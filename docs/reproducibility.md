@@ -31,6 +31,14 @@ Evidence states and seeds:
 - State7: seeds `1,2,3,4,5`.
 - State5: seeds `0,1,2,3,4,5`.
 
+Paper-facing attack parameters:
+
+- PGD budget: `epsilon=0.10`, `step_size=0.020`, `num_steps=20`.
+- CW margin for the primary VIS condition: `5.0`.
+- Default fixed windows exposed by `scripts/run_attack_pipeline.py`: State7 `75-84`, State5 `78-87`.
+- Timing-control window: `constant_delta_pregrasp` uses the pregrasp/contact window `35-45`.
+- Public quickstart runs use `configs/paper_black_bowl_attack.yaml`; historical `v4_*` configs are retained for provenance and exploratory ablations.
+
 ## Six-Condition Quickstart: State7 Seed1
 
 ```bash
@@ -46,7 +54,7 @@ Condition logic:
 
 - `clean`: baseline rollout.
 - `oracle_continuous`: physical upper-bound check that forces gripper opening in the target window.
-- `vis_margin_prevdelta`: primary gripper-targeted temporal PGD condition.
-- `ctrl_same_gate_zero_margin`: tests whether the effect requires the same temporal initialization/margin setting.
+- `vis_margin_prevdelta`: primary gripper-targeted temporal PGD condition with `prev_delta` initialization and CW margin `5.0`.
+- `ctrl_same_gate_zero_margin`: matched-window control with zero-margin initialization; this prevents claiming `prev_delta`/margin uniqueness.
 - `ctrl_random_direction`: tests whether arbitrary visual perturbation causes the same failure.
-- `constant_delta_pregrasp`: timing control for early contact disturbance rather than release/pre-place failure.
+- `constant_delta_pregrasp`: timing control for early contact disturbance rather than release/pre-place failure; it uses the fixed pregrasp window `35-45`.

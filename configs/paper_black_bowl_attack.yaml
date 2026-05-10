@@ -1,0 +1,39 @@
+version: paper_template_b
+experiment_id: openvla_gripper_dutycycle_black_bowl
+victim: openvla_7b
+trigger_timing: current_step_observer_decode
+model_paths:
+  base: ${OPENVLA_BASE_MODEL_DIR}
+  libero_spatial: ${OPENVLA_MODEL_ROOT}/openvla-7b-finetuned-libero-spatial
+seeds: [1, 2, 3, 4, 5]
+episodes_per_task_seed: 1
+rhos: [1.0]
+triggers_main: [clean, fixed_step_window_budgeted]
+attack_optimizer:
+  method: token_prefix_pgd
+  fallback_method: visual_linf_noise_adapter
+  objective: gripper_logit_margin_cw
+  epsilon: 0.10
+  step_size: 0.020
+  num_steps: 20
+  cw_margin: 5.0
+  temporal_init: prev_delta
+  random_start: false
+  clip_min: 0.0
+  clip_max: 1.0
+uncertainty:
+  K_trigger: 8
+  K_attack: 8
+budget:
+  budget_rounding: floor
+  min_budget_steps: 1
+directional_target:
+  direction_id: fixed_dx_positive
+  dims: [0, 1, 2, 3, 4, 5]
+  alpha: 1.0
+  alignment_threshold: 0.0
+logging:
+  output_root: outputs/repro_black_bowl
+  save_step_jsonl: true
+  save_episode_jsonl: true
+  save_summary_csv: true

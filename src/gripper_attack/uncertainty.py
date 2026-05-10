@@ -47,7 +47,8 @@ def arm_entropy(prefix_logits: np.ndarray) -> float:
 
 
 def gripper_entropy(prefix_logits: np.ndarray) -> float:
-    return prefix_entropy_positions(prefix_logits, [6])
+    x = _as_prefix_logits(prefix_logits)
+    return prefix_entropy_positions(x, [x.shape[0] - 1])
 
 
 def _motion_norm(clean_action, dims: list[int] | tuple[int, ...]) -> float:

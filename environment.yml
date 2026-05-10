@@ -19,4 +19,6 @@ dependencies:
       - safetensors  # version not pinned, verified working as of 2026-05-10
       - libero  # version not pinned, verified working as of 2026-05-10
       - robosuite  # version not pinned, verified working as of 2026-05-10
-      - openvla  # version not pinned, verified working as of 2026-05-10
+# openvla is not a pip package. It is loaded via trust_remote_code=True from
+# the model checkpoint directory (which contains modeling_prismatic.py). The
+# runner auto-patches prerequisites via patch_openvla_compat.py. See README.

@@ -30,55 +30,66 @@ CONDITIONS = {
     "clean": {
         "trigger": "clean",
         "rho": "0.0",
+        "objective": "",
+        "temporal_init": "none",
+        "cw_margin": None,
+        "window": None,
         "extra_env": {},
     },
     "oracle_continuous": {
         "trigger": "fixed_step_window_budgeted",
         "rho": "1.0",
+        "objective": "oracle_env_gripper_open",
+        "temporal_init": "none",
+        "cw_margin": None,
+        "window": None,
         "extra_env": {
-            "V4_ATTACK_OBJECTIVE": "oracle_env_gripper_open",
             "V4_ORACLE_FORCE_GRIPPER_ENV_VALUE": "-1.0",
-            "V4_ORACLE_OPEN_PATTERN": "continuous_open",
+            "V4_ORACLE_GRIPPER_PATTERN": "continuous_open",
         },
     },
     "vis_margin_prevdelta": {
         "trigger": "fixed_step_window_budgeted",
         "rho": "1.0",
-        "extra_env": {
-            "V4_ATTACK_OBJECTIVE": "gripper_logit_margin_cw",
-            "V4_TEMPORAL_INIT": "prev_delta",
-            "V4_CW_MARGIN": "5.0",
-        },
+        "objective": "gripper_logit_margin_cw",
+        "temporal_init": "prev_delta",
+        "cw_margin": "5.0",
+        "window": None,
+        "extra_env": {},
     },
     "ctrl_same_gate_zero_margin": {
         "trigger": "fixed_step_window_budgeted",
         "rho": "1.0",
-        "extra_env": {
-            "V4_ATTACK_OBJECTIVE": "gripper_logit_margin_cw",
-            "V4_TEMPORAL_INIT": "none",
-            "V4_CW_MARGIN": "0.0",
-        },
+        "objective": "gripper_logit_margin_cw",
+        "temporal_init": "none",
+        "cw_margin": "0.0",
+        "window": None,
+        "extra_env": {},
     },
     "ctrl_random_direction": {
         "trigger": "fixed_step_window_budgeted",
         "rho": "1.0",
-        "extra_env": {
-            "V4_ATTACK_OBJECTIVE": "untargeted_arm_clean_token_ce",
-            "V4_TEMPORAL_INIT": "none",
-        },
+        "objective": "untargeted_arm_clean_token_ce",
+        "temporal_init": "none",
+        "cw_margin": None,
+        "window": None,
+        "extra_env": {},
     },
     "constant_delta_pregrasp": {
         "trigger": "fixed_step_window_budgeted",
         "rho": "1.0",
+        "objective": "constant_delta_pregrasp",
+        "temporal_init": "none",
+        "cw_margin": None,
+        "window": (35, 45),
         "extra_env": {
-            "V4_ATTACK_OBJECTIVE": "constant_delta_pregrasp",
             "V4_CONSTANT_DELTA_GRIPPER": "-1.0",
         },
     },
 }
 
 STATE_WINDOWS = {
-    7: (96, 112),
+    7: (75, 84),
     5: (78, 87),
 }
 
@@ -93,11 +104,18 @@ def env_path(primary: str, root_var: str, suffix: str) -> str:
 
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Run public gripper duty-cycle attack conditions.")
+    ap = argparse.ArgumentParser(
+        description="Run public gripper duty-cycle attack conditions. "
+                    "See docs/reproducibility.md for the full condition matrix "
+                    "and docs/claim_and_evidence.md for claim boundaries."
+    )
     ap.add_argument("--task", choices=sorted(TASKS), default="black_bowl")
-    ap.add_argument("--state", type=int, required=True, help="Deterministic LIBERO init state, e.g. 7 or 5.")
-    ap.add_argument("--seed", type=int, required=True)
-    ap.add_argument("--condition", choices=sorted(CONDITIONS), required=True)
+    ap.add_argument("--state", type=int, choices=[5, 7], required=True,
+                    help="Deterministic LIBERO init state (5 or 7).")
+    ap.add_argument("--seed", type=int, required=True,
+                    help="Random seed for reproducibility. See docs/reproducibility.md for paper seeds per state.")
+    ap.add_argument("--condition", choices=sorted(CONDITIONS), required=True,
+                    help="Attack condition name. See docs/reproducibility.md for full descriptions.")
     ap.add_argument("--episodes", type=int, default=1)
     ap.add_argument("--max_steps", type=int, default=700)
     ap.add_argument("--window_start", type=int, default=None)
@@ -107,9 +125,12 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--model_path", default="")
     ap.add_argument("--base_model_code_dir", default=os.environ.get("OPENVLA_BASE_MODEL_DIR", ""))
     ap.add_argument("--tasks_config", default="configs/v4_tasks_libero.yaml")
-    ap.add_argument("--attack_config", default="configs/v4_attack.yaml")
+    ap.add_argument("--attack_config", default="configs/paper_black_bowl_attack.yaml")
     ap.add_argument("--directions_config", default="configs/v4_directions.yaml")
     ap.add_argument("--thresholds", default="")
+    ap.add_argument("--epsilon", default="0.10")
+    ap.add_argument("--step_size", default="0.020")
+    ap.add_argument("--attack_steps", default="20")
     ap.add_argument("--dry_run", action="store_true", help="Print the dispatched command without executing it.")
     return ap.parse_args()
 
@@ -118,7 +139,13 @@ def main() -> int:
     args = parse_args()
     task = TASKS[args.task]
     condition = CONDITIONS[args.condition]
-    w0, w1 = STATE_WINDOWS.get(args.state, (args.window_start, args.window_end))
+    condition_window = condition.get("window")
+    if args.condition == "constant_delta_pregrasp" and (args.window_start is not None or args.window_end is not None):
+        raise SystemExit("constant_delta_pregrasp is fixed to the 35-45 pregrasp/contact window; do not pass --window_start/--window_end.")
+    if condition_window is not None:
+        w0, w1 = condition_window
+    else:
+        w0, w1 = STATE_WINDOWS.get(args.state, (args.window_start, args.window_end))
     if args.window_start is not None:
         w0 = args.window_start
     if args.window_end is not None:
@@ -133,10 +160,10 @@ def main() -> int:
     env = os.environ.copy()
     env.setdefault("MUJOCO_GL", "egl")
     env.setdefault("PYTHONUNBUFFERED", "1")
-    env.setdefault("V4_TARGET_OBJECT_NAME", task["object"])
-    env.setdefault("V4_TARGET_RECEPTACLE_NAME", task["receptacle"])
-    env.setdefault("V4_FIXED_WINDOW_START", str(w0))
-    env.setdefault("V4_FIXED_WINDOW_END", str(w1))
+    env["V4_TARGET_OBJECT_NAME"] = task["object"]
+    env["V4_TARGET_RECEPTACLE_NAME"] = task["receptacle"]
+    env["V4_FIXED_ATTACK_START"] = str(w0)
+    env["V4_FIXED_ATTACK_END"] = str(w1)
     env.update(condition["extra_env"])
 
     cmd = [
@@ -157,15 +184,36 @@ def main() -> int:
         "--base_model_code_dir", base_model,
         "--unnorm_key", task["unnorm_key"],
         "--camera_obs_key", "agentview_image",
+        "--epsilon", str(args.epsilon),
+        "--step_size", str(args.step_size),
+        "--attack_steps", str(args.attack_steps),
+        "--temporal_init", str(condition["temporal_init"]),
         "--libero_official_preprocess",
         "--center_crop",
         "--postprocess_gripper",
         "--deterministic_init_states",
+        "--state_ids", str(args.state),
     ]
+    if condition["objective"]:
+        cmd.extend(["--attack_objective", str(condition["objective"])])
+    if condition["cw_margin"] is not None:
+        cmd.extend(["--cw_margin", str(condition["cw_margin"])])
     if args.thresholds:
         cmd.extend(["--thresholds", args.thresholds])
 
     if args.dry_run:
+        audit_env_keys = [
+            "V4_FIXED_ATTACK_START",
+            "V4_FIXED_ATTACK_END",
+            "V4_TARGET_OBJECT_NAME",
+            "V4_TARGET_RECEPTACLE_NAME",
+            "V4_ORACLE_FORCE_GRIPPER_ENV_VALUE",
+            "V4_ORACLE_GRIPPER_PATTERN",
+            "V4_CONSTANT_DELTA_GRIPPER",
+        ]
+        visible_env = [f"{key}={env[key]}" for key in audit_env_keys if key in env]
+        if visible_env:
+            print("ENV " + " ".join(visible_env))
         print(" ".join(cmd))
         return 0
     return subprocess.call(cmd, cwd=str(ROOT), env=env)
