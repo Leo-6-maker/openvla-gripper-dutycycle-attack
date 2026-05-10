@@ -1,0 +1,11 @@
+mode: dense
+rho: 1.0
+patch:
+  eps: 0.08
+  step_size: 0.01
+  steps_per_update: 1
+  init: zeros
+objective:
+  alpha: 1.0
+  action_slice: [0, 1, 2]
+  g_hat: [1.0, 0.0, 0.0]

@@ -1,0 +1,9 @@
+suite: libero
+tasks:
+  - name: libero_spatial_open_drawer
+  - name: libero_object_pick_mug
+  - name: libero_goal_place_bowl
+  - name: libero_long_stack_blocks
+seeds: [0, 1, 2]
+episodes_per_task: 20
+max_steps: 300

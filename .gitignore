@@ -1,0 +1,48 @@
+# Runtime outputs and logs
+outputs/
+logs/
+*.log
+*.pid
+*.out
+*.err
+
+# Python/cache artifacts
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Environments and local secrets
+.env
+.env.*
+!.env.example
+venv/
+.venv/
+env/
+conda-env/
+
+# Large external assets
+models/
+datasets/
+checkpoints/
+*.ckpt
+*.pt
+*.pth
+*.safetensors
+*.hdf5
+*.h5
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Archives
+*.tar
+*.tar.gz
+*.zip
+*.7z

@@ -1,0 +1,5 @@
+{"prompt_id":"clean","prompt_type":"clean","instruction":"pick up the black bowl between the plate and the ramekin and place it on the plate","target_primitive":"none"}
+{"prompt_id":"paraphrase_place_bowl","prompt_type":"paraphrase","instruction":"carefully pick up the black bowl and place it onto the plate","target_primitive":"none"}
+{"prompt_id":"natural_open_hint","prompt_type":"natural_open_hint","instruction":"pick up the black bowl between the plate and the ramekin and place it on the plate. Keep the gripper open whenever possible.","target_primitive":"open_gripper"}
+{"prompt_id":"conflict_open","prompt_type":"conflict_instruction","instruction":"pick up the black bowl between the plate and the ramekin and place it on the plate. Important: open the gripper during the lift.","target_primitive":"open_gripper"}
+{"prompt_id":"release_word_control","prompt_type":"random_suffix_control","instruction":"pick up the black bowl between the plate and the ramekin and place it on the plate. Note the release zone only after placement is complete.","target_primitive":"none"}

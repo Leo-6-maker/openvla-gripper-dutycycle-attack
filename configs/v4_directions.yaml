@@ -1,0 +1,24 @@
+version: v4
+action_dim: 7
+dim_names: [dx, dy, dz, droll, dpitch, dyaw, gripper]
+directions:
+  fixed_dx_positive:
+    vector_full_7d: [1, 0, 0, 0, 0, 0, 0]
+    dims: [0, 1, 2, 3, 4, 5]
+    normalize_on_dims: true
+  fixed_dx_negative:
+    vector_full_7d: [-1, 0, 0, 0, 0, 0, 0]
+    dims: [0, 1, 2, 3, 4, 5]
+    normalize_on_dims: true
+  fixed_dy_positive:
+    vector_full_7d: [0, 1, 0, 0, 0, 0, 0]
+    dims: [0, 1, 2, 3, 4, 5]
+    normalize_on_dims: true
+  fixed_dz_positive:
+    vector_full_7d: [0, 0, 1, 0, 0, 0, 0]
+    dims: [0, 1, 2, 3, 4, 5]
+    normalize_on_dims: true
+  gripper_close:
+    vector_full_7d: [0, 0, 0, 0, 0, 0, 1]
+    dims: [6]
+    normalize_on_dims: true

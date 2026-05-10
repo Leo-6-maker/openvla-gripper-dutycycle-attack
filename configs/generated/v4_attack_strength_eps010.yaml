@@ -1,0 +1,46 @@
+version: v4
+experiment_id: v4_utsa_openvla_strength_eps010
+victim: openvla_7b
+trigger_timing: current_step_observer_decode
+model_paths:
+  base: ${OPENVLA_BASE_MODEL_DIR}
+  libero_goal: ${OPENVLA_MODEL_ROOT}/openvla-7b-finetuned-libero-goal
+  libero_spatial: ${OPENVLA_MODEL_ROOT}/openvla-7b-finetuned-libero-spatial
+  libero_object: ${OPENVLA_MODEL_ROOT}/openvla-7b-finetuned-libero-object
+  libero_10: ${OPENVLA_MODEL_ROOT}/openvla-7b-finetuned-libero-10
+seeds: [0, 1, 2]
+episodes_per_task_seed: 20
+rhos: [0.01, 0.05, 0.10, 0.20]
+triggers_main: [clean, dense, random_bernoulli_budgeted, periodic_budgeted, entropy_threshold, margin_threshold]
+triggers_diagnostic: [oracle_offline_entropy_topk, oracle_offline_margin_topk]
+attack_optimizer:
+  method: visual_linf_pgd_or_adapter
+  fallback_method: visual_linf_noise_adapter
+  epsilon: 0.10
+  step_size: 0.006
+  num_steps: 5
+  random_start: false
+  clip_min: 0.0
+  clip_max: 1.0
+uncertainty:
+  K_trigger: 8
+  K_attack: 8
+budget:
+  budget_rounding: floor
+  min_budget_steps: 1
+directional_target:
+  direction_id: fixed_dx_positive
+  dims: [0, 1, 2, 3, 4, 5]
+  alpha: 1.0
+  alignment_threshold: 0.0
+feasibility_gate:
+  trigger_only_extra_forward_max: 0
+  trigger_only_extra_decode_max: 0
+  trigger_latency_p95_max_seconds: 0.02
+  signal_availability_min: 0.95
+  fallback_rate_max: 0.05
+logging:
+  output_root: outputs/v4
+  save_step_jsonl: true
+  save_episode_jsonl: true
+  save_summary_csv: true

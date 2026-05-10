@@ -1,0 +1,22 @@
+name: openvla-gripper-attack
+channels:
+  - pytorch
+  - nvidia
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pip:
+      - torch  # version not pinned, verified working as of 2026-05-10
+      - torchvision  # version not pinned, verified working as of 2026-05-10
+      - torchaudio  # version not pinned, verified working as of 2026-05-10
+      - transformers  # version not pinned, verified working as of 2026-05-10
+      - numpy  # version not pinned, verified working as of 2026-05-10
+      - pillow  # version not pinned, verified working as of 2026-05-10
+      - pyyaml  # version not pinned, verified working as of 2026-05-10
+      - h5py  # version not pinned, verified working as of 2026-05-10
+      - accelerate  # version not pinned, verified working as of 2026-05-10
+      - safetensors  # version not pinned, verified working as of 2026-05-10
+      - libero  # version not pinned, verified working as of 2026-05-10
+      - robosuite  # version not pinned, verified working as of 2026-05-10
+      - openvla  # version not pinned, verified working as of 2026-05-10

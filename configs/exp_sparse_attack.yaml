@@ -1,0 +1,65 @@
+experiment:
+  experiment_id: openvla_sparse_attack_v0_cpu_design
+  owner: liuyu
+  phase: phase2_phase3_design
+  code_commit: "TBD"
+  model_ckpt_id: openvla/openvla-7b
+  dataset_manifest_hash: "TBD"
+
+paths:
+  tasks_config: ${REPO_ROOT}/configs/tasks_libero_real.yaml
+  output_root: ${REPO_ROOT}/outputs/phase2_phase3
+
+runtime:
+  dry_run: true
+  resume: true
+  episodes_per_task_seed: 20
+  max_steps_per_episode: 400
+  long_task_max_steps: 700
+  seeds: [0, 1, 2]
+
+attack_defaults:
+  perturb_target: action
+  epsilon: 0.05
+  magnitude: 0.03
+  budget_policy: topk
+  clip_rule:
+    min: -1.0
+    max: 1.0
+
+acceptance_thresholds:
+  fr_gain_min_pp: 5.0
+  nad_max: 1.2
+  latency_overhead_max: 0.20
+  significance_rule: bootstrap_95ci_lb_gt_0
+
+matrix:
+  - name: E0_clean
+    enabled: true
+    mode: clean
+    triggers: [none]
+    ratios: [0.0]
+
+  - name: E1_dense
+    enabled: true
+    mode: attack
+    triggers: [dense]
+    ratios: [1.0]
+
+  - name: E2_sparse_ablation
+    enabled: true
+    mode: attack
+    triggers:
+      - random
+      - periodic_sparse
+      - entropy_topk
+      - margin_topk
+      - action_variance_topk
+      - shuffled_uncertainty_rank
+    ratios: [0.05, 0.10, 0.20]
+
+  - name: E3_ratio_sweep
+    enabled: true
+    mode: attack
+    triggers: [entropy_topk, margin_topk]
+    ratios: [0.01, 0.05, 0.10, 0.20, 1.0]

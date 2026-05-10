@@ -1,0 +1,28 @@
+real_data:
+  repo_id: yifengzhu-hf/LIBERO-datasets
+  repo_type: dataset
+  endpoints:
+    - https://hf-mirror.com
+    - https://huggingface.co
+  download_dir: ${LIBERO_DATA_ROOT}
+
+tasks:
+  - task_id: spatial_bowl_plate
+    suite: libero_spatial
+    task_name: pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate
+    hf_file: libero_spatial/pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate_demo.hdf5
+
+  - task_id: object_alphabet_soup
+    suite: libero_object
+    task_name: pick_up_the_alphabet_soup_and_place_it_in_the_basket
+    hf_file: libero_object/pick_up_the_alphabet_soup_and_place_it_in_the_basket_demo.hdf5
+
+  - task_id: goal_open_middle_drawer
+    suite: libero_goal
+    task_name: open_the_middle_drawer_of_the_cabinet
+    hf_file: libero_goal/open_the_middle_drawer_of_the_cabinet_demo.hdf5
+
+  - task_id: long_two_moka_pots
+    suite: libero_10
+    task_name: KITCHEN_SCENE8_put_both_moka_pots_on_the_stove
+    hf_file: libero_10/KITCHEN_SCENE8_put_both_moka_pots_on_the_stove_demo.hdf5

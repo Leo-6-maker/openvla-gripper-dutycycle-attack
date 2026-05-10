@@ -1,0 +1,14 @@
+[
+  "open",
+  "open gripper",
+  "release",
+  "release gripper",
+  "let go",
+  "drop",
+  "drop bowl",
+  "ungrip",
+  "loosen grip",
+  "open during lift",
+  "release during lift",
+  "let go while carrying"
+]

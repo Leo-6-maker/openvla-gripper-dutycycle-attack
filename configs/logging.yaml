@@ -1,0 +1,17 @@
+export:
+  jsonl: true
+  csv: true
+fields:
+  - step_idx
+  - trigger_name
+  - trigger_score
+  - trigger_active
+  - trigger_signal_available
+  - trigger_fallback
+  - Ntrig_fwd
+  - Ntrig_decode
+  - Ttrig
+  - Tattack
+  - Ttotal
+  - Mcache
+  - Asignal

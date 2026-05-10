@@ -1,0 +1,13 @@
+random_sparse:
+  seed: 0
+entropy:
+  threshold: 3.5
+  warmup_steps: 20
+  quantile: 0.9
+margin:
+  threshold: 0.25
+  warmup_steps: 20
+  quantile: 0.1
+apd:
+  threshold: 0.4
+  metric: l2
