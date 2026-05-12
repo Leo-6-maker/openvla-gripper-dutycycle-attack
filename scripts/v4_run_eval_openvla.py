@@ -16,7 +16,7 @@ from gripper_attack.io import make_run_id, read_json, sha256_jsonable, write_csv
 from gripper_attack.logging_schema import validate_episode_record, validate_run_manifest, validate_step_record
 from gripper_attack.metrics import aggregate_episode_from_steps, aggregate_run, normalized_action_discrepancy_cleanref
 from gripper_attack.triggers import make_trigger
-from gripper_attack.types import TriggerContext
+from gripper_attack.types import AttackResult, TriggerContext
 from gripper_attack.uncertainty import extract_prefix_logits
 
 FORCE_OPEN_OBJECTIVES = {"force_gripper_open_token_ce", "force_gripper_open", "targeted_gripper_open_ce"}
@@ -26,6 +26,7 @@ ADAPTIVE_ANTI_GRIPPER_OBJECTIVES = {"adaptive_anti_gripper_token_ce"}
 ORACLE_ENV_GRIPPER_OPEN_OBJECTIVES = {"oracle_env_gripper_open", "oracle_force_env_gripper_open"}
 ARM_ONLY_UNTARGETED_OBJECTIVES = {"untargeted_arm_clean_token_ce", "ctrl_random_direction_arm_only"}
 CONSTANT_DELTA_OBJECTIVES = {"constant_delta_pregrasp"}
+NOISE_BASELINE_OBJECTIVES = {"noise_baseline"}
 
 def load_yaml(p):
     with open(p, "r", encoding="utf-8") as f: return yaml.safe_load(f)
@@ -411,6 +412,38 @@ def target_metadata_for_objective(clean, executed, target, args, cfg):
         meta["adaptive_target_sign_ok"] = bool((clean_closed and target_open) or ((not clean_closed) and target_closed))
     return meta
 
+def guard_should_block_open(step_meta: dict, env_action, *, close_threshold: float = -0.5, lift_z_min: float = 0.02, release_proximity: float = 0.05, mode: str = "conservative") -> tuple[bool, str]:
+    """Online command-layer guard: block open-gripper commands during grasp→pre-release.
+
+    Returns (block, reason).  Block is True only when ALL of these hold:
+      (a) env_action gripper is an open command (gripper < close_threshold)
+      (b) a close/grasp event has been detected
+      (c) bowl has been lifted (bowl_z_delta >= lift_z_min)
+      (d) bowl is NOT yet near the plate (release not started)
+
+    This naturally permits normal release-phase gripper opening at the end of
+    the task, and should never trigger on clean rollouts (no spurios open
+    commands during grasp→carry).
+    """
+    gripper_cmd = float(np.asarray(env_action, dtype=np.float32).reshape(-1)[-1])
+    if gripper_cmd >= close_threshold:
+        return False, "gripper_not_open"
+    guard_mode = str(mode or "conservative").strip().lower()
+    close_seen = bool(step_meta.get("grasp_close_intent", False) or step_meta.get("grasp_first_close_step") is not None or step_meta.get("grasp_first_gate_step") is not None)
+    if not close_seen:
+        return False, "no_close_intent"
+    bowl_plate_dxy = float(step_meta.get("grasp_bowl_plate_dxy", 999.0) or 999.0)
+    bowl_plate_dz = float(step_meta.get("grasp_bowl_plate_dz", 999.0) or 999.0)
+    if bowl_plate_dxy < release_proximity and bowl_plate_dz < release_proximity:
+        return False, "near_release_target"
+    if guard_mode in {"strict_after_close", "strict", "after_close"}:
+        return True, "guard_blocked_strict_after_close"
+    bowl_z_delta = float(step_meta.get("grasp_bowl_z_delta", 0.0) or 0.0)
+    if bowl_z_delta < lift_z_min:
+        return False, "bowl_not_lifted"
+    return True, "guard_blocked"
+
+
 def primitive_target_ok(value: float, target_primitive: str) -> bool:
     primitive = str(target_primitive or "none").strip().lower()
     if primitive in {"open_gripper", "open", "open_at_lift", "persistent_open"}:
@@ -707,8 +740,16 @@ def run_dry(args, task, cfg, direction, thresholds):
                 Tattack=time.time()-at
             else:
                 attacker.reset_temporal_state()
-            al=compute_alignment(compute_delta_action(executed,clean),direction.g_hat,direction.dims); rec=build_record(args,cfg,task,run_id,ep,t,max_steps,dec,bd,clean,executed,al,attack_res,0.001,Ttrig,Tattack,action_low=np.full_like(clean,-1.0),action_high=np.full_like(clean,1.0),nad_dims=cfg.get("directional_target",{}).get("dims", list(range(len(clean))))); rec.update(resolve_instruction_for_run(args, task["task_name"])[1]); validate_step_record(rec); ep_steps.append(rec); all_steps.append(rec)
+            al=compute_alignment(compute_delta_action(executed,clean),direction.g_hat,direction.dims); rec=build_record(args,cfg,task,run_id,ep,t,max_steps,dec,bd,clean,executed,al,attack_res,0.001,Ttrig,Tattack,action_low=np.full_like(clean,-1.0),action_high=np.full_like(clean,1.0),nad_dims=cfg.get("directional_target",{}).get("dims", list(range(len(clean))))); rec.update(resolve_instruction_for_run(args, task["task_name"])[1])
             rec.update(target_metadata_for_objective(clean, executed, target, args, cfg))
+            rec["guard_blocked"] = False
+            rec["guard_reason"] = ""
+            rec["guard_mode"] = str(args.guard_mode) if getattr(args, "guard_enabled", False) else ""
+            rec.setdefault("clean_gripper_token", "")
+            rec.setdefault("attack_gripper_token", "")
+            rec.setdefault("gripper_token_flip", False)
+            rec["target_primitive_ok"]=bool(len(executed) and primitive_target_ok(float(executed[-1]), rec.get("target_primitive", "none")))
+            validate_step_record(rec); ep_steps.append(rec); all_steps.append(rec)
         success=True if args.trigger=="clean" else bool(rng.rand()>0.25); epagg=aggregate_episode_from_steps(ep_steps,success,False,False); epagg.update({"version":"v4","run_id":run_id,"experiment_id":cfg["experiment_id"],"task_id":task["task_id"],"suite":task["suite"],"seed":args.seed,"episode_id":ep,"trigger_name":args.trigger,"rho":args.rho,"invalid_reason":"","feasibility_pass":True,"artifact_step_jsonl":str(step_path)}); validate_episode_record(epagg); episodes.append(epagg); persist_progress(args,cfg,task,run_id,out,step_path,ep_path,episodes,all_steps,max_steps,"dry_run",status="running"); print(f"[progress] run={run_id} episode={ep+1}/{args.episodes} steps={len(ep_steps)} success={success}", flush=True)
     finalize(args,cfg,task,run_id,out,step_path,ep_path,episodes,all_steps,"dry_run",max_steps); persist_progress(args,cfg,task,run_id,out,step_path,ep_path,episodes,all_steps,max_steps,"dry_run",status="done"); print("[ok] v4 dry run ->", out, flush=True)
 
@@ -919,6 +960,17 @@ def run_real(args, task, cfg, direction, thresholds):
                     executed=clean.copy()
                 elif objective in CONSTANT_DELTA_OBJECTIVES:
                     executed=target.copy()
+                elif objective in NOISE_BASELINE_OBJECTIVES:
+                    noise_eps=float(cfg.get("attack_optimizer",{}).get("epsilon",0.10))
+                    rng_noise=np.random.RandomState(args.seed*1000+t*7+ep*13)
+                    obs_img=np.asarray(obs[args.camera_obs_key],dtype=np.float32)
+                    if bool(obs_img.max()>1.0):
+                        obs_img=obs_img/255.0
+                    noise=rng_noise.uniform(-noise_eps,noise_eps,size=obs_img.shape).astype(np.float32)
+                    noisy_img=np.clip(obs_img+noise,0.0,1.0)
+                    noisy_img_uint8=(noisy_img*255.0).astype(np.uint8)
+                    executed,_,adv_decode_sec,adv_gen=decode_with_scores(model,processor,device,noisy_img_uint8,instruction,unnorm,int(cfg["uncertainty"]["K_trigger"]),libero_official_preprocess=args.libero_official_preprocess,center_crop=args.center_crop,resize_size=args.openvla_resize_size,drop_attention_mask=(not args.keep_attention_mask))
+                    attack_res=AttackResult(x_adv=noisy_img_uint8,action_adv=executed,attack_method="random_uniform_noise",directional_loss_available=False,num_attack_steps=0,epsilon=noise_eps,step_size=0.0,observation_perturb_linf=float(np.max(np.abs(noise))),observation_perturb_l2=float(np.linalg.norm(noise.reshape(-1))))
                 else:
                     attack_res=attacker.attack(obs[args.camera_obs_key],instruction,clean,target,out_clean,unnorm_key=unnorm)
                     if attack_res and isinstance(attack_res.debug, dict) and "adv_inputs" in attack_res.debug:
@@ -1003,6 +1055,17 @@ def run_real(args, task, cfg, direction, thresholds):
             else:
                 consecutive_open_streak = 0
             rec["consecutive_open_streak"] = int(consecutive_open_streak)
+
+            # ── Online command-layer guard ──
+            guard_blocked = False; guard_reason = ""
+            if args.guard_enabled:
+                guard_blocked, guard_reason = guard_should_block_open(step_meta, env_action, mode=args.guard_mode)
+                if guard_blocked:
+                    env_action = np.asarray(env_action, dtype=np.float32).copy()
+                    env_action[-1] = np.clip(1.0, -1.0, 1.0)  # closed in LIBERO postprocessed space
+            rec["guard_blocked"] = bool(guard_blocked)
+            rec["guard_reason"] = guard_reason
+            rec["guard_mode"] = str(args.guard_mode) if args.guard_enabled else ""
             rec["target_primitive_ok"]=bool(len(env_action) and primitive_target_ok(float(env_action[-1]), prompt_meta["target_primitive"]))
             eef_before=eef_pos(env); bowl_before=object_pos(env, target_object_name)
             rec["clean_z_action"]=float(np.asarray(clean, dtype=np.float32)[2]) if len(clean) >= 3 else 0.0
@@ -1043,7 +1106,7 @@ def run_real(args, task, cfg, direction, thresholds):
     print("[ok] v4 real run ->", out, flush=True)
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument("--tasks_config",default="configs/v4_tasks_libero.yaml"); ap.add_argument("--attack_config",default="configs/v4_attack.yaml"); ap.add_argument("--directions_config",default="configs/v4_directions.yaml"); ap.add_argument("--thresholds",default=""); ap.add_argument("--task_id",required=True); ap.add_argument("--trigger",required=True); ap.add_argument("--rho",type=float,default=0.0); ap.add_argument("--seed",type=int,default=0); ap.add_argument("--episodes",type=int,default=1); ap.add_argument("--max_steps_override",type=int,default=0); ap.add_argument("--output_root",default="outputs/v4/smoke"); ap.add_argument("--run_id",default=""); ap.add_argument("--dry_run",action="store_true"); ap.add_argument("--model_path",default=""); ap.add_argument("--base_model_code_dir",default="${OPENVLA_BASE_MODEL_DIR}"); ap.add_argument("--unnorm_key",default="libero_goal"); ap.add_argument("--camera_obs_key",default="agentview_image"); ap.add_argument("--render_gpu_device_id",type=int,default=0); ap.add_argument("--model_gpu_device_id",type=int,default=-1,help="CUDA-visible local GPU index for model inference; default chooses a non-render GPU when available"); ap.add_argument("--grasp_gate_dist",type=float,default=0.10,help="Privileged grasp gate eef-bowl distance threshold in meters"); ap.add_argument("--attack_objective",default="",help="Override attack_optimizer.objective for this run, e.g. force_gripper_open_token_ce"); ap.add_argument("--epsilon",type=float,default=None,help="Override attack_optimizer.epsilon for reproducibility entrypoints"); ap.add_argument("--step_size",type=float,default=None,help="Override attack_optimizer.step_size for reproducibility entrypoints"); ap.add_argument("--attack_steps",type=int,default=None,help="Override attack_optimizer.num_steps for reproducibility entrypoints"); ap.add_argument("--temporal_init",default="",help="Override attack_optimizer.temporal_init, e.g. prev_delta or none"); ap.add_argument("--cw_margin",type=float,default=None,help="Override attack_optimizer.cw_margin for gripper-logit margin objectives"); ap.add_argument("--force_open_raw_gripper",type=float,default=0.0,help="Raw OpenVLA gripper target used by force_gripper_open objectives"); ap.add_argument("--matched_to_run_id",default=""); ap.add_argument("--matched_to_trigger",default=""); ap.add_argument("--matched_to_attacked_ratio",type=float,default=-1.0); ap.add_argument("--auto_patch_compat",action="store_true"); ap.add_argument("--libero_official_preprocess",action="store_true",help="Use official OpenVLA-LIBERO image preprocessing: 256 render + 180-degree rotate + resize before processor"); ap.add_argument("--image_size",type=int,default=256); ap.add_argument("--openvla_resize_size",type=int,default=224); ap.add_argument("--center_crop",action="store_true"); ap.add_argument("--num_steps_wait",type=int,default=0); ap.add_argument("--postprocess_gripper",action="store_true",help="Apply official normalize_gripper_action + invert_gripper_action before env.step"); ap.add_argument("--success_metric",choices=["done","check_success"],default="done"); ap.add_argument("--deterministic_init_states",action="store_true",help="Use official-style episode index init states instead of random sampling"); ap.add_argument("--state_ids",default="",help="Comma-separated deterministic LIBERO init-state ids, e.g. 5,7,8; overrides --episodes count for rollout order"); ap.add_argument("--keep_attention_mask",action="store_true",help="Debug only: keep processor attention_mask during OpenVLA generation"); ap.add_argument("--require_rollout_calibration", action="store_true", help="Require rollout-passive calibration provenance for entropy/margin thresholds"); ap.add_argument("--min_calibration_steps", type=int, default=0, help="Minimum calibration num_steps for entropy/margin thresholds"); ap.add_argument("--instruction_override",default="",help="Replace the benchmark instruction for prompt-channel experiments"); ap.add_argument("--instruction_suffix",default="",help="Append a suffix to the effective instruction"); ap.add_argument("--prompt_variants_path",default="",help="JSON/JSONL/CSV prompt set for offline prompt audit"); ap.add_argument("--offline_prompt_audit",action="store_true",help="Run fixed-observation prompt-to-gripper audit without prompt attacks or visual PGD"); ap.add_argument("--offline_prompt_audit_steps",type=int,default=1,help="Number of collected clean-trajectory frames per state for offline prompt audit"); ap.add_argument("--offline_prompt_audit_start_step",type=int,default=0,help="Clean rollout step at which offline prompt audit starts collecting frames"); ap.add_argument("--offline_prompt_audit_stride",type=int,default=1,help="Stride between collected offline prompt audit frames"); ap.add_argument("--prompt_id",default="",help="Stable prompt identifier for prompt-hijack diagnostics"); ap.add_argument("--prompt_type",default="",help="Prompt category, e.g. clean/paraphrase/conflict/suffix"); ap.add_argument("--prompt_attack_config",default="",help="Optional prompt attack manifest/config path"); ap.add_argument("--target_primitive",choices=["none","open_gripper","close_gripper","freeze","open_at_lift","persistent_open"],default="none",help="Primitive targeted by inference-time prompt attack"); args=ap.parse_args()
+    ap=argparse.ArgumentParser(); ap.add_argument("--tasks_config",default="configs/v4_tasks_libero.yaml"); ap.add_argument("--attack_config",default="configs/v4_attack.yaml"); ap.add_argument("--directions_config",default="configs/v4_directions.yaml"); ap.add_argument("--thresholds",default=""); ap.add_argument("--task_id",required=True); ap.add_argument("--trigger",required=True); ap.add_argument("--rho",type=float,default=0.0); ap.add_argument("--seed",type=int,default=0); ap.add_argument("--episodes",type=int,default=1); ap.add_argument("--max_steps_override",type=int,default=0); ap.add_argument("--output_root",default="outputs/v4/smoke"); ap.add_argument("--run_id",default=""); ap.add_argument("--dry_run",action="store_true"); ap.add_argument("--model_path",default=""); ap.add_argument("--base_model_code_dir",default="${OPENVLA_BASE_MODEL_DIR}"); ap.add_argument("--unnorm_key",default="libero_goal"); ap.add_argument("--camera_obs_key",default="agentview_image"); ap.add_argument("--render_gpu_device_id",type=int,default=0); ap.add_argument("--model_gpu_device_id",type=int,default=-1,help="CUDA-visible local GPU index for model inference; default chooses a non-render GPU when available"); ap.add_argument("--grasp_gate_dist",type=float,default=0.10,help="Privileged grasp gate eef-bowl distance threshold in meters"); ap.add_argument("--attack_objective",default="",help="Override attack_optimizer.objective for this run, e.g. force_gripper_open_token_ce"); ap.add_argument("--epsilon",type=float,default=None,help="Override attack_optimizer.epsilon for reproducibility entrypoints"); ap.add_argument("--step_size",type=float,default=None,help="Override attack_optimizer.step_size for reproducibility entrypoints"); ap.add_argument("--attack_steps",type=int,default=None,help="Override attack_optimizer.num_steps for reproducibility entrypoints"); ap.add_argument("--temporal_init",default="",help="Override attack_optimizer.temporal_init, e.g. prev_delta or none"); ap.add_argument("--cw_margin",type=float,default=None,help="Override attack_optimizer.cw_margin for gripper-logit margin objectives"); ap.add_argument("--force_open_raw_gripper",type=float,default=0.0,help="Raw OpenVLA gripper target used by force_gripper_open objectives"); ap.add_argument("--matched_to_run_id",default=""); ap.add_argument("--matched_to_trigger",default=""); ap.add_argument("--matched_to_attacked_ratio",type=float,default=-1.0); ap.add_argument("--auto_patch_compat",action="store_true"); ap.add_argument("--libero_official_preprocess",action="store_true",help="Use official OpenVLA-LIBERO image preprocessing: 256 render + 180-degree rotate + resize before processor"); ap.add_argument("--image_size",type=int,default=256); ap.add_argument("--openvla_resize_size",type=int,default=224); ap.add_argument("--center_crop",action="store_true"); ap.add_argument("--num_steps_wait",type=int,default=0); ap.add_argument("--postprocess_gripper",action="store_true",help="Apply official normalize_gripper_action + invert_gripper_action before env.step"); ap.add_argument("--success_metric",choices=["done","check_success"],default="done"); ap.add_argument("--deterministic_init_states",action="store_true",help="Use official-style episode index init states instead of random sampling"); ap.add_argument("--state_ids",default="",help="Comma-separated deterministic LIBERO init-state ids, e.g. 5,7,8; overrides --episodes count for rollout order"); ap.add_argument("--keep_attention_mask",action="store_true",help="Debug only: keep processor attention_mask during OpenVLA generation"); ap.add_argument("--require_rollout_calibration", action="store_true", help="Require rollout-passive calibration provenance for entropy/margin thresholds"); ap.add_argument("--min_calibration_steps", type=int, default=0, help="Minimum calibration num_steps for entropy/margin thresholds"); ap.add_argument("--instruction_override",default="",help="Replace the benchmark instruction for prompt-channel experiments"); ap.add_argument("--instruction_suffix",default="",help="Append a suffix to the effective instruction"); ap.add_argument("--prompt_variants_path",default="",help="JSON/JSONL/CSV prompt set for offline prompt audit"); ap.add_argument("--offline_prompt_audit",action="store_true",help="Run fixed-observation prompt-to-gripper audit without prompt attacks or visual PGD"); ap.add_argument("--offline_prompt_audit_steps",type=int,default=1,help="Number of collected clean-trajectory frames per state for offline prompt audit"); ap.add_argument("--offline_prompt_audit_start_step",type=int,default=0,help="Clean rollout step at which offline prompt audit starts collecting frames"); ap.add_argument("--offline_prompt_audit_stride",type=int,default=1,help="Stride between collected offline prompt audit frames"); ap.add_argument("--prompt_id",default="",help="Stable prompt identifier for prompt-hijack diagnostics"); ap.add_argument("--prompt_type",default="",help="Prompt category, e.g. clean/paraphrase/conflict/suffix"); ap.add_argument("--prompt_attack_config",default="",help="Optional prompt attack manifest/config path"); ap.add_argument("--target_primitive",choices=["none","open_gripper","close_gripper","freeze","open_at_lift","persistent_open"],default="none",help="Primitive targeted by inference-time prompt attack"); ap.add_argument("--guard_enabled",action="store_true",help="Enable online command-layer gripper guard during grasp-to-pre-release"); ap.add_argument("--guard_mode",choices=["conservative","strict_after_close"],default="conservative",help="Guard policy. strict_after_close blocks any open command after close/gate detection until near release."); args=ap.parse_args()
     tasks=load_yaml(args.tasks_config)["tasks"]; task=next(t for t in tasks if t["task_id"]==args.task_id); cfg=load_yaml(args.attack_config); direction=load_direction_spec(args.directions_config,cfg["directional_target"]["direction_id"]); thresholds=read_json(args.thresholds) if args.thresholds and Path(args.thresholds).exists() else {}; validate_thresholds_for_trigger(args.trigger, args.thresholds, thresholds, task["task_id"], args.rho, require_rollout_source=getattr(args, "require_rollout_calibration", False), min_steps=getattr(args, "min_calibration_steps", 0))
     if args.dry_run:
         args.model_gpu_device_id = int(args.model_gpu_device_id)

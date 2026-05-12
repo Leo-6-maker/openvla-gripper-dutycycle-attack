@@ -86,6 +86,87 @@ CONDITIONS = {
             "V4_CONSTANT_DELTA_GRIPPER": "-1.0",
         },
     },
+    "noise_baseline": {
+        "trigger": "fixed_step_window_budgeted",
+        "rho": "1.0",
+        "objective": "noise_baseline",
+        "temporal_init": "none",
+        "cw_margin": None,
+        "window": None,
+        "extra_env": {},
+    },
+    "oracle_continuous_guard": {
+        "trigger": "fixed_step_window_budgeted",
+        "rho": "1.0",
+        "objective": "oracle_env_gripper_open",
+        "temporal_init": "none",
+        "cw_margin": None,
+        "window": None,
+        "extra_env": {
+            "V4_ORACLE_FORCE_GRIPPER_ENV_VALUE": "-1.0",
+            "V4_ORACLE_GRIPPER_PATTERN": "continuous_open",
+        },
+        "guard_enabled": True,
+        "guard_mode": "conservative",
+    },
+    "vis_margin_prevdelta_guard": {
+        "trigger": "fixed_step_window_budgeted",
+        "rho": "1.0",
+        "objective": "gripper_logit_margin_cw",
+        "temporal_init": "prev_delta",
+        "cw_margin": "5.0",
+        "window": None,
+        "extra_env": {},
+        "guard_enabled": True,
+        "guard_mode": "conservative",
+    },
+    "ctrl_same_gate_zero_margin_guard": {
+        "trigger": "fixed_step_window_budgeted",
+        "rho": "1.0",
+        "objective": "gripper_logit_margin_cw",
+        "temporal_init": "none",
+        "cw_margin": "0.0",
+        "window": None,
+        "extra_env": {},
+        "guard_enabled": True,
+        "guard_mode": "conservative",
+    },
+    "oracle_continuous_guard_strict": {
+        "trigger": "fixed_step_window_budgeted",
+        "rho": "1.0",
+        "objective": "oracle_env_gripper_open",
+        "temporal_init": "none",
+        "cw_margin": None,
+        "window": None,
+        "extra_env": {
+            "V4_ORACLE_FORCE_GRIPPER_ENV_VALUE": "-1.0",
+            "V4_ORACLE_GRIPPER_PATTERN": "continuous_open",
+        },
+        "guard_enabled": True,
+        "guard_mode": "strict_after_close",
+    },
+    "vis_margin_prevdelta_guard_strict": {
+        "trigger": "fixed_step_window_budgeted",
+        "rho": "1.0",
+        "objective": "gripper_logit_margin_cw",
+        "temporal_init": "prev_delta",
+        "cw_margin": "5.0",
+        "window": None,
+        "extra_env": {},
+        "guard_enabled": True,
+        "guard_mode": "strict_after_close",
+    },
+    "ctrl_same_gate_zero_margin_guard_strict": {
+        "trigger": "fixed_step_window_budgeted",
+        "rho": "1.0",
+        "objective": "gripper_logit_margin_cw",
+        "temporal_init": "none",
+        "cw_margin": "0.0",
+        "window": None,
+        "extra_env": {},
+        "guard_enabled": True,
+        "guard_mode": "strict_after_close",
+    },
 }
 
 STATE_WINDOWS = {
@@ -198,6 +279,9 @@ def main() -> int:
         cmd.extend(["--attack_objective", str(condition["objective"])])
     if condition["cw_margin"] is not None:
         cmd.extend(["--cw_margin", str(condition["cw_margin"])])
+    if condition.get("guard_enabled"):
+        cmd.append("--guard_enabled")
+        cmd.extend(["--guard_mode", str(condition.get("guard_mode", "conservative"))])
     if args.thresholds:
         cmd.extend(["--thresholds", args.thresholds])
 

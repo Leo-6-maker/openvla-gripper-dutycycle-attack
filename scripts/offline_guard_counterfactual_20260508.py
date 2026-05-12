@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
 """Offline command-layer gripper guard counterfactual for state7 seedrep runs.
 
-Purpose:
+DEPRECATED (2026-05-10): This script was a diagnostic prototype that performed
+log-level counterfactual analysis only.  The paper-facing causal defense
+experiment is now implemented as an online guard in v4_run_eval_openvla.py
+(flag: --guard_enabled).  See the plan at .claude/plans/ for the full
+experimental design.
+
+This script is retained for provenance and should NOT be cited as a defense
+evaluation in the paper.
+
+Purpose (historical):
     Read logged step records, detect consecutive unsafe open commands during
     contact-like phases, clamp those command-layer opens to close, and report
     original vs guarded open streaks and unsafe-open segments.
-
-Usage:
-    Run on the remote experiment server after state7 seedrep outputs exist.
-    This script does not replay physics or recompute physical qpos.
-
-Outputs:
-    ${OPENVLA_OUTPUT_ROOT}/state7_seedrep_20260508/tables/offline_guard_counterfactual.csv
-
-Paper link:
-    Defense baseline for the Template-B story. It is a command-layer
-    counterfactual only; physical action replay is future work.
 """
 
 from __future__ import annotations

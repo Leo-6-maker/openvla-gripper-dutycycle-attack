@@ -197,7 +197,7 @@ class TokenPrefixPGDAttacker:
             rows.append((int(b.item()), int(label_pos.item()), dim, row_index))
         return rows
 
-    def _loss(self, full_input_ids, labels, pixel_values, *, objective: str = "targeted_directional_ce", region_token_ids=None, margin: float = 5.0):
+    def _loss(self, full_input_ids, labels, pixel_values, *, objective: str = "targeted_directional_ce", region_token_ids=None, margin: float = 5.0, num_action_tokens: int = 7):
         obj = str(objective)
         if obj not in {"gripper_open_region_ce", "gripper_logit_margin_cw"}:
             # Keep the proven OpenVLA/HF label path for ordinary targeted CE;
@@ -210,7 +210,7 @@ class TokenPrefixPGDAttacker:
             return F.cross_entropy(logits.view(-1, logits.shape[-1]), shifted.view(-1), ignore_index=-100)
         out = self.model(input_ids=full_input_ids, pixel_values=pixel_values, use_cache=False, return_dict=True)
         logits = out.logits.float().contiguous()
-        action_dim = int(torch.sum(labels != -100).item())
+        action_dim = max(int(num_action_tokens), 1)
         rows = self._active_label_rows(logits, labels, max(action_dim, 1))
         if not rows:
             return logits.sum() * 0.0
@@ -360,7 +360,7 @@ class TokenPrefixPGDAttacker:
         else:
             delta = torch.zeros_like(x_orig)
         adv = (x_orig + delta).detach()
-        loss_kwargs = {"objective": objective}
+        loss_kwargs = {"objective": objective, "num_action_tokens": int(target_ids.numel())}
         region_token_ids = None
         if is_gripper_region:
             region_token_ids = self.action_bins_for_env_sign(
@@ -386,6 +386,7 @@ class TokenPrefixPGDAttacker:
                 # Minimize target CE: signed gradient descent.
                 adv = adv.detach() - self.step_size * grad.detach().sign()
             adv = torch.max(torch.min(adv, x_orig + self.epsilon), x_orig - self.epsilon)
+            adv = torch.clamp(adv, 0.0, 1.0)  # valid pixel range for processor inputs
             if self.temporal_smooth_lambda > 0.0 and self._prev_delta is not None and tuple(self._prev_delta.shape) == tuple(adv.shape):
                 lam = min(max(float(self.temporal_smooth_lambda), 0.0), 1.0)
                 smoothed_delta = (1.0 - lam) * (adv.detach() - x_orig) + lam * self._prev_delta.detach().to(device=x_orig.device, dtype=x_orig.dtype)

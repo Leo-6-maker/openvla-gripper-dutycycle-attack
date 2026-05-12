@@ -25,7 +25,7 @@ class GraspPhaseTracker:
 
     def update(self, step_idx: int, env_gripper_action: float, gate_active: bool, bowl_z_delta: float) -> None:
         g = float(env_gripper_action)
-        if g < -0.5 and self.first_close_step is None:
+        if lift_env_gripper_closed(g) and self.first_close_step is None:
             self.first_close_step = int(step_idx)
         if gate_active and self.first_gate_step is None:
             self.first_gate_step = int(step_idx)
@@ -84,9 +84,9 @@ def close_transition_active(history: list[float], current: float) -> bool:
     vals = [float(x) for x in history[-5:]] + [float(current)]
     if len(vals) < 2:
         return False
-    if vals[-1] < -0.5 and any(v > 0.5 for v in vals[:-1]):
+    if lift_env_gripper_closed(vals[-1]) and any(not lift_env_gripper_closed(v) for v in vals[:-1]):
         return True
-    return any((vals[i - 1] - vals[i]) > 1.0 for i in range(1, len(vals)))
+    return any((not lift_env_gripper_closed(vals[i - 1])) and lift_env_gripper_closed(vals[i]) for i in range(1, len(vals)))
 
 
 def compute_grasp_metadata(
@@ -115,7 +115,7 @@ def compute_grasp_metadata(
     bowl_plate_dz = float(bowl[2] - plate[2]) if bowl is not None and plate is not None else 0.0
     recent = list(tracker.gripper_history)
     close_transition = close_transition_active(recent, gripper_env)
-    close_intent = bool(gripper_env < -0.5 or close_transition)
+    close_intent = bool(lift_env_gripper_closed(gripper_env) or close_transition)
     gate_active = bool(
         eef_bowl_dist < float(gate_dist_threshold)
         and int(step_idx) < 160
@@ -154,7 +154,7 @@ def proxy_grasp_metadata(step_idx: int, clean_action: Any, env_action: Any, hist
     close_transition = close_transition_active(history, gripper_env)
     motion_norm = float(np.linalg.norm(clean[:3])) if clean.size >= 3 else 0.0
     z_up = bool(clean.size >= 3 and clean[2] > 0.02)
-    close_intent = bool(gripper_env < -0.5 or close_transition)
+    close_intent = bool(lift_env_gripper_closed(gripper_env) or close_transition)
     step_gate = bool(int(step_idx) < 160)
     close_only = bool(step_gate and close_intent)
     transition_only = bool(step_gate and close_transition)

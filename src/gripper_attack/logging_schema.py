@@ -14,7 +14,7 @@ STEP_FIELDS = [
     "prompt_variants_path","offline_prompt_audit",
     "prompt_id","prompt_type","prompt_attack_config","target_primitive",
     "clean_gripper_token","attack_gripper_token","gripper_token_flip","target_primitive_ok",
-    "success_so_far",
+    "guard_blocked","guard_reason","guard_mode","success_so_far",
 ]
 EPISODE_FIELDS = [
     "version","run_id","experiment_id","task_id","suite","seed","episode_id","trigger_name","rho",
