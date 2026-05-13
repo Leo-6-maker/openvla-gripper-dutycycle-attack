@@ -11,7 +11,16 @@ from patch_openvla_compat import patch_openvla
 from gripper_attack.attack_adapter import OpenVLAVisualAttacker
 from gripper_attack.budget import OnlineBudgetController
 from gripper_attack.directional import build_target_action, compute_alignment, compute_delta_action, load_direction_spec
-from gripper_attack.grasp import GraspPhaseTracker, compute_grasp_metadata, eef_pos, infer_failure_phase, object_pos, proxy_grasp_metadata
+from gripper_attack.grasp import (
+    GraspPhaseTracker,
+    MokaTwoPotStageTracker,
+    compute_grasp_metadata,
+    compute_moka_two_pot_stage_metadata,
+    eef_pos,
+    infer_failure_phase,
+    object_pos,
+    proxy_grasp_metadata,
+)
 from gripper_attack.io import make_run_id, read_json, sha256_jsonable, write_csv, write_json, write_jsonl
 from gripper_attack.logging_schema import validate_episode_record, validate_run_manifest, validate_step_record
 from gripper_attack.metrics import aggregate_episode_from_steps, aggregate_run, normalized_action_discrepancy_cleanref
@@ -244,6 +253,45 @@ def postprocess_openvla_action_for_libero(action, enabled: bool = False):
         env_action = normalize_gripper_action(env_action, binarize=True)
         env_action = invert_gripper_action(env_action)
     return np.clip(env_action, -1.0, 1.0).astype(np.float32)
+
+def apply_action_clamp(env_action, clean_env_action, mode: str = "none"):
+    mode = str(mode or "none").strip()
+    before = np.asarray(env_action, dtype=np.float32).copy()
+    clean = np.asarray(clean_env_action, dtype=np.float32).copy()
+    after = before.copy()
+    n = min(len(after), len(clean))
+    if mode == "none" or n == 0:
+        pass
+    elif mode == "gripper_clean":
+        after[n - 1] = clean[n - 1]
+    elif mode == "arm_clean":
+        arm_n = min(6, max(0, n - 1))
+        if arm_n:
+            after[:arm_n] = clean[:arm_n]
+    else:
+        raise ValueError(f"unknown action_clamp_mode: {mode}")
+    return np.clip(after, -1.0, 1.0).astype(np.float32), before
+
+def action_clamp_audit(mode: str, env_action_before, env_action_after, clean_env_action) -> dict:
+    before = np.asarray(env_action_before, dtype=np.float32).reshape(-1)
+    after = np.asarray(env_action_after, dtype=np.float32).reshape(-1)
+    clean = np.asarray(clean_env_action, dtype=np.float32).reshape(-1)
+    n = min(len(after), len(clean))
+    arm_n = min(6, max(0, n - 1))
+    delta = after[:n] - clean[:n] if n else np.asarray([], dtype=np.float32)
+    arm_delta = delta[:arm_n] if arm_n else np.asarray([], dtype=np.float32)
+    rot_delta = delta[3:arm_n] if arm_n > 3 else np.asarray([], dtype=np.float32)
+    return {
+        "action_clamp_mode": str(mode or "none"),
+        "env_action_before_clamp": before.tolist(),
+        "env_action_after_clamp": after.tolist(),
+        "arm_delta_l2": float(np.linalg.norm(arm_delta)) if arm_delta.size else 0.0,
+        "gripper_delta_env": float(delta[n - 1]) if n else 0.0,
+        "dx_delta": float(delta[0]) if arm_n >= 1 else 0.0,
+        "dy_delta": float(delta[1]) if arm_n >= 2 else 0.0,
+        "dz_delta": float(delta[2]) if arm_n >= 3 else 0.0,
+        "rot_delta_l2": float(np.linalg.norm(rot_delta)) if rot_delta.size else 0.0,
+    }
 
 def physical_gripper_state(env, obs=None) -> dict:
     """Best-effort physical gripper opening readout from obs or MuJoCo qpos."""
@@ -607,7 +655,7 @@ def build_record(args,cfg,task,run_id,ep,t,max_steps,dec,bd,clean,executed,al,at
     n_back = int(dbg.get("num_backwards", 0)) if bd.attack_active else 0
     n_adv_dec = int(dbg.get("num_adv_decodes", 1)) if bd.attack_active else 0
     threshold_active = dec.raw_active if getattr(dec, "threshold_active", None) is None else bool(dec.threshold_active)
-    rec = {"version":"v4","run_id":run_id,"experiment_id":cfg["experiment_id"],"task_id":task["task_id"],"suite":task["suite"],"episode_id":ep,"seed":args.seed,"step_idx":t,"max_steps":max_steps,"trigger_name":args.trigger,"rho":args.rho,"trigger_timing":cfg.get("trigger_timing","current_step_observer_decode"),"raw_trigger_score":dec.score,"trigger_active_raw":threshold_active,"trigger_request_active":dec.raw_active,"attack_active":bd.attack_active,"budget_max_steps":bd.budget_used_before+bd.budget_remaining_after+(1 if bd.attack_active else 0),"budget_used_before":bd.budget_used_before,"budget_remaining_after":bd.budget_remaining_after,"budget_blocked":bd.budget_blocked,"signal_available":dec.signal_available,"fallback":dec.fallback,"fallback_reason":dec.reason,"oracle":dec.oracle,"privileged":dec.privileged,"Ntrig_fwd":0,"Ntrig_decode":0,"Nattack_fwd":n_loss_fwd,"Nattack_decode":n_adv_dec,"Tclean_decode":Tclean,"Ttrig":Ttrig,"Tattack":Tattack,"Ttotal":Tclean+Ttrig+Tattack,"Mcache":0,"Asignal":1 if dec.signal_available else 0,"clean_action":clean.tolist(),"executed_action":executed.tolist(),"action_delta":delta.tolist(),"action_bound_low":low_list,"action_bound_high":high_list,"nad_cleanref_dims":[int(x) for x in nad_dims],"nad_cleanref_step":nad_clean,"directional_alignment":al["alignment"],"directional_alignment_cos":al["alignment_cos"],"delta_l2":al["delta_l2"],"delta_linf":al["delta_linf"],"attack_method":attack_res.attack_method if attack_res else "none","directional_loss_available":attack_res.directional_loss_available if attack_res else False,"epsilon":cfg["attack_optimizer"]["epsilon"],"attack_steps":attack_res.num_attack_steps if attack_res else 0,"observation_perturb_linf":attack_res.observation_perturb_linf if attack_res else 0.0,"observation_perturb_l2":attack_res.observation_perturb_l2 if attack_res else 0.0,"target_token_ids":[],"clean_token_ids":[],"adv_token_ids":[],"target_ce_initial":None,"target_ce_final":None,"token_match_rate":None,"token_changed_count":0,"pixel_space":"","num_loss_forwards":n_loss_fwd,"num_backwards":n_back,"success_so_far":False}
+    rec = {"version":"v4","run_id":run_id,"experiment_id":cfg["experiment_id"],"task_id":task["task_id"],"suite":task["suite"],"episode_id":ep,"seed":args.seed,"step_idx":t,"max_steps":max_steps,"trigger_name":args.trigger,"rho":args.rho,"trigger_timing":cfg.get("trigger_timing","current_step_observer_decode"),"raw_trigger_score":dec.score,"trigger_active_raw":threshold_active,"trigger_request_active":dec.raw_active,"attack_active":bd.attack_active,"budget_max_steps":bd.budget_used_before+bd.budget_remaining_after+(1 if bd.attack_active else 0),"budget_used_before":bd.budget_used_before,"budget_remaining_after":bd.budget_remaining_after,"budget_blocked":bd.budget_blocked,"signal_available":dec.signal_available,"fallback":dec.fallback,"fallback_reason":dec.reason,"oracle":dec.oracle,"privileged":dec.privileged,"Ntrig_fwd":0,"Ntrig_decode":0,"Nattack_fwd":n_loss_fwd,"Nattack_decode":n_adv_dec,"Tclean_decode":Tclean,"Ttrig":Ttrig,"Tattack":Tattack,"Ttotal":Tclean+Ttrig+Tattack,"Mcache":0,"Asignal":1 if dec.signal_available else 0,"clean_action":clean.tolist(),"executed_action":executed.tolist(),"action_delta":delta.tolist(),"action_bound_low":low_list,"action_bound_high":high_list,"nad_cleanref_dims":[int(x) for x in nad_dims],"nad_cleanref_step":nad_clean,"directional_alignment":al["alignment"],"directional_alignment_cos":al["alignment_cos"],"delta_l2":al["delta_l2"],"delta_linf":al["delta_linf"],"attack_method":attack_res.attack_method if attack_res else "none","directional_loss_available":attack_res.directional_loss_available if attack_res else False,"epsilon":cfg["attack_optimizer"]["epsilon"],"attack_steps":attack_res.num_attack_steps if attack_res else 0,"observation_perturb_linf":attack_res.observation_perturb_linf if attack_res else 0.0,"observation_perturb_l2":attack_res.observation_perturb_l2 if attack_res else 0.0,"target_token_ids":[],"clean_token_ids":[],"adv_token_ids":[],"target_ce_initial":None,"target_ce_final":None,"token_match_rate":None,"token_changed_count":0,"pixel_space":"","num_loss_forwards":n_loss_fwd,"num_backwards":n_back,"success_so_far":False,"moka_stage_id":"","moka_attack_enabled_by_stage":True,"moka_anchor_step":None,"moka_relative_step":None,"moka_first_pot_on_stove":False,"moka_second_pot_on_stove":False,"moka_first_pot_stove_dxy":None,"moka_first_pot_stove_dz":None,"moka_second_pot_stove_dxy":None,"moka_second_pot_stove_dz":None,"moka_first_on_stove_streak":0,"moka_second_on_stove_streak":0,"moka_anchor_reason":""}
     if step_metadata:
         rec.update(step_metadata)
     return rec
@@ -749,6 +797,12 @@ def run_dry(args, task, cfg, direction, thresholds):
             rec.setdefault("attack_gripper_token", "")
             rec.setdefault("gripper_token_flip", False)
             rec["target_primitive_ok"]=bool(len(executed) and primitive_target_ok(float(executed[-1]), rec.get("target_primitive", "none")))
+            rec["moka_stage_id"] = "dry_run"
+            rec["moka_attack_enabled_by_stage"] = True
+            rec["moka_anchor_step"] = None
+            rec["moka_relative_step"] = None
+            rec["moka_first_pot_on_stove"] = False
+            rec["moka_second_pot_on_stove"] = False
             validate_step_record(rec); ep_steps.append(rec); all_steps.append(rec)
         success=True if args.trigger=="clean" else bool(rng.rand()>0.25); epagg=aggregate_episode_from_steps(ep_steps,success,False,False); epagg.update({"version":"v4","run_id":run_id,"experiment_id":cfg["experiment_id"],"task_id":task["task_id"],"suite":task["suite"],"seed":args.seed,"episode_id":ep,"trigger_name":args.trigger,"rho":args.rho,"invalid_reason":"","feasibility_pass":True,"artifact_step_jsonl":str(step_path)}); validate_episode_record(epagg); episodes.append(epagg); persist_progress(args,cfg,task,run_id,out,step_path,ep_path,episodes,all_steps,max_steps,"dry_run",status="running"); print(f"[progress] run={run_id} episode={ep+1}/{args.episodes} steps={len(ep_steps)} success={success}", flush=True)
     finalize(args,cfg,task,run_id,out,step_path,ep_path,episodes,all_steps,"dry_run",max_steps); persist_progress(args,cfg,task,run_id,out,step_path,ep_path,episodes,all_steps,max_steps,"dry_run",status="done"); print("[ok] v4 dry run ->", out, flush=True)
@@ -919,6 +973,8 @@ def run_real(args, task, cfg, direction, thresholds):
         eef_z_episode_min=float(eef0[2]) if eef0 is not None else None
         grasp_tracker=GraspPhaseTracker()
         grasp_tracker.reset(float(bowl0[2]) if bowl0 is not None else 0.0)
+        moka_stage_tracker = MokaTwoPotStageTracker(stable_steps=int(max(1, int(args.moka_stage_stable_steps))))
+        moka_stage_tracker.reset()
         proxy_gripper_history=[]; proxy_lift_carry_z_up_streak=0; consecutive_open_streak=0; lift_proxy_streak_min=int(os.environ.get("V4_LIFT_PROXY_Z_UP_STREAK_MIN", "4")); lift_proxy_eef_delta_min=float(os.environ.get("V4_LIFT_PROXY_EEF_Z_DELTA_MIN", "0.04"))
         trigger.reset(ep,max_steps); attacker.reset_temporal_state(); budget=OnlineBudgetController(args.rho,max_steps,cfg.get("budget",{}).get("budget_rounding","floor"),cfg.get("budget",{}).get("min_budget_steps",1)); ep_steps=[]; success=False; timeout=False; invalid=False; invalid_reason=""
         for t in range(max_steps):
@@ -949,8 +1005,23 @@ def run_real(args, task, cfg, direction, thresholds):
                 "proxy_lift_carry_gate_active": bool(proxy_lift_carry_z_up_streak >= int(lift_proxy_streak_min)),
                 "proxy_lift_carry_eefrise_gate_active": bool(proxy_lift_carry_z_up_streak >= int(lift_proxy_streak_min) and float(proxy_lift_eef_delta) >= float(lift_proxy_eef_delta_min)),
             })
-            step_meta={**grasp_meta, **proxy_meta}
-            tt=time.time(); dec=trigger.evaluate(TriggerContext(task["task_id"],ep,t,args.rho,prefix_logits=prefix_logits,clean_action=clean,metadata=step_meta)); Ttrig=time.time()-tt; bd=budget.decide(dec.raw_active); executed=clean.copy(); attack_res=None; Tattack=0; adv_gen=None; objective=effective_attack_objective(args,cfg)
+            moka_meta = compute_moka_two_pot_stage_metadata(
+                env,
+                t,
+                moka_stage_tracker,
+                enabled=bool(args.moka_two_pot_mode),
+                stage_anchor=str(args.moka_stage_anchor),
+                first_pot_name=str(args.moka_first_pot_name),
+                second_pot_name=str(args.moka_second_pot_name),
+                stove_name=str(args.moka_stove_name),
+                on_stove_dxy_threshold=float(args.moka_on_stove_dxy_threshold),
+                on_stove_dz_threshold=float(args.moka_on_stove_dz_threshold),
+            )
+            step_meta={**grasp_meta, **proxy_meta, **moka_meta}
+            phase_attack_enabled = True
+            if bool(args.moka_two_pot_mode):
+                phase_attack_enabled = str(moka_meta.get("moka_stage_id", "")) == "second_pot_phase"
+            tt=time.time(); dec=trigger.evaluate(TriggerContext(task["task_id"],ep,t,args.rho,prefix_logits=prefix_logits,clean_action=clean,metadata=step_meta,phase_attack_enabled=phase_attack_enabled)); Ttrig=time.time()-tt; bd=budget.decide(dec.raw_active if phase_attack_enabled else False); executed=clean.copy(); attack_res=None; Tattack=0; adv_gen=None; objective=effective_attack_objective(args,cfg)
             if bd.attack_active:
                 if step_meta.get("grasp_first_gate_step") is not None:
                     step_meta["first_attack_step_relative_to_grasp"]=int(t)-int(step_meta["grasp_first_gate_step"])
@@ -987,6 +1058,16 @@ def run_real(args, task, cfg, direction, thresholds):
             target_meta=target_metadata_for_objective(clean,executed,target,args,cfg)
             rec=build_record(args,cfg,task,run_id,ep,t,max_steps,dec,bd,clean,executed,al,attack_res,Tclean,Ttrig,Tattack,action_low=action_low,action_high=action_high,nad_dims=nad_dims,step_metadata={**step_meta, **target_meta})
             rec.update(prompt_meta)
+            rec["moka_attack_enabled_by_stage"] = bool(phase_attack_enabled)
+            rec["moka_anchor_step"] = step_meta.get("moka_stage_anchor_step")
+            rec["moka_relative_step"] = (None if step_meta.get("moka_stage_anchor_step") is None else int(t) - int(step_meta.get("moka_stage_anchor_step")))
+            rec["moka_first_pot_stove_dxy"] = step_meta.get("moka_first_pot_stove_dxy")
+            rec["moka_first_pot_stove_dz"] = step_meta.get("moka_first_pot_stove_dz")
+            rec["moka_second_pot_stove_dxy"] = step_meta.get("moka_second_pot_stove_dxy")
+            rec["moka_second_pot_stove_dz"] = step_meta.get("moka_second_pot_stove_dz")
+            rec["moka_first_on_stove_streak"] = step_meta.get("moka_first_on_stove_streak", 0)
+            rec["moka_second_on_stove_streak"] = step_meta.get("moka_second_on_stove_streak", 0)
+            rec["moka_anchor_reason"] = step_meta.get("moka_anchor_reason", "")
             action_dim_for_tokens=int(model.get_action_dim(unnorm))
             clean_token_ids=action_token_ids_from_gen(out_clean, action_dim_for_tokens)
             adv_token_ids=action_token_ids_from_gen(adv_gen, action_dim_for_tokens) if adv_gen is not None else []
@@ -1066,6 +1147,11 @@ def run_real(args, task, cfg, direction, thresholds):
             rec["guard_blocked"] = bool(guard_blocked)
             rec["guard_reason"] = guard_reason
             rec["guard_mode"] = str(args.guard_mode) if args.guard_enabled else ""
+            env_action, env_action_before_clamp = apply_action_clamp(env_action, clean_env_action, args.action_clamp_mode)
+            rec.update(action_clamp_audit(args.action_clamp_mode, env_action_before_clamp, env_action, clean_env_action))
+            rec["env_action_after_clamp"] = env_action.tolist()
+            rec["executed_gripper_env"] = float(env_action[-1]) if len(env_action) else rec.get("executed_gripper_env")
+            rec["force_open_sign_target_ok"] = bool(force_open_env_target_ok(float(env_action[-1]))) if len(env_action) else False
             rec["target_primitive_ok"]=bool(len(env_action) and primitive_target_ok(float(env_action[-1]), prompt_meta["target_primitive"]))
             eef_before=eef_pos(env); bowl_before=object_pos(env, target_object_name)
             rec["clean_z_action"]=float(np.asarray(clean, dtype=np.float32)[2]) if len(clean) >= 3 else 0.0
@@ -1106,7 +1192,9 @@ def run_real(args, task, cfg, direction, thresholds):
     print("[ok] v4 real run ->", out, flush=True)
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument("--tasks_config",default="configs/v4_tasks_libero.yaml"); ap.add_argument("--attack_config",default="configs/v4_attack.yaml"); ap.add_argument("--directions_config",default="configs/v4_directions.yaml"); ap.add_argument("--thresholds",default=""); ap.add_argument("--task_id",required=True); ap.add_argument("--trigger",required=True); ap.add_argument("--rho",type=float,default=0.0); ap.add_argument("--seed",type=int,default=0); ap.add_argument("--episodes",type=int,default=1); ap.add_argument("--max_steps_override",type=int,default=0); ap.add_argument("--output_root",default="outputs/v4/smoke"); ap.add_argument("--run_id",default=""); ap.add_argument("--dry_run",action="store_true"); ap.add_argument("--model_path",default=""); ap.add_argument("--base_model_code_dir",default="${OPENVLA_BASE_MODEL_DIR}"); ap.add_argument("--unnorm_key",default="libero_goal"); ap.add_argument("--camera_obs_key",default="agentview_image"); ap.add_argument("--render_gpu_device_id",type=int,default=0); ap.add_argument("--model_gpu_device_id",type=int,default=-1,help="CUDA-visible local GPU index for model inference; default chooses a non-render GPU when available"); ap.add_argument("--grasp_gate_dist",type=float,default=0.10,help="Privileged grasp gate eef-bowl distance threshold in meters"); ap.add_argument("--attack_objective",default="",help="Override attack_optimizer.objective for this run, e.g. force_gripper_open_token_ce"); ap.add_argument("--epsilon",type=float,default=None,help="Override attack_optimizer.epsilon for reproducibility entrypoints"); ap.add_argument("--step_size",type=float,default=None,help="Override attack_optimizer.step_size for reproducibility entrypoints"); ap.add_argument("--attack_steps",type=int,default=None,help="Override attack_optimizer.num_steps for reproducibility entrypoints"); ap.add_argument("--temporal_init",default="",help="Override attack_optimizer.temporal_init, e.g. prev_delta or none"); ap.add_argument("--cw_margin",type=float,default=None,help="Override attack_optimizer.cw_margin for gripper-logit margin objectives"); ap.add_argument("--force_open_raw_gripper",type=float,default=0.0,help="Raw OpenVLA gripper target used by force_gripper_open objectives"); ap.add_argument("--matched_to_run_id",default=""); ap.add_argument("--matched_to_trigger",default=""); ap.add_argument("--matched_to_attacked_ratio",type=float,default=-1.0); ap.add_argument("--auto_patch_compat",action="store_true"); ap.add_argument("--libero_official_preprocess",action="store_true",help="Use official OpenVLA-LIBERO image preprocessing: 256 render + 180-degree rotate + resize before processor"); ap.add_argument("--image_size",type=int,default=256); ap.add_argument("--openvla_resize_size",type=int,default=224); ap.add_argument("--center_crop",action="store_true"); ap.add_argument("--num_steps_wait",type=int,default=0); ap.add_argument("--postprocess_gripper",action="store_true",help="Apply official normalize_gripper_action + invert_gripper_action before env.step"); ap.add_argument("--success_metric",choices=["done","check_success"],default="done"); ap.add_argument("--deterministic_init_states",action="store_true",help="Use official-style episode index init states instead of random sampling"); ap.add_argument("--state_ids",default="",help="Comma-separated deterministic LIBERO init-state ids, e.g. 5,7,8; overrides --episodes count for rollout order"); ap.add_argument("--keep_attention_mask",action="store_true",help="Debug only: keep processor attention_mask during OpenVLA generation"); ap.add_argument("--require_rollout_calibration", action="store_true", help="Require rollout-passive calibration provenance for entropy/margin thresholds"); ap.add_argument("--min_calibration_steps", type=int, default=0, help="Minimum calibration num_steps for entropy/margin thresholds"); ap.add_argument("--instruction_override",default="",help="Replace the benchmark instruction for prompt-channel experiments"); ap.add_argument("--instruction_suffix",default="",help="Append a suffix to the effective instruction"); ap.add_argument("--prompt_variants_path",default="",help="JSON/JSONL/CSV prompt set for offline prompt audit"); ap.add_argument("--offline_prompt_audit",action="store_true",help="Run fixed-observation prompt-to-gripper audit without prompt attacks or visual PGD"); ap.add_argument("--offline_prompt_audit_steps",type=int,default=1,help="Number of collected clean-trajectory frames per state for offline prompt audit"); ap.add_argument("--offline_prompt_audit_start_step",type=int,default=0,help="Clean rollout step at which offline prompt audit starts collecting frames"); ap.add_argument("--offline_prompt_audit_stride",type=int,default=1,help="Stride between collected offline prompt audit frames"); ap.add_argument("--prompt_id",default="",help="Stable prompt identifier for prompt-hijack diagnostics"); ap.add_argument("--prompt_type",default="",help="Prompt category, e.g. clean/paraphrase/conflict/suffix"); ap.add_argument("--prompt_attack_config",default="",help="Optional prompt attack manifest/config path"); ap.add_argument("--target_primitive",choices=["none","open_gripper","close_gripper","freeze","open_at_lift","persistent_open"],default="none",help="Primitive targeted by inference-time prompt attack"); ap.add_argument("--guard_enabled",action="store_true",help="Enable online command-layer gripper guard during grasp-to-pre-release"); ap.add_argument("--guard_mode",choices=["conservative","strict_after_close"],default="conservative",help="Guard policy. strict_after_close blocks any open command after close/gate detection until near release."); args=ap.parse_args()
+    ap=argparse.ArgumentParser(); ap.add_argument("--tasks_config",default="configs/v4_tasks_libero.yaml"); ap.add_argument("--attack_config",default="configs/v4_attack.yaml"); ap.add_argument("--directions_config",default="configs/v4_directions.yaml"); ap.add_argument("--thresholds",default=""); ap.add_argument("--task_id",required=True); ap.add_argument("--trigger",required=True); ap.add_argument("--rho",type=float,default=0.0); ap.add_argument("--seed",type=int,default=0); ap.add_argument("--episodes",type=int,default=1); ap.add_argument("--max_steps_override",type=int,default=0); ap.add_argument("--output_root",default="outputs/v4/smoke"); ap.add_argument("--run_id",default=""); ap.add_argument("--dry_run",action="store_true"); ap.add_argument("--model_path",default=""); ap.add_argument("--base_model_code_dir",default="${OPENVLA_BASE_MODEL_DIR}"); ap.add_argument("--unnorm_key",default="libero_goal"); ap.add_argument("--camera_obs_key",default="agentview_image"); ap.add_argument("--render_gpu_device_id",type=int,default=0); ap.add_argument("--model_gpu_device_id",type=int,default=-1,help="CUDA-visible local GPU index for model inference; default chooses a non-render GPU when available"); ap.add_argument("--grasp_gate_dist",type=float,default=0.10,help="Privileged grasp gate eef-bowl distance threshold in meters"); ap.add_argument("--attack_objective",default="",help="Override attack_optimizer.objective for this run, e.g. force_gripper_open_token_ce"); ap.add_argument("--epsilon",type=float,default=None,help="Override attack_optimizer.epsilon for reproducibility entrypoints"); ap.add_argument("--step_size",type=float,default=None,help="Override attack_optimizer.step_size for reproducibility entrypoints"); ap.add_argument("--attack_steps",type=int,default=None,help="Override attack_optimizer.num_steps for reproducibility entrypoints"); ap.add_argument("--temporal_init",default="",help="Override attack_optimizer.temporal_init, e.g. prev_delta or none"); ap.add_argument("--cw_margin",type=float,default=None,help="Override attack_optimizer.cw_margin for gripper-logit margin objectives"); ap.add_argument("--force_open_raw_gripper",type=float,default=0.0,help="Raw OpenVLA gripper target used by force_gripper_open objectives"); ap.add_argument("--action_clamp_mode",choices=["none","gripper_clean","arm_clean"],default="none",help="Clamp selected postprocessed env-action dimensions back to clean before env.step."); ap.add_argument("--matched_to_run_id",default=""); ap.add_argument("--matched_to_trigger",default=""); ap.add_argument("--matched_to_attacked_ratio",type=float,default=-1.0); ap.add_argument("--auto_patch_compat",action="store_true"); ap.add_argument("--libero_official_preprocess",action="store_true",help="Use official OpenVLA-LIBERO image preprocessing: 256 render + 180-degree rotate + resize before processor"); ap.add_argument("--image_size",type=int,default=256); ap.add_argument("--openvla_resize_size",type=int,default=224); ap.add_argument("--center_crop",action="store_true"); ap.add_argument("--num_steps_wait",type=int,default=0); ap.add_argument("--postprocess_gripper",action="store_true",help="Apply official normalize_gripper_action + invert_gripper_action before env.step"); ap.add_argument("--success_metric",choices=["done","check_success"],default="done"); ap.add_argument("--deterministic_init_states",action="store_true",help="Use official-style episode index init states instead of random sampling"); ap.add_argument("--state_ids",default="",help="Comma-separated deterministic LIBERO init-state ids, e.g. 5,7,8; overrides --episodes count for rollout order"); ap.add_argument("--keep_attention_mask",action="store_true",help="Debug only: keep processor attention_mask during OpenVLA generation"); ap.add_argument("--require_rollout_calibration", action="store_true", help="Require rollout-passive calibration provenance for entropy/margin thresholds"); ap.add_argument("--min_calibration_steps", type=int, default=0, help="Minimum calibration num_steps for entropy/margin thresholds"); ap.add_argument("--instruction_override",default="",help="Replace the benchmark instruction for prompt-channel experiments"); ap.add_argument("--instruction_suffix",default="",help="Append a suffix to the effective instruction"); ap.add_argument("--prompt_variants_path",default="",help="JSON/JSONL/CSV prompt set for offline prompt audit"); ap.add_argument("--offline_prompt_audit",action="store_true",help="Run fixed-observation prompt-to-gripper audit without prompt attacks or visual PGD"); ap.add_argument("--offline_prompt_audit_steps",type=int,default=1,help="Number of collected clean-trajectory frames per state for offline prompt audit"); ap.add_argument("--offline_prompt_audit_start_step",type=int,default=0,help="Clean rollout step at which offline prompt audit starts collecting frames"); ap.add_argument("--offline_prompt_audit_stride",type=int,default=1,help="Stride between collected offline prompt audit frames"); ap.add_argument("--prompt_id",default="",help="Stable prompt identifier for prompt-hijack diagnostics"); ap.add_argument("--prompt_type",default="",help="Prompt category, e.g. clean/paraphrase/conflict/suffix"); ap.add_argument("--prompt_attack_config",default="",help="Optional prompt attack manifest/config path"); ap.add_argument("--target_primitive",choices=["none","open_gripper","close_gripper","freeze","open_at_lift","persistent_open"],default="none",help="Primitive targeted by inference-time prompt attack"); ap.add_argument("--guard_enabled",action="store_true",help="Enable online command-layer gripper guard during grasp-to-pre-release"); ap.add_argument("--guard_mode",choices=["conservative","strict_after_close"],default="conservative",help="Guard policy. strict_after_close blocks any open command after close/gate detection until near release."); ap.add_argument("--moka_two_pot_mode",action="store_true",help="Enable two-pot stage tracking for Moka and phase-gated attack activation."); ap.add_argument("--moka_stage_anchor",choices=["first_pot_on_stove_stable"],default="first_pot_on_stove_stable",help="Anchor policy for second-pot relative attack window."); ap.add_argument("--moka_second_window_start",type=int,default=0,help="Relative start step (from anchor) for second-pot window trigger."); ap.add_argument("--moka_second_window_end",type=int,default=30,help="Relative end step (from anchor) for second-pot window trigger."); ap.add_argument("--moka_stage_stable_steps",type=int,default=10,help="Required consecutive stable steps before setting first-pot anchor."); ap.add_argument("--moka_first_pot_name",default="moka_pot_1"); ap.add_argument("--moka_second_pot_name",default="moka_pot_2"); ap.add_argument("--moka_stove_name",default="flat_stove_1"); ap.add_argument("--moka_on_stove_dxy_threshold",type=float,default=0.10); ap.add_argument("--moka_on_stove_dz_threshold",type=float,default=0.08); args=ap.parse_args()
+    os.environ["V4_MOKA_SECOND_WINDOW_START"] = str(int(args.moka_second_window_start))
+    os.environ["V4_MOKA_SECOND_WINDOW_END"] = str(int(args.moka_second_window_end))
     tasks=load_yaml(args.tasks_config)["tasks"]; task=next(t for t in tasks if t["task_id"]==args.task_id); cfg=load_yaml(args.attack_config); direction=load_direction_spec(args.directions_config,cfg["directional_target"]["direction_id"]); thresholds=read_json(args.thresholds) if args.thresholds and Path(args.thresholds).exists() else {}; validate_thresholds_for_trigger(args.trigger, args.thresholds, thresholds, task["task_id"], args.rho, require_rollout_source=getattr(args, "require_rollout_calibration", False), min_steps=getattr(args, "min_calibration_steps", 0))
     if args.dry_run:
         args.model_gpu_device_id = int(args.model_gpu_device_id)

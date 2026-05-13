@@ -14,6 +14,11 @@ STEP_FIELDS = [
     "prompt_variants_path","offline_prompt_audit",
     "prompt_id","prompt_type","prompt_attack_config","target_primitive",
     "clean_gripper_token","attack_gripper_token","gripper_token_flip","target_primitive_ok",
+    "moka_stage_id","moka_attack_enabled_by_stage","moka_anchor_step","moka_relative_step",
+    "moka_first_pot_on_stove","moka_second_pot_on_stove",
+    "moka_first_pot_stove_dxy","moka_first_pot_stove_dz",
+    "moka_second_pot_stove_dxy","moka_second_pot_stove_dz",
+    "moka_first_on_stove_streak","moka_second_on_stove_streak","moka_anchor_reason",
     "guard_blocked","guard_reason","guard_mode","success_so_far",
 ]
 EPISODE_FIELDS = [
@@ -25,6 +30,7 @@ EPISODE_FIELDS = [
     "mean_alignment_all","mean_alignment_attacked","targeted_alignment_rate","latency_total_p50",
     "latency_total_p95","latency_trigger_p50","latency_trigger_p95","latency_attack_p50",
     "latency_attack_p95","signal_availability_rate","fallback_rate","feasibility_pass","artifact_step_jsonl",
+    "moka_first_phase_attack_steps","moka_second_phase_attack_steps",
 ]
 RUN_FIELDS = [
     "version","run_id","created_at","host","user","cwd","command","code_git_commit","code_dirty",

@@ -167,6 +167,39 @@ class FixedStepWindowBudgetedTrigger(BaseTrigger):
         )
 
 
+class MokaSecondPotRelativeWindowBudgetedTrigger(BaseTrigger):
+    name = "moka_second_pot_relative_window_budgeted"
+    privileged = False
+
+    def _start_end(self) -> tuple[int, int]:
+        start = int(os.environ.get("V4_MOKA_SECOND_WINDOW_START", "0"))
+        end = int(os.environ.get("V4_MOKA_SECOND_WINDOW_END", "30"))
+        if end < start:
+            start, end = end, start
+        return start, end
+
+    def evaluate(self, context):
+        if context.phase_attack_enabled is False:
+            return TriggerDecision(self.name, False, score=0.0, threshold_active=False, reason="phase_attack_disabled")
+        stage = str((context.metadata or {}).get("moka_stage_id", ""))
+        anchor = (context.metadata or {}).get("moka_stage_anchor_step", None)
+        if stage != "second_pot_phase":
+            return TriggerDecision(self.name, False, score=0.0, threshold_active=False, reason=f"stage={stage}")
+        if anchor is None:
+            return TriggerDecision(self.name, False, score=0.0, threshold_active=False, reason="missing_anchor")
+        rel = int(context.step_idx) - int(anchor)
+        start, end = self._start_end()
+        active = bool(start <= rel <= end)
+        return TriggerDecision(
+            self.name,
+            active,
+            score=float(active),
+            privileged=self.privileged,
+            threshold_active=active,
+            reason=f"moka_relative_window={start}-{end};relative_step={rel}",
+        )
+
+
 class _ThresholdBase(BaseTrigger):
     score_name = ""; mode = "ge"; name = "threshold"
     def __init__(self, thresholds: dict): self.thresholds = thresholds
@@ -464,6 +497,7 @@ def make_trigger(name: str, seed: int = 0, thresholds: dict | None = None):
     if name == "proxy_lift_carry_gate_burst_budgeted": return ProxyLiftCarryGateBurstBudgetedTrigger()
     if name == "proxy_lift_carry_eefrise_gate_burst_budgeted": return ProxyLiftCarryEefRiseGateBurstBudgetedTrigger()
     if name in ("fixed_step_window_budgeted", "constant_delta_window_budgeted", "absolute_step_window_budgeted"): return FixedStepWindowBudgetedTrigger()
+    if name == "moka_second_pot_relative_window_budgeted": return MokaSecondPotRelativeWindowBudgetedTrigger()
     if name in ("periodic_budgeted", "periodic_sparse"): return PeriodicBudgetedTrigger()
     if name == "entropy_threshold": return EntropyThresholdTrigger(thresholds or {})
     if name == "entropy_threshold_cooldown": return EntropyThresholdCooldownTrigger(thresholds or {})

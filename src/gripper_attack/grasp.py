@@ -34,6 +34,19 @@ class GraspPhaseTracker:
         self.gripper_history.append(g)
 
 
+@dataclass
+class MokaTwoPotStageTracker:
+    stable_steps: int = 10
+    first_on_stove_streak: int = 0
+    second_on_stove_streak: int = 0
+    anchor_step: int | None = None
+
+    def reset(self) -> None:
+        self.first_on_stove_streak = 0
+        self.second_on_stove_streak = 0
+        self.anchor_step = None
+
+
 def lift_env_gripper_closed(value: float) -> bool:
     # Current OpenVLA + LIBERO postprocess shows env +1 while the bowl is held.
     sign = os.environ.get("V4_LIFT_CLOSED_GRIPPER_SIGN", "positive").strip().lower()
@@ -87,6 +100,90 @@ def close_transition_active(history: list[float], current: float) -> bool:
     if lift_env_gripper_closed(vals[-1]) and any(not lift_env_gripper_closed(v) for v in vals[:-1]):
         return True
     return any((not lift_env_gripper_closed(vals[i - 1])) and lift_env_gripper_closed(vals[i]) for i in range(1, len(vals)))
+
+
+def _is_on_stove(obj: np.ndarray | None, stove: np.ndarray | None, dxy_thr: float, dz_thr: float) -> bool:
+    dxy, dz = _stove_offsets(obj, stove)
+    if dxy is None or dz is None:
+        return False
+    return bool(dxy <= float(dxy_thr) and abs(dz) <= float(dz_thr))
+
+
+def _stove_offsets(obj: np.ndarray | None, stove: np.ndarray | None) -> tuple[float | None, float | None]:
+    if obj is None or stove is None:
+        return None, None
+    obj_arr = np.asarray(obj, dtype=np.float32)
+    stove_arr = np.asarray(stove, dtype=np.float32)
+    dxy = float(np.linalg.norm(obj_arr[:2] - stove_arr[:2]))
+    dz = float(obj_arr[2] - stove_arr[2])
+    return dxy, dz
+
+
+def compute_moka_two_pot_stage_metadata(
+    env: Any,
+    step_idx: int,
+    tracker: MokaTwoPotStageTracker,
+    *,
+    enabled: bool,
+    stage_anchor: str = "first_pot_on_stove_stable",
+    first_pot_name: str = "moka_pot_1",
+    second_pot_name: str = "moka_pot_2",
+    stove_name: str = "flat_stove_1",
+    on_stove_dxy_threshold: float = 0.10,
+    on_stove_dz_threshold: float = 0.08,
+) -> dict[str, Any]:
+    if not enabled:
+        return {
+            "moka_first_pot_on_stove": False,
+            "moka_second_pot_on_stove": False,
+            "moka_stage_id": "",
+            "moka_stage_anchor_step": None,
+            "moka_first_pot_stove_dxy": None,
+            "moka_first_pot_stove_dz": None,
+            "moka_second_pot_stove_dxy": None,
+            "moka_second_pot_stove_dz": None,
+            "moka_first_on_stove_streak": 0,
+            "moka_second_on_stove_streak": 0,
+            "moka_anchor_reason": "",
+        }
+
+    first = object_pos(env, first_pot_name)
+    second = object_pos(env, second_pot_name)
+    stove = object_pos(env, stove_name)
+    first_dxy, first_dz = _stove_offsets(first, stove)
+    second_dxy, second_dz = _stove_offsets(second, stove)
+    first_on = _is_on_stove(first, stove, on_stove_dxy_threshold, on_stove_dz_threshold)
+    second_on = _is_on_stove(second, stove, on_stove_dxy_threshold, on_stove_dz_threshold)
+
+    tracker.first_on_stove_streak = int(tracker.first_on_stove_streak + 1) if first_on else 0
+    tracker.second_on_stove_streak = int(tracker.second_on_stove_streak + 1) if second_on else 0
+
+    anchor_reason = ""
+    if str(stage_anchor) == "first_pot_on_stove_stable":
+        if tracker.anchor_step is None and tracker.first_on_stove_streak >= int(max(1, tracker.stable_steps)):
+            tracker.anchor_step = int(step_idx)
+            anchor_reason = "first_pot_on_stove_stable"
+
+    if tracker.anchor_step is None:
+        stage_id = "first_pot_phase"
+    elif second_on:
+        stage_id = "second_pot_done"
+    else:
+        stage_id = "second_pot_phase"
+
+    return {
+        "moka_first_pot_on_stove": bool(first_on),
+        "moka_second_pot_on_stove": bool(second_on),
+        "moka_stage_id": stage_id,
+        "moka_stage_anchor_step": tracker.anchor_step,
+        "moka_first_pot_stove_dxy": first_dxy,
+        "moka_first_pot_stove_dz": first_dz,
+        "moka_second_pot_stove_dxy": second_dxy,
+        "moka_second_pot_stove_dz": second_dz,
+        "moka_first_on_stove_streak": int(tracker.first_on_stove_streak),
+        "moka_second_on_stove_streak": int(tracker.second_on_stove_streak),
+        "moka_anchor_reason": anchor_reason,
+    }
 
 
 def compute_grasp_metadata(

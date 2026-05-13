@@ -14,6 +14,7 @@ class TriggerContext:
     clean_action: Optional[Any] = None
     prev_decoded_prefix: Optional[Any] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
+    phase_attack_enabled: Optional[bool] = None
 
 
 @dataclass

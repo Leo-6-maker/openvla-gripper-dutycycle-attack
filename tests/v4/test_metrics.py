@@ -27,3 +27,14 @@ def test_aggregate_exposes_cleanref_and_l2_names():
     r = aggregate_run([e])
     assert r["action_delta_l2_mean"] == 2.0
     assert r["NAD_cleanref_mean"] == 0.25
+
+
+def test_moka_phase_attack_counts():
+    steps = [
+        {"attack_active": True, "trigger_active_raw": True, "budget_blocked": False, "moka_stage_id": "first_pot_phase"},
+        {"attack_active": True, "trigger_active_raw": True, "budget_blocked": False, "moka_stage_id": "second_pot_phase"},
+        {"attack_active": False, "trigger_active_raw": False, "budget_blocked": False, "moka_stage_id": "second_pot_phase"},
+    ]
+    e = aggregate_episode_from_steps(steps, False, False, False)
+    assert e["moka_first_phase_attack_steps"] == 1
+    assert e["moka_second_phase_attack_steps"] == 1

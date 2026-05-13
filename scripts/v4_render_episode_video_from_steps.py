@@ -98,6 +98,7 @@ def main() -> None:
     ap.add_argument("--fps", type=int, default=20)
     ap.add_argument("--action_field", default="env_action", choices=["env_action", "executed_action", "clean_action"])
     ap.add_argument("--max_frames", type=int, default=0)
+    ap.add_argument("--horizon_override", type=int, default=0)
     ap.add_argument("--no_overlay", action="store_true")
     args = ap.parse_args()
 
@@ -136,12 +137,15 @@ def main() -> None:
     bench = get_benchmark(task["suite"])()
     task_idx = resolve_task_index(bench, task["task_name"])
     init_states = bench.get_task_init_states(task_idx)
+    max_replay_step = max((int(row.get("step_idx", 0)) for row in steps), default=0) + 2
+    max_episode_steps = max((int(e.get("num_steps", 0)) for e in episodes), default=0) + 2
+    horizon = int(args.horizon_override or max(int(task.get("max_steps", 400)), max_replay_step, max_episode_steps))
     env = OffScreenRenderEnv(
         bddl_file_name=bench.get_task_bddl_file_path(task_idx),
         camera_heights=int(args.image_size),
         camera_widths=int(args.image_size),
         render_gpu_device_id=int(args.render_gpu_device_id),
-        horizon=int(task.get("max_steps", 400)),
+        horizon=horizon,
     )
     try:
         env.seed(0)
@@ -172,7 +176,12 @@ def main() -> None:
             frames_written += 1
             for row in rows:
                 action = np.asarray(row[args.action_field], dtype=np.float32)
-                obs, _, done, _ = env.step(action)
+                try:
+                    obs, _, done, _ = env.step(action)
+                except ValueError as exc:
+                    if "terminated episode" in str(exc):
+                        break
+                    raise
                 step_idx = int(row.get("step_idx", 0))
                 if step_idx % max(1, int(args.frame_stride)) == 0 or done:
                     frame = np.asarray(obs[args.camera_obs_key]).astype(np.uint8)
@@ -184,6 +193,8 @@ def main() -> None:
                     frames_written += 1
                     if args.max_frames and frames_written >= int(args.max_frames):
                         break
+                if done:
+                    break
         print(f"[ok] wrote {out_path} frames={frames_written}", flush=True)
 
 
