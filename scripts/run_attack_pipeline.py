@@ -54,6 +54,7 @@ CONDITIONS = {
         "objective": "gripper_logit_margin_cw",
         "temporal_init": "prev_delta",
         "cw_margin": "5.0",
+        "force_open_raw_gripper": "1.0",
         "window": None,
         "extra_env": {},
     },
@@ -63,6 +64,7 @@ CONDITIONS = {
         "objective": "gripper_logit_margin_cw",
         "temporal_init": "none",
         "cw_margin": "0.0",
+        "force_open_raw_gripper": "1.0",
         "window": None,
         "extra_env": {},
     },
@@ -115,6 +117,7 @@ CONDITIONS = {
         "objective": "gripper_logit_margin_cw",
         "temporal_init": "prev_delta",
         "cw_margin": "5.0",
+        "force_open_raw_gripper": "1.0",
         "window": None,
         "extra_env": {},
         "guard_enabled": True,
@@ -126,6 +129,7 @@ CONDITIONS = {
         "objective": "gripper_logit_margin_cw",
         "temporal_init": "none",
         "cw_margin": "0.0",
+        "force_open_raw_gripper": "1.0",
         "window": None,
         "extra_env": {},
         "guard_enabled": True,
@@ -151,6 +155,7 @@ CONDITIONS = {
         "objective": "gripper_logit_margin_cw",
         "temporal_init": "prev_delta",
         "cw_margin": "5.0",
+        "force_open_raw_gripper": "1.0",
         "window": None,
         "extra_env": {},
         "guard_enabled": True,
@@ -162,6 +167,7 @@ CONDITIONS = {
         "objective": "gripper_logit_margin_cw",
         "temporal_init": "none",
         "cw_margin": "0.0",
+        "force_open_raw_gripper": "1.0",
         "window": None,
         "extra_env": {},
         "guard_enabled": True,
@@ -279,6 +285,8 @@ def main() -> int:
         cmd.extend(["--attack_objective", str(condition["objective"])])
     if condition["cw_margin"] is not None:
         cmd.extend(["--cw_margin", str(condition["cw_margin"])])
+    if condition.get("force_open_raw_gripper") is not None:
+        cmd.extend(["--force_open_raw_gripper", str(condition["force_open_raw_gripper"])])
     if condition.get("guard_enabled"):
         cmd.append("--guard_enabled")
         cmd.extend(["--guard_mode", str(condition.get("guard_mode", "conservative"))])
