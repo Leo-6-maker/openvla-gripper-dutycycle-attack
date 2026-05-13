@@ -46,7 +46,28 @@ def test_vis_dispatches_paper_pgd_params_and_prev_delta():
     assert "--attack_steps 20" in out
     assert "--temporal_init prev_delta" in out
     assert "--cw_margin 5.0" in out
+    assert "--force_open_raw_gripper 1.0" in out
     assert "--state_ids 7" in out
+
+
+def test_zero_margin_dispatches_force_open_and_cw_zero():
+    out = run_pipeline("--task", "black_bowl", "--state", "7", "--seed", "1", "--condition", "ctrl_same_gate_zero_margin")
+    assert "--attack_objective gripper_logit_margin_cw" in out
+    assert "--temporal_init none" in out
+    assert "--cw_margin 0.0" in out
+    assert "--force_open_raw_gripper 1.0" in out
+
+
+def test_guard_vis_dispatches_guard_and_force_open():
+    out = run_pipeline("--task", "black_bowl", "--state", "7", "--seed", "1", "--condition", "vis_margin_prevdelta_guard")
+    assert "--guard_enabled" in out
+    assert "--force_open_raw_gripper 1.0" in out
+
+
+def test_guard_zero_margin_dispatches_guard_and_force_open():
+    out = run_pipeline("--task", "black_bowl", "--state", "7", "--seed", "1", "--condition", "ctrl_same_gate_zero_margin_guard")
+    assert "--guard_enabled" in out
+    assert "--force_open_raw_gripper 1.0" in out
 
 
 def test_random_dispatches_arm_only_objective():
