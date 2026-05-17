@@ -1,10 +1,16 @@
 # Runtime outputs and logs
 outputs/
 logs/
+manual_review_packages/
+videos/
 *.log
 *.pid
 *.out
 *.err
+*.mp4
+*.avi
+*.mov
+*.mkv
 
 # Python/cache artifacts
 __pycache__/
@@ -34,6 +40,8 @@ checkpoints/
 *.safetensors
 *.hdf5
 *.h5
+*.pkl
+*.npy
 
 # OS/editor
 .DS_Store
