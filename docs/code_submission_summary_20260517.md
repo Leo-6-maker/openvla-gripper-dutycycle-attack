@@ -8,7 +8,12 @@ Commits:
 
 - `9f51c83` refactor: add task-agnostic generic auto-window detector
 - `b023949` test: isolate Black Bowl reference-window evaluation
-- CQ v2 commit: this summary is included with the CQ v2 metric commit.
+- `8f3d2fd` fix: add contact-quality v2 metric for uncontrolled drops
+
+Pushed branch:
+
+- `origin/refactor/generic-autowindow-cqv2-20260517`
+- Pull request URL: https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/pull/new/refactor/generic-autowindow-cqv2-20260517
 
 Validation:
 
