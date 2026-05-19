@@ -63,6 +63,14 @@ def aggregate_episode_from_steps(step_records: list[dict], success: bool, timeou
     delta_linf_atk = [float(r.get("delta_linf", 0.0)) for r in atk]
     nad_clean = [float(r.get("nad_cleanref_step", 0.0)) for r in step_records]
     nad_clean_atk = [float(r.get("nad_cleanref_step", 0.0)) for r in atk]
+    first_phase_attack_steps = sum(
+        1 for r in step_records
+        if bool(r.get("attack_active")) and str(r.get("moka_stage_id", "")) == "first_pot_phase"
+    )
+    second_phase_attack_steps = sum(
+        1 for r in step_records
+        if bool(r.get("attack_active")) and str(r.get("moka_stage_id", "")) == "second_pot_phase"
+    )
     return {
         "success": bool(success), "failure": not bool(success), "timeout": bool(timeout), "invalid": bool(invalid),
         "num_steps": len(step_records), "num_attack_active_steps": len(atk),
@@ -91,6 +99,8 @@ def aggregate_episode_from_steps(step_records: list[dict], success: bool, timeou
         "latency_attack_p95": _pct([r.get("Tattack", 0.0) for r in step_records], 95),
         "signal_availability_rate": float(np.mean([bool(r.get("signal_available")) for r in step_records])) if step_records else 0.0,
         "fallback_rate": float(np.mean([bool(r.get("fallback")) for r in step_records])) if step_records else 0.0,
+        "moka_first_phase_attack_steps": int(first_phase_attack_steps),
+        "moka_second_phase_attack_steps": int(second_phase_attack_steps),
     }
 
 

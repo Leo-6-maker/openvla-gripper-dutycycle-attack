@@ -1,0 +1,362 @@
+version: v4
+tasks:
+  - task_id: spatial_pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate
+    suite: libero_spatial
+    task_name: pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_spatial/pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_spatial
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: plate_1
+    expected_mechanism_type: pick_place
+  - task_id: spatial_pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate
+    suite: libero_spatial
+    task_name: pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_spatial/pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_spatial
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: plate_1
+    expected_mechanism_type: pick_place
+  - task_id: spatial_pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate
+    suite: libero_spatial
+    task_name: pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_spatial/pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_spatial
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: plate_1
+    expected_mechanism_type: pick_place
+  - task_id: spatial_pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate
+    suite: libero_spatial
+    task_name: pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_spatial/pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_spatial
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: plate_1
+    expected_mechanism_type: pick_place
+  - task_id: spatial_pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate
+    suite: libero_spatial
+    task_name: pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_spatial/pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_spatial
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: plate_1
+    expected_mechanism_type: pick_place
+  - task_id: spatial_pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate
+    suite: libero_spatial
+    task_name: pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_spatial/pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_spatial
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: plate_1
+    expected_mechanism_type: pick_place
+  - task_id: spatial_pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate
+    suite: libero_spatial
+    task_name: pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_spatial/pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_spatial
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: plate_1
+    expected_mechanism_type: pick_place
+  - task_id: spatial_pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate
+    suite: libero_spatial
+    task_name: pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_spatial/pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_spatial
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: plate_1
+    expected_mechanism_type: pick_place
+  - task_id: spatial_pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate
+    suite: libero_spatial
+    task_name: pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_spatial/pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_spatial
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: plate_1
+    expected_mechanism_type: pick_place
+  - task_id: spatial_pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate
+    suite: libero_spatial
+    task_name: pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_spatial/pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_spatial
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: plate_1
+    expected_mechanism_type: pick_place
+  - task_id: object_pick_up_the_alphabet_soup_and_place_it_in_the_basket
+    suite: libero_object
+    task_name: pick_up_the_alphabet_soup_and_place_it_in_the_basket
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_object/pick_up_the_alphabet_soup_and_place_it_in_the_basket_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_object
+    target_object_name: alphabet_soup_1
+    target_receptacle_name: basket_1
+    expected_mechanism_type: pick_place
+  - task_id: object_pick_up_the_bbq_sauce_and_place_it_in_the_basket
+    suite: libero_object
+    task_name: pick_up_the_bbq_sauce_and_place_it_in_the_basket
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_object/pick_up_the_bbq_sauce_and_place_it_in_the_basket_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_object
+    target_object_name: bbq_sauce_1
+    target_receptacle_name: basket_1
+    expected_mechanism_type: pick_place
+  - task_id: object_pick_up_the_butter_and_place_it_in_the_basket
+    suite: libero_object
+    task_name: pick_up_the_butter_and_place_it_in_the_basket
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_object/pick_up_the_butter_and_place_it_in_the_basket_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_object
+    target_object_name: butter_1
+    target_receptacle_name: basket_1
+    expected_mechanism_type: pick_place
+  - task_id: object_pick_up_the_chocolate_pudding_and_place_it_in_the_basket
+    suite: libero_object
+    task_name: pick_up_the_chocolate_pudding_and_place_it_in_the_basket
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_object/pick_up_the_chocolate_pudding_and_place_it_in_the_basket_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_object
+    target_object_name: chocolate_pudding_1
+    target_receptacle_name: basket_1
+    expected_mechanism_type: pick_place
+  - task_id: object_pick_up_the_cream_cheese_and_place_it_in_the_basket
+    suite: libero_object
+    task_name: pick_up_the_cream_cheese_and_place_it_in_the_basket
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_object/pick_up_the_cream_cheese_and_place_it_in_the_basket_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_object
+    target_object_name: cream_cheese_1
+    target_receptacle_name: basket_1
+    expected_mechanism_type: pick_place
+  - task_id: object_pick_up_the_ketchup_and_place_it_in_the_basket
+    suite: libero_object
+    task_name: pick_up_the_ketchup_and_place_it_in_the_basket
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_object/pick_up_the_ketchup_and_place_it_in_the_basket_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_object
+    target_object_name: ketchup_1
+    target_receptacle_name: basket_1
+    expected_mechanism_type: pick_place
+  - task_id: object_pick_up_the_milk_and_place_it_in_the_basket
+    suite: libero_object
+    task_name: pick_up_the_milk_and_place_it_in_the_basket
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_object/pick_up_the_milk_and_place_it_in_the_basket_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_object
+    target_object_name: milk_1
+    target_receptacle_name: basket_1
+    expected_mechanism_type: pick_place
+  - task_id: object_pick_up_the_orange_juice_and_place_it_in_the_basket
+    suite: libero_object
+    task_name: pick_up_the_orange_juice_and_place_it_in_the_basket
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_object/pick_up_the_orange_juice_and_place_it_in_the_basket_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_object
+    target_object_name: orange_juice_1
+    target_receptacle_name: basket_1
+    expected_mechanism_type: pick_place
+  - task_id: object_pick_up_the_salad_dressing_and_place_it_in_the_basket
+    suite: libero_object
+    task_name: pick_up_the_salad_dressing_and_place_it_in_the_basket
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_object/pick_up_the_salad_dressing_and_place_it_in_the_basket_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_object
+    target_object_name: salad_dressing_1
+    target_receptacle_name: basket_1
+    expected_mechanism_type: pick_place
+  - task_id: object_pick_up_the_tomato_sauce_and_place_it_in_the_basket
+    suite: libero_object
+    task_name: pick_up_the_tomato_sauce_and_place_it_in_the_basket
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_object/pick_up_the_tomato_sauce_and_place_it_in_the_basket_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_object
+    target_object_name: tomato_sauce_1
+    target_receptacle_name: basket_1
+    expected_mechanism_type: pick_place
+  - task_id: goal_open_the_middle_drawer_of_the_cabinet
+    suite: libero_goal
+    task_name: open_the_middle_drawer_of_the_cabinet
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_goal/open_the_middle_drawer_of_the_cabinet_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_goal
+    target_object_name: wooden_cabinet_1_middle_region
+    target_receptacle_name:
+    expected_mechanism_type: articulated_or_non_transfer
+  - task_id: goal_open_the_top_drawer_and_put_the_bowl_inside
+    suite: libero_goal
+    task_name: open_the_top_drawer_and_put_the_bowl_inside
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_goal/open_the_top_drawer_and_put_the_bowl_inside_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_goal
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: wooden_cabinet_1_top_region
+    expected_mechanism_type: articulated_or_non_transfer
+  - task_id: goal_push_the_plate_to_the_front_of_the_stove
+    suite: libero_goal
+    task_name: push_the_plate_to_the_front_of_the_stove
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_goal/push_the_plate_to_the_front_of_the_stove_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_goal
+    target_object_name: plate_1
+    target_receptacle_name: main_table_stove_front_region
+    expected_mechanism_type: articulated_or_non_transfer
+  - task_id: goal_put_the_bowl_on_the_plate
+    suite: libero_goal
+    task_name: put_the_bowl_on_the_plate
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_goal/put_the_bowl_on_the_plate_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_goal
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: plate_1
+    expected_mechanism_type: pick_place
+  - task_id: goal_put_the_bowl_on_the_stove
+    suite: libero_goal
+    task_name: put_the_bowl_on_the_stove
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_goal/put_the_bowl_on_the_stove_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_goal
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: flat_stove_1_cook_region
+    expected_mechanism_type: pick_place
+  - task_id: goal_put_the_bowl_on_top_of_the_cabinet
+    suite: libero_goal
+    task_name: put_the_bowl_on_top_of_the_cabinet
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_goal/put_the_bowl_on_top_of_the_cabinet_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_goal
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: wooden_cabinet_1_top_side
+    expected_mechanism_type: pick_place
+  - task_id: goal_put_the_cream_cheese_in_the_bowl
+    suite: libero_goal
+    task_name: put_the_cream_cheese_in_the_bowl
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_goal/put_the_cream_cheese_in_the_bowl_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_goal
+    target_object_name: cream_cheese_1
+    target_receptacle_name: akita_black_bowl_1
+    expected_mechanism_type: pick_place
+  - task_id: goal_put_the_wine_bottle_on_the_rack
+    suite: libero_goal
+    task_name: put_the_wine_bottle_on_the_rack
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_goal/put_the_wine_bottle_on_the_rack_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_goal
+    target_object_name: wine_bottle_1
+    target_receptacle_name: wine_rack_1_top_region
+    expected_mechanism_type: pick_place
+  - task_id: goal_put_the_wine_bottle_on_top_of_the_cabinet
+    suite: libero_goal
+    task_name: put_the_wine_bottle_on_top_of_the_cabinet
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_goal/put_the_wine_bottle_on_top_of_the_cabinet_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_goal
+    target_object_name: wine_bottle_1
+    target_receptacle_name: wooden_cabinet_1_top_side
+    expected_mechanism_type: pick_place
+  - task_id: goal_turn_on_the_stove
+    suite: libero_goal
+    task_name: turn_on_the_stove
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_goal/turn_on_the_stove_demo.hdf5
+    max_steps: 400
+    default_unnorm_key: libero_goal
+    target_object_name: flat_stove_1
+    target_receptacle_name:
+    expected_mechanism_type: articulated_or_non_transfer
+  - task_id: libero10_kitchen_scene3_turn_on_the_stove_and_put_the_moka_pot_on_it
+    suite: libero_10
+    task_name: KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_10/KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it_demo.hdf5
+    max_steps: 700
+    default_unnorm_key: libero_10
+    target_object_name: moka_pot_1
+    target_receptacle_name: flat_stove_1
+    expected_mechanism_type: articulated_or_non_transfer
+  - task_id: libero10_kitchen_scene4_put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet_and_close_it
+    suite: libero_10
+    task_name: KITCHEN_SCENE4_put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet_and_close_it
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_10/KITCHEN_SCENE4_put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet_and_close_it_demo.hdf5
+    max_steps: 700
+    default_unnorm_key: libero_10
+    target_object_name: akita_black_bowl_1
+    target_receptacle_name: white_cabinet_1
+    expected_mechanism_type: articulated_or_non_transfer
+  - task_id: libero10_kitchen_scene6_put_the_yellow_and_white_mug_in_the_microwave_and_close_it
+    suite: libero_10
+    task_name: KITCHEN_SCENE6_put_the_yellow_and_white_mug_in_the_microwave_and_close_it
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_10/KITCHEN_SCENE6_put_the_yellow_and_white_mug_in_the_microwave_and_close_it_demo.hdf5
+    max_steps: 700
+    default_unnorm_key: libero_10
+    target_object_name: white_yellow_mug_1
+    target_receptacle_name: microwave_1
+    expected_mechanism_type: articulated_or_non_transfer
+  - task_id: libero10_kitchen_scene8_put_both_moka_pots_on_the_stove
+    suite: libero_10
+    task_name: KITCHEN_SCENE8_put_both_moka_pots_on_the_stove
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_10/KITCHEN_SCENE8_put_both_moka_pots_on_the_stove_demo.hdf5
+    max_steps: 700
+    default_unnorm_key: libero_10
+    target_object_name: moka_pot_1
+    target_receptacle_name: flat_stove_1
+    expected_mechanism_type: multi_object_transfer
+  - task_id: libero10_living_room_scene1_put_both_the_alphabet_soup_and_the_cream_cheese_box_in_the_basket
+    suite: libero_10
+    task_name: LIVING_ROOM_SCENE1_put_both_the_alphabet_soup_and_the_cream_cheese_box_in_the_basket
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_10/LIVING_ROOM_SCENE1_put_both_the_alphabet_soup_and_the_cream_cheese_box_in_the_basket_demo.hdf5
+    max_steps: 700
+    default_unnorm_key: libero_10
+    target_object_name: alphabet_soup_1
+    target_receptacle_name: basket_1
+    expected_mechanism_type: multi_object_transfer
+  - task_id: libero10_living_room_scene2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket
+    suite: libero_10
+    task_name: LIVING_ROOM_SCENE2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_10/LIVING_ROOM_SCENE2_put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket_demo.hdf5
+    max_steps: 700
+    default_unnorm_key: libero_10
+    target_object_name: alphabet_soup_1
+    target_receptacle_name: basket_1
+    expected_mechanism_type: multi_object_transfer
+  - task_id: libero10_living_room_scene2_put_both_the_cream_cheese_box_and_the_butter_in_the_basket
+    suite: libero_10
+    task_name: LIVING_ROOM_SCENE2_put_both_the_cream_cheese_box_and_the_butter_in_the_basket
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_10/LIVING_ROOM_SCENE2_put_both_the_cream_cheese_box_and_the_butter_in_the_basket_demo.hdf5
+    max_steps: 700
+    default_unnorm_key: libero_10
+    target_object_name: cream_cheese_1
+    target_receptacle_name: basket_1
+    expected_mechanism_type: multi_object_transfer
+  - task_id: libero10_living_room_scene5_put_the_white_mug_on_the_left_plate_and_put_the_yellow_and_white_mug_on_the_right_plate
+    suite: libero_10
+    task_name: LIVING_ROOM_SCENE5_put_the_white_mug_on_the_left_plate_and_put_the_yellow_and_white_mug_on_the_right_plate
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_10/LIVING_ROOM_SCENE5_put_the_white_mug_on_the_left_plate_and_put_the_yellow_and_white_mug_on_the_right_plate_demo.hdf5
+    max_steps: 700
+    default_unnorm_key: libero_10
+    target_object_name: plate_1
+    target_receptacle_name: porcelain_mug_1
+    expected_mechanism_type: pick_place
+  - task_id: libero10_living_room_scene6_put_the_white_mug_on_the_plate_and_put_the_chocolate_pudding_to_the_right_of_the_plate
+    suite: libero_10
+    task_name: LIVING_ROOM_SCENE6_put_the_white_mug_on_the_plate_and_put_the_chocolate_pudding_to_the_right_of_the_plate
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_10/LIVING_ROOM_SCENE6_put_the_white_mug_on_the_plate_and_put_the_chocolate_pudding_to_the_right_of_the_plate_demo.hdf5
+    max_steps: 700
+    default_unnorm_key: libero_10
+    target_object_name: plate_1
+    target_receptacle_name: porcelain_mug_1
+    expected_mechanism_type: pick_place
+  - task_id: libero10_study_scene1_pick_up_the_book_and_place_it_in_the_back_compartment_of_the_caddy
+    suite: libero_10
+    task_name: STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_back_compartment_of_the_caddy
+    dataset_path: /data/aviary/datasets/libero/datasets/libero_10/STUDY_SCENE1_pick_up_the_book_and_place_it_in_the_back_compartment_of_the_caddy_demo.hdf5
+    max_steps: 700
+    default_unnorm_key: libero_10
+    target_object_name: black_book_1
+    target_receptacle_name: desk_caddy_1
+    expected_mechanism_type: pick_place
