@@ -1,0 +1,17 @@
+relative_path,size_bytes,source
+reports/CLAIM_BOUNDARY_NONBB_BOWL_PLATE.md,463,evidence_freeze
+reports/CODE_UPLOAD_AUDIT.md,408,evidence_freeze
+reports/EVIDENCE_INTEGRITY_CHECK.md,1623,evidence_freeze
+reports/NEXT_ACTION_RECOMMENDATION.md,94,evidence_freeze
+reports/NEXT_ACTION_STATUS.md,261,evidence_freeze
+reports/NONBB_BOWL_PLATE_EVIDENCE_SUMMARY.md,874,evidence_freeze
+reports/NONBB_EVIDENCE_FREEZE_STATUS.md,261,evidence_freeze
+reports/TEST_STATUS.md,167,evidence_freeze
+reports/WHAT_THIS_RESULT_DOES_AND_DOES_NOT_SUPPORT.md,463,evidence_freeze
+tables/code_upload_file_list.csv,1153,evidence_freeze
+tables/evidence_integrity_checklist.csv,1573,evidence_freeze
+tables/nonbb_bowl_plate_claim_boundary_table.csv,362,evidence_freeze
+tables/nonbb_bowl_plate_condition_summary.csv,3100,evidence_freeze
+tables/nonbb_bowl_plate_mechanism_table.csv,1109,evidence_freeze
+tables/nonbb_bowl_plate_qpos_summary.csv,4025,evidence_freeze
+tables/nonbb_bowl_plate_state_window_table.csv,335,evidence_freeze

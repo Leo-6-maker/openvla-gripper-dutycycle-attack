@@ -1,0 +1,12 @@
+diagnostic_only: true
+objectives:
+  best_VIS_gripper_targeted_stronger:
+    attack_objective: force_gripper_open_token_ce
+    epsilon: 0.25
+    step_size: 0.05
+    attack_steps: 60
+  VIS_gripper_open_region_ce:
+    attack_objective: gripper_open_region_ce
+    epsilon: 0.18
+    step_size: 0.035
+    attack_steps: 40

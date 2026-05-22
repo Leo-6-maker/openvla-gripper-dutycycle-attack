@@ -1,0 +1,6 @@
+claim,supported,notes
+diagnostic_nonBB_bowl_plate_mechanism_evidence,true,state4/state5 pass with state-specific autowindows
+formal_Table2_attack_result,false,diagnostic_only; no broad Table2
+LIBERO_wide_generalization,false,single task only
+142_eligible_full_attack,false,not run
+fixed_state0_window_cross_state_validity,false,state-specific windows used

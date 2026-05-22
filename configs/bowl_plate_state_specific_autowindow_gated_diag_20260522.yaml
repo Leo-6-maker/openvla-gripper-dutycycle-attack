@@ -1,0 +1,20 @@
+task_id: goal_put_the_bowl_on_the_plate
+diagnostic_only: true
+state_specific_autowindow_used: true
+fixed_state0_window_reuse: false
+states:
+  - state_id: 3
+    window: [65, 74]
+  - state_id: 4
+    window: [66, 75]
+  - state_id: 5
+    window: [61, 70]
+  - state_id: 7
+    window: [62, 71]
+  - state_id: 8
+    window: [63, 72]
+  - state_id: 9
+    window: [76, 85]
+conditions:
+  phase_a: [clean_repeat, random_same_window, command_open_0.75_same_window]
+  phase_b: [VIS_current_same_window, best_VIS_gripper_targeted_stronger_same_window, VIS_gripper_open_region_ce_same_window]

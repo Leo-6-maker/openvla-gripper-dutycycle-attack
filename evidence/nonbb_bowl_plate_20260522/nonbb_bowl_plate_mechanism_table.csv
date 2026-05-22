@@ -1,0 +1,7 @@
+state_id,autowindow_start,autowindow_end,clean_success,random_success,VIS_current_success,command_open_0.75_success,best_targeted_VIS_success,open_region_ce_success,command_open_qpos_max,targeted_VIS_qpos_max,VIS_current_qpos_max,random_qpos_max,state_interpretation,pass_for_small_mechanism_table,reason
+3,65,74,True,True,,True,,,0.03934642672538757,,,0.010526636615395546,not_phaseA_vulnerable,False,skipped_phaseB
+4,66,75,True,True,True,False,False,False,0.07162769138813019,0.0666351318359375,0.005142657086253166,0.0051500024273991585,state_pass,True,
+5,61,70,True,True,True,False,False,False,0.07162682712078094,0.07162734866142273,0.004854070954024792,0.0048547969199717045,state_pass,True,
+7,62,71,True,True,,True,,,0.041068512946367264,,,0.01077367179095745,not_phaseA_vulnerable,False,skipped_phaseB
+8,63,72,True,True,,True,,,0.039703648537397385,,,0.013650385662913322,not_phaseA_vulnerable,False,skipped_phaseB
+9,76,85,True,True,True,False,False,False,0.07161848247051239,0.04004532843828201,0.004164356738328934,0.004167597740888596,targeted_VIS_not_reproduced_or_not_interpretable,False,

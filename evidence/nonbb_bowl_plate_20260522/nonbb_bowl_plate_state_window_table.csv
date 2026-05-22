@@ -1,0 +1,7 @@
+state_id,autowindow_start,autowindow_end,state_specific_autowindow_used,fixed_state0_window_reuse,phaseA_vulnerable,pass_for_small_mechanism_table
+3,65,74,true,false,False,False
+4,66,75,true,false,True,True
+5,61,70,true,false,True,True
+7,62,71,true,false,False,False
+8,63,72,true,false,False,False
+9,76,85,true,false,True,False
