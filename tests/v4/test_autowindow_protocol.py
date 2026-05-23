@@ -220,6 +220,57 @@ class TestAutowindowRunner:
         assert ids == {"r1", "r2"}
 
 
+class TestPhaseCuesZeroStep:
+    """Zero is a valid step value — should not be treated as missing."""
+    def test_accepts_grasp_step_zero(self):
+        validate_phase_cues_present({
+            "grasp_step": 0, "lift_step": 5, "carry_start_step": 8,
+            "release_intent_step": 20, "done_step": 30,
+        })
+
+    def test_accepts_synthetic_row_with_grasp_zero(self):
+        row = {
+            "run_id": "syn", "detector_config_hash": "abc",
+            "detector_mode": "release_intent", "confidence": "high",
+            "auto_window_start": "10", "auto_window_end": "19",
+            "window_detected": True, "mechanism_type": "trajectory_transfer_candidate",
+            "clean_success": True,
+            "grasp_step": 0, "lift_step": 5, "carry_start_step": 8,
+            "release_intent_step": 20, "done_step": 30,
+        }
+        validate_generic_autowindow_outputs(row)
+
+
+class TestValidateAutowindowProtocolRejectsDeviations:
+    def test_rejects_wrong_detector_name(self):
+        with pytest.raises(ProtocolValidationError):
+            validate_autowindow_protocol(dict(
+                TABLE1_GENERIC_AUTOWINDOW_PROTOCOL,
+                detector_name="wrong_name",
+            ))
+
+    def test_rejects_uses_attack_outcome_true(self):
+        with pytest.raises(ProtocolValidationError):
+            validate_autowindow_protocol(dict(
+                TABLE1_GENERIC_AUTOWINDOW_PROTOCOL,
+                uses_attack_outcome=True,
+            ))
+
+    def test_rejects_wrong_window_source(self):
+        with pytest.raises(ProtocolValidationError):
+            validate_autowindow_protocol(dict(
+                TABLE1_GENERIC_AUTOWINDOW_PROTOCOL,
+                window_source="table1_prior",
+            ))
+
+    def test_rejects_missing_phase_cues_requirement(self):
+        with pytest.raises(ProtocolValidationError):
+            validate_autowindow_protocol(dict(
+                TABLE1_GENERIC_AUTOWINDOW_PROTOCOL,
+                requires_phase_cues_csv=False,
+            ))
+
+
 class TestProtocolValidationError:
     def test_is_value_error(self):
         assert issubclass(ProtocolValidationError, ValueError)

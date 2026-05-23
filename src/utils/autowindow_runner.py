@@ -95,6 +95,16 @@ def filter_eligible_rows(rows, min_confidence="medium"):
 
     Requires: window_detected=True, clean_success=True, confidence >= min_confidence,
     detector_mode not in ('failed_no_signal',).
+
+    IMPORTANT: This is a coarse detector-output filter, NOT final command-open
+    eligibility. Final rollout gating MUST additionally check:
+      - task identity (is_black_bowl_related, suite, runner_task_id)
+      - phase label (not post_release, not gripper_open_throughout)
+      - window_source is fresh_clean_generic_autowindow
+      - detector_config_hash present and matching
+      - model suite matches task suite
+      - same-seed protocol (matched_seed == clean_seed)
+      - protocol validators pass (command_open rho>0, etc.)
     """
     eligible = []
     for row in rows:
