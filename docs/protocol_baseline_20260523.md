@@ -114,3 +114,20 @@ for c in LEGACY_CODEX_STATE5_MATCHED_CONDITIONS:
 print('smoke ok')
 "
 ```
+
+## Autowindow Protocol Baseline
+
+**Update**: 2026-05-24 (see `docs/autowindow_protocols.md` for full details)
+
+- **Canonical detector**: `table1_generic_autowindow_phase_cue`
+  - Script: `scripts/detect_contact_window_from_clean.py`
+  - Config: `configs/generic_autowindow_detector.yaml`
+  - Window source: `fresh_clean_generic_autowindow`
+- **Deprecated**: `standard_done_minus_11_2` (`[done-11, done-2]` formula)
+  - Produced post-release windows on ALL true non-BB relay candidates (2026-05-23)
+  - Table1 used the generic phase-cue detector, NOT this formula
+  - Do NOT use for matched rollouts
+- **Table1 prior windows** (e.g., 139-148) are provenance only — NOT rollout input
+- **Protocol definitions**: `src/utils/autowindow_protocols.py`
+- **Validators**: `src/utils/autowindow_validation.py`
+- **Runner helper**: `src/utils/autowindow_runner.py`
