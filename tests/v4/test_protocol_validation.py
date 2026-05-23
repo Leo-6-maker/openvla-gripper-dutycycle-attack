@@ -14,9 +14,11 @@ from src.utils.task_identity import (
 from src.utils.condition_protocols import (
     COMMAND_OPEN_ORACLE_PROTOCOL,
     CODEX_LEGACY_TARGETED_FORCE_GRIPPER_OPEN,
+    CODEX_LEGACY_RANDOM_SAME_WINDOW,
     LEGACY_CODEX_STATE5_MATCHED_CONDITIONS,
 )
 from src.utils.protocol_validation import (
+    ProtocolValidationError,
     validate_command_open_protocol,
     validate_same_seed_protocol,
     validate_window_source,
@@ -55,12 +57,29 @@ class TestCommandOpenRhoZeroRejected:
 
     def test_rho_zero_rejected(self):
         broken = dict(COMMAND_OPEN_ORACLE_PROTOCOL, rho=0.0)
-        with pytest.raises(AssertionError, match="disables oracle override"):
+        with pytest.raises(ProtocolValidationError, match="disables oracle override"):
             validate_command_open_protocol(broken)
 
     def test_wrong_objective_rejected(self):
         broken = dict(COMMAND_OPEN_ORACLE_PROTOCOL, attack_objective="wrong")
-        with pytest.raises(AssertionError, match="oracle_env_gripper_open"):
+        with pytest.raises(ProtocolValidationError, match="oracle_env_gripper_open"):
+            validate_command_open_protocol(broken)
+
+    def test_missing_env_extra_rejected(self):
+        broken = {k: v for k, v in COMMAND_OPEN_ORACLE_PROTOCOL.items()
+                  if k != "env_extra"}
+        with pytest.raises(ProtocolValidationError, match="env_extra"):
+            validate_command_open_protocol(broken)
+
+    def test_missing_oracle_env_value_rejected(self):
+        broken = dict(COMMAND_OPEN_ORACLE_PROTOCOL,
+                      env_extra={"V4_ORACLE_GRIPPER_PATTERN": "continuous_open"})
+        with pytest.raises(ProtocolValidationError, match="V4_ORACLE_FORCE_GRIPPER_ENV_VALUE"):
+            validate_command_open_protocol(broken)
+
+    def test_attack_steps_zero_rejected(self):
+        broken = dict(COMMAND_OPEN_ORACLE_PROTOCOL, attack_steps=0)
+        with pytest.raises(ProtocolValidationError, match="attack_steps"):
             validate_command_open_protocol(broken)
 
 
@@ -70,14 +89,14 @@ class TestSameSeedProtocolRequired:
         validate_same_seed_protocol(5, 5)
 
     def test_mismatched_seeds_raise(self):
-        with pytest.raises(AssertionError, match="Seed drift"):
+        with pytest.raises(ProtocolValidationError, match="Seed drift"):
             validate_same_seed_protocol(105, 5)
 
 
 # ── window source validation ──────────────────────────────────────────
 class TestTable1PriorWindowRejected:
     def test_table1_prior_rejected(self):
-        with pytest.raises(AssertionError, match="table1_prior_window"):
+        with pytest.raises(ProtocolValidationError, match="table1_prior_window"):
             validate_window_source("table1_prior_window_139_148")
 
     def test_clean_detect_source_accepted(self):
@@ -91,28 +110,28 @@ class TestCodexTargetedProtocolExact:
 
     def test_wrong_epsilon_rejected(self):
         broken = dict(CODEX_LEGACY_TARGETED_FORCE_GRIPPER_OPEN, epsilon=0.10)
-        with pytest.raises(AssertionError, match="epsilon"):
+        with pytest.raises(ProtocolValidationError, match="epsilon"):
             validate_codex_targeted_protocol(broken)
 
     def test_wrong_step_size_rejected(self):
         broken = dict(CODEX_LEGACY_TARGETED_FORCE_GRIPPER_OPEN, step_size=0.02)
-        with pytest.raises(AssertionError, match="step_size"):
+        with pytest.raises(ProtocolValidationError, match="step_size"):
             validate_codex_targeted_protocol(broken)
 
     def test_wrong_attack_steps_rejected(self):
         broken = dict(CODEX_LEGACY_TARGETED_FORCE_GRIPPER_OPEN, attack_steps=20)
-        with pytest.raises(AssertionError, match="attack_steps"):
+        with pytest.raises(ProtocolValidationError, match="attack_steps"):
             validate_codex_targeted_protocol(broken)
 
     def test_wrong_objective_rejected(self):
         broken = dict(CODEX_LEGACY_TARGETED_FORCE_GRIPPER_OPEN,
                       attack_objective="gripper_logit_margin_cw")
-        with pytest.raises(AssertionError, match="force_gripper_open_token_ce"):
+        with pytest.raises(ProtocolValidationError, match="force_gripper_open_token_ce"):
             validate_codex_targeted_protocol(broken)
 
     def test_wrong_fo_rejected(self):
         broken = dict(CODEX_LEGACY_TARGETED_FORCE_GRIPPER_OPEN, force_open_raw_gripper=0.75)
-        with pytest.raises(AssertionError, match="force_open_raw_gripper"):
+        with pytest.raises(ProtocolValidationError, match="force_open_raw_gripper"):
             validate_codex_targeted_protocol(broken)
 
 
@@ -124,5 +143,28 @@ class TestConditionConfigSchema:
 
     def test_missing_field_rejected(self):
         broken = {"condition_name": "test"}
-        with pytest.raises(AssertionError, match="Missing required fields"):
+        with pytest.raises(ProtocolValidationError, match="Missing required fields"):
             validate_condition_config_schema(broken)
+
+    def test_missing_recommended_field_rejected(self):
+        broken = dict(CODEX_LEGACY_TARGETED_FORCE_GRIPPER_OPEN)
+        del broken["force_open_raw_gripper"]
+        with pytest.raises(ProtocolValidationError, match="Missing recommended fields"):
+            validate_condition_config_schema(broken)
+
+
+# ── attack_objective=None CLI-arg semantics ───────────────────────────
+class TestNoneObjectiveOmitsCliFlag:
+    def test_random_has_omit_attack_objective_cli_arg(self):
+        assert CODEX_LEGACY_RANDOM_SAME_WINDOW["attack_objective"] is None
+        assert CODEX_LEGACY_RANDOM_SAME_WINDOW["attack_objective_raw_arg"] is None
+        assert CODEX_LEGACY_RANDOM_SAME_WINDOW["omit_attack_objective_cli_arg"] is True
+
+    def test_none_means_omit_not_string_none(self):
+        """attack_objective=None means the --attack_objective CLI flag is OMITTED,
+        not passed as the string 'None' or empty string."""
+        c = CODEX_LEGACY_RANDOM_SAME_WINDOW
+        assert c["attack_objective"] is not None or c["omit_attack_objective_cli_arg"] is True
+        # The driver must check omit_attack_objective_cli_arg and skip the flag
+        assert c["effective_attack_objective_expected"] != "None"
+        assert c["effective_attack_objective_expected"] != ""

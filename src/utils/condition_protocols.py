@@ -67,6 +67,7 @@ CODEX_LEGACY_RANDOM_SAME_WINDOW = {
     "condition_name": "random_same_autowindow",
     "attack_objective": None,  # Codex did NOT pass --attack_objective; falls back to config
     "attack_objective_raw_arg": None,  # what Codex passed on CLI (nothing)
+    "omit_attack_objective_cli_arg": True,  # driver MUST omit --attack_objective flag entirely
     "effective_attack_objective_expected": "targeted_directional_ce",  # config default fallback
     "requires_execution_audit": True,  # must verify effective objective in raw step_records
     "temporal_init": "prev_delta",
@@ -81,8 +82,10 @@ CODEX_LEGACY_RANDOM_SAME_WINDOW = {
     "is_oracle": False,
     "notes": (
         "Codex: 10 active steps, linf=0.10, SR=1.0. Not a clean-repeat control. "
-        "attack_objective=None means --attack_objective was NOT passed; "
-        "effective objective resolved to 'targeted_directional_ce' via config default."
+        "attack_objective=None + omit_attack_objective_cli_arg=True means "
+        "--attack_objective was NOT passed on CLI; effective objective resolved "
+        "to 'targeted_directional_ce' via config default. "
+        "Driver MUST NOT pass 'None' or empty string as --attack_objective value."
     ),
 }
 
@@ -114,6 +117,9 @@ CODEX_LEGACY_VIS_CURRENT_SAME_WINDOW = {
 CODEX_LEGACY_TARGETED_FORCE_GRIPPER_OPEN = {
     "condition_name": "best_VIS_gripper_targeted_stronger_same_autowindow",
     "attack_objective": "force_gripper_open_token_ce",
+    "attack_objective_raw_arg": "force_gripper_open_token_ce",  # what Codex passed on CLI
+    "effective_attack_objective_expected": "force_gripper_open_token_ce",  # direct match
+    "omit_attack_objective_cli_arg": False,  # this objective IS explicitly passed
     "temporal_init": "prev_delta",
     "force_open_raw_gripper": 1.0,
     "rho": 1.0,
@@ -144,6 +150,9 @@ COMMAND_OPEN_ORACLE_PROTOCOL = {
     "protocol_version": "1.0",
     "purpose": "upper_bound_command_layer_gripper_open",
     "attack_objective": "oracle_env_gripper_open",
+    "attack_objective_raw_arg": "oracle_env_gripper_open",  # what Codex passed on CLI
+    "effective_attack_objective_expected": "oracle_env_gripper_open",  # direct match
+    "omit_attack_objective_cli_arg": False,  # this objective IS explicitly passed
     "temporal_init": "prev_delta",
     "force_open_raw_gripper": 0.75,
     "rho": 1.0,  # MUST be >0 for oracle override to activate
