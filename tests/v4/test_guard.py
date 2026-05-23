@@ -1,6 +1,5 @@
 """Unit tests for guard_should_block_open()."""
 import numpy as np
-import pytest
 from v4_run_eval_openvla import guard_should_block_open
 
 
