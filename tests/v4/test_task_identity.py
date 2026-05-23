@@ -8,6 +8,7 @@ sys.path.insert(0, str(REPO))
 from src.utils.task_identity import (
     TASK_IDENTITY, RUNNER_TASK_ID, RUN_ID_TASK_KEY, TABLE1_TASK_KEY,
     DEPRECATED_DEEPSEEK_DRIFT_MATCHED_CONDITIONS,
+    make_run_id, make_clean_detect_run_id,
 )
 from src.utils.condition_protocols import (
     CLEAN_DETECT_PROTOCOL,
@@ -19,8 +20,6 @@ from src.utils.condition_protocols import (
     CODEX_LEGACY_VIS_CURRENT_SAME_WINDOW,
     DIAGNOSTIC_GRIPPER_MARGIN_PROTOCOL,
     DIAGNOSTIC_OPEN_REGION_CE_PROTOCOL,
-    make_run_id,
-    make_clean_detect_run_id,
 )
 
 
@@ -135,3 +134,49 @@ class TestDiagnosticProtocols:
 
     def test_open_region_ce_is_diagnostic(self):
         assert DIAGNOSTIC_OPEN_REGION_CE_PROTOCOL["attack_objective"] == "gripper_open_region_ce"
+
+
+class TestMakeRunIdImportsFromTaskIdentity:
+    """make_run_id / make_clean_detect_run_id are defined in task_identity,
+    NOT in condition_protocols.  Verify the import module is correct."""
+
+    def test_make_run_id_module(self):
+        assert make_run_id.__module__ == "src.utils.task_identity", \
+            f"make_run_id imported from {make_run_id.__module__}, expected src.utils.task_identity"
+
+    def test_make_clean_detect_run_id_module(self):
+        assert make_clean_detect_run_id.__module__ == "src.utils.task_identity", \
+            f"make_clean_detect_run_id imported from {make_clean_detect_run_id.__module__}, expected src.utils.task_identity"
+
+    def test_make_run_id_output(self):
+        rid = make_run_id("goal_put_the_bowl_on_the_plate", 5, 3, "clean_detect")
+        assert rid == "goal_put_the_bowl_on_the_plate_s5_r3_clean_detect"
+
+
+class TestDeprecatedMatchedConditionsFailFast:
+    """MATCHED_CONDITIONS / TRIAGE_MATCHED_CONDITIONS must fail fast,
+    not silently return wrong deprecated configs."""
+
+    def test_iter_raises(self):
+        import pytest
+        from src.utils.task_identity import MATCHED_CONDITIONS
+        with pytest.raises(RuntimeError, match="LEGACY_CODEX_STATE5"):
+            list(MATCHED_CONDITIONS)
+
+    def test_getitem_raises(self):
+        import pytest
+        from src.utils.task_identity import MATCHED_CONDITIONS
+        with pytest.raises(RuntimeError, match="LEGACY_CODEX_STATE5"):
+            _ = MATCHED_CONDITIONS[0]
+
+    def test_len_raises(self):
+        import pytest
+        from src.utils.task_identity import MATCHED_CONDITIONS
+        with pytest.raises(RuntimeError, match="LEGACY_CODEX_STATE5"):
+            len(MATCHED_CONDITIONS)
+
+    def test_triage_also_raises(self):
+        import pytest
+        from src.utils.task_identity import TRIAGE_MATCHED_CONDITIONS
+        with pytest.raises(RuntimeError, match="LEGACY_CODEX_STATE5"):
+            list(TRIAGE_MATCHED_CONDITIONS)

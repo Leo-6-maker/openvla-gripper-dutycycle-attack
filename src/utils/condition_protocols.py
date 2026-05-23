@@ -66,6 +66,9 @@ LEGACY_CODEX_STATE5_PROTOCOL = {
 CODEX_LEGACY_RANDOM_SAME_WINDOW = {
     "condition_name": "random_same_autowindow",
     "attack_objective": None,  # Codex did NOT pass --attack_objective; falls back to config
+    "attack_objective_raw_arg": None,  # what Codex passed on CLI (nothing)
+    "effective_attack_objective_expected": "targeted_directional_ce",  # config default fallback
+    "requires_execution_audit": True,  # must verify effective objective in raw step_records
     "temporal_init": "prev_delta",
     "force_open_raw_gripper": None,
     "rho": 1.0,
@@ -76,13 +79,20 @@ CODEX_LEGACY_RANDOM_SAME_WINDOW = {
     "is_attack": True,
     "is_control": False,
     "is_oracle": False,
-    "notes": "Codex: 10 active steps, linf=0.10, SR=1.0. Not a clean-repeat control.",
+    "notes": (
+        "Codex: 10 active steps, linf=0.10, SR=1.0. Not a clean-repeat control. "
+        "attack_objective=None means --attack_objective was NOT passed; "
+        "effective objective resolved to 'targeted_directional_ce' via config default."
+    ),
 }
 
 # VIS_current same-window condition (Codex legacy: actual attack with vis_current objective)
 CODEX_LEGACY_VIS_CURRENT_SAME_WINDOW = {
     "condition_name": "VIS_current_same_autowindow",
     "attack_objective": "vis_current",
+    "attack_objective_raw_arg": "vis_current",  # what Codex passed on CLI or via env
+    "effective_attack_objective_expected": "vis_current",  # confirmed in step_records audit
+    "requires_execution_audit": True,  # must verify effective objective in raw step_records
     "temporal_init": "prev_delta",
     "force_open_raw_gripper": None,
     "rho": 1.0,
@@ -93,7 +103,11 @@ CODEX_LEGACY_VIS_CURRENT_SAME_WINDOW = {
     "is_attack": True,
     "is_control": False,
     "is_oracle": False,
-    "notes": "Codex: 10 active steps, linf=2.12, SR=1.0. Same perturbation budget as targeted, different objective.",
+    "notes": (
+        "Codex: 10 active steps, linf=2.12, SR=1.0. "
+        "attack_objective='vis_current' — this is an actual attack, not a control. "
+        "Do NOT misinterpret as a no-attack baseline."
+    ),
 }
 
 # Targeted force-gripper-open token CE (Codex legacy: primary attack)

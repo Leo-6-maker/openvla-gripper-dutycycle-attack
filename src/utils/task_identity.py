@@ -127,10 +127,25 @@ DEPRECATED_DEEPSEEK_DRIFT_MATCHED_CONDITIONS = [
     },
 ]
 
-# DEPRECATED: alias kept only for backward compat with broken tests
-MATCHED_CONDITIONS = DEPRECATED_DEEPSEEK_DRIFT_MATCHED_CONDITIONS
-TRIAGE_MATCHED_CONDITIONS = DEPRECATED_DEEPSEEK_DRIFT_MATCHED_CONDITIONS
-OPTIONAL_CONDITION = DIAGNOSTIC_OPEN_REGION_CE_PROTOCOL
+# ── Fail-fast sentinel for deprecated condition aliases ──────────────────
+# MATCHED_CONDITIONS / TRIAGE_MATCHED_CONDITIONS previously returned wrong
+# deprecated configs (rho=0, wrong objectives).  Any attempt to iterate,
+# index, or len-check these names now raises RuntimeError pointing to the
+# correct replacement: condition_protocols.LEGACY_CODEX_STATE5_MATCHED_CONDITIONS.
+class _DeprecatedProtocolSentinel:
+    _msg = (
+        "MATCHED_CONDITIONS / TRIAGE_MATCHED_CONDITIONS are removed. "
+        "Use src.utils.condition_protocols.LEGACY_CODEX_STATE5_MATCHED_CONDITIONS instead."
+    )
+    def __iter__(self):       raise RuntimeError(self._msg)
+    def __getitem__(self, _): raise RuntimeError(self._msg)
+    def __len__(self):        raise RuntimeError(self._msg)
+    def __bool__(self):       raise RuntimeError(self._msg)
+    def __repr__(self):       return f"<DeprecatedProtocolSentinel: {self._msg}>"
+
+MATCHED_CONDITIONS        = _DeprecatedProtocolSentinel()
+TRIAGE_MATCHED_CONDITIONS = _DeprecatedProtocolSentinel()
+OPTIONAL_CONDITION = DIAGNOSTIC_OPEN_REGION_CE_PROTOCOL  # still valid
 
 
 def make_run_id(semantic_task_name, state_id, repeat_id, condition_name):
