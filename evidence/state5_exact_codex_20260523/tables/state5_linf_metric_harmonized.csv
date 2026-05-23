@@ -1,0 +1,5 @@
+condition,epsilon,measured_linf_pixel,measured_linf_normalized,perturbation_semantics,PGD_convergence,notes
+random_same_autowindow,0.10,2.1191,0.00831,random_direction,budget_saturated,"Random direction in pixel space. linf hits epsilon ceiling. No gripper-specific semantics."
+VIS_current_same_autowindow,0.10,2.1191,0.00831,vis_current_direction,budget_saturated,"Targets vis_current feature direction. linf hits epsilon ceiling. Different direction from random but same magnitude."
+targeted_force_gripper_open_token_ce,0.25,2.1191,0.00831,token_ce_targeted_gripper_open,below_budget,"Targets specific gripper-open token positions via CE loss. linf=2.12 is BELOW 0.25 budget — gradient focuses energy on semantically meaningful pixels rather than saturating budget."
+command_open_oracle,0.00,0.0000,0.00000,no_visual_perturbation,none,"No visual perturbation. Oracle operates at command layer via env override, not pixel space."

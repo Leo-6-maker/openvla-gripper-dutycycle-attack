@@ -1,0 +1,7 @@
+repeat_id,window_start,window_end,window_length,window_offset_from_clean_start,relative_phase,attack_SR,phase_classification,notes
+r0,62,71,10,62,pre_place_approach,0.0,attack_sensitive,Window captures carry-to-plate approach phase. Attack forces gripper-open during approach causing premature release.
+r1,62,71,10,62,pre_place_approach,0.0,attack_sensitive,Same window as r0. Consistent replication.
+r2,62,71,10,62,pre_place_approach,0.0,attack_sensitive,Same window as r0. Consistent replication.
+r13,65,74,10,65,pre_place_approach_shifted,1.0,phase_robust,Only 3 steps later than r0 window but task succeeds. Suggests phase boundary near step 65-74.
+r18,93,102,10,93,post_release_retract,0.0,attack_sensitive,"Much later window — post bowl-release. Attack forces gripper-open during retract phase. Task still fails, suggesting token-flip timing matters across full trajectory."
+r5,93,102,10,93,post_release_retract,N/A,quarantined,"Window inherited from r18. No independent clean baseline. Not classified."

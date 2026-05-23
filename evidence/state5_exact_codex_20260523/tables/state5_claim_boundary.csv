@@ -1,0 +1,17 @@
+claim_dimension,value,scope,status
+task,libero_spatial_black_bowl,LIBERO-Spatial single task,confirmed
+semantic_task,goal_put_the_bowl_on_the_plate,bowl-on-plate pick-place,confirmed
+suite,libero_spatial,LIBERO-Spatial only,confirmed
+state_id,5,Single state only (not full 10-state),confirmed
+mechanism_type,pick_place,Gripper release mechanism,confirmed
+grasp_type,gripper_release,Premature gripper open via token-CE attack,confirmed
+is_black_bowl_related,true,Primary black-bowl experiment,confirmed
+is_non_black_bowl_claim,false,NOT a non-BB candidate validation,confirmed
+is_full_table2,false,Only state5 confirmatory repeats (6 total),confirmed
+is_broad_benchmark,false,Single task single mechanism single state,confirmed
+is_true_nonbb_evidence,false,Requires separate non-BB candidate pilot,confirmed
+human_review_pending,true,Video review not yet complete,confirmed
+attack_objective,force_gripper_open_token_ce,Token-level CE targeting gripper-open tokens,verified
+protocol_version,exact_codex_r0r2,Matches Codex r0/r1/r2 raw step_records audit 2026-05-23,verified
+valid_eligible_repeats,5,Corrected denominator (r5 quarantined),corrected
+valid_pass_repeats,4,r0 r1 r2 r18,confirmed

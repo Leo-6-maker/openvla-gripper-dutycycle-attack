@@ -1,0 +1,15 @@
+repeat_id,condition,attack_objective,rho,seed,epsilon,step_size,attack_steps,force_open_raw_gripper,attack_active_steps,window_start,window_end,linf_max,l2_max,oracle_active,success,trigger_name,run_status
+r13,clean_detect,"",1.0,13,0.0,0.0,0,N/A,1,0,0,2.1191,284.0196,false,true,fixed_step_window_budgeted,done
+r13,random_same_autowindow,gripper_logit_margin_cw,1.0,13,0.10,0.020,20,N/A,10,65,74,2.1191,302.8314,false,true,fixed_step_window_budgeted,done
+r13,VIS_current_same_autowindow,gripper_logit_margin_cw,1.0,13,0.10,0.020,20,N/A,10,65,74,2.1191,302.7504,false,true,fixed_step_window_budgeted,done
+r13,targeted,force_gripper_open_token_ce,1.0,13,0.25,0.050,60,1.0,10,65,74,2.1191,308.0722,false,true,fixed_step_window_budgeted,done
+r13,command_open_0.75,oracle_env_gripper_open,1.0,13,0.00,0.000,1,0.75,8,65,72,0.0000,0.0000,true,true,fixed_step_window_budgeted,done
+r18,clean_detect,"",1.0,18,0.0,0.0,0,N/A,1,0,0,2.1191,284.0197,false,true,fixed_step_window_budgeted,done
+r18,random_same_autowindow,gripper_logit_margin_cw,1.0,18,0.10,0.020,20,N/A,10,93,102,2.1191,309.1069,false,true,fixed_step_window_budgeted,done
+r18,VIS_current_same_autowindow,gripper_logit_margin_cw,1.0,18,0.10,0.020,20,N/A,10,93,102,2.1191,309.1070,false,true,fixed_step_window_budgeted,done
+r18,targeted,force_gripper_open_token_ce,1.0,18,0.25,0.050,60,1.0,10,93,102,2.1191,315.9821,false,false,fixed_step_window_budgeted,done
+r18,command_open_0.75,oracle_env_gripper_open,1.0,18,0.00,0.000,1,0.75,10,93,102,0.0000,0.0000,true,false,fixed_step_window_budgeted,done
+r5,random_same_autowindow,gripper_logit_margin_cw,1.0,5,0.10,0.020,20,N/A,10,93,102,2.1191,309.1069,false,false,fixed_step_window_budgeted,done
+r5,VIS_current_same_autowindow,gripper_logit_margin_cw,1.0,5,0.10,0.020,20,N/A,10,93,102,2.1191,309.1070,false,true,fixed_step_window_budgeted,done
+r5,targeted,force_gripper_open_token_ce,1.0,5,0.25,0.050,60,1.0,10,93,102,2.1191,315.5554,false,true,fixed_step_window_budgeted,done
+r5,command_open_0.75,oracle_env_gripper_open,1.0,5,0.00,0.000,1,0.75,10,93,102,0.0000,0.0000,true,false,fixed_step_window_budgeted,done
