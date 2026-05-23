@@ -45,8 +45,22 @@ RUN_ID_TASK_KEY = TASK_IDENTITY["semantic_task_name"]
 TABLE1_TASK_KEY = TASK_IDENTITY["table1_task_key"]
 
 
-# --- Condition definitions (dict-based, avoids tuple-length bugs) ---
-MATCHED_CONDITIONS = [
+# --- Condition configs have moved to src/utils/condition_protocols.py ---
+# The MATCHED_CONDITIONS previously defined here did NOT match Codex r0/r1/r2 protocol.
+# See LEGACY_CODEX_STATE5_MATCHED_CONDITIONS in condition_protocols.py for the correct config.
+# Import for backward compatibility (deprecated, do not use for new experiments):
+from src.utils.condition_protocols import (
+    CLEAN_DETECT_PROTOCOL,
+    LEGACY_CODEX_STATE5_PROTOCOL,
+    LEGACY_CODEX_STATE5_MATCHED_CONDITIONS,
+    COMMAND_OPEN_ORACLE_PROTOCOL,
+    DIAGNOSTIC_GRIPPER_MARGIN_PROTOCOL,
+    DIAGNOSTIC_OPEN_REGION_CE_PROTOCOL,
+)
+
+# DEPRECATED: old MATCHED_CONDITIONS had wrong rho/objective/eps values.
+# Kept only for reference — do NOT use for confirmatory experiments.
+DEPRECATED_DEEPSEEK_DRIFT_MATCHED_CONDITIONS = [
     {
         "condition_name": "random_same_autowindow",
         "attack_objective": "random_noise",
@@ -59,6 +73,8 @@ MATCHED_CONDITIONS = [
         "attack_steps": 0,
         "is_attack": False,
         "is_control": True,
+        "deprecated": True,
+        "deprecation_reason": "rho=0 disables attack; Codex used rho=1.0 with actual perturbation (linf=0.10)",
     },
     {
         "condition_name": "VIS_current_same_autowindow",
@@ -72,6 +88,8 @@ MATCHED_CONDITIONS = [
         "attack_steps": 0,
         "is_attack": False,
         "is_control": True,
+        "deprecated": True,
+        "deprecation_reason": "rho=0 disables attack; Codex used rho=1.0 with vis_current objective (linf=2.12)",
     },
     {
         "condition_name": "best_VIS_gripper_targeted_stronger_same_autowindow",
@@ -85,6 +103,8 @@ MATCHED_CONDITIONS = [
         "attack_steps": 20,
         "is_attack": True,
         "is_control": False,
+        "deprecated": True,
+        "deprecation_reason": "Codex used force_gripper_open_token_ce (not margin), eps=0.25 (not 0.10), asteps=60 (not 20), fo=1.0",
     },
     {
         "condition_name": "command_open_0.75_same_autowindow",
@@ -102,90 +122,15 @@ MATCHED_CONDITIONS = [
             "V4_ORACLE_FORCE_GRIPPER_ENV_VALUE": "-1.0",
             "V4_ORACLE_GRIPPER_PATTERN": "continuous_open",
         },
+        "deprecated": True,
+        "deprecation_reason": "rho=0 DISABLES oracle override; rho must be >0. Codex used rho=1.0, eps=0.0, asteps=1.",
     },
 ]
 
-# Optional condition: VIS_gripper_open_region_ce_same_autowindow
-OPTIONAL_CONDITION = {
-    "condition_name": "VIS_gripper_open_region_ce_same_autowindow",
-    "attack_objective": "gripper_open_region_ce",
-    "temporal_init": "prev_delta",
-    "force_open_raw_gripper": None,
-    "rho": 1.0,
-    "cw_margin": None,
-    "epsilon": 0.10,
-    "step_size": 0.020,
-    "attack_steps": 20,
-    "is_attack": True,
-    "is_control": False,
-}
-
-# Queue B conditions (triage: fewer conditions)
-TRIAGE_MATCHED_CONDITIONS = [
-    {
-        "condition_name": "random_same_autowindow",
-        "attack_objective": "random_noise",
-        "temporal_init": "prev_delta",
-        "force_open_raw_gripper": None,
-        "rho": 0.0,
-        "cw_margin": None,
-        "epsilon": 0.10,
-        "step_size": 0.020,
-        "attack_steps": 0,
-    },
-    {
-        "condition_name": "command_open_0.75_same_autowindow",
-        "attack_objective": "oracle_env_gripper_open",
-        "temporal_init": "none",
-        "force_open_raw_gripper": 0.75,
-        "rho": 0.0,
-        "cw_margin": None,
-        "epsilon": 0.10,
-        "step_size": 0.020,
-        "attack_steps": 0,
-        "env_extra": {
-            "V4_ORACLE_FORCE_GRIPPER_ENV_VALUE": "-1.0",
-            "V4_ORACLE_GRIPPER_PATTERN": "continuous_open",
-        },
-    },
-    {
-        "condition_name": "command_open_1.00_same_autowindow",
-        "attack_objective": "oracle_env_gripper_open",
-        "temporal_init": "none",
-        "force_open_raw_gripper": 1.0,
-        "rho": 0.0,
-        "cw_margin": None,
-        "epsilon": 0.10,
-        "step_size": 0.020,
-        "attack_steps": 0,
-        "env_extra": {
-            "V4_ORACLE_FORCE_GRIPPER_ENV_VALUE": "-1.0",
-            "V4_ORACLE_GRIPPER_PATTERN": "continuous_open",
-        },
-    },
-    {
-        "condition_name": "VIS_current_same_autowindow",
-        "attack_objective": "vis_current",
-        "temporal_init": "prev_delta",
-        "force_open_raw_gripper": None,
-        "rho": 0.0,
-        "cw_margin": None,
-        "epsilon": 0.10,
-        "step_size": 0.020,
-        "attack_steps": 0,
-    },
-    {
-        "condition_name": "best_VIS_gripper_targeted_stronger_same_autowindow",
-        "attack_objective": "gripper_logit_margin_cw",
-        "temporal_init": "prev_delta",
-        "force_open_raw_gripper": None,
-        "rho": 1.0,
-        "cw_margin": 5.0,
-        "epsilon": 0.10,
-        "step_size": 0.020,
-        "attack_steps": 20,
-    },
-]
+# DEPRECATED: alias kept only for backward compat with broken tests
+MATCHED_CONDITIONS = DEPRECATED_DEEPSEEK_DRIFT_MATCHED_CONDITIONS
+TRIAGE_MATCHED_CONDITIONS = DEPRECATED_DEEPSEEK_DRIFT_MATCHED_CONDITIONS
+OPTIONAL_CONDITION = DIAGNOSTIC_OPEN_REGION_CE_PROTOCOL
 
 
 def make_run_id(semantic_task_name, state_id, repeat_id, condition_name):

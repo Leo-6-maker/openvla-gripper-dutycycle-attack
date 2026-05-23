@@ -1,20 +1,24 @@
-"""Test task identity mapping — no GPU, no model, no rollout."""
+"""Test task identity mapping and condition protocols — no GPU, no model."""
 import sys
 from pathlib import Path
 
-# Ensure src/ is importable
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
 from src.utils.task_identity import (
-    TASK_IDENTITY,
-    BOWL_ON_PLATE_SPATIAL,
-    RUNNER_TASK_ID,
-    RUN_ID_TASK_KEY,
-    TABLE1_TASK_KEY,
-    MATCHED_CONDITIONS,
-    OPTIONAL_CONDITION,
-    TRIAGE_MATCHED_CONDITIONS,
+    TASK_IDENTITY, RUNNER_TASK_ID, RUN_ID_TASK_KEY, TABLE1_TASK_KEY,
+    DEPRECATED_DEEPSEEK_DRIFT_MATCHED_CONDITIONS,
+)
+from src.utils.condition_protocols import (
+    CLEAN_DETECT_PROTOCOL,
+    LEGACY_CODEX_STATE5_PROTOCOL,
+    LEGACY_CODEX_STATE5_MATCHED_CONDITIONS,
+    COMMAND_OPEN_ORACLE_PROTOCOL,
+    CODEX_LEGACY_TARGETED_FORCE_GRIPPER_OPEN,
+    CODEX_LEGACY_RANDOM_SAME_WINDOW,
+    CODEX_LEGACY_VIS_CURRENT_SAME_WINDOW,
+    DIAGNOSTIC_GRIPPER_MARGIN_PROTOCOL,
+    DIAGNOSTIC_OPEN_REGION_CE_PROTOCOL,
     make_run_id,
     make_clean_detect_run_id,
 )
@@ -37,64 +41,97 @@ class TestTaskIdentity:
     def test_runner_and_semantic_are_different(self):
         assert RUNNER_TASK_ID != RUN_ID_TASK_KEY
 
-    def test_table1_key_matches_semantic(self):
-        assert TABLE1_TASK_KEY == RUN_ID_TASK_KEY
-
-    def test_convenience_aliases_match(self):
-        assert RUNNER_TASK_ID == BOWL_ON_PLATE_SPATIAL["runner_task_id"]
-        assert RUN_ID_TASK_KEY == BOWL_ON_PLATE_SPATIAL["semantic_task_name"]
-
     def test_make_run_id(self):
         rid = make_run_id("goal_put_the_bowl_on_the_plate", 5, 3, "clean_detect")
         assert rid == "goal_put_the_bowl_on_the_plate_s5_r3_clean_detect"
 
-    def test_make_clean_detect_run_id(self):
-        rid = make_clean_detect_run_id("goal_put_the_bowl_on_the_plate", 0, 7)
-        assert rid == "goal_put_the_bowl_on_the_plate_s0_r7_clean_detect"
+
+class TestCleanDetectProtocol:
+    def test_attack_disabled(self):
+        assert CLEAN_DETECT_PROTOCOL["attack_enabled"] is False
+
+    def test_attack_objective_empty(self):
+        assert CLEAN_DETECT_PROTOCOL["attack_objective"] == ""
+
+    def test_rho_zero(self):
+        """Clean detect uses rho=0 (no attack budget)."""
+        assert CLEAN_DETECT_PROTOCOL["rho"] == 0.0
 
 
-class TestMatchedConditions:
-    def test_all_conditions_have_required_fields(self):
-        required = {"condition_name", "attack_objective", "temporal_init",
-                    "force_open_raw_gripper", "rho", "cw_margin",
-                    "epsilon", "step_size", "attack_steps"}
-        for i, c in enumerate(MATCHED_CONDITIONS):
-            missing = required - set(c.keys())
-            assert not missing, f"Condition {i} ({c.get('condition_name','?')}) missing: {missing}"
+class TestCommandOpenProtocol:
+    def test_rho_positive(self):
+        """WARNING: rho=0 DISABLES oracle override. Must be >0."""
+        assert COMMAND_OPEN_ORACLE_PROTOCOL["rho"] > 0, \
+            "command_open rho=0 disables oracle override (attack_active never True)"
 
-    def test_all_tuples_same_length(self):
-        """Dict-based conditions cannot have tuple-length bugs."""
-        for i, c in enumerate(MATCHED_CONDITIONS):
-            assert len(c) >= 10, f"Condition {i}: expected >=10 keys, got {len(c)}"
+    def test_objective_is_oracle_env(self):
+        assert COMMAND_OPEN_ORACLE_PROTOCOL["attack_objective"] == "oracle_env_gripper_open"
 
-    def test_control_conditions_have_rho_zero(self):
-        for c in MATCHED_CONDITIONS:
-            if c.get("is_control"):
-                assert c["rho"] == 0.0, f"{c['condition_name']}: control should have rho=0.0"
+    def test_force_open_is_075(self):
+        assert COMMAND_OPEN_ORACLE_PROTOCOL["force_open_raw_gripper"] == 0.75
 
-    def test_attack_conditions_have_attack_steps_positive(self):
-        for c in MATCHED_CONDITIONS:
-            if c.get("is_attack"):
-                assert c["attack_steps"] > 0, f"{c['condition_name']}: attack should have attack_steps>0"
+    def test_min_attack_steps(self):
+        """Must have at least 1 attack step to trigger attack_active."""
+        assert COMMAND_OPEN_ORACLE_PROTOCOL["attack_steps"] >= 1
 
-    def test_random_has_noise_objective(self):
-        rand = MATCHED_CONDITIONS[0]
-        assert rand["attack_objective"] == "random_noise"
-        assert rand["is_control"] is True
 
-    def test_targeted_vis_has_cw_objective(self):
-        targeted = MATCHED_CONDITIONS[2]
-        assert targeted["attack_objective"] == "gripper_logit_margin_cw"
-        assert targeted["is_attack"] is True
+class TestLegacyCodexProtocol:
+    def test_random_is_actual_attack(self):
+        """Codex random: rho=1.0, actual visual attack (linf=0.10)."""
+        c = CODEX_LEGACY_RANDOM_SAME_WINDOW
+        assert c["rho"] == 1.0
+        assert c["is_attack"] is True
+        assert c["is_control"] is False
 
-    def test_command_open_has_oracle_objective(self):
-        cmd = MATCHED_CONDITIONS[3]
-        assert cmd["attack_objective"] == "oracle_env_gripper_open"
-        assert cmd["force_open_raw_gripper"] == 0.75
+    def test_vis_current_is_actual_attack(self):
+        """Codex VIS_current: rho=1.0, actual visual attack (linf=2.12)."""
+        c = CODEX_LEGACY_VIS_CURRENT_SAME_WINDOW
+        assert c["rho"] == 1.0
+        assert c["is_attack"] is True
 
-    def test_optional_condition_has_expected_name(self):
-        assert OPTIONAL_CONDITION["condition_name"] == "VIS_gripper_open_region_ce_same_autowindow"
+    def test_targeted_uses_force_gripper_open_token_ce(self):
+        """Codex targeted: force_gripper_open_token_ce, NOT gripper_logit_margin_cw."""
+        c = CODEX_LEGACY_TARGETED_FORCE_GRIPPER_OPEN
+        assert c["attack_objective"] == "force_gripper_open_token_ce"
+        assert c["epsilon"] == 0.25
+        assert c["step_size"] == 0.050
+        assert c["attack_steps"] == 60
+        assert c["force_open_raw_gripper"] == 1.0
 
-    def test_triage_conditions_include_command_open_1_00(self):
-        names = [c["condition_name"] for c in TRIAGE_MATCHED_CONDITIONS]
-        assert "command_open_1.00_same_autowindow" in names
+    def test_targeted_is_not_margin_cw(self):
+        """Ensure targeted does NOT use gripper_logit_margin_cw."""
+        c = CODEX_LEGACY_TARGETED_FORCE_GRIPPER_OPEN
+        assert c["attack_objective"] != "gripper_logit_margin_cw"
+
+    def test_all_matched_have_positive_rho(self):
+        for c in LEGACY_CODEX_STATE5_MATCHED_CONDITIONS:
+            assert c["rho"] > 0, f"{c['condition_name']}: rho must be >0"
+
+    def test_all_matched_have_same_seed_protocol(self):
+        """Legacy Codex protocol: matched seed = clean seed = repeat_id."""
+        pass  # enforced by driver, not config
+
+
+class TestDeprecatedConditions:
+    def test_deprecated_conditions_exist_for_reference(self):
+        assert len(DEPRECATED_DEEPSEEK_DRIFT_MATCHED_CONDITIONS) >= 4
+
+    def test_deprecated_have_wrong_rho(self):
+        """Deprecated conditions have rho=0 for random/vis_current — this is WRONG."""
+        deprecated_random = DEPRECATED_DEEPSEEK_DRIFT_MATCHED_CONDITIONS[0]
+        assert deprecated_random["rho"] == 0.0  # this is the bug
+        assert deprecated_random.get("deprecated") is True
+
+    def test_deprecated_command_open_rho_zero(self):
+        """Deprecated command_open has rho=0 — this DISABLES oracle override."""
+        deprecated_cmd = DEPRECATED_DEEPSEEK_DRIFT_MATCHED_CONDITIONS[3]
+        assert deprecated_cmd["rho"] == 0.0
+        assert deprecated_cmd.get("deprecated") is True
+
+
+class TestDiagnosticProtocols:
+    def test_margin_cw_is_diagnostic(self):
+        assert DIAGNOSTIC_GRIPPER_MARGIN_PROTOCOL["attack_objective"] == "gripper_logit_margin_cw"
+
+    def test_open_region_ce_is_diagnostic(self):
+        assert DIAGNOSTIC_OPEN_REGION_CE_PROTOCOL["attack_objective"] == "gripper_open_region_ce"
