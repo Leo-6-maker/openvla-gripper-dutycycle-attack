@@ -24,6 +24,9 @@ CLEAN_DETECT_PROTOCOL = {
     "purpose": "clean_baseline_and_autowindow",
     "attack_enabled": False,
     "attack_objective": "",
+    "attack_objective_raw_arg": "",  # empty string passed to suppress config default
+    "effective_attack_objective_expected": "",  # no attack, no objective fallback
+    "omit_attack_objective_cli_arg": False,  # explicitly pass empty string
     "temporal_init": "",
     "rho": 0.0,
     "epsilon": 0.0,

@@ -176,3 +176,41 @@ def validate_condition_config_schema(protocol):
             raise ProtocolValidationError(
                 f"{name}: Codex targeted must have attack_steps=60"
             )
+
+
+def validate_clean_detect_protocol(protocol):
+    """Clean detect protocol must have attack disabled and rho=0.
+
+    Clean detect is the baseline for autowindow detection. Any deviation
+    from these invariants means the clean trajectory is contaminated.
+    """
+    if protocol.get("attack_enabled") is not False:
+        raise ProtocolValidationError(
+            f"clean_detect must have attack_enabled=False, "
+            f"got {protocol.get('attack_enabled')}"
+        )
+    if protocol.get("attack_objective") != "":
+        raise ProtocolValidationError(
+            f"clean_detect must have attack_objective='' (empty string to suppress "
+            f"config default fallback), got {protocol.get('attack_objective')!r}"
+        )
+    if protocol.get("rho", 0) != 0.0:
+        raise ProtocolValidationError(
+            f"clean_detect must have rho=0.0 (no attack budget), "
+            f"got {protocol.get('rho')}"
+        )
+    if protocol.get("attack_steps", 0) != 0:
+        raise ProtocolValidationError(
+            f"clean_detect must have attack_steps=0, "
+            f"got {protocol.get('attack_steps')}"
+        )
+    if protocol.get("is_attack") is not False:
+        raise ProtocolValidationError(
+            f"clean_detect must have is_attack=False, "
+            f"got {protocol.get('is_attack')}"
+        )
+    if protocol.get("is_oracle", False) is not False:
+        raise ProtocolValidationError(
+            f"clean_detect must have is_oracle=False, "
+            f"got {protocol.get('is_oracle')}"
+        )
