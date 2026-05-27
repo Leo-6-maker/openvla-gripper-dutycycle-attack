@@ -170,12 +170,7 @@ def load_prompt_variants(path: str, *, base_instruction: str, args=None) -> list
     return [normalize(dict(row), i) for i, row in enumerate(rows)]
 
 def _pil_center_crop_resize(image: Image.Image, crop_scale: float = 0.9, size: int = 224) -> Image.Image:
-    """Approximate official OpenVLA center crop using PIL only.
-
-    Official OpenVLA uses TensorFlow crop_and_resize with sqrt(crop_scale) on
-    both axes.  PIL is sufficient here and avoids introducing a hard TF runtime
-    dependency in the rollout worker.
-    """
+    """Fallback center crop used only when official preprocessing is disabled."""
     if crop_scale is None or float(crop_scale) >= 0.999:
         return image.resize((size, size), Image.Resampling.LANCZOS)
     w, h = image.size
@@ -186,25 +181,99 @@ def _pil_center_crop_resize(image: Image.Image, crop_scale: float = 0.9, size: i
     return image.resize((size, size), Image.Resampling.LANCZOS)
 
 
-def prepare_openvla_image(image_np, *, libero_official_preprocess: bool = False, center_crop: bool = False, resize_size: int = 224) -> Image.Image:
-    """Prepare a LIBERO observation image for OpenVLA inference.
+def _official_pil_libero_image(image_np, *, center_crop: bool = False, resize_size: int = 224) -> Image.Image:
+    """Official OpenVLA LIBERO image path (PIL): rotate 180, Lanczos resize, Lanczos center crop.
 
-    Matches the official LIBERO/OpenVLA eval path when
-    ``libero_official_preprocess`` is enabled: rotate the agentview image by
-    180 degrees, resize to the OpenVLA input size, then optionally center-crop
-    with crop_scale=0.9 and resize back.
+    Matches the corrected official OpenVLA eval script exactly:
+    - Rotate agentview 180 degrees
+    - PIL LANCZOS resize to resize_size
+    - Optional center crop (0.9 scale) → PIL LANCZOS resize back
+    - NO JPEG round-trip, NO TensorFlow dependency
     """
     arr = np.asarray(image_np)
     if arr.dtype != np.uint8:
         arr = np.clip(arr, 0, 255).astype(np.uint8)
-    if libero_official_preprocess:
-        arr = arr[::-1, ::-1]
+    arr = arr[::-1, ::-1]  # rotate 180 degrees
     image = Image.fromarray(arr).convert("RGB")
-    if libero_official_preprocess:
-        image = image.resize((int(resize_size), int(resize_size)), Image.Resampling.LANCZOS)
+    image = image.resize((int(resize_size), int(resize_size)), Image.LANCZOS)
     if center_crop:
-        image = _pil_center_crop_resize(image, crop_scale=0.9, size=int(resize_size))
+        crop_scale = 0.9 ** 0.5
+        w, h = image.size
+        cw, ch = max(1, int(w * crop_scale)), max(1, int(h * crop_scale))
+        left, top = (w - cw) // 2, (h - ch) // 2
+        image = image.crop((left, top, left + cw, top + ch))
+        image = image.resize((int(resize_size), int(resize_size)), Image.LANCZOS)
     return image
+
+
+def _official_tf_libero_image(image_np, *, center_crop: bool = False, resize_size: int = 224) -> Image.Image:
+    """Official OpenVLA LIBERO image path: rotate, JPEG round-trip, TF Lanczos3.
+
+    This intentionally requires TensorFlow instead of silently using the older
+    PIL approximation when ``--libero_official_preprocess`` is requested.
+    """
+    try:
+        import tensorflow as tf
+    except Exception as exc:
+        raise SystemExit(
+            "--libero_official_preprocess now requires TensorFlow for official "
+            f"LIBERO preprocessing; import failed: {exc}"
+        )
+    arr = np.asarray(image_np)
+    if arr.dtype != np.uint8:
+        arr = np.clip(arr, 0, 255).astype(np.uint8)
+    arr = arr[::-1, ::-1]
+    tensor = tf.convert_to_tensor(arr)
+    tensor = tf.io.decode_image(tf.io.encode_jpeg(tensor), expand_animations=False, dtype=tf.uint8)
+    tensor = tf.image.resize(tensor, [int(resize_size), int(resize_size)], method="lanczos3", antialias=True)
+    if center_crop:
+        crop_scale = 0.9 ** 0.5
+        box = [[
+            (1.0 - crop_scale) / 2.0,
+            (1.0 - crop_scale) / 2.0,
+            (1.0 + crop_scale) / 2.0,
+            (1.0 + crop_scale) / 2.0,
+        ]]
+        tensor = tf.image.crop_and_resize(
+            tf.expand_dims(tensor, axis=0),
+            boxes=tf.convert_to_tensor(box, dtype=tf.float32),
+            box_indices=tf.convert_to_tensor([0], dtype=tf.int32),
+            crop_size=[int(resize_size), int(resize_size)],
+            method="bilinear",
+        )[0]
+    tensor = tf.cast(tf.clip_by_value(tf.round(tensor), 0, 255), tf.uint8)
+    return Image.fromarray(tensor.numpy()).convert("RGB")
+
+
+def prepare_openvla_image(image_np, *, libero_official_preprocess: bool = False, center_crop: bool = False, resize_size: int = 224, libero_preprocess_backend: str = "official_pil_lanczos") -> Image.Image:
+    """Prepare a LIBERO observation image for OpenVLA inference.
+
+    Backends:
+      - official_pil_lanczos (default): rotate 180, PIL Lanczos resize, Lanczos center crop.
+        Matches the corrected official OpenVLA eval script. No TensorFlow dependency.
+      - tf_jpeg_legacy: rotate 180, JPEG round-trip, TF Lanczos3 resize, TF bilinear crop.
+        Legacy backend requiring TensorFlow. Known to produce +9 lower Object SR.
+
+    When ``libero_official_preprocess`` is True (legacy flag), uses tf_jpeg_legacy.
+    The ``libero_preprocess_backend`` flag takes precedence over the legacy boolean.
+    """
+    backend = str(libero_preprocess_backend or "official_pil_lanczos")
+    # Legacy boolean flag overrides to tf_jpeg_legacy for backward compat
+    if libero_official_preprocess and backend == "official_pil_lanczos":
+        backend = "tf_jpeg_legacy"
+
+    if backend == "official_pil_lanczos":
+        return _official_pil_libero_image(image_np, center_crop=center_crop, resize_size=int(resize_size))
+    elif backend == "tf_jpeg_legacy":
+        return _official_tf_libero_image(image_np, center_crop=center_crop, resize_size=int(resize_size))
+    else:
+        arr = np.asarray(image_np)
+        if arr.dtype != np.uint8:
+            arr = np.clip(arr, 0, 255).astype(np.uint8)
+        image = Image.fromarray(arr).convert("RGB")
+        if center_crop:
+            image = _pil_center_crop_resize(image, crop_scale=0.9, size=int(resize_size))
+        return image
 
 
 def normalize_gripper_action(action, binarize: bool = True):
@@ -550,13 +619,14 @@ def load_model(model_path, model_gpu_device_id: int = -1):
             "max_memory": {int(model_gpu_device_id): mm, "cpu": "128GiB"},
         }
         mode = "single_visible_gpu"
+    attn_impl = os.environ.get("OPENVLA_ATTN_IMPLEMENTATION", "flash_attention_2").strip() or "flash_attention_2"
     model=AutoModelCls.from_pretrained(
         model_path,
         trust_remote_code=True,
         local_files_only=True,
-        torch_dtype=torch.float16,
+        torch_dtype=torch.bfloat16,
         low_cpu_mem_usage=True,
-        attn_implementation="eager",
+        attn_implementation=attn_impl,
         **extra_kw,
     )
     dev = "cuda:0"
@@ -570,14 +640,43 @@ def load_model(model_path, model_gpu_device_id: int = -1):
                 break
     print(
         f"[model] loaded path={model_path} mode={mode} primary_device={dev} render_device=cuda:{os.environ.get('OPENVLA_RENDER_LOCAL_DEVICE','0')} "
-        f"CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES','')} OPENVLA_CUDA_MAX_MEMORY={mm} "
+        f"CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES','')} OPENVLA_CUDA_MAX_MEMORY={mm} attn_implementation={attn_impl} "
         f"hf_device_map={getattr(model, 'hf_device_map', {})}",
         flush=True,
     )
     return model, processor, dev
 
-def decode_with_scores(model, processor, device, image_np, instruction, unnorm_key, k, *, libero_official_preprocess=False, center_crop=False, resize_size=224, drop_attention_mask=True):
-    image=prepare_openvla_image(image_np, libero_official_preprocess=libero_official_preprocess, center_crop=center_crop, resize_size=resize_size)
+
+def resolve_unnorm_key(args, task, model) -> str:
+    """Official LIBERO eval uses the suite name as the unnormalization key."""
+    keys = list(getattr(model, "norm_stats", {}).keys())
+    expected = str(task.get("suite", "") or getattr(args, "unnorm_key", ""))
+    if expected not in keys and f"{expected}_no_noops" in keys:
+        expected = f"{expected}_no_noops"
+    if expected not in keys:
+        raise SystemExit(
+            f"Official LIBERO eval requires unnorm_key={task.get('suite')} in model.norm_stats; "
+            f"available keys={keys}"
+        )
+    requested = str(getattr(args, "unnorm_key", expected) or expected)
+    if requested not in (expected, str(task.get("suite", ""))):
+        raise SystemExit(
+            f"Refusing silent unnorm fallback: requested {requested!r}, official key is {expected!r}"
+        )
+    return expected
+
+def _model_float_dtype(model):
+    dtype = getattr(model, "dtype", None)
+    if dtype is not None:
+        return dtype
+    try:
+        return next(model.parameters()).dtype
+    except StopIteration:
+        return torch.float32
+
+
+def decode_with_scores(model, processor, device, image_np, instruction, unnorm_key, k, *, libero_official_preprocess=False, center_crop=False, resize_size=224, drop_attention_mask=True, libero_preprocess_backend="official_pil_lanczos"):
+    image=prepare_openvla_image(image_np, libero_official_preprocess=libero_official_preprocess, center_crop=center_crop, resize_size=resize_size, libero_preprocess_backend=libero_preprocess_backend)
     inputs=processor(prompt(str(instruction).lower()), image, return_tensors="pt")
     if drop_attention_mask:
         # OpenVLA's Prismatic generation code inserts visual tokens internally.
@@ -587,7 +686,7 @@ def decode_with_scores(model, processor, device, image_np, instruction, unnorm_k
         # without attention_mask, so V4 uses that path by default.
         inputs.pop("attention_mask", None)
     for key,val in list(inputs.items()):
-        if torch.is_floating_point(val): inputs[key]=val.to(device=device, dtype=torch.float16)
+        if torch.is_floating_point(val): inputs[key]=val.to(device=device, dtype=_model_float_dtype(model))
         else: inputs[key]=val.to(device=device)
     input_ids=inputs.get("input_ids")
     if input_ids is not None and not torch.all(input_ids[:, -1] == 29871):
@@ -613,7 +712,7 @@ def decode_prepared_inputs_with_scores(model, device, prepared_inputs, unnorm_ke
     for key, val in list(inputs.items()):
         if torch.is_tensor(val):
             if torch.is_floating_point(val):
-                inputs[key] = val.to(device=device, dtype=torch.float16)
+                inputs[key] = val.to(device=device, dtype=_model_float_dtype(model))
             else:
                 inputs[key] = val.to(device=device)
     input_ids = inputs.get("input_ids")
@@ -697,7 +796,22 @@ def write_progress_stub(args, task, run_id, out, max_steps, model_path, status="
 
 
 def build_run_manifest(args,cfg,task,run_id,step_path,ep_path,summary_path,model_path,max_steps,status="done",error=""):
-    manifest={"version":"v4","run_id":run_id,"created_at":time.strftime("%Y-%m-%dT%H:%M:%S"),"host":socket.gethostname(),"user":getpass.getuser(),"cwd":os.getcwd(),"command":" ".join(sys.argv),"code_git_commit":"unknown","code_dirty":"unknown","config_hash":sha256_jsonable(cfg),"attack_config_path":args.attack_config,"tasks_config_path":args.tasks_config,"directions_config_path":args.directions_config,"thresholds_path":args.thresholds or "","model_id":cfg.get("victim","openvla_7b"),"model_checkpoint_path":model_path,"dataset_manifest_hash":"","task_id":task["task_id"],"suite":task["suite"],"seed":args.seed,"trigger_name":args.trigger,"rho":args.rho,"episodes":args.episodes,"max_steps":max_steps,"output_files":{"steps":str(step_path),"episodes":str(ep_path),"summary":str(summary_path)},"status":status,"error":error,"cuda_visible_devices":os.environ.get("CUDA_VISIBLE_DEVICES", ""),"render_gpu_device_id":int(args.render_gpu_device_id),"model_gpu_device_id":int(args.model_gpu_device_id),"attack_objective":effective_attack_objective(args,cfg),"force_open_raw_gripper":float(getattr(args,"force_open_raw_gripper",0.0)),"grasp_gate_dist_threshold":float(getattr(args,"grasp_gate_dist",0.10)),**matched_provenance(args)}
+    manifest={"version":"v4","run_id":run_id,"created_at":time.strftime("%Y-%m-%dT%H:%M:%S"),"host":socket.gethostname(),"user":getpass.getuser(),"cwd":os.getcwd(),"command":" ".join(sys.argv),"code_git_commit":"unknown","code_dirty":"unknown","config_hash":sha256_jsonable(cfg),"attack_config_path":args.attack_config,"tasks_config_path":args.tasks_config,"directions_config_path":args.directions_config,"thresholds_path":args.thresholds or "","model_id":cfg.get("victim","openvla_7b"),"model_checkpoint_path":model_path,"dataset_manifest_hash":"","task_id":task["task_id"],"suite":task["suite"],"seed":args.seed,"trigger_name":args.trigger,"rho":args.rho,"episodes":args.episodes,"max_steps":max_steps,"output_files":{"steps":str(step_path),"episodes":str(ep_path),"summary":str(summary_path)},"status":status,"error":error,"cuda_visible_devices":os.environ.get("CUDA_VISIBLE_DEVICES", ""),"render_gpu_device_id":int(args.render_gpu_device_id),"model_gpu_device_id":int(args.model_gpu_device_id),"attack_objective":effective_attack_objective(args,cfg),"force_open_raw_gripper":float(getattr(args,"force_open_raw_gripper",0.0)),"grasp_gate_dist_threshold":float(getattr(args,"grasp_gate_dist",0.10)),
+        "preprocess_backend": str(getattr(args, "libero_preprocess_backend", "official_pil_lanczos")),
+        "resize_interpolation": "LANCZOS" if str(getattr(args, "libero_preprocess_backend", "official_pil_lanczos")) == "official_pil_lanczos" else "lanczos3" if str(getattr(args, "libero_preprocess_backend", "official_pil_lanczos")) == "tf_jpeg_legacy" else "LANCZOS",
+        "uses_jpeg_roundtrip": str(getattr(args, "libero_preprocess_backend", "official_pil_lanczos")) == "tf_jpeg_legacy",
+        "center_crop": bool(args.center_crop),
+        "rotate_180": True,
+        "prompt_format": "In: What action should the robot take to {task}?\nOut:",
+        "eos_token_handling": "add_if_missing_29871",
+        "model_inference_path": "model.generate()",
+        "python_executable": sys.executable,
+        "transformers_version": str(transformers.__version__) if hasattr(transformers, "__version__") else "unknown",
+        "tokenizers_version": str(tokenizers.__version__) if hasattr(tokenizers, "__version__") else "unknown",
+        "torch_version": str(torch.__version__) if hasattr(torch, "__version__") else "unknown",
+        "mujoco_version": "",
+        "robosuite_version": "",
+        **matched_provenance(args)}
     manifest.update({
         "instruction_override": str(getattr(args, "instruction_override", "") or ""),
         "instruction_suffix": str(getattr(args, "instruction_suffix", "") or ""),
@@ -832,14 +946,13 @@ def run_offline_prompt_audit(args, task, cfg, direction, thresholds):
     if args.auto_patch_compat:
         patch_openvla(Path(args.base_model_code_dir), Path(model_path))
     model,processor,device=load_model(model_path, model_gpu_device_id=int(args.model_gpu_device_id))
-    keys=list(getattr(model,"norm_stats",{}).keys())
-    unnorm=args.unnorm_key if args.unnorm_key in keys else (task.get("default_unnorm_key") if task.get("default_unnorm_key") in keys else (keys[0] if keys else args.unnorm_key))
+    unnorm=resolve_unnorm_key(args, task, model)
     bench=get_benchmark(task["suite"])()
     idx=resolve_task_index(bench,task["task_name"])
     base_instruction=get_instruction(bench,idx,task["task_name"])
     variants=load_prompt_variants(args.prompt_variants_path, base_instruction=base_instruction, args=args)
     init_states=bench.get_task_init_states(idx)
-    env=OffScreenRenderEnv(bddl_file_name=bench.get_task_bddl_file_path(idx),camera_heights=int(args.image_size),camera_widths=int(args.image_size),render_gpu_device_id=args.render_gpu_device_id,horizon=int(args.max_steps_override or task["max_steps"]))
+    env=OffScreenRenderEnv(bddl_file_name=bench.get_task_bddl_file_path(idx),camera_heights=int(args.image_size),camera_widths=int(args.image_size),render_gpu_device_id=args.render_gpu_device_id,horizon=int(args.max_steps_override or task["max_steps"])+int(args.num_steps_wait))
     try:
         env.seed(0)
     except Exception:
@@ -944,10 +1057,10 @@ def run_real(args, task, cfg, direction, thresholds):
     out=Path(args.output_root)/run_id; step_path=out/"step_records.jsonl"; ep_path=out/"episode_records.jsonl"; max_steps=int(args.max_steps_override or task["max_steps"]); all_steps=[]; episodes=[]; rng=np.random.RandomState(args.seed)
     write_progress_stub(args, task, run_id, out, max_steps, model_path, status="starting")
     if args.auto_patch_compat: patch_openvla(Path(args.base_model_code_dir), Path(model_path))
-    model,processor,device=load_model(model_path, model_gpu_device_id=int(args.model_gpu_device_id)); keys=list(getattr(model,"norm_stats",{}).keys()); unnorm=args.unnorm_key if args.unnorm_key in keys else (task.get("default_unnorm_key") if task.get("default_unnorm_key") in keys else (keys[0] if keys else args.unnorm_key))
+    model,processor,device=load_model(model_path, model_gpu_device_id=int(args.model_gpu_device_id)); unnorm=resolve_unnorm_key(args, task, model)
     action_stats=model.get_action_stats(unnorm); action_low=np.asarray(action_stats["q01"],dtype=np.float32); action_high=np.asarray(action_stats["q99"],dtype=np.float32); nad_dims=cfg.get("directional_target",{}).get("dims", list(range(len(action_low))))
     bench=get_benchmark(task["suite"])(); idx=resolve_task_index(bench,task["task_name"]); base_instruction=get_instruction(bench,idx,task["task_name"]); instruction,prompt_meta=resolve_instruction_for_run(args, base_instruction); init_states=bench.get_task_init_states(idx)
-    env=OffScreenRenderEnv(bddl_file_name=bench.get_task_bddl_file_path(idx),camera_heights=int(args.image_size),camera_widths=int(args.image_size),render_gpu_device_id=args.render_gpu_device_id,horizon=int(args.max_steps_override or task["max_steps"]))
+    env=OffScreenRenderEnv(bddl_file_name=bench.get_task_bddl_file_path(idx),camera_heights=int(args.image_size),camera_widths=int(args.image_size),render_gpu_device_id=args.render_gpu_device_id,horizon=int(args.max_steps_override or task["max_steps"])+int(args.num_steps_wait))
     try:
         env.seed(0)
     except Exception:
@@ -1192,7 +1305,8 @@ def run_real(args, task, cfg, direction, thresholds):
     print("[ok] v4 real run ->", out, flush=True)
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument("--tasks_config",default="configs/v4_tasks_libero.yaml"); ap.add_argument("--attack_config",default="configs/v4_attack.yaml"); ap.add_argument("--directions_config",default="configs/v4_directions.yaml"); ap.add_argument("--thresholds",default=""); ap.add_argument("--task_id",required=True); ap.add_argument("--trigger",required=True); ap.add_argument("--rho",type=float,default=0.0); ap.add_argument("--seed",type=int,default=0); ap.add_argument("--episodes",type=int,default=1); ap.add_argument("--max_steps_override",type=int,default=0); ap.add_argument("--output_root",default="outputs/v4/smoke"); ap.add_argument("--run_id",default=""); ap.add_argument("--dry_run",action="store_true"); ap.add_argument("--model_path",default=""); ap.add_argument("--base_model_code_dir",default="${OPENVLA_BASE_MODEL_DIR}"); ap.add_argument("--unnorm_key",default="libero_goal"); ap.add_argument("--camera_obs_key",default="agentview_image"); ap.add_argument("--render_gpu_device_id",type=int,default=0); ap.add_argument("--model_gpu_device_id",type=int,default=-1,help="CUDA-visible local GPU index for model inference; default chooses a non-render GPU when available"); ap.add_argument("--grasp_gate_dist",type=float,default=0.10,help="Privileged grasp gate eef-bowl distance threshold in meters"); ap.add_argument("--attack_objective",default="",help="Override attack_optimizer.objective for this run, e.g. force_gripper_open_token_ce"); ap.add_argument("--epsilon",type=float,default=None,help="Override attack_optimizer.epsilon for reproducibility entrypoints"); ap.add_argument("--step_size",type=float,default=None,help="Override attack_optimizer.step_size for reproducibility entrypoints"); ap.add_argument("--attack_steps",type=int,default=None,help="Override attack_optimizer.num_steps for reproducibility entrypoints"); ap.add_argument("--temporal_init",default="",help="Override attack_optimizer.temporal_init, e.g. prev_delta or none"); ap.add_argument("--cw_margin",type=float,default=None,help="Override attack_optimizer.cw_margin for gripper-logit margin objectives"); ap.add_argument("--force_open_raw_gripper",type=float,default=0.0,help="Raw OpenVLA gripper target used by force_gripper_open objectives"); ap.add_argument("--action_clamp_mode",choices=["none","gripper_clean","arm_clean"],default="none",help="Clamp selected postprocessed env-action dimensions back to clean before env.step."); ap.add_argument("--matched_to_run_id",default=""); ap.add_argument("--matched_to_trigger",default=""); ap.add_argument("--matched_to_attacked_ratio",type=float,default=-1.0); ap.add_argument("--auto_patch_compat",action="store_true"); ap.add_argument("--libero_official_preprocess",action="store_true",help="Use official OpenVLA-LIBERO image preprocessing: 256 render + 180-degree rotate + resize before processor"); ap.add_argument("--image_size",type=int,default=256); ap.add_argument("--openvla_resize_size",type=int,default=224); ap.add_argument("--center_crop",action="store_true"); ap.add_argument("--num_steps_wait",type=int,default=0); ap.add_argument("--postprocess_gripper",action="store_true",help="Apply official normalize_gripper_action + invert_gripper_action before env.step"); ap.add_argument("--success_metric",choices=["done","check_success"],default="done"); ap.add_argument("--deterministic_init_states",action="store_true",help="Use official-style episode index init states instead of random sampling"); ap.add_argument("--state_ids",default="",help="Comma-separated deterministic LIBERO init-state ids, e.g. 5,7,8; overrides --episodes count for rollout order"); ap.add_argument("--keep_attention_mask",action="store_true",help="Debug only: keep processor attention_mask during OpenVLA generation"); ap.add_argument("--require_rollout_calibration", action="store_true", help="Require rollout-passive calibration provenance for entropy/margin thresholds"); ap.add_argument("--min_calibration_steps", type=int, default=0, help="Minimum calibration num_steps for entropy/margin thresholds"); ap.add_argument("--instruction_override",default="",help="Replace the benchmark instruction for prompt-channel experiments"); ap.add_argument("--instruction_suffix",default="",help="Append a suffix to the effective instruction"); ap.add_argument("--prompt_variants_path",default="",help="JSON/JSONL/CSV prompt set for offline prompt audit"); ap.add_argument("--offline_prompt_audit",action="store_true",help="Run fixed-observation prompt-to-gripper audit without prompt attacks or visual PGD"); ap.add_argument("--offline_prompt_audit_steps",type=int,default=1,help="Number of collected clean-trajectory frames per state for offline prompt audit"); ap.add_argument("--offline_prompt_audit_start_step",type=int,default=0,help="Clean rollout step at which offline prompt audit starts collecting frames"); ap.add_argument("--offline_prompt_audit_stride",type=int,default=1,help="Stride between collected offline prompt audit frames"); ap.add_argument("--prompt_id",default="",help="Stable prompt identifier for prompt-hijack diagnostics"); ap.add_argument("--prompt_type",default="",help="Prompt category, e.g. clean/paraphrase/conflict/suffix"); ap.add_argument("--prompt_attack_config",default="",help="Optional prompt attack manifest/config path"); ap.add_argument("--target_primitive",choices=["none","open_gripper","close_gripper","freeze","open_at_lift","persistent_open"],default="none",help="Primitive targeted by inference-time prompt attack"); ap.add_argument("--guard_enabled",action="store_true",help="Enable online command-layer gripper guard during grasp-to-pre-release"); ap.add_argument("--guard_mode",choices=["conservative","strict_after_close"],default="conservative",help="Guard policy. strict_after_close blocks any open command after close/gate detection until near release."); ap.add_argument("--moka_two_pot_mode",action="store_true",help="Enable two-pot stage tracking for Moka and phase-gated attack activation."); ap.add_argument("--moka_stage_anchor",choices=["first_pot_on_stove_stable"],default="first_pot_on_stove_stable",help="Anchor policy for second-pot relative attack window."); ap.add_argument("--moka_second_window_start",type=int,default=0,help="Relative start step (from anchor) for second-pot window trigger."); ap.add_argument("--moka_second_window_end",type=int,default=30,help="Relative end step (from anchor) for second-pot window trigger."); ap.add_argument("--moka_stage_stable_steps",type=int,default=10,help="Required consecutive stable steps before setting first-pot anchor."); ap.add_argument("--moka_first_pot_name",default="moka_pot_1"); ap.add_argument("--moka_second_pot_name",default="moka_pot_2"); ap.add_argument("--moka_stove_name",default="flat_stove_1"); ap.add_argument("--moka_on_stove_dxy_threshold",type=float,default=0.10); ap.add_argument("--moka_on_stove_dz_threshold",type=float,default=0.08); args=ap.parse_args()
+    ap=argparse.ArgumentParser(); ap.add_argument("--tasks_config",default="configs/v4_tasks_libero.yaml"); ap.add_argument("--attack_config",default="configs/v4_attack.yaml"); ap.add_argument("--directions_config",default="configs/v4_directions.yaml"); ap.add_argument("--thresholds",default=""); ap.add_argument("--task_id",required=True); ap.add_argument("--trigger",required=True); ap.add_argument("--rho",type=float,default=0.0); ap.add_argument("--seed",type=int,default=0); ap.add_argument("--episodes",type=int,default=1); ap.add_argument("--max_steps_override",type=int,default=0); ap.add_argument("--output_root",default="outputs/v4/smoke"); ap.add_argument("--run_id",default=""); ap.add_argument("--dry_run",action="store_true"); ap.add_argument("--model_path",default=""); ap.add_argument("--base_model_code_dir",default="${OPENVLA_BASE_MODEL_DIR}"); ap.add_argument("--unnorm_key",default="libero_goal"); ap.add_argument("--camera_obs_key",default="agentview_image"); ap.add_argument("--render_gpu_device_id",type=int,default=0); ap.add_argument("--model_gpu_device_id",type=int,default=-1,help="CUDA-visible local GPU index for model inference; default chooses a non-render GPU when available"); ap.add_argument("--grasp_gate_dist",type=float,default=0.10,help="Privileged grasp gate eef-bowl distance threshold in meters"); ap.add_argument("--attack_objective",default="",help="Override attack_optimizer.objective for this run, e.g. force_gripper_open_token_ce"); ap.add_argument("--epsilon",type=float,default=None,help="Override attack_optimizer.epsilon for reproducibility entrypoints"); ap.add_argument("--step_size",type=float,default=None,help="Override attack_optimizer.step_size for reproducibility entrypoints"); ap.add_argument("--attack_steps",type=int,default=None,help="Override attack_optimizer.num_steps for reproducibility entrypoints"); ap.add_argument("--temporal_init",default="",help="Override attack_optimizer.temporal_init, e.g. prev_delta or none"); ap.add_argument("--cw_margin",type=float,default=None,help="Override attack_optimizer.cw_margin for gripper-logit margin objectives"); ap.add_argument("--force_open_raw_gripper",type=float,default=0.0,help="Raw OpenVLA gripper target used by force_gripper_open objectives"); ap.add_argument("--action_clamp_mode",choices=["none","gripper_clean","arm_clean"],default="none",help="Clamp selected postprocessed env-action dimensions back to clean before env.step."); ap.add_argument("--matched_to_run_id",default=""); ap.add_argument("--matched_to_trigger",default=""); ap.add_argument("--matched_to_attacked_ratio",type=float,default=-1.0); ap.add_argument("--auto_patch_compat",action="store_true"); ap.add_argument("--libero_official_preprocess",action="store_true",help="(Legacy) Use TF JPEG preprocessing. Prefer --libero_preprocess_backend official_pil_lanczos for official-aligned runs.")
+    ap.add_argument("--libero_preprocess_backend",choices=["official_pil_lanczos","tf_jpeg_legacy","none"],default="official_pil_lanczos",help="Image preprocessing backend. official_pil_lanczos matches corrected official eval (no JPG, PIL Lanczos). tf_jpeg_legacy is old TF path with JPEG round-trip."); ap.add_argument("--image_size",type=int,default=256); ap.add_argument("--openvla_resize_size",type=int,default=224); ap.add_argument("--center_crop",action="store_true"); ap.add_argument("--num_steps_wait",type=int,default=10); ap.add_argument("--postprocess_gripper",action="store_true",help="Apply official normalize_gripper_action + invert_gripper_action before env.step"); ap.add_argument("--success_metric",choices=["done","check_success"],default="done"); ap.add_argument("--deterministic_init_states",action="store_true",help="Use official-style episode index init states instead of random sampling"); ap.add_argument("--state_ids",default="",help="Comma-separated deterministic LIBERO init-state ids, e.g. 5,7,8; overrides --episodes count for rollout order"); ap.add_argument("--keep_attention_mask",action="store_true",help="Debug only: keep processor attention_mask during OpenVLA generation"); ap.add_argument("--require_rollout_calibration", action="store_true", help="Require rollout-passive calibration provenance for entropy/margin thresholds"); ap.add_argument("--min_calibration_steps", type=int, default=0, help="Minimum calibration num_steps for entropy/margin thresholds"); ap.add_argument("--instruction_override",default="",help="Replace the benchmark instruction for prompt-channel experiments"); ap.add_argument("--instruction_suffix",default="",help="Append a suffix to the effective instruction"); ap.add_argument("--prompt_variants_path",default="",help="JSON/JSONL/CSV prompt set for offline prompt audit"); ap.add_argument("--offline_prompt_audit",action="store_true",help="Run fixed-observation prompt-to-gripper audit without prompt attacks or visual PGD"); ap.add_argument("--offline_prompt_audit_steps",type=int,default=1,help="Number of collected clean-trajectory frames per state for offline prompt audit"); ap.add_argument("--offline_prompt_audit_start_step",type=int,default=0,help="Clean rollout step at which offline prompt audit starts collecting frames"); ap.add_argument("--offline_prompt_audit_stride",type=int,default=1,help="Stride between collected offline prompt audit frames"); ap.add_argument("--prompt_id",default="",help="Stable prompt identifier for prompt-hijack diagnostics"); ap.add_argument("--prompt_type",default="",help="Prompt category, e.g. clean/paraphrase/conflict/suffix"); ap.add_argument("--prompt_attack_config",default="",help="Optional prompt attack manifest/config path"); ap.add_argument("--target_primitive",choices=["none","open_gripper","close_gripper","freeze","open_at_lift","persistent_open"],default="none",help="Primitive targeted by inference-time prompt attack"); ap.add_argument("--guard_enabled",action="store_true",help="Enable online command-layer gripper guard during grasp-to-pre-release"); ap.add_argument("--guard_mode",choices=["conservative","strict_after_close"],default="conservative",help="Guard policy. strict_after_close blocks any open command after close/gate detection until near release."); ap.add_argument("--moka_two_pot_mode",action="store_true",help="Enable two-pot stage tracking for Moka and phase-gated attack activation."); ap.add_argument("--moka_stage_anchor",choices=["first_pot_on_stove_stable"],default="first_pot_on_stove_stable",help="Anchor policy for second-pot relative attack window."); ap.add_argument("--moka_second_window_start",type=int,default=0,help="Relative start step (from anchor) for second-pot window trigger."); ap.add_argument("--moka_second_window_end",type=int,default=30,help="Relative end step (from anchor) for second-pot window trigger."); ap.add_argument("--moka_stage_stable_steps",type=int,default=10,help="Required consecutive stable steps before setting first-pot anchor."); ap.add_argument("--moka_first_pot_name",default="moka_pot_1"); ap.add_argument("--moka_second_pot_name",default="moka_pot_2"); ap.add_argument("--moka_stove_name",default="flat_stove_1"); ap.add_argument("--moka_on_stove_dxy_threshold",type=float,default=0.10); ap.add_argument("--moka_on_stove_dz_threshold",type=float,default=0.08); args=ap.parse_args()
     os.environ["V4_MOKA_SECOND_WINDOW_START"] = str(int(args.moka_second_window_start))
     os.environ["V4_MOKA_SECOND_WINDOW_END"] = str(int(args.moka_second_window_end))
     tasks=load_yaml(args.tasks_config)["tasks"]; task=next(t for t in tasks if t["task_id"]==args.task_id); cfg=load_yaml(args.attack_config); direction=load_direction_spec(args.directions_config,cfg["directional_target"]["direction_id"]); thresholds=read_json(args.thresholds) if args.thresholds and Path(args.thresholds).exists() else {}; validate_thresholds_for_trigger(args.trigger, args.thresholds, thresholds, task["task_id"], args.rho, require_rollout_source=getattr(args, "require_rollout_calibration", False), min_steps=getattr(args, "min_calibration_steps", 0))
