@@ -805,9 +805,9 @@ def build_run_manifest(args,cfg,task,run_id,step_path,ep_path,summary_path,model
         "eos_token_handling": "add_if_missing_29871",
         "model_inference_path": "model.generate()",
         "python_executable": sys.executable,
-        "transformers_version": str(transformers.__version__) if hasattr(transformers, "__version__") else "unknown",
-        "tokenizers_version": str(tokenizers.__version__) if hasattr(tokenizers, "__version__") else "unknown",
-        "torch_version": str(torch.__version__) if hasattr(torch, "__version__") else "unknown",
+        "transformers_version": __import__("transformers").__version__,
+        "tokenizers_version": __import__("tokenizers").__version__,
+        "torch_version": str(torch.__version__),
         "mujoco_version": "",
         "robosuite_version": "",
         **matched_provenance(args)}
