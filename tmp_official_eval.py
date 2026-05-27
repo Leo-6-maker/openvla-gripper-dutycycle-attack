@@ -134,7 +134,10 @@ def main():
     ap.add_argument("--task_start", type=int, default=0, help="First task index (0-based)")
     ap.add_argument("--task_count", type=int, default=10, help="Number of tasks to run")
     ap.add_argument("--run_id_prefix", default="official", help="Prefix for output naming")
+    ap.add_argument("--worker_id", default="", help="Worker ID for parallel-safe shard naming")
     args = ap.parse_args()
+    if not args.worker_id:
+        args.worker_id = args.run_id_prefix
 
     os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda_visible_devices
     os.environ["MUJOCO_GL"] = "egl"
@@ -334,13 +337,20 @@ def main():
 
     log.close()
 
-    # Write results
+    # Write results — worker-safe shard naming (parallel workers never share files)
     import csv
-    with open(out / "tables" / "object_official_script_100_manifest.csv", "w", newline="") as f:
+    shard_dir = out / "tables" / "shards"
+    shard_dir.mkdir(parents=True, exist_ok=True)
+    worker_id = getattr(args, "worker_id", args.run_id_prefix)
+    suite_short = args.task_suite_name.replace("libero_", "")
+    manifest_shard = shard_dir / f"manifest_{suite_short}_worker_{worker_id}.csv"
+    summary_shard = shard_dir / f"summary_{suite_short}_worker_{worker_id}.csv"
+
+    with open(manifest_shard, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=manifest_rows[0].keys())
         w.writeheader(); w.writerows(manifest_rows)
 
-    with open(out / "tables" / "object_official_script_100_summary_by_task.csv", "w", newline="") as f:
+    with open(summary_shard, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["task_name","n","success","sr"])
         w.writeheader()
         for tn, ts in sorted(task_summary.items()):
