@@ -21,18 +21,11 @@ def _pil_center_crop_resize(image: Image.Image, crop_scale: float = 0.9, size: i
     return image.crop((left, top, left + cw, top + ch)).resize((size, size), Image.Resampling.LANCZOS)
 
 
-def prepare_openvla_image_for_attack(image_np, *, libero_official_preprocess: bool = False, center_crop: bool = False, resize_size: int = 224) -> Image.Image:
-    arr = np.asarray(image_np)
-    if arr.dtype != np.uint8:
-        arr = np.clip(arr, 0, 255).astype(np.uint8)
-    if libero_official_preprocess:
-        arr = arr[::-1, ::-1]
-    image = Image.fromarray(arr).convert("RGB")
-    if libero_official_preprocess:
-        image = image.resize((int(resize_size), int(resize_size)), Image.Resampling.LANCZOS)
-    if center_crop:
-        image = _pil_center_crop_resize(image, crop_scale=0.9, size=int(resize_size))
-    return image
+def prepare_openvla_image_for_attack(image_np, *, libero_official_preprocess: bool = False, center_crop: bool = False, resize_size: int = 224, libero_preprocess_backend: str = "official_pil_lanczos", **kwargs) -> Image.Image:
+    from scripts.v4_run_eval_openvla import prepare_openvla_image
+    return prepare_openvla_image(image_np, libero_official_preprocess=libero_official_preprocess,
+                                 center_crop=center_crop, resize_size=resize_size,
+                                 libero_preprocess_backend=libero_preprocess_backend)
 
 
 class ExistingDenseAttackAdapter:
