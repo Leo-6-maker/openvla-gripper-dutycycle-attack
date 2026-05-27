@@ -1,0 +1,87 @@
+# Deployment Detector Feature Schema
+# Milestone 2D Phase A
+# Defines allowed/prohibited features for the final no-timestep online detector
+
+# The final detector must predict phase from signals available on a real robot.
+# normalized_step and absolute timestep are FORBIDDEN as deployment features.
+
+allowed_deployment_inputs:
+
+  task_language:
+    - task_instruction
+    - parsed_target_object
+    - parsed_target_receptacle
+    - mechanism_type
+    - parse_confidence
+
+  visual:
+    - image_path
+    - visual_feature_path
+    - visual_encoder_name
+    - visual_feature_available
+    - visual_prompt_scores_optional
+
+  gripper:
+    - gripper_command
+    - gripper_qpos
+    - gripper_width
+    - recent_close_streak
+    - recent_open_streak
+    - recent_gripper_flip_count
+
+  eef:
+    - eef_x
+    - eef_y
+    - eef_z
+    - eef_vx
+    - eef_vy
+    - eef_vz
+
+  action_history:
+    - action_dx
+    - action_dy
+    - action_dz
+    - action_gripper
+
+forbidden_deployment_inputs:
+  - normalized_step
+  - absolute_timestep
+  - max_steps
+  - teacher_window_start
+  - teacher_window_end
+  - teacher_anchor_step
+  - object_pose
+  - target_pose
+  - object_to_target_distance
+  - future_done
+  - success
+  - attack_outcome
+  - oracle_outcome
+  - random_outcome
+  - manual_outcome
+  - task_id_as_model_feature
+  - state_id_as_model_feature
+  - run_id_as_model_feature
+  - episode_key_as_model_feature
+  - hard_coded_windows
+
+normalized_step_policy:
+  may_remain_for:
+    - dev_upper_bound
+    - time_only_baseline
+    - ablation_comparison
+  must_not_be_in:
+    - deployment_feature_schema
+    - final_detector_model_input
+    - paper_main_results
+
+model_versions:
+  full_proprio_dev:
+    uses_normalized_step: true
+    purpose: "Development upper bound and debug"
+  proprio_no_step:
+    uses_normalized_step: false
+    purpose: "Deployable proprio baseline"
+  visual_proprio_no_step:
+    uses_normalized_step: false
+    purpose: "Final main model"

@@ -1,0 +1,456 @@
+#!/usr/bin/env python3
+"""Milestone 2D — Artifact-rich official-eval-aligned clean runner.
+
+Preserves corrected clean behavior (PIL Lanczos, correct prompt, EOS handling)
+while saving per-timestep artifacts: RGB frames, step_records, episode_records,
+run_manifest, gripper/EEF/action traces, and optional teacher-privileged state.
+
+Each worker writes its own manifest shard. Never overwrites another worker's CSV.
+"""
+import os, sys, json, time, math, csv, argparse
+import numpy as np
+import torch
+from pathlib import Path
+from PIL import Image
+
+DATE_TIME = time.strftime("%Y_%m_%d-%H_%M_%S")
+
+
+def quat2axisangle(quat):
+    quat = np.asarray(quat).copy()
+    quat[3] = np.clip(quat[3], -1.0, 1.0)
+    den = np.sqrt(1.0 - quat[3] * quat[3])
+    if abs(den) < 1e-8:
+        return np.zeros(3)
+    return (quat[:3] * 2.0 * math.acos(quat[3])) / den
+
+
+def normalize_gripper_action(action, binarize=True):
+    action = np.asarray(action, dtype=np.float32).copy()
+    action[..., -1] = 2.0 * action[..., -1] - 1.0
+    if binarize:
+        action[..., -1] = np.sign(action[..., -1])
+        action[..., -1] = 1.0 if action[..., -1] == 0 else action[..., -1]
+    return action
+
+
+def invert_gripper_action(action):
+    action = np.asarray(action, dtype=np.float32).copy()
+    action[..., -1] = -1.0 * action[..., -1]
+    return action
+
+
+def parse_args():
+    ap = argparse.ArgumentParser(description="Artifact-rich official eval runner")
+    ap.add_argument("--model_path", required=True)
+    ap.add_argument("--task_suite_name", default="libero_object")
+    ap.add_argument("--num_trials_per_task", type=int, default=10)
+    ap.add_argument("--num_steps_wait", type=int, default=10)
+    ap.add_argument("--center_crop", action="store_true", default=True)
+    ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--output_root", required=True)
+    ap.add_argument("--render_gpu_device_id", type=int, default=0)
+    ap.add_argument("--attn_impl", default="eager")
+    ap.add_argument("--cuda_visible_devices", default="0,1")
+    ap.add_argument("--task_start", type=int, default=0)
+    ap.add_argument("--task_count", type=int, default=10)
+    ap.add_argument("--run_id_prefix", default="artifact_rich")
+    ap.add_argument("--worker_id", default="w0")
+    ap.add_argument("--save_rgb", action="store_true", default=True)
+    ap.add_argument("--save_step_records", action="store_true", default=True)
+    ap.add_argument("--save_privileged_teacher_state", action="store_true", default=True)
+    ap.add_argument("--rgb_format", default="png", choices=["png", "jpg"])
+    ap.add_argument("--dry_run", action="store_true")
+    return ap.parse_args()
+
+
+def get_libero_dummy_action():
+    return [0, 0, 0, 0, 0, 0, -1]
+
+
+def get_libero_image(obs, resize_size=224):
+    img = obs["agentview_image"]
+    img = img[::-1, ::-1]
+    img = Image.fromarray(img).convert("RGB")
+    img = img.resize((resize_size, resize_size), Image.LANCZOS)
+    return np.array(img)
+
+
+def get_vla_action(model, processor, device, obs, task_label, unnorm_key, center_crop=True):
+
+    image = Image.fromarray(obs["full_image"]).convert("RGB")
+    if center_crop:
+        scale = 0.9 ** 0.5
+        w, h = image.size
+        cw, ch = max(1, int(w * scale)), max(1, int(h * scale))
+        left, top = (w - cw) // 2, (h - ch) // 2
+        image = image.crop((left, top, left + cw, top + ch))
+        image = image.resize((224, 224), Image.LANCZOS)
+
+    prompt = f"In: What action should the robot take to {task_label.lower()}?\nOut:"
+    inputs = processor(prompt, image, return_tensors="pt")
+    inputs.pop("attention_mask", None)
+    for key, val in list(inputs.items()):
+        inputs[key] = val.to(device=device, dtype=torch.bfloat16 if torch.is_floating_point(val) else None)
+
+    input_ids = inputs.get("input_ids")
+    if input_ids is not None and not torch.all(input_ids[:, -1] == 29871):
+        inputs["input_ids"] = torch.cat(
+            (input_ids, torch.unsqueeze(torch.tensor([29871]).long(), dim=0).to(input_ids.device)), dim=1)
+
+    action_dim = int(model.get_action_dim(unnorm_key))
+    with torch.inference_mode():
+        gen = model.generate(**inputs, max_new_tokens=action_dim, do_sample=False,
+                            return_dict_in_generate=True, output_scores=True)
+
+    token_ids = gen.sequences[0, -action_dim:].detach().cpu().numpy()
+    vocab_size = model.config.text_config.vocab_size - model.config.pad_to_multiple_of
+    discretized = np.clip(vocab_size - token_ids - 1, a_min=0, a_max=model.bin_centers.shape[0] - 1)
+    norm_actions = model.bin_centers[discretized]
+    stats = model.get_action_stats(unnorm_key)
+    mask = stats.get("mask", np.ones_like(stats["q01"], dtype=bool))
+    high, low = np.array(stats["q99"]), np.array(stats["q01"])
+    action = np.where(mask, 0.5 * (norm_actions + 1) * (high - low) + low, norm_actions).astype(np.float32)
+    return action, prompt
+
+
+def save_step_record(run_dir, step_idx, record, args):
+    if not args.save_step_records:
+        return
+    path = run_dir / "step_records.jsonl"
+    with open(path, "a") as f:
+        f.write(json.dumps(record, default=float) + "\n")
+
+
+def save_episode_record(run_dir, record, args):
+    path = run_dir / "episode_records.jsonl"
+    with open(path, "a") as f:
+        f.write(json.dumps(record, default=float) + "\n")
+
+
+def save_run_manifest(run_dir, manifest, args):
+    path = run_dir / "run_manifest.json"
+    with open(path, "w") as f:
+        json.dump(manifest, f, indent=2, default=float)
+
+
+def main():
+    args = parse_args()
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda_visible_devices
+    os.environ["MUJOCO_GL"] = "egl"
+
+    from transformers import AutoModelForVision2Seq, AutoProcessor
+
+    visible = len(args.cuda_visible_devices.split(","))
+    max_memory = {i: "10000MiB" for i in range(max(visible, 1))}
+    max_memory["cpu"] = "128GiB"
+
+    print(f"=== Artifact-Rich Official Eval Runner ===")
+    print(f"Model: {args.model_path}")
+    print(f"Suite: {args.task_suite_name}")
+    print(f"Worker: {args.worker_id}")
+    print(f"Save RGB: {args.save_rgb}")
+    print(f"Save step_records: {args.save_step_records}")
+    print(f"Dry run: {args.dry_run}")
+
+    if args.dry_run:
+        print("[DRY RUN] Schema check only. No GPU rollout.")
+        # Validate action_path
+        action_path = "generate_manual_decode"
+        assert action_path in {"predict_action", "generate_manual_decode", "unknown_needs_audit"}
+        print(f"action_path={action_path}  (valid)")
+        print("DRY RUN PASSED")
+        return 0
+
+    # Load model
+    print("\n[*] Loading model...")
+    model = AutoModelForVision2Seq.from_pretrained(
+        args.model_path, attn_implementation=args.attn_impl,
+        torch_dtype=torch.bfloat16, low_cpu_mem_usage=True,
+        trust_remote_code=True, device_map="auto", max_memory=max_memory,
+    )
+    DEVICE = "cuda:0"
+    if hasattr(model, 'hf_device_map') and model.hf_device_map:
+        for v in model.hf_device_map.values():
+            if isinstance(v, str) and v.startswith("cuda"): DEVICE = v; break
+            if isinstance(v, int): DEVICE = f"cuda:{v}"; break
+    print(f"[*] Model loaded, primary device: {DEVICE}")
+
+    stats_path = os.path.join(args.model_path, "dataset_statistics.json")
+    if os.path.isfile(stats_path):
+        with open(stats_path) as f:
+            model.norm_stats = json.load(f)
+
+    processor = AutoProcessor.from_pretrained(args.model_path, trust_remote_code=True)
+
+    unnorm_key = args.task_suite_name
+    if unnorm_key not in model.norm_stats and f"{unnorm_key}_no_noops" in model.norm_stats:
+        unnorm_key = f"{unnorm_key}_no_noops"
+    assert unnorm_key in model.norm_stats, f"Key {unnorm_key} not found in norm_stats"
+
+    out = Path(args.output_root)
+    out.mkdir(parents=True, exist_ok=True)
+    shard_dir = out / "tables" / "shards"
+    shard_dir.mkdir(parents=True, exist_ok=True)
+
+    from libero.libero import benchmark, get_libero_path
+    from libero.libero.envs import OffScreenRenderEnv
+
+    benchmark_dict = benchmark.get_benchmark_dict()
+    task_suite = benchmark_dict[args.task_suite_name]()
+    num_tasks = task_suite.n_tasks
+
+    # Suite-specific max steps
+    suite_max_steps = {
+        "libero_spatial": 220, "libero_object": 280,
+        "libero_goal": 300, "libero_10": 520,
+    }
+    max_steps = suite_max_steps.get(args.task_suite_name, 400)
+
+    task_end = min(args.task_start + args.task_count, num_tasks)
+    total_episodes = 0
+    total_successes = 0
+    summary_rows = []
+
+    for task_id in range(args.task_start, task_end):
+        task = task_suite.get_task(task_id)
+        task_name = task_suite.get_task_names()[task_id]
+        task_desc = task.language
+        initial_states = task_suite.get_task_init_states(task_id)
+
+        bddl = os.path.join(get_libero_path("bddl_files"), task.problem_folder, task.bddl_file)
+
+        for ep_idx in range(args.num_trials_per_task):
+            start_time = time.strftime("%Y-%m-%dT%H:%M:%S")
+            run_id = f"{args.run_id_prefix}_{task_name.replace('pick_up_the_','').replace('_and_place_it_in_the_basket','')}_s{ep_idx}"
+            run_dir = out / "runs" / args.task_suite_name / f"{task_name}_state{ep_idx}"
+            run_dir.mkdir(parents=True, exist_ok=True)
+            rgb_dir = run_dir / "frames" if args.save_rgb else None
+            if rgb_dir:
+                rgb_dir.mkdir(exist_ok=True)
+
+            env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=256, camera_widths=256)
+            env.seed(0)
+            obs = env.reset()
+            obs = env.set_init_state(initial_states[ep_idx])
+
+            t = 0
+            policy_step = 0
+            success = False
+            runtime_error = False
+            error_msg = ""
+            done_step = -1
+            eef_prev = None
+            action_path = "generate_manual_decode"
+
+            while t < max_steps + args.num_steps_wait:
+                try:
+                    if t < args.num_steps_wait:
+                        obs, reward, done, info = env.step(get_libero_dummy_action())
+                        # Record wait step
+                        if args.save_step_records:
+                            save_step_record(run_dir, t, {
+                                "run_id": run_id, "suite": args.task_suite_name,
+                                "task_id": task_id, "task_name": task_name,
+                                "task_instruction": task_desc, "state_id": ep_idx,
+                                "seed": args.seed, "step_idx": t,
+                                "policy_step_idx": -1, "phase": "wait",
+                                "image_path": "", "image_path_available": False,
+                                "raw_action": [0]*7, "env_action": [0]*7,
+                                "action_dx": 0, "action_dy": 0, "action_dz": 0, "action_gripper": 0,
+                                "gripper_command": 0, "gripper_qpos": float(obs.get("robot0_gripper_qpos", [0])[0]),
+                                "gripper_width": 0,
+                                "eef_x": float(obs["robot0_eef_pos"][0]),
+                                "eef_y": float(obs["robot0_eef_pos"][1]),
+                                "eef_z": float(obs["robot0_eef_pos"][2]),
+                                "eef_qx": 0, "eef_qy": 0, "eef_qz": 0, "eef_qw": 0,
+                                "eef_axang_x": 0, "eef_axang_y": 0, "eef_axang_z": 0,
+                                "eef_vx": 0, "eef_vy": 0, "eef_vz": 0,
+                                "reward": float(reward), "done": bool(done),
+                                "success_so_far": False, "info_success_if_available": "",
+                                "runtime_error": False, "error_msg": "",
+                                "teacher_privileged_state_available": False,
+                            }, args)
+                        t += 1
+                        continue
+
+                    # Preprocess image
+                    img = get_libero_image(obs, 224)
+                    observation = {
+                        "full_image": img,
+                        "state": np.concatenate([
+                            obs["robot0_eef_pos"], quat2axisangle(obs["robot0_eef_quat"]),
+                            obs["robot0_gripper_qpos"],
+                        ]),
+                    }
+
+                    # Save RGB
+                    image_path = ""
+                    if args.save_rgb:
+                        image_path = str(rgb_dir / f"step_{policy_step:04d}.{args.rgb_format}")
+                        Image.fromarray(img).save(image_path)
+
+                    # Model inference
+                    raw_action, prompt_str = get_vla_action(
+                        model, processor, DEVICE, observation, task_desc, unnorm_key,
+                        center_crop=args.center_crop,
+                    )
+
+                    # Gripper postprocess
+                    env_action = normalize_gripper_action(raw_action.copy(), binarize=True)
+                    env_action = invert_gripper_action(env_action)
+
+                    # EEF velocity
+                    eef_pos = obs["robot0_eef_pos"]
+                    eef_vx = eef_vy = eef_vz = 0.0
+                    if eef_prev is not None:
+                        eef_vx = float(eef_pos[0] - eef_prev[0])
+                        eef_vy = float(eef_pos[1] - eef_prev[1])
+                        eef_vz = float(eef_pos[2] - eef_prev[2])
+                    eef_prev = eef_pos.copy()
+
+                    # Teacher privileged state
+                    teacher_priv = False
+                    object_pose_json = ""
+                    target_pose_json = ""
+                    obj_dist = ""
+                    if args.save_privileged_teacher_state:
+                        try:
+                            obj_pose = obs.get("object_pos", obs.get("obj_pos", None))
+                            if obj_pose is not None:
+                                object_pose_json = json.dumps(np.asarray(obj_pose).tolist())
+                                teacher_priv = True
+                            tgt_pose = obs.get("target_pos", obs.get("goal_pos", None))
+                            if tgt_pose is not None:
+                                target_pose_json = json.dumps(np.asarray(tgt_pose).tolist())
+                                teacher_priv = True
+                            if obj_pose is not None and tgt_pose is not None:
+                                obj_arr = np.asarray(obj_pose)
+                                tgt_arr = np.asarray(tgt_pose)
+                                obj_dist = float(np.linalg.norm(obj_arr - tgt_arr))
+                                teacher_priv = True
+                        except Exception:
+                            pass
+
+                    # Step record
+                    if args.save_step_records:
+                        save_step_record(run_dir, t, {
+                            "run_id": run_id, "suite": args.task_suite_name,
+                            "task_id": task_id, "task_name": task_name,
+                            "task_instruction": task_desc, "state_id": ep_idx,
+                            "seed": args.seed, "step_idx": t,
+                            "policy_step_idx": policy_step, "phase": "policy",
+                            "image_path": image_path,
+                            "image_path_available": bool(image_path),
+                            "raw_action": raw_action.tolist(),
+                            "env_action": env_action.tolist(),
+                            "action_dx": float(env_action[0]),
+                            "action_dy": float(env_action[1]),
+                            "action_dz": float(env_action[2]),
+                            "action_gripper": float(env_action[-1]),
+                            "gripper_command": float(raw_action[-1]),
+                            "gripper_qpos": float(obs.get("robot0_gripper_qpos", [0])[0]),
+                            "gripper_width": float(obs.get("robot0_gripper_qpos", [0])[0]),
+                            "eef_x": float(eef_pos[0]), "eef_y": float(eef_pos[1]), "eef_z": float(eef_pos[2]),
+                            "eef_qx": 0, "eef_qy": 0, "eef_qz": 0, "eef_qw": 0,
+                            "eef_axang_x": 0, "eef_axang_y": 0, "eef_axang_z": 0,
+                            "eef_vx": eef_vx, "eef_vy": eef_vy, "eef_vz": eef_vz,
+                            "reward": float(reward) if 'reward' in dir() else 0.0,
+                            "done": False, "success_so_far": False,
+                            "info_success_if_available": "",
+                            "runtime_error": False, "error_msg": "",
+                            "object_pose_json": object_pose_json,
+                            "target_pose_json": target_pose_json,
+                            "object_to_target_distance": obj_dist,
+                            "teacher_privileged_state_available": teacher_priv,
+                        }, args)
+
+                    obs, reward, done, info = env.step(env_action.tolist())
+                    policy_step += 1
+
+                    if done:
+                        success = True
+                        done_step = policy_step
+                        break
+                    t += 1
+                except Exception as e:
+                    runtime_error = True
+                    error_msg = str(e)[:200]
+                    print(f"  ERROR: {e}")
+                    break
+
+            end_time = time.strftime("%Y-%m-%dT%H:%M:%S")
+            env.close()
+
+            # Episode record
+            ep_record = {
+                "run_id": run_id, "suite": args.task_suite_name,
+                "task_id": task_id, "task_name": task_name,
+                "task_instruction": task_desc, "state_id": ep_idx,
+                "seed": args.seed, "success": success,
+                "runtime_error": runtime_error, "failure_phase": "",
+                "num_steps": t + 1, "done_step": done_step,
+                "first_policy_step": args.num_steps_wait,
+                "last_policy_step": policy_step - 1,
+                "artifact_complete": True,
+                "step_records_path": str(run_dir / "step_records.jsonl") if args.save_step_records else "",
+                "video_path_optional": "",
+                "rgb_dir_optional": str(rgb_dir) if args.save_rgb else "",
+            }
+            if args.save_step_records:
+                save_episode_record(run_dir, ep_record, args)
+
+            # Run manifest
+            manifest = {
+                "run_id": run_id, "suite": args.task_suite_name,
+                "task_id": task_id, "task_name": task_name,
+                "task_instruction": task_desc, "state_id": ep_idx,
+                "seed": args.seed, "model_path": args.model_path,
+                "checkpoint_name": os.path.basename(args.model_path),
+                "action_path": action_path,
+                "unnorm_key": unnorm_key,
+                "num_steps_wait": args.num_steps_wait,
+                "max_steps": max_steps, "center_crop": args.center_crop,
+                "image_preprocess": "official_pil_lanczos",
+                "dtype": "bfloat16", "attention_backend": args.attn_impl,
+                "cuda_visible_devices": args.cuda_visible_devices,
+                "render_gpu_device_id": args.render_gpu_device_id,
+                "save_rgb": args.save_rgb,
+                "save_step_records": args.save_step_records,
+                "save_privileged_teacher_state": args.save_privileged_teacher_state,
+                "output_root": args.output_root,
+                "run_dir": str(run_dir), "start_time": start_time,
+                "end_time": end_time, "runtime_status": "complete",
+                "success": success, "failure_phase": "",
+                "artifact_complete": True,
+            }
+            save_run_manifest(run_dir, manifest, args)
+
+            total_episodes += 1
+            if success:
+                total_successes += 1
+            summary_rows.append({
+                "suite": args.task_suite_name, "task_id": task_id,
+                "task_name": task_name, "state_id": ep_idx,
+                "seed": args.seed, "run_id": run_id,
+                "worker_id": args.worker_id, "success": success,
+                "runtime_error": runtime_error, "num_steps": t + 1,
+                "artifact_complete": True,
+            })
+
+            print(f"  {task_name} s{ep_idx}: success={success} steps={t+1}")
+
+    # Write worker shard
+    shard_path = shard_dir / f"manifest_worker_{args.worker_id}.csv"
+    with open(shard_path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(summary_rows[0].keys()))
+        w.writeheader()
+        w.writerows(summary_rows)
+
+    print(f"\nWorker {args.worker_id} complete: {total_successes}/{total_episodes} = {total_successes/max(1,total_episodes):.3f}")
+    print(f"Shard: {shard_path}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

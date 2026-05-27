@@ -1,0 +1,123 @@
+# Artifact-Rich Official-Eval-Aligned Clean Runner Schema
+# Milestone 2D Phase A
+# Defines required fields for artifact-rich clean rollouts
+
+run_manifest:
+  required:
+    - run_id
+    - suite
+    - task_id
+    - task_name
+    - task_instruction
+    - state_id
+    - seed
+    - model_path
+    - checkpoint_name
+    - action_path
+    - unnorm_key
+    - num_steps_wait
+    - max_steps
+    - center_crop
+    - image_preprocess
+    - dtype
+    - attention_backend
+    - cuda_visible_devices
+    - render_gpu_device_id
+    - save_rgb
+    - save_step_records
+    - save_privileged_teacher_state
+    - output_root
+    - run_dir
+    - start_time
+    - end_time
+    - runtime_status
+    - success
+    - failure_phase
+    - artifact_complete
+
+  action_path_values:
+    - predict_action
+    - generate_manual_decode
+    - unknown_needs_audit
+
+step_records:
+  required:
+    - run_id
+    - suite
+    - task_id
+    - task_name
+    - task_instruction
+    - state_id
+    - seed
+    - step_idx
+    - policy_step_idx
+    - phase                          # wait | policy
+    - image_path
+    - image_path_available
+    - raw_action
+    - env_action
+    - action_dx
+    - action_dy
+    - action_dz
+    - action_gripper
+    - gripper_command
+    - gripper_qpos
+    - gripper_width
+    - eef_x
+    - eef_y
+    - eef_z
+    - eef_qx
+    - eef_qy
+    - eef_qz
+    - eef_qw
+    - eef_axang_x
+    - eef_axang_y
+    - eef_axang_z
+    - eef_vx
+    - eef_vy
+    - eef_vz
+    - reward
+    - done
+    - success_so_far
+    - info_success_if_available
+    - runtime_error
+    - error_msg
+
+  teacher_only_privileged:
+    - object_pose_json
+    - target_pose_json
+    - object_to_target_distance
+    - teacher_privileged_state_available
+
+  teacher_only_note: >
+    Privileged fields may be logged for teacher labels only.
+    They must NOT enter deployed student features.
+
+episode_records:
+  required:
+    - run_id
+    - suite
+    - task_id
+    - task_name
+    - task_instruction
+    - state_id
+    - seed
+    - success
+    - runtime_error
+    - failure_phase
+    - num_steps
+    - done_step
+    - first_policy_step
+    - last_policy_step
+    - artifact_complete
+    - step_records_path
+    - video_path_optional
+    - rgb_dir_optional
+
+worker_manifest_shard:
+  path: tables/shards/manifest_worker_{worker_id}.csv
+  rule: Each worker writes its own shard. Never allow multiple workers to write the same CSV.
+
+aggregate_manifest:
+  path: tables/official_clean_artifact_rich_manifest.csv
+  episode_key: "suite::task_id::task_name::state_id::seed::run_id"
