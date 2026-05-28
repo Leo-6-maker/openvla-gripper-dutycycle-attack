@@ -13,6 +13,13 @@ import torch
 from pathlib import Path
 from PIL import Image
 
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO))
+from src.utils.libero_privileged_state import (
+    extract_teacher_privileged_state,
+    build_sim_debug_metadata,
+)
+
 DATE_TIME = time.strftime("%Y_%m_%d-%H_%M_%S")
 
 
@@ -314,23 +321,16 @@ def main():
                     object_pose_json = ""
                     target_pose_json = ""
                     obj_dist = ""
+                    object_eef_dist = ""
+                    priv_error = ""
                     if args.save_privileged_teacher_state:
-                        try:
-                            obj_pose = obs.get("object_pos", obs.get("obj_pos", None))
-                            if obj_pose is not None:
-                                object_pose_json = json.dumps(np.asarray(obj_pose).tolist())
-                                teacher_priv = True
-                            tgt_pose = obs.get("target_pos", obs.get("goal_pos", None))
-                            if tgt_pose is not None:
-                                target_pose_json = json.dumps(np.asarray(tgt_pose).tolist())
-                                teacher_priv = True
-                            if obj_pose is not None and tgt_pose is not None:
-                                obj_arr = np.asarray(obj_pose)
-                                tgt_arr = np.asarray(tgt_pose)
-                                obj_dist = float(np.linalg.norm(obj_arr - tgt_arr))
-                                teacher_priv = True
-                        except Exception:
-                            pass
+                        priv = extract_teacher_privileged_state(env, obs, task_desc)
+                        teacher_priv = priv["teacher_privileged_state_available"]
+                        object_pose_json = priv["object_pose_json"]
+                        target_pose_json = priv["target_pose_json"]
+                        obj_dist = priv["object_to_target_distance"]
+                        object_eef_dist = priv["object_eef_distance"]
+                        priv_error = priv["privileged_state_error"]
 
                     # Step record
                     if args.save_step_records:
@@ -362,6 +362,8 @@ def main():
                             "object_pose_json": object_pose_json,
                             "target_pose_json": target_pose_json,
                             "object_to_target_distance": obj_dist,
+                            "object_eef_distance": object_eef_dist,
+                            "privileged_state_error": priv_error,
                             "teacher_privileged_state_available": teacher_priv,
                         }, args)
 
@@ -380,6 +382,15 @@ def main():
                     break
 
             end_time = time.strftime("%Y-%m-%dT%H:%M:%S")
+
+            # Save debug sim metadata before closing env
+            if args.save_privileged_teacher_state:
+                debug_dir = run_dir / "debug"
+                debug_dir.mkdir(exist_ok=True)
+                debug_meta = build_sim_debug_metadata(env, task_desc)
+                with open(debug_dir / "sim_names.json", "w") as f:
+                    json.dump(debug_meta, f, indent=2, default=float)
+
             env.close()
 
             # Episode record
