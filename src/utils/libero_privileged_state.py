@@ -17,38 +17,192 @@ def _normalize_name(name: str) -> str:
     return name.lower().strip().replace("_", " ").replace("-", " ").replace("the ", "")
 
 
-def _parse_task_objects(task_instruction: str) -> tuple[str | None, str | None]:
-    """Extract target object and receptacle from task instruction.
+def classify_mechanism(task_instruction: str) -> dict[str, Any]:
+    """Classify task mechanism type and extract parsed objects.
 
-    Returns (object_name, receptacle_name).
+    Returns dict with:
+        mechanism_type, gripper_duty_eligible, parsed_object, parsed_target,
+        target_type, segments, parser_confidence, unsupported_reason
     """
     text = task_instruction.lower().strip()
-    obj = rec = None
 
-    # Pattern: "pick up the X and place it in the Y"
-    m = re.search(r"pick up the (.+?) and place it in the (.+)", text)
+    # Default
+    result: dict[str, Any] = {
+        "mechanism_type": "unsupported_or_low_signal",
+        "gripper_duty_eligible": False,
+        "parsed_object": None,
+        "parsed_target": None,
+        "target_type": "unknown",
+        "segments": [],
+        "parser_confidence": "low",
+        "unsupported_reason": "",
+    }
+
+    # ── Pattern: "pick up the X and place it in/on the Y" (Object, Spatial) ──
+    m = re.search(r"pick up the (.+?) and place it (?:in|on) the (.+)", text)
+    if m:
+        result["mechanism_type"] = "pick_place_transfer"
+        result["gripper_duty_eligible"] = True
+        result["parsed_object"] = m.group(1).strip()
+        result["parsed_target"] = m.group(2).strip()
+        result["target_type"] = "body_or_site"
+        result["parser_confidence"] = "high"
+        return result
+
+    # ── Pattern: "put both the X and the Y in/on the Z" (L10 multi-object) ──
+    m = re.search(r"put both the (.+?) and the (.+?) (?:in|on) the (.+)", text)
+    if m:
+        result["mechanism_type"] = "multi_object_transfer"
+        result["gripper_duty_eligible"] = True
+        result["parsed_object"] = m.group(1).strip()
+        result["parsed_target"] = m.group(3).strip()
+        result["target_type"] = "body_or_site"
+        result["segments"] = [
+            {"object": m.group(1).strip(), "target": m.group(3).strip()},
+            {"object": m.group(2).strip(), "target": m.group(3).strip()},
+        ]
+        result["parser_confidence"] = "high"
+        return result
+
+    # ── Pattern: "put both Xs on the Y" (L10) ──
+    m = re.search(r"put both (.+?) on the (.+)", text)
+    if m:
+        result["mechanism_type"] = "multi_object_transfer"
+        result["gripper_duty_eligible"] = True
+        result["parsed_object"] = m.group(1).strip()
+        result["parsed_target"] = m.group(2).strip()
+        result["target_type"] = "body_or_site"
+        result["parser_confidence"] = "medium"
+        return result
+
+    # ── Pattern: "put the X on/in the Y and put the Z on/to the W" (L10 multi-step, BEFORE simple put) ──
+    m = re.search(r"put the (.+?) (?:in|on) the (.+?) and put the (.+?) (?:in|on|to|on top of) the (.+)", text)
+    if m:
+        result["mechanism_type"] = "multi_object_transfer"
+        result["gripper_duty_eligible"] = True
+        result["parsed_object"] = m.group(1).strip()
+        result["parsed_target"] = m.group(2).strip()
+        result["target_type"] = "body_or_site"
+        result["segments"] = [
+            {"object": m.group(1).strip(), "target": m.group(2).strip()},
+            {"object": m.group(3).strip(), "target": m.group(4).strip()},
+        ]
+        result["parser_confidence"] = "high"
+        return result
+
+    # ── Pattern: "put the X in/on/to/on top of the Y" (simple, Goal/L10, AFTER multi-step) ──
+    m = re.search(r"put the (.+?) (?:in|on|to|on top of) the (.+?)(?: and (?:put|close)|$)", text)
     if m:
         obj = m.group(1).strip()
         rec = m.group(2).strip()
-        return obj, rec
+        rec = re.split(r"\s+and\s+put\b", rec)[0].strip()
+        rec = re.split(r"\s+and\s+close\b", rec)[0].strip()
+        result["mechanism_type"] = "pick_place_transfer"
+        result["gripper_duty_eligible"] = True
+        result["parsed_object"] = obj
+        result["parsed_target"] = rec
+        result["target_type"] = "body_or_site"
+        result["parser_confidence"] = "high"
+        return result
 
-    # Pattern: "pick up the X and place it on the Y"
-    m = re.search(r"pick up the (.+?) and place it on the (.+)", text)
+    # ── Pattern: "open the X" (articulated, AFTER compound open+put) ──
+    if " and put " not in text and " and close" not in text:
+        m = re.search(r"open the (.+?)(?: of the .+)?$", text)
     if m:
-        obj = m.group(1).strip()
-        rec = m.group(2).strip()
-        return obj, rec
+        result["mechanism_type"] = "articulated_object"
+        result["gripper_duty_eligible"] = False
+        result["parsed_object"] = m.group(1).strip()
+        result["parsed_target"] = None
+        result["target_type"] = "articulated_joint"
+        result["parser_confidence"] = "high"
+        return result
 
-    # Pattern: "pick up the X"
-    m = re.search(r"pick up the (.+)", text)
+    # ── Pattern: "open the X and put the Y inside/in" ──
+    m = re.search(r"open the (.+?) and put the (.+?) (?:inside|in)", text)
     if m:
-        obj = m.group(1).strip()
-    # Pattern: "place it in the Y"
-    m = re.search(r"place it (?:in|on) the (.+)", text)
-    if m:
-        rec = m.group(1).strip()
+        result["mechanism_type"] = "articulated_object"
+        result["gripper_duty_eligible"] = False
+        result["parsed_object"] = m.group(2).strip()  # the object being moved
+        result["parsed_target"] = m.group(1).strip()   # the drawer/door
+        result["target_type"] = "articulated_joint"
+        result["parser_confidence"] = "high"
+        return result
 
-    return obj, rec
+    # ── Pattern: "turn on the X and put the Y on it" ──
+    m = re.search(r"turn (?:on|off) the (.+?) and put the (.+?) on", text)
+    if m:
+        result["mechanism_type"] = "articulated_object"
+        result["gripper_duty_eligible"] = False
+        result["parsed_object"] = m.group(2).strip()
+        result["parsed_target"] = m.group(1).strip()
+        result["target_type"] = "articulated_joint"
+        result["parser_confidence"] = "high"
+        return result
+
+    # ── Pattern: "close the X" or "put X in Y and close it" ──
+    m = re.search(r"(?:put the .+? (?:in|on) the .+? and )?close (?:it|the )?(.+)", text)
+    if m:
+        result["mechanism_type"] = "articulated_object"
+        result["gripper_duty_eligible"] = False
+        result["parsed_target"] = m.group(1).strip() if m.group(1) else "door_or_drawer"
+        result["unsupported_reason"] = "articulated_close_action"
+        result["parser_confidence"] = "medium"
+        return result
+
+    # ── Pattern: "turn on/off the X" ──
+    m = re.search(r"turn (?:on|off) the (.+)", text)
+    if m:
+        result["mechanism_type"] = "articulated_object"
+        result["gripper_duty_eligible"] = False
+        result["parsed_target"] = m.group(1).strip()
+        result["target_type"] = "articulated_joint"
+        result["parser_confidence"] = "high"
+        return result
+
+    # ── Pattern: "push the X to the Y" ──
+    m = re.search(r"push the (.+?) (?:to|into) the (.+)", text)
+    if m:
+        result["mechanism_type"] = "planar_rearrangement_or_spatial_relation"
+        result["gripper_duty_eligible"] = False
+        result["parsed_object"] = m.group(1).strip()
+        result["parsed_target"] = m.group(2).strip()
+        result["target_type"] = "spatial_region"
+        result["parser_confidence"] = "medium"
+        return result
+
+    # ── Pattern: "turn on the X and put the Y on it" ──
+    m = re.search(r"turn on the (.+?) and put the (.+?) on", text)
+    if m:
+        result["mechanism_type"] = "articulated_object"
+        result["gripper_duty_eligible"] = False
+        result["parsed_object"] = m.group(2).strip()
+        result["parsed_target"] = m.group(1).strip()
+        result["target_type"] = "articulated_joint"
+        result["parser_confidence"] = "high"
+        return result
+
+    # ── Pattern: "pick up the X and place it in the Y" (L10 variant) ──
+    m = re.search(r"pick up the (.+?) and place it (?:in|on) the (.+)", text)
+    if m:
+        result["mechanism_type"] = "pick_place_transfer"
+        result["gripper_duty_eligible"] = True
+        result["parsed_object"] = m.group(1).strip()
+        result["parsed_target"] = m.group(2).strip()
+        result["target_type"] = "body_or_site"
+        result["parser_confidence"] = "high"
+        return result
+
+    # ── Fallback ──
+    result["unsupported_reason"] = f"no_matching_pattern: '{text[:80]}'"
+    return result
+
+
+def _parse_task_objects(task_instruction: str) -> tuple[str | None, str | None]:
+    """Extract target object and receptacle from task instruction.
+    Kept for backward compatibility. Prefer classify_mechanism() for new code.
+    """
+    result = classify_mechanism(task_instruction)
+    return result["parsed_object"], result["parsed_target"]
 
 
 def _find_obs_key(obs: dict[str, Any], object_name: str | None, suffix: str = "_pos") -> str | None:
@@ -152,10 +306,29 @@ def extract_teacher_privileged_state(
     }
 
     try:
-        target_obj, target_rec = _parse_task_objects(task_instruction)
+        mech_info = classify_mechanism(task_instruction)
     except Exception as e:
         result["privileged_state_error"] = f"parse_task: {e}"
         return result
+
+    # Handle articulated / unsupported / planar — no pick-place privileged state
+    if mech_info["mechanism_type"] in ("articulated_object", "unsupported_or_low_signal",
+                                        "planar_rearrangement_or_spatial_relation"):
+        result["privileged_state_error"] = f"mechanism={mech_info['mechanism_type']} gripper_duty_eligible=false"
+        return result
+
+    # Get primary object/target from mechanism info
+    target_obj = mech_info["parsed_object"]
+    target_rec = mech_info["parsed_target"]
+    segments = mech_info.get("segments", [])
+
+    # For multi-object transfer, try each segment until one resolves
+    if not target_obj and segments:
+        for seg in segments:
+            target_obj = seg.get("object")
+            target_rec = seg.get("target")
+            if target_obj and target_rec:
+                break
 
     obj_pos = obj_quat = rec_pos = None
     errors: list[str] = []

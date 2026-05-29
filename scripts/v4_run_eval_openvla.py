@@ -781,6 +781,7 @@ def run_dry(args, task, cfg, direction, thresholds):
     write_progress_stub(args, task, run_id, out, max_steps, "dry_run", status="starting")
     for ep in range(args.episodes):
         trigger.reset(ep,max_steps); budget=OnlineBudgetController(args.rho,max_steps,cfg.get("budget",{}).get("budget_rounding","floor"),cfg.get("budget",{}).get("min_budget_steps",1)); ep_steps=[]
+        tcn_prev_eef = None
         for t in range(max_steps):
             clean=fake_action(rng); t0=time.time(); dec=trigger.evaluate(TriggerContext(task["task_id"],ep,t,args.rho,prefix_logits=fake_logits(rng, int(cfg["uncertainty"]["K_trigger"])),clean_action=clean)); Ttrig=time.time()-t0; bd=budget.decide(dec.raw_active); executed=clean.copy(); attack_res=None; Tattack=0; adv_gen=None
             target=build_target_action_for_objective(clean,direction,cfg,args)
@@ -865,6 +866,7 @@ def run_offline_prompt_audit(args, task, cfg, direction, thresholds):
         obs=env.reset()
         obs=env.set_init_state(init_states[int(sid)])
         collected = 0
+        tcn_prev_eef = None
         for t in range(max_steps):
             if args.camera_obs_key not in obs:
                 break
@@ -985,6 +987,7 @@ def run_real(args, task, cfg, direction, thresholds):
         moka_stage_tracker.reset()
         proxy_gripper_history=[]; proxy_lift_carry_z_up_streak=0; consecutive_open_streak=0; lift_proxy_streak_min=int(os.environ.get("V4_LIFT_PROXY_Z_UP_STREAK_MIN", "4")); lift_proxy_eef_delta_min=float(os.environ.get("V4_LIFT_PROXY_EEF_Z_DELTA_MIN", "0.04"))
         trigger.reset(ep,max_steps); attacker.reset_temporal_state(); budget=OnlineBudgetController(args.rho,max_steps,cfg.get("budget",{}).get("budget_rounding","floor"),cfg.get("budget",{}).get("min_budget_steps",1)); ep_steps=[]; success=False; timeout=False; invalid=False; invalid_reason=""
+        tcn_prev_eef = None
         for t in range(max_steps):
             if args.camera_obs_key not in obs: invalid=True; invalid_reason=f"missing camera {args.camera_obs_key}; keys={list(obs.keys())}"; break
             clean,prefix_logits,Tclean,out_clean=decode_with_scores(model,processor,device,obs[args.camera_obs_key],instruction,unnorm,int(cfg["uncertainty"]["K_trigger"]),libero_official_preprocess=args.libero_official_preprocess,libero_preprocess_backend=args.libero_preprocess_backend,center_crop=args.center_crop,resize_size=args.openvla_resize_size,drop_attention_mask=(not args.keep_attention_mask))
@@ -1025,7 +1028,23 @@ def run_real(args, task, cfg, direction, thresholds):
                 on_stove_dxy_threshold=float(args.moka_on_stove_dxy_threshold),
                 on_stove_dz_threshold=float(args.moka_on_stove_dz_threshold),
             )
-            step_meta={**grasp_meta, **proxy_meta, **moka_meta}
+            # ---- TCN detector proprio enrichment ----
+            eef = eef_pos(env)
+            eef_x, eef_y, eef_z = (float(eef[0]), float(eef[1]), float(eef[2])) if eef is not None else (0.0, 0.0, 0.0)
+            eef_vx = float(eef_x - tcn_prev_eef[0]) if tcn_prev_eef is not None else 0.0
+            eef_vy = float(eef_y - tcn_prev_eef[1]) if tcn_prev_eef is not None else 0.0
+            eef_vz = float(eef_z - tcn_prev_eef[2]) if tcn_prev_eef is not None else 0.0
+            tcn_prev_eef = (eef_x, eef_y, eef_z)
+            gq = obs.get('robot0_gripper_qpos', [0.0])
+            gripper_qpos = float(gq[0]) if hasattr(gq, '__len__') and len(gq) > 0 else float(gq)
+            tcn_proprio = {
+                'gripper_command': 0.0,
+                'gripper_qpos': gripper_qpos,
+                'gripper_width': float(obs.get('gripper_width', 0.0)),
+                'eef_x': eef_x, 'eef_y': eef_y, 'eef_z': eef_z,
+                'eef_vx': eef_vx, 'eef_vy': eef_vy, 'eef_vz': eef_vz,
+            }
+            step_meta={**grasp_meta, **proxy_meta, **moka_meta, **tcn_proprio}
             phase_attack_enabled = True
             if bool(args.moka_two_pot_mode):
                 phase_attack_enabled = str(moka_meta.get("moka_stage_id", "")) == "second_pot_phase"

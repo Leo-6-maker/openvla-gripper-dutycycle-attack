@@ -486,7 +486,102 @@ class OracleOfflineMarginTopKTrigger(OracleOfflineEntropyTopKTrigger):
     name = "oracle_offline_margin_topk"
 
 
+class TCNDetectorBudgetedTrigger(BaseTrigger):
+    name = "tcn_proprio_budgeted"
+    HISTORY_LEN = 16
+    HIDDEN_DIM = 64
+    TCN_LAYERS = 3
+    ALLOWED = [
+        "gripper_command", "gripper_qpos", "gripper_width",
+        "eef_x", "eef_y", "eef_z", "eef_vx", "eef_vy", "eef_vz",
+        "action_dx", "action_dy", "action_dz", "action_gripper",
+    ]
+    N_PROPRIO = len(ALLOWED)
+
+    def __init__(self, model_path=None, hazard_threshold=0.1, trigger_duration=5):
+        self.model_path = model_path or "/data/liuyu/outputs/milestone_2e3_object100_visual_proprio_no_step_20260527/models/ProprioNoStep_baseline.pt"
+        self.hazard_th = float(hazard_threshold)
+        self.trig_dur = int(trigger_duration)
+        self._history = []
+        self._hazard_buf = []
+        self._model = None  # lazy load
+
+    def _ensure_model(self):
+        if self._model is not None:
+            return
+        import torch, torch.nn as nn, torch.nn.functional as F, numpy as np
+        class _TCN(nn.Module):
+            def __init__(self, in_dim, h_dim, n_ph=8, n_l=3, do=0.1):
+                super().__init__()
+                self.proj = nn.Linear(in_dim, h_dim)
+                self.convs = nn.ModuleList([nn.Conv1d(h_dim, h_dim, 3, padding=2**(i+1), dilation=2**i) for i in range(n_l)])
+                self.drop = nn.Dropout(do)
+                self.ph = nn.Linear(h_dim, n_ph); self.hz = nn.Linear(h_dim, 1); self.rl = nn.Linear(h_dim, 1)
+            def forward(self, x):
+                x = self.proj(x); x = x.transpose(1, 2)
+                for c in self.convs:
+                    r = x; x = F.relu(c(x)); x = x[:, :, -r.shape[2]:] + r; x = self.drop(x)
+                x = x[:, :, -1]; return self.ph(x), self.hz(x).squeeze(-1), self.rl(x).squeeze(-1)
+        self._model = _TCN(self.N_PROPRIO, self.HIDDEN_DIM, 8, self.TCN_LAYERS)
+        self._model.load_state_dict(torch.load(self.model_path, map_location='cpu'))
+        self._model.eval()
+        self._torch = torch; self._np = np
+
+    def reset(self, episode_id, max_steps):
+        super().reset(episode_id, max_steps)
+        self._history = []; self._hazard_buf = []
+
+    def evaluate(self, context):
+        self._ensure_model()
+        torch = self._torch; np = self._np
+
+        # Extract features from context
+        meta = context.metadata or {}
+        action = context.clean_action
+        ax, ay, az, ag = (0.0, 0.0, 0.0, 0.0)
+        if action is not None:
+            if hasattr(action, 'tolist'):
+                a = action.tolist()
+            else:
+                a = list(action)
+            if len(a) >= 4:
+                ax, ay, az, ag = float(a[0]), float(a[1]), float(a[2]), float(a[3])
+
+        feats = np.array([
+            float(meta.get('gripper_command', 0)), float(meta.get('gripper_qpos', 0)),
+            float(meta.get('gripper_width', 0)),
+            float(meta.get('eef_x', 0)), float(meta.get('eef_y', 0)), float(meta.get('eef_z', 0)),
+            float(meta.get('eef_vx', 0)), float(meta.get('eef_vy', 0)), float(meta.get('eef_vz', 0)),
+            ax, ay, az, ag,
+        ], dtype=np.float32)
+
+        self._history.append(feats)
+        if len(self._history) > self.HISTORY_LEN:
+            self._history = self._history[-self.HISTORY_LEN:]
+
+        hist = np.array(self._history, dtype=np.float32)
+        if hist.shape[0] < self.HISTORY_LEN:
+            pad = np.zeros((self.HISTORY_LEN - hist.shape[0], self.N_PROPRIO), dtype=np.float32)
+            hist = np.concatenate([pad, hist], axis=0)
+
+        x = torch.tensor(hist, dtype=torch.float32).unsqueeze(0)
+        with torch.no_grad():
+            _, hl, _ = self._model(x)
+        hs = float(torch.sigmoid(hl).item())
+
+        self._hazard_buf.append(hs)
+        if len(self._hazard_buf) > self.trig_dur:
+            self._hazard_buf = self._hazard_buf[-self.trig_dur:]
+
+        trigger_now = False
+        if len(self._hazard_buf) >= self.trig_dur and all(h > self.hazard_th for h in self._hazard_buf):
+            trigger_now = True
+
+        return TriggerDecision(self.name, trigger_now, score=hs, reason=f"hazard={hs:.3f}")
+
+
 def make_trigger(name: str, seed: int = 0, thresholds: dict | None = None):
+    if name in ("tcn_proprio_budgeted", "tcn_proprio"): return TCNDetectorBudgetedTrigger(thresholds.get("model_path") if thresholds else None, float(thresholds.get("hazard_th", 0.1)) if thresholds else 0.1, int(thresholds.get("dur", 5)) if thresholds else 5)
     if name in ("clean", "none"): return CleanTrigger()
     if name == "dense": return DenseTrigger()
     if name in ("random_bernoulli_budgeted", "random"): return RandomBernoulliBudgetedTrigger(seed)

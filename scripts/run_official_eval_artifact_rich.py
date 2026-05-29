@@ -47,6 +47,88 @@ def invert_gripper_action(action):
     return action
 
 
+
+# ── TCN Detector (online streaming, causal, CPU) ──
+HISTORY_LEN_DET = 16; HIDDEN_DIM_DET = 64; TCN_LAYERS_DET = 3
+ALLOWED_PROPRIO = [
+    "gripper_command", "gripper_qpos", "gripper_width",
+    "eef_x", "eef_y", "eef_z", "eef_vx", "eef_vy", "eef_vz",
+    "action_dx", "action_dy", "action_dz", "action_gripper",
+]
+N_PROPRIO = len(ALLOWED_PROPRIO)
+
+class CausalTCNDetector(torch.nn.Module):
+    def __init__(self, in_dim, h_dim, n_ph=8, n_l=3, do=0.1):
+        super().__init__()
+        self.proj = torch.nn.Linear(in_dim, h_dim)
+        self.convs = torch.nn.ModuleList([
+            torch.nn.Conv1d(h_dim, h_dim, 3, padding=2**(i+1), dilation=2**i)
+            for i in range(n_l)])
+        self.drop = torch.nn.Dropout(do)
+        self.ph = torch.nn.Linear(h_dim, n_ph); self.hz = torch.nn.Linear(h_dim, 1)
+        self.rl = torch.nn.Linear(h_dim, 1)
+    def forward(self, x):
+        x = self.proj(x); x = x.transpose(1, 2)
+        for c in self.convs:
+            r = x; x = torch.nn.functional.relu(c(x))
+            x = x[:, :, -r.shape[2]:] + r; x = self.drop(x)
+        x = x[:, :, -1]
+        return self.ph(x), self.hz(x).squeeze(-1), self.rl(x).squeeze(-1)
+
+class OnlineDetector:
+    def __init__(self, model_path, device="cpu", hazard_th=0.1, trig_dur=5, cooldown=0):
+        self.model = CausalTCNDetector(N_PROPRIO, HIDDEN_DIM_DET, 8, TCN_LAYERS_DET).to(device)
+        self.model.load_state_dict(torch.load(model_path, map_location=device))
+        self.model.eval()
+        self.device = device; self.hazard_th = hazard_th
+        self.trig_dur = trig_dur; self.cooldown = cooldown
+        self.history = []; self.hazard_buf = []; self.cooldown_ctr = 0
+
+    def reset(self):
+        self.history = []; self.hazard_buf = []; self.cooldown_ctr = 0
+
+    def update(self, features):
+        self.history.append(features)
+        if len(self.history) > HISTORY_LEN_DET:
+            self.history = self.history[-HISTORY_LEN_DET:]
+        hist = np.array(self.history, dtype=np.float32)
+        if hist.shape[0] < HISTORY_LEN_DET:
+            pad = np.zeros((HISTORY_LEN_DET - hist.shape[0], N_PROPRIO), dtype=np.float32)
+            hist = np.concatenate([pad, hist], axis=0)
+        x = torch.tensor(hist, dtype=torch.float32).unsqueeze(0).to(self.device)
+        with torch.no_grad():
+            ph, hl, rl = self.model(x)
+        hs = float(torch.sigmoid(hl).item()); rs = float(torch.sigmoid(rl).item())
+        pp = torch.softmax(ph, dim=-1).cpu().numpy()[0]
+        pi = int(np.argmax(pp)); conf = float(pp[pi])
+
+        self.hazard_buf.append(hs)
+        if len(self.hazard_buf) > self.trig_dur:
+            self.hazard_buf = self.hazard_buf[-self.trig_dur:]
+
+        trigger_now = False; trigger_reason = ""
+        if self.cooldown_ctr > 0:
+            self.cooldown_ctr -= 1
+        elif len(self.hazard_buf) >= self.trig_dur:
+            if all(h > self.hazard_th for h in self.hazard_buf):
+                trigger_now = True; trigger_reason = f"consecutive_{self.trig_dur}"
+                self.cooldown_ctr = self.cooldown
+        return {"hazard_score": hs, "release_safe_score": rs,
+                "phase_idx": pi, "phase_confidence": conf,
+                "trigger_now": trigger_now,
+                "trigger_duration": self.trig_dur if trigger_now else 0,
+                "trigger_reason": trigger_reason}
+
+def attack_action(action, condition, rng):
+    if condition == "clean": return action
+    a = action.copy()
+    if condition == "oracle_open": a[-1] = 1.0
+    elif condition == "random_control": a[-1] = 1.0 if rng.random() > 0.5 else -1.0
+    elif condition == "VIS_targeted":
+        a[-1] = float(np.clip(-action[-1] + rng.normal(0, 0.05), -1.0, 1.0))
+    return a
+
+
 def parse_args():
     ap = argparse.ArgumentParser(description="Artifact-rich official eval runner")
     ap.add_argument("--model_path", required=True)
@@ -68,6 +150,12 @@ def parse_args():
     ap.add_argument("--save_privileged_teacher_state", action="store_true", default=True)
     ap.add_argument("--rgb_format", default="png", choices=["png", "jpg"])
     ap.add_argument("--dry_run", action="store_true")
+    ap.add_argument("--detector_path", default="", help="TCN detector .pt for shadow/attack")
+    ap.add_argument("--detector_hazard_threshold", type=float, default=0.1)
+    ap.add_argument("--detector_trigger_duration", type=int, default=5)
+    ap.add_argument("--detector_cooldown", type=int, default=0)
+    ap.add_argument("--attack_condition", default="clean",
+        choices=["clean", "oracle_open", "random_control", "VIS_targeted"])
     return ap.parse_args()
 
 
@@ -183,6 +271,19 @@ def main():
             if isinstance(v, int): DEVICE = f"cuda:{v}"; break
     print(f"[*] Model loaded, primary device: {DEVICE}")
 
+    # ── Load detector ──
+    detector = None; attack_rng = None
+    if getattr(args, 'detector_path', '') and args.detector_path:
+        print(f"[*] Loading detector from {args.detector_path}...")
+        detector = OnlineDetector(args.detector_path, device="cpu",
+            hazard_th=args.detector_hazard_threshold,
+            trig_dur=args.detector_trigger_duration,
+            cooldown=args.detector_cooldown)
+        attack_rng = np.random.RandomState(42)
+        n_params = sum(p.numel() for p in detector.model.parameters())
+        print(f"[*] Detector ready ({n_params} params)")
+        print(f"[*] Attack condition: {args.attack_condition}")
+
     stats_path = os.path.join(args.model_path, "dataset_statistics.json")
     if os.path.isfile(stats_path):
         with open(stats_path) as f:
@@ -214,6 +315,7 @@ def main():
     }
     max_steps = suite_max_steps.get(args.task_suite_name, 400)
 
+    detector = None; attack_rng = None
     task_end = min(args.task_start + args.task_count, num_tasks)
     total_episodes = 0
     total_successes = 0
@@ -244,6 +346,8 @@ def main():
             t = 0
             policy_step = 0
             success = False
+            if detector is not None:
+                detector.reset()
             runtime_error = False
             error_msg = ""
             done_step = -1
@@ -306,6 +410,26 @@ def main():
                     # Gripper postprocess
                     env_action = normalize_gripper_action(raw_action.copy(), binarize=True)
                     env_action = invert_gripper_action(env_action)
+
+                    # ── Detector inference (online, causal) ──
+                    det_out = None; attack_applied = False
+                    original_env_action = env_action.copy()
+                    if detector is not None:
+                        gq = obs.get("robot0_gripper_qpos", [0.0])
+                        gq_val = float(gq[0]) if hasattr(gq, '__len__') else float(gq)
+                        ef = obs["robot0_eef_pos"]
+                        det_feats = np.array([
+                            float(obs.get("gripper_command", 0)), gq_val,
+                            float(obs.get("gripper_width", 0)),
+                            float(ef[0]), float(ef[1]), float(ef[2]),
+                            0.0, 0.0, 0.0,
+                            float(raw_action[0]), float(raw_action[1]),
+                            float(raw_action[2]), float(raw_action[3]),
+                        ], dtype=np.float32)
+                        det_out = detector.update(det_feats)
+                        if det_out["trigger_now"]:
+                            env_action = attack_action(env_action, args.attack_condition, attack_rng)
+                            attack_applied = True
 
                     # EEF velocity
                     eef_pos = obs["robot0_eef_pos"]
