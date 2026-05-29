@@ -335,7 +335,7 @@ def main():
         for ep_idx in range(args.num_trials_per_task):
             start_time = time.strftime("%Y-%m-%dT%H:%M:%S")
             run_id = f"{args.run_id_prefix}_{task_name.replace('pick_up_the_','').replace('_and_place_it_in_the_basket','')}_s{ep_idx}"
-            run_dir = out / "runs" / args.task_suite_name / f"{task_name}_state{ep_idx}"
+            run_dir = out / "runs" / args.task_suite_name / run_id
             run_dir.mkdir(parents=True, exist_ok=True)
             rgb_dir = run_dir / "frames" if args.save_rgb else None
             if rgb_dir:
@@ -444,7 +444,7 @@ def main():
                             det_out["trigger_now"] = True
                             det_out["trigger_duration"] = 3
                             det_out["trigger_reason"] = "forced_smoke_test"
-                        if det_out["trigger_now"] and attack_remaining == 0:
+                        if det_out["trigger_now"] and attack_remaining == 0 and args.attack_condition != "clean":
                             attack_remaining = det_out["trigger_duration"]
                         if attack_remaining > 0 and args.attack_condition != "clean":
                             env_action = attack_action(env_action, args.attack_condition, attack_rng)
@@ -581,6 +581,12 @@ def main():
                 "save_rgb": args.save_rgb,
                 "save_step_records": args.save_step_records,
                 "save_privileged_teacher_state": args.save_privileged_teacher_state,
+                "attack_condition": args.attack_condition,
+                "detector_path": args.detector_path if hasattr(args, "detector_path") else "",
+                "detector_hazard_threshold": args.detector_hazard_threshold if hasattr(args, "detector_hazard_threshold") else 0.0,
+                "detector_trigger_duration": args.detector_trigger_duration if hasattr(args, "detector_trigger_duration") else 0,
+                "detector_cooldown": args.detector_cooldown if hasattr(args, "detector_cooldown") else 0,
+                "force_detector_trigger": args.force_detector_trigger if hasattr(args, "force_detector_trigger") else False,
                 "output_root": args.output_root,
                 "run_dir": str(run_dir), "start_time": start_time,
                 "end_time": end_time, "runtime_status": "complete",
@@ -599,6 +605,12 @@ def main():
                 "worker_id": args.worker_id, "success": success,
                 "runtime_error": runtime_error, "num_steps": t + 1,
                 "artifact_complete": True,
+                "run_dir": str(run_dir),
+                "attack_condition": args.attack_condition,
+                "detector_path": args.detector_path if hasattr(args, "detector_path") else "",
+                "detector_hazard_threshold": args.detector_hazard_threshold if hasattr(args, "detector_hazard_threshold") else 0.0,
+                "detector_trigger_duration": args.detector_trigger_duration if hasattr(args, "detector_trigger_duration") else 0,
+                "force_detector_trigger": args.force_detector_trigger if hasattr(args, "force_detector_trigger") else False,
             })
 
             print(f"  {task_name} s{ep_idx}: success={success} steps={t+1}")

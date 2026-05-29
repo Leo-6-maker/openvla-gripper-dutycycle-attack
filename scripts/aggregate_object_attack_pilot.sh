@@ -35,7 +35,7 @@ for ep_dir in sorted(glob.glob(os.path.join(runs_dir, '*'))):
     # Extract condition from run_id
     run_id = manifest.get('run_id', '')
     condition = 'unknown'
-    for cond in ['clean', 'oracle_open', 'random_control', 'VIS_targeted']:
+    for cond in ['clean', 'oracle_open', 'random_control', 'gripper_inversion_proxy']:
         if cond in run_id:
             condition = cond; break
 
@@ -76,14 +76,14 @@ for r in results:
 
 print()
 print('=== PER-CONDITION SUMMARY ===')
-for cond in ['clean', 'oracle_open', 'random_control', 'VIS_targeted']:
+for cond in ['clean', 'oracle_open', 'random_control', 'gripper_inversion_proxy']:
     c = by_cond.get(cond, {'n':0,'success':0,'total_triggers':0,'total_attacks':0})
     print(f'{cond}: SR={c[\"success\"]}/{c[\"n\"]} ({c[\"success\"]/max(1,c[\"n\"]):.2f}) triggers={c[\"total_triggers\"]} attacks={c[\"total_attacks\"]}')
 
 with open(os.path.join(OUT, 'tables', 'attack_pilot_condition_summary.csv'), 'w', newline='') as f:
     w = csv.DictWriter(f, fieldnames=['condition', 'n', 'success', 'sr', 'total_triggers', 'total_attacks'])
     w.writeheader()
-    for cond in ['clean', 'oracle_open', 'random_control', 'VIS_targeted']:
+    for cond in ['clean', 'oracle_open', 'random_control', 'gripper_inversion_proxy']:
         c = by_cond.get(cond, {'n':0,'success':0,'total_triggers':0,'total_attacks':0})
         w.writerow({'condition': cond, 'n': c['n'], 'success': c['success'],
             'sr': c['success']/max(1,c['n']), 'total_triggers': c['total_triggers'],
