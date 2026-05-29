@@ -350,6 +350,9 @@ def main():
             policy_step = 0
             success = False
             attack_remaining = 0
+            ep_done_any = False
+            ep_reward_max = 0.0
+            ep_info_success = None
             if detector is not None:
                 detector.reset()
             runtime_error = False
@@ -503,6 +506,7 @@ def main():
                             "object_to_target_distance": obj_dist,
                             "object_eef_distance": object_eef_dist,
                             "privileged_state_error": priv_error,
+                            "done": bool(done), "reward": float(reward),
                             "teacher_privileged_state_available": teacher_priv,
                             # ── Detector/attack fields ──
                             "detector_hazard_score": float(det_out["hazard_score"]) if det_out else "",
@@ -520,10 +524,13 @@ def main():
                         }, args)
 
                     obs, reward, done, info = env.step(env_action.tolist())
+                    if done: ep_done_any = True
+                    if reward > ep_reward_max: ep_reward_max = float(reward)
+                    if info and "success" in info: ep_info_success = info["success"]
                     policy_step += 1
 
                     if done:
-                        success = bool(info.get("success", False))
+                        success = True
                         done_step = policy_step
                         break
                     t += 1
@@ -591,6 +598,15 @@ def main():
                 "run_dir": str(run_dir), "start_time": start_time,
                 "end_time": end_time, "runtime_status": "complete",
                 "success": success, "failure_phase": "",
+                "success_official": success,
+                "success_done": ep_done_any,
+                "success_info_present": ep_info_success is not None,
+                "success_info_value": str(ep_info_success) if ep_info_success is not None else "",
+                "success_reward": bool(ep_reward_max > 0),
+                "reward_max": float(ep_reward_max),
+                "done_any": ep_done_any,
+                "timeout": bool(not ep_done_any and t >= max_steps + args.num_steps_wait),
+                "success_source": "done_any_LIBERO_official",
                 "artifact_complete": True,
             }
             save_run_manifest(run_dir, manifest, args)
@@ -604,6 +620,10 @@ def main():
                 "seed": args.seed, "run_id": run_id,
                 "worker_id": args.worker_id, "success": success,
                 "runtime_error": runtime_error, "num_steps": t + 1,
+                "success_official": success,
+                "success_done": ep_done_any,
+                "success_reward": bool(ep_reward_max > 0),
+                "timeout": bool(not ep_done_any and t >= max_steps + args.num_steps_wait),
                 "artifact_complete": True,
                 "run_dir": str(run_dir),
                 "attack_condition": args.attack_condition,
