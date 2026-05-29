@@ -19,6 +19,7 @@ if not os.path.isdir(runs_dir):
 # Using existing infer_failure_phase from grasp.py
 import sys
 sys.path.insert(0, '/data/liuyu/repos/openvla-gripper-dutycycle-attack-clean-main-20260524')
+sys.path.insert(0, '/data/liuyu/repos/openvla-gripper-dutycycle-attack-clean-main-20260524')
 from gripper_attack.grasp import infer_failure_phase
 
 results = []
@@ -88,7 +89,7 @@ for r in results:
 
 print()
 print('=== CQ BY CONDITION ===')
-print(f'{'Condition':<20} {'SR':>5} {'CQFR':>6} {'CQSR':>6} {'Mismatch':>9} {'Gripper':>8} {'Streak':>6}')
+print(f"{"Condition":<20} {"SR":>5} {"CQFR":>6} {"CQSR":>6} {"Mismatch":>9} {"Gripper":>8} {"Streak":>6}")
 for cond in ['clean', 'oracle_open', 'random_control', 'VIS_targeted']:
     c = by_cond.get(cond)
     if not c or c['n'] == 0: continue

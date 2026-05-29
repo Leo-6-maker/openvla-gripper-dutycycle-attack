@@ -124,7 +124,10 @@ def attack_action(action, condition, rng):
     a = action.copy()
     if condition == "oracle_open": a[-1] = 1.0
     elif condition == "random_control": a[-1] = 1.0 if rng.random() > 0.5 else -1.0
-    elif condition == "VIS_targeted":
+    elif condition in ("VIS_targeted", "gripper_inversion_proxy"):
+        # NOTE: This is NOT visual PGD. It is a command-layer gripper inversion + noise proxy.
+        # True VIS PGD requires OpenVLAVisualAttacker from v4_run_eval_openvla.py.
+        # For formal VIS evidence, wire the visual attacker path instead.
         a[-1] = float(np.clip(-action[-1] + rng.normal(0, 0.05), -1.0, 1.0))
     return a
 
@@ -155,7 +158,7 @@ def parse_args():
     ap.add_argument("--detector_trigger_duration", type=int, default=5)
     ap.add_argument("--detector_cooldown", type=int, default=0)
     ap.add_argument("--attack_condition", default="clean",
-        choices=["clean", "oracle_open", "random_control", "VIS_targeted"])
+        choices=["clean", "oracle_open", "random_control", "gripper_inversion_proxy"])
     return ap.parse_args()
 
 
@@ -346,6 +349,7 @@ def main():
             t = 0
             policy_step = 0
             success = False
+            attack_remaining = 0
             if detector is not None:
                 detector.reset()
             runtime_error = False
@@ -411,6 +415,15 @@ def main():
                     env_action = normalize_gripper_action(raw_action.copy(), binarize=True)
                     env_action = invert_gripper_action(env_action)
 
+                    # ── EEF velocity (computed before detector for causal correctness) ──
+                    eef_pos = obs["robot0_eef_pos"]
+                    eef_vx = eef_vy = eef_vz = 0.0
+                    if eef_prev is not None:
+                        eef_vx = float(eef_pos[0] - eef_prev[0])
+                        eef_vy = float(eef_pos[1] - eef_prev[1])
+                        eef_vz = float(eef_pos[2] - eef_prev[2])
+                    eef_prev = eef_pos.copy()
+
                     # ── Detector inference (online, causal) ──
                     det_out = None; attack_applied = False
                     original_env_action = env_action.copy()
@@ -419,26 +432,24 @@ def main():
                         gq_val = float(gq[0]) if hasattr(gq, '__len__') else float(gq)
                         ef = obs["robot0_eef_pos"]
                         det_feats = np.array([
-                            float(obs.get("gripper_command", 0)), gq_val,
+                            float(raw_action[-1]), gq_val,
                             float(obs.get("gripper_width", 0)),
-                            float(ef[0]), float(ef[1]), float(ef[2]),
-                            0.0, 0.0, 0.0,
+                            float(eef_pos[0]), float(eef_pos[1]), float(eef_pos[2]),
+                            eef_vx, eef_vy, eef_vz,
                             float(raw_action[0]), float(raw_action[1]),
-                            float(raw_action[2]), float(raw_action[3]),
+                            float(raw_action[2]), float(env_action[-1]),
                         ], dtype=np.float32)
                         det_out = detector.update(det_feats)
-                        if det_out["trigger_now"]:
+                        if det_out["trigger_now"] and attack_remaining == 0:
+                            attack_remaining = det_out["trigger_duration"]
+                        if attack_remaining > 0 and args.attack_condition != "clean":
                             env_action = attack_action(env_action, args.attack_condition, attack_rng)
                             attack_applied = True
+                            attack_remaining -= 1
+                        else:
+                            attack_applied = False
 
-                    # EEF velocity
-                    eef_pos = obs["robot0_eef_pos"]
-                    eef_vx = eef_vy = eef_vz = 0.0
-                    if eef_prev is not None:
-                        eef_vx = float(eef_pos[0] - eef_prev[0])
-                        eef_vy = float(eef_pos[1] - eef_prev[1])
-                        eef_vz = float(eef_pos[2] - eef_prev[2])
-                    eef_prev = eef_pos.copy()
+# EEF velocity already computed before detector
 
                     # Teacher privileged state
                     teacher_priv = False
@@ -489,13 +500,26 @@ def main():
                             "object_eef_distance": object_eef_dist,
                             "privileged_state_error": priv_error,
                             "teacher_privileged_state_available": teacher_priv,
+                            # ── Detector/attack fields ──
+                            "detector_hazard_score": float(det_out["hazard_score"]) if det_out else "",
+                            "detector_release_safe_score": float(det_out["release_safe_score"]) if det_out else "",
+                            "detector_phase_idx": int(det_out["phase_idx"]) if det_out else "",
+                            "detector_phase_confidence": float(det_out["phase_confidence"]) if det_out else "",
+                            "detector_trigger_now": bool(det_out["trigger_now"]) if det_out else False,
+                            "detector_trigger_duration": int(det_out["trigger_duration"]) if det_out else 0,
+                            "detector_trigger_reason": str(det_out["trigger_reason"]) if det_out else "",
+                            "attack_condition": args.attack_condition,
+                            "attack_applied": bool(attack_applied),
+                            "attack_remaining": int(attack_remaining),
+                            "original_env_action": original_env_action.tolist() if original_env_action is not None else [],
+                            "attacked_env_action": env_action.tolist(),
                         }, args)
 
                     obs, reward, done, info = env.step(env_action.tolist())
                     policy_step += 1
 
                     if done:
-                        success = True
+                        success = bool(info.get("success", False))
                         done_step = policy_step
                         break
                     t += 1

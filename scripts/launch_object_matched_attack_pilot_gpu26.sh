@@ -11,7 +11,9 @@ DET=/data/liuyu/outputs/milestone_2e3_object100_visual_proprio_no_step_20260527/
 MODEL=/data/aviary/models/openvla/openvla-7b-finetuned-libero-object
 
 DET_SHA256=4b3f3d479d6bbb92b2bd15cffec0be587bf221dc81663aaff93e44afdd9c7b1f
-RUNNER_COMMIT=da4b297
+RUNNER_COMMIT=$(git -C ${REPO} rev-parse HEAD)
+RUNNER_BRANCH=$(git -C ${REPO} branch --show-current)
+RUNNER_DIRTY=$(git -C ${REPO} status --porcelain | head -1)
 
 export CUDA_VISIBLE_DEVICES=2,6
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
