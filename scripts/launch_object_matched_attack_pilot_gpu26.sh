@@ -12,8 +12,8 @@ MODEL=/data/aviary/models/openvla/openvla-7b-finetuned-libero-object
 
 DET_SHA256=4b3f3d479d6bbb92b2bd15cffec0be587bf221dc81663aaff93e44afdd9c7b1f
 RUNNER_COMMIT=$(git -C ${REPO} rev-parse HEAD)
-RUNNER_BRANCH=$(git -C ${REPO} branch --show-current)
-RUNNER_DIRTY=$(git -C ${REPO} status --porcelain | head -1)
+RUNNER_BRANCH=$(git -C ${REPO} rev-parse --abbrev-ref HEAD)
+RUNNER_DIRTY=$(git -C ${REPO} status --porcelain 2>/dev/null | head -1 || echo clean)
 
 export CUDA_VISIBLE_DEVICES=2,6
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
