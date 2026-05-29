@@ -42,7 +42,7 @@ for ep_dir in sorted(glob.glob(os.path.join(runs_dir, '*'))):
 
     run_id = manifest.get('run_id', '')
     condition = 'unknown'
-    for cond in ['clean', 'oracle_open', 'random_control', 'VIS_targeted']:
+    for cond in ['clean', 'oracle_open', 'random_control', 'gripper_inversion_proxy']:
         if cond in run_id: condition = cond; break
 
     success = manifest.get('success', False)
@@ -89,8 +89,8 @@ for r in results:
 
 print()
 print('=== CQ BY CONDITION ===')
-print(f"{"Condition":<20} {"SR":>5} {"CQFR":>6} {"CQSR":>6} {"Mismatch":>9} {"Gripper":>8} {"Streak":>6}")
-for cond in ['clean', 'oracle_open', 'random_control', 'VIS_targeted']:
+print(f"{'Condition':<20} {'SR':>5} {'CQFR':>6} {'CQSR':>6} {'Mismatch':>9} {'Gripper':>8} {'Streak':>6}")
+for cond in ['clean', 'oracle_open', 'random_control', 'gripper_inversion_proxy']:
     c = by_cond.get(cond)
     if not c or c['n'] == 0: continue
     sr = c['official_sr'] / c['n']
@@ -105,7 +105,7 @@ for cond in ['clean', 'oracle_open', 'random_control', 'VIS_targeted']:
 with open(os.path.join(OUT, 'tables', 'cq_condition_summary.csv'), 'w', newline='') as f:
     w = csv.DictWriter(f, fieldnames=['condition', 'n', 'official_sr', 'CQFR', 'CQSR', 'sr_cq_mismatch', 'avg_max_gripper_qpos', 'avg_max_open_streak'])
     w.writeheader()
-    for cond in ['clean', 'oracle_open', 'random_control', 'VIS_targeted']:
+    for cond in ['clean', 'oracle_open', 'random_control', 'gripper_inversion_proxy']:
         c = by_cond.get(cond)
         if not c or c['n'] == 0: continue
         cond_results = [r for r in results if r['condition'] == cond]

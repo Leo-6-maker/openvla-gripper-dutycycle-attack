@@ -45,7 +45,7 @@ nvidia-smi -i 2,6 >> ${OUT}/reports/PREFLIGHT_GPU26.txt
 
 # cream_cheese=task1, milk=task7
 # 4 conditions, 5 states each
-for COND in clean oracle_open random_control VIS_targeted; do
+for COND in clean oracle_open random_control gripper_inversion_proxy; do
   for TID in 1 7; do
     WORKER="atk26_${COND}_t${TID}"
     echo "=== ${COND} task_start=${TID} $(date) ==="

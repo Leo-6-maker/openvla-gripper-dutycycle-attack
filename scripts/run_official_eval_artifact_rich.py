@@ -157,6 +157,7 @@ def parse_args():
     ap.add_argument("--detector_hazard_threshold", type=float, default=0.1)
     ap.add_argument("--detector_trigger_duration", type=int, default=5)
     ap.add_argument("--detector_cooldown", type=int, default=0)
+    ap.add_argument("--force_detector_trigger", action="store_true", help="Force detector to always trigger (smoke test only)")
     ap.add_argument("--attack_condition", default="clean",
         choices=["clean", "oracle_open", "random_control", "gripper_inversion_proxy"])
     return ap.parse_args()
@@ -318,7 +319,6 @@ def main():
     }
     max_steps = suite_max_steps.get(args.task_suite_name, 400)
 
-    detector = None; attack_rng = None
     task_end = min(args.task_start + args.task_count, num_tasks)
     total_episodes = 0
     total_successes = 0
@@ -440,6 +440,10 @@ def main():
                             float(raw_action[2]), float(env_action[-1]),
                         ], dtype=np.float32)
                         det_out = detector.update(det_feats)
+                        if args.force_detector_trigger:
+                            det_out["trigger_now"] = True
+                            det_out["trigger_duration"] = 3
+                            det_out["trigger_reason"] = "forced_smoke_test"
                         if det_out["trigger_now"] and attack_remaining == 0:
                             attack_remaining = det_out["trigger_duration"]
                         if attack_remaining > 0 and args.attack_condition != "clean":

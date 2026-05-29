@@ -9,8 +9,8 @@ echo "=== Aggregating attack pilot ==="
 # 1. Aggregate artifact-rich manifests
 cd /data/liuyu/repos/openvla-gripper-dutycycle-attack-clean-main-20260524
 ${PY} scripts/aggregate_artifact_rich_manifests.py \
-  --input_root ${OUT} \
-  --output_table ${OUT}/tables/official_clean_artifact_rich_manifest.csv
+  --output_root ${OUT} \
+  --overwrite
 
 # 2. Per-condition summary
 ${PY} -c "
