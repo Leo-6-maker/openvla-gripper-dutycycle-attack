@@ -124,6 +124,7 @@ def attack_action(action, condition, rng):
     a = action.copy()
     if condition == "oracle_open": a[-1] = 1.0
     elif condition == "random_control": a[-1] = 1.0 if rng.random() > 0.5 else -1.0
+    elif condition == "sustained_command_open_proxy": a[-1] = 1.0
     elif condition in ("VIS_targeted", "gripper_inversion_proxy"):
         # NOTE: This is NOT visual PGD. It is a command-layer gripper inversion + noise proxy.
         # True VIS PGD requires OpenVLAVisualAttacker from v4_run_eval_openvla.py.
@@ -158,8 +159,12 @@ def parse_args():
     ap.add_argument("--detector_trigger_duration", type=int, default=5)
     ap.add_argument("--detector_cooldown", type=int, default=0)
     ap.add_argument("--force_detector_trigger", action="store_true", help="Force detector to always trigger (smoke test only)")
+    ap.add_argument("--attack_burst_steps", type=int, default=0,
+        help="Sustained proxy: attack hold duration in policy steps (0=use trigger_duration for backward compat)")
+    ap.add_argument("--attack_hold_mode", default="fixed",
+        choices=["fixed"], help="Sustained proxy hold mode (only fixed supported)")
     ap.add_argument("--attack_condition", default="clean",
-        choices=["clean", "oracle_open", "random_control", "gripper_inversion_proxy"])
+        choices=["clean", "oracle_open", "random_control", "gripper_inversion_proxy", "sustained_command_open_proxy"])
     return ap.parse_args()
 
 
@@ -448,7 +453,7 @@ def main():
                             det_out["trigger_duration"] = 3
                             det_out["trigger_reason"] = "forced_smoke_test"
                         if det_out["trigger_now"] and attack_remaining == 0 and args.attack_condition != "clean":
-                            attack_remaining = det_out["trigger_duration"]
+                            burst_steps = args.attack_burst_steps if hasattr(args, "attack_burst_steps") and args.attack_burst_steps > 0 else det_out["trigger_duration"]; attack_remaining = burst_steps
                         if attack_remaining > 0 and args.attack_condition != "clean":
                             env_action = attack_action(env_action, args.attack_condition, attack_rng)
                             attack_applied = True
@@ -593,6 +598,8 @@ def main():
                 "detector_hazard_threshold": args.detector_hazard_threshold if hasattr(args, "detector_hazard_threshold") else 0.0,
                 "detector_trigger_duration": args.detector_trigger_duration if hasattr(args, "detector_trigger_duration") else 0,
                 "detector_cooldown": args.detector_cooldown if hasattr(args, "detector_cooldown") else 0,
+                "attack_burst_steps": args.attack_burst_steps if hasattr(args, "attack_burst_steps") else 0,
+                "attack_hold_mode": args.attack_hold_mode if hasattr(args, "attack_hold_mode") else "none",
                 "force_detector_trigger": args.force_detector_trigger if hasattr(args, "force_detector_trigger") else False,
                 "output_root": args.output_root,
                 "run_dir": str(run_dir), "start_time": start_time,
