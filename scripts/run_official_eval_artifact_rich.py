@@ -125,7 +125,7 @@ def attack_action(action, condition, rng):
     if condition == "oracle_open": a[-1] = 1.0
     elif condition == "random_control": a[-1] = 1.0 if rng.random() > 0.5 else -1.0
     elif condition == "sustained_command_open_proxy": a[-1] = 1.0
-    elif condition in ("VIS_targeted", "gripper_inversion_proxy"):
+    elif condition == "gripper_inversion_proxy":
         # NOTE: This is NOT visual PGD. It is a command-layer gripper inversion + noise proxy.
         # True VIS PGD requires OpenVLAVisualAttacker from v4_run_eval_openvla.py.
         # For formal VIS evidence, wire the visual attacker path instead.
@@ -453,7 +453,10 @@ def main():
                             det_out["trigger_duration"] = 3
                             det_out["trigger_reason"] = "forced_smoke_test"
                         if det_out["trigger_now"] and attack_remaining == 0 and args.attack_condition != "clean":
-                            burst_steps = args.attack_burst_steps if hasattr(args, "attack_burst_steps") and args.attack_burst_steps > 0 else det_out["trigger_duration"]; attack_remaining = burst_steps
+                            is_sustained = args.attack_condition == "sustained_command_open_proxy"
+                            use_burst = hasattr(args, "attack_burst_steps") and args.attack_burst_steps > 0
+                            burst_steps = args.attack_burst_steps if (is_sustained and use_burst) else det_out["trigger_duration"]
+                            attack_remaining = burst_steps
                         if attack_remaining > 0 and args.attack_condition != "clean":
                             env_action = attack_action(env_action, args.attack_condition, attack_rng)
                             attack_applied = True
