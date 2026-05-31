@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+from dataclasses import dataclass
 import importlib.util
 import json
 import os
@@ -70,6 +71,23 @@ CSV_FIELDS = [
     "cuda_visible_devices",
     "error",
 ]
+
+
+@dataclass
+class OneFrameContext:
+    """Reusable model/frame state for repeated no-rollout VIS diagnostics."""
+
+    runner: Any
+    step_row: Dict[str, Any]
+    frame_path: Path
+    image: np.ndarray
+    instruction: str
+    model: Any
+    processor: Any
+    device: Any
+    clean_action: Any
+    clean_gen: Any
+    clean_decode_runtime_sec: float
 
 
 def parse_budget(value: str) -> float:
@@ -156,7 +174,14 @@ def _gripper_audit(debug: dict, prefix: str) -> dict:
     }
 
 
-def run_one_frame(args) -> Dict[str, Any]:
+def prepare_one_frame_context(args) -> OneFrameContext:
+    """Load the model, frame, instruction, and clean decode once.
+
+    Threshold sweeps should reuse this context across objective/epsilon/step
+    combinations. This keeps diagnostics no-rollout while avoiding repeated
+    OpenVLA model loads for the same frame.
+    """
+
     if _physical_gpu0_visible() and not args.allow_physical_gpu0:
         raise RuntimeError("refusing real diagnostic because physical GPU0 is visible; set CUDA_VISIBLE_DEVICES to nonzero GPUs")
     runner = _load_runner_module()
@@ -184,8 +209,25 @@ def run_one_frame(args) -> Dict[str, Any]:
         drop_attention_mask=True,
     )
     clean_decode_runtime = clean_dt if clean_dt is not None else time.time() - clean_t0
+    return OneFrameContext(
+        runner=runner,
+        step_row=step_row,
+        frame_path=frame_path,
+        image=image,
+        instruction=str(instruction),
+        model=model,
+        processor=processor,
+        device=device,
+        clean_action=clean_action,
+        clean_gen=clean_gen,
+        clean_decode_runtime_sec=float(clean_decode_runtime),
+    )
 
-    target_action = np.asarray(clean_action, dtype=np.float32).copy()
+
+def run_one_frame_attack(context: OneFrameContext, args) -> Dict[str, Any]:
+    """Run one TokenPrefixPGD attack and re-decode from debug adv_inputs."""
+
+    target_action = np.asarray(context.clean_action, dtype=np.float32).copy()
     target_action[-1] = float(args.force_open_raw_gripper)
     attack_objective = OBJECTIVE_MAP[args.objective]
     attack_cfg = {
@@ -200,8 +242,8 @@ def run_one_frame(args) -> Dict[str, Any]:
         }
     }
     attacker = TokenPrefixPGDAttacker(
-        model,
-        processor,
+        context.model,
+        context.processor,
         attack_cfg,
         seed=int(args.seed),
         preprocess_kwargs={
@@ -211,53 +253,57 @@ def run_one_frame(args) -> Dict[str, Any]:
             "resize_size": int(args.openvla_resize_size),
             "postprocess_gripper": args.postprocess_gripper,
         },
-        device=device,
+        device=context.device,
     )
     attack_t0 = time.time()
     attack_result = attacker.attack(
-        observation=image,
-        instruction=instruction,
-        clean_action=clean_action,
+        observation=context.image,
+        instruction=context.instruction,
+        clean_action=context.clean_action,
         target_action=target_action,
-        clean_model_output=clean_gen,
+        clean_model_output=context.clean_gen,
         unnorm_key=args.unnorm_key,
     )
     attack_runtime = time.time() - attack_t0
     adv_inputs = get_adv_inputs_from_attack_result(attack_result)
     adv_decoded = redecode_openvla_action_from_adv_inputs(
-        model=model,
-        processor=processor,
+        model=context.model,
+        processor=context.processor,
         adv_inputs=adv_inputs,
-        instruction=instruction,
+        instruction=context.instruction,
         unnorm_key=args.unnorm_key,
     )
     adv_action = np.asarray(adv_decoded.action, dtype=np.float32)
-    clean_tokens = runner.action_token_ids_from_gen(clean_gen, int(model.get_action_dim(args.unnorm_key)))
+    clean_tokens = context.runner.action_token_ids_from_gen(
+        context.clean_gen,
+        int(context.model.get_action_dim(args.unnorm_key)),
+    )
     adv_tokens = [int(x) for x in adv_decoded.token_ids.tolist()]
     clean_grip_token = clean_tokens[-1] if clean_tokens else ""
     adv_grip_token = adv_tokens[-1] if adv_tokens else ""
     clean_audit = _gripper_audit(attack_result.debug or {}, "clean")
     adv_audit = _gripper_audit(attack_result.debug or {}, "adv")
-    arm_l2 = float(np.linalg.norm(adv_action[:-1] - np.asarray(clean_action, dtype=np.float32)[:-1]))
+    clean_action_np = np.asarray(context.clean_action, dtype=np.float32)
+    arm_l2 = float(np.linalg.norm(adv_action[:-1] - clean_action_np[:-1]))
     return {
-        "frame_path": str(frame_path),
+        "frame_path": str(context.frame_path),
         "step_records_path": args.step_records or "",
-        "step_idx": args.step_idx if args.step_idx is not None else step_row.get("step_idx", ""),
-        "instruction": str(instruction),
+        "step_idx": args.step_idx if args.step_idx is not None else context.step_row.get("step_idx", ""),
+        "instruction": context.instruction,
         "model_path": args.model_path,
         "unnorm_key": args.unnorm_key,
         "objective": args.objective,
         "attack_objective": attack_objective,
         "eps": args.eps,
         "steps": args.steps,
-        "clean_action": _json(clean_action),
+        "clean_action": _json(context.clean_action),
         "adv_action": _json(adv_action),
         "clean_gripper_token": clean_grip_token,
         "adv_gripper_token": adv_grip_token,
         "gripper_token_flipped": str(clean_grip_token != adv_grip_token).lower() if clean_grip_token != "" and adv_grip_token != "" else "",
-        "clean_gripper_action": float(np.asarray(clean_action, dtype=np.float32)[-1]),
+        "clean_gripper_action": float(clean_action_np[-1]),
         "adv_gripper_action": float(adv_action[-1]),
-        "gripper_delta": float(adv_action[-1] - np.asarray(clean_action, dtype=np.float32)[-1]),
+        "gripper_delta": float(adv_action[-1] - clean_action_np[-1]),
         "arm_l2": arm_l2,
         "target_ce_before": clean_audit["target_ce"],
         "target_ce_after": adv_audit["target_ce"],
@@ -269,7 +315,7 @@ def run_one_frame(args) -> Dict[str, Any]:
         "open_close_margin_after": adv_audit["margin"],
         "perturbation_linf": attack_result.observation_perturb_linf,
         "perturbation_l2": attack_result.observation_perturb_l2,
-        "clean_decode_runtime_sec": clean_decode_runtime,
+        "clean_decode_runtime_sec": context.clean_decode_runtime_sec,
         "adv_decode_runtime_sec": adv_decoded.runtime_sec,
         "attack_runtime_sec": attack_runtime,
         "model_dtype": adv_decoded.model_dtype,
@@ -277,6 +323,12 @@ def run_one_frame(args) -> Dict[str, Any]:
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
         "error": "",
     }
+
+
+def run_one_frame(args) -> Dict[str, Any]:
+    """Load one diagnostic context and run one TokenPrefixPGD attack."""
+
+    return run_one_frame_attack(prepare_one_frame_context(args), args)
 
 
 def write_rows(path: Path, rows: list[dict]) -> None:

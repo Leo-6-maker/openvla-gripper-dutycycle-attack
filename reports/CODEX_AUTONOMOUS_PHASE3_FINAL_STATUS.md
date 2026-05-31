@@ -156,9 +156,9 @@ No checkpoints, videos, frames, rollout outputs, or model files were committed.
 
 VIS:
 
-1. Improve VIS objective/optimization under `processor_pixel_values_linf` budget semantics.
-2. Re-run the one-frame loader.
-3. Only run threshold sweep if decoded gripper token/action movement appears without dominant arm drift.
+1. Use the context-reuse threshold sweep path in `scripts/diagnostics/vis_token_flip_threshold.py`.
+2. Sweep one frame across objective / epsilon / step combinations without rollout.
+3. Treat rollout as blocked unless the sweep shows decoded gripper token/action movement without dominant arm drift.
 
 CrossSuite:
 

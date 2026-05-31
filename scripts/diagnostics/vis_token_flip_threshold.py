@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from gripper_attack.openvla_redecode import redecode_openvla_action_from_adv_inputs
-from vis_one_frame_loader import run_one_frame
+from vis_one_frame_loader import prepare_one_frame_context, run_one_frame_attack
 
 
 OBJECTIVES = ("target_action_ce", "gripper_open_region_ce", "gripper_logit_margin_cw")
@@ -140,6 +140,7 @@ def main() -> int:
     eps_values = args.eps or ["4/255", "8/255", "12/255", "16/255"]
     steps_values = args.steps or [10, 20, 40]
     objectives = args.objective or list(OBJECTIVES)
+    context = prepare_one_frame_context(args)
     output_csv.parent.mkdir(parents=True, exist_ok=True)
     rows = []
     for objective in objectives:
@@ -172,7 +173,7 @@ def main() -> int:
                         allow_physical_gpu0=args.allow_physical_gpu0,
                         output_csv=str(output_csv),
                     )
-                    result = run_one_frame(loader_args)
+                    result = run_one_frame_attack(context, loader_args)
                     rows.append({
                         "objective": objective,
                         "eps": eps_text,
