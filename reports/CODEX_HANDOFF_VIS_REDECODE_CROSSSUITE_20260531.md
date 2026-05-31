@@ -14,13 +14,22 @@ ssh -J scene@10.60.133.3 liuyu@10.60.133.4
 
 ## 2. Branches / Commits
 
-| Branch | SHA | Notes |
-|--------|-----|-------|
-| Production | `exp/sustained-proxy-burst-control-20260530` @ `07e13a0` | Object production |
-| New branch | `exp/vis-token-prefix-redecode-and-crosssuite-audit-20260531` @ `3763e4e` | VIS fix + audit |
-| Server HEAD | `703c172` → `4f0bcbd` | Equivalent to local commits |
+| Location | Branch | SHA | Notes |
+|----------|--------|-----|-------|
+| **Production** | `exp/sustained-proxy-burst-control-20260530` | `07e13a0` | Object production — do not modify |
+| **GitHub (source of truth)** | `exp/vis-token-prefix-redecode-and-crosssuite-audit-20260531` | `c24db50` | Review this branch |
+| **Server** | `exp/vis-token-prefix-redecode-and-crosssuite-audit-20260531` | `bf4dd9c` | Patch-applied equivalent |
 
-PR URL: `https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/pull/new/exp/vis-token-prefix-redecode-and-crosssuite-audit-20260531`
+**Commits on GitHub branch:**
+```
+c24db50 Add Codex handoff: VIS re-decode status and cross-suite transfer audit
+3763e4e Fix VIS PGD dtype handling: use model dtype for pixel_values
+```
+
+**Note**: Server SHA (`bf4dd9c`) and GitHub SHA (`c24db50`) differ because of local `git am` / format-patch recomputation. Codex should review GitHub branch `c24db50` as the authoritative source.
+
+**PR status**: Not yet created.
+PR creation URL: `https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/pull/new/exp/vis-token-prefix-redecode-and-crosssuite-audit-20260531` (base: `exp/sustained-proxy-burst-control-20260530`)
 
 ## 3. Production Line (Unchanged)
 
