@@ -116,6 +116,38 @@ class TestTokenPrefixPGDInterface(unittest.TestCase):
         self.assertLess(torch.min(adv_inputs["pixel_values"]).item(), 0.0)
         self.assertEqual(result.debug["pixel_epsilon_space"], "processor_pixel_values_linf")
 
+    def test_bfloat16_adv_inputs_respect_nominal_budget_after_quantization(self):
+        attacker = TokenPrefixPGDAttacker(
+            FakeModel(torch.bfloat16),
+            FakeProcessor(),
+            {"attack_optimizer": {"num_steps": 4, "epsilon": 4 / 255, "step_size": 1 / 255}},
+            device="cpu",
+        )
+        attacker.action_to_token_ids = lambda action, unnorm_key: torch.tensor([10, 11], dtype=torch.long)
+        x_orig = torch.full((1, 3, 4, 4), 2.5, dtype=torch.bfloat16)
+        attacker._build_inputs_and_labels = lambda obs, instr, toks: (
+            torch.tensor([[1, 2, 29871]], dtype=torch.long),
+            torch.tensor([[1, 2, 29871, 10, 11]], dtype=torch.long),
+            torch.tensor([[-100, -100, -100, 10, 11]], dtype=torch.long),
+            x_orig.clone(),
+        )
+        attacker._loss = lambda full_ids, labels, pixel_values, **kwargs: pixel_values.sum()
+        attacker._audit_logits = lambda *args, **kwargs: {}
+
+        result = attacker.attack(
+            observation=object(),
+            instruction="pick up the test object",
+            target_action=[0.0, 0.0],
+            unnorm_key="libero_object",
+        )
+
+        adv_inputs = get_adv_inputs_from_attack_result(result)
+        diff = (adv_inputs["pixel_values"].float() - x_orig.float()).abs().max().item()
+        self.assertLessEqual(diff, (4 / 255) + 1e-7)
+        self.assertEqual(adv_inputs["pixel_values"].dtype, torch.bfloat16)
+        self.assertEqual(result.debug["pixel_master_dtype"], "torch.float32")
+        self.assertLessEqual(result.debug["pixel_budget_adv_inputs_linf"], (4 / 255) + 1e-7)
+
     def test_helper_rejects_missing_adv_inputs(self):
         with self.assertRaisesRegex(ValueError, "adv_inputs"):
             get_adv_inputs_from_attack_result(AttackResult(action_adv=None, debug={}))

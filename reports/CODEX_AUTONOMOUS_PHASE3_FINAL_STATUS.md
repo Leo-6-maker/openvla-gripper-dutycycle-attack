@@ -156,9 +156,9 @@ No checkpoints, videos, frames, rollout outputs, or model files were committed.
 
 VIS:
 
-1. Fix bf16 multi-step budget accounting in TokenPrefixPGD before another real sweep.
-2. Re-run a small no-rollout threshold diagnostic only after nominal budget checks pass.
-3. Treat rollout as blocked unless a valid-budget sweep shows decoded gripper token/action movement without dominant arm drift.
+1. Run a limited no-rollout arm-drift/random-baseline diagnostic using the valid-budget `target_action_ce`, `eps=4/255`, `steps=4` configuration.
+2. Treat rollout as blocked unless gripper effect remains stronger than random same-norm perturbation and arm drift is controlled.
+3. Do not run forced-window VIS micro until the arm-drift/random-baseline gate passes.
 
 CrossSuite:
 
@@ -170,7 +170,7 @@ CrossSuite:
 
 - VIS re-decode helper exists.
 - One-frame VIS loader is implemented and can decode clean/adversarial actions from real model execution.
-- VIS token-flip diagnostic failed on the first real smoke and remains blocked.
+- VIS token-flip is now observed on one frame after bf16-safe budget accounting, but rollout remains blocked pending arm-drift/random-baseline gate.
 - CrossSuite index is now sufficient for a limited offline smoke proposal.
 - Object production line is unchanged.
 
