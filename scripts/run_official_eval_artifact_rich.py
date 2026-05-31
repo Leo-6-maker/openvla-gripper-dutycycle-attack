@@ -159,6 +159,8 @@ def parse_args():
     ap.add_argument("--detector_trigger_duration", type=int, default=5)
     ap.add_argument("--detector_cooldown", type=int, default=0)
     ap.add_argument("--force_detector_trigger", action="store_true", help="Force detector to always trigger (smoke test only)")
+    ap.add_argument("--force_detector_trigger_start", type=int, default=None, help="If force_detector_trigger, only force trigger starting at this policy step index")
+    ap.add_argument("--force_detector_trigger_end", type=int, default=None, help="If force_detector_trigger, stop forcing trigger after this policy step index")
     ap.add_argument("--attack_burst_steps", type=int, default=0,
         help="Sustained proxy: attack hold duration in policy steps (0=use trigger_duration for backward compat)")
     ap.add_argument("--attack_hold_mode", default="fixed",
@@ -448,16 +450,31 @@ def main():
                             float(raw_action[2]), float(env_action[-1]),
                         ], dtype=np.float32)
                         det_out = detector.update(det_feats)
-                        if args.force_detector_trigger:
-                            det_out["trigger_now"] = True
-                            det_out["trigger_duration"] = 3
-                            det_out["trigger_reason"] = "forced_smoke_test"
                         if det_out["trigger_now"] and attack_remaining == 0 and args.attack_condition != "clean":
                             is_sustained = args.attack_condition == "sustained_command_open_proxy"
                             use_burst = hasattr(args, "attack_burst_steps") and args.attack_burst_steps > 0
                             burst_steps = args.attack_burst_steps if (is_sustained and use_burst) else det_out["trigger_duration"]
                             attack_remaining = burst_steps
                         if attack_remaining > 0 and args.attack_condition != "clean":
+                            env_action = attack_action(env_action, args.attack_condition, attack_rng)
+                            attack_applied = True
+                            attack_remaining -= 1
+                        else:
+                            attack_applied = False
+
+                    # ── Force detector trigger without detector (window sweep) ──
+                    if args.force_detector_trigger and detector is None and args.attack_condition != "clean":
+                        in_window = True
+                        fs = getattr(args, 'force_detector_trigger_start', None)
+                        fe = getattr(args, 'force_detector_trigger_end', None)
+                        if fs is not None and policy_step < fs:
+                            in_window = False
+                        if fe is not None and policy_step > fe:
+                            in_window = False
+                        if in_window and attack_remaining == 0:
+                            use_burst = hasattr(args, "attack_burst_steps") and args.attack_burst_steps > 0
+                            attack_remaining = args.attack_burst_steps if use_burst else 30
+                        if attack_remaining > 0:
                             env_action = attack_action(env_action, args.attack_condition, attack_rng)
                             attack_applied = True
                             attack_remaining -= 1
