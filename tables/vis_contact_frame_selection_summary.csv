@@ -1,0 +1,7 @@
+metric,value
+rows_total,7
+frame_available_but_not_contact,4
+candidate_missing_frame,3
+candidate_frame_available,0
+no_contact_candidate,0
+gate_decision,blocked_missing_verified_contact_frames

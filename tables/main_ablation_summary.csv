@@ -1,0 +1,7 @@
+attempt,approach,trigger_phase,selectivity,status,key_finding
+1,ProprioNoStep,contact/transport/placement (step 100-160),selective (High 0/10 Robust 10/10),PRODUCTION,proprio encodes contact dynamics
+2,VisualNoStep V6 frozen,pre-contact (step 14-63),non-selective (ketchup 0/3),FAILED,visual encodes scene appearance
+3,VisualNoStep_v2 trained,step 4 universal,non-selective (all tasks),FAILED,training on teacher_hazard doesn't fix timing
+4,Proprio+Visual re-ranker,contact (Proprio-timed),scores zero at contact,FAILED,visual scores decay to zero by contact phase
+5,Contact-aware delta,step 4 universal,non-selective,FAILED,frame delta features still pre-contact
+6,VIS PGD verified frames,single-frame,N/A,FAILED,CE drops 34→0 but gripper token unchanged

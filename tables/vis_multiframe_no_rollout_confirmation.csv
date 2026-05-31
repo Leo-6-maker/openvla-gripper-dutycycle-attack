@@ -1,0 +1,5 @@
+frame_id,object,targeted_token_flip,targeted_gripper_delta,targeted_arm_l2,targeted_ratio,targeted_linf,random_token_flip,random_gripper_delta,random_arm_l2,random_ratio,random_linf,frame_gate
+ketchup_s0,ketchup,true,0.9960784316062927,0.06952968239784241,14.325945369731794,0.015625,false,0.0,2.1393201876662715e-08,0.0,0.015625,pass
+cream_s0,cream_cheese,false,0.0,0.14271065592765808,0.0,0.015625,false,0.0,0.058949586004018784,0.0,0.015625,fail
+tomato_s0,tomato_sauce,true,0.9960784316062927,0.3641011118888855,2.735719279841889,0.015625,false,0.0,1.0990010679279294e-08,0.0,0.015625,pass
+cream_s1,cream_cheese,false,0.0,0.10503624379634857,0.0,0.015625,false,0.0,3.225398259587564e-08,0.0,0.015625,fail
