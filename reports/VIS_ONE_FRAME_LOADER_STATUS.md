@@ -61,7 +61,7 @@ Output:
 tables/vis_one_frame_loader_smoke.csv
 ```
 
-Key metrics:
+Key metrics after the TokenPrefixPGD processor-pixel budget fix:
 
 - clean gripper token: `31872`
 - adversarial gripper token: `31872`
@@ -69,20 +69,20 @@ Key metrics:
 - clean gripper action: `0.0`
 - adversarial gripper action: `0.0`
 - gripper delta: `0.0`
-- arm L2: `0.054859`
-- target CE: `32.0000 -> 30.9197`
-- open-bin mass: `5.87e-13 -> 1.76e-11`
-- close-bin mass: `0.999996 -> 0.562177`
-- perturbation Linf: `2.125`
+- arm L2: `0.184442`
+- target CE: `32.0000 -> 15.9500`
+- open-bin mass: `5.87e-13 -> 1.52e-07`
+- close-bin mass: `0.999996 -> 0.987568`
+- perturbation Linf: `0.0078125`
 - model dtype: `torch.bfloat16`
 - pixel_values dtype: `torch.bfloat16`
 
 ## Gate VIS-Loader
 
-Result: PASS with diagnostic caveat.
+Result: PASS.
 
 The loader successfully decoded both clean and adversarial actions from real model execution and `debug["adv_inputs"]`, without fallback zeros and without dtype mismatch.
 
-Diagnostic caveat: the perturbation Linf is far above the requested `eps=4/255`, which indicates the current TokenPrefixPGD pixel-value clamp/norm accounting is not a valid small-epsilon image-budget implementation for normalized OpenVLA processor `pixel_values`.
+The perturbation Linf is now within the requested `eps=4/255` under the explicit `processor_pixel_values_linf` semantics.
 
-This caveat blocks VIS-1 and any rollout.
+VIS-1 still fails because the decoded gripper token/action did not change and arm drift is nontrivial.

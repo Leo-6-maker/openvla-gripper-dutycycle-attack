@@ -67,12 +67,13 @@ Result:
 - token flip: `false`
 - clean gripper action: `0.0`
 - adversarial gripper action: `0.0`
-- target CE improved: `32.0000 -> 30.9197`
-- perturbation Linf: `2.125` despite requested `eps=4/255`
+- target CE improved: `32.0000 -> 15.9500`
+- perturbation Linf after budget fix: `0.0078125` under requested `eps=4/255`
+- arm L2: `0.184442`
 
 Gate VIS-1: FAIL.
 
-VIS remains blocked before rollout because there is no decoded token/action flip and the current normalized `pixel_values` perturbation accounting is not a valid small-epsilon budget.
+VIS remains blocked before rollout because there is no decoded token/action flip and arm drift is nontrivial despite a valid processor-pixel Linf budget.
 
 ## VIS Arm-drift Status
 
@@ -155,9 +156,9 @@ No checkpoints, videos, frames, rollout outputs, or model files were committed.
 
 VIS:
 
-1. Fix TokenPrefixPGD perturbation-space semantics.
+1. Improve VIS objective/optimization under `processor_pixel_values_linf` budget semantics.
 2. Re-run the one-frame loader.
-3. Only run threshold sweep if perturbation budget is valid.
+3. Only run threshold sweep if decoded gripper token/action movement appears without dominant arm drift.
 
 CrossSuite:
 

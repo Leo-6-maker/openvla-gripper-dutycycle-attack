@@ -85,6 +85,37 @@ class TestTokenPrefixPGDInterface(unittest.TestCase):
         self.assertIn("pixel_values", adv_inputs)
         self.assertIn("input_ids", adv_inputs)
 
+    def test_processor_pixel_values_are_not_clamped_to_raw_image_range(self):
+        attacker = TokenPrefixPGDAttacker(
+            FakeModel(torch.float32),
+            FakeProcessor(),
+            {"attack_optimizer": {"num_steps": 1, "epsilon": 0.01, "step_size": 0.01}},
+            device="cpu",
+        )
+        attacker.action_to_token_ids = lambda action, unnorm_key: torch.tensor([10, 11], dtype=torch.long)
+        x_orig = torch.full((1, 3, 4, 4), -1.5, dtype=torch.float32)
+        attacker._build_inputs_and_labels = lambda obs, instr, toks: (
+            torch.tensor([[1, 2, 29871]], dtype=torch.long),
+            torch.tensor([[1, 2, 29871, 10, 11]], dtype=torch.long),
+            torch.tensor([[-100, -100, -100, 10, 11]], dtype=torch.long),
+            x_orig.clone(),
+        )
+        attacker._loss = lambda full_ids, labels, pixel_values, **kwargs: pixel_values.sum()
+        attacker._audit_logits = lambda *args, **kwargs: {}
+
+        result = attacker.attack(
+            observation=object(),
+            instruction="pick up the test object",
+            target_action=[0.0, 0.0],
+            unnorm_key="libero_object",
+        )
+
+        adv_inputs = get_adv_inputs_from_attack_result(result)
+        diff = (adv_inputs["pixel_values"] - x_orig).abs().max().item()
+        self.assertLessEqual(diff, 0.01001)
+        self.assertLess(torch.min(adv_inputs["pixel_values"]).item(), 0.0)
+        self.assertEqual(result.debug["pixel_epsilon_space"], "processor_pixel_values_linf")
+
     def test_helper_rejects_missing_adv_inputs(self):
         with self.assertRaisesRegex(ValueError, "adv_inputs"):
             get_adv_inputs_from_attack_result(AttackResult(action_adv=None, debug={}))

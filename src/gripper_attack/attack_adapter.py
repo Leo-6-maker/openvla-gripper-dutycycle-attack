@@ -411,7 +411,10 @@ class TokenPrefixPGDAttacker:
                 # Minimize target CE: signed gradient descent.
                 adv = adv.detach() - self.step_size * grad.detach().sign()
             adv = torch.max(torch.min(adv, x_orig + self.epsilon), x_orig - self.epsilon)
-            adv = torch.clamp(adv, 0.0, 1.0)  # valid pixel range for processor inputs
+            # ``pixel_values`` are processor-normalized OpenVLA inputs, not raw
+            # RGB values.  Clamping them to [0, 1] can create a perturbation far
+            # larger than epsilon whenever normalized pixels are negative.  The
+            # budget enforced here is therefore Linf in processor pixel space.
             if self.temporal_smooth_lambda > 0.0 and self._prev_delta is not None and tuple(self._prev_delta.shape) == tuple(adv.shape):
                 lam = min(max(float(self.temporal_smooth_lambda), 0.0), 1.0)
                 smoothed_delta = (1.0 - lam) * (adv.detach() - x_orig) + lam * self._prev_delta.detach().to(device=x_orig.device, dtype=x_orig.dtype)
@@ -435,6 +438,8 @@ class TokenPrefixPGDAttacker:
             "loss_direction": "maximize" if is_untargeted else "minimize",
             "token_label_source": token_label_source,
             "pixel_space": "processor_pixel_values",
+            "pixel_epsilon_space": "processor_pixel_values_linf",
+            "pixel_value_clamp": "project_to_x_orig_plusminus_epsilon_only",
             "num_loss_forwards": int(max(self.num_steps, 1) + 1),
             "num_backwards": int(max(self.num_steps, 1)),
             "num_adv_decodes": 1,

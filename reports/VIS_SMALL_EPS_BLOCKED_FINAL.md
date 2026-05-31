@@ -6,31 +6,32 @@ VIS remains blocked before rollout.
 
 ## Blocking Condition
 
-The real one-frame loader now works, but the first real smoke did not produce a decoded gripper-token flip or decoded gripper-action change.
+The real one-frame loader now works and TokenPrefixPGD now respects the requested processor-pixel Linf budget. However, the valid-budget smoke did not produce a decoded gripper-token flip or decoded gripper-action change.
 
-More importantly, the diagnostic reported:
+After the budget fix, the diagnostic reported:
 
 ```text
 requested eps = 4/255 = 0.015686
-observed perturbation_linf = 2.125
+observed perturbation_linf = 0.0078125
 ```
 
-This means the current TokenPrefixPGD normalized `pixel_values` perturbation accounting/clamp is not a valid small-epsilon image-budget implementation for a VIS claim.
+This means the previous budget bug is fixed for `processor_pixel_values_linf` semantics, but VIS remains blocked because there is still no decoded gripper effect.
 
 ## Evidence
 
 From `tables/vis_token_flip_threshold_diagnostic.csv`:
 
-- target CE: `32.0000 -> 30.9197`
-- open-bin probability mass: `5.87e-13 -> 1.76e-11`
-- close-bin probability mass: `0.999996 -> 0.562177`
+- target CE: `32.0000 -> 15.9500`
+- open-bin probability mass: `5.87e-13 -> 1.52e-07`
+- close-bin probability mass: `0.999996 -> 0.987568`
 - clean gripper token: `31872`
 - adversarial gripper token: `31872`
 - gripper token flipped: `false`
 - clean gripper action: `0.0`
 - adversarial gripper action: `0.0`
 - gripper delta: `0.0`
-- arm L2: `0.054859`
+- arm L2: `0.184442`
+- perturbation Linf: `0.0078125`
 
 ## Gate Decision
 
@@ -45,10 +46,9 @@ Do not run:
 
 ## Next Required Work
 
-Fix or explicitly define TokenPrefixPGD perturbation-space semantics:
+Improve VIS effectiveness under valid budget:
 
-1. Decide whether epsilon is in raw image `[0, 1]`, processor-normalized pixel space, or another space.
-2. Keep an fp32 master perturbation in the chosen space.
-3. Avoid clamping normalized processor `pixel_values` to `[0, 1]` if those values are not raw pixels.
-4. Re-run one-frame loader smoke.
-5. Only then run a threshold sweep.
+1. Keep `processor_pixel_values_linf` semantics unless a separate raw-image-space PGD path is implemented.
+2. Improve objective/optimization without increasing arm drift.
+3. Re-run one-frame loader smoke.
+4. Only run a threshold sweep if decoded gripper token/action movement appears under valid budget.
