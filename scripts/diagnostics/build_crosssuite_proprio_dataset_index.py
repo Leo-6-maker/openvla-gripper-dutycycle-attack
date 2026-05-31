@@ -171,6 +171,15 @@ def _extract_action(row: dict, idx: int, fallback_keys: Iterable[str]) -> Option
     return None
 
 
+def _first_float(row: dict, *keys: str) -> Optional[float]:
+    for key in keys:
+        if key in row and row.get(key) not in (None, ""):
+            value = _as_float(row.get(key))
+            if value is not None:
+                return value
+    return None
+
+
 def _extract_step_features(row: dict, prev_row: Optional[dict]) -> Dict[str, Optional[float]]:
     eef_x = _as_float(row.get("eef_x"))
     eef_y = _as_float(row.get("eef_y"))
@@ -185,9 +194,9 @@ def _extract_step_features(row: dict, prev_row: Optional[dict]) -> Dict[str, Opt
         "eef_vx": _as_float(row.get("eef_vx")) if row.get("eef_vx") not in (None, "") else (None if eef_x is None or prev_x is None else eef_x - prev_x),
         "eef_vy": _as_float(row.get("eef_vy")) if row.get("eef_vy") not in (None, "") else (None if eef_y is None or prev_y is None else eef_y - prev_y),
         "eef_vz": _as_float(row.get("eef_vz")) if row.get("eef_vz") not in (None, "") else (None if eef_z is None or prev_z is None else eef_z - prev_z),
-        "gripper_qpos": _as_float(row.get("gripper_qpos") or row.get("gripper_qpos_sum_before") or row.get("gripper_qpos_abs_sum_before")),
-        "gripper_width": _as_float(row.get("gripper_width") or row.get("gripper_qpos_abs_sum_before") or row.get("gripper_qpos_abs_sum_after")),
-        "gripper_command": _as_float(row.get("gripper_command") or row.get("clean_gripper_env") or row.get("executed_gripper_env")),
+        "gripper_qpos": _first_float(row, "gripper_qpos", "gripper_qpos_sum_before", "gripper_qpos_abs_sum_before"),
+        "gripper_width": _first_float(row, "gripper_width", "gripper_qpos_abs_sum_before", "gripper_qpos_abs_sum_after"),
+        "gripper_command": _first_float(row, "gripper_command", "clean_gripper_env", "executed_gripper_env"),
         "action_dx": _as_float(row.get("action_dx")) if row.get("action_dx") not in (None, "") else _extract_action(row, 0, ("env_action", "executed_action", "clean_action", "raw_action")),
         "action_dy": _as_float(row.get("action_dy")) if row.get("action_dy") not in (None, "") else _extract_action(row, 1, ("env_action", "executed_action", "clean_action", "raw_action")),
         "action_dz": _as_float(row.get("action_dz")) if row.get("action_dz") not in (None, "") else _extract_action(row, 2, ("env_action", "executed_action", "clean_action", "raw_action")),
@@ -236,6 +245,9 @@ def _artifact_rows(artifact_roots: Iterable[Path], teacher_labels: Dict[Tuple[st
     output = []
     for root in artifact_roots:
         for step_path in sorted(root.rglob("step_records.jsonl")):
+            path_text = str(step_path).lower()
+            if any(marker in path_text for marker in ("sus30", "oracle", "random", "attack")) and "_clean_" not in path_text:
+                continue
             rows = list(_read_jsonl(step_path))
             if not rows:
                 continue

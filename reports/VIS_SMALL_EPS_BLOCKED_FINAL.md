@@ -6,21 +6,31 @@ VIS remains blocked before rollout.
 
 ## Blocking Condition
 
-The diagnostic harness now enforces the correct interface and the reusable OpenVLA re-decode helper is implemented. The remaining blocker is the real one-frame model/frame/attack-result loader that produces `debug["adv_inputs"]` for the diagnostic.
+The real one-frame loader now works, but the first real smoke did not produce a decoded gripper-token flip or decoded gripper-action change.
 
-Because of that, the branch cannot establish:
+More importantly, the diagnostic reported:
 
-- decoded gripper token flip at epsilon <= 8/255
-- decoded gripper action movement in the intended direction
-- controlled arm drift
-- targeted effect stronger than random same-norm control
+```text
+requested eps = 4/255 = 0.015686
+observed perturbation_linf = 2.125
+```
 
-## Action Taken
+This means the current TokenPrefixPGD normalized `pixel_values` perturbation accounting/clamp is not a valid small-epsilon image-budget implementation for a VIS claim.
 
-- Ran dry-run schema for token-flip diagnostics.
-- Ran a real diagnostic probe only far enough to verify that it fails loudly instead of fabricating decoded actions.
-- Wrote `tables/vis_token_flip_threshold_diagnostic.csv` with the missing-decode error.
-- Added `src/gripper_attack/openvla_redecode.py` and mock tests for OpenVLA action re-decode from prepared adversarial inputs.
+## Evidence
+
+From `tables/vis_token_flip_threshold_diagnostic.csv`:
+
+- target CE: `32.0000 -> 30.9197`
+- open-bin probability mass: `5.87e-13 -> 1.76e-11`
+- close-bin probability mass: `0.999996 -> 0.562177`
+- clean gripper token: `31872`
+- adversarial gripper token: `31872`
+- gripper token flipped: `false`
+- clean gripper action: `0.0`
+- adversarial gripper action: `0.0`
+- gripper delta: `0.0`
+- arm L2: `0.054859`
 
 ## Gate Decision
 
@@ -31,10 +41,14 @@ Do not run:
 - VIS rollout
 - forced-window VIS micro
 - detector-triggered VIS
+- heavy arm-drift sweep
 
-Next required work is wiring a concrete one-frame loader that:
+## Next Required Work
 
-1. loads a real Object contact frame,
-2. runs `TokenPrefixPGDAttacker`,
-3. passes `attack_result.debug["adv_inputs"]` to `redecode_openvla_action_from_adv_inputs`,
-4. records decoded clean/adv token and action metrics.
+Fix or explicitly define TokenPrefixPGD perturbation-space semantics:
+
+1. Decide whether epsilon is in raw image `[0, 1]`, processor-normalized pixel space, or another space.
+2. Keep an fp32 master perturbation in the chosen space.
+3. Avoid clamping normalized processor `pixel_values` to `[0, 1]` if those values are not raw pixels.
+4. Re-run one-frame loader smoke.
+5. Only then run a threshold sweep.

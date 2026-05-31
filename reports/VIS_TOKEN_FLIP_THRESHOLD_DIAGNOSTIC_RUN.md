@@ -4,50 +4,62 @@ Date: 2026-05-31
 
 ## Status
 
-Dry-run schema passed. The reusable OpenVLA re-decode helper is now implemented, but real one-frame token-flip smoke remains blocked because the diagnostic script still needs a concrete model/frame/attack-result loader that creates `debug["adv_inputs"]` from a real frame.
+One real one-frame VIS loader smoke ran successfully. The full 3-objective x 4-epsilon x 3-step threshold sweep did not run because the first real smoke exposed a budget-validity blocker.
 
-## Commands
-
-Dry-run:
-
-```bash
-python scripts/diagnostics/vis_token_flip_threshold.py --dry-run --print-schema --output_csv /tmp/vis_token_flip_schema.csv
-```
-
-Real diagnostic probe:
-
-```bash
-python scripts/diagnostics/vis_token_flip_threshold.py \
-  --frame contact_frame_placeholder \
-  --instruction "pick up the ketchup and place it in the basket" \
-  --model_path /missing/openvla \
-  --unnorm_key libero_object \
-  --output_csv tables/vis_token_flip_threshold_diagnostic.csv
-```
-
-## Result
-
-The harness failed loudly as intended:
-
-```text
-OpenVLA adversarial re-decode helper is implemented, but this diagnostic still needs a real model/frame/attack-result loader for one-frame smoke.
-The real path must call redecode_openvla_action_from_adv_inputs(model, processor, debug['adv_inputs'], ...); do not use action_adv and do not fallback to zeros.
-```
-
-The CSV was written with the error field populated:
+## Output
 
 ```text
 tables/vis_token_flip_threshold_diagnostic.csv
+tables/vis_one_frame_loader_smoke.csv
 ```
+
+## Smoke Configuration
+
+- frame: Object ketchup clean frame, step 0
+- model: `openvla-7b-finetuned-libero-object`
+- objective: `target_action_ce`
+- epsilon: `4/255`
+- attack steps: `1`
+- physical GPUs: `2,6`
+- attention backend: `eager`
+
+## Result
+
+| Metric | Value |
+| --- | ---: |
+| clean gripper token | 31872 |
+| adversarial gripper token | 31872 |
+| token flip | false |
+| clean gripper action | 0.0 |
+| adversarial gripper action | 0.0 |
+| gripper delta | 0.0 |
+| arm L2 | 0.054859 |
+| target CE before | 32.0000 |
+| target CE after | 30.9197 |
+| open-bin prob mass before | 5.87e-13 |
+| open-bin prob mass after | 1.76e-11 |
+| close-bin prob mass before | 0.999996 |
+| close-bin prob mass after | 0.562177 |
+| perturbation Linf | 2.125 |
 
 ## Gate VIS-1
 
-Result: FAIL / BLOCKED.
+Result: FAIL.
 
-Reason:
+Reasons:
 
-- decoded gripper token flip was not evaluated
-- decoded action was not evaluated
-- real model/frame/attack-result loader is missing
+- No decoded gripper token flip.
+- No decoded gripper action change.
+- Target CE improves, but decoded action remains unchanged.
+- Perturbation Linf is far above the requested small epsilon budget, indicating the current TokenPrefixPGD normalized `pixel_values` perturbation accounting/clamp is not yet valid for a small-epsilon VIS claim.
 
-No VIS rollout is allowed from this state.
+## Decision
+
+Do not run:
+
+- full token-flip sweep
+- arm-drift sweep
+- forced-window VIS micro
+- detector-triggered VIS rollout
+
+Next VIS work should fix/define the valid pixel-space budget semantics before any additional VIS rollout work.
