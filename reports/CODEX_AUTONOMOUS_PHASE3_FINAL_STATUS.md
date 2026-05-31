@@ -156,9 +156,9 @@ No checkpoints, videos, frames, rollout outputs, or model files were committed.
 
 VIS:
 
-1. Add or verify a contact-frame selector before more VIS diagnostics.
-2. Re-run no-rollout confirmation on verified contact/pre-place frames for ketchup, tomato_sauce, and cream_cheese.
-3. Do not run forced-window VIS micro until multi-frame contact evidence passes and explicit approval is given.
+1. Collect or reconstruct verified contact-frame images for selector-chosen Object steps.
+2. Re-run no-rollout VIS confirmation on those verified contact/carry frames.
+3. Do not run forced-window VIS micro until verified contact-frame evidence passes and explicit approval is given.
 
 CrossSuite:
 
@@ -173,6 +173,7 @@ CrossSuite:
 - VIS token-flip is now observed on one frame after bf16-safe budget accounting.
 - One-frame arm-drift/random baseline diagnostic passed for that frame.
 - Four-frame no-rollout confirmation is partial: ketchup and tomato pass; cream_cheese s0/s1 fail.
+- Contact-frame audit shows previous saved VIS frames are wait/pre-policy frames; selected contact/carry steps currently lack frame images.
 - CrossSuite index is now sufficient for a limited offline smoke proposal.
 - Object production line is unchanged.
 
