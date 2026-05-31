@@ -35,6 +35,34 @@ bash -n scripts/*.sh
 
 Expected/observed result before final commit: 30 tests passed.
 
+Additional local validation after contact-frame collection planning:
+
+```bash
+python -m py_compile \
+  src/gripper_attack/attack_adapter.py \
+  scripts/run_official_eval_artifact_rich.py \
+  src/gripper_attack/openvla_redecode.py \
+  scripts/diagnostics/vis_token_flip_threshold.py \
+  scripts/diagnostics/vis_arm_drift_sweep.py \
+  scripts/diagnostics/crosssuite_feature_transform_audit.py \
+  scripts/diagnostics/build_crosssuite_proprio_dataset_index.py \
+  scripts/diagnostics/select_vis_contact_frames.py \
+  scripts/diagnostics/build_vis_contact_frame_collection_plan.py
+
+pytest \
+  tests/v4/test_success_predicate_regression.py \
+  tests/v4/test_sustained_proxy_burst.py \
+  tests/v4/test_token_prefix_pgd_interface.py \
+  tests/v4/test_openvla_redecode.py \
+  tests/v4/test_vis_arm_drift_sweep.py \
+  tests/v4/test_select_vis_contact_frames.py \
+  tests/v4/test_build_vis_contact_frame_collection_plan.py
+```
+
+Observed local result: 39 tests passed.
+
+`bash -n scripts/*.sh` passed under Git Bash. The default `bash` entrypoint on this Windows host failed because no default WSL distribution is installed.
+
 ## One-frame VIS Loader Status
 
 Implemented:
@@ -91,6 +119,26 @@ Blocked:
 - arm-drift sweep
 - forced-window VIS micro
 - detector-triggered VIS
+
+## Contact-frame Collection Plan
+
+Generated a proposal only:
+
+```text
+scripts/diagnostics/build_vis_contact_frame_collection_plan.py
+tables/vis_contact_frame_collection_plan.csv
+reports/VIS_CONTACT_FRAME_COLLECTION_PROPOSAL.md
+```
+
+Planned clean-only frame dump rows:
+
+| Task | State | Target policy step | Requested frames |
+| --- | ---: | ---: | --- |
+| ketchup | 0 | 98 | 96..100 |
+| tomato_sauce | 0 | 134 | 132..136 |
+| cream_cheese | 0 | 143 | 141..145 |
+
+The plan is not executed. It uses `scripts/run_official_eval_artifact_rich.py` with clean-only settings, `attack_condition=clean`, no detector, no VIS, no sus30, and a maximum of three state-0 clean episodes if explicitly approved later.
 
 ## CrossSuite Rich Index Status
 
@@ -156,9 +204,10 @@ No checkpoints, videos, frames, rollout outputs, or model files were committed.
 
 VIS:
 
-1. Collect or reconstruct verified contact-frame images for selector-chosen Object steps.
-2. Re-run no-rollout VIS confirmation on those verified contact/carry frames.
-3. Do not run forced-window VIS micro until verified contact-frame evidence passes and explicit approval is given.
+1. If approved, execute only the three-row clean contact-frame collection plan in `tables/vis_contact_frame_collection_plan.csv`.
+2. Verify that `frames/step_0098.png`, `frames/step_0134.png`, and `frames/step_0143.png` equivalents exist in the new clean artifact-rich output.
+3. Re-run no-rollout VIS confirmation on those verified contact/carry frames.
+4. Do not run forced-window VIS micro until verified contact-frame evidence passes and explicit approval is given.
 
 CrossSuite:
 
@@ -174,6 +223,7 @@ CrossSuite:
 - One-frame arm-drift/random baseline diagnostic passed for that frame.
 - Four-frame no-rollout confirmation is partial: ketchup and tomato pass; cream_cheese s0/s1 fail.
 - Contact-frame audit shows previous saved VIS frames are wait/pre-policy frames; selected contact/carry steps currently lack frame images.
+- A clean-only contact-frame collection plan exists, but it has not been executed.
 - CrossSuite index is now sufficient for a limited offline smoke proposal.
 - Object production line is unchanged.
 
