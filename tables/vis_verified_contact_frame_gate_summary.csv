@@ -1,0 +1,4 @@
+gate,status,reason
+CF-1,PASS,2/3 episodes completed with target frames
+CF-2,PASS,2/3 tasks verified contact/carry
+VIS-1,FAIL,0/32 decoded gripper token flips

@@ -1,0 +1,4 @@
+task,state,target_step,frame_exists,verified,clean_grip,num_configs,token_flips,ce_reduction,gate,vis_rollout
+ketchup,0,98,True,True,0.996,16,0,34→0,VIS-1 FAIL,blocked
+tomato_sauce,0,134,True,True,0.996,16,0,28→0,VIS-1 FAIL,blocked
+cream_cheese,0,143,False,False,N/A,0,N/A,N/A,CF-1 FAIL,blocked
