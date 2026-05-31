@@ -156,9 +156,9 @@ No checkpoints, videos, frames, rollout outputs, or model files were committed.
 
 VIS:
 
-1. Use the context-reuse threshold sweep path in `scripts/diagnostics/vis_token_flip_threshold.py`.
-2. Sweep one frame across objective / epsilon / step combinations without rollout.
-3. Treat rollout as blocked unless the sweep shows decoded gripper token/action movement without dominant arm drift.
+1. Fix bf16 multi-step budget accounting in TokenPrefixPGD before another real sweep.
+2. Re-run a small no-rollout threshold diagnostic only after nominal budget checks pass.
+3. Treat rollout as blocked unless a valid-budget sweep shows decoded gripper token/action movement without dominant arm drift.
 
 CrossSuite:
 

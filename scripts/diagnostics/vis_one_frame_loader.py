@@ -141,8 +141,9 @@ def _read_step_record(path: Optional[str], step_idx: Optional[int]) -> Dict[str,
 
 
 def _resolve_frame_path(args, row: Dict[str, Any]) -> Path:
-    if args.image_path:
-        return Path(args.image_path)
+    image_path = getattr(args, "image_path", None) or getattr(args, "frame", None)
+    if image_path:
+        return Path(image_path)
     for key in ("image_path", "agentview_image_path", "frame_path", "rgb_path"):
         value = row.get(key)
         if value:
@@ -201,7 +202,7 @@ def prepare_one_frame_context(args) -> OneFrameContext:
         image,
         instruction,
         args.unnorm_key,
-        int(args.k_prefix_logits),
+        int(getattr(args, "k_prefix_logits", 8)),
         libero_official_preprocess=args.libero_official_preprocess,
         libero_preprocess_backend=args.libero_preprocess_backend,
         center_crop=args.center_crop,

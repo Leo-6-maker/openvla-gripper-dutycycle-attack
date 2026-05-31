@@ -95,6 +95,44 @@ class TestVisTokenFlipThresholdSweep(unittest.TestCase):
             self.assertEqual(calls["attack"], 8)
             self.assertEqual(len(rows), 8)
             self.assertEqual({row["objective"] for row in rows}, {"target_action_ce", "gripper_open_region_ce"})
+            self.assertTrue(all(row["budget_ok"] == "true" for row in rows))
+            self.assertTrue(all(float(row["nominal_eps_float"]) > 0 for row in rows))
+
+    def test_loader_context_accepts_frame_alias_and_default_prefix_logits(self):
+        sys.path.insert(0, str(DIAG_DIR))
+        import vis_one_frame_loader as loader
+
+        class Args:
+            frame = "frame.png"
+            image_path = None
+            step_records = None
+            step_idx = None
+            instruction = "pick up the test object"
+            model_path = "mock-model"
+            model_gpu_device_id = -1
+            unnorm_key = "libero_object"
+            libero_official_preprocess = False
+            libero_preprocess_backend = "official_pil_lanczos"
+            center_crop = True
+            openvla_resize_size = 224
+            allow_physical_gpu0 = True
+
+        class FakeRunner:
+            def load_model(self, model_path, model_gpu_device_id=0):
+                return "model", "processor", "cpu"
+
+            def decode_with_scores(self, *args, **kwargs):
+                self.kwargs = kwargs
+                return [0.0] * 7, None, 0.01, "clean_gen"
+
+        fake_runner = FakeRunner()
+        with patch.object(loader, "_load_runner_module", return_value=fake_runner):
+            with patch.object(loader, "_load_frame", return_value="image"):
+                context = loader.prepare_one_frame_context(Args())
+
+        self.assertEqual(str(context.frame_path), "frame.png")
+        self.assertEqual(context.clean_gen, "clean_gen")
+        self.assertEqual(fake_runner.kwargs["drop_attention_mask"], True)
 
 
 if __name__ == "__main__":

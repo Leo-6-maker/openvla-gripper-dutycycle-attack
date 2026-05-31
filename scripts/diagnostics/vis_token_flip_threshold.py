@@ -25,6 +25,7 @@ OBJECTIVES = ("target_action_ce", "gripper_open_region_ce", "gripper_logit_margi
 CSV_FIELDS = [
     "objective",
     "eps",
+    "nominal_eps_float",
     "steps",
     "target_ce_before",
     "target_ce_after",
@@ -41,6 +42,8 @@ CSV_FIELDS = [
     "gripper_token_flipped",
     "arm_action_l2",
     "perturbation_linf",
+    "budget_ratio",
+    "budget_ok",
     "perturbation_l2",
     "runtime_sec",
     "model_dtype",
@@ -62,6 +65,28 @@ def write_schema_csv(path: Path) -> None:
     with path.open("w", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
         writer.writeheader()
+
+
+def write_rows(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
+        writer.writeheader()
+        writer.writerows({field: row.get(field, "") for field in CSV_FIELDS} for row in rows)
+
+
+def budget_fields(eps_text: str, perturbation_linf) -> dict:
+    nominal = parse_budget(eps_text)
+    try:
+        linf = float(perturbation_linf)
+    except (TypeError, ValueError):
+        return {"nominal_eps_float": nominal, "budget_ratio": "", "budget_ok": ""}
+    ratio = linf / nominal if nominal > 0 else float("inf")
+    return {
+        "nominal_eps_float": nominal,
+        "budget_ratio": ratio,
+        "budget_ok": str(ratio <= 1.01).lower(),
+    }
 
 
 def print_schema() -> None:
@@ -174,7 +199,7 @@ def main() -> int:
                         output_csv=str(output_csv),
                     )
                     result = run_one_frame_attack(context, loader_args)
-                    rows.append({
+                    row = {
                         "objective": objective,
                         "eps": eps_text,
                         "steps": steps,
@@ -198,24 +223,23 @@ def main() -> int:
                         "model_dtype": result.get("model_dtype", ""),
                         "pixel_values_dtype": result.get("pixel_values_dtype", ""),
                         "error": "",
-                    })
+                    }
+                    row.update(budget_fields(eps_text, row["perturbation_linf"]))
+                    rows.append(row)
+                    write_rows(output_csv, rows)
                 except Exception as exc:
-                    rows.append({
+                    row = {
                         "objective": objective,
                         "eps": eps_text,
+                        "nominal_eps_float": parse_budget(eps_text),
                         "steps": steps,
                         "runtime_sec": f"{time.time() - start:.6f}",
                         "error": str(exc),
-                    })
-                    with output_csv.open("w", newline="") as f:
-                        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
-                        writer.writeheader()
-                        writer.writerows(rows)
+                    }
+                    rows.append(row)
+                    write_rows(output_csv, rows)
                     raise
-    with output_csv.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=CSV_FIELDS)
-        writer.writeheader()
-        writer.writerows(rows)
+    write_rows(output_csv, rows)
     return 0
 
 
