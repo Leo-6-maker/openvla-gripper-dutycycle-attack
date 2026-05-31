@@ -156,9 +156,9 @@ No checkpoints, videos, frames, rollout outputs, or model files were committed.
 
 VIS:
 
-1. Confirm the valid-budget VIS effect across additional Object contact frames with no rollout.
-2. If multi-frame no-rollout confirmation passes, write a forced-window VIS micro proposal with clean/random controls.
-3. Do not run forced-window VIS micro until explicitly approved.
+1. Add or verify a contact-frame selector before more VIS diagnostics.
+2. Re-run no-rollout confirmation on verified contact/pre-place frames for ketchup, tomato_sauce, and cream_cheese.
+3. Do not run forced-window VIS micro until multi-frame contact evidence passes and explicit approval is given.
 
 CrossSuite:
 
@@ -172,6 +172,7 @@ CrossSuite:
 - One-frame VIS loader is implemented and can decode clean/adversarial actions from real model execution.
 - VIS token-flip is now observed on one frame after bf16-safe budget accounting.
 - One-frame arm-drift/random baseline diagnostic passed for that frame.
+- Four-frame no-rollout confirmation is partial: ketchup and tomato pass; cream_cheese s0/s1 fail.
 - CrossSuite index is now sufficient for a limited offline smoke proposal.
 - Object production line is unchanged.
 

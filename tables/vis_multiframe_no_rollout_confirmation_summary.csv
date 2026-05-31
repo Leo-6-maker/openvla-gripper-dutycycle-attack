@@ -1,0 +1,8 @@
+metric,value
+frames_total,4
+frames_pass,2
+frames_fail,2
+targeted_token_flip_frames,2
+random_token_flip_frames,0
+objects_tested,cream_cheese;ketchup;tomato_sauce
+gate_decision,partial_pass_no_rollout
