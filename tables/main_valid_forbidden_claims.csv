@@ -1,0 +1,12 @@
+type,claim
+valid,"ProprioNoStep + sus30 selectively disrupts high-sensitive Object tasks while preserving robust controls (High 0/10, Robust 10/10)"
+valid,"Effect is Object-suite validated"
+valid,"Static visual features fail contact-phase timing across multiple independent attempts"
+valid,"VIS token-prefix PGD (eps<=8/255) does not flip decoded gripper token on verified contact frames"
+valid,"Cross-suite zero-shot transfer is limited by workspace distribution shift (eef_z 5.7x)"
+forbidden,"VIS attack successful"
+forbidden,"Universal attack"
+forbidden,"Detector oracle-optimal"
+forbidden,"ProprioNoStep universal across LIBERO"
+forbidden,"Cross-suite attack ready"
+forbidden,"Command-layer sus30 equals VIS"
