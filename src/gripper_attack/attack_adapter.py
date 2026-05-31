@@ -143,7 +143,7 @@ class TokenPrefixPGDAttacker:
         full_input_ids = torch.cat([input_ids, target], dim=1)
         labels = torch.full_like(full_input_ids, -100)
         labels[:, -target.shape[1]:] = target
-        pixel_values = inputs["pixel_values"].to(device=self.device, dtype=torch.float16)
+        model_dtype = next(self.model.parameters()).dtype; pixel_values = inputs["pixel_values"].to(device=self.device, dtype=model_dtype)
         return input_ids, full_input_ids, labels, pixel_values
 
     def action_bins_for_env_sign(self, dim: int, target_env_sign: str, unnorm_key: str, *, postprocess_gripper: bool = False) -> torch.LongTensor:
