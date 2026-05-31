@@ -2,11 +2,16 @@
 
 Date: 2026-05-31
 
-## Input
+## Inputs
 
 ```text
 /data/liuyu/outputs/milestone_2b_parser_visual_linkage_20260526/tables/student_train_dataset.csv
+/data/liuyu/outputs/libero_full4_clean_official_aligned_eager_10states_20260525
+/data/liuyu/outputs/milestone_3a_crosssuite_proprio_shadow_20260531
+/data/liuyu/outputs/table1_clean_detector_dev_audit_20260526/tables/teacher_window_labels.csv
 ```
+
+No rollout was launched. No detector was trained.
 
 ## Output
 
@@ -14,50 +19,39 @@ Date: 2026-05-31
 tables/crosssuite_proprio_dataset_index.csv
 ```
 
-## Episode Counts
+The index is episode-level to avoid committing large per-timestep artifacts. It records feature/label availability, mechanism eligibility, split candidacy, and one representative value for each deployed proprio feature.
 
-- libero_spatial: 100 episodes
-- libero_object: 100 episodes
-- libero_goal: 100 episodes
-- libero_10: 100 episodes
-- total: 400 episodes
+## Counts
 
-## Label Availability
+Total rows: 475 episode/run entries.
 
-Teacher labels are present for all 400 indexed episodes:
+| Suite | Rows | Full EEF xyz | Full EEF velocity | Teacher labels | Mechanism eligible | Full split candidates | Partial EEF-z candidates |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| libero_spatial | 131 | 20 | 20 | 120 | 99 | 20 | 100 |
+| libero_object | 112 | 0 | 0 | 100 | 68 | 0 | 100 |
+| libero_goal | 122 | 12 | 12 | 112 | 84 | 12 | 100 |
+| libero_10 | 110 | 0 | 0 | 100 | 53 | 0 | 100 |
 
-- `teacher_phase`
-- `teacher_hazard`
-- `teacher_release_safe`
+Split candidate summary:
 
-## Feature Availability
+- `yes`: 32
+- `partial_eef_z_only`: 400
+- `no`: 43
 
-All suites have partial proprio coverage suitable for metadata indexing:
+## Interpretation
 
-- `eef_z`
-- `gripper_qpos`
-- `gripper_width`
-- `action_gripper`
-
-Missing for all indexed episodes:
-
-- `eef_x`
-- `eef_y`
-- `eef_vx`
-- `eef_vy`
-
-## Split Candidate Status
-
-All 400 episodes are marked:
-
-```text
-partial_eef_z_only
-```
-
-This is enough for a future relative-EEF-z smoke design, but not enough for a full relative-EEF-xyz CrossSuite-v2 claim.
+The richer artifact index found full EEF xyz/velocity in cross-suite shadow artifacts for Spatial and Goal, and clean teacher labels/mechanism eligibility in the Table1 detector-development audit. However, Object still lacks full EEF x/y and x/y velocity in the available clean artifacts.
 
 ## Gate XS-2
 
-Result: PARTIAL / BLOCKED FOR TRAINING.
+Result: FAIL / BLOCKED FOR FULL CrossSuite-v2 TRAINING.
 
-Metadata and clean teacher labels exist, but full feature coverage is incomplete and `mechanism_eligible` is absent from the 2B student dataset. Do not train CrossSuite-v2 until a richer artifact/label index is available or the v2 scope is explicitly narrowed to EEF-z-only.
+Reason:
+
+- Full EEF xyz/velocity is available for some non-Object shadow entries.
+- Full EEF xyz/velocity is not available for Object production-reference entries.
+- Clean teacher labels are available for the 400 Table1 development episodes.
+- Mechanism eligibility is available for the 400 Table1 development episodes.
+- At least Object plus non-Object are usable only for `partial_eef_z_only`, not for full relative-EEF-xyz training.
+
+Do not train CrossSuite-ProprioNoStep-v2 from this index unless the scope is explicitly narrowed to an EEF-z-only smoke or richer Object artifact-rich clean data is generated.

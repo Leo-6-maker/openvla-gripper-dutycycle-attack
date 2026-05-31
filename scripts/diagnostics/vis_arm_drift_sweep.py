@@ -9,7 +9,12 @@ from __future__ import annotations
 
 import argparse
 import csv
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+
+from gripper_attack.openvla_redecode import redecode_openvla_action_from_adv_inputs
 
 
 LOSS_VARIANTS = (
@@ -49,6 +54,18 @@ def print_schema() -> None:
         print(field)
 
 
+def decode_adv_inputs_for_diagnostic(model, processor, adv_inputs, instruction, unnorm_key):
+    """Decode prepared adversarial inputs using the shared OpenVLA helper."""
+
+    return redecode_openvla_action_from_adv_inputs(
+        model=model,
+        processor=processor,
+        adv_inputs=adv_inputs,
+        instruction=instruction,
+        unnorm_key=unnorm_key,
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--frame")
@@ -80,8 +97,11 @@ def main() -> int:
     if missing:
         raise SystemExit(f"missing required arguments for real diagnostic: {', '.join(missing)}")
     raise RuntimeError(
-        "Real VIS arm-drift sweep requires OpenVLA decode integration from debug['adv_inputs']; "
-        "this harness must not fake decoded actions or use action_adv."
+        "OpenVLA adversarial re-decode helper is implemented, but this arm-drift "
+        "harness still needs a real model/frame/attack-result loader. The real path "
+        "must call redecode_openvla_action_from_adv_inputs(model, processor, "
+        "debug['adv_inputs'], ...); this harness must not fake decoded actions or "
+        "use action_adv."
     )
 
 

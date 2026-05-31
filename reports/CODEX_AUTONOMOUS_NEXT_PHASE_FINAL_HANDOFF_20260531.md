@@ -25,7 +25,7 @@ The pytest run collected 25 tests and passed all 25.
 
 Status: BLOCKED.
 
-The harness is reproducible and refuses to fabricate decoded actions. Real OpenVLA re-decode from `debug["adv_inputs"]` is not wired yet, so VIS-1 fails.
+The harness is reproducible and refuses to fabricate decoded actions. The reusable OpenVLA re-decode helper from `debug["adv_inputs"]` is implemented and mock-tested, but a real one-frame model/frame/attack-result loader is still missing. VIS-1 remains blocked.
 
 ## VIS Arm-Drift Status
 
@@ -41,19 +41,19 @@ Reason: VIS-1 failed. No rollout was started.
 
 ## VIS Conclusion
 
-VIS remains blocked before rollout. The next required item is a real re-decode helper consuming `debug["adv_inputs"]`.
+VIS remains blocked before rollout. The next required item is a concrete one-frame loader that creates `debug["adv_inputs"]` from a real contact frame and passes it through `redecode_openvla_action_from_adv_inputs`.
 
 ## CrossSuite Relative Feature Audit Status
 
 Status: PARTIAL PASS.
 
-Relative `eef_z` substantially reduces raw Object-to-Spatial/Goal mean shift, but x/y EEF fields are missing from the current 2B student dataset.
+Relative `eef_z` substantially reduces raw Object-to-Spatial/Goal mean shift. The richer artifact index now finds full EEF xyz/velocity for limited Spatial/Goal shadow entries, but Object production-reference entries still lack full EEF x/y and x/y velocity.
 
 ## Dataset Index Status
 
 Status: PARTIAL / BLOCKED FOR TRAINING.
 
-All 400 episodes have clean teacher labels and partial proprio features, but the index lacks full EEF xyz/velocity and mechanism eligibility. CrossSuite-v2 training is not approved.
+The index now includes clean teacher labels and mechanism eligibility for the 400 Table1 development episodes, plus full EEF xyz/velocity for a limited Spatial/Goal shadow subset. Object still has only partial EEF-z coverage in the available production-reference artifacts. CrossSuite-v2 full relative-EEF-xyz training is not approved.
 
 ## CrossSuite-v2 Smoke Status
 
@@ -94,7 +94,7 @@ No rollout was launched.
 
 ## Next Recommended Action
 
-1. Implement a real OpenVLA re-decode helper from `debug["adv_inputs"]`.
-2. Rerun token-flip threshold diagnostic on one frame.
-3. Build a richer CrossSuite artifact index with complete EEF xyz/velocity and mechanism eligibility.
+1. Wire the real one-frame VIS loader around the implemented re-decode helper.
+2. Rerun token-flip threshold diagnostic on one real Object contact frame.
+3. Generate artifact-rich Object clean data with full EEF xyz/velocity, or explicitly narrow CrossSuite-v2 to an EEF-z-only smoke with strict claim boundaries.
 4. Do not run rollout or CrossSuite-v2 training until the corresponding gates pass.

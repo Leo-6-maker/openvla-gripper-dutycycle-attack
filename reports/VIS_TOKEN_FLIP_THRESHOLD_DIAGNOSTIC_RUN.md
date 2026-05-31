@@ -4,7 +4,7 @@ Date: 2026-05-31
 
 ## Status
 
-Dry-run schema passed. Real token-flip diagnostic did not run because OpenVLA adversarial re-decode integration is not wired in this harness yet.
+Dry-run schema passed. The reusable OpenVLA re-decode helper is now implemented, but real one-frame token-flip smoke remains blocked because the diagnostic script still needs a concrete model/frame/attack-result loader that creates `debug["adv_inputs"]` from a real frame.
 
 ## Commands
 
@@ -30,8 +30,8 @@ python scripts/diagnostics/vis_token_flip_threshold.py \
 The harness failed loudly as intended:
 
 ```text
-OpenVLA adversarial re-decode integration is not wired in this harness.
-Provide a real decoder that consumes debug['adv_inputs']; do not use action_adv and do not fallback to zeros.
+OpenVLA adversarial re-decode helper is implemented, but this diagnostic still needs a real model/frame/attack-result loader for one-frame smoke.
+The real path must call redecode_openvla_action_from_adv_inputs(model, processor, debug['adv_inputs'], ...); do not use action_adv and do not fallback to zeros.
 ```
 
 The CSV was written with the error field populated:
@@ -48,6 +48,6 @@ Reason:
 
 - decoded gripper token flip was not evaluated
 - decoded action was not evaluated
-- decode integration is missing
+- real model/frame/attack-result loader is missing
 
 No VIS rollout is allowed from this state.

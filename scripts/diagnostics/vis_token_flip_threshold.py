@@ -4,15 +4,20 @@
 This script is intentionally diagnostic-only. It does not run rollout and it
 must re-decode from TokenPrefixPGD ``debug["adv_inputs"]`` rather than using
 ``action_adv``. The real OpenVLA decode integration is left as an explicit
-integration point; when it is unavailable the script fails loudly instead of
-fabricating results.
+integration point; when a model/frame loader is unavailable the script fails
+loudly instead of fabricating results.
 """
 from __future__ import annotations
 
 import argparse
 import csv
+import sys
 import time
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+
+from gripper_attack.openvla_redecode import redecode_openvla_action_from_adv_inputs
 
 
 OBJECTIVES = ("target_action_ce", "gripper_open_region_ce", "gripper_logit_margin_cw")
@@ -63,11 +68,25 @@ def print_schema() -> None:
         print(field)
 
 
-def require_real_decode_path() -> None:
+def require_real_model_frame_loader() -> None:
     raise RuntimeError(
-        "OpenVLA adversarial re-decode integration is not wired in this harness. "
-        "Provide a real decoder that consumes debug['adv_inputs']; do not use action_adv "
-        "and do not fallback to zeros."
+        "OpenVLA adversarial re-decode helper is implemented, but this diagnostic "
+        "still needs a real model/frame/attack-result loader for one-frame smoke. "
+        "The real path must call redecode_openvla_action_from_adv_inputs(model, "
+        "processor, debug['adv_inputs'], ...); do not use action_adv and do not "
+        "fallback to zeros."
+    )
+
+
+def decode_adv_inputs_for_diagnostic(model, processor, adv_inputs, instruction, unnorm_key):
+    """Decode prepared adversarial inputs using the shared OpenVLA helper."""
+
+    return redecode_openvla_action_from_adv_inputs(
+        model=model,
+        processor=processor,
+        adv_inputs=adv_inputs,
+        instruction=instruction,
+        unnorm_key=unnorm_key,
     )
 
 
@@ -109,7 +128,7 @@ def main() -> int:
     _ = args.objective or list(OBJECTIVES)
     start = time.time()
     try:
-        require_real_decode_path()
+        require_real_model_frame_loader()
     except Exception as exc:
         output_csv.parent.mkdir(parents=True, exist_ok=True)
         with output_csv.open("w", newline="") as f:

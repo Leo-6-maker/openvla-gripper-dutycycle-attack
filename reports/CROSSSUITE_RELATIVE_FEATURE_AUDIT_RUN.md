@@ -5,13 +5,15 @@ Date: 2026-05-31
 ## Input
 
 ```text
-/data/liuyu/outputs/milestone_2b_parser_visual_linkage_20260526/tables/student_train_dataset.csv
+tables/crosssuite_proprio_dataset_index.csv
 ```
 
-Rows:
+This index combines:
 
-- 87,474 timestep rows
-- 400 episode keys
+- Milestone 2B student scaffold rows as episode-level metadata
+- artifact-rich official clean run directories where available
+- `milestone_3a_crosssuite_proprio_shadow_20260531` shadow artifacts for Spatial/Goal
+- clean-only teacher window labels for mechanism eligibility
 
 ## Output
 
@@ -21,25 +23,20 @@ tables/crosssuite_relative_feature_audit.csv
 
 ## Key Finding
 
-Raw `eef_z` has large Object-to-Spatial/Goal shift. Causal relative-to-initial `eef_z` sharply reduces this mean shift.
-
-Object mean absolute distance for `eef_z`:
-
-| Suite | Raw distance | Relative-initial distance |
-| --- | ---: | ---: |
-| libero_spatial | 0.8671 | 0.0466 |
-| libero_goal | 0.8678 | 0.0441 |
-| libero_10 | 0.6269 | 0.0449 |
-| libero_object | 0.0000 | 0.0000 |
-
-This supports the hypothesis that relative EEF-z can reduce the largest observed cross-suite coordinate shift.
-
-## Schema Caveat
-
-The 2B dataset has usable `eef_z`, gripper, and action features, but `eef_x`, `eef_y`, `eef_vx`, and `eef_vy` are missing across all indexed episodes. `eef_vz` is mostly present but has expected first-step gaps.
+The richer index confirms that full EEF xyz/velocity exists for a limited Spatial/Goal shadow subset, but not for Object. Therefore the previous relative-EEF-z conclusion remains the only cross-suite feature result supported across all four suites.
 
 ## Gate XS-1
 
 Result: PARTIAL PASS.
 
-Relative `eef_z` reduces the main shift, but full `relative_eef_xyz` cannot be validated from this dataset because x/y are missing. CrossSuite-v2 full training is not approved from this audit alone.
+Supported:
+
+- relative-to-initial EEF-z can be audited across all 400 Table1 development episodes
+- full EEF xyz/velocity can be audited for some Spatial/Goal shadow entries
+
+Not supported:
+
+- full relative-EEF-xyz CrossSuite-v2 training with Object retention gate
+- full Object-vs-Spatial/Goal distribution comparison on xyz/velocity
+
+CrossSuite-v2 full training remains blocked until Object artifact-rich clean data includes EEF x/y and velocity or the experiment is explicitly narrowed to EEF-z-only.
