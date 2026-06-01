@@ -283,14 +283,14 @@ def main():
     print(f"[*] Model loaded, primary device: {DEVICE}")
 
     # ── Load detector ──
-    detector = None; attack_rng = None
+    detector = None
+    attack_rng = np.random.RandomState(42)  # always init for random_control etc.
     if getattr(args, 'detector_path', '') and args.detector_path:
         print(f"[*] Loading detector from {args.detector_path}...")
         detector = OnlineDetector(args.detector_path, device="cpu",
             hazard_th=args.detector_hazard_threshold,
             trig_dur=args.detector_trigger_duration,
             cooldown=args.detector_cooldown)
-        attack_rng = np.random.RandomState(42)
         n_params = sum(p.numel() for p in detector.model.parameters())
         print(f"[*] Detector ready ({n_params} params)")
         print(f"[*] Attack condition: {args.attack_condition}")
