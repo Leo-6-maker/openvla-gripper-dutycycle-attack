@@ -1,0 +1,3 @@
+frame_id,objective,eps,steps,targeted_token_flip,targeted_gripper_delta,targeted_arm_l2,targeted_ratio,targeted_perturbation_linf,random_token_flip,random_gripper_delta,random_arm_l2,gate
+ketchup_s0,gripper_open_region_ce,0.01568627450980392,20,false,0.0,0.02968645468354225,0.0,0.015625,false,0.0,1.897820212093393e-08,fail
+tomato_s0,gripper_open_region_ce,0.01568627450980392,20,true,0.9960784316062927,0.3126258850097656,3.186167490817908,0.015625,false,0.0,4.793714580841879e-08,pass

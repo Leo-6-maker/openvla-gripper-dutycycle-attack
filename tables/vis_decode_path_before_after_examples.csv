@@ -1,0 +1,4 @@
+frame,old_grip,new_grip,old_explanation,new_explanation,tokens
+ketchup_s0_0098,0.996078,0.0,EOS-as-gripper,neutral (correct),"[31849, 31753, 31869, 31857, 31887, 31834, 31872]"
+tomato_s0_0134,0.996078,0.0,EOS-as-gripper,neutral (correct),"[31916, 31856, 31872, 31900, 31887, 31834, 31872]"
+ketchup_s0_0050,0.996078,0.996078,EOS-as-gripper,actually open (coincidence),"[31900, 31870, 31941, 31860, 31920, 31834, 31744]"

@@ -1,0 +1,4 @@
+frame_id,targeted_token_flip,targeted_gripper_delta,targeted_arm_l2,targeted_perturbation_linf,random_token_flip,random_gripper_delta,random_arm_l2,gate,note
+ketchup_s0,false,0.0,0.02030321955680847,0.015625,false,0.0,1.897820212093393e-08,fail,no_decoded_gripper_change
+tomato_s0,false,0.0,0.037792742252349854,0.015625,false,0.0,4.793714580841879e-08,fail,no_decoded_gripper_change
+cream_s0,true,0.0,6.254071394096172e-08,0.015625,false,0.0,0.053287848830223083,fail,token_only_no_action_change

@@ -11,6 +11,32 @@ def _prompt(instruction: str) -> str:
     return f"In: What action should the robot take to {str(instruction).lower()}?\nOut:"
 
 
+def _infer_model_dtype(model) -> torch.dtype:
+    """Return the dtype used by model parameters, falling back to fp32 for mocks."""
+    try:
+        return next(model.parameters()).dtype
+    except StopIteration:
+        return torch.float32
+
+
+def get_adv_inputs_from_attack_result(result: AttackResult) -> Dict[str, Any]:
+    """Return TokenPrefixPGD adversarial inputs or raise a clear error.
+
+    TokenPrefixPGDAttacker intentionally returns ``action_adv=None`` because the
+    final OpenVLA action must be decoded from adversarial processor inputs. This
+    helper prevents callers from silently treating ``None`` as a zero action.
+    """
+    if not isinstance(result, AttackResult):
+        raise TypeError("expected AttackResult")
+    adv_inputs = (result.debug or {}).get("adv_inputs")
+    if not isinstance(adv_inputs, dict):
+        raise ValueError("AttackResult is missing debug['adv_inputs']; re-decode cannot proceed")
+    missing = [key for key in ("input_ids", "pixel_values") if key not in adv_inputs]
+    if missing:
+        raise ValueError(f"AttackResult debug['adv_inputs'] missing required keys: {missing}")
+    return adv_inputs
+
+
 def _pil_center_crop_resize(image: Image.Image, crop_scale: float = 0.9, size: int = 224) -> Image.Image:
     if crop_scale is None or float(crop_scale) >= 0.999:
         return image.resize((size, size), Image.Resampling.LANCZOS)
@@ -65,6 +91,11 @@ class TokenPrefixPGDAttacker:
     It never edits actuator commands.  It optimizes the processor pixel_values so
     the autoregressive action-token prefix is more likely to match the tokenized
     directional target action, then the caller performs adversarial re-decode.
+
+    ``attack()`` returns ``action_adv=None`` by design. Callers must re-decode
+    OpenVLA from ``result.debug["adv_inputs"]``, which contains ``input_ids`` and
+    adversarial ``pixel_values``. Use ``get_adv_inputs_from_attack_result`` to
+    validate that interface; never fallback from ``action_adv=None`` to zeros.
     """
     def __init__(self, model, processor, config: dict, seed: int = 0, preprocess_kwargs: Optional[Dict[str, Any]] = None, device: Optional[str] = None):
         cfg = (config or {}).get("attack_optimizer", config or {})
@@ -143,8 +174,40 @@ class TokenPrefixPGDAttacker:
         full_input_ids = torch.cat([input_ids, target], dim=1)
         labels = torch.full_like(full_input_ids, -100)
         labels[:, -target.shape[1]:] = target
-        pixel_values = inputs["pixel_values"].to(device=self.device, dtype=torch.float16)
+        model_dtype = _infer_model_dtype(self.model)
+        pixel_values = inputs["pixel_values"].to(device=self.device, dtype=model_dtype)
         return input_ids, full_input_ids, labels, pixel_values
+
+    def _project_pixel_master(self, adv_float: torch.Tensor, x_orig_float: torch.Tensor) -> torch.Tensor:
+        return torch.max(torch.min(adv_float, x_orig_float + self.epsilon), x_orig_float - self.epsilon)
+
+    def _cast_projected_pixel_values(self, adv_float: torch.Tensor, x_orig_model: torch.Tensor) -> torch.Tensor:
+        """Project in fp32, then cast to model dtype without violating Linf budget.
+
+        OpenVLA often runs in bf16/fp16, but the perturbation budget is checked
+        in processor pixel-value space.  Casting a value at the fp32 boundary to
+        bf16 can round outside ``x_orig +/- epsilon``.  Any such rounded element
+        is reset to the original model-dtype pixel value so the actual
+        ``debug["adv_inputs"]["pixel_values"]`` tensor remains budget-valid.
+        """
+
+        x_orig_float = x_orig_model.detach().float()
+        projected = self._project_pixel_master(adv_float.float(), x_orig_float)
+        model_dtype = x_orig_model.dtype
+        if model_dtype == torch.float32:
+            return projected
+        casted = projected.to(dtype=model_dtype)
+        over_budget = (casted.float() - x_orig_float).abs() > (float(self.epsilon) + 1e-7)
+        if bool(torch.any(over_budget).detach().cpu()):
+            casted = torch.where(over_budget, x_orig_model.detach(), casted)
+        return casted
+
+    def _count_quantized_budget_corrections(self, adv_model: torch.Tensor, adv_float: torch.Tensor, x_orig_model: torch.Tensor) -> int:
+        x_orig_float = x_orig_model.detach().float()
+        projected = self._project_pixel_master(adv_float.detach().float(), x_orig_float)
+        naive = projected.to(dtype=x_orig_model.dtype)
+        over_budget = (naive.float() - x_orig_float).abs() > (float(self.epsilon) + 1e-7)
+        return int(torch.sum(over_budget).detach().cpu())
 
     def action_bins_for_env_sign(self, dim: int, target_env_sign: str, unnorm_key: str, *, postprocess_gripper: bool = False) -> torch.LongTensor:
         stats, unnorm_key = self._action_stats(unnorm_key)
@@ -342,17 +405,18 @@ class TokenPrefixPGDAttacker:
                 masked[:, label_pos] = labels[:, label_pos]
             labels = masked
             token_label_source = "untargeted_clean_action_arm_only_gripper_masked"
-        x_orig = x0.detach()
+        x_orig_model = x0.detach()
+        x_orig = x_orig_model.detach().float()
         gen = torch.Generator(device=x_orig.device); gen.manual_seed(self.seed)
         temporal_prev_delta_used = False
         if self.temporal_init in {"prev_delta", "previous_delta", "carry", "carryover"} and self._prev_delta is not None and tuple(self._prev_delta.shape) == tuple(x_orig.shape):
-            delta = torch.clamp(self._prev_delta.detach().to(device=x_orig.device, dtype=x_orig.dtype), -self.epsilon, self.epsilon)
+            delta = torch.clamp(self._prev_delta.detach().to(device=x_orig.device, dtype=torch.float32), -self.epsilon, self.epsilon)
             temporal_prev_delta_used = True
         elif self.random_start:
             delta = torch.empty_like(x_orig).uniform_(-self.epsilon, self.epsilon, generator=gen)
         else:
             delta = torch.zeros_like(x_orig)
-        adv = (x_orig + delta).detach()
+        adv = self._project_pixel_master(x_orig + delta, x_orig).detach()
         loss_kwargs = {"objective": objective, "num_action_tokens": int(target_ids.numel())}
         region_token_ids = None
         if is_gripper_region:
@@ -368,7 +432,8 @@ class TokenPrefixPGDAttacker:
         initial_loss = None; final_loss = None
         for i in range(max(self.num_steps, 1)):
             adv = adv.detach().requires_grad_(True)
-            loss = self._loss(full_ids, labels, adv, **loss_kwargs)
+            adv_for_loss = self._cast_projected_pixel_values(adv, x_orig_model)
+            loss = self._loss(full_ids, labels, adv_for_loss, **loss_kwargs)
             if i == 0:
                 initial_loss = float(loss.detach().cpu())
             grad = torch.autograd.grad(loss, adv, retain_graph=False, create_graph=False)[0]
@@ -378,31 +443,45 @@ class TokenPrefixPGDAttacker:
             else:
                 # Minimize target CE: signed gradient descent.
                 adv = adv.detach() - self.step_size * grad.detach().sign()
-            adv = torch.max(torch.min(adv, x_orig + self.epsilon), x_orig - self.epsilon)
-            adv = torch.clamp(adv, 0.0, 1.0)  # valid pixel range for processor inputs
+            adv = self._project_pixel_master(adv, x_orig)
+            # ``pixel_values`` are processor-normalized OpenVLA inputs, not raw
+            # RGB values.  Clamping them to [0, 1] can create a perturbation far
+            # larger than epsilon whenever normalized pixels are negative.  The
+            # budget enforced here is therefore Linf in processor pixel space.
             if self.temporal_smooth_lambda > 0.0 and self._prev_delta is not None and tuple(self._prev_delta.shape) == tuple(adv.shape):
                 lam = min(max(float(self.temporal_smooth_lambda), 0.0), 1.0)
-                smoothed_delta = (1.0 - lam) * (adv.detach() - x_orig) + lam * self._prev_delta.detach().to(device=x_orig.device, dtype=x_orig.dtype)
+                smoothed_delta = (1.0 - lam) * (adv.detach() - x_orig) + lam * self._prev_delta.detach().to(device=x_orig.device, dtype=torch.float32)
                 smoothed_delta = torch.clamp(smoothed_delta, -self.epsilon, self.epsilon)
-                adv = (x_orig + smoothed_delta).detach()
+                adv = self._project_pixel_master(x_orig + smoothed_delta, x_orig).detach()
             del grad, loss
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
+        adv_model = self._cast_projected_pixel_values(adv.detach(), x_orig_model)
         with torch.no_grad():
-            final_loss = float(self._loss(full_ids, labels, adv, **loss_kwargs).detach().cpu())
+            final_loss = float(self._loss(full_ids, labels, adv_model, **loss_kwargs).detach().cpu())
         postprocess_gripper = bool(self.postprocess_gripper)
-        clean_audit = self._audit_logits(full_ids, labels, x_orig, target_ids, unnorm_key, postprocess_gripper=postprocess_gripper, region_token_ids=region_token_ids)
-        adv_audit = self._audit_logits(full_ids, labels, adv, target_ids, unnorm_key, postprocess_gripper=postprocess_gripper, region_token_ids=region_token_ids)
-        diff = (adv - x_orig).detach().float()
-        self._prev_delta = (adv.detach() - x_orig).detach()
-        adv_inputs = {"input_ids": clean_ids.detach(), "pixel_values": adv.detach()}
+        clean_audit = self._audit_logits(full_ids, labels, x_orig_model, target_ids, unnorm_key, postprocess_gripper=postprocess_gripper, region_token_ids=region_token_ids)
+        adv_audit = self._audit_logits(full_ids, labels, adv_model, target_ids, unnorm_key, postprocess_gripper=postprocess_gripper, region_token_ids=region_token_ids)
+        diff = (adv_model - x_orig_model).detach().float()
+        master_diff = (self._project_pixel_master(adv.detach(), x_orig) - x_orig).detach().float()
+        self._prev_delta = diff.detach()
+        adv_inputs = {"input_ids": clean_ids.detach(), "pixel_values": adv_model.detach()}
         token_list = [int(x) for x in target_ids.detach().cpu().tolist()]
+        quantized_correction_count = self._count_quantized_budget_corrections(adv_model, adv.detach(), x_orig_model)
         debug={
             "adv_inputs": adv_inputs,
             "attack_objective": objective,
             "loss_direction": "maximize" if is_untargeted else "minimize",
             "token_label_source": token_label_source,
             "pixel_space": "processor_pixel_values",
+            "pixel_epsilon_space": "processor_pixel_values_linf",
+            "pixel_value_clamp": "project_to_x_orig_plusminus_epsilon_only",
+            "pixel_master_dtype": "torch.float32",
+            "pixel_model_dtype": str(x_orig_model.dtype),
+            "pixel_budget_master_linf": float(master_diff.abs().max().cpu()) if master_diff.numel() else 0.0,
+            "pixel_budget_adv_inputs_linf": float(diff.abs().max().cpu()) if diff.numel() else 0.0,
+            "pixel_budget_quantized_correction_count": int(quantized_correction_count),
+            "pixel_budget_quantized_correction_rate": float(quantized_correction_count / max(int(diff.numel()), 1)),
             "num_loss_forwards": int(max(self.num_steps, 1) + 1),
             "num_backwards": int(max(self.num_steps, 1)),
             "num_adv_decodes": 1,
@@ -443,6 +522,9 @@ class TokenPrefixPGDAttacker:
                     debug["target_z_token_id"] = int(token_list[2])
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
+        # TokenPrefixPGD produces adversarial processor inputs, not an already
+        # decoded actuator action. Downstream evaluation must re-decode from
+        # debug["adv_inputs"]; action_adv intentionally remains None.
         return AttackResult(
             x_adv=None,
             action_adv=None,
