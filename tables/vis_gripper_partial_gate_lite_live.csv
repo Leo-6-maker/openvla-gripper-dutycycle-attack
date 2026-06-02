@@ -1,0 +1,7 @@
+task,frame_label,objective,eps_raw_pixels,steps,z_weight,gripper_token_flipped,nad_z,armL2,perturbation_linf_raw,attack_runtime_sec,note
+cream_cheese,step030,gripper_open_region_ce,8,40,0.0,FLIP,0.2868,0.5252,8.031,201.6,lowest armL2 among all flips
+cream_cheese,step030,gripper_open_region_ce,12,40,0.0,FLIP,0.7206,0.8259,12.0154,200.2,higher armL2 than eps8
+cream_cheese,step030,force_open_z_down_token_ce,8,40,0.5,FLIP,0.4338,0.6128,8.031,200.4,hybrid control only
+cream_cheese,step030,force_open_z_down_token_ce,12,40,0.5,FLIP,0.6397,0.7743,12.0154,201.2,hybrid control only
+cream_cheese,step035,gripper_open_region_ce,8,40,0.0,noop,0.8015,0.8511,8.031,200.1,no flip despite similar armL2 to step030-eps12
+cream_cheese,step035,gripper_open_region_ce,12,40,0.0,noop,0.8015,0.8511,12.0154,201.2,no flip despite similar armL2 to step030-eps12

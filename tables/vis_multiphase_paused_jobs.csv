@@ -1,0 +1,8 @@
+pid,gpu_pair,gpu_bus_ids,script,task,schedule,elapsed,status,partial_trace
+16008,1-0,"04:00.0,06:00.0",vis_rollout_multiphase_v1.py,ketchup,two_phase_strong_carry_preplace_d20_d20,27m30s,killed_SIGTERM,no (vis_pgd phase in progress)
+5279,4-5,"0C:00.0,0D:00.0",vis_rollout_multiphase_v1.py,ketchup,ultra_three_phase_d20_d20_d20,2m59s,killed_SIGTERM,partial (random_matched complete; vis_pgd killed)
+2576,-,-,launch_vis_failure_first_hardcase_recovery_20260602_lf.sh,queue_scheduler,-,-,killed_SIGTERM,-
+41408,-,-,launch_vis_failure_first_multiphase_20260602_lf.sh,queue_scheduler,-,-,killed_SIGTERM,-
+48675,1-0,"04:00.0,06:00.0",vis_rollout_multiphase_v1.py,salad_dressing,single_best_phase_d20,~20m,completed_earlier,yes (traces in output dir)
+14128,2-3,"07:00.0,08:00.0",vis_rollout_multiphase_v1.py,salad_dressing,two_phase_strong_carry_preplace_d20_d20,~20m,completed_earlier,yes (traces in output dir)
+1147,4-5,"0C:00.0,0D:00.0",vis_rollout_multiphase_v1.py,salad_dressing,three_phase_strong_d16_d16_d16,~20m,completed_earlier,yes (traces in output dir)
