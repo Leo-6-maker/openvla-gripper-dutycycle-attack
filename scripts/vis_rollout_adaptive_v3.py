@@ -57,10 +57,11 @@ def parse_args():
     ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--duration', type=int, default=0)
     ap.add_argument('--strategy', choices=['full','sparse'], default='full')
-    ap.add_argument('--controller', choices=['fixed','open_streak_stop','qpos_safety_stop','streak_with_qpos_cap'], default='fixed')
-    ap.add_argument('--K', type=int, default=0, help='OPEN streak threshold')
+    ap.add_argument('--controller', choices=['fixed','open_streak_stop','open_count_stop','qpos_safety_stop','min_hold_qpos_cap','streak_with_qpos_cap'], default='fixed')
+    ap.add_argument('--K', type=int, default=0, help='OPEN streak/count threshold')
     ap.add_argument('--Q', type=float, default=0, help='qpos_delta threshold')
-    ap.add_argument('--max_duration', type=int, default=0, help='max VIS duration')
+    ap.add_argument('--max_duration', type=int, default=0, help='max PGD attacks for adaptive controller')
+    ap.add_argument('--min_attacks', type=int, default=0, help='min PGD attacks before allowing stop')
     ap.add_argument('--dry_run', action='store_true')
     return ap.parse_args()
 
@@ -110,7 +111,9 @@ env_args = {
 env = OffScreenRenderEnv(**env_args)
 env.seed(args.seed)
 
-# Apply duration override
+# Extend perturbation window to accommodate max_duration or explicit duration
+if args.max_duration > 0:
+    cfg['perturb_end'] = max(cfg['perturb_end'], cfg['perturb_start'] + args.max_duration - 1)
 if args.duration > 0:
     cfg['perturb_end'] = cfg['perturb_start'] + args.duration - 1
 
@@ -184,9 +187,11 @@ ws = cfg['perturb_start']; we = cfg['perturb_end']
 ctrl = {
     'mode': args.controller, 'K': args.K, 'Q': args.Q,
     'max_dur': args.max_duration if args.max_duration > 0 else 999,
+    'min_att': args.min_attacks if args.min_attacks > 0 else 0,
     'active': True, 'stop_reason': 'none',
     'current_streak': 0, 'max_streak': 0, 'total_open': 0,
     'qpos_start': 0.0, 'qpos_delta_online': 0.0, 'attacks_applied': 0,
+    'qpos_pre': 0.0, 'qpos_post': 0.0,
 }
 if args.controller != 'fixed' and args.condition == 'vis_pgd':
     print(f'    Adaptive controller: {args.controller} K={args.K} Q={args.Q} max_dur={ctrl["max_dur"]}')
@@ -244,8 +249,24 @@ while t < max_steps + num_steps_wait:
                         gq = float(gripper_qpos[0]) if len(gripper_qpos) > 0 else 0.0
                         if ctrl['attacks_applied'] == 1: ctrl['qpos_start'] = gq
                         ctrl['qpos_delta_online'] = abs(gq - ctrl['qpos_start'])
-                        if ctrl['K'] > 0 and ctrl['current_streak'] >= ctrl['K']:
-                            ctrl['stop_reason'] = 'streak_threshold'
+                        # Check stop conditions by mode
+                        if ctrl['mode'] == 'min_hold_qpos_cap':
+                            if ctrl['attacks_applied'] < ctrl['min_att']:
+                                pass  # must continue
+                            elif ctrl['Q'] > 0 and ctrl['qpos_delta_online'] >= ctrl['Q']:
+                                ctrl['stop_reason'] = 'qpos_threshold'
+                            elif ctrl['attacks_applied'] >= ctrl['max_dur']:
+                                ctrl['stop_reason'] = 'max_duration'
+                        elif ctrl['mode'] == 'open_streak_stop':
+                            if ctrl['K'] > 0 and ctrl['current_streak'] >= ctrl['K']:
+                                ctrl['stop_reason'] = 'streak_threshold'
+                            elif ctrl['attacks_applied'] >= ctrl['max_dur']:
+                                ctrl['stop_reason'] = 'max_duration'
+                        elif ctrl['mode'] == 'open_count_stop':
+                            if ctrl['K'] > 0 and ctrl['total_open'] >= ctrl['K']:
+                                ctrl['stop_reason'] = 'open_count_threshold'
+                            elif ctrl['attacks_applied'] >= ctrl['max_dur']:
+                                ctrl['stop_reason'] = 'max_duration'
                         elif ctrl['Q'] > 0 and ctrl['qpos_delta_online'] >= ctrl['Q']:
                             ctrl['stop_reason'] = 'qpos_threshold'
                         elif ctrl['attacks_applied'] >= ctrl['max_dur']:
@@ -286,6 +307,10 @@ while t < max_steps + num_steps_wait:
     if done: success = True; done_any = True; break
     t += 1; policy_step += 1
     if t >= max_steps + num_steps_wait - 1: done_any = True; break
+
+# Post-loop: if controller was active but never stopped, mark force_window_end
+if ctrl['mode'] != 'fixed' and ctrl['stop_reason'] == 'none' and ctrl['attacks_applied'] > 0:
+    ctrl['stop_reason'] = 'force_window_end'
 
 total_dt = time.time() - t_start
 window_rows = [r for r in trace_rows if r['in_window']]
