@@ -76,6 +76,7 @@ def parse_args():
     ap.add_argument('--pgd_steps', type=int, default=STEPS_DEFAULT, help=f'PGD iterations (default: {STEPS_DEFAULT})')
     ap.add_argument('--pgd_restarts', type=int, default=PGD_RESTARTS_DEFAULT, help=f'PGD random restarts (default: {PGD_RESTARTS_DEFAULT})')
     ap.add_argument('--objective', choices=['gripper_open_region_ce','force_open_z_down_token_ce',
+        'force_open_region_z_down_ce',
         'force_gripper_open_token_ce','gripper_logit_margin_cw','targeted_directional_ce',
         'prefix_locked_gripper_open_region_ce','prefix_locked_gripper_open_margin',
         'gripper_open_expected_action'],
@@ -226,7 +227,13 @@ def run_pgd_attack(img_np, instruction, clean_action, clean_gen, seed):
     target_action = np.asarray(clean_action, dtype=np.float32).copy()
     target_action[-1] = 1.0  # OPEN gripper (raw ~1.0 → most-open bin after normalization)
     if ATTACK_OBJECTIVE == 'force_open_z_down_token_ce':
+        # DEPRECATED: target_action[-1]=1.0 may map to CLOSE in decoded-action space.
+        # Use force_open_region_z_down_ce for corrected hybrid with OPEN-region gripper loss.
         target_action[2] = low[2]  # Z DOWN: minimum Z delta = most negative displacement
+    if ATTACK_OBJECTIVE == 'force_open_region_z_down_ce':
+        # Corrected hybrid: gripper uses corrected OPEN-region loss, Z uses CE toward down token.
+        # target_action[-1] is set to 1.0 only for tokenization; actual loss uses region.
+        target_action[2] = low[2]  # Z DOWN
     _PREFIX_LOCKED_SET = {'prefix_locked_gripper_open_region_ce', 'prefix_locked_gripper_open_margin', 'gripper_open_expected_action'}
     _GRIPPER_OBJ_SET = {'gripper_open_region_ce', 'force_open_z_down_token_ce'} | _PREFIX_LOCKED_SET
     base_random_start = (ATTACK_OBJECTIVE in _GRIPPER_OBJ_SET)
@@ -241,7 +248,7 @@ def run_pgd_attack(img_np, instruction, clean_action, clean_gen, seed):
                 'random_start': (base_random_start and restart > 0),
             }
         }
-        if ATTACK_OBJECTIVE == 'force_open_z_down_token_ce':
+        if ATTACK_OBJECTIVE in {'force_open_z_down_token_ce', 'force_open_region_z_down_ce'}:
             attack_cfg['attack_optimizer']['loss_weights'] = {
                 str(action_dim - 1): GRIPPER_WEIGHT,  # gripper dim
                 '2': Z_DOWN_WEIGHT,                    # z dim

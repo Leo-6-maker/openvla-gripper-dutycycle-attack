@@ -371,8 +371,10 @@ class TokenPrefixPGDAttacker:
 
     def _loss(self, full_input_ids, labels, pixel_values, *, objective: str = "targeted_directional_ce", region_token_ids=None, margin: float = 5.0, num_action_tokens: int = 7, loss_weights: dict = None, arm_preserve_weight: float = 0.1):
         obj = str(objective)
-        _PREFIX_LOCKED_OBJS = {"prefix_locked_gripper_open_region_ce", "prefix_locked_gripper_open_margin", "gripper_open_expected_action"}
-        if obj not in {"gripper_open_region_ce", "gripper_logit_margin_cw", "prefix_locked_gripper_open_region_ce", "prefix_locked_gripper_open_margin", "gripper_open_expected_action"}:
+        _SPECIAL_OBJS = {"gripper_open_region_ce", "gripper_logit_margin_cw",
+                         "prefix_locked_gripper_open_region_ce", "prefix_locked_gripper_open_margin",
+                         "gripper_open_expected_action", "force_open_region_z_down_ce"}
+        if obj not in _SPECIAL_OBJS:
             if loss_weights is None or obj != "force_open_z_down_token_ce":
                 # Keep the proven OpenVLA/HF label path for ordinary targeted CE;
                 # hand-aligning visual-token logits against text labels is brittle.
@@ -402,6 +404,27 @@ class TokenPrefixPGDAttacker:
         logits = out.logits.float().contiguous()
         action_dim = max(int(num_action_tokens), 1)
         rows = self._active_label_rows(logits, labels, max(action_dim, 1))
+
+        # Corrected hybrid: gripper OPEN-region loss + Z weighted CE
+        if obj == "force_open_region_z_down_ce" and region_token_ids is not None and int(region_token_ids.numel()) > 0:
+            losses = []
+            # Gripper component: OPEN-region loss from the last action token logit row
+            gripper_row_index = -1  # last action token = gripper
+            gripper_row = logits[0, gripper_row_index, :]
+            if int(region_token_ids.numel()) > 0:
+                log_region = torch.logsumexp(gripper_row[region_token_ids], dim=0)
+                log_all = torch.logsumexp(gripper_row, dim=0)
+                losses.append(-(log_region - log_all))
+            # Z component: weighted CE from labels
+            for b, label_pos, dim, row_index in rows:
+                if dim == 2:  # Z dim
+                    row = logits[b, row_index, :]
+                    target = labels[b, label_pos]
+                    z_w = loss_weights.get('2', loss_weights.get(2, 0.5)) if loss_weights else 0.5
+                    ce = F.cross_entropy(row.view(1, -1), target.view(1))
+                    losses.append(float(z_w) * ce)
+            return torch.stack(losses).mean() if losses else logits.sum() * 0.0
+
         if not rows:
             return logits.sum() * 0.0
         losses = []
@@ -529,6 +552,7 @@ class TokenPrefixPGDAttacker:
         is_arm_only_untargeted = objective in {"untargeted_arm_clean_token_ce", "ctrl_random_direction_arm_only"}
         is_force_gripper_open = objective in {"force_gripper_open_token_ce", "force_gripper_open", "targeted_gripper_open_ce", "adaptive_anti_gripper_token_ce"}
         is_force_open_z_down = objective in {"force_open_z_down_token_ce"}
+        is_force_open_region_z_down = objective in {"force_open_region_z_down_ce"}  # corrected hybrid
         is_gripper_margin = objective in {"gripper_logit_margin_cw"}
         is_gripper_region = objective in {"gripper_open_region_ce"}
         # New gripper-specific objectives (2026-06-02)
@@ -536,6 +560,7 @@ class TokenPrefixPGDAttacker:
         is_prefix_locked_open_margin = objective in {"prefix_locked_gripper_open_margin"}
         is_gripper_expected_action = objective in {"gripper_open_expected_action"}
         is_prefix_locked = is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action
+        is_corrected_hybrid = is_force_open_region_z_down  # uses corrected OPEN region + Z CE
         if self.model is None or self.processor is None or ((not is_untargeted) and target_action is None):
             return ExistingDenseAttackAdapter(self.epsilon, self.step_size, self.num_steps, self.seed).attack(observation, instruction, clean_action, target_action, clean_model_output)
         self._freeze_model()
@@ -566,6 +591,18 @@ class TokenPrefixPGDAttacker:
             masked[:, gripper_label_pos] = -100
             labels = masked
             token_label_source = f"prefix_locked_arm_preserve_gripper_{objective}"
+        elif is_corrected_hybrid:
+            # Corrected hybrid: gripper uses corrected OPEN-region loss, Z uses CE toward Z-down.
+            # Unlike old force_open_z_down, gripper target is NOT target_action[-1]=1.0.
+            action_dim = int(target_ids.numel())
+            gripper_dim = action_dim - 1
+            z_dim = 2
+            masked = torch.full_like(labels, -100)
+            # Keep only Z label for CE; gripper handled by corrected OPEN region
+            z_label_pos = labels.shape[1] - action_dim + z_dim
+            masked[:, z_label_pos] = labels[:, z_label_pos]
+            labels = masked
+            token_label_source = "force_open_region_z_down_ce_corrected_hybrid"
         elif is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region:
             action_dim = int(target_ids.numel())
             gripper_dim = action_dim - 1
@@ -607,7 +644,7 @@ class TokenPrefixPGDAttacker:
         loss_kwargs = {"objective": objective, "num_action_tokens": int(target_ids.numel())}
         region_token_ids = None
         corrected_region_info = None
-        _needs_region = is_gripper_region or is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action
+        _needs_region = is_gripper_region or is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action or is_corrected_hybrid
         if _needs_region:
             # P0 BUG FIX: use decoded-action semantics instead of sign-string heuristic.
             corrected_region_info = self.get_gripper_region_by_decoded_action(
@@ -723,11 +760,12 @@ class TokenPrefixPGDAttacker:
                 debug["arm_preserve_weight"] = float(self.arm_preserve_weight)
                 debug["gripper_margin_param"] = float(self.gripper_margin)
                 debug["best_restart_metric"] = self.best_restart_metric
-            if is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region or is_prefix_locked:
+            if is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region or is_prefix_locked or is_corrected_hybrid:
                 debug.update({
                     "target_gripper_token_id": int(token_list[-1]) if token_list else None,
                     "gripper_only_loss": bool(is_force_gripper_open or is_gripper_margin or is_gripper_region or is_prefix_locked),
                     "z_and_gripper_loss": bool(is_force_open_z_down),
+                    "corrected_open_region_z_down": bool(is_corrected_hybrid),
                     "gripper_logit_margin_loss": bool(is_gripper_margin or is_prefix_locked_open_margin),
                     "gripper_open_region_loss": bool(is_gripper_region or is_prefix_locked_open_region),
                     "gripper_expected_action_loss": bool(is_gripper_expected_action),
@@ -739,6 +777,11 @@ class TokenPrefixPGDAttacker:
                     debug["gripper_open_region_token_count"] = int(len(vals))
                 if is_force_open_z_down and len(token_list) > 2:
                     debug["target_z_token_id"] = int(token_list[2])
+                    # P0: old force_open_z_down uses target_action[-1]=1.0 which may target CLOSE.
+                    # Mark as deprecated; use force_open_region_z_down_ce for corrected hybrid.
+                    debug["force_open_z_down_gripper_target_status"] = "deprecated_unsafe_old_target_semantics"
+                if is_corrected_hybrid:
+                    debug["force_open_z_down_gripper_target_status"] = "corrected_open_region_z_down_20260602"
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         # TokenPrefixPGD produces adversarial processor inputs, not an already
