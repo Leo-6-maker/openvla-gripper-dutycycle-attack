@@ -97,13 +97,14 @@ GRIPPER_WEIGHT = args.gripper_weight
 print(f'[0] VIS Rollout Micro: {args.task} / {args.condition} (seed={args.seed}) controller={args.controller}')
 print(f'    GPU pair: {args.gpu_pair}')
 
-# Load model
+# Load model — use --gpu_pair for device placement.
+_gpu_ids = [int(x.strip()) for x in args.gpu_pair.split(',')]
 print('[1] Loading model...')
 from transformers import AutoModelForVision2Seq, AutoProcessor
 model = AutoModelForVision2Seq.from_pretrained(
     MODEL_PATH, attn_implementation='eager', torch_dtype=torch.bfloat16,
     low_cpu_mem_usage=True, device_map='auto',
-    max_memory={0: '9000MiB', 1: '9000MiB', 'cpu': '64GiB'}, trust_remote_code=True)
+    max_memory={_gpu_ids[0]: '9000MiB', _gpu_ids[1]: '9000MiB', 'cpu': '64GiB'}, trust_remote_code=True)
 processor = AutoProcessor.from_pretrained(MODEL_PATH, trust_remote_code=True)
 device = next(model.parameters()).device
 mdtype = next(model.parameters()).dtype
@@ -389,7 +390,9 @@ while t < max_steps + num_steps_wait:
         clean_action, clean_token_ids = decode_image(img_np, cfg['instruction'])
         clean_action_vec = clean_action.copy()
         img_f = img_np.astype(np.float32) / 255.0
-        noise = rng.uniform(-EPS, EPS, img_f.shape).astype(np.float32)
+        # Use raw-pixel Linf budget (matched to --eps_raw_pixels), NOT processor-space EPS.
+        eps_raw_unit = EPS_RAW_PIXELS / 255.0
+        noise = rng.uniform(-eps_raw_unit, eps_raw_unit, img_f.shape).astype(np.float32)
         adv_img_np = (np.clip(img_f + noise, 0.0, 1.0) * 255).astype(np.uint8)
         adv_action, adv_token_ids = decode_image(adv_img_np, cfg['instruction'])
         raw_action = adv_action; adv_grip = float(raw_action[-1]); clean_grip = float(clean_action[-1])
