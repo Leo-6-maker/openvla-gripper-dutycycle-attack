@@ -109,6 +109,10 @@ class TokenPrefixPGDAttacker:
         self.temporal_smooth_lambda = float(cfg.get("temporal_smooth_lambda", 0.0) or 0.0)
         self._prev_delta = None
         self.objective = str(cfg.get("objective", cfg.get("loss_objective", "targeted_directional_ce")))
+        self.loss_weights = None
+        _raw_weights = cfg.get("loss_weights", None)
+        if _raw_weights is not None and isinstance(_raw_weights, dict):
+            self.loss_weights = {int(k) if k.lstrip('-').isdigit() else k: float(v) for k, v in _raw_weights.items()}
         self.seed = int(seed)
         self.preprocess_kwargs = dict(preprocess_kwargs or {})
         self.postprocess_gripper = bool(self.preprocess_kwargs.pop("postprocess_gripper", False))
@@ -253,17 +257,34 @@ class TokenPrefixPGDAttacker:
             rows.append((int(b.item()), int(label_pos.item()), dim, row_index))
         return rows
 
-    def _loss(self, full_input_ids, labels, pixel_values, *, objective: str = "targeted_directional_ce", region_token_ids=None, margin: float = 5.0, num_action_tokens: int = 7):
+    def _loss(self, full_input_ids, labels, pixel_values, *, objective: str = "targeted_directional_ce", region_token_ids=None, margin: float = 5.0, num_action_tokens: int = 7, loss_weights: dict = None):
         obj = str(objective)
         if obj not in {"gripper_open_region_ce", "gripper_logit_margin_cw"}:
-            # Keep the proven OpenVLA/HF label path for ordinary targeted CE;
-            # hand-aligning visual-token logits against text labels is brittle.
-            out = self.model(input_ids=full_input_ids, pixel_values=pixel_values, labels=labels, use_cache=False, return_dict=True)
-            if out.loss is not None:
-                return out.loss
-            logits = out.logits[:, :-1, :].contiguous()
-            shifted = labels[:, 1:].contiguous()
-            return F.cross_entropy(logits.view(-1, logits.shape[-1]), shifted.view(-1), ignore_index=-100)
+            if loss_weights is None or obj != "force_open_z_down_token_ce":
+                # Keep the proven OpenVLA/HF label path for ordinary targeted CE;
+                # hand-aligning visual-token logits against text labels is brittle.
+                out = self.model(input_ids=full_input_ids, pixel_values=pixel_values, labels=labels, use_cache=False, return_dict=True)
+                if out.loss is not None:
+                    return out.loss
+                logits = out.logits[:, :-1, :].contiguous()
+                shifted = labels[:, 1:].contiguous()
+                return F.cross_entropy(logits.view(-1, logits.shape[-1]), shifted.view(-1), ignore_index=-100)
+            # Weighted path for force_open_z_down_token_ce: per-dimension CE with configurable weights.
+            # labels are already masked to only gripper(dim=-1) and z(dim=2).
+            out = self.model(input_ids=full_input_ids, pixel_values=pixel_values, use_cache=False, return_dict=True)
+            logits = out.logits.float().contiguous()
+            action_dim = max(int(num_action_tokens), 1)
+            rows = self._active_label_rows(logits, labels, action_dim)
+            if not rows:
+                return logits.sum() * 0.0
+            weighted_losses = []
+            for _b, _label_pos, dim, row_index in rows:
+                row = logits[_b, row_index, :]
+                target = labels[_b, _label_pos]
+                ce = F.cross_entropy(row.view(1, -1), target.view(1))
+                w = loss_weights.get(str(dim), loss_weights.get(int(dim), 1.0))
+                weighted_losses.append(float(w) * ce)
+            return torch.stack(weighted_losses).mean() if weighted_losses else logits.sum() * 0.0
         out = self.model(input_ids=full_input_ids, pixel_values=pixel_values, use_cache=False, return_dict=True)
         logits = out.logits.float().contiguous()
         action_dim = max(int(num_action_tokens), 1)
@@ -429,6 +450,8 @@ class TokenPrefixPGDAttacker:
             loss_kwargs["region_token_ids"] = region_token_ids
         if is_gripper_margin:
             loss_kwargs["margin"] = float((getattr(self, "config", {}) or {}).get("cw_margin", 5.0)) if hasattr(self, "config") else 5.0
+        if is_force_open_z_down and self.loss_weights is not None:
+            loss_kwargs["loss_weights"] = self.loss_weights
         initial_loss = None; final_loss = None
         for i in range(max(self.num_steps, 1)):
             adv = adv.detach().requires_grad_(True)

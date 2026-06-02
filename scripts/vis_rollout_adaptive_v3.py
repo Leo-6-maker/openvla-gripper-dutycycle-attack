@@ -17,16 +17,16 @@ os.makedirs(f'{OUT_BASE}/tables', exist_ok=True)
 os.makedirs(f'{OUT_BASE}/runs', exist_ok=True)
 
 UNNORM_KEY = 'libero_object'
-# Attack strength parameters — calibrated for SigLIP processor space.
-# SigLIP normalization: x_norm = (x/255 - 0.5) / 0.5, so delta_norm = delta_raw / 127.5.
-# Default: 8 raw pixel values Linf → 8/127.5 ≈ 0.0627 in processor space.
-SIGLIP_STD = 0.5
-EPS_RAW = 8.0 / 255.0          # raw RGB [0,1] Linf budget (standard: 8/255)
-EPS = EPS_RAW / SIGLIP_STD      # processor-space epsilon (~0.0627)
-STEPS = 40                      # PGD iterations
-STEP_SIZE = EPS / 8.0           # ~0.0078 — standard PGD step size
-ATTACK_OBJECTIVE = 'force_open_z_down_token_ce'
-PGD_RESTARTS = 3
+# Attack strength defaults (overridden by CLI / processor at runtime).
+# eps_raw_pixels is the canonical budget: "8 raw pixel values Linf in [0,255]".
+# Processor-space epsilon is computed as eps_raw / (255 * image_std_c) per channel.
+EPS_RAW_PIXELS_DEFAULT = 8
+STEPS_DEFAULT = 40
+STEP_SIZE_RATIO = 8.0             # step_size = eps_processor / STEP_SIZE_RATIO
+ATTACK_OBJECTIVE_DEFAULT = 'force_open_z_down_token_ce'
+PGD_RESTARTS_DEFAULT = 3
+Z_DOWN_WEIGHT_DEFAULT = 0.5
+GRIPPER_OPEN_WEIGHT_DEFAULT = 1.0
 
 TASK_CONFIGS = {
     'cream_cheese': {
@@ -68,26 +68,34 @@ def parse_args():
     ap.add_argument('--Q', type=float, default=0, help='qpos_delta threshold')
     ap.add_argument('--max_duration', type=int, default=0, help='max PGD attacks for adaptive controller')
     ap.add_argument('--min_attacks', type=int, default=0, help='min PGD attacks before allowing stop')
-    ap.add_argument('--epsilon_raw', type=float, default=EPS_RAW, help=f'raw RGB Linf budget [0-1] (default: {EPS_RAW})')
-    ap.add_argument('--pgd_steps', type=int, default=STEPS, help=f'PGD iterations (default: {STEPS})')
-    ap.add_argument('--pgd_restarts', type=int, default=PGD_RESTARTS, help=f'PGD random restarts (default: {PGD_RESTARTS})')
+    # EPS: raw-pixel semantics (default) or processor-direct (legacy).
+    ap.add_argument('--eps_raw_pixels', type=int, choices=[4, 8, 12, 16], default=None,
+        help=f'raw RGB Linf budget in pixel values [0-255] (default: {EPS_RAW_PIXELS_DEFAULT})')
+    ap.add_argument('--eps_processor_direct', type=float, default=None,
+        help='use processor-space epsilon directly (legacy; bypasses raw-pixel conversion)')
+    ap.add_argument('--pgd_steps', type=int, default=STEPS_DEFAULT, help=f'PGD iterations (default: {STEPS_DEFAULT})')
+    ap.add_argument('--pgd_restarts', type=int, default=PGD_RESTARTS_DEFAULT, help=f'PGD random restarts (default: {PGD_RESTARTS_DEFAULT})')
     ap.add_argument('--objective', choices=['gripper_open_region_ce','force_open_z_down_token_ce',
         'force_gripper_open_token_ce','gripper_logit_margin_cw','targeted_directional_ce'],
-        default=ATTACK_OBJECTIVE, help=f'attack objective (default: {ATTACK_OBJECTIVE})')
+        default=ATTACK_OBJECTIVE_DEFAULT, help=f'attack objective (default: {ATTACK_OBJECTIVE_DEFAULT})')
+    ap.add_argument('--z_down_weight', type=float, default=Z_DOWN_WEIGHT_DEFAULT,
+        help=f'Z-down loss weight (default: {Z_DOWN_WEIGHT_DEFAULT})')
+    ap.add_argument('--gripper_weight', type=float, default=GRIPPER_OPEN_WEIGHT_DEFAULT,
+        help=f'gripper-open loss weight (default: {GRIPPER_OPEN_WEIGHT_DEFAULT})')
     ap.add_argument('--dry_run', action='store_true')
     return ap.parse_args()
 
 args = parse_args()
-# Apply CLI overrides for attack strength parameters
-EPS_RAW = args.epsilon_raw
-EPS = EPS_RAW / SIGLIP_STD
+# Resolve EPS: raw-pixel semantics (default) or processor-direct (legacy flag).
+EPS_RAW_PIXELS = args.eps_raw_pixels if args.eps_raw_pixels is not None else EPS_RAW_PIXELS_DEFAULT
+EPS_PROCESSOR_DIRECT = args.eps_processor_direct
 STEPS = args.pgd_steps
-STEP_SIZE = EPS / 8.0
 ATTACK_OBJECTIVE = args.objective
 PGD_RESTARTS = args.pgd_restarts
+Z_DOWN_WEIGHT = args.z_down_weight
+GRIPPER_WEIGHT = args.gripper_weight
 print(f'[0] VIS Rollout Micro: {args.task} / {args.condition} (seed={args.seed}) controller={args.controller}')
 print(f'    GPU pair: {args.gpu_pair}')
-print(f'    Attack: eps_raw={EPS_RAW:.4f} eps_proc={EPS:.4f} steps={STEPS} restarts={PGD_RESTARTS} objective={ATTACK_OBJECTIVE}')
 
 # Load model
 print('[1] Loading model...')
@@ -107,6 +115,48 @@ mask = np.array(stats.get('mask', np.ones_like(stats['q01'], dtype=bool)))
 low = np.array(stats['q01'])
 high = np.array(stats['q99'])
 print(f'    device={device}, mdtype={mdtype}, action_dim={action_dim}')
+
+# ── EPS calibration from processor ──
+# Read image normalization parameters to convert raw-pixel Linf → processor space.
+if EPS_PROCESSOR_DIRECT is not None:
+    EPS = float(EPS_PROCESSOR_DIRECT)
+    EPS_SOURCE = 'eps_processor_direct'
+    IMAGE_MEAN = None
+    IMAGE_STD = None
+    EPS_PER_CHANNEL = None
+    EFFECTIVE_RAW_EPS = None
+else:
+    try:
+        ip = processor.image_processor
+        # PrismaticImageProcessor stores means/stds as lists-of-lists.
+        # Use the LAST normalization (SigLIP) which is the final pre-model transform.
+        all_means = getattr(ip, 'means', [[0.5, 0.5, 0.5]])
+        all_stds = getattr(ip, 'stds', [[0.5, 0.5, 0.5]])
+        IMAGE_MEAN = all_means[-1] if all_means else [0.5, 0.5, 0.5]
+        IMAGE_STD = all_stds[-1] if all_stds else [0.5, 0.5, 0.5]
+    except Exception:
+        IMAGE_MEAN = [0.5, 0.5, 0.5]
+        IMAGE_STD = [0.5, 0.5, 0.5]
+    # Convert: delta_processor_c = delta_raw / (255 * std_c) for each channel.
+    # Conservative choice: use the channel with the LARGEST std → smallest eps.
+    # This ensures the most-constrained channel still respects the budget.
+    EPS_PER_CHANNEL = [(EPS_RAW_PIXELS / 255.0) / float(s) for s in IMAGE_STD]
+    EPS = min(EPS_PER_CHANNEL)
+    EFFECTIVE_RAW_EPS = [EPS * 255.0 * float(s) for s in IMAGE_STD]
+    EPS_SOURCE = 'eps_raw_pixels'
+print(f'    EPS source: {EPS_SOURCE}')
+print(f'    Image mean: {IMAGE_MEAN}')
+print(f'    Image std:  {IMAGE_STD}')
+if EPS_PER_CHANNEL is not None:
+    print(f'    eps_raw_pixels: {EPS_RAW_PIXELS}')
+    print(f'    eps_processor_per_channel: {[round(e, 6) for e in EPS_PER_CHANNEL]}')
+    print(f'    eps_processor (min across channels): {EPS:.6f}')
+    print(f'    effective_raw_eps_recovered: {[round(e, 4) for e in EFFECTIVE_RAW_EPS]}')
+else:
+    print(f'    eps_processor_direct: {EPS:.6f}')
+STEP_SIZE = EPS / STEP_SIZE_RATIO
+print(f'    steps={STEPS} step_size={STEP_SIZE:.6f} restarts={PGD_RESTARTS}')
+print(f'    objective={ATTACK_OBJECTIVE} z_weight={Z_DOWN_WEIGHT} grip_weight={GRIPPER_WEIGHT}')
 
 from gripper_attack.attack_adapter import TokenPrefixPGDAttacker, get_adv_inputs_from_attack_result
 from gripper_attack.openvla_redecode import redecode_openvla_action_from_adv_inputs
@@ -179,6 +229,11 @@ def run_pgd_attack(img_np, instruction, clean_action, clean_gen, seed):
                 'random_start': (base_random_start and restart > 0),
             }
         }
+        if ATTACK_OBJECTIVE == 'force_open_z_down_token_ce':
+            attack_cfg['attack_optimizer']['loss_weights'] = {
+                str(action_dim - 1): GRIPPER_WEIGHT,  # gripper dim
+                '2': Z_DOWN_WEIGHT,                    # z dim
+            }
         attacker = TokenPrefixPGDAttacker(
             model, processor, attack_cfg, seed=restart_seed,
             preprocess_kwargs={'libero_official_preprocess': False, 'center_crop': False, 'resize_size': 224,
@@ -248,10 +303,12 @@ while t < max_steps + num_steps_wait:
     controller_stopped = (ctrl['mode'] != 'fixed' and ctrl['stop_reason'] != 'none')
     controller_active = (args.condition == 'vis_pgd' and in_window and not controller_stopped)
     effective_attack_step_idx = ''
+    clean_action_vec = None  # will be set in each branch for NAD computation
 
     if args.condition == 'clean' or not in_window:
         raw_action, _ = decode_image(img_np, cfg['instruction'])
         adv_grip = float(raw_action[-1]); clean_grip = adv_grip
+        clean_action_vec = raw_action.copy()
 
     elif args.condition == 'vis_pgd':
         # Check if adaptive controller already stopped
@@ -261,10 +318,12 @@ while t < max_steps + num_steps_wait:
         if ctrl_stopped:
             raw_action, _ = decode_image(img_np, cfg['instruction'])
             adv_grip = float(raw_action[-1]); clean_grip = adv_grip
+            clean_action_vec = raw_action.copy()
         else:
             attack_attempted = True
             try:
                 clean_action, clean_token_ids = decode_image(img_np, cfg['instruction'])
+                clean_action_vec = clean_action.copy()
                 clean_grip = float(clean_action[-1])
                 if args.strategy == 'sparse' and abs(clean_grip) > 0.02:
                     raw_action = clean_action; adv_grip = clean_grip
@@ -328,6 +387,7 @@ while t < max_steps + num_steps_wait:
 
     elif args.condition == 'random_linf':
         clean_action, clean_token_ids = decode_image(img_np, cfg['instruction'])
+        clean_action_vec = clean_action.copy()
         img_f = img_np.astype(np.float32) / 255.0
         noise = rng.uniform(-EPS, EPS, img_f.shape).astype(np.float32)
         adv_img_np = (np.clip(img_f + noise, 0.0, 1.0) * 255).astype(np.uint8)
@@ -343,6 +403,9 @@ while t < max_steps + num_steps_wait:
     gripper_qpos_post = obs['robot0_gripper_qpos'].copy()
     qpos_post_step = float(gripper_qpos_post[0]) if len(gripper_qpos_post) > 0 else 0.0
 
+    clean_z_val = float(clean_action_vec[2]) if clean_action_vec is not None else 0.0
+    adv_z_val = float(raw_action[2])
+    nad_dof1_3 = float(np.linalg.norm(raw_action[:3] - clean_action_vec[:3])) if clean_action_vec is not None else 0.0
     trace_rows.append({
         'task': args.task, 'condition': args.condition, 'seed': args.seed,
         'step': t, 'policy_step': policy_step, 'in_window': in_window,
@@ -352,6 +415,10 @@ while t < max_steps + num_steps_wait:
         'raw_gripper': float(raw_action[-1]), 'env_gripper': float(env_action[-1]),
         'gripper_qpos': qpos_pre_step, 'qpos_pre_step': qpos_pre_step, 'qpos_post_step': qpos_post_step,
         'clean_grip': clean_grip, 'adv_grip': adv_grip,
+        'clean_z': clean_z_val, 'adv_z': adv_z_val,
+        'nad_dof7': abs(float(raw_action[-1]) - clean_grip),
+        'nad_z': abs(adv_z_val - clean_z_val),
+        'nad_dof1_3': nad_dof1_3,
         'arm_l2': arm_l2, 'linf': linf, 'token_flip': token_flip, 'attack_dt': attack_dt,
         'eef_x': float(eef_pos[0]), 'eef_y': float(eef_pos[1]), 'eef_z': float(eef_pos[2]),
         'done': bool(done), 'reward': float(reward),
