@@ -290,17 +290,23 @@ class TokenPrefixPGDAttacker:
             # Step 3: invert_gripper_action
             env_val = -1.0 * env_val
 
-            # Step 4: classify
-            # After invert: OPEN = +1, CLOSE = -1
-            # Decoded action in [0,1]: OPEN ≈ 0, CLOSE ≈ 1
-            decoded_action = 0.5 * (norm + 1.0) * (high[gripper_dim] - low[gripper_dim]) + low[gripper_dim]
+            # Step 4: classify using decoded_action against threshold.
+            # After invert: OPEN = +1, CLOSE = -1.
+            # decoded_action in [0,1]: OPEN ≈ 0, CLOSE ≈ 1.
+            decoded_action = float(0.5 * (norm + 1.0) * (high[gripper_dim] - low[gripper_dim]) + low[gripper_dim])
 
             tid = int(vocab_size - disc - 1)
-            token_action_map[tid] = float(decoded_action)
+            token_action_map[tid] = decoded_action
 
-            if env_val > 0:  # OPEN
+            is_open_by_env = (env_val > 0)
+            is_open_by_action = (decoded_action < float(open_threshold))
+            # Sanity: these must agree for all bins
+            assert is_open_by_env == is_open_by_action, \
+                f"OPEN classification mismatch at disc={disc}: env={int(env_val)} action={decoded_action:.6f}"
+
+            if is_open_by_env:
                 open_tokens.append(tid)
-            else:  # CLOSE
+            else:
                 close_tokens.append(tid)
 
             # Boundary detection: adjacent discs with opposite signs
@@ -315,6 +321,26 @@ class TokenPrefixPGDAttacker:
 
         open_token_ids = torch.tensor(sorted(set(open_tokens)), dtype=torch.long, device=self.device)
         close_token_ids = torch.tensor(sorted(set(close_tokens)), dtype=torch.long, device=self.device)
+
+        # ── Runtime assertions: prevent region inversion from ever recurring ──
+        # 1. Every OPEN token must decode to OPEN (decoded_action < open_threshold)
+        for tid in open_tokens:
+            act = token_action_map[int(tid)]
+            assert act < float(open_threshold), \
+                f"OPEN token {tid} decodes to CLOSE action {act:.6f}"
+        # 2. Every CLOSE token must decode to CLOSE (decoded_action >= open_threshold)
+        for tid in close_tokens:
+            act = token_action_map[int(tid)]
+            assert act >= float(open_threshold), \
+                f"CLOSE token {tid} decodes to OPEN action {act:.6f}"
+        # 3. Known CLOSE saturation tokens must NOT be in OPEN set
+        _close_saturation = {31744, 31745}
+        for tid in _close_saturation:
+            if tid in open_tokens:
+                raise AssertionError(f"Token {tid} is in CLOSE saturation but classified as OPEN")
+        # 4. OPEN and CLOSE sets must be non-empty and disjoint
+        assert int(open_token_ids.numel()) > 0, "OPEN token set is empty"
+        assert int(close_token_ids.numel()) > 0, "CLOSE token set is empty"
 
         return {
             "open_token_ids": open_token_ids,
@@ -474,6 +500,8 @@ class TokenPrefixPGDAttacker:
                         "close_bin_token_max": int(torch.max(close_tokens).detach().cpu()) if int(close_tokens.numel()) else None,
                         "bin_mapping": "corrected_decoded_action_semantics_20260602" if postprocess_gripper else "raw_negative_open_positive_closed",
                         "region_is_corrected": True,
+                        "open_region_logsumexp": float(torch.logsumexp(row[open_tokens], dim=0).detach().cpu()) if int(open_tokens.numel()) else None,
+                        "non_open_max_logit": float(row[close_tokens].max().detach().cpu()) if int(close_tokens.numel()) else float(row.max().detach().cpu()),
                     })
                 rows.append(item)
             out = {"action_token_logit_audit": rows}
@@ -525,7 +553,20 @@ class TokenPrefixPGDAttacker:
             target_ids = self.action_to_token_ids(target_action, unnorm_key)
             token_label_source = "directional_target_action"
         clean_ids, full_ids, labels, x0 = self._build_inputs_and_labels(observation, str(instruction), target_ids)
-        if is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region or is_prefix_locked:
+        # P0 FIX: prefix_locked must be checked FIRST so arm-preserve branch is reachable.
+        # Previously `or is_prefix_locked` in the gripper-only branch made this unreachable.
+        if is_prefix_locked:
+            # Prefix-locked objectives: preserve clean arm tokens (dims 0-5), attack gripper only.
+            # target_ids encodes the clean action (target_action = clean_action in rollout script).
+            # Mask gripper dim to -100 so it's handled by corrected OPEN-region loss.
+            action_dim = int(target_ids.numel())
+            gripper_dim = action_dim - 1
+            masked = labels.clone()  # keep all arm token labels for CE preservation
+            gripper_label_pos = labels.shape[1] - action_dim + gripper_dim
+            masked[:, gripper_label_pos] = -100
+            labels = masked
+            token_label_source = f"prefix_locked_arm_preserve_gripper_{objective}"
+        elif is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region:
             action_dim = int(target_ids.numel())
             gripper_dim = action_dim - 1
             label_positions = [labels.shape[1] - action_dim + gripper_dim]
@@ -542,17 +583,6 @@ class TokenPrefixPGDAttacker:
                 token_label_source = "gripper_open_region_ce_target_action_gripper_only"
             else:
                 token_label_source = "force_open_z_down_target_action_z_and_gripper" if is_force_open_z_down else "force_gripper_open_target_action_gripper_only"
-        elif is_prefix_locked:
-            # Prefix-locked objectives: preserve clean arm tokens, attack gripper only.
-            # target_ids already encodes the clean action (target_action = clean_action in v3 script).
-            # Mask gripper dim to -100 so it's handled by region/margin/expected-action loss.
-            action_dim = int(target_ids.numel())
-            gripper_dim = action_dim - 1
-            masked = labels.clone()
-            gripper_label_pos = labels.shape[1] - action_dim + gripper_dim
-            masked[:, gripper_label_pos] = -100
-            labels = masked
-            token_label_source = f"prefix_locked_arm_preserve_gripper_{objective}"
         elif is_arm_only_untargeted:
             action_dim = int(target_ids.numel())
             masked = torch.full_like(labels, -100)
@@ -681,8 +711,14 @@ class TokenPrefixPGDAttacker:
                 debug["close_bin_prob_mass_after"] = _gadv.get("close_bin_prob_mass", None)
                 _open_mass = float(_gadv.get("open_bin_prob_mass", 0.0) or 0.0)
                 _close_mass = float(_gadv.get("close_bin_prob_mass", 0.0) or 0.0)
-                debug["gripper_margin_after"] = _open_mass - _close_mass
+                # Probability mass margin (not logit margin — see gripper_logit_margin_after)
+                debug["gripper_prob_mass_margin_after"] = _open_mass - _close_mass
                 debug["gripper_open_prob_mass"] = _open_mass
+                # True logit margin: logsumexp(open) - max(non-open)
+                _gripper_open_lse = _gadv.get("open_region_logsumexp")
+                _gripper_non_open_max = _gadv.get("non_open_max_logit")
+                if _gripper_open_lse is not None and _gripper_non_open_max is not None:
+                    debug["gripper_logit_margin_after"] = float(_gripper_open_lse) - float(_gripper_non_open_max)
             if is_prefix_locked:
                 debug["arm_preserve_weight"] = float(self.arm_preserve_weight)
                 debug["gripper_margin_param"] = float(self.gripper_margin)
