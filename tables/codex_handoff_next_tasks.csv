@@ -1,0 +1,18 @@
+priority,task_id,description,estimated_hours,depends_on,blocks,acceptance_criteria
+P0,STATIC-001,py_compile scripts/vis_rollout_adaptive_v3.py and verify no syntax errors,0.1,none,P1-P4,py_compile passes
+P0,STATIC-002,Add qpos_pre_step and qpos_post_step fields to trace CSV output in adaptive script,0.5,none,BUG-001,Both fields populated in test dry-run trace
+P0,STATIC-003,Add pgd_applied/attack_attempted/controller_active per-step flags to trace CSV,0.5,STATIC-002,BUG-002,Flags correctly True/False in test dry-run trace
+P0,STATIC-004,Fix attack_dt to measure PGD elapsed time per step,0.3,none,BUG-004,attack_dt > 0 for attacked steps
+P0,STATIC-005,Add CQ/CQFR placeholder fields to summary JSON,0.2,none,BUG-003,Fields present with None when unavailable
+P0,STATIC-006,Fix GPU_HEALTH report wording about driver reload safety,0.1,none,BUG-005,Explicit warning added
+P0,STATIC-007,Run pytest on all VIS-related tests,0.2,none,P1,All tests pass or known failures documented
+P1,DATA-001,Parse all 16 adaptive controller trace CSVs and recompute metrics,1.0,STATIC-001,BUG-006,CSV output with attacked-step denominator
+P1,DATA-002,Build rollout index CSV mapping run_id to trace_path/log_path with validity_status,1.0,DATA-001,none,All 90 traces classified
+P1,DATA-003,Flag overwritten/missing/crashed traces in validity_status column,0.5,DATA-002,none,No false valid flags
+P2,DOC-001,Downgrade adaptive controller language in VIS_FAILURE_MECHANISM_AUDIT.md,0.3,none,BUG-007,"'Exploratory negative calibration' replaces 'shows promise'"
+P2,DOC-002,Add source trace table to VIS_FAILURE_MECHANISM_AUDIT.md linking each number to file path,0.5,DATA-001,BUG-006,Every fail rate/flip/qpos number traceable
+P2,DOC-003,Update this handoff with any corrections found during P0/P1,0.3,P0+P1,none,Handoff accurate after fixes
+P3,DESIGN-001,Create VIS_TRANSFER_HEAD_DATASET_SCHEMA.md with feature definitions,1.0,none,P4,Schema reviewed
+P3,DESIGN-002,Create vis_transfer_feature_schema_audit_template.csv with leakage checks,0.5,DESIGN-001,P4,Template complete
+P4,SMOKE-001,Dry-run adaptive script with min_hold_qpos_cap to verify logging fixes,0.3,STATIC-002+STATIC-003,none,Dry-run produces all new fields
+P4,SMOKE-002,Only if Leon approves: run 1-2 real adaptive smokes with fixed logging,1.0,SMOKE-001,none,Real rollout logs correct
