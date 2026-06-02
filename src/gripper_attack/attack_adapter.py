@@ -217,6 +217,11 @@ class TokenPrefixPGDAttacker:
         return int(torch.sum(over_budget).detach().cpu())
 
     def action_bins_for_env_sign(self, dim: int, target_env_sign: str, unnorm_key: str, *, postprocess_gripper: bool = False) -> torch.LongTensor:
+        """DEPRECATED: sign-string semantics are inverted for postprocessed gripper.
+
+        Use get_gripper_region_by_decoded_action() for any new code.
+        Kept for backward compatibility with existing objective code paths.
+        """
         stats, unnorm_key = self._action_stats(unnorm_key)
         mask = np.asarray(stats.get("mask", np.ones_like(stats["q01"], dtype=bool)), dtype=bool)
         low = np.asarray(stats["q01"], dtype=np.float32)
@@ -242,6 +247,84 @@ class TokenPrefixPGDAttacker:
         vocab_size = int(self.model.config.text_config.vocab_size - self.model.config.pad_to_multiple_of)
         token_ids = vocab_size - disc - 1
         return torch.tensor(token_ids, dtype=torch.long, device=self.device)
+
+    def get_gripper_region_by_decoded_action(self, unnorm_key: str, *, postprocess_gripper: bool = True, open_threshold: float = 0.5) -> dict:
+        """Return OPEN/CLOSE/BOUNDARY token sets using canonical decoded-action semantics.
+
+        This function directly decodes every possible gripper token through the
+        same bin→action→postprocess→invert pipeline used in rollout, then
+        classifies each token as OPEN, CLOSE, or BOUNDARY based on decoded action.
+
+        Returns dict with keys:
+          - open_token_ids: tokens whose decoded action is OPEN (< open_threshold)
+          - close_token_ids: tokens whose decoded action is CLOSE (>= open_threshold)
+          - boundary_token_ids: tokens at the OPEN/CLOSE transition
+          - token_action_map: {token_id: decoded_action} for all gripper tokens
+          - is_corrected: True
+        """
+        stats, unnorm_key = self._action_stats(unnorm_key)
+        low = np.asarray(stats["q01"], dtype=np.float32)
+        high = np.asarray(stats["q99"], dtype=np.float32)
+        centers = np.asarray(self.model.bin_centers, dtype=np.float32)
+        vocab_size = int(self.model.config.text_config.vocab_size - self.model.config.pad_to_multiple_of)
+        action_dim = int(self.model.get_action_dim(unnorm_key))
+        gripper_dim = action_dim - 1
+
+        # Decode every possible bin through the production pipeline
+        n_bins = len(centers)
+        open_tokens = []
+        close_tokens = []
+        boundary_tokens = []
+        token_action_map = {}
+
+        for disc in range(n_bins):
+            # Step 1: unnormalize (same as rollout decode)
+            norm = centers[disc]
+            raw_action = 0.5 * (norm + 1.0) * (high[gripper_dim] - low[gripper_dim]) + low[gripper_dim]
+
+            # Step 2: normalize_gripper_action (binarize=True)
+            env_val = 2.0 * raw_action - 1.0
+            env_val = np.sign(env_val)
+            env_val = 1.0 if env_val == 0 else env_val
+
+            # Step 3: invert_gripper_action
+            env_val = -1.0 * env_val
+
+            # Step 4: classify
+            # After invert: OPEN = +1, CLOSE = -1
+            # Decoded action in [0,1]: OPEN ≈ 0, CLOSE ≈ 1
+            decoded_action = 0.5 * (norm + 1.0) * (high[gripper_dim] - low[gripper_dim]) + low[gripper_dim]
+
+            tid = int(vocab_size - disc - 1)
+            token_action_map[tid] = float(decoded_action)
+
+            if env_val > 0:  # OPEN
+                open_tokens.append(tid)
+            else:  # CLOSE
+                close_tokens.append(tid)
+
+            # Boundary detection: adjacent discs with opposite signs
+            if disc > 0:
+                prev_env_val = 2.0 * (0.5 * (centers[disc-1] + 1.0) * (high[gripper_dim] - low[gripper_dim]) + low[gripper_dim]) - 1.0
+                prev_env_val = np.sign(prev_env_val)
+                prev_env_val = 1.0 if prev_env_val == 0 else prev_env_val
+                prev_env_val = -1.0 * prev_env_val
+                if int(env_val) != int(prev_env_val):
+                    boundary_tokens.append(int(vocab_size - disc - 1))
+                    boundary_tokens.append(int(vocab_size - (disc - 1) - 1))
+
+        open_token_ids = torch.tensor(sorted(set(open_tokens)), dtype=torch.long, device=self.device)
+        close_token_ids = torch.tensor(sorted(set(close_tokens)), dtype=torch.long, device=self.device)
+
+        return {
+            "open_token_ids": open_token_ids,
+            "close_token_ids": close_token_ids,
+            "boundary_token_ids": sorted(set(boundary_tokens)),
+            "token_action_map": token_action_map,
+            "open_count": int(open_token_ids.numel()),
+            "close_count": int(close_token_ids.numel()),
+            "is_corrected": True,
+        }
 
     def _active_label_rows(self, logits, labels, action_dim: int):
         action_start = int(labels.shape[1]) - int(action_dim)
@@ -351,8 +434,9 @@ class TokenPrefixPGDAttacker:
             action_dim = int(target_ids.numel())
             rows = []
             vocab_size = int(self.model.config.text_config.vocab_size - self.model.config.pad_to_multiple_of)
-            open_tokens = self.action_bins_for_env_sign(action_dim - 1, "negative", unnorm_key, postprocess_gripper=postprocess_gripper)
-            close_tokens = self.action_bins_for_env_sign(action_dim - 1, "positive", unnorm_key, postprocess_gripper=postprocess_gripper)
+            _region_info = self.get_gripper_region_by_decoded_action(unnorm_key, postprocess_gripper=postprocess_gripper)
+            open_tokens = _region_info["open_token_ids"]
+            close_tokens = _region_info["close_token_ids"]
             action_start = int(labels.shape[1]) - action_dim
             active = (labels != -100).nonzero(as_tuple=False)
             for b, label_pos in active:
@@ -388,7 +472,8 @@ class TokenPrefixPGDAttacker:
                         "open_bin_token_max": int(torch.max(open_tokens).detach().cpu()) if int(open_tokens.numel()) else None,
                         "close_bin_token_min": int(torch.min(close_tokens).detach().cpu()) if int(close_tokens.numel()) else None,
                         "close_bin_token_max": int(torch.max(close_tokens).detach().cpu()) if int(close_tokens.numel()) else None,
-                        "bin_mapping": "env_negative_open_positive_closed_after_postprocess" if postprocess_gripper else "raw_negative_open_positive_closed",
+                        "bin_mapping": "corrected_decoded_action_semantics_20260602" if postprocess_gripper else "raw_negative_open_positive_closed",
+                        "region_is_corrected": True,
                     })
                 rows.append(item)
             out = {"action_token_logit_audit": rows}
@@ -491,14 +576,13 @@ class TokenPrefixPGDAttacker:
         adv = self._project_pixel_master(x_orig + delta, x_orig).detach()
         loss_kwargs = {"objective": objective, "num_action_tokens": int(target_ids.numel())}
         region_token_ids = None
+        corrected_region_info = None
         _needs_region = is_gripper_region or is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action
         if _needs_region:
-            region_token_ids = self.action_bins_for_env_sign(
-                int(target_ids.numel()) - 1,
-                "negative",
-                unnorm_key,
-                postprocess_gripper=bool(self.postprocess_gripper),
-            )
+            # P0 BUG FIX: use decoded-action semantics instead of sign-string heuristic.
+            corrected_region_info = self.get_gripper_region_by_decoded_action(
+                unnorm_key, postprocess_gripper=bool(self.postprocess_gripper))
+            region_token_ids = corrected_region_info["open_token_ids"]
             loss_kwargs["region_token_ids"] = region_token_ids
         if is_gripper_margin:
             loss_kwargs["margin"] = float((getattr(self, "config", {}) or {}).get("cw_margin", 5.0)) if hasattr(self, "config") else 5.0
@@ -584,7 +668,12 @@ class TokenPrefixPGDAttacker:
                 "target_ce_initial": initial_loss,
                 "target_ce_final": final_loss,
             })
-            # Gripper-specific restart-selection metrics
+            # Gripper-specific restart-selection metrics (now using corrected region)
+            if corrected_region_info is not None:
+                debug["corrected_open_token_count"] = corrected_region_info["open_count"]
+                debug["corrected_close_token_count"] = corrected_region_info["close_count"]
+                debug["corrected_boundary_tokens"] = corrected_region_info["boundary_token_ids"]
+                debug["region_mapping_status"] = "corrected_decoded_action_20260602"
             gripper_adv_audit = adv_audit.get("action_token_logit_audit", [])
             if gripper_adv_audit:
                 _gadv = gripper_adv_audit[-1]  # last dim = gripper
