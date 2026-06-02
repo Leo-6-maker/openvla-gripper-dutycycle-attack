@@ -17,10 +17,16 @@ os.makedirs(f'{OUT_BASE}/tables', exist_ok=True)
 os.makedirs(f'{OUT_BASE}/runs', exist_ok=True)
 
 UNNORM_KEY = 'libero_object'
-EPS = 4.0 / 255.0
-STEPS = 20
-STEP_SIZE = 1.0 / 255.0
-ATTACK_OBJECTIVE = 'gripper_open_region_ce'
+# Attack strength parameters — calibrated for SigLIP processor space.
+# SigLIP normalization: x_norm = (x/255 - 0.5) / 0.5, so delta_norm = delta_raw / 127.5.
+# Default: 8 raw pixel values Linf → 8/127.5 ≈ 0.0627 in processor space.
+SIGLIP_STD = 0.5
+EPS_RAW = 8.0 / 255.0          # raw RGB [0,1] Linf budget (standard: 8/255)
+EPS = EPS_RAW / SIGLIP_STD      # processor-space epsilon (~0.0627)
+STEPS = 40                      # PGD iterations
+STEP_SIZE = EPS / 8.0           # ~0.0078 — standard PGD step size
+ATTACK_OBJECTIVE = 'force_open_z_down_token_ce'
+PGD_RESTARTS = 3
 
 TASK_CONFIGS = {
     'cream_cheese': {
@@ -62,12 +68,26 @@ def parse_args():
     ap.add_argument('--Q', type=float, default=0, help='qpos_delta threshold')
     ap.add_argument('--max_duration', type=int, default=0, help='max PGD attacks for adaptive controller')
     ap.add_argument('--min_attacks', type=int, default=0, help='min PGD attacks before allowing stop')
+    ap.add_argument('--epsilon_raw', type=float, default=EPS_RAW, help=f'raw RGB Linf budget [0-1] (default: {EPS_RAW})')
+    ap.add_argument('--pgd_steps', type=int, default=STEPS, help=f'PGD iterations (default: {STEPS})')
+    ap.add_argument('--pgd_restarts', type=int, default=PGD_RESTARTS, help=f'PGD random restarts (default: {PGD_RESTARTS})')
+    ap.add_argument('--objective', choices=['gripper_open_region_ce','force_open_z_down_token_ce',
+        'force_gripper_open_token_ce','gripper_logit_margin_cw','targeted_directional_ce'],
+        default=ATTACK_OBJECTIVE, help=f'attack objective (default: {ATTACK_OBJECTIVE})')
     ap.add_argument('--dry_run', action='store_true')
     return ap.parse_args()
 
 args = parse_args()
+# Apply CLI overrides for attack strength parameters
+EPS_RAW = args.epsilon_raw
+EPS = EPS_RAW / SIGLIP_STD
+STEPS = args.pgd_steps
+STEP_SIZE = EPS / 8.0
+ATTACK_OBJECTIVE = args.objective
+PGD_RESTARTS = args.pgd_restarts
 print(f'[0] VIS Rollout Micro: {args.task} / {args.condition} (seed={args.seed}) controller={args.controller}')
 print(f'    GPU pair: {args.gpu_pair}')
+print(f'    Attack: eps_raw={EPS_RAW:.4f} eps_proc={EPS:.4f} steps={STEPS} restarts={PGD_RESTARTS} objective={ATTACK_OBJECTIVE}')
 
 # Load model
 print('[1] Loading model...')
@@ -143,23 +163,39 @@ def decode_image(img_np, instruction):
     return action, token_ids
 
 def run_pgd_attack(img_np, instruction, clean_action, clean_gen, seed):
-    target_action = np.asarray(clean_action, dtype=np.float32).copy(); target_action[-1] = 1.0
-    attack_cfg = {
-        'attack_optimizer': {
-            'method': 'token_prefix_pgd', 'objective': ATTACK_OBJECTIVE,
-            'epsilon': EPS, 'step_size': STEP_SIZE, 'num_steps': STEPS, 'random_start': False,
+    target_action = np.asarray(clean_action, dtype=np.float32).copy()
+    target_action[-1] = 1.0  # OPEN gripper (raw ~1.0 → most-open bin after normalization)
+    if ATTACK_OBJECTIVE == 'force_open_z_down_token_ce':
+        target_action[2] = low[2]  # Z DOWN: minimum Z delta = most negative displacement
+    base_random_start = (ATTACK_OBJECTIVE in {'gripper_open_region_ce', 'force_open_z_down_token_ce'})
+    best_result = None
+    best_loss = float('inf')
+    for restart in range(max(1, PGD_RESTARTS)):
+        restart_seed = seed + restart * 1000
+        attack_cfg = {
+            'attack_optimizer': {
+                'method': 'token_prefix_pgd', 'objective': ATTACK_OBJECTIVE,
+                'epsilon': EPS, 'step_size': STEP_SIZE, 'num_steps': STEPS,
+                'random_start': (base_random_start and restart > 0),
+            }
         }
-    }
-    attacker = TokenPrefixPGDAttacker(
-        model, processor, attack_cfg, seed=seed,
-        preprocess_kwargs={'libero_official_preprocess': False, 'center_crop': False, 'resize_size': 224}, device=device)
-    attack_result = attacker.attack(observation=img_np, instruction=instruction,
-        clean_action=clean_action, target_action=target_action,
-        clean_model_output=clean_gen, unnorm_key=UNNORM_KEY)
-    adv_inputs = get_adv_inputs_from_attack_result(attack_result)
+        attacker = TokenPrefixPGDAttacker(
+            model, processor, attack_cfg, seed=restart_seed,
+            preprocess_kwargs={'libero_official_preprocess': False, 'center_crop': False, 'resize_size': 224,
+                               'postprocess_gripper': True}, device=device)
+        attack_result = attacker.attack(observation=img_np, instruction=instruction,
+            clean_action=clean_action, target_action=target_action,
+            clean_model_output=clean_gen, unnorm_key=UNNORM_KEY)
+        loss = (attack_result.debug or {}).get('target_ce_final', float('inf'))
+        if isinstance(loss, (int, float)) and loss < best_loss:
+            best_loss = loss
+            best_result = attack_result
+        if PGD_RESTARTS <= 1:
+            break
+    adv_inputs = get_adv_inputs_from_attack_result(best_result)
     adv_decoded = redecode_openvla_action_from_adv_inputs(
         model=model, processor=processor, adv_inputs=adv_inputs, instruction=instruction, unnorm_key=UNNORM_KEY)
-    return np.asarray(adv_decoded.action, dtype=np.float32), adv_decoded.token_ids, attack_result, time.time()
+    return np.asarray(adv_decoded.action, dtype=np.float32), adv_decoded.token_ids, best_result
 
 def normalize_gripper_action(action, binarize=True):
     action = np.asarray(action, dtype=np.float32).copy()
@@ -203,9 +239,15 @@ while t < max_steps + num_steps_wait:
     img_np = get_libero_image(obs, 224)
     eef_pos = obs['robot0_eef_pos'].copy()
     gripper_qpos = obs['robot0_gripper_qpos'].copy()
+    qpos_pre_step = float(gripper_qpos[0]) if len(gripper_qpos) > 0 else 0.0
     in_window = cfg['perturb_start'] <= policy_step <= cfg['perturb_end']
 
     clean_grip = 0.0; adv_grip = 0.0; arm_l2 = 0.0; linf = 0.0; attack_dt = 0.0; token_flip = False
+    attack_attempted = False
+    pgd_applied = False
+    controller_stopped = (ctrl['mode'] != 'fixed' and ctrl['stop_reason'] != 'none')
+    controller_active = (args.condition == 'vis_pgd' and in_window and not controller_stopped)
+    effective_attack_step_idx = ''
 
     if args.condition == 'clean' or not in_window:
         raw_action, _ = decode_image(img_np, cfg['instruction'])
@@ -214,10 +256,13 @@ while t < max_steps + num_steps_wait:
     elif args.condition == 'vis_pgd':
         # Check if adaptive controller already stopped
         ctrl_stopped = (ctrl['mode'] != 'fixed' and ctrl['stop_reason'] != 'none')
+        controller_stopped = ctrl_stopped
+        controller_active = not ctrl_stopped
         if ctrl_stopped:
             raw_action, _ = decode_image(img_np, cfg['instruction'])
             adv_grip = float(raw_action[-1]); clean_grip = adv_grip
         else:
+            attack_attempted = True
             try:
                 clean_action, clean_token_ids = decode_image(img_np, cfg['instruction'])
                 clean_grip = float(clean_action[-1])
@@ -234,21 +279,25 @@ while t < max_steps + num_steps_wait:
                         inputs['input_ids'] = torch.cat((inputs['input_ids'], torch.tensor([[29871]], dtype=torch.long, device=device)), dim=1)
                     with torch.inference_mode():
                         clean_gen = model.generate(**inputs, max_new_tokens=action_dim, do_sample=False, return_dict_in_generate=True, output_scores=True)
-                    adv_action, adv_token_ids, atk_result, _ = run_pgd_attack(img_np, cfg['instruction'], clean_action, clean_gen, args.seed + policy_step)
+                    attack_t0 = time.time()
+                    adv_action, adv_token_ids, atk_result = run_pgd_attack(img_np, cfg['instruction'], clean_action, clean_gen, args.seed + policy_step)
+                    attack_dt = time.time() - attack_t0
+                    pgd_applied = True
+                    effective_attack_step_idx = ctrl['attacks_applied']
                     raw_action = adv_action; adv_grip = float(raw_action[-1])
                     arm_l2 = float(np.linalg.norm(adv_action[:6] - clean_action[:6]))
                     linf = float(atk_result.observation_perturb_linf)
                     token_flip = int(clean_token_ids[-1]) != int(adv_token_ids[-1])
-                    # Update controller
+                    # Update attack/controller audit state using causally available qpos.
+                    ctrl['attacks_applied'] += 1
+                    is_open = adv_grip > 0.5
+                    ctrl['current_streak'] = ctrl['current_streak'] + 1 if is_open else 0
+                    ctrl['max_streak'] = max(ctrl['max_streak'], ctrl['current_streak'])
+                    ctrl['total_open'] += (1 if is_open else 0)
+                    if ctrl['attacks_applied'] == 1:
+                        ctrl['qpos_start'] = qpos_pre_step
+                    ctrl['qpos_delta_online'] = abs(qpos_pre_step - ctrl['qpos_start'])
                     if ctrl['mode'] != 'fixed':
-                        ctrl['attacks_applied'] += 1
-                        is_open = adv_grip > 0.5
-                        ctrl['current_streak'] = ctrl['current_streak'] + 1 if is_open else 0
-                        ctrl['max_streak'] = max(ctrl['max_streak'], ctrl['current_streak'])
-                        ctrl['total_open'] += (1 if is_open else 0)
-                        gq = float(gripper_qpos[0]) if len(gripper_qpos) > 0 else 0.0
-                        if ctrl['attacks_applied'] == 1: ctrl['qpos_start'] = gq
-                        ctrl['qpos_delta_online'] = abs(gq - ctrl['qpos_start'])
                         # Check stop conditions by mode
                         if ctrl['mode'] == 'min_hold_qpos_cap':
                             if ctrl['attacks_applied'] < ctrl['min_att']:
@@ -271,6 +320,7 @@ while t < max_steps + num_steps_wait:
                             ctrl['stop_reason'] = 'qpos_threshold'
                         elif ctrl['attacks_applied'] >= ctrl['max_dur']:
                             ctrl['stop_reason'] = 'max_duration'
+                    controller_stopped = (ctrl['mode'] != 'fixed' and ctrl['stop_reason'] != 'none')
             except Exception as e:
                 print(f'    PGD ERROR at step {policy_step}: {str(e)[:100]}')
                 raw_action, _ = decode_image(img_np, cfg['instruction'])
@@ -290,12 +340,17 @@ while t < max_steps + num_steps_wait:
     env_action = normalize_gripper_action(raw_action, binarize=True)
     env_action = invert_gripper_action(env_action)
     obs, reward, done, info = env.step(env_action)
+    gripper_qpos_post = obs['robot0_gripper_qpos'].copy()
+    qpos_post_step = float(gripper_qpos_post[0]) if len(gripper_qpos_post) > 0 else 0.0
 
     trace_rows.append({
         'task': args.task, 'condition': args.condition, 'seed': args.seed,
         'step': t, 'policy_step': policy_step, 'in_window': in_window,
+        'attack_attempted': attack_attempted, 'pgd_applied': pgd_applied,
+        'controller_active': controller_active, 'controller_stopped': controller_stopped,
+        'effective_attack_step_idx': effective_attack_step_idx,
         'raw_gripper': float(raw_action[-1]), 'env_gripper': float(env_action[-1]),
-        'gripper_qpos': float(gripper_qpos[0]) if len(gripper_qpos) > 0 else 0,
+        'gripper_qpos': qpos_pre_step, 'qpos_pre_step': qpos_pre_step, 'qpos_post_step': qpos_post_step,
         'clean_grip': clean_grip, 'adv_grip': adv_grip,
         'arm_l2': arm_l2, 'linf': linf, 'token_flip': token_flip, 'attack_dt': attack_dt,
         'eef_x': float(eef_pos[0]), 'eef_y': float(eef_pos[1]), 'eef_z': float(eef_pos[2]),
@@ -314,10 +369,21 @@ if ctrl['mode'] != 'fixed' and ctrl['stop_reason'] == 'none' and ctrl['attacks_a
 
 total_dt = time.time() - t_start
 window_rows = [r for r in trace_rows if r['in_window']]
+attacked_rows = [r for r in window_rows if r['pgd_applied']]
 n_flip = sum(1 for r in window_rows if r['token_flip'])
+attacked_flips = sum(1 for r in attacked_rows if r['token_flip'])
+open_count_full_window = sum(1 for r in window_rows if r['adv_grip'] > 0.5)
+open_count_attacked_steps = sum(1 for r in attacked_rows if r['adv_grip'] > 0.5)
+qpos_delta_pre = 0.0
+qpos_delta_post = 0.0
+if attacked_rows:
+    qpos_pre0 = attacked_rows[0]['qpos_pre_step']
+    qpos_post0 = attacked_rows[0]['qpos_post_step']
+    qpos_delta_pre = max(abs(r['qpos_pre_step'] - qpos_pre0) for r in attacked_rows)
+    qpos_delta_post = max(abs(r['qpos_post_step'] - qpos_post0) for r in attacked_rows)
 avg_al = np.mean([r['arm_l2'] for r in window_rows]) if window_rows else 0
 print(f'[4] Episode finished: success={success}, steps={policy_step}, time={total_dt:.0f}s')
-print(f'    Window: {len(window_rows)} steps, {n_flip} flips, avg armL2={avg_al:.4f}')
+print(f'    Window: {len(window_rows)} steps, attacks={len(attacked_rows)}, flips={n_flip} full / {attacked_flips} attacked, avg armL2={avg_al:.4f}')
 if ctrl['stop_reason'] != 'none':
     print(f'    Controller STOP: {ctrl["stop_reason"]} at attacks={ctrl["attacks_applied"]} streak={ctrl["max_streak"]} qpos_d={ctrl["qpos_delta_online"]:.5f}')
 
@@ -330,10 +396,16 @@ with open(csv_path, 'w', newline='') as f:
 summary = {
     'task': args.task, 'condition': args.condition, 'seed': args.seed, 'success': success,
     'total_steps': policy_step, 'window_start': ws, 'window_end': we, 'window_steps': len(window_rows),
+    'attacks_applied': len(attacked_rows),
+    'token_flips_full_window': n_flip, 'token_flips_attacked_steps': attacked_flips,
+    'open_count_full_window': open_count_full_window, 'open_count_attacked_steps': open_count_attacked_steps,
     'window_token_flips': n_flip, 'avg_arm_l2': avg_al, 'total_dt_s': round(total_dt, 1),
     'controller': ctrl['mode'], 'K': ctrl['K'], 'Q': ctrl['Q'], 'max_dur': ctrl['max_dur'],
-    'stop_reason': ctrl['stop_reason'], 'attacks_applied': ctrl['attacks_applied'],
+    'stop_reason': ctrl['stop_reason'],
     'max_open_streak': ctrl['max_streak'], 'qpos_delta_online': round(ctrl['qpos_delta_online'], 6),
+    'qpos_delta_pre': round(qpos_delta_pre, 6), 'qpos_delta_post': round(qpos_delta_post, 6),
+    'official_success': None, 'cq_success': None, 'cq_failure': None, 'sr_cq_mismatch': None,
+    'manual_audit_needed': None,
 }
 print(json.dumps(summary))
 print(f'Saved: {csv_path}')

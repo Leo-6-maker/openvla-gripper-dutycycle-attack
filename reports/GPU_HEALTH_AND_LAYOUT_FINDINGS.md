@@ -13,7 +13,8 @@ handling the C+G (rendering) load.
 
 1. **Server reboot**: Clears all Xid errors, temporary fix. ~2-3 minutes.
 2. **Nvidia driver reload** (`rmmod nvidia* && modprobe nvidia*`): Faster (~10 seconds),
-   achieves the same result without affecting other GPUs.
+   achieves the same result, but kills ALL CUDA contexts on ALL GPUs. Only run this
+   after verifying that no GPU job exists anywhere on the server.
 
 ## Stable GPU Layout
 
