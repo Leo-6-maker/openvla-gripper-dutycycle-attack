@@ -474,6 +474,20 @@ class TokenPrefixPGDAttacker:
                 other = row.clone()
                 other[target] = torch.finfo(other.dtype).min
                 losses.append(F.relu(torch.max(other) - target_logit + float(margin)))
+        # P2 FIX: prefix-locked objectives use weighted aggregation
+        # loss = gripper_loss_sum + arm_preserve_weight * mean(arm_CEs)
+        # instead of mean([gripper_loss, arm_loss_1, ..., arm_loss_6])
+        if losses and obj in {"prefix_locked_gripper_open_region_ce", "prefix_locked_gripper_open_margin", "gripper_open_expected_action"}:
+            gripper_losses = []
+            arm_weighted_losses = []
+            for i, (_b, _label_pos, dim, _row_index) in enumerate(rows):
+                if dim == action_dim - 1 and i < len(losses):
+                    gripper_losses.append(losses[i])
+                elif i < len(losses):
+                    arm_weighted_losses.append(losses[i])
+            grip_term = torch.stack(gripper_losses).sum() if gripper_losses else 0.0
+            arm_term = torch.stack(arm_weighted_losses).mean() if arm_weighted_losses else 0.0
+            return grip_term + arm_term
         return torch.stack(losses).mean() if losses else logits.sum() * 0.0
 
     def _audit_logits(self, full_input_ids, labels, pixel_values, target_ids, unnorm_key: str, *, postprocess_gripper: bool = False, region_token_ids=None) -> dict:

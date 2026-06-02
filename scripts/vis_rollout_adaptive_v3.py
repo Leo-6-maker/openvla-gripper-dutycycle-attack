@@ -265,12 +265,37 @@ def run_pgd_attack(img_np, instruction, clean_action, clean_gen, seed):
             clean_action=clean_action, target_action=target_action,
             clean_model_output=clean_gen, unnorm_key=UNNORM_KEY)
         debug = attack_result.debug or {}
-        # Restart selection: gripper-specific objectives use open_prob_mass, others use target_ce_final.
+        # P1 FIX: restart selection uses actual generated output, not teacher-forced metrics.
         if ATTACK_OBJECTIVE in _GRIPPER_OBJ_SET:
-            metric_val = float(debug.get('gripper_open_prob_mass', debug.get('open_region_prob_mass_after', 0.0)) or 0.0)
-            if metric_val > best_metric_val:
-                best_metric_val = metric_val
-                best_result = attack_result
+            # Re-decode adversarial action to check actual generated gripper output
+            try:
+                from gripper_attack.openvla_redecode import redecode_openvla_action_from_adv_inputs
+                _adv_inputs = debug.get('adv_inputs')
+                if _adv_inputs is not None:
+                    _adv_decoded = redecode_openvla_action_from_adv_inputs(
+                        model=model, processor=processor, adv_inputs=_adv_inputs,
+                        instruction=str(instruction), unnorm_key=UNNORM_KEY)
+                    _gen_action = np.asarray(_adv_decoded.action, dtype=np.float32)
+                    _is_open = float(_gen_action[-1]) < 0.5
+                    _nad_dof7 = abs(float(_gen_action[-1]) - float(clean_action[-1]))
+                    _arm_l2 = float(np.linalg.norm(_gen_action[:6] - clean_action[:6]))
+                    # Priority: true OPEN > highest NAD > highest teacher-forced open_prob
+                    _tf_open = float(debug.get('gripper_open_prob_mass', 0.0) or 0.0)
+                    _score = (1.0 if _is_open else 0.0) + 0.01 * _nad_dof7 + 0.0001 * _tf_open - 0.001 * _arm_l2
+                    if _score > best_metric_val:
+                        best_metric_val = _score
+                        best_result = attack_result
+                else:
+                    # Fallback: no adv_inputs, use teacher-forced prob
+                    _tf_open = float(debug.get('gripper_open_prob_mass', 0.0) or 0.0)
+                    if _tf_open > best_metric_val:
+                        best_metric_val = _tf_open
+                        best_result = attack_result
+            except Exception:
+                _tf_open = float(debug.get('gripper_open_prob_mass', 0.0) or 0.0)
+                if _tf_open > best_metric_val:
+                    best_metric_val = _tf_open
+                    best_result = attack_result
         else:
             loss = float(debug.get('target_ce_final', float('inf')))
             if loss < best_metric_val:
