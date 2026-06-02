@@ -1,0 +1,4 @@
+task_id,task_name,state_id,manifest,sr_lines,ep_records,done_any,success_official,attack_applied_count,orig_eq_attacked,orig_neq_attacked,no_orig,valid
+4,ketchup,0,True,169,True,True,True,0,159,0,10,True
+4,ketchup,1,True,190,True,True,True,0,180,0,10,True
+4,ketchup,2,True,150,True,True,True,0,140,0,10,True

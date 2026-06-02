@@ -1,0 +1,16 @@
+task_id,task_name,state_id,pure_manifest,pure_done_any,pure_success,det_manifest,det_done_any,det_success,det_attack_applied,det_worker_id,status
+1,cream_cheese,0,True,True,True,True,True,True,None,,complete
+1,cream_cheese,1,True,True,True,True,False,False,None,,complete
+1,cream_cheese,2,True,True,True,True,True,True,None,,complete
+2,ketchup,0,True,True,True,False,N/A,N/A,N/A,,partial (step_records only, no manifest)
+2,ketchup,1,True,True,True,False,N/A,N/A,N/A,,missing
+2,ketchup,2,True,True,True,False,N/A,N/A,N/A,,missing
+4,salad_dressing,0,True,True,True,True,True,True,None,,complete
+4,salad_dressing,1,True,True,True,True,True,True,None,,complete
+4,salad_dressing,2,True,True,True,True,True,True,None,,complete
+5,tomato_sauce,0,True,True,True,False,N/A,N/A,N/A,,missing
+5,tomato_sauce,1,True,True,True,False,N/A,N/A,N/A,,missing
+5,tomato_sauce,2,True,True,True,False,N/A,N/A,N/A,,missing
+7,milk,0,True,True,True,False,N/A,N/A,N/A,,missing
+7,milk,1,True,True,True,False,N/A,N/A,N/A,,missing
+7,milk,2,True,True,True,False,N/A,N/A,N/A,,missing

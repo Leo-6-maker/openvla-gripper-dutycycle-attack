@@ -1,0 +1,16 @@
+task_id,task_name,state_id,pure_success,det_success,det_attack_applied,det_valid,source_root
+1,cream_cheese,0,True,True,0,True,original
+1,cream_cheese,1,True,False,0,False,original
+1,cream_cheese,2,True,True,0,True,original
+2,salad_dressing,0,True,True,0,True,original
+2,salad_dressing,1,True,True,0,True,original
+2,salad_dressing,2,True,True,0,True,original
+4,ketchup,0,True,True,0,True,rerun_corrected
+4,ketchup,1,True,True,0,True,rerun_corrected
+4,ketchup,2,True,True,0,True,rerun_corrected
+5,tomato_sauce,0,True,True,0,True,rerun
+5,tomato_sauce,1,True,True,0,True,rerun
+5,tomato_sauce,2,True,True,0,True,rerun
+7,milk,0,True,True,0,True,rerun
+7,milk,1,True,True,0,True,rerun
+7,milk,2,True,True,0,True,rerun

@@ -1,0 +1,48 @@
+field,field_group,input_status,allowed_for_model,required,leakage_risk,notes
+run_id,identifier,audit_key,false,true,low,Stable join key only
+task,task_metadata,allowed_input,true,true,low,Categorical task id/name
+task_family,task_metadata,allowed_input,true,false,low,Optional high-level task group
+object_name,task_metadata,allowed_input,true,false,medium,Use canonical object id only
+receptacle_name,task_metadata,allowed_input,true,false,medium,Use canonical receptacle id only
+instruction_template_id,task_metadata,allowed_input,true,false,medium,Avoid free text that includes outcome annotations
+seed,identifier,audit_key,false,true,low,Audit/split key only
+policy_step,window_metadata,allowed_input,true,true,low,Causally available timing
+policy_step_norm,window_metadata,allowed_input,true,false,low,Normalize within episode horizon
+window_start,window_metadata,allowed_input,true,true,low,Known before attack
+window_end,window_metadata,allowed_input,true,true,low,Known before attack
+window_steps,window_metadata,allowed_input,true,true,low,Known from configured window
+epsilon,vis_config,allowed_input,true,true,low,Known perturbation budget
+step_size,vis_config,allowed_input,true,true,low,Known PGD step size
+attack_steps,vis_config,allowed_input,true,true,low,Known PGD iterations
+objective,vis_config,allowed_input,true,true,low,Known objective
+strategy,vis_config,allowed_input,true,true,low,full or sparse
+duration_budget,vis_config,allowed_input,true,false,low,Configured max attack duration
+clean_grip,clean_decode_trace,allowed_input,true,true,low,Clean decoded gripper channel
+clean_action_l2_norm,clean_decode_trace,allowed_input,true,false,low,Clean action magnitude summary
+adv_grip,vis_decode_trace,allowed_input,true,true,low,Decoded attacked gripper channel for attacked rows
+token_flip,vis_decode_trace,allowed_input,true,true,low,Token-level attacked-vs-clean flip
+arm_l2,vis_decode_trace,allowed_input,true,true,low,Action perturbation outside gripper
+linf,vis_decode_trace,allowed_input,true,true,low,Observed image perturbation norm
+open_streak_so_far,vis_decode_trace,allowed_input,true,true,low,Online attacked-step streak only
+open_count_so_far,vis_decode_trace,allowed_input,true,true,low,Online attacked-step count only
+attack_attempted,denominator,allowed_input,true,true,low,Required denominator repair flag
+pgd_applied,denominator,allowed_input,true,true,low,Required denominator repair flag
+controller_active,denominator,allowed_input,true,true,low,Required for adaptive traces
+controller_stopped,denominator,allowed_input,true,true,low,Required for adaptive traces
+effective_attack_step_idx,denominator,allowed_input,true,true,low,Required attacked-step denominator
+qpos_pre_step,pre_step_proprio,allowed_input,true,true,medium,Causally available proprio input
+qpos_delta_pre_so_far,pre_step_proprio,allowed_input,true,false,medium,Causal online qpos delta
+eef_x,pre_step_proprio,allowed_input,true,false,medium,Use pre-step EEF position
+eef_y,pre_step_proprio,allowed_input,true,false,medium,Use pre-step EEF position
+eef_z,pre_step_proprio,allowed_input,true,false,medium,Use pre-step EEF position
+qpos_post_step,post_step_response,audit_only,false,true,high,Post-env.step audit field only
+qpos_delta_post,post_step_response,label_only,false,false,high,Future physical response
+qpos_delta_after_window,post_window_response,label_only,false,true,critical,Primary label-only physical-transfer target; never model input
+official_success,outcome,label_only,false,true,critical,Simulator success label
+cq_success,outcome,label_only,false,true,critical,Contact-quality success label
+cq_failure,outcome,label_only,false,true,critical,Contact-quality failure label
+sr_cq_mismatch,outcome,label_only,false,true,critical,Outcome disagreement flag
+manual_audit_needed,audit,audit_only,false,true,medium,Review triage only
+done,outcome,label_only,false,false,critical,Final or post-step simulator state
+reward,outcome,label_only,false,false,critical,Final or post-step simulator reward
+failure_phase,outcome,label_only,false,false,critical,Posthoc failure explanation

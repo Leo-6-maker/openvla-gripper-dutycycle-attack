@@ -1,0 +1,13 @@
+task,phase_name,window_start,window_end,source,confidence,notes
+cream_cheese,contact_grasp_onset,65,84,current hand-coded window from existing VIS single-phase contact window,medium,single d20 baseline uses this phase
+cream_cheese,early_lift_carry,90,109,manual phase estimate from successful object pick-place timing,low,used for carry d20 in failure-first schedules
+cream_cheese,preplace_release,120,139,manual phase estimate from successful object pick-place timing,low,used for pre-place d20 in failure-first schedules
+salad_dressing,contact_grasp_onset,88,107,current hand-coded window from existing VIS single-phase contact window,medium,vulnerable reference only; not robust control
+salad_dressing,early_lift_carry,113,132,manual phase estimate from successful object pick-place timing,low,used for carry d20 in failure-first schedules
+salad_dressing,preplace_release,143,162,manual phase estimate from successful object pick-place timing,low,used for pre-place d20 in failure-first schedules
+ketchup,contact_grasp_onset,93,112,current hand-coded window from existing VIS single-phase contact window,medium,single d20 baseline uses this phase
+ketchup,early_lift_carry,118,137,manual phase estimate from successful object pick-place timing,low,used for carry d20 in failure-first schedules
+ketchup,preplace_release,148,167,manual phase estimate from successful object pick-place timing,low,used for pre-place d20 in failure-first schedules
+tomato_sauce,contact_grasp_onset,128,147,current hand-coded window from existing VIS single-phase contact window,medium,single d20 baseline uses this phase
+tomato_sauce,early_lift_carry,153,172,manual phase estimate from successful object pick-place timing,low,used for carry d20 in failure-first schedules
+tomato_sauce,preplace_release,183,202,manual phase estimate from successful object pick-place timing,low,used for pre-place d20 in failure-first schedules

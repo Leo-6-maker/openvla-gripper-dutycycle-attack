@@ -1,0 +1,9 @@
+task_id,task_name,state_id,manifest,sr_lines,ep_records,frames,mtime,success_official,done_any,attack_condition,attack_applied,original_eq_attacked,duplicate_keys,validity
+1,cream_cheese,0,True,138,True,128,2026-05-29T19:47:43,True,True,clean,None,128/128,0,valid
+1,cream_cheese,1,True,290,True,280,2026-05-29T19:53:13,False,False,clean,None,N/A,N/A,failed_clean
+1,cream_cheese,2,True,154,True,144,2026-05-29T19:56:09,True,True,clean,None,144/144,0,valid
+4,ketchup,0,True,160,True,150,2026-05-29T20:07:01,True,True,clean,None,150/150,0,valid
+4,ketchup,1,False,123,False,114,2026-05-29T20:07:04,N/A,N/A,N/A,N/A,N/A,N/A,partial
+2,salad_dressing,0,True,132,True,122,2026-05-29T19:58:47,True,True,clean,None,122/122,0,valid
+2,salad_dressing,1,True,138,True,128,2026-05-29T20:01:15,True,True,clean,None,128/128,0,valid
+2,salad_dressing,2,True,147,True,137,2026-05-29T20:03:52,True,True,clean,None,137/137,0,valid

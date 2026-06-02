@@ -1,0 +1,5 @@
+condition,trigger,rho,objective,attack_steps,epsilon,gripper_override,arm_action,description
+clean,detector_tcn,0.0,none,0,0.0,preserved,preserved,Clean OpenVLA rollout with detector logging only
+oracle_open,detector_tcn,0.0,oracle_env_gripper_open,det_trigger_duration,0.0,force_open_1.0,preserved,Detector-triggered oracle gripper fully open
+random_control,detector_tcn,1.0,ctrl_random_direction_arm_only,det_trigger_duration,0.10,random_sign,random_sign,Detector-triggered random gripper control
+VIS_targeted,detector_tcn,1.0,targeted_directional_ce,det_trigger_duration,0.25,invert_with_noise,preserved,Detector-triggered VIS gripper-channel targeted attack

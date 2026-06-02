@@ -1,0 +1,2 @@
+repeat_id,quarantine_reason,missing_clean_baseline,inherited_window_source,random_control_failed,secondary_signal,disposition
+r5,"No independent clean_detect baseline. Window [93,102] inherited from r18 autowindow. Random control SR=0.0 (should be 1.0 for clean control).",yes,r18_autowindow,true,"VIS_current SR=1.0 but random SR=0.0 confirms control contamination","Excluded from valid denominator. Preserved in quarantine for transparency. Not included in pass_rate calculation."

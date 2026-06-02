@@ -1,0 +1,7 @@
+repeat_id,valid_eligible,pass,classification,clean_baseline_exists,autowindow_source,window_start,window_end,random_SR,VIS_current_SR,targeted_SR,command_open_SR,control_ok,targeted_VIS_failure,command_open_vulnerable,evidence_quality,notes
+r0,true,true,valid_positive,yes,independent_clean_detect,62,71,1.0,1.0,0.0,1.0,true,true,true,summary_only,raw step_records purged; cross-validated via r18
+r1,true,true,valid_positive,yes,independent_clean_detect,62,71,1.0,1.0,0.0,1.0,true,true,true,summary_only,raw step_records purged; cross-validated via r18
+r2,true,true,valid_positive,yes,independent_clean_detect,62,71,1.0,1.0,0.0,1.0,true,true,true,summary_only,raw step_records purged; cross-validated via r18
+r13,true,false,valid_phase_robust,yes,independent_clean_detect,65,74,1.0,1.0,1.0,1.0,true,false,true,full_step_records,attack applied correctly but task is phase-robust at this window
+r18,true,true,valid_positive,yes,independent_clean_detect,93,102,1.0,1.0,0.0,0.0,true,true,true,full_step_records,independent positive replication of Codex protocol
+r5,false,false,quarantined_no_baseline,no,inherited_from_r18_autowindow,93,102,0.0,1.0,1.0,0.0,false,false,true,full_step_records,excluded from denominator; no independent clean baseline; random control failure

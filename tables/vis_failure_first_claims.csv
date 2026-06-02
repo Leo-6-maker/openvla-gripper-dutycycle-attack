@@ -1,0 +1,5 @@
+claim,status,evidence,notes
+VIS failure upper bound exists,pass,vismp_cream_cheese_state0_seed0_ultra_three_phase_d20_d20_d20_20260602_144535,requires qpos/CQ/manual confirmation
+Matched random does not reproduce,pass,no random reproduction parsed,random reproduction heuristic uses official failure or VIS-like qpos/open trace
+Strong PASS,pending_or_fail,cream_fail=True; hard_fail=,requires manual audit before final wording
+Medium PASS,pass,cream_fail=True; salad_fail=False; hard_fail=,easy-positive only if hard cases survive

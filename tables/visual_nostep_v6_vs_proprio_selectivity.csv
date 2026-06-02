@@ -1,0 +1,11 @@
+task,sensitivity_class,proprio_sus30_success,visual_v6_sus30_success,delta
+cream_cheese,high,0/3,1/3,+1
+tomato_sauce,high,0/3,1/3,+1
+butter,medium,1/3,N/A,N/A
+chocolate_pudding,medium,1/3,N/A,N/A
+bbq_sauce,medium,0/3,N/A,N/A
+alphabet_soup,medium,1/3,N/A,N/A
+milk,low,1/3,N/A,N/A
+orange_juice,low,3/3,N/A,N/A
+ketchup,robust,3/3,0/3,-3
+salad_dressing,robust,3/3,2/3,-1

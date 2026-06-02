@@ -1,0 +1,27 @@
+priority,task,detector,condition,state,success,total_steps,first_trigger,first_attack,attack_steps,max_hs,final_gripper,final_tgt_dist,failure_mode
+P0,cream_cheese,ProprioNoStep,sus30,s0,False,290,137,137,153,0.9763,0.0201,0.204,transport failure
+P0,cream_cheese,ProprioNoStep,sus30,s1,False,290,123,123,163,0.9736,0.0199,0.171,transport failure
+P0,cream_cheese,ProprioNoStep,sus30,s2,False,290,123,123,167,0.9539,0.0200,0.238,transport failure
+P0,cream_cheese,ProprioNoStep,sus30,s3,False,290,128,128,150,0.9439,0.0213,0.192,transport failure
+P0,cream_cheese,ProprioNoStep,sus30,s4,False,290,161,161,129,0.9520,0.0202,0.199,transport failure
+P0,tomato_sauce,ProprioNoStep,sus30,s0,False,290,196,196,94,0.9690,0.0347,0.158,placement failure
+P0,tomato_sauce,ProprioNoStep,sus30,s1,False,290,146,146,144,0.9781,0.0277,0.215,placement failure
+P0,tomato_sauce,ProprioNoStep,sus30,s2,False,290,152,152,138,0.9766,0.0270,0.206,placement failure
+P0,tomato_sauce,ProprioNoStep,sus30,s3,False,290,118,118,164,0.9774,0.0311,0.178,placement failure
+P0,tomato_sauce,ProprioNoStep,sus30,s4,False,290,135,135,146,0.9149,0.0283,0.190,placement failure
+P0,ketchup,ProprioNoStep,sus30,s0,True,202,125,125,71,0.9427,0.0177,0.146,survived attack
+P0,ketchup,ProprioNoStep,sus30,s1,True,190,161,161,29,0.9384,0.0169,0.145,survived attack
+P0,ketchup,ProprioNoStep,sus30,s2,True,173,131,131,42,0.9431,0.0175,0.145,survived attack
+P0,ketchup,ProprioNoStep,sus30,s3,True,166,126,126,30,0.9284,0.0201,0.152,survived attack
+P0,ketchup,ProprioNoStep,sus30,s4,True,143,120,120,23,0.9494,0.0108,0.149,survived attack
+P1,salad_dressing,ProprioNoStep,sus30,s0,True,260,100,100,160,0.9596,0.0164,0.142,survived heavy attack
+P1,salad_dressing,ProprioNoStep,sus30,s1,True,134,107,107,27,0.9628,0.0130,0.153,survived attack
+P1,salad_dressing,ProprioNoStep,sus30,s2,True,122,88,88,32,0.9501,0.0180,0.143,survived attack
+P1,salad_dressing,ProprioNoStep,sus30,s3,True,137,108,108,29,0.9503,0.0153,0.153,survived attack
+P1,salad_dressing,ProprioNoStep,sus30,s4,True,136,100,100,30,0.9167,0.0196,0.143,survived attack
+P1,ketchup,VisualNoStep V6,sus30,s0,False,290,22,22,253,0.9581,0.0005,0.528,pre-grasp prevention
+P1,ketchup,VisualNoStep V6,sus30,s1,False,290,14,14,216,0.9992,0.0005,0.521,pre-grasp prevention
+P1,ketchup,VisualNoStep V6,sus30,s2,False,290,63,63,187,0.9987,0.0006,0.158,pre-grasp prevention
+P2,ketchup,VisualNoStep V6,clean,s0,True,169,22,NO_ATK,0,0.9581,0.0196,0.156,clean false positive
+P2,ketchup,VisualNoStep V6,clean,s1,True,190,14,NO_ATK,0,0.9992,0.0169,0.145,clean false positive
+P2,ketchup,VisualNoStep V6,clean,s2,True,150,63,NO_ATK,0,0.9987,0.0175,0.151,clean false positive
