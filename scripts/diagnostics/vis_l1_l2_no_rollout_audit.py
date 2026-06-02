@@ -256,6 +256,8 @@ def load_frames_from_clean_policy_rollout(task_name, model, processor, device, m
     instruction = TASK_INSTRUCTIONS[task_name]
     max_steps = 300
     for step in range(max_steps):
+        if step % 30 == 0:
+            print(f'    rollout step {step}/{max_steps}...', flush=True)
         img_np_raw = obs['agentview_image']
         # Apply the same preprocessing as vis_rollout_adaptive_v3
         img = img_np_raw[::-1, ::-1]
@@ -264,7 +266,7 @@ def load_frames_from_clean_policy_rollout(task_name, model, processor, device, m
         img_np = np.array(img)
 
         # Decode clean action
-        action, token_ids = decode_clean_action(
+        action, token_ids, _clean_gen = decode_clean_action(
             model, processor, img_np, instruction, device, mdtype,
             VS, BC, mask, low, high, action_dim)
 

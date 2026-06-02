@@ -76,12 +76,21 @@ def parse_args():
     ap.add_argument('--pgd_steps', type=int, default=STEPS_DEFAULT, help=f'PGD iterations (default: {STEPS_DEFAULT})')
     ap.add_argument('--pgd_restarts', type=int, default=PGD_RESTARTS_DEFAULT, help=f'PGD random restarts (default: {PGD_RESTARTS_DEFAULT})')
     ap.add_argument('--objective', choices=['gripper_open_region_ce','force_open_z_down_token_ce',
-        'force_gripper_open_token_ce','gripper_logit_margin_cw','targeted_directional_ce'],
+        'force_gripper_open_token_ce','gripper_logit_margin_cw','targeted_directional_ce',
+        'prefix_locked_gripper_open_region_ce','prefix_locked_gripper_open_margin',
+        'gripper_open_expected_action'],
         default=ATTACK_OBJECTIVE_DEFAULT, help=f'attack objective (default: {ATTACK_OBJECTIVE_DEFAULT})')
     ap.add_argument('--z_down_weight', type=float, default=Z_DOWN_WEIGHT_DEFAULT,
         help=f'Z-down loss weight (default: {Z_DOWN_WEIGHT_DEFAULT})')
     ap.add_argument('--gripper_weight', type=float, default=GRIPPER_OPEN_WEIGHT_DEFAULT,
         help=f'gripper-open loss weight (default: {GRIPPER_OPEN_WEIGHT_DEFAULT})')
+    ap.add_argument('--arm_preserve_weight', type=float, default=0.1,
+        help='arm-preserve CE weight for prefix-locked objectives (default: 0.1)')
+    ap.add_argument('--gripper_margin', type=float, default=5.0,
+        help='gripper margin for prefix_locked_gripper_open_margin (default: 5.0)')
+    ap.add_argument('--best_restart_metric', choices=['target_ce_final','gripper_open_prob_mass',
+        'gripper_margin','decoded_gripper_open','composite'],
+        default='gripper_open_prob_mass', help='metric for best-restart selection (default: gripper_open_prob_mass)')
     ap.add_argument('--dry_run', action='store_true')
     return ap.parse_args()
 
@@ -218,9 +227,11 @@ def run_pgd_attack(img_np, instruction, clean_action, clean_gen, seed):
     target_action[-1] = 1.0  # OPEN gripper (raw ~1.0 → most-open bin after normalization)
     if ATTACK_OBJECTIVE == 'force_open_z_down_token_ce':
         target_action[2] = low[2]  # Z DOWN: minimum Z delta = most negative displacement
-    base_random_start = (ATTACK_OBJECTIVE in {'gripper_open_region_ce', 'force_open_z_down_token_ce'})
+    _PREFIX_LOCKED_SET = {'prefix_locked_gripper_open_region_ce', 'prefix_locked_gripper_open_margin', 'gripper_open_expected_action'}
+    _GRIPPER_OBJ_SET = {'gripper_open_region_ce', 'force_open_z_down_token_ce'} | _PREFIX_LOCKED_SET
+    base_random_start = (ATTACK_OBJECTIVE in _GRIPPER_OBJ_SET)
     best_result = None
-    best_loss = float('inf')
+    best_metric_val = float('-inf') if ATTACK_OBJECTIVE in _GRIPPER_OBJ_SET else float('inf')
     for restart in range(max(1, PGD_RESTARTS)):
         restart_seed = seed + restart * 1000
         attack_cfg = {
@@ -235,6 +246,10 @@ def run_pgd_attack(img_np, instruction, clean_action, clean_gen, seed):
                 str(action_dim - 1): GRIPPER_WEIGHT,  # gripper dim
                 '2': Z_DOWN_WEIGHT,                    # z dim
             }
+        if ATTACK_OBJECTIVE in _PREFIX_LOCKED_SET:
+            attack_cfg['attack_optimizer']['arm_preserve_weight'] = float(args.arm_preserve_weight)
+            attack_cfg['attack_optimizer']['gripper_margin'] = float(args.gripper_margin)
+            attack_cfg['attack_optimizer']['best_restart_metric'] = args.best_restart_metric
         attacker = TokenPrefixPGDAttacker(
             model, processor, attack_cfg, seed=restart_seed,
             preprocess_kwargs={'libero_official_preprocess': False, 'center_crop': False, 'resize_size': 224,
@@ -242,10 +257,18 @@ def run_pgd_attack(img_np, instruction, clean_action, clean_gen, seed):
         attack_result = attacker.attack(observation=img_np, instruction=instruction,
             clean_action=clean_action, target_action=target_action,
             clean_model_output=clean_gen, unnorm_key=UNNORM_KEY)
-        loss = (attack_result.debug or {}).get('target_ce_final', float('inf'))
-        if isinstance(loss, (int, float)) and loss < best_loss:
-            best_loss = loss
-            best_result = attack_result
+        debug = attack_result.debug or {}
+        # Restart selection: gripper-specific objectives use open_prob_mass, others use target_ce_final.
+        if ATTACK_OBJECTIVE in _GRIPPER_OBJ_SET:
+            metric_val = float(debug.get('gripper_open_prob_mass', debug.get('open_region_prob_mass_after', 0.0)) or 0.0)
+            if metric_val > best_metric_val:
+                best_metric_val = metric_val
+                best_result = attack_result
+        else:
+            loss = float(debug.get('target_ce_final', float('inf')))
+            if loss < best_metric_val:
+                best_metric_val = loss
+                best_result = attack_result
         if PGD_RESTARTS <= 1:
             break
     adv_inputs = get_adv_inputs_from_attack_result(best_result)

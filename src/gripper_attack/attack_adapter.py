@@ -113,6 +113,9 @@ class TokenPrefixPGDAttacker:
         _raw_weights = cfg.get("loss_weights", None)
         if _raw_weights is not None and isinstance(_raw_weights, dict):
             self.loss_weights = {int(k) if k.lstrip('-').isdigit() else k: float(v) for k, v in _raw_weights.items()}
+        self.arm_preserve_weight = float(cfg.get("arm_preserve_weight", 0.1))
+        self.gripper_margin = float(cfg.get("gripper_margin", 5.0))
+        self.best_restart_metric = str(cfg.get("best_restart_metric", "target_ce_final"))
         self.seed = int(seed)
         self.preprocess_kwargs = dict(preprocess_kwargs or {})
         self.postprocess_gripper = bool(self.preprocess_kwargs.pop("postprocess_gripper", False))
@@ -257,9 +260,10 @@ class TokenPrefixPGDAttacker:
             rows.append((int(b.item()), int(label_pos.item()), dim, row_index))
         return rows
 
-    def _loss(self, full_input_ids, labels, pixel_values, *, objective: str = "targeted_directional_ce", region_token_ids=None, margin: float = 5.0, num_action_tokens: int = 7, loss_weights: dict = None):
+    def _loss(self, full_input_ids, labels, pixel_values, *, objective: str = "targeted_directional_ce", region_token_ids=None, margin: float = 5.0, num_action_tokens: int = 7, loss_weights: dict = None, arm_preserve_weight: float = 0.1):
         obj = str(objective)
-        if obj not in {"gripper_open_region_ce", "gripper_logit_margin_cw"}:
+        _PREFIX_LOCKED_OBJS = {"prefix_locked_gripper_open_region_ce", "prefix_locked_gripper_open_margin", "gripper_open_expected_action"}
+        if obj not in {"gripper_open_region_ce", "gripper_logit_margin_cw", "prefix_locked_gripper_open_region_ce", "prefix_locked_gripper_open_margin", "gripper_open_expected_action"}:
             if loss_weights is None or obj != "force_open_z_down_token_ce":
                 # Keep the proven OpenVLA/HF label path for ordinary targeted CE;
                 # hand-aligning visual-token logits against text labels is brittle.
@@ -295,13 +299,44 @@ class TokenPrefixPGDAttacker:
         for b, label_pos, dim, row_index in rows:
             row = logits[b, row_index, :]
             target = labels[b, label_pos]
+            is_gripper_dim = (dim == action_dim - 1)
+            is_arm_dim = not is_gripper_dim
             if obj == "gripper_open_region_ce":
-                if region_token_ids is None or int(region_token_ids.numel()) == 0:
-                    losses.append(F.cross_entropy(row.view(1, -1), target.view(1)))
-                else:
+                if is_gripper_dim and region_token_ids is not None and int(region_token_ids.numel()) > 0:
                     log_region = torch.logsumexp(row[region_token_ids], dim=0)
                     log_all = torch.logsumexp(row, dim=0)
                     losses.append(-(log_region - log_all))
+                elif target.item() != -100:
+                    losses.append(F.cross_entropy(row.view(1, -1), target.view(1)))
+            elif obj == "prefix_locked_gripper_open_region_ce":
+                # Arm dims: CE to preserve clean action. Gripper dim: open-region CE.
+                apw = float(arm_preserve_weight)
+                if is_gripper_dim and region_token_ids is not None and int(region_token_ids.numel()) > 0:
+                    log_region = torch.logsumexp(row[region_token_ids], dim=0)
+                    log_all = torch.logsumexp(row, dim=0)
+                    losses.append(-(log_region - log_all))
+                elif is_arm_dim and target.item() != -100:
+                    losses.append(apw * F.cross_entropy(row.view(1, -1), target.view(1)))
+            elif obj == "prefix_locked_gripper_open_margin":
+                # Arm dims: CE to preserve. Gripper dim: margin loss (OPEN must beat non-OPEN by margin).
+                apw = float(arm_preserve_weight)
+                if is_gripper_dim and region_token_ids is not None and int(region_token_ids.numel()) > 0:
+                    log_open = torch.logsumexp(row[region_token_ids], dim=0)
+                    non_open_mask = torch.ones_like(row, dtype=torch.bool)
+                    non_open_mask[region_token_ids] = False
+                    max_non_open = row[non_open_mask].max()
+                    losses.append(F.relu(max_non_open - log_open + float(margin)))
+                elif is_arm_dim and target.item() != -100:
+                    losses.append(apw * F.cross_entropy(row.view(1, -1), target.view(1)))
+            elif obj == "gripper_open_expected_action":
+                # Minimize negative expected OPEN score: -E[gripper_open] under softmax.
+                if is_gripper_dim and region_token_ids is not None and int(region_token_ids.numel()) > 0:
+                    probs = torch.softmax(row, dim=-1)
+                    open_prob_mass = probs[region_token_ids].sum()
+                    losses.append(-open_prob_mass)
+                elif is_arm_dim and target.item() != -100:
+                    apw = float(arm_preserve_weight)
+                    losses.append(apw * F.cross_entropy(row.view(1, -1), target.view(1)))
             else:
                 target_logit = row[target]
                 other = row.clone()
@@ -383,6 +418,11 @@ class TokenPrefixPGDAttacker:
         is_force_open_z_down = objective in {"force_open_z_down_token_ce"}
         is_gripper_margin = objective in {"gripper_logit_margin_cw"}
         is_gripper_region = objective in {"gripper_open_region_ce"}
+        # New gripper-specific objectives (2026-06-02)
+        is_prefix_locked_open_region = objective in {"prefix_locked_gripper_open_region_ce"}
+        is_prefix_locked_open_margin = objective in {"prefix_locked_gripper_open_margin"}
+        is_gripper_expected_action = objective in {"gripper_open_expected_action"}
+        is_prefix_locked = is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action
         if self.model is None or self.processor is None or ((not is_untargeted) and target_action is None):
             return ExistingDenseAttackAdapter(self.epsilon, self.step_size, self.num_steps, self.seed).attack(observation, instruction, clean_action, target_action, clean_model_output)
         self._freeze_model()
@@ -400,7 +440,7 @@ class TokenPrefixPGDAttacker:
             target_ids = self.action_to_token_ids(target_action, unnorm_key)
             token_label_source = "directional_target_action"
         clean_ids, full_ids, labels, x0 = self._build_inputs_and_labels(observation, str(instruction), target_ids)
-        if is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region:
+        if is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region or is_prefix_locked:
             action_dim = int(target_ids.numel())
             gripper_dim = action_dim - 1
             label_positions = [labels.shape[1] - action_dim + gripper_dim]
@@ -417,6 +457,17 @@ class TokenPrefixPGDAttacker:
                 token_label_source = "gripper_open_region_ce_target_action_gripper_only"
             else:
                 token_label_source = "force_open_z_down_target_action_z_and_gripper" if is_force_open_z_down else "force_gripper_open_target_action_gripper_only"
+        elif is_prefix_locked:
+            # Prefix-locked objectives: preserve clean arm tokens, attack gripper only.
+            # target_ids already encodes the clean action (target_action = clean_action in v3 script).
+            # Mask gripper dim to -100 so it's handled by region/margin/expected-action loss.
+            action_dim = int(target_ids.numel())
+            gripper_dim = action_dim - 1
+            masked = labels.clone()
+            gripper_label_pos = labels.shape[1] - action_dim + gripper_dim
+            masked[:, gripper_label_pos] = -100
+            labels = masked
+            token_label_source = f"prefix_locked_arm_preserve_gripper_{objective}"
         elif is_arm_only_untargeted:
             action_dim = int(target_ids.numel())
             masked = torch.full_like(labels, -100)
@@ -440,7 +491,8 @@ class TokenPrefixPGDAttacker:
         adv = self._project_pixel_master(x_orig + delta, x_orig).detach()
         loss_kwargs = {"objective": objective, "num_action_tokens": int(target_ids.numel())}
         region_token_ids = None
-        if is_gripper_region:
+        _needs_region = is_gripper_region or is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action
+        if _needs_region:
             region_token_ids = self.action_bins_for_env_sign(
                 int(target_ids.numel()) - 1,
                 "negative",
@@ -450,6 +502,9 @@ class TokenPrefixPGDAttacker:
             loss_kwargs["region_token_ids"] = region_token_ids
         if is_gripper_margin:
             loss_kwargs["margin"] = float((getattr(self, "config", {}) or {}).get("cw_margin", 5.0)) if hasattr(self, "config") else 5.0
+        if is_prefix_locked:
+            loss_kwargs["arm_preserve_weight"] = float(self.arm_preserve_weight)
+            loss_kwargs["margin"] = float(self.gripper_margin)
         if is_force_open_z_down and self.loss_weights is not None:
             loss_kwargs["loss_weights"] = self.loss_weights
         initial_loss = None; final_loss = None
@@ -529,15 +584,31 @@ class TokenPrefixPGDAttacker:
                 "target_ce_initial": initial_loss,
                 "target_ce_final": final_loss,
             })
-            if is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region:
+            # Gripper-specific restart-selection metrics
+            gripper_adv_audit = adv_audit.get("action_token_logit_audit", [])
+            if gripper_adv_audit:
+                _gadv = gripper_adv_audit[-1]  # last dim = gripper
+                debug["open_region_prob_mass_after"] = _gadv.get("open_bin_prob_mass", None)
+                debug["close_bin_prob_mass_after"] = _gadv.get("close_bin_prob_mass", None)
+                _open_mass = float(_gadv.get("open_bin_prob_mass", 0.0) or 0.0)
+                _close_mass = float(_gadv.get("close_bin_prob_mass", 0.0) or 0.0)
+                debug["gripper_margin_after"] = _open_mass - _close_mass
+                debug["gripper_open_prob_mass"] = _open_mass
+            if is_prefix_locked:
+                debug["arm_preserve_weight"] = float(self.arm_preserve_weight)
+                debug["gripper_margin_param"] = float(self.gripper_margin)
+                debug["best_restart_metric"] = self.best_restart_metric
+            if is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region or is_prefix_locked:
                 debug.update({
                     "target_gripper_token_id": int(token_list[-1]) if token_list else None,
-                    "gripper_only_loss": bool(is_force_gripper_open or is_gripper_margin or is_gripper_region),
+                    "gripper_only_loss": bool(is_force_gripper_open or is_gripper_margin or is_gripper_region or is_prefix_locked),
                     "z_and_gripper_loss": bool(is_force_open_z_down),
-                    "gripper_logit_margin_loss": bool(is_gripper_margin),
-                    "gripper_open_region_loss": bool(is_gripper_region),
+                    "gripper_logit_margin_loss": bool(is_gripper_margin or is_prefix_locked_open_margin),
+                    "gripper_open_region_loss": bool(is_gripper_region or is_prefix_locked_open_region),
+                    "gripper_expected_action_loss": bool(is_gripper_expected_action),
+                    "prefix_locked_arm_preserve": bool(is_prefix_locked),
                 })
-                if is_gripper_region and region_token_ids is not None:
+                if _needs_region and region_token_ids is not None:
                     vals = [int(x) for x in region_token_ids.detach().cpu().tolist()]
                     debug["gripper_open_region_token_ids"] = vals
                     debug["gripper_open_region_token_count"] = int(len(vals))
