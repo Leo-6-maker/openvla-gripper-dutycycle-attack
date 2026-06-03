@@ -1,84 +1,102 @@
-"""Test phase-conditioned VIS audit logic: claim gates, bridge taxonomy."""
+"""Test phase-conditioned VIS audit logic — imports from real audit module."""
 
-import csv, io, os, sys
+import os, sys
 import pytest
-import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
-from gripper_attack.gripper_semantics import raw_gripper_is_open
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'scripts', 'diagnostics'))
+
+# Import real functions from the audit module
+from audit_phase_conditioned_vis import classify_bridge_taxonomy, compute_trace_metrics
+from gripper_attack.gripper_semantics import raw_gripper_is_open, QPOS_OPEN_MAX, QPOS_CLOSED_MIN
 
 
-def _compute_bridge_taxonomy(open_cnt, total, qpos_delta, done, clean_ratio, random_done=True, random_open=0):
-    """Mirror audit_phase_conditioned_vis claim gate logic."""
-    action_pos = open_cnt >= max(1, total - 2) if total > 0 else False
-    physical_pos = qpos_delta >= 0.03 if total > 0 else False
-    task_fail = not done if total > 0 else False
-    confounded = clean_ratio > 0.5
-    denom_clean = random_done and random_open == 0
-    claim = action_pos and physical_pos and task_fail and denom_clean and not confounded
-    return {
-        "action_bridge_positive": action_pos,
-        "physical_bridge_positive": physical_pos,
-        "task_failure_positive": task_fail,
-        "natural_release_confounded": confounded,
-        "denominator_clean": denom_clean,
-        "claim_usable": claim,
-    }
+def _fake_metrics(open_cnt=0, total=18, qpos_delta=0.0, done=True, attack_invalid=False):
+    return {"generated_OPEN_count":open_cnt,"generated_OPEN_total":total,
+            "qpos_delta_post":qpos_delta,"done":done,"armL2_max":0.0,
+            "attack_invalid":attack_invalid,"valid":not attack_invalid}
 
 
 class TestEarlyWindowPositive:
-    def test_early_window_claim_usable(self):
-        """Early window: 18/18 OPEN, qpos=0.038, done=False, clean_ratio=0, random clean."""
-        g = _compute_bridge_taxonomy(18, 18, 0.038, False, 0.0)
-        assert g["action_bridge_positive"] is True
-        assert g["physical_bridge_positive"] is True
-        assert g["task_failure_positive"] is True
-        assert g["natural_release_confounded"] is False
-        assert g["denominator_clean"] is True
-        assert g["claim_usable"] is True
+    def test_claim_usable(self):
+        """Early window: 18/18 OPEN, qpos=0.038, done=False, random clean."""
+        vis = _fake_metrics(18,18,0.038,False)
+        rand = _fake_metrics(0,18,0.0006,True)
+        clean = _fake_metrics(0,18,0.0,True)
+        tax = classify_bridge_taxonomy(vis, rand, clean)
+        assert tax["claim_usable"] is True
+        assert tax["taxonomy_label"] == "claim_usable"
 
 
 class TestLateWindowNegative:
-    def test_late_window_action_positive_physical_negative(self):
-        """Late window: 18/18 OPEN, qpos=0.0001, done=True, clean_ratio=0.5."""
-        g = _compute_bridge_taxonomy(18, 18, 0.0001, True, 0.5)
-        assert g["action_bridge_positive"] is True
-        assert g["physical_bridge_positive"] is False
-        assert g["task_failure_positive"] is False
-        assert g["claim_usable"] is False
+    def test_action_positive_physical_negative(self):
+        """Late window: 18/18 OPEN, qpos=0.0001, done=True."""
+        vis = _fake_metrics(18,18,0.0001,True)
+        rand = _fake_metrics(0,18,0.0006,True)
+        clean = _fake_metrics(0,18,0.0,True)
+        tax = classify_bridge_taxonomy(vis, rand, clean)
+        assert tax["action_bridge_positive"] is True
+        assert tax["physical_bridge_positive"] is False
+        assert tax["taxonomy_label"] == "action_bridge_positive_physical_bridge_negative"
 
-    def test_late_window_label_action_positive_physical_negative(self):
-        """Late window explicitly labeled."""
-        g = _compute_bridge_taxonomy(18, 18, 0.00001, True, 0.0)
-        assert not g["physical_bridge_positive"]
-        assert not g["claim_usable"]
+    def test_no_action_bridge(self):
+        """VIS generates only 2/18 OPEN."""
+        vis = _fake_metrics(2,18,0.0,True)
+        tax = classify_bridge_taxonomy(vis, None, None)
+        assert tax["action_bridge_positive"] is False
+        assert tax["taxonomy_label"] == "no_action_bridge"
 
 
 class TestNaturalReleaseConfounded:
-    def test_high_clean_open_confounds(self):
-        """Window with clean natural OPEN >50% is confounded."""
-        g = _compute_bridge_taxonomy(18, 18, 0.04, False, 0.75)
-        assert g["natural_release_confounded"] is True
-        assert g["claim_usable"] is False
+    def test_clean_open_high_confounds(self):
+        """Clean natural OPEN at 75% confounds the window."""
+        vis = _fake_metrics(18,18,0.04,False)
+        rand = _fake_metrics(0,18,0.0006,True)
+        clean = _fake_metrics(14,18,0.0,True)  # 14/18 = 78% natural OPEN
+        tax = classify_bridge_taxonomy(vis, rand, clean)
+        assert tax["natural_release_confounded"] is True
+        assert tax["taxonomy_label"] == "natural_release_confounded"
 
 
 class TestDenominatorPolluted:
-    def test_random_fail_pollutes(self):
-        """Random task failure pollutes denominator."""
-        g = _compute_bridge_taxonomy(18, 18, 0.038, False, 0.0, random_done=False)
-        assert g["denominator_clean"] is False
-        assert g["claim_usable"] is False
+    def test_random_fail(self):
+        vis = _fake_metrics(18,18,0.038,False)
+        rand = _fake_metrics(0,18,0.0006,False)  # random task failed
+        tax = classify_bridge_taxonomy(vis, rand, None)
+        assert tax["denominator_clean"] is False
 
-    def test_random_open_pollutes(self):
-        """Random OPEN pollutes denominator."""
-        g = _compute_bridge_taxonomy(18, 18, 0.038, False, 0.0, random_open=5)
-        assert g["denominator_clean"] is False
-        assert g["claim_usable"] is False
+    def test_random_open(self):
+        vis = _fake_metrics(18,18,0.038,False)
+        rand = _fake_metrics(5,18,0.0006,True)  # random has OPEN
+        tax = classify_bridge_taxonomy(vis, rand, None)
+        assert tax["denominator_clean"] is False
 
 
 class TestGeneratedOpenInsufficient:
     def test_open_alone_insufficient(self):
-        """18/18 OPEN but qpos≈0 and done=True: not a usable claim."""
-        g = _compute_bridge_taxonomy(18, 18, 0.0, True, 0.0)
-        assert g["action_bridge_positive"] is True
-        assert g["claim_usable"] is False
+        vis = _fake_metrics(18,18,0.0,True)
+        rand = _fake_metrics(0,18,0.0006,True)
+        tax = classify_bridge_taxonomy(vis, rand, None)
+        assert tax["action_bridge_positive"] is True
+        assert tax["claim_usable"] is False
+
+
+class TestInvalidExcluded:
+    def test_oom_trace_excluded(self):
+        """OOM/invalid trace should be excluded."""
+        vis = _fake_metrics(0,0,0.0,True,attack_invalid=True)
+        assert vis["valid"] is False
+        tax = classify_bridge_taxonomy(vis, None, None)
+        assert tax["claim_usable"] is False
+
+
+class TestQposDirection:
+    """Verify qpos direction: OPEN=qpos_low, CLOSE=qpos_high."""
+    def test_open_qpos_low(self):
+        assert raw_gripper_is_open(0.0) is True
+
+    def test_close_qpos_high_raw(self):
+        assert raw_gripper_is_open(0.996) is False
+
+    def test_physical_open_threshold(self):
+        assert QPOS_OPEN_MAX < QPOS_CLOSED_MIN

@@ -34,6 +34,12 @@ OPEN_THRESHOLD: float = 0.5
 # ── Semantic version string — bump when semantics change ──
 CANONICAL_OPEN_SEMANTICS_VERSION = "v1.0_decoded_action_lt_0.5_is_open_20260603"
 
+# ── Physical qpos constants (verified by server smoke) ──
+# OPEN:  qpos decreases → low values (e.g. 0.020 → 0.001)
+# CLOSE: qpos increases → high values (e.g. 0.021 → 0.039)
+QPOS_OPEN_MAX = 0.005    # qpos <= this is physically open
+QPOS_CLOSED_MIN = 0.03   # qpos >= this is physically closed
+
 
 def raw_gripper_is_open(raw_gripper: float, *, threshold: float = OPEN_THRESHOLD) -> bool:
     """Return True if *raw_gripper* (model-decoded action[-1]) is OPEN.
