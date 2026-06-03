@@ -38,6 +38,8 @@ def parse_args():
     ap.add_argument("--consecutive-k", type=int, default=2)
     ap.add_argument("--window-policy", choices=["T_to_Tplus17","Tminus3_to_Tplus14"], default="T_to_Tplus17")
     ap.add_argument("--output-csv", default="tables/phase_selector_window_proposals.csv")
+    ap.add_argument("--allow-partial-labels", action="store_true",
+        help="Allow label_validity=partial_missing_qpos (default: heuristic only)")
     ap.add_argument("--dry-run", action="store_true")
     return ap.parse_args()
 
@@ -89,9 +91,25 @@ def main():
         r0 = rlist[0]; task = r0.get("task","?"); seed = r0.get("seed","?")
 
         if args.mode == "oracle_phase":
+            # Gate by label_validity
+            _validity = r0.get("label_validity", "unknown")
+            _allowed = ["heuristic"]
+            if args.allow_partial_labels:
+                _allowed.append("partial_missing_qpos")
+            if _validity not in _allowed:
+                proposals.append({
+                    "task":task,"seed":seed,"T_eg":"","window_start":"","window_end":"",
+                    "window_policy":args.window_policy,"selector_type":"oracle_phase",
+                    "selector_confidence":0.0,"online_feasible":False,
+                    "clean_natural_open_ratio":"","natural_release_confounded":"",
+                    "phase_overlap_iou":"",
+                    "proposal_valid":False,
+                    "invalid_reason":f"invalid_label_validity_{_validity}",
+                })
+                continue
             T_eg = _find_T_eg_from_labels(rlist)
             selector_type = "oracle_phase"
-            online_feasible = False  # oracle uses privileged/offline labels
+            online_feasible = False
         else:
             _find_T_eg_from_selector(rlist, args.checkpoint, args.feature_schema, args.threshold, args.consecutive_k)
             selector_type = "trained_selector_placeholder_NOT_IMPLEMENTED"

@@ -41,6 +41,8 @@ def parse_args():
     ap.add_argument("--output-dir", default=".")
     ap.add_argument("--allow-fallback-fixed-window", action="store_true",
         help="Only when you explicitly accept fixed-window fallback")
+    ap.add_argument("--allow-partial-labels", action="store_true",
+        help="Allow label_validity=partial_missing_qpos (default: heuristic only)")
     ap.add_argument("--dry-run", action="store_true")
     return ap.parse_args()
 
@@ -65,6 +67,17 @@ def get_window_from_source(args):
         with open(args.phase_csv, newline="") as f:
             rows = list(csv.DictReader(f))
         tr = [r for r in rows if r.get("task")==args.task and int(r.get("seed",-1))==args.seed]
+        # Gate: require label_validity == heuristic (or partial with flag)
+        _validity = tr[0].get("label_validity", "unknown") if tr else "unknown"
+        _allowed = ["heuristic"]
+        if args.allow_partial_labels:
+            _allowed.append("partial_missing_qpos")
+        if _validity not in _allowed:
+            raise SystemExit(
+                f"Phase labels for {args.task} seed {args.seed} have "
+                f"label_validity={_validity}. Only {_allowed} allowed. "
+                "Use --allow-partial-labels for partial_missing_qpos, or fix labels."
+            )
         gs = [int(r["policy_step"]) for r in tr if r.get("phase_label_3class")==args.phase]
         if not gs:
             if args.allow_fallback_fixed_window:
@@ -169,6 +182,8 @@ def main():
         "selector_type": selector_type, "selector_checkpoint": "",
         "detector_trigger_step": args.proprionostep_trigger_step,
         "phase_label_3class": "", "phase_label_6class": "",
+        "phase_label_validity": _validity if '_validity' in dir() else "",
+        "phase_window_selection_validity": "ok" if ws is not None else "invalid",
         "clean_natural_open_ratio": "", "natural_release_confounded": "",
         "phase_conditioned_wrapper_version": CANONICAL_OPEN_SEMANTICS_VERSION,
     }
