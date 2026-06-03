@@ -62,18 +62,20 @@ def compute_trace_metrics(trace_path):
     # Directional qpos opening
     qpost = [float(r["qpos_post_step"]) for r in wr
              if r.get("qpos_post_step") and r["qpos_post_step"] not in ("", None)]
-    missing_qpos = (n > 0 and len(qpost) == 0)
+    missing_qpos_count = n - len(qpost)
     qpos_start = qpost[0] if qpost else 0.0
     qpos_min = min(qpost) if qpost else 0.0
     qd_opening = qpos_start - qpos_min if len(qpost) > 1 else 0.0
     qd_abs = max(abs(v - qpost[0]) for v in qpost) if len(qpost) > 1 else 0.0
 
-    # Schema + exclusion
-    schema_incomplete = (missing_grip > 0 and n > 0) or missing_qpos or (n == 0)
+    # Schema + exclusion: partial missing is also schema_incomplete
+    schema_incomplete = (missing_grip > 0 and n > 0) or (missing_qpos_count > 0 and n > 0) or (n == 0)
     exclusion_reason = ""
     if invalid: exclusion_reason = "attack_invalid"
-    elif missing_grip > 0 and n > 0: exclusion_reason = "missing_gripper"
-    elif missing_qpos: exclusion_reason = "missing_qpos_post_step"
+    elif missing_grip > 0 and n > 0 and missing_qpos_count > 0:
+        exclusion_reason = f"missing_gripper_{missing_grip}_missing_qpos_{missing_qpos_count}"
+    elif missing_grip > 0 and n > 0: exclusion_reason = f"missing_gripper_{missing_grip}"
+    elif missing_qpos_count > 0 and n > 0: exclusion_reason = f"missing_qpos_post_step_{missing_qpos_count}"
     elif n == 0: exclusion_reason = "no_in_window_rows"
 
     return {
@@ -93,6 +95,8 @@ def compute_trace_metrics(trace_path):
         "armL2_max": round(al2,6),
         "done": done, "timeout": not done and len(rows) >= 299,
         "attack_invalid": invalid,
+        "missing_gripper_count": missing_grip,
+        "missing_qpos_count": missing_qpos_count,
         "schema_incomplete": schema_incomplete,
         "claim_excluded": invalid or schema_incomplete,
         "exclusion_reason": exclusion_reason,
@@ -172,10 +176,29 @@ def compute_group_summary(vis_list, random_list, clean_list, window_info):
     if clean_list:
         s["clean_OPEN_mean"]=round(np.mean([r["generated_OPEN_count"]/max(r["generated_OPEN_total"],1) for r in clean_list]),4) if np else 0
 
-    vis_m = vis_list[0] if vis_list else None
-    rand_m = random_list[0] if random_list else None
-    clean_m = clean_list[0] if clean_list else None
-    tax = classify_bridge_taxonomy(vis_m, rand_m, clean_m)
+    # Duplicate detection
+    s["duplicate_condition_count"] = 0
+    if len(vis_list) > 1: s["duplicate_condition_count"] += 1
+    if len(random_list) > 1: s["duplicate_condition_count"] += 1
+    if len(clean_list) > 1: s["duplicate_condition_count"] += 1
+
+    # Conservative aggregation: use min OPEN/min qpos for VIS, all-clean for random/denominator
+    if vis_list:
+        vis_agg = min(vis_list, key=lambda r: r["generated_OPEN_count"])
+    else:
+        vis_agg = None
+    if random_list:
+        rand_agg = max(random_list, key=lambda r: r["generated_OPEN_count"])  # worst random
+    else:
+        rand_agg = None
+    if clean_list:
+        clean_agg = max(clean_list, key=lambda r: r["generated_OPEN_count"] / max(r["generated_OPEN_total"], 1))
+    else:
+        clean_agg = None
+
+    tax = classify_bridge_taxonomy(vis_agg, rand_agg, clean_agg)
+    if s["duplicate_condition_count"] > 0 and not tax["claim_usable"]:
+        tax["taxonomy_label"] = "duplicate_runs_present+" + tax["taxonomy_label"]
     s.update(tax)
     return s
 

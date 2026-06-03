@@ -3,6 +3,11 @@
 
 Wraps vis_rollout_adaptive_v3.py. After subprocess completes, patches trace CSV
 with phase/window metadata columns.
+
+CRITICAL: selector modes NEVER fall back to fixed window.
+  - heuristic_phase with missing label → SystemExit (unless --allow-fallback-fixed-window)
+  - phase_selector with invalid proposal → SystemExit
+  - fallback_fixed ONLY when --window-source fixed or --allow-fallback-fixed-window
 """
 
 from __future__ import annotations
@@ -12,7 +17,6 @@ from pathlib import Path
 REPO = Path(os.environ.get("ATTACK_REPO", "/data/liuyu/repos/openvla-gripper-dutycycle-attack-clean-main-20260524"))
 VIS_ROLLOUT = str(REPO / "scripts/vis_rollout_adaptive_v3.py")
 PYTHON = os.environ.get("PYTHON_BIN", "python")
-
 CANONICAL_OPEN_SEMANTICS_VERSION = "v1.0_decoded_action_lt_0.5_is_open_20260603"
 
 
@@ -35,57 +39,90 @@ def parse_args():
     ap.add_argument("--pgd_restarts", type=int, default=3)
     ap.add_argument("--gpu_pair", default="6,7")
     ap.add_argument("--output-dir", default=".")
+    ap.add_argument("--allow-fallback-fixed-window", action="store_true",
+        help="Only when you explicitly accept fixed-window fallback")
     ap.add_argument("--dry-run", action="store_true")
     return ap.parse_args()
 
 
 def get_window_from_source(args):
+    """Determine attack window. Hard-fail if selector fails — no silent fallback."""
     ws, we = None, None; selector_type = "unknown"
     window_source = args.window_source
 
     if window_source == "fixed":
         ws, we = args.fixed_window_start, args.fixed_window_end
         selector_type = "fixed"
+
     elif window_source == "proprionostep_offset":
         T = args.proprionostep_trigger_step
         ws = max(0, T + args.offset); we = min(299, ws + 17)
         selector_type = f"proprionostep_offset_{args.offset}"
-    elif window_source == "heuristic_phase" and os.path.exists(args.phase_csv):
+
+    elif window_source == "heuristic_phase":
+        if not os.path.exists(args.phase_csv):
+            raise SystemExit("phase-csv not found for heuristic_phase")
         with open(args.phase_csv, newline="") as f:
             rows = list(csv.DictReader(f))
         tr = [r for r in rows if r.get("task")==args.task and int(r.get("seed",-1))==args.seed]
-        if args.phase == "grasp_formation":
-            gs = [int(r["policy_step"]) for r in tr if r.get("phase_label_3class")=="grasp_formation"]
-            ws = min(gs) if gs else 10; we = min(ws+17, 299)
-        selector_type = "heuristic_phase"
-    elif window_source == "phase_selector" and os.path.exists(args.window_proposals_csv):
+        gs = [int(r["policy_step"]) for r in tr if r.get("phase_label_3class")==args.phase]
+        if not gs:
+            if args.allow_fallback_fixed_window:
+                ws, we = args.fixed_window_start, args.fixed_window_end
+                selector_type = "heuristic_phase_fallback_fixed"
+            else:
+                raise SystemExit(
+                    f"No '{args.phase}' label found for {args.task} seed {args.seed}. "
+                    "Use --allow-fallback-fixed-window to fall back, or fix phase labels."
+                )
+        else:
+            ws = min(gs); we = min(ws + 17, 299)
+            selector_type = "heuristic_phase"
+
+    elif window_source == "phase_selector":
+        if not os.path.exists(args.window_proposals_csv):
+            raise SystemExit("window-proposals-csv not found for phase_selector")
         with open(args.window_proposals_csv, newline="") as f:
             props = list(csv.DictReader(f))
-        for p in props:
-            if p.get("task")==args.task and int(p.get("seed",-1))==args.seed:
-                ws = int(p["window_start"]); we = int(p["window_end"])
-                selector_type = p.get("selector_type","phase_selector"); break
+        matched = [p for p in props
+                   if p.get("task")==args.task and int(p.get("seed",-1))==args.seed]
+        if not matched:
+            raise SystemExit(f"No proposal found for {args.task} seed {args.seed}")
+        p = matched[0]
+        pv = str(p.get("proposal_valid","True")).strip().lower()
+        if pv not in ("true","1","yes") and "proposal_valid" in p:
+            raise SystemExit(
+                f"Invalid proposal for {args.task} seed {args.seed}: "
+                f"{p.get('invalid_reason','unknown')}"
+            )
+        ws_str = p.get("window_start",""); we_str = p.get("window_end","")
+        if not ws_str or not we_str:
+            if args.allow_fallback_fixed_window:
+                ws, we = args.fixed_window_start, args.fixed_window_end
+                selector_type = "phase_selector_fallback_fixed"
+            else:
+                raise SystemExit(
+                    f"Empty window in proposal for {args.task} seed {args.seed}. "
+                    "Use --allow-fallback-fixed-window to fall back."
+                )
+        else:
+            ws = int(ws_str); we = int(we_str)
+            selector_type = p.get("selector_type","phase_selector")
 
     if ws is None:
-        ws, we = args.fixed_window_start, args.fixed_window_end
-        selector_type = "fallback_fixed"
+        raise SystemExit(f"Could not resolve window for source={window_source}. This is a bug.")
     return ws, we, selector_type
 
 
 def patch_trace_with_metadata(trace_path, metadata):
-    """Add phase/window metadata columns to existing trace CSV."""
-    if not trace_path or not os.path.exists(trace_path):
-        return
+    if not trace_path or not os.path.exists(trace_path): return
     with open(trace_path, newline="") as f:
         rows = list(csv.DictReader(f))
     fieldnames = list(rows[0].keys())
     for key in metadata:
-        if key not in fieldnames:
-            fieldnames.append(key)
+        if key not in fieldnames: fieldnames.append(key)
     for r in rows:
-        for k, v in metadata.items():
-            r[k] = v
-    # Write back
+        for k, v in metadata.items(): r[k] = v
     tmp = trace_path + ".tmp"
     with open(tmp, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
@@ -103,6 +140,8 @@ def main():
         return
 
     os.makedirs(args.output_dir, exist_ok=True)
+    log_path = os.path.join(args.output_dir,
+        f"phase_conditioned_attack_{args.task}_seed{args.seed}_{args.condition}_{ws}_{we}.log")
 
     cmd = [PYTHON, "-u", VIS_ROLLOUT,
         "--task", args.task, "--condition", args.condition,
@@ -114,15 +153,17 @@ def main():
         cmd += ["--pgd_steps", str(args.pgd_steps), "--pgd_restarts", str(args.pgd_restarts)]
 
     print(f"Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, cwd=str(REPO), capture_output=True, text=True, timeout=7200)
+    print(f"Log: {log_path}")
+    with open(log_path, "w") as log_f:
+        result = subprocess.run(cmd, cwd=str(REPO), stdout=log_f, stderr=subprocess.STDOUT, timeout=7200)
 
-    # Find newest trace from output
+    # Find trace path from log file
     trace_path = None
-    for line in (result.stdout + result.stderr).split("\n"):
-        if "Saved:" in line and "_trace.csv" in line:
-            trace_path = line.split("Saved:")[-1].strip(); break
+    with open(log_path) as log_f:
+        for line in log_f:
+            if "Saved:" in line and "_trace.csv" in line:
+                trace_path = line.split("Saved:")[-1].strip(); break
 
-    # Patch trace with phase metadata
     metadata = {
         "window_source": args.window_source, "phase": args.phase,
         "selector_type": selector_type, "selector_checkpoint": "",
@@ -135,25 +176,21 @@ def main():
         patch_trace_with_metadata(trace_path, metadata)
         print(f"Patched trace: {trace_path}")
     elif result.returncode == 0:
-        print("FATAL: subprocess succeeded but no trace CSV found. Cannot patch metadata.")
-        metadata["trace_patch_failed"] = True
-        # Write failure manifest
+        print("FATAL: subprocess rc=0 but no trace CSV found. Cannot patch metadata.")
         manifest = {"task":args.task,"seed":args.seed,"condition":args.condition,
             "window_source":args.window_source,"window_start":ws,"window_end":we,
             "selector_type":selector_type,"trace_path":None,"rc":result.returncode,
             "trace_patch_failed":True}
-        manifest_path = os.path.join(args.output_dir, "phase_conditioned_attack_manifest.json")
-        with open(manifest_path, "a") as f:
-            json.dump(manifest, f); f.write("\n")
+        with open(os.path.join(args.output_dir, "phase_conditioned_attack_manifest.json"), "a") as mf:
+            json.dump(manifest, mf); mf.write("\n")
         sys.exit(2)
 
-    # Write manifest
+    # Write success manifest
     manifest = {"task":args.task,"seed":args.seed,"condition":args.condition,
         "window_source":args.window_source,"window_start":ws,"window_end":we,
         "selector_type":selector_type,"trace_path":trace_path,"rc":result.returncode}
-    manifest_path = os.path.join(args.output_dir, "phase_conditioned_attack_manifest.json")
-    with open(manifest_path, "a") as f:
-        json.dump(manifest, f); f.write("\n")
+    with open(os.path.join(args.output_dir, "phase_conditioned_attack_manifest.json"), "a") as mf:
+        json.dump(manifest, mf); mf.write("\n")
     sys.exit(result.returncode)
 
 

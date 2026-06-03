@@ -12,7 +12,7 @@ from audit_phase_conditioned_vis import (
 from gripper_attack.gripper_semantics import raw_gripper_is_open, QPOS_OPEN_MAX, QPOS_CLOSED_MIN
 
 
-def _fake_metrics(open_cnt=0, total=18, qpos_opening=0.0, done=True, attack_invalid=False, missing_grip=0):
+def _fake_metrics(open_cnt=0, total=18, qpos_opening=0.0, done=True, attack_invalid=False):
     return {"generated_OPEN_count":open_cnt,"generated_OPEN_total":total,
             "qpos_opening_delta":qpos_opening,"qpos_abs_delta":abs(qpos_opening),
             "qpos_post_start":0.039,"qpos_post_min":0.039-qpos_opening,
@@ -163,3 +163,59 @@ class TestGetRawGripper:
 class TestQposConstants:
     def test_open_max_less_than_closed_min(self):
         assert QPOS_OPEN_MAX < QPOS_CLOSED_MIN
+
+
+# ── P0 REGRESSION: partial qpos missing ──
+
+class TestPartialQposExcluded:
+    def test_missing_1_of_18_qpos_excluded(self):
+        """If 1 of 18 in-window rows is missing qpos, trace must be claim_excluded."""
+        rows = []
+        for i in range(18):
+            r = {"in_window":"True","adv_grip":"0.0","arm_l2":"0","done":"False",
+                 "condition":"vis_pgd","task":"test","seed":"0",
+                 "window_start":"10","window_end":"27"}
+            if i != 5:  # row 5 missing qpos
+                r["qpos_post_step"] = "0.039"
+            rows.append(r)
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+            _write_fake_trace(rows, f.name)
+            m = compute_trace_metrics(f.name)
+        os.unlink(f.name)
+        assert m["claim_excluded"] is True
+        assert m["missing_qpos_count"] == 1
+
+
+class TestCleanGripFallback:
+    def test_clean_grip_only_counts_open(self):
+        """clean trace with only clean_grip field must count natural OPEN."""
+        rows = [{"in_window":"True","clean_grip":"0.0","arm_l2":"0","done":"True",
+                 "qpos_post_step":"0.039","condition":"clean","task":"test","seed":"0",
+                 "window_start":"10","window_end":"27"} for _ in range(18)]
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+            _write_fake_trace(rows, f.name)
+            m = compute_trace_metrics(f.name)
+        os.unlink(f.name)
+        assert m["generated_OPEN_count"] == 18, \
+            f"clean_grip=0.0 was not counted as OPEN: got {m['generated_OPEN_count']}"
+
+
+class TestDuplicateDetection:
+    def test_duplicate_vis_triggers_duplicate_flag(self):
+        """Two valid VIS traces in same group should trigger duplicate detection."""
+        vis = [
+            _fake_metrics(18,18,0.038,False),
+            _fake_metrics(18,18,0.037,False),
+        ]
+        rand = [_fake_metrics(0,18,0.0006,True)]
+        clean = [_fake_metrics(0,18,0.0,True)]
+        s = compute_group_summary(vis, rand, clean, {"task":"test","seed":"0"})
+        assert s["duplicate_condition_count"] == 1  # vis has duplicate
+
+    def test_no_duplicate_when_single_each(self):
+        vis = [_fake_metrics(18,18,0.038,False)]
+        rand = [_fake_metrics(0,18,0.0006,True)]
+        clean = [_fake_metrics(0,18,0.0,True)]
+        s = compute_group_summary(vis, rand, clean, {"task":"test","seed":"0"})
+        assert s["duplicate_condition_count"] == 0
+        assert s["claim_usable"] is True

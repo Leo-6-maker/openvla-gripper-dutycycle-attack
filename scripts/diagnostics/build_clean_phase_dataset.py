@@ -20,6 +20,17 @@ except ImportError:
     def raw_gripper_is_open(v): return float(v) < 0.5
     CANONICAL_OPEN_SEMANTICS_VERSION = "dry_run_fallback"
 
+# Shared gripper field fallback order (must match audit_phase_conditioned_vis.py)
+GRIP_FIELDS = ("adv_grip", "raw_gripper", "clean_grip", "clean_gripper_action", "adv_gripper_action", "action_gripper")
+
+
+def get_raw_gripper(row):
+    for k in GRIP_FIELDS:
+        if k in row and row[k] not in ("", None):
+            try: return float(row[k])
+            except (ValueError, TypeError): continue
+    return None
+
 PHASE_6CLASS = {0:"approach",1:"pregrasp",2:"grasp_formation",3:"stable_grasp_or_lift",4:"carry_or_place",5:"release_or_done"}
 PHASE_3CLASS = {0:"pre_grasp",1:"grasp_formation",2:"post_grasp"}
 
@@ -92,16 +103,20 @@ def detect_events(steps):
     if n < 5: return {}, np.full(n,-1,int), np.full(n,-1,int)
 
     # Extract time series
-    # env_gripper: prefer actual field, fallback to raw_gripper semantics
+    # env_gripper fallback: if missing, use raw_gripper semantics. If raw also missing, mark incomplete.
     has_env_grip = any(s.get("env_gripper","") not in ("", None) for s in steps)
+    has_any_grip = any(get_raw_gripper(s) is not None for s in steps)
+    if not has_any_grip:
+        return {}, np.full(n,-1,int), np.full(n,-1,int)  # cannot label without gripper
+
     if has_env_grip:
         env_grip = np.array([_safe_float(s.get("env_gripper", 0.0)) for s in steps])
         is_close_env = env_grip < 0
     else:
-        # Fallback: use raw_gripper_is_close semantics (raw >= 0.5 = CLOSE)
-        raw_grip = np.array([_safe_float(s.get("raw_gripper", s.get("adv_grip", 0.996))) for s in steps])
+        raw_grip = np.array([get_raw_gripper(s) or 0.996 for s in steps])
         is_close_env = np.array([not raw_gripper_is_open(v) for v in raw_grip])
-    raw_grip = np.array([_safe_float(s.get("raw_gripper", s.get("adv_grip", 0.996))) for s in steps])
+
+    raw_grip = np.array([get_raw_gripper(s) or 0.996 for s in steps])
     qpos = np.array([_safe_float(s.get("qpos_post_step", s.get("gripper_qpos", 0.03))) for s in steps])
     eef_z = np.array([_safe_float(s.get("eef_z", 0)) for s in steps])
     done = np.array([parse_bool(s.get("done","False")) for s in steps])
@@ -256,15 +271,18 @@ def main():
         events, ph6, ph3 = detect_events(steps)
         features = _build_feature_columns(steps)
 
+        _has_grip = any(get_raw_gripper(s) is not None for s in steps)
+        _validity = "incomplete_missing_gripper" if not _has_grip else \
+            ("heuristic" if events.get("T_grasp_formation_start") is not None else "incomplete")
         summaries.append({"task":task,"seed":seed,"rollout_id":Path(tp).stem,
             "trace_path":tp,**{k: v if v is not None else "" for k,v in events.items()},
-            "label_validity":"heuristic" if events.get("T_grasp_formation_start") is not None else "incomplete"})
+            "label_validity": _validity})
 
         for i,s in enumerate(steps):
             feats = features.get(i, {})
             row = {"task":task,"seed":seed,"rollout_id":Path(tp).stem,"trace_path":tp,
                 "policy_step": int(_safe_float(s.get("policy_step", str(i)), i)),
-                "raw_gripper":s.get("raw_gripper",s.get("adv_grip","")),
+                "raw_gripper": get_raw_gripper(s) if get_raw_gripper(s) is not None else "",
                 "env_gripper":s.get("env_gripper",""), "done":s.get("done","False"),
                 "phase_label_6class":PHASE_6CLASS.get(int(ph6[i]),"unknown"), "phase_label_6class_id":int(ph6[i]),
                 "phase_label_3class":PHASE_3CLASS.get(int(ph3[i]),"unknown"), "phase_label_3class_id":int(ph3[i]),
