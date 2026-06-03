@@ -91,12 +91,14 @@ def main():
         r0 = rlist[0]; task = r0.get("task","?"); seed = r0.get("seed","?")
 
         if args.mode == "oracle_phase":
-            # Gate by label_validity
-            _validity = r0.get("label_validity", "unknown")
+            # Gate by label_validity across ALL rollout rows
+            validities = sorted(set(r.get("label_validity", "unknown") for r in rlist))
             _allowed = ["heuristic"]
             if args.allow_partial_labels:
                 _allowed.append("partial_missing_qpos")
-            if _validity not in _allowed:
+            _rejected = [v for v in validities if v not in _allowed]
+            if _rejected or len(validities) > 1:
+                reason = f"mixed_label_validity_{validities}" if len(validities) > 1 else f"invalid_label_validity_{_rejected[0]}"
                 proposals.append({
                     "task":task,"seed":seed,"T_eg":"","window_start":"","window_end":"",
                     "window_policy":args.window_policy,"selector_type":"oracle_phase",
@@ -104,7 +106,7 @@ def main():
                     "clean_natural_open_ratio":"","natural_release_confounded":"",
                     "phase_overlap_iou":"",
                     "proposal_valid":False,
-                    "invalid_reason":f"invalid_label_validity_{_validity}",
+                    "invalid_reason":reason,
                 })
                 continue
             T_eg = _find_T_eg_from_labels(rlist)

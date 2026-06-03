@@ -48,18 +48,25 @@ def parse_args():
 
 
 def get_window_from_source(args):
-    """Determine attack window. Hard-fail if selector fails — no silent fallback."""
+    """Determine attack window. Returns (ws, we, selector_type, selection_meta)."""
     ws, we = None, None; selector_type = "unknown"
     window_source = args.window_source
+    selection_meta = {
+        "phase_label_validity": "", "phase_window_selection_validity": "",
+        "phase_window_selection_reason": "", "clean_natural_open_ratio": "",
+        "natural_release_confounded": "",
+    }
 
     if window_source == "fixed":
         ws, we = args.fixed_window_start, args.fixed_window_end
         selector_type = "fixed"
+        selection_meta["phase_window_selection_validity"] = "fixed_manual"
 
     elif window_source == "proprionostep_offset":
         T = args.proprionostep_trigger_step
         ws = max(0, T + args.offset); we = min(299, ws + 17)
         selector_type = f"proprionostep_offset_{args.offset}"
+        selection_meta["phase_window_selection_validity"] = "proprionostep_offset"
 
     elif window_source == "heuristic_phase":
         if not os.path.exists(args.phase_csv):
@@ -67,17 +74,27 @@ def get_window_from_source(args):
         with open(args.phase_csv, newline="") as f:
             rows = list(csv.DictReader(f))
         tr = [r for r in rows if r.get("task")==args.task and int(r.get("seed",-1))==args.seed]
-        # Gate: require label_validity == heuristic (or partial with flag)
-        _validity = tr[0].get("label_validity", "unknown") if tr else "unknown"
+        if not tr:
+            raise SystemExit(f"No rows for {args.task} seed {args.seed} in phase CSV")
+
+        # Validate label_validity across ALL rows in rollout (not just r0)
+        validities = sorted(set(r.get("label_validity", "unknown") for r in tr))
         _allowed = ["heuristic"]
         if args.allow_partial_labels:
             _allowed.append("partial_missing_qpos")
-        if _validity not in _allowed:
+        _rejected = [v for v in validities if v not in _allowed]
+        if _rejected or len(validities) > 1:
+            # Mixed or invalid: reject
             raise SystemExit(
-                f"Phase labels for {args.task} seed {args.seed} have "
-                f"label_validity={_validity}. Only {_allowed} allowed. "
-                "Use --allow-partial-labels for partial_missing_qpos, or fix labels."
+                f"Phase label_validity for {args.task} seed {args.seed}: "
+                f"{validities}. Only single-value {_allowed} allowed. "
+                f"Rejected: {_rejected}. Mixed: {len(validities)>1}."
             )
+        _validity = validities[0]
+        selection_meta["phase_label_validity"] = _validity
+        selection_meta["phase_window_selection_validity"] = "ok"
+        selection_meta["phase_window_selection_reason"] = "heuristic_phase_validated"
+
         gs = [int(r["policy_step"]) for r in tr if r.get("phase_label_3class")==args.phase]
         if not gs:
             if args.allow_fallback_fixed_window:
@@ -124,7 +141,7 @@ def get_window_from_source(args):
 
     if ws is None:
         raise SystemExit(f"Could not resolve window for source={window_source}. This is a bug.")
-    return ws, we, selector_type
+    return ws, we, selector_type, selection_meta
 
 
 def patch_trace_with_metadata(trace_path, metadata):
@@ -145,11 +162,12 @@ def patch_trace_with_metadata(trace_path, metadata):
 
 def main():
     args = parse_args()
-    ws, we, selector_type = get_window_from_source(args)
+    ws, we, selector_type, selection_meta = get_window_from_source(args)
 
     if args.dry_run:
         print(f"DRY RUN: {args.condition} {args.task} seed={args.seed} [{ws},{we}]")
         print(f"  window_source={args.window_source} selector={selector_type}")
+        print(f"  selection_meta: {selection_meta}")
         return
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -182,9 +200,11 @@ def main():
         "selector_type": selector_type, "selector_checkpoint": "",
         "detector_trigger_step": args.proprionostep_trigger_step,
         "phase_label_3class": "", "phase_label_6class": "",
-        "phase_label_validity": _validity if '_validity' in dir() else "",
-        "phase_window_selection_validity": "ok" if ws is not None else "invalid",
-        "clean_natural_open_ratio": "", "natural_release_confounded": "",
+        "phase_label_validity": selection_meta.get("phase_label_validity", ""),
+        "phase_window_selection_validity": selection_meta.get("phase_window_selection_validity", "invalid"),
+        "phase_window_selection_reason": selection_meta.get("phase_window_selection_reason", ""),
+        "clean_natural_open_ratio": selection_meta.get("clean_natural_open_ratio", ""),
+        "natural_release_confounded": selection_meta.get("natural_release_confounded", ""),
         "phase_conditioned_wrapper_version": CANONICAL_OPEN_SEMANTICS_VERSION,
     }
     if trace_path and os.path.exists(trace_path):
