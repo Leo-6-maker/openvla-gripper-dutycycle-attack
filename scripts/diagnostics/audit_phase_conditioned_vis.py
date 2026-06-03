@@ -19,8 +19,20 @@ try: from gripper_attack.gripper_semantics import raw_gripper_is_open
 except ImportError: raw_gripper_is_open = lambda v: float(v) < 0.5
 
 WINDOW_LEN_TOLERANCE = 2
-QPOS_DELTA_THRESH = 0.03
+QPOS_OPENING_DELTA_THRESH = 0.03   # directional: qpos_start - qpos_min >= 0.03
 RANDOM_QPOS_THRESH = 0.005
+
+# Fields to try for raw gripper, in priority order
+GRIP_FIELDS = ("adv_grip", "raw_gripper", "clean_grip", "clean_gripper_action", "adv_gripper_action")
+
+
+def get_raw_gripper(row):
+    """Extract raw gripper value from trace row with fallback."""
+    for k in GRIP_FIELDS:
+        if k in row and row[k] not in ("", None):
+            try: return float(row[k])
+            except (ValueError, TypeError): continue
+    return None
 
 
 def parse_bool(v):
@@ -38,20 +50,31 @@ def compute_trace_metrics(trace_path):
     r0 = rows[0]
     wr = [r for r in rows if parse_bool(r.get("in_window","False"))]
     n = len(wr)
-    open_cnt = sum(1 for r in wr if raw_gripper_is_open(float(r.get("adv_grip",0.996))))
+    # Use helper for clean/generated OPEN — don't assume adv_grip exists
+    open_cnt = sum(1 for r in wr if raw_gripper_is_open(get_raw_gripper(r) or 0.996))
     al2 = max(float(r.get("arm_l2",0)) for r in wr) if wr else 0.0
     done = any(parse_bool(r.get("done","False")) for r in rows)
-    qpost = [float(r.get("qpos_post_step",0)) for r in wr if r.get("qpos_post_step")]
-    qd = max(abs(v-qpost[0]) for v in qpost) if len(qpost)>1 else 0.0
+    qpost = [float(r.get("qpos_post_step",0)) for r in wr if r.get("qpos_post_step") and r["qpos_post_step"] not in ("", None)]
+    # Directional opening: OPEN = qpos decreases. physical = start->min drop >= threshold
+    qpos_start = qpost[0] if qpost else 0.0
+    qpos_min = min(qpost) if qpost else 0.0
+    qd_opening = qpos_start - qpos_min if len(qpost) > 1 else 0.0  # directional
+    qd_abs = max(abs(v - qpost[0]) for v in qpost) if len(qpost) > 1 else 0.0  # diagnostic only
     invalid = parse_bool(r0.get("attack_invalid","False"))
+    # Schema check
+    grip_val = get_raw_gripper(r0) if n > 0 else None
+    schema_incomplete = (grip_val is None and n > 0) or (len(qpost) == 0 and n > 0)
     return {"trace_path":trace_path,"task":r0.get("task",""),"seed":r0.get("seed",""),
         "condition":r0.get("condition",""),"window_start":r0.get("window_start",""),
         "window_end":r0.get("window_end",""),"window_source":r0.get("window_source","fixed"),
         "selector_type":r0.get("selector_type","unknown"),"phase":r0.get("phase",""),
         "generated_OPEN_count":open_cnt,"generated_OPEN_total":n,
-        "qpos_delta_post":round(qd,6),"armL2_max":round(al2,6),
+        "qpos_opening_delta":round(qd_opening,6),
+        "qpos_abs_delta":round(qd_abs,6),  # diagnostic only, not gated
+        "qpos_post_start":round(qpos_start,6),"qpos_post_min":round(qpos_min,6),
+        "armL2_max":round(al2,6),
         "done":done,"timeout":not done and len(rows)>=299,
-        "attack_invalid":invalid,"valid":not invalid}
+        "attack_invalid":invalid,"valid":not invalid and not schema_incomplete}
 
 
 def classify_bridge_taxonomy(vis_metrics, random_metrics, clean_metrics):
@@ -66,17 +89,17 @@ def classify_bridge_taxonomy(vis_metrics, random_metrics, clean_metrics):
 
     n = vis_metrics.get("generated_OPEN_total",0)
     open_cnt = vis_metrics.get("generated_OPEN_count",0)
-    qd = vis_metrics.get("qpos_delta_post",0.0)
+    qd_open = vis_metrics.get("qpos_opening_delta",0.0)  # directional: start -> min
     done = vis_metrics.get("done",True)
 
     result["action_bridge_positive"] = open_cnt >= max(1, n - WINDOW_LEN_TOLERANCE) if n>0 else False
-    result["physical_bridge_positive"] = qd >= QPOS_DELTA_THRESH
+    result["physical_bridge_positive"] = qd_open >= QPOS_OPENING_DELTA_THRESH  # directional gate
     result["task_failure_positive"] = not done
 
     if random_metrics:
         r_open = random_metrics.get("generated_OPEN_count",-1)
         r_done = random_metrics.get("done",False)
-        r_qd = random_metrics.get("qpos_delta_post",999.0)
+        r_qd = random_metrics.get("qpos_opening_delta", 999.0)
         result["denominator_clean"] = r_done and r_open==0 and r_qd <= RANDOM_QPOS_THRESH
 
     if clean_metrics:
@@ -90,21 +113,20 @@ def classify_bridge_taxonomy(vis_metrics, random_metrics, clean_metrics):
     d = result["denominator_clean"]
     c = result["natural_release_confounded"]
 
+    # Build taxonomy label — preserve both confound and denominator info
+    labels = []
     if a and p and t and d and not c:
         result["claim_usable"] = True
-        result["taxonomy_label"] = "claim_usable"
-    elif a and not p and t:
-        result["taxonomy_label"] = "action_bridge_positive_physical_bridge_negative"
-    elif a and p and not t:
-        result["taxonomy_label"] = "action_positive_physical_positive_task_negative"
-    elif a and not p and not t:
-        result["taxonomy_label"] = "action_positive_physical_negative_task_negative"
-    elif not a:
-        result["taxonomy_label"] = "no_action_bridge"
-    if c:
-        result["taxonomy_label"] = "natural_release_confounded"
-    if not d and a:
-        result["taxonomy_label"] = "denominator_polluted"
+        labels.append("claim_usable")
+    else:
+        if not a: labels.append("no_action_bridge")
+        elif a and not p:
+            labels.append("action_positive_physical_negative")
+        elif a and p and not t:
+            labels.append("action_positive_physical_positive_task_negative")
+        if c: labels.append("natural_release_confounded")
+        if not d and a: labels.append("denominator_polluted")
+    result["taxonomy_label"] = "+".join(labels) if labels else "unclassified"
     return result
 
 

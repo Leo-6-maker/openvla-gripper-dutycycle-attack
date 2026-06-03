@@ -78,7 +78,8 @@ def load_traces(run_dirs, task_filter=None, seed_filter=None):
             if task_filter and task not in task_filter: continue
             if seed_filter is not None and int(seed) not in seed_filter: continue
             loaded.append((tp, rows))
-        except Exception: continue
+        except Exception as e:
+            print(f"  SKIP: {tp} ({e})")
     return loaded
 
 
@@ -202,7 +203,7 @@ def _build_feature_columns(steps):
 
     features = {}
     for i in range(n):
-        features[i] = {
+        feats = {
             "gripper_command": raw_grip[i],
             "gripper_qpos": qpos_vals[i],
             "gripper_width": width[i] if width[i] != 0 else "",
@@ -211,9 +212,13 @@ def _build_feature_columns(steps):
             "action_dx": action_dx[i], "action_dy": action_dy[i], "action_dz": action_dz[i],
             "action_gripper": raw_grip[i],
         }
-        missing = sum(1 for v in features[i].values() if v == "" or (isinstance(v,float) and v==0.0 and k in ("gripper_width","action_dx","action_dy","action_dz")))
-        features[i]["feature_validity"] = "ok" if missing <= 3 else "partial"
-        features[i]["missing_feature_count"] = missing
+        missing = 0
+        for k, v in feats.items():
+            if v == "" or (isinstance(v, float) and v == 0.0 and k == "gripper_width"):
+                missing += 1
+        feats["feature_validity"] = "ok" if missing <= 3 else "partial"
+        feats["missing_feature_count"] = missing
+        features[i] = feats
 
     return features
 
@@ -251,7 +256,8 @@ def main():
 
         for i,s in enumerate(steps):
             feats = features.get(i, {})
-            row = {"task":task,"seed":seed,"rollout_id":Path(tp).stem,"trace_path":tp, "policy_step":i,
+            row = {"task":task,"seed":seed,"rollout_id":Path(tp).stem,"trace_path":tp,
+                "policy_step": int(_safe_float(s.get("policy_step", str(i)), i)),
                 "raw_gripper":s.get("raw_gripper",s.get("adv_grip","")),
                 "env_gripper":s.get("env_gripper",""), "done":s.get("done","False"),
                 "phase_label_6class":PHASE_6CLASS.get(int(ph6[i]),"unknown"), "phase_label_6class_id":int(ph6[i]),
@@ -263,7 +269,10 @@ def main():
                 "label_confidence":"medium","label_source":"heuristic",
                 "label_validity":"heuristic" if events.get("T_grasp_formation_start") is not None else "incomplete",
             }
-            row.update({f"feat_{k}": v for k,v in feats.items()})
+            for k in RUNTIME_FEATURES:
+                row[f"feat_{k}"] = feats.get(k, "")
+            row["feature_validity"] = feats.get("feature_validity", "unknown")
+            row["missing_feature_count"] = feats.get("missing_feature_count", 0)
             all_rows.append(row)
         print(f"  {task} seed{seed}: T_close={events.get('T_gripper_close_onset')} T_gform={events.get('T_grasp_formation_start')} T_lock={events.get('T_grasp_lock')} T_lift={events.get('T_lift_start')} T_rel={events.get('T_release_start')}")
 

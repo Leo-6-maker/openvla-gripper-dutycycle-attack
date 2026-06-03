@@ -42,10 +42,11 @@ def _find_T_eg_from_labels(rlist, phase_label_col="phase_label_3class"):
 
 
 def _find_T_eg_from_selector(rlist, checkpoint_path, feature_schema_path, threshold, k):
-    """Trained selector: placeholder for GPU inference."""
-    # TODO: implement causal TCN inference using checkpoint
-    # For now, fall back to heuristic
-    return _find_T_eg_from_labels(rlist)
+    """Trained selector: NOT IMPLEMENTED. Hard fail."""
+    raise SystemExit(
+        "trained_selector mode requires GPU inference from checkpoint. "
+        "Not implemented. Use --mode oracle_phase instead."
+    )
 
 
 def main():
@@ -77,9 +78,9 @@ def main():
             selector_type = "oracle_phase"
             online_feasible = False  # oracle uses privileged/offline labels
         else:
-            T_eg = _find_T_eg_from_selector(rlist, args.checkpoint, args.feature_schema, args.threshold, args.consecutive_k)
-            selector_type = "trained_phase_selector"
-            online_feasible = True
+            _find_T_eg_from_selector(rlist, args.checkpoint, args.feature_schema, args.threshold, args.consecutive_k)
+            selector_type = "trained_selector_placeholder_NOT_IMPLEMENTED"
+            online_feasible = False
 
         if T_eg is None:
             T_eg = 10  # fallback

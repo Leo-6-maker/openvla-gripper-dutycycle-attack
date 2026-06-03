@@ -131,9 +131,21 @@ def main():
         "clean_natural_open_ratio": "", "natural_release_confounded": "",
         "phase_conditioned_wrapper_version": CANONICAL_OPEN_SEMANTICS_VERSION,
     }
-    if trace_path:
+    if trace_path and os.path.exists(trace_path):
         patch_trace_with_metadata(trace_path, metadata)
         print(f"Patched trace: {trace_path}")
+    elif result.returncode == 0:
+        print("FATAL: subprocess succeeded but no trace CSV found. Cannot patch metadata.")
+        metadata["trace_patch_failed"] = True
+        # Write failure manifest
+        manifest = {"task":args.task,"seed":args.seed,"condition":args.condition,
+            "window_source":args.window_source,"window_start":ws,"window_end":we,
+            "selector_type":selector_type,"trace_path":None,"rc":result.returncode,
+            "trace_patch_failed":True}
+        manifest_path = os.path.join(args.output_dir, "phase_conditioned_attack_manifest.json")
+        with open(manifest_path, "a") as f:
+            json.dump(manifest, f); f.write("\n")
+        sys.exit(2)
 
     # Write manifest
     manifest = {"task":args.task,"seed":args.seed,"condition":args.condition,
