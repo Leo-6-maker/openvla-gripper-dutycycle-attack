@@ -50,12 +50,23 @@ CSV_FIELDS = [
     'steps', 'pgd_restarts', 'arm_preserve_weight', 'gripper_margin',
     'clean_gripper_token', 'adv_gripper_token', 'gripper_token_flipped',
     'clean_gripper_action', 'adv_gripper_action', 'gripper_delta',
+    'canonical_open',
     'nad_dof7', 'nad_z', 'nad_dof1_3', 'arm_l2',
     'open_region_prob_mass_before', 'open_region_prob_mass_after',
     'gripper_margin_before', 'gripper_margin_after',
     'target_ce_initial', 'target_ce_final',
     'perturbation_linf_processor', 'perturbation_linf_raw',
-    'attack_runtime_sec', 'error',
+    'attack_runtime_sec',
+    'gripper_row_index',
+    'prefix_locked_gripper_loss_present',
+    'prefix_locked_arm_loss_present',
+    'gripper_loss_value',
+    'arm_loss_value',
+    'gripper_open_region_token_count',
+    'canonical_open_semantics_version',
+    'teacher_forced_fallback_used',
+    'restart_selection_metric',
+    'error',
 ]
 
 
@@ -211,6 +222,8 @@ def run_one_attack_with_restarts(model, processor, frame_data, objective,
 
         best_result = None
         best_score = float('-inf')
+        best_metric_label = 'none'
+        _teacher_forced_used = False
         for restart in range(max(1, int(pgd_restarts))):
             restart_seed = 42 + restart * 1000
             attack_cfg = {
@@ -226,7 +239,6 @@ def run_one_attack_with_restarts(model, processor, frame_data, objective,
             if is_prefix_locked:
                 attack_cfg['attack_optimizer']['arm_preserve_weight'] = float(arm_preserve_weight)
                 attack_cfg['attack_optimizer']['gripper_margin'] = float(gripper_margin)
-                attack_cfg['attack_optimizer']['best_restart_metric'] = 'gripper_open_prob_mass'
 
             attacker = TokenPrefixPGDAttacker(
                 model, processor, attack_cfg, seed=restart_seed,
@@ -240,10 +252,30 @@ def run_one_attack_with_restarts(model, processor, frame_data, objective,
                 clean_model_output=clean_gen, unnorm_key=UNNORM_KEY)
 
             debug = attack_result.debug or {}
-            score = float(debug.get('gripper_open_prob_mass',
-                         debug.get('open_region_prob_mass_after', 0.0)) or 0.0)
-            if score > best_score:
-                best_score = score
+
+            # For gripper objectives: restart selection MUST use actual
+            # autoregressive re-decode, NOT teacher-forced open_prob_mass.
+            if is_gripper_obj:
+                _adv_inputs = debug.get('adv_inputs')
+                if _adv_inputs is None:
+                    raise RuntimeError(
+                        f"Restart {restart}: adv_inputs missing for {objective}. "
+                        "Teacher-forced fallback is banned.")
+                _adv_dec = redecode_openvla_action_from_adv_inputs(
+                    model=model, processor=processor, adv_inputs=_adv_inputs,
+                    instruction=instruction, unnorm_key=UNNORM_KEY)
+                _gen_act = np.asarray(_adv_dec.action, dtype=np.float32)
+                _is_open = raw_gripper_is_open(float(_gen_act[-1]))
+                _nad = abs(float(_gen_act[-1]) - float(clean_action[-1]))
+                _arm_l2 = float(np.linalg.norm(_gen_act[:6] - clean_action[:6]))
+                _score = (1.0 if _is_open else 0.0) + 0.01 * _nad - 0.001 * _arm_l2
+                best_metric_label = 'autoregressive_generated_open'
+            else:
+                _score = float(debug.get('target_ce_final', float('inf')))
+                best_metric_label = 'target_ce_final'
+
+            if _score > best_score:
+                best_score = _score
                 best_result = attack_result
 
         attack_result = best_result
@@ -255,6 +287,8 @@ def run_one_attack_with_restarts(model, processor, frame_data, objective,
         adv_action = np.asarray(adv_decoded.action, dtype=np.float32)
         adv_tokens = adv_decoded.token_ids
         debug = attack_result.debug or {}
+
+        _is_canonical_open = raw_gripper_is_open(float(adv_action[-1]))
 
         clean_audit = (debug.get('clean_logit_audit') or {}).get('action_token_logit_audit', [])
         adv_audit = (debug.get('adv_logit_audit') or {}).get('action_token_logit_audit', [])
@@ -279,6 +313,7 @@ def run_one_attack_with_restarts(model, processor, frame_data, objective,
             'clean_gripper_action': float(clean_action[-1]),
             'adv_gripper_action': float(adv_action[-1]),
             'gripper_delta': float(adv_action[-1]) - float(clean_action[-1]),
+            'canonical_open': _is_canonical_open,
             'nad_dof7': abs(float(adv_action[-1]) - float(clean_action[-1])),
             'nad_z': abs(float(adv_action[2]) - float(clean_action[2])),
             'nad_dof1_3': float(np.linalg.norm(adv_action[:3] - clean_action[:3])),
@@ -291,6 +326,16 @@ def run_one_attack_with_restarts(model, processor, frame_data, objective,
             'target_ce_final': debug.get('target_ce_final', None),
             'perturbation_linf_processor': linf_proc,
             'perturbation_linf_raw': round(linf_raw, 4),
+            # Prefix loss debug fields
+            'gripper_row_index': debug.get('gripper_row_index', None),
+            'prefix_locked_gripper_loss_present': debug.get('prefix_locked_gripper_loss_present', None),
+            'prefix_locked_arm_loss_present': debug.get('prefix_locked_arm_loss_present', None),
+            'gripper_loss_value': debug.get('gripper_loss_value', None),
+            'arm_loss_value': debug.get('arm_loss_value', None),
+            'gripper_open_region_token_count': debug.get('gripper_open_region_token_count', None),
+            'canonical_open_semantics_version': debug.get('canonical_open_semantics_version', None),
+            'teacher_forced_fallback_used': _teacher_forced_used,
+            'restart_selection_metric': best_metric_label,
         }
     except Exception as e:
         error = str(e)[:200]

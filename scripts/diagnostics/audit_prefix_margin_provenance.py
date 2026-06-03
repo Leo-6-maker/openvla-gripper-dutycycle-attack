@@ -184,14 +184,14 @@ def _infer_params_from_run_id(run_id, trace_rows):
                 break
 
     if 'window_start' not in info or 'window_end' not in info:
-        for part in parts:
-            if part.startswith('w') and '_' in part[1:]:
-                try:
-                    w_parts = part[1:].split('_')
-                    info['window_start'] = int(w_parts[0])
-                    info['window_end'] = int(w_parts[1])
-                except (ValueError, IndexError):
-                    pass
+        # Regex fallback: handle pre-repair run_ids like
+        #   vis_ketchup_s0_vis_pgd_full_d18_w10_27_seed0_042831
+        # where split('_') breaks w10_27 into w10, 27.
+        import re
+        _wm = re.search(r'_w(\d+)_(\d+)', run_id)
+        if _wm:
+            info['window_start'] = int(_wm.group(1))
+            info['window_end'] = int(_wm.group(2))
 
     if 'objective' not in info:
         info['objective'] = 'unknown'
@@ -573,7 +573,7 @@ def generate_report(provenance_rows, group_summaries, args):
     lines.append(f'- Prior reports used inconsistent predicates; this audit is authoritative.')
     lines.append('')
     lines.append('### Prefix-loss fix')
-    lines.append('- Gripper loss now computed directly from gripper logit row (row_index=-1), independent of labels.')
+    lines.append('- Gripper loss now computed directly from gripper logit row via `action_token_logit_row_index(action_dim-1, action_dim)` (= -2 for action_dim=7), independent of labels.')
     lines.append('- Arm CE computed from `_active_label_rows()` (arm dims only).')
     lines.append('- Loss = gripper_margin + arm_preserve_weight * mean(arm_CEs).')
     lines.append('')
