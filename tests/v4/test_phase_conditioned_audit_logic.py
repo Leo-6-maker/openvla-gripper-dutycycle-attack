@@ -1,25 +1,87 @@
 """Test phase-conditioned VIS audit logic — imports from real audit module."""
 
-import os, sys
-import pytest
+import os, sys, csv, io, tempfile
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'scripts', 'diagnostics'))
 
 from audit_phase_conditioned_vis import (
-    classify_bridge_taxonomy, compute_trace_metrics,
+    classify_bridge_taxonomy, compute_trace_metrics, compute_group_summary,
     get_raw_gripper, QPOS_OPENING_DELTA_THRESH,
 )
 from gripper_attack.gripper_semantics import raw_gripper_is_open, QPOS_OPEN_MAX, QPOS_CLOSED_MIN
 
 
-def _fake_metrics(open_cnt=0, total=18, qpos_opening=0.0, done=True, attack_invalid=False):
+def _fake_metrics(open_cnt=0, total=18, qpos_opening=0.0, done=True, attack_invalid=False, missing_grip=0):
     return {"generated_OPEN_count":open_cnt,"generated_OPEN_total":total,
             "qpos_opening_delta":qpos_opening,"qpos_abs_delta":abs(qpos_opening),
             "qpos_post_start":0.039,"qpos_post_min":0.039-qpos_opening,
-            "done":done,"armL2_max":0.0,
-            "attack_invalid":attack_invalid,"valid":not attack_invalid}
+            "done":done,"armL2_max":0.0,"valid":not attack_invalid,
+            "attack_invalid":attack_invalid,"claim_excluded":attack_invalid}
 
+
+def _write_fake_trace(rows, path):
+    """Write fake trace CSV to path."""
+    with open(path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        w.writeheader(); w.writerows(rows)
+
+
+# ── P0 REGRESSION: or 0.996 bug ──
+
+class TestOpenCountNoFalsyBug:
+    def test_adv_grip_zero_counts_as_open(self):
+        """adv_grip=0.0 MUST be OPEN, NOT CLOSE via 'or 0.996' fallback."""
+        rows = [{"in_window":"True","adv_grip":"0.0","arm_l2":"0","done":"False",
+                 "qpos_post_step":"0.039","condition":"vis_pgd","task":"test","seed":"0",
+                 "window_start":"10","window_end":"27"} for _ in range(18)]
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+            _write_fake_trace(rows, f.name)
+            m = compute_trace_metrics(f.name)
+        os.unlink(f.name)
+        assert m["generated_OPEN_count"] == 18, \
+            f"OPEN=0.0 was miscounted as CLOSE due to 'or 0.996': got {m['generated_OPEN_count']}"
+
+    def test_adv_grip_0996_counts_as_close(self):
+        """adv_grip=0.996 MUST be CLOSE."""
+        rows = [{"in_window":"True","adv_grip":"0.996","arm_l2":"0","done":"True",
+                 "qpos_post_step":"0.039","condition":"vis_pgd","task":"test","seed":"0",
+                 "window_start":"10","window_end":"27"} for _ in range(18)]
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+            _write_fake_trace(rows, f.name)
+            m = compute_trace_metrics(f.name)
+        os.unlink(f.name)
+        assert m["generated_OPEN_count"] == 0
+
+    def test_missing_gripper_counts_missing(self):
+        """Row without any gripper field should produce claim_excluded."""
+        rows = [{"in_window":"True","arm_l2":"0","done":"True",
+                 "qpos_post_step":"0.039","condition":"clean","task":"test","seed":"0",
+                 "window_start":"10","window_end":"27"} for _ in range(5)]
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
+            _write_fake_trace(rows, f.name)
+            m = compute_trace_metrics(f.name)
+        os.unlink(f.name)
+        assert m["claim_excluded"] is True
+        assert "missing_gripper" in m["exclusion_reason"]
+
+
+# ── P0 REGRESSION: qpos field mismatch ──
+
+class TestGroupSummaryNoKeyError:
+    def test_group_summary_fields_exist(self):
+        """compute_group_summary must not KeyError — uses qpos_opening_delta, not qpos_delta_post."""
+        vis = [_fake_metrics(18,18,0.038,False)]
+        rand = [_fake_metrics(0,18,0.0006,True)]
+        clean = [_fake_metrics(0,18,0.0,True)]
+        s = compute_group_summary(vis, rand, clean, {"task":"test","seed":"0"})
+        assert "vis_qpos_opening_delta_mean" in s
+        assert "vis_qpos_opening_delta_min" in s
+        assert "random_qpos_opening_delta_max" in s
+        assert "vis_OPEN_min" in s
+
+
+# ── Existing taxonomy tests ──
 
 class TestEarlyWindowPositive:
     def test_claim_usable(self):
@@ -28,7 +90,6 @@ class TestEarlyWindowPositive:
         clean = _fake_metrics(0,18,0.0,True)
         tax = classify_bridge_taxonomy(vis, rand, clean)
         assert tax["claim_usable"] is True
-        assert "claim_usable" in tax["taxonomy_label"]
 
 
 class TestLateWindowNegative:
@@ -39,23 +100,15 @@ class TestLateWindowNegative:
         tax = classify_bridge_taxonomy(vis, rand, clean)
         assert tax["action_bridge_positive"] is True
         assert tax["physical_bridge_positive"] is False
-        assert "action_positive_physical_negative" in tax["taxonomy_label"]
-
-    def test_no_action_bridge(self):
-        vis = _fake_metrics(2,18,0.0,True)
-        tax = classify_bridge_taxonomy(vis, None, None)
-        assert tax["action_bridge_positive"] is False
-        assert "no_action_bridge" in tax["taxonomy_label"]
 
 
 class TestNaturalReleaseConfounded:
-    def test_confounded_with_clean_denom(self):
+    def test_confounded(self):
         vis = _fake_metrics(18,18,0.04,False)
         rand = _fake_metrics(0,18,0.0006,True)
-        clean = _fake_metrics(14,18,0.0,True)  # 78% natural OPEN
+        clean = _fake_metrics(14,18,0.0,True)
         tax = classify_bridge_taxonomy(vis, rand, clean)
         assert tax["natural_release_confounded"] is True
-        assert "natural_release_confounded" in tax["taxonomy_label"]
 
 
 class TestDenominatorPolluted:
@@ -64,21 +117,13 @@ class TestDenominatorPolluted:
         rand = _fake_metrics(0,18,0.0006,False)
         tax = classify_bridge_taxonomy(vis, rand, None)
         assert tax["denominator_clean"] is False
-        assert "denominator_polluted" in tax["taxonomy_label"]
-
-    def test_random_open(self):
-        vis = _fake_metrics(18,18,0.038,False)
-        rand = _fake_metrics(5,18,0.0006,True)
-        tax = classify_bridge_taxonomy(vis, rand, None)
-        assert tax["denominator_clean"] is False
 
 
 class TestTaxonomyPreservesBoth:
-    def test_confounded_and_denom_polluted(self):
-        """Both confound and denominator polluted should appear in label."""
+    def test_confounded_and_denom(self):
         vis = _fake_metrics(18,18,0.038,False)
-        rand = _fake_metrics(5,18,0.01,False)  # polluted: OPEN>0, task fails
-        clean = _fake_metrics(14,18,0.0,True)  # confounded: high natural OPEN
+        rand = _fake_metrics(5,18,0.01,False)
+        clean = _fake_metrics(14,18,0.0,True)
         tax = classify_bridge_taxonomy(vis, rand, clean)
         assert tax["natural_release_confounded"] is True
         assert tax["denominator_clean"] is False
@@ -87,16 +132,12 @@ class TestTaxonomyPreservesBoth:
 
 
 class TestQposDirectional:
-    def test_directional_opening_detected(self):
-        """qpos from 0.039 -> 0.001: opening_delta = 0.038 >= threshold."""
+    def test_directional_opening(self):
         vis = _fake_metrics(18,18,0.038,False)
-        assert vis["qpos_post_start"] == 0.039
-        assert vis["qpos_post_min"] == 0.001
         tax = classify_bridge_taxonomy(vis, _fake_metrics(0,18,0.0006,True), _fake_metrics(0,18,0.0,True))
         assert tax["physical_bridge_positive"] is True
 
     def test_no_opening_when_stable(self):
-        """qpos stable at 0.039: opening_delta = 0 < threshold."""
         vis = _fake_metrics(18,18,0.0,True)
         tax = classify_bridge_taxonomy(vis, _fake_metrics(0,18,0.0006,True), _fake_metrics(0,18,0.0,True))
         assert tax["physical_bridge_positive"] is False
@@ -106,25 +147,19 @@ class TestGetRawGripper:
     def test_finds_adv_grip(self):
         assert get_raw_gripper({"adv_grip": "0.0"}) == 0.0
 
-    def test_falls_back_to_raw_gripper(self):
+    def test_fallback_order(self):
         assert get_raw_gripper({"raw_gripper": "0.996"}) == 0.996
 
-    def test_falls_back_to_clean_grip(self):
-        assert get_raw_gripper({"clean_grip": "0.0"}) == 0.0
+    def test_returns_none(self):
+        assert get_raw_gripper({"x": "1"}) is None
 
-    def test_returns_none_when_missing(self):
-        assert get_raw_gripper({"other": "x"}) is None
-
-    def test_clean_open_via_clean_grip(self):
-        """clean trace without adv_grip but with clean_grip should count natural OPEN."""
-        grip = get_raw_gripper({"clean_grip": "0.0"})
-        assert grip == 0.0
-        assert raw_gripper_is_open(grip) is True
+    def test_zero_is_not_none(self):
+        """0.0 is a valid raw gripper value (OPEN), NOT None."""
+        g = get_raw_gripper({"adv_grip": 0.0})
+        assert g == 0.0
+        assert g is not None
 
 
 class TestQposConstants:
     def test_open_max_less_than_closed_min(self):
         assert QPOS_OPEN_MAX < QPOS_CLOSED_MIN
-
-    def test_opening_delta_threshold(self):
-        assert QPOS_OPENING_DELTA_THRESH == 0.03

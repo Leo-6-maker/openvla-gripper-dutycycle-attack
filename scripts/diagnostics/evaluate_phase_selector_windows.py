@@ -83,8 +83,16 @@ def main():
             online_feasible = False
 
         if T_eg is None:
-            T_eg = 10  # fallback
-            selector_type += "_fallback"
+            proposals.append({
+                "task":task,"seed":seed,"T_eg":"","window_start":"","window_end":"",
+                "window_policy":args.window_policy,"selector_type":selector_type,
+                "selector_confidence":0.0,"online_feasible":False,
+                "clean_natural_open_ratio":"","natural_release_confounded":"",
+                "phase_overlap_iou":"",
+                "proposal_valid":False,
+                "invalid_reason":"no_grasp_formation_label",
+            })
+            continue
 
         ws = T_eg
         we = min(T_eg + 17, 299) if args.window_policy == "T_to_Tplus17" else min(T_eg + 14, 299)

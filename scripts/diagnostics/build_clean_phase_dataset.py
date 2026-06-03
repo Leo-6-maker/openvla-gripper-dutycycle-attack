@@ -92,13 +92,19 @@ def detect_events(steps):
     if n < 5: return {}, np.full(n,-1,int), np.full(n,-1,int)
 
     # Extract time series
-    env_grip = np.array([_safe_float(s.get("env_gripper", -1.0)) for s in steps])
+    # env_gripper: prefer actual field, fallback to raw_gripper semantics
+    has_env_grip = any(s.get("env_gripper","") not in ("", None) for s in steps)
+    if has_env_grip:
+        env_grip = np.array([_safe_float(s.get("env_gripper", 0.0)) for s in steps])
+        is_close_env = env_grip < 0
+    else:
+        # Fallback: use raw_gripper_is_close semantics (raw >= 0.5 = CLOSE)
+        raw_grip = np.array([_safe_float(s.get("raw_gripper", s.get("adv_grip", 0.996))) for s in steps])
+        is_close_env = np.array([not raw_gripper_is_open(v) for v in raw_grip])
     raw_grip = np.array([_safe_float(s.get("raw_gripper", s.get("adv_grip", 0.996))) for s in steps])
     qpos = np.array([_safe_float(s.get("qpos_post_step", s.get("gripper_qpos", 0.03))) for s in steps])
     eef_z = np.array([_safe_float(s.get("eef_z", 0)) for s in steps])
     done = np.array([parse_bool(s.get("done","False")) for s in steps])
-
-    is_close_env = env_grip < 0       # env_grip < 0 = CLOSE command
     is_open_canon = np.array([raw_gripper_is_open(_safe_float(s.get("raw_gripper", s.get("adv_grip",0.996)))) for s in steps])
     is_open_phys = qpos <= QPOS_OPEN_MAX   # PHYSICAL open
     is_closed_phys = qpos >= QPOS_CLOSED_MIN  # PHYSICAL closed

@@ -19,7 +19,8 @@ except ImportError: raw_gripper_is_open = lambda v: float(v) < 0.5
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--phase-csv", default="tables/phase_alignment_clean_rollouts.csv")
-    ap.add_argument("--detector-score-csv", default=None)
+    ap.add_argument("--detector-score-csv", default=None,
+        help="NOT YET IMPLEMENTED — will raise SystemExit if provided")
     ap.add_argument("--output-csv", default="tables/proprionostep_phase_alignment.csv")
     ap.add_argument("--report", default="reports/VIS_PHASE_ALIGNMENT_AUDIT.md")
     ap.add_argument("--trigger-step", type=int, default=93)
@@ -32,6 +33,10 @@ def main():
         print(f"DRY RUN: audit_proprionostep_phase_alignment trigger_step={args.trigger_step}")
         return
 
+    if args.detector_score_csv:
+        print("FATAL: --detector-score-csv is not yet implemented. Use --trigger-step for manual T_prop.")
+        sys.exit(1)
+
     if not os.path.exists(args.phase_csv):
         print(f"Phase CSV not found: {args.phase_csv}")
         print("Using manual trigger only.")
@@ -41,7 +46,7 @@ def main():
             rows = list(csv.DictReader(f))
 
     T = args.trigger_step
-    trigger_source = "manual" if not args.detector_score_csv else "detector_csv"
+    trigger_source = "manual"
 
     # Group by rollout
     from collections import defaultdict
