@@ -202,15 +202,22 @@ class TestCleanGripFallback:
 
 class TestDuplicateDetection:
     def test_duplicate_vis_triggers_duplicate_flag(self):
-        """Two valid VIS traces in same group should trigger duplicate detection."""
-        vis = [
-            _fake_metrics(18,18,0.038,False),
-            _fake_metrics(18,18,0.037,False),
-        ]
+        vis = [_fake_metrics(18,18,0.038,False), _fake_metrics(18,18,0.037,False)]
         rand = [_fake_metrics(0,18,0.0006,True)]
         clean = [_fake_metrics(0,18,0.0,True)]
         s = compute_group_summary(vis, rand, clean, {"task":"test","seed":"0"})
-        assert s["duplicate_condition_count"] == 1  # vis has duplicate
+        assert s["duplicate_condition_count"] == 1
+        assert s["claim_usable"] is False
+        assert "duplicate_runs_present" in s["taxonomy_label"]
+
+    def test_duplicate_with_physical_negative(self):
+        """Duplicate VIS with one physical-negative → physical_bridge=False."""
+        vis = [_fake_metrics(18,18,0.038,False), _fake_metrics(18,18,0.0001,False)]
+        rand = [_fake_metrics(0,18,0.0006,True)]
+        clean = [_fake_metrics(0,18,0.0,True)]
+        s = compute_group_summary(vis, rand, clean, {"task":"test","seed":"0"})
+        assert s["vis_physical_bridge"] is False  # min opening = 0.0001 < 0.03
+        assert s["claim_usable"] is False
 
     def test_no_duplicate_when_single_each(self):
         vis = [_fake_metrics(18,18,0.038,False)]

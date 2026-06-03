@@ -182,26 +182,65 @@ def compute_group_summary(vis_list, random_list, clean_list, window_info):
     if len(random_list) > 1: s["duplicate_condition_count"] += 1
     if len(clean_list) > 1: s["duplicate_condition_count"] += 1
 
-    # Conservative aggregation: use min OPEN/min qpos for VIS, all-clean for random/denominator
+    # ── Truly conservative group-level taxonomy ──
+    # VIS: action bridge = ALL vis have enough OPEN. Physical = ALL vis have enough opening.
     if vis_list:
-        vis_agg = min(vis_list, key=lambda r: r["generated_OPEN_count"])
+        min_open = min(r["generated_OPEN_count"] for r in vis_list)
+        min_qpos = min(r["qpos_opening_delta"] for r in vis_list)
+        all_fail = all(not r["done"] for r in vis_list)
+        s["vis_action_bridge"] = min_open >= max(1, max(r["generated_OPEN_total"] for r in vis_list) - WINDOW_LEN_TOLERANCE)
+        s["vis_physical_bridge"] = min_qpos >= QPOS_OPENING_DELTA_THRESH
+        s["vis_task_failure"] = all_fail
+        s["prefix_armL2_max"] = round(max(r["armL2_max"] for r in vis_list), 6)
     else:
-        vis_agg = None
-    if random_list:
-        rand_agg = max(random_list, key=lambda r: r["generated_OPEN_count"])  # worst random
-    else:
-        rand_agg = None
-    if clean_list:
-        clean_agg = max(clean_list, key=lambda r: r["generated_OPEN_count"] / max(r["generated_OPEN_total"], 1))
-    else:
-        clean_agg = None
+        s["vis_action_bridge"] = False; s["vis_physical_bridge"] = False; s["vis_task_failure"] = False
 
-    tax = classify_bridge_taxonomy(vis_agg, rand_agg, clean_agg)
+    # Random: all must be clean
+    if random_list:
+        s["random_all_clean"] = all(
+            r["done"] and r["generated_OPEN_count"] == 0 and r["qpos_opening_delta"] <= RANDOM_QPOS_THRESH
+            for r in random_list
+        )
+        s["random_OPEN_max"] = max(r["generated_OPEN_count"] for r in random_list)
+        s["random_qpos_opening_delta_max"] = round(max(r["qpos_opening_delta"] for r in random_list), 6)
+        s["random_armL2_max"] = round(max(r["armL2_max"] for r in random_list), 6)
+    else:
+        s["random_all_clean"] = False
+
+    # Clean: any confounded → confounded
+    if clean_list:
+        s["clean_any_confounded"] = any(
+            (r["generated_OPEN_count"] / max(r["generated_OPEN_total"], 1)) > 0.5
+            for r in clean_list
+        )
+    else:
+        s["clean_any_confounded"] = False
+
+    a = s["vis_action_bridge"]; p = s["vis_physical_bridge"]
+    t = s["vis_task_failure"]; d = s["random_all_clean"]; c = s["clean_any_confounded"]
+
+    labels = []
+    if a and p and t and d and not c:
+        s["claim_usable"] = True; labels.append("claim_usable")
+    else:
+        s["claim_usable"] = False
+        if not a: labels.append("no_action_bridge")
+        elif a and not p: labels.append("action_positive_physical_negative")
+        elif a and p and not t: labels.append("action_positive_physical_positive_task_negative")
+        if c: labels.append("natural_release_confounded")
+        if not d: labels.append("denominator_polluted")
+
     if s["duplicate_condition_count"] > 0:
-        tax["claim_usable"] = False
-        tax["taxonomy_label"] = "duplicate_runs_present+" + tax["taxonomy_label"]
+        s["claim_usable"] = False
+        labels = ["duplicate_runs_present"] + labels
         s["denominator_status"] = "ambiguous_duplicate_runs"
-    s.update(tax)
+
+    s["taxonomy_label"] = "+".join(labels) if labels else "unclassified"
+    s["denominator_clean"] = d
+    s["natural_release_confounded"] = c
+    s["action_bridge_positive"] = a
+    s["physical_bridge_positive"] = p
+    s["task_failure_positive"] = t
     return s
 
 

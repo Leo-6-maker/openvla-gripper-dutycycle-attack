@@ -64,6 +64,18 @@ def _safe_float(v, default=0.0):
     except (ValueError, TypeError): return default
 
 
+def get_numeric(row, *keys, default=None):
+    """Extract numeric value with fallback keys. Returns default if all missing."""
+    _nan = float('nan') if np is None else np.nan
+    d = _nan if default is None else default
+    for k in keys:
+        v = row.get(k, "")
+        if v not in ("", None):
+            try: return float(v)
+            except (ValueError, TypeError): pass
+    return d
+
+
 def _finite_diff(arr):
     """Compute finite differences, padding first element with 0."""
     if len(arr) < 2: return np.zeros_like(arr)
@@ -118,8 +130,11 @@ def detect_events(steps):
 
     # raw_grip: use explicit None (not 0.996 fallback — OPEN=0.0 must stay 0.0)
     raw_grip = np.array([get_raw_gripper(s) for s in steps])  # None where missing
-    qpos = np.array([_safe_float(s.get("qpos_post_step", s.get("gripper_qpos", 0.03))) for s in steps])
-    eef_z = np.array([_safe_float(s.get("eef_z", 0)) for s in steps])
+    qpos = np.array([get_numeric(s, "qpos_post_step", "gripper_qpos") for s in steps])
+    eef_z = np.array([get_numeric(s, "eef_z") for s in steps])
+    _nan_check = np.isnan if np is not None else (lambda x: [v != v for v in x])
+    qpos_missing = _nan_check(qpos)
+    has_qpos = not np.all(qpos_missing)
     done = np.array([parse_bool(s.get("done","False")) for s in steps])
     # is_open_canon: use get_raw_gripper helper, None → not-open (conservative)
     is_open_canon = np.array([
@@ -276,8 +291,17 @@ def main():
         features = _build_feature_columns(steps)
 
         _has_grip = any(get_raw_gripper(s) is not None for s in steps)
-        _validity = "incomplete_missing_gripper" if not _has_grip else \
-            ("heuristic" if events.get("T_grasp_formation_start") is not None else "incomplete")
+        _nan = np.isnan if np is not None else (lambda x: [v != v for v in x])
+        _qpos_arr = qpos if 'qpos' in dir() else np.array([])
+        _has_qpos = len(_qpos_arr) > 0 and not np.all(_nan(_qpos_arr))
+        _qpos_partial = _has_qpos and np.any(_nan(_qpos_arr))
+
+        if not _has_grip: _validity = "incomplete_missing_gripper"
+        elif not _has_qpos: _validity = "incomplete_missing_qpos"
+        elif _qpos_partial: _validity = "partial_missing_qpos"
+        elif events.get("T_grasp_formation_start") is None: _validity = "incomplete_no_grasp_formation"
+        else: _validity = "heuristic"
+
         summaries.append({"task":task,"seed":seed,"rollout_id":Path(tp).stem,
             "trace_path":tp,**{k: v if v is not None else "" for k,v in events.items()},
             "label_validity": _validity})
@@ -295,7 +319,7 @@ def main():
                 "T_grasp_lock":events.get("T_grasp_lock",""),"T_lift_start":events.get("T_lift_start",""),
                 "T_release_start":events.get("T_release_start",""),"T_done":events.get("T_done",""),
                 "label_confidence":"medium","label_source":"heuristic",
-                "label_validity":"heuristic" if events.get("T_grasp_formation_start") is not None else "incomplete",
+                "label_validity": _validity,
             }
             for k in RUNTIME_FEATURES:
                 row[f"feat_{k}"] = feats.get(k, "")

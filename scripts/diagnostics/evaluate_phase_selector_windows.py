@@ -78,6 +78,12 @@ def main():
         rid = r.get("rollout_id", f"{r.get('task','?')}_{r.get('seed','?')}")
         rollouts[rid].append(r)
 
+    PROPOSAL_FIELDS = [
+        "task","seed","T_eg","window_start","window_end","window_policy",
+        "selector_type","selector_confidence","online_feasible",
+        "clean_natural_open_ratio","natural_release_confounded","phase_overlap_iou",
+        "proposal_valid","invalid_reason",
+    ]
     proposals = []
     for rid, rlist in rollouts.items():
         r0 = rlist[0]; task = r0.get("task","?"); seed = r0.get("seed","?")
@@ -145,14 +151,23 @@ def main():
             "clean_natural_open_ratio":round(clean_ratio,4),
             "natural_release_confounded":clean_ratio > 0.5,
             "phase_overlap_iou":iou,
+            "proposal_valid":True,"invalid_reason":"",
         })
+
+    if not proposals:
+        print("ERROR: no proposals generated — check phase CSV or task/seed match.")
+        sys.exit(1)
 
     os.makedirs(os.path.dirname(args.output_csv) or ".", exist_ok=True)
     with open(args.output_csv,"w",newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(proposals[0].keys())); w.writeheader(); w.writerows(proposals)
+        w = csv.DictWriter(f, fieldnames=PROPOSAL_FIELDS, extrasaction="ignore")
+        w.writeheader(); w.writerows(proposals)
     print(f"Wrote {len(proposals)} proposals to {args.output_csv}")
     for p in proposals:
-        print(f"  {p['task']} seed{p['seed']}: T_eg={p['T_eg']} [{p['window_start']}-{p['window_end']}] confounded={p['natural_release_confounded']} IoU={p['phase_overlap_iou']}")
+        valid = str(p.get("proposal_valid",""))
+        reason = p.get("invalid_reason","")
+        tag = f"[{reason}]" if reason else ""
+        print(f"  {p['task']} seed{p['seed']}: T_eg={p.get('T_eg','?')} [{p.get('window_start','?')}-{p.get('window_end','?')}] valid={valid} {tag}")
 
 
 if __name__ == "__main__":
