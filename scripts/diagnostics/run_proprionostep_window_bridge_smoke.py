@@ -57,7 +57,11 @@ class CausalTCN(torch.nn.Module):
 class OnlineDetector:
     def __init__(self, model_path, device="cpu", hazard_th=0.1, trig_dur=5, cooldown=0):
         self.model = CausalTCN(N_PROPRIO, HIDDEN_DIM, 8, TCN_LAYERS).to(device)
-        self.model.load_state_dict(torch.load(model_path, map_location=device))
+        ckpt = torch.load(model_path, map_location=device)
+        if "model_state" in ckpt:
+            self.model.load_state_dict(ckpt["model_state"])
+        else:
+            self.model.load_state_dict(ckpt)
         self.model.eval()
         self.device = device; self.hazard_th = hazard_th
         self.trig_dur = trig_dur; self.cooldown = cooldown
