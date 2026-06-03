@@ -112,6 +112,8 @@ def detect_events(steps):
     OPEN: qpos LOW (near 0), CLOSE: qpos HIGH (near 0.039).
     """
     n = len(steps)
+    if np is None:
+        raise RuntimeError("numpy is required for detect_events — install numpy on this environment")
     if n < 5: return {}, np.full(n,-1,int), np.full(n,-1,int)
 
     # Extract time series
@@ -197,9 +199,17 @@ def detect_events(steps):
 
     T_dn = next((i for i in range(n) if done[i]), None)
 
+    # qpos validity: track missing/partial for downstream label_validity
+    qpos_missing_count = int(np.sum(qpos_missing)) if np is not None else sum(1 for v in qpos if v != v)
     events = {"T_gripper_close_onset":T_close,"T_grasp_formation_start":T_gform,
               "T_grasp_lock":T_lock,"T_lift_start":T_lift,
-              "T_release_start":T_rel,"T_done":T_dn,"n_steps":n}
+              "T_release_start":T_rel,"T_done":T_dn,"n_steps":n,
+              "qpos_missing_count": qpos_missing_count,
+              "qpos_total_count": int(n),
+              "has_qpos": bool(not np.all(qpos_missing)),
+              "qpos_partial_missing": bool(not np.all(qpos_missing) and np.any(qpos_missing)),
+              "qpos_all_missing": bool(np.all(qpos_missing)),
+    }
 
     # Per-step labels
     ph6 = np.full(n, -1, int)
@@ -224,10 +234,10 @@ def _build_feature_columns(steps):
     Uses get_raw_gripper helper for consistent clean_grip fallback."""
     n = len(steps)
     raw_grip = np.array([get_raw_gripper(s) if get_raw_gripper(s) is not None else np.nan for s in steps])
-    qpos_vals = np.array([_safe_float(s.get("qpos_post_step", s.get("gripper_qpos",""))) for s in steps])
-    eef_x = np.array([_safe_float(s.get("eef_x","")) for s in steps])
-    eef_y = np.array([_safe_float(s.get("eef_y","")) for s in steps])
-    eef_z = np.array([_safe_float(s.get("eef_z","")) for s in steps])
+    qpos_vals = np.array([get_numeric(s, "qpos_post_step", "gripper_qpos") for s in steps])
+    eef_x = np.array([get_numeric(s, "eef_x") for s in steps])
+    eef_y = np.array([get_numeric(s, "eef_y") for s in steps])
+    eef_z = np.array([get_numeric(s, "eef_z") for s in steps])
 
     eef_vx = _finite_diff(eef_x); eef_vy = _finite_diff(eef_y); eef_vz = _finite_diff(eef_z)
 
@@ -242,10 +252,11 @@ def _build_feature_columns(steps):
 
     features = {}
     for i in range(n):
-        grip_val = raw_grip[i] if not np.isnan(raw_grip[i]) else ""
+        grip_val = raw_grip[i] if not (np.isnan(raw_grip[i]) if np is not None else raw_grip[i] != raw_grip[i]) else ""
+        qpos_val = qpos_vals[i] if not (np.isnan(qpos_vals[i]) if np is not None else qpos_vals[i] != qpos_vals[i]) else ""
         feats = {
             "gripper_command": grip_val,
-            "gripper_qpos": qpos_vals[i],
+            "gripper_qpos": qpos_val,
             "gripper_width": width[i] if width[i] != 0 else "",
             "eef_x": eef_x[i], "eef_y": eef_y[i], "eef_z": eef_z[i],
             "eef_vx": eef_vx[i], "eef_vy": eef_vy[i], "eef_vz": eef_vz[i],
@@ -291,13 +302,12 @@ def main():
         features = _build_feature_columns(steps)
 
         _has_grip = any(get_raw_gripper(s) is not None for s in steps)
-        _nan = np.isnan if np is not None else (lambda x: [v != v for v in x])
-        _qpos_arr = qpos if 'qpos' in dir() else np.array([])
-        _has_qpos = len(_qpos_arr) > 0 and not np.all(_nan(_qpos_arr))
-        _qpos_partial = _has_qpos and np.any(_nan(_qpos_arr))
+        _has_qpos = bool(events.get("has_qpos", True))
+        _qpos_partial = bool(events.get("qpos_partial_missing", False))
+        _qpos_all_missing = bool(events.get("qpos_all_missing", False))
 
         if not _has_grip: _validity = "incomplete_missing_gripper"
-        elif not _has_qpos: _validity = "incomplete_missing_qpos"
+        elif _qpos_all_missing: _validity = "incomplete_missing_qpos"
         elif _qpos_partial: _validity = "partial_missing_qpos"
         elif events.get("T_grasp_formation_start") is None: _validity = "incomplete_no_grasp_formation"
         else: _validity = "heuristic"
