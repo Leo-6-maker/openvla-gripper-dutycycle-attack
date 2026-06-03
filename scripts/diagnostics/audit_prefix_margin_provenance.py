@@ -373,6 +373,7 @@ GROUP_SUMMARY_FIELDS = [
     'code_status',
     'n_runs', 'n_valid', 'n_invalid',
     'valid_unique_seed_count',
+    'prefix_unique_seed_count', 'random_unique_seed_count',
     'prefix_fail', 'prefix_success',
     'random_fail', 'random_success',
     'canonical_open_min', 'canonical_open_max',
@@ -386,6 +387,7 @@ GROUP_SUMMARY_FIELDS = [
     'denominator_detail',
     'claim_eligible',
     'claim_caveats',
+    'supporting_eligible',
     'failure_phase_mode',
     'claim_readiness',
 ]
@@ -476,29 +478,118 @@ def _compute_group_summary(rows):
             s['denominator_status'] = 'polluted'
             s['denominator_detail'] = 'random fails or produces OPEN — VIS-specific claim unsupported'
 
-        # ── Claim eligibility ──
-        claim_eligible = True
-        caveats = []
-        if s['prefix_fail'] == 0:
-            claim_eligible = False
-            caveats.append('no prefix failure')
-        if s['denominator_status'] not in ('clean', 'minor_contamination'):
-            claim_eligible = False
-            caveats.append(f'denominator {s["denominator_status"]}')
-        if s.get('code_status') == 'pre_repair':
-            claim_eligible = False
-            caveats.append('pre-repair code — OPEN semantics and prefix loss not canonical')
-        s['claim_eligible'] = claim_eligible
-        s['claim_caveats'] = '; '.join(caveats) if caveats else 'none'
+        # ── Per-condition unique seed counts ──
+        _pseeds = set()
+        for r in prefix:
+            sv = r.get('seed')
+            if sv is not None:
+                _pseeds.add(sv)
+        s['prefix_unique_seed_count'] = len(_pseeds)
+
+        _rseeds = set()
+        for r in randoms:
+            sv = r.get('seed')
+            if sv is not None:
+                _rseeds.add(sv)
+        s['random_unique_seed_count'] = len(_rseeds)
 
         # Failure phase mode
         phases = [r.get('failure_phase_auto', 'unknown') for r in prefix if not r.get('official_done', True)]
         if phases:
             s['failure_phase_mode'] = max(set(phases), key=phases.count)
 
+        # ── Claim eligibility (strict post-repair gates) ──
+        # Primary claim: ketchup 10-27 eps6. Supporting: 20-37.
+        # These thresholds are specific to the 18-step ketchup window.
+        _window_steps = int(s.get('window_end', 0)) - int(s.get('window_start', 0)) + 1
+        _is_supporting = int(s.get('window_start', 0)) == 20
+        OPEN_THRESHOLD = max(1, _window_steps - 2)  # >= 16 for 18-step window
+
+        claim_eligible = True
+        caveats = []
+
+        # Code must be post-repair
+        if s.get('code_status') != 'post_repair':
+            claim_eligible = False
+            caveats.append('pre-repair code — OPEN semantics and prefix loss not canonical')
+
+        # Seed count gates
+        if s.get('prefix_unique_seed_count', 0) < 4:
+            claim_eligible = False
+            caveats.append(f'prefix unique seeds={s.get("prefix_unique_seed_count", 0)} < 4')
+        if s.get('random_unique_seed_count', 0) < 6:
+            claim_eligible = False
+            caveats.append(f'random unique seeds={s.get("random_unique_seed_count", 0)} < 6')
+
+        # Prefix must fail (>= 4 seeds for primary, >= 3 for supporting)
+        _min_prefix_fail = 3 if _is_supporting else 4
+        if s['prefix_fail'] < _min_prefix_fail:
+            claim_eligible = False
+            caveats.append(f'prefix_fail={s["prefix_fail"]} < {_min_prefix_fail}')
+
+        # Random must all succeed
+        if s['random_fail'] > 0:
+            claim_eligible = False
+            caveats.append(f'random_fail={s["random_fail"]} > 0')
+
+        # Denominator must be clean
+        if s['denominator_status'] not in ('clean',):
+            claim_eligible = False
+            caveats.append(f'denominator={s["denominator_status"]}')
+
+        # Random OPEN must be 0
+        if s.get('all_random_open_zero') is not True:
+            claim_eligible = False
+            caveats.append('random OPEN not all-zero')
+
+        # Prefix OPEN count must meet threshold
+        _open_min = s.get('canonical_open_min', 0) or 0
+        if _open_min < OPEN_THRESHOLD:
+            claim_eligible = False
+            caveats.append(f'prefix OPEN min={_open_min} < {OPEN_THRESHOLD}')
+
+        # qpos must show physical opening
+        _qpos_min = s.get('qpos_delta_post_min')
+        if _qpos_min is None or _qpos_min < 0.03:
+            claim_eligible = False
+            caveats.append(f'qpos_delta_post_min={_qpos_min} < 0.03 (no physical opening)')
+
+        # armL2 must be near-zero
+        _arm_max = s.get('armL2_max')
+        if _arm_max is None or _arm_max > 1e-6:
+            claim_eligible = False
+            caveats.append(f'armL2_max={_arm_max} > 1e-6 (arm drift present)')
+
+        # Failure phase must be early_grasp_disruption
+        if s.get('failure_phase_mode') != 'early_grasp_disruption':
+            claim_eligible = False
+            caveats.append(f'failure_phase={s.get("failure_phase_mode")} != early_grasp_disruption')
+
+        s['claim_eligible'] = claim_eligible
+        s['claim_caveats'] = '; '.join(caveats) if caveats else 'none'
+
+        # Supporting eligibility: relaxed version for 20-37 window
+        s['supporting_eligible'] = False
+        if not claim_eligible and _is_supporting:
+            _sup_ok = True
+            _sup_caveats = []
+            if s.get('prefix_unique_seed_count', 0) < 3:
+                _sup_ok = False
+            if s.get('random_unique_seed_count', 0) < 3:
+                _sup_ok = False
+            if s['prefix_fail'] < 2:
+                _sup_ok = False
+            if s.get('all_random_open_zero') is not True:
+                _sup_ok = False
+            if s.get('denominator_status') not in ('clean', 'minor_contamination'):
+                _sup_ok = False
+            s['supporting_eligible'] = _sup_ok
+
         # Claim readiness (derived from claim_eligible)
         if s['claim_eligible']:
-            s['claim_readiness'] = 'admissible_for_claim'
+            s['claim_readiness'] = 'admissible_for_primary_claim'
+        elif s.get('supporting_eligible'):
+            s['claim_readiness'] = 'admissible_for_supporting_claim'
         elif s['prefix_fail'] > 0:
             s['claim_readiness'] = 'denominator_polluted_or_missing_controls'
         else:
