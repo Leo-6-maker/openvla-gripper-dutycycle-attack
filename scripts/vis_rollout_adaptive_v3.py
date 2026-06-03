@@ -239,7 +239,7 @@ def decode_image(img_np, instruction):
 
 def run_pgd_attack(img_np, instruction, clean_action, clean_gen, seed):
     target_action = np.asarray(clean_action, dtype=np.float32).copy()
-    target_action[-1] = 1.0  # OPEN gripper (raw ~1.0 → most-open bin after normalization)
+    target_action[-1] = 1.0  # CLOSE-end of bin range (raw ~1.0); prefix-locked masks gripper label to -100 anyway, loss uses corrected OPEN region
     if ATTACK_OBJECTIVE == 'force_open_z_down_token_ce':
         # DEPRECATED: target_action[-1]=1.0 may map to CLOSE in decoded-action space.
         # Use force_open_region_z_down_ce for corrected hybrid with OPEN-region gripper loss.
@@ -502,6 +502,11 @@ while t < max_steps + num_steps_wait:
     nad_dof1_3 = float(np.linalg.norm(raw_action[:3] - clean_action_vec[:3])) if clean_action_vec is not None else 0.0
     trace_rows.append({
         'task': args.task, 'condition': args.condition, 'seed': args.seed,
+        'state_id': state_id, 'objective': ATTACK_OBJECTIVE,
+        'eps_raw_pixels': EPS_RAW_PIXELS, 'eps_processor': round(EPS, 6),
+        'window_start': ws, 'window_end': we,
+        'semantics_version': CANONICAL_OPEN_SEMANTICS_VERSION,
+        'trace_generated_by_repaired_runner': True,
         'step': t, 'policy_step': policy_step, 'in_window': in_window,
         'attack_attempted': attack_attempted, 'attack_invalid': attack_invalid,
         'attack_invalid_reason': attack_invalid_reason, 'attack_invalid_detail': attack_invalid_detail,

@@ -553,7 +553,7 @@ class TokenPrefixPGDAttacker:
                 dim = int(label_pos.item()) - action_start
                 if dim < 0 or dim >= action_dim:
                     continue
-                row_index = -(action_dim - dim + 1)
+                row_index = action_token_logit_row_index(dim, action_dim)
                 if abs(row_index) > int(logits.shape[1]):
                     continue
                 row = logits[int(b.item()), row_index, :]

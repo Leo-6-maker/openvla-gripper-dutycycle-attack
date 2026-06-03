@@ -122,63 +122,82 @@ def _parse_run_id_from_filename(trace_path):
 
 
 def _infer_params_from_run_id(run_id, trace_rows):
-    """Infer experiment parameters from run_id and trace rows."""
+    """Infer experiment parameters from trace rows (primary) or run_id (fallback).
+
+    Post-repair traces write objective/eps/window/state_id directly into each row.
+    Pre-repair traces don't — fall back to filename heuristics.
+    """
     info = {'run_id': run_id}
 
-    # Extract task from run_id prefix
+    # ── Primary: read from trace rows (post-repair or v2+ schema) ──
+    if trace_rows:
+        r0 = trace_rows[0]
+        for key in ('task', 'condition', 'seed', 'state_id', 'objective',
+                     'eps_raw_pixels', 'window_start', 'window_end'):
+            if key in r0:
+                try:
+                    val = r0[key]
+                    info[key] = int(val) if key in ('seed', 'state_id',
+                        'eps_raw_pixels', 'window_start', 'window_end') else str(val)
+                except (ValueError, TypeError):
+                    info[key] = str(val)
+
+    # ── Fallback: filename heuristics (pre-repair traces) ──
     parts = run_id.split('_')
-    if len(parts) >= 2 and parts[0] == 'vis':
-        info['task'] = '_'.join(parts[1:3]) if parts[1] in ('cream', 'salad', 'ketchup', 'tomato') else parts[1]
-        if info['task'].startswith('cream_cheese'):
-            info['task'] = 'cream_cheese'
-        elif info['task'].startswith('salad_dressing'):
-            info['task'] = 'salad_dressing'
-        elif info['task'].startswith('tomato_sauce'):
-            info['task'] = 'tomato_sauce'
-        elif info['task'].startswith('ketchup'):
-            info['task'] = 'ketchup'
 
-    # Infer condition
-    info['condition'] = 'unknown'
-    if 'vis_pgd' in run_id:
-        info['condition'] = 'vis_pgd'
-    elif 'random_linf' in run_id or '_random_' in run_id:
-        info['condition'] = 'random_linf'
-    elif 'clean' in run_id:
-        info['condition'] = 'clean'
+    if 'task' not in info or not info.get('task'):
+        if len(parts) >= 2 and parts[0] == 'vis':
+            info['task'] = '_'.join(parts[1:3]) if parts[1] in ('cream', 'salad', 'ketchup', 'tomato') else parts[1]
+            if info.get('task', '').startswith('cream_cheese'):
+                info['task'] = 'cream_cheese'
+            elif info.get('task', '').startswith('salad_dressing'):
+                info['task'] = 'salad_dressing'
+            elif info.get('task', '').startswith('tomato_sauce'):
+                info['task'] = 'tomato_sauce'
+            elif info.get('task', '').startswith('ketchup'):
+                info['task'] = 'ketchup'
 
-    # Infer state_id
-    info['state_id'] = 0
-    for part in parts:
-        if part.startswith('s') and len(part) >= 2 and part[1:].isdigit():
-            info['state_id'] = int(part[1:])
-            break
+    if 'condition' not in info or not info.get('condition'):
+        info['condition'] = 'unknown'
+        if 'vis_pgd' in run_id:
+            info['condition'] = 'vis_pgd'
+        elif 'random_linf' in run_id or '_random_' in run_id:
+            info['condition'] = 'random_linf'
+        elif 'clean' in run_id:
+            info['condition'] = 'clean'
 
-    # Infer seed
-    info['seed'] = 0
-    for part in parts:
-        if part.startswith('seed'):
-            info['seed'] = int(part[4:])
-            break
+    if 'state_id' not in info:
+        info['state_id'] = 0
+        for part in parts:
+            if part.startswith('s') and len(part) >= 2 and part[1:].isdigit():
+                info['state_id'] = int(part[1:])
+                break
 
-    # Infer window from run_id (w10_27 format)
-    for part in parts:
-        if part.startswith('w') and '_' in part[1:]:
-            try:
-                w_parts = part[1:].split('_')
-                info['window_start'] = int(w_parts[0])
-                info['window_end'] = int(w_parts[1])
-            except (ValueError, IndexError):
-                pass
+    if 'seed' not in info:
+        info['seed'] = 0
+        for part in parts:
+            if part.startswith('seed'):
+                try:
+                    info['seed'] = int(part[4:])
+                except ValueError:
+                    pass
+                break
 
-    # Infer duration from run_id (d18 format)
-    for part in parts:
-        if part.startswith('d') and part[1:].isdigit():
-            info['eps_raw_pixels'] = None  # duration tag, not eps
-            break
+    if 'window_start' not in info or 'window_end' not in info:
+        for part in parts:
+            if part.startswith('w') and '_' in part[1:]:
+                try:
+                    w_parts = part[1:].split('_')
+                    info['window_start'] = int(w_parts[0])
+                    info['window_end'] = int(w_parts[1])
+                except (ValueError, IndexError):
+                    pass
 
-    # Infer objective (may not be in filename for older runs)
-    info['objective'] = 'unknown'
+    if 'objective' not in info:
+        info['objective'] = 'unknown'
+
+    if 'eps_raw_pixels' not in info:
+        info['eps_raw_pixels'] = ''
 
     return info
 
@@ -227,21 +246,24 @@ def _compute_provenance(trace_rows, trace_path, info):
     row['trace_path'] = trace_path
 
     # ── Provenance separation fields ──
-    # Detect whether trace was generated by repaired or pre-repair runner.
-    # Key heuristics:
-    #   - Post-repair traces have both qpos_post_step AND env_gripper columns
-    #   - Post-repair run_id contains a semantics_version marker (future)
-    #   - Pre-repair traces have at most v1 or v2 schema
-    _has_qpos_post = any('qpos_post_step' in r for r in trace_rows)
-    _has_env_grip = any('env_gripper' in r for r in trace_rows)
-    _has_both = _has_qpos_post and _has_env_grip
-    row['code_status'] = 'pre_repair'  # default; override for post-repair traces
+    # Post-repair traces contain trace_generated_by_repaired_runner=True in every row.
+    _is_repaired = any(
+        parse_bool(r.get('trace_generated_by_repaired_runner', 'False'))
+        for r in trace_rows
+    )
+    row['code_status'] = 'post_repair' if _is_repaired else 'pre_repair'
+    row['trace_generated_by_repaired_runner'] = _is_repaired
+    # Read attacker semantic version from trace if present
+    _semver = None
+    for r in trace_rows:
+        if r.get('semantics_version'):
+            _semver = str(r['semantics_version'])
+            break
+    row['semantics_version'] = _semver or CANONICAL_OPEN_SEMANTICS_VERSION
+    row['prefix_loss_version'] = 'repaired_direct_row_v2' if _is_repaired else 'pre_repair_label_based'
+    row['teacher_forced_fallback_allowed'] = not _is_repaired
     row['attack_adapter_commit'] = 'unknown'
     row['runner_commit'] = 'unknown'
-    row['semantics_version'] = CANONICAL_OPEN_SEMANTICS_VERSION  # canonical version used for THIS audit
-    row['prefix_loss_version'] = 'pre_repair_label_based'
-    row['teacher_forced_fallback_allowed'] = True  # default for pre-repair
-    row['trace_generated_by_repaired_runner'] = False  # default; set True for post-repair
 
     # Schema version detection
     has_qpos_post = any('qpos_post_step' in r for r in trace_rows)
@@ -257,7 +279,13 @@ def _compute_provenance(trace_rows, trace_path, info):
 
     # Window analysis
     window_rows = [r for r in trace_rows if parse_bool(r.get('in_window', 'False'))]
-    attacked_rows = [r for r in window_rows if parse_bool(r.get('pgd_applied', 'False'))]
+    # For PGD conditions, attacked_rows = pgd_applied=True within window.
+    # For random_linf / clean, use all window_rows as effective rows for qpos tracking.
+    is_pgd_condition = row.get('condition') in ('vis_pgd',)
+    if is_pgd_condition:
+        effective_rows = [r for r in window_rows if parse_bool(r.get('pgd_applied', 'False'))]
+    else:
+        effective_rows = list(window_rows)  # random/clean: all in-window steps
 
     # Canonical OPEN count (using repaired semantics: raw_gripper < 0.5 = OPEN)
     row['generated_open_count_canonical'] = sum(
@@ -268,10 +296,10 @@ def _compute_provenance(trace_rows, trace_path, info):
         row['generated_open_count_canonical'] / max(row['generated_open_total'], 1), 4)
     row['generated_open_predicate_version'] = CANONICAL_OPEN_SEMANTICS_VERSION
 
-    # qpos metrics
-    if attacked_rows:
-        qpos_pre_vals = [float(r['qpos_pre_step']) for r in attacked_rows if 'qpos_pre_step' in r]
-        qpos_post_vals = [float(r['qpos_post_step']) for r in attacked_rows if 'qpos_post_step' in r]
+    # qpos metrics (from effective rows)
+    if effective_rows:
+        qpos_pre_vals = [float(r['qpos_pre_step']) for r in effective_rows if 'qpos_pre_step' in r]
+        qpos_post_vals = [float(r['qpos_post_step']) for r in effective_rows if 'qpos_post_step' in r]
 
         if qpos_pre_vals:
             row['qpos_pre_start'] = round(qpos_pre_vals[0], 6)
@@ -291,7 +319,7 @@ def _compute_provenance(trace_rows, trace_path, info):
             row['invalid_reason'] = (row.get('invalid_reason', '') + '; missing qpos_post_step').strip('; ')
     else:
         row['validity'] = 'schema_incomplete'
-        row['invalid_reason'] = (row.get('invalid_reason', '') + '; no attacked rows').strip('; ')
+        row['invalid_reason'] = (row.get('invalid_reason', '') + '; no effective rows').strip('; ')
 
     # Arm L2
     arm_l2_vals = [float(r['arm_l2']) for r in window_rows if 'arm_l2' in r]
@@ -323,19 +351,24 @@ def _compute_provenance(trace_rows, trace_path, info):
 
 
 def _group_key(row):
+    """Group by experiment config, NOT by condition.
+
+    Prefix and random conditions must appear in the same group so
+    denominator_status and claim_eligible can be computed correctly.
+    """
     return (
         row.get('task', 'unknown'),
         row.get('state_id', 0),
-        row.get('condition', 'unknown'),
         row.get('objective', 'unknown'),
         row.get('eps_raw_pixels', ''),
         row.get('window_start', ''),
         row.get('window_end', ''),
+        row.get('code_status', 'pre_repair'),
     )
 
 
 GROUP_SUMMARY_FIELDS = [
-    'task', 'state_id', 'condition', 'objective',
+    'task', 'state_id', 'objective',
     'eps_raw_pixels', 'window_start', 'window_end',
     'code_status',
     'n_runs', 'n_valid', 'n_invalid',
@@ -505,17 +538,21 @@ def generate_report(provenance_rows, group_summaries, args):
     if group_summaries:
         lines.append('## Group Summary')
         lines.append('')
-        lines.append('| Task | Window | Cond | eps | Prefix F/S | Random F/S | OPEN (mean) | qposΔ | armL2 | Denominator | Claim Ready? |')
-        lines.append('|------|--------|------|-----|-----------|------------|-------------|-------|-------|-------------|-------------|')
+        lines.append('| Task | Window | eps | Code | Prefix F/S | Random F/S | OPEN pre/rand | qposΔ | armL2 | Denominator | Claim Ready? |')
+        lines.append('|------|--------|-----|------|-----------|------------|---------------|-------|-------|-------------|-------------|')
         for gs in sorted(group_summaries, key=lambda g: (g['task'], g['window_start'])):
+            _pref_open = gs.get('open_count_prefix_mean', '-')
+            _rand_open = gs.get('open_count_random_mean', '-')
+            _qpos = gs.get('qpos_delta_post_prefix_mean', '-')
+            _arm = gs.get('armL2_max', '-')
             lines.append(
                 f"| {gs['task']} | {gs['window_start']}-{gs['window_end']} "
-                f"| {gs['condition']} | {gs['eps_raw_pixels']} "
+                f"| {gs['eps_raw_pixels']} | {gs['code_status'][:8]} "
                 f"| {gs['prefix_fail']}/{gs['prefix_success']} "
                 f"| {gs['random_fail']}/{gs['random_success']} "
-                f"| {gs['mean_open_count']:.1f}/{gs['mean_open_ratio']:.2f} "
-                f"| {gs['mean_qpos_delta_post']:.4f} "
-                f"| {gs['mean_armL2_mean']:.4f} "
+                f"| {_pref_open}/{_rand_open} "
+                f"| {_qpos} "
+                f"| {_arm} "
                 f"| {gs['denominator_status']} "
                 f"| {gs['claim_readiness']} |"
             )

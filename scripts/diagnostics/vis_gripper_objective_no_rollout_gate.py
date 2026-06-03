@@ -315,7 +315,12 @@ def main():
     ap.add_argument('--arm_preserve_weight', type=float, default=0.1)
     ap.add_argument('--gripper_margin', type=float, default=5.0)
     ap.add_argument('--gpu_pair', default='0,1')
-    ap.add_argument('--output_dir', default=str(REPO_ROOT / 'tables'))
+    ap.add_argument('--output_dir', '--output-dir', default=str(REPO_ROOT / 'tables'))
+    # Aliases for single-value CLI compat (matching the gate invocation convention)
+    ap.add_argument('--objective', dest='objectives', nargs='+',
+                    help='alias for --objectives (single objective)')
+    ap.add_argument('--eps_raw_pixels', type=int, dest='eps_raw_list', nargs='+',
+                    help='alias for --eps_raw_list (single eps value)')
     ap.add_argument('--dry_run', action='store_true')
     args = ap.parse_args()
 

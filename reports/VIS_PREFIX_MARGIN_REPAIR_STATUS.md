@@ -35,7 +35,7 @@ evidence**. The following issues cast doubt on their validity:
 ### B. Prefix-locked loss fix
 
 - **Modified**: `src/gripper_attack/attack_adapter.py::_loss()`
-- **Change**: Gripper loss now computed directly from `logits[0, -1, :]`, independent of labels
+- **Change**: Gripper loss now computed directly from `logits[0, action_token_logit_row_index(action_dim - 1, action_dim), :]` (= `logits[0, -2, :]` for action_dim=7), independent of labels
 - **Formula**: `loss = relu(max_non_open - logsumexp(open_region) + margin) + arm_weight * mean(arm_CEs)`
 - **Debug fields**: `prefix_locked_gripper_loss_present`, `gripper_loss_value`, `arm_loss_value`, `gripper_open_region_token_count`, `canonical_open_semantics_version`
 - **Status**: ✅ Code complete, pending server-side model test

@@ -113,7 +113,7 @@ def _self_check():
         -0.5:      "open",
          0.0:      "open",   # neutral → OPEN after pipeline
          0.496:    "open",   # just below threshold
-         0.5:      "close_or_hold",  # exactly at threshold → boundary
+         0.5:      "boundary",        # exactly at threshold
          0.504:    "close_or_hold",  # just above threshold
          0.996094: "close_or_hold",  # most-extreme CLOSE bin (saturation tokens 31744/31745)
     }

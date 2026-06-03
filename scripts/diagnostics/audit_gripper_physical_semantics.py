@@ -140,7 +140,7 @@ def run_condition(env, init_state, raw_gripper_val, n_steps, label):
             'qpos': qpos_val,
         })
 
-    env.close()
+    # NOTE: do NOT close env here — caller reuses the same env for both conditions.
     return rows
 
 
@@ -174,6 +174,7 @@ def main():
     env, init_state = init_libero_env(args.task, args.gpu)
 
     all_rows = []
+    results = {}  # label -> {pass, qpos_start, qpos_end, qpos_delta}
     for raw_val, label in [
         (OPEN_RAW, 'open_raw_0.0'),
         (CLOSE_RAW, 'close_raw_0.996'),
@@ -182,24 +183,33 @@ def main():
         rows = run_condition(env, init_state, raw_val, args.steps, label)
         all_rows.extend(rows)
 
-        # Verify physical response
         qpos_vals = [r['qpos'] for r in rows]
         qpos_start = qpos_vals[0]
         qpos_end = qpos_vals[-1]
         qpos_delta = qpos_end - qpos_start
 
         if raw_gripper_is_open(raw_val):
-            # OPEN: qpos should decrease (gripper opens)
-            open_pass = qpos_delta < 0 or qpos_end < 0.02  # allow fully-open case
-            status = 'PASS' if open_pass else 'FAIL'
+            passed = qpos_delta < 0 or qpos_end < 0.02
+            status = 'PASS' if passed else 'FAIL'
             print(f'      qpos: {qpos_start:.4f} -> {qpos_end:.4f} (delta={qpos_delta:.4f}) [{status}]')
         else:
-            # CLOSE/HOLD: qpos should stay high or increase
-            close_pass = qpos_delta >= -0.001  # essentially not opening
-            status = 'PASS' if close_pass else 'FAIL'
+            passed = qpos_delta >= -0.001
+            status = 'PASS' if passed else 'FAIL'
             print(f'      qpos: {qpos_start:.4f} -> {qpos_end:.4f} (delta={qpos_delta:.4f}) [{status}]')
+        results[label] = {'passed': passed, 'qpos_start': qpos_start,
+                          'qpos_end': qpos_end, 'qpos_delta': qpos_delta}
 
     env.close()
+
+    # Hard assert: both conditions must pass.
+    failed_any = False
+    for label, r in results.items():
+        if not r['passed']:
+            failed_any = True
+            print(f'FATAL: {label} FAILED: qpos {r["qpos_start"]:.4f} -> {r["qpos_end"]:.4f} (delta={r["qpos_delta"]:.4f})')
+    if failed_any:
+        print('FATAL: Physical semantics smoke FAILED. Canonical OPEN/CLOSE mapping not verified in env.')
+        sys.exit(1)
 
     # Write CSV
     os.makedirs(args.output_dir, exist_ok=True)
@@ -210,7 +220,9 @@ def main():
         w.writerows(all_rows)
     print(f'    CSV saved: {csv_path}')
 
-    # Write report
+    # Write report with actual measured values
+    _open_r = results.get('open_raw_0.0', {})
+    _close_r = results.get('close_raw_0.996', {})
     os.makedirs(os.path.dirname(args.report) or '.', exist_ok=True)
     with open(args.report, 'w', encoding='utf-8') as f:
         f.write(f"""# Gripper Physical Semantics Audit
@@ -233,15 +245,17 @@ All parameterized raw→env→open mappings verified:
 
 ### OPEN condition (raw={OPEN_RAW})
 - Expected: `env_gripper=+1` → qpos decreases (gripper opens)
-- Actual: see CSV trace
+- Measured: qpos {_open_r.get('qpos_start', '?')} → {_open_r.get('qpos_end', '?')} (delta={_open_r.get('qpos_delta', '?')})
+- Status: **{'PASS' if _open_r.get('passed') else 'FAIL'}**
 
 ### CLOSE/HOLD condition (raw={CLOSE_RAW})
-- Expected: `env_gripper=-1` → qpos stays high or increases (gripper holds/closees)
-- Actual: see CSV trace
+- Expected: `env_gripper=-1` → qpos stays high or increases
+- Measured: qpos {_close_r.get('qpos_start', '?')} → {_close_r.get('qpos_end', '?')} (delta={_close_r.get('qpos_delta', '?')})
+- Status: **{'PASS' if _close_r.get('passed') else 'FAIL'}**
 
 ## Verdict
 
-*Pending env execution — run on server.
+{'**PASS**: Canonical semantics confirmed in LIBERO env.' if not failed_any else '**FAIL**: Physical response does not match canonical semantics.'}
 
 ## Claim
 
