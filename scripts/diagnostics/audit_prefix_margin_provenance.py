@@ -380,8 +380,8 @@ GROUP_SUMMARY_FIELDS = [
     'open_count_prefix_mean', 'open_count_random_mean',
     'qpos_delta_post_min', 'qpos_delta_post_max',
     'qpos_delta_post_prefix_mean',
-    'armL2_max',
-    'all_armL2_zero',
+    'prefix_armL2_max', 'random_armL2_max',
+    'prefix_armL2_mean', 'random_armL2_mean',
     'all_random_open_zero',
     'denominator_status',
     'denominator_detail',
@@ -444,10 +444,13 @@ def _compute_group_summary(rows):
             s['qpos_delta_post_max'] = round(max(qpos_post_p), 6) if qpos_post_p else None
             s['qpos_delta_post_prefix_mean'] = round(np.mean(qpos_post_p), 6) if qpos_post_p else None
 
-        # Arm L2
-        if valid:
-            s['armL2_max'] = round(np.max([r['armL2_max'] or 0 for r in valid]), 6)
-            s['all_armL2_zero'] = all((r.get('armL2_max') or 0) < 1e-6 for r in valid)
+        # Arm L2 — per-condition (prefix must be near-zero; random is reported only)
+        if prefix:
+            s['prefix_armL2_max'] = round(np.max([r['armL2_max'] or 0 for r in prefix]), 6)
+            s['prefix_armL2_mean'] = round(np.mean([r['armL2_mean'] or 0 for r in prefix]), 6)
+        if randoms:
+            s['random_armL2_max'] = round(np.max([r['armL2_max'] or 0 for r in randoms]), 6)
+            s['random_armL2_mean'] = round(np.mean([r['armL2_mean'] or 0 for r in randoms]), 6)
 
         # Random OPEN check
         s['all_random_open_zero'] = all(
@@ -575,11 +578,11 @@ def _compute_group_summary(rows):
             claim_eligible = False
             caveats.append(f'qpos_delta_post_min={_qpos_min} < 0.03 (no physical opening)')
 
-        # armL2 must be near-zero
-        _arm_max = s.get('armL2_max')
+        # prefix armL2 must be near-zero (random armL2 is reported but not a disqualifier)
+        _arm_max = s.get('prefix_armL2_max')
         if _arm_max is None or _arm_max > 1e-6:
             claim_eligible = False
-            caveats.append(f'armL2_max={_arm_max} > 1e-6 (arm drift present)')
+            caveats.append(f'prefix_armL2_max={_arm_max} > 1e-6 (prefix arm drift present)')
 
         # Failure phase must be early_grasp_disruption
         if s.get('failure_phase_mode') != 'early_grasp_disruption':
