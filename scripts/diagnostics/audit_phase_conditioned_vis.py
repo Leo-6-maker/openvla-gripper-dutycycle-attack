@@ -197,8 +197,10 @@ def compute_group_summary(vis_list, random_list, clean_list, window_info):
         clean_agg = None
 
     tax = classify_bridge_taxonomy(vis_agg, rand_agg, clean_agg)
-    if s["duplicate_condition_count"] > 0 and not tax["claim_usable"]:
+    if s["duplicate_condition_count"] > 0:
+        tax["claim_usable"] = False
         tax["taxonomy_label"] = "duplicate_runs_present+" + tax["taxonomy_label"]
+        s["denominator_status"] = "ambiguous_duplicate_runs"
     s.update(tax)
     return s
 

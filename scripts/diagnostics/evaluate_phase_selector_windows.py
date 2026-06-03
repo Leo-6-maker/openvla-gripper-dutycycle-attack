@@ -18,6 +18,15 @@ if os.path.isdir(_src): sys.path.insert(0, _src)
 try: from gripper_attack.gripper_semantics import raw_gripper_is_open
 except ImportError: raw_gripper_is_open = lambda v: float(v) < 0.5
 
+# Shared gripper field fallback (must match audit_phase_conditioned_vis.py)
+GRIP_FIELDS = ("adv_grip", "raw_gripper", "clean_grip", "clean_gripper_action", "adv_gripper_action", "action_gripper")
+def get_raw_gripper(row):
+    for k in GRIP_FIELDS:
+        if k in row and row[k] not in ("", None):
+            try: return float(row[k])
+            except (ValueError, TypeError): continue
+    return None
+
 
 def parse_args():
     ap = argparse.ArgumentParser()
@@ -99,11 +108,26 @@ def main():
         if args.window_policy == "Tminus3_to_Tplus14":
             ws = max(0, T_eg - 3)
 
-        # Clean natural OPEN in window using raw_gripper_is_open, not phase label
+        # Clean natural OPEN — use get_raw_gripper helper (same as audit)
         wrows = [r for r in rlist if ws <= int(r.get("policy_step",-1)) <= we]
         n_w = len(wrows)
-        clean_open = sum(1 for r in wrows if raw_gripper_is_open(float(r.get("raw_gripper", 0.996))))
+        clean_open = 0; clean_missing = 0
+        for r in wrows:
+            g = get_raw_gripper(r)
+            if g is None: clean_missing += 1
+            elif raw_gripper_is_open(g): clean_open += 1
         clean_ratio = clean_open / max(n_w, 1)
+        if clean_missing > 0:
+            proposals.append({
+                "task":task,"seed":seed,"T_eg":T_eg,"window_start":ws,"window_end":we,
+                "window_policy":args.window_policy,"selector_type":selector_type,
+                "selector_confidence":0.0,"online_feasible":False,
+                "clean_natural_open_ratio":"","natural_release_confounded":"",
+                "phase_overlap_iou":"",
+                "proposal_valid":False,
+                "invalid_reason":f"missing_clean_gripper_for_confound_audit_{clean_missing}",
+            })
+            continue
 
         # IoU with oracle grasp_formation if available
         gform_rows = [r for r in rlist if r.get("phase_label_3class")=="grasp_formation"]

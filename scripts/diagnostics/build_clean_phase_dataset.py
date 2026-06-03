@@ -113,14 +113,19 @@ def detect_events(steps):
         env_grip = np.array([_safe_float(s.get("env_gripper", 0.0)) for s in steps])
         is_close_env = env_grip < 0
     else:
-        raw_grip = np.array([get_raw_gripper(s) or 0.996 for s in steps])
-        is_close_env = np.array([not raw_gripper_is_open(v) for v in raw_grip])
+        _raw = np.array([get_raw_gripper(s) for s in steps])  # None where missing
+        is_close_env = np.array([not raw_gripper_is_open(float(v)) if v is not None else False for v in _raw])
 
-    raw_grip = np.array([get_raw_gripper(s) or 0.996 for s in steps])
+    # raw_grip: use explicit None (not 0.996 fallback — OPEN=0.0 must stay 0.0)
+    raw_grip = np.array([get_raw_gripper(s) for s in steps])  # None where missing
     qpos = np.array([_safe_float(s.get("qpos_post_step", s.get("gripper_qpos", 0.03))) for s in steps])
     eef_z = np.array([_safe_float(s.get("eef_z", 0)) for s in steps])
     done = np.array([parse_bool(s.get("done","False")) for s in steps])
-    is_open_canon = np.array([raw_gripper_is_open(_safe_float(s.get("raw_gripper", s.get("adv_grip",0.996)))) for s in steps])
+    # is_open_canon: use get_raw_gripper helper, None → not-open (conservative)
+    is_open_canon = np.array([
+        raw_gripper_is_open(float(g)) if (g := get_raw_gripper(s)) is not None else False
+        for s in steps
+    ])
     is_open_phys = qpos <= QPOS_OPEN_MAX   # PHYSICAL open
     is_closed_phys = qpos >= QPOS_CLOSED_MIN  # PHYSICAL closed
 
@@ -200,9 +205,10 @@ def detect_events(steps):
 
 
 def _build_feature_columns(steps):
-    """Extract runtime features from trace rows, computing velocities via finite diff."""
+    """Extract runtime features from trace rows, computing velocities via finite diff.
+    Uses get_raw_gripper helper for consistent clean_grip fallback."""
     n = len(steps)
-    raw_grip = np.array([_safe_float(s.get("raw_gripper", s.get("adv_grip",""))) for s in steps])
+    raw_grip = np.array([get_raw_gripper(s) if get_raw_gripper(s) is not None else np.nan for s in steps])
     qpos_vals = np.array([_safe_float(s.get("qpos_post_step", s.get("gripper_qpos",""))) for s in steps])
     eef_x = np.array([_safe_float(s.get("eef_x","")) for s in steps])
     eef_y = np.array([_safe_float(s.get("eef_y","")) for s in steps])
@@ -212,9 +218,6 @@ def _build_feature_columns(steps):
 
     action_dx = np.zeros(n); action_dy = np.zeros(n); action_dz = np.zeros(n)
     for i,s in enumerate(steps):
-        raw = s.get("raw_gripper", s.get("adv_grip",""))
-        if raw: raw_grip[i] = _safe_float(raw)
-        # Try to extract arm deltas from action columns if present
         for dim, col in [(0,"action_dx"),(1,"action_dy"),(2,"action_dz")]:
             val = s.get(col, s.get(f"action_{dim}", ""))
             if val:
@@ -224,14 +227,15 @@ def _build_feature_columns(steps):
 
     features = {}
     for i in range(n):
+        grip_val = raw_grip[i] if not np.isnan(raw_grip[i]) else ""
         feats = {
-            "gripper_command": raw_grip[i],
+            "gripper_command": grip_val,
             "gripper_qpos": qpos_vals[i],
             "gripper_width": width[i] if width[i] != 0 else "",
             "eef_x": eef_x[i], "eef_y": eef_y[i], "eef_z": eef_z[i],
             "eef_vx": eef_vx[i], "eef_vy": eef_vy[i], "eef_vz": eef_vz[i],
             "action_dx": action_dx[i], "action_dy": action_dy[i], "action_dz": action_dz[i],
-            "action_gripper": raw_grip[i],
+            "action_gripper": grip_val,
         }
         missing = 0
         for k, v in feats.items():
