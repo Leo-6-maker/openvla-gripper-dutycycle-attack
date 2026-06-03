@@ -499,13 +499,34 @@ def _compute_group_summary(rows):
             s['failure_phase_mode'] = max(set(phases), key=phases.count)
 
         # ── Claim eligibility (strict post-repair gates) ──
-        # Primary claim: ketchup 10-27 eps6. Supporting: 20-37.
-        # These thresholds are specific to the 18-step ketchup window.
-        _window_steps = int(s.get('window_end', 0)) - int(s.get('window_start', 0)) + 1
-        _is_supporting = int(s.get('window_start', 0)) == 20
+        # Primary claim: ONLY ketchup 10-27 eps6, post-repair code.
+        # Supporting claim: ONLY ketchup 20-37 eps6, post-repair code.
+        # Any other task/window/eps/code_status combination is ineligible.
+        _task = str(s.get('task', ''))
+        _eps = int(s.get('eps_raw_pixels', -1))
+        _ws = int(s.get('window_start', -1))
+        _we = int(s.get('window_end', -1))
+        _code = str(s.get('code_status', ''))
+
+        _is_primary = (
+            _task == 'ketchup'
+            and _eps == 6
+            and _ws == 10
+            and _we == 27
+            and _code == 'post_repair'
+        )
+        _is_supporting = (
+            _task == 'ketchup'
+            and _eps == 6
+            and _ws == 20
+            and _we == 37
+            and _code == 'post_repair'
+        )
+
+        _window_steps = _we - _ws + 1
         OPEN_THRESHOLD = max(1, _window_steps - 2)  # >= 16 for 18-step window
 
-        claim_eligible = True
+        claim_eligible = _is_primary  # false by default unless primary group
         caveats = []
 
         # Code must be post-repair
