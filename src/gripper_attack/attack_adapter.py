@@ -5,6 +5,10 @@ from PIL import Image
 import torch
 import torch.nn.functional as F
 from .types import AttackResult
+from .gripper_semantics import (
+    raw_gripper_is_open,
+    CANONICAL_OPEN_SEMANTICS_VERSION,
+)
 
 
 def _prompt(instruction: str) -> str:
@@ -52,6 +56,27 @@ def prepare_openvla_image_for_attack(image_np, *, libero_official_preprocess: bo
     return prepare_openvla_image(image_np, libero_official_preprocess=libero_official_preprocess,
                                  center_crop=center_crop, resize_size=resize_size,
                                  libero_preprocess_backend=libero_preprocess_backend)
+
+
+def action_token_logit_row_index(dim: int, action_dim: int) -> int:
+    """Return the logit row index (from end) that predicts action token *dim*.
+
+    In a causal LM, the logit at position ``t`` predicts the token at position
+    ``t+1``.  With *action_dim* action tokens appended to the input sequence,
+    the logit predicting action token *dim* (0-indexed from the start of the
+    action prefix) is located at::
+
+        row_index = -(action_dim - dim + 1)
+
+    Examples for action_dim=7:
+        dim=0  →  -8   (first arm dim)
+        dim=5  →  -3   (last arm dim)
+        dim=6  →  -2   (gripper — the final action token)
+
+    ``logits[0, -1, :]`` predicts whatever token follows the action prefix
+    (usually an EOS or continuation token) — it is NOT the gripper row.
+    """
+    return -(int(action_dim) - int(dim) + 1)
 
 
 class ExistingDenseAttackAdapter:
@@ -251,16 +276,15 @@ class TokenPrefixPGDAttacker:
     def get_gripper_region_by_decoded_action(self, unnorm_key: str, *, postprocess_gripper: bool = True, open_threshold: float = 0.5) -> dict:
         """Return OPEN/CLOSE/BOUNDARY token sets using canonical decoded-action semantics.
 
-        This function directly decodes every possible gripper token through the
-        same bin→action→postprocess→invert pipeline used in rollout, then
-        classifies each token as OPEN, CLOSE, or BOUNDARY based on decoded action.
+        Uses the same classification rule as ``gripper_semantics.raw_gripper_is_open``:
+        ``decoded_action < open_threshold`` → OPEN.
 
         Returns dict with keys:
-          - open_token_ids: tokens whose decoded action is OPEN (< open_threshold)
-          - close_token_ids: tokens whose decoded action is CLOSE (>= open_threshold)
-          - boundary_token_ids: tokens at the OPEN/CLOSE transition
-          - token_action_map: {token_id: decoded_action} for all gripper tokens
+          - open_token_ids, close_token_ids, boundary_token_ids
+          - token_action_map: {token_id: decoded_action}
+          - open_count, close_count
           - is_corrected: True
+          - canonical_semantics_version: str
         """
         stats, unnorm_key = self._action_stats(unnorm_key)
         low = np.asarray(stats["q01"], dtype=np.float32)
@@ -350,6 +374,7 @@ class TokenPrefixPGDAttacker:
             "open_count": int(open_token_ids.numel()),
             "close_count": int(close_token_ids.numel()),
             "is_corrected": True,
+            "canonical_semantics_version": CANONICAL_OPEN_SEMANTICS_VERSION,
         }
 
     def _active_label_rows(self, logits, labels, action_dim: int):
@@ -360,10 +385,7 @@ class TokenPrefixPGDAttacker:
             dim = int(label_pos.item()) - action_start
             if dim < 0 or dim >= int(action_dim):
                 continue
-            # The logit that predicts action token dim is emitted by the previous
-            # text/action token. OpenVLA's forward logits include visual tokens,
-            # so address from the suffix rather than aligning against text labels.
-            row_index = -(int(action_dim) - dim + 1)
+            row_index = action_token_logit_row_index(dim, action_dim)
             if abs(row_index) > int(logits.shape[1]):
                 continue
             rows.append((int(b.item()), int(label_pos.item()), dim, row_index))
@@ -371,21 +393,17 @@ class TokenPrefixPGDAttacker:
 
     def _loss(self, full_input_ids, labels, pixel_values, *, objective: str = "targeted_directional_ce", region_token_ids=None, margin: float = 5.0, num_action_tokens: int = 7, loss_weights: dict = None, arm_preserve_weight: float = 0.1):
         obj = str(objective)
-        _SPECIAL_OBJS = {"gripper_open_region_ce", "gripper_logit_margin_cw",
-                         "prefix_locked_gripper_open_region_ce", "prefix_locked_gripper_open_margin",
-                         "gripper_open_expected_action", "force_open_region_z_down_ce"}
+        _PREFIX_LOCKED_OBJS = {"prefix_locked_gripper_open_region_ce", "prefix_locked_gripper_open_margin", "gripper_open_expected_action"}
+        _SPECIAL_OBJS = {"gripper_open_region_ce", "gripper_logit_margin_cw", "force_open_region_z_down_ce"} | _PREFIX_LOCKED_OBJS
+
         if obj not in _SPECIAL_OBJS:
             if loss_weights is None or obj != "force_open_z_down_token_ce":
-                # Keep the proven OpenVLA/HF label path for ordinary targeted CE;
-                # hand-aligning visual-token logits against text labels is brittle.
                 out = self.model(input_ids=full_input_ids, pixel_values=pixel_values, labels=labels, use_cache=False, return_dict=True)
                 if out.loss is not None:
                     return out.loss
                 logits = out.logits[:, :-1, :].contiguous()
                 shifted = labels[:, 1:].contiguous()
                 return F.cross_entropy(logits.view(-1, logits.shape[-1]), shifted.view(-1), ignore_index=-100)
-            # Weighted path for force_open_z_down_token_ce: per-dimension CE with configurable weights.
-            # labels are already masked to only gripper(dim=-1) and z(dim=2).
             out = self.model(input_ids=full_input_ids, pixel_values=pixel_values, use_cache=False, return_dict=True)
             logits = out.logits.float().contiguous()
             action_dim = max(int(num_action_tokens), 1)
@@ -400,24 +418,89 @@ class TokenPrefixPGDAttacker:
                 w = loss_weights.get(str(dim), loss_weights.get(int(dim), 1.0))
                 weighted_losses.append(float(w) * ce)
             return torch.stack(weighted_losses).mean() if weighted_losses else logits.sum() * 0.0
+
         out = self.model(input_ids=full_input_ids, pixel_values=pixel_values, use_cache=False, return_dict=True)
         logits = out.logits.float().contiguous()
         action_dim = max(int(num_action_tokens), 1)
-        rows = self._active_label_rows(logits, labels, max(action_dim, 1))
+
+        # ── Prefix-locked objectives: gripper loss computed DIRECTLY from logit row,
+        #     NOT dependent on labels (which are masked to -100 for gripper). ──
+        if obj in _PREFIX_LOCKED_OBJS:
+            # Gripper logit row: logits[:, -2, :] predicts the final action token
+            # (dim=6, gripper) because the gripper token is at position -1 in the
+            # input and the causal logit at -2 predicts token at -1.
+            gripper_row_index = action_token_logit_row_index(action_dim - 1, action_dim)
+            gripper_row = logits[0, gripper_row_index, :]  # [vocab_size]
+
+            _gripper_loss_present = False
+            _gripper_loss_value = 0.0
+            _arm_loss_present = False
+            _arm_ce_list = []
+
+            if region_token_ids is not None and int(region_token_ids.numel()) > 0:
+                _gripper_loss_present = True
+                open_count = int(region_token_ids.numel())
+                if obj == "prefix_locked_gripper_open_margin":
+                    log_open = torch.logsumexp(gripper_row[region_token_ids], dim=0)
+                    non_open_mask = torch.ones_like(gripper_row, dtype=torch.bool)
+                    non_open_mask[region_token_ids] = False
+                    max_non_open = gripper_row[non_open_mask].max()
+                    gripper_loss = F.relu(max_non_open - log_open + float(margin))
+                elif obj == "prefix_locked_gripper_open_region_ce":
+                    log_region = torch.logsumexp(gripper_row[region_token_ids], dim=0)
+                    log_all = torch.logsumexp(gripper_row, dim=0)
+                    gripper_loss = -(log_region - log_all)
+                elif obj == "gripper_open_expected_action":
+                    probs = torch.softmax(gripper_row, dim=-1)
+                    open_prob_mass = probs[region_token_ids].sum()
+                    gripper_loss = -open_prob_mass
+                else:
+                    gripper_loss = logits.sum() * 0.0
+                _gripper_loss_value = float(gripper_loss.detach().cpu())
+            else:
+                open_count = 0
+                gripper_loss = logits.sum() * 0.0
+
+            # Arm CE: compute from label rows (arm dims only — gripper label is -100).
+            apw = float(arm_preserve_weight)
+            rows = self._active_label_rows(logits, labels, action_dim)
+            for _b, _label_pos, dim, row_index in rows:
+                if dim == action_dim - 1:
+                    continue  # skip gripper dim (should be absent, but defensive)
+                _arm_loss_present = True
+                row = logits[_b, row_index, :]
+                target = labels[_b, _label_pos]
+                _arm_ce_list.append(apw * F.cross_entropy(row.view(1, -1), target.view(1)))
+
+            arm_term = torch.stack(_arm_ce_list).mean() if _arm_ce_list else 0.0
+            total = gripper_loss + arm_term
+
+            # Store debug fields on the returned tensor for inspection in attack().
+            # (non-standard but the cleanest way to thread this through the PGD loop)
+            total._prefix_debug = {
+                "prefix_locked_gripper_loss_present": _gripper_loss_present,
+                "prefix_locked_arm_loss_present": _arm_loss_present,
+                "gripper_loss_value": _gripper_loss_value,
+                "arm_loss_value": float(arm_term.detach().cpu()) if isinstance(arm_term, torch.Tensor) else float(arm_term),
+                "gripper_open_region_token_count": open_count,
+                "gripper_row_index": int(gripper_row_index),
+                "canonical_open_semantics_version": CANONICAL_OPEN_SEMANTICS_VERSION,
+            }
+            return total
+
+        rows = self._active_label_rows(logits, labels, action_dim)
 
         # Corrected hybrid: gripper OPEN-region loss + Z weighted CE
         if obj == "force_open_region_z_down_ce" and region_token_ids is not None and int(region_token_ids.numel()) > 0:
             losses = []
-            # Gripper component: OPEN-region loss from the last action token logit row
-            gripper_row_index = -1  # last action token = gripper
+            gripper_row_index = action_token_logit_row_index(action_dim - 1, action_dim)
             gripper_row = logits[0, gripper_row_index, :]
             if int(region_token_ids.numel()) > 0:
                 log_region = torch.logsumexp(gripper_row[region_token_ids], dim=0)
                 log_all = torch.logsumexp(gripper_row, dim=0)
                 losses.append(-(log_region - log_all))
-            # Z component: weighted CE from labels
             for b, label_pos, dim, row_index in rows:
-                if dim == 2:  # Z dim
+                if dim == 2:
                     row = logits[b, row_index, :]
                     target = labels[b, label_pos]
                     z_w = loss_weights.get('2', loss_weights.get(2, 0.5)) if loss_weights else 0.5
@@ -432,7 +515,6 @@ class TokenPrefixPGDAttacker:
             row = logits[b, row_index, :]
             target = labels[b, label_pos]
             is_gripper_dim = (dim == action_dim - 1)
-            is_arm_dim = not is_gripper_dim
             if obj == "gripper_open_region_ce":
                 if is_gripper_dim and region_token_ids is not None and int(region_token_ids.numel()) > 0:
                     log_region = torch.logsumexp(row[region_token_ids], dim=0)
@@ -440,33 +522,12 @@ class TokenPrefixPGDAttacker:
                     losses.append(-(log_region - log_all))
                 elif target.item() != -100:
                     losses.append(F.cross_entropy(row.view(1, -1), target.view(1)))
-            elif obj == "prefix_locked_gripper_open_region_ce":
-                # Arm dims: CE to preserve clean action. Gripper dim: open-region CE.
-                apw = float(arm_preserve_weight)
-                if is_gripper_dim and region_token_ids is not None and int(region_token_ids.numel()) > 0:
-                    log_region = torch.logsumexp(row[region_token_ids], dim=0)
-                    log_all = torch.logsumexp(row, dim=0)
-                    losses.append(-(log_region - log_all))
-                elif is_arm_dim and target.item() != -100:
-                    losses.append(apw * F.cross_entropy(row.view(1, -1), target.view(1)))
-            elif obj == "prefix_locked_gripper_open_margin":
-                # Arm dims: CE to preserve. Gripper dim: margin loss (OPEN must beat non-OPEN by margin).
-                apw = float(arm_preserve_weight)
-                if is_gripper_dim and region_token_ids is not None and int(region_token_ids.numel()) > 0:
-                    log_open = torch.logsumexp(row[region_token_ids], dim=0)
-                    non_open_mask = torch.ones_like(row, dtype=torch.bool)
-                    non_open_mask[region_token_ids] = False
-                    max_non_open = row[non_open_mask].max()
-                    losses.append(F.relu(max_non_open - log_open + float(margin)))
-                elif is_arm_dim and target.item() != -100:
-                    losses.append(apw * F.cross_entropy(row.view(1, -1), target.view(1)))
             elif obj == "gripper_open_expected_action":
-                # Minimize negative expected OPEN score: -E[gripper_open] under softmax.
                 if is_gripper_dim and region_token_ids is not None and int(region_token_ids.numel()) > 0:
                     probs = torch.softmax(row, dim=-1)
                     open_prob_mass = probs[region_token_ids].sum()
                     losses.append(-open_prob_mass)
-                elif is_arm_dim and target.item() != -100:
+                elif target.item() != -100:
                     apw = float(arm_preserve_weight)
                     losses.append(apw * F.cross_entropy(row.view(1, -1), target.view(1)))
             else:
@@ -474,20 +535,6 @@ class TokenPrefixPGDAttacker:
                 other = row.clone()
                 other[target] = torch.finfo(other.dtype).min
                 losses.append(F.relu(torch.max(other) - target_logit + float(margin)))
-        # P2 FIX: prefix-locked objectives use weighted aggregation
-        # loss = gripper_loss_sum + arm_preserve_weight * mean(arm_CEs)
-        # instead of mean([gripper_loss, arm_loss_1, ..., arm_loss_6])
-        if losses and obj in {"prefix_locked_gripper_open_region_ce", "prefix_locked_gripper_open_margin", "gripper_open_expected_action"}:
-            gripper_losses = []
-            arm_weighted_losses = []
-            for i, (_b, _label_pos, dim, _row_index) in enumerate(rows):
-                if dim == action_dim - 1 and i < len(losses):
-                    gripper_losses.append(losses[i])
-                elif i < len(losses):
-                    arm_weighted_losses.append(losses[i])
-            grip_term = torch.stack(gripper_losses).sum() if gripper_losses else 0.0
-            arm_term = torch.stack(arm_weighted_losses).mean() if arm_weighted_losses else 0.0
-            return grip_term + arm_term
         return torch.stack(losses).mean() if losses else logits.sum() * 0.0
 
     def _audit_logits(self, full_input_ids, labels, pixel_values, target_ids, unnorm_key: str, *, postprocess_gripper: bool = False, region_token_ids=None) -> dict:
@@ -672,13 +719,15 @@ class TokenPrefixPGDAttacker:
             loss_kwargs["margin"] = float(self.gripper_margin)
         if is_force_open_z_down and self.loss_weights is not None:
             loss_kwargs["loss_weights"] = self.loss_weights
-        initial_loss = None; final_loss = None
+        initial_loss = None; final_loss = None; _prefix_debug_final = None
         for i in range(max(self.num_steps, 1)):
             adv = adv.detach().requires_grad_(True)
             adv_for_loss = self._cast_projected_pixel_values(adv, x_orig_model)
             loss = self._loss(full_ids, labels, adv_for_loss, **loss_kwargs)
             if i == 0:
                 initial_loss = float(loss.detach().cpu())
+            if is_prefix_locked and hasattr(loss, "_prefix_debug"):
+                _prefix_debug_final = loss._prefix_debug
             grad = torch.autograd.grad(loss, adv, retain_graph=False, create_graph=False)[0]
             if is_untargeted:
                 # Maximize CE of the clean action-token prefix.
@@ -774,6 +823,8 @@ class TokenPrefixPGDAttacker:
                 debug["arm_preserve_weight"] = float(self.arm_preserve_weight)
                 debug["gripper_margin_param"] = float(self.gripper_margin)
                 debug["best_restart_metric"] = self.best_restart_metric
+                if _prefix_debug_final is not None:
+                    debug.update(_prefix_debug_final)
             if is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region or is_prefix_locked or is_corrected_hybrid:
                 debug.update({
                     "target_gripper_token_id": int(token_list[-1]) if token_list else None,

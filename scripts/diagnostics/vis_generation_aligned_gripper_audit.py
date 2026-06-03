@@ -23,6 +23,8 @@ from PIL import Image
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
+from gripper_attack.gripper_semantics import raw_gripper_is_open
+
 MODEL_PATH = '/data/aviary/models/openvla/openvla-7b-finetuned-libero-object'
 UNNORM_KEY = 'libero_object'
 
@@ -177,7 +179,7 @@ def main():
         'decoded_actions': str([float(f"{a:.4f}") for a in clean_action]),
         'gripper_token': int(clean_tokens[-1]),
         'gripper_action': float(clean_action[-1]),
-        'gripper_is_open': float(clean_action[-1]) < 0.5,
+        'gripper_is_open': raw_gripper_is_open(float(clean_action[-1])),
         'arm_tokens_changed': 0, 'arm_l2': 0.0,
         'note': 'clean baseline generation',
     }
@@ -241,7 +243,7 @@ def main():
 
             arm_changed = sum(1 for i in range(6) if int(clean_tokens[i]) != int(adv_tokens[i]))
             arm_l2_gen = float(np.linalg.norm(adv_action[:6] - clean_action[:6]))
-            grip_is_open = float(adv_action[-1]) < 0.5
+            grip_is_open = raw_gripper_is_open(float(adv_action[-1]))
 
             print(f'  restart={restart}: gen_grip_token={adv_tokens[-1]} gen_grip_action={adv_action[-1]:.4f} '
                   f'is_open={grip_is_open} arm_changed={arm_changed} armL2={arm_l2_gen:.4f} '

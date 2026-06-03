@@ -62,6 +62,8 @@ def parse_args():
     ap.add_argument('--gpu_pair', default='4,5')
     ap.add_argument('--seed', type=int, default=0)
     ap.add_argument('--duration', type=int, default=0)
+    ap.add_argument('--perturb_start', type=int, default=-1, help='override perturb_start (default: use task config)')
+    ap.add_argument('--perturb_end', type=int, default=-1, help='override perturb_end (default: use task config)')
     ap.add_argument('--strategy', choices=['full','sparse'], default='full')
     ap.add_argument('--controller', choices=['fixed','open_streak_stop','open_count_stop','qpos_safety_stop','min_hold_qpos_cap','streak_with_qpos_cap'], default='fixed')
     ap.add_argument('--K', type=int, default=0, help='OPEN streak/count threshold')
@@ -69,7 +71,7 @@ def parse_args():
     ap.add_argument('--max_duration', type=int, default=0, help='max PGD attacks for adaptive controller')
     ap.add_argument('--min_attacks', type=int, default=0, help='min PGD attacks before allowing stop')
     # EPS: raw-pixel semantics (default) or processor-direct (legacy).
-    ap.add_argument('--eps_raw_pixels', type=int, choices=[4, 8, 12, 16], default=None,
+    ap.add_argument('--eps_raw_pixels', type=int, choices=[4, 6, 8, 12, 16], default=None,
         help=f'raw RGB Linf budget in pixel values [0-255] (default: {EPS_RAW_PIXELS_DEFAULT})')
     ap.add_argument('--eps_processor_direct', type=float, default=None,
         help='use processor-space epsilon directly (legacy; bypasses raw-pixel conversion)')
@@ -92,6 +94,8 @@ def parse_args():
     ap.add_argument('--best_restart_metric', choices=['target_ce_final','gripper_open_prob_mass',
         'gripper_margin','decoded_gripper_open','composite'],
         default='gripper_open_prob_mass', help='metric for best-restart selection (default: gripper_open_prob_mass)')
+    ap.add_argument('--save_frames_dir', type=str, default=None, help='save frames every N steps for video export')
+    ap.add_argument('--save_frames_every', type=int, default=1, help='save every N steps (default: 1)')
     ap.add_argument('--dry_run', action='store_true')
     return ap.parse_args()
 
@@ -171,6 +175,11 @@ print(f'    objective={ATTACK_OBJECTIVE} z_weight={Z_DOWN_WEIGHT} grip_weight={G
 
 from gripper_attack.attack_adapter import TokenPrefixPGDAttacker, get_adv_inputs_from_attack_result
 from gripper_attack.openvla_redecode import redecode_openvla_action_from_adv_inputs
+from gripper_attack.gripper_semantics import (
+    raw_gripper_is_open,
+    env_gripper_is_open,
+    CANONICAL_OPEN_SEMANTICS_VERSION,
+)
 
 # Init LIBERO env
 print('[2] Initializing LIBERO environment...')
@@ -192,6 +201,11 @@ env_args = {
 env = OffScreenRenderEnv(**env_args)
 env.seed(args.seed)
 
+# Override perturbation window from CLI if specified
+if args.perturb_start >= 0:
+    cfg['perturb_start'] = args.perturb_start
+if args.perturb_end >= 0:
+    cfg['perturb_end'] = args.perturb_end
 # Extend perturbation window to accommodate max_duration or explicit duration
 if args.max_duration > 0:
     cfg['perturb_end'] = max(cfg['perturb_end'], cfg['perturb_start'] + args.max_duration - 1)
@@ -235,7 +249,7 @@ def run_pgd_attack(img_np, instruction, clean_action, clean_gen, seed):
         # target_action[-1] is set to 1.0 only for tokenization; actual loss uses region.
         target_action[2] = low[2]  # Z DOWN
     _PREFIX_LOCKED_SET = {'prefix_locked_gripper_open_region_ce', 'prefix_locked_gripper_open_margin', 'gripper_open_expected_action'}
-    _GRIPPER_OBJ_SET = {'gripper_open_region_ce', 'force_open_z_down_token_ce'} | _PREFIX_LOCKED_SET
+    _GRIPPER_OBJ_SET = {'gripper_open_region_ce', 'force_open_z_down_token_ce', 'force_open_region_z_down_ce'} | _PREFIX_LOCKED_SET
     base_random_start = (ATTACK_OBJECTIVE in _GRIPPER_OBJ_SET)
     best_result = None
     best_metric_val = float('-inf') if ATTACK_OBJECTIVE in _GRIPPER_OBJ_SET else float('inf')
@@ -267,35 +281,38 @@ def run_pgd_attack(img_np, instruction, clean_action, clean_gen, seed):
         debug = attack_result.debug or {}
         # P1 FIX: restart selection uses actual generated output, not teacher-forced metrics.
         if ATTACK_OBJECTIVE in _GRIPPER_OBJ_SET:
-            # Re-decode adversarial action to check actual generated gripper output
+            # Re-decode adversarial action to check actual generated gripper output.
+            _adv_inputs = debug.get('adv_inputs')
+            if _adv_inputs is None:
+                # Teacher-forced fallback BANNED for gripper objectives.
+                # adv_inputs must exist; if not, the restart is invalid.
+                raise RuntimeError(
+                    f"Restart {restart}: AttackResult.debug['adv_inputs'] is missing. "
+                    f"Teacher-forced fallback is banned for gripper objectives "
+                    f"(objective={ATTACK_OBJECTIVE}). "
+                    f"Fix: ensure TokenPrefixPGDAttacker populates debug['adv_inputs']."
+                )
             try:
                 from gripper_attack.openvla_redecode import redecode_openvla_action_from_adv_inputs
-                _adv_inputs = debug.get('adv_inputs')
-                if _adv_inputs is not None:
-                    _adv_decoded = redecode_openvla_action_from_adv_inputs(
-                        model=model, processor=processor, adv_inputs=_adv_inputs,
-                        instruction=str(instruction), unnorm_key=UNNORM_KEY)
-                    _gen_action = np.asarray(_adv_decoded.action, dtype=np.float32)
-                    _is_open = float(_gen_action[-1]) < 0.5
-                    _nad_dof7 = abs(float(_gen_action[-1]) - float(clean_action[-1]))
-                    _arm_l2 = float(np.linalg.norm(_gen_action[:6] - clean_action[:6]))
-                    # Priority: true OPEN > highest NAD > highest teacher-forced open_prob
-                    _tf_open = float(debug.get('gripper_open_prob_mass', 0.0) or 0.0)
-                    _score = (1.0 if _is_open else 0.0) + 0.01 * _nad_dof7 + 0.0001 * _tf_open - 0.001 * _arm_l2
-                    if _score > best_metric_val:
-                        best_metric_val = _score
-                        best_result = attack_result
-                else:
-                    # Fallback: no adv_inputs, use teacher-forced prob
-                    _tf_open = float(debug.get('gripper_open_prob_mass', 0.0) or 0.0)
-                    if _tf_open > best_metric_val:
-                        best_metric_val = _tf_open
-                        best_result = attack_result
-            except Exception:
-                _tf_open = float(debug.get('gripper_open_prob_mass', 0.0) or 0.0)
-                if _tf_open > best_metric_val:
-                    best_metric_val = _tf_open
+                _adv_decoded = redecode_openvla_action_from_adv_inputs(
+                    model=model, processor=processor, adv_inputs=_adv_inputs,
+                    instruction=str(instruction), unnorm_key=UNNORM_KEY)
+                _gen_action = np.asarray(_adv_decoded.action, dtype=np.float32)
+                _is_open = raw_gripper_is_open(float(_gen_action[-1]))
+                _nad_dof7 = abs(float(_gen_action[-1]) - float(clean_action[-1]))
+                _arm_l2 = float(np.linalg.norm(_gen_action[:6] - clean_action[:6]))
+                # Priority: true OPEN > highest NAD > lowest armL2
+                _score = (1.0 if _is_open else 0.0) + 0.01 * _nad_dof7 - 0.001 * _arm_l2
+                if _score > best_metric_val:
+                    best_metric_val = _score
                     best_result = attack_result
+            except Exception as e:
+                # Re-decode failure: RAISE, do not fallback to teacher-forced.
+                raise RuntimeError(
+                    f"Restart {restart}: Re-decode failed for gripper objective "
+                    f"{ATTACK_OBJECTIVE}: {e}. "
+                    f"Teacher-forced fallback is banned."
+                ) from e
         else:
             loss = float(debug.get('target_ce_final', float('inf')))
             if loss < best_metric_val:
@@ -355,6 +372,9 @@ while t < max_steps + num_steps_wait:
 
     clean_grip = 0.0; adv_grip = 0.0; arm_l2 = 0.0; linf = 0.0; attack_dt = 0.0; token_flip = False
     attack_attempted = False
+    attack_invalid = False
+    attack_invalid_reason = ''
+    attack_invalid_detail = ''
     pgd_applied = False
     controller_stopped = (ctrl['mode'] != 'fixed' and ctrl['stop_reason'] != 'none')
     controller_active = (args.condition == 'vis_pgd' and in_window and not controller_stopped)
@@ -405,7 +425,7 @@ while t < max_steps + num_steps_wait:
                     token_flip = int(clean_token_ids[-1]) != int(adv_token_ids[-1])
                     # Update attack/controller audit state using causally available qpos.
                     ctrl['attacks_applied'] += 1
-                    is_open = adv_grip > 0.5
+                    is_open = raw_gripper_is_open(adv_grip)
                     ctrl['current_streak'] = ctrl['current_streak'] + 1 if is_open else 0
                     ctrl['max_streak'] = max(ctrl['max_streak'], ctrl['current_streak'])
                     ctrl['total_open'] += (1 if is_open else 0)
@@ -438,8 +458,15 @@ while t < max_steps + num_steps_wait:
                     controller_stopped = (ctrl['mode'] != 'fixed' and ctrl['stop_reason'] != 'none')
             except Exception as e:
                 print(f'    PGD ERROR at step {policy_step}: {str(e)[:100]}')
+                _err_msg = str(e)
+                _is_restart_failure = ('adv_inputs' in _err_msg and 'missing' in _err_msg) or \
+                                      ('Re-decode failed' in _err_msg) or \
+                                      ('Teacher-forced fallback is banned' in _err_msg)
                 raw_action, _ = decode_image(img_np, cfg['instruction'])
                 adv_grip = float(raw_action[-1]); clean_grip = adv_grip
+                attack_invalid = True
+                attack_invalid_reason = 'restart_infrastructure_failure' if _is_restart_failure else 'pgd_runtime_error'
+                attack_invalid_detail = _err_msg[:200]
 
     elif args.condition == 'random_linf':
         clean_action, clean_token_ids = decode_image(img_np, cfg['instruction'])
@@ -461,13 +488,24 @@ while t < max_steps + num_steps_wait:
     gripper_qpos_post = obs['robot0_gripper_qpos'].copy()
     qpos_post_step = float(gripper_qpos_post[0]) if len(gripper_qpos_post) > 0 else 0.0
 
+    # Save frames for video export
+    if args.save_frames_dir and policy_step % args.save_frames_every == 0:
+        os.makedirs(args.save_frames_dir, exist_ok=True)
+        frame_img = obs['agentview_image'].copy()
+        # Apply same preprocessing as model sees (double flip)
+        frame_img = frame_img[::-1, ::-1]
+        frame_path = os.path.join(args.save_frames_dir, f'step_{policy_step:04d}.png')
+        Image.fromarray(frame_img).save(frame_path)
+
     clean_z_val = float(clean_action_vec[2]) if clean_action_vec is not None else 0.0
     adv_z_val = float(raw_action[2])
     nad_dof1_3 = float(np.linalg.norm(raw_action[:3] - clean_action_vec[:3])) if clean_action_vec is not None else 0.0
     trace_rows.append({
         'task': args.task, 'condition': args.condition, 'seed': args.seed,
         'step': t, 'policy_step': policy_step, 'in_window': in_window,
-        'attack_attempted': attack_attempted, 'pgd_applied': pgd_applied,
+        'attack_attempted': attack_attempted, 'attack_invalid': attack_invalid,
+        'attack_invalid_reason': attack_invalid_reason, 'attack_invalid_detail': attack_invalid_detail,
+        'pgd_applied': pgd_applied,
         'controller_active': controller_active, 'controller_stopped': controller_stopped,
         'effective_attack_step_idx': effective_attack_step_idx,
         'raw_gripper': float(raw_action[-1]), 'env_gripper': float(env_action[-1]),
@@ -493,12 +531,22 @@ if ctrl['mode'] != 'fixed' and ctrl['stop_reason'] == 'none' and ctrl['attacks_a
     ctrl['stop_reason'] = 'force_window_end'
 
 total_dt = time.time() - t_start
+# Detect infrastructure failures: steps where all restarts were invalid.
+_invalid_steps = [r for r in trace_rows if r.get('attack_invalid')]
+_any_invalid = len(_invalid_steps) > 0
+_run_validity = 'invalid_run' if _any_invalid else None
+_run_invalid_reason = ''
+if _any_invalid:
+    _reasons = set(r.get('attack_invalid_reason', '') for r in _invalid_steps)
+    _run_invalid_reason = '; '.join(sorted(_reasons))
+    print(f'    WARNING: {len(_invalid_steps)} steps had attack_invalid=True: {_run_invalid_reason}')
+
 window_rows = [r for r in trace_rows if r['in_window']]
 attacked_rows = [r for r in window_rows if r['pgd_applied']]
 n_flip = sum(1 for r in window_rows if r['token_flip'])
 attacked_flips = sum(1 for r in attacked_rows if r['token_flip'])
-open_count_full_window = sum(1 for r in window_rows if r['adv_grip'] > 0.5)
-open_count_attacked_steps = sum(1 for r in attacked_rows if r['adv_grip'] > 0.5)
+open_count_full_window = sum(1 for r in window_rows if raw_gripper_is_open(r['adv_grip']))
+open_count_attacked_steps = sum(1 for r in attacked_rows if raw_gripper_is_open(r['adv_grip']))
 qpos_delta_pre = 0.0
 qpos_delta_post = 0.0
 if attacked_rows:
@@ -520,8 +568,9 @@ with open(csv_path, 'w', newline='') as f:
     w = csv.DictWriter(f, fieldnames=list(trace_rows[0].keys())); w.writeheader(); w.writerows(trace_rows)
 summary = {
     'task': args.task, 'condition': args.condition, 'seed': args.seed, 'success': success,
+    'run_validity': _run_validity, 'run_invalid_reason': _run_invalid_reason,
     'total_steps': policy_step, 'window_start': ws, 'window_end': we, 'window_steps': len(window_rows),
-    'attacks_applied': len(attacked_rows),
+    'attacks_applied': len(attacked_rows), 'attack_invalid_steps': len(_invalid_steps),
     'token_flips_full_window': n_flip, 'token_flips_attacked_steps': attacked_flips,
     'open_count_full_window': open_count_full_window, 'open_count_attacked_steps': open_count_attacked_steps,
     'window_token_flips': n_flip, 'avg_arm_l2': avg_al, 'total_dt_s': round(total_dt, 1),

@@ -3,10 +3,11 @@
 **Date**: 2026-06-03  
 **Branch**: `exp/vis-attack-strength-upgrade-20260602`  
 **Objective**: `prefix_locked_gripper_open_margin`
+**Status**: PRE-REPAIR CANDIDATE EVIDENCE — under audit (see [VIS_PREFIX_MARGIN_REPAIR_STATUS.md](VIS_PREFIX_MARGIN_REPAIR_STATUS.md))
 
 ## Main Result
 
-**On ketchup at eps6, prefix_margin establishes same-budget random-controlled VIS-specific early_grasp_disruption.**
+**On ketchup at eps6, prefix_margin is pre-repair candidate evidence; final claim pending canonical gripper semantics, prefix-loss repair, and provenance rerun.** The historical results below were computed with semantically inconsistent OPEN predicates (`adv_grip > 0.5` counts CLOSE, not OPEN) and a prefix-locked loss that masked gripper labels to -100 (zero gripper loss). Provenance must be regenerated from trace CSVs using the canonical helper.
 
 ## Ketchup — Core Evidence
 
@@ -72,8 +73,12 @@ ProprioNoStep detects release-phase hazards (top windows are natural-release-con
 
 NOT ready. Dataset v0 exists (114 windows, 3 tasks) but positives are ketchup-dominated. Cross-task task-level positives missing. Leakage audit pending. Baselines undefined.
 
-## Claim Boundary
+## Claim Boundary (pre-repair — under audit)
 
-**Allowed**: same-budget VIS-specific ketchup early_grasp_disruption at eps6; gripper-channel selectivity (armL2=0); physical bridge; window generalization to 20-37; budget compression to eps4.
+**Pre-repair allowed** (subject to provenance recomputation): same-budget VIS-specific ketchup early_grasp_disruption at eps6; gripper-channel selectivity (armL2=0); physical bridge; window generalization to 20-37; budget compression to eps4.
 
-**Forbidden**: broad LIBERO generalization; ProprioNoStep-guided attack; pre-release drop; cream/salad task-level claim; trained detector ready.
+**Currently forbidden** (pending repair): all claims above, until provenance is regenerated with canonical semantics and prefix-loss is verified to include gripper term.
+
+**Permanently forbidden**: broad LIBERO generalization; ProprioNoStep-guided attack; pre-release drop; cream/salad task-level claim; trained detector ready; direct `< 0.5` / `> 0.5` comparisons outside `gripper_semantics.py`.
+
+**Repair audit**: see [VIS_PREFIX_MARGIN_REPAIR_STATUS.md](VIS_PREFIX_MARGIN_REPAIR_STATUS.md)

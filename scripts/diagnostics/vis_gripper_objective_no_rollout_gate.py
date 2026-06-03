@@ -23,6 +23,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from gripper_attack.attack_adapter import TokenPrefixPGDAttacker, get_adv_inputs_from_attack_result
 from gripper_attack.openvla_redecode import redecode_openvla_action_from_adv_inputs
+from gripper_attack.gripper_semantics import raw_gripper_is_open
 
 MODEL_PATH = '/data/aviary/models/openvla/openvla-7b-finetuned-libero-object'
 UNNORM_KEY = 'libero_object'
@@ -388,10 +389,12 @@ def main():
                         all_rows.append(row)
 
                         flipped = 'FLIP' if row.get('gripper_token_flipped') else 'noop'
+                        _adv_grip = row.get('adv_gripper_action', 1.0)
+                        is_open_mark = 'OPEN' if row.get('gripper_is_open', raw_gripper_is_open(float(_adv_grip))) else 'noop'
                         print(f'  {frame_data["frame_label"]} obj={objective} eps={eps_raw} '
-                              f'| {flipped} nad_dof7={row["nad_dof7"]:.4f} '
-                              f'armL2={row["arm_l2"]:.4f} open_after={row["open_region_prob_mass_after"]} '
-                              f't={row["attack_runtime_sec"]:.1f}s')
+                              f'| {flipped} {is_open_mark} nad_dof7={row.get("nad_dof7", 0):.4f} '
+                              f'armL2={row.get("arm_l2", 0):.4f} open_after={row.get("open_region_prob_mass_after", 0)} '
+                              f't={row.get("attack_runtime_sec", 0):.1f}s')
 
     os.makedirs(args.output_dir, exist_ok=True)
     csv_path = os.path.join(args.output_dir, 'vis_gripper_objective_no_rollout_metrics.csv')
