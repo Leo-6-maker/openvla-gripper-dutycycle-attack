@@ -195,7 +195,7 @@ def main():
         w = csv.DictWriter(f, fieldnames=csv_fields, extrasaction="ignore")
         w.writeheader(); w.writerows(results)
 
-    # Save eval metrics JSON for proposal script
+    # Save eval metrics JSON for proposal script (with metadata for consistency checks)
     eval_metrics = {
         "best_threshold": best_th, "best_K": best_k,
         "min_trigger_rate": MIN_TRIGGER_RATE,
@@ -203,6 +203,12 @@ def main():
         "test_MAE_tcn": round(tcn_mae, 2) if tcn_mae is not None else None,
         "test_MAE_rule": round(rule_mae, 2) if rule_mae is not None else None,
         "tcn_triggers_test": tcn_trig,
+        "checkpoint_basename": os.path.basename(args.checkpoint),
+        "npz_path": args.npz_path,
+        "split_csv": args.split_csv,
+        "split_col": args.split_col,
+        "label_schema_path": "data/detector/object_clean_label_schema_v3.json",
+        "feature_schema_path": "data/detector/object_clean_feature_schema_v3.json",
     }
     eval_json_path = args.output_csv.replace(".csv", "_eval_metrics.json")
     with open(eval_json_path, "w") as f:

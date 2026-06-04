@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""online_detector_window_proposals.py v4 — Generate attack window proposals from detector.
+"""online_detector_window_proposals.py v5 — Hardened attack window proposals from detector.
 
-Fixes from v3:
-  - Load full NPZ once, access X_raw and X_norm from matching original indices.
-  - Compute clean_natural_open_ratio from X_raw with raw_gripper<0.5=OPEN.
-  - Load best threshold/K from eval metrics.json.
-  - --dry-run mode.
-  - Do NOT run VIS from these proposals without gate approval.
+v5 hardening:
+  - proposal_valid requires full 18-step window (no clipped-short).
+  - proposal_eligible gate: clean_natural_open_ratio <= max_clean_open_ratio.
+  - Consistency check: checkpoint/NPZ/split must match eval metrics.
+  - SystemExit if X_raw missing (required for clean_open_ratio).
+  - --allow-mismatch to override consistency checks.
+  - Do NOT run VIS from proposals without gate approval.
 """
 
 from __future__ import annotations
@@ -14,8 +15,7 @@ import argparse, csv, json, os, sys
 import numpy as np
 import torch
 
-GRIPPER_IDX = 0  # gripper_command is feature 0
-GRASP_CLASS = 1  # grasp_formation
+GRIPPER_IDX = 0; GRASP_CLASS = 1
 
 
 def parse_args():
@@ -24,14 +24,17 @@ def parse_args():
     ap.add_argument("--npz-path", default="data/detector/object_clean_sequences_v3.npz")
     ap.add_argument("--split-csv", default="tables/object_detector_split_plan_clean.csv")
     ap.add_argument("--split-col", default="split_state_holdout")
-    ap.add_argument("--splits", nargs="+", default=["train","val","test"])
-    ap.add_argument("--eval-metrics-json", help="Load best threshold/K from eval metrics.json")
+    ap.add_argument("--splits", nargs="+", default=["val","test"])
+    ap.add_argument("--eval-metrics-json", required=True)
     ap.add_argument("--trigger-threshold", type=float, default=None)
     ap.add_argument("--trigger-K", type=int, default=None)
-    ap.add_argument("--output-csv", default="tables/object_detector_window_proposals_v4.csv")
+    ap.add_argument("--max-clean-open-ratio", type=float, default=0.1,
+                    help="Max clean natural OPEN ratio for eligibility")
+    ap.add_argument("--output-csv", default="tables/object_detector_window_proposals_v5.csv")
     ap.add_argument("--delays", type=int, nargs="+", default=[5, 10])
     ap.add_argument("--window-len", type=int, default=18)
     ap.add_argument("--device", default="cuda:0")
+    ap.add_argument("--allow-mismatch", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     return ap.parse_args()
 
@@ -48,53 +51,71 @@ def find_trigger(probs, K=2, threshold=0.5):
 
 def main():
     args = parse_args()
-    device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
-    # ── Resolve threshold/K ──
-    th = args.trigger_threshold; K = args.trigger_K
-    eval_path = args.eval_metrics_json
-    if eval_path and os.path.exists(eval_path):
-        with open(eval_path) as f: em = json.load(f)
-        if th is None: th = em.get("best_threshold")
-        if K is None: K = em.get("best_K")
-        print(f"Loaded from eval: threshold={th}, K={K}")
-    if th is None: th = 0.5
-    if K is None: K = 2
-    print(f"Trigger config: threshold={th}, K={K}")
+    # ── Load eval metrics ──
+    if not os.path.exists(args.eval_metrics_json):
+        print(f"ERROR: eval_metrics_json not found: {args.eval_metrics_json}")
+        sys.exit(1)
+    with open(args.eval_metrics_json) as f:
+        em = json.load(f)
+
+    # Consistency checks
+    mismatches = []
+    em_npz = em.get("npz_path",""); em_ckpt = em.get("checkpoint_basename","")
+    em_split = em.get("split_col",""); em_label = em.get("label_schema_path","")
+
+    if em_npz and os.path.basename(args.npz_path) != os.path.basename(em_npz):
+        mismatches.append(f"NPZ: args={os.path.basename(args.npz_path)} vs eval={os.path.basename(em_npz)}")
+    if em_ckpt and os.path.basename(args.checkpoint) != em_ckpt:
+        mismatches.append(f"checkpoint: args={os.path.basename(args.checkpoint)} vs eval={em_ckpt}")
+    if em_split and args.split_col != em_split:
+        mismatches.append(f"split_col: args={args.split_col} vs eval={em_split}")
+    if mismatches:
+        msg = "Consistency mismatch:\n  " + "\n  ".join(mismatches)
+        if args.allow_mismatch:
+            print(f"WARNING: {msg}")
+        else:
+            print(f"ERROR: {msg}\n  Use --allow-mismatch to override.")
+            sys.exit(1)
+
+    # Resolve threshold/K
+    th = args.trigger_threshold or em.get("best_threshold", 0.5)
+    K = args.trigger_K or em.get("best_K", 2)
+    print(f"Trigger: threshold={th}, K={K} (min_trigger_rate={em.get('min_trigger_rate','?')})")
 
     if args.dry_run:
-        print("DRY RUN: would load checkpoint and generate proposals.")
-        return
+        print("DRY RUN complete."); return
 
-    # ── Load NPZ once ──
+    # ── Load NPZ ──
+    device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     print(f"Loading NPZ: {args.npz_path}")
     data = np.load(args.npz_path, allow_pickle=True)
-    has_raw = "X_raw" in data
-    X_model = data["X_norm"] if "X_norm" in data else data["X"]
-    X_raw_all = data["X_raw"] if has_raw else None
-    y_all = data["y"]; mask_all = data["mask"]
-    ep_ids_all = list(data.get("episode_ids", [f"ep_{i}" for i in range(len(X_model))]))
-    print(f"  {len(ep_ids_all)} episodes, X_raw={'present' if has_raw else 'MISSING'}")
+    if "X_raw" not in data:
+        print("ERROR: X_raw not found in NPZ — required for clean_open_ratio with raw gripper semantics.")
+        sys.exit(1)
+    X_norm_all = data["X_norm"] if "X_norm" in data else data["X"]
+    X_raw_all = data["X_raw"]
+    mask_all = data["mask"]
+    ep_ids_all = list(data.get("episode_ids", [f"ep_{i}" for i in range(len(X_norm_all))]))
+    print(f"  {len(ep_ids_all)} episodes, X_raw present, X_norm present")
 
-    # ── Load split ──
+    # ── Split ──
     split_map = {}
     if os.path.exists(args.split_csv):
         with open(args.split_csv, newline="") as f:
             split_map = {r["episode_id"]: r[args.split_col] for r in csv.DictReader(f)}
 
-    # ── Load model ──
+    # ── Model ──
     ckpt = torch.load(args.checkpoint, map_location=device, weights_only=False)
     config = ckpt.get("config", {})
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from train_early_grasp_detector import EarlyGraspTCN
-
     model = EarlyGraspTCN(
         input_dim=config.get("input_dim",13), hidden_dim=config.get("hidden_dim",64),
         num_layers=config.get("num_layers",3), kernel_size=config.get("kernel_size",3),
         num_classes=config.get("num_classes",3), dropout=config.get("dropout",0.1),
     ).to(device)
-    model.load_state_dict(ckpt["model_state"])
-    model.eval()
+    model.load_state_dict(ckpt["model_state"]); model.eval()
 
     # ── Meta ──
     meta_csv = args.npz_path.replace(".npz","_meta.csv")
@@ -103,50 +124,56 @@ def main():
         with open(meta_csv, newline="") as f:
             for r in csv.DictReader(f): meta[r["episode_id"]] = r
 
-    # ── Generate proposals per split ──
+    # ── Generate ──
     proposals = []
     for split in args.splits:
         for orig_idx, eid in enumerate(ep_ids_all):
             eid_str = str(eid)
-            if split_map.get(eid_str, "train") != split:
-                continue
+            if split_map.get(eid_str, "train") != split: continue
 
-            X_norm_ep = X_model[orig_idx]
-            X_raw_ep = X_raw_all[orig_idx] if has_raw else None
-            m = mask_all[orig_idx]
-            T = int(m.sum())
+            Xn = X_norm_all[orig_idx]; Xr = X_raw_all[orig_idx]
+            m = mask_all[orig_idx]; T = int(m.sum())
 
-            # Model inference
-            Xt = torch.from_numpy(X_norm_ep[:T]).float().unsqueeze(0).to(device)
+            Xt = torch.from_numpy(Xn[:T]).float().unsqueeze(0).to(device)
             with torch.no_grad():
                 probs = torch.softmax(model(Xt), dim=-1).squeeze(0).cpu().numpy()
 
             T_pred = find_trigger(probs, K=K, threshold=th)
-            ep = meta.get(eid_str, {})
+            ep = meta.get(eid_str,{})
             tg_str = ep.get("T_gform",""); tg = int(tg_str) if tg_str else None
             task = ep.get("task_name","?"); state_id = ep.get("state_id","?")
             trig_err = (T_pred - tg) if (T_pred is not None and tg is not None) else None
 
             for delay in args.delays:
-                if T_pred is not None and T_pred < T:
-                    ws = T_pred + delay
-                    we = min(ws + args.window_len - 1, T - 1)
-                    valid = ws <= we < T
-                else:
-                    ws = ""; we = ""; valid = False
+                ws = ""; we = ""; actual_len = 0; valid = False; inv_reason = ""
+                clean_open_ratio = ""; clean_open_count = 0; eligible = False; elig_reason = ""
 
-                # Compute clean_natural_open_ratio from X_raw
-                clean_open_ratio = ""; clean_open_count = ""; actual_win_len = ""
-                raw_open_semantics = ""
-                if has_raw and valid and isinstance(ws, int):
-                    win_end = int(we) + 1
-                    raw_gc = X_raw_ep[int(ws):win_end, GRIPPER_IDX]
-                    actual_win_len = len(raw_gc)
+                if T_pred is None:
+                    inv_reason = "no_trigger"
+                elif T_pred >= T:
+                    inv_reason = "trigger_out_of_bounds"
+                else:
+                    ws = T_pred + delay; we = ws + args.window_len - 1
+                    if ws < 0:
+                        inv_reason = "window_before_start"
+                    elif we >= T:
+                        actual_len = T - ws
+                        inv_reason = f"clipped_short_len_{actual_len}"
+                    else:
+                        actual_len = args.window_len
+                        valid = True
+
+                # Compute clean_open_ratio from X_raw
+                if valid and isinstance(ws, int):
+                    raw_gc = Xr[int(ws):int(we)+1, GRIPPER_IDX]
                     clean_open_count = int((raw_gc < 0.5).sum())
-                    clean_open_ratio = round(clean_open_count / max(actual_win_len, 1), 4)
-                    raw_open_semantics = "raw_gripper<0.5=OPEN"
-                elif not has_raw:
-                    raw_open_semantics = "X_raw_missing_in_NPZ"
+                    clean_open_ratio = round(clean_open_count / args.window_len, 4)
+
+                    # Eligibility gate
+                    if clean_open_ratio <= args.max_clean_open_ratio:
+                        eligible = True
+                    else:
+                        elig_reason = f"natural_open_confound_ratio_{clean_open_ratio}"
 
                 proposals.append(dict(
                     episode_id=eid_str, task_name=task, state_id=state_id, split=split,
@@ -154,36 +181,41 @@ def main():
                     T_pred=T_pred if T_pred is not None else "",
                     trigger_error=trig_err if trig_err is not None else "",
                     delay=delay, window_start=ws, window_end=we,
-                    window_len=args.window_len, proposal_valid=valid,
+                    actual_window_len=actual_len,
+                    proposal_valid=valid, invalid_reason=inv_reason,
+                    proposal_eligible=eligible, eligibility_reason=elig_reason,
                     clean_natural_open_ratio=clean_open_ratio,
                     clean_open_count=clean_open_count,
-                    actual_window_len=actual_win_len,
-                    raw_open_semantics=raw_open_semantics,
-                    detector_version="v4",
-                    checkpoint=os.path.basename(args.checkpoint),
+                    raw_open_semantics="raw_gripper<0.5=OPEN",
+                    detector_version="v5", checkpoint=os.path.basename(args.checkpoint),
                     threshold=th, K=K,
-                    eval_metrics_json=eval_path or "",
-                    feature_space_model="X_norm",
-                    feature_space_open_ratio="X_raw" if has_raw else "missing",
-                    notes="detector_based" if T_pred is not None else "no_trigger"))
+                    eval_metrics_json=args.eval_metrics_json,
+                    npz_path=args.npz_path, split_col=args.split_col,
+                    feature_space_model="X_norm", feature_space_open_ratio="X_raw",
+                    notes="detector_based"))
 
     # ── Write ──
     fields = ["episode_id","task_name","state_id","split","T_gform","T_pred",
-              "trigger_error","delay","window_start","window_end","window_len",
-              "proposal_valid","clean_natural_open_ratio","clean_open_count",
-              "actual_window_len","raw_open_semantics",
-              "detector_version","checkpoint","threshold","K","eval_metrics_json",
+              "trigger_error","delay","window_start","window_end","actual_window_len",
+              "proposal_valid","invalid_reason",
+              "proposal_eligible","eligibility_reason",
+              "clean_natural_open_ratio","clean_open_count",
+              "raw_open_semantics",
+              "detector_version","checkpoint","threshold","K",
+              "eval_metrics_json","npz_path","split_col",
               "feature_space_model","feature_space_open_ratio","notes"]
     os.makedirs(os.path.dirname(args.output_csv) or ".", exist_ok=True)
     with open(args.output_csv,"w",newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader(); w.writerows(proposals)
 
-    n_valid = sum(1 for p in proposals if p["proposal_valid"])
-    n_no_trigger = sum(1 for p in proposals if "no_trigger" in str(p.get("notes","")))
-    n_with_open_ratio = sum(1 for p in proposals if p["clean_natural_open_ratio"] != "")
-    print(f"Wrote {len(proposals)} proposals: {n_valid} valid, "
-          f"{n_no_trigger} no-trigger, {n_with_open_ratio} with clean_open_ratio")
+    n = len(proposals); n_valid = sum(1 for p in proposals if p["proposal_valid"])
+    n_eligible = sum(1 for p in proposals if p["proposal_eligible"])
+    n_no_trigger = sum(1 for p in proposals if "no_trigger" in str(p.get("invalid_reason","")))
+    n_clipped = sum(1 for p in proposals if "clipped" in str(p.get("invalid_reason","")))
+    n_confound = sum(1 for p in proposals if "confound" in str(p.get("eligibility_reason","")))
+    print(f"Wrote {n} proposals: {n_valid} valid, {n_eligible} eligible, "
+          f"{n_no_trigger} no-trigger, {n_clipped} clipped, {n_confound} confounded")
     print(f"Saved to {args.output_csv}")
 
 
