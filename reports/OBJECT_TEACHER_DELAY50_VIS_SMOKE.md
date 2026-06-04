@@ -48,8 +48,23 @@ This is **NOT** a simple "lead=-50 works" result. The phase-response is task-dep
 - alphabet_soup: rerun random to complete denominator
 - phase-response mini-matrix: 3 far_closed + 3 near_closed + controls
 
+## Merged Summary
+
+The raw audit summary (`object_teacher_delay50_vis_smoke_summary.csv`) contains
+split groups for butter (clean/random and VIS in different run_ids). The
+**merged summary** (`object_teacher_delay50_vis_smoke_merged_summary.csv`) is
+the claim-facing table with butter resolved to claim_usable=True after manual
+merge validation.
+
+| Task | Claim | Merge Type | Taxonomy |
+|------|-------|------------|----------|
+| ketchup | True | raw_audit_group | action+, physical strong, task+ |
+| butter | True | manual_merge_validated | action+, physical strong, task+ |
+| alphabet_soup | False | incomplete_denominator | action+, physical weak, task+ |
+
 ## Provenance
 
-- Traces recovered from global runs after reboot; localized copies in per-episode dirs.
+- Raw audit: `tables/object_teacher_delay50_vis_smoke_summary.csv` (preserves split groups)
+- Merged summary: `tables/object_teacher_delay50_vis_smoke_merged_summary.csv` (claim-facing)
 - Butter manual merge: `tables/object_teacher_delay50_manual_trace_merge.csv`
-- Audit: `tables/object_teacher_delay50_vis_smoke_summary.csv`
+- Traces recovered from global runs after reboot; localized copies in per-episode dirs.

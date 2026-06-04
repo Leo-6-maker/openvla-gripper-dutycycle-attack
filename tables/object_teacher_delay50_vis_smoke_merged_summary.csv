@@ -1,0 +1,4 @@
+task_key,state_id,window_start,window_end,phase_bin,lead,VIS_OPEN,qpos_delta,qpos_label,done,task_failure,n_clean,n_random,n_vis,denominator_status,claim_usable,merge_type,taxonomy,provenance_note
+ketchup,0,16,33,far_closed_proxy,-50,18/18,0.038042,strong,False,True,1,1,1,clean,True,raw_audit_group,action_positive_physical_strong_task_positive,single raw audit group
+butter,0,29,46,near_closed_proxy,-47,18/18,0.037905,strong,False,True,1,1,1,clean,True,manual_merge_validated,action_positive_physical_strong_task_positive,split groups; merged via manual_trace_merge.csv
+alphabet_soup,0,3,20,far_closed_proxy,-50,18/18,0.027619,weak,False,True,1,0,1,incomplete,False,incomplete_denominator,action_positive_physical_weak_task_positive_or_uncertain,random missing; needs rerun
