@@ -233,9 +233,11 @@ instruction_keywords = task_key.replace('_',' ').lower().split()
 inst_lower = task.instruction.lower() if hasattr(task,'instruction') else ''
 key_in_instruction = all(kw in inst_lower for kw in instruction_keywords)
 if not (key_in_problem or key_in_bddl or key_in_instruction):
-    print(f"WARNING: task_key='{task_key}' not found in problem_folder='{task.problem_folder}' or bddl='{task.bddl_file}' or instruction='{inst_lower}'")
-    print(f"  Proceeding, but verify task_id={cfg['task_id']} maps correctly.")
-print(f"Task: {task_key} (id={cfg['task_id']}) | problem={task.problem_folder} | bddl={task.bddl_file} | instruction='{cfg['instruction']}'")
+    raise SystemExit(
+        f"task_id mapping mismatch: task_key='{task_key}' not found in "
+        f"problem_folder='{task.problem_folder}' bddl='{task.bddl_file}' instruction='{inst_lower}'. "
+        f"Check TASK_CONFIGS task_id={cfg['task_id']}.")
+print(f"Task: {task_key} (id={cfg['task_id']}) | problem={task.problem_folder} | bddl={task.bddl_file} | instruction='{cfg['instruction']}' | mapping_assertion=passed")
 
 initial_states = task_suite.get_task_init_states(cfg['task_id'])
 n_states = len(initial_states)

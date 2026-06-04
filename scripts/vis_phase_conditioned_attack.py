@@ -11,12 +11,12 @@ CRITICAL: selector modes NEVER fall back to fixed window.
 """
 
 from __future__ import annotations
-import argparse, csv, json, os, subprocess, sys, time
+import argparse, csv, json, os, shutil, subprocess, sys, time
 from pathlib import Path
 
 REPO = Path(os.environ.get("ATTACK_REPO", "/data/liuyu/repos/openvla-gripper-dutycycle-attack-clean-main-20260524"))
 VIS_ROLLOUT = str(REPO / "scripts/vis_rollout_adaptive_v3.py")
-PYTHON = os.environ.get("PYTHON_BIN", "python")
+PYTHON = os.environ.get("PYTHON_BIN", "/home/liuyu/.conda/envs/openvla_official_libero_20260525/bin/python")
 CANONICAL_OPEN_SEMANTICS_VERSION = "v1.0_decoded_action_lt_0.5_is_open_20260603"
 
 
@@ -210,23 +210,35 @@ def main():
         "natural_release_confounded": selection_meta.get("natural_release_confounded", ""),
         "phase_conditioned_wrapper_version": CANONICAL_OPEN_SEMANTICS_VERSION,
     }
+    # Localize trace to per-episode directory
+    localized_path = ""
+    episode_id = args.episode_id or f"{args.task}_s{args.state_id}"
     if trace_path and os.path.exists(trace_path):
         patch_trace_with_metadata(trace_path, metadata)
         print(f"Patched trace: {trace_path}")
+        traces_dir = os.path.join(args.output_dir, "traces")
+        os.makedirs(traces_dir, exist_ok=True)
+        local_name = f"{episode_id}_{args.condition}_w{ws}_{we}_trace.csv"
+        localized_path = os.path.join(traces_dir, local_name)
+        shutil.copy2(trace_path, localized_path)
+        print(f"Localized trace: {localized_path}")
     elif result.returncode == 0:
         print("FATAL: subprocess rc=0 but no trace CSV found. Cannot patch metadata.")
-        manifest = {"task":args.task,"seed":args.seed,"condition":args.condition,
-            "window_source":args.window_source,"window_start":ws,"window_end":we,
-            "selector_type":selector_type,"trace_path":None,"rc":result.returncode,
+        manifest = {"task":args.task,"state_id":args.state_id,"episode_id":episode_id,
+            "condition":args.condition,"window_source":args.window_source,
+            "window_start":ws,"window_end":we,"selector_type":selector_type,
+            "global_trace_path":None,"localized_trace_path":"","rc":result.returncode,
             "trace_patch_failed":True}
         with open(os.path.join(args.output_dir, "phase_conditioned_attack_manifest.json"), "a") as mf:
             json.dump(manifest, mf); mf.write("\n")
         sys.exit(2)
 
     # Write success manifest
-    manifest = {"task":args.task,"seed":args.seed,"condition":args.condition,
-        "window_source":args.window_source,"window_start":ws,"window_end":we,
-        "selector_type":selector_type,"trace_path":trace_path,"rc":result.returncode}
+    manifest = {"task":args.task,"state_id":args.state_id,"episode_id":episode_id,
+        "condition":args.condition,"window_source":args.window_source,
+        "window_start":ws,"window_end":we,"selector_type":selector_type,
+        "global_trace_path":trace_path,"localized_trace_path":localized_path,
+        "rc":result.returncode,"trace_patch_failed":False}
     with open(os.path.join(args.output_dir, "phase_conditioned_attack_manifest.json"), "a") as mf:
         json.dump(manifest, mf); mf.write("\n")
     sys.exit(result.returncode)
