@@ -92,42 +92,55 @@ def find_eef_slowdown(eef_speed, percentile=20):
 
 
 def classify_window(ws, we, T, raw_gc, qpos, eef_speed, events):
-    """Classify window into a phase bin proxy."""
+    """Classify window into a REFINED phase bin proxy.
+
+    Priority order (first match wins):
+    """
     open_ratio = np.mean(raw_gc[ws:we+1] < 0.5)
-    tg = events.get("T_gform"); tm = events.get("T_qpos_motion")
-    ts = events.get("T_qpos_stable"); te = events.get("T_eef_slowdown")
+    tg = events.get("T_gform")
+    tm = events.get("T_qpos_motion")  # first meaningful qpos change
+    ts = events.get("T_qpos_stable")  # qpos stabilizes after opening
 
-    # Natural-open confounded
+    # 1. Natural-open confounded
     if open_ratio > 0.3:
-        return "natural_open_or_release_proxy"
+        return "natural_open_or_release_proxy", "open_ratio>0.3", "high" if open_ratio > 0.5 else "medium"
 
-    # Stable grasp: window after qpos has stabilized or well after T_gform
+    # 2. Stable grasp: window after qpos has stabilized OR well past T_gform
     if ts is not None and ws >= ts:
-        return "stable_grasp_or_lift_proxy"
+        return "stable_grasp_or_lift_proxy", f"ws>=T_qpos_stable({ts})", "high"
     if tg is not None and ws > tg + 10:
-        return "stable_grasp_or_lift_proxy"
+        return "stable_grasp_or_lift_proxy", f"ws>T_gform+10({tg+10})", "high"
 
-    # Grasp formation zone: overlaps qpos motion -> stability
+    # 3. Grasp formation zone: overlaps qpos motion -> stability
     if tm is not None and ts is not None and we >= tm and ws <= ts:
-        return "grasp_formation_pre_lock_proxy"
+        return "grasp_formation_pre_lock_proxy", f"overlaps_qpos_motion[{tm},{ts}]", "high"
     if tg is not None and tg - 20 <= ws <= tg + 10:
-        return "grasp_formation_pre_lock_proxy"
+        return "grasp_formation_pre_lock_proxy", f"ws_in[T_gform-20,T_gform+10]=[{tg-20},{tg+10}]", "medium"
 
-    # Pre-grasp CLOSED: gripper closed, before qpos motion
+    # 4. Pre-lock CLOSED: just before grasp, gripper closed
+    if open_ratio <= 0.1 and tg is not None and tg - 20 <= ws < tg:
+        return "pre_lock_closed_proxy", f"ws_in[T_gform-20,T_gform)=[{tg-20},{tg})", "high"
+    if open_ratio <= 0.1 and tm is not None and tm - 20 <= ws < tm:
+        return "pre_lock_closed_proxy", f"ws_in[T_motion-20,T_motion)=[{tm-20},{tm})", "medium"
+
+    # 5. Approach near CLOSED: moderately before grasp, gripper closed
+    if open_ratio <= 0.1 and tg is not None and tg - 40 <= ws < tg - 20:
+        return "approach_near_closed_proxy", f"ws_in[T_gform-40,T_gform-20)=[{tg-40},{tg-20})", "high"
+    if open_ratio <= 0.1 and tm is not None and tm - 40 <= ws < tm - 20:
+        return "approach_near_closed_proxy", f"ws_in[T_motion-40,T_motion-20)=[{tm-40},{tm-20})", "medium"
+
+    # 6. Approach far CLOSED: far before grasp, gripper closed
+    if open_ratio <= 0.1 and tg is not None and ws < tg - 40:
+        return "approach_far_closed_proxy", f"ws<T_gform-40({tg-40})", "high"
+    if open_ratio <= 0.1 and tm is not None and ws < tm - 40:
+        return "approach_far_closed_proxy", f"ws<T_motion-40({tm-40})", "medium"
+
+    # Fallback: closed but can't classify precisely
     if open_ratio <= 0.1:
-        if tm is not None and we < tm:
-            return "pre_grasp_closed_proxy"
-        if tg is not None and we < tg:
-            return "pre_grasp_closed_proxy"
-        return "pre_grasp_closed_proxy"
+        return "pre_grasp_closed_proxy", "fallback_closed_no_T_gform", "low"
 
-    # Approach: far from grasp, EEF moving
-    if tg is not None and ws < tg - 20:
-        if eef_speed[ws:we+1].mean() > 0.003:
-            return "approach_far_proxy"
-        return "approach_near_proxy"
-
-    return "unknown_proxy"
+    # 7. Anything else
+    return "unknown_proxy", "no_rule_matched", "low"
 
 
 def main():
@@ -278,7 +291,7 @@ def main():
             T_eef_slowdown=int(ev["T_eef_slowdown"]) if ev.get("T_eef_slowdown") else None,
         )
 
-        phase_bin = classify_window(ws, we, T, raw_gc, qpos, eef_speed, events)
+        phase_bin, bin_reason, bin_conf = classify_window(ws, we, T, raw_gc, qpos, eef_speed, events)
 
         task = c.get("task_name", c.get("task_key", "?"))
         task_key = TASK_KEY_MAP.get(task, task) if len(task) > 20 else task
@@ -314,6 +327,8 @@ def main():
             dist_to_T_eef_slowdown=dist(int(ev["T_eef_slowdown"]) if ev.get("T_eef_slowdown") else None),
             dist_to_T_done=dist(T),
             phase_bin_proxy=phase_bin,
+            phase_bin_reason=bin_reason,
+            phase_bin_confidence=bin_conf,
             notes="",
         ))
 
@@ -326,7 +341,7 @@ def main():
                 "eef_speed_mean","eef_speed_max","eef_displacement","eef_z_delta",
                 "dist_to_T_open_onset","dist_to_T_qpos_motion","dist_to_T_qpos_min",
                 "dist_to_T_qpos_stable","dist_to_T_eef_slowdown","dist_to_T_done",
-                "phase_bin_proxy","notes"]
+                "phase_bin_proxy","phase_bin_reason","phase_bin_confidence","notes"]
     with open(args.output_descriptors, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=d_fields, extrasaction="ignore")
         w.writeheader(); w.writerows(descriptors)
@@ -342,12 +357,13 @@ def main():
     # ── 6. Candidate ranking ──
     BIN_PRIORITY = {
         "grasp_formation_pre_lock_proxy": 1,
-        "pre_grasp_closed_proxy": 2,
-        "approach_near_proxy": 3,
-        "approach_far_proxy": 4,
-        "stable_grasp_or_lift_proxy": 5,
-        "natural_open_or_release_proxy": 6,
-        "unknown_proxy": 7,
+        "pre_lock_closed_proxy": 2,
+        "approach_near_closed_proxy": 3,
+        "pre_grasp_closed_proxy": 4,
+        "approach_far_closed_proxy": 5,
+        "stable_grasp_or_lift_proxy": 6,
+        "natural_open_or_release_proxy": 7,
+        "unknown_proxy": 8,
     }
 
     # Filter to strict-eligible only, then rank
@@ -361,7 +377,7 @@ def main():
     ranking = []
     for task_key in sorted(per_task):
         for i, d in enumerate(per_task[task_key][:3]):  # top 3 per task
-            d["rank"] = i + 1; d["reason"] = f"phase_bin={d['phase_bin_proxy']}_open={d['clean_open_ratio']}"
+            d["rank"] = i + 1; d["reason"] = f"{d['phase_bin_proxy']}_conf={d.get('phase_bin_confidence','?')}_open={d['clean_open_ratio']}"
             ranking.append(d)
 
     # Take top 20 overall
@@ -369,7 +385,7 @@ def main():
     ranking = ranking[:20]
 
     r_fields = ["episode_id","task_key","state_id","window_start","window_end","T_gform",
-                "relative_lead","phase_bin_proxy","clean_open_ratio",
+                "relative_lead","phase_bin_proxy","phase_bin_confidence","clean_open_ratio",
                 "candidate_source","rank","reason"]
     with open(args.output_ranking, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=r_fields, extrasaction="ignore")
