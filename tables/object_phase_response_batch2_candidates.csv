@@ -1,0 +1,8 @@
+episode_id,task_key,state_id,window_start,window_end,phase_bin_proxy,clean_open_ratio,T_gform,relative_lead,candidate_source,batch,reason
+obj100_alphabet_soup_alphabet_soup_s2,alphabet_soup,2,11,28,approach_far_closed_proxy,0.0,61,-50,teacher_oracle,2,phase_bin=approach_far_closed_proxy
+obj100_alphabet_soup_alphabet_soup_s4,alphabet_soup,4,4,21,approach_far_closed_proxy,0.0,54,-50,teacher_oracle,2,phase_bin=approach_far_closed_proxy
+obj100_bbq_sauce_bbq_sauce_s4,bbq_sauce,4,14,31,approach_far_closed_proxy,0.0,64,-50,teacher_oracle,2,phase_bin=approach_far_closed_proxy
+obj100_alphabet_soup_alphabet_soup_s3,alphabet_soup,3,21,38,approach_near_closed_proxy,0.0,71,-50,teacher_oracle,2,phase_bin=approach_near_closed_proxy
+obj100_alphabet_soup_alphabet_soup_s6,alphabet_soup,6,40,57,approach_near_closed_proxy,0.0,90,-50,teacher_oracle,2,phase_bin=approach_near_closed_proxy
+obj100_alphabet_soup_alphabet_soup_s7,alphabet_soup,7,60,77,approach_near_closed_proxy,0.0,110,-50,teacher_oracle,2,phase_bin=approach_near_closed_proxy
+obj100_chocolate_pudding_rerun_chocolate_pudding_s6,chocolate_pudding,6,36,53,pre_lock_closed_proxy,0.0,86,-50,teacher_oracle,2,phase_bin=pre_lock_closed_proxy
