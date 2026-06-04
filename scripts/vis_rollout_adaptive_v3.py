@@ -118,7 +118,7 @@ from transformers import AutoModelForVision2Seq, AutoProcessor
 model = AutoModelForVision2Seq.from_pretrained(
     MODEL_PATH, attn_implementation='eager', torch_dtype=torch.bfloat16,
     low_cpu_mem_usage=True, device_map='auto',
-    max_memory={_gpu_ids[0]: '9000MiB', _gpu_ids[1]: '9000MiB', 'cpu': '64GiB'}, trust_remote_code=True)
+    max_memory={_gpu_ids[0]: '10500MiB', _gpu_ids[1]: '10500MiB', 'cpu': '64GiB'}, trust_remote_code=True)
 processor = AutoProcessor.from_pretrained(MODEL_PATH, trust_remote_code=True)
 device = next(model.parameters()).device
 mdtype = next(model.parameters()).dtype

@@ -316,10 +316,12 @@ def _compute_provenance(trace_rows, trace_path, info):
             row['qpos_abs_after_max'] = round(max(qpos_post_vals), 6)
         else:
             row['validity'] = 'schema_incomplete'
-            row['invalid_reason'] = (row.get('invalid_reason', '') + '; missing qpos_post_step').strip('; ')
+            _prev = row.get('invalid_reason') or ''
+            row['invalid_reason'] = (_prev + '; missing qpos_post_step').strip('; ')
     else:
         row['validity'] = 'schema_incomplete'
-        row['invalid_reason'] = (row.get('invalid_reason', '') + '; no effective rows').strip('; ')
+        _prev = row.get('invalid_reason') or ''
+        row['invalid_reason'] = (_prev + '; no effective rows').strip('; ')
 
     # Arm L2
     arm_l2_vals = [float(r['arm_l2']) for r in window_rows if 'arm_l2' in r]
@@ -505,11 +507,14 @@ def _compute_group_summary(rows):
         # Primary claim: ONLY ketchup 10-27 eps6, post-repair code.
         # Supporting claim: ONLY ketchup 20-37 eps6, post-repair code.
         # Any other task/window/eps/code_status combination is ineligible.
-        _task = str(s.get('task', ''))
-        _eps = int(s.get('eps_raw_pixels', -1))
-        _ws = int(s.get('window_start', -1))
-        _we = int(s.get('window_end', -1))
-        _code = str(s.get('code_status', ''))
+        _task = str(s.get('task') or '')
+        try: _eps = int(s.get('eps_raw_pixels') or -1)
+        except (ValueError, TypeError): _eps = -1
+        try: _ws = int(s.get('window_start') or -1)
+        except (ValueError, TypeError): _ws = -1
+        try: _we = int(s.get('window_end') or -1)
+        except (ValueError, TypeError): _we = -1
+        _code = str(s.get('code_status') or '')
 
         _is_primary = (
             _task == 'ketchup'
@@ -526,7 +531,7 @@ def _compute_group_summary(rows):
             and _code == 'post_repair'
         )
 
-        _window_steps = _we - _ws + 1
+        _window_steps = max(1, _we - _ws + 1)
         OPEN_THRESHOLD = max(1, _window_steps - 2)  # >= 16 for 18-step window
 
         claim_eligible = _is_primary  # false by default unless primary group
@@ -568,18 +573,24 @@ def _compute_group_summary(rows):
 
         # Prefix OPEN count must meet threshold
         _open_min = s.get('canonical_open_min', 0) or 0
+        try: _open_min = int(_open_min)
+        except (ValueError, TypeError): _open_min = 0
         if _open_min < OPEN_THRESHOLD:
             claim_eligible = False
             caveats.append(f'prefix OPEN min={_open_min} < {OPEN_THRESHOLD}')
 
         # qpos must show physical opening
         _qpos_min = s.get('qpos_delta_post_min')
+        try: _qpos_min = float(_qpos_min) if _qpos_min is not None else None
+        except (ValueError, TypeError): _qpos_min = None
         if _qpos_min is None or _qpos_min < 0.03:
             claim_eligible = False
             caveats.append(f'qpos_delta_post_min={_qpos_min} < 0.03 (no physical opening)')
 
         # prefix armL2 must be near-zero (random armL2 is reported but not a disqualifier)
         _arm_max = s.get('prefix_armL2_max')
+        try: _arm_max = float(_arm_max) if _arm_max is not None else None
+        except (ValueError, TypeError): _arm_max = None
         if _arm_max is None or _arm_max > 1e-6:
             claim_eligible = False
             caveats.append(f'prefix_armL2_max={_arm_max} > 1e-6 (prefix arm drift present)')
@@ -655,21 +666,21 @@ def generate_report(provenance_rows, group_summaries, args):
         lines.append('')
         lines.append('| Task | Window | eps | Code | Prefix F/S | Random F/S | OPEN pre/rand | qposΔ | armL2 | Denominator | Claim Ready? |')
         lines.append('|------|--------|-----|------|-----------|------------|---------------|-------|-------|-------------|-------------|')
-        for gs in sorted(group_summaries, key=lambda g: (g['task'], g['window_start'])):
+        for gs in sorted(group_summaries, key=lambda g: (g.get('task') or '', g.get('window_start') or 0)):
             _pref_open = gs.get('open_count_prefix_mean', '-')
             _rand_open = gs.get('open_count_random_mean', '-')
             _qpos = gs.get('qpos_delta_post_prefix_mean', '-')
             _arm = gs.get('armL2_max', '-')
             lines.append(
-                f"| {gs['task']} | {gs['window_start']}-{gs['window_end']} "
-                f"| {gs['eps_raw_pixels']} | {gs['code_status'][:8]} "
-                f"| {gs['prefix_fail']}/{gs['prefix_success']} "
-                f"| {gs['random_fail']}/{gs['random_success']} "
+                f"| {gs.get('task','?')} | {gs.get('window_start','?')}-{gs.get('window_end','?')} "
+                f"| {gs.get('eps_raw_pixels','?')} | {str(gs.get('code_status',''))[:8]} "
+                f"| {gs.get('prefix_fail','?')}/{gs.get('prefix_success','?')} "
+                f"| {gs.get('random_fail','?')}/{gs.get('random_success','?')} "
                 f"| {_pref_open}/{_rand_open} "
                 f"| {_qpos} "
                 f"| {_arm} "
-                f"| {gs['denominator_status']} "
-                f"| {gs['claim_readiness']} |"
+                f"| {gs.get('denominator_status','?')} "
+                f"| {gs.get('claim_readiness','?')} |"
             )
         lines.append('')
 

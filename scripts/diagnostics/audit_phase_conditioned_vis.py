@@ -19,6 +19,7 @@ except ImportError: raw_gripper_is_open = lambda v: float(v) < 0.5
 
 WINDOW_LEN_TOLERANCE = 2
 QPOS_OPENING_DELTA_THRESH = 0.03
+QPOS_OPENING_WEAK_MIN = 0.01    # weak physical: 0.01 <= delta < 0.03
 RANDOM_QPOS_THRESH = 0.005
 
 GRIP_FIELDS = ("adv_grip", "raw_gripper", "clean_grip", "clean_gripper_action", "adv_gripper_action")
@@ -143,7 +144,11 @@ def classify_bridge_taxonomy(vis_metrics, random_metrics, clean_metrics):
         result["claim_usable"] = True; labels.append("claim_usable")
     else:
         if not a: labels.append("no_action_bridge")
-        elif a and not p: labels.append("action_positive_physical_negative")
+        elif a and not p:
+            if qd_open >= QPOS_OPENING_WEAK_MIN:
+                labels.append("action_positive_physical_weak")
+            else:
+                labels.append("action_positive_physical_negative")
         elif a and p and not t: labels.append("action_positive_physical_positive_task_negative")
         if c: labels.append("natural_release_confounded")
         if not d and a: labels.append("denominator_polluted")
@@ -225,7 +230,11 @@ def compute_group_summary(vis_list, random_list, clean_list, window_info):
     else:
         s["claim_usable"] = False
         if not a: labels.append("no_action_bridge")
-        elif a and not p: labels.append("action_positive_physical_negative")
+        elif a and not p:
+            if qd_open >= QPOS_OPENING_WEAK_MIN:
+                labels.append("action_positive_physical_weak")
+            else:
+                labels.append("action_positive_physical_negative")
         elif a and p and not t: labels.append("action_positive_physical_positive_task_negative")
         if c: labels.append("natural_release_confounded")
         if not d: labels.append("denominator_polluted")

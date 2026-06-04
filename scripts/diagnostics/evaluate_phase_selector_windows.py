@@ -36,7 +36,7 @@ def parse_args():
     ap.add_argument("--phase-csv", default="tables/phase_alignment_clean_rollouts.csv")
     ap.add_argument("--threshold", type=float, default=0.5)
     ap.add_argument("--consecutive-k", type=int, default=2)
-    ap.add_argument("--window-policy", choices=["T_to_Tplus17","Tminus3_to_Tplus14"], default="T_to_Tplus17")
+    ap.add_argument("--window-policy", choices=["T_to_Tplus17","Tminus3_to_Tplus14","Tplus5_to_Tplus22","Tplus10_to_Tplus27","Tplus15_to_Tplus32","Tplus20_to_Tplus37","Tplus25_to_Tplus42","Tplus30_to_Tplus47","Tplus35_to_Tplus52","Tplus40_to_Tplus57","Tlock_minus5_to_Tlock_plus12"], default="T_to_Tplus17")
     ap.add_argument("--output-csv", default="tables/phase_selector_window_proposals.csv")
     ap.add_argument("--allow-partial-labels", action="store_true",
         help="Allow label_validity=partial_missing_qpos (default: heuristic only)")
@@ -83,6 +83,7 @@ def main():
     PROPOSAL_FIELDS = [
         "task","seed","T_eg","window_start","window_end","window_policy",
         "selector_type","selector_confidence","online_feasible",
+        "online_feasible_if_causal_trigger","causal_delay_steps",
         "clean_natural_open_ratio","natural_release_confounded","phase_overlap_iou",
         "proposal_valid","invalid_reason",
     ]
@@ -103,6 +104,7 @@ def main():
                     "task":task,"seed":seed,"T_eg":"","window_start":"","window_end":"",
                     "window_policy":args.window_policy,"selector_type":"oracle_phase",
                     "selector_confidence":0.0,"online_feasible":False,
+                    "online_feasible_if_causal_trigger":False,"causal_delay_steps":"",
                     "clean_natural_open_ratio":"","natural_release_confounded":"",
                     "phase_overlap_iou":"",
                     "proposal_valid":False,
@@ -129,10 +131,37 @@ def main():
             })
             continue
 
-        ws = T_eg
-        we = min(T_eg + 17, 299) if args.window_policy == "T_to_Tplus17" else min(T_eg + 14, 299)
-        if args.window_policy == "Tminus3_to_Tplus14":
-            ws = max(0, T_eg - 3)
+        # Window policy
+        policy = args.window_policy
+        if policy == "T_to_Tplus17":
+            ws = T_eg; we = min(T_eg + 17, 299)
+        elif policy == "Tminus3_to_Tplus14":
+            ws = max(0, T_eg - 3); we = min(T_eg + 14, 299)
+        elif policy == "Tplus5_to_Tplus22":
+            ws = T_eg + 5; we = min(T_eg + 22, 299)
+        elif policy == "Tplus10_to_Tplus27":
+            ws = T_eg + 10; we = min(T_eg + 27, 299)
+        elif policy == "Tplus15_to_Tplus32":
+            ws = T_eg + 15; we = min(T_eg + 32, 299)
+        elif policy == "Tplus20_to_Tplus37":
+            ws = T_eg + 20; we = min(T_eg + 37, 299)
+        elif policy == "Tplus25_to_Tplus42":
+            ws = T_eg + 25; we = min(T_eg + 42, 299)
+        elif policy == "Tplus30_to_Tplus47":
+            ws = T_eg + 30; we = min(T_eg + 47, 299)
+        elif policy == "Tplus35_to_Tplus52":
+            ws = T_eg + 35; we = min(T_eg + 52, 299)
+        elif policy == "Tplus40_to_Tplus57":
+            ws = T_eg + 40; we = min(T_eg + 57, 299)
+        elif policy == "Tlock_minus5_to_Tlock_plus12":
+            T_lock_str = r0.get("T_grasp_lock", "")
+            if T_lock_str:
+                T_lock = int(T_lock_str)
+                ws = max(0, T_lock - 5); we = min(T_lock + 12, 299)
+            else:
+                ws = 0; we = 0  # will be rejected
+        else:
+            ws = T_eg; we = min(T_eg + 17, 299)
 
         # Clean natural OPEN — use get_raw_gripper helper (same as audit)
         wrows = [r for r in rlist if ws <= int(r.get("policy_step",-1)) <= we]
@@ -164,10 +193,13 @@ def main():
             union = max(we,ge) - min(ws,gs) + 1
             iou = round(overlap/max(union,1), 4)
 
+        _delay = ws - T_eg if ws > T_eg else 0
         proposals.append({
             "task":task,"seed":seed,"T_eg":T_eg,"window_start":ws,"window_end":we,
             "window_policy":args.window_policy,"selector_type":selector_type,
             "selector_confidence":1.0,"online_feasible":online_feasible,
+            "online_feasible_if_causal_trigger":True if _delay >= 0 else False,
+            "causal_delay_steps":_delay,
             "clean_natural_open_ratio":round(clean_ratio,4),
             "natural_release_confounded":clean_ratio > 0.5,
             "phase_overlap_iou":iou,
