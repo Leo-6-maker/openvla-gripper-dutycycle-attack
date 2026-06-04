@@ -224,6 +224,7 @@ def compute_group_summary(vis_list, random_list, clean_list, window_info):
 
     a = s["vis_action_bridge"]; p = s["vis_physical_bridge"]
     t = s["vis_task_failure"]; d = s["random_all_clean"]; c = s["clean_any_confounded"]
+    group_qd_open = s.get("vis_qpos_opening_delta_min", 0)
 
     labels = []
     if a and p and t and d and not c:
@@ -232,7 +233,7 @@ def compute_group_summary(vis_list, random_list, clean_list, window_info):
         s["claim_usable"] = False
         if not a: labels.append("no_action_bridge")
         elif a and not p:
-            if qd_open >= QPOS_OPENING_WEAK_MIN:
+            if group_qd_open >= QPOS_OPENING_WEAK_MIN:
                 labels.append("action_positive_physical_weak")
             else:
                 labels.append("action_positive_physical_negative")
@@ -325,7 +326,12 @@ def main():
     if summaries:
         os.makedirs(os.path.dirname(args.summary_csv) or ".", exist_ok=True)
         with open(args.summary_csv,"w",newline="") as f:
-            w = csv.DictWriter(f, fieldnames=list(summaries[0].keys()))
+            # Collect all fieldnames across all summaries (some may differ)
+            all_fields = list(summaries[0].keys())
+            for s in summaries[1:]:
+                for k in s.keys():
+                    if k not in all_fields: all_fields.append(k)
+            w = csv.DictWriter(f, fieldnames=all_fields, extrasaction='ignore')
             w.writeheader(); w.writerows(summaries)
         print(f"Wrote {len(summaries)} groups to {args.summary_csv}")
         for s in summaries:
