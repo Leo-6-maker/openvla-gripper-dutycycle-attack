@@ -1,0 +1,11 @@
+episode_id,task_name,state_id,split,T_gform,T_pred,trigger_error,delay,window_start,window_end,actual_window_len,clean_natural_open_ratio,clean_open_count,attack_eligible_strict,structural_valid,notes
+obj100_alphabet_soup_alphabet_soup_s4,pick_up_the_alphabet_soup_and_place_it_in_the_basket,4,val,54,53,-1,-50,3,20,18,0.0,0,True,True,oracle_delay50_smoke_candidate
+obj100_bbq_sauce_bbq_sauce_s4,pick_up_the_bbq_sauce_and_place_it_in_the_basket,4,test,64,70,6,-50,20,37,18,0.0,0,True,True,oracle_delay50_smoke_candidate
+obj100_butter_butter_s2,pick_up_the_butter_and_place_it_in_the_basket,2,test,73,73,0,-50,23,40,18,0.0,0,True,True,oracle_delay50_smoke_candidate
+obj100_chocolate_pudding_rerun_chocolate_pudding_s2,pick_up_the_chocolate_pudding_and_place_it_in_the_basket,2,test,64,74,10,-50,24,41,18,0.0,0,True,True,oracle_delay50_smoke_candidate
+obj100_cream_cheese_cream_cheese_s8,pick_up_the_cream_cheese_and_place_it_in_the_basket,8,test,104,84,-20,-50,34,51,18,0.0,0,True,True,oracle_delay50_smoke_candidate
+obj100_ketchup_ketchup_s5,pick_up_the_ketchup_and_place_it_in_the_basket,5,test,59,55,-4,-50,5,22,18,0.0,0,True,True,oracle_delay50_smoke_candidate
+obj100_milk_milk_s9,pick_up_the_milk_and_place_it_in_the_basket,9,test,91,55,-36,-50,5,22,18,0.0,0,True,True,oracle_delay50_smoke_candidate
+obj100_orange_juice_orange_juice_s2,pick_up_the_orange_juice_and_place_it_in_the_basket,2,test,83,77,-6,-50,27,44,18,0.0,0,True,True,oracle_delay50_smoke_candidate
+obj100_salad_dressing_salad_dressing_s0,pick_up_the_salad_dressing_and_place_it_in_the_basket,0,test,57,71,14,-50,21,38,18,0.0,0,True,True,oracle_delay50_smoke_candidate
+obj100_tomato_sauce_tomato_sauce_s0,pick_up_the_tomato_sauce_and_place_it_in_the_basket,0,test,99,102,3,-50,52,69,18,0.0,0,True,True,oracle_delay50_smoke_candidate

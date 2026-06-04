@@ -29,25 +29,55 @@ Z_DOWN_WEIGHT_DEFAULT = 0.5
 GRIPPER_OPEN_WEIGHT_DEFAULT = 1.0
 
 TASK_CONFIGS = {
+    'alphabet_soup': {
+        'task_id': 0, 'task_name': 'alphabet_soup',
+        'instruction': 'pick up the alphabet soup and place it in the basket',
+        'perturb_start': 0, 'perturb_end': 0,
+    },
     'cream_cheese': {
         'task_id': 1, 'task_name': 'cream_cheese',
         'instruction': 'pick up the cream cheese and place it in the basket',
         'perturb_start': 65, 'perturb_end': 75,
     },
-    'tomato_sauce': {
-        'task_id': 5, 'task_name': 'tomato_sauce',
-        'instruction': 'pick up the tomato sauce and place it in the basket',
-        'perturb_start': 128, 'perturb_end': 140,
+    'salad_dressing': {
+        'task_id': 2, 'task_name': 'salad_dressing',
+        'instruction': 'put the salad dressing in the basket',
+        'perturb_start': 88, 'perturb_end': 108,
+    },
+    'bbq_sauce': {
+        'task_id': 3, 'task_name': 'bbq_sauce',
+        'instruction': 'pick up the bbq sauce and place it in the basket',
+        'perturb_start': 0, 'perturb_end': 0,
     },
     'ketchup': {
         'task_id': 4, 'task_name': 'ketchup',
         'instruction': 'pick up the ketchup and place it in the basket',
         'perturb_start': 93, 'perturb_end': 103,
     },
-    'salad_dressing': {
-        'task_id': 2, 'task_name': 'salad_dressing',
-        'instruction': 'put the salad dressing in the basket',
-        'perturb_start': 88, 'perturb_end': 108,
+    'tomato_sauce': {
+        'task_id': 5, 'task_name': 'tomato_sauce',
+        'instruction': 'pick up the tomato sauce and place it in the basket',
+        'perturb_start': 128, 'perturb_end': 140,
+    },
+    'butter': {
+        'task_id': 6, 'task_name': 'butter',
+        'instruction': 'pick up the butter and place it in the basket',
+        'perturb_start': 0, 'perturb_end': 0,
+    },
+    'milk': {
+        'task_id': 7, 'task_name': 'milk',
+        'instruction': 'pick up the milk and place it in the basket',
+        'perturb_start': 0, 'perturb_end': 0,
+    },
+    'chocolate_pudding': {
+        'task_id': 8, 'task_name': 'chocolate_pudding',
+        'instruction': 'pick up the chocolate pudding and place it in the basket',
+        'perturb_start': 0, 'perturb_end': 0,
+    },
+    'orange_juice': {
+        'task_id': 9, 'task_name': 'orange_juice',
+        'instruction': 'pick up the orange juice and place it in the basket',
+        'perturb_start': 0, 'perturb_end': 0,
     },
 }
 CONDITIONS = ['clean', 'vis_pgd', 'random_linf']
@@ -58,6 +88,7 @@ def prompt(instruction):
 def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument('--task', choices=list(TASK_CONFIGS.keys()), required=True)
+    ap.add_argument('--state-id', type=int, default=0, help='LIBERO initial state ID (0-9 for Object tasks)')
     ap.add_argument('--condition', choices=CONDITIONS, required=True)
     ap.add_argument('--gpu_pair', default='4,5')
     ap.add_argument('--seed', type=int, default=0)
@@ -191,7 +222,7 @@ task_suite = benchmark_dict['libero_object']()
 task = task_suite.get_task(cfg['task_id'])
 bddl = os.path.join(get_libero_path('bddl_files'), task.problem_folder, task.bddl_file)
 initial_states = task_suite.get_task_init_states(cfg['task_id'])
-state_id = 0
+state_id = max(0, min(args.state_id, len(initial_states) - 1))
 env_args = {
     'bddl_file_name': bddl, 'camera_heights': 256, 'camera_widths': 256,
     'has_renderer': False, 'has_offscreen_renderer': True,
