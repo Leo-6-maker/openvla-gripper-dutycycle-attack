@@ -145,8 +145,12 @@ def main():
             trig_err = (T_pred - tg) if (T_pred is not None and tg is not None) else None
 
             for delay in args.delays:
-                ws = ""; we = ""; actual_len = 0; valid = False; inv_reason = ""
-                clean_open_ratio = ""; clean_open_count = 0; eligible = False; elig_reason = ""
+                ws = ""; we = ""; actual_len = 0
+                structural_valid = False; inv_reason = ""
+                clean_open_ratio = ""; clean_open_count = 0
+                strict_eligible = False; relaxed_eligible = False
+                strict_reason = ""; relaxed_reason = ""
+                online_feasible = False; online_reason = ""
 
                 if T_pred is None:
                     inv_reason = "no_trigger"
@@ -155,25 +159,41 @@ def main():
                 else:
                     ws = T_pred + delay; we = ws + args.window_len - 1
                     if ws < 0:
-                        inv_reason = "window_before_start"
+                        actual_len = args.window_len - abs(ws)
+                        inv_reason = f"window_before_start_len_{actual_len}"
                     elif we >= T:
                         actual_len = T - ws
                         inv_reason = f"clipped_short_len_{actual_len}"
                     else:
                         actual_len = args.window_len
-                        valid = True
+                        structural_valid = True
 
                 # Compute clean_open_ratio from X_raw
-                if valid and isinstance(ws, int):
+                STRICT_THRESH = 0.1
+                if structural_valid and isinstance(ws, int) and ws >= 0 and we < T:
                     raw_gc = Xr[int(ws):int(we)+1, GRIPPER_IDX]
                     clean_open_count = int((raw_gc < 0.5).sum())
                     clean_open_ratio = round(clean_open_count / args.window_len, 4)
-
-                    # Eligibility gate
-                    if clean_open_ratio <= args.max_clean_open_ratio:
-                        eligible = True
+                    if clean_open_ratio <= STRICT_THRESH:
+                        strict_eligible = True
                     else:
-                        elig_reason = f"natural_open_confound_ratio_{clean_open_ratio}"
+                        strict_reason = f"natural_open_confound_{clean_open_ratio}"
+                    if clean_open_ratio <= args.max_clean_open_ratio:
+                        relaxed_eligible = True
+                    else:
+                        relaxed_reason = f"natural_open_confound_{clean_open_ratio}"
+                elif structural_valid and isinstance(ws, int) and ws < 0:
+                    # Window starts before episode start — check partial
+                    start = max(0, int(ws)); end_val = int(we)
+                    if start <= end_val:
+                        raw_gc = Xr[start:end_val+1, GRIPPER_IDX]
+                        clean_open_count = int((raw_gc < 0.5).sum())
+                        clean_open_ratio = round(clean_open_count / (end_val-start+1), 4)
+
+                # online_feasible: delay >= 0 (no future knowledge needed)
+                online_feasible = delay >= 0
+                if not online_feasible:
+                    online_reason = "requires_future_T_pred"
 
                 proposals.append(dict(
                     episode_id=eid_str, task_name=task, state_id=state_id, split=split,
@@ -182,12 +202,16 @@ def main():
                     trigger_error=trig_err if trig_err is not None else "",
                     delay=delay, window_start=ws, window_end=we,
                     actual_window_len=actual_len,
-                    proposal_valid=valid, invalid_reason=inv_reason,
-                    proposal_eligible=eligible, eligibility_reason=elig_reason,
+                    structural_valid=structural_valid, invalid_reason=inv_reason,
+                    attack_eligible_strict=strict_eligible, strict_reason=strict_reason,
+                    attack_eligible_relaxed=relaxed_eligible, relaxed_reason=relaxed_reason,
+                    online_feasible=online_feasible, online_reason=online_reason,
                     clean_natural_open_ratio=clean_open_ratio,
                     clean_open_count=clean_open_count,
+                    clean_open_threshold_strict=STRICT_THRESH,
+                    clean_open_threshold_relaxed=args.max_clean_open_ratio,
                     raw_open_semantics="raw_gripper<0.5=OPEN",
-                    detector_version="v5", checkpoint=os.path.basename(args.checkpoint),
+                    detector_version="v6", checkpoint=os.path.basename(args.checkpoint),
                     threshold=th, K=K,
                     eval_metrics_json=args.eval_metrics_json,
                     npz_path=args.npz_path, split_col=args.split_col,
@@ -197,9 +221,12 @@ def main():
     # ── Write ──
     fields = ["episode_id","task_name","state_id","split","T_gform","T_pred",
               "trigger_error","delay","window_start","window_end","actual_window_len",
-              "proposal_valid","invalid_reason",
-              "proposal_eligible","eligibility_reason",
+              "structural_valid","invalid_reason",
+              "attack_eligible_strict","strict_reason",
+              "attack_eligible_relaxed","relaxed_reason",
+              "online_feasible","online_reason",
               "clean_natural_open_ratio","clean_open_count",
+              "clean_open_threshold_strict","clean_open_threshold_relaxed",
               "raw_open_semantics",
               "detector_version","checkpoint","threshold","K",
               "eval_metrics_json","npz_path","split_col",
@@ -209,13 +236,16 @@ def main():
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
         w.writeheader(); w.writerows(proposals)
 
-    n = len(proposals); n_valid = sum(1 for p in proposals if p["proposal_valid"])
-    n_eligible = sum(1 for p in proposals if p["proposal_eligible"])
-    n_no_trigger = sum(1 for p in proposals if "no_trigger" in str(p.get("invalid_reason","")))
+    n = len(proposals); n_struct = sum(1 for p in proposals if p["structural_valid"])
+    n_strict = sum(1 for p in proposals if p["attack_eligible_strict"])
+    n_relaxed = sum(1 for p in proposals if p["attack_eligible_relaxed"])
+    n_online = sum(1 for p in proposals if p["online_feasible"])
+    n_no_trig = sum(1 for p in proposals if "no_trigger" in str(p.get("invalid_reason","")))
     n_clipped = sum(1 for p in proposals if "clipped" in str(p.get("invalid_reason","")))
-    n_confound = sum(1 for p in proposals if "confound" in str(p.get("eligibility_reason","")))
-    print(f"Wrote {n} proposals: {n_valid} valid, {n_eligible} eligible, "
-          f"{n_no_trigger} no-trigger, {n_clipped} clipped, {n_confound} confounded")
+    print(f"Wrote {n} proposals: {n_struct} structural, "
+          f"{n_strict} strict-eligible, {n_relaxed} relaxed-eligible, "
+          f"{n_online} online-feasible")
+    print(f"  {n_no_trig} no-trigger, {n_clipped} clipped")
     print(f"Saved to {args.output_csv}")
 
 
