@@ -57,6 +57,22 @@ def load_summaries(args):
     return deduped
 
 
+def classify_outcome_role_aware(o):
+    """Use role-specific gates when candidate_role is available."""
+    role = o.get("candidate_role", o.get("merge_type", ""))
+    if role in ("stable_post_lock_control", "far_too_early_control", "pre_lock_control"):
+        import sys, os
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from role_specific_gates import classify_vis_outcome
+        vis_open = 18  # All our VIS produce 18/18
+        qpos = o["qpos"]; done = o["done"]; denom_clean = o["denom"]
+        label, status, taxonomy, confounded = classify_vis_outcome(role, vis_open, qpos, done, denom_clean)
+        o["taxonomy"] = taxonomy
+        o["action_bridge_confounded"] = confounded
+        return label, status, taxonomy
+    return classify_outcome(o)
+
+
 def classify_outcome(o):
     """Classify VIS outcome into vulnerability_ready label with assertions."""
     if o["claim"]:
@@ -122,7 +138,7 @@ def main():
     # Build labels
     labels = []
     for o in outcomes:
-        tp, st, reason = classify_outcome(o)
+        tp, st, reason = classify_outcome_role_aware(o)
         key = (o["task"], o["state_id"], o["window_start"], o["window_end"])
         ph = phase_map.get(key, {})
         ph_bin = ph.get("phase_bin_proxy","")
@@ -136,9 +152,13 @@ def main():
             qpos_label="strong" if o["qpos"]>=0.03 else "weak",
             done=o["done"], taxonomy=o["taxonomy"],
             denominator_clean=o["denom"], claim_usable=o["claim"],
+            candidate_role=o.get("candidate_role",""),
+            denominator_type=getattr(o, "denominator_type", ""),
+            action_bridge_confounded=getattr(o, "action_bridge_confounded", False),
             label_action_bridge=1, label_physical_response=phys,
             label_task_failure=0 if o["done"] else 1,
             label_vulnerability_ready=tp, label_status=st,
+            label_use=st if st in ("positive","negative") else ("ignore" if st=="ignore" else "manual_review"),
             exclusion_or_uncertain_reason=reason,
         ))
 
