@@ -110,6 +110,10 @@ class Watcher:
         self.tasks = []
         self.running = {}
         self.blacklisted = set()
+        self.pair_status = {"1,0":"healthy","2,3":"probation","4,5":"healthy","6,7":"healthy"}
+        self.probation_budget = {"2,3": 1}
+        self.probation_attempted = False
+        self.probation_result = ""
         self.seen_xid_lines = set(check_xid())
         self.started_at = datetime.now()
         self.audit_done = False
@@ -224,8 +228,12 @@ class Watcher:
                         log_content = f.read()[-2000:]
                 if "illegal memory" in log_content or "CUDA error" in log_content:
                     task.status = "INFRA_FAILED"; task.failure_reason = "CUDA_illegal_memory"; task.infra_status = "cuda_crash"
+                    if self.pair_status.get(pair) == "probation":
+                        task.failure_reason += "_gpu23_probation_failed"
+                        self.probation_result = "failed"
+                        self.log(f"GPU23_PROBATION_FAILED_BLACKLISTED {task.task_id}")
                     self.blacklisted.add(pair)
-                    self.log(f"INFRA CUDA crash {task.task_id}: GPU {pair} blacklisted")
+                    if pair in self.pair_status: self.pair_status[pair] = "blacklisted"
                     if task.retry_count < MAX_RETRY:
                         self._requeue(task, pair, "cuda_crash")
                     else:
@@ -284,23 +292,46 @@ class Watcher:
                     except Exception as e:
                         self.log(f"WAVE1 parse error: {e}")
 
+    def _probation_allowed(self, task, pair):
+        """Check if task can run on probation pair."""
+        if self.pair_status.get(pair) != "probation":
+            return True
+        if self.probation_budget.get(pair, 0) <= 0:
+            return False
+        if task.retry_count > 0:
+            return False
+        if "control" in getattr(task, 'phase', '') or "control" in getattr(task, 'phase', ''):
+            return False
+        if task.status == "PENDING_RETRY":
+            return False
+        return True
+
     def schedule(self):
         can_schedule = self.check_xid_and_handle()
         if not can_schedule:
             return
-        for pair in GPU_PAIRS:
+        # Schedule healthy pairs first, then probation
+        for pair in list(GPU_PAIRS):
             if pair in self.blacklisted or pair in self.running:
                 continue
             if not gpu_idle(pair):
                 continue
+            ps = self.pair_status.get(pair, "healthy")
             pending = [t for t in self.tasks if t.status in ("PENDING", "PENDING_RETRY")
-                      and t.gpu_pair == "" or t.status == "PENDING_RETRY"]
+                      and (t.gpu_pair == "" or t.status == "PENDING_RETRY")]
             if not pending:
                 pending = [t for t in self.tasks if t.status in ("PENDING", "PENDING_RETRY")]
+            # For probation: only non-control, first-time tasks
+            if ps == "probation":
+                pending = [t for t in pending if self._probation_allowed(t, pair)]
             pending.sort(key=lambda t: (t.status != "PENDING_RETRY", t.priority))
             if pending:
-                pending[0].gpu_pair = pair
-                self.launch_vis(pending[0])
+                t = pending[0]; t.gpu_pair = pair
+                if ps == "probation":
+                    self.probation_budget[pair] -= 1
+                    self.probation_attempted = True
+                    self.log(f"PROBATION_LAUNCH {t.task_id} on {pair} (budget remaining: {self.probation_budget[pair]})")
+                self.launch_vis(t)
 
     def all_vis_terminal(self):
         vis = [t for t in self.tasks if t.task_type == "BATCH3_VIS"]
