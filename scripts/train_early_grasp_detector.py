@@ -71,7 +71,8 @@ class EarlyGraspTCN(nn.Module):
 class SequenceDataset(Dataset):
     def __init__(self, npz_path, split_csv=None, split="train", split_col="split_state_holdout"):
         data = np.load(npz_path, allow_pickle=True)
-        self.X = torch.from_numpy(data["X"]).float()
+        X_key = "X_norm" if "X_norm" in data else "X"
+        self.X = torch.from_numpy(data[X_key]).float()
         self.y = torch.from_numpy(data["y"]).long()
         self.mask = torch.from_numpy(data["mask"]).bool()
         self.episode_ids = list(data.get("episode_ids", [f"ep_{i}" for i in range(len(self.X))]))
@@ -135,7 +136,7 @@ def eval_epoch(model, loader, device):
 
 def parse_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--npz-path", default="data/detector/object_clean_sequences_v2.npz")
+    ap.add_argument("--npz-path", default="data/detector/object_clean_sequences_v3.npz")
     ap.add_argument("--split-csv", default="tables/object_detector_split_plan_clean.csv")
     ap.add_argument("--split-col", default="split_state_holdout")
     ap.add_argument("--norm-stats", default="data/detector/object_clean_feature_norm_stats_v2.json")

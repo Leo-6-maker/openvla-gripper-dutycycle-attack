@@ -13,8 +13,8 @@ import numpy as np
 
 def parse_args():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--npz-path", default="data/detector/object_clean_sequences_v1.npz")
-    ap.add_argument("--meta-csv", default="data/detector/object_clean_sequences_v1_meta.csv")
+    ap.add_argument("--npz-path", default="data/detector/object_clean_sequences_v3.npz")
+    ap.add_argument("--meta-csv", default="data/detector/object_clean_sequences_v3_meta.csv")
     ap.add_argument("--output-csv", default="tables/object_rule_based_trigger_eval.csv")
     ap.add_argument("--output-report", default="reports/OBJECT_RULE_BASED_TRIGGER_BASELINE.md")
     ap.add_argument("--close-K", type=int, default=2,
@@ -46,7 +46,8 @@ def main():
         sys.exit(1)
 
     data = np.load(args.npz_path, allow_pickle=True)
-    X = data["X"]
+    X_key = "X_raw" if "X_raw" in data else "X"
+    X = data[X_key]
     y = data["y"]
     mask = data["mask"]
     episode_ids = data.get("episode_ids", np.array([f"ep_{i}" for i in range(len(X))]))

@@ -24,7 +24,7 @@ GRASP_CLASS = 1  # grasp_formation
 def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--checkpoint", required=True)
-    ap.add_argument("--npz-path", default="data/detector/object_clean_sequences_v2.npz")
+    ap.add_argument("--npz-path", default="data/detector/object_clean_sequences_v3.npz")
     ap.add_argument("--split-csv", default="tables/object_detector_split_plan_clean.csv")
     ap.add_argument("--split-col", default="split_state_holdout")
     ap.add_argument("--rule-csv", default="tables/object_rule_based_trigger_eval.csv")
@@ -53,7 +53,7 @@ def main():
     config = ckpt.get("config", {})
 
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    from train_early_grasp_detector import EarlyGraspTCN, SequenceDataset
+    from train_early_grasp_detector import EarlyGraspTCN, SequenceDataset, compute_detailed_metrics
 
     model = EarlyGraspTCN(
         input_dim=config.get("input_dim", 13),
@@ -109,18 +109,32 @@ def main():
         return results
 
     # Sweep val
-    best_config = None; best_mae = float("inf")
+    MIN_TRIGGER_RATE = 0.8
+    best_config = None; best_mae = float("inf"); best_score = float("inf")
     sweep_results = []
     for th in THRESHOLDS:
         for k in K_VALUES:
             val_res = evaluate_split(val_loader, th, k)
             errs = [r["abs_error"] for r in val_res if r["abs_error"] is not None]
             triggered = sum(1 for r in val_res if r["triggered"])
+            n_val = len(val_res)
+            trig_rate = triggered / n_val if n_val > 0 else 0.0
             mae = np.mean(errs) if errs else float("inf")
-            sweep_results.append(dict(threshold=th, K=k, val_mae=round(mae,2) if errs else None,
-                                      val_triggered=triggered, val_n=len(val_res),
-                                      val_trigger_rate=round(100*triggered/len(val_res),1)))
-            if errs and mae < best_mae:
+            early = sum(1 for r in val_res if r["error"] is not None and r["error"] < -5)
+            late = sum(1 for r in val_res if r["error"] is not None and r["error"] > 5)
+            within5 = sum(1 for r in val_res if r["abs_error"] is not None and r["abs_error"] <= 5)
+            within10 = sum(1 for r in val_res if r["abs_error"] is not None and r["abs_error"] <= 10)
+            no_trig_rate = 1.0 - trig_rate
+            score = mae + 100 * no_trig_rate if errs else float("inf")
+            sweep_results.append(dict(threshold=th, K=k,
+                val_mae=round(mae,2) if errs else None,
+                val_triggered=triggered, val_n=n_val,
+                val_trigger_rate=round(100*trig_rate,1),
+                val_early_pct=round(100*early/max(triggered,1),1),
+                val_late_pct=round(100*late/max(triggered,1),1),
+                val_within5=within5, val_within10=within10,
+                score=round(score,2) if errs else None))
+            if trig_rate >= MIN_TRIGGER_RATE and errs and mae < best_mae:
                 best_mae = mae; best_config = (th, k)
 
     print("\nThreshold sweep (val):")
@@ -131,8 +145,15 @@ def main():
 
     # Evaluate test with best config
     if best_config is None:
-        print("No valid trigger config found — using default threshold=0.15, K=2")
-        best_config = (0.15, 2)
+        print(f"No config passed min_trigger_rate={MIN_TRIGGER_RATE:.0%} — using best score")
+        valid_sweep = [s for s in sweep_results if s["score"] is not None]
+        if valid_sweep:
+            best = min(valid_sweep, key=lambda s: s["score"])
+            best_config = (best["threshold"], best["K"])
+            print(f"  Fallback: th={best_config[0]}, K={best_config[1]}, score={best['score']}")
+        else:
+            print("  No valid config at all — using threshold=0.15, K=2")
+            best_config = (0.15, 2)
 
     best_th, best_k = best_config
     print(f"\nBest config: threshold={best_th}, K={best_k}, val_MAE={best_mae:.2f}")
