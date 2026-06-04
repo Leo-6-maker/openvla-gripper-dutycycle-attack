@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
-"""evaluate_early_grasp_detector.py — Evaluate trained causal TCN detector.
+"""evaluate_early_grasp_detector.py — Evaluate trained causal TCN detector with threshold sweep. v2.
 
-Computes per-step classification metrics and trigger-level T_pred vs T_gform errors.
-Compares against rule-based baseline if available.
+Fixes (v2):
+  - Sweep thresholds {0.05,0.1,0.15,0.2,0.3,0.5} × K={1,2,3}
+  - Select best on val split, report on test.
+  - Load full model config from checkpoint.
+  - Compare against rule baseline.
+  - OPEN naming: raw_gripper < 0.5 = OPEN (canonical semantics).
 """
 
 from __future__ import annotations
@@ -12,206 +16,212 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 
+THRESHOLDS = [0.05, 0.1, 0.15, 0.2, 0.3, 0.5]
+K_VALUES = [1, 2, 3]
+GRASP_CLASS = 1  # grasp_formation
+
 
 def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--checkpoint", required=True)
-    ap.add_argument("--npz-path", default="data/detector/object_clean_sequences_v1.npz")
+    ap.add_argument("--npz-path", default="data/detector/object_clean_sequences_v2.npz")
     ap.add_argument("--split-csv", default="tables/object_detector_split_plan_clean.csv")
-    ap.add_argument("--split-col", default="split_task_holdout")
+    ap.add_argument("--split-col", default="split_state_holdout")
     ap.add_argument("--rule-csv", default="tables/object_rule_based_trigger_eval.csv")
     ap.add_argument("--output-csv", default="tables/object_detector_predictions.csv")
     ap.add_argument("--output-report", default="reports/OBJECT_DETECTOR_EVAL.md")
-    ap.add_argument("--trigger-K", type=int, default=2)
-    ap.add_argument("--trigger-threshold", type=float, default=0.5)
     ap.add_argument("--device", default="cuda:0")
     return ap.parse_args()
 
 
-def find_trigger_from_probs(probs, grasp_class=1, K=2, threshold=0.5):
-    """T_pred = first step where P(grasp_formation) > threshold for K consecutive steps."""
+def find_trigger(probs, K=2, threshold=0.5):
     streak = 0
     for t in range(len(probs)):
-        if probs[t, grasp_class] >= threshold:
+        if probs[t, GRASP_CLASS] >= threshold:
             streak += 1
             if streak >= K:
                 return t - K + 1
-        else:
-            streak = 0
+        else: streak = 0
     return None
 
 
 def main():
     args = parse_args()
-
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
 
-    # Load checkpoint
     ckpt = torch.load(args.checkpoint, map_location=device, weights_only=False)
     config = ckpt.get("config", {})
-    input_dim = config.get("input_dim", 13)
-    hidden_dim = config.get("hidden_dim", 64)
-    num_layers = config.get("num_layers", 3)
 
-    # Import model class
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     from train_early_grasp_detector import EarlyGraspTCN, SequenceDataset
 
-    model = EarlyGraspTCN(input_dim=input_dim, hidden_dim=hidden_dim,
-                          num_layers=num_layers).to(device)
+    model = EarlyGraspTCN(
+        input_dim=config.get("input_dim", 13),
+        hidden_dim=config.get("hidden_dim", 64),
+        num_layers=config.get("num_layers", 3),
+        kernel_size=config.get("kernel_size", 3),
+        num_classes=config.get("num_classes", 3),
+        dropout=config.get("dropout", 0.1),
+    ).to(device)
     model.load_state_dict(ckpt["model_state"])
     model.eval()
+    print(f"Loaded checkpoint: best_val_f1_grasp={config.get('best_val_f1_grasp','?')}")
 
     # Load data
     ds_kwargs = dict(npz_path=args.npz_path, split_csv=args.split_csv, split_col=args.split_col)
+    val_ds = SequenceDataset(**ds_kwargs, split="val")
     test_ds = SequenceDataset(**ds_kwargs, split="test")
+    val_loader = DataLoader(val_ds, batch_size=1, shuffle=False)
     test_loader = DataLoader(test_ds, batch_size=1, shuffle=False)
-    print(f"Test episodes: {len(test_ds)}")
+    print(f"Val: {len(val_ds)}, Test: {len(test_ds)}")
+
+    # Load meta
+    meta_csv = args.npz_path.replace(".npz", "_meta.csv")
+    meta = {}
+    if os.path.exists(meta_csv):
+        with open(meta_csv, newline="") as f:
+            for r in csv.DictReader(f):
+                meta[r["episode_id"]] = r
 
     # Load rule baseline
-    rule_baseline = {}
+    rule_base = {}
     if os.path.exists(args.rule_csv):
         with open(args.rule_csv, newline="") as f:
             for r in csv.DictReader(f):
-                rule_baseline[r["episode_id"]] = r
-        print(f"Loaded {len(rule_baseline)} rule baseline entries")
+                rule_base[r["episode_id"]] = r
 
-    # Evaluate
+    # ── Threshold sweep on val ──
+    def evaluate_split(loader, threshold, K):
+        results = []
+        for i, (Xb, yb, mb) in enumerate(loader):
+            Xb = Xb.to(device); eid = loader.dataset.episode_ids[i]
+            with torch.no_grad():
+                probs = torch.softmax(model(Xb), dim=-1).squeeze(0).cpu().numpy()
+            T = int(mb.sum()); probs = probs[:T]
+            T_pred = find_trigger(probs, K=K, threshold=threshold)
+            ep_m = meta.get(eid, {})
+            tg_str = ep_m.get("T_gform", ""); tg = int(tg_str) if tg_str else None
+            task = ep_m.get("task_name", "?")
+            error = (T_pred - tg) if (T_pred is not None and tg is not None) else None
+            results.append(dict(episode_id=eid, task_name=task, T_gform=tg, T_pred=T_pred,
+                                error=error, abs_error=abs(error) if error is not None else None,
+                                triggered=T_pred is not None))
+        return results
+
+    # Sweep val
+    best_config = None; best_mae = float("inf")
+    sweep_results = []
+    for th in THRESHOLDS:
+        for k in K_VALUES:
+            val_res = evaluate_split(val_loader, th, k)
+            errs = [r["abs_error"] for r in val_res if r["abs_error"] is not None]
+            triggered = sum(1 for r in val_res if r["triggered"])
+            mae = np.mean(errs) if errs else float("inf")
+            sweep_results.append(dict(threshold=th, K=k, val_mae=round(mae,2) if errs else None,
+                                      val_triggered=triggered, val_n=len(val_res),
+                                      val_trigger_rate=round(100*triggered/len(val_res),1)))
+            if errs and mae < best_mae:
+                best_mae = mae; best_config = (th, k)
+
+    print("\nThreshold sweep (val):")
+    print(f"  {'th':>6s}  {'K':1s}  {'MAE':>8s}  {'triggered':>9s}  {'rate':>6s}")
+    for sr in sweep_results:
+        mae_str = f"{sr['val_mae']:.2f}" if sr['val_mae'] is not None else "N/A"
+        print(f"  {sr['threshold']:6.2f}  {sr['K']:1d}  {mae_str:>8s}  {sr['val_triggered']:4d}/{sr['val_n']:<4d}  {sr['val_trigger_rate']:5.1f}%")
+
+    # Evaluate test with best config
+    if best_config is None:
+        print("No valid trigger config found — using default threshold=0.15, K=2")
+        best_config = (0.15, 2)
+
+    best_th, best_k = best_config
+    print(f"\nBest config: threshold={best_th}, K={best_k}, val_MAE={best_mae:.2f}")
+    test_res = evaluate_split(test_loader, best_th, best_k)
+
+    # Per-episode results
     results = []
-    per_task_tcn = defaultdict(list)
-    per_task_rule = defaultdict(list)
+    per_task_tcn = defaultdict(list); per_task_rule = defaultdict(list)
+    for tr in test_res:
+        eid = tr["episode_id"]
+        rb = rule_base.get(eid, {})
+        T_rule_str = rb.get("T_rule", ""); T_rule = int(T_rule_str) if T_rule_str else None
+        tg = tr["T_gform"]
+        rule_err = (T_rule - tg) if (T_rule is not None and tg is not None) else None
+        r = dict(episode_id=eid, task_name=tr["task_name"], T_gform=tg if tg is not None else "",
+                 T_pred=tr["T_pred"] if tr["T_pred"] is not None else "",
+                 T_rule=T_rule if T_rule is not None else "",
+                 tcn_error=tr["error"] if tr["error"] is not None else "",
+                 tcn_abs_error=tr["abs_error"] if tr["abs_error"] is not None else "",
+                 rule_error=rule_err if rule_err is not None else "",
+                 rule_abs_error=abs(rule_err) if rule_err is not None else "")
+        results.append(r)
+        if tr["abs_error"] is not None: per_task_tcn[tr["task_name"]].append(tr["abs_error"])
+        if rule_err is not None: per_task_rule[tr["task_name"]].append(abs(rule_err))
 
-    for i, (X_batch, y_batch, mask_batch) in enumerate(test_loader):
-        X_batch = X_batch.to(device)
-        eid = test_ds.episode_ids[i]
-
-        with torch.no_grad():
-            logits = model(X_batch)  # [1, T, C]
-            probs = torch.softmax(logits, dim=-1).squeeze(0).cpu().numpy()
-
-        T = int(mask_batch.sum())
-        probs = probs[:T]
-
-        # Find T_pred
-        T_pred = find_trigger_from_probs(probs, K=args.trigger_K, threshold=args.trigger_threshold)
-
-        # T_gform from meta (need to load separately)
-        meta_csv = args.npz_path.replace(".npz", "_meta.csv")
-        tg = None
-        task = "unknown"
-        if os.path.exists(meta_csv):
-            with open(meta_csv, newline="") as f:
-                for r in csv.DictReader(f):
-                    if r["episode_id"] == eid:
-                        tg = int(r["T_gform"]) if r.get("T_gform") else None
-                        task = r.get("task_name", "unknown")
-                        break
-
-        # Errors
-        tcn_error = None
-        tcn_abs = None
-        rule_error = None
-        rule_abs = None
-
-        if T_pred is not None and tg is not None:
-            tcn_error = T_pred - tg
-            tcn_abs = abs(tcn_error)
-            per_task_tcn[task].append(tcn_abs)
-
-        rb = rule_baseline.get(eid, {})
-        T_rule_str = rb.get("T_rule", "")
-        if T_rule_str:
-            T_rule = int(T_rule_str)
-            if tg is not None:
-                rule_error = T_rule - tg
-                rule_abs = abs(rule_error)
-                per_task_rule[task].append(rule_abs)
-
-        results.append({
-            "episode_id": eid,
-            "task_name": task,
-            "T_gform": tg if tg is not None else "",
-            "T_pred": T_pred if T_pred is not None else "",
-            "T_rule": T_rule_str,
-            "tcn_error": tcn_error if tcn_error is not None else "",
-            "tcn_abs_error": tcn_abs if tcn_abs is not None else "",
-            "rule_error": rule_error if rule_error is not None else "",
-            "rule_abs_error": rule_abs if rule_abs is not None else "",
-        })
+    tcn_valid = [r for r in results if r["tcn_abs_error"] != ""]
+    rule_valid = [r for r in results if r["rule_abs_error"] != ""]
+    tcn_mae = np.mean([r["tcn_abs_error"] for r in tcn_valid]) if tcn_valid else None
+    rule_mae = np.mean([r["rule_abs_error"] for r in rule_valid]) if rule_valid else None
+    tcn_med = np.median([r["tcn_abs_error"] for r in tcn_valid]) if tcn_valid else None
+    rule_med = np.median([r["rule_abs_error"] for r in rule_valid]) if rule_valid else None
+    tcn_trig = sum(1 for r in tcn_valid)
 
     # Write CSV
-    csv_fields = ["episode_id", "task_name", "T_gform", "T_pred", "T_rule",
-                  "tcn_error", "tcn_abs_error", "rule_error", "rule_abs_error"]
+    csv_fields = ["episode_id","task_name","T_gform","T_pred","T_rule",
+                  "tcn_error","tcn_abs_error","rule_error","rule_abs_error"]
     os.makedirs(os.path.dirname(args.output_csv) or ".", exist_ok=True)
     with open(args.output_csv, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=csv_fields, extrasaction="ignore")
-        w.writeheader()
-        w.writerows(results)
-
-    # Aggregate
-    valid_tcn = [r for r in results if r["tcn_abs_error"] != ""]
-    valid_rule = [r for r in results if r["rule_abs_error"] != ""]
-
-    tcn_mae = np.mean([r["tcn_abs_error"] for r in valid_tcn]) if valid_tcn else None
-    rule_mae = np.mean([r["rule_abs_error"] for r in valid_rule]) if valid_rule else None
-    tcn_med = np.median([r["tcn_abs_error"] for r in valid_tcn]) if valid_tcn else None
-    rule_med = np.median([r["rule_abs_error"] for r in valid_rule]) if valid_rule else None
-
-    print(f"\nTest results:")
-    print(f"  TCN:  n={len(valid_tcn)} MAE={tcn_mae:.2f} MedAE={tcn_med:.2f}" if tcn_mae else "  TCN: no valid")
-    print(f"  Rule: n={len(valid_rule)} MAE={rule_mae:.2f} MedAE={rule_med:.2f}" if rule_mae else "  Rule: no valid")
-
-    if tcn_mae is not None and rule_mae is not None:
-        delta = rule_mae - tcn_mae
-        print(f"  Improvement: {delta:+.2f} steps ({100*delta/rule_mae:+.1f}%)")
+        w.writeheader(); w.writerows(results)
 
     # Report
-    report = f"""# Early-Grasp Detector Evaluation
+    imp = ""
+    if tcn_mae is not None and rule_mae is not None:
+        delta = rule_mae - tcn_mae
+        imp = f"| Delta | {delta:+.2f} ({100*delta/rule_mae:+.1f}%) | -- |\n"
+
+    report = f"""# Early-Grasp Detector Evaluation v2
 
 **Checkpoint**: {args.checkpoint}
-**Trigger config**: K={args.trigger_K}, threshold={args.trigger_threshold}
+**Best config**: threshold={best_th}, K={best_k} (selected on val)
+**Val MAE**: {best_mae:.2f}
 
 ## Test Set Results
 
 | Metric | TCN Detector | Rule Baseline |
 |--------|-------------|---------------|
-| n | {len(valid_tcn)} | {len(valid_rule)} |
+| n triggered | {tcn_trig} | {len(rule_valid)} |
 | MAE | {tcn_mae:.2f} | {rule_mae:.2f} |
 | MedAE | {tcn_med:.2f} | {rule_med:.2f} |
-"""
-    if tcn_mae is not None and rule_mae is not None:
-        delta = rule_mae - tcn_mae
-        report += f"| Delta | {delta:+.2f} ({100*delta/rule_mae:+.1f}%) | -- |\n"
-
-    report += f"""
-
+{imp}
 ## Per-Task (TCN)
 
 | Task | n | MAE |
 |------|---|-----|
-""" + "\n".join(
-        f"| {t} | {len(e)} | {np.mean(e):.2f} |"
-        for t, e in sorted(per_task_tcn.items())
-    ) + f"""
+""" + "\n".join(f"| {t} | {len(e)} | {np.mean(e):.2f} |" for t, e in sorted(per_task_tcn.items())) + f"""
+
+## Threshold Sweep (Val)
+
+| Threshold | K | MAE | Trigger Rate |
+|-----------|----|-----|-------------|
+""" + "\n".join(f"| {sr['threshold']} | {sr['K']} | {sr['val_mae']} | {sr['val_trigger_rate']}% |" for sr in sweep_results) + f"""
 
 ## Verdict
 
 """
+
     if tcn_mae is not None and rule_mae is not None and tcn_mae < rule_mae:
-        report += (
-            f"TCN detector improves over rule-based baseline by {rule_mae - tcn_mae:.1f} steps. "
-            "Learned detector is justified."
-        )
+        report += f"TCN improves over rule baseline by {rule_mae-tcn_mae:.1f} steps. Learned detector justified."
+    elif tcn_trig == 0:
+        report += "TCN still cannot trigger. Detector training needs further improvement (auxiliary head, more data, etc.)."
     else:
-        report += (
-            "TCN detector does not beat rule-based baseline. "
-            "Rule-based trigger should be the primary approach."
-        )
+        report += "TCN does not beat rule baseline. Rule-based trigger should be primary approach."
 
     os.makedirs(os.path.dirname(args.output_report) or ".", exist_ok=True)
     with open(args.output_report, "w") as f:
         f.write(report)
     print(f"Report: {args.output_report}")
+    print(f"CSV: {args.output_csv}")
 
 
 if __name__ == "__main__":
