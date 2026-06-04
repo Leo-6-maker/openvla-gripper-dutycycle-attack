@@ -8,5 +8,5 @@ obj100_butter_butter_s6,butter,6,34,51,approach_near_closed_proxy,0.0,84,-50,tea
 obj100_alphabet_soup_alphabet_soup_s8,alphabet_soup,8,29,46,pre_lock_closed_proxy,0.0,62,-33,negative_delay_sweep,2b,balanced_batch2b_pre_lock_closed_proxy
 obj100_butter_butter_s0,butter,0,32,49,pre_lock_closed_proxy,0.0,79,-47,negative_delay_sweep,2b,balanced_batch2b_pre_lock_closed_proxy
 obj100_ketchup_ketchup_s1,ketchup,1,28,45,pre_lock_closed_proxy,0.0556,71,-43,negative_delay_sweep,2b,balanced_batch2b_pre_lock_closed_proxy
-obj100_alphabet_soup_alphabet_soup_s2,alphabet_soup,2,11,28,approach_far_closed_proxy,0.0,61,-50,teacher_oracle,2b,alphabet_far_closed_comparison
 obj100_alphabet_soup_alphabet_soup_s4,alphabet_soup,4,4,21,approach_far_closed_proxy,0.0,54,-50,teacher_oracle,2b,alphabet_far_closed_comparison
+obj100_ketchup_ketchup_s2,ketchup,2,39,56,pre_lock_closed_proxy,0.0556,75,-36,negative_delay_sweep,2b,balanced_batch2b_replacement_pre_lock_closed
