@@ -1,0 +1,45 @@
+feature,role,feature_set_A,feature_set_B,feature_set_C
+K,forbidden,no,no,no
+T_gform,forbidden,no,no,no
+VIS_OPEN,forbidden,no,no,no
+VIS_done,forbidden,no,no,no
+candidate_source,forbidden,no,no,no
+checkpoint,forbidden,no,no,no
+claim_usable,forbidden,no,no,no
+clean_open_count,descriptor_only (future_in_window),yes,no,no
+clean_open_ratio,descriptor_only (future_in_window),yes,yes,no
+clean_open_threshold_relaxed,forbidden,no,no,no
+clean_open_threshold_strict,forbidden,no,no,no
+delay,forbidden,no,no,no
+denominator_status,forbidden,no,no,no
+detector_version,forbidden,no,no,no
+done,forbidden,no,no,no
+eef_displacement,descriptor_only (future_in_window),yes,no,no
+eef_speed_max,descriptor_only (future_in_window),yes,no,no
+eef_speed_mean,causal_allowed (approximate),yes,yes,yes
+eef_z_delta,descriptor_only (future_in_window),yes,no,no
+feature_space_model,forbidden,no,no,no
+feature_space_open_ratio,forbidden,no,no,no
+normalized_step,forbidden,no,no,no
+object_pose,forbidden,no,no,no
+object_to_target_distance,forbidden,no,no,no
+online_feasible,forbidden,no,no,no
+online_reason,forbidden,no,no,no
+phase_bin_confidence,forbidden,no,no,no
+phase_bin_reason,forbidden,no,no,no
+provenance_status,forbidden,no,no,no
+qpos_delta_abs,descriptor_only (future_in_window),yes,no,no
+qpos_end,descriptor_only (future_in_window),yes,no,no
+qpos_max,descriptor_only (future_in_window),yes,no,no
+qpos_min,causal_allowed (approximate),yes,yes,yes
+qpos_opening_delta,forbidden,no,no,no
+qpos_opening_proxy,descriptor_only (future_in_window),yes,no,no
+qpos_start,causal_allowed (approximate),yes,yes,yes
+qpos_velocity_mean,descriptor_only (future_in_window),yes,no,no
+raw_gripper_mean,causal_allowed (approximate),yes,yes,yes
+raw_open_semantics,forbidden,no,no,no
+relative_lead,forbidden,no,no,no
+step_idx,forbidden,no,no,no
+target_pose,forbidden,no,no,no
+taxonomy,forbidden,no,no,no
+threshold,forbidden,no,no,no
