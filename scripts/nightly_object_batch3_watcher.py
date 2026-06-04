@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""10h overnight watcher v2 — hardened Xid, provenance, post-VIS stages."""
+"""10h overnight watcher v2.2 — auto-requeue recoverable failures, full pipeline stages.
 
-import csv, json, os, subprocess, sys, time, shutil
+v2.2: Xid GPU parsing, auto-requeue, retry bookkeeping, label merge, detector v2, final summary.
+"""
+
+import csv, json, os, re, subprocess, sys, time
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
@@ -13,8 +16,13 @@ GPU_PAIRS = ["1,0", "2,3", "4,5", "6,7"]
 POLL_SEC = 60
 MAX_RUNTIME = 10 * 3600
 MAX_RETRY = 1
-
 WAVE1_OUT = "/data/liuyu/outputs/object_phase_response_batch3_VIS_20260604"
+
+# PCI bus to GPU ID mapping (from nvidia-smi earlier logs)
+PCI_TO_GPU = {
+    "0000:04:00": 0, "0000:06:00": 1, "0000:07:00": 2, "0000:08:00": 3,
+    "0000:0C:00": 4, "0000:0D:00": 5, "0000:0E:00": 6, "0000:0F:00": 7,
+}
 
 
 def gpu_mem(gpu_id):
@@ -29,10 +37,19 @@ def gpu_mem(gpu_id):
 
 def check_xid():
     try:
-        out = subprocess.check_output("dmesg | tail -n 200 | grep -i 'xid\\|nvrm'", shell=True, text=True)
-        return out.strip().split("\n")
+        out = subprocess.check_output("dmesg | tail -n 300 | grep -i 'xid\\|nvrm'", shell=True, text=True)
+        return [l.strip() for l in out.strip().split("\n") if l.strip()]
     except subprocess.CalledProcessError:
         return []
+
+
+def parse_xid_gpu(line):
+    """Extract GPU id from Xid line using PCI address."""
+    m = re.search(r"PCI:0000:([0-9A-Fa-f]{2}):([0-9A-Fa-f]{2})", line)
+    if m:
+        pci = f"0000:{m.group(1)}:{m.group(2)}"
+        return PCI_TO_GPU.get(pci)
+    return None
 
 
 def gpu_idle(pair):
@@ -54,10 +71,38 @@ def verify_trace_metadata(trace_path, task_key, state_id, ws, we):
         ("window_start", str(r0.get("window_start", "")), str(ws)),
         ("window_end", str(r0.get("window_end", "")), str(we)),
     ]
+    eps = r0.get("eps_raw_pixels", "")
+    if eps and str(eps) != "6":
+        checks.append(("eps", str(eps), "6"))
+    obj = r0.get("objective", "")
+    if obj and "prefix_locked_gripper_open_margin" not in obj:
+        checks.append(("objective", obj[:40], "prefix_locked_gripper_open_margin"))
     failures = [f"{k}={v}!={exp}" for k, v, exp in checks if v != exp]
-    if failures:
-        return False, "metadata_mismatch: " + ", ".join(failures)
-    return True, "ok"
+    return (False, "metadata_mismatch: " + ", ".join(failures)) if failures else (True, "ok")
+
+
+class Task:
+    __slots__ = ("task_id","task_type","priority","task_key","state_id","ws","we","phase",
+                 "gpu_pair","status","retry_count","previous_gpu_pairs","output_dir",
+                 "log_path","created_at","started_at","finished_at","failure_reason",
+                 "infra_status","last_rc","provenance_status","trace_path","proc")
+    def __init__(self, tid, ttype, pri, key, st, ws, we, ph, gpu, **kw):
+        self.task_id = tid; self.task_type = ttype; self.priority = pri
+        self.task_key = key; self.state_id = st; self.ws = int(ws); self.we = int(we)
+        self.phase = ph; self.gpu_pair = gpu
+        self.status = "PENDING"; self.retry_count = 0; self.previous_gpu_pairs = []
+        self.output_dir = ""; self.log_path = ""; self.created_at = datetime.now().isoformat()
+        self.started_at = ""; self.finished_at = ""; self.failure_reason = ""
+        self.infra_status = ""; self.last_rc = ""; self.provenance_status = ""
+        self.trace_path = ""; self.proc = None
+
+    def to_dict(self):
+        return {k: str(getattr(self, k, "")) for k in [
+            "task_id","task_type","priority","task_key","state_id","ws","we","phase",
+            "gpu_pair","status","retry_count","previous_gpu_pairs","output_dir",
+            "log_path","created_at","started_at","finished_at","failure_reason",
+            "infra_status","last_rc","provenance_status","trace_path",
+        ]}
 
 
 class Watcher:
@@ -65,17 +110,15 @@ class Watcher:
         self.tasks = []
         self.running = {}
         self.blacklisted = set()
-        # Seed with ALL current Xid lines so old ones don't trigger stop
         self.seen_xid_lines = set(check_xid())
-        if self.seen_xid_lines:
-            self.log("Seeded %d existing Xid lines as baseline" % len(self.seen_xid_lines))
         self.started_at = datetime.now()
-        self.stage = "BATCH3_VIS"  # current pipeline stage
         self.audit_done = False
         self.labels_done = False
-        os.makedirs(f"{OUT}/queue", exist_ok=True)
-        os.makedirs(f"{OUT}/logs", exist_ok=True)
-        os.makedirs(f"{OUT}/batch3_VIS", exist_ok=True)
+        self.stages_run = set()
+        if self.seen_xid_lines:
+            print(f"[INIT] Seeded {len(self.seen_xid_lines)} existing Xid baseline lines")
+        for d in ["queue","logs","batch3_VIS"]:
+            os.makedirs(f"{OUT}/{d}", exist_ok=True)
 
     def log(self, msg):
         ts = datetime.now().strftime("%H:%M:%S")
@@ -84,16 +127,49 @@ class Watcher:
         with open(f"{OUT}/queue/events.log", "a") as f:
             f.write(line + "\n")
 
-    def check_xid_and_blacklist(self):
-        xid_lines = check_xid()
-        fresh = [l for l in xid_lines if l not in self.seen_xid_lines]
-        if fresh:
-            for line in fresh:
-                self.seen_xid_lines.add(line)
-                self.log(f"XID_DETECTED: {line[:120]}")
-            self.log("WARNING: Fresh Xid — pausing scheduling, writing NEEDS_MANUAL_GPU_CHECK")
-            self._write_stop_report("fresh_xid_detected", "\n".join(fresh))
-            sys.exit(1)  # Conservative: stop on any fresh Xid
+    def check_xid_and_handle(self):
+        fresh = [l for l in check_xid() if l not in self.seen_xid_lines]
+        if not fresh:
+            return True  # no new Xid
+        for line in fresh:
+            self.seen_xid_lines.add(line)
+            gpu_id = parse_xid_gpu(line)
+            if gpu_id is not None:
+                self.log(f"FRESH_XID GPU={gpu_id}: {line[:120]}")
+                for pair in list(GPU_PAIRS):
+                    if str(gpu_id) in pair.split(","):
+                        self.blacklisted.add(pair)
+                        self.log(f"BLACKLISTED pair {pair} due to GPU{gpu_id} Xid")
+                        if pair in self.running:
+                            t = self.running[pair]
+                            t.status = "INFRA_FAILED"; t.failure_reason = f"Xid_GPU{gpu_id}"
+                            t.infra_status = "xid"
+                            if t.retry_count < MAX_RETRY:
+                                new_pair = self.choose_healthy_pair(exclude=pair)
+                                if new_pair:
+                                    t.retry_count += 1
+                                    t.previous_gpu_pairs.append(pair)
+                                    t.gpu_pair = new_pair
+                                    t.status = "PENDING_RETRY"
+                                    self.log(f"REQUEUE {t.task_id} to {new_pair}")
+                                    del self.running[pair]
+                            else:
+                                t.status = "NEEDS_MANUAL_RETRY"
+                                del self.running[pair]
+            else:
+                self.log(f"FRESH_XID_UNPARSED: {line[:120]}. Pausing scheduler.")
+                return False  # conservative pause
+        return True
+
+    def choose_healthy_pair(self, exclude=None):
+        for pair in GPU_PAIRS:
+            if pair in self.blacklisted or pair in self.running:
+                continue
+            if pair == exclude:
+                continue
+            if gpu_idle(pair):
+                return pair
+        return None
 
     def launch_vis(self, task):
         ep_id = f"batch3_{task.task_key}_s{task.state_id}_{task.phase}_w{task.ws}_{task.we}"
@@ -111,267 +187,258 @@ class Watcher:
         lp = f"{od}/VIS_launch.log"
         self.log(f"LAUNCH {task.task_id}: {task.task_key}_s{task.state_id} [{task.ws},{task.we}] GPU={task.gpu_pair}")
         proc = subprocess.Popen(cmd, cwd=REPO, stdout=open(lp, "w"), stderr=subprocess.STDOUT)
-        task.status = "RUNNING"
-        task.started_at = datetime.now().isoformat()
-        task.output_dir = od
-        task.log_path = lp
-        task.proc = proc
+        task.status = "RUNNING"; task.started_at = datetime.now().isoformat()
+        task.output_dir = od; task.log_path = lp; task.proc = proc
         self.running[task.gpu_pair] = task
 
     def check_completions(self):
         done_pairs = []
         for pair, task in list(self.running.items()):
             if task.proc is None:
-                done_pairs.append(pair)
-                continue
+                done_pairs.append(pair); continue
             rc = task.proc.poll()
             if rc is None:
                 continue
-            task.finished_at = datetime.now().isoformat()
+            task.finished_at = datetime.now().isoformat(); task.last_rc = str(rc)
             trace_dir = f"{task.output_dir}/traces"
             traces = list(Path(trace_dir).glob("*vis*trace.csv"))
-
             if rc == 0 and traces:
-                trace_path = str(traces[0])
-                ok, meta_reason = verify_trace_metadata(trace_path, task.task_key, task.state_id, task.ws, task.we)
+                tp = str(traces[0]); task.trace_path = tp
+                ok, reason = verify_trace_metadata(tp, task.task_key, task.state_id, task.ws, task.we)
                 if ok:
-                    task.status = "DONE"
+                    task.status = "DONE"; task.provenance_status = "verified"
                     self.log(f"DONE {task.task_id}: {task.task_key}_s{task.state_id}")
                 else:
-                    task.status = "PROVENANCE_FAILED"
-                    task.failure_reason = meta_reason
-                    self.log(f"PROVENANCE_FAILED {task.task_id}: {meta_reason}")
+                    task.status = "PROVENANCE_FAILED"; task.failure_reason = reason; task.provenance_status = "failed"
+                    self.log(f"PROVENANCE_FAILED {task.task_id}: {reason}")
+            elif rc == 0 and not traces:
+                task.status = "MISSING_TRACE"; task.failure_reason = "no_trace_rc0"
+                if task.retry_count < MAX_RETRY:
+                    self._requeue(task, pair, "trace_missing")
+                else:
+                    task.status = "NEEDS_MANUAL_RETRY"
             elif rc != 0:
                 log_content = ""
                 if os.path.exists(task.log_path):
                     with open(task.log_path) as f:
                         log_content = f.read()[-2000:]
                 if "illegal memory" in log_content or "CUDA error" in log_content:
-                    task.status = "INFRA_FAILED"
-                    task.failure_reason = "CUDA_illegal_memory"
+                    task.status = "INFRA_FAILED"; task.failure_reason = "CUDA_illegal_memory"; task.infra_status = "cuda_crash"
                     self.blacklisted.add(pair)
-                    self.log(f"INFRA_FAILED {task.task_id}: GPU {pair} blacklisted")
+                    self.log(f"INFRA CUDA crash {task.task_id}: GPU {pair} blacklisted")
+                    if task.retry_count < MAX_RETRY:
+                        self._requeue(task, pair, "cuda_crash")
+                    else:
+                        task.status = "NEEDS_MANUAL_RETRY"
                 elif "OutOfMemory" in log_content or "OOM" in log_content:
-                    task.status = "INFRA_FAILED"
-                    task.failure_reason = "CUDA_OOM"
+                    task.status = "INFRA_FAILED"; task.failure_reason = "CUDA_OOM"; task.infra_status = "oom"
+                    if task.retry_count < MAX_RETRY:
+                        self._requeue(task, pair, "oom")
+                    else:
+                        task.status = "NEEDS_MANUAL_RETRY"
                 else:
-                    task.status = "FAILED"
-                    task.failure_reason = f"rc={rc}"
-                if task.retry_count < MAX_RETRY and task.status != "PROVENANCE_FAILED":
-                    task.retry_count += 1
-                    task.status = "PENDING_RETRY"
-                    for p in GPU_PAIRS:
-                        if p not in self.blacklisted and p not in self.running:
-                            task.gpu_pair = p
-                            break
-                    self.log(f"RETRY {task.task_id} on {task.gpu_pair}")
-                elif task.status != "PROVENANCE_FAILED":
-                    task.status = "NEEDS_MANUAL_RETRY"
-            else:
-                task.status = "MISSING_TRACE"
-                if task.retry_count < MAX_RETRY:
-                    task.retry_count += 1
-                    task.status = "PENDING_RETRY"
-
+                    task.status = "FAILED"; task.failure_reason = f"rc={rc}"
+                    if task.retry_count < MAX_RETRY:
+                        self._requeue(task, pair, f"rc_{rc}")
+                    else:
+                        task.status = "NEEDS_MANUAL_RETRY"
             done_pairs.append(pair)
         for pair in done_pairs:
-            del self.running[pair]
+            if pair in self.running:
+                del self.running[pair]
+
+    def _requeue(self, task, old_pair, reason):
+        new_pair = self.choose_healthy_pair(exclude=old_pair)
+        if new_pair:
+            task.retry_count += 1; task.previous_gpu_pairs.append(old_pair)
+            task.gpu_pair = new_pair; task.status = "PENDING_RETRY"
+            self.log(f"REQUEUE {task.task_id}: {reason} → {new_pair} (retry={task.retry_count})")
+        else:
+            task.status = "PENDING_RETRY"
+            self.log(f"REQUEUE_WAIT {task.task_id}: {reason}, no healthy pair available")
 
     def discover_wave1(self):
-        """Scan Wave 1 output dir for completed traces."""
         if not os.path.isdir(WAVE1_OUT):
             return
         for root, dirs, files in os.walk(WAVE1_OUT):
             for f in files:
                 if "vis_pgd" in f and f.endswith("_trace.csv") and "traces" in root:
-                    trace_path = os.path.join(root, f)
-                    # Already discovered?
-                    known = [t for t in self.tasks if hasattr(t, 'wave1_discovered')]
-                    if any(trace_path in getattr(t, 'wave1_path', '') for t in known):
+                    tp = os.path.join(root, f)
+                    known = [getattr(t, 'wave1_path', '') for t in self.tasks if hasattr(t, 'wave1_discovered')]
+                    if tp in known:
                         continue
-                    # Parse task/state from trace
                     try:
-                        with open(trace_path) as tf:
+                        with open(tp) as tf:
                             r0 = next(csv.DictReader(tf), None)
                         if not r0:
                             continue
-                        tt = r0.get("task", ""); st = r0.get("state_id", "")
-                        ws = r0.get("window_start", ""); we = r0.get("window_end", "")
-                        done = r0.get("done", "").lower() == "true"
+                        tt = r0.get("task",""); st = r0.get("state_id","")
+                        ws = r0.get("window_start",""); we = r0.get("window_end","")
                         tid = f"W1_{tt}_s{st}_w{ws}_{we}"
-                        t = type('obj', (object,), {
-                            'task_id': tid, 'task_type': 'BATCH3_VIS', 'priority': 0,
-                            'task_key': tt, 'state_id': st, 'ws': int(ws or 0),
-                            'we': int(we or 0), 'phase': '', 'gpu_pair': 'wave1',
-                            'status': 'EXTERNAL_DONE' if not done else 'EXTERNAL_DONE',
-                            'retry_count': 0, 'output_dir': os.path.dirname(os.path.dirname(root)),
-                            'log_path': '', 'depends_on': '', 'created_at': '',
-                            'started_at': '', 'finished_at': '', 'failure_reason': '',
-                            'proc': None, 'wave1_discovered': True, 'wave1_path': trace_path,
-                        })()
+                        t = Task(tid, "BATCH3_VIS", 0, tt, st, ws, we, "wave1", "wave1")
+                        t.status = "EXTERNAL_DONE"; t.output_dir = os.path.dirname(os.path.dirname(root))
+                        t.trace_path = tp; t.provenance_status = "external"
+                        t.wave1_discovered = True; t.wave1_path = tp
                         self.tasks.append(t)
-                        self.log(f"WAVE1 discovered: {tid} status={t.status}")
+                        self.log(f"WAVE1 discovered: {tid}")
                     except Exception as e:
                         self.log(f"WAVE1 parse error: {e}")
 
     def schedule(self):
+        can_schedule = self.check_xid_and_handle()
+        if not can_schedule:
+            return
         for pair in GPU_PAIRS:
             if pair in self.blacklisted or pair in self.running:
                 continue
             if not gpu_idle(pair):
                 continue
-            pending = [t for t in self.tasks if t.status in ("PENDING", "PENDING_RETRY")]
+            pending = [t for t in self.tasks if t.status in ("PENDING", "PENDING_RETRY")
+                      and t.gpu_pair == "" or t.status == "PENDING_RETRY"]
+            if not pending:
+                pending = [t for t in self.tasks if t.status in ("PENDING", "PENDING_RETRY")]
             pending.sort(key=lambda t: (t.status != "PENDING_RETRY", t.priority))
             if pending:
                 pending[0].gpu_pair = pair
                 self.launch_vis(pending[0])
 
-    def all_batch3_vis_terminal(self):
-        vis_tasks = [t for t in self.tasks if t.task_type == "BATCH3_VIS"]
-        if not vis_tasks:
+    def all_vis_terminal(self):
+        vis = [t for t in self.tasks if t.task_type == "BATCH3_VIS"]
+        if not vis:
             return False
-        terminal_states = {"DONE", "EXTERNAL_DONE", "EXTERNAL_INFRA_FAILED",
-                          "INFRA_FAILED", "PROVENANCE_FAILED", "NEEDS_MANUAL_RETRY", "FAILED"}
-        return all(t.status in terminal_states for t in vis_tasks)
+        term = {"DONE","EXTERNAL_DONE","INFRA_FAILED","PROVENANCE_FAILED","NEEDS_MANUAL_RETRY","FAILED"}
+        return all(t.status in term for t in vis)
 
     def run_audit(self):
-        if self.audit_done:
+        if self.audit_done or "audit" in self.stages_run:
             return
-        self.log("Running Batch3 VIS audit...")
+        self.log("=== AUDIT STAGE ===")
         vis_dirs = []
         for t in self.tasks:
-            if t.task_type == "BATCH3_VIS" and t.status in ("DONE", "EXTERNAL_DONE"):
-                td = os.path.join(t.output_dir, "traces") if not hasattr(t, 'wave1_discovered') else os.path.dirname(t.wave1_path) if hasattr(t, 'wave1_path') else ""
+            if t.task_type == "BATCH3_VIS" and t.status in ("DONE","EXTERNAL_DONE"):
+                td = os.path.join(t.output_dir, "traces") if hasattr(t, 'output_dir') and t.output_dir else ""
+                if not td and hasattr(t, 'wave1_path'):
+                    td = os.path.dirname(t.wave1_path)
                 if td and os.path.isdir(td):
                     vis_dirs.append(td)
         if not vis_dirs:
-            # Also scan Wave 1
             if os.path.isdir(WAVE1_OUT):
                 for root, dirs, files in os.walk(WAVE1_OUT):
                     if os.path.basename(root) == "traces":
                         vis_dirs.append(root)
         if not vis_dirs:
-            self.log("Audit: no VIS trace dirs found yet")
-            return
+            self.log("Audit: no trace dirs yet"); return
         cmd = [PY, "-u", f"{REPO}/scripts/diagnostics/audit_phase_conditioned_vis.py",
                "--run-dirs"] + vis_dirs + [
                "--output-csv", f"{REPO}/tables/object_phase_response_batch3_vis_provenance.csv",
                "--summary-csv", f"{REPO}/tables/object_phase_response_batch3_vis_summary.csv"]
-        self.log(f"Running audit on {len(vis_dirs)} dirs")
-        result = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True, timeout=300)
-        if result.returncode == 0:
-            self.audit_done = True
+        self.log(f"Audit on {len(vis_dirs)} dirs")
+        r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True, timeout=300)
+        if r.returncode == 0:
+            self.audit_done = True; self.stages_run.add("audit")
             self.log("Audit PASSED")
+            self.run_label_merge()
         else:
-            self.log(f"Audit FAILED: {result.stderr[:300]}")
+            self.log(f"Audit FAILED: {r.stderr[:300]}")
 
-    def all_terminal(self):
-        if not self.tasks:
-            return False
-        terminal_states = {"DONE", "EXTERNAL_DONE", "FAILED", "INFRA_FAILED",
-                          "PROVENANCE_FAILED", "NEEDS_MANUAL_RETRY", "SKIPPED"}
-        return all(t.status in terminal_states for t in self.tasks)
+    def run_label_merge(self):
+        if "labels" in self.stages_run:
+            return
+        self.log("=== LABEL MERGE STAGE ===")
+        label_script = f"{REPO}/scripts/diagnostics/finalize_phase_response_labels.py"
+        if not os.path.exists(label_script):
+            self.log("Label builder not found — skipping");
+            return
+        cmd = [PY, "-u", label_script,
+               "--batch1-merged", f"{REPO}/tables/object_teacher_delay50_vis_smoke_merged_summary.csv",
+               "--batch2b-vis", f"{REPO}/tables/object_phase_response_batch2b_vis_summary.csv",
+               "--batch3-vis", f"{REPO}/tables/object_phase_response_batch3_vis_summary.csv",
+               "--descriptors", f"{REPO}/tables/object_teacher_window_phase_descriptors.csv",
+               "--output-labels", f"{REPO}/tables/object_phase_response_labels_v1.csv",
+               "--output-metrics", f"{REPO}/tables/vulnerability_ready_smoke_metrics_v2.csv",
+               "--output-predictions", f"{REPO}/tables/vulnerability_ready_smoke_predictions_v2.csv",
+               "--output-report", f"{REPO}/reports/VULNERABILITY_READY_SMOKE_DETECTOR_V2.md"]
+        self.log("Running label builder (CSV mode)...")
+        r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True, timeout=300)
+        if r.returncode == 0:
+            self.labels_done = True; self.stages_run.add("labels")
+            self.log("Label merge PASSED")
+        else:
+            self.log(f"Label merge FAILED: {r.stderr[:200]}")
 
-    def write_state(self):
-        rows = []
-        for t in self.tasks:
-            rows.append(dict(
-                task_id=t.task_id, task_type=t.task_type, task_key=t.task_key,
-                state_id=t.state_id, window_start=t.ws, window_end=t.we,
-                status=t.status, retry_count=t.retry_count,
-                output_dir=t.output_dir, failure_reason=t.failure_reason,
-                started_at=t.started_at, finished_at=t.finished_at,
-            ))
-        with open(f"{OUT}/queue/state.jsonl", "w") as f:
-            for r in rows:
-                f.write(json.dumps(r) + "\n")
-        with open(f"{OUT}/queue/tasks_snapshot.json", "w") as f:
-            json.dump(rows, f, indent=2)
-
-    def _write_stop_report(self, reason, detail=""):
+    def write_final_summary(self):
         path = f"{REPO}/reports/NIGHTLY_OBJECT_BATCH3_WATCHER_SUMMARY.md"
-        n_done = sum(1 for t in self.tasks if t.status in ("DONE", "EXTERNAL_DONE"))
-        n_fail = sum(1 for t in self.tasks if "FAIL" in t.status)
+        n_done = sum(1 for t in self.tasks if t.status in ("DONE","EXTERNAL_DONE"))
+        n_infra = sum(1 for t in self.tasks if "INFRA" in t.status or "FAIL" in t.status)
+        n_retry = sum(1 for t in self.tasks if t.retry_count > 0)
         with open(path, "w") as f:
             f.write(f"# Overnight Batch3 Watcher Summary\n\n")
-            f.write(f"**Stop reason**: {reason}\n")
-            f.write(f"**Runtime**: {datetime.now() - self.started_at}\n\n")
+            f.write(f"**Runtime**: {datetime.now() - self.started_at}\n")
+            f.write(f"**Blacklisted**: {self.blacklisted}\n\n")
             f.write(f"| Metric | Value |\n|--------|-------|\n")
             f.write(f"| Total tasks | {len(self.tasks)} |\n")
-            f.write(f"| Done | {n_done} |\n")
-            f.write(f"| Failed/Infra | {n_fail} |\n")
-            f.write(f"| Blacklisted GPUs | {self.blacklisted} |\n")
-            if detail:
-                f.write(f"\n## Detail\n\n```\n{detail}\n```\n")
-        self.log(f"Stop report: {path}")
+            f.write(f"| DONE | {n_done} |\n")
+            f.write(f"| Infra/PROV failed | {n_infra} |\n")
+            f.write(f"| Retried | {n_retry} |\n")
+            f.write(f"| Audit | {'PASS' if self.audit_done else 'NOT RUN'} |\n")
+            f.write(f"| Labels | {'PASS' if self.labels_done else 'NOT RUN'} |\n")
+            f.write(f"| Stages | {self.stages_run} |\n\n")
+            f.write("## Tasks\n\n")
+            for t in self.tasks:
+                f.write(f"- {t.task_id}: {t.task_key}_s{t.state_id} [{t.ws},{t.we}] {t.status} retry={t.retry_count} {t.failure_reason}\n")
+        self.log(f"Final summary: {path}")
 
     def run(self):
-        self.log("Watcher v2 started. Pairs: %s, Max: %dh" % (GPU_PAIRS, MAX_RUNTIME // 3600))
+        self.log(f"Watcher v2.2 started. Pairs: {GPU_PAIRS}, Max: {MAX_RUNTIME//3600}h")
 
-        # Load Batch3 VIS targets
-        targets_path = f"{REPO}/tables/object_phase_response_batch3_vis_targets.csv"
-        if os.path.exists(targets_path):
-            with open(targets_path, newline="") as f:
+        # Load targets
+        tp = f"{REPO}/tables/object_phase_response_batch3_vis_targets.csv"
+        if os.path.exists(tp):
+            with open(tp, newline="") as f:
                 targets = list(csv.DictReader(f))
             self.log(f"Loaded {len(targets)} VIS targets")
-
-            # Wave 1 keys (already running)
-            wave1_keys = {
-                ("cream_cheese", "4", 28, 45), ("milk", "4", 19, 36),
-                ("salad_dressing", "0", 7, 24), ("bbq_sauce", "5", 27, 44),
-            }
+            wave1_keys = {("cream_cheese","4",28,45),("milk","4",19,36),("salad_dressing","0",7,24),("bbq_sauce","5",27,44)}
             tid = 0
             for t in targets:
                 key = (t["task_key"], t["state_id"], int(t["window_start"]), int(t["window_end"]))
                 if key in wave1_keys:
                     continue
                 tid += 1
-                ph = t.get("phase_bin_proxy", t.get("candidate_role", ""))
-                tk = type('obj', (object,), {
-                    'task_id': f"B3_VIS_{tid:03d}", 'task_type': 'BATCH3_VIS', 'priority': 10,
-                    'task_key': t["task_key"], 'state_id': t["state_id"],
-                    'ws': int(t["window_start"]), 'we': int(t["window_end"]),
-                    'phase': ph, 'gpu_pair': '', 'status': 'PENDING',
-                    'retry_count': 0, 'output_dir': '', 'log_path': '',
-                    'depends_on': '', 'created_at': datetime.now().isoformat(),
-                    'started_at': '', 'finished_at': '', 'failure_reason': '', 'proc': None,
-                })()
+                tk = Task(f"B3_VIS_{tid:03d}","BATCH3_VIS",10,t["task_key"],t["state_id"],t["window_start"],t["window_end"],t.get("phase_bin_proxy",""),"")
                 self.tasks.append(tk)
-            self.log(f"Queued {tid} tasks (Wave 1 excluded)")
+            self.log(f"Queued {tid} tasks")
 
-        # Main loop
         start = time.time()
         while time.time() - start < MAX_RUNTIME:
-            self.check_xid_and_blacklist()
             self.discover_wave1()
             self.check_completions()
-
-            if self.all_batch3_vis_terminal() and not self.audit_done:
+            if self.all_vis_terminal():
                 self.run_audit()
-
-            if self.all_terminal():
-                self.log("ALL tasks terminal.")
-                break
-
+                if all(t.status in ("DONE","EXTERNAL_DONE","INFRA_FAILED","PROVENANCE_FAILED","NEEDS_MANUAL_RETRY","FAILED") for t in self.tasks):
+                    self.log("All tasks terminal.")
+                    break
             self.schedule()
-
             if len(self.blacklisted) > 2:
                 self.log("STOP: >2 GPU pairs blacklisted")
-                self._write_stop_report("blacklist_count_exceeded")
                 break
-
-            tnow = datetime.now().strftime("%H:%M")
             running_n = len(self.running)
-            done_n = sum(1 for t in self.tasks if t.status in ("DONE", "EXTERNAL_DONE"))
+            done_n = sum(1 for t in self.tasks if t.status in ("DONE","EXTERNAL_DONE"))
             pend_n = sum(1 for t in self.tasks if t.status.startswith("PENDING"))
-            self.log(f"{tnow} heartbeat: run={running_n} done={done_n} pend={pend_n} bl={len(self.blacklisted)}")
+            self.log(f"{datetime.now().strftime('%H:%M')} heartbeat: run={running_n} done={done_n} pend={pend_n} bl={len(self.blacklisted)}")
             self.write_state()
             time.sleep(POLL_SEC)
 
-        self.write_state()
-        self.log("Watcher exiting.")
+        self.write_final_summary()
+        self.log("Watcher exiting.");
+
+    def write_state(self):
+        rows = [t.to_dict() for t in self.tasks]
+        with open(f"{OUT}/queue/state.jsonl","w") as f:
+            for r in rows:
+                f.write(json.dumps(r)+"\n")
+        with open(f"{OUT}/queue/tasks_snapshot.json","w") as f:
+            json.dump(rows, f, indent=2)
 
 
 if __name__ == "__main__":
-    w = Watcher()
-    w.run()
+    Watcher().run()
