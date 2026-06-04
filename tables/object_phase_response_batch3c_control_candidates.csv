@@ -1,0 +1,12 @@
+task_key,state_id,window_start,window_end,phase_bin_proxy,candidate_role,clean_open_ratio,T_gform,relative_lead,qpos_start,qpos_min,eef_speed_mean,actual_window_len,manual_selection_flag,reason_selected
+tomato_sauce,0,119,136,stable_grasp_or_lift_proxy,stable_post_lock_control,1.0,99,20,0.038668,0.031384,0.038633,18,True,batch3c_stable_post_lock_control
+orange_juice,0,125,142,stable_grasp_or_lift_proxy,stable_post_lock_control,0.5,100,25,0.039045,0.035044,0.350775,18,True,batch3c_stable_post_lock_control
+cream_cheese,1,125,142,stable_grasp_or_lift_proxy,stable_post_lock_control,0.5,105,20,0.020071,0.02006,0.013323,18,True,batch3c_stable_post_lock_control
+salad_dressing,0,77,94,stable_grasp_or_lift_proxy,stable_post_lock_control,1.0,57,20,0.01735,0.01735,0.041516,18,True,batch3c_stable_post_lock_control
+milk,0,107,124,stable_grasp_or_lift_proxy,stable_post_lock_control,1.0,87,20,0.030021,0.03002,0.069513,18,True,batch3c_stable_post_lock_control
+bbq_sauce,0,95,112,stable_grasp_or_lift_proxy,stable_post_lock_control,0.6667,75,20,0.038676,0.014121,0.137021,18,True,batch3c_stable_post_lock_control
+tomato_sauce,0,0,17,approach_far_closed_proxy,far_too_early_control,0.0,99,-99,0.038725,0.038725,0.034244,18,True,batch3c_far_too_early_control
+orange_juice,0,0,17,approach_far_closed_proxy,far_too_early_control,0.0,100,-100,0.038721,0.038721,0.428286,18,True,batch3c_far_too_early_control
+cream_cheese,0,0,17,approach_far_closed_proxy,far_too_early_control,0.0,128,-128,0.038722,0.038722,0.174535,18,True,batch3c_far_too_early_control
+salad_dressing,0,0,17,approach_far_closed_proxy,far_too_early_control,0.0,57,-57,0.038724,0.038724,0.451806,18,True,batch3c_far_too_early_control
+alphabet_soup,0,33,50,pre_lock_closed_proxy,pre_lock_control,0.0556,53,-20,0.039649,0.030828,0.161341,18,True,batch3c_pre_lock_control
