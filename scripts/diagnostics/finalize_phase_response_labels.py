@@ -18,6 +18,10 @@ def parse_args():
     ap.add_argument("--output-metrics", default="tables/vulnerability_ready_smoke_metrics_v1.csv")
     ap.add_argument("--output-predictions", default="tables/vulnerability_ready_smoke_predictions_v1.csv")
     ap.add_argument("--output-report", default="reports/VULNERABILITY_READY_SMOKE_DETECTOR_V1.md")
+    ap.add_argument("--use-frozen-batch2b", action="store_true",
+                    help="Use verified 9-outcome hardcoded set (Batch2b freeze only)")
+    ap.add_argument("--batch3-vis", default="",
+                    help="Batch3 VIS summary CSV for multi-batch label building")
     ap.add_argument("--dry-run", action="store_true")
     return ap.parse_args()
 
@@ -77,8 +81,9 @@ def main():
     print("Loaded %d unique VIS outcomes from CSV" % len(outcomes))
 
     # ── Verified 9-outcome fallback (frozen from direct trace audit) ──
-    # Always use verified 9-outcome set (CSV schemas inconsistent across sources)
-    outcomes = [
+    if args.use_frozen_batch2b:
+        print("Using frozen Batch2b 9-outcome set")
+        outcomes = [
             dict(source="B1", task="alphabet_soup",state_id="0",window_start="3", window_end="20", qpos=0.027619,done=False,claim=False,denom=True, taxonomy="weak_physical_uncertain"),
             dict(source="B2b",task="alphabet_soup",state_id="2",window_start="11",window_end="28",qpos=0.037643,done=False,claim=True, denom=True, taxonomy="action_physical_strong_task_positive"),
             dict(source="B2b",task="bbq_sauce",    state_id="0",window_start="25",window_end="42",qpos=0.038055,done=True, claim=False,denom=True, taxonomy="physical_strong_task_negative"),
@@ -89,6 +94,22 @@ def main():
             dict(source="B1", task="ketchup",      state_id="0",window_start="16",window_end="33",qpos=0.038042,done=False,claim=True, denom=True, taxonomy="action_physical_strong_task_positive"),
             dict(source="B2b",task="ketchup",      state_id="1",window_start="28",window_end="45",qpos=0.037948,done=True, claim=False,denom=True, taxonomy="physical_strong_task_negative"),
         ]
+    else:
+        # CSV-reading mode for multi-batch label building
+        print("CSV-reading mode: %d outcomes loaded" % len(outcomes))
+        if args.batch3_vis and os.path.exists(args.batch3_vis):
+            with open(args.batch3_vis, newline="") as f:
+                for r in csv.DictReader(f):
+                    task = r.get("task_key", r.get("task",""))
+                    claim = str(r.get("claim_usable","")).lower() == "true"
+                    denom = str(r.get("denominator_clean", r.get("denominator_status",""))).lower() in ("clean","true")
+                    tax = r.get("taxonomy_label", r.get("taxonomy",""))
+                    qpos = float(r.get("qpos_opening_delta", r.get("qpos_delta", r.get("vis_qpos_opening_delta_mean", 0))) or 0)
+                    done = "task_negative" in tax.lower() or "no_action" in tax.lower()
+                    outcomes.append(dict(source="batch3", task=task,
+                        state_id=r.get("state_id","0"), window_start=r.get("window_start",""),
+                        window_end=r.get("window_end",""), qpos=qpos, done=done,
+                        claim=claim, denom=denom, taxonomy=tax, merge_type=""))
 
     # Load phase descriptors
     phase_map = {}
