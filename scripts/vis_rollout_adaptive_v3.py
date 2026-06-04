@@ -221,8 +221,28 @@ benchmark_dict = benchmark.get_benchmark_dict()
 task_suite = benchmark_dict['libero_object']()
 task = task_suite.get_task(cfg['task_id'])
 bddl = os.path.join(get_libero_path('bddl_files'), task.problem_folder, task.bddl_file)
+
+# Task mapping assertion: verify task_key matches loaded task
+task_key = args.task
+problem_hint = task.problem_folder.lower()
+bddl_hint = task.bddl_file.lower()
+key_in_problem = task_key.replace('_','') in problem_hint.replace('_','')
+key_in_bddl = task_key.replace('_','') in bddl_hint.replace('_','')
+# Also try instruction match
+instruction_keywords = task_key.replace('_',' ').lower().split()
+inst_lower = task.instruction.lower() if hasattr(task,'instruction') else ''
+key_in_instruction = all(kw in inst_lower for kw in instruction_keywords)
+if not (key_in_problem or key_in_bddl or key_in_instruction):
+    print(f"WARNING: task_key='{task_key}' not found in problem_folder='{task.problem_folder}' or bddl='{task.bddl_file}' or instruction='{inst_lower}'")
+    print(f"  Proceeding, but verify task_id={cfg['task_id']} maps correctly.")
+print(f"Task: {task_key} (id={cfg['task_id']}) | problem={task.problem_folder} | bddl={task.bddl_file} | instruction='{cfg['instruction']}'")
+
 initial_states = task_suite.get_task_init_states(cfg['task_id'])
-state_id = max(0, min(args.state_id, len(initial_states) - 1))
+n_states = len(initial_states)
+if args.state_id < 0 or args.state_id >= n_states:
+    raise SystemExit(f"Invalid state_id={args.state_id}; available 0..{n_states-1}")
+state_id = args.state_id
+print(f"State: requested={args.state_id} resolved={state_id} n_initial_states={n_states}")
 env_args = {
     'bddl_file_name': bddl, 'camera_heights': 256, 'camera_widths': 256,
     'has_renderer': False, 'has_offscreen_renderer': True,
@@ -598,7 +618,7 @@ if ctrl['stop_reason'] != 'none':
 
 ts = time.strftime('%H%M%S')
 ctrl_tag = f'_{ctrl["mode"]}_K{ctrl["K"]}_Q{ctrl["Q"]}_md{ctrl["max_dur"]}' if ctrl['mode'] != 'fixed' else ''
-run_id = f'vis_{args.task}_s0_{args.condition}_{args.strategy}_d{dval}_w{ws}_{we}_seed{args.seed}{ctrl_tag}_{ts}'
+run_id = f'vis_{args.task}_state{state_id}_{args.condition}_{args.strategy}_d{dval}_w{ws}_{we}_seed{args.seed}{ctrl_tag}_{ts}'
 csv_path = f'{OUT_BASE}/runs/{run_id}_trace.csv'
 with open(csv_path, 'w', newline='') as f:
     w = csv.DictWriter(f, fieldnames=list(trace_rows[0].keys())); w.writeheader(); w.writerows(trace_rows)

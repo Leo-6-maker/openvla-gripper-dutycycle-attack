@@ -37,6 +37,8 @@ def parse_args():
     ap.add_argument("--objective", default="prefix_locked_gripper_open_margin")
     ap.add_argument("--pgd_steps", type=int, default=40)
     ap.add_argument("--pgd_restarts", type=int, default=3)
+    ap.add_argument("--state-id", type=int, default=0, help="LIBERO initial state ID")
+    ap.add_argument("--episode-id", default="", help="Episode ID for provenance")
     ap.add_argument("--gpu_pair", default="6,7")
     ap.add_argument("--output-dir", default=".")
     ap.add_argument("--allow-fallback-fixed-window", action="store_true",
@@ -165,7 +167,7 @@ def main():
     ws, we, selector_type, selection_meta = get_window_from_source(args)
 
     if args.dry_run:
-        print(f"DRY RUN: {args.condition} {args.task} seed={args.seed} [{ws},{we}]")
+        print(f"DRY RUN: {args.condition} {args.task} seed={args.seed} state_id={args.state_id} window=[{ws},{we}]")
         print(f"  window_source={args.window_source} selector={selector_type}")
         print(f"  selection_meta: {selection_meta}")
         return
@@ -179,7 +181,8 @@ def main():
         "--eps_raw_pixels", str(args.eps_raw_pixels),
         "--perturb_start", str(ws), "--perturb_end", str(we),
         "--objective", args.objective,
-        "--seed", str(args.seed), "--gpu_pair", args.gpu_pair]
+        "--seed", str(args.seed), "--state-id", str(args.state_id),
+        "--gpu_pair", args.gpu_pair]
     if args.condition == "vis_pgd":
         cmd += ["--pgd_steps", str(args.pgd_steps), "--pgd_restarts", str(args.pgd_restarts)]
 

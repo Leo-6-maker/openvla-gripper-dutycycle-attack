@@ -1,49 +1,49 @@
-episode_id,task_name,state_id,split,T_gform,T_pred,trigger_error,window_source,delay,window_start,window_end,actual_window_len,clean_natural_open_ratio,clean_open_count,attack_eligible_strict,structural_valid
-obj100_alphabet_soup_alphabet_soup_s0,pick_up_the_alphabet_soup_and_place_it_in_the_basket,0,train,53,,,teacher_oracle,-50,3,20,18,0.0,0,True,True
-obj100_alphabet_soup_alphabet_soup_s2,pick_up_the_alphabet_soup_and_place_it_in_the_basket,2,train,61,,,teacher_oracle,-50,11,28,18,0.0,0,True,True
-obj100_alphabet_soup_alphabet_soup_s3,pick_up_the_alphabet_soup_and_place_it_in_the_basket,3,train,71,,,teacher_oracle,-50,21,38,18,0.0,0,True,True
-obj100_alphabet_soup_alphabet_soup_s4,pick_up_the_alphabet_soup_and_place_it_in_the_basket,4,val,54,,,teacher_oracle,-50,4,21,18,0.0,0,True,True
-obj100_alphabet_soup_alphabet_soup_s6,pick_up_the_alphabet_soup_and_place_it_in_the_basket,6,test,90,,,teacher_oracle,-50,40,57,18,0.0,0,True,True
-obj100_alphabet_soup_alphabet_soup_s7,pick_up_the_alphabet_soup_and_place_it_in_the_basket,7,train,110,,,teacher_oracle,-50,60,77,18,0.0,0,True,True
-obj100_alphabet_soup_alphabet_soup_s8,pick_up_the_alphabet_soup_and_place_it_in_the_basket,8,val,62,,,teacher_oracle,-50,12,29,18,0.0,0,True,True
-obj100_bbq_sauce_bbq_sauce_s0,pick_up_the_bbq_sauce_and_place_it_in_the_basket,0,test,75,,,teacher_oracle,-50,25,42,18,0.0,0,True,True
-obj100_bbq_sauce_bbq_sauce_s4,pick_up_the_bbq_sauce_and_place_it_in_the_basket,4,test,64,,,teacher_oracle,-50,14,31,18,0.0,0,True,True
-obj100_bbq_sauce_bbq_sauce_s5,pick_up_the_bbq_sauce_and_place_it_in_the_basket,5,train,77,,,teacher_oracle,-50,27,44,18,0.0,0,True,True
-obj100_bbq_sauce_bbq_sauce_s9,pick_up_the_bbq_sauce_and_place_it_in_the_basket,9,train,72,,,teacher_oracle,-50,22,39,18,0.0,0,True,True
-obj100_butter_butter_s0,pick_up_the_butter_and_place_it_in_the_basket,0,val,79,,,teacher_oracle,-50,29,46,18,0.0,0,True,True
-obj100_butter_butter_s2,pick_up_the_butter_and_place_it_in_the_basket,2,test,73,,,teacher_oracle,-50,23,40,18,0.0,0,True,True
-obj100_butter_butter_s3,pick_up_the_butter_and_place_it_in_the_basket,3,train,79,,,teacher_oracle,-50,29,46,18,0.0,0,True,True
-obj100_butter_butter_s5,pick_up_the_butter_and_place_it_in_the_basket,5,train,75,,,teacher_oracle,-50,25,42,18,0.0,0,True,True
-obj100_butter_butter_s6,pick_up_the_butter_and_place_it_in_the_basket,6,test,84,,,teacher_oracle,-50,34,51,18,0.0,0,True,True
-obj100_butter_butter_s7,pick_up_the_butter_and_place_it_in_the_basket,7,train,60,,,teacher_oracle,-50,10,27,18,0.0,0,True,True
-obj100_butter_butter_s8,pick_up_the_butter_and_place_it_in_the_basket,8,train,86,,,teacher_oracle,-50,36,53,18,0.0,0,True,True
-obj100_butter_butter_s9,pick_up_the_butter_and_place_it_in_the_basket,9,train,61,,,teacher_oracle,-50,11,28,18,0.0,0,True,True
-obj100_chocolate_pudding_rerun_chocolate_pudding_s2,pick_up_the_chocolate_pudding_and_place_it_in_the_basket,2,test,64,,,teacher_oracle,-50,14,31,18,0.0,0,True,True
-obj100_chocolate_pudding_rerun_chocolate_pudding_s3,pick_up_the_chocolate_pudding_and_place_it_in_the_basket,3,train,90,,,teacher_oracle,-50,40,57,18,0.0,0,True,True
-obj100_chocolate_pudding_rerun_chocolate_pudding_s4,pick_up_the_chocolate_pudding_and_place_it_in_the_basket,4,train,65,,,teacher_oracle,-50,15,32,18,0.0,0,True,True
-obj100_chocolate_pudding_rerun_chocolate_pudding_s5,pick_up_the_chocolate_pudding_and_place_it_in_the_basket,5,train,82,,,teacher_oracle,-50,32,49,18,0.0,0,True,True
-obj100_chocolate_pudding_rerun_chocolate_pudding_s6,pick_up_the_chocolate_pudding_and_place_it_in_the_basket,6,val,86,,,teacher_oracle,-50,36,53,18,0.0,0,True,True
-obj100_chocolate_pudding_rerun_chocolate_pudding_s9,pick_up_the_chocolate_pudding_and_place_it_in_the_basket,9,train,78,,,teacher_oracle,-50,28,45,18,0.0,0,True,True
-obj100_cream_cheese_cream_cheese_s4,pick_up_the_cream_cheese_and_place_it_in_the_basket,4,train,78,,,teacher_oracle,-50,28,45,18,0.0,0,True,True
-obj100_ketchup_ketchup_s0,pick_up_the_ketchup_and_place_it_in_the_basket,0,train,66,,,teacher_oracle,-50,16,33,18,0.0,0,True,True
-obj100_ketchup_ketchup_s1,pick_up_the_ketchup_and_place_it_in_the_basket,1,val,71,,,teacher_oracle,-50,21,38,18,0.0,0,True,True
-obj100_ketchup_ketchup_s2,pick_up_the_ketchup_and_place_it_in_the_basket,2,val,75,,,teacher_oracle,-50,25,42,18,0.0,0,True,True
-obj100_ketchup_ketchup_s5,pick_up_the_ketchup_and_place_it_in_the_basket,5,test,59,,,teacher_oracle,-50,9,26,18,0.0,0,True,True
-obj100_ketchup_ketchup_s9,pick_up_the_ketchup_and_place_it_in_the_basket,9,train,91,,,teacher_oracle,-50,41,58,18,0.0,0,True,True
-obj100_milk_milk_s4,pick_up_the_milk_and_place_it_in_the_basket,4,train,69,,,teacher_oracle,-50,19,36,18,0.0,0,True,True
-obj100_milk_milk_s5,pick_up_the_milk_and_place_it_in_the_basket,5,test,75,,,teacher_oracle,-50,25,42,18,0.0,0,True,True
-obj100_milk_milk_s8,pick_up_the_milk_and_place_it_in_the_basket,8,train,58,,,teacher_oracle,-50,8,25,18,0.0,0,True,True
-obj100_orange_juice_orange_juice_s0,pick_up_the_orange_juice_and_place_it_in_the_basket,0,train,100,,,teacher_oracle,-50,50,67,18,0.0,0,True,True
-obj100_orange_juice_orange_juice_s1,pick_up_the_orange_juice_and_place_it_in_the_basket,1,train,60,,,teacher_oracle,-50,10,27,18,0.0,0,True,True
-obj100_orange_juice_orange_juice_s2,pick_up_the_orange_juice_and_place_it_in_the_basket,2,test,83,,,teacher_oracle,-50,33,50,18,0.0,0,True,True
-obj100_orange_juice_orange_juice_s6,pick_up_the_orange_juice_and_place_it_in_the_basket,6,train,81,,,teacher_oracle,-50,31,48,18,0.0556,1,True,True
-obj100_orange_juice_orange_juice_s7,pick_up_the_orange_juice_and_place_it_in_the_basket,7,train,87,,,teacher_oracle,-50,37,54,18,0.0,0,True,True
-obj100_salad_dressing_salad_dressing_s0,pick_up_the_salad_dressing_and_place_it_in_the_basket,0,test,57,,,teacher_oracle,-50,7,24,18,0.0,0,True,True
-obj100_salad_dressing_salad_dressing_s1,pick_up_the_salad_dressing_and_place_it_in_the_basket,1,train,76,,,teacher_oracle,-50,26,43,18,0.0,0,True,True
-obj100_salad_dressing_salad_dressing_s2,pick_up_the_salad_dressing_and_place_it_in_the_basket,2,train,59,,,teacher_oracle,-50,9,26,18,0.0,0,True,True
-obj100_salad_dressing_salad_dressing_s4,pick_up_the_salad_dressing_and_place_it_in_the_basket,4,train,72,,,teacher_oracle,-50,22,39,18,0.0,0,True,True
-obj100_salad_dressing_salad_dressing_s5,pick_up_the_salad_dressing_and_place_it_in_the_basket,5,val,78,,,teacher_oracle,-50,28,45,18,0.0,0,True,True
-obj100_tomato_sauce_tomato_sauce_s0,pick_up_the_tomato_sauce_and_place_it_in_the_basket,0,test,99,,,teacher_oracle,-50,49,66,18,0.0,0,True,True
-obj100_tomato_sauce_tomato_sauce_s1,pick_up_the_tomato_sauce_and_place_it_in_the_basket,1,train,73,,,teacher_oracle,-50,23,40,18,0.0,0,True,True
-obj100_tomato_sauce_tomato_sauce_s3,pick_up_the_tomato_sauce_and_place_it_in_the_basket,3,train,67,,,teacher_oracle,-50,17,34,18,0.0,0,True,True
-obj100_tomato_sauce_tomato_sauce_s4,pick_up_the_tomato_sauce_and_place_it_in_the_basket,4,test,90,,,teacher_oracle,-50,40,57,18,0.0,0,True,True
+episode_id,task_key,task_instruction,task_name,state_id,split,T_gform,T_pred,trigger_error,window_source,delay,window_start,window_end,actual_window_len,clean_natural_open_ratio,clean_open_count,attack_eligible_strict,structural_valid
+obj100_alphabet_soup_alphabet_soup_s0,alphabet_soup,pick up the alphabet soup and place it in the basket,pick_up_the_alphabet_soup_and_place_it_in_the_basket,0,train,53,,,teacher_oracle,-50,3,20,18,0.0,0,True,True
+obj100_alphabet_soup_alphabet_soup_s2,alphabet_soup,pick up the alphabet soup and place it in the basket,pick_up_the_alphabet_soup_and_place_it_in_the_basket,2,train,61,,,teacher_oracle,-50,11,28,18,0.0,0,True,True
+obj100_alphabet_soup_alphabet_soup_s3,alphabet_soup,pick up the alphabet soup and place it in the basket,pick_up_the_alphabet_soup_and_place_it_in_the_basket,3,train,71,,,teacher_oracle,-50,21,38,18,0.0,0,True,True
+obj100_alphabet_soup_alphabet_soup_s4,alphabet_soup,pick up the alphabet soup and place it in the basket,pick_up_the_alphabet_soup_and_place_it_in_the_basket,4,val,54,,,teacher_oracle,-50,4,21,18,0.0,0,True,True
+obj100_alphabet_soup_alphabet_soup_s6,alphabet_soup,pick up the alphabet soup and place it in the basket,pick_up_the_alphabet_soup_and_place_it_in_the_basket,6,test,90,,,teacher_oracle,-50,40,57,18,0.0,0,True,True
+obj100_alphabet_soup_alphabet_soup_s7,alphabet_soup,pick up the alphabet soup and place it in the basket,pick_up_the_alphabet_soup_and_place_it_in_the_basket,7,train,110,,,teacher_oracle,-50,60,77,18,0.0,0,True,True
+obj100_alphabet_soup_alphabet_soup_s8,alphabet_soup,pick up the alphabet soup and place it in the basket,pick_up_the_alphabet_soup_and_place_it_in_the_basket,8,val,62,,,teacher_oracle,-50,12,29,18,0.0,0,True,True
+obj100_bbq_sauce_bbq_sauce_s0,bbq_sauce,pick up the bbq sauce and place it in the basket,pick_up_the_bbq_sauce_and_place_it_in_the_basket,0,test,75,,,teacher_oracle,-50,25,42,18,0.0,0,True,True
+obj100_bbq_sauce_bbq_sauce_s4,bbq_sauce,pick up the bbq sauce and place it in the basket,pick_up_the_bbq_sauce_and_place_it_in_the_basket,4,test,64,,,teacher_oracle,-50,14,31,18,0.0,0,True,True
+obj100_bbq_sauce_bbq_sauce_s5,bbq_sauce,pick up the bbq sauce and place it in the basket,pick_up_the_bbq_sauce_and_place_it_in_the_basket,5,train,77,,,teacher_oracle,-50,27,44,18,0.0,0,True,True
+obj100_bbq_sauce_bbq_sauce_s9,bbq_sauce,pick up the bbq sauce and place it in the basket,pick_up_the_bbq_sauce_and_place_it_in_the_basket,9,train,72,,,teacher_oracle,-50,22,39,18,0.0,0,True,True
+obj100_butter_butter_s0,butter,pick up the butter and place it in the basket,pick_up_the_butter_and_place_it_in_the_basket,0,val,79,,,teacher_oracle,-50,29,46,18,0.0,0,True,True
+obj100_butter_butter_s2,butter,pick up the butter and place it in the basket,pick_up_the_butter_and_place_it_in_the_basket,2,test,73,,,teacher_oracle,-50,23,40,18,0.0,0,True,True
+obj100_butter_butter_s3,butter,pick up the butter and place it in the basket,pick_up_the_butter_and_place_it_in_the_basket,3,train,79,,,teacher_oracle,-50,29,46,18,0.0,0,True,True
+obj100_butter_butter_s5,butter,pick up the butter and place it in the basket,pick_up_the_butter_and_place_it_in_the_basket,5,train,75,,,teacher_oracle,-50,25,42,18,0.0,0,True,True
+obj100_butter_butter_s6,butter,pick up the butter and place it in the basket,pick_up_the_butter_and_place_it_in_the_basket,6,test,84,,,teacher_oracle,-50,34,51,18,0.0,0,True,True
+obj100_butter_butter_s7,butter,pick up the butter and place it in the basket,pick_up_the_butter_and_place_it_in_the_basket,7,train,60,,,teacher_oracle,-50,10,27,18,0.0,0,True,True
+obj100_butter_butter_s8,butter,pick up the butter and place it in the basket,pick_up_the_butter_and_place_it_in_the_basket,8,train,86,,,teacher_oracle,-50,36,53,18,0.0,0,True,True
+obj100_butter_butter_s9,butter,pick up the butter and place it in the basket,pick_up_the_butter_and_place_it_in_the_basket,9,train,61,,,teacher_oracle,-50,11,28,18,0.0,0,True,True
+obj100_chocolate_pudding_rerun_chocolate_pudding_s2,chocolate_pudding,pick up the chocolate pudding and place it in the basket,pick_up_the_chocolate_pudding_and_place_it_in_the_basket,2,test,64,,,teacher_oracle,-50,14,31,18,0.0,0,True,True
+obj100_chocolate_pudding_rerun_chocolate_pudding_s3,chocolate_pudding,pick up the chocolate pudding and place it in the basket,pick_up_the_chocolate_pudding_and_place_it_in_the_basket,3,train,90,,,teacher_oracle,-50,40,57,18,0.0,0,True,True
+obj100_chocolate_pudding_rerun_chocolate_pudding_s4,chocolate_pudding,pick up the chocolate pudding and place it in the basket,pick_up_the_chocolate_pudding_and_place_it_in_the_basket,4,train,65,,,teacher_oracle,-50,15,32,18,0.0,0,True,True
+obj100_chocolate_pudding_rerun_chocolate_pudding_s5,chocolate_pudding,pick up the chocolate pudding and place it in the basket,pick_up_the_chocolate_pudding_and_place_it_in_the_basket,5,train,82,,,teacher_oracle,-50,32,49,18,0.0,0,True,True
+obj100_chocolate_pudding_rerun_chocolate_pudding_s6,chocolate_pudding,pick up the chocolate pudding and place it in the basket,pick_up_the_chocolate_pudding_and_place_it_in_the_basket,6,val,86,,,teacher_oracle,-50,36,53,18,0.0,0,True,True
+obj100_chocolate_pudding_rerun_chocolate_pudding_s9,chocolate_pudding,pick up the chocolate pudding and place it in the basket,pick_up_the_chocolate_pudding_and_place_it_in_the_basket,9,train,78,,,teacher_oracle,-50,28,45,18,0.0,0,True,True
+obj100_cream_cheese_cream_cheese_s4,cream_cheese,pick up the cream cheese and place it in the basket,pick_up_the_cream_cheese_and_place_it_in_the_basket,4,train,78,,,teacher_oracle,-50,28,45,18,0.0,0,True,True
+obj100_ketchup_ketchup_s0,ketchup,pick up the ketchup and place it in the basket,pick_up_the_ketchup_and_place_it_in_the_basket,0,train,66,,,teacher_oracle,-50,16,33,18,0.0,0,True,True
+obj100_ketchup_ketchup_s1,ketchup,pick up the ketchup and place it in the basket,pick_up_the_ketchup_and_place_it_in_the_basket,1,val,71,,,teacher_oracle,-50,21,38,18,0.0,0,True,True
+obj100_ketchup_ketchup_s2,ketchup,pick up the ketchup and place it in the basket,pick_up_the_ketchup_and_place_it_in_the_basket,2,val,75,,,teacher_oracle,-50,25,42,18,0.0,0,True,True
+obj100_ketchup_ketchup_s5,ketchup,pick up the ketchup and place it in the basket,pick_up_the_ketchup_and_place_it_in_the_basket,5,test,59,,,teacher_oracle,-50,9,26,18,0.0,0,True,True
+obj100_ketchup_ketchup_s9,ketchup,pick up the ketchup and place it in the basket,pick_up_the_ketchup_and_place_it_in_the_basket,9,train,91,,,teacher_oracle,-50,41,58,18,0.0,0,True,True
+obj100_milk_milk_s4,milk,pick up the milk and place it in the basket,pick_up_the_milk_and_place_it_in_the_basket,4,train,69,,,teacher_oracle,-50,19,36,18,0.0,0,True,True
+obj100_milk_milk_s5,milk,pick up the milk and place it in the basket,pick_up_the_milk_and_place_it_in_the_basket,5,test,75,,,teacher_oracle,-50,25,42,18,0.0,0,True,True
+obj100_milk_milk_s8,milk,pick up the milk and place it in the basket,pick_up_the_milk_and_place_it_in_the_basket,8,train,58,,,teacher_oracle,-50,8,25,18,0.0,0,True,True
+obj100_orange_juice_orange_juice_s0,orange_juice,pick up the orange juice and place it in the basket,pick_up_the_orange_juice_and_place_it_in_the_basket,0,train,100,,,teacher_oracle,-50,50,67,18,0.0,0,True,True
+obj100_orange_juice_orange_juice_s1,orange_juice,pick up the orange juice and place it in the basket,pick_up_the_orange_juice_and_place_it_in_the_basket,1,train,60,,,teacher_oracle,-50,10,27,18,0.0,0,True,True
+obj100_orange_juice_orange_juice_s2,orange_juice,pick up the orange juice and place it in the basket,pick_up_the_orange_juice_and_place_it_in_the_basket,2,test,83,,,teacher_oracle,-50,33,50,18,0.0,0,True,True
+obj100_orange_juice_orange_juice_s6,orange_juice,pick up the orange juice and place it in the basket,pick_up_the_orange_juice_and_place_it_in_the_basket,6,train,81,,,teacher_oracle,-50,31,48,18,0.0556,1,True,True
+obj100_orange_juice_orange_juice_s7,orange_juice,pick up the orange juice and place it in the basket,pick_up_the_orange_juice_and_place_it_in_the_basket,7,train,87,,,teacher_oracle,-50,37,54,18,0.0,0,True,True
+obj100_salad_dressing_salad_dressing_s0,salad_dressing,put the salad dressing in the basket,pick_up_the_salad_dressing_and_place_it_in_the_basket,0,test,57,,,teacher_oracle,-50,7,24,18,0.0,0,True,True
+obj100_salad_dressing_salad_dressing_s1,salad_dressing,put the salad dressing in the basket,pick_up_the_salad_dressing_and_place_it_in_the_basket,1,train,76,,,teacher_oracle,-50,26,43,18,0.0,0,True,True
+obj100_salad_dressing_salad_dressing_s2,salad_dressing,put the salad dressing in the basket,pick_up_the_salad_dressing_and_place_it_in_the_basket,2,train,59,,,teacher_oracle,-50,9,26,18,0.0,0,True,True
+obj100_salad_dressing_salad_dressing_s4,salad_dressing,put the salad dressing in the basket,pick_up_the_salad_dressing_and_place_it_in_the_basket,4,train,72,,,teacher_oracle,-50,22,39,18,0.0,0,True,True
+obj100_salad_dressing_salad_dressing_s5,salad_dressing,put the salad dressing in the basket,pick_up_the_salad_dressing_and_place_it_in_the_basket,5,val,78,,,teacher_oracle,-50,28,45,18,0.0,0,True,True
+obj100_tomato_sauce_tomato_sauce_s0,tomato_sauce,pick up the tomato sauce and place it in the basket,pick_up_the_tomato_sauce_and_place_it_in_the_basket,0,test,99,,,teacher_oracle,-50,49,66,18,0.0,0,True,True
+obj100_tomato_sauce_tomato_sauce_s1,tomato_sauce,pick up the tomato sauce and place it in the basket,pick_up_the_tomato_sauce_and_place_it_in_the_basket,1,train,73,,,teacher_oracle,-50,23,40,18,0.0,0,True,True
+obj100_tomato_sauce_tomato_sauce_s3,tomato_sauce,pick up the tomato sauce and place it in the basket,pick_up_the_tomato_sauce_and_place_it_in_the_basket,3,train,67,,,teacher_oracle,-50,17,34,18,0.0,0,True,True
+obj100_tomato_sauce_tomato_sauce_s4,tomato_sauce,pick up the tomato sauce and place it in the basket,pick_up_the_tomato_sauce_and_place_it_in_the_basket,4,test,90,,,teacher_oracle,-50,40,57,18,0.0,0,True,True

@@ -82,6 +82,7 @@ def compute_trace_metrics(trace_path):
     return {
         "trace_path": trace_path,
         "task": r0.get("task",""), "seed": r0.get("seed",""),
+        "state_id": r0.get("state_id",""),
         "condition": r0.get("condition",""),
         "window_start": r0.get("window_start",""),
         "window_end": r0.get("window_end",""),
@@ -254,7 +255,8 @@ def compute_group_summary(vis_list, random_list, clean_list, window_info):
 
 
 def _group_key(r):
-    return (r.get("task",""), r.get("seed",""), r.get("window_source","fixed"),
+    return (r.get("task",""), r.get("state_id",""), r.get("seed",""),
+            r.get("window_source","fixed"),
             r.get("selector_type","unknown"), r.get("phase",""),
             r.get("window_start",""), r.get("window_end",""))
 
@@ -293,7 +295,8 @@ def main():
         if not m["valid"]: continue
         gk = _group_key(m)
         g = groups[gk]
-        g["info"] = {"task":m["task"],"seed":m["seed"],"window_source":m["window_source"],
+        g["info"] = {"task":m["task"],"state_id":m["state_id"],"seed":m["seed"],
+            "window_source":m["window_source"],
             "selector_type":m["selector_type"],"phase":m["phase"],
             "window_start":m["window_start"],"window_end":m["window_end"]}
         cond = m["condition"]
@@ -307,7 +310,7 @@ def main():
         summaries.append(s)
 
     # Provenance CSV with correct field names
-    prov_fields = ["trace_path","task","seed","condition","window_start","window_end",
+    prov_fields = ["trace_path","task","state_id","seed","condition","window_start","window_end",
         "window_source","selector_type","phase",
         "generated_OPEN_count","generated_OPEN_total",
         "qpos_opening_delta","qpos_abs_delta","qpos_post_start","qpos_post_min",
