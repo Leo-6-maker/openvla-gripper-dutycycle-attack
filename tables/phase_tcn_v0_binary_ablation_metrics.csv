@@ -1,0 +1,6 @@
+task,precision,recall,f1,tp,fp,fn,tn
+near_closed_vs_all,0.3581,0.9935,0.5265,308,552,2,634
+far_closed_vs_all,0.1688,0.7375,0.2747,118,581,42,755
+pre_lock_vs_all,0.0,0.0,0.0,0,529,15,952
+near_or_pre_vs_all,0.3542,0.9046,0.5091,294,536,31,635
+closed_pregrasp_vs_all,0.5272,1.0,0.6904,485,435,0,576

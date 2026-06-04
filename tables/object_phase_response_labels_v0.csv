@@ -1,0 +1,11 @@
+source,task_key,state_id,window_start,window_end,phase_bin_proxy,label_vulnerability_ready,label_reason
+batch1,,0,16,33,,ignore,denominator_not_clean
+batch1,,0,29,46,,ignore,denominator_not_clean
+batch1,,0,3,20,,ignore,denominator_not_clean
+batch2b,alphabet_soup,0,3,20,approach_far_closed_proxy,0,weak_physical
+batch2b,alphabet_soup,2,11,28,approach_far_closed_proxy,1,claim_usable_positive
+batch2b,butter,0,29,46,approach_near_closed_proxy,0,action_only_physical_none
+batch2b,butter,0,32,49,pre_lock_closed_proxy,0,physical_strong_task_negative
+batch2b,butter,0,29,46,approach_near_closed_proxy,ignore,infrastructure_or_polluted
+batch2b,ketchup,0,16,33,approach_far_closed_proxy,1,claim_usable_positive
+batch2b,ketchup,1,28,45,pre_lock_closed_proxy,0,physical_strong_task_negative
