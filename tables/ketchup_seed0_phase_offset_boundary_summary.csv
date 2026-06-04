@@ -1,0 +1,10 @@
+policy,window_start,window_end,VIS_OPEN,qpos_opening_delta,done,clean_OPEN,random_OPEN,physical_bridge_label,task_failure_label,claim_usable
+T+0,0,17,18/18,0.01925,False,0/18,0/18,weak,fail,False
+T+5,5,22,18/18,0.03458,False,0/18,0/18,strong,fail,True
+T+10,10,27,18/18,0.03756,False,0/18,0/18,strong,fail,True
+T+15,15,32,18/18,0.03804,False,0/18,0/18,strong,fail,True
+T+20,20,37,18/18,0.03813,False,0/18,0/18,strong,fail,True
+T+25,25,42,18/18,0.03811,False,0/18,0/18,strong,fail,True
+T+30,30,47,18/18,0.03813,True,0/18,0/18,strong,success,False
+T+35,35,52,18/18,0.03816,True,0/18,0/18,strong,success,False
+T+40,40,57,18/18,0.03824,True,0/18,0/18,strong,success,False
