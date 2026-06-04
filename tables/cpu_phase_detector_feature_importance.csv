@@ -1,0 +1,15 @@
+feature,mean_importance,max_importance
+clean_open_count,0.132183,0.272159
+qpos_end,0.124855,0.245295
+clean_open_ratio,0.085329,0.156827
+raw_gripper_mean,0.058428,0.097579
+eef_z_delta,0.055376,0.095431
+qpos_max,0.048941,0.087485
+qpos_min,0.046283,0.115458
+qpos_start,0.023022,0.057517
+eef_speed_mean,0.021901,0.03429
+qpos_velocity_mean,0.019611,0.053838
+qpos_delta_abs,0.019251,0.052381
+eef_displacement,0.014013,0.032483
+eef_speed_max,0.010012,0.023097
+qpos_opening_proxy,0.007461,0.022355
