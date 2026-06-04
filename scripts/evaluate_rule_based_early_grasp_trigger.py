@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""evaluate_rule_based_early_grasp_trigger.py — Mandatory baseline: rule-based CLOSE->OPEN
-transition detector.
+"""evaluate_rule_based_early_grasp_trigger.py — Mandatory baseline: first_sustained_OPEN rule.
 
-T_rule = first step where gripper_command < 0.5 for K consecutive steps.
+T_rule = first step where raw gripper_command < 0.5 (OPEN) for K consecutive steps.
+Canonical semantics: raw_gripper < 0.5 = OPEN (qpos decreases, env_gripper > 0).
 """
 
 from __future__ import annotations
@@ -163,7 +163,9 @@ def main():
     report = f"""# Object Rule-Based Early-Grasp Trigger Baseline
 
 **Date**: 2026-06-04
-**Config**: K={args.close_K}, threshold={args.close_threshold} (CLOSE->OPEN transition)
+**Config**: K={args.close_K}, threshold={args.close_threshold}
+  T_rule = first step where raw_gripper_command < 0.5 (OPEN) for K consecutive steps.
+  Canonical semantics: raw < 0.5 = OPEN, qpos decreases, env_gripper > 0.
 
 ---
 
@@ -195,7 +197,8 @@ def main():
 
 ## Interpretation
 
-The rule-based baseline simply fires on the first sustained CLOSE->OPEN transition.
+The rule-based baseline fires on the first sustained OPEN command (raw_gripper_command < 0.5).
+Canonical semantics: raw < 0.5 = OPEN (qpos decreases, physical gripper opens).
 With K={args.close_K}, threshold={args.close_threshold}:
 
 - MAE = {metrics['MAE']} steps — this is the average absolute error between

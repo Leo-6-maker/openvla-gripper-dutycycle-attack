@@ -195,13 +195,27 @@ def main():
         w = csv.DictWriter(f, fieldnames=csv_fields, extrasaction="ignore")
         w.writeheader(); w.writerows(results)
 
+    # Save eval metrics JSON for proposal script
+    eval_metrics = {
+        "best_threshold": best_th, "best_K": best_k,
+        "min_trigger_rate": MIN_TRIGGER_RATE,
+        "best_val_MAE": best_mae if best_mae != float("inf") else None,
+        "test_MAE_tcn": round(tcn_mae, 2) if tcn_mae is not None else None,
+        "test_MAE_rule": round(rule_mae, 2) if rule_mae is not None else None,
+        "tcn_triggers_test": tcn_trig,
+    }
+    eval_json_path = args.output_csv.replace(".csv", "_eval_metrics.json")
+    with open(eval_json_path, "w") as f:
+        json.dump(eval_metrics, f, indent=2)
+    print(f"Saved eval metrics to {eval_json_path}")
+
     # Report
     imp = ""
     if tcn_mae is not None and rule_mae is not None:
         delta = rule_mae - tcn_mae
         imp = f"| Delta | {delta:+.2f} ({100*delta/rule_mae:+.1f}%) | -- |\n"
 
-    report = f"""# Early-Grasp Detector Evaluation v2
+    report = f"""# Early-Grasp Detector Evaluation v3
 
 **Checkpoint**: {args.checkpoint}
 **Best config**: threshold={best_th}, K={best_k} (selected on val)
