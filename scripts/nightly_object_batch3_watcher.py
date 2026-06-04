@@ -65,7 +65,10 @@ class Watcher:
         self.tasks = []
         self.running = {}
         self.blacklisted = set()
-        self.seen_xid_lines = set()
+        # Seed with ALL current Xid lines so old ones don't trigger stop
+        self.seen_xid_lines = set(check_xid())
+        if self.seen_xid_lines:
+            self.log("Seeded %d existing Xid lines as baseline" % len(self.seen_xid_lines))
         self.started_at = datetime.now()
         self.stage = "BATCH3_VIS"  # current pipeline stage
         self.audit_done = False
