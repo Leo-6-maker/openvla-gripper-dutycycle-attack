@@ -1,0 +1,12 @@
+episode_id,task_key,state_id,window_start,window_end,phase_bin_proxy,clean_open_ratio,T_gform,relative_lead,candidate_source,batch,reason_selected
+obj100_alphabet_soup_alphabet_soup_s2,alphabet_soup,2,11,28,approach_far_closed_proxy,0.0,61,-50,teacher_oracle,2b,alphabet_far_closed_comparison
+obj100_bbq_sauce_bbq_sauce_s4,bbq_sauce,4,14,31,approach_far_closed_proxy,0.0,64,-50,teacher_oracle,2b,balanced_batch2b_approach_far_closed_proxy
+obj100_butter_butter_s2,butter,2,23,40,approach_far_closed_proxy,0.0,73,-50,teacher_oracle,2b,balanced_batch2b_approach_far_closed_proxy
+obj100_alphabet_soup_alphabet_soup_s3,alphabet_soup,3,21,38,approach_near_closed_proxy,0.0,71,-50,teacher_oracle,2b,balanced_batch2b_approach_near_closed_proxy
+obj100_bbq_sauce_bbq_sauce_s0,bbq_sauce,0,25,42,approach_near_closed_proxy,0.0,75,-50,teacher_oracle,2b,balanced_batch2b_approach_near_closed_proxy
+obj100_butter_butter_s6,butter,6,34,51,approach_near_closed_proxy,0.0,84,-50,teacher_oracle,2b,balanced_batch2b_approach_near_closed_proxy
+obj100_alphabet_soup_alphabet_soup_s8,alphabet_soup,8,29,46,pre_lock_closed_proxy,0.0,62,-33,negative_delay_sweep,2b,balanced_batch2b_pre_lock_closed_proxy
+obj100_butter_butter_s0,butter,0,32,49,pre_lock_closed_proxy,0.0,79,-47,negative_delay_sweep,2b,balanced_batch2b_pre_lock_closed_proxy
+obj100_ketchup_ketchup_s1,ketchup,1,28,45,pre_lock_closed_proxy,0.0556,71,-43,negative_delay_sweep,2b,balanced_batch2b_pre_lock_closed_proxy
+obj100_alphabet_soup_alphabet_soup_s2,alphabet_soup,2,11,28,approach_far_closed_proxy,0.0,61,-50,teacher_oracle,2b,alphabet_far_closed_comparison
+obj100_alphabet_soup_alphabet_soup_s4,alphabet_soup,4,4,21,approach_far_closed_proxy,0.0,54,-50,teacher_oracle,2b,alphabet_far_closed_comparison
