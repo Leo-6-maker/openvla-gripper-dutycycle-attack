@@ -6,7 +6,7 @@ Scope: local repo consistency only. No server rollout, VIS job, GPU job, or serv
 
 ## Verdict
 
-**Conditionally usable, but not sufficient for detector v2 training as-is.**
+**Conditionally usable as a plan, but not sufficient for detector v2 training as-is.**
 
 The handoff correctly states the current scientific boundary and the Codex/DeepSeek division of labor, but the local repo has several blocking gaps for a safe v2 label merge:
 
@@ -14,6 +14,7 @@ The handoff correctly states the current scientific boundary and the Codex/DeepS
 - `scripts/diagnostics/finalize_phase_response_labels.py` does not accept `--batch3b-vis` or `--batch3c-vis`.
 - The label builder still has strict 9-row v0/v1 assertions, so it is not v2-ready.
 - Batch3b/Batch3c status is described as in progress or ready, but the relevant output CSVs are not locally present for verification.
+- Server read-only verification found the server checkout on `exp/vis-payload-upgrade-validation-20260601`, not the handoff branch `exp/vis-prefix-margin-repair-20260603`.
 
 ## Path Audit
 
@@ -41,6 +42,34 @@ The handoff correctly states the current scientific boundary and the Codex/DeepS
 | Self-referential commit loop risk | Partially mitigated by the line recommending `git log -1 -- reports/HANDOFF_20260605_WINDOW_COMPRESSION_AND_DETECTOR.md`; still present where older hardcoded commit IDs remain. |
 
 Recommendation: do not create a standalone commit only to refresh the handoff SHA. If the handoff is edited for substantive reasons, replace checklist-style hardcoded "latest" fields with the `git log -1 -- ...` command.
+
+## Server Read-Only Verification
+
+SSH route:
+
+```bash
+ssh -J scene@10.60.133.3 liuyu@10.60.133.4
+```
+
+Server repo checked:
+
+```bash
+/data/liuyu/repos/openvla-gripper-dutycycle-attack-clean-main-20260524
+```
+
+| Check | Server Result |
+|---|---|
+| Host | `klfy-SYS-4028GR-TR2` |
+| Current branch | `exp/vis-payload-upgrade-validation-20260601` |
+| Current HEAD | `653ed33d78578aa0f0af96539a9c8b4c2a6d4c08` |
+| Expected handoff branch | `exp/vis-prefix-margin-repair-20260603` |
+| Local Codex commit `3a35239` present | No |
+| `object_phase_response_labels_v2.csv` | Missing |
+| Official env Python | Exists, `Python 3.10.13` |
+
+Server output directories for Batch3, Batch3b, and Batch3 VIS exist, but no server output was modified.
+
+This makes server branch synchronization a blocking prerequisite before DeepSeek runs label merge or detector v2 training.
 
 ## Python / Environment Audit
 
