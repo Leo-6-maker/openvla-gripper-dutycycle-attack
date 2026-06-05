@@ -1,0 +1,2 @@
+check_id,severity,status,count,detail
+input_exists,hard_fail,fail,1,aligned windows CSV missing: tables/missing_phaseE_aligned_windows_v0_server.csv

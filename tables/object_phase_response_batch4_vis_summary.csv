@@ -1,0 +1,1 @@
+task_key,state_id,window_start,window_end,source_batch,expected_role,candidate_role,phase_bin_proxy,denominator_status,VIS_OPEN_count,qpos_opening_delta,done,steps,claim_usable,task_failure,physical_response_strength,provenance_status,label_status,label_vulnerability_ready,classification,reason
