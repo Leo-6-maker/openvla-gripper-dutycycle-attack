@@ -176,6 +176,8 @@ def load_canary_candidates(args, *, for_run=False):
 
     if for_run and not args.allow_legacy_default:
         raise SystemExit("Phase E run requires --candidate-csv unless --allow-legacy-default is explicitly passed")
+    if for_run:
+        print("WARNING: using legacy DEFAULT_CANARY fallback; these centered windows are not phase-aligned.")
     for task_key, state_id, parent_start, parent_end, label in DEFAULT_CANARY:
         window_start, window_end = centered_window(parent_start, parent_end, args.compressed_len)
         candidates.append({

@@ -99,6 +99,20 @@ def low_budget_silver_eligible(row) -> bool:
     )
 
 
+def row_points_to_labels_v2_v3(row) -> bool:
+    fields = [
+        "label_output",
+        "output_labels",
+        "target_labels",
+        "label_table",
+        "destination",
+        "output_csv",
+        "labels_csv",
+    ]
+    text = " ".join(str(row.get(field, "")) for field in fields).lower()
+    return "labels_v2" in text or "labels_v3" in text or "object_phase_response_labels_v2" in text or "object_phase_response_labels_v3" in text
+
+
 def audit_one(name: str, path: str):
     result = {
         "dataset": name,
@@ -240,6 +254,28 @@ def audit_one(name: str, path: str):
             if phase_misaligned_metric:
                 result["issues"].append(f"phase_misaligned_counted_as_low_budget_result:{phase_misaligned_metric}")
 
+            blocked_mechanism_metric = sum(
+                1
+                for r in rows
+                if str(r.get("mechanism_status", "")).strip().lower() in {"action_confounded", "no_physical_transfer", "infra_failed"}
+                and str(r.get("count_toward_metrics", "")).strip().lower() in {"1", "true", "yes"}
+            )
+            if blocked_mechanism_metric:
+                result["issues"].append(f"blocked_mechanism_counted_toward_metrics:{blocked_mechanism_metric}")
+
+            silver_or_proxy_to_labels = sum(
+                1
+                for r in rows
+                if (
+                    "silver" in str(r.get("label_confidence", "")).lower()
+                    or "proxy" in str(r.get("label_source", "")).lower()
+                    or "proxy" in str(r.get("label_confidence", "")).lower()
+                )
+                and row_points_to_labels_v2_v3(r)
+            )
+            if silver_or_proxy_to_labels:
+                result["issues"].append(f"silver_or_proxy_points_to_labels_v2_v3:{silver_or_proxy_to_labels}")
+
             result["silver_candidate_eligible_rows"] = sum(1 for r in rows if low_budget_silver_eligible(r))
 
     if result["issues"]:
@@ -298,7 +334,8 @@ def write_report(path: str, audits):
         "- Low-budget silver_candidate rows are not train labels.",
         "- mechanism_status other than mechanism_clean means the row is not usable as silver_candidate.",
         "- INFRA_FAILED rows cannot count toward metrics.",
-        "- phase_misaligned rows cannot count as low-budget failure/success.",
+        "- phase_misaligned, action_confounded, no_physical_transfer, and infra_failed rows cannot count as low-budget failure/success.",
+        "- Proxy/silver rows must not point to labels_v2/v3 destinations.",
         "- Rows with INFRA_FAILED/Xid/OOM/CUDA failures must not be treated as trainable labels.",
         "- Rows with MEASUREMENT_FAILED must not be treated as proxy labels.",
         "",
