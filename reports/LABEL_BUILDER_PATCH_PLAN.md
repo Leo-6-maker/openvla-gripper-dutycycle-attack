@@ -1,101 +1,73 @@
-# Label Builder Patch Plan
+# Label Builder Patch Status
 
 Audit target: `scripts/diagnostics/finalize_phase_response_labels.py`
 
 ## Verdict
 
-The current label builder is **not v2-ready**.
+The label builder has been patched for v2 multi-source label building, but detector v2 training remains blocked until the server is synced and a real `object_phase_response_labels_v2.csv` is generated from Batch3b/Batch3c sources.
 
-It supports:
+It now supports:
 
 - `--batch1-merged`
 - `--batch2b-vis`
 - `--batch3-vis`
-- `--output-labels`
-
-It does **not** support:
-
 - `--batch3b-vis`
 - `--batch3c-vis`
+- `--output-labels`
+- `--output-readiness`
+- `--output-conflicts`
 
-It also still contains strict 9-label assertions from the earlier Batch2b freeze path, which will fail on any real v2 multi-source merge.
-
-## Current Gaps
+## Implemented
 
 | Requirement | Status | Notes |
 |---|---:|---|
-| Multi-source CSV reading | PARTIAL | Batch1, Batch2b, Batch3 only. |
-| `source_batch` preservation | PARTIAL | Internal source exists, but output currently omits explicit `source_batch`. |
-| `candidate_role` preservation | PARTIAL | Output has field, but Batch3 CSV ingestion does not preserve it. |
-| `denominator_type` preservation | PARTIAL | Output field exists, but not consistently populated. |
-| `action_bridge_confounded` preservation | PARTIAL | Output field exists, but role-aware path is limited. |
-| Role-specific taxonomy support | PARTIAL | Control roles use `role_specific_gates.py`, but only if role metadata reaches classifier. |
-| Duplicate conflict hard fail | MISSING | Current dedupe keeps first row and drops later duplicates silently. |
-| Train/ignore/manual_review separation | PARTIAL | Positive/negative/ignore exists; manual_review is not robustly separated for controls. |
-| v2 assertions | MISSING | Current assertions hard-code 9 total / 4 pos / 4 neg / 1 ignore. |
+| Multi-source CSV reading | DONE | Batch1, Batch2b, Batch3, Batch3b, Batch3c. |
+| `source_batch` preservation | DONE | Output includes `source_batch`. |
+| `candidate_role` preservation | DONE | Output includes `candidate_role`. |
+| `control_type` preservation | DONE | Output includes `control_type`. |
+| `denominator_type` preservation | DONE | Output includes `denominator_type`. |
+| `action_bridge_confounded` preservation | DONE | Output includes `action_bridge_confounded`. |
+| Role-specific taxonomy support | DONE | Uses `role_specific_gates.py` for stable_post_lock, far_too_early, and pre_lock controls. |
+| Duplicate conflict hard fail | DONE | Writes conflict CSV and exits nonzero. |
+| Train/ignore/manual_review separation | DONE | Only positive/negative rows get `label_use=train`; manual_review does not enter train. |
+| v2 fixed 9-label assertions removed | DONE | No hardcoded Batch2b count assertions in normal v2 mode. |
 
-## Minimal Patch Plan
+## Current Blocker
 
-1. Add CLI inputs:
+No full-source v2 label file has been generated in this local review because:
 
-```bash
---batch3b-vis tables/object_phase_response_batch3b_vis_summary.csv
---batch3c-vis tables/object_phase_response_batch3c_vis_summary.csv
-```
+- Server checkout is still on `exp/vis-payload-upgrade-validation-20260601`.
+- Server does not yet have the reviewed commit.
+- Real Batch3b/Batch3c source CSVs are not available in the local reviewed checkout.
 
-2. Replace the fixed source loop with a source registry:
+Therefore, `tables/object_phase_response_labels_v2.csv` should still be treated as missing for detector v2 readiness.
 
-```python
-sources = [
-    ("batch1", args.batch1_merged),
-    ("batch2b", args.batch2b_vis),
-    ("batch3", args.batch3_vis),
-    ("batch3b", args.batch3b_vis),
-    ("batch3c", args.batch3c_vis),
-]
-```
-
-3. Normalize and preserve these fields for every row:
-
-- `source_batch`
-- `task_key`
-- `state_id`
-- `window_start`
-- `window_end`
-- `candidate_role`
-- `phase_bin_proxy`
-- `denominator_type`
-- `provenance_status`
-- `action_bridge_confounded`
-- `taxonomy_label`
-
-4. Replace silent dedupe with conflict-aware duplicate handling:
-
-- Same task/state/window/source with identical normalized label metadata: allow one row.
-- Same task/state/window with conflicting label_status or label_vulnerability_ready: hard fail.
-- Same task/state/window with different candidate_role: preserve as separate only if an explicit role key is included; otherwise hard fail.
-
-5. Implement role-specific taxonomy gates before train eligibility:
-
-- `stable_post_lock`: late-open control denominator; skip clean-open unsuitable rows; `done=False` requires manual review unless mechanism is clean.
-- `far_too_early`: negative/control taxonomy; never automatic positive.
-- `pre_lock`: negative/control taxonomy unless VIS/random/qpos evidence satisfies the frozen positive gate.
-
-6. Replace v1 hardcoded assertions with schema and minimum-count assertions:
-
-- Required columns present.
-- Allowed label_status values only.
-- Train rows only positive/negative.
-- Blocked provenance/taxonomy rows cannot enter train.
-- Optional minimum counts are warnings or CLI-configured hard gates, not fixed 9-row assumptions.
-
-7. Run the new schema audit after label build:
+## Intended Server Command
 
 ```bash
-python scripts/diagnostics/audit_label_schema.py \
+PY=/home/liuyu/.conda/envs/openvla_official_libero_20260525/bin/python
+$PY scripts/diagnostics/finalize_phase_response_labels.py \
+  --batch1-merged tables/object_teacher_delay50_vis_smoke_merged_summary.csv \
+  --batch2b-vis tables/object_phase_response_batch2b_vis_summary.csv \
+  --batch3-vis tables/object_phase_response_batch3_vis_summary.csv \
+  --batch3b-vis tables/object_phase_response_batch3b_vis_summary.csv \
+  --batch3c-vis tables/object_phase_response_batch3c_vis_summary.csv \
+  --output-labels tables/object_phase_response_labels_v2.csv \
+  --output-readiness reports/OBJECT_PHASE_RESPONSE_LABEL_READINESS_V2.md \
+  --output-conflicts tables/object_phase_response_label_conflicts_v2.csv
+
+$PY scripts/diagnostics/audit_label_schema.py \
   --labels-csv tables/object_phase_response_labels_v2.csv
 ```
 
-## Recommended Implementation Boundary
+## Synthetic Tests
 
-Do not patch the full builder blindly until Batch3b/Batch3c CSV schemas are available. The minimum safe next change is to add source registry plumbing and conflict-hard-fail logic, then test on v1/Batch3 local CSVs before DeepSeek runs the server-side v2 merge.
+Added `tests/diagnostics/test_finalize_phase_response_labels_v2.py`.
+
+Covered cases:
+
+- Batch3b/Batch3c CLI source wiring.
+- stable_post_lock done=False becomes manual_review and not train.
+- far_too_early done=True/strong becomes negative.
+- pre_lock done=False/strong becomes positive.
+- duplicate task/state/window conflicting labels hard fail and write conflict CSV.

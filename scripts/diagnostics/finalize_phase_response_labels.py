@@ -1,11 +1,80 @@
 #!/usr/bin/env python3
-"""finalize_phase_response_labels.py v2 — Read from CSV sources, not hardcoded.
+"""Build vulnerability-ready labels from multi-batch VIS summary CSVs.
 
-Reads Batch1 merged + Batch2b VIS summary + phase descriptors.
-Generates labels + vulnerability_ready smoke detector with feature-set ablations.
+This is a CPU-only label builder. It does not run rollouts, VIS, GPU work, or
+detector training. Detector training should run only after this builder and the
+schema audit both pass.
 """
 
-import argparse, csv, os, sys, numpy as np
+import argparse
+import csv
+import os
+import sys
+from collections import Counter, defaultdict
+
+
+ALLOWED_STATUS = {"positive", "negative", "ignore", "manual_review"}
+TRAIN_STATUS = {"positive", "negative"}
+CONTROL_ROLES = {
+    "stable_post_lock": "stable_post_lock_control",
+    "stable_post_lock_control": "stable_post_lock_control",
+    "far_too_early": "far_too_early_control",
+    "far_too_early_control": "far_too_early_control",
+    "pre_lock": "pre_lock_control",
+    "pre_lock_control": "pre_lock_control",
+}
+BLOCKED_TOKENS = {
+    "polluted",
+    "random_failed",
+    "denominator_failed",
+    "infra_failed",
+    "xid",
+    "oom",
+    "missing_trace",
+    "provenance_failed",
+    "schema_incomplete",
+    "ambiguous_merge",
+}
+LABEL_FIELDS = [
+    "source_batch",
+    "task_key",
+    "state_id",
+    "window_start",
+    "window_end",
+    "candidate_role",
+    "control_type",
+    "phase_bin_proxy",
+    "denominator_type",
+    "provenance_status",
+    "provenance_note",
+    "VIS_OPEN",
+    "vis_open_count",
+    "qpos_opening_delta",
+    "qpos_label",
+    "done",
+    "taxonomy",
+    "denominator_clean",
+    "claim_usable",
+    "action_bridge_confounded",
+    "label_action_bridge",
+    "label_physical_response",
+    "label_task_failure",
+    "label_vulnerability_ready",
+    "label_status",
+    "label_use",
+    "exclusion_or_uncertain_reason",
+]
+CONFLICT_FIELDS = [
+    "task_key",
+    "state_id",
+    "window_start",
+    "window_end",
+    "sources",
+    "labels",
+    "statuses",
+    "roles",
+    "reason",
+]
 
 
 def parse_args():
@@ -13,325 +82,451 @@ def parse_args():
     ap.add_argument("--batch1-merged", default="tables/object_teacher_delay50_vis_smoke_merged_summary.csv")
     ap.add_argument("--batch2b-vis", default="tables/object_phase_response_batch2b_vis_summary.csv")
     ap.add_argument("--batch2b-provenance", default="tables/object_phase_response_batch2b_vis_provenance.csv")
+    ap.add_argument("--batch3-vis", default="tables/object_phase_response_batch3_vis_summary.csv")
+    ap.add_argument("--batch3b-vis", default="")
+    ap.add_argument("--batch3c-vis", default="")
     ap.add_argument("--descriptors", default="tables/object_teacher_window_phase_descriptors.csv")
-    ap.add_argument("--output-labels", default="tables/object_phase_response_labels_v0.csv")
-    ap.add_argument("--output-metrics", default="tables/vulnerability_ready_smoke_metrics_v1.csv")
-    ap.add_argument("--output-predictions", default="tables/vulnerability_ready_smoke_predictions_v1.csv")
-    ap.add_argument("--output-report", default="reports/VULNERABILITY_READY_SMOKE_DETECTOR_V1.md")
+    ap.add_argument("--output-labels", default="tables/object_phase_response_labels_v2.csv")
+    ap.add_argument("--output-readiness", default="reports/OBJECT_PHASE_RESPONSE_LABEL_READINESS_V2.md")
+    ap.add_argument("--output-conflicts", default="tables/object_phase_response_label_conflicts_v2.csv")
+    ap.add_argument("--output-metrics", default="tables/vulnerability_ready_smoke_metrics_v1.csv",
+                    help="Kept for CLI compatibility; this builder does not train detector models.")
+    ap.add_argument("--output-predictions", default="tables/vulnerability_ready_smoke_predictions_v1.csv",
+                    help="Kept for CLI compatibility; this builder does not train detector models.")
+    ap.add_argument("--output-report", default="reports/VULNERABILITY_READY_SMOKE_DETECTOR_V1.md",
+                    help="Kept for CLI compatibility; this builder does not train detector models.")
     ap.add_argument("--use-frozen-batch2b", action="store_true",
-                    help="Use verified 9-outcome hardcoded set (Batch2b freeze only)")
-    ap.add_argument("--batch3-vis", default="",
-                    help="Batch3 VIS summary CSV for multi-batch label building")
+                    help="Use verified 9-outcome hardcoded set for legacy reproduction.")
     ap.add_argument("--dry-run", action="store_true")
     return ap.parse_args()
 
 
-def load_summaries(args):
-    """Load VIS outcomes from CSV sources with assertions."""
-    outcomes = []
-    for src, csv_path in [("batch1", args.batch1_merged), ("batch2b", args.batch2b_vis)]:
-        if not os.path.exists(csv_path): continue
-        with open(csv_path, newline="") as f:
-            for r in csv.DictReader(f):
-                # Normalize field names
-                task = r.get("task_key", r.get("task",""))
-                state = r.get("state_id","0")
-                ws = r.get("window_start",""); we = r.get("window_end","")
-                claim = str(r.get("claim_usable","")).lower() == "true"
-                denom = str(r.get("denominator_clean", r.get("denominator_status",""))).lower() in ("clean","true")
-                tax = r.get("taxonomy_label", r.get("taxonomy",""))
-                qpos_str = r.get("qpos_opening_delta", r.get("qpos_delta", r.get("vis_qpos_opening_delta_mean", 0)))
-                qpos = float(qpos_str) if qpos_str and qpos_str != "" else 0.0
-                # Infer done from taxonomy: "task_positive" = done=False, "task_negative" = done=True
-                done = "task_negative" in tax.lower() or "no_action" in tax.lower()
-                outcomes.append(dict(source=src, task=task, state_id=state,
-                    window_start=ws, window_end=we, qpos=qpos, done=done,
-                    claim=claim, denom=denom, taxonomy=tax, merge_type=r.get("merge_type","")))
-
-    # Deduplicate
-    seen = set(); deduped = []
-    for o in outcomes:
-        key = (o["task"], o["state_id"], o["window_start"], o["window_end"])
-        if key not in seen:
-            seen.add(key); deduped.append(o)
-    return deduped
+def norm(value):
+    return str(value if value is not None else "").strip()
 
 
-def classify_outcome_role_aware(o):
-    """Use role-specific gates when candidate_role is available."""
-    role = o.get("candidate_role", o.get("merge_type", ""))
-    if role in ("stable_post_lock_control", "far_too_early_control", "pre_lock_control"):
-        import sys, os
+def lower(value):
+    return norm(value).lower()
+
+
+def parse_bool(value, default=False):
+    v = lower(value)
+    if v in {"true", "1", "yes", "y", "clean"}:
+        return True
+    if v in {"false", "0", "no", "n", "polluted", "polluted_or_incomplete", "failed"}:
+        return False
+    return default
+
+
+def parse_float(value, default=0.0):
+    try:
+        v = norm(value)
+        if v == "":
+            return default
+        return float(v)
+    except (TypeError, ValueError):
+        return default
+
+
+def parse_open(value, default=0):
+    v = norm(value)
+    if not v:
+        return default
+    if "/" in v:
+        v = v.split("/", 1)[0]
+    return int(parse_float(v, default))
+
+
+def clean_role(value):
+    role = lower(value)
+    return CONTROL_ROLES.get(role, role)
+
+
+def first(row, *fields):
+    for field in fields:
+        if field in row and norm(row.get(field)) != "":
+            return row.get(field)
+    return ""
+
+
+def load_phase_map(path):
+    phase_map = {}
+    if not path or not os.path.exists(path):
+        return phase_map
+    with open(path, newline="", encoding="utf-8") as f:
+        for r in csv.DictReader(f):
+            key = (norm(r.get("task_key")), norm(r.get("state_id")), norm(r.get("window_start")), norm(r.get("window_end")))
+            phase_map[key] = r
+    return phase_map
+
+
+def infer_done(row, taxonomy):
+    if norm(row.get("done")) != "":
+        return parse_bool(row.get("done"))
+    if norm(row.get("VIS_done")) != "":
+        return parse_bool(row.get("VIS_done"))
+    if norm(row.get("vis_done_all_false")) != "":
+        return not parse_bool(row.get("vis_done_all_false"))
+    tax = lower(taxonomy)
+    if "task_negative" in tax or "no_action" in tax:
+        return True
+    if "task_positive" in tax or "task_failure" in tax:
+        return False
+    return False
+
+
+def denominator_clean(row):
+    if norm(row.get("denominator_clean")) != "":
+        return parse_bool(row.get("denominator_clean"))
+    if norm(row.get("denominator_status")) != "":
+        return lower(row.get("denominator_status")) == "clean"
+    if norm(row.get("random_all_clean")) != "":
+        return parse_bool(row.get("random_all_clean"))
+    return True
+
+
+def provenance_status(row):
+    status = first(row, "provenance_status", "provenance_note", "trace_status", "validity_status")
+    return norm(status) if norm(status) else "unknown"
+
+
+def blocked_reason(row, provenance):
+    blob = " ".join(
+        lower(row.get(f))
+        for f in [
+            "taxonomy",
+            "taxonomy_label",
+            "denominator_status",
+            "provenance_status",
+            "provenance_note",
+            "validity_status",
+            "stop_reason",
+            "failure_reason",
+            "exclusion_reason",
+        ]
+    )
+    blob = (blob + " " + lower(provenance)).strip()
+    hits = sorted(token for token in BLOCKED_TOKENS if token in blob)
+    if hits:
+        return "|".join(hits)
+    return ""
+
+
+def normalize_row(source, row, phase_map):
+    task = norm(first(row, "task_key", "task"))
+    state = norm(first(row, "state_id", "state"))
+    ws = norm(row.get("window_start"))
+    we = norm(row.get("window_end"))
+    key = (task, state, ws, we)
+    phase = phase_map.get(key, {})
+    taxonomy = norm(first(row, "taxonomy_label", "taxonomy"))
+    role = clean_role(first(row, "candidate_role", "control_type", "merge_type"))
+    control_type = clean_role(first(row, "control_type", "candidate_role"))
+    phase_bin = norm(first(row, "phase_bin_proxy", "phase_bin", "phase")) or norm(phase.get("phase_bin_proxy"))
+    qpos = parse_float(first(row, "qpos_opening_delta", "qpos_delta", "vis_qpos_opening_delta_mean", "qpos"), 0.0)
+    vis_open_raw = first(row, "VIS_OPEN", "vis_open", "vis_OPEN_mean", "vis_OPEN_min", "vis_open_count")
+    vis_open_count = parse_open(vis_open_raw, 0)
+    denom = denominator_clean(row)
+    claim = parse_bool(row.get("claim_usable"), False)
+    done = infer_done(row, taxonomy)
+    prov = provenance_status(row)
+    denom_type = norm(first(row, "denominator_type", "denominator_kind"))
+    if not denom_type and role:
+        denom_type = get_denominator_type_safe(role)
+    if not denom_type:
+        denom_type = "standard"
+    return {
+        "source_batch": source,
+        "task_key": task,
+        "state_id": state,
+        "window_start": ws,
+        "window_end": we,
+        "candidate_role": role,
+        "control_type": control_type,
+        "phase_bin_proxy": phase_bin,
+        "denominator_type": denom_type,
+        "provenance_status": prov,
+        "provenance_note": norm(first(row, "provenance_note", "notes")),
+        "VIS_OPEN": norm(vis_open_raw),
+        "vis_open_count": vis_open_count,
+        "qpos_opening_delta": qpos,
+        "done": done,
+        "taxonomy": taxonomy,
+        "denominator_clean": denom,
+        "claim_usable": claim,
+        "_raw": row,
+    }
+
+
+def get_denominator_type_safe(role):
+    try:
         sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-        from role_specific_gates import classify_vis_outcome, get_denominator_type, parse_vis_open
-        vis_open = parse_vis_open(o.get("vis_open", o.get("VIS_OPEN", "18/18")))
-        qpos = o["qpos"]; done = o["done"]; denom_clean = o["denom"]
-        label, status, taxonomy, confounded = classify_vis_outcome(role, vis_open, qpos, done, denom_clean)
-        o["taxonomy"] = taxonomy
-        o["action_bridge_confounded"] = confounded
-        o["denominator_type"] = get_denominator_type(role)
-        return label, status, taxonomy
-    return classify_outcome(o)
+        from role_specific_gates import get_denominator_type
+        return get_denominator_type(role)
+    except Exception:
+        if role == "stable_post_lock_control":
+            return "late_open_control"
+        if role in {"far_too_early_control", "pre_lock_control"}:
+            return "closed_window_control"
+        return "standard"
+
+
+def classify_role_specific(o):
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from role_specific_gates import classify_vis_outcome
+        return classify_vis_outcome(
+            o["candidate_role"],
+            int(o["vis_open_count"]),
+            float(o["qpos_opening_delta"]),
+            bool(o["done"]),
+            bool(o["denominator_clean"]),
+        )
+    except Exception:
+        return "", "manual_review", "role_specific_gate_error", False
+
+
+def classify_standard(o):
+    blocked = blocked_reason(o["_raw"], o["provenance_status"])
+    if blocked:
+        return "", "ignore", blocked, False
+    if not o["denominator_clean"]:
+        return "", "ignore", "denominator_not_clean", False
+    action_pos = int(o["vis_open_count"]) >= 16 or "action_positive" in lower(o["taxonomy"])
+    phys_strong = float(o["qpos_opening_delta"]) >= 0.03
+    phys_weak = 0.01 <= float(o["qpos_opening_delta"]) < 0.03
+    task_fail = not bool(o["done"])
+    if o["claim_usable"]:
+        if action_pos and phys_strong and task_fail:
+            return 1, "positive", o["taxonomy"] or "claim_usable_positive", False
+        return "", "manual_review", "claim_gate_inconsistent", False
+    if action_pos and phys_strong and not task_fail:
+        return 0, "negative", o["taxonomy"] or "physical_strong_task_negative", False
+    if phys_strong and not task_fail:
+        return 0, "negative", o["taxonomy"] or "physical_strong_task_negative", False
+    if action_pos and phys_weak:
+        return "", "ignore", "weak_physical_uncertain", False
+    if not action_pos:
+        return 0, "negative", o["taxonomy"] or "action_only", False
+    return "", "manual_review", "unclassified_action_positive", False
 
 
 def classify_outcome(o):
-    """Classify VIS outcome into vulnerability_ready label with assertions."""
-    if o["claim"]:
-        # Verify claim requirements
-        assert o["qpos"] >= 0.03, f"claim_usable but qpos={o['qpos']}"
-        assert not o["done"], f"claim_usable but done=True"
-        assert o["denom"], f"claim_usable but denom not clean"
-        return 1, "positive", ""
-    if not o["denom"]:
-        return "", "ignore", "denominator_not_clean"
-    # Denominator clean but not claim
-    if o["qpos"] >= 0.03:
-        return 0, "negative", "physical_strong_task_negative"
-    if o["qpos"] >= 0.01:
-        return "", "ignore", "weak_physical_uncertain"
-    return 0, "negative", "action_only"
+    if o["candidate_role"] in CONTROL_ROLES.values():
+        return classify_role_specific(o)
+    return classify_standard(o)
+
+
+def load_csv_sources(args, phase_map):
+    if args.use_frozen_batch2b:
+        return frozen_batch2b_outcomes()
+    sources = [
+        ("batch1", args.batch1_merged),
+        ("batch2b", args.batch2b_vis),
+        ("batch3", args.batch3_vis),
+        ("batch3b", args.batch3b_vis),
+        ("batch3c", args.batch3c_vis),
+    ]
+    outcomes = []
+    for source, path in sources:
+        if not path or not os.path.exists(path):
+            continue
+        with open(path, newline="", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                item = normalize_row(source, row, phase_map)
+                if item["task_key"] and item["window_start"] != "" and item["window_end"] != "":
+                    outcomes.append(item)
+    return outcomes
+
+
+def frozen_batch2b_outcomes():
+    rows = [
+        ("batch1", "alphabet_soup", "0", "3", "20", 18, 0.027619, False, False, True, "weak_physical_uncertain"),
+        ("batch2b", "alphabet_soup", "2", "11", "28", 18, 0.037643, True, False, True, "action_physical_strong_task_positive"),
+        ("batch2b", "bbq_sauce", "0", "25", "42", 18, 0.038055, False, True, True, "physical_strong_task_negative"),
+        ("batch2b", "bbq_sauce", "4", "14", "31", 18, 0.037853, False, True, True, "physical_strong_task_negative"),
+        ("batch1", "butter", "0", "29", "46", 18, 0.037905, True, False, True, "action_physical_strong_task_positive"),
+        ("batch2b", "butter", "0", "32", "49", 18, 0.037934, False, True, True, "physical_strong_task_negative"),
+        ("batch2b", "butter", "2", "23", "40", 18, 0.037462, True, False, True, "action_physical_strong_task_positive"),
+        ("batch1", "ketchup", "0", "16", "33", 18, 0.038042, True, False, True, "action_physical_strong_task_positive"),
+        ("batch2b", "ketchup", "1", "28", "45", 18, 0.037948, False, True, True, "physical_strong_task_negative"),
+    ]
+    outcomes = []
+    for src, task, state, ws, we, vis_open, qpos, claim, done, denom, tax in rows:
+        outcomes.append({
+            "source_batch": src,
+            "task_key": task,
+            "state_id": state,
+            "window_start": ws,
+            "window_end": we,
+            "candidate_role": "",
+            "control_type": "",
+            "phase_bin_proxy": "",
+            "denominator_type": "standard",
+            "provenance_status": "frozen_batch2b",
+            "provenance_note": "",
+            "VIS_OPEN": str(vis_open),
+            "vis_open_count": vis_open,
+            "qpos_opening_delta": qpos,
+            "done": done,
+            "taxonomy": tax,
+            "denominator_clean": denom,
+            "claim_usable": claim,
+            "_raw": {},
+        })
+    return outcomes
+
+
+def build_labels(outcomes):
+    labels = []
+    for o in outcomes:
+        label, status, taxonomy, action_confounded = classify_outcome(o)
+        if status not in ALLOWED_STATUS:
+            status = "manual_review"
+        if status not in TRAIN_STATUS:
+            label = ""
+        qpos = float(o["qpos_opening_delta"])
+        labels.append({
+            "source_batch": o["source_batch"],
+            "task_key": o["task_key"],
+            "state_id": o["state_id"],
+            "window_start": o["window_start"],
+            "window_end": o["window_end"],
+            "candidate_role": o["candidate_role"],
+            "control_type": o["control_type"],
+            "phase_bin_proxy": o["phase_bin_proxy"],
+            "denominator_type": o["denominator_type"],
+            "provenance_status": o["provenance_status"],
+            "provenance_note": o["provenance_note"],
+            "VIS_OPEN": o["VIS_OPEN"],
+            "vis_open_count": o["vis_open_count"],
+            "qpos_opening_delta": round(qpos, 6),
+            "qpos_label": "strong" if qpos >= 0.03 else ("weak" if qpos >= 0.01 else "none"),
+            "done": o["done"],
+            "taxonomy": taxonomy,
+            "denominator_clean": o["denominator_clean"],
+            "claim_usable": o["claim_usable"],
+            "action_bridge_confounded": bool(action_confounded),
+            "label_action_bridge": 1 if int(o["vis_open_count"]) >= 16 else 0,
+            "label_physical_response": 1 if qpos >= 0.03 else (0.5 if qpos >= 0.01 else 0),
+            "label_task_failure": 0 if o["done"] else 1,
+            "label_vulnerability_ready": label,
+            "label_status": status,
+            "label_use": "train" if status in TRAIN_STATUS else status,
+            "exclusion_or_uncertain_reason": "" if status in TRAIN_STATUS else taxonomy,
+        })
+    return labels
+
+
+def find_conflicts(labels):
+    by_key = defaultdict(list)
+    for row in labels:
+        key = (row["task_key"], row["state_id"], row["window_start"], row["window_end"])
+        by_key[key].append(row)
+    conflicts = []
+    for key, rows in by_key.items():
+        states = {(norm(r["label_status"]), norm(r["label_vulnerability_ready"])) for r in rows}
+        if len(states) <= 1:
+            continue
+        conflicts.append({
+            "task_key": key[0],
+            "state_id": key[1],
+            "window_start": key[2],
+            "window_end": key[3],
+            "sources": "|".join(sorted(set(r["source_batch"] for r in rows))),
+            "labels": "|".join(sorted(set(norm(r["label_vulnerability_ready"]) for r in rows))),
+            "statuses": "|".join(sorted(set(norm(r["label_status"]) for r in rows))),
+            "roles": "|".join(sorted(set(norm(r["candidate_role"]) for r in rows))),
+            "reason": "duplicate_label_conflict",
+        })
+    return conflicts
+
+
+def write_csv(path, rows, fieldnames):
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(rows)
+
+
+def write_readiness(path, labels, conflicts, output_labels, output_conflicts):
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    status_counts = Counter(r["label_status"] for r in labels)
+    source_counts = Counter(r["source_batch"] for r in labels)
+    role_counts = Counter(r["candidate_role"] or "standard" for r in labels)
+    train = [r for r in labels if r["label_status"] in TRAIN_STATUS]
+    train_manual = [r for r in train if r["label_status"] == "manual_review"]
+    blockers = []
+    if conflicts:
+        blockers.append("duplicate label conflicts present")
+    if train_manual:
+        blockers.append("manual_review rows entered train")
+    if not labels:
+        blockers.append("no labels built")
+    verdict = "PASS" if not blockers else "FAIL"
+    lines = [
+        "# Object Phase Response Label Readiness V2",
+        "",
+        f"**Labels CSV**: `{output_labels}`",
+        f"**Conflict CSV**: `{output_conflicts}`",
+        f"**Rows**: {len(labels)}",
+        f"**Train rows**: {len(train)}",
+        f"**Verdict**: **{verdict}**",
+        "",
+        "## Blocking Issues",
+        "",
+    ]
+    if blockers:
+        for b in blockers:
+            lines.append("- " + b)
+    else:
+        lines.append("- None.")
+    lines += [
+        "",
+        "## Label Status Counts",
+        "",
+        "| Status | Count |",
+        "|---|---:|",
+    ]
+    for k in sorted(status_counts):
+        lines.append(f"| {k} | {status_counts[k]} |")
+    lines += ["", "## Source Counts", "", "| Source | Count |", "|---|---:|"]
+    for k in sorted(source_counts):
+        lines.append(f"| {k} | {source_counts[k]} |")
+    lines += ["", "## Role Counts", "", "| Role | Count |", "|---|---:|"]
+    for k in sorted(role_counts):
+        lines.append(f"| {k} | {role_counts[k]} |")
+    lines += [
+        "",
+        "## Boundaries",
+        "",
+        "- Only positive/negative rows are train-eligible.",
+        "- manual_review, ignore, polluted, random-failed, denominator-failed, infra-failed, Xid/OOM, missing-trace, provenance-failed, schema-incomplete, and ambiguous rows must not enter train.",
+        "- This builder does not train detector v2.",
+        "",
+    ]
+    with open(path, "w", encoding="utf-8") as f:
+        f.write("\n".join(lines))
 
 
 def main():
     args = parse_args()
-    outcomes = load_summaries(args)
-    print("Loaded %d unique VIS outcomes from CSV" % len(outcomes))
-
-    # ── Verified 9-outcome fallback (frozen from direct trace audit) ──
-    if args.use_frozen_batch2b:
-        print("Using frozen Batch2b 9-outcome set")
-        outcomes = [
-            dict(source="B1", task="alphabet_soup",state_id="0",window_start="3", window_end="20", qpos=0.027619,done=False,claim=False,denom=True, taxonomy="weak_physical_uncertain"),
-            dict(source="B2b",task="alphabet_soup",state_id="2",window_start="11",window_end="28",qpos=0.037643,done=False,claim=True, denom=True, taxonomy="action_physical_strong_task_positive"),
-            dict(source="B2b",task="bbq_sauce",    state_id="0",window_start="25",window_end="42",qpos=0.038055,done=True, claim=False,denom=True, taxonomy="physical_strong_task_negative"),
-            dict(source="B2b",task="bbq_sauce",    state_id="4",window_start="14",window_end="31",qpos=0.037853,done=True, claim=False,denom=True, taxonomy="physical_strong_task_negative"),
-            dict(source="B1", task="butter",       state_id="0",window_start="29",window_end="46",qpos=0.037905,done=False,claim=True, denom=True, taxonomy="action_physical_strong_task_positive"),
-            dict(source="B2b",task="butter",       state_id="0",window_start="32",window_end="49",qpos=0.037934,done=True, claim=False,denom=True, taxonomy="physical_strong_task_negative"),
-            dict(source="B2b",task="butter",       state_id="2",window_start="23",window_end="40",qpos=0.037462,done=False,claim=True, denom=True, taxonomy="action_physical_strong_task_positive"),
-            dict(source="B1", task="ketchup",      state_id="0",window_start="16",window_end="33",qpos=0.038042,done=False,claim=True, denom=True, taxonomy="action_physical_strong_task_positive"),
-            dict(source="B2b",task="ketchup",      state_id="1",window_start="28",window_end="45",qpos=0.037948,done=True, claim=False,denom=True, taxonomy="physical_strong_task_negative"),
-        ]
-    else:
-        # CSV-reading mode for multi-batch label building
-        print("CSV-reading mode: %d outcomes loaded" % len(outcomes))
-        if args.batch3_vis and os.path.exists(args.batch3_vis):
-            with open(args.batch3_vis, newline="") as f:
-                for r in csv.DictReader(f):
-                    task = r.get("task_key", r.get("task",""))
-                    claim = str(r.get("claim_usable","")).lower() == "true"
-                    denom = str(r.get("denominator_clean", r.get("denominator_status",""))).lower() in ("clean","true")
-                    tax = r.get("taxonomy_label", r.get("taxonomy",""))
-                    qpos = float(r.get("qpos_opening_delta", r.get("qpos_delta", r.get("vis_qpos_opening_delta_mean", 0))) or 0)
-                    done = "task_negative" in tax.lower() or "no_action" in tax.lower()
-                    outcomes.append(dict(source="batch3", task=task,
-                        state_id=r.get("state_id","0"), window_start=r.get("window_start",""),
-                        window_end=r.get("window_end",""), qpos=qpos, done=done,
-                        claim=claim, denom=denom, taxonomy=tax, merge_type=""))
-
-    # Load phase descriptors
-    phase_map = {}
-    if os.path.exists(args.descriptors):
-        with open(args.descriptors, newline="") as f:
-            for r in csv.DictReader(f):
-                key = (r["task_key"], r.get("state_id","0"), r["window_start"], r["window_end"])
-                phase_map[key] = r
-
-    # Build labels
-    labels = []
-    for o in outcomes:
-        tp, st, reason = classify_outcome_role_aware(o)
-        key = (o["task"], o["state_id"], o["window_start"], o["window_end"])
-        ph = phase_map.get(key, {})
-        ph_bin = ph.get("phase_bin_proxy","")
-        lead = ph.get("relative_lead","")
-        phys = 1 if o["qpos"] >= 0.03 else (0.5 if o["qpos"] >= 0.01 else 0)
-        labels.append(dict(
-            task_key=o["task"], state_id=o["state_id"],
-            window_start=o["window_start"], window_end=o["window_end"],
-            phase_bin_proxy=ph_bin, lead=lead, VIS_OPEN="18/18",
-            qpos_opening_delta=round(o["qpos"],6),
-            qpos_label="strong" if o["qpos"]>=0.03 else "weak",
-            done=o["done"], taxonomy=o["taxonomy"],
-            denominator_clean=o["denom"], claim_usable=o["claim"],
-            candidate_role=o.get("candidate_role",""),
-            denominator_type=o.get("denominator_type", ""),
-            action_bridge_confounded=o.get("action_bridge_confounded", False),
-            label_action_bridge=1, label_physical_response=phys,
-            label_task_failure=0 if o["done"] else 1,
-            label_vulnerability_ready=tp, label_status=st,
-            label_use=st if st in ("positive","negative") else ("ignore" if st=="ignore" else "manual_review"),
-            exclusion_or_uncertain_reason=reason,
-        ))
-
-    lf = list(labels[0].keys())
-    os.makedirs(os.path.dirname(args.output_labels) or ".", exist_ok=True)
-    with open(args.output_labels, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=lf, extrasaction="ignore")
-        w.writeheader(); w.writerows(labels)
-
-    pos = [l for l in labels if l["label_vulnerability_ready"]==1]
-    neg = [l for l in labels if l["label_vulnerability_ready"]==0]
-    ign = [l for l in labels if l["label_status"]=="ignore"]
-    print("Labels: pos=%d neg=%d ignore=%d" % (len(pos), len(neg), len(ign)))
-
-    # ── Strict assertions ──
-    assert len(labels) == 9, "Expected 9 total, got %d" % len(labels)
-    assert len(pos) == 4, "Expected 4 positive, got %d" % len(pos)
-    assert len(neg) == 4, "Expected 4 negative, got %d" % len(neg)
-    assert len(ign) == 1, "Expected 1 ignore, got %d" % len(ign)
-    train_rows = [l for l in labels if l["label_status"] in ("positive","negative")]
-    assert len(train_rows) == 8, "Expected 8 train_rows, got %d" % len(train_rows)
-    tasks_present = set(l["task_key"] for l in train_rows)
-    assert "bbq_sauce" in tasks_present, "bbq_sauce missing from train_rows"
-    assert "butter" in tasks_present, "butter missing"
-    assert "alphabet_soup" in tasks_present, "alphabet_soup missing"
-    assert "ketchup" in tasks_present, "ketchup missing"
-    bbq_rows = [l for l in labels if l["task_key"] == "bbq_sauce"]
-    assert len(bbq_rows) == 2, "Expected 2 bbq rows, got %d" % len(bbq_rows)
-    assert all(l["label_vulnerability_ready"] == 0 for l in bbq_rows), "bbq rows should be negative"
-    print("All assertions passed: 9 total, pos=4, neg=4, ignore=1, train=8, tasks=4")
-
-    if args.dry_run:
-        return
-
-    # ── Smoke detector v1 with feature-set ablations ──
-    from sklearn.linear_model import LogisticRegression
-    from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-    from sklearn.model_selection import LeaveOneGroupOut, cross_val_predict
-    from sklearn.metrics import confusion_matrix
-
-    if len(train_rows) < 4:
-        print("Too few rows for smoke detector")
-        return
-
-    y = np.array([l["label_vulnerability_ready"] for l in train_rows])
-    task_groups = np.array([l["task_key"] for l in train_rows])
-
-    # Build feature sets
-    feature_sets = {}
-    # A: phase_bin_only
-    phase_bins = sorted(set(l["phase_bin_proxy"] for l in train_rows))
-    Xa = np.zeros((len(train_rows), len(phase_bins)))
-    for i, l in enumerate(train_rows):
-        if l["phase_bin_proxy"] in phase_bins:
-            Xa[i, phase_bins.index(l["phase_bin_proxy"])] = 1
-    feature_sets["A_phase_bin_only"] = Xa
-
-    # B: task_key_only
-    tasks = sorted(set(l["task_key"] for l in train_rows))
-    Xb = np.zeros((len(train_rows), len(tasks)))
-    for i, l in enumerate(train_rows):
-        if l["task_key"] in tasks:
-            Xb[i, tasks.index(l["task_key"])] = 1
-    feature_sets["B_task_key_only"] = Xb
-
-    # C: causal_safe_descriptors (from phase descriptors)
-    desc_flds = ["clean_open_ratio","raw_gripper_mean","qpos_start","qpos_min","eef_speed_mean"]
-    Xc = np.zeros((len(train_rows), len(desc_flds)))
-    for i, l in enumerate(train_rows):
-        key = (l["task_key"], l["state_id"], str(l["window_start"]), str(l["window_end"]))
-        ph = phase_map.get(key, {})
-        for j, fld in enumerate(desc_flds):
-            v = ph.get(fld, 0)
-            try: Xc[i,j] = float(v) if v else 0.0
-            except: Xc[i,j] = 0.0
-    Xc = np.nan_to_num(Xc, 0.0)
-    feature_sets["C_causal_safe_descriptors"] = Xc
-
-    # D: phase_bin + causal_safe
-    Xd = np.hstack([Xa, Xc])
-    feature_sets["D_phase+causal"] = Xd
-
-    # E: task_key + phase_bin
-    Xe = np.hstack([Xb, Xa])
-    feature_sets["E_task+phase"] = Xe
-
-    # F: descriptor_upper_bound (more fields)
-    desc_flds_f = ["clean_open_count","clean_open_ratio","raw_gripper_mean","qpos_start","qpos_end",
-                   "qpos_min","qpos_delta_abs","eef_speed_mean","eef_speed_max","eef_z_delta"]
-    Xf = np.zeros((len(train_rows), len(desc_flds_f)))
-    for i, l in enumerate(train_rows):
-        key = (l["task_key"], l["state_id"], str(l["window_start"]), str(l["window_end"]))
-        ph = phase_map.get(key, {})
-        for j, fld in enumerate(desc_flds_f):
-            v = ph.get(fld, 0)
-            try: Xf[i,j] = float(v) if v else 0.0
-            except: Xf[i,j] = 0.0
-    Xf = np.nan_to_num(Xf, 0.0)
-    feature_sets["F_descriptor_upper_bound"] = Xf
-
-    # Evaluate each feature set
-    results = []; predictions = []
-    for fs_name, X_fs in feature_sets.items():
-        for model_name, model in [("LR", LogisticRegression(max_iter=1000, class_weight="balanced")),
-                                   ("RF", RandomForestClassifier(n_estimators=50, max_depth=4, class_weight="balanced", random_state=42))]:
-            try:
-                logo = LeaveOneGroupOut()
-                preds = cross_val_predict(model, X_fs, y, groups=task_groups, cv=logo)
-                cm = confusion_matrix(y, preds)
-                tn,fp,fn,tp = cm.ravel() if cm.size==4 else (0,0,0,0)
-                prec = tp/max(tp+fp,1); rec = tp/max(tp+fn,1)
-                f1 = 2*prec*rec/max(prec+rec,1e-8)
-                acc = np.mean(preds==y)
-                results.append(dict(feature_set=fs_name, model=model_name,
-                    accuracy=round(acc,4), precision=round(prec,4),
-                    recall=round(rec,4), f1=round(f1,4), tp=tp, fp=fp, fn=fn, tn=tn))
-                for i, l in enumerate(train_rows):
-                    predictions.append(dict(task_key=l["task_key"], state_id=l["state_id"],
-                        feature_set=fs_name, model=model_name,
-                        true=y[i], pred=preds[i]))
-            except Exception as e:
-                results.append(dict(feature_set=fs_name, model=model_name, accuracy="", f1="err:%s" % str(e)[:40]))
-
-    # Write
-    with open(args.output_metrics, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["feature_set","model","accuracy","precision","recall","f1","tp","fp","fn","tn"])
-        w.writeheader(); w.writerows(results)
-
-    if predictions:
-        with open(args.output_predictions, "w", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=list(predictions[0].keys()))
-            w.writeheader(); w.writerows(predictions)
-
-    # Report
-    best = max([r for r in results if isinstance(r.get("f1"),(int,float))], key=lambda r: r["f1"], default={"f1":0,"feature_set":"?","model":"?"})
-    task_f1s = [r["f1"] for r in results if r["feature_set"]=="B_task_key_only" and isinstance(r.get("f1"),(int,float))]
-    b_f1 = max(task_f1s) if task_f1s else 0
-    caus_f1s = [r["f1"] for r in results if "causal" in r["feature_set"] and isinstance(r.get("f1"),(int,float))]
-    runtime_beats = any(f > b_f1 + 0.05 for f in caus_f1s) if caus_f1s else False
-
-    report = f"""# Vulnerability-Ready Smoke Detector v1
-
-**Rows**: {len(train_rows)} ({int(sum(y==1))} pos, {int(sum(y==0))} neg)
-**Evaluation**: leave-one-task-out (tasks: {sorted(set(task_groups))})
-
-## Feature Set Ablation
-
-| Feature Set | Model | F1 | Prec | Rec |
-|-------------|-------|-----|------|-----|
-""" + "\n".join(f"| {r['feature_set']} | {r['model']} | {r.get('f1','?')} | {r.get('precision','?')} | {r.get('recall','?')} |" for r in results if isinstance(r.get('f1'),(int,float))) + f"""
-
-## Best: {best['feature_set']} + {best['model']}, F1={best.get('f1','?')}
-
-## Key Questions
-
-| Question | Answer |
-|----------|--------|
-| Does runtime info beat task-only? | {'YES' if runtime_beats else 'NO (N=%d too small, task F1=%.2f, causal F1=%.2f)' % (len(train_rows), b_f1, max(caus_f1s) if caus_f1s else 0)} |
-| Is phase_bin alone sufficient? | {'YES' if best['feature_set']=='A_phase_bin_only' else 'NO'} |
-
-## Verdict
-
-Diagnostic smoke only. N={len(train_rows)} too small for deployment.
-LR recall captures positives; precision limited by task confound.
-Need stable/post-lock controls and more data.
-"""
-
-    os.makedirs(os.path.dirname(args.output_report) or ".", exist_ok=True)
-    with open(args.output_report, "w") as f:
-        f.write(report)
-    print("Report: %s" % args.output_report)
+    phase_map = load_phase_map(args.descriptors)
+    outcomes = load_csv_sources(args, phase_map)
+    labels = build_labels(outcomes)
+    conflicts = find_conflicts(labels)
+    write_csv(args.output_labels, labels, LABEL_FIELDS)
+    write_csv(args.output_conflicts, conflicts, CONFLICT_FIELDS)
+    write_readiness(args.output_readiness, labels, conflicts, args.output_labels, args.output_conflicts)
+    print("Built %d labels -> %s" % (len(labels), args.output_labels))
+    print("Conflicts: %d -> %s" % (len(conflicts), args.output_conflicts))
+    print("Readiness: %s" % args.output_readiness)
+    if conflicts:
+        print("ERROR: duplicate label conflicts present")
+        return 2
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

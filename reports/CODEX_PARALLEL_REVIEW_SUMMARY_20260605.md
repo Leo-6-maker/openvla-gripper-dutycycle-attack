@@ -16,25 +16,26 @@ Scope: design, audit, scripts, and CPU-only feasibility validation. No GPU, roll
 
 - `scripts/diagnostics/audit_label_schema.py`
 - `scripts/diagnostics/generate_window_compression_candidates.py`
+- `scripts/diagnostics/finalize_phase_response_labels.py`
 - `scripts/train_vulnerability_ready_detector_v1.py`
 - `tables/label_schema_audit_v2.csv`
 - `tables/object_window_compression_candidates.csv`
 - `reports/LABEL_SCHEMA_AUDIT_V2.md`
 - `reports/OBJECT_WINDOW_COMPRESSION_CANDIDATE_PLAN.md`
+- `reports/OBJECT_PHASE_RESPONSE_LABEL_READINESS_V2.md`
 - `reports/HANDOFF_CONSISTENCY_AUDIT_20260605.md`
 - `reports/DETECTOR_TRAINING_SCRIPT_AUDIT.md`
 - `reports/DETECTOR_V2_AND_VISUAL_TRANSFER_DESIGN.md`
 - `reports/LABEL_BUILDER_PATCH_PLAN.md`
+- `reports/SERVER_SYNC_PLAN_20260605.md`
 - `reports/CODEX_PARALLEL_REVIEW_SUMMARY_20260605.md`
 
 ## Blocking Issues
 
-1. `tables/object_phase_response_labels_v2.csv` is missing locally.
-2. `finalize_phase_response_labels.py` does not support `--batch3b-vis` / `--batch3c-vis`.
-3. The label builder still contains hardcoded 9-label assertions and is not safe for v2 multi-source merging.
-4. Batch3c labels are not safe to merge until role metadata, denominator type, and manual_review separation are preserved.
-5. Detector v2 should not train until schema audit passes on `object_phase_response_labels_v2.csv`.
-6. Server read-only verification found the server repo on `exp/vis-payload-upgrade-validation-20260601`, not the handoff branch `exp/vis-prefix-margin-repair-20260603`; local Codex commit `3a35239` is not present on server.
+1. Server read-only verification found the server repo on `exp/vis-payload-upgrade-validation-20260601`, not the reviewed branch `exp/vis-prefix-margin-repair-20260603`; local reviewed commit `e086836` is not present on server.
+2. `tables/object_phase_response_labels_v2.csv` is still missing as a full-source label artifact.
+3. Batch3c labels are not safe to train on until the patched builder is run on synced server sources and schema audit passes.
+4. Detector v2 should not train until schema audit passes on `object_phase_response_labels_v2.csv`.
 
 ## Non-Blocking Warnings
 
@@ -42,6 +43,29 @@ Scope: design, audit, scripts, and CPU-only feasibility validation. No GPU, roll
 2. Handoff still contains older hardcoded commit IDs; use `git log -1 -- reports/HANDOFF_20260605_WINDOW_COMPRESSION_AND_DETECTOR.md` for current committed revision.
 3. Local Batch2b/Batch3b/Batch3c final CSVs are absent, so server-side state must be verified by DeepSeek before merge/training.
 4. Local sklearn is unavailable, so model-training smoke could not complete on this Windows machine. Compile and source-level hardening passed.
+5. Label builder synthetic tests pass, but they are not a substitute for full-source server label generation.
+
+## Remote Visibility
+
+Local reviewed branch:
+
+```text
+exp/vis-prefix-margin-repair-20260603
+```
+
+Local HEAD:
+
+```text
+e0868362bd21a8770eddb77baf211618abf6da85
+```
+
+Remote HEAD after push:
+
+```text
+e0868362bd21a8770eddb77baf211618abf6da85
+```
+
+`e086836` is now pushed to `origin/exp/vis-prefix-margin-repair-20260603`.
 
 ## Server Read-Only Verification
 
@@ -62,11 +86,13 @@ Result:
 - Current server branch: `exp/vis-payload-upgrade-validation-20260601`.
 - Current server HEAD: `653ed33d78578aa0f0af96539a9c8b4c2a6d4c08`.
 - Expected handoff branch `exp/vis-prefix-margin-repair-20260603` was not listed in the server local branch check.
-- Local Codex audit commit `3a35239` is not present on server.
+- Local Codex audit commit `e086836` is not present on server.
 - Official env exists: `/home/liuyu/.conda/envs/openvla_official_libero_20260525/bin/python`, `Python 3.10.13`.
 - Server has Batch3/Batch3b output directories, but labels v2 and this review package are missing.
 
 No GPU command, rollout, VIS job, watcher, training job, or server output mutation was run.
+
+Recommended server sync: **Option A safe worktree** from `reports/SERVER_SYNC_PLAN_20260605.md`.
 
 ## Validation Run
 
@@ -96,15 +122,21 @@ Result: PASS. Generated 15 candidates: five parent windows times L12/L10/L8.
 
 ## DeepSeek Readiness
 
-Can DeepSeek safely train detector v2 now: **No.**
+Can DeepSeek safely train detector v2 now: **No. BLOCKED.**
 
 Required first:
 
 1. Sync/check out the intended reviewed branch on server.
-2. Patch or replace label builder for Batch3b/Batch3c.
+2. Run the patched label builder for Batch3b/Batch3c on real server sources.
 3. Generate `tables/object_phase_response_labels_v2.csv`.
 4. Run `scripts/diagnostics/audit_label_schema.py` and require PASS.
 5. Confirm class balance, controls, and task split warnings before interpreting v2 metrics.
+
+Label builder Batch3b/c support: **Yes, implemented locally and pushed to remote.**
+
+Server synced to reviewed branch: **No.**
+
+Full-source labels v2 present: **No.**
 
 Are compression candidates ready: **Yes, as candidate windows only.**
 
