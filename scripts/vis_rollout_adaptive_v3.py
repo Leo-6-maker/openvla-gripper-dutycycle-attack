@@ -131,6 +131,18 @@ def parse_args():
     return ap.parse_args()
 
 args = parse_args()
+def _validate_gpu_pair(gpu_pair):
+    ids = [x.strip() for x in gpu_pair.split(',') if x.strip()]
+    if any(x in {'3', '7'} for x in ids):
+        raise SystemExit('INFRA_FAILED: GPU3/GPU7 are blacklisted; requested --gpu_pair=%s' % gpu_pair)
+    visible = os.environ.get('CUDA_VISIBLE_DEVICES', '').replace(' ', '')
+    if visible == '2,6' and gpu_pair.replace(' ', '') == '2,6':
+        raise SystemExit(
+            'INFRA_FAILED: do not combine CUDA_VISIBLE_DEVICES=2,6 with --gpu_pair 2,6; '
+            'inside a remapped visible set, --gpu_pair would need logical 0,1, but this is not recommended'
+        )
+    return gpu_pair
+_validate_gpu_pair(args.gpu_pair)
 # Resolve EPS: raw-pixel semantics (default) or processor-direct (legacy flag).
 EPS_RAW_PIXELS = args.eps_raw_pixels if args.eps_raw_pixels is not None else EPS_RAW_PIXELS_DEFAULT
 EPS_PROCESSOR_DIRECT = args.eps_processor_direct

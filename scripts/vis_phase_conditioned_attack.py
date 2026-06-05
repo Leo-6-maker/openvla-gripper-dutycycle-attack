@@ -39,7 +39,7 @@ def parse_args():
     ap.add_argument("--pgd_restarts", type=int, default=3)
     ap.add_argument("--state-id", type=int, default=0, help="LIBERO initial state ID")
     ap.add_argument("--episode-id", default="", help="Episode ID for provenance")
-    ap.add_argument("--gpu_pair", default="6,7")
+    ap.add_argument("--gpu_pair", default="1,0")
     ap.add_argument("--output-dir", default=".")
     ap.add_argument("--allow-fallback-fixed-window", action="store_true",
         help="Only when you explicitly accept fixed-window fallback")
@@ -47,6 +47,19 @@ def parse_args():
         help="Allow label_validity=partial_missing_qpos (default: heuristic only)")
     ap.add_argument("--dry-run", action="store_true")
     return ap.parse_args()
+
+
+def validate_gpu_pair(gpu_pair):
+    ids = [x.strip() for x in gpu_pair.split(",") if x.strip()]
+    if any(x in {"3", "7"} for x in ids):
+        raise SystemExit("INFRA_FAILED: GPU3/GPU7 are blacklisted; requested --gpu_pair=%s" % gpu_pair)
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES", "").replace(" ", "")
+    if visible == "2,6" and gpu_pair.replace(" ", "") == "2,6":
+        raise SystemExit(
+            "INFRA_FAILED: do not combine CUDA_VISIBLE_DEVICES=2,6 with --gpu_pair 2,6; "
+            "inside a remapped visible set, --gpu_pair would need logical 0,1, but this is not recommended"
+        )
+    return gpu_pair
 
 
 def get_window_from_source(args):
@@ -164,6 +177,7 @@ def patch_trace_with_metadata(trace_path, metadata):
 
 def main():
     args = parse_args()
+    validate_gpu_pair(args.gpu_pair)
     ws, we, selector_type, selection_meta = get_window_from_source(args)
 
     if args.dry_run:
