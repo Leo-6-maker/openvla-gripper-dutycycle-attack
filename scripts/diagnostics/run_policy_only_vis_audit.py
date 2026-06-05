@@ -22,6 +22,7 @@ warnings.filterwarnings("ignore")
 
 REPO = Path(os.environ.get("ATTACK_REPO",
     "/data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260605"))
+MODEL_PATH = "/data/aviary/models/openvla/openvla-7b-finetuned-libero-object"
 
 
 def parse_args():
@@ -56,6 +57,13 @@ def parse_gpu_ids(gpu_pair: str):
     return [int(x.strip()) for x in validate_gpu_pair(gpu_pair).split(",") if x.strip()]
 
 
+def from_pretrained_local(cls, path: str, **kwargs):
+    try:
+        return cls.from_pretrained(path, local_files_only=True, **kwargs)
+    except TypeError:
+        return cls.from_pretrained(path, **kwargs)
+
+
 def infra_status_from_error(error_text: str):
     low = str(error_text).lower()
     if any(tok in low for tok in ["xid", "out of memory", "oom", "cuda illegal", "cublas"]):
@@ -69,9 +77,9 @@ def load_model_processor(gpu_pair: str):
     import transformers
     gpu_ids = parse_gpu_ids(gpu_pair)
     device = f"cuda:{gpu_ids[0]}"
-    model_id = "openvla/openvla-7b"
-    processor = transformers.AutoProcessor.from_pretrained(model_id, trust_remote_code=True)
+    processor = from_pretrained_local(transformers.AutoProcessor, MODEL_PATH, trust_remote_code=True)
     model_kwargs = dict(
+        attn_implementation="eager",
         torch_dtype=torch.bfloat16,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
@@ -81,8 +89,7 @@ def load_model_processor(gpu_pair: str):
             device_map="auto",
             max_memory={gpu_ids[0]: "10500MiB", gpu_ids[1]: "10500MiB", "cpu": "64GiB"},
         )
-    model = transformers.AutoModelForVision2Seq.from_pretrained(
-        model_id, **model_kwargs)
+    model = from_pretrained_local(transformers.AutoModelForVision2Seq, MODEL_PATH, **model_kwargs)
     if len(gpu_ids) < 2:
         model = model.to(device)
     model.eval()

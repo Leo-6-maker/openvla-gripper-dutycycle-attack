@@ -22,9 +22,24 @@ warnings.filterwarnings("ignore")
 REPO = Path(os.environ.get("ATTACK_REPO",
     "/data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260605"))
 
-MEASUREMENT_VERSION = "v1_obs_robot0_gripper_qpos_or_mujoco_joint_lookup_20260605"
+MODEL_PATH = "/data/aviary/models/openvla/openvla-7b-finetuned-libero-object"
+UNNORM_KEY = "libero_object"
+MEASUREMENT_VERSION = "v2_mujoco_gripper_qpos_primary_obs_audit_fallback_20260605"
 ACTION_INJECTION_VERSION = "v1_final_env_step_action_space_after_normalize_invert_20260605"
 FORCED_OPEN_RAW_GRIPPER = 0.0
+
+TASK_CONFIGS = {
+    "alphabet_soup": {"task_id": 0, "instruction": "pick up the alphabet soup and place it in the basket"},
+    "cream_cheese": {"task_id": 1, "instruction": "pick up the cream cheese and place it in the basket"},
+    "salad_dressing": {"task_id": 2, "instruction": "put the salad dressing in the basket"},
+    "bbq_sauce": {"task_id": 3, "instruction": "pick up the bbq sauce and place it in the basket"},
+    "ketchup": {"task_id": 4, "instruction": "pick up the ketchup and place it in the basket"},
+    "tomato_sauce": {"task_id": 5, "instruction": "pick up the tomato sauce and place it in the basket"},
+    "butter": {"task_id": 6, "instruction": "pick up the butter and place it in the basket"},
+    "milk": {"task_id": 7, "instruction": "pick up the milk and place it in the basket"},
+    "chocolate_pudding": {"task_id": 8, "instruction": "pick up the chocolate pudding and place it in the basket"},
+    "orange_juice": {"task_id": 9, "instruction": "pick up the orange juice and place it in the basket"},
+}
 
 
 def parse_args():
@@ -55,6 +70,13 @@ def parse_gpu_ids(gpu_pair: str):
     return [int(x.strip()) for x in validate_gpu_pair(gpu_pair).split(",") if x.strip()]
 
 
+def from_pretrained_local(cls, path: str, **kwargs):
+    try:
+        return cls.from_pretrained(path, local_files_only=True, **kwargs)
+    except TypeError:
+        return cls.from_pretrained(path, **kwargs)
+
+
 def normalize_gripper_action(action, binarize=True):
     import numpy as np
     action = np.asarray(action, dtype=np.float32).copy()
@@ -79,31 +101,72 @@ def raw_gripper_to_env_action(raw_gripper: float) -> float:
     return float(invert_gripper_action(normalize_gripper_action(action, binarize=True))[-1])
 
 
-def read_gripper_qpos(obs, env):
-    """Return (qpos_value, source, status). Never use env._joint_positions."""
-    import numpy as np
-
-    if isinstance(obs, dict) and "robot0_gripper_qpos" in obs:
-        arr = np.asarray(obs.get("robot0_gripper_qpos"), dtype=np.float32).reshape(-1)
-        if arr.size > 0:
-            return float(arr[0]), "obs.robot0_gripper_qpos", "ok"
-
+def read_mujoco_gripper_qpos(env):
     sim = getattr(env, "sim", None)
     model = getattr(sim, "model", None)
     data = getattr(sim, "data", None)
     if model is not None and data is not None and hasattr(data, "qpos"):
         joint_names = list(getattr(model, "joint_names", []) or [])
+        preferred = []
+        fallback = []
         for name in joint_names:
             lname = str(name).lower()
-            if "gripper" not in lname:
-                continue
+            if "gripper" in lname and "finger" in lname:
+                preferred.append(name)
+            elif "gripper" in lname:
+                fallback.append(name)
+        for name in preferred + fallback:
             try:
                 jid = model.joint_name2id(name)
                 adr = int(model.jnt_qposadr[jid])
                 return float(data.qpos[adr]), f"mujoco_joint:{name}", "ok"
             except Exception:
                 continue
-    return None, "unavailable", "missing_gripper_qpos"
+    return None, "", "missing_mujoco_gripper_qpos"
+
+
+def read_obs_gripper_qpos(obs):
+    import numpy as np
+    if isinstance(obs, dict) and "robot0_gripper_qpos" in obs:
+        arr = np.asarray(obs.get("robot0_gripper_qpos"), dtype=np.float32).reshape(-1)
+        if arr.size > 0:
+            return float(arr[0]), "obs.robot0_gripper_qpos", "ok"
+    return None, "", "missing_obs_robot0_gripper_qpos"
+
+
+def read_gripper_qpos(obs, env):
+    """Return gripper qpos audit fields. Never use env._joint_positions."""
+    mujoco_qpos, mujoco_source, mujoco_status = read_mujoco_gripper_qpos(env)
+    obs_qpos, obs_source, obs_status = read_obs_gripper_qpos(obs)
+
+    warning = ""
+    if mujoco_qpos is not None and obs_qpos is not None and abs(float(mujoco_qpos) - float(obs_qpos)) > 1e-3:
+        warning = "mujoco_obs_qpos_mismatch"
+
+    if mujoco_qpos is not None:
+        used = float(mujoco_qpos)
+        source = mujoco_source
+        status = "ok"
+    elif obs_qpos is not None:
+        used = float(obs_qpos)
+        source = obs_source
+        status = "ok"
+    else:
+        used = None
+        source = "unavailable"
+        status = "missing_gripper_qpos"
+
+    return {
+        "used": used,
+        "source": source,
+        "status": status,
+        "mujoco": mujoco_qpos,
+        "obs": obs_qpos,
+        "mujoco_status": mujoco_status,
+        "obs_status": obs_status,
+        "warning": warning,
+        "source_priority": "mujoco_primary_obs_fallback",
+    }
 
 
 def infra_status_from_error(error_text: str):
@@ -113,22 +176,21 @@ def infra_status_from_error(error_text: str):
     return "ERROR"
 
 
-def load_libero_env():
-    """LIBERO environment with OpenVLA task setup."""
-    import libero
+def load_libero_task_suite():
     from libero.libero import benchmark
     benchmark_dict = benchmark.get_benchmark_dict()
-    task_suite = benchmark_dict["libero_object"]()
-    return task_suite
+    return benchmark_dict["libero_object"]()
 
 
-def run_command_proxy_episode(task_suite, task_id: int, state_id: int,
+def run_command_proxy_episode(task_suite, task_key: str, task_id: int, state_id: int,
                                window_start: int, window_end: int, gpu_pair: str,
                                max_steps: int):
     """Run rollout with forced OPEN gripper during the window."""
     import numpy as np
     import torch
     from transformers import AutoModelForVision2Seq, AutoProcessor
+    from libero.libero import get_libero_path
+    from libero.libero.envs import OffScreenRenderEnv
     from PIL import Image
 
     gpu_ids = parse_gpu_ids(gpu_pair)
@@ -136,6 +198,7 @@ def run_command_proxy_episode(task_suite, task_id: int, state_id: int,
 
     # Load model
     model_kwargs = dict(
+        attn_implementation="eager",
         torch_dtype=torch.bfloat16,
         low_cpu_mem_usage=True,
         trust_remote_code=True,
@@ -145,25 +208,41 @@ def run_command_proxy_episode(task_suite, task_id: int, state_id: int,
             device_map="auto",
             max_memory={gpu_ids[0]: "10500MiB", gpu_ids[1]: "10500MiB", "cpu": "64GiB"},
         )
-    model = AutoModelForVision2Seq.from_pretrained("openvla/openvla-7b", **model_kwargs)
+    model = from_pretrained_local(AutoModelForVision2Seq, MODEL_PATH, **model_kwargs)
     if len(gpu_ids) < 2:
         model = model.to(device)
     model.eval()
-    processor = AutoProcessor.from_pretrained("openvla/openvla-7b", trust_remote_code=True)
+    processor = from_pretrained_local(AutoProcessor, MODEL_PATH, trust_remote_code=True)
 
     # Setup environment
     task = task_suite.get_task(task_id)
-    task_suite.set_task_id(task_id)
-    env_args = {"bddl_file_name": os.path.expanduser(task_suite.get_task_bddl_file_path(task_id)),
-                "camera_heights": 224, "camera_widths": 224}
-    env = task_suite.env
-    env.reset()
-    obs = env.set_init_state(state_id % 50)
+    bddl = os.path.join(get_libero_path("bddl_files"), task.problem_folder, task.bddl_file)
+    initial_states = task_suite.get_task_init_states(task_id)
+    if state_id < 0 or state_id >= len(initial_states):
+        raise RuntimeError(f"invalid_state_id:{state_id}:available=0..{len(initial_states)-1}")
+    env_args = {
+        "bddl_file_name": bddl,
+        "camera_heights": 224,
+        "camera_widths": 224,
+        "has_renderer": False,
+        "has_offscreen_renderer": True,
+        "use_camera_obs": True,
+        "camera_names": ["agentview"],
+        "control_freq": 20,
+        "render_gpu_device_id": gpu_ids[0],
+    }
+    env = OffScreenRenderEnv(**env_args)
+    env.seed(0)
+    obs = env.reset()
+    env.sim.data.qvel[:] = 0
+    env.sim.forward()
+    env.set_init_state(initial_states[state_id])
+    for _ in range(5):
+        obs, _, _, _ = env.step(np.zeros(7, dtype=np.float32))
 
-    instruction = task.language_instruction
+    instruction = TASK_CONFIGS[task_key]["instruction"]
     action_dim = 7
-    unnorm_key = "libero_goal"
-    stats = list(model.norm_stats.values())[0]
+    stats = model.get_action_stats(UNNORM_KEY)
     mask = np.asarray(stats.get("mask", np.ones(action_dim, dtype=bool)), dtype=bool)
     q01 = np.asarray(stats["q01"], dtype=np.float32)
     q99 = np.asarray(stats["q99"], dtype=np.float32)
@@ -178,6 +257,10 @@ def run_command_proxy_episode(task_suite, task_id: int, state_id: int,
     qpos_first_pre = None
     qpos_min_post = None
     qpos_source = ""
+    qpos_mujoco = ""
+    qpos_obs = ""
+    qpos_used = ""
+    qpos_warning = ""
     measurement_failed = False
     measurement_failure_reason = ""
     arm_l2_sum = 0.0
@@ -188,12 +271,21 @@ def run_command_proxy_episode(task_suite, task_id: int, state_id: int,
     post_transform_gripper_actions = []
 
     while step < max_steps and not done:
-        qpos_pre, qpos_source_step, qpos_status = read_gripper_qpos(obs, env)
-        if qpos_status != "ok":
+        qpos_pre_audit = read_gripper_qpos(obs, env)
+        qpos_pre = qpos_pre_audit["used"]
+        if qpos_pre_audit["mujoco"] is not None:
+            qpos_mujoco = float(qpos_pre_audit["mujoco"])
+        if qpos_pre_audit["obs"] is not None:
+            qpos_obs = float(qpos_pre_audit["obs"])
+        if qpos_pre is not None:
+            qpos_used = float(qpos_pre)
+        if qpos_pre_audit["warning"]:
+            qpos_warning = qpos_pre_audit["warning"]
+        if qpos_pre_audit["status"] != "ok":
             measurement_failed = True
-            measurement_failure_reason = qpos_status
+            measurement_failure_reason = qpos_pre_audit["status"]
         elif not qpos_source:
-            qpos_source = qpos_source_step
+            qpos_source = qpos_pre_audit["source"]
 
         img = Image.fromarray(obs["agentview_image"][::-1])
         prompt = f"In: What action should the robot take to {instruction.lower()}?\nOut:"
@@ -228,13 +320,22 @@ def run_command_proxy_episode(task_suite, task_id: int, state_id: int,
             forced_open_count += 1
 
         obs, reward, done, info = env.step(env_action)
-        qpos_post, qpos_source_post, qpos_post_status = read_gripper_qpos(obs, env)
-        if qpos_post_status != "ok":
+        qpos_post_audit = read_gripper_qpos(obs, env)
+        qpos_post = qpos_post_audit["used"]
+        if qpos_post_audit["mujoco"] is not None:
+            qpos_mujoco = float(qpos_post_audit["mujoco"])
+        if qpos_post_audit["obs"] is not None:
+            qpos_obs = float(qpos_post_audit["obs"])
+        if qpos_post is not None:
+            qpos_used = float(qpos_post)
+        if qpos_post_audit["warning"]:
+            qpos_warning = qpos_post_audit["warning"]
+        if qpos_post_audit["status"] != "ok":
             measurement_failed = True
-            measurement_failure_reason = qpos_post_status
+            measurement_failure_reason = qpos_post_audit["status"]
         else:
             if not qpos_source:
-                qpos_source = qpos_source_post
+                qpos_source = qpos_post_audit["source"]
             if window_start <= step < window_end:
                 qpos_min_post = (
                     float(qpos_post) if qpos_min_post is None
@@ -270,6 +371,11 @@ def run_command_proxy_episode(task_suite, task_id: int, state_id: int,
         "measurement_version": MEASUREMENT_VERSION,
         "action_injection_version": ACTION_INJECTION_VERSION,
         "gripper_qpos_source": qpos_source or "unavailable",
+        "gripper_qpos_mujoco": qpos_mujoco,
+        "gripper_qpos_obs": qpos_obs,
+        "gripper_qpos_used": qpos_used,
+        "gripper_qpos_source_priority": "mujoco_primary_obs_fallback",
+        "gripper_qpos_warning": qpos_warning,
         "clean_gripper_action": clean_gripper_action,
         "forced_gripper_action": forced_gripper_action,
         "forced_open_value_used": forced_open_value_used,
@@ -292,9 +398,7 @@ def main():
         return
 
     print("Loading LIBERO environment...")
-    task_suite = load_libero_env()
-    task_names = [task.name for task in task_suite.tasks]
-    print(f"Tasks: {len(task_names)}")
+    task_suite = load_libero_task_suite()
 
     results = []
     for i, c in enumerate(candidates):
@@ -303,30 +407,15 @@ def main():
         ws = int(c["parent_window_start"])
         we = int(c["parent_window_end"])
 
-        # Find task ID
-        matches = [j for j, name in enumerate(task_names) if task.replace("_", " ") in name.lower()]
-        if not matches:
-            print(f"SKIP {task}_s{sid}: task not found")
-            results.append(dict(task_key=task, state_id=sid, window_start=ws, window_end=we,
-                                label=c.get("full_vis_label",""), label_source="full_vis_label",
-                                label_confidence="silver_proxy_not_gold",
-                                denominator_status="not_applicable_command_proxy",
-                                gpu_pair=args.gpu_pair, runtime_sec="",
-                                measurement_version=MEASUREMENT_VERSION,
-                                action_injection_version=ACTION_INJECTION_VERSION,
-                                gripper_qpos_source="", clean_gripper_action="",
-                                forced_gripper_action=FORCED_OPEN_RAW_GRIPPER,
-                                forced_open_value_used=raw_gripper_to_env_action(FORCED_OPEN_RAW_GRIPPER),
-                                post_transform_gripper_action="",
-                                provenance_status="ERROR:task_not_found"))
-            continue
-        task_id = matches[0]
+        if task not in TASK_CONFIGS:
+            raise SystemExit(f"ERROR:no_task_mapping:{task}")
+        task_id = int(TASK_CONFIGS[task]["task_id"])
 
         print(f"[{i+1}/{len(candidates)}] {task}_s{sid} [{ws},{we}] task_id={task_id}")
 
         try:
             r = run_command_proxy_episode(
-                task_suite, task_id, sid, ws, we, args.gpu_pair, args.max_steps)
+                task_suite, task, task_id, sid, ws, we, args.gpu_pair, args.max_steps)
         except Exception as e:
             status = infra_status_from_error(str(e))
             r = {
@@ -335,6 +424,11 @@ def main():
                 "measurement_version": MEASUREMENT_VERSION,
                 "action_injection_version": ACTION_INJECTION_VERSION,
                 "gripper_qpos_source": "",
+                "gripper_qpos_mujoco": "",
+                "gripper_qpos_obs": "",
+                "gripper_qpos_used": "",
+                "gripper_qpos_source_priority": "mujoco_primary_obs_fallback",
+                "gripper_qpos_warning": "",
                 "clean_gripper_action": "",
                 "forced_gripper_action": FORCED_OPEN_RAW_GRIPPER,
                 "forced_open_value_used": raw_gripper_to_env_action(FORCED_OPEN_RAW_GRIPPER),
@@ -364,6 +458,8 @@ def main():
     fields = ["task_key","state_id","window_start","window_end","label",
               "label_source","label_confidence","denominator_status","gpu_pair",
               "measurement_version","action_injection_version","gripper_qpos_source",
+              "gripper_qpos_mujoco","gripper_qpos_obs","gripper_qpos_used",
+              "gripper_qpos_source_priority","gripper_qpos_warning",
               "clean_gripper_action","forced_gripper_action","forced_open_value_used",
               "post_transform_gripper_action",
               "forced_open_count","qpos_opening_delta","task_done","steps",
@@ -385,14 +481,16 @@ def main():
 
 ## Results
 
-| Task | State | Window | Label | Done | QposΔ | Qpos source | Clean raw g | Forced env g | Physical | Steps | Runtime | Provenance |
-|------|-------|--------|-------|------|-------|-------------|-------------|--------------|----------|-------|---------|------------|
+| Task | State | Window | Label | Done | QposΔ | Qpos source | Mujoco qpos | Obs qpos | Used qpos | Warning | Clean raw g | Forced env g | Physical | Steps | Runtime | Provenance |
+|------|-------|--------|-------|------|-------|-------------|-------------|----------|-----------|---------|-------------|--------------|----------|-------|---------|------------|
 """
     for r in results:
         report += (
             f"| {r['task_key']} | {r['state_id']} | [{r['window_start']},{r['window_end']}] | "
             f"{r.get('label','?')} | {r.get('task_done','?')} | {r.get('qpos_opening_delta','?')} | "
-            f"{r.get('gripper_qpos_source','?')} | {r.get('clean_gripper_action','?')} | "
+            f"{r.get('gripper_qpos_source','?')} | {r.get('gripper_qpos_mujoco','?')} | "
+            f"{r.get('gripper_qpos_obs','?')} | {r.get('gripper_qpos_used','?')} | "
+            f"{r.get('gripper_qpos_warning','?')} | {r.get('clean_gripper_action','?')} | "
             f"{r.get('post_transform_gripper_action','?')} | {r.get('physical_response','?')} | "
             f"{r.get('steps','?')} | {r.get('runtime_sec','?')} | {r.get('provenance_status','?')} |\n"
         )
@@ -407,7 +505,9 @@ def main():
 - qpos measurement version: `{MEASUREMENT_VERSION}`
 - action injection version: `{ACTION_INJECTION_VERSION}`
 - forced OPEN is injected as final env-step gripper action after normalize/invert transforms.
+- MuJoCo gripper joint qpos is primary; `obs["robot0_gripper_qpos"]` is fallback/audit comparison only.
 - `env._joint_positions` is not used for gripper qpos.
+- MuJoCo/obs qpos mismatch is recorded in `gripper_qpos_warning`, never silently zeroed.
 - `MEASUREMENT_FAILED` rows are not usable proxy labels.
 
 ## Claim boundary
