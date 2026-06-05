@@ -9,14 +9,14 @@ No handoff self-reference update is needed. Use `git log -1 -- reports/HANDOFF_2
 | Item | Value |
 |---|---|
 | Local reviewed branch | `exp/vis-prefix-margin-repair-20260603` |
-| Local HEAD | `e0868362bd21a8770eddb77baf211618abf6da85` |
+| Local HEAD | `a74eaead95fc139548ee2e39b0ec1c40bf254c96` |
 | Remote | `origin https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack.git` |
-| Remote branch HEAD | `e0868362bd21a8770eddb77baf211618abf6da85` |
+| Remote branch HEAD | `a74eaead95fc139548ee2e39b0ec1c40bf254c96` |
 | Remote visibility | PASS: `git ls-remote origin exp/vis-prefix-margin-repair-20260603` matches local HEAD |
 | Server repo | `/data/liuyu/repos/openvla-gripper-dutycycle-attack-clean-main-20260524` |
 | Server current branch | `exp/vis-payload-upgrade-validation-20260601` |
 | Server current HEAD | `653ed33d78578aa0f0af96539a9c8b4c2a6d4c08` |
-| Server has local `e086836` commit | No |
+| Server has local reviewed HEAD | No |
 
 ## Required Sync Action
 
@@ -24,7 +24,7 @@ Server must be synced to the reviewed branch before DeepSeek runs label merge, s
 
 DeepSeek detector v2 training remains **BLOCKED** until:
 
-1. Server can access the reviewed branch at `e0868362bd21a8770eddb77baf211618abf6da85`.
+1. Server can access the reviewed branch at `a74eaead95fc139548ee2e39b0ec1c40bf254c96`.
 2. Label builder supports Batch3b/Batch3c.
 3. `tables/object_phase_response_labels_v2.csv` is generated.
 4. `scripts/diagnostics/audit_label_schema.py --labels-csv tables/object_phase_response_labels_v2.csv` passes.
@@ -52,7 +52,7 @@ ls reports/CODEX_PARALLEL_REVIEW_SUMMARY_20260605.md
 Expected HEAD:
 
 ```text
-e0868362bd21a8770eddb77baf211618abf6da85
+a74eaead95fc139548ee2e39b0ec1c40bf254c96
 ```
 
 Note: a detached worktree from `origin/...` is acceptable for read-only audit/training preparation. If DeepSeek needs local branch commits, create a local branch in the worktree after verifying HEAD.

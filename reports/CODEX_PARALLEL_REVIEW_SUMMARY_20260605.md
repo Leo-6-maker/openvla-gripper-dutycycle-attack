@@ -32,7 +32,7 @@ Scope: design, audit, scripts, and CPU-only feasibility validation. No GPU, roll
 
 ## Blocking Issues
 
-1. Server read-only verification found the server repo on `exp/vis-payload-upgrade-validation-20260601`, not the reviewed branch `exp/vis-prefix-margin-repair-20260603`; local reviewed commit `e086836` is not present on server.
+1. Server read-only verification found the server repo on `exp/vis-payload-upgrade-validation-20260601`, not the reviewed branch `exp/vis-prefix-margin-repair-20260603`; latest reviewed commit `a74eaea` is not present on server.
 2. `tables/object_phase_response_labels_v2.csv` is still missing as a full-source label artifact.
 3. Batch3c labels are not safe to train on until the patched builder is run on synced server sources and schema audit passes.
 4. Detector v2 should not train until schema audit passes on `object_phase_response_labels_v2.csv`.
@@ -56,16 +56,16 @@ exp/vis-prefix-margin-repair-20260603
 Local HEAD:
 
 ```text
-e0868362bd21a8770eddb77baf211618abf6da85
+a74eaead95fc139548ee2e39b0ec1c40bf254c96
 ```
 
 Remote HEAD after push:
 
 ```text
-e0868362bd21a8770eddb77baf211618abf6da85
+a74eaead95fc139548ee2e39b0ec1c40bf254c96
 ```
 
-`e086836` is now pushed to `origin/exp/vis-prefix-margin-repair-20260603`.
+`e086836` was confirmed pushed first. The branch then advanced with the label-builder patch, and latest reviewed HEAD `a74eaea` is now pushed to `origin/exp/vis-prefix-margin-repair-20260603`.
 
 ## Server Read-Only Verification
 
@@ -86,7 +86,7 @@ Result:
 - Current server branch: `exp/vis-payload-upgrade-validation-20260601`.
 - Current server HEAD: `653ed33d78578aa0f0af96539a9c8b4c2a6d4c08`.
 - Expected handoff branch `exp/vis-prefix-margin-repair-20260603` was not listed in the server local branch check.
-- Local Codex audit commit `e086836` is not present on server.
+- Latest reviewed commit `a74eaea` is not present on server.
 - Official env exists: `/home/liuyu/.conda/envs/openvla_official_libero_20260525/bin/python`, `Python 3.10.13`.
 - Server has Batch3/Batch3b output directories, but labels v2 and this review package are missing.
 
@@ -148,4 +148,4 @@ They need role-specific preservation and manual_review handling first.
 
 ## Next Recommended Action
 
-DeepSeek should first finish/audit Batch3b/Batch3c source CSVs, then patch label builder minimally for multi-source v2 merge. After `object_phase_response_labels_v2.csv` exists, run the schema audit before training. Window compression can stay queued as a CPU-generated plan and should not block Batch3b/c labels.
+DeepSeek should first sync a safe reviewed worktree, then run the patched label builder on Batch3b/Batch3c source CSVs. After `object_phase_response_labels_v2.csv` exists, run the schema audit before training. Window compression can stay queued as a CPU-generated plan and should not block Batch3b/c labels.
