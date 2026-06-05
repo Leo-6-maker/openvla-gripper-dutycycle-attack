@@ -1,0 +1,19 @@
+name: vis_1r_full_window_screening
+description: CPU-only config documenting full-window VIS screening with one PGD restart.
+condition: vis_pgd
+window_source: fixed
+objective: prefix_locked_gripper_open_margin
+eps_raw_pixels: 6
+pgd_steps: 40
+pgd_restarts: 1
+label_policy:
+  gold_3r: full VIS with pgd_restarts=3
+  silver_positive_1r: 1R positive, screening-only positive evidence
+  pending_negative_1r: 1R negative, never gold and not train-negative
+runtime_policy:
+  compare_against_restarts: 3
+  expected_restart_speedup_upper_bound: 3.0
+safety:
+  run_gpu: false
+  phase_e_included: false
+  one_restart_negative_is_gold: false

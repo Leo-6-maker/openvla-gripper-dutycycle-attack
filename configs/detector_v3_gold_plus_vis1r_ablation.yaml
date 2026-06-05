@@ -1,0 +1,27 @@
+name: detector_v3_gold_plus_vis1r_ablation
+labels_csv: tables/object_phase_response_labels_v3_candidate.csv
+ablations:
+  gold_only:
+    include_label_tiers: [gold_3r]
+    sample_weight:
+      gold_3r: 1.0
+  gold_plus_silver_positives:
+    include_label_tiers: [gold_3r, silver_positive_1r]
+    sample_weight:
+      gold_3r: 1.0
+      silver_positive_1r: 0.5
+exclude_label_tiers:
+  - pending_negative_1r
+  - proxy
+  - phase_e
+metrics:
+  - balanced_accuracy
+  - macro_F1
+  - F1_pos
+  - F1_neg
+  - negative_recall
+  - positive_recall
+  - MCC
+safety:
+  use_1r_negative_as_gold: false
+  train_detector_now: false

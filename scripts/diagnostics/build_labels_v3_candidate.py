@@ -14,6 +14,8 @@ def parse_args():
     ap.add_argument("--labels-v2", default="tables/object_phase_response_labels_v2.csv")
     ap.add_argument("--batch4-summary", default="tables/object_phase_response_batch4_vis_summary.csv")
     ap.add_argument("--batch4-candidates", default="tables/object_phase_response_batch4_candidates.csv")
+    ap.add_argument("--vis-1r-summary", default="")
+    ap.add_argument("--include-vis-1r-silver-positives", action="store_true")
     ap.add_argument("--output-labels", default="tables/object_phase_response_labels_v3_candidate.csv")
     ap.add_argument("--output-conflicts", default="tables/object_phase_response_labels_v3_conflicts.csv")
     ap.add_argument("--output-readiness", default="reports/OBJECT_PHASE_RESPONSE_LABEL_READINESS_V3_CANDIDATE.md")
@@ -48,6 +50,21 @@ def blocked_batch4(row):
     return any(tok in text for tok in ["phase_d", "phase_e", "proxy", "silver", "infra_failed", "manual_review", "polluted"])
 
 
+def parse_label(row):
+    for field in ["label_vulnerability_ready", "full_vis_label", "label", "classification"]:
+        value = lower(row.get(field))
+        if value in {"1", "true", "positive"}:
+            return "positive", "1"
+        if value in {"0", "false", "negative"}:
+            return "negative", "0"
+    status = lower(row.get("label_status"))
+    if status == "positive":
+        return "positive", "1"
+    if status == "negative":
+        return "negative", "0"
+    return "", ""
+
+
 def write_csv(path, fields, rows):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as f:
@@ -73,14 +90,15 @@ def main():
     for row in batch4:
         clean = lower(row.get("denominator_status")) == "clean"
         ok = lower(row.get("provenance_status")) == "ok"
-        status = lower(row.get("label_status"))
+        status, label = parse_label(row)
         if not clean or not ok or blocked_batch4(row) or status not in {"positive", "negative"}:
             continue
         new = dict(row)
         new.update({
             "source_batch": "batch4",
+            "label_tier": "gold_3r",
             "label_status": status,
-            "label_vulnerability_ready": "1" if status == "positive" else "0",
+            "label_vulnerability_ready": label,
             "label_use": "train",
         })
         old = existing.get(key(new), [])
@@ -92,6 +110,40 @@ def main():
             continue
         out.append(new)
         existing[key(new)].append(new)
+    if args.vis_1r_summary and os.path.exists(args.vis_1r_summary):
+        _, vis1r = read_csv(args.vis_1r_summary)
+        for row in vis1r:
+            if "phase_e" in " ".join(lower(v) for v in row.values()):
+                continue
+            status, label = parse_label(row)
+            if status == "positive":
+                if not args.include_vis_1r_silver_positives:
+                    continue
+                new = dict(row)
+                new.update({
+                    "source_batch": "vis_1r_screening",
+                    "label_tier": "silver_positive_1r",
+                    "label_status": "positive",
+                    "label_vulnerability_ready": "1",
+                    "label_use": "train",
+                    "sample_weight": "0.5",
+                })
+            elif status == "negative":
+                new = dict(row)
+                new.update({
+                    "source_batch": "vis_1r_screening",
+                    "label_tier": "pending_negative_1r",
+                    "label_status": "ignore",
+                    "label_vulnerability_ready": "",
+                    "label_use": "not_train_pending_negative_1r",
+                    "sample_weight": "0.0",
+                })
+            else:
+                continue
+            if key(new) in existing:
+                continue
+            out.append(new)
+            existing[key(new)].append(new)
     all_fields = sorted(set(fields) | {k for row in out for k in row.keys()})
     write_csv(args.output_labels, all_fields, out)
     write_csv(args.output_conflicts, ["task_key", "state_id", "window_start", "window_end", "reason"], conflicts)
@@ -134,6 +186,9 @@ def write_report(args, rows, conflicts, status, reasons, train=None, pos=None, n
         f"**Manual review count**: {len(manual)}",
         f"**Infra failed count**: {len(infra)}",
         f"**Schema status**: {'pass' if not conflicts else 'fail'}",
+        f"**gold_3r rows**: {sum(1 for r in rows if lower(r.get('label_tier')) == 'gold_3r')}",
+        f"**silver_positive_1r rows**: {sum(1 for r in rows if lower(r.get('label_tier')) == 'silver_positive_1r')}",
+        f"**pending_negative_1r rows**: {sum(1 for r in rows if lower(r.get('label_tier')) == 'pending_negative_1r')}",
         "",
         "## Reasons",
         "",
