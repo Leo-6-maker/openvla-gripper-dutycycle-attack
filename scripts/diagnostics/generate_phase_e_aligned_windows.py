@@ -93,6 +93,7 @@ def parse_args():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--closed-threshold", type=float, default=0.015)
     ap.add_argument("--open-threshold", type=float, default=0.005)
+    ap.add_argument("--allow-obs-qpos-recommendation", action="store_true")
     return ap.parse_args()
 
 
@@ -236,6 +237,8 @@ def classify_phase(row, args):
     elif obs is not None:
         qpos_value = obs
         qpos_source = "obs_trace"
+        if abs(obs) <= 1e-8:
+            qpos_warning = "obs_qpos_all_zero_untrusted"
     elif used is not None:
         qpos_value = used
         qpos_source = "label_qpos_used"
@@ -272,7 +275,7 @@ def classify_phase(row, args):
         "qpos_phase_class": phase_class,
         "true_closed_score": f"{true_closed_score:.6g}",
         "natural_open_score": f"{natural_open_score:.6g}",
-        "phase_alignment_source": "mujoco_trace" if qpos_source == "mujoco_trace" else "obs_trace",
+        "phase_alignment_source": "mujoco_trace" if qpos_source == "mujoco_trace" else qpos_source,
     }
 
 
@@ -353,9 +356,16 @@ def phase_proxy_mismatch(row, phase_class):
     return False
 
 
-def recommend(row):
+def recommend(row, args):
     if row["qpos_phase_class"] == "missing":
         return False, "rejected_missing_qpos"
+    if row.get("qpos_source_warning") == "obs_qpos_all_zero_untrusted":
+        return False, "rejected_obs_only_qpos_untrusted"
+    if row.get("qpos_source") != "mujoco_trace" and row.get("phase_alignment_source") != "mujoco_trace":
+        if not args.allow_obs_qpos_recommendation:
+            if row.get("qpos_source") == "obs_trace" or row.get("phase_alignment_source") == "obs_trace":
+                return False, "rejected_obs_only_qpos_untrusted"
+            return False, "rejected_missing_mujoco_qpos"
     if row["qpos_phase_class"] == "natural_open":
         return False, "rejected_natural_open"
     if row["qpos_phase_class"] not in {"true_closed", "transitional-pre-open"}:
@@ -389,6 +399,12 @@ def write_report(path, args, rows, notes):
     recommended = [row for row in rows if row["recommended_for_phaseE"] == "true"]
     missing = [row for row in rows if row["qpos_phase_class"] == "missing"]
     phase_counts = Counter(row.get("qpos_phase_class", "missing") for row in rows)
+    source_counts = Counter(row.get("qpos_source", "missing") for row in rows)
+    obs_trace_only = [
+        row for row in rows
+        if row.get("qpos_source") == "obs_trace" and row.get("phase_alignment_source") != "mujoco_trace"
+    ]
+    obs_all_zero = [row for row in rows if row.get("qpos_source_warning") == "obs_qpos_all_zero_untrusted"]
     lines = [
         "# Phase E Aligned Windows V0",
         "",
@@ -398,8 +414,12 @@ def write_report(path, args, rows, notes):
         f"**open_threshold**: {args.open_threshold}",
         f"**Rows generated**: {len(rows)}",
         f"**Recommended for Phase E**: {len(recommended)}",
+        f"**MuJoCo trace rows**: {source_counts.get('mujoco_trace', 0)}",
+        f"**Obs trace only rows**: {len(obs_trace_only)}",
         f"**Missing qpos rows**: {len(missing)}",
+        f"**Obs all-zero rows**: {len(obs_all_zero)}",
         f"**Dry run**: {args.dry_run}",
+        f"**allow_obs_qpos_recommendation**: {args.allow_obs_qpos_recommendation}",
         "",
         "This is a CPU-only candidate audit. It does not run rollout, VIS, watcher jobs, GPU work, or detector training.",
         "",
@@ -410,8 +430,17 @@ def write_report(path, args, rows, notes):
         lines.extend(f"- {note}" for note in notes)
     else:
         lines.append("- None.")
+    if args.allow_obs_qpos_recommendation:
+        lines.append("- WARNING: obs-only qpos recommendation override is enabled. Do not use this mode for Phase E GPU canary scheduling without manual review.")
     lines.extend(
         [
+            "",
+            "## MuJoCo Requirement",
+            "",
+            "- MuJoCo qpos is required for automatic Phase E recommendation.",
+            "- Obs qpos is audit-only by default because server traces showed all-zero obs qpos false positives.",
+            "- Obs-only windows require manual review and cannot launch GPU canary unless an explicit override is used.",
+            "- `obs_qpos_all_zero_untrusted` rows are never auto-recommended.",
             "",
             "## Qpos Phase Rule",
             "",
@@ -434,7 +463,7 @@ def write_report(path, args, rows, notes):
             "- Do not assume centered L10 is valid.",
             "- Recommend true_closed windows directly after denominator/provenance/mismatch gates.",
             "- Recommend transitional-pre-open windows only when true_closed_score is at least 0.35.",
-            "- MuJoCo qpos is preferred; obs qpos is fallback; missing qpos is never auto-recommended.",
+            "- MuJoCo qpos is required for automatic recommendation; obs qpos is audit-only by default.",
             "- Polluted denominators, severe phase proxy mismatch, and infra-failed provenance block recommendation.",
             "",
             "## Trace Root Guidance",
@@ -520,7 +549,7 @@ def main():
                     "denominator_status": denom,
                     "provenance_status": norm(merged.get("provenance_status")) or "missing",
                 }
-                ok, reason = recommend(row)
+                ok, reason = recommend(row, args)
                 row["recommended_for_phaseE"] = "true" if ok else "false"
                 row["reason"] = reason
                 out.append(row)
