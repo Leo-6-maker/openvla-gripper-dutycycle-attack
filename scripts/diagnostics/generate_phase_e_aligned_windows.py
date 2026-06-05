@@ -12,6 +12,7 @@ import argparse
 import csv
 import os
 from pathlib import Path
+from collections import Counter
 
 
 LENGTHS = [8, 10, 12]
@@ -89,8 +90,8 @@ def parse_args():
     ap.add_argument("--output-csv", default="tables/phaseE_aligned_windows_v0.csv")
     ap.add_argument("--output-report", default="reports/PHASE_E_ALIGNED_WINDOWS_V0.md")
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--closed-threshold", type=float, default=0.03)
-    ap.add_argument("--open-threshold", type=float, default=0.008)
+    ap.add_argument("--closed-threshold", type=float, default=0.015)
+    ap.add_argument("--open-threshold", type=float, default=0.005)
     return ap.parse_args()
 
 
@@ -353,18 +354,25 @@ def phase_proxy_mismatch(row, phase_class):
 
 def recommend(row):
     if row["qpos_phase_class"] == "missing":
-        return False, "MISSING_QPOS_TRACE"
+        return False, "rejected_missing_qpos"
+    if row["qpos_phase_class"] == "natural_open":
+        return False, "rejected_natural_open"
     if row["qpos_phase_class"] not in {"true_closed", "transitional-pre-open"}:
-        return False, "not_true_closed_or_transitional"
-    if parse_float(row["natural_open_score"]) is not None and parse_float(row["natural_open_score"]) > 0.35:
-        return False, "natural_open_score_high"
+        return False, "rejected_not_true_closed_or_transitional"
     if row["denominator_status"] == "polluted":
-        return False, "denominator_polluted"
+        return False, "rejected_denominator_polluted"
     if row["phase_proxy_mismatch"] == "true":
-        return False, "phase_proxy_mismatch"
+        return False, "rejected_phase_proxy_mismatch"
     if "infra_failed" in lower(row.get("provenance_status")):
-        return False, "infra_failed_provenance"
-    return True, "phase_aligned_qpos_supported"
+        return False, "rejected_infra_failed_provenance"
+    if row["qpos_phase_class"] == "true_closed":
+        return True, "phase_aligned_true_closed"
+    true_closed_score = parse_float(row.get("true_closed_score"))
+    if true_closed_score is None:
+        true_closed_score = 0.0
+    if true_closed_score >= 0.35:
+        return True, "phase_aligned_transitional_pre_open"
+    return False, "rejected_transitional_low_true_closed_score"
 
 
 def write_csv(path, rows):
@@ -379,11 +387,14 @@ def write_report(path, args, rows, notes):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     recommended = [row for row in rows if row["recommended_for_phaseE"] == "true"]
     missing = [row for row in rows if row["qpos_phase_class"] == "missing"]
+    phase_counts = Counter(row.get("qpos_phase_class", "missing") for row in rows)
     lines = [
         "# Phase E Aligned Windows V0",
         "",
         f"**Candidates source**: `{args.candidates}`",
         f"**Labels source**: `{args.labels_csv}`",
+        f"**closed_threshold**: {args.closed_threshold}",
+        f"**open_threshold**: {args.open_threshold}",
         f"**Rows generated**: {len(rows)}",
         f"**Recommended for Phase E**: {len(recommended)}",
         f"**Missing qpos rows**: {len(missing)}",
@@ -401,12 +412,37 @@ def write_report(path, args, rows, notes):
     lines.extend(
         [
             "",
+            "## Qpos Phase Rule",
+            "",
+            f"- `qpos >= {args.closed_threshold}`: `true_closed`.",
+            f"- `qpos <= {args.open_threshold}`: `natural_open`.",
+            f"- Otherwise: `transitional-pre-open`.",
+            "- `true_closed` may be recommended when denominator/provenance/mismatch gates pass.",
+            "- `transitional-pre-open` may be recommended when `true_closed_score >= 0.35` and gates pass.",
+            "- `natural_open` and missing-qpos rows are rejected.",
+            "",
+            "## Qpos Phase Counts",
+            "",
+            f"- `true_closed`: {phase_counts.get('true_closed', 0)}",
+            f"- `transitional-pre-open`: {phase_counts.get('transitional-pre-open', 0)}",
+            f"- `natural_open`: {phase_counts.get('natural_open', 0)}",
+            f"- `missing`: {phase_counts.get('missing', 0)}",
+            "",
             "## Selection Rule",
             "",
             "- Do not assume centered L10 is valid.",
-            "- Recommend only true_closed or transitional-pre-open windows with low natural-open score.",
+            "- Recommend true_closed windows directly after denominator/provenance/mismatch gates.",
+            "- Recommend transitional-pre-open windows only when true_closed_score is at least 0.35.",
             "- MuJoCo qpos is preferred; obs qpos is fallback; missing qpos is never auto-recommended.",
             "- Polluted denominators, severe phase proxy mismatch, and infra-failed provenance block recommendation.",
+            "",
+            "## Trace Root Guidance",
+            "",
+            "- Broad `/data/liuyu/outputs` scans may miss traces because the script caps CSV scanning for safety.",
+            "- Prefer specific trace roots when available:",
+            "  - `/data/liuyu/outputs/nightly_object_batch3_20260604`",
+            "  - `/data/liuyu/outputs/object_phase_response_batch3_VIS_20260604`",
+            "  - `/data/liuyu/outputs/object_phase_response_batch4_...`",
             "",
         ]
     )
