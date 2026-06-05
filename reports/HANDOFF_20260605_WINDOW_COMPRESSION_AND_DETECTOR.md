@@ -1,6 +1,6 @@
 # HANDOFF — Window Compression & Detector Design
 
-**Date**: 2025-06-05  
+**Date**: 2026-06-05  
 **Author**: Leon + Claude (DeepSeek executor)  
 **Next**: GPT / Codex review
 
@@ -68,7 +68,8 @@ dmesg | tail -n 200 | grep -i "xid\\|nvrm" || true
 Server: klfy-SYS-4028GR-TR2
 User: liuyu
 Repo branch: exp/vis-prefix-margin-repair-20260603
-Latest commit: ba6f860
+Handoff commit: 05dfea2
+Experimental base commit: ba6f860
 Remote: git@github.com:Leo-6-maker/openvla-gripper-dutycycle-attack.git
 Python: 3.10 (conda env openvla_official_libero_20260525)
 ```
@@ -140,7 +141,7 @@ clean rollout / denominator
 ### Batch2b (Object teacher-oracle delay=-50 probe)
 
 - 9 VIS completed, 4 claim_usable, 4 task-negative, 1 weak
-- pre_lock 0/2 positive (ruled out as vulnerable phase)
+- pre_lock 0/2 positive in current sample; treated as negative/control candidate for now, not universally ruled out
 - far_closed 3/5 (60%), near_closed 1/2 (50%)
 - CSV: `tables/object_phase_response_batch2b_vis_summary.csv`
 
@@ -188,7 +189,25 @@ clean rollout / denominator
 
 ---
 
-## 5. DeepSeek Execution Plan (Server)
+## 5. Current Watcher Status
+
+```bash
+# Check if watcher is alive
+ps -ef | grep nightly_object_batch3_watcher
+
+# Read recent events
+tail -n 100 /data/liuyu/outputs/nightly_object_batch3_20260604/queue/events.log
+
+# If watcher stopped, do NOT infer experiment failure.
+# Inspect terminal states and localized traces manually.
+```
+
+Last known watcher version: v2.2 (probation + Xid handling + auto-audit).
+Watcher may stop after all tasks terminal. This is EXPECTED behavior.
+
+---
+
+## 6. DeepSeek Execution Plan (Server)
 
 ### Priority A — Finish Batch3b
 
@@ -200,6 +219,13 @@ clean rollout / denominator
 
 ### Priority B — Batch3c Controls
 
+**⚠️ Batch3c VIS is BLOCKED until:**
+1. `role_specific_gates.py` is active (currently implemented, must be verified)
+2. `candidate_role` is preserved into label merge
+3. `stable_post_lock` uses `late_open_control` denominator (skip clean_OPEN≤0.1)
+4. `done=False` stable_post_lock rows go to `manual_review` UNLESS mechanism is clean
+
+Once unblocked:
 1. Run Batch3c precheck with role-specific gates
 2. Apply late_open_control taxonomy for stable_post_lock
 3. Run Batch3c VIS only if negatives insufficient
@@ -207,13 +233,17 @@ clean rollout / denominator
 
 ### Priority C — Merge Labels v2
 
-After Batch3b/c VIS summaries:
+Run label builder / finalize script to generate `object_phase_response_labels_v2.csv`:
 ```bash
-$PY scripts/train_vulnerability_ready_detector_v1.py \
-  --labels-csv tables/object_phase_response_labels_v2.csv
+$PY scripts/diagnostics/finalize_phase_response_labels.py \
+  --batch1-merged tables/... \
+  --batch2b-vis tables/... \
+  --batch3-vis tables/... \
+  --batch3b-vis tables/... (if exists) \
+  --output-labels tables/object_phase_response_labels_v2.csv
 ```
 
-Training gates: valid≥24, pos≥8, neg/control≥8, tasks≥6
+⚠️ If current label builder does not support Batch3b/c multi-source yet, mark **NEEDS_LABEL_BUILDER_PATCH** before detector v2 training.
 
 ### Priority D — Train Detector v2
 
@@ -223,7 +253,22 @@ $PY scripts/train_vulnerability_ready_detector_v1.py \
   --min-rows 24
 ```
 
-Pass condition: phase+causal beats prevalence on balanced_accuracy, negative_recall>0, control FP reduced
+### v2 Training Gates
+
+| Gate | valid | pos | neg/control | tasks | controls | Permits |
+|------|-------|-----|-------------|-------|----------|---------|
+| Minimum diagnostic | ≥24 | ≥8 | ≥8 | ≥6 | — | training only, NOT evidence |
+| Preferred diagnostic | ≥30 | ≥10 | ≥12 | ≥8 | ≥4 | stronger evidence |
+| Stronger evidence | ≥40 | ≥14 | ≥18 | ≥8-10 | ≥6 | reproducible claim |
+
+Passing minimum gate only permits diagnostic training — NOT a claim that vulnerability_ready is learned.
+
+### Detector v2 Pass Condition
+
+- phase+causal_safe beats prevalence baseline on balanced_accuracy
+- negative_recall > 0 (no longer all-positive predictor)
+- control false positives reduced
+- ideally beats task_key_only
 
 ---
 
@@ -238,7 +283,14 @@ Negatives: salad_dressing s0 [7,24], bbq_sauce s5 [27,44]
 
 **Compression**: L12, L10, L8 centered. Run VIS + random for each.
 
-**Success**: ≥2/3 positives claim_usable at L10 or L8. Freeze as default.
+**Success criteria** (all must hold):
+1. ≥2/3 positives remain claim_usable
+2. Negatives remain task-negative (not claim_usable)
+3. Matched random does NOT reproduce VIS-like failure
+4. Provenance clean (no denominator/infra contamination)
+5. qpos response remains interpretable
+
+Do NOT freeze compression default until all 5 criteria pass.
 
 ---
 
@@ -271,9 +323,31 @@ scp vla:/data/liuyu/outputs/nightly_object_batch3_20260604/HANDOFF_20260605_WIND
 
 ---
 
-## 9. Checklist
+## 9. Codex Parallel Plan (NO GPU)
+
+| Task | Description |
+|------|-------------|
+| 1 | Handoff consistency audit |
+| 2 | Detector design doc |
+| 3 | Label schema audit + **forbidden-feature leakage audit** (claim_usable, done, VIS_OPEN, qpos_delta, denom, outcome fields) |
+| 4 | Review train_vulnerability_ready_detector_v1.py |
+| 5 | Window compression candidate generator (CPU-only) |
+| 6 | VisualTransferHead feasibility note |
+
+---
+
+## 10. ⚠️ Compression Must NOT Block Batch3b/c
+
+Do not start full compression sweep before Batch3b/c label merge unless GPUs are idle.
+Compression smoke should not block Batch3b/c controls.
+Current mainline priority = Batch3b/c labels and controls, not window compression.
+
+---
+
+## 11. Checklist
 
 - [x] Branch: `exp/vis-prefix-margin-repair-20260603`, commit `ba6f860`
+- [x] Handoff commit: `05dfea2`
 - [x] Python 3.10, conda env openvla_official_libero_20260525
 - [x] Batch3 final results: 11 VIS, 7 claim_usable
 - [x] Batch3b precheck launched
@@ -284,5 +358,5 @@ scp vla:/data/liuyu/outputs/nightly_object_batch3_20260604/HANDOFF_20260605_WIND
 - [x] Codex tasks listed (1-6)
 - [x] Window compression plan
 - [x] Forbidden claims listed
-- [ ] Handoff copied to output dirs → pending server copy
-- [ ] Commit pushed
+- [x] Handoff copied to output dirs (nightly_object_batch3 + batch3b)
+- [x] Commit pushed (05dfea2)
