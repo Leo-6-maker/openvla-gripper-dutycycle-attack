@@ -23,7 +23,8 @@ This is a CPU-only schema audit. It does not run rollout, VIS, watcher, or detec
 - Low-budget silver_candidate rows are not train labels.
 - mechanism_status other than mechanism_clean means the row is not usable as silver_candidate.
 - INFRA_FAILED rows cannot count toward metrics.
-- phase_misaligned rows cannot count as low-budget failure/success.
+- phase_misaligned, action_confounded, no_physical_transfer, and infra_failed rows cannot count as low-budget failure/success.
+- Proxy/silver rows must not point to labels_v2/v3 destinations.
 - Rows with INFRA_FAILED/Xid/OOM/CUDA failures must not be treated as trainable labels.
 - Rows with MEASUREMENT_FAILED must not be treated as proxy labels.
 
