@@ -16,6 +16,7 @@ This is a CPU-only schema audit. It does not run rollout, VIS, watcher, or detec
 
 - Required columns: task_key, state_id, window_start, window_end, label, label_source, label_confidence, gpu_pair, runtime_sec, provenance_status.
 - Command-proxy additionally requires measurement_version, action_injection_version, gripper_qpos_source, gripper_qpos_mujoco, gripper_qpos_obs, gripper_qpos_used, gripper_qpos_source_priority, forced_open_value_used, post_transform_gripper_action, clean_gripper_action, and forced_gripper_action.
+- Low-budget VIS additionally requires action_transform_version, raw/env gripper action transform fields, MuJoCo-primary qpos audit fields, and previous_phase_e_v0_status.
 - denominator_status is required, including explicit not_applicable values for policy-only and command-proxy outputs.
 - Proxy labels must not be marked gold.
 - Rows with INFRA_FAILED/Xid/OOM/CUDA failures must not be treated as trainable labels.

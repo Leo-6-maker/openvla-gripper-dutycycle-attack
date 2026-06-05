@@ -36,6 +36,21 @@ COMMAND_PROXY_REQUIRED = {
     "forced_gripper_action",
 }
 
+LOW_BUDGET_REQUIRED = {
+    "action_transform_version",
+    "raw_clean_action_gripper",
+    "raw_adv_action_gripper",
+    "env_clean_action_gripper_after_transform",
+    "env_adv_action_gripper_after_transform",
+    "post_transform_gripper_action",
+    "gripper_qpos_mujoco",
+    "gripper_qpos_obs",
+    "gripper_qpos_used",
+    "gripper_qpos_source_priority",
+    "gripper_qpos_warning",
+    "previous_phase_e_v0_status",
+}
+
 
 def parse_args():
     ap = argparse.ArgumentParser()
@@ -82,6 +97,8 @@ def audit_one(name: str, path: str):
     required.add("denominator_status")
     if name == "command_proxy":
         required.update(COMMAND_PROXY_REQUIRED)
+    if name == "low_budget":
+        required.update(LOW_BUDGET_REQUIRED)
     missing = sorted(required - fields)
     if missing:
         result["issues"].append("missing_required_columns:" + ",".join(missing))
@@ -97,6 +114,14 @@ def audit_one(name: str, path: str):
                 "gripper_qpos_source_priority",
                 "forced_open_value_used",
                 "post_transform_gripper_action",
+            ])
+        if name == "low_budget":
+            value_cols.extend([
+                "action_transform_version",
+                "post_transform_gripper_action",
+                "gripper_qpos_used",
+                "gripper_qpos_source_priority",
+                "previous_phase_e_v0_status",
             ])
         for col in value_cols:
             if col not in fields:
@@ -190,6 +215,7 @@ def write_report(path: str, audits):
         "",
         "- Required columns: task_key, state_id, window_start, window_end, label, label_source, label_confidence, gpu_pair, runtime_sec, provenance_status.",
         "- Command-proxy additionally requires measurement_version, action_injection_version, gripper_qpos_source, gripper_qpos_mujoco, gripper_qpos_obs, gripper_qpos_used, gripper_qpos_source_priority, forced_open_value_used, post_transform_gripper_action, clean_gripper_action, and forced_gripper_action.",
+        "- Low-budget VIS additionally requires action_transform_version, raw/env gripper action transform fields, MuJoCo-primary qpos audit fields, and previous_phase_e_v0_status.",
         "- denominator_status is required, including explicit not_applicable values for policy-only and command-proxy outputs.",
         "- Proxy labels must not be marked gold.",
         "- Rows with INFRA_FAILED/Xid/OOM/CUDA failures must not be treated as trainable labels.",

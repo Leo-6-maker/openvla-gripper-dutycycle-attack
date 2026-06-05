@@ -10,6 +10,7 @@ Status: PARTIAL PASS WITH FAST OUTPUT BLOCKERS
 
 - `scripts/diagnostics/run_policy_only_vis_audit.py`: patched for dry-run safety, local OpenVLA model loading, explicit `gpu_pair`, `runtime_sec`, `provenance_status`, `denominator_status`, `label_source`, and `label_confidence` fields.
 - `scripts/diagnostics/run_command_open_proxy_replay.py`: patched for local OpenVLA model loading, fixed LIBERO Object task mapping, stable `OffScreenRenderEnv` setup, MuJoCo-primary gripper qpos measurement, and final env-step OPEN injection.
+- `scripts/diagnostics/run_phase_e_canary.py`: patched for official action transform before every `env.step()`, action-transform provenance, and MuJoCo-primary qpos audit fields. Phase E canary v0 is marked `INVALID_ACTION_SPACE_CONFOUNDED`.
 - `scripts/diagnostics/compare_fast_vis_to_full_labels.py`: implemented. Current comparison remains blocked only because Fast VIS output CSVs are missing.
 - `scripts/vis_phase_conditioned_attack.py`: patched unsafe default from `6,7` to `1,0` and added GPU3/GPU7/CUDA_VISIBLE_DEVICES guard.
 - `scripts/vis_rollout_adaptive_v3.py`: added GPU3/GPU7/CUDA_VISIBLE_DEVICES guard. It still relies on physical GPU IDs in `max_memory` and `render_gpu_device_id`.
@@ -85,6 +86,37 @@ Status: IMPLEMENTED
 
 The script now computes positive recall, negative specificity, runtime reduction where available, false positives on controls, agreement with full VIS, recommended fast budget, and failure modes. It excludes `INFRA_FAILED`, `MEASUREMENT_FAILED`, `BLOCKED`, and `ERROR` rows from metrics and keeps proxy/silver evidence separate from gold labels.
 
+### scripts/diagnostics/run_phase_e_canary.py
+
+Findings before patch:
+
+- Phase E canary v0 passed raw OpenVLA actions directly to `env.step(adv_act)` and `env.step(clean_act)`.
+- This skipped the official `normalize_gripper_action(raw_action, binarize=True)` and `invert_gripper_action(env_action)` transform.
+- The old canary result is therefore `INVALID_ACTION_SPACE_CONFOUNDED`.
+
+Patch applied:
+
+- Every environment step now receives `env_action = invert_gripper_action(normalize_gripper_action(raw_action, binarize=True))`.
+- Added `action_transform_version`.
+- Added gripper action provenance fields:
+  - `raw_clean_action_gripper`
+  - `raw_adv_action_gripper`
+  - `env_clean_action_gripper_after_transform`
+  - `env_adv_action_gripper_after_transform`
+  - `post_transform_gripper_action`
+- Added MuJoCo-primary qpos audit fields:
+  - `gripper_qpos_mujoco`
+  - `gripper_qpos_obs`
+  - `gripper_qpos_used`
+  - `gripper_qpos_source_priority`
+  - `gripper_qpos_warning`
+- Added `previous_phase_e_v0_status=INVALID_ACTION_SPACE_CONFOUNDED`.
+- Added CPU-only `--dry-run` that exits before importing or loading OpenVLA/LIBERO/torch.
+
+Remaining caveat:
+
+- Low-budget VIS canary remains silver/proxy evidence only until DeepSeek reruns with the patched script and the output schema audit passes.
+
 ### scripts/vis_phase_conditioned_attack.py
 
 Findings before patch:
@@ -120,11 +152,13 @@ Remaining caveat:
   - `scripts/diagnostics/run_policy_only_vis_audit.py`
   - `scripts/diagnostics/run_command_open_proxy_replay.py`
   - `scripts/diagnostics/audit_fast_vis_outputs.py`
+  - `scripts/diagnostics/run_phase_e_canary.py`
   - `scripts/vis_phase_conditioned_attack.py`
   - `scripts/vis_rollout_adaptive_v3.py`
 - Dry-run passed for:
   - `run_policy_only_vis_audit.py --dry-run --candidate-csv tables/fast_vis_calibration_candidates_v0.csv --gpu-pair 2,6`
   - `run_command_open_proxy_replay.py --dry-run --candidate-csv tables/fast_vis_calibration_candidates_v0.csv --gpu-pair 2,6`
+  - `run_phase_e_canary.py --dry-run`
   - `vis_phase_conditioned_attack.py --dry-run`
 - Guard check passed:
   - `CUDA_VISIBLE_DEVICES=2,6` plus `--gpu-pair 2,6` exits with `INFRA_FAILED` before entering GPU code.
@@ -136,4 +170,5 @@ Remaining caveat:
 - No command proxy result proves VIS.
 - No silver/proxy label may be treated as gold.
 - Old Phase D v0 command-proxy results are invalid and must be discarded.
+- Old Phase E canary v0 results are invalid as `INVALID_ACTION_SPACE_CONFOUNDED`.
 - DeepSeek microcheck v2 validates MuJoCo qpos measurement and final env-step OPEN injection, but Codex did not run GPU/rollout in this patch.
