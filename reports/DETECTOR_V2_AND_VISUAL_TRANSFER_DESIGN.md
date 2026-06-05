@@ -109,3 +109,55 @@ Real robot use must start with passive logging:
 5. Only then consider active attack tests under explicit approval.
 
 No real-robot active attack is authorized by this design note.
+
+## Integration Status 2026-06-05
+
+Detector v2 remains proprio-only unless `tables/object_phase_response_labels_v2.csv` is generated and passes schema audit.
+
+VisualTransferHead is a future Stage 2 augmentation. It should not replace ProprioNoStep:
+
+- ProprioNoStep proposes timing / contact / candidate windows.
+- VisualTransferHead estimates transfer risk on those candidate windows.
+- VIS remains downstream of the selector and matched controls.
+
+Existing data can currently validate:
+
+- Trigger-centered visual path availability.
+- Dataset-row schema.
+- Leakage boundaries.
+- Dummy feature pipeline shape.
+- Metadata-only probe plumbing.
+
+Existing data cannot yet validate:
+
+- Real visual feature usefulness.
+- Deployable visual detector behavior.
+- Cross-suite generalization.
+- Real robot readiness.
+
+Real frozen embeddings come later. Do not claim visual detector value until real frozen visual features beat task-key and prevalence baselines and reduce control false positives under leave-task-out evaluation.
+
+## GPU Boundary
+
+Default VisualTransferHead work is CPU-only.
+
+GPU7 is permanently blacklisted. Do not use GPU7 and do not use `CUDA_VISIBLE_DEVICES=6,7`.
+
+GPU6 may be used only as optional auxiliary compute for a tiny frozen visual embedding smoke:
+
+- `CUDA_VISIBLE_DEVICES=6` only.
+- At most 10-20 samples.
+- No rollout.
+- No VIS.
+- No watcher.
+- No detector v2 training.
+- Outputs only under `/data/liuyu/outputs/codex_visual_aux_gpu6_20260605`.
+
+GPU6 use requires pre/post checks:
+
+```bash
+nvidia-smi -i 6
+dmesg | tail -n 200 | grep -i "xid\\|nvrm" || true
+```
+
+If GPU6 shows Xid, OOM, or CUDA illegal memory, stop immediately and mark GPU6 suspect.

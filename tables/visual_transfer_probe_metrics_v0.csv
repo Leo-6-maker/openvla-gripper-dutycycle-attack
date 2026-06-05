@@ -1,0 +1,8 @@
+mode,model,n_rows,balanced_accuracy,macro_F1,negative_recall,MCC,tp,fp,fn,tn,control_false_positives,control_rows
+dummy_visual,always_positive,19,0.5,0.3667,0.0,0.0,11,8,0,0,8,8
+dummy_visual,task_key_only,19,0.5511,0.5476,0.375,0.1086,8,5,3,3,5,8
+dummy_visual,phase_candidate_role_only,19,0.5,0.3667,0.0,0.0,11,8,0,0,8,8
+dummy_visual,proprio_summary_only,19,0.5,0.3667,0.0,0.0,11,8,0,0,8,8
+dummy_visual,task_plus_phase,19,0.5511,0.5476,0.375,0.1086,8,5,3,3,5,8
+dummy_visual,task_plus_proprio_summary,19,0.5511,0.5476,0.375,0.1086,8,5,3,3,5,8
+dummy_visual,dummy_visual_only,19,0.5,0.3667,0.0,0.0,11,8,0,0,8,8

@@ -1,0 +1,5 @@
+check_id,status,detail
+forbidden_input_columns,pass,
+future_frame_columns,pass,
+label_input_separation,pass,
+future_frame_values,pass,
