@@ -10,7 +10,8 @@ Status: PARTIAL PASS WITH FAST OUTPUT BLOCKERS
 
 - `scripts/diagnostics/run_policy_only_vis_audit.py`: patched for dry-run safety, local OpenVLA model loading, explicit `gpu_pair`, `runtime_sec`, `provenance_status`, `denominator_status`, `label_source`, and `label_confidence` fields.
 - `scripts/diagnostics/run_command_open_proxy_replay.py`: patched for local OpenVLA model loading, fixed LIBERO Object task mapping, stable `OffScreenRenderEnv` setup, MuJoCo-primary gripper qpos measurement, and final env-step OPEN injection.
-- `scripts/diagnostics/run_phase_e_canary.py`: patched for official action transform before every `env.step()`, action-transform provenance, and MuJoCo-primary qpos audit fields. Phase E canary v0 is marked `INVALID_ACTION_SPACE_CONFOUNDED`.
+- `scripts/diagnostics/generate_phase_e_aligned_windows.py`: added CPU-only phase-aligned subwindow generator. It enumerates L8/L10/L12 windows and recommends only qpos-supported true_closed or transitional-pre-open candidates.
+- `scripts/diagnostics/run_phase_e_canary.py`: patched for explicit candidate CSV windows, official action transform before every `env.step()`, action-transform provenance, MuJoCo-primary qpos audit fields, mechanism guard fields, and epsilon calibration provenance. Phase E canary v0 remains `INVALID_ACTION_SPACE_CONFOUNDED`.
 - `scripts/diagnostics/compare_fast_vis_to_full_labels.py`: implemented. Current comparison remains blocked only because Fast VIS output CSVs are missing.
 - `scripts/vis_phase_conditioned_attack.py`: patched unsafe default from `6,7` to `1,0` and added GPU3/GPU7/CUDA_VISIBLE_DEVICES guard.
 - `scripts/vis_rollout_adaptive_v3.py`: added GPU3/GPU7/CUDA_VISIBLE_DEVICES guard. It still relies on physical GPU IDs in `max_memory` and `render_gpu_device_id`.
@@ -88,15 +89,21 @@ The script now computes positive recall, negative specificity, runtime reduction
 
 ### scripts/diagnostics/run_phase_e_canary.py
 
-Findings before patch:
+Findings before Phase E repair:
 
 - Phase E canary v0 passed raw OpenVLA actions directly to `env.step(adv_act)` and `env.step(clean_act)`.
 - This skipped the official `normalize_gripper_action(raw_action, binarize=True)` and `invert_gripper_action(env_action)` transform.
 - The old canary result is therefore `INVALID_ACTION_SPACE_CONFOUNDED`.
+- Phase E v1 then failed as `PHASE_MISALIGNED_COMPRESSED_WINDOW` because centered L10 entered a natural-open phase.
+- Phase E v2 then failed as `PHASE_NOT_CAPTURED` because parent-start aligned L10 still had qpos near open.
+- The core issue is not only budget. Compressed windows must be selected from real MuJoCo/obs qpos state, not only from centered window geometry or `phase_bin_proxy`.
 
 Patch applied:
 
 - Every environment step now receives `env_action = invert_gripper_action(normalize_gripper_action(raw_action, binarize=True))`.
+- Added `--candidate-csv`, `--limit`, `--only-recommended`, and `--allow-unrecommended`.
+- When `--candidate-csv` is provided, the script uses explicit `window_start/window_end` and does not call `centered_window()`.
+- Candidate rows must provide `phase_alignment_source`; recommended filtering is enforced unless `--allow-unrecommended` is explicitly passed.
 - Added `action_transform_version`.
 - Added gripper action provenance fields:
   - `raw_clean_action_gripper`
@@ -111,11 +118,23 @@ Patch applied:
   - `gripper_qpos_source_priority`
   - `gripper_qpos_warning`
 - Added `previous_phase_e_v0_status=INVALID_ACTION_SPACE_CONFOUNDED`.
+- Added Phase E mechanism fields: arm/action drift, token flips, VIS_OPEN count, env gripper OPEN count, raw/env gripper means, MuJoCo/obs qpos starts/mins/opening deltas, epsilon calibration, PGD budget provenance, `mechanism_status`, and `mechanism_reason`.
+- `label_confidence=silver_candidate` is allowed only when `mechanism_status=mechanism_clean`; otherwise rows are `not_silver_candidate`.
 - Added CPU-only `--dry-run` that exits before importing or loading OpenVLA/LIBERO/torch.
 
 Remaining caveat:
 
-- Low-budget VIS canary remains silver/proxy evidence only until DeepSeek reruns with the patched script and the output schema audit passes.
+- Low-budget VIS canary remains diagnostic/proxy evidence only. It cannot become a silver-candidate generator until true_closed phase alignment, mechanism_clean audit, positive/negative separation, and 5-sample smoke pass.
+
+### scripts/diagnostics/generate_phase_e_aligned_windows.py
+
+Status: IMPLEMENTED
+
+The script enumerates L8/L10/L12 windows at parent_start_aligned, parent_start_plus_2, parent_start_plus_4, centered, and parent_end_aligned positions. It records MuJoCo/obs qpos fields when available, classifies windows as true_closed, transitional-pre-open, natural_open, or missing, and does not recommend missing-qpos rows.
+
+Remaining caveat:
+
+- On the local checkout `labels_v2` and server trace roots may be absent, so current local output may be a missing-qpos planning artifact. DeepSeek should rerun this script on the server after syncing the reviewed branch.
 
 ### scripts/vis_phase_conditioned_attack.py
 

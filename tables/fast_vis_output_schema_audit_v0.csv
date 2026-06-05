@@ -1,4 +1,4 @@
-dataset,path,status,row_count,issues
-policy_only,tables/fast_vis_policy_only_audit_v0.csv,BLOCKED_MISSING_FAST_VIS_OUTPUTS,0,missing_csv
-command_proxy,tables/fast_vis_command_proxy_v0.csv,BLOCKED_MISSING_FAST_VIS_OUTPUTS,0,missing_csv
-low_budget,tables/fast_vis_low_budget_sweep_v0.csv,BLOCKED_MISSING_FAST_VIS_OUTPUTS,0,missing_csv
+dataset,path,status,row_count,silver_candidate_eligible_rows,issues
+policy_only,tables/fast_vis_policy_only_audit_v0.csv,BLOCKED_MISSING_FAST_VIS_OUTPUTS,0,,missing_csv
+command_proxy,tables/fast_vis_command_proxy_v0.csv,BLOCKED_MISSING_FAST_VIS_OUTPUTS,0,,missing_csv
+low_budget,tables/fast_vis_low_budget_sweep_v0.csv,BLOCKED_MISSING_FAST_VIS_OUTPUTS,0,,missing_csv
