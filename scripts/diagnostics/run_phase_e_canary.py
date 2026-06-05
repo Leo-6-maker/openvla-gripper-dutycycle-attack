@@ -380,9 +380,20 @@ def classify_mechanism(row):
         return "action_confounded", "done false with no qpos opening and high arm drift"
     if vis_open > 0 and qpos_delta <= 0.003 and env_open > 0:
         return "no_physical_transfer", "VIS/env gripper opening did not produce MuJoCo qpos opening"
-    if vis_open >= 1 and env_open >= 1 and qpos_delta > 0.01 and (arm_l2_max is None or arm_l2_max <= 0.05) and "ok" in provenance and "polluted" not in denominator:
+    clean_physical = vis_open >= 1 and env_open >= 1 and qpos_delta > 0.01 and (arm_l2_max is None or arm_l2_max <= 0.05) and "ok" in provenance
+    if clean_physical and denominator != "clean":
+        return "pending_denominator", "mechanism-like evidence present but denominator_status is not clean"
+    if clean_physical and denominator == "clean":
         return "mechanism_clean", "VIS_OPEN/env OPEN/qpos opening present with low arm drift"
     return "pending", "mechanism evidence incomplete"
+
+
+def label_confidence_for_mechanism(mechanism_status):
+    if mechanism_status == "mechanism_clean":
+        return "silver_candidate"
+    if mechanism_status == "pending_denominator":
+        return "silver_candidate_pending_denominator"
+    return "not_silver_candidate"
 
 
 def write_canary_report(path, rows, args):
@@ -752,7 +763,7 @@ def run_canary(args):
             mechanism_status, mechanism_reason = classify_mechanism(base_row)
             base_row["mechanism_status"] = mechanism_status
             base_row["mechanism_reason"] = mechanism_reason
-            base_row["label_confidence"] = "silver_candidate" if mechanism_status == "mechanism_clean" else "not_silver_candidate"
+            base_row["label_confidence"] = label_confidence_for_mechanism(mechanism_status)
             results.append(base_row)
         except Exception as exc:
             import traceback

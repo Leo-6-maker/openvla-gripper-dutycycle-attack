@@ -53,6 +53,7 @@ OUTPUT_FIELDS = [
     "random_open_ratio",
     "random_done",
     "denominator_status",
+    "provenance_status",
     "phase_alignment_source",
     "recommended_for_phaseE",
     "reason",
@@ -517,6 +518,7 @@ def main():
                     "random_open_ratio": norm(merged.get("random_open_ratio")),
                     "random_done": norm(merged.get("random_done")),
                     "denominator_status": denom,
+                    "provenance_status": norm(merged.get("provenance_status")) or "missing",
                 }
                 ok, reason = recommend(row)
                 row["recommended_for_phaseE"] = "true" if ok else "false"
