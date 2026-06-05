@@ -1,0 +1,16 @@
+target_id,task_key,state_id,parent_window_start,parent_window_end,compressed_window_start,compressed_window_end,compression_len,label_role,source_batch,phase_bin_proxy,reason_selected
+cream_cheese_s4_p28_45_L12_w31_42,cream_cheese,4,28,45,31,42,12,positive,batch3,grasp_formation,Batch3 claim_usable positive; representative new vulnerable task
+cream_cheese_s4_p28_45_L10_w32_41,cream_cheese,4,28,45,32,41,10,positive,batch3,grasp_formation,Batch3 claim_usable positive; representative new vulnerable task
+cream_cheese_s4_p28_45_L8_w33_40,cream_cheese,4,28,45,33,40,8,positive,batch3,grasp_formation,Batch3 claim_usable positive; representative new vulnerable task
+milk_s4_p19_36_L12_w22_33,milk,4,19,36,22,33,12,positive,batch3,grasp_formation,Batch3 claim_usable positive; second new vulnerable task
+milk_s4_p19_36_L10_w23_32,milk,4,19,36,23,32,10,positive,batch3,grasp_formation,Batch3 claim_usable positive; second new vulnerable task
+milk_s4_p19_36_L8_w24_31,milk,4,19,36,24,31,8,positive,batch3,grasp_formation,Batch3 claim_usable positive; second new vulnerable task
+ketchup_s1_p21_38_L12_w24_35,ketchup,1,21,38,24,35,12,positive,batch3,grasp_formation,Batch3 claim_usable positive; known ketchup transfer reference
+ketchup_s1_p21_38_L10_w25_34,ketchup,1,21,38,25,34,10,positive,batch3,grasp_formation,Batch3 claim_usable positive; known ketchup transfer reference
+ketchup_s1_p21_38_L8_w26_33,ketchup,1,21,38,26,33,8,positive,batch3,grasp_formation,Batch3 claim_usable positive; known ketchup transfer reference
+salad_dressing_s0_p7_24_L12_w10_21,salad_dressing,0,7,24,10,21,12,negative,batch3,grasp_formation,Batch3 physical bridge but task-negative control
+salad_dressing_s0_p7_24_L10_w11_20,salad_dressing,0,7,24,11,20,10,negative,batch3,grasp_formation,Batch3 physical bridge but task-negative control
+salad_dressing_s0_p7_24_L8_w12_19,salad_dressing,0,7,24,12,19,8,negative,batch3,grasp_formation,Batch3 physical bridge but task-negative control
+bbq_sauce_s5_p27_44_L12_w30_41,bbq_sauce,5,27,44,30,41,12,negative,batch3,grasp_formation,Batch3 physical bridge but task-negative control
+bbq_sauce_s5_p27_44_L10_w31_40,bbq_sauce,5,27,44,31,40,10,negative,batch3,grasp_formation,Batch3 physical bridge but task-negative control
+bbq_sauce_s5_p27_44_L8_w32_39,bbq_sauce,5,27,44,32,39,8,negative,batch3,grasp_formation,Batch3 physical bridge but task-negative control
