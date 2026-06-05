@@ -45,6 +45,21 @@ Scope: design, audit, scripts, and CPU-only feasibility validation. No GPU, roll
 4. Local sklearn is unavailable, so model-training smoke could not complete on this Windows machine. Compile and source-level hardening passed.
 5. Label builder synthetic tests pass, including candidate metadata joins, but they are not a substitute for full-source server label generation.
 
+## Final Label-Builder Audit
+
+- Remote visibility before final denominator patch: `git ls-remote origin exp/vis-prefix-margin-repair-20260603` showed branch tip `a99d6adc0566ee8ef50d295fab74da3829729f12`.
+- `finalize_phase_response_labels.py` supports `--batch3b-vis` and `--batch3c-vis`.
+- It supports candidate metadata inputs: `--batch2b-candidates`, `--batch3-candidates`, `--batch3b-candidates`, and `--batch3c-candidates`.
+- Candidate metadata join fills missing `candidate_role`, `control_type`, `phase_bin_proxy`, `denominator_type`, `action_bridge_confounded`, and `reason_selected`.
+- Summary/candidate `candidate_role` conflict hard fails and writes the conflict CSV.
+- Batch3c rows with missing joined role become `manual_review` and do not enter train.
+- Batch3b/Batch3c rows with missing explicit denominator fields become `manual_review` and do not enter train.
+- Synthetic tests: 7 OK.
+- Full-source `tables/object_phase_response_labels_v2.csv` is still missing.
+- DeepSeek detector v2 training remains **BLOCKED** until server-generated labels v2 passes schema audit.
+
+Warning: full-source label merge must only use summaries with explicit denominator status; missing denominator fields are dangerous and are now excluded from train for Batch3b/Batch3c.
+
 ## Remote Visibility
 
 Local reviewed branch:

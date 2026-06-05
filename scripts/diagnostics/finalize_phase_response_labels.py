@@ -279,6 +279,13 @@ def denominator_clean(row):
     return True
 
 
+def has_denominator_field(row):
+    return any(
+        norm(row.get(field)) != ""
+        for field in ("denominator_clean", "denominator_status", "random_all_clean")
+    )
+
+
 def provenance_status(row):
     status = first(row, "provenance_status", "provenance_note", "trace_status", "validity_status")
     return norm(status) if norm(status) else "unknown"
@@ -351,6 +358,7 @@ def normalize_row(source, row, phase_map):
         "claim_usable": claim,
         "action_bridge_confounded_source": parse_bool(row.get("action_bridge_confounded"), False),
         "missing_candidate_role": parse_bool(row.get("_missing_candidate_role"), False),
+        "missing_denominator_status": parse_bool(row.get("_missing_denominator_status"), False),
         "_raw": row,
     }
 
@@ -411,6 +419,8 @@ def classify_standard(o):
 def classify_outcome(o):
     if o.get("missing_candidate_role"):
         return "", "manual_review", "missing_candidate_role_for_batch3c_control", False
+    if o.get("missing_denominator_status"):
+        return "", "manual_review", "missing_denominator_status", False
     if o["candidate_role"] in CONTROL_ROLES.values():
         return classify_role_specific(o)
     return classify_standard(o)
@@ -437,6 +447,8 @@ def load_csv_sources(args, phase_map):
             for row in csv.DictReader(f):
                 merged, row_conflicts = merge_candidate_metadata(source, row, candidate_map.get(join_key(row), {}))
                 conflicts.extend(row_conflicts)
+                if source in {"batch3b", "batch3c"} and not has_denominator_field(merged):
+                    merged["_missing_denominator_status"] = "true"
                 item = normalize_row(source, merged, phase_map)
                 if item["task_key"] and item["window_start"] != "" and item["window_end"] != "":
                     outcomes.append(item)

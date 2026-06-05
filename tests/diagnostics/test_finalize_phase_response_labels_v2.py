@@ -269,6 +269,37 @@ class FinalizePhaseResponseLabelsV2Test(unittest.TestCase):
             self.assertEqual(label["label_vulnerability_ready"], "")
             self.assertEqual(read_csv(conflicts_path), [])
 
+    def test_batch3c_missing_denominator_status_is_manual_review_not_train(self):
+        summary = [{
+            "task_key": "bbq_sauce",
+            "state_id": "5",
+            "window_start": "27",
+            "window_end": "44",
+            "vis_OPEN_mean": "18",
+            "vis_qpos_opening_delta_mean": "0.038",
+            "vis_done_all_false": "False",
+        }]
+        candidates = [{
+            "task_key": "bbq_sauce",
+            "state_id": "5",
+            "window_start": "27",
+            "window_end": "44",
+            "candidate_role": "far_too_early_control",
+        }]
+        with tempfile.TemporaryDirectory() as tmp:
+            labels_path, _, conflicts_path, _ = self.run_builder(
+                tmp,
+                {"batch3c": summary},
+                {"batch3c": candidates},
+            )
+            label = read_csv(labels_path)[0]
+            self.assertEqual(label["candidate_role"], "far_too_early_control")
+            self.assertEqual(label["label_status"], "manual_review")
+            self.assertEqual(label["label_use"], "manual_review")
+            self.assertEqual(label["label_vulnerability_ready"], "")
+            self.assertEqual(label["exclusion_or_uncertain_reason"], "missing_denominator_status")
+            self.assertEqual(read_csv(conflicts_path), [])
+
 
 if __name__ == "__main__":
     unittest.main()
