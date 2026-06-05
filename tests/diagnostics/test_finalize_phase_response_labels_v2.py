@@ -25,13 +25,18 @@ def read_csv(path):
 
 
 class FinalizePhaseResponseLabelsV2Test(unittest.TestCase):
-    def run_builder(self, tmp, rows_by_source, expect_ok=True):
+    def run_builder(self, tmp, rows_by_source, candidate_rows_by_source=None, expect_ok=True):
         tmp = Path(tmp)
         paths = {}
         for name, rows in rows_by_source.items():
             path = tmp / ("%s.csv" % name)
             write_csv(path, rows)
             paths[name] = path
+        candidate_paths = {}
+        for name, rows in (candidate_rows_by_source or {}).items():
+            path = tmp / ("%s_candidates.csv" % name)
+            write_csv(path, rows)
+            candidate_paths[name] = path
         out_labels = tmp / "labels_v2.csv"
         out_ready = tmp / "readiness.md"
         out_conflicts = tmp / "conflicts.csv"
@@ -43,6 +48,10 @@ class FinalizePhaseResponseLabelsV2Test(unittest.TestCase):
             "--batch3-vis", str(paths.get("batch3", tmp / "missing_batch3.csv")),
             "--batch3b-vis", str(paths.get("batch3b", tmp / "missing_batch3b.csv")),
             "--batch3c-vis", str(paths.get("batch3c", tmp / "missing_batch3c.csv")),
+            "--batch2b-candidates", str(candidate_paths.get("batch2b", tmp / "missing_batch2b_candidates.csv")),
+            "--batch3-candidates", str(candidate_paths.get("batch3", tmp / "missing_batch3_candidates.csv")),
+            "--batch3b-candidates", str(candidate_paths.get("batch3b", tmp / "missing_batch3b_candidates.csv")),
+            "--batch3c-candidates", str(candidate_paths.get("batch3c", tmp / "missing_batch3c_candidates.csv")),
             "--output-labels", str(out_labels),
             "--output-readiness", str(out_ready),
             "--output-conflicts", str(out_conflicts),
@@ -147,6 +156,118 @@ class FinalizePhaseResponseLabelsV2Test(unittest.TestCase):
             conflicts = read_csv(conflicts_path)
             self.assertEqual(len(conflicts), 1)
             self.assertEqual(conflicts[0]["reason"], "duplicate_label_conflict")
+
+    def test_batch3c_stable_post_lock_role_join_from_candidates(self):
+        summary = [{
+            "task_key": "salad_dressing",
+            "state_id": "0",
+            "window_start": "7",
+            "window_end": "24",
+            "denominator_clean": "True",
+            "vis_OPEN_mean": "18",
+            "vis_qpos_opening_delta_mean": "0.038",
+            "vis_done_all_false": "False",
+        }]
+        candidates = [{
+            "task_key": "salad_dressing",
+            "state_id": "0",
+            "window_start": "7",
+            "window_end": "24",
+            "candidate_role": "stable_post_lock_control",
+            "denominator_type": "late_open_control",
+            "reason_selected": "synthetic stable post lock",
+        }]
+        with tempfile.TemporaryDirectory() as tmp:
+            labels_path, _, conflicts_path, _ = self.run_builder(
+                tmp,
+                {"batch3c": summary},
+                {"batch3c": candidates},
+            )
+            labels = read_csv(labels_path)
+            self.assertEqual(labels[0]["candidate_role"], "stable_post_lock_control")
+            self.assertEqual(labels[0]["label_status"], "negative")
+            self.assertEqual(labels[0]["label_vulnerability_ready"], "0")
+            self.assertEqual(labels[0]["reason_selected"], "synthetic stable post lock")
+            self.assertEqual(read_csv(conflicts_path), [])
+
+    def test_batch3c_far_too_early_role_join_from_candidates(self):
+        summary = [{
+            "task_key": "bbq_sauce",
+            "state_id": "5",
+            "window_start": "27",
+            "window_end": "44",
+            "denominator_clean": "True",
+            "vis_OPEN_mean": "18",
+            "vis_qpos_opening_delta_mean": "0.038",
+            "vis_done_all_false": "False",
+        }]
+        candidates = [{
+            "task_key": "bbq_sauce",
+            "state_id": "5",
+            "window_start": "27",
+            "window_end": "44",
+            "candidate_role": "far_too_early_control",
+        }]
+        with tempfile.TemporaryDirectory() as tmp:
+            labels_path, _, _, _ = self.run_builder(
+                tmp,
+                {"batch3c": summary},
+                {"batch3c": candidates},
+            )
+            label = read_csv(labels_path)[0]
+            self.assertEqual(label["candidate_role"], "far_too_early_control")
+            self.assertEqual(label["label_status"], "negative")
+            self.assertEqual(label["label_vulnerability_ready"], "0")
+
+    def test_summary_candidate_role_conflict_hard_fails(self):
+        summary = [{
+            "task_key": "bbq_sauce",
+            "state_id": "5",
+            "window_start": "27",
+            "window_end": "44",
+            "candidate_role": "stable_post_lock_control",
+            "denominator_clean": "True",
+            "vis_OPEN_mean": "18",
+            "vis_qpos_opening_delta_mean": "0.038",
+            "vis_done_all_false": "False",
+        }]
+        candidates = [{
+            "task_key": "bbq_sauce",
+            "state_id": "5",
+            "window_start": "27",
+            "window_end": "44",
+            "candidate_role": "far_too_early_control",
+        }]
+        with tempfile.TemporaryDirectory() as tmp:
+            _, _, conflicts_path, _ = self.run_builder(
+                tmp,
+                {"batch3c": summary},
+                {"batch3c": candidates},
+                expect_ok=False,
+            )
+            conflicts = read_csv(conflicts_path)
+            self.assertEqual(len(conflicts), 1)
+            self.assertEqual(conflicts[0]["reason"], "summary_candidate_role_conflict")
+
+    def test_batch3c_missing_join_role_is_manual_review_not_train(self):
+        summary = [{
+            "task_key": "salad_dressing",
+            "state_id": "0",
+            "window_start": "7",
+            "window_end": "24",
+            "denominator_clean": "True",
+            "vis_OPEN_mean": "18",
+            "vis_qpos_opening_delta_mean": "0.038",
+            "vis_done_all_false": "False",
+        }]
+        with tempfile.TemporaryDirectory() as tmp:
+            labels_path, _, conflicts_path, _ = self.run_builder(tmp, {"batch3c": summary})
+            label = read_csv(labels_path)[0]
+            self.assertEqual(label["candidate_role"], "")
+            self.assertEqual(label["label_status"], "manual_review")
+            self.assertEqual(label["label_use"], "manual_review")
+            self.assertEqual(label["label_vulnerability_ready"], "")
+            self.assertEqual(read_csv(conflicts_path), [])
 
 
 if __name__ == "__main__":

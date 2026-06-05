@@ -13,6 +13,10 @@ It now supports:
 - `--batch3-vis`
 - `--batch3b-vis`
 - `--batch3c-vis`
+- `--batch2b-candidates`
+- `--batch3-candidates`
+- `--batch3b-candidates`
+- `--batch3c-candidates`
 - `--output-labels`
 - `--output-readiness`
 - `--output-conflicts`
@@ -31,6 +35,9 @@ It now supports:
 | Duplicate conflict hard fail | DONE | Writes conflict CSV and exits nonzero. |
 | Train/ignore/manual_review separation | DONE | Only positive/negative rows get `label_use=train`; manual_review does not enter train. |
 | v2 fixed 9-label assertions removed | DONE | No hardcoded Batch2b count assertions in normal v2 mode. |
+| Candidate metadata join | DONE | Joins candidate CSV on task/state/window and fills missing role/control metadata. |
+| Summary/candidate role conflict hard fail | DONE | Writes conflict CSV and exits nonzero. |
+| Batch3c missing role guard | DONE | Missing role becomes manual_review and not train. |
 
 ## Current Blocker
 
@@ -52,6 +59,10 @@ $PY scripts/diagnostics/finalize_phase_response_labels.py \
   --batch3-vis tables/object_phase_response_batch3_vis_summary.csv \
   --batch3b-vis tables/object_phase_response_batch3b_vis_summary.csv \
   --batch3c-vis tables/object_phase_response_batch3c_vis_summary.csv \
+  --batch2b-candidates tables/object_phase_response_batch2b_candidates.csv \
+  --batch3-candidates tables/object_phase_response_batch3_candidates.csv \
+  --batch3b-candidates tables/object_phase_response_batch3b_candidates.csv \
+  --batch3c-candidates tables/object_phase_response_batch3c_candidates.csv \
   --output-labels tables/object_phase_response_labels_v2.csv \
   --output-readiness reports/OBJECT_PHASE_RESPONSE_LABEL_READINESS_V2.md \
   --output-conflicts tables/object_phase_response_label_conflicts_v2.csv
@@ -71,3 +82,6 @@ Covered cases:
 - far_too_early done=True/strong becomes negative.
 - pre_lock done=False/strong becomes positive.
 - duplicate task/state/window conflicting labels hard fail and write conflict CSV.
+- Batch3c stable_post_lock and far_too_early roles can be supplied only by candidate CSV.
+- Summary/candidate candidate_role mismatch hard fails.
+- Batch3c control rows with no joined role become manual_review and not train.

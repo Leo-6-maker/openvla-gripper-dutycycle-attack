@@ -15,6 +15,9 @@ This placeholder records the current readiness boundary after patching the label
 | `action_bridge_confounded` preservation | Yes |
 | `manual_review` excluded from train | Yes |
 | Duplicate conflict hard fail | Yes |
+| Candidate metadata join | Yes |
+| Summary/candidate role conflict hard fail | Yes |
+| Batch3c missing role excluded from train | Yes |
 | Synthetic tests | Pass |
 | Full server-source `tables/object_phase_response_labels_v2.csv` | Missing |
 | Detector v2 training | BLOCKED |
@@ -31,6 +34,10 @@ $PY scripts/diagnostics/finalize_phase_response_labels.py \
   --batch3-vis tables/object_phase_response_batch3_vis_summary.csv \
   --batch3b-vis tables/object_phase_response_batch3b_vis_summary.csv \
   --batch3c-vis tables/object_phase_response_batch3c_vis_summary.csv \
+  --batch2b-candidates tables/object_phase_response_batch2b_candidates.csv \
+  --batch3-candidates tables/object_phase_response_batch3_candidates.csv \
+  --batch3b-candidates tables/object_phase_response_batch3b_candidates.csv \
+  --batch3c-candidates tables/object_phase_response_batch3c_candidates.csv \
   --output-labels tables/object_phase_response_labels_v2.csv \
   --output-readiness reports/OBJECT_PHASE_RESPONSE_LABEL_READINESS_V2.md \
   --output-conflicts tables/object_phase_response_label_conflicts_v2.csv

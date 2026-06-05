@@ -47,6 +47,7 @@ LABEL_FIELDS = [
     "denominator_type",
     "provenance_status",
     "provenance_note",
+    "reason_selected",
     "VIS_OPEN",
     "vis_open_count",
     "qpos_opening_delta",
@@ -63,6 +64,14 @@ LABEL_FIELDS = [
     "label_status",
     "label_use",
     "exclusion_or_uncertain_reason",
+]
+CANDIDATE_FILL_FIELDS = [
+    "candidate_role",
+    "control_type",
+    "phase_bin_proxy",
+    "denominator_type",
+    "action_bridge_confounded",
+    "reason_selected",
 ]
 CONFLICT_FIELDS = [
     "task_key",
@@ -85,6 +94,10 @@ def parse_args():
     ap.add_argument("--batch3-vis", default="tables/object_phase_response_batch3_vis_summary.csv")
     ap.add_argument("--batch3b-vis", default="")
     ap.add_argument("--batch3c-vis", default="")
+    ap.add_argument("--batch2b-candidates", default="")
+    ap.add_argument("--batch3-candidates", default="")
+    ap.add_argument("--batch3b-candidates", default="")
+    ap.add_argument("--batch3c-candidates", default="")
     ap.add_argument("--descriptors", default="tables/object_teacher_window_phase_descriptors.csv")
     ap.add_argument("--output-labels", default="tables/object_phase_response_labels_v2.csv")
     ap.add_argument("--output-readiness", default="reports/OBJECT_PHASE_RESPONSE_LABEL_READINESS_V2.md")
@@ -142,11 +155,92 @@ def clean_role(value):
     return CONTROL_ROLES.get(role, role)
 
 
+def normalize_candidate_field(field, value):
+    if field in {"candidate_role", "control_type"}:
+        return clean_role(value)
+    if field == "action_bridge_confounded":
+        return str(parse_bool(value, False))
+    return norm(value)
+
+
 def first(row, *fields):
     for field in fields:
         if field in row and norm(row.get(field)) != "":
             return row.get(field)
     return ""
+
+
+def join_key(row):
+    return (
+        norm(first(row, "task_key", "task")),
+        norm(first(row, "state_id", "state")),
+        norm(row.get("window_start")),
+        norm(row.get("window_end")),
+    )
+
+
+def load_candidate_map(path):
+    candidate_map = {}
+    conflicts = []
+    if not path or not os.path.exists(path):
+        return candidate_map, conflicts
+    with open(path, newline="", encoding="utf-8") as f:
+        for row in csv.DictReader(f):
+            key = join_key(row)
+            if not key[0] or key[2] == "" or key[3] == "":
+                continue
+            meta = {}
+            for field in CANDIDATE_FILL_FIELDS:
+                value = normalize_candidate_field(field, row.get(field))
+                if value != "":
+                    meta[field] = value
+            if key in candidate_map:
+                old = candidate_map[key]
+                changed = {
+                    field
+                    for field in CANDIDATE_FILL_FIELDS
+                    if old.get(field, "") and meta.get(field, "") and old.get(field) != meta.get(field)
+                }
+                if changed:
+                    conflicts.append(metadata_conflict(key, "candidate_duplicate_metadata_conflict", old, meta))
+                    continue
+                old.update({k: v for k, v in meta.items() if v != ""})
+            else:
+                candidate_map[key] = meta
+    return candidate_map, conflicts
+
+
+def metadata_conflict(key, reason, summary_meta, candidate_meta):
+    return {
+        "task_key": key[0],
+        "state_id": key[1],
+        "window_start": key[2],
+        "window_end": key[3],
+        "sources": "summary|candidate",
+        "labels": "",
+        "statuses": "",
+        "roles": "%s|%s" % (
+            norm(summary_meta.get("candidate_role")),
+            norm(candidate_meta.get("candidate_role")),
+        ),
+        "reason": reason,
+    }
+
+
+def merge_candidate_metadata(source, row, candidate_meta):
+    merged = dict(row)
+    conflicts = []
+    key = join_key(row)
+    summary_role = clean_role(first(row, "candidate_role", "control_type"))
+    candidate_role = clean_role(candidate_meta.get("candidate_role")) if candidate_meta else ""
+    if summary_role and candidate_role and summary_role != candidate_role:
+        conflicts.append(metadata_conflict(key, "summary_candidate_role_conflict", {"candidate_role": summary_role}, candidate_meta))
+    for field in CANDIDATE_FILL_FIELDS:
+        if norm(merged.get(field)) == "" and candidate_meta.get(field, "") != "":
+            merged[field] = candidate_meta[field]
+    if source == "batch3c" and clean_role(merged.get("candidate_role")) == "":
+        merged["_missing_candidate_role"] = "true"
+    return merged, conflicts
 
 
 def load_phase_map(path):
@@ -247,6 +341,7 @@ def normalize_row(source, row, phase_map):
         "denominator_type": denom_type,
         "provenance_status": prov,
         "provenance_note": norm(first(row, "provenance_note", "notes")),
+        "reason_selected": norm(row.get("reason_selected")),
         "VIS_OPEN": norm(vis_open_raw),
         "vis_open_count": vis_open_count,
         "qpos_opening_delta": qpos,
@@ -254,6 +349,8 @@ def normalize_row(source, row, phase_map):
         "taxonomy": taxonomy,
         "denominator_clean": denom,
         "claim_usable": claim,
+        "action_bridge_confounded_source": parse_bool(row.get("action_bridge_confounded"), False),
+        "missing_candidate_role": parse_bool(row.get("_missing_candidate_role"), False),
         "_raw": row,
     }
 
@@ -312,6 +409,8 @@ def classify_standard(o):
 
 
 def classify_outcome(o):
+    if o.get("missing_candidate_role"):
+        return "", "manual_review", "missing_candidate_role_for_batch3c_control", False
     if o["candidate_role"] in CONTROL_ROLES.values():
         return classify_role_specific(o)
     return classify_standard(o)
@@ -319,24 +418,29 @@ def classify_outcome(o):
 
 def load_csv_sources(args, phase_map):
     if args.use_frozen_batch2b:
-        return frozen_batch2b_outcomes()
+        return frozen_batch2b_outcomes(), []
     sources = [
-        ("batch1", args.batch1_merged),
-        ("batch2b", args.batch2b_vis),
-        ("batch3", args.batch3_vis),
-        ("batch3b", args.batch3b_vis),
-        ("batch3c", args.batch3c_vis),
+        ("batch1", args.batch1_merged, ""),
+        ("batch2b", args.batch2b_vis, args.batch2b_candidates),
+        ("batch3", args.batch3_vis, args.batch3_candidates),
+        ("batch3b", args.batch3b_vis, args.batch3b_candidates),
+        ("batch3c", args.batch3c_vis, args.batch3c_candidates),
     ]
     outcomes = []
-    for source, path in sources:
+    conflicts = []
+    for source, path, candidate_path in sources:
         if not path or not os.path.exists(path):
             continue
+        candidate_map, candidate_conflicts = load_candidate_map(candidate_path)
+        conflicts.extend(candidate_conflicts)
         with open(path, newline="", encoding="utf-8") as f:
             for row in csv.DictReader(f):
-                item = normalize_row(source, row, phase_map)
+                merged, row_conflicts = merge_candidate_metadata(source, row, candidate_map.get(join_key(row), {}))
+                conflicts.extend(row_conflicts)
+                item = normalize_row(source, merged, phase_map)
                 if item["task_key"] and item["window_start"] != "" and item["window_end"] != "":
                     outcomes.append(item)
-    return outcomes
+    return outcomes, conflicts
 
 
 def frozen_batch2b_outcomes():
@@ -365,6 +469,7 @@ def frozen_batch2b_outcomes():
             "denominator_type": "standard",
             "provenance_status": "frozen_batch2b",
             "provenance_note": "",
+            "reason_selected": "",
             "VIS_OPEN": str(vis_open),
             "vis_open_count": vis_open,
             "qpos_opening_delta": qpos,
@@ -372,6 +477,8 @@ def frozen_batch2b_outcomes():
             "taxonomy": tax,
             "denominator_clean": denom,
             "claim_usable": claim,
+            "action_bridge_confounded_source": False,
+            "missing_candidate_role": False,
             "_raw": {},
         })
     return outcomes
@@ -398,6 +505,7 @@ def build_labels(outcomes):
             "denominator_type": o["denominator_type"],
             "provenance_status": o["provenance_status"],
             "provenance_note": o["provenance_note"],
+            "reason_selected": o["reason_selected"],
             "VIS_OPEN": o["VIS_OPEN"],
             "vis_open_count": o["vis_open_count"],
             "qpos_opening_delta": round(qpos, 6),
@@ -406,7 +514,7 @@ def build_labels(outcomes):
             "taxonomy": taxonomy,
             "denominator_clean": o["denominator_clean"],
             "claim_usable": o["claim_usable"],
-            "action_bridge_confounded": bool(action_confounded),
+            "action_bridge_confounded": bool(action_confounded) or bool(o.get("action_bridge_confounded_source")),
             "label_action_bridge": 1 if int(o["vis_open_count"]) >= 16 else 0,
             "label_physical_response": 1 if qpos >= 0.03 else (0.5 if qpos >= 0.01 else 0),
             "label_task_failure": 0 if o["done"] else 1,
@@ -513,9 +621,9 @@ def write_readiness(path, labels, conflicts, output_labels, output_conflicts):
 def main():
     args = parse_args()
     phase_map = load_phase_map(args.descriptors)
-    outcomes = load_csv_sources(args, phase_map)
+    outcomes, metadata_conflicts = load_csv_sources(args, phase_map)
     labels = build_labels(outcomes)
-    conflicts = find_conflicts(labels)
+    conflicts = metadata_conflicts + find_conflicts(labels)
     write_csv(args.output_labels, labels, LABEL_FIELDS)
     write_csv(args.output_conflicts, conflicts, CONFLICT_FIELDS)
     write_readiness(args.output_readiness, labels, conflicts, args.output_labels, args.output_conflicts)

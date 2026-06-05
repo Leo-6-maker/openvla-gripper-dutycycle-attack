@@ -34,7 +34,7 @@ Scope: design, audit, scripts, and CPU-only feasibility validation. No GPU, roll
 
 1. Server read-only verification found the server repo on `exp/vis-payload-upgrade-validation-20260601`, not the reviewed branch `exp/vis-prefix-margin-repair-20260603`; the reviewed branch tip is not present on server.
 2. `tables/object_phase_response_labels_v2.csv` is still missing as a full-source label artifact.
-3. Batch3c labels are not safe to train on until the patched builder is run on synced server sources and schema audit passes.
+3. Batch3c labels are not safe to train on until the patched builder is run on synced server sources with candidate metadata joins and schema audit passes.
 4. Detector v2 should not train until schema audit passes on `object_phase_response_labels_v2.csv`.
 
 ## Non-Blocking Warnings
@@ -43,7 +43,7 @@ Scope: design, audit, scripts, and CPU-only feasibility validation. No GPU, roll
 2. Handoff still contains older hardcoded commit IDs; use `git log -1 -- reports/HANDOFF_20260605_WINDOW_COMPRESSION_AND_DETECTOR.md` for current committed revision.
 3. Local Batch2b/Batch3b/Batch3c final CSVs are absent, so server-side state must be verified by DeepSeek before merge/training.
 4. Local sklearn is unavailable, so model-training smoke could not complete on this Windows machine. Compile and source-level hardening passed.
-5. Label builder synthetic tests pass, but they are not a substitute for full-source server label generation.
+5. Label builder synthetic tests pass, including candidate metadata joins, but they are not a substitute for full-source server label generation.
 
 ## Remote Visibility
 
@@ -133,6 +133,8 @@ Required first:
 5. Confirm class balance, controls, and task split warnings before interpreting v2 metrics.
 
 Label builder Batch3b/c support: **Yes, implemented locally and pushed to remote.**
+
+Candidate metadata join support: **Yes.** The builder supports `--batch2b-candidates`, `--batch3-candidates`, `--batch3b-candidates`, and `--batch3c-candidates`; summary/candidate role conflicts hard fail; Batch3c rows with no joined role become manual_review and do not enter train.
 
 Server synced to reviewed branch: **No.**
 
