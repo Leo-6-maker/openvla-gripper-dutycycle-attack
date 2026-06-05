@@ -22,6 +22,16 @@ COMMON_REQUIRED = {
     "provenance_status",
 }
 
+COMMAND_PROXY_REQUIRED = {
+    "measurement_version",
+    "action_injection_version",
+    "gripper_qpos_source",
+    "forced_open_value_used",
+    "post_transform_gripper_action",
+    "clean_gripper_action",
+    "forced_gripper_action",
+}
+
 
 def parse_args():
     ap = argparse.ArgumentParser()
@@ -66,12 +76,25 @@ def audit_one(name: str, path: str):
     fields = set(fieldnames)
     required = set(COMMON_REQUIRED)
     required.add("denominator_status")
+    if name == "command_proxy":
+        required.update(COMMAND_PROXY_REQUIRED)
     missing = sorted(required - fields)
     if missing:
         result["issues"].append("missing_required_columns:" + ",".join(missing))
 
     if rows:
-        for col in ["gpu_pair", "runtime_sec", "provenance_status", "label_source", "label_confidence"]:
+        value_cols = ["gpu_pair", "runtime_sec", "provenance_status", "label_source", "label_confidence"]
+        if name == "command_proxy":
+            value_cols.extend([
+                "measurement_version",
+                "action_injection_version",
+                "gripper_qpos_source",
+                "forced_open_value_used",
+                "post_transform_gripper_action",
+            ])
+        for col in value_cols:
+            if col not in fields:
+                continue
             missing_values = sum(1 for r in rows if not has_value(r, col))
             if missing_values:
                 result["issues"].append(f"missing_values:{col}:{missing_values}")
@@ -102,6 +125,17 @@ def audit_one(name: str, path: str):
                 infra_as_label += 1
         if infra_as_label:
             result["issues"].append(f"infra_failed_row_treated_as_label:{infra_as_label}")
+
+        measurement_as_label = 0
+        for r in rows:
+            if "measurement_failed" not in str(r.get("provenance_status", "")).lower():
+                continue
+            confidence = str(r.get("label_confidence", "")).lower()
+            source = str(r.get("label_source", "")).lower()
+            if confidence and "not_label" not in confidence and "reference_only" not in source:
+                measurement_as_label += 1
+        if measurement_as_label:
+            result["issues"].append(f"measurement_failed_row_treated_as_label:{measurement_as_label}")
 
     if result["issues"]:
         result["status"] = "FAIL"
@@ -149,9 +183,11 @@ def write_report(path: str, audits):
         "## Checks",
         "",
         "- Required columns: task_key, state_id, window_start, window_end, label, label_source, label_confidence, gpu_pair, runtime_sec, provenance_status.",
+        "- Command-proxy additionally requires measurement_version, action_injection_version, gripper_qpos_source, forced_open_value_used, post_transform_gripper_action, clean_gripper_action, and forced_gripper_action.",
         "- denominator_status is required, including explicit not_applicable values for policy-only and command-proxy outputs.",
         "- Proxy labels must not be marked gold.",
         "- Rows with INFRA_FAILED/Xid/OOM/CUDA failures must not be treated as trainable labels.",
+        "- Rows with MEASUREMENT_FAILED must not be treated as proxy labels.",
         "",
         "## Claim Boundary",
         "",

@@ -22,6 +22,10 @@ warnings.filterwarnings("ignore")
 REPO = Path(os.environ.get("ATTACK_REPO",
     "/data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260605"))
 
+MEASUREMENT_VERSION = "v1_obs_robot0_gripper_qpos_or_mujoco_joint_lookup_20260605"
+ACTION_INJECTION_VERSION = "v1_final_env_step_action_space_after_normalize_invert_20260605"
+FORCED_OPEN_RAW_GRIPPER = 0.0
+
 
 def parse_args():
     ap = argparse.ArgumentParser()
@@ -51,6 +55,57 @@ def parse_gpu_ids(gpu_pair: str):
     return [int(x.strip()) for x in validate_gpu_pair(gpu_pair).split(",") if x.strip()]
 
 
+def normalize_gripper_action(action, binarize=True):
+    import numpy as np
+    action = np.asarray(action, dtype=np.float32).copy()
+    action[..., -1] = 2.0 * action[..., -1] - 1.0
+    if binarize:
+        action[..., -1] = np.sign(action[..., -1])
+        action[..., -1] = 1.0 if action[..., -1] == 0 else action[..., -1]
+    return action
+
+
+def invert_gripper_action(action):
+    import numpy as np
+    action = np.asarray(action, dtype=np.float32).copy()
+    action[..., -1] = -1.0 * action[..., -1]
+    return action
+
+
+def raw_gripper_to_env_action(raw_gripper: float) -> float:
+    import numpy as np
+    action = np.zeros(7, dtype=np.float32)
+    action[-1] = float(raw_gripper)
+    return float(invert_gripper_action(normalize_gripper_action(action, binarize=True))[-1])
+
+
+def read_gripper_qpos(obs, env):
+    """Return (qpos_value, source, status). Never use env._joint_positions."""
+    import numpy as np
+
+    if isinstance(obs, dict) and "robot0_gripper_qpos" in obs:
+        arr = np.asarray(obs.get("robot0_gripper_qpos"), dtype=np.float32).reshape(-1)
+        if arr.size > 0:
+            return float(arr[0]), "obs.robot0_gripper_qpos", "ok"
+
+    sim = getattr(env, "sim", None)
+    model = getattr(sim, "model", None)
+    data = getattr(sim, "data", None)
+    if model is not None and data is not None and hasattr(data, "qpos"):
+        joint_names = list(getattr(model, "joint_names", []) or [])
+        for name in joint_names:
+            lname = str(name).lower()
+            if "gripper" not in lname:
+                continue
+            try:
+                jid = model.joint_name2id(name)
+                adr = int(model.jnt_qposadr[jid])
+                return float(data.qpos[adr]), f"mujoco_joint:{name}", "ok"
+            except Exception:
+                continue
+    return None, "unavailable", "missing_gripper_qpos"
+
+
 def infra_status_from_error(error_text: str):
     low = str(error_text).lower()
     if any(tok in low for tok in ["xid", "out of memory", "oom", "cuda illegal", "cublas"]):
@@ -74,7 +129,6 @@ def run_command_proxy_episode(task_suite, task_id: int, state_id: int,
     import numpy as np
     import torch
     from transformers import AutoModelForVision2Seq, AutoProcessor
-    import robosuite.utils.transform_utils as T
     from PIL import Image
 
     gpu_ids = parse_gpu_ids(gpu_pair)
@@ -121,11 +175,26 @@ def run_command_proxy_episode(task_suite, task_id: int, state_id: int,
     step = 0
     done = False
     forced_open_count = 0
-    qpos_pre = None
-    qpos_max_delta = 0.0
+    qpos_first_pre = None
+    qpos_min_post = None
+    qpos_source = ""
+    measurement_failed = False
+    measurement_failure_reason = ""
     arm_l2_sum = 0.0
+    clean_gripper_action = ""
+    forced_gripper_action = FORCED_OPEN_RAW_GRIPPER
+    forced_open_value_used = raw_gripper_to_env_action(FORCED_OPEN_RAW_GRIPPER)
+    post_transform_gripper_action = ""
+    post_transform_gripper_actions = []
 
     while step < max_steps and not done:
+        qpos_pre, qpos_source_step, qpos_status = read_gripper_qpos(obs, env)
+        if qpos_status != "ok":
+            measurement_failed = True
+            measurement_failure_reason = qpos_status
+        elif not qpos_source:
+            qpos_source = qpos_source_step
+
         img = Image.fromarray(obs["agentview_image"][::-1])
         prompt = f"In: What action should the robot take to {instruction.lower()}?\nOut:"
         inputs = processor(prompt, img, return_tensors="pt")
@@ -144,38 +213,67 @@ def run_command_proxy_episode(task_suite, task_id: int, state_id: int,
                 tid = int(vocab_size - tokens[dim] - 1)
                 action[dim] = 0.5 * (bins[tid] + 1.0) * denom[dim] + q01[dim]
 
-        # Record pre-window qpos
-        if step == window_start - 1 and qpos_pre is None and hasattr(env, "_joint_positions"):
-            qpos_pre = env._joint_positions.copy() if env._joint_positions is not None else None
+        if window_start <= step < window_end and clean_gripper_action == "":
+            clean_gripper_action = float(action[-1])
 
-        # Force OPEN gripper during window
+        env_action = invert_gripper_action(normalize_gripper_action(action, binarize=True))
+
+        # Force OPEN in final env.step action space after normalize/invert transforms.
         if window_start <= step < window_end:
-            action[-1] = 1.0  # OPEN in env space
+            if qpos_pre is not None and qpos_first_pre is None:
+                qpos_first_pre = float(qpos_pre)
+            env_action[-1] = forced_open_value_used
+            post_transform_gripper_action = float(env_action[-1])
+            post_transform_gripper_actions.append(post_transform_gripper_action)
             forced_open_count += 1
 
-        obs, reward, done, info = env.step(action)
+        obs, reward, done, info = env.step(env_action)
+        qpos_post, qpos_source_post, qpos_post_status = read_gripper_qpos(obs, env)
+        if qpos_post_status != "ok":
+            measurement_failed = True
+            measurement_failure_reason = qpos_post_status
+        else:
+            if not qpos_source:
+                qpos_source = qpos_source_post
+            if window_start <= step < window_end:
+                qpos_min_post = (
+                    float(qpos_post) if qpos_min_post is None
+                    else min(float(qpos_min_post), float(qpos_post))
+                )
         step += 1
-
-        # Track arm L2
-        if hasattr(env, "_joint_positions") and env._joint_positions is not None:
-            qpos_now = env._joint_positions
-            if qpos_pre is not None:
-                delta = np.max(np.abs(qpos_now - qpos_pre))
-                qpos_max_delta = max(qpos_max_delta, float(delta))
 
     runtime = time.time() - t0
     env.close()
 
+    if measurement_failed or qpos_first_pre is None or qpos_min_post is None:
+        qpos_opening_delta = ""
+        physical_response = "measurement_failed"
+        provenance_status = f"MEASUREMENT_FAILED:{measurement_failure_reason or 'missing_window_qpos'}"
+    else:
+        qpos_opening_delta = round(float(qpos_first_pre) - float(qpos_min_post), 6)
+        physical_response = (
+            "strong" if qpos_opening_delta >= 0.03
+            else ("weak" if qpos_opening_delta >= 0.01 else "none")
+        )
+        provenance_status = "ok"
+
     return {
         "forced_open_count": forced_open_count,
-        "qpos_opening_delta": round(qpos_max_delta, 6),
+        "qpos_opening_delta": qpos_opening_delta,
         "task_done": int(done),
         "steps": step,
         "arm_l2": round(arm_l2_sum, 4),
-        "physical_response": "strong" if qpos_max_delta >= 0.03 else ("weak" if qpos_max_delta >= 0.01 else "none"),
+        "physical_response": physical_response,
         "task_failure": int(not done),
         "runtime_sec": round(runtime, 2),
-        "provenance_status": "ok",
+        "provenance_status": provenance_status,
+        "measurement_version": MEASUREMENT_VERSION,
+        "action_injection_version": ACTION_INJECTION_VERSION,
+        "gripper_qpos_source": qpos_source or "unavailable",
+        "clean_gripper_action": clean_gripper_action,
+        "forced_gripper_action": forced_gripper_action,
+        "forced_open_value_used": forced_open_value_used,
+        "post_transform_gripper_action": post_transform_gripper_action,
     }
 
 
@@ -214,6 +312,12 @@ def main():
                                 label_confidence="silver_proxy_not_gold",
                                 denominator_status="not_applicable_command_proxy",
                                 gpu_pair=args.gpu_pair, runtime_sec="",
+                                measurement_version=MEASUREMENT_VERSION,
+                                action_injection_version=ACTION_INJECTION_VERSION,
+                                gripper_qpos_source="", clean_gripper_action="",
+                                forced_gripper_action=FORCED_OPEN_RAW_GRIPPER,
+                                forced_open_value_used=raw_gripper_to_env_action(FORCED_OPEN_RAW_GRIPPER),
+                                post_transform_gripper_action="",
                                 provenance_status="ERROR:task_not_found"))
             continue
         task_id = matches[0]
@@ -225,11 +329,31 @@ def main():
                 task_suite, task_id, sid, ws, we, args.gpu_pair, args.max_steps)
         except Exception as e:
             status = infra_status_from_error(str(e))
-            r = {"provenance_status": f"{status}:{e}", "runtime_sec": ""}
+            r = {
+                "provenance_status": f"{status}:{e}",
+                "runtime_sec": "",
+                "measurement_version": MEASUREMENT_VERSION,
+                "action_injection_version": ACTION_INJECTION_VERSION,
+                "gripper_qpos_source": "",
+                "clean_gripper_action": "",
+                "forced_gripper_action": FORCED_OPEN_RAW_GRIPPER,
+                "forced_open_value_used": raw_gripper_to_env_action(FORCED_OPEN_RAW_GRIPPER),
+                "post_transform_gripper_action": "",
+            }
+
+        confidence = "silver_proxy_not_gold"
+        source = "full_vis_label"
+        provenance = str(r.get("provenance_status", ""))
+        if provenance.startswith("MEASUREMENT_FAILED"):
+            confidence = "not_label_measurement_failed"
+            source = "full_vis_label_reference_only"
+        elif provenance.startswith("INFRA_FAILED"):
+            confidence = "not_label_infra_failed"
+            source = "full_vis_label_reference_only"
 
         r.update(dict(task_key=task, state_id=sid, window_start=ws, window_end=we,
-                      label=c.get("full_vis_label",""), label_source="full_vis_label",
-                      label_confidence="silver_proxy_not_gold",
+                      label=c.get("full_vis_label",""), label_source=source,
+                      label_confidence=confidence,
                       denominator_status="not_applicable_command_proxy",
                       gpu_pair=args.gpu_pair))
         results.append(r)
@@ -239,6 +363,9 @@ def main():
     # Write CSV
     fields = ["task_key","state_id","window_start","window_end","label",
               "label_source","label_confidence","denominator_status","gpu_pair",
+              "measurement_version","action_injection_version","gripper_qpos_source",
+              "clean_gripper_action","forced_gripper_action","forced_open_value_used",
+              "post_transform_gripper_action",
               "forced_open_count","qpos_opening_delta","task_done","steps",
               "physical_response","task_failure","runtime_sec","provenance_status"]
     os.makedirs(os.path.dirname(args.output_csv) or ".", exist_ok=True)
@@ -258,11 +385,17 @@ def main():
 
 ## Results
 
-| Task | State | Window | Label | Done | QposΔ | Physical | Steps | Runtime |
-|------|-------|--------|-------|------|-------|----------|-------|---------|
+| Task | State | Window | Label | Done | QposΔ | Qpos source | Clean raw g | Forced env g | Physical | Steps | Runtime | Provenance |
+|------|-------|--------|-------|------|-------|-------------|-------------|--------------|----------|-------|---------|------------|
 """
     for r in results:
-        report += f"| {r['task_key']} | {r['state_id']} | [{r['window_start']},{r['window_end']}] | {r.get('label','?')} | {r.get('task_done','?')} | {r.get('qpos_opening_delta','?')} | {r.get('physical_response','?')} | {r.get('steps','?')} | {r.get('runtime_sec','?')} |\n"
+        report += (
+            f"| {r['task_key']} | {r['state_id']} | [{r['window_start']},{r['window_end']}] | "
+            f"{r.get('label','?')} | {r.get('task_done','?')} | {r.get('qpos_opening_delta','?')} | "
+            f"{r.get('gripper_qpos_source','?')} | {r.get('clean_gripper_action','?')} | "
+            f"{r.get('post_transform_gripper_action','?')} | {r.get('physical_response','?')} | "
+            f"{r.get('steps','?')} | {r.get('runtime_sec','?')} | {r.get('provenance_status','?')} |\n"
+        )
 
     report += f"""
 ## Summary
@@ -271,6 +404,11 @@ def main():
 - Negatives that stay done: control negative
 - Large qpos delta during window: physical bridge possible
 - Task failure after forced OPEN: SUSCEPTIBLE to gripper perturbation
+- qpos measurement version: `{MEASUREMENT_VERSION}`
+- action injection version: `{ACTION_INJECTION_VERSION}`
+- forced OPEN is injected as final env-step gripper action after normalize/invert transforms.
+- `env._joint_positions` is not used for gripper qpos.
+- `MEASUREMENT_FAILED` rows are not usable proxy labels.
 
 ## Claim boundary
 
