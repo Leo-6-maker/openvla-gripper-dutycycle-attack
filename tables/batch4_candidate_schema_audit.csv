@@ -1,0 +1,11 @@
+check_id,severity,status,count,detail
+candidate_rows_present,hard_fail,fail,0,candidate CSV has no rows
+required_columns,hard_fail,pass,0,all required columns present
+qpos_verification_values,hard_fail,pass,0,qpos verification values present
+duplicate_task_state_window,hard_fail,pass,0,no duplicate task/state/window rows
+gpu3_gpu7_assumptions,hard_fail,pass,0,no GPU3/GPU7 assumptions found
+denominator_plan_present,hard_fail,pass,0,all rows have denominator_plan
+expected_role_present,hard_fail,pass,0,all rows have expected_role
+no_phase_d_e_proxy_labels,hard_fail,pass,0,no Phase D/E proxy labels found
+enough_hard_negatives,hard_fail,fail,0,"hard negatives=0, min=6"
+hard_negative_qpos_verified_true_closed,warning,pass,0,qpos-verified true_closed hard negatives=0

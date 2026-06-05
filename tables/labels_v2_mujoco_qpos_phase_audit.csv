@@ -1,0 +1,1 @@
+task_key,state_id,window_start,window_end,source_batch,candidate_role,phase_bin_proxy,label_status,label_vulnerability_ready,gripper_qpos_mujoco,gripper_qpos_obs,gripper_qpos_used,gripper_qpos_source_priority,true_closed,natural_open,phase_proxy_mismatch,qpos_phase_status,reason
