@@ -1,0 +1,40 @@
+column,role,group,description
+row_id,audit,metadata,
+episode_key,audit,metadata,
+task_key,audit,metadata,
+state_id,audit,metadata,
+seed,audit,metadata,
+window_start,audit,metadata,
+window_end,audit,metadata,
+stratum,audit,metadata,
+train_use,audit,metadata,
+exclude_reason,audit,metadata,
+mechanism_type,audit,metadata,
+teacher_window_original,audit,metadata,
+opportunity_label,label,target,"1=teacher window positive, 0=control"
+window_start,feature,other,online-legal causal feature
+window_end,feature,other,online-legal causal feature
+gripper_qpos_mean,feature,proprio_gripper_qpos,online-legal causal feature
+gripper_qpos_std,feature,proprio_gripper_qpos,online-legal causal feature
+gripper_qpos_min,feature,proprio_gripper_qpos,online-legal causal feature
+gripper_qpos_max,feature,proprio_gripper_qpos,online-legal causal feature
+gripper_qpos_at_start,feature,proprio_gripper_qpos,online-legal causal feature
+gripper_qpos_range,feature,proprio_gripper_qpos,online-legal causal feature
+gripper_is_closed,feature,other,online-legal causal feature
+gripper_width_mean,feature,proprio_gripper_width,online-legal causal feature
+gripper_width_std,feature,proprio_gripper_width,online-legal causal feature
+gripper_command_mean,feature,action_gripper_command,online-legal causal feature
+gripper_command_std,feature,action_gripper_command,online-legal causal feature
+gripper_command_open_rate,feature,action_gripper_command,online-legal causal feature
+clean_open_count,feature,action_gripper_stats,online-legal causal feature
+clean_open_rate,feature,action_gripper_stats,online-legal causal feature
+clean_longest_open_streak,feature,other,online-legal causal feature
+eef_displacement,feature,proprio_eef,online-legal causal feature
+eef_z_mean,feature,proprio_eef,online-legal causal feature
+eef_z_trend,feature,proprio_eef,online-legal causal feature
+qpos_delta_from_pre,feature,proprio_gripper_qpos,online-legal causal feature
+grip_command_delta_from_pre,feature,action_gripper_command,online-legal causal feature
+window_start_frac,feature,window_position,online-legal causal feature
+window_len_frac,feature,window_position,online-legal causal feature
+n_window_frames,feature,window_metadata,online-legal causal feature
+n_total_steps,feature,window_metadata,online-legal causal feature
