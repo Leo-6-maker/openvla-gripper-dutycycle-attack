@@ -30,15 +30,31 @@ def check_state():
         elif s.get('condition') == 'random_linf':
             rand[jid] = s
 
-    vis_ok = {k: v for k, v in vis.items() if v.get('infra_status') == 'ok'}
-    rand_ok = {k: v for k, v in rand.items() if v.get('infra_status') == 'ok'}
-    paired = set(vis_ok.keys()) & set(rand_ok.keys())
-    vis_only = set(vis_ok.keys()) - paired
-    rand_only = set(rand_ok.keys()) - paired
-    infra_fail = sum(1 for s in summaries if s.get('infra_status') != 'ok')
+    # Pair by window coordinates (task, state, ws, we), not job_id
+    from collections import defaultdict
+    windows = defaultdict(dict)
+    for s in summaries:
+        key = (s.get('task_key',''), str(s.get('state_id','')), s.get('window_start',0), s.get('window_end',0))
+        windows[key][s.get('condition','')] = s
 
-    vis_opens = [v['decoded_open_count'] for v in vis_ok.values()]
-    positives = sum(1 for o in vis_opens if o >= 6)
+    paired = 0; vis_only = 0; rand_only = 0; positives = 0
+    vis_ok = 0; rand_ok = 0; infra_fail = 0
+    for key, conds in windows.items():
+        has_vis = 'vis_pgd' in conds; has_rand = 'random_linf' in conds
+        if has_vis and has_rand:
+            paired += 1
+            if conds['vis_pgd'].get('infra_status') == 'ok': vis_ok += 1
+            if conds['random_linf'].get('infra_status') == 'ok': rand_ok += 1
+            if conds['vis_pgd'].get('infra_status') == 'ok' and conds['vis_pgd']['decoded_open_count'] >= 6:
+                positives += 1
+        elif has_vis:
+            vis_only += 1
+            if conds['vis_pgd'].get('infra_status') == 'ok': vis_ok += 1
+            if conds['vis_pgd'].get('infra_status') != 'ok': infra_fail += 1
+        elif has_rand:
+            rand_only += 1
+            if conds['random_linf'].get('infra_status') == 'ok': rand_ok += 1
+            if conds['random_linf'].get('infra_status') != 'ok': infra_fail += 1
 
     # Check worker processes via GPU memory (robust across subprocess issues)
     workers_alive = 0
@@ -57,13 +73,13 @@ def check_state():
 
     return {
         'total_summaries': len(summaries),
-        'vis_ok': len(vis_ok), 'rand_ok': len(rand_ok),
-        'valid_paired': len(paired),
-        'vis_only': len(vis_only), 'rand_only': len(rand_only),
+        'vis_ok': vis_ok, 'rand_ok': rand_ok,
+        'valid_paired': paired,
+        'vis_only': vis_only, 'rand_only': rand_only,
         'infra_fail': infra_fail,
         'infra_rate': infra_fail / max(len(summaries), 1),
         'provisional_positives': positives,
-        'positive_rate': positives / max(len(vis_ok), 1),
+        'positive_rate': positives / max(paired + vis_only, 1),
         'workers_alive': workers_alive,
     }
 
