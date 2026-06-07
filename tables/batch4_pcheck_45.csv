@@ -1,0 +1,6 @@
+candidate_id,task_key,state_id,window_start,window_end,phase_bin_proxy,candidate_role,expected_role,reason_selected,denominator_plan,precheck_status
+b4_02,milk,1,30,47,near_closed,approach_near_closed_proxy,hard_negative,"FP_fix: milk_s1 FP, shifted later",clean_random_precheck,pending
+b4_05,ketchup,3,25,42,near_closed,approach_near_closed_proxy,hard_negative,"FP_fix: ketchup FPx2, state=3",clean_random_precheck,pending
+b4_08,butter,9,30,47,near_closed,approach_near_closed_proxy,hard_negative,"task_balance: butter neg, state=9",clean_random_precheck,pending
+b4_11,tomato_sauce,0,15,32,far_closed,approach_far_closed_proxy,likely_positive,task_balance: tomato_sauce 0 pos,clean_random_precheck,pending
+b4_14,milk,4,55,72,stable_post_lock,stable_post_lock_control,control,control: stable_post_lock milk s4,clean_random_precheck,pending

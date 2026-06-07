@@ -1,0 +1,9 @@
+task_key,state_id,window_start,window_end,label,eps_raw_pixels,pgd_steps,pgd_restarts,vis_open,open_margin,policy_transfer_score,runtime_sec,provenance_status,budget
+cream_cheese,4,28,45,1,4,10,1,,,,,BLOCKED_MISSING_CACHED_OBS:no_cached_image,eps4_steps10_rst1
+milk,4,19,36,1,4,10,1,,,,,BLOCKED_MISSING_CACHED_OBS:no_cached_image,eps4_steps10_rst1
+ketchup,1,21,38,1,4,10,1,,,,,BLOCKED_MISSING_CACHED_OBS:no_cached_image,eps4_steps10_rst1
+butter,5,25,42,1,4,10,1,,,,,BLOCKED_MISSING_CACHED_OBS:no_cached_image,eps4_steps10_rst1
+salad_dressing,0,7,24,0,4,10,1,,,,,BLOCKED_MISSING_CACHED_OBS:no_cached_image,eps4_steps10_rst1
+bbq_sauce,5,27,44,0,4,10,1,,,,,BLOCKED_MISSING_CACHED_OBS:no_cached_image,eps4_steps10_rst1
+ketchup,5,9,26,0,4,10,1,,,,,BLOCKED_MISSING_CACHED_OBS:no_cached_image,eps4_steps10_rst1
+milk,5,25,42,0,4,10,1,,,,,BLOCKED_MISSING_CACHED_OBS:no_cached_image,eps4_steps10_rst1

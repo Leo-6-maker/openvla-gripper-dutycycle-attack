@@ -1,0 +1,5 @@
+source_batch,task_key,state_id,window_start,window_end,candidate_role,control_type,phase_bin_proxy,denominator_type,provenance_status,provenance_note,reason_selected,VIS_OPEN,vis_open_count,qpos_opening_delta,qpos_label,done,taxonomy,denominator_clean,claim_usable,action_bridge_confounded,label_action_bridge,label_physical_response,label_task_failure,label_vulnerability_ready,label_status,label_use,exclusion_or_uncertain_reason
+batch1,ketchup,0,16,33,raw_audit_group,,far_closed_proxy,standard,complete,complete,,18/18,18,0.038042,strong,False,action_positive_physical_strong_task_positive,True,True,False,1,1,1,1,positive,train,
+batch3,alphabet_soup,4,4,21,,,grasp_formation,standard,unknown,,,18.0,18,0.032241,strong,False,claim_usable,True,True,False,1,1,1,1,positive,train,
+batch3,bbq_sauce,5,27,44,,,grasp_formation,standard,unknown,,,18.0,18,0.038119,strong,True,action_positive_physical_positive_task_negative,True,False,False,1,1,0,0,negative,train,
+batch3b,alphabet_soup,6,40,57,,,grasp_formation,standard,unknown,,,0.0,0,0.0,none,True,no_action_bridge,True,False,False,0,0,0,0,negative,train,

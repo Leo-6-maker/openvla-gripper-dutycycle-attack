@@ -1,0 +1,11 @@
+task_key,state_id,window_start,window_end,reason
+bbq_sauce,5,27,44,missing_1r_counterpart
+bbq_sauce,9,22,39,missing_1r_counterpart
+butter,5,25,42,missing_1r_counterpart
+cream_cheese,4,28,45,missing_1r_counterpart
+ketchup,0,16,33,missing_1r_counterpart
+ketchup,2,15,32,missing_1r_counterpart
+ketchup,3,25,42,missing_1r_counterpart
+ketchup,5,9,26,missing_1r_counterpart
+milk,4,19,36,missing_1r_counterpart
+milk,5,25,42,missing_1r_counterpart

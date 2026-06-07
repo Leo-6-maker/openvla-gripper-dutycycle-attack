@@ -1,0 +1,3 @@
+task_key,state_id,parent_window_start,parent_window_end,window_start,window_end,compressed_len,eps_raw_pixels,pgd_steps,pgd_restarts,objective,gpu_pair,runtime_sec,VIS_OPEN_count,qpos_opening_delta,done,steps,provenance_status,denominator_status,label_source,label_confidence,full_vis_label
+cream_cheese,4,28,45,31,41,10,4,10,1,prefix_locked_gripper_open_margin,"4,5",558.55,10,-6.9e-05,0,300,ok,low_budget_no_precheck,low_budget_vis,silver_candidate,1
+bbq_sauce,5,27,44,30,40,10,4,10,1,prefix_locked_gripper_open_margin,"4,5",534.02,10,-7.8e-05,0,300,ok,low_budget_no_precheck,low_budget_vis,silver_candidate,0

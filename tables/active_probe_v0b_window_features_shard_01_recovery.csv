@@ -1,0 +1,9 @@
+task_key,state_id,window_start,window_end,label_status,taxonomy,n_probe_steps,max_open_score_gain,mean_open_score_gain,max_grad_norm,any_token_flip,any_probe_error
+alphabet_soup,3,21,38,ignore,polluted,3,1.881172,0.743351,28.0,1,0
+alphabet_soup,4,4,21,positive,claim_usable,3,1.95977,1.575429,24.375,0,0
+alphabet_soup,8,29,46,ignore,polluted,3,2.502712,2.458947,26.375,1,0
+bbq_sauce,0,30,47,ignore,polluted,3,2.992885,1.425735,19.375,1,0
+bbq_sauce,5,27,44,negative,action_positive_physical_positive_task_negative,3,0.768597,0.2651,28.875,1,0
+bbq_sauce,9,22,39,positive,claim_usable,3,1.608334,1.066696,22.625,1,0
+butter,3,29,46,ignore,polluted,3,2.794468,1.067427,33.25,1,0
+butter,5,25,42,positive,claim_usable,3,5.270157,3.378563,21.25,1,0

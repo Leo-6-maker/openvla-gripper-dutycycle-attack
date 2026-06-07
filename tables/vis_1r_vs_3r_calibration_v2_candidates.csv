@@ -1,0 +1,11 @@
+task_key,state_id,window_start,window_end,expected_label,reason
+ketchup,1,21,38,positive,batch3 gold pos
+milk,1,8,25,positive,batch3 gold pos
+milk,4,19,36,positive,batch3 gold pos
+butter,5,25,42,positive,batch3 gold pos
+ketchup,0,16,33,positive,batch1 gold pos
+ketchup,5,9,26,negative,batch3 gold neg
+milk,5,25,42,negative,batch3 gold neg
+salad_dressing,0,7,24,negative,batch3 gold neg
+ketchup,2,15,32,negative,batch4 hard neg
+ketchup,3,25,42,negative,batch4 hard neg

@@ -1,0 +1,5 @@
+task_key,state_id,window_start,window_end,phase_bin_proxy,candidate_role,clean_open_ratio,T_gform,relative_lead,qpos_start,qpos_min,eef_speed_mean,actual_window_len,reason_selected
+salad_dressing,1,26,43,approach_near_closed_proxy,approach_near_closed_proxy,0.0,76,-50,0.039588,0.039588,0.501323,18,batch3b_approach_near_closed_proxy
+milk,1,18,35,approach_near_closed_proxy,approach_near_closed_proxy,0.0,96,-78,0.039407,0.039407,0.166206,18,batch3b_approach_near_closed_proxy
+bbq_sauce,0,15,32,approach_near_closed_proxy,approach_near_closed_proxy,0.0,75,-60,0.039368,0.039368,0.552193,18,batch3b_approach_near_closed_proxy
+alphabet_soup,6,40,57,approach_near_closed_proxy,approach_near_closed_proxy,0.0,90,-50,0.039443,0.039443,0.266514,18,batch3b_approach_near_closed_proxy

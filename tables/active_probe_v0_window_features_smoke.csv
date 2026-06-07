@@ -1,0 +1,2 @@
+task_key,state_id,window_start,window_end,label_status,taxonomy,n_probe_steps,clean_margin_mean,fgsm1_margin_gain_max,fgsm1_margin_gain_mean,pgd1_margin_gain_max,pgd1_margin_gain_mean,pgd3_margin_gain_max,pgd3_margin_gain_mean,max_margin_gain_any,any_token_flip
+ketchup,0,16,33,positive,action_positive_physical_strong_task_positive,3,-33.0694,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0

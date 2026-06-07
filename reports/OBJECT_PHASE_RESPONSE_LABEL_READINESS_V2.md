@@ -1,49 +1,42 @@
 # Object Phase Response Label Readiness V2
 
-Status: **NOT GENERATED FROM FULL SOURCES YET**
+**Labels CSV**: `tables/object_phase_response_labels_v2.csv`
+**Conflict CSV**: `tables/object_phase_response_labels_v2_conflicts.csv`
+**Rows**: 31
+**Train rows**: 22
+**Verdict**: **PASS**
 
-This placeholder records the current readiness boundary after patching the label builder. It is not a label-generation result and should not be used as detector training evidence.
+## Blocking Issues
 
-## Current State
+- None.
 
-| Item | Status |
+## Label Status Counts
+
+| Status | Count |
 |---|---:|
-| Label builder supports Batch3b/c CLI inputs | Yes |
-| `candidate_role` preservation | Yes |
-| `control_type` preservation | Yes |
-| `denominator_type` preservation | Yes |
-| `action_bridge_confounded` preservation | Yes |
-| `manual_review` excluded from train | Yes |
-| Duplicate conflict hard fail | Yes |
-| Candidate metadata join | Yes |
-| Summary/candidate role conflict hard fail | Yes |
-| Batch3c missing role excluded from train | Yes |
-| Synthetic tests | Pass |
-| Full server-source `tables/object_phase_response_labels_v2.csv` | Missing |
-| Detector v2 training | BLOCKED |
+| ignore | 9 |
+| negative | 13 |
+| positive | 9 |
 
-## Required Next Step
+## Source Counts
 
-After the server is synced to the reviewed branch/worktree, DeepSeek should run:
+| Source | Count |
+|---|---:|
+| batch1 | 3 |
+| batch3 | 18 |
+| batch3b | 10 |
 
-```bash
-PY=/home/liuyu/.conda/envs/openvla_official_libero_20260525/bin/python
-$PY scripts/diagnostics/finalize_phase_response_labels.py \
-  --batch1-merged tables/object_teacher_delay50_vis_smoke_merged_summary.csv \
-  --batch2b-vis tables/object_phase_response_batch2b_vis_summary.csv \
-  --batch3-vis tables/object_phase_response_batch3_vis_summary.csv \
-  --batch3b-vis tables/object_phase_response_batch3b_vis_summary.csv \
-  --batch3c-vis tables/object_phase_response_batch3c_vis_summary.csv \
-  --batch2b-candidates tables/object_phase_response_batch2b_candidates.csv \
-  --batch3-candidates tables/object_phase_response_batch3_candidates.csv \
-  --batch3b-candidates tables/object_phase_response_batch3b_candidates.csv \
-  --batch3c-candidates tables/object_phase_response_batch3c_candidates.csv \
-  --output-labels tables/object_phase_response_labels_v2.csv \
-  --output-readiness reports/OBJECT_PHASE_RESPONSE_LABEL_READINESS_V2.md \
-  --output-conflicts tables/object_phase_response_label_conflicts_v2.csv
+## Role Counts
 
-$PY scripts/diagnostics/audit_label_schema.py \
-  --labels-csv tables/object_phase_response_labels_v2.csv
-```
+| Role | Count |
+|---|---:|
+| complete_denominator | 1 |
+| manual_merge_validated | 1 |
+| raw_audit_group | 1 |
+| standard | 28 |
 
-Detector v2 training remains blocked until this full-source run and schema audit pass.
+## Boundaries
+
+- Only positive/negative rows are train-eligible.
+- manual_review, ignore, polluted, random-failed, denominator-failed, infra-failed, Xid/OOM, missing-trace, provenance-failed, schema-incomplete, and ambiguous rows must not enter train.
+- This builder does not train detector v2.

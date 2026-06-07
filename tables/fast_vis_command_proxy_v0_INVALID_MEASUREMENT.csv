@@ -1,0 +1,9 @@
+task_key,state_id,window_start,window_end,phase_bin_proxy,forced_open_count,qpos_opening_delta,done,steps,physical_response,task_failure,runtime_sec,gpu_pair,provenance_status,denominator_status,label_source,label_confidence
+cream_cheese,4,28,45,near_closed,17,0.0,0,300,none,1,362.07,"2,6",ok,command_proxy_no_denom_check,command_proxy,proxy
+milk,4,19,36,near_closed,17,0.0,0,300,none,1,373.84,"2,6",ok,command_proxy_no_denom_check,command_proxy,proxy
+ketchup,1,21,38,near_closed,17,0.0,0,300,none,1,369.93,"2,6",ok,command_proxy_no_denom_check,command_proxy,proxy
+butter,5,25,42,far_closed,17,0.0,0,300,none,1,372.81,"2,6",ok,command_proxy_no_denom_check,command_proxy,proxy
+salad_dressing,0,7,24,far_closed,17,0.0,0,300,none,1,342.17,"2,6",ok,command_proxy_no_denom_check,command_proxy,proxy
+bbq_sauce,5,27,44,near_closed,17,0.0,0,300,none,1,371.18,"2,6",ok,command_proxy_no_denom_check,command_proxy,proxy
+ketchup,5,9,26,far_closed,17,0.0,0,300,none,1,345.43,"2,6",ok,command_proxy_no_denom_check,command_proxy,proxy
+milk,5,25,42,far_closed,17,0.0,0,300,none,1,370.23,"2,6",ok,command_proxy_no_denom_check,command_proxy,proxy

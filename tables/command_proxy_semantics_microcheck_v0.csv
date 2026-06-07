@@ -1,0 +1,3 @@
+task_key,state_id,window_start,window_end,label,clean_gripper_pre,clean_gripper_window,clean_gripper_post,clean_decoded_gripper,forced_gripper_pre,forced_gripper_window,forced_gripper_post,forced_gripper_delta,forced_injected_steps,gripper_obs_keys,measurement_valid,gpu_pair,provenance_status,measurement_version,label_source,label_confidence
+cream_cheese,4,28,45,positive,0.020493,0.02017,0.020068,0.0,0.020471,0.004979,0.000599,-0.015492,17,"['robot0_gripper_qpos', 'robot0_gripper_qvel']",1,"2,6",ok,v1_obs_gripper_qpos,command_proxy_microcheck,proxy
+bbq_sauce,5,27,44,negative,0.020507,0.020195,0.020094,0.0,0.020486,0.005033,0.000631,-0.015454,17,"['robot0_gripper_qpos', 'robot0_gripper_qvel']",1,"2,6",ok,v1_obs_gripper_qpos,command_proxy_microcheck,proxy

@@ -1,0 +1,10 @@
+task_key,state_id,window_start,window_end,label_status,taxonomy,n_probe_steps,max_open_score_gain,mean_open_score_gain,max_grad_norm,any_token_flip,any_probe_error
+bbq_sauce,0,15,32,ignore,polluted,3,1.588726,0.388186,20.75,1,0
+bbq_sauce,0,5,22,negative,no_action_bridge,3,1.098492,0.261286,15.875,0,0
+ketchup,4,28,45,negative,no_action_bridge,3,2.219254,1.548323,89.5,1,0
+milk,1,18,35,negative,no_action_bridge,3,2.275593,1.693575,21.75,1,0
+milk,8,8,25,negative,no_action_bridge,3,2.639259,1.265148,27.375,1,0
+orange_juice,2,17,34,negative,no_action_bridge,3,3.181446,1.49225,32.0,1,0
+salad_dressing,5,28,45,negative,no_action_bridge,3,1.380882,0.812243,21.125,1,0
+tomato_sauce,1,23,40,negative,no_action_bridge,3,1.914455,1.330423,17.0,0,0
+tomato_sauce,3,17,34,negative,no_action_bridge,3,1.198322,0.692169,25.125,1,0

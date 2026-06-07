@@ -1,0 +1,5 @@
+candidate_id,task_key,state_id,window_start,window_end,phase_bin_proxy,candidate_role,expected_role,reason_selected,denominator_plan,precheck_status
+b4_03,milk,5,35,52,pre_lock,pre_lock_closed_proxy,hard_negative,"FP_fix: milk_s5 FP, pre_lock phase",clean_random_precheck,pending
+b4_06,alphabet_soup,7,20,37,far_closed,approach_far_closed_proxy,hard_negative,"FP_fix: alphabet_s6 FP, state=7",clean_random_precheck,pending
+b4_09,orange_juice,6,15,32,far_closed,approach_far_closed_proxy,likely_positive,task_balance: orange_juice 0 pos,clean_random_precheck,pending
+b4_12,bbq_sauce,4,18,35,near_closed,approach_near_closed_proxy,likely_positive,FN_fix: bbq_sauce_s9 was FN,clean_random_precheck,pending

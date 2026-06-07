@@ -1,0 +1,11 @@
+task_key,state_id,window_start,window_end,vis_open_3r,vis_open_1r,done_3r,done_1r,denom_3r,denom_1r,claim_3r,claim_1r,agreement
+bbq_sauce,5,27,44,18.0,0.0,False,False,True,True,False,False,no
+bbq_sauce,9,22,39,18.0,0.0,True,True,False,True,False,False,no
+butter,5,25,42,0.0,0.0,False,False,True,True,False,False,yes
+ketchup,0,16,33,0.0,0.0,False,True,True,True,False,False,yes
+ketchup,1,21,38,0.0,0.0,False,False,True,True,False,False,yes
+ketchup,2,15,32,1.0,0.0,False,False,True,True,False,False,no
+ketchup,3,25,42,0.0,0.0,True,False,True,True,False,False,yes
+milk,1,8,25,0.0,0.0,False,False,True,True,False,False,yes
+salad_dressing,0,7,24,1.0,0.0,True,True,True,True,False,False,no
+tomato_sauce,1,23,40,0.0,0.0,False,False,True,True,False,False,yes

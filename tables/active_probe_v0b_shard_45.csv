@@ -1,0 +1,10 @@
+source_batch,task_key,state_id,window_start,window_end,candidate_role,control_type,phase_bin_proxy,denominator_type,provenance_status,provenance_note,reason_selected,VIS_OPEN,vis_open_count,qpos_opening_delta,qpos_label,done,taxonomy,denominator_clean,claim_usable,action_bridge_confounded,label_action_bridge,label_physical_response,label_task_failure,label_vulnerability_ready,label_status,label_use,exclusion_or_uncertain_reason
+batch3b,bbq_sauce,0,15,32,,,grasp_formation,standard,unknown,,,,0,0.0,none,True,polluted,False,False,False,0,0,0,,ignore,ignore,polluted
+batch3b,bbq_sauce,0,5,22,,,grasp_formation,standard,unknown,,,1.0,1,0.0,none,True,no_action_bridge,True,False,False,0,0,0,0,negative,train,
+batch3b,ketchup,4,28,45,,,grasp_formation,standard,unknown,,,0.0,0,0.0,none,True,no_action_bridge,True,False,False,0,0,0,0,negative,train,
+batch3b,milk,1,18,35,,,grasp_formation,standard,unknown,,,0.0,0,0.0,none,True,no_action_bridge,True,False,False,0,0,0,0,negative,train,
+batch3b,milk,8,8,25,,,grasp_formation,standard,unknown,,,0.0,0,0.0,none,True,no_action_bridge,True,False,False,0,0,0,0,negative,train,
+batch3b,orange_juice,2,17,34,,,grasp_formation,standard,unknown,,,0.0,0,0.0,none,True,no_action_bridge,True,False,False,0,0,0,0,negative,train,
+batch3b,salad_dressing,5,28,45,,,grasp_formation,standard,unknown,,,0.0,0,0.0,none,True,no_action_bridge,True,False,False,0,0,0,0,negative,train,
+batch3b,tomato_sauce,1,23,40,,,grasp_formation,standard,unknown,,,1.0,1,4e-06,none,True,no_action_bridge,True,False,False,0,0,0,0,negative,train,
+batch3b,tomato_sauce,3,17,34,,,grasp_formation,standard,unknown,,,0.0,0,0.0,none,True,no_action_bridge,True,False,False,0,0,0,0,negative,train,

@@ -1,0 +1,2 @@
+task_key,state_id,window_start,window_end,expected_label,reason,run_1r_rc,run_1r_vis_open,run_1r_runtime_sec,run_3r_rc,run_3r_vis_open,run_3r_runtime_sec,gpu_pair,paired_status
+ketchup,1,21,38,positive,batch3 gold pos,1,?,1101.7,-9,?,223.8,"0,1",both_infra_failed

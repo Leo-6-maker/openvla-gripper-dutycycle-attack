@@ -1,0 +1,3 @@
+timestamp,labels_v2_train,v2_pos,v2_neg,v2_tasks,vis1r_done,vis1r_infra,precheck_fail,pending,calibration_paired,calibration_pass,provisional_silver_1r,new_hard_neg_est,total_train_optimistic,total_train_conservative,ready_v2_5_ablation,ready_v3_diagnostic
+2026-06-06 11:04:29.676816,22,9,13,9,12,5,8,119,10,yes,12,0,34,22,yes,no
+2026-06-06 12:48:21.521193,22,9,13,9,20,10,8,106,10,yes,20,0,42,22,yes,no

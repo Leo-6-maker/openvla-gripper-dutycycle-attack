@@ -1,0 +1,4 @@
+task_key,state_id,window_start,window_end,label_status,taxonomy,probe_status,step,clean_margin,clean_open_mass,fgsm1_margin_gain,fgsm1_open_mass_gain,fgsm1_token_flip,pgd1_margin_gain,pgd1_open_mass_gain,pgd1_token_flip,pgd3_margin_gain,pgd3_open_mass_gain,pgd3_token_flip,max_margin_gain,any_token_flip
+ketchup,0,16,33,positive,action_positive_physical_strong_task_positive,ok,16,-29.69019194910176,1.2755963819943705e-13,0.0,0.0,0,0.0,0.0,0,0.0,0.0,0,0.0,0
+ketchup,0,16,33,positive,action_positive_physical_strong_task_positive,ok,24,-36.8650370712175,9.766021213579126e-17,0.0,0.0,0,0.0,0.0,0,0.0,0.0,0,0.0,0
+ketchup,0,16,33,positive,action_positive_physical_strong_task_positive,ok,33,-32.65284642603787,6.592482839468637e-15,0.0,0.0,0,0.0,0.0,0,0.0,0.0,0,0.0,0

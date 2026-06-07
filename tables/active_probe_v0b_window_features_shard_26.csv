@@ -1,0 +1,12 @@
+task_key,state_id,window_start,window_end,label_status,taxonomy,n_probe_steps,max_open_score_gain,mean_open_score_gain,max_grad_norm,any_token_flip,any_probe_error
+cream_cheese,4,28,45,positive,claim_usable,3,0.888397,-0.174884,20.0,1,0
+ketchup,1,21,38,positive,claim_usable,3,1.474949,1.1853,18.125,1,0
+ketchup,2,39,56,ignore,polluted,3,1.324246,0.543724,23.25,1,0
+ketchup,5,9,26,negative,action_positive_physical_positive_task_negative,3,3.341022,0.559373,18.0,1,0
+milk,1,8,25,positive,claim_usable,3,1.137059,-0.25043,16.875,1,0
+milk,4,19,36,positive,claim_usable,3,3.075222,1.341558,18.625,1,0
+milk,5,25,42,negative,action_positive_physical_positive_task_negative,3,2.533134,1.763569,19.875,1,0
+milk,9,5,22,ignore,polluted,3,1.019211,0.464214,14.6875,1,0
+salad_dressing,0,31,48,ignore,polluted,3,-0.539608,-1.039698,21.875,1,0
+salad_dressing,0,7,24,negative,action_positive_physical_positive_task_negative,3,0.223968,0.127008,17.625,1,0
+alphabet_soup,6,40,57,negative,no_action_bridge,3,1.794193,1.065478,15.6875,1,0

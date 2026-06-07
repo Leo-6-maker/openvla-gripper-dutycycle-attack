@@ -1,0 +1,13 @@
+task_key,state_id,window_start,window_end,control_type,reason_non_vulnerable,qpos_phase_class
+ketchup,0,50,67,natural_open,gripper already at natural open,gripper qpos ~0.001 at parent window
+milk,4,45,62,natural_open,gripper already at natural open,gripper qpos ~0.001 from qpos cache
+butter,5,50,67,natural_open,gripper already at natural open,"late window, natural dynamics"
+ketchup,1,70,87,stable_post_lock,"task complete, post-lock stable",late window far beyond grasp
+milk,1,65,82,stable_post_lock,"task complete, post-lock stable",late window
+bbq_sauce,5,0,17,far_too_early,before contact/grasp,very early window
+salad_dressing,0,0,17,far_too_early,before contact/grasp,very early window
+tomato_sauce,1,50,67,post_lock,after task completion,gripper should be stable
+ketchup,0,70,87,post_lock,after task completion,gripper already released
+milk,8,40,57,after_done,episode terminal,near episode end
+ketchup,2,50,67,after_done,episode terminal,near episode end
+bbq_sauce,0,50,67,no_contact,no object contact expected,arm far from object

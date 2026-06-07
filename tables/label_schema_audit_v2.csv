@@ -1,2 +1,8 @@
 check_id,severity,status,count,detail
-input_exists,hard_fail,fail,0,labels CSV not found: tables/object_phase_response_labels_v2.csv
+required_fields,hard_fail,pass,0,all required fields present
+label_status_values,hard_fail,pass,0,all statuses allowed
+train_labels_binary,hard_fail,pass,0,train labels are binary
+train_rows_status_source,hard_fail,pass,0,train selection comes only from positive/negative rows
+blocked_rows_excluded_from_train,hard_fail,pass,0,blocked taxonomy/provenance rows excluded from train
+duplicate_conflict,hard_fail,pass,0,no conflicting duplicate labels
+forbidden_feature_columns_present,warning,warn,5,"label-only/outcome columns present; detector must exclude: VIS_OPEN,vis_open_count,done,denominator_clean,claim_usable"

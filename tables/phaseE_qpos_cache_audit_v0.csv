@@ -1,9 +1,9 @@
 task_key,state_id,cache_path,file_exists,row_count,step_min,step_max,parent_window_start,parent_window_end,covers_parent_window,has_mujoco_qpos,mujoco_qpos_nonempty_count,mujoco_qpos_min,mujoco_qpos_max,mujoco_qpos_mean,obs_qpos_nonempty_count,obs_all_zero,mujoco_obs_mismatch_count,true_closed_count,transitional_count,natural_open_count,provenance_status,cache_status,reason
-cream_cheese,4,\data\liuyu\outputs\phaseE_mujoco_qpos_cache_20260605\cream_cheese_s4\qpos_trace.csv,false,0,,,28,45,false,false,0,,,,0,false,0,0,0,0,missing_file,missing_file,qpos_trace.csv not found
-milk,4,\data\liuyu\outputs\phaseE_mujoco_qpos_cache_20260605\milk_s4\qpos_trace.csv,false,0,,,19,36,false,false,0,,,,0,false,0,0,0,0,missing_file,missing_file,qpos_trace.csv not found
-ketchup,1,\data\liuyu\outputs\phaseE_mujoco_qpos_cache_20260605\ketchup_s1\qpos_trace.csv,false,0,,,21,38,false,false,0,,,,0,false,0,0,0,0,missing_file,missing_file,qpos_trace.csv not found
-butter,5,\data\liuyu\outputs\phaseE_mujoco_qpos_cache_20260605\butter_s5\qpos_trace.csv,false,0,,,25,42,false,false,0,,,,0,false,0,0,0,0,missing_file,missing_file,qpos_trace.csv not found
-salad_dressing,0,\data\liuyu\outputs\phaseE_mujoco_qpos_cache_20260605\salad_dressing_s0\qpos_trace.csv,false,0,,,7,24,false,false,0,,,,0,false,0,0,0,0,missing_file,missing_file,qpos_trace.csv not found
-bbq_sauce,5,\data\liuyu\outputs\phaseE_mujoco_qpos_cache_20260605\bbq_sauce_s5\qpos_trace.csv,false,0,,,27,44,false,false,0,,,,0,false,0,0,0,0,missing_file,missing_file,qpos_trace.csv not found
-ketchup,5,\data\liuyu\outputs\phaseE_mujoco_qpos_cache_20260605\ketchup_s5\qpos_trace.csv,false,0,,,9,26,false,false,0,,,,0,false,0,0,0,0,missing_file,missing_file,qpos_trace.csv not found
-milk,5,\data\liuyu\outputs\phaseE_mujoco_qpos_cache_20260605\milk_s5\qpos_trace.csv,false,0,,,25,42,false,false,0,,,,0,false,0,0,0,0,missing_file,missing_file,qpos_trace.csv not found
+cream_cheese,4,/data/liuyu/outputs/phaseE_mujoco_qpos_cache_20260605/cream_cheese_s4/qpos_trace.csv,true,300,0,299,28,45,true,true,300,0.0005157,0.020833,0.000976025,300,false,0,3,3,294,ok,ok,usable MuJoCo qpos cache
+milk,4,/data/liuyu/outputs/phaseE_mujoco_qpos_cache_20260605/milk_s4/qpos_trace.csv,true,300,0,299,19,36,true,true,300,0.00051911,0.020833,0.000894227,300,false,0,3,3,294,ok,ok,usable MuJoCo qpos cache
+ketchup,1,/data/liuyu/outputs/phaseE_mujoco_qpos_cache_20260605/ketchup_s1/qpos_trace.csv,true,300,0,299,21,38,true,true,300,0.00025558,0.020833,0.000725953,300,false,0,3,3,294,ok,ok,usable MuJoCo qpos cache
+butter,5,/data/liuyu/outputs/phaseE_mujoco_qpos_cache_20260605/butter_s5/qpos_trace.csv,true,300,0,299,25,42,true,true,300,0.00053731,0.020833,0.0011046,300,false,0,3,3,294,ok,ok,usable MuJoCo qpos cache
+salad_dressing,0,/data/liuyu/outputs/phaseE_mujoco_qpos_cache_20260605/salad_dressing_s0/qpos_trace.csv,true,300,0,299,7,24,true,true,300,0.00047229,0.020833,0.00088463,300,false,0,3,3,294,ok,ok,usable MuJoCo qpos cache
+bbq_sauce,5,/data/liuyu/outputs/phaseE_mujoco_qpos_cache_20260605/bbq_sauce_s5/qpos_trace.csv,true,300,0,299,27,44,true,true,300,0.00054877,0.020833,0.00102131,300,false,0,3,3,294,ok,ok,usable MuJoCo qpos cache
+ketchup,5,/data/liuyu/outputs/phaseE_mujoco_qpos_cache_20260605/ketchup_s5/qpos_trace.csv,true,300,0,299,9,26,true,true,300,0.00035602,0.020833,0.000780363,300,false,0,3,3,294,ok,ok,usable MuJoCo qpos cache
+milk,5,/data/liuyu/outputs/phaseE_mujoco_qpos_cache_20260605/milk_s5/qpos_trace.csv,false,0,,,25,42,false,false,0,,,,0,false,0,0,0,0,missing_file,missing_file,qpos_trace.csv not found

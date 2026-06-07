@@ -1,16 +1,16 @@
 # Label Schema Audit V2
 
 **Input**: `tables/object_phase_response_labels_v2.csv`
-**Rows**: 0
-**Verdict**: **FAIL**
+**Rows**: 31
+**Verdict**: **PASS**
 
 ## Blocking Issues
 
-- `input_exists`: labels CSV not found: tables/object_phase_response_labels_v2.csv
+- None.
 
 ## Warnings
 
-- None.
+- `forbidden_feature_columns_present`: label-only/outcome columns present; detector must exclude: VIS_OPEN,vis_open_count,done,denominator_clean,claim_usable
 
 ## Notes
 

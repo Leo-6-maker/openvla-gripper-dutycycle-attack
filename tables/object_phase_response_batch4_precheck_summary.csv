@@ -1,0 +1,15 @@
+candidate_id,task_key,state_id,window_start,window_end,expected_role,denominator_status,provenance_status,precheck_pair
+b4_01,milk,9,10,27,hard_negative,clean,ok,unknown
+b4_02,milk,1,30,47,hard_negative,pending,pending,unknown
+b4_03,milk,5,35,52,hard_negative,pending,pending,unknown
+b4_04,ketchup,2,15,32,hard_negative,pending,pending,unknown
+b4_05,ketchup,3,25,42,hard_negative,pending,pending,unknown
+b4_06,alphabet_soup,7,20,37,hard_negative,pending,pending,unknown
+b4_07,butter,6,12,29,hard_negative,pending,pending,unknown
+b4_08,butter,9,30,47,hard_negative,pending,pending,unknown
+b4_09,orange_juice,6,15,32,likely_positive,pending,pending,unknown
+b4_10,orange_juice,7,25,42,likely_positive,polluted,ok,unknown
+b4_11,tomato_sauce,0,15,32,likely_positive,pending,pending,unknown
+b4_12,bbq_sauce,4,18,35,likely_positive,pending,pending,unknown
+b4_13,ketchup,0,60,77,control,polluted,ok,unknown
+b4_14,milk,4,55,72,control,pending,pending,unknown

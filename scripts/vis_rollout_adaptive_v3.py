@@ -97,6 +97,13 @@ def parse_args():
     ap.add_argument('--perturb_end', type=int, default=-1, help='override perturb_end (default: use task config)')
     ap.add_argument('--strategy', choices=['full','sparse'], default='full')
     ap.add_argument('--controller', choices=['fixed','open_streak_stop','open_count_stop','qpos_safety_stop','min_hold_qpos_cap','streak_with_qpos_cap'], default='fixed')
+    ap.add_argument('--use_proprionostep_detector', action='store_true', help='Enable ProprioNoStep online CPU phase detector')
+    ap.add_argument('--proprionostep_model_path', type=str, default='/data/liuyu/outputs/proprionostep_cpu_20260602/proprio_no_step_tcn_cpu.pt')
+    ap.add_argument('--proprionostep_hazard_threshold', type=float, default=0.5, help='Hazard score threshold for trigger')
+    ap.add_argument('--proprionostep_trigger_duration', type=int, default=5, help='Min steps to sustain trigger')
+    ap.add_argument('--proprionostep_cooldown', type=int, default=20, help='Cooldown steps after trigger ends')
+    ap.add_argument('--proprionostep_device', type=str, default='cpu', help='Device for ProprioNoStep (must be cpu)')
+    ap.add_argument('--proprionostep_history_len', type=int, default=32, help='History buffer length for TCN')
     ap.add_argument('--K', type=int, default=0, help='OPEN streak/count threshold')
     ap.add_argument('--Q', type=float, default=0, help='qpos_delta threshold')
     ap.add_argument('--max_duration', type=int, default=0, help='max PGD attacks for adaptive controller')
@@ -127,14 +134,46 @@ def parse_args():
         default='gripper_open_prob_mass', help='metric for best-restart selection (default: gripper_open_prob_mass)')
     ap.add_argument('--save_frames_dir', type=str, default=None, help='save frames every N steps for video export')
     ap.add_argument('--save_frames_every', type=int, default=1, help='save every N steps (default: 1)')
+    ap.add_argument('--allow_blacklisted_gpu_probation', action='store_true',
+        help='Allow GPU3/GPU7 only for isolated probation. Requires GPU37_PROBATION_ACK=1.')
     ap.add_argument('--dry_run', action='store_true')
     return ap.parse_args()
 
 args = parse_args()
 def _validate_gpu_pair(gpu_pair):
     ids = [x.strip() for x in gpu_pair.split(',') if x.strip()]
-    if any(x in {'3', '7'} for x in ids):
-        raise SystemExit('INFRA_FAILED: GPU3/GPU7 are blacklisted; requested --gpu_pair=%s' % gpu_pair)
+    requested_blacklisted = any(x in {'3', '7'} for x in ids)
+
+    if requested_blacklisted:
+        if not getattr(args, 'allow_blacklisted_gpu_probation', False):
+            raise SystemExit(
+                'INFRA_FAILED: GPU3/GPU7 are blacklisted; requested --gpu_pair=%s. '
+                'Use --allow_blacklisted_gpu_probation only for isolated probation.' % gpu_pair)
+
+        if os.environ.get('GPU37_PROBATION_ACK') != '1':
+            raise SystemExit(
+                'INFRA_FAILED: GPU3/GPU7 probation requires GPU37_PROBATION_ACK=1')
+
+        out = (getattr(args, 'output_dir', '') or getattr(args, 'save_dir', '')
+               or getattr(args, 'run_dir', '') or OUT_BASE or os.getcwd())
+        if 'gpu37_probation' not in out and 'gpu37_probation' not in os.getcwd():
+            raise SystemExit(
+                'INFRA_FAILED: GPU3/GPU7 probation output_dir must contain '
+                'gpu37_probation to prevent mixing with main outputs.')
+
+        condition = str(getattr(args, 'condition', '')).lower()
+        is_light = any(tok in condition for tok in
+            ['clean', 'random', 'precheck', 'denom', 'control'])
+        allow_vis = os.environ.get('GPU37_ALLOW_VIS_CANARY') == '1'
+        if not is_light and not allow_vis:
+            raise SystemExit(
+                'INFRA_FAILED: GPU3/GPU7 probation allows only clean/random/'
+                'precheck by default. Set GPU37_ALLOW_VIS_CANARY=1 for VIS canary.')
+        if allow_vis:
+            if int(getattr(args, 'pgd_restarts', 999)) > 1:
+                raise SystemExit(
+                    'INFRA_FAILED: GPU3/GPU7 VIS probation only allows pgd_restarts <= 1.')
+
     visible = os.environ.get('CUDA_VISIBLE_DEVICES', '').replace(' ', '')
     if visible == '2,6' and gpu_pair.replace(' ', '') == '2,6':
         raise SystemExit(
@@ -412,6 +451,153 @@ rng = np.random.RandomState(args.seed + 100000)
 dval = args.duration if args.duration > 0 else cfg['perturb_end'] - cfg['perturb_start'] + 1
 ws = cfg['perturb_start']; we = cfg['perturb_end']
 
+
+
+# ── ProprioNoStep Online CPU Detector ──────────────────────────────
+FEATURE_ORDER = [
+    'gripper_command', 'gripper_qpos', 'gripper_width',
+    'eef_x', 'eef_y', 'eef_z',
+    'eef_vx', 'eef_vy', 'eef_vz',
+    'action_dx', 'action_dy', 'action_dz',
+    'action_gripper',
+]
+PHASE_NAMES = ['far_closed','near_closed','pre_lock_closed','grasp_formation','stable','natural_open','uncertain','invalid']
+
+class ProprioNoStepDetector:
+    def __init__(self, model_path, device='cpu', history_len=32,
+                 hazard_threshold=0.5, trigger_duration=5, cooldown=20):
+        self.device = torch.device(device)
+        self.history_len = history_len
+        self.hazard_threshold = hazard_threshold
+        self.trigger_duration = trigger_duration
+        self.cooldown = cooldown
+
+        # Load model weights
+        state = torch.load(model_path, map_location=self.device, weights_only=False)
+        self.proj_weight = state['proj.weight'].to(self.device)
+        self.proj_bias = state['proj.bias'].to(self.device)
+        self.convs = torch.nn.ModuleList()
+        for i in range(3):
+            conv = torch.nn.Conv1d(64, 64, 3, padding=1)
+            conv.weight.data = state[f'convs.{i}.weight'].to(self.device)
+            conv.bias.data = state[f'convs.{i}.bias'].to(self.device)
+            self.convs.append(conv)
+        self.phase_head = torch.nn.Linear(64, 8)
+        self.phase_head.weight.data = state['phase_head.weight'].to(self.device)
+        self.phase_head.bias.data = state['phase_head.bias'].to(self.device)
+        self.hazard_head = torch.nn.Linear(64, 1)
+        self.hazard_head.weight.data = state['hazard_head.weight'].to(self.device)
+        self.hazard_head.bias.data = state['hazard_head.bias'].to(self.device)
+        self.release_head = torch.nn.Linear(64, 1)
+        self.release_head.weight.data = state['release_head.weight'].to(self.device)
+        self.release_head.bias.data = state['release_head.bias'].to(self.device)
+        self.eval()
+
+        # State
+        self.history = []  # list of 13-dim feature vectors
+        self.trigger_active = False
+        self.trigger_counter = 0
+        self.cooldown_counter = 0
+        self.last_hazard = 0.0
+        self.last_release = 0.0
+        self.last_phase_idx = -1
+        self.last_phase_conf = 0.0
+
+    def eval(self):
+        self.proj_weight.requires_grad_(False); self.proj_bias.requires_grad_(False)
+        for c in self.convs: c.eval()
+        self.phase_head.eval(); self.hazard_head.eval(); self.release_head.eval()
+
+    def extract_features(self, obs, action_vec):
+        '''Extract 13-dim feature vector from observation and action.'''
+        # Get qpos from MuJoCo (obs qpos always 0)
+        try:
+            gripper_qpos = float(env.sim.data.qpos[-2:].mean())  # finger joints
+        except:
+            gripper_qpos = 0.0
+        gripper_width = obs.get('robot0_gripper_qpos', [0.0])[0] if hasattr(obs, 'get') else 0.0
+        eef_pos = obs.get('robot0_eef_pos', np.zeros(3))
+        eef_vel = obs.get('robot0_eef_vel', np.zeros(3)) if 'robot0_eef_vel' in (obs if isinstance(obs, dict) else {}) else np.zeros(3)
+
+        feats = np.array([
+            float(action_vec[-1]) if len(action_vec) > 0 else 0.0,  # gripper_command (from action)
+            float(gripper_qpos),
+            float(gripper_width) if not isinstance(gripper_width, (list, np.ndarray)) else float(np.mean(gripper_width)),
+            float(eef_pos[0]) if len(eef_pos) > 0 else 0.0,
+            float(eef_pos[1]) if len(eef_pos) > 1 else 0.0,
+            float(eef_pos[2]) if len(eef_pos) > 2 else 0.0,
+            float(eef_vel[0]) if len(eef_vel) > 0 else 0.0,
+            float(eef_vel[1]) if len(eef_vel) > 1 else 0.0,
+            float(eef_vel[2]) if len(eef_vel) > 2 else 0.0,
+            0.0, 0.0, 0.0,  # action_dx/dy/dz (from previous step, approximate with zeros)
+            float(action_vec[-1]) if len(action_vec) > 0 else 0.0,  # action_gripper
+        ], dtype=np.float32)
+        return feats
+
+    def step(self, obs, action_vec):
+        # Run one inference step. Returns dict with detector outputs.
+        feats = self.extract_features(obs, action_vec)
+        self.history.append(feats)
+        if len(self.history) > self.history_len:
+            self.history = self.history[-self.history_len:]
+
+        result = {
+            'hazard_score': 0.0, 'release_safe_score': 0.0,
+            'phase_idx': -1, 'phase_confidence': 0.0,
+            'trigger_now': False, 'trigger_reason': '',
+        }
+
+        if len(self.history) < 8:  # need minimum history
+            return result
+
+        # Build input tensor [1, 13, T]
+        x = torch.as_tensor(np.stack(self.history, axis=0), dtype=torch.float32, device=self.device).T.unsqueeze(0)
+        # Project
+        x = torch.relu(torch.matmul(x.transpose(1, 2), self.proj_weight.T) + self.proj_bias).transpose(1, 2)
+        # TCN layers
+        for conv in self.convs:
+            x = torch.relu(conv(x))
+        # Global average pool
+        x_pooled = x.mean(dim=-1)  # [1, 64]
+
+        phase_logits = self.phase_head(x_pooled)
+        phase_probs = torch.softmax(phase_logits, dim=-1)
+        phase_idx = int(phase_probs.argmax(dim=-1).item())
+        phase_conf = float(phase_probs.max(dim=-1).values.item())
+
+        hazard = float(torch.sigmoid(self.hazard_head(x_pooled)).item())
+        release = float(torch.sigmoid(self.release_head(x_pooled)).item())
+
+        self.last_hazard = hazard
+        self.last_release = release
+        self.last_phase_idx = phase_idx
+        self.last_phase_conf = phase_conf
+
+        result['hazard_score'] = round(hazard, 6)
+        result['release_safe_score'] = round(release, 6)
+        result['phase_idx'] = phase_idx
+        result['phase_confidence'] = round(phase_conf, 6)
+
+        # Trigger logic
+        if self.cooldown_counter > 0:
+            self.cooldown_counter -= 1
+            self.trigger_active = False
+            return result
+
+        if hazard >= self.hazard_threshold:
+            self.trigger_counter += 1
+            if self.trigger_counter >= self.trigger_duration and not self.trigger_active:
+                self.trigger_active = True
+                result['trigger_now'] = True
+                result['trigger_reason'] = 'hazard_%.3f_sustained_%d' % (hazard, self.trigger_counter)
+        else:
+            if self.trigger_active:
+                self.cooldown_counter = self.cooldown
+            self.trigger_active = False
+            self.trigger_counter = 0
+
+        return result
+
 # Adaptive controller state
 ctrl = {
     'mode': args.controller, 'K': args.K, 'Q': args.Q,
@@ -422,6 +608,23 @@ ctrl = {
     'qpos_start': 0.0, 'qpos_delta_online': 0.0, 'attacks_applied': 0,
     'qpos_pre': 0.0, 'qpos_post': 0.0,
 }
+# ── ProprioNoStep detector init ──
+proprionostep_detector = None
+if args.use_proprionostep_detector:
+    if args.proprionostep_device != 'cpu':
+        print('WARNING: ProprioNoStep must run on CPU; forcing cpu')
+        args.proprionostep_device = 'cpu'
+    proprionostep_detector = ProprioNoStepDetector(
+        model_path=args.proprionostep_model_path,
+        device=args.proprionostep_device,
+        history_len=args.proprionostep_history_len,
+        hazard_threshold=args.proprionostep_hazard_threshold,
+        trigger_duration=args.proprionostep_trigger_duration,
+        cooldown=args.proprionostep_cooldown,
+    )
+    print(f'    ProprioNoStep detector loaded: hazard_thr={args.proprionostep_hazard_threshold} '
+          f'trig_dur={args.proprionostep_trigger_duration} cooldown={args.proprionostep_cooldown}')
+
 if args.controller != 'fixed' and args.condition == 'vis_pgd':
     print(f'    Adaptive controller: {args.controller} K={args.K} Q={args.Q} max_dur={ctrl["max_dur"]}')
 
@@ -446,6 +649,7 @@ while t < max_steps + num_steps_wait:
     effective_attack_step_idx = ''
     clean_action_vec = None  # will be set in each branch for NAD computation
 
+    proprionostep_result = {}
     if args.condition == 'clean' or not in_window:
         raw_action, _ = decode_image(img_np, cfg['instruction'])
         adv_grip = float(raw_action[-1]); clean_grip = adv_grip
@@ -488,7 +692,20 @@ while t < max_steps + num_steps_wait:
                     arm_l2 = float(np.linalg.norm(adv_action[:6] - clean_action[:6]))
                     linf = float(atk_result.observation_perturb_linf)
                     token_flip = int(clean_token_ids[-1]) != int(adv_token_ids[-1])
-                    # Update attack/controller audit state using causally available qpos.
+                    # ── ProprioNoStep detector inference ──
+                if proprionostep_detector is not None:
+                    try:
+                        proprionostep_result = proprionostep_detector.step(obs, clean_action_vec)
+                        # Override attack window: if detector triggers, start attacking from current step
+                        if proprionostep_result.get('trigger_now') and args.condition == 'vis_pgd':
+                            if not in_window:
+                                in_window = True
+                                cfg['perturb_start'] = t
+                                cfg['perturb_end'] = min(t + args.max_duration - 1, cfg.get('episode_length', 300))
+                    except Exception as _de:
+                        proprionostep_result = {'hazard_score': -1.0, 'error': str(_de)[:80]}
+
+                # Update attack/controller audit state using causally available qpos.
                     ctrl['attacks_applied'] += 1
                     is_open = raw_gripper_is_open(adv_grip)
                     ctrl['current_streak'] = ctrl['current_streak'] + 1 if is_open else 0
@@ -591,6 +808,12 @@ while t < max_steps + num_steps_wait:
         'ctrl_mode': ctrl['mode'], 'ctrl_stop_reason': ctrl['stop_reason'],
         'ctrl_streak': ctrl['current_streak'], 'ctrl_max_streak': ctrl['max_streak'],
         'ctrl_qpos_delta': round(ctrl['qpos_delta_online'], 6), 'ctrl_attacks': ctrl['attacks_applied'],
+        'proprionostep_hazard_score': proprionostep_result.get('hazard_score', 0.0),
+        'proprionostep_release_safe_score': proprionostep_result.get('release_safe_score', 0.0),
+        'proprionostep_phase_idx': proprionostep_result.get('phase_idx', -1),
+        'proprionostep_phase_confidence': proprionostep_result.get('phase_confidence', 0.0),
+        'proprionostep_trigger_now': int(proprionostep_result.get('trigger_now', False)),
+        'proprionostep_trigger_reason': proprionostep_result.get('trigger_reason', ''),
     })
     if done: success = True; done_any = True; break
     t += 1; policy_step += 1
@@ -644,6 +867,9 @@ summary = {
     'token_flips_full_window': n_flip, 'token_flips_attacked_steps': attacked_flips,
     'open_count_full_window': open_count_full_window, 'open_count_attacked_steps': open_count_attacked_steps,
     'window_token_flips': n_flip, 'avg_arm_l2': avg_al, 'total_dt_s': round(total_dt, 1),
+    'proprionostep_triggered': int(any(r.get('proprionostep_trigger_now', 0) for r in window_rows if isinstance(r, dict))),
+    'proprionostep_trigger_count': sum(1 for r in window_rows if isinstance(r, dict) and r.get('proprionostep_trigger_now', 0)),
+    'proprionostep_hazard_mean': round(float(np.mean([r.get('proprionostep_hazard_score', 0) for r in window_rows if isinstance(r, dict)])), 6) if window_rows else 0.0,
     'controller': ctrl['mode'], 'K': ctrl['K'], 'Q': ctrl['Q'], 'max_dur': ctrl['max_dur'],
     'stop_reason': ctrl['stop_reason'],
     'max_open_streak': ctrl['max_streak'], 'qpos_delta_online': round(ctrl['qpos_delta_online'], 6),

@@ -1,0 +1,12 @@
+task_key,state_id,window_start,window_end,label_status,taxonomy,n_probe_steps,clean_margin_mean,fgsm1_margin_gain_max,fgsm1_margin_gain_mean,pgd1_margin_gain_max,pgd1_margin_gain_mean,pgd3_margin_gain_max,pgd3_margin_gain_mean,max_margin_gain_any,any_token_flip
+cream_cheese,4,28,45,positive,claim_usable,3,-32.6533,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0
+ketchup,1,21,38,positive,claim_usable,3,-25.3148,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0
+ketchup,2,39,56,ignore,polluted,3,-28.6544,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0
+ketchup,5,9,26,negative,action_positive_physical_positive_task_negative,3,-27.7412,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0
+milk,1,8,25,positive,claim_usable,3,-29.0489,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0
+milk,4,19,36,positive,claim_usable,3,-31.6098,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0
+milk,5,25,42,negative,action_positive_physical_positive_task_negative,3,-34.2175,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0
+milk,9,5,22,ignore,polluted,3,-31.0937,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0
+salad_dressing,0,31,48,ignore,polluted,3,-26.2505,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0
+salad_dressing,0,7,24,negative,action_positive_physical_positive_task_negative,3,-34.9493,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0
+alphabet_soup,6,40,57,negative,no_action_bridge,3,-28.3189,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0

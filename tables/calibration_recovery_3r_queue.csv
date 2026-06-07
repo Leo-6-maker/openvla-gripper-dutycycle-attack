@@ -1,0 +1,7 @@
+task_key,state_id,window_start,window_end,reason,expected_role,source_chain
+ketchup,1,21,38,INFRA_FAILED_XID13_REPLACEMENT,positive,chain_01
+milk,4,19,36,LOCALIZATION_FAIL_RETRY,positive,chain_26
+bbq_sauce,9,22,39,LOCALIZATION_FAIL_RETRY,positive,chain_26
+cream_cheese,4,28,45,EXTRA_CALIBRATION_POSITIVE,positive,none
+ketchup,5,9,26,EXTRA_CALIBRATION_NEGATIVE,negative,none
+salad_dressing,0,7,24,EXTRA_CALIBRATION_NEGATIVE,negative,none

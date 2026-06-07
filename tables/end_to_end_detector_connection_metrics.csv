@@ -1,0 +1,10 @@
+mode,variant,n_eval,n_pos,n_neg,tp,fp,tn,fn,pos_recall,neg_recall,fpr,accuracy,balanced_acc,hard_gate,phase_needed,recommended,notes
+A_vulnerability_only,V0_gold_only/LR/D_causal_safe,22,9,13,8,6,7,1,0.8889,0.5385,0.4615,0.6818,0.7137,no,no,baseline,Physical bridge pos recall 0.889; high FPR on no_action_bridge negs
+B_phase_as_feature,not_evaluated,0,0,0,0,0,0,0,,,,,,no,yes,cannot_evaluate,No retraining. Phase features (hazard=0 for all vuln windows) would not help.
+C_mechanism_aware_routing,V0_gold_only/LR/D_causal_safe,22,9,13,8,6,7,1,0.8889,0.5385,0.4615,0.6818,0.7137,no,no,RECOMMENDED,8 physical_alarms(8/8 correct); 6 policy_escalations; 8 manual_review; 0 suppressed
+D_soft_modulation,phase_factor_0.5_constant,7,3,4,8,6,7,1,,,,,,no,yes,diagnostic_only,All hazard=0 for vuln windows; phase factor constant 0.5. No discrimination. ALL_ZERO_useless
+E_hard_gate_REJECTED,phase_gate_AND_vuln,7,7,0,0,0,0,7,0.0,,,0.0,,yes_REJECTED,yes,DO_NOT_USE,POC: 0/7 positive recall. Phase gate blocks ALL vulnerability positives.
+mechanism_stratified,negative_unclassified,13,0,13,0,6,7,0,,0.5385,0.4615,0.5385,,no,no,,
+mechanism_stratified,physical_bridge_positive,9,9,0,8,0,0,1,0.8889,,,0.8889,,no,no,,
+coverage,phase_coverage,22,,,7,15,,,phase_available_pct,0.3182,,,,no,n/a,,7/22 rows have phase data
+coverage,full_pipeline,7,,,77,,,,fully_joined_pct,0.0909,,,,no,yes,,7/77 rows fully joined (phase+vuln+mech)

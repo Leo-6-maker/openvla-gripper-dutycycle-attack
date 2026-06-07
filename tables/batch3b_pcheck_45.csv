@@ -1,0 +1,5 @@
+task_key,state_id,window_start,window_end,phase_bin_proxy,candidate_role,clean_open_ratio,T_gform,relative_lead,qpos_start,qpos_min,eef_speed_mean,actual_window_len,reason_selected
+bbq_sauce,0,5,22,approach_far_closed_proxy,approach_far_closed_proxy,0.0,75,-70,0.039047,0.039047,0.562242,18,batch3b_approach_far_closed_proxy
+tomato_sauce,1,23,40,approach_near_closed_proxy,approach_near_closed_proxy,0.0,73,-50,0.039545,0.039545,0.331893,18,batch3b_approach_near_closed_proxy
+orange_juice,1,10,27,approach_near_closed_proxy,approach_near_closed_proxy,0.0,60,-50,0.039204,0.039204,0.602981,18,batch3b_approach_near_closed_proxy
+cream_cheese,3,44,61,approach_near_closed_proxy,approach_near_closed_proxy,0.0,108,-64,0.039781,0.039781,0.301012,18,batch3b_approach_near_closed_proxy

@@ -1,0 +1,6 @@
+task_key,state_id,window_start,window_end,expected_label,reason
+milk,1,8,25,positive,"batch3 gold pos, far_closed"
+cream_cheese,4,28,45,positive,"batch3 gold pos, near_closed"
+ketchup,5,9,26,negative,"batch3 gold neg, far_closed"
+salad_dressing,0,7,24,negative,"batch3 gold neg, far_closed"
+tomato_sauce,1,23,40,negative,"batch3b neg, near_closed"

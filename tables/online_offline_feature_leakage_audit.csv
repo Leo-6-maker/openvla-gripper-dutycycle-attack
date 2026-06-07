@@ -1,0 +1,91 @@
+column_name,category,category_name,description
+VIS_OPEN,B,offline_after_attack_only,VIS OPEN frames count — BLOCKED for online
+action_bridge_confounded,B,offline_after_attack_only,Action bridge confounded — BLOCKED
+action_bridge_status,B,offline_after_attack_only,Action→gripper bridge during VIS — BLOCKED
+adaptive_status,D,metadata,Audit: adaptive status
+candidate_id,A,online_available_before_attack,Derived identity key
+candidate_role,A,online_available_before_attack,Planned role for this candidate
+claim_usable,C,label_oracle,Claim usable flag — oracle
+control_reason,A,online_available_before_attack,Why this is a control
+control_type,A,online_available_before_attack,Type of control (if known a priori)
+denominator_clean,A,online_available_before_attack,Clean rollout denominator check
+denominator_plan,A,online_available_before_attack,Planned denominator check
+denominator_status,A,online_available_before_attack,Denominator check result
+denominator_type,A,online_available_before_attack,Type of denominator check
+detector_feature_set,D,metadata,Which feature set used
+detector_model,D,metadata,Which model produced this
+detector_variant,D,metadata,Which detector variant produced this
+done,B,offline_after_attack_only,Task completion under VIS — BLOCKED
+eval_scope,D,metadata,Evaluation scope
+exclusion_or_uncertain_reason,B,offline_after_attack_only,Exclusion/uncertainty post-VIS — BLOCKED
+exclusion_reason,B,offline_after_attack_only,Exclusion reason post-VIS — BLOCKED
+exists,D,metadata,File exists check
+expected_role,A,online_available_before_attack,Expected label role
+feature_set,D,metadata,Feature set name in predictions
+fit_sample_weight,D,metadata,Fit sample weight strategy
+full_two_stage_possible,D,metadata,Audit flag
+gpu_pair,B,offline_after_attack_only,GPU used — not a feature
+hazard_score_max,A,online_available_before_attack,ProprioNoStep max hazard over clean window
+hazard_score_mean,A,online_available_before_attack,ProprioNoStep mean hazard over clean window
+in_calibration_v2,D,metadata,Audit: in calibration v2
+inclusion_status,B,offline_after_attack_only,Inclusion decision post-VIS — BLOCKED
+join_status,D,metadata,Audit: join status
+label_1r,C,label_oracle,1R screening label — oracle (post-attack label)
+label_action_bridge,B,offline_after_attack_only,Labeled action bridge from VIS — BLOCKED
+label_confidence,C,label_oracle,Label confidence score
+label_physical_response,B,offline_after_attack_only,Physical response from VIS — BLOCKED
+label_source,C,label_oracle,gold_v2/clean_control/1R_screening — ground truth
+label_status,C,label_oracle,positive/negative/ignore — ground truth
+label_task_failure,B,offline_after_attack_only,Task failure label from VIS — BLOCKED
+label_use,C,label_oracle,train/ignore/ablation — training decision
+label_vulnerability_ready,C,label_oracle,Is this label ready for training
+location,D,metadata,File location
+mechanism_type,C,label_oracle,Mechanism classification — oracle label
+missing_phase_rows,D,metadata,Missing phase count
+missing_reason,D,metadata,Audit: why missing
+mode,D,metadata,Evaluation mode
+model,D,metadata,Model name in predictions
+notes,D,metadata,Notes
+path,D,metadata,File path
+phase_available,A,online_available_before_attack,Phase detector available for this task
+phase_bin_proxy,A,online_available_before_attack,Heuristic phase bin (clean rollout)
+phase_columns,D,metadata,Phase column names
+phase_confidence,A,online_available_before_attack,Phase detector confidence
+phase_coverage_rows,D,metadata,Phase coverage count
+phase_is_critical,A,online_available_before_attack,Phase is critical hazard phase
+phase_missing_reason,D,metadata,Why phase is missing
+phase_source,A,online_available_before_attack,Source of phase data
+phase_value_hits,D,metadata,Phase value hit count
+precheck_status,A,online_available_before_attack,Precheck outcome (clean+random)
+predicted_phase,A,online_available_before_attack,Phase detector predicted phase bin
+provenance_note,B,offline_after_attack_only,VIS provenance notes — BLOCKED
+provenance_status,B,offline_after_attack_only,VIS provenance — BLOCKED
+qpos_delta,B,offline_after_attack_only,Qpos change from VIS attack — BLOCKED
+qpos_label,B,offline_after_attack_only,strong/weak/none from VIS outcome — BLOCKED
+qpos_opening_delta,B,offline_after_attack_only,Qpos opening delta from VIS — BLOCKED
+qpos_phase_class,A,online_available_before_attack,Phase class from clean qpos
+reason_selected,A,online_available_before_attack,Why this candidate was selected
+release_safe_score_mean,A,online_available_before_attack,ProprioNoStep mean release-safe
+release_safe_score_min,A,online_available_before_attack,ProprioNoStep min release-safe
+rows,D,metadata,Row count
+runtime_sec,B,offline_after_attack_only,VIS runtime — not a feature
+sample_weight,C,label_oracle,Training sample weight — oracle
+source_batch,A,online_available_before_attack,Which batch this came from
+source_reason,A,online_available_before_attack,Reason for source classification
+source_type,A,online_available_before_attack,gold/clean_control/candidate_derived
+state_id,A,online_available_before_attack,Episode state identity
+status,B,offline_after_attack_only,VIS run status — not a feature
+targeted_v2_error,B,offline_after_attack_only,Targeted error from v2 — BLOCKED
+task_failure,B,offline_after_attack_only,Task failure under VIS — BLOCKED
+task_key,A,online_available_before_attack,Task identity from env
+taxonomy,C,label_oracle,Taxonomy string — oracle label
+train_use,C,label_oracle,Use in training — oracle
+train_variant,C,label_oracle,Training variant — oracle
+true,C,label_oracle,Ground truth in predictions — oracle
+variant,D,metadata,Detector variant name
+vis_open_count,B,offline_after_attack_only,Number of VIS frames with gripper open — BLOCKED
+vuln_score_available,D,metadata,Audit: is vuln score available
+vulnerability_pred,D,metadata,Detector prediction — not input feature
+vulnerability_score,D,metadata,Detector output — not input feature
+window_end,A,online_available_before_attack,Window end step
+window_start,A,online_available_before_attack,Window start step

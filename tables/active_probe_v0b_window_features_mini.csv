@@ -1,0 +1,5 @@
+task_key,state_id,window_start,window_end,label_status,taxonomy,n_probe_steps,max_open_score_gain,mean_open_score_gain,max_grad_norm,any_token_flip,any_probe_error
+ketchup,0,16,33,positive,action_positive_physical_strong_task_positive,3,3.624386,1.927169,19.75,1,0
+alphabet_soup,4,4,21,positive,claim_usable,3,0.682266,0.047259,22.125,1,0
+bbq_sauce,5,27,44,negative,action_positive_physical_positive_task_negative,3,0.380436,-0.065662,21.5,0,0
+alphabet_soup,6,40,57,negative,no_action_bridge,3,1.794193,0.920034,15.6875,1,0
