@@ -36,6 +36,7 @@ UNNORM_KEY = OFFICIAL_UNNORM_KEY_LIBERO_OBJECT
 TRACE_VERSION = 'corrected_stageb_v1_1'
 RUNNER_VERSION = 'stageb_vis_labeling_v1_1_spec_aligned_20260607'
 OPEN_CONVENTION = 'env_action_6_lt_neg_0p5_means_OPEN'
+SOURCE_SNAPSHOT_ID = '4fe01c43'  # RC1 server snapshot — spec module SHA256 prefix
 
 
 def _get_git_info():
@@ -362,6 +363,7 @@ if env is not None:
                 'exec_spec_version': OPENVLA_LIBERO_EXEC_SPEC_VERSION,
                 'git_commit': GIT_COMMIT,
                 'git_dirty': GIT_DIRTY,
+                'source_snapshot_id': SOURCE_SNAPSHOT_ID,
                 'prompt_style': PROMPT_STYLE,
                 'image_preprocess_style': IMAGE_PREPROCESS_STYLE,
                 'unnorm_key': UNNORM_KEY,
@@ -416,7 +418,7 @@ TRACE_COLUMNS = [
     'random_noise_linf', 'random_noise_l2',
     'eps_processor', 'eps_raw_pixels_name_deprecated_or_compat',
     'trace_version', 'runner_version', 'exec_spec_version',
-    'git_commit', 'git_dirty',
+    'git_commit', 'git_dirty', 'source_snapshot_id',
     'prompt_style', 'image_preprocess_style', 'unnorm_key',
 ]
 
@@ -442,6 +444,7 @@ summary = {
     'runner_version': RUNNER_VERSION,
     'exec_spec_version': OPENVLA_LIBERO_EXEC_SPEC_VERSION,
     'git_commit': GIT_COMMIT, 'git_dirty': GIT_DIRTY,
+    'source_snapshot_id': SOURCE_SNAPSHOT_ID,
     'prompt_style': PROMPT_STYLE,
     'image_preprocess_style': IMAGE_PREPROCESS_STYLE,
     'unnorm_key': UNNORM_KEY,

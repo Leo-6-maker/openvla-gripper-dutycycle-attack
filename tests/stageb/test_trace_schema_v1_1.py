@@ -17,7 +17,7 @@ REQUIRED_COLUMNS = [
     'random_noise_linf', 'random_noise_l2',
     'eps_processor', 'eps_raw_pixels_name_deprecated_or_compat',
     'trace_version', 'runner_version', 'exec_spec_version',
-    'git_commit', 'git_dirty',
+    'git_commit', 'git_dirty', 'source_snapshot_id',
     'prompt_style', 'image_preprocess_style', 'unnorm_key',
 ]
 
