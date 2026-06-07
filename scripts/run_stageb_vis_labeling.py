@@ -188,7 +188,7 @@ if env is not None:
             
             # Use obs robot0_gripper_qpos (correct joint indices)
             gq = obs.get('robot0_gripper_qpos', np.zeros(2))
-            gripper_qpos = float((abs(gq[0]) + abs(gq[1])) / 2.0)
+            gripper_qpos = float((abs(gq[0]) + abs(gq[1])) / 2.0)  # abs_mean avoids sign cancellation
             try:
                 eef_pos = env.sim.data.site_xpos[env.sim.model.site_name2id('gripper0_center')]
             except:
@@ -247,10 +247,6 @@ if env is not None:
 
             if in_window:
                 decoded_grips.append(env_grip)
-                
-                gq_after = obs.get('robot0_gripper_qpos', np.zeros(2))
-                qpos_after = float((abs(gq_after[0]) + abs(gq_after[1])) / 2.0)
-                qpos_deltas.append(qpos_after - qpos_before if attack_this_step else 0.0)
 
             trace_rows.append({
                 'step': str(current_step), 'in_window': str(in_window),
@@ -272,6 +268,11 @@ if env is not None:
             })
 
             obs, reward, done, info = env.step(env_action_full)
+            # Measure qpos AFTER env.step (not before) for correct delta
+            if in_window:
+                gq_after = obs.get('robot0_gripper_qpos', np.zeros(2))
+                qpos_after = float((abs(gq_after[0]) + abs(gq_after[1])) / 2.0)
+                qpos_deltas.append(qpos_after - qpos_before if attack_this_step else 0.0)
             current_step += 1
 
     except Exception as e:
