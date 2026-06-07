@@ -80,6 +80,25 @@ def test_worker_generators_pass_shared_pair_id():
         assert text.count('--pair_id %s') >= 2, rel
 
 
+def test_unreachable_windows_cannot_be_labeled():
+    """No-in-window/no-attack rows must fail before becoming negatives."""
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'scripts', 'stageb'))
+    import build_pair_labels_v1_1 as builder
+
+    bad = {
+        'trace': 'trace_unreachable.csv',
+        'n_window_steps': '0',
+        'n_attack_steps': '0',
+    }
+    try:
+        builder.require_positive_count(bad, 'n_window_steps', 'VIS')
+    except SystemExit as e:
+        assert e.code == 1
+    else:
+        raise AssertionError('unreachable window should hard-fail')
+
+
 if __name__ == '__main__':
     test_pairing_key()
     test_no_filename_parsing()
@@ -87,4 +106,5 @@ if __name__ == '__main__':
     test_qpos_abs_sum()
     test_shifted_qpos_indexing()
     test_worker_generators_pass_shared_pair_id()
+    test_unreachable_windows_cannot_be_labeled()
     print('All pair label builder v1.1 tests PASSED')

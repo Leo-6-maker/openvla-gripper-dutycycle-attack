@@ -18,6 +18,20 @@ PHYS_STRICT_THRESHOLD = 0.02
 CMD_OPEN_THRESHOLD = 6
 
 
+def require_positive_count(row, field, trace_role):
+    try:
+        value = int(row.get(field, '0'))
+    except ValueError:
+        print('REJECT: %s has non-integer %s=%r'
+              % (row.get('trace', '?'), field, row.get(field, '')))
+        sys.exit(1)
+    if value <= 0:
+        print('REJECT: %s %s has %s=%d; unreachable/no-intervention windows cannot become labels'
+              % (trace_role, row.get('trace', '?'), field, value))
+        sys.exit(1)
+    return value
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--qpos-csv', required=True)
@@ -72,6 +86,11 @@ def main():
                      v.get('trace', 'MISSING') if v else 'MISSING',
                      r.get('trace', 'MISSING') if r else 'MISSING'))
             sys.exit(1)
+
+        require_positive_count(v, 'n_window_steps', 'VIS')
+        require_positive_count(r, 'n_window_steps', 'RAND')
+        require_positive_count(v, 'n_attack_steps', 'VIS')
+        require_positive_count(r, 'n_attack_steps', 'RAND')
 
         vis_open = int(v['open_count'])
         vis_streak = int(v['open_streak'])

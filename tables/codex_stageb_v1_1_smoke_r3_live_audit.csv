@@ -1,0 +1,10 @@
+finding_id,area,status,severity,evidence,required_action
+SMOKE-R3-001,server_repo_state,WARNING,medium,"Server repo HEAD observed ca3a97e with dirty/manual-uploaded files; not a clean e878bae checkout.","Use trace metadata and uploaded file checks as source of truth; do not rely on server git cleanliness."
+SMOKE-R3-002,trace_schema,PASS,info,"All six trace CSVs had required v1.1 columns, corrected trace_version, obs qpos source, official prompt style, official image preprocess style, and corrected open convention.","No action required for schema."
+SMOKE-R3-003,pair_id_matching,PASS,info,"Smoke traces used shared pair IDs p01, p02, p03 for VIS/random matched pairs.","No action required for this smoke."
+SMOKE-R3-004,validator,PASS_WITH_WARNING,medium,"Validator reported Valid: 6 Failed: 0, with NO_IN_WINDOW_STEPS warnings on butter and ketchup traces.","Do not consume no-window traces as labels."
+SMOKE-R3-005,butter_window_reachability,FAIL,high,"butter s6 [182,192] VIS and random both had n_window_steps=0 and n_attack_steps=0.","Select earlier v1.1-official reachable window."
+SMOKE-R3-006,ketchup_window_reachability,FAIL,high,"ketchup s8 [154,164] VIS and random both had n_window_steps=0 and n_attack_steps=0.","Select earlier v1.1-official reachable window."
+SMOKE-R3-007,cream_window_reachability,PASS,info,"cream_cheese s7 [91,101] VIS and random both had n_window_steps=11 and n_attack_steps=11.","Reachable smoke pair can be inspected, but is not broad evidence."
+SMOKE-R3-008,label_builder_no_window_guard,BLOCKER_FIXED,high,"Old v1.1 label builder would output unreachable butter/ketchup rows as all-zero labels.","Patched build_pair_labels_v1_1.py to hard-fail n_window_steps<=0 or n_attack_steps<=0."
+SMOKE-R3-009,smoke_scientific_claim,BOUNDARY,high,"Smoke validates code/schema but not Stage-B VIS effect; two pairs are unreachable and one reachable cream pair is negative.","Do not claim VIS success/failure from this smoke."
