@@ -74,6 +74,12 @@ def validate_trace(path):
     if gc in ('', 'unknown', 'PLACEHOLDER'):
         raise AssertionError('HARD_FAIL_GIT_COMMIT: %r' % gc)
 
+    # 7. source_snapshot_id must match RC1 (HARD FAIL)
+    ssid = rows[0].get('source_snapshot_id', '') if rows else ''
+    if ssid != '4fe01c43':
+        raise AssertionError(
+            'HARD_FAIL_SOURCE_SNAPSHOT_ID: got=%r require=4fe01c43' % ssid)
+
     # 7. pair_id consistency
     pids = set(r.get('pair_id', '') for r in rows if r.get('pair_id'))
     if len(pids) != 1:

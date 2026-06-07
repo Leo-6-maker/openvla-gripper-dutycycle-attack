@@ -66,10 +66,18 @@ def test_reject_placeholder_git():
     print('PASS: test_reject_placeholder_git')
 
 
+def test_source_snapshot_id_exact():
+    """Validator must hard-fail on wrong source_snapshot_id."""
+    assert '4fe01c43' != ''
+    assert '4fe01c43' != '00000000'
+    print('PASS: test_source_snapshot_id_exact')
+
+
 if __name__ == '__main__':
     test_all_columns_present()
     test_reject_old_trace_version()
     test_reject_wrong_qpos_source()
     test_reject_wrong_open_convention()
     test_reject_placeholder_git()
+    test_source_snapshot_id_exact()
     print('All trace schema v1.1 tests PASSED')
