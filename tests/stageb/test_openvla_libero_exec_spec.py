@@ -9,9 +9,11 @@ from gripper_attack.openvla_libero_exec_spec import (
     official_prompt,
     open_token_ids_from_decoded_action,
     raw_gripper_is_close,
+    raw_gripper_is_boundary,
     raw_gripper_is_open,
     raw_gripper_to_env_gripper,
     validate_open_close_token_sets,
+    boundary_token_ids_from_decoded_action,
 )
 
 
@@ -24,8 +26,10 @@ def test_raw_to_env_truth_table():
     assert env_gripper_is_close(1.0)
     assert raw_gripper_is_close(0.0)
 
-    assert raw_gripper_to_env_gripper(0.5) == -1.0
-    assert raw_gripper_is_open(0.5)
+    assert raw_gripper_to_env_gripper(0.5) == 0.0
+    assert raw_gripper_is_boundary(0.5)
+    assert not raw_gripper_is_open(0.5)
+    assert not raw_gripper_is_close(0.5)
 
 
 def test_official_prompt_shape():
@@ -38,8 +42,10 @@ def test_token_helpers_follow_raw_threshold():
     token_action_map = {10: 0.0, 11: 0.499, 12: 0.5, 13: 0.996, 31744: 1.0, 31745: 0.999}
     open_ids = open_token_ids_from_decoded_action(token_action_map)
     close_ids = close_token_ids_from_decoded_action(token_action_map)
-    assert open_ids == [12, 13, 31744, 31745]
+    boundary_ids = boundary_token_ids_from_decoded_action(token_action_map)
+    assert open_ids == [13, 31744, 31745]
     assert close_ids == [10, 11]
+    assert boundary_ids == [12]
     validate_open_close_token_sets(open_ids, close_ids, token_action_map)
 
 

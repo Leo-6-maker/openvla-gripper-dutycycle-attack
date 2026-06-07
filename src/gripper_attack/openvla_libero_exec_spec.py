@@ -13,9 +13,10 @@ Official convention:
     raw gripper 0 = close, raw gripper 1 = open
     LIBERO env gripper -1 = open, +1 = close
 
-Therefore:
-    raw >= 0.5 -> env -1 -> physical OPEN
+Therefore, matching the official ``np.sign`` binarization:
+    raw >  0.5 -> env -1 -> physical OPEN
     raw <  0.5 -> env +1 -> physical CLOSE
+    raw == 0.5 -> env  0 -> BOUNDARY / NEUTRAL
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ RAW_GRIPPER_CLOSE_VALUE: float = 0.0
 RAW_GRIPPER_OPEN_VALUE: float = 1.0
 ENV_GRIPPER_OPEN_VALUE: float = -1.0
 ENV_GRIPPER_CLOSE_VALUE: float = 1.0
-OPENVLA_LIBERO_EXEC_SPEC_VERSION = "openvla_libero_exec_spec_v1_20260607"
+OPENVLA_LIBERO_EXEC_SPEC_VERSION = "openvla_libero_exec_spec_v2_official_boundary_20260607"
 OFFICIAL_PROMPT_STYLE = "official_in_out"
 OFFICIAL_UNNORM_KEY_LIBERO_OBJECT = "libero_object"
 OFFICIAL_QPOS_SOURCE = 'obs["robot0_gripper_qpos"]'
@@ -48,7 +49,7 @@ def normalize_gripper_raw(raw: float, *, binarize: bool = True) -> float:
         elif val < 0:
             val = -1.0
         else:
-            val = 1.0  # tie-break: 0 → +1
+            val = 0.0
     return float(val)
 
 
@@ -64,12 +65,17 @@ def decoded_action_to_env_gripper(raw: float, *, binarize: bool = True) -> float
 
 def raw_gripper_is_open(raw: float, *, threshold: float = OPEN_THRESHOLD_RAW) -> bool:
     """OPEN in raw/decoded OpenVLA action space."""
-    return float(raw) >= float(threshold)
+    return float(raw) > float(threshold)
 
 
 def raw_gripper_is_close(raw: float, *, threshold: float = OPEN_THRESHOLD_RAW) -> bool:
     """CLOSE in raw/decoded OpenVLA action space."""
     return float(raw) < float(threshold)
+
+
+def raw_gripper_is_boundary(raw: float, *, threshold: float = OPEN_THRESHOLD_RAW, atol: float = 1e-9) -> bool:
+    """Neutral boundary in raw/decoded OpenVLA action space."""
+    return abs(float(raw) - float(threshold)) <= float(atol)
 
 
 def env_gripper_is_open(env: float) -> bool:
@@ -83,7 +89,11 @@ def env_gripper_is_close(env: float) -> bool:
 
 
 def classify_raw_gripper(raw: float, *, threshold: float = OPEN_THRESHOLD_RAW) -> str:
-    return "open" if raw_gripper_is_open(raw, threshold=threshold) else "close"
+    if raw_gripper_is_open(raw, threshold=threshold):
+        return "open"
+    if raw_gripper_is_close(raw, threshold=threshold):
+        return "close"
+    return "boundary_or_neutral"
 
 
 def classify_env_gripper(env: float) -> str:
@@ -102,6 +112,16 @@ def open_token_ids_from_decoded_action(token_action_map: Mapping[int, float], *,
 def close_token_ids_from_decoded_action(token_action_map: Mapping[int, float], *, threshold: float = OPEN_THRESHOLD_RAW) -> list[int]:
     """Return token ids whose decoded raw gripper action is physical CLOSE."""
     return sorted(int(tid) for tid, raw in token_action_map.items() if raw_gripper_is_close(raw, threshold=threshold))
+
+
+def boundary_token_ids_from_decoded_action(token_action_map: Mapping[int, float], *, threshold: float = OPEN_THRESHOLD_RAW) -> list[int]:
+    """Return token ids whose decoded raw gripper action is official boundary/neutral."""
+    return sorted(
+        int(tid)
+        for tid, raw in token_action_map.items()
+        if not raw_gripper_is_open(raw, threshold=threshold)
+        and not raw_gripper_is_close(raw, threshold=threshold)
+    )
 
 
 def validate_open_close_token_sets(
@@ -124,13 +144,17 @@ def validate_open_close_token_sets(
     for tid in open_set:
         raw = float(token_action_map[int(tid)])
         env = raw_gripper_to_env_gripper(raw)
-        if not (raw >= float(threshold) and env_gripper_is_open(env)):
+        if not (raw > float(threshold) and env_gripper_is_open(env)):
             raise AssertionError(f"OPEN token {tid} decodes to raw={raw:.6f}, env={env:.1f}")
     for tid in close_set:
         raw = float(token_action_map[int(tid)])
         env = raw_gripper_to_env_gripper(raw)
         if not (raw < float(threshold) and env_gripper_is_close(env)):
             raise AssertionError(f"CLOSE token {tid} decodes to raw={raw:.6f}, env={env:.1f}")
+    for tid, raw in token_action_map.items():
+        if raw_gripper_is_boundary(float(raw), threshold=threshold):
+            if int(tid) in open_set or int(tid) in close_set:
+                raise AssertionError(f"BOUNDARY token {tid} must not be OPEN/CLOSE")
 
 
 def get_libero_image_official(obs: Mapping, *, resize_size=None):
@@ -155,7 +179,7 @@ def _self_check() -> None:
     cases = [
         (0.996, -1.0, True),
         (1.0, -1.0, True),
-        (0.5, -1.0, True),
+        (0.5, 0.0, False),
         (0.0, 1.0, False),
         (0.499, 1.0, False),
     ]
@@ -166,6 +190,8 @@ def _self_check() -> None:
         assert env_gripper_is_open(env) is expected_open, (env, expected_open)
     assert env_gripper_is_close(1.0)
     assert not env_gripper_is_close(-1.0)
+    assert classify_raw_gripper(0.5) == "boundary_or_neutral"
+    assert classify_env_gripper(0.0) == "neutral_or_invalid"
 
 
 _self_check()

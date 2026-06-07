@@ -11,7 +11,7 @@
 | Branch | `exp/vis-prefix-margin-repair-20260603` |
 | Commit SHA | `ca570704b56c7e424a92a37813036f7b2c631419` |
 | Tag | None (RC1, not final) |
-| Spec version | `openvla_libero_exec_spec_v1_20260607` |
+| Spec version | `openvla_libero_exec_spec_v2_official_boundary_20260607` |
 | Trace version | `corrected_stageb_v1_1` |
 | Runner version | `stageb_vis_labeling_v1_1_spec_aligned_20260607` |
 
@@ -19,10 +19,11 @@
 
 | Rule | Value |
 |------|-------|
-| raw_gripper OPEN threshold | `>= 0.5` |
+| raw_gripper OPEN threshold | `> 0.5` |
 | env_action_6 OPEN | `< -0.5` (env = -1.0) |
 | env_action_6 CLOSE | `> +0.5` (env = +1.0) |
-| open_token_ids | `{tid \| decoded raw >= 0.5}` |
+| raw_gripper boundary | `== 0.5` → neutral/excluded |
+| open_token_ids | `{tid \| decoded raw > 0.5}` |
 | qpos source | `obs["robot0_gripper_qpos"]` |
 | qpos aggregation | `abs(q0) + abs(q1)` |
 | shifted qpos | `step_dict[s+1]` |
@@ -57,7 +58,7 @@ Core files:
 | `src/gripper_attack/openvla_libero_exec_spec.py` | Executable spec — single source of truth |
 | `src/gripper_attack/gripper_semantics.py` | Spec wrapper |
 | `src/gripper_attack/attack_adapter.py` | Token region + PGD attacker |
-| `scripts/run_stageb_vis_labeling.py` | v1.1 labeling runner (52-column trace) |
+| `scripts/run_stageb_vis_labeling.py` | v1.1 labeling runner (53-column trace) |
 | `scripts/generate_stageb_worker_scripts.py` | Worker script generator with shared --pair_id |
 | `scripts/stageb/validate_stageb_trace_v1_1.py` | Trace schema validator |
 | `scripts/stageb/postprocess_traces_v1_1.py` | v1.1-only qpos postprocess |
@@ -68,15 +69,17 @@ Core files:
 
 See `tables/stageb_v1_1_rc1_test_results.csv` for per-test details.
 
-- Pure-Python (local): 7/7 test files PASS
-- Server full suite (Codex): 24 passed
+- Pure-Python (local): 13/13 Stage-B test files PASS
+- Local full suite (Codex): 47 passed
+- Server validation copy: 47 passed
 - Key assertions verified:
   - `raw_gripper_is_open(0.996)` → True
   - `env_gripper_is_open(-1.0)` → True
   - `open_token_ids` correctly classify saturation tokens
-  - v1.1 trace columns all present (52 cols)
+  - v1.1 trace columns all present (53 cols)
   - old trace_version rejected
   - unreachable windows rejected by label builder
+  - raw gripper boundary `0.5` is neutral/excluded, matching official `np.sign`
 
 ## 6. Smoke Validation (R3)
 
@@ -101,23 +104,23 @@ See `tables/stageb_v1_1_rc1_test_results.csv` for per-test details.
 | Field | Value |
 |-------|-------|
 | Server | klfy-SYS-4028GR-TR2 |
-| Source path | `/data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260605` |
+| Source path | `/data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260605` remains untouched; RC1a validation copy is `/data/liuyu/repos/codex_stageb_openvla_alignment_rc1a_20260607` |
 | git_commit | `3985809a` |
 | git_dirty | `0` (clean tar upload) |
-| source_snapshot_id | `4fe01c43` |
-| Files synced | 27 |
-| py_compile (system py3.6) | 6/6 scripts PASS; 3 src files need py3.7+ |
-| py_compile (conda py3.10) | spec: PASS |
-| pytest (conda py3.10) | **39 passed** in 0.21s |
+| source_snapshot_id | `f9840cb1` |
+| Files synced | RC1a validated in isolated server copy, not live reviewed worktree |
+| py_compile (system py3.6) | RC1 result: 6/6 scripts PASS; 3 src files need py3.7+ |
+| py_compile (conda py3.10) | RC1a local: PASS; RC1a server validation copy: PASS |
+| pytest (conda py3.10) | RC1a local: **47 passed** in 0.23s; server validation copy: **47 passed** in 0.21s |
 
 ### Trace provenance contract
 
 Every subsequent v1.1 trace MUST record:
 - `git_commit = 3985809a`
-- `source_snapshot_id = 4fe01c43`
+- `source_snapshot_id = f9840cb1`
 - `git_dirty = 0`
 - `trace_version = corrected_stageb_v1_1`
-- `exec_spec_version = openvla_libero_exec_spec_v1_20260607`
+- `exec_spec_version = openvla_libero_exec_spec_v2_official_boundary_20260607`
 
 Full SHA256 table: `tables/stageb_v1_1_rc1_server_file_sha.csv`
 Server verification report: `reports/STAGEB_V1_1_RC1_SERVER_SNAPSHOT_VERIFY.md`
@@ -143,6 +146,7 @@ This includes:
 - [x] Label builder hard-fails on unreachable windows
 - [x] open_token_ids verified against spec
 - [x] pair_id shared between VIS/random in worker scripts
-- [ ] Server source snapshot uploaded and verified
+- [x] RC1a isolated server validation copy uploaded and verified
+- [ ] Live reviewed worktree resynced for execution
 - [ ] v1.1 clean reachability scan completed
 - [ ] Windows selected from v1.1 clean trajectories

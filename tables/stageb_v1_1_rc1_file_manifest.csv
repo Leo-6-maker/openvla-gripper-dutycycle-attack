@@ -26,6 +26,7 @@ scripts/stageb/build_pair_labels_v1.py,label_builder_legacy,legacy,pre-v1.1 labe
 scripts/stageb/validate_stageb_outputs_v1.py,validator_legacy,legacy,pre-v1.1 validator
 tests/stageb/test_openvla_libero_exec_spec.py,test,frozen,spec self-consistency
 tests/stageb/test_attack_open_token_region.py,test,frozen,token region audit
+tests/stageb/test_openvla_full_alignment.py,test,rc1a,official boundary prompt image and direct-comparison audit
 tests/stageb/test_trace_schema_v1_1.py,test,frozen,v1.1 schema validation
 tests/stageb/test_pair_label_builder_v1_1.py,test,frozen,v1.1 label builder + reachability guard
 tests/stageb/test_old_label_quarantine.py,test,frozen,old trace rejection

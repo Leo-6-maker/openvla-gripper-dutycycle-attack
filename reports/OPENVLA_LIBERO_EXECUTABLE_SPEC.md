@@ -1,6 +1,6 @@
 # OpenVLA-LIBERO Executable Spec
 
-**Version**: `openvla_libero_exec_spec_v1_20260607`
+**Version**: `openvla_libero_exec_spec_v2_official_boundary_20260607`
 **Executable module**: `src/gripper_attack/openvla_libero_exec_spec.py`
 **Status**: frozen standard for Stage-B semantic repair
 
@@ -42,11 +42,12 @@ After official normalize + invert, LIBERO receives:
 
 ```text
 raw_gripper <  0.5 -> env_action_6 = +1.0 -> physical CLOSE
-raw_gripper >= 0.5 -> env_action_6 = -1.0 -> physical OPEN
+raw_gripper >  0.5 -> env_action_6 = -1.0 -> physical OPEN
+raw_gripper == 0.5 -> env_action_6 = 0.0 -> BOUNDARY / NEUTRAL
 ```
 
-Boundary rule: `raw_gripper == 0.5` is OPEN because the binarized zero case is
-treated as `+1` before inversion.
+Boundary rule: official OpenVLA uses `np.sign` during binarization, so
+`raw_gripper == 0.5` stays zero after normalization and is not OPEN/CLOSE.
 
 ## Truth Table
 
@@ -54,7 +55,7 @@ treated as `+1` before inversion.
 |---:|---:|---:|---:|---|
 | 0.000 | -1.000 | -1.0 | +1.0 | CLOSE |
 | 0.499 | -0.002 | -1.0 | +1.0 | CLOSE |
-| 0.500 |  0.000 | +1.0 | -1.0 | OPEN |
+| 0.500 |  0.000 |  0.0 |  0.0 | BOUNDARY |
 | 0.996 | +0.992 | +1.0 | -1.0 | OPEN |
 | 1.000 | +1.000 | +1.0 | -1.0 | OPEN |
 
@@ -63,8 +64,9 @@ treated as `+1` before inversion.
 Raw/decoded action space:
 
 ```text
-OPEN  = raw_gripper >= 0.5
+OPEN  = raw_gripper >  0.5
 CLOSE = raw_gripper <  0.5
+BOUNDARY = raw_gripper == 0.5
 ```
 
 LIBERO env action space:
@@ -77,8 +79,9 @@ CLOSE = env_action_6 > +0.5
 Token regions:
 
 ```text
-open_token_ids  = {token_id | decoded raw_gripper >= 0.5}
+open_token_ids  = {token_id | decoded raw_gripper >  0.5}
 close_token_ids = {token_id | decoded raw_gripper <  0.5}
+boundary_token_ids = {token_id | decoded raw_gripper == 0.5}
 ```
 
 Saturation tokens such as `31744` / `31745` must be classified by decoded raw
@@ -139,12 +142,14 @@ from gripper_attack.openvla_libero_exec_spec import (
     decoded_action_to_env_gripper,
     raw_gripper_is_open,
     raw_gripper_is_close,
+    raw_gripper_is_boundary,
     env_gripper_is_open,
     env_gripper_is_close,
     classify_raw_gripper,
     classify_env_gripper,
     open_token_ids_from_decoded_action,
     close_token_ids_from_decoded_action,
+    boundary_token_ids_from_decoded_action,
     validate_open_close_token_sets,
     get_libero_image_official,
 )

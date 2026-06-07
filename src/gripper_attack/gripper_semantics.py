@@ -16,6 +16,7 @@ from .openvla_libero_exec_spec import (
     OPENVLA_LIBERO_EXEC_SPEC_VERSION,
     raw_gripper_is_open,
     raw_gripper_is_close,
+    raw_gripper_is_boundary,
     raw_gripper_to_env_gripper,
     decoded_action_to_env_gripper,
     env_gripper_is_open,
@@ -36,4 +37,6 @@ QPOS_CLOSED_MIN = QPOS_OPEN_MIN
 
 def classify_gripper_action(raw_gripper: float, *, threshold: float = OPEN_THRESHOLD) -> str:
     value = classify_raw_gripper(raw_gripper, threshold=threshold)
-    return "close_or_hold" if value == "close" else value
+    if value == "close":
+        return "close_or_hold"
+    return value

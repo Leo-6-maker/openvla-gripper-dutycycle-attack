@@ -10,12 +10,17 @@ Usage:
 """
 import csv, os, sys, argparse, json, glob
 
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(REPO, 'src'))
+
+from gripper_attack.openvla_libero_exec_spec import env_gripper_is_open
+
 REQUIRED_TRACE_VERSION = 'corrected_stageb_v1_1'
 VALID_OPEN_CONVENTION = 'env_action_6_lt_neg_0p5_means_OPEN'
 
 
 def is_open_env(ea6):
-    return float(ea6) < -0.5
+    return env_gripper_is_open(float(ea6))
 
 
 def abs_sum(q0, q1):

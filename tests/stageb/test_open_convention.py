@@ -4,6 +4,7 @@ from gripper_attack.openvla_libero_exec_spec import (
     env_gripper_is_close,
     env_gripper_is_open,
     raw_gripper_is_open,
+    raw_gripper_is_close,
     raw_gripper_to_env_gripper,
 )
 
@@ -17,10 +18,11 @@ def test_open_convention():
 
 def test_raw_boundary_convention():
     assert raw_gripper_is_open(0.996)
-    assert raw_gripper_is_open(0.5)
+    assert not raw_gripper_is_open(0.5)
+    assert not raw_gripper_is_close(0.5)
     assert not raw_gripper_is_open(0.0)
     assert raw_gripper_to_env_gripper(0.996) == -1.0
-    assert raw_gripper_to_env_gripper(0.5) == -1.0
+    assert raw_gripper_to_env_gripper(0.5) == 0.0
     assert raw_gripper_to_env_gripper(0.0) == 1.0
 
 

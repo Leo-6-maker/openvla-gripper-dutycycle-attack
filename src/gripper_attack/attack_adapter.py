@@ -9,6 +9,7 @@ from .gripper_semantics import (
     raw_gripper_is_open,
     decoded_action_to_env_gripper,
     env_gripper_is_open,
+    env_gripper_is_close,
     CANONICAL_OPEN_SEMANTICS_VERSION,
 )
 
@@ -278,8 +279,10 @@ class TokenPrefixPGDAttacker:
     def get_gripper_region_by_decoded_action(self, unnorm_key: str, *, postprocess_gripper: bool = True, open_threshold: float = 0.5) -> dict:
         """Return OPEN/CLOSE/BOUNDARY token sets using canonical decoded-action semantics.
 
-        Uses the same classification rule as ``gripper_semantics.raw_gripper_is_open``:
-        ``decoded_action >= open_threshold`` → OPEN.
+        Uses the official OpenVLA/LIBERO classification:
+        ``decoded_action > open_threshold`` → OPEN,
+        ``decoded_action < open_threshold`` → CLOSE,
+        and equality is boundary/neutral.
 
         Returns dict with keys:
           - open_token_ids, close_token_ids, boundary_token_ids
@@ -322,14 +325,15 @@ class TokenPrefixPGDAttacker:
 
             if is_open_by_env:
                 open_tokens.append(tid)
-            else:
+            elif env_gripper_is_close(env_val):
                 close_tokens.append(tid)
+            else:
+                boundary_tokens.append(tid)
 
             # Boundary detection: adjacent discs with opposite signs
             if disc > 0:
                 prev_env_val = 2.0 * (0.5 * (centers[disc-1] + 1.0) * (high[gripper_dim] - low[gripper_dim]) + low[gripper_dim]) - 1.0
                 prev_env_val = np.sign(prev_env_val)
-                prev_env_val = 1.0 if prev_env_val == 0 else prev_env_val
                 prev_env_val = -1.0 * prev_env_val
                 if int(env_val) != int(prev_env_val):
                     boundary_tokens.append(int(vocab_size - disc - 1))
@@ -339,18 +343,25 @@ class TokenPrefixPGDAttacker:
         close_token_ids = torch.tensor(sorted(set(close_tokens)), dtype=torch.long, device=self.device)
 
         # ── Runtime assertions: prevent region inversion from ever recurring ──
-        # 1. Every OPEN token must decode to OPEN (decoded_action >= open_threshold)
+        # 1. Every OPEN token must decode to OPEN (decoded_action > open_threshold)
         for tid in open_tokens:
             act = token_action_map[int(tid)]
             env = decoded_action_to_env_gripper(act)
-            assert act >= float(open_threshold) and env_gripper_is_open(env), \
+            assert act > float(open_threshold) and env_gripper_is_open(env), \
                 f"OPEN token {tid} decodes to CLOSE action {act:.6f}"
         # 2. Every CLOSE token must decode to CLOSE (decoded_action < open_threshold)
         for tid in close_tokens:
             act = token_action_map[int(tid)]
             env = decoded_action_to_env_gripper(act)
-            assert act < float(open_threshold) and not env_gripper_is_open(env), \
+            assert act < float(open_threshold) and env_gripper_is_close(env), \
                 f"CLOSE token {tid} decodes to OPEN action {act:.6f}"
+        # 2b. Boundary tokens must not be targeted by OPEN/CLOSE objectives.
+        for tid in set(boundary_tokens):
+            act = token_action_map[int(tid)]
+            if abs(float(act) - float(open_threshold)) <= 1e-9:
+                env = decoded_action_to_env_gripper(act)
+                assert not env_gripper_is_open(env) and not env_gripper_is_close(env), \
+                    f"BOUNDARY token {tid} decodes to executable open/close env={env:.6f}"
         # 3. Saturation tokens are classified by decoded physical env sign, not comments.
         for tid in {31744, 31745}:
             if tid not in token_action_map:

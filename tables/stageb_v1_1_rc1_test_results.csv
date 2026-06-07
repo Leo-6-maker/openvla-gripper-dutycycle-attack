@@ -1,6 +1,7 @@
 test_file,status,tests_passed,requires,notes
 test_openvla_libero_exec_spec.py,PASS,4,numpy,spec self-check + truth table + token region + image rotation
 test_attack_open_token_region.py,PASS,3,gripper_attack module,token region classification + boundary + assertion
+test_openvla_full_alignment.py,PASS,5,gripper_attack module,official boundary neutral + prompt + image style + no direct comparison audit
 test_trace_schema_v1_1.py,PASS,5,none,v1.1 52-column check + version/qpos/convention/git reject
 test_pair_label_builder_v1_1.py,PASS,6,none,pairing key + filename reject + open_count + qpos + shifted + worker generator check
 test_old_label_quarantine.py,PASS,4,none,old version reject + quarantine tag + filename reject + summary qpos reject

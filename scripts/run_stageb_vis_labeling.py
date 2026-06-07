@@ -36,7 +36,7 @@ UNNORM_KEY = OFFICIAL_UNNORM_KEY_LIBERO_OBJECT
 TRACE_VERSION = 'corrected_stageb_v1_1'
 RUNNER_VERSION = 'stageb_vis_labeling_v1_1_spec_aligned_20260607'
 OPEN_CONVENTION = 'env_action_6_lt_neg_0p5_means_OPEN'
-SOURCE_SNAPSHOT_ID = '4fe01c43'  # RC1 server snapshot — spec module SHA256 prefix
+SOURCE_SNAPSHOT_ID = 'f9840cb1'  # RC1a server validation snapshot -- spec module SHA256 prefix
 
 
 def _get_git_info():
