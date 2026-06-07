@@ -1,0 +1,13 @@
+test_file,status,tests_passed,requires,notes
+test_openvla_libero_exec_spec.py,PASS,4,numpy,spec self-check + truth table + token region + image rotation
+test_attack_open_token_region.py,PASS,3,gripper_attack module,token region classification + boundary + assertion
+test_trace_schema_v1_1.py,PASS,5,none,v1.1 52-column check + version/qpos/convention/git reject
+test_pair_label_builder_v1_1.py,PASS,6,none,pairing key + filename reject + open_count + qpos + shifted + worker generator check
+test_old_label_quarantine.py,PASS,4,none,old version reject + quarantine tag + filename reject + summary qpos reject
+test_random_linf_metadata.py,PASS,3,none,random fields + perturbation space + eps check
+test_pair_label_builder.py,PASS,5,none,pre-spec pair label logic
+test_shifted_qpos_indexing.py,PASS,2,none,step_dict lookup + enumerate bug demo
+test_trace_schema.py,PASS,3,none,pre-v1.1 schema validation
+test_open_convention.py,PASS,2,gripper_attack module,open/close symmetry
+test_qpos_convention.py,PASS,3,numpy,signed mean cancellation + abs_sum + placeholder
+test_stageb_open_count_convention.py,PASS,2,gripper_attack module,spec open count

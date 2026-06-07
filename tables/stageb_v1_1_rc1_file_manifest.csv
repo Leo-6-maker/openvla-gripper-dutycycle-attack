@@ -1,0 +1,39 @@
+path,role,status,notes
+src/gripper_attack/openvla_libero_exec_spec.py,exec_spec,frozen,self-check at import time
+src/gripper_attack/gripper_semantics.py,spec_wrapper,frozen,wraps exec_spec
+src/gripper_attack/attack_adapter.py,attack_token_region,frozen,open_token_ids use spec
+src/gripper_attack/openvla_preprocess.py,image_preprocess,frozen,official rot180
+src/gripper_attack/__init__.py,package_init,frozen,
+src/gripper_attack/budget.py,attack_budget,frozen,
+src/gripper_attack/directional.py,attack_directional,frozen,
+src/gripper_attack/grasp.py,grasp_detection,frozen,
+src/gripper_attack/io.py,io,frozen,
+src/gripper_attack/logging_schema.py,logging,frozen,
+src/gripper_attack/metrics.py,metrics,frozen,
+src/gripper_attack/openvla_redecode.py,redecode,frozen,
+src/gripper_attack/triggers.py,triggers,frozen,
+src/gripper_attack/types.py,types,frozen,
+src/gripper_attack/uncertainty.py,uncertainty,frozen,
+scripts/run_stageb_vis_labeling.py,runner,rc1,52-column trace v1.1
+scripts/generate_stageb_worker_scripts.py,worker_generator,rc1,shared --pair_id
+scripts/stageb/validate_stageb_trace_v1_1.py,validator,rc1,hard-fail on schema violations
+scripts/stageb/postprocess_traces_v1_1.py,postprocess,rc1,v1.1-only qpos recompute
+scripts/stageb/build_pair_labels_v1_1.py,label_builder,rc1,v1.1-only hard-fail unreachable
+scripts/stageb/run_paired_vis_random_v1.py,runner_legacy,legacy,pre-v1.1 runner
+scripts/stageb/postprocess_patched_traces_v1.py,postprocess_legacy,legacy,pre-v1.1 postprocess
+scripts/stageb/build_pair_labels_v1.py,label_builder_legacy,legacy,pre-v1.1 label builder
+scripts/stageb/validate_stageb_outputs_v1.py,validator_legacy,legacy,pre-v1.1 validator
+tests/stageb/test_openvla_libero_exec_spec.py,test,frozen,spec self-consistency
+tests/stageb/test_attack_open_token_region.py,test,frozen,token region audit
+tests/stageb/test_trace_schema_v1_1.py,test,frozen,v1.1 schema validation
+tests/stageb/test_pair_label_builder_v1_1.py,test,frozen,v1.1 label builder + reachability guard
+tests/stageb/test_old_label_quarantine.py,test,frozen,old trace rejection
+tests/stageb/test_random_linf_metadata.py,test,frozen,random perturbation metadata
+tests/stageb/test_open_convention.py,test,legacy,pre-spec open convention tests
+tests/stageb/test_pair_label_builder.py,test,legacy,pre-spec label builder tests
+tests/stageb/test_qpos_convention.py,test,legacy,pre-spec qpos tests
+tests/stageb/test_shifted_qpos_indexing.py,test,frozen,shifted qpos lookup
+tests/stageb/test_trace_schema.py,test,legacy,pre-v1.1 schema tests
+tests/stageb/test_stageb_open_count_convention.py,test,legacy,pre-spec open count
+reports/OPENVLA_LIBERO_EXECUTABLE_SPEC.md,doc,frozen,official semantics reference
+reports/CODEX_STAGEB_V1_1_SMOKE_R3_LIVE_AUDIT.md,doc,rc1,smoke audit results
