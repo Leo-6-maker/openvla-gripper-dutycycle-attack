@@ -16,6 +16,7 @@ src/gripper_attack/types.py,types,frozen,
 src/gripper_attack/uncertainty.py,uncertainty,frozen,
 scripts/run_stageb_vis_labeling.py,runner,rc1,52-column trace v1.1
 scripts/generate_stageb_worker_scripts.py,worker_generator,rc1,shared --pair_id
+scripts/diagnostics/generate_stageb_worker_scripts.py,worker_generator_diagnostics,rc1,same as main generator
 scripts/stageb/validate_stageb_trace_v1_1.py,validator,rc1,hard-fail on schema violations
 scripts/stageb/postprocess_traces_v1_1.py,postprocess,rc1,v1.1-only qpos recompute
 scripts/stageb/build_pair_labels_v1_1.py,label_builder,rc1,v1.1-only hard-fail unreachable

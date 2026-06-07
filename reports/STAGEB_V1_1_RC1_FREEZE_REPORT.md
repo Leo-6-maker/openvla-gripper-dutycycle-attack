@@ -102,19 +102,25 @@ See `tables/stageb_v1_1_rc1_test_results.csv` for per-test details.
 |-------|-------|
 | Server | klfy-SYS-4028GR-TR2 |
 | Source path | `/data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260605` |
-| Server git HEAD | `ca3a97e` (files manually uploaded to RC1) |
-| py_compile (system py3.6) | runner, postprocess, label_builder, validator: PASS |
-| py_compile (conda py3.10) | spec module: PASS |
-| pytest (conda py3.10) | 19 passed in 0.19s |
+| git_commit | `3985809a` |
+| git_dirty | `0` (clean tar upload) |
+| source_snapshot_id | `4fe01c43` |
+| Files synced | 27 |
+| py_compile (system py3.6) | 6/6 scripts PASS; 3 src files need py3.7+ |
+| py_compile (conda py3.10) | spec: PASS |
+| pytest (conda py3.10) | **39 passed** in 0.21s |
 
-### RC1 File SHA256 (server)
+### Trace provenance contract
 
-| File | SHA256 |
-|------|--------|
-| `openvla_libero_exec_spec.py` | `4fe01c43...ac2aa5ac` |
-| `run_stageb_vis_labeling.py` | `d37d8f49...24b15329` |
-| `build_pair_labels_v1_1.py` | `0dbe18a3...303718` |
-| `validate_stageb_trace_v1_1.py` | `838159d2...c04b54dd` |
+Every subsequent v1.1 trace MUST record:
+- `git_commit = 3985809a`
+- `source_snapshot_id = 4fe01c43`
+- `git_dirty = 0`
+- `trace_version = corrected_stageb_v1_1`
+- `exec_spec_version = openvla_libero_exec_spec_v1_20260607`
+
+Full SHA256 table: `tables/stageb_v1_1_rc1_server_file_sha.csv`
+Server verification report: `reports/STAGEB_V1_1_RC1_SERVER_SNAPSHOT_VERIFY.md`
 
 ## 9. Quarantine Rule
 
