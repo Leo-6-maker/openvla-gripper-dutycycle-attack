@@ -45,11 +45,12 @@ for f in sorted(glob.glob(ROOT + '/trace_*.csv')):
                if i+1 < len(rows) and rows[i+1].get('in_window') == '1']
     att_max_shifted = max(shifted) if shifted else att_max_unshifted
 
-    # Open count from env_action_6
-    open_count = sum(1 for r in att if float(r.get('env_action_6', 0)) > 0.5)
+    # OPEN convention: env_action_6 = -1.0 = OPEN (verified by oracle smoke)
+    def is_open(v): return float(v) < -0.5
+    open_count = sum(1 for r in att if is_open(r.get('env_action_6', 0)))
     streak = max_streak = 0
     for r in att:
-        if float(r.get('env_action_6', 0)) > 0.5: streak += 1; max_streak = max(max_streak, streak)
+        if is_open(r.get('env_action_6', 0)): streak += 1; max_streak = max(max_streak, streak)
         else: streak = 0
 
     delta_unshifted = att_max_unshifted - qpos_pre

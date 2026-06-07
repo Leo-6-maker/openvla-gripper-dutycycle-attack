@@ -118,7 +118,8 @@ for m in manifest:
         r['qpos_abs_mean'] = r['qpos_abs_sum'] / 2.0
         r['qpos_signed_mean'] = gq
         r['env_action_gripper'] = float(r.get('env_action_6', 0))
-        r['decoded_open_bool'] = 1 if r['env_action_gripper'] > 0.5 else 0  # env_action[-1]=+1=OPEN
+        # OPEN: env_action_6 = -1.0 (verified by oracle smoke)
+        r['decoded_open_bool'] = 1 if r['env_action_gripper'] < -0.5 else 0
 
     # Pre (3 steps before), attack window, post (10 steps after)
     pre_steps = [r for r in rows if ws - 3 <= int(r['step']) < ws]

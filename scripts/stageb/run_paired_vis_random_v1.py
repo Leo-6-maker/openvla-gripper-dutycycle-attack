@@ -221,11 +221,18 @@ if env is not None:
         log('INFRA: %s' % infra_status)
     env.close()
 
+# OPEN convention: env_action_6 = -1.0 means OPEN (verified by oracle smoke)
+def is_env_open(grip_val):
+    """Return True if env_action_gripper means OPEN.
+    env_action_6 = -1.0 = OPEN (qpos increases), +1.0 = CLOSE (qpos decreases)."""
+    return grip_val < -0.5
+OPEN_CONVENTION = 'env_action_6_lt_neg_0_5_means_OPEN'
+
 # ── Summary ──────────────────────────────────────────────────────
-open_count = sum(1 for g in decoded_grips if g > 0)
+open_count = sum(1 for g in decoded_grips if is_env_open(g))
 streak = max_streak = 0
 for g in decoded_grips:
-    if g > 0: streak += 1; max_streak = max(max_streak, streak)
+    if is_env_open(g): streak += 1; max_streak = max(max_streak, streak)
     else: streak = 0
 total_qpos_delta = float(np.sum(np.abs(qpos_deltas))) if qpos_deltas else 0.0
 mean_arm_l2 = float(np.mean([float(r['arm_l2']) for r in trace_rows if r['in_window'] == '1'])) if trace_rows else 0.0
