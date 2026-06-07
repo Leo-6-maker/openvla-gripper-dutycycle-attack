@@ -1,0 +1,11 @@
+finding_id,area,status,severity,scope,evidence,required_action
+SHA-001,runner_source_snapshot_field,PASS,high,scripts/run_stageb_vis_labeling.py,"Runner records source_snapshot_id = 4fe01c43 in trace rows and summary.","No action required."
+SHA-002,validator_exact_check,PASS,high,scripts/stageb/validate_stageb_trace_v1_1.py,"Validator hard-fails with HARD_FAIL_SOURCE_SNAPSHOT_ID when source_snapshot_id is not 4fe01c43.","No action required."
+SHA-003,test_exact_check,PASS_AFTER_CODEX_PATCH,high,tests/stageb/test_trace_schema_v1_1.py,"Test now builds a synthetic wrong-source_snapshot_id trace and calls validate_trace to confirm hard fail.","No action required."
+SHA-004,sha_table_rows,PASS,high,tables/stageb_v1_1_rc1_server_file_sha.csv,"SHA table has 19 rows including runner validator stageb tests and two reports.","No action required."
+SHA-005,server_sha_match,PASS,high,server snapshot,"Server verification reported SHA_ROWS 19 and SHA_MISMATCH_COUNT 0.","No action required."
+SHA-006,validator_sha_refresh,PASS_AFTER_CODEX_PATCH,high,tables/stageb_v1_1_rc1_server_file_sha.csv,"Validator SHA refreshed to 6c1add49cc998cec07c3fce62e92c388077a975b56288e1f4b82e4cbdf7b325c.","No action required."
+SHA-007,test_schema_sha_refresh,PASS_AFTER_CODEX_PATCH,high,tables/stageb_v1_1_rc1_server_file_sha.csv,"test_trace_schema_v1_1.py server SHA refreshed to 970115a6aa6afe995efaa24ea7146165fed86de622164d3d1d79539e3be64d32 after upload.","No action required."
+SHA-008,server_tests,PASS,high,server tests,"Official env pytest tests/stageb returned 42 passed in 0.20s.","No action required."
+SHA-009,local_tests,PASS,medium,local tests,"Local pytest tests/stageb returned 42 passed in 0.22s.","No action required."
+SHA-010,server_git_status,BOUNDARY,medium,server source tree,"Server remains manually synchronized; provenance should use the 19-row SHA table, not git status.","Keep using SHA table for RC1 provenance."

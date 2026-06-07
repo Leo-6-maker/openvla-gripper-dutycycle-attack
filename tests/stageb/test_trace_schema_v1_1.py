@@ -1,5 +1,10 @@
 """Test: Stage-B v1.1 trace schema validator."""
 
+import csv
+import os
+import sys
+import tempfile
+
 REQUIRED_COLUMNS = [
     'step', 'row_id', 'in_window', 'attack_this_step',
     'pair_id', 'condition', 'task_key', 'state_id', 'seed',
@@ -68,8 +73,41 @@ def test_reject_placeholder_git():
 
 def test_source_snapshot_id_exact():
     """Validator must hard-fail on wrong source_snapshot_id."""
-    assert '4fe01c43' != ''
-    assert '4fe01c43' != '00000000'
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'scripts', 'stageb'))
+    import validate_stageb_trace_v1_1 as validator
+
+    row = {c: '0' for c in REQUIRED_COLUMNS}
+    row.update({
+        'step': '0',
+        'row_id': 'synthetic_wrong_snapshot',
+        'pair_id': 'pair_synthetic',
+        'condition': 'vis_pgd',
+        'task_key': 'cream_cheese',
+        'state_id': '0',
+        'seed': '0',
+        'window_start': '1',
+        'window_end': '2',
+        'trace_version': 'corrected_stageb_v1_1',
+        'qpos_source': 'obs_robot0_gripper_qpos',
+        'open_convention': 'env_action_6_lt_neg_0p5_means_OPEN',
+        'decoded_open_bool': '0',
+        'git_commit': '3985809a',
+        'source_snapshot_id': '00000000',
+    })
+    with tempfile.NamedTemporaryFile('w', newline='', suffix='.csv', delete=False) as f:
+        path = f.name
+        w = csv.DictWriter(f, fieldnames=REQUIRED_COLUMNS)
+        w.writeheader()
+        w.writerow(row)
+    try:
+        try:
+            validator.validate_trace(path)
+        except AssertionError as e:
+            assert 'HARD_FAIL_SOURCE_SNAPSHOT_ID' in str(e)
+        else:
+            raise AssertionError('wrong source_snapshot_id should hard-fail')
+    finally:
+        os.unlink(path)
     print('PASS: test_source_snapshot_id_exact')
 
 
