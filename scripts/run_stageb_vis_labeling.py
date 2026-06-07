@@ -72,6 +72,8 @@ ap.add_argument('--pgd_steps', type=int, default=20)
 ap.add_argument('--eps_raw_pixels', type=float, default=6.0)
 ap.add_argument('--max_steps', type=int, default=400)
 ap.add_argument('--seed', type=int, default=0)
+ap.add_argument('--pair_id', default=None,
+                help='Shared pair ID for VIS/random matching; auto-generated if not set')
 ap.add_argument('--image_preprocess', choices=['official_rot180', 'legacy_no_rotation'],
                 default='official_rot180')
 args = ap.parse_args()
@@ -185,7 +187,7 @@ from libero.libero import benchmark, get_libero_path
 from libero.libero.envs import OffScreenRenderEnv
 
 ws = args.window_start; we = args.window_end
-pair_id = str(uuid.uuid4())[:8]
+pair_id = args.pair_id if args.pair_id else str(uuid.uuid4())[:8]
 cid = '%s_s%d_w%d_%d' % (args.task, args.state_id, ws, we)
 log('%s [%d,%d] %s pair=%s' % (cid, ws, we, args.condition, pair_id))
 
