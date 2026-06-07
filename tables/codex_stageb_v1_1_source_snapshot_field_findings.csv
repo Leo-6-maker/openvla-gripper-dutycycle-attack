@@ -1,0 +1,13 @@
+finding_id,area,status,severity,scope,evidence,required_action
+SSF-001,runner_constant,PASS,high,scripts/run_stageb_vis_labeling.py,"Runner defines SOURCE_SNAPSHOT_ID = 4fe01c43.","No action required."
+SSF-002,trace_row_field,PASS,high,scripts/run_stageb_vis_labeling.py,"Trace row dictionary writes source_snapshot_id from SOURCE_SNAPSHOT_ID.","No action required."
+SSF-003,summary_field,PASS,high,scripts/run_stageb_vis_labeling.py,"Summary JSON writes source_snapshot_id from SOURCE_SNAPSHOT_ID.","No action required."
+SSF-004,trace_columns,PASS,high,scripts/run_stageb_vis_labeling.py,"TRACE_COLUMNS includes source_snapshot_id after git_dirty.","No action required."
+SSF-005,validator_required_column,PASS,high,scripts/stageb/validate_stageb_trace_v1_1.py,"REQUIRED_COLUMNS includes source_snapshot_id.","No action required for presence check."
+SSF-006,validator_value_check,WARNING,medium,scripts/stageb/validate_stageb_trace_v1_1.py,"Validator requires the column but does not hard-fail if source_snapshot_id is not 4fe01c43.","Add exact value check if trace-level snapshot identity must be enforced."
+SSF-007,server_runner_sha,PASS,high,server runner,"Server runner SHA is cf2a2320976240a2dade0d6862130e250c48be19b7c8a00a072de2590b6b7c59 and contains source_snapshot_id fields.","No action required for live file."
+SSF-008,server_missing_manifest_files,PASS,medium,server manifest paths,"Previously missing test_stageb_open_count_convention.py OPENVLA_LIBERO_EXECUTABLE_SPEC.md and CODEX_STAGEB_V1_1_SMOKE_R3_LIVE_AUDIT.md now exist on server.","No action required."
+SSF-009,server_trace_schema_test,PASS,medium,server tests,"Official env test_trace_schema_v1_1.py returned 5 passed.","No action required."
+SSF-010,local_stageb_tests,PASS,medium,local tests,"Local a400 tests/stageb returned 41 passed.","No action required."
+SSF-011,sha_csv_stale,FAIL_STALE,high,tables/stageb_v1_1_rc1_server_file_sha.csv,"SHA CSV still lists old runner SHA d37d8f49 old validator SHA 838159d2 and old test schema SHA b959f8 while a400/server files changed.","Regenerate SHA CSV before calling a400 a locked server snapshot."
+SSF-012,server_git_status,FAIL,medium,server git worktree,"Server git status --short still reported 30 lines.","Use regenerated file SHA table rather than git clean status for provenance."
