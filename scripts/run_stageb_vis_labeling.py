@@ -259,6 +259,16 @@ if env is not None:
                 'pgd_applied': str(pgd_applied), 'attacks_applied': str(attacks_applied),
                 'gripper_qpos': str(round(gripper_qpos, 6)),
                 'done': str(int(done)),
+                'env_action_0': str(round(float(env_action_full[0]), 6)),
+                'env_action_1': str(round(float(env_action_full[1]), 6)),
+                'env_action_2': str(round(float(env_action_full[2]), 6)),
+                'env_action_3': str(round(float(env_action_full[3]), 6)),
+                'env_action_4': str(round(float(env_action_full[4]), 6)),
+                'env_action_5': str(round(float(env_action_full[5]), 6)),
+                'env_action_6': str(round(float(env_action_full[6]), 6)),
+                'obs_gripper_qpos_0': str(round(float(gq[0]), 6)),
+                'obs_gripper_qpos_1': str(round(float(gq[1]), 6)),
+                'qpos_source': 'obs_robot0_gripper_qpos',
             })
 
             obs, reward, done, info = env.step(env_action_full)
