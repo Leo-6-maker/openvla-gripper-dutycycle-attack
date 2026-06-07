@@ -185,8 +185,10 @@ if env is not None:
             clean_actions.append(clean_action)
 
             # Gripper state
-            qpos = env.sim.data.qpos
-            gripper_qpos = float((qpos[-2] + qpos[-1]) / 2.0)
+            
+            # Use obs robot0_gripper_qpos (correct joint indices)
+            gq = obs.get('robot0_gripper_qpos', np.zeros(2))
+            gripper_qpos = float((abs(gq[0]) + abs(gq[1])) / 2.0)
             try:
                 eef_pos = env.sim.data.site_xpos[env.sim.model.site_name2id('gripper0_center')]
             except:
@@ -201,7 +203,7 @@ if env is not None:
                 if args.condition == 'vis_pgd':
                     try:
                         qpos_before = gripper_qpos
-                        width_before = float(env.sim.data.qpos[-1] if hasattr(env.sim.data, 'qpos') else 0)
+                        width_before = float(abs(obs.get("robot0_gripper_qpos", [0,0])[0]) + abs(obs.get("robot0_gripper_qpos", [0,0])[1])) / 2.0
                         result = attacker.attack(observation=pil, instruction=instruction.lower(),
                                                   target_action=clean_action, unnorm_key=UNNORM_KEY)
                         adv_inputs = get_adv_inputs_from_attack_result(result)
@@ -245,7 +247,9 @@ if env is not None:
 
             if in_window:
                 decoded_grips.append(env_grip)
-                qpos_after = float((env.sim.data.qpos[-2] + env.sim.data.qpos[-1]) / 2.0)
+                
+                gq_after = obs.get('robot0_gripper_qpos', np.zeros(2))
+                qpos_after = float((abs(gq_after[0]) + abs(gq_after[1])) / 2.0)
                 qpos_deltas.append(qpos_after - qpos_before if attack_this_step else 0.0)
 
             trace_rows.append({
