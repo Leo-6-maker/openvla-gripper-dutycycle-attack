@@ -1,0 +1,4 @@
+pair_id,task_key,state_id,seed,window_start,window_end,vis_trace,rand_trace,vis_open_count,vis_streak,vis_qpos_delta_shifted,rand_open_count,rand_streak,rand_qpos_delta_shifted,cmd_susceptible,random_confounded,physical_response_sensitive,physical_response_strict,vis_specific_physical_response
+smoke3b_alphabet_soup_s1_45_55,alphabet_soup,1,1,45,55,trace_alphabet_soup_vis_pgd_job99001.csv,trace_alphabet_soup_random_linf_job99002.csv,1,1,0.000424,9,7,-0.001451,0,1,0,0,0
+smoke3b_bbq_sauce_s0_60_70,bbq_sauce,0,0,60,70,trace_bbq_sauce_vis_pgd_job99003.csv,trace_bbq_sauce_random_linf_job99004.csv,2,1,8.5e-05,0,0,5e-05,0,0,0,0,0
+smoke3b_cream_cheese_s2_45_55,cream_cheese,2,2,45,55,trace_cream_cheese_vis_pgd_job99005.csv,trace_cream_cheese_random_linf_job99006.csv,8,4,-0.000978,0,0,-0.071438,1,0,0,0,0

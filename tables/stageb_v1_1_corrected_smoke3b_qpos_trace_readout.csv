@@ -1,0 +1,7 @@
+trace,pair_id,condition,task_key,state_id,seed,window_start,window_end,trace_version,open_count,open_streak,qpos_delta_shifted_total,qpos_delta_shifted_max,n_attack_steps,n_window_steps,n_shifted_pairs
+trace_alphabet_soup_random_linf_job99002.csv,smoke3b_alphabet_soup_s1_45_55,random_linf,alphabet_soup,1,1,45,55,corrected_stageb_v1_1,9,7,-0.001451,0.000663,11,11,11
+trace_alphabet_soup_vis_pgd_job99001.csv,smoke3b_alphabet_soup_s1_45_55,vis_pgd,alphabet_soup,1,1,45,55,corrected_stageb_v1_1,1,1,0.000424,0.001135,11,11,11
+trace_bbq_sauce_random_linf_job99004.csv,smoke3b_bbq_sauce_s0_60_70,random_linf,bbq_sauce,0,0,60,70,corrected_stageb_v1_1,0,0,5e-05,0.000105,11,11,11
+trace_bbq_sauce_vis_pgd_job99003.csv,smoke3b_bbq_sauce_s0_60_70,vis_pgd,bbq_sauce,0,0,60,70,corrected_stageb_v1_1,2,1,8.5e-05,0.000111,11,11,11
+trace_cream_cheese_random_linf_job99006.csv,smoke3b_cream_cheese_s2_45_55,random_linf,cream_cheese,2,2,45,55,corrected_stageb_v1_1,0,0,-0.071438,-0.000884,11,11,11
+trace_cream_cheese_vis_pgd_job99005.csv,smoke3b_cream_cheese_s2_45_55,vis_pgd,cream_cheese,2,2,45,55,corrected_stageb_v1_1,8,4,-0.000978,0.003543,11,11,11
