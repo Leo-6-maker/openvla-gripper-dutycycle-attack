@@ -37,11 +37,28 @@ def main():
 
     # ── Pair by full key ──
     pairs = defaultdict(lambda: {'VIS': None, 'RAND': None})
+    duplicate_errors = []
     for t in traces:
         key = (t['pair_id'], t['task_key'], t['state_id'], t['seed'],
                t['window_start'], t['window_end'])
-        cond = 'VIS' if t['condition'] == 'vis_pgd' else 'RAND'
+        if t['condition'] == 'vis_pgd':
+            cond = 'VIS'
+        elif t['condition'] == 'random_linf':
+            cond = 'RAND'
+        else:
+            print('REJECT: unexpected condition %r in %s'
+                  % (t.get('condition', ''), t.get('trace', '?')))
+            sys.exit(1)
+        if pairs[key][cond] is not None:
+            duplicate_errors.append((key, cond, pairs[key][cond].get('trace', '?'), t.get('trace', '?')))
         pairs[key][cond] = t
+
+    if duplicate_errors:
+        for key, cond, old_trace, new_trace in duplicate_errors:
+            pair_id, task, sid, seed, ws, we = key
+            print('REJECT: duplicate %s trace for %s s%s seed%s [%s,%s] pair=%s: %s vs %s'
+                  % (cond, task, sid, seed, ws, we, pair_id, old_trace, new_trace))
+        sys.exit(1)
 
     # ── Compute labels ──
     label_rows = []
@@ -54,7 +71,7 @@ def main():
                   % (task, sid, ws, we, pair_id,
                      v.get('trace', 'MISSING') if v else 'MISSING',
                      r.get('trace', 'MISSING') if r else 'MISSING'))
-            continue
+            sys.exit(1)
 
         vis_open = int(v['open_count'])
         vis_streak = int(v['open_streak'])

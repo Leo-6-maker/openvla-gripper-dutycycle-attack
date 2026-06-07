@@ -66,10 +66,25 @@ def test_shifted_qpos_indexing():
     print('PASS: test_shifted_qpos_indexing')
 
 
+def test_worker_generators_pass_shared_pair_id():
+    """Worker generators must pass the same pair_id to VIS and matched random."""
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[2]
+    for rel in [
+        'scripts/generate_stageb_worker_scripts.py',
+        'scripts/diagnostics/generate_stageb_worker_scripts.py',
+    ]:
+        text = (repo / rel).read_text()
+        assert "pair_id = 'stageb_pair_%s' % jid" in text
+        assert text.count('--pair_id %s') >= 2, rel
+
+
 if __name__ == '__main__':
     test_pairing_key()
     test_no_filename_parsing()
     test_open_count_uses_spec()
     test_qpos_abs_sum()
     test_shifted_qpos_indexing()
+    test_worker_generators_pass_shared_pair_id()
     print('All pair label builder v1.1 tests PASSED')

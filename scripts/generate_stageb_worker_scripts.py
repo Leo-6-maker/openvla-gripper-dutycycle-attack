@@ -31,15 +31,16 @@ for w in range(3):
     for j in vis_jobs:
         jid = j['job_id']; task = j['task_key']; sid = j['state_id']
         ws = j['window_start']; we = j['window_end']; stratum = j['stratum']
+        pair_id = 'stageb_pair_%s' % jid
         lines.append('')
         lines.append('echo "[$(date +%%H:%%M:%%S)] VIS %s: %s s%s [%s,%s] %s"' % (jid, task, sid, ws, we, stratum))
-        lines.append('%s -u %s --task %s --state-id %s --window_start %s --window_end %s --condition vis_pgd --gpu_pair 0,1 --pgd_steps 20 --eps_raw_pixels 6 --max_steps 400 --job_id %s --output_dir %s 2>&1 || echo "VIS_FAIL %s"' % (PY, SCRIPT, task, sid, ws, we, jid, OUT, jid))
+        lines.append('%s -u %s --task %s --state-id %s --window_start %s --window_end %s --condition vis_pgd --gpu_pair 0,1 --pgd_steps 20 --eps_raw_pixels 6 --max_steps 400 --job_id %s --pair_id %s --output_dir %s 2>&1 || echo "VIS_FAIL %s"' % (PY, SCRIPT, task, sid, ws, we, jid, pair_id, OUT, jid))
 
         rj = rand_jobs.get(jid)
         if rj:
             rjid = rj['job_id']
             lines.append('echo "[$(date +%%H:%%M:%%S)] RAND %s: %s s%s [%s,%s]"' % (rjid, task, sid, ws, we))
-            lines.append('%s -u %s --task %s --state-id %s --window_start %s --window_end %s --condition random_linf --gpu_pair 0,1 --eps_raw_pixels 6 --max_steps 400 --job_id %s --output_dir %s 2>&1 || echo "RAND_FAIL %s"' % (PY, SCRIPT, task, sid, ws, we, rjid, OUT, rjid))
+            lines.append('%s -u %s --task %s --state-id %s --window_start %s --window_end %s --condition random_linf --gpu_pair 0,1 --eps_raw_pixels 6 --max_steps 400 --job_id %s --pair_id %s --output_dir %s 2>&1 || echo "RAND_FAIL %s"' % (PY, SCRIPT, task, sid, ws, we, rjid, pair_id, OUT, rjid))
 
     lines.append('')
     lines.append('echo "[$(date +%%H:%%M:%%S)] %s DONE"' % WORKER_NAME[w])
