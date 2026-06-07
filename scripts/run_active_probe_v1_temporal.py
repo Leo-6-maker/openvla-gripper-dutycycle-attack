@@ -217,10 +217,12 @@ def run_probe_at_frame(pil_image, instruction, eps_eff):
         'random_grip': rand_grip,
     }
 
+from gripper_attack.gripper_semantics import env_gripper_is_open
+
 # ── Compute streaks from a sequence of gripper values ────────────
 def compute_gripper_stats(grip_values):
-    """Given list of gripper values (+1=OPEN, -1=CLOSE), compute stats."""
-    opens = [1 if g > 0 else 0 for g in grip_values]
+    """Given list of env gripper values (-1=OPEN, +1=CLOSE), compute stats."""
+    opens = [1 if env_gripper_is_open(g) else 0 for g in grip_values]
     open_count = sum(opens)
     open_rate = open_count / max(len(opens), 1)
     streak = 0; max_streak = 0

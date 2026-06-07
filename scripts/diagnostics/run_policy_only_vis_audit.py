@@ -23,6 +23,8 @@ warnings.filterwarnings("ignore")
 REPO = Path(os.environ.get("ATTACK_REPO",
     "/data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260605"))
 MODEL_PATH = "/data/aviary/models/openvla/openvla-7b-finetuned-libero-object"
+sys.path.insert(0, str(REPO / "src"))
+from gripper_attack.openvla_libero_exec_spec import raw_gripper_is_open
 
 
 def parse_args():
@@ -130,7 +132,7 @@ def run_policy_only_attack(model, processor, device, image_np, instruction: str,
         TokenPrefixPGDAttacker, prepare_openvla_image_for_attack, _prompt
     )
     action_dim = 7  # OpenVLA action dim
-    unnorm_key = "libero_goal"
+    unnorm_key = "libero_object"
 
     # Get clean action for target
     image = prepare_openvla_image_for_attack(image_np)
@@ -163,9 +165,9 @@ def run_policy_only_attack(model, processor, device, image_np, instruction: str,
             norm = bins[tid]
             clean_action[dim] = 0.5 * (norm + 1.0) * (q99[dim] - q01[dim]) + q01[dim]
 
-    # Target: arm = clean, gripper = OPEN (decoded_action < 0.5)
+    # Target: arm = clean, gripper = OPEN (decoded/raw action >= 0.5).
     target_action = clean_action.copy()
-    target_action[-1] = 0.0  # OPEN
+    target_action[-1] = 1.0  # OPEN
 
     # Compute processor-space epsilon
     eps_processor = np.array([eps_raw / 255.0] * 3, dtype=np.float32)
@@ -215,7 +217,7 @@ def run_policy_only_attack(model, processor, device, image_np, instruction: str,
             gripper_tid = int(vocab_size - adv_tokens[-1] - 1)
             gripper_norm = bins[gripper_tid]
             gripper_action = 0.5 * (gripper_norm + 1.0) * (q99[-1] - q01[-1]) + q01[-1]
-            is_open = float(gripper_action) < 0.5
+            is_open = raw_gripper_is_open(float(gripper_action))
 
             if is_open:
                 best_open_prob = 1.0
@@ -247,7 +249,7 @@ def run_policy_only_attack(model, processor, device, image_np, instruction: str,
             gripper_tid = int(vocab_size - adv_tokens[-1] - 1)
             gripper_norm = bins[gripper_tid]
             best_action = 0.5 * (gripper_norm + 1.0) * (q99[-1] - q01[-1]) + q01[-1]
-            best_open_prob = 1.0 if float(best_action) < 0.5 else 0.0
+            best_open_prob = 1.0 if raw_gripper_is_open(float(best_action)) else 0.0
         except Exception as e:
             status = infra_status_from_error(str(e))
             return {

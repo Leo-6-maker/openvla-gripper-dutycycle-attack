@@ -9,9 +9,9 @@ import numpy as np
 from collections import defaultdict, Counter
 
 ROOT = '/data/liuyu/outputs/stageb_selective_rerun_patched_20260607'
-REPO = '/data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260607'
-
-def is_open(v): return float(v) < -0.5
+REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(REPO, 'src'))
+from gripper_attack.gripper_semantics import env_gripper_is_open
 
 # ── Load all summaries as ground truth for metadata ──────────────
 summaries = {}
@@ -69,10 +69,10 @@ for f in sorted(glob.glob(ROOT + '/trace_*.csv')):
     att_max_shifted = max(shifted) if shifted else att_max_unshifted
 
     # Open count: env_action_6 < -0.5 = OPEN
-    open_count = sum(1 for r in att if is_open(r.get('env_action_6', 0)))
+    open_count = sum(1 for r in att if env_gripper_is_open(r.get('env_action_6', 0)))
     streak = max_streak = 0
     for r in att:
-        if is_open(r.get('env_action_6', 0)): streak += 1; max_streak = max(max_streak, streak)
+        if env_gripper_is_open(r.get('env_action_6', 0)): streak += 1; max_streak = max(max_streak, streak)
         else: streak = 0
 
     delta_unshifted = att_max_unshifted - qpos_pre

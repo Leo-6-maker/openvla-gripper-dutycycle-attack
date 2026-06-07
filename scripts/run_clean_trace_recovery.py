@@ -19,6 +19,7 @@ if not _VISIBLE:
 
 REPO = '/data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260605'
 sys.path.insert(0, REPO); sys.path.insert(0, os.path.join(REPO, 'src'))
+from gripper_attack.openvla_libero_exec_spec import env_gripper_is_open, env_gripper_is_close
 MODEL_PATH = '/data/aviary/models/openvla/openvla-7b-finetuned-libero-object'
 SHARED = '/data/liuyu/outputs/shared_detector_v25_inputs_20260606'
 OUT_DIR = '/data/liuyu/outputs/clean_trace_recovery_20260607'
@@ -307,15 +308,15 @@ for idx, r in enumerate(my_windows):
     gripper_is_open = 1.0 if gripper_qpos_mean > 0.035 else 0.0
 
     # Gripper action
-    grip_open_count = int(np.sum(env_grip_vals > 0))
-    grip_close_count = int(np.sum(env_grip_vals < 0))
+    grip_open_count = int(np.sum([env_gripper_is_open(v) for v in env_grip_vals]))
+    grip_close_count = int(np.sum([env_gripper_is_close(v) for v in env_grip_vals]))
     grip_open_rate = float(grip_open_count / max(n, 1))
     grip_action_mean = float(np.mean(env_grip_vals))
     grip_action_std = float(np.std(env_grip_vals))
     grip_action_switches = int(np.sum(np.abs(np.diff(np.sign(env_grip_vals))) > 0))
     streak = 0; max_streak = 0
     for g in env_grip_vals:
-        if g > 0: streak += 1; max_streak = max(max_streak, streak)
+        if env_gripper_is_open(g): streak += 1; max_streak = max(max_streak, streak)
         else: streak = 0
     clean_longest_open_streak = int(max_streak)
 

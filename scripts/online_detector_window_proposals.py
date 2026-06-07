@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse, csv, json, os, sys
 import numpy as np
 import torch
+from gripper_attack.gripper_semantics import raw_gripper_is_open, CANONICAL_OPEN_SEMANTICS_VERSION
 
 GRIPPER_IDX = 0; GRASP_CLASS = 1
 
@@ -172,7 +173,7 @@ def main():
                 STRICT_THRESH = 0.1
                 if structural_valid and isinstance(ws, int) and ws >= 0 and we < T:
                     raw_gc = Xr[int(ws):int(we)+1, GRIPPER_IDX]
-                    clean_open_count = int((raw_gc < 0.5).sum())
+                    clean_open_count = int(np.sum([raw_gripper_is_open(v) for v in raw_gc]))
                     clean_open_ratio = round(clean_open_count / args.window_len, 4)
                     if clean_open_ratio <= STRICT_THRESH:
                         strict_eligible = True
@@ -187,7 +188,7 @@ def main():
                     start = max(0, int(ws)); end_val = int(we)
                     if start <= end_val:
                         raw_gc = Xr[start:end_val+1, GRIPPER_IDX]
-                        clean_open_count = int((raw_gc < 0.5).sum())
+                        clean_open_count = int(np.sum([raw_gripper_is_open(v) for v in raw_gc]))
                         clean_open_ratio = round(clean_open_count / (end_val-start+1), 4)
 
                 # online_feasible: delay >= 0 (no future knowledge needed)
@@ -210,7 +211,7 @@ def main():
                     clean_open_count=clean_open_count,
                     clean_open_threshold_strict=STRICT_THRESH,
                     clean_open_threshold_relaxed=args.max_clean_open_ratio,
-                    raw_open_semantics="raw_gripper<0.5=OPEN",
+                    raw_open_semantics=CANONICAL_OPEN_SEMANTICS_VERSION,
                     detector_version="v6", checkpoint=os.path.basename(args.checkpoint),
                     threshold=th, K=K,
                     eval_metrics_json=args.eval_metrics_json,

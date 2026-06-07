@@ -68,9 +68,11 @@ def detect_phase_events(steps):
     eef_z = np.array([float(s.get("eef_z", 0)) for s in steps])
     done = np.array([s.get("done", "False") == "True" for s in steps])
 
+    from gripper_attack.gripper_semantics import env_gripper_is_open, env_gripper_is_close
+
     # Environment OPEN/CLOSE
-    is_open_env = env_grip > 0        # env_grip > 0 = OPEN command to MuJoCo
-    is_close_env = env_grip < 0       # env_grip < 0 = CLOSE
+    is_open_env = np.array([env_gripper_is_open(g) for g in env_grip])
+    is_close_env = np.array([env_gripper_is_close(g) for g in env_grip])
 
     is_open_canonical = np.array([raw_gripper_is_open(float(s.get("raw_gripper", s.get("adv_grip", 0.996)))) for s in steps])
 

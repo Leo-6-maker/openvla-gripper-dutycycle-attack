@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """build_clean_phase_dataset.py — clean-only phase/event-labeled dataset builder.
 
-Physical semantics (verified by server smoke):
-  OPEN:  qpos decreases (e.g. 0.020 -> 0.001), env_gripper=+1, raw_gripper<0.5
-  CLOSE: qpos increases (e.g. 0.021 -> 0.039), env_gripper=-1, raw_gripper>=0.5
+Physical semantics (verified by Stage-B env-only smoke):
+  OPEN:  qpos_abs_sum / finger width increases, env_gripper=-1, raw_gripper>=0.5
+  CLOSE: qpos_abs_sum / finger width decreases, env_gripper=+1, raw_gripper<0.5
 """
 
 from __future__ import annotations
@@ -15,9 +15,10 @@ except ImportError: np = None
 REPO = Path(os.environ.get("ATTACK_REPO", "/data/liuyu/repos/openvla-gripper-dutycycle-attack-clean-main-20260524"))
 _src = str(REPO / "src")
 if os.path.isdir(_src): sys.path.insert(0, _src)
-try: from gripper_attack.gripper_semantics import raw_gripper_is_open, CANONICAL_OPEN_SEMANTICS_VERSION
+try: from gripper_attack.gripper_semantics import raw_gripper_is_open, env_gripper_is_close, CANONICAL_OPEN_SEMANTICS_VERSION
 except ImportError:
-    def raw_gripper_is_open(v): return float(v) < 0.5
+    def raw_gripper_is_open(v): return float(v) >= 0.5
+    def env_gripper_is_close(v): return float(v) > 0.5
     CANONICAL_OPEN_SEMANTICS_VERSION = "dry_run_fallback"
 
 # Shared gripper field fallback order (must match audit_phase_conditioned_vis.py)
@@ -35,8 +36,8 @@ PHASE_6CLASS = {0:"approach",1:"pregrasp",2:"grasp_formation",3:"stable_grasp_or
 PHASE_3CLASS = {0:"pre_grasp",1:"grasp_formation",2:"post_grasp"}
 
 # ── Physical constants (confirmed by server smoke) ──
-QPOS_OPEN_MAX = 0.005   # qpos <= this is definitely open
-QPOS_CLOSED_MIN = 0.03  # qpos >= this is definitely closed
+QPOS_OPEN_MIN = 0.03    # qpos_abs_mean >= this is definitely open-ish
+QPOS_CLOSED_MAX = 0.005 # qpos_abs_mean <= this is definitely closed-ish
 
 # Runtime feature names (must match train_phase_selector.py DEFAULT_FEATURES)
 RUNTIME_FEATURES = [
@@ -109,7 +110,7 @@ def load_traces(run_dirs, task_filter=None, seed_filter=None):
 def detect_events(steps):
     """Heuristic phase event detection using CORRECTED qpos direction.
 
-    OPEN: qpos LOW (near 0), CLOSE: qpos HIGH (near 0.039).
+    OPEN: qpos_abs HIGH (near 0.039), CLOSE: qpos_abs LOW (near 0).
     """
     n = len(steps)
     if np is None:
@@ -125,7 +126,7 @@ def detect_events(steps):
 
     if has_env_grip:
         env_grip = np.array([_safe_float(s.get("env_gripper", 0.0)) for s in steps])
-        is_close_env = env_grip < 0
+        is_close_env = np.array([env_gripper_is_close(v) for v in env_grip])
     else:
         _raw = np.array([get_raw_gripper(s) for s in steps])  # None where missing
         is_close_env = np.array([not raw_gripper_is_open(float(v)) if v is not None else False for v in _raw])
@@ -143,8 +144,8 @@ def detect_events(steps):
         raw_gripper_is_open(float(g)) if (g := get_raw_gripper(s)) is not None else False
         for s in steps
     ])
-    is_open_phys = qpos <= QPOS_OPEN_MAX   # PHYSICAL open
-    is_closed_phys = qpos >= QPOS_CLOSED_MIN  # PHYSICAL closed
+    is_open_phys = qpos >= QPOS_OPEN_MIN   # PHYSICAL open
+    is_closed_phys = qpos <= QPOS_CLOSED_MAX  # PHYSICAL closed
 
     # T_gripper_close_onset: first sustained env CLOSE + qpos starts INCREASING
     T_close = None

@@ -46,6 +46,7 @@ log('GPU: physical=%s render=%d' % (_VISIBLE, _render_gpu))
 # ── Load model ──────────────────────────────────────────────────
 from transformers import AutoModelForVision2Seq, AutoProcessor
 from gripper_attack.attack_adapter import TokenPrefixPGDAttacker, get_adv_inputs_from_attack_result
+from gripper_attack.gripper_semantics import env_gripper_is_open
 
 log('Loading model...')
 model = AutoModelForVision2Seq.from_pretrained(
@@ -282,10 +283,10 @@ if env is not None:
     env.close()
 
 # ── Compute summary metrics ──────────────────────────────────────
-open_count = sum(1 for g in decoded_grips if g > 0)
+open_count = sum(1 for g in decoded_grips if env_gripper_is_open(g))
 streak = 0; max_streak = 0
 for g in decoded_grips:
-    if g > 0: streak += 1; max_streak = max(max_streak, streak)
+    if env_gripper_is_open(g): streak += 1; max_streak = max(max_streak, streak)
     else: streak = 0
 total_qpos_delta = float(np.sum(np.abs(qpos_deltas))) if qpos_deltas else 0.0
 mean_arm_l2 = float(np.mean([float(r['arm_l2']) for r in trace_rows if r['in_window'] == '1'])) if trace_rows else 0.0

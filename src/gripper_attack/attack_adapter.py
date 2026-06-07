@@ -7,6 +7,8 @@ import torch.nn.functional as F
 from .types import AttackResult
 from .gripper_semantics import (
     raw_gripper_is_open,
+    decoded_action_to_env_gripper,
+    env_gripper_is_open,
     CANONICAL_OPEN_SEMANTICS_VERSION,
 )
 
@@ -277,7 +279,7 @@ class TokenPrefixPGDAttacker:
         """Return OPEN/CLOSE/BOUNDARY token sets using canonical decoded-action semantics.
 
         Uses the same classification rule as ``gripper_semantics.raw_gripper_is_open``:
-        ``decoded_action < open_threshold`` → OPEN.
+        ``decoded_action >= open_threshold`` → OPEN.
 
         Returns dict with keys:
           - open_token_ids, close_token_ids, boundary_token_ids
@@ -306,24 +308,14 @@ class TokenPrefixPGDAttacker:
             norm = centers[disc]
             raw_action = 0.5 * (norm + 1.0) * (high[gripper_dim] - low[gripper_dim]) + low[gripper_dim]
 
-            # Step 2: normalize_gripper_action (binarize=True)
-            env_val = 2.0 * raw_action - 1.0
-            env_val = np.sign(env_val)
-            env_val = 1.0 if env_val == 0 else env_val
-
-            # Step 3: invert_gripper_action
-            env_val = -1.0 * env_val
-
-            # Step 4: classify using decoded_action against threshold.
-            # After invert: OPEN = +1, CLOSE = -1.
-            # decoded_action in [0,1]: OPEN ≈ 0, CLOSE ≈ 1.
             decoded_action = float(0.5 * (norm + 1.0) * (high[gripper_dim] - low[gripper_dim]) + low[gripper_dim])
+            env_val = decoded_action_to_env_gripper(decoded_action)
 
             tid = int(vocab_size - disc - 1)
             token_action_map[tid] = decoded_action
 
-            is_open_by_env = (env_val > 0)
-            is_open_by_action = (decoded_action < float(open_threshold))
+            is_open_by_env = env_gripper_is_open(env_val)
+            is_open_by_action = raw_gripper_is_open(decoded_action, threshold=open_threshold)
             # Sanity: these must agree for all bins
             assert is_open_by_env == is_open_by_action, \
                 f"OPEN classification mismatch at disc={disc}: env={int(env_val)} action={decoded_action:.6f}"
@@ -347,24 +339,32 @@ class TokenPrefixPGDAttacker:
         close_token_ids = torch.tensor(sorted(set(close_tokens)), dtype=torch.long, device=self.device)
 
         # ── Runtime assertions: prevent region inversion from ever recurring ──
-        # 1. Every OPEN token must decode to OPEN (decoded_action < open_threshold)
+        # 1. Every OPEN token must decode to OPEN (decoded_action >= open_threshold)
         for tid in open_tokens:
             act = token_action_map[int(tid)]
-            assert act < float(open_threshold), \
+            env = decoded_action_to_env_gripper(act)
+            assert act >= float(open_threshold) and env_gripper_is_open(env), \
                 f"OPEN token {tid} decodes to CLOSE action {act:.6f}"
-        # 2. Every CLOSE token must decode to CLOSE (decoded_action >= open_threshold)
+        # 2. Every CLOSE token must decode to CLOSE (decoded_action < open_threshold)
         for tid in close_tokens:
             act = token_action_map[int(tid)]
-            assert act >= float(open_threshold), \
+            env = decoded_action_to_env_gripper(act)
+            assert act < float(open_threshold) and not env_gripper_is_open(env), \
                 f"CLOSE token {tid} decodes to OPEN action {act:.6f}"
-        # 3. Known CLOSE saturation tokens must NOT be in OPEN set
-        _close_saturation = {31744, 31745}
-        for tid in _close_saturation:
-            if tid in open_tokens:
-                raise AssertionError(f"Token {tid} is in CLOSE saturation but classified as OPEN")
+        # 3. Saturation tokens are classified by decoded physical env sign, not comments.
+        for tid in {31744, 31745}:
+            if tid not in token_action_map:
+                continue
+            act = token_action_map[int(tid)]
+            env = decoded_action_to_env_gripper(act)
+            if env_gripper_is_open(env):
+                assert tid in open_tokens, f"OPEN saturation token {tid} missing from OPEN set"
+            else:
+                assert tid in close_tokens, f"CLOSE saturation token {tid} missing from CLOSE set"
         # 4. OPEN and CLOSE sets must be non-empty and disjoint
         assert int(open_token_ids.numel()) > 0, "OPEN token set is empty"
         assert int(close_token_ids.numel()) > 0, "CLOSE token set is empty"
+        assert set(open_tokens).isdisjoint(set(close_tokens)), "OPEN and CLOSE token sets overlap"
 
         return {
             "open_token_ids": open_token_ids,

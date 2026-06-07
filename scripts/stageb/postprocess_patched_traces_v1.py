@@ -7,6 +7,8 @@ from collections import defaultdict
 
 ROOT = sys.argv[1] if len(sys.argv) > 1 else '.'
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(REPO, 'src'))
+from gripper_attack.gripper_semantics import env_gripper_is_open
 
 qpos_rows, windows = [], defaultdict(dict)
 
@@ -45,12 +47,11 @@ for f in sorted(glob.glob(ROOT + '/trace_*.csv')):
                if i+1 < len(rows) and rows[i+1].get('in_window') == '1']
     att_max_shifted = max(shifted) if shifted else att_max_unshifted
 
-    # OPEN convention: env_action_6 = -1.0 = OPEN (verified by oracle smoke)
-    def is_open(v): return float(v) < -0.5
-    open_count = sum(1 for r in att if is_open(r.get('env_action_6', 0)))
+    # OPEN convention: env_action_6 = -1.0 = OPEN (verified by env-only smoke)
+    open_count = sum(1 for r in att if env_gripper_is_open(r.get('env_action_6', 0)))
     streak = max_streak = 0
     for r in att:
-        if is_open(r.get('env_action_6', 0)): streak += 1; max_streak = max(max_streak, streak)
+        if env_gripper_is_open(r.get('env_action_6', 0)): streak += 1; max_streak = max(max_streak, streak)
         else: streak = 0
 
     delta_unshifted = att_max_unshifted - qpos_pre

@@ -15,10 +15,12 @@ from PIL import Image
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(REPO / "src"))
 from src.utils.libero_privileged_state import (
     extract_teacher_privileged_state,
     build_sim_debug_metadata,
 )
+from gripper_attack.openvla_libero_exec_spec import ENV_GRIPPER_OPEN_VALUE
 
 DATE_TIME = time.strftime("%Y_%m_%d-%H_%M_%S")
 
@@ -122,9 +124,9 @@ class OnlineDetector:
 def attack_action(action, condition, rng):
     if condition == "clean": return action
     a = action.copy()
-    if condition == "oracle_open": a[-1] = 1.0
+    if condition == "oracle_open": a[-1] = ENV_GRIPPER_OPEN_VALUE
     elif condition == "random_control": a[-1] = 1.0 if rng.random() > 0.5 else -1.0
-    elif condition == "sustained_command_open_proxy": a[-1] = 1.0
+    elif condition == "sustained_command_open_proxy": a[-1] = ENV_GRIPPER_OPEN_VALUE
     elif condition == "gripper_inversion_proxy":
         # NOTE: This is NOT visual PGD. It is a command-layer gripper inversion + noise proxy.
         # True VIS PGD requires OpenVLAVisualAttacker from v4_run_eval_openvla.py.

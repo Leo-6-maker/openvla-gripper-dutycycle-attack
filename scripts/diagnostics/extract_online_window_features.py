@@ -92,9 +92,11 @@ def extract_window_features(trace_rows, ws, we, task, state_id):
     gripper_is_closed = 1.0 if gripper_qpos_mean < 0.03 else 0.0
     gripper_is_open = 1.0 if gripper_qpos_mean > 0.035 else 0.0
 
-    # Gripper action features (+1=OPEN, -1=CLOSE)
-    grip_open_count = int(np.sum(env_grip > 0))
-    grip_close_count = int(np.sum(env_grip < 0))
+    from gripper_attack.gripper_semantics import env_gripper_is_open, env_gripper_is_close
+
+    # Gripper action features (-1=OPEN, +1=CLOSE)
+    grip_open_count = int(np.sum([env_gripper_is_open(g) for g in env_grip]))
+    grip_close_count = int(np.sum([env_gripper_is_close(g) for g in env_grip]))
     grip_open_rate = float(grip_open_count / max(n, 1))
     grip_action_mean = float(np.mean(env_grip))
     grip_action_std = float(np.std(env_grip))
@@ -137,7 +139,7 @@ def extract_window_features(trace_rows, ws, we, task, state_id):
     # Open streak in clean rollout
     streak = 0; max_streak = 0
     for g in env_grip:
-        if g > 0: streak += 1; max_streak = max(max_streak, streak)
+        if env_gripper_is_open(g): streak += 1; max_streak = max(max_streak, streak)
         else: streak = 0
     clean_longest_open_streak = int(max_streak)
 

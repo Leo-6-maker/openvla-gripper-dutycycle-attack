@@ -346,8 +346,10 @@ for idx, q in enumerate(my_queue):
         log('  SKIP: no data'); continue
 
     # ── Aggregate per-budget ────────────────────────────────────
+    from gripper_attack.gripper_semantics import env_gripper_is_open
+
     def compute_stats(grips):
-        opens = [1 if g > 0 else 0 for g in grips if not np.isnan(g)]
+        opens = [1 if env_gripper_is_open(g) else 0 for g in grips if not np.isnan(g)]
         open_count = sum(opens)
         open_rate = round(open_count / max(len(opens), 1), 4)
         streak = 0; max_streak = 0

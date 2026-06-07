@@ -17,6 +17,7 @@ import torch
 
 REPO = '/data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260605'
 sys.path.insert(0, REPO); sys.path.insert(0, os.path.join(REPO, 'src'))
+from gripper_attack.gripper_semantics import raw_gripper_is_open, env_gripper_is_open, ENV_GRIPPER_OPEN_VALUE
 MODEL_PATH = '/data/aviary/models/openvla/openvla-7b-finetuned-libero-object'
 UNNORM_KEY = 'libero_object'
 FEATURE_SCHEMA_VERSION = 'proprionostep_v1_13dim_zero_action_delta_20260602'
@@ -290,9 +291,10 @@ while step < args.max_steps and not done:
     oracle_open_applied = False
     if attack_this_step:
         if args.condition == 'oracle_open':
-            env_action[-1] = 1.0; oracle_open_applied = True; condition_action_modified = 'oracle_open'
+            env_action[-1] = ENV_GRIPPER_OPEN_VALUE; oracle_open_applied = True; condition_action_modified = 'oracle_open'
         elif args.condition == 'sustained_command_open_proxy':
-            env_action[-1] = 1.0; oracle_open_applied = True; condition_action_modified = 'sustained_command_open_proxy'
+            env_action[-1] = ENV_GRIPPER_OPEN_VALUE; oracle_open_applied = True; condition_action_modified = 'sustained_command_open_proxy'
+    final_env_gripper = float(env_action[-1])
 
     # 8. Get qpos before step
     try: qpos=env.sim.data.qpos; qpos_pre=float(np.mean([qpos[-2],qpos[-1]]))
@@ -306,7 +308,7 @@ while step < args.max_steps and not done:
     except: qpos_post=0.0
 
     eef = obs.get('robot0_eef_pos', np.zeros(3))
-    is_open = abs(final_env_gripper) < 0.1 or final_raw_gripper < 0.5
+    is_open = env_gripper_is_open(final_env_gripper)
 
     trace_rows.append({
         'task':args.task,'condition':args.condition,'seed':str(args.seed),'state_id':str(args.state_id),
@@ -338,10 +340,10 @@ env.close()
 # ── Summarize ─────────────────────────────────────────────────────
 window_rows = [r for r in trace_rows if r['attack_this_step'] or r['in_window']]
 all_rows = trace_rows
-n_open = sum(1 for r in all_rows if abs(float(r['env_gripper']))<0.1 or float(r['raw_gripper'])<0.5)
+n_open = sum(1 for r in all_rows if env_gripper_is_open(float(r['env_gripper'])))
 streaks=[]; cur=0
 for r in all_rows:
-    if abs(float(r['env_gripper']))<0.1 or float(r['raw_gripper'])<0.5: cur+=1
+    if env_gripper_is_open(float(r['env_gripper'])): cur+=1
     else: streaks.append(cur); cur=0
 streaks.append(cur); max_streak=max(streaks) if streaks else 0
 attacked=[r for r in all_rows if r['attack_this_step']]
@@ -368,9 +370,8 @@ summary = {
     'qpos_source':'mujoco_finger_joint_mean','prompt_style':'original_in_out',
     'window_source':'proprionostep_triggered' if trigger_active else 'clean_full_episode',
     'render_gpu_device_id':_render_gpu,'cuda_visible_devices':_VISIBLE,
-    # Oracle semantics: env_action[-1]=+1.0 = OPEN after normalize(invert(action)).
-    # normalize: raw[-1] in [0,1] -> [-1,+1]; invert: sign flip -> LIBERO expects +1=OPEN.
-    'oracle_open_semantics':'env_action_minus1_equals_plus1_means_OPEN_after_normalize_invert',
+    # Oracle semantics: official normalize + invert maps raw OPEN to env_action[-1] = -1.0.
+    'oracle_open_semantics':'env_action_minus1_equals_minus1_means_OPEN_after_normalize_invert',
 }
 
 # ── Save ──────────────────────────────────────────────────────────
