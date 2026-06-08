@@ -71,7 +71,7 @@ def main():
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'src'))
     MODEL_PATH = '/data/aviary/models/openvla/openvla-7b-finetuned-libero-object'
 
-    from transformers import AutoModel, AutoImageProcessor, AutoProcessor
+    from transformers import AutoModelForVision2Seq, AutoProcessor
     from gripper_attack.openvla_libero_exec_spec import (
         official_prompt, get_libero_image_official,
         OFFICIAL_UNNORM_KEY_LIBERO_OBJECT,
@@ -92,15 +92,21 @@ def main():
     processor_openvla = AutoProcessor.from_pretrained(MODEL_PATH, trust_remote_code=True)
     print('OpenVLA loaded')
 
-    # Load DINOv2
-    print('Loading DINOv2...')
-    dino_processor = AutoImageProcessor.from_pretrained('facebook/dinov2-base')
-    dino_model = AutoModel.from_pretrained('facebook/dinov2-base').to(device).eval()
-    print('DINOv2 loaded on %s' % device)
+    # Use OpenVLA's built-in SigLIP vision backbone (already loaded, no download needed)
+    vision_backbone = model_openvla.vision_backbone
+    print('Using OpenVLA SigLIP vision backbone (2176-dim)')
 
     # Load LIBERO
-    from libero.libero import benchmark
-    task_suite = benchmark.get_benchmark_dict()['libero_object']()
+    from libero.libero import benchmark, get_libero_path
+    from libero.libero.envs import OffScreenRenderEnv
+
+    TASK_CFG = {
+        'ketchup': 0, 'butter': 1, 'cream_cheese': 2, 'salad_dressing': 3,
+        'bbq_sauce': 4, 'milk': 5, 'alphabet_soup': 6, 'tomato_sauce': 7, 'orange_juice': 8,
+    }
+    bm_dict = benchmark.get_benchmark_dict()
+    task_suite = bm_dict['libero_object']()
+    _render_gpu = int(os.environ.get('CUDA_VISIBLE_DEVICES', '0').split(',')[0])
     print('LIBERO loaded')
 
     # ── Output dirs ──
@@ -119,18 +125,38 @@ def main():
         t_ep = time.time()
 
         # Collect all needed frame steps for this episode
-        frame_steps = set()
+        frame_steps_set = set()
         for w in windows:
             for pos in ['frame_start', 'frame_center', 'frame_end']:
-                frame_steps.add(w[pos])
-        frame_steps = sorted(frame_steps)
+                frame_steps_set.add(w[pos])
+        frame_steps_sorted = sorted(frame_steps_set)
 
         print('\n[%d/%d] %s s%s seed=%s  (%d windows, %d frame steps)' %
-              (ep_idx + 1, len(ep_list), task, sid, seed, len(windows), len(frame_steps)))
+              (ep_idx + 1, len(ep_list), task, sid, seed, len(windows), len(frame_steps_sorted)))
 
-        # ── Run clean rollout ──
+        # ── Init env (matching runner pattern) ──
+        cfg = TASK_CFG.get(task)
+        if cfg is None:
+            print('  SKIP: unknown task %s' % task)
+            continue
         try:
-            env = task_suite.get_task_bddl_and_init(task, int(sid))
+            task_obj = task_suite.get_task(cfg)
+            initial_states = task_suite.get_task_init_states(cfg)
+            if int(sid) >= len(initial_states):
+                print('  SKIP: state %s OOB (max %d)' % (sid, len(initial_states)))
+                continue
+            bddl = os.path.join(get_libero_path('bddl_files'),
+                                task_obj.problem_folder, task_obj.bddl_file)
+            env = OffScreenRenderEnv(
+                bddl_file_name=bddl, camera_heights=256, camera_widths=256,
+                has_renderer=False, has_offscreen_renderer=True,
+                use_camera_obs=True, camera_names=['agentview'], control_freq=20,
+                render_gpu_device_id=_render_gpu)
+            env.seed(int(seed))
+            obs = env.reset()
+            env.sim.data.qvel[:] = 0
+            env.sim.forward()
+            env.set_init_state(initial_states[int(sid)])
         except Exception as e:
             print('  SKIP: env init failed: %s' % e)
             continue
@@ -139,35 +165,38 @@ def main():
         prompt = official_prompt(task.replace('_', ' '))
         captured_frames = {}  # step -> PIL Image
 
-        max_step = max(frame_steps) + 10
+        max_step = max(frame_steps_sorted) + 10
         done = False
 
         for step in range(max_step):
             # Capture frame if this step is requested
-            if step in frame_steps and step not in captured_frames:
-                img = obs.get('agentview_rgb')
-                if img is None:
-                    for k in ['agentview_image', 'image', 'rgb']:
-                        if k in obs:
-                            img = obs[k]; break
+            if step in frame_steps_set and step not in captured_frames:
+                img = obs.get('agentview_image', obs.get('agentview_rgb'))
                 if img is not None:
                     captured_frames[step] = img
-                    frame_steps.discard(step)
+                    frame_steps_set.discard(step)
 
             if done:
                 break
 
-            # Get OpenVLA action
+            # Get OpenVLA action (matching runner: np.array -> PIL -> processor)
             try:
-                img_processed = get_libero_image_official(obs)
-                inputs = processor_openvla(prompt, img_processed, return_tensors='pt').to(device)
+                img_np = get_libero_image_official(obs)
+                img_pil = Image.fromarray(img_np.astype(np.uint8))
+                inputs = processor_openvla(prompt, img_pil)
+                for k in list(inputs.keys()):
+                    v = inputs[k]
+                    if isinstance(v, torch.Tensor) and v.dtype != model_openvla.dtype:
+                        inputs[k] = v.to(dtype=model_openvla.dtype)
+                inputs = {k: v.to(model_openvla.device) if isinstance(v, torch.Tensor) else v
+                          for k, v in inputs.items()}
                 with torch.no_grad():
                     action = model_openvla.predict_action(
                         **inputs, unnorm_key=OFFICIAL_UNNORM_KEY_LIBERO_OBJECT, do_sample=False
                     )
-                action = action.cpu().numpy().flatten()
+                action = action.float().cpu().numpy().flatten()
             except Exception as e:
-                print('  Model inference error at step %d: %s' % (step, e))
+                print('  Model inference error at step %d: %s' % (step, str(e)[:80]))
                 action = np.zeros(7, dtype=np.float32)
 
             obs, reward, done, info = env.step(action)
@@ -183,7 +212,7 @@ def main():
                 img_np = (img_np * 255).astype(np.uint8)
             Image.fromarray(img_np).save(fpath)
 
-        # ── Extract DINOv2 embeddings for each window ──
+        # ── Extract OpenVLA vision embeddings for each window ──
         for w in windows:
             emb_row = {
                 'pair_id': w['pair_id'], 'task_key': task,
@@ -192,15 +221,23 @@ def main():
                 'window_end': str(w['window_end']),
             }
             for pos_label, step_key in [('start', 'frame_start'), ('center', 'frame_center'), ('end', 'frame_end')]:
-                step = w[step_key]
-                img = captured_frames.get(step)
+                step_id = w[step_key]
+                img = captured_frames.get(step_id)
                 if img is not None:
-                    # DINOv2 inference
+                    # Preprocess: resize to 224x224, normalize
                     pil_img = Image.fromarray(img if img.max() > 1 else (img * 255).astype(np.uint8))
-                    inputs = dino_processor(images=pil_img, return_tensors='pt').to(device)
+                    pil_img = pil_img.resize((224, 224), Image.BICUBIC)
+                    arr = np.array(pil_img).astype(np.float32) / 255.0
+                    if arr.ndim == 2:
+                        arr = np.stack([arr, arr, arr], axis=-1)
+                    tensor_3ch = torch.from_numpy(arr).permute(2, 0, 1).unsqueeze(0).to(
+                        model_openvla.device).to(model_openvla.dtype)
+                    # Duplicate: OpenVLA expects [B, 6, H, W] (3 raw + 3 fused)
+                    tensor_6ch = torch.cat([tensor_3ch, tensor_3ch], dim=1)
                     with torch.no_grad():
-                        outputs = dino_model(**inputs)
-                        emb = outputs.last_hidden_state[:, 0, :].cpu().numpy().flatten()
+                        viz_out = vision_backbone(tensor_6ch)
+                    # Mean pool across 256 tokens -> 2176-dim embedding
+                    emb = viz_out.mean(dim=1).float().cpu().numpy().flatten()
                     fname = '%s_%s.npy' % (w['pair_id'], pos_label)
                     np.save(os.path.join(emb_dir, fname), emb)
                     emb_row['emb_%s_file' % pos_label] = fname
