@@ -75,6 +75,48 @@ if args.label_tier == 'bronze':
             'stratum': c.get('candidate_stratum', '?'),
         })
 
+elif args.label_tier == 'rescue_override':
+    with open(RESCUE_LABELS) as f: rescue = list(csv.DictReader(f))
+    # Map rescue pair_id to bronze parent
+    rescue_ov = {}
+    for r in rescue:
+        # rescue_bronze_butter_s0_w70_80_r0 -> bronze_butter_s0_w70_80
+        pid = r['pair_id'].replace('rescue_bronze_', 'bronze_').rsplit('_r', 1)[0]
+        rescue_ov[pid] = {
+            'cmd_any': int(r['cmd_susceptible']),
+            'phys': int(r['vis_specific_physical_response']),
+            'rand': int(r['random_confounded']),
+            'tier': 'rescue'}
+    for pid, bl in bronze.items():
+        ov = rescue_ov.get(pid, {})
+        cmd_any = ov.get('cmd_any', int(bl['cmd_susceptible'])) if ov else int(bl['cmd_susceptible'])
+        phys = ov.get('phys', int(bl['vis_specific_physical_response'])) if ov else int(bl['vis_specific_physical_response'])
+        rand = ov.get('rand', int(bl['random_confounded'])) if ov else int(bl['random_confounded'])
+        cmd_specific = 1 if (cmd_any == 1 and rand == 0) else 0
+        seed = bl.get('seed', '0')
+        key = (bl['task_key'], bl['state_id'], seed, bl['window_start'], bl['window_end'])
+        c = cand_lookup.get(key)
+        if c is None:
+            print('HARD_FAIL_MISSING_CANDIDATE: %s' % str(key))
+            sys.exit(1)
+        label_rows.append({'pair_id': pid, 'task_key': bl['task_key'], 'state_id': bl['state_id'],
+            'seed': seed, 'window_start': int(bl['window_start']), 'window_end': int(bl['window_end']),
+            'target_cmd_any': cmd_any, 'target_cmd_specific': cmd_specific,
+            'target_phys': phys, 'target_rand': rand,
+            'label_tier': ov.get('tier', 'bronze_only') if ov else 'bronze_only',
+            'actual_max_step': int(c['actual_max_step']),
+            'clean_open_count': int(c.get('clean_open_count', 0)),
+            'clean_open_frac': float(c.get('clean_open_frac', 0)),
+            'raw_gripper_mean': float(c.get('raw_gripper_mean', 0)),
+            'raw_gripper_max': float(c.get('raw_gripper_max', 0)),
+            'qpos_pre': float(c.get('qpos_abs_sum_pre', 0)),
+            'qpos_mean': float(c.get('qpos_abs_sum_window_mean', 0)),
+            'qpos_max': float(c.get('qpos_abs_sum_window_max', 0)),
+            'qpos_slope': float(c.get('qpos_abs_sum_slope', 0)),
+            'eef_disp': float(c.get('eef_displacement', 0)),
+            'stratum': c.get('candidate_stratum', '?'),
+        })
+
 elif args.label_tier == 'silver_override':
     with open(SILVER_LABELS) as f: silver = list(csv.DictReader(f))
     # Group by parent
@@ -281,7 +323,7 @@ with open(os.path.join(OUT, '%s_feature_table.csv' % prefix), 'w', newline='') a
     w.writeheader(); w.writerows(label_rows)
 
 with open(os.path.join(OUT, '%s_split_audit.csv' % prefix), 'w', newline='') as f:
-    w = csv.DictWriter(f, fieldnames=['fold','group_key','n_test','cmd_any_pos','cmd_spec_pos'])
+    w = csv.DictWriter(f, fieldnames=['fold','group_key','n_train','n_test','cmd_any_pos','cmd_spec_pos','phys_pos','rand_pos'])
     w.writeheader(); w.writerows(split_rows)
 
 # ── Ablation summary ──
