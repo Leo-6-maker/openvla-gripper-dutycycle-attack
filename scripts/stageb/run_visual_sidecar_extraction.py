@@ -66,26 +66,14 @@ def main():
     from transformers import AutoModelForVision2Seq, AutoProcessor
     from gripper_attack.openvla_libero_exec_spec import (
         official_prompt, get_libero_image_official,
-        normalize_gripper_raw, raw_gripper_to_env_gripper,
+        raw_gripper_to_env_gripper,
         OFFICIAL_UNNORM_KEY_LIBERO_OBJECT,
     )
 
-    # P0.3: gripper postprocess helpers (matching spec)
-    def normalize_gripper_action(action, binarize=True):
-        """normalize_gripper_action from spec."""
-        import copy
-        action = copy.deepcopy(action)
-        if binarize:
-            action[..., -1] = np.where(action[..., -1] > 0, 1.0, 0.0)
-        action[..., -1] = (action[..., -1] - 0.5) * 2.0
-        return action
-
-    def invert_gripper_action(action):
-        """invert_gripper_action from spec."""
-        import copy
-        action = copy.deepcopy(action)
-        action[..., -1] *= -1.0
-        return action
+    # P0: self-check gripper semantics at import time
+    assert raw_gripper_to_env_gripper(0.7) == -1.0, 'SPEC FAIL: raw=0.7 should be env=-1 OPEN'
+    assert raw_gripper_to_env_gripper(0.3) == 1.0, 'SPEC FAIL: raw=0.3 should be env=+1 CLOSE'
+    print('Gripper semantics self-check: PASS')
 
     # Load OpenVLA
     print('Loading OpenVLA...')
@@ -229,9 +217,9 @@ def main():
                 print('  Model error at step %d: %s' % (step, str(e)[:80]))
                 raw_action = np.zeros(7, dtype=np.float32)
 
-            # P0.3: Official gripper postprocess chain
-            env_action = normalize_gripper_action(raw_action.copy(), binarize=True)
-            env_action = invert_gripper_action(env_action)
+            # P0: Official gripper postprocess via spec (raw -> env, binarize=True)
+            env_action = raw_action.copy()
+            env_action[-1] = raw_gripper_to_env_gripper(env_action[-1], binarize=True)
             obs, reward, done, info = env.step(env_action)
 
         env.close()
