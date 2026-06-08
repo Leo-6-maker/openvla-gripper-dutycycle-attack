@@ -287,8 +287,11 @@ if env is not None:
                 elif args.condition == 'random_linf':
                     try:
                         qpos_before = qpos_abs_sum
-                        random_seed_str = str(args.seed + args.job_id)
-                        noise = (2 * torch.rand_like(clean_pv) - 1) * _eps_eff
+                        random_seed_str = str(int(_attack_seed) + args.job_id)
+                        rand_gen = torch.Generator(device=clean_pv.device)
+                        rand_gen.manual_seed(int(random_seed_str))
+                        noise = (2 * torch.rand(clean_pv.shape, device=clean_pv.device,
+                                               dtype=clean_pv.dtype, generator=rand_gen) - 1) * _eps_eff
                         rand_pv = torch.clamp(clean_pv + noise, clean_pv - _eps_eff, clean_pv + _eps_eff)
                         noise_linf = str(round(float(noise.abs().max().cpu()), 6))
                         noise_l2 = str(round(float(torch.linalg.vector_norm(noise.reshape(-1)).cpu()), 6))
@@ -324,6 +327,8 @@ if env is not None:
                 'task_key': args.task,
                 'state_id': str(args.state_id),
                 'seed': str(args.seed),
+                'env_seed': str(_env_seed),
+                'attack_seed': str(_attack_seed),
                 'window_start': str(ws),
                 'window_end': str(we),
                 'done': str(int(done)),
@@ -441,6 +446,8 @@ summary = {
     'window_start': ws, 'window_end': we,
     'condition': args.condition,
     'seed': args.seed,
+    'env_seed': _env_seed,
+    'attack_seed': _attack_seed,
     'infra_status': infra_status, 'provenance_status': provenance,
     'decoded_open_count': open_count, 'decoded_longest_open_streak': max_streak,
     'open_convention': OPEN_CONVENTION,
