@@ -14,13 +14,19 @@ from sklearn.metrics import roc_auc_score, average_precision_score
 from collections import defaultdict, Counter
 
 ap = argparse.ArgumentParser()
-ap.add_argument('--label-tier', choices=['bronze', 'silver_override'], default='silver_override')
+ap.add_argument('--label-tier', choices=['bronze', 'silver_override', 'rescue_override'], default='silver_override')
+ap.add_argument('--bronze-labels', default='/tmp/bronze_labels.csv')
+ap.add_argument('--silver-labels', default='/tmp/silver_p1a_labels.csv')
+ap.add_argument('--rescue-labels', default='/tmp/rescue_labels.csv')
+ap.add_argument('--candidates', default='/data/liuyu/outputs/stageb_v1_1_reachable_window_candidates.csv')
+ap.add_argument('--out', default='/data/liuyu/outputs/stageb_v1_1_detector_v0_rc1a_20260608')
 args = ap.parse_args()
 
-BRONZE_LABELS = '/tmp/bronze_labels.csv'
-SILVER_LABELS = '/tmp/silver_p1a_labels.csv'
-CANDIDATES = '/data/liuyu/outputs/stageb_v1_1_reachable_window_candidates.csv'
-OUT = '/data/liuyu/outputs/stageb_v1_1_detector_v0_rc1a_20260608'
+BRONZE_LABELS = args.bronze_labels
+SILVER_LABELS = args.silver_labels
+RESCUE_LABELS = args.rescue_labels
+CANDIDATES = args.candidates
+OUT = args.out
 os.makedirs(OUT, exist_ok=True)
 
 # ── Load data ──
@@ -56,7 +62,7 @@ if args.label_tier == 'bronze':
             'target_cmd_any': cmd_any, 'target_cmd_specific': cmd_specific,
             'target_phys': phys, 'target_rand': rand,
             'label_tier': 'bronze',
-            'actual_max_step': int(c.get('actual_max_step', 300)),
+            'actual_max_step': int(c['actual_max_step']),
             'clean_open_count': int(c.get('clean_open_count', 0)),
             'clean_open_frac': float(c.get('clean_open_frac', 0)),
             'raw_gripper_mean': float(c.get('raw_gripper_mean', 0)),
@@ -121,7 +127,7 @@ elif args.label_tier == 'silver_override':
             'target_cmd_any': cmd_any, 'target_cmd_specific': cmd_specific,
             'target_phys': phys, 'target_rand': rand,
             'label_tier': ov.get('tier', 'bronze_only'),
-            'actual_max_step': int(c.get('actual_max_step', 300)),
+            'actual_max_step': int(c['actual_max_step']),
             'clean_open_count': int(c.get('clean_open_count', 0)),
             'clean_open_frac': float(c.get('clean_open_frac', 0)),
             'raw_gripper_mean': float(c.get('raw_gripper_mean', 0)),
@@ -250,16 +256,18 @@ for target_name, y in targets:
     except Exception as e:
         pass
 
-# ── P1-C: Split audit ──
+# ── P1-C: Split audit with full target counts ──
 split_rows = []
 gkf = GroupKFold(n_splits=n_splits)
 for fold_i, (ti, te) in enumerate(gkf.split(X_clean, targets[0][1], groups)):
-    te_groups = set(groups[te])
-    for g in sorted(te_groups):
+    n_train = len(ti); n_test = len(te)
+    for g in sorted(set(groups[te])):
         idx = np.where(groups[te] == g)[0]
-        split_rows.append({'fold': fold_i, 'group_key': g, 'n_test': len(idx),
+        split_rows.append({'fold': fold_i, 'group_key': g, 'n_train': n_train, 'n_test': len(idx),
             'cmd_any_pos': int(targets[0][1][te][idx].sum()),
-            'cmd_spec_pos': int(targets[1][1][te][idx].sum())})
+            'cmd_spec_pos': int(targets[1][1][te][idx].sum()),
+            'phys_pos': int(targets[2][1][te][idx].sum()),
+            'rand_pos': int(targets[3][1][te][idx].sum())})
 
 # ── Write outputs ──
 prefix = 'fixed_%s' % args.label_tier
