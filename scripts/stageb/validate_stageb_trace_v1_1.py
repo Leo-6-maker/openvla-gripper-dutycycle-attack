@@ -119,15 +119,40 @@ def main():
         print('FATAL: --trace or --dir required'); sys.exit(1)
 
     ok = 0; fail = 0
+    global_pair_condition = []
     for fp in files:
         try:
             valid, nrows, nwin, pid = validate_trace(fp)
             ok += 1
             print('PASS %-50s rows=%d window=%d pair=%s'
                   % (os.path.basename(fp), nrows, nwin, pid))
+            # Extract condition from filename: trace_{task}_{condition}_job{id}.csv
+            fname = os.path.basename(fp)
+            cond = None
+            if '_vis_pgd_' in fname: cond = 'vis_pgd'
+            elif '_random_linf_' in fname: cond = 'random_linf'
+            elif '_clean_' in fname: cond = 'clean'
+            if pid and cond:
+                global_pair_condition.append((pid, cond, fname))
         except AssertionError as e:
             fail += 1
             print('FAIL %-50s %s' % (os.path.basename(fp), e))
+
+    # 9. Each pair_id must have exactly one VIS and one RAND (HARD FAIL)
+    pc_by_pair = {}
+    for pid, cond, fname in global_pair_condition:
+        pc_by_pair.setdefault(pid, []).append((cond, fname))
+    for pid, entries in pc_by_pair.items():
+        conds = [e[0] for e in entries]
+        if sorted(conds) != ['random_linf', 'vis_pgd']:
+            print('HARD_FAIL_PAIR_MISMATCH: pair=%s conditions=%s files=%s'
+                  % (pid, conds, [e[1] for e in entries]))
+            fail += 1
+            # Double-check incomplete pairs vs extra duplicates
+        if len(entries) != 2:
+            print('HARD_FAIL_PAIR_COUNT: pair=%s has %d traces (expect 2: VIS+RAND)'
+                  % (pid, len(entries)))
+            fail += 1
 
     print('\nValid: %d  Failed: %d' % (ok, fail))
     if fail > 0:

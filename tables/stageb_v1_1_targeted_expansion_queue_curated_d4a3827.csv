@@ -1,0 +1,30 @@
+Warning: Permanently added '10.60.133.3' (ED25519) to the list of known hosts.
+Warning: Permanently added '10.60.133.4' (ED25519) to the list of known hosts.
+category,pair_id,task_key,state_id,seed,window_start,window_end,n_window_steps,actual_max_step,candidate_stratum,clean_open_count,clean_open_frac,raw_gripper_mean,raw_gripper_max,qpos_pre,qpos_mean,qpos_max,qpos_slope,eef_disp,selection_reason
+cmd_expansion,cmd_expansion_alphabet_soup_s1_w50_60_seed1,alphabet_soup,1,1,50,60,11,299,high_opportunity,0,0.0,0.0,0.0,0.006757,0.002491,0.004694,-0.0002974,0.001504,"priority non-butter cmd: closed gripper, high opp"
+cmd_expansion,cmd_expansion_bbq_sauce_s1_w55_65_seed1,bbq_sauce,1,1,55,65,11,135,high_opportunity,0,0.0,0.0,0.0,0.059726,0.036602,0.050774,-0.0017124,0.007673,non-butter cmd: bbq_sauce s1
+cmd_expansion,cmd_expansion_bbq_sauce_s2_w200_210_seed2,bbq_sauce,2,2,200,210,11,299,medium_opportunity,0,0.0,0.0,0.0,0.001,0.001,0.001,0.0,0.0,non-butter cmd: bbq_sauce s2 late window
+cmd_expansion,cmd_expansion_cream_cheese_s1_w145_155_seed1,cream_cheese,1,1,145,155,11,299,high_opportunity,0,0.0,0.0,0.0,0.009145,0.002833,0.006271,-0.0004487,0.002243,non-butter cmd: cream_cheese
+cmd_expansion,cmd_expansion_salad_dressing_s1_w50_60_seed1,salad_dressing,1,1,50,60,11,114,hard_negative_or_idle,0,0.0,0.0,0.0,0.078648,0.046742,0.074521,-0.0038744,0.019494,non-butter cmd: salad_dressing underrepresented
+cmd_expansion,cmd_expansion_salad_dressing_s2_w110_120_seed2,salad_dressing,2,2,110,120,11,262,hard_negative_or_idle,0,0.0,0.0,0.0,0.077993,0.041028,0.077579,-0.0071999,0.036004,non-butter cmd: salad_dressing s2 contrast
+cmd_expansion,cmd_expansion_orange_juice_s2_w25_35_seed2,orange_juice,2,2,25,35,11,299,high_opportunity,0,0.0,0.0,0.0,0.008545,0.002718,0.005708,-0.0003948,0.001987,non-butter cmd: orange_juice underrepresented
+cmd_expansion,cmd_expansion_milk_s0_w230_240_seed0,milk,0,0,230,240,11,299,high_opportunity,0,0.0,0.0,0.0,0.031589,0.006139,0.021803,-0.0019796,0.009903,non-butter cmd: milk underrepresented
+phys_enrichment,phys_enrichment_cream_cheese_s2_w50_60_seed2,cream_cheese,2,2,50,60,11,299,high_opportunity,0,0.0,0.0,0.0,0.041329,0.008868,0.031723,-0.0029628,0.014798,phys bridge: cream_cheese interaction zone
+phys_enrichment,phys_enrichment_cream_cheese_s0_w85_95_seed0,cream_cheese,0,0,85,95,11,147,medium_opportunity,0,0.0,0.0,0.0,0.036983,0.036838,0.036882,-5.6e-06,0.000119,phys bridge: cream_cheese interaction zone
+phys_enrichment,phys_enrichment_orange_juice_s2_w20_30_seed2,orange_juice,2,2,20,30,11,299,high_opportunity,0,0.0,0.0,0.0,0.049939,0.012435,0.040975,-0.003876,0.019388,phys bridge: orange_juice interaction zone
+phys_enrichment,phys_enrichment_bbq_sauce_s0_w60_70_seed0,bbq_sauce,0,0,60,70,11,140,medium_opportunity,0,0.0,0.0,0.0,0.041339,0.031766,0.031817,5.2e-06,1.4e-05,phys bridge: bbq_sauce underrepresented
+phys_enrichment,phys_enrichment_tomato_sauce_s2_w150_160_seed2,tomato_sauce,2,2,150,160,11,299,high_opportunity,0,0.0,0.0,0.0,0.008343,0.002675,0.005549,-0.000379,0.0019,phys bridge: tomato_sauce under cap
+hard_negative,hard_negative_alphabet_soup_s1_w50_60_seed1,alphabet_soup,1,1,50,60,11,299,high_opportunity,0,0.0,0.0,0.0,0.006757,0.002491,0.004694,-0.0002974,0.001504,relaxed HN: alphabet_soup opens<=2 low qpos
+hard_negative,hard_negative_bbq_sauce_s2_w100_110_seed2,bbq_sauce,2,2,100,110,11,299,medium_opportunity,0,0.0,0.0,0.0,0.001,0.001,0.001,0.0,1.5e-05,relaxed HN: bbq_sauce opens<=2 low qpos
+hard_negative,hard_negative_cream_cheese_s1_w145_155_seed1,cream_cheese,1,1,145,155,11,299,high_opportunity,0,0.0,0.0,0.0,0.009145,0.002833,0.006271,-0.0004487,0.002243,relaxed HN: cream_cheese opens<=2 low qpos
+hard_negative,hard_negative_orange_juice_s2_w25_35_seed2,orange_juice,2,2,25,35,11,299,high_opportunity,0,0.0,0.0,0.0,0.008545,0.002718,0.005708,-0.0003948,0.001987,relaxed HN: orange_juice opens<=2 low qpos
+hard_negative,hard_negative_milk_s0_w240_250_seed0,milk,0,0,240,250,11,299,high_opportunity,2,0.182,0.1811,0.9961,0.002097,0.002093,0.005819,0.0003812,0.001905,relaxed HN: milk opens<=2 low qpos
+hard_negative,hard_negative_tomato_sauce_s2_w150_160_seed2,tomato_sauce,2,2,150,160,11,299,high_opportunity,0,0.0,0.0,0.0,0.008343,0.002675,0.005549,-0.000379,0.0019,relaxed HN: tomato_sauce opens<=2 low qpos
+hard_negative,hard_negative_salad_dressing_s2_w80_90_seed2,salad_dressing,2,2,80,90,11,262,medium_opportunity,1,0.091,0.0906,0.9961,0.003121,0.002167,0.003273,6.46e-05,0.000282,relaxed HN: salad_dressing opens<=2 low qpos
+hard_negative,hard_negative_salad_dressing_s2_w120_130_seed2,salad_dressing,2,2,120,130,11,262,medium_opportunity,2,0.182,0.1811,0.9961,0.008399,0.003118,0.00605,4.7e-05,0.000211,relaxed HN: salad_dressing opens<=2 low qpos
+rand_abstain,rand_abstain_tomato_sauce_s2_w155_165_seed2,tomato_sauce,2,2,155,165,11,299,medium_opportunity,1,0.091,0.0906,0.9961,0.002347,0.001991,0.003205,0.0001011,0.000504,rand abstain: tomato_sauce
+rand_abstain,rand_abstain_alphabet_soup_s0_w15_25_seed0,alphabet_soup,0,0,15,25,11,299,medium_opportunity,1,0.091,0.0906,0.9961,0.005324,0.002772,0.003887,-0.0001803,0.000876,rand abstain: alphabet_soup exploratory
+rand_abstain,rand_abstain_orange_juice_s1_w15_25_seed1,orange_juice,1,1,15,25,11,299,high_opportunity,2,0.182,0.1811,0.9961,0.008422,0.003154,0.005638,-0.0002797,0.001499,rand abstain: orange_juice exploratory
+sentinel_repeat,sentinel_repeat_milk_s0_w70_80_seed0,milk,0,0,70,80,11,299,high_opportunity,1,0.091,0.0906,0.9961,0.031765,0.006203,0.021902,-0.0019415,0.009799,sentinel: milk s0 stable cmd+phys
+sentinel_repeat,sentinel_repeat_tomato_sauce_s2_w95_105_seed2,tomato_sauce,2,2,95,105,11,299,high_opportunity,3,0.273,0.2717,0.9961,0.002104,0.003997,0.009932,0.0007168,0.003561,sentinel: tomato_sauce s2 stable cmd+phys
+sentinel_repeat,sentinel_repeat_alphabet_soup_s0_w60_70_seed0,alphabet_soup,0,0,60,70,11,299,medium_opportunity,6,0.545,0.5433,0.9961,0.002406,0.01463,0.036387,0.0033667,0.016833,sentinel: alphabet_soup s0 stable cmd+phys
