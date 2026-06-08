@@ -53,7 +53,7 @@ def main():
     pairs = defaultdict(lambda: {'VIS': None, 'RAND': None})
     duplicate_errors = []
     for t in traces:
-        key = (t['pair_id'], t['task_key'], t['state_id'],
+        key = (t['pair_id'], t['task_key'], t['state_id'], t['seed'],
                t['window_start'], t['window_end'])
         if t['condition'] == 'vis_pgd':
             cond = 'VIS'
@@ -69,15 +69,15 @@ def main():
 
     if duplicate_errors:
         for key, cond, old_trace, new_trace in duplicate_errors:
-            pair_id, task, sid, ws, we = key
-            print('REJECT: duplicate %s trace for %s s%s [%s,%s] pair=%s: %s vs %s'
-                  % (cond, task, sid, ws, we, pair_id, old_trace, new_trace))
+            pair_id, task, sid, seed, ws, we = key
+            print('REJECT: duplicate %s trace for %s s%s seed=%s [%s,%s] pair=%s: %s vs %s'
+                  % (cond, task, sid, seed, ws, we, pair_id, old_trace, new_trace))
         sys.exit(1)
 
     # ── Compute labels ──
     label_rows = []
     for key, p in sorted(pairs.items()):
-        pair_id, task, sid, ws, we = key
+        pair_id, task, sid, seed, ws, we = key
         v = p['VIS']; r = p['RAND']
 
         if not v or not r:
@@ -115,7 +115,7 @@ def main():
             'pair_id': pair_id,
             'task_key': task,
             'state_id': sid,
-            'seed': v.get('seed', sid),
+            'seed': seed,
             'window_start': ws,
             'window_end': we,
             'vis_trace': v['trace'],

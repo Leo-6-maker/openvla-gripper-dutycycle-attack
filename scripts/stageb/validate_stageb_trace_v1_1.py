@@ -69,6 +69,16 @@ def validate_trace(path):
                 'HARD_FAIL_DECODED_OPEN_BOOL: step=%s val=%r'
                 % (r.get('step', '?'), v))
 
+    # 5b. decoded_open_bool must match env_action_6 semantics (HARD FAIL)
+    for r in rows:
+        ea6 = float(r.get('env_action_6', '99'))
+        expected = '1' if ea6 < -0.5 else '0'
+        actual = r.get('decoded_open_bool', '')
+        if actual != expected:
+            raise AssertionError(
+                'HARD_FAIL_DECODED_OPEN_BOOL_MISMATCH: step=%s ea6=%s expected=%s got=%s'
+                % (r.get('step', '?'), ea6, expected, actual))
+
     # 6. git_commit not placeholder (HARD FAIL)
     gc = rows[0].get('git_commit', '') if rows else ''
     if gc in ('', 'unknown', 'PLACEHOLDER'):
