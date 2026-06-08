@@ -15,22 +15,22 @@ PARENTS = [
     # Tomato neighbors
     ('tomato_sauce', 2, 2, 155, 165, 'contrast_tomato_late', 'neighbor of K5 tomato[150,160]'),
     ('tomato_sauce', 2, 2, 95, 105, 'contrast_tomato_early', 'neighbor of K5 tomato[90,100]'),
-    ('tomato_sauce', 2, 2, 85, 95, 'contrast_tomato_mid', 'same-episode contrast window'),
+    ('tomato_sauce', 0, 0, 55, 65, 'contrast_tomato_far', 'same-task far window, non-edge state'),
 
     # === B: Strict phys candidates (4) ===
     ('cream_cheese', 2, 2, 50, 60, 'strict_phys_cream', 'VIS=8 RAND=0, high qpos, non-edge'),
-    ('bbq_sauce', 2, 2, 200, 210, 'strict_phys_bbq', 'VIS=8 RAND=0 Vq=0.037, monitor for edge'),
+    ('cream_cheese', 1, 1, 145, 155, 'strict_phys_cream2', 'Vq=0.024 Rq=0.004, reachable per candidate audit'),
     ('tomato_sauce', 2, 2, 165, 175, 'strict_phys_tomato', 'neighbor of [155,165], master phys label'),
     ('salad_dressing', 2, 2, 70, 80, 'strict_phys_salad', 'untested phys candidate from master'),
 
     # === C: Rand-sensitive (3) ===
     ('alphabet_soup', 0, 0, 60, 70, 'rand_alpha', 'VIS=0 RAND=11, sentinel rand_cmd signal'),
     ('salad_dressing', 2, 2, 80, 90, 'rand_salad', 'RAND qpos=0.051, phys confound candidate'),
-    ('orange_juice', 2, 2, 20, 30, 'rand_oj', 'V=2 RAND qpos=0.039, phys confound candidate'),
+    ('salad_dressing', 1, 1, 50, 60, 'rand_salad2', 'RAND qpos=0.013, non-edge replacement'),
 
     # === D: Hard negative anchors (3) ===
     ('alphabet_soup', 1, 1, 50, 60, 'neg_alpha', 'V=2 R=0, clean neg from smoke'),
-    ('orange_juice', 2, 2, 25, 35, 'neg_oj', 'V=2 R=0, clean neg expansion'),
+    ('cream_cheese', 0, 0, 85, 95, 'neg_cream', 'V=1 R=0, clean neg, non-edge'),
     ('bbq_sauce', 0, 0, 60, 70, 'neg_bbq', 'V=2 R=0, clean neg, non-bbq-s2 task diversity'),
 ]
 K = 5
