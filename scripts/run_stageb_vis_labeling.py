@@ -73,6 +73,10 @@ ap.add_argument('--pgd_steps', type=int, default=20)
 ap.add_argument('--eps_raw_pixels', type=float, default=6.0)
 ap.add_argument('--max_steps', type=int, default=400)
 ap.add_argument('--seed', type=int, default=0)
+ap.add_argument('--env_seed', type=int, default=None,
+                help='Env replay seed (default: --seed). Fixed for K-repeat stability.')
+ap.add_argument('--attack_seed', type=int, default=None,
+                help='Attack perturbation seed (default: --seed). Varied for K-repeat stability.')
 ap.add_argument('--pair_id', default=None,
                 help='Shared pair ID for VIS/random matching; auto-generated if not set')
 ap.add_argument('--image_preprocess', choices=['official_rot180', 'legacy_no_rotation'],
@@ -149,8 +153,11 @@ attacker_config = {
     'arm_preserve_weight': 0.5,
     'gripper_margin': 5.0,
 }
+# S5: separate env_seed (replay determinism) from attack_seed (perturbation diversity)
+_env_seed = args.env_seed if args.env_seed is not None else args.seed
+_attack_seed = args.attack_seed if args.attack_seed is not None else args.seed
 attacker = TokenPrefixPGDAttacker(
-    model=model, processor=processor, config=attacker_config, seed=args.seed,
+    model=model, processor=processor, config=attacker_config, seed=_attack_seed,
     device='cuda:%d' % gpu_ids[0], preprocess_kwargs={'postprocess_gripper': True})
 attacker._freeze_model()
 
@@ -214,7 +221,7 @@ try:
                              has_renderer=False, has_offscreen_renderer=True,
                              use_camera_obs=True, camera_names=['agentview'], control_freq=20,
                              render_gpu_device_id=_render_gpu)
-    env.seed(args.seed); obs = env.reset()
+    env.seed(_env_seed); obs = env.reset()
     env.sim.data.qvel[:] = 0; env.sim.forward()
     env.set_init_state(initial_states[args.state_id])
 except Exception as e:
@@ -223,7 +230,7 @@ except Exception as e:
     env = None
 
 if env is not None:
-    rng = np.random.RandomState(args.seed + args.job_id)
+    rng = np.random.RandomState(_attack_seed + args.job_id)
     try:
         while not done and current_step < min(we + 5, args.max_steps):
             # ── Official image preprocessing ──
