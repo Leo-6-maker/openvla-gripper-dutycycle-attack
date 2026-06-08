@@ -208,18 +208,23 @@ def main():
                 img_pil = Image.fromarray(
                     get_libero_image_official(obs).astype(np.uint8))
                 inputs = processor(prompt_text, img_pil)
-                # Convert dtypes to match model
+                # Move to device; only cast FLOATING tensors to model dtype
+                # (input_ids, attention_mask must stay Long/Int)
                 for k in list(inputs.keys()):
                     v = inputs[k]
-                    if isinstance(v, torch.Tensor) and v.dtype != model.dtype:
-                        inputs[k] = v.to(dtype=model.dtype)
-                inputs = {k: v.to(model.device) if isinstance(v, torch.Tensor) else v
-                          for k, v in inputs.items()}
+                    if isinstance(v, torch.Tensor):
+                        if torch.is_floating_point(v) and v.dtype != model.dtype:
+                            v = v.to(dtype=model.dtype)
+                        inputs[k] = v.to(model.device)
                 with torch.no_grad():
                     raw_action = model.predict_action(
                         **inputs, unnorm_key=OFFICIAL_UNNORM_KEY_LIBERO_OBJECT,
                         do_sample=False)
-                raw_action = raw_action.float().cpu().numpy().flatten()
+                # predict_action returns numpy array when do_sample=False
+                if isinstance(raw_action, np.ndarray):
+                    raw_action = raw_action.flatten()
+                else:
+                    raw_action = raw_action.float().cpu().numpy().flatten()
             except Exception as e:
                 print('  Model error at step %d: %s' % (step, str(e)[:80]))
                 raw_action = np.zeros(7, dtype=np.float32)
