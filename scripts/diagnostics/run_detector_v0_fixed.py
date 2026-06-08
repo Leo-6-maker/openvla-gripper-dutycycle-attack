@@ -77,16 +77,33 @@ if args.label_tier == 'bronze':
 
 elif args.label_tier == 'rescue_override':
     with open(RESCUE_LABELS) as f: rescue = list(csv.DictReader(f))
-    # Map rescue pair_id to bronze parent
-    rescue_ov = {}
+    # Aggregate rescue repeats per parent (same stability logic as silver)
+    rescue_by_parent = defaultdict(list)
     for r in rescue:
-        # rescue_bronze_butter_s0_w70_80_r0 -> bronze_butter_s0_w70_80
-        pid = r['pair_id'].replace('rescue_bronze_', 'bronze_').rsplit('_r', 1)[0]
-        rescue_ov[pid] = {
-            'cmd_any': int(r['cmd_susceptible']),
-            'phys': int(r['vis_specific_physical_response']),
-            'rand': int(r['random_confounded']),
-            'tier': 'rescue'}
+        parent = r['pair_id'].replace('rescue_bronze_', 'bronze_').rsplit('_r', 1)[0]
+        rescue_by_parent[parent].append(r)
+    rescue_ov = {}
+    for parent, reps in rescue_by_parent.items():
+        n = len(reps)
+        vc = sum(1 for r in reps if int(r.get('vis_open_count', 0)) >= 6)
+        vp = sum(1 for r in reps if float(r.get('vis_qpos_delta_shifted', 0)) >= 0.01)
+        rc_r = sum(1 for r in reps if int(r.get('rand_open_count', 0)) >= 6)
+        rp_r = sum(1 for r in reps if float(r.get('rand_qpos_delta_shifted', 0)) >= 0.01)
+        vr = vc / max(n, 1); rr = rc_r / max(n, 1)
+        pr_vis = vp / max(n, 1); pr_rand = rp_r / max(n, 1)
+        is_cmd = vr >= 0.67 and rr <= 0.33
+        is_phys = pr_vis >= 0.67 and pr_rand <= 0.33
+        is_rand = rr >= 0.67 or pr_rand >= 0.67
+        if is_cmd:
+            rescue_ov[parent] = {'cmd_any': 1, 'phys': 1 if is_phys else 0, 'rand': 1 if is_rand else 0, 'tier': 'rescue_cmd'}
+        elif is_phys:
+            rescue_ov[parent] = {'cmd_any': 0, 'phys': 1, 'rand': 1 if is_rand else 0, 'tier': 'rescue_phys'}
+        elif is_rand:
+            rescue_ov[parent] = {'cmd_any': 0, 'phys': 0, 'rand': 1, 'tier': 'rescue_rand'}
+        elif vr <= 0.33 and rr <= 0.33:
+            rescue_ov[parent] = {'cmd_any': 0, 'phys': 0, 'rand': 0, 'tier': 'rescue_hard_neg'}
+        else:
+            rescue_ov[parent] = {'cmd_any': -1, 'phys': -1, 'rand': -1, 'tier': 'rescue_unstable'}
     for pid, bl in bronze.items():
         ov = rescue_ov.get(pid, {})
         cmd_any = ov.get('cmd_any', int(bl['cmd_susceptible'])) if ov else int(bl['cmd_susceptible'])
