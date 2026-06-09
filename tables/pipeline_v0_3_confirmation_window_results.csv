@@ -1,0 +1,25 @@
+group,pair_id,attack_seed,task,window,vis_open,rand_open,vis_cmd,rand_cmd,vis_phys,rand_phys,yield_cmd,fp_fn_note
+A,conf_A1_milk_w70_80,5,milk,70-80,8,1,1,0,1,1,1,
+A,conf_A1_milk_w70_80,6,milk,70-80,9,0,1,0,1,1,1,
+A,conf_A2_butter_w80_90,5,butter,80-90,8,3,1,0,1,0,1,
+A,conf_A2_butter_w80_90,6,butter,80-90,8,3,1,0,1,1,1,
+A,conf_A3_cream_w50_60,5,cream_cheese,50-60,8,0,1,0,1,1,1,
+A,conf_A3_cream_w50_60,6,cream_cheese,50-60,8,1,1,0,1,1,1,
+A,conf_A4_tomato_w150_160,5,tomato_sauce,150-160,8,2,1,0,1,0,1,
+A,conf_A4_tomato_w150_160,6,tomato_sauce,150-160,8,1,1,0,1,0,1,
+B,conf_B1_tomato_w55_65,5,tomato_sauce,55-65,7,0,1,0,1,0,1,"detector_FP: CleanRand marked high-risk but fresh VIS=7,RAND=0 (GOLD)"
+B,conf_B1_tomato_w55_65,6,tomato_sauce,55-65,7,0,1,0,1,0,1,"detector_FP: CleanRand marked high-risk but fresh VIS=7,RAND=0 (GOLD)"
+B,conf_B2_milk_w75_85,5,milk,75-85,8,7,1,1,1,1,0,
+B,conf_B2_milk_w75_85,6,milk,75-85,7,6,1,1,1,1,0,
+B,conf_B3_cream_w85_95,5,cream_cheese,85-95,1,0,0,0,0,0,0,
+B,conf_B3_cream_w85_95,6,cream_cheese,85-95,0,0,0,0,0,0,0,
+B,conf_B4_salad_w70_80,5,salad_dressing,70-80,4,11,0,1,1,0,-1,"detector_FN: CleanRand passed but fresh VIS=4,RAND=10-11 (rand)"
+B,conf_B4_salad_w70_80,6,salad_dressing,70-80,4,10,0,1,1,0,-1,"detector_FN: CleanRand passed but fresh VIS=4,RAND=10-11 (rand)"
+C,conf_C1_milk_w80_90,5,milk,80-90,6,6,1,1,1,1,0,
+C,conf_C1_milk_w80_90,6,milk,80-90,9,6,1,1,1,1,0,
+C,conf_C2_butter_w95_105,5,butter,95-105,3,5,0,1,1,1,-1,
+C,conf_C2_butter_w95_105,6,butter,95-105,8,5,1,1,1,1,0,
+C,conf_C3_alphabet_w60_70,5,alphabet_soup,60-70,4,11,0,1,1,0,-1,
+C,conf_C3_alphabet_w60_70,6,alphabet_soup,60-70,0,0,0,0,1,0,0,
+C,conf_C4_tomato_w115_125,5,tomato_sauce,115-125,1,11,0,1,0,0,-1,
+C,conf_C4_tomato_w115_125,6,tomato_sauce,115-125,7,11,1,1,1,0,0,

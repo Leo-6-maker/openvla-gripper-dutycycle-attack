@@ -1,0 +1,4 @@
+group,group_name,n_logical_pairs,cmd_hit,cmd_rand_hit,abstain_any_hit,pV_cmd,pR_cmd,mean_yield_cmd,mean_vis_open,mean_rand_open,mean_vis_qpos,mean_rand_qpos
+A,CleanRand-pass,8,1.0,0.0,0.625,1.0,0.0,1.0,8.12,1.38,0.05481,0.015899
+B,TaskOnly baseline,8,0.25,0.5,0.5,0.5,0.5,0.0,4.75,4.25,0.024961,0.009873
+C,High-risk abstain,8,0.0,0.875,0.875,0.5,0.875,-0.375,4.75,6.88,0.038538,0.015528
