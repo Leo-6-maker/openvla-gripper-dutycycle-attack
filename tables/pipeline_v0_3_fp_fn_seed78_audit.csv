@@ -1,0 +1,9 @@
+case,window,seed,vis_open,rand_open,vis_cmd,rand_cmd,interpretation
+FP,conf_B1_tomato_w55_65__atk6,5-6_atk6,7,0,1,0,FP_GOLD_rejected
+FP,conf_B1_tomato_w55_65__atk5,5-6_atk5,7,0,1,0,FP_GOLD_rejected
+FP,rob_FP_tomato_w55_65__atk7,7-8_atk7,6,0,1,0,FP_persists_GOLD
+FP,rob_FP_tomato_w55_65__atk8,7-8_atk8,1,1,0,0,FP_persists_GOLD
+FN,conf_B4_salad_w70_80__atk5,5-6_atk5,4,11,0,1,FN_rand_passed
+FN,conf_B4_salad_w70_80__atk6,5-6_atk6,4,10,0,1,FN_rand_passed
+FN,rob_FN_salad_w70_80__atk7,7-8_atk7,8,0,1,0,FN_persists
+FN,rob_FN_salad_w70_80__atk8,7-8_atk8,4,10,0,1,FN_persists
