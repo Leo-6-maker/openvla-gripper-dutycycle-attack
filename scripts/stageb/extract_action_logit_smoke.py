@@ -107,7 +107,8 @@ for name, task_name, state_id, ws, we in TARGETS:
     env.seed(state_id); env.reset()
     env.set_init_state(init_states[state_id])
 
-    prompt = processor.tokenizer.bos_token + 'In: What action should the robot do next?\nOut:'
+    # Official prompt: same as run_stageb_vis_labeling.py
+    prompt = 'In: What action should the robot take to %s?\nOut:' % instruction.lower()
     done = False; step = 0; max_steps = we + 10
     step_records = []
 
@@ -115,8 +116,9 @@ for name, task_name, state_id, ws, we in TARGETS:
         img = env.sim.render(256, 256, camera_name='agentview')
         img_pil = Image.fromarray(img.astype(np.uint8)).rotate(180)
 
+        # Same processor call as official runner
         inp = processor(prompt, img_pil)
-        inp = {k: v.to(model_device, dtype=torch.bfloat16 if v.dtype == torch.float32 else v.dtype)
+        inp = {k: v.to(model_device, dtype=torch.bfloat16 if isinstance(v, torch.Tensor) and v.dtype == torch.float32 else v.dtype)
                if isinstance(v, torch.Tensor) else v for k, v in inp.items()}
 
         with torch.no_grad():
@@ -166,12 +168,18 @@ for name, task_name, state_id, ws, we in TARGETS:
 
     env.close()
 
-    # Aggregate pre-window features
-    pre = [r for r in step_records if not r['in_window']]
-    win = [r for r in step_records if r['in_window']]
+    # P0-fix: pre = step < ws only (NOT post-window)
+    pre = [r for r in step_records if r['step'] < ws]
+    win = [r for r in step_records if ws <= r['step'] <= we]
+    post = [r for r in step_records if r['step'] > we]
 
     if len(pre) < 5:
         print('  SKIP: too few pre steps (%d)' % len(pre)); continue
+
+    # Prefix provenance hash
+    import hashlib
+    pre_rg_str = ','.join(str(r['raw_gripper']) for r in pre)
+    pre_hash = hashlib.md5(pre_rg_str.encode()).hexdigest()[:8]
 
     def agg(name, func, data=pre):
         vals = [r[name] for r in data]
@@ -179,7 +187,9 @@ for name, task_name, state_id, ws, we in TARGETS:
 
     r = {
         'window': name, 'task': task_name, 'ws': ws, 'we': we,
-        'n_pre': len(pre), 'n_win': len(win),
+        'n_pre': len(pre), 'n_win': len(win), 'n_post': len(post),
+        'prompt': prompt, 'pre_hash': pre_hash,
+        'online_safe': True,  # all features from step < ws only
         'rg_mean': agg('raw_gripper', np.mean), 'rg_std': agg('raw_gripper', np.std),
         'rg_last': pre[-1]['raw_gripper'], 'rg_slope': agg('raw_gripper', lambda x: np.polyfit(range(len(x)), x, 1)[0]),
         'open_prob_mean': agg('open_prob', np.mean), 'open_prob_std': agg('open_prob', np.std),
