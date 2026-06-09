@@ -1,8 +1,8 @@
-strategy,k,n_avail,rand_hit,cmd_hit,mean_pV,mean_pR,mean_yield
-Random,8,32,0.375,0.5,0.475,0.175,0.30000000000000004
-TaskOnly (no abstain),8,32,0.375,0.5,0.7,0.3,0.4
-CleanCmd (no abstain),8,32,0.25,0.5,0.5,0.125,0.375
-Abstain(CleanRand)+Random,8,16,0.125,0.625,0.625,0.025,0.6
-Abstain(CleanRand)+TaskRank,8,16,0.125,0.5,0.5,0.125,0.375
-Abstain(CleanRand)+CleanCmd,8,16,0.25,0.5,0.5,0.125,0.375
-Oracle abstain + yield rank,8,20,0.0,1.0,1.0,0.0,1.0
+strategy,k,n_avail,cmd_rand_hit,abstain_any_hit,cmd_hit,mean_pV,mean_pR,mean_yield
+Random,8,32,0.375,0.75,0.5,0.475,0.175,0.30000000000000004
+TaskOnly (no abstain),8,32,0.375,0.625,0.5,0.7,0.3,0.4
+CleanCmd (no abstain),8,32,0.25,0.75,0.5,0.5,0.125,0.375
+Abstain(CleanRand)+Random,8,16,0.125,0.5,0.625,0.625,0.025,0.6
+Abstain(CleanRand)+TaskRank,8,16,0.125,0.375,0.5,0.5,0.125,0.375
+Abstain(CleanRand)+CleanCmd,8,16,0.25,0.75,0.5,0.5,0.125,0.375
+Oracle abstain + yield rank,8,20,0.0,0.625,1.0,1.0,0.0,1.0

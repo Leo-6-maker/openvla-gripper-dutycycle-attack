@@ -27,7 +27,22 @@ failed_original = []
 retry_success = []
 
 # Known failed job_ids from worker_26 CUDA errors
-FAILED_ORIGINAL_JIDS = {520060, 520065, 520090}
+# Static manifest: original job info preserved even if summary was overwritten by retry
+FAILED_ORIGINAL_MANIFEST = {
+    520060: {'pair_id': 'k5c_cmd_milk_neg', 'condition': 'vis_pgd', 'attack_seed': 0,
+             'task': 'milk', 'state_id': 0, 'window_start': 235, 'window_end': 245,
+             'original_n_steps': 116, 'original_error': 'CUDA illegal memory access',
+             'original_gpu_pair': '2,6', 'retry_gpu_pair': '1,0'},
+    520065: {'pair_id': 'k5c_cmd_milk_neg', 'condition': 'random_linf', 'attack_seed': 2,
+             'task': 'milk', 'state_id': 0, 'window_start': 235, 'window_end': 245,
+             'original_n_steps': 123, 'original_error': 'CUDA illegal memory access',
+             'original_gpu_pair': '2,6', 'retry_gpu_pair': '4,5'},
+    520090: {'pair_id': 'k5c_cmd_alpha', 'condition': 'vis_pgd', 'attack_seed': 0,
+             'task': 'alphabet_soup', 'state_id': 0, 'window_start': 65, 'window_end': 75,
+             'original_n_steps': 70, 'original_error': 'CUDA illegal memory access',
+             'original_gpu_pair': '2,6', 'retry_gpu_pair': '4,5'},
+}
+FAILED_ORIGINAL_JIDS = set(FAILED_ORIGINAL_MANIFEST.keys())
 
 for j in summaries:
     jid = j.get('job_id', -1)
@@ -112,9 +127,23 @@ def classify_stable(pV_seed, pR_seed, pV_phys_seed, pR_phys_seed, yield_cmd, yie
         return 'stable_vis_phys'
     return 'unstable_or_unknown'
 
+def classify_phys(pV_phys_seed, pR_phys_seed, yield_phys, risk_rand):
+    """Classify phys label separately from cmd label."""
+    if pV_phys_seed >= 0.6 and pR_phys_seed <= 0.2 and yield_phys >= 0.4:
+        return 'stable_vis_phys'
+    if pR_phys_seed >= 0.4 and pV_phys_seed >= 0.4:
+        return 'shared_phys'
+    if pR_phys_seed >= 0.4:
+        return 'stable_rand_phys'
+    if pV_phys_seed <= 0.2 and pR_phys_seed <= 0.2:
+        return 'stable_no_phys'
+    return 'unstable_phys'
+
 # SEED-LEVEL threshold: open_count >= window_size/2 means "command success"
 # For phys: qpos_delta >= 0.01 means physical gripper change
 PHYS_THRESHOLD = 0.01
+# For abstain_any: risk_rand >= 0.4
+ABSTAIN_THRESHOLD = 0.4
 
 label_rows = []
 for pk in sorted(by_pair.keys()):
@@ -160,11 +189,16 @@ for pk in sorted(by_pair.keys()):
 
     cmd_label = classify_stable(pV_seed, pR_seed, pV_phys_seed, pR_phys_seed, yield_cmd, yield_phys, risk_rand)
 
+    # Phys label (independent of cmd label)
+    phys_label = classify_phys(pV_phys_seed, pR_phys_seed, yield_phys, risk_rand)
+
+    # Abstain label: any rand risk (command or physical)
+    abstain_label = 'rand_abstain' if risk_rand >= ABSTAIN_THRESHOLD else 'keep'
+
     # Special handling for milk[235,245]
     is_borderline = False
     if pk == 'k5c_cmd_milk_neg':
         is_borderline = True
-        # Override: VIS-dominant with one RAND outlier → cmd_specific_borderline
         cmd_label = 'stable_cmd_specific_borderline'
 
     cat = PARENT_CATEGORIES.get(pk, '?')
@@ -187,6 +221,8 @@ for pk in sorted(by_pair.keys()):
         'yield_phys': round(yield_phys, 2),
         'risk_rand': round(risk_rand, 2),
         'cmd_label': cmd_label,
+        'phys_label': phys_label,
+        'abstain_label': abstain_label,
         'borderline_note': 'VIS-dominant; one RAND outlier seed; seed-level pR=0.20 borderline-pass' if is_borderline else '',
     })
 
@@ -245,13 +281,13 @@ with open(labels_path, 'w', newline='') as f:
     w.writerow(['parent','task','category','window','K','vis_open_list','rand_open_list',
                 'vis_open_mean','rand_open_mean','vis_qpos_mean','rand_qpos_mean',
                 'pV_cmd_seed','pR_cmd_seed','pV_phys_seed','pR_phys_seed',
-                'yield_cmd','yield_phys','risk_rand','cmd_label','borderline_note'])
+                'yield_cmd','yield_phys','risk_rand','cmd_label','phys_label','abstain_label','borderline_note'])
     for r in label_rows:
         w.writerow([r['parent'],r['task'],r['category'],r['window'],r['K'],
                     r['vis_open_list'],r['rand_open_list'],
                     r['vis_open_mean'],r['rand_open_mean'],r['vis_qpos_mean'],r['rand_qpos_mean'],
                     r['pV_cmd_seed'],r['pR_cmd_seed'],r['pV_phys_seed'],r['pR_phys_seed'],
-                    r['yield_cmd'],r['yield_phys'],r['risk_rand'],r['cmd_label'],r['borderline_note']])
+                    r['yield_cmd'],r['yield_phys'],r['risk_rand'],r['cmd_label'],r['phys_label'],r['abstain_label'],r['borderline_note']])
 
 print(f'\nOutputs:')
 print(f'  Job audit: tables/stageb_v1_1_k5c_job_audit_rc1a_ca3a97e.csv')

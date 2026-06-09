@@ -37,3 +37,13 @@ All 3 retries produced valid results:
 - 520090: retried on GPU 4,5 → open=4, n_steps=80, matches other VIS runs
 
 **0 scientific failures — all failures are infra, all resolved by retry.**
+
+## Retry GPU Provenance Note
+
+The committed retry shell script (`run_k5c_retry_failed.sh`) uses GPU 4,5 for all 3 retries.
+In execution, job 520060 was retried separately on GPU 1,0 (a manual retry command run after
+the initial GPU 4,5 retry produced prefix mismatch and early termination for that specific job).
+Jobs 520065 and 520090 were retried on GPU 4,5 as committed in the batch script.
+
+The static retry audit CSV (`tables/stageb_v1_1_k5c_retry_audit_rc1a_ca3a97e.csv`)
+accurately records the actual retry GPU pair used for each job.
