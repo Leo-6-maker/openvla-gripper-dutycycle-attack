@@ -1,6 +1,7 @@
 #!/bin/bash
 # Autonomous watcher: monitors main extraction, auto-runs readout on completion.
-# Server-side, no frontend polling needed.
+# Server-side, no frontend polling needed. P0: hard-fail on gate failure.
+set -euo pipefail
 
 MAIN_LOG=/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/action_logit_full/run.log
 DUP_LOG=/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/action_logit_duplicate_gpu45/run.log
@@ -13,18 +14,17 @@ echo "  Dup:  $(grep -c 'pre=' $DUP_LOG 2>/dev/null || echo 0)/8"
 
 # Wait for main extraction to complete
 while true; do
-  DONE=$(grep -c 'pre=' $MAIN_LOG 2>/dev/null || echo 0)
-  ERR=$(grep -c 'Error\|Traceback' $MAIN_LOG 2>/dev/null || echo 0)
+  DONE=$(grep -c 'pre=' "$MAIN_LOG" 2>/dev/null || echo 0)
   if [ "$DONE" -ge 38 ]; then
     echo "[$(date +%H:%M)] MAIN EXTRACTION COMPLETE ($DONE done)"
     break
   fi
   # Check for errors
-  ERR_COUNT=$(grep -c 'Error\|Traceback' $MAIN_LOG 2>/dev/null || echo 0)
-  if [ "$ERR_COUNT" -gt 0 ] 2>/dev/null; then
+  ERR_COUNT=$(grep -cE 'Error|Traceback' "$MAIN_LOG" 2>/dev/null || echo 0)
+  if [ "$ERR_COUNT" -gt 0 ]; then
     echo "[$(date +%H:%M)] ERRORS IN MAIN EXTRACTION ($ERR_COUNT)"
-    grep -E 'Error|Traceback' $MAIN_LOG | tail -5
-    break
+    grep -E 'Error|Traceback' "$MAIN_LOG" | tail -5
+    exit 1
   fi
   sleep 300
 done
@@ -92,29 +92,32 @@ with open(FEAT) as f:
     reader=csv.DictReader(f)
     cols=reader.fieldnames
     rows=list(reader)
+# P0: hard-fail gate — must pass all checks
+import sys
+failed=False
 # Check forbidden columns
 forbidden=['yield_cmd','pV_cmd','pR_cmd','vis_open','rand_open','qpos_delta','success','failure','win_raw','win_open']
 found_forbidden=[c for c in cols for f in forbidden if f in c.lower() and 'window' not in c.lower()]
 if found_forbidden:
     print('FORBIDDEN LEAKAGE COLUMNS:', found_forbidden)
+    failed=True
 else:
     print('No forbidden columns.')
 # Check pre-window safety
 for r in rows:
     if r.get('online_safe','')!='True':
-        print('FAIL: online_safe=False for', r.get('window','?'))
-        break
+        print('FAIL: online_safe=False for', r.get('window','?')); failed=True
     if r.get('feature_source','')!='pre_window_only':
-        print('FAIL: feature_source!=pre_window_only for', r.get('window','?'))
-        break
+        print('FAIL: feature_source!=pre_window_only for', r.get('window','?')); failed=True
     if int(r.get('n_pre',0))<1:
-        print('FAIL: n_pre=0 for', r.get('window','?'))
-        break
-    if not r.get('prompt',''):
-        print('FAIL: empty prompt for', r.get('window','?'))
-        break
-else:
+        print('FAIL: n_pre=0 for', r.get('window','?')); failed=True
+    if not r.get('prompt','') or len(r.get('prompt','').strip())<5:
+        print('FAIL: empty/short prompt for', r.get('window','?')); failed=True
+if not failed:
     print('All rows: online_safe=True, pre_window_only, n_pre>0, prompt present.')
+else:
+    print('GATE B FAILED — stopping readout')
+    sys.exit(1)
 print('Rows:', len(rows))
 "
 

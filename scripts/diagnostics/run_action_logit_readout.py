@@ -82,14 +82,24 @@ for pk, pr in stable.items():
 
 print('Coverage: %d/%d matched, %d missing' % (matched, matched+missing, missing))
 
-if matched < 30:
-    print('FAIL: coverage too low, stopping'); exit(1)
+if matched < 36:
+    print('FAIL: coverage %d < 36, stopping' % matched); exit(1)
 
 n = len(rows)
 
-# ── 4. Feature safety audit ──
-# All features are from pre-window online-safe extraction
-print('Feature safety: all pre-window only, online_safe=True (verified in extraction script)')
+# ── 4. Feature safety audit (hard-fail) ──
+with open(FEATURES) as f:
+    feat_rows = list(csv.DictReader(f))
+    feat_cols = list(feat_rows[0].keys()) if feat_rows else []
+forbidden = ['yield_cmd','pV_cmd','pR_cmd','vis_open','rand_open','qpos_delta','success','failure','win_raw','win_open']
+found = [c for c in feat_cols for f in forbidden if f in c.lower()]
+if found:
+    print('FAIL: forbidden columns in features:', found); exit(1)
+for r in feat_rows:
+    if r.get('online_safe','') != 'True': print('FAIL: online_safe'); exit(1)
+    if r.get('feature_source','') != 'pre_window_only': print('FAIL: feature_source'); exit(1)
+    if int(r.get('n_pre',0)) < 1: print('FAIL: n_pre'); exit(1)
+print('Feature safety PASS: %d rows, all online_safe=True, pre_window_only' % len(feat_rows))
 
 # ── 5. Readout ──
 print('\n=== Action-Logit Readout v0 ===')
@@ -139,18 +149,32 @@ configs = {
     'CleanProprio+Last': np.column_stack([X_proprio, X_last_only, X_timing]),
 }
 
-print('%-25s %8s %8s %8s %8s %8s' % ('Model','RandAUC','CmdAUC','FP_score','FN_score','yield'))
-print('-' * 70)
+print('%-25s %8s %8s %8s %8s %8s %8s %8s' % ('Model','RandAUC','CmdAUC_r','ShufAUC','FP_score','FN_score','yield','1-AUC'))
+print('-' * 95)
 
 for name, X_feat in configs.items():
-    oof_rand = np.zeros(n)
+    oof_rand = np.zeros(n); fold_degenerate = False
     for ti, tei in gkf.split(X_feat, y_rand, groups=groups):
         ss = StandardScaler(); Xt = ss.fit_transform(X_feat[ti]); Xe = ss.transform(X_feat[tei])
+        # P1-1: fold single-class fallback
+        if len(set(y_rand[ti])) < 2:
+            oof_rand[tei] = y_rand[ti].mean()
+            fold_degenerate = True; continue
         m = LogisticRegression(max_iter=3000, class_weight='balanced', random_state=42, C=0.5)
         m.fit(Xt, y_rand[ti]); oof_rand[tei] = m.predict_proba(Xe)[:, 1]
 
     auc_r = roc_auc_score(y_rand, oof_rand) if len(set(y_rand)) > 1 else 0
-    auc_c = roc_auc_score(y_cmd, oof_rand) if len(set(y_cmd)) > 1 else 0
+    auc_c_on_rand = roc_auc_score(y_cmd, oof_rand) if len(set(y_cmd)) > 1 else 0  # P1-2: renamed
+
+    # P1-3: label shuffle
+    y_rand_shuf = y_rand.copy(); np.random.seed(42); np.random.shuffle(y_rand_shuf)
+    oof_shuf = np.zeros(n)
+    for ti, tei in gkf.split(X_feat, y_rand_shuf, groups=groups):
+        if len(set(y_rand_shuf[ti])) < 2: oof_shuf[tei] = y_rand_shuf[ti].mean(); continue
+        ss = StandardScaler(); Xt = ss.fit_transform(X_feat[ti]); Xe = ss.transform(X_feat[tei])
+        m = LogisticRegression(max_iter=3000, class_weight='balanced', random_state=42, C=0.5)
+        m.fit(Xt, y_rand_shuf[ti]); oof_shuf[tei] = m.predict_proba(Xe)[:, 1]
+    auc_shuf = roc_auc_score(y_rand_shuf, oof_shuf) if len(set(y_rand_shuf)) > 1 else 0
 
     # FP/FN
     fp_s = fn_s = 0
@@ -164,8 +188,9 @@ for name, X_feat in configs.items():
     rand_hit = np.mean([r['is_rand'] for i, r in enumerate(rows) if keep[i]]) if sum(keep) > 0 else 0
     yld = np.mean([r['yield'] for i, r in enumerate(rows) if keep[i]]) if sum(keep) > 0 else 0
 
-    print('%-25s %8.3f %8.3f %8.4f %8.4f %+8.2f n=%d rand=%.2f cmd=%.2f' % (
-        name, auc_r, auc_c, fp_s, fn_s, yld, sum(keep), rand_hit, cmd_hit))
+    print('%-25s %8.3f %8.3f %8.3f %8.4f %8.4f %+8.2f %8.3f n=%d rand=%.2f cmd=%.2f deg=%s' % (
+        name, auc_r, auc_c_on_rand, auc_shuf, fp_s, fn_s, yld, 1-auc_r, sum(keep), rand_hit, cmd_hit,
+        'Y' if fold_degenerate else 'N'))
 
 # ── 6. Last vs aggregate ablation ──
 print('\n=== Ablation: Last-only vs Aggregate-only ===')
