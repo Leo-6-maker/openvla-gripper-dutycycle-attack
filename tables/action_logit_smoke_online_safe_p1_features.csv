@@ -1,0 +1,9 @@
+window,task,ws,we,n_pre,n_win,n_post,online_safe,feature_source,prompt,pre_hash,model_path,image_preprocess,rg_mean,rg_std,rg_last,rg_slope,open_prob_mean,open_prob_std,close_prob_mean,open_norm_mean,open_norm_last,logit_margin_mean,logit_margin_std,logit_margin_last,entropy_mean,entropy_std,entropy_last,top2_margin_mean,top2_margin_last
+"A1_milk[70,80]",milk,70,80,70,11,9,True,pre_window_only,"In: What action should the robot take to pick up the tomato sauce and place it in the basket?
+Out:",ba8a55719ade,/data/aviary/models/openvla/openvla-7b-finetuned-libero-object,official_rot180_only,0.198095,0.632697,0.0,-0.004298,0.550333,0.450131,0.336028,0.637995,0.037791,7.258929,17.044497,-3.25,0.513026,0.572757,0.526006,5.499107,1.5
+"A2_butter[80,90]",butter,80,90,80,11,9,True,pre_window_only,"In: What action should the robot take to pick up the cream cheese and place it in the basket?
+Out:",32db7ee16793,/data/aviary/models/openvla/openvla-7b-finetuned-libero-object,official_rot180_only,0.255,0.305578,0.298039,-0.003559,0.633413,0.449139,0.040646,0.954066,1.0,14.843164,9.454644,15.625,0.374939,0.557637,0.010436,7.579688,7.25
+"FP_tomato[55,65]",tomato_sauce,55,65,55,11,9,True,pre_window_only,"In: What action should the robot take to pick up the milk and place it in the basket?
+Out:",f0605a59e775,/data/aviary/models/openvla/openvla-7b-finetuned-libero-object,official_rot180_only,0.190659,0.296711,-0.164706,-0.005998,0.65675,0.446522,0.181607,0.80238,0.003279,12.708523,13.138158,-5.6875,0.392267,0.483035,0.920671,6.901136,2.875
+"FN_salad[70,80]",salad_dressing,70,80,70,11,9,True,pre_window_only,"In: What action should the robot take to pick up the bbq sauce and place it in the basket?
+Out:",a4ef8ad450c3,/data/aviary/models/openvla/openvla-7b-finetuned-libero-object,official_rot180_only,0.259384,0.339266,0.996078,-0.000558,0.675443,0.422303,0.106095,0.877692,1.0,11.542857,9.515107,32.5,0.374137,0.409997,8.8e-05,5.7,12.0

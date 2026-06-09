@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
-"""Action-logit clean extraction smoke: 4 windows, GPU clean forward sidecar.
+"""Action-logit clean extraction smoke — P1 online-safe (pre-window only, official prompt, provenance).
 Extracts OpenVLA internal action-decoding signals without modifying main runner.
 """
-import csv, os, sys, json, time, argparse
+import csv, os, sys, json, time, argparse, hashlib
+
+# P1-2: set CUDA_VISIBLE_DEVICES BEFORE importing torch
+ap = argparse.ArgumentParser()
+ap.add_argument('--gpu_pair', default='0,1')
+args, _ = ap.parse_known_args()
+os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_pair
+gpu_ids = [int(x) for x in args.gpu_pair.split(',')]
+
 import numpy as np
 import torch
 from PIL import Image
@@ -12,7 +20,7 @@ sys.path.insert(0, REPO)
 sys.path.insert(0, os.path.join(REPO, 'src'))
 MODEL_PATH = '/data/aviary/models/openvla/openvla-7b-finetuned-libero-object'
 
-OUT_DIR = '/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/action_logit_smoke'
+OUT_DIR = '/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/action_logit_smoke_online_safe_p1'
 os.makedirs(OUT_DIR, exist_ok=True)
 
 TARGETS = [
@@ -23,12 +31,6 @@ TARGETS = [
 ]
 
 # ── Step 1: Load OpenVLA BEFORE LIBERO (TF otherwise steals GPU memory) ──
-ap = argparse.ArgumentParser()
-ap.add_argument('--gpu_pair', default='0,1')
-args, _ = ap.parse_known_args()
-os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu_pair
-gpu_ids = [int(x) for x in args.gpu_pair.split(',')]
-
 from transformers import AutoModelForVision2Seq, AutoProcessor
 print('Loading OpenVLA (before LIBERO)...')
 processor = AutoProcessor.from_pretrained(MODEL_PATH, trust_remote_code=True)
@@ -176,10 +178,11 @@ for name, task_name, state_id, ws, we in TARGETS:
     if len(pre) < 5:
         print('  SKIP: too few pre steps (%d)' % len(pre)); continue
 
-    # Prefix provenance hash
-    import hashlib
+    # P1-4: extended prefix provenance hash (raw_gripper + env_gripper + token_ids)
     pre_rg_str = ','.join(str(r['raw_gripper']) for r in pre)
-    pre_hash = hashlib.md5(pre_rg_str.encode()).hexdigest()[:8]
+    pre_env_str = ','.join(str(r['env_gripper']) for r in pre)
+    pre_tok_str = ','.join(str(r['token_ids']) for r in pre)
+    pre_hash = hashlib.md5((pre_rg_str + '|' + pre_env_str + '|' + pre_tok_str).encode()).hexdigest()[:12]
 
     def agg(name, func, data=pre):
         vals = [r[name] for r in data]
@@ -189,7 +192,8 @@ for name, task_name, state_id, ws, we in TARGETS:
         'window': name, 'task': task_name, 'ws': ws, 'we': we,
         'n_pre': len(pre), 'n_win': len(win), 'n_post': len(post),
         'prompt': prompt, 'pre_hash': pre_hash,
-        'online_safe': True,  # all features from step < ws only
+        'online_safe': True, 'feature_source': 'pre_window_only',
+        'model_path': MODEL_PATH, 'image_preprocess': 'official_rot180_only',
         'rg_mean': agg('raw_gripper', np.mean), 'rg_std': agg('raw_gripper', np.std),
         'rg_last': pre[-1]['raw_gripper'], 'rg_slope': agg('raw_gripper', lambda x: np.polyfit(range(len(x)), x, 1)[0]),
         'open_prob_mean': agg('open_prob', np.mean), 'open_prob_std': agg('open_prob', np.std),
@@ -222,16 +226,25 @@ if fp and fn:
         d = fp[feat] - fn[feat]
         print('%-25s %18s %18s %+10s' % (feat, str(fp[feat]), str(fn[feat]), str(round(d, 6))))
 
-# Save
-with open(os.path.join(OUT_DIR, 'action_logit_smoke_features.csv'), 'w', newline='') as f:
+# Save with P1 provenance fields
+with open(os.path.join(OUT_DIR, 'action_logit_smoke_online_safe_p1_features.csv'), 'w', newline='') as f:
     w = csv.writer(f)
-    cols = ['window','task','ws','we','n_pre','n_win','rg_mean','rg_std','rg_last','rg_slope',
+    cols = ['window','task','ws','we','n_pre','n_win','n_post','online_safe','feature_source',
+            'prompt','pre_hash','model_path','image_preprocess',
+            'rg_mean','rg_std','rg_last','rg_slope',
             'open_prob_mean','open_prob_std','close_prob_mean','open_norm_mean','open_norm_last',
             'logit_margin_mean','logit_margin_std','logit_margin_last',
             'entropy_mean','entropy_std','entropy_last',
             'top2_margin_mean','top2_margin_last']
     w.writerow(cols)
     for r_ in results:
-        w.writerow([r_[c] for c in cols])
+        w.writerow([r_.get(c, '') for c in cols])
 
-print('\nSaved: %s' % os.path.join(OUT_DIR, 'action_logit_smoke_features.csv'))
+# Prompt audit: exact string used
+print('\n=== Prompt Audit ===')
+print('Sidecar prompt:', repr(results[0].get('prompt','N/A')) if results else 'N/A')
+print('Official format: In: What action should the robot take to {instruction}?\\nOut:')
+print('Match: prompt starts with \"In: What action should the robot take to\" ->',
+      results[0].get('prompt','').startswith('In: What action should the robot take to') if results else False)
+
+print('\nSaved:', os.path.join(OUT_DIR, 'action_logit_smoke_online_safe_p1_features.csv'))
