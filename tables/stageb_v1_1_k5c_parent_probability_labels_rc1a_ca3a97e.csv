@@ -1,0 +1,17 @@
+parent,task,category,window,K,vis_open_list,rand_open_list,vis_open_mean,rand_open_mean,vis_qpos_mean,rand_qpos_mean,pV_cmd_seed,pR_cmd_seed,pV_phys_seed,pR_phys_seed,yield_cmd,yield_phys,risk_rand,cmd_label,borderline_note
+k5c_cmd_alpha,alphabet_soup,same_task_contrast,65_75,5,"[5, 4, 4, 4, 4]","[10, 7, 9, 5, 7]",0.3818,0.6909,0.03086,0.053193,0.2,1.0,1.0,1.0,-0.8,0.0,1.0,stable_rand_sensitive,
+k5c_cmd_butter,butter,same_task_contrast,80_90,5,"[8, 8, 8, 8, 8]","[2, 2, 2, 1, 4]",0.7273,0.2,0.063735,0.004264,1.0,0.0,1.0,0.0,1.0,1.0,0.0,stable_cmd_specific,
+k5c_cmd_cream,cream_cheese,same_task_contrast,85_95,5,"[3, 3, 4, 6, 5]","[4, 3, 3, 3, 4]",0.3818,0.3091,0.017558,0.014886,0.4,0.0,1.0,1.0,0.4,0.0,1.0,stable_rand_sensitive,
+k5c_cmd_milk_neg,milk,same_task_contrast,235_245,5,"[11, 11, 11, 11, 11]","[0, 0, 11, 0, 2]",1.0,0.2364,0.071312,0.002179,1.0,0.2,1.0,0.0,0.8,1.0,0.2,stable_cmd_specific_borderline,VIS-dominant; one RAND outlier seed; seed-level pR=0.20 borderline-pass
+k5c_cmd_salad_neg,salad_dressing,same_task_contrast,55_65,5,"[7, 6, 5, 4, 5]","[0, 0, 0, 0, 0]",0.4909,0.0,0.002336,0.001208,0.8,0.0,0.0,0.0,0.8,0.0,0.0,stable_cmd_specific,
+k5c_cmd_tomato_early,tomato_sauce,same_task_contrast,50_60,5,"[6, 6, 6, 8, 6]","[1, 2, 0, 0, 2]",0.5818,0.0909,0.006674,0.00057,1.0,0.0,0.2,0.0,1.0,0.2,0.0,stable_cmd_specific,
+k5c_phys_bbq,bbq_sauce,strict_phys,70_80,5,"[4, 2, 4, 1, 3]","[0, 0, 0, 4, 0]",0.2545,0.0727,0.000623,0.011193,0.0,0.0,0.0,0.4,0.0,-0.4,0.4,stable_rand_sensitive,
+k5c_phys_butter,butter,strict_phys,135_145,5,"[0, 6, 1, 5, 3]","[2, 2, 0, 0, 7]",0.2727,0.2,0.018351,0.028845,0.4,0.2,0.4,0.6,0.2,-0.2,0.6,stable_rand_sensitive,
+k5c_phys_salad,salad_dressing,strict_phys,75_85,5,"[6, 8, 4, 4, 7]","[11, 0, 0, 2, 0]",0.5273,0.2364,0.039547,0.025158,0.6,0.2,1.0,0.6,0.4,0.4,0.6,stable_rand_sensitive,
+k5c_phys_tomato,tomato_sauce,strict_phys,85_95,5,"[3, 8, 5, 7, 2]","[11, 0, 1, 0, 7]",0.4545,0.3455,0.031567,0.029494,0.6,0.4,0.6,0.6,0.2,0.0,0.6,stable_rand_sensitive,
+k5c_rand_alpha,alphabet_soup,rand_sensitive,55_65,5,"[4, 1, 3, 0, 6]","[0, 4, 0, 3, 0]",0.2545,0.1273,0.014633,0.01003,0.2,0.0,0.6,0.2,0.2,0.4,0.2,unstable_or_unknown,
+k5c_rand_butter1,butter,rand_sensitive,90_100,5,"[8, 10, 10, 10, 7]","[11, 2, 11, 11, 2]",0.8182,0.6727,0.063706,0.047371,1.0,0.6,1.0,0.8,0.4,0.2,0.8,stable_rand_sensitive,
+k5c_rand_butter2,butter,rand_sensitive,95_105,5,"[6, 6, 6, 4, 7]","[11, 11, 11, 11, 11]",0.5273,1.0,0.047165,0.039099,0.8,1.0,1.0,1.0,-0.2,0.0,1.0,stable_rand_sensitive,
+k5c_rand_cream,cream_cheese,rand_sensitive,65_75,5,"[3, 4, 4, 4, 5]","[4, 5, 2, 3, 2]",0.3636,0.2909,0.011513,0.01395,0.2,0.2,0.8,0.4,0.0,0.4,0.4,stable_rand_sensitive,
+k5c_rand_oj,orange_juice,rand_sensitive,50_60,5,"[2, 4, 2, 4, 2]","[4, 4, 6, 7, 5]",0.2545,0.4727,0.007478,0.020287,0.0,0.6,0.2,1.0,-0.6,-0.8,1.0,stable_rand_sensitive,
+k5c_sentinel_milk_gold,milk,sentinel,70_80,5,"[10, 7, 10, 11, 7]","[0, 1, 0, 0, 0]",0.8182,0.0182,0.051032,0.020163,1.0,0.0,1.0,1.0,1.0,0.0,1.0,stable_cmd_specific,

@@ -1,0 +1,4 @@
+job_id,pair_id,condition,attack_seed,original_status,retry_status,original_n_steps,retry_n_steps,retry_open_count,retry_gpu_pair
+520065,?,?,?,?,ok,?,250,11,"4,5"
+520090,?,?,?,?,ok,?,80,4,"4,5"
+520060,?,?,?,?,ok,?,250,11,"1,0"

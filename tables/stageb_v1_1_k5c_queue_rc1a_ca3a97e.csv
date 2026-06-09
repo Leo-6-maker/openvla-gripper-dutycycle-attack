@@ -1,0 +1,161 @@
+parent_key,pair_id,job_id,task,state_id,env_seed,attack_seed,window_start,window_end,condition,category,rationale,output_dir
+k5c_rand_butter1,0,520000,butter,0,0,0,90,100,vis_pgd,rand_sensitive,"Old RCMD label, butter has 0 windows, cf=0.36",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter1,0,520001,butter,0,0,0,90,100,random_linf,rand_sensitive,"Old RCMD label, butter has 0 windows, cf=0.36",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter1,0,520002,butter,0,0,1,90,100,vis_pgd,rand_sensitive,"Old RCMD label, butter has 0 windows, cf=0.36",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter1,0,520003,butter,0,0,1,90,100,random_linf,rand_sensitive,"Old RCMD label, butter has 0 windows, cf=0.36",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter1,0,520004,butter,0,0,2,90,100,vis_pgd,rand_sensitive,"Old RCMD label, butter has 0 windows, cf=0.36",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter1,0,520005,butter,0,0,2,90,100,random_linf,rand_sensitive,"Old RCMD label, butter has 0 windows, cf=0.36",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter1,0,520006,butter,0,0,3,90,100,vis_pgd,rand_sensitive,"Old RCMD label, butter has 0 windows, cf=0.36",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter1,0,520007,butter,0,0,3,90,100,random_linf,rand_sensitive,"Old RCMD label, butter has 0 windows, cf=0.36",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter1,0,520008,butter,0,0,4,90,100,vis_pgd,rand_sensitive,"Old RCMD label, butter has 0 windows, cf=0.36",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter1,0,520009,butter,0,0,4,90,100,random_linf,rand_sensitive,"Old RCMD label, butter has 0 windows, cf=0.36",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter2,1,520010,butter,0,0,0,95,105,vis_pgd,rand_sensitive,"Old RCMD+VPHYS label, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter2,1,520011,butter,0,0,0,95,105,random_linf,rand_sensitive,"Old RCMD+VPHYS label, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter2,1,520012,butter,0,0,1,95,105,vis_pgd,rand_sensitive,"Old RCMD+VPHYS label, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter2,1,520013,butter,0,0,1,95,105,random_linf,rand_sensitive,"Old RCMD+VPHYS label, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter2,1,520014,butter,0,0,2,95,105,vis_pgd,rand_sensitive,"Old RCMD+VPHYS label, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter2,1,520015,butter,0,0,2,95,105,random_linf,rand_sensitive,"Old RCMD+VPHYS label, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter2,1,520016,butter,0,0,3,95,105,vis_pgd,rand_sensitive,"Old RCMD+VPHYS label, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter2,1,520017,butter,0,0,3,95,105,random_linf,rand_sensitive,"Old RCMD+VPHYS label, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter2,1,520018,butter,0,0,4,95,105,vis_pgd,rand_sensitive,"Old RCMD+VPHYS label, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_butter2,1,520019,butter,0,0,4,95,105,random_linf,rand_sensitive,"Old RCMD+VPHYS label, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_cream,2,520020,cream_cheese,2,2,0,65,75,vis_pgd,rand_sensitive,"Heuristic: high cf=0.82, cream has 0 rand in pool",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_cream,2,520021,cream_cheese,2,2,0,65,75,random_linf,rand_sensitive,"Heuristic: high cf=0.82, cream has 0 rand in pool",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_cream,2,520022,cream_cheese,2,2,1,65,75,vis_pgd,rand_sensitive,"Heuristic: high cf=0.82, cream has 0 rand in pool",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_cream,2,520023,cream_cheese,2,2,1,65,75,random_linf,rand_sensitive,"Heuristic: high cf=0.82, cream has 0 rand in pool",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_cream,2,520024,cream_cheese,2,2,2,65,75,vis_pgd,rand_sensitive,"Heuristic: high cf=0.82, cream has 0 rand in pool",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_cream,2,520025,cream_cheese,2,2,2,65,75,random_linf,rand_sensitive,"Heuristic: high cf=0.82, cream has 0 rand in pool",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_cream,2,520026,cream_cheese,2,2,3,65,75,vis_pgd,rand_sensitive,"Heuristic: high cf=0.82, cream has 0 rand in pool",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_cream,2,520027,cream_cheese,2,2,3,65,75,random_linf,rand_sensitive,"Heuristic: high cf=0.82, cream has 0 rand in pool",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_cream,2,520028,cream_cheese,2,2,4,65,75,vis_pgd,rand_sensitive,"Heuristic: high cf=0.82, cream has 0 rand in pool",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_cream,2,520029,cream_cheese,2,2,4,65,75,random_linf,rand_sensitive,"Heuristic: high cf=0.82, cream has 0 rand in pool",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_oj,3,520030,orange_juice,1,1,0,50,60,vis_pgd,rand_sensitive,"Heuristic: high cf=0.73, orange_juice has 0 windows",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_oj,3,520031,orange_juice,1,1,0,50,60,random_linf,rand_sensitive,"Heuristic: high cf=0.73, orange_juice has 0 windows",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_oj,3,520032,orange_juice,1,1,1,50,60,vis_pgd,rand_sensitive,"Heuristic: high cf=0.73, orange_juice has 0 windows",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_oj,3,520033,orange_juice,1,1,1,50,60,random_linf,rand_sensitive,"Heuristic: high cf=0.73, orange_juice has 0 windows",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_oj,3,520034,orange_juice,1,1,2,50,60,vis_pgd,rand_sensitive,"Heuristic: high cf=0.73, orange_juice has 0 windows",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_oj,3,520035,orange_juice,1,1,2,50,60,random_linf,rand_sensitive,"Heuristic: high cf=0.73, orange_juice has 0 windows",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_oj,3,520036,orange_juice,1,1,3,50,60,vis_pgd,rand_sensitive,"Heuristic: high cf=0.73, orange_juice has 0 windows",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_oj,3,520037,orange_juice,1,1,3,50,60,random_linf,rand_sensitive,"Heuristic: high cf=0.73, orange_juice has 0 windows",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_oj,3,520038,orange_juice,1,1,4,50,60,vis_pgd,rand_sensitive,"Heuristic: high cf=0.73, orange_juice has 0 windows",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_oj,3,520039,orange_juice,1,1,4,50,60,random_linf,rand_sensitive,"Heuristic: high cf=0.73, orange_juice has 0 windows",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_alpha,4,520040,alphabet_soup,0,0,0,55,65,vis_pgd,rand_sensitive,"Heuristic: mid cf=0.46, alpha only has 1 rand",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_alpha,4,520041,alphabet_soup,0,0,0,55,65,random_linf,rand_sensitive,"Heuristic: mid cf=0.46, alpha only has 1 rand",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_alpha,4,520042,alphabet_soup,0,0,1,55,65,vis_pgd,rand_sensitive,"Heuristic: mid cf=0.46, alpha only has 1 rand",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_alpha,4,520043,alphabet_soup,0,0,1,55,65,random_linf,rand_sensitive,"Heuristic: mid cf=0.46, alpha only has 1 rand",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_alpha,4,520044,alphabet_soup,0,0,2,55,65,vis_pgd,rand_sensitive,"Heuristic: mid cf=0.46, alpha only has 1 rand",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_alpha,4,520045,alphabet_soup,0,0,2,55,65,random_linf,rand_sensitive,"Heuristic: mid cf=0.46, alpha only has 1 rand",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_alpha,4,520046,alphabet_soup,0,0,3,55,65,vis_pgd,rand_sensitive,"Heuristic: mid cf=0.46, alpha only has 1 rand",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_alpha,4,520047,alphabet_soup,0,0,3,55,65,random_linf,rand_sensitive,"Heuristic: mid cf=0.46, alpha only has 1 rand",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_alpha,4,520048,alphabet_soup,0,0,4,55,65,vis_pgd,rand_sensitive,"Heuristic: mid cf=0.46, alpha only has 1 rand",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_rand_alpha,4,520049,alphabet_soup,0,0,4,55,65,random_linf,rand_sensitive,"Heuristic: mid cf=0.46, alpha only has 1 rand",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_tomato_early,5,520050,tomato_sauce,0,0,0,50,60,vis_pgd,same_task_contrast,"Old CMD, tomato same-task contrast (tomato has 7 windows)",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_tomato_early,5,520051,tomato_sauce,0,0,0,50,60,random_linf,same_task_contrast,"Old CMD, tomato same-task contrast (tomato has 7 windows)",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_tomato_early,5,520052,tomato_sauce,0,0,1,50,60,vis_pgd,same_task_contrast,"Old CMD, tomato same-task contrast (tomato has 7 windows)",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_tomato_early,5,520053,tomato_sauce,0,0,1,50,60,random_linf,same_task_contrast,"Old CMD, tomato same-task contrast (tomato has 7 windows)",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_tomato_early,5,520054,tomato_sauce,0,0,2,50,60,vis_pgd,same_task_contrast,"Old CMD, tomato same-task contrast (tomato has 7 windows)",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_tomato_early,5,520055,tomato_sauce,0,0,2,50,60,random_linf,same_task_contrast,"Old CMD, tomato same-task contrast (tomato has 7 windows)",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_tomato_early,5,520056,tomato_sauce,0,0,3,50,60,vis_pgd,same_task_contrast,"Old CMD, tomato same-task contrast (tomato has 7 windows)",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_tomato_early,5,520057,tomato_sauce,0,0,3,50,60,random_linf,same_task_contrast,"Old CMD, tomato same-task contrast (tomato has 7 windows)",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_tomato_early,5,520058,tomato_sauce,0,0,4,50,60,vis_pgd,same_task_contrast,"Old CMD, tomato same-task contrast (tomato has 7 windows)",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_tomato_early,5,520059,tomato_sauce,0,0,4,50,60,random_linf,same_task_contrast,"Old CMD, tomato same-task contrast (tomato has 7 windows)",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_milk_neg,6,520060,milk,0,0,0,235,245,vis_pgd,same_task_contrast,"Old NEG, milk same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_milk_neg,6,520061,milk,0,0,0,235,245,random_linf,same_task_contrast,"Old NEG, milk same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_milk_neg,6,520062,milk,0,0,1,235,245,vis_pgd,same_task_contrast,"Old NEG, milk same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_milk_neg,6,520063,milk,0,0,1,235,245,random_linf,same_task_contrast,"Old NEG, milk same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_milk_neg,6,520064,milk,0,0,2,235,245,vis_pgd,same_task_contrast,"Old NEG, milk same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_milk_neg,6,520065,milk,0,0,2,235,245,random_linf,same_task_contrast,"Old NEG, milk same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_milk_neg,6,520066,milk,0,0,3,235,245,vis_pgd,same_task_contrast,"Old NEG, milk same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_milk_neg,6,520067,milk,0,0,3,235,245,random_linf,same_task_contrast,"Old NEG, milk same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_milk_neg,6,520068,milk,0,0,4,235,245,vis_pgd,same_task_contrast,"Old NEG, milk same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_milk_neg,6,520069,milk,0,0,4,235,245,random_linf,same_task_contrast,"Old NEG, milk same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_cream,7,520070,cream_cheese,1,1,0,85,95,vis_pgd,same_task_contrast,"Old CMD, cream same-task contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_cream,7,520071,cream_cheese,1,1,0,85,95,random_linf,same_task_contrast,"Old CMD, cream same-task contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_cream,7,520072,cream_cheese,1,1,1,85,95,vis_pgd,same_task_contrast,"Old CMD, cream same-task contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_cream,7,520073,cream_cheese,1,1,1,85,95,random_linf,same_task_contrast,"Old CMD, cream same-task contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_cream,7,520074,cream_cheese,1,1,2,85,95,vis_pgd,same_task_contrast,"Old CMD, cream same-task contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_cream,7,520075,cream_cheese,1,1,2,85,95,random_linf,same_task_contrast,"Old CMD, cream same-task contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_cream,7,520076,cream_cheese,1,1,3,85,95,vis_pgd,same_task_contrast,"Old CMD, cream same-task contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_cream,7,520077,cream_cheese,1,1,3,85,95,random_linf,same_task_contrast,"Old CMD, cream same-task contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_cream,7,520078,cream_cheese,1,1,4,85,95,vis_pgd,same_task_contrast,"Old CMD, cream same-task contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_cream,7,520079,cream_cheese,1,1,4,85,95,random_linf,same_task_contrast,"Old CMD, cream same-task contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_salad_neg,8,520080,salad_dressing,1,1,0,55,65,vis_pgd,same_task_contrast,"Old NEG, salad same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_salad_neg,8,520081,salad_dressing,1,1,0,55,65,random_linf,same_task_contrast,"Old NEG, salad same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_salad_neg,8,520082,salad_dressing,1,1,1,55,65,vis_pgd,same_task_contrast,"Old NEG, salad same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_salad_neg,8,520083,salad_dressing,1,1,1,55,65,random_linf,same_task_contrast,"Old NEG, salad same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_salad_neg,8,520084,salad_dressing,1,1,2,55,65,vis_pgd,same_task_contrast,"Old NEG, salad same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_salad_neg,8,520085,salad_dressing,1,1,2,55,65,random_linf,same_task_contrast,"Old NEG, salad same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_salad_neg,8,520086,salad_dressing,1,1,3,55,65,vis_pgd,same_task_contrast,"Old NEG, salad same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_salad_neg,8,520087,salad_dressing,1,1,3,55,65,random_linf,same_task_contrast,"Old NEG, salad same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_salad_neg,8,520088,salad_dressing,1,1,4,55,65,vis_pgd,same_task_contrast,"Old NEG, salad same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_salad_neg,8,520089,salad_dressing,1,1,4,55,65,random_linf,same_task_contrast,"Old NEG, salad same-task negative contrast",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_alpha,9,520090,alphabet_soup,0,0,0,65,75,vis_pgd,same_task_contrast,"Old CMD+VPHYS, alpha has 0 cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_alpha,9,520091,alphabet_soup,0,0,0,65,75,random_linf,same_task_contrast,"Old CMD+VPHYS, alpha has 0 cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_alpha,9,520092,alphabet_soup,0,0,1,65,75,vis_pgd,same_task_contrast,"Old CMD+VPHYS, alpha has 0 cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_alpha,9,520093,alphabet_soup,0,0,1,65,75,random_linf,same_task_contrast,"Old CMD+VPHYS, alpha has 0 cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_alpha,9,520094,alphabet_soup,0,0,2,65,75,vis_pgd,same_task_contrast,"Old CMD+VPHYS, alpha has 0 cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_alpha,9,520095,alphabet_soup,0,0,2,65,75,random_linf,same_task_contrast,"Old CMD+VPHYS, alpha has 0 cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_alpha,9,520096,alphabet_soup,0,0,3,65,75,vis_pgd,same_task_contrast,"Old CMD+VPHYS, alpha has 0 cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_alpha,9,520097,alphabet_soup,0,0,3,65,75,random_linf,same_task_contrast,"Old CMD+VPHYS, alpha has 0 cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_alpha,9,520098,alphabet_soup,0,0,4,65,75,vis_pgd,same_task_contrast,"Old CMD+VPHYS, alpha has 0 cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_alpha,9,520099,alphabet_soup,0,0,4,65,75,random_linf,same_task_contrast,"Old CMD+VPHYS, alpha has 0 cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_butter,10,520100,butter,0,0,0,80,90,vis_pgd,same_task_contrast,"Old CMD, butter needs cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_butter,10,520101,butter,0,0,0,80,90,random_linf,same_task_contrast,"Old CMD, butter needs cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_butter,10,520102,butter,0,0,1,80,90,vis_pgd,same_task_contrast,"Old CMD, butter needs cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_butter,10,520103,butter,0,0,1,80,90,random_linf,same_task_contrast,"Old CMD, butter needs cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_butter,10,520104,butter,0,0,2,80,90,vis_pgd,same_task_contrast,"Old CMD, butter needs cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_butter,10,520105,butter,0,0,2,80,90,random_linf,same_task_contrast,"Old CMD, butter needs cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_butter,10,520106,butter,0,0,3,80,90,vis_pgd,same_task_contrast,"Old CMD, butter needs cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_butter,10,520107,butter,0,0,3,80,90,random_linf,same_task_contrast,"Old CMD, butter needs cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_butter,10,520108,butter,0,0,4,80,90,vis_pgd,same_task_contrast,"Old CMD, butter needs cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_cmd_butter,10,520109,butter,0,0,4,80,90,random_linf,same_task_contrast,"Old CMD, butter needs cmd",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_butter,11,520110,butter,0,0,0,135,145,vis_pgd,strict_phys,"Old CMD+VPHYS NOT abstain, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_butter,11,520111,butter,0,0,0,135,145,random_linf,strict_phys,"Old CMD+VPHYS NOT abstain, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_butter,11,520112,butter,0,0,1,135,145,vis_pgd,strict_phys,"Old CMD+VPHYS NOT abstain, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_butter,11,520113,butter,0,0,1,135,145,random_linf,strict_phys,"Old CMD+VPHYS NOT abstain, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_butter,11,520114,butter,0,0,2,135,145,vis_pgd,strict_phys,"Old CMD+VPHYS NOT abstain, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_butter,11,520115,butter,0,0,2,135,145,random_linf,strict_phys,"Old CMD+VPHYS NOT abstain, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_butter,11,520116,butter,0,0,3,135,145,vis_pgd,strict_phys,"Old CMD+VPHYS NOT abstain, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_butter,11,520117,butter,0,0,3,135,145,random_linf,strict_phys,"Old CMD+VPHYS NOT abstain, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_butter,11,520118,butter,0,0,4,135,145,vis_pgd,strict_phys,"Old CMD+VPHYS NOT abstain, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_butter,11,520119,butter,0,0,4,135,145,random_linf,strict_phys,"Old CMD+VPHYS NOT abstain, cf=0.73",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_tomato,12,520120,tomato_sauce,2,2,0,85,95,vis_pgd,strict_phys,"Old CMD+VPHYS+ABSTAIN, tomato phys context",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_tomato,12,520121,tomato_sauce,2,2,0,85,95,random_linf,strict_phys,"Old CMD+VPHYS+ABSTAIN, tomato phys context",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_tomato,12,520122,tomato_sauce,2,2,1,85,95,vis_pgd,strict_phys,"Old CMD+VPHYS+ABSTAIN, tomato phys context",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_tomato,12,520123,tomato_sauce,2,2,1,85,95,random_linf,strict_phys,"Old CMD+VPHYS+ABSTAIN, tomato phys context",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_tomato,12,520124,tomato_sauce,2,2,2,85,95,vis_pgd,strict_phys,"Old CMD+VPHYS+ABSTAIN, tomato phys context",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_tomato,12,520125,tomato_sauce,2,2,2,85,95,random_linf,strict_phys,"Old CMD+VPHYS+ABSTAIN, tomato phys context",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_tomato,12,520126,tomato_sauce,2,2,3,85,95,vis_pgd,strict_phys,"Old CMD+VPHYS+ABSTAIN, tomato phys context",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_tomato,12,520127,tomato_sauce,2,2,3,85,95,random_linf,strict_phys,"Old CMD+VPHYS+ABSTAIN, tomato phys context",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_tomato,12,520128,tomato_sauce,2,2,4,85,95,vis_pgd,strict_phys,"Old CMD+VPHYS+ABSTAIN, tomato phys context",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_tomato,12,520129,tomato_sauce,2,2,4,85,95,random_linf,strict_phys,"Old CMD+VPHYS+ABSTAIN, tomato phys context",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_salad,13,520130,salad_dressing,2,2,0,75,85,vis_pgd,strict_phys,Heuristic: salad phys context,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_salad,13,520131,salad_dressing,2,2,0,75,85,random_linf,strict_phys,Heuristic: salad phys context,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_salad,13,520132,salad_dressing,2,2,1,75,85,vis_pgd,strict_phys,Heuristic: salad phys context,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_salad,13,520133,salad_dressing,2,2,1,75,85,random_linf,strict_phys,Heuristic: salad phys context,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_salad,13,520134,salad_dressing,2,2,2,75,85,vis_pgd,strict_phys,Heuristic: salad phys context,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_salad,13,520135,salad_dressing,2,2,2,75,85,random_linf,strict_phys,Heuristic: salad phys context,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_salad,13,520136,salad_dressing,2,2,3,75,85,vis_pgd,strict_phys,Heuristic: salad phys context,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_salad,13,520137,salad_dressing,2,2,3,75,85,random_linf,strict_phys,Heuristic: salad phys context,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_salad,13,520138,salad_dressing,2,2,4,75,85,vis_pgd,strict_phys,Heuristic: salad phys context,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_salad,13,520139,salad_dressing,2,2,4,75,85,random_linf,strict_phys,Heuristic: salad phys context,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_bbq,14,520140,bbq_sauce,0,0,0,70,80,vis_pgd,strict_phys,"Heuristic: bbq phys context, bbq has 0 phys",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_bbq,14,520141,bbq_sauce,0,0,0,70,80,random_linf,strict_phys,"Heuristic: bbq phys context, bbq has 0 phys",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_bbq,14,520142,bbq_sauce,0,0,1,70,80,vis_pgd,strict_phys,"Heuristic: bbq phys context, bbq has 0 phys",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_bbq,14,520143,bbq_sauce,0,0,1,70,80,random_linf,strict_phys,"Heuristic: bbq phys context, bbq has 0 phys",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_bbq,14,520144,bbq_sauce,0,0,2,70,80,vis_pgd,strict_phys,"Heuristic: bbq phys context, bbq has 0 phys",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_bbq,14,520145,bbq_sauce,0,0,2,70,80,random_linf,strict_phys,"Heuristic: bbq phys context, bbq has 0 phys",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_bbq,14,520146,bbq_sauce,0,0,3,70,80,vis_pgd,strict_phys,"Heuristic: bbq phys context, bbq has 0 phys",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_bbq,14,520147,bbq_sauce,0,0,3,70,80,random_linf,strict_phys,"Heuristic: bbq phys context, bbq has 0 phys",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_bbq,14,520148,bbq_sauce,0,0,4,70,80,vis_pgd,strict_phys,"Heuristic: bbq phys context, bbq has 0 phys",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_phys_bbq,14,520149,bbq_sauce,0,0,4,70,80,random_linf,strict_phys,"Heuristic: bbq phys context, bbq has 0 phys",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_sentinel_milk_gold,15,520150,milk,0,0,0,70,80,vis_pgd,sentinel,Re-run K5 GOLD anchor for runner health check,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_sentinel_milk_gold,15,520151,milk,0,0,0,70,80,random_linf,sentinel,Re-run K5 GOLD anchor for runner health check,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_sentinel_milk_gold,15,520152,milk,0,0,1,70,80,vis_pgd,sentinel,Re-run K5 GOLD anchor for runner health check,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_sentinel_milk_gold,15,520153,milk,0,0,1,70,80,random_linf,sentinel,Re-run K5 GOLD anchor for runner health check,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_sentinel_milk_gold,15,520154,milk,0,0,2,70,80,vis_pgd,sentinel,Re-run K5 GOLD anchor for runner health check,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_sentinel_milk_gold,15,520155,milk,0,0,2,70,80,random_linf,sentinel,Re-run K5 GOLD anchor for runner health check,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_sentinel_milk_gold,15,520156,milk,0,0,3,70,80,vis_pgd,sentinel,Re-run K5 GOLD anchor for runner health check,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_sentinel_milk_gold,15,520157,milk,0,0,3,70,80,random_linf,sentinel,Re-run K5 GOLD anchor for runner health check,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_sentinel_milk_gold,15,520158,milk,0,0,4,70,80,vis_pgd,sentinel,Re-run K5 GOLD anchor for runner health check,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
+k5c_sentinel_milk_gold,15,520159,milk,0,0,4,70,80,random_linf,sentinel,Re-run K5 GOLD anchor for runner health check,/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e
