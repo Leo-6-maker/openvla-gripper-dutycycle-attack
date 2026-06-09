@@ -1,0 +1,13 @@
+window,task,ws,we,n_vis,n_rand,vis_open_mean,rand_open_mean,vis_cmd_rate,rand_cmd_rate,cmd_yield,vis_qpos,rand_qpos,phys_diff,score,recommendation
+"butter_[80,90]",butter,80,90,4,4,8.0,3.2,1.0,0.0,1.0,0.066179,0.006758,0.059421,1.919,strong_phys_candidate
+"milk_[70,80]",milk,70,80,4,4,8.8,1.8,1.0,0.25,0.75,0.059684,0.028686,0.030998,1.218,strong_phys_candidate
+"tomato_sauce_[150,160]",tomato_sauce,150,160,4,4,7.8,1.5,1.0,0.0,1.0,0.036582,0.007593,0.028989,1.163,strong_phys_candidate
+"cream_cheese_[50,60]",cream_cheese,50,60,4,4,8.0,0.2,1.0,0.0,1.0,0.053957,0.029885,0.024072,1.151,strong_phys_candidate
+"alphabet_soup_[60,70]",alphabet_soup,60,70,2,2,2.0,5.5,0.0,0.5,-0.5,0.046994,0.000527,0.046467,0.964,not_phys_candidate
+"tomato_sauce_[55,65]",tomato_sauce,55,65,4,4,5.2,0.2,0.75,0.0,0.75,0.034575,0.028987,0.005588,0.585,strong_phys_candidate
+"tomato_sauce_[115,125]",tomato_sauce,115,125,2,2,4.0,11.0,0.5,1.0,-0.5,0.031198,0.000228,0.03097,0.575,not_phys_candidate
+"salad_dressing_[70,80]",salad_dressing,70,80,4,4,5.0,7.8,0.25,0.75,-0.5,0.036445,0.014767,0.021678,0.416,not_phys_candidate
+"milk_[80,90]",milk,80,90,2,2,7.5,6.0,1.0,1.0,0.0,0.042928,0.034913,0.008015,0.375,weak
+"milk_[75,85]",milk,75,85,2,2,7.5,6.5,1.0,1.0,0.0,0.039121,0.037882,0.001239,0.22,weak
+"butter_[95,105]",butter,95,105,2,2,5.5,5.0,0.5,1.0,-0.5,0.03303,0.026443,0.006587,0.097,not_phys_candidate
+"cream_cheese_[85,95]",cream_cheese,85,95,2,2,0.5,0.0,0.0,0.0,0.0,0.000189,9.9e-05,9e-05,0.003,weak
