@@ -19,16 +19,107 @@ while true; do
     echo "[$(date +%H:%M)] MAIN EXTRACTION COMPLETE ($DONE done)"
     break
   fi
-  if [ "$ERR" -gt 0 ]; then
-    echo "[$(date +%H:%M)] ERRORS IN MAIN EXTRACTION"
+  # Check for errors
+  ERR_COUNT=$(grep -c 'Error\|Traceback' $MAIN_LOG 2>/dev/null || echo 0)
+  if [ "$ERR_COUNT" -gt 0 ] 2>/dev/null; then
+    echo "[$(date +%H:%M)] ERRORS IN MAIN EXTRACTION ($ERR_COUNT)"
     grep -E 'Error|Traceback' $MAIN_LOG | tail -5
     break
   fi
   sleep 300
 done
 
-# Run readout
-echo "[$(date +%H:%M)] RUNNING ACTION-LOGIT READOUT..."
+# ── Gate A: Coverage audit ──
+FEATURES_CSV=/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/action_logit_full/action_logit_full_features.csv
+EXPECTED=38
+COVERAGE=$(tail -n +2 $FEATURES_CSV 2>/dev/null | wc -l)
+echo "[$(date +%H:%M)] GATE A: Coverage $COVERAGE/$EXPECTED"
+if [ "$COVERAGE" -lt 36 ]; then
+  echo "[$(date +%H:%M)] FAIL: coverage $COVERAGE < 36, stopping"
+  exit 1
+fi
+if [ "$COVERAGE" -lt 38 ]; then
+  echo "[$(date +%H:%M)] WARN: coverage $COVERAGE < 38, missing windows listed below"
+  cd $REPO && PYTHONPATH=src $PY -c "
+import csv
+STABLE='tables/stageb_v1_1_stable_parent_pool_k5_k5b_k5c_rc1a_ca3a97e.csv'
+FEAT='$FEATURES_CSV'
+import re
+KNOWN=['alphabet_soup','bbq_sauce','butter','cream_cheese','milk','orange_juice','salad_dressing','tomato_sauce']
+def parse(pk):
+    task=sid=ws=we=None
+    for tk in KNOWN:
+        if tk in pk: task=tk; break
+    m_s=re.search(r'_s(\d+)',pk); m_w=re.search(r'_w(\d+)_(\d+)',pk)
+    if m_s: sid=m_s.group(1)
+    if m_w: ws=m_w.group(1); we=m_w.group(2)
+    return task,sid,ws,we
+stable={}
+with open(STABLE) as f:
+    for r in csv.DictReader(f): stable[r['parent']]=r
+feat_keys=set()
+with open(FEAT) as f:
+    for r in csv.DictReader(f):
+        feat_keys.add((r['task'],int(r['state_id']),int(r['ws']),int(r['we'])))
+missing=[]
+for pk,pr in stable.items():
+    task,sid,ws,we=parse(pk)
+    if not task: task=pr.get('task','?')
+    if not ws:
+        win=pr.get('window',''); parts=win.replace('_env0','').replace('_env1','').replace('_env2','').split('_')
+        if len(parts)>=2: ws,we=int(parts[0]),int(parts[1])
+    if not sid: sid=int(win.split('_env')[1] if '_env' in win else 0) if 'win' in dir() else 0
+    else: sid=int(sid)
+    if not all([task,isinstance(ws,int),isinstance(we,int)]): continue
+    if (task,sid,ws,we) not in feat_keys: missing.append(pk)
+if missing:
+    print('MISSING:')
+    for m in missing: print(' ',m)
+    with open('/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/action_logit_full/missing_windows.csv','w') as fh:
+        fh.write('parent\\n')
+        for m in missing: fh.write(m+'\\n')
+else:
+    print('No missing windows')
+"
+fi
+
+# ── Gate B: Leakage + feature safety ──
+echo "[$(date +%H:%M)] GATE B: Leakage + pre-window check"
+cd $REPO && PYTHONPATH=src $PY -c "
+import csv
+FEAT='$FEATURES_CSV'
+with open(FEAT) as f:
+    reader=csv.DictReader(f)
+    cols=reader.fieldnames
+    rows=list(reader)
+# Check forbidden columns
+forbidden=['yield_cmd','pV_cmd','pR_cmd','vis_open','rand_open','qpos_delta','success','failure','win_raw','win_open']
+found_forbidden=[c for c in cols for f in forbidden if f in c.lower() and 'window' not in c.lower()]
+if found_forbidden:
+    print('FORBIDDEN LEAKAGE COLUMNS:', found_forbidden)
+else:
+    print('No forbidden columns.')
+# Check pre-window safety
+for r in rows:
+    if r.get('online_safe','')!='True':
+        print('FAIL: online_safe=False for', r.get('window','?'))
+        break
+    if r.get('feature_source','')!='pre_window_only':
+        print('FAIL: feature_source!=pre_window_only for', r.get('window','?'))
+        break
+    if int(r.get('n_pre',0))<1:
+        print('FAIL: n_pre=0 for', r.get('window','?'))
+        break
+    if not r.get('prompt',''):
+        print('FAIL: empty prompt for', r.get('window','?'))
+        break
+else:
+    print('All rows: online_safe=True, pre_window_only, n_pre>0, prompt present.')
+print('Rows:', len(rows))
+"
+
+# ── Gate check passed, run readout ──
+echo "[$(date +%H:%M)] GATES PASSED — RUNNING READOUT"
 cd $REPO && PYTHONPATH=src $PY scripts/diagnostics/run_action_logit_readout.py > /data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/action_logit_full/readout.log 2>&1
 echo "[$(date +%H:%M)] READOUT COMPLETE"
 
