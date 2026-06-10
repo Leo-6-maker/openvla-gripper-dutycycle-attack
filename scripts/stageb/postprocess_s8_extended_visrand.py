@@ -1,16 +1,27 @@
 #!/usr/bin/env python3
-"""S8 Phase 2 postprocess: compute oracle_normalized_qpos_area and VIS-RAND gap."""
-import json, os, csv, numpy as np
+"""S8 Phase 2 postprocess: oracle_normalized_qpos_area, VIS-RAND gap, trace audit."""
+import json, os, csv, numpy as np, argparse
 from collections import defaultdict
 
-def postprocess(summary_dir, oracle_ref_map, output_csv, output_report_md=None):
+def postprocess(summary_dir, launch_csv_path, output_csv):
+    # Load launch CSV for oracle_ref backup + metadata
+    launch_map = {}
+    if launch_csv_path and os.path.exists(launch_csv_path):
+        with open(launch_csv_path) as f:
+            for r in csv.DictReader(f):
+                launch_map[r['logical_pair_key']] = r
+
+    # Load summaries
     summaries = []
+    trace_files = []
     for fname in sorted(os.listdir(summary_dir)):
         if fname.startswith('summary_') and fname.endswith('.json'):
             with open(os.path.join(summary_dir, fname)) as f:
                 summaries.append(json.load(f))
+        if fname.startswith('trace_') and fname.endswith('.csv'):
+            trace_files.append(fname)
 
-    # Group by logical_pair_key
+    # Group by pair_id (logical_pair_key)
     pairs = defaultdict(dict)
     for s in summaries:
         lp = s.get('pair_id', '')
@@ -20,109 +31,105 @@ def postprocess(summary_dir, oracle_ref_map, output_csv, output_report_md=None):
     results = []
     for lp in sorted(pairs):
         cd = pairs[lp]
-        if len(cd) != 2: continue
+        if len(cd) != 2:
+            print('WARN: %s has %d conditions' % (lp, len(cd)))
+            continue
+
         vis = cd.get('VIS', {}); rand = cd.get('RAND', {})
 
-        # Find oracle reference from physical_pair_key
-        # Pairs with window_start/end matching the original window
-        ppk_short = '%s_s%d_w%d_%d_L10' % (vis.get('task',''), vis.get('state_id',0),
-                                             vis.get('original_window_start', vis.get('window_start',0)),
-                                             vis.get('original_window_end', vis.get('window_end',0)))
-        oracle_ref = oracle_ref_map.get(ppk_short, {})
-        oracle_pos_area = oracle_ref.get('qpos_pos_area', 0.0)
+        # Oracle ref: priority = summary embedded > launch CSV
+        oracle_pos = vis.get('oracle_ref_L10_pos_area', 0) or rand.get('oracle_ref_L10_pos_area', 0)
+        if oracle_pos == 0 and lp in launch_map:
+            oracle_pos = float(launch_map[lp].get('oracle_ref_L10_pos_area', 0))
 
         vis_pos = vis.get('qpos_pos_area', 0); rand_pos = rand.get('qpos_pos_area', 0)
         vis_abs = vis.get('qpos_abs_area', 0); rand_abs = rand.get('qpos_abs_area', 0)
         vis_open = vis.get('decoded_open_count', 0); rand_open = rand.get('decoded_open_count', 0)
         vis_streak = vis.get('max_open_streak', 0); rand_streak = rand.get('max_open_streak', 0)
         vis_infra = vis.get('infra_status',''); rand_infra = rand.get('infra_status','')
+        vis_arm = vis.get('mean_arm_qpos_norm_pre', 0); rand_arm = rand.get('mean_arm_qpos_norm_pre', 0)
 
         results.append({
             'logical_pair_key': lp,
             'task': vis.get('task',''),
+            'length_mode': vis.get('length_mode',''),
             'window_start': vis.get('window_start',0),
             'window_end': vis.get('window_end',0),
-            'length_mode': _get_length_mode(lp),
+            'original_ws': vis.get('original_window_start',0),
+            'original_we': vis.get('original_window_end',0),
             'attack_seed': vis.get('attack_seed',0),
             'vis_open_count': vis_open, 'rand_open_count': rand_open,
             'vis_max_streak': vis_streak, 'rand_max_streak': rand_streak,
             'vis_qpos_pos_area': round(vis_pos, 8), 'rand_qpos_pos_area': round(rand_pos, 8),
             'vis_qpos_abs_area': round(vis_abs, 8), 'rand_qpos_abs_area': round(rand_abs, 8),
             'vis_minus_rand_pos_area': round(vis_pos - rand_pos, 8),
-            'oracle_pos_area': round(oracle_pos_area, 8),
-            'vis_oracle_normalized': round(vis_pos / oracle_pos_area, 4) if oracle_pos_area > 0 else 0,
-            'rand_oracle_normalized': round(rand_pos / oracle_pos_area, 4) if oracle_pos_area > 0 else 0,
+            'oracle_pos_area': round(oracle_pos, 8),
+            'vis_oracle_normalized': round(vis_pos / oracle_pos, 4) if oracle_pos > 0 else -1,
+            'rand_oracle_normalized': round(rand_pos / oracle_pos, 4) if oracle_pos > 0 else -1,
+            'vis_arm_norm': round(vis_arm, 8), 'rand_arm_norm': round(rand_arm, 8),
             'vis_infra': vis_infra, 'rand_infra': rand_infra,
+            'trace_csv_exists': 'Y' if any('trace_' in t and lp.replace('__','_') in t.replace('__','_') for t in trace_files) else 'N',
         })
 
+    if not results:
+        print('No results found')
+        return []
+
     # Write CSV
-    cols = list(results[0].keys()) if results else []
+    cols = list(results[0].keys())
     with open(output_csv, 'w', newline='') as f:
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
         for r in results: w.writerow(r)
+    print('Results: %s (%d rows)' % (output_csv, len(results)))
 
     # Report
-    print('Pairs: %d' % len(results))
     n_infra_ok = sum(1 for r in results if r['vis_infra']=='ok' and r['rand_infra']=='ok')
-    print('Infra OK: %d/%d' % (n_infra_ok, len(results)))
+    n_trace_ok = sum(1 for r in results if r['trace_csv_exists'] == 'Y')
+    print('Infra OK: %d/%d, Trace OK: %d/%d, Summaries: %d' % (
+        n_infra_ok, len(results), n_trace_ok, len(results), len(summaries)))
 
-    if results:
-        vis_pos_mean = np.mean([r['vis_qpos_pos_area'] for r in results])
-        rand_pos_mean = np.mean([r['rand_qpos_pos_area'] for r in results])
-        vis_norm_mean = np.mean([r['vis_oracle_normalized'] for r in results])
-        rand_norm_mean = np.mean([r['rand_oracle_normalized'] for r in results])
-        vis_open_mean = np.mean([r['vis_open_count'] for r in results])
-        rand_open_mean = np.mean([r['rand_open_count'] for r in results])
-
-        print()
-        print('=== VIS vs RAND ===')
-        print('VIS qpos_pos_area: %.6f' % vis_pos_mean)
-        print('RAND qpos_pos_area: %.6f' % rand_pos_mean)
-        print('VIS-RAND gap: %.6f' % (vis_pos_mean - rand_pos_mean))
-        print('VIS oracle_norm: %.4f' % vis_norm_mean)
-        print('RAND oracle_norm: %.4f' % rand_norm_mean)
-        print('VIS open_count: %.2f' % vis_open_mean)
-        print('RAND open_count: %.2f' % rand_open_mean)
-
-        # Gate checks
-        bridge = vis_pos_mean > rand_pos_mean
-        vis_norm = vis_norm_mean >= 0.3
-        cmd = vis_open_mean > rand_open_mean
-        print()
-        print('Bridge gate (VIS>RAND pos_area): %s' % ('PASS' if bridge else 'FAIL'))
-        print('Normalized gate (VIS>=0.3 oracle): %s' % ('PASS' if vis_norm else 'FAIL'))
-        print('Command gate (VIS>RAND open): %s' % ('PASS' if cmd else 'FAIL'))
+    # By length_mode
+    for lmode in ['short', 'extended20']:
+        gr = [r for r in results if r['length_mode'] == lmode]
+        if not gr: continue
+        vis_pos = np.mean([r['vis_qpos_pos_area'] for r in gr])
+        rand_pos = np.mean([r['rand_qpos_pos_area'] for r in gr])
+        vis_norm = np.mean([r['vis_oracle_normalized'] for r in gr if r['vis_oracle_normalized'] >= 0])
+        rand_norm = np.mean([r['rand_oracle_normalized'] for r in gr if r['rand_oracle_normalized'] >= 0])
+        vis_op = np.mean([r['vis_open_count'] for r in gr])
+        rand_op = np.mean([r['rand_open_count'] for r in gr])
 
         print()
-        print('%-45s %4s %8s %8s %8s %8s %8s %8s %s' % ('Pair', 'seed', 'vis_pos', 'rand_pos', 'V-R', 'vis_norm', 'vis_op', 'rand_op', 'infra'))
-        for r in sorted(results, key=lambda x: (x['task'], x['length_mode'], x['attack_seed'])):
-            print('%-45s %4d %8.6f %8.6f %+8.6f %8.4f %8d %8d %s' % (
-                r['logical_pair_key'][:45], r['attack_seed'],
-                r['vis_qpos_pos_area'], r['rand_qpos_pos_area'],
-                r['vis_minus_rand_pos_area'], r['vis_oracle_normalized'],
-                r['vis_open_count'], r['rand_open_count'],
-                'OK' if (r['vis_infra']=='ok' and r['rand_infra']=='ok') else 'FAIL'))
+        print('=== %s ===' % lmode)
+        print('VIS-RAND pos_area: %.6f' % (vis_pos - rand_pos))
+        print('VIS oracle_norm: %.4f  RAND oracle_norm: %.4f' % (vis_norm, rand_norm))
+        print('VIS open: %.2f  RAND open: %.2f' % (vis_op, rand_op))
+        bridge = vis_pos > rand_pos
+        norm = vis_norm >= 0.3
+        cmd = vis_op > rand_op
+        print('Bridge: %s  Norm>=0.3: %s  Cmd_VIS>RAND: %s' % (
+            'PASS' if bridge else 'FAIL', 'PASS' if norm else 'FAIL', 'PASS' if cmd else 'FAIL'))
+
+    # Per-pair table
+    print()
+    print('%-45s %6s %4s %8s %8s %8s %8s %8s %8s %5s %5s' % (
+        'Pair', 'Lmode', 'seed', 'vis_pos', 'rand_pos', 'V-R', 'vis_norm', 'vis_op', 'rand_op', 'infra', 'trc'))
+    for r in sorted(results, key=lambda x: (x['length_mode'], x['attack_seed'])):
+        print('%-45s %6s %4d %8.6f %8.6f %+8.6f %8.4f %8d %8d %5s %5s' % (
+            r['logical_pair_key'][:45], r['length_mode'][:6], r['attack_seed'],
+            r['vis_qpos_pos_area'], r['rand_qpos_pos_area'],
+            r['vis_minus_rand_pos_area'], r['vis_oracle_normalized'],
+            r['vis_open_count'], r['rand_open_count'],
+            'OK' if (r['vis_infra']=='ok' and r['rand_infra']=='ok') else 'X',
+            r['trace_csv_exists']))
 
     return results
 
-def _get_length_mode(lp):
-    if 'extended20' in lp: return 'extended20'
-    if '_short__' in lp or lp.endswith('_short'): return 'short'
-    return 'short'
-
 if __name__ == '__main__':
-    import argparse
     ap = argparse.ArgumentParser()
     ap.add_argument('--summary_dir', required=True)
-    ap.add_argument('--oracle_ref_csv', required=True)
+    ap.add_argument('--launch_csv', default='')
     ap.add_argument('--output_csv', required=True)
     args = ap.parse_args()
-
-    import csv as csv_module
-    oracle_ref_map = {}
-    with open(args.oracle_ref_csv) as f:
-        for r in csv_module.DictReader(f):
-            oracle_ref_map[r['physical_pair_key']] = {'qpos_pos_area': float(r['oracle_qpos_pos_area'])}
-
-    postprocess(args.summary_dir, oracle_ref_map, args.output_csv)
+    postprocess(args.summary_dir, args.launch_csv, args.output_csv)
