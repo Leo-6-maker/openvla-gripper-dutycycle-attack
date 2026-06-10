@@ -1,0 +1,5 @@
+length_mode,condition,window_convention,post_horizon,n_window_steps,qpos_baseline,qpos_pos_area,qpos_neg_area,qpos_abs_area,decoded_open_count,response_delay_pos,infra_status
+ext20_halfopen,clean,half_open,40,30,0.039509,0.0,0.413664,0.413664,12,-1,ok
+ext20_halfopen,oracle_open,half_open,40,30,0.039509,0.000504,0.872893,0.873396,30,-1,ok
+short_halfopen,clean,half_open,40,10,0.039487,0.0,0.359008,0.359008,1,-1,ok
+short_halfopen,oracle_open,half_open,40,10,0.039487,0.0,0.180761,0.180761,10,-1,ok
