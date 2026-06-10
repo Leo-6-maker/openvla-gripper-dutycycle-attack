@@ -1,4 +1,4 @@
-old_requested_task,old_cfg_index,actual_libro_idx,actual_task_key,actual_language,status
+old_requested_task,old_cfg_index,actual_libero_idx,actual_task_key,actual_language,status
 ketchup,0,0,alphabet_soup,pick up the alphabet soup and place it in the basket,never_used
 butter,1,1,cream_cheese,pick up the cream cheese and place it in the basket,used_as_butter
 cream_cheese,2,2,salad_dressing,pick up the salad dressing and place it in the basket,used_as_cream_cheese
@@ -7,6 +7,5 @@ bbq_sauce,4,4,ketchup,pick up the ketchup and place it in the basket,used_as_bbq
 milk,5,5,tomato_sauce,pick up the tomato sauce and place it in the basket,used_as_milk_PRIMARY
 alphabet_soup,6,6,butter,pick up the butter and place it in the basket,used_as_alphabet_soup
 tomato_sauce,7,7,milk,pick up the milk and place it in the basket,used_as_tomato_sauce
-orange_juice,8,8,chocolate_pudding,pick up the chocolate pudding and place it in the basket,used_as_orange_juice
-none,missing,9,orange_juice,pick up the orange juice and place it in the basket,never_run
-none,missing,missing,chocolate_pudding,pick up the chocolate pudding and place it in the basket,run_as_orange_juice
+orange_juice,8,8,chocolate_pudding,pick up the chocolate pudding and place it in the basket,alias_never_directly_called_chocolate_pudding_run_instead
+none,missing,9,orange_juice,pick up the orange juice and place it in the basket,never_run_true_orange_juice_untested

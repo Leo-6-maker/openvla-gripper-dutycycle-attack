@@ -94,9 +94,11 @@ ORACLE refs: tomato_sauce_s0_w240-250=0.2755, milk_s2_w95-105=0.6474
 
 1. ✅ **All GPU jobs killed** — S16c tmux sessions terminated.
 2. ✅ **Task order audit completed** — `tables/libero_object_actual_task_order.csv`.
-3. 🔲 **Patch runner** — remove TASK_CFG, use canonical task resolution from task metadata.
-4. 🔲 **Relabel all summaries** — generate corrected aggregate tables.
-5. 🔲 **Rewrite claim boundary** — under corrected task labels.
+3. ✅ **Patch runner** — TASK_CFG removed at e9578b0; canonical resolution verified all 10 tasks.
+4. ✅ **Trace provenance** — trace CSV now writes requested_task, actual_task_key, actual_task_idx, actual_language, actual_bddl_file.
+5. ✅ **Duplicate assert** — _canonical_task_key collision raises RuntimeError; length assertion added.
+6. 🔲 **Relabel all summaries** — generate corrected aggregate tables (in progress as S16R).
+7. 🔲 **Rewrite claim boundary** — under corrected task labels (in progress as S16R).
 
 ## Current Allowed Claim (during relabel)
 

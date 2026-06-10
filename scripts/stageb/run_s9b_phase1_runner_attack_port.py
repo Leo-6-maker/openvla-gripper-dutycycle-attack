@@ -111,7 +111,10 @@ _actual_by_key = {}
 for _i in range(len(task_suite.tasks)):
     _tobj = task_suite.get_task(_i)
     _key = _canonical_task_key(_tobj)
+    if _key in _actual_by_key:
+        raise RuntimeError('duplicate canonical task key: %s (idx %d and %d)' % (_key, _actual_by_key[_key], _i))
     _actual_by_key[_key] = _i
+assert len(_actual_by_key) == len(task_suite.tasks), 'canonical coverage: %d keys != %d tasks' % (len(_actual_by_key), len(task_suite.tasks))
 
 cfg = _actual_by_key.get(args.task)
 if cfg is None: print('Unknown task:', args.task, 'available:', sorted(_actual_by_key.keys())); sys.exit(1)
@@ -238,7 +241,10 @@ while not done and step < max_steps_local:
         'pgd_applied': pgd_applied, 'attacks_applied': attacks_applied,
         'random_seed_str': random_seed_str, 'noise_linf': noise_linf, 'noise_l2': noise_l2,
         'perturbation_space': perturbation_space,
-        'condition': args.condition, 'pair_id': pair_id,
+        'requested_task': args.task, 'actual_task_key': actual_task_key,
+	        'actual_task_idx': cfg, 'actual_language': instruction,
+	        'actual_bddl_file': task_obj.bddl_file,
+	        'condition': args.condition, 'pair_id': pair_id,
         'attack_seed': args.attack_seed, 'env_seed': args.env_seed,
     })
     step += 1

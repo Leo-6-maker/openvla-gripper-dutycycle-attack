@@ -1,0 +1,18 @@
+claim_level,status,claim_text,evidence,scope
+claim,ALLOWED,tomato_sauce_s0_w70-80 is the only confirmed clean repeated physical bridge POC,5/6 seeds PHYSICAL_BRIDGE_PASS (seeds 9/10/11/24/50); seed12 PHYSICAL_BORDERLINE (norm=0.129),single window
+claim,ALLOWED,VIS attack produces stronger OPEN duty-cycle than matched random on selected task/state/window parents,multiple command_attack_positive results across S16b; VIS>>RAND gap confirmed,parent-level on screened windows
+claim,ALLOWED,Layer1 command selectivity alone is insufficient for Layer3 physical bridge specificity,multiple Layer1-selected windows fail at command or physical level (salad_dressing cmd_weak; milk RAND-confounded),across tested tasks
+claim,ALLOWED,milk family shows RAND contamination in most tested windows,milk_s2_w155-165 RAND 2-8/10; milk_s0_w55-65 RAND 0-4/10; milk_s2_w95-105 RAND 3-4/10 on veto,task-level observation
+claim,ALLOWED,salad_dressing is command-weak on tested windows,VIS 2-3/10 OPEN on s2_w50-60 (4 seeds); VIS 4/10 on s0_w85-95 (RAND confounded),task-level observation
+claim,ALLOWED,tomato_sauce_s0_w240-250 is a command-positive candidate with partial confirmation,seed52 PHYSICAL_BRIDGE_PASS (norm=0.391); seed51 weak; seed53 not run,incomplete
+claim,ALLOWED,Task-mapping bug invalidated all S6-S16 object labels; physical traces remain valid; this relabel is authoritative,verified via LIBERO task order audit; 199 summaries relabeled,meta
+method,ALLOWED,Patched runner uses canonical task resolution from task metadata,removed TASK_CFG; runtime enumeration; assert actual==requested; duplicate detection; coverage assertion,runner
+method,ALLOWED,Trace CSV now includes task provenance fields,requested_task actual_task_key actual_task_idx actual_language actual_bddl_file,runner
+claim,FORBIDDEN,milk is physical bridge POC,old milk = actual tomato_sauce,n/a
+claim,FORBIDDEN,tomato is RAND-confounded,old tomato_sauce = actual milk,n/a
+claim,FORBIDDEN,cream is command-weak,old cream_cheese = actual salad_dressing,n/a
+claim,FORBIDDEN,butter is manual candidate,old butter = actual cream_cheese,n/a
+claim,FORBIDDEN,Any object-level claim using old task names,all pre-relabel names are wrong,n/a
+claim,FORBIDDEN,Object-wide success / Layer3 solved / Detector solved,not supported by current evidence breadth,n/a
+claim,FORBIDDEN,milk_s2_w95-105 as positive candidate,S16c partial RAND-veto REJECTED (seeds 51 open=3 seed53 open=4),n/a
+claim,FORBIDDEN,LIBERO Object 10-task coverage,only 4 tasks meaningfully tested (tomato_sauce milk salad_dressing cream_cheese); bbq_sauce touched once,n/a
