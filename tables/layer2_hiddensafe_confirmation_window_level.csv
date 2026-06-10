@@ -1,0 +1,9 @@
+group,window,seed9_label,seed10_label,window_status,vis_rate_atk9,vis_rate_atk10,rand_rate_atk9,rand_rate_atk10,window_yield_score
+H,cream_cheese_s0_w65_75,rand_only,rand_only,rand_only,0.4,0.4,1.1,1.1,0.0
+H,milk_s0_w70_80,cmd_hit,cmd_hit,cmd_hit,0.8,0.9,0.0,0.2,0.75
+H,salad_dressing_s1_w50_60,cmd_hit,cmd_hit,cmd_hit,0.5,0.6,0.0,0.1,0.5
+H,tomato_sauce_s2_w165_175,cmd_rand,cmd_rand,cmd_rand,0.8,0.8,0.6,0.8,0.0
+B,bbq_sauce_s2_w100_110,cmd_hit,cmd_hit,cmd_hit,0.8,0.8,0.0,0.0,0.8
+B,butter_s0_w90_100,cmd_rand,cmd_rand,cmd_rand,0.8,1.0,1.0,1.1,0.0
+B,cream_cheese_s0_w85_95,no_effect,no_effect,no_effect,0.0,0.3,0.0,0.0,0.0
+B,milk_s0_w230_240,cmd_hit,cmd_hit,cmd_hit,1.1,1.1,0.0,0.0,1.1
