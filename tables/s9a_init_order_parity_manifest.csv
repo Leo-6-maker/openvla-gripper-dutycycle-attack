@@ -1,0 +1,3 @@
+job_id,task,state_id,window_start,window_end,original_window_start,original_window_end,length_mode,condition,attack_seed,attack_budget,pair_id,oracle_ref_L10_pos_area,post_horizon,window_convention,init_mode,gpu_pair,output_dir
+950300,milk,0,70,80,70,80,short_halfopen,clean,0,none,milk_s0_w70_80_short_s9a,0.261452,40,half_open,phase1_parity,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s9a_init_order_parity
+950301,milk,0,70,80,70,80,short_halfopen,oracle_open,0,none,milk_s0_w70_80_short_s9a,0.261452,40,half_open,phase1_parity,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s9a_init_order_parity
