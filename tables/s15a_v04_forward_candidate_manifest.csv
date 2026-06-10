@@ -1,0 +1,18 @@
+candidate_id,parent,object,state_id,window_start,window_end,source,cmd_label,pV_cmd,risk_rand,phys_label,layer1_selected,already_tested,test_result,oracle_exists,rand_vetoed,needs_oracle,needs_rand_veto,priority,reason_include,reason_exclude
+C01,k5b_neg_cream_cream_cheese_s0_w85_95_env0,cream_cheese,0,85,95,K5b,stable_cmd_specific,0.8,0.4,stable_rand_phys,TRUE,FALSE,,FALSE,FALSE,TRUE,TRUE,A,fresh non-milk cmd_specific; different state/window from tested cream_s2_w50-60,
+C02,k5c_cmd_milk_neg,milk,0,235,245,K5c,stable_cmd_specific_borderline,1.0,0.2,stable_vis_phys,TRUE,FALSE,,FALSE,FALSE,TRUE,TRUE,A,fresh milk late window; cmd_specific borderline; low risk_rand; VIS phys,
+C03,k5b_neg_cream_cream_cheese_s0_w85_95_env0,cream_cheese,0,85,95,K5b,stable_cmd_specific,0.8,0.4,stable_rand_phys,TRUE,FALSE,,FALSE,FALSE,TRUE,TRUE,A,DUPLICATE of C01,DUPLICATE
+C04,k5_confounded_swing_milk_s0_w230_240_env0,milk,0,230,240,K5,stable_cmd_specific,1.0,1.0,stable_rand_phys,TRUE,FALSE,,FALSE,FALSE,TRUE,TRUE,B,milk late window; high risk_rand=1.0,
+C05,k5b_contrast_milk_late_milk_s0_w240_250_env0,milk,0,240,250,K5b,stable_cmd_specific,1.0,0.8,stable_rand_phys,TRUE,FALSE,,FALSE,FALSE,TRUE,TRUE,B,milk late window; high risk_rand=0.8,
+C06,k5b_rand_salad2_salad_dressing_s1_w50_60_env1,salad_dressing,1,50,60,K5b,stable_cmd_specific,0.6,1.0,stable_rand_phys,TRUE,FALSE,,FALSE,FALSE,TRUE,TRUE,B,non-milk non-tomato; high risk_rand=1.0,
+C07,k5c_cmd_salad_neg,salad_dressing,0,55,65,K5c,stable_cmd_specific,0.8,0.0,stable_no_phys,TRUE,FALSE,,FALSE,FALSE,TRUE,TRUE,REJECT_no_phys,Layer1 selected but phys_label=stable_no_phys,
+C08,k5c_cmd_tomato_early,tomato_sauce,0,50,60,K5c,stable_cmd_specific,1.0,0.0,stable_no_phys,TRUE,FALSE,,FALSE,FALSE,TRUE,TRUE,REJECT_no_phys,Layer1 selected but phys_label=stable_no_phys,
+C09,k5b_contrast_tomato_early_tomato_sauce_s2_w95_105_env2,tomato_sauce,2,95,105,K5b,stable_cmd_specific,0.8,0.8,stable_rand_phys,TRUE,FALSE,,FALSE,FALSE,TRUE,TRUE,REJECT_tomato,tomato family; all tomato windows RAND REJECTED,
+C10,k5_cmd_anchor_milk_s0_w70_80_env0,milk,0,70,80,K5,stable_cmd_specific,1.0,1.0,stable_rand_phys,TRUE,TRUE,PASS_4of5,TRUE,FALSE,FALSE,FALSE,EXCLUDED,already tested 5 seeds (S9b/S9c/S13a),
+C11,k5c_sentinel_milk_gold,milk,0,70,80,K5c,stable_cmd_specific,1.0,1.0,shared_phys,TRUE,TRUE,PASS_4of5,TRUE,FALSE,FALSE,FALSE,EXCLUDED,already tested 5 seeds (S9b/S9c/S13a),
+C12,k5b_strict_phys_cream_cream_cheese_s2_w50_60_env2,cream_cheese,2,50,60,K5b,stable_cmd_specific,1.0,1.0,stable_rand_phys,TRUE,TRUE,FAIL_0of3_cmd_weak,TRUE,TRUE,FALSE,FALSE,EXCLUDED,already tested (S12b cream),
+C13,k5_rand_cmd_drift_tomato_sauce_s2_w150_160_env2,tomato_sauce,2,150,160,K5,stable_cmd_specific,1.0,0.6,stable_rand_phys,TRUE,TRUE,RAND_REJECTED,TRUE,TRUE,FALSE,FALSE,EXCLUDED,tested S12a RAND-veto REJECT,
+C14,k5_rand_phys_flip_tomato_sauce_s2_w90_100_env2,tomato_sauce,2,90,100,K5,stable_cmd_specific,1.0,0.0,stable_vis_phys,TRUE,TRUE,RAND_REJECTED,TRUE,TRUE,FALSE,FALSE,EXCLUDED,tested S13a RAND-veto REJECT,
+C15,k5b_contrast_tomato_far_tomato_sauce_s0_w55_65_env0,tomato_sauce,0,55,65,K5b,stable_cmd_specific,1.0,0.0,stable_vis_phys,TRUE,TRUE,RAND_REJECTED,TRUE,TRUE,FALSE,FALSE,EXCLUDED,tested S13a RAND-veto REJECT,
+C16,k5b_contrast_tomato_late_tomato_sauce_s2_w155_165_env2,tomato_sauce,2,155,165,K5b,stable_cmd_specific,1.0,0.2,stable_vis_phys,TRUE,TRUE,RAND_CONFOUNDED,TRUE,TRUE,FALSE,FALSE,EXCLUDED,tested S11b RAND confounded,
+C17,k5c_cmd_butter,butter,0,80,90,K5c,stable_cmd_specific,1.0,0.0,stable_vis_phys,TRUE,TRUE,RAND_REJECTED,TRUE,TRUE,FALSE,FALSE,EXCLUDED,tested S12a RAND-veto REJECT,

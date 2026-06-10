@@ -1,0 +1,16 @@
+candidate,object,state_id,window,condition,seed,open,streak,pos_area,neg_area,baseline,oracle_ref,oracle_norm,infra,gate_result,notes
+C02,milk,0,235-245,oracle_open,0,10,10,0.2496,0.0010,0.0010,0.2496,1.000,ok,ORACLE_PASS,lower ORACLE than w70-80 (0.295)
+C02,milk,0,235-245,random_linf,27,2,1,0.0153,0.0010,0.0010,0.2496,0.061,ok,USABLE,open=2 borderline; norm low
+C02,milk,0,235-245,random_linf,28,1,1,0.0019,0.0039,0.0010,0.2496,0.008,ok,STRICT_CLEAN,
+C02,milk,0,235-245,random_linf,29,0,0,0.0024,0.0041,0.0010,0.2496,0.010,ok,STRICT_CLEAN,
+C02,milk,0,235-245,vis_pgd,27,5,3,0.0424,0.0015,0.0010,0.2496,0.170,ok,BORDERLINE_cmd_weak,open=5 < 6; streak=3 < 4; norm=0.170
+C04,milk,0,230-240,oracle_open,0,10,10,0.3266,0.0005,0.0005,0.3266,1.000,ok,ORACLE_PASS,comparable to w70-80 ORACLE
+C04,milk,0,230-240,random_linf,27,0,0,0.0232,0.0025,0.0011,0.3266,0.071,ok,STRICT_CLEAN,
+C04,milk,0,230-240,random_linf,28,2,1,0.0001,0.0064,0.0015,0.3266,0.000,ok,USABLE,
+C04,milk,0,230-240,random_linf,29,5,4,0.0233,0.0026,0.0015,0.3266,0.071,ok,REJECT,RAND open=5 ≥ 3; streak=4; RAND contaminated
+C04,milk,0,230-240,vis_pgd,27,5,3,0.0536,0.0015,0.0013,0.3266,0.164,ok,BORDERLINE_cmd_weak,open=5 < 6; streak=3 < 4
+C01,cream_cheese,0,85-95,oracle_open,0,10,10,0.5333,0.0013,0.0013,0.5333,1.000,ok,ORACLE_STRONG,higher ORACLE than cream_s2 (0.284)
+C01,cream_cheese,0,85-95,random_linf,27,3,2,0.1070,0.0013,0.0013,0.5333,0.201,ok,REJECT,RAND open=3; norm=0.201 > 0.10
+C01,cream_cheese,0,85-95,random_linf,28,4,2,0.0041,0.0050,0.0013,0.5333,0.008,ok,REJECT,RAND open=4 ≥ 3
+C01,cream_cheese,0,85-95,random_linf,29,3,2,0.0865,0.0013,0.0013,0.5333,0.162,ok,REJECT,RAND open=3 ≥ 3
+C01,cream_cheese,0,85-95,vis_pgd,27,3,1,0.0421,0.0026,0.0013,0.5333,0.079,ok,FAIL_cmd_weak,open=3 < 6; streak=1; command-weak like cream_s2

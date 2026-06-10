@@ -1,0 +1,40 @@
+task_name,object,state_id,window_start,window_end,source,cmd_label,layer1_selected,pV_cmd,risk_rand,phys_label,oracle_ref,rand_veto_status,vis_probe,full_bridge,status,notes
+milk_s0_w70-80,milk,0,70,80,K5/K5c,stable_cmd_specific,TRUE,1.0,1.0,shared_phys,0.2949,CLEAN,PASS,PASS_4of5,anchor_positive,milk gold standard; 5 seeds tested; 4/5 PASS; seed24 strongest (norm=1.297)
+milk_s0_w75-85,milk,0,75,85,K5b,stable_rand_sensitive,FALSE,1.0,0.8,stable_rand_phys,,,,untested,rand_sensitive,Layer1 rejected; random-sensitive
+milk_s0_w80-90,milk,0,80,90,K5b,stable_rand_sensitive,FALSE,0.8,1.0,stable_rand_phys,,,,untested,rand_sensitive,Layer1 rejected; high risk_rand
+milk_s0_w230-240,milk,0,230,240,K5,stable_cmd_specific,TRUE,1.0,1.0,stable_rand_phys,,S15b_running,S15b_running,,s15b_screening,late episode; high risk_rand; swing window
+milk_s0_w235-245,milk,0,235,245,K5c,stable_cmd_specific_borderline,TRUE,1.0,0.2,stable_vis_phys,,S15b_running,S15b_running,,s15b_screening,late episode; borderline cmd_specific; low risk_rand
+milk_s0_w240-250,milk,0,240,250,K5b,stable_cmd_specific,TRUE,1.0,0.8,stable_rand_phys,,,,untested,late episode; high risk_rand
+cream_cheese_s2_w50-60,cream_cheese,2,50,60,K5b,stable_cmd_specific,TRUE,1.0,1.0,stable_rand_phys,0.2838,CLEAN,FAIL,FAIL_0of3,tested_cmd_weak,Layer1+ORACLE+RANDclean; VIS 2-3/10 OPEN; 0/3 bridge
+cream_cheese_s0_w85-95,cream_cheese,0,85,95,K5b,stable_cmd_specific,TRUE,0.8,0.4,stable_rand_phys,,S15b_REJECTED,S15b_running,,s15b_REJECTED,RAND seed27 open=3 seed28 open=4; different state from tested
+cream_cheese_s1_w145-155,cream_cheese,1,145,155,K5b,stable_negative,FALSE,0.0,0.2,stable_vis_phys,,,,untested,Layer1 negative
+cream_cheese_s0_w65-75,cream_cheese,0,65,75,K5c,stable_rand_sensitive,FALSE,0.2,0.4,shared_phys,,,,untested,rand_sensitive
+cream_cheese_s0_w85-95_b,cream_cheese,0,85,95,K5c,stable_rand_sensitive,FALSE,0.4,1.0,shared_phys,,,,untested,rand_sensitive; different source from K5b entry
+tomato_sauce_s2_w155-165,tomato_sauce,2,155,165,K5b,stable_cmd_specific,TRUE,1.0,0.2,stable_vis_phys,0.6217,REJECTED,CONFOUNDED,CONFOUNDED,tested_RAND_confounded,RAND open 2-7/10; Layer3 abstain
+tomato_sauce_s2_w150-160,tomato_sauce,2,150,160,K5,stable_cmd_specific,TRUE,1.0,0.6,stable_rand_phys,0.6011,REJECTED,,,S12a_REJECTED,RAND open 2-5/10
+tomato_sauce_s2_w90-100,tomato_sauce,2,90,100,K5,stable_cmd_specific,TRUE,1.0,0.0,stable_vis_phys,0.2686,REJECTED,,,S13a_REJECTED,RAND open 2-3/10
+tomato_sauce_s0_w55-65,tomato_sauce,0,55,65,K5b,stable_cmd_specific,TRUE,1.0,0.0,stable_vis_phys,0.5039,REJECTED,,,S13a_REJECTED,RAND seed25 open=4
+tomato_sauce_s2_w95-105,tomato_sauce,2,95,105,K5b,stable_cmd_specific,TRUE,0.8,0.8,stable_rand_phys,,,,untested,tomato family; high risk_rand
+tomato_sauce_s0_w50-60,tomato_sauce,0,50,60,K5c,stable_cmd_specific,TRUE,1.0,0.0,stable_no_phys,,,,untested,no_phys,no physical reachability
+tomato_sauce_s2_w115-125,tomato_sauce,2,115,125,K5,stable_rand_sensitive,FALSE,0.8,0.8,stable_rand_phys,,,,untested,rand_sensitive
+tomato_sauce_s2_w165-175,tomato_sauce,2,165,175,K5b,stable_rand_sensitive,FALSE,1.0,1.0,stable_rand_phys,,,,untested,rand_sensitive
+tomato_sauce_s0_w85-95,tomato_sauce,0,85,95,K5c,stable_rand_sensitive,FALSE,0.6,0.6,shared_phys,,,,untested,rand_sensitive
+butter_s0_w80-90,butter,0,80,90,K5c,stable_cmd_specific,TRUE,1.0,0.0,stable_vis_phys,0.3436,REJECTED,,,S12a_REJECTED,RAND open 2-3/10; norm up to 0.44
+butter_s0_w90-100,butter,0,90,100,K5c,stable_rand_sensitive,FALSE,1.0,0.8,shared_phys,0.3436,,,FAIL_cmd_weak,manual_ORACLE_tested,manual candidate; not Layer1-selected; VIS 2/10 OPEN
+butter_s0_w95-105,butter,0,95,105,K5c,stable_rand_sensitive,FALSE,0.8,1.0,shared_phys,,,,untested,rand_sensitive
+butter_s0_w135-145,butter,0,135,145,K5c,stable_rand_sensitive,FALSE,0.4,0.6,shared_phys,,,,untested,rand_sensitive
+salad_dressing_s1_w50-60,salad_dressing,1,50,60,K5b,stable_cmd_specific,TRUE,0.6,1.0,stable_rand_phys,,,,untested,cmd_specific but high risk_rand
+salad_dressing_s0_w55-65,salad_dressing,0,55,65,K5c,stable_cmd_specific,TRUE,0.8,0.0,stable_no_phys,,,,untested,no_phys,no physical reachability
+salad_dressing_s2_w120-130,salad_dressing,2,120,130,K5,stable_negative,FALSE,0.0,0.0,stable_no_phys,,,,untested,Layer1 negative
+salad_dressing_s2_w70-80,salad_dressing,2,70,80,K5b,stable_rand_sensitive,FALSE,0.0,1.0,stable_vis_phys,,,,untested,rand_sensitive
+salad_dressing_s2_w80-90,salad_dressing,2,80,90,K5b,unstable_or_unknown,FALSE,0.4,0.8,stable_rand_phys,,,,untested,unstable
+salad_dressing_s0_w75-85,salad_dressing,0,75,85,K5c,stable_rand_sensitive,FALSE,0.6,0.6,shared_phys,,,,untested,rand_sensitive
+alphabet_soup_s1_w65-75,alphabet_soup,1,65,75,K5,stable_negative,FALSE,0.0,0.0,stable_no_phys,,,,untested,Layer1 negative
+alphabet_soup_s1_w50-60,alphabet_soup,1,50,60,K5b,unstable_or_unknown,FALSE,0.4,0.4,stable_rand_phys,,,,untested,unstable
+alphabet_soup_s0_w60-70,alphabet_soup,0,60,70,K5b,stable_rand_sensitive,FALSE,0.2,1.0,stable_rand_phys,,,,untested,rand_sensitive
+alphabet_soup_s0_w55-65,alphabet_soup,0,55,65,K5c,unstable_or_unknown,FALSE,0.2,0.2,unstable_phys,,,,untested,unstable
+alphabet_soup_s0_w65-75,alphabet_soup,0,65,75,K5c,stable_rand_sensitive,FALSE,0.2,1.0,shared_phys,,,,untested,rand_sensitive
+bbq_sauce_s2_w100-110,bbq_sauce,2,100,110,K5,stable_negative,FALSE,0.0,0.0,stable_no_phys,,,,untested,Layer1 negative
+bbq_sauce_s0_w60-70,bbq_sauce,0,60,70,K5b,stable_negative,FALSE,0.0,0.8,stable_rand_phys,,,,untested,Layer1 negative
+bbq_sauce_s0_w70-80,bbq_sauce,0,70,80,K5c,stable_rand_sensitive,FALSE,0.0,0.4,stable_rand_phys,,,,untested,rand_sensitive
+orange_juice_s0_w50-60,orange_juice,0,50,60,K5c,stable_rand_sensitive,FALSE,0.0,1.0,stable_rand_phys,,,,untested,rand_sensitive
