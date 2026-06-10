@@ -131,7 +131,7 @@ while not done and step < max_steps:
         'env_action_6': round(env_action_6, 6),
         'is_open': int(is_open), 'oracle_active': int(oracle_active),
         'gripper_qpos': round(gripper_qpos, 8),
-        'arm_l2': round(arm_l2, 8),
+        'arm_qpos_norm': round(arm_l2, 8),
     })
     decoded_opens.append(int(is_open))
     step += 1
@@ -142,28 +142,54 @@ env.close(); torch.cuda.empty_cache()
 ws_idx = ws
 we_idx = min(we, len(trace_rows))
 oracle_we_idx = min(oracle_we, len(trace_rows))
-post_start = we_idx
-post_end = min(len(trace_rows), we_idx + 40)  # 40-step post-window horizon
+post_start = oracle_we_idx  # post-window starts after ORACLE duration ends
+post_end = min(len(trace_rows), oracle_we_idx + 40)
+post_qpos_raw = np.array(qpos_history[post_start:post_end]) if post_end > post_start else np.array([])
 
-pre_qpos = np.array(qpos_history[:ws_idx]) if ws_idx > 0 else np.array([0.0])
-window_qpos = np.array(qpos_history[ws_idx:oracle_we_idx]) if oracle_we_idx > ws_idx else np.array([0.0])
-post_qpos = np.array(qpos_history[post_start:post_end]) if post_end > post_start else np.array([0.0])
-pre_arm = np.array(arm_l2_history[:ws_idx]) if ws_idx > 0 else np.array([0.0])
-window_arm = np.array(arm_l2_history[ws_idx:we_idx]) if we_idx > ws_idx else np.array([0.0])
+pre_qpos = np.array(qpos_history[:ws_idx]) if ws_idx > 0 else np.array([])
+window_qpos_orig = np.array(qpos_history[ws_idx:we_idx]) if we_idx > ws_idx else np.array([])
+window_qpos_oracle = np.array(qpos_history[ws_idx:oracle_we_idx]) if oracle_we_idx > ws_idx else np.array([])
+pre_arm = np.array(arm_l2_history[:ws_idx]) if ws_idx > 0 else np.array([])
 
-baseline_qpos = np.median(pre_qpos) if len(pre_qpos) > 0 else 0.0
-qpos_delta = np.max(window_qpos) - baseline_qpos if len(window_qpos) > 0 else 0.0
-qpos_peak = float(np.max(post_qpos) - baseline_qpos) if len(post_qpos) > 0 else 0.0
-qpos_area = float(np.sum(np.maximum(post_qpos - baseline_qpos, 0))) if len(post_qpos) > 0 else 0.0
+baseline_qpos = float(np.median(pre_qpos)) if len(pre_qpos) > 0 else 0.0
 
-# Response delay: first step in post-window where qpos exceeds baseline + threshold
+# Bidirectional: do not assume qpos increase = opening
+if len(post_qpos_raw) > 0:
+    qpos_diff = post_qpos_raw - baseline_qpos
+    qpos_pos_peak = float(np.max(qpos_diff))
+    qpos_pos_area = float(np.sum(np.maximum(qpos_diff, 0)))
+    qpos_neg_peak = float(np.max(-qpos_diff))
+    qpos_neg_area = float(np.sum(np.maximum(-qpos_diff, 0)))
+    qpos_abs_peak = float(np.max(np.abs(qpos_diff)))
+    qpos_abs_area = float(np.sum(np.abs(qpos_diff)))
+else:
+    qpos_pos_peak = qpos_pos_area = qpos_neg_peak = qpos_neg_area = qpos_abs_peak = qpos_abs_area = 0.0
+
+# Response delay: bidirectional
 threshold = 0.005
-response_delay = -1
-for i, q in enumerate(post_qpos):
-    if q - baseline_qpos > threshold:
-        response_delay = i; break
+response_delay_pos = -1; response_delay_neg = -1
+for i, q in enumerate(post_qpos_raw):
+    d = q - baseline_qpos
+    if response_delay_pos < 0 and d > threshold: response_delay_pos = i
+    if response_delay_neg < 0 and baseline_qpos - q > threshold: response_delay_neg = i
 
-decoded_open_count = sum(1 for i in range(ws_idx, we_idx) if i < len(decoded_opens) and decoded_opens[i])
+# Window delta (for quick check)
+if len(window_qpos_oracle) > 0:
+    qpos_window_delta_pos = float(np.max(window_qpos_oracle - baseline_qpos))
+    qpos_window_delta_neg = float(np.max(baseline_qpos - window_qpos_oracle))
+else:
+    qpos_window_delta_pos = qpos_window_delta_neg = 0.0
+
+# Open counts: original window AND oracle duration
+open_count_orig = sum(1 for i in range(ws_idx, min(we_idx, len(decoded_opens))) if decoded_opens[i])
+open_count_oracle = sum(1 for i in range(ws_idx, min(oracle_we_idx, len(decoded_opens))) if decoded_opens[i])
+oracle_active_count = sum(1 for t in trace_rows if t['oracle_active'])
+orig_window_steps = max(we_idx - ws_idx, 1)
+oracle_window_steps = max(oracle_we_idx - ws_idx, 1)
+
+# Arm metrics (raw, not deviation vs clean — that's postprocess)
+mean_arm_qpos_norm_pre = round(float(np.mean(pre_arm)), 8) if len(pre_arm) > 0 else 0.0
+mean_arm_qpos_norm_window = round(float(np.mean(np.array(arm_l2_history[ws_idx:we_idx]))), 8) if we_idx > ws_idx else 0.0
 
 summary = {
     'job_id': args.job_id, 'pair_id': pair_id,
@@ -171,17 +197,32 @@ summary = {
     'window_start': ws, 'window_end': we,
     'oracle_duration': args.open_duration, 'oracle_end': oracle_we,
     'condition': args.condition,
-    'n_steps': step, 'n_window_steps': we_idx - ws_idx,
-    'decoded_open_count': decoded_open_count,
-    'qpos_baseline': round(float(baseline_qpos), 8),
-    'qpos_delta': round(qpos_delta, 8),
-    'qpos_peak': round(qpos_peak, 8),
-    'qpos_area': round(qpos_area, 8),
-    'response_delay': response_delay,
-    'mean_arm_l2_pre': round(float(np.mean(pre_arm)), 8) if len(pre_arm) > 0 else 0,
-    'mean_arm_l2_window': round(float(np.mean(window_arm)), 8) if len(window_arm) > 0 else 0,
+    'n_steps': step,
+    'n_window_steps_original': we_idx - ws_idx,
+    'n_window_steps_oracle': oracle_we_idx - ws_idx,
+    'qpos_baseline': round(baseline_qpos, 8),
+    # Bidirectional opening metrics
+    'qpos_window_delta_pos': round(qpos_window_delta_pos, 8),
+    'qpos_window_delta_neg': round(qpos_window_delta_neg, 8),
+    'qpos_pos_peak': round(qpos_pos_peak, 8),
+    'qpos_pos_area': round(qpos_pos_area, 8),
+    'qpos_neg_peak': round(qpos_neg_peak, 8),
+    'qpos_neg_area': round(qpos_neg_area, 8),
+    'qpos_abs_peak': round(qpos_abs_peak, 8),
+    'qpos_abs_area': round(qpos_abs_area, 8),
+    'response_delay_pos': response_delay_pos,
+    'response_delay_neg': response_delay_neg,
+    # Open counts covering both windows
+    'open_count_original_window': open_count_orig,
+    'open_count_oracle_duration': open_count_oracle,
+    'open_rate_original_window': round(open_count_orig / orig_window_steps, 4),
+    'open_rate_oracle_duration': round(open_count_oracle / oracle_window_steps, 4),
+    'oracle_active_count': oracle_active_count,
+    # Arm (raw, not deviation)
+    'mean_arm_qpos_norm_pre': mean_arm_qpos_norm_pre,
+    'mean_arm_qpos_norm_window': mean_arm_qpos_norm_window,
     'infra_status': 'ok',
-    'runner': 's8_oracle_open_physical_scan_v0',
+    'runner': 's8_oracle_open_physical_scan_v1',
 }
 
 with open(out_json, 'w') as f: json.dump(summary, f)
@@ -190,5 +231,6 @@ with open(out_trace, 'w', newline='') as f:
     w.writeheader()
     for r in trace_rows: w.writerow(r)
 
-print('[%s] Done: open=%d qpos_delta=%.6f qpos_peak=%.6f qpos_area=%.6f delay=%d infra=ok' % (
-    datetime.now().strftime('%H:%M:%S'), decoded_open_count, qpos_delta, qpos_peak, qpos_area, response_delay))
+print('[%s] Done: open_orig=%d open_oracle=%d qpos_pos=%.6f qpos_neg=%.6f qpos_abs=%.6f delay_pos=%d delay_neg=%d infra=ok' % (
+    datetime.now().strftime('%H:%M:%S'), open_count_orig, open_count_oracle,
+    qpos_pos_peak, qpos_neg_peak, qpos_abs_peak, response_delay_pos, response_delay_neg))
