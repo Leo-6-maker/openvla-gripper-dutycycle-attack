@@ -1,0 +1,7 @@
+selection_source,condition,attack_seed,qpos_pos_area,decoded_open_count,oracle_norm,infra
+manual_oracle_referenced_microextension,clean,0,0.007729,1,0.0114,ok
+manual_oracle_referenced_microextension,oracle_open,0,0.678166,10,1.0,ok
+manual_oracle_referenced_microextension,random_linf,13,0.054196,1,0.0799,ok
+manual_oracle_referenced_microextension,vis_pgd,13,0.0048,2,0.0071,ok
+manual_oracle_referenced_microextension,random_linf,14,0.089508,3,0.132,ok
+manual_oracle_referenced_microextension,vis_pgd,14,0.008502,2,0.0125,ok
