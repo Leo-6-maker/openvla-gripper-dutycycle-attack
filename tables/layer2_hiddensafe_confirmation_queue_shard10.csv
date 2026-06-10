@@ -1,0 +1,13 @@
+queue_group,window_id,task,state_id,env_seed,window_start,window_end,attack_seed,condition,eps,attack_budget,logical_pair_key,cleanrand_score,hidden_risk_score,hidden_safe_score,action_logit_score,rank_method,selection_rank,source_commit,feature_source,online_safe,notes
+H_HiddenSafeRank,cream_cheese_s0_w65_75,cream_cheese,0,0,65,75,10,VIS,0.03,linf,cream_cheese_s0_w65_75__atk10,0.45303,0.731056,0.268944,0.382506,HiddenSafeRank,2,de96877,pre_window_only,True,
+H_HiddenSafeRank,cream_cheese_s0_w65_75,cream_cheese,0,0,65,75,10,RAND,0.03,linf,cream_cheese_s0_w65_75__atk10,0.45303,0.731056,0.268944,0.382506,HiddenSafeRank,2,de96877,pre_window_only,True,
+B_RandomRank,bbq_sauce_s2_w100_110,bbq_sauce,2,2,100,110,10,VIS,0.03,linf,bbq_sauce_s2_w100_110__atk10,0.320435,0.381962,0.618038,0.337932,RandomRank,2,de96877,pre_window_only,True,
+B_RandomRank,bbq_sauce_s2_w100_110,bbq_sauce,2,2,100,110,10,RAND,0.03,linf,bbq_sauce_s2_w100_110__atk10,0.320435,0.381962,0.618038,0.337932,RandomRank,2,de96877,pre_window_only,True,
+H_HiddenSafeRank,cream_cheese_s0_w65_75,cream_cheese,0,0,65,75,9,VIS,0.03,linf,cream_cheese_s0_w65_75__atk9,0.45303,0.731056,0.268944,0.382506,HiddenSafeRank,2,de96877,pre_window_only,True,
+H_HiddenSafeRank,cream_cheese_s0_w65_75,cream_cheese,0,0,65,75,9,RAND,0.03,linf,cream_cheese_s0_w65_75__atk9,0.45303,0.731056,0.268944,0.382506,HiddenSafeRank,2,de96877,pre_window_only,True,
+B_RandomRank,bbq_sauce_s2_w100_110,bbq_sauce,2,2,100,110,9,VIS,0.03,linf,bbq_sauce_s2_w100_110__atk9,0.320435,0.381962,0.618038,0.337932,RandomRank,2,de96877,pre_window_only,True,
+B_RandomRank,bbq_sauce_s2_w100_110,bbq_sauce,2,2,100,110,9,RAND,0.03,linf,bbq_sauce_s2_w100_110__atk9,0.320435,0.381962,0.618038,0.337932,RandomRank,2,de96877,pre_window_only,True,
+H_HiddenSafeRank,milk_s0_w70_80,milk,0,0,70,80,10,VIS,0.03,linf,milk_s0_w70_80__atk10,0.109597,0.699327,0.300673,0.401834,HiddenSafeRank,3,de96877,pre_window_only,True,
+H_HiddenSafeRank,milk_s0_w70_80,milk,0,0,70,80,10,RAND,0.03,linf,milk_s0_w70_80__atk10,0.109597,0.699327,0.300673,0.401834,HiddenSafeRank,3,de96877,pre_window_only,True,
+B_RandomRank,butter_s0_w90_100,butter,0,0,90,100,10,VIS,0.03,linf,butter_s0_w90_100__atk10,0.42206,0.176662,0.823338,0.482073,RandomRank,3,de96877,pre_window_only,True,
+B_RandomRank,butter_s0_w90_100,butter,0,0,90,100,10,RAND,0.03,linf,butter_s0_w90_100__atk10,0.42206,0.176662,0.823338,0.482073,RandomRank,3,de96877,pre_window_only,True,
