@@ -15,7 +15,7 @@ ap.add_argument('--task', required=True)
 ap.add_argument('--state-id', type=int, required=True)
 ap.add_argument('--window_start', type=int, required=True)
 ap.add_argument('--window_end', type=int, required=True)
-ap.add_argument('--condition', choices=['vis_pgd', 'random_linf'], required=True)
+ap.add_argument('--condition', choices=['vis_pgd', 'random_linf', 'oracle_open', 'clean'], required=True)
 ap.add_argument('--attack_seed', type=int, required=True)
 ap.add_argument('--env_seed', type=int, default=None)
 ap.add_argument('--pgd_steps', type=int, default=20)
@@ -238,6 +238,13 @@ try:
                 except Exception as e:
                     env_grip = clean_grip
                     infra_status = 'random_error: %s' % str(e)[:60]
+
+            elif args.condition == 'oracle_open':
+                raw_action = clean_action.copy()
+                raw_action[-1] = 1.0
+                env_grip = -1.0
+                attacks_applied = 1
+                perturbation_space = 'oracle_forced_open'
 
         # Env action
         env_action_full = raw_action.copy()
