@@ -1,0 +1,7 @@
+condition,attack_seed,qpos_baseline,qpos_pos_area,decoded_open_count,max_open_streak,infra_status
+random_linf,15,0.00144548,0.16563524,2,2,ok
+vis_pgd,15,0.00144548,0.11742092,6,5,ok
+random_linf,16,0.00144548,0.59035324,7,6,ok
+vis_pgd,16,0.00144548,0.05377444,6,2,ok
+random_linf,17,0.00128561,0.07223465,5,3,ok
+vis_pgd,17,0.00149456,0.15721282,7,3,ok
