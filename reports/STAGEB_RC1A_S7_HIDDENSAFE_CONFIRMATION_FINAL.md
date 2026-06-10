@@ -1,11 +1,12 @@
 # Stage-B RC1a S7 HiddenSafe Fresh Confirmation — Final
 
 **Date**: 2026-06-10
-**S7 readout freeze**: de96877
-**Queue commit**: de31cea
-**Three-way shard commit**: f671aff
-**Final freeze commit**: TBD
 **Branch**: exp/vis-prefix-margin-repair-20260603
+**S7 readout freeze**: de96877
+**Queue generation commit**: de31cea
+**Shard launch commit**: f671aff
+**Final freeze commit**: ef09d45
+**GitHub merge HEAD**: 52283bb
 
 ## Executive Summary
 
@@ -19,7 +20,10 @@ Therefore **HiddenSafe remains offline mechanism evidence only and is not a vali
 
 | Item | Value |
 |------|-------|
-| Git HEAD (launch) | de31cea |
+| queue_generation_commit | de31cea |
+| shard_launch_commit | f671aff |
+| final_freeze_commit | ef09d45 |
+| github_merge_head | 52283bb |
 | Queue CSV | tables/layer2_hiddensafe_confirmation_queue.csv |
 | Queue SHA256 | 8e05d6f3bc3b1bc642662b90946468fcd29ec074f3eb37177c837b479d350d74 |
 | Attack seeds | 9, 10 |
