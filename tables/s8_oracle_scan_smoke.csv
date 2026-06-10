@@ -1,0 +1,5 @@
+job_id,task,state_id,window_start,window_end,open_duration,condition,pair_id,gpu_pair,output_dir,max_steps
+900000,milk,0,70,80,10,clean,milk_s0_w70_80_L10_clean,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/smoke,400
+900001,milk,0,70,80,10,oracle_open,milk_s0_w70_80_L10_oracle_open,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/smoke,400
+900024,cream_cheese,0,65,75,10,clean,cream_cheese_s0_w65_75_L10_clean,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/smoke,400
+900025,cream_cheese,0,65,75,10,oracle_open,cream_cheese_s0_w65_75_L10_oracle_open,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/smoke,400
