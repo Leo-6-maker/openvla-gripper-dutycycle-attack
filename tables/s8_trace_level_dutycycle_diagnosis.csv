@@ -1,0 +1,10 @@
+source,condition,length,seed,n_steps,open_count,max_streak,close_interrupts,runs,qpos_baseline,qpos_window_mean,qpos_window_rel_mean,qpos_post_pos_area,qpos_post_neg_area
+Phase1_ORACLE,oracle_open,10,-,10,10,10,0,[10],0.001937,0.017845,0.015909,0.261452,0.004524
+Phase2_smoke,RAND,extended20,10,31,12,10,1,"[2, 10]",0.039509,0.016224,-0.023285,0.0,0.017659
+Phase2_smoke,VIS,extended20,10,31,19,6,7,"[1, 1, 2, 6, 1, 5, 1, 2]",0.039509,0.035463,-0.004045,0.0,0.022123
+Phase2_smoke,RAND,extended20,9_,31,6,3,2,"[3, 1, 2]",0.039509,0.013255,-0.026253,0.0,0.161431
+Phase2_smoke,VIS,extended20,9_,31,16,5,6,"[1, 1, 4, 2, 2, 1, 5]",0.039509,0.030042,-0.009466,0.0,0.068541
+Phase2_smoke,RAND,short,10,11,2,2,0,[2],0.039487,0.003083,-0.036404,0.0,0.169163
+Phase2_smoke,VIS,short,10,11,8,8,0,[8],0.039487,0.015302,-0.024184,0.0,0.029063
+Phase2_smoke,RAND,short,9_,11,0,0,0,[],0.039487,0.003055,-0.036431,0.0,0.184876
+Phase2_smoke,VIS,short,9_,11,10,8,1,"[2, 8]",0.039487,0.013656,-0.02583,0.0,0.02341
