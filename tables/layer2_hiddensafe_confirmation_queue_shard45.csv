@@ -1,0 +1,11 @@
+queue_group,window_id,task,state_id,env_seed,window_start,window_end,attack_seed,condition,eps,attack_budget,logical_pair_key,cleanrand_score,hidden_risk_score,hidden_safe_score,action_logit_score,rank_method,selection_rank,source_commit,feature_source,online_safe,notes
+H_HiddenSafeRank,milk_s0_w70_80,milk,0,0,70,80,9,VIS,0.03,linf,milk_s0_w70_80__atk9,0.109597,0.699327,0.300673,0.401834,HiddenSafeRank,3,de96877,pre_window_only,True,
+H_HiddenSafeRank,milk_s0_w70_80,milk,0,0,70,80,9,RAND,0.03,linf,milk_s0_w70_80__atk9,0.109597,0.699327,0.300673,0.401834,HiddenSafeRank,3,de96877,pre_window_only,True,
+B_RandomRank,butter_s0_w90_100,butter,0,0,90,100,9,VIS,0.03,linf,butter_s0_w90_100__atk9,0.42206,0.176662,0.823338,0.482073,RandomRank,3,de96877,pre_window_only,True,
+B_RandomRank,butter_s0_w90_100,butter,0,0,90,100,9,RAND,0.03,linf,butter_s0_w90_100__atk9,0.42206,0.176662,0.823338,0.482073,RandomRank,3,de96877,pre_window_only,True,
+H_HiddenSafeRank,salad_dressing_s1_w50_60,salad_dressing,1,1,50,60,10,VIS,0.03,linf,salad_dressing_s1_w50_60__atk10,0.424587,0.586721,0.413279,0.375899,HiddenSafeRank,4,de96877,pre_window_only,True,
+H_HiddenSafeRank,salad_dressing_s1_w50_60,salad_dressing,1,1,50,60,10,RAND,0.03,linf,salad_dressing_s1_w50_60__atk10,0.424587,0.586721,0.413279,0.375899,HiddenSafeRank,4,de96877,pre_window_only,True,
+B_RandomRank,cream_cheese_s0_w85_95,cream_cheese,0,0,85,95,10,VIS,0.03,linf,cream_cheese_s0_w85_95__atk10,0.424628,0.653019,0.346981,0.336719,RandomRank,4,de96877,pre_window_only,True,
+B_RandomRank,cream_cheese_s0_w85_95,cream_cheese,0,0,85,95,10,RAND,0.03,linf,cream_cheese_s0_w85_95__atk10,0.424628,0.653019,0.346981,0.336719,RandomRank,4,de96877,pre_window_only,True,
+H_HiddenSafeRank,salad_dressing_s1_w50_60,salad_dressing,1,1,50,60,9,VIS,0.03,linf,salad_dressing_s1_w50_60__atk9,0.424587,0.586721,0.413279,0.375899,HiddenSafeRank,4,de96877,pre_window_only,True,
+H_HiddenSafeRank,salad_dressing_s1_w50_60,salad_dressing,1,1,50,60,9,RAND,0.03,linf,salad_dressing_s1_w50_60__atk9,0.424587,0.586721,0.413279,0.375899,HiddenSafeRank,4,de96877,pre_window_only,True,

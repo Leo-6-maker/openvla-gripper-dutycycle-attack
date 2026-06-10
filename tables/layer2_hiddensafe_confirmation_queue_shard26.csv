@@ -1,0 +1,11 @@
+queue_group,window_id,task,state_id,env_seed,window_start,window_end,attack_seed,condition,eps,attack_budget,logical_pair_key,cleanrand_score,hidden_risk_score,hidden_safe_score,action_logit_score,rank_method,selection_rank,source_commit,feature_source,online_safe,notes
+B_RandomRank,cream_cheese_s0_w85_95,cream_cheese,0,0,85,95,9,VIS,0.03,linf,cream_cheese_s0_w85_95__atk9,0.424628,0.653019,0.346981,0.336719,RandomRank,4,de96877,pre_window_only,True,
+B_RandomRank,cream_cheese_s0_w85_95,cream_cheese,0,0,85,95,9,RAND,0.03,linf,cream_cheese_s0_w85_95__atk9,0.424628,0.653019,0.346981,0.336719,RandomRank,4,de96877,pre_window_only,True,
+H_HiddenSafeRank,tomato_sauce_s2_w165_175,tomato_sauce,2,2,165,175,10,VIS,0.03,linf,tomato_sauce_s2_w165_175__atk10,0.322191,0.88539,0.11461,0.605538,HiddenSafeRank,1,de96877,pre_window_only,True,
+H_HiddenSafeRank,tomato_sauce_s2_w165_175,tomato_sauce,2,2,165,175,10,RAND,0.03,linf,tomato_sauce_s2_w165_175__atk10,0.322191,0.88539,0.11461,0.605538,HiddenSafeRank,1,de96877,pre_window_only,True,
+B_RandomRank,milk_s0_w230_240,milk,0,0,230,240,10,VIS,0.03,linf,milk_s0_w230_240__atk10,0.407426,0.531653,0.468347,0.360776,RandomRank,1,de96877,pre_window_only,True,
+B_RandomRank,milk_s0_w230_240,milk,0,0,230,240,10,RAND,0.03,linf,milk_s0_w230_240__atk10,0.407426,0.531653,0.468347,0.360776,RandomRank,1,de96877,pre_window_only,True,
+H_HiddenSafeRank,tomato_sauce_s2_w165_175,tomato_sauce,2,2,165,175,9,VIS,0.03,linf,tomato_sauce_s2_w165_175__atk9,0.322191,0.88539,0.11461,0.605538,HiddenSafeRank,1,de96877,pre_window_only,True,
+H_HiddenSafeRank,tomato_sauce_s2_w165_175,tomato_sauce,2,2,165,175,9,RAND,0.03,linf,tomato_sauce_s2_w165_175__atk9,0.322191,0.88539,0.11461,0.605538,HiddenSafeRank,1,de96877,pre_window_only,True,
+B_RandomRank,milk_s0_w230_240,milk,0,0,230,240,9,VIS,0.03,linf,milk_s0_w230_240__atk9,0.407426,0.531653,0.468347,0.360776,RandomRank,1,de96877,pre_window_only,True,
+B_RandomRank,milk_s0_w230_240,milk,0,0,230,240,9,RAND,0.03,linf,milk_s0_w230_240__atk9,0.407426,0.531653,0.468347,0.360776,RandomRank,1,de96877,pre_window_only,True,
