@@ -1,0 +1,9 @@
+stage,condition,attack_seed,qpos_baseline,qpos_pos_area,decoded_open_count,max_open_streak,oracle_norm,infra
+S9b,random_linf,10,0.001235,0.016111,0,0,0.0546,ok
+S9b,vis_pgd,10,0.001749,0.078278,6,5,0.2654,ok
+S9b,random_linf,9,0.001967,0.0,0,0,0.0,ok
+S9b,vis_pgd,9,0.001967,0.124803,7,4,0.4232,ok
+S9c,random_linf,11,0.001672,0.0,1,1,0.0,ok
+S9c,vis_pgd,11,0.001967,0.11147,6,4,0.378,ok
+S9c,random_linf,12,0.001733,0.008763,0,0,0.0297,ok
+S9c,vis_pgd,12,0.002876,0.038141,6,4,0.1293,ok
