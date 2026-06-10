@@ -1,0 +1,9 @@
+model,RandAUC,CmdAUC_on_rand,ShuffleAUC,FP_tomato,FN_salad,yield,cmd_hit,rand_hit,n_pass,degenerate
+TaskOnly,0.4857,0.4505,0.3763,0.5039,0.5132,0.4615,0.4615,0.4231,26,N
+CleanProprio,0.4857,0.4674,0.457,0.613,0.5201,0.48,0.45,0.35,20,N
+ActionLogitOnly,0.5612,0.5117,0.4193,0.6586,0.3802,0.41,0.45,0.35,20,N
+ActionHiddenOnly,0.3086,0.7721,0.5039,0.867,0.3685,0.07,0.15,0.5,20,N
+CleanProprio+Logit,0.4753,0.4284,0.3633,0.6712,0.5269,0.51,0.45,0.45,20,N
+CleanProprio+Hidden,0.3008,0.7122,0.5273,0.8709,0.4253,0.13,0.2,0.55,20,N
+ActionLogit+Hidden,0.3607,0.6419,0.4622,0.9293,0.3728,0.19,0.3,0.5,20,N
+CleanProprio+Logit+Hidden,0.2826,0.6862,0.4818,0.9081,0.5009,0.23,0.25,0.5,20,N
