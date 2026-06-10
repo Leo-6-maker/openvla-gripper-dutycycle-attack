@@ -1,0 +1,11 @@
+logical_pair_key,seed,condition,source,decoded_open_count,n_window_steps,expected_ws,infra_status
+tomato_sauce_s2_w165_175__atk9,9,VIS,original,7,11,10,"runtime_error: CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be"
+tomato_sauce_s2_w165_175__atk9,9,VIS,retry,8,11,10,ok
+tomato_sauce_s2_w165_175__atk9,9,RAND,original,7,11,10,ok
+tomato_sauce_s2_w165_175__atk9,9,RAND,retry,6,11,10,ok
+tomato_sauce_s2_w165_175__atk10,10,VIS,original,1,2,10,"runtime_error: CUDA error: an illegal memory access was encountered
+CUDA kernel errors might be"
+tomato_sauce_s2_w165_175__atk10,10,VIS,retry,8,11,10,ok
+tomato_sauce_s2_w165_175__atk10,10,RAND,original,8,11,10,ok
+tomato_sauce_s2_w165_175__atk10,10,RAND,retry,8,11,10,ok
