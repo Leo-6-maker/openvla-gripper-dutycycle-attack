@@ -1,0 +1,5 @@
+task,sid,ws,we,oracle_pos,clean_pos,physically_reachable,nonzero_clean_baseline,s7_label,s8_label,stable_labels,veto_risks
+milk,0,70,80,0.261452,0.0,True,False,S6_good_cmd,S8_cleanest_physical,stable_cmd_specific,CLEAN
+butter,0,90,100,0.667268,0.028082,True,True,S8_strongest_ORACLE,nonzero_clean_baseline,stable_rand_sensitive,CLEAN_DRIFT
+cream_cheese,0,65,75,0.212442,0.018218,True,True,S7_false_safe_rand_only,S8_physical_reachable,stable_rand_sensitive,CLEAN_DRIFT
+tomato_sauce,2,165,175,0.676182,0.000296,True,False,S7_cmd_rand,S8_physical_reachable,stable_rand_sensitive,CLEAN
