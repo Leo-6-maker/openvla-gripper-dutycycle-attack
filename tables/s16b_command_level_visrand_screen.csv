@@ -1,0 +1,25 @@
+parent,object,state_id,window_start,window_end,role,condition,seed,open_count,max_streak,qpos_pos_area,qpos_neg_area,baseline,infra,classification,vis_rand_gap,notes
+milk_s0_w240-250,milk,0,240,250,fresh_milk_late,vis_pgd,50,7,4,0.0769,0.0000,0.0011,ok,COMMAND_ATTACK_POSITIVE,+5,first non-anchor milk command-positive
+milk_s0_w240-250,milk,0,240,250,fresh_milk_late,random_linf,50,2,1,0.0035,0.0084,0.0011,ok,,,
+tomato_s2_w95-105,tomato_sauce,2,95,105,fresh_tomato,vis_pgd,50,10,10,0.6590,0.0000,0.0014,ok,COMMAND_ATTACK_POSITIVE,+8,complete takeover; requires RAND-veto before claim
+tomato_s2_w95-105,tomato_sauce,2,95,105,fresh_tomato,random_linf,50,2,1,0.0120,0.0001,0.0014,ok,,,
+milk_s0_w70-80,milk,0,70,80,calibration_positive,vis_pgd,50,8,4,0.1830,0.0000,0.0015,ok,COMMAND_ATTACK_POSITIVE,+8,anchor positive control; confirms known pattern
+milk_s0_w70-80,milk,0,70,80,calibration_positive,random_linf,50,0,0,0.0000,0.0256,0.0015,ok,,,
+salad_s1_w50-60,salad_dressing,1,50,60,fresh_salad,vis_pgd,50,5,2,0.0125,0.0011,0.0013,ok,BORDERLINE,+3,first salad test; moderate VIS transfer
+salad_s1_w50-60,salad_dressing,1,50,60,fresh_salad,random_linf,50,2,1,0.0000,0.0089,0.0013,ok,,,
+milk_s0_w235-245,milk,0,235,245,calibration_borderline,vis_pgd,50,5,3,0.0125,0.0031,0.0010,ok,BORDERLINE,+3,consistent with S15b seed27 (open=5 streak=3)
+milk_s0_w235-245,milk,0,235,245,calibration_borderline,random_linf,50,2,1,0.0039,0.0052,0.0010,ok,,,
+milk_s0_w230-240,milk,0,230,240,calibration_borderline,vis_pgd,50,4,2,0.0169,0.0005,0.0015,ok,BORDERLINE,+2,consistent with S15b; weaker than w240-250
+milk_s0_w230-240,milk,0,230,240,calibration_borderline,random_linf,50,2,1,0.0012,0.0070,0.0015,ok,,,
+tomato_s0_w50-60,tomato_sauce,0,50,60,fresh_tomato_early,vis_pgd,50,3,2,0.0020,0.0072,0.0014,ok,COMMAND_WEAK,+2,VIS weak; phys=stable_no_phys confirmed
+tomato_s0_w50-60,tomato_sauce,0,50,60,fresh_tomato_early,random_linf,50,1,1,0.0006,0.0015,0.0014,ok,,,
+salad_s0_w55-65,salad_dressing,0,55,65,fresh_salad_clean,vis_pgd,50,0,0,0.0002,0.0047,0.0024,ok,COMMAND_WEAK,-1,Layer1 false positive; pV=0.8 but VIS=0
+salad_s0_w55-65,salad_dressing,0,55,65,fresh_salad_clean,random_linf,50,1,1,0.0054,0.0015,0.0024,ok,,,
+cream_s2_w50-60,cream_cheese,2,50,60,calibration_cmd_weak,vis_pgd,50,2,1,0.0021,0.0032,0.0009,ok,COMMAND_WEAK,+2,consistent with S12b cmd_weak
+cream_s2_w50-60,cream_cheese,2,50,60,calibration_cmd_weak,random_linf,50,0,0,0.0000,0.0047,0.0009,ok,,,
+butter_s0_w80-90,butter,0,80,90,calibration_cmd_weak,vis_pgd,50,1,1,0.0045,0.0022,0.0011,ok,COMMAND_WEAK,+0,consistent with S12a RAND REJECTED
+butter_s0_w80-90,butter,0,80,90,calibration_cmd_weak,random_linf,50,1,1,0.0089,0.0008,0.0011,ok,,,
+tomato_s2_w155-165,tomato_sauce,2,155,165,calibration_rand_confounded,vis_pgd,50,4,3,0.0525,0.0004,0.0013,ok,RANDOM_CONFOUNDED,-4,RAND 8/10 dominates VIS 4/10
+tomato_s2_w155-165,tomato_sauce,2,155,165,calibration_rand_confounded,random_linf,50,8,5,0.5698,0.0000,0.0013,ok,,,
+cream_s0_w85-95,cream_cheese,0,85,95,calibration_rand_confounded,vis_pgd,50,4,1,0.0062,0.0027,0.0010,ok,RANDOM_CONFOUNDED,+1,RAND open=3 confounds VIS
+cream_s0_w85-95,cream_cheese,0,85,95,calibration_rand_confounded,random_linf,50,3,2,0.0723,0.0000,0.0010,ok,,,

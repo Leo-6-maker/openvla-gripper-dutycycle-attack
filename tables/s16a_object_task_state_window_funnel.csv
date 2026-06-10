@@ -1,0 +1,40 @@
+task_name,object,state_id,window_start,window_end,source_pool,layer1_selected,cmd_label,pV_cmd,risk_rand,oracle_known,rand_veto_status,vis_probe_status,full_bridge_status,already_tested,eligible_s16b,role_s16b,reason_include,reason_exclude
+milk_s0_w70-80,milk,0,70,80,K5/K5c,TRUE,stable_cmd_specific,1.0,1.0,YES,CLEAN,PASS,PASS_4of5,TRUE,FALSE,calibration_positive,anchor positive reference; 4/5 seeds bridge; strongest seed24 norm=1.297,already tested; not for fresh claim
+milk_s0_w75-85,milk,0,75,85,K5b,FALSE,stable_rand_sensitive,1.0,0.8,NO,,,,FALSE,FALSE,,rand_sensitive; Layer1 rejected; risk_rand=0.8,Layer1 rejected
+milk_s0_w80-90,milk,0,80,90,K5b,FALSE,stable_rand_sensitive,0.8,1.0,NO,,,,FALSE,FALSE,,rand_sensitive; Layer1 rejected; risk_rand=1.0,Layer1 rejected
+milk_s0_w230-240,milk,0,230,240,K5,TRUE,stable_cmd_specific,1.0,1.0,YES,REJECTED,S15b_borderline,,TRUE,FALSE,calibration_borderline,tested S15b; VIS open=5 streak=3; RAND seed29 open=5,already tested; RAND contaminated on one seed
+milk_s0_w235-245,milk,0,235,245,K5c,TRUE,stable_cmd_specific_borderline,1.0,0.2,YES,USABLE,S15b_borderline,,TRUE,FALSE,calibration_borderline,tested S15b; VIS open=5 streak=3; RAND usable but VIS weak,already tested; borderline cmd
+milk_s0_w240-250,milk,0,240,250,K5b,TRUE,stable_cmd_specific,1.0,0.8,NO,,,,FALSE,TRUE,fresh_milk_late,Layer1-selected fresh milk late window; cmd_specific; risk_rand=0.8,late episode; high risk_rand
+cream_cheese_s2_w50-60,cream_cheese,2,50,60,K5b,TRUE,stable_cmd_specific,1.0,1.0,YES,CLEAN,FAIL,FAIL_0of3,TRUE,FALSE,calibration_cmd_weak,tested S12b; VIS 2-3/10 OPEN; 0/3 bridge; command_weak reference,already tested; not for fresh claim
+cream_cheese_s0_w85-95,cream_cheese,0,85,95,K5b,TRUE,stable_cmd_specific,0.8,0.4,YES,REJECTED,S15b_REJECTED,,TRUE,FALSE,calibration_rand_confounded,tested S15b; RAND open 3-4/10; VIS open=3; cream family pattern,already tested; RAND confounded + cmd weak
+cream_cheese_s1_w145-155,cream_cheese,1,145,155,K5b,FALSE,stable_negative,0.0,0.2,NO,,,,FALSE,FALSE,,Layer1 negative,Layer1 rejected
+cream_cheese_s0_w65-75,cream_cheese,0,65,75,K5c,FALSE,stable_rand_sensitive,0.2,0.4,NO,,,,FALSE,FALSE,,rand_sensitive; Layer1 rejected,Layer1 rejected
+cream_cheese_s0_w85-95_b,cream_cheese,0,85,95,K5c,FALSE,stable_rand_sensitive,0.4,1.0,NO,,,,FALSE,FALSE,,rand_sensitive; different source from K5b entry,Layer1 rejected
+tomato_sauce_s2_w155-165,tomato_sauce,2,155,165,K5b,TRUE,stable_cmd_specific,1.0,0.2,YES,REJECTED,CONFOUNDED,CONFOUNDED,TRUE,FALSE,calibration_rand_confounded,tested S11b; RAND open 2-7/10; tomato family pattern,already tested; RAND confounded
+tomato_sauce_s2_w150-160,tomato_sauce,2,150,160,K5,TRUE,stable_cmd_specific,1.0,0.6,YES,REJECTED,,,TRUE,FALSE,,tested S12a RAND REJECTED,already tested; RAND REJECTED
+tomato_sauce_s2_w90-100,tomato_sauce,2,90,100,K5,TRUE,stable_cmd_specific,1.0,0.0,YES,REJECTED,,,TRUE,FALSE,,tested S13a RAND REJECTED,already tested; RAND REJECTED
+tomato_sauce_s0_w55-65,tomato_sauce,0,55,65,K5b,TRUE,stable_cmd_specific,1.0,0.0,YES,REJECTED,,,TRUE,FALSE,,tested S13a RAND REJECTED,already tested; RAND REJECTED
+tomato_sauce_s2_w95-105,tomato_sauce,2,95,105,K5b,TRUE,stable_cmd_specific,0.8,0.8,NO,,,,FALSE,TRUE,fresh_tomato,Layer1-selected fresh tomato window; cmd_specific; risk_rand=0.8,tomato family history of RAND contamination
+tomato_sauce_s0_w50-60,tomato_sauce,0,50,60,K5c,TRUE,stable_cmd_specific,1.0,0.0,NO,,,,FALSE,TRUE,fresh_tomato_early,Layer1-selected fresh tomato early window; cmd_specific; risk_rand=0.0; phys=stable_no_phys but cmd-level OK,phys_label=stable_no_phys but command-level screen doesn't need phys
+tomato_sauce_s2_w115-125,tomato_sauce,2,115,125,K5,FALSE,stable_rand_sensitive,0.8,0.8,NO,,,,FALSE,FALSE,,rand_sensitive; Layer1 rejected,Layer1 rejected
+tomato_sauce_s2_w165-175,tomato_sauce,2,165,175,K5b,FALSE,stable_rand_sensitive,1.0,1.0,NO,,,,FALSE,FALSE,,rand_sensitive; Layer1 rejected,Layer1 rejected
+tomato_sauce_s0_w85-95,tomato_sauce,0,85,95,K5c,FALSE,stable_rand_sensitive,0.6,0.6,NO,,,,FALSE,FALSE,,rand_sensitive; Layer1 rejected,Layer1 rejected
+butter_s0_w80-90,butter,0,80,90,K5c,TRUE,stable_cmd_specific,1.0,0.0,YES,REJECTED,,,TRUE,FALSE,calibration_rand_confounded,tested S12a RAND REJECTED,already tested; RAND REJECTED
+butter_s0_w90-100,butter,0,90,100,K5c,FALSE,stable_rand_sensitive,1.0,0.8,YES,,,FAIL_cmd_weak,TRUE,FALSE,,manual ORACLE candidate; not Layer1-selected,manual; not Layer1; already tested
+butter_s0_w95-105,butter,0,95,105,K5c,FALSE,stable_rand_sensitive,0.8,1.0,NO,,,,FALSE,FALSE,,rand_sensitive; Layer1 rejected,Layer1 rejected
+butter_s0_w135-145,butter,0,135,145,K5c,FALSE,stable_rand_sensitive,0.4,0.6,NO,,,,FALSE,FALSE,,rand_sensitive; Layer1 rejected,Layer1 rejected
+salad_dressing_s1_w50-60,salad_dressing,1,50,60,K5b,TRUE,stable_cmd_specific,0.6,1.0,NO,,,,FALSE,TRUE,fresh_salad,Layer1-selected fresh salad; FIRST salad test; cmd_specific; risk_rand=1.0,high risk_rand=1.0
+salad_dressing_s0_w55-65,salad_dressing,0,55,65,K5c,TRUE,stable_cmd_specific,0.8,0.0,NO,,,,FALSE,TRUE,fresh_salad_clean,Layer1-selected fresh salad; clean (risk_rand=0.0); cmd_specific; phys=stable_no_phys but cmd OK,phys_label=stable_no_phys but command-level screen doesn't need phys
+salad_dressing_s2_w120-130,salad_dressing,2,120,130,K5,FALSE,stable_negative,0.0,0.0,NO,,,,FALSE,FALSE,,Layer1 negative,Layer1 rejected
+salad_dressing_s2_w70-80,salad_dressing,2,70,80,K5b,FALSE,stable_rand_sensitive,0.0,1.0,NO,,,,FALSE,FALSE,,rand_sensitive,Layer1 rejected
+salad_dressing_s2_w80-90,salad_dressing,2,80,90,K5b,FALSE,unstable_or_unknown,0.4,0.8,NO,,,,FALSE,FALSE,,unstable,unstable label
+salad_dressing_s0_w75-85,salad_dressing,0,75,85,K5c,FALSE,stable_rand_sensitive,0.6,0.6,NO,,,,FALSE,FALSE,,rand_sensitive,Layer1 rejected
+alphabet_soup_s1_w65-75,alphabet_soup,1,65,75,K5,FALSE,stable_negative,0.0,0.0,NO,,,,FALSE,FALSE,,Layer1 negative; no cmd_specific in task,Layer1 rejected; task has no Layer1 candidate
+alphabet_soup_s1_w50-60,alphabet_soup,1,50,60,K5b,FALSE,unstable_or_unknown,0.4,0.4,NO,,,,FALSE,FALSE,,unstable; no cmd_specific in task,unstable; task has no Layer1 candidate
+alphabet_soup_s0_w60-70,alphabet_soup,0,60,70,K5b,FALSE,stable_rand_sensitive,0.2,1.0,NO,,,,FALSE,FALSE,,rand_sensitive,Layer1 rejected
+alphabet_soup_s0_w55-65,alphabet_soup,0,55,65,K5c,FALSE,unstable_or_unknown,0.2,0.2,NO,,,,FALSE,FALSE,,unstable,unstable
+alphabet_soup_s0_w65-75,alphabet_soup,0,65,75,K5c,FALSE,stable_rand_sensitive,0.2,1.0,NO,,,,FALSE,FALSE,,rand_sensitive,Layer1 rejected
+bbq_sauce_s2_w100-110,bbq_sauce,2,100,110,K5,FALSE,stable_negative,0.0,0.0,NO,,,,FALSE,FALSE,,Layer1 negative; no cmd_specific in task,Layer1 rejected
+bbq_sauce_s0_w60-70,bbq_sauce,0,60,70,K5b,FALSE,stable_negative,0.0,0.8,NO,,,,FALSE,FALSE,,Layer1 negative,Layer1 rejected
+bbq_sauce_s0_w70-80,bbq_sauce,0,70,80,K5c,FALSE,stable_rand_sensitive,0.0,0.4,NO,,,,FALSE,FALSE,,rand_sensitive,Layer1 rejected
+orange_juice_s0_w50-60,orange_juice,0,50,60,K5c,FALSE,stable_rand_sensitive,0.0,1.0,NO,,,,FALSE,FALSE,,rand_sensitive; no cmd_specific in task,Layer1 rejected; task has no Layer1 candidate
