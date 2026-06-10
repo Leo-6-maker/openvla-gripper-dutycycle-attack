@@ -58,6 +58,14 @@ def decode_tokens(tids):
     disc = np.clip(VS - tids - 1, 0, len(BC_NP)-1)
     return np.where(MK, 0.5*(BC_NP[disc]+1)*(HI-LO)+LO, BC_NP[disc]).astype(np.float32)
 
+def generate_action_from_inputs(input_ids, pixel_values):
+    with torch.no_grad():
+        gen = model.generate(input_ids=input_ids, pixel_values=pixel_values,
+                             max_new_tokens=action_dim, do_sample=False,
+                             return_dict_in_generate=True, output_scores=False)
+    tids = gen.sequences[0, -action_dim:].cpu().numpy()
+    return decode_tokens(tids)
+
 # S6 attack config
 _eps_eff = args.eps_raw_pixels / 255.0
 _attack_seed = args.attack_seed
@@ -161,7 +169,7 @@ while not done and step < max_steps_local:
                 adv_inputs = get_adv_inputs_from_attack_result(result)
                 adv_pv = adv_inputs['pixel_values'].to(device=model_device, dtype=model_dtype)
                 adv_ids = adv_inputs['input_ids'].to(model_device)
-                adv_action = decode_tokens(adv_ids[0, -action_dim:].cpu().numpy())
+                adv_action = generate_action_from_inputs(adv_ids, adv_pv)
                 raw_action = adv_action.copy()
                 pgd_applied = 1; attacks_applied = 1
                 perturbation_space = 'processor_pixel_values_linf'
@@ -254,6 +262,7 @@ summary = {
     'n_steps': step, 'n_window_steps': we - ws,
     'infra_status': infra_status, 'git_commit': git_commit,
     'runner_family': 'phase1_oracle_port',
+    'adv_redecode_mode': 'model_generate_from_adv_inputs',
     'image_source': 'env.sim.render_rotate180',
     'prompt_mode': 'phase1_handrolled',
     'attack_objective': 'prefix_locked_gripper_open_margin',

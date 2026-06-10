@@ -1,0 +1,5 @@
+job_id,task,state_id,window_start,window_end,open_duration,condition,attack_seed,pair_id,eps_raw_pixels,pgd_steps,gpu_pair,output_dir
+950410,milk,0,70,80,10,vis_pgd,9,milk_s0_w70_80_phase1port_seed9,6.0,20,"1,0",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s9b_phase1_runner_visrand_smoke
+950411,milk,0,70,80,10,random_linf,9,milk_s0_w70_80_phase1port_seed9,6.0,20,"1,0",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s9b_phase1_runner_visrand_smoke
+950412,milk,0,70,80,10,vis_pgd,10,milk_s0_w70_80_phase1port_seed10,6.0,20,"4,5",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s9b_phase1_runner_visrand_smoke
+950413,milk,0,70,80,10,random_linf,10,milk_s0_w70_80_phase1port_seed10,6.0,20,"4,5",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s9b_phase1_runner_visrand_smoke
