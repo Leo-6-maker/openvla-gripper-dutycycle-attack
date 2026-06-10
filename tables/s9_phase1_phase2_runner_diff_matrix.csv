@@ -1,0 +1,20 @@
+dimension,phase1_oracle_runner,phase2_visrand_runner,potential_impact,notes
+env_init_order,seed-reset-set_init_state,seed-reset-qvel0-sim.forward-set_init_state,HIGH,"qvel zero + sim.forward changes initial dynamics; most likely mismatch source"
+qpos_source,env.sim.data.qpos.copy()[7],env.sim.data.qpos.copy()[7],NONE,same index/source
+qpos_sampling_timing,before env.step (after action compute),before env.step (after action compute),NONE,same timing
+image_source,env.sim.render+rotate180,get_libero_image_official(obs)=obs[agentview][::-1::-1],LOW,functionally equivalent (both 180 rotation)
+prompt,"hand-rolled 'In: What action...? backslash nOut:'",official_prompt() via openvla_libero_exec_spec,LOW,same format
+tokenizer_input_processing,processor(prompt img_pil) no EOS check,make_inputs() adds EOS if missing,LOW,EOS token unlikely to affect action
+gripper_action_oracle_open,env_action[-1] = -1.0 directly,raw_action[-1]=1.0 then normalize_gripper_raw+invert,NONE,functionally equivalent
+gripper_action_clean,raw_gripper decode+manual binarize+invert,normalize_gripper_raw(binarize=True)+invert,LOW,functionally equivalent
+arm_action_source,model.generate() with processor inputs,decode_action() via model.generate() with make_inputs(),LOW,same model same inference
+loop_termination,while step < max(we,oracle_we)+20,while step < min(we+post_horizon,max_steps),MEDIUM,Phase1 has longer guaranteed post window
+post_horizon,40 hardcoded,configurable (default 40 in S8c),NONE,matched in S8c
+window_convention,L=duration oracle_we=ws+L,configurable inclusive/half_open,LOW,matched half_open in S8c
+oracle_active_interval,ws <= step < oracle_we (half-open),ws <= step < we if half_open else <=we,MEDIUM,matched in S8c
+max_steps,400,400,NONE,same
+control_freq,20,20,NONE,same
+camera,agentview 256x256,agentview 256x256,NONE,same
+render_gpu,render_physical_gpu from CUDA_VISIBLE_DEVICES,render_gpu from CUDA_VISIBLE_DEVICES,NONE,same pattern
+model_loading,device_map=auto no max_memory,device_map=auto with max_memory per GPU,LOW,should not affect inference
+TF_GPU_block,yes,yes,NONE,same
