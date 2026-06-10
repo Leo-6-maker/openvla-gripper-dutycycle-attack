@@ -1,0 +1,5 @@
+job_id,task,state_id,window_start,window_end,original_window_start,original_window_end,length_mode,condition,attack_seed,attack_budget,pair_id,oracle_ref_L10_pos_area,post_horizon,gpu_pair,output_dir
+950200,milk,0,70,79,70,80,short_halfopen,clean,0,none,milk_s0_w70_79_short_halfopen,0.261452,40,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8c_runner_parity_isolation
+950201,milk,0,70,79,70,80,short_halfopen,oracle_open,0,none,milk_s0_w70_79_short_halfopen,0.261452,40,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8c_runner_parity_isolation
+950202,milk,0,60,89,70,80,ext20_halfopen,clean,0,none,milk_s0_w60_89_ext20_halfopen,0.261452,40,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8c_runner_parity_isolation
+950203,milk,0,60,89,70,80,ext20_halfopen,oracle_open,0,none,milk_s0_w60_89_ext20_halfopen,0.261452,40,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8c_runner_parity_isolation
