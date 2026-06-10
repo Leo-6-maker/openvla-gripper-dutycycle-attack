@@ -1,0 +1,11 @@
+idx,canonical_task_key,language,problem_folder,bddl_file,n_init_states
+0,alphabet_soup,pick up the alphabet soup and place it in the basket,libero_object,pick_up_the_alphabet_soup_and_place_it_in_the_basket.bddl,50
+1,cream_cheese,pick up the cream cheese and place it in the basket,libero_object,pick_up_the_cream_cheese_and_place_it_in_the_basket.bddl,50
+2,salad_dressing,pick up the salad dressing and place it in the basket,libero_object,pick_up_the_salad_dressing_and_place_it_in_the_basket.bddl,50
+3,bbq_sauce,pick up the bbq sauce and place it in the basket,libero_object,pick_up_the_bbq_sauce_and_place_it_in_the_basket.bddl,50
+4,ketchup,pick up the ketchup and place it in the basket,libero_object,pick_up_the_ketchup_and_place_it_in_the_basket.bddl,50
+5,tomato_sauce,pick up the tomato sauce and place it in the basket,libero_object,pick_up_the_tomato_sauce_and_place_it_in_the_basket.bddl,50
+6,butter,pick up the butter and place it in the basket,libero_object,pick_up_the_butter_and_place_it_in_the_basket.bddl,50
+7,milk,pick up the milk and place it in the basket,libero_object,pick_up_the_milk_and_place_it_in_the_basket.bddl,50
+8,chocolate_pudding,pick up the chocolate pudding and place it in the basket,libero_object,pick_up_the_chocolate_pudding_and_place_it_in_the_basket.bddl,50
+9,orange_juice,pick up the orange juice and place it in the basket,libero_object,pick_up_the_orange_juice_and_place_it_in_the_basket.bddl,50

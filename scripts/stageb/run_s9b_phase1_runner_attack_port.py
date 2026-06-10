@@ -89,12 +89,35 @@ import gym; gym.logger.set_level(40)
 from libero.libero import benchmark, get_libero_path
 from libero.libero.envs import OffScreenRenderEnv
 
-TASK_CFG = {'ketchup':0,'butter':1,'cream_cheese':2,'salad_dressing':3,'bbq_sauce':4,'milk':5,'alphabet_soup':6,'tomato_sauce':7,'orange_juice':8}
+# TASK_CFG removed — task index resolved from actual LIBERO task metadata at runtime
+def _canonical_task_key(task_obj):
+    text = ' '.join([getattr(task_obj, 'language', ''),
+                     getattr(task_obj, 'problem_folder', ''),
+                     getattr(task_obj, 'bddl_file', '')]).lower()
+    if 'alphabet' in text: return 'alphabet_soup'
+    if 'cream' in text: return 'cream_cheese'
+    if 'salad' in text: return 'salad_dressing'
+    if 'bbq' in text or 'barbecue' in text: return 'bbq_sauce'
+    if 'ketchup' in text: return 'ketchup'
+    if 'tomato' in text: return 'tomato_sauce'
+    if 'butter' in text: return 'butter'
+    if 'milk' in text: return 'milk'
+    if 'chocolate' in text: return 'chocolate_pudding'
+    if 'orange' in text and 'juice' in text: return 'orange_juice'
+    raise ValueError('Unknown task: %s' % text)
 bm = benchmark.get_benchmark_dict(); task_suite = bm['libero_object']()
 
-cfg = TASK_CFG.get(args.task)
-if cfg is None: print('Unknown task:', args.task); sys.exit(1)
+_actual_by_key = {}
+for _i in range(len(task_suite.tasks)):
+    _tobj = task_suite.get_task(_i)
+    _key = _canonical_task_key(_tobj)
+    _actual_by_key[_key] = _i
+
+cfg = _actual_by_key.get(args.task)
+if cfg is None: print('Unknown task:', args.task, 'available:', sorted(_actual_by_key.keys())); sys.exit(1)
 task_obj = task_suite.get_task(cfg); init_states = task_suite.get_task_init_states(cfg)
+actual_task_key = _canonical_task_key(task_obj)
+assert actual_task_key == args.task, 'FATAL: canonical task key %r != requested task %r' % (actual_task_key, args.task)
 if args.state_id >= len(init_states): print('state_id out of range'); sys.exit(1)
 
 instruction = task_obj.language if hasattr(task_obj,'language') else args.task.replace('_',' ')
@@ -255,7 +278,10 @@ except: git_commit = 'unknown'
 
 summary = {
     'job_id': args.job_id, 'pair_id': pair_id,
-    'task': args.task, 'state_id': args.state_id,
+    'task': args.task, 'actual_task_key': actual_task_key,
+	    'actual_task_idx': cfg, 'actual_language': instruction,
+	    'actual_problem_folder': task_obj.problem_folder, 'actual_bddl_file': task_obj.bddl_file,
+	    'state_id': args.state_id,
     'window_start': ws, 'window_end': we, 'open_duration': args.open_duration,
     'condition': args.condition, 'attack_seed': args.attack_seed, 'env_seed': args.env_seed,
     'eps_raw_pixels': args.eps_raw_pixels, 'pgd_steps': args.pgd_steps,
