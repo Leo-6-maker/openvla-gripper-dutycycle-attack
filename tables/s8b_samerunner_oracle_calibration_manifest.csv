@@ -1,5 +1,5 @@
-job_id,task,state_id,window_start,window_end,original_window_start,original_window_end,length_mode,condition,oracle_ref_L10_pos_area,gpu_pair,output_dir
-950100,milk,0,70,80,70,80,short,clean,0.261452,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8b_samerunner_oracle_calibration
-950101,milk,0,70,80,70,80,short,oracle_open,0.261452,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8b_samerunner_oracle_calibration
-950102,milk,0,60,90,70,80,extended20,clean,0.261452,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8b_samerunner_oracle_calibration
-950103,milk,0,60,90,70,80,extended20,oracle_open,0.261452,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8b_samerunner_oracle_calibration
+job_id,task,state_id,window_start,window_end,original_window_start,original_window_end,length_mode,condition,attack_seed,attack_budget,pair_id,oracle_ref_L10_pos_area,gpu_pair,output_dir
+950100,milk,0,70,80,70,80,short,clean,0,none,milk_s0_w70_80_short_samerunner,0.261452,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8b_samerunner_oracle_calibration
+950101,milk,0,70,80,70,80,short,oracle_open,0,none,milk_s0_w70_80_short_samerunner,0.261452,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8b_samerunner_oracle_calibration
+950102,milk,0,60,90,70,80,extended20,clean,0,none,milk_s0_w60_90_extended20_samerunner,0.261452,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8b_samerunner_oracle_calibration
+950103,milk,0,60,90,70,80,extended20,oracle_open,0,none,milk_s0_w60_90_extended20_samerunner,0.261452,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8b_samerunner_oracle_calibration
