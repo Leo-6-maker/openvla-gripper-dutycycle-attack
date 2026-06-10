@@ -1,8 +1,9 @@
 # Stage-B RC1a S12B Running Handoff — Layer3 RAND-Clean Physical Bridge Search
 
 **Date**: 2026-06-10 ~20:10 CST
-**Server HEAD**: `ee8bf3e`
-**GitHub HEAD**: `77d0eee` (merge)
+**Server experiment HEAD**: `ee8bf3e` (S12a frozen / S12b launched from server)
+**Handoff base GitHub commit**: `b81498a`
+**Previous GitHub HEAD recorded before handoff push**: `77d0eee` (superseded by the handoff push)
 **Branch**: `exp/vis-prefix-margin-repair-20260603`
 
 ## 0. First-Read Instructions
@@ -114,7 +115,14 @@ Runner: `scripts/stageb/run_s9b_phase1_runner_attack_port.py`
 | GPU26 | 2,6 | 0,1 |
 | GPU45 | 4,5 | 0,1 |
 
-Launch: `CUDA_VISIBLE_DEVICES=1,0 MUJOCO_GL=egl PYOPENGL_PLATFORM=egl unset DISPLAY`
+Launch template (do not paste without script args):
+```bash
+unset DISPLAY
+CUDA_VISIBLE_DEVICES=1,0 MUJOCO_GL=egl PYOPENGL_PLATFORM=egl python <script.py> ...
+
+# Equivalent one-liner:
+env -u DISPLAY CUDA_VISIBLE_DEVICES=1,0 MUJOCO_GL=egl PYOPENGL_PLATFORM=egl python <script.py> ...
+```
 
 ---
 
