@@ -26,6 +26,7 @@ ap.add_argument('--output_dir', required=True)
 ap.add_argument('--max_steps', type=int, default=400)
 ap.add_argument('--post_horizon', type=int, default=40)
 ap.add_argument('--window_convention', choices=['inclusive','half_open'], default='inclusive')
+ap.add_argument('--init_mode', choices=['phase2_current','phase1_parity'], default='phase2_current')
 # Phase 2 additions
 ap.add_argument('--original_window_start', type=int, default=None)
 ap.add_argument('--original_window_end', type=int, default=None)
@@ -164,8 +165,16 @@ try:
                              use_camera_obs=True, camera_names=['agentview'], control_freq=20,
                              render_gpu_device_id=_render_gpu)
     env.seed(args.env_seed); obs = env.reset()
-    env.sim.data.qvel[:] = 0; env.sim.forward()
+    qpos_after_reset = float(env.sim.data.qpos.copy()[7]) if len(env.sim.data.qpos) > 7 else 0.0
+    qvel_norm_after_reset = float(np.linalg.norm(env.sim.data.qvel.copy()))
+    qpos_after_qvel_forward = None; qvel_norm_after_qvel_forward = None
+    if args.init_mode == 'phase2_current':
+        env.sim.data.qvel[:] = 0; env.sim.forward()
+        qpos_after_qvel_forward = float(env.sim.data.qpos.copy()[7]) if len(env.sim.data.qpos) > 7 else 0.0
+        qvel_norm_after_qvel_forward = float(np.linalg.norm(env.sim.data.qvel.copy()))
     env.set_init_state(initial_states[args.state_id])
+    qpos_after_set_init_state = float(env.sim.data.qpos.copy()[7]) if len(env.sim.data.qpos) > 7 else 0.0
+    qvel_norm_after_set_init_state = float(np.linalg.norm(env.sim.data.qvel.copy()))
 
     while not done and current_step < min(we + args.post_horizon, args.max_steps):
         # ── Official image preprocess ──
@@ -340,6 +349,13 @@ summary = {
     'length_mode': args.length_mode,
     'window_convention': args.window_convention,
     'post_horizon': args.post_horizon,
+    'init_mode': args.init_mode,
+    'qpos_after_reset': round(qpos_after_reset, 8),
+    'qvel_norm_after_reset': round(qvel_norm_after_reset, 8),
+    'qpos_after_qvel_forward': round(qpos_after_qvel_forward, 8) if qpos_after_qvel_forward is not None else None,
+    'qvel_norm_after_qvel_forward': round(qvel_norm_after_qvel_forward, 8) if qvel_norm_after_qvel_forward is not None else None,
+    'qpos_after_set_init_state': round(qpos_after_set_init_state, 8),
+    'qvel_norm_after_set_init_state': round(qvel_norm_after_set_init_state, 8),
     'physical_pair_key': physical_pair_key,
     'oracle_ref_L10_pos_area': args.oracle_ref_L10_pos_area,
     'condition': args.condition, 'attack_seed': args.attack_seed, 'env_seed': args.env_seed,
@@ -357,6 +373,7 @@ summary = {
     'qpos_abs_peak': round(qpos_abs_peak, 8), 'qpos_abs_area': round(qpos_abs_area, 8),
     'response_delay_pos': response_delay_pos, 'response_delay_neg': response_delay_neg,
     'mean_arm_qpos_norm_pre': round(mean_pre_arm, 8),
+    'first_5_pre_window_qpos': [round(float(x),8) for x in qpos_history[:5]] if len(qpos_history)>=5 else [],
     # Attack provenance
     'attack_objective': 'prefix_locked_gripper_open_margin',
     'random_linf_seed_rule': 'attack_seed + job_id',
