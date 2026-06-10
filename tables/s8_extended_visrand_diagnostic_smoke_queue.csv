@@ -1,0 +1,9 @@
+window_id,task,state_id,original_window_start,original_window_end,window_start,window_end,length_mode,attack_seed,condition,eps,attack_budget,logical_pair_key,oracle_ref_L10_pos_area,physical_pair_key,gpu_pair,output_dir
+milk_s0_w70_80,milk,0,70,80,70,80,short,9,VIS,6.0,linf,milk_s0_w70_80_short__atk9,0.26145175,milk_s0_w70_80_L10,,
+milk_s0_w70_80,milk,0,70,80,70,80,short,9,RAND,6.0,linf,milk_s0_w70_80_short__atk9,0.26145175,milk_s0_w70_80_L10,,
+milk_s0_w70_80,milk,0,70,80,70,80,short,10,VIS,6.0,linf,milk_s0_w70_80_short__atk10,0.26145175,milk_s0_w70_80_L10,,
+milk_s0_w70_80,milk,0,70,80,70,80,short,10,RAND,6.0,linf,milk_s0_w70_80_short__atk10,0.26145175,milk_s0_w70_80_L10,,
+milk_s0_w60_90,milk,0,70,80,60,90,extended20,9,VIS,6.0,linf,milk_s0_w60_90_extended20__atk9,0.26145175,milk_s0_w70_80_L10,,
+milk_s0_w60_90,milk,0,70,80,60,90,extended20,9,RAND,6.0,linf,milk_s0_w60_90_extended20__atk9,0.26145175,milk_s0_w70_80_L10,,
+milk_s0_w60_90,milk,0,70,80,60,90,extended20,10,VIS,6.0,linf,milk_s0_w60_90_extended20__atk10,0.26145175,milk_s0_w70_80_L10,,
+milk_s0_w60_90,milk,0,70,80,60,90,extended20,10,RAND,6.0,linf,milk_s0_w60_90_extended20__atk10,0.26145175,milk_s0_w70_80_L10,,
