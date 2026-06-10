@@ -1,0 +1,5 @@
+condition,attack_seed,qpos_baseline,qpos_pos_area,qpos_neg_area,qpos_abs_area,decoded_open_count,n_window_steps,max_open_streak,response_delay_pos,oracle_norm,infra_status,adv_redecode_mode
+random_linf,10,0.001235,0.016111,0.004289,0.0204,0,10,0,-1,0.0546,ok,model_generate_from_adv_inputs
+vis_pgd,10,0.001749,0.078278,0.006084,0.084362,6,10,5,0,0.2654,ok,model_generate_from_adv_inputs
+random_linf,9,0.001967,0.0,0.021669,0.021669,0,10,0,-1,0.0,ok,model_generate_from_adv_inputs
+vis_pgd,9,0.001967,0.124803,0.006887,0.131689,7,10,4,0,0.4232,ok,model_generate_from_adv_inputs
