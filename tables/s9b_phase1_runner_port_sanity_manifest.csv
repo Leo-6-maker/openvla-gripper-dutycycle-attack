@@ -1,0 +1,3 @@
+job_id,task,state_id,window_start,window_end,open_duration,condition,attack_seed,pair_id,gpu_pair,output_dir
+950400,milk,0,70,80,10,clean,0,milk_s0_w70_80_phase1port_sanity,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s9b_phase1_runner_port_sanity
+950401,milk,0,70,80,10,oracle_open,0,milk_s0_w70_80_phase1port_sanity,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s9b_phase1_runner_port_sanity
