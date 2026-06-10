@@ -25,6 +25,7 @@ ap.add_argument('--pair_id', default='')
 ap.add_argument('--output_dir', required=True)
 ap.add_argument('--max_steps', type=int, default=400)
 ap.add_argument('--post_horizon', type=int, default=40)
+ap.add_argument('--window_convention', choices=['inclusive','half_open'], default='inclusive')
 # Phase 2 additions
 ap.add_argument('--original_window_start', type=int, default=None)
 ap.add_argument('--original_window_end', type=int, default=None)
@@ -191,7 +192,7 @@ try:
         gq = obs.get('robot0_gripper_qpos', np.zeros(2))
         obs_q0, obs_q1 = float(gq[0]), float(gq[1])
 
-        in_window = 1 if ws <= current_step <= we else 0
+        in_window = 1 if (ws <= current_step < we if args.window_convention == 'half_open' else ws <= current_step <= we) else 0
         attack_this_step = in_window
 
         env_grip = clean_grip
@@ -290,7 +291,9 @@ except Exception as e:
     torch.cuda.empty_cache()
 
 # ── Metrics ──
-ws_idx = ws; we_idx = min(we, len(qpos_history))
+ws_idx = ws
+we_exclusive = we if args.window_convention == 'half_open' else we + 1
+we_idx = min(we_exclusive, len(qpos_history))
 post_start = we_idx; post_end = min(len(qpos_history), we_idx + args.post_horizon)
 pre_qpos = np.array(qpos_history[:ws_idx]) if ws_idx > 0 else np.array([0.0])
 post_qpos = np.array(qpos_history[post_start:post_end]) if post_end > post_start else np.array([])
@@ -335,6 +338,8 @@ summary = {
     'window_start': ws, 'window_end': we,
     'original_window_start': ow_start, 'original_window_end': ow_end,
     'length_mode': args.length_mode,
+    'window_convention': args.window_convention,
+    'post_horizon': args.post_horizon,
     'physical_pair_key': physical_pair_key,
     'oracle_ref_L10_pos_area': args.oracle_ref_L10_pos_area,
     'condition': args.condition, 'attack_seed': args.attack_seed, 'env_seed': args.env_seed,
