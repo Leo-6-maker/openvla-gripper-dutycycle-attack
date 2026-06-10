@@ -1,0 +1,3 @@
+condition,init_mode,qpos_baseline,qpos_pos_area,qpos_neg_area,qpos_abs_area,decoded_open_count,n_window_steps,response_delay_pos,qpos_after_reset,qvel_norm_after_set_init,infra_status
+clean,phase1_parity,0.039487,0.0,0.359008,0.359008,1,10,-1,0.020833,0.0,ok
+oracle_open,phase1_parity,0.039487,0.0,0.180761,0.180761,10,10,-1,0.020833,0.0,ok
