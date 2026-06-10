@@ -1,0 +1,3 @@
+condition,qpos_baseline,qpos_pos_area,qpos_neg_area,qpos_abs_area,decoded_open_count,n_window_steps,max_open_streak,response_delay_pos,infra_status
+clean,0.00196721,0.0,0.02832248,0.02832248,0,10,0,-1,ok
+oracle_open,0.00196721,0.29489932,0.00369374,0.29859306,10,10,10,0,ok
