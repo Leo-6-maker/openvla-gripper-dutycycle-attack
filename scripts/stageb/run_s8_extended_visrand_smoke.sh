@@ -3,6 +3,9 @@
 # Runner: run_extended_visrand_physical.py (v2, S6-attack-aligned)
 set +e
 export CUDA_VISIBLE_DEVICES=1,0
+export MUJOCO_GL=egl
+export PYOPENGL_PLATFORM=egl
+unset DISPLAY
 OUT=/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_extended_visrand_diagnostic/smoke
 mkdir -p $OUT
 PY=/home/liuyu/.conda/envs/openvla_official_libero_20260525/bin/python
