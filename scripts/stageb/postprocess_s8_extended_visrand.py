@@ -68,7 +68,7 @@ def postprocess(summary_dir, launch_csv_path, output_csv):
             'rand_oracle_normalized': round(rand_pos / oracle_pos, 4) if oracle_pos > 0 else -1,
             'vis_arm_norm': round(vis_arm, 8), 'rand_arm_norm': round(rand_arm, 8),
             'vis_infra': vis_infra, 'rand_infra': rand_infra,
-            'trace_csv_exists': 'Y' if any('trace_' in t and lp.replace('__','_') in t.replace('__','_') for t in trace_files) else 'N',
+            'trace_csv_exists': 'Y' if any(lp.replace('__','_') in t for t in trace_files) else 'N',
         })
 
     if not results:

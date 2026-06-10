@@ -48,7 +48,7 @@ sys.path.insert(0, REPO); sys.path.insert(0, os.path.join(REPO, 'src'))
 MODEL_PATH = '/data/aviary/models/openvla/openvla-7b-finetuned-libero-object'
 
 from gripper_attack.openvla_libero_exec_spec import (
-    UNNORM_KEY_LIBERO_OBJECT as UNNORM_KEY,
+    OFFICIAL_UNNORM_KEY_LIBERO_OBJECT as UNNORM_KEY,
     official_prompt,
     normalize_gripper_raw,
     raw_gripper_to_env_gripper,
@@ -134,8 +134,9 @@ logical_pair_key = pair_id  # same
 physical_pair_key = '%s_s%d_w%d_%d_L10' % (args.task, args.state_id, ow_start, ow_end)
 
 os.makedirs(args.output_dir, exist_ok=True)
-out_json = os.path.join(args.output_dir, 'summary_%s_job%d.json' % (args.condition.replace('_',''), args.job_id))
-out_trace = os.path.join(args.output_dir, 'trace_%s_job%d.csv' % (args.condition.replace('_',''), args.job_id))
+safe_pair = pair_id.replace('/', '_').replace('\\', '_')
+out_json = os.path.join(args.output_dir, 'summary_%s_%s_job%d.json' % (safe_pair, args.condition.replace('_',''), args.job_id))
+out_trace = os.path.join(args.output_dir, 'trace_%s_%s_job%d.csv' % (safe_pair, args.condition.replace('_',''), args.job_id))
 
 print('[%s] %s s%d w[%d,%d] %s atk=%d L=%s' % (datetime.now().strftime('%H:%M:%S'), args.task, args.state_id, ws, we, args.condition, args.attack_seed, args.length_mode))
 
