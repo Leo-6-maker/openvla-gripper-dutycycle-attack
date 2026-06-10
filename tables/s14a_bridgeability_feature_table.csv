@@ -1,0 +1,14 @@
+object,state_id,window_start,window_end,seed,condition,layer1_selected,oracle_ref_pos_area,vis_pos_area,vis_open_count,vis_max_streak,vis_oracle_norm,rand_open_count,rand_oracle_norm,qpos_area_on_open_steps,qpos_area_on_nonopen_steps,response_delay,qpos_peak_diff,failure_mode
+milk,0,70,80,9,vis_pgd,True,0.2949,0.1248,7,4,0.423,0,0.0,0.0857,0.0391,4,0.0177,clean_bridge_positive
+milk,0,70,80,10,vis_pgd,True,0.2949,0.0783,6,5,0.265,0,0.055,0.0311,0.0472,8,0.0163,clean_bridge_positive
+milk,0,70,80,11,vis_pgd,True,0.2949,0.1115,6,4,0.378,1,0.0,0.0746,0.0369,4,0.017,clean_bridge_positive
+milk,0,70,80,24,vis_pgd,True,0.2949,0.3824,6,4,1.297,0,0.0,0.1798,0.2026,5,0.0346,clean_bridge_positive
+milk,0,70,80,12,vis_pgd,True,0.2949,0.0381,6,4,0.129,0,0.03,0.0315,0.0066,6,0.0137,physical_transfer_weak
+butter,0,90,100,13,vis_pgd,False,0.3436,0.0048,2,2,0.014,1,0.158,0.0018,0.003,-1,0.001,command_weak
+butter,0,90,100,14,vis_pgd,False,0.3436,0.0085,2,2,0.025,3,0.261,0.0,0.0085,-1,0.0021,command_weak_random_confounded
+tomato_sauce,2,155,165,15,vis_pgd,True,0.6217,0.1174,6,5,0.189,2,0.266,0.0325,0.0849,7,0.0167,physical_transfer_weak_random_drift_confounded
+tomato_sauce,2,155,165,16,vis_pgd,True,0.6217,0.0538,6,2,0.087,7,0.95,0.0138,0.04,7,0.0082,random_command_confounded
+tomato_sauce,2,155,165,17,vis_pgd,True,0.6217,0.1572,7,3,0.253,5,0.116,0.1074,0.0498,3,0.0228,random_command_confounded
+cream_cheese,2,50,60,21,vis_pgd,True,0.2838,0.002,2,1,0.007,0,0.006,0.0002,0.0018,-1,0.0008,command_weak
+cream_cheese,2,50,60,22,vis_pgd,True,0.2838,0.0124,3,2,0.044,0,0.0,0.0041,0.0084,-1,0.0038,command_weak
+cream_cheese,2,50,60,23,vis_pgd,True,0.2838,0.0005,2,2,0.002,0,0.083,0.0002,0.0003,-1,0.0003,command_weak_random_drift_confounded
