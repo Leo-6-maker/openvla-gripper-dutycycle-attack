@@ -1,0 +1,7 @@
+task,seed,condition,open,streak,pos_area,neg_area,baseline,oracle_norm,oracle_ref,infra,verdict
+cream_cheese,21,vis_pgd,2,1,0.002040,0.002406,0.000952,0.0072,0.2838,ok,FAIL_norm
+cream_cheese,21,random_linf,0,0,0.001763,0.003387,0.000952,0.0062,0.2838,ok,clean
+cream_cheese,22,vis_pgd,3,2,0.012423,0.001281,0.000952,0.0438,0.2838,ok,FAIL_norm
+cream_cheese,22,random_linf,0,0,0.000000,0.007468,0.000952,0.0000,0.2838,ok,clean
+cream_cheese,23,vis_pgd,2,2,0.000497,0.004188,0.000980,0.0018,0.2838,ok,FAIL_norm_confound
+cream_cheese,23,random_linf,0,0,0.023674,0.000006,0.000619,0.0834,0.2838,ok,confound_drift

@@ -8,3 +8,6 @@ butter,90-100,manual_ORACLE,14,0.009,2,0.013,0.09,3,FAIL_cmd_weak_confound
 tomato,155-165,Layer1+ORACLE,15,0.117,6,0.189,0.166,2,FAIL_rand_confound
 tomato,155-165,Layer1+ORACLE,16,0.054,6,0.087,0.59,7,FAIL_rand_confound
 tomato,155-165,Layer1+ORACLE,17,0.157,7,0.253,0.072,5,MIXED_rand_contaminated
+cream_cheese,50-60,Layer1+ORACLE+RANDclean,21,0.002,2,0.007,0.002,0,FAIL_vis_bridge
+cream_cheese,50-60,Layer1+ORACLE+RANDclean,22,0.012,3,0.044,0.0,0,FAIL_vis_bridge
+cream_cheese,50-60,Layer1+ORACLE+RANDclean,23,0.0005,2,0.002,0.024,0,FAIL_vis_bridge_confound
