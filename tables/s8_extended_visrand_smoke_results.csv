@@ -1,0 +1,5 @@
+logical_pair_key,task,length_mode,window_start,window_end,original_ws,original_we,attack_seed,vis_open_count,rand_open_count,vis_max_streak,rand_max_streak,vis_qpos_pos_area,rand_qpos_pos_area,vis_qpos_abs_area,rand_qpos_abs_area,vis_minus_rand_pos_area,oracle_pos_area,vis_oracle_normalized,rand_oracle_normalized,vis_arm_norm,rand_arm_norm,vis_infra,rand_infra,trace_csv_exists
+milk_s0_w60_90_extended20__atk10,milk,extended20,60,90,70,80,10,19,11,6,9,0.0,0.0,0.02212291,0.0176592,0.0,0.261452,0.0,0.0,0.32792912,0.32792912,ok,ok,Y
+milk_s0_w60_90_extended20__atk9,milk,extended20,60,90,70,80,9,15,5,4,3,0.0,0.0,0.06854094,0.16143094,0.0,0.261452,0.0,0.0,0.32792912,0.32792912,ok,ok,Y
+milk_s0_w70_80_short__atk10,milk,short,70,80,70,80,10,8,1,8,1,0.0,0.0,0.02906291,0.16916256,0.0,0.261452,0.0,0.0,0.38987329,0.38987329,ok,ok,Y
+milk_s0_w70_80_short__atk9,milk,short,70,80,70,80,9,9,0,7,0,0.0,0.0,0.02341013,0.18487598,0.0,0.261452,0.0,0.0,0.38987329,0.38987329,ok,ok,Y
