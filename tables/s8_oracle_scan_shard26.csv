@@ -1,0 +1,11 @@
+job_id,task,state_id,window_start,window_end,open_duration,condition,pair_id,gpu_pair,output_dir,max_steps
+900006,milk,0,70,80,40,clean,milk_s0_w70_80_L40_clean,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/shard26,400
+900007,milk,0,70,80,40,oracle_open,milk_s0_w70_80_L40_oracle_open,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/shard26,400
+900014,butter,0,90,100,40,clean,butter_s0_w90_100_L40_clean,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/shard26,400
+900015,butter,0,90,100,40,oracle_open,butter_s0_w90_100_L40_oracle_open,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/shard26,400
+900022,tomato_sauce,2,165,175,40,clean,tomato_sauce_s2_w165_175_L40_clean,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/shard26,400
+900023,tomato_sauce,2,165,175,40,oracle_open,tomato_sauce_s2_w165_175_L40_oracle_open,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/shard26,400
+900028,cream_cheese,0,65,75,30,clean,cream_cheese_s0_w65_75_L30_clean,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/shard26,400
+900029,cream_cheese,0,65,75,30,oracle_open,cream_cheese_s0_w65_75_L30_oracle_open,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/shard26,400
+900030,cream_cheese,0,65,75,40,clean,cream_cheese_s0_w65_75_L40_clean,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/shard26,400
+900031,cream_cheese,0,65,75,40,oracle_open,cream_cheese_s0_w65_75_L40_oracle_open,"0,1",/data/liuyu/outputs/stageb_v1_1_k5c_targeted_expansion_rc1a_ca3a97e/s8_oracle_open_physical_scan/shard26,400

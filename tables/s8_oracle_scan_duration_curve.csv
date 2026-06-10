@@ -1,0 +1,17 @@
+window_key,task,state_id,ws,we,L,oracle_minus_clean_pos_area,oracle_minus_clean_abs_area,response_delay_pos,min_L_responsive,window_category
+butter_s0_w90_100,butter,0,90,100,10,0.63918559,0.63918559,0,10,C
+butter_s0_w90_100,butter,0,90,100,20,0.23871365,0.23839636,0,10,C
+butter_s0_w90_100,butter,0,90,100,30,0.260257,0.25869337,0,10,C
+butter_s0_w90_100,butter,0,90,100,40,0.20978642,0.20930755,0,10,C
+cream_cheese_s0_w65_75,cream_cheese,0,65,75,10,0.1942242,0.19456661,0,10,C
+cream_cheese_s0_w65_75,cream_cheese,0,65,75,20,0.21875845,0.21598255,0,10,C
+cream_cheese_s0_w65_75,cream_cheese,0,65,75,30,0.19766988,0.19795592,0,10,C
+cream_cheese_s0_w65_75,cream_cheese,0,65,75,40,0.5609908,0.56034206,0,10,C
+milk_s0_w70_80,milk,0,70,80,10,0.26145175,0.23810194,0,10,C
+milk_s0_w70_80,milk,0,70,80,20,0.26116933,0.23587839,0,10,C
+milk_s0_w70_80,milk,0,70,80,30,0.20578322,0.1790477,0,10,C
+milk_s0_w70_80,milk,0,70,80,40,0.21867246,0.19918355,0,10,C
+tomato_sauce_s2_w165_175,tomato_sauce,2,165,175,10,0.67588594,0.66356792,0,10,C
+tomato_sauce_s2_w165_175,tomato_sauce,2,165,175,20,0.16274352,0.16455579,0,10,C
+tomato_sauce_s2_w165_175,tomato_sauce,2,165,175,30,0.16477109,0.1676462,0,10,C
+tomato_sauce_s2_w165_175,tomato_sauce,2,165,175,40,0.39793452,0.38620085,0,10,C
