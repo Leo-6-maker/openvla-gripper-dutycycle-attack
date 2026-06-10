@@ -24,6 +24,7 @@ ap.add_argument('--job_id', type=int, default=0)
 ap.add_argument('--pair_id', default='')
 ap.add_argument('--output_dir', required=True)
 ap.add_argument('--max_steps', type=int, default=400)
+ap.add_argument('--post_horizon', type=int, default=40)
 # Phase 2 additions
 ap.add_argument('--original_window_start', type=int, default=None)
 ap.add_argument('--original_window_end', type=int, default=None)
@@ -165,7 +166,7 @@ try:
     env.sim.data.qvel[:] = 0; env.sim.forward()
     env.set_init_state(initial_states[args.state_id])
 
-    while not done and current_step < min(we + 5, args.max_steps):
+    while not done and current_step < min(we + args.post_horizon, args.max_steps):
         # ── Official image preprocess ──
         img = get_libero_image_official(obs)
         pil = Image.fromarray(img.astype(np.uint8))
@@ -290,7 +291,7 @@ except Exception as e:
 
 # ── Metrics ──
 ws_idx = ws; we_idx = min(we, len(qpos_history))
-post_start = we_idx; post_end = min(len(qpos_history), we_idx + 40)
+post_start = we_idx; post_end = min(len(qpos_history), we_idx + args.post_horizon)
 pre_qpos = np.array(qpos_history[:ws_idx]) if ws_idx > 0 else np.array([0.0])
 post_qpos = np.array(qpos_history[post_start:post_end]) if post_end > post_start else np.array([])
 baseline_qpos = float(np.median(pre_qpos)) if len(pre_qpos) > 0 else 0.0
