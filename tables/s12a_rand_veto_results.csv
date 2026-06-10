@@ -1,0 +1,10 @@
+task,sid,ws,we,seed,open,streak,pos,norm,infra
+butter,0,80,90,18,3,2,0.152283,0.4432,ok
+butter,0,80,90,19,2,1,0.083821,0.2439,ok
+butter,0,80,90,20,3,3,0.021499,0.0626,ok
+cream_cheese,2,50,60,18,0,0,0.000329,0.0012,ok
+cream_cheese,2,50,60,19,0,0,0.0,0.0,ok
+cream_cheese,2,50,60,20,0,0,0.0,0.0,ok
+tomato_sauce,2,150,160,18,2,2,0.009481,0.0158,ok
+tomato_sauce,2,150,160,19,5,1,0.015331,0.0255,ok
+tomato_sauce,2,150,160,20,3,1,0.042798,0.0712,ok
