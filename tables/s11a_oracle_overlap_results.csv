@@ -1,0 +1,7 @@
+task,sid,ws,we,baseline,pos_area,open,tier
+butter,0,80,90,0.000991,0.3436,10,STRONG
+cream_cheese,2,50,60,0.000952,0.2838,10,STRONG
+tomato_sauce,0,55,65,0.001172,0.504,10,STRONG
+tomato_sauce,2,150,160,0.001419,0.6011,10,STRONG
+tomato_sauce,2,155,165,0.001445,0.6217,10,STRONG
+tomato_sauce,2,90,100,0.001211,0.2686,10,STRONG
