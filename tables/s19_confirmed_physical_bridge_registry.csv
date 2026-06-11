@@ -1,0 +1,3 @@
+actual_task,state_id,window_start,window_end,n_seeds_tested,n_cmd_pass,n_phys_pass,oracle_qpos,rand_confounded_seeds,status
+tomato_sauce,0,70,80,6,6,5,0.2949,0,confirmed_anchor_POC
+ketchup,0,150,160,3,2,2,0.5973,1,confirmed_second_POC

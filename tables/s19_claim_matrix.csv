@@ -1,0 +1,11 @@
+level,claim,status,evidence,scope
+Level1_cmd,ketchup_s0_w150-160 parent-level command PASS,CONFIRMED,2/3 seeds cmd_OK (seeds72/73); seed71 RAND-confounded,single_parent
+Level2_phys,ketchup_s0_w150-160 physical bridge PASS,CONFIRMED,"2/3 seeds PHYS_PASS (vn=0.91,0.34); ORACLE=0.60",single_parent
+Level1_cmd,tomato_sauce_s0_w70-80 parent-level command PASS,CONFIRMED,6/6 seeds cmd_OK across S9b/S9c/S13a/S16b/S17a,single_parent
+Level2_phys,tomato_sauce_s0_w70-80 physical bridge PASS,CONFIRMED,5/6 seeds PHYS_PASS + 1 borderline (seed12),single_parent
+Level1_cmd,milk_s0_w230-240 command FAIL,CONFIRMED_FAIL,0/3 cmd_OK; 2/3 RAND-confounded (seeds72/73),single_parent
+Level1_cmd,milk_s0_w90-100 command FAIL,CONFIRMED_FAIL,0/3 cmd_OK; VIS weak/borderline (open 1-5),single_parent
+Level1_cmd,orange_juice_s0_w50-60 command FAIL,CONFIRMED_FAIL,0/3 cmd_OK; VIS borderline (open 5-7 but streak 2-3 <4),single_parent
+cross_task,Two actual tasks have confirmed physical bridge parents,CONFIRMED,tomato_sauce + ketchup; single-window each,two_tasks
+cross_task,VIS>RAND command signal exists beyond tomato_sauce,CONFIRMED,S18 4/50 cmd-pos + S19 ketchup confirmed,census_level
+Layer3,Task failure / object drop,NOT_EVALUATED,,

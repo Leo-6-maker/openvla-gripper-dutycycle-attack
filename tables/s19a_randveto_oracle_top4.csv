@@ -1,0 +1,17 @@
+candidate,actual_task,state_id,window_start,window_end,condition,seed,open_count,max_streak,qpos_pos_area,oracle_ref,rand_norm,veto_status
+ketchup_s0_w150_160,ketchup,0,150,160,oracle_open,0,10,10,0.59732133,0.59732133,1.0,ORACLE_REACHABLE
+ketchup_s0_w150_160,ketchup,0,150,160,random_linf,71,0,0,0.00126209,0.59732133,0.0021,STRICT_CLEAN
+ketchup_s0_w150_160,ketchup,0,150,160,random_linf,72,0,0,0.00133087,0.59732133,0.0022,STRICT_CLEAN
+ketchup_s0_w150_160,ketchup,0,150,160,random_linf,73,0,0,0.0,0.59732133,0.0,STRICT_CLEAN
+milk_s0_w230_240,milk,0,230,240,oracle_open,0,10,10,0.24056796,0.24056796,1.0,ORACLE_REACHABLE
+milk_s0_w230_240,milk,0,230,240,random_linf,71,0,0,0.00030091,0.24056796,0.0013,STRICT_CLEAN
+milk_s0_w230_240,milk,0,230,240,random_linf,72,0,0,0.00077113,0.24056796,0.0032,STRICT_CLEAN
+milk_s0_w230_240,milk,0,230,240,random_linf,73,0,0,0.00026792,0.24056796,0.0011,STRICT_CLEAN
+milk_s0_w90_100,milk,0,90,100,oracle_open,0,10,10,0.62468305,0.62468305,1.0,ORACLE_REACHABLE
+milk_s0_w90_100,milk,0,90,100,random_linf,71,1,1,0.01232513,0.62468305,0.0197,STRICT_CLEAN
+milk_s0_w90_100,milk,0,90,100,random_linf,72,2,1,0.01382021,0.62468305,0.0221,USABLE
+milk_s0_w90_100,milk,0,90,100,random_linf,73,2,2,0.01407793,0.62468305,0.0225,USABLE
+orange_juice_s0_w50_60,orange_juice,0,50,60,oracle_open,0,10,10,0.3906803,0.3906803,1.0,ORACLE_REACHABLE
+orange_juice_s0_w50_60,orange_juice,0,50,60,random_linf,71,0,0,0.0,0.3906803,0.0,STRICT_CLEAN
+orange_juice_s0_w50_60,orange_juice,0,50,60,random_linf,72,0,0,0.00412271,0.3906803,0.0106,STRICT_CLEAN
+orange_juice_s0_w50_60,orange_juice,0,50,60,random_linf,73,0,0,0.01417764,0.3906803,0.0363,STRICT_CLEAN
