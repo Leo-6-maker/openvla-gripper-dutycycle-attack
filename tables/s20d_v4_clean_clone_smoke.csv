@@ -1,6 +1,4 @@
-task,state_id,seed,max_steps,success_metric,expected_success,actual_success,actual_steps,success_done,success_check,timeout,infra_status,notes
-ketchup,0,0,280,done,True,,,expected_s0_success,,,,
-ketchup,1,0,280,done,True,,,expected_s1_success,,,,
-ketchup,3,0,280,done,True,,,,,,,
-tomato_sauce,3,0,280,done,True,,,,,,,
-tomato_sauce,5,0,280,done,True,,,,,,,
+task,state_id,seed,max_steps,success_metric,expected_success,actual_success,actual_steps,success_done,success_check,timeout,infra_status,gpu_pair,notes
+ketchup,1,0,280,done,True,True,180,True,True,False,ok,1-0,steps close to baseline ~157
+tomato_sauce,3,0,280,done,True,True,141,True,True,False,ok,2-6,steps close to baseline ~135
+tomato_sauce,5,0,280,done,True,True,137,True,True,False,ok,4-5,steps close to baseline ~136

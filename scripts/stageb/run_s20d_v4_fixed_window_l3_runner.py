@@ -17,9 +17,43 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "eager")
 
 from v4_run_eval_openvla import (
-    load_model, decode_with_scores, postprocess_openvla_action_for_libero,
+    decode_with_scores, postprocess_openvla_action_for_libero,
     physical_gripper_state, prompt,
 )
+
+def load_model_s20d(model_path, model_gpu_device_id=-1):
+    """V4 load_model with use_fast=True to avoid protobuf dependency (missing in env)."""
+    from transformers import AutoProcessor
+    try:
+        from transformers import AutoModelForImageTextToText as AutoModelCls
+    except Exception:
+        from transformers import AutoModelForVision2Seq as AutoModelCls
+    processor = AutoProcessor.from_pretrained(
+        model_path, trust_remote_code=True, local_files_only=True, use_fast=True)
+    visible = torch.cuda.device_count()
+    mm = os.environ.get("OPENVLA_CUDA_MAX_MEMORY", "").strip() or "10000MiB"
+    if int(model_gpu_device_id) < 0:
+        max_memory = {idx: mm for idx in range(max(visible, 1))}
+        max_memory["cpu"] = "128GiB"
+        extra_kw = {"device_map": "auto", "max_memory": max_memory}
+    else:
+        extra_kw = {"device_map": {"": int(model_gpu_device_id)},
+                     "max_memory": {int(model_gpu_device_id): mm, "cpu": "128GiB"}}
+    attn_impl = os.environ.get("OPENVLA_ATTN_IMPLEMENTATION", "eager").strip() or "eager"
+    model = AutoModelCls.from_pretrained(
+        model_path, trust_remote_code=True, local_files_only=True,
+        torch_dtype=torch.bfloat16, low_cpu_mem_usage=True,
+        attn_implementation=attn_impl, **extra_kw)
+    dev = "cuda:0"
+    if hasattr(model, "hf_device_map"):
+        for v in model.hf_device_map.values():
+            if isinstance(v, str) and v.startswith("cuda"):
+                dev = v; break
+            if isinstance(v, int):
+                dev = f"cuda:{v}"; break
+    print(f"[model] loaded path={model_path} device={dev} attn={attn_impl} "
+          f"CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES','')}", flush=True)
+    return model, processor, dev
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--task', required=True, choices=[
@@ -49,21 +83,67 @@ args = ap.parse_args()
 _eps_eff = args.eps_raw_pixels / 255.0
 state_ids = [int(x.strip()) for x in args.state_ids.split(',') if x.strip()]
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-import tensorflow as tf; tf.config.set_visible_devices([], 'GPU')
-import gym; gym.logger.set_level(40)
-
 os.environ.setdefault("OPENVLA_RENDER_LOCAL_DEVICE", str(args.render_gpu_device_id))
 
 # ── Model loading (EXACT V4 path) ──
 print(f"[{datetime.now().strftime('%H:%M:%S')}] Loading model from {args.model_path}", flush=True)
-model, processor, device = load_model(args.model_path, model_gpu_device_id=args.model_gpu_device_id)
+model, processor, device = load_model_s20d(args.model_path, model_gpu_device_id=args.model_gpu_device_id)
 model_dtype = next(model.parameters()).dtype
 print(f"[{datetime.now().strftime('%H:%M:%S')}] Model loaded on {device} dtype={model_dtype}", flush=True)
 
 # ── LIBERO env setup (V4 pattern) ──
 from libero.libero import benchmark, get_libero_path
 from libero.libero.envs import OffScreenRenderEnv
+from gripper_attack.grasp import eef_pos, object_pos
+
+# Best-effort target object name resolution (non-critical: falls back to None)
+TARGET_OBJECT_GUESS = {
+    'ketchup': 'ketchup_green_bottle_1',
+    'tomato_sauce': 'tomato_sauce_bottle_1',
+    'milk': 'milk_carton_1',
+    'butter': 'butter_box_1',
+    'cream_cheese': 'cream_cheese_box_1',
+    'salad_dressing': 'salad_dressing_bottle_1',
+    'bbq_sauce': 'bbq_sauce_bottle_1',
+    'alphabet_soup': 'alphabet_soup_can_1',
+    'orange_juice': 'orange_juice_carton_1',
+    'chocolate_pudding': 'chocolate_pudding_box_1',
+}
+
+def get_object_pose_safe(env, obj_name):
+    """Non-fatal object pose query. Returns None on failure."""
+    try:
+        return object_pos(env, obj_name)
+    except Exception:
+        return None
+
+def resolve_target_object(env, task_name):
+    """Try to find the target object in the env. Falls back to guess table."""
+    candidate = TARGET_OBJECT_GUESS.get(task_name, '')
+    if candidate:
+        try:
+            _ = env.sim.model.body_name2id(candidate)
+            return candidate
+        except Exception:
+            pass
+    # Scan all bodies for likely target (not robot, table, basket)
+    try:
+        for i in range(env.sim.model.nbody):
+            try:
+                name = env.sim.model.body_id2name(i)
+                ln = name.lower()
+                if any(kw in ln for kw in ['robot', 'table', 'basket', 'bin', 'world', 'floor']):
+                    continue
+                if any(kw in ln for kw in ['bottle', 'box', 'carton', 'can', 'bowl', 'cream', 'butter',
+                                            'ketchup', 'tomato', 'milk', 'chocolate', 'pudding',
+                                            'sauce', 'soup', 'salad', 'juice', 'cheese', 'dressing',
+                                            'bbq', 'orange', 'alphabet']):
+                    return name
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return None
 
 TASK_IDX = {
     'ketchup': 4, 'tomato_sauce': 5, 'milk': 7, 'butter': 6,
@@ -140,6 +220,10 @@ for sid in state_ids:
         dummy_action = np.array([0, 0, 0, 0, 0, 0, -1], dtype=np.float32)
         for _ in range(args.num_steps_wait):
             obs, _, _, _ = env.step(dummy_action)
+
+    target_object_name = resolve_target_object(env, args.task)
+    if target_object_name is None:
+        target_object_name = TARGET_OBJECT_GUESS.get(args.task, 'akita_black_bowl_1')
 
     trace_rows = []
     qpos_history = []
@@ -283,12 +367,20 @@ for sid in state_ids:
         # LibERO OPEN command convention: env_action[-1] < -0.5 means OPEN
         is_open = int(env_action[-1] < -0.5)
 
+        # ── Non-invasive pose logging (before step) ──
+        eef_before = eef_pos(env) if eef_pos is not None else None
+        obj_before = get_object_pose_safe(env, target_object_name)
+
         # ── Step environment ──
         obs, reward, done, info = env.step(env_action)
 
         # Qpos after step
         gripper_phys_after = physical_gripper_state(env, obs)
         gripper_qpos_after = float(np.sum(gripper_phys_after.get('qpos', [0.0])))
+
+        # ── Non-invasive pose logging (after step) ──
+        eef_after = eef_pos(env) if eef_pos is not None else None
+        obj_after = get_object_pose_safe(env, target_object_name)
 
         # V4 success tracking
         success_check = bool(env.check_success())
@@ -323,6 +415,15 @@ for sid in state_ids:
             'gripper_qpos_before': round(gripper_qpos_before, 8),
             'gripper_qpos_after': round(gripper_qpos_after, 8),
             'physical_gripper_opening_delta': round(gripper_qpos_after - gripper_qpos_before, 8),
+            'eef_x': round(float(eef_before[0]), 6) if eef_before is not None else '',
+            'eef_y': round(float(eef_before[1]), 6) if eef_before is not None else '',
+            'eef_z': round(float(eef_before[2]), 6) if eef_before is not None else '',
+            'eef_z_after': round(float(eef_after[2]), 6) if eef_after is not None else '',
+            'obj_x': round(float(obj_before[0]), 6) if obj_before is not None else '',
+            'obj_y': round(float(obj_before[1]), 6) if obj_before is not None else '',
+            'obj_z': round(float(obj_before[2]), 6) if obj_before is not None else '',
+            'obj_z_after': round(float(obj_after[2]), 6) if obj_after is not None else '',
+            'target_object_name': target_object_name or '',
             'pgd_applied': pgd_applied,
             'random_seed_str': random_seed_str,
             'random_seed_mode': random_seed_mode,

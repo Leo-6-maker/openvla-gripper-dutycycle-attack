@@ -1,0 +1,7 @@
+task,state_id,clean_success_step,candidate_window_start,candidate_window_end,window_type,evidence,confidence,notes
+ketchup,1,179,46,55,post-grasp-early-transport,gripper first closes at step 45 then oscillates 45-95; window 46-55 right after first grasp before oscillations begin,medium,object pose not available; based on gripper action pattern only
+ketchup,1,179,100,109,mid-transport,gripper closed stably from step 96 onwards; window 100-109 during stable carry phase before pre-place (success@179),high,stable grasp confirmed by consistent closed-gripper commands
+tomato_sauce,3,140,64,73,post-grasp-early-transport,gripper first closes at step 63; window 64-73 right after grasp during carry phase,medium,object pose not available
+tomato_sauce,3,140,90,99,mid-transport,gripper closed stably 63-120; window 90-99 during stable carry before pre-place oscillations at step 121,high,stable grasp confirmed
+tomato_sauce,5,136,62,71,post-grasp-early-transport,gripper first closes at step 61; window 62-71 right after grasp,medium,backup state
+tomato_sauce,5,136,85,94,mid-transport,gripper closed stably 61-118; window 85-94 during stable carry before pre-place at step 119,high,backup state
