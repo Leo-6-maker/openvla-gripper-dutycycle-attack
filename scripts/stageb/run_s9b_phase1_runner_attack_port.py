@@ -21,6 +21,8 @@ ap.add_argument('--random_control_seed', type=int, default=None, help='explicit 
 ap.add_argument('--pair_id', default='')
 ap.add_argument('--output_dir', required=True)
 ap.add_argument('--max_steps', type=int, default=400)
+ap.add_argument('--full_episode', action='store_true', help='run to max_steps or done, not w_end+20')
+ap.add_argument('--save_video_dir', default='', help='directory to save rendered frames')
 args, _ = ap.parse_known_args()
 
 if args.env_seed is None: args.env_seed = args.state_id
@@ -146,7 +148,11 @@ out_trace = os.path.join(args.output_dir, 'trace_%s_%s_job%d.csv' % (safe_pair, 
 
 print('[%s] %s s%d w[%d,%d] L=%d %s atk=%d' % (datetime.now().strftime('%H:%M:%S'), args.task, args.state_id, ws, we, args.open_duration, args.condition, args.attack_seed))
 
-done = False; step = 0; max_steps_local = max(we, oracle_we) + 20
+done = False; step = 0
+if args.full_episode:
+    max_steps_local = args.max_steps
+else:
+    max_steps_local = max(we, oracle_we) + 20
 trace_rows = []; decoded_open_bools = []; qpos_history = []; arm_l2_history = []
 infra_status = 'ok'
 
@@ -236,6 +242,24 @@ while not done and step < max_steps_local:
     is_open = int(env_action_6 < -0.5)
 
     obs, reward, done, info = env.step(env_action)
+    # Post-step qpos
+    try:
+        post_qpos = env.sim.data.qpos.copy()
+        post_gripper_qpos = float(post_qpos[7]) if len(post_qpos) > 7 else 0.0
+    except:
+        post_gripper_qpos = 0.0
+
+    # Extract success/done info
+    info_success = int(info.get("success", 0)) if isinstance(info, dict) else 0
+    info_done = int(info.get("done", 0)) if isinstance(info, dict) else int(done)
+
+    # Save video frame
+    video_frame_path = ""
+    if args.save_video_dir and args.full_episode:
+        os.makedirs(args.save_video_dir, exist_ok=True)
+        video_frame_path = os.path.join(args.save_video_dir, "frame_%06d.png" % step)
+        img_pil.save(video_frame_path)
+
     decoded_open_bools.append(is_open)
 
     trace_rows.append({
@@ -243,7 +267,10 @@ while not done and step < max_steps_local:
         'oracle_active': int(oracle_active),
         'env_action_6': round(env_action_6, 6), 'decoded_open_bool': is_open,
         'raw_action_6': round(float(raw_action[-1]), 6),
-        'gripper_qpos': round(gripper_qpos, 8), 'arm_qpos_norm': round(arm_l2, 8),
+        'pre_step_gripper_qpos': round(gripper_qpos, 8), 'post_step_gripper_qpos': round(post_gripper_qpos, 8), 'arm_qpos_norm': round(arm_l2, 8),
+        'reward': round(float(reward), 6) if isinstance(reward, (int,float)) else 0,
+        'done_step': int(done), 'info_success': info_success,
+        'video_frame_path': video_frame_path,
         'pgd_applied': pgd_applied, 'attacks_applied': attacks_applied,
         'random_control_seed': args.random_control_seed, 'random_seed_str': random_seed_str, 'random_seed_mode': random_seed_mode, 'noise_linf': noise_linf, 'noise_l2': noise_l2,
         'perturbation_space': perturbation_space,
@@ -312,6 +339,11 @@ summary = {
     'decoded_open_count': open_count, 'max_open_streak': max_streak,
     'open_rate': round(open_count / ws_steps, 4),
     'mean_arm_qpos_norm_pre': round(float(np.mean(arm_l2_history[:ws])), 8) if ws > 0 and len(arm_l2_history) > ws else 0,
+    'full_episode': args.full_episode,
+    'final_done': int(done), 'final_reward': round(float(reward), 6) if isinstance(reward, (int,float)) else 0,
+    'info_final_success': info_success,
+    'video_dir': args.save_video_dir if args.save_video_dir else '',
+    'n_steps_total': step,
 }
 
 with open(out_json, 'w') as f: json.dump(summary, f)
