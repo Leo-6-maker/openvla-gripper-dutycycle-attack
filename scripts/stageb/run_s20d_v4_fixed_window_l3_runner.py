@@ -9,9 +9,10 @@ from pathlib import Path
 import numpy as np, torch
 from datetime import datetime
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
-sys.path.insert(0, str(ROOT / "scripts"))
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT / "src"))
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "eager")
 
