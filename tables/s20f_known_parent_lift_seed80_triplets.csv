@@ -1,0 +1,7 @@
+parent,condition,seed,steps,success_done,success_check,timeout,open_count_window,max_open_streak,qpos_pos_area,classification
+ketchup_s0_w150-160,clean,0,159,True,True,False,6,6,0.0,baseline
+ketchup_s0_w150-160,random_linf,80,154,True,True,False,4,4,0.0,RAND_BORDERLINE
+ketchup_s0_w150-160,vis_pgd,80,170,True,True,False,2,1,0.002202,NO_OFFICIAL_TRANSFER
+tomato_sauce_s0_w70-80,clean,0,209,True,True,False,9,8,0.040447,baseline
+tomato_sauce_s0_w70-80,random_linf,80,185,True,True,False,3,2,0.000273,RAND_PASS
+tomato_sauce_s0_w70-80,vis_pgd,80,280,False,False,True,10,10,0.008584,PROVISIONAL_TASK_EFFECT_POSITIVE
