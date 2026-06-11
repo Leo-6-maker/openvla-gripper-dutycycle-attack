@@ -57,8 +57,12 @@ if excluded_found:
 else:
     print('CLEAN')
 
-# Build refill queues
-reserved_keys = set(seen.keys())
+# Build refill queues with parent-level exclusion
+reserved_keys = set(seen.keys())  # seed+condition level
+reserved_parents = set()  # parent level (task, state, ws, we) — exclude from fresh broad
+for k in seen:
+    reserved_parents.add((k[0], k[1], int(k[2]), int(k[3])))
+
 for d in ['/data/liuyu/outputs/stageb_s20f_queues_20260611/output',
           '/data/liuyu/outputs/stageb_s20f_v031_gpu10_extra_20260611',
           '/data/liuyu/outputs/stageb_s20g_v031_visfill_overnight_20260611',
@@ -66,6 +70,7 @@ for d in ['/data/liuyu/outputs/stageb_s20f_queues_20260611/output',
     for f in glob.glob(d + '/summary_*.json'):
         s = json.load(open(f))
         reserved_keys.add((s['task'], str(s['state_id']), s['window_start'], s['window_end'], str(s.get('attack_seed','0')), s['condition']))
+        reserved_parents.add((s['task'], str(s['state_id']), int(s['window_start']), int(s['window_end'])))
 
 universe = {}
 with open('/data/liuyu/outputs/stageb_s20f_v031_repair_20260611/s20f_v031_candidate_universe.csv') as f:
@@ -75,7 +80,7 @@ with open('/data/liuyu/outputs/stageb_s20f_v031_repair_20260611/s20f_v031_candid
 priority_phases = ['grasp_transition', 'early_transport', 'transport', 'preplace']
 priority_tasks = ['tomato_sauce', 'ketchup', 'milk', 'orange_juice', 'bbq_sauce', 'salad_dressing', 'cream_cheese', 'butter', 'alphabet_soup', 'chocolate_pudding']
 
-# Round-robin: per phase, per task, pick 1 fresh candidate
+# Round-robin: per phase, per task, pick fresh parent NOT in any prior queue/summary
 refill_cands = []
 seen_cands = set()
 for phase in priority_phases:
@@ -86,18 +91,42 @@ for phase in priority_phases:
             if u.get('phase_id', '?') != phase: continue
             cid = '%s_s%s_w%d_%d' % (t, sid, ws, we)
             if cid in seen_cands: continue
-            # Only skip if seed 85 specifically exists (refill uses seed 85)
-            if (t, str(sid), ws, we, '85', 'random_linf') in reserved_keys: continue
+            # Parent-level exclusion: skip if this parent already queued/run
+            if (t, str(sid), ws, we) in reserved_parents: continue
             refill_cands.append((t, str(sid), ws, we, phase))
             seen_cands.add(cid)
 
-# Use seed 85 for refill to avoid conflicts with current seed 83/84 queues
+print('Refill candidates (fresh parents only): %d' % len(refill_cands))
+phase_counts = Counter(c[4] for c in refill_cands)
+task_counts = Counter(c[0] for c in refill_cands)
+print('  Tasks: %d, Phases: %s' % (len(task_counts), dict(phase_counts)))
+
+# Use seed 85 for refill
 refill_jobs = []
 jid = 220000
 for task, sid, ws, we, phase in refill_cands[:30]:
     cid = '%s_s%s_w%d_%d' % (task, sid, ws, we)
     jid += 1; refill_jobs.append({'job_id':str(jid),'task':task,'state_id':sid,'window_start':str(ws),'window_end':str(we),'condition':'random_linf','attack_seed':'85','random_control_seed':'85','seed':'0','candidate_id':cid,'tier':'C_refill_'+phase,'track':'C_refill','status':'pending'})
     jid += 1; refill_jobs.append({'job_id':str(jid),'task':task,'state_id':sid,'window_start':str(ws),'window_end':str(we),'condition':'vis_pgd','attack_seed':'85','random_control_seed':'','seed':'0','candidate_id':cid,'tier':'C_refill_'+phase,'track':'C_refill','status':'pending'})
+
+# Write refill coverage
+with open(TABLES + '/s20i_refill_task_phase_coverage.csv', 'w', newline='') as f:
+    w = csv.writer(f)
+    w.writerow(['task','phase','n'])
+    for t in sorted(task_counts):
+        for p in priority_phases:
+            n = sum(1 for c in refill_cands if c[0] == t and c[4] == p)
+            if n > 0: w.writerow([t, p, n])
+
+# Re-run duplicate audit including refill
+all_refill_keys = [(j['task'], j['state_id'], j['window_start'], j['window_end'], j['attack_seed'], j['condition']) for j in refill_jobs]
+refill_dupes_internal = [k for k, v in Counter(all_refill_keys).items() if v > 1]
+refill_dupes_vs_main = [k for k in all_refill_keys if k in seen]
+print('Refill internal dupes: %d, vs main queues: %d' % (len(refill_dupes_internal), len(refill_dupes_vs_main)))
+if refill_dupes_internal:
+    print('  INTERNAL DUPES: %s' % refill_dupes_internal)
+if refill_dupes_vs_main:
+    print('  VS MAIN DUPES: %s' % refill_dupes_vs_main[:5])
 
 # Split across 3 refill queues
 refill_qs = {'gpu10': [], 'gpu26': [], 'gpu45': []}
