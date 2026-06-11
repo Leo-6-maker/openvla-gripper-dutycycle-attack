@@ -1,0 +1,15 @@
+task,state_id,window_start,window_end,attack_seed,condition,count,queues,job_ids
+tomato_sauce,3,60,70,83,random_linf,3,s20i_gpu10.csv;s20i_gpu10_refill_001.csv;s20i_gpu26.csv,210049;220001;210025
+tomato_sauce,3,60,70,83,vis_pgd,3,s20i_gpu10.csv;s20i_gpu10_refill_001.csv;s20i_gpu26.csv,210050;220002;210026
+tomato_sauce,5,105,115,83,random_linf,2,s20i_gpu10.csv;s20i_gpu26.csv,210073;210041
+tomato_sauce,5,105,115,83,vis_pgd,2,s20i_gpu10.csv;s20i_gpu26.csv,210074;210042
+tomato_sauce,3,110,120,83,random_linf,2,s20i_gpu10.csv;s20i_gpu10_refill_001.csv,210103;220013
+tomato_sauce,3,110,120,83,vis_pgd,2,s20i_gpu10.csv;s20i_gpu10_refill_001.csv,210104;220014
+tomato_sauce,3,70,80,83,random_linf,3,s20i_gpu26.csv;s20i_gpu45.csv;s20i_gpu45_refill_001.csv,210029;210071;220005
+tomato_sauce,3,70,80,83,vis_pgd,3,s20i_gpu26.csv;s20i_gpu45.csv;s20i_gpu45_refill_001.csv,210030;210072;220006
+tomato_sauce,3,120,130,83,random_linf,2,s20i_gpu26.csv;s20i_gpu45.csv,210033;210107
+tomato_sauce,3,120,130,83,vis_pgd,2,s20i_gpu26.csv;s20i_gpu45.csv,210034;210108
+tomato_sauce,5,60,70,83,random_linf,2,s20i_gpu26.csv;s20i_gpu45.csv,210037;210053
+tomato_sauce,5,60,70,83,vis_pgd,2,s20i_gpu26.csv;s20i_gpu45.csv,210038;210054
+tomato_sauce,3,75,85,83,random_linf,2,s20i_gpu26.csv;s20i_gpu26_refill_001.csv,210075;220009
+tomato_sauce,3,75,85,83,vis_pgd,2,s20i_gpu26.csv;s20i_gpu26_refill_001.csv,210076;220010
