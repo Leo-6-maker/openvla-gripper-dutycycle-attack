@@ -1,0 +1,6 @@
+classification,count,mean_distance,mean_close_commitment,mean_post_close_streak,transition_overlap_rate
+task_effect,1,-4.0,0.1,1.0,1.0
+contact_effect_weak,3,-9.3,0.533,17.7,0.0
+cmd_specific,5,6.6,0.493,6.8,0.6
+cmd_borderline,4,2.5,0.225,1.8,0.5
+no_effect,22,-21.0,0.868,57.3,0.18

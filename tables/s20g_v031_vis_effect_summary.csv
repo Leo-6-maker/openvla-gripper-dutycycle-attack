@@ -1,0 +1,5 @@
+classification,count,mean_open_delta,mean_streak_delta
+task_effect,1,6.0,5.0
+cmd_specific,5,5.6,4.6
+cmd_borderline,4,1.25,1.25
+no_effect,22,-2.272727272727273,-1.2727272727272727

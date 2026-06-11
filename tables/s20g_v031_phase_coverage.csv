@@ -1,0 +1,7 @@
+phase,paired,task_effect,cmd_specific,random_sensitive
+approach,1,0,1,0
+grasp_transition,16,1,2,0
+early_transport,3,0,0,0
+transport,8,0,0,0
+preplace,6,0,2,0
+place_or_done,1,0,0,0
