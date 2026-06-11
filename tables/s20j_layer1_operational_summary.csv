@@ -9,7 +9,9 @@ borderline,4
 baseline_clean_pct,36
 improvement_factor,2.1
 tasks,6
+task_list,"alphabet_soup(1),ketchup(13),milk(20),orange_juice(3),salad_dressing(4),tomato_sauce(2)"
 vis_total,34
-seeds,"87:7,86:36"
+vis_open_positive,4
+seeds,"86:36,87:7"
 layer1_status,PASSED_OPERATIONAL
 layer3_status,NOT_ESTABLISHED
