@@ -1,0 +1,51 @@
+parameter,value,source,source_confidence
+python_executable,/data/aviary/envs/openvla_official_libero_20260525/bin/python,tmp_object_full.sh tmp_worker_par.sh,high
+conda_env,openvla_official_libero_20260525,tmp_worker_par.sh,high
+model_path,/data/aviary/models/openvla/openvla-7b-finetuned-libero-object,tmp_object_full.sh + multiple,high
+trigger,clean,all clean scripts,high
+rho,0.0,all clean scripts,high
+seed,0 (object_full_10x10) / 1 (Table1 canary),tmp_object_full.sh vs tmp_canary_table1.sh,high
+episodes,1,all single-state scripts,high
+max_steps_override,280 (object suite),tmp_object_full.sh tmp_worker_*.sh,high
+success_metric,done,all scripts,high
+libero_official_preprocess,True,all scripts (--libero_official_preprocess),high
+center_crop,True,all scripts (--center_crop),high
+postprocess_gripper,True,all scripts (--postprocess_gripper),high
+deterministic_init_states,True,all scripts,high
+num_steps_wait,10,all scripts,high
+state_ids,explicit per-state,tmp_object_full.sh,high
+render_gpu_device_id,varies (0/2/4),worker scripts,high
+model_gpu_device_id,-1 (auto device_map),all scripts,high
+image_size,256,all scripts,high
+openvla_resize_size,224,all scripts,high
+camera_obs_key,agentview_image,all scripts,high
+auto_patch_compat,True,all scripts,high
+epsilon,0.0,tmp_object_full.sh tmp_canary_table1.sh,high
+step_size,0.0,tmp_object_full.sh tmp_canary_table1.sh,high
+attack_steps,0,tmp_object_full.sh tmp_canary_table1.sh,high
+attack_objective,"" (empty),tmp_object_full.sh tmp_canary_table1.sh,high
+processor_use_fast,False,v4_run_eval_openvla.py:501,high
+processor_local_files_only,True,v4_run_eval_openvla.py:501,high
+model_local_files_only,True,v4_run_eval_openvla.py:518,high
+model_torch_dtype,bfloat16,v4_run_eval_openvla.py:522,high
+model_low_cpu_mem_usage,True,v4_run_eval_openvla.py:523,high
+attn_implementation,eager (2080Ti) / flash_attention_2 (default),env var OPENVLA_ATTN_IMPLEMENTATION,medium
+device_map,auto,v4_run_eval_openvla.py:508,high
+max_memory_per_gpu,10000MiB,v4_run_eval_openvla.py:506,high
+drop_attention_mask,True (--keep_attention_mask not passed),v4_run_eval_openvla.py:576,high
+eos_token_handling,insert 29871 if missing,v4_run_eval_openvla.py:587-588,high
+decode_function,decode_with_scores(),v4_run_eval_openvla.py:573,high
+postprocess_function,postprocess_openvla_action_for_libero(),v4_run_eval_openvla.py:214,high
+image_preprocess_function,prepare_openvla_image(),v4_run_eval_openvla.py:574,high
+libero_preprocess_backend,official_pil_lanczos,v4_run_eval_openvla.py:574 default,high
+resize_size,224,v4_run_eval_openvla.py:574,high
+env_seed,0 (hardcoded),v4_run_eval_openvla.py:960,high
+wait_action,dummy [0,0,0,0,0,0,-1],v4_run_eval_openvla.py:974,high
+task_config_file,configs/v4_tasks_libero_full4_official_eval_20260525.yaml,tmp_object_full.sh,high
+attack_config_file,configs/v4_official_eval_clean_attack_config_20260525.yaml,tmp_object_full.sh,high
+directions_config_file,configs/v4_directions.yaml,tmp_object_full.sh,high
+unnorm_key,libero_object,all object scripts,high
+suite_key,libero_object,all object scripts,high
+success_primary_metric,done (LIBERO done flag),v4_run_eval_openvla.py:1191,high
+check_success_logged,True (logged but not used as primary),v4_run_eval_openvla.py:1190,high
+video_rendering,separate v4_render_episode_video_from_steps.py,libero_full4_state0_balanced_driver,medium
