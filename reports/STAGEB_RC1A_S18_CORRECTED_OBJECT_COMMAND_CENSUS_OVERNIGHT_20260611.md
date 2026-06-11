@@ -39,10 +39,10 @@ This is a single-seed screen only. No physical bridge or task-effect claim is ma
 
 | Task | Window | VIS | Streak | RAND | Gap | qpos |
 |------|--------|-----|--------|------|-----|------|
-| orange_juice | 50-60 | 8 | 5 | 1 | +7 | 0.18 |
 | ketchup | 150-160 | 7 | 4 | 0 | +7 | 0.15 |
-| alphabet_soup | 90-100 | 6 | 5 | 2 | +4 | 0.46 |
 | milk | 230-240 | 7 | 7 | 0 | +7 | 0.14 |
+| milk | 90-100 | 8 | 4 | 1 | +7 | 0.40 |
+| orange_juice | 50-60 | 8 | 5 | 1 | +7 | 0.18 |
 
 ### PROMISING_BORDERLINE (Phase 1: RAND-veto only)
 
@@ -62,13 +62,13 @@ This is a single-seed screen only. No physical bridge or task-effect claim is ma
 
 | Task | POS | PROM | BORDER | WEAK | CONF | Total |
 |------|-----|------|--------|------|------|-------|
-| alphabet_soup | 1 | 1 | 0 | 1 | 2 | 5 |
+| alphabet_soup | 0 | 1 | 1 | 1 | 2 | 5 |
 | bbq_sauce | 0 | 1 | 1 | 2 | 1 | 5 |
 | butter | 0 | 3 | 0 | 0 | 2 | 5 |
 | chocolate_pudding | 0 | 0 | 1 | 2 | 2 | 5 |
 | cream_cheese | 0 | 1 | 0 | 1 | 3 | 5 |
 | ketchup | 1 | 1 | 0 | 2 | 1 | 5 |
-| milk | 1 | 0 | 2 | 0 | 2 | 5 |
+| milk | 2 | 0 | 1 | 0 | 2 | 5 |
 | orange_juice | 1 | 0 | 1 | 2 | 1 | 5 |
 | salad_dressing | 0 | 1 | 1 | 2 | 1 | 5 |
 | tomato_sauce | 0 | 1 | 2 | 0 | 2 | 5 |
@@ -118,6 +118,21 @@ This is a single-seed screen only. No physical bridge or task-effect claim is ma
 | Task summary | `tables/s18_task_summary.csv` |
 | Job manifest | `tables/s18_jobs_manifest.csv` |
 | Pair status | `tables/s18_pair_status.csv` |
+
+## Post-Freeze Reconciliation (2026-06-11)
+
+The initial report prose listed `alphabet_soup w90-100` as COMMAND_POSITIVE — this was a stale entry from the old CRLF-run data. The authoritative frozen CSV (`s18_candidate_table.csv`, generated from clean summaries with job_id >= 954000) correctly classifies `alphabet_soup w90-100` as RANDOM_CONFOUNDED (VIS=2, RAND=3). The report prose and By Actual Task table have been corrected to match the CSV.
+
+See `tables/s18_top_candidate_reconciliation.csv` for the full reconciliation.
+
+**Authoritative Top 4 (from frozen CSV):**
+
+| Rank | Candidate | VIS | Streak | RAND | Gap | qpos |
+|------|-----------|-----|--------|------|-----|------|
+| 1 | ketchup w150-160 | 7 | 4 | 0 | +7 | 0.15 |
+| 2 | milk w230-240 | 7 | 7 | 0 | +7 | 0.14 |
+| 3 | milk w90-100 | 8 | 4 | 1 | +7 | 0.40 |
+| 4 | orange_juice w50-60 | 8 | 5 | 1 | +7 | 0.18 |
 
 ## Next Step
 

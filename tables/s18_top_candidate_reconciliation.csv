@@ -1,0 +1,7 @@
+source,candidate,VIS_open,VIS_streak,RAND_open,RAND_streak,qpos,classification,status
+report_prose_old,alphabet_soup_w90-100,6,5,2,1,0.46,COMMAND_POSITIVE,STALE_from_crlf_run_EXCLUDED
+frozen_csv_authoritative,alphabet_soup_w90-100,2,1,3,1,0.30,RANDOM_CONFOUNDED,correct_from_new_clean_data
+frozen_csv_authoritative,milk_w90-100,8,4,1,1,0.40,COMMAND_POSITIVE,missing_from_report_prose
+frozen_csv_authoritative,ketchup_w150-160,7,4,0,0,0.15,COMMAND_POSITIVE,rank_1_in_CSV
+frozen_csv_authoritative,milk_w230-240,7,7,0,0,0.14,COMMAND_POSITIVE,rank_2_in_CSV
+frozen_csv_authoritative,orange_juice_w50-60,8,5,1,1,0.18,COMMAND_POSITIVE,rank_4_in_CSV
