@@ -1,0 +1,4 @@
+phase,seed,VIS_open,VIS_streak,RAND_open,RAND_streak,VIS_qpos,RAND_qpos,gap,oracle_ref,VIS_norm,cmd_status,phys_status,rand_protocol
+S20a_fresh,74,8,6,0,0,0.4586,0.0,8,0.5973,0.7678,CMD_OK,PHYS_PASS,explicit_random_control_seed
+S20a_fresh,75,7,5,2,2,0.4023,0.0018,5,0.5973,0.6736,CMD_OK,PHYS_BORDER,explicit_random_control_seed
+S20a_fresh,76,7,4,1,1,0.5648,0.0156,6,0.5973,0.9456,CMD_OK,PHYS_PASS,explicit_random_control_seed

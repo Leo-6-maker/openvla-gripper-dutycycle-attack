@@ -1,0 +1,3 @@
+actual_task,state_id,window_start,window_end,n_seeds,n_phys_pass,n_rand_confounded,oracle_qpos,status,protocol_notes
+tomato_sauce,0,70,80,6,5,0,0.2949,confirmed_anchor_POC,legacy protocol
+ketchup,0,150,160,6,5,1,0.597,confirmed_second_POC,S19: 2/3 legacy; S20a: 3/3 explicit random_control_seed
