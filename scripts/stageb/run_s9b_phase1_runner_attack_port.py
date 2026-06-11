@@ -17,6 +17,7 @@ ap.add_argument('--env_seed', type=int, default=None)
 ap.add_argument('--pgd_steps', type=int, default=20)
 ap.add_argument('--eps_raw_pixels', type=float, default=6.0)
 ap.add_argument('--job_id', type=int, default=0)
+ap.add_argument('--random_control_seed', type=int, default=None, help='explicit seed for random_linf torch.Generator; if set, overrides attack_seed+job_id')
 ap.add_argument('--pair_id', default='')
 ap.add_argument('--output_dir', required=True)
 ap.add_argument('--max_steps', type=int, default=400)
@@ -179,7 +180,7 @@ while not done and step < max_steps_local:
     oracle_active = in_window and args.condition == 'oracle_open'
 
     pgd_applied = 0; attacks_applied = 0
-    random_seed_str = ''; noise_linf = '0'; noise_l2 = '0'
+    random_seed_str = ''; random_seed_mode = 'n/a'; noise_linf = '0'; noise_l2 = '0'
     perturbation_space = 'none'
     env_grip_raw = raw_gripper
 
@@ -205,7 +206,12 @@ while not done and step < max_steps_local:
         elif args.condition == 'random_linf':
             try:
                 pv_clean = inp['pixel_values']
-                random_seed_str = str(int(_attack_seed) + args.job_id)
+                if args.random_control_seed is not None:
+                    random_seed_str = str(args.random_control_seed)
+                    random_seed_mode = "explicit_random_control_seed"
+                else:
+                    random_seed_str = str(int(_attack_seed) + args.job_id)
+                    random_seed_mode = "legacy_attack_seed_plus_job_id"
                 rand_gen = torch.Generator(device=pv_clean.device)
                 rand_gen.manual_seed(int(random_seed_str))
                 noise = (2 * torch.rand(pv_clean.shape, device=pv_clean.device,
@@ -239,7 +245,7 @@ while not done and step < max_steps_local:
         'raw_action_6': round(float(raw_action[-1]), 6),
         'gripper_qpos': round(gripper_qpos, 8), 'arm_qpos_norm': round(arm_l2, 8),
         'pgd_applied': pgd_applied, 'attacks_applied': attacks_applied,
-        'random_seed_str': random_seed_str, 'noise_linf': noise_linf, 'noise_l2': noise_l2,
+        'random_control_seed': args.random_control_seed, 'random_seed_str': random_seed_str, 'random_seed_mode': random_seed_mode, 'noise_linf': noise_linf, 'noise_l2': noise_l2,
         'perturbation_space': perturbation_space,
         'requested_task': args.task, 'actual_task_key': actual_task_key,
 	        'actual_task_idx': cfg, 'actual_language': instruction,
@@ -297,7 +303,7 @@ summary = {
     'adv_redecode_mode': 'model_generate_from_adv_inputs',
     'image_source': 'env.sim.render_rotate180',
     'prompt_mode': 'phase1_handrolled',
-    'attack_objective': 'prefix_locked_gripper_open_margin',
+    'attack_objective': 'prefix_locked_gripper_open_margin', 'random_seed_mode': random_seed_mode if args.condition == 'random_linf' else 'n/a',
     'qpos_baseline': round(baseline_qpos, 8),
     'qpos_pos_peak': round(qpos_pos_peak, 8), 'qpos_pos_area': round(qpos_pos_area, 8),
     'qpos_neg_peak': round(qpos_neg_peak, 8), 'qpos_neg_area': round(qpos_neg_area, 8),
