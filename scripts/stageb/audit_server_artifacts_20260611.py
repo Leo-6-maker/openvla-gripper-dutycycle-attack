@@ -571,9 +571,18 @@ def best_clean_state_map(rows: List[Dict[str, Any]]) -> Dict[Tuple[str, str], Di
 
 def level3_shortlist_rows(inventory: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     best = best_clean_state_map(inventory)
+    high_conf_success_values: Dict[Tuple[str, str], set] = defaultdict(set)
+    for r in inventory:
+        key = (str(r.get("task")), str(r.get("state_id")))
+        success_value = parse_bool(r.get("success"))
+        if r.get("source_confidence") == "high" and success_value is not None:
+            high_conf_success_values[key].add(success_value)
+
     candidates: List[Dict[str, Any]] = []
     preferred = {("ketchup", "1"): 100, ("ketchup", "3"): 95, ("tomato_sauce", "3"): 100, ("tomato_sauce", "5"): 95}
     for (task, sid), r in best.items():
+        if len(high_conf_success_values.get((task, sid), set())) > 1:
+            continue
         success = parse_bool(r.get("success"))
         if success is not True:
             continue
