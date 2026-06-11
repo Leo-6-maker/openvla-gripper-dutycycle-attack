@@ -1,0 +1,11 @@
+metric,value
+manifest_expected_jobs,100
+new_clean_summaries_jobid_ge_954000,101
+old_crlf_run_summaries_excluded,22
+total_raw_files_on_disk,123
+complete_vis_rand_pairs_new,50
+complete_pairs_old_excluded,10
+infra_errors,0
+provenance_fails,0
+extra_summary_mixins,1
+notes,"101 new summaries (1 extra likely clean/oracle mix-in from early testing). 22 old summaries from CRLF run excluded (different job_id batch). All analysis uses only new summaries with job_id >= 954000."
