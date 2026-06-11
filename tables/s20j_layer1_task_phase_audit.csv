@@ -1,0 +1,16 @@
+task,phase,total,clean,clean_pct
+alphabet_soup,grasp_transition,1,0,0
+ketchup,grasp_transition,5,5,100
+ketchup,early_transport,1,1,100
+ketchup,transport,6,5,83
+ketchup,preplace,1,1,100
+milk,grasp_transition,4,2,50
+milk,early_transport,1,1,100
+milk,transport,11,10,91
+milk,preplace,4,4,100
+orange_juice,approach,2,0,0
+orange_juice,transport,1,1,100
+salad_dressing,grasp_transition,2,0,0
+salad_dressing,transport,2,2,100
+tomato_sauce,grasp_transition,1,1,100
+tomato_sauce,transport,1,0,0

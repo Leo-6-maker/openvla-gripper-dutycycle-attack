@@ -1,0 +1,15 @@
+metric,value
+rand_total,43
+rand_clean,33
+rand_clean_pct,77
+strict,31
+usable,2
+confounded,6
+borderline,4
+baseline_clean_pct,36
+improvement_factor,2.1
+tasks,6
+vis_total,34
+seeds,"87:7,86:36"
+layer1_status,PASSED_OPERATIONAL
+layer3_status,NOT_ESTABLISHED

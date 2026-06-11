@@ -1,0 +1,5 @@
+tier,count,tasks,task_distribution
+STRICT,31,5,"{'ketchup': 11, 'milk': 17, 'orange_juice': 1, 'salad_dressing': 1, 'tomato_sauce': 1}"
+USABLE,2,2,"{'ketchup': 1, 'salad_dressing': 1}"
+CONFOUNDED,6,4,"{'alphabet_soup': 1, 'ketchup': 1, 'milk': 2, 'salad_dressing': 2}"
+BORDERLINE,4,3,"{'milk': 1, 'orange_juice': 2, 'tomato_sauce': 1}"
