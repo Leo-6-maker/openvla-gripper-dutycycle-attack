@@ -1,0 +1,17 @@
+model,threshold,eligible_count,eligible_precision,false_clean_rate,abstain_rate,recall
+Clean+Transition_LR,0.15,5,0.8,0.2,0.963,0.012
+Clean+Transition_LR,0.2,8,0.625,0.375,0.94,0.037
+Clean+Transition_LR,0.25,10,0.7,0.3,0.925,0.037
+Clean+Transition_LR,0.3,16,0.625,0.375,0.881,0.074
+Clean+Transition_LR,0.35,34,0.618,0.382,0.746,0.16
+Clean+Transition_LR,0.4,46,0.543,0.457,0.657,0.259
+Clean+Transition_LR,0.45,47,0.553,0.447,0.649,0.259
+Clean+Transition_LR,0.5,63,0.54,0.46,0.53,0.358
+AllCleanNoTask_LR,0.15,9,0.556,0.444,0.933,0.049
+AllCleanNoTask_LR,0.2,12,0.583,0.417,0.91,0.062
+AllCleanNoTask_LR,0.25,16,0.625,0.375,0.881,0.074
+AllCleanNoTask_LR,0.3,22,0.636,0.364,0.836,0.099
+AllCleanNoTask_LR,0.35,32,0.562,0.438,0.761,0.173
+AllCleanNoTask_LR,0.4,40,0.6,0.4,0.701,0.198
+AllCleanNoTask_LR,0.45,47,0.553,0.447,0.649,0.259
+AllCleanNoTask_LR,0.5,51,0.529,0.471,0.619,0.296
