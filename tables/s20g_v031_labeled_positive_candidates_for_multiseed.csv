@@ -1,0 +1,10 @@
+task,state_id,window_start,window_end,seed,phase,first_close_step,lift_step,label_quality,rand_open,rand_streak,rand_done,rand_timeout,rand_steps,vis_open,vis_streak,vis_done,vis_timeout,vis_steps,open_delta,streak_delta,classification
+ketchup,1,40,50,80,grasp_transition,45,107,STRICT,3,1,True,False,228,7,4,True,False,133,4,3,cmd_specific
+ketchup,1,65,75,80,grasp_transition,45,107,STRICT,0,0,True,False,144,2,1,False,True,280,2,1,contact_effect_weak
+tomato_sauce,5,160,170,80,preplace,64,110,STRICT,0,0,True,False,135,8,5,True,False,170,8,5,cmd_specific
+tomato_sauce,5,70,80,80,grasp_transition,64,110,STRICT,2,2,True,False,141,8,7,False,True,280,6,5,task_effect
+ketchup,1,55,65,80,grasp_transition,45,107,STRICT,0,0,True,False,138,0,0,False,True,280,0,0,contact_effect_weak
+tomato_sauce,5,145,155,80,preplace,64,110,USABLE,5,5,True,False,150,5,4,False,True,280,0,-1,contact_effect_weak
+tomato_sauce,3,25,35,80,approach,63,73,STRICT,3,2,True,False,275,10,10,True,False,147,7,8,cmd_specific
+tomato_sauce,5,150,160,80,preplace,64,110,STRICT,0,0,True,False,138,5,3,True,False,161,5,3,cmd_specific
+tomato_sauce,5,60,70,80,grasp_transition,64,110,STRICT,0,0,True,False,226,4,4,True,False,164,4,4,cmd_specific

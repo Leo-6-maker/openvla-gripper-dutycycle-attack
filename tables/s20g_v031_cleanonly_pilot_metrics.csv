@@ -1,0 +1,13 @@
+mode,model,target,n,pos,auroc_gkf,bal_gkf,auroc_skf
+clean_only,LR,cmd_specific,35,9,0.747,0.629,0.701
+clean_only,LR,task_or_contact,35,4,nan,0.697,0.753
+clean_only,RF,cmd_specific,35,9,0.754,0.604,0.813
+clean_only,RF,task_or_contact,35,4,nan,0.667,0.756
+clean_only,GB,cmd_specific,35,9,0.747,0.723,0.534
+clean_only,GB,task_or_contact,35,4,nan,0.694,0.87
+post_rand_triage,LR,cmd_specific,35,9,0.783,0.641,0.588
+post_rand_triage,LR,task_or_contact,35,4,nan,0.697,0.803
+post_rand_triage,RF,cmd_specific,35,9,0.804,0.53,0.755
+post_rand_triage,RF,task_or_contact,35,4,nan,0.667,0.653
+post_rand_triage,GB,cmd_specific,35,9,0.747,0.723,0.535
+post_rand_triage,GB,task_or_contact,35,4,nan,0.569,0.776
