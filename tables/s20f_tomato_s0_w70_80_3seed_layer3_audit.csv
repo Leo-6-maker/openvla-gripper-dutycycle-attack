@@ -1,0 +1,8 @@
+parent,seed,condition,steps,success_done,success_check,timeout,window_open_count,max_open_streak,qpos_pos_area,qpos_baseline,arm_attribution,classification
+tomato_sauce_s0_w70-80,0,clean,209,True,True,False,9,8,0.040447,0.0,normal,baseline
+tomato_sauce_s0_w70-80,80,random_linf,185,True,True,False,3,2,0.000273,0.0,normal,RAND_PASS
+tomato_sauce_s0_w70-80,80,vis_pgd,280,False,False,True,10,10,0.008584,0.0,GRIPPER_CONTACT_ATTRIBUTED,TASK_EFFECT_POSITIVE
+tomato_sauce_s0_w70-80,81,random_linf,229,True,True,False,5,5,0.001711,0.0,normal,RAND_PASS
+tomato_sauce_s0_w70-80,81,vis_pgd,280,False,False,True,9,9,0.056963,0.0,GRIPPER_CONTACT_ATTRIBUTED,TASK_EFFECT_POSITIVE
+tomato_sauce_s0_w70-80,82,random_linf,230,True,True,False,8,7,0.0,0.0,RAND_BORDERLINE,RAND_BORDERLINE_HIGH_OPEN
+tomato_sauce_s0_w70-80,82,vis_pgd,175,True,True,False,10,10,0.0,0.0,normal,CONTACT_WEAK_VIS_RECOVERS
