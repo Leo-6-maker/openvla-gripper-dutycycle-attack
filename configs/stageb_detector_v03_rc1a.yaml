@@ -1,0 +1,43 @@
+# Detector v0.3_rc1a Frozen Spec
+# Materialized 2026-06-11 from run_selector_v0_3.py + 72 labeled K5/K5b/K5c pairs
+# No checkpoint existed; frozen by training LR on full labeled set
+
+detector_version: detector_v0.3_rc1a
+source_framework: scripts/diagnostics/run_selector_v0_3.py
+label_source: all_labels_rc1a_14cfabe_72pairs.csv
+stable_pool: stageb_v1_1_stable_parent_pool_k5_k5b_k5c_rc1a_ca3a97e.csv
+training_set_size: 22  # pairs that matched both stable pool and labels
+n_cmd: 11
+n_rand: 6
+
+feature_group: CleanNoTaskNoTiming  # 6 clean + 2 timing features
+model: LogisticRegression
+model_kwargs:
+  max_iter: 2000
+  class_weight: balanced
+  random_state: 42
+
+features:
+  - clean_open_count
+  - clean_open_frac
+  - raw_gripper_mean
+  - raw_gripper_max
+  - qpos_pre
+  - qpos_mean
+  - window_center
+  - rel_timing
+
+targets:
+  primary_bridge: cmd_specific
+  abstain_target: random_sensitive
+
+window_convention: half_open  # ws <= step < we
+window_len_default: 10
+
+abstain_rule:
+  metric: p_random_sensitive
+  threshold: 50th_percentile_of_training_set
+  threshold_value: 0.1849
+
+selection_score: p_cmd_specific
+selection_rule: top non-abstain by p_cmd_specific descending
