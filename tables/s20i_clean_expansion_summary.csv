@@ -1,0 +1,6 @@
+task,state_id,success,done_step,max_steps,first_close,lift,preplace
+milk,1,True,152,153,50,66,118
+cream_cheese,1,True,125,126,56,67,105
+salad_dressing,1,True,125,126,57,67,105
+orange_juice,1,True,130,131,51,59,103
+alphabet_soup,1,True,204,205,67,129,181
