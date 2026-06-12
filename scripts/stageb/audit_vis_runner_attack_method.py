@@ -9,8 +9,8 @@ os.makedirs(T, exist_ok=True)
 # ═══════════════════════════════════════════════════════════════
 # Audit source: run_s20d_v4_fixed_window_l3_runner.py
 # ═══════════════════════════════════════════════════════════════
-V4_PATH = '/data/liuyu/repos/codex_stageb_openvla_alignment_rc1a_20260607/scripts/stageb/run_s20d_v4_fixed_window_l3_runner.py'
-ADAPTER_PATH = '/home/liuyu/openvla_gripper_attack/OpenVLA Gripper Duty-Cycle Attack/src/gripper_attack/attack_adapter.py'
+V4_PATH = str(Path(__file__).resolve().parents[2] / 'scripts/stageb/run_s20d_v4_fixed_window_l3_runner.py')
+ADAPTER_PATH = str(Path(__file__).resolve().parents[2] / 'src/gripper_attack/attack_adapter.py')
 
 checks = []
 

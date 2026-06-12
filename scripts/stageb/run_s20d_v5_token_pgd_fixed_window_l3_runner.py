@@ -88,7 +88,8 @@ model, processor, device = load_model_s20d(
     args.model_path, model_gpu_device_id=int(args.model_gpu_device_id))
 model_dtype = torch.bfloat16
 K_trigger = 8  # match V4 default uncertainty K
-action_dim = model.config.pad_to_multiple_of
+unnorm_key = "libero_object"
+action_dim = int(model.get_action_dim(unnorm_key)); assert action_dim == 7, f"Unexpected action_dim={action_dim}"
 print(datetime.now().strftime('[%H:%M:%S]'), 'Model loaded on %s dtype=%s' % (device, model_dtype))
 
 # ── Env setup ──
@@ -96,13 +97,12 @@ from libero.libero import benchmark, get_libero_path
 from libero.libero.envs import OffScreenRenderEnv
 bm = benchmark.get_benchmark_dict()
 task_suite = bm['libero_object']()
-TASK_IDX = {t.name: i for i, t in enumerate(task_suite.tasks)}
+TASK_IDX = {'ketchup': 4, 'tomato_sauce': 5, 'milk': 7, 'butter': 6, 'cream_cheese': 1, 'salad_dressing': 2, 'bbq_sauce': 3, 'alphabet_soup': 0, 'orange_juice': 9, 'chocolate_pudding': 8}
 task_idx = TASK_IDX[args.task]
 task_obj = task_suite.get_task(task_idx)
 init_states = task_suite.get_task_init_states(task_idx)
+bddl_file = os.path.join(get_libero_path("bddl_files"), task_obj.problem_folder, task_obj.bddl_file)
 instruction = task_obj.language
-bddl_file = os.path.join(get_libero_path('bddl_files'), task_obj.problem_folder, task_obj.bddl_file)
-unnorm_key = 'libero_object'
 
 # ── Shared helpers ──
 def decode_action_from_token_ids(model, token_ids, unnorm_key):
@@ -194,7 +194,12 @@ for sid in state_ids:
     obs = env.reset()
     obs = env.set_init_state(init_states[sid])
 
-    max_steps = min(args.max_steps_override, init_states.shape[1] if init_states.ndim == 2 else args.max_steps_override)
+    # V4-aligned dummy wait (P0 fix: was missing)
+    dummy_action = [0, 0, 0, 0, 0, 0, -1]
+    for _ in range(args.num_steps_wait):
+        obs, _, _, _ = env.step(dummy_action)
+
+    max_steps = args.max_steps_override
     ws, we = max(0, min(args.window_start, max_steps)), max(0, min(args.window_end, max_steps))
 
     success_primary = False; success_done_any = False; success_check_any = False
@@ -230,7 +235,7 @@ for sid in state_ids:
 
     while step < max_steps:
         obs['agentview_image']
-        env.render()
+        # render handled by obs access
 
         img_uint8 = obs['agentview_image']
 
@@ -300,7 +305,7 @@ for sid in state_ids:
                             v5_telemetry['fallback_adapter_used'] = bool(dbg.get('fallback_adapter_used', False))
                         else:
                             infra_status = 'v5_token_pgd_no_adv_inputs'
-                            v5_telemetry['fallback_adapter_used'] = True
+                            raise RuntimeError('V5 HARD FAIL: adv_inputs missing for token_pgd')
                     else:
                         infra_status = 'v5_token_pgd_attack_result_none'
                 except Exception as e:
@@ -342,14 +347,12 @@ for sid in state_ids:
         max_streak = max(max_streak, current_streak)
 
         eef_before = env.env.robots[0]._hand_pos if hasattr(env.env.robots[0], '_hand_pos') else None
-        eef_after = env.env.robots[0]._hand_pos if hasattr(env.env.robots[0], '_hand_pos') else None
         obj_before_id = env.env.object_sites[0] if hasattr(env.env, 'object_sites') and env.env.object_sites else None
         obj_before = env.sim.data.get_site_xpos(obj_before_id) if obj_before_id is not None else None
-        obj_after = env.sim.data.get_site_xpos(obj_before_id) if obj_before_id is not None else None
 
         success_done = info.get('success_done', 0) if isinstance(info, dict) else 0
         success_check = info.get('success_check', 0) if isinstance(info, dict) else 0
-        success_primary_now = success_done if args.success_metric == 'check_success' else success_check
+        success_primary_now = success_done if args.success_metric == 'done' else success_check
         if success_primary_now and not success_primary:
             success_primary = True; success_step_primary = step
         if success_done and not success_done_any: success_done_any = True; done_step_any = step

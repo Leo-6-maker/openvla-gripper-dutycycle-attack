@@ -69,7 +69,7 @@ def load_model_s20d(model_path, model_gpu_device_id=-1):
 print('[%s] Loading model...' % time.strftime('%H:%M:%S'))
 model, processor, device = load_model_s20d(MODEL_PATH, model_gpu_device_id=-1)
 model_dtype = torch.bfloat16
-action_dim = model.config.pad_to_multiple_of
+action_dim = int(model.get_action_dim(unnorm_key)); assert action_dim == 7, f"Unexpected action_dim={action_dim}"
 unnorm_key = 'libero_object'
 print('[%s] Model loaded: %s dtype=%s' % (time.strftime('%H:%M:%S'), device, model_dtype))
 
@@ -102,7 +102,8 @@ for case in CASES:
     seed = case['attack_seed']
 
     print('[%s] Smoke: %s seed=%d ws=%d' % (time.strftime('%H:%M:%S'), cid, seed, ws))
-    try:
+
+    # Setup env
     task_idx = TASK_IDX[task]
     task_obj = task_suite.get_task(task_idx)
     init_states = task_suite.get_task_init_states(task_idx)
