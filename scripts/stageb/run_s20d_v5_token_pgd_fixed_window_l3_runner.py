@@ -15,7 +15,14 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "eager")
 
 from v4_run_eval_openvla import (
-    decode_with_scores, postprocess_openvla_action_for_libero, TARGET_OBJECT_GUESS)
+    decode_with_scores, postprocess_openvla_action_for_libero)
+
+TARGET_OBJECT_GUESS = {
+    'ketchup': 'ketchup_1', 'tomato_sauce': 'tomato_sauce_1', 'milk': 'milk_1',
+    'butter': 'butter_1', 'cream_cheese': 'cream_cheese_1', 'salad_dressing': 'salad_dressing_1',
+    'bbq_sauce': 'bbq_sauce_1', 'alphabet_soup': 'alphabet_soup_1',
+    'orange_juice': 'orange_juice_1', 'chocolate_pudding': 'chocolate_pudding_1',
+}
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--task', required=True, choices=[
