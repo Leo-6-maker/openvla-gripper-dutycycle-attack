@@ -15,7 +15,14 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "eager")
 
 from v4_run_eval_openvla import (
-    decode_with_scores, postprocess_openvla_action_for_libero, TARGET_OBJECT_GUESS)
+    decode_with_scores, postprocess_openvla_action_for_libero)
+
+TARGET_OBJECT_GUESS = {
+    'ketchup': 'ketchup_1', 'tomato_sauce': 'tomato_sauce_1', 'milk': 'milk_1',
+    'butter': 'butter_1', 'cream_cheese': 'cream_cheese_1', 'salad_dressing': 'salad_dressing_1',
+    'bbq_sauce': 'bbq_sauce_1', 'alphabet_soup': 'alphabet_soup_1',
+    'orange_juice': 'orange_juice_1', 'chocolate_pudding': 'chocolate_pudding_1',
+}
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--task', required=True, choices=[
@@ -81,7 +88,8 @@ model, processor, device = load_model_s20d(
     args.model_path, model_gpu_device_id=int(args.model_gpu_device_id))
 model_dtype = torch.bfloat16
 K_trigger = 8  # match V4 default uncertainty K
-action_dim = model.config.pad_to_multiple_of
+unnorm_key = "libero_object"
+action_dim = int(model.get_action_dim(unnorm_key)); assert action_dim == 7, f"Unexpected action_dim={action_dim}"
 print(datetime.now().strftime('[%H:%M:%S]'), 'Model loaded on %s dtype=%s' % (device, model_dtype))
 
 # ── Env setup ──
@@ -89,13 +97,12 @@ from libero.libero import benchmark, get_libero_path
 from libero.libero.envs import OffScreenRenderEnv
 bm = benchmark.get_benchmark_dict()
 task_suite = bm['libero_object']()
-TASK_IDX = {t.name: i for i, t in enumerate(task_suite.tasks)}
+TASK_IDX = {'ketchup': 4, 'tomato_sauce': 5, 'milk': 7, 'butter': 6, 'cream_cheese': 1, 'salad_dressing': 2, 'bbq_sauce': 3, 'alphabet_soup': 0, 'orange_juice': 9, 'chocolate_pudding': 8}
 task_idx = TASK_IDX[args.task]
 task_obj = task_suite.get_task(task_idx)
 init_states = task_suite.get_task_init_states(task_idx)
+bddl_file = os.path.join(get_libero_path("bddl_files"), task_obj.problem_folder, task_obj.bddl_file)
 instruction = task_obj.language
-bddl_file = os.path.join(get_libero_path('bddl_files'), task_obj.problem_folder, task_obj.bddl_file)
-unnorm_key = 'libero_object'
 
 # ── Shared helpers ──
 def decode_action_from_token_ids(model, token_ids, unnorm_key):
@@ -137,6 +144,7 @@ def physical_gripper_state(env, obs):
         return {}
 
 # ── Attack setup (v5: FIXED) ──
+eps_norm = args.eps_raw_pixels / 255.0  # P0-F: global scope
 attacker = None
 attacker_config = {}
 v5_attack_telemetry = {}
@@ -144,7 +152,6 @@ v5_attack_telemetry = {}
 if args.condition == 'vis_pgd':
     from gripper_attack.attack_adapter import OpenVLAVisualAttacker, get_adv_inputs_from_attack_result
 
-    eps_norm = args.eps_raw_pixels / 255.0
     attacker_config = {
         'method': 'token_prefix_pgd',  # ← BUGFIX 1: explicitly set method
         'epsilon': eps_norm,
@@ -197,7 +204,12 @@ for sid in state_ids:
     obs = env.reset()
     obs = env.set_init_state(init_states[sid])
 
-    max_steps = min(args.max_steps_override, init_states.shape[1] if init_states.ndim == 2 else args.max_steps_override)
+    # V4-aligned dummy wait (P0 fix: was missing)
+    dummy_action = [0, 0, 0, 0, 0, 0, -1]
+    for _ in range(args.num_steps_wait):
+        obs, _, _, _ = env.step(dummy_action)
+
+    max_steps = args.max_steps_override
     ws, we = max(0, min(args.window_start, max_steps)), max(0, min(args.window_end, max_steps))
 
     success_primary = False; success_done_any = False; success_check_any = False
@@ -233,7 +245,7 @@ for sid in state_ids:
 
     while step < max_steps:
         obs['agentview_image']
-        env.render()
+        # render handled by obs access
 
         img_uint8 = obs['agentview_image']
 
@@ -253,6 +265,13 @@ for sid in state_ids:
         attack_this_step = in_window and args.condition != 'clean'
 
         pgd_applied = 0; perturbation_space = 'none'
+        step_v5 = {'attack_method': '', 'token_label_source': '',
+            'target_ce_initial': '', 'target_ce_final': '', 'loss_decrease': '',
+            'gripper_logit_margin_after': '', 'open_region_prob_mass_after': '',
+            'close_bin_prob_mass_after': '', 'corrected_open_token_count': '',
+            'pixel_budget_adv_inputs_linf': '', 'adv_decode_path': '',
+            'used_adv_inputs': False, 'fallback_adapter_used': False,
+            'adv_gripper_raw': '', 'adv_env_gripper': '', 'adv_open_bool': ''}
         env_action = clean_env_action.copy()
         executed_action = clean_action.copy()
 
@@ -285,33 +304,33 @@ for sid in state_ids:
                             step_v5["adv_open_bool"] = int(env_action[-1] < -0.5)
                             perturbation_space = 'token_prefix_pgd_adv_inputs_v5'
 
-                            v5_telemetry['used_adv_inputs'] = True
+                            step_v5['used_adv_inputs'] = True
                             v5_telemetry['used_x_adv'] = False
                             v5_telemetry['pgd_applied'] = 1
 
                             # Extract debug telemetry
                             dbg = getattr(attack_result, 'debug', {}) or {}
-                            v5_telemetry['attack_method'] = getattr(attack_result, 'attack_method', 'unknown')
-                            v5_telemetry['token_label_source'] = str(dbg.get('token_label_source', 'not_available'))
-                            v5_telemetry['target_ce_initial'] = float(dbg.get('target_ce_initial', -1) or -1)
-                            v5_telemetry['target_ce_final'] = float(dbg.get('target_ce_final', -1) or -1)
-                            v5_telemetry['loss_decrease'] = float(dbg.get('loss_decrease', 0) or 0)
-                            v5_telemetry['open_region_prob_mass_after'] = float(dbg.get('open_region_prob_mass_after', -1) or -1)
-                            v5_telemetry['close_bin_prob_mass_after'] = float(dbg.get('close_bin_prob_mass_after', -1) or -1)
+                            step_v5['attack_method'] = getattr(attack_result, 'attack_method', 'unknown')
+                            step_v5['token_label_source'] = str(dbg.get('token_label_source', 'not_available'))
+                            step_v5['target_ce_initial'] = float(dbg.get('target_ce_initial', -1) or -1)
+                            step_v5['target_ce_final'] = float(dbg.get('target_ce_final', -1) or -1)
+                            step_v5['loss_decrease'] = float(dbg.get('loss_decrease', 0) or 0)
+                            step_v5['open_region_prob_mass_after'] = float(dbg.get('open_region_prob_mass_after', -1) or -1)
+                            step_v5['close_bin_prob_mass_after'] = float(dbg.get('close_bin_prob_mass_after', -1) or -1)
                             v5_telemetry['gripper_prob_mass_margin_after'] = float(dbg.get('gripper_prob_mass_margin_after', -1) or -1)
-                            v5_telemetry['gripper_logit_margin_after'] = float(dbg.get('gripper_logit_margin_after', -1) or -1)
-                            v5_telemetry['corrected_open_token_count'] = int(dbg.get('corrected_open_token_count', -1) or -1)
+                            step_v5['gripper_logit_margin_after'] = float(dbg.get('gripper_logit_margin_after', -1) or -1)
+                            step_v5['corrected_open_token_count'] = int(dbg.get('corrected_open_token_count', -1) or -1)
                             v5_telemetry['region_mapping_status'] = str(dbg.get('region_mapping_status', 'not_available'))
-                            v5_telemetry['pixel_budget_adv_inputs_linf'] = float(dbg.get('pixel_budget_adv_inputs_linf', -1) or -1)
+                            step_v5['pixel_budget_adv_inputs_linf'] = float(dbg.get('pixel_budget_adv_inputs_linf', -1) or -1)
                             v5_telemetry['pixel_budget_master_linf'] = float(dbg.get('pixel_budget_master_linf', -1) or -1)
-                            v5_telemetry['fallback_adapter_used'] = bool(dbg.get('fallback_adapter_used', False))
+                            step_v5['fallback_adapter_used'] = bool(dbg.get('fallback_adapter_used', False))
                         else:
                             infra_status = 'v5_token_pgd_no_adv_inputs'
-                            v5_telemetry['fallback_adapter_used'] = True
+                            raise RuntimeError('V5 HARD FAIL: adv_inputs missing for token_pgd')
                     else:
-                        infra_status = 'v5_token_pgd_attack_result_none'
+                        raise RuntimeError("V5 HARD FAIL: attack_result is None for token_pgd")
                 except Exception as e:
-                    infra_status = 'v5_pgd_error: %s' % str(e)[:80]
+                                        raise
 
             elif args.condition == 'random_linf':
                 try:
@@ -337,10 +356,15 @@ for sid in state_ids:
                 except Exception as e:
                     infra_status = 'rand_error: %s' % str(e)[:80]
 
+        eef_before = env.env.robots[0]._hand_pos if hasattr(env.env.robots[0], '_hand_pos') else None
+        obj_before_id = env.env.object_sites[0] if hasattr(env.env, 'object_sites') and env.env.object_sites else None
+        obj_before = env.sim.data.get_site_xpos(obj_before_id) if obj_before_id is not None else None
         obs, reward, done, info = env.step(env_action)
 
         gripper_phys_after = physical_gripper_state(env, obs)
         gripper_qpos_after = float(np.sum(gripper_phys_after.get('qpos', [0.0])))
+        eef_after = env.env.robots[0]._hand_pos if hasattr(env.env.robots[0], "_hand_pos") else None
+        obj_after = env.sim.data.get_site_xpos(obj_before_id) if obj_before_id is not None else None
         is_open = 1 if env_action[-1] < -0.5 else 0
 
         total_decoded_open += is_open
@@ -348,15 +372,10 @@ for sid in state_ids:
         else: current_streak = 0
         max_streak = max(max_streak, current_streak)
 
-        eef_before = env.env.robots[0]._hand_pos if hasattr(env.env.robots[0], '_hand_pos') else None
-        eef_after = env.env.robots[0]._hand_pos if hasattr(env.env.robots[0], '_hand_pos') else None
-        obj_before_id = env.env.object_sites[0] if hasattr(env.env, 'object_sites') and env.env.object_sites else None
-        obj_before = env.sim.data.get_site_xpos(obj_before_id) if obj_before_id is not None else None
-        obj_after = env.sim.data.get_site_xpos(obj_before_id) if obj_before_id is not None else None
 
-        success_done = info.get('success_done', 0) if isinstance(info, dict) else 0
-        success_check = info.get('success_check', 0) if isinstance(info, dict) else 0
-        success_primary_now = success_done if args.success_metric == 'check_success' else success_check
+        success_done = bool(done)
+        success_check = bool(env.check_success())
+        success_primary_now = success_done if args.success_metric == 'done' else success_check
         if success_primary_now and not success_primary:
             success_primary = True; success_step_primary = step
         if success_done and not success_done_any: success_done_any = True; done_step_any = step
@@ -391,6 +410,23 @@ for sid in state_ids:
             'success_primary': int(success_primary_now),
             'attack_seed': args.attack_seed, 'job_id': args.job_id,
             'infra_status': infra_status, 'window_start': ws, 'window_end': we,
+            # v5 per-step telemetry
+            'attack_method': step_v5['attack_method'] if pgd_applied else '',
+            'token_label_source': step_v5['token_label_source'] if pgd_applied else '',
+            'target_ce_initial': fmt_float(step_v5['target_ce_initial'], 6),
+            'target_ce_final': fmt_float(step_v5['target_ce_final'], 6),
+            'loss_decrease': fmt_float(step_v5['loss_decrease'], 6),
+            'gripper_logit_margin_after': fmt_float(step_v5['gripper_logit_margin_after'], 6),
+            'open_region_prob_mass_after': fmt_float(step_v5['open_region_prob_mass_after'], 6),
+            'close_bin_prob_mass_after': fmt_float(step_v5['close_bin_prob_mass_after'], 6),
+            'corrected_open_token_count': step_v5['corrected_open_token_count'] if pgd_applied else '',
+            'pixel_budget_adv_inputs_linf': fmt_float(step_v5['pixel_budget_adv_inputs_linf'], 8),
+            'adv_decode_path': step_v5['adv_decode_path'] if pgd_applied else '',
+            'used_adv_inputs': step_v5['used_adv_inputs'] if pgd_applied else '',
+            'fallback_adapter_used': step_v5['fallback_adapter_used'] if pgd_applied else False,
+            'adv_gripper_raw': round(float(executed_action[-1]), 6) if pgd_applied else '',
+            'adv_env_gripper': round(float(env_action[-1]), 6) if pgd_applied else '',
+            'adv_open_bool': is_open if pgd_applied else '',
         })
 
         if success_primary or done: break
@@ -427,26 +463,28 @@ for sid in state_ids:
         'dtype': str(model_dtype),
         # v5 telemetry
         'vis_runner_version': 'v5_token_pgd',
-        'attack_method': v5_telemetry['attack_method'],
+        'attack_method': step_v5['attack_method'] if pgd_applied else '',
         'attacker_config_method': v5_telemetry.get('attacker_config_method', ''),
         'attack_objective': v5_telemetry.get('attack_objective', ''),
-        'token_label_source': v5_telemetry['token_label_source'],
+        'token_label_source': step_v5['token_label_source'] if pgd_applied else '',
         'target_action_source': v5_telemetry['target_action_source'],
-        'target_ce_initial': round(v5_telemetry['target_ce_initial'], 6),
-        'target_ce_final': round(v5_telemetry['target_ce_final'], 6),
-        'loss_decrease': round(v5_telemetry['loss_decrease'], 6),
-        'gripper_logit_margin_after': round(v5_telemetry['gripper_logit_margin_after'], 6),
-        'open_region_prob_mass_after': round(v5_telemetry['open_region_prob_mass_after'], 6),
-        'close_bin_prob_mass_after': round(v5_telemetry['close_bin_prob_mass_after'], 6),
+        'target_ce_initial': fmt_float(step_v5['target_ce_initial'], 6),
+        'target_ce_final': fmt_float(step_v5['target_ce_final'], 6),
+        'loss_decrease': fmt_float(step_v5['loss_decrease'], 6),
+        'gripper_logit_margin_after': fmt_float(step_v5['gripper_logit_margin_after'], 6),
+        'open_region_prob_mass_after': fmt_float(step_v5['open_region_prob_mass_after'], 6),
+        'close_bin_prob_mass_after': fmt_float(step_v5['close_bin_prob_mass_after'], 6),
         'gripper_prob_mass_margin_after': round(v5_telemetry['gripper_prob_mass_margin_after'], 6),
-        'corrected_open_token_count': v5_telemetry['corrected_open_token_count'],
+        'corrected_open_token_count': step_v5['corrected_open_token_count'] if pgd_applied else '',
         'region_mapping_status': v5_telemetry['region_mapping_status'],
-        'pixel_budget_adv_inputs_linf': round(v5_telemetry['pixel_budget_adv_inputs_linf'], 8),
+        'pixel_budget_adv_inputs_linf': fmt_float(step_v5['pixel_budget_adv_inputs_linf'], 8),
         'pixel_budget_master_linf': round(v5_telemetry['pixel_budget_master_linf'], 8),
-        'adv_decode_path': v5_telemetry['adv_decode_path'],
-        'used_adv_inputs': v5_telemetry['used_adv_inputs'],
-        'used_x_adv': v5_telemetry.get('used_x_adv', False),
-        'fallback_adapter_used': v5_telemetry['fallback_adapter_used'],
+        'adv_decode_path': step_v5['adv_decode_path'] if pgd_applied else '',
+        'used_adv_inputs': step_v5['used_adv_inputs'] if pgd_applied else '',
+        'used_x_adv': v5_telemetry['used_x_adv'],
+        'fallback_adapter_used': step_v5['fallback_adapter_used'],
+        'n_v5_pgd_applied_steps': sum(1 for r in trace_rows if r.get('pgd_applied', 0)),
+        'v5_last_attack_method': v5_telemetry.get('attack_method', ''),
         'v5_pgd_applied': v5_telemetry.get('pgd_applied', 0),
     }
 
