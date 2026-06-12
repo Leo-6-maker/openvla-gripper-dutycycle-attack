@@ -1,0 +1,17 @@
+task,sid,ws,we,tier,open,streak,timeout,steps
+alphabet_soup,1,65,75,CONFOUNDED,3,1,True,280
+alphabet_soup,1,75,85,CONFOUNDED,3,1,True,280
+alphabet_soup,2,70,80,BORDERLINE,6,5,False,145
+alphabet_soup,2,75,85,CONFOUNDED,9,9,True,280
+bbq_sauce,0,105,115,CONFOUNDED,0,0,True,280
+bbq_sauce,0,110,120,STRICT,0,0,False,186
+butter,1,85,95,STRICT,0,0,False,157
+butter,1,90,100,CONFOUNDED,5,3,True,280
+butter,2,80,90,STRICT,1,1,False,158
+butter,2,85,95,STRICT,1,1,False,169
+chocolate_pudding,2,120,130,STRICT,1,1,False,163
+chocolate_pudding,2,70,80,STRICT,1,1,False,151
+orange_juice,1,40,50,BORDERLINE,6,3,False,132
+orange_juice,1,45,55,CONFOUNDED,3,1,True,280
+orange_juice,2,110,120,USABLE,5,4,False,141
+orange_juice,2,115,125,BORDERLINE,9,8,False,126

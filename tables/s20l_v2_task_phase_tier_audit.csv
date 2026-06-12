@@ -1,0 +1,6 @@
+task,STRICT,USABLE,CONFOUNDED,BORDERLINE,total,clean_pct
+alphabet_soup,0,0,3,1,4,0
+bbq_sauce,1,0,1,0,2,50
+butter,3,0,1,0,4,75
+chocolate_pudding,2,0,0,0,2,100
+orange_juice,0,1,1,2,4,25
