@@ -307,9 +307,9 @@ for sid in state_ids:
                             infra_status = 'v5_token_pgd_no_adv_inputs'
                             raise RuntimeError('V5 HARD FAIL: adv_inputs missing for token_pgd')
                     else:
-                        infra_status = 'v5_token_pgd_attack_result_none'
+                        raise RuntimeError("V5 HARD FAIL: attack_result is None for token_pgd")
                 except Exception as e:
-                    infra_status = 'v5_pgd_error: %s' % str(e)[:80]
+                                        raise
 
             elif args.condition == 'random_linf':
                 try:
@@ -335,6 +335,9 @@ for sid in state_ids:
                 except Exception as e:
                     infra_status = 'rand_error: %s' % str(e)[:80]
 
+        eef_before = env.env.robots[0]._hand_pos if hasattr(env.env.robots[0], '_hand_pos') else None
+        obj_before_id = env.env.object_sites[0] if hasattr(env.env, 'object_sites') and env.env.object_sites else None
+        obj_before = env.sim.data.get_site_xpos(obj_before_id) if obj_before_id is not None else None
         obs, reward, done, info = env.step(env_action)
 
         gripper_phys_after = physical_gripper_state(env, obs)
@@ -348,11 +351,8 @@ for sid in state_ids:
         else: current_streak = 0
         max_streak = max(max_streak, current_streak)
 
-        eef_before = env.env.robots[0]._hand_pos if hasattr(env.env.robots[0], '_hand_pos') else None
-        obj_before_id = env.env.object_sites[0] if hasattr(env.env, 'object_sites') and env.env.object_sites else None
-        obj_before = env.sim.data.get_site_xpos(obj_before_id) if obj_before_id is not None else None
 
-        success_done = info.get('success_done', 0) if isinstance(info, dict) else 0
+        success_done = bool(done)
         success_check = bool(env.check_success())
         success_primary_now = success_done if args.success_metric == 'done' else success_check
         if success_primary_now and not success_primary:
@@ -390,19 +390,19 @@ for sid in state_ids:
             'attack_seed': args.attack_seed, 'job_id': args.job_id,
             'infra_status': infra_status, 'window_start': ws, 'window_end': we,
             # v5 per-step telemetry
-            'attack_method': v5_telemetry['attack_method'],
-            'token_label_source': v5_telemetry['token_label_source'],
+            'attack_method': v5_telemetry.get('attack_method', '') if pgd_applied else '',
+            'token_label_source': v5_telemetry.get('token_label_source', '') if pgd_applied else '',
             'target_ce_initial': round(v5_telemetry['target_ce_initial'], 6),
             'target_ce_final': round(v5_telemetry['target_ce_final'], 6),
             'loss_decrease': round(v5_telemetry['loss_decrease'], 6),
             'gripper_logit_margin_after': round(v5_telemetry['gripper_logit_margin_after'], 6),
             'open_region_prob_mass_after': round(v5_telemetry['open_region_prob_mass_after'], 6),
             'close_bin_prob_mass_after': round(v5_telemetry['close_bin_prob_mass_after'], 6),
-            'corrected_open_token_count': v5_telemetry['corrected_open_token_count'],
+            'corrected_open_token_count': v5_telemetry.get('corrected_open_token_count', '') if pgd_applied else '',
             'pixel_budget_adv_inputs_linf': round(v5_telemetry['pixel_budget_adv_inputs_linf'], 8),
-            'adv_decode_path': v5_telemetry['adv_decode_path'],
-            'used_adv_inputs': v5_telemetry['used_adv_inputs'],
-            'fallback_adapter_used': v5_telemetry['fallback_adapter_used'],
+            'adv_decode_path': v5_telemetry.get('adv_decode_path', '') if pgd_applied else '',
+            'used_adv_inputs': v5_telemetry.get('used_adv_inputs', '') if pgd_applied else '',
+            'fallback_adapter_used': v5_telemetry.get('fallback_adapter_used', False) if pgd_applied else False,
             'adv_gripper_raw': round(float(executed_action[-1]), 6) if pgd_applied else '',
             'adv_env_gripper': round(float(env_action[-1]), 6) if pgd_applied else '',
             'adv_open_bool': is_open if pgd_applied else '',
@@ -442,10 +442,10 @@ for sid in state_ids:
         'dtype': str(model_dtype),
         # v5 telemetry
         'vis_runner_version': 'v5_token_pgd',
-        'attack_method': v5_telemetry['attack_method'],
+        'attack_method': v5_telemetry.get('attack_method', '') if pgd_applied else '',
         'attacker_config_method': v5_telemetry['attacker_config_method'],
         'attack_objective': v5_telemetry['attack_objective'],
-        'token_label_source': v5_telemetry['token_label_source'],
+        'token_label_source': v5_telemetry.get('token_label_source', '') if pgd_applied else '',
         'target_action_source': v5_telemetry['target_action_source'],
         'target_ce_initial': round(v5_telemetry['target_ce_initial'], 6),
         'target_ce_final': round(v5_telemetry['target_ce_final'], 6),
@@ -454,12 +454,12 @@ for sid in state_ids:
         'open_region_prob_mass_after': round(v5_telemetry['open_region_prob_mass_after'], 6),
         'close_bin_prob_mass_after': round(v5_telemetry['close_bin_prob_mass_after'], 6),
         'gripper_prob_mass_margin_after': round(v5_telemetry['gripper_prob_mass_margin_after'], 6),
-        'corrected_open_token_count': v5_telemetry['corrected_open_token_count'],
+        'corrected_open_token_count': v5_telemetry.get('corrected_open_token_count', '') if pgd_applied else '',
         'region_mapping_status': v5_telemetry['region_mapping_status'],
         'pixel_budget_adv_inputs_linf': round(v5_telemetry['pixel_budget_adv_inputs_linf'], 8),
         'pixel_budget_master_linf': round(v5_telemetry['pixel_budget_master_linf'], 8),
-        'adv_decode_path': v5_telemetry['adv_decode_path'],
-        'used_adv_inputs': v5_telemetry['used_adv_inputs'],
+        'adv_decode_path': v5_telemetry.get('adv_decode_path', '') if pgd_applied else '',
+        'used_adv_inputs': v5_telemetry.get('used_adv_inputs', '') if pgd_applied else '',
         'used_x_adv': v5_telemetry['used_x_adv'],
         'fallback_adapter_used': v5_telemetry['fallback_adapter_used'],
         'v5_pgd_applied': v5_telemetry['pgd_applied'],
