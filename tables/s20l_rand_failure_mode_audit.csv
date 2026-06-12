@@ -1,0 +1,17 @@
+task,state_id,ws,we,phase,tier,open,streak,timeout,steps
+alphabet_soup,1,130,140,?,CONFOUNDED,4,1,True,280
+alphabet_soup,1,135,145,?,CONFOUNDED,3,2,True,280
+alphabet_soup,1,140,150,?,CONFOUNDED,0,0,True,280
+alphabet_soup,1,145,155,?,CONFOUNDED,2,1,True,280
+alphabet_soup,1,150,160,?,CONFOUNDED,0,0,True,280
+alphabet_soup,1,160,170,?,CONFOUNDED,1,1,True,280
+alphabet_soup,1,175,185,?,BORDERLINE,7,5,False,251
+bbq_sauce,0,55,65,?,CONFOUNDED,1,1,True,280
+cream_cheese,1,55,65,?,CONFOUNDED,0,0,True,280
+cream_cheese,1,5,15,?,CONFOUNDED,5,2,True,280
+cream_cheese,1,70,80,?,CONFOUNDED,1,1,True,280
+orange_juice,1,105,115,?,BORDERLINE,7,4,False,114
+orange_juice,1,15,25,?,CONFOUNDED,10,10,True,280
+orange_juice,1,20,30,?,BORDERLINE,8,5,False,114
+orange_juice,1,30,40,?,USABLE,4,1,False,124
+orange_juice,1,35,45,?,CONFOUNDED,4,1,True,280

@@ -1,0 +1,8 @@
+metric,S20J,S20L_fresh_only
+RAND_total,43,25
+RAND_clean,33,10
+RAND_clean_pct,77,40
+tasks,6,5
+VIS,34,25
+screener,v0.3.1_randhead,phase/open_heuristic
+claim,Layer1_operational,fresh_task_stress_test

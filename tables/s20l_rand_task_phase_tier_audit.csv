@@ -1,0 +1,6 @@
+task,phase,STRICT,USABLE,CONFOUNDED,BORDERLINE,total,clean_pct
+alphabet_soup,?,1,0,6,1,8,12
+bbq_sauce,?,1,0,1,0,2,50
+cream_cheese,?,4,0,3,0,7,57
+orange_juice,?,2,1,2,2,7,43
+salad_dressing,?,1,0,0,0,1,100
