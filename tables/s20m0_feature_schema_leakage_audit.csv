@@ -1,0 +1,13 @@
+column,category
+attack_seed,allowed_input
+rand_done,label_only
+rand_label,label_only
+rand_open,label_only
+rand_steps,allowed_input
+rand_streak,label_only
+rand_timeout,label_only
+state_id,allowed_input
+target_random_sensitive,label_only
+task,allowed_input
+window_end,allowed_input
+window_start,allowed_input

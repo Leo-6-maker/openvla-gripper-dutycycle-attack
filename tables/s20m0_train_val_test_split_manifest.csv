@@ -1,0 +1,4 @@
+split,tasks,n_train_parents,n_test_parents_available,notes
+train,"ketchup,milk,tomato_sauce",98,,S20F-J RAND labels
+val,"cream_cheese,salad_dressing",,8,held-out from training
+test,"alphabet_soup,bbq_sauce,butter,chocolate_pudding,orange_juice",,17,"fresh-only, no training leakage"
