@@ -101,14 +101,15 @@ tc=Counter(c['task']for c in candidates)
 print('Tasks: %s'%dict(tc))
 
 selected=[];task_n=Counter();phase_n=Counter();adj_n=Counter()
-target_total=60;max_per_task=10
-tier_targets={'eligible_strict':24,'eligible_usable':15,'boundary_disagree':21}
+target_total=72;max_per_task=12
+tier_targets={'eligible_strict':28,'eligible_usable':22,'boundary_disagree':22}
+phase_max_frac=0.35
 candidates.sort(key=lambda c:{'eligible_strict':0,'eligible_usable':1,'boundary_disagree':2}.get(c['tier'],9))
 
 for c in candidates:
     if len(selected)>=target_total:break
     if task_n[c['task']]>=max_per_task:continue
-    if phase_n[c['phase']]>=target_total*0.30:continue
+    if phase_n[c['phase']]>=target_total*phase_max_frac:continue
     if len([s for s in selected if s['tier']==c['tier']])>=tier_targets.get(c['tier'],99):continue
     if adj_n[(c['task'],c['sid'])]>=2:continue
     selected.append(c)
@@ -140,7 +141,7 @@ for gpu,gj in queues.items():
 with open(T+'/s20m1_calibration_manifest.csv','w',newline='')as f:
     w=csv.DictWriter(f,fieldnames=['task','state_id','ws','we','phase','tier','clean_open'])
     w.writeheader()
-    for c in selected:w.writerow({k:c.get(k,c.get({'sid':'state_id'}.get(k,k))) for k in ['task','sid','ws','we','phase','tier','clean_open']})
+    for c in selected:w.writerow({'task':c['task'],'state_id':c['sid'],'ws':c['ws'],'we':c['we'],'phase':c['phase'],'tier':c['tier'],'clean_open':c['clean_open']})
 
 print('Total: %d RAND-only (seed90/91, no VIS)'%len(jobs))
 print('Output: %s'%O)
