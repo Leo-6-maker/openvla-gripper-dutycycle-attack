@@ -2,6 +2,7 @@
 """Static VIS runner interface audit: confirm S20D v4 vis_pgd never executed TokenPrefixPGD.
 Part of Freeze A — runner provenance audit, not claim freeze."""
 import csv, os, ast, re
+from pathlib import Path
 
 T = '/data/liuyu/repos/codex_stageb_openvla_alignment_rc1a_20260607/tables'
 os.makedirs(T, exist_ok=True)

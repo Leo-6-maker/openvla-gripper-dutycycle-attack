@@ -54,7 +54,7 @@ def load_model_s20d(model_path, model_gpu_device_id=-1):
 
 print('[%s] Loading model...' % time.strftime('%H:%M:%S'))
 model, processor, device = load_model_s20d(MODEL_PATH, model_gpu_device_id=-1)
-model_dtype = torch.bfloat16; action_dim = model.config.pad_to_multiple_of
+model_dtype = torch.bfloat16; unnorm_key = 'libero_object'; action_dim = int(model.get_action_dim(unnorm_key)); assert action_dim == 7, f'Unexpected action_dim={action_dim}'
 print('[%s] Model loaded: %s' % (time.strftime('%H:%M:%S'), device))
 
 from v4_run_eval_openvla import decode_with_scores, postprocess_openvla_action_for_libero

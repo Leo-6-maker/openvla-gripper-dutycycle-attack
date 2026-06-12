@@ -134,6 +134,7 @@ def physical_gripper_state(env, obs):
         return {}
 
 # ── Attack setup (v5: FIXED) ──
+eps_norm = args.eps_raw_pixels / 255.0  # P0-F: global scope
 attacker = None
 attacker_config = {}
 v5_attack_telemetry = {}
@@ -141,7 +142,6 @@ v5_attack_telemetry = {}
 if args.condition == 'vis_pgd':
     from gripper_attack.attack_adapter import OpenVLAVisualAttacker, get_adv_inputs_from_attack_result
 
-    eps_norm = args.eps_raw_pixels / 255.0
     attacker_config = {
         'method': 'token_prefix_pgd',  # ← BUGFIX 1: explicitly set method
         'epsilon': eps_norm,
@@ -339,6 +339,8 @@ for sid in state_ids:
 
         gripper_phys_after = physical_gripper_state(env, obs)
         gripper_qpos_after = float(np.sum(gripper_phys_after.get('qpos', [0.0])))
+        eef_after = env.env.robots[0]._hand_pos if hasattr(env.env.robots[0], "_hand_pos") else None
+        obj_after = env.sim.data.get_site_xpos(obj_before_id) if obj_before_id is not None else None
         is_open = 1 if env_action[-1] < -0.5 else 0
 
         total_decoded_open += is_open
@@ -351,7 +353,7 @@ for sid in state_ids:
         obj_before = env.sim.data.get_site_xpos(obj_before_id) if obj_before_id is not None else None
 
         success_done = info.get('success_done', 0) if isinstance(info, dict) else 0
-        success_check = info.get('success_check', 0) if isinstance(info, dict) else 0
+        success_check = bool(env.check_success())
         success_primary_now = success_done if args.success_metric == 'done' else success_check
         if success_primary_now and not success_primary:
             success_primary = True; success_step_primary = step
@@ -387,6 +389,23 @@ for sid in state_ids:
             'success_primary': int(success_primary_now),
             'attack_seed': args.attack_seed, 'job_id': args.job_id,
             'infra_status': infra_status, 'window_start': ws, 'window_end': we,
+            # v5 per-step telemetry
+            'attack_method': v5_telemetry['attack_method'],
+            'token_label_source': v5_telemetry['token_label_source'],
+            'target_ce_initial': round(v5_telemetry['target_ce_initial'], 6),
+            'target_ce_final': round(v5_telemetry['target_ce_final'], 6),
+            'loss_decrease': round(v5_telemetry['loss_decrease'], 6),
+            'gripper_logit_margin_after': round(v5_telemetry['gripper_logit_margin_after'], 6),
+            'open_region_prob_mass_after': round(v5_telemetry['open_region_prob_mass_after'], 6),
+            'close_bin_prob_mass_after': round(v5_telemetry['close_bin_prob_mass_after'], 6),
+            'corrected_open_token_count': v5_telemetry['corrected_open_token_count'],
+            'pixel_budget_adv_inputs_linf': round(v5_telemetry['pixel_budget_adv_inputs_linf'], 8),
+            'adv_decode_path': v5_telemetry['adv_decode_path'],
+            'used_adv_inputs': v5_telemetry['used_adv_inputs'],
+            'fallback_adapter_used': v5_telemetry['fallback_adapter_used'],
+            'adv_gripper_raw': round(float(executed_action[-1]), 6) if pgd_applied else '',
+            'adv_env_gripper': round(float(env_action[-1]), 6) if pgd_applied else '',
+            'adv_open_bool': is_open if pgd_applied else '',
         })
 
         if success_primary or done: break
