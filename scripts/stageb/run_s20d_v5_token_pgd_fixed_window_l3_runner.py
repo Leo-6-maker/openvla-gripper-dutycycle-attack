@@ -127,6 +127,16 @@ def generate_from_adv_inputs(adv_inputs, device, model_dtype, action_dim):
             return_dict_in_generate=True, output_scores=False)
     return gen.sequences[0, -action_dim:].detach().cpu().numpy(), gen
 
+def fmt_float(x, nd=6):
+    """Safe float format for telemetry: empty string if x is empty."""
+    if x in ("", None):
+        return ""
+    try:
+        return round(float(x), nd)
+    except Exception:
+        return ""
+
+
 def physical_gripper_state(env, obs):
     try:
         return env.env.robots[0].controller.gripper_state
@@ -397,19 +407,19 @@ for sid in state_ids:
             'attack_seed': args.attack_seed, 'job_id': args.job_id,
             'infra_status': infra_status, 'window_start': ws, 'window_end': we,
             # v5 per-step telemetry
-            'attack_method': v5_telemetry.get('attack_method', '') if pgd_applied else '',
-            'token_label_source': v5_telemetry.get('token_label_source', '') if pgd_applied else '',
-            'target_ce_initial': round(step_v5['target_ce_initial'], 6),
-            'target_ce_final': round(step_v5['target_ce_final'], 6),
-            'loss_decrease': round(step_v5['loss_decrease'], 6),
-            'gripper_logit_margin_after': round(step_v5['gripper_logit_margin_after'], 6),
-            'open_region_prob_mass_after': round(step_v5['open_region_prob_mass_after'], 6),
-            'close_bin_prob_mass_after': round(step_v5['close_bin_prob_mass_after'], 6),
-            'corrected_open_token_count': v5_telemetry.get('corrected_open_token_count', '') if pgd_applied else '',
-            'pixel_budget_adv_inputs_linf': round(step_v5['pixel_budget_adv_inputs_linf'], 8),
-            'adv_decode_path': v5_telemetry.get('adv_decode_path', '') if pgd_applied else '',
-            'used_adv_inputs': v5_telemetry.get('used_adv_inputs', '') if pgd_applied else '',
-            'fallback_adapter_used': v5_telemetry.get('fallback_adapter_used', False) if pgd_applied else False,
+            'attack_method': step_v5['attack_method'] if pgd_applied else '',
+            'token_label_source': step_v5['token_label_source'] if pgd_applied else '',
+            'target_ce_initial': fmt_float(step_v5['target_ce_initial'], 6),
+            'target_ce_final': fmt_float(step_v5['target_ce_final'], 6),
+            'loss_decrease': fmt_float(step_v5['loss_decrease'], 6),
+            'gripper_logit_margin_after': fmt_float(step_v5['gripper_logit_margin_after'], 6),
+            'open_region_prob_mass_after': fmt_float(step_v5['open_region_prob_mass_after'], 6),
+            'close_bin_prob_mass_after': fmt_float(step_v5['close_bin_prob_mass_after'], 6),
+            'corrected_open_token_count': step_v5['corrected_open_token_count'] if pgd_applied else '',
+            'pixel_budget_adv_inputs_linf': fmt_float(step_v5['pixel_budget_adv_inputs_linf'], 8),
+            'adv_decode_path': step_v5['adv_decode_path'] if pgd_applied else '',
+            'used_adv_inputs': step_v5['used_adv_inputs'] if pgd_applied else '',
+            'fallback_adapter_used': step_v5['fallback_adapter_used'] if pgd_applied else False,
             'adv_gripper_raw': round(float(executed_action[-1]), 6) if pgd_applied else '',
             'adv_env_gripper': round(float(env_action[-1]), 6) if pgd_applied else '',
             'adv_open_bool': is_open if pgd_applied else '',
@@ -449,24 +459,24 @@ for sid in state_ids:
         'dtype': str(model_dtype),
         # v5 telemetry
         'vis_runner_version': 'v5_token_pgd',
-        'attack_method': v5_telemetry.get('attack_method', '') if pgd_applied else '',
-        'attacker_config_method': v5_telemetry['attacker_config_method'],
-        'attack_objective': v5_telemetry['attack_objective'],
-        'token_label_source': v5_telemetry.get('token_label_source', '') if pgd_applied else '',
+        'attack_method': step_v5['attack_method'] if pgd_applied else '',
+        'attacker_config_method': v5_telemetry.get('attacker_config_method', ''),
+        'attack_objective': v5_telemetry.get('attack_objective', ''),
+        'token_label_source': step_v5['token_label_source'] if pgd_applied else '',
         'target_action_source': v5_telemetry['target_action_source'],
-        'target_ce_initial': round(step_v5['target_ce_initial'], 6),
-        'target_ce_final': round(step_v5['target_ce_final'], 6),
-        'loss_decrease': round(step_v5['loss_decrease'], 6),
-        'gripper_logit_margin_after': round(step_v5['gripper_logit_margin_after'], 6),
-        'open_region_prob_mass_after': round(step_v5['open_region_prob_mass_after'], 6),
-        'close_bin_prob_mass_after': round(step_v5['close_bin_prob_mass_after'], 6),
+        'target_ce_initial': fmt_float(step_v5['target_ce_initial'], 6),
+        'target_ce_final': fmt_float(step_v5['target_ce_final'], 6),
+        'loss_decrease': fmt_float(step_v5['loss_decrease'], 6),
+        'gripper_logit_margin_after': fmt_float(step_v5['gripper_logit_margin_after'], 6),
+        'open_region_prob_mass_after': fmt_float(step_v5['open_region_prob_mass_after'], 6),
+        'close_bin_prob_mass_after': fmt_float(step_v5['close_bin_prob_mass_after'], 6),
         'gripper_prob_mass_margin_after': round(v5_telemetry['gripper_prob_mass_margin_after'], 6),
-        'corrected_open_token_count': v5_telemetry.get('corrected_open_token_count', '') if pgd_applied else '',
+        'corrected_open_token_count': step_v5['corrected_open_token_count'] if pgd_applied else '',
         'region_mapping_status': v5_telemetry['region_mapping_status'],
-        'pixel_budget_adv_inputs_linf': round(step_v5['pixel_budget_adv_inputs_linf'], 8),
+        'pixel_budget_adv_inputs_linf': fmt_float(step_v5['pixel_budget_adv_inputs_linf'], 8),
         'pixel_budget_master_linf': round(v5_telemetry['pixel_budget_master_linf'], 8),
-        'adv_decode_path': v5_telemetry.get('adv_decode_path', '') if pgd_applied else '',
-        'used_adv_inputs': v5_telemetry.get('used_adv_inputs', '') if pgd_applied else '',
+        'adv_decode_path': step_v5['adv_decode_path'] if pgd_applied else '',
+        'used_adv_inputs': step_v5['used_adv_inputs'] if pgd_applied else '',
         'used_x_adv': v5_telemetry['used_x_adv'],
         'fallback_adapter_used': step_v5['fallback_adapter_used'],
         'n_v5_pgd_applied_steps': sum(1 for r in trace_rows if r.get('pgd_applied', 0)),
