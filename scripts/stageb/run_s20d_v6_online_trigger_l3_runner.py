@@ -1,3 +1,4 @@
+    qpos_opening_delta = gripper_qpos_before - gripper_qpos_after  # positive=opening
 #!/usr/bin/env python3
 """V6 Online-Trigger Layer3 Runner (P0-fixed).
 - P0-1: VIS uses get_adv_inputs_from_attack_result() + V5 re-decode path
@@ -235,6 +236,8 @@ episode_infra_status = 'ok'
 trace_rows = []
 step = 0
 
+done = False
+
 while step < max_steps:
     if 'agentview_image' not in obs:
         episode_infra_status = "missing_camera"
@@ -257,7 +260,8 @@ while step < max_steps:
     clean_gripper_raw = float(clean_action[-1])
     clean_gripper_env = float(clean_env_action[-1])
     clean_close = clean_gripper_raw < 0.5
-    clean_open = not clean_close
+    clean_open = clean_gripper_raw > 0.5
+    clean_boundary = not clean_close and not clean_open
 
     if clean_close:
         close_streak += 1
@@ -350,7 +354,7 @@ while step < max_steps:
                     center_crop=True, resize_size=224,
                     libero_preprocess_backend='official_pil_lanczos')
                 rand_inputs = processor(
-                    text=instruction, images=v4_image,
+                    text=prompt(str(instruction).lower()), images=v4_image,
                     return_tensors='pt')
                 rand_inputs.pop("attention_mask", None)
                 in_ids = rand_inputs.get("input_ids")
@@ -368,10 +372,10 @@ while step < max_steps:
                     for k, v in rand_inputs.items()}
                 # Add L∞ noise to pixel_values
                 pv = rand_inputs["pixel_values"]
-                noise = torch.empty_like(pv).uniform_(
-                    -eps_norm, eps_norm)
-                rand_inputs["pixel_values"] = torch.clamp(
-                    pv + noise, 0.0, 1.0)
+                g_rand = torch.Generator(device=pv.device)
+                g_rand.manual_seed(args.attack_seed + step)
+                noise = torch.empty(pv.shape, device=pv.device, dtype=torch.float32).uniform_(-eps_norm, eps_norm, generator=g_rand)
+                rand_inputs["pixel_values"] = torch.maximum(torch.minimum(pv.float() + noise, pv.float() + eps_norm), pv.float() - eps_norm).to(dtype=model_dtype)
                 # Re-decode
                 with torch.inference_mode():
                     rand_gen = model.generate(
@@ -493,6 +497,9 @@ summary = {
     'decoded_open_count': total_decoded_open,
     'max_open_streak': max_open_streak,
     'n_steps': step,
+        'n_pgd_applied_steps': sum(1 for r in trace_rows if r.get('pgd_applied', 0)),
+        'success_step_primary': success_step_primary,
+        'done_step_any': done_step_any,
     'max_steps': max_steps,
     'success_primary': success_primary,
     'success_done_any': success_done_any,
