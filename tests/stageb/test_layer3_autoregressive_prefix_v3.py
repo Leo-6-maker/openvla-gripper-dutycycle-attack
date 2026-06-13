@@ -219,3 +219,45 @@ def test_arm_preservation_indexing_and_prefix_refresh_count():
     assert result.debug["prefix_refresh_count"] == 2
     assert result.debug["num_generation_forwards"] == 3
     assert result.debug["arm_preservation_debug_final"]["arm_preservation_dims"] == [0, 1, 2, 3, 4, 5]
+
+
+def test_sequential_gradient_equivalence():
+    """∇(L_gripper + L_arm) = ∇L_gripper + ∇L_arm with non-zero arm weight."""
+    attacker = make_attacker(num_steps=1, epsilon=0.03, step_size=0.006,
+                             prefix_refresh_interval=1)
+    target_ids = torch.tensor([CLEAN_ARM_TOKEN] * 6 + [CLOSE_TOKEN], dtype=torch.long)
+    clean_ids, full_ids, labels, x0 = attacker._build_inputs_and_labels(
+        np.zeros((2, 2, 3), dtype=np.uint8), "pick object", target_ids)
+
+    # Get region tokens
+    region = attacker.get_gripper_region_by_decoded_action("libero_object")
+    open_ids = region["open_token_ids"]
+    close_ids = region["close_token_ids"]
+
+    # Generate prefix on same image
+    prefix = attacker._generate_action_prefix_tokens(clean_ids, x0, prefix_len=6)
+
+    adv = x0.detach().clone().requires_grad_(True)
+    adv_fp = attacker._cast_projected_pixel_values(adv, x0)
+
+    # Joint gradient: L_gripper + L_arm together
+    g_loss, _ = attacker._generated_prefix_gripper_loss_and_stats(
+        clean_ids, prefix, adv_fp, open_ids, close_ids, margin=0.5)
+    a_loss, _ = attacker._arm_preservation_loss_and_stats(
+        full_ids, labels, adv_fp, 7, arm_preserve_weight=1.0)
+    loss_joint = g_loss + a_loss
+    grad_joint = torch.autograd.grad(loss_joint, adv, retain_graph=True, create_graph=False)[0]
+
+    # Sequential gradients
+    grad_g = torch.autograd.grad(g_loss, adv, retain_graph=False, create_graph=False)[0]
+    # Rebuild forward for arm (graph was freed)
+    adv_fp2 = attacker._cast_projected_pixel_values(adv, x0)
+    a_loss2, _ = attacker._arm_preservation_loss_and_stats(
+        full_ids, labels, adv_fp2, 7, arm_preserve_weight=1.0)
+    grad_a = torch.autograd.grad(a_loss2, adv, retain_graph=False, create_graph=False)[0]
+    grad_seq = grad_g + grad_a
+
+    assert torch.allclose(grad_joint, grad_seq, atol=1e-6), \
+        f"max diff: {(grad_joint - grad_seq).abs().max().item():.8f}"
+    assert (grad_joint.sign() == grad_seq.sign()).all().item(), \
+        "sign mismatch in sequential vs joint gradient"

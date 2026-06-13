@@ -631,7 +631,14 @@ class TokenPrefixPGDAttacker:
                 return_dict_in_generate=True,
                 output_scores=False,
             )
-        return gen.sequences[0, -int(prefix_len):].detach().to(device=prompt_input_ids.device, dtype=torch.long)
+        new_token_count = int(gen.sequences.shape[1]) - int(prompt_input_ids.shape[1])
+        if new_token_count != int(prefix_len):
+            raise RuntimeError(
+                f"V3 prefix generation produced {new_token_count} new tokens, "
+                f"expected {int(prefix_len)}. Early EOS or truncation detected."
+            )
+        return gen.sequences[0, prompt_input_ids.shape[1]:].detach().to(
+            device=prompt_input_ids.device, dtype=torch.long)
 
     def _gripper_row_stats(self, row: torch.Tensor, open_token_ids: torch.LongTensor, close_token_ids: torch.LongTensor) -> dict:
         probs = torch.softmax(row, dim=-1)
@@ -934,10 +941,10 @@ class TokenPrefixPGDAttacker:
                 "prefix_refresh_strategy": "every_k_pgd_steps",
                 "prefix_refresh_interval": int(prefix_refresh_interval),
                 "prefix_refresh_count": int(prefix_refresh_count),
-                "clean_arm_prefix_token_ids": clean_arm_prefix_token_ids,
+                "retokenized_clean_action_arm_token_ids": clean_arm_prefix_token_ids,
                 "generated_arm_prefix_token_ids": generated_arm_prefix_final,
-                "arm_token_match_rate": arm_match_rate,
-                "teacher_forced_gripper_margin_initial": teacher_initial.get("open_minus_close_margin"),
+                "generated_vs_retokenized_arm_match_rate": arm_match_rate,
+                "teacher_forced_margin_clean_x0": teacher_initial.get("open_minus_close_margin"),
                 "teacher_forced_gripper_margin_final": teacher_final.get("open_minus_close_margin"),
                 "generated_prefix_gripper_margin_initial": (initial_generated_stats or {}).get("open_minus_close_margin"),
                 "generated_prefix_gripper_margin_final": (final_generated_stats or {}).get("open_minus_close_margin"),
