@@ -279,6 +279,7 @@ total_decoded_open = 0
 max_open_streak = 0
 current_streak = 0
 C2O_count = 0
+v3_attack_records = []  # V3 per-opportunity telemetry accumulator
 C2O_native_count = 0
 C2O_clip_count = 0
 attacked_close_count = 0
@@ -364,7 +365,7 @@ while step < max_steps:
     step_gripper_clipped = False
     step_gripper_region = ''
     result_objective = ''
-    _v3 = {}  # V3 transfer telemetry (populated for v3 VIS only)
+    step_v3 = {}  # V3 transfer telemetry for this step (populated for v3 VIS attacks only)
     env_action = clean_env_action.copy()
     executed_action = clean_action.copy()
     infra_status = 'ok'
@@ -449,24 +450,65 @@ while step < max_steps:
                 step_actual_linf = actual_linf
                 step_fallback_reason = str(debug_info.get('fallback_reason', ''))
 
-                # V3 transfer telemetry (observation only, from debug_info)
-                _v3.clear()
-                for _k in ('generated_prefix_gripper_margin_initial',
-                           'generated_prefix_gripper_margin_final',
-                           'selected_loss_initial', 'selected_loss_final',
-                           'teacher_forced_margin_clean_x0',
-                           'teacher_forced_gripper_margin_final',
-                           'prefix_refresh_count', 'num_generation_forwards',
-                           'generated_vs_retokenized_arm_match_rate',
-                           'arm_preservation_loss_initial',
-                           'arm_preservation_loss_final',
-                           'gripper_loss_initial', 'gripper_loss_final',
-                           'global_top_token_initial', 'global_top_token_final',
-                           'generated_arm_prefix_token_ids',
-                           'retokenized_clean_action_arm_token_ids',
-                           'clean_generated_arm_prefix_token_ids'):
-                    if _k in debug_info:
-                        _v3[_k] = debug_info[_k]
+                # V3 transfer telemetry: per-attack-step extraction
+                step_v3.clear()
+                is_v3 = 'v3' in str(args.attack_objective)
+
+                def _none_to_blank(v):
+                    return '' if v is None else v
+
+                if is_v3:
+                    # Required fields (hard-fail if missing)
+                    _required = [
+                        'generated_prefix_gripper_margin_initial',
+                        'generated_prefix_gripper_margin_final',
+                        'selected_loss_initial', 'selected_loss_final',
+                        'prefix_refresh_count', 'num_generation_forwards',
+                        'generated_arm_prefix_token_ids',
+                    ]
+                    _missing = [k for k in _required if k not in debug_info or debug_info[k] is None]
+                    if _missing:
+                        raise RuntimeError(
+                            f"V6 HARD FAIL: v3 missing required telemetry: {_missing}")
+
+                    # Scalar telemety
+                    step_v3['margin_initial'] = _none_to_blank(debug_info.get('generated_prefix_gripper_margin_initial'))
+                    step_v3['margin_final'] = _none_to_blank(debug_info.get('generated_prefix_gripper_margin_final'))
+                    step_v3['margin_delta'] = _none_to_blank(
+                        (debug_info.get('generated_prefix_gripper_margin_final') or 0)
+                        - (debug_info.get('generated_prefix_gripper_margin_initial') or 0))
+                    step_v3['loss_initial'] = _none_to_blank(debug_info.get('selected_loss_initial'))
+                    step_v3['loss_final'] = _none_to_blank(debug_info.get('selected_loss_final'))
+                    step_v3['teacher_margin_x0'] = _none_to_blank(debug_info.get('teacher_forced_margin_clean_x0'))
+                    step_v3['prefix_refresh_count'] = _none_to_blank(debug_info.get('prefix_refresh_count'))
+                    step_v3['generation_forwards'] = _none_to_blank(debug_info.get('num_generation_forwards'))
+                    step_v3['arm_loss_initial'] = _none_to_blank(debug_info.get('arm_preservation_loss_initial'))
+                    step_v3['arm_loss_final'] = _none_to_blank(debug_info.get('arm_preservation_loss_final'))
+                    step_v3['arm_match_rate'] = _none_to_blank(debug_info.get('generated_vs_retokenized_arm_match_rate'))
+
+                    # Gripper hinge (from margin, if available)
+                    _m = float(debug_info.get('gripper_margin_param', 0.5))
+                    _mi = debug_info.get('generated_prefix_gripper_margin_initial')
+                    _mf = debug_info.get('generated_prefix_gripper_margin_final')
+                    step_v3['hinge_initial'] = _none_to_blank(max(0.0, _m - float(_mi)) if _mi is not None else None)
+                    step_v3['hinge_final'] = _none_to_blank(max(0.0, _m - float(_mf)) if _mf is not None else None)
+
+                    # Global top token from nested stats
+                    _init_stats = debug_info.get('generated_prefix_gripper_stats_initial') or {}
+                    _final_stats = debug_info.get('generated_prefix_gripper_stats_final') or {}
+                    step_v3['global_top_token_initial'] = _none_to_blank(_init_stats.get('top_token_id'))
+                    step_v3['global_top_token_final'] = _none_to_blank(_final_stats.get('top_token_id'))
+                    step_v3['native_open_score_initial'] = _none_to_blank(_init_stats.get('open_score'))
+                    step_v3['native_open_score_final'] = _none_to_blank(_final_stats.get('open_score'))
+                    step_v3['native_close_score_initial'] = _none_to_blank(_init_stats.get('close_score'))
+                    step_v3['native_close_score_final'] = _none_to_blank(_final_stats.get('close_score'))
+
+                    # Arm prefix tokens
+                    step_v3['generated_arm_prefix'] = _none_to_blank(debug_info.get('generated_arm_prefix_token_ids'))
+                    step_v3['retokenized_clean_arm_prefix'] = _none_to_blank(debug_info.get('retokenized_clean_action_arm_token_ids'))
+
+                    # Append to episode-level records
+                    v3_attack_records.append(dict(step_v3))
 
                 # Official OpenVLA decoder: token_ids → np.clip → action
                 # No hard-fail for out-of-native-range tokens — official pipeline clips them.
@@ -736,6 +778,18 @@ while step < max_steps:
         'c2o_official': c2o_official,
         'c2o_native_open': c2o_native_open,
         'c2o_clip_mediated': c2o_clip_mediated,
+        # V3 per-step telemetry (attack steps only)
+        'v3_margin_initial': step_v3.get('margin_initial', ''),
+        'v3_margin_final': step_v3.get('margin_final', ''),
+        'v3_margin_delta': step_v3.get('margin_delta', ''),
+        'v3_hinge_initial': step_v3.get('hinge_initial', ''),
+        'v3_hinge_final': step_v3.get('hinge_final', ''),
+        'v3_loss_initial': step_v3.get('loss_initial', ''),
+        'v3_loss_final': step_v3.get('loss_final', ''),
+        'v3_arm_loss_initial': step_v3.get('arm_loss_initial', ''),
+        'v3_arm_loss_final': step_v3.get('arm_loss_final', ''),
+        'v3_global_top_token_initial': step_v3.get('global_top_token_initial', ''),
+        'v3_global_top_token_final': step_v3.get('global_top_token_final', ''),
     })
 
     step += 1
@@ -786,17 +840,9 @@ summary = {
     'qpos_abs_at_trigger': qpos_abs_at_trigger if qpos_abs_at_trigger is not None else '',
     'qpos_abs_peak_post_trigger': qpos_abs_peak_post_trigger if qpos_abs_peak_post_trigger is not None else '',
     'qpos_abs_peak_delta': round(float(qpos_abs_peak_post_trigger or 0) - float(qpos_abs_at_trigger or 0), 8) if qpos_abs_at_trigger is not None else '',
-    # V3 transfer telemetry (only populated for v3 VIS)
-    'v3_generated_margin_initial': _v3.get('generated_prefix_gripper_margin_initial') or '',
-    'v3_generated_margin_final': _v3.get('generated_prefix_gripper_margin_final') or '',
-    'v3_selected_loss_initial': _v3.get('selected_loss_initial') or '',
-    'v3_selected_loss_final': _v3.get('selected_loss_final') or '',
-    'v3_teacher_margin_clean_x0': _v3.get('teacher_forced_margin_clean_x0') or '',
-    'v3_prefix_refresh_count': _v3.get('prefix_refresh_count') or '',
-    'v3_generation_forwards': _v3.get('num_generation_forwards') or '',
-    'v3_arm_match_rate': _v3.get('generated_vs_retokenized_arm_match_rate') or '',
-    'v3_arm_loss_initial': _v3.get('arm_preservation_loss_initial') or '',
-    'v3_arm_loss_final': _v3.get('arm_preservation_loss_final') or '',
+    # V3 transfer telemetry: per-opportunity records + episode-level aggregates
+    'v3_transfer_records': v3_attack_records,
+    'v3_transfer_opportunity_count': len(v3_attack_records),
     'attacked_close_count': attacked_close_count,
     'decoded_open_count': total_decoded_open,
     'max_open_streak': max_open_streak,
