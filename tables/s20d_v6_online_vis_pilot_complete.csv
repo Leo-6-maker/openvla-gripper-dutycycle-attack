@@ -1,0 +1,10 @@
+parent_id,task,state_id,seed,trigger_found,trigger_step,attacked_close_count,C2O_count,C2O_episode,event_C2O_rate,event_C2O_rate_flag,success_primary,timeout,infra_status,perturb_frame_count,eps_raw_pixels,pgd_steps
+bbq_sauce_s0,bbq_sauce,0,99,True,52,3,0,0,0.0,,True,False,ok,3,6,20
+bbq_sauce_s0,bbq_sauce,0,199,True,52,3,1,1,0.3333,,True,False,ok,3,6,20
+bbq_sauce_s0,bbq_sauce,0,299,True,52,3,0,0,0.0,,True,False,ok,3,6,20
+butter_s2,butter,2,99,True,4,1,1,1,1.0,,True,False,ok,1,6,20
+butter_s2,butter,2,199,True,4,2,2,1,1.0,,True,False,ok,2,6,20
+butter_s2,butter,2,299,True,4,1,1,1,1.0,,True,False,ok,1,6,20
+chocolate_pudding_s2,chocolate_pudding,2,99,True,57,3,0,0,0.0,,True,False,ok,3,6,20
+chocolate_pudding_s2,chocolate_pudding,2,199,True,57,3,0,0,0.0,,True,False,ok,3,6,20
+chocolate_pudding_s2,chocolate_pudding,2,299,True,58,3,0,0,0.0,,True,False,ok,3,6,20

@@ -1,0 +1,13 @@
+parent_id,task,state_id,job_id,repeat_index,trigger_found,trigger_step,trigger_clean_gripper_raw,n_steps,success_primary,timeout,infra_status
+alphabet_soup_s10,alphabet_soup,10,as10_r1,r1,True,52,0.0,280,False,True,ok
+alphabet_soup_s10,alphabet_soup,10,p1_alphabet_soup_10_r0,r0,True,48,0.0,135,True,False,ok
+bbq_sauce_s0,bbq_sauce,0,bbq0_r0b,0b,True,50,0.0,127,True,False,ok
+bbq_sauce_s0,bbq_sauce,0,bbq0_r1b,1b,True,44,0.0,112,True,False,ok
+butter_s2,butter,2,bt2_r1,r1,True,4,0.0,158,True,False,ok
+butter_s2,butter,2,p1_butter_2_r0,r0,True,4,0.0,158,True,False,ok
+chocolate_pudding_s2,chocolate_pudding,2,cp2_r0,r0,True,58,0.0,155,True,False,ok
+chocolate_pudding_s2,chocolate_pudding,2,cp2_r1b,1b,True,58,0.0,155,True,False,ok
+cream_cheese_s2,cream_cheese,2,p1_cream_cheese_2_r0,r0,True,60,0.0,148,True,False,ok
+cream_cheese_s2,cream_cheese,2,p1_cream_cheese_s2_r1,r1,True,59,0.0,135,True,False,ok
+ketchup_s11,ketchup,11,kt11_r0,r0,True,42,0.0,144,True,False,ok
+ketchup_s11,ketchup,11,kt11_r1b,1b,True,46,0.0,133,True,False,ok

@@ -1,4 +1,3 @@
-    qpos_opening_delta = gripper_qpos_before - gripper_qpos_after  # positive=opening
 #!/usr/bin/env python3
 """V6 Online-Trigger Layer3 Runner (P0-fixed).
 - P0-1: VIS uses get_adv_inputs_from_attack_result() + V5 re-decode path
@@ -95,6 +94,7 @@ print('[%s] Model loaded. device=%s' % (time.strftime('%H:%M:%S'), device), flus
 
 # ── V4 imports ──
 from v4_run_eval_openvla import (
+    prompt,
     decode_with_scores, postprocess_openvla_action_for_libero,
     physical_gripper_state)
 
@@ -408,6 +408,7 @@ while step < max_steps:
     gripper_phys_after = physical_gripper_state(env, obs)
     gripper_qpos_after = float(
         np.sum(gripper_phys_after.get('qpos', [0.0])))
+    qpos_opening_delta = gripper_qpos_before - gripper_qpos_after  # positive=opening
     is_open = int(env_action[-1] < -0.5)
     c2o_this_step = int(clean_close and is_open)
     C2O_count += c2o_this_step

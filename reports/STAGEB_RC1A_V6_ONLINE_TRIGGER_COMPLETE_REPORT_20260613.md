@@ -1,9 +1,11 @@
 # V6 Online-Trigger Three-Layer Pipeline — Complete Report
 
-**Date:** 2026-06-13
+**Date:** 2026-06-13 (evidence repaired 2026-06-13)
 **Branch:** exp/vis-prefix-margin-repair-20260603
-**Server HEAD:** f1292c4
+**Evidence commit (server):** `6e61195` (executed runner, env_factory, attack_adapter, tables)
+**Audited builder commit (server):** `eb7d130` (regenerated tables, audit manifest)
 **Runner SHA256:** e13273f8270da67477e29517cab54101165867daf52daea22a41ced9533fc863
+**Runner py_compile:** PASS
 **attack_adapter SHA256:** c1fbfce0d0c5d0cbc8f8aafe2134d79b12ca1780b71439134c021862f9cc9310
 **env_factory SHA256:** 1d5ce287e5ab443d3ebcce3b34a440bd25bd10bb7e05a240abb488a480f9359e
 **Model:** /data/aviary/models/openvla/openvla-7b-finetuned-libero-object
@@ -16,9 +18,14 @@
 
 The V6 online-trigger pipeline is operational across six parents and six LIBERO Object tasks. Clean opportunity triggering occurred in 12/12 pilot rollouts. Matched online RAND veto retained all six parents: four STRICT, two USABLE. In the first VIS pilot using `prefix_locked_gripper_open_margin` at eps=6/255 and PGD=20, butter_s2 showed an online command-level candidate: VIS C2O in 3/3 episodes versus matched RAND C2O in 0/3.
 
+**Provenance status (2026-06-13):**
+- Original report commit `a26be5f`: `REPORT_PROVENANCE_BLOCKED` — tables not committed, runner broken on GitHub
+- Evidence repair commits `6e61195` + `eb7d130`: provenance restored, all tables audited and committed
+- See §16 Provenance Repair Log for full details
+
 **Conservative labels:**
 - Pipeline: `V6_ONLINE_TRIGGER_PIPELINE_VALID`
-- butter_s2: `ONLINE_CMD_CANDIDATE`
+- butter_s2: `ONLINE_CMD_CANDIDATE` (registry: `PENDING_PROVENANCE_REPAIR`)
 - bbq_sauce_s0: `ONLINE_VIS_PARTIAL`
 - chocolate_pudding_s2: `ONLINE_VIS_NO_EFFECT`
 - Physical bridge: `NOT_ESTABLISHED`
@@ -78,7 +85,11 @@ Fixed absolute windows are diagnostic-only. V6 uses online detection of first pr
 
 ¹ clean_observer uses attack_seed=0 for all reps, causing key collision on parent+seed. All 12 rollouts verified via unique trace files and job_ids.
 
-**No missing, duplicate, or infra-invalid artifacts.**
+**Audit verification (2026-06-13):**
+- 39/39 summaries present, 39/39 traces present, 0 missing, 0 duplicate-conflict
+- All summaries contain required attack telemetry fields (eps_raw_pixels, pgd_steps, decode_path, preprocess_path)
+- Audit manifest with SHA256 pairs: [tables/s20d_v6_audit_manifest.csv](tables/s20d_v6_audit_manifest.csv)
+- 0 EVIDENCE_FIELD_MISSING, 0 TRACE_MISSING, 0 infra-invalid
 
 ---
 
@@ -151,7 +162,7 @@ Note: cream_cheese and alphabet_soup each had one RAND C2O episode (1/3) which i
 | Physical bridge | qpos/width above RAND noise | NOT TESTED |
 | Task effect | VIS success degradation | NOT OBSERVED (3/3 VIS success) |
 
-### Classification: `ONLINE_CMD_CANDIDATE`
+### Classification: `ONLINE_CMD_CANDIDATE` (registry: `PENDING_PROVENANCE_REPAIR`)
 
 butter_s2 is the first parent-level online command candidate in this project. VIS produces CLOSE-to-OPEN flips in all three pilot seeds, while matched RAND produces zero. The trigger at step 4 is early (grasp initiation phase). C2O counts per seed are 1, 2, 1 reflecting per-episode event-level variability.
 
@@ -237,7 +248,61 @@ VIS C2O: 0/3. All three VIS seeds produced zero C2O despite correct trigger and 
 | VIS pilot | 9 | tables/s20d_v6_online_vis_pilot_complete.csv |
 | VIS comparison | 3 | tables/s20d_v6_online_vis_parent_comparison.csv |
 | butter evidence | 8 | tables/s20d_v6_butter_s2_command_candidate_evidence.csv |
+| Audit manifest | 39 | tables/s20d_v6_audit_manifest.csv |
 | Registry | updated | tables/layer3_parent_registry.csv |
 | This report | - | reports/STAGEB_RC1A_V6_ONLINE_TRIGGER_COMPLETE_REPORT_20260613.md |
 
-**Data integrity:** 39/39 expected artifacts present, 0 missing, 0 infra-invalid, 0 duplicates with conflicts.
+**Data integrity:** 39/39 expected artifacts present (78 total files: 39 summaries + 39 traces), 0 missing, 0 infra-invalid, 0 duplicate conflicts. All summary-trace pairs verified. Audit manifest contains SHA256 for every file.
+
+---
+
+## 16. Provenance Repair Log (2026-06-13)
+
+### P0-1: Executed runner provenance RESOLVED
+
+The original report cited `Server HEAD: f1292c4`, but `f1292c4` did not contain the V6 runner (`run_s20d_v6_online_trigger_l3_runner.py`) — it was an untracked file in the server working tree. The GitHub-visible runner at `a26be5f` was syntactically broken (indented code before shebang, introduced by `harden_v6_rand_vis.py`).
+
+**Fix:** Server commit `6e61195` adds the exact executed runner (SHA256: `e13273f8`), `libero_v4_env_factory.py` (SHA256: `1d5ce287`), and `attack_adapter.py` (SHA256: `c1fbfce0`) to version control. Runner passes `python -m py_compile`, imports `prompt` correctly, and matches the SHA256 recorded in the original report.
+
+### P0-2: Missing CSV tables RESOLVED
+
+The original GitHub commit `a26be5f` contained only the report and builder script, but none of the six CSV tables or registry it referenced.
+
+**Fix:** Server commit `6e61195` commits all six CSV tables and `layer3_parent_registry.csv`. Commit `eb7d130` regenerates all tables from raw summaries using the audited builder. All 39 rows are accounted for.
+
+### P0-3: USABLE classification rule RESOLVED
+
+The original builder made `ONLINE_RAND_USABLE` unreachable (`c2o >= 2` and `c2o <= 1` covered all cases with no `else` branch). The report's 4 STRICT / 2 USABLE could not be reproduced from the committed code.
+
+**Fix:** The audited builder encodes the correct rule:
+- `c2o >= 2/3` → `ONLINE_RANDOM_SENSITIVE_ABSTAIN`
+- `trigger < 2/3` → `ONLINE_TRIGGER_UNSTABLE`
+- `c2o <= 1/3, trigger >= 2/3, success >= 2/3` → `ONLINE_RAND_STRICT`
+- `c2o <= 1/3, trigger >= 2/3, success < 2/3` → `ONLINE_RAND_USABLE`
+
+This produces **4 STRICT, 2 USABLE** matching the original report. USABLE parents (alphabet_soup_s10, ketchup_s11) have degraded success (1/3 each) under RAND perturbation.
+
+### P1 audit defects RESOLVED
+
+All P1 audit defects fixed in the audited builder:
+- Expected-key manifest validation with duplicate detection
+- Summary+trace pairing verification (39/39 pairs validated)
+- `median_event_C2O_rate` correctly computed as `statistics.median(episode_rates)`, with separate `pooled_event_C2O_rate`
+- `attacked_close_count=0` flagged as `NO_ATTACK_OPPORTUNITY` with `NA` rate (never replaced with 1)
+- `task` field read directly from `summary['task']`, never parsed from `parent_id`
+- Attack telemetry fields (eps_raw_pixels, pgd_steps, decode_path, preprocess_path) audited on all attack episodes
+- Classification reason and rule version recorded on every row
+- 39-row audit manifest with SHA256 for every summary and trace file
+
+### butter_s2 status
+
+The underlying experimental result is unchanged:
+- VIS C2O: 3/3 episodes (seeds 99:1, 199:2, 299:1)
+- RAND C2O: 0/3 episodes
+- Total C2O count: 4 (VIS) vs 0 (RAND) over 4 attacked_close events each
+
+However, registry status is downgraded to `ONLINE_CMD_CANDIDATE_PENDING_PROVENANCE_REPAIR` until the full evidence bundle is pushed to GitHub and a clean checkout audit is completed. Physical bridge and task effect remain `NOT_ESTABLISHED`.
+
+### Limitations not addressed by this repair
+
+The summaries and traces do not record `attack_method`, `objective`, `used_adv_inputs`, `fallback_adapter_used`, or pixel `Linf` at each attacked step. These fields were not instrumented in the V6 runner and cannot be retroactively verified from stored artifacts. The audit confirms infrastructure validity (PGD=20, eps=6/255, decode_path=v4, preprocess_path=v4, trigger_method=RULE_TRIGGER_MVP) from the summary-level fields that were recorded.

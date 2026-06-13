@@ -1,0 +1,9 @@
+condition,seed,job_id,trigger_step,C2O_count,C2O_episode,success,infra
+clean_observer,N/A,bt2_r1,4,0,0,True,ok
+clean_observer,N/A,p1_butter_2_r0,4,0,0,True,ok
+online_random_linf,91,,4,0,0,False,ok
+online_random_linf,92,,4,0,0,True,ok
+online_random_linf,93,,4,0,0,True,ok
+online_vis_pgd,99,,4,1,1,True,ok
+online_vis_pgd,199,,4,2,1,True,ok
+online_vis_pgd,299,,4,1,1,True,ok

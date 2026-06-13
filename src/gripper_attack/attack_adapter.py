@@ -7,9 +7,6 @@ import torch.nn.functional as F
 from .types import AttackResult
 from .gripper_semantics import (
     raw_gripper_is_open,
-    decoded_action_to_env_gripper,
-    env_gripper_is_open,
-    env_gripper_is_close,
     CANONICAL_OPEN_SEMANTICS_VERSION,
 )
 
@@ -279,10 +276,8 @@ class TokenPrefixPGDAttacker:
     def get_gripper_region_by_decoded_action(self, unnorm_key: str, *, postprocess_gripper: bool = True, open_threshold: float = 0.5) -> dict:
         """Return OPEN/CLOSE/BOUNDARY token sets using canonical decoded-action semantics.
 
-        Uses the official OpenVLA/LIBERO classification:
-        ``decoded_action > open_threshold`` → OPEN,
-        ``decoded_action < open_threshold`` → CLOSE,
-        and equality is boundary/neutral.
+        Uses the same classification rule as ``gripper_semantics.raw_gripper_is_open``:
+        ``decoded_action < open_threshold`` → OPEN.
 
         Returns dict with keys:
           - open_token_ids, close_token_ids, boundary_token_ids
@@ -311,29 +306,38 @@ class TokenPrefixPGDAttacker:
             norm = centers[disc]
             raw_action = 0.5 * (norm + 1.0) * (high[gripper_dim] - low[gripper_dim]) + low[gripper_dim]
 
+            # Step 2: normalize_gripper_action (binarize=True)
+            env_val = 2.0 * raw_action - 1.0
+            env_val = np.sign(env_val)
+            env_val = 1.0 if env_val == 0 else env_val
+
+            # Step 3: invert_gripper_action
+            env_val = -1.0 * env_val
+
+            # Step 4: classify using decoded_action against threshold.
+            # After invert: OPEN = +1, CLOSE = -1.
+            # decoded_action in [0,1]: OPEN ≈ 0, CLOSE ≈ 1.
             decoded_action = float(0.5 * (norm + 1.0) * (high[gripper_dim] - low[gripper_dim]) + low[gripper_dim])
-            env_val = decoded_action_to_env_gripper(decoded_action)
 
             tid = int(vocab_size - disc - 1)
             token_action_map[tid] = decoded_action
 
-            is_open_by_env = env_gripper_is_open(env_val)
-            is_open_by_action = raw_gripper_is_open(decoded_action, threshold=open_threshold)
+            is_open_by_env = (env_val > 0)
+            is_open_by_action = (decoded_action < float(open_threshold))
             # Sanity: these must agree for all bins
             assert is_open_by_env == is_open_by_action, \
                 f"OPEN classification mismatch at disc={disc}: env={int(env_val)} action={decoded_action:.6f}"
 
             if is_open_by_env:
                 open_tokens.append(tid)
-            elif env_gripper_is_close(env_val):
-                close_tokens.append(tid)
             else:
-                boundary_tokens.append(tid)
+                close_tokens.append(tid)
 
             # Boundary detection: adjacent discs with opposite signs
             if disc > 0:
                 prev_env_val = 2.0 * (0.5 * (centers[disc-1] + 1.0) * (high[gripper_dim] - low[gripper_dim]) + low[gripper_dim]) - 1.0
                 prev_env_val = np.sign(prev_env_val)
+                prev_env_val = 1.0 if prev_env_val == 0 else prev_env_val
                 prev_env_val = -1.0 * prev_env_val
                 if int(env_val) != int(prev_env_val):
                     boundary_tokens.append(int(vocab_size - disc - 1))
@@ -343,39 +347,24 @@ class TokenPrefixPGDAttacker:
         close_token_ids = torch.tensor(sorted(set(close_tokens)), dtype=torch.long, device=self.device)
 
         # ── Runtime assertions: prevent region inversion from ever recurring ──
-        # 1. Every OPEN token must decode to OPEN (decoded_action > open_threshold)
+        # 1. Every OPEN token must decode to OPEN (decoded_action < open_threshold)
         for tid in open_tokens:
             act = token_action_map[int(tid)]
-            env = decoded_action_to_env_gripper(act)
-            assert act > float(open_threshold) and env_gripper_is_open(env), \
+            assert act < float(open_threshold), \
                 f"OPEN token {tid} decodes to CLOSE action {act:.6f}"
-        # 2. Every CLOSE token must decode to CLOSE (decoded_action < open_threshold)
+        # 2. Every CLOSE token must decode to CLOSE (decoded_action >= open_threshold)
         for tid in close_tokens:
             act = token_action_map[int(tid)]
-            env = decoded_action_to_env_gripper(act)
-            assert act < float(open_threshold) and env_gripper_is_close(env), \
+            assert act >= float(open_threshold), \
                 f"CLOSE token {tid} decodes to OPEN action {act:.6f}"
-        # 2b. Boundary tokens must not be targeted by OPEN/CLOSE objectives.
-        for tid in set(boundary_tokens):
-            act = token_action_map[int(tid)]
-            if abs(float(act) - float(open_threshold)) <= 1e-9:
-                env = decoded_action_to_env_gripper(act)
-                assert not env_gripper_is_open(env) and not env_gripper_is_close(env), \
-                    f"BOUNDARY token {tid} decodes to executable open/close env={env:.6f}"
-        # 3. Saturation tokens are classified by decoded physical env sign, not comments.
-        for tid in {31744, 31745}:
-            if tid not in token_action_map:
-                continue
-            act = token_action_map[int(tid)]
-            env = decoded_action_to_env_gripper(act)
-            if env_gripper_is_open(env):
-                assert tid in open_tokens, f"OPEN saturation token {tid} missing from OPEN set"
-            else:
-                assert tid in close_tokens, f"CLOSE saturation token {tid} missing from CLOSE set"
+        # 3. Known CLOSE saturation tokens must NOT be in OPEN set
+        _close_saturation = {31744, 31745}
+        for tid in _close_saturation:
+            if tid in open_tokens:
+                raise AssertionError(f"Token {tid} is in CLOSE saturation but classified as OPEN")
         # 4. OPEN and CLOSE sets must be non-empty and disjoint
         assert int(open_token_ids.numel()) > 0, "OPEN token set is empty"
         assert int(close_token_ids.numel()) > 0, "CLOSE token set is empty"
-        assert set(open_tokens).isdisjoint(set(close_tokens)), "OPEN and CLOSE token sets overlap"
 
         return {
             "open_token_ids": open_token_ids,
@@ -402,9 +391,9 @@ class TokenPrefixPGDAttacker:
             rows.append((int(b.item()), int(label_pos.item()), dim, row_index))
         return rows
 
-    def _loss(self, full_input_ids, labels, pixel_values, *, objective: str = "targeted_directional_ce", region_token_ids=None, margin: float = 5.0, num_action_tokens: int = 7, loss_weights: dict = None, arm_preserve_weight: float = 0.1):
+    def _loss(self, full_input_ids, labels, pixel_values, *, objective: str = "targeted_directional_ce", region_token_ids=None, close_token_ids=None, margin: float = 5.0, num_action_tokens: int = 7, loss_weights: dict = None, arm_preserve_weight: float = 0.1):
         obj = str(objective)
-        _PREFIX_LOCKED_OBJS = {"prefix_locked_gripper_open_region_ce", "prefix_locked_gripper_open_margin", "gripper_open_expected_action"}
+        _PREFIX_LOCKED_OBJS = {"prefix_locked_gripper_open_region_ce", "prefix_locked_gripper_open_margin", "gripper_open_expected_action", "prefix_locked_gripper_top1_open_vs_close"}
         _SPECIAL_OBJS = {"gripper_open_region_ce", "gripper_logit_margin_cw", "force_open_region_z_down_ce"} | _PREFIX_LOCKED_OBJS
 
         if obj not in _SPECIAL_OBJS:
@@ -465,6 +454,10 @@ class TokenPrefixPGDAttacker:
                     probs = torch.softmax(gripper_row, dim=-1)
                     open_prob_mass = probs[region_token_ids].sum()
                     gripper_loss = -open_prob_mass
+                elif obj == "prefix_locked_gripper_top1_open_vs_close":
+                    max_open = gripper_row[region_token_ids].max()
+                    max_close = gripper_row[close_token_ids].max()
+                    gripper_loss = F.relu(max_close - max_open + float(margin))
                 else:
                     gripper_loss = logits.sum() * 0.0
                 _gripper_loss_value = float(gripper_loss.detach().cpu())
@@ -630,6 +623,7 @@ class TokenPrefixPGDAttacker:
         # New gripper-specific objectives (2026-06-02)
         is_prefix_locked_open_region = objective in {"prefix_locked_gripper_open_region_ce"}
         is_prefix_locked_open_margin = objective in {"prefix_locked_gripper_open_margin"}
+        is_prefix_locked_top1 = objective in {"prefix_locked_gripper_top1_open_vs_close"}
         is_gripper_expected_action = objective in {"gripper_open_expected_action"}
         is_prefix_locked = is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action
         is_corrected_hybrid = is_force_open_region_z_down  # uses corrected OPEN region + Z CE
@@ -716,13 +710,14 @@ class TokenPrefixPGDAttacker:
         loss_kwargs = {"objective": objective, "num_action_tokens": int(target_ids.numel())}
         region_token_ids = None
         corrected_region_info = None
-        _needs_region = is_gripper_region or is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action or is_corrected_hybrid
+        _needs_region = is_gripper_region or is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action or is_corrected_hybrid or is_prefix_locked_top1
         if _needs_region:
             # P0 BUG FIX: use decoded-action semantics instead of sign-string heuristic.
             corrected_region_info = self.get_gripper_region_by_decoded_action(
                 unnorm_key, postprocess_gripper=bool(self.postprocess_gripper))
             region_token_ids = corrected_region_info["open_token_ids"]
             loss_kwargs["region_token_ids"] = region_token_ids
+            loss_kwargs["close_token_ids"] = corrected_region_info.get("close_token_ids")
         if is_gripper_margin:
             loss_kwargs["margin"] = float((getattr(self, "config", {}) or {}).get("cw_margin", 5.0)) if hasattr(self, "config") else 5.0
         if is_prefix_locked:
@@ -844,6 +839,7 @@ class TokenPrefixPGDAttacker:
                     "corrected_open_region_z_down": bool(is_corrected_hybrid),
                     "gripper_logit_margin_loss": bool(is_gripper_margin or is_prefix_locked_open_margin),
                     "gripper_open_region_loss": bool(is_gripper_region or is_prefix_locked_open_region),
+                    "gripper_top1_open_vs_close_loss": bool(is_prefix_locked_top1),
                     "gripper_expected_action_loss": bool(is_gripper_expected_action),
                     "prefix_locked_arm_preserve": bool(is_prefix_locked),
                 })
