@@ -271,8 +271,8 @@ total_decoded_open = 0
 max_open_streak = 0
 current_streak = 0
 C2O_count = 0
-C2O_env_count = 0
-C2O_boundary_count = 0
+C2O_native_count = 0
+C2O_clip_count = 0
 attacked_close_count = 0
 episode_infra_status = 'ok'
 trace_rows = []
@@ -346,9 +346,11 @@ while step < max_steps:
     step_result_method = ''
     step_actual_linf = ''
     step_fallback_reason = ''
-    step_all_tokens_legal = True
+    step_any_token_clipped = False
     step_gripper_token_id = ''
-    step_gripper_disc = ''
+    step_gripper_disc_before = ''
+    step_gripper_disc_after = ''
+    step_gripper_clipped = False
     step_gripper_region = ''
     result_objective = ''
     env_action = clean_env_action.copy()
@@ -431,25 +433,24 @@ while step < max_steps:
                 step_actual_linf = actual_linf
                 step_fallback_reason = str(debug_info.get('fallback_reason', ''))
 
-                # P1: validate tokens BEFORE decode (avoid silent clip)
+                # Official OpenVLA decoder: token_ids → np.clip → action
+                # No hard-fail for out-of-native-range tokens — official pipeline clips them.
                 token_ids, _ = generate_from_adv_inputs(
                     adv_inputs, device, model_dtype, action_dim)
                 n_bins = int(model.bin_centers.shape[0])
                 vocab_eff = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of)
                 generated_tokens = [int(t) for t in token_ids[-action_dim:]]
-                all_tokens_legal = True
-                illegal_tokens = []
-                for i, tid in enumerate(generated_tokens):
-                    disc = vocab_eff - tid - 1
-                    if disc < 0 or disc >= n_bins:
-                        all_tokens_legal = False
-                        illegal_tokens.append(int(i))
-                if not all_tokens_legal:
-                    raise RuntimeError(f"V6 HARD FAIL: illegal tokens at dims {illegal_tokens}")
                 gripper_token_id = int(generated_tokens[-1])
-                gripper_disc = vocab_eff - gripper_token_id - 1
 
-                # Now decode and classify
+                # Clip telemetry (observation only, no control flow)
+                disc_before = [vocab_eff - tid - 1 for tid in generated_tokens]
+                disc_after = [max(0, min(n_bins - 1, d)) for d in disc_before]
+                any_clipped = any(d != da for d, da in zip(disc_before, disc_after))
+                gripper_disc_before = vocab_eff - gripper_token_id - 1
+                gripper_disc_after = max(0, min(n_bins - 1, gripper_disc_before))
+                gripper_clipped = gripper_disc_before != gripper_disc_after
+
+                # Official decode (with np.clip inside decode_action_from_token_ids)
                 adv_action = decode_action_from_token_ids(token_ids)
                 autoregressive_raw = adv_action
                 gripper_raw = float(adv_action[-1])
@@ -460,10 +461,12 @@ while step < max_steps:
                 else:
                     gripper_region = 'EXACT_BOUNDARY'
 
-                # P0-1: assign gripper telemetry to step variables
-                step_all_tokens_legal = bool(all_tokens_legal)
+                # Clip telemetry to step variables
                 step_gripper_token_id = gripper_token_id
-                step_gripper_disc = gripper_disc
+                step_gripper_disc_before = gripper_disc_before
+                step_gripper_disc_after = gripper_disc_after
+                step_gripper_clipped = gripper_clipped
+                step_any_token_clipped = any_clipped
                 step_gripper_region = gripper_region
 
                 adv_env_action = postprocess_openvla_action_for_libero(
@@ -536,20 +539,19 @@ while step < max_steps:
                 rand_tids = rand_gen.sequences[
                     0, -action_dim:].detach().cpu().numpy()
 
-                # P0-3: RAND token legality (same as VIS)
+                # Official OpenVLA decoder: token_ids → np.clip → action
                 vocab_eff = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of)
                 n_bins = int(model.bin_centers.shape[0])
                 rand_generated = [int(t) for t in rand_tids]
-                rand_legal = True
-                for i, tid in enumerate(rand_generated):
-                    disc = vocab_eff - tid - 1
-                    if disc < 0 or disc >= n_bins:
-                        rand_legal = False
-                        break
-                if not rand_legal:
-                    raise RuntimeError(f"V6 HARD FAIL: RAND illegal token in generated sequence")
                 rand_gripper_tid = int(rand_generated[-1])
-                rand_gripper_disc = vocab_eff - rand_gripper_tid - 1
+
+                # Clip telemetry (observation only)
+                rand_disc_before = [vocab_eff - tid - 1 for tid in rand_generated]
+                rand_disc_after = [max(0, min(n_bins - 1, d)) for d in rand_disc_before]
+                rand_any_clipped = any(d != da for d, da in zip(rand_disc_before, rand_disc_after))
+                rand_gripper_disc_before = vocab_eff - rand_gripper_tid - 1
+                rand_gripper_disc_after = max(0, min(n_bins - 1, rand_gripper_disc_before))
+                rand_gripper_clipped = rand_gripper_disc_before != rand_gripper_disc_after
 
                 rand_action = decode_action_from_token_ids(rand_tids)
                 rand_env_action = postprocess_openvla_action_for_libero(
@@ -561,12 +563,14 @@ while step < max_steps:
                 attacked_close_count += 1
                 perturb_frame_count += 1
 
-                # P0: RAND audit telemetry (matched VIS audit standard)
+                # RAND audit telemetry
                 step_result_method = 'random_linf_pixel_values'
                 step_actual_linf = rand_linf
-                step_all_tokens_legal = bool(rand_legal)
                 step_gripper_token_id = rand_gripper_tid
-                step_gripper_disc = rand_gripper_disc
+                step_gripper_disc_before = rand_gripper_disc_before
+                step_gripper_disc_after = rand_gripper_disc_after
+                step_gripper_clipped = rand_gripper_clipped
+                step_any_token_clipped = rand_any_clipped
                 rand_gripper_raw = float(rand_action[-1])
                 if rand_gripper_raw > 0.5:
                     step_gripper_region = 'OPEN'
@@ -592,16 +596,16 @@ while step < max_steps:
         np.sum(gripper_phys_after.get('qpos', [0.0])))
     qpos_opening_delta = gripper_qpos_before - gripper_qpos_after  # positive=opening
     is_open = int(env_action[-1] < -0.5)
-    # P0-1: multi-level C2O metrics
+    # C2O metrics: official execution is PRIMARY
     executed_raw_gripper = float(executed_action[-1])
     executed_env_gripper = float(env_action[-1])
-    c2o_env = int(clean_close and executed_env_gripper < -0.5)
-    c2o_strict = int(clean_close and executed_raw_gripper > 0.5 and executed_env_gripper < -0.5)
-    boundary_exec_open = int(clean_close and abs(executed_raw_gripper - 0.5) <= 1e-9 and executed_env_gripper < -0.5)
-    c2o_this_step = c2o_strict  # PRIMARY metric
-    C2O_count += c2o_strict
-    C2O_env_count += c2o_env
-    C2O_boundary_count += boundary_exec_open
+    c2o_official = int(clean_close and executed_env_gripper < -0.5)
+    c2o_native_open = int(clean_close and executed_raw_gripper > 0.5 and executed_env_gripper < -0.5)
+    c2o_clip_mediated = int(clean_close and executed_raw_gripper <= 0.5 and executed_env_gripper < -0.5)
+    c2o_this_step = c2o_official  # PRIMARY: official execution
+    C2O_count += c2o_official
+    C2O_native_count += c2o_native_open
+    C2O_clip_count += c2o_clip_mediated
 
     total_decoded_open += is_open
     current_streak = current_streak + 1 if is_open else 0
@@ -666,15 +670,17 @@ while step < max_steps:
         'step_fallback_detected': int(bool(step_fallback_reason)) if (attack_this_step and is_attack_condition) else '',
         'step_fallback_reason': step_fallback_reason if args.condition == 'online_vis_pgd' else '',
         'step_actual_linf': step_actual_linf if (attack_this_step and is_attack_condition) else '',
-        'step_all_tokens_legal': int(step_all_tokens_legal) if (attack_this_step and is_attack_condition) else '',
+        'step_any_token_clipped': int(step_any_token_clipped) if (attack_this_step and is_attack_condition) else '',
         'step_gripper_token_id': step_gripper_token_id if (attack_this_step and is_attack_condition) else '',
-        'step_gripper_disc': step_gripper_disc if (attack_this_step and is_attack_condition) else '',
+        'step_gripper_disc_before': step_gripper_disc_before if (attack_this_step and is_attack_condition) else '',
+        'step_gripper_disc_after': step_gripper_disc_after if (attack_this_step and is_attack_condition) else '',
+        'step_gripper_clipped': int(step_gripper_clipped) if (attack_this_step and is_attack_condition) else '',
         'step_gripper_region': step_gripper_region if (attack_this_step and is_attack_condition) else '',
         'step_clean_gripper_raw': round(clean_gripper_raw, 6),
         'step_executed_gripper_raw': round(float(autoregressive_raw[-1]), 6) if (attack_this_step and is_attack_condition and autoregressive_raw is not None) else '',
-        'c2o_env': c2o_env,
-        'c2o_strict': c2o_strict,
-        'boundary_exec_open': boundary_exec_open,
+        'c2o_official': c2o_official,
+        'c2o_native_open': c2o_native_open,
+        'c2o_clip_mediated': c2o_clip_mediated,
     })
 
     step += 1
@@ -715,9 +721,9 @@ summary = {
     'eligible_close_opportunities': eligible_close_opportunities,
     'perturb_frame_count': perturb_frame_count,
     'naturally_open_skip': naturally_open_skip,
-    'C2O_count': C2O_count,  # PRIMARY: strict C2O
-    'C2O_env_count': C2O_env_count,
-    'C2O_boundary_count': C2O_boundary_count,
+    'C2O_count': C2O_count,  # PRIMARY: official execution C2O
+    'C2O_native_open_count': C2O_native_count,
+    'C2O_clip_mediated_count': C2O_clip_count,
     'attacked_close_count': attacked_close_count,
     'decoded_open_count': total_decoded_open,
     'max_open_streak': max_open_streak,
