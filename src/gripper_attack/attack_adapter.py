@@ -845,36 +845,47 @@ class TokenPrefixPGDAttacker:
             final_generated_stats = None
             for i in range(max(self.num_steps, 1)):
                 adv = adv.detach().requires_grad_(True)
-                adv_for_loss = self._cast_projected_pixel_values(adv, x_orig_model)
+                # --- Prefix generation (if needed) ---
                 if generated_arm_prefix_token_ids is None or (i % prefix_refresh_interval) == 0:
+                    adv_for_gen = self._cast_projected_pixel_values(adv, x_orig_model)
                     generated_arm_prefix_token_ids = self._generate_action_prefix_tokens(
-                        clean_ids,
-                        adv_for_loss,
-                        prefix_len=max(int(target_ids.numel()) - 1, 0),
-                    )
+                        clean_ids, adv_for_gen,
+                        prefix_len=max(int(target_ids.numel()) - 1, 0))
                     prefix_refresh_count += 1
                     num_generation_forwards += 1
+
+                # --- Sequential gradient accumulation: L_gripper + L_arm ---
+                # Forward 1: generated-prefix gripper loss
+                adv_g = self._cast_projected_pixel_values(adv, x_orig_model)
                 gripper_loss, gripper_stats = self._generated_prefix_gripper_loss_and_stats(
-                    clean_ids,
-                    generated_arm_prefix_token_ids,
-                    adv_for_loss,
-                    region_token_ids,
-                    corrected_region_info.get("close_token_ids"),
-                    margin=float(self.gripper_margin),
-                )
+                    clean_ids, generated_arm_prefix_token_ids, adv_g,
+                    region_token_ids, corrected_region_info.get("close_token_ids"),
+                    margin=float(self.gripper_margin))
+                grad_g = torch.autograd.grad(gripper_loss, adv,
+                    retain_graph=False, create_graph=False)[0]
+                gv = float(gripper_loss.detach().cpu())
+                del gripper_loss, adv_g
+
+                # Forward 2: arm preservation loss (rebuild tensor after freeing graph)
+                adv_a = self._cast_projected_pixel_values(adv, x_orig_model)
                 arm_loss, arm_stats = self._arm_preservation_loss_and_stats(
-                    full_ids,
-                    labels,
-                    adv_for_loss,
-                    int(target_ids.numel()),
-                    arm_preserve_weight=float(self.arm_preserve_weight),
-                )
-                loss = gripper_loss + arm_loss
+                    full_ids, labels, adv_a,
+                    int(target_ids.numel()), arm_preserve_weight=float(self.arm_preserve_weight))
+                grad_a = torch.autograd.grad(arm_loss, adv,
+                    retain_graph=False, create_graph=False)[0]
+                av = float(arm_loss.detach().cpu())
+                del arm_loss, adv_a
+
+                # Combined gradient: ∇(L_gripper + L_arm) = ∇L_gripper + ∇L_arm
+                grad = grad_g + grad_a
+                loss_value = gv + av
+                del grad_g, grad_a
+
                 if i == 0:
-                    initial_loss = float(loss.detach().cpu())
+                    initial_loss = loss_value
                     initial_generated_stats = dict(gripper_stats)
                     initial_arm_stats = dict(arm_stats)
-                grad = torch.autograd.grad(loss, adv, retain_graph=False, create_graph=False)[0]
+
                 adv = adv.detach() - self.step_size * grad.detach().sign()
                 adv = self._project_pixel_master(adv, x_orig)
                 if self.temporal_smooth_lambda > 0.0 and self._prev_delta is not None and tuple(self._prev_delta.shape) == tuple(adv.shape):
@@ -882,7 +893,7 @@ class TokenPrefixPGDAttacker:
                     smoothed_delta = (1.0 - lam) * (adv.detach() - x_orig) + lam * self._prev_delta.detach().to(device=x_orig.device, dtype=torch.float32)
                     smoothed_delta = torch.clamp(smoothed_delta, -self.epsilon, self.epsilon)
                     adv = self._project_pixel_master(x_orig + smoothed_delta, x_orig).detach()
-                del grad, loss, gripper_loss, arm_loss
+                del grad
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
             adv_model_for_final = self._cast_projected_pixel_values(adv.detach(), x_orig_model)
