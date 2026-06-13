@@ -365,7 +365,8 @@ while step < max_steps:
     step_gripper_clipped = False
     step_gripper_region = ''
     result_objective = ''
-    step_v3 = {}  # V3 transfer telemetry for this step (populated for v3 VIS attacks only)
+    step_v3 = {}  # V3 transfer telemetry for this step
+    _pending_v3 = {}  # P0-1: completed after AR decode + C2O
     env_action = clean_env_action.copy()
     executed_action = clean_action.copy()
     infra_status = 'ok'
@@ -493,9 +494,19 @@ while step < max_steps:
                     step_v3['hinge_initial'] = _none_to_blank(max(0.0, _m - float(_mi)) if _mi is not None else None)
                     step_v3['hinge_final'] = _none_to_blank(max(0.0, _m - float(_mf)) if _mf is not None else None)
 
-                    # Global top token from nested stats
-                    _init_stats = debug_info.get('generated_prefix_gripper_stats_initial') or {}
-                    _final_stats = debug_info.get('generated_prefix_gripper_stats_final') or {}
+                    # P0-2: Hard-fail on missing nested global-top stats
+                    for _sk in ('generated_prefix_gripper_stats_initial',
+                                'generated_prefix_gripper_stats_final'):
+                        _s = debug_info.get(_sk)
+                        if not isinstance(_s, dict):
+                            raise RuntimeError(
+                                f"V6 HARD FAIL: v3 missing nested stats {_sk}")
+                        for _nk in ('top_token_id', 'open_score', 'close_score'):
+                            if _s.get(_nk) is None:
+                                raise RuntimeError(
+                                    f"V6 HARD FAIL: v3 stats {_sk}.{_nk} is None")
+                    _init_stats = debug_info['generated_prefix_gripper_stats_initial']
+                    _final_stats = debug_info['generated_prefix_gripper_stats_final']
                     step_v3['global_top_token_initial'] = _none_to_blank(_init_stats.get('top_token_id'))
                     step_v3['global_top_token_final'] = _none_to_blank(_final_stats.get('top_token_id'))
                     step_v3['native_open_score_initial'] = _none_to_blank(_init_stats.get('open_score'))
@@ -507,8 +518,13 @@ while step < max_steps:
                     step_v3['generated_arm_prefix'] = _none_to_blank(debug_info.get('generated_arm_prefix_token_ids'))
                     step_v3['retokenized_clean_arm_prefix'] = _none_to_blank(debug_info.get('retokenized_clean_action_arm_token_ids'))
 
-                    # Append to episode-level records
-                    v3_attack_records.append(dict(step_v3))
+                    # Create pending record (will be completed after AR decode + C2O)
+                    _pending_v3 = {
+                        'step': step,
+                        'close_opportunity_idx': close_opportunity_idx,
+                        'within_first_B3': bool(within_first_B3),
+                    }
+                    _pending_v3.update(step_v3)
 
                 # Official OpenVLA decoder: token_ids → np.clip → action
                 # No hard-fail for out-of-native-range tokens — official pipeline clips them.
@@ -690,6 +706,32 @@ while step < max_steps:
     if c2o_official and within_first_B3:
         open_count_B3 += 1
 
+    # P0-1: Complete pending v3 record with AR decode results + C2O
+    if attack_this_step and is_attack_condition and _pending_v3:
+        _pending_v3.update({
+            'full_ar_gripper_token_id': gripper_token_id if 'gripper_token_id' in dir() else '',
+            'gripper_disc_before': step_gripper_disc_before,
+            'gripper_disc_after': step_gripper_disc_after,
+            'gripper_clipped': bool(step_gripper_clipped),
+            'executed_raw_gripper': float(executed_action[-1]),
+            'executed_env_gripper': float(env_action[-1]),
+            'c2o_official': int(c2o_official),
+            'c2o_native_open': int(c2o_native_open),
+            'c2o_clip_mediated': int(c2o_clip_mediated),
+        })
+        # P0-3: Prefix and top-token invariants
+        if 'generated_arm_prefix' in _pending_v3 and _pending_v3['generated_arm_prefix']:
+            _gen_prefix = _pending_v3['generated_arm_prefix']
+            if isinstance(_gen_prefix, list) and len(_gen_prefix) == 6:
+                _ar_prefix = [int(t) for t in generated_tokens[:6]] if 'generated_tokens' in dir() else []
+                _pending_v3['prefix_match'] = _gen_prefix == _ar_prefix if _ar_prefix else None
+        if 'global_top_token_final' in _pending_v3 and _pending_v3['global_top_token_final'] != '':
+            _pending_v3['top_token_match'] = (
+                int(_pending_v3['global_top_token_final']) == int(gripper_token_id)
+                if 'gripper_token_id' in dir() else None)
+        v3_attack_records.append(dict(_pending_v3))
+        _pending_v3.clear()
+
     # Physical tracking post-trigger (fixed window: trigger+7)
     if trigger_found and qpos_abs_at_trigger is None:
         qpos_abs_at_trigger = qpos_abs_before
@@ -798,9 +840,25 @@ while step < max_steps:
 
 env.close()
 
-# ── Summary (P1-3: trigger-moment values, P1-4: real infra_status) ──
-safe_tag = '%s_s%d_v6_%s_seed%d' % (
-    args.task, args.state_id, args.condition, args.attack_seed)
+# ── P1: v3 record integrity checks ──
+if 'v3' in str(args.attack_objective) and args.condition == 'online_vis_pgd':
+    n_attacked = sum(1 for r in trace_rows if r.get('pgd_applied') == 1)
+    if len(v3_attack_records) != n_attacked:
+        raise RuntimeError(
+            f"V6 HARD FAIL: v3 records {len(v3_attack_records)} != "
+            f"attacked steps {n_attacked}")
+    import math
+    for _i, _rec in enumerate(v3_attack_records):
+        for _k in ('margin_initial', 'margin_final', 'loss_initial', 'loss_final'):
+            _v = _rec.get(_k)
+            if _v is not None and _v != '' and not math.isfinite(float(_v)):
+                raise RuntimeError(
+                    f"V6 HARD FAIL: v3 record[{_i}].{_k}={_v} is not finite")
+
+# ── Summary ──
+objective_tag = 'v3_ar_prefix' if 'v3' in str(args.attack_objective) else 'v2_execspec'
+safe_tag = '%s_s%d_%s_%s_seed%d' % (
+    args.task, args.state_id, objective_tag, args.condition, args.attack_seed)
 summary = {
     'runner_family': 's20d_v6_online_trigger_l3',
     'vis_runner_version': 'v6_online_trigger_%s_auditready' % (
