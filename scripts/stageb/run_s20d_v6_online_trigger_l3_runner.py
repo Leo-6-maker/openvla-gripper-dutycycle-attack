@@ -22,9 +22,16 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "eager")
 os.environ.setdefault("OPENVLA_CUDA_MAX_MEMORY", "10000MiB")
 
-# ── Runner self-provenance ──
+# ── Source provenance (SHA256 + import paths) ──
 import hashlib as _hl
 _runner_sha256 = _hl.sha256(open(__file__, 'rb').read()).hexdigest()
+_src_dir = REPO_ROOT / "src" / "gripper_attack"
+_adapter_path = str(_src_dir / "attack_adapter.py")
+_semantics_path = str(_src_dir / "gripper_semantics.py")
+_spec_path = str(_src_dir / "openvla_libero_exec_spec.py")
+_adapter_sha256 = _hl.sha256(open(_adapter_path, 'rb').read()).hexdigest() if os.path.exists(_adapter_path) else 'MISSING'
+_semantics_sha256 = _hl.sha256(open(_semantics_path, 'rb').read()).hexdigest() if os.path.exists(_semantics_path) else 'MISSING'
+_spec_sha256 = _hl.sha256(open(_spec_path, 'rb').read()).hexdigest() if os.path.exists(_spec_path) else 'MISSING'
 del _hl
 
 # ── Args ──
@@ -318,6 +325,7 @@ while step < max_steps:
     step_fallback_reason = ''
     step_all_tokens_legal = True
     step_gripper_token_id = ''
+    step_gripper_disc = ''
     step_gripper_region = ''
     env_action = clean_env_action.copy()
     executed_action = clean_action.copy()
@@ -372,19 +380,25 @@ while step < max_steps:
                 adv_inputs_used = True
 
                 # P0-2: hard-assert actual perturbation budget
+                _BUDGET_ATOL = 1e-6
                 actual_linf = float(debug_info.get('pixel_budget_adv_inputs_linf', 999))
                 master_linf = float(debug_info.get('pixel_budget_master_linf', 999))
-                if actual_linf > eps_norm + 5e-5:
-                    raise RuntimeError(f"V6 HARD FAIL: actual Linf {actual_linf:.8f} > eps_norm {eps_norm:.8f} + 5e-5")
-                if master_linf > eps_norm + 5e-5:
-                    raise RuntimeError(f"V6 HARD FAIL: master Linf {master_linf:.8f} > eps_norm {eps_norm:.8f}")
+                if actual_linf > eps_norm + _BUDGET_ATOL:
+                    raise RuntimeError(f"V6 HARD FAIL: actual Linf {actual_linf:.8f} > eps_norm {eps_norm:.8f} + {_BUDGET_ATOL}")
+                if master_linf > eps_norm + _BUDGET_ATOL:
+                    raise RuntimeError(f"V6 HARD FAIL: master Linf {master_linf:.8f} > eps_norm {eps_norm:.8f} + {_BUDGET_ATOL}")
+                # Consistency: observation_perturb_linf must match pixel_budget_adv_inputs_linf
+                obs_perturb_linf = float(getattr(attack_result, 'observation_perturb_linf', 999))
+                if abs(obs_perturb_linf - actual_linf) > 1e-8:
+                    raise RuntimeError(f"V6 HARD FAIL: Linf mismatch obs={obs_perturb_linf:.8f} vs adv_inputs={actual_linf:.8f}")
                 result_pgd_steps = int(getattr(attack_result, 'num_attack_steps', 0))
                 if result_pgd_steps != args.pgd_steps:
                     raise RuntimeError(f"V6 HARD FAIL: PGD steps {result_pgd_steps} != {args.pgd_steps}")
-                # Verify observation_perturb_linf from attack_result
-                obs_perturb_linf = float(getattr(attack_result, 'observation_perturb_linf', 999))
-                if obs_perturb_linf > eps_norm + 5e-5:
-                    raise RuntimeError(f"V6 HARD FAIL: observation_perturb_linf {obs_perturb_linf:.8f} > eps_norm {eps_norm:.8f}")
+                # P0-2: exact objective match
+                EXPECTED_OBJECTIVE = 'prefix_locked_gripper_top1_open_vs_close_execspec_v2'
+                result_objective = str(debug_info.get('attack_objective', ''))
+                if result_objective != EXPECTED_OBJECTIVE:
+                    raise RuntimeError(f"V6 HARD FAIL: objective={result_objective}, expected={EXPECTED_OBJECTIVE}")
                 if getattr(attack_result, 'x_adv', None) is not None:
                     raise RuntimeError("V6 HARD FAIL: x_adv is not None (should use adv_inputs)")
 
@@ -393,25 +407,27 @@ while step < max_steps:
                 step_actual_linf = actual_linf
                 step_fallback_reason = str(debug_info.get('fallback_reason', ''))
 
+                # P1: validate tokens BEFORE decode (avoid silent clip)
                 token_ids, _ = generate_from_adv_inputs(
                     adv_inputs, device, model_dtype, action_dim)
-                adv_action = decode_action_from_token_ids(token_ids)
-                autoregressive_raw = adv_action
-
-                # P0-3: validate all 7 action tokens are legal (BEFORE clip in decode_action_from_token_ids)
                 n_bins = int(model.bin_centers.shape[0])
+                vocab_eff = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of)
                 generated_tokens = [int(t) for t in token_ids[-action_dim:]]
                 all_tokens_legal = True
                 illegal_tokens = []
                 for i, tid in enumerate(generated_tokens):
-                    disc = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of - tid - 1)
+                    disc = vocab_eff - tid - 1
                     if disc < 0 or disc >= n_bins:
                         all_tokens_legal = False
                         illegal_tokens.append(int(i))
                 if not all_tokens_legal:
                     raise RuntimeError(f"V6 HARD FAIL: illegal tokens at dims {illegal_tokens}")
                 gripper_token_id = int(generated_tokens[-1])
-                gripper_disc = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of - gripper_token_id - 1)
+                gripper_disc = vocab_eff - gripper_token_id - 1
+
+                # Now decode and classify
+                adv_action = decode_action_from_token_ids(token_ids)
+                autoregressive_raw = adv_action
                 gripper_raw = float(adv_action[-1])
                 if gripper_raw > 0.5:
                     gripper_region = 'OPEN'
@@ -419,6 +435,12 @@ while step < max_steps:
                     gripper_region = 'CLOSE'
                 else:
                     gripper_region = 'EXACT_BOUNDARY'
+
+                # P0-1: assign gripper telemetry to step variables
+                step_all_tokens_legal = bool(all_tokens_legal)
+                step_gripper_token_id = gripper_token_id
+                step_gripper_disc = gripper_disc
+                step_gripper_region = gripper_region
 
                 adv_env_action = postprocess_openvla_action_for_libero(
                     adv_action, enabled=True)
@@ -461,12 +483,26 @@ while step < max_steps:
                             if v.dtype in (torch.float32, torch.bfloat16)
                             else v.dtype)
                     for k, v in rand_inputs.items()}
-                # Add L∞ noise to pixel_values
-                pv = rand_inputs["pixel_values"]
-                g_rand = torch.Generator(device=pv.device)
+                # P0-3: RAND budget audit with BF16 cast correction
+                _BUDGET_ATOL = 1e-6
+                pv0 = rand_inputs["pixel_values"].detach()
+                pv0_fp32 = pv0.float()
+                g_rand = torch.Generator(device=pv0.device)
                 g_rand.manual_seed(args.attack_seed + step)
-                noise = torch.empty(pv.shape, device=pv.device, dtype=torch.float32).uniform_(-eps_norm, eps_norm, generator=g_rand)
-                rand_inputs["pixel_values"] = torch.maximum(torch.minimum(pv.float() + noise, pv.float() + eps_norm), pv.float() - eps_norm).to(dtype=model_dtype)
+                noise = torch.empty(pv0.shape, device=pv0.device, dtype=torch.float32).uniform_(-eps_norm, eps_norm, generator=g_rand)
+                rand_fp32 = torch.maximum(torch.minimum(pv0_fp32 + noise, pv0_fp32 + eps_norm), pv0_fp32 - eps_norm)
+                rand_model = rand_fp32.to(dtype=model_dtype)
+                # Correct BF16 rounding overshoot
+                over_budget = (rand_model.float() - pv0_fp32).abs() > eps_norm + _BUDGET_ATOL
+                if over_budget.any():
+                    rand_model = torch.where(over_budget, pv0, rand_model)
+                # Hard-assert RAND budget
+                rand_linf = float((rand_model.float() - pv0_fp32).abs().max().cpu())
+                if rand_linf > eps_norm + _BUDGET_ATOL:
+                    raise RuntimeError(f"V6 HARD FAIL: RAND Linf {rand_linf:.8f} > eps_norm {eps_norm:.8f}")
+                step_actual_linf = rand_linf
+                rand_inputs["pixel_values"] = rand_model
+
                 # Re-decode
                 with torch.inference_mode():
                     rand_gen = model.generate(
@@ -475,6 +511,22 @@ while step < max_steps:
                         output_scores=False)
                 rand_tids = rand_gen.sequences[
                     0, -action_dim:].detach().cpu().numpy()
+
+                # P0-3: RAND token legality (same as VIS)
+                vocab_eff = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of)
+                n_bins = int(model.bin_centers.shape[0])
+                rand_generated = [int(t) for t in rand_tids]
+                rand_legal = True
+                for i, tid in enumerate(rand_generated):
+                    disc = vocab_eff - tid - 1
+                    if disc < 0 or disc >= n_bins:
+                        rand_legal = False
+                        break
+                if not rand_legal:
+                    raise RuntimeError(f"V6 HARD FAIL: RAND illegal token in generated sequence")
+                rand_gripper_tid = int(rand_generated[-1])
+                rand_gripper_disc = vocab_eff - rand_gripper_tid - 1
+
                 rand_action = decode_action_from_token_ids(rand_tids)
                 rand_env_action = postprocess_openvla_action_for_libero(
                     rand_action, enabled=True)
@@ -570,13 +622,14 @@ while step < max_steps:
         'c2o_this_step': c2o_this_step,
         # Wave 0 audit-ready per-step telemetry
         'step_attack_method': step_result_method if (args.condition == 'online_vis_pgd' and attack_this_step) else ('random_linf_pixel_values' if (args.condition == 'online_random_linf' and attack_this_step) else ''),
-        'step_attack_objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2' if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_attack_objective': result_objective if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
         'step_adv_inputs_used': int(adv_inputs_used) if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
         'step_fallback_detected': int(bool(step_fallback_reason)) if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
         'step_fallback_reason': step_fallback_reason if args.condition == 'online_vis_pgd' else '',
         'step_actual_linf': step_actual_linf if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
         'step_all_tokens_legal': int(step_all_tokens_legal) if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
         'step_gripper_token_id': step_gripper_token_id if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_gripper_disc': step_gripper_disc if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
         'step_gripper_region': step_gripper_region if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
         'step_clean_gripper_raw': round(clean_gripper_raw, 6),
         'step_executed_gripper_raw': round(float(autoregressive_raw[-1]), 6) if (args.condition == 'online_vis_pgd' and attack_this_step and autoregressive_raw is not None) else '',
@@ -598,6 +651,12 @@ summary = {
     'runner_family': 's20d_v6_online_trigger_l3',
     'vis_runner_version': 'v6_online_trigger_execspec_v2_auditready',
     'runner_sha256': _runner_sha256,
+    'adapter_sha256': _adapter_sha256,
+    'semantics_sha256': _semantics_sha256,
+    'exec_spec_sha256': _spec_sha256,
+    'adapter_path': _adapter_path,
+    'semantics_path': _semantics_path,
+    'exec_spec_path': _spec_path,
     # Condition-aware attack provenance
     'attack_method': 'token_prefix_pgd' if args.condition == 'online_vis_pgd' else ('random_linf_pixel_values' if args.condition == 'online_random_linf' else 'none'),
     'attack_objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2' if args.condition == 'online_vis_pgd' else ('none' if args.condition == 'clean_observer' else 'random_linf'),
