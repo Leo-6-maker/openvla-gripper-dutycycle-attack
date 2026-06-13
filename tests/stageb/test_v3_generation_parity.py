@@ -100,9 +100,9 @@ def test_score_invariant_none():
 
 def test_replay_bundle_missing_fields():
     bundle = {'step': 4}
-    missing = validate_replay_bundle(bundle)
-    assert len(missing) > 0
-    assert 'full_ar_tokens' in missing
+    issues = validate_replay_bundle(bundle)
+    assert len(issues) > 0
+    assert any('full_ar_tokens' in i for i in issues)
 
 
 def test_replay_bundle_valid():
@@ -111,12 +111,12 @@ def test_replay_bundle_valid():
         'state_id': 2, 'job_id': 'test', 'condition': 'online_vis_pgd',
         'objective': 'autoregressive_prefix_gripper_open_execspec_v3',
         'objective_tag': 'v3_ar_prefix', 'seed': 811,
-        'runner_sha256': 'aa', 'adapter_sha256': 'bb',
-        'semantics_sha256': 'cc', 'exec_spec_sha256': 'dd',
+        'runner_sha256': 'a'*64, 'adapter_sha256': 'b'*64,
+        'semantics_sha256': 'c'*64, 'exec_spec_sha256': 'd'*64,
         'model_path': '/m', 'model_dtype': 'torch.bfloat16',
         'prompt_input_ids': [[3]], 'prompt_input_ids_shape': [1, 2],
         'adv_pixel_values_shape': [1,3,224,224], 'adv_tensor_dtype': 'torch.bfloat16',
-        'adv_tensor_filename': 'x.pt', 'adv_tensor_sha256': 'ee',
+        'adv_tensor_filename': 'x.pt', 'adv_tensor_sha256': 'e'*64,
         'generated_arm_prefix': [1]*6, 'full_ar_tokens': [1]*7,
         'surrogate_global_top_token': 1,
         'surrogate_token_execution': {'token_id': 1, 'execution_class': 'NATIVE_OPEN'},
@@ -184,6 +184,70 @@ def test_classify_disc_and_raw_native_open():
     result2 = classify_disc_and_raw(tid_open2, VOCAB, NBINS, bin_centers, stats)
     assert result2['disc_before'] == 255
     assert result2['execution_class'] == 'NATIVE_OPEN'
+
+
+# ── Production integration: invariant called as runner does ──
+
+def test_invariant_called_with_dict():
+    """Matches runner production path: dict with generation_score_argmax key."""
+    score_audit = {'generation_score_argmax': 31872}
+    ok, ft = validate_generation_score_invariant(score_audit, 31872)
+    assert ok and ft == ''
+
+
+def test_invariant_called_with_dict_mismatch():
+    score_audit = {'generation_score_argmax': 31744}
+    ok, ft = validate_generation_score_invariant(score_audit, 31872)
+    assert not ok and ft == 'GENERATE_SCORE_ARGMAX_MISMATCH'
+
+
+# ── Replay bundle value validation ──
+
+def test_replay_bundle_empty_strings_rejected():
+    bundle = {
+        'schema_version': 'v3_parity_v1', 'step': 4, 'task': 'butter',
+        'state_id': 2, 'job_id': 'test', 'condition': 'online_vis_pgd',
+        'objective': 'v3', 'objective_tag': 'v3', 'seed': 811,
+        'runner_sha256': 'a'*64, 'adapter_sha256': 'b'*64,
+        'semantics_sha256': 'c'*64, 'exec_spec_sha256': 'd'*64,
+        'model_path': '/m', 'model_dtype': 'bf16',
+        'prompt_input_ids': [[3]], 'prompt_input_ids_shape': [1, 2],
+        'adv_pixel_values_shape': [1,3,224,224], 'adv_tensor_dtype': 'bf16',
+        'adv_tensor_filename': '',  # EMPTY — should be rejected
+        'adv_tensor_sha256': 'e'*64,
+        'generated_arm_prefix': [1]*6, 'full_ar_tokens': [1]*7,
+        'surrogate_global_top_token': 1,
+        'surrogate_token_execution': {'token_id': 1, 'execution_class': 'NATIVE_OPEN'},
+        'ar_token_execution': {'token_id': 1, 'execution_class': 'NATIVE_OPEN'},
+        'generation_score_argmax': 1,
+        'surrogate_top_matches_generation': True,
+        'v3_transfer_class': 'SURROGATE_TOP_MATCH_NATIVE_OPEN',
+    }
+    issues = validate_replay_bundle(bundle)
+    assert 'adv_tensor_filename:EMPTY' in issues
+
+
+def test_replay_bundle_short_sha_rejected():
+    bundle = {
+        'schema_version': 'v3_parity_v1', 'step': 4, 'task': 'butter',
+        'state_id': 2, 'job_id': 'test', 'condition': 'online_vis_pgd',
+        'objective': 'v3', 'objective_tag': 'v3', 'seed': 811,
+        'runner_sha256': 'ee',  # too short
+        'adapter_sha256': 'b'*64, 'semantics_sha256': 'c'*64,
+        'exec_spec_sha256': 'd'*64, 'model_path': '/m', 'model_dtype': 'bf16',
+        'prompt_input_ids': [[3]], 'prompt_input_ids_shape': [1, 2],
+        'adv_pixel_values_shape': [1,3,224,224], 'adv_tensor_dtype': 'bf16',
+        'adv_tensor_filename': 'x.pt', 'adv_tensor_sha256': 'e'*64,
+        'generated_arm_prefix': [1]*6, 'full_ar_tokens': [1]*7,
+        'surrogate_global_top_token': 1,
+        'surrogate_token_execution': {'token_id': 1, 'execution_class': 'NATIVE_OPEN'},
+        'ar_token_execution': {'token_id': 1, 'execution_class': 'NATIVE_OPEN'},
+        'generation_score_argmax': 1,
+        'surrogate_top_matches_generation': True,
+        'v3_transfer_class': 'SURROGATE_TOP_MATCH_NATIVE_OPEN',
+    }
+    issues = validate_replay_bundle(bundle)
+    assert any('runner_sha256' in i for i in issues)
 
 
 def test_classify_disc_and_raw_mask_false():

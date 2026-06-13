@@ -169,9 +169,37 @@ REPLAY_BUNDLE_REQUIRED_FIELDS = (
 
 
 def validate_replay_bundle(bundle):
-    """Check replay bundle has all required fields. Returns list of missing."""
-    missing = [k for k in REPLAY_BUNDLE_REQUIRED_FIELDS if k not in bundle]
-    return missing
+    """Check replay bundle has all required fields with non-empty values.
+
+    Returns list of issues (missing keys or empty values).
+    """
+    issues = []
+    for k in REPLAY_BUNDLE_REQUIRED_FIELDS:
+        if k not in bundle:
+            issues.append(f'{k}:MISSING')
+            continue
+        v = bundle[k]
+        if v is None or v == '':
+            issues.append(f'{k}:EMPTY')
+            continue
+        # Type-specific checks
+        if k == 'generated_arm_prefix':
+            if not isinstance(v, list) or len(v) != 6:
+                issues.append(f'{k}:expected list[6], got {type(v).__name__}')
+        if k == 'full_ar_tokens':
+            if not isinstance(v, list) or len(v) != 7:
+                issues.append(f'{k}:expected list[7], got {type(v).__name__}')
+        if k in ('adv_tensor_sha256', 'runner_sha256', 'adapter_sha256',
+                 'semantics_sha256', 'exec_spec_sha256'):
+            if isinstance(v, str) and len(v) != 64:
+                issues.append(f'{k}:expected 64-char hex, got len={len(v)}')
+        if k == 'surrogate_token_execution':
+            if not isinstance(v, dict) or 'execution_class' not in v:
+                issues.append(f'{k}:expected dict with execution_class')
+        if k == 'ar_token_execution':
+            if not isinstance(v, dict) or 'execution_class' not in v:
+                issues.append(f'{k}:expected dict with execution_class')
+    return issues
 
 
 # ── Finite + non-empty check ──

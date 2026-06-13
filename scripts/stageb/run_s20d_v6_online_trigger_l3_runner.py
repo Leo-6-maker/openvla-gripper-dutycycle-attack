@@ -600,14 +600,9 @@ while step < max_steps:
                     adv_inputs, device, model_dtype, action_dim,
                     output_scores=_want_scores)
                 if _score_audit:
+                    # Save compact score audit sub-dict (not individual fields)
+                    step_v3['official_generation_score_audit'] = _score_audit
                     step_v3['generation_score_argmax'] = _score_audit.get('generation_score_argmax')
-                    step_v3['generation_top1_score'] = _score_audit.get('generation_top1_score')
-                    step_v3['generation_top2_score'] = _score_audit.get('generation_top2_score')
-                    step_v3['generation_top1_top2_gap'] = _score_audit.get('generation_top1_top2_gap')
-                    step_v3['generation_score_token_31744'] = _score_audit.get('score_token_31744')
-                    step_v3['generation_score_token_31872'] = _score_audit.get('score_token_31872')
-                    step_v3['generation_best_open_token'] = _score_audit.get('generation_best_open_token')
-                    step_v3['generation_best_close_token'] = _score_audit.get('generation_best_close_token')
                 n_bins = int(model.bin_centers.shape[0])
 
                 # Now sync step_v3 (with score audit) into pending record
@@ -815,14 +810,12 @@ while step < max_steps:
                 f"V3 INFRA HARD FAIL: surrogate prefix {_gen_prefix} "
                 f"!= full AR prefix {_ar_prefix}")
 
-        # P0: Official generation score invariant — shared helper
+        # P0: Official generation score invariant — shared helper with full audit dict
         from gripper_attack.v3_generation_parity import (
             classify_token_simple, determine_v3_transfer_class,
             validate_generation_score_invariant, classify_disc_and_raw)
-        _inv_ok, _inv_ft = validate_generation_score_invariant(
-            _pending_v3.get('generation_score_argmax'), _ar_gripper)
-        if _pending_v3.get('generation_score_argmax') is None:
-            raise RuntimeError("V3 INFRA HARD FAIL: generation score argmax is missing")
+        _score_dict = {'generation_score_argmax': _pending_v3.get('generation_score_argmax')}
+        _inv_ok, _inv_ft = validate_generation_score_invariant(_score_dict, _ar_gripper)
         if not _inv_ok:
             raise RuntimeError(f"V3 INFRA HARD FAIL: {_inv_ft}")
 
@@ -846,6 +839,8 @@ while step < max_steps:
             _surr_exec['execution_class'], _ar_class)
 
         _pending_v3.update({
+            'official_generation_score_audit': _pending_v3.get(
+                'official_generation_score_audit', {}),
             'full_ar_action_token_ids': _ar_full,
             'full_ar_arm_prefix_token_ids': _ar_prefix,
             'full_ar_gripper_token_id': _ar_gripper,
@@ -899,26 +894,31 @@ while step < max_steps:
                 'surrogate_top_matches_generation': _top_match,
                 'v3_transfer_class': _v3_transfer,
             }
-            from gripper_attack.v3_generation_parity import validate_replay_bundle
-            _missing = validate_replay_bundle(_dump)
-            if _missing:
-                raise RuntimeError(
-                    f"V3 INFRA HARD FAIL: replay bundle missing fields: {_missing}")
-            _dump_stem = 'v3_parity_%s_s%d_%s_%s_s%d_step%d' % (
+            # Correct order: tensor save → SHA → validate → JSON → writeback
+            _dump_stem = 'v3_parity_%s_s%d_%s_%s_%s_s%d_step%d' % (
                 args.task, args.state_id, objective_tag, args.condition,
-                args.attack_seed, step)
+                args.job_id, args.attack_seed, step)
             _dump_path = os.path.join(_dump_dir, _dump_stem + '.json')
             _tensor_path = os.path.join(_dump_dir, _dump_stem + '_adv_pv.pt')
-            import hashlib as _hl2
-            _dump['adv_tensor_filename'] = os.path.basename(_tensor_path)
-            # Save raw tensors and record SHA
             _pt = adv_inputs.get('pixel_values').detach().cpu()
             torch.save(_pt, _tensor_path)
             import hashlib as _hl2
             with open(_tensor_path, 'rb') as _tf:
-                _dump['adv_tensor_sha256'] = _hl2.sha256(_tf.read()).hexdigest()
+                _tensor_sha = _hl2.sha256(_tf.read()).hexdigest()
+            _dump['adv_tensor_filename'] = os.path.basename(_tensor_path)
+            _dump['adv_tensor_sha256'] = _tensor_sha
+            from gripper_attack.v3_generation_parity import validate_replay_bundle
+            _missing = validate_replay_bundle(_dump)
+            if _missing:
+                raise RuntimeError(
+                    f"V3 INFRA HARD FAIL: replay bundle missing: {_missing}")
             with open(_dump_path, 'w') as _f:
                 json.dump(_dump, _f, indent=2)
+            # Write back paths to record
+            _rec = v3_attack_records[-1]
+            _rec['replay_json_path'] = _dump_path
+            _rec['replay_tensor_path'] = _tensor_path
+            _rec['replay_tensor_sha256'] = _tensor_sha
 
         _pending_v3.clear()
 
