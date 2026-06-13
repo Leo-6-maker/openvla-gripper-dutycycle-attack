@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-"""V6 Online-Trigger Layer3 Runner.
-Replaces fixed-window attack with online critical-CLOSE event detection.
-Preprocessing EXACTLY matches V4 runner (decode_with_scores, enabled=True, K_trigger).
-Three conditions: clean_observer, online_random_linf, online_vis_pgd.
-Trigger: first pre-success clean CLOSE onset (RULE_TRIGGER_MVP).
-Event budget: H=5 steps, B=3 max perturbed frames, eps=6, PGD=20.
+"""V6 Online-Trigger Layer3 Runner (P0-fixed).
+- P0-1: VIS uses get_adv_inputs_from_attack_result() + V5 re-decode path
+- P0-2: Attacker config matches V5 exactly (step_size, num_steps, objective, seed, preprocess_kwargs)
+- P0-3: instruction = raw task language (decode_with_scores applies prompt internally)
+- P0-4: RAND perturbs pixel_values in visual space (L∞, eps=6/255), same as VIS input space
+- P0-5: env factory committed alongside
+- P1-1: Import physical_gripper_state from v4_run_eval_openvla
+- P1-2: clean_observer does NOT increment perturb_frame_count
+- P1-3: Summary records trigger-moment values
+- P1-4: infra_status recorded per-episode, not hardcoded
 """
 import argparse, csv, json, os, sys, time
 from pathlib import Path
@@ -25,7 +29,6 @@ ap.add_argument('--state_id', type=int, required=True)
 ap.add_argument('--condition', required=True,
                 choices=['clean_observer', 'online_random_linf', 'online_vis_pgd'])
 ap.add_argument('--attack_seed', type=int, default=99)
-ap.add_argument('--random_control_seed', type=str, default='')
 ap.add_argument('--pgd_steps', type=int, default=20)
 ap.add_argument('--eps_raw_pixels', type=int, default=6)
 ap.add_argument('--model_path',
@@ -74,11 +77,9 @@ def load_model_s20d(model_path, model_gpu_device_id=-1):
     if hasattr(model, "hf_device_map"):
         for v in model.hf_device_map.values():
             if isinstance(v, str) and v.startswith("cuda"):
-                dev = v
-                break
+                dev = v; break
             if isinstance(v, int):
-                dev = "cuda:%d" % v
-                break
+                dev = "cuda:%d" % v; break
     return model, processor, dev
 
 
@@ -86,22 +87,20 @@ model, processor, device = load_model_s20d(
     args.model_path, model_gpu_device_id=int(args.model_gpu_device_id))
 model_dtype = torch.bfloat16
 unnorm_key = 'libero_object'
-K_trigger = 8  # V4 default
+K_trigger = 8
 action_dim = int(model.get_action_dim(unnorm_key))
 assert action_dim == 7, f"Unexpected action_dim={action_dim}"
-print('[%s] Model loaded. device=%s action_dim=%d' % (
-    time.strftime('%H:%M:%S'), device, action_dim), flush=True)
+print('[%s] Model loaded. device=%s' % (time.strftime('%H:%M:%S'), device), flush=True)
 
 # ── V4 imports ──
 from v4_run_eval_openvla import (
-    decode_with_scores, postprocess_openvla_action_for_libero, prompt,
-    prepare_openvla_image, _model_float_dtype)
+    decode_with_scores, postprocess_openvla_action_for_libero,
+    physical_gripper_state)
 
 # ── Env ──
 from gripper_attack.libero_v4_env_factory import (
     build_v4_exact_env, apply_dummy_wait)
 from libero.libero import benchmark, get_libero_path
-from libero.libero.envs import OffScreenRenderEnv
 
 bm = benchmark.get_benchmark_dict()
 task_suite = bm['libero_object']()
@@ -116,8 +115,8 @@ init_states = task_suite.get_task_init_states(task_idx)
 bddl_file = os.path.join(
     get_libero_path("bddl_files"),
     task_obj.problem_folder, task_obj.bddl_file)
-instruction_raw = task_obj.language
-instruction = prompt(instruction_raw)  # V4 prompt wrapping
+# P0-3: RAW instruction — decode_with_scores applies prompt() internally
+instruction = task_obj.language
 
 env, obs = build_v4_exact_env(
     bddl_file, int(args.render_gpu_device_id),
@@ -127,40 +126,74 @@ env, obs = apply_dummy_wait(env, obs, args.num_steps_wait)
 
 max_steps = args.max_steps_override
 
-# ── Attack setup ──
+# ── Attack setup (P0-2: V5-aligned config, P0-1: adv_inputs path) ──
 eps_norm = args.eps_raw_pixels / 255.0
 attacker = None
-attacker_config = {}
 if args.condition == 'online_vis_pgd':
     from gripper_attack.attack_adapter import (
-        OpenVLAVisualAttacker)
+        OpenVLAVisualAttacker, get_adv_inputs_from_attack_result)
+
     attacker_config = {
         'method': 'token_prefix_pgd',
         'epsilon': eps_norm,
-        'alpha': eps_norm / args.pgd_steps * 2.5,
-        'num_iter': args.pgd_steps,
-        'token_label_source': 'prefix_locked_gripper_open_margin',
-        'target_token_margin': 5,
-        'K_trigger': K_trigger,
-        'use_restart': True,
-        'num_restarts': 1,
+        'step_size': eps_norm / max(args.pgd_steps, 1) * 1.5,
+        'num_steps': args.pgd_steps,
         'random_start': True,
-        'target_return_first': False,
+        'objective': 'prefix_locked_gripper_open_margin',
+        'arm_preserve_weight': 0.5,
+        'gripper_margin': 5.0,
     }
     attacker = OpenVLAVisualAttacker(
-        model, processor, attacker_config, device=device)
-    print('[%s] V6 TokenPrefixPGD attacker ready' %
-          time.strftime('%H:%M:%S'), flush=True)
-
-
-def physical_gripper_state(env, obs):
-    try:
-        return env.env.robots[0].controller.gripper_state
-    except Exception:
-        return {}
-
+        model=model, processor=processor,
+        config={
+            'attack_optimizer': attacker_config,
+            'directional_target': {
+                'direction_id': 'gripper_open',
+                'dims': list(range(action_dim)),
+            },
+            'uncertainty': {'K_trigger': K_trigger},
+        },
+        direction_spec={
+            'g_hat': np.zeros(action_dim, dtype=np.float32),
+            'dims': list(range(action_dim)),
+        },
+        seed=args.attack_seed,
+        preprocess_kwargs={
+            'libero_official_preprocess': False,
+            'libero_preprocess_backend': 'official_pil_lanczos',
+            'center_crop': True,
+            'resize_size': 224,
+        },
+        device=device)
+    print('[%s] V6 TokenPrefixPGD attacker ready (seed=%d, PGD=%d)' %
+          (time.strftime('%H:%M:%S'), args.attack_seed, args.pgd_steps),
+          flush=True)
 
 # ── Helpers ──
+def decode_action_from_token_ids(token_ids):
+    """V5 token→action decoder (used for VIS re-decode)."""
+    v = model.config.text_config.vocab_size - model.config.pad_to_multiple_of
+    d = np.clip(v - token_ids - 1, 0, model.bin_centers.shape[0] - 1)
+    na = model.bin_centers[d]
+    stats = model.get_action_stats(unnorm_key)
+    mk = stats.get("mask", np.ones_like(stats["q01"], dtype=bool))
+    hi, lo = np.array(stats["q99"]), np.array(stats["q01"])
+    return np.where(mk, 0.5 * (na + 1) * (hi - lo) + lo, na).astype(np.float32)
+
+
+def generate_from_adv_inputs(adv_inputs, device, model_dtype, action_dim):
+    """V5 re-decode from adversarial processor inputs."""
+    input_ids = adv_inputs["input_ids"].to(device)
+    pixel_values = adv_inputs["pixel_values"].to(
+        device=device, dtype=model_dtype)
+    with torch.inference_mode():
+        gen = model.generate(
+            input_ids=input_ids, pixel_values=pixel_values,
+            max_new_tokens=action_dim, do_sample=False,
+            return_dict_in_generate=True, output_scores=False)
+    return gen.sequences[0, -action_dim:].detach().cpu().numpy(), gen
+
+
 def fmt_float(x, nd=6):
     if x in ("", None):
         return ""
@@ -173,11 +206,16 @@ def fmt_float(x, nd=6):
 # ── Online trigger state ──
 trigger_found = False
 trigger_step = -1
+# P1-3: save trigger-moment values
+trigger_close_onset = False
+trigger_close_streak = 0
+trigger_clean_gripper_raw = 0.0
+trigger_clean_gripper_env = 0.0
+
 event_start = -1
 event_end = -1
 perturb_frame_count = 0
 naturally_open_skip = 0
-clean_close_history = []
 eligible_close_opportunities = 0
 close_streak = 0
 prev_clean_open = True
@@ -193,17 +231,18 @@ max_open_streak = 0
 current_streak = 0
 C2O_count = 0
 attacked_close_count = 0
+episode_infra_status = 'ok'
 trace_rows = []
 step = 0
 
 while step < max_steps:
     if 'agentview_image' not in obs:
-        infra_status = f"missing camera at step {step}"
+        episode_infra_status = "missing_camera"
         break
 
     img_uint8 = obs['agentview_image']
 
-    # ── V4 EXACT clean decode ──
+    # ── V4 EXACT clean decode (P0-3: raw instruction, decode_with_scores wraps prompt) ──
     clean_action, prefix_logits, Tclean, gen_out = decode_with_scores(
         model, processor, device,
         img_uint8, instruction, unnorm_key, K_trigger,
@@ -217,10 +256,9 @@ while step < max_steps:
         clean_action, enabled=True)
     clean_gripper_raw = float(clean_action[-1])
     clean_gripper_env = float(clean_env_action[-1])
-    clean_close = clean_gripper_raw < 0.5  # V4: raw<0.5 → CLOSE
+    clean_close = clean_gripper_raw < 0.5
     clean_open = not clean_close
 
-    clean_close_history.append(clean_close)
     if clean_close:
         close_streak += 1
     else:
@@ -228,18 +266,24 @@ while step < max_steps:
     close_onset = clean_close and prev_clean_open
     prev_clean_open = clean_open
 
-    # ── Online trigger check (RULE_TRIGGER_MVP) ──
+    # ── Online trigger (RULE_TRIGGER_MVP: first pre-success clean CLOSE onset) ──
     if (not trigger_found and clean_close and close_onset
             and not success_primary):
         trigger_found = True
         trigger_step = step
+        # P1-3: save trigger-moment values
+        trigger_close_onset = True
+        trigger_close_streak = close_streak
+        trigger_clean_gripper_raw = clean_gripper_raw
+        trigger_clean_gripper_env = clean_gripper_env
         event_start = step
         event_end = min(step + args.event_horizon, max_steps)
-        print('[%s] TRIGGER step=%d onset=%d streak=%d' % (
+        print('[%s] TRIGGER step=%d onset=%d streak=%d clean_grip=%.3f' % (
             time.strftime('%H:%M:%S'), step,
-            int(close_onset), close_streak), flush=True)
+            int(close_onset), close_streak, clean_gripper_raw),
+            flush=True)
 
-    # ── Qpos before step ──
+    # ── Qpos before (P1-1: use V4 physical_gripper_state) ──
     gripper_phys_before = physical_gripper_state(env, obs)
     gripper_qpos_before = float(
         np.sum(gripper_phys_before.get('qpos', [0.0])))
@@ -252,13 +296,18 @@ while step < max_steps:
     env_action = clean_env_action.copy()
     executed_action = clean_action.copy()
     infra_status = 'ok'
+    is_attack_condition = args.condition in (
+        'online_vis_pgd', 'online_random_linf')
 
     if in_event and clean_close and perturb_frame_count < args.max_perturb_frames:
-        attack_this_step = True
         eligible_close_opportunities += 1
+
+        if is_attack_condition:
+            attack_this_step = True
 
         if args.condition == 'online_vis_pgd' and attacker is not None:
             try:
+                # P0-1: use get_adv_inputs_from_attack_result, NOT x_adv
                 attack_result = attacker.attack(
                     img_uint8, instruction,
                     clean_action, clean_action, gen_out,
@@ -266,16 +315,15 @@ while step < max_steps:
                 if attack_result is None:
                     raise RuntimeError(
                         "V6 HARD FAIL: attack_result is None")
-                if attack_result.x_adv is None:
+                adv_inputs = get_adv_inputs_from_attack_result(
+                    attack_result)
+                if (adv_inputs is None
+                        or adv_inputs.get("input_ids") is None):
                     raise RuntimeError(
-                        "V6 HARD FAIL: x_adv is None in attack_result")
-                adv_action, _, _, _ = decode_with_scores(
-                    model, processor, device,
-                    attack_result.x_adv, instruction, unnorm_key, K_trigger,
-                    libero_official_preprocess=False,
-                    libero_preprocess_backend='official_pil_lanczos',
-                    center_crop=True, resize_size=224,
-                    drop_attention_mask=True)
+                        "V6 HARD FAIL: adv_inputs missing")
+                token_ids, _ = generate_from_adv_inputs(
+                    adv_inputs, device, model_dtype, action_dim)
+                adv_action = decode_action_from_token_ids(token_ids)
                 adv_env_action = postprocess_openvla_action_for_libero(
                     adv_action, enabled=True)
                 env_action = adv_env_action
@@ -283,30 +331,68 @@ while step < max_steps:
                 pgd_applied = 1
                 perturbation_space = 'online_token_prefix_pgd_v6'
                 attacked_close_count += 1
+                # P0-1/P1-2: only increment when attack applied
+                perturb_frame_count += 1
             except Exception as e:
-                infra_status = 'vis_error: %s' % str(e)[:80]
+                episode_infra_status = 'vis_error: %s' % str(e)[:80]
                 raise
 
         elif args.condition == 'online_random_linf':
             try:
-                rand_gen = np.random.RandomState(
-                    int(args.random_control_seed or args.attack_seed) + step)
-                rand_action = clean_action.copy()
-                rand_action[-1] += rand_gen.uniform(
-                    -eps_norm, eps_norm) * 2.0
-                rand_env_action = rand_action.copy()
-                rand_env_action[-1] = (
-                    -1.0 if rand_action[-1] > 0.5
-                    else (1.0 if rand_action[-1] < -0.5 else 0.0))
+                # P0-4: visual RAND — perturb pixel_values, re-decode
+                # Apply L∞ noise in pixel_values space (same as VIS perturbation space)
+                rand_noise = torch.empty_like(
+                    gen_out.sequences)  # placeholder — we need pixel_values
+                # Re-run processor to get clean pixel_values
+                from v4_run_eval_openvla import prepare_openvla_image
+                v4_image = prepare_openvla_image(
+                    img_uint8, libero_official_preprocess=False,
+                    center_crop=True, resize_size=224,
+                    libero_preprocess_backend='official_pil_lanczos')
+                rand_inputs = processor(
+                    text=instruction, images=v4_image,
+                    return_tensors='pt')
+                rand_inputs.pop("attention_mask", None)
+                in_ids = rand_inputs.get("input_ids")
+                if in_ids is not None and not torch.all(
+                        in_ids[:, -1] == 29871):
+                    rand_inputs["input_ids"] = torch.cat((
+                        in_ids, torch.unsqueeze(
+                            torch.tensor([29871]).long(), dim=0).to(
+                            in_ids.device)), dim=1)
+                rand_inputs = {
+                    k: v.to(device=device,
+                            dtype=model_dtype
+                            if v.dtype in (torch.float32, torch.bfloat16)
+                            else v.dtype)
+                    for k, v in rand_inputs.items()}
+                # Add L∞ noise to pixel_values
+                pv = rand_inputs["pixel_values"]
+                noise = torch.empty_like(pv).uniform_(
+                    -eps_norm, eps_norm)
+                rand_inputs["pixel_values"] = torch.clamp(
+                    pv + noise, 0.0, 1.0)
+                # Re-decode
+                with torch.inference_mode():
+                    rand_gen = model.generate(
+                        **rand_inputs, max_new_tokens=action_dim,
+                        do_sample=False, return_dict_in_generate=True,
+                        output_scores=False)
+                rand_tids = rand_gen.sequences[
+                    0, -action_dim:].detach().cpu().numpy()
+                rand_action = decode_action_from_token_ids(rand_tids)
+                rand_env_action = postprocess_openvla_action_for_libero(
+                    rand_action, enabled=True)
                 env_action = rand_env_action
                 executed_action = rand_action
                 pgd_applied = 2
-                perturbation_space = 'online_random_linf_v6'
+                perturbation_space = 'online_random_linf_pixel_v6'
                 attacked_close_count += 1
+                perturb_frame_count += 1
             except Exception as e:
-                infra_status = 'rand_error: %s' % str(e)[:80]
+                episode_infra_status = 'rand_error: %s' % str(e)[:80]
+                raise
 
-        perturb_frame_count += 1
     elif in_event and not clean_close:
         naturally_open_skip += 1
 
@@ -353,9 +439,12 @@ while step < max_steps:
         'gripper_qpos_after': round(gripper_qpos_after, 6),
         'physical_gripper_opening_delta': round(
             gripper_qpos_after - gripper_qpos_before, 6),
-        'eef_x': round(float(eef_before[0]), 6) if eef_before is not None else '',
-        'eef_y': round(float(eef_before[1]), 6) if eef_before is not None else '',
-        'eef_z': round(float(eef_before[2]), 6) if eef_before is not None else '',
+        'eef_x': round(float(eef_before[0]), 6)
+        if eef_before is not None else '',
+        'eef_y': round(float(eef_before[1]), 6)
+        if eef_before is not None else '',
+        'eef_z': round(float(eef_before[2]), 6)
+        if eef_before is not None else '',
         'eef_z_after': '',
         'obj_x': '', 'obj_y': '', 'obj_z': '', 'obj_z_after': '',
         'target_object_name': '',
@@ -365,7 +454,7 @@ while step < max_steps:
         'success_check': int(success_check),
         'success_primary': int(success_primary_now),
         'attack_seed': args.attack_seed, 'job_id': args.job_id,
-        'infra_status': infra_status,
+        'infra_status': episode_infra_status,
         'window_start': '', 'window_end': '',
         'trigger_found': int(trigger_found),
         'trigger_step': trigger_step,
@@ -381,7 +470,7 @@ while step < max_steps:
 
 env.close()
 
-# ── Summary ──
+# ── Summary (P1-3: trigger-moment values, P1-4: real infra_status) ──
 safe_tag = '%s_s%d_v6_%s_seed%d' % (
     args.task, args.state_id, args.condition, args.attack_seed)
 summary = {
@@ -390,9 +479,12 @@ summary = {
     'task': args.task, 'state_id': args.state_id,
     'condition': args.condition,
     'attack_seed': args.attack_seed, 'job_id': args.job_id,
-    'trigger_found': trigger_found, 'trigger_step': trigger_step,
-    'close_onset': int(close_onset),
-    'close_streak_at_trigger': close_streak,
+    'trigger_found': trigger_found,
+    'trigger_step': trigger_step,
+    'trigger_close_onset': trigger_close_onset,
+    'trigger_close_streak': trigger_close_streak,
+    'trigger_clean_gripper_raw': trigger_clean_gripper_raw,
+    'trigger_clean_gripper_env': trigger_clean_gripper_env,
     'eligible_close_opportunities': eligible_close_opportunities,
     'perturb_frame_count': perturb_frame_count,
     'naturally_open_skip': naturally_open_skip,
@@ -406,16 +498,16 @@ summary = {
     'success_done_any': success_done_any,
     'success_check_any': success_check_any,
     'timeout': not done and not success_primary,
-    'infra_status': 'ok',
+    'infra_status': episode_infra_status,
     'event_horizon': args.event_horizon,
     'eps_raw_pixels': args.eps_raw_pixels,
     'pgd_steps': args.pgd_steps,
     'model_path': args.model_path,
     'decode_path': 'v4_decode_with_scores',
-    'preprocess_path': 'v4_prepare_openvla_image_official_pil_lanczos_center_crop_224',
-    'postprocess_path': 'v4_postprocess_openvla_action_for_libero_enabled_true',
+    'preprocess_path': 'v4_center_crop_224_official_pil_lanczos',
+    'postprocess_path': 'v4_enabled_true',
     'attention_mask': 'v4_drop',
-    'eos_token': 'v4_29871_insertion',
+    'eos_token': 'v4_29871',
     'trigger_method': 'RULE_TRIGGER_MVP_clean_close_onset',
 }
 os.makedirs(args.output_dir, exist_ok=True)
@@ -432,7 +524,8 @@ if trace_rows:
         w.writeheader()
         w.writerows(trace_rows)
 
-print('[%s] V6 DONE. trigger=%s step=%d C2O=%d attacked=%d/%d opens=%d/%d' % (
-    time.strftime('%H:%M:%S'), trigger_found, trigger_step, C2O_count,
-    attacked_close_count, eligible_close_opportunities,
-    total_decoded_open, step), flush=True)
+print('[%s] V6 DONE. trigger=%s step=%d C2O=%d attacked=%d/%d '
+      'opens=%d/%d infra=%s' % (
+          time.strftime('%H:%M:%S'), trigger_found, trigger_step,
+          C2O_count, attacked_close_count, eligible_close_opportunities,
+          total_decoded_open, step, episode_infra_status), flush=True)
