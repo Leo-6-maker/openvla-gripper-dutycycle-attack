@@ -7,8 +7,12 @@ import torch.nn.functional as F
 from .types import AttackResult
 from .gripper_semantics import (
     raw_gripper_is_open,
+    raw_gripper_is_close,
+    env_gripper_is_open,
+    env_gripper_is_close,
     CANONICAL_OPEN_SEMANTICS_VERSION,
 )
+from .openvla_libero_exec_spec import validate_open_close_token_sets
 
 
 def _prompt(instruction: str) -> str:
