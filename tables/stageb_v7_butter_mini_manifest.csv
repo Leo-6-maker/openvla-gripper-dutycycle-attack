@@ -1,0 +1,9 @@
+phase,gpu_pair,order,parent_id,task,state_id,condition,attack_seed,job_id,logical_key
+mini,GPU10,1,butter_s2,butter,2,clean_observer,0,v7_mini_clean_rep0_gpu10,(butter_s2,clean,0,v7)
+mini,GPU10,2,butter_s2,butter,2,online_random_linf,401,v7_mini_rand_s401_gpu10,(butter_s2,rand,401,v7)
+mini,GPU10,3,butter_s2,butter,2,online_vis_pgd,401,v7_mini_vis_s401_gpu10,(butter_s2,vis,401,v7)
+mini,GPU26,1,butter_s2,butter,2,online_vis_pgd,402,v7_mini_vis_s402_gpu26,(butter_s2,vis,402,v7)
+mini,GPU26,2,butter_s2,butter,2,online_random_linf,402,v7_mini_rand_s402_gpu26,(butter_s2,rand,402,v7)
+mini,GPU26,3,butter_s2,butter,2,clean_observer,0,v7_mini_clean_rep1_gpu26,(butter_s2,clean,0,v7)
+mini,GPU45,1,butter_s2,butter,2,online_random_linf,403,v7_mini_rand_s403_gpu45,(butter_s2,rand,403,v7)
+mini,GPU45,2,butter_s2,butter,2,online_vis_pgd,403,v7_mini_vis_s403_gpu45,(butter_s2,vis,403,v7)
