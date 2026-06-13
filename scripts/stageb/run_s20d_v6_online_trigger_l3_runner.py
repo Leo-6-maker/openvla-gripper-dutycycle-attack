@@ -222,7 +222,10 @@ def decode_action_from_token_ids(token_ids):
 
 
 def generate_from_adv_inputs(adv_inputs, device, model_dtype, action_dim):
-    """V5 re-decode from adversarial processor inputs."""
+    """V5 re-decode from adversarial processor inputs.
+
+    P0-2: Hard-fail if generation does not produce exactly action_dim new tokens.
+    """
     input_ids = adv_inputs["input_ids"].to(device)
     pixel_values = adv_inputs["pixel_values"].to(
         device=device, dtype=model_dtype)
@@ -231,7 +234,18 @@ def generate_from_adv_inputs(adv_inputs, device, model_dtype, action_dim):
             input_ids=input_ids, pixel_values=pixel_values,
             max_new_tokens=action_dim, do_sample=False,
             return_dict_in_generate=True, output_scores=False)
-    return gen.sequences[0, -action_dim:].detach().cpu().numpy(), gen
+    prompt_len = int(input_ids.shape[1])
+    total_len = int(gen.sequences.shape[1])
+    new_token_count = total_len - prompt_len
+    if new_token_count != int(action_dim):
+        raise RuntimeError(
+            f"V3 INFRA HARD FAIL: full AR generation produced "
+            f"{new_token_count} new tokens, expected {action_dim}")
+    tokens = gen.sequences[0, prompt_len:]
+    if int(tokens.numel()) != int(action_dim):
+        raise RuntimeError(
+            "V3 INFRA HARD FAIL: full AR token slice has incorrect length")
+    return tokens.detach().cpu().numpy(), gen
 
 
 def fmt_float(x, nd=6):
@@ -365,6 +379,8 @@ while step < max_steps:
     step_gripper_clipped = False
     step_gripper_region = ''
     result_objective = ''
+    generated_tokens = None  # P1-1: explicit init, not dir()
+    gripper_token_id = None
     step_v3 = {}  # V3 transfer telemetry for this step
     _pending_v3 = {}  # P0-1: completed after AR decode + C2O
     env_action = clean_env_action.copy()
@@ -708,8 +724,43 @@ while step < max_steps:
 
     # P0-1: Complete pending v3 record with AR decode results + C2O
     if attack_this_step and is_attack_condition and _pending_v3:
+        # P1-1: explicit None check, not dir()
+        if generated_tokens is None:
+            raise RuntimeError("V3 INFRA HARD FAIL: full AR generated_tokens is None")
+        if gripper_token_id is None:
+            raise RuntimeError("V3 INFRA HARD FAIL: gripper_token_id is None")
+
+        # P1-2: Save full AR token sequence to record
+        _ar_full = [int(t) for t in generated_tokens]
+        _ar_prefix = _ar_full[:6]
+        _ar_gripper = _ar_full[6]
+
+        # P0-1: Prefix invariant — hard-fail on mismatch
+        _gen_prefix = _pending_v3.get('generated_arm_prefix')
+        if not isinstance(_gen_prefix, list):
+            raise RuntimeError(
+                "V3 INFRA HARD FAIL: generated arm prefix is not a list")
+        if len(_gen_prefix) != 6:
+            raise RuntimeError(
+                f"V3 INFRA HARD FAIL: generated prefix len={len(_gen_prefix)}, expected 6")
+        _prefix_match = (_gen_prefix == _ar_prefix)
+        if not _prefix_match:
+            raise RuntimeError(
+                f"V3 INFRA HARD FAIL: surrogate prefix {_gen_prefix} "
+                f"!= full AR prefix {_ar_prefix}")
+
+        # P0-1: Top-token invariant — hard-fail on mismatch
+        _pred_gripper = int(_pending_v3.get('global_top_token_final'))
+        _top_match = (_pred_gripper == _ar_gripper)
+        if not _top_match:
+            raise RuntimeError(
+                f"V3 INFRA HARD FAIL: predicted gripper token {_pred_gripper} "
+                f"!= full AR token {_ar_gripper}")
+
         _pending_v3.update({
-            'full_ar_gripper_token_id': gripper_token_id if 'gripper_token_id' in dir() else '',
+            'full_ar_action_token_ids': _ar_full,
+            'full_ar_arm_prefix_token_ids': _ar_prefix,
+            'full_ar_gripper_token_id': _ar_gripper,
             'gripper_disc_before': step_gripper_disc_before,
             'gripper_disc_after': step_gripper_disc_after,
             'gripper_clipped': bool(step_gripper_clipped),
@@ -718,17 +769,9 @@ while step < max_steps:
             'c2o_official': int(c2o_official),
             'c2o_native_open': int(c2o_native_open),
             'c2o_clip_mediated': int(c2o_clip_mediated),
+            'prefix_match': True,
+            'top_token_match': True,
         })
-        # P0-3: Prefix and top-token invariants
-        if 'generated_arm_prefix' in _pending_v3 and _pending_v3['generated_arm_prefix']:
-            _gen_prefix = _pending_v3['generated_arm_prefix']
-            if isinstance(_gen_prefix, list) and len(_gen_prefix) == 6:
-                _ar_prefix = [int(t) for t in generated_tokens[:6]] if 'generated_tokens' in dir() else []
-                _pending_v3['prefix_match'] = _gen_prefix == _ar_prefix if _ar_prefix else None
-        if 'global_top_token_final' in _pending_v3 and _pending_v3['global_top_token_final'] != '':
-            _pending_v3['top_token_match'] = (
-                int(_pending_v3['global_top_token_final']) == int(gripper_token_id)
-                if 'gripper_token_id' in dir() else None)
         v3_attack_records.append(dict(_pending_v3))
         _pending_v3.clear()
 
@@ -843,17 +886,47 @@ env.close()
 # ── P1: v3 record integrity checks ──
 if 'v3' in str(args.attack_objective) and args.condition == 'online_vis_pgd':
     n_attacked = sum(1 for r in trace_rows if r.get('pgd_applied') == 1)
+    if len(v3_attack_records) != attacked_close_count:
+        raise RuntimeError(
+            f"V6 HARD FAIL: v3 records {len(v3_attack_records)} != "
+            f"attacked_close_count {attacked_close_count}")
     if len(v3_attack_records) != n_attacked:
         raise RuntimeError(
             f"V6 HARD FAIL: v3 records {len(v3_attack_records)} != "
-            f"attacked steps {n_attacked}")
-    import math
+            f"pgd_applied steps {n_attacked}")
+    import math as _math
+    _REQUIRED = (
+        'margin_initial', 'margin_final', 'margin_delta',
+        'hinge_initial', 'hinge_final',
+        'loss_initial', 'loss_final',
+        'global_top_token_initial', 'global_top_token_final',
+        'native_open_score_initial', 'native_open_score_final',
+        'native_close_score_initial', 'native_close_score_final',
+        'full_ar_action_token_ids', 'full_ar_arm_prefix_token_ids',
+        'full_ar_gripper_token_id',
+        'executed_raw_gripper', 'executed_env_gripper',
+        'c2o_official', 'c2o_native_open', 'c2o_clip_mediated',
+    )
     for _i, _rec in enumerate(v3_attack_records):
-        for _k in ('margin_initial', 'margin_final', 'loss_initial', 'loss_final'):
+        for _k in _REQUIRED:
             _v = _rec.get(_k)
-            if _v is not None and _v != '' and not math.isfinite(float(_v)):
+            if _v is None or _v == '':
                 raise RuntimeError(
-                    f"V6 HARD FAIL: v3 record[{_i}].{_k}={_v} is not finite")
+                    f"V6 HARD FAIL: v3 record[{_i}].{_k} is missing/empty")
+        for _k in ('prefix_match', 'top_token_match'):
+            if _rec.get(_k) is not True:
+                raise RuntimeError(
+                    f"V6 HARD FAIL: v3 record[{_i}].{_k} is not True")
+        for _k in ('margin_initial', 'margin_final', 'margin_delta',
+                   'hinge_initial', 'hinge_final',
+                   'loss_initial', 'loss_final',
+                   'native_open_score_initial', 'native_open_score_final',
+                   'native_close_score_initial', 'native_close_score_final',
+                   'executed_raw_gripper', 'executed_env_gripper'):
+            _v = _rec.get(_k)
+            if not _math.isfinite(float(_v)):
+                raise RuntimeError(
+                    f"V6 HARD FAIL: v3 record[{_i}].{_k}={_v} not finite")
 
 # ── Summary ──
 objective_tag = 'v3_ar_prefix' if 'v3' in str(args.attack_objective) else 'v2_execspec'
