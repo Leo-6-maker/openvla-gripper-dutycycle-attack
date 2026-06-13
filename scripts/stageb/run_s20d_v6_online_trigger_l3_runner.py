@@ -301,6 +301,10 @@ while step < max_steps:
     attack_this_step = False
     pgd_applied = 0
     perturbation_space = 'none'
+    # Reset per-step telemetry
+    adv_inputs_used = False
+    fallback_detected = False
+    autoregressive_raw = None
     env_action = clean_env_action.copy()
     executed_action = clean_action.copy()
     infra_status = 'ok'
@@ -324,17 +328,25 @@ while step < max_steps:
                     raise RuntimeError(
                         "V6 HARD FAIL: attack_result is None")
 
-                # Wave 0: hard-fail on wrong method
-                attack_method = getattr(attack_result, 'method', None) or attacker.config.get('method', '')
-                if attack_method not in ('token_prefix_pgd', 'openvla_token_prefix_pgd', 'visual_token_prefix_pgd'):
+                # Wave 0: hard-fail on wrong method (uses attacker.method, not .config)
+                if attacker.method != 'token_prefix_pgd':
                     raise RuntimeError(
-                        f"V6 HARD FAIL: attack method={attack_method}, expected token_prefix_pgd")
+                        f"V6 HARD FAIL: attacker method={attacker.method}, expected token_prefix_pgd")
 
-                # Wave 0: hard-fail on fallback
-                debug_info = getattr(attack_result, 'debug', None) or {}
-                if debug_info.get('fallback', False) or debug_info.get('fallback_adapter_used', False):
+                # Wave 0: hard-fail on wrong result method
+                result_method = getattr(attack_result, 'attack_method', 'none')
+                if result_method == 'visual_linf_noise_adapter' or 'fallback' in str(result_method).lower():
                     raise RuntimeError(
-                        "V6 HARD FAIL: fallback adapter detected")
+                        f"V6 HARD FAIL: attack_result.attack_method={result_method} (fallback/noise adapter)")
+                if not str(result_method).startswith('token_prefix_pgd'):
+                    raise RuntimeError(
+                        f"V6 HARD FAIL: attack_result.attack_method={result_method}, expected token_prefix_pgd_*")
+
+                # Wave 0: hard-fail on fallback in debug
+                debug_info = getattr(attack_result, 'debug', None) or {}
+                if debug_info.get('fallback', False) or debug_info.get('fallback_reason', ''):
+                    raise RuntimeError(
+                        f"V6 HARD FAIL: fallback detected: {debug_info.get('fallback_reason', 'unknown')}")
 
                 adv_inputs = get_adv_inputs_from_attack_result(
                     attack_result)
@@ -511,11 +523,12 @@ safe_tag = '%s_s%d_v6_%s_seed%d' % (
 summary = {
     'runner_family': 's20d_v6_online_trigger_l3',
     'vis_runner_version': 'v6_online_trigger_execspec_v2',
-    'attack_method': 'token_prefix_pgd',
-    'attack_objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2',
-    'attack_margin': 0.5,
-    'attack_pgd_steps': args.pgd_steps,
-    'attack_eps_raw_pixels': args.eps_raw_pixels,
+    # Condition-aware attack provenance
+    'attack_method': 'token_prefix_pgd' if args.condition == 'online_vis_pgd' else ('random_linf_pixel_values' if args.condition == 'online_random_linf' else 'none'),
+    'attack_objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2' if args.condition == 'online_vis_pgd' else ('none' if args.condition == 'clean_observer' else 'random_linf'),
+    'attack_margin': 0.5 if args.condition == 'online_vis_pgd' else '',
+    'attack_pgd_steps': args.pgd_steps if args.condition == 'online_vis_pgd' else 0,
+    'attack_eps_raw_pixels': args.eps_raw_pixels if args.condition in ('online_vis_pgd', 'online_random_linf') else 0,
     'task': args.task, 'state_id': args.state_id,
     'condition': args.condition,
     'attack_seed': args.attack_seed, 'job_id': args.job_id,
