@@ -380,7 +380,7 @@ while step < max_steps:
                 adv_inputs_used = True
 
                 # P0-2: hard-assert actual perturbation budget
-                _BUDGET_ATOL = 1e-6
+                _BUDGET_ATOL = 5e-5  # ~0.013/255, float32 PGD accumulation tolerance
                 actual_linf = float(debug_info.get('pixel_budget_adv_inputs_linf', 999))
                 master_linf = float(debug_info.get('pixel_budget_master_linf', 999))
                 if actual_linf > eps_norm + _BUDGET_ATOL:
@@ -484,7 +484,7 @@ while step < max_steps:
                             else v.dtype)
                     for k, v in rand_inputs.items()}
                 # P0-3: RAND budget audit with BF16 cast correction
-                _BUDGET_ATOL = 1e-6
+                _BUDGET_ATOL = 5e-5  # ~0.013/255, float32 PGD accumulation tolerance
                 pv0 = rand_inputs["pixel_values"].detach()
                 pv0_fp32 = pv0.float()
                 g_rand = torch.Generator(device=pv0.device)
