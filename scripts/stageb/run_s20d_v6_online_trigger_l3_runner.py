@@ -491,12 +491,12 @@ while step < max_steps:
         'close_streak': close_streak,
         'c2o_this_step': c2o_this_step,
         # Wave 0 attack provenance columns (per-step)
-        'step_attack_method': 'token_prefix_pgd' if (condition == 'online_vis_pgd' and attack_this_step) else '',
-        'step_attack_objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2' if (condition == 'online_vis_pgd' and attack_this_step) else '',
-        'step_adv_inputs_used': int(adv_inputs_used) if (condition == 'online_vis_pgd' and attack_this_step) else '',
-        'step_fallback_detected': int(fallback_detected) if (condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_attack_method': 'token_prefix_pgd' if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_attack_objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2' if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_adv_inputs_used': int(adv_inputs_used) if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_fallback_detected': int(fallback_detected) if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
         'step_clean_gripper_raw': round(clean_gripper_raw, 6),
-        'step_executed_gripper_raw': round(float(autoregressive_raw[-1]), 6) if (condition == 'online_vis_pgd' and attack_this_step and autoregressive_raw is not None) else '',
+        'step_executed_gripper_raw': round(float(autoregressive_raw[-1]), 6) if (args.condition == 'online_vis_pgd' and attack_this_step and autoregressive_raw is not None) else '',
     })
 
     step += 1
