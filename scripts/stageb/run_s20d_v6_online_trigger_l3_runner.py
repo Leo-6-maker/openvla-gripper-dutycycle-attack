@@ -448,6 +448,25 @@ while step < max_steps:
                 step_actual_linf = actual_linf
                 step_fallback_reason = str(debug_info.get('fallback_reason', ''))
 
+                # V3 transfer telemetry (observation only, from debug_info)
+                _v3 = {}
+                for _k in ('generated_prefix_gripper_margin_initial',
+                           'generated_prefix_gripper_margin_final',
+                           'selected_loss_initial', 'selected_loss_final',
+                           'teacher_forced_margin_clean_x0',
+                           'teacher_forced_gripper_margin_final',
+                           'prefix_refresh_count', 'num_generation_forwards',
+                           'generated_vs_retokenized_arm_match_rate',
+                           'arm_preservation_loss_initial',
+                           'arm_preservation_loss_final',
+                           'gripper_loss_initial', 'gripper_loss_final',
+                           'global_top_token_initial', 'global_top_token_final',
+                           'generated_arm_prefix_token_ids',
+                           'retokenized_clean_action_arm_token_ids',
+                           'clean_generated_arm_prefix_token_ids'):
+                    if _k in debug_info:
+                        _v3[_k] = debug_info[_k]
+
                 # Official OpenVLA decoder: token_ids → np.clip → action
                 # No hard-fail for out-of-native-range tokens — official pipeline clips them.
                 token_ids, _ = generate_from_adv_inputs(
@@ -729,7 +748,8 @@ safe_tag = '%s_s%d_v6_%s_seed%d' % (
     args.task, args.state_id, args.condition, args.attack_seed)
 summary = {
     'runner_family': 's20d_v6_online_trigger_l3',
-    'vis_runner_version': 'v6_online_trigger_execspec_v2_auditready',
+    'vis_runner_version': 'v6_online_trigger_%s_auditready' % (
+        'v3' if 'v3' in str(args.attack_objective) else 'v2'),
     'runner_sha256': _runner_sha256,
     'adapter_sha256': _adapter_sha256,
     'semantics_sha256': _semantics_sha256,
