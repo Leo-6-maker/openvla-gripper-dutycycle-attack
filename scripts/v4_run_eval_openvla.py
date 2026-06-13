@@ -591,6 +591,11 @@ def decode_with_scores(model, processor, device, image_np, instruction, unnorm_k
         t0=time.time()
         gen=model.generate(**inputs, max_new_tokens=action_dim, do_sample=False, return_dict_in_generate=True, output_scores=True)
         dt=time.time()-t0
+    try:
+        gen.prompt_input_ids = inputs["input_ids"].detach().cpu()
+        gen.prompt_len = int(inputs["input_ids"].shape[1])
+    except Exception:
+        pass
     token_ids=gen.sequences[0, -action_dim:].detach().cpu().numpy()
     vocab_size=model.config.text_config.vocab_size - model.config.pad_to_multiple_of
     discretized=np.clip(vocab_size-token_ids-1, a_min=0, a_max=model.bin_centers.shape[0]-1)
@@ -618,6 +623,11 @@ def decode_prepared_inputs_with_scores(model, device, prepared_inputs, unnorm_ke
         t0=time.time()
         gen=model.generate(**inputs, max_new_tokens=action_dim, do_sample=False, return_dict_in_generate=True, output_scores=True)
         dt=time.time()-t0
+    try:
+        gen.prompt_input_ids = inputs["input_ids"].detach().cpu()
+        gen.prompt_len = int(inputs["input_ids"].shape[1])
+    except Exception:
+        pass
     token_ids=gen.sequences[0, -action_dim:].detach().cpu().numpy()
     vocab_size=model.config.text_config.vocab_size - model.config.pad_to_multiple_of
     discretized=np.clip(vocab_size-token_ids-1, a_min=0, a_max=model.bin_centers.shape[0]-1)

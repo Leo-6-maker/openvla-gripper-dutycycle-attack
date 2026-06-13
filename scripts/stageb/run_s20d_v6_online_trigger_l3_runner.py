@@ -225,7 +225,7 @@ def decode_action_from_token_ids(token_ids):
 
 
 def generate_from_adv_inputs(adv_inputs, device, model_dtype, action_dim,
-                             output_scores=False):
+                             output_scores=False, surrogate_top_token=None):
     """V5 re-decode from adversarial processor inputs.
 
     P0-2: Hard-fail if generation does not produce exactly action_dim new tokens.
@@ -241,62 +241,27 @@ def generate_from_adv_inputs(adv_inputs, device, model_dtype, action_dim,
             return_dict_in_generate=True,
             output_scores=output_scores)
     prompt_len = int(input_ids.shape[1])
-    total_len = int(gen.sequences.shape[1])
-    new_token_count = total_len - prompt_len
-    if new_token_count != int(action_dim):
-        raise RuntimeError(
-            f"V3 INFRA HARD FAIL: full AR generation produced "
-            f"{new_token_count} new tokens, expected {action_dim}")
-    tokens = gen.sequences[0, prompt_len:]
-    if int(tokens.numel()) != int(action_dim):
-        raise RuntimeError(
-            "V3 INFRA HARD FAIL: full AR token slice has incorrect length")
+    from gripper_attack.v3_generation_parity import (
+        extract_exact_new_tokens, generation_score_audit_from_row)
+    token_list = extract_exact_new_tokens(
+        gen.sequences, prompt_len=prompt_len, expected_new_tokens=action_dim)
+    tokens = torch.tensor(token_list, dtype=torch.long)
 
     score_audit = {}
     if output_scores and gen.scores:
         _last_scores = gen.scores[-1][0]  # final step, batch 0
-        _last_argmax = int(torch.argmax(_last_scores).cpu())
-        _top2 = torch.topk(_last_scores, 2)
-        score_audit = {
-            'generation_score_argmax': _last_argmax,
-            'generation_top1_score': float(_top2.values[0].cpu()),
-            'generation_top2_score': float(_top2.values[1].cpu()),
-            'generation_top1_top2_gap': float(
-                _top2.values[0].cpu() - _top2.values[1].cpu()),
-        }
-        # Scores for diagnostic tokens
-        for _tid in [31744, 31872]:
-            score_audit[f'score_token_{_tid}'] = float(_last_scores[_tid].cpu())
-        # Best OPEN/CLOSE/boundary scores using shared official classifier
         vocab_eff = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of)
         n_bins = int(model.bin_centers.shape[0])
-        _best_open_score = -float('inf'); _best_close_score = -float('inf')
-        _best_boundary_score = -float('inf')
-        _best_open_tid = None; _best_close_tid = None; _best_boundary_tid = None
         _action_stats = model.get_action_stats(unnorm_key)
-        from gripper_attack.v3_generation_parity import classify_disc_and_raw
-        for _tid in range(vocab_eff - n_bins, vocab_eff):
-            _s = float(_last_scores[_tid].cpu())
-            _result = classify_disc_and_raw(_tid, vocab_eff, n_bins,
-                                            model.bin_centers, _action_stats)
-            _ec = _result['execution_class']
-            if _ec == 'NATIVE_OPEN' and _s > _best_open_score:
-                _best_open_score = _s; _best_open_tid = _tid
-            if _ec == 'NATIVE_CLOSE' and _s > _best_close_score:
-                _best_close_score = _s; _best_close_tid = _tid
-            if _ec == 'NATIVE_BOUNDARY' and _s > _best_boundary_score:
-                _best_boundary_score = _s; _best_boundary_tid = _tid
-        score_audit['generation_best_open_token'] = _best_open_tid
-        score_audit['generation_best_open_score'] = _best_open_score
-        score_audit['generation_best_close_token'] = _best_close_tid
-        score_audit['generation_best_close_score'] = _best_close_score
-        score_audit['generation_best_boundary_token'] = _best_boundary_tid
-        score_audit['generation_best_boundary_score'] = _best_boundary_score
-        # Surrogate token score in official generation distribution
-        _surr_tid = step_v3.get('global_top_token_final')
-        if _surr_tid not in (None, ''):
-            score_audit['surrogate_token_official_score'] = float(
-                _last_scores[int(_surr_tid)].cpu())
+        score_audit = generation_score_audit_from_row(
+            _last_scores,
+            emitted_token=int(token_list[-1]),
+            vocab_eff=vocab_eff,
+            n_bins=n_bins,
+            bin_centers=model.bin_centers,
+            action_stats=_action_stats,
+            surrogate_top_token=surrogate_top_token,
+        )
 
     return tokens.detach().cpu().numpy(), gen, score_audit
 
@@ -373,6 +338,12 @@ while step < max_steps:
         resize_size=224,
         drop_attention_mask=True,
     )
+    from gripper_attack.v3_generation_parity import extract_new_tokens_from_generation
+    if not hasattr(gen_out, "prompt_len"):
+        raise RuntimeError("V3 INFRA HARD FAIL: clean generation missing prompt_len provenance")
+    clean_generated_action_token_ids = extract_new_tokens_from_generation(
+        gen_out, prompt_len=int(gen_out.prompt_len), expected_new_tokens=action_dim)
+    clean_generated_arm_prefix_token_ids = clean_generated_action_token_ids[:6]
     clean_env_action = postprocess_openvla_action_for_libero(
         clean_action, enabled=True)
     clean_gripper_raw = float(clean_action[-1])
@@ -598,7 +569,8 @@ while step < max_steps:
                 _want_scores = 'v3' in str(args.attack_objective)
                 token_ids, _, _score_audit = generate_from_adv_inputs(
                     adv_inputs, device, model_dtype, action_dim,
-                    output_scores=_want_scores)
+                    output_scores=_want_scores,
+                    surrogate_top_token=step_v3.get('global_top_token_final'))
                 if _score_audit:
                     # Save compact score audit sub-dict (not individual fields)
                     step_v3['official_generation_score_audit'] = _score_audit
@@ -812,9 +784,9 @@ while step < max_steps:
 
         # P0: Official generation score invariant — shared helper with full audit dict
         from gripper_attack.v3_generation_parity import (
-            classify_token_simple, determine_v3_transfer_class,
+            arm_match_rate, determine_v3_transfer_class,
             validate_generation_score_invariant, classify_disc_and_raw)
-        _score_dict = {'generation_score_argmax': _pending_v3.get('generation_score_argmax')}
+        _score_dict = _pending_v3.get('official_generation_score_audit', {})
         _inv_ok, _inv_ft = validate_generation_score_invariant(_score_dict, _ar_gripper)
         if not _inv_ok:
             raise RuntimeError(f"V3 INFRA HARD FAIL: {_inv_ft}")
@@ -841,6 +813,12 @@ while step < max_steps:
         _pending_v3.update({
             'official_generation_score_audit': _pending_v3.get(
                 'official_generation_score_audit', {}),
+            'clean_generated_action_token_ids': [int(t) for t in clean_generated_action_token_ids],
+            'clean_generated_arm_prefix_token_ids': [int(t) for t in clean_generated_arm_prefix_token_ids],
+            'retokenized_clean_action_arm_prefix': _pending_v3.get('retokenized_clean_arm_prefix'),
+            'adv_generated_arm_prefix': _ar_prefix,
+            'adv_vs_clean_generated_arm_match_rate': arm_match_rate(
+                clean_generated_arm_prefix_token_ids, _ar_prefix),
             'full_ar_action_token_ids': _ar_full,
             'full_ar_arm_prefix_token_ids': _ar_prefix,
             'full_ar_gripper_token_id': _ar_gripper,
@@ -866,58 +844,89 @@ while step < max_steps:
         if args.v3_parity_dump_dir and attack_this_step and is_attack_condition:
             _dump_dir = args.v3_parity_dump_dir
             os.makedirs(_dump_dir, exist_ok=True)
+            from gripper_attack.v3_generation_parity import (
+                REPLAY_SCHEMA_VERSION, make_safe_replay_stem,
+                sha256_file, validate_replay_bundle)
+            _dump_stem = make_safe_replay_stem(
+                task=args.task,
+                state_id=args.state_id,
+                objective_tag=objective_tag,
+                condition=args.condition,
+                job_id=args.job_id,
+                seed=args.attack_seed,
+                step=step,
+            )
+            _dump_path = os.path.join(_dump_dir, _dump_stem + '.json')
+            _tensor_path = os.path.join(_dump_dir, _dump_stem + '_adv_pv.pt')
+            _pt = adv_inputs.get('pixel_values').detach().cpu()
+            torch.save(_pt, _tensor_path)
+            _tensor_sha = sha256_file(_tensor_path)
+            _prompt_ids = adv_inputs.get('input_ids').detach().cpu()
+            _gen_cfg = getattr(model, "generation_config", None)
             _dump = {
-                'schema_version': 'v3_parity_v1',
+                'schema_version': REPLAY_SCHEMA_VERSION,
                 'step': step, 'task': args.task, 'state_id': args.state_id,
+                'attack_seed': args.attack_seed, 'seed': args.attack_seed,
                 'job_id': args.job_id, 'condition': args.condition,
                 'objective': args.attack_objective,
                 'objective_tag': objective_tag,
-                'seed': args.attack_seed,
                 'model_path': args.model_path,
                 'model_dtype': str(model_dtype),
                 'runner_sha256': _runner_sha256,
                 'adapter_sha256': _adapter_sha256,
                 'semantics_sha256': _semantics_sha256,
                 'exec_spec_sha256': _spec_sha256,
-                'prompt_input_ids': adv_inputs.get('input_ids').detach().cpu().tolist(),
-                'prompt_input_ids_shape': list(adv_inputs.get('input_ids').shape),
-                'adv_pixel_values_shape': list(adv_inputs.get('pixel_values').shape),
-                'adv_tensor_dtype': str(adv_inputs.get('pixel_values').dtype),
-                'adv_tensor_filename': '',
-                'adv_tensor_sha256': '',
-                'generated_arm_prefix': _gen_prefix,
-                'full_ar_tokens': _ar_full,
+                'prompt_input_ids': _prompt_ids.tolist(),
+                'prompt_input_ids_shape': list(_prompt_ids.shape),
+                'prompt_input_ids_dtype': str(_prompt_ids.dtype),
+                'adv_pixel_values_shape': list(_pt.shape),
+                'adv_tensor_dtype': str(_pt.dtype),
+                'adv_tensor_filename': os.path.basename(_tensor_path),
+                'adv_tensor_sha256': _tensor_sha,
+                'surrogate_generated_arm_prefix_token_ids': _gen_prefix,
+                'generated_arm_prefix': _gen_prefix,  # backward-compatible alias
+                'official_generated_action_token_ids': _ar_full,
+                'full_ar_tokens': _ar_full,  # backward-compatible alias
                 'surrogate_global_top_token': _pred_gripper,
+                'official_generation_score_audit': _pending_v3.get(
+                    'official_generation_score_audit', {}),
                 'surrogate_token_execution': _surr_exec,
-                'ar_token_execution': _ar_exec,
+                'official_token_execution': _ar_exec,
+                'ar_token_execution': _ar_exec,  # backward-compatible alias
                 'generation_score_argmax': _pending_v3.get('generation_score_argmax'),
+                'generation_config': {
+                    'do_sample': False,
+                    'max_new_tokens': int(action_dim),
+                    'default_use_cache': getattr(_gen_cfg, 'use_cache', None),
+                    'effective_use_cache': getattr(_gen_cfg, 'use_cache', None),
+                    'eos_token_id': getattr(_gen_cfg, 'eos_token_id', None),
+                    'pad_token_id': getattr(_gen_cfg, 'pad_token_id', None),
+                },
+                'clean_generated_action_token_ids': [int(t) for t in clean_generated_action_token_ids],
+                'clean_generated_arm_prefix_token_ids': [int(t) for t in clean_generated_arm_prefix_token_ids],
+                'retokenized_clean_action_arm_prefix': _pending_v3.get('retokenized_clean_arm_prefix'),
+                'adv_generated_arm_prefix': _ar_prefix,
+                'adv_vs_clean_generated_arm_match_rate': _pending_v3.get(
+                    'adv_vs_clean_generated_arm_match_rate'),
                 'surrogate_top_matches_generation': _top_match,
+                'transfer_classification': _v3_transfer,
                 'v3_transfer_class': _v3_transfer,
             }
-            # Correct order: tensor save → SHA → validate → JSON → writeback
-            _dump_stem = 'v3_parity_%s_s%d_%s_%s_%s_s%d_step%d' % (
-                args.task, args.state_id, objective_tag, args.condition,
-                args.job_id, args.attack_seed, step)
-            _dump_path = os.path.join(_dump_dir, _dump_stem + '.json')
-            _tensor_path = os.path.join(_dump_dir, _dump_stem + '_adv_pv.pt')
-            _pt = adv_inputs.get('pixel_values').detach().cpu()
-            torch.save(_pt, _tensor_path)
-            import hashlib as _hl2
-            with open(_tensor_path, 'rb') as _tf:
-                _tensor_sha = _hl2.sha256(_tf.read()).hexdigest()
-            _dump['adv_tensor_filename'] = os.path.basename(_tensor_path)
-            _dump['adv_tensor_sha256'] = _tensor_sha
-            from gripper_attack.v3_generation_parity import validate_replay_bundle
-            _missing = validate_replay_bundle(_dump)
+            _missing = validate_replay_bundle(
+                _dump, bundle_dir=_dump_dir, verify_tensor=True)
             if _missing:
                 raise RuntimeError(
                     f"V3 INFRA HARD FAIL: replay bundle missing: {_missing}")
             with open(_dump_path, 'w') as _f:
                 json.dump(_dump, _f, indent=2)
+            _json_sha = sha256_file(_dump_path)
             # Write back paths to record
             _rec = v3_attack_records[-1]
             _rec['replay_json_path'] = _dump_path
+            _rec['replay_json_filename'] = os.path.basename(_dump_path)
+            _rec['replay_json_sha256'] = _json_sha
             _rec['replay_tensor_path'] = _tensor_path
+            _rec['replay_tensor_filename'] = os.path.basename(_tensor_path)
             _rec['replay_tensor_sha256'] = _tensor_sha
 
         _pending_v3.clear()

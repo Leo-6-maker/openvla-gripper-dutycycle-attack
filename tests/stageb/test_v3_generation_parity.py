@@ -1,268 +1,608 @@
-"""CPU tests for v3 generation parity shared helpers.
+from __future__ import annotations
 
-Tests the PRODUCTION code in src/gripper_attack/v3_generation_parity.py.
-No duplicated helpers. No tautological assertions.
-"""
+from types import SimpleNamespace
 
-import math
+import numpy as np
+import pytest
+import torch
+
 from gripper_attack.v3_generation_parity import (
-    classify_token_simple,
-    determine_v3_transfer_class,
-    validate_generation_score_invariant,
-    validate_replay_bundle,
-    check_finite_or_fail,
+    ACTION_DIM,
+    REPLAY_SCHEMA_VERSION,
+    arm_match_rate,
     classify_disc_and_raw,
+    classify_path_diagnosis,
+    classify_token_simple,
+    extract_exact_new_tokens,
+    extract_new_tokens_from_generation,
+    generation_score_audit_from_row,
+    make_safe_replay_stem,
+    path_result_schema,
+    require_token_list,
+    sanitize_component,
+    sha256_file,
+    summarize_score_row,
+    validate_generation_score_invariant,
+    validate_prefix_invariant,
+    validate_replay_bundle,
+)
+from stageb.diagnose_v3_generation_parity import (
+    run_forward_path,
+    run_generate_path,
 )
 
-VOCAB = 32000
-NBINS = 256
+VOCAB = 20
+NBINS = 3
+CLOSE_TOKEN = 19
+BOUNDARY_TOKEN = 18
+OPEN_TOKEN = 17
+ARM_TOKEN = 14
 
 
-# ── Token classification ──
-
-def test_classify_native_open():
-    assert classify_token_simple(31745, VOCAB, NBINS, 1.0, False) == 'NATIVE_OPEN'
-
-
-def test_classify_native_close():
-    assert classify_token_simple(31999, VOCAB, NBINS, 0.0, False) == 'NATIVE_CLOSE'
-
-
-def test_classify_native_boundary():
-    assert classify_token_simple(31872, VOCAB, NBINS, 0.5, False) == 'NATIVE_BOUNDARY'
-
-
-def test_classify_clip_mediated_open():
-    # Out-of-range disc → clipped=True; raw>0.5 → CLIP_MEDIATED_OPEN
-    # tid=31000 → disc = 32000-31000-1 = 999 > 255 → out of range → clipped
-    assert classify_token_simple(31000, VOCAB, NBINS, 0.996, True) == 'CLIP_MEDIATED_OPEN'
-
-
-def test_classify_clip_mediated_close():
-    assert classify_token_simple(31000, VOCAB, NBINS, 0.0, True) == 'CLIP_MEDIATED_CLOSE'
-
-
-def test_classify_unknown_none():
-    assert classify_token_simple(None, VOCAB, NBINS, 0.0, False) == 'UNKNOWN'
-
-
-def test_classify_preserves_zero():
-    """Legal 0.0 is NOT converted to empty string or None."""
-    result = classify_token_simple(31999, VOCAB, NBINS, 0.0, False)
-    assert result == 'NATIVE_CLOSE'
-    assert float(0.0) == 0.0
-
-
-# ── V3 transfer class ──
-
-def test_transfer_mismatch():
-    assert determine_v3_transfer_class(31744, 31872, '', 'NATIVE_CLOSE') == 'SURROGATE_TO_GENERATION_TOP1_MISMATCH'
-
-
-def test_transfer_match_native_open():
-    assert determine_v3_transfer_class(31745, 31745, '', 'NATIVE_OPEN') == 'SURROGATE_TOP_MATCH_NATIVE_OPEN'
-
-
-def test_transfer_match_nonopen():
-    assert determine_v3_transfer_class(31872, 31872, '', 'NATIVE_BOUNDARY') == 'SURROGATE_TOP_MATCH_NONOPEN'
-
-
-def test_transfer_match_clip_mediated():
-    assert determine_v3_transfer_class(31000, 31000, '', 'CLIP_MEDIATED_OPEN') == 'SURROGATE_TOP_MATCH_CLIP_MEDIATED_OPEN'
-
-
-# ── Generation score invariant ──
-
-def test_score_invariant_pass():
-    ok, ft = validate_generation_score_invariant(
-        {'generation_score_argmax': 31872}, 31872)
-    assert ok and ft == ''
-
-
-def test_score_invariant_mismatch():
-    ok, ft = validate_generation_score_invariant(
-        {'generation_score_argmax': 31744}, 31872)
-    assert not ok and ft == 'GENERATE_SCORE_ARGMAX_MISMATCH'
-
-
-def test_score_invariant_missing():
-    ok, ft = validate_generation_score_invariant({}, 31872)
-    assert not ok and ft == 'GENERATE_SCORE_AUDIT_MISSING'
-
-
-def test_score_invariant_none():
-    ok, ft = validate_generation_score_invariant(
-        {'generation_score_argmax': None}, 31872)
-    assert not ok and ft == 'GENERATE_SCORE_AUDIT_MISSING'
-
-
-# ── Replay bundle schema ──
-
-def test_replay_bundle_missing_fields():
-    bundle = {'step': 4}
-    issues = validate_replay_bundle(bundle)
-    assert len(issues) > 0
-    assert any('full_ar_tokens' in i for i in issues)
-
-
-def test_replay_bundle_valid():
-    bundle = {
-        'schema_version': 'v3_parity_v1', 'step': 4, 'task': 'butter',
-        'state_id': 2, 'job_id': 'test', 'condition': 'online_vis_pgd',
-        'objective': 'autoregressive_prefix_gripper_open_execspec_v3',
-        'objective_tag': 'v3_ar_prefix', 'seed': 811,
-        'runner_sha256': 'a'*64, 'adapter_sha256': 'b'*64,
-        'semantics_sha256': 'c'*64, 'exec_spec_sha256': 'd'*64,
-        'model_path': '/m', 'model_dtype': 'torch.bfloat16',
-        'prompt_input_ids': [[3]], 'prompt_input_ids_shape': [1, 2],
-        'adv_pixel_values_shape': [1,3,224,224], 'adv_tensor_dtype': 'torch.bfloat16',
-        'adv_tensor_filename': 'x.pt', 'adv_tensor_sha256': 'e'*64,
-        'generated_arm_prefix': [1]*6, 'full_ar_tokens': [1]*7,
-        'surrogate_global_top_token': 1,
-        'surrogate_token_execution': {'token_id': 1, 'execution_class': 'NATIVE_OPEN'},
-        'ar_token_execution': {'token_id': 1, 'execution_class': 'NATIVE_OPEN'},
-        'generation_score_argmax': 1,
-        'surrogate_top_matches_generation': True,
-        'v3_transfer_class': 'SURROGATE_TOP_MATCH_NATIVE_OPEN',
+def stats(mask_last=True):
+    return {
+        "q01": np.zeros(7, dtype=np.float32),
+        "q99": np.ones(7, dtype=np.float32),
+        "mask": np.array([True] * 6 + [mask_last], dtype=bool),
     }
-    assert validate_replay_bundle(bundle) == []
 
 
-# ── Finite check ──
-
-def test_finite_pass():
-    check_finite_or_fail(0.0, 'test_zero', 0)
-    check_finite_or_fail(-1.5, 'test_neg', 0)
-    check_finite_or_fail(3.14, 'test_pos', 0)
+def bin_centers():
+    return np.asarray([-1.0, 0.0, 1.0], dtype=np.float32)
 
 
-def test_finite_fail_none():
-    try:
-        check_finite_or_fail(None, 'test_none', 0)
-        assert False, 'should have raised'
-    except RuntimeError as e:
-        assert 'missing/empty' in str(e)
+def good_score_audit(emitted=BOUNDARY_TOKEN):
+    row = torch.full((VOCAB,), -10.0)
+    row[emitted] = 5.0
+    row[OPEN_TOKEN] = 4.0
+    row[CLOSE_TOKEN] = 3.0
+    return generation_score_audit_from_row(
+        row,
+        emitted_token=emitted,
+        vocab_eff=VOCAB,
+        n_bins=NBINS,
+        bin_centers=bin_centers(),
+        action_stats=stats(),
+        surrogate_top_token=OPEN_TOKEN,
+    )
 
 
-def test_finite_fail_nan():
-    try:
-        check_finite_or_fail(float('nan'), 'test_nan', 0)
-        assert False, 'should have raised'
-    except RuntimeError as e:
-        assert 'not finite' in str(e)
-
-
-def test_finite_fail_inf():
-    try:
-        check_finite_or_fail(float('inf'), 'test_inf', 0)
-        assert False, 'should have raised'
-    except RuntimeError as e:
-        assert 'not finite' in str(e)
-
-
-# ── Full decode pipeline ──
-
-def test_classify_disc_and_raw_native_open():
-    """Integration: token→disc→clip→unnormalize→OPEN."""
-    import numpy as np
-    bin_centers = np.linspace(-1, 1, NBINS, dtype=np.float32)
-    stats = {
-        'q01': np.array([-0.15]*6 + [0.0], dtype=np.float32),
-        'q99': np.array([0.15]*6 + [1.0], dtype=np.float32),
-        'mask': np.ones(7, dtype=bool),
+def good_bundle(tmp_path, *, tensor=True):
+    tensor_name = "adv.pt"
+    tensor_path = tmp_path / tensor_name
+    value = torch.zeros((1, 1, 1, 1), dtype=torch.float32)
+    if tensor:
+        torch.save(value, tensor_path)
+        tensor_sha = sha256_file(tensor_path)
+    else:
+        tensor_sha = "a" * 64
+    return {
+        "schema_version": REPLAY_SCHEMA_VERSION,
+        "task": "butter",
+        "state_id": 2,
+        "attack_seed": 811,
+        "seed": 811,
+        "job_id": "job/with spaces",
+        "step": 12,
+        "condition": "online_vis_pgd",
+        "objective": "autoregressive_prefix_gripper_open_execspec_v3",
+        "objective_tag": "v3_ar_prefix",
+        "model_path": "/model",
+        "model_dtype": "torch.bfloat16",
+        "runner_sha256": "a" * 64,
+        "adapter_sha256": "b" * 64,
+        "semantics_sha256": "c" * 64,
+        "exec_spec_sha256": "d" * 64,
+        "prompt_input_ids": [[3, 29871]],
+        "prompt_input_ids_shape": [1, 2],
+        "prompt_input_ids_dtype": "torch.int64",
+        "adv_tensor_filename": tensor_name,
+        "adv_tensor_sha256": tensor_sha,
+        "adv_pixel_values_shape": [1, 1, 1, 1],
+        "adv_tensor_dtype": "torch.float32",
+        "surrogate_generated_arm_prefix_token_ids": [ARM_TOKEN] * 6,
+        "generated_arm_prefix": [ARM_TOKEN] * 6,
+        "official_generated_action_token_ids": [ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        "full_ar_tokens": [ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        "surrogate_global_top_token": OPEN_TOKEN,
+        "official_generation_score_audit": good_score_audit(BOUNDARY_TOKEN),
+        "surrogate_token_execution": classify_disc_and_raw(
+            OPEN_TOKEN, VOCAB, NBINS, bin_centers(), stats()),
+        "official_token_execution": classify_disc_and_raw(
+            BOUNDARY_TOKEN, VOCAB, NBINS, bin_centers(), stats()),
+        "ar_token_execution": classify_disc_and_raw(
+            BOUNDARY_TOKEN, VOCAB, NBINS, bin_centers(), stats()),
+        "generation_score_argmax": BOUNDARY_TOKEN,
+        "generation_config": {
+            "do_sample": False,
+            "max_new_tokens": 7,
+            "default_use_cache": True,
+            "effective_use_cache": True,
+            "eos_token_id": None,
+            "pad_token_id": None,
+        },
+        "clean_generated_action_token_ids": [ARM_TOKEN] * 6 + [CLOSE_TOKEN],
+        "clean_generated_arm_prefix_token_ids": [ARM_TOKEN] * 6,
+        "retokenized_clean_action_arm_prefix": [CLOSE_TOKEN] * 6,
+        "adv_generated_arm_prefix": [ARM_TOKEN] * 6,
+        "adv_vs_clean_generated_arm_match_rate": 1.0,
+        "surrogate_top_matches_generation": False,
+        "transfer_classification": "SURROGATE_TO_GENERATION_TOP1_MISMATCH",
+        "v3_transfer_class": "SURROGATE_TO_GENERATION_TOP1_MISMATCH",
     }
-    # tid corresponding to disc=0 → center=-1.0 → raw=0.0 (un-normalized)
-    tid_open = VOCAB - 1  # disc 0
-    result = classify_disc_and_raw(tid_open, VOCAB, NBINS, bin_centers, stats)
-    assert result['disc_before'] == 0
-    assert result['clipped'] == False
-    # disc 0 center=-1.0, raw=0.5*(-1+1)*(1-0)+0 = 0.0 → CLOSE
-    assert result['execution_class'] == 'NATIVE_CLOSE'
-
-    # tid disc=NBINS-1=255 → center≈1.0 → raw≈1.0 → OPEN
-    tid_open2 = VOCAB - NBINS  # disc 255
-    result2 = classify_disc_and_raw(tid_open2, VOCAB, NBINS, bin_centers, stats)
-    assert result2['disc_before'] == 255
-    assert result2['execution_class'] == 'NATIVE_OPEN'
 
 
-# ── Production integration: invariant called as runner does ──
-
-def test_invariant_called_with_dict():
-    """Matches runner production path: dict with generation_score_argmax key."""
-    score_audit = {'generation_score_argmax': 31872}
-    ok, ft = validate_generation_score_invariant(score_audit, 31872)
-    assert ok and ft == ''
-
-
-def test_invariant_called_with_dict_mismatch():
-    score_audit = {'generation_score_argmax': 31744}
-    ok, ft = validate_generation_score_invariant(score_audit, 31872)
-    assert not ok and ft == 'GENERATE_SCORE_ARGMAX_MISMATCH'
+def test_exact_new_token_extraction_pass_fail():
+    seq = torch.tensor([[1, 2, 3, 4, 5, 6, 7, 8, 9]], dtype=torch.long)
+    assert extract_exact_new_tokens(seq, prompt_len=2, expected_new_tokens=7) == [3, 4, 5, 6, 7, 8, 9]
+    with pytest.raises(ValueError, match="expected 7 new tokens"):
+        extract_exact_new_tokens(seq, prompt_len=3, expected_new_tokens=7)
+    gen = SimpleNamespace(sequences=seq)
+    assert extract_new_tokens_from_generation(gen, prompt_len=2, expected_new_tokens=7)[-1] == 9
 
 
-# ── Replay bundle value validation ──
+def test_prefix_invariant_and_match_rate():
+    assert validate_prefix_invariant([1] * 6, [1] * 6 + [2])["ok"] is True
+    mismatch = validate_prefix_invariant([1] * 6, [1, 1, 1, 1, 1, 9, 2])
+    assert mismatch["ok"] is False
+    assert mismatch["failure_type"] == "SURROGATE_PREFIX_FULL_AR_PREFIX_MISMATCH"
+    assert arm_match_rate([1, 2, 3, 4, 5, 6], [1, 2, 0, 4, 0, 6]) == pytest.approx(4 / 6)
 
-def test_replay_bundle_empty_strings_rejected():
-    bundle = {
-        'schema_version': 'v3_parity_v1', 'step': 4, 'task': 'butter',
-        'state_id': 2, 'job_id': 'test', 'condition': 'online_vis_pgd',
-        'objective': 'v3', 'objective_tag': 'v3', 'seed': 811,
-        'runner_sha256': 'a'*64, 'adapter_sha256': 'b'*64,
-        'semantics_sha256': 'c'*64, 'exec_spec_sha256': 'd'*64,
-        'model_path': '/m', 'model_dtype': 'bf16',
-        'prompt_input_ids': [[3]], 'prompt_input_ids_shape': [1, 2],
-        'adv_pixel_values_shape': [1,3,224,224], 'adv_tensor_dtype': 'bf16',
-        'adv_tensor_filename': '',  # EMPTY — should be rejected
-        'adv_tensor_sha256': 'e'*64,
-        'generated_arm_prefix': [1]*6, 'full_ar_tokens': [1]*7,
-        'surrogate_global_top_token': 1,
-        'surrogate_token_execution': {'token_id': 1, 'execution_class': 'NATIVE_OPEN'},
-        'ar_token_execution': {'token_id': 1, 'execution_class': 'NATIVE_OPEN'},
-        'generation_score_argmax': 1,
-        'surrogate_top_matches_generation': True,
-        'v3_transfer_class': 'SURROGATE_TOP_MATCH_NATIVE_OPEN',
+
+def test_score_invariant_pass_missing_mismatch():
+    ok, failure = validate_generation_score_invariant(good_score_audit(), BOUNDARY_TOKEN)
+    assert ok and failure == ""
+    ok, failure = validate_generation_score_invariant({}, BOUNDARY_TOKEN)
+    assert not ok and failure == "GENERATE_SCORE_AUDIT_MISSING"
+    audit = good_score_audit()
+    audit["processed_score_argmax_token"] = OPEN_TOKEN
+    ok, failure = validate_generation_score_invariant(audit, BOUNDARY_TOKEN)
+    assert not ok and failure == "GENERATE_SCORE_ARGMAX_MISMATCH"
+
+
+def test_official_decode_native_boundary_clip_edges_and_mask_false():
+    assert classify_disc_and_raw(OPEN_TOKEN, VOCAB, NBINS, bin_centers(), stats())["execution_class"] == "NATIVE_OPEN"
+    assert classify_disc_and_raw(CLOSE_TOKEN, VOCAB, NBINS, bin_centers(), stats())["execution_class"] == "NATIVE_CLOSE"
+    assert classify_disc_and_raw(BOUNDARY_TOKEN, VOCAB, NBINS, bin_centers(), stats())["execution_class"] == "NATIVE_BOUNDARY"
+    assert classify_disc_and_raw(25, VOCAB, NBINS, bin_centers(), stats())["execution_class"] == "CLIP_MEDIATED_CLOSE"
+    assert classify_disc_and_raw(-1, VOCAB, NBINS, bin_centers(), stats())["execution_class"] == "CLIP_MEDIATED_OPEN"
+    assert classify_disc_and_raw(OPEN_TOKEN, VOCAB, NBINS, bin_centers(), stats(mask_last=False))["decoded_raw_gripper"] == 1.0
+    assert classify_token_simple(None, VOCAB, NBINS, 0.0, False) == "UNKNOWN"
+
+
+def test_score_row_summary_retains_required_competition_fields():
+    row = torch.zeros((VOCAB,), dtype=torch.float32)
+    row[OPEN_TOKEN] = 3.0
+    row[BOUNDARY_TOKEN] = 5.0
+    row[CLOSE_TOKEN] = 4.0
+    summary = summarize_score_row(
+        row,
+        vocab_eff=VOCAB,
+        n_bins=NBINS,
+        bin_centers=bin_centers(),
+        action_stats=stats(),
+        surrogate_top_token=OPEN_TOKEN,
+    )
+    assert summary["top1_token"] == BOUNDARY_TOKEN
+    assert summary["top2_token"] == CLOSE_TOKEN
+    assert summary["top1_minus_top2_gap"] == pytest.approx(1.0)
+    assert summary["score_token_31744"] is None
+    assert summary["score_token_31872"] is None
+    assert summary["best_native_open_token"] == OPEN_TOKEN
+    assert summary["best_native_close_token"] == CLOSE_TOKEN
+    assert summary["best_native_boundary_token"] == BOUNDARY_TOKEN
+    assert summary["surrogate_top_score"] == pytest.approx(3.0)
+
+
+def test_safe_replay_stem_sanitizes_job_id_and_adds_digest():
+    stem = make_safe_replay_stem(
+        task="butter", state_id=2, objective_tag="v3", condition="online",
+        job_id="bad/id with spaces", seed=811, step=4)
+    assert "/" not in stem and " " not in stem
+    assert "bad_id_with_spaces" in stem
+    assert len(stem.rsplit("_", 1)[-1]) == 12
+    assert sanitize_component("///") == "none"
+
+
+def test_replay_validation_rejects_bad_hash_token_lengths_missing_tensor_and_sha(tmp_path):
+    bundle = good_bundle(tmp_path)
+    assert validate_replay_bundle(bundle, bundle_dir=tmp_path, verify_tensor=True) == []
+
+    bad_hash = dict(bundle)
+    bad_hash["runner_sha256"] = "zz"
+    assert any("runner_sha256" in x for x in validate_replay_bundle(bad_hash, bundle_dir=tmp_path, verify_tensor=True))
+
+    bad_tokens = dict(bundle)
+    bad_tokens["official_generated_action_token_ids"] = [1, 2]
+    assert any("official_generated_action_token_ids" in x for x in validate_replay_bundle(bad_tokens, bundle_dir=tmp_path, verify_tensor=True))
+
+    missing = good_bundle(tmp_path / "missing", tensor=False)
+    assert any("FILE_MISSING" in x for x in validate_replay_bundle(missing, bundle_dir=tmp_path / "missing", verify_tensor=True))
+
+    bad_sha = dict(bundle)
+    bad_sha["adv_tensor_sha256"] = "e" * 64
+    assert any("FILE_HASH_MISMATCH" in x for x in validate_replay_bundle(bad_sha, bundle_dir=tmp_path, verify_tensor=True))
+
+
+def test_replay_validation_rejects_shape_dtype_prompt_execution_and_schema(tmp_path):
+    bundle = good_bundle(tmp_path)
+    bad_shape = dict(bundle)
+    bad_shape["adv_pixel_values_shape"] = [9]
+    assert any("TENSOR_SHAPE_MISMATCH" in x for x in validate_replay_bundle(bad_shape, bundle_dir=tmp_path, verify_tensor=True))
+
+    bad_dtype = dict(bundle)
+    bad_dtype["adv_tensor_dtype"] = "torch.bfloat16"
+    assert any("TENSOR_DTYPE_MISMATCH" in x for x in validate_replay_bundle(bad_dtype, bundle_dir=tmp_path, verify_tensor=True))
+
+    bad_prompt = dict(bundle)
+    bad_prompt["prompt_input_ids_shape"] = [1, 99]
+    assert "prompt_input_ids_shape:mismatch" in validate_replay_bundle(bad_prompt, bundle_dir=tmp_path, verify_tensor=True)
+
+    bad_exec = dict(bundle)
+    bad_exec["official_token_execution"] = {"token_id": 1}
+    assert any("official_token_execution.execution_class" in x for x in validate_replay_bundle(bad_exec, bundle_dir=tmp_path, verify_tensor=True))
+
+    bad_schema = dict(bundle)
+    bad_schema["schema_version"] = "old"
+    assert any("schema_version:INVALID" in x for x in validate_replay_bundle(bad_schema, bundle_dir=tmp_path, verify_tensor=True))
+
+
+class TinyDiagnosticModel(torch.nn.Module):
+    def __init__(self, emitted=BOUNDARY_TOKEN, forward_top=OPEN_TOKEN, d_tokens=None):
+        super().__init__()
+        self.anchor = torch.nn.Parameter(torch.zeros(()))
+        self.config = SimpleNamespace(
+            text_config=SimpleNamespace(vocab_size=VOCAB),
+            pad_to_multiple_of=0,
+        )
+        self.bin_centers = bin_centers()
+        self.emitted = emitted
+        self.forward_top = forward_top
+        self.d_tokens = d_tokens
+
+    def get_action_stats(self, key):
+        return stats()
+
+    def generate(self, input_ids, pixel_values, max_new_tokens, do_sample=False,
+                 return_dict_in_generate=True, output_scores=True, use_cache=None):
+        toks = self.d_tokens if use_cache is False and self.d_tokens is not None else [ARM_TOKEN] * 6 + [self.emitted]
+        toks = torch.tensor([toks[:max_new_tokens]], dtype=torch.long, device=input_ids.device)
+        scores = []
+        for idx in range(max_new_tokens):
+            row = torch.full((1, VOCAB), -10.0, device=input_ids.device)
+            emitted = int(toks[0, idx])
+            row[0, emitted] = 5.0
+            row[0, OPEN_TOKEN] = max(float(row[0, OPEN_TOKEN]), 4.0)
+            row[0, CLOSE_TOKEN] = max(float(row[0, CLOSE_TOKEN]), 3.0)
+            scores.append(row)
+        return SimpleNamespace(sequences=torch.cat([input_ids, toks], dim=1), scores=tuple(scores))
+
+    def forward(self, input_ids, pixel_values, use_cache=False, return_dict=True):
+        logits = torch.zeros((1, input_ids.shape[1], VOCAB), dtype=torch.float32, device=input_ids.device)
+        top = BOUNDARY_TOKEN if use_cache else self.forward_top
+        logits[0, -1, top] = 5.0
+        logits[0, -1, OPEN_TOKEN] = max(float(logits[0, -1, OPEN_TOKEN]), 4.0)
+        logits[0, -1, CLOSE_TOKEN] = max(float(logits[0, -1, CLOSE_TOKEN]), 3.0)
+        return SimpleNamespace(logits=logits)
+
+
+class BadScoreDiagnosticModel(TinyDiagnosticModel):
+    def generate(self, input_ids, pixel_values, max_new_tokens, do_sample=False,
+                 return_dict_in_generate=True, output_scores=True, use_cache=None):
+        out = super().generate(
+            input_ids, pixel_values, max_new_tokens,
+            do_sample=do_sample,
+            return_dict_in_generate=return_dict_in_generate,
+            output_scores=output_scores,
+            use_cache=use_cache,
+        )
+        rows = []
+        for idx, row in enumerate(out.scores):
+            row = row.clone()
+            if idx == max_new_tokens - 1:
+                row[0, OPEN_TOKEN] = 9.0
+                row[0, BOUNDARY_TOKEN] = 5.0
+            rows.append(row)
+        out.scores = tuple(rows)
+        return out
+
+
+def test_path_a_d_exact_token_score_checks_and_four_path_schema(tmp_path):
+    model = TinyDiagnosticModel()
+    bundle = good_bundle(tmp_path)
+    input_ids = torch.tensor(bundle["prompt_input_ids"], dtype=torch.long)
+    pixel_values = torch.zeros((1, 1, 1, 1))
+    prefix = torch.tensor([ARM_TOKEN] * 6, dtype=torch.long)
+
+    a = run_generate_path(model, input_ids, pixel_values, bundle, path_name="A", use_cache_arg=None)
+    d = run_generate_path(model, input_ids, pixel_values, bundle, path_name="D", use_cache_arg=False)
+    b = run_forward_path(model, input_ids, pixel_values, prefix, bundle, path_name="B", use_cache=False)
+    c = run_forward_path(model, input_ids, pixel_values, prefix, bundle, path_name="C", use_cache=True)
+    assert a["generated_tokens"] == [ARM_TOKEN] * 6 + [BOUNDARY_TOKEN]
+    assert d["processed_score_top_token"] == BOUNDARY_TOKEN
+    assert b["raw_logit_top_token"] == OPEN_TOKEN
+    assert c["raw_logit_top_token"] == BOUNDARY_TOKEN
+    for item in (a, b, c, d):
+        assert "path" in item and "cache_behavior" in item
+        assert "processed_score_top2_token" in item
+        assert "raw_logit_top2_token" in item
+
+
+def test_path_a_reproduction_mismatch_raises(tmp_path):
+    model = TinyDiagnosticModel(emitted=OPEN_TOKEN)
+    bundle = good_bundle(tmp_path)
+    input_ids = torch.tensor(bundle["prompt_input_ids"], dtype=torch.long)
+    with pytest.raises(RuntimeError, match="Path A official reproduction mismatch"):
+        run_generate_path(model, input_ids, torch.zeros((1, 1, 1, 1)), bundle, path_name="A", use_cache_arg=None)
+
+
+def test_path_generation_score_invariant_mismatch_raises(tmp_path):
+    model = BadScoreDiagnosticModel()
+    bundle = good_bundle(tmp_path)
+    input_ids = torch.tensor(bundle["prompt_input_ids"], dtype=torch.long)
+    with pytest.raises(RuntimeError, match="GENERATE_SCORE_ARGMAX_MISMATCH"):
+        run_generate_path(model, input_ids, torch.zeros((1, 1, 1, 1)), bundle, path_name="A", use_cache_arg=None)
+
+
+def test_diagnosis_categories_report_supporting_differences(tmp_path):
+    bundle = good_bundle(tmp_path)
+    a = path_result_schema(
+        path="A", cache_behavior="default", prefix_tokens=[ARM_TOKEN] * 6,
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+        processed_score_summary={"top1_token": BOUNDARY_TOKEN, "top1_score": 5.0, "top2_token": OPEN_TOKEN, "top2_score": 4.0, "top1_minus_top2_gap": 1.0},
+    )
+    b = path_result_schema(path="B", cache_behavior="use_cache=False", raw_logit_summary={"top1_token": OPEN_TOKEN, "top1_score": 5.0})
+    c = path_result_schema(path="C", cache_behavior="use_cache=True", raw_logit_summary={"top1_token": BOUNDARY_TOKEN, "top1_score": 5.0})
+    d = path_result_schema(path="D", cache_behavior="use_cache=False", generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN], emitted_gripper_token=BOUNDARY_TOKEN)
+    diagnosis = classify_path_diagnosis({"A": a, "B": b, "C": c, "D": d}, bundle)
+    assert diagnosis["class"] == "CACHE_PATH_MISMATCH_CANDIDATE"
+    assert diagnosis["evidence"]["A_token"] == BOUNDARY_TOKEN
+    assert diagnosis["evidence"]["B_token"] == OPEN_TOKEN
+
+    c2 = path_result_schema(path="C", cache_behavior="use_cache=True", raw_logit_summary={"top1_token": OPEN_TOKEN, "top1_score": 5.0})
+    d2 = path_result_schema(path="D", cache_behavior="use_cache=False", generated_tokens=[ARM_TOKEN] * 6 + [OPEN_TOKEN], emitted_gripper_token=OPEN_TOKEN)
+    assert classify_path_diagnosis({"A": a, "B": b, "C": c2, "D": d2}, bundle)["class"] == "GENERATION_SCORE_PROCESSING_MISMATCH_CANDIDATE"
+
+    a_tie = dict(a)
+    a_tie["processed_score_top1_minus_top2_gap"] = 1e-5
+    c_tie = path_result_schema(path="C", cache_behavior="use_cache=True", raw_logit_summary={"top1_token": CLOSE_TOKEN, "top1_score": 5.0})
+    assert classify_path_diagnosis({"A": a_tie, "B": b, "C": c_tie, "D": d}, bundle)["class"] == "NEAR_TIE_NUMERICAL_SENSITIVITY_CANDIDATE"
+
+
+def test_cream_like_path_agreement_boundary_over_open_confirms_competition_set(tmp_path):
+    bundle = good_bundle(tmp_path)
+    processed = {
+        "top1_token": BOUNDARY_TOKEN,
+        "top1_score": 5.1,
+        "top2_token": OPEN_TOKEN,
+        "top2_score": 4.5,
+        "top1_minus_top2_gap": 0.6,
     }
-    issues = validate_replay_bundle(bundle)
-    assert 'adv_tensor_filename:EMPTY' in issues
-
-
-def test_replay_bundle_short_sha_rejected():
-    bundle = {
-        'schema_version': 'v3_parity_v1', 'step': 4, 'task': 'butter',
-        'state_id': 2, 'job_id': 'test', 'condition': 'online_vis_pgd',
-        'objective': 'v3', 'objective_tag': 'v3', 'seed': 811,
-        'runner_sha256': 'ee',  # too short
-        'adapter_sha256': 'b'*64, 'semantics_sha256': 'c'*64,
-        'exec_spec_sha256': 'd'*64, 'model_path': '/m', 'model_dtype': 'bf16',
-        'prompt_input_ids': [[3]], 'prompt_input_ids_shape': [1, 2],
-        'adv_pixel_values_shape': [1,3,224,224], 'adv_tensor_dtype': 'bf16',
-        'adv_tensor_filename': 'x.pt', 'adv_tensor_sha256': 'e'*64,
-        'generated_arm_prefix': [1]*6, 'full_ar_tokens': [1]*7,
-        'surrogate_global_top_token': 1,
-        'surrogate_token_execution': {'token_id': 1, 'execution_class': 'NATIVE_OPEN'},
-        'ar_token_execution': {'token_id': 1, 'execution_class': 'NATIVE_OPEN'},
-        'generation_score_argmax': 1,
-        'surrogate_top_matches_generation': True,
-        'v3_transfer_class': 'SURROGATE_TOP_MATCH_NATIVE_OPEN',
+    raw_boundary_over_open = {
+        "top1_token": BOUNDARY_TOKEN,
+        "top1_score": 5.1,
+        "top2_token": OPEN_TOKEN,
+        "top2_score": 4.5,
+        "top1_minus_top2_gap": 0.6,
+        "best_native_open_token": OPEN_TOKEN,
+        "best_native_open_score": 4.5,
+        "best_native_close_token": CLOSE_TOKEN,
+        "best_native_close_score": 3.0,
+        "best_native_boundary_token": BOUNDARY_TOKEN,
+        "best_native_boundary_score": 5.1,
     }
-    issues = validate_replay_bundle(bundle)
-    assert any('runner_sha256' in i for i in issues)
+    a = path_result_schema(
+        path="A", cache_behavior="default", prefix_tokens=[ARM_TOKEN] * 6,
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+        processed_score_summary=processed,
+        token_execution=classify_disc_and_raw(BOUNDARY_TOKEN, VOCAB, NBINS, bin_centers(), stats()),
+    )
+    b = path_result_schema(
+        path="B", cache_behavior="use_cache=False",
+        raw_logit_summary=raw_boundary_over_open,
+        token_execution=classify_disc_and_raw(BOUNDARY_TOKEN, VOCAB, NBINS, bin_centers(), stats()),
+    )
+    c = path_result_schema(path="C", cache_behavior="use_cache=True", raw_logit_summary=raw_boundary_over_open)
+    d = path_result_schema(
+        path="D", cache_behavior="use_cache=False",
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+        processed_score_summary=processed,
+    )
+
+    diagnosis = classify_path_diagnosis({"A": a, "B": b, "C": c, "D": d}, bundle)
+
+    assert diagnosis["class"] == "COMPETITION_SET_INCOMPLETENESS_CONFIRMED"
+    assert diagnosis["evidence"]["A_token"] == BOUNDARY_TOKEN
+    assert diagnosis["evidence"]["B_token"] == BOUNDARY_TOKEN
+    assert diagnosis["evidence"]["C_token"] == BOUNDARY_TOKEN
+    assert diagnosis["evidence"]["B_best_open_score"] == pytest.approx(4.5)
+    assert diagnosis["evidence"]["B_best_close_score"] == pytest.approx(3.0)
+    assert diagnosis["evidence"]["B_best_boundary_score"] == pytest.approx(5.1)
+    assert diagnosis["evidence"]["open_minus_close"] == pytest.approx(1.5)
+    assert diagnosis["evidence"]["frozen_margin"] == pytest.approx(0.5)
 
 
-def test_classify_disc_and_raw_mask_false():
-    """When mask[gripper_dim] is False, raw stays as center value."""
-    import numpy as np
-    bin_centers = np.linspace(-1, 1, NBINS, dtype=np.float32)
-    stats = {
-        'q01': np.array([-0.15]*6 + [0.0], dtype=np.float32),
-        'q99': np.array([0.15]*6 + [1.0], dtype=np.float32),
-        'mask': np.array([True]*6 + [False], dtype=bool),  # gripper dim masked out
+def test_butter_like_a_b_mismatch_prioritizes_cache_path_not_competition(tmp_path):
+    bundle = good_bundle(tmp_path)
+    bundle["surrogate_token_execution"] = classify_disc_and_raw(CLOSE_TOKEN, VOCAB, NBINS, bin_centers(), stats())
+    a = path_result_schema(
+        path="A", cache_behavior="default", prefix_tokens=[ARM_TOKEN] * 6,
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+        processed_score_summary={"top1_token": BOUNDARY_TOKEN, "top1_score": 5.0, "top2_token": CLOSE_TOKEN, "top2_score": 4.9, "top1_minus_top2_gap": 0.1},
+    )
+    b = path_result_schema(
+        path="B", cache_behavior="use_cache=False",
+        raw_logit_summary={
+            "top1_token": CLOSE_TOKEN,
+            "top1_score": 5.0,
+            "top2_token": BOUNDARY_TOKEN,
+            "top2_score": 4.0,
+            "top1_minus_top2_gap": 1.0,
+            "best_native_open_token": OPEN_TOKEN,
+            "best_native_open_score": 2.0,
+            "best_native_close_token": CLOSE_TOKEN,
+            "best_native_close_score": 5.0,
+            "best_native_boundary_token": BOUNDARY_TOKEN,
+            "best_native_boundary_score": 4.0,
+        },
+        token_execution=classify_disc_and_raw(CLOSE_TOKEN, VOCAB, NBINS, bin_centers(), stats()),
+    )
+    c = path_result_schema(path="C", cache_behavior="use_cache=True", raw_logit_summary={"top1_token": BOUNDARY_TOKEN, "top1_score": 5.0})
+    d = path_result_schema(path="D", cache_behavior="use_cache=False", generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN], emitted_gripper_token=BOUNDARY_TOKEN)
+
+    diagnosis = classify_path_diagnosis({"A": a, "B": b, "C": c, "D": d}, bundle)
+
+    assert diagnosis["class"] == "CACHE_PATH_MISMATCH_CANDIDATE"
+    assert diagnosis["class"] != "COMPETITION_SET_INCOMPLETENESS_CONFIRMED"
+    assert diagnosis["evidence"]["A_token"] == BOUNDARY_TOKEN
+    assert diagnosis["evidence"]["B_token"] == CLOSE_TOKEN
+    assert diagnosis["evidence"]["C_token"] == BOUNDARY_TOKEN
+
+
+def test_near_tie_preempts_generation_processing_when_b_c_match(tmp_path):
+    bundle = good_bundle(tmp_path)
+    a = path_result_schema(
+        path="A", cache_behavior="default", prefix_tokens=[ARM_TOKEN] * 6,
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+        processed_score_summary={
+            "top1_token": BOUNDARY_TOKEN,
+            "top1_score": 5.00001,
+            "top2_token": OPEN_TOKEN,
+            "top2_score": 5.0,
+            "top1_minus_top2_gap": 1e-5,
+        },
+    )
+    raw_open = {
+        "top1_token": OPEN_TOKEN,
+        "top1_score": 5.0,
+        "top2_token": BOUNDARY_TOKEN,
+        "top2_score": 3.0,
+        "top1_minus_top2_gap": 2.0,
     }
-    # tid disc 255 → center ≈ 1.0
-    tid = VOCAB - NBINS
-    result = classify_disc_and_raw(tid, VOCAB, NBINS, bin_centers, stats)
-    # mask=False → raw = center, not unnormalized
-    assert abs(result['decoded_raw_gripper'] - 1.0) < 0.02
-    # center≈1.0 → raw_gripper_to_env_gripper(1.0) = -1.0 → OPEN
-    assert result['execution_class'] == 'NATIVE_OPEN'
+    b = path_result_schema(path="B", cache_behavior="use_cache=False", raw_logit_summary=raw_open)
+    c = path_result_schema(path="C", cache_behavior="use_cache=True", raw_logit_summary=raw_open)
+    d = path_result_schema(
+        path="D", cache_behavior="use_cache=False",
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+    )
+
+    diagnosis = classify_path_diagnosis({"A": a, "B": b, "C": c, "D": d}, bundle)
+
+    assert diagnosis["class"] == "NEAR_TIE_NUMERICAL_SENSITIVITY_CANDIDATE"
+    assert diagnosis["evidence"]["A_gap"] == pytest.approx(1e-5)
+    assert diagnosis["evidence"]["B_token"] == OPEN_TOKEN
+    assert diagnosis["evidence"]["C_token"] == OPEN_TOKEN
+
+
+def test_competition_set_accepts_margin_equality(tmp_path):
+    bundle = good_bundle(tmp_path)
+    processed = {
+        "top1_token": BOUNDARY_TOKEN,
+        "top1_score": 4.6,
+        "top2_token": OPEN_TOKEN,
+        "top2_score": 4.0,
+        "top1_minus_top2_gap": 0.6,
+    }
+    raw_boundary_at_margin = {
+        "top1_token": BOUNDARY_TOKEN,
+        "top1_score": 4.6,
+        "top2_token": OPEN_TOKEN,
+        "top2_score": 4.0,
+        "top1_minus_top2_gap": 0.6,
+        "best_native_open_token": OPEN_TOKEN,
+        "best_native_open_score": 4.0,
+        "best_native_close_token": CLOSE_TOKEN,
+        "best_native_close_score": 3.5,
+        "best_native_boundary_token": BOUNDARY_TOKEN,
+        "best_native_boundary_score": 4.6,
+    }
+    a = path_result_schema(
+        path="A", cache_behavior="default", prefix_tokens=[ARM_TOKEN] * 6,
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+        processed_score_summary=processed,
+    )
+    b = path_result_schema(
+        path="B", cache_behavior="use_cache=False",
+        raw_logit_summary=raw_boundary_at_margin,
+        token_execution=classify_disc_and_raw(BOUNDARY_TOKEN, VOCAB, NBINS, bin_centers(), stats()),
+    )
+    c = path_result_schema(path="C", cache_behavior="use_cache=True", raw_logit_summary=raw_boundary_at_margin)
+    d = path_result_schema(
+        path="D", cache_behavior="use_cache=False",
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+        processed_score_summary=processed,
+    )
+
+    diagnosis = classify_path_diagnosis({"A": a, "B": b, "C": c, "D": d}, bundle)
+
+    assert diagnosis["class"] == "COMPETITION_SET_INCOMPLETENESS_CONFIRMED"
+    assert diagnosis["evidence"]["open_minus_close"] == pytest.approx(0.5)
+    assert diagnosis["evidence"]["boundary_minus_open"] == pytest.approx(0.6)
+
+
+def test_competition_set_requires_d_path_agreement(tmp_path):
+    bundle = good_bundle(tmp_path)
+    processed = {
+        "top1_token": BOUNDARY_TOKEN,
+        "top1_score": 5.1,
+        "top2_token": OPEN_TOKEN,
+        "top2_score": 4.5,
+        "top1_minus_top2_gap": 0.6,
+    }
+    raw_boundary_over_open = {
+        "top1_token": BOUNDARY_TOKEN,
+        "top1_score": 5.1,
+        "top2_token": OPEN_TOKEN,
+        "top2_score": 4.5,
+        "top1_minus_top2_gap": 0.6,
+        "best_native_open_token": OPEN_TOKEN,
+        "best_native_open_score": 4.5,
+        "best_native_close_token": CLOSE_TOKEN,
+        "best_native_close_score": 3.0,
+        "best_native_boundary_token": BOUNDARY_TOKEN,
+        "best_native_boundary_score": 5.1,
+    }
+    a = path_result_schema(
+        path="A", cache_behavior="default", prefix_tokens=[ARM_TOKEN] * 6,
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+        processed_score_summary=processed,
+    )
+    b = path_result_schema(
+        path="B", cache_behavior="use_cache=False",
+        raw_logit_summary=raw_boundary_over_open,
+        token_execution=classify_disc_and_raw(BOUNDARY_TOKEN, VOCAB, NBINS, bin_centers(), stats()),
+    )
+    c = path_result_schema(path="C", cache_behavior="use_cache=True", raw_logit_summary=raw_boundary_over_open)
+    d = path_result_schema(
+        path="D", cache_behavior="use_cache=False",
+        generated_tokens=[ARM_TOKEN] * 6 + [OPEN_TOKEN],
+        emitted_gripper_token=OPEN_TOKEN,
+        processed_score_summary={
+            "top1_token": OPEN_TOKEN,
+            "top1_score": 5.0,
+            "top2_token": BOUNDARY_TOKEN,
+            "top2_score": 4.0,
+            "top1_minus_top2_gap": 1.0,
+        },
+    )
+
+    diagnosis = classify_path_diagnosis({"A": a, "B": b, "C": c, "D": d}, bundle)
+
+    assert diagnosis["class"] == "GENERATION_SCORE_PROCESSING_MISMATCH_CANDIDATE"
+    assert diagnosis["class"] != "COMPETITION_SET_INCOMPLETENESS_CONFIRMED"
+    assert diagnosis["evidence"]["A_token"] == BOUNDARY_TOKEN
+    assert diagnosis["evidence"]["D_token"] == OPEN_TOKEN
+
+
+def test_require_token_list_real_exception():
+    with pytest.raises(ValueError):
+        require_token_list([1, 2], expected_len=7, label="tokens")
