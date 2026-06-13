@@ -8,6 +8,7 @@ from .types import AttackResult
 from .gripper_semantics import (
     raw_gripper_is_open,
     raw_gripper_is_close,
+    raw_gripper_is_boundary,
     env_gripper_is_open,
     env_gripper_is_close,
     CANONICAL_OPEN_SEMANTICS_VERSION,
@@ -329,10 +330,14 @@ class TokenPrefixPGDAttacker:
             is_close = raw_gripper_is_close(decoded_action, threshold=float(open_threshold))
 
             # Sanity: env-level and raw-level classification must agree
-            assert is_open == env_gripper_is_open(env_val), \
-                f"OPEN classification mismatch at disc={disc}: env={int(env_val)} action={decoded_action:.6f}"
-            assert is_close == env_gripper_is_close(env_val), \
-                f"CLOSE classification mismatch at disc={disc}: env={int(env_val)} action={decoded_action:.6f}"
+            # Exception: boundary tokens (raw ≈ 0.5) — np.sign fixup maps 0→+1→-1
+            # which disagrees with raw threshold classification.
+            is_boundary = raw_gripper_is_boundary(decoded_action, threshold=float(open_threshold))
+            if not is_boundary:
+                assert is_open == env_gripper_is_open(env_val), \
+                    f"OPEN classification mismatch at disc={disc}: env={int(env_val)} action={decoded_action:.6f}"
+                assert is_close == env_gripper_is_close(env_val), \
+                    f"CLOSE classification mismatch at disc={disc}: env={int(env_val)} action={decoded_action:.6f}"
 
             if is_open:
                 open_tokens.append(tid)
