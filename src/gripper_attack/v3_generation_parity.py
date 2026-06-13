@@ -41,12 +41,12 @@ def classify_disc_and_raw(token_id: int, vocab_eff: int, n_bins: int,
     hi = np.asarray(stats["q99"], dtype=np.float32)
     lo = np.asarray(stats["q01"], dtype=np.float32)
     gripper_dim = len(hi) - 1
-    raw = float(0.5 * (center + 1.0) * (hi[gripper_dim] - lo[gripper_dim]) + lo[gripper_dim])
-
-    if mask[gripper_dim]:
-        env = raw_gripper_to_env_gripper(raw)
+    if bool(mask[gripper_dim]):
+        raw = float(0.5 * (center + 1.0) * (hi[gripper_dim] - lo[gripper_dim]) + lo[gripper_dim])
     else:
-        env = 0.0
+        raw = float(center)  # official: np.where(mask, unnormalize, center)
+
+    env = raw_gripper_to_env_gripper(raw)
 
     # Classify by official execution
     if clipped:
@@ -153,13 +153,17 @@ def determine_v3_transfer_class(surrogate_top_token, ar_gripper_token,
 
 
 REPLAY_BUNDLE_REQUIRED_FIELDS = (
-    'schema_version', 'step', 'task', 'state_id', 'seed', 'condition',
-    'objective', 'runner_sha256', 'adapter_sha256', 'semantics_sha256',
+    'schema_version', 'step', 'task', 'state_id', 'job_id', 'condition',
+    'objective', 'objective_tag', 'seed',
+    'runner_sha256', 'adapter_sha256', 'semantics_sha256',
     'exec_spec_sha256', 'model_path', 'model_dtype',
-    'prompt_input_ids', 'adv_pixel_values_shape', 'adv_tensor_filename',
-    'adv_tensor_sha256',
+    'prompt_input_ids', 'prompt_input_ids_shape',
+    'adv_pixel_values_shape', 'adv_tensor_dtype',
+    'adv_tensor_filename', 'adv_tensor_sha256',
     'generated_arm_prefix', 'full_ar_tokens',
-    'surrogate_global_top_token', 'generation_score_argmax',
+    'surrogate_global_top_token', 'surrogate_token_execution',
+    'ar_token_execution',
+    'generation_score_argmax',
     'surrogate_top_matches_generation', 'v3_transfer_class',
 )
 

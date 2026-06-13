@@ -108,15 +108,19 @@ def test_replay_bundle_missing_fields():
 def test_replay_bundle_valid():
     bundle = {
         'schema_version': 'v3_parity_v1', 'step': 4, 'task': 'butter',
-        'state_id': 2, 'seed': 811, 'condition': 'online_vis_pgd',
+        'state_id': 2, 'job_id': 'test', 'condition': 'online_vis_pgd',
         'objective': 'autoregressive_prefix_gripper_open_execspec_v3',
+        'objective_tag': 'v3_ar_prefix', 'seed': 811,
         'runner_sha256': 'aa', 'adapter_sha256': 'bb',
         'semantics_sha256': 'cc', 'exec_spec_sha256': 'dd',
         'model_path': '/m', 'model_dtype': 'torch.bfloat16',
-        'prompt_input_ids': [[3]], 'adv_pixel_values_shape': [1,3,224,224],
+        'prompt_input_ids': [[3]], 'prompt_input_ids_shape': [1, 2],
+        'adv_pixel_values_shape': [1,3,224,224], 'adv_tensor_dtype': 'torch.bfloat16',
         'adv_tensor_filename': 'x.pt', 'adv_tensor_sha256': 'ee',
         'generated_arm_prefix': [1]*6, 'full_ar_tokens': [1]*7,
         'surrogate_global_top_token': 1,
+        'surrogate_token_execution': {'token_id': 1, 'execution_class': 'NATIVE_OPEN'},
+        'ar_token_execution': {'token_id': 1, 'execution_class': 'NATIVE_OPEN'},
         'generation_score_argmax': 1,
         'surrogate_top_matches_generation': True,
         'v3_transfer_class': 'SURROGATE_TOP_MATCH_NATIVE_OPEN',
@@ -180,3 +184,21 @@ def test_classify_disc_and_raw_native_open():
     result2 = classify_disc_and_raw(tid_open2, VOCAB, NBINS, bin_centers, stats)
     assert result2['disc_before'] == 255
     assert result2['execution_class'] == 'NATIVE_OPEN'
+
+
+def test_classify_disc_and_raw_mask_false():
+    """When mask[gripper_dim] is False, raw stays as center value."""
+    import numpy as np
+    bin_centers = np.linspace(-1, 1, NBINS, dtype=np.float32)
+    stats = {
+        'q01': np.array([-0.15]*6 + [0.0], dtype=np.float32),
+        'q99': np.array([0.15]*6 + [1.0], dtype=np.float32),
+        'mask': np.array([True]*6 + [False], dtype=bool),  # gripper dim masked out
+    }
+    # tid disc 255 → center ≈ 1.0
+    tid = VOCAB - NBINS
+    result = classify_disc_and_raw(tid, VOCAB, NBINS, bin_centers, stats)
+    # mask=False → raw = center, not unnormalized
+    assert abs(result['decoded_raw_gripper'] - 1.0) < 0.02
+    # center≈1.0 → raw_gripper_to_env_gripper(1.0) = -1.0 → OPEN
+    assert result['execution_class'] == 'NATIVE_OPEN'
