@@ -51,6 +51,8 @@ ap.add_argument('--success_metric', default='check_success')
 ap.add_argument('--num_steps_wait', type=int, default=10)
 ap.add_argument('--event_horizon', type=int, default=5)
 ap.add_argument('--max_perturb_frames', type=int, default=3)
+ap.add_argument('--v3_parity_dump_dir', default='',
+                help='Optional: dump adv inputs/prompt/tokens for parity diagnostics')
 args = ap.parse_args()
 
 # ── V4-aligned model load ──
@@ -221,10 +223,12 @@ def decode_action_from_token_ids(token_ids):
     return np.where(mk, 0.5 * (na + 1) * (hi - lo) + lo, na).astype(np.float32)
 
 
-def generate_from_adv_inputs(adv_inputs, device, model_dtype, action_dim):
+def generate_from_adv_inputs(adv_inputs, device, model_dtype, action_dim,
+                             output_scores=False):
     """V5 re-decode from adversarial processor inputs.
 
     P0-2: Hard-fail if generation does not produce exactly action_dim new tokens.
+    If output_scores=True, also returns score audit dict.
     """
     input_ids = adv_inputs["input_ids"].to(device)
     pixel_values = adv_inputs["pixel_values"].to(
@@ -233,7 +237,8 @@ def generate_from_adv_inputs(adv_inputs, device, model_dtype, action_dim):
         gen = model.generate(
             input_ids=input_ids, pixel_values=pixel_values,
             max_new_tokens=action_dim, do_sample=False,
-            return_dict_in_generate=True, output_scores=False)
+            return_dict_in_generate=True,
+            output_scores=output_scores)
     prompt_len = int(input_ids.shape[1])
     total_len = int(gen.sequences.shape[1])
     new_token_count = total_len - prompt_len
@@ -245,7 +250,49 @@ def generate_from_adv_inputs(adv_inputs, device, model_dtype, action_dim):
     if int(tokens.numel()) != int(action_dim):
         raise RuntimeError(
             "V3 INFRA HARD FAIL: full AR token slice has incorrect length")
-    return tokens.detach().cpu().numpy(), gen
+
+    score_audit = {}
+    if output_scores and gen.scores:
+        _last_scores = gen.scores[-1][0]  # final step, batch 0
+        _last_argmax = int(torch.argmax(_last_scores).cpu())
+        _top2 = torch.topk(_last_scores, 2)
+        score_audit = {
+            'generation_score_argmax': _last_argmax,
+            'generation_top1_score': float(_top2.values[0].cpu()),
+            'generation_top2_score': float(_top2.values[1].cpu()),
+            'generation_top1_top2_gap': float(
+                _top2.values[0].cpu() - _top2.values[1].cpu()),
+        }
+        # Scores for diagnostic tokens
+        for _tid in [31744, 31872]:
+            score_audit[f'score_token_{_tid}'] = float(_last_scores[_tid].cpu())
+        # Best OPEN/CLOSE scores from the score distribution
+        vocab_eff = int(model.config.text_config.vocab_size
+                        - model.config.pad_to_multiple_of)
+        n_bins = int(model.bin_centers.shape[0])
+        _best_open_score = -float('inf')
+        _best_close_score = -float('inf')
+        _best_open_tid = None
+        _best_close_tid = None
+        for _tid in range(vocab_eff - n_bins, vocab_eff):
+            _s = float(_last_scores[_tid].cpu())
+            _disc = vocab_eff - _tid - 1
+            if 0 <= _disc < n_bins:
+                # Classify by decoded action
+                from src.gripper_attack.openvla_libero_exec_spec import raw_gripper_is_open, raw_gripper_is_close
+                _raw = float(model.bin_centers[_disc])
+                if raw_gripper_is_open(_raw) and _s > _best_open_score:
+                    _best_open_score = _s
+                    _best_open_tid = _tid
+                if raw_gripper_is_close(_raw) and _s > _best_close_score:
+                    _best_close_score = _s
+                    _best_close_tid = _tid
+        score_audit['generation_best_open_token'] = _best_open_tid
+        score_audit['generation_best_open_score'] = _best_open_score
+        score_audit['generation_best_close_token'] = _best_close_tid
+        score_audit['generation_best_close_score'] = _best_close_score
+
+    return tokens.detach().cpu().numpy(), gen, score_audit
 
 
 def fmt_float(x, nd=6):
@@ -255,6 +302,30 @@ def fmt_float(x, nd=6):
         return round(float(x), nd)
     except Exception:
         return ""
+
+
+def _classify_gripper_token(token_id, info, vocab_eff, n_bins):
+    """Classify a gripper token by official execution semantics."""
+    if info is None:
+        info = {}
+    tid = int(token_id) if token_id not in (None, '') else None
+    if tid is None:
+        return 'UNKNOWN'
+    disc = vocab_eff - tid - 1
+    if disc < 0 or disc >= n_bins:
+        return 'OUT_OF_RANGE'
+    raw = info.get('executed_raw')
+    clipped = info.get('gripper_clipped', False)
+    if clipped:
+        return 'CLIP_MEDIATED_OPEN' if (isinstance(raw, (int, float)) and raw > 0.5) else 'CLIP_MEDIATED_CLOSE'
+    if isinstance(raw, (int, float)):
+        if raw > 0.5:
+            return 'NATIVE_OPEN'
+        if raw < 0.5:
+            return 'NATIVE_CLOSE'
+        if abs(raw - 0.5) <= 1e-9:
+            return 'NATIVE_BOUNDARY'
+    return 'NATIVE_UNCLASSIFIED'
 
 
 # ── Online trigger state ──
@@ -544,8 +615,19 @@ while step < max_steps:
 
                 # Official OpenVLA decoder: token_ids → np.clip → action
                 # No hard-fail for out-of-native-range tokens — official pipeline clips them.
-                token_ids, _ = generate_from_adv_inputs(
-                    adv_inputs, device, model_dtype, action_dim)
+                _want_scores = 'v3' in str(args.attack_objective)
+                token_ids, _, _score_audit = generate_from_adv_inputs(
+                    adv_inputs, device, model_dtype, action_dim,
+                    output_scores=_want_scores)
+                if _score_audit:
+                    step_v3['generation_score_argmax'] = _score_audit.get('generation_score_argmax')
+                    step_v3['generation_top1_score'] = _score_audit.get('generation_top1_score')
+                    step_v3['generation_top2_score'] = _score_audit.get('generation_top2_score')
+                    step_v3['generation_top1_top2_gap'] = _score_audit.get('generation_top1_top2_gap')
+                    step_v3['generation_score_token_31744'] = _score_audit.get('score_token_31744')
+                    step_v3['generation_score_token_31872'] = _score_audit.get('score_token_31872')
+                    step_v3['generation_best_open_token'] = _score_audit.get('generation_best_open_token')
+                    step_v3['generation_best_close_token'] = _score_audit.get('generation_best_close_token')
                 n_bins = int(model.bin_centers.shape[0])
                 vocab_eff = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of)
                 generated_tokens = [int(t) for t in token_ids[-action_dim:]]
@@ -735,7 +817,7 @@ while step < max_steps:
         _ar_prefix = _ar_full[:6]
         _ar_gripper = _ar_full[6]
 
-        # P0-1: Prefix invariant — hard-fail on mismatch
+        # P0: Prefix invariant — INFRA hard-fail on mismatch
         _gen_prefix = _pending_v3.get('generated_arm_prefix')
         if not isinstance(_gen_prefix, list):
             raise RuntimeError(
@@ -749,13 +831,27 @@ while step < max_steps:
                 f"V3 INFRA HARD FAIL: surrogate prefix {_gen_prefix} "
                 f"!= full AR prefix {_ar_prefix}")
 
-        # P0-1: Top-token invariant — hard-fail on mismatch
+        # P0: Official generation score invariant — INFRA hard-fail
+        # argmax(official generation scores[-1]) MUST equal generated token
+        _gen_score_argmax = _pending_v3.get('generation_score_argmax')
+        if _gen_score_argmax is not None and int(_gen_score_argmax) != _ar_gripper:
+            raise RuntimeError(
+                f"V3 INFRA HARD FAIL: generation score argmax {_gen_score_argmax} "
+                f"!= generated token {_ar_gripper}")
+
+        # METHOD diagnostic: no-cache surrogate top vs official generate top
         _pred_gripper = int(_pending_v3.get('global_top_token_final'))
         _top_match = (_pred_gripper == _ar_gripper)
-        if not _top_match:
-            raise RuntimeError(
-                f"V3 INFRA HARD FAIL: predicted gripper token {_pred_gripper} "
-                f"!= full AR token {_ar_gripper}")
+        _surrogate_mismatch = 'SURROGATE_TO_GENERATION_TOP1_MISMATCH' if not _top_match else ''
+
+        # Token classification
+        _surrogate_class = _classify_gripper_token(
+            _pred_gripper, _pending_v3, vocab_eff, n_bins) if not _top_match else ''
+        _ar_class = _classify_gripper_token(
+            _ar_gripper, {'gripper_clipped': bool(step_gripper_clipped),
+                          'executed_raw': float(executed_action[-1]),
+                          'executed_env': float(env_action[-1])},
+            vocab_eff, n_bins)
 
         _pending_v3.update({
             'full_ar_action_token_ids': _ar_full,
@@ -770,9 +866,40 @@ while step < max_steps:
             'c2o_native_open': int(c2o_native_open),
             'c2o_clip_mediated': int(c2o_clip_mediated),
             'prefix_match': True,
-            'top_token_match': True,
+            'surrogate_top_matches_generation': _top_match,
+            'surrogate_mismatch_type': _surrogate_mismatch,
+            'surrogate_token_class': _surrogate_class,
+            'ar_token_class': _ar_class,
         })
         v3_attack_records.append(dict(_pending_v3))
+
+        # Replay bundle dump (only if --v3_parity_dump_dir is set)
+        if args.v3_parity_dump_dir and attack_this_step and is_attack_condition:
+            _dump_dir = args.v3_parity_dump_dir
+            os.makedirs(_dump_dir, exist_ok=True)
+            _dump = {
+                'step': step, 'task': args.task, 'state_id': args.state_id,
+                'seed': args.attack_seed, 'condition': args.condition,
+                'objective': args.attack_objective,
+                'runner_sha256': _runner_sha256,
+                'prompt_input_ids': adv_inputs.get('input_ids').detach().cpu().tolist(),
+                'adv_pixel_values_shape': list(adv_inputs.get('pixel_values').shape),
+                'generated_arm_prefix': _gen_prefix,
+                'full_ar_tokens': _ar_full,
+                'surrogate_global_top_token': _pred_gripper,
+                'generation_score_argmax': _pending_v3.get('generation_score_argmax'),
+                'surrogate_top_matches_generation': _top_match,
+                'surrogate_mismatch_type': _surrogate_mismatch,
+            }
+            _dump_path = os.path.join(_dump_dir,
+                'v3_parity_%s_s%d_step%d.json' % (args.task, args.state_id, step))
+            with open(_dump_path, 'w') as _f:
+                json.dump(_dump, _f, indent=2)
+            # Save raw tensors
+            _tensor_path = os.path.join(_dump_dir,
+                'v3_parity_%s_s%d_step%d_adv_pv.pt' % (args.task, args.state_id, step))
+            torch.save(adv_inputs.get('pixel_values').detach().cpu(), _tensor_path)
+
         _pending_v3.clear()
 
     # Physical tracking post-trigger (fixed window: trigger+7)
@@ -913,10 +1040,14 @@ if 'v3' in str(args.attack_objective) and args.condition == 'online_vis_pgd':
             if _v is None or _v == '':
                 raise RuntimeError(
                     f"V6 HARD FAIL: v3 record[{_i}].{_k} is missing/empty")
-        for _k in ('prefix_match', 'top_token_match'):
-            if _rec.get(_k) is not True:
-                raise RuntimeError(
-                    f"V6 HARD FAIL: v3 record[{_i}].{_k} is not True")
+        # INFRA hard-fail: prefix must match
+        if _rec.get('prefix_match') is not True:
+            raise RuntimeError(
+                f"V6 HARD FAIL: v3 record[{_i}].prefix_match is not True")
+        # METHOD diagnostic: surrogate mismatch is allowed (recorded, not fatal)
+        if _rec.get('surrogate_top_matches_generation') is None:
+            raise RuntimeError(
+                f"V6 HARD FAIL: v3 record[{_i}].surrogate_top_matches_generation missing")
         for _k in ('margin_initial', 'margin_final', 'margin_delta',
                    'hinge_initial', 'hinge_final',
                    'loss_initial', 'loss_final',
