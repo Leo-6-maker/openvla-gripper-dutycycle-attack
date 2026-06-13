@@ -276,8 +276,8 @@ class TokenPrefixPGDAttacker:
     def get_gripper_region_by_decoded_action(self, unnorm_key: str, *, postprocess_gripper: bool = True, open_threshold: float = 0.5) -> dict:
         """Return OPEN/CLOSE/BOUNDARY token sets using canonical decoded-action semantics.
 
-        Uses the same classification rule as ``gripper_semantics.raw_gripper_is_open``:
-        ``decoded_action < open_threshold`` → OPEN.
+        Canonical exec spec: raw > 0.5 → env -1 → physical OPEN; raw < 0.5 → env +1 → physical CLOSE.
+        This means ``decoded_action > open_threshold`` → OPEN (execspec v2 fix).
 
         Returns dict with keys:
           - open_token_ids, close_token_ids, boundary_token_ids
@@ -314,24 +314,27 @@ class TokenPrefixPGDAttacker:
             # Step 3: invert_gripper_action
             env_val = -1.0 * env_val
 
-            # Step 4: classify using decoded_action against threshold.
-            # After invert: OPEN = +1, CLOSE = -1.
-            # decoded_action in [0,1]: OPEN ≈ 0, CLOSE ≈ 1.
+            # Step 4: canonical classification via exec spec helpers (NOT manual sign checks).
             decoded_action = float(0.5 * (norm + 1.0) * (high[gripper_dim] - low[gripper_dim]) + low[gripper_dim])
 
             tid = int(vocab_size - disc - 1)
             token_action_map[tid] = decoded_action
 
-            is_open_by_env = (env_val > 0)
-            is_open_by_action = (decoded_action < float(open_threshold))
-            # Sanity: these must agree for all bins
-            assert is_open_by_env == is_open_by_action, \
-                f"OPEN classification mismatch at disc={disc}: env={int(env_val)} action={decoded_action:.6f}"
+            # Canonical: raw > 0.5 → OPEN, raw < 0.5 → CLOSE
+            is_open = raw_gripper_is_open(decoded_action, threshold=float(open_threshold))
+            is_close = raw_gripper_is_close(decoded_action, threshold=float(open_threshold))
 
-            if is_open_by_env:
+            # Sanity: env-level and raw-level classification must agree
+            assert is_open == env_gripper_is_open(env_val), \
+                f"OPEN classification mismatch at disc={disc}: env={int(env_val)} action={decoded_action:.6f}"
+            assert is_close == env_gripper_is_close(env_val), \
+                f"CLOSE classification mismatch at disc={disc}: env={int(env_val)} action={decoded_action:.6f}"
+
+            if is_open:
                 open_tokens.append(tid)
-            else:
+            elif is_close:
                 close_tokens.append(tid)
+            # boundary: neither open nor close → excluded from both sets
 
             # Boundary detection: adjacent discs with opposite signs
             if disc > 0:
@@ -346,25 +349,13 @@ class TokenPrefixPGDAttacker:
         open_token_ids = torch.tensor(sorted(set(open_tokens)), dtype=torch.long, device=self.device)
         close_token_ids = torch.tensor(sorted(set(close_tokens)), dtype=torch.long, device=self.device)
 
-        # ── Runtime assertions: prevent region inversion from ever recurring ──
-        # 1. Every OPEN token must decode to OPEN (decoded_action < open_threshold)
-        for tid in open_tokens:
-            act = token_action_map[int(tid)]
-            assert act < float(open_threshold), \
-                f"OPEN token {tid} decodes to CLOSE action {act:.6f}"
-        # 2. Every CLOSE token must decode to CLOSE (decoded_action >= open_threshold)
-        for tid in close_tokens:
-            act = token_action_map[int(tid)]
-            assert act >= float(open_threshold), \
-                f"CLOSE token {tid} decodes to OPEN action {act:.6f}"
-        # 3. Known CLOSE saturation tokens must NOT be in OPEN set
-        _close_saturation = {31744, 31745}
-        for tid in _close_saturation:
-            if tid in open_tokens:
-                raise AssertionError(f"Token {tid} is in CLOSE saturation but classified as OPEN")
-        # 4. OPEN and CLOSE sets must be non-empty and disjoint
-        assert int(open_token_ids.numel()) > 0, "OPEN token set is empty"
-        assert int(close_token_ids.numel()) > 0, "CLOSE token set is empty"
+        # ── Canonical validation via exec spec helpers (NOT manual assertions) ──
+        validate_open_close_token_sets(
+            [int(t) for t in open_token_ids],
+            [int(t) for t in close_token_ids],
+            token_action_map,
+            threshold=float(open_threshold),
+        )
 
         return {
             "open_token_ids": open_token_ids,
@@ -393,7 +384,7 @@ class TokenPrefixPGDAttacker:
 
     def _loss(self, full_input_ids, labels, pixel_values, *, objective: str = "targeted_directional_ce", region_token_ids=None, close_token_ids=None, margin: float = 5.0, num_action_tokens: int = 7, loss_weights: dict = None, arm_preserve_weight: float = 0.1):
         obj = str(objective)
-        _PREFIX_LOCKED_OBJS = {"prefix_locked_gripper_open_region_ce", "prefix_locked_gripper_open_margin", "gripper_open_expected_action", "prefix_locked_gripper_top1_open_vs_close"}
+        _PREFIX_LOCKED_OBJS = {"prefix_locked_gripper_open_region_ce", "prefix_locked_gripper_open_margin", "gripper_open_expected_action", "prefix_locked_gripper_top1_open_vs_close", "prefix_locked_gripper_top1_open_vs_close_execspec_v2"}
         _SPECIAL_OBJS = {"gripper_open_region_ce", "gripper_logit_margin_cw", "force_open_region_z_down_ce"} | _PREFIX_LOCKED_OBJS
 
         if obj not in _SPECIAL_OBJS:
@@ -455,6 +446,12 @@ class TokenPrefixPGDAttacker:
                     open_prob_mass = probs[region_token_ids].sum()
                     gripper_loss = -open_prob_mass
                 elif obj == "prefix_locked_gripper_top1_open_vs_close":
+                    max_open = gripper_row[region_token_ids].max()
+                    max_close = gripper_row[close_token_ids].max()
+                    gripper_loss = F.relu(max_close - max_open + float(margin))
+                elif obj == "prefix_locked_gripper_top1_open_vs_close_execspec_v2":
+                    # SAME formula: relu(max_close - max_open + margin)
+                    # DIFFERENCE: token regions are from corrected exec spec (raw>0.5=OPEN)
                     max_open = gripper_row[region_token_ids].max()
                     max_close = gripper_row[close_token_ids].max()
                     gripper_loss = F.relu(max_close - max_open + float(margin))
@@ -623,9 +620,9 @@ class TokenPrefixPGDAttacker:
         # New gripper-specific objectives (2026-06-02)
         is_prefix_locked_open_region = objective in {"prefix_locked_gripper_open_region_ce"}
         is_prefix_locked_open_margin = objective in {"prefix_locked_gripper_open_margin"}
-        is_prefix_locked_top1 = objective in {"prefix_locked_gripper_top1_open_vs_close"}
+        is_prefix_locked_top1 = objective in {"prefix_locked_gripper_top1_open_vs_close", "prefix_locked_gripper_top1_open_vs_close_execspec_v2"}
         is_gripper_expected_action = objective in {"gripper_open_expected_action"}
-        is_prefix_locked = is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action
+        is_prefix_locked = is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action or is_prefix_locked_top1
         is_corrected_hybrid = is_force_open_region_z_down  # uses corrected OPEN region + Z CE
         if self.model is None or self.processor is None or ((not is_untargeted) and target_action is None):
             return ExistingDenseAttackAdapter(self.epsilon, self.step_size, self.num_steps, self.seed).attack(observation, instruction, clean_action, target_action, clean_model_output)

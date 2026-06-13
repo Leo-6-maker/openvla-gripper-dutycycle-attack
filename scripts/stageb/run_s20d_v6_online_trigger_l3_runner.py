@@ -140,9 +140,9 @@ if args.condition == 'online_vis_pgd':
         'step_size': eps_norm / max(args.pgd_steps, 1) * 1.5,
         'num_steps': args.pgd_steps,
         'random_start': True,
-        'objective': 'prefix_locked_gripper_open_margin',
+        'objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2',
         'arm_preserve_weight': 0.5,
-        'gripper_margin': 5.0,
+        'gripper_margin': 0.5,
     }
     attacker = OpenVLAVisualAttacker(
         model=model, processor=processor,
@@ -216,6 +216,10 @@ trigger_clean_gripper_env = 0.0
 event_start = -1
 event_end = -1
 perturb_frame_count = 0
+# Wave 0 attack telemetry
+adv_inputs_used = False
+fallback_detected = False
+autoregressive_raw = None
 naturally_open_skip = 0
 eligible_close_opportunities = 0
 close_streak = 0
@@ -319,15 +323,32 @@ while step < max_steps:
                 if attack_result is None:
                     raise RuntimeError(
                         "V6 HARD FAIL: attack_result is None")
+
+                # Wave 0: hard-fail on wrong method
+                attack_method = getattr(attack_result, 'method', None) or attacker.config.get('method', '')
+                if attack_method not in ('token_prefix_pgd', 'openvla_token_prefix_pgd', 'visual_token_prefix_pgd'):
+                    raise RuntimeError(
+                        f"V6 HARD FAIL: attack method={attack_method}, expected token_prefix_pgd")
+
+                # Wave 0: hard-fail on fallback
+                debug_info = getattr(attack_result, 'debug', None) or {}
+                if debug_info.get('fallback', False) or debug_info.get('fallback_adapter_used', False):
+                    raise RuntimeError(
+                        "V6 HARD FAIL: fallback adapter detected")
+
                 adv_inputs = get_adv_inputs_from_attack_result(
                     attack_result)
                 if (adv_inputs is None
                         or adv_inputs.get("input_ids") is None):
                     raise RuntimeError(
                         "V6 HARD FAIL: adv_inputs missing")
+
+                adv_inputs_used = True
+
                 token_ids, _ = generate_from_adv_inputs(
                     adv_inputs, device, model_dtype, action_dim)
                 adv_action = decode_action_from_token_ids(token_ids)
+                autoregressive_raw = adv_action  # Store for telemetry
                 adv_env_action = postprocess_openvla_action_for_libero(
                     adv_action, enabled=True)
                 env_action = adv_env_action
@@ -469,6 +490,13 @@ while step < max_steps:
         'close_onset': int(close_onset),
         'close_streak': close_streak,
         'c2o_this_step': c2o_this_step,
+        # Wave 0 attack provenance columns (per-step)
+        'step_attack_method': 'token_prefix_pgd' if (condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_attack_objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2' if (condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_adv_inputs_used': int(adv_inputs_used) if (condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_fallback_detected': int(fallback_detected) if (condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_clean_gripper_raw': round(clean_gripper_raw, 6),
+        'step_executed_gripper_raw': round(float(autoregressive_raw[-1]), 6) if (condition == 'online_vis_pgd' and attack_this_step and autoregressive_raw is not None) else '',
     })
 
     step += 1
@@ -482,7 +510,12 @@ safe_tag = '%s_s%d_v6_%s_seed%d' % (
     args.task, args.state_id, args.condition, args.attack_seed)
 summary = {
     'runner_family': 's20d_v6_online_trigger_l3',
-    'vis_runner_version': 'v6_online_trigger',
+    'vis_runner_version': 'v6_online_trigger_execspec_v2',
+    'attack_method': 'token_prefix_pgd',
+    'attack_objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2',
+    'attack_margin': 0.5,
+    'attack_pgd_steps': args.pgd_steps,
+    'attack_eps_raw_pixels': args.eps_raw_pixels,
     'task': args.task, 'state_id': args.state_id,
     'condition': args.condition,
     'attack_seed': args.attack_seed, 'job_id': args.job_id,
