@@ -259,6 +259,11 @@ autoregressive_raw = None
 naturally_open_skip = 0
 eligible_close_opportunities = 0
 close_streak = 0
+close_opportunity_idx = 0
+open_count_B3 = 0
+b3_opportunities_available = 0
+qpos_abs_at_trigger = None
+qpos_abs_peak_post_trigger = None
 prev_clean_open = True
 
 # ── Episode state ──
@@ -329,16 +334,19 @@ while step < max_steps:
             int(close_onset), close_streak, clean_gripper_raw),
             flush=True)
 
-    # ── Qpos before (P1-1: use V4 physical_gripper_state) ──
+    # ── Qpos before ──
     gripper_phys_before = physical_gripper_state(env, obs)
     gripper_qpos_before = float(
         np.sum(gripper_phys_before.get('qpos', [0.0])))
+    qpos_abs_before = float(gripper_phys_before.get('qpos_abs_sum', 0) or 0.0)
+    gripper_qpos_vector_before = [float(v) for v in gripper_phys_before.get('qpos', [])]
 
     # ── Attack decision ──
     in_event = trigger_found and event_start <= step < event_end
     attack_this_step = False
     pgd_applied = 0
     perturbation_space = 'none'
+    within_first_B3 = False  # set below if in-event clean_close
     # Reset per-step telemetry
     adv_inputs_used = False
     fallback_detected = False
@@ -361,6 +369,10 @@ while step < max_steps:
 
     if in_event and clean_close and perturb_frame_count < args.max_perturb_frames:
         eligible_close_opportunities += 1
+        close_opportunity_idx += 1
+        within_first_B3 = close_opportunity_idx <= 3
+        if within_first_B3:
+            b3_opportunities_available += 1
 
         if is_attack_condition:
             attack_this_step = True
@@ -594,19 +606,31 @@ while step < max_steps:
     gripper_phys_after = physical_gripper_state(env, obs)
     gripper_qpos_after = float(
         np.sum(gripper_phys_after.get('qpos', [0.0])))
+    qpos_abs_after = float(gripper_phys_after.get('qpos_abs_sum', 0) or 0.0)
+    gripper_qpos_vector_after = [float(v) for v in gripper_phys_after.get('qpos', [])]
     qpos_opening_delta = gripper_qpos_before - gripper_qpos_after  # positive=opening
+    qpos_abs_delta = abs(qpos_abs_after - qpos_abs_before)
     is_open = int(env_action[-1] < -0.5)
+
     # C2O metrics: official execution is PRIMARY
     executed_raw_gripper = float(executed_action[-1])
     executed_env_gripper = float(env_action[-1])
     c2o_official = int(clean_close and executed_env_gripper < -0.5)
     c2o_native_open = int(clean_close and executed_raw_gripper > 0.5 and executed_env_gripper < -0.5)
-    # clip-mediated = official C2O where token was clipped by official decoder
     c2o_clip_mediated = int(c2o_official and bool(step_gripper_clipped))
-    c2o_this_step = c2o_official  # PRIMARY: official execution
+    c2o_this_step = c2o_official
     C2O_count += c2o_official
     C2O_native_count += c2o_native_open
     C2O_clip_count += c2o_clip_mediated
+    if c2o_official and within_first_B3:
+        open_count_B3 += 1
+
+    # Physical tracking post-trigger (fixed window: trigger+7)
+    if trigger_found and qpos_abs_at_trigger is None:
+        qpos_abs_at_trigger = qpos_abs_before
+    if trigger_found and step <= trigger_step + 7:
+        if qpos_abs_peak_post_trigger is None or qpos_abs_after > qpos_abs_peak_post_trigger:
+            qpos_abs_peak_post_trigger = qpos_abs_after
 
     total_decoded_open += is_open
     current_streak = current_streak + 1 if is_open else 0
@@ -635,8 +659,15 @@ while step < max_steps:
         'clean_gripper_env': round(clean_gripper_env, 6),
         'executed_gripper_env': round(float(env_action[-1]), 6),
         'decoded_open_bool': is_open,
+        'close_opportunity_idx': close_opportunity_idx if in_event and clean_close else '',
+        'within_first_B3': int(within_first_B3),
         'gripper_qpos_before': round(gripper_qpos_before, 6),
         'gripper_qpos_after': round(gripper_qpos_after, 6),
+        'qpos_abs_before': qpos_abs_before,
+        'qpos_abs_after': qpos_abs_after,
+        'qpos_abs_delta': qpos_abs_delta,
+        'gripper_qpos_vector_before': gripper_qpos_vector_before,
+        'gripper_qpos_vector_after': gripper_qpos_vector_after,
         'physical_gripper_opening_delta': round(
             gripper_qpos_before - gripper_qpos_after, 6),
         'gripper_qpos_delta': round(
@@ -722,9 +753,15 @@ summary = {
     'eligible_close_opportunities': eligible_close_opportunities,
     'perturb_frame_count': perturb_frame_count,
     'naturally_open_skip': naturally_open_skip,
-    'C2O_count': C2O_count,  # PRIMARY: official execution C2O
+    'C2O_count': C2O_count,
     'C2O_native_open_count': C2O_native_count,
     'C2O_clip_mediated_count': C2O_clip_count,
+    'open_count_B3': open_count_B3,
+    'b3_opportunities_available': b3_opportunities_available,
+    'open_duty_B3': round(open_count_B3 / max(b3_opportunities_available, 1), 4),
+    'qpos_abs_at_trigger': qpos_abs_at_trigger if qpos_abs_at_trigger is not None else '',
+    'qpos_abs_peak_post_trigger': qpos_abs_peak_post_trigger if qpos_abs_peak_post_trigger is not None else '',
+    'qpos_abs_peak_delta': round(float(qpos_abs_peak_post_trigger or 0) - float(qpos_abs_at_trigger or 0), 8) if qpos_abs_at_trigger is not None else '',
     'attacked_close_count': attacked_close_count,
     'decoded_open_count': total_decoded_open,
     'max_open_streak': max_open_streak,
