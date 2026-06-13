@@ -27,6 +27,8 @@ VALID_REPLAY_SCHEMA_VERSIONS = {REPLAY_SCHEMA_VERSION}
 DIAGNOSTIC_TOKENS = (31744, 31872)
 ACTION_DIM = 7
 ARM_PREFIX_LEN = 6
+FROZEN_NATIVE_OPEN_MARGIN = 0.5
+NEAR_TIE_GAP_EPS = 1e-3
 
 
 def sha256_file(path: str | Path) -> str:
@@ -316,28 +318,132 @@ def determine_v3_transfer_class(surrogate_top_token, ar_gripper_token, surrogate
     return "SURROGATE_TOP_MATCH_NONOPEN"
 
 
-def classify_path_diagnosis(paths: Mapping[str, Mapping[str, Any]], bundle: Mapping[str, Any]) -> str:
+def _int_or_none(value: Any) -> int | None:
+    if value is None or value == "":
+        return None
+    return int(value)
+
+
+def _float_or_none(value: Any) -> float | None:
+    if value is None or value == "":
+        return None
+    return float(value)
+
+
+def _same_token(left: int | None, right: int | None) -> bool:
+    return left is not None and right is not None and int(left) == int(right)
+
+
+def _small_gap(*gaps: float | None) -> bool:
+    return any(gap is not None and abs(float(gap)) < NEAR_TIE_GAP_EPS for gap in gaps)
+
+
+def _path_diagnosis_evidence(
+    paths: Mapping[str, Mapping[str, Any]],
+    *,
+    frozen_margin: float,
+) -> dict[str, Any]:
     a = paths.get("A") or {}
     b = paths.get("B") or {}
     c = paths.get("C") or {}
     d = paths.get("D") or {}
-    a_tok = a.get("emitted_gripper_token")
-    b_tok = b.get("raw_logit_top_token")
-    c_tok = c.get("raw_logit_top_token")
-    d_tok = d.get("emitted_gripper_token")
-    a_gap = a.get("processed_score_top1_minus_top2_gap")
+    b_open = _float_or_none(b.get("raw_logit_best_native_open_score"))
+    b_close = _float_or_none(b.get("raw_logit_best_native_close_score"))
+    b_boundary = _float_or_none(b.get("raw_logit_best_native_boundary_score"))
+    c_open = _float_or_none(c.get("raw_logit_best_native_open_score"))
+    c_close = _float_or_none(c.get("raw_logit_best_native_close_score"))
+    c_boundary = _float_or_none(c.get("raw_logit_best_native_boundary_score"))
+    return {
+        "A_token": _int_or_none(a.get("emitted_gripper_token")),
+        "B_token": _int_or_none(b.get("raw_logit_top_token")),
+        "C_token": _int_or_none(c.get("raw_logit_top_token")),
+        "D_token": _int_or_none(d.get("emitted_gripper_token")),
+        "A_gap": _float_or_none(a.get("processed_score_top1_minus_top2_gap")),
+        "B_gap": _float_or_none(b.get("raw_logit_top1_minus_top2_gap")),
+        "C_gap": _float_or_none(c.get("raw_logit_top1_minus_top2_gap")),
+        "D_gap": _float_or_none(d.get("processed_score_top1_minus_top2_gap")),
+        "B_best_open_token": _int_or_none(b.get("raw_logit_best_native_open_token")),
+        "B_best_open_score": b_open,
+        "B_best_close_token": _int_or_none(b.get("raw_logit_best_native_close_token")),
+        "B_best_close_score": b_close,
+        "B_best_boundary_token": _int_or_none(b.get("raw_logit_best_native_boundary_token")),
+        "B_best_boundary_score": b_boundary,
+        "C_best_open_score": c_open,
+        "C_best_close_score": c_close,
+        "C_best_boundary_score": c_boundary,
+        "open_minus_close": None if b_open is None or b_close is None else float(b_open - b_close),
+        "boundary_minus_open": None if b_boundary is None or b_open is None else float(b_boundary - b_open),
+        "frozen_margin": float(frozen_margin),
+    }
+
+
+def _path_agreement_shows_competition_incompleteness(
+    paths: Mapping[str, Mapping[str, Any]],
+    evidence: Mapping[str, Any],
+) -> bool:
+    a_tok = evidence.get("A_token")
+    b_tok = evidence.get("B_token")
+    c_tok = evidence.get("C_token")
+    if not _same_token(a_tok, b_tok):
+        return False
+    if c_tok is not None and not _same_token(a_tok, c_tok):
+        return False
+
+    b = paths.get("B") or {}
+    b_exec = b.get("token_execution") or {}
+    boundary_token = evidence.get("B_best_boundary_token")
+    boundary_is_global_top = (
+        _same_token(a_tok, boundary_token)
+        or b_exec.get("execution_class") == "NATIVE_BOUNDARY"
+    )
+    if not boundary_is_global_top:
+        return False
+
+    open_minus_close = evidence.get("open_minus_close")
+    boundary_minus_open = evidence.get("boundary_minus_open")
+    if open_minus_close is None or boundary_minus_open is None:
+        return False
+    return (
+        float(open_minus_close) > float(evidence["frozen_margin"])
+        and float(boundary_minus_open) >= 0.0
+    )
+
+
+def classify_path_diagnosis(
+    paths: Mapping[str, Mapping[str, Any]],
+    bundle: Mapping[str, Any],
+    *,
+    frozen_margin: float = FROZEN_NATIVE_OPEN_MARGIN,
+) -> dict[str, Any]:
+    del bundle  # Classification is evidence-based on the four measured paths.
+
+    evidence = _path_diagnosis_evidence(paths, frozen_margin=frozen_margin)
+    a_tok = evidence["A_token"]
+    b_tok = evidence["B_token"]
+    c_tok = evidence["C_token"]
+    d_tok = evidence["D_token"]
+
+    diagnosis_class = "PATHS_AGREE_OR_INSUFFICIENT_DIFFERENCE"
     if a_tok is not None and b_tok is not None and int(a_tok) != int(b_tok):
-        if c_tok is not None and int(c_tok) == int(a_tok):
-            return "CACHE_PATH_MISMATCH_CANDIDATE"
-        if d_tok is not None and int(d_tok) != int(a_tok):
-            return "GENERATION_SCORE_PROCESSING_MISMATCH_CANDIDATE"
-        if a_gap is not None and abs(float(a_gap)) < 1e-3:
-            return "NEAR_TIE_NUMERICAL_SENSITIVITY_CANDIDATE"
-        surr = bundle.get("surrogate_token_execution") or {}
-        if surr.get("execution_class") in {"NATIVE_BOUNDARY", "NATIVE_CLOSE"}:
-            return "COMPETITION_SET_INCOMPLETENESS_CONFIRMED"
-        return "LARGE_UNEXPLAINED_PATH_DIFFERENCE"
-    return "PATHS_AGREE_OR_INSUFFICIENT_DIFFERENCE"
+        if _same_token(c_tok, a_tok):
+            diagnosis_class = "CACHE_PATH_MISMATCH_CANDIDATE"
+        elif _same_token(b_tok, c_tok):
+            diagnosis_class = "GENERATION_SCORE_PROCESSING_MISMATCH_CANDIDATE"
+        elif _small_gap(evidence["A_gap"], evidence["B_gap"], evidence["C_gap"], evidence["D_gap"]):
+            diagnosis_class = "NEAR_TIE_NUMERICAL_SENSITIVITY_CANDIDATE"
+        else:
+            diagnosis_class = "LARGE_UNEXPLAINED_PATH_DIFFERENCE"
+    elif _path_agreement_shows_competition_incompleteness(paths, evidence):
+        diagnosis_class = "COMPETITION_SET_INCOMPLETENESS_CONFIRMED"
+    elif d_tok is not None and a_tok is not None and int(d_tok) != int(a_tok) and _same_token(b_tok, c_tok):
+        diagnosis_class = "GENERATION_SCORE_PROCESSING_MISMATCH_CANDIDATE"
+    elif _small_gap(evidence["A_gap"], evidence["B_gap"], evidence["C_gap"], evidence["D_gap"]):
+        diagnosis_class = "NEAR_TIE_NUMERICAL_SENSITIVITY_CANDIDATE"
+
+    return {
+        "class": diagnosis_class,
+        "evidence": evidence,
+    }
 
 
 def path_result_schema(

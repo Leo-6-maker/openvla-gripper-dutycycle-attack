@@ -151,8 +151,15 @@ Final diagnosis categories include:
 - `COMPETITION_SET_INCOMPLETENESS_CONFIRMED`;
 - `LARGE_UNEXPLAINED_PATH_DIFFERENCE`.
 
-The diagnosis is reported with the supporting score gaps. The script fails
-loudly on malformed input instead of silently skipping missing files.
+The diagnosis is emitted as a structured object with `class` and `evidence`
+fields, including A/B/C/D tokens, score gaps, best native OPEN/CLOSE/boundary
+scores, OPEN-minus-CLOSE, boundary-minus-OPEN, and the frozen native-OPEN
+margin. A/B path disagreement is classified as cache/path, generation-score
+processing, near-tie, or unexplained path difference before any competition-set
+claim is considered. Competition-set incompleteness is reserved for the
+path-agreeing boundary case where native OPEN beats native CLOSE by the frozen
+margin but boundary remains global top. The script fails loudly on malformed
+input instead of silently skipping missing files.
 
 ## CPU test coverage
 
@@ -172,6 +179,9 @@ loudly on malformed input instead of silently skipping missing files.
 - Path A/D exact-token and score-invariant checks using deterministic mocks;
 - Path A reproduction mismatch;
 - stable four-path output schema;
+- deterministic cream-like path-agreeing boundary-over-OPEN diagnosis;
+- deterministic butter-like A/B mismatch diagnosis that prioritizes cache/path
+  disagreement over competition-set claims;
 - clean AR prefix extraction and match-rate calculation.
 
 `tests/stageb/test_layer3_autoregressive_prefix_v3.py` remains green and keeps

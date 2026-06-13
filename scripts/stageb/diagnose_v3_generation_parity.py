@@ -256,8 +256,9 @@ def main() -> None:
     out_path.write_text(json.dumps(results, indent=2, sort_keys=True), encoding="utf-8")
     print(f"[ok] wrote {len(results)} diagnostic entries -> {out_path}")
     for item in results:
+        diagnosis_class = item["diagnosis"]["class"]
         print(
-            f"[ok] {Path(item['replay_json']).name}: diagnosis={item['diagnosis']} "
+            f"[ok] {Path(item['replay_json']).name}: diagnosis={diagnosis_class} "
             f"A={item['paths']['A']['emitted_gripper_token']} "
             f"B={item['paths']['B']['raw_logit_top_token']} "
             f"C={item['paths']['C']['raw_logit_top_token']} "
