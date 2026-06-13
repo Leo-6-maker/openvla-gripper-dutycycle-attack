@@ -22,16 +22,9 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "eager")
 os.environ.setdefault("OPENVLA_CUDA_MAX_MEMORY", "10000MiB")
 
-# ── Source provenance (SHA256 + import paths) ──
+# ── Runner self-provenance ──
 import hashlib as _hl
 _runner_sha256 = _hl.sha256(open(__file__, 'rb').read()).hexdigest()
-_src_dir = REPO_ROOT / "src" / "gripper_attack"
-_adapter_path = str(_src_dir / "attack_adapter.py")
-_semantics_path = str(_src_dir / "gripper_semantics.py")
-_spec_path = str(_src_dir / "openvla_libero_exec_spec.py")
-_adapter_sha256 = _hl.sha256(open(_adapter_path, 'rb').read()).hexdigest() if os.path.exists(_adapter_path) else 'MISSING'
-_semantics_sha256 = _hl.sha256(open(_semantics_path, 'rb').read()).hexdigest() if os.path.exists(_semantics_path) else 'MISSING'
-_spec_sha256 = _hl.sha256(open(_spec_path, 'rb').read()).hexdigest() if os.path.exists(_spec_path) else 'MISSING'
 del _hl
 
 # ── Args ──
@@ -103,6 +96,36 @@ K_trigger = 8
 action_dim = int(model.get_action_dim(unnorm_key))
 assert action_dim == 7, f"Unexpected action_dim={action_dim}"
 print('[%s] Model loaded. device=%s' % (time.strftime('%H:%M:%S'), device), flush=True)
+
+# ── Actual import path provenance (prevents stale module shadowing) ──
+import hashlib as _hl
+import gripper_attack.attack_adapter as _aa
+import gripper_attack.gripper_semantics as _gs
+import gripper_attack.openvla_libero_exec_spec as _spec
+
+_actual_adapter_path = str(Path(_aa.__file__).resolve())
+_actual_semantics_path = str(Path(_gs.__file__).resolve())
+_actual_spec_path = str(Path(_spec.__file__).resolve())
+
+_expected_src = str((REPO_ROOT / "src" / "gripper_attack").resolve())
+assert _actual_adapter_path.startswith(_expected_src), \
+    f"adapter loaded from {_actual_adapter_path}, expected under {_expected_src}"
+assert _actual_semantics_path.startswith(_expected_src), \
+    f"semantics loaded from {_actual_semantics_path}, expected under {_expected_src}"
+assert _actual_spec_path.startswith(_expected_src), \
+    f"exec_spec loaded from {_actual_spec_path}, expected under {_expected_src}"
+
+# Function identity: all modules must share the same canonical function objects
+assert _aa.raw_gripper_is_open is _gs.raw_gripper_is_open is _spec.raw_gripper_is_open, \
+    "raw_gripper_is_open function identity mismatch across modules"
+assert _aa.raw_gripper_is_close is _gs.raw_gripper_is_close is _spec.raw_gripper_is_close, \
+    "raw_gripper_is_close function identity mismatch across modules"
+
+_adapter_sha256 = _hl.sha256(open(_actual_adapter_path, 'rb').read()).hexdigest()
+_semantics_sha256 = _hl.sha256(open(_actual_semantics_path, 'rb').read()).hexdigest()
+_spec_sha256 = _hl.sha256(open(_actual_spec_path, 'rb').read()).hexdigest()
+_function_identity_ok = True
+del _hl, _aa, _gs, _spec
 
 # ── V4 imports ──
 from v4_run_eval_openvla import (
@@ -536,6 +559,21 @@ while step < max_steps:
                 perturbation_space = 'online_random_linf_pixel_v6'
                 attacked_close_count += 1
                 perturb_frame_count += 1
+
+                # P0: RAND audit telemetry (matched VIS audit standard)
+                step_result_method = 'random_linf_pixel_values'
+                step_actual_linf = rand_linf
+                step_all_tokens_legal = bool(rand_legal)
+                step_gripper_token_id = rand_gripper_tid
+                step_gripper_disc = rand_gripper_disc
+                rand_gripper_raw = float(rand_action[-1])
+                if rand_gripper_raw > 0.5:
+                    step_gripper_region = 'OPEN'
+                elif rand_gripper_raw < 0.5:
+                    step_gripper_region = 'CLOSE'
+                else:
+                    step_gripper_region = 'EXACT_BOUNDARY'
+                autoregressive_raw = rand_action
             except Exception as e:
                 episode_infra_status = 'rand_error: %s' % str(e)[:80]
                 raise
@@ -621,18 +659,18 @@ while step < max_steps:
         'close_streak': close_streak,
         'c2o_this_step': c2o_this_step,
         # Wave 0 audit-ready per-step telemetry
-        'step_attack_method': step_result_method if (args.condition == 'online_vis_pgd' and attack_this_step) else ('random_linf_pixel_values' if (args.condition == 'online_random_linf' and attack_this_step) else ''),
-        'step_attack_objective': result_objective if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
-        'step_adv_inputs_used': int(adv_inputs_used) if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
-        'step_fallback_detected': int(bool(step_fallback_reason)) if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_attack_method': step_result_method if (attack_this_step and is_attack_condition) else ('random_linf_pixel_values' if (args.condition == 'online_random_linf' and attack_this_step) else ''),
+        'step_attack_objective': result_objective if (attack_this_step and is_attack_condition) else '',
+        'step_adv_inputs_used': int(adv_inputs_used) if (attack_this_step and is_attack_condition) else '',
+        'step_fallback_detected': int(bool(step_fallback_reason)) if (attack_this_step and is_attack_condition) else '',
         'step_fallback_reason': step_fallback_reason if args.condition == 'online_vis_pgd' else '',
-        'step_actual_linf': step_actual_linf if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
-        'step_all_tokens_legal': int(step_all_tokens_legal) if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
-        'step_gripper_token_id': step_gripper_token_id if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
-        'step_gripper_disc': step_gripper_disc if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
-        'step_gripper_region': step_gripper_region if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_actual_linf': step_actual_linf if (attack_this_step and is_attack_condition) else '',
+        'step_all_tokens_legal': int(step_all_tokens_legal) if (attack_this_step and is_attack_condition) else '',
+        'step_gripper_token_id': step_gripper_token_id if (attack_this_step and is_attack_condition) else '',
+        'step_gripper_disc': step_gripper_disc if (attack_this_step and is_attack_condition) else '',
+        'step_gripper_region': step_gripper_region if (attack_this_step and is_attack_condition) else '',
         'step_clean_gripper_raw': round(clean_gripper_raw, 6),
-        'step_executed_gripper_raw': round(float(autoregressive_raw[-1]), 6) if (args.condition == 'online_vis_pgd' and attack_this_step and autoregressive_raw is not None) else '',
+        'step_executed_gripper_raw': round(float(autoregressive_raw[-1]), 6) if (attack_this_step and is_attack_condition and autoregressive_raw is not None) else '',
         'c2o_env': c2o_env,
         'c2o_strict': c2o_strict,
         'boundary_exec_open': boundary_exec_open,
@@ -654,9 +692,10 @@ summary = {
     'adapter_sha256': _adapter_sha256,
     'semantics_sha256': _semantics_sha256,
     'exec_spec_sha256': _spec_sha256,
-    'adapter_path': _adapter_path,
-    'semantics_path': _semantics_path,
-    'exec_spec_path': _spec_path,
+    'adapter_path': _actual_adapter_path,
+    'semantics_path': _actual_semantics_path,
+    'exec_spec_path': _actual_spec_path,
+    'function_identity_ok': _function_identity_ok,
     # Condition-aware attack provenance
     'attack_method': 'token_prefix_pgd' if args.condition == 'online_vis_pgd' else ('random_linf_pixel_values' if args.condition == 'online_random_linf' else 'none'),
     'attack_objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2' if args.condition == 'online_vis_pgd' else ('none' if args.condition == 'clean_observer' else 'random_linf'),
