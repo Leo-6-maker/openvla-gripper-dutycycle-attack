@@ -1,4 +1,4 @@
 parent_id,task,VIS_C2O_episodes,VIS_total_C2O,VIS_attacked_close,VIS_pooled_event_C2O_rate,VIS_no_attack_eps,VIS_success,RAND_C2O_episodes,RAND_total_C2O,RAND_attacked_close,RAND_pooled_event_C2O_rate,RAND_no_attack_eps,physical_bridge,task_effect,classification
 butter_s2,butter,3/3,4,4,1.0,0,3/3,0/3,0,4,0.0,0,NOT_ESTABLISHED,NOT_ESTABLISHED,ONLINE_CMD_CANDIDATE
-bbq_sauce_s0,bbq,1/3,1,9,0.1111,0,3/3,0/3,0,9,0.0,0,NOT_ESTABLISHED,NOT_ESTABLISHED,ONLINE_VIS_PARTIAL
-chocolate_pudding_s2,chocolate pudding,0/3,0,9,0.0,0,3/3,0/3,0,9,0.0,0,NOT_ESTABLISHED,NOT_ESTABLISHED,ONLINE_VIS_NO_EFFECT
+bbq_sauce_s0,bbq_sauce,1/3,1,9,0.1111,0,3/3,0/3,0,9,0.0,0,NOT_ESTABLISHED,NOT_ESTABLISHED,ONLINE_VIS_PARTIAL
+chocolate_pudding_s2,chocolate_pudding,0/3,0,9,0.0,0,3/3,0/3,0,9,0.0,0,NOT_ESTABLISHED,NOT_ESTABLISHED,ONLINE_VIS_NO_EFFECT

@@ -443,6 +443,8 @@ while step < max_steps:
         'gripper_qpos_before': round(gripper_qpos_before, 6),
         'gripper_qpos_after': round(gripper_qpos_after, 6),
         'physical_gripper_opening_delta': round(
+            gripper_qpos_before - gripper_qpos_after, 6),
+        'gripper_qpos_delta': round(
             gripper_qpos_after - gripper_qpos_before, 6),
         'eef_x': round(float(eef_before[0]), 6)
         if eef_before is not None else '',

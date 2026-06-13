@@ -57,8 +57,8 @@ def trace_path(phase_dir, summary):
 
 
 def verify_expected_keys(summaries, phase_label, expected_parents, seeds_per_parent,
-                          is_clean_phase=False):
-    """Verify expected count and uniqueness. Returns list of issues."""
+                          is_clean_phase=False, expected_seed_set=None):
+    """Verify expected count, exact seeds, and uniqueness. Returns list of issues."""
     issues = []
 
     # Build key map
@@ -73,6 +73,9 @@ def verify_expected_keys(summaries, phase_label, expected_parents, seeds_per_par
         issues.append(
             f"{phase_label}: expected {expected_total} summaries, found {len(summaries)}"
         )
+
+    # Build observed key set for exact-match check
+    observed_keys = set()
 
     # Check each parent
     for pid in expected_parents:
@@ -92,6 +95,7 @@ def verify_expected_keys(summaries, phase_label, expected_parents, seeds_per_par
                         f"{phase_label}: duplicate job_id {jid} for parent {pid}"
                     )
                 seen_jobs.add(jid)
+                observed_keys.add((pid, jid))
         else:
             # For RAND/VIS phases, key by seed
             seen_seeds = set()
@@ -102,6 +106,21 @@ def verify_expected_keys(summaries, phase_label, expected_parents, seeds_per_par
                         f"{phase_label}: duplicate seed {seed} for parent {pid}"
                     )
                 seen_seeds.add(seed)
+                observed_keys.add((pid, seed))
+
+    # Check exact seed set if provided
+    if expected_seed_set is not None and not is_clean_phase:
+        expected_keys = {
+            (pid, seed) for pid in expected_parents for seed in expected_seed_set
+        }
+        missing_keys = expected_keys - observed_keys
+        unexpected_keys = observed_keys - expected_keys
+        if missing_keys:
+            for k in sorted(missing_keys):
+                issues.append(f"{phase_label}: MISSING expected key: parent={k[0]} seed={k[1]}")
+        if unexpected_keys:
+            for k in sorted(unexpected_keys):
+                issues.append(f"{phase_label}: UNEXPECTED key: parent={k[0]} seed={k[1]} (not in expected seed set {expected_seed_set})")
 
     # Check for unexpected parents
     for pid in by_parent:
@@ -127,13 +146,44 @@ def check_trace_exists(phase_dir, summary):
 
 
 def validate_attack_telemetry(summary):
-    """Check for required attack telemetry fields. Returns list of missing fields."""
-    required = [
+    """Check required attack telemetry fields AND their expected values. Returns list of issues."""
+    issues = []
+
+    # Required field presence
+    required_fields = [
         'eps_raw_pixels', 'pgd_steps', 'perturb_frame_count',
         'decode_path', 'preprocess_path', 'attention_mask',
+        'condition', 'trigger_method', 'event_horizon',
     ]
-    missing = [f for f in required if f not in summary]
-    return missing
+    for f in required_fields:
+        if f not in summary:
+            issues.append(f'EVIDENCE_FIELD_MISSING:{f}')
+            continue
+
+    # Value validation for key fields (only if present)
+    expected_values = {
+        'eps_raw_pixels': 6,
+        'pgd_steps': 20,
+        'event_horizon': 5,
+        'decode_path': 'v4_decode_with_scores',
+        'preprocess_path': 'v4_center_crop_224_official_pil_lanczos',
+        'attention_mask': 'v4_drop',
+        'trigger_method': 'RULE_TRIGGER_MVP_clean_close_onset',
+    }
+    for field, expected in expected_values.items():
+        actual = summary.get(field)
+        if actual is not None and actual != expected:
+            issues.append(f'TELEMETRY_VALUE_MISMATCH:{field} expected={expected} got={actual}')
+
+    # Condition-specific checks
+    condition = summary.get('condition', '')
+    if condition == 'online_vis_pgd':
+        # VIS must have perturb_frame_count > 0 if trigger found
+        pf = summary.get('perturb_frame_count', -1)
+        if summary.get('trigger_found') and pf <= 0:
+            issues.append(f'TELEMETRY_VALUE_MISMATCH:perturb_frame_count={pf} but trigger_found=True for VIS')
+
+    return issues
 
 
 def compute_event_C2O_rate(c2o_count, attacked_close_count):
@@ -167,16 +217,21 @@ def main():
     all_issues = []
 
     # ── Verify expected keys ──
+    RAND_SEEDS = {91, 92, 93}
+    VIS_SEEDS = {99, 199, 299}
+
     p1_issues, p1_by_parent = verify_expected_keys(
         p1_raw, 'Phase1', ALL_PARENTS, 2, is_clean_phase=True
     )
     p2_issues, p2_by_parent = verify_expected_keys(
-        p2_raw, 'Phase2', ALL_PARENTS, 3, is_clean_phase=False
+        p2_raw, 'Phase2', ALL_PARENTS, 3, is_clean_phase=False,
+        expected_seed_set=RAND_SEEDS
     )
     # Phase 3 only has 3 VIS parents
     VIS_PARENTS = ['butter_s2', 'bbq_sauce_s0', 'chocolate_pudding_s2']
     p3_issues, p3_by_parent = verify_expected_keys(
-        p3_raw, 'Phase3', VIS_PARENTS, 3, is_clean_phase=False
+        p3_raw, 'Phase3', VIS_PARENTS, 3, is_clean_phase=False,
+        expected_seed_set=VIS_SEEDS
     )
 
     all_issues.extend(p1_issues)
@@ -199,17 +254,17 @@ def main():
                     f"trace rows={n_rows} vs n_steps={s.get('n_steps')}"
                 )
 
-    # ── Check attack telemetry fields ──
+    # ── Check attack telemetry fields AND values ──
     for label, summaries in [('P2', p2_raw), ('P3', p3_raw)]:
         for s in summaries:
-            missing = validate_attack_telemetry(s)
-            if missing:
-                all_issues.append(
-                    f"{label}: {s.get('task')}_s{s.get('state_id')} seed={s.get('attack_seed')}: "
-                    f"EVIDENCE_FIELD_MISSING: {missing}"
-                )
+            telemetry_issues = validate_attack_telemetry(s)
+            if telemetry_issues:
+                for ti in telemetry_issues:
+                    all_issues.append(
+                        f"{label}: {s.get('task')}_s{s.get('state_id')} seed={s.get('attack_seed')}: {ti}"
+                    )
 
-    # Hard fail on issues
+    # Hard fail on ANY issues — no silent pass
     if all_issues:
         print("AUDIT ISSUES FOUND:")
         for issue in all_issues:
@@ -218,7 +273,7 @@ def main():
         # Write issues file
         with open(os.path.join(args.output_dir, 's20d_v6_audit_issues.txt'), 'w') as f:
             f.write('\n'.join(all_issues))
-        raise SystemExit(1 if any('EVIDENCE_FIELD_MISSING' in i or 'TRACE_MISSING' in i for i in all_issues) else 0)
+        raise SystemExit(1)
 
     print(f"Audit PASS: {len(p1_raw)} P1 + {len(p2_raw)} P2 + {len(p3_raw)} P3 = {len(p1_raw)+len(p2_raw)+len(p3_raw)} summaries, all traces present, 0 evidence fields missing")
 
@@ -322,18 +377,37 @@ def main():
         task = p2_by_parent[pid][0]['task']  # Read task from summary
 
         # Classification rules
-        classification_rule_version = 'v6_audited_v1'
+        classification_rule_version = 'v6_audited_v2'
+        cln_succ = clean_succ.get(pid, 0)
+        cln_n = clean_n.get(pid, 0)
+
         if d['c2o_ep'] >= 2:
             cls = 'ONLINE_RANDOM_SENSITIVE_ABSTAIN'
             reason = f"RAND C2O episodes {d['c2o_ep']}/{d['n']} >= 2/3 threshold"
         elif d['trigger'] < 2:
             cls = 'ONLINE_TRIGGER_UNSTABLE'
             reason = f"trigger {d['trigger']}/{d['n']} < 2/3 threshold"
-        elif d['succ'] >= 2:
+        elif d['c2o_ep'] <= 1 and d['succ'] >= 2:
             cls = 'ONLINE_RAND_STRICT'
             reason = (f"C2O {d['c2o_ep']}/{d['n']} <= 1/3, "
                       f"trigger {d['trigger']}/{d['n']}, "
                       f"success {d['succ']}/{d['n']} >= 2/3")
+        elif d['c2o_ep'] <= 1 and d['succ'] < 2:
+            # Success degraded under RAND — check if clean baseline was stable
+            if cln_succ >= 2 and cln_n >= 2:
+                # Clean was high-success, RAND caused systematic degradation
+                cls = 'ONLINE_RAND_TASK_SENSITIVE_ABSTAIN'
+                reason = (f"C2O {d['c2o_ep']}/{d['n']} <= 1/3, "
+                          f"trigger {d['trigger']}/{d['n']}, "
+                          f"RAND success {d['succ']}/{d['n']} but clean success {cln_succ}/{cln_n} "
+                          f"— RAND causes >=2/3 episode task degradation, confounded")
+            else:
+                # Clean baseline already unstable
+                cls = 'ONLINE_RAND_USABLE_BASELINE_UNSTABLE'
+                reason = (f"C2O {d['c2o_ep']}/{d['n']} <= 1/3, "
+                          f"trigger {d['trigger']}/{d['n']}, "
+                          f"RAND success {d['succ']}/{d['n']}, clean success {cln_succ}/{cln_n} "
+                          f"— low success but baseline was already unstable")
         else:
             cls = 'ONLINE_RAND_USABLE'
             reason = (f"C2O {d['c2o_ep']}/{d['n']} <= 1/3, "
@@ -447,9 +521,11 @@ def main():
         vis_pooled = round(vd['c2o_cnt'] / max(vd['att'], 1), 4) if vd['att'] > 0 else None
         rand_pooled = round(rd['c2o_cnt'] / max(rd['att'], 1), 4) if rd['att'] > 0 else None
 
+        # Read task from summary data, never parse from parent_id
+        vis_task = p3_by_parent.get(pid, [{}])[0].get('task', pid.split('_')[0]) if p3_by_parent.get(pid) else pid.split('_')[0]
         rows5.append({
             'parent_id': pid,
-            'task': pid.split('_s')[0].replace('_', ' '),  # Only used for display
+            'task': vis_task,
             'VIS_C2O_episodes': f"{vd['c2o_ep']}/{vd['n']}",
             'VIS_total_C2O': vd['c2o_cnt'],
             'VIS_attacked_close': vd['att'],
@@ -635,8 +711,10 @@ def main():
     # Final summary
     print(f'\nAll tables in {args.output_dir}')
     print(f'Summary: {len(p1_raw)}+{len(p2_raw)}+{len(p3_raw)}={len(p1_raw)+len(p2_raw)+len(p3_raw)} episodes')
-    print(f'RAND: {sum(1 for r in rows3 if r["classification"]=="ONLINE_RAND_STRICT")} STRICT, '
-          f'{sum(1 for r in rows3 if r["classification"]=="ONLINE_RAND_USABLE")} USABLE')
+    strict_n = sum(1 for r in rows3 if r['classification'] == 'ONLINE_RAND_STRICT')
+    usable_n = sum(1 for r in rows3 if 'USABLE' in r['classification'])
+    task_sens_n = sum(1 for r in rows3 if 'TASK_SENSITIVE' in r['classification'])
+    print(f'RAND: {strict_n} STRICT, {usable_n} USABLE, {task_sens_n} TASK_SENSITIVE_ABSTAIN')
     vis_cmd = sum(1 for r in rows5 if r['classification'] == 'ONLINE_CMD_CANDIDATE')
     print(f'VIS: {vis_cmd} CMD_CANDIDATE, '
           f'{sum(1 for r in rows5 if r["classification"]=="ONLINE_VIS_PARTIAL")} PARTIAL, '

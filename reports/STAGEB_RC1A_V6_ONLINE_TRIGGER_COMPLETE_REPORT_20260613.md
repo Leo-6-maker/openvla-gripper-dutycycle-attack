@@ -2,8 +2,8 @@
 
 **Date:** 2026-06-13 (evidence repaired 2026-06-13)
 **Branch:** exp/vis-prefix-margin-repair-20260603
-**Evidence commit (server):** `6e61195` (executed runner, env_factory, attack_adapter, tables)
-**Audited builder commit (server):** `eb7d130` (regenerated tables, audit manifest)
+**GitHub evidence bundle:** `fefbbe3481d20d74715c042121f35b19cfd5cb2c`
+**Server worktree commits (historical):** `6e61195` (executed source files), `eb7d130` (audited tables)
 **Runner SHA256:** e13273f8270da67477e29517cab54101165867daf52daea22a41ced9533fc863
 **Runner py_compile:** PASS
 **attack_adapter SHA256:** c1fbfce0d0c5d0cbc8f8aafe2134d79b12ca1780b71439134c021862f9cc9310
@@ -18,14 +18,15 @@
 
 The V6 online-trigger pipeline is operational across six parents and six LIBERO Object tasks. Clean opportunity triggering occurred in 12/12 pilot rollouts. Matched online RAND veto retained all six parents: four STRICT, two USABLE. In the first VIS pilot using `prefix_locked_gripper_open_margin` at eps=6/255 and PGD=20, butter_s2 showed an online command-level candidate: VIS C2O in 3/3 episodes versus matched RAND C2O in 0/3.
 
-**Provenance status (2026-06-13):**
-- Original report commit `a26be5f`: `REPORT_PROVENANCE_BLOCKED` — tables not committed, runner broken on GitHub
-- Evidence repair commits `6e61195` + `eb7d130`: provenance restored, all tables audited and committed
+**Provenance status (2026-06-13, hardened):**
+- Original report commit `a26be5f`: `REPORT_PROVENANCE_BLOCKED`
+- Evidence repair `fefbbe3`: provenance restored, tables committed, runner py_compile PASS
+- Audit hardening `a8e14ba` (server) / pending push: seed-set verification, telemetry values, task-sensitivity, qpos delta fix, 400-key clean scan manifest
 - See §16 Provenance Repair Log for full details
 
 **Conservative labels:**
 - Pipeline: `V6_ONLINE_TRIGGER_PIPELINE_VALID`
-- butter_s2: `ONLINE_CMD_CANDIDATE` (registry: `PENDING_PROVENANCE_REPAIR`)
+- butter_s2: `ONLINE_CMD_CANDIDATE` (registry: `PENDING_AUDIT_HARDENING`)
 - bbq_sauce_s0: `ONLINE_VIS_PARTIAL`
 - chocolate_pudding_s2: `ONLINE_VIS_NO_EFFECT`
 - Physical bridge: `NOT_ESTABLISHED`
@@ -110,18 +111,19 @@ Fixed absolute windows are diagnostic-only. V6 uses online detection of first pr
 
 ## 7. Phase 2 — RAND Veto Results (18/18)
 
-| Parent | C2O ep | Trigger | Success | Class |
-|--------|--------|---------|---------|-------|
-| butter_s2 | 0/3 | 3/3 | 2/3 | STRICT |
-| bbq_sauce_s0 | 0/3 | 3/3 | 3/3 | STRICT |
-| chocolate_pudding_s2 | 0/3 | 3/3 | 3/3 | STRICT |
-| cream_cheese_s2 | 1/3 | 3/3 | 3/3 | STRICT |
-| alphabet_soup_s10 | 1/3 | 3/3 | 1/3 | USABLE |
-| ketchup_s11 | 0/3 | 3/3 | 1/3 | USABLE |
+| Parent | C2O ep | Trigger | Success | Clean | Class |
+|--------|--------|---------|---------|-------|-------|
+| butter_s2 | 0/3 | 3/3 | 2/3 | 2/2 | STRICT |
+| bbq_sauce_s0 | 0/3 | 3/3 | 3/3 | 2/2 | STRICT |
+| chocolate_pudding_s2 | 0/3 | 3/3 | 3/3 | 2/2 | STRICT |
+| cream_cheese_s2 | 1/3 | 3/3 | 3/3 | 2/2 | STRICT |
+| alphabet_soup_s10 | 1/3 | 3/3 | 1/3 | 1/2 | USABLE_BASELINE_UNSTABLE |
+| ketchup_s11 | 0/3 | 3/3 | 1/3 | 2/2 | TASK_SENSITIVE_ABSTAIN |
 
-**0 random-sensitive, 0 trigger-unstable, 0 infra-invalid. All parents retained.**
+**0 random-sensitive, 0 trigger-unstable, 0 infra-invalid. 4 STRICT, 1 USABLE_BASELINE_UNSTABLE, 1 TASK_SENSITIVE_ABSTAIN.**
 
-Note: cream_cheese and alphabet_soup each had one RAND C2O episode (1/3) which is within the STRICT/USABLE threshold (≤1/3). Random-sensitive requires ≥2/3 C2O episodes.
+ketchup_s11: clean success 2/2 but RAND success 1/3 — RAND causes ≥2/3 episode task degradation, classified TASK_SENSITIVE_ABSTAIN.
+alphabet_soup_s10: clean baseline already unstable (1/2), RAND 1/3, classified USABLE_BASELINE_UNSTABLE.
 
 ---
 
@@ -200,7 +202,9 @@ VIS C2O: 0/3. All three VIS seeds produced zero C2O despite correct trigger and 
 - Current objective is a teacher-forced surrogate
 - BF16 autoregressive execution is not bitwise deterministic
 - Parent selection is limited to 6 tasks
-- Clean scan incomplete at 377/400
+- Clean scan queue terminal complete (400/400), artifacts incomplete (381/400 summaries, 19 missing)
+  - 358 done, 42 failed, 381 summaries, 256 policy success, 102 policy failure/timeout, 23 infra-fail-with-summary, 19 infra-fail-no-summary
+  - See [tables/s20m4_clean_scan_400_manifest.csv](tables/s20m4_clean_scan_400_manifest.csv)
 
 ---
 
@@ -249,6 +253,7 @@ VIS C2O: 0/3. All three VIS seeds produced zero C2O despite correct trigger and 
 | VIS comparison | 3 | tables/s20d_v6_online_vis_parent_comparison.csv |
 | butter evidence | 8 | tables/s20d_v6_butter_s2_command_candidate_evidence.csv |
 | Audit manifest | 39 | tables/s20d_v6_audit_manifest.csv |
+| Clean scan manifest | 400 | tables/s20m4_clean_scan_400_manifest.csv |
 | Registry | updated | tables/layer3_parent_registry.csv |
 | This report | - | reports/STAGEB_RC1A_V6_ONLINE_TRIGGER_COMPLETE_REPORT_20260613.md |
 
