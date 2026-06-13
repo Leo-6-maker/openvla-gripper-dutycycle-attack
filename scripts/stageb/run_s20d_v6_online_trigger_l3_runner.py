@@ -350,6 +350,7 @@ while step < max_steps:
     step_gripper_token_id = ''
     step_gripper_disc = ''
     step_gripper_region = ''
+    result_objective = ''
     env_action = clean_env_action.copy()
     executed_action = clean_action.copy()
     infra_status = 'ok'
