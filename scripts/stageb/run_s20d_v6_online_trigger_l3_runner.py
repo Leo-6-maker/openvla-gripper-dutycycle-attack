@@ -266,7 +266,7 @@ def generate_from_adv_inputs(adv_inputs, device, model_dtype, action_dim,
         # Scores for diagnostic tokens
         for _tid in [31744, 31872]:
             score_audit[f'score_token_{_tid}'] = float(_last_scores[_tid].cpu())
-        # Best OPEN/CLOSE scores from the score distribution
+        # Best OPEN/CLOSE scores using official unnormalize pipeline
         vocab_eff = int(model.config.text_config.vocab_size
                         - model.config.pad_to_multiple_of)
         n_bins = int(model.bin_centers.shape[0])
@@ -274,19 +274,23 @@ def generate_from_adv_inputs(adv_inputs, device, model_dtype, action_dim,
         _best_close_score = -float('inf')
         _best_open_tid = None
         _best_close_tid = None
+        _action_stats = model.get_action_stats(unnorm_key)
+        import numpy as _np
         for _tid in range(vocab_eff - n_bins, vocab_eff):
             _s = float(_last_scores[_tid].cpu())
             _disc = vocab_eff - _tid - 1
             if 0 <= _disc < n_bins:
-                # Classify by decoded action
+                _center = float(model.bin_centers[_disc])
+                _mask = _action_stats.get("mask", _np.ones_like(_action_stats["q01"], dtype=bool))
+                _hi = _np.asarray(_action_stats["q99"], dtype=_np.float32)
+                _lo = _np.asarray(_action_stats["q01"], dtype=_np.float32)
+                _gdim = len(_hi) - 1
+                _raw = float(0.5 * (_center + 1.0) * (_hi[_gdim] - _lo[_gdim]) + _lo[_gdim])
                 from src.gripper_attack.openvla_libero_exec_spec import raw_gripper_is_open, raw_gripper_is_close
-                _raw = float(model.bin_centers[_disc])
                 if raw_gripper_is_open(_raw) and _s > _best_open_score:
-                    _best_open_score = _s
-                    _best_open_tid = _tid
+                    _best_open_score = _s; _best_open_tid = _tid
                 if raw_gripper_is_close(_raw) and _s > _best_close_score:
-                    _best_close_score = _s
-                    _best_close_tid = _tid
+                    _best_close_score = _s; _best_close_tid = _tid
         score_audit['generation_best_open_token'] = _best_open_tid
         score_audit['generation_best_open_score'] = _best_open_score
         score_audit['generation_best_close_token'] = _best_close_tid
@@ -302,30 +306,6 @@ def fmt_float(x, nd=6):
         return round(float(x), nd)
     except Exception:
         return ""
-
-
-def _classify_gripper_token(token_id, info, vocab_eff, n_bins):
-    """Classify a gripper token by official execution semantics."""
-    if info is None:
-        info = {}
-    tid = int(token_id) if token_id not in (None, '') else None
-    if tid is None:
-        return 'UNKNOWN'
-    disc = vocab_eff - tid - 1
-    if disc < 0 or disc >= n_bins:
-        return 'OUT_OF_RANGE'
-    raw = info.get('executed_raw')
-    clipped = info.get('gripper_clipped', False)
-    if clipped:
-        return 'CLIP_MEDIATED_OPEN' if (isinstance(raw, (int, float)) and raw > 0.5) else 'CLIP_MEDIATED_CLOSE'
-    if isinstance(raw, (int, float)):
-        if raw > 0.5:
-            return 'NATIVE_OPEN'
-        if raw < 0.5:
-            return 'NATIVE_CLOSE'
-        if abs(raw - 0.5) <= 1e-9:
-            return 'NATIVE_BOUNDARY'
-    return 'NATIVE_UNCLASSIFIED'
 
 
 # ── Online trigger state ──
@@ -611,8 +591,6 @@ while step < max_steps:
                         'close_opportunity_idx': close_opportunity_idx,
                         'within_first_B3': bool(within_first_B3),
                     }
-                    _pending_v3.update(step_v3)
-
                 # Official OpenVLA decoder: token_ids → np.clip → action
                 # No hard-fail for out-of-native-range tokens — official pipeline clips them.
                 _want_scores = 'v3' in str(args.attack_objective)
@@ -629,6 +607,10 @@ while step < max_steps:
                     step_v3['generation_best_open_token'] = _score_audit.get('generation_best_open_token')
                     step_v3['generation_best_close_token'] = _score_audit.get('generation_best_close_token')
                 n_bins = int(model.bin_centers.shape[0])
+
+                # Now sync step_v3 (with score audit) into pending record
+                if _pending_v3:
+                    _pending_v3.update(step_v3)
                 vocab_eff = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of)
                 generated_tokens = [int(t) for t in token_ids[-action_dim:]]
                 gripper_token_id = int(generated_tokens[-1])
@@ -834,7 +816,10 @@ while step < max_steps:
         # P0: Official generation score invariant — INFRA hard-fail
         # argmax(official generation scores[-1]) MUST equal generated token
         _gen_score_argmax = _pending_v3.get('generation_score_argmax')
-        if _gen_score_argmax is not None and int(_gen_score_argmax) != _ar_gripper:
+        if _gen_score_argmax is None:
+            raise RuntimeError(
+                "V3 INFRA HARD FAIL: generation score argmax is missing from audit")
+        if int(_gen_score_argmax) != _ar_gripper:
             raise RuntimeError(
                 f"V3 INFRA HARD FAIL: generation score argmax {_gen_score_argmax} "
                 f"!= generated token {_ar_gripper}")
@@ -844,14 +829,14 @@ while step < max_steps:
         _top_match = (_pred_gripper == _ar_gripper)
         _surrogate_mismatch = 'SURROGATE_TO_GENERATION_TOP1_MISMATCH' if not _top_match else ''
 
-        # Token classification
-        _surrogate_class = _classify_gripper_token(
-            _pred_gripper, _pending_v3, vocab_eff, n_bins) if not _top_match else ''
-        _ar_class = _classify_gripper_token(
-            _ar_gripper, {'gripper_clipped': bool(step_gripper_clipped),
-                          'executed_raw': float(executed_action[-1]),
-                          'executed_env': float(env_action[-1])},
-            vocab_eff, n_bins)
+        # Token classification using shared helper
+        from gripper_attack.v3_generation_parity import (
+            classify_token_simple, determine_v3_transfer_class)
+        _ar_class = classify_token_simple(
+            _ar_gripper, vocab_eff, n_bins,
+            float(executed_action[-1]), bool(step_gripper_clipped))
+        _v3_transfer = determine_v3_transfer_class(
+            _pred_gripper, _ar_gripper, '', _ar_class)
 
         _pending_v3.update({
             'full_ar_action_token_ids': _ar_full,
@@ -868,8 +853,8 @@ while step < max_steps:
             'prefix_match': True,
             'surrogate_top_matches_generation': _top_match,
             'surrogate_mismatch_type': _surrogate_mismatch,
-            'surrogate_token_class': _surrogate_class,
             'ar_token_class': _ar_class,
+            'v3_transfer_class': _v3_transfer,
         })
         v3_attack_records.append(dict(_pending_v3))
 
@@ -878,27 +863,41 @@ while step < max_steps:
             _dump_dir = args.v3_parity_dump_dir
             os.makedirs(_dump_dir, exist_ok=True)
             _dump = {
+                'schema_version': 'v3_parity_v1',
                 'step': step, 'task': args.task, 'state_id': args.state_id,
                 'seed': args.attack_seed, 'condition': args.condition,
                 'objective': args.attack_objective,
+                'model_path': args.model_path,
+                'model_dtype': str(model_dtype),
                 'runner_sha256': _runner_sha256,
+                'adapter_sha256': _adapter_sha256,
+                'semantics_sha256': _semantics_sha256,
+                'exec_spec_sha256': _spec_sha256,
                 'prompt_input_ids': adv_inputs.get('input_ids').detach().cpu().tolist(),
                 'adv_pixel_values_shape': list(adv_inputs.get('pixel_values').shape),
+                'adv_tensor_filename': '',
+                'adv_tensor_sha256': '',
                 'generated_arm_prefix': _gen_prefix,
                 'full_ar_tokens': _ar_full,
                 'surrogate_global_top_token': _pred_gripper,
                 'generation_score_argmax': _pending_v3.get('generation_score_argmax'),
                 'surrogate_top_matches_generation': _top_match,
-                'surrogate_mismatch_type': _surrogate_mismatch,
+                'v3_transfer_class': _pending_v3.get('v3_transfer_class', ''),
             }
-            _dump_path = os.path.join(_dump_dir,
-                'v3_parity_%s_s%d_step%d.json' % (args.task, args.state_id, step))
+            _dump_stem = 'v3_parity_%s_s%d_%s_s%d_step%d' % (
+                args.task, args.state_id, objective_tag, args.attack_seed, step)
+            _dump_path = os.path.join(_dump_dir, _dump_stem + '.json')
+            _tensor_path = os.path.join(_dump_dir, _dump_stem + '_adv_pv.pt')
+            import hashlib as _hl2
+            _dump['adv_tensor_filename'] = os.path.basename(_tensor_path)
+            # Save raw tensors and record SHA
+            _pt = adv_inputs.get('pixel_values').detach().cpu()
+            torch.save(_pt, _tensor_path)
+            import hashlib as _hl2
+            with open(_tensor_path, 'rb') as _tf:
+                _dump['adv_tensor_sha256'] = _hl2.sha256(_tf.read()).hexdigest()
             with open(_dump_path, 'w') as _f:
                 json.dump(_dump, _f, indent=2)
-            # Save raw tensors
-            _tensor_path = os.path.join(_dump_dir,
-                'v3_parity_%s_s%d_step%d_adv_pv.pt' % (args.task, args.state_id, step))
-            torch.save(adv_inputs.get('pixel_values').detach().cpu(), _tensor_path)
 
         _pending_v3.clear()
 
