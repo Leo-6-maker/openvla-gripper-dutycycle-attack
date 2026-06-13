@@ -601,7 +601,8 @@ while step < max_steps:
     executed_env_gripper = float(env_action[-1])
     c2o_official = int(clean_close and executed_env_gripper < -0.5)
     c2o_native_open = int(clean_close and executed_raw_gripper > 0.5 and executed_env_gripper < -0.5)
-    c2o_clip_mediated = int(clean_close and executed_raw_gripper <= 0.5 and executed_env_gripper < -0.5)
+    # clip-mediated = official C2O where token was clipped by official decoder
+    c2o_clip_mediated = int(c2o_official and bool(step_gripper_clipped))
     c2o_this_step = c2o_official  # PRIMARY: official execution
     C2O_count += c2o_official
     C2O_native_count += c2o_native_open
