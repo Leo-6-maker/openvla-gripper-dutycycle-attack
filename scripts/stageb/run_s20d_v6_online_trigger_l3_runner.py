@@ -22,6 +22,11 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "eager")
 os.environ.setdefault("OPENVLA_CUDA_MAX_MEMORY", "10000MiB")
 
+# ── Runner self-provenance ──
+import hashlib as _hl
+_runner_sha256 = _hl.sha256(open(__file__, 'rb').read()).hexdigest()
+del _hl
+
 # ── Args ──
 ap = argparse.ArgumentParser()
 ap.add_argument('--task', required=True)
@@ -235,6 +240,8 @@ total_decoded_open = 0
 max_open_streak = 0
 current_streak = 0
 C2O_count = 0
+C2O_env_count = 0
+C2O_boundary_count = 0
 attacked_close_count = 0
 episode_infra_status = 'ok'
 trace_rows = []
@@ -305,6 +312,12 @@ while step < max_steps:
     adv_inputs_used = False
     fallback_detected = False
     autoregressive_raw = None
+    step_result_method = ''
+    step_actual_linf = ''
+    step_fallback_reason = ''
+    step_all_tokens_legal = True
+    step_gripper_token_id = ''
+    step_gripper_region = ''
     env_action = clean_env_action.copy()
     executed_action = clean_action.copy()
     infra_status = 'ok'
@@ -357,10 +370,54 @@ while step < max_steps:
 
                 adv_inputs_used = True
 
+                # P0-2: hard-assert actual perturbation budget
+                actual_linf = float(debug_info.get('pixel_budget_adv_inputs_linf', 999))
+                master_linf = float(debug_info.get('pixel_budget_master_linf', 999))
+                if actual_linf > eps_norm + 1e-7:
+                    raise RuntimeError(f"V6 HARD FAIL: actual Linf {actual_linf:.8f} > eps_norm {eps_norm:.8f}")
+                if master_linf > eps_norm + 1e-7:
+                    raise RuntimeError(f"V6 HARD FAIL: master Linf {master_linf:.8f} > eps_norm {eps_norm:.8f}")
+                result_pgd_steps = int(debug_info.get('num_attack_steps', 0))
+                if result_pgd_steps != args.pgd_steps:
+                    raise RuntimeError(f"V6 HARD FAIL: PGD steps {result_pgd_steps} != {args.pgd_steps}")
+                result_objective = str(debug_info.get('attack_objective', ''))
+                if 'execspec_v2' not in result_objective:
+                    raise RuntimeError(f"V6 HARD FAIL: objective {result_objective} != execspec_v2")
+                if getattr(attack_result, 'x_adv', None) is not None:
+                    raise RuntimeError("V6 HARD FAIL: x_adv is not None (should use adv_inputs)")
+
+                # Save actual telemetry from attack_result
+                step_result_method = result_method
+                step_actual_linf = actual_linf
+                step_fallback_reason = str(debug_info.get('fallback_reason', ''))
+
                 token_ids, _ = generate_from_adv_inputs(
                     adv_inputs, device, model_dtype, action_dim)
                 adv_action = decode_action_from_token_ids(token_ids)
-                autoregressive_raw = adv_action  # Store for telemetry
+                autoregressive_raw = adv_action
+
+                # P0-3: validate all 7 action tokens are legal (BEFORE clip in decode_action_from_token_ids)
+                n_bins = int(model.bin_centers.shape[0])
+                generated_tokens = [int(t) for t in token_ids[-action_dim:]]
+                all_tokens_legal = True
+                illegal_tokens = []
+                for i, tid in enumerate(generated_tokens):
+                    disc = int(v - tid - 1)
+                    if disc < 0 or disc >= n_bins:
+                        all_tokens_legal = False
+                        illegal_tokens.append(int(i))
+                if not all_tokens_legal:
+                    raise RuntimeError(f"V6 HARD FAIL: illegal tokens at dims {illegal_tokens}")
+                gripper_token_id = int(generated_tokens[-1])
+                gripper_disc = int(v - gripper_token_id - 1)
+                gripper_raw = float(adv_action[-1])
+                if gripper_raw > 0.5:
+                    gripper_region = 'OPEN'
+                elif gripper_raw < 0.5:
+                    gripper_region = 'CLOSE'
+                else:
+                    gripper_region = 'EXACT_BOUNDARY'
+
                 adv_env_action = postprocess_openvla_action_for_libero(
                     adv_action, enabled=True)
                 env_action = adv_env_action
@@ -368,7 +425,6 @@ while step < max_steps:
                 pgd_applied = 1
                 perturbation_space = 'online_token_prefix_pgd_v6'
                 attacked_close_count += 1
-                # P0-1/P1-2: only increment when attack applied
                 perturb_frame_count += 1
             except Exception as e:
                 episode_infra_status = 'vis_error: %s' % str(e)[:80]
@@ -443,8 +499,16 @@ while step < max_steps:
         np.sum(gripper_phys_after.get('qpos', [0.0])))
     qpos_opening_delta = gripper_qpos_before - gripper_qpos_after  # positive=opening
     is_open = int(env_action[-1] < -0.5)
-    c2o_this_step = int(clean_close and is_open)
-    C2O_count += c2o_this_step
+    # P0-1: multi-level C2O metrics
+    executed_raw_gripper = float(executed_action[-1])
+    executed_env_gripper = float(env_action[-1])
+    c2o_env = int(clean_close and executed_env_gripper < -0.5)
+    c2o_strict = int(clean_close and executed_raw_gripper > 0.5 and executed_env_gripper < -0.5)
+    boundary_exec_open = int(clean_close and abs(executed_raw_gripper - 0.5) <= 1e-9 and executed_env_gripper < -0.5)
+    c2o_this_step = c2o_strict  # PRIMARY metric
+    C2O_count += c2o_strict
+    C2O_env_count += c2o_env
+    C2O_boundary_count += boundary_exec_open
 
     total_decoded_open += is_open
     current_streak = current_streak + 1 if is_open else 0
@@ -502,13 +566,21 @@ while step < max_steps:
         'close_onset': int(close_onset),
         'close_streak': close_streak,
         'c2o_this_step': c2o_this_step,
-        # Wave 0 attack provenance columns (per-step)
-        'step_attack_method': 'token_prefix_pgd' if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
+        # Wave 0 audit-ready per-step telemetry
+        'step_attack_method': step_result_method if (args.condition == 'online_vis_pgd' and attack_this_step) else ('random_linf_pixel_values' if (args.condition == 'online_random_linf' and attack_this_step) else ''),
         'step_attack_objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2' if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
         'step_adv_inputs_used': int(adv_inputs_used) if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
-        'step_fallback_detected': int(fallback_detected) if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_fallback_detected': int(bool(step_fallback_reason)) if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_fallback_reason': step_fallback_reason if args.condition == 'online_vis_pgd' else '',
+        'step_actual_linf': step_actual_linf if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_all_tokens_legal': int(step_all_tokens_legal) if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_gripper_token_id': step_gripper_token_id if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
+        'step_gripper_region': step_gripper_region if (args.condition == 'online_vis_pgd' and attack_this_step) else '',
         'step_clean_gripper_raw': round(clean_gripper_raw, 6),
         'step_executed_gripper_raw': round(float(autoregressive_raw[-1]), 6) if (args.condition == 'online_vis_pgd' and attack_this_step and autoregressive_raw is not None) else '',
+        'c2o_env': c2o_env,
+        'c2o_strict': c2o_strict,
+        'boundary_exec_open': boundary_exec_open,
     })
 
     step += 1
@@ -522,7 +594,8 @@ safe_tag = '%s_s%d_v6_%s_seed%d' % (
     args.task, args.state_id, args.condition, args.attack_seed)
 summary = {
     'runner_family': 's20d_v6_online_trigger_l3',
-    'vis_runner_version': 'v6_online_trigger_execspec_v2',
+    'vis_runner_version': 'v6_online_trigger_execspec_v2_auditready',
+    'runner_sha256': _runner_sha256,
     # Condition-aware attack provenance
     'attack_method': 'token_prefix_pgd' if args.condition == 'online_vis_pgd' else ('random_linf_pixel_values' if args.condition == 'online_random_linf' else 'none'),
     'attack_objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2' if args.condition == 'online_vis_pgd' else ('none' if args.condition == 'clean_observer' else 'random_linf'),
@@ -541,7 +614,9 @@ summary = {
     'eligible_close_opportunities': eligible_close_opportunities,
     'perturb_frame_count': perturb_frame_count,
     'naturally_open_skip': naturally_open_skip,
-    'C2O_count': C2O_count,
+    'C2O_count': C2O_count,  # PRIMARY: strict C2O
+    'C2O_env_count': C2O_env_count,
+    'C2O_boundary_count': C2O_boundary_count,
     'attacked_close_count': attacked_close_count,
     'decoded_open_count': total_decoded_open,
     'max_open_streak': max_open_streak,
