@@ -36,6 +36,9 @@ ap.add_argument('--condition', required=True,
 ap.add_argument('--attack_seed', type=int, default=99)
 ap.add_argument('--pgd_steps', type=int, default=20)
 ap.add_argument('--eps_raw_pixels', type=int, default=6)
+ap.add_argument('--attack_objective', default='prefix_locked_gripper_top1_open_vs_close_execspec_v2',
+                choices=['prefix_locked_gripper_top1_open_vs_close_execspec_v2',
+                         'autoregressive_prefix_gripper_open_execspec_v3'])
 ap.add_argument('--model_path',
                 default='/data/aviary/models/openvla/openvla-7b-finetuned-libero-object')
 ap.add_argument('--render_gpu_device_id', type=int, default=0)
@@ -175,7 +178,7 @@ if args.condition == 'online_vis_pgd':
         'step_size': eps_norm / max(args.pgd_steps, 1) * 1.5,
         'num_steps': args.pgd_steps,
         'random_start': True,
-        'objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2',
+        'objective': args.attack_objective,
         'arm_preserve_weight': 0.5,
         'gripper_margin': 0.5,
     }
@@ -433,7 +436,7 @@ while step < max_steps:
                 if result_pgd_steps != args.pgd_steps:
                     raise RuntimeError(f"V6 HARD FAIL: PGD steps {result_pgd_steps} != {args.pgd_steps}")
                 # P0-2: exact objective match
-                EXPECTED_OBJECTIVE = 'prefix_locked_gripper_top1_open_vs_close_execspec_v2'
+                EXPECTED_OBJECTIVE = str(args.attack_objective)
                 result_objective = str(debug_info.get('attack_objective', ''))
                 if result_objective != EXPECTED_OBJECTIVE:
                     raise RuntimeError(f"V6 HARD FAIL: objective={result_objective}, expected={EXPECTED_OBJECTIVE}")
@@ -737,7 +740,7 @@ summary = {
     'function_identity_ok': _function_identity_ok,
     # Condition-aware attack provenance
     'attack_method': 'token_prefix_pgd' if args.condition == 'online_vis_pgd' else ('random_linf_pixel_values' if args.condition == 'online_random_linf' else 'none'),
-    'attack_objective': 'prefix_locked_gripper_top1_open_vs_close_execspec_v2' if args.condition == 'online_vis_pgd' else ('none' if args.condition == 'clean_observer' else 'random_linf'),
+    'attack_objective': args.attack_objective if args.condition == 'online_vis_pgd' else ('none' if args.condition == 'clean_observer' else 'random_linf'),
     'attack_margin': 0.5 if args.condition == 'online_vis_pgd' else '',
     'attack_pgd_steps': args.pgd_steps if args.condition == 'online_vis_pgd' else 0,
     'attack_eps_raw_pixels': args.eps_raw_pixels if args.condition in ('online_vis_pgd', 'online_random_linf') else 0,

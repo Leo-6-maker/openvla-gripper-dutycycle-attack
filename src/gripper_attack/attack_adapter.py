@@ -145,6 +145,7 @@ class TokenPrefixPGDAttacker:
             self.loss_weights = {int(k) if k.lstrip('-').isdigit() else k: float(v) for k, v in _raw_weights.items()}
         self.arm_preserve_weight = float(cfg.get("arm_preserve_weight", 0.1))
         self.gripper_margin = float(cfg.get("gripper_margin", 5.0))
+        self.prefix_refresh_interval = max(1, int(cfg.get("prefix_refresh_interval", 1) or 1))
         self.best_restart_metric = str(cfg.get("best_restart_metric", "target_ce_final"))
         self.seed = int(seed)
         self.preprocess_kwargs = dict(preprocess_kwargs or {})
@@ -617,6 +618,96 @@ class TokenPrefixPGDAttacker:
         except Exception:
             return None
 
+    def _generate_action_prefix_tokens(self, prompt_input_ids: torch.LongTensor, pixel_values: torch.Tensor, *, prefix_len: int) -> torch.LongTensor:
+        """Greedily generate action-prefix token ids as stop-gradient context."""
+        if int(prefix_len) <= 0:
+            return torch.empty((0,), dtype=torch.long, device=prompt_input_ids.device)
+        with torch.no_grad():
+            gen = self.model.generate(
+                input_ids=prompt_input_ids,
+                pixel_values=pixel_values.detach(),
+                max_new_tokens=int(prefix_len),
+                do_sample=False,
+                return_dict_in_generate=True,
+                output_scores=False,
+            )
+        return gen.sequences[0, -int(prefix_len):].detach().to(device=prompt_input_ids.device, dtype=torch.long)
+
+    def _gripper_row_stats(self, row: torch.Tensor, open_token_ids: torch.LongTensor, close_token_ids: torch.LongTensor) -> dict:
+        probs = torch.softmax(row, dim=-1)
+        top_val, top_idx = torch.max(row, dim=-1)
+        max_open_val, max_open_rel = torch.max(row[open_token_ids], dim=0)
+        max_close_val, max_close_rel = torch.max(row[close_token_ids], dim=0)
+        strongest_open = int(open_token_ids[int(max_open_rel.detach().cpu())].detach().cpu())
+        strongest_close = int(close_token_ids[int(max_close_rel.detach().cpu())].detach().cpu())
+        return {
+            "top_token_id": int(top_idx.detach().cpu()),
+            "top_logit": float(top_val.detach().cpu()),
+            "strongest_native_open_token": strongest_open,
+            "strongest_native_close_token": strongest_close,
+            "open_score": float(max_open_val.detach().cpu()),
+            "close_score": float(max_close_val.detach().cpu()),
+            "open_minus_close_margin": float((max_open_val - max_close_val).detach().cpu()),
+            "open_prob_mass": float(torch.sum(probs[open_token_ids]).detach().cpu()),
+            "close_prob_mass": float(torch.sum(probs[close_token_ids]).detach().cpu()),
+        }
+
+    def _teacher_forced_gripper_margin_stats(self, full_input_ids, pixel_values, action_dim: int, open_token_ids, close_token_ids) -> dict:
+        with torch.no_grad():
+            out = self.model(input_ids=full_input_ids, pixel_values=pixel_values, use_cache=False, return_dict=True)
+            logits = out.logits.float().contiguous()
+            row_index = action_token_logit_row_index(int(action_dim) - 1, int(action_dim))
+            stats = self._gripper_row_stats(logits[0, row_index, :], open_token_ids, close_token_ids)
+            stats["gripper_row_index"] = int(row_index)
+            stats["conditioning"] = "teacher_forced_target_arm_prefix"
+            return stats
+
+    def _generated_prefix_gripper_loss_and_stats(
+        self,
+        prompt_input_ids: torch.LongTensor,
+        generated_arm_prefix_token_ids: torch.LongTensor,
+        pixel_values: torch.Tensor,
+        open_token_ids: torch.LongTensor,
+        close_token_ids: torch.LongTensor,
+        *,
+        margin: float,
+    ):
+        prefix = generated_arm_prefix_token_ids.view(1, -1).to(device=prompt_input_ids.device, dtype=torch.long)
+        context_ids = torch.cat([prompt_input_ids, prefix], dim=1)
+        out = self.model(input_ids=context_ids, pixel_values=pixel_values, use_cache=False, return_dict=True)
+        logits = out.logits.float().contiguous()
+        gripper_row = logits[0, -1, :]
+        max_open = gripper_row[open_token_ids].max()
+        max_close = gripper_row[close_token_ids].max()
+        loss = F.relu(max_close - max_open + float(margin))
+        stats = self._gripper_row_stats(gripper_row, open_token_ids, close_token_ids)
+        stats.update({
+            "gripper_row_index": -1,
+            "conditioning": "generated_arm_prefix_stop_gradient",
+            "generated_arm_prefix_token_ids": [int(x) for x in generated_arm_prefix_token_ids.detach().cpu().tolist()],
+        })
+        return loss, stats
+
+    def _arm_preservation_loss_and_stats(self, full_input_ids, labels, pixel_values, action_dim: int, *, arm_preserve_weight: float):
+        out = self.model(input_ids=full_input_ids, pixel_values=pixel_values, use_cache=False, return_dict=True)
+        logits = out.logits.float().contiguous()
+        losses = []
+        rows_used = []
+        for b, label_pos, dim, row_index in self._active_label_rows(logits, labels, int(action_dim)):
+            if dim == int(action_dim) - 1:
+                continue
+            row = logits[b, row_index, :]
+            target = labels[b, label_pos]
+            losses.append(float(arm_preserve_weight) * F.cross_entropy(row.view(1, -1), target.view(1)))
+            rows_used.append(int(dim))
+        loss = torch.stack(losses).mean() if losses else logits.sum() * 0.0
+        return loss, {
+            "arm_preservation_dims": rows_used,
+            "arm_preservation_dim_count": int(len(rows_used)),
+            "arm_preservation_loss": float(loss.detach().cpu()),
+            "arm_preservation_weight": float(arm_preserve_weight),
+        }
+
     def attack(self, observation: Any, instruction=None, clean_action=None, target_action=None, clean_model_output=None, *, unnorm_key: str = "libero_goal") -> AttackResult:
         objective = str(getattr(self, "objective", "targeted_directional_ce"))
         is_untargeted = objective in {"untargeted_clean_token_ce", "untargeted_clean_ce", "maximize_clean_ce", "untargeted_arm_clean_token_ce", "ctrl_random_direction_arm_only"}
@@ -630,6 +721,7 @@ class TokenPrefixPGDAttacker:
         is_prefix_locked_open_region = objective in {"prefix_locked_gripper_open_region_ce"}
         is_prefix_locked_open_margin = objective in {"prefix_locked_gripper_open_margin"}
         is_prefix_locked_top1 = objective in {"prefix_locked_gripper_top1_open_vs_close", "prefix_locked_gripper_top1_open_vs_close_execspec_v2"}
+        is_generated_prefix_v3 = objective in {"autoregressive_prefix_gripper_open_execspec_v3"}
         is_gripper_expected_action = objective in {"gripper_open_expected_action"}
         is_prefix_locked = is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action or is_prefix_locked_top1
         is_corrected_hybrid = is_force_open_region_z_down  # uses corrected OPEN region + Z CE
@@ -652,7 +744,7 @@ class TokenPrefixPGDAttacker:
         clean_ids, full_ids, labels, x0 = self._build_inputs_and_labels(observation, str(instruction), target_ids)
         # P0 FIX: prefix_locked must be checked FIRST so arm-preserve branch is reachable.
         # Previously `or is_prefix_locked` in the gripper-only branch made this unreachable.
-        if is_prefix_locked:
+        if is_prefix_locked or is_generated_prefix_v3:
             # Prefix-locked objectives: preserve clean arm tokens (dims 0-5), attack gripper only.
             # target_ids encodes the clean action (target_action = clean_action in rollout script).
             # Mask gripper dim to -100 so it's handled by corrected OPEN-region loss.
@@ -662,7 +754,11 @@ class TokenPrefixPGDAttacker:
             gripper_label_pos = labels.shape[1] - action_dim + gripper_dim
             masked[:, gripper_label_pos] = -100
             labels = masked
-            token_label_source = f"prefix_locked_arm_preserve_gripper_{objective}"
+            token_label_source = (
+                "generated_prefix_arm_preserve_gripper_autoregressive_prefix_gripper_open_execspec_v3"
+                if is_generated_prefix_v3
+                else f"prefix_locked_arm_preserve_gripper_{objective}"
+            )
         elif is_corrected_hybrid:
             # Corrected hybrid: gripper uses corrected OPEN-region loss, Z uses CE toward Z-down.
             # Unlike old force_open_z_down, gripper target is NOT target_action[-1]=1.0.
@@ -716,7 +812,7 @@ class TokenPrefixPGDAttacker:
         loss_kwargs = {"objective": objective, "num_action_tokens": int(target_ids.numel())}
         region_token_ids = None
         corrected_region_info = None
-        _needs_region = is_gripper_region or is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action or is_corrected_hybrid or is_prefix_locked_top1
+        _needs_region = is_gripper_region or is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action or is_corrected_hybrid or is_prefix_locked_top1 or is_generated_prefix_v3
         if _needs_region:
             # P0 BUG FIX: use decoded-action semantics instead of sign-string heuristic.
             corrected_region_info = self.get_gripper_region_by_decoded_action(
@@ -729,40 +825,157 @@ class TokenPrefixPGDAttacker:
         if is_prefix_locked:
             loss_kwargs["arm_preserve_weight"] = float(self.arm_preserve_weight)
             loss_kwargs["margin"] = float(self.gripper_margin)
+        if is_generated_prefix_v3:
+            loss_kwargs["arm_preserve_weight"] = float(self.arm_preserve_weight)
+            loss_kwargs["margin"] = float(self.gripper_margin)
         if is_force_open_z_down and self.loss_weights is not None:
             loss_kwargs["loss_weights"] = self.loss_weights
         initial_loss = None; final_loss = None; _prefix_debug_final = None
-        for i in range(max(self.num_steps, 1)):
-            adv = adv.detach().requires_grad_(True)
-            adv_for_loss = self._cast_projected_pixel_values(adv, x_orig_model)
-            loss = self._loss(full_ids, labels, adv_for_loss, **loss_kwargs)
-            if i == 0:
-                initial_loss = float(loss.detach().cpu())
-            if is_prefix_locked and hasattr(loss, "_prefix_debug"):
-                _prefix_debug_final = loss._prefix_debug
-            grad = torch.autograd.grad(loss, adv, retain_graph=False, create_graph=False)[0]
-            if is_untargeted:
-                # Maximize CE of the clean action-token prefix.
-                adv = adv.detach() + self.step_size * grad.detach().sign()
-            else:
-                # Minimize target CE: signed gradient descent.
+        generated_prefix_debug = {}
+        if is_generated_prefix_v3:
+            prefix_refresh_interval = int(self.prefix_refresh_interval)
+            prefix_refresh_count = 0
+            num_generation_forwards = 0
+            generated_arm_prefix_token_ids = None
+            clean_arm_prefix_token_ids = [int(x) for x in target_ids[: max(int(target_ids.numel()) - 1, 0)].detach().cpu().tolist()]
+            teacher_initial = self._teacher_forced_gripper_margin_stats(
+                full_ids, x_orig_model, int(target_ids.numel()), region_token_ids, corrected_region_info.get("close_token_ids"))
+            initial_generated_stats = None
+            initial_arm_stats = None
+            final_generated_stats = None
+            for i in range(max(self.num_steps, 1)):
+                adv = adv.detach().requires_grad_(True)
+                adv_for_loss = self._cast_projected_pixel_values(adv, x_orig_model)
+                if generated_arm_prefix_token_ids is None or (i % prefix_refresh_interval) == 0:
+                    generated_arm_prefix_token_ids = self._generate_action_prefix_tokens(
+                        clean_ids,
+                        adv_for_loss,
+                        prefix_len=max(int(target_ids.numel()) - 1, 0),
+                    )
+                    prefix_refresh_count += 1
+                    num_generation_forwards += 1
+                gripper_loss, gripper_stats = self._generated_prefix_gripper_loss_and_stats(
+                    clean_ids,
+                    generated_arm_prefix_token_ids,
+                    adv_for_loss,
+                    region_token_ids,
+                    corrected_region_info.get("close_token_ids"),
+                    margin=float(self.gripper_margin),
+                )
+                arm_loss, arm_stats = self._arm_preservation_loss_and_stats(
+                    full_ids,
+                    labels,
+                    adv_for_loss,
+                    int(target_ids.numel()),
+                    arm_preserve_weight=float(self.arm_preserve_weight),
+                )
+                loss = gripper_loss + arm_loss
+                if i == 0:
+                    initial_loss = float(loss.detach().cpu())
+                    initial_generated_stats = dict(gripper_stats)
+                    initial_arm_stats = dict(arm_stats)
+                grad = torch.autograd.grad(loss, adv, retain_graph=False, create_graph=False)[0]
                 adv = adv.detach() - self.step_size * grad.detach().sign()
-            adv = self._project_pixel_master(adv, x_orig)
-            # ``pixel_values`` are processor-normalized OpenVLA inputs, not raw
-            # RGB values.  Clamping them to [0, 1] can create a perturbation far
-            # larger than epsilon whenever normalized pixels are negative.  The
-            # budget enforced here is therefore Linf in processor pixel space.
-            if self.temporal_smooth_lambda > 0.0 and self._prev_delta is not None and tuple(self._prev_delta.shape) == tuple(adv.shape):
-                lam = min(max(float(self.temporal_smooth_lambda), 0.0), 1.0)
-                smoothed_delta = (1.0 - lam) * (adv.detach() - x_orig) + lam * self._prev_delta.detach().to(device=x_orig.device, dtype=torch.float32)
-                smoothed_delta = torch.clamp(smoothed_delta, -self.epsilon, self.epsilon)
-                adv = self._project_pixel_master(x_orig + smoothed_delta, x_orig).detach()
-            del grad, loss
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
+                adv = self._project_pixel_master(adv, x_orig)
+                if self.temporal_smooth_lambda > 0.0 and self._prev_delta is not None and tuple(self._prev_delta.shape) == tuple(adv.shape):
+                    lam = min(max(float(self.temporal_smooth_lambda), 0.0), 1.0)
+                    smoothed_delta = (1.0 - lam) * (adv.detach() - x_orig) + lam * self._prev_delta.detach().to(device=x_orig.device, dtype=torch.float32)
+                    smoothed_delta = torch.clamp(smoothed_delta, -self.epsilon, self.epsilon)
+                    adv = self._project_pixel_master(x_orig + smoothed_delta, x_orig).detach()
+                del grad, loss, gripper_loss, arm_loss
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+            adv_model_for_final = self._cast_projected_pixel_values(adv.detach(), x_orig_model)
+            final_prefix = self._generate_action_prefix_tokens(
+                clean_ids,
+                adv_model_for_final,
+                prefix_len=max(int(target_ids.numel()) - 1, 0),
+            )
+            num_generation_forwards += 1
+            with torch.no_grad():
+                final_gripper_loss, final_generated_stats = self._generated_prefix_gripper_loss_and_stats(
+                    clean_ids,
+                    final_prefix,
+                    adv_model_for_final,
+                    region_token_ids,
+                    corrected_region_info.get("close_token_ids"),
+                    margin=float(self.gripper_margin),
+                )
+                final_arm_loss, final_arm_stats = self._arm_preservation_loss_and_stats(
+                    full_ids,
+                    labels,
+                    adv_model_for_final,
+                    int(target_ids.numel()),
+                    arm_preserve_weight=float(self.arm_preserve_weight),
+                )
+                final_loss = float((final_gripper_loss + final_arm_loss).detach().cpu())
+            teacher_final = self._teacher_forced_gripper_margin_stats(
+                full_ids, adv_model_for_final, int(target_ids.numel()), region_token_ids, corrected_region_info.get("close_token_ids"))
+            generated_arm_prefix_final = [int(x) for x in final_prefix.detach().cpu().tolist()]
+            n_arm = min(len(clean_arm_prefix_token_ids), len(generated_arm_prefix_final))
+            arm_match_rate = (
+                float(sum(int(clean_arm_prefix_token_ids[j] == generated_arm_prefix_final[j]) for j in range(n_arm)) / max(n_arm, 1))
+                if n_arm else 0.0
+            )
+            generated_prefix_debug = {
+                "objective_name": "autoregressive_prefix_gripper_open_execspec_v3",
+                "method_version": "generated_prefix_stop_gradient_v1",
+                "prefix_refresh_strategy": "every_k_pgd_steps",
+                "prefix_refresh_interval": int(prefix_refresh_interval),
+                "prefix_refresh_count": int(prefix_refresh_count),
+                "clean_arm_prefix_token_ids": clean_arm_prefix_token_ids,
+                "generated_arm_prefix_token_ids": generated_arm_prefix_final,
+                "arm_token_match_rate": arm_match_rate,
+                "teacher_forced_gripper_margin_initial": teacher_initial.get("open_minus_close_margin"),
+                "teacher_forced_gripper_margin_final": teacher_final.get("open_minus_close_margin"),
+                "generated_prefix_gripper_margin_initial": (initial_generated_stats or {}).get("open_minus_close_margin"),
+                "generated_prefix_gripper_margin_final": (final_generated_stats or {}).get("open_minus_close_margin"),
+                "selected_loss_initial": initial_loss,
+                "selected_loss_final": final_loss,
+                "arm_preservation_loss_initial": (initial_arm_stats or {}).get("arm_preservation_loss"),
+                "arm_preservation_loss_final": final_arm_stats.get("arm_preservation_loss"),
+                "num_generation_forwards": int(num_generation_forwards),
+                "teacher_forced_gripper_stats_initial": teacher_initial,
+                "teacher_forced_gripper_stats_final": teacher_final,
+                "generated_prefix_gripper_stats_initial": initial_generated_stats,
+                "generated_prefix_gripper_stats_final": final_generated_stats,
+                "arm_preservation_debug_final": final_arm_stats,
+                "generated_prefix_stop_gradient": True,
+                "gradient_through_generated_token_ids": False,
+            }
+        else:
+            for i in range(max(self.num_steps, 1)):
+                adv = adv.detach().requires_grad_(True)
+                adv_for_loss = self._cast_projected_pixel_values(adv, x_orig_model)
+                loss = self._loss(full_ids, labels, adv_for_loss, **loss_kwargs)
+                if i == 0:
+                    initial_loss = float(loss.detach().cpu())
+                if is_prefix_locked and hasattr(loss, "_prefix_debug"):
+                    _prefix_debug_final = loss._prefix_debug
+                grad = torch.autograd.grad(loss, adv, retain_graph=False, create_graph=False)[0]
+                if is_untargeted:
+                    # Maximize CE of the clean action-token prefix.
+                    adv = adv.detach() + self.step_size * grad.detach().sign()
+                else:
+                    # Minimize target CE: signed gradient descent.
+                    adv = adv.detach() - self.step_size * grad.detach().sign()
+                adv = self._project_pixel_master(adv, x_orig)
+                # ``pixel_values`` are processor-normalized OpenVLA inputs, not raw
+                # RGB values.  Clamping them to [0, 1] can create a perturbation far
+                # larger than epsilon whenever normalized pixels are negative.  The
+                # budget enforced here is therefore Linf in processor pixel space.
+                if self.temporal_smooth_lambda > 0.0 and self._prev_delta is not None and tuple(self._prev_delta.shape) == tuple(adv.shape):
+                    lam = min(max(float(self.temporal_smooth_lambda), 0.0), 1.0)
+                    smoothed_delta = (1.0 - lam) * (adv.detach() - x_orig) + lam * self._prev_delta.detach().to(device=x_orig.device, dtype=torch.float32)
+                    smoothed_delta = torch.clamp(smoothed_delta, -self.epsilon, self.epsilon)
+                    adv = self._project_pixel_master(x_orig + smoothed_delta, x_orig).detach()
+                del grad, loss
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
         adv_model = self._cast_projected_pixel_values(adv.detach(), x_orig_model)
-        with torch.no_grad():
-            final_loss = float(self._loss(full_ids, labels, adv_model, **loss_kwargs).detach().cpu())
+        if not is_generated_prefix_v3:
+            with torch.no_grad():
+                final_loss = float(self._loss(full_ids, labels, adv_model, **loss_kwargs).detach().cpu())
         postprocess_gripper = bool(self.postprocess_gripper)
         clean_audit = self._audit_logits(full_ids, labels, x_orig_model, target_ids, unnorm_key, postprocess_gripper=postprocess_gripper, region_token_ids=region_token_ids)
         adv_audit = self._audit_logits(full_ids, labels, adv_model, target_ids, unnorm_key, postprocess_gripper=postprocess_gripper, region_token_ids=region_token_ids)
@@ -796,6 +1009,9 @@ class TokenPrefixPGDAttacker:
             "clean_logit_audit": clean_audit,
             "adv_logit_audit": adv_audit,
         }
+        if is_generated_prefix_v3:
+            debug.update(generated_prefix_debug)
+            debug["num_loss_forwards"] = int(2 * max(self.num_steps, 1) + 2)
         if is_untargeted:
             debug.update({
                 "clean_token_label_ids": token_list,
@@ -837,17 +1053,18 @@ class TokenPrefixPGDAttacker:
                 debug["best_restart_metric"] = self.best_restart_metric
                 if _prefix_debug_final is not None:
                     debug.update(_prefix_debug_final)
-            if is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region or is_prefix_locked or is_corrected_hybrid:
+            if is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region or is_prefix_locked or is_corrected_hybrid or is_generated_prefix_v3:
                 debug.update({
                     "target_gripper_token_id": int(token_list[-1]) if token_list else None,
-                    "gripper_only_loss": bool(is_force_gripper_open or is_gripper_margin or is_gripper_region or is_prefix_locked),
+                    "gripper_only_loss": bool(is_force_gripper_open or is_gripper_margin or is_gripper_region or is_prefix_locked or is_generated_prefix_v3),
                     "z_and_gripper_loss": bool(is_force_open_z_down),
                     "corrected_open_region_z_down": bool(is_corrected_hybrid),
                     "gripper_logit_margin_loss": bool(is_gripper_margin or is_prefix_locked_open_margin),
                     "gripper_open_region_loss": bool(is_gripper_region or is_prefix_locked_open_region),
                     "gripper_top1_open_vs_close_loss": bool(is_prefix_locked_top1),
+                    "autoregressive_prefix_gripper_open_loss": bool(is_generated_prefix_v3),
                     "gripper_expected_action_loss": bool(is_gripper_expected_action),
-                    "prefix_locked_arm_preserve": bool(is_prefix_locked),
+                    "prefix_locked_arm_preserve": bool(is_prefix_locked or is_generated_prefix_v3),
                 })
                 if _needs_region and region_token_ids is not None:
                     vals = [int(x) for x in region_token_ids.detach().cpu().tolist()]
@@ -871,7 +1088,11 @@ class TokenPrefixPGDAttacker:
             attack_method=(
                 ("token_prefix_pgd_pixel_values_untargeted_arm_only_clean_ce" if is_arm_only_untargeted else "token_prefix_pgd_pixel_values_untargeted_clean_ce")
                 if is_untargeted
-                else ("token_prefix_pgd_pixel_values_gripper_only" if (is_force_gripper_open or is_gripper_margin or is_gripper_region) else "token_prefix_pgd_pixel_values")
+                else (
+                    "token_prefix_pgd_pixel_values_autoregressive_prefix_v3"
+                    if is_generated_prefix_v3
+                    else ("token_prefix_pgd_pixel_values_gripper_only" if (is_force_gripper_open or is_gripper_margin or is_gripper_region) else "token_prefix_pgd_pixel_values")
+                )
             ),
             directional_loss_available=False if is_untargeted else True,
             num_attack_steps=self.num_steps,
