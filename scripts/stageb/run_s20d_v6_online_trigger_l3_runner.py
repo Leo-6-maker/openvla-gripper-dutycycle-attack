@@ -364,6 +364,7 @@ while step < max_steps:
     step_gripper_clipped = False
     step_gripper_region = ''
     result_objective = ''
+    _v3 = {}  # V3 transfer telemetry (populated for v3 VIS only)
     env_action = clean_env_action.copy()
     executed_action = clean_action.copy()
     infra_status = 'ok'
@@ -449,7 +450,7 @@ while step < max_steps:
                 step_fallback_reason = str(debug_info.get('fallback_reason', ''))
 
                 # V3 transfer telemetry (observation only, from debug_info)
-                _v3 = {}
+                _v3.clear()
                 for _k in ('generated_prefix_gripper_margin_initial',
                            'generated_prefix_gripper_margin_final',
                            'selected_loss_initial', 'selected_loss_final',
@@ -785,6 +786,17 @@ summary = {
     'qpos_abs_at_trigger': qpos_abs_at_trigger if qpos_abs_at_trigger is not None else '',
     'qpos_abs_peak_post_trigger': qpos_abs_peak_post_trigger if qpos_abs_peak_post_trigger is not None else '',
     'qpos_abs_peak_delta': round(float(qpos_abs_peak_post_trigger or 0) - float(qpos_abs_at_trigger or 0), 8) if qpos_abs_at_trigger is not None else '',
+    # V3 transfer telemetry (only populated for v3 VIS)
+    'v3_generated_margin_initial': _v3.get('generated_prefix_gripper_margin_initial', ''),
+    'v3_generated_margin_final': _v3.get('generated_prefix_gripper_margin_final', ''),
+    'v3_selected_loss_initial': _v3.get('selected_loss_initial', ''),
+    'v3_selected_loss_final': _v3.get('selected_loss_final', ''),
+    'v3_teacher_margin_clean_x0': _v3.get('teacher_forced_margin_clean_x0', ''),
+    'v3_prefix_refresh_count': _v3.get('prefix_refresh_count', ''),
+    'v3_generation_forwards': _v3.get('num_generation_forwards', ''),
+    'v3_arm_match_rate': _v3.get('generated_vs_retokenized_arm_match_rate', ''),
+    'v3_arm_loss_initial': _v3.get('arm_preservation_loss_initial', ''),
+    'v3_arm_loss_final': _v3.get('arm_preservation_loss_final', ''),
     'attacked_close_count': attacked_close_count,
     'decoded_open_count': total_decoded_open,
     'max_open_streak': max_open_streak,
