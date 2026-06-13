@@ -29,6 +29,7 @@ ACTION_DIM = 7
 ARM_PREFIX_LEN = 6
 FROZEN_NATIVE_OPEN_MARGIN = 0.5
 NEAR_TIE_GAP_EPS = 1e-3
+MARGIN_TOLERANCE = 1e-6
 
 
 def sha256_file(path: str | Path) -> str:
@@ -384,9 +385,12 @@ def _path_agreement_shows_competition_incompleteness(
     a_tok = evidence.get("A_token")
     b_tok = evidence.get("B_token")
     c_tok = evidence.get("C_token")
+    d_tok = evidence.get("D_token")
     if not _same_token(a_tok, b_tok):
         return False
     if c_tok is not None and not _same_token(a_tok, c_tok):
+        return False
+    if d_tok is not None and not _same_token(a_tok, d_tok):
         return False
 
     b = paths.get("B") or {}
@@ -404,7 +408,7 @@ def _path_agreement_shows_competition_incompleteness(
     if open_minus_close is None or boundary_minus_open is None:
         return False
     return (
-        float(open_minus_close) > float(evidence["frozen_margin"])
+        float(open_minus_close) >= float(evidence["frozen_margin"]) - MARGIN_TOLERANCE
         and float(boundary_minus_open) >= 0.0
     )
 
@@ -425,20 +429,20 @@ def classify_path_diagnosis(
 
     diagnosis_class = "PATHS_AGREE_OR_INSUFFICIENT_DIFFERENCE"
     if a_tok is not None and b_tok is not None and int(a_tok) != int(b_tok):
-        if _same_token(c_tok, a_tok):
+        if _small_gap(evidence["A_gap"], evidence["B_gap"], evidence["C_gap"], evidence["D_gap"]):
+            diagnosis_class = "NEAR_TIE_NUMERICAL_SENSITIVITY_CANDIDATE"
+        elif _same_token(c_tok, a_tok):
             diagnosis_class = "CACHE_PATH_MISMATCH_CANDIDATE"
         elif _same_token(b_tok, c_tok):
             diagnosis_class = "GENERATION_SCORE_PROCESSING_MISMATCH_CANDIDATE"
-        elif _small_gap(evidence["A_gap"], evidence["B_gap"], evidence["C_gap"], evidence["D_gap"]):
-            diagnosis_class = "NEAR_TIE_NUMERICAL_SENSITIVITY_CANDIDATE"
         else:
             diagnosis_class = "LARGE_UNEXPLAINED_PATH_DIFFERENCE"
     elif _path_agreement_shows_competition_incompleteness(paths, evidence):
         diagnosis_class = "COMPETITION_SET_INCOMPLETENESS_CONFIRMED"
-    elif d_tok is not None and a_tok is not None and int(d_tok) != int(a_tok) and _same_token(b_tok, c_tok):
-        diagnosis_class = "GENERATION_SCORE_PROCESSING_MISMATCH_CANDIDATE"
     elif _small_gap(evidence["A_gap"], evidence["B_gap"], evidence["C_gap"], evidence["D_gap"]):
         diagnosis_class = "NEAR_TIE_NUMERICAL_SENSITIVITY_CANDIDATE"
+    elif d_tok is not None and a_tok is not None and int(d_tok) != int(a_tok) and _same_token(b_tok, c_tok):
+        diagnosis_class = "GENERATION_SCORE_PROCESSING_MISMATCH_CANDIDATE"
 
     return {
         "class": diagnosis_class,

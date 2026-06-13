@@ -156,10 +156,12 @@ fields, including A/B/C/D tokens, score gaps, best native OPEN/CLOSE/boundary
 scores, OPEN-minus-CLOSE, boundary-minus-OPEN, and the frozen native-OPEN
 margin. A/B path disagreement is classified as cache/path, generation-score
 processing, near-tie, or unexplained path difference before any competition-set
-claim is considered. Competition-set incompleteness is reserved for the
-path-agreeing boundary case where native OPEN beats native CLOSE by the frozen
-margin but boundary remains global top. The script fails loudly on malformed
-input instead of silently skipping missing files.
+claim is considered, with near ties taking precedence over non-cache path
+attribution. Competition-set incompleteness is reserved for the path-agreeing
+boundary case where A/B/C/D agree when available, native OPEN beats native CLOSE
+by at least the frozen margin under hinge semantics, and boundary remains global
+top. The script fails loudly on malformed input instead of silently skipping
+missing files.
 
 ## CPU test coverage
 
@@ -182,6 +184,9 @@ input instead of silently skipping missing files.
 - deterministic cream-like path-agreeing boundary-over-OPEN diagnosis;
 - deterministic butter-like A/B mismatch diagnosis that prioritizes cache/path
   disagreement over competition-set claims;
+- near-tie precedence for `B=C!=A` with a tiny processed-score gap;
+- margin-equality competition-set confirmation;
+- D-path disagreement blocking competition-set confirmation;
 - clean AR prefix extraction and match-rate calculation.
 
 `tests/stageb/test_layer3_autoregressive_prefix_v3.py` remains green and keeps

@@ -463,6 +463,146 @@ def test_butter_like_a_b_mismatch_prioritizes_cache_path_not_competition(tmp_pat
     assert diagnosis["evidence"]["C_token"] == BOUNDARY_TOKEN
 
 
+def test_near_tie_preempts_generation_processing_when_b_c_match(tmp_path):
+    bundle = good_bundle(tmp_path)
+    a = path_result_schema(
+        path="A", cache_behavior="default", prefix_tokens=[ARM_TOKEN] * 6,
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+        processed_score_summary={
+            "top1_token": BOUNDARY_TOKEN,
+            "top1_score": 5.00001,
+            "top2_token": OPEN_TOKEN,
+            "top2_score": 5.0,
+            "top1_minus_top2_gap": 1e-5,
+        },
+    )
+    raw_open = {
+        "top1_token": OPEN_TOKEN,
+        "top1_score": 5.0,
+        "top2_token": BOUNDARY_TOKEN,
+        "top2_score": 3.0,
+        "top1_minus_top2_gap": 2.0,
+    }
+    b = path_result_schema(path="B", cache_behavior="use_cache=False", raw_logit_summary=raw_open)
+    c = path_result_schema(path="C", cache_behavior="use_cache=True", raw_logit_summary=raw_open)
+    d = path_result_schema(
+        path="D", cache_behavior="use_cache=False",
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+    )
+
+    diagnosis = classify_path_diagnosis({"A": a, "B": b, "C": c, "D": d}, bundle)
+
+    assert diagnosis["class"] == "NEAR_TIE_NUMERICAL_SENSITIVITY_CANDIDATE"
+    assert diagnosis["evidence"]["A_gap"] == pytest.approx(1e-5)
+    assert diagnosis["evidence"]["B_token"] == OPEN_TOKEN
+    assert diagnosis["evidence"]["C_token"] == OPEN_TOKEN
+
+
+def test_competition_set_accepts_margin_equality(tmp_path):
+    bundle = good_bundle(tmp_path)
+    processed = {
+        "top1_token": BOUNDARY_TOKEN,
+        "top1_score": 4.6,
+        "top2_token": OPEN_TOKEN,
+        "top2_score": 4.0,
+        "top1_minus_top2_gap": 0.6,
+    }
+    raw_boundary_at_margin = {
+        "top1_token": BOUNDARY_TOKEN,
+        "top1_score": 4.6,
+        "top2_token": OPEN_TOKEN,
+        "top2_score": 4.0,
+        "top1_minus_top2_gap": 0.6,
+        "best_native_open_token": OPEN_TOKEN,
+        "best_native_open_score": 4.0,
+        "best_native_close_token": CLOSE_TOKEN,
+        "best_native_close_score": 3.5,
+        "best_native_boundary_token": BOUNDARY_TOKEN,
+        "best_native_boundary_score": 4.6,
+    }
+    a = path_result_schema(
+        path="A", cache_behavior="default", prefix_tokens=[ARM_TOKEN] * 6,
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+        processed_score_summary=processed,
+    )
+    b = path_result_schema(
+        path="B", cache_behavior="use_cache=False",
+        raw_logit_summary=raw_boundary_at_margin,
+        token_execution=classify_disc_and_raw(BOUNDARY_TOKEN, VOCAB, NBINS, bin_centers(), stats()),
+    )
+    c = path_result_schema(path="C", cache_behavior="use_cache=True", raw_logit_summary=raw_boundary_at_margin)
+    d = path_result_schema(
+        path="D", cache_behavior="use_cache=False",
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+        processed_score_summary=processed,
+    )
+
+    diagnosis = classify_path_diagnosis({"A": a, "B": b, "C": c, "D": d}, bundle)
+
+    assert diagnosis["class"] == "COMPETITION_SET_INCOMPLETENESS_CONFIRMED"
+    assert diagnosis["evidence"]["open_minus_close"] == pytest.approx(0.5)
+    assert diagnosis["evidence"]["boundary_minus_open"] == pytest.approx(0.6)
+
+
+def test_competition_set_requires_d_path_agreement(tmp_path):
+    bundle = good_bundle(tmp_path)
+    processed = {
+        "top1_token": BOUNDARY_TOKEN,
+        "top1_score": 5.1,
+        "top2_token": OPEN_TOKEN,
+        "top2_score": 4.5,
+        "top1_minus_top2_gap": 0.6,
+    }
+    raw_boundary_over_open = {
+        "top1_token": BOUNDARY_TOKEN,
+        "top1_score": 5.1,
+        "top2_token": OPEN_TOKEN,
+        "top2_score": 4.5,
+        "top1_minus_top2_gap": 0.6,
+        "best_native_open_token": OPEN_TOKEN,
+        "best_native_open_score": 4.5,
+        "best_native_close_token": CLOSE_TOKEN,
+        "best_native_close_score": 3.0,
+        "best_native_boundary_token": BOUNDARY_TOKEN,
+        "best_native_boundary_score": 5.1,
+    }
+    a = path_result_schema(
+        path="A", cache_behavior="default", prefix_tokens=[ARM_TOKEN] * 6,
+        generated_tokens=[ARM_TOKEN] * 6 + [BOUNDARY_TOKEN],
+        emitted_gripper_token=BOUNDARY_TOKEN,
+        processed_score_summary=processed,
+    )
+    b = path_result_schema(
+        path="B", cache_behavior="use_cache=False",
+        raw_logit_summary=raw_boundary_over_open,
+        token_execution=classify_disc_and_raw(BOUNDARY_TOKEN, VOCAB, NBINS, bin_centers(), stats()),
+    )
+    c = path_result_schema(path="C", cache_behavior="use_cache=True", raw_logit_summary=raw_boundary_over_open)
+    d = path_result_schema(
+        path="D", cache_behavior="use_cache=False",
+        generated_tokens=[ARM_TOKEN] * 6 + [OPEN_TOKEN],
+        emitted_gripper_token=OPEN_TOKEN,
+        processed_score_summary={
+            "top1_token": OPEN_TOKEN,
+            "top1_score": 5.0,
+            "top2_token": BOUNDARY_TOKEN,
+            "top2_score": 4.0,
+            "top1_minus_top2_gap": 1.0,
+        },
+    )
+
+    diagnosis = classify_path_diagnosis({"A": a, "B": b, "C": c, "D": d}, bundle)
+
+    assert diagnosis["class"] == "GENERATION_SCORE_PROCESSING_MISMATCH_CANDIDATE"
+    assert diagnosis["class"] != "COMPETITION_SET_INCOMPLETENESS_CONFIRMED"
+    assert diagnosis["evidence"]["A_token"] == BOUNDARY_TOKEN
+    assert diagnosis["evidence"]["D_token"] == OPEN_TOKEN
+
+
 def test_require_token_list_real_exception():
     with pytest.raises(ValueError):
         require_token_list([1, 2], expected_len=7, label="tokens")
