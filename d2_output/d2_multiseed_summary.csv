@@ -1,0 +1,10 @@
+metric,value
+n_seeds,16
+mean_test_top1,0.6577
+median_test_top1,0.619
+min_test_top1,0.5714
+max_test_top1,0.7619
+n_beating_baseline,16
+seed42_value,0.619
+seed42_rank,8
+post_hoc,True

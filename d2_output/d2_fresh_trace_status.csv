@@ -1,0 +1,7 @@
+trace_id,task_key,state_id,seed,provenance_pass,field_validity_pass,open_convention_pass,remap_pass,grasp_privilege_valid,n_close_candidates,n_tp_qualifying_candidates,teacher_p_step,legacy_first_match_step,teacher_r_step,category,failure_detail
+trace_alphabet_soup_s0_w0_10_s20d_clean_seed0_job500000,alphabet_soup,0,0,True,True,True,True,True,17,3,-1,184,50,TEACHER_P_AMBIGUOUS,
+trace_alphabet_soup_s3_w0_10_s20d_clean_seed0_job500000,alphabet_soup,3,0,True,True,True,True,True,1,1,57,57,57,ELIGIBLE_SINGLE_CANDIDATE,
+trace_alphabet_soup_s4_w0_10_s20d_clean_seed0_job500000,alphabet_soup,4,0,True,True,True,True,True,19,2,-1,172,7,TEACHER_P_AMBIGUOUS,
+trace_alphabet_soup_s5_w0_10_s20d_clean_seed0_job500000,alphabet_soup,5,0,True,True,True,True,True,3,1,101,101,51,ELIGIBLE_MULTI_CANDIDATE,
+trace_alphabet_soup_s6_w0_10_s20d_clean_seed0_job500000,alphabet_soup,6,0,True,True,True,True,True,7,3,-1,51,51,TEACHER_P_AMBIGUOUS,
+trace_alphabet_soup_s7_w0_10_s20d_clean_seed0_job500000,alphabet_soup,7,0,True,True,True,True,True,5,2,-1,89,89,TEACHER_P_AMBIGUOUS,
