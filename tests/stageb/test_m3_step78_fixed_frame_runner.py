@@ -14,6 +14,7 @@ from scripts.stageb.run_m3_step78_true_pgd_fixed_frame import (
 
 
 CONFIG = Path("configs/m3_step78_true_pgd_31744.yaml")
+LOGRATIO_V2_CONFIG = Path("configs/m3_step78_true_pgd_31744_logratio_v2.yaml")
 
 
 def test_step78_config_is_fixed_to_preregistered_conditions():
@@ -71,3 +72,15 @@ def test_config_does_not_enable_libero_rollout_result_modes():
     assert "legacy" not in cfg["conditions"]
     assert cfg["controls"]["shuffled_grad_control"] == "single_pgd20_trajectory"
     assert "shuffled_grad_count" not in cfg["controls"]
+
+
+def test_logratio_v2_config_keeps_target_and_requires_cached_path():
+    cfg = load_config(LOGRATIO_V2_CONFIG)
+    assert cfg["input"]["task"] == "tomato_sauce"
+    assert cfg["input"]["absolute_step"] == 78
+    assert cfg["attack_optimizer"]["target_token_id"] == 31744
+    assert cfg["attack_optimizer"]["target_execution_class"] == "CLIP_MEDIATED_OPEN"
+    assert cfg["attack_optimizer"]["objective"] == "autoregressive_prefix_gripper_target_token_logratio_v2"
+    assert cfg["attack_optimizer"]["surrogate_score_path"] == "cached_autoregressive_generate_v1"
+    assert cfg["controls"]["rand20_selection_metric"] == "surrogate_target_objective_margin"
+    assert cfg["conditions"] == MAIN_CONDITIONS
