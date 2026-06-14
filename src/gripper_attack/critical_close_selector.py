@@ -100,6 +100,27 @@ def _eef_speed(records: list[dict], t: int, window: int = 3) -> float:
     return float(np.sqrt(dx**2 + dy**2 + dz**2))
 
 
+def _eef_speed_if_valid(records: list[dict], t: int, window: int = 3) -> Optional[float]:
+    """Compute EEF speed only when both endpoint positions are valid.
+    Returns None if either endpoint has invalid/missing coordinates.
+    """
+    if t < window:
+        return None
+    t0, t1 = t - window, t
+    eef0_valid = (_field_is_present_and_valid(records[t0], "eef_x") and
+                  _field_is_present_and_valid(records[t0], "eef_y") and
+                  _field_is_present_and_valid(records[t0], "eef_z"))
+    eef1_valid = (_field_is_present_and_valid(records[t1], "eef_x") and
+                  _field_is_present_and_valid(records[t1], "eef_y") and
+                  _field_is_present_and_valid(records[t1], "eef_z"))
+    if not (eef0_valid and eef1_valid):
+        return None
+    dx = _safe_float(records[t1].get("eef_x", 0)) - _safe_float(records[t0].get("eef_x", 0))
+    dy = _safe_float(records[t1].get("eef_y", 0)) - _safe_float(records[t0].get("eef_y", 0))
+    dz = _safe_float(records[t1].get("eef_z", 0)) - _safe_float(records[t0].get("eef_z", 0))
+    return float(np.sqrt(dx**2 + dy**2 + dz**2))
+
+
 def rule_based_close_predictor(records: list[dict],
                                 horizon: int = PREDICTION_HORIZON,
                                 teacher_anchor: int = -1) -> list[dict]:
@@ -150,15 +171,24 @@ def rule_based_close_predictor(records: list[dict],
         score = 0.0
 
         # Detect explicit close-event signals
+        # Raw crossing requires: current AND previous raw valid, AND both
+        # gripper semantics valid (cannot bridge invalid gap)
         raw_open_to_close_crossing = False
-        if t >= 1 and raw_valid:
-            raw_prev = _safe_float(visible[t - 1].get("clean_gripper_raw",
-                    visible[t - 1].get("clean_gripper_raw_proxy", 0.5)))
-            if raw_prev > 0.5 and raw_now <= 0.5:
-                raw_open_to_close_crossing = True
-                score += 1.5
-        elif not raw_valid:
-            disabled_features.append("raw_crossing")
+        if t >= 1:
+            prev_raw_valid = (_field_is_present_and_valid(visible[t - 1], "clean_gripper_raw") or
+                             _field_is_present_and_valid(visible[t - 1], "clean_gripper_raw_proxy"))
+            prev_gripper_valid = _check_feature_validity(visible[t - 1], "gripper_semantics_valid")
+            curr_gripper_valid = _check_feature_validity(r, "gripper_semantics_valid")
+            crossing_allowed = (raw_valid and prev_raw_valid and
+                               prev_gripper_valid and curr_gripper_valid)
+            if crossing_allowed:
+                raw_prev = _safe_float(visible[t - 1].get("clean_gripper_raw",
+                        visible[t - 1].get("clean_gripper_raw_proxy", 0.5)))
+                if raw_prev > 0.5 and raw_now <= 0.5:
+                    raw_open_to_close_crossing = True
+                    score += 1.5
+            elif not (raw_valid and prev_raw_valid):
+                disabled_features.append("raw_crossing")
 
         # First close in a streak (potential grasp start, not sustained close)
         if close_streak == 1:
@@ -169,13 +199,15 @@ def rule_based_close_predictor(records: list[dict],
             score += 0.5
 
         # EEF decelerating (approaching grasp point)
-        if t >= 4 and eef_valid:
-            speed_now = _eef_speed(visible, t)
-            speed_prev = _eef_speed(visible, t - 1)
-            if speed_prev > 0 and speed_now < speed_prev and speed_now < 0.01:
+        # All 4 endpoints must be valid: t, t-1, t-3, t-4
+        if t >= 4:
+            speed_now = _eef_speed_if_valid(visible, t, window=3)
+            speed_prev = _eef_speed_if_valid(visible, t - 1, window=3)
+            if (speed_now is not None and speed_prev is not None and
+                speed_prev > 0 and speed_now < speed_prev and speed_now < 0.01):
                 score += 0.5
-        elif not eef_valid:
-            disabled_features.append("eef_deceleration")
+            elif speed_now is None or speed_prev is None:
+                disabled_features.append("eef_deceleration")
 
         # Gripper qpos low (physically ready for close/grasp)
         if qpos_valid and qpos < 0.01 and not decoded_open:

@@ -192,7 +192,7 @@ def test_remapper_version_field():
     path = _make_v4_csv(rows)
     try:
         result, issues, _ = remap_v4_to_l12(path, path + ".out")
-        assert "rc1a_corrected" in str(result[0]["remapper_version"])
+        assert "rc1a_corrected_v2_e1_5" in str(result[0]["remapper_version"])
     finally:
         os.unlink(path)
         if os.path.exists(path + ".out"): os.unlink(path + ".out")
@@ -284,6 +284,44 @@ def test_missing_env_to_close_gap():
         result, issues, _ = remap_v4_to_l12(path, path + ".out")
         assert int(result[0]["gripper_semantics_valid"]) == 0
         assert int(result[1]["close_onset_after_invalid_gap"]) == 1
+    finally:
+        os.unlink(path)
+        if os.path.exists(path + ".out"): os.unlink(path + ".out")
+
+
+# ── P1-4: Valid zero coordinate preservation ──
+
+def test_valid_zero_coordinates_are_preserved():
+    """eef_x/y/z=0.0, obj_x/y/z=0.0 preserved as valid zeros in output."""
+    rows = [_base_v4_row(0)]
+    rows[0]["eef_x"] = "0.0"
+    rows[0]["eef_y"] = "0.0"
+    rows[0]["eef_z"] = "0.0"
+    rows[0]["obj_x"] = "0.0"
+    rows[0]["obj_y"] = "0.0"
+    rows[0]["obj_z"] = "0.0"
+    path = _make_v4_csv(rows)
+    try:
+        result, issues, _ = remap_v4_to_l12(path, path + ".out")
+        for field in ["eef_x", "eef_y", "eef_z", "obj_x", "obj_y", "obj_z"]:
+            assert float(result[0][field]) == 0.0, \
+                f"Field {field} should be 0.0, got '{result[0][field]}'"
+        # eef_to_obj_distance should be 0.0 (valid, both poses at origin)
+        assert float(result[0]["eef_to_obj_distance"]) == 0.0
+        assert int(result[0]["eef_pose_valid"]) == 1
+        assert int(result[0]["object_pose_valid"]) == 1
+    finally:
+        os.unlink(path)
+        if os.path.exists(path + ".out"): os.unlink(path + ".out")
+
+
+def test_remapper_version_is_e1_5_v2():
+    """Output must include remapper_version=rc1a_corrected_v2_e1_5."""
+    rows = [_base_v4_row(0)]
+    path = _make_v4_csv(rows)
+    try:
+        result, issues, _ = remap_v4_to_l12(path, path + ".out")
+        assert "rc1a_corrected_v2_e1_5" == result[0]["remapper_version"]
     finally:
         os.unlink(path)
         if os.path.exists(path + ".out"): os.unlink(path + ".out")

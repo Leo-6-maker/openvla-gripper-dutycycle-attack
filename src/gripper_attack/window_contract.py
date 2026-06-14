@@ -111,8 +111,15 @@ class WindowProposal:
             issues.append("student_features_not_causal")
 
         # ── Window bounds ──
+        # Legitimate abstention: negative window OK when eligible=False and
+        # abstain_reason is non-empty (e.g. all_abstain, no_online_trigger).
+        # But eligible=True with negative window = contract violation.
         if self.window_start < 0:
-            issues.append("window_start:NEGATIVE")
+            if self.eligible and not self.abstain_reason:
+                issues.append("window_start:NEGATIVE_ON_ELIGIBLE")
+            elif not self.eligible and not self.abstain_reason:
+                issues.append("window_start:NEGATIVE_WITHOUT_REASON")
+            # eligible=False + abstain_reason non-empty → allowed (abstention)
         if self.window_end <= self.window_start and self.window_start >= 0:
             issues.append("window_end:NOT_GT_START")
 

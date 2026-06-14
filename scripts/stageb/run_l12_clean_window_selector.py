@@ -148,6 +148,7 @@ def main():
         )
 
         # Annotate offline proposal — Teacher-P is evaluation target, Teacher-R is baseline
+        # anchor_error_vs_p: None when Teacher-P unavailable (NOT empty string)
         anchor_error_p_off = abs(anchor_p - win_offline["anchor_step"]) if teacher_p_available else None
         anchor_error_r_off = abs(anchor_r - win_offline["anchor_step"]) if anchor_r >= 0 else -1
 
@@ -162,7 +163,7 @@ def main():
             "teacher_r_window": f"[{ws_r},{we_r}]" if anchor_r >= 0 else "N/A",
             "student_anchor": win_offline["anchor_step"],
             "student_window": f"[{win_offline['window_start']},{win_offline['window_end']}]",
-            "anchor_error_vs_p": anchor_error_p_off if anchor_error_p_off is not None else "",
+            "anchor_error_vs_p": anchor_error_p_off,    # int or None
             "anchor_error_vs_r": anchor_error_r_off,
             "teacher_p_abstain": not teacher_p_available,
             "n_steps": len(records),
@@ -185,7 +186,7 @@ def main():
             "teacher_r_window": f"[{ws_r},{we_r}]" if anchor_r >= 0 else "N/A",
             "student_anchor": online_trigger,
             "student_window": f"[{win_online['window_start']},{win_online['window_end']}]" if online_trigger >= 0 else "NO_TRIGGER",
-            "anchor_error_vs_p": anchor_error_p_on if anchor_error_p_on is not None else "",
+            "anchor_error_vs_p": anchor_error_p_on,    # int or None
             "anchor_error_vs_r": anchor_error_r_on,
             "teacher_p_abstain": not teacher_p_available,
             "n_steps": len(records),
@@ -206,6 +207,7 @@ def main():
             "mode",
             "teacher_p_anchor", "teacher_p_window",
             "teacher_r_anchor", "teacher_r_window",
+            "teacher_reference_unavailable",
             "student_anchor", "student_window",
             "anchor_error_vs_p", "anchor_error_vs_r",
             "teacher_p_abstain", "n_steps",
@@ -220,9 +222,10 @@ def main():
                 "teacher_p_window": p["teacher_p_window"],
                 "teacher_r_anchor": p["teacher_r_anchor"],
                 "teacher_r_window": p["teacher_r_window"],
+                "teacher_reference_unavailable": p["teacher_reference_unavailable"],
                 "student_anchor": p["student_anchor"],
                 "student_window": p["student_window"],
-                "anchor_error_vs_p": p["anchor_error_vs_p"],
+                "anchor_error_vs_p": p["anchor_error_vs_p"] if p["anchor_error_vs_p"] is not None else "",
                 "anchor_error_vs_r": p["anchor_error_vs_r"],
                 "teacher_p_abstain": p["teacher_p_abstain"],
                 "n_steps": p["n_steps"],
@@ -248,8 +251,13 @@ def main():
     for p in proposals:
         err_p = p["anchor_error_vs_p"]
         err_r = p["anchor_error_vs_r"]
-        err_p_str = f"err_p={err_p}" if err_p >= 0 else "P_ABSTAIN"
-        err_r_str = f"err_r={err_r}" if err_r >= 0 else "N/A"
+        if err_p is None or err_p == "":
+            err_p_str = "P_ABSTAIN"
+        elif err_p >= 0:
+            err_p_str = f"err_p={err_p}"
+        else:
+            err_p_str = "N/A"
+        err_r_str = f"err_r={err_r}" if isinstance(err_r, (int, float)) and err_r >= 0 else "N/A"
         print(f"  [{p['mode']}] {p['trace_path']}: student={p['student_anchor']} "
               f"teacher_p={p['teacher_p_anchor']} {err_p_str} "
               f"teacher_r={p['teacher_r_anchor']} {err_r_str} "

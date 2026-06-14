@@ -199,6 +199,7 @@ def _classify_motion_evidence(records: list[dict], anchor_t: int,
     if anchor_t >= T - sustained_frames:
         return result
 
+    anchor_obj_x = _safe_float(records[anchor_t].get("obj_x", 0))
     anchor_obj_y = _safe_float(records[anchor_t].get("obj_y", 0))
     anchor_obj_z = _safe_float(records[anchor_t].get("obj_z", 0))
 
@@ -210,17 +211,20 @@ def _classify_motion_evidence(records: list[dict], anchor_t: int,
     max_horiz_cons = 0
 
     for future_t in range(anchor_t + 1, min(anchor_t + lookahead, T)):
+        obj_x_after = _safe_float(records[future_t].get("obj_x", 0))
         obj_y_after = _safe_float(records[future_t].get("obj_y", 0))
         obj_z_after = _safe_float(records[future_t].get("obj_z", 0))
         eef_to_obj = _safe_float(records[future_t].get("eef_to_obj_distance", 999))
 
         # Cumulative displacement from anchor
         cumulative_dz = obj_z_after - anchor_obj_z
-        cumulative_dy = abs(obj_y_after - anchor_obj_y)
+        cumulative_dx = obj_x_after - anchor_obj_x
+        cumulative_dy = obj_y_after - anchor_obj_y
+        cumulative_dxy = float(np.sqrt(cumulative_dx**2 + cumulative_dy**2))
         eef_near = eef_to_obj < eef_near_threshold
 
         max_cumulative_dz = max(max_cumulative_dz, cumulative_dz)
-        max_cumulative_dxy = max(max_cumulative_dxy, cumulative_dy)
+        max_cumulative_dxy = max(max_cumulative_dxy, cumulative_dxy)
 
         # Vertical lift: cumulative z >= threshold AND EEF near
         if cumulative_dz >= min_delta and eef_near:
@@ -417,10 +421,15 @@ def teacher_privileged_critical_close_anchor(records: list[dict]) -> int:
 def check_teacher_p_privilege_capability(records: list[dict]) -> dict:
     """Audit Teacher-P privilege capability for this trace.
 
+    grasp_privilege_valid: ALL grasp fields (eef_x/y/z, obj_x/y/z,
+      eef_to_obj_distance) are present and valid.
+    placement_privilege_valid: grasp_valid AND all placement fields
+      (target_obj_x/y/z, obj_to_target_distance) are present and valid.
+
     Returns dict with:
       grasp_privilege_valid: bool
       placement_privilege_valid: bool
-      privilege_missing_fields: list of field names
+      privilege_missing_fields: list of missing field names
     """
     result = {
         "grasp_privilege_valid": False,
@@ -430,23 +439,23 @@ def check_teacher_p_privilege_capability(records: list[dict]) -> dict:
     if not records:
         return result
 
-    # Check grasp privilege globally
-    has_grasp = False
+    # Every required grasp field must be valid in at least one of first 3 records
+    grasp_missing = []
     for field in GRASP_PRIVILEGE_FIELDS:
-        if any(_field_is_valid(r, field) for r in records[:3]):
-            has_grasp = True
-        else:
-            result["privilege_missing_fields"].append(field)
-    result["grasp_privilege_valid"] = has_grasp and not result["privilege_missing_fields"]
+        if not any(_field_is_valid(r, field) for r in records[:3]):
+            grasp_missing.append(field)
+    result["grasp_privilege_valid"] = len(grasp_missing) == 0
 
-    # Check placement privilege
-    has_placement = True
+    # Placement: requires grasp valid AND all target fields valid
+    placement_missing = []
     for field in PLACEMENT_PRIVILEGE_FIELDS:
         if not any(_field_is_valid(r, field) for r in records[:3]):
-            has_placement = False
-            result["privilege_missing_fields"].append(field)
-    result["placement_privilege_valid"] = has_placement and has_grasp
+            placement_missing.append(field)
+    result["placement_privilege_valid"] = (
+        result["grasp_privilege_valid"] and len(placement_missing) == 0
+    )
 
+    result["privilege_missing_fields"] = grasp_missing + placement_missing
     return result
 
 

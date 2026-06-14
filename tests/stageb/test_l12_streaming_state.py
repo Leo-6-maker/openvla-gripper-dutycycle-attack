@@ -147,6 +147,69 @@ def test_streaming_handles_raw_proxy_field():
     for r in records:
         state.update(r)
 
-    # Should detect the close at step 30 via proxy field
     assert state.predictions[30]["is_close_event_candidate"]
     assert state.predictions[30]["raw_open_to_close_crossing"]
+
+
+def test_streaming_missing_qpos_disables_all_qpos_bonuses():
+    """When qpos field is missing/empty, no qpos bonuses are awarded."""
+    records = _make_trace(n_close_onset_at=30)
+    # Remove qpos from all records
+    for r in records:
+        r["gripper_qpos_before"] = ""
+
+    state = CloseEventStreamingState()
+    for r in records:
+        state.update(r)
+
+    # At the close step, score should come from raw crossing + close_streak only
+    # No close_onset+qpos bonus (+0.5) and no qpos ready bonus (+0.3)
+    pred = state.predictions[30]
+    assert pred["close_onset"] == 1
+    # Score = 1.5 (raw crossing) + 1.0 (close_streak==1) = 2.5
+    # NOT 3.3 (which includes +0.5 +0.3 from qpos)
+    assert pred["score"] == 2.5, f"Expected 2.5 (no qpos bonuses), got {pred['score']}"
+
+
+def test_missing_qpos_batch_streaming_parity():
+    """Batch and streaming produce identical scores when qpos is missing."""
+    records = _make_trace(n_close_onset_at=30)
+    for r in records:
+        r["gripper_qpos_before"] = ""
+
+    preds_batch = rule_based_close_predictor(records)
+    state = CloseEventStreamingState()
+    for r in records:
+        state.update(r)
+
+    for t in range(len(records)):
+        assert abs(preds_batch[t]["score"] - state.predictions[t]["score"]) < 1e-6, \
+            f"Step {t}: batch={preds_batch[t]['score']}, stream={state.predictions[t]['score']}"
+
+
+def test_invalid_eef_history_batch_streaming_parity():
+    """Batch and streaming produce identical scores with invalid EEF history."""
+    records = _make_trace(n_close_onset_at=30)
+    for r in records:
+        r["eef_x"] = ""; r["eef_y"] = ""; r["eef_z"] = ""
+
+    preds_batch = rule_based_close_predictor(records)
+    state = CloseEventStreamingState()
+    for r in records:
+        state.update(r)
+
+    for t in range(len(records)):
+        assert abs(preds_batch[t]["score"] - state.predictions[t]["score"]) < 1e-6, \
+            f"Step {t}: batch={preds_batch[t]['score']}, stream={state.predictions[t]['score']}"
+
+
+def test_raw_crossing_does_not_bridge_invalid_gap():
+    """Raw crossing NOT detected when current gripper semantics invalid."""
+    records = _make_trace(n_close_onset_at=30)
+    records[30]["gripper_semantics_valid"] = 0  # invalid at close
+
+    state = CloseEventStreamingState()
+    for r in records:
+        state.update(r)
+
+    assert not state.predictions[30]["raw_open_to_close_crossing"]

@@ -721,3 +721,35 @@ def test_single_frame_z_jitter_still_fails():
     evidence = _classify_motion_evidence(records, 30, min_delta=0.005, sustained_frames=2)
     assert evidence["motion_evidence_type"] != MOTION_SUSTAINED_VERTICAL_LIFT, \
         f"Single-frame jitter should fail: {evidence['motion_evidence_type']}"
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Follow-up: placement privilege and Teacher-P abstain
+# ═══════════════════════════════════════════════════════════════════
+
+def test_placement_privilege_requires_valid_grasp_privilege():
+    """Placement privilege is False when grasp fields are incomplete."""
+    records = _make_case_a()
+    # Remove one grasp field → grasp privilege invalid
+    for r in records:
+        r["eef_x"] = ""
+    cap = check_teacher_p_privilege_capability(records)
+    assert not cap["grasp_privilege_valid"]
+    assert not cap["placement_privilege_valid"], \
+        "Placement should not be true when grasp is false"
+
+
+def test_teacher_p_abstain_does_not_fallback_to_teacher_r():
+    """When Teacher-P abstains, horizon labels use -1 (no fallback)."""
+    records = _make_case_a()
+    for r in records:
+        r["obj_x"] = ""  # break grasp privilege → Teacher-P will abstain
+
+    anchor_p = teacher_privileged_critical_close_anchor(records)
+    assert anchor_p == -1, "Teacher-P should abstain"
+
+    # Student with horizon_anchor=-1: no horizon labels filled
+    preds = rule_based_close_predictor(records, horizon=4, teacher_anchor=-1)
+    for p in preds:
+        assert not p["will_critical_close_within_horizon"], \
+            f"Step {p['step']}: should not have horizon label when P abstains"

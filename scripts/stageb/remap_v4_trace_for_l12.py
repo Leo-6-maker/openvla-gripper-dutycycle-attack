@@ -20,6 +20,8 @@ import csv
 import math
 import sys
 
+REMAPPER_VERSION = "rc1a_corrected_v2_e1_5"
+
 
 def _is_numeric(val) -> bool:
     """Check if a value is a valid finite number (not empty, not NaN)."""
@@ -229,7 +231,7 @@ def remap_v4_to_l12(input_path: str, output_path: str,
             "success": int(r.get("success_done", 0)),
             "done": int(r.get("success_done", 0)),
             "source_trace": input_path,
-            "remapper_version": "rc1a_corrected_v1",
+            "remapper_version": REMAPPER_VERSION,
         }
         l12_rows.append(row)
         if clean_close is not None:

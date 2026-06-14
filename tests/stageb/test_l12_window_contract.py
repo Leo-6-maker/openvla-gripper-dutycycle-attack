@@ -187,3 +187,42 @@ def test_unknown_prediction_mode_rejected():
     p = _valid_proposal(prediction_mode="some_future_v3")
     assert not p.is_valid()
     assert any("prediction_mode:UNKNOWN" in i for i in p.validate())
+
+
+def test_abstain_window_proposal_is_contract_valid():
+    """Legitimate abstention (eligible=False, abstain_reason, negative window) is valid."""
+    p = _valid_proposal(
+        eligible=False,
+        abstain_reason="no_online_trigger",
+        window_start=-1,
+        window_end=-1,
+        anchor_step=-1,
+        predicted_first_close_step=-1,
+        is_online=True,
+        selection_mode="online_streaming",
+        features_are_causal=True,
+        selection_is_causal=True,
+        prediction_mode="",
+    )
+    assert p.is_valid(), f"Abstain proposal should be valid: {p.validate()}"
+
+
+def test_negative_window_without_reason_is_invalid():
+    """Negative window without abstain_reason is invalid."""
+    p = _valid_proposal(
+        eligible=False,
+        abstain_reason="",
+        window_start=-1,
+    )
+    assert not p.is_valid()
+    assert any("NEGATIVE_WITHOUT_REASON" in i for i in p.validate())
+
+
+def test_eligible_with_negative_window_is_invalid():
+    """Eligible=True with negative window is a contract violation."""
+    p = _valid_proposal(
+        eligible=True,
+        window_start=-1,
+    )
+    assert not p.is_valid()
+    assert any("NEGATIVE_ON_ELIGIBLE" in i for i in p.validate())
