@@ -1,0 +1,11 @@
+change_area,classification,details,claim_impact
+new telemetry imports / helpers,LOGGING_ONLY,"Adds self-contained exact-token extraction, token execution classification, final-score audit, and invariant labeling. Does not call env.step or mutate inputs/actions.","Needed for mechanism audit."
+clean decode telemetry call,LOGGING_ONLY,"Runs after the existing clean decode and reads generation outputs already produced by decode_with_scores.","No intended execution change."
+executed_gen_out variable,LOGGING_ONLY,"Retains a reference to the generation object for the action actually selected by the existing branch.","No intended execution change."
+VIS branch adv_gen capture,LOGGING_ONLY,"Changes adv_action, _, _, _ to adv_action, _, _, adv_gen with identical decode_with_scores arguments.","No intended execution change."
+random branch output_scores flag,NUMERICAL_PATH_CHANGE_OBSERVED_NO_TOKEN_CHANGE,"Changes model.generate output_scores from False to True so final processed scores can be audited. This changes returned payload and memory use, though greedy decode arguments are otherwise identical.","EXECUTION_EQUIVALENCE_OBSERVED_ON_TESTED_WINDOW. NOT PROVEN BITWISE EQUIVALENT. Original oldbase control on pair13 seed80 matched instrumented RAND80 at success/open=5."
+random branch prompt_len annotation,LOGGING_ONLY,"Annotates gen_rand.prompt_len after generation for exact token slicing.","No intended execution change."
+executed telemetry call,LOGGING_ONLY,"Runs after env_action and executed_action have been selected; reads generation scores/tokens for CSV.","No intended execution change."
+trace row extra fields,LOGGING_ONLY,"Adds token ids, execution classes, score audit JSON, and score invariant fields to trace rows.","No intended execution change."
+summary generation,UNCHANGED,"Summary code and success termination logic are unchanged from oldbase runner.","Supports qualitative comparison to S20F."
+known residual,CLAIM_LIMITATION,"Because random output_scores=True is not a strict no-op and exact historical counts drift for seeds 80 and 82, freeze exact numerical reproduction as PARTIAL.","Allowed claim is qualitative paired reproduction plus directional clip-open persistence, not bitwise replay. Instrumentation equivalence is observed on tested window only."
