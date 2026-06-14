@@ -251,7 +251,7 @@ def replay_true_pgd_candidates(
         delta = torch.zeros_like(x_orig)
     adv = adapter._project_pixel_master(x_orig + delta, x_orig).detach()
     delta0_adv_model = adapter._cast_projected_pixel_values(adv.detach(), x_orig_model)
-    rows: list[dict[str, Any]] = []
+    candidate_states: list[dict[str, Any]] = []
 
     def record_candidate(
         *,
@@ -262,6 +262,22 @@ def replay_true_pgd_candidates(
         surrogate_prefix: list[int] | None = None,
         gradient_norm: Mapping[str, Any] | None = None,
     ) -> None:
+        candidate_states.append(
+            {
+                "iteration": int(iteration),
+                "update_step": update_step,
+                "pixel_values": pixel_values.detach().clone(),
+                "surrogate_stats": dict(surrogate_stats or {}),
+                "surrogate_prefix": list(surrogate_prefix or []),
+                "gradient_norm": dict(gradient_norm or {}),
+            }
+        )
+
+    def official_row(state: Mapping[str, Any]) -> dict[str, Any]:
+        pixel_values = state["pixel_values"]
+        surrogate_stats = state["surrogate_stats"]
+        surrogate_prefix = state["surrogate_prefix"]
+        gradient_norm = state["gradient_norm"]
         official = official_decode(
             model,
             {"input_ids": clean_ids.detach(), "pixel_values": pixel_values.detach()},
@@ -275,38 +291,32 @@ def replay_true_pgd_candidates(
         delta_model = (pixel_values.detach().float() - x_orig_model.detach().float()).detach()
         arm_match = arm_match_count([int(x) for x in official["arm_prefix"]], clean_prefix)
         stats = official["target_stats"]
-        rows.append(
-            {
-                "iteration": int(iteration),
-                "update_step": update_step,
-                "official_tokens": _json_list(official["tokens"]),
-                "official_gripper_token": int(official["gripper_token"]),
-                "official_target31744_score": float(stats["target_token_score"]),
-                "official_best_competitor_token": int(stats["best_competitor_token_id"]),
-                "official_best_competitor_score": float(stats["best_competitor_score"]),
-                "official_target31744_margin": float(stats.get("target_objective_margin", stats["target_minus_best_competitor_margin"])),
-                "official_target31744_best_competitor_margin": float(stats["target_minus_best_competitor_margin"]),
-                "official_target31744_logratio_margin": stats.get("target_minus_competitor_logsumexp_margin", ""),
-                "score_invariant_status": "PASS" if official["score_invariant"]["tie_aware_pass"] else "FAIL",
-                "official_arm_prefix": _json_list(official["arm_prefix"]),
-                "clean_arm_prefix": _json_list(clean_prefix),
-                "arm_prefix_match_count": int(arm_match),
-                "arm_prefix_match_denominator": int(len(clean_prefix)),
-                "surrogate_arm_prefix_pre_update": _json_list(surrogate_prefix or []),
-                "surrogate_logratio_margin_pre_update": ""
-                if surrogate_stats is None
-                else surrogate_stats.get("target_minus_competitor_logsumexp_margin", ""),
-                "surrogate_best_competitor_margin_pre_update": ""
-                if surrogate_stats is None
-                else surrogate_stats.get("target_minus_best_competitor_margin", ""),
-                "gradient_l1": "" if gradient_norm is None else gradient_norm.get("l1", ""),
-                "gradient_l2": "" if gradient_norm is None else gradient_norm.get("l2", ""),
-                "gradient_linf": "" if gradient_norm is None else gradient_norm.get("linf", ""),
-                "delta_sha256": tensor_sha256(delta_model),
-                "processor_input_sha256": tensor_sha256(pixel_values.detach()),
-                "processor_linf": float(delta_model.abs().max().cpu()) if delta_model.numel() else 0.0,
-            }
-        )
+        return {
+            "iteration": int(state["iteration"]),
+            "update_step": state["update_step"],
+            "official_tokens": _json_list(official["tokens"]),
+            "official_gripper_token": int(official["gripper_token"]),
+            "official_target31744_score": float(stats["target_token_score"]),
+            "official_best_competitor_token": int(stats["best_competitor_token_id"]),
+            "official_best_competitor_score": float(stats["best_competitor_score"]),
+            "official_target31744_margin": float(stats.get("target_objective_margin", stats["target_minus_best_competitor_margin"])),
+            "official_target31744_best_competitor_margin": float(stats["target_minus_best_competitor_margin"]),
+            "official_target31744_logratio_margin": stats.get("target_minus_competitor_logsumexp_margin", ""),
+            "score_invariant_status": "PASS" if official["score_invariant"]["tie_aware_pass"] else "FAIL",
+            "official_arm_prefix": _json_list(official["arm_prefix"]),
+            "clean_arm_prefix": _json_list(clean_prefix),
+            "arm_prefix_match_count": int(arm_match),
+            "arm_prefix_match_denominator": int(len(clean_prefix)),
+            "surrogate_arm_prefix_pre_update": _json_list(surrogate_prefix),
+            "surrogate_logratio_margin_pre_update": surrogate_stats.get("target_minus_competitor_logsumexp_margin", ""),
+            "surrogate_best_competitor_margin_pre_update": surrogate_stats.get("target_minus_best_competitor_margin", ""),
+            "gradient_l1": gradient_norm.get("l1", ""),
+            "gradient_l2": gradient_norm.get("l2", ""),
+            "gradient_linf": gradient_norm.get("linf", ""),
+            "delta_sha256": tensor_sha256(delta_model),
+            "processor_input_sha256": tensor_sha256(pixel_values.detach()),
+            "processor_linf": float(delta_model.abs().max().cpu()) if delta_model.numel() else 0.0,
+        }
 
     record_candidate(iteration=0, update_step="delta0", pixel_values=delta0_adv_model)
 
@@ -369,7 +379,9 @@ def replay_true_pgd_candidates(
         "num_steps": int(cfg["attack_optimizer"]["num_steps"]),
         "step_size": float(cfg["attack_optimizer"]["step_size"]),
         "commit": git_value(["rev-parse", "HEAD"]),
+        "official_decode_schedule": "after_full_pgd_replay",
     }
+    rows = [official_row(state) for state in candidate_states]
     return rows, replay_meta
 
 
