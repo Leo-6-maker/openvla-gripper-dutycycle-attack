@@ -40,6 +40,13 @@ DEPLOYMENT_SAFE_FIELDS = [
 ]
 
 
+def _safe_float(v, default=0.0):
+    try:
+        return float(v)
+    except (ValueError, TypeError):
+        return default
+
+
 def compute_eef_velocity(records: list[dict], window: int = 3) -> list[float]:
     """Compute EEF velocity magnitude from consecutive positions."""
     velocities = []
@@ -47,9 +54,9 @@ def compute_eef_velocity(records: list[dict], window: int = 3) -> list[float]:
         if i < window:
             velocities.append(0.0)
             continue
-        dx = records[i].get("eef_x", 0) - records[i - window].get("eef_x", 0)
-        dy = records[i].get("eef_y", 0) - records[i - window].get("eef_y", 0)
-        dz = records[i].get("eef_z", 0) - records[i - window].get("eef_z", 0)
+        dx = _safe_float(records[i].get("eef_x", 0)) - _safe_float(records[i - window].get("eef_x", 0))
+        dy = _safe_float(records[i].get("eef_y", 0)) - _safe_float(records[i - window].get("eef_y", 0))
+        dz = _safe_float(records[i].get("eef_z", 0)) - _safe_float(records[i - window].get("eef_z", 0))
         velocities.append(float(np.sqrt(dx**2 + dy**2 + dz**2)))
     return velocities
 
@@ -67,13 +74,10 @@ def teacher_phase_labels(records: list[dict]) -> list[str]:
 
     for t in range(T):
         r = records[t]
-        # Extract privileged fields if available
-        obj_z = r.get("obj_z", None)
-        eef_z = r.get("eef_z", None)
-        clean_close = r.get("clean_close", 0)
-        close_onset = r.get("close_onset", 0)
-        decoded_open = r.get("decoded_open_bool", 0)
-        gripper_qpos = r.get("gripper_qpos_before", 0)
+        clean_close = int(_safe_float(r.get("clean_close", 0)))
+        close_onset = int(_safe_float(r.get("close_onset", 0)))
+        decoded_open = int(_safe_float(r.get("decoded_open_bool", 0)))
+        gripper_qpos = _safe_float(r.get("gripper_qpos_before", 0))
 
         # ── Rule-based teacher ──
         # release_safe: gripper OPEN after a period of CLOSE (post-grasp release)
@@ -110,7 +114,7 @@ def teacher_phase_labels(records: list[dict]) -> list[str]:
         if clean_close and t > T - 20:
             found_open = False
             for fwd in range(t + 1, min(t + 15, T)):
-                if records[fwd].get("decoded_open_bool", 0):
+                if int(_safe_float(records[fwd].get("decoded_open_bool", 0))):
                     found_open = True
                     break
             if found_open:
@@ -127,10 +131,9 @@ def teacher_critical_close_anchor(records: list[dict]) -> int:
     """
     # Find first clean CLOSE onset after approach phase
     for t, r in enumerate(records):
-        if r.get("close_onset", 0) and r.get("clean_close", 0):
-            # Verify this isn't a post-release re-close by checking qpos
-            qpos = r.get("gripper_qpos_before", 0)
-            if qpos < 0.01:  # gripper is physically closed (not just commanded)
+        if int(_safe_float(r.get("close_onset", 0))) and int(_safe_float(r.get("clean_close", 0))):
+            qpos = _safe_float(r.get("gripper_qpos_before", 0))
+            if qpos < 0.01:
                 return t
     return -1
 

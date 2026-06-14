@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from typing import Optional
 
 import numpy as np
@@ -26,27 +27,30 @@ def _sha256_str(s: str) -> str:
     return hashlib.sha256(s.encode()).hexdigest()
 
 
-def extract_deployment_features(records: list[dict]) -> np.ndarray:
-    """Extract deployment-safe feature matrix from clean trace records.
+def _safe_float(v, default=0.0):
+    try:
+        return float(v)
+    except (ValueError, TypeError):
+        return default
 
-    Returns (T, F) array where F = 13: gripper_env, gripper_raw, gripper_qpos,
-    qpos_abs, eef_x/y/z, close_streak, decoded_open, eef_vel_x/y/z (computed).
-    """
+
+def extract_deployment_features(records: list[dict]) -> np.ndarray:
+    """Extract deployment-safe feature matrix from clean trace records."""
     T = len(records)
     F = 13
     feats = np.zeros((T, F), dtype=np.float32)
 
     for t in range(T):
         r = records[t]
-        feats[t, 0] = float(r.get("clean_gripper_env", 0))
-        feats[t, 1] = float(r.get("clean_gripper_raw", 0.0))
-        feats[t, 2] = float(r.get("gripper_qpos_before", 0.0))
-        feats[t, 3] = float(r.get("qpos_abs_before", 0.0))
-        feats[t, 4] = float(r.get("eef_x", 0.0))
-        feats[t, 5] = float(r.get("eef_y", 0.0))
-        feats[t, 6] = float(r.get("eef_z", 0.0))
-        feats[t, 7] = float(r.get("close_streak", 0))
-        feats[t, 8] = float(r.get("decoded_open_bool", 0))
+        feats[t, 0] = _safe_float(r.get("clean_gripper_env", 0))
+        feats[t, 1] = _safe_float(r.get("clean_gripper_raw", 0.0))
+        feats[t, 2] = _safe_float(r.get("gripper_qpos_before", 0.0))
+        feats[t, 3] = _safe_float(r.get("qpos_abs_before", 0.0))
+        feats[t, 4] = _safe_float(r.get("eef_x", 0.0))
+        feats[t, 5] = _safe_float(r.get("eef_y", 0.0))
+        feats[t, 6] = _safe_float(r.get("eef_z", 0.0))
+        feats[t, 7] = _safe_float(r.get("close_streak", 0))
+        feats[t, 8] = _safe_float(r.get("decoded_open_bool", 0))
         # EEF velocity (3-step)
         if t >= 3:
             feats[t, 9] = feats[t, 4] - feats[t - 3, 4]
@@ -72,13 +76,12 @@ def rule_based_close_predictor(records: list[dict]) -> list[dict]:
         r = visible[-1]
 
         # ── Features ──
-        clean_close = r.get("clean_close", 0)
-        close_onset = r.get("close_onset", 0)
-        close_streak = r.get("close_streak", 0)
-        decoded_open = r.get("decoded_open_bool", 0)
-        qpos = float(r.get("gripper_qpos_before", 0))
-        qpos_abs = float(r.get("qpos_abs_before", 0))
-        eef_z = float(r.get("eef_z", 0))
+        clean_close = int(_safe_float(r.get("clean_close", 0)))
+        close_onset = int(_safe_float(r.get("close_onset", 0)))
+        close_streak = int(_safe_float(r.get("close_streak", 0)))
+        decoded_open = int(_safe_float(r.get("decoded_open_bool", 0)))
+        qpos = _safe_float(r.get("gripper_qpos_before", 0))
+        qpos_abs = _safe_float(r.get("qpos_abs_before", 0))
 
         # ── Scoring ──
         score = 0.0
@@ -171,7 +174,9 @@ def build_clean_proposal(
     phase_label: str = "",
 ) -> WindowProposal:
     """Build a frozen WindowProposal from clean-only selector output."""
-    pid = f"{task_key}_s{state_id}_l12v1"
+    import hashlib as _hl
+    _trace_stem = os.path.basename(trace_path).replace(".csv", "")[-20:]
+    pid = f"{task_key}_s{state_id}_l12v1_{_trace_stem}"
     return WindowProposal(
         proposal_id=pid,
         selector_version=SELECTOR_VERSION,
