@@ -1,0 +1,24 @@
+# E3 FROZEN SENSITIVITY GRID — preregistered before any E3 run
+# Do NOT modify after first E3 execution.
+# Selector/remapper/thresholds otherwise frozen (Commit A: e87820a).
+
+grid:
+  tie_tolerance:       [0.1, 0.3, 0.5, 0.8, 1.0]
+  min_close_separation: [5, 10, 20]
+  event_score_floor:    [0.3, 0.5, 0.8]
+  online_threshold:     [1.0, 1.5, 2.0, 2.5]
+
+frozen:
+  window_len: 10
+  pre_offset: 2
+  prediction_horizon: 4
+  confirmation_steps: 1
+  cooldown_steps: 20
+  selector_version: "l12_close_event_interceptor_v4"
+  remapper_version: "rc1a_corrected_v2_e1_5"
+  selector_commit: "0f72fda"
+  teacher_p_thresholds:
+    eef_near: 0.08
+    cumulative_lift_delta: 0.005
+    lookahead: 15
+    sustained_frames: 2
