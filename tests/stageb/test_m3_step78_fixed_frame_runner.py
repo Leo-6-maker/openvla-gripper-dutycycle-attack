@@ -69,3 +69,5 @@ def test_config_does_not_enable_libero_rollout_result_modes():
     assert "full_window" not in cfg.get("stage", "").lower()
     assert "rollout" not in cfg.get("stage", "").lower()
     assert "legacy" not in cfg["conditions"]
+    assert cfg["controls"]["shuffled_grad_control"] == "single_pgd20_trajectory"
+    assert "shuffled_grad_count" not in cfg["controls"]

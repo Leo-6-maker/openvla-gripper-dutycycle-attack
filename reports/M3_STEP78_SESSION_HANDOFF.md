@@ -4,12 +4,13 @@
 
 `M3_STEP78_TRUE_PGD_CANARY = RANDOM_NOT_BEATEN`
 
-The route and official transfer worked, but the matched `RAND20` control tied TRUE_PGD on official target margin and emitted the same target token.
+The route and official transfer worked, but the matched `RAND20` control tied TRUE_PGD on official target margin and emitted the same target token. A follow-up audit computed that the selected `RAND20` best only matched the clean arm prefix `4/6`, while TRUE_PGD matched `6/6`; this does not change the preregistered primary result.
 
 ## Key Commits
 
 - Integration base after PR #14 merge: `a47f0a9ddd00ad61b47a16e439aea4c9c3f8d7e7`
-- M3 step78 branch head: `af545e1c5eb1012ad5dc8b8872e50596315bd4d5`
+- Experiment commit: `af545e1c5eb1012ad5dc8b8872e50596315bd4d5`
+- Initial result report commit: `6d5abca43dd6dae3487d547c20ff617a242e1abe`
 
 ## Pull Request
 
@@ -77,4 +78,4 @@ The fixed-frame random superiority gate failed. Do not run the fixed-frame panel
 
 ## Next Action
 
-Review PR #15 and the negative canary result. Any continuation would require an explicit decision to run the bounded development-only diagnostic grid described in the preregistration constraints; changing epsilon, target token, window, objective, or success criteria requires owner approval.
+Phase A follow-up has tightened PR #15 artifacts. The next authorized work is Phase C: audit all 20 frozen RAND candidates for official token and arm-selectivity behavior, then Phase D CPU-only implementation of the non-saturating target-logratio v2 objective. Changing epsilon, target token, frame, random candidate count, or primary success criteria requires owner approval.

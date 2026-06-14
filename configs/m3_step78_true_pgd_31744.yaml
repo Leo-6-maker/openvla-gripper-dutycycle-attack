@@ -44,14 +44,14 @@ controls:
   rand20_count: 20
   rand20_selection_metric: surrogate_target31744_margin
   shuffled_grad_mode: permute
-  shuffled_grad_count: 20
+  shuffled_grad_control: single_pgd20_trajectory
 
 conditions:
   - CLEAN
   - PGD_DELTA0
   - TRUE_PGD_FINAL
   - RAND20
-  - SHUFFLED_GRAD20
+  - SHUFFLED_GRAD_PGD20
 
 gates:
   preflight_required: true

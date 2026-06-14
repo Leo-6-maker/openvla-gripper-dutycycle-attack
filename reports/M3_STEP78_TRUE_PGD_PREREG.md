@@ -12,7 +12,7 @@ Primary objective: `autoregressive_prefix_gripper_target_token_cw_v1`.
 
 Primary comparison:
 
-`TRUE_PGD_FINAL` vs `PGD_DELTA0`, `RAND20`, and `SHUFFLED_GRAD20`.
+`TRUE_PGD_FINAL` vs `PGD_DELTA0`, `RAND20`, and `SHUFFLED_GRAD_PGD20`.
 
 Legacy Tomato conditions are historical context only and are not part of the fixed-frame superiority claim.
 
@@ -23,7 +23,7 @@ Legacy Tomato conditions are historical context only and are not part of the fix
 3. TRUE_PGD must prove strict route metadata: no fallback, `TokenPrefixPGDAttacker`, `adv_inputs` decode path, `20` backwards, exact `7` generated tokens, and valid processor-space budget.
 4. Surrogate margin must improve from `PGD_DELTA0` to `TRUE_PGD_FINAL`.
 5. Official target margin must improve from `PGD_DELTA0` to `TRUE_PGD_FINAL`.
-6. TRUE_PGD official target margin must exceed both `RAND20` best and `SHUFFLED_GRAD20`.
+6. TRUE_PGD official target margin must exceed both `RAND20` best and `SHUFFLED_GRAD_PGD20`.
 7. Actual generated arm prefix must match the clean generated prefix in at least `5/6` positions.
 
 ## Result Classes
@@ -48,4 +48,4 @@ Only `FULL_TOKEN_FLIP` or `MARGIN_ONLY_TRANSFER` with random controls beaten per
 - No closed-loop critical-closure disruption is claimed here.
 - Historical Tomato legacy behavior is not treated as true-PGD evidence.
 - Surrogate-only improvement is not treated as official generation improvement.
-- A result that does not beat `RAND20` and `SHUFFLED_GRAD20` is not `VIS > random`.
+- A result that does not beat `RAND20` and `SHUFFLED_GRAD_PGD20` is not `VIS > random`.

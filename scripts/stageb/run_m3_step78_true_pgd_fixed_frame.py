@@ -86,7 +86,7 @@ TASK_IDX = {
     "orange_juice": 9,
 }
 
-MAIN_CONDITIONS = ["CLEAN", "PGD_DELTA0", "TRUE_PGD_FINAL", "RAND20", "SHUFFLED_GRAD20"]
+MAIN_CONDITIONS = ["CLEAN", "PGD_DELTA0", "TRUE_PGD_FINAL", "RAND20", "SHUFFLED_GRAD_PGD20"]
 PRELIGHT_CLASSES = {
     "SURROGATE_OFFICIAL_SCORE_PATH_MATCH",
     "SURROGATE_OFFICIAL_SCORE_PATH_TIE_EQUIVALENT",
@@ -424,6 +424,8 @@ def collect_condition_row(
     result_class: str = "",
     arm_match: tuple[int, int] | None = None,
     processor_linf: float | None = None,
+    stage_result: str = "",
+    arm_selectivity_status: str = "",
 ) -> dict[str, Any]:
     stats = official["target_stats"]
     return {
@@ -444,7 +446,9 @@ def collect_condition_row(
         "arm_prefix_match_count": "" if arm_match is None else int(arm_match[0]),
         "arm_prefix_match_denominator": "" if arm_match is None else int(arm_match[1]),
         "processor_linf": "" if processor_linf is None else float(processor_linf),
-        "result_class": result_class,
+        "condition_result": result_class,
+        "arm_selectivity_status": arm_selectivity_status,
+        "stage_result": stage_result,
         "output_dir": str(output_dir),
     }
 
@@ -715,7 +719,7 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
             official=true_official,
             surrogate=true_surrogate,
             route_status="PASS",
-            result_class="PENDING_GATE",
+            result_class="TRUE_PGD_CONDITION_VALID",
             arm_match=arm_match,
             processor_linf=float(true_debug.get("pixel_budget_adv_inputs_linf", 0.0) or 0.0),
         )
@@ -766,7 +770,7 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
         candidate_rows.append({"stage": stage, "commit": commit, "attack_seed": seed, **row})
 
     shuffled_info, shuffled_inputs = run_true_pgd_condition(
-        name="SHUFFLED_GRAD20",
+        name="SHUFFLED_GRAD_PGD20",
         model=model,
         processor=processor,
         cfg=cfg,
@@ -792,7 +796,7 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
         collect_condition_row(
             stage=stage,
             commit=commit,
-            condition="SHUFFLED_GRAD20",
+            condition="SHUFFLED_GRAD_PGD20",
             attack_seed=seed,
             output_dir=output_dir,
             official=shuffled_official,
