@@ -1,0 +1,12 @@
+claim,status,evidence,notes
+strict_true_pgd_route,PASS,tables/m3_logratio_v2_seed81_route_audit.csv,"strict_route=true, fallback_used=false, num_backwards=20"
+surrogate_official_preflight,PASS,tables/m3_logratio_v2_seed81_summary.csv,"clean and delta0 both SURROGATE_OFFICIAL_SCORE_PATH_MATCH"
+official_target_margin_transfer,PASS,tables/m3_logratio_v2_seed81_condition_results.csv,"delta0 -0.25 to TRUE_PGD 29.249469757080078"
+true_pgd_beats_rand20_margin,PASS,tables/m3_logratio_v2_seed81_condition_results.csv,"TRUE_PGD 29.249469757080078 > RAND20 6.0"
+true_pgd_beats_shuffled_margin,PASS,tables/m3_logratio_v2_seed81_condition_results.csv,"TRUE_PGD 29.249469757080078 > SHUFFLED_GRAD_PGD20 -0.5"
+arm_selectivity,FAIL,tables/m3_logratio_v2_seed81_condition_results.csv,"TRUE_PGD arm prefix match 2/6 < 5/6"
+fixed_frame_panel_success,NOT_ESTABLISHED,reports/M3_LOGRATIO_V2_SEED81_CANARY_RESULTS.md,"stopped before panel"
+closed_loop_critical_closure_disruption,NOT_ESTABLISHED,reports/M3_LOGRATIO_V2_SEED81_CANARY_RESULTS.md,"no LIBERO rollout launched"
+paired_task_effect,NOT_ESTABLISHED,reports/M3_LOGRATIO_V2_SEED81_CANARY_RESULTS.md,"no LIBERO rollout launched"
+held_out_transfer,NOT_ESTABLISHED,reports/M3_LOGRATIO_V2_SEED81_CANARY_RESULTS.md,"no held-out parent run"
+layer3_solved,FORBIDDEN,reports/M3_LOGRATIO_V2_SEED81_CANARY_RESULTS.md,"ARM_NONSELECTIVE result stops this path before downstream gates"
