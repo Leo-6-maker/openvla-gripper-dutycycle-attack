@@ -1,0 +1,13 @@
+task_key,state_id,anchor_type,anchor_step,eef_to_obj_distance,cumulative_vertical_dz,cumulative_horizontal_dxy,motion_evidence_type,sustained_above_threshold_frames,eef_attachment_consistent,clean_close,close_onset,decoded_open_bool,gripper_qpos_before
+butter,2,Teacher-P,68,0.021996,0.0507,0.01166,sustained_vertical_lift,6,True,1,1,0,-0.00153
+butter,2,Teacher-R,4,0.340292,0.0,0.0,no_sustained_motion,0,False,1,1,0,-2.606e-
+butter,1,Teacher-P,72,0.044432,0.06192,0.01494,sustained_vertical_lift,6,True,1,1,0,-0.00012
+butter,1,Teacher-R,6,0.363901,0.0,0.0,no_sustained_motion,0,False,1,1,0,-3.39e-0
+cream_cheese,1,Teacher-P,54,0.025909,0.02463,0.01138,sustained_vertical_lift,4,True,1,1,0,-8.45e-0
+cream_cheese,1,Teacher-R,8,0.338270,0.0,0.0,no_sustained_motion,0,False,1,1,0,-5.45e-0
+bbq_sauce,0,Teacher-P,85,0.038281,0.00682,0.01435,sustained_vertical_lift,2,True,1,1,0,-1.429e-
+bbq_sauce,0,Teacher-R,52,0.064336,0.0046,0.00819,sustained_horizontal_transport,3,True,1,1,0,-1.916e-
+ketchup,2,Teacher-P,56,0.042386,0.03181,0.00503,sustained_vertical_lift,6,True,1,1,0,-4.889e-
+ketchup,2,Teacher-R,0,0.301724,0.0,0.0,no_sustained_motion,0,False,1,1,0,1.73e-06
+alphabet_soup,1,Teacher-P,122,0.048769,0.08724,0.00489,sustained_vertical_lift,9,True,1,1,0,-9.275e-
+alphabet_soup,1,Teacher-R,62,0.043663,0.0035,0.00461,no_sustained_motion,0,True,1,1,0,-0.00835

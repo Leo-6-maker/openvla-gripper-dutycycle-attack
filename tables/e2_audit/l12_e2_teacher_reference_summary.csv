@@ -1,0 +1,13 @@
+task_key,state_id,teacher_p_anchor,teacher_p_available,teacher_r_anchor
+butter,2,68,True,4
+butter,1,72,True,6
+cream_cheese,2,63,True,59
+cream_cheese,1,54,True,8
+bbq_sauce,0,85,True,52
+bbq_sauce,2,-1,False,49
+chocolate_pudding,2,58,True,58
+chocolate_pudding,1,-1,False,12
+ketchup,2,56,True,0
+ketchup,3,55,True,55
+alphabet_soup,2,55,True,55
+alphabet_soup,1,122,True,62
