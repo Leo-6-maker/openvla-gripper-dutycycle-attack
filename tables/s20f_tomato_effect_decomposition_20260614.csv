@@ -1,0 +1,4 @@
+seed,clean_window_open,rand_clean_shadow_open,rand_executed_open,vis_clean_shadow_open,vis_executed_open,vis_minus_rand,vis_minus_clean,rand_minus_clean,rand_open_to_close_count,vis_direct_c2o_count,clean_first_close,rand_first_close,vis_first_close,rand_delay_vs_clean,vis_delay_vs_clean,rand_post_open_rate,vis_post_open_rate,paired_task_effect
+80,9,10,5,10,10,5,1,-4,5,0,78,74,81,-4,3,0.467742,0.345,True
+81,9,10,5,9,9,4,0,-4,5,0,78,75,79,-3,1,0.463087,0.23,True
+82,9,10,6,7,7,1,-2,-3,4,0,78,70,77,-8,-1,0.169014,0.176471,False
