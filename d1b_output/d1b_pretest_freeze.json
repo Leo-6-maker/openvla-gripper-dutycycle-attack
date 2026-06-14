@@ -1,0 +1,12 @@
+{
+  "best_epoch": 6,
+  "best_val_top1": 0.8,
+  "best_val_mae": 14.2,
+  "val_coverage": 1.0,
+  "val_baseline_top1": 0.05,
+  "val_baseline_top1_count": "1/20",
+  "val_baseline_top2": 0.7,
+  "val_baseline_coverage": 0.35,
+  "val_baseline_cond_mae": 55.4,
+  "checkpoint_sha": "cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7326f691742b9a438f1174858"
+}
