@@ -1,0 +1,8 @@
+claim,status,evidence,allowed_language,forbidden_language
+Fresh seed82 full selective replication,FAIL,TRUE_PGD emitted 31744 and beat controls on margin but arm match was 2/6,Do not claim replication pass,Do not claim v3 replicated seed81
+Target token controllability on seed82,PASS_WITH_LIMITATION,TRUE_PGD emitted 31744 with official target margin 29.937013626098633,TRUE_PGD can drive the target token on this fixed frame,Do not claim target control is arm selective
+Arm selectivity on seed82,FAIL,TRUE_PGD arm-prefix match was 2/6 against the actual clean generated prefix,Seed82 failed the arm gate,Do not call this gripper-selective
+TRUE_PGD margin greater than RAND20,PASS,TRUE_PGD margin 29.937013626098633 vs selected RAND20 margin 0.25,TRUE_PGD beat selected RAND20 on official target margin,Do not claim random had no target effect because RAND20 also emitted 31744
+TRUE_PGD margin greater than shuffled-gradient,PASS,TRUE_PGD margin 29.937013626098633 vs shuffled margin -0.5,TRUE_PGD beat shuffled-gradient on official target margin,Do not claim closed-loop effect
+Closed-loop Layer3,NOT_EVALUATED,No LIBERO rollout was run,None,Do not claim task effect or physical gripper disruption
+Multi-frame robustness,NOT_EVALUATED,Only Tomato state0 step78 seed82 was run,None,Do not claim panel robustness or held-out transfer

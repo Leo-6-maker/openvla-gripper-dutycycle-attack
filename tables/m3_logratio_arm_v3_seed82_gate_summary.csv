@@ -1,0 +1,6 @@
+condition,official_gripper_token,official_target31744_margin,official_tokens,arm_prefix_match,arm_gate,target_gate,rand_gate,shuffled_gate,notes
+CLEAN,31872,-0.25,"[31900, 31870, 31915, 31882, 31862, 31913, 31872]",6/6,CONTEXT,CONTEXT,CONTEXT,CONTEXT,clean reference
+PGD_DELTA0,31744,5.75,"[31900, 31870, 31915, 31882, 31891, 31834, 31744]",4/6,FAIL,PASS,CONTEXT,CONTEXT,initial random delta already emits target but drifts arm
+TRUE_PGD_FINAL,31744,29.937013626098633,"[31938, 31870, 31937, 31882, 31999, 31916, 31744]",2/6,FAIL,PASS,PASS,PASS,target and control margins pass but arm gate fails
+RAND20,31744,0.25,"[31900, 31870, 31915, 31882, 31862, 31913, 31744]",6/6,PASS,PASS,CONTROL,CONTROL,selected random control also emits target with lower margin and preserved arm
+SHUFFLED_GRAD_PGD20,31872,-0.5,"[31900, 31870, 31915, 31882, 31862, 31913, 31872]",6/6,PASS,FAIL,CONTROL,CONTROL,shuffled control preserves arm but does not emit target
