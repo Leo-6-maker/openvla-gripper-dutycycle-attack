@@ -753,3 +753,47 @@ def test_teacher_p_abstain_does_not_fallback_to_teacher_r():
     for p in preds:
         assert not p["will_critical_close_within_horizon"], \
             f"Step {p['step']}: should not have horizon label when P abstains"
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Third-review tests: horizontal transport, privilege atom, student provenance
+# ═══════════════════════════════════════════════════════════════════
+
+def test_x_only_horizontal_transport_detected():
+    """Pure x-direction movement without vertical lift → horizontal transport."""
+    records = _make_motion_trace(close_at=30)
+    for dt in [1, 2, 3, 4, 5]:
+        records[30 + dt]["obj_x"] = 0.5 + dt * 0.01  # moves in x only
+        records[30 + dt]["obj_y"] = 0.0
+        records[30 + dt]["obj_z"] = 0.05  # no vertical
+    evidence = _classify_motion_evidence(records, 30, min_delta=0.005)
+    assert evidence["motion_evidence_type"] == MOTION_SUSTAINED_HORIZONTAL_TRANSPORT, \
+        f"X-only transport should be detected, got {evidence['motion_evidence_type']}"
+
+
+def test_negative_y_horizontal_transport_detected():
+    """Negative y-direction movement → horizontal transport (not stuck)."""
+    records = _make_motion_trace(close_at=30)
+    for dt in [1, 2, 3, 4, 5]:
+        records[30 + dt]["obj_y"] = -dt * 0.01  # negative y only
+        records[30 + dt]["obj_z"] = 0.05
+    evidence = _classify_motion_evidence(records, 30, min_delta=0.005)
+    # Should be detected (cumulative dxy uses sqrt, magnitude matters)
+    assert evidence["motion_evidence_type"] == MOTION_SUSTAINED_HORIZONTAL_TRANSPORT, \
+        f"Negative-y transport should be detected, got {evidence['motion_evidence_type']}"
+
+
+def test_privilege_capability_requires_atomic_same_row_tuple():
+    """Privilege must be valid in a SINGLE row, not assembled across rows."""
+    records = _make_case_a()
+    # Split privilege fields across rows: no single row has all fields
+    for t, r in enumerate(records):
+        if t == 0:
+            r["obj_x"] = ""; r["obj_y"] = ""; r["obj_z"] = ""  # only eef
+        elif t == 1:
+            r["eef_x"] = ""; r["eef_y"] = ""; r["eef_z"] = ""  # only obj
+        elif t == 2:
+            r["eef_to_obj_distance"] = ""  # neither complete
+    cap = check_teacher_p_privilege_capability(records)
+    assert not cap["grasp_privilege_valid"], \
+        "Cross-row assembly should NOT count as grasp-valid"

@@ -233,7 +233,7 @@ def _classify_motion_evidence(records: list[dict], anchor_t: int,
             vert_above_cons = 0
 
         # Horizontal transport: cumulative xy >= threshold AND EEF near AND no vertical
-        if cumulative_dy >= min_delta and eef_near and cumulative_dz < min_delta:
+        if cumulative_dxy >= min_delta and eef_near and cumulative_dz < min_delta:
             horiz_above_cons += 1
         else:
             horiz_above_cons = 0
@@ -439,23 +439,27 @@ def check_teacher_p_privilege_capability(records: list[dict]) -> dict:
     if not records:
         return result
 
-    # Every required grasp field must be valid in at least one of first 3 records
-    grasp_missing = []
-    for field in GRASP_PRIVILEGE_FIELDS:
-        if not any(_field_is_valid(r, field) for r in records[:3]):
-            grasp_missing.append(field)
-    result["grasp_privilege_valid"] = len(grasp_missing) == 0
+    # Atomic same-row check: at least one record in sample must have ALL
+    # required fields valid simultaneously (not assembled across rows)
+    sample = records[:min(3, len(records))]
 
-    # Placement: requires grasp valid AND all target fields valid
-    placement_missing = []
-    for field in PLACEMENT_PRIVILEGE_FIELDS:
-        if not any(_field_is_valid(r, field) for r in records[:3]):
-            placement_missing.append(field)
-    result["placement_privilege_valid"] = (
-        result["grasp_privilege_valid"] and len(placement_missing) == 0
+    grasp_valid = any(
+        all(_field_is_valid(r, f) for f in GRASP_PRIVILEGE_FIELDS)
+        for r in sample
     )
+    result["grasp_privilege_valid"] = grasp_valid
 
-    result["privilege_missing_fields"] = grasp_missing + placement_missing
+    placement_valid = any(
+        all(_field_is_valid(r, f) for f in (GRASP_PRIVILEGE_FIELDS + PLACEMENT_PRIVILEGE_FIELDS))
+        for r in sample
+    )
+    result["placement_privilege_valid"] = placement_valid
+
+    # Collect which fields were missing from ALL sample rows
+    result["privilege_missing_fields"] = [
+        f for f in (GRASP_PRIVILEGE_FIELDS + PLACEMENT_PRIVILEGE_FIELDS)
+        if not any(_field_is_valid(r, f) for r in sample)
+    ]
     return result
 
 

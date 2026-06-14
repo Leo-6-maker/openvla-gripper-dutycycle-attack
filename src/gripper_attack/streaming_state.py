@@ -89,6 +89,7 @@ class CloseEventStreamingState:
 
         # ── Scoring (same logic as rule_based_close_predictor) ──
         score = 0.0
+        disabled_features = []
 
         # Raw crossing: requires current AND previous raw valid, AND both
         # gripper semantics valid (cannot bridge invalid/neutral gap)
@@ -98,6 +99,8 @@ class CloseEventStreamingState:
         if crossing_allowed and self._last_raw > 0.5 and raw_now <= 0.5:
             raw_open_to_close_crossing = True
             score += 1.5
+        elif not crossing_allowed:
+            disabled_features.append("raw_crossing")
 
         # Close streak == 1
         if close_streak == 1:
@@ -106,6 +109,8 @@ class CloseEventStreamingState:
         # Close onset with low qpos (only when qpos is valid)
         if close_onset and qpos_valid and qpos < 0.005:
             score += 0.5
+        elif close_onset and not qpos_valid:
+            disabled_features.append("qpos_close_response")
 
         # EEF deceleration: 3-step velocity parity with batch _eef_speed
         # All 4 history endpoints must be valid (not just current frame)
@@ -127,10 +132,14 @@ class CloseEventStreamingState:
                 speed_prev = (dx_prev**2 + dy_prev**2 + dz_prev**2)**0.5
                 if speed_prev > 0 and speed_now < speed_prev and speed_now < 0.01:
                     score += 0.5
+            else:
+                disabled_features.append("eef_deceleration")
 
         # Qpos ready (only when qpos is valid)
         if qpos_valid and qpos < 0.01 and not decoded_open:
             score += 0.3
+        elif not qpos_valid:
+            disabled_features.append("qpos_ready")
 
         # Penalty
         if decoded_open:
@@ -181,6 +190,10 @@ class CloseEventStreamingState:
             "is_close_event_candidate": is_close_event_candidate,
             "triggered": triggered_this_step,
             "trigger_step": self._trigger_step if self._triggered else -1,
+            "disabled_features": disabled_features,
+            "gripper_semantics_valid": int(gripper_valid),
+            "raw_valid": int(raw_valid),
+            "qpos_valid": int(qpos_valid),
         }
 
         # Update internal state

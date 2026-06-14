@@ -118,7 +118,8 @@ def main():
 
         task_key = f"{args.task}"
 
-        # Build offline proposal (Teacher-P reference only, no fallback)
+        # Build offline proposal — student anchor for phase_label (no Teacher-P pollution)
+        student_anchor_off = win_offline.get("anchor_step", -1)
         p_offline = build_clean_proposal(
             task_key=task_key,
             state_id=args.state_id,
@@ -126,7 +127,7 @@ def main():
             trace_sha256=trace_sha,
             commit=args.commit,
             window_info=win_offline,
-            phase_label=phases[anchor_p] if teacher_p_available and 0 <= anchor_p < len(phases) else "",
+            phase_label=phases[student_anchor_off] if student_anchor_off >= 0 and student_anchor_off < len(phases) else "",
             selection_mode="offline_clean_repeat",
             is_online=False,
             first_close_horizon=PREDICTION_HORIZON,
@@ -148,9 +149,18 @@ def main():
         )
 
         # Annotate offline proposal — Teacher-P is evaluation target, Teacher-R is baseline
-        # anchor_error_vs_p: None when Teacher-P unavailable (NOT empty string)
-        anchor_error_p_off = abs(anchor_p - win_offline["anchor_step"]) if teacher_p_available else None
-        anchor_error_r_off = abs(anchor_r - win_offline["anchor_step"]) if anchor_r >= 0 else -1
+        # anchor_error: None when teacher unavailable OR student abstains (NOT numeric fallback)
+        student_available_off = student_anchor_off >= 0
+        anchor_error_p_off = (
+            abs(anchor_p - student_anchor_off)
+            if teacher_p_available and student_available_off
+            else None
+        )
+        anchor_error_r_off = (
+            abs(anchor_r - student_anchor_off)
+            if anchor_r >= 0 and student_available_off
+            else None
+        )
 
         proposals.append({
             "proposal": p_offline,
@@ -172,8 +182,17 @@ def main():
 
         # Annotate online proposal
         online_trigger = win_online.get("trigger_step", -1)
-        anchor_error_p_on = abs(anchor_p - online_trigger) if teacher_p_available and online_trigger >= 0 else None
-        anchor_error_r_on = abs(anchor_r - online_trigger) if anchor_r >= 0 and online_trigger >= 0 else -1
+        student_available_on = online_trigger >= 0
+        anchor_error_p_on = (
+            abs(anchor_p - online_trigger)
+            if teacher_p_available and student_available_on
+            else None
+        )
+        anchor_error_r_on = (
+            abs(anchor_r - online_trigger)
+            if anchor_r >= 0 and student_available_on
+            else None
+        )
 
         proposals.append({
             "proposal": p_online,

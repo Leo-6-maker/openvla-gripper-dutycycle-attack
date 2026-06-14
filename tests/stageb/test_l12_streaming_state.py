@@ -213,3 +213,35 @@ def test_raw_crossing_does_not_bridge_invalid_gap():
         state.update(r)
 
     assert not state.predictions[30]["raw_open_to_close_crossing"]
+
+
+def test_streaming_disabled_features_match_batch():
+    """Streaming disabled_features match batch for missing-field trace."""
+    records = _make_trace(n_close_onset_at=30)
+    for r in records:
+        r["gripper_qpos_before"] = ""  # missing qpos
+
+    preds_batch = rule_based_close_predictor(records)
+    state = CloseEventStreamingState()
+    for r in records:
+        state.update(r)
+
+    for t in range(len(records)):
+        b_disabled = set(preds_batch[t].get("disabled_features", []))
+        s_disabled = set(state.predictions[t].get("disabled_features", []))
+        assert b_disabled == s_disabled, \
+            f"Step {t}: batch disabled={b_disabled}, stream disabled={s_disabled}"
+
+
+def test_streaming_outputs_validity_flags():
+    """Streaming prediction includes validity mask fields."""
+    records = _make_trace(n_close_onset_at=30)
+    state = CloseEventStreamingState()
+    for r in records:
+        state.update(r)
+
+    pred = state.predictions[30]
+    assert "gripper_semantics_valid" in pred
+    assert "raw_valid" in pred
+    assert "qpos_valid" in pred
+    assert "disabled_features" in pred

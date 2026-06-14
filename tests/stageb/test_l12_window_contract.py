@@ -74,7 +74,7 @@ def test_window_order():
 def test_negative_window():
     p = _valid_proposal(window_start=-5)
     assert not p.is_valid()
-    assert any("NEGATIVE" in i for i in p.validate())
+    assert any("NEGATIVE_ON_ELIGIBLE" in i for i in p.validate())
 
 
 def test_clean_only_false():
@@ -226,3 +226,54 @@ def test_eligible_with_negative_window_is_invalid():
     )
     assert not p.is_valid()
     assert any("NEGATIVE_ON_ELIGIBLE" in i for i in p.validate())
+
+
+def test_eligible_negative_window_with_reason_is_invalid():
+    """Eligible=True with negative window AND abstain_reason still invalid."""
+    p = _valid_proposal(
+        eligible=True,
+        window_start=-1,
+        abstain_reason="no_online_trigger",
+    )
+    assert not p.is_valid()
+    assert any("NEGATIVE_ON_ELIGIBLE" in i for i in p.validate())
+
+
+def test_abstain_sentinel_mismatched_anchor_is_invalid():
+    """Abstain sentinel with anchor_step != -1 is a violation."""
+    p = _valid_proposal(
+        eligible=False,
+        abstain_reason="all_abstain",
+        window_start=-1,
+        window_end=-1,
+        anchor_step=5,  # should be -1
+        predicted_first_close_step=-1,
+    )
+    assert not p.is_valid()
+    assert any("abstain_sentinel" in i for i in p.validate())
+
+
+def test_feature_matrix_distinguishes_missing_from_valid_zero():
+    """extract_deployment_features returns validity mask for missing fields."""
+    from gripper_attack.critical_close_selector import extract_deployment_features
+    # Build minimal trace locally
+    records = []
+    for t in range(50):
+        rec = {
+            "step": str(t),
+            "clean_gripper_env": "1.0",
+            "clean_gripper_raw": "0.7",
+            "gripper_qpos_before": "0.0",
+            "qpos_abs_before": "0.0",
+            "eef_x": "0.0", "eef_y": "0.0", "eef_z": "0.2",
+            "close_streak": "0",
+            "decoded_open_bool": "0",
+        }
+        records.append(rec)
+    records[10]["gripper_qpos_before"] = ""
+    records[20]["eef_x"] = ""
+    feats, validity = extract_deployment_features(records)
+    assert not validity[10, 2], "Missing qpos should be flagged invalid"
+    assert not validity[20, 4], "Missing eef_x should be flagged invalid"
+    assert validity[30, 2], "Present qpos should be flagged valid"
+    assert validity[30, 4], "Present eef_x should be flagged valid"

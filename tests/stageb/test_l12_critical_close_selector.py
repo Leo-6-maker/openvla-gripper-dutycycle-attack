@@ -61,9 +61,11 @@ def _make_trace(n_close_onset_at=50, n_steps=100):
 
 def test_feature_extraction_shape():
     records = _make_trace()
-    feats = extract_deployment_features(records)
+    feats, validity = extract_deployment_features(records)
     assert feats.shape == (100, 13)
     assert feats.dtype == np.float32
+    assert validity.shape == (100, 13)
+    assert validity.dtype == np.bool_
 
 
 def test_rule_predictor_returns_all_steps():

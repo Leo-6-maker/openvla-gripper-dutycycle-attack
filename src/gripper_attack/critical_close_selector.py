@@ -64,15 +64,23 @@ def _check_feature_validity(r: dict, field: str) -> bool:
 
 
 def extract_deployment_features(records: list[dict]) -> np.ndarray:
-    """Extract deployment-safe feature matrix from clean trace records."""
+    """Extract deployment-safe feature matrix from clean trace records.
+
+    DEPRECATED: silently fills missing fields with zero. Callers should prefer
+    rule_based_close_predictor which uses per-field validity gates.
+    This function is kept for compatibility but is NOT the primary
+    deployment feature path.
+    """
     T = len(records)
     F = 13
     feats = np.zeros((T, F), dtype=np.float32)
+    validity = np.zeros((T, F), dtype=np.bool_)
 
     for t in range(T):
         r = records[t]
         feats[t, 0] = _safe_float(r.get("clean_gripper_env", 0))
-        feats[t, 1] = _safe_float(r.get("clean_gripper_raw", 0.0))
+        feats[t, 1] = _safe_float(r.get("clean_gripper_raw",
+                                        r.get("clean_gripper_raw_proxy", 0.0)))
         feats[t, 2] = _safe_float(r.get("gripper_qpos_before", 0.0))
         feats[t, 3] = _safe_float(r.get("qpos_abs_before", 0.0))
         feats[t, 4] = _safe_float(r.get("eef_x", 0.0))
@@ -80,14 +88,33 @@ def extract_deployment_features(records: list[dict]) -> np.ndarray:
         feats[t, 6] = _safe_float(r.get("eef_z", 0.0))
         feats[t, 7] = _safe_float(r.get("close_streak", 0))
         feats[t, 8] = _safe_float(r.get("decoded_open_bool", 0))
-        # EEF velocity (3-step)
-        if t >= 3:
-            feats[t, 9] = feats[t, 4] - feats[t - 3, 4]
-            feats[t, 10] = feats[t, 5] - feats[t - 3, 5]
-            feats[t, 11] = feats[t, 6] - feats[t - 3, 6]
-        feats[t, 12] = 1.0  # bias
 
-    return feats
+        # Validity: field present and non-empty
+        validity[t, 0] = _field_is_present_and_valid(r, "clean_gripper_env")
+        validity[t, 1] = (_field_is_present_and_valid(r, "clean_gripper_raw") or
+                          _field_is_present_and_valid(r, "clean_gripper_raw_proxy"))
+        validity[t, 2] = _field_is_present_and_valid(r, "gripper_qpos_before")
+        validity[t, 3] = validity[t, 2]  # qpos_abs derives from qpos
+        validity[t, 4] = _field_is_present_and_valid(r, "eef_x")
+        validity[t, 5] = _field_is_present_and_valid(r, "eef_y")
+        validity[t, 6] = _field_is_present_and_valid(r, "eef_z")
+        validity[t, 7] = _field_is_present_and_valid(r, "close_streak")
+        validity[t, 8] = _field_is_present_and_valid(r, "decoded_open_bool")
+
+        # EEF velocity (3-step) — only valid when both endpoints valid
+        if t >= 3 and validity[t, 4] and validity[t - 3, 4]:
+            feats[t, 9] = feats[t, 4] - feats[t - 3, 4]
+            validity[t, 9] = True
+        if t >= 3 and validity[t, 5] and validity[t - 3, 5]:
+            feats[t, 10] = feats[t, 5] - feats[t - 3, 5]
+            validity[t, 10] = True
+        if t >= 3 and validity[t, 6] and validity[t - 3, 6]:
+            feats[t, 11] = feats[t, 6] - feats[t - 3, 6]
+            validity[t, 11] = True
+        feats[t, 12] = 1.0  # bias
+        validity[t, 12] = True
+
+    return feats, validity
 
 
 def _eef_speed(records: list[dict], t: int, window: int = 3) -> float:
@@ -197,6 +224,8 @@ def rule_based_close_predictor(records: list[dict],
         # CLOSE onset with gripper not yet responding (pre-grasp close)
         if close_onset and qpos_valid and qpos < 0.005:
             score += 0.5
+        elif close_onset and not qpos_valid:
+            disabled_features.append("qpos_close_response")
 
         # EEF decelerating (approaching grasp point)
         # All 4 endpoints must be valid: t, t-1, t-3, t-4
