@@ -1,0 +1,27 @@
+E4C.2 RUN LOG
+hostname: klfy-SYS-4028GR-TR2
+start: 2026-06-14T18:43:07.650332+00:00
+end: 2026-06-14T18:43:29.627238+00:00
+elapsed_seconds: 9.4
+remapper_version: rc1a_corrected_v2_e1_5
+config_sha256: 2BFDCC4222298D6E803A3287A39E5F422DDCCCC8969FE830166E872452598F80
+input_manifest: /data/liuyu/l12_e4c2_pipeline/l12_e4c2_input_manifest.csv
+n_input: 402
+n_processed: 402
+n_trace_status_rows: 402
+n_candidate_rows: 1780
+cuda_available: True
+gpu_count: 8
+env_cuda_visible_devices: 
+gpu_0: NVIDIA GeForce RTX 2080 Ti
+gpu_1: NVIDIA GeForce RTX 2080 Ti
+gpu_2: NVIDIA GeForce RTX 2080 Ti
+gpu_3: NVIDIA GeForce RTX 2080 Ti
+gpu_4: NVIDIA GeForce RTX 2080 Ti
+gpu_5: NVIDIA GeForce RTX 2080 Ti
+gpu_6: NVIDIA GeForce RTX 2080 Ti
+gpu_7: NVIDIA GeForce RTX 2080 Ti
+parity_mode: False
+category_ELIGIBLE_MULTI_CANDIDATE: 261
+category_TEACHER_P_UNAVAILABLE: 87
+category_ELIGIBLE_SINGLE_CANDIDATE: 54
