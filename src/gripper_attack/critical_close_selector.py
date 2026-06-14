@@ -107,7 +107,9 @@ def rule_based_close_predictor(records: list[dict],
         close_streak = int(_safe_float(r.get("close_streak", 0)))
         decoded_open = int(_safe_float(r.get("decoded_open_bool", 0)))
         qpos = _safe_float(r.get("gripper_qpos_before", 0))
-        raw_now = _safe_float(r.get("clean_gripper_raw", 0.5))
+        # raw: prefer native field, fall back to proxy (V4 remapped traces)
+        raw_now = _safe_float(r.get("clean_gripper_raw",
+                                     r.get("clean_gripper_raw_proxy", 0.5)))
 
         # ── Precursor-based scoring (no absolute step thresholds) ──
         score = 0.0
@@ -115,7 +117,8 @@ def rule_based_close_predictor(records: list[dict],
         # Detect explicit close-event signals
         raw_open_to_close_crossing = False
         if t >= 1:
-            raw_prev = _safe_float(visible[t - 1].get("clean_gripper_raw", 0.5))
+            raw_prev = _safe_float(visible[t - 1].get("clean_gripper_raw",
+                    visible[t - 1].get("clean_gripper_raw_proxy", 0.5)))
             if raw_prev > 0.5 and raw_now <= 0.5:
                 raw_open_to_close_crossing = True
                 score += 1.5

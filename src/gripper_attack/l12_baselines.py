@@ -1,17 +1,18 @@
 """L12 baselines: independent implementations, do not pollute formal selector.
 
-Baselines:
-  TimeOnly:       predicts based solely on absolute/normalized step
-  TaskOnly:       predicts based on task identity (no physical state access)
+Baselines (as specified in review):
+  offline_time_only_diagnostic: predicts anchor at 25% of full trajectory length
+  online_safe_time: predicts based on current absolute step only
+  TaskOnly: predicts from train-fold task median (NOT eval trace itself)
   CloseEventRule: the current causal close-event detector (for comparison)
-  LabelShuffle:   shuffles Teacher-P anchors, keeps features unchanged
-  Prevalence:     always predicts most common anchor or abstains
+  label_shuffle_null: shuffles Teacher-P target, evaluates selector invariance
+  train_fold_prevalence: always predicts train-fold global median anchor
+  oracle_anchor_upper_bound: uses eval trace's actual Teacher-P anchor (NOT a baseline)
+  AlwaysAbstain: never proposes a window
 """
 
 from __future__ import annotations
 
-import hashlib
-import os
 from typing import Optional
 
 import numpy as np
@@ -19,31 +20,17 @@ import numpy as np
 from .critical_close_selector import (
     WINDOW_LEN, PRE_OFFSET, TIE_TOLERANCE,
     rule_based_close_predictor, select_best_window,
-    _detect_ambiguous_multiple_closes,
 )
-from .window_contract import WindowProposal
 from .phase_detector import _safe_float
 
-# ── Known task median anchors (from prior dev analysis — Teacher-R anchors) ──
-TASK_MEDIAN_ANCHORS = {
-    "butter": 4,
-    "cream_cheese": 59,
-    "bbq_sauce": 47,
-    "chocolate_pudding": 58,
-    "ketchup": 44,
-    "alphabet_soup": 50,
-    "tomato_sauce": 78,
-}
 
+def offline_time_only_diagnostic(n_steps: int,
+                                  window_len: int = WINDOW_LEN,
+                                  pre_offset: int = PRE_OFFSET) -> dict:
+    """Time-only diagnostic: predict close at 25% of FULL trajectory length.
 
-def time_only_window(n_steps: int,
-                     window_len: int = WINDOW_LEN,
-                     pre_offset: int = PRE_OFFSET) -> dict:
-    """TimeOnly baseline: predict critical close at 25% of trajectory.
-
-    Uses ONLY absolute step information. No physical state access.
-    This is a pure time heuristic — should not outperform any
-    physically-informed selector.
+    Labeled as DIAGNOSTIC because it uses future knowledge (episode length).
+    NOT deployment-safe. For comparison only.
     """
     anchor = max(0, int(n_steps * 0.25))
     ws = max(0, anchor - pre_offset)
@@ -54,20 +41,49 @@ def time_only_window(n_steps: int,
         "anchor_step": anchor,
         "score": 0.5,
         "abstain_reason": "",
-        "prediction_mode": "time_only_baseline",
+        "prediction_mode": "offline_time_only_diagnostic",
+    }
+
+
+def online_safe_time_baseline(current_step: int,
+                               window_len: int = WINDOW_LEN,
+                               pre_offset: int = PRE_OFFSET) -> dict:
+    """Online-safe time baseline: uses ONLY current absolute step.
+
+    Does NOT have access to episode length. Uses a fixed threshold
+    (step >= 40) as a naive online trigger.
+    """
+    if current_step < 40:
+        return {
+            "window_start": -1, "window_end": -1,
+            "anchor_step": -1, "score": 0.0,
+            "abstain_reason": "too_early_time_heuristic",
+            "prediction_mode": "online_time_baseline",
+        }
+    anchor = current_step
+    ws = max(0, anchor - pre_offset)
+    we = ws + window_len
+    return {
+        "window_start": ws,
+        "window_end": we,
+        "anchor_step": anchor,
+        "score": 0.5,
+        "abstain_reason": "",
+        "prediction_mode": "online_time_baseline",
     }
 
 
 def task_only_window(task_key: str,
-                     n_steps: int,
-                     window_len: int = WINDOW_LEN,
-                     pre_offset: int = PRE_OFFSET) -> dict:
-    """TaskOnly baseline: predict using only task identity.
+                      train_fold_median_anchors: dict,
+                      global_train_median: int = 50,
+                      window_len: int = WINDOW_LEN,
+                      pre_offset: int = PRE_OFFSET) -> dict:
+    """TaskOnly baseline: predicts from train-fold task median anchor.
 
-    Returns the task's known median close step (from prior dev analysis).
-    Does NOT observe this episode's actions or physical state.
+    Does NOT use this episode's data. Unknown tasks fall back to
+    global_train_median. No hardcoded anchor table.
     """
-    anchor = TASK_MEDIAN_ANCHORS.get(task_key, int(n_steps * 0.25))
+    anchor = train_fold_median_anchors.get(task_key, global_train_median)
     if anchor < 0:
         return {
             "window_start": -1, "window_end": -1,
@@ -90,58 +106,74 @@ def task_only_window(task_key: str,
 def close_event_rule_baseline(records: list[dict],
                                window_len: int = WINDOW_LEN,
                                pre_offset: int = PRE_OFFSET) -> dict:
-    """CloseEventRuleBaseline: the current causal close-event detector.
-
-    Uses *_detect_ambiguous_multiple_closes* for ambiguity abstain.
-    This is the SAME logic as the formal selector — included here
-    as a named baseline for comparison in baseline tables.
-    """
+    """CloseEventRuleBaseline: the current causal close-event detector."""
     preds = rule_based_close_predictor(records)
     win = select_best_window(preds, window_len, pre_offset)
     win["prediction_mode"] = "close_event_rule_baseline"
     return win
 
 
-def label_shuffle_baseline(records: list[dict],
-                            teacher_p_anchor: int,
-                            n_shuffles: int = 20,
-                            window_len: int = WINDOW_LEN,
-                            pre_offset: int = PRE_OFFSET) -> list[dict]:
-    """LabelShuffle baseline: shuffle Teacher-P anchors, keep features.
+def label_shuffle_null(records: list[dict],
+                        teacher_p_anchor: int,
+                        n_shuffles: int = 20,
+                        window_len: int = WINDOW_LEN,
+                        pre_offset: int = PRE_OFFSET) -> list[dict]:
+    """LabelShuffle evaluation null: shuffles Teacher-P target, re-evaluates
+    selector output invariance. The selector itself is unchanged (rule-based,
+    not learned), so this measures whether evaluation metrics are sensitive
+    to the specific teacher anchor choice.
 
-    For each shuffle seed, randomly reassigns the Teacher-P anchor to a
-    different step. The student features and scoring are unchanged.
-    Returns the list of per-shuffle window results.
+    Returns list of dicts with shuffled_eval_target, selector window.
     """
     T = len(records)
     results = []
     for seed in range(n_shuffles):
         rng = np.random.RandomState(seed)
-        fake_anchor = int(rng.randint(0, T))
-        preds = rule_based_close_predictor(records, teacher_anchor=fake_anchor)
+        fake_target = int(rng.randint(0, max(1, T)))
+        # Run selector (unchanged — does not use teacher)
+        preds = rule_based_close_predictor(records)
         win = select_best_window(preds, window_len, pre_offset)
         win["shuffle_seed"] = seed
-        win["fake_anchor"] = fake_anchor
-        win["prediction_mode"] = "label_shuffle_baseline"
+        win["shuffled_eval_target"] = fake_target
+        win["original_teacher_anchor"] = teacher_p_anchor
+        win["prediction_mode"] = "label_shuffle_null"
         results.append(win)
     return results
 
 
-def prevalence_baseline(records: list[dict],
-                         teacher_p_anchor: int,
-                         window_len: int = WINDOW_LEN,
-                         pre_offset: int = PRE_OFFSET) -> dict:
-    """Prevalence baseline: always predict the given anchor or abstain.
+def train_fold_prevalence(train_fold_global_median: int = 50,
+                           window_len: int = WINDOW_LEN,
+                           pre_offset: int = PRE_OFFSET) -> dict:
+    """Prevalence baseline: always predicts train-fold global median anchor.
+    Does NOT access eval trace data.
+    """
+    anchor = train_fold_global_median
+    ws = max(0, anchor - pre_offset)
+    we = ws + window_len
+    return {
+        "window_start": ws,
+        "window_end": we,
+        "anchor_step": anchor,
+        "score": 1.0,
+        "abstain_reason": "",
+        "prediction_mode": "train_fold_prevalence",
+    }
 
-    If teacher_p_anchor >= 0: predicts that anchor (cheating baseline)
-    If teacher_p_anchor < 0: abstains
+
+def oracle_anchor_upper_bound(teacher_p_anchor: int,
+                               window_len: int = WINDOW_LEN,
+                               pre_offset: int = PRE_OFFSET) -> dict:
+    """Oracle upper bound: uses the eval trace's actual Teacher-P anchor.
+
+    NOT a baseline — this is a theoretical upper bound. Reported separately,
+    never compared against baselines.
     """
     if teacher_p_anchor < 0:
         return {
             "window_start": -1, "window_end": -1,
             "anchor_step": -1, "score": 0.0,
             "abstain_reason": "teacher_abstained",
-            "prediction_mode": "prevalence_baseline",
+            "prediction_mode": "oracle_upper_bound",
         }
     ws = max(0, teacher_p_anchor - pre_offset)
     we = ws + window_len
@@ -149,9 +181,9 @@ def prevalence_baseline(records: list[dict],
         "window_start": ws,
         "window_end": we,
         "anchor_step": teacher_p_anchor,
-        "score": 5.0,  # maximum — knows the answer
+        "score": 5.0,
         "abstain_reason": "",
-        "prediction_mode": "prevalence_baseline",
+        "prediction_mode": "oracle_upper_bound",
     }
 
 

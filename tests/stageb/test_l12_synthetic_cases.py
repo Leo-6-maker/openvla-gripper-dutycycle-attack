@@ -567,3 +567,107 @@ def test_eef_detaches_during_motion_fails():
     assert not evidence["eef_attachment_consistent"]
     # Should NOT report vertical lift (EEF must be near for lift classification)
     assert evidence["motion_evidence_type"] != MOTION_SUSTAINED_VERTICAL_LIFT
+
+
+# ═══════════════════════════════════════════════════════════════════
+# E0.3: Teacher-P grasp privilege (no target required)
+# ═══════════════════════════════════════════════════════════════════
+
+from gripper_attack.phase_detector import (
+    check_teacher_p_privilege_capability,
+    _check_grasp_privilege_valid,
+    _check_placement_privilege_valid,
+)
+
+
+def test_grasp_teacher_does_not_require_target_pose():
+    """Teacher-P works with grasp privilege only (no target coordinates)."""
+    records = _make_case_a()  # has obj/eef/distance, target coords present
+    # Remove target coords (simulating V4 trace)
+    for r in records:
+        r["target_obj_x"] = ""
+        r["target_obj_y"] = ""
+        r["target_obj_z"] = ""
+        r["obj_to_target_distance"] = ""
+    # Teacher-P should still find anchor (grasp privilege only)
+    anchor = teacher_privileged_critical_close_anchor(records)
+    assert anchor == 50, f"Teacher-P expected 50 with grasp-only privilege, got {anchor}"
+
+    # Capability check
+    cap = check_teacher_p_privilege_capability(records)
+    assert cap["grasp_privilege_valid"], "Grasp privilege should be valid"
+    assert not cap["placement_privilege_valid"], "Placement privilege should be invalid"
+
+
+def test_placement_teacher_requires_target_pose():
+    """Placement privilege requires target coords."""
+    records = _make_case_a()
+    # Has all fields including target → placement valid
+    cap = check_teacher_p_privilege_capability(records)
+    assert cap["grasp_privilege_valid"]
+    assert cap["placement_privilege_valid"]
+
+
+def test_grasp_teacher_requires_object_and_eef_pose():
+    """Teacher-P abstains when object or eef pose is missing."""
+    records = _make_case_a()
+    # Remove object pose
+    for r in records:
+        r["obj_x"] = ""
+        r["obj_y"] = ""
+        r["obj_z"] = ""
+    anchor = teacher_privileged_critical_close_anchor(records)
+    assert anchor == -1, "Teacher-P should abstain without object pose"
+
+
+# ═══════════════════════════════════════════════════════════════════
+# E0.4: Streaming EEF velocity parity
+# ═══════════════════════════════════════════════════════════════════
+
+from gripper_attack.streaming_state import CloseEventStreamingState
+
+
+def test_streaming_batch_score_parity_dynamic():
+    """Batch and streaming scores match for multi-transition trace."""
+    records = _make_case_a()
+    # Batch
+    preds_batch = rule_based_close_predictor(records)
+    # Streaming
+    state = CloseEventStreamingState()
+    for r in records:
+        state.update(r)
+    preds_stream = state.predictions
+
+    for t in range(len(records)):
+        assert abs(preds_batch[t]["score"] - preds_stream[t]["score"]) < 1e-6, \
+            f"Step {t}: batch={preds_batch[t]['score']:.4f}, stream={preds_stream[t]['score']:.4f}"
+        assert preds_batch[t]["raw_open_to_close_crossing"] == preds_stream[t]["raw_open_to_close_crossing"]
+
+
+def test_streaming_batch_deceleration_flag_parity():
+    """EEF deceleration detection matches between batch and streaming."""
+    records = _make_case_a()
+    preds_batch = rule_based_close_predictor(records)
+    state = CloseEventStreamingState()
+    for r in records:
+        state.update(r)
+
+    # The deceleration bonus contributes to the score — scores must match exactly
+    for t in range(len(records)):
+        assert abs(preds_batch[t]["score"] - state.predictions[t]["score"]) < 1e-6
+
+
+def test_streaming_batch_trigger_parity():
+    """Online trigger step matches between batch and streaming."""
+    records = _make_case_a()
+    preds_batch = rule_based_close_predictor(records)
+    win_batch = select_online_trigger(preds_batch, score_threshold=1.0,
+                                       confirmation_steps=1, mode="close_interception")
+
+    state = CloseEventStreamingState(score_threshold=1.0, confirmation_steps=1)
+    for r in records:
+        state.update(r)
+    win_stream = state.online_window()
+
+    assert win_batch["trigger_step"] == win_stream["trigger_step"], \
+        f"Batch trigger={win_batch['trigger_step']}, stream={win_stream['trigger_step']}"

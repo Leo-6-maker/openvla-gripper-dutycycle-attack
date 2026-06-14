@@ -36,6 +36,13 @@ PRIVILEGED_FIELDS = [
 
 PRIVILEGED_REQUIRED_FIELDS = ["eef_to_obj_distance", "obj_to_target_distance"]
 
+# Grasp privilege: needs eef + object pose only (NOT target)
+GRASP_PRIVILEGE_FIELDS = ["eef_x", "eef_y", "eef_z", "obj_x", "obj_y", "obj_z",
+                           "eef_to_obj_distance"]
+# Placement privilege: needs grasp + target pose
+PLACEMENT_PRIVILEGE_FIELDS = ["target_obj_x", "target_obj_y", "target_obj_z",
+                               "obj_to_target_distance"]
+
 # Fields that must be locally valid at each candidate close for Teacher-P
 PRIVILEGED_LOCAL_CANDIDATE_FIELDS = [
     "eef_to_obj_distance", "obj_x", "obj_y", "obj_z"
@@ -71,22 +78,72 @@ def _safe_float(v, default=0.0):
         return default
 
 
+def _field_is_valid(r: dict, field: str) -> bool:
+    """Check a single field is present, non-empty, non-NaN."""
+    val = r.get(field)
+    if val is None or val == "":
+        return False
+    try:
+        if np.isnan(float(val)):
+            return False
+    except (ValueError, TypeError):
+        return False
+    return True
+
+
 def _check_privileged_fields_available(records: list[dict]) -> bool:
-    """Return True if privileged object/target pose fields are present and valid."""
+    """Return True if privileged fields are present and valid in at least
+    one record (global availability check)."""
     if not records:
         return False
-    # Sample first 3 records to confirm field availability
     sample = records[:min(3, len(records))]
     for field in PRIVILEGED_REQUIRED_FIELDS:
+        found = False
         for r in sample:
-            val = r.get(field)
-            if val is None or val == "":
-                return False
-            try:
-                if np.isnan(float(val)):
-                    return False
-            except (ValueError, TypeError):
-                return False
+            if _field_is_valid(r, field):
+                found = True
+                break
+        if not found:
+            return False
+    return True
+
+
+def _check_grasp_privilege_valid(records: list[dict], t: int,
+                                  lookahead: int = None) -> bool:
+    """Check grasp privilege: eef pose + object pose + eef_to_obj_distance
+    are locally valid at step t and in the lookahead window.
+    Does NOT require target pose."""
+    if lookahead is None:
+        lookahead = OBJECT_LIFT_LOOKAHEAD
+    T = len(records)
+    for i in range(t, min(t + lookahead, T)):
+        r = records[i]
+        # Check eef pose validity
+        eef_valid = all(_field_is_valid(r, f) for f in ["eef_x", "eef_y", "eef_z"])
+        # Check object pose validity
+        obj_valid = all(_field_is_valid(r, f) for f in ["obj_x", "obj_y", "obj_z"])
+        # Check distance validity
+        dist_valid = _field_is_valid(r, "eef_to_obj_distance")
+        if not (eef_valid and obj_valid and dist_valid):
+            return False
+    return True
+
+
+def _check_placement_privilege_valid(records: list[dict], t: int,
+                                      lookahead: int = None) -> bool:
+    """Check placement privilege: grasp privilege + target pose.
+    Returns True only when target coordinates are locally valid."""
+    if not _check_grasp_privilege_valid(records, t, lookahead):
+        return False
+    if lookahead is None:
+        lookahead = OBJECT_LIFT_LOOKAHEAD
+    T = len(records)
+    for i in range(t, min(t + lookahead, T)):
+        r = records[i]
+        tgt_valid = all(_field_is_valid(r, f) for f in
+                        ["target_obj_x", "target_obj_y", "target_obj_z"])
+        if not tgt_valid:
+            return False
     return True
 
 
@@ -306,29 +363,25 @@ def teacher_rule_critical_close_anchor(records: list[dict]) -> int:
 
 
 def teacher_privileged_critical_close_anchor(records: list[dict]) -> int:
-    """Teacher-P: privileged critical-close anchor using object/target pose.
+    """Teacher-P: privileged critical-close anchor using grasp privilege.
+
+    Requires only grasp_privilege (eef pose + object pose + distance).
+    Does NOT require placement privilege (target pose).
 
     A CLOSE is considered \"critical\" only when:
-      1. Privileged fields are locally valid at the candidate close
-         (obj_x, obj_y, obj_z, eef_to_obj_distance — not NaN, not empty)
+      1. Grasp privilege fields are locally valid at the candidate close
       2. EEF is near the object (eef_to_obj_distance < threshold)
       3. The CLOSE is followed by sustained VERTICAL lift (>=2 consecutive
          frames of positive z with EEF remaining near object)
       4. Gripper is not already open
 
-    Horizontal-only transport does NOT qualify as lift evidence.
-    See _classify_motion_evidence() for the structured motion audit.
-
     Abstains (returns -1) if:
-      - Global privileged field check fails
+      - Grasp privilege check fails (object/eef pose not valid)
       - No close satisfies all criticality conditions
 
-    This prevents accepting spurious early closes that occur before the EEF
-    reaches the object.
+    The caller can check _check_placement_privilege_valid() separately
+    for placement-specific capabilities.
     """
-    if not _check_privileged_fields_available(records):
-        return -1
-
     T = len(records)
 
     for t in range(T):
@@ -343,8 +396,8 @@ def teacher_privileged_critical_close_anchor(records: list[dict]) -> int:
         if int(_safe_float(r.get("decoded_open_bool", 0))):
             continue
 
-        # ── Local privileged field check per candidate ──
-        if not _check_local_privileged_fields(records, t):
+        # ── Grasp privilege check per candidate ──
+        if not _check_grasp_privilege_valid(records, t):
             continue
 
         # EEF must be near object
@@ -353,13 +406,48 @@ def teacher_privileged_critical_close_anchor(records: list[dict]) -> int:
             continue
 
         # Must have sustained VERTICAL lift with EEF proximity
-        # (horizontal-only transport does not qualify)
         if not _check_sustained_object_lift(records, t):
             continue
 
         return t
 
     return -1
+
+
+def check_teacher_p_privilege_capability(records: list[dict]) -> dict:
+    """Audit Teacher-P privilege capability for this trace.
+
+    Returns dict with:
+      grasp_privilege_valid: bool
+      placement_privilege_valid: bool
+      privilege_missing_fields: list of field names
+    """
+    result = {
+        "grasp_privilege_valid": False,
+        "placement_privilege_valid": False,
+        "privilege_missing_fields": [],
+    }
+    if not records:
+        return result
+
+    # Check grasp privilege globally
+    has_grasp = False
+    for field in GRASP_PRIVILEGE_FIELDS:
+        if any(_field_is_valid(r, field) for r in records[:3]):
+            has_grasp = True
+        else:
+            result["privilege_missing_fields"].append(field)
+    result["grasp_privilege_valid"] = has_grasp and not result["privilege_missing_fields"]
+
+    # Check placement privilege
+    has_placement = True
+    for field in PLACEMENT_PRIVILEGE_FIELDS:
+        if not any(_field_is_valid(r, field) for r in records[:3]):
+            has_placement = False
+            result["privilege_missing_fields"].append(field)
+    result["placement_privilege_valid"] = has_placement and has_grasp
+
+    return result
 
 
 def teacher_window_proposal(anchor: int, window_len: int = 10,

@@ -118,3 +118,35 @@ def test_streaming_state_no_trigger_on_idle():
     assert not state.triggered
     win = state.online_window()
     assert win["abstain_reason"] == "no_online_trigger"
+
+
+def test_streaming_handles_raw_proxy_field():
+    """Streaming state reads clean_gripper_raw_proxy when clean_gripper_raw absent."""
+    records = []
+    for t in range(50):
+        rec = {
+            "step": t,
+            "clean_gripper_env": 1.0,
+            "clean_gripper_raw_proxy": 0.7,  # proxy field only
+            "gripper_qpos_before": 0.0,
+            "qpos_abs_before": 0.0,
+            "eef_x": 0.0, "eef_y": 0.0, "eef_z": 0.2,
+            "clean_close": 0,
+            "close_onset": 0,
+            "close_streak": 0,
+            "decoded_open_bool": 0,
+        }
+        if t == 30:
+            rec["clean_gripper_raw_proxy"] = 0.0  # CLOSE via proxy
+            rec["clean_close"] = 1
+            rec["close_onset"] = 1
+            rec["close_streak"] = 1
+        records.append(rec)
+
+    state = CloseEventStreamingState()
+    for r in records:
+        state.update(r)
+
+    # Should detect the close at step 30 via proxy field
+    assert state.predictions[30]["is_close_event_candidate"]
+    assert state.predictions[30]["raw_open_to_close_crossing"]

@@ -47,7 +47,7 @@ class CloseEventStreamingState:
         self._last_trigger = -cooldown_steps
         self._trigger_step = -1
 
-        # EEF history (last 5 positions for velocity)
+        # EEF history (last 6 positions for 3-step velocity)
         self._eef_history = []   # list of (x, y, z)
 
         # All predictions for batch comparison
@@ -58,8 +58,9 @@ class CloseEventStreamingState:
         t = self._step
         r = record
 
-        # Extract features
-        raw_now = _safe_float(r.get("clean_gripper_raw", 0.5))
+        # Extract features — try clean_gripper_raw first, fall back to proxy
+        raw_now = _safe_float(r.get("clean_gripper_raw",
+                                     r.get("clean_gripper_raw_proxy", 0.5)))
         clean_close = int(_safe_float(r.get("clean_close", 0)))
         close_onset = int(_safe_float(r.get("close_onset", 0)))
         close_streak = int(_safe_float(r.get("close_streak", 0)))
@@ -71,7 +72,7 @@ class CloseEventStreamingState:
 
         # Update EEF history
         self._eef_history.append((eef_x, eef_y, eef_z))
-        if len(self._eef_history) > 5:
+        if len(self._eef_history) > 6:
             self._eef_history.pop(0)
 
         # ── Scoring (same logic as rule_based_close_predictor) ──
@@ -91,20 +92,22 @@ class CloseEventStreamingState:
         if close_onset and qpos < 0.005:
             score += 0.5
 
-        # EEF deceleration
-        if len(self._eef_history) >= 3:
-            # Compute speed from 3-step deltas
+        # EEF deceleration: 3-step velocity parity with batch _eef_speed
+        # history stores up to 6 positions: [t-5, t-4, t-3, t-2, t-1, t]
+        # speed_now  = pos[t]   - pos[t-3] = h[-1] - h[-4]
+        # speed_prev = pos[t-1] - pos[t-4] = h[-2] - h[-5]
+        if len(self._eef_history) >= 4:
             h = self._eef_history
-            dx = h[-1][0] - h[-3][0]
-            dy = h[-1][1] - h[-3][1]
-            dz = h[-1][2] - h[-3][2]
-            speed_now = (dx**2 + dy**2 + dz**2)**0.5
+            dx_now = h[-1][0] - h[-4][0]
+            dy_now = h[-1][1] - h[-4][1]
+            dz_now = h[-1][2] - h[-4][2]
+            speed_now = (dx_now**2 + dy_now**2 + dz_now**2)**0.5
 
-            if len(self._eef_history) >= 4:
-                dx_p = h[-2][0] - h[-4][0]
-                dy_p = h[-2][1] - h[-4][1]
-                dz_p = h[-2][2] - h[-4][2]
-                speed_prev = (dx_p**2 + dy_p**2 + dz_p**2)**0.5
+            if len(self._eef_history) >= 5:
+                dx_prev = h[-2][0] - h[-5][0]
+                dy_prev = h[-2][1] - h[-5][1]
+                dz_prev = h[-2][2] - h[-5][2]
+                speed_prev = (dx_prev**2 + dy_prev**2 + dz_prev**2)**0.5
                 if speed_prev > 0 and speed_now < speed_prev and speed_now < 0.01:
                     score += 0.5
 
