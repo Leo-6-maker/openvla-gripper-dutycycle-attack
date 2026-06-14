@@ -36,6 +36,11 @@ PRIVILEGED_FIELDS = [
 
 PRIVILEGED_REQUIRED_FIELDS = ["eef_to_obj_distance", "obj_to_target_distance"]
 
+# Fields that must be locally valid at each candidate close for Teacher-P
+PRIVILEGED_LOCAL_CANDIDATE_FIELDS = [
+    "eef_to_obj_distance", "obj_x", "obj_y", "obj_z"
+]
+
 # ── Deployment-safe fields ──
 DEPLOYMENT_SAFE_FIELDS = [
     "step",
@@ -79,26 +84,68 @@ def _check_privileged_fields_available(records: list[dict]) -> bool:
     return True
 
 
-def _check_subsequent_object_lift(records: list[dict], anchor_t: int,
-                                   lookahead: int = OBJECT_LIFT_LOOKAHEAD,
-                                   min_delta: float = OBJECT_LIFT_MIN_DELTA) -> bool:
-    """Check if object moves (is lifted) within `lookahead` steps after `anchor_t`."""
+def _check_local_privileged_fields(records: list[dict], t: int,
+                                     lookahead: int = None) -> bool:
+    """Verify privileged fields exist and are valid at candidate close `t`
+    and in the lookahead window. Returns False if any required field is
+    missing, empty, or NaN — prevents _safe_float silently defaulting to 0."""
+    if lookahead is None:
+        lookahead = OBJECT_LIFT_LOOKAHEAD
     T = len(records)
-    if anchor_t >= T - 1:
+    check_range = range(t, min(t + lookahead, T))
+    for i in check_range:
+        r = records[i]
+        for field in PRIVILEGED_LOCAL_CANDIDATE_FIELDS:
+            val = r.get(field)
+            if val is None or val == "":
+                return False
+            try:
+                if np.isnan(float(val)):
+                    return False
+            except (ValueError, TypeError):
+                return False
+    return True
+
+
+def _check_sustained_object_lift(records: list[dict], anchor_t: int,
+                                  lookahead: int = OBJECT_LIFT_LOOKAHEAD,
+                                  min_delta: float = OBJECT_LIFT_MIN_DELTA,
+                                  sustained_frames: int = 2) -> bool:
+    """Robust lift: object displacement sustained for >= `sustained_frames`
+    consecutive frames, with EEF remaining near object during movement.
+
+    Requires:
+      - Object displacement > min_delta per frame for sustained_frames frames
+      - EEF-to-object distance stays < EEF_TO_OBJ_NEAR_THRESHOLD during movement
+      - Primary axis is object_z (vertical lift) for pick-and-place
+    """
+    T = len(records)
+    if anchor_t >= T - sustained_frames:
         return False
 
     obj_y_before = _safe_float(records[anchor_t].get("obj_y", 0))
     obj_z_before = _safe_float(records[anchor_t].get("obj_z", 0))
 
+    consecutive = 0
     for future_t in range(anchor_t + 1, min(anchor_t + lookahead, T)):
         obj_y_after = _safe_float(records[future_t].get("obj_y", 0))
         obj_z_after = _safe_float(records[future_t].get("obj_z", 0))
+        eef_to_obj = _safe_float(records[future_t].get("eef_to_obj_distance", 999))
 
         dy = abs(obj_y_after - obj_y_before)
         dz = obj_z_after - obj_z_before  # positive = lifted
 
-        if dy > min_delta or dz > min_delta:
-            return True
+        # Must have sustained displacement AND EEF proximity
+        if (dy > min_delta or dz > min_delta) and eef_to_obj < EEF_TO_OBJ_NEAR_THRESHOLD:
+            consecutive += 1
+            if consecutive >= sustained_frames:
+                return True
+        else:
+            consecutive = 0
+
+        # Update baseline for next frame delta
+        obj_y_before = obj_y_after
+        obj_z_before = obj_z_after
 
     return False
 
@@ -117,10 +164,11 @@ def compute_eef_velocity(records: list[dict], window: int = 3) -> list[float]:
     return velocities
 
 
-def teacher_phase_labels(records: list[dict]) -> list[str]:
-    """Privileged teacher: classify each step using object + target pose.
+def teacher_rule_phase_labels(records: list[dict]) -> list[str]:
+    """Teacher-R: rule-based phase labels using deployment-safe fields + time.
 
-    Returns list of phase labels, one per record.
+    Uses only clean action/gripper/proprio history and absolute step heuristics.
+    This is a fast rule baseline, NOT a privileged phase teacher.
     """
     T = len(records)
     labels = ["other"] * T
@@ -135,13 +183,12 @@ def teacher_phase_labels(records: list[dict]) -> list[str]:
         decoded_open = int(_safe_float(r.get("decoded_open_bool", 0)))
         gripper_qpos = _safe_float(r.get("gripper_qpos_before", 0))
 
-        # ── Rule-based teacher ──
         # release_safe: gripper OPEN after a period of CLOSE (post-grasp release)
         if decoded_open and gripper_qpos > 0.01 and t > 20:
             labels[t] = "release_safe"
             continue
 
-        # grasp_close: first CLOSE onset after approach phase
+        # grasp_close: first CLOSE onset
         if close_onset and clean_close:
             labels[t] = "grasp_close"
             continue
@@ -200,12 +247,15 @@ def teacher_privileged_critical_close_anchor(records: list[dict]) -> int:
     """Teacher-P: privileged critical-close anchor using object/target pose.
 
     A CLOSE is considered \"critical\" only when:
-      1. EEF is near the object (eef_to_obj_distance < threshold)
-      2. The CLOSE is followed by object movement (lift/transport evidence)
-      3. Gripper is not already open
+      1. Privileged fields are locally valid at the candidate close
+         (obj_x, obj_y, obj_z, eef_to_obj_distance — not NaN, not empty)
+      2. EEF is near the object (eef_to_obj_distance < threshold)
+      3. The CLOSE is followed by sustained object lift (>=2 consecutive
+         frames of displacement with EEF remaining near object)
+      4. Gripper is not already open
 
     Abstains (returns -1) if:
-      - Privileged fields are missing or contain NaN
+      - Global privileged field check fails
       - No close satisfies all criticality conditions
 
     This prevents accepting spurious early closes that occur before the EEF
@@ -228,13 +278,17 @@ def teacher_privileged_critical_close_anchor(records: list[dict]) -> int:
         if int(_safe_float(r.get("decoded_open_bool", 0))):
             continue
 
+        # ── Local privileged field check per candidate ──
+        if not _check_local_privileged_fields(records, t):
+            continue
+
         # EEF must be near object
         eef_to_obj = _safe_float(r.get("eef_to_obj_distance", 999))
         if eef_to_obj > EEF_TO_OBJ_NEAR_THRESHOLD:
             continue
 
-        # Must have subsequent object lift/transport evidence
-        if not _check_subsequent_object_lift(records, t):
+        # Must have sustained object lift with EEF proximity
+        if not _check_sustained_object_lift(records, t):
             continue
 
         return t

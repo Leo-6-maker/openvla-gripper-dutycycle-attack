@@ -31,7 +31,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from gripper_attack.window_contract import WindowProposal, validate_proposals
 from gripper_attack.phase_detector import (
-    teacher_phase_labels,
+    teacher_rule_phase_labels,
     teacher_rule_critical_close_anchor,
     teacher_privileged_critical_close_anchor,
     teacher_window_proposal,
@@ -90,7 +90,7 @@ def main():
         trace_sha = _sha256_file(trace_path)
 
         # Layer1: Teacher phase estimation
-        phases = teacher_phase_labels(records)
+        phases = teacher_rule_phase_labels(records)
 
         # Teacher-R: rule-based anchor (deployment-safe, fast baseline)
         anchor_r = teacher_rule_critical_close_anchor(records)
@@ -140,7 +140,8 @@ def main():
             phase_label=phases[win_online.get("trigger_step", -1)] if win_online.get("trigger_step", -1) >= 0 and win_online.get("trigger_step", -1) < len(phases) else "",
             selection_mode="online_streaming",
             is_online=True,
-            first_close_horizon=PREDICTION_HORIZON,
+            first_close_horizon=0,
+            prediction_mode=win_online.get("prediction_mode", "observed_close_interception"),
         )
 
         # Annotate offline proposal

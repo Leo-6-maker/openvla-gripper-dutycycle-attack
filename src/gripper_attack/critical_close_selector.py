@@ -20,8 +20,10 @@ WINDOW_LEN = 10
 PRE_OFFSET = 2
 HISTORY_LEN = 16
 PREDICTION_HORIZON = 4         # H: predict critical close within [t+1, t+H]
-SELECTOR_VERSION = "l12_critical_close_selector_v2"
-FEATURE_SCHEMA_VERSION = "l12_v2"
+TIE_TOLERANCE = 0.5            # score tie tolerance for ambiguous close detection
+MIN_CLOSE_SEPARATION = 10      # steps: min separation to consider two closes distinct
+SELECTOR_VERSION = "l12_close_event_detector_v3"
+FEATURE_SCHEMA_VERSION = "l12_v3"
 
 
 def _sha256_str(s: str) -> str:
@@ -172,13 +174,40 @@ def rule_based_close_predictor(records: list[dict],
     return predictions
 
 
+def _detect_ambiguous_multiple_closes(predictions: list[dict],
+                                       tie_tolerance: float = TIE_TOLERANCE,
+                                       min_separation: int = MIN_CLOSE_SEPARATION) -> bool:
+    """Return True if two or more high-score close candidates are far apart
+    with scores within tie_tolerance — selector cannot disambiguate them."""
+    valid = [p for p in predictions if not p["abstain"] and p["score"] >= 0.5]
+    if len(valid) < 2:
+        return False
+
+    # Sort by score descending
+    sorted_valid = sorted(valid, key=lambda p: p["score"], reverse=True)
+    best_score = sorted_valid[0]["score"]
+
+    # Check if another high-score candidate is far away with similar score
+    for p in sorted_valid[1:]:
+        if abs(p["step"] - sorted_valid[0]["step"]) >= min_separation:
+            if abs(p["score"] - best_score) <= tie_tolerance:
+                return True
+
+    return False
+
+
 def select_best_window(predictions: list[dict],
                        window_len: int = WINDOW_LEN,
-                       pre_offset: int = PRE_OFFSET) -> Optional[dict]:
+                       pre_offset: int = PRE_OFFSET,
+                       tie_tolerance: float = TIE_TOLERANCE) -> Optional[dict]:
     """Offline clean-repeat: select best window from full-trajectory predictions.
 
     Picks the highest-scoring non-abstaining step as the anchor.
     Allowed to scan the full trajectory (offline mode).
+
+    Abstains (ambiguous_multiple_close_candidates) when two distinct high-score
+    closes are far apart with scores within tie_tolerance — refuses to
+    silently pick the earliest.
 
     Returns dict with window_start, window_end, anchor_step, score, abstain_reason.
     """
@@ -189,6 +218,14 @@ def select_best_window(predictions: list[dict],
             "window_start": -1, "window_end": -1,
             "anchor_step": -1, "score": 0.0,
             "abstain_reason": "all_abstain",
+        }
+
+    # Check for ambiguous multiple closes before selecting
+    if _detect_ambiguous_multiple_closes(predictions, tie_tolerance=tie_tolerance):
+        return {
+            "window_start": -1, "window_end": -1,
+            "anchor_step": -1, "score": 0.0,
+            "abstain_reason": "ambiguous_multiple_close_candidates",
         }
 
     best = max(valid, key=lambda p: p["score"])
@@ -208,11 +245,15 @@ def select_best_window(predictions: list[dict],
 
 def select_online_trigger(predictions: list[dict],
                            score_threshold: float = 1.5,
-                           confirmation_steps: int = 2,
+                           confirmation_steps: int = 1,
                            cooldown_steps: int = 20,
                            window_len: int = WINDOW_LEN,
-                           pre_offset: int = PRE_OFFSET) -> Optional[dict]:
-    """Online streaming: first threshold crossing with K-step confirmation.
+                           pre_offset: int = PRE_OFFSET,
+                           mode: str = "close_interception") -> Optional[dict]:
+    """Online streaming: same-step close interception (Mode 1).
+
+    This is NOT a pre-close forecast. It detects and intercepts a CLOSE
+    command at the moment it is issued (gripper_raw OPEN→CLOSE crossing).
 
     Scans causally through predictions. Triggers when:
       1. Score crosses `score_threshold` (first crossing only).
@@ -221,7 +262,12 @@ def select_online_trigger(predictions: list[dict],
 
     Window start >= trigger_step (cannot start in the past).
 
-    Returns dict with window_start, window_end, trigger_step, score, abstain_reason.
+    Args:
+        mode: "close_interception" (same-step) — the only mode currently
+              implemented. "future_close_forecast" (Mode 2) is not yet built.
+
+    Returns dict with window_start, window_end, trigger_step, score, abstain_reason,
+    and prediction_mode.
     If no trigger fires, returns all_abstain sentinel.
     """
     triggered = False
@@ -249,6 +295,7 @@ def select_online_trigger(predictions: list[dict],
                     "trigger_step": trigger_step,
                     "score": p["score"],
                     "abstain_reason": "",
+                    "prediction_mode": "observed_close_interception",
                 }
         else:
             confirm_count = 0
@@ -258,6 +305,7 @@ def select_online_trigger(predictions: list[dict],
         "anchor_step": -1, "trigger_step": -1,
         "score": 0.0,
         "abstain_reason": "no_online_trigger",
+        "prediction_mode": "",
     }
 
 
@@ -272,18 +320,36 @@ def build_clean_proposal(
     selection_mode: str = "offline_clean_repeat",
     is_online: bool = False,
     first_close_horizon: int = 0,
+    prediction_mode: str = "",
 ) -> WindowProposal:
     """Build a frozen WindowProposal from clean-only selector output.
+
+    Provenance is set correctly per mode:
+      offline_clean_repeat: features_are_causal=True, selection_is_causal=False
+      online_streaming:     features_are_causal=True, selection_is_causal=True
 
     Args:
         selection_mode: "offline_clean_repeat" or "online_streaming"
         is_online: True if online streaming selection
-        first_close_horizon: steps from anchor to predicted close (0 if N/A)
+        prediction_mode: "observed_close_interception" or "future_close_forecast"
     """
     import hashlib as _hl
     _trace_stem = os.path.basename(trace_path).replace(".csv", "")[-20:]
     _mode_short = "on" if is_online else "off"
-    pid = f"{task_key}_s{state_id}_l12v2_{_mode_short}_{_trace_stem}"
+    pid = f"{task_key}_s{state_id}_l12v3_{_mode_short}_{_trace_stem}"
+
+    # Correct provenance per mode
+    features_are_causal = True  # per-step feature extraction is always causal
+    selection_is_causal = is_online  # only online mode has causal selection
+    pred_mode = prediction_mode or window_info.get("prediction_mode", "")
+
+    # predicted_first_close_step semantics
+    trigger = window_info.get("trigger_step", -1)
+    if trigger >= 0 and pred_mode == "observed_close_interception":
+        predicted_close = trigger  # same-step: detected close IS the predicted close
+    else:
+        predicted_close = window_info.get("anchor_step", -1)
+
     return WindowProposal(
         proposal_id=pid,
         selector_version=SELECTOR_VERSION,
@@ -296,7 +362,7 @@ def build_clean_proposal(
         window_start=window_info["window_start"],
         window_end=window_info["window_end"],
         anchor_step=window_info["anchor_step"],
-        predicted_first_close_step=window_info.get("trigger_step", window_info["anchor_step"]),
+        predicted_first_close_step=predicted_close,
         first_close_horizon=first_close_horizon,
         phase_label=phase_label,
         phase_confidence=min(1.0, window_info["score"] / 5.0),
@@ -304,10 +370,12 @@ def build_clean_proposal(
         selector_score=window_info["score"],
         eligible=window_info["window_start"] >= 0,
         abstain_reason=window_info.get("abstain_reason", ""),
+        prediction_mode=pred_mode,
         uses_clean_only=True,
         uses_attack_outcome=False,
         uses_random_outcome=False,
-        is_causal=True,
+        features_are_causal=features_are_causal,
+        selection_is_causal=selection_is_causal,
         history_length=HISTORY_LEN,
         selector_config_sha256=_sha256_str(
             f"{SELECTOR_VERSION}:{WINDOW_LEN}:{PRE_OFFSET}:{HISTORY_LEN}:{PREDICTION_HORIZON}"),

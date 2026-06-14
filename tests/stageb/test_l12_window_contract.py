@@ -22,7 +22,8 @@ def _valid_proposal(**overrides):
         "uses_clean_only": True,
         "uses_attack_outcome": False,
         "uses_random_outcome": False,
-        "is_causal": True,
+        "features_are_causal": True,
+        "selection_is_causal": False,
         "selector_role": "student",
     }
     kw.update(overrides)
@@ -103,3 +104,33 @@ def test_to_dict_roundtrip():
     assert p2.proposal_id == p.proposal_id
     assert p2.uses_clean_only == p.uses_clean_only
     assert p2.is_valid()
+
+
+def test_offline_mode_selection_not_causal_allowed():
+    """Offline clean-repeat: features_are_causal=True, selection_is_causal=False is OK."""
+    p = _valid_proposal(features_are_causal=True, selection_is_causal=False,
+                        is_online=False, selection_mode="offline_clean_repeat")
+    assert p.is_valid()
+
+
+def test_online_mode_requires_selection_is_causal():
+    """Online streaming must have selection_is_causal=True."""
+    p = _valid_proposal(features_are_causal=True, selection_is_causal=False,
+                        is_online=True, selection_mode="online_streaming")
+    assert not p.is_valid()
+    assert any("online_mode_requires_selection_is_causal" in i for i in p.validate())
+
+
+def test_online_mode_valid_with_selection_causal():
+    """Online streaming with selection_is_causal=True is valid."""
+    p = _valid_proposal(features_are_causal=True, selection_is_causal=True,
+                        is_online=True, selection_mode="online_streaming")
+    assert p.is_valid()
+
+
+def test_prediction_mode_roundtrip():
+    """prediction_mode is preserved in to_dict/from_dict roundtrip."""
+    p = _valid_proposal(prediction_mode="observed_close_interception")
+    d = p.to_dict()
+    p2 = WindowProposal.from_dict(d)
+    assert p2.prediction_mode == "observed_close_interception"

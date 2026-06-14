@@ -60,12 +60,16 @@ class WindowProposal:
     eligible: bool = False
     abstain_reason: str = ""
 
+    # ── Prediction mode ──
+    prediction_mode: str = ""  # "observed_close_interception" or "future_close_forecast"
+
     # ── Provenance invariants ──
     uses_clean_only: bool = True
     uses_attack_outcome: bool = False
     uses_random_outcome: bool = False
     uses_privileged_state: bool = False
-    is_causal: bool = True
+    features_are_causal: bool = True    # per-step feature extraction is causal
+    selection_is_causal: bool = False   # window-selection process is online-causal
     history_length: int = 16
 
     # ── Config provenance ──
@@ -88,8 +92,12 @@ class WindowProposal:
             issues.append("uses_random_outcome:TRUE")
         if self.selector_role == "student" and self.uses_privileged_state:
             issues.append("student_uses_privileged_state")
-        if self.selector_role == "student" and not self.is_causal:
-            issues.append("student_not_causal")
+        if self.selector_role == "student" and not self.features_are_causal:
+            issues.append("student_features_not_causal")
+        # Offline mode: features_are_causal=True, selection_is_causal=False (OK)
+        # Online mode: selection_is_causal must be True
+        if self.is_online and not self.selection_is_causal:
+            issues.append("online_mode_requires_selection_is_causal")
         if self.window_start < 0:
             issues.append("window_start:NEGATIVE")
         if self.window_end <= self.window_start:
@@ -134,7 +142,9 @@ class WindowProposal:
             "uses_attack_outcome": self.uses_attack_outcome,
             "uses_random_outcome": self.uses_random_outcome,
             "uses_privileged_state": self.uses_privileged_state,
-            "is_causal": self.is_causal,
+            "features_are_causal": self.features_are_causal,
+            "selection_is_causal": self.selection_is_causal,
+            "prediction_mode": self.prediction_mode,
             "history_length": self.history_length,
             "selector_config_sha256": self.selector_config_sha256,
             "feature_schema_version": self.feature_schema_version,

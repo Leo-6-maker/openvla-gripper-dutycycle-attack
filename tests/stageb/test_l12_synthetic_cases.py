@@ -223,14 +223,10 @@ def test_case_b_student_equal_scores_documented_limitation():
 
     This is the HONEST and CORRECT behavior: without privileged object-pose data,
     the deployment-safe student CANNOT distinguish a spurious early close from a
-    task-critical close. Both events present the same causal features:
-      - gripper_raw crosses 0.7→0.0 (OPEN→CLOSE)
-      - close_onset=1, close_streak=1
-      - gripper_qpos < 0.01
+    task-critical close.
 
-    This is WHY Teacher-P exists: to provide the privileged ground truth that
-    the student alone cannot determine. The student's job is to detect closes
-    causally, not to judge their task-criticality.
+    The offline selector correctly ABSTAINS (ambiguous_multiple_close_candidates)
+    rather than silently picking the earliest.
     """
     records = _make_case_b()
     preds = rule_based_close_predictor(records, horizon=PREDICTION_HORIZON, teacher_anchor=78)
@@ -243,9 +239,11 @@ def test_case_b_student_equal_scores_documented_limitation():
     assert not preds[4]["abstain"]
     assert not preds[78]["abstain"]
 
-    # The offline selector picks the FIRST high score (step 4) — this is a known
-    # limitation of the rule-based student without privileged context.
-    # Teacher-P corrects this by identifying step 78 as the true critical close.
+    # Offline selector abstains due to ambiguous multiple closes
+    win = select_best_window(preds)
+    assert win["abstain_reason"] == "ambiguous_multiple_close_candidates", \
+        f"Expected ambiguous_multiple_close_candidates, got '{win['abstain_reason']}'"
+    assert win["anchor_step"] == -1
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -338,10 +336,11 @@ def _make_case_d():
     r50["close_onset"] = 1
     r50["close_streak"] = 1
     r50["eef_to_obj_distance"] = 0.02
-    for t in range(51, 55):
+    for t in range(51, 65):
         records[t]["clean_gripper_raw"] = 0.0
         records[t]["clean_close"] = 1
         records[t]["close_streak"] = t - 50 + 1
+        records[t]["eef_to_obj_distance"] = 0.03  # EEF stays near during lift
     for t in range(52, 60):
         records[t]["obj_z"] = 0.05 + 0.01 * (t - 51)  # lift
 

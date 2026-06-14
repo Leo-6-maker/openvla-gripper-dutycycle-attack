@@ -8,7 +8,7 @@ from gripper_attack.critical_close_selector import (
     build_clean_proposal,
 )
 from gripper_attack.phase_detector import (
-    teacher_phase_labels,
+    teacher_rule_phase_labels,
     teacher_rule_critical_close_anchor,
     teacher_privileged_critical_close_anchor,
 )
@@ -139,9 +139,11 @@ def test_teacher_privileged_with_object_fields():
         r["obj_z"] = 0.05
     # At close onset, EEF is near object
     records[50]["eef_to_obj_distance"] = 0.03  # 3cm = near
-    # After close, object lifts (moves up)
+    # After close, EEF stays near and object lifts (sustained, 2+ consecutive frames)
+    for t in range(51, 65):
+        records[t]["eef_to_obj_distance"] = 0.04  # EEF stays near during lift
     for t in range(52, 60):
-        records[t]["obj_z"] = 0.05 + 0.01 * (t - 51)  # rising
+        records[t]["obj_z"] = 0.05 + 0.01 * (t - 51)  # rising (sustained lift)
     anchor = teacher_privileged_critical_close_anchor(records)
     assert anchor == 50
 
@@ -161,19 +163,19 @@ def test_teacher_privileged_rejects_early_far_close():
     records[50]["close_streak"] = 1
     records[50]["eef_to_obj_distance"] = 0.02  # near
     records[50]["gripper_qpos_before"] = 0.0
-    for t in range(52, 62):
+    for t in range(51, 65):
         records[t]["clean_close"] = 1
         records[t]["close_streak"] = t - 50 + 1
-        records[t]["eef_to_obj_distance"] = 0.02
+        records[t]["eef_to_obj_distance"] = 0.03  # EEF stays near during lift
     for t in range(52, 60):
-        records[t]["obj_z"] = 0.05 + 0.01 * (t - 51)
+        records[t]["obj_z"] = 0.05 + 0.01 * (t - 51)  # sustained lift
     anchor = teacher_privileged_critical_close_anchor(records)
     assert anchor == 50  # step 50, NOT step 4
 
 
 def test_teacher_phase_labels():
     records = _make_trace(n_close_onset_at=50)
-    labels = teacher_phase_labels(records)
+    labels = teacher_rule_phase_labels(records)
     assert len(labels) == 100
     # grasp_close label at onset
     assert labels[50] == "grasp_close"
