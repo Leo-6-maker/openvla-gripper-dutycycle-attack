@@ -22,6 +22,7 @@ UNTARGETED_OBJECTIVES = {
 TARGET_TOKEN_OBJECTIVES = {
     "autoregressive_prefix_gripper_target_token_cw_v1",
     "autoregressive_prefix_gripper_target_token_logratio_v2",
+    "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
 }
 
 EXPECTED_M3_TARGET_TOKEN_ID = 31744

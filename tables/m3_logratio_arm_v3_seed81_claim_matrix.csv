@@ -1,0 +1,10 @@
+claim,status,evidence,notes
+strict_route,PASS,tables/m3_logratio_arm_v3_seed81_route_audit.csv,"strict_route=true, fallback_used=false, TokenPrefixPGDAttacker, 20 backwards"
+surrogate_official_preflight,PASS,tables/m3_logratio_arm_v3_seed81_zero_step_preflight.json,clean and delta0 surrogate/official score paths match
+official_target_margin_transfer,PASS,tables/m3_logratio_arm_v3_seed81_condition_results.csv,delta0 -0.25 to TRUE_PGD 21.499736785888672
+true_pgd_beats_rand20_margin,PASS,tables/m3_logratio_arm_v3_seed81_condition_results.csv,TRUE_PGD 21.499736785888672 > RAND20 6.0
+true_pgd_beats_shuffled_margin,PASS,tables/m3_logratio_arm_v3_seed81_condition_results.csv,TRUE_PGD 21.499736785888672 > SHUFFLED -0.25
+arm_selectivity,PASS,tables/m3_logratio_arm_v3_seed81_condition_results.csv,TRUE_PGD arm prefix match 6/6
+fixed_frame_step78_result,FULL_TOKEN_FLIP_FIXED_FRAME,tables/m3_logratio_arm_v3_seed81_summary.csv,single Tomato development frame only
+libero_rollout,NOT_RUN,reports/M3_LOGRATIO_ARM_V3_SEED81_CANARY_RESULTS.md,No LIBERO attack rollout or multi-frame panel was launched
+layer3_solved,FORBIDDEN,reports/M3_LOGRATIO_ARM_V3_SEED81_CANARY_RESULTS.md,Fixed-frame canary is not closed-loop Layer3

@@ -242,7 +242,10 @@ def official_decode(
     tokens = extract_exact_new_tokens(gen.sequences, prompt_len=int(input_ids.shape[1]), expected_new_tokens=int(action_dim))
     score_row = gen.scores[-1][0].detach().float().cpu()
     invariant = validate_processed_argmax_matches_emitted(score_row, int(tokens[-1]), tolerance=float(tolerance))
-    if str(objective) == "autoregressive_prefix_gripper_target_token_logratio_v2":
+    if str(objective) in {
+        "autoregressive_prefix_gripper_target_token_logratio_v2",
+        "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+    }:
         _, stats = target_token_logratio_loss_and_stats(score_row, target_token_id=int(target_token_id))
     else:
         _, stats = target_token_cw_loss_and_stats(score_row, target_token_id=int(target_token_id), margin=float(margin))

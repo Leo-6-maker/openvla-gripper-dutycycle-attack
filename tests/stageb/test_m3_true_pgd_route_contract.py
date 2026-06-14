@@ -280,6 +280,22 @@ def test_contract_accepts_logratio_v2_target_objective():
     )
 
 
+def test_contract_accepts_logratio_arm_v3_target_objective():
+    route = route_config_from_attack_config(
+        strict_config(objective="autoregressive_prefix_gripper_target_token_logratio_arm_v3")["attack_optimizer"]
+    )
+    validate_true_pgd_attack_result(
+        _valid_result(
+            attack_method="token_prefix_pgd_pixel_values_target_token_logratio_arm_v3",
+            debug_updates={
+                "requested_objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+                "resolved_objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+            },
+        ),
+        route,
+    )
+
+
 def test_contract_rejects_wrong_target_token():
     route = route_config_from_attack_config(strict_config()["attack_optimizer"])
     with pytest.raises(RouteContractError, match="target_token_id"):
@@ -482,6 +498,22 @@ def test_logratio_v2_requires_cached_surrogate_path():
         )
 
 
+def test_logratio_arm_v3_requires_cached_surrogate_path():
+    attacker = make_attacker(
+        objective="autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+        surrogate_score_path="uncached_full_context_v1",
+    )
+    with pytest.raises(RouteContractError, match="requires cached_autoregressive_generate_v1"):
+        attacker.attack(
+            np.zeros((2, 2, 3), dtype=np.uint8),
+            "pick object",
+            np.zeros(7, dtype=np.float32),
+            np.zeros(7, dtype=np.float32),
+            clean_generation(),
+            unnorm_key="libero_object",
+        )
+
+
 def test_true_pgd_logratio_v2_mock_records_non_saturating_margin():
     attacker = make_attacker(
         objective="autoregressive_prefix_gripper_target_token_logratio_v2",
@@ -505,6 +537,34 @@ def test_true_pgd_logratio_v2_mock_records_non_saturating_margin():
     assert debug["target_token_logratio_margin_final"] > debug["target_token_logratio_margin_initial"]
     assert debug["target_token_objective_margin_name"] == "target_minus_competitor_logsumexp_margin"
     assert len(debug["target_token_logratio_margin_trajectory"]) == 1
+
+
+def test_true_pgd_logratio_arm_v3_records_combined_arm_penalty():
+    attacker = make_attacker(
+        objective="autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+        surrogate_score_path="cached_autoregressive_generate_v1",
+        arm_preserve_weight=0.5,
+        num_steps=1,
+    )
+    result = attacker.attack(
+        np.zeros((2, 2, 3), dtype=np.uint8),
+        "pick object",
+        np.zeros(7, dtype=np.float32),
+        np.zeros(7, dtype=np.float32),
+        clean_generation(),
+        unnorm_key="libero_object",
+    )
+    debug = result.debug
+    assert result.attack_method == "token_prefix_pgd_pixel_values_target_token_logratio_arm_v3"
+    assert debug["requested_objective"] == "autoregressive_prefix_gripper_target_token_logratio_arm_v3"
+    assert debug["autoregressive_prefix_target_token_logratio_loss"] is True
+    assert debug["autoregressive_prefix_target_token_logratio_arm_loss"] is True
+    assert debug["arm_preservation_role"] == "combined_gradient_penalty"
+    assert debug["arm_preserve_weight"] == 0.5
+    assert debug["target_token_logratio_margin_final"] > debug["target_token_logratio_margin_initial"]
+    assert debug["target_token_arm_preservation_loss_final"] is not None
+    assert len(debug["target_token_arm_preservation_loss_trajectory"]) == 1
+    assert debug["arm_gate_reference"] == "clean_actual_generation"
 
 
 def test_rand20_controls_are_reproducible_and_processor_space():
