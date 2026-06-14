@@ -1,0 +1,27 @@
+{
+  "attack_seed": 81,
+  "clean_arm_prefix": [
+    31900,
+    31870,
+    31915,
+    31882,
+    31862,
+    31913
+  ],
+  "clean_tokens": [
+    31900,
+    31870,
+    31915,
+    31882,
+    31862,
+    31913,
+    31872
+  ],
+  "commit": "284eeaf56640c51a8a96bf5842e3b746d390ea40",
+  "config_objective": "autoregressive_prefix_gripper_target_token_logratio_v2",
+  "epsilon": 0.023529411764705882,
+  "num_steps": 20,
+  "official_decode_schedule": "after_full_pgd_replay",
+  "step_size": 0.0017647058823529412,
+  "target_token_id": 31744
+}

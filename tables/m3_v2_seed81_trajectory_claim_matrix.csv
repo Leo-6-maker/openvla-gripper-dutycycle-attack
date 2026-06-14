@@ -1,0 +1,8 @@
+claim,status,evidence,notes
+offline_surrogate_telemetry,RECORDED,tables/m3_v2_seed81_trajectory_telemetry.csv,"Early surrogate rows show arm 6/6 with margin above 6.0, but no official decode or tensor candidate was saved in the frozen artifact."
+delta0_reconstruction,PASS,tables/m3_v2_seed81_full_trajectory_official_audit.csv,"Replay delta0 hash matches the frozen seed81 artifact."
+terminal_reconstruction,FAIL,tables/m3_v2_seed81_replay_reproducibility_audit.csv,"Deterministic replay terminal hash and official margin do not match the frozen artifact."
+original_runner_rerun_bitwise,FAIL,tables/m3_v2_seed81_replay_reproducibility_audit.csv,"Original fixed-frame runner rerun also changes terminal hash/margin while preserving final token sequence and arm 2/6."
+feasible_intermediate,NOT_ESTABLISHED,tables/m3_v2_seed81_full_trajectory_official_audit.csv,"Intermediate candidates cannot be promoted because the underlying trajectory reconstruction failed."
+v2_1_promotion,FORBIDDEN,reports/M3_V2_SEED81_TRAJECTORY_FEASIBILITY_AUDIT.md,"Do not use this artifact to launch v2.1, multi-frame panel, or closed-loop rollout."
+libero_rollout,NOT_RUN,reports/M3_V2_SEED81_TRAJECTORY_FEASIBILITY_AUDIT.md,"Fixed-frame audit only; no LIBERO environment attack rollout was launched."
