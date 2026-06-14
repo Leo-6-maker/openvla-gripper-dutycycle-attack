@@ -34,9 +34,47 @@ def sample_processor_delta(
     return delta.to(device=device, dtype=dtype)
 
 
+def project_and_cast_processor_values(
+    x_orig: torch.Tensor,
+    candidate: torch.Tensor,
+    *,
+    epsilon: float,
+    candidate_is_delta: bool = True,
+    tolerance: float = 1e-7,
+) -> tuple[torch.Tensor, int]:
+    """Project in fp32 and cast to ``x_orig`` dtype without budget overflow.
+
+    The processor-space budget is audited on the actual tensor consumed by the
+    model.  bf16/fp16 casts can round a projected fp32 boundary value outside
+    ``x_orig +/- epsilon``; those elements are reset to the original value.
+    This helper is intentionally shared by PGD and random controls.
+    """
+
+    x_orig_float = x_orig.detach().float()
+    candidate_float = candidate.to(device=x_orig.device, dtype=torch.float32)
+    adv_float = x_orig_float + candidate_float if candidate_is_delta else candidate_float
+    projected = torch.max(
+        torch.min(adv_float, x_orig_float + float(epsilon)),
+        x_orig_float - float(epsilon),
+    )
+    if x_orig.dtype == torch.float32:
+        return projected.to(device=x_orig.device), 0
+    casted = projected.to(dtype=x_orig.dtype)
+    over_budget = (casted.float() - x_orig_float).abs() > (float(epsilon) + float(tolerance))
+    correction_count = int(torch.sum(over_budget).detach().cpu())
+    if correction_count:
+        casted = torch.where(over_budget, x_orig.detach(), casted)
+    return casted, correction_count
+
+
 def project_processor_space(x_orig: torch.Tensor, delta: torch.Tensor, *, epsilon: float) -> torch.Tensor:
-    delta = torch.clamp(delta.to(device=x_orig.device, dtype=torch.float32), -float(epsilon), float(epsilon))
-    return (x_orig.detach().float() + delta).to(dtype=x_orig.dtype)
+    projected, _ = project_and_cast_processor_values(
+        x_orig,
+        delta,
+        epsilon=float(epsilon),
+        candidate_is_delta=True,
+    )
+    return projected
 
 
 def select_best_surrogate_only(candidate_ids: Iterable[int], surrogate_scores: Sequence[float]) -> int:

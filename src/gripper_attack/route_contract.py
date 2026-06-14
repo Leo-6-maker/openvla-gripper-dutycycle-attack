@@ -23,6 +23,9 @@ TARGET_TOKEN_OBJECTIVES = {
     "autoregressive_prefix_gripper_target_token_cw_v1",
 }
 
+EXPECTED_M3_TARGET_TOKEN_ID = 31744
+EXPECTED_M3_TARGET_EXECUTION_CLASS = "CLIP_MEDIATED_OPEN"
+
 
 class RouteContractError(RuntimeError):
     """Raised when a scientific attack route cannot prove its execution path."""
@@ -144,22 +147,56 @@ def attach_route_debug(
 
 def validate_true_pgd_attack_result(result: Any, route: RouteConfig) -> None:
     debug = getattr(result, "debug", {}) or {}
+    if debug.get("strict_route") is not True:
+        raise RouteContractError("strict route result missing strict_route=True")
+    if debug.get("allow_fallback") is not False:
+        raise RouteContractError("strict route result must record allow_fallback=False")
     if debug.get("fallback_used") is not False:
         raise RouteContractError(f"strict route used fallback: {debug.get('fallback_reason')}")
     if "fallback_reason" in debug and debug.get("fallback_reason"):
         raise RouteContractError(f"fallback_reason present: {debug.get('fallback_reason')}")
     if debug.get("resolved_adapter_class") != "TokenPrefixPGDAttacker":
         raise RouteContractError("strict route did not resolve TokenPrefixPGDAttacker")
-    if not isinstance(debug.get("adv_inputs"), Mapping):
+    attack_method = str(getattr(result, "attack_method", "") or "")
+    if not attack_method.startswith("token_prefix_pgd"):
+        raise RouteContractError(f"unexpected attack_method for true PGD: {attack_method}")
+    if getattr(result, "directional_loss_available", None) is not True:
+        raise RouteContractError("true target-token PGD must report directional_loss_available=True")
+    if debug.get("requested_objective") != debug.get("resolved_objective"):
+        raise RouteContractError("requested_objective and resolved_objective differ")
+    if route.requested_objective in TARGET_TOKEN_OBJECTIVES:
+        if debug.get("resolved_objective") != "autoregressive_prefix_gripper_target_token_cw_v1":
+            raise RouteContractError(f"wrong resolved objective: {debug.get('resolved_objective')}")
+        if int(debug.get("target_token_id", -1)) != EXPECTED_M3_TARGET_TOKEN_ID:
+            raise RouteContractError(f"wrong target_token_id: {debug.get('target_token_id')}")
+        if str(debug.get("target_execution_class")) != EXPECTED_M3_TARGET_EXECUTION_CLASS:
+            raise RouteContractError(f"wrong target_execution_class: {debug.get('target_execution_class')}")
+    adv_inputs = debug.get("adv_inputs")
+    if not isinstance(adv_inputs, Mapping):
         raise RouteContractError("strict route result missing debug['adv_inputs']")
+    missing = [key for key in ("input_ids", "pixel_values") if key not in adv_inputs]
+    if missing:
+        raise RouteContractError(f"strict route adv_inputs missing keys: {missing}")
     if getattr(result, "x_adv", None) is not None:
         raise RouteContractError("true token-prefix PGD must return x_adv=None")
     if debug.get("x_adv_is_none") is False:
         raise RouteContractError("debug claims x_adv is not None")
+    if getattr(result, "action_adv", None) is not None:
+        raise RouteContractError("true token-prefix PGD must return action_adv=None")
+    if debug.get("action_adv_is_none") is False:
+        raise RouteContractError("debug claims action_adv is not None")
     if route.expected_num_backwards is not None and int(debug.get("num_backwards", -1)) != int(route.expected_num_backwards):
         raise RouteContractError(
             f"num_backwards={debug.get('num_backwards')} expected {route.expected_num_backwards}"
         )
+    num_backwards = int(debug.get("num_backwards", -1))
+    num_loss_forwards = int(debug.get("num_loss_forwards", -1))
+    if num_loss_forwards < num_backwards + 1:
+        raise RouteContractError(
+            f"num_loss_forwards={num_loss_forwards} must be >= num_backwards+1 ({num_backwards + 1})"
+        )
+    if debug.get("pixel_space") != "processor_pixel_values":
+        raise RouteContractError(f"unexpected pixel_space: {debug.get('pixel_space')}")
     epsilon = float(getattr(result, "epsilon", 0.0) or 0.0)
     linf = float(debug.get("pixel_budget_adv_inputs_linf", getattr(result, "observation_perturb_linf", 0.0)) or 0.0)
     if epsilon >= 0.0 and linf > epsilon + 1e-6:

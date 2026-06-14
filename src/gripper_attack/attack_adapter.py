@@ -9,6 +9,7 @@ from .execution_target import (
     target_token_cw_loss_and_stats,
     validate_execution_target,
 )
+from .m3_controls import project_and_cast_processor_values
 from .gripper_semantics import (
     raw_gripper_is_open,
     raw_gripper_is_close,
@@ -243,23 +244,22 @@ class TokenPrefixPGDAttacker:
         ``debug["adv_inputs"]["pixel_values"]`` tensor remains budget-valid.
         """
 
-        x_orig_float = x_orig_model.detach().float()
-        projected = self._project_pixel_master(adv_float.float(), x_orig_float)
-        model_dtype = x_orig_model.dtype
-        if model_dtype == torch.float32:
-            return projected
-        casted = projected.to(dtype=model_dtype)
-        over_budget = (casted.float() - x_orig_float).abs() > (float(self.epsilon) + 1e-7)
-        if bool(torch.any(over_budget).detach().cpu()):
-            casted = torch.where(over_budget, x_orig_model.detach(), casted)
+        casted, _ = project_and_cast_processor_values(
+            x_orig_model,
+            adv_float,
+            epsilon=float(self.epsilon),
+            candidate_is_delta=False,
+        )
         return casted
 
     def _count_quantized_budget_corrections(self, adv_model: torch.Tensor, adv_float: torch.Tensor, x_orig_model: torch.Tensor) -> int:
-        x_orig_float = x_orig_model.detach().float()
-        projected = self._project_pixel_master(adv_float.detach().float(), x_orig_float)
-        naive = projected.to(dtype=x_orig_model.dtype)
-        over_budget = (naive.float() - x_orig_float).abs() > (float(self.epsilon) + 1e-7)
-        return int(torch.sum(over_budget).detach().cpu())
+        _casted, correction_count = project_and_cast_processor_values(
+            x_orig_model,
+            adv_float.detach(),
+            epsilon=float(self.epsilon),
+            candidate_is_delta=False,
+        )
+        return int(correction_count)
 
     def action_bins_for_env_sign(self, dim: int, target_env_sign: str, unnorm_key: str, *, postprocess_gripper: bool = False) -> torch.LongTensor:
         """DEPRECATED: sign-string semantics are inverted for postprocessed gripper.
@@ -632,6 +632,26 @@ class TokenPrefixPGDAttacker:
         except Exception:
             return None
 
+    def _exact_tokens_from_generation(
+        self,
+        gen,
+        *,
+        prompt_len: int,
+        action_dim: int,
+        context: str,
+    ) -> torch.LongTensor:
+        if gen is None or not hasattr(gen, "sequences"):
+            raise RouteContractError(f"{context} requires clean_model_output with generated sequences")
+        seq = gen.sequences
+        if int(seq.ndim) != 2 or int(seq.shape[0]) < 1:
+            raise RouteContractError(f"{context} clean_model_output.sequences must be [batch, seq]")
+        new_count = int(seq.shape[1]) - int(prompt_len)
+        if new_count != int(action_dim):
+            raise RouteContractError(
+                f"{context} requires exact {int(action_dim)} clean generated tokens; got {new_count}"
+            )
+        return seq[0, int(prompt_len):].detach().to(device=self.device, dtype=torch.long)
+
     def _generate_action_prefix_tokens(self, prompt_input_ids: torch.LongTensor, pixel_values: torch.Tensor, *, prefix_len: int) -> torch.LongTensor:
         """Greedily generate action-prefix token ids as stop-gradient context."""
         if int(prefix_len) <= 0:
@@ -791,6 +811,28 @@ class TokenPrefixPGDAttacker:
             target_ids = self.action_to_token_ids(target_action, unnorm_key)
             token_label_source = "directional_target_action"
         clean_ids, full_ids, labels, x0 = self._build_inputs_and_labels(observation, str(instruction), target_ids)
+        retokenized_target_ids = target_ids.detach().clone()
+        clean_generated_action_token_ids = None
+        clean_generated_arm_prefix_token_ids = None
+        retokenized_clean_action_token_ids = [int(x) for x in retokenized_target_ids.detach().cpu().tolist()]
+        retokenized_clean_action_arm_token_ids = [
+            int(x)
+            for x in retokenized_target_ids[: max(int(retokenized_target_ids.numel()) - 1, 0)].detach().cpu().tolist()
+        ]
+        if is_target_token_cw_v1:
+            clean_generated_action_token_ids = self._exact_tokens_from_generation(
+                clean_model_output,
+                prompt_len=int(clean_ids.shape[1]),
+                action_dim=int(target_ids.numel()),
+                context="strict target-token objective",
+            )
+            clean_generated_arm_prefix_token_ids = [
+                int(x)
+                for x in clean_generated_action_token_ids[: max(int(clean_generated_action_token_ids.numel()) - 1, 0)]
+                .detach()
+                .cpu()
+                .tolist()
+            ]
         # P0 FIX: prefix_locked must be checked FIRST so arm-preserve branch is reachable.
         # Previously `or is_prefix_locked` in the gripper-only branch made this unreachable.
         if is_prefix_locked or is_generated_prefix_v3 or is_target_token_cw_v1:
@@ -903,7 +945,11 @@ class TokenPrefixPGDAttacker:
             prefix_refresh_count = 0
             num_generation_forwards = 0
             generated_arm_prefix_token_ids = None
-            clean_arm_prefix_token_ids = [int(x) for x in target_ids[: max(int(target_ids.numel()) - 1, 0)].detach().cpu().tolist()]
+            clean_arm_prefix_token_ids = (
+                clean_generated_arm_prefix_token_ids
+                if is_target_token_cw_v1
+                else retokenized_clean_action_arm_token_ids
+            )
             teacher_initial = (
                 None
                 if is_target_token_cw_v1
@@ -1031,15 +1077,33 @@ class TokenPrefixPGDAttacker:
                 float(sum(int(clean_arm_prefix_token_ids[j] == generated_arm_prefix_final[j]) for j in range(n_arm)) / max(n_arm, 1))
                 if n_arm else 0.0
             )
+            retok_n_arm = min(len(retokenized_clean_action_arm_token_ids), len(generated_arm_prefix_final))
+            retokenized_arm_match_rate = (
+                float(
+                    sum(
+                        int(retokenized_clean_action_arm_token_ids[j] == generated_arm_prefix_final[j])
+                        for j in range(retok_n_arm)
+                    )
+                    / max(retok_n_arm, 1)
+                )
+                if retok_n_arm else 0.0
+            )
             generated_prefix_debug = {
                 "objective_name": objective,
                 "method_version": "generated_prefix_stop_gradient_v1",
                 "prefix_refresh_strategy": "every_k_pgd_steps",
                 "prefix_refresh_interval": int(prefix_refresh_interval),
                 "prefix_refresh_count": int(prefix_refresh_count),
-                "retokenized_clean_action_arm_token_ids": clean_arm_prefix_token_ids,
+                "retokenized_clean_action_token_ids": retokenized_clean_action_token_ids,
+                "retokenized_clean_action_arm_token_ids": retokenized_clean_action_arm_token_ids,
+                "clean_generated_action_token_ids": None
+                if clean_generated_action_token_ids is None
+                else [int(x) for x in clean_generated_action_token_ids.detach().cpu().tolist()],
+                "clean_generated_arm_prefix_token_ids": clean_generated_arm_prefix_token_ids,
                 "generated_arm_prefix_token_ids": generated_arm_prefix_final,
-                "generated_vs_retokenized_arm_match_rate": arm_match_rate,
+                "generated_adv_arm_prefix_token_ids": generated_arm_prefix_final,
+                "generated_vs_clean_generated_arm_match_rate": arm_match_rate if is_target_token_cw_v1 else None,
+                "generated_vs_retokenized_arm_match_rate": retokenized_arm_match_rate,
                 "teacher_forced_margin_clean_x0": None if teacher_initial is None else teacher_initial.get("open_minus_close_margin"),
                 "teacher_forced_gripper_margin_final": None if teacher_final is None else teacher_final.get("open_minus_close_margin"),
                 "generated_prefix_gripper_margin_initial": (
@@ -1072,7 +1136,13 @@ class TokenPrefixPGDAttacker:
                     "target_token_cw_margin_initial": (initial_generated_stats or {}).get("target_minus_best_competitor_margin"),
                     "target_token_cw_margin_final": (final_generated_stats or {}).get("target_minus_best_competitor_margin"),
                     "arm_preservation_role": "acceptance_gate_not_primary_loss",
+                    "arm_gate_reference": "clean_actual_generation",
                     "arm_prefix_match_count": int(sum(int(clean_arm_prefix_token_ids[j] == generated_arm_prefix_final[j]) for j in range(n_arm))) if n_arm else 0,
+                    "arm_prefix_match_denominator": int(n_arm),
+                    "retokenized_arm_prefix_match_count": int(sum(int(retokenized_clean_action_arm_token_ids[j] == generated_arm_prefix_final[j]) for j in range(retok_n_arm))) if retok_n_arm else 0,
+                    "retokenized_arm_prefix_match_denominator": int(retok_n_arm),
+                    "target_token_cw_loss_initial": initial_loss,
+                    "target_token_cw_loss_final": final_loss,
                 })
         else:
             for i in range(max(self.num_steps, 1)):
@@ -1104,7 +1174,7 @@ class TokenPrefixPGDAttacker:
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
         adv_model = self._cast_projected_pixel_values(adv.detach(), x_orig_model)
-        if not is_generated_prefix_v3:
+        if not (is_generated_prefix_v3 or is_target_token_cw_v1):
             with torch.no_grad():
                 final_loss = float(self._loss(full_ids, labels, adv_model, **loss_kwargs).detach().cpu())
         postprocess_gripper = bool(self.postprocess_gripper)
@@ -1159,9 +1229,12 @@ class TokenPrefixPGDAttacker:
         else:
             debug.update({
                 "target_token_ids": token_list,
-                "target_ce_initial": initial_loss,
-                "target_ce_final": final_loss,
+                "target_ce_initial": None if is_target_token_cw_v1 else initial_loss,
+                "target_ce_final": None if is_target_token_cw_v1 else final_loss,
             })
+            if is_target_token_cw_v1:
+                debug["target_token_cw_loss_initial"] = initial_loss
+                debug["target_token_cw_loss_final"] = final_loss
             # Gripper-specific restart-selection metrics (now using corrected region)
             if corrected_region_info is not None:
                 debug["corrected_open_token_count"] = corrected_region_info["open_count"]
@@ -1191,7 +1264,9 @@ class TokenPrefixPGDAttacker:
                     debug.update(_prefix_debug_final)
             if is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region or is_prefix_locked or is_corrected_hybrid or is_generated_prefix_v3 or is_target_token_cw_v1:
                 debug.update({
-                    "target_gripper_token_id": int(token_list[-1]) if token_list else None,
+                    "target_gripper_token_id": None if is_target_token_cw_v1 else (int(token_list[-1]) if token_list else None),
+                    "attack_target_gripper_token_id": int(self.target_token_id) if is_target_token_cw_v1 else (int(token_list[-1]) if token_list else None),
+                    "arm_reference_retokenized_gripper_token_id": int(token_list[-1]) if token_list else None,
                     "gripper_only_loss": bool(is_force_gripper_open or is_gripper_margin or is_gripper_region or is_prefix_locked or is_generated_prefix_v3 or is_target_token_cw_v1),
                     "z_and_gripper_loss": bool(is_force_open_z_down),
                     "corrected_open_region_z_down": bool(is_corrected_hybrid),

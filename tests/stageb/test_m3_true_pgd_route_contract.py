@@ -16,6 +16,7 @@ from gripper_attack.execution_target import (
     validate_execution_target,
 )
 from gripper_attack.m3_controls import (
+    project_and_cast_processor_values,
     project_processor_space,
     rand_seed_schedule,
     sample_processor_delta,
@@ -35,12 +36,13 @@ from stageb.diagnose_m3_true_pgd_fixed_frame import (
 )
 
 
-VOCAB_EFF = 21
-ROW_VOCAB = 22
-TARGET_TOKEN = 21
+VOCAB_EFF = TARGET_31744
+ROW_VOCAB = TARGET_31744 + 1
+TARGET_TOKEN = TARGET_31744
 N_BINS = 3
 ARM_TOKEN = 15
 CLOSE_TOKEN = 20
+PROMPT_TOKENS = [3, 29871]
 
 
 class TinyProcessor:
@@ -121,6 +123,51 @@ def make_attacker(**overrides):
     )
 
 
+def _valid_debug(**updates):
+    debug = {
+        "strict_route": True,
+        "allow_fallback": False,
+        "fallback_used": False,
+        "fallback_reason": None,
+        "resolved_adapter_class": "TokenPrefixPGDAttacker",
+        "requested_objective": "autoregressive_prefix_gripper_target_token_cw_v1",
+        "resolved_objective": "autoregressive_prefix_gripper_target_token_cw_v1",
+        "target_token_id": TARGET_31744,
+        "target_execution_class": TARGET_31744_EXECUTION_CLASS,
+        "adv_inputs": {
+            "input_ids": torch.ones((1, 2), dtype=torch.long),
+            "pixel_values": torch.zeros((1, 1, 1, 1)),
+        },
+        "x_adv_is_none": True,
+        "action_adv_is_none": True,
+        "num_backwards": 1,
+        "num_loss_forwards": 2,
+        "pixel_space": "processor_pixel_values",
+        "pixel_budget_adv_inputs_linf": 0.0,
+    }
+    debug.update(updates)
+    return debug
+
+
+def _valid_result(**updates):
+    debug_updates = updates.pop("debug_updates", {})
+    return AttackResult(
+        x_adv=updates.pop("x_adv", None),
+        action_adv=updates.pop("action_adv", None),
+        attack_method=updates.pop("attack_method", "token_prefix_pgd_pixel_values_target_token_cw_v1"),
+        directional_loss_available=updates.pop("directional_loss_available", True),
+        epsilon=updates.pop("epsilon", 0.25),
+        debug=_valid_debug(**debug_updates),
+    )
+
+
+def clean_generation(tokens=None):
+    action = [ARM_TOKEN] * 6 + [CLOSE_TOKEN] if tokens is None else [int(x) for x in tokens]
+    return SimpleNamespace(
+        sequences=torch.tensor([PROMPT_TOKENS + action], dtype=torch.long)
+    )
+
+
 def test_strict_route_rejects_missing_method():
     with pytest.raises(RouteContractError, match="explicit method"):
         OpenVLAVisualAttacker(config={"attack_optimizer": {"strict_route": True, "allow_fallback": False}})
@@ -146,7 +193,7 @@ def test_strict_route_rejects_missing_target_token():
 def test_strict_route_rejects_targeted_objective_without_target():
     attacker = make_attacker(objective="targeted_directional_ce")
     with pytest.raises(RouteContractError, match="target_action"):
-        attacker.attack(np.zeros((2, 2, 3), dtype=np.uint8), "pick", None, None, None, unnorm_key="libero_object")
+        attacker.attack(np.zeros((2, 2, 3), dtype=np.uint8), "pick", None, None, clean_generation(), unnorm_key="libero_object")
 
 
 def test_strict_route_disables_typeerror_retry():
@@ -177,12 +224,60 @@ def test_strict_route_rejects_existing_dense_adapter():
 def test_true_pgd_result_contract_rejects_bad_results():
     route = route_config_from_attack_config(strict_config()["attack_optimizer"])
     with pytest.raises(RouteContractError, match="adv_inputs"):
-        validate_true_pgd_attack_result(AttackResult(debug={"fallback_used": False, "resolved_adapter_class": "TokenPrefixPGDAttacker", "num_backwards": 1}), route)
+        validate_true_pgd_attack_result(_valid_result(debug_updates={"adv_inputs": None}), route)
     with pytest.raises(RouteContractError, match="x_adv"):
         validate_true_pgd_attack_result(
-            AttackResult(x_adv=np.zeros((1,)), epsilon=1.0, debug={"fallback_used": False, "resolved_adapter_class": "TokenPrefixPGDAttacker", "num_backwards": 1, "adv_inputs": {"input_ids": torch.ones((1, 1), dtype=torch.long), "pixel_values": torch.zeros((1, 1, 1, 1))}}),
+            _valid_result(x_adv=np.zeros((1,))),
             route,
         )
+
+
+def test_contract_rejects_wrong_attack_method():
+    route = route_config_from_attack_config(strict_config()["attack_optimizer"])
+    with pytest.raises(RouteContractError, match="attack_method"):
+        validate_true_pgd_attack_result(_valid_result(attack_method="visual_linf_noise_adapter"), route)
+
+
+def test_contract_rejects_directional_loss_false():
+    route = route_config_from_attack_config(strict_config()["attack_optimizer"])
+    with pytest.raises(RouteContractError, match="directional_loss"):
+        validate_true_pgd_attack_result(_valid_result(directional_loss_available=False), route)
+
+
+def test_contract_rejects_wrong_objective():
+    route = route_config_from_attack_config(strict_config()["attack_optimizer"])
+    with pytest.raises(RouteContractError, match="wrong resolved objective|requested_objective"):
+        validate_true_pgd_attack_result(
+            _valid_result(debug_updates={"resolved_objective": "prefix_locked_gripper_open_margin"}),
+            route,
+        )
+
+
+def test_contract_rejects_wrong_target_token():
+    route = route_config_from_attack_config(strict_config()["attack_optimizer"])
+    with pytest.raises(RouteContractError, match="target_token_id"):
+        validate_true_pgd_attack_result(_valid_result(debug_updates={"target_token_id": 123}), route)
+
+
+def test_contract_rejects_missing_adv_input_keys():
+    route = route_config_from_attack_config(strict_config()["attack_optimizer"])
+    with pytest.raises(RouteContractError, match="adv_inputs missing keys"):
+        validate_true_pgd_attack_result(
+            _valid_result(debug_updates={"adv_inputs": {"pixel_values": torch.zeros((1, 1, 1, 1))}}),
+            route,
+        )
+
+
+def test_contract_rejects_action_adv():
+    route = route_config_from_attack_config(strict_config()["attack_optimizer"])
+    with pytest.raises(RouteContractError, match="action_adv"):
+        validate_true_pgd_attack_result(_valid_result(action_adv=np.zeros(7)), route)
+
+
+def test_contract_rejects_insufficient_loss_forwards():
+    route = route_config_from_attack_config(strict_config()["attack_optimizer"])
+    with pytest.raises(RouteContractError, match="num_loss_forwards"):
+        validate_true_pgd_attack_result(_valid_result(debug_updates={"num_loss_forwards": 1}), route)
 
 
 def test_true_pgd_target_token_objective_improves_mock_margin_and_records_contract():
@@ -192,7 +287,7 @@ def test_true_pgd_target_token_objective_improves_mock_margin_and_records_contra
         "pick object",
         np.zeros(7, dtype=np.float32),
         np.zeros(7, dtype=np.float32),
-        None,
+        clean_generation(),
         unnorm_key="libero_object",
     )
     debug = result.debug
@@ -204,7 +299,58 @@ def test_true_pgd_target_token_objective_improves_mock_margin_and_records_contra
     assert debug["target_execution_class"] == "CLIP_MEDIATED_OPEN"
     assert debug["target_token_cw_margin_final"] > debug["target_token_cw_margin_initial"]
     assert debug["arm_preservation_as_acceptance_gate"] is True
+    assert debug["arm_gate_reference"] == "clean_actual_generation"
+    assert debug["clean_generated_arm_prefix_token_ids"] == [ARM_TOKEN] * 6
+    assert debug["retokenized_clean_action_arm_token_ids"] != debug["clean_generated_arm_prefix_token_ids"]
+    assert debug["generated_adv_arm_prefix_token_ids"] == [ARM_TOKEN] * 6
+    assert debug["arm_prefix_match_count"] == 6
     assert require_runner_uses_adv_inputs(result)["pixel_values"].shape == (1, 1, 1, 1)
+
+
+def test_strict_target_token_requires_clean_generation():
+    attacker = make_attacker(num_steps=1)
+    with pytest.raises(RouteContractError, match="clean_model_output"):
+        attacker.attack(
+            np.zeros((2, 2, 3), dtype=np.uint8),
+            "pick object",
+            np.zeros(7, dtype=np.float32),
+            np.zeros(7, dtype=np.float32),
+            None,
+            unnorm_key="libero_object",
+        )
+
+
+def test_arm_gate_uses_actual_clean_generated_prefix():
+    attacker = make_attacker(num_steps=1)
+    result = attacker.attack(
+        np.zeros((2, 2, 3), dtype=np.uint8),
+        "pick object",
+        np.zeros(7, dtype=np.float32),
+        np.zeros(7, dtype=np.float32),
+        clean_generation([ARM_TOKEN, ARM_TOKEN, ARM_TOKEN, ARM_TOKEN, ARM_TOKEN, 99, CLOSE_TOKEN]),
+        unnorm_key="libero_object",
+    )
+    debug = result.debug
+    assert debug["clean_generated_arm_prefix_token_ids"] == [ARM_TOKEN, ARM_TOKEN, ARM_TOKEN, ARM_TOKEN, ARM_TOKEN, 99]
+    assert debug["generated_adv_arm_prefix_token_ids"] == [ARM_TOKEN] * 6
+    assert debug["arm_prefix_match_count"] == 5
+    assert debug["arm_prefix_match_denominator"] == 6
+
+
+def test_retokenized_prefix_mismatch_does_not_mask_arm_change():
+    attacker = make_attacker(num_steps=1)
+    result = attacker.attack(
+        np.zeros((2, 2, 3), dtype=np.uint8),
+        "pick object",
+        np.zeros(7, dtype=np.float32),
+        np.zeros(7, dtype=np.float32),
+        clean_generation([99, 99, 99, 99, 99, 99, CLOSE_TOKEN]),
+        unnorm_key="libero_object",
+    )
+    debug = result.debug
+    assert debug["retokenized_arm_prefix_match_count"] == 0
+    assert debug["arm_prefix_match_count"] == 0
+    assert debug["arm_gate_reference"] == "clean_actual_generation"
 
 
 def test_31744_clip_mediated_semantics_are_explicit():
@@ -264,6 +410,35 @@ def test_rand20_controls_are_reproducible_and_processor_space():
     adv = project_processor_space(x, d1, epsilon=0.1)
     assert float((adv - x).abs().max()) <= 0.1 + 1e-7
     assert select_best_surrogate_only([0, 1, 2], [0.0, 3.0, 2.0]) == 1
+
+
+def test_rand20_bf16_budget_after_cast():
+    x = torch.tensor([[[[0.25, -0.25]]]], dtype=torch.bfloat16)
+    delta = torch.tensor([[[[0.015, -0.015]]]], dtype=torch.float32)
+    adv, corrections = project_and_cast_processor_values(x, delta, epsilon=0.01, candidate_is_delta=True)
+    assert adv.dtype == torch.bfloat16
+    assert int(corrections) >= 0
+    assert float((adv.float() - x.float()).abs().max()) <= 0.01 + 1e-7
+
+
+def test_rand20_fp16_budget_after_cast():
+    x = torch.tensor([[[[0.25, -0.25]]]], dtype=torch.float16)
+    delta = torch.tensor([[[[0.015, -0.015]]]], dtype=torch.float32)
+    adv, corrections = project_and_cast_processor_values(x, delta, epsilon=0.01, candidate_is_delta=True)
+    assert adv.dtype == torch.float16
+    assert int(corrections) >= 0
+    assert float((adv.float() - x.float()).abs().max()) <= 0.01 + 1e-7
+
+
+def test_pgd_and_rand_share_exact_projection_helper():
+    attacker = make_attacker(num_steps=1, epsilon=0.01)
+    x = torch.tensor([[[[0.25, -0.25]]]], dtype=torch.bfloat16)
+    delta = torch.tensor([[[[0.015, -0.015]]]], dtype=torch.float32)
+    shared, correction_count = project_and_cast_processor_values(x, x.float() + delta, epsilon=0.01, candidate_is_delta=False)
+    adapter_cast = attacker.adapter._cast_projected_pixel_values(x.float() + delta, x)
+    adapter_corrections = attacker.adapter._count_quantized_budget_corrections(adapter_cast, x.float() + delta, x)
+    assert torch.equal(shared, adapter_cast)
+    assert int(correction_count) == int(adapter_corrections)
 
 
 def test_official_generation_helpers_validate_exact_tokens_and_ties():
