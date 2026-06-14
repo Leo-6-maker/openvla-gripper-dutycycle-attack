@@ -212,6 +212,15 @@ def rule_based_close_predictor(records: list[dict],
 
         # ── Precursor-based scoring (no absolute step thresholds) ──
         score = 0.0
+        # Score decomposition (E4A)
+        raw_crossing_bonus = 0.0
+        close_streak_bonus = 0.0
+        close_onset_qpos_bonus = 0.0
+        eef_deceleration_bonus = 0.0
+        qpos_ready_bonus = 0.0
+        decoded_open_penalty = 0.0
+        speed_now_val = None
+        speed_prev_val = None
 
         # Detect explicit close-event signals
         # Raw crossing requires: current AND previous raw valid, AND both
@@ -229,40 +238,44 @@ def rule_based_close_predictor(records: list[dict],
                         visible[t - 1].get("clean_gripper_raw_proxy", 0.5)))
                 if raw_prev > 0.5 and raw_now <= 0.5:
                     raw_open_to_close_crossing = True
+                    raw_crossing_bonus = 1.5
                     score += 1.5
             if not crossing_allowed:
                 disabled_features.append("raw_crossing")
 
         # First close in a streak (potential grasp start, not sustained close)
         if close_streak == 1:
+            close_streak_bonus = 1.0
             score += 1.0
 
         # CLOSE onset with gripper not yet responding (pre-grasp close)
         if close_onset and qpos_valid and qpos < 0.005:
+            close_onset_qpos_bonus = 0.5
             score += 0.5
         elif close_onset and not qpos_valid:
             disabled_features.append("qpos_close_response")
 
         # EEF decelerating (approaching grasp point)
-        # All 4 endpoints must be valid: t, t-1, t-3, t-4
         if t >= 4:
-            speed_now = _eef_speed_if_valid(visible, t, window=3)
-            speed_prev = _eef_speed_if_valid(visible, t - 1, window=3)
-            if (speed_now is not None and speed_prev is not None and
-                speed_prev > 0 and speed_now < speed_prev and speed_now < 0.01):
+            speed_now_val = _eef_speed_if_valid(visible, t, window=3)
+            speed_prev_val = _eef_speed_if_valid(visible, t - 1, window=3)
+            if (speed_now_val is not None and speed_prev_val is not None and
+                speed_prev_val > 0 and speed_now_val < speed_prev_val and speed_now_val < 0.01):
+                eef_deceleration_bonus = 0.5
                 score += 0.5
-            elif speed_now is None or speed_prev is None:
+            elif speed_now_val is None or speed_prev_val is None:
                 disabled_features.append("eef_deceleration")
 
         # Gripper qpos low (physically ready for close/grasp)
         if qpos_valid and qpos < 0.01 and not decoded_open:
+            qpos_ready_bonus = 0.3
             score += 0.3
         elif not qpos_valid:
             disabled_features.append("qpos_ready")
 
         # ── Penalties ──
-        # Gripper already open (post-release)
         if decoded_open:
+            decoded_open_penalty = -2.0
             score -= 2.0
 
         # ── Explicit close-event candidate flag ──
@@ -305,6 +318,15 @@ def rule_based_close_predictor(records: list[dict],
             "predicted_close_horizon": close_at - t if close_at > 0 else -1,
             "horizon": horizon,
             "disabled_features": disabled_features,
+            # E4A score decomposition
+            "raw_crossing_bonus": raw_crossing_bonus,
+            "close_streak_bonus": close_streak_bonus,
+            "close_onset_qpos_bonus": close_onset_qpos_bonus,
+            "eef_deceleration_bonus": eef_deceleration_bonus,
+            "qpos_ready_bonus": qpos_ready_bonus,
+            "decoded_open_penalty": decoded_open_penalty,
+            "eef_speed_now": round(speed_now_val, 6) if speed_now_val is not None else "",
+            "eef_speed_prev": round(speed_prev_val, 6) if speed_prev_val is not None else "",
         })
 
     return predictions
