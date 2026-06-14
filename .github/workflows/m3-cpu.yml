@@ -1,0 +1,35 @@
+name: m3-cpu
+
+on:
+  pull_request:
+    paths:
+      - "src/gripper_attack/**"
+      - "scripts/stageb/diagnose_m3_true_pgd_fixed_frame.py"
+      - "tests/stageb/test_m3_true_pgd_route_contract.py"
+      - "reports/M3_TRUE_PGD_EXECUTION_CONTRACT.md"
+      - ".github/workflows/m3-cpu.yml"
+
+jobs:
+  m3-cpu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install CPU test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest numpy pillow
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Compile M3 modules
+        run: |
+          python -m py_compile \
+            src/gripper_attack/route_contract.py \
+            src/gripper_attack/execution_target.py \
+            src/gripper_attack/m3_controls.py \
+            src/gripper_attack/attack_adapter.py \
+            scripts/stageb/diagnose_m3_true_pgd_fixed_frame.py \
+            tests/stageb/test_m3_true_pgd_route_contract.py
+      - name: Run M3 CPU route-contract tests
+        run: python -m pytest tests/stageb/test_m3_true_pgd_route_contract.py -q
