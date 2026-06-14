@@ -304,7 +304,34 @@ def test_true_pgd_target_token_objective_improves_mock_margin_and_records_contra
     assert debug["retokenized_clean_action_arm_token_ids"] != debug["clean_generated_arm_prefix_token_ids"]
     assert debug["generated_adv_arm_prefix_token_ids"] == [ARM_TOKEN] * 6
     assert debug["arm_prefix_match_count"] == 6
+    assert debug["delta0_sha256"]
+    assert debug["delta_final_sha256"]
+    assert debug["delta0_processor_input_sha256"]
+    assert debug["processor_input_sha256"]
+    assert debug["pixel_budget_delta0_adv_inputs_linf"] <= attacker.adapter.epsilon + 1e-7
+    assert len(debug["target_token_cw_loss_trajectory"]) == 1
+    assert len(debug["target_token_cw_margin_trajectory"]) == 1
+    assert len(debug["gradient_norm_trajectory"]) == 1
+    assert debug["gradient_transform"] == "none"
     assert require_runner_uses_adv_inputs(result)["pixel_values"].shape == (1, 1, 1, 1)
+
+
+def test_shuffled_gradient_control_records_transform_and_preserves_contract():
+    attacker = make_attacker(gradient_transform="rademacher", gradient_transform_seed=123)
+    result = attacker.attack(
+        np.zeros((2, 2, 3), dtype=np.uint8),
+        "pick object",
+        np.zeros(7, dtype=np.float32),
+        np.zeros(7, dtype=np.float32),
+        clean_generation(),
+        unnorm_key="libero_object",
+    )
+    debug = result.debug
+    assert debug["gradient_transform"] == "rademacher"
+    assert debug["gradient_transform_seed"] == 123
+    assert debug["fallback_used"] is False
+    assert debug["num_backwards"] == 1
+    assert len(debug["gradient_norm_trajectory"]) == 1
 
 
 def test_strict_target_token_requires_clean_generation():

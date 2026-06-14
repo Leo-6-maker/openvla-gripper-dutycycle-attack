@@ -9,7 +9,11 @@ from .execution_target import (
     target_token_cw_loss_and_stats,
     validate_execution_target,
 )
-from .m3_controls import project_and_cast_processor_values
+from .m3_controls import (
+    project_and_cast_processor_values,
+    shuffled_grad_direction,
+    tensor_sha256,
+)
 from .gripper_semantics import (
     raw_gripper_is_open,
     raw_gripper_is_close,
@@ -161,6 +165,9 @@ class TokenPrefixPGDAttacker:
         self.target_token_id = None if cfg.get("target_token_id", cfg.get("target_token")) is None else int(cfg.get("target_token_id", cfg.get("target_token")))
         self.target_execution_class = None if cfg.get("target_execution_class") is None else str(cfg.get("target_execution_class"))
         self.prefix_refresh_interval = max(1, int(cfg.get("prefix_refresh_interval", 1) or 1))
+        self.surrogate_score_path = str(cfg.get("surrogate_score_path", "uncached_full_context_v1") or "uncached_full_context_v1").strip().lower()
+        self.gradient_transform = str(cfg.get("gradient_transform", "none") or "none").strip().lower()
+        self.gradient_transform_seed = int(cfg.get("gradient_transform_seed", seed))
         self.best_restart_metric = str(cfg.get("best_restart_metric", "target_ce_final"))
         self.seed = int(seed)
         self.preprocess_kwargs = dict(preprocess_kwargs or {})
@@ -738,6 +745,14 @@ class TokenPrefixPGDAttacker:
         target_token_id: int,
         margin: float,
     ):
+        if self.surrogate_score_path in {"cached_autoregressive_generate_v1", "cached_generate_v1"}:
+            return self._generated_prefix_target_token_loss_and_stats_cached(
+                prompt_input_ids,
+                generated_arm_prefix_token_ids,
+                pixel_values,
+                target_token_id=int(target_token_id),
+                margin=float(margin),
+            )
         prefix = generated_arm_prefix_token_ids.view(1, -1).to(device=prompt_input_ids.device, dtype=torch.long)
         context_ids = torch.cat([prompt_input_ids, prefix], dim=1)
         out = self.model(input_ids=context_ids, pixel_values=pixel_values, use_cache=False, return_dict=True)
@@ -752,6 +767,60 @@ class TokenPrefixPGDAttacker:
         stats.update({
             "gripper_row_index": -1,
             "conditioning": "generated_arm_prefix_stop_gradient",
+            "generated_arm_prefix_token_ids": [int(x) for x in generated_arm_prefix_token_ids.detach().cpu().tolist()],
+        })
+        return loss, stats
+
+    def _generated_prefix_target_token_loss_and_stats_cached(
+        self,
+        prompt_input_ids: torch.LongTensor,
+        generated_arm_prefix_token_ids: torch.LongTensor,
+        pixel_values: torch.Tensor,
+        *,
+        target_token_id: int,
+        margin: float,
+    ):
+        """Target-token row using the same cached AR path as default generate().
+
+        OpenVLA's cached generation path can produce a different seventh-token
+        score row than a single no-cache forward over ``prompt + arm_prefix``.
+        The M3 fixed-frame objective is only valid if its surrogate row follows
+        the official cached autoregressive execution path.
+        """
+
+        out = self.model(
+            input_ids=prompt_input_ids,
+            pixel_values=pixel_values,
+            use_cache=True,
+            return_dict=True,
+        )
+        past = getattr(out, "past_key_values", None)
+        if past is None:
+            raise RouteContractError("cached_autoregressive_generate_v1 requires model past_key_values")
+        final_out = out
+        for token in generated_arm_prefix_token_ids.detach().to(device=prompt_input_ids.device, dtype=torch.long).view(-1):
+            step_ids = token.view(1, 1)
+            final_out = self.model(
+                input_ids=step_ids,
+                past_key_values=past,
+                use_cache=True,
+                return_dict=True,
+            )
+            past = getattr(final_out, "past_key_values", None)
+            if past is None:
+                raise RouteContractError("cached autoregressive step did not return past_key_values")
+        logits = final_out.logits.float().contiguous()
+        gripper_row = logits[0, -1, :]
+        loss, stats = target_token_cw_loss_and_stats(
+            gripper_row,
+            target_token_id=int(target_token_id),
+            allowed_token_ids=range(int(gripper_row.numel())),
+            margin=float(margin),
+        )
+        stats.update({
+            "gripper_row_index": -1,
+            "conditioning": "generated_arm_prefix_stop_gradient",
+            "surrogate_score_path": "cached_autoregressive_generate_v1",
             "generated_arm_prefix_token_ids": [int(x) for x in generated_arm_prefix_token_ids.detach().cpu().tolist()],
         })
         return loss, stats
@@ -903,6 +972,8 @@ class TokenPrefixPGDAttacker:
         else:
             delta = torch.zeros_like(x_orig)
         adv = self._project_pixel_master(x_orig + delta, x_orig).detach()
+        delta0_adv_model = self._cast_projected_pixel_values(adv.detach(), x_orig_model)
+        delta0_diff = (delta0_adv_model.detach().float() - x_orig_model.detach().float()).detach()
         loss_kwargs = {"objective": objective, "num_action_tokens": int(target_ids.numel())}
         region_token_ids = None
         corrected_region_info = None
@@ -959,6 +1030,10 @@ class TokenPrefixPGDAttacker:
             initial_generated_stats = None
             initial_arm_stats = None
             final_generated_stats = None
+            target_token_cw_loss_trajectory = []
+            target_token_cw_margin_trajectory = []
+            gradient_norm_trajectory = []
+            generated_arm_prefix_trajectory = []
             for i in range(max(self.num_steps, 1)):
                 adv = adv.detach().requires_grad_(True)
                 # --- Prefix generation (if needed) ---
@@ -1017,6 +1092,28 @@ class TokenPrefixPGDAttacker:
                     initial_loss = loss_value
                     initial_generated_stats = dict(gripper_stats)
                     initial_arm_stats = None if arm_stats is None else dict(arm_stats)
+                if is_target_token_cw_v1:
+                    if self.gradient_transform not in {"", "none"}:
+                        grad = shuffled_grad_direction(
+                            grad,
+                            seed=int(self.gradient_transform_seed) + int(i),
+                            mode=self.gradient_transform,
+                        )
+                    target_token_cw_loss_trajectory.append(float(loss_value))
+                    target_token_cw_margin_trajectory.append(
+                        float(gripper_stats.get("target_minus_best_competitor_margin", float("nan")))
+                    )
+                    gradient_norm_trajectory.append(
+                        {
+                            "step": int(i),
+                            "l1": float(grad.detach().abs().sum().cpu()),
+                            "l2": float(torch.linalg.vector_norm(grad.detach().reshape(-1)).cpu()),
+                            "linf": float(grad.detach().abs().max().cpu()) if grad.numel() else 0.0,
+                        }
+                    )
+                    generated_arm_prefix_trajectory.append(
+                        [int(x) for x in generated_arm_prefix_token_ids.detach().cpu().tolist()]
+                    )
 
                 adv = adv.detach() - self.step_size * grad.detach().sign()
                 adv = self._project_pixel_master(adv, x_orig)
@@ -1133,6 +1230,7 @@ class TokenPrefixPGDAttacker:
                 generated_prefix_debug.update({
                     "target_token_id": int(self.target_token_id),
                     "target_execution_class": self.target_execution_class,
+                    "surrogate_score_path": self.surrogate_score_path,
                     "target_token_cw_margin_initial": (initial_generated_stats or {}).get("target_minus_best_competitor_margin"),
                     "target_token_cw_margin_final": (final_generated_stats or {}).get("target_minus_best_competitor_margin"),
                     "arm_preservation_role": "acceptance_gate_not_primary_loss",
@@ -1143,6 +1241,12 @@ class TokenPrefixPGDAttacker:
                     "retokenized_arm_prefix_match_denominator": int(retok_n_arm),
                     "target_token_cw_loss_initial": initial_loss,
                     "target_token_cw_loss_final": final_loss,
+                    "target_token_cw_loss_trajectory": target_token_cw_loss_trajectory,
+                    "target_token_cw_margin_trajectory": target_token_cw_margin_trajectory,
+                    "gradient_norm_trajectory": gradient_norm_trajectory,
+                    "generated_arm_prefix_trajectory": generated_arm_prefix_trajectory,
+                    "gradient_transform": self.gradient_transform,
+                    "gradient_transform_seed": int(self.gradient_transform_seed),
                 })
         else:
             for i in range(max(self.num_steps, 1)):
@@ -1180,14 +1284,16 @@ class TokenPrefixPGDAttacker:
         postprocess_gripper = bool(self.postprocess_gripper)
         clean_audit = self._audit_logits(full_ids, labels, x_orig_model, target_ids, unnorm_key, postprocess_gripper=postprocess_gripper, region_token_ids=region_token_ids)
         adv_audit = self._audit_logits(full_ids, labels, adv_model, target_ids, unnorm_key, postprocess_gripper=postprocess_gripper, region_token_ids=region_token_ids)
-        diff = (adv_model - x_orig_model).detach().float()
+        diff = (adv_model.detach().float() - x_orig_model.detach().float()).detach()
         master_diff = (self._project_pixel_master(adv.detach(), x_orig) - x_orig).detach().float()
         self._prev_delta = diff.detach()
         adv_inputs = {"input_ids": clean_ids.detach(), "pixel_values": adv_model.detach()}
+        delta0_adv_inputs = {"input_ids": clean_ids.detach(), "pixel_values": delta0_adv_model.detach()}
         token_list = [int(x) for x in target_ids.detach().cpu().tolist()]
         quantized_correction_count = self._count_quantized_budget_corrections(adv_model, adv.detach(), x_orig_model)
         debug={
             "adv_inputs": adv_inputs,
+            "delta0_adv_inputs": delta0_adv_inputs,
             "attack_objective": objective,
             "loss_direction": "maximize" if is_untargeted else "minimize",
             "token_label_source": token_label_source,
@@ -1198,6 +1304,7 @@ class TokenPrefixPGDAttacker:
             "pixel_model_dtype": str(x_orig_model.dtype),
             "pixel_budget_master_linf": float(master_diff.abs().max().cpu()) if master_diff.numel() else 0.0,
             "pixel_budget_adv_inputs_linf": float(diff.abs().max().cpu()) if diff.numel() else 0.0,
+            "pixel_budget_delta0_adv_inputs_linf": float(delta0_diff.abs().max().cpu()) if delta0_diff.numel() else 0.0,
             "pixel_budget_quantized_correction_count": int(quantized_correction_count),
             "pixel_budget_quantized_correction_rate": float(quantized_correction_count / max(int(diff.numel()), 1)),
             "num_loss_forwards": int(max(self.num_steps, 1) + 1),
@@ -1209,6 +1316,10 @@ class TokenPrefixPGDAttacker:
             "temporal_prev_delta_linf": float(delta.detach().abs().max().cpu()) if delta.numel() else 0.0,
             "clean_logit_audit": clean_audit,
             "adv_logit_audit": adv_audit,
+            "delta0_sha256": tensor_sha256(delta0_diff),
+            "delta_final_sha256": tensor_sha256(diff),
+            "delta0_processor_input_sha256": tensor_sha256(delta0_adv_model.detach()),
+            "processor_input_sha256": tensor_sha256(adv_model.detach()),
         }
         if is_generated_prefix_v3 or is_target_token_cw_v1:
             debug.update(generated_prefix_debug)
