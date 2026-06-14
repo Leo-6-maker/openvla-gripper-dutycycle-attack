@@ -32,7 +32,6 @@ def main():
     env = {**os.environ, "MUJOCO_GL": "egl", "PYOPENGL_PLATFORM": "egl",
            "OPENVLA_ATTN_IMPLEMENTATION": "eager",
            "CUDA_VISIBLE_DEVICES": GPU_VISIBLE, "DISPLAY": "",
-           "CUDA_LAUNCH_BLOCKING": "1",
            "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"}
 
     total = len(all_jobs); completed = 0; failed = 0; job_id = 500000
