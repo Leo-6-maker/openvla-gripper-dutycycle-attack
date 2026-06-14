@@ -110,25 +110,36 @@ class WindowProposal:
         if self.selector_role == "student" and not self.features_are_causal:
             issues.append("student_features_not_causal")
 
-        # ── Window bounds ──
-        # Legitimate abstention: eligible=False, all sentinel values at -1,
-        # and abstain_reason non-empty.
-        # Eligible=True with negative window = ALWAYS a contract violation.
-        if self.window_start < 0:
-            if self.eligible:
-                issues.append("window_start:NEGATIVE_ON_ELIGIBLE")
-            elif not self.abstain_reason:
-                issues.append("window_start:NEGATIVE_WITHOUT_REASON")
-            # eligible=False + abstain_reason → allowed (abstention sentinel)
-        # Abstain sentinel consistency: all window/anchor fields must be -1
-        if (not self.eligible and self.abstain_reason and
-            self.window_start == -1 and self.window_end == -1):
+        # ── Proposal state contract: exactly two legal states ──
+        # ELIGIBLE: eligible=True, abstain_reason="", window_start>=0,
+        #           window_end>window_start, anchor_step>=0
+        # ABSTAIN:  eligible=False, abstain_reason!="", window_start=-1,
+        #           window_end=-1, anchor_step=-1, predicted_first_close_step=-1
+        # No hybrid/partial state is permitted.
+        if self.eligible:
+            # ── Eligible proposal invariants ──
+            if self.abstain_reason:
+                issues.append("eligible_proposal:HAS_ABSTAIN_REASON")
+            if self.window_start < 0:
+                issues.append("eligible_proposal:NEGATIVE_WINDOW_START")
+            if self.window_end < 0:
+                issues.append("eligible_proposal:NEGATIVE_WINDOW_END")
+            if self.anchor_step < 0:
+                issues.append("eligible_proposal:NEGATIVE_ANCHOR")
+            if self.window_end <= self.window_start and self.window_start >= 0:
+                issues.append("eligible_proposal:WINDOW_END_NOT_GT_START")
+        else:
+            # ── Abstain proposal invariants ──
+            if not self.abstain_reason:
+                issues.append("abstain_proposal:MISSING_REASON")
+            if self.window_start != -1:
+                issues.append("abstain_proposal:WINDOW_START_NOT_NEG1")
+            if self.window_end != -1:
+                issues.append("abstain_proposal:WINDOW_END_NOT_NEG1")
             if self.anchor_step != -1:
-                issues.append("abstain_sentinel:ANCHOR_NOT_NEG1")
+                issues.append("abstain_proposal:ANCHOR_NOT_NEG1")
             if self.predicted_first_close_step != -1:
-                issues.append("abstain_sentinel:PREDICTED_NOT_NEG1")
-        if self.window_end <= self.window_start and self.window_start >= 0:
-            issues.append("window_end:NOT_GT_START")
+                issues.append("abstain_proposal:PREDICTED_NOT_NEG1")
 
         # ── Cross-field: selection_mode ↔ is_online ──
         if self.selection_mode == "offline_clean_repeat" and self.is_online:

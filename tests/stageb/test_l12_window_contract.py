@@ -68,13 +68,13 @@ def test_teacher_with_privileged_state_allowed():
 def test_window_order():
     p = _valid_proposal(window_start=80, window_end=70)
     assert not p.is_valid()
-    assert any("window_end" in i for i in p.validate())
+    assert any("WINDOW_END_NOT_GT_START" in i for i in p.validate())
 
 
 def test_negative_window():
     p = _valid_proposal(window_start=-5)
     assert not p.is_valid()
-    assert any("NEGATIVE_ON_ELIGIBLE" in i for i in p.validate())
+    assert any("eligible_proposal:NEGATIVE_WINDOW_START" in i for i in p.validate())
 
 
 def test_clean_only_false():
@@ -215,7 +215,7 @@ def test_negative_window_without_reason_is_invalid():
         window_start=-1,
     )
     assert not p.is_valid()
-    assert any("NEGATIVE_WITHOUT_REASON" in i for i in p.validate())
+    assert any("abstain_proposal:MISSING_REASON" in i for i in p.validate())
 
 
 def test_eligible_with_negative_window_is_invalid():
@@ -225,7 +225,7 @@ def test_eligible_with_negative_window_is_invalid():
         window_start=-1,
     )
     assert not p.is_valid()
-    assert any("NEGATIVE_ON_ELIGIBLE" in i for i in p.validate())
+    assert any("eligible_proposal:NEGATIVE_WINDOW_START" in i for i in p.validate())
 
 
 def test_eligible_negative_window_with_reason_is_invalid():
@@ -236,7 +236,7 @@ def test_eligible_negative_window_with_reason_is_invalid():
         abstain_reason="no_online_trigger",
     )
     assert not p.is_valid()
-    assert any("NEGATIVE_ON_ELIGIBLE" in i for i in p.validate())
+    assert any("eligible_proposal:NEGATIVE_WINDOW_START" in i for i in p.validate())
 
 
 def test_abstain_sentinel_mismatched_anchor_is_invalid():
@@ -250,7 +250,52 @@ def test_abstain_sentinel_mismatched_anchor_is_invalid():
         predicted_first_close_step=-1,
     )
     assert not p.is_valid()
-    assert any("abstain_sentinel" in i for i in p.validate())
+    assert any("abstain_proposal:ANCHOR_NOT_NEG1" in i for i in p.validate())
+
+
+def test_partial_negative_abstain_sentinel_is_invalid():
+    """Abstain with window_start=-1 but window_end=5 → hybrid, invalid."""
+    p = _valid_proposal(
+        eligible=False,
+        abstain_reason="no_online_trigger",
+        window_start=-1,
+        window_end=5,  # not -1
+        anchor_step=12,
+        predicted_first_close_step=-1,
+    )
+    assert not p.is_valid()
+
+
+def test_abstain_with_positive_window_is_invalid():
+    """Abstain with positive window → hybrid, invalid."""
+    p = _valid_proposal(
+        eligible=False,
+        abstain_reason="all_abstain",
+        window_start=10,
+        window_end=20,
+        anchor_step=15,
+    )
+    assert not p.is_valid()
+
+
+def test_eligible_with_abstain_reason_is_invalid():
+    """Eligible=True with non-empty abstain_reason → invalid hybrid."""
+    p = _valid_proposal(
+        eligible=True,
+        abstain_reason="some_reason",
+    )
+    assert not p.is_valid()
+    assert any("eligible_proposal:HAS_ABSTAIN_REASON" in i for i in p.validate())
+
+
+def test_eligible_with_negative_anchor_is_invalid():
+    """Eligible=True with anchor_step=-1 → invalid."""
+    p = _valid_proposal(
+        eligible=True,
+        anchor_step=-1,
+    )
+    assert not p.is_valid()
+    assert any("eligible_proposal:NEGATIVE_ANCHOR" in i for i in p.validate())
 
 
 def test_feature_matrix_distinguishes_missing_from_valid_zero():
@@ -277,3 +322,25 @@ def test_feature_matrix_distinguishes_missing_from_valid_zero():
     assert not validity[20, 4], "Missing eef_x should be flagged invalid"
     assert validity[30, 2], "Present qpos should be flagged valid"
     assert validity[30, 4], "Present eef_x should be flagged valid"
+
+
+def test_missing_qpos_abs_with_valid_nonzero_qpos_not_fabricated():
+    """When qpos_abs is missing but qpos is valid nonzero, don't fabricate."""
+    from gripper_attack.critical_close_selector import extract_deployment_features
+    records = []
+    for t in range(10):
+        rec = {
+            "step": str(t),
+            "clean_gripper_env": "1.0",
+            "clean_gripper_raw": "0.7",
+            "gripper_qpos_before": "0.03",  # valid nonzero
+            "qpos_abs_before": "",  # missing
+            "eef_x": "0.0", "eef_y": "0.0", "eef_z": "0.2",
+            "close_streak": "0",
+            "decoded_open_bool": "0",
+        }
+        records.append(rec)
+    feats, validity = extract_deployment_features(records)
+    # qpos_abs validity derives from qpos_before validity (same source)
+    assert validity[0, 3], "qpos_abs should be valid (derived from valid qpos)"
+    assert abs(feats[0, 3] - 0.03) < 1e-5, f"qpos_abs should be ~0.03, got {feats[0, 3]}"

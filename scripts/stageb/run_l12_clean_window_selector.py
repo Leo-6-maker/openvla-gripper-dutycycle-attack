@@ -133,7 +133,10 @@ def main():
             first_close_horizon=PREDICTION_HORIZON,
         )
 
-        # Build online proposal
+        # Build online proposal — phase_label left empty (teacher_rule_phase_labels
+        # is not strictly causal — it scans forward and uses absolute T).
+        # A causal phase estimator is not yet implemented; using empty string
+        # prevents future leakage in online proposals.
         p_online = build_clean_proposal(
             task_key=task_key,
             state_id=args.state_id,
@@ -141,7 +144,7 @@ def main():
             trace_sha256=trace_sha,
             commit=args.commit,
             window_info=win_online,
-            phase_label=phases[win_online.get("trigger_step", -1)] if win_online.get("trigger_step", -1) >= 0 and win_online.get("trigger_step", -1) < len(phases) else "",
+            phase_label="",  # online: no future-capable phase label available
             selection_mode="online_streaming",
             is_online=True,
             first_close_horizon=0,

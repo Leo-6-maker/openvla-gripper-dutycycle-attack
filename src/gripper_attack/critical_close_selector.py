@@ -63,13 +63,16 @@ def _check_feature_validity(r: dict, field: str) -> bool:
     return str(val).strip() not in ("0", "False", "false")
 
 
-def extract_deployment_features(records: list[dict]) -> np.ndarray:
+def extract_deployment_features(records: list[dict]) -> tuple:
     """Extract deployment-safe feature matrix from clean trace records.
 
-    DEPRECATED: silently fills missing fields with zero. Callers should prefer
+    Returns (feats, validity) where validity[i,j] is True iff the
+    underlying field was present and non-NaN. Validity is NOT derived
+    from a different field — each feature's validity comes from its
+    own source column(s).
+
+    DEPRECATED: silently fills missing with zero. Callers should prefer
     rule_based_close_predictor which uses per-field validity gates.
-    This function is kept for compatibility but is NOT the primary
-    deployment feature path.
     """
     T = len(records)
     F = 13
@@ -78,39 +81,52 @@ def extract_deployment_features(records: list[dict]) -> np.ndarray:
 
     for t in range(T):
         r = records[t]
-        feats[t, 0] = _safe_float(r.get("clean_gripper_env", 0))
+        # Env: valid when field present AND gripper semantics not invalid
+        env_raw = r.get("clean_gripper_env", "")
+        env_valid = _field_is_present_and_valid(r, "clean_gripper_env")
+        feats[t, 0] = _safe_float(env_raw, 0.0)
+        validity[t, 0] = env_valid
+
+        # Raw: valid when native or proxy field present
+        raw_valid_flag = (_field_is_present_and_valid(r, "clean_gripper_raw") or
+                          _field_is_present_and_valid(r, "clean_gripper_raw_proxy"))
         feats[t, 1] = _safe_float(r.get("clean_gripper_raw",
                                         r.get("clean_gripper_raw_proxy", 0.0)))
+        validity[t, 1] = raw_valid_flag
+
+        # Qpos: value and validity from same field
         feats[t, 2] = _safe_float(r.get("gripper_qpos_before", 0.0))
-        feats[t, 3] = _safe_float(r.get("qpos_abs_before", 0.0))
+        validity[t, 2] = _field_is_present_and_valid(r, "gripper_qpos_before")
+
+        # Qpos_abs: derived from qpos value using its validity
+        feats[t, 3] = abs(feats[t, 2]) if validity[t, 2] else 0.0
+        validity[t, 3] = validity[t, 2]
+
+        # EEF: each coordinate from its own field
         feats[t, 4] = _safe_float(r.get("eef_x", 0.0))
         feats[t, 5] = _safe_float(r.get("eef_y", 0.0))
         feats[t, 6] = _safe_float(r.get("eef_z", 0.0))
-        feats[t, 7] = _safe_float(r.get("close_streak", 0))
-        feats[t, 8] = _safe_float(r.get("decoded_open_bool", 0))
-
-        # Validity: field present and non-empty
-        validity[t, 0] = _field_is_present_and_valid(r, "clean_gripper_env")
-        validity[t, 1] = (_field_is_present_and_valid(r, "clean_gripper_raw") or
-                          _field_is_present_and_valid(r, "clean_gripper_raw_proxy"))
-        validity[t, 2] = _field_is_present_and_valid(r, "gripper_qpos_before")
-        validity[t, 3] = validity[t, 2]  # qpos_abs derives from qpos
         validity[t, 4] = _field_is_present_and_valid(r, "eef_x")
         validity[t, 5] = _field_is_present_and_valid(r, "eef_y")
         validity[t, 6] = _field_is_present_and_valid(r, "eef_z")
+
+        feats[t, 7] = _safe_float(r.get("close_streak", 0))
         validity[t, 7] = _field_is_present_and_valid(r, "close_streak")
+
+        feats[t, 8] = _safe_float(r.get("decoded_open_bool", 0))
         validity[t, 8] = _field_is_present_and_valid(r, "decoded_open_bool")
 
         # EEF velocity (3-step) — only valid when both endpoints valid
-        if t >= 3 and validity[t, 4] and validity[t - 3, 4]:
-            feats[t, 9] = feats[t, 4] - feats[t - 3, 4]
-            validity[t, 9] = True
-        if t >= 3 and validity[t, 5] and validity[t - 3, 5]:
-            feats[t, 10] = feats[t, 5] - feats[t - 3, 5]
-            validity[t, 10] = True
-        if t >= 3 and validity[t, 6] and validity[t - 3, 6]:
-            feats[t, 11] = feats[t, 6] - feats[t - 3, 6]
-            validity[t, 11] = True
+        if t >= 3:
+            if validity[t, 4] and validity[t - 3, 4]:
+                feats[t, 9] = feats[t, 4] - feats[t - 3, 4]
+                validity[t, 9] = True
+            if validity[t, 5] and validity[t - 3, 5]:
+                feats[t, 10] = feats[t, 5] - feats[t - 3, 5]
+                validity[t, 10] = True
+            if validity[t, 6] and validity[t - 3, 6]:
+                feats[t, 11] = feats[t, 6] - feats[t - 3, 6]
+                validity[t, 11] = True
         feats[t, 12] = 1.0  # bias
         validity[t, 12] = True
 
@@ -214,7 +230,7 @@ def rule_based_close_predictor(records: list[dict],
                 if raw_prev > 0.5 and raw_now <= 0.5:
                     raw_open_to_close_crossing = True
                     score += 1.5
-            elif not (raw_valid and prev_raw_valid):
+            if not crossing_allowed:
                 disabled_features.append("raw_crossing")
 
         # First close in a streak (potential grasp start, not sustained close)

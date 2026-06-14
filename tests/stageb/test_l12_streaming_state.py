@@ -245,3 +245,56 @@ def test_streaming_outputs_validity_flags():
     assert "raw_valid" in pred
     assert "qpos_valid" in pred
     assert "disabled_features" in pred
+
+
+def test_disabled_features_parity_current_gripper_invalid():
+    """Batch/streaming disabled_features match when current gripper invalid."""
+    records = _make_trace(n_close_onset_at=30)
+    records[30]["gripper_semantics_valid"] = 0  # invalid at close
+
+    preds_batch = rule_based_close_predictor(records)
+    state = CloseEventStreamingState()
+    for r in records:
+        state.update(r)
+
+    for t in range(len(records)):
+        b_disabled = set(preds_batch[t].get("disabled_features", []))
+        s_disabled = set(state.predictions[t].get("disabled_features", []))
+        assert b_disabled == s_disabled, \
+            f"Step {t}: batch={b_disabled}, stream={s_disabled}"
+
+
+def test_disabled_features_parity_previous_gripper_invalid():
+    """Batch/streaming disabled_features match when previous gripper invalid."""
+    records = _make_trace(n_close_onset_at=30)
+    records[29]["gripper_semantics_valid"] = 0  # step before close invalid
+
+    preds_batch = rule_based_close_predictor(records)
+    state = CloseEventStreamingState()
+    for r in records:
+        state.update(r)
+
+    for t in range(len(records)):
+        b_disabled = set(preds_batch[t].get("disabled_features", []))
+        s_disabled = set(state.predictions[t].get("disabled_features", []))
+        assert b_disabled == s_disabled, \
+            f"Step {t}: batch={b_disabled}, stream={s_disabled}"
+
+
+def test_disabled_features_parity_neutral_gap():
+    """Batch/streaming disabled_features match with neutral env gap."""
+    records = _make_trace(n_close_onset_at=30)
+    # Make step 29 neutral (invalid)
+    records[29]["clean_gripper_raw"] = "0.5"
+    records[29]["gripper_semantics_valid"] = 0
+
+    preds_batch = rule_based_close_predictor(records)
+    state = CloseEventStreamingState()
+    for r in records:
+        state.update(r)
+
+    for t in range(len(records)):
+        b_disabled = set(preds_batch[t].get("disabled_features", []))
+        s_disabled = set(state.predictions[t].get("disabled_features", []))
+        assert b_disabled == s_disabled, \
+            f"Step {t}: batch={b_disabled}, stream={s_disabled}"
