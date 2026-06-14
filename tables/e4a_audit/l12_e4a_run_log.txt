@@ -1,0 +1,10 @@
+E4A.1 RUN LOG
+runner_commit: c1dcecb6123ea95d132b7a12488659cf95b93258
+remapper_version: rc1a_corrected_v2_e1_5
+start: 2026-06-14T16:55:50.888184+00:00
+input_traces: 12
+invariant_violations: 0
+field_issues: 0
+gate_errors: 0
+worktree_clean: True
+exit_code: 0
