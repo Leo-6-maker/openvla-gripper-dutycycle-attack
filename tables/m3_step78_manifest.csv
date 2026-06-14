@@ -1,0 +1,1 @@
+stage,commit,dirty_status,config_path,config_sha256,output_dir,model_path,model_fingerprint,python,torch,transformers,cuda_visible_devices,gpu_query,command_line,status
