@@ -1,0 +1,10 @@
+feature,n_valid_traces,n_missing_or_empty,n_P_better_than_best_nonP,n_tie_with_best_nonP,n_nonP_better_than_P,avg_P_minus_best_nonP_diff,P_better_rate
+total_score,8,2,2,0,6,-0.25,0.25
+raw_crossing_bonus,8,2,0,8,0,0.0,0.0
+close_streak_bonus,8,2,0,8,0,0.0,0.0
+close_onset_qpos_bonus,8,2,0,8,0,0.0,0.0
+eef_deceleration_bonus,8,2,2,0,6,-0.25,0.25
+qpos_ready_bonus,8,2,0,8,0,0.0,0.0
+eef_speed_now,8,2,5,1,2,0.0026,0.625
+close_streak,8,2,0,8,0,0.0,0.0
+raw_crossing,8,2,0,8,0,0.0,0.0
