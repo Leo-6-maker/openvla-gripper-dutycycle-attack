@@ -24,11 +24,12 @@ PROVENANCE_ARCHIVE: PASS
 ATTACK_ROUTING_AUDIT: FAILED - legacy vis_pgd label did not establish PGD execution
 LEGACY_CONDITION_A_GT_CONDITION_B_CLIP_OPEN_DUTY: 3/3 directionally positive
 PAIRED_TASK_EFFECT: 2/3 positive
-CONDITION_A_EXECUTION: RAW_RGB_RADEMACHER_SIGN_NOISE, subject to dirty-runtime caveat
+CONDITION_A_EXECUTION: CONSISTENT_WITH RAW_RGB_RADEMACHER FALLBACK
+CONDITION_A_HISTORICAL_RUNTIME: NOT BYTE-PROVEN
 CONDITION_B_EXECUTION: PROCESSOR_SPACE_UNIFORM_NOISE
-GRADIENT_OPTIMIZATION_EXECUTED: NOT SUPPORTED / LIKELY FALSE
-PREFIX_LOCKED_OBJECTIVE_EXECUTED: NOT SUPPORTED / LIKELY FALSE
-PGD20: NOT EXECUTED; num_steps was inert metadata for the fallback adapter
+PGD20_EXECUTION: NOT ESTABLISHED
+PREFIX_LOCKED_OBJECTIVE_EXECUTION: NOT ESTABLISHED
+STATIC_ROUTE_EVIDENCE: STRONGLY_INDICATES_FALLBACK_NON_PGD_EXECUTION
 FAIR_SAME_SPACE_RANDOM_CONTROL: NOT ESTABLISHED
 DIRECT_C2O_INJECTION: 0/3 supported
 DIRECT_VIS_CLASS_FLIP: 0/3 supported
@@ -108,10 +109,12 @@ expected GitHub 7f8a0e4 blob from review: 78e985953da0019237907bd6000424eb0b8de7
 ```
 
 Because the runtime repo is dirty, the exact committed-source provenance is not
-fully clean. However, the current runtime snapshot still supports the route
-failure: missing `method` defaults to `visual_linf_noise_adapter`, and
-`target_action is None` causes non-untargeted token-prefix objectives to fall
-back to `ExistingDenseAttackAdapter`.
+fully clean. Therefore this report does not byte-prove that historical condition
+A executed the fallback adapter. The static route evidence is still strong:
+the archived runner omits `method=token_prefix_pgd`, the current runtime
+defaults missing `method` to `visual_linf_noise_adapter`, and `target_action is
+None` causes non-untargeted token-prefix objectives to fall back to
+`ExistingDenseAttackAdapter`.
 
 Model:
 
@@ -159,8 +162,10 @@ It does not set `method=token_prefix_pgd`. In the audited runtime,
 method = cfg.get("method", "visual_linf_noise_adapter")
 ```
 
-Therefore the historical `vis_pgd` condition routes to the dense fallback
-adapter rather than `TokenPrefixPGDAttacker`.
+Therefore the static route evidence strongly indicates that the historical
+`vis_pgd` condition routes to the dense fallback adapter rather than
+`TokenPrefixPGDAttacker`; because the runtime was dirty, this is not a
+byte-proven reconstruction of the historical runtime.
 
 The runner also calls:
 
