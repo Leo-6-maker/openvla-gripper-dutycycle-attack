@@ -19,9 +19,9 @@ FEATURES = [
     ("total_score", "discrete_score", "hand-designed scalar score"),
     ("raw_crossing_bonus", "candidate_definition", "OPEN→CLOSE raw crossing bonus"),
     ("close_streak_bonus", "candidate_definition", "bonus for close_streak==1 (onset)"),
-    ("close_onset_qpos_bonus", "candidate_definition", "bonus for close_onset with low qpos"),
+    ("close_onset_qpos_bonus", "qpos_conditioned_discrete", "bonus for close_onset with low qpos"),
     ("eef_deceleration_bonus", "discrete_score", "EEF deceleration bonus (0 or 0.5)"),
-    ("qpos_ready_bonus", "candidate_definition", "bonus for low qpos ready state"),
+    ("qpos_ready_bonus", "qpos_conditioned_discrete", "bonus for low qpos ready state"),
     ("eef_speed_now", "continuous_dynamic", "EEF speed magnitude (3-step delta)"),
     ("eef_speed_prev", "continuous_dynamic", "EEF speed at previous step"),
     ("eef_deceleration_delta", "continuous_dynamic", "speed_now - speed_prev"),
@@ -68,6 +68,7 @@ def main():
         n_value_missing = 0
         p_vals_list = []
         nonp_max_list = []
+        nonp_min_list = []
         p_better_high = 0
         p_better_low = 0
         n_tie = 0
@@ -108,7 +109,7 @@ def main():
             n_with_comparator += 1
             p_vals_list.append(p_val)
             nonp_max_list.append(max(non_p_vals))
-            nonp_min_list = min(non_p_vals)
+            nonp_min_list.append(min(non_p_vals))
 
             if p_val > max(non_p_vals) + 0.001:
                 p_better_high += 1
@@ -118,11 +119,32 @@ def main():
                 p_better_low += 1
 
         n_valid = n_with_comparator
+
         if n_valid == 0:
+            # Emit row even when no comparator — don't silently drop
+            pair_rows.append({
+                "feature": feat_name,
+                "feature_type": feat_type,
+                "description": feat_desc,
+                "n_p_available": n_p_avail,
+                "n_with_nonP_comparator": 0,
+                "n_no_nonP_comparator": n_no_comparator,
+                "n_value_missing": n_value_missing,
+                "analysis_status": "unavailable_all_missing" if n_value_missing > 0 else "unavailable_no_comparator",
+                "P_higher_than_all_nonP": "",
+                "P_lower_than_all_nonP": "",
+                "P_tied_with_best_nonP": "",
+                "n_other": "",
+                "avg_P_value": "",
+                "avg_best_nonP_value": "",
+                "avg_worst_nonP_value": "",
+                "avg_P_minus_best_nonP": "",
+            })
             continue
 
         avg_p = sum(p_vals_list) / len(p_vals_list) if p_vals_list else 0
         avg_nonp_max = sum(nonp_max_list) / len(nonp_max_list) if nonp_max_list else 0
+        avg_nonp_min = sum(nonp_min_list) / len(nonp_min_list) if nonp_min_list else 0
 
         pair_rows.append({
             "feature": feat_name,
@@ -132,12 +154,15 @@ def main():
             "n_with_nonP_comparator": n_with_comparator,
             "n_no_nonP_comparator": n_no_comparator,
             "n_value_missing": n_value_missing,
+            "analysis_status": "ok",
             "P_higher_than_all_nonP": p_better_high,
             "P_lower_than_all_nonP": p_better_low,
             "P_tied_with_best_nonP": n_tie,
             "n_other": n_valid - p_better_high - p_better_low - n_tie,
             "avg_P_value": round(avg_p, 5),
             "avg_best_nonP_value": round(avg_nonp_max, 5),
+            "avg_worst_nonP_value": round(avg_nonp_min, 5),
+            "avg_P_minus_best_nonP": round(avg_p - avg_nonp_max, 5),
         })
 
     with open(out / "l12_e4b_feature_pair_summary_v2.csv", "w", newline="") as f:
@@ -213,15 +238,19 @@ def main():
         w = csv.DictWriter(f, fieldnames=list(lm_summary[0].keys()))
         w.writeheader(); w.writerows(lm_summary)
 
-    # ── Final summary report ──
-    report_path = out / "L12_E4B_FINAL_SUMMARY.md"
+    # ── Final summary report (dynamic) ──
+    # Compute values from data
+    n_unique_top1 = sum(1 for r in rank_rows
+                        if r["feature"] == "total_score" and r["n_strictly_higher"] == 0 and r["n_equal"] == 1)
+    n_comp_top2 = sum(1 for r in rank_rows
+                      if r["feature"] == "total_score" and r["competition_rank_high"] <= 2)
+    report_dir = Path("reports"); report_dir.mkdir(parents=True, exist_ok=True)
+    report_path = report_dir / "L12_E4B_FINAL_SUMMARY.md"
     with open(report_path, "w") as f:
         f.write("# L12 E4B Final Summary\n\n")
         f.write(f"## Teacher-P Score Rank\n\n")
-        f.write(f"- Unique top-1 by score: 4/{n_p_avail}\n")
-        comp_top2 = sum(1 for r in rank_rows if r["feature"] == "total_score" and r["competition_rank_high"] <= 2
-                        and r["n_strictly_higher"] <= 1)
-        f.write(f"- Competition-rank top-2: 7/{n_p_avail}\n\n")
+        f.write(f"- Unique top-1 by score: {n_unique_top1}/{n_p_avail}\n")
+        f.write(f"- Competition-rank top-2: {n_comp_top2}/{n_p_avail}\n\n")
 
         f.write("## Local-Maximum Policy\n\n")
         f.write(f"- Coverage: {n_causal}/{n_total} emitted decisions\n")
@@ -230,38 +259,38 @@ def main():
         f.write(f"- No-decision: {n_total - n_causal}/{n_total}\n")
         f.write(f"- Avg delay (emitted): {lm_summary[0]['avg_delay_among_emitted']} steps\n\n")
 
-        f.write("## Feature Discriminability\n\n")
-        f.write("Features classified by type:\n\n")
-        f.write("| Feature | Type | P vs best non-P |\n")
-        f.write("|---------|------|----------------|\n")
+        f.write("## Feature Discriminability (8 traces with non-P comparators)\n\n")
+        f.write("| Feature | Type | P_high | P_low | tie | other | Status |\n")
+        f.write("|---------|------|--------|-------|-----|-------|--------|\n")
         for r in pair_rows:
-            n = r["n_with_nonP_comparator"]
-            if n == 0:
-                result = "no comparator"
-            elif r["P_higher_than_all_nonP"] == n:
-                result = f"P always higher ({n}/{n})"
-            elif r["P_lower_than_all_nonP"] == n:
-                result = f"P always lower ({n}/{n})"
-            elif r["P_tied_with_best_nonP"] == n:
-                result = f"always tied ({n}/{n})"
+            if r.get("analysis_status", "ok") != "ok":
+                status = r["analysis_status"]
+                f.write(f"| {r['feature']} | {r['feature_type']} | - | - | - | - | {status} |\n")
             else:
-                result = f"mixed: high={r['P_higher_than_all_nonP']} low={r['P_lower_than_all_nonP']} tie={r['P_tied_with_best_nonP']}"
-            f.write(f"| {r['feature']} | {r['feature_type']} | {result} |\n")
+                f.write(f"| {r['feature']} | {r['feature_type']} | {r['P_higher_than_all_nonP']} | "
+                        f"{r['P_lower_than_all_nonP']} | {r['P_tied_with_best_nonP']} | "
+                        f"{r['n_other']} | ok |\n")
         f.write("\n")
 
         f.write("## Key Findings\n\n")
-        f.write("1. Four candidate-definition discrete score components (raw_crossing, close_streak, ")
-        f.write("close_onset_qpos, qpos_ready) produce identical values for ALL close-event candidates ")
-        f.write("on all traces with non-P comparators — zero within-trace discrimination.\n\n")
-        f.write("2. EEF-related continuous features (speed_now, speed_prev, deceleration_delta) are ")
-        f.write("among the few signals that vary across candidates. Their correct ranking direction ")
-        f.write("and per-trace consistency have not been established.\n\n")
-        f.write("3. The current scalar score predominantly reflects candidate-definition features, ")
-        f.write("resulting in Teacher-P unique top-1 in only 4/10 P-available traces.\n\n")
+        f.write("1. Four saturated discrete score components (raw_crossing, close_streak, ")
+        f.write("close_onset_qpos, qpos_ready, and their bonuses) produce identical values ")
+        f.write("for ALL close-event candidates on all traces with non-P comparators ")
+        f.write("— zero within-trace discrimination.\n\n")
+        f.write("2. EEF-related continuous features (speed_now, speed_prev, deceleration_delta) ")
+        f.write("vary across candidates and Teacher-P shows distinct dynamics ")
+        f.write(f"(speed_now: P_higher in {sum(1 for r in pair_rows if r['feature']=='eef_speed_now' and r.get('P_higher_than_all_nonP','')!='' and int(r.get('P_higher_than_all_nonP',0))>0)}/8 traces), ")
+        f.write("but their correct ranking direction and per-trace consistency ")
+        f.write("have not been established.\n\n")
+        f.write(f"3. The current scalar score reflects saturated discrete features, ")
+        f.write(f"resulting in Teacher-P unique top-1 in only {n_unique_top1}/{n_p_avail} P-available traces.\n\n")
         f.write("4. Causal peak-hold policies add delay without improving online near-correct rate.\n\n")
-        f.write("5. Establishing discriminative deployment-safe features for critical-close ")
-        f.write("identification requires moving beyond candidate-definition signals toward ")
-        f.write("continuous dynamic and temporal-context features with validated direction.\n")
+        f.write("5. The current scoring function only coarsely binarizes EEF dynamics ")
+        f.write("into a 0/0.5 bonus and does not effectively exploit the continuous ")
+        f.write("variation for candidate ranking.\n\n")
+        f.write("6. Establishing discriminative deployment-safe features requires moving ")
+        f.write("beyond saturated discrete signals toward continuous dynamic and ")
+        f.write("temporal-context features with validated ranking direction.\n")
 
     print(f"\nReport: {report_path}")
     print(f"Output: {out}")

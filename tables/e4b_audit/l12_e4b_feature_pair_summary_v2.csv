@@ -1,16 +1,17 @@
-feature,feature_type,description,n_p_available,n_with_nonP_comparator,n_no_nonP_comparator,n_value_missing,P_higher_than_all_nonP,P_lower_than_all_nonP,P_tied_with_best_nonP,n_other,avg_P_value,avg_best_nonP_value
-total_score,discrete_score,hand-designed scalar score,10,8,2,0,2,0,0,6,3.425,3.675
-raw_crossing_bonus,candidate_definition,OPEN→CLOSE raw crossing bonus,10,8,2,0,0,0,8,0,1.5,1.5
-close_streak_bonus,candidate_definition,bonus for close_streak==1 (onset),10,8,2,0,0,0,8,0,1.0,1.0
-close_onset_qpos_bonus,candidate_definition,bonus for close_onset with low qpos,10,8,2,0,0,0,8,0,0.5,0.5
-eef_deceleration_bonus,discrete_score,EEF deceleration bonus (0 or 0.5),10,8,2,0,2,0,0,6,0.125,0.375
-qpos_ready_bonus,candidate_definition,bonus for low qpos ready state,10,8,2,0,0,0,8,0,0.3,0.3
-eef_speed_now,continuous_dynamic,EEF speed magnitude (3-step delta),10,8,2,0,5,0,1,2,0.01962,0.017
-eef_speed_prev,continuous_dynamic,EEF speed at previous step,10,8,2,0,6,0,0,2,0.02397,0.01748
-eef_deceleration_delta,continuous_dynamic,speed_now - speed_prev,10,8,2,0,0,4,0,4,-0.00435,0.00313
-close_streak,candidate_definition,close streak counter (1 at onset),10,8,2,0,0,0,8,0,1.0,1.0
-raw_crossing,candidate_definition,OPEN→CLOSE raw crossing boolean,10,8,2,0,0,0,8,0,1.0,1.0
-close_onset,candidate_definition,first CLOSE in a sequence,10,8,2,0,0,0,8,0,1.0,1.0
-qpos,continuous_dynamic,gripper qpos before step,10,8,2,0,2,1,5,0,-0.0,-0.00014
-time_since_prev_close,temporal_context,steps since previous CLOSE candidate,10,6,2,2,2,0,0,4,31.5,48.83333
-candidate_index,temporal_context,ordinal index among CLOSE candidates,10,8,2,0,2,2,0,4,3.25,4.5
+feature,feature_type,description,n_p_available,n_with_nonP_comparator,n_no_nonP_comparator,n_value_missing,analysis_status,P_higher_than_all_nonP,P_lower_than_all_nonP,P_tied_with_best_nonP,n_other,avg_P_value,avg_best_nonP_value,avg_worst_nonP_value,avg_P_minus_best_nonP
+total_score,discrete_score,hand-designed scalar score,10,8,2,0,ok,2,0,0,6,3.425,3.675,3.3,-0.25
+raw_crossing_bonus,candidate_definition,OPEN→CLOSE raw crossing bonus,10,8,2,0,ok,0,0,8,0,1.5,1.5,1.5,0.0
+close_streak_bonus,candidate_definition,bonus for close_streak==1 (onset),10,8,2,0,ok,0,0,8,0,1.0,1.0,1.0,0.0
+close_onset_qpos_bonus,qpos_conditioned_discrete,bonus for close_onset with low qpos,10,8,2,0,ok,0,0,8,0,0.5,0.5,0.5,0.0
+eef_deceleration_bonus,discrete_score,EEF deceleration bonus (0 or 0.5),10,8,2,0,ok,2,0,0,6,0.125,0.375,0.0,-0.25
+qpos_ready_bonus,qpos_conditioned_discrete,bonus for low qpos ready state,10,8,2,0,ok,0,0,8,0,0.3,0.3,0.3,0.0
+eef_speed_now,continuous_dynamic,EEF speed magnitude (3-step delta),10,8,2,0,ok,5,0,1,2,0.01962,0.017,0.00317,0.00262
+eef_speed_prev,continuous_dynamic,EEF speed at previous step,10,8,2,0,ok,6,0,0,2,0.02397,0.01748,0.00278,0.00649
+eef_deceleration_delta,continuous_dynamic,speed_now - speed_prev,10,8,2,0,ok,0,4,0,4,-0.00435,0.00313,-0.00447,-0.00748
+close_streak,candidate_definition,close streak counter (1 at onset),10,8,2,0,ok,0,0,8,0,1.0,1.0,1.0,0.0
+raw_crossing,candidate_definition,OPEN→CLOSE raw crossing boolean,10,8,2,0,ok,0,0,8,0,1.0,1.0,1.0,0.0
+close_onset,candidate_definition,first CLOSE in a sequence,10,8,2,0,ok,0,0,8,0,1.0,1.0,1.0,0.0
+qpos,continuous_dynamic,gripper qpos before step,10,8,2,0,ok,2,1,5,0,-0.0,-0.00014,-0.00268,0.00014
+time_since_prev_close,temporal_context,steps since previous CLOSE candidate,10,6,2,2,ok,2,0,0,4,31.5,48.83333,2.33333,-17.33333
+time_since_last_open,temporal_context,steps since last OPEN state,10,0,2,8,unavailable_all_missing,,,,,,,,
+candidate_index,temporal_context,ordinal index among CLOSE candidates,10,8,2,0,ok,2,2,0,4,3.25,4.5,0.25,-1.25
