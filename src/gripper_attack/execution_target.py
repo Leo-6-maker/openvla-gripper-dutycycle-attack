@@ -151,6 +151,58 @@ def target_token_cw_loss_and_stats(
         "best_competitor_token_id": best_token,
         "best_competitor_score": float(best_score.detach().cpu()),
         "target_minus_best_competitor_margin": float((target_score - best_score).detach().cpu()),
+        "target_objective_margin": float((target_score - best_score).detach().cpu()),
+        "target_objective_margin_name": "target_minus_best_competitor_margin",
         "cw_margin_param": float(margin),
+        "allowed_token_count": int(allowed.numel()),
+    }
+
+
+def target_token_logratio_loss_and_stats(
+    row: torch.Tensor,
+    *,
+    target_token_id: int,
+    allowed_token_ids: Iterable[int] | None = None,
+) -> tuple[torch.Tensor, dict[str, Any]]:
+    """Non-saturating target-token objective.
+
+    The loss is ``logsumexp(scores[j != target]) - score[target]`` over the
+    official action-position score row. Unlike the CW hinge objective, this has
+    no zero-loss plateau once the target clears a fixed margin.
+    """
+
+    row = row.float()
+    target = int(target_token_id)
+    if target < 0 or target >= int(row.numel()):
+        raise ValueError(f"target token {target} is outside score row length {int(row.numel())}")
+    if allowed_token_ids is None:
+        allowed = torch.arange(row.numel(), device=row.device, dtype=torch.long)
+    else:
+        allowed = torch.tensor([int(x) for x in allowed_token_ids], device=row.device, dtype=torch.long)
+    if allowed.numel() == 0:
+        raise ValueError("allowed_token_ids must not be empty")
+    allowed = allowed[(allowed >= 0) & (allowed < row.numel())]
+    if not torch.any(allowed == target):
+        allowed = torch.cat([allowed, torch.tensor([target], device=row.device, dtype=torch.long)])
+    competitor = allowed[allowed != target]
+    if competitor.numel() == 0:
+        raise ValueError("target-token log-ratio loss needs at least one competitor")
+    target_score = row[target]
+    competitor_scores = row[competitor]
+    competitor_logsumexp = torch.logsumexp(competitor_scores, dim=0)
+    best_score, best_rel = torch.max(competitor_scores, dim=0)
+    best_token = int(competitor[int(best_rel.detach().cpu())].detach().cpu())
+    loss = competitor_logsumexp - target_score
+    return loss, {
+        "target_token_id": int(target),
+        "target_token_score": float(target_score.detach().cpu()),
+        "best_competitor_token_id": best_token,
+        "best_competitor_score": float(best_score.detach().cpu()),
+        "competitor_logsumexp_score": float(competitor_logsumexp.detach().cpu()),
+        "target_minus_best_competitor_margin": float((target_score - best_score).detach().cpu()),
+        "target_minus_competitor_logsumexp_margin": float((target_score - competitor_logsumexp).detach().cpu()),
+        "target_objective_margin": float((target_score - competitor_logsumexp).detach().cpu()),
+        "target_objective_margin_name": "target_minus_competitor_logsumexp_margin",
+        "cw_margin_param": None,
         "allowed_token_count": int(allowed.numel()),
     }

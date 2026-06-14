@@ -21,6 +21,7 @@ UNTARGETED_OBJECTIVES = {
 
 TARGET_TOKEN_OBJECTIVES = {
     "autoregressive_prefix_gripper_target_token_cw_v1",
+    "autoregressive_prefix_gripper_target_token_logratio_v2",
 }
 
 EXPECTED_M3_TARGET_TOKEN_ID = 31744
@@ -165,7 +166,7 @@ def validate_true_pgd_attack_result(result: Any, route: RouteConfig) -> None:
     if debug.get("requested_objective") != debug.get("resolved_objective"):
         raise RouteContractError("requested_objective and resolved_objective differ")
     if route.requested_objective in TARGET_TOKEN_OBJECTIVES:
-        if debug.get("resolved_objective") != "autoregressive_prefix_gripper_target_token_cw_v1":
+        if debug.get("resolved_objective") != route.requested_objective:
             raise RouteContractError(f"wrong resolved objective: {debug.get('resolved_objective')}")
         if int(debug.get("target_token_id", -1)) != EXPECTED_M3_TARGET_TOKEN_ID:
             raise RouteContractError(f"wrong target_token_id: {debug.get('target_token_id')}")

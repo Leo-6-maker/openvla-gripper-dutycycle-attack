@@ -1,0 +1,61 @@
+stage: M3_STEP78_TRUE_PGD_LOGRATIO_V2_CANARY
+repo_base_merge_sha: a065a563acefddda76ff4d29b31c054584ea35ef
+
+model:
+  path: /data/aviary/models/openvla/openvla-7b-finetuned-libero-object
+  unnorm_key: libero_object
+  attn_implementation: eager
+  torch_dtype: bfloat16
+
+input:
+  suite: libero_object
+  task: tomato_sauce
+  state_id: 0
+  absolute_step: 78
+  expected_clean_gripper_token: 31872
+  expected_target_score_31744_approx: 41.0
+  expected_close_score_31872_approx: 41.25
+  expected_margin_31744_minus_31872_approx: -0.25
+
+preprocess:
+  libero_official_preprocess: false
+  libero_preprocess_backend: official_pil_lanczos
+  center_crop: true
+  resize_size: 224
+  postprocess_gripper: true
+
+attack_optimizer:
+  strict_route: true
+  allow_fallback: false
+  method: token_prefix_pgd
+  objective: autoregressive_prefix_gripper_target_token_logratio_v2
+  target_token_id: 31744
+  target_execution_class: CLIP_MEDIATED_OPEN
+  epsilon: 0.023529411764705882
+  num_steps: 20
+  step_size: 0.0017647058823529412
+  random_start: true
+  prefix_refresh_interval: 1
+  surrogate_score_path: cached_autoregressive_generate_v1
+  gripper_margin: 5.0
+  arm_gate_min_match_count: 5
+
+controls:
+  rand20_count: 20
+  rand20_selection_metric: surrogate_target_objective_margin
+  shuffled_grad_mode: permute
+  shuffled_grad_control: single_pgd20_trajectory
+
+conditions:
+  - CLEAN
+  - PGD_DELTA0
+  - TRUE_PGD_FINAL
+  - RAND20
+  - SHUFFLED_GRAD_PGD20
+
+gates:
+  preflight_required: true
+  exact_new_tokens: 7
+  score_tie_tolerance: 0.000001
+  official_transfer_metric: official_target31744_margin
+  arm_prefix_min_match_count: 5

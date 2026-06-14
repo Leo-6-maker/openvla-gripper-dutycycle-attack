@@ -13,6 +13,7 @@ from gripper_attack.execution_target import (
     classify_execution_token,
     native_action_token_ids,
     target_token_cw_loss_and_stats,
+    target_token_logratio_loss_and_stats,
     validate_execution_target,
 )
 from gripper_attack.m3_controls import (
@@ -74,12 +75,21 @@ class TargetTokenModel(torch.nn.Module):
             "mask": np.ones(7, dtype=bool),
         }
 
-    def forward(self, input_ids, pixel_values, labels=None, use_cache=False, return_dict=True):
+    def forward(self, input_ids, pixel_values=None, labels=None, use_cache=False, return_dict=True, past_key_values=None):
         bsz, seq_len = input_ids.shape
+        if pixel_values is None:
+            if past_key_values is None:
+                pixel_signal = self.anchor * 0.0
+            else:
+                pixel_signal = past_key_values[0]
+        else:
+            pixel_signal = pixel_values.float().mean()
         logits = pixel_values.mean() * torch.zeros(
             (bsz, seq_len, ROW_VOCAB), dtype=torch.float32, device=pixel_values.device
+        ) if pixel_values is not None else pixel_signal * torch.zeros(
+            (bsz, seq_len, ROW_VOCAB), dtype=torch.float32, device=input_ids.device
         )
-        signal = pixel_values.float().mean() * 4.0 + self.anchor * 0.0
+        signal = pixel_signal * 4.0 + self.anchor * 0.0
         logits[0, -1, TARGET_TOKEN] = signal
         logits[0, -1, CLOSE_TOKEN] = 1.0
         logits[0, -1, 0] = 0.5
@@ -87,7 +97,8 @@ class TargetTokenModel(torch.nn.Module):
             row = -(7 - dim + 1)
             if abs(row) <= seq_len:
                 logits[0, row, ARM_TOKEN] = 1.0
-        return SimpleNamespace(logits=logits, loss=None)
+        past = (pixel_signal,) if use_cache else None
+        return SimpleNamespace(logits=logits, loss=None, past_key_values=past)
 
     def generate(self, input_ids, pixel_values, max_new_tokens, do_sample=False, return_dict_in_generate=True, output_scores=False):
         toks = torch.tensor([[ARM_TOKEN] * int(max_new_tokens)], dtype=torch.long, device=input_ids.device)
@@ -251,6 +262,22 @@ def test_contract_rejects_wrong_objective():
             _valid_result(debug_updates={"resolved_objective": "prefix_locked_gripper_open_margin"}),
             route,
         )
+
+
+def test_contract_accepts_logratio_v2_target_objective():
+    route = route_config_from_attack_config(
+        strict_config(objective="autoregressive_prefix_gripper_target_token_logratio_v2")["attack_optimizer"]
+    )
+    validate_true_pgd_attack_result(
+        _valid_result(
+            attack_method="token_prefix_pgd_pixel_values_target_token_logratio_v2",
+            debug_updates={
+                "requested_objective": "autoregressive_prefix_gripper_target_token_logratio_v2",
+                "resolved_objective": "autoregressive_prefix_gripper_target_token_logratio_v2",
+            },
+        ),
+        route,
+    )
 
 
 def test_contract_rejects_wrong_target_token():
@@ -424,6 +451,60 @@ def test_target_token_cw_gradient_improves_mock_margin():
         improved_row[2] = improved_signal
         _, improved_stats = target_token_cw_loss_and_stats(improved_row, target_token_id=2, margin=0.5)
     assert improved_stats["target_minus_best_competitor_margin"] > stats["target_minus_best_competitor_margin"]
+
+
+def test_target_token_logratio_has_no_zero_loss_plateau():
+    target_signal = torch.tensor(10.0, requires_grad=True)
+    row = torch.tensor([0.0, 0.0, 0.0, 1.0, 0.0])
+    row = row.clone()
+    row[2] = target_signal
+    loss, stats = target_token_logratio_loss_and_stats(row, target_token_id=2)
+    loss.backward()
+    assert float(loss.detach()) < 0.0
+    assert stats["target_objective_margin_name"] == "target_minus_competitor_logsumexp_margin"
+    assert target_signal.grad is not None
+    assert float(target_signal.grad) == pytest.approx(-1.0)
+
+
+def test_logratio_v2_requires_cached_surrogate_path():
+    attacker = make_attacker(
+        objective="autoregressive_prefix_gripper_target_token_logratio_v2",
+        surrogate_score_path="uncached_full_context_v1",
+    )
+    with pytest.raises(RouteContractError, match="requires cached_autoregressive_generate_v1"):
+        attacker.attack(
+            np.zeros((2, 2, 3), dtype=np.uint8),
+            "pick object",
+            np.zeros(7, dtype=np.float32),
+            np.zeros(7, dtype=np.float32),
+            clean_generation(),
+            unnorm_key="libero_object",
+        )
+
+
+def test_true_pgd_logratio_v2_mock_records_non_saturating_margin():
+    attacker = make_attacker(
+        objective="autoregressive_prefix_gripper_target_token_logratio_v2",
+        surrogate_score_path="cached_autoregressive_generate_v1",
+        num_steps=1,
+    )
+    result = attacker.attack(
+        np.zeros((2, 2, 3), dtype=np.uint8),
+        "pick object",
+        np.zeros(7, dtype=np.float32),
+        np.zeros(7, dtype=np.float32),
+        clean_generation(),
+        unnorm_key="libero_object",
+    )
+    debug = result.debug
+    assert result.attack_method == "token_prefix_pgd_pixel_values_target_token_logratio_v2"
+    assert debug["requested_objective"] == "autoregressive_prefix_gripper_target_token_logratio_v2"
+    assert debug["autoregressive_prefix_target_token_logratio_loss"] is True
+    assert debug["autoregressive_prefix_target_token_cw_loss"] is False
+    assert debug["surrogate_score_path"] == "cached_autoregressive_generate_v1"
+    assert debug["target_token_logratio_margin_final"] > debug["target_token_logratio_margin_initial"]
+    assert debug["target_token_objective_margin_name"] == "target_minus_competitor_logsumexp_margin"
+    assert len(debug["target_token_logratio_margin_trajectory"]) == 1
 
 
 def test_rand20_controls_are_reproducible_and_processor_space():
