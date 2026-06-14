@@ -112,30 +112,40 @@ def normalize_features(candidates, means, stdevs, impute):
 
 
 def per_trace_top1_accuracy(model, traces, means, stdevs, impute, device):
-    """Per-trace: candidate with highest score == Teacher-P? Tie → incorrect."""
+    """Per-trace: unique top-1 candidate == Teacher-P?
+    Tie for max → no unique decision → incorrect, predicted_step=-1, abs_error=-1."""
     model.eval()
-    correct = 0; total = 0; errors = []
+    correct = 0; total = 0; unique_decisions = 0; errors = []
     with torch.no_grad():
         for tid, candidates in traces.items():
             X = normalize_features(candidates, means, stdevs, impute).to(device)
             scores = model(X).cpu().numpy()
-            # Find argmax with tie tolerance
-            best_idx = int(np.argmax(scores))
-            max_score = scores[best_idx]
+            max_score = scores.max()
             ties = [i for i, s in enumerate(scores) if abs(s - max_score) < TIE_TOLERANCE]
             total += 1
-            is_correct = False
-            if len(ties) == 1 and int(candidates[best_idx].get("is_teacher_p", 0)) == 1:
-                correct += 1; is_correct = True
-            # MAE
             tp_step = None
             for c in candidates:
                 if int(c.get("is_teacher_p", 0)) == 1:
                     tp_step = int(c["candidate_step"]); break
-            pred_step = int(candidates[best_idx]["candidate_step"])
-            err = abs(pred_step - tp_step) if tp_step is not None else -1
-            errors.append({"trace_id": tid, "correct": is_correct, "abs_error": err, "n_ties": len(ties)})
-    return correct / total if total > 0 else 0, errors
+            if len(ties) == 1:
+                unique_decisions += 1
+                best_idx = ties[0]
+                is_correct = int(candidates[best_idx].get("is_teacher_p", 0)) == 1
+                if is_correct: correct += 1
+                pred_step = int(candidates[best_idx]["candidate_step"])
+                abs_err = abs(pred_step - tp_step) if tp_step is not None else -1
+            else:
+                is_correct = False
+                pred_step = -1
+                abs_err = -1  # no unique decision
+            errors.append({
+                "trace_id": tid, "correct": int(is_correct), "abs_error": abs_err,
+                "predicted_step": pred_step, "n_ties": len(ties),
+                "unique_decision": int(len(ties) == 1),
+            })
+    acc = correct / total if total > 0 else 0
+    cov = unique_decisions / total if total > 0 else 0
+    return acc, errors, cov, unique_decisions
 
 
 def train_epoch(model, optimizer, train_traces, means, stdevs, impute, device):
@@ -186,6 +196,18 @@ def main():
     out = Path(args.output_dir); out.mkdir(parents=True, exist_ok=True)
     start_time = datetime.now(timezone.utc)
 
+    # ── D1b.2: Fail-closed artifact verification ──
+    from verify_d1b_artifacts import verify_all
+    seal_ok, seal_failures, seal_results = verify_all()
+    print("=== ARTIFACT VERIFICATION ===")
+    for k, v in seal_results.items():
+        print(f"  {k}: {v[:16]}... OK")
+    if not seal_ok:
+        print(f"FATAL: artifact seal failed:")
+        for f in seal_failures: print(f"  {f}")
+        sys.exit(1)
+    print("  SEAL PASS\n")
+
     # Runtime provenance
     artifact_hashes = {
         "runner_sha": sha256_file(__file__),
@@ -193,9 +215,6 @@ def main():
         "candidate_table_sha": sha256_file(args.candidate_table),
         "norm_csv_sha": sha256_file(args.norm_csv),
     }
-    print("=== RUNTIME ARTIFACTS ===")
-    for k, v in artifact_hashes.items():
-        print(f"  {k}: {v[:16]}...")
 
     device = torch.device(args.device if torch.cuda.is_available() else "cpu")
     print(f"Device: {device}")
@@ -205,17 +224,22 @@ def main():
     candidates = list(csv.DictReader(open(args.candidate_table)))
     means, stdevs, impute = load_normalization(args.norm_csv)
 
-    # Group candidates by trace, filter to training manifest
     by_trace = defaultdict(list)
     for c in candidates:
         tid = c["trace_id"]
         if tid in manifest:
             by_trace[tid].append(c)
 
-    # Split
     train_traces = {tid: cands for tid, cands in by_trace.items() if manifest[tid]["split"] == "train"}
     val_traces = {tid: cands for tid, cands in by_trace.items() if manifest[tid]["split"] == "val"}
     print(f"Train traces: {len(train_traces)}  Val traces: {len(val_traces)}")
+
+    # Data assertions
+    assert len(train_traces) == 90, f"Expected 90 train, got {len(train_traces)}"
+    assert len(val_traces) == 20, f"Expected 20 val, got {len(val_traces)}"
+    for tid, cands in {**train_traces, **val_traces}.items():
+        assert sum(1 for c in cands if int(c.get("is_teacher_p", 0)) == 1) == 1, \
+            f"Trace {tid}: expected 1 positive"
 
     # Verify all train values finite after normalization
     for tid, cands in train_traces.items():
@@ -226,40 +250,57 @@ def main():
     optimizer = optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
 
     best_val_acc = -1.0; best_epoch = -1; best_state = None
-    best_val_mae = float("inf")
+    best_val_mae = float("inf"); best_val_cov = 0.0
     patience_counter = 0
     history = []
 
     for epoch in range(1, MAX_EPOCHS + 1):
         train_loss = train_epoch(model, optimizer, train_traces, means, stdevs, impute, device)
-        val_acc, val_errors = per_trace_top1_accuracy(model, val_traces, means, stdevs, impute, device)
-        val_mae = np.mean([e["abs_error"] for e in val_errors if e["abs_error"] >= 0])
+        val_acc, val_errors, val_cov, val_uniq = per_trace_top1_accuracy(
+            model, val_traces, means, stdevs, impute, device)
+        val_mae = np.mean([e["abs_error"] for e in val_errors
+                          if e["abs_error"] >= 0 and e["unique_decision"] == 1])
 
         history.append({"epoch": epoch, "train_loss": round(train_loss, 6),
-                        "val_top1_acc": round(val_acc, 6), "val_mae": round(val_mae, 2)})
+                        "val_top1_acc": round(val_acc, 6), "val_mae": round(val_mae, 2),
+                        "val_coverage": round(val_cov, 4)})
 
-        # Checkpoint rule: best val top-1 → lower MAE → earlier epoch
+        # Checkpoint rule: highest val top-1 → lower MAE → EARLIER epoch
         is_better = False
         if val_acc > best_val_acc + TIE_TOLERANCE:
             is_better = True
-        elif abs(val_acc - best_val_acc) < TIE_TOLERANCE and val_mae < best_val_mae - TIE_TOLERANCE:
-            is_better = True
-        elif abs(val_acc - best_val_acc) < TIE_TOLERANCE and abs(val_mae - best_val_mae) < TIE_TOLERANCE and epoch < best_epoch:
-            is_better = True
+        elif abs(val_acc - best_val_acc) < TIE_TOLERANCE:
+            if val_mae < best_val_mae - TIE_TOLERANCE:
+                is_better = True
+            elif abs(val_mae - best_val_mae) < TIE_TOLERANCE and epoch < best_epoch:
+                is_better = True  # earlier epoch wins when tied
 
         if is_better:
-            best_val_acc = val_acc; best_val_mae = val_mae; best_epoch = epoch
+            best_val_acc = val_acc; best_val_mae = val_mae
+            best_val_cov = val_cov; best_epoch = epoch
             best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
             patience_counter = 0
         else:
             patience_counter += 1
 
         if epoch % 10 == 0 or epoch == 1:
-            print(f"  epoch {epoch:3d}: loss={train_loss:.4f} val_acc={val_acc:.4f} val_mae={val_mae:.1f} best_ep={best_epoch} patience={patience_counter}")
+            print(f"  epoch {epoch:3d}: loss={train_loss:.4f} val_acc={val_acc:.4f} "
+                  f"val_mae={val_mae:.1f} cov={val_cov:.2f} best_ep={best_epoch} patience={patience_counter}")
 
         if patience_counter >= EARLY_STOP_PATIENCE:
             print(f"Early stop at epoch {epoch}")
             break
+
+    # ── D1b.2: Reload best checkpoint before final validation ──
+    model.load_state_dict(best_state)
+    val_acc_best, val_errors_best, val_cov_best, val_uniq_best = per_trace_top1_accuracy(
+        model, val_traces, means, stdevs, impute, device)
+    val_mae_best = np.mean([e["abs_error"] for e in val_errors_best
+                           if e["abs_error"] >= 0 and e["unique_decision"] == 1])
+    # Parity check
+    assert abs(val_acc_best - best_val_acc) < 0.001, \
+        f"Checkpoint parity fail: saved={best_val_acc:.4f} reloaded={val_acc_best:.4f}"
+    print(f"Checkpoint reload parity: PASS (acc={val_acc_best:.4f})")
 
     # Save checkpoint
     ckpt_path = out / "d1b_detector_checkpoint.pt"
@@ -268,42 +309,53 @@ def main():
         "epoch": best_epoch,
         "val_top1_acc": best_val_acc,
         "val_mae": best_val_mae,
+        "val_coverage": best_val_cov,
         "config": {"n_features": 16, "hidden": [128, 64, 32], "dropout": 0.1, "seed": TRAINING_SEED},
         "normalization": {"means": means, "stdevs": stdevs, "impute": impute},
         "artifact_hashes": artifact_hashes,
     }, ckpt_path)
 
-    # Final evaluation on val
-    val_acc_final, val_errors_final = per_trace_top1_accuracy(model, val_traces, means, stdevs, impute, device)
-    val_mae_final = np.mean([e["abs_error"] for e in val_errors_final if e["abs_error"] >= 0]) if val_errors_final else 0
-
-    print(f"\nBest checkpoint: epoch={best_epoch} val_acc={best_val_acc:.4f} val_mae={best_val_mae:.1f}")
-    print(f"Final val: acc={val_acc_final:.4f} mae={val_mae_final:.1f}")
+    # Save validation predictions
+    val_pred_fields = list(val_errors_best[0].keys())
+    # Add trace metadata
+    for e in val_errors_best:
+        tid = e["trace_id"]
+        e["task_key"] = val_traces[tid][0]["task_key"]
+        e["state_id"] = val_traces[tid][0]["state_id"]
+        e["teacher_p_step"] = next(
+            int(c["candidate_step"]) for c in val_traces[tid]
+            if int(c.get("is_teacher_p", 0)) == 1)
+    with open(out / "d1b_val_model_predictions.csv", "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(val_errors_best[0].keys()))
+        w.writeheader(); w.writerows(val_errors_best)
 
     # Save training history
     with open(out / "d1b_training_history.csv", "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["epoch", "train_loss", "val_top1_acc", "val_mae"])
+        w = csv.DictWriter(f, fieldnames=list(history[0].keys()))
         w.writeheader(); w.writerows(history)
 
     # Run log
     end_time = datetime.now(timezone.utc)
+    ckpt_sha = sha256_file(str(ckpt_path))
+    artifact_hashes["checkpoint_sha"] = ckpt_sha
     with open(out / "d1b_training_run_log.txt", "w") as f:
         f.write(f"D1b TRAINING RUN LOG\n")
         f.write(f"start: {start_time.isoformat()}\nend: {end_time.isoformat()}\n")
-        f.write(f"runner_sha: {artifact_hashes['runner_sha']}\n")
-        f.write(f"manifest_sha: {artifact_hashes['manifest_sha']}\n")
-        f.write(f"candidate_table_sha: {artifact_hashes['candidate_table_sha']}\n")
-        f.write(f"norm_csv_sha: {artifact_hashes['norm_csv_sha']}\n")
+        for k, v in artifact_hashes.items():
+            f.write(f"{k}: {v}\n")
+        for k, v in seal_results.items():
+            f.write(f"seal_{k}: {v}\n")
         f.write(f"device: {device}\n")
         f.write(f"best_epoch: {best_epoch}\n")
         f.write(f"best_val_top1_acc: {best_val_acc}\n")
         f.write(f"best_val_mae: {best_val_mae}\n")
+        f.write(f"best_val_coverage: {best_val_cov}\n")
         f.write(f"checkpoint_path: {ckpt_path}\n")
-        ckpt_sha = sha256_file(str(ckpt_path))
         f.write(f"checkpoint_sha256: {ckpt_sha}\n")
-        artifact_hashes["checkpoint_sha"] = ckpt_sha
 
-    print(f"\nTRAINING COMPLETE — checkpoint saved to {ckpt_path}")
+    print(f"\nBest checkpoint: epoch={best_epoch} val_acc={best_val_acc:.4f} "
+          f"val_mae={best_val_mae:.1f} cov={best_val_cov:.2f}")
+    print(f"TRAINING COMPLETE — checkpoint saved to {ckpt_path}")
 
 
 if __name__ == "__main__":

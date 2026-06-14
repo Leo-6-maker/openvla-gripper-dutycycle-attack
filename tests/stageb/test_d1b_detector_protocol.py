@@ -117,28 +117,30 @@ class TestTieHandling:
 class TestCheckpointRule:
     def test_best_val_acc_selected(self):
         history = [
-            {"epoch": 1, "val_acc": 0.3, "val_mae": 10},
-            {"epoch": 2, "val_acc": 0.4, "val_mae": 8},
-            {"epoch": 3, "val_acc": 0.35, "val_mae": 5},
+            {"epoch": 1, "val_acc": 0.3, "val_mae": 10.0},
+            {"epoch": 2, "val_acc": 0.4, "val_mae": 8.0},
+            {"epoch": 3, "val_acc": 0.35, "val_mae": 5.0},
         ]
-        best = max(history, key=lambda h: (h["val_acc"], -h["val_mae"], -h["epoch"]))
+        best = min(history, key=lambda h: (-h["val_acc"], h["val_mae"], h["epoch"]))
         assert best["epoch"] == 2  # 0.4 > 0.35 > 0.3
 
     def test_tiebreak_by_mae(self):
         history = [
-            {"epoch": 1, "val_acc": 0.4, "val_mae": 10},
-            {"epoch": 2, "val_acc": 0.4, "val_mae": 5},
+            {"epoch": 1, "val_acc": 0.4, "val_mae": 10.0},
+            {"epoch": 2, "val_acc": 0.4, "val_mae": 5.0},
         ]
-        best = max(history, key=lambda h: (h["val_acc"], -h["val_mae"], -h["epoch"]))
+        best = min(history, key=lambda h: (-h["val_acc"], h["val_mae"], h["epoch"]))
         assert best["epoch"] == 2  # same acc, lower MAE
 
     def test_tiebreak_by_epoch(self):
+        # Same val_acc and val_mae → earlier epoch wins
         history = [
-            {"epoch": 1, "val_acc": 0.4, "val_mae": 5},
-            {"epoch": 2, "val_acc": 0.4, "val_mae": 5},
+            {"epoch": 1, "val_acc": 0.4, "val_mae": 5.0},
+            {"epoch": 2, "val_acc": 0.4, "val_mae": 5.0},
         ]
-        best = max(history, key=lambda h: (h["val_acc"], -h["val_mae"], -h["epoch"]))
-        assert best["epoch"] == 2  # same acc+mae, later epoch
+        # Rule: higher acc → lower mae → lower (earlier) epoch
+        best = min(history, key=lambda h: (-h["val_acc"], h["val_mae"], h["epoch"]))
+        assert best["epoch"] == 1  # same acc+mae, EARLIER epoch wins
 
 
 class TestPerTraceInvariants:
