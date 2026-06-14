@@ -1,0 +1,24 @@
+D1 PREREGISTRATION RUN LOG
+stage: D1
+branch: exp/l12-critical-close-window-selector-20260615
+commit: 9232c4a6695f3ebe101e6581fddbef4cb23ebc9d
+parent: 1458239
+timestamp: 2026-06-15T00:00:00Z
+worktree_status: clean
+runner: local_audit_only
+
+data_sources_audited: 5
+eligible_sources: 0
+prohibited_sources: 3
+not_eligible_sources: 2
+
+e4c_schema_passing_traces: 402
+e4c_rc1a_remapped: 0
+e4c_teacher_p_evaluated: 0
+e2_dev_remapped_traces: 12
+e2_dev_teacher_p_available: 12
+e2_dev_tasks_covered: 7
+
+result_class: DATA_NOT_YET_ELIGIBLE
+training_started: NO
+next_action: AWAIT_REVIEWER_AUTHORIZATION_FOR_E4C2_OR_ALTERNATIVE_DATA

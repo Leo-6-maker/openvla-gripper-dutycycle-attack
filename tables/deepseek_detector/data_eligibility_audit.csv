@@ -1,0 +1,6 @@
+source_id,source_description,n_traces,n_tasks,rc1a_remapped,teacher_p_evaluated,close_candidates_enumerated,label_type,attack_outcome_labels,has_split,already_consumed_in_dev,eligibility_verdict,blocking_gaps
+E4C_402,E4C.1 deterministic inventory — 402 schema-passing clean traces,402,10,NO,NO,NO,none,NO,NO,NO,NOT_ELIGIBLE,"No RC1a remap; no Teacher-P evaluation; no candidate enumeration; E4C.2 deferred"
+E2_DEV_12,E2 development audit — 12 RC1a-remapped traces,12,7,YES,YES,YES,partial_teacher_p_anchor,NO,NO,YES,NOT_ELIGIBLE,"Development-only (12 traces); already consumed in E4B; 3 tasks missing; no formal split; no formal per-candidate labels"
+DETECTOR_V03,Detector v0.3 — 22 K5/K5b/K5c training pairs,22,UNKNOWN,UNKNOWN,NO,NO,cmd_specific_random_sensitive,YES,NO,UNKNOWN,PROHIBITED,"Attack-outcome labels (cmd_specific; random_sensitive); RC1a provenance unverified"
+DETECTOR_V3_GOLD,Detector v3 gold+vis1r ablation,~72,UNKNOWN,UNKNOWN,NO,NO,gold_3r_silver_positive_1r,YES,NO,UNKNOWN,PROHIBITED,"Attack-outcome labels (gold_3r; silver_positive_1r)"
+S20M0_SPLIT,s20m0 train/val/test split — S20F-J RAND labels,~123,5,UNKNOWN,NO,NO,rand_sensitive,YES,YES,UNKNOWN,PROHIBITED,"Attack-outcome labels (random_sensitive)"
