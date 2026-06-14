@@ -342,7 +342,9 @@ def _detect_ambiguous_multiple_closes(predictions: list[dict],
 def select_best_window(predictions: list[dict],
                        window_len: int = WINDOW_LEN,
                        pre_offset: int = PRE_OFFSET,
-                       tie_tolerance: float = TIE_TOLERANCE) -> Optional[dict]:
+                       tie_tolerance: float = TIE_TOLERANCE,
+                       min_separation: int = MIN_CLOSE_SEPARATION,
+                       event_score_floor: float = EVENT_SCORE_FLOOR) -> Optional[dict]:
     """Offline clean-repeat: select best window from full-trajectory predictions.
 
     Picks the highest-scoring non-abstaining step as the anchor.
@@ -351,6 +353,11 @@ def select_best_window(predictions: list[dict],
     Abstains (ambiguous_multiple_close_candidates) when two distinct high-score
     closes are far apart with scores within tie_tolerance — refuses to
     silently pick the earliest.
+
+    Args:
+        tie_tolerance: max score difference to consider two closes tied.
+        min_separation: min steps between closes to consider them distinct.
+        event_score_floor: min score for a step to be a close-event candidate.
 
     Returns dict with window_start, window_end, anchor_step, score, abstain_reason.
     """
@@ -364,7 +371,12 @@ def select_best_window(predictions: list[dict],
         }
 
     # Check for ambiguous multiple closes before selecting
-    if _detect_ambiguous_multiple_closes(predictions, tie_tolerance=tie_tolerance):
+    if _detect_ambiguous_multiple_closes(
+        predictions,
+        tie_tolerance=tie_tolerance,
+        min_separation=min_separation,
+        event_score_floor=event_score_floor,
+    ):
         return {
             "window_start": -1, "window_end": -1,
             "anchor_step": -1, "score": 0.0,

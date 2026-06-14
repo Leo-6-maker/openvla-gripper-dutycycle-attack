@@ -191,6 +191,7 @@ def main():
     # ── Run grid sweep ──
     sensitivity_rows = []
     failure_rows = []
+    candidate_audit_rows = []
 
     combo_idx = 0
     for tie_tol, min_sep, ev_floor, on_thresh in itertools.product(
@@ -235,28 +236,19 @@ def main():
             if p_avail:
                 n_p_available += 1
 
-            # Override frozen parameters for this grid point
-            import gripper_attack.critical_close_selector as cs
-            save_tie = cs.TIE_TOLERANCE
-            save_sep = cs.MIN_CLOSE_SEPARATION
-            save_floor = cs.EVENT_SCORE_FLOOR
-            cs.TIE_TOLERANCE = tie_tol
-            cs.MIN_CLOSE_SEPARATION = min_sep
-            cs.EVENT_SCORE_FLOOR = ev_floor
-
-            # Offline
+            # Offline — all 3 ambiguity params passed explicitly
             preds_off = rule_based_close_predictor(rows, horizon=PREDICTION_HORIZON,
                                                     teacher_anchor=p_anchor if p_avail else -1)
-            win_off = select_best_window(preds_off, WINDOW_LEN, PRE_OFFSET, tie_tolerance=tie_tol)
+            win_off = select_best_window(
+                preds_off, WINDOW_LEN, PRE_OFFSET,
+                tie_tolerance=tie_tol,
+                min_separation=min_sep,
+                event_score_floor=ev_floor,
+            )
 
             # Online
             win_on = select_online_trigger(preds_off, score_threshold=on_thresh,
                                            confirmation_steps=1, mode="close_interception")
-
-            # Restore
-            cs.TIE_TOLERANCE = save_tie
-            cs.MIN_CLOSE_SEPARATION = save_sep
-            cs.EVENT_SCORE_FLOOR = save_floor
 
             # Classify offline
             off_cat = _classify_offline_failure(preds_off, win_off, p_anchor, p_avail)
@@ -332,6 +324,38 @@ def main():
         })
         sensitivity_rows.append(combo_stats)
 
+    # ── Candidate-level score audit (at default params) ──
+    from gripper_attack.critical_close_selector import TIE_TOLERANCE as _DEF_TIE, \
+        MIN_CLOSE_SEPARATION as _DEF_SEP, EVENT_SCORE_FLOOR as _DEF_FLOOR
+    for td in trace_data:
+        rows = td["l12_rows"]
+        p_anchor = td["teacher_p_anchor"]
+        r_anchor = td["teacher_r_anchor"]
+        preds = rule_based_close_predictor(rows, horizon=PREDICTION_HORIZON,
+                                            teacher_anchor=p_anchor if td["teacher_p_available"] else -1)
+        win_on_def = select_online_trigger(preds, mode="close_interception")
+        first_trigger = win_on_def.get("trigger_step", -1)
+
+        for p in preds:
+            if p.get("is_close_event_candidate") and not p.get("abstain"):
+                step = p["step"]
+                candidate_audit_rows.append({
+                    "task_key": td["task_key"],
+                    "state_id": td["state_id"],
+                    "candidate_step": step,
+                    "is_teacher_p_anchor": int(step == p_anchor) if td["teacher_p_available"] else 0,
+                    "is_teacher_r_anchor": int(step == r_anchor),
+                    "is_online_first_trigger": int(step == first_trigger),
+                    "total_score": p["score"],
+                    "raw_open_to_close_crossing": int(p.get("raw_open_to_close_crossing", 0)),
+                    "close_onset": p.get("close_onset", 0),
+                    "close_streak": p.get("close_streak", 0) if p.get("close_streak") != "" else 0,
+                    "qpos": str(p.get("qpos", ""))[:8],
+                    "disabled_features": ",".join(p.get("disabled_features", [])),
+                    "distance_to_teacher_p": step - p_anchor if td["teacher_p_available"] else "",
+                    "abstain": p.get("abstain", ""),
+                })
+
     # ── Write outputs ──
     def _write_csv(rows, name):
         if not rows:
@@ -344,6 +368,7 @@ def main():
 
     _write_csv(sensitivity_rows, "l12_e3_sensitivity_surface.csv")
     _write_csv(failure_rows, "l12_e3_failure_taxonomy.csv")
+    _write_csv(candidate_audit_rows, "l12_e3_candidate_score_audit.csv")
 
     # Best combo by offline correct
     best_off = max(sensitivity_rows, key=lambda r: (r["off_correct_pct"], -r["off_ambiguous_pct"]))
