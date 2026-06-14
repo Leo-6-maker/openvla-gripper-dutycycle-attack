@@ -1,0 +1,55 @@
+# D2 — Fresh Clean Rollout Config (PREREG ONLY)
+# Collect missing task-state groups to fill the 500-state universe.
+# Clean inference only. NO attack, VIS, PGD, or random rollout.
+
+stage: D2
+mode: clean_rollout_only
+attack_forbidden: true
+
+# ── Expected Universe ──
+universe:
+  tasks: 10
+  states_per_task: 50
+  expected_total: 500
+  existing: 402
+  missing: 98
+
+# ── Rollout Parameters (matching original 402) ──
+rollout:
+  model: openvla-7b-finetuned-libero-object
+  model_path: /data/aviary/models/openvla/openvla-7b-finetuned-libero-object
+  suite: LIBERO-Object
+  max_steps: 280
+  success_metric: check_success
+  num_steps_wait: 10
+  condition: clean  # NO ATTACK
+  window_start: 0
+  window_end: 10
+  seed: 0
+  env:
+    MUJOCO_GL: egl
+    PYOPENGL_PLATFORM: egl
+    OPENVLA_ATTN_IMPLEMENTATION: eager
+
+# ── Infrastructure ──
+infra:
+  runner_repo: /data/liuyu/repos/codex_stageb_openvla_alignment_rc1a_20260607
+  runner_script: scripts/stageb/run_s20d_v4_fixed_window_l3_runner.py
+  python: /home/liuyu/.conda/envs/openvla_official_libero_20260525/bin/python
+  output_dir: /data/liuyu/outputs/stageb_d2_fresh_clean_20260615
+  gpus: [0, 1, 2, 4, 5, 6, 7]  # 3 excluded (blacklisted)
+  render_gpu: 7  # single GPU for rendering, rest for model
+
+# ── Job Distribution ──
+job_distribution:
+  total_jobs: 98
+  gpu_count: 7
+  jobs_per_gpu: 14
+  manifest: tables/d2_fresh/d2_missing_clean_groups.csv
+
+# ── Stop Rules ──
+stop:
+  attack_forbidden: true
+  training_forbidden: true
+  gpu_cleanup_after: true
+  max_runtime_hours: 4
