@@ -1,7 +1,11 @@
-E4B RUN LOG
-runner_commit: 20b030689048014da4d7896c5a56dcda73c77487
+E4B.1 RUN LOG
+runner_commit: c1c362bee58f2b5cb78ab6738f7c287dadc3c44e
 remapper_version: rc1a_corrected_v2_e1_5
-start: 2026-06-14T17:00:58.192860+00:00
+start: 2026-06-14T17:07:52.034403+00:00
+input_traces: 12
 invariant_violations: 0
-policies: 8
+field_issues: 0
+gate_errors: 0
+policies: 7
 worktree_clean: True
+exit_code: 0
