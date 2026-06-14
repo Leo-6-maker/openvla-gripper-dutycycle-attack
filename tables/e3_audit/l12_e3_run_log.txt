@@ -1,0 +1,8 @@
+E3 RUN LOG
+runner_commit: d83bdcf68f87622f0526d27ffb4cbd1dda2945ce
+selector_commit: 0f72fda
+remapper_version: rc1a_corrected_v2_e1_5
+grid_config: ./configs/e3_sensitivity_grid_v1.yaml
+n_combinations: 180
+best_offline: tie=0.1 sep=5 floor=0.3 correct=40.0%
+best_online: tie=0.1 sep=5 floor=0.3 thresh=1.0 correct=50.0%
