@@ -403,7 +403,7 @@ def run_rand20(
                 "condition": "RAND20",
                 "candidate_id": idx,
                 "candidate_seed": int(cand_seed),
-                "selection_metric": "surrogate_target31744_margin",
+                "selection_metric": str(cfg["controls"].get("rand20_selection_metric", "surrogate_target31744_margin")),
                 "surrogate_target31744_margin": score,
                 "surrogate_target31744_best_competitor_margin": float(stats["target_minus_best_competitor_margin"]),
                 "surrogate_target31744_logratio_margin": stats.get("target_minus_competitor_logsumexp_margin", ""),
@@ -671,7 +671,7 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
     route_rows = []
     candidate_rows = []
     commit = git_value(["rev-parse", "HEAD"])
-    stage = "M3_STEP78_TRUE_PGD_CANARY"
+    stage = str(cfg.get("stage", "M3_STEP78_TRUE_PGD_CANARY"))
     condition_rows.append(
         collect_condition_row(
             stage=stage,
