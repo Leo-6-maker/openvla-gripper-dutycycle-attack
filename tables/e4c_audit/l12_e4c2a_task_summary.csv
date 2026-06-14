@@ -1,0 +1,11 @@
+task_key,n_total,n_provenance_pass,n_field_valid,n_open_convention_pass,n_remap_pass,n_grasp_privilege_valid,n_tp_qualifying_1,n_tp_qualifying_gt1,n_tp_qualifying_0,n_eligible_multi,n_eligible_single,n_no_candidate,n_tp_unavailable,n_tp_ambiguous
+alphabet_soup,38,38,38,38,38,38,23,12,3,18,5,0,3,12
+bbq_sauce,43,43,43,43,43,43,16,3,24,13,3,4,20,3
+butter,42,42,42,42,42,42,17,12,13,17,0,0,13,12
+chocolate_pudding,41,41,41,41,41,41,7,25,9,7,0,0,9,25
+cream_cheese,42,42,42,42,42,42,15,21,6,15,0,0,6,21
+ketchup,42,42,42,42,42,42,27,12,3,21,6,0,3,12
+milk,41,41,41,41,41,41,21,10,10,6,15,0,10,10
+orange_juice,41,41,41,41,41,41,24,11,6,8,16,4,2,11
+salad_dressing,37,37,37,37,37,37,18,13,6,10,8,0,6,13
+tomato_sauce,35,35,35,35,35,35,16,12,7,16,0,0,7,12
