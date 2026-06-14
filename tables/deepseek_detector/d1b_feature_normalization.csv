@@ -1,0 +1,17 @@
+feature,n_train_values,n_missing,mean,stdev,min,max,normalization
+total_score,561,0,3.446524,0.245661,1.8,3.8,z_score
+raw_crossing_bonus,561,0,1.497326,0.06333,0.0,1.5,z_score
+close_streak_bonus,561,0,1.0,0.0,1.0,1.0,z_score
+close_onset_qpos_bonus,561,0,0.491979,0.062876,0.0,0.5,z_score
+eef_deceleration_bonus,561,0,0.157754,0.232566,0.0,0.5,z_score
+qpos_ready_bonus,561,0,0.299465,0.012666,0.0,0.3,z_score
+eef_speed_now,560,1,0.011089,0.009163,5.5e-05,0.041309,z_score
+eef_speed_prev,560,1,0.0123,0.010064,5.4e-05,0.042336,z_score
+eef_deceleration_delta,560,1,-0.001211,0.003482,-0.014918,0.010949,z_score
+close_streak,561,0,1.0,0.0,1.0,1.0,z_score
+raw_crossing,561,0,0.998217,0.04222,0.0,1.0,z_score
+close_onset,561,0,1.0,0.0,1.0,1.0,z_score
+qpos,561,0,-0.000318,0.002501,-0.027152,0.010118,z_score
+time_since_prev_close,471,90,18.424628,25.797125,2.0,119.0,z_score
+time_since_last_open,560,1,1.0,0.0,1.0,1.0,z_score
+candidate_index,561,0,5.768271,6.64238,0.0,34.0,z_score

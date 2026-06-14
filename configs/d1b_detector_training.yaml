@@ -1,0 +1,125 @@
+# D1b — DeepSeek Learned Detector Training Config (PREREG ONLY)
+# Frozen 2026-06-15. No training executed. No GPU authorized.
+# All values preregistered before seeing validation/test results.
+
+stage: D1b
+mode: prereg_only
+training_authorized: false
+
+# ── Data ──
+data:
+  training_manifest: tables/deepseek_detector/d1b_training_manifest.csv
+  split_manifest: tables/deepseek_detector/d1b_split_manifest.csv
+  candidate_table: tables/e4c_audit/l12_e4c2b_close_candidates.csv
+  n_train_traces: 90
+  n_val_traces: 20
+  n_test_traces: 21
+  total_traces: 131
+  tasks_covered: 10
+
+label:
+  positive: "is_teacher_p == 1 (unique TP-qualifying candidate per trace)"
+  negative: "other CLOSE candidates in same trace"
+  abstain_traces:
+    - TEACHER_P_AMBIGUOUS  # 131 traces excluded
+    - TEACHER_P_UNAVAILABLE  # 79 traces excluded
+    - NO_CLOSE_CANDIDATE  # 8 traces excluded
+    - ELIGIBLE_SINGLE_CANDIDATE  # 53 traces excluded from ranking
+  forbidden_labels:
+    - attack_outcome
+    - random_sensitive
+    - VIS_success
+    - bronze_label
+    - teacher_p_unavailable_as_negative
+
+# ── Model Architecture ──
+model:
+  type: MLP  # starting point; Transformer/DeepSet candidates for D2
+  input_features: 16  # all frozen E4B.3 features
+  causal_history: 0  # per-candidate features only (no temporal context beyond candidate step)
+  hidden_layers: [128, 64, 32]
+  activation: relu
+  dropout: 0.1
+  output_head: scalar  # score per candidate
+  # No privileged features (Teacher-P, EEF-to-obj distance) at inference
+
+# ── Input Features (all 16) ──
+features:
+  - total_score           # discrete_score
+  - raw_crossing_bonus    # candidate_definition
+  - close_streak_bonus    # candidate_definition
+  - close_onset_qpos_bonus  # qpos_conditioned_discrete
+  - eef_deceleration_bonus  # discrete_score
+  - qpos_ready_bonus      # qpos_conditioned_discrete
+  - eef_speed_now         # continuous_dynamic
+  - eef_speed_prev        # continuous_dynamic
+  - eef_deceleration_delta  # continuous_dynamic
+  - close_streak          # candidate_definition
+  - raw_crossing          # candidate_definition
+  - close_onset           # candidate_definition
+  - qpos                  # continuous_dynamic
+  - time_since_prev_close # temporal_context
+  - time_since_last_open  # temporal_context
+  - candidate_index       # temporal_context
+
+# ── Normalization ──
+normalization:
+  method: z_score
+  fit_on: train_split_only  # 90 traces
+  manifest: tables/deepseek_detector/d1b_feature_normalization.csv
+  missing_value_strategy: impute_train_mean
+  outlier_strategy: clip_3_stdev
+
+# ── Training ──
+training:
+  loss: pairwise_margin_ranking  # per-trace: score(pos) > score(neg) + margin
+  margin: 0.5
+  optimizer: adamw
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  batch_construction: per_trace_grouped  # all candidates from same trace in one batch
+  max_epochs: 200
+  early_stop_patience: 30
+  early_stop_metric: val_pairwise_accuracy  # fraction of traces where pos scored higher than all negs
+  training_seed: 42
+
+# ── Evaluation ──
+evaluation:
+  primary_metric: per_trace_teacher_p_top1_accuracy  # pos = highest-scoring candidate
+  secondary_metric: per_trace_competition_top2_accuracy
+  auxiliary_metrics:
+    - mean_absolute_timing_error
+    - median_absolute_timing_error
+    - decision_coverage  # fraction of traces with emitted decision
+    - conditional_accuracy  # accuracy among emitted-only
+    - early_spurious_rate
+  report_by:
+    - all_test_traces
+    - multi_candidate_test_traces
+    - per_task
+
+# ── Checkpoint Selection (PREREG ONLY) ──
+checkpoint:
+  selection_metric: val_per_trace_teacher_p_top1_accuracy  # highest
+  tiebreak_1: val_mean_absolute_timing_error  # lower
+  tiebreak_2: earlier_epoch  # lower
+  threshold_determination: validation_set_only
+  threshold_method: max_val_metric  # threshold = best validation top-1 accuracy score
+
+# ── Test Evaluation ──
+test:
+  evaluations: 1  # single evaluation after checkpoint + threshold frozen
+  forbidden_during_training: test_data_visibility
+
+# ── Hardware ──
+hardware:
+  device: gpu  # NVIDIA RTX 2080 Ti (8 available on vla)
+  cuda_devices: "0,1"
+  environment: /home/liuyu/.conda/envs/openvla_official_libero_20260525
+  code_commit: to_be_frozen_at_training_time
+  config_sha: to_be_computed_after_freeze
+
+# ── Stop Rule ──
+stop:
+  training_started: false
+  after_commit: stop_for_audit
