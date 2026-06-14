@@ -8,7 +8,8 @@ from gripper_attack.critical_close_selector import (
 )
 from gripper_attack.phase_detector import (
     teacher_phase_labels,
-    teacher_critical_close_anchor,
+    teacher_rule_critical_close_anchor,
+    teacher_privileged_critical_close_anchor,
 )
 
 
@@ -104,10 +105,61 @@ def test_build_proposal():
     assert p.anchor_step == 78
 
 
-def test_teacher_anchor():
+def test_teacher_rule_anchor():
     records = _make_trace(n_close_onset_at=78)
-    anchor = teacher_critical_close_anchor(records)
+    anchor = teacher_rule_critical_close_anchor(records)
     assert anchor == 78
+
+
+def test_teacher_privileged_abstains_without_privileged_fields():
+    """Teacher-P must abstain when trace lacks object/target pose fields."""
+    records = _make_trace(n_close_onset_at=78)
+    anchor = teacher_privileged_critical_close_anchor(records)
+    assert anchor == -1  # abstain: no privileged fields in synthetic trace
+
+
+def test_teacher_privileged_with_object_fields():
+    """Teacher-P finds critical close when object is near and lift evidence exists."""
+    records = _make_trace(n_close_onset_at=50)
+    # Add privileged fields
+    for t, r in enumerate(records):
+        r["eef_to_obj_distance"] = 0.15  # far initially
+        r["obj_to_target_distance"] = 0.3
+        r["obj_x"] = 0.0
+        r["obj_y"] = 0.0
+        r["obj_z"] = 0.05
+    # At close onset, EEF is near object
+    records[50]["eef_to_obj_distance"] = 0.03  # 3cm = near
+    # After close, object lifts (moves up)
+    for t in range(52, 60):
+        records[t]["obj_z"] = 0.05 + 0.01 * (t - 51)  # rising
+    anchor = teacher_privileged_critical_close_anchor(records)
+    assert anchor == 50
+
+
+def test_teacher_privileged_rejects_early_far_close():
+    """Teacher-P must NOT accept a close when EEF is far from object."""
+    records = _make_trace(n_close_onset_at=4)  # early close like butter_s2
+    for t, r in enumerate(records):
+        r["eef_to_obj_distance"] = 0.5  # 50cm = far
+        r["obj_to_target_distance"] = 0.3
+        r["obj_x"] = 0.0
+        r["obj_y"] = 0.0
+        r["obj_z"] = 0.05
+    # Later close at step 50 with EEF near object
+    records[50]["close_onset"] = 1
+    records[50]["clean_close"] = 1
+    records[50]["close_streak"] = 1
+    records[50]["eef_to_obj_distance"] = 0.02  # near
+    records[50]["gripper_qpos_before"] = 0.0
+    for t in range(52, 62):
+        records[t]["clean_close"] = 1
+        records[t]["close_streak"] = t - 50 + 1
+        records[t]["eef_to_obj_distance"] = 0.02
+    for t in range(52, 60):
+        records[t]["obj_z"] = 0.05 + 0.01 * (t - 51)
+    anchor = teacher_privileged_critical_close_anchor(records)
+    assert anchor == 50  # step 50, NOT step 4
 
 
 def test_teacher_phase_labels():

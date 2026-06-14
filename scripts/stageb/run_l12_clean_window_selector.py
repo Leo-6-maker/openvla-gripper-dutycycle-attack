@@ -32,7 +32,8 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from gripper_attack.window_contract import WindowProposal, validate_proposals
 from gripper_attack.phase_detector import (
     teacher_phase_labels,
-    teacher_critical_close_anchor,
+    teacher_rule_critical_close_anchor,
+    teacher_privileged_critical_close_anchor,
     teacher_window_proposal,
 )
 from gripper_attack.critical_close_selector import (
@@ -89,8 +90,14 @@ def main():
 
         # Layer1: Teacher phase estimation
         phases = teacher_phase_labels(records)
-        anchor = teacher_critical_close_anchor(records)
-        ws, we = teacher_window_proposal(anchor, WINDOW_LEN, PRE_OFFSET)
+
+        # Teacher-R: rule-based anchor (deployment-safe, fast baseline)
+        anchor_r = teacher_rule_critical_close_anchor(records)
+        ws_r, we_r = teacher_window_proposal(anchor_r, WINDOW_LEN, PRE_OFFSET)
+
+        # Teacher-P: privileged anchor (object/target pose, may abstain)
+        anchor_p = teacher_privileged_critical_close_anchor(records)
+        ws_p, we_p = teacher_window_proposal(anchor_p, WINDOW_LEN, PRE_OFFSET) if anchor_p >= 0 else (-1, -1)
 
         # Layer2: Causal student selector
         preds = rule_based_close_predictor(records)
@@ -99,7 +106,8 @@ def main():
         task_key = f"{args.task}"
         pid = f"{task_key}_s{args.state_id}_l12v1"
 
-        # Build student proposal
+        # Build student proposal (teacher anchor = Teacher-P if available, else Teacher-R)
+        primary_anchor = anchor_p if anchor_p >= 0 else anchor_r
         p = build_clean_proposal(
             task_key=task_key,
             state_id=args.state_id,
@@ -107,21 +115,25 @@ def main():
             trace_sha256=trace_sha,
             commit=args.commit,
             window_info=win,
-            phase_label=phases[anchor] if 0 <= anchor < len(phases) else "",
+            phase_label=phases[primary_anchor] if 0 <= primary_anchor < len(phases) else "",
         )
 
-        # Annotate with teacher comparison
-        teacher_ws, teacher_we = ws, we
-        anchor_error = abs(anchor - win["anchor_step"]) if anchor >= 0 else -1
+        # Annotate with teacher comparison (both Teacher-P and Teacher-R)
+        anchor_error_p = abs(anchor_p - win["anchor_step"]) if anchor_p >= 0 else -1
+        anchor_error_r = abs(anchor_r - win["anchor_step"]) if anchor_r >= 0 else -1
 
         proposals.append({
             "proposal": p,
             "trace_path": trace_path,
-            "teacher_anchor": anchor,
-            "teacher_window": f"[{teacher_ws},{teacher_we}]",
+            "teacher_p_anchor": anchor_p,
+            "teacher_p_window": f"[{ws_p},{we_p}]" if anchor_p >= 0 else "ABSTAIN",
+            "teacher_r_anchor": anchor_r,
+            "teacher_r_window": f"[{ws_r},{we_r}]" if anchor_r >= 0 else "N/A",
             "student_anchor": win["anchor_step"],
             "student_window": f"[{win['window_start']},{win['window_end']}]",
-            "anchor_error": anchor_error,
+            "anchor_error_vs_p": anchor_error_p,
+            "anchor_error_vs_r": anchor_error_r,
+            "teacher_p_abstain": anchor_p < 0,
             "n_steps": len(records),
             "abstain": win.get("abstain_reason", ""),
         })
@@ -137,19 +149,26 @@ def main():
     # Write CSV
     with open(args.output, "w", newline="") as f:
         fieldnames = list(prop_objects[0].to_dict().keys()) + [
-            "teacher_anchor", "teacher_window", "student_anchor",
-            "student_window", "anchor_error", "n_steps",
+            "teacher_p_anchor", "teacher_p_window",
+            "teacher_r_anchor", "teacher_r_window",
+            "student_anchor", "student_window",
+            "anchor_error_vs_p", "anchor_error_vs_r",
+            "teacher_p_abstain", "n_steps",
         ]
         w = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
         w.writeheader()
         for p in proposals:
             d = p["proposal"].to_dict()
             d.update({
-                "teacher_anchor": p["teacher_anchor"],
-                "teacher_window": p["teacher_window"],
+                "teacher_p_anchor": p["teacher_p_anchor"],
+                "teacher_p_window": p["teacher_p_window"],
+                "teacher_r_anchor": p["teacher_r_anchor"],
+                "teacher_r_window": p["teacher_r_window"],
                 "student_anchor": p["student_anchor"],
                 "student_window": p["student_window"],
-                "anchor_error": p["anchor_error"],
+                "anchor_error_vs_p": p["anchor_error_vs_p"],
+                "anchor_error_vs_r": p["anchor_error_vs_r"],
+                "teacher_p_abstain": p["teacher_p_abstain"],
                 "n_steps": p["n_steps"],
             })
             w.writerow(d)
@@ -157,14 +176,19 @@ def main():
     # Summary
     n_eligible = sum(1 for p in prop_objects if p.eligible)
     n_abstain = sum(1 for p in prop_objects if p.abstain_reason)
+    n_p_abstain = sum(1 for p in proposals if p["teacher_p_abstain"])
     print(f"Task: {args.task}_s{args.state_id}")
     print(f"Traces: {len(traces)}")
     print(f"Proposals: {len(proposals)} ({n_eligible} eligible, {n_abstain} abstain)")
+    print(f"Teacher-P abstains: {n_p_abstain}/{len(proposals)}")
     for p in proposals:
-        err = p["anchor_error"]
-        err_str = f"err={err}" if err >= 0 else "N/A"
+        err_p = p["anchor_error_vs_p"]
+        err_r = p["anchor_error_vs_r"]
+        err_p_str = f"err_p={err_p}" if err_p >= 0 else "P_ABSTAIN"
+        err_r_str = f"err_r={err_r}" if err_r >= 0 else "N/A"
         print(f"  {p['trace_path']}: student={p['student_anchor']} "
-              f"teacher={p['teacher_anchor']} {err_str} "
+              f"teacher_p={p['teacher_p_anchor']} {err_p_str} "
+              f"teacher_r={p['teacher_r_anchor']} {err_r_str} "
               f"window={p['student_window']} "
               f"abstain={p['abstain']}")
     print(f"Output: {args.output}")

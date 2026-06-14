@@ -1,7 +1,13 @@
 """Layer1: Causal manipulation-phase estimator.
 
-Produces phase labels from privileged or deployment-safe inputs.
-Teacher variant may use object/target pose for pseudo-label generation.
+Two teacher variants:
+  Teacher-P: privileged simulation teacher — uses object/target pose to
+             identify task-critical grasp closures. Abstains if privileged
+             fields are unavailable or insufficient.
+  Teacher-R: clean-action rule teacher — low-cost rule baseline using only
+             deployment-safe action/gripper fields. Fast but may confuse
+             spurious early closes with critical ones.
+
 Student variant must use only proprio/action history.
 """
 
@@ -21,12 +27,14 @@ PHASE_LABELS = [
     "other",
 ]
 
-# ── Clean-only privilege fields ──
+# ── Privileged fields (Teacher-P only) ──
 PRIVILEGED_FIELDS = [
     "obj_x", "obj_y", "obj_z",
     "target_obj_x", "target_obj_y", "target_obj_z",
     "eef_to_obj_distance", "obj_to_target_distance",
 ]
+
+PRIVILEGED_REQUIRED_FIELDS = ["eef_to_obj_distance", "obj_to_target_distance"]
 
 # ── Deployment-safe fields ──
 DEPLOYMENT_SAFE_FIELDS = [
@@ -39,12 +47,60 @@ DEPLOYMENT_SAFE_FIELDS = [
     "decoded_open_bool",
 ]
 
+# ── Teacher-P thresholds ──
+EEF_TO_OBJ_NEAR_THRESHOLD = 0.08       # meters: EEF within 8cm of object
+OBJECT_LIFT_MIN_DELTA = 0.005           # meters: 5mm movement = lift evidence
+OBJECT_LIFT_LOOKAHEAD = 15              # steps: look ahead for lift after close
+
 
 def _safe_float(v, default=0.0):
     try:
         return float(v)
     except (ValueError, TypeError):
         return default
+
+
+def _check_privileged_fields_available(records: list[dict]) -> bool:
+    """Return True if privileged object/target pose fields are present and valid."""
+    if not records:
+        return False
+    # Sample first 3 records to confirm field availability
+    sample = records[:min(3, len(records))]
+    for field in PRIVILEGED_REQUIRED_FIELDS:
+        for r in sample:
+            val = r.get(field)
+            if val is None or val == "":
+                return False
+            try:
+                if np.isnan(float(val)):
+                    return False
+            except (ValueError, TypeError):
+                return False
+    return True
+
+
+def _check_subsequent_object_lift(records: list[dict], anchor_t: int,
+                                   lookahead: int = OBJECT_LIFT_LOOKAHEAD,
+                                   min_delta: float = OBJECT_LIFT_MIN_DELTA) -> bool:
+    """Check if object moves (is lifted) within `lookahead` steps after `anchor_t`."""
+    T = len(records)
+    if anchor_t >= T - 1:
+        return False
+
+    obj_y_before = _safe_float(records[anchor_t].get("obj_y", 0))
+    obj_z_before = _safe_float(records[anchor_t].get("obj_z", 0))
+
+    for future_t in range(anchor_t + 1, min(anchor_t + lookahead, T)):
+        obj_y_after = _safe_float(records[future_t].get("obj_y", 0))
+        obj_z_after = _safe_float(records[future_t].get("obj_z", 0))
+
+        dy = abs(obj_y_after - obj_y_before)
+        dz = obj_z_after - obj_z_before  # positive = lifted
+
+        if dy > min_delta or dz > min_delta:
+            return True
+
+    return False
 
 
 def compute_eef_velocity(records: list[dict], window: int = 3) -> list[float]:
@@ -123,18 +179,66 @@ def teacher_phase_labels(records: list[dict]) -> list[str]:
     return labels
 
 
-def teacher_critical_close_anchor(records: list[dict]) -> int:
-    """Return the step index of the teacher-identified first critical CLOSE.
+def teacher_rule_critical_close_anchor(records: list[dict]) -> int:
+    """Teacher-R: rule-based first critical CLOSE anchor (clean-only, no privilege).
 
-    The teacher uses privileged object pose to identify the pre-grasp CLOSE
-    that is most critical for task success.
+    Uses only deployment-safe features: close_onset, clean_close, gripper_qpos.
+    Fast but may accept spurious early closes that are not task-critical
+    (e.g. butter_s2 step 4 before EEF reaches object).
+
+    Returns step index or -1 if no close found.
     """
-    # Find first clean CLOSE onset after approach phase
     for t, r in enumerate(records):
         if int(_safe_float(r.get("close_onset", 0))) and int(_safe_float(r.get("clean_close", 0))):
             qpos = _safe_float(r.get("gripper_qpos_before", 0))
             if qpos < 0.01:
                 return t
+    return -1
+
+
+def teacher_privileged_critical_close_anchor(records: list[dict]) -> int:
+    """Teacher-P: privileged critical-close anchor using object/target pose.
+
+    A CLOSE is considered \"critical\" only when:
+      1. EEF is near the object (eef_to_obj_distance < threshold)
+      2. The CLOSE is followed by object movement (lift/transport evidence)
+      3. Gripper is not already open
+
+    Abstains (returns -1) if:
+      - Privileged fields are missing or contain NaN
+      - No close satisfies all criticality conditions
+
+    This prevents accepting spurious early closes that occur before the EEF
+    reaches the object.
+    """
+    if not _check_privileged_fields_available(records):
+        return -1
+
+    T = len(records)
+
+    for t in range(T):
+        r = records[t]
+
+        # Must be a CLOSE onset
+        if not (int(_safe_float(r.get("close_onset", 0))) and
+                int(_safe_float(r.get("clean_close", 0)))):
+            continue
+
+        # Gripper must not already be open
+        if int(_safe_float(r.get("decoded_open_bool", 0))):
+            continue
+
+        # EEF must be near object
+        eef_to_obj = _safe_float(r.get("eef_to_obj_distance", 999))
+        if eef_to_obj > EEF_TO_OBJ_NEAR_THRESHOLD:
+            continue
+
+        # Must have subsequent object lift/transport evidence
+        if not _check_subsequent_object_lift(records, t):
+            continue
+
+        return t
+
     return -1
 
 
