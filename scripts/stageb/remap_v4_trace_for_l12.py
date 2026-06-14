@@ -72,6 +72,7 @@ def remap_v4_to_l12(input_path: str, output_path: str,
 
     prev_clean_close = 0
     close_streak = 0
+    _prev_gripper_was_invalid = False
     invariant_issues = []
     field_issues = []
 
@@ -137,21 +138,40 @@ def remap_v4_to_l12(input_path: str, output_path: str,
             clean_gripper_raw_is_proxy = True
 
         # ── Derived semantics ──
+        close_onset_after_invalid_gap = False
         if clean_gripper_raw_proxy is not None:
             clean_close = int(clean_gripper_raw_proxy <= 0.5)
-            close_onset = int(clean_close and not prev_clean_close)
-            if clean_close:
+            # First CLOSE after OPEN (normal onset)
+            onset = clean_close and not prev_clean_close
+            if onset and _prev_gripper_was_invalid:
+                # CLOSE after an invalid gap — can't claim normal onset
+                close_onset_after_invalid_gap = True
+                close_onset = 0  # not a normal onset
+                close_streak = 1  # restart streak from this valid CLOSE
+            elif onset:
+                close_onset = 1
                 close_streak += 1
-            else:
+            elif clean_close:
+                close_onset = 0
+                close_streak += 1
+            else:  # OPEN
+                close_onset = 0
                 close_streak = 0
+            _prev_gripper_was_invalid = False
         else:
             clean_close = None
             close_onset = None
             close_streak = None
+            # Reset internal state — invalid gap breaks continuity
+            close_streak = 0
+            prev_clean_close = 0  # force onset detection on next valid step
+            _prev_gripper_was_invalid = True
 
         # ── Qpos ──
         gripper_qpos_before = _safe_float(qpos_raw)
         qpos_abs_before = abs(gripper_qpos_before) if gripper_qpos_before is not None else None
+        gripper_qpos_after_val = _safe_float(r.get("gripper_qpos_after", ""))
+        qpos_abs_after_val = abs(gripper_qpos_after_val) if gripper_qpos_after_val is not None else None
 
         # ── EEF pose validity ──
         eef_x = _safe_float(eef_x_raw)
@@ -183,9 +203,9 @@ def remap_v4_to_l12(input_path: str, output_path: str,
             "clean_gripper_raw_is_proxy": int(clean_gripper_raw_is_proxy),
             "clean_gripper_raw_source": "reconstructed_from_env_rc1a",
             "gripper_qpos_before": gripper_qpos_before if gripper_qpos_before is not None else "",
-            "gripper_qpos_after": _safe_float(r.get("gripper_qpos_after", "")) or "",
+            "gripper_qpos_after": gripper_qpos_after_val if gripper_qpos_after_val is not None else "",
             "qpos_abs_before": qpos_abs_before if qpos_abs_before is not None else "",
-            "qpos_abs_after": abs(_safe_float(r.get("gripper_qpos_after", "")) or 0.0) if _is_numeric(r.get("gripper_qpos_after", "")) else "",
+            "qpos_abs_after": qpos_abs_after_val if qpos_abs_after_val is not None else "",
             "eef_x": eef_x if eef_x is not None else "",
             "eef_y": eef_y if eef_y is not None else "",
             "eef_z": eef_z if eef_z is not None else "",
@@ -193,6 +213,7 @@ def remap_v4_to_l12(input_path: str, output_path: str,
             "eef_to_obj_distance": eef_to_obj_distance if eef_to_obj_distance is not None else "",
             "clean_close": clean_close if clean_close is not None else "",
             "close_onset": close_onset if close_onset is not None else "",
+            "close_onset_after_invalid_gap": int(close_onset_after_invalid_gap),
             "close_streak": close_streak if close_streak is not None else "",
             "decoded_open_bool": decoded_open_bool if decoded_open_bool is not None else "",
             "gripper_semantics_valid": int(gripper_semantics_valid),

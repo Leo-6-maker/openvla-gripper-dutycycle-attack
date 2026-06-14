@@ -10,7 +10,7 @@ from typing import Optional
 
 from .critical_close_selector import (
     WINDOW_LEN, PRE_OFFSET, PREDICTION_HORIZON, TIE_TOLERANCE,
-    _safe_float,
+    _safe_float, _check_feature_validity, _field_is_present_and_valid,
 )
 from .phase_detector import _safe_float as _sf
 
@@ -41,6 +41,7 @@ class CloseEventStreamingState:
         # Internal causal state
         self._step = 0
         self._last_raw = 0.5      # initial OPEN assumption
+        self._last_raw_valid = True  # initial assumption: valid
         self._close_streak = 0
         self._triggered = False
         self._confirm_count = 0
@@ -66,6 +67,16 @@ class CloseEventStreamingState:
         close_streak = int(_safe_float(r.get("close_streak", 0)))
         decoded_open = int(_safe_float(r.get("decoded_open_bool", 0)))
         qpos = _safe_float(r.get("gripper_qpos_before", 0))
+
+        # Feature validity
+        gripper_valid = _check_feature_validity(r, "gripper_semantics_valid")
+        qpos_valid = _field_is_present_and_valid(r, "gripper_qpos_before")
+        eef_valid = (_field_is_present_and_valid(r, "eef_x") and
+                     _field_is_present_and_valid(r, "eef_y") and
+                     _field_is_present_and_valid(r, "eef_z"))
+        raw_valid = (_field_is_present_and_valid(r, "clean_gripper_raw") or
+                     _field_is_present_and_valid(r, "clean_gripper_raw_proxy"))
+
         eef_x = _safe_float(r.get("eef_x", 0))
         eef_y = _safe_float(r.get("eef_y", 0))
         eef_z = _safe_float(r.get("eef_z", 0))
@@ -78,9 +89,9 @@ class CloseEventStreamingState:
         # ── Scoring (same logic as rule_based_close_predictor) ──
         score = 0.0
 
-        # Raw crossing
+        # Raw crossing (only if raw field is valid)
         raw_open_to_close_crossing = False
-        if self._last_raw > 0.5 and raw_now <= 0.5:
+        if raw_valid and self._last_raw_valid and self._last_raw > 0.5 and raw_now <= 0.5:
             raw_open_to_close_crossing = True
             score += 1.5
 
@@ -93,10 +104,8 @@ class CloseEventStreamingState:
             score += 0.5
 
         # EEF deceleration: 3-step velocity parity with batch _eef_speed
-        # history stores up to 6 positions: [t-5, t-4, t-3, t-2, t-1, t]
-        # speed_now  = pos[t]   - pos[t-3] = h[-1] - h[-4]
-        # speed_prev = pos[t-1] - pos[t-4] = h[-2] - h[-5]
-        if len(self._eef_history) >= 4:
+        # Only enabled when EEF pose is valid
+        if eef_valid and len(self._eef_history) >= 4:
             h = self._eef_history
             dx_now = h[-1][0] - h[-4][0]
             dy_now = h[-1][1] - h[-4][1]
@@ -130,7 +139,9 @@ class CloseEventStreamingState:
 
         # ── Abstain ──
         abstain = ""
-        if decoded_open:
+        if not gripper_valid:
+            abstain = "gripper_semantics_invalid"
+        elif decoded_open:
             abstain = "gripper_already_open"
         elif t < 3:
             abstain = "too_early"
@@ -166,6 +177,7 @@ class CloseEventStreamingState:
 
         # Update internal state
         self._last_raw = raw_now
+        self._last_raw_valid = raw_valid
         if clean_close:
             self._close_streak = close_streak
         else:

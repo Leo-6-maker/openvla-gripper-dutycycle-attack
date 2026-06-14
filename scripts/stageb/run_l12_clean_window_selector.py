@@ -101,21 +101,24 @@ def main():
         ws_p, we_p = teacher_window_proposal(anchor_p, WINDOW_LEN, PRE_OFFSET) if anchor_p >= 0 else (-1, -1)
 
         # Layer2: Causal student selector
-        primary_anchor = anchor_p if anchor_p >= 0 else anchor_r
+        # Teacher-P is the SOLE evaluation target. When Teacher-P abstains,
+        # we do NOT fall back to Teacher-R — we mark teacher_reference_unavailable.
+        teacher_p_available = anchor_p >= 0
+        horizon_anchor = anchor_p if teacher_p_available else -1
 
         # --- Mode A: offline clean-repeat ---
         preds_offline = rule_based_close_predictor(
-            records, horizon=PREDICTION_HORIZON, teacher_anchor=primary_anchor)
+            records, horizon=PREDICTION_HORIZON, teacher_anchor=horizon_anchor)
         win_offline = select_best_window(preds_offline, WINDOW_LEN, PRE_OFFSET)
 
         # --- Mode B: online streaming ---
         preds_online = rule_based_close_predictor(
-            records, horizon=PREDICTION_HORIZON, teacher_anchor=primary_anchor)
+            records, horizon=PREDICTION_HORIZON, teacher_anchor=horizon_anchor)
         win_online = select_online_trigger(preds_online)
 
         task_key = f"{args.task}"
 
-        # Build offline proposal
+        # Build offline proposal (Teacher-P reference only, no fallback)
         p_offline = build_clean_proposal(
             task_key=task_key,
             state_id=args.state_id,
@@ -123,7 +126,7 @@ def main():
             trace_sha256=trace_sha,
             commit=args.commit,
             window_info=win_offline,
-            phase_label=phases[win_offline["anchor_step"]] if 0 <= win_offline["anchor_step"] < len(phases) else "",
+            phase_label=phases[anchor_p] if teacher_p_available and 0 <= anchor_p < len(phases) else "",
             selection_mode="offline_clean_repeat",
             is_online=False,
             first_close_horizon=PREDICTION_HORIZON,
@@ -144,8 +147,8 @@ def main():
             prediction_mode=win_online.get("prediction_mode", "observed_close_interception"),
         )
 
-        # Annotate offline proposal
-        anchor_error_p_off = abs(anchor_p - win_offline["anchor_step"]) if anchor_p >= 0 else -1
+        # Annotate offline proposal — Teacher-P is evaluation target, Teacher-R is baseline
+        anchor_error_p_off = abs(anchor_p - win_offline["anchor_step"]) if teacher_p_available else None
         anchor_error_r_off = abs(anchor_r - win_offline["anchor_step"]) if anchor_r >= 0 else -1
 
         proposals.append({
@@ -154,20 +157,21 @@ def main():
             "mode": "offline",
             "teacher_p_anchor": anchor_p,
             "teacher_p_window": f"[{ws_p},{we_p}]" if anchor_p >= 0 else "ABSTAIN",
+            "teacher_reference_unavailable": not teacher_p_available,
             "teacher_r_anchor": anchor_r,
             "teacher_r_window": f"[{ws_r},{we_r}]" if anchor_r >= 0 else "N/A",
             "student_anchor": win_offline["anchor_step"],
             "student_window": f"[{win_offline['window_start']},{win_offline['window_end']}]",
-            "anchor_error_vs_p": anchor_error_p_off,
+            "anchor_error_vs_p": anchor_error_p_off if anchor_error_p_off is not None else "",
             "anchor_error_vs_r": anchor_error_r_off,
-            "teacher_p_abstain": anchor_p < 0,
+            "teacher_p_abstain": not teacher_p_available,
             "n_steps": len(records),
             "abstain": win_offline.get("abstain_reason", ""),
         })
 
         # Annotate online proposal
         online_trigger = win_online.get("trigger_step", -1)
-        anchor_error_p_on = abs(anchor_p - online_trigger) if anchor_p >= 0 and online_trigger >= 0 else -1
+        anchor_error_p_on = abs(anchor_p - online_trigger) if teacher_p_available and online_trigger >= 0 else None
         anchor_error_r_on = abs(anchor_r - online_trigger) if anchor_r >= 0 and online_trigger >= 0 else -1
 
         proposals.append({
@@ -176,13 +180,14 @@ def main():
             "mode": "online",
             "teacher_p_anchor": anchor_p,
             "teacher_p_window": f"[{ws_p},{we_p}]" if anchor_p >= 0 else "ABSTAIN",
+            "teacher_reference_unavailable": not teacher_p_available,
             "teacher_r_anchor": anchor_r,
             "teacher_r_window": f"[{ws_r},{we_r}]" if anchor_r >= 0 else "N/A",
             "student_anchor": online_trigger,
             "student_window": f"[{win_online['window_start']},{win_online['window_end']}]" if online_trigger >= 0 else "NO_TRIGGER",
-            "anchor_error_vs_p": anchor_error_p_on,
+            "anchor_error_vs_p": anchor_error_p_on if anchor_error_p_on is not None else "",
             "anchor_error_vs_r": anchor_error_r_on,
-            "teacher_p_abstain": anchor_p < 0,
+            "teacher_p_abstain": not teacher_p_available,
             "n_steps": len(records),
             "abstain": win_online.get("abstain_reason", ""),
         })

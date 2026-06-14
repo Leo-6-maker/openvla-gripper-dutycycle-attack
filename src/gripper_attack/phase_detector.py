@@ -175,80 +175,80 @@ def _classify_motion_evidence(records: list[dict], anchor_t: int,
                                 min_delta: float = OBJECT_LIFT_MIN_DELTA,
                                 sustained_frames: int = SUSTAINED_MOTION_FRAMES,
                                 eef_near_threshold: float = EEF_TO_OBJ_NEAR_THRESHOLD) -> dict:
-    """Classify post-close object motion into vertical lift, horizontal transport,
-    or no sustained motion.
+    """Classify post-close object motion using CUMULATIVE displacement from anchor.
+
+    Uses cumulative_z = obj_z[t] - obj_z[anchor] rather than per-frame deltas.
+    This prevents control-frequency sensitivity: slow but real lifts that don't
+    exceed min_delta per individual frame are still captured.
 
     Returns dict with:
       motion_evidence_type: one of MOTION_* constants
-      vertical_delta_z: max sustained positive z delta
-      horizontal_delta_xy: max sustained horizontal displacement
-      consecutive_motion_frames: max consecutive frames with motion
+      cumulative_vertical_dz: total positive z displacement from anchor
+      cumulative_horizontal_dxy: total horizontal displacement from anchor
+      sustained_above_threshold_frames: consecutive frames where cumulative_z >= min_delta
       eef_attachment_consistent: whether EEF stayed near object during motion
     """
     T = len(records)
     result = {
         "motion_evidence_type": MOTION_NO_SUSTAINED_MOTION,
-        "vertical_delta_z": 0.0,
-        "horizontal_delta_xy": 0.0,
-        "consecutive_motion_frames": 0,
+        "cumulative_vertical_dz": 0.0,
+        "cumulative_horizontal_dxy": 0.0,
+        "sustained_above_threshold_frames": 0,
         "eef_attachment_consistent": True,
     }
     if anchor_t >= T - sustained_frames:
         return result
 
-    obj_y_before = _safe_float(records[anchor_t].get("obj_y", 0))
-    obj_z_before = _safe_float(records[anchor_t].get("obj_z", 0))
-    z_baseline = obj_z_before
+    anchor_obj_y = _safe_float(records[anchor_t].get("obj_y", 0))
+    anchor_obj_z = _safe_float(records[anchor_t].get("obj_z", 0))
 
-    vertical_consecutive = 0
-    horizontal_consecutive = 0
+    max_cumulative_dz = 0.0
+    max_cumulative_dxy = 0.0
+    vert_above_cons = 0
+    horiz_above_cons = 0
     max_vert_cons = 0
     max_horiz_cons = 0
-    max_dz = 0.0
-    max_dxy = 0.0
 
     for future_t in range(anchor_t + 1, min(anchor_t + lookahead, T)):
         obj_y_after = _safe_float(records[future_t].get("obj_y", 0))
         obj_z_after = _safe_float(records[future_t].get("obj_z", 0))
         eef_to_obj = _safe_float(records[future_t].get("eef_to_obj_distance", 999))
 
-        dy = abs(obj_y_after - obj_y_before)
-        dz = obj_z_after - obj_z_before  # positive = lifted
-
+        # Cumulative displacement from anchor
+        cumulative_dz = obj_z_after - anchor_obj_z
+        cumulative_dy = abs(obj_y_after - anchor_obj_y)
         eef_near = eef_to_obj < eef_near_threshold
 
-        # Vertical lift: sustained positive z with EEF near
-        if dz > min_delta and eef_near:
-            vertical_consecutive += 1
-            max_dz = max(max_dz, obj_z_after - z_baseline)
-        else:
-            vertical_consecutive = 0
+        max_cumulative_dz = max(max_cumulative_dz, cumulative_dz)
+        max_cumulative_dxy = max(max_cumulative_dxy, cumulative_dy)
 
-        # Horizontal transport: sustained xy with EEF near
-        if dy > min_delta and eef_near and dz <= min_delta:
-            horizontal_consecutive += 1
-            max_dxy = max(max_dxy, dy)
+        # Vertical lift: cumulative z >= threshold AND EEF near
+        if cumulative_dz >= min_delta and eef_near:
+            vert_above_cons += 1
         else:
-            horizontal_consecutive = 0
+            vert_above_cons = 0
 
-        max_vert_cons = max(max_vert_cons, vertical_consecutive)
-        max_horiz_cons = max(max_horiz_cons, horizontal_consecutive)
+        # Horizontal transport: cumulative xy >= threshold AND EEF near AND no vertical
+        if cumulative_dy >= min_delta and eef_near and cumulative_dz < min_delta:
+            horiz_above_cons += 1
+        else:
+            horiz_above_cons = 0
+
+        max_vert_cons = max(max_vert_cons, vert_above_cons)
+        max_horiz_cons = max(max_horiz_cons, horiz_above_cons)
 
         if not eef_near:
             result["eef_attachment_consistent"] = False
 
-        obj_y_before = obj_y_after
-        obj_z_before = obj_z_after
-
-    result["vertical_delta_z"] = max_dz
-    result["horizontal_delta_xy"] = max_dxy
+    result["cumulative_vertical_dz"] = max_cumulative_dz
+    result["cumulative_horizontal_dxy"] = max_cumulative_dxy
 
     if max_vert_cons >= sustained_frames:
         result["motion_evidence_type"] = MOTION_SUSTAINED_VERTICAL_LIFT
-        result["consecutive_motion_frames"] = max_vert_cons
+        result["sustained_above_threshold_frames"] = max_vert_cons
     elif max_horiz_cons >= sustained_frames:
         result["motion_evidence_type"] = MOTION_SUSTAINED_HORIZONTAL_TRANSPORT
-        result["consecutive_motion_frames"] = max_horiz_cons
+        result["sustained_above_threshold_frames"] = max_horiz_cons
 
     return result
 

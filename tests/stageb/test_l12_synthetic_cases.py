@@ -529,7 +529,8 @@ def test_sustained_vertical_lift_passes():
         (1, 0.008), (2, 0.016), (3, 0.024)])
     evidence = _classify_motion_evidence(records, 30)
     assert evidence["motion_evidence_type"] == MOTION_SUSTAINED_VERTICAL_LIFT
-    assert evidence["consecutive_motion_frames"] >= 2
+    assert evidence["sustained_above_threshold_frames"] >= 2
+    assert evidence["cumulative_vertical_dz"] > 0.01
 
 
 def test_horizontal_push_not_called_vertical_lift():
@@ -671,3 +672,52 @@ def test_streaming_batch_trigger_parity():
 
     assert win_batch["trigger_step"] == win_stream["trigger_step"], \
         f"Batch trigger={win_batch['trigger_step']}, stream={win_stream['trigger_step']}"
+
+
+# ═══════════════════════════════════════════════════════════════════
+# P1-3: Feature validity consumption by student
+# ═══════════════════════════════════════════════════════════════════
+
+def test_student_abstains_on_invalid_gripper():
+    """Student must hard-abstain when gripper_semantics_valid=0."""
+    records = _make_case_a()
+    # Invalidate gripper at a specific step
+    records[50]["gripper_semantics_valid"] = 0
+    preds = rule_based_close_predictor(records, teacher_anchor=50)
+    assert preds[50]["abstain"] == "gripper_semantics_invalid"
+
+
+def test_student_skips_raw_crossing_when_raw_invalid():
+    """Student disables raw crossing when raw field is missing."""
+    records = _make_case_a()
+    # Remove raw fields
+    records[50]["clean_gripper_raw"] = ""
+    records[50]["clean_gripper_raw_proxy"] = ""
+    preds = rule_based_close_predictor(records, teacher_anchor=50)
+    assert "raw_crossing" in preds[50]["disabled_features"]
+
+
+# ═══════════════════════════════════════════════════════════════════
+# P1-5: Cumulative lift evidence
+# ═══════════════════════════════════════════════════════════════════
+
+def test_slow_cumulative_lift_still_detected():
+    """Slow lift (<5mm/frame) detected via cumulative displacement."""
+    records = _make_motion_trace(close_at=30, z_offsets=[
+        (1, 0.003), (2, 0.006), (3, 0.009), (4, 0.012)])
+    # Per-frame delta is only 3mm (<5mm threshold), but cumulative is 12mm
+    evidence = _classify_motion_evidence(records, 30, min_delta=0.005)
+    assert evidence["motion_evidence_type"] == MOTION_SUSTAINED_VERTICAL_LIFT, \
+        f"Slow cumulative lift should be detected, got {evidence['motion_evidence_type']}"
+    assert evidence["cumulative_vertical_dz"] >= 0.01
+
+
+def test_single_frame_z_jitter_still_fails():
+    """Single frame above cumulative threshold but not sustained → fails."""
+    records = _make_motion_trace(close_at=30, z_offsets=[
+        (1, 0.006), (2, 0.000), (3, 0.000)])
+    # One frame hits cumulative 6mm, but subsequent frames back to baseline
+    # → sustained_above_threshold_frames = 1 < 2
+    evidence = _classify_motion_evidence(records, 30, min_delta=0.005, sustained_frames=2)
+    assert evidence["motion_evidence_type"] != MOTION_SUSTAINED_VERTICAL_LIFT, \
+        f"Single-frame jitter should fail: {evidence['motion_evidence_type']}"

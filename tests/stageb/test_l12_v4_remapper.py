@@ -196,3 +196,94 @@ def test_remapper_version_field():
     finally:
         os.unlink(path)
         if os.path.exists(path + ".out"): os.unlink(path + ".out")
+
+
+# ── P1-1: Valid zero preservation ──
+
+def test_valid_zero_qpos_after_is_preserved():
+    """qpos=0.0 must be preserved, not converted to empty string."""
+    rows = [_base_v4_row(0, qpos=0.0)]
+    rows[0]["gripper_qpos_after"] = "0.0"
+    path = _make_v4_csv(rows)
+    try:
+        result, issues, _ = remap_v4_to_l12(path, path + ".out")
+        assert float(result[0]["gripper_qpos_after"]) == 0.0, \
+            f"Expected 0.0, got '{result[0]['gripper_qpos_after']}'"
+    finally:
+        os.unlink(path)
+        if os.path.exists(path + ".out"): os.unlink(path + ".out")
+
+
+def test_valid_zero_qpos_before_is_preserved():
+    """qpos_before=0.0 preserved (not converted to empty by falsy check)."""
+    rows = [_base_v4_row(0, qpos=0.0)]
+    path = _make_v4_csv(rows)
+    try:
+        result, issues, _ = remap_v4_to_l12(path, path + ".out")
+        assert float(result[0]["gripper_qpos_before"]) == 0.0
+    finally:
+        os.unlink(path)
+        if os.path.exists(path + ".out"): os.unlink(path + ".out")
+
+
+# ── P1-2: Invalid/neutral gap state reset ──
+
+def test_open_to_neutral_to_close_gap():
+    """OPEN → neutral → CLOSE: close_onset marked as after_invalid_gap."""
+    rows = [
+        _base_v4_row(0, env=-1.0, decoded=1),  # OPEN
+        _base_v4_row(1, env=0.0, decoded=0),    # neutral (invalid semantics)
+        _base_v4_row(2, env=1.0, decoded=0),    # CLOSE (after gap)
+    ]
+    path = _make_v4_csv(rows)
+    try:
+        result, issues, _ = remap_v4_to_l12(path, path + ".out")
+        # Step 0: OPEN
+        assert int(result[0]["clean_close"]) == 0, f"step 0 should be OPEN"
+        # Step 1: neutral — invalid semantics
+        assert int(result[1]["gripper_semantics_valid"]) == 0
+        # Step 2: CLOSE after gap — not a normal onset
+        assert int(result[2]["clean_close"]) == 1
+        assert int(result[2]["close_onset"]) == 0  # not normal onset
+        assert int(result[2]["close_onset_after_invalid_gap"]) == 1
+        assert int(result[2]["close_streak"]) == 1  # restarted
+    finally:
+        os.unlink(path)
+        if os.path.exists(path + ".out"): os.unlink(path + ".out")
+
+
+def test_close_to_neutral_to_close_gap():
+    """CLOSE → neutral → CLOSE: streak resets, not bridged across gap."""
+    rows = [
+        _base_v4_row(0, env=1.0, decoded=0),   # CLOSE
+        _base_v4_row(1, env=1.0, decoded=0),   # CLOSE (streak=2)
+        _base_v4_row(2, env=0.0, decoded=0),    # neutral gap
+        _base_v4_row(3, env=1.0, decoded=0),    # CLOSE after gap
+    ]
+    path = _make_v4_csv(rows)
+    try:
+        result, issues, _ = remap_v4_to_l12(path, path + ".out")
+        assert int(result[1]["close_streak"]) == 2  # before gap
+        assert int(result[2]["gripper_semantics_valid"]) == 0  # gap
+        assert int(result[3]["close_streak"]) == 1  # restarted, NOT bridged to 3
+        assert int(result[3]["close_onset_after_invalid_gap"]) == 1
+    finally:
+        os.unlink(path)
+        if os.path.exists(path + ".out"): os.unlink(path + ".out")
+
+
+def test_missing_env_to_close_gap():
+    """Missing env → valid CLOSE: marked after_invalid_gap."""
+    rows = [
+        _base_v4_row(0, env=-1.0, decoded=1),
+    ]
+    rows[0]["clean_gripper_env"] = ""  # missing
+    rows.append(_base_v4_row(1, env=1.0, decoded=0))  # CLOSE
+    path = _make_v4_csv(rows)
+    try:
+        result, issues, _ = remap_v4_to_l12(path, path + ".out")
+        assert int(result[0]["gripper_semantics_valid"]) == 0
+        assert int(result[1]["close_onset_after_invalid_gap"]) == 1
+    finally:
+        os.unlink(path)
+        if os.path.exists(path + ".out"): os.unlink(path + ".out")

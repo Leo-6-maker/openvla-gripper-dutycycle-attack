@@ -38,6 +38,31 @@ def _safe_float(v, default=0.0):
         return default
 
 
+def _field_is_present_and_valid(r: dict, field: str) -> bool:
+    """Check a field is present, non-empty, and non-NaN in the record."""
+    val = r.get(field)
+    if val is None or val == "" or val == "nan" or val == "NaN":
+        return False
+    # Check explicit validity flags when present
+    validity_flag = r.get(f"{field}_valid")
+    if validity_flag is not None and str(validity_flag).strip() in ("0", "False", "false"):
+        return False
+    try:
+        f = float(val)
+        import numpy as np
+        return not np.isnan(f)
+    except (ValueError, TypeError):
+        return False
+
+
+def _check_feature_validity(r: dict, field: str) -> bool:
+    """Check a boolean validity flag field (e.g. gripper_semantics_valid)."""
+    val = r.get(field)
+    if val is None or val == "":
+        return True  # flag absent → assume valid
+    return str(val).strip() not in ("0", "False", "false")
+
+
 def extract_deployment_features(records: list[dict]) -> np.ndarray:
     """Extract deployment-safe feature matrix from clean trace records."""
     T = len(records)
@@ -111,36 +136,52 @@ def rule_based_close_predictor(records: list[dict],
         raw_now = _safe_float(r.get("clean_gripper_raw",
                                      r.get("clean_gripper_raw_proxy", 0.5)))
 
+        # ── Feature validity flags ──
+        gripper_valid = _check_feature_validity(r, "gripper_semantics_valid")
+        qpos_valid = _field_is_present_and_valid(r, "gripper_qpos_before")
+        eef_valid = (_field_is_present_and_valid(r, "eef_x") and
+                     _field_is_present_and_valid(r, "eef_y") and
+                     _field_is_present_and_valid(r, "eef_z"))
+        raw_valid = (_field_is_present_and_valid(r, "clean_gripper_raw") or
+                     _field_is_present_and_valid(r, "clean_gripper_raw_proxy"))
+        disabled_features = []
+
         # ── Precursor-based scoring (no absolute step thresholds) ──
         score = 0.0
 
         # Detect explicit close-event signals
         raw_open_to_close_crossing = False
-        if t >= 1:
+        if t >= 1 and raw_valid:
             raw_prev = _safe_float(visible[t - 1].get("clean_gripper_raw",
                     visible[t - 1].get("clean_gripper_raw_proxy", 0.5)))
             if raw_prev > 0.5 and raw_now <= 0.5:
                 raw_open_to_close_crossing = True
                 score += 1.5
+        elif not raw_valid:
+            disabled_features.append("raw_crossing")
 
         # First close in a streak (potential grasp start, not sustained close)
         if close_streak == 1:
             score += 1.0
 
         # CLOSE onset with gripper not yet responding (pre-grasp close)
-        if close_onset and qpos < 0.005:
+        if close_onset and qpos_valid and qpos < 0.005:
             score += 0.5
 
         # EEF decelerating (approaching grasp point)
-        if t >= 4:
+        if t >= 4 and eef_valid:
             speed_now = _eef_speed(visible, t)
             speed_prev = _eef_speed(visible, t - 1)
             if speed_prev > 0 and speed_now < speed_prev and speed_now < 0.01:
                 score += 0.5
+        elif not eef_valid:
+            disabled_features.append("eef_deceleration")
 
         # Gripper qpos low (physically ready for close/grasp)
-        if qpos < 0.01 and not decoded_open:
+        if qpos_valid and qpos < 0.01 and not decoded_open:
             score += 0.3
+        elif not qpos_valid:
+            disabled_features.append("qpos_ready")
 
         # ── Penalties ──
         # Gripper already open (post-release)
@@ -156,7 +197,9 @@ def rule_based_close_predictor(records: list[dict],
 
         # ── Abstain detection ──
         abstain = ""
-        if decoded_open:
+        if not gripper_valid:
+            abstain = "gripper_semantics_invalid"
+        elif decoded_open:
             abstain = "gripper_already_open"
         elif t < 3:
             abstain = "too_early"
@@ -184,6 +227,7 @@ def rule_based_close_predictor(records: list[dict],
             "will_critical_close_within_horizon": will_close,
             "predicted_close_horizon": close_at - t if close_at > 0 else -1,
             "horizon": horizon,
+            "disabled_features": disabled_features,
         })
 
     return predictions
