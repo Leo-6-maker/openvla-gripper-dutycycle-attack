@@ -1,0 +1,116 @@
+# L12 E4C.2 — Frozen remap + Teacher-P eligibility config
+# Prereg-only. No training. No GPU. No threshold tuning.
+
+stage: E4C.2
+mode: CPU / SSH / deterministic_offline
+authorized_input: tables/e4c_audit/l12_e4c2_input_manifest.csv
+input_manifest_sha256: B11AC1E8DF74F63FD764985FF335A7D6648114AF66045FC34ACA6956E6B85863
+n_input_traces: 402
+n_tasks: 10
+
+remapper:
+  version: rc1a_corrected_v2_e1_5
+  source_file: scripts/stageb/remap_v4_trace_for_l12.py
+  open_convention:
+    raw_gt_05: "OPEN (env=-1; decoded_open=1)"
+    raw_lt_05: "CLOSE (env=+1; decoded_open=0)"
+    raw_eq_05: "boundary (excluded)"
+  invariant_check: "decoded_open_bool == 1 iff clean_gripper_env < -0.5"
+  gap_state_reset: true
+  close_onset_after_invalid_gap_flag: true
+
+teacher_p:
+  source_file: src/gripper_attack/phase_detector.py
+  privilege_level: grasp_only  # placement privilege unavailable
+  thresholds:
+    eef_to_obj_near: 0.08
+    object_lift_min_delta: 0.005
+    object_lift_lookahead: 15
+    sustained_motion_frames: 2
+  criteria:
+    - close_onset_and_clean_close
+    - gripper_not_already_open
+    - grasp_privilege_locally_valid
+    - eef_near_object
+    - sustained_vertical_lift_with_eef_attachment
+  abstain_when:
+    - grasp_privilege_invalid
+    - no_candidate_satisfies_all_criteria
+
+teacher_r:
+  source_file: src/gripper_attack/phase_detector.py
+  rule: first close_onset + clean_close + qpos < 0.01
+
+close_candidate:
+  source_file: src/gripper_attack/critical_close_selector.py
+  selector_version: l12_close_event_interceptor_v4
+  candidate_definition:
+    - raw_open_to_close_crossing
+    - close_onset
+    - close_streak_eq_1
+  features:
+    - total_score
+    - raw_crossing_bonus
+    - close_streak_bonus
+    - close_onset_qpos_bonus
+    - eef_deceleration_bonus
+    - qpos_ready_bonus
+    - eef_speed_now
+    - eef_speed_prev
+    - eef_deceleration_delta
+    - close_streak
+    - raw_crossing
+    - close_onset
+    - qpos
+    - time_since_prev_close
+    - time_since_last_open
+    - candidate_index
+  prediction_horizon: 4
+  tie_tolerance: 0.5
+  min_close_separation: 10
+  event_score_floor: 0.5
+
+field_validity:
+  required_fields:
+    - obj_x
+    - obj_y
+    - obj_z
+    - eef_x
+    - eef_y
+    - eef_z
+    - clean_gripper_env
+    - decoded_open_bool
+    - gripper_qpos_before
+  check_method: row_level_all_rows  # NOT 50-row sample
+  record:
+    - missing_count
+    - parse_failure_count
+    - non_finite_count
+    - invalid_domain_count
+    - first_invalid_row
+
+eligibility_categories:
+  - ELIGIBLE_MULTI_CANDIDATE
+  - ELIGIBLE_SINGLE_CANDIDATE
+  - TEACHER_P_UNAVAILABLE
+  - TEACHER_P_AMBIGUOUS
+  - NO_CLOSE_CANDIDATE
+  - FIELD_VALIDITY_FAIL
+  - OPEN_CONVENTION_FAIL
+  - RC1A_REMAP_FAIL
+  - PROVENANCE_FAIL
+  - OTHER_ABSTAIN
+
+prohibited:
+  - threshold_tuning_from_aggregate
+  - attack_outcome_labels
+  - teacher_p_unavailable_as_negative
+  - bronze_labels_as_final
+  - placement_privilege_fabrication
+  - training
+  - gpu
+  - rollout
+  - new_data_capture
+
+stop_rule:
+  training_started: NO
