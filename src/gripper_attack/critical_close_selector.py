@@ -19,8 +19,9 @@ from .window_contract import WindowProposal
 WINDOW_LEN = 10
 PRE_OFFSET = 2
 HISTORY_LEN = 16
-SELECTOR_VERSION = "l12_critical_close_selector_v1"
-FEATURE_SCHEMA_VERSION = "l12_v1"
+PREDICTION_HORIZON = 4         # H: predict critical close within [t+1, t+H]
+SELECTOR_VERSION = "l12_critical_close_selector_v2"
+FEATURE_SCHEMA_VERSION = "l12_v2"
 
 
 def _sha256_str(s: str) -> str:
@@ -61,54 +62,82 @@ def extract_deployment_features(records: list[dict]) -> np.ndarray:
     return feats
 
 
-def rule_based_close_predictor(records: list[dict]) -> list[dict]:
-    """Rule-based causal predictor: score each step for critical-close likelihood.
+def _eef_speed(records: list[dict], t: int, window: int = 3) -> float:
+    """Compute EEF speed magnitude at step t using `window`-step deltas."""
+    if t < window:
+        return 0.0
+    dx = _safe_float(records[t].get("eef_x", 0)) - _safe_float(records[t - window].get("eef_x", 0))
+    dy = _safe_float(records[t].get("eef_y", 0)) - _safe_float(records[t - window].get("eef_y", 0))
+    dz = _safe_float(records[t].get("eef_z", 0)) - _safe_float(records[t - window].get("eef_z", 0))
+    return float(np.sqrt(dx**2 + dy**2 + dz**2))
 
-    Returns list of per-step dicts with prediction scores.
-    Uses only deployment-safe features from records[:t] at each step.
+
+def rule_based_close_predictor(records: list[dict],
+                                horizon: int = PREDICTION_HORIZON,
+                                teacher_anchor: int = -1) -> list[dict]:
+    """Rule-based causal predictor: at each step t, score the likelihood that
+    a critical CLOSE will occur within [t+1, t+horizon].
+
+    Uses only deployment-safe features from records[:t+1] (strictly causal).
+    Does NOT use absolute step thresholds (t < 60, t > 200).
+    close_onset is a signal, not the dominant +3.0 copy of the teacher rule.
+
+    Args:
+        records: full clean trace.
+        horizon: prediction horizon H (default 4).
+        teacher_anchor: teacher-identified critical-close step.
+            Used ONLY to compute horizon ground-truth labels, NOT for scoring.
+
+    Returns:
+        List of per-step dicts with prediction scores and horizon labels.
     """
     T = len(records)
     predictions = []
 
     for t in range(T):
-        # Only see records[:t] (causal)
         visible = records[:t + 1]
         r = visible[-1]
 
-        # ── Features ──
+        # ── Deployment-safe features ──
         clean_close = int(_safe_float(r.get("clean_close", 0)))
         close_onset = int(_safe_float(r.get("close_onset", 0)))
         close_streak = int(_safe_float(r.get("close_streak", 0)))
         decoded_open = int(_safe_float(r.get("decoded_open_bool", 0)))
         qpos = _safe_float(r.get("gripper_qpos_before", 0))
-        qpos_abs = _safe_float(r.get("qpos_abs_before", 0))
+        raw_now = _safe_float(r.get("clean_gripper_raw", 0.5))
 
-        # ── Scoring ──
+        # ── Precursor-based scoring (no absolute step thresholds) ──
         score = 0.0
 
-        # Strong signal: first CLOSE onset with gripper not yet responding
-        if close_onset and qpos < 0.005:
-            score += 3.0
+        # Gripper raw just crossed OPEN→CLOSE (action just issued)
+        if t >= 1:
+            raw_prev = _safe_float(visible[t - 1].get("clean_gripper_raw", 0.5))
+            if raw_prev > 0.5 and raw_now <= 0.5:
+                score += 1.5
 
-        # CLOSE command with low qpos (gripper truly closed)
-        if clean_close and qpos < 0.01:
+        # First close in a streak (potential grasp start, not sustained close)
+        if close_streak == 1:
             score += 1.0
 
-        # Early in trajectory (pre-grasp phase)
-        if t < 60 and not decoded_open:
+        # CLOSE onset with gripper not yet responding (pre-grasp close)
+        if close_onset and qpos < 0.005:
             score += 0.5
 
-        # CLOSE streak > 2 (sustained CLOSE command)
-        if close_streak > 2:
+        # EEF decelerating (approaching grasp point)
+        if t >= 4:
+            speed_now = _eef_speed(visible, t)
+            speed_prev = _eef_speed(visible, t - 1)
+            if speed_prev > 0 and speed_now < speed_prev and speed_now < 0.01:
+                score += 0.5
+
+        # Gripper qpos low (physically ready for close/grasp)
+        if qpos < 0.01 and not decoded_open:
             score += 0.3
 
-        # Penalize: gripper already open (post-release)
-        if decoded_open or qpos > 0.01:
+        # ── Penalties ──
+        # Gripper already open (post-release)
+        if decoded_open:
             score -= 2.0
-
-        # Penalize: very late in trajectory
-        if t > 200:
-            score -= 1.0
 
         # ── Abstain detection ──
         abstain = ""
@@ -119,6 +148,15 @@ def rule_based_close_predictor(records: list[dict]) -> list[dict]:
         elif score < 0.5:
             abstain = "low_confidence"
 
+        # ── Horizon ground-truth labels (for evaluation only, not scoring) ──
+        will_close = False
+        close_at = -1
+        if teacher_anchor >= 0:
+            # Critical close is within [t+1, t+horizon]
+            if t < teacher_anchor <= t + horizon:
+                will_close = True
+                close_at = teacher_anchor
+
         predictions.append({
             "step": t,
             "score": max(0.0, score),
@@ -126,6 +164,9 @@ def rule_based_close_predictor(records: list[dict]) -> list[dict]:
             "clean_close": clean_close,
             "close_onset": close_onset,
             "qpos": qpos,
+            "will_critical_close_within_horizon": will_close,
+            "predicted_close_horizon": close_at - t if close_at > 0 else -1,
+            "horizon": horizon,
         })
 
     return predictions
@@ -134,11 +175,13 @@ def rule_based_close_predictor(records: list[dict]) -> list[dict]:
 def select_best_window(predictions: list[dict],
                        window_len: int = WINDOW_LEN,
                        pre_offset: int = PRE_OFFSET) -> Optional[dict]:
-    """Select the best window proposal from causal predictions.
+    """Offline clean-repeat: select best window from full-trajectory predictions.
+
+    Picks the highest-scoring non-abstaining step as the anchor.
+    Allowed to scan the full trajectory (offline mode).
 
     Returns dict with window_start, window_end, anchor_step, score, abstain_reason.
     """
-    # Filter non-abstaining predictions
     valid = [p for p in predictions if not p["abstain"]]
 
     if not valid:
@@ -148,7 +191,6 @@ def select_best_window(predictions: list[dict],
             "abstain_reason": "all_abstain",
         }
 
-    # Pick highest score
     best = max(valid, key=lambda p: p["score"])
 
     anchor = best["step"]
@@ -164,6 +206,61 @@ def select_best_window(predictions: list[dict],
     }
 
 
+def select_online_trigger(predictions: list[dict],
+                           score_threshold: float = 1.5,
+                           confirmation_steps: int = 2,
+                           cooldown_steps: int = 20,
+                           window_len: int = WINDOW_LEN,
+                           pre_offset: int = PRE_OFFSET) -> Optional[dict]:
+    """Online streaming: first threshold crossing with K-step confirmation.
+
+    Scans causally through predictions. Triggers when:
+      1. Score crosses `score_threshold` (first crossing only).
+      2. Score stays above threshold for `confirmation_steps` consecutive steps.
+      3. Cooldown: no re-trigger within `cooldown_steps` of last trigger.
+
+    Window start >= trigger_step (cannot start in the past).
+
+    Returns dict with window_start, window_end, trigger_step, score, abstain_reason.
+    If no trigger fires, returns all_abstain sentinel.
+    """
+    triggered = False
+    confirm_count = 0
+    last_trigger = -cooldown_steps
+
+    for p in predictions:
+        t = p["step"]
+        if p["abstain"]:
+            confirm_count = 0
+            continue
+
+        if p["score"] >= score_threshold and t - last_trigger >= cooldown_steps:
+            confirm_count += 1
+            if confirm_count >= confirmation_steps and not triggered:
+                triggered = True
+                trigger_step = t
+                last_trigger = t
+                ws = max(trigger_step, trigger_step - pre_offset)
+                we = ws + window_len
+                return {
+                    "window_start": ws,
+                    "window_end": we,
+                    "anchor_step": trigger_step,
+                    "trigger_step": trigger_step,
+                    "score": p["score"],
+                    "abstain_reason": "",
+                }
+        else:
+            confirm_count = 0
+
+    return {
+        "window_start": -1, "window_end": -1,
+        "anchor_step": -1, "trigger_step": -1,
+        "score": 0.0,
+        "abstain_reason": "no_online_trigger",
+    }
+
+
 def build_clean_proposal(
     task_key: str,
     state_id: int,
@@ -172,11 +269,21 @@ def build_clean_proposal(
     commit: str,
     window_info: dict,
     phase_label: str = "",
+    selection_mode: str = "offline_clean_repeat",
+    is_online: bool = False,
+    first_close_horizon: int = 0,
 ) -> WindowProposal:
-    """Build a frozen WindowProposal from clean-only selector output."""
+    """Build a frozen WindowProposal from clean-only selector output.
+
+    Args:
+        selection_mode: "offline_clean_repeat" or "online_streaming"
+        is_online: True if online streaming selection
+        first_close_horizon: steps from anchor to predicted close (0 if N/A)
+    """
     import hashlib as _hl
     _trace_stem = os.path.basename(trace_path).replace(".csv", "")[-20:]
-    pid = f"{task_key}_s{state_id}_l12v1_{_trace_stem}"
+    _mode_short = "on" if is_online else "off"
+    pid = f"{task_key}_s{state_id}_l12v2_{_mode_short}_{_trace_stem}"
     return WindowProposal(
         proposal_id=pid,
         selector_version=SELECTOR_VERSION,
@@ -189,9 +296,11 @@ def build_clean_proposal(
         window_start=window_info["window_start"],
         window_end=window_info["window_end"],
         anchor_step=window_info["anchor_step"],
-        predicted_first_close_step=window_info["anchor_step"],
+        predicted_first_close_step=window_info.get("trigger_step", window_info["anchor_step"]),
+        first_close_horizon=first_close_horizon,
         phase_label=phase_label,
         phase_confidence=min(1.0, window_info["score"] / 5.0),
+        closure_criticality=window_info.get("score", 0.0) / 5.0,
         selector_score=window_info["score"],
         eligible=window_info["window_start"] >= 0,
         abstain_reason=window_info.get("abstain_reason", ""),
@@ -201,7 +310,9 @@ def build_clean_proposal(
         is_causal=True,
         history_length=HISTORY_LEN,
         selector_config_sha256=_sha256_str(
-            f"{SELECTOR_VERSION}:{WINDOW_LEN}:{PRE_OFFSET}:{HISTORY_LEN}"),
+            f"{SELECTOR_VERSION}:{WINDOW_LEN}:{PRE_OFFSET}:{HISTORY_LEN}:{PREDICTION_HORIZON}"),
         feature_schema_version=FEATURE_SCHEMA_VERSION,
         selector_role="student",
+        selection_mode=selection_mode,
+        is_online=is_online,
     )

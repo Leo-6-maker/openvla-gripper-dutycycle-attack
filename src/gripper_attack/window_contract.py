@@ -50,6 +50,10 @@ class WindowProposal:
     release_safe_score: float = 0.0
     selector_score: float = 0.0
 
+    # ── Selection mode ──
+    selection_mode: str = "offline_clean_repeat"  # "offline_clean_repeat" or "online_streaming"
+    is_online: bool = False
+
     # ── Mechanism ──
     mechanism_type: str = ""
     mechanism_eligible: bool = False
@@ -120,6 +124,8 @@ class WindowProposal:
             "closure_criticality": self.closure_criticality,
             "release_safe_score": self.release_safe_score,
             "selector_score": self.selector_score,
+            "selection_mode": self.selection_mode,
+            "is_online": self.is_online,
             "mechanism_type": self.mechanism_type,
             "mechanism_eligible": self.mechanism_eligible,
             "eligible": self.eligible,
