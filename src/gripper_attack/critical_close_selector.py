@@ -22,8 +22,9 @@ HISTORY_LEN = 16
 PREDICTION_HORIZON = 4         # H: predict critical close within [t+1, t+H]
 TIE_TOLERANCE = 0.5            # score tie tolerance for ambiguous close detection
 MIN_CLOSE_SEPARATION = 10      # steps: min separation to consider two closes distinct
-SELECTOR_VERSION = "l12_close_event_detector_v3"
-FEATURE_SCHEMA_VERSION = "l12_v3"
+EVENT_SCORE_FLOOR = 0.5        # min score for ambiguity consideration
+SELECTOR_VERSION = "l12_close_event_interceptor_v4"
+FEATURE_SCHEMA_VERSION = "l12_v4"
 
 
 def _sha256_str(s: str) -> str:
@@ -111,10 +112,12 @@ def rule_based_close_predictor(records: list[dict],
         # ── Precursor-based scoring (no absolute step thresholds) ──
         score = 0.0
 
-        # Gripper raw just crossed OPEN→CLOSE (action just issued)
+        # Detect explicit close-event signals
+        raw_open_to_close_crossing = False
         if t >= 1:
             raw_prev = _safe_float(visible[t - 1].get("clean_gripper_raw", 0.5))
             if raw_prev > 0.5 and raw_now <= 0.5:
+                raw_open_to_close_crossing = True
                 score += 1.5
 
         # First close in a streak (potential grasp start, not sustained close)
@@ -141,6 +144,13 @@ def rule_based_close_predictor(records: list[dict],
         if decoded_open:
             score -= 2.0
 
+        # ── Explicit close-event candidate flag ──
+        is_close_event_candidate = (
+            raw_open_to_close_crossing
+            or bool(close_onset)
+            or close_streak == 1
+        )
+
         # ── Abstain detection ──
         abstain = ""
         if decoded_open:
@@ -166,6 +176,8 @@ def rule_based_close_predictor(records: list[dict],
             "clean_close": clean_close,
             "close_onset": close_onset,
             "qpos": qpos,
+            "raw_open_to_close_crossing": raw_open_to_close_crossing,
+            "is_close_event_candidate": is_close_event_candidate,
             "will_critical_close_within_horizon": will_close,
             "predicted_close_horizon": close_at - t if close_at > 0 else -1,
             "horizon": horizon,
@@ -176,20 +188,27 @@ def rule_based_close_predictor(records: list[dict],
 
 def _detect_ambiguous_multiple_closes(predictions: list[dict],
                                        tie_tolerance: float = TIE_TOLERANCE,
-                                       min_separation: int = MIN_CLOSE_SEPARATION) -> bool:
-    """Return True if two or more high-score close candidates are far apart
-    with scores within tie_tolerance — selector cannot disambiguate them."""
-    valid = [p for p in predictions if not p["abstain"] and p["score"] >= 0.5]
-    if len(valid) < 2:
+                                       min_separation: int = MIN_CLOSE_SEPARATION,
+                                       event_score_floor: float = EVENT_SCORE_FLOOR) -> bool:
+    """Return True if two or more high-score CLOSE EVENT candidates are far apart
+    with scores within tie_tolerance.
+
+    Only considers steps where is_close_event_candidate=True (raw crossing,
+    close_onset, or close_streak==1). Non-close-event high-score steps
+    (e.g. EEF deceleration alone) do NOT trigger ambiguity.
+    """
+    close_events = [p for p in predictions
+                    if not p["abstain"]
+                    and p.get("is_close_event_candidate", False)
+                    and p["score"] >= event_score_floor]
+    if len(close_events) < 2:
         return False
 
-    # Sort by score descending
-    sorted_valid = sorted(valid, key=lambda p: p["score"], reverse=True)
-    best_score = sorted_valid[0]["score"]
+    sorted_events = sorted(close_events, key=lambda p: p["score"], reverse=True)
+    best_score = sorted_events[0]["score"]
 
-    # Check if another high-score candidate is far away with similar score
-    for p in sorted_valid[1:]:
-        if abs(p["step"] - sorted_valid[0]["step"]) >= min_separation:
+    for p in sorted_events[1:]:
+        if abs(p["step"] - sorted_events[0]["step"]) >= min_separation:
             if abs(p["score"] - best_score) <= tie_tolerance:
                 return True
 
@@ -263,13 +282,24 @@ def select_online_trigger(predictions: list[dict],
     Window start >= trigger_step (cannot start in the past).
 
     Args:
-        mode: "close_interception" (same-step) — the only mode currently
-              implemented. "future_close_forecast" (Mode 2) is not yet built.
+        mode: Must be "close_interception" (the only implemented mode).
+              Raises ValueError for "future_close_forecast", "", or unknown
+              modes — refuses to silently execute wrong behavior.
 
     Returns dict with window_start, window_end, trigger_step, score, abstain_reason,
     and prediction_mode.
     If no trigger fires, returns all_abstain sentinel.
     """
+    allowed_modes = {"close_interception"}
+    if mode not in allowed_modes:
+        if mode == "future_close_forecast":
+            raise ValueError(
+                "future_close_forecast (Mode 2) is not yet implemented. "
+                "Only close_interception (Mode 1) is available.")
+        raise ValueError(
+            f"Unknown online trigger mode: '{mode}'. "
+            f"Allowed: {sorted(allowed_modes)}")
+
     triggered = False
     confirm_count = 0
     last_trigger = -cooldown_steps

@@ -488,3 +488,82 @@ def test_teacher_r_accepts_early_close():
     # This is the documented limitation: Teacher-R confuses spurious early closes
     assert anchor == 4, \
         f"Teacher-R expected 4 (first close onset, even if spurious), got {anchor}"
+
+
+# ═══════════════════════════════════════════════════════════════════
+# A.1.4: Motion evidence type distinction
+# ═══════════════════════════════════════════════════════════════════
+
+from gripper_attack.phase_detector import (
+    _classify_motion_evidence,
+    MOTION_SUSTAINED_VERTICAL_LIFT,
+    MOTION_SUSTAINED_HORIZONTAL_TRANSPORT,
+    MOTION_NO_SUSTAINED_MOTION,
+)
+
+
+def _make_motion_trace(close_at=30, z_offsets=None):
+    """Minimal privileged trace with configurable post-close z/y offsets."""
+    records = [_base_record(t) for t in range(60)]
+    for t in range(60):
+        records[t]["obj_x"] = 0.5
+        records[t]["obj_z"] = 0.05
+        records[t]["obj_y"] = 0.0
+        records[t]["eef_to_obj_distance"] = 0.03
+    r = records[close_at]
+    r["clean_gripper_raw"] = 0.0
+    r["clean_close"] = 1
+    r["close_onset"] = 1
+    r["close_streak"] = 1
+    if z_offsets:
+        for dt, dz in z_offsets:
+            t = close_at + dt
+            if t < 60:
+                records[t]["obj_z"] = 0.05 + dz
+    return records
+
+
+def test_sustained_vertical_lift_passes():
+    """2+ consecutive frames of positive dz with EEF near → vertical lift."""
+    records = _make_motion_trace(close_at=30, z_offsets=[
+        (1, 0.008), (2, 0.016), (3, 0.024)])
+    evidence = _classify_motion_evidence(records, 30)
+    assert evidence["motion_evidence_type"] == MOTION_SUSTAINED_VERTICAL_LIFT
+    assert evidence["consecutive_motion_frames"] >= 2
+
+
+def test_horizontal_push_not_called_vertical_lift():
+    """Horizontal-only displacement without vertical z → NOT vertical lift."""
+    records = _make_motion_trace(close_at=30)
+    # Move only in y (horizontal), z stays flat
+    for dt in [1, 2, 3, 4]:
+        records[30 + dt]["obj_y"] = dt * 0.01  # y increases
+        records[30 + dt]["obj_z"] = 0.05        # z flat
+    evidence = _classify_motion_evidence(records, 30)
+    assert evidence["motion_evidence_type"] != MOTION_SUSTAINED_VERTICAL_LIFT
+    # Should be horizontal transport or no sustained motion
+    assert evidence["motion_evidence_type"] in (
+        MOTION_SUSTAINED_HORIZONTAL_TRANSPORT, MOTION_NO_SUSTAINED_MOTION)
+
+
+def test_single_frame_z_jitter_fails():
+    """Single frame dz > threshold → NOT sustained vertical lift."""
+    records = _make_motion_trace(close_at=30, z_offsets=[
+        (1, 0.006),  # one frame only
+        (2, 0.0),    # back to flat
+    ])
+    evidence = _classify_motion_evidence(records, 30)
+    assert evidence["motion_evidence_type"] != MOTION_SUSTAINED_VERTICAL_LIFT
+
+
+def test_eef_detaches_during_motion_fails():
+    """EEF far from object during z motion → eef_attachment_consistent=False."""
+    records = _make_motion_trace(close_at=30, z_offsets=[
+        (1, 0.008), (2, 0.016), (3, 0.024)])
+    # EEF moves away during lift
+    for dt in [1, 2, 3]:
+        records[30 + dt]["eef_to_obj_distance"] = 0.20  # far
+    evidence = _classify_motion_evidence(records, 30)
+    assert not evidence["eef_attachment_consistent"]
+    # Should NOT report vertical lift (EEF must be near for lift classification)
+    assert evidence["motion_evidence_type"] != MOTION_SUSTAINED_VERTICAL_LIFT

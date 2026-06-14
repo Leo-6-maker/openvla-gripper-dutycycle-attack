@@ -80,30 +80,73 @@ class WindowProposal:
     selector_role: str = "student"
 
     def validate(self) -> list[str]:
-        """Return list of contract violations (empty = valid)."""
+        """Return list of contract violations (empty = valid).
+
+        Cross-field consistency checks:
+          - selection_mode and is_online must agree
+          - offline_clean_repeat must not claim online provenance
+          - online_streaming must have selection_is_causal=True
+          - observed_close_interception: horizon==0, predicted_close==anchor
+          - future_close_forecast: REJECTED (not yet implemented)
+        """
         issues = []
+        # ── Identity ──
         if not self.proposal_id:
             issues.append("proposal_id:EMPTY")
+        if not self.source_commit:
+            issues.append("source_commit:EMPTY")
+
+        # ── Clean-only invariants ──
         if not self.uses_clean_only:
             issues.append("uses_clean_only:FALSE")
         if self.uses_attack_outcome:
             issues.append("uses_attack_outcome:TRUE")
         if self.uses_random_outcome:
             issues.append("uses_random_outcome:TRUE")
+
+        # ── Student constraints ──
         if self.selector_role == "student" and self.uses_privileged_state:
             issues.append("student_uses_privileged_state")
         if self.selector_role == "student" and not self.features_are_causal:
             issues.append("student_features_not_causal")
-        # Offline mode: features_are_causal=True, selection_is_causal=False (OK)
-        # Online mode: selection_is_causal must be True
-        if self.is_online and not self.selection_is_causal:
-            issues.append("online_mode_requires_selection_is_causal")
+
+        # ── Window bounds ──
         if self.window_start < 0:
             issues.append("window_start:NEGATIVE")
-        if self.window_end <= self.window_start:
+        if self.window_end <= self.window_start and self.window_start >= 0:
             issues.append("window_end:NOT_GT_START")
-        if not self.source_commit:
-            issues.append("source_commit:EMPTY")
+
+        # ── Cross-field: selection_mode ↔ is_online ──
+        if self.selection_mode == "offline_clean_repeat" and self.is_online:
+            issues.append("offline_mode_is_online:TRUE")
+        if self.selection_mode == "online_streaming" and not self.is_online:
+            issues.append("online_mode_is_online:FALSE")
+
+        # ── Cross-field: offline mode provenance ──
+        if self.selection_mode == "offline_clean_repeat":
+            if self.selection_is_causal:
+                issues.append("offline_mode_selection_is_causal:TRUE")
+
+        # ── Cross-field: online mode provenance ──
+        if self.is_online:
+            if not self.selection_is_causal:
+                issues.append("online_mode_requires_selection_is_causal")
+
+        # ── Cross-field: prediction_mode consistency ──
+        if self.prediction_mode == "observed_close_interception":
+            if self.first_close_horizon != 0:
+                issues.append("interception_mode_horizon:NONZERO")
+            if self.predicted_first_close_step != self.anchor_step:
+                issues.append("interception_mode_predicted_close:MISMATCH_ANCHOR")
+            if not self.is_online:
+                issues.append("interception_mode_requires_online")
+        elif self.prediction_mode == "future_close_forecast":
+            # Mode 2 not implemented — reject any proposal claiming it
+            issues.append("future_close_forecast:NOT_IMPLEMENTED")
+        elif self.prediction_mode:
+            # Unknown non-empty prediction_mode
+            issues.append(f"prediction_mode:UNKNOWN_{self.prediction_mode}")
+
         return issues
 
     def is_valid(self) -> bool:

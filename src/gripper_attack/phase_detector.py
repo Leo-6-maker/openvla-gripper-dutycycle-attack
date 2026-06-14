@@ -56,6 +56,12 @@ DEPLOYMENT_SAFE_FIELDS = [
 EEF_TO_OBJ_NEAR_THRESHOLD = 0.08       # meters: EEF within 8cm of object
 OBJECT_LIFT_MIN_DELTA = 0.005           # meters: 5mm movement = lift evidence
 OBJECT_LIFT_LOOKAHEAD = 15              # steps: look ahead for lift after close
+SUSTAINED_MOTION_FRAMES = 2             # consecutive frames for robust evidence
+
+# ── Motion evidence types ──
+MOTION_SUSTAINED_VERTICAL_LIFT = "sustained_vertical_lift"
+MOTION_SUSTAINED_HORIZONTAL_TRANSPORT = "sustained_horizontal_transport"
+MOTION_NO_SUSTAINED_MOTION = "no_sustained_motion"
 
 
 def _safe_float(v, default=0.0):
@@ -107,26 +113,43 @@ def _check_local_privileged_fields(records: list[dict], t: int,
     return True
 
 
-def _check_sustained_object_lift(records: list[dict], anchor_t: int,
-                                  lookahead: int = OBJECT_LIFT_LOOKAHEAD,
-                                  min_delta: float = OBJECT_LIFT_MIN_DELTA,
-                                  sustained_frames: int = 2) -> bool:
-    """Robust lift: object displacement sustained for >= `sustained_frames`
-    consecutive frames, with EEF remaining near object during movement.
+def _classify_motion_evidence(records: list[dict], anchor_t: int,
+                                lookahead: int = OBJECT_LIFT_LOOKAHEAD,
+                                min_delta: float = OBJECT_LIFT_MIN_DELTA,
+                                sustained_frames: int = SUSTAINED_MOTION_FRAMES,
+                                eef_near_threshold: float = EEF_TO_OBJ_NEAR_THRESHOLD) -> dict:
+    """Classify post-close object motion into vertical lift, horizontal transport,
+    or no sustained motion.
 
-    Requires:
-      - Object displacement > min_delta per frame for sustained_frames frames
-      - EEF-to-object distance stays < EEF_TO_OBJ_NEAR_THRESHOLD during movement
-      - Primary axis is object_z (vertical lift) for pick-and-place
+    Returns dict with:
+      motion_evidence_type: one of MOTION_* constants
+      vertical_delta_z: max sustained positive z delta
+      horizontal_delta_xy: max sustained horizontal displacement
+      consecutive_motion_frames: max consecutive frames with motion
+      eef_attachment_consistent: whether EEF stayed near object during motion
     """
     T = len(records)
+    result = {
+        "motion_evidence_type": MOTION_NO_SUSTAINED_MOTION,
+        "vertical_delta_z": 0.0,
+        "horizontal_delta_xy": 0.0,
+        "consecutive_motion_frames": 0,
+        "eef_attachment_consistent": True,
+    }
     if anchor_t >= T - sustained_frames:
-        return False
+        return result
 
     obj_y_before = _safe_float(records[anchor_t].get("obj_y", 0))
     obj_z_before = _safe_float(records[anchor_t].get("obj_z", 0))
+    z_baseline = obj_z_before
 
-    consecutive = 0
+    vertical_consecutive = 0
+    horizontal_consecutive = 0
+    max_vert_cons = 0
+    max_horiz_cons = 0
+    max_dz = 0.0
+    max_dxy = 0.0
+
     for future_t in range(anchor_t + 1, min(anchor_t + lookahead, T)):
         obj_y_after = _safe_float(records[future_t].get("obj_y", 0))
         obj_z_after = _safe_float(records[future_t].get("obj_z", 0))
@@ -135,19 +158,58 @@ def _check_sustained_object_lift(records: list[dict], anchor_t: int,
         dy = abs(obj_y_after - obj_y_before)
         dz = obj_z_after - obj_z_before  # positive = lifted
 
-        # Must have sustained displacement AND EEF proximity
-        if (dy > min_delta or dz > min_delta) and eef_to_obj < EEF_TO_OBJ_NEAR_THRESHOLD:
-            consecutive += 1
-            if consecutive >= sustained_frames:
-                return True
-        else:
-            consecutive = 0
+        eef_near = eef_to_obj < eef_near_threshold
 
-        # Update baseline for next frame delta
+        # Vertical lift: sustained positive z with EEF near
+        if dz > min_delta and eef_near:
+            vertical_consecutive += 1
+            max_dz = max(max_dz, obj_z_after - z_baseline)
+        else:
+            vertical_consecutive = 0
+
+        # Horizontal transport: sustained xy with EEF near
+        if dy > min_delta and eef_near and dz <= min_delta:
+            horizontal_consecutive += 1
+            max_dxy = max(max_dxy, dy)
+        else:
+            horizontal_consecutive = 0
+
+        max_vert_cons = max(max_vert_cons, vertical_consecutive)
+        max_horiz_cons = max(max_horiz_cons, horizontal_consecutive)
+
+        if not eef_near:
+            result["eef_attachment_consistent"] = False
+
         obj_y_before = obj_y_after
         obj_z_before = obj_z_after
 
-    return False
+    result["vertical_delta_z"] = max_dz
+    result["horizontal_delta_xy"] = max_dxy
+
+    if max_vert_cons >= sustained_frames:
+        result["motion_evidence_type"] = MOTION_SUSTAINED_VERTICAL_LIFT
+        result["consecutive_motion_frames"] = max_vert_cons
+    elif max_horiz_cons >= sustained_frames:
+        result["motion_evidence_type"] = MOTION_SUSTAINED_HORIZONTAL_TRANSPORT
+        result["consecutive_motion_frames"] = max_horiz_cons
+
+    return result
+
+
+def _check_sustained_object_lift(records: list[dict], anchor_t: int,
+                                  lookahead: int = OBJECT_LIFT_LOOKAHEAD,
+                                  min_delta: float = OBJECT_LIFT_MIN_DELTA,
+                                  sustained_frames: int = SUSTAINED_MOTION_FRAMES) -> bool:
+    """Robust lift: object VERTICAL displacement sustained for >= `sustained_frames`
+    consecutive frames, with EEF remaining near object during movement.
+
+    This is equivalent to _classify_motion_evidence returning
+    MOTION_SUSTAINED_VERTICAL_LIFT. Horizontal-only transport does NOT qualify.
+    """
+    evidence = _classify_motion_evidence(
+        records, anchor_t, lookahead=lookahead, min_delta=min_delta,
+        sustained_frames=sustained_frames)
+    return evidence["motion_evidence_type"] == MOTION_SUSTAINED_VERTICAL_LIFT
 
 
 def compute_eef_velocity(records: list[dict], window: int = 3) -> list[float]:
@@ -250,9 +312,12 @@ def teacher_privileged_critical_close_anchor(records: list[dict]) -> int:
       1. Privileged fields are locally valid at the candidate close
          (obj_x, obj_y, obj_z, eef_to_obj_distance — not NaN, not empty)
       2. EEF is near the object (eef_to_obj_distance < threshold)
-      3. The CLOSE is followed by sustained object lift (>=2 consecutive
-         frames of displacement with EEF remaining near object)
+      3. The CLOSE is followed by sustained VERTICAL lift (>=2 consecutive
+         frames of positive z with EEF remaining near object)
       4. Gripper is not already open
+
+    Horizontal-only transport does NOT qualify as lift evidence.
+    See _classify_motion_evidence() for the structured motion audit.
 
     Abstains (returns -1) if:
       - Global privileged field check fails
@@ -287,7 +352,8 @@ def teacher_privileged_critical_close_anchor(records: list[dict]) -> int:
         if eef_to_obj > EEF_TO_OBJ_NEAR_THRESHOLD:
             continue
 
-        # Must have sustained object lift with EEF proximity
+        # Must have sustained VERTICAL lift with EEF proximity
+        # (horizontal-only transport does not qualify)
         if not _check_sustained_object_lift(records, t):
             continue
 

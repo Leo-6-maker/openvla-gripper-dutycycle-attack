@@ -134,3 +134,56 @@ def test_prediction_mode_roundtrip():
     d = p.to_dict()
     p2 = WindowProposal.from_dict(d)
     assert p2.prediction_mode == "observed_close_interception"
+
+
+def test_offline_mode_rejects_selection_is_causal_true():
+    """offline_clean_repeat must NOT have selection_is_causal=True."""
+    p = _valid_proposal(selection_mode="offline_clean_repeat", is_online=False,
+                        selection_is_causal=True, features_are_causal=True)
+    assert not p.is_valid()
+    assert any("offline_mode_selection_is_causal" in i for i in p.validate())
+
+
+def test_online_mode_rejects_is_online_false():
+    """online_streaming must have is_online=True."""
+    p = _valid_proposal(selection_mode="online_streaming", is_online=False,
+                        features_are_causal=True, selection_is_causal=True)
+    assert not p.is_valid()
+    assert any("online_mode_is_online" in i for i in p.validate())
+
+
+def test_online_mode_rejects_nonzero_horizon_for_interception():
+    """observed_close_interception with non-zero horizon is invalid."""
+    p = _valid_proposal(selection_mode="online_streaming", is_online=True,
+                        features_are_causal=True, selection_is_causal=True,
+                        prediction_mode="observed_close_interception",
+                        first_close_horizon=4)
+    assert not p.is_valid()
+    assert any("interception_mode_horizon" in i for i in p.validate())
+
+
+def test_future_forecast_rejected_until_implemented():
+    """Any proposal claiming future_close_forecast must be rejected."""
+    p = _valid_proposal(prediction_mode="future_close_forecast")
+    assert not p.is_valid()
+    assert any("future_close_forecast:NOT_IMPLEMENTED" in i for i in p.validate())
+
+    p2 = _valid_proposal(selection_mode="online_streaming", is_online=True,
+                         features_are_causal=True, selection_is_causal=True,
+                         prediction_mode="future_close_forecast")
+    assert not p2.is_valid()
+    assert any("future_close_forecast:NOT_IMPLEMENTED" in i for i in p2.validate())
+
+
+def test_selection_mode_and_is_online_must_agree():
+    """offline with is_online=True is invalid."""
+    p = _valid_proposal(selection_mode="offline_clean_repeat", is_online=True)
+    assert not p.is_valid()
+    assert any("offline_mode_is_online" in i for i in p.validate())
+
+
+def test_unknown_prediction_mode_rejected():
+    """Non-empty unknown prediction_mode must be caught."""
+    p = _valid_proposal(prediction_mode="some_future_v3")
+    assert not p.is_valid()
+    assert any("prediction_mode:UNKNOWN" in i for i in p.validate())

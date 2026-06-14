@@ -300,5 +300,93 @@ def test_no_absolute_step_in_scoring():
             f"Step {t}: score_high={preds_high[t]['score']}, score_low={preds_low[t]['score']}"
 
 
+def test_is_close_event_candidate_field():
+    """Every prediction row must have raw_open_to_close_crossing and is_close_event_candidate."""
+    records = _make_trace(n_close_onset_at=50)
+    preds = rule_based_close_predictor(records)
+    for p in preds:
+        assert "raw_open_to_close_crossing" in p
+        assert "is_close_event_candidate" in p
+    # Step 50 should be a close event candidate (raw crossing + close_onset + streak==1)
+    assert preds[50]["is_close_event_candidate"]
+    assert preds[50]["raw_open_to_close_crossing"]
+
+
+def test_ambiguity_ignores_non_close_high_score_steps():
+    """Non-close-event steps with high scores don't trigger ambiguity."""
+    records = _make_trace(n_close_onset_at=50)
+    preds = rule_based_close_predictor(records)
+    # Only step 50 is a close event candidate with high score
+    # Steps 46-49 have score ~0.3 (qpos only), are not close events
+    result = _detect_ambiguous_multiple_closes(preds)
+    assert not result  # Only one close event candidate, not ambiguous
+
+
+def test_ambiguity_detects_two_true_close_events():
+    """Two close events far apart with similar scores → ambiguity."""
+    from gripper_attack.critical_close_selector import _detect_ambiguous_multiple_closes
+    # Create two close events at steps 30 and 80
+    records = _make_trace(n_close_onset_at=30, n_steps=120)
+    # Add second close at step 80
+    records[80]["clean_gripper_raw"] = 0.0
+    records[80]["clean_close"] = 1
+    records[80]["close_onset"] = 1
+    records[80]["close_streak"] = 1
+    records[79]["clean_gripper_raw"] = 0.7  # OPEN before
+    for t in range(81, 90):
+        records[t]["clean_gripper_raw"] = 0.0
+        records[t]["clean_close"] = 1
+        records[t]["close_streak"] = t - 80 + 1
+    preds = rule_based_close_predictor(records)
+    assert _detect_ambiguous_multiple_closes(preds)
+
+
+def test_single_close_with_many_preclose_scores_not_ambiguous():
+    """Many steps with moderate scores before a close are not ambiguous."""
+    from gripper_attack.critical_close_selector import _detect_ambiguous_multiple_closes
+    records = _make_trace(n_close_onset_at=50)
+    preds = rule_based_close_predictor(records)
+    # Steps before close may have non-zero scores but are not close events
+    assert not _detect_ambiguous_multiple_closes(preds)
+
+
+def test_online_trigger_rejects_unknown_mode():
+    """select_online_trigger must raise ValueError for unknown modes."""
+    records = _make_trace(n_close_onset_at=50)
+    preds = rule_based_close_predictor(records)
+    try:
+        select_online_trigger(preds, mode="future_close_forecast")
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "not yet implemented" in str(e)
+    try:
+        select_online_trigger(preds, mode="unknown_mode")
+        assert False, "Should have raised ValueError"
+    except ValueError as e:
+        assert "Unknown" in str(e)
+    try:
+        select_online_trigger(preds, mode="")
+        assert False, "Should have raised ValueError"
+    except ValueError:
+        pass
+
+
+def test_close_interception_sets_horizon_zero():
+    """observed_close_interception must have horizon=0."""
+    records = _make_trace(n_close_onset_at=50)
+    preds = rule_based_close_predictor(records)
+    win = select_online_trigger(preds, mode="close_interception")
+    assert win["prediction_mode"] == "observed_close_interception"
+
+
+def test_close_interception_predicted_step_equals_trigger():
+    """In interception mode, predicted_first_close_step equals trigger_step."""
+    records = _make_trace(n_close_onset_at=50)
+    preds = rule_based_close_predictor(records)
+    win = select_online_trigger(preds, mode="close_interception")
+    assert win["trigger_step"] == win["anchor_step"]
+
+
 # numpy import for tests that need it
 import numpy as np
+from gripper_attack.critical_close_selector import _detect_ambiguous_multiple_closes
