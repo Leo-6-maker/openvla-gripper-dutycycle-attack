@@ -1,0 +1,13 @@
+task_key,state_id,teacher_p_available,teacher_p_anchor,teacher_p_score,teacher_r_anchor,teacher_r_score,online_first_trigger,trigger_score,best_candidate_step,best_candidate_score,failure_classification
+butter,2,True,68,3.8,4,3.3,4,3.3,68,3.8,first_hit_policy_failure__critical_ranked_higher_but_later
+butter,1,True,72,3.3,6,3.3,6,3.3,10,3.8,exact_score_collision__first_hit_picks_earlier
+cream_cheese,2,True,63,3.8,59,3.3,59,3.3,63,3.8,first_hit_policy_failure__critical_ranked_higher_but_later
+cream_cheese,1,True,54,3.3,8,3.3,8,3.3,113,3.8,exact_score_collision__first_hit_picks_earlier
+bbq_sauce,0,True,85,3.3,52,3.8,52,3.8,52,3.8,spurious_candidate_ranked_higher
+bbq_sauce,2,False,-1,,49,3.3,49,3.3,75,3.8,teacher_reference_unavailable
+chocolate_pudding,2,True,58,3.3,58,3.3,58,3.3,154,3.8,exact_score_collision__first_hit_picks_earlier
+chocolate_pudding,1,False,-1,,12,3.3,12,3.3,12,3.3,teacher_reference_unavailable
+ketchup,2,True,56,3.3,0,1.8,56,3.3,56,3.3,correct_near_anchor
+ketchup,3,True,55,3.3,55,3.3,55,3.3,145,3.8,exact_score_collision__first_hit_picks_earlier
+alphabet_soup,2,True,55,3.3,55,3.3,55,3.3,55,3.3,correct_near_anchor
+alphabet_soup,1,True,122,3.3,62,3.3,62,3.3,89,3.8,exact_score_collision__first_hit_picks_earlier
