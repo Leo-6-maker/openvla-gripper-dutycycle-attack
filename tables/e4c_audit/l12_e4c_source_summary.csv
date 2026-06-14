@@ -1,0 +1,6 @@
+source,n_all_csv,n_trace_regex,n_schema_pass
+stageb_s20k_clean_expansion_20260613,16,16,16
+stageb_s20i_clean_expansion_20260612,5,5,5
+stageb_s20m4_clean_scan_20260613,382,381,381
+stageb_s20e_mainline_official_closure_20260611,3,0,0
+smoke,3,3,0

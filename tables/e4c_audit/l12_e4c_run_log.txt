@@ -1,0 +1,13 @@
+E4C.1 RUN LOG
+start: 2026-06-14T17:43:47.973172+00:00
+end: 2026-06-14T18:10:08.262269+00:00
+sources_reachable: 5/5
+total_csv: 409
+trace_regex_match: 405
+nontrace_excluded: 4
+schema_pass: 402
+schema_fail: 3
+unique_sha: 402
+sha_duplicate_files: 0
+has_target_fields: 0
+unique_tasks: 10
