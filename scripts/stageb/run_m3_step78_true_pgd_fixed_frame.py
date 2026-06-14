@@ -46,6 +46,7 @@ from gripper_attack.attack_adapter import (  # noqa: E402
 from gripper_attack.execution_target import (  # noqa: E402
     TARGET_31744,
     target_token_cw_loss_and_stats,
+    target_token_logratio_loss_and_stats,
 )
 from gripper_attack.m3_controls import (  # noqa: E402
     project_and_cast_processor_values,
@@ -225,6 +226,7 @@ def official_decode(
     target_token_id: int,
     margin: float,
     tolerance: float,
+    objective: str = "autoregressive_prefix_gripper_target_token_cw_v1",
 ) -> dict[str, Any]:
     input_ids = adv_inputs["input_ids"]
     pixel_values = adv_inputs["pixel_values"]
@@ -240,7 +242,10 @@ def official_decode(
     tokens = extract_exact_new_tokens(gen.sequences, prompt_len=int(input_ids.shape[1]), expected_new_tokens=int(action_dim))
     score_row = gen.scores[-1][0].detach().float().cpu()
     invariant = validate_processed_argmax_matches_emitted(score_row, int(tokens[-1]), tolerance=float(tolerance))
-    _, stats = target_token_cw_loss_and_stats(score_row, target_token_id=int(target_token_id), margin=float(margin))
+    if str(objective) == "autoregressive_prefix_gripper_target_token_logratio_v2":
+        _, stats = target_token_logratio_loss_and_stats(score_row, target_token_id=int(target_token_id))
+    else:
+        _, stats = target_token_cw_loss_and_stats(score_row, target_token_id=int(target_token_id), margin=float(margin))
     vocab_eff = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of)
     audit = generation_score_audit_from_row(
         score_row,
@@ -390,7 +395,7 @@ def run_rand20(
             target_token_id=int(target_token_id),
             margin=float(margin),
         )
-        score = float(stats["target_minus_best_competitor_margin"])
+        score = float(stats.get("target_objective_margin", stats["target_minus_best_competitor_margin"]))
         scores.append(score)
         inputs_by_id[idx] = cand_inputs
         candidate_rows.append(
@@ -400,6 +405,8 @@ def run_rand20(
                 "candidate_seed": int(cand_seed),
                 "selection_metric": "surrogate_target31744_margin",
                 "surrogate_target31744_margin": score,
+                "surrogate_target31744_best_competitor_margin": float(stats["target_minus_best_competitor_margin"]),
+                "surrogate_target31744_logratio_margin": stats.get("target_minus_competitor_logsumexp_margin", ""),
                 "delta_sha256": tensor_sha256((projected - x).detach().float()),
                 "processor_input_sha256": tensor_sha256(projected.detach()),
                 "budget_quantized_correction_count": int(corrections),
@@ -441,8 +448,12 @@ def collect_condition_row(
         "official_target31744_score": stats["target_token_score"],
         "official_best_competitor_token": stats["best_competitor_token_id"],
         "official_best_competitor_score": stats["best_competitor_score"],
-        "official_target31744_margin": stats["target_minus_best_competitor_margin"],
-        "surrogate_target31744_margin": "" if surrogate is None else surrogate["target_minus_best_competitor_margin"],
+        "official_target31744_margin": stats.get("target_objective_margin", stats["target_minus_best_competitor_margin"]),
+        "official_target31744_best_competitor_margin": stats["target_minus_best_competitor_margin"],
+        "official_target31744_logratio_margin": stats.get("target_minus_competitor_logsumexp_margin", ""),
+        "surrogate_target31744_margin": "" if surrogate is None else surrogate.get("target_objective_margin", surrogate["target_minus_best_competitor_margin"]),
+        "surrogate_target31744_best_competitor_margin": "" if surrogate is None else surrogate["target_minus_best_competitor_margin"],
+        "surrogate_target31744_logratio_margin": "" if surrogate is None else surrogate.get("target_minus_competitor_logsumexp_margin", ""),
         "arm_prefix_match_count": "" if arm_match is None else int(arm_match[0]),
         "arm_prefix_match_denominator": "" if arm_match is None else int(arm_match[1]),
         "processor_linf": "" if processor_linf is None else float(processor_linf),
@@ -517,6 +528,7 @@ def run_capture_input(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
         target_token_id=int(cfg["attack_optimizer"]["target_token_id"]),
         margin=float(cfg["attack_optimizer"]["gripper_margin"]),
         tolerance=float(cfg["gates"]["score_tie_tolerance"]),
+        objective=str(cfg["attack_optimizer"]["objective"]),
     )
     write_json(
         gen_path,
@@ -583,6 +595,7 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
         target_token_id=int(cfg["attack_optimizer"]["target_token_id"]),
         margin=float(cfg["attack_optimizer"]["gripper_margin"]),
         tolerance=float(cfg["gates"]["score_tie_tolerance"]),
+        objective=str(cfg["attack_optimizer"]["objective"]),
     )
     clean_gen = type("CleanGen", (), {})()
     clean_gen.sequences = torch.tensor(
@@ -632,6 +645,7 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
         target_token_id=int(cfg["attack_optimizer"]["target_token_id"]),
         margin=float(cfg["attack_optimizer"]["gripper_margin"]),
         tolerance=float(cfg["gates"]["score_tie_tolerance"]),
+        objective=str(cfg["attack_optimizer"]["objective"]),
     )
     clean_preflight = compare_surrogate_official(clean_surrogate, clean_official, tolerance=float(args.preflight_tolerance))
     delta0_preflight = compare_surrogate_official(delta0_surrogate, delta0_official, tolerance=float(args.preflight_tolerance))
@@ -706,6 +720,7 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
         target_token_id=int(cfg["attack_optimizer"]["target_token_id"]),
         margin=float(cfg["attack_optimizer"]["gripper_margin"]),
         tolerance=float(cfg["gates"]["score_tie_tolerance"]),
+        objective=str(cfg["attack_optimizer"]["objective"]),
     )
     true_surrogate = true_debug.get("generated_prefix_gripper_stats_final", {})
     arm_match = (int(true_debug.get("arm_prefix_match_count", 0) or 0), int(true_debug.get("arm_prefix_match_denominator", 0) or 0))
@@ -752,6 +767,7 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
         target_token_id=int(cfg["attack_optimizer"]["target_token_id"]),
         margin=float(cfg["attack_optimizer"]["gripper_margin"]),
         tolerance=float(cfg["gates"]["score_tie_tolerance"]),
+        objective=str(cfg["attack_optimizer"]["objective"]),
     )
     rand_selected = rand_candidates[int(rand_info["selected_candidate"])]
     condition_rows.append(
@@ -791,6 +807,7 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
         target_token_id=int(cfg["attack_optimizer"]["target_token_id"]),
         margin=float(cfg["attack_optimizer"]["gripper_margin"]),
         tolerance=float(cfg["gates"]["score_tie_tolerance"]),
+        objective=str(cfg["attack_optimizer"]["objective"]),
     )
     condition_rows.append(
         collect_condition_row(
