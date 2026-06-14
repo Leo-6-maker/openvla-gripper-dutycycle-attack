@@ -1,0 +1,2 @@
+total_traces,emitted_decisions,no_decision,overall_near_correct,conditional_near_correct,conditional_denominator,avg_delay_among_emitted
+10,6,4,3,3,6,51.3
