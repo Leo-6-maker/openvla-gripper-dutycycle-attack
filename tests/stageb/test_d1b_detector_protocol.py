@@ -172,8 +172,8 @@ class TestModelArchitecture:
 
     def test_seed_reproducibility(self):
         torch.manual_seed(TRAINING_SEED)
-        m1 = CandidateRanker(n_features=16)
+        m1 = CandidateRanker(n_features=16).eval()
         torch.manual_seed(TRAINING_SEED)
-        m2 = CandidateRanker(n_features=16)
+        m2 = CandidateRanker(n_features=16).eval()
         x = torch.randn(3, 16)
         assert torch.allclose(m1(x), m2(x)), "Models not reproducible with same seed"
