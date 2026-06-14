@@ -1,2 +1,12 @@
 check,detail,violation
-ALL_CHECKS,no leakage detected,False
+trace_id_across_split_summary,"checked 131 traces, 0 violations",False
+logical_group_across_split_summary,"checked 131 groups, 0 violations",False
+task_state_across_split_summary,"checked 131 task-states, 0 violations",False
+source_sha256_across_split_summary,"checked 131 unique SHAs, 0 violations",False
+source_path_across_split_summary,"checked 131 unique paths, 0 violations",False
+candidate_count,"expected 760, got 760",False
+positive_count_summary,0 traces with != 1 positive,False
+candidate_split_membership,0 orphan candidates,False
+split_source_dir_train,"{'stageb_s20i_clean_expansion_20260612': 2, 'stageb_s20m4_clean_scan_20260613': 79, 'stageb_s20k_clean_expansion_20260613': 9}",False
+split_source_dir_val,{'stageb_s20m4_clean_scan_20260613': 20},False
+split_source_dir_test,{'stageb_s20m4_clean_scan_20260613': 21},False

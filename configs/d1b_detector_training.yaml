@@ -1,10 +1,14 @@
-# D1b — DeepSeek Learned Detector Training Config (PREREG ONLY)
+# D1b.1 — Learned Critical-CLOSE Candidate Ranker Training Config
 # Frozen 2026-06-15. No training executed. No GPU authorized.
 # All values preregistered before seeing validation/test results.
+# THIS IS AN OFFLINE CANDIDATE RANKER, NOT AN ONLINE DETECTOR.
 
-stage: D1b
+stage: D1b.1
 mode: prereg_only
 training_authorized: false
+scientific_scope: offline_per_trace_candidate_ranker  # NOT online detector
+coverage: 100_percent  # always emits highest-scoring candidate, no threshold
+experiment_type: single_seed_feasibility_canary  # multi-seed deferred to D2
 
 # ── Data ──
 data:
@@ -102,9 +106,37 @@ evaluation:
 checkpoint:
   selection_metric: val_per_trace_teacher_p_top1_accuracy  # highest
   tiebreak_1: val_mean_absolute_timing_error  # lower
-  tiebreak_2: earlier_epoch  # lower
-  threshold_determination: validation_set_only
-  threshold_method: max_val_metric  # threshold = best validation top-1 accuracy score
+  tiebreak_2: earlier_epoch  # higher epoch preferred
+  tie_tolerance: 0.001  # score difference below this → tie
+  # NO THRESHOLD: primary experiment is offline ranker with 100% coverage.
+  # Threshold/abstain is deferred to a separate preregistered experiment.
+
+# ── Tie Handling (frozen) ──
+tie_handling:
+  tolerance: 0.001
+  top1_definition: "n_higher == 0 AND n_equal == 1 (unique highest score)"
+  top2_definition: "n_higher <= 1 (among top 2)"
+  ties_for_max: ">1 candidate at max score → top-1 incorrect"
+  baseline_tie_rule: "identical tolerance and definition as learned model"
+
+# ── Zero-Variance Features ──
+zero_variance:
+  handling: "if stdev < 1e-8 → normalized_value = 0.0 (not NaN/Inf)"
+  affected_features: [close_streak_bonus, close_streak, close_onset, time_since_last_open]
+  note: "these are saturated discrete features identified in E4B.3"
+
+# ── Artifact SHAs (frozen at prereg) ──
+frozen_artifacts:
+  training_manifest_sha: acc3ecb96e704506fdbd0b72950f91adecc5d2780b9db6e2a980d982af4ca628
+  split_manifest_sha: 7a61ffa700af09087f333dd37e220691fc8a3801118b6dc91146a656b426b112
+  split_summary_sha: bce20a91d132a9b4d46468b263691a42b74e1b55c50e2a710ad2aa60d415d699
+  leakage_audit_sha: 94c116e48b3e9decf4d6084f0ae32586ba2ff8c43dd1ac583440f3e4c0813bf0
+  feature_normalization_sha: 1ea34404a6a948cc804219edd657b9664f64a90628686b8332dc0e2326b740ef
+  candidate_table_sha: bfe87362d35dc4c6b8f359e2dc4fb19d3fe8cd99b1aa68f8fda9af12939c575c
+  training_config_sha: cb10d6730e4c2d4272ba7d8bdd8c16137afd430c7c69514aaeec5ceb7e0ca3ed
+  train_runner_sha: 62bcaa6aed31335d1facccc04d35cd3fb40e646015a4ba47b5607cda6098eb6b
+  eval_runner_sha: a669e3f4640f4beb3e97ab221c7b32a1806dd9bbbf05b37d9fc6f7fd09bb1aa5
+  protocol_tests_sha: 845bc236d9e8227e9c68266abf4975db18f1a4b57e65456ada64b5c74cee0f2a
 
 # ── Test Evaluation ──
 test:
@@ -116,8 +148,7 @@ hardware:
   device: gpu  # NVIDIA RTX 2080 Ti (8 available on vla)
   cuda_devices: "0,1"
   environment: /home/liuyu/.conda/envs/openvla_official_libero_20260525
-  code_commit: to_be_frozen_at_training_time
-  config_sha: to_be_computed_after_freeze
+  code_commit: ac132f2  # D1b prereg commit; D1b.1 extends this
 
 # ── Stop Rule ──
 stop:
