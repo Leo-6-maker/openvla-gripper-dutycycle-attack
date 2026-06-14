@@ -1,0 +1,12 @@
+metric,model,baseline
+n,21,21
+top1,13,2
+top1_rate,0.619,0.0952
+top2,18,16
+top2_rate,0.8571,0.7619
+coverage,1.0,0.3333
+n_tied,0,14
+cond_near,14,2
+cond_near_rate,0.6667,0.2857
+cond_mae,26.2,50.3
+cond_median_ae,0.0,64.0

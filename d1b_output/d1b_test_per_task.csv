@@ -1,0 +1,11 @@
+task_key,n_traces,model_top1,model_top1_rate,model_coverage,model_cond_mae,baseline_top1,baseline_top1_rate,baseline_coverage,baseline_cond_mae
+alphabet_soup,3,2,0.6667,1.0,16.0,0,0.0,0.0,
+bbq_sauce,2,2,1.0,1.0,0.0,0,0.0,0.5,50.0
+butter,3,2,0.6667,1.0,16.0,0,0.0,0.0,
+chocolate_pudding,1,0,0.0,1.0,16.0,1,1.0,1.0,0.0
+cream_cheese,2,1,0.5,1.0,107.0,0,0.0,0.5,64.0
+ketchup,4,1,0.25,1.0,55.2,0,0.0,0.25,92.0
+milk,1,1,1.0,1.0,0.0,0,0.0,0.0,
+orange_juice,1,1,1.0,1.0,0.0,0,0.0,1.0,74.0
+salad_dressing,2,1,0.5,1.0,2.0,1,0.5,1.0,36.0
+tomato_sauce,2,2,1.0,1.0,0.0,0,0.0,0.0,

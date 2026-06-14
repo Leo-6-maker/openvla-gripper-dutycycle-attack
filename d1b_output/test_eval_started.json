@@ -1,0 +1,8 @@
+{
+  "checkpoint_sha": "cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7326f691742b9a438f1174858",
+  "candidate_table_sha": "bfe87362d35dc4c6b8f359e2dc4fb19dbb974ad10f83d670a8025cb775ad5b2a",
+  "split_manifest_sha": "7a61ffa700af09087f333dd37e220691fc8a3801118b6dc91146a656b426b112",
+  "evaluation_runner_sha": "1f1bed8142ef66110d1f8443e7d13ea87bee9ca77a59534ff1951dedde1570f6",
+  "timestamp": "2026-06-14T19:39:14.824220+00:00",
+  "git_commit": "unknown"
+}
