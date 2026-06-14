@@ -239,11 +239,31 @@ def main():
         w.writeheader(); w.writerows(lm_summary)
 
     # ── Final summary report (dynamic) ──
-    # Compute values from data
-    n_unique_top1 = sum(1 for r in rank_rows
-                        if r["feature"] == "total_score" and r["n_strictly_higher"] == 0 and r["n_equal"] == 1)
-    n_comp_top2 = sum(1 for r in rank_rows
-                      if r["feature"] == "total_score" and r["competition_rank_high"] <= 2)
+    # Compute from candidate table directly (not rank_rows, which excludes single-candidate traces)
+    n_unique_top1 = 0
+    n_comp_top2 = 0
+    for (task, state), cands in p_traces:
+        p_cands = [c for c in cands if c["is_teacher_p"] == "1"]
+        if not p_cands: continue
+        p_score = float(p_cands[0]["total_score"])
+        n_higher = sum(1 for c in cands if float(c["total_score"]) > p_score + 0.001)
+        n_equal = sum(1 for c in cands if abs(float(c["total_score"]) - p_score) < 0.001)
+        if n_higher == 0 and n_equal == 1:
+            n_unique_top1 += 1
+        if n_higher <= 1:
+            n_comp_top2 += 1
+
+    # Extract eef values directly from pair_rows
+    def _pair_val(feature, col):
+        for r in pair_rows:
+            if r["feature"] == feature and r.get("analysis_status", "ok") == "ok":
+                return r[col]
+        return "?"
+    eef_now_high = _pair_val("eef_speed_now", "P_higher_than_all_nonP")
+    eef_prev_high = _pair_val("eef_speed_prev", "P_higher_than_all_nonP")
+    eef_delta_low = _pair_val("eef_deceleration_delta", "P_lower_than_all_nonP")
+    eef_now_n = _pair_val("eef_speed_now", "n_with_nonP_comparator")
+
     report_dir = Path("reports"); report_dir.mkdir(parents=True, exist_ok=True)
     report_path = report_dir / "L12_E4B_FINAL_SUMMARY.md"
     with open(report_path, "w") as f:
@@ -279,7 +299,7 @@ def main():
         f.write("— zero within-trace discrimination.\n\n")
         f.write("2. EEF-related continuous features (speed_now, speed_prev, deceleration_delta) ")
         f.write("vary across candidates and Teacher-P shows distinct dynamics ")
-        f.write(f"(speed_now: P_higher in {sum(1 for r in pair_rows if r['feature']=='eef_speed_now' and r.get('P_higher_than_all_nonP','')!='' and int(r.get('P_higher_than_all_nonP',0))>0)}/8 traces), ")
+        f.write(f"(speed_now: P_higher={eef_now_high}/{eef_now_n}, speed_prev: P_higher={eef_prev_high}/{eef_now_n}, decel_delta: P_lower={eef_delta_low}/{eef_now_n}), ")
         f.write("but their correct ranking direction and per-trace consistency ")
         f.write("have not been established.\n\n")
         f.write(f"3. The current scalar score reflects saturated discrete features, ")

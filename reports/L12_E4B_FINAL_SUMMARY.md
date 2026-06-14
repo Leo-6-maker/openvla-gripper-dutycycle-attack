@@ -2,8 +2,8 @@
 
 ## Teacher-P Score Rank
 
-- Unique top-1 by score: 2/10
-- Competition-rank top-2: 5/10
+- Unique top-1 by score: 4/10
+- Competition-rank top-2: 7/10
 
 ## Local-Maximum Policy
 
@@ -38,9 +38,9 @@
 
 1. Four saturated discrete score components (raw_crossing, close_streak, close_onset_qpos, qpos_ready, and their bonuses) produce identical values for ALL close-event candidates on all traces with non-P comparators — zero within-trace discrimination.
 
-2. EEF-related continuous features (speed_now, speed_prev, deceleration_delta) vary across candidates and Teacher-P shows distinct dynamics (speed_now: P_higher in 1/8 traces), but their correct ranking direction and per-trace consistency have not been established.
+2. EEF-related continuous features (speed_now, speed_prev, deceleration_delta) vary across candidates and Teacher-P shows distinct dynamics (speed_now: P_higher=5/8, speed_prev: P_higher=6/8, decel_delta: P_lower=4/8), but their correct ranking direction and per-trace consistency have not been established.
 
-3. The current scalar score reflects saturated discrete features, resulting in Teacher-P unique top-1 in only 2/10 P-available traces.
+3. The current scalar score reflects saturated discrete features, resulting in Teacher-P unique top-1 in only 4/10 P-available traces.
 
 4. Causal peak-hold policies add delay without improving online near-correct rate.
 
