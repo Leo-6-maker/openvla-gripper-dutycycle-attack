@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""E4A: Rule-family scoring/policy diagnosis.
+"""E4A.1: Corrected failure taxonomy and score decomposition diagnosis.
 
-For each Teacher-P-available trace, pairs online first trigger,
-Teacher-R anchor, Teacher-P anchor, and highest-scoring candidate.
-Classifies failure mode using score decomposition.
+Outputs per-anchor score decomposition, then classifies online trigger
+outcome using the frozen ±4 near-anchor standard. Distinguishes:
+  correct/near-correct, policy-only failure, collision with/without
+  higher spurious, spurious-ranked-higher, etc.
 
-CPU only. Same 12 frozen traces. No tuning, no model, no attack.
+CPU only. Same 12 frozen traces. No tuning, no new features.
 """
 
 from __future__ import annotations
@@ -17,6 +18,8 @@ import shutil
 import subprocess
 import sys
 import traceback
+from collections import Counter
+from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -34,6 +37,8 @@ from gripper_attack.critical_close_selector import (
     select_online_trigger,
     WINDOW_LEN, PRE_OFFSET, PREDICTION_HORIZON,
 )
+
+NEAR_THRESHOLD = 4
 
 
 def _sha256_file(path: str) -> str:
@@ -55,39 +60,79 @@ def _git_rev_parse() -> str:
         return "unknown"
 
 
-def _classify_failure(preds, p_anchor, r_anchor, first_trigger, best_candidate_step,
-                       best_score, p_score, trigger_score):
-    """Classify the failure mode for this trace."""
+def _git_is_clean() -> bool:
+    try:
+        out = subprocess.check_output(
+            ["git", "status", "--porcelain", "-uno"], cwd=str(REPO_ROOT), text=True).strip()
+        return out == ""
+    except Exception:
+        return False
+
+
+def _classify_failure(first_trigger, p_anchor):
+    """Binary check: is the online trigger correct per frozen ±4 standard?"""
     if p_anchor < 0:
-        return "teacher_reference_unavailable"
+        return "teacher_reference_unavailable", True
+    if first_trigger < 0:
+        return "no_trigger", True
+    if abs(first_trigger - p_anchor) <= NEAR_THRESHOLD:
+        return "correct_or_near_teacher_anchor", True
+    return None, False  # needs sub-classification
 
-    # Find scores at key points
-    if best_candidate_step == p_anchor and first_trigger == p_anchor:
-        return "correct_near_anchor"
 
-    # Check if Teacher-P candidate has highest score
-    if p_score is not None and best_score is not None:
-        if p_score >= best_score and first_trigger != p_anchor and first_trigger < p_anchor:
-            return "first_hit_policy_failure__critical_ranked_higher_but_later"
+def _subclassify_early_failure(preds, first_trigger, p_anchor):
+    """For traces where trigger is already known to be wrong (early),
+    determine WHY the early trigger fired instead of the Teacher-P anchor."""
+    # Filter close-event candidates only
+    close_candidates = [p for p in preds
+                        if p.get("is_close_event_candidate") and not p.get("abstain")]
+    all_valid = [p for p in preds if not p.get("abstain")]
 
-    # Check score equality
-    if trigger_score is not None and p_score is not None:
-        if abs(trigger_score - p_score) < 0.01:
-            return "exact_score_collision__first_hit_picks_earlier"
+    # Global best close candidate
+    best_close = max(close_candidates, key=lambda p: p["score"]) if close_candidates else None
+    best_all = max(all_valid, key=lambda p: p["score"]) if all_valid else None
 
-    # Check ranking
-    if trigger_score is not None and p_score is not None:
-        if trigger_score > p_score and first_trigger < p_anchor:
-            return "spurious_candidate_ranked_higher"
-        if p_score > trigger_score and first_trigger < p_anchor:
-            return "first_hit_policy_failure__critical_ranked_higher_but_later"
+    p_pred = preds[p_anchor] if 0 <= p_anchor < len(preds) else None
+    trigger_pred = preds[first_trigger] if 0 <= first_trigger < len(preds) else None
 
-    if first_trigger < p_anchor:
-        return "early_trigger_unknown_cause"
-    if first_trigger > p_anchor:
-        return "late_trigger"
+    p_score = p_pred["score"] if p_pred else None
+    trigger_score = trigger_pred["score"] if trigger_pred else None
 
-    return "unclassified"
+    # Is P the unique global best close candidate?
+    p_is_global_best = (best_close is not None and best_close["step"] == p_anchor)
+    num_tied = sum(1 for p in close_candidates
+                   if abs(p["score"] - (p_score or 0)) < 0.01)
+    num_higher = sum(1 for p in close_candidates
+                     if p["score"] > (p_score or 0) + 0.01)
+
+    extra = {
+        "trigger_error": first_trigger - p_anchor,
+        "p_is_global_best_close": p_is_global_best,
+        "num_candidates_tied_with_p": num_tied,
+        "num_candidates_higher_than_p": num_higher,
+        "best_close_step": best_close["step"] if best_close else -1,
+        "best_close_score": best_close["score"] if best_close else 0.0,
+        "best_nonabstain_step": best_all["step"] if best_all else -1,
+        "best_nonabstain_score": best_all["score"] if best_all else 0.0,
+    }
+
+    # Policy-only: P is unique global best, higher than trigger, but trigger fired first
+    if p_is_global_best and num_higher == 0 and p_score is not None and trigger_score is not None:
+        if p_score > trigger_score + 0.01:
+            return ("policy_only__P_is_unique_global_best_and_higher", extra)
+        # P is best AND tied with trigger
+        return ("trigger_P_exact_score_collision__no_higher_spurious", extra)
+
+    # Collision: trigger and P have same score, but higher spurious exists
+    if (trigger_score is not None and p_score is not None and
+        abs(trigger_score - p_score) < 0.01 and not p_is_global_best):
+        return ("trigger_P_score_collision__higher_spurious_exists", extra)
+
+    # Spurious ranked higher
+    if trigger_score is not None and p_score is not None and trigger_score > p_score + 0.01:
+        return ("spurious_trigger_ranked_higher_than_P", extra)
+
+    return ("early_unknown", extra)
 
 
 def main():
@@ -98,31 +143,50 @@ def main():
     args = ap.parse_args()
 
     RUNNER_COMMIT = _git_rev_parse()
+    START_TIME = datetime.now(timezone.utc)
+
+    # Provenance gates
+    gate_errors = []
+    if not _git_is_clean():
+        gate_errors.append("G1: tracked worktree dirty")
+
     out = Path(args.output_dir)
     if out.exists():
-        print(f"FATAL: output dir exists: {out}")
-        sys.exit(1)
-    out.mkdir(parents=True)
+        gate_errors.append(f"FATAL: output dir exists: {out}")
+    else:
+        out.mkdir(parents=True)
 
     with open(args.manifest, "r", newline="") as f:
         manifest_rows = list(csv.DictReader(f))
 
+    if len(manifest_rows) != 12:
+        gate_errors.append(f"G2: expected 12 manifest rows, got {len(manifest_rows)}")
+
     for mr in manifest_rows:
         actual = _sha256_file(mr["trace_path"])
         if actual != mr["expected_sha256"]:
-            print(f"FATAL: SHA mismatch {mr['task_key']}_s{mr['state_id']}")
-            sys.exit(1)
+            gate_errors.append(f"G3: SHA mismatch {mr['task_key']}_s{mr['state_id']}")
+
+    if gate_errors:
+        for e in gate_errors:
+            print(e)
+        sys.exit(1)
 
     diagnosis_rows = []
     candidate_decomp_rows = []
+    invariant_total = 0
+    field_issue_total = 0
 
     for mr in manifest_rows:
         task = mr["task_key"]
         state = int(mr["state_id"])
-        print(f"  {task}_s{state} ...", end=" ", flush=True)
 
         remap_out = str(out / f"remap_{task}_s{state}.csv")
         l12_rows, inv, fi = remap_v4_to_l12(mr["trace_path"], remap_out, raise_on_invariant=False)
+        invariant_total += len(inv)
+        field_issue_total += len(fi)
+        if len(l12_rows) != int(mr["expected_row_count"]):
+            gate_errors.append(f"G5: row count mismatch {task}_s{state}")
 
         p_anchor = teacher_privileged_critical_close_anchor(l12_rows)
         r_anchor = teacher_rule_critical_close_anchor(l12_rows)
@@ -133,27 +197,22 @@ def main():
         win_on = select_online_trigger(preds, mode="close_interception")
         first_trigger = win_on.get("trigger_step", -1)
 
-        # Find highest-scoring non-abstaining step
-        valid_preds = [p for p in preds if not p["abstain"]]
-        best_pred = max(valid_preds, key=lambda p: p["score"]) if valid_preds else None
-        best_step = best_pred["step"] if best_pred else -1
-        best_score = best_pred["score"] if best_pred else 0.0
-
-        # Scores at key points
-        p_pred = preds[p_anchor] if p_avail and 0 <= p_anchor < len(preds) else None
-        r_pred = preds[r_anchor] if r_anchor >= 0 and r_anchor < len(preds) else None
-        t_pred = preds[first_trigger] if first_trigger >= 0 and first_trigger < len(preds) else None
-
-        p_score = p_pred["score"] if p_pred else None
-        r_score = r_pred["score"] if r_pred else None
-        trigger_score = t_pred["score"] if t_pred else None
-
-        failure = _classify_failure(preds, p_anchor, r_anchor, first_trigger,
-                                     best_step, best_score, p_score, trigger_score)
+        # Step 1: binary correct/not
+        cat, is_terminal = _classify_failure(first_trigger, p_anchor)
+        extra = {}
+        if not is_terminal:
+            cat, extra = _subclassify_early_failure(preds, first_trigger, p_anchor)
 
         # Score decomposition at key anchors
-        for label, pred_obj in [("Teacher-P", p_pred), ("Teacher-R", r_pred),
-                                 ("first_trigger", t_pred), ("best_candidate", best_pred)]:
+        close_cands = [p for p in preds if p.get("is_close_event_candidate") and not p.get("abstain")]
+        best_close = max(close_cands, key=lambda p: p["score"]) if close_cands else None
+
+        for label, pred_obj in [
+            ("Teacher-P", preds[p_anchor] if p_avail and 0 <= p_anchor < len(preds) else None),
+            ("Teacher-R", preds[r_anchor] if r_anchor >= 0 and r_anchor < len(preds) else None),
+            ("first_trigger", preds[first_trigger] if first_trigger >= 0 and first_trigger < len(preds) else None),
+            ("best_close_candidate", best_close),
+        ]:
             if pred_obj is None:
                 continue
             candidate_decomp_rows.append({
@@ -170,22 +229,35 @@ def main():
                 "eef_speed_now": pred_obj.get("eef_speed_now", ""),
                 "eef_speed_prev": pred_obj.get("eef_speed_prev", ""),
                 "disabled_features": ",".join(pred_obj.get("disabled_features", [])),
-                "is_close_event_candidate": pred_obj.get("is_close_event_candidate", ""),
-                "qpos": str(pred_obj.get("qpos", ""))[:10],
-                "close_onset": pred_obj.get("close_onset", ""),
             })
 
-        # Diagnosis row
+        p_pred = preds[p_anchor] if p_avail and 0 <= p_anchor < len(preds) else None
+        trigger_pred = preds[first_trigger] if first_trigger >= 0 and first_trigger < len(preds) else None
+
         diagnosis_rows.append({
             "task_key": task, "state_id": state,
             "teacher_p_available": p_avail,
-            "teacher_p_anchor": p_anchor, "teacher_p_score": p_score if p_score is not None else "",
-            "teacher_r_anchor": r_anchor, "teacher_r_score": r_score if r_score is not None else "",
-            "online_first_trigger": first_trigger, "trigger_score": trigger_score if trigger_score is not None else "",
-            "best_candidate_step": best_step, "best_candidate_score": best_score,
-            "failure_classification": failure,
+            "teacher_p_anchor": p_anchor,
+            "teacher_p_score": p_pred["score"] if p_pred else "",
+            "teacher_r_anchor": r_anchor,
+            "online_first_trigger": first_trigger,
+            "trigger_score": trigger_pred["score"] if trigger_pred else "",
+            "trigger_error": extra.get("trigger_error", first_trigger - p_anchor if p_avail else ""),
+            "is_near_correct": int(abs(first_trigger - p_anchor) <= NEAR_THRESHOLD) if p_avail and first_trigger >= 0 else "",
+            "p_is_global_best_close": extra.get("p_is_global_best_close", ""),
+            "num_candidates_tied_with_p": extra.get("num_candidates_tied_with_p", ""),
+            "num_candidates_higher_than_p": extra.get("num_candidates_higher_than_p", ""),
+            "best_close_step": extra.get("best_close_step", ""),
+            "best_close_score": extra.get("best_close_score", ""),
+            "failure_classification": cat,
         })
-        print(failure)
+        print(f"  {task}_s{state}: {cat}")
+
+    # Remaining gates
+    if invariant_total > 0:
+        gate_errors.append(f"G7: {invariant_total} RC1a invariant violations")
+    if field_issue_total > 0:
+        gate_errors.append(f"G8: {field_issue_total} field issues")
 
     # Write tables
     def _wcsv(rows, name):
@@ -200,23 +272,46 @@ def main():
     _wcsv(diagnosis_rows, "l12_e4a_failure_diagnosis.csv")
     _wcsv(candidate_decomp_rows, "l12_e4a_score_decomposition.csv")
 
+    # Run log
+    log_path = out / "l12_e4a_run_log.txt"
+    with open(log_path, "w") as f:
+        f.write(f"E4A.1 RUN LOG\n")
+        f.write(f"runner_commit: {RUNNER_COMMIT}\n")
+        f.write(f"remapper_version: {REMAPPER_VERSION}\n")
+        f.write(f"start: {START_TIME.isoformat()}\n")
+        f.write(f"input_traces: {len(manifest_rows)}\n")
+        f.write(f"invariant_violations: {invariant_total}\n")
+        f.write(f"field_issues: {field_issue_total}\n")
+        f.write(f"gate_errors: {len(gate_errors)}\n")
+        f.write(f"worktree_clean: {_git_is_clean()}\n")
+        f.write(f"exit_code: {1 if gate_errors else 0}\n")
+
     # Summary
-    from collections import Counter
     counts = Counter(r["failure_classification"] for r in diagnosis_rows)
-    print(f"\n=== E4A DIAGNOSIS SUMMARY ===")
+    n_p_avail = sum(1 for r in diagnosis_rows if r["teacher_p_available"])
+    n_correct = sum(1 for r in diagnosis_rows if r["failure_classification"] == "correct_or_near_teacher_anchor")
+    print(f"\n=== E4A.1 DIAGNOSIS SUMMARY ===")
+    print(f"Traces: {len(diagnosis_rows)} (P-available: {n_p_avail})")
+    print(f"Correct/near-correct: {n_correct}/{n_p_avail}")
     for cat, n in counts.most_common():
-        pct = n / len(diagnosis_rows) * 100
-        print(f"  {cat}: {n} ({pct:.0f}%)")
+        print(f"  {cat}: {n}")
+
+    if gate_errors:
+        print(f"\nGATE FAILURES ({len(gate_errors)}):")
+        for e in gate_errors:
+            print(f"  {e}")
+        sys.exit(1)
 
     if args.tracked_tables_dir:
         tracked = Path(args.tracked_tables_dir)
         tracked.mkdir(parents=True, exist_ok=True)
         for f in out.glob("*.csv"):
             shutil.copy2(f, tracked / f.name)
+        shutil.copy2(log_path, tracked / "l12_e4a_run_log.txt")
         print(f"\nTracked: {tracked}")
 
     print(f"\nOutput: {out}")
-    print("E4A COMPLETE")
+    print("E4A.1 COMPLETE")
 
 
 if __name__ == "__main__":
