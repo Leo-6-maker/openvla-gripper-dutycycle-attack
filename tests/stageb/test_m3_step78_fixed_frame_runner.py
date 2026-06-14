@@ -15,6 +15,7 @@ from scripts.stageb.run_m3_step78_true_pgd_fixed_frame import (
 
 CONFIG = Path("configs/m3_step78_true_pgd_31744.yaml")
 LOGRATIO_V2_CONFIG = Path("configs/m3_step78_true_pgd_31744_logratio_v2.yaml")
+LOGRATIO_ARM_V3_CONFIG = Path("configs/m3_step78_true_pgd_31744_logratio_arm_v3.yaml")
 
 
 def test_step78_config_is_fixed_to_preregistered_conditions():
@@ -83,4 +84,19 @@ def test_logratio_v2_config_keeps_target_and_requires_cached_path():
     assert cfg["attack_optimizer"]["objective"] == "autoregressive_prefix_gripper_target_token_logratio_v2"
     assert cfg["attack_optimizer"]["surrogate_score_path"] == "cached_autoregressive_generate_v1"
     assert cfg["controls"]["rand20_selection_metric"] == "surrogate_target_objective_margin"
+    assert cfg["conditions"] == MAIN_CONDITIONS
+
+
+def test_logratio_arm_v3_config_keeps_fixed_frame_and_adds_arm_penalty():
+    cfg = load_config(LOGRATIO_ARM_V3_CONFIG)
+    assert cfg["input"]["task"] == "tomato_sauce"
+    assert cfg["input"]["state_id"] == 0
+    assert cfg["input"]["absolute_step"] == 78
+    assert cfg["attack_optimizer"]["target_token_id"] == 31744
+    assert cfg["attack_optimizer"]["target_execution_class"] == "CLIP_MEDIATED_OPEN"
+    assert cfg["attack_optimizer"]["epsilon"] == 0.023529411764705882
+    assert cfg["attack_optimizer"]["objective"] == "autoregressive_prefix_gripper_target_token_logratio_arm_v3"
+    assert cfg["attack_optimizer"]["surrogate_score_path"] == "cached_autoregressive_generate_v1"
+    assert cfg["attack_optimizer"]["arm_preserve_weight"] == 0.5
+    assert cfg["attack_optimizer"]["arm_gate_min_match_count"] == 5
     assert cfg["conditions"] == MAIN_CONDITIONS

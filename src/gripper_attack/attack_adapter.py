@@ -778,7 +778,10 @@ class TokenPrefixPGDAttacker:
         target_token_id: int,
         margin: float,
     ):
-        if str(getattr(self, "objective", "")) == "autoregressive_prefix_gripper_target_token_logratio_v2":
+        if str(getattr(self, "objective", "")) in {
+            "autoregressive_prefix_gripper_target_token_logratio_v2",
+            "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+        }:
             return target_token_logratio_loss_and_stats(
                 gripper_row,
                 target_token_id=int(target_token_id),
@@ -864,6 +867,48 @@ class TokenPrefixPGDAttacker:
             "arm_preservation_weight": float(arm_preserve_weight),
         }
 
+    def _clean_generated_arm_preservation_loss_and_stats(
+        self,
+        prompt_input_ids: torch.LongTensor,
+        clean_generated_action_token_ids: torch.LongTensor,
+        pixel_values: torch.Tensor,
+        action_dim: int,
+        *,
+        arm_preserve_weight: float,
+    ):
+        target = clean_generated_action_token_ids.view(1, -1).to(prompt_input_ids.device)
+        full_input_ids = torch.cat([prompt_input_ids, target], dim=1)
+        labels = torch.full_like(full_input_ids, -100)
+        action_start = labels.shape[1] - int(action_dim)
+        rows_used = []
+        for dim in range(max(int(action_dim) - 1, 0)):
+            label_pos = action_start + dim
+            labels[:, label_pos] = target[:, dim]
+            rows_used.append(int(dim))
+        out = self.model(input_ids=full_input_ids, pixel_values=pixel_values, use_cache=False, return_dict=True)
+        logits = out.logits.float().contiguous()
+        losses = []
+        active_rows = []
+        for b, label_pos, dim, row_index in self._active_label_rows(logits, labels, int(action_dim)):
+            if dim == int(action_dim) - 1:
+                continue
+            row = logits[b, row_index, :]
+            label = labels[b, label_pos]
+            losses.append(float(arm_preserve_weight) * F.cross_entropy(row.view(1, -1), label.view(1)))
+            active_rows.append(int(dim))
+        loss = torch.stack(losses).mean() if losses else logits.sum() * 0.0
+        return loss, {
+            "arm_preservation_dims": active_rows or rows_used,
+            "arm_preservation_dim_count": int(len(active_rows or rows_used)),
+            "arm_preservation_loss": float(loss.detach().cpu()),
+            "arm_preservation_weight": float(arm_preserve_weight),
+            "arm_preservation_label_source": "clean_actual_generation",
+            "clean_generated_arm_prefix_token_ids": [
+                int(x)
+                for x in target[0, : max(int(action_dim) - 1, 0)].detach().cpu().tolist()
+            ],
+        }
+
     def attack(self, observation: Any, instruction=None, clean_action=None, target_action=None, clean_model_output=None, *, unnorm_key: str = "libero_goal") -> AttackResult:
         objective = str(getattr(self, "objective", "targeted_directional_ce"))
         is_untargeted = objective in {"untargeted_clean_token_ce", "untargeted_clean_ce", "maximize_clean_ce", "untargeted_arm_clean_token_ce", "ctrl_random_direction_arm_only"}
@@ -880,7 +925,8 @@ class TokenPrefixPGDAttacker:
         is_generated_prefix_v3 = objective in {"autoregressive_prefix_gripper_open_execspec_v3"}
         is_target_token_cw_v1 = objective in {"autoregressive_prefix_gripper_target_token_cw_v1"}
         is_target_token_logratio_v2 = objective in {"autoregressive_prefix_gripper_target_token_logratio_v2"}
-        is_target_token_objective = is_target_token_cw_v1 or is_target_token_logratio_v2
+        is_target_token_logratio_arm_v3 = objective in {"autoregressive_prefix_gripper_target_token_logratio_arm_v3"}
+        is_target_token_objective = is_target_token_cw_v1 or is_target_token_logratio_v2 or is_target_token_logratio_arm_v3
         is_gripper_expected_action = objective in {"gripper_open_expected_action"}
         is_prefix_locked = is_prefix_locked_open_region or is_prefix_locked_open_margin or is_gripper_expected_action or is_prefix_locked_top1
         is_corrected_hybrid = is_force_open_region_z_down  # uses corrected OPEN region + Z CE
@@ -910,8 +956,8 @@ class TokenPrefixPGDAttacker:
             for x in retokenized_target_ids[: max(int(retokenized_target_ids.numel()) - 1, 0)].detach().cpu().tolist()
         ]
         if is_target_token_objective:
-            if is_target_token_logratio_v2 and self.surrogate_score_path not in {"cached_autoregressive_generate_v1", "cached_generate_v1"}:
-                raise RouteContractError("autoregressive_prefix_gripper_target_token_logratio_v2 requires cached_autoregressive_generate_v1")
+            if (is_target_token_logratio_v2 or is_target_token_logratio_arm_v3) and self.surrogate_score_path not in {"cached_autoregressive_generate_v1", "cached_generate_v1"}:
+                raise RouteContractError(f"{objective} requires cached_autoregressive_generate_v1")
             clean_generated_action_token_ids = self._exact_tokens_from_generation(
                 clean_model_output,
                 prompt_len=int(clean_ids.shape[1]),
@@ -1057,6 +1103,7 @@ class TokenPrefixPGDAttacker:
             target_token_objective_margin_trajectory = []
             target_token_best_margin_trajectory = []
             target_token_logratio_margin_trajectory = []
+            target_token_arm_loss_trajectory = []
             gradient_norm_trajectory = []
             generated_arm_prefix_trajectory = []
             for i in range(max(self.num_steps, 1)):
@@ -1092,7 +1139,21 @@ class TokenPrefixPGDAttacker:
                 gv = float(gripper_loss.detach().cpu())
                 del gripper_loss, adv_g
 
-                if is_target_token_objective:
+                if is_target_token_logratio_arm_v3:
+                    adv_a = self._cast_projected_pixel_values(adv, x_orig_model)
+                    arm_loss, arm_stats = self._clean_generated_arm_preservation_loss_and_stats(
+                        clean_ids,
+                        clean_generated_action_token_ids,
+                        adv_a,
+                        int(target_ids.numel()),
+                        arm_preserve_weight=float(self.arm_preserve_weight),
+                    )
+                    grad_a = torch.autograd.grad(arm_loss, adv, retain_graph=False, create_graph=False)[0]
+                    av = float(arm_loss.detach().cpu())
+                    grad = grad_g + grad_a
+                    loss_value = gv + av
+                    del grad_g, grad_a, arm_loss, adv_a
+                elif is_target_token_objective:
                     arm_stats = None
                     grad = grad_g
                     loss_value = gv
@@ -1133,6 +1194,9 @@ class TokenPrefixPGDAttacker:
                     )
                     target_token_logratio_margin_trajectory.append(
                         float(gripper_stats.get("target_minus_competitor_logsumexp_margin", float("nan")))
+                    )
+                    target_token_arm_loss_trajectory.append(
+                        "" if arm_stats is None else float(arm_stats.get("arm_preservation_loss", float("nan")))
                     )
                     gradient_norm_trajectory.append(
                         {
@@ -1181,15 +1245,26 @@ class TokenPrefixPGDAttacker:
                         corrected_region_info.get("close_token_ids"),
                         margin=float(self.gripper_margin),
                     )
-                final_arm_loss, final_arm_stats = self._arm_preservation_loss_and_stats(
-                    full_ids,
-                    labels,
-                    adv_model_for_final,
-                    int(target_ids.numel()),
-                    arm_preserve_weight=float(self.arm_preserve_weight),
-                )
+                if is_target_token_logratio_arm_v3:
+                    final_arm_loss, final_arm_stats = self._clean_generated_arm_preservation_loss_and_stats(
+                        clean_ids,
+                        clean_generated_action_token_ids,
+                        adv_model_for_final,
+                        int(target_ids.numel()),
+                        arm_preserve_weight=float(self.arm_preserve_weight),
+                    )
+                else:
+                    final_arm_loss, final_arm_stats = self._arm_preservation_loss_and_stats(
+                        full_ids,
+                        labels,
+                        adv_model_for_final,
+                        int(target_ids.numel()),
+                        arm_preserve_weight=float(self.arm_preserve_weight),
+                    )
                 final_loss = float(
-                    final_gripper_loss.detach().cpu()
+                    (final_gripper_loss + final_arm_loss).detach().cpu()
+                    if is_target_token_logratio_arm_v3
+                    else final_gripper_loss.detach().cpu()
                     if is_target_token_objective
                     else (final_gripper_loss + final_arm_loss).detach().cpu()
                 )
@@ -1266,7 +1341,8 @@ class TokenPrefixPGDAttacker:
                     "target_token_objective_margin_name": (final_generated_stats or {}).get("target_objective_margin_name"),
                     "target_token_objective_margin_initial": (initial_generated_stats or {}).get("target_objective_margin"),
                     "target_token_objective_margin_final": (final_generated_stats or {}).get("target_objective_margin"),
-                    "arm_preservation_role": "acceptance_gate_not_primary_loss",
+                    "arm_preservation_role": "combined_gradient_penalty" if is_target_token_logratio_arm_v3 else "acceptance_gate_not_primary_loss",
+                    "arm_preserve_weight": float(self.arm_preserve_weight),
                     "arm_gate_reference": "clean_actual_generation",
                     "arm_prefix_match_count": int(sum(int(clean_arm_prefix_token_ids[j] == generated_arm_prefix_final[j]) for j in range(n_arm))) if n_arm else 0,
                     "arm_prefix_match_denominator": int(n_arm),
@@ -1276,6 +1352,9 @@ class TokenPrefixPGDAttacker:
                     "target_token_objective_loss_final": final_loss,
                     "target_token_objective_loss_trajectory": target_token_objective_loss_trajectory,
                     "target_token_objective_margin_trajectory": target_token_objective_margin_trajectory,
+                    "target_token_arm_preservation_loss_trajectory": target_token_arm_loss_trajectory,
+                    "target_token_arm_preservation_loss_initial": None if initial_arm_stats is None else initial_arm_stats.get("arm_preservation_loss"),
+                    "target_token_arm_preservation_loss_final": final_arm_stats.get("arm_preservation_loss"),
                     "gradient_norm_trajectory": gradient_norm_trajectory,
                     "generated_arm_prefix_trajectory": generated_arm_prefix_trajectory,
                     "gradient_transform": self.gradient_transform,
@@ -1290,7 +1369,7 @@ class TokenPrefixPGDAttacker:
                         "target_token_cw_loss_trajectory": target_token_objective_loss_trajectory,
                         "target_token_cw_margin_trajectory": target_token_best_margin_trajectory,
                     })
-                if is_target_token_logratio_v2:
+                if is_target_token_logratio_v2 or is_target_token_logratio_arm_v3:
                     generated_prefix_debug.update({
                         "target_token_logratio_margin_initial": (initial_generated_stats or {}).get("target_minus_competitor_logsumexp_margin"),
                         "target_token_logratio_margin_final": (final_generated_stats or {}).get("target_minus_competitor_logsumexp_margin"),
@@ -1298,6 +1377,12 @@ class TokenPrefixPGDAttacker:
                         "target_token_logratio_loss_final": final_loss,
                         "target_token_logratio_loss_trajectory": target_token_objective_loss_trajectory,
                         "target_token_logratio_margin_trajectory": target_token_logratio_margin_trajectory,
+                    })
+                if is_target_token_logratio_arm_v3:
+                    generated_prefix_debug.update({
+                        "target_token_logratio_arm_v3": True,
+                        "target_token_logratio_arm_loss_initial": initial_loss,
+                        "target_token_logratio_arm_loss_final": final_loss,
                     })
         else:
             for i in range(max(self.num_steps, 1)):
@@ -1397,7 +1482,7 @@ class TokenPrefixPGDAttacker:
             if is_target_token_cw_v1:
                 debug["target_token_cw_loss_initial"] = initial_loss
                 debug["target_token_cw_loss_final"] = final_loss
-            if is_target_token_logratio_v2:
+            if is_target_token_logratio_v2 or is_target_token_logratio_arm_v3:
                 debug["target_token_logratio_loss_initial"] = initial_loss
                 debug["target_token_logratio_loss_final"] = final_loss
             # Gripper-specific restart-selection metrics (now using corrected region)
@@ -1440,7 +1525,8 @@ class TokenPrefixPGDAttacker:
                     "gripper_top1_open_vs_close_loss": bool(is_prefix_locked_top1),
                     "autoregressive_prefix_gripper_open_loss": bool(is_generated_prefix_v3),
                     "autoregressive_prefix_target_token_cw_loss": bool(is_target_token_cw_v1),
-                    "autoregressive_prefix_target_token_logratio_loss": bool(is_target_token_logratio_v2),
+                    "autoregressive_prefix_target_token_logratio_loss": bool(is_target_token_logratio_v2 or is_target_token_logratio_arm_v3),
+                    "autoregressive_prefix_target_token_logratio_arm_loss": bool(is_target_token_logratio_arm_v3),
                     "gripper_expected_action_loss": bool(is_gripper_expected_action),
                     "prefix_locked_arm_preserve": bool(is_prefix_locked or is_generated_prefix_v3),
                     "arm_preservation_as_acceptance_gate": bool(is_target_token_objective),
@@ -1472,7 +1558,9 @@ class TokenPrefixPGDAttacker:
                     if is_generated_prefix_v3
                     else (
                         (
-                            "token_prefix_pgd_pixel_values_target_token_logratio_v2"
+                            "token_prefix_pgd_pixel_values_target_token_logratio_arm_v3"
+                            if is_target_token_logratio_arm_v3
+                            else "token_prefix_pgd_pixel_values_target_token_logratio_v2"
                             if is_target_token_logratio_v2
                             else "token_prefix_pgd_pixel_values_target_token_cw_v1"
                         )
