@@ -30,7 +30,7 @@ RUNNER = os.path.join(PIPELINE_ROOT, "scripts", "stageb", "run_d4_clean_shadow.p
 CHECKPOINT = os.path.join(PIPELINE_ROOT, "outputs", "d1b_training", "d1b_detector_best.pt")
 
 GPU_SLOTS = [
-    {"slot": 0, "cuda": "0,1", "render": 0},   # first physical GPU in visible set
+    {"slot": 0, "cuda": "1,3", "render": 1},   # GPU 0 excluded (Xid 13/43), GPU 3 healthy
     {"slot": 1, "cuda": "2,6", "render": 2},
     {"slot": 2, "cuda": "4,5", "render": 4},
 ]
