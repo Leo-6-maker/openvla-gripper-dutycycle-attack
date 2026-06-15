@@ -1,0 +1,84 @@
+{
+  "clean_action": [
+    -0.33474263548851013,
+    -0.0025840436574071646,
+    -0.5735294222831726,
+    -3.151186683680862e-05,
+    -0.09855041652917862,
+    -0.12630252540111542,
+    0.9960784316062927
+  ],
+  "clean_exact_7_tokens": [
+    31962,
+    31870,
+    31950,
+    31882,
+    31982,
+    31965,
+    31744
+  ],
+  "instruction": "pick up the tomato sauce and place it in the basket",
+  "official": {
+    "arm_prefix": [
+      31962,
+      31870,
+      31950,
+      31882,
+      31982,
+      31965
+    ],
+    "gripper_token": 31744,
+    "score_audit": {
+      "argmax_matches_emitted": true,
+      "best_native_boundary_score": null,
+      "best_native_boundary_token": null,
+      "best_native_close_score": 24.5,
+      "best_native_close_token": 31872,
+      "best_native_open_score": 16.875,
+      "best_native_open_token": 31746,
+      "emitted_token": 31744,
+      "generation_score_argmax": 31744,
+      "processed_score_argmax_token": 31744,
+      "score_token_31744": 63.75,
+      "score_token_31872": 24.5,
+      "surrogate_top_score": 24.5,
+      "surrogate_top_token": 31872,
+      "top1_minus_top2_gap": 39.25,
+      "top1_score": 63.75,
+      "top1_token": 31744,
+      "top2_score": 24.5,
+      "top2_token": 31872
+    },
+    "score_invariant": {
+      "argmax_token": 31744,
+      "emitted_score": 63.75,
+      "emitted_token": 31744,
+      "max_score": 63.75,
+      "strict_argmax_match": true,
+      "tie_aware_pass": true
+    },
+    "score_row_sha256": "bdec2b8299ad18727382170137ae4ba05abfb850777271cd775f8d23d6150627",
+    "target_stats": {
+      "allowed_token_count": 32064,
+      "best_competitor_score": 24.5,
+      "best_competitor_token_id": 31872,
+      "competitor_logsumexp_score": 24.50057029724121,
+      "cw_margin_param": null,
+      "target_minus_best_competitor_margin": 39.25,
+      "target_minus_competitor_logsumexp_margin": 39.249427795410156,
+      "target_objective_margin": 39.249427795410156,
+      "target_objective_margin_name": "target_minus_competitor_logsumexp_margin",
+      "target_token_id": 31744,
+      "target_token_score": 63.75
+    },
+    "tokens": [
+      31962,
+      31870,
+      31950,
+      31882,
+      31982,
+      31965,
+      31744
+    ]
+  }
+}

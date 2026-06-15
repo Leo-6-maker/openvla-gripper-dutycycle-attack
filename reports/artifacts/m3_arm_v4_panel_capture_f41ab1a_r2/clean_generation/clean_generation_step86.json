@@ -1,0 +1,84 @@
+{
+  "clean_action": [
+    0.0019590435549616814,
+    -0.0025840436574071646,
+    0.0,
+    -0.007733192760497332,
+    0.0004411758272908628,
+    -0.10794118046760559,
+    0.0
+  ],
+  "clean_exact_7_tokens": [
+    31900,
+    31870,
+    31872,
+    31895,
+    31887,
+    31946,
+    31872
+  ],
+  "instruction": "pick up the tomato sauce and place it in the basket",
+  "official": {
+    "arm_prefix": [
+      31900,
+      31870,
+      31872,
+      31895,
+      31887,
+      31946
+    ],
+    "gripper_token": 31872,
+    "score_audit": {
+      "argmax_matches_emitted": true,
+      "best_native_boundary_score": null,
+      "best_native_boundary_token": null,
+      "best_native_close_score": 51.75,
+      "best_native_close_token": 31872,
+      "best_native_open_score": 7.0625,
+      "best_native_open_token": 31745,
+      "emitted_token": 31872,
+      "generation_score_argmax": 31872,
+      "processed_score_argmax_token": 31872,
+      "score_token_31744": 27.5,
+      "score_token_31872": 51.75,
+      "surrogate_top_score": 51.75,
+      "surrogate_top_token": 31872,
+      "top1_minus_top2_gap": 24.25,
+      "top1_score": 51.75,
+      "top1_token": 31872,
+      "top2_score": 27.5,
+      "top2_token": 31744
+    },
+    "score_invariant": {
+      "argmax_token": 31872,
+      "emitted_score": 51.75,
+      "emitted_token": 31872,
+      "max_score": 51.75,
+      "strict_argmax_match": true,
+      "tie_aware_pass": true
+    },
+    "score_row_sha256": "0812befcec360a78e08fd0108f284a369441146f93802a0d96b9aedb096e9b5b",
+    "target_stats": {
+      "allowed_token_count": 32064,
+      "best_competitor_score": 51.75,
+      "best_competitor_token_id": 31872,
+      "competitor_logsumexp_score": 51.75,
+      "cw_margin_param": null,
+      "target_minus_best_competitor_margin": -24.25,
+      "target_minus_competitor_logsumexp_margin": -24.25,
+      "target_objective_margin": -24.25,
+      "target_objective_margin_name": "target_minus_competitor_logsumexp_margin",
+      "target_token_id": 31744,
+      "target_token_score": 27.5
+    },
+    "tokens": [
+      31900,
+      31870,
+      31872,
+      31895,
+      31887,
+      31946,
+      31872
+    ]
+  }
+}
