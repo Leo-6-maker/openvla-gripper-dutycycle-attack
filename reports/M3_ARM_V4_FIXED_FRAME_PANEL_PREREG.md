@@ -2,10 +2,10 @@
 
 ## Decision
 
-`PREREG_REPAIRED_IMPLEMENTATION_ONLY`
+`PREREG_REPAIRED_EXECUTABLE_GATE_ONLY`
 
 This commit repairs the panel preregistration protocol and adds CPU-tested
-panel helper logic. It does not authorize panel GPU execution, LIBERO
+executable panel gate wiring. It does not authorize panel GPU execution, LIBERO
 closed-loop rollout, production-runner transfer, critical-close rescue,
 held-out transfer, or Layer1/2 selector attack.
 
@@ -84,6 +84,9 @@ STOP
 ```
 
 Do not run the main panel after a positive-control input mismatch.
+
+The executable panel entry point must perform this capture as one trajectory.
+Per-frame replays are not valid panel input capture.
 
 ## Panel Frames
 
@@ -193,6 +196,8 @@ after seed85 artifacts are reviewed and a separate authorization is given.
 
 This preregistration still does not authorize panel GPU execution.
 
+The executable panel entry point must reject any seed other than `85`.
+
 ## Frame Full Selective Pass
 
 A main-denominator frame passes only if all conditions are jointly true on that
@@ -231,7 +236,7 @@ gate.
 
 ## Result Classes
 
-- `PANEL_PREREG_REPAIRED_IMPLEMENTATION_ONLY`: this commit.
+- `PANEL_PREREG_REPAIRED_EXECUTABLE_GATE_ONLY`: this commit.
 - `POSITIVE_CONTROL_INPUT_MISMATCH`: captured step78 does not match frozen
   step78 input.
 - `CLEAN_ALREADY_TARGET`: clean token is already `31744`.
@@ -254,6 +259,10 @@ The panel runner must write:
 - capture/preflight artifact hash manifests.
 
 If these cannot be written, the run must be treated as provenance-invalid.
+
+The executable panel entry point must fail closed on dirty worktrees,
+unavailable GPU snapshots, missing model fingerprints, missing artifact hash
+manifests, or a pre-existing one-shot sentinel.
 
 ## Allowed Claim If A Later Panel Passes
 

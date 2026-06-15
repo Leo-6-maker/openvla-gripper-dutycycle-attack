@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -11,15 +12,21 @@ from scripts.stageb.run_m3_step78_true_pgd_fixed_frame import (
     PANEL_MAIN_FRAMES,
     PANEL_POSITIVE_CONTROL_FRAME,
     V4_CONDITIONS,
+    claim_one_shot_sentinel,
     clean_frame_eligibility,
     compare_surrogate_official,
     frame_full_selective_status,
+    frame_status_from_v4_artifacts,
     load_config,
     panel_aggregate_status,
+    parse_panel_steps,
+    run_panel_seed85,
     select_hard_feasible_candidate,
     step78_parity_status,
     validate_panel_seed,
+    validate_manifest_provenance,
     write_csv,
+    write_json,
 )
 
 
@@ -342,6 +349,27 @@ def test_panel_seed_is_frozen_to_85_only():
         validate_panel_seed(86)
 
 
+def test_panel_seed85_entry_rejects_other_seed_before_work(tmp_path):
+    args = SimpleNamespace(
+        attack_seed=84,
+        panel_steps="",
+        output_dir=str(tmp_path),
+        frozen_step78_manifest="",
+    )
+    with pytest.raises(SystemExit):
+        run_panel_seed85(args, load_config(LOGRATIO_ARM_V4_CONFIG))
+    assert not any(tmp_path.iterdir())
+
+
+def test_panel_steps_must_match_exact_frozen_set():
+    assert parse_panel_steps("") == PANEL_ALL_CAPTURE_FRAMES
+    assert parse_panel_steps(",".join(str(x) for x in PANEL_ALL_CAPTURE_FRAMES)) == PANEL_ALL_CAPTURE_FRAMES
+    with pytest.raises(SystemExit):
+        parse_panel_steps("70,72,74,76,78,80,82,84")
+    with pytest.raises(SystemExit):
+        parse_panel_steps("70,72,74,76,78,80,82,84,84")
+
+
 def test_step78_parity_mismatch_stops_positive_control():
     frozen = {
         "raw_image_sha256": "a",
@@ -355,3 +383,115 @@ def test_step78_parity_mismatch_stops_positive_control():
     assert step78_parity_status(new, frozen) == "POSITIVE_CONTROL_INPUT_MATCH"
     new["processed_tensor_sha256"] = "changed"
     assert step78_parity_status(new, frozen) == "POSITIVE_CONTROL_INPUT_MISMATCH"
+
+
+def test_aggregate_rejects_duplicate_or_wrong_main_frame_set():
+    rows = []
+    for idx in range(8):
+        rows.append(
+            {
+                "frame": 70 if idx < 2 else PANEL_MAIN_FRAMES[idx],
+                "main_denominator": True,
+                "frame_status": "FRAME_FULL_SELECTIVE_PASS",
+                "rand_paired_margin": 1.0,
+                "shuffled_paired_margin": 1.0,
+            }
+        )
+    agg = panel_aggregate_status(rows)
+    assert agg["panel_status"] == "PANEL_SINGLE_SEED_FAIL"
+    assert "wrong_main_frame_set" in agg["failure_reasons"]
+
+
+def test_manifest_provenance_fails_closed_on_dirty_or_missing_gpu(tmp_path):
+    row = {
+        "dirty_status": "DIRTY: M file.py",
+        "gpu_query": "0, GPU-uuid, Test, 0 MiB, 1 MiB, 0 %, 30",
+        "model_fingerprint": '{"ok": true}',
+    }
+    write_csv(tmp_path / "m3_step78_manifest.csv", [row], list(row.keys()))
+    write_csv(tmp_path / "m3_artifact_hash_manifest.csv", [{"file": "x", "size_bytes": 1, "sha256": "abc"}], ["file", "size_bytes", "sha256"])
+    with pytest.raises(RuntimeError, match="dirty_status"):
+        validate_manifest_provenance(tmp_path)
+
+    row["dirty_status"] = "CLEAN"
+    row["gpu_query"] = "NVIDIA_SMI_UNAVAILABLE"
+    write_csv(tmp_path / "m3_step78_manifest.csv", [row], list(row.keys()))
+    with pytest.raises(RuntimeError, match="gpu_query"):
+        validate_manifest_provenance(tmp_path)
+
+    row["gpu_query"] = "0, GPU-uuid, Test, 0 MiB, 1 MiB, 0 %, 30"
+    row["model_fingerprint"] = "PENDING_MODEL_LOAD"
+    write_csv(tmp_path / "m3_step78_manifest.csv", [row], list(row.keys()))
+    with pytest.raises(RuntimeError, match="model_fingerprint"):
+        validate_manifest_provenance(tmp_path)
+
+
+def test_one_shot_sentinel_prevents_rerun(tmp_path):
+    claim_one_shot_sentinel(tmp_path, stage="m3_panel_seed85", seed=85)
+    with pytest.raises(RuntimeError, match="one-shot sentinel"):
+        claim_one_shot_sentinel(tmp_path, stage="m3_panel_seed85", seed=85)
+
+
+def test_frame_status_from_real_artifacts_uses_clean_gate_and_candidate_counts(tmp_path):
+    clean_dir = tmp_path / "capture" / "step70"
+    run_dir = tmp_path / "frames" / "step70"
+    clean_dir.mkdir(parents=True)
+    run_dir.mkdir(parents=True)
+    write_json(
+        clean_dir / "clean_generation_step70.json",
+        {
+            "official": {
+                "tokens": [1, 2, 3, 4, 5, 6, 31872],
+                "gripper_token": 31872,
+                "score_invariant": {"tie_aware_pass": True},
+            }
+        },
+    )
+    selected_rows = [
+        _selected(margin=10.0) | {"condition": "TRUE_PGD_TRAJECTORY21_SELECTIVE"},
+        _selected(margin=1.0) | {"condition": "RAND21_SELECTIVE"},
+        _selected(margin=2.0) | {"condition": "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"},
+    ]
+    write_csv(run_dir / "m3_v4_selected_results.csv", selected_rows, list(selected_rows[0].keys()))
+    candidate_rows = []
+    for condition in ["TRUE_PGD_TRAJECTORY21_SELECTIVE", "RAND21_SELECTIVE", "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"]:
+        for idx in range(21):
+            candidate_rows.append({"condition": condition, "candidate_id": idx})
+    write_csv(run_dir / "m3_v4_candidate_audit.csv", candidate_rows, ["condition", "candidate_id"])
+    route_rows = []
+    for condition in ["TRUE_PGD_TRAJECTORY21_SELECTIVE", "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"]:
+        route_rows.append(
+            {
+                "condition": condition,
+                "strict_route": "true",
+                "allow_fallback": "false",
+                "fallback_used": "false",
+                "resolved_adapter_class": "TokenPrefixPGDAttacker",
+                "num_backwards": "20",
+                "trajectory_candidate_count": "21",
+            }
+        )
+    write_csv(run_dir / "m3_v4_route_audit.csv", route_rows, list(route_rows[0].keys()))
+    status = frame_status_from_v4_artifacts(run_dir, step=70, main_denominator=True, clean_dir=clean_dir)
+    assert status["frame_status"] == "FRAME_FULL_SELECTIVE_PASS"
+    assert status["true_candidate_count"] == 21
+
+
+def test_frame_status_skips_attack_artifacts_when_clean_ineligible(tmp_path):
+    clean_dir = tmp_path / "capture" / "step70"
+    run_dir = tmp_path / "frames" / "step70"
+    clean_dir.mkdir(parents=True)
+    run_dir.mkdir(parents=True)
+    write_json(
+        clean_dir / "clean_generation_step70.json",
+        {
+            "official": {
+                "tokens": [1, 2, 3, 4, 5, 6, 31744],
+                "gripper_token": 31744,
+                "score_invariant": {"tie_aware_pass": True},
+            }
+        },
+    )
+    status = frame_status_from_v4_artifacts(run_dir, step=70, main_denominator=True, clean_dir=clean_dir)
+    assert status["frame_status"] == "CLEAN_ALREADY_TARGET"
+    assert status["infra_status"] == "SKIPPED_CLEAN_INELIGIBLE"

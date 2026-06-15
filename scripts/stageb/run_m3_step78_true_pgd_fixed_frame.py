@@ -22,6 +22,7 @@ import socket
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -196,6 +197,10 @@ def write_csv(path: Path, rows: list[dict[str, Any]], fieldnames: list[str]) -> 
 
 
 def update_manifest_model_fingerprint(output_dir: Path, fingerprint: Mapping[str, Any]) -> None:
+    update_manifest_model_fingerprint_text(output_dir, json.dumps(dict(fingerprint), sort_keys=True))
+
+
+def update_manifest_model_fingerprint_text(output_dir: Path, fingerprint_text: str) -> None:
     path = output_dir / "m3_step78_manifest.csv"
     if not path.exists():
         return
@@ -204,7 +209,7 @@ def update_manifest_model_fingerprint(output_dir: Path, fingerprint: Mapping[str
         fieldnames = list(rows[0].keys()) if rows else []
     if not rows or "model_fingerprint" not in fieldnames:
         return
-    rows[0]["model_fingerprint"] = json.dumps(dict(fingerprint), sort_keys=True)
+    rows[0]["model_fingerprint"] = fingerprint_text
     write_csv(path, rows, fieldnames)
 
 
@@ -652,6 +657,7 @@ def _median(values: list[float]) -> float:
 
 def panel_aggregate_status(frame_rows: list[Mapping[str, Any]], *, total_main_frames: int = 8) -> dict[str, Any]:
     main = [r for r in frame_rows if bool(r.get("main_denominator", True))]
+    main_frames = [int(r.get("frame", -1)) for r in main]
     ineligible = [r for r in main if str(r.get("frame_status")) in {"CLEAN_CONTEXT_INELIGIBLE", "CLEAN_ALREADY_TARGET", "CLEAN_NOT_CLOSE"}]
     infra_invalid = [r for r in main if str(r.get("frame_status")) == "INFRA_INVALID"]
     full_pass = [r for r in main if str(r.get("frame_status")) == "FRAME_FULL_SELECTIVE_PASS"]
@@ -660,6 +666,8 @@ def panel_aggregate_status(frame_rows: list[Mapping[str, Any]], *, total_main_fr
     reasons = []
     if len(main) != int(total_main_frames):
         reasons.append("wrong_main_denominator_count")
+    if main_frames != PANEL_MAIN_FRAMES or len(set(main_frames)) != len(main_frames):
+        reasons.append("wrong_main_frame_set")
     if infra_invalid:
         reasons.append("infra_invalid_frame")
     if len(ineligible) > 1:
@@ -707,6 +715,215 @@ def step78_parity_status(new_manifest: Mapping[str, Any], frozen_manifest: Mappi
         if str(new_manifest.get(key, "")) != str(frozen_manifest.get(key, "")):
             return "POSITIVE_CONTROL_INPUT_MISMATCH"
     return "POSITIVE_CONTROL_INPUT_MATCH"
+
+
+def parse_panel_steps(panel_steps: str | None) -> list[int]:
+    if panel_steps and str(panel_steps).strip():
+        steps = [int(x) for x in str(panel_steps).split(",") if x.strip()]
+    else:
+        steps = list(PANEL_ALL_CAPTURE_FRAMES)
+    validate_panel_frame_set(steps, require_positive_control=True)
+    return steps
+
+
+def validate_panel_frame_set(steps: list[int], *, require_positive_control: bool) -> None:
+    expected = PANEL_ALL_CAPTURE_FRAMES if require_positive_control else PANEL_MAIN_FRAMES
+    if list(steps) != expected or len(set(steps)) != len(steps):
+        raise SystemExit(f"panel frame set must be exactly {expected}")
+
+
+def read_single_csv(path: Path) -> dict[str, str]:
+    if not path.exists():
+        raise FileNotFoundError(str(path))
+    with path.open("r", encoding="utf-8", newline="") as f:
+        rows = list(csv.DictReader(f))
+    if len(rows) != 1:
+        raise RuntimeError(f"expected exactly one row in {path}, found {len(rows)}")
+    return dict(rows[0])
+
+
+def validate_manifest_provenance(output_dir: Path) -> None:
+    row = read_single_csv(output_dir / "m3_step78_manifest.csv")
+    dirty = str(row.get("dirty_status", ""))
+    if dirty != "CLEAN":
+        raise RuntimeError(f"provenance invalid: dirty_status={dirty!r}")
+    gpu_query = str(row.get("gpu_query", ""))
+    if not gpu_query or gpu_query in {"NVIDIA_SMI_UNAVAILABLE", "NVIDIA_SMI_EMPTY"}:
+        raise RuntimeError(f"provenance invalid: gpu_query={gpu_query!r}")
+    fingerprint = str(row.get("model_fingerprint", ""))
+    if not fingerprint or fingerprint == "PENDING_MODEL_LOAD":
+        raise RuntimeError("provenance invalid: model_fingerprint missing")
+    if not (output_dir / "m3_artifact_hash_manifest.csv").exists():
+        raise RuntimeError("provenance invalid: m3_artifact_hash_manifest.csv missing")
+
+
+def validate_start_provenance() -> None:
+    dirty = dirty_status_value()
+    if dirty != "CLEAN":
+        raise RuntimeError(f"provenance invalid before panel run: dirty_status={dirty!r}")
+    gpu_query = gpu_query_snapshot()
+    if not gpu_query or gpu_query in {"NVIDIA_SMI_UNAVAILABLE", "NVIDIA_SMI_EMPTY"}:
+        raise RuntimeError(f"provenance invalid before panel run: gpu_query={gpu_query!r}")
+
+
+def claim_one_shot_sentinel(output_dir: Path, *, stage: str, seed: int) -> Path:
+    sentinel = output_dir / f"{stage}_ONESHOT_SENTINEL.json"
+    if sentinel.exists():
+        raise RuntimeError(f"one-shot sentinel already exists: {sentinel}")
+    write_json(
+        sentinel,
+        {
+            "stage": stage,
+            "seed": int(seed),
+            "commit": git_value(["rev-parse", "HEAD"]),
+            "created_utc": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+    return sentinel
+
+
+def input_manifest_path(frame_dir: Path, step: int) -> Path:
+    return frame_dir / f"m3_step{int(step)}_input_manifest.csv"
+
+
+def load_input_manifest(frame_dir: Path, step: int) -> dict[str, str]:
+    return read_single_csv(input_manifest_path(frame_dir, step))
+
+
+def step78_parity_from_manifest_paths(new_manifest_path: Path, frozen_manifest_path: Path) -> str:
+    return step78_parity_status(read_single_csv(new_manifest_path), read_single_csv(frozen_manifest_path))
+
+
+def clean_eligibility_from_frame_dir(frame_dir: Path, step: int) -> dict[str, Any]:
+    gen_path = frame_dir / frame_filename("clean_generation", step, "json")
+    if not gen_path.exists():
+        return {"status": "CLEAN_CONTEXT_INELIGIBLE", "reason": "clean_generation_missing", "clean_gripper_token": ""}
+    clean_json = json.loads(gen_path.read_text(encoding="utf-8"))
+    official = clean_json.get("official", {})
+    return clean_frame_eligibility(official)
+
+
+def _rows_by_condition(path: Path) -> dict[str, dict[str, str]]:
+    if not path.exists():
+        return {}
+    with path.open("r", encoding="utf-8", newline="") as f:
+        rows = [dict(r) for r in csv.DictReader(f)]
+    return {str(r.get("condition", "")): r for r in rows}
+
+
+def _candidate_counts(path: Path) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    if not path.exists():
+        return counts
+    with path.open("r", encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            condition = str(row.get("condition", ""))
+            counts[condition] = counts.get(condition, 0) + 1
+    return counts
+
+
+def _route_artifacts_valid(path: Path) -> bool:
+    if not path.exists():
+        return False
+    with path.open("r", encoding="utf-8", newline="") as f:
+        rows = [dict(r) for r in csv.DictReader(f)]
+    required = {"TRUE_PGD_TRAJECTORY21_SELECTIVE", "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"}
+    seen = {str(r.get("condition", "")) for r in rows}
+    if not required.issubset(seen):
+        return False
+    for row in rows:
+        if row.get("condition") not in required:
+            continue
+        if str(row.get("strict_route", "")).lower() != "true":
+            return False
+        if str(row.get("allow_fallback", "")).lower() != "false":
+            return False
+        if str(row.get("fallback_used", "")).lower() != "false":
+            return False
+        if str(row.get("resolved_adapter_class", "")) != "TokenPrefixPGDAttacker":
+            return False
+        if int(float(row.get("num_backwards", 0) or 0)) != 20:
+            return False
+        if int(float(row.get("trajectory_candidate_count", 0) or 0)) != 21:
+            return False
+    return True
+
+
+def frame_status_from_v4_artifacts(
+    frame_dir: Path,
+    *,
+    step: int,
+    main_denominator: bool,
+    clean_dir: Path | None = None,
+) -> dict[str, Any]:
+    clean_status = clean_eligibility_from_frame_dir(clean_dir or frame_dir, step)
+    base = {
+        "frame": int(step),
+        "main_denominator": bool(main_denominator),
+        "clean_status": clean_status["status"],
+        "clean_gripper_token": clean_status.get("clean_gripper_token", ""),
+    }
+    if clean_status["status"] != "CLEAN_ELIGIBLE":
+        return {**base, "frame_status": clean_status["status"], "infra_status": "SKIPPED_CLEAN_INELIGIBLE"}
+    selected_rows = _rows_by_condition(frame_dir / "m3_v4_selected_results.csv")
+    counts = _candidate_counts(frame_dir / "m3_v4_candidate_audit.csv")
+    infra_valid = _route_artifacts_valid(frame_dir / "m3_v4_route_audit.csv")
+    expected_counts = {
+        "TRUE_PGD_TRAJECTORY21_SELECTIVE": 21,
+        "RAND21_SELECTIVE": 21,
+        "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE": 21,
+    }
+    for condition, expected in expected_counts.items():
+        if counts.get(condition, 0) != expected:
+            infra_valid = False
+    status = frame_full_selective_status(
+        true_row=selected_rows.get("TRUE_PGD_TRAJECTORY21_SELECTIVE"),
+        rand_row=selected_rows.get("RAND21_SELECTIVE"),
+        shuffled_row=selected_rows.get("SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"),
+        clean_status=clean_status["status"],
+        infra_valid=infra_valid,
+    )
+    return {
+        **base,
+        "infra_status": "PASS" if infra_valid else "INFRA_INVALID",
+        "frame_status": status["status"],
+        "full_pass": status.get("full_pass", False),
+        "rand_win": status.get("rand_win", False),
+        "shuffled_win": status.get("shuffled_win", False),
+        "rand_control_status": status.get("rand_control_status", ""),
+        "shuffled_control_status": status.get("shuffled_control_status", ""),
+        "rand_paired_margin": status.get("rand_paired_margin", ""),
+        "shuffled_paired_margin": status.get("shuffled_paired_margin", ""),
+        "true_candidate_count": counts.get("TRUE_PGD_TRAJECTORY21_SELECTIVE", 0),
+        "rand_candidate_count": counts.get("RAND21_SELECTIVE", 0),
+        "shuffled_candidate_count": counts.get("SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE", 0),
+    }
+
+
+def write_panel_joint_and_aggregate(output_dir: Path, frame_rows: list[Mapping[str, Any]]) -> dict[str, Any]:
+    joint_path = output_dir / "m3_panel_frame_joint_results.csv"
+    fields = [
+        "frame",
+        "main_denominator",
+        "clean_status",
+        "clean_gripper_token",
+        "infra_status",
+        "frame_status",
+        "full_pass",
+        "rand_win",
+        "shuffled_win",
+        "rand_control_status",
+        "shuffled_control_status",
+        "rand_paired_margin",
+        "shuffled_paired_margin",
+        "true_candidate_count",
+        "rand_candidate_count",
+        "shuffled_candidate_count",
+    ]
+    write_csv(joint_path, [dict(r) for r in frame_rows], fields)
+    aggregate = panel_aggregate_status([r for r in frame_rows if bool(r.get("main_denominator", True))])
+    write_csv(output_dir / "m3_panel_aggregate_result.csv", [aggregate], list(aggregate.keys()))
+    return aggregate
 
 
 def candidate_row_from_official(
@@ -881,6 +1098,81 @@ def run_rand21_official_candidates(
     return rows
 
 
+def write_captured_clean_frame(
+    *,
+    output_dir: Path,
+    cfg: Mapping[str, Any],
+    model: Any,
+    processor: Any,
+    device: str,
+    model_dtype: torch.dtype,
+    action_dim: int,
+    instruction: str,
+    raw_at_step: np.ndarray,
+    clean_action_at_step: np.ndarray,
+    step: int,
+) -> dict[str, Any]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    npy_path = output_dir / frame_filename("raw_agentview", step, "npy")
+    png_path = output_dir / frame_filename("raw_agentview", step, "png")
+    pt_path = output_dir / frame_filename("processor_inputs", step, "pt")
+    gen_path = output_dir / frame_filename("clean_generation", step, "json")
+    np.save(npy_path, raw_at_step)
+    Image.fromarray(raw_at_step).save(png_path)
+    proc_inputs = preprocess_raw_image(raw_at_step, processor, instruction, cfg, device, model_dtype)
+    torch.save({k: v.detach().cpu() for k, v in proc_inputs.items()}, pt_path)
+    official = official_decode(
+        model,
+        proc_inputs,
+        action_dim=action_dim,
+        unnorm_key=cfg["model"]["unnorm_key"],
+        target_token_id=int(cfg["attack_optimizer"]["target_token_id"]),
+        margin=float(cfg["attack_optimizer"]["gripper_margin"]),
+        tolerance=float(cfg["gates"]["score_tie_tolerance"]),
+        objective=str(cfg["attack_optimizer"]["objective"]),
+    )
+    write_json(
+        gen_path,
+        {
+            "instruction": instruction,
+            "clean_action": clean_action_at_step.tolist(),
+            "clean_exact_7_tokens": official["tokens"],
+            "official": official,
+        },
+    )
+    manifest_row = {
+        "source_commit": git_value(["rev-parse", "HEAD"]),
+        "source_output_dir": str(output_dir),
+        "task": cfg["input"]["task"],
+        "state": cfg["input"]["state_id"],
+        "step": int(step),
+        "instruction": instruction,
+        "raw_image_shape": list(raw_at_step.shape),
+        "raw_image_dtype": str(raw_at_step.dtype),
+        "raw_image_sha256": hashlib.sha256(np.ascontiguousarray(raw_at_step).tobytes()).hexdigest(),
+        "processed_tensor_shape": list(proc_inputs["pixel_values"].shape),
+        "processed_tensor_dtype": str(proc_inputs["pixel_values"].dtype),
+        "processed_tensor_sha256": tensor_sha256(proc_inputs["pixel_values"].detach().cpu()),
+        "prompt": prompt(instruction),
+        "prompt_token_ids_sha256": tensor_sha256(proc_inputs["input_ids"].detach().cpu()),
+        "unnorm_key": cfg["model"]["unnorm_key"],
+        "center_crop": cfg["preprocess"]["center_crop"],
+        "resize_size": cfg["preprocess"]["resize_size"],
+        "preprocess_backend": cfg["preprocess"]["libero_preprocess_backend"],
+        "model_fingerprint": json.dumps(model_fingerprint(model), sort_keys=True),
+        "clean_exact_7_tokens": json.dumps(official["tokens"]),
+        "clean_arm_prefix": json.dumps(official["arm_prefix"]),
+        "clean_gripper_token": official["gripper_token"],
+        "clean_score_argmax": official["score_invariant"]["argmax_token"],
+        "status": "CAPTURED",
+    }
+    write_csv(output_dir / f"m3_step{step}_input_manifest.csv", [manifest_row], list(manifest_row.keys()))
+    if step == PANEL_POSITIVE_CONTROL_FRAME:
+        write_csv(output_dir / "m3_step78_input_manifest.csv", [manifest_row], list(manifest_row.keys()))
+    write_artifact_hash_manifest(output_dir)
+    return manifest_row
+
+
 def run_capture_input(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
     from gripper_attack.libero_v4_env_factory import apply_dummy_wait, build_v4_exact_env
     from libero.libero import benchmark, get_libero_path
@@ -930,65 +1222,22 @@ def run_capture_input(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
     if raw_at_step is None:
         raise RuntimeError("failed to capture requested step")
     step = int(cfg["input"]["absolute_step"])
-    npy_path = output_dir / frame_filename("raw_agentview", step, "npy")
-    png_path = output_dir / frame_filename("raw_agentview", step, "png")
-    pt_path = output_dir / frame_filename("processor_inputs", step, "pt")
-    gen_path = output_dir / frame_filename("clean_generation", step, "json")
-    np.save(npy_path, raw_at_step)
-    Image.fromarray(raw_at_step).save(png_path)
-    proc_inputs = preprocess_raw_image(raw_at_step, processor, instruction, cfg, device, model_dtype)
-    torch.save({k: v.detach().cpu() for k, v in proc_inputs.items()}, pt_path)
-    official = official_decode(
-        model,
-        proc_inputs,
+    manifest_row = write_captured_clean_frame(
+        output_dir=output_dir,
+        cfg=cfg,
+        model=model,
+        processor=processor,
+        device=device,
+        model_dtype=model_dtype,
         action_dim=action_dim,
-        unnorm_key=cfg["model"]["unnorm_key"],
-        target_token_id=int(cfg["attack_optimizer"]["target_token_id"]),
-        margin=float(cfg["attack_optimizer"]["gripper_margin"]),
-        tolerance=float(cfg["gates"]["score_tie_tolerance"]),
-        objective=str(cfg["attack_optimizer"]["objective"]),
+        instruction=instruction,
+        raw_at_step=raw_at_step,
+        clean_action_at_step=clean_action_at_step,
+        step=step,
     )
-    write_json(
-        gen_path,
-        {
-            "instruction": instruction,
-            "clean_action": clean_action_at_step.tolist(),
-            "clean_exact_7_tokens": official["tokens"],
-            "official": official,
-        },
-    )
-    manifest_row = {
-        "source_commit": git_value(["rev-parse", "HEAD"]),
-        "source_output_dir": str(output_dir),
-        "task": cfg["input"]["task"],
-        "state": cfg["input"]["state_id"],
-        "step": cfg["input"]["absolute_step"],
-        "instruction": instruction,
-        "raw_image_shape": list(raw_at_step.shape),
-        "raw_image_dtype": str(raw_at_step.dtype),
-        "raw_image_sha256": hashlib.sha256(np.ascontiguousarray(raw_at_step).tobytes()).hexdigest(),
-        "processed_tensor_shape": list(proc_inputs["pixel_values"].shape),
-        "processed_tensor_dtype": str(proc_inputs["pixel_values"].dtype),
-        "processed_tensor_sha256": tensor_sha256(proc_inputs["pixel_values"].detach().cpu()),
-        "prompt": prompt(instruction),
-        "prompt_token_ids_sha256": tensor_sha256(proc_inputs["input_ids"].detach().cpu()),
-        "unnorm_key": cfg["model"]["unnorm_key"],
-        "center_crop": cfg["preprocess"]["center_crop"],
-        "resize_size": cfg["preprocess"]["resize_size"],
-        "preprocess_backend": cfg["preprocess"]["libero_preprocess_backend"],
-        "model_fingerprint": json.dumps(model_fingerprint(model), sort_keys=True),
-        "clean_exact_7_tokens": json.dumps(official["tokens"]),
-        "clean_arm_prefix": json.dumps(official["arm_prefix"]),
-        "clean_gripper_token": official["gripper_token"],
-        "clean_score_argmax": official["score_invariant"]["argmax_token"],
-        "status": "CAPTURED",
-    }
-    write_csv(output_dir / f"m3_step{step}_input_manifest.csv", [manifest_row], list(manifest_row.keys()))
-    if step == 78:
-        write_csv(output_dir / "m3_step78_input_manifest.csv", [manifest_row], list(manifest_row.keys()))
     update_manifest_model_fingerprint(output_dir, model_fingerprint(model))
     write_artifact_hash_manifest(output_dir)
-    print(json.dumps({"status": "CAPTURED", "output_dir": str(output_dir), "clean_gripper_token": official["gripper_token"]}, indent=2))
+    print(json.dumps({"status": "CAPTURED", "output_dir": str(output_dir), "clean_gripper_token": manifest_row["clean_gripper_token"]}, indent=2))
 
 
 def load_frozen_input(input_dir: Path) -> tuple[np.ndarray, dict[str, Any]]:
@@ -1008,13 +1257,71 @@ def load_frozen_input(input_dir: Path) -> tuple[np.ndarray, dict[str, Any]]:
 
 
 def run_capture_panel_inputs(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
-    steps = [int(x) for x in str(args.panel_steps or ",".join(str(x) for x in PANEL_ALL_CAPTURE_FRAMES)).split(",") if x.strip()]
-    for step in steps:
-        sub_cfg = json.loads(json.dumps(cfg))
-        sub_cfg["input"]["absolute_step"] = int(step)
-        sub_args = argparse.Namespace(**vars(args))
-        sub_args.output_dir = str(Path(args.output_dir) / f"step{step}")
-        run_capture_input(sub_args, sub_cfg)
+    from gripper_attack.libero_v4_env_factory import apply_dummy_wait, build_v4_exact_env
+    from libero.libero import benchmark, get_libero_path
+
+    validate_start_provenance()
+    steps = parse_panel_steps(args.panel_steps)
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    model, processor, device = load_model(cfg["model"]["path"], args.model_gpu_device_id)
+    update_manifest_model_fingerprint(output_dir, model_fingerprint(model))
+    model_dtype = next(model.parameters()).dtype
+    action_dim = int(model.get_action_dim(cfg["model"]["unnorm_key"]))
+
+    bm = benchmark.get_benchmark_dict()
+    task_suite = bm[cfg["input"]["suite"]]()
+    task_obj = task_suite.get_task(TASK_IDX[cfg["input"]["task"]])
+    init_states = task_suite.get_task_init_states(TASK_IDX[cfg["input"]["task"]])
+    bddl_file = os.path.join(get_libero_path("bddl_files"), task_obj.problem_folder, task_obj.bddl_file)
+    env, obs = build_v4_exact_env(bddl_file, int(args.render_gpu_device_id), int(args.max_steps), int(args.num_steps_wait))
+    obs = env.set_init_state(init_states[int(cfg["input"]["state_id"])])
+    env, obs = apply_dummy_wait(env, obs, int(args.num_steps_wait))
+    instruction = task_obj.language
+
+    captured: list[dict[str, Any]] = []
+    step_set = set(steps)
+    for step in range(max(steps) + 1):
+        raw = np.asarray(obs["agentview_image"]).copy()
+        action, _scores, _dt, _gen = decode_with_scores(
+            model,
+            processor,
+            device,
+            raw,
+            instruction,
+            cfg["model"]["unnorm_key"],
+            8,
+            libero_official_preprocess=bool(cfg["preprocess"]["libero_official_preprocess"]),
+            center_crop=bool(cfg["preprocess"]["center_crop"]),
+            resize_size=int(cfg["preprocess"]["resize_size"]),
+            libero_preprocess_backend=str(cfg["preprocess"]["libero_preprocess_backend"]),
+        )
+        if step in step_set:
+            frame_dir = output_dir / f"step{step}"
+            captured.append(
+                write_captured_clean_frame(
+                    output_dir=frame_dir,
+                    cfg={**cfg, "input": {**cfg["input"], "absolute_step": int(step)}},
+                    model=model,
+                    processor=processor,
+                    device=device,
+                    model_dtype=model_dtype,
+                    action_dim=action_dim,
+                    instruction=instruction,
+                    raw_at_step=raw,
+                    clean_action_at_step=np.asarray(action, dtype=np.float32),
+                    step=step,
+                )
+            )
+        if step < max(steps):
+            obs, _reward, _done, _info = env.step(postprocess_openvla_action_for_libero(action, enabled=True))
+    env.close()
+
+    if sorted(int(r["step"]) for r in captured) != steps:
+        raise RuntimeError(f"panel capture missed frames: expected {steps}, got {[r['step'] for r in captured]}")
+    write_csv(output_dir / "m3_panel_capture_manifest.csv", captured, list(captured[0].keys()))
+    write_artifact_hash_manifest(output_dir)
+    print(json.dumps({"status": "PANEL_CAPTURED_SINGLE_CLEAN_REPLAY", "frames": steps, "output_dir": str(output_dir)}, indent=2))
 
 
 def mark_and_select_candidates(
@@ -1535,6 +1842,112 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
     print(json.dumps({"status": "CANARY_COMPLETE_UNCLASSIFIED", "output_dir": str(output_dir)}, indent=2))
 
 
+def run_panel_seed85(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
+    validate_panel_seed(int(args.attack_seed))
+    parse_panel_steps(args.panel_steps)
+    validate_start_provenance()
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    claim_one_shot_sentinel(output_dir, stage="m3_panel_seed85", seed=int(args.attack_seed))
+
+    if not args.frozen_step78_manifest:
+        raise SystemExit("--frozen_step78_manifest is required for panel_seed85")
+
+    capture_args = argparse.Namespace(**vars(args))
+    capture_args.output_dir = str(output_dir / "capture")
+    run_capture_panel_inputs(capture_args, cfg)
+    first_capture_manifest = load_input_manifest(output_dir / "capture" / f"step{PANEL_ALL_CAPTURE_FRAMES[0]}", PANEL_ALL_CAPTURE_FRAMES[0])
+    update_manifest_model_fingerprint_text(output_dir, str(first_capture_manifest["model_fingerprint"]))
+    write_artifact_hash_manifest(output_dir)
+
+    step78_new = output_dir / "capture" / f"step{PANEL_POSITIVE_CONTROL_FRAME}" / "m3_step78_input_manifest.csv"
+    parity = step78_parity_from_manifest_paths(step78_new, Path(args.frozen_step78_manifest))
+    write_json(
+        output_dir / "m3_panel_step78_parity.json",
+        {
+            "status": parity,
+            "new_manifest": str(step78_new),
+            "frozen_manifest": str(args.frozen_step78_manifest),
+        },
+    )
+    if parity != "POSITIVE_CONTROL_INPUT_MATCH":
+        write_artifact_hash_manifest(output_dir)
+        raise RuntimeError("POSITIVE_CONTROL_INPUT_MISMATCH")
+
+    frame_rows: list[dict[str, Any]] = []
+    for step in PANEL_ALL_CAPTURE_FRAMES:
+        clean_dir = output_dir / "capture" / f"step{step}"
+        main_denominator = step in PANEL_MAIN_FRAMES
+        clean_status = clean_eligibility_from_frame_dir(clean_dir, step)
+        if step == PANEL_POSITIVE_CONTROL_FRAME:
+            frame_rows.append(
+                {
+                    "frame": step,
+                    "main_denominator": False,
+                    "clean_status": clean_status["status"],
+                    "clean_gripper_token": clean_status.get("clean_gripper_token", ""),
+                    "infra_status": "POSITIVE_CONTROL_ONLY",
+                    "frame_status": "POSITIVE_CONTROL_INPUT_MATCH",
+                    "full_pass": False,
+                    "rand_win": "",
+                    "shuffled_win": "",
+                    "rand_control_status": "",
+                    "shuffled_control_status": "",
+                    "rand_paired_margin": "",
+                    "shuffled_paired_margin": "",
+                    "true_candidate_count": "",
+                    "rand_candidate_count": "",
+                    "shuffled_candidate_count": "",
+                }
+            )
+            continue
+        if clean_status["status"] != "CLEAN_ELIGIBLE":
+            frame_rows.append(
+                {
+                    "frame": step,
+                    "main_denominator": main_denominator,
+                    "clean_status": clean_status["status"],
+                    "clean_gripper_token": clean_status.get("clean_gripper_token", ""),
+                    "infra_status": "SKIPPED_CLEAN_INELIGIBLE",
+                    "frame_status": clean_status["status"],
+                    "full_pass": False,
+                    "rand_win": "",
+                    "shuffled_win": "",
+                    "rand_control_status": "",
+                    "shuffled_control_status": "",
+                    "rand_paired_margin": "",
+                    "shuffled_paired_margin": "",
+                    "true_candidate_count": "",
+                    "rand_candidate_count": "",
+                    "shuffled_candidate_count": "",
+                }
+            )
+            continue
+
+        frame_output = output_dir / "frames" / f"step{step}"
+        frame_args = argparse.Namespace(**vars(args))
+        frame_args.input_dir = str(clean_dir)
+        frame_args.output_dir = str(frame_output)
+        frame_args.mode = "canary_v4"
+        write_manifest(frame_args, cfg)
+        run_preflight_or_canary(frame_args, cfg, canary=True)
+        validate_manifest_provenance(frame_output)
+        frame_rows.append(
+            frame_status_from_v4_artifacts(
+                frame_output,
+                step=step,
+                main_denominator=main_denominator,
+                clean_dir=clean_dir,
+            )
+        )
+
+    aggregate = write_panel_joint_and_aggregate(output_dir, frame_rows)
+    write_json(output_dir / "m3_panel_result.json", {"aggregate": aggregate, "frames": frame_rows})
+    write_artifact_hash_manifest(output_dir)
+    validate_manifest_provenance(output_dir)
+    print(json.dumps({"status": aggregate["panel_status"], "output_dir": str(output_dir), "aggregate": aggregate}, indent=2))
+
+
 def write_manifest(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -1566,10 +1979,15 @@ def write_manifest(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=str(REPO_ROOT / "configs" / "m3_step78_true_pgd_31744.yaml"))
-    ap.add_argument("--mode", choices=["capture_input", "capture_panel_inputs", "preflight_zero_step", "canary", "canary_v4"], required=True)
+    ap.add_argument(
+        "--mode",
+        choices=["capture_input", "capture_panel_inputs", "preflight_zero_step", "canary", "canary_v4", "panel_seed85"],
+        required=True,
+    )
     ap.add_argument("--output_dir", required=True)
     ap.add_argument("--input_dir", default="")
     ap.add_argument("--panel_steps", default="")
+    ap.add_argument("--frozen_step78_manifest", default="")
     ap.add_argument("--attack_seed", type=int, default=80)
     ap.add_argument("--model_gpu_device_id", type=int, default=-1)
     ap.add_argument("--render_gpu_device_id", type=int, default=0)
@@ -1585,6 +2003,8 @@ def main() -> None:
         run_capture_input(args, cfg)
     elif args.mode == "capture_panel_inputs":
         run_capture_panel_inputs(args, cfg)
+    elif args.mode == "panel_seed85":
+        run_panel_seed85(args, cfg)
     elif args.mode == "preflight_zero_step":
         if not args.input_dir:
             raise SystemExit("--input_dir is required for preflight_zero_step")
