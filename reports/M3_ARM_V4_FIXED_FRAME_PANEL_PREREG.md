@@ -2,14 +2,12 @@
 
 ## Decision
 
-`PREREG_ONLY`
+`PREREG_REPAIRED_IMPLEMENTATION_ONLY`
 
-This commit preregisters the next fixed-frame panel after arm-v4 passed the
-Tomato state0 step78 development frame for fresh seeds `83` and `84`.
-
-No panel GPU run, LIBERO closed-loop rollout, production-runner transfer,
-critical-close rescue, held-out transfer, or Layer1/2 selector attack is
-authorized by this preregistration.
+This commit repairs the panel preregistration protocol and adds CPU-tested
+panel helper logic. It does not authorize panel GPU execution, LIBERO
+closed-loop rollout, production-runner transfer, critical-close rescue,
+held-out transfer, or Layer1/2 selector attack.
 
 ## Current State
 
@@ -55,6 +53,38 @@ Frozen method fields:
 The objective, target token, epsilon, step count, candidate count, arm gate, and
 selection rule must not change for the panel.
 
+## Capture Protocol
+
+Before any panel attack run, capture all panel inputs through one deterministic
+Tomato state0 clean replay:
+
+```text
+70, 72, 74, 76, 78, 80, 82, 84, 86
+```
+
+For every captured frame, save or manifest:
+
+- raw runner input image hash;
+- processed tensor hash;
+- prompt and prompt-token hash;
+- clean exact 7 generated tokens;
+- clean generated arm prefix;
+- clean gripper token;
+- score row / score invariant;
+- runner, model, preprocessing, worktree, and GPU provenance.
+
+Frame 78 is a positive-control input-chain parity check against the previously
+frozen step78 input. If raw hash, processed tensor hash, prompt-token hash,
+clean exact tokens, clean arm prefix, or clean gripper token differs, mark:
+
+```text
+POSITIVE_CONTROL_INPUT_MISMATCH
+INFRA_INVALID
+STOP
+```
+
+Do not run the main panel after a positive-control input mismatch.
+
 ## Panel Frames
 
 Task/state:
@@ -78,7 +108,7 @@ Development positive control:
 Step78 must be reported separately as a development positive control and must
 not enter the panel main denominator.
 
-## Frame Eligibility
+## Clean Eligibility
 
 Before running any attack on a frame, capture or load the clean fixed-frame
 input and verify:
@@ -88,13 +118,20 @@ input and verify:
 - score invariant passes or has an explicit tie-aware status;
 - clean generated arm prefix is available;
 - target score row is available;
-- processor input and raw image hashes are recorded.
+- processor input and raw image hashes are recorded;
+- clean official gripper token is exactly `31872`.
 
-If a frame fails clean eligibility, mark it:
+Clean-context labels:
 
-`CLEAN_CONTEXT_INELIGIBLE`
+| Condition | Label | Main denominator treatment |
+| --- | --- | --- |
+| clean gripper token `31872` | `CLEAN_ELIGIBLE` | attack may run |
+| clean gripper token `31744` | `CLEAN_ALREADY_TARGET` | ineligible; no replacement |
+| clean gripper token other than `31872` or `31744` | `CLEAN_NOT_CLOSE` | ineligible; no replacement |
+| exact-token, score, prefix, or provenance failure | `CLEAN_CONTEXT_INELIGIBLE` | ineligible or infra invalid as appropriate |
 
-Do not replace it with another frame. Report it as an ineligible panel cell.
+If a frame is ineligible, do not replace it with another frame. Report it as an
+ineligible panel cell.
 
 ## Conditions Per Eligible Frame
 
@@ -124,72 +161,99 @@ Each frame must report, per condition:
 Both selected-margin and feasible-candidate rate must be reported. Reporting
 only the best selected margin is insufficient.
 
+## Control Infeasibility Semantics
+
+Frame comparison semantics are frozen as follows:
+
+| TRUE candidate | control candidate | Result |
+| --- | --- | --- |
+| infeasible | any | frame fails |
+| feasible | infeasible | TRUE wins that control, but paired margin is blank |
+| feasible | feasible | compare finite official target margins |
+| infeasible | infeasible | frame fails |
+
+Automatic wins from an infeasible control must be counted and reported
+separately. They do not contribute finite paired margins.
+
+Median paired margin uses only frames where TRUE and the corresponding control
+both have feasible selected candidates. Each control requires at least 4 finite
+paired frames. The finite median paired margin must be positive for both RAND21
+and shuffled-gradient controls.
+
 ## Seeds
 
-Panel seed policy is not authorized for execution by this preregistration.
-
-Recommended first reviewable panel run, if later authorized:
+The first panel seed is frozen to exactly:
 
 ```text
 attack_seed = 85
 ```
 
-Recommended replication run, if seed85 panel passes and a separate review
-authorizes it:
+There is exactly one seed85 run. Do not rerun seed85. Seed86 may only be run
+after seed85 artifacts are reviewed and a separate authorization is given.
+
+This preregistration still does not authorize panel GPU execution.
+
+## Frame Full Selective Pass
+
+A main-denominator frame passes only if all conditions are jointly true on that
+same frame:
 
 ```text
-attack_seed = 86
+FRAME_FULL_SELECTIVE_PASS =
+    clean status is CLEAN_ELIGIBLE
+    AND TRUE candidate exists
+    AND TRUE token == 31744
+    AND TRUE arm match >= 5/6
+    AND TRUE budget / route / score invariant is valid
+    AND TRUE margin > RAND margin, or RAND has no feasible selected candidate
+    AND TRUE margin > shuffled margin, or shuffled has no feasible selected candidate
 ```
 
-Do not run seed85 or seed86 without explicit post-prereg authorization.
+Separate sub-metric counts across different frames cannot satisfy the panel
+gate.
 
 ## Panel Aggregate Gate
 
 For the main denominator of 8 non-development frames, a single-seed panel pass
 requires all of:
 
-- no `INFRA_INVALID` eligible frame;
-- no more than 1 `CLEAN_CONTEXT_INELIGIBLE` frame;
-- among eligible frames, TRUE_PGD selected candidate emits `31744` in at least
-  6 frames;
-- among eligible frames, TRUE_PGD selected candidate arm match is `>=5/6` in at
-  least 6 frames;
-- among eligible frames, TRUE_PGD selected official margin exceeds selected
-  RAND21 margin in at least 6 frames;
-- among eligible frames, TRUE_PGD selected official margin exceeds selected
-  shuffled-gradient margin in at least 6 frames;
-- median paired TRUE_PGD minus RAND21 official margin is positive;
-- median paired TRUE_PGD minus shuffled-gradient official margin is positive.
+- exactly 8 main-denominator frames are reported;
+- no `INFRA_INVALID` main-denominator frame;
+- no more than 1 clean-ineligible main-denominator frame;
+- `FRAME_FULL_SELECTIVE_PASS >= 6/8`;
+- RAND finite paired margin count `>=4`;
+- shuffled finite paired margin count `>=4`;
+- median finite TRUE minus RAND official target margin `>0`;
+- median finite TRUE minus shuffled official target margin `>0`.
 
-Step78 may be shown as a positive-control row but must not affect the above
+Step78 may be shown as a positive-control row but must not affect the aggregate
 gate.
 
 ## Result Classes
 
-- `PANEL_PREREG_ONLY`: this commit.
-- `PANEL_CLEAN_CONTEXT_INELIGIBLE`: one or more preregistered frames fail clean
-  input eligibility.
+- `PANEL_PREREG_REPAIRED_IMPLEMENTATION_ONLY`: this commit.
+- `POSITIVE_CONTROL_INPUT_MISMATCH`: captured step78 does not match frozen
+  step78 input.
+- `CLEAN_ALREADY_TARGET`: clean token is already `31744`.
+- `CLEAN_NOT_CLOSE`: clean token is not `31872`.
+- `CLEAN_CONTEXT_INELIGIBLE`: clean input or clean decode is invalid.
+- `FRAME_FULL_SELECTIVE_PASS`: one main-denominator frame satisfies the joint
+  frame gate.
 - `PANEL_SINGLE_SEED_PASS`: one authorized panel seed passes the aggregate gate.
 - `PANEL_SINGLE_SEED_FAIL`: one authorized panel seed fails the aggregate gate.
-- `PANEL_REPLICATION_PASS`: two authorized panel seeds pass after separate
-  review.
-- `PANEL_REPLICATION_FAIL`: second authorized panel seed fails.
 - `INFRA_INVALID`: route, budget, exact-token, score invariant, provenance, or
   candidate-count checks fail.
 
-## P1 Provenance Fix Required Before Panel GPU
+## Provenance Fixes Required Before Panel GPU
 
-Before any panel GPU execution, fix or otherwise fail-closed around the current
-manifest gaps:
+The panel runner must write:
 
-- `dirty_status` must record the actual worktree status;
-- `model_fingerprint` must be populated;
-- `gpu_query` must include GPU UUID or an equivalent `nvidia-smi` snapshot
-  reference;
-- preflight artifacts must have either committed summaries or hash manifests.
+- `dirty_status` as `CLEAN`, `DIRTY:...`, or `GIT_STATUS_UNAVAILABLE`;
+- populated `model_fingerprint`;
+- GPU UUID or an equivalent `nvidia-smi` snapshot reference;
+- capture/preflight artifact hash manifests.
 
-This preregistration records the requirement but does not modify the manifest
-writer. A separate code commit is required before panel GPU execution.
+If these cannot be written, the run must be treated as provenance-invalid.
 
 ## Allowed Claim If A Later Panel Passes
 
@@ -212,6 +276,6 @@ Even if a future panel passes, do not claim:
 
 ## Stop Rule
 
-After this preregistration, stop for review. Do not launch panel GPU jobs until
-the manifest P1 issue is fixed and explicit panel execution authorization is
-given.
+After this protocol repair commit, stop for review. Do not launch panel GPU
+jobs until the repaired preregistration and CPU tests are reviewed and explicit
+panel execution authorization is given.

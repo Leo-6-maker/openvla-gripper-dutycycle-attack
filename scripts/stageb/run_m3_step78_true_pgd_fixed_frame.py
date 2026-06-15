@@ -94,6 +94,9 @@ V4_CONDITIONS = [
     "RAND21_SELECTIVE",
     "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE",
 ]
+PANEL_MAIN_FRAMES = [70, 72, 74, 76, 80, 82, 84, 86]
+PANEL_POSITIVE_CONTROL_FRAME = 78
+PANEL_ALL_CAPTURE_FRAMES = [70, 72, 74, 76, 78, 80, 82, 84, 86]
 PRELIGHT_CLASSES = {
     "SURROGATE_OFFICIAL_SCORE_PATH_MATCH",
     "SURROGATE_OFFICIAL_SCORE_PATH_TIE_EQUIVALENT",
@@ -128,6 +131,36 @@ def git_value(args: list[str]) -> str:
         return ""
 
 
+def dirty_status_value() -> str:
+    try:
+        status = subprocess.check_output(
+            ["git", "status", "--porcelain"],
+            cwd=REPO_ROOT,
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip()
+    except Exception:
+        return "GIT_STATUS_UNAVAILABLE"
+    if not status:
+        return "CLEAN"
+    return "DIRTY:" + status.replace("\n", "\\n")
+
+
+def gpu_query_snapshot() -> str:
+    try:
+        return subprocess.check_output(
+            [
+                "nvidia-smi",
+                "--query-gpu=index,uuid,name,memory.used,memory.total,utilization.gpu,temperature.gpu",
+                "--format=csv,noheader",
+            ],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip() or "NVIDIA_SMI_EMPTY"
+    except Exception:
+        return "NVIDIA_SMI_UNAVAILABLE"
+
+
 def jsonable(value: Any) -> Any:
     if torch.is_tensor(value):
         if value.numel() <= 64:
@@ -160,6 +193,35 @@ def write_csv(path: Path, rows: list[dict[str, Any]], fieldnames: list[str]) -> 
         writer.writeheader()
         for row in rows:
             writer.writerow({k: row.get(k, "") for k in fieldnames})
+
+
+def update_manifest_model_fingerprint(output_dir: Path, fingerprint: Mapping[str, Any]) -> None:
+    path = output_dir / "m3_step78_manifest.csv"
+    if not path.exists():
+        return
+    with path.open("r", encoding="utf-8", newline="") as f:
+        rows = list(csv.DictReader(f))
+        fieldnames = list(rows[0].keys()) if rows else []
+    if not rows or "model_fingerprint" not in fieldnames:
+        return
+    rows[0]["model_fingerprint"] = json.dumps(dict(fingerprint), sort_keys=True)
+    write_csv(path, rows, fieldnames)
+
+
+def write_artifact_hash_manifest(output_dir: Path, filename: str = "m3_artifact_hash_manifest.csv") -> None:
+    rows = []
+    for path in sorted(output_dir.glob("*")):
+        if not path.is_file() or path.name == filename:
+            continue
+        rows.append(
+            {
+                "file": path.name,
+                "size_bytes": path.stat().st_size,
+                "sha256": sha256_file(path),
+            }
+        )
+    if rows:
+        write_csv(output_dir / filename, rows, ["file", "size_bytes", "sha256"])
 
 
 def model_fingerprint(model: Any) -> dict[str, Any]:
@@ -473,6 +535,10 @@ def collect_condition_row(
     }
 
 
+def frame_filename(stem: str, step: int, suffix: str) -> str:
+    return f"{stem}_step{int(step)}.{suffix}"
+
+
 def arm_prefix_match_count(candidate_arm: list[int], clean_arm: list[int]) -> tuple[int, int]:
     n = min(len(candidate_arm), len(clean_arm))
     return sum(int(candidate_arm[i] == clean_arm[i]) for i in range(n)), n
@@ -501,6 +567,146 @@ def select_hard_feasible_candidate(
             int(row.get("candidate_id", 10**9)),
         ),
     )[0]
+
+
+def clean_frame_eligibility(official: Mapping[str, Any]) -> dict[str, Any]:
+    token = int(official.get("gripper_token", -1))
+    tokens = official.get("tokens", [])
+    invariant = official.get("score_invariant", {})
+    if len(tokens) != 7:
+        return {"status": "CLEAN_CONTEXT_INELIGIBLE", "reason": "clean_not_exact_7_tokens", "clean_gripper_token": token}
+    if not bool(invariant.get("tie_aware_pass", False)):
+        return {"status": "CLEAN_CONTEXT_INELIGIBLE", "reason": "clean_score_invariant_fail", "clean_gripper_token": token}
+    if token == TARGET_31744:
+        return {"status": "CLEAN_ALREADY_TARGET", "reason": "clean_already_31744", "clean_gripper_token": token}
+    if token != 31872:
+        return {"status": "CLEAN_NOT_CLOSE", "reason": "clean_not_31872", "clean_gripper_token": token}
+    return {"status": "CLEAN_ELIGIBLE", "reason": "clean_close_31872", "clean_gripper_token": token}
+
+
+def _selected_is_feasible(row: Mapping[str, Any] | None, *, target_token_id: int = TARGET_31744, arm_gate: int = 5) -> bool:
+    if row is None:
+        return False
+    if str(row.get("condition_result", "")) == "NO_FEASIBLE_CANDIDATE":
+        return False
+    return (
+        int(row.get("official_gripper_token", -1) or -1) == int(target_token_id)
+        and int(row.get("arm_prefix_match_count", 0) or 0) >= int(arm_gate)
+    )
+
+
+def frame_full_selective_status(
+    *,
+    true_row: Mapping[str, Any] | None,
+    rand_row: Mapping[str, Any] | None,
+    shuffled_row: Mapping[str, Any] | None,
+    clean_status: str = "CLEAN_ELIGIBLE",
+    infra_valid: bool = True,
+    target_token_id: int = TARGET_31744,
+    arm_gate: int = 5,
+) -> dict[str, Any]:
+    if not infra_valid:
+        return {"status": "INFRA_INVALID", "full_pass": False, "rand_win": False, "shuffled_win": False}
+    if clean_status != "CLEAN_ELIGIBLE":
+        return {"status": clean_status, "full_pass": False, "rand_win": False, "shuffled_win": False}
+    true_ok = _selected_is_feasible(true_row, target_token_id=target_token_id, arm_gate=arm_gate)
+    rand_ok = _selected_is_feasible(rand_row, target_token_id=target_token_id, arm_gate=arm_gate)
+    shuffled_ok = _selected_is_feasible(shuffled_row, target_token_id=target_token_id, arm_gate=arm_gate)
+    if not true_ok:
+        return {"status": "FRAME_FAIL_TRUE_INFEASIBLE", "full_pass": False, "rand_win": False, "shuffled_win": False}
+    true_margin = float(true_row["official_target31744_margin"])
+    rand_win = True if not rand_ok else true_margin > float(rand_row["official_target31744_margin"])
+    shuffled_win = True if not shuffled_ok else true_margin > float(shuffled_row["official_target31744_margin"])
+    if rand_win and shuffled_win:
+        return {
+            "status": "FRAME_FULL_SELECTIVE_PASS",
+            "full_pass": True,
+            "rand_win": True,
+            "shuffled_win": True,
+            "rand_paired_margin": "" if not rand_ok else true_margin - float(rand_row["official_target31744_margin"]),
+            "shuffled_paired_margin": "" if not shuffled_ok else true_margin - float(shuffled_row["official_target31744_margin"]),
+            "rand_control_status": "CONTROL_INFEASIBLE_AUTO_WIN" if not rand_ok else "PAIRED_FINITE",
+            "shuffled_control_status": "CONTROL_INFEASIBLE_AUTO_WIN" if not shuffled_ok else "PAIRED_FINITE",
+        }
+    return {
+        "status": "FRAME_FAIL_CONTROL_NOT_BEATEN",
+        "full_pass": False,
+        "rand_win": rand_win,
+        "shuffled_win": shuffled_win,
+        "rand_paired_margin": "" if not rand_ok else true_margin - float(rand_row["official_target31744_margin"]),
+        "shuffled_paired_margin": "" if not shuffled_ok else true_margin - float(shuffled_row["official_target31744_margin"]),
+        "rand_control_status": "CONTROL_INFEASIBLE_AUTO_WIN" if not rand_ok else "PAIRED_FINITE",
+        "shuffled_control_status": "CONTROL_INFEASIBLE_AUTO_WIN" if not shuffled_ok else "PAIRED_FINITE",
+    }
+
+
+def _median(values: list[float]) -> float:
+    if not values:
+        raise ValueError("median requires at least one value")
+    vals = sorted(float(v) for v in values)
+    mid = len(vals) // 2
+    if len(vals) % 2:
+        return vals[mid]
+    return 0.5 * (vals[mid - 1] + vals[mid])
+
+
+def panel_aggregate_status(frame_rows: list[Mapping[str, Any]], *, total_main_frames: int = 8) -> dict[str, Any]:
+    main = [r for r in frame_rows if bool(r.get("main_denominator", True))]
+    ineligible = [r for r in main if str(r.get("frame_status")) in {"CLEAN_CONTEXT_INELIGIBLE", "CLEAN_ALREADY_TARGET", "CLEAN_NOT_CLOSE"}]
+    infra_invalid = [r for r in main if str(r.get("frame_status")) == "INFRA_INVALID"]
+    full_pass = [r for r in main if str(r.get("frame_status")) == "FRAME_FULL_SELECTIVE_PASS"]
+    rand_margins = [float(r["rand_paired_margin"]) for r in main if r.get("rand_paired_margin") not in {"", None}]
+    shuffled_margins = [float(r["shuffled_paired_margin"]) for r in main if r.get("shuffled_paired_margin") not in {"", None}]
+    reasons = []
+    if len(main) != int(total_main_frames):
+        reasons.append("wrong_main_denominator_count")
+    if infra_invalid:
+        reasons.append("infra_invalid_frame")
+    if len(ineligible) > 1:
+        reasons.append("too_many_clean_ineligible_frames")
+    if len(full_pass) < 6:
+        reasons.append("fewer_than_6_full_selective_pass_frames")
+    if len(rand_margins) < 4:
+        reasons.append("rand_paired_frames_below_4")
+    if len(shuffled_margins) < 4:
+        reasons.append("shuffled_paired_frames_below_4")
+    rand_median = "" if len(rand_margins) < 4 else _median(rand_margins)
+    shuffled_median = "" if len(shuffled_margins) < 4 else _median(shuffled_margins)
+    if rand_median != "" and rand_median <= 0:
+        reasons.append("rand_median_not_positive")
+    if shuffled_median != "" and shuffled_median <= 0:
+        reasons.append("shuffled_median_not_positive")
+    return {
+        "panel_status": "PANEL_SINGLE_SEED_PASS" if not reasons else "PANEL_SINGLE_SEED_FAIL",
+        "full_pass_count": len(full_pass),
+        "clean_ineligible_count": len(ineligible),
+        "infra_invalid_count": len(infra_invalid),
+        "rand_paired_count": len(rand_margins),
+        "shuffled_paired_count": len(shuffled_margins),
+        "rand_median_margin": rand_median,
+        "shuffled_median_margin": shuffled_median,
+        "failure_reasons": ";".join(reasons),
+    }
+
+
+def validate_panel_seed(seed: int) -> None:
+    if int(seed) != 85:
+        raise SystemExit("panel prereg permits exactly one first panel run with attack_seed=85")
+
+
+def step78_parity_status(new_manifest: Mapping[str, Any], frozen_manifest: Mapping[str, Any]) -> str:
+    keys = [
+        "raw_image_sha256",
+        "processed_tensor_sha256",
+        "prompt_token_ids_sha256",
+        "clean_exact_7_tokens",
+        "clean_arm_prefix",
+        "clean_gripper_token",
+    ]
+    for key in keys:
+        if str(new_manifest.get(key, "")) != str(frozen_manifest.get(key, "")):
+            return "POSITIVE_CONTROL_INPUT_MISMATCH"
+    return "POSITIVE_CONTROL_INPUT_MATCH"
 
 
 def candidate_row_from_official(
@@ -723,10 +929,11 @@ def run_capture_input(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
 
     if raw_at_step is None:
         raise RuntimeError("failed to capture requested step")
-    npy_path = output_dir / "raw_agentview_step78.npy"
-    png_path = output_dir / "raw_agentview_step78.png"
-    pt_path = output_dir / "processor_inputs_step78.pt"
-    gen_path = output_dir / "clean_generation_step78.json"
+    step = int(cfg["input"]["absolute_step"])
+    npy_path = output_dir / frame_filename("raw_agentview", step, "npy")
+    png_path = output_dir / frame_filename("raw_agentview", step, "png")
+    pt_path = output_dir / frame_filename("processor_inputs", step, "pt")
+    gen_path = output_dir / frame_filename("clean_generation", step, "json")
     np.save(npy_path, raw_at_step)
     Image.fromarray(raw_at_step).save(png_path)
     proc_inputs = preprocess_raw_image(raw_at_step, processor, instruction, cfg, device, model_dtype)
@@ -776,16 +983,38 @@ def run_capture_input(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
         "clean_score_argmax": official["score_invariant"]["argmax_token"],
         "status": "CAPTURED",
     }
-    write_csv(output_dir / "m3_step78_input_manifest.csv", [manifest_row], list(manifest_row.keys()))
+    write_csv(output_dir / f"m3_step{step}_input_manifest.csv", [manifest_row], list(manifest_row.keys()))
+    if step == 78:
+        write_csv(output_dir / "m3_step78_input_manifest.csv", [manifest_row], list(manifest_row.keys()))
+    update_manifest_model_fingerprint(output_dir, model_fingerprint(model))
+    write_artifact_hash_manifest(output_dir)
     print(json.dumps({"status": "CAPTURED", "output_dir": str(output_dir), "clean_gripper_token": official["gripper_token"]}, indent=2))
 
 
 def load_frozen_input(input_dir: Path) -> tuple[np.ndarray, dict[str, Any]]:
     raw_path = input_dir / "raw_agentview_step78.npy"
     gen_path = input_dir / "clean_generation_step78.json"
+    if not raw_path.exists():
+        matches = sorted(input_dir.glob("raw_agentview_step*.npy"))
+        if matches:
+            raw_path = matches[0]
+    if not gen_path.exists():
+        matches = sorted(input_dir.glob("clean_generation_step*.json"))
+        if matches:
+            gen_path = matches[0]
     if not raw_path.exists() or not gen_path.exists():
         raise FileNotFoundError(f"frozen input missing raw npy or clean_generation json in {input_dir}")
     return np.load(raw_path), json.loads(gen_path.read_text(encoding="utf-8"))
+
+
+def run_capture_panel_inputs(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
+    steps = [int(x) for x in str(args.panel_steps or ",".join(str(x) for x in PANEL_ALL_CAPTURE_FRAMES)).split(",") if x.strip()]
+    for step in steps:
+        sub_cfg = json.loads(json.dumps(cfg))
+        sub_cfg["input"]["absolute_step"] = int(step)
+        sub_args = argparse.Namespace(**vars(args))
+        sub_args.output_dir = str(Path(args.output_dir) / f"step{step}")
+        run_capture_input(sub_args, sub_cfg)
 
 
 def mark_and_select_candidates(
@@ -1018,6 +1247,7 @@ def run_v4_hard_selection(
     write_csv(output_dir / "m3_v4_candidate_audit.csv", all_candidates, list(all_candidates[0].keys()))
     write_csv(output_dir / "m3_v4_route_audit.csv", route_rows, list(route_rows[0].keys()))
     write_json(output_dir / "m3_v4_debug.json", {"true_pgd": true_debug, "shuffled_grad": shuffled_debug})
+    write_artifact_hash_manifest(output_dir)
     print(json.dumps({"status": "V4_CANARY_COMPLETE", "result_class": result_class, "output_dir": str(output_dir)}, indent=2))
 
 
@@ -1026,6 +1256,7 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
     output_dir.mkdir(parents=True, exist_ok=True)
     raw_image, clean_json = load_frozen_input(Path(args.input_dir))
     model, processor, device = load_model(cfg["model"]["path"], args.model_gpu_device_id)
+    update_manifest_model_fingerprint(output_dir, model_fingerprint(model))
     model_dtype = next(model.parameters()).dtype
     action_dim = int(model.get_action_dim(cfg["model"]["unnorm_key"]))
     instruction = str(clean_json["instruction"])
@@ -1105,9 +1336,11 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
         },
     )
     if clean_preflight == "SURROGATE_OFFICIAL_SCORE_PATH_MISMATCH" or delta0_preflight == "SURROGATE_OFFICIAL_SCORE_PATH_MISMATCH":
+        write_artifact_hash_manifest(output_dir)
         print(json.dumps({"status": "PREFLIGHT_MISMATCH", "clean": clean_preflight, "delta0": delta0_preflight}, indent=2))
         return
     if not canary:
+        write_artifact_hash_manifest(output_dir)
         print(json.dumps({"status": "PREFLIGHT_PASS", "clean": clean_preflight, "delta0": delta0_preflight}, indent=2))
         return
     if cfg.get("conditions") == V4_CONDITIONS:
@@ -1298,6 +1531,7 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
     if candidate_rows:
         write_csv(output_dir / "m3_step78_candidate_controls.csv", candidate_rows, list(candidate_rows[0].keys()))
     write_json(output_dir / "m3_step78_canary_debug.json", {"true_pgd": true_debug, "shuffled_grad": shuffled_debug})
+    write_artifact_hash_manifest(output_dir)
     print(json.dumps({"status": "CANARY_COMPLETE_UNCLASSIFIED", "output_dir": str(output_dir)}, indent=2))
 
 
@@ -1312,17 +1546,17 @@ def write_manifest(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
     row = {
         "stage": cfg.get("stage", "M3_STEP78_TRUE_PGD_CANARY"),
         "commit": git_value(["rev-parse", "HEAD"]),
-        "dirty_status": git_value(["status", "--porcelain"]),
+        "dirty_status": dirty_status_value(),
         "config_path": str(args.config),
         "config_sha256": sha256_file(Path(args.config)),
         "output_dir": str(output_dir),
         "model_path": cfg["model"]["path"],
-        "model_fingerprint": "",
+        "model_fingerprint": "PENDING_MODEL_LOAD",
         "python": sys.executable,
         "torch": torch.__version__,
         "transformers": transformers_version,
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
-        "gpu_query": "",
+        "gpu_query": gpu_query_snapshot(),
         "command_line": " ".join(sys.argv),
         "status": args.mode,
     }
@@ -1332,9 +1566,10 @@ def write_manifest(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=str(REPO_ROOT / "configs" / "m3_step78_true_pgd_31744.yaml"))
-    ap.add_argument("--mode", choices=["capture_input", "preflight_zero_step", "canary", "canary_v4"], required=True)
+    ap.add_argument("--mode", choices=["capture_input", "capture_panel_inputs", "preflight_zero_step", "canary", "canary_v4"], required=True)
     ap.add_argument("--output_dir", required=True)
     ap.add_argument("--input_dir", default="")
+    ap.add_argument("--panel_steps", default="")
     ap.add_argument("--attack_seed", type=int, default=80)
     ap.add_argument("--model_gpu_device_id", type=int, default=-1)
     ap.add_argument("--render_gpu_device_id", type=int, default=0)
@@ -1348,6 +1583,8 @@ def main() -> None:
     write_manifest(args, cfg)
     if args.mode == "capture_input":
         run_capture_input(args, cfg)
+    elif args.mode == "capture_panel_inputs":
+        run_capture_panel_inputs(args, cfg)
     elif args.mode == "preflight_zero_step":
         if not args.input_dir:
             raise SystemExit("--input_dir is required for preflight_zero_step")
