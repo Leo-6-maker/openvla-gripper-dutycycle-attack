@@ -1,0 +1,10 @@
+D4.0 RUN LOG
+start: 2026-06-15T05:21:51.022822+00:00
+checkpoint_sha: cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7326f691742b9a438f1174858
+val_traces: 20
+model_threshold: 0.23631200194358826 (OK)
+baseline_threshold: inf (OK)
+feature_audit_ok: 98
+feature_audit_mismatch: 0
+test21_evaluated: NO
+fresh25_evaluated: NO

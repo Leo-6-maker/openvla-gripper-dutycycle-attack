@@ -1,0 +1,6 @@
+threshold,n_exact,n_early,n_late,n_abstain,n_emissions
+2.5,11,9,0,0,20
+3.0,11,9,0,0,20
+3.3,11,9,0,0,20
+3.8,0,5,7,8,12
+inf,0,0,0,20,0

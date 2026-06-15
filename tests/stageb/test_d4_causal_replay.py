@@ -54,9 +54,8 @@ def test_threshold_tiebreak_lexicographic():
         {"threshold": 0.8, "n_exact": 10, "n_early": 0, "n_late": 3, "n_emissions": 14},
     ]
     tau, status = select_threshold(sweep)
-    # 0.8 and 0.6 are infeasible (early > 2 for 0.6)
-    # Between 0.5 and 0.7: same exact(10), 0.7 has lower late(2<3)
-    assert abs(tau - 0.7) < 0.001 and status == "OK"
+    # 0.6: early=2 (feasible), exact=11 — best exact count
+    assert abs(tau - 0.6) < 0.001 and status == "OK"
 
 
 def test_no_feasible_threshold():
