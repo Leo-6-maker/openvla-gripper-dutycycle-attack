@@ -81,83 +81,148 @@ def select_threshold(sweep_results):
     return best["threshold"], "OK"
 
 
-# ── Feature causality audit ──
+# ── Feature causality audit (D4.0a: all 16 features) ──
 
-def audit_feature_prefix_equivalence(val_trace_ids, candidate_table_path, candidate_csv_path,
-                                      manifest_path, split_path, norm_path):
-    """For each validation trace, regenerate features from records[:step+1]
-    and compare with the candidate table. Return audit results."""
-    # This requires the full trace files and the remapper.
-    # For D4.0, we verify that the candidate table features match what
-    # would be computed causally.
+def audit_feature_prefix_equivalence(val_trace_ids, candidate_table_path, manifest_map, *args):
+    """For each validation candidate, regenerate all 16 features from
+    records[:step+1] and compare with committed candidate table.
+    manifest_map: {trace_id: {source_path: ...}} for trace file access.
+    Returns (audit_rows, n_ok, n_mismatch, n_total_comparisons)."""
     sys.path.insert(0, os.path.join(PIPELINE_ROOT, "scripts", "stageb"))
     from remap_v4_trace_for_l12 import remap_v4_to_l12
+    from gripper_attack.critical_close_selector import rule_based_close_predictor, PREDICTION_HORIZON
+    from gripper_attack.phase_detector import _safe_float
 
-    # Load candidates and split
+    _t0 = time.time()
+
     all_candidates = list(csv.DictReader(open(candidate_table_path)))
-    split = {r["trace_id"]: r["split"] for r in csv.DictReader(open(split_path))}
-    manifest = {r["trace_id"]: r for r in csv.DictReader(open(manifest_path))}
-
-    # Group validation candidates by trace
-    val_cands = defaultdict(list)
+    # Filter to val traces
+    val_traces = defaultdict(list)
     for c in all_candidates:
         tid = c["trace_id"]
-        if tid in split and split[tid] == "val":
-            val_cands[tid].append(c)
+        if tid in val_trace_ids:
+            val_traces[tid].append(c)
 
     audit_rows = []
     n_ok = 0; n_mismatch = 0
 
-    for tid in sorted(val_cands):
-        if tid not in manifest:
+    for tid in sorted(val_traces):
+        candidates = sorted(val_traces[tid], key=lambda x: int(x["candidate_step"]))
+        if not candidates or tid not in manifest_map:
             continue
-        fp = manifest[tid]["source_path"]
+
+        fp = manifest_map[tid].get("source_path", "")
+        if not fp or not os.path.isfile(fp):
+            continue
         rows, _, _ = remap_v4_to_l12(fp, "/dev/null", raise_on_invariant=False)
 
-        # For each candidate, compute features from records[:step+1]
-        from gripper_attack.critical_close_selector import rule_based_close_predictor, PREDICTION_HORIZON
+        # Causal prediction
         preds = rule_based_close_predictor(rows, horizon=PREDICTION_HORIZON, teacher_anchor=-1)
 
-        for c in val_cands[tid]:
+        # Build OPEN step list from remapped rows
+        open_steps = [
+            int(r.get("step", i)) for i, r in enumerate(rows)
+            if int(_safe_float(r.get("decoded_open_bool", 0))) == 1
+        ]
+
+        # Build CLOSE candidate step list for causal ordering
+        all_close_steps = sorted([
+            p["step"] for p in preds if p.get("is_close_event_candidate")
+        ])
+
+        for idx, c in enumerate(candidates):
             step = int(c["candidate_step"])
-            pred = preds[step]  # causal: uses only records[:step+1]
-            match = True
-            for fn in FEATURE_NAMES:
-                full_val = c.get(fn, "")
-                causal_val = str(pred.get(fn, "")) if fn in pred else ""
-                if fn in ("total_score",):
-                    causal_val = str(round(pred.get("score", 0), 4))
-                elif fn == "eef_deceleration_delta":
-                    sn = pred.get("eef_speed_now", "")
-                    sp = pred.get("eef_speed_prev", "")
-                    causal_val = str(round(float(sn) - float(sp), 6)) if sn != "" and sp != "" else ""
-                elif fn == "close_streak":
-                    causal_val = str(pred.get("close_streak_value", ""))
-                elif fn == "raw_crossing":
-                    causal_val = str(int(pred.get("raw_open_to_close_crossing", 0)))
-                elif fn == "close_onset":
-                    causal_val = str(int(pred.get("close_onset", 0)))
-                elif fn == "candidate_index":
-                    # candidate_index is computed from the sorted candidate list
-                    pass  # skip — it's an ordering artifact
-                elif fn == "time_since_prev_close":
-                    pass  # skip — computed from candidate list order
-                elif fn == "time_since_last_open":
-                    pass  # skip — computed from candidate list order
+            pred = preds[step] if step < len(preds) else {}
 
-                if causal_val and full_val and fn not in ("candidate_index", "time_since_prev_close", "time_since_last_open"):
-                    try:
-                        if abs(float(causal_val) - float(full_val)) > 0.001:
-                            match = False
-                    except (ValueError, TypeError):
-                        if causal_val != full_val:
-                            match = False
+            # Causal candidate_index: number of CLOSE candidates before this one
+            causal_cand_idx = sum(1 for s in all_close_steps if s < step)
 
-            audit_rows.append({"trace_id": tid, "candidate_step": step, "causal_match": match})
-            if match: n_ok += 1
-            else: n_mismatch += 1
+            # Causal time_since_prev_close
+            prev_steps = [s for s in all_close_steps if s < step]
+            causal_prev = step - max(prev_steps) if prev_steps else ""
 
-    return audit_rows, n_ok, n_mismatch
+            # Causal time_since_last_open
+            prior_opens = [s for s in open_steps if s < step]
+            causal_open = step - max(prior_opens) if prior_opens else ""
+
+            # For each of 16 features, compare committed vs causal
+            feature_checks = {
+                "total_score": ("discrete_score", str(round(pred.get("score", 0), 4)) if pred else ""),
+                "raw_crossing_bonus": ("discrete_score", str(pred.get("raw_crossing_bonus", "")) if pred else ""),
+                "close_streak_bonus": ("discrete_score", str(pred.get("close_streak_bonus", "")) if pred else ""),
+                "close_onset_qpos_bonus": ("discrete_score", str(pred.get("close_onset_qpos_bonus", "")) if pred else ""),
+                "eef_deceleration_bonus": ("discrete_score", str(pred.get("eef_deceleration_bonus", "")) if pred else ""),
+                "qpos_ready_bonus": ("discrete_score", str(pred.get("qpos_ready_bonus", "")) if pred else ""),
+                "eef_speed_now": ("continuous", str(pred.get("eef_speed_now", "")) if pred else ""),
+                "eef_speed_prev": ("continuous", str(pred.get("eef_speed_prev", "")) if pred else ""),
+                "eef_deceleration_delta": ("continuous", _compute_delta(pred)),
+                "close_streak": ("discrete", str(pred.get("close_streak_value", "")) if pred else ""),
+                "raw_crossing": ("discrete", str(int(pred.get("raw_open_to_close_crossing", 0))) if pred else ""),
+                "close_onset": ("discrete", str(int(pred.get("close_onset", 0))) if pred else ""),
+                "qpos": ("continuous", str(pred.get("qpos", "")) if pred else ""),
+                "time_since_prev_close": ("temporal", str(causal_prev) if causal_prev != "" else ""),
+                "time_since_last_open": ("temporal", str(causal_open) if causal_open != "" else ""),
+                "candidate_index": ("temporal", str(causal_cand_idx)),
+            }
+
+            for fn, (ftype, causal_val) in feature_checks.items():
+                committed_val = c.get(fn, "")
+                match, reason = _compare_values(committed_val, causal_val)
+                audit_rows.append({
+                    "trace_id": tid, "candidate_step": step,
+                    "feature_name": fn, "feature_type": ftype,
+                    "committed_value": committed_val, "causal_value": causal_val,
+                    "match": match, "difference": reason,
+                })
+                if match:
+                    n_ok += 1
+                else:
+                    n_mismatch += 1
+
+    total = len(audit_rows)
+    print(f"  Audit: {total} comparisons ({len(val_traces)} traces, {n_ok} ok, {n_mismatch} mismatch) in {time.time()-_t0:.1f}s")
+    return audit_rows, n_ok, n_mismatch, total
+
+
+def _compute_delta(pred):
+    if not pred: return ""
+    sn = pred.get("eef_speed_now", "")
+    sp = pred.get("eef_speed_prev", "")
+    if sn != "" and sp != "":
+        try: return str(round(float(sn) - float(sp), 6))
+        except: return ""
+    return ""
+
+
+def _compare_values(committed, causal):
+    """Compare two feature values with proper empty/zero/missing handling."""
+    # Both empty → match
+    if committed == "" and causal == "":
+        return True, ""
+    # One empty, one not → mismatch (0 vs "" is a mismatch)
+    if committed == "" and causal != "":
+        try:
+            if float(causal) == 0.0:
+                return False, "committed_empty_vs_causal_zero"
+        except: pass
+        return False, "committed_empty_vs_causal_nonempty"
+    if causal == "" and committed != "":
+        try:
+            if float(committed) == 0.0:
+                return False, "committed_zero_vs_causal_empty"
+        except: pass
+        return False, "committed_nonempty_vs_causal_empty"
+    # Both non-empty — compare numerically
+    try:
+        cv = float(committed); gv = float(causal)
+        diff = abs(cv - gv)
+        if diff < 0.001:
+            return True, ""
+        return False, f"diff={diff}"
+    except (ValueError, TypeError):
+        if committed == causal:
+            return True, ""
+        return False, "string_mismatch"
 
 
 def main():
@@ -223,7 +288,8 @@ def main():
 
     print(f"Sweeping {len(model_thresholds)} model thresholds...")
     model_sweep = threshold_sweep(val_cands, model_scores, model_thresholds, tp_map)
-    model_tau, model_status = select_threshold(model_sweep)
+    model_tau, model_status_raw = select_threshold(model_sweep)
+    model_status = model_status_raw  # "OK" for model (has finite emitting threshold)
 
     # ── Baseline threshold sweep ──
     baseline_scores = {}
@@ -235,13 +301,19 @@ def main():
 
     print(f"Sweeping {len(baseline_thresholds)} baseline thresholds...")
     baseline_sweep = threshold_sweep(val_cands, baseline_scores, baseline_thresholds, tp_map)
-    baseline_tau, baseline_status = select_threshold(baseline_sweep)
+    baseline_tau, baseline_status_raw = select_threshold(baseline_sweep)
+    baseline_status = "SAFE_ABSTAIN_ONLY" if float(baseline_tau) > 1e6 else baseline_status_raw
 
-    # ── Feature causality audit ──
-    print("Running feature causality audit...")
-    audit_rows, n_ok, n_mismatch = audit_feature_prefix_equivalence(
-        set(val_cands.keys()), args.candidate_table,
-        args.candidate_table, args.manifest, args.split_manifest, args.norm_csv)
+    # ── Feature causality audit (D4.0a: all 16 features) ──
+    print("Running full 16-feature causality audit...")
+    # Inject source paths into candidate dicts for remap access
+    manifest_map = {r["trace_id"]: r for r in csv.DictReader(open(args.manifest))}
+    for tid in val_cands:
+        if tid in manifest_map:
+            for c in val_cands[tid]:
+                c["_source_path"] = manifest_map[tid]["source_path"]
+    audit_rows, n_ok, n_mismatch, n_total = audit_feature_prefix_equivalence(
+        set(val_cands.keys()), args.candidate_table, manifest_map, args.split_manifest, args.norm_csv)
 
     # ── Write outputs ──
     with open(out / "d4_model_threshold_sweep.csv", "w", newline="") as f:
@@ -252,9 +324,11 @@ def main():
         w = csv.DictWriter(f, fieldnames=fields); w.writeheader(); w.writerows(baseline_sweep)
 
     with open(out / "d4_selected_thresholds.csv", "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["policy", "threshold", "status"]); w.writeheader()
-        w.writerow({"policy": "model", "threshold": model_tau, "status": model_status})
-        w.writerow({"policy": "baseline", "threshold": baseline_tau, "status": baseline_status})
+        w = csv.DictWriter(f, fieldnames=["policy", "threshold", "status", "finite_emitting_threshold_feasible"]); w.writeheader()
+        w.writerow({"policy": "model", "threshold": model_tau, "status": model_status,
+                     "finite_emitting_threshold_feasible": True})
+        w.writerow({"policy": "baseline", "threshold": baseline_tau, "status": baseline_status,
+                     "finite_emitting_threshold_feasible": float(baseline_tau) < 1e6})
 
     # Val causal predictions with selected thresholds
     val_preds = []
@@ -275,7 +349,7 @@ def main():
         w = csv.DictWriter(f, fieldnames=list(val_preds[0].keys())); w.writeheader(); w.writerows(val_preds)
 
     with open(out / "d4_feature_prefix_equivalence.csv", "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["trace_id", "candidate_step", "causal_match"])
+        w = csv.DictWriter(f, fieldnames=list(audit_rows[0].keys()))
         w.writeheader(); w.writerows(audit_rows)
 
     # Run log
@@ -288,6 +362,8 @@ def main():
         f.write(f"baseline_threshold: {baseline_tau} ({baseline_status})\n")
         f.write(f"feature_audit_ok: {n_ok}\n")
         f.write(f"feature_audit_mismatch: {n_mismatch}\n")
+        f.write(f"feature_audit_total: {n_total}\n")
+        f.write(f"causality_audit_pass: {n_mismatch == 0}\n")
         f.write(f"test21_evaluated: NO\n")
         f.write(f"fresh25_evaluated: NO\n")
 
