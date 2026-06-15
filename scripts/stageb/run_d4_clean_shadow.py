@@ -162,11 +162,41 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
     """
     from libero.libero import benchmark, get_libero_path
     from libero.libero.envs import OffScreenRenderEnv
-    from gripper_attack.grasp import eef_pos
+    from gripper_attack.grasp import eef_pos, object_pos
     from v4_run_eval_openvla import (
         decode_with_scores, postprocess_openvla_action_for_libero,
         physical_gripper_state,
     )
+
+    # ── Privileged sidecar: object mapping ──
+    OBJECT_MAP = {
+        "ketchup": "ketchup_green_bottle_1",
+        "tomato_sauce": "tomato_sauce_bottle_1",
+        "milk": "milk_carton_1",
+        "butter": "butter_box_1",
+        "cream_cheese": "cream_cheese_box_1",
+        "salad_dressing": "salad_dressing_bottle_1",
+        "bbq_sauce": "bbq_sauce_bottle_1",
+        "alphabet_soup": "alphabet_soup_can_1",
+        "orange_juice": "orange_juice_carton_1",
+        "chocolate_pudding": "chocolate_pudding_box_1",
+    }
+
+    def get_object_pose_safe(env, obj_name):
+        try:
+            return object_pos(env, obj_name)
+        except Exception:
+            return None
+
+    def resolve_object_name(env, task_name):
+        candidate = OBJECT_MAP.get(task_name, "")
+        if candidate:
+            try:
+                env.sim.model.body_name2id(candidate)
+                return candidate, True
+            except Exception:
+                pass
+        return "", False
 
     is_reference = (detector is None)
     max_steps = args.max_steps_override
@@ -203,6 +233,19 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
         dummy_action = np.array([0, 0, 0, 0, 0, 0, -1], dtype=np.float32)
         for _ in range(num_steps_wait):
             obs, _, _, _ = env.step(dummy_action)
+
+    # ── Resolve privileged object (after env init, before episode loop) ──
+    target_object_name = ""
+    object_lookup_ok = True
+    obj_init_z = None
+    if args.enable_privileged_sidecar:
+        target_object_name, object_lookup_ok = resolve_object_name(env, task)
+        if not object_lookup_ok:
+            infra_status = f"PRIVILEGED_OBJECT_LOOKUP_FAIL:{task}"
+        else:
+            obj_init = get_object_pose_safe(env, target_object_name)
+            if obj_init is not None:
+                obj_init_z = float(obj_init[2])
 
     # ── Reset detector ──
     if not is_reference:
@@ -359,21 +402,47 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
             "success_check": int(success_check),
         }
 
-        # ── Privileged sidecar (read-only, only when enabled) ──
+        # ── Privileged sidecar (read-only, pre-action timing) ──
         if args.enable_privileged_sidecar:
-            obj_after = get_object_pose_safe(env, target_object_name)
-            obj_x = round(float(obj_after[0]), 6) if obj_after is not None else ""
-            obj_y = round(float(obj_after[1]), 6) if obj_after is not None else ""
-            obj_z = round(float(obj_after[2]), 6) if obj_after is not None else ""
-            eef_after_step = eef_pos(env)
-            eef_to_obj = ""
-            if obj_after is not None and eef_after_step is not None:
-                eef_to_obj = round(float(np.linalg.norm(
-                    np.array(eef_after_step) - np.array(obj_after)
-                )), 6)
+            priv_valid = True
+            priv_reason = ""
+            if not object_lookup_ok:
+                priv_valid = False
+                priv_reason = "object_lookup_fail"
+
+            # Pre-action (before env.step) — matches EEF timing
+            obj_pre = get_object_pose_safe(env, target_object_name) if priv_valid else None
+            obj_pre_x = round(float(obj_pre[0]), 6) if obj_pre is not None else ""
+            obj_pre_y = round(float(obj_pre[1]), 6) if obj_pre is not None else ""
+            obj_pre_z = round(float(obj_pre[2]), 6) if obj_pre is not None else ""
+            eef_pre_for_dist = eef_pos(env)
+            eef_to_obj_pre = ""
+            if obj_pre is not None and eef_pre_for_dist is not None:
+                eef_to_obj_pre = round(float(np.linalg.norm(
+                    np.array(eef_pre_for_dist) - np.array(obj_pre))), 6)
+            if obj_pre is None:
+                priv_valid = False
+                priv_reason = "object_pose_read_fail"
+
             trace_row.update({
-                "obj_x": obj_x, "obj_y": obj_y, "obj_z": obj_z,
-                "eef_to_obj_distance": eef_to_obj,
+                "obj_pre_x": obj_pre_x, "obj_pre_y": obj_pre_y, "obj_pre_z": obj_pre_z,
+                "eef_to_obj_pre": eef_to_obj_pre,
+                "target_object_name": target_object_name,
+                "privileged_valid": int(priv_valid),
+                "privileged_failure_reason": priv_reason if not priv_valid else "",
+            })
+
+            # Post-action object pose (after env.step)
+            qpos_phys_after = physical_gripper_state(env, obs) if 'physical_gripper_state' in dir() else None
+            obj_post = get_object_pose_safe(env, target_object_name) if priv_valid else None
+            obj_post_x = round(float(obj_post[0]), 6) if obj_post is not None else ""
+            obj_post_y = round(float(obj_post[1]), 6) if obj_post is not None else ""
+            obj_post_z = round(float(obj_post[2]), 6) if obj_post is not None else ""
+            obj_z_delta = round(float(obj_post[2]) - obj_init_z, 6) if obj_post is not None and obj_init_z is not None else ""
+            trace_row.update({
+                "obj_post_x": obj_post_x, "obj_post_y": obj_post_y, "obj_post_z": obj_post_z,
+                "obj_z_delta_post": obj_z_delta,
+                "obj_init_z": round(obj_init_z, 6) if obj_init_z is not None else "",
             })
 
         step_trace.append(trace_row)
