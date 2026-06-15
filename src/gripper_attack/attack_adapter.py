@@ -1043,6 +1043,20 @@ class TokenPrefixPGDAttacker:
         adv = self._project_pixel_master(x_orig + delta, x_orig).detach()
         delta0_adv_model = self._cast_projected_pixel_values(adv.detach(), x_orig_model)
         delta0_diff = (delta0_adv_model.detach().float() - x_orig_model.detach().float()).detach()
+        trajectory_candidate_inputs = [
+            {
+                "candidate_index": 0,
+                "candidate_source": "delta0",
+                "input_ids": clean_ids.detach(),
+                "pixel_values": delta0_adv_model.detach(),
+                "delta_sha256": tensor_sha256(delta0_diff),
+                "processor_input_sha256": tensor_sha256(delta0_adv_model.detach()),
+                "pixel_budget_adv_inputs_linf": float(delta0_diff.abs().max().cpu()) if delta0_diff.numel() else 0.0,
+                "pixel_budget_quantized_correction_count": self._count_quantized_budget_corrections(
+                    delta0_adv_model, self._project_pixel_master(x_orig + delta0_diff, x_orig), x_orig_model
+                ),
+            }
+        ]
         loss_kwargs = {"objective": objective, "num_action_tokens": int(target_ids.numel())}
         region_token_ids = None
         corrected_region_info = None
@@ -1217,6 +1231,24 @@ class TokenPrefixPGDAttacker:
                     smoothed_delta = (1.0 - lam) * (adv.detach() - x_orig) + lam * self._prev_delta.detach().to(device=x_orig.device, dtype=torch.float32)
                     smoothed_delta = torch.clamp(smoothed_delta, -self.epsilon, self.epsilon)
                     adv = self._project_pixel_master(x_orig + smoothed_delta, x_orig).detach()
+                if is_target_token_objective:
+                    cand_model = self._cast_projected_pixel_values(adv.detach(), x_orig_model)
+                    cand_diff = (cand_model.detach().float() - x_orig_model.detach().float()).detach()
+                    trajectory_candidate_inputs.append(
+                        {
+                            "candidate_index": int(i + 1),
+                            "candidate_source": "pgd_iteration",
+                            "input_ids": clean_ids.detach(),
+                            "pixel_values": cand_model.detach(),
+                            "delta_sha256": tensor_sha256(cand_diff),
+                            "processor_input_sha256": tensor_sha256(cand_model.detach()),
+                            "pixel_budget_adv_inputs_linf": float(cand_diff.abs().max().cpu()) if cand_diff.numel() else 0.0,
+                            "pixel_budget_quantized_correction_count": self._count_quantized_budget_corrections(
+                                cand_model, adv.detach(), x_orig_model
+                            ),
+                        }
+                    )
+                    del cand_model, cand_diff
                 del grad
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
@@ -1459,6 +1491,9 @@ class TokenPrefixPGDAttacker:
         }
         if is_generated_prefix_v3 or is_target_token_objective:
             debug.update(generated_prefix_debug)
+            if is_target_token_objective:
+                debug["trajectory_candidate_inputs"] = trajectory_candidate_inputs
+                debug["trajectory_candidate_count"] = int(len(trajectory_candidate_inputs))
             debug["num_generation_forwards"] = int(generated_prefix_debug.get("num_generation_forwards", 0) or 0)
             debug["num_loss_forwards"] = (
                 int(max(self.num_steps, 1) + 1)

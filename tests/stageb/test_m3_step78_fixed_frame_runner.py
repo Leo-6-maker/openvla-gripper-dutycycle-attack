@@ -7,8 +7,10 @@ import pytest
 
 from scripts.stageb.run_m3_step78_true_pgd_fixed_frame import (
     MAIN_CONDITIONS,
+    V4_CONDITIONS,
     compare_surrogate_official,
     load_config,
+    select_hard_feasible_candidate,
     write_csv,
 )
 
@@ -16,6 +18,7 @@ from scripts.stageb.run_m3_step78_true_pgd_fixed_frame import (
 CONFIG = Path("configs/m3_step78_true_pgd_31744.yaml")
 LOGRATIO_V2_CONFIG = Path("configs/m3_step78_true_pgd_31744_logratio_v2.yaml")
 LOGRATIO_ARM_V3_CONFIG = Path("configs/m3_step78_true_pgd_31744_logratio_arm_v3.yaml")
+LOGRATIO_ARM_V4_CONFIG = Path("configs/m3_step78_true_pgd_31744_logratio_arm_v4.yaml")
 
 
 def test_step78_config_is_fixed_to_preregistered_conditions():
@@ -100,3 +103,105 @@ def test_logratio_arm_v3_config_keeps_fixed_frame_and_adds_arm_penalty():
     assert cfg["attack_optimizer"]["arm_preserve_weight"] == 0.5
     assert cfg["attack_optimizer"]["arm_gate_min_match_count"] == 5
     assert cfg["conditions"] == MAIN_CONDITIONS
+
+
+def test_logratio_arm_v4_config_freezes_hard_feasible_selection_protocol():
+    cfg = load_config(LOGRATIO_ARM_V4_CONFIG)
+    assert cfg["input"]["task"] == "tomato_sauce"
+    assert cfg["input"]["state_id"] == 0
+    assert cfg["input"]["absolute_step"] == 78
+    assert cfg["attack_optimizer"]["target_token_id"] == 31744
+    assert cfg["attack_optimizer"]["target_execution_class"] == "CLIP_MEDIATED_OPEN"
+    assert cfg["attack_optimizer"]["epsilon"] == 0.023529411764705882
+    assert cfg["attack_optimizer"]["num_steps"] == 20
+    assert cfg["attack_optimizer"]["step_size"] == 0.0017647058823529412
+    assert cfg["attack_optimizer"]["objective"] == "autoregressive_prefix_gripper_target_token_logratio_arm_v3"
+    assert cfg["attack_optimizer"]["arm_preserve_weight"] == 0.5
+    assert cfg["gates"]["arm_prefix_min_match_count"] == 5
+    assert cfg["controls"]["rand21_count"] == 21
+    assert cfg["controls"]["shuffled_grad_control"] == "trajectory21_selective"
+    assert cfg["conditions"] == V4_CONDITIONS
+
+
+def test_hard_feasible_selection_filters_arm_and_target_before_margin():
+    rows = [
+        {
+            "candidate_id": 0,
+            "arm_prefix_match_count": 6,
+            "official_gripper_token": 31872,
+            "score_invariant_status": "PASS",
+            "official_target31744_margin": 100.0,
+            "processor_linf": 0.01,
+        },
+        {
+            "candidate_id": 1,
+            "arm_prefix_match_count": 2,
+            "official_gripper_token": 31744,
+            "score_invariant_status": "PASS",
+            "official_target31744_margin": 90.0,
+            "processor_linf": 0.01,
+        },
+        {
+            "candidate_id": 2,
+            "arm_prefix_match_count": 5,
+            "official_gripper_token": 31744,
+            "score_invariant_status": "PASS",
+            "official_target31744_margin": 3.0,
+            "processor_linf": 0.02,
+        },
+    ]
+    selected = select_hard_feasible_candidate(rows, arm_gate_min_match_count=5, target_token_id=31744)
+    assert selected is rows[2]
+
+
+def test_hard_feasible_selection_tie_breaks_linf_then_earlier_candidate():
+    rows = [
+        {
+            "candidate_id": 3,
+            "arm_prefix_match_count": 5,
+            "official_gripper_token": 31744,
+            "score_invariant_status": "PASS",
+            "official_target31744_margin": 7.0,
+            "processor_linf": 0.02,
+        },
+        {
+            "candidate_id": 2,
+            "arm_prefix_match_count": 5,
+            "official_gripper_token": 31744,
+            "score_invariant_status": "PASS",
+            "official_target31744_margin": 7.0,
+            "processor_linf": 0.01,
+        },
+        {
+            "candidate_id": 1,
+            "arm_prefix_match_count": 5,
+            "official_gripper_token": 31744,
+            "score_invariant_status": "PASS",
+            "official_target31744_margin": 7.0,
+            "processor_linf": 0.01,
+        },
+    ]
+    selected = select_hard_feasible_candidate(rows, arm_gate_min_match_count=5, target_token_id=31744)
+    assert selected is rows[2]
+
+
+def test_hard_feasible_selection_does_not_fallback_to_arm_breaking_candidate():
+    rows = [
+        {
+            "candidate_id": 0,
+            "arm_prefix_match_count": 4,
+            "official_gripper_token": 31744,
+            "score_invariant_status": "PASS",
+            "official_target31744_margin": 30.0,
+            "processor_linf": 0.01,
+        },
+        {
+            "candidate_id": 1,
+            "arm_prefix_match_count": 6,
+            "official_gripper_token": 31872,
+            "score_invariant_status": "PASS",
+            "official_target31744_margin": 1.0,
+            "processor_linf": 0.01,
+        },
+    ]
+    assert select_hard_feasible_candidate(rows, arm_gate_min_match_count=5, target_token_id=31744) is None
