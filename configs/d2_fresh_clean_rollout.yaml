@@ -1,20 +1,18 @@
-# D2 — Fresh Clean Rollout Config (PREREG ONLY)
-# Collect missing task-state groups to fill the 500-state universe.
-# Clean inference only. NO attack, VIS, PGD, or random rollout.
+# D2.1 — Fresh Clean Rollout Config (PREREG REPAIR)
+# Resumable job-ledger launcher. Clean inference only.
 
-stage: D2
+stage: D2.1
 mode: clean_rollout_only
 attack_forbidden: true
 
-# ── Expected Universe ──
 universe:
   tasks: 10
   states_per_task: 50
   expected_total: 500
-  existing: 402
-  missing: 98
+  existing: 402  # from E4C.1
+  fresh_collected: 6  # from D2.0 (alphabet_soup s0,s3,s4,s5,s6,s7)
+  remaining: 92
 
-# ── Rollout Parameters (matching original 402) ──
 rollout:
   model: openvla-7b-finetuned-libero-object
   model_path: /data/aviary/models/openvla/openvla-7b-finetuned-libero-object
@@ -22,34 +20,29 @@ rollout:
   max_steps: 280
   success_metric: check_success
   num_steps_wait: 10
-  condition: clean  # NO ATTACK
+  condition: clean
   window_start: 0
   window_end: 10
   seed: 0
-  env:
-    MUJOCO_GL: egl
-    PYOPENGL_PLATFORM: egl
-    OPENVLA_ATTN_IMPLEMENTATION: eager
 
-# ── Infrastructure ──
 infra:
   runner_repo: /data/liuyu/repos/codex_stageb_openvla_alignment_rc1a_20260607
   runner_script: scripts/stageb/run_s20d_v4_fixed_window_l3_runner.py
   python: /home/liuyu/.conda/envs/openvla_official_libero_20260525/bin/python
   output_dir: /data/liuyu/outputs/stageb_d2_fresh_clean_20260615
-  gpus: [0, 1, 2, 4, 5, 6, 7]  # 3 excluded (blacklisted)
-  render_gpu: 7  # single GPU for rendering, rest for model
+  gpus: [0, 1, 2, 4, 5, 6, 7]  # 3 excluded
+  render_gpu: 0  # aligned with launcher default
+  gpu_visible: "0,1,2,4,5,6,7"
+  topology: multi_gpu_single_process  # OpenVLA-7B needs device_map=auto across GPUs
 
-# ── Job Distribution ──
 job_distribution:
-  total_jobs: 98
-  gpu_count: 7
-  jobs_per_gpu: 14
+  total_jobs: 92
+  mode: sequential_task_batched
+  resumable: true
   manifest: tables/d2_fresh/d2_missing_clean_groups.csv
+  ledger: d2_rollout_ledger.csv
 
-# ── Stop Rules ──
 stop:
   attack_forbidden: true
   training_forbidden: true
   gpu_cleanup_after: true
-  max_runtime_hours: 4
