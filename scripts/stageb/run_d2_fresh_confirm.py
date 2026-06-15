@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""D2 Phase D: Fresh confirmation — evaluate frozen seed42 checkpoint on new traces.
-Loads the exact checkpoint from D1b training. Single evaluation pass.
+"""D2.1a: Fresh confirmation — evaluate frozen seed42 checkpoint on new traces.
 Must match frozen checkpoint SHA: cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7
 
-D2.1 fix (P0-1): Group ALL candidates by trace, filter eligibility from
-trace_status.csv. A trace is eligible iff it has >=2 total candidates and
-exactly 1 is_teacher_p==1 AND its trace_status category is ELIGIBLE_MULTI_CANDIDATE.
+D2.1a fixes:
+  - select_eligible_multi_traces() is the single source of truth for grouping.
+  - Sentinel prevents second evaluation.
+  - tasks-represented gate for FRESH_SAMPLE_TOO_SMALL classification.
 """
 
 import argparse, csv, hashlib, json, os, sys
@@ -16,6 +16,8 @@ import torch
 
 FROZEN_CHECKPOINT_SHA = "cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7326f691742b9a438f1174858"
 TIE_TOLERANCE = 0.001
+MIN_FRESH_MULTI = 20
+MIN_TASKS_REPRESENTED = 8
 
 PIPELINE_ROOT = "/data/liuyu/l12_e4c2_pipeline"
 sys.path.insert(0, os.path.join(PIPELINE_ROOT, "scripts", "stageb"))
@@ -28,6 +30,39 @@ def sha256_file(path):
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(65536), b""): h.update(chunk)
     return h.hexdigest()
+
+
+def select_eligible_multi_traces(candidate_rows, status_rows):
+    """Select traces eligible for fresh multi-candidate confirmation.
+
+    A trace is eligible iff:
+      1. Its category in status_rows is ELIGIBLE_MULTI_CANDIDATE
+      2. It has >=2 total candidates
+      3. Exactly 1 candidate has is_teacher_p == 1
+
+    Args:
+        candidate_rows: list of dicts from close_candidates CSV
+        status_rows: list of dicts from trace_status CSV
+
+    Returns:
+        dict: {trace_id: [candidate_dicts]} for eligible traces
+    """
+    eligible_ids = {r["trace_id"] for r in status_rows
+                    if r["category"] == "ELIGIBLE_MULTI_CANDIDATE"}
+
+    by_trace = defaultdict(list)
+    for c in candidate_rows:
+        by_trace[c["trace_id"]].append(c)
+
+    multi_traces = {}
+    for tid, cands in by_trace.items():
+        if tid not in eligible_ids:
+            continue
+        n_pos = sum(1 for c in cands if int(c.get("is_teacher_p", 0)) == 1)
+        if n_pos == 1 and len(cands) >= 2:
+            multi_traces[tid] = cands
+
+    return multi_traces
 
 
 def evaluate_model(model, traces, means, stdevs, impute, device):
@@ -61,8 +96,7 @@ def evaluate_model(model, traces, means, stdevs, impute, device):
 
             results.append({
                 "trace_id": tid, "task_key": candidates[0]["task_key"],
-                "state_id": candidates[0]["state_id"],
-                "n_candidates": len(candidates),
+                "state_id": candidates[0]["state_id"], "n_candidates": len(candidates),
                 "is_correct_top1": int(is_unique_top1),
                 "tp_competition_rank": n_higher + 1 if n_higher >= 0 else -1,
                 "n_ties_for_max": len(ties), "unique_decision": int(len(ties) == 1),
@@ -105,17 +139,31 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--checkpoint", required=True)
     ap.add_argument("--candidate-table", required=True)
-    ap.add_argument("--trace-status", required=True, help="fresh_trace_status.csv with eligibility categories")
+    ap.add_argument("--trace-status", required=True)
     ap.add_argument("--output-dir", required=True)
     ap.add_argument("--device", default="cuda:0")
     args = ap.parse_args()
 
     out = Path(args.output_dir); out.mkdir(parents=True, exist_ok=True)
 
+    # ── Sentinel ──
+    sentinel_path = out / "fresh_confirmation_started.json"
+    if sentinel_path.exists():
+        print("FATAL: fresh confirmation already started (sentinel exists)")
+        sys.exit(2)
+    with open(sentinel_path, "w") as f:
+        json.dump({
+            "checkpoint_sha": sha256_file(args.checkpoint),
+            "candidate_table_sha": sha256_file(args.candidate_table),
+            "trace_status_sha": sha256_file(args.trace_status),
+            "timestamp": str(np.datetime64('now')),
+            "runner_sha": sha256_file(__file__),
+        }, f, indent=2)
+
     # Verify checkpoint SHA
     actual = sha256_file(args.checkpoint)
     if actual != FROZEN_CHECKPOINT_SHA:
-        print(f"FATAL: checkpoint SHA mismatch. Expected {FROZEN_CHECKPOINT_SHA[:16]}, got {actual[:16]}")
+        print(f"FATAL: checkpoint SHA mismatch")
         sys.exit(1)
     print(f"Checkpoint SHA verified: {actual[:16]}...")
 
@@ -123,45 +171,25 @@ def main():
     ckpt = torch.load(args.checkpoint, map_location=device, weights_only=False)
     print(f"Checkpoint: epoch={ckpt['epoch']} val_acc={ckpt['val_top1_acc']:.4f}")
 
-    # ── P0-1 fix: Group ALL candidates by trace ──
+    # Load and select
     candidates = list(csv.DictReader(open(args.candidate_table)))
-    by_trace = defaultdict(list)
-    for c in candidates:
-        by_trace[c["trace_id"]].append(c)
-
-    # Read trace status for eligibility
     status_rows = list(csv.DictReader(open(args.trace_status)))
-    eligible_ids = {r["trace_id"] for r in status_rows
-                    if r["category"] == "ELIGIBLE_MULTI_CANDIDATE"}
+    multi_traces = select_eligible_multi_traces(candidates, status_rows)
+    n_tasks = len(set(multi_traces[tid][0]["task_key"] for tid in multi_traces))
 
-    # Select multi-candidate traces: in eligible_ids AND >=2 candidates AND exactly 1 positive
-    multi_traces = {}
-    for tid, cands in by_trace.items():
-        if tid not in eligible_ids:
-            continue
-        n_pos = sum(1 for c in cands if int(c.get("is_teacher_p", 0)) == 1)
-        if n_pos == 1 and len(cands) >= 2:
-            multi_traces[tid] = cands
-
-    print(f"Candidate table rows: {len(candidates)}")
-    print(f"Unique traces: {len(by_trace)}")
-    print(f"Eligible traces (trace_status): {len(eligible_ids)}")
-    print(f"Fresh eligible multi-candidate traces: {len(multi_traces)}")
-
-    # Per-task breakdown
-    task_counts = defaultdict(int)
-    for tid in multi_traces:
-        task_counts[multi_traces[tid][0]["task_key"]] += 1
-    for t in sorted(task_counts):
-        print(f"  {t}: {task_counts[t]}")
+    print(f"Candidates: {len(candidates)}  Status rows: {len(status_rows)}")
+    print(f"Eligible multi-candidate traces: {len(multi_traces)}")
+    print(f"Tasks represented: {n_tasks}")
 
     if len(multi_traces) == 0:
         print("RESULT: NO_FRESH_ELIGIBLE_MULTI_TRACES")
-        with open(out / "d2_fresh_confirmation_status.txt", "w") as f:
-            f.write("NO_FRESH_ELIGIBLE_MULTI_TRACES\n")
-            f.write(f"total_traces={len(by_trace)}\n")
-            f.write(f"eligible_in_status={len(eligible_ids)}\n")
         return
+
+    if len(multi_traces) < MIN_FRESH_MULTI or n_tasks < MIN_TASKS_REPRESENTED:
+        result_class = "FRESH_SAMPLE_TOO_SMALL"
+        print(f"RESULT_CLASS: {result_class} (need >= {MIN_FRESH_MULTI} traces and >= {MIN_TASKS_REPRESENTED} tasks)")
+    else:
+        result_class = None  # determined after evaluation
 
     means = ckpt["normalization"]["means"]
     stdevs = ckpt["normalization"]["stdevs"]
@@ -180,74 +208,55 @@ def main():
     b_ties = sum(1 for r in baseline_results if r["n_ties_for_max"] > 1)
     m_mae = np.mean([r["abs_error"] for r in model_results if r["unique_decision"] == 1 and r["abs_error"] >= 0])
     b_mae = np.mean([r["abs_error"] for r in baseline_results if r["unique_decision"] == 1 and r["abs_error"] >= 0])
-    # Paired correctness
-    both_correct = sum(1 for mr, br in zip(model_results, baseline_results)
-                       if mr["is_correct_top1"] and br["is_correct_top1"])
-    model_only = sum(1 for mr, br in zip(model_results, baseline_results)
-                     if mr["is_correct_top1"] and not br["is_correct_top1"])
-    baseline_only = sum(1 for mr, br in zip(model_results, baseline_results)
-                        if not mr["is_correct_top1"] and br["is_correct_top1"])
-    both_wrong = sum(1 for mr, br in zip(model_results, baseline_results)
-                     if not mr["is_correct_top1"] and not br["is_correct_top1"])
+    paired = defaultdict(int)
+    for mr, br in zip(model_results, baseline_results):
+        key = (mr["is_correct_top1"], br["is_correct_top1"])
+        paired[f"m{key[0]}_b{key[1]}"] += 1
 
-    print(f"\n=== FRESH CONFIRMATION (n={n}) ===")
-    print(f"Model top-1: {m_correct}/{n} = {m_correct/n:.4f}  ties={m_ties}/{n}")
-    print(f"Baseline top-1: {b_correct}/{n} = {b_correct/n:.4f}  ties={b_ties}/{n}")
-    print(f"Model cond MAE: {m_mae:.1f}  Baseline cond MAE: {b_mae:.1f}")
-    print(f"Paired: both={both_correct} model-only={model_only} baseline-only={baseline_only} both-wrong={both_wrong}")
+    print(f"\n=== FRESH CONFIRMATION (n={n}, tasks={n_tasks}) ===")
+    print(f"Model top-1: {m_correct}/{n} = {m_correct/n:.4f}  ties={m_ties}")
+    print(f"Baseline top-1: {b_correct}/{n} = {b_correct/n:.4f}  ties={b_ties}")
+    print(f"Model cond MAE: {m_mae:.1f}  Baseline: {b_mae:.1f}")
+    print(f"Paired: {dict(paired)}")
 
-    # Per-trace predictions
-    with open(out / "d2_fresh_confirmation.csv", "w", newline="") as f:
-        fields = ["trace_id", "task_key", "state_id", "n_candidates",
-                  "model_correct", "model_ties", "model_abs_error",
-                  "baseline_correct", "baseline_ties", "baseline_abs_error"]
-        w = csv.DictWriter(f, fieldnames=fields); w.writeheader()
-        for mr, br in zip(model_results, baseline_results):
-            w.writerow({
-                "trace_id": mr["trace_id"], "task_key": mr["task_key"],
-                "state_id": mr["state_id"], "n_candidates": mr["n_candidates"],
-                "model_correct": mr["is_correct_top1"], "model_ties": mr["n_ties_for_max"],
-                "model_abs_error": mr["abs_error"],
-                "baseline_correct": br["is_correct_top1"], "baseline_ties": br["n_ties_for_max"],
-                "baseline_abs_error": br["abs_error"],
-            })
-
-    with open(out / "d2_fresh_confirmation_summary.csv", "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=["metric", "model", "baseline"]); w.writeheader()
-        w.writerows([
-            {"metric": "n_traces", "model": n, "baseline": n},
-            {"metric": "top1", "model": f"{m_correct}/{n}", "baseline": f"{b_correct}/{n}"},
-            {"metric": "top1_rate", "model": round(m_correct/n, 4), "baseline": round(b_correct/n, 4)},
-            {"metric": "n_ties", "model": m_ties, "baseline": b_ties},
-            {"metric": "cond_mae", "model": round(m_mae, 1), "baseline": round(b_mae, 1)},
-            {"metric": "paired_both_correct", "model": both_correct, "baseline": ""},
-            {"metric": "paired_model_only", "model": model_only, "baseline": ""},
-            {"metric": "paired_baseline_only", "model": baseline_only, "baseline": ""},
-            {"metric": "paired_both_wrong", "model": both_wrong, "baseline": ""},
-        ])
-
-    with open(out / "d2_fresh_confirmation_run_log.txt", "w") as f:
-        f.write(f"D2 FRESH CONFIRMATION LOG\n")
-        f.write(f"checkpoint_sha: {actual}\n")
-        f.write(f"candidate_table_sha: {sha256_file(args.candidate_table)}\n")
-        f.write(f"trace_status_sha: {sha256_file(args.trace_status)}\n")
-        f.write(f"n_total_traces_in_candidate_table: {len(by_trace)}\n")
-        f.write(f"n_eligible_traces: {len(eligible_ids)}\n")
-        f.write(f"n_multi_traces_evaluated: {n}\n")
-        f.write(f"model_top1: {m_correct/n:.4f}\n")
-        f.write(f"baseline_top1: {b_correct/n:.4f}\n")
-
-    # Determine result class
-    if n >= 20:
+    if result_class is None:
         if m_correct > b_correct:
             result_class = "FRESH_REPLICATION_GAIN"
         elif m_correct == b_correct:
             result_class = "FRESH_REPLICATION_NO_GAIN"
         else:
             result_class = "FRESH_REPLICATION_REGRESSION"
-    else:
-        result_class = "FRESH_SAMPLE_TOO_SMALL"
-    print(f"\nRESULT_CLASS: {result_class}")
+
+    print(f"RESULT_CLASS: {result_class}")
+
+    # Write outputs
+    with open(out / "d2_fresh_confirmation.csv", "w", newline="") as f:
+        fields = ["trace_id", "task_key", "state_id", "n_candidates",
+                  "model_correct", "model_ties", "model_abs_error",
+                  "baseline_correct", "baseline_ties", "baseline_abs_error"]
+        w = csv.DictWriter(f, fieldnames=fields); w.writeheader()
+        for mr, br in zip(model_results, baseline_results):
+            w.writerow({**{f"model_{k}": v for k, v in mr.items()},
+                        **{f"baseline_{k}": v for k, v in br.items()}})
+
+    with open(out / "d2_fresh_confirmation_summary.csv", "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=["metric", "model", "baseline"]); w.writeheader()
+        for kv in [("n", n, n), ("top1_rate", round(m_correct/n, 4), round(b_correct/n, 4)),
+                    ("n_ties", m_ties, b_ties), ("cond_mae", round(m_mae, 1), round(b_mae, 1)),
+                    ("n_tasks", n_tasks, "")]:
+            w.writerow({"metric": kv[0], "model": kv[1], "baseline": kv[2]})
+
+    with open(out / "d2_fresh_confirmation_run_log.txt", "w") as f:
+        f.write(f"D2 FRESH CONFIRMATION LOG\n")
+        f.write(f"checkpoint_sha: {actual}\n")
+        f.write(f"candidate_table_sha: {sha256_file(args.candidate_table)}\n")
+        f.write(f"trace_status_sha: {sha256_file(args.trace_status)}\n")
+        f.write(f"n_eligible_multi: {n}\n")
+        f.write(f"n_tasks_represented: {n_tasks}\n")
+        f.write(f"result_class: {result_class}\n")
+        f.write(f"model_top1: {m_correct}/{n}\n")
+        f.write(f"baseline_top1: {b_correct}/{n}\n")
+
     print(f"Output: {out}")
 
 
