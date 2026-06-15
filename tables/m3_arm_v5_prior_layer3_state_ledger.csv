@@ -1,4 +1,6 @@
 task,state_id,prior_stage,commit,artifact_path,used_for_development,exclusion_reason
-butter,2,V3/V6/V7 mechanism development,unknown_pre_v5_reviewed_artifact,reports/STAGEB_V7_BUTTER_CONFIRMATION_PREREG_20260613.md,1,known Layer3 mechanism/development state
-cream_cheese,2,V3 mechanism development,unknown_pre_v5_reviewed_artifact,reports/CODEX_LAYER3_MINIMAL_EXPERIMENT_SPEC_20260613.md,1,known Layer3 mechanism/development state
+bbq_sauce,0,V6 online Layer3 development,fefbbe3481d20d74715c042121f35b19cfd5cb2c,tables/layer3_parent_registry.csv,1,known Layer3 mechanism/development state
+butter,2,V6 online Layer3 development,fefbbe3481d20d74715c042121f35b19cfd5cb2c,tables/layer3_parent_registry.csv,1,known Layer3 mechanism/development state
+chocolate_pudding,2,V6 online Layer3 development,fefbbe3481d20d74715c042121f35b19cfd5cb2c,tables/layer3_parent_registry.csv,1,known Layer3 mechanism/development state
+cream_cheese,2,V3 minimal Layer3 development parent,97207bad85bce3cd7e353f3dcb0cf836fb6a48be,reports/CODEX_LAYER3_MINIMAL_EXPERIMENT_SPEC_20260613.md,1,known Layer3 mechanism/development state
 tomato_sauce,0,M3 arm-v3/v4 fixed-frame development,f41ab1a27e5337b6aceedd104e81a24dd8ff2168,reports/M3_ARM_V4_SEED83_84_RESULTS.md,1,known M3 development state

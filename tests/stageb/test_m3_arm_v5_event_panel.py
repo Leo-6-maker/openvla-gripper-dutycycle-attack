@@ -27,13 +27,16 @@ from gripper_attack.m3_event_panel import (
 CONFIG = Path("configs/m3_arm_v5_clean_close_event_panel.yaml")
 
 
-def _record(step, token, invariant=True, tokens=None):
+def _record(step, token, invariant=True, tokens=None, *, task="alphabet_soup", state_id=9, argmax=None):
     if tokens is None:
         tokens = [1, 2, 3, 4, 5, 6, token]
     return {
+        "task": task,
+        "state_id": state_id,
         "step": step,
         "tokens": tokens,
         "gripper_token": token,
+        "official_score_argmax_token_id": token if argmax is None else argmax,
         "score_invariant": {"tie_aware_pass": invariant},
     }
 
@@ -88,6 +91,16 @@ def test_v5_exclusions_are_loaded_from_prior_layer3_ledger():
     with pytest.raises(ValueError, match="prior Layer3 development state"):
         validate_state_pool_against_ledger(bad_pool, ledger)
 
+    arbitrary = list(select_two_states_per_task())
+    arbitrary[0] = type(arbitrary[0])(
+        task="ketchup",
+        state_id=0,
+        task_rank=1,
+        state_hash=v5_state_hash("ketchup", 0),
+    )
+    with pytest.raises(ValueError, match="ledger-derived hash selection"):
+        validate_state_pool_against_ledger(arbitrary, ledger)
+
 
 def test_v5_state_selection_uses_only_task_state_hash():
     task = "ketchup"
@@ -139,23 +152,57 @@ def test_clean_close_event_requires_strict_adjacent_unique_steps():
 
 
 def test_clean_close_event_rejects_token_field_mismatch_and_argmax_mismatch():
-    mismatch = [_record(10, 31744), _record(11, 12345, tokens=[1, 2, 3, 4, 5, 6, 31872])]
+    mismatch = [
+        _record(10, 31744, task="milk", state_id=35),
+        _record(11, 12345, tokens=[1, 2, 3, 4, 5, 6, 31872], task="milk", state_id=35),
+    ]
     result = find_first_clean_close_onset_with_status(mismatch, task="milk", state_id=35)
     assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
     assert result.reason == "gripper_token_mismatch"
 
-    argmax = [_record(10, 31744), _record(11, 31872)]
-    argmax[1]["score_argmax_token_id"] = 31744
+    argmax = [_record(10, 31744, task="milk", state_id=35), _record(11, 31872, task="milk", state_id=35, argmax=31744)]
     result = find_first_clean_close_onset_with_status(argmax, task="milk", state_id=35)
     assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
     assert result.reason == "official_argmax_emitted_mismatch"
 
 
+def test_clean_close_event_rejects_missing_argmax_evidence():
+    records = [_record(10, 31744), _record(11, 31872)]
+    records[1].pop("official_score_argmax_token_id")
+    result = find_first_clean_close_onset_with_status(records, task="alphabet_soup", state_id=9)
+    assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
+    assert result.reason == "missing_official_argmax_evidence"
+
+    records = [_record(10, 31744), _record(11, 31872)]
+    records[0].pop("official_score_argmax_token_id")
+    result = find_first_clean_close_onset_with_status(records, task="alphabet_soup", state_id=9)
+    assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
+    assert result.reason == "missing_official_argmax_evidence"
+
+
+def test_clean_close_event_rejects_wrong_task_or_state():
+    result = find_first_clean_close_onset_with_status(
+        [_record(10, 31744, task="milk", state_id=35), _record(11, 31872, task="milk", state_id=35)],
+        task="ketchup",
+        state_id=35,
+    )
+    assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
+    assert result.reason == "task_mismatch"
+
+    result = find_first_clean_close_onset_with_status(
+        [_record(10, 31744, task="milk", state_id=35), _record(11, 31872, task="milk", state_id=35)],
+        task="milk",
+        state_id=0,
+    )
+    assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
+    assert result.reason == "state_id_mismatch"
+
+
 def test_clean_close_event_requires_exact7_and_score_invariant():
-    bad_tokens = [_record(10, 31744), _record(11, 31872, tokens=[1, 2, 3])]
+    bad_tokens = [_record(10, 31744, task="milk", state_id=35), _record(11, 31872, tokens=[1, 2, 3], task="milk", state_id=35)]
     assert find_first_clean_close_onset(bad_tokens, task="milk", state_id=35) is None
 
-    bad_invariant = [_record(10, 31744), _record(11, 31872, invariant=False)]
+    bad_invariant = [_record(10, 31744, task="milk", state_id=35), _record(11, 31872, invariant=False, task="milk", state_id=35)]
     assert find_first_clean_close_onset(bad_invariant, task="milk", state_id=35) is None
     result = find_first_clean_close_onset_with_status(bad_invariant, task="milk", state_id=35)
     assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
@@ -164,21 +211,33 @@ def test_clean_close_event_requires_exact7_and_score_invariant():
 
 def test_clean_close_event_uses_earliest_qualifying_event_per_state():
     records = [
-        _record(10, 31744),
-        _record(11, 31872),
-        _record(12, 31744),
-        _record(13, 31872),
+        _record(10, 31744, task="orange_juice", state_id=11),
+        _record(11, 31872, task="orange_juice", state_id=11),
+        _record(12, 31744, task="orange_juice", state_id=11),
+        _record(13, 31872, task="orange_juice", state_id=11),
     ]
     event = find_first_clean_close_onset(records, task="orange_juice", state_id=11)
     assert event is not None
     assert event.step == 11
 
 
+def test_clean_close_event_validates_corruption_after_apparent_event():
+    records = [
+        _record(10, 31744),
+        _record(11, 31872),
+        _record(12, 31744),
+    ]
+    records[2].pop("official_score_argmax_token_id")
+    result = find_first_clean_close_onset_with_status(records, task="alphabet_soup", state_id=9)
+    assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
+    assert result.reason == "missing_official_argmax_evidence"
+
+
 def test_clean_close_event_respects_min_max_step():
     records = [
-        _record(8, 31744),
-        _record(9, 31744),
-        _record(10, 31872),
+        _record(8, 31744, task="salad_dressing", state_id=11),
+        _record(9, 31744, task="salad_dressing", state_id=11),
+        _record(10, 31872, task="salad_dressing", state_id=11),
     ]
     event = find_first_clean_close_onset(records, task="salad_dressing", state_id=11, min_step=10, max_step=20)
     assert event is not None
@@ -191,7 +250,10 @@ def test_first_eight_eligible_states_selected_by_hash_order():
     events = {}
     for candidate in candidates:
         events[(candidate.task, candidate.state_id)] = find_first_clean_close_onset(
-            [_record(0, 31744), _record(1, 31872)],
+            [
+                _record(0, 31744, task=candidate.task, state_id=candidate.state_id),
+                _record(1, 31872, task=candidate.task, state_id=candidate.state_id),
+            ],
             task=candidate.task,
             state_id=candidate.state_id,
         )
@@ -206,7 +268,10 @@ def test_insufficient_pool_stop_rule():
     events = {}
     for candidate in candidates[:7]:
         events[(candidate.task, candidate.state_id)] = find_first_clean_close_onset(
-            [_record(0, 31744), _record(1, 31872)],
+            [
+                _record(0, 31744, task=candidate.task, state_id=candidate.state_id),
+                _record(1, 31872, task=candidate.task, state_id=candidate.state_id),
+            ],
             task=candidate.task,
             state_id=candidate.state_id,
         )

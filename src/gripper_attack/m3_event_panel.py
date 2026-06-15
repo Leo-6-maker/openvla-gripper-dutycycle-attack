@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
@@ -31,7 +31,9 @@ V5_TASKS = (
 )
 
 V5_EXCLUDED_DEVELOPMENT_STATES: dict[str, tuple[int, ...]] = {
+    "bbq_sauce": (0,),
     "butter": (2,),
+    "chocolate_pudding": (2,),
     "cream_cheese": (2,),
     "tomato_sauce": (0,),
 }
@@ -57,6 +59,7 @@ class V5CleanCloseEvent:
     previous_gripper_token: int
     exact_7_tokens: tuple[int, ...]
     previous_exact_7_tokens: tuple[int, ...] = ()
+    artifacts: Mapping[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -104,6 +107,19 @@ def select_two_states_per_task(
     return selected
 
 
+def derive_state_pool_from_ledger(
+    ledger_rows: Iterable[V5PriorStateLedgerRow],
+    *,
+    tasks: Iterable[str] = V5_TASKS,
+    state_ids: Iterable[int] = V5_STATE_ID_CANDIDATES,
+) -> list[V5StateCandidate]:
+    return select_two_states_per_task(
+        tasks=tasks,
+        state_ids=state_ids,
+        excluded=excluded_states_from_prior_ledger(ledger_rows),
+    )
+
+
 def parse_bool(value: Any) -> bool:
     if isinstance(value, bool):
         return value
@@ -143,6 +159,8 @@ def validate_state_pool_against_ledger(
     pool: Iterable[V5StateCandidate | Mapping[str, Any]],
     ledger_rows: Iterable[V5PriorStateLedgerRow],
 ) -> None:
+    ledger_rows = list(ledger_rows)
+    pool = list(pool)
     excluded = {
         (row.task, row.state_id)
         for row in ledger_rows
@@ -159,6 +177,24 @@ def validate_state_pool_against_ledger(
         if pair in pool_pairs:
             raise ValueError(f"state pool contains duplicate state: {pair[0]}_s{pair[1]}")
         pool_pairs.add(pair)
+    expected = derive_state_pool_from_ledger(ledger_rows)
+    actual = [
+        row
+        if isinstance(row, V5StateCandidate)
+        else V5StateCandidate(
+            task=str(row["task"]),
+            state_id=int(row["state_id"]),
+            state_hash=str(row["state_hash"]),
+            task_rank=int(row["task_rank"]),
+        )
+        for row in pool
+    ]
+    if len(actual) != len(expected):
+        raise ValueError(f"state pool size mismatch: expected {len(expected)}, got {len(actual)}")
+    expected_rows = [(r.task, r.state_id, r.task_rank, r.state_hash) for r in expected]
+    actual_rows = [(r.task, r.state_id, r.task_rank, r.state_hash) for r in actual]
+    if actual_rows != expected_rows:
+        raise ValueError("state pool does not match ledger-derived hash selection")
 
 
 def _tokens_from_record(record: Mapping[str, Any]) -> list[int]:
@@ -185,23 +221,15 @@ def _score_invariant_pass(record: Mapping[str, Any]) -> bool:
     return False
 
 
-def _official_argmax_matches_emitted(record: Mapping[str, Any], token: int | None) -> bool:
+def _official_argmax_status(record: Mapping[str, Any], token: int | None) -> str:
     if token is None:
-        return False
-    for key in (
-        "score_argmax_token_id",
-        "official_score_argmax_token_id",
-        "processed_score_argmax_token_id",
-        "generation_score_argmax",
-    ):
-        if key in record and record[key] not in ("", None):
-            return int(record[key]) == int(token)
-    audit = record.get("generation_score_audit", record.get("official_generation_score_audit", {}))
-    if isinstance(audit, Mapping):
-        for key in ("argmax_token_id", "top1_token_id", "top_token_id"):
-            if key in audit and audit[key] not in ("", None):
-                return int(audit[key]) == int(token)
-    return True
+        return "official_argmax_emitted_mismatch"
+    value = record.get("official_score_argmax_token_id", "")
+    if value in ("", None):
+        return "missing_official_argmax_evidence"
+    if int(value) != int(token):
+        return "official_argmax_emitted_mismatch"
+    return "pass"
 
 
 def clean_gripper_token(record: Mapping[str, Any]) -> int | None:
@@ -215,7 +243,16 @@ def clean_gripper_token(record: Mapping[str, Any]) -> int | None:
     return None
 
 
-def _record_validation_status(record: Mapping[str, Any]) -> tuple[str, int | None, list[int]]:
+def _record_validation_status(
+    record: Mapping[str, Any],
+    *,
+    task: str,
+    state_id: int,
+) -> tuple[str, int | None, list[int]]:
+    if str(record.get("task", "")) != str(task):
+        return "task_mismatch", None, []
+    if int(record.get("state_id", -1)) != int(state_id):
+        return "state_id_mismatch", None, []
     tokens = _tokens_from_record(record)
     token = clean_gripper_token(record)
     if len(tokens) != 7:
@@ -226,9 +263,37 @@ def _record_validation_status(record: Mapping[str, Any]) -> tuple[str, int | Non
         return "gripper_token_mismatch", token, tokens
     if not _score_invariant_pass(record):
         return "score_invariant_not_pass", token, tokens
-    if not _official_argmax_matches_emitted(record, token):
-        return "official_argmax_emitted_mismatch", token, tokens
+    argmax_status = _official_argmax_status(record, token)
+    if argmax_status != "pass":
+        return argmax_status, token, tokens
     return "pass", int(token), tokens
+
+
+def _event_artifacts(record: Mapping[str, Any], previous_record: Mapping[str, Any] | None) -> dict[str, Any]:
+    keys = (
+        "raw_image_path",
+        "raw_image_sha256",
+        "processed_tensor_path",
+        "processed_tensor_sha256",
+        "prompt_token_ids",
+        "prompt_token_ids_sha256",
+        "model_fingerprint",
+        "model_checkpoint_sha256",
+        "processor_config_sha256",
+        "preprocess_config_sha256",
+        "task_state_init_sha256",
+        "clean_record_source_path",
+        "clean_record_source_sha256",
+        "runner_sha256",
+        "config_sha256",
+        "commit",
+        "gpu_query",
+        "worktree_status",
+        "official_score_argmax_token_id",
+    )
+    artifacts = {key: record.get(key, "") for key in keys}
+    artifacts["previous_official_score_argmax_token_id"] = "" if previous_record is None else previous_record.get("official_score_argmax_token_id", "")
+    return artifacts
 
 
 def find_first_clean_close_onset_with_status(
@@ -239,10 +304,12 @@ def find_first_clean_close_onset_with_status(
     min_step: int = V5_MIN_STEP,
     max_step: int = V5_MAX_STEP,
 ) -> V5EventSelectionResult:
+    previous_record: dict[str, Any] | None = None
     previous_step: int | None = None
     previous_token: int | None = None
     previous_tokens: list[int] | None = None
     seen_steps: set[int] = set()
+    first_event: V5CleanCloseEvent | None = None
     saw_any = False
     for raw_record in records:
         saw_any = True
@@ -270,7 +337,7 @@ def find_first_clean_close_onset_with_status(
                     reason="step_gap",
                     invalid_step=step,
                 )
-        status, token, tokens = _record_validation_status(record)
+        status, token, tokens = _record_validation_status(record, task=task, state_id=state_id)
         if status != "pass":
             return V5EventSelectionResult(
                 "V5_CLEAN_EVENT_INFRA_INVALID",
@@ -292,9 +359,8 @@ def find_first_clean_close_onset_with_status(
                     invalid_step=step,
                 )
             if previous_token != V5_EVENT_GRIPPER_TOKEN:
-                return V5EventSelectionResult(
-                    "V5_CLEAN_EVENT_FOUND",
-                    event=V5CleanCloseEvent(
+                if first_event is None:
+                    first_event = V5CleanCloseEvent(
                         task=task,
                         state_id=int(state_id),
                         step=step,
@@ -302,11 +368,14 @@ def find_first_clean_close_onset_with_status(
                         previous_gripper_token=int(previous_token),
                         exact_7_tokens=tuple(tokens),
                         previous_exact_7_tokens=tuple(previous_tokens or ()),
-                    ),
-                )
+                        artifacts=_event_artifacts(record, previous_record),
+                    )
         previous_step = step
         previous_token = token
         previous_tokens = tokens
+        previous_record = record
+    if first_event is not None:
+        return V5EventSelectionResult("V5_CLEAN_EVENT_FOUND", event=first_event)
     if not saw_any:
         return V5EventSelectionResult("V5_CLEAN_EVENT_NOT_FOUND", reason="empty_records")
     return V5EventSelectionResult("V5_CLEAN_EVENT_NOT_FOUND", reason="no_clean_close_onset")

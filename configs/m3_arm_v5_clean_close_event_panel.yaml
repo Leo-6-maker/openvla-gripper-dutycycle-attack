@@ -1,12 +1,34 @@
 stage: M3_ARM_V5_EVENT_ANCHORED_CLEAN_CLOSE_PANEL_PREREG
 
+runtime:
+  python_env: /data/aviary/envs/openvla_official_libero_20260525
+  suite: libero_object
+  exact_state_count: 20
+  one_clean_trajectory_per_state: true
+  no_attack_modules: true
+
+model:
+  path: /data/aviary/models/openvla/openvla-7b-finetuned-libero-object
+  unnorm_key: libero_object
+  attn_implementation: eager
+  torch_dtype: bfloat16
+
+preprocess:
+  libero_official_preprocess: false
+  libero_preprocess_backend: official_pil_lanczos
+  center_crop: true
+  resize_size: 224
+  postprocess_gripper: true
+
 selection:
   hash_salt: M3_ARM_V5_CLOSE_PANEL
   state_id_candidates: "0..49"
   states_per_task: 2
   prior_layer3_state_ledger: tables/m3_arm_v5_prior_layer3_state_ledger.csv
   excluded_development_states:
+    bbq_sauce: [0]
     butter: [2]
+    chocolate_pudding: [2]
     cream_cheese: [2]
     tomato_sauce: [0]
   min_step: 0

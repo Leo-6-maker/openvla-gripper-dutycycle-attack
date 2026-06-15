@@ -29,7 +29,9 @@ For each task, candidate states are `0..49` except known Layer3 development
 states:
 
 ```text
+bbq_sauce: 0
 butter: 2
+chocolate_pudding: 2
 cream_cheese: 2
 tomato_sauce: 0
 ```
@@ -43,6 +45,17 @@ tables/m3_arm_v5_prior_layer3_state_ledger.csv
 Every row with `used_for_development=1` must be excluded from the state pool.
 The helper tests assert that the frozen 20-state pool contains no prior Layer3
 development state; this is not a narrative-only exclusion.
+The config pool and CSV pool must exactly equal the ledger-derived hash
+selection:
+
+```text
+ledger
+→ used_for_development exclusions
+→ enumerate 10 tasks x states 0..49
+→ recompute SHA256("M3_ARM_V5_CLOSE_PANEL|task|state")
+→ choose first 2 states per task
+→ assert equality with YAML and CSV
+```
 
 Each task takes the two smallest hashes:
 
@@ -71,7 +84,7 @@ current step has adjacent previous row: previous_step == current_step - 1
 exact official action tokens == 7
 score invariant == PASS
 explicit gripper token == tokens[-1]
-official processed-score argmax is emitted token
+official_score_argmax_token_id is present and equals emitted token
 current gripper token == 31872
 previous step gripper token != 31872
 ```
@@ -94,6 +107,22 @@ V5_CLEAN_EVENT_INFRA_INVALID
 
 That state remains invalid for V5.1 and cannot be replaced by a non-frozen
 state.
+
+The only accepted argmax evidence field is:
+
+```text
+official_score_argmax_token_id
+```
+
+Missing argmax evidence is:
+
+```text
+V5_CLEAN_EVENT_INFRA_INVALID
+reason = missing_official_argmax_evidence
+```
+
+The full clean trajectory must be validated before event selection is accepted;
+corruption after an apparent first event is still infra-invalid.
 
 Forbidden during event selection:
 
@@ -129,6 +158,32 @@ adapter or control modules. The runner must read the frozen 20-state manifest,
 produce at most one clean trajectory per state, preserve invalid/missing states
 in its all-state table, and write a hash manifest for capture/preflight
 artifacts.
+
+For each selected event, the frozen panel CSV must have non-empty bindings for:
+
+```text
+raw_image_path + raw_image_sha256
+processed_tensor_path + processed_tensor_sha256
+prompt_token_ids + prompt_token_ids_sha256
+current and previous official_score_argmax_token_id
+model_fingerprint
+model_checkpoint_sha256
+processor_config_sha256
+preprocess_config_sha256
+task_state_init_sha256
+clean_record_source_path + clean_record_source_sha256
+runner_sha256
+config_sha256
+commit
+gpu_query
+worktree_status
+```
+
+If any selected field is blank, V5.1 must stop with:
+
+```text
+V5_EXACT_INPUT_BINDING_INCOMPLETE
+```
 
 Capture attempt policy is fail-closed:
 
