@@ -270,6 +270,7 @@ def main() -> int:
         preprocess_kwargs=dict(cfg.get("preprocess", {})),
         device=device,
     )
+    adapter._freeze_model()
 
     write_phase_marker(phase_path, phase_rows, "REPEATS_BEGIN")
     repeat_rows: list[dict[str, Any]] = []
@@ -380,6 +381,7 @@ def main() -> int:
         "no_shuffled_grad21": True,
         "no_libero_rollout": True,
         "no_panel_capture": True,
+        "model_parameters_frozen_for_pixel_gradient": True,
         "torch_allow_tf32_matmul": bool(torch.backends.cuda.matmul.allow_tf32),
         "torch_allow_tf32_cudnn": bool(torch.backends.cudnn.allow_tf32),
         "cublas_workspace_config": os.environ.get("CUBLAS_WORKSPACE_CONFIG", ""),
