@@ -957,6 +957,8 @@ def audit_candidate_artifacts(
             return False, f"{condition}:selected_results_not_selected_candidate"
         if str(candidate.get("score_invariant_status", "")) != "PASS":
             return False, f"{condition}:selected_score_invariant_not_pass"
+        if int(candidate.get("feasible", 0) or 0) != 1:
+            return False, f"{condition}:selected_candidate_not_marked_feasible"
         if int(candidate.get("official_gripper_token", -1) or -1) != int(selected_row.get("official_gripper_token", -2) or -2):
             return False, f"{condition}:selected_token_mismatch"
         if int(candidate.get("arm_prefix_match_count", -1) or -1) != int(selected_row.get("arm_prefix_match_count", -2) or -2):
@@ -981,6 +983,11 @@ def audit_route_artifacts(
         rows = [dict(r) for r in csv.DictReader(f)]
     required = {"TRUE_PGD_TRAJECTORY21_SELECTIVE", "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"}
     seen = {str(r.get("condition", "")) for r in rows}
+    if seen != required or len(rows) != 2:
+        return False, "route_rows_not_exactly_true_and_shuffled"
+    for condition in required:
+        if sum(1 for r in rows if str(r.get("condition", "")) == condition) != 1:
+            return False, "route_condition_not_unique"
     if not required.issubset(seen):
         return False, "route_required_conditions_missing"
     for row in rows:

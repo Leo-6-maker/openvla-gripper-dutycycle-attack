@@ -420,6 +420,7 @@ def _candidate_rows(condition, *, selected_id=0, seed=85, commit="abc", linf=0.0
                 "score_invariant_status": invariant if idx == selected_id else "PASS",
                 "processor_linf": linf,
                 "selected": 1 if idx == selected_id else 0,
+                "feasible": 1,
             }
         )
     return rows
@@ -463,6 +464,19 @@ def test_candidate_artifact_audit_requires_exact_ids_budget_and_selected_mapping
     )
     assert not ok
     assert "selected_score_invariant_not_pass" in reason
+
+    bad_rows = list(rows)
+    bad_rows[0] = dict(bad_rows[0], feasible=0)
+    ok, reason = audit_candidate_artifacts(
+        candidate_rows=bad_rows,
+        selected_row=selected,
+        condition="TRUE_PGD_TRAJECTORY21_SELECTIVE",
+        expected_seed=85,
+        expected_commit="abc",
+        epsilon=6 / 255,
+    )
+    assert not ok
+    assert "selected_candidate_not_marked_feasible" in reason
 
 
 def test_candidate_artifact_audit_rejects_duplicate_ids_even_when_count_is_21():
@@ -513,6 +527,13 @@ def test_route_artifact_audit_requires_counts_objective_target_and_seed(tmp_path
     ok, reason = audit_route_artifacts(path, expected_seed=85, expected_commit="abc")
     assert not ok
     assert reason == "route_wrong_generation_forward_count"
+
+    rows[0]["num_generation_forwards"] = "21"
+    rows.append(dict(rows[0]))
+    write_csv(path, rows, list(rows[0].keys()))
+    ok, reason = audit_route_artifacts(path, expected_seed=85, expected_commit="abc")
+    assert not ok
+    assert reason == "route_rows_not_exactly_true_and_shuffled"
 
 
 def test_recursive_manifest_verifies_content_changes(tmp_path):

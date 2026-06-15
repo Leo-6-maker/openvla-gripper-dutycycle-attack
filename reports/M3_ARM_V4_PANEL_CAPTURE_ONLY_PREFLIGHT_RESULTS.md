@@ -26,6 +26,17 @@ model loading with CUDA OOM before any capture artifacts were written. The
 successful capture used the same two-GPU mapping as the accepted arm-v4 seed83
 and seed84 fixed-frame runs.
 
+Attempt ledger:
+
+```text
+reports/artifacts/m3_arm_v4_panel_capture_f41ab1a_r2/m3_panel_capture_attempt_ledger.csv
+```
+
+| Attempt | Status | Model mapping | First clean action | Capture artifacts |
+| --- | --- | --- | --- | --- |
+| attempt_0 | `MODEL_LOAD_OOM_NO_CAPTURE_ARTIFACTS` | `--model_gpu_device_id 0` | `NO` | `NONE` |
+| attempt_1 | `CAPTURE_ONLY_SUCCESS` | `--model_gpu_device_id -1` | `YES` | `/data/liuyu/outputs/m3_arm_v4_panel_capture_f41ab1a_r2` |
+
 ## Step78 Parity
 
 Step78 matched the previously frozen step78 input on all preregistered parity
