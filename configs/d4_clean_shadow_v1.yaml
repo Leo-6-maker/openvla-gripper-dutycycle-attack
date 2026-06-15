@@ -1,0 +1,126 @@
+# D4.3 — Clean Shadow Detector Configuration (V1 frozen)
+# Infrastructure canary + fixed panel. No attack. No perturbation. No training.
+
+stage: D4.3
+version: v1
+mode: clean_shadow
+attack_forbidden: true
+training_forbidden: true
+threshold_retuning_forbidden: true
+
+# Frozen artifacts
+checkpoint_sha: cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7326f691742b9a438f1174858
+threshold: 0.236312
+baseline_threshold: inf
+baseline_status: SAFE_ABSTAIN_ONLY
+
+# Model
+model_path: /data/aviary/models/openvla/openvla-7b-finetuned-libero-object
+unnorm_key: libero_object
+K_trigger: 8
+
+# Environment
+suite: libero_object
+tasks: 10
+states_per_task: 50
+total_universe: 500
+
+# Phase A: Infrastructure canary (D4.3a)
+canary:
+  n_states: 4
+  n_distinct_tasks: 4
+  selection_method: sha256_sort_smallest
+  salt: D4.3_SHADOW_V1
+  paired_experiment: true
+  reference_episodes: 4
+  shadow_episodes: 4
+  gpu: "2,6"
+  max_infra_retries: 1
+  retry_only_before_first_action: true
+
+  gates:
+    - all_states_completed
+    - no_state_replacement
+    - zero_detector_exceptions
+    - zero_action_hash_mismatch
+    - reference_shadow_identical:
+        - raw_action_sequence
+        - env_action_sequence
+        - rgb_observation_hash_sequence
+        - episode_length
+        - done_step
+        - success_result
+    - detector_reset_before_every_episode
+    - no_invalid_critical_gripper_field
+    - no_predictor_abstain_emission
+    - latency_p99_us: 20000
+    - latency_max_us: 50000
+    - median_detector_overhead_pct: 5
+    - gpu_processes_return_to_zero
+
+# Phase B: Fixed clean shadow panel (D4.3b)
+panel:
+  n_states: 30
+  tasks: 10
+  states_per_task: 3
+  selection_method: sha256_sort_smallest_3_per_task
+  gpu_workers:
+    A: "2,6"
+    B: "4,5"
+  max_infra_retries: 1
+  retry_only_before_first_action: true
+
+  primary_metrics:
+    - exact
+    - early
+    - late
+    - abstain
+    - coverage
+    - exact_per_emission
+    - early_per_all
+    - early_per_emission
+    - signed_delay_distribution
+    - absolute_delay_distribution
+
+  secondary_metrics:
+    - candidate_count_per_episode
+    - score_trajectory
+    - input_validity_fraction
+    - detector_latency_per_step
+    - clean_task_success_rate
+
+  safety:
+    - action_identity_verification
+    - episode_termination_unchanged
+
+  diagnostic_flag:
+    unique_multi_early_gt_10pct: D4_SHADOW_POLICY_EARLY_RISK
+
+# Teacher-P sidecar (post-hoc, offline only)
+teacher_p:
+  mode: post_hoc_only
+  never_in_rollout: true
+  taxonomy:
+    - UNIQUE_MULTI
+    - UNIQUE_SINGLE
+    - AMBIGUOUS
+    - UNAVAILABLE
+    - NO_CLOSE
+  primary_denominator: UNIQUE_MULTI
+  ambiguous_unavailable_are_not_negatives: true
+
+# Absolute forbidden
+forbidden:
+  - adversarial_perturbation
+  - gripper_override
+  - action_modification
+  - layer3_invocation
+  - attack_rollout
+  - threshold_retuning
+  - training
+  - adaptive_state_selection
+  - state_replacement
+  - deleting_failed_artifacts
+  - reclassifying_ambiguous_as_negatives
+  - claiming_early_triggers_are_safe
+  - closed_loop_integration
