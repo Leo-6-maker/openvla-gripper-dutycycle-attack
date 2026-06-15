@@ -1,0 +1,18 @@
+D4.2c RUN LOG
+timestamp: 2026-06-15T10:17:20Z
+checkpoint_sha: cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7326f691742b9a438f1174858
+threshold: 0.236312
+n_traces: 46
+step_mismatches: 0
+feature_mismatches: 0
+norm_feat_mismatches: 0
+max_norm_feat_diff: 0.000000e+00
+norm_feat_tolerance: 1.0e-07
+mlp_score_mismatches: 0
+max_mlp_score_diff: 4.995842e-07
+mlp_score_tolerance: 1.0e-06
+emit_mismatches: 0
+skipped: 0
+all_gates_pass: True
+runner_sha: 606d88e81b811d15d3044f6dacffdfa4401c373b048951253ca0aabeced51e4a
+detector_sha: 683cf9d399cdba75d4500eaf8123ea5715d2564117d44e1d1595b163abf85a63

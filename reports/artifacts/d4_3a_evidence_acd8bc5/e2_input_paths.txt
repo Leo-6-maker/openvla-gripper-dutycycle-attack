@@ -1,0 +1,12 @@
+outputs/d1b_training/d1b_detector_best.pt
+tables/e4c_audit/l12_e4c2b_close_candidates.csv
+tables/d2_fresh/d2_fresh_close_candidates.csv
+tables/d2_fresh/d2_fresh_trace_status.csv
+tables/e4c_audit/l12_e4c2_input_manifest.csv
+tables/d2_fresh/d2_final_trace_inventory.csv
+tables/deepseek_detector/d1b_split_manifest.csv
+tables/deepseek_detector/d1b_feature_normalization.csv
+tables/d4_replay/d4_test21_model_predictions.csv
+tables/d4_replay/d4_fresh25_model_predictions.csv
+scripts/stageb/run_d4_production_parity.py
+src/gripper_attack/production_detector.py
