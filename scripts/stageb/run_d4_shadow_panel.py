@@ -77,10 +77,20 @@ def worker_main():
     ap.add_argument("--worker-states-file", default="")
     ap.add_argument("--output-dir", default="")
     ap.add_argument("--launcher-dir", default="")
+    ap.add_argument("--worker-head", default="")
+    ap.add_argument("--worker-branch", default="")
     args = ap.parse_args()
 
     if not args.worker:
         return
+
+    # Worker provenance check
+    if args.worker_head:
+        actual_head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+        assert actual_head == args.worker_head, f"Worker HEAD mismatch: {actual_head[:16]} != {args.worker_head[:16]}"
+    if args.worker_branch:
+        actual_branch = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True).stdout.strip()
+        assert actual_branch == args.worker_branch, f"Worker branch mismatch: {actual_branch} != {args.worker_branch}"
 
     gpu_slot = {"slot": args.worker_slot, "cuda": args.worker_cuda, "render": args.worker_render}
 
@@ -223,6 +233,16 @@ def main():
     head = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     assert head == args.expected_execution_head, f"HEAD mismatch"
     print(f"HEAD: {head[:16]}... VERIFIED")
+
+    # Branch and worktree check
+    branch = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True).stdout.strip()
+    ws = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True).stdout
+    assert ws.strip() == "", f"Worktree not clean: {ws[:200]}"
+    print(f"Branch: {branch}  Worktree: clean")
+
+    # Script SHA
+    self_sha = sha256_file(__file__)
+    print(f"Panel script SHA: {self_sha[:16]}...")
 
     # Load and assign panel states
     rows = list(csv.DictReader(open(args.panel_manifest)))
