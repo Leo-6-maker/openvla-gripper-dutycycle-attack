@@ -170,16 +170,16 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
 
     # ── Privileged sidecar: object mapping ──
     OBJECT_MAP = {
-        "ketchup": "ketchup_green_bottle_1",
-        "tomato_sauce": "tomato_sauce_bottle_1",
-        "milk": "milk_carton_1",
-        "butter": "butter_box_1",
-        "cream_cheese": "cream_cheese_box_1",
-        "salad_dressing": "salad_dressing_bottle_1",
-        "bbq_sauce": "bbq_sauce_bottle_1",
-        "alphabet_soup": "alphabet_soup_can_1",
-        "orange_juice": "orange_juice_carton_1",
-        "chocolate_pudding": "chocolate_pudding_box_1",
+        "alphabet_soup": "alphabet_soup_1_main",
+        "cream_cheese": "cream_cheese_1_main",
+        "salad_dressing": "salad_dressing_1_main",
+        "bbq_sauce": "bbq_sauce_1_main",
+        "ketchup": "ketchup_1_main",
+        "tomato_sauce": "tomato_sauce_1_main",
+        "butter": "butter_1_main",
+        "milk": "milk_1_main",
+        "chocolate_pudding": "chocolate_pudding_1_main",
+        "orange_juice": "orange_juice_1_main",
     }
 
     def get_object_pose_safe(env, obj_name):
