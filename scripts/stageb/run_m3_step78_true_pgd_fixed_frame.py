@@ -98,6 +98,8 @@ V4_CONDITIONS = [
 PANEL_MAIN_FRAMES = [70, 72, 74, 76, 80, 82, 84, 86]
 PANEL_POSITIVE_CONTROL_FRAME = 78
 PANEL_ALL_CAPTURE_FRAMES = [70, 72, 74, 76, 78, 80, 82, 84, 86]
+PANEL_FROZEN_V4_CONFIG_SHA256 = "2dcef93bf2decf742e0c98f321267ae665b57890f3ab03088dfda3686ae8a2a8"
+PANEL_FROZEN_OBJECTIVE = "autoregressive_prefix_gripper_target_token_logratio_arm_v3"
 PRELIGHT_CLASSES = {
     "SURROGATE_OFFICIAL_SCORE_PATH_MATCH",
     "SURROGATE_OFFICIAL_SCORE_PATH_TIE_EQUIVALENT",
@@ -227,6 +229,45 @@ def write_artifact_hash_manifest(output_dir: Path, filename: str = "m3_artifact_
         )
     if rows:
         write_csv(output_dir / filename, rows, ["file", "size_bytes", "sha256"])
+
+
+def write_recursive_artifact_hash_manifest(
+    output_dir: Path,
+    filename: str = "m3_recursive_artifact_hash_manifest.csv",
+) -> None:
+    rows = []
+    manifest_path = output_dir / filename
+    for path in sorted(output_dir.rglob("*")):
+        if not path.is_file() or path.resolve() == manifest_path.resolve():
+            continue
+        rows.append(
+            {
+                "relative_path": str(path.relative_to(output_dir)).replace("\\", "/"),
+                "size_bytes": path.stat().st_size,
+                "sha256": sha256_file(path),
+            }
+        )
+    write_csv(manifest_path, rows, ["relative_path", "size_bytes", "sha256"])
+
+
+def verify_recursive_artifact_hash_manifest(
+    output_dir: Path,
+    filename: str = "m3_recursive_artifact_hash_manifest.csv",
+) -> None:
+    manifest_path = output_dir / filename
+    if not manifest_path.exists():
+        raise RuntimeError(f"recursive artifact manifest missing: {manifest_path}")
+    with manifest_path.open("r", encoding="utf-8", newline="") as f:
+        rows = list(csv.DictReader(f))
+    for row in rows:
+        path = output_dir / row["relative_path"]
+        if not path.exists():
+            raise RuntimeError(f"artifact manifest entry missing on disk: {path}")
+        if str(path.stat().st_size) != str(row["size_bytes"]):
+            raise RuntimeError(f"artifact size mismatch: {path}")
+        actual = sha256_file(path)
+        if actual != row["sha256"]:
+            raise RuntimeError(f"artifact sha256 mismatch: {path}")
 
 
 def model_fingerprint(model: Any) -> dict[str, Any]:
@@ -766,6 +807,49 @@ def validate_start_provenance() -> None:
         raise RuntimeError(f"provenance invalid before panel run: gpu_query={gpu_query!r}")
 
 
+def ensure_output_dir_absent_or_empty(output_dir: Path) -> None:
+    if output_dir.exists() and any(output_dir.iterdir()):
+        raise RuntimeError(f"output directory is not empty: {output_dir}")
+
+
+def require_arg_value(args: argparse.Namespace, name: str) -> str:
+    value = str(getattr(args, name, "") or "")
+    if not value:
+        raise SystemExit(f"--{name} is required for panel_seed85")
+    return value
+
+
+def validate_expected_panel_sources(args: argparse.Namespace) -> None:
+    expected_commit = require_arg_value(args, "expected_commit")
+    expected_config_sha = require_arg_value(args, "expected_config_sha256")
+    expected_runner_sha = require_arg_value(args, "expected_runner_sha256")
+    expected_attack_adapter_sha = require_arg_value(args, "expected_attack_adapter_sha256")
+    expected_frozen_manifest_sha = require_arg_value(args, "expected_frozen_step78_manifest_sha256")
+    frozen_manifest = Path(require_arg_value(args, "frozen_step78_manifest"))
+    if not frozen_manifest.exists():
+        raise FileNotFoundError(str(frozen_manifest))
+    actual_commit = git_value(["rev-parse", "HEAD"])
+    if actual_commit != expected_commit:
+        raise RuntimeError(f"unexpected execution commit: {actual_commit} != {expected_commit}")
+    actual_config_sha = sha256_file(Path(args.config))
+    if actual_config_sha != expected_config_sha:
+        raise RuntimeError(f"unexpected config sha256: {actual_config_sha} != {expected_config_sha}")
+    if expected_config_sha != PANEL_FROZEN_V4_CONFIG_SHA256:
+        raise RuntimeError(f"panel seed85 must use frozen arm-v4 config sha {PANEL_FROZEN_V4_CONFIG_SHA256}")
+    actual_runner_sha = sha256_file(Path(__file__).resolve())
+    if actual_runner_sha != expected_runner_sha:
+        raise RuntimeError(f"unexpected runner sha256: {actual_runner_sha} != {expected_runner_sha}")
+    adapter_path = REPO_ROOT / "src" / "gripper_attack" / "attack_adapter.py"
+    actual_adapter_sha = sha256_file(adapter_path)
+    if actual_adapter_sha != expected_attack_adapter_sha:
+        raise RuntimeError(f"unexpected attack_adapter sha256: {actual_adapter_sha} != {expected_attack_adapter_sha}")
+    actual_frozen_manifest_sha = sha256_file(frozen_manifest)
+    if actual_frozen_manifest_sha != expected_frozen_manifest_sha:
+        raise RuntimeError(
+            f"unexpected frozen step78 manifest sha256: {actual_frozen_manifest_sha} != {expected_frozen_manifest_sha}"
+        )
+
+
 def claim_one_shot_sentinel(output_dir: Path, *, stage: str, seed: int) -> Path:
     sentinel = output_dir / f"{stage}_ONESHOT_SENTINEL.json"
     if sentinel.exists():
@@ -822,31 +906,117 @@ def _candidate_counts(path: Path) -> dict[str, int]:
     return counts
 
 
-def _route_artifacts_valid(path: Path) -> bool:
+def _parse_token_list(value: Any) -> list[int]:
+    if isinstance(value, list):
+        return [int(x) for x in value]
+    return [int(x) for x in json.loads(str(value))]
+
+
+def _float_equal(a: Any, b: Any, *, tolerance: float = 1e-6) -> bool:
+    return abs(float(a) - float(b)) <= tolerance
+
+
+def audit_candidate_artifacts(
+    *,
+    candidate_rows: list[Mapping[str, Any]],
+    selected_row: Mapping[str, Any] | None,
+    condition: str,
+    expected_seed: int,
+    expected_commit: str,
+    epsilon: float,
+) -> tuple[bool, str]:
+    rows = [dict(r) for r in candidate_rows if str(r.get("condition", "")) == condition]
+    if len(rows) != 21:
+        return False, f"{condition}:candidate_count_{len(rows)}"
+    ids = [int(r.get("candidate_id", -1)) for r in rows]
+    if sorted(ids) != list(range(21)) or len(set(ids)) != 21:
+        return False, f"{condition}:candidate_ids_not_0_20_unique"
+    for row in rows:
+        if int(row.get("attack_seed", -1) or -1) != int(expected_seed):
+            return False, f"{condition}:attack_seed_mismatch"
+        if expected_commit and str(row.get("commit", "")) != expected_commit:
+            return False, f"{condition}:commit_mismatch"
+        try:
+            if len(_parse_token_list(row.get("official_tokens", "[]"))) != 7:
+                return False, f"{condition}:official_tokens_not_7"
+        except Exception:
+            return False, f"{condition}:official_tokens_unparseable"
+        if float(row.get("processor_linf", 999.0) or 999.0) > float(epsilon) + 1e-9:
+            return False, f"{condition}:processor_linf_over_budget"
+    selected_flags = [r for r in rows if int(r.get("selected", 0) or 0) == 1]
+    selected_feasible = selected_row is not None and str(selected_row.get("condition_result", "")) != "NO_FEASIBLE_CANDIDATE"
+    if selected_feasible:
+        if len(selected_flags) != 1:
+            return False, f"{condition}:selected_flag_not_unique"
+        selected_id = int(selected_row.get("selected_candidate_id", -1) or -1)
+        matches = [r for r in rows if int(r.get("candidate_id", -1) or -1) == selected_id]
+        if len(matches) != 1:
+            return False, f"{condition}:selected_candidate_id_not_unique"
+        candidate = matches[0]
+        if candidate is not selected_flags[0] and int(candidate.get("selected", 0) or 0) != 1:
+            return False, f"{condition}:selected_results_not_selected_candidate"
+        if str(candidate.get("score_invariant_status", "")) != "PASS":
+            return False, f"{condition}:selected_score_invariant_not_pass"
+        if int(candidate.get("official_gripper_token", -1) or -1) != int(selected_row.get("official_gripper_token", -2) or -2):
+            return False, f"{condition}:selected_token_mismatch"
+        if int(candidate.get("arm_prefix_match_count", -1) or -1) != int(selected_row.get("arm_prefix_match_count", -2) or -2):
+            return False, f"{condition}:selected_arm_match_mismatch"
+        if not _float_equal(candidate.get("official_target31744_margin", 0.0), selected_row.get("official_target31744_margin", 999.0)):
+            return False, f"{condition}:selected_margin_mismatch"
+    elif selected_flags:
+        return False, f"{condition}:selected_flag_present_without_selected_result"
+    return True, "PASS"
+
+
+def audit_route_artifacts(
+    path: Path,
+    *,
+    expected_seed: int,
+    expected_commit: str,
+    expected_objective: str = PANEL_FROZEN_OBJECTIVE,
+) -> tuple[bool, str]:
     if not path.exists():
-        return False
+        return False, "route_audit_missing"
     with path.open("r", encoding="utf-8", newline="") as f:
         rows = [dict(r) for r in csv.DictReader(f)]
     required = {"TRUE_PGD_TRAJECTORY21_SELECTIVE", "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"}
     seen = {str(r.get("condition", "")) for r in rows}
     if not required.issubset(seen):
-        return False
+        return False, "route_required_conditions_missing"
     for row in rows:
         if row.get("condition") not in required:
             continue
+        if int(row.get("attack_seed", -1) or -1) != int(expected_seed):
+            return False, "route_attack_seed_mismatch"
+        if expected_commit and str(row.get("commit", "")) != expected_commit:
+            return False, "route_commit_mismatch"
         if str(row.get("strict_route", "")).lower() != "true":
-            return False
+            return False, "route_strict_route_not_true"
         if str(row.get("allow_fallback", "")).lower() != "false":
-            return False
+            return False, "route_allow_fallback_not_false"
         if str(row.get("fallback_used", "")).lower() != "false":
-            return False
+            return False, "route_fallback_used"
         if str(row.get("resolved_adapter_class", "")) != "TokenPrefixPGDAttacker":
-            return False
+            return False, "route_wrong_adapter"
+        if str(row.get("requested_objective", "")) != expected_objective:
+            return False, "route_wrong_requested_objective"
+        if str(row.get("resolved_objective", "")) != expected_objective:
+            return False, "route_wrong_resolved_objective"
+        if int(row.get("target_token_id", -1) or -1) != TARGET_31744:
+            return False, "route_wrong_target_token"
         if int(float(row.get("num_backwards", 0) or 0)) != 20:
-            return False
+            return False, "route_wrong_backward_count"
+        if int(float(row.get("num_loss_forwards", 0) or 0)) != 21:
+            return False, "route_wrong_loss_forward_count"
+        if int(float(row.get("num_generation_forwards", 0) or 0)) != 21:
+            return False, "route_wrong_generation_forward_count"
         if int(float(row.get("trajectory_candidate_count", 0) or 0)) != 21:
-            return False
-    return True
+            return False, "route_wrong_trajectory_candidate_count"
+    return True, "PASS"
+
+
+def _route_artifacts_valid(path: Path) -> bool:
+    return audit_route_artifacts(path, expected_seed=85, expected_commit="")[0]
 
 
 def frame_status_from_v4_artifacts(
@@ -855,6 +1025,10 @@ def frame_status_from_v4_artifacts(
     step: int,
     main_denominator: bool,
     clean_dir: Path | None = None,
+    expected_seed: int = 85,
+    expected_commit: str = "",
+    expected_objective: str = PANEL_FROZEN_OBJECTIVE,
+    epsilon: float = 6.0 / 255.0,
 ) -> dict[str, Any]:
     clean_status = clean_eligibility_from_frame_dir(clean_dir or frame_dir, step)
     base = {
@@ -866,16 +1040,37 @@ def frame_status_from_v4_artifacts(
     if clean_status["status"] != "CLEAN_ELIGIBLE":
         return {**base, "frame_status": clean_status["status"], "infra_status": "SKIPPED_CLEAN_INELIGIBLE"}
     selected_rows = _rows_by_condition(frame_dir / "m3_v4_selected_results.csv")
-    counts = _candidate_counts(frame_dir / "m3_v4_candidate_audit.csv")
-    infra_valid = _route_artifacts_valid(frame_dir / "m3_v4_route_audit.csv")
-    expected_counts = {
-        "TRUE_PGD_TRAJECTORY21_SELECTIVE": 21,
-        "RAND21_SELECTIVE": 21,
-        "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE": 21,
-    }
-    for condition, expected in expected_counts.items():
-        if counts.get(condition, 0) != expected:
+    candidate_path = frame_dir / "m3_v4_candidate_audit.csv"
+    if candidate_path.exists():
+        with candidate_path.open("r", encoding="utf-8", newline="") as f:
+            candidate_rows = [dict(r) for r in csv.DictReader(f)]
+    else:
+        candidate_rows = []
+    counts = _candidate_counts(candidate_path)
+    infra_valid = True
+    infra_reasons = []
+    route_ok, route_reason = audit_route_artifacts(
+        frame_dir / "m3_v4_route_audit.csv",
+        expected_seed=expected_seed,
+        expected_commit=expected_commit,
+        expected_objective=expected_objective,
+    )
+    if not route_ok:
+        infra_valid = False
+        infra_reasons.append(route_reason)
+    for condition in ["TRUE_PGD_TRAJECTORY21_SELECTIVE", "RAND21_SELECTIVE", "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"]:
+        selected = selected_rows.get(condition)
+        ok, reason = audit_candidate_artifacts(
+            candidate_rows=candidate_rows,
+            selected_row=selected,
+            condition=condition,
+            expected_seed=expected_seed,
+            expected_commit=expected_commit,
+            epsilon=epsilon,
+        )
+        if not ok:
             infra_valid = False
+            infra_reasons.append(reason)
     status = frame_full_selective_status(
         true_row=selected_rows.get("TRUE_PGD_TRAJECTORY21_SELECTIVE"),
         rand_row=selected_rows.get("RAND21_SELECTIVE"),
@@ -886,6 +1081,7 @@ def frame_status_from_v4_artifacts(
     return {
         **base,
         "infra_status": "PASS" if infra_valid else "INFRA_INVALID",
+        "infra_reasons": ";".join(infra_reasons),
         "frame_status": status["status"],
         "full_pass": status.get("full_pass", False),
         "rand_win": status.get("rand_win", False),
@@ -908,6 +1104,7 @@ def write_panel_joint_and_aggregate(output_dir: Path, frame_rows: list[Mapping[s
         "clean_status",
         "clean_gripper_token",
         "infra_status",
+        "infra_reasons",
         "frame_status",
         "full_pass",
         "rand_win",
@@ -1845,13 +2042,14 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
 def run_panel_seed85(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
     validate_panel_seed(int(args.attack_seed))
     parse_panel_steps(args.panel_steps)
-    validate_start_provenance()
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-    claim_one_shot_sentinel(output_dir, stage="m3_panel_seed85", seed=int(args.attack_seed))
-
     if not args.frozen_step78_manifest:
         raise SystemExit("--frozen_step78_manifest is required for panel_seed85")
+    validate_expected_panel_sources(args)
+    output_dir = Path(args.output_dir)
+    ensure_output_dir_absent_or_empty(output_dir)
+    validate_start_provenance()
+    claim_one_shot_sentinel(output_dir, stage="m3_panel_seed85", seed=int(args.attack_seed))
+    write_manifest(args, cfg)
 
     capture_args = argparse.Namespace(**vars(args))
     capture_args.output_dir = str(output_dir / "capture")
@@ -1887,6 +2085,7 @@ def run_panel_seed85(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
                     "clean_status": clean_status["status"],
                     "clean_gripper_token": clean_status.get("clean_gripper_token", ""),
                     "infra_status": "POSITIVE_CONTROL_ONLY",
+                    "infra_reasons": "",
                     "frame_status": "POSITIVE_CONTROL_INPUT_MATCH",
                     "full_pass": False,
                     "rand_win": "",
@@ -1909,6 +2108,7 @@ def run_panel_seed85(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
                     "clean_status": clean_status["status"],
                     "clean_gripper_token": clean_status.get("clean_gripper_token", ""),
                     "infra_status": "SKIPPED_CLEAN_INELIGIBLE",
+                    "infra_reasons": "",
                     "frame_status": clean_status["status"],
                     "full_pass": False,
                     "rand_win": "",
@@ -1938,11 +2138,19 @@ def run_panel_seed85(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
                 step=step,
                 main_denominator=main_denominator,
                 clean_dir=clean_dir,
+                expected_seed=int(args.attack_seed),
+                expected_commit=git_value(["rev-parse", "HEAD"]),
+                expected_objective=str(cfg["attack_optimizer"]["objective"]),
+                epsilon=float(cfg["attack_optimizer"]["epsilon"]),
             )
         )
 
+    write_recursive_artifact_hash_manifest(output_dir)
+    verify_recursive_artifact_hash_manifest(output_dir)
     aggregate = write_panel_joint_and_aggregate(output_dir, frame_rows)
     write_json(output_dir / "m3_panel_result.json", {"aggregate": aggregate, "frames": frame_rows})
+    write_recursive_artifact_hash_manifest(output_dir)
+    verify_recursive_artifact_hash_manifest(output_dir)
     write_artifact_hash_manifest(output_dir)
     validate_manifest_provenance(output_dir)
     print(json.dumps({"status": aggregate["panel_status"], "output_dir": str(output_dir), "aggregate": aggregate}, indent=2))
@@ -1988,6 +2196,11 @@ def main() -> None:
     ap.add_argument("--input_dir", default="")
     ap.add_argument("--panel_steps", default="")
     ap.add_argument("--frozen_step78_manifest", default="")
+    ap.add_argument("--expected_commit", default="")
+    ap.add_argument("--expected_config_sha256", default="")
+    ap.add_argument("--expected_runner_sha256", default="")
+    ap.add_argument("--expected_attack_adapter_sha256", default="")
+    ap.add_argument("--expected_frozen_step78_manifest_sha256", default="")
     ap.add_argument("--attack_seed", type=int, default=80)
     ap.add_argument("--model_gpu_device_id", type=int, default=-1)
     ap.add_argument("--render_gpu_device_id", type=int, default=0)
@@ -1998,7 +2211,8 @@ def main() -> None:
     cfg = load_config(Path(args.config))
     if cfg.get("conditions") != MAIN_CONDITIONS and cfg.get("conditions") != V4_CONDITIONS:
         raise SystemExit(f"config conditions must be {MAIN_CONDITIONS} or {V4_CONDITIONS}")
-    write_manifest(args, cfg)
+    if args.mode != "panel_seed85":
+        write_manifest(args, cfg)
     if args.mode == "capture_input":
         run_capture_input(args, cfg)
     elif args.mode == "capture_panel_inputs":

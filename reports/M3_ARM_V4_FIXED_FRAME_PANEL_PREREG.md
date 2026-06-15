@@ -164,6 +164,25 @@ Each frame must report, per condition:
 Both selected-margin and feasible-candidate rate must be reported. Reporting
 only the best selected margin is insufficient.
 
+## Fail-Closed Artifact Audit
+
+Before a frame can contribute to `FRAME_FULL_SELECTIVE_PASS`, the executable
+auditor must validate the actual candidate and route artifacts:
+
+- each condition has exactly 21 candidate rows;
+- candidate IDs are exactly `0..20` and unique;
+- every candidate row uses the frozen attack seed and execution commit;
+- every official token list has exactly 7 tokens;
+- every candidate processor-space Linf is `<= 6/255`;
+- selected flag is unique when a feasible selected candidate exists;
+- selected-results uniquely maps back to the selected candidate row;
+- selected candidate score invariant is `PASS`;
+- TRUE and shuffled route rows use strict route, no fallback,
+  `TokenPrefixPGDAttacker`, target token `31744`, 20 backwards, 21 loss
+  forwards, 21 generation forwards, and 21 trajectory candidates.
+
+Any mismatch is `INFRA_INVALID`; it cannot enter the scientific denominator.
+
 ## Control Infeasibility Semantics
 
 Frame comparison semantics are frozen as follows:
@@ -263,6 +282,11 @@ If these cannot be written, the run must be treated as provenance-invalid.
 The executable panel entry point must fail closed on dirty worktrees,
 unavailable GPU snapshots, missing model fingerprints, missing artifact hash
 manifests, or a pre-existing one-shot sentinel.
+
+The seed85 entry point must also check exact execution commit, config SHA,
+runner SHA, attack-adapter SHA, and frozen step78 manifest SHA before creating
+the sentinel. Recursive artifact hashes over root, capture, and frame outputs
+must be regenerated and verified before aggregate construction.
 
 ## Allowed Claim If A Later Panel Passes
 

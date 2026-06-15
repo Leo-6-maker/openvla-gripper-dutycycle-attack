@@ -9,9 +9,12 @@ import pytest
 from scripts.stageb.run_m3_step78_true_pgd_fixed_frame import (
     MAIN_CONDITIONS,
     PANEL_ALL_CAPTURE_FRAMES,
+    PANEL_FROZEN_OBJECTIVE,
     PANEL_MAIN_FRAMES,
     PANEL_POSITIVE_CONTROL_FRAME,
     V4_CONDITIONS,
+    audit_candidate_artifacts,
+    audit_route_artifacts,
     claim_one_shot_sentinel,
     clean_frame_eligibility,
     compare_surrogate_official,
@@ -25,7 +28,9 @@ from scripts.stageb.run_m3_step78_true_pgd_fixed_frame import (
     step78_parity_status,
     validate_panel_seed,
     validate_manifest_provenance,
+    verify_recursive_artifact_hash_manifest,
     write_csv,
+    write_recursive_artifact_hash_manifest,
     write_json,
 )
 
@@ -249,9 +254,10 @@ def test_clean_non_close_non_target_is_ineligible():
     assert status["status"] == "CLEAN_NOT_CLOSE"
 
 
-def _selected(token=31744, arm=6, margin=1.0):
+def _selected(token=31744, arm=6, margin=1.0, candidate_id=0):
     return {
         "condition_result": "SELECTED",
+        "selected_candidate_id": candidate_id,
         "official_gripper_token": token,
         "arm_prefix_match_count": arm,
         "official_target31744_margin": margin,
@@ -361,6 +367,18 @@ def test_panel_seed85_entry_rejects_other_seed_before_work(tmp_path):
     assert not any(tmp_path.iterdir())
 
 
+def test_panel_seed85_entry_rejects_missing_required_args_before_output(tmp_path):
+    args = SimpleNamespace(
+        attack_seed=85,
+        panel_steps="",
+        output_dir=str(tmp_path),
+        frozen_step78_manifest="",
+    )
+    with pytest.raises(SystemExit):
+        run_panel_seed85(args, load_config(LOGRATIO_ARM_V4_CONFIG))
+    assert not any(tmp_path.iterdir())
+
+
 def test_panel_steps_must_match_exact_frozen_set():
     assert parse_panel_steps("") == PANEL_ALL_CAPTURE_FRAMES
     assert parse_panel_steps(",".join(str(x) for x in PANEL_ALL_CAPTURE_FRAMES)) == PANEL_ALL_CAPTURE_FRAMES
@@ -383,6 +401,127 @@ def test_step78_parity_mismatch_stops_positive_control():
     assert step78_parity_status(new, frozen) == "POSITIVE_CONTROL_INPUT_MATCH"
     new["processed_tensor_sha256"] = "changed"
     assert step78_parity_status(new, frozen) == "POSITIVE_CONTROL_INPUT_MISMATCH"
+
+
+def _candidate_rows(condition, *, selected_id=0, seed=85, commit="abc", linf=0.01, invariant="PASS"):
+    rows = []
+    for idx in range(21):
+        rows.append(
+            {
+                "stage": "test",
+                "commit": commit,
+                "condition": condition,
+                "attack_seed": seed,
+                "candidate_id": idx,
+                "official_tokens": "[1, 2, 3, 4, 5, 6, 31744]",
+                "official_gripper_token": 31744,
+                "official_target31744_margin": 10.0 if idx == selected_id else 1.0,
+                "arm_prefix_match_count": 6,
+                "score_invariant_status": invariant if idx == selected_id else "PASS",
+                "processor_linf": linf,
+                "selected": 1 if idx == selected_id else 0,
+            }
+        )
+    return rows
+
+
+def test_candidate_artifact_audit_requires_exact_ids_budget_and_selected_mapping():
+    rows = _candidate_rows("TRUE_PGD_TRAJECTORY21_SELECTIVE")
+    selected = _selected(margin=10.0, candidate_id=0)
+    ok, reason = audit_candidate_artifacts(
+        candidate_rows=rows,
+        selected_row=selected,
+        condition="TRUE_PGD_TRAJECTORY21_SELECTIVE",
+        expected_seed=85,
+        expected_commit="abc",
+        epsilon=6 / 255,
+    )
+    assert ok, reason
+
+    bad_rows = list(rows)
+    bad_rows[0] = dict(bad_rows[0], processor_linf=0.1)
+    ok, reason = audit_candidate_artifacts(
+        candidate_rows=bad_rows,
+        selected_row=selected,
+        condition="TRUE_PGD_TRAJECTORY21_SELECTIVE",
+        expected_seed=85,
+        expected_commit="abc",
+        epsilon=6 / 255,
+    )
+    assert not ok
+    assert "processor_linf_over_budget" in reason
+
+    bad_rows = list(rows)
+    bad_rows[0] = dict(bad_rows[0], score_invariant_status="FAIL")
+    ok, reason = audit_candidate_artifacts(
+        candidate_rows=bad_rows,
+        selected_row=selected,
+        condition="TRUE_PGD_TRAJECTORY21_SELECTIVE",
+        expected_seed=85,
+        expected_commit="abc",
+        epsilon=6 / 255,
+    )
+    assert not ok
+    assert "selected_score_invariant_not_pass" in reason
+
+
+def test_candidate_artifact_audit_rejects_duplicate_ids_even_when_count_is_21():
+    rows = _candidate_rows("RAND21_SELECTIVE")
+    rows[20] = dict(rows[20], candidate_id=19, selected=0)
+    ok, reason = audit_candidate_artifacts(
+        candidate_rows=rows,
+        selected_row=_selected(candidate_id=0),
+        condition="RAND21_SELECTIVE",
+        expected_seed=85,
+        expected_commit="abc",
+        epsilon=6 / 255,
+    )
+    assert not ok
+    assert "candidate_ids_not_0_20_unique" in reason
+
+
+def test_route_artifact_audit_requires_counts_objective_target_and_seed(tmp_path):
+    rows = []
+    for condition in ["TRUE_PGD_TRAJECTORY21_SELECTIVE", "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"]:
+        rows.append(
+            {
+                "stage": "test",
+                "commit": "abc",
+                "condition": condition,
+                "attack_seed": "85",
+                "requested_method": "token_prefix_pgd",
+                "resolved_adapter_class": "TokenPrefixPGDAttacker",
+                "strict_route": "true",
+                "allow_fallback": "false",
+                "fallback_used": "false",
+                "requested_objective": PANEL_FROZEN_OBJECTIVE,
+                "resolved_objective": PANEL_FROZEN_OBJECTIVE,
+                "target_token_id": "31744",
+                "num_backwards": "20",
+                "num_loss_forwards": "21",
+                "num_generation_forwards": "21",
+                "trajectory_candidate_count": "21",
+            }
+        )
+    path = tmp_path / "route.csv"
+    write_csv(path, rows, list(rows[0].keys()))
+    ok, reason = audit_route_artifacts(path, expected_seed=85, expected_commit="abc")
+    assert ok, reason
+
+    rows[0]["num_generation_forwards"] = "20"
+    write_csv(path, rows, list(rows[0].keys()))
+    ok, reason = audit_route_artifacts(path, expected_seed=85, expected_commit="abc")
+    assert not ok
+    assert reason == "route_wrong_generation_forward_count"
+
+
+def test_recursive_manifest_verifies_content_changes(tmp_path):
+    (tmp_path / "a.txt").write_text("first", encoding="utf-8")
+    write_recursive_artifact_hash_manifest(tmp_path)
+    verify_recursive_artifact_hash_manifest(tmp_path)
+    (tmp_path / "a.txt").write_text("other", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="sha256 mismatch"):
+        verify_recursive_artifact_hash_manifest(tmp_path)
 
 
 def test_aggregate_rejects_duplicate_or_wrong_main_frame_set():
@@ -448,26 +587,36 @@ def test_frame_status_from_real_artifacts_uses_clean_gate_and_candidate_counts(t
         },
     )
     selected_rows = [
-        _selected(margin=10.0) | {"condition": "TRUE_PGD_TRAJECTORY21_SELECTIVE"},
-        _selected(margin=1.0) | {"condition": "RAND21_SELECTIVE"},
-        _selected(margin=2.0) | {"condition": "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"},
+        _selected(margin=10.0, candidate_id=0) | {"condition": "TRUE_PGD_TRAJECTORY21_SELECTIVE"},
+        _selected(margin=1.0, candidate_id=0) | {"condition": "RAND21_SELECTIVE"},
+        _selected(margin=2.0, candidate_id=0) | {"condition": "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"},
     ]
     write_csv(run_dir / "m3_v4_selected_results.csv", selected_rows, list(selected_rows[0].keys()))
     candidate_rows = []
     for condition in ["TRUE_PGD_TRAJECTORY21_SELECTIVE", "RAND21_SELECTIVE", "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"]:
-        for idx in range(21):
-            candidate_rows.append({"condition": condition, "candidate_id": idx})
-    write_csv(run_dir / "m3_v4_candidate_audit.csv", candidate_rows, ["condition", "candidate_id"])
+        margin = 10.0 if condition == "TRUE_PGD_TRAJECTORY21_SELECTIVE" else 1.0
+        if condition == "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE":
+            margin = 2.0
+        candidate_rows.extend(_candidate_rows(condition, commit="", selected_id=0))
+        candidate_rows[-21]["official_target31744_margin"] = margin
+    write_csv(run_dir / "m3_v4_candidate_audit.csv", candidate_rows, list(candidate_rows[0].keys()))
     route_rows = []
     for condition in ["TRUE_PGD_TRAJECTORY21_SELECTIVE", "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"]:
         route_rows.append(
             {
                 "condition": condition,
+                "commit": "",
+                "attack_seed": "85",
                 "strict_route": "true",
                 "allow_fallback": "false",
                 "fallback_used": "false",
                 "resolved_adapter_class": "TokenPrefixPGDAttacker",
+                "requested_objective": PANEL_FROZEN_OBJECTIVE,
+                "resolved_objective": PANEL_FROZEN_OBJECTIVE,
+                "target_token_id": "31744",
                 "num_backwards": "20",
+                "num_loss_forwards": "21",
+                "num_generation_forwards": "21",
                 "trajectory_candidate_count": "21",
             }
         )
