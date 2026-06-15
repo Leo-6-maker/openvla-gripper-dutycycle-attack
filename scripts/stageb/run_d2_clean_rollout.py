@@ -112,7 +112,9 @@ def worker_main():
 
     # Batch by task in allocation order
     task_order = args.tasks.split(",")
-    job_id_base = {"A": 510000, "B": 520000, "C": 530000, "D": 540000}[args.worker_id]
+    job_id_map = {"A": 510000, "B": 520000, "C": 530000, "D": 540000,
+                  "RETRY_A": 560000, "RETRY_D": 570000}
+    job_id_base = job_id_map.get(args.worker_id, 590000)
 
     env = {**os.environ, "MUJOCO_GL": "egl", "PYOPENGL_PLATFORM": "egl",
            "OPENVLA_ATTN_IMPLEMENTATION": "eager",
