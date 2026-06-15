@@ -106,16 +106,29 @@ def parse_safe_tag(tag, valid_keys):
 
 
 def is_successful_attempt(ep_dir, ll_dir):
-    """Check if an attempt completed successfully."""
+    """Check if an attempt completed successfully.
+
+    Requirements:
+      returncode.json exists, returncode == 0
+      episode_manifest.json exists, fatal != true, infra_status == ok
+      FIRST_ACTION_GENERATED.json exists
+    """
     rc_json = load_json(ll_dir / "returncode.json")
-    ep_manifest = load_json(ep_dir / "episode_manifest.json")
     if rc_json is None:
         return False
     if rc_json.get("returncode", -1) != 0:
         return False
-    if ep_manifest and ep_manifest.get("fatal"):
+
+    ep_manifest = load_json(ep_dir / "episode_manifest.json")
+    if ep_manifest is None:
         return False
-    # Must have FIRST_ACTION_GENERATED
+    if ep_manifest.get("fatal"):
+        return False
+    if ep_manifest.get("infra_status") != "ok":
+        return False
+    if not ep_manifest.get("first_action_generated"):
+        return False
+
     if not (ep_dir / "FIRST_ACTION_GENERATED.json").exists():
         return False
     return True
@@ -191,6 +204,13 @@ def main():
             all_pass = False
             continue
 
+        # ── Attempt ID sequence must be [1] or [1, 2] ──
+        ids = [a["attempt_id"] for a in att_list]
+        if ids not in ([1], [1, 2]):
+            gates.append((f"ATTEMPT_IDS:{tag_base}:{ids}", False))
+            all_pass = False
+            continue
+
         # Check each attempt
         success_count = 0
         for att in att_list:
@@ -210,11 +230,16 @@ def main():
                 gates.append((f"LAUNCHER_HASH_MANIFEST_MISSING:{att['safe_tag']}", False))
                 all_pass = False
             else:
-                lh_names = {r["artifact"] for r in lh_rows}
-                for an in HASHED_LAUNCHER_FILES:
-                    if an not in lh_names:
-                        gates.append((f"LAUNCHER_HASH_ROW_MISSING:{att['safe_tag']}:{an}", False))
-                        all_pass = False
+                lh_names = [r["artifact"] for r in lh_rows]
+                if sorted(lh_names) != sorted(HASHED_LAUNCHER_FILES):
+                    gates.append((f"LAUNCHER_HASH_SET:{att['safe_tag']}", False))
+                    all_pass = False
+                if len(lh_names) != len(set(lh_names)):
+                    gates.append((f"LAUNCHER_HASH_DUP:{att['safe_tag']}", False))
+                    all_pass = False
+                if len(lh_rows) != len(HASHED_LAUNCHER_FILES):
+                    gates.append((f"LAUNCHER_HASH_COUNT:{att['safe_tag']}", False))
+                    all_pass = False
                 for row in lh_rows:
                     an = row["artifact"]
                     ap = ll_dir / an
@@ -247,11 +272,16 @@ def main():
                     gates.append((f"EP_HASH_MANIFEST_MISSING:{att['safe_tag']}", False))
                     all_pass = False
                 else:
-                    eh_names = {r["artifact"] for r in eh_rows}
-                    for an in HASHED_EPISODE_FILES:
-                        if an not in eh_names:
-                            gates.append((f"EP_HASH_ROW_MISSING:{att['safe_tag']}:{an}", False))
-                            all_pass = False
+                    eh_names = [r["artifact"] for r in eh_rows]
+                    if sorted(eh_names) != sorted(HASHED_EPISODE_FILES):
+                        gates.append((f"EP_HASH_SET:{att['safe_tag']}", False))
+                        all_pass = False
+                    if len(eh_names) != len(set(eh_names)):
+                        gates.append((f"EP_HASH_DUP:{att['safe_tag']}", False))
+                        all_pass = False
+                    if len(eh_rows) != len(HASHED_EPISODE_FILES):
+                        gates.append((f"EP_HASH_COUNT:{att['safe_tag']}", False))
+                        all_pass = False
                     for row in eh_rows:
                         an = row["artifact"]
                         ap = ep_dir / an
@@ -267,11 +297,19 @@ def main():
             else:
                 # Failed attempt: must NOT have FIRST_ACTION_GENERATED
                 if has_fa:
-                    gates.append((f"POST_FA_RETRY:{att['safe_tag']}", False))
+                    gates.append((f"POST_FA_FAIL:{att['safe_tag']}", False))
                     all_pass = False
                 # Must have ATTEMPT_STARTED
                 if not (ep_dir / "ATTEMPT_STARTED.json").exists():
                     gates.append((f"NO_STARTED:{att['safe_tag']}", False))
+                    all_pass = False
+                # Returncode must exist and be non-zero
+                rc_json = load_json(ll_dir / "returncode.json")
+                if rc_json is None:
+                    gates.append((f"NO_RETURNCODE:{att['safe_tag']}", False))
+                    all_pass = False
+                elif rc_json.get("returncode", -1) == 0:
+                    gates.append((f"RC_ZERO_NO_SUCCESS:{att['safe_tag']}", False))
                     all_pass = False
 
         # ── Retry legality ──
@@ -339,12 +377,42 @@ def main():
             gates.append((f"ACTION_IDENTITY:{tag}", False))
             all_pass = False
 
-        # Invalid fields
-        if sh_m.get("n_invalid_field_steps", 0) > 0:
-            gates.append((f"INVALID_FIELDS:{tag}", False))
+        # ── Recompute invalid fields from step_trace.csv ──
+        sh_trace = load_csv(sh_dir / "step_trace.csv")
+        invalid_from_csv = 0
+        for row in sh_trace:
+            flags = ["raw_valid", "env_valid", "qpos_valid", "eef_valid",
+                      "convention_ok", "semantics_ok"]
+            if any(row.get(f, "1") in ("0", "False", "false") for f in flags):
+                invalid_from_csv += 1
+        manifest_invalid = sh_m.get("n_invalid_field_steps", -1)
+        if invalid_from_csv != manifest_invalid:
+            gates.append((f"INVALID_MISMATCH:{tag}:csv={invalid_from_csv}_manifest={manifest_invalid}", False))
+            all_pass = False
+        elif invalid_from_csv > 0:
+            gates.append((f"INVALID_FIELDS:{tag}:{invalid_from_csv}", False))
             all_pass = False
 
-        # Detector reset
+        # ── Recompute action identity from CSV ──
+        sh_id_rows = load_csv(sh_dir / "action_identity.csv")
+        identity_fail_from_csv = any(
+            row.get("action_identical") in ("0", "False", "false")
+            for row in sh_id_rows
+        )
+        if identity_fail_from_csv != bool(sh_m.get("action_identity_fail")):
+            gates.append((f"IDENTITY_MISMATCH:{tag}", False))
+            all_pass = False
+        if identity_fail_from_csv:
+            gates.append((f"ACTION_IDENTITY_CSV:{tag}", False))
+            all_pass = False
+
+        # ── Row count consistency ──
+        n_steps = sh_m.get("n_steps", 0)
+        for csv_name in ["step_trace.csv", "action_identity.csv", "latency.csv"]:
+            actual_rows = len(load_csv(sh_dir / csv_name))
+            if actual_rows != n_steps:
+                gates.append((f"ROW_COUNT:{tag}:{csv_name}:{actual_rows}!={n_steps}", False))
+                all_pass = False
         pre = sh_m.get("detector_pre_reset", {})
         if not pre:
             gates.append((f"RESET_MISSING:{tag}", False))
@@ -401,6 +469,24 @@ def main():
                 if med_mod > 0 and med_det / med_mod > 0.05:
                     gates.append((f"LATENCY_OVERHEAD:{tag}", False))
                     all_pass = False
+
+    # ── GPU snapshot independent audit ──
+    for snapshot_name in ["gpu_processes_before.csv", "gpu_processes_after.csv"]:
+        sp = out / snapshot_name
+        if not sp.exists():
+            gates.append((f"GPU_SNAPSHOT_MISSING:{snapshot_name}", False))
+            all_pass = False
+    gpu_before_rows = load_csv(out / "gpu_processes_before.csv")
+    gpu_after_rows = load_csv(out / "gpu_processes_after.csv")
+    if gpu_before_rows and gpu_after_rows:
+        before_ids = {(r["gpu_uuid"], r["pid"], r["process_name"])
+                       for r in gpu_before_rows}
+        after_ids = {(r["gpu_uuid"], r["pid"], r["process_name"])
+                      for r in gpu_after_rows}
+        new_procs = after_ids - before_ids
+        if new_procs:
+            gates.append((f"GPU_RESIDUAL:{len(new_procs)}", False))
+            all_pass = False
 
     # ── Print audit ──
     print(f"\n{'='*60}")
