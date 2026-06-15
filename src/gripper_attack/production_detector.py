@@ -151,16 +151,25 @@ class ProductionStreamingDetector:
             )
         self._next_expected_step = step_id + 1
 
+        # ── Strict validity flag validation ──
+        raw_valid_ok = _is_valid_binary(raw_valid) and bool(raw_valid)
+        env_valid_ok = _is_valid_binary(env_valid) and bool(env_valid)
+        qpos_valid_ok = _is_valid_binary(qpos_valid) and bool(qpos_valid)
+        eef_valid_ok = _is_valid_binary(eef_valid) and bool(eef_valid)
+
         # ── None / NaN / inf fail-closed ──
-        raw_ok = raw_valid and _is_valid_float(raw_gripper)
-        env_ok = env_valid and _is_valid_float(env_gripper)
-        qpos_ok = qpos_valid and _is_valid_float(gripper_qpos)
-        eef_ok = eef_valid and all(_is_valid_float(v) for v in (eef_x, eef_y, eef_z))
+        raw_ok = raw_valid_ok and _is_valid_float(raw_gripper)
+        env_ok = env_valid_ok and _is_valid_float(env_gripper)
+        qpos_ok = qpos_valid_ok and _is_valid_float(gripper_qpos)
+        eef_ok = eef_valid_ok and all(_is_valid_float(v) for v in (eef_x, eef_y, eef_z))
 
         # ── decoded_open validity ──
         decoded_open_ok = _is_valid_binary(decoded_open)
 
-        semantics_ok = gripper_semantics_valid
+        semantics_ok = (
+            _is_valid_binary(gripper_semantics_valid)
+            and bool(gripper_semantics_valid)
+        )
 
         # Build record compatible with rule_based_close_predictor
         record = {
