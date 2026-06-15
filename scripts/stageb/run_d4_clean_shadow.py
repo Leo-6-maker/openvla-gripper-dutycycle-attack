@@ -495,7 +495,7 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
         w.writerow(["git_HEAD", git_head])
         w.writerow(["git_clean", str(git_clean)])
         w.writerow(["branch", subprocess.run(
-            ["git", "branch", "--show-current"], capture_output=True, text=True,
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True,
         ).stdout.strip()])
         w.writerow(["checkpoint_sha", FROZEN_CHECKPOINT_SHA])
         w.writerow(["threshold", str(FROZEN_TAU)])
@@ -602,7 +602,7 @@ def main():
         sys.exit(1)
 
     git_branch = subprocess.run(
-        ["git", "branch", "--show-current"], capture_output=True, text=True,
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True,
     ).stdout.strip()
 
     # Use git status --porcelain to catch tracked AND untracked changes

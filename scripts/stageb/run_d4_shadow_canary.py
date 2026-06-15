@@ -261,7 +261,7 @@ def main():
     assert current_head, "FATAL: Could not determine git HEAD"
 
     current_branch = subprocess.run(
-        ["git", "branch", "--show-current"], capture_output=True, text=True,
+        ["git", "rev-parse", "--abbrev-ref", "HEAD"], capture_output=True, text=True,
     ).stdout.strip()
 
     git_status = subprocess.run(
