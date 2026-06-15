@@ -4,12 +4,11 @@
 Reads the frozen 4-state canary manifest. For each state:
   1. Run CLEAN_REFERENCE (detector disabled).
   2. Run CLEAN_SHADOW (detector enabled, read-only).
-  3. Compare sequences.
-  4. Check all hard gates.
+  3. Compare all hard gates.
+  4. If all pass → CANARY_PASS; else STOP.
 
-Retry policy: at most 1 infra retry, only if failure occurs before the
-first model action is generated. Never retry for detector output, action
-mismatch, task failure, or post-first-action crash.
+Retry: only if FIRST_ACTION_GENERATED marker does not exist in attempt dir.
+Max 1 retry per state per mode.
 
 GPU: physical 2,6 only. No attack. No perturbation.
 """
@@ -26,110 +25,155 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 PIPELINE_ROOT = os.environ.get("L12_PIPELINE_ROOT", "/data/liuyu/l12_e4c2_pipeline")
-PYTHON = os.environ.get("L12_PYTHON", "/home/liuyu/.conda/envs/openvla_official_libero_20260525/bin/python")
-RUNNER_SCRIPT = os.path.join(PIPELINE_ROOT, "scripts", "stageb", "run_d4_clean_shadow.py")
-
-FROZEN_CHECKPOINT = os.path.join(
-    PIPELINE_ROOT, "outputs", "d1b_training", "d1b_detector_best.pt")
+PYTHON = os.environ.get(
+    "L12_PYTHON",
+    "/home/liuyu/.conda/envs/openvla_official_libero_20260525/bin/python",
+)
+RUNNER = os.path.join(PIPELINE_ROOT, "scripts", "stageb", "run_d4_clean_shadow.py")
+CHECKPOINT = os.path.join(PIPELINE_ROOT, "outputs", "d1b_training", "d1b_detector_best.pt")
 
 GPU_VISIBLE = "2,6"
 RENDER_GPU = 2
-
-CANARY_N_STATES = 4
-MAX_RETRIES = 1  # only for pre-first-action infra failure
+CANARY_N = 4
+MAX_RETRIES = 1
 
 
 def sha256_file(path: str) -> str:
-    if not os.path.isfile(path):
-        return ""
+    if not os.path.isfile(path): return ""
     h = hashlib.sha256()
     with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
+        for chunk in iter(lambda: f.read(65536), b""): h.update(chunk)
     return h.hexdigest()
 
 
-def run_one_episode(task, state_id, mode, attempt_id, output_dir, extra_args=None):
-    """Launch one episode via subprocess. Returns (returncode, episode_dir)."""
+def sha256_hex(s: str) -> str:
+    return hashlib.sha256(s.encode()).hexdigest()
+
+
+def gpu_process_count():
+    """Return list of (gpu_uuid, pid, process_name, used_memory) for GPUs 2,6."""
+    try:
+        out = subprocess.run(
+            ["nvidia-smi", "--query-compute-apps=gpu_uuid,pid,process_name,used_memory",
+             "--format=csv,noheader"],
+            capture_output=True, text=True, timeout=30,
+        ).stdout.strip()
+    except Exception:
+        return []
+    if not out:
+        return []
+    procs = []
+    for line in out.split("\n"):
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) >= 3:
+            procs.append(tuple(parts))
+    return procs
+
+
+def gpu_uuids():
+    """Return mapping from GPU index to UUID."""
+    try:
+        out = subprocess.run(
+            ["nvidia-smi", "--query-gpu=index,uuid", "--format=csv,noheader"],
+            capture_output=True, text=True, timeout=30,
+        ).stdout.strip()
+    except Exception:
+        return {}
+    mapping = {}
+    for line in out.split("\n"):
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) >= 2:
+            mapping[int(parts[0])] = parts[1]
+    return mapping
+
+
+def episode_failed_before_first_action(episode_dir):
+    """Retry allowed only if FIRST_ACTION_GENERATED.json does not exist."""
+    marker = os.path.join(episode_dir, "FIRST_ACTION_GENERATED.json")
+    return not os.path.exists(marker)
+
+
+def run_one_episode(task, state_id, mode, attempt_id, output_dir):
+    """Launch one episode via subprocess. Saves full stdout/stderr/command."""
     safe_tag = f"{task}_s{state_id}_{mode}_attempt{attempt_id}"
     episode_dir = os.path.join(output_dir, safe_tag)
 
+    # Create attempt directory (orchestrator does this so logs go inside)
+    try:
+        os.makedirs(episode_dir, exist_ok=False)
+    except FileExistsError:
+        return -1, episode_dir  # Should not happen if orchestrator manages attempts
+
     cmd = [
-        PYTHON, "-u", RUNNER_SCRIPT,
-        "--task", task,
-        "--state-id", str(state_id),
-        "--mode", mode,
-        "--attempt-id", str(attempt_id),
+        PYTHON, "-u", RUNNER,
+        "--task", task, "--state-id", str(state_id),
+        "--mode", mode, "--attempt-id", str(attempt_id),
         "--output-dir", output_dir,
-        "--checkpoint", FROZEN_CHECKPOINT,
+        "--checkpoint", CHECKPOINT,
         "--render-gpu-device-id", str(RENDER_GPU),
         "--model-gpu-device-id", "-1",
     ]
-    if extra_args:
-        cmd.extend(extra_args)
+
+    # Save command
+    with open(os.path.join(episode_dir, "command.txt"), "w") as f:
+        f.write(" ".join(cmd) + "\n")
+        f.write(f"CUDA_VISIBLE_DEVICES={GPU_VISIBLE}\n")
+
+    # Save environment snapshot
+    env_snap = {k: str(v) for k, v in sorted(os.environ.items())
+                if any(p in k.lower() for p in ["cuda", "gpu", "mujoco", "opengl",
+                                                 "openvla", "python", "ld_", "path"])}
+    with open(os.path.join(episode_dir, "environment_snapshot.json"), "w") as f:
+        json.dump(env_snap, f, indent=2)
 
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = GPU_VISIBLE
     env["MUJOCO_GL"] = "egl"
     env["PYOPENGL_PLATFORM"] = "egl"
 
-    print(f"  [{datetime.now().strftime('%H:%M:%S')}] Launching: {' '.join(cmd)}")
     t0 = time.time()
-    try:
-        result = subprocess.run(
-            cmd, env=env, timeout=5400,
-            capture_output=True, text=True,
-        )
-        dt = time.time() - t0
-        rc = result.returncode
-        stderr_tail = result.stderr[-500:] if result.stderr else ""
-        print(f"  [{datetime.now().strftime('%H:%M:%S')}] {safe_tag}: rc={rc} dt={dt:.0f}s")
-        if rc != 0:
-            print(f"  STDERR tail: {stderr_tail[-300:]}")
-    except subprocess.TimeoutExpired:
-        rc = -1
-        dt = time.time() - t0
-        stderr_tail = "TIMEOUT (5400s)"
-        print(f"  [{datetime.now().strftime('%H:%M:%S')}] {safe_tag}: TIMEOUT dt={dt:.0f}s")
+    stdout_path = os.path.join(episode_dir, "stdout.log")
+    stderr_path = os.path.join(episode_dir, "stderr.log")
 
+    print(f"  [{datetime.now().strftime('%H:%M:%S')}] Launch: {safe_tag}")
+
+    with open(stdout_path, "w") as out_f, open(stderr_path, "w") as err_f:
+        out_f.write(f"=== {safe_tag} ===\n{' '.join(cmd)}\n\n")
+        err_f.write(f"=== {safe_tag} ===\n{' '.join(cmd)}\n\n")
+        try:
+            proc = subprocess.Popen(
+                cmd, env=env, stdout=out_f, stderr=err_f,
+            )
+            proc.wait(timeout=5400)
+            rc = proc.returncode
+        except subprocess.TimeoutExpired:
+            proc.kill(); proc.wait()
+            rc = -1
+            err_f.write("\n=== TIMEOUT (5400s) ===\n")
+
+    dt = time.time() - t0
+
+    # Write returncode
+    with open(os.path.join(episode_dir, "returncode.json"), "w") as f:
+        json.dump({"returncode": rc, "runtime_sec": round(dt, 1),
+                    "timeout": rc == -1}, f, indent=2)
+
+    print(f"  [{datetime.now().strftime('%H:%M:%S')}] {safe_tag}: rc={rc} dt={dt:.0f}s")
     return rc, episode_dir
 
 
-def episode_failed_before_first_action(episode_dir):
-    """Check if episode manifest shows failure before first model action."""
-    manifest_path = os.path.join(episode_dir, "episode_manifest.json")
-    if not os.path.exists(manifest_path):
-        return True  # No manifest = likely before first action
-    try:
-        with open(manifest_path) as f:
-            m = json.load(f)
-        # Evidence of reaching first action: n_steps > 0 or sentinel exists
-        sentinel = os.path.join(episode_dir, "SENTINEL.txt")
-        if os.path.exists(sentinel) and m.get("n_steps", 0) >= 0:
-            # Sentinel is written before first model action.
-            # If sentinel exists but n_steps == 0 and infra_status contains certain patterns
-            infra = m.get("infra_status", "ok")
-            if m.get("n_steps", -1) == 0 and infra != "ok" and "action" not in infra.lower():
-                return True
-        return False
-    except Exception:
-        return False
-
-
-def load_episode_manifest(episode_dir):
+def load_manifest(episode_dir):
     path = os.path.join(episode_dir, "episode_manifest.json")
-    if not os.path.exists(path):
-        return None
-    with open(path) as f:
-        return json.load(f)
+    if not os.path.exists(path): return None
+    with open(path) as f: return json.load(f)
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--canary-manifest", required=True,
-                    help="tables/d4_shadow/d4_shadow_state_manifest.csv (canary subset)")
-    ap.add_argument("--output-dir", required=True,
-                    help="Root output directory for canary run")
+    ap.add_argument("--canary-manifest", required=True)
+    ap.add_argument("--expected-manifest-sha256", required=True)
+    ap.add_argument("--expected-freeze-runner-sha256", required=True)
+    ap.add_argument("--output-dir", required=True)
     args = ap.parse_args()
 
     out = Path(args.output_dir)
@@ -138,21 +182,41 @@ def main():
     )
     out.mkdir(parents=True, exist_ok=True)
 
-    # ── Load canary states ──
+    # ── Verify manifest ──
+    manifest_sha = sha256_file(args.canary_manifest)
+    assert manifest_sha == args.expected_manifest_sha256, (
+        f"FATAL: Manifest SHA mismatch: got {manifest_sha[:16]}..., "
+        f"expected {args.expected_manifest_sha256[:16]}..."
+    )
+    print(f"Manifest SHA: {manifest_sha[:16]}... VERIFIED")
+
     manifest_rows = list(csv.DictReader(open(args.canary_manifest)))
     canary_states = [r for r in manifest_rows if r["subset"] == "canary"]
-    assert len(canary_states) == CANARY_N_STATES, (
-        f"FATAL: Expected {CANARY_N_STATES} canary states, got {len(canary_states)}"
+    assert len(canary_states) == CANARY_N, (
+        f"FATAL: Expected {CANARY_N} canary states, got {len(canary_states)}"
     )
-
     tasks = {r["task_key"] for r in canary_states}
-    assert len(tasks) == CANARY_N_STATES, (
-        f"FATAL: Canary states must have {CANARY_N_STATES} distinct tasks, got {len(tasks)}"
-    )
+    assert len(tasks) == CANARY_N, f"FATAL: need 4 distinct tasks, got {len(tasks)}"
 
-    print(f"Canary manifest: {CANARY_N_STATES} states, {len(tasks)} distinct tasks")
+    # Verify each canary state's selection hash can be recomputed
+    SALT = "D4.3_SHADOW_V1"
+    for r in canary_states:
+        expected = r["selection_hash"]
+        recomputed = sha256_hex(f"{SALT}|{r['task_key']}|{r['state_id']}")
+        assert recomputed == expected, (
+            f"FATAL: selection hash mismatch for {r['task_key']}_s{r['state_id']}: "
+            f"expected {expected[:16]}..., recomputed {recomputed[:16]}..."
+        )
+    print(f"Canary: {CANARY_N} states, {len(tasks)} tasks — all selection hashes verified")
+
     for r in canary_states:
         print(f"  {r['task_key']}_s{r['state_id']}  hash={r['selection_hash'][:16]}...")
+
+    # ── GPU baseline ──
+    gpu_procs_before = gpu_process_count()
+    print(f"GPU processes before canary: {len(gpu_procs_before)}")
+    for gp in gpu_procs_before:
+        print(f"  {gp}")
 
     # ── Run canary ──
     results = []
@@ -163,129 +227,180 @@ def main():
         task = row["task_key"]
         state_id = int(row["state_id"])
         print(f"\n{'='*60}")
-        print(f"CANARY [{idx+1}/{CANARY_N_STATES}]: {task}_s{state_id}")
+        print(f"CANARY [{idx+1}/{CANARY_N}]: {task}_s{state_id}")
         print(f"{'='*60}")
 
-        # ── Reference run ──
-        ref_ok = False
-        ref_dir = None
+        # ── Reference ──
+        ref_ok = False; ref_dir = None
         for attempt in range(1, MAX_RETRIES + 2):
             rc, ep_dir = run_one_episode(task, state_id, "reference", attempt, str(out))
             if rc == 0:
-                ref_ok = True
-                ref_dir = ep_dir
-                break
+                ref_ok = True; ref_dir = ep_dir; break
             if not episode_failed_before_first_action(ep_dir):
-                # Post-first-action failure — no retry
-                break
+                break  # Post-first-action failure → no retry
 
         if not ref_ok:
             canary_pass = False
             gate_failures.append(f"REFERENCE_FAIL:{task}_s{state_id}")
-            print(f"  GATE FAIL: REFERENCE_FAIL for {task}_s{state_id}")
-            continue
 
-        ref_manifest = load_episode_manifest(ref_dir)
-
-        # ── Shadow run ──
-        sh_ok = False
-        sh_dir = None
+        # ── Shadow ──
+        sh_ok = False; sh_dir = None
         for attempt in range(1, MAX_RETRIES + 2):
             rc, ep_dir = run_one_episode(task, state_id, "shadow", attempt, str(out))
             if rc == 0:
-                sh_ok = True
-                sh_dir = ep_dir
-                break
+                sh_ok = True; sh_dir = ep_dir; break
             if not episode_failed_before_first_action(ep_dir):
                 break
 
         if not sh_ok:
             canary_pass = False
             gate_failures.append(f"SHADOW_FAIL:{task}_s{state_id}")
-            print(f"  GATE FAIL: SHADOW_FAIL for {task}_s{state_id}")
+
+        if not ref_ok or not sh_ok:
+            results.append({
+                "task": task, "state_id": state_id,
+                "ref_ok": ref_ok, "sh_ok": sh_ok,
+                "ref_dir": ref_dir, "sh_dir": sh_dir,
+            })
             continue
 
-        sh_manifest = load_episode_manifest(sh_dir)
+        ref_m = load_manifest(ref_dir)
+        sh_m = load_manifest(sh_dir)
 
         # ── Gate: no detector exception ──
-        if sh_manifest.get("detector_exception"):
+        if sh_m.get("detector_exception"):
             canary_pass = False
             gate_failures.append(f"DETECTOR_EXCEPTION:{task}_s{state_id}")
 
         # ── Gate: no action identity failure ──
-        if sh_manifest.get("action_identity_fail"):
+        if sh_m.get("action_identity_fail"):
             canary_pass = False
             gate_failures.append(f"ACTION_IDENTITY_FAIL:{task}_s{state_id}")
 
-        # ── Gate: reference and shadow identical sequences ──
+        # ── Gate: sequence hashes identical ──
         for key in ["raw_action_sequence_sha256", "env_action_sequence_sha256",
                      "obs_sequence_sha256"]:
-            ref_val = ref_manifest.get(key, "")
-            sh_val = sh_manifest.get(key, "")
-            if ref_val != sh_val:
+            if ref_m.get(key) != sh_m.get(key):
                 canary_pass = False
                 gate_failures.append(f"{key}_MISMATCH:{task}_s{state_id}")
 
-        # ── Gate: episode length match ──
-        if ref_manifest.get("n_steps") != sh_manifest.get("n_steps"):
+        # ── Gate: episode length ──
+        if ref_m.get("n_steps") != sh_m.get("n_steps"):
             canary_pass = False
-            gate_failures.append(f"EPISODE_LENGTH_MISMATCH:{task}_s{state_id}")
+            gate_failures.append(f"STEPS_MISMATCH:{task}_s{state_id}")
 
-        # ── Gate: success match ──
-        if ref_manifest.get("success_primary") != sh_manifest.get("success_primary"):
-            canary_pass = False
-            gate_failures.append(f"SUCCESS_MISMATCH:{task}_s{state_id}")
-
-        # ── Gate: detector reset before episode ──
-        sh_sentinel = os.path.join(sh_dir, "SENTINEL.txt")
-        if os.path.exists(sh_sentinel):
-            with open(sh_sentinel) as f:
-                sentinel_text = f.read()
-            if "shadow" not in sentinel_text:
+        # ── Gate: success + done ──
+        for sk in ["success_primary", "success_done_any", "success_check_any",
+                    "success_step_primary", "done_step"]:
+            if ref_m.get(sk) != sh_m.get(sk):
                 canary_pass = False
-                gate_failures.append(f"SENTINEL_INVALID:{task}_s{state_id}")
+                gate_failures.append(f"{sk}_MISMATCH:{task}_s{state_id}")
 
-        # ── Latency gates ──
-        sh_latency_path = os.path.join(sh_dir, "latency.csv")
-        if os.path.exists(sh_latency_path):
-            latencies = []
-            with open(sh_latency_path) as f:
+        # ── Gate: no invalid critical gripper fields ──
+        if sh_m.get("n_invalid_field_steps", 0) > 0:
+            canary_pass = False
+            gate_failures.append(
+                f"INVALID_FIELDS:{task}_s{state_id}:"
+                f"{sh_m['n_invalid_field_steps']}_steps"
+            )
+
+        # ── Gate: detector reset state before episode ──
+        pre = sh_m.get("detector_pre_reset", {})
+        if pre:
+            if pre.get("next_expected_step") != 0:
+                canary_pass = False
+                gate_failures.append(f"RESET_STEP:{task}_s{state_id}")
+            if pre.get("emit_step") != -1:
+                canary_pass = False
+                gate_failures.append(f"RESET_EMIT:{task}_s{state_id}")
+
+        # ── Gate: no predictor-abstain emission ──
+        sh_cand_path = os.path.join(sh_dir, "detector_candidates.csv")
+        if os.path.exists(sh_cand_path) and sh_m.get("detector_emit_step", -1) >= 0:
+            emit_step = sh_m["detector_emit_step"]
+            with open(sh_cand_path) as f:
+                for cand in csv.DictReader(f):
+                    if int(cand.get("step", -1)) == emit_step:
+                        if cand.get("abstained", "1") == "1" or cand.get("abstain", ""):
+                            canary_pass = False
+                            gate_failures.append(
+                                f"ABSTAIN_EMISSION:{task}_s{state_id}:"
+                                f"step={emit_step} reason={cand.get('abstain','')}"
+                            )
+                        break
+
+        # ── Gate: latency ──
+        sh_lat_path = os.path.join(sh_dir, "latency.csv")
+        if os.path.exists(sh_lat_path):
+            det_lats = []
+            model_lats = []
+            with open(sh_lat_path) as f:
                 for row in csv.DictReader(f):
                     du = row.get("detector_update_us", "")
+                    mu = row.get("model_inference_us", "")
                     if du and du != "DISABLED":
-                        latencies.append(int(du))
-            if latencies:
-                p99 = sorted(latencies)[int(len(latencies) * 0.99)]
-                max_lat = max(latencies)
+                        det_lats.append(int(du))
+                    if mu and mu != "DISABLED":
+                        model_lats.append(int(mu))
+            if det_lats:
+                p99 = sorted(det_lats)[int(len(det_lats) * 0.99)]
+                mx = max(det_lats)
+                median_det = sorted(det_lats)[len(det_lats) // 2]
+                median_model = (sorted(model_lats)[len(model_lats) // 2]
+                                if model_lats else 1)
                 if p99 > 20000:
                     canary_pass = False
                     gate_failures.append(f"LATENCY_P99:{task}_s{state_id}:{p99}us")
-                if max_lat > 50000:
+                if mx > 50000:
                     canary_pass = False
-                    gate_failures.append(f"LATENCY_MAX:{task}_s{state_id}:{max_lat}us")
+                    gate_failures.append(f"LATENCY_MAX:{task}_s{state_id}:{mx}us")
+                if median_model > 0:
+                    overhead_pct = median_det / median_model * 100
+                    if overhead_pct > 5.0:
+                        canary_pass = False
+                        gate_failures.append(
+                            f"LATENCY_OVERHEAD:{task}_s{state_id}:{overhead_pct:.1f}%"
+                        )
 
         results.append({
             "task": task, "state_id": state_id,
             "ref_dir": ref_dir, "sh_dir": sh_dir,
-            "ref_n_steps": ref_manifest.get("n_steps", -1),
-            "sh_n_steps": sh_manifest.get("n_steps", -1),
-            "ref_success": ref_manifest.get("success_primary", -1),
-            "sh_success": sh_manifest.get("success_primary", -1),
-            "sh_emit_step": sh_manifest.get("detector_emit_step", -1),
-            "action_identity_ok": not sh_manifest.get("action_identity_fail", True),
             "ref_ok": ref_ok, "sh_ok": sh_ok,
+            "ref_n_steps": ref_m.get("n_steps"),
+            "sh_n_steps": sh_m.get("n_steps"),
+            "ref_success": ref_m.get("success_primary"),
+            "sh_success": sh_m.get("success_primary"),
+            "sh_emit_step": sh_m.get("detector_emit_step"),
+            "action_identity_ok": not sh_m.get("action_identity_fail"),
+            "invalid_field_steps": sh_m.get("n_invalid_field_steps", 0),
         })
 
-    # ── Aggregate result ──
-    print(f"\n{'='*60}")
-    print(f"CANARY RESULTS")
-    print(f"{'='*60}")
+    # ── GPU cleanup gate ──
+    time.sleep(2)  # Let processes finish
+    gpu_procs_after = gpu_process_count()
+    print(f"\nGPU processes after canary: {len(gpu_procs_after)}")
+    for gp in gpu_procs_after:
+        print(f"  {gp}")
 
+    # Identify new processes (in 'after' but not in 'before')
+    before_set = set(gpu_procs_before)
+    new_procs = [p for p in gpu_procs_after if p not in before_set]
+    if new_procs:
+        canary_pass = False
+        gate_failures.append(f"GPU_CLEANUP:{len(new_procs)}_new_processes")
+        for np in new_procs:
+            print(f"  RESIDUAL: {np}")
+
+    # ── Summary ──
+    print(f"\n{'='*60}")
+    print("CANARY RESULTS")
+    print(f"{'='*60}")
     for r in results:
-        print(f"  {r['task']}_s{r['state_id']}: ref_steps={r['ref_n_steps']} "
-              f"sh_steps={r['sh_n_steps']} ref_succ={r['ref_success']} "
-              f"sh_succ={r['sh_success']} emit={r['sh_emit_step']} "
-              f"identity_ok={r['action_identity_ok']}")
+        print(f"  {r['task']}_s{r['state_id']}: ref={r['ref_ok']} sh={r['sh_ok']} "
+              f"steps={r['ref_n_steps']}/{r['sh_n_steps']} "
+              f"succ={r['ref_success']}/{r['sh_success']} "
+              f"emit={r['sh_emit_step']} identity={r['action_identity_ok']} "
+              f"invalid={r.get('invalid_field_steps',0)}")
 
     if gate_failures:
         print(f"\nGATE FAILURES ({len(gate_failures)}):")
@@ -295,15 +410,15 @@ def main():
     result_class = "D4_SHADOW_CANARY_PASS" if canary_pass else "D4_SHADOW_CANARY_FAIL"
     print(f"\nRESULT: {result_class}")
 
-    # ── Write canary report ──
     report = {
-        "result_class": result_class,
-        "canary_pass": canary_pass,
-        "n_states": CANARY_N_STATES,
-        "n_completed": len(results),
+        "result_class": result_class, "canary_pass": canary_pass,
+        "n_states": CANARY_N, "n_completed": len(results),
         "gate_failures": gate_failures,
-        "gpu_visible": GPU_VISIBLE,
-        "render_gpu": RENDER_GPU,
+        "gpu_visible": GPU_VISIBLE, "render_gpu": RENDER_GPU,
+        "gpu_procs_before": len(gpu_procs_before),
+        "gpu_procs_after": len(gpu_procs_after),
+        "gpu_new_processes": len(new_procs) if canary_pass else -1,
+        "manifest_sha": manifest_sha,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "results": results,
     }
@@ -314,16 +429,11 @@ def main():
         w = csv.DictWriter(f, fieldnames=[
             "task", "state_id", "ref_ok", "sh_ok", "ref_n_steps", "sh_n_steps",
             "ref_success", "sh_success", "sh_emit_step", "action_identity_ok",
-            "ref_dir", "sh_dir",
+            "invalid_field_steps", "ref_dir", "sh_dir",
         ])
-        w.writeheader()
-        w.writerows(results)
+        w.writeheader(); w.writerows(results)
 
-    # GPU cleanup check
-    rc = os.system("nvidia-smi --query-gpu=index,uuid --format=csv,noheader 2>/dev/null")
-    print(f"\nGPU status: nvidia-smi rc={rc}")
-
-    print(f"Output: {out}")
+    print(f"\nOutput: {out}")
     if not canary_pass:
         print("STOP: Canary failed. Do not run panel.")
         sys.exit(1)

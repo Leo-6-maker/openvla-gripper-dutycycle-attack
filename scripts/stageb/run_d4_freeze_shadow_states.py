@@ -188,8 +188,10 @@ def main():
     exclusion_records = []
     unmapped_exclusions = 0
 
-    # 5a. D1b val + test
+    # 5a. D1b val + test (with key uniqueness and mutual exclusion checks)
     split_rows = list(csv.DictReader(open(args.d1b_split_manifest)))
+    val_keys = set()
+    test_keys = set()
     n_val = 0
     n_test = 0
     for r in split_rows:
@@ -197,6 +199,8 @@ def main():
         sid = int(r["state_id"])
         key = (tk, sid)
         if r["split"] == "val":
+            assert key not in val_keys, f"FATAL: duplicate val key {key}"
+            val_keys.add(key)
             excluded_keys.add(key)
             exclusion_records.append({
                 "task_key": tk, "state_id": str(sid), "trace_id": r["trace_id"],
@@ -204,6 +208,8 @@ def main():
             })
             n_val += 1
         elif r["split"] == "test":
+            assert key not in test_keys, f"FATAL: duplicate test key {key}"
+            test_keys.add(key)
             excluded_keys.add(key)
             exclusion_records.append({
                 "task_key": tk, "state_id": str(sid), "trace_id": r["trace_id"],
@@ -213,7 +219,14 @@ def main():
 
     assert n_val == 20, f"FATAL: D1b val count = {n_val}, expected 20"
     assert n_test == 21, f"FATAL: D1b test count = {n_test}, expected 21"
-    print(f"D1b exclusions: val={n_val}, test={n_test}")
+    assert len(val_keys) == 20, f"FATAL: val unique keys = {len(val_keys)}, expected 20"
+    assert len(test_keys) == 21, f"FATAL: test unique keys = {len(test_keys)}, expected 21"
+    overlap_val_test = val_keys & test_keys
+    assert len(overlap_val_test) == 0, (
+        f"FATAL: val/test key overlap: {sorted(overlap_val_test)}"
+    )
+    print(f"D1b exclusions: val={n_val} (unique={len(val_keys)}), "
+          f"test={n_test} (unique={len(test_keys)}), overlap=0")
 
     # 5b. D2 fresh25 — from correct table: d2_fresh_close_candidates.csv
     from run_d2_fresh_confirm import select_eligible_multi_traces
@@ -235,12 +248,15 @@ def main():
         key = (r["task_key"], int(r["state_id"]))
         d2_tid_to_key[tid] = key
 
+    fresh25_keys = set()
     for tid in fresh25_map:
         key = d2_tid_to_key.get(tid)
         if key is None:
             unmapped_exclusions += 1
             print(f"  WARNING: fresh25 trace {tid[:50]}... not found in fresh inventory")
             continue
+        assert key not in fresh25_keys, f"FATAL: duplicate fresh25 key {key}"
+        fresh25_keys.add(key)
         excluded_keys.add(key)
         exclusion_records.append({
             "task_key": key[0], "state_id": str(key[1]),
@@ -250,9 +266,15 @@ def main():
     assert unmapped_exclusions == 0, (
         f"FATAL: {unmapped_exclusions} fresh25 traces could not be mapped to task-state keys"
     )
+    assert len(fresh25_keys) == 25, (
+        f"FATAL: fresh25 unique keys = {len(fresh25_keys)}, expected 25"
+    )
 
-    # 5c. Invalid infrastructure states
-    if args.invalid_state_manifest and os.path.exists(args.invalid_state_manifest):
+    # 5c. Invalid infrastructure states (must be an explicit file; if none, use frozen empty header)
+    if not args.invalid_state_manifest:
+        print("FATAL: --invalid-state-manifest is required (even if empty header only)")
+        sys.exit(1)
+    if os.path.exists(args.invalid_state_manifest):
         invalid_rows = list(csv.DictReader(open(args.invalid_state_manifest)))
         n_invalid = 0
         for r in invalid_rows:
@@ -266,7 +288,7 @@ def main():
             n_invalid += 1
         print(f"Invalid infrastructure exclusions: {n_invalid}")
     else:
-        print("Invalid infrastructure exclusions: 0 (no manifest provided)")
+        print(f"Invalid infrastructure exclusions: 0 (file not found: {args.invalid_state_manifest})")
 
     # ═══════════════════════════════════════════════════════════
     # 6. Build eligible set (exclude by key)
