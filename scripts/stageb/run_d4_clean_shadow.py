@@ -245,7 +245,11 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
         else:
             obj_init = get_object_pose_safe(env, target_object_name)
             if obj_init is not None:
+                obj_init_x = float(obj_init[0])
+                obj_init_y = float(obj_init[1])
                 obj_init_z = float(obj_init[2])
+            else:
+                obj_init_x = None; obj_init_y = None; obj_init_z = None
 
     # ── Reset detector ──
     if not is_reference:
@@ -310,12 +314,35 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
         raw_action_hash_pre = sha256_array(clean_action)
         env_action_hash_pre = sha256_array(clean_env_action)
 
-        # ── Live validity ──
+        # ── PRE-ACTION readings (before env.step) ──
         gripper_phys = physical_gripper_state(env, obs)
         qpos_raw = gripper_phys.get("qpos") if gripper_phys else None
         eef_before = eef_pos(env)
 
         v = _check_live_validity(clean_action, clean_env_action, qpos_raw, eef_before)
+
+        # Privileged sidecar PRE (must be BEFORE env.step)
+        priv_pre = {}
+        if args.enable_privileged_sidecar:
+            priv_valid = object_lookup_ok
+            priv_reason = "" if priv_valid else "object_lookup_fail"
+            obj_pre = get_object_pose_safe(env, target_object_name) if priv_valid else None
+            if obj_pre is None and priv_valid:
+                priv_valid = False
+                priv_reason = "object_pose_read_fail"
+            priv_pre = {
+                "eef_pre_x": round(float(eef_before[0]), 6) if eef_before is not None else "",
+                "eef_pre_y": round(float(eef_before[1]), 6) if eef_before is not None else "",
+                "eef_pre_z": round(float(eef_before[2]), 6) if eef_before is not None else "",
+                "obj_pre_x": round(float(obj_pre[0]), 6) if obj_pre is not None else "",
+                "obj_pre_y": round(float(obj_pre[1]), 6) if obj_pre is not None else "",
+                "obj_pre_z": round(float(obj_pre[2]), 6) if obj_pre is not None else "",
+                "eef_to_obj_pre": round(float(np.linalg.norm(
+                    np.array(eef_before) - np.array(obj_pre))), 6)
+                    if eef_before is not None and obj_pre is not None else "",
+                "privileged_valid": int(priv_valid),
+                "privileged_failure_reason": priv_reason if not priv_valid else "",
+            }
 
         # ── Step 3-4: Detector ──
         det_result = None
@@ -402,48 +429,33 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
             "success_check": int(success_check),
         }
 
-        # ── Privileged sidecar (read-only, pre-action timing) ──
+        # ── POST-ACTION privileged sidecar (after env.step) ──
         if args.enable_privileged_sidecar:
-            priv_valid = True
-            priv_reason = ""
-            if not object_lookup_ok:
-                priv_valid = False
-                priv_reason = "object_lookup_fail"
+            # Merge PRE fields from pre-read above
+            trace_row.update(priv_pre)
+            trace_row["target_object_name"] = target_object_name
+            trace_row["obj_init_x"] = round(obj_init_x, 6) if obj_init_x is not None else ""
+            trace_row["obj_init_y"] = round(obj_init_y, 6) if obj_init_y is not None else ""
+            trace_row["obj_init_z"] = round(obj_init_z, 6) if obj_init_z is not None else ""
 
-            # Pre-action (before env.step) — matches EEF timing
-            obj_pre = get_object_pose_safe(env, target_object_name) if priv_valid else None
-            obj_pre_x = round(float(obj_pre[0]), 6) if obj_pre is not None else ""
-            obj_pre_y = round(float(obj_pre[1]), 6) if obj_pre is not None else ""
-            obj_pre_z = round(float(obj_pre[2]), 6) if obj_pre is not None else ""
-            eef_pre_for_dist = eef_pos(env)
-            eef_to_obj_pre = ""
-            if obj_pre is not None and eef_pre_for_dist is not None:
-                eef_to_obj_pre = round(float(np.linalg.norm(
-                    np.array(eef_pre_for_dist) - np.array(obj_pre))), 6)
-            if obj_pre is None:
-                priv_valid = False
-                priv_reason = "object_pose_read_fail"
-
-            trace_row.update({
-                "obj_pre_x": obj_pre_x, "obj_pre_y": obj_pre_y, "obj_pre_z": obj_pre_z,
-                "eef_to_obj_pre": eef_to_obj_pre,
-                "target_object_name": target_object_name,
-                "privileged_valid": int(priv_valid),
-                "privileged_failure_reason": priv_reason if not priv_valid else "",
-            })
-
-            # Post-action object pose (after env.step)
-            qpos_phys_after = physical_gripper_state(env, obs) if 'physical_gripper_state' in dir() else None
-            obj_post = get_object_pose_safe(env, target_object_name) if priv_valid else None
-            obj_post_x = round(float(obj_post[0]), 6) if obj_post is not None else ""
-            obj_post_y = round(float(obj_post[1]), 6) if obj_post is not None else ""
-            obj_post_z = round(float(obj_post[2]), 6) if obj_post is not None else ""
-            obj_z_delta = round(float(obj_post[2]) - obj_init_z, 6) if obj_post is not None and obj_init_z is not None else ""
-            trace_row.update({
-                "obj_post_x": obj_post_x, "obj_post_y": obj_post_y, "obj_post_z": obj_post_z,
-                "obj_z_delta_post": obj_z_delta,
-                "obj_init_z": round(obj_init_z, 6) if obj_init_z is not None else "",
-            })
+            # POST-action readings (after env.step)
+            obj_post = get_object_pose_safe(env, target_object_name) if priv_pre.get("privileged_valid", 0) else None
+            eef_post = eef_pos(env)
+            trace_row["eef_post_x"] = round(float(eef_post[0]), 6) if eef_post is not None else ""
+            trace_row["eef_post_y"] = round(float(eef_post[1]), 6) if eef_post is not None else ""
+            trace_row["eef_post_z"] = round(float(eef_post[2]), 6) if eef_post is not None else ""
+            trace_row["obj_post_x"] = round(float(obj_post[0]), 6) if obj_post is not None else ""
+            trace_row["obj_post_y"] = round(float(obj_post[1]), 6) if obj_post is not None else ""
+            trace_row["obj_post_z"] = round(float(obj_post[2]), 6) if obj_post is not None else ""
+            if obj_post is not None and eef_post is not None:
+                trace_row["eef_to_obj_post"] = round(float(np.linalg.norm(
+                    np.array(eef_post) - np.array(obj_post))), 6)
+            else:
+                trace_row["eef_to_obj_post"] = ""
+            if obj_post is not None and obj_init_z is not None:
+                trace_row["obj_z_delta_post"] = round(float(obj_post[2]) - obj_init_z, 6)
+            else:
+                trace_row["obj_z_delta_post"] = ""
 
         step_trace.append(trace_row)
 
