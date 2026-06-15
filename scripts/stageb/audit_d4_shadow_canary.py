@@ -387,6 +387,7 @@ def main():
                 all_pass = False
         invalid_from_csv = 0
         for row in sh_trace:
+            row_invalid = False
             for f in REQUIRED_FLAGS:
                 v = row.get(f, None)
                 if v is None:
@@ -395,8 +396,10 @@ def main():
                 elif str(v) not in ("0", "1"):
                     gates.append((f"STEP_TRACE_BAD_VAL:{tag}:{f}={v}", False))
                     all_pass = False
-                elif v in ("0", "False", "false", 0):
-                    invalid_from_csv += 1
+                elif str(v) == "0":
+                    row_invalid = True
+            if row_invalid:
+                invalid_from_csv += 1
         manifest_invalid = sh_m.get("n_invalid_field_steps", -1)
         if invalid_from_csv != manifest_invalid:
             gates.append((f"INVALID_MISMATCH:{tag}:csv={invalid_from_csv}_manifest={manifest_invalid}", False))
