@@ -83,6 +83,11 @@ def git_dirty_status() -> str:
     return "CLEAN" if not status else "DIRTY:" + status.replace("\n", "\\n")
 
 
+def git_branch_name() -> str:
+    branch = git_value(["rev-parse", "--abbrev-ref", "HEAD"])
+    return branch or "UNKNOWN"
+
+
 def nvidia_smi_query() -> str:
     return run_command(
         [
@@ -240,6 +245,14 @@ def main() -> int:
     if actual_uuids != expected_uuids:
         raise RuntimeError(f"GPU UUID binding mismatch: expected {expected_uuids}, got {actual_uuids}")
 
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
+    torch.backends.cudnn.benchmark = False
+    try:
+        torch.use_deterministic_algorithms(True, warn_only=True)
+    except Exception:
+        pass
+
     before_gpu = nvidia_smi_query()
     before_apps = nvidia_smi_compute_apps()
     (output_dir / "nvidia_smi_before.txt").write_text(before_gpu + "\n", encoding="utf-8")
@@ -350,7 +363,7 @@ def main() -> int:
         "stage": "M3_GPU45_FIXED_FRAME_INFRA_QUALIFICATION",
         "result_class": result_class,
         "repo_commit": git_value(["rev-parse", "HEAD"]),
-        "branch": git_value(["branch", "--show-current"]),
+        "branch": git_branch_name(),
         "dirty_status": git_dirty_status(),
         "hostname": socket.gethostname(),
         "platform": platform.platform(),
@@ -384,6 +397,8 @@ def main() -> int:
         "model_parameters_frozen_for_pixel_gradient": True,
         "torch_allow_tf32_matmul": bool(torch.backends.cuda.matmul.allow_tf32),
         "torch_allow_tf32_cudnn": bool(torch.backends.cudnn.allow_tf32),
+        "torch_cudnn_benchmark": bool(torch.backends.cudnn.benchmark),
+        "torch_deterministic_algorithms": bool(torch.are_deterministic_algorithms_enabled()),
         "cublas_workspace_config": os.environ.get("CUBLAS_WORKSPACE_CONFIG", ""),
     }
     write_csv(output_dir / "m3_gpu45_qualification_manifest.csv", [manifest_row], list(manifest_row.keys()))
