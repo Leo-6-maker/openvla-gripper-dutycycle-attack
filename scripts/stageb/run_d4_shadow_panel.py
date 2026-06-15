@@ -143,7 +143,8 @@ def _run_one(task, state_id, mode, attempt_id, output_dir, launcher_dir, gpu_slo
            "--mode", mode, "--attempt-id", str(attempt_id),
            "--episode-dir", episode_dir, "--checkpoint", CHECKPOINT,
            "--render-gpu-device-id", str(gpu_slot["render"]),
-           "--model-gpu-device-id", "-1"]
+           "--model-gpu-device-id", "-1",
+           "--require-clean-worktree"]
 
     with open(os.path.join(log_dir, "command.txt"), "w") as f:
         f.write(" ".join(cmd) + f"\nCUDA={gpu_slot['cuda']}\n")
@@ -169,11 +170,23 @@ def _run_one(task, state_id, mode, attempt_id, output_dir, launcher_dir, gpu_slo
 
 def _check_gates(ref_m, sh_m, tag):
     failures = []
-    if ref_m and sh_m:
-        if ref_m.get("n_steps") != sh_m.get("n_steps"): failures.append(f"STEPS:{tag}")
-        if ref_m.get("success_primary") != sh_m.get("success_primary"): failures.append(f"SUCCESS:{tag}")
-        if sh_m.get("action_identity_fail"): failures.append(f"IDENTITY:{tag}")
-        if sh_m.get("n_invalid_field_steps", 0) > 0: failures.append(f"INVALID:{tag}")
+    if not ref_m or not sh_m:
+        failures.append(f"MISSING_MANIFEST:{tag}")
+        return failures
+    # Steps, success, done
+    if ref_m.get("n_steps") != sh_m.get("n_steps"): failures.append(f"STEPS:{tag}")
+    if ref_m.get("success_primary") != sh_m.get("success_primary"): failures.append(f"SUCCESS:{tag}")
+    if ref_m.get("success_done_any") != sh_m.get("success_done_any"): failures.append(f"DONE:{tag}")
+    if ref_m.get("done_step") != sh_m.get("done_step"): failures.append(f"DONESTEP:{tag}")
+    # Sequence identity
+    for sk in ["raw_action_sequence_sha256", "env_action_sequence_sha256", "obs_sequence_sha256"]:
+        if ref_m.get(sk) != sh_m.get(sk) or not ref_m.get(sk): failures.append(f"SEQ_{sk}:{tag}")
+    # Action identity
+    if sh_m.get("action_identity_fail"): failures.append(f"IDENTITY:{tag}")
+    # Invalid fields
+    if sh_m.get("n_invalid_field_steps", 0) > 0: failures.append(f"INVALID:{tag}")
+    # Detector exception
+    if sh_m.get("detector_exception"): failures.append(f"DET_EXC:{tag}")
     return failures
 
 
@@ -248,7 +261,10 @@ def main():
                "--worker", "--worker-slot", str(s["slot"]),
                "--worker-cuda", s["cuda"], "--worker-render", str(s["render"]),
                "--worker-states-file", states_file,
-               "--output-dir", str(out), "--launcher-dir", launcher_dir]
+               "--output-dir", str(out), "--launcher-dir", launcher_dir,
+               "--worker-head", head, "--worker-branch",
+               subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                              capture_output=True, text=True).stdout.strip()]
         log_file = str(out / f"worker_{s['slot']}.log")
         print(f"[Master] Launching worker {s['slot']}: GPU={s['cuda']}")
         with open(log_file, "w") as lf:
@@ -275,11 +291,15 @@ def main():
                 ok = r["ref_ok"] and r["sh_ok"]
                 if not ok: panel_pass = False
                 gate_failures.extend(r.get("gate_failures", []))
-                if not r["ref_ok"]: gate_failures.append(f"REF_FAIL:{r['task']}_s{r['state_id']}")
-                if not r["sh_ok"]: gate_failures.append(f"SH_FAIL:{r['task']}_s{r['state_id']}")
+                if not r["ref_ok"]: panel_pass = False; gate_failures.append(f"REF_FAIL:{r['task']}_s{r['state_id']}")
+                if not r["sh_ok"]: panel_pass = False; gate_failures.append(f"SH_FAIL:{r['task']}_s{r['state_id']}")
         else:
             panel_pass = False
             gate_failures.append(f"WORKER_MISSING:slot_{s['slot']}")
+
+    # Gate failures from within episodes also cause panel fail
+    if gate_failures:
+        panel_pass = False
 
     # GPU cleanup
     time.sleep(3)
