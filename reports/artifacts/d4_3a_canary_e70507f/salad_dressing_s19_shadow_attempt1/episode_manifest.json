@@ -1,0 +1,39 @@
+{
+  "task": "salad_dressing",
+  "state_id": 19,
+  "mode": "shadow",
+  "attempt_id": 1,
+  "n_steps": 124,
+  "max_steps": 280,
+  "success_primary": 1,
+  "success_step_primary": 123,
+  "success_done_any": 1,
+  "success_check_any": 1,
+  "done_step": 123,
+  "timeout": false,
+  "infra_status": "ok",
+  "detector_exception": false,
+  "action_identity_fail": false,
+  "invalid_field_steps": [],
+  "n_invalid_field_steps": 0,
+  "detector_emit_step": -1,
+  "detector_n_candidates": 3,
+  "detector_pre_reset": {
+    "next_expected_step": 0,
+    "history_len": 0,
+    "emit_step": -1,
+    "candidate_count": 0
+  },
+  "detector_post_episode": {
+    "next_expected_step": 124,
+    "history_len": 124,
+    "emit_step": -1,
+    "candidate_count": 3
+  },
+  "first_action_generated": true,
+  "total_time_sec": 1781525095.62,
+  "timestamp": "2026-06-15T12:04:55.619595+00:00",
+  "raw_action_sequence_sha256": "b32db7d3e1142280371a5ae7033007015ba40055ed28952f24afed6201a20951",
+  "env_action_sequence_sha256": "67f17c5604d483c665e083ee774afc8620a1e55514a13ba120ef808bcaf28942",
+  "obs_sequence_sha256": "5a24af4a98f45a3d687440195275ba8663b3407c711b4b7218cfeff0f8fc1673"
+}

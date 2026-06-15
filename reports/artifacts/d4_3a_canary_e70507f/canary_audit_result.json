@@ -1,0 +1,825 @@
+{
+  "auditor_result": "PASS",
+  "all_pass": true,
+  "n_gates": 204,
+  "n_pass": 204,
+  "n_fail": 0,
+  "gates": [
+    {
+      "name": "LAUNCHER_EXISTS:bbq_sauce_s36_reference_attempt1:command.txt",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:bbq_sauce_s36_reference_attempt1:environment_snapshot.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:bbq_sauce_s36_reference_attempt1:stdout.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:bbq_sauce_s36_reference_attempt1:stderr.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:bbq_sauce_s36_reference_attempt1:returncode.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:bbq_sauce_s36_reference_attempt1:launcher_artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_reference_attempt1:ATTEMPT_STARTED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_reference_attempt1:MODEL_LOADED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_reference_attempt1:FIRST_ACTION_GENERATED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_reference_attempt1:step_trace.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_reference_attempt1:detector_candidates.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_reference_attempt1:detector_emission.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_reference_attempt1:action_identity.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_reference_attempt1:latency.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_reference_attempt1:provenance.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_reference_attempt1:episode_manifest.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_reference_attempt1:artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_reference_attempt1:teacher_sidecar.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:bbq_sauce_s36_shadow_attempt1:command.txt",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:bbq_sauce_s36_shadow_attempt1:environment_snapshot.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:bbq_sauce_s36_shadow_attempt1:stdout.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:bbq_sauce_s36_shadow_attempt1:stderr.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:bbq_sauce_s36_shadow_attempt1:returncode.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:bbq_sauce_s36_shadow_attempt1:launcher_artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_shadow_attempt1:ATTEMPT_STARTED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_shadow_attempt1:MODEL_LOADED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_shadow_attempt1:FIRST_ACTION_GENERATED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_shadow_attempt1:step_trace.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_shadow_attempt1:detector_candidates.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_shadow_attempt1:detector_emission.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_shadow_attempt1:action_identity.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_shadow_attempt1:latency.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_shadow_attempt1:provenance.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_shadow_attempt1:episode_manifest.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_shadow_attempt1:artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:bbq_sauce_s36_shadow_attempt1:teacher_sidecar.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:milk_s23_reference_attempt1:command.txt",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:milk_s23_reference_attempt1:environment_snapshot.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:milk_s23_reference_attempt1:stdout.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:milk_s23_reference_attempt1:stderr.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:milk_s23_reference_attempt1:returncode.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:milk_s23_reference_attempt1:launcher_artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_reference_attempt1:ATTEMPT_STARTED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_reference_attempt1:MODEL_LOADED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_reference_attempt1:FIRST_ACTION_GENERATED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_reference_attempt1:step_trace.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_reference_attempt1:detector_candidates.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_reference_attempt1:detector_emission.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_reference_attempt1:action_identity.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_reference_attempt1:latency.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_reference_attempt1:provenance.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_reference_attempt1:episode_manifest.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_reference_attempt1:artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_reference_attempt1:teacher_sidecar.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:milk_s23_shadow_attempt1:command.txt",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:milk_s23_shadow_attempt1:environment_snapshot.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:milk_s23_shadow_attempt1:stdout.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:milk_s23_shadow_attempt1:stderr.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:milk_s23_shadow_attempt1:returncode.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:milk_s23_shadow_attempt1:launcher_artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_shadow_attempt1:ATTEMPT_STARTED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_shadow_attempt1:MODEL_LOADED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_shadow_attempt1:FIRST_ACTION_GENERATED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_shadow_attempt1:step_trace.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_shadow_attempt1:detector_candidates.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_shadow_attempt1:detector_emission.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_shadow_attempt1:action_identity.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_shadow_attempt1:latency.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_shadow_attempt1:provenance.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_shadow_attempt1:episode_manifest.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_shadow_attempt1:artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:milk_s23_shadow_attempt1:teacher_sidecar.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:salad_dressing_s19_reference_attempt1:command.txt",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:salad_dressing_s19_reference_attempt1:environment_snapshot.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:salad_dressing_s19_reference_attempt1:stdout.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:salad_dressing_s19_reference_attempt1:stderr.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:salad_dressing_s19_reference_attempt1:returncode.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:salad_dressing_s19_reference_attempt1:launcher_artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_reference_attempt1:ATTEMPT_STARTED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_reference_attempt1:MODEL_LOADED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_reference_attempt1:FIRST_ACTION_GENERATED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_reference_attempt1:step_trace.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_reference_attempt1:detector_candidates.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_reference_attempt1:detector_emission.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_reference_attempt1:action_identity.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_reference_attempt1:latency.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_reference_attempt1:provenance.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_reference_attempt1:episode_manifest.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_reference_attempt1:artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_reference_attempt1:teacher_sidecar.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:salad_dressing_s19_shadow_attempt1:command.txt",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:salad_dressing_s19_shadow_attempt1:environment_snapshot.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:salad_dressing_s19_shadow_attempt1:stdout.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:salad_dressing_s19_shadow_attempt1:stderr.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:salad_dressing_s19_shadow_attempt1:returncode.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:salad_dressing_s19_shadow_attempt1:launcher_artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_shadow_attempt1:ATTEMPT_STARTED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_shadow_attempt1:MODEL_LOADED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_shadow_attempt1:FIRST_ACTION_GENERATED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_shadow_attempt1:step_trace.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_shadow_attempt1:detector_candidates.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_shadow_attempt1:detector_emission.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_shadow_attempt1:action_identity.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_shadow_attempt1:latency.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_shadow_attempt1:provenance.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_shadow_attempt1:episode_manifest.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_shadow_attempt1:artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:salad_dressing_s19_shadow_attempt1:teacher_sidecar.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:tomato_sauce_s6_reference_attempt1:command.txt",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:tomato_sauce_s6_reference_attempt1:environment_snapshot.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:tomato_sauce_s6_reference_attempt1:stdout.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:tomato_sauce_s6_reference_attempt1:stderr.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:tomato_sauce_s6_reference_attempt1:returncode.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:tomato_sauce_s6_reference_attempt1:launcher_artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_reference_attempt1:ATTEMPT_STARTED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_reference_attempt1:MODEL_LOADED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_reference_attempt1:FIRST_ACTION_GENERATED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_reference_attempt1:step_trace.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_reference_attempt1:detector_candidates.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_reference_attempt1:detector_emission.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_reference_attempt1:action_identity.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_reference_attempt1:latency.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_reference_attempt1:provenance.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_reference_attempt1:episode_manifest.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_reference_attempt1:artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_reference_attempt1:teacher_sidecar.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:tomato_sauce_s6_shadow_attempt1:command.txt",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:tomato_sauce_s6_shadow_attempt1:environment_snapshot.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:tomato_sauce_s6_shadow_attempt1:stdout.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:tomato_sauce_s6_shadow_attempt1:stderr.log",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:tomato_sauce_s6_shadow_attempt1:returncode.json",
+      "pass": true
+    },
+    {
+      "name": "LAUNCHER_EXISTS:tomato_sauce_s6_shadow_attempt1:launcher_artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_shadow_attempt1:ATTEMPT_STARTED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_shadow_attempt1:MODEL_LOADED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_shadow_attempt1:FIRST_ACTION_GENERATED.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_shadow_attempt1:step_trace.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_shadow_attempt1:detector_candidates.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_shadow_attempt1:detector_emission.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_shadow_attempt1:action_identity.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_shadow_attempt1:latency.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_shadow_attempt1:provenance.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_shadow_attempt1:episode_manifest.json",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_shadow_attempt1:artifact_hashes.csv",
+      "pass": true
+    },
+    {
+      "name": "EP_EXISTS:tomato_sauce_s6_shadow_attempt1:teacher_sidecar.json",
+      "pass": true
+    },
+    {
+      "name": "SEQ_raw_action_sequence_sha256:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "SEQ_env_action_sequence_sha256:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "SEQ_obs_sequence_sha256:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "n_steps:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "success_primary:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "success_done_any:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "success_check_any:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "success_step_primary:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "done_step:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "RESET_next_expected_step:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "RESET_emit_step:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "RESET_history_len:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "RESET_candidate_count:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "LATENCY_P99:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "LATENCY_MAX:bbq_sauce_s36",
+      "pass": true
+    },
+    {
+      "name": "SEQ_raw_action_sequence_sha256:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "SEQ_env_action_sequence_sha256:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "SEQ_obs_sequence_sha256:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "n_steps:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "success_primary:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "success_done_any:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "success_check_any:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "success_step_primary:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "done_step:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "RESET_next_expected_step:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "RESET_emit_step:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "RESET_history_len:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "RESET_candidate_count:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "LATENCY_P99:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "LATENCY_MAX:milk_s23",
+      "pass": true
+    },
+    {
+      "name": "SEQ_raw_action_sequence_sha256:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "SEQ_env_action_sequence_sha256:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "SEQ_obs_sequence_sha256:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "n_steps:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "success_primary:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "success_done_any:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "success_check_any:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "success_step_primary:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "done_step:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "RESET_next_expected_step:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "RESET_emit_step:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "RESET_history_len:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "RESET_candidate_count:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "LATENCY_P99:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "LATENCY_MAX:salad_dressing_s19",
+      "pass": true
+    },
+    {
+      "name": "SEQ_raw_action_sequence_sha256:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "SEQ_env_action_sequence_sha256:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "SEQ_obs_sequence_sha256:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "n_steps:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "success_primary:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "success_done_any:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "success_check_any:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "success_step_primary:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "done_step:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "RESET_next_expected_step:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "RESET_emit_step:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "RESET_history_len:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "RESET_candidate_count:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "LATENCY_P99:tomato_sauce_s6",
+      "pass": true
+    },
+    {
+      "name": "LATENCY_MAX:tomato_sauce_s6",
+      "pass": true
+    }
+  ]
+}

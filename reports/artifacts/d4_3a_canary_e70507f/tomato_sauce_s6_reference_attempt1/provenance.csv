@@ -1,0 +1,16 @@
+key,value
+git_HEAD,e70507f282239597426bd4967a25da0acb362473
+git_clean,True
+branch,exp/l12-production-streaming-adapter-20260615
+checkpoint_sha,cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7326f691742b9a438f1174858
+threshold,0.236312
+runner_sha,3f70321e7b29d5cca3242a2507e90883bd9f0c73512ebd62f8f5a36dbcbb487a
+task,tomato_sauce
+state_id,6
+mode,reference
+attempt_id,1
+cuda_visible_devices,"2,6"
+nvidia_smi,"0, GPU-33559d32-c12c-6c20-6159-0b693a28b101, NVIDIA GeForce RTX 2080 Ti | 1, GPU-64734dbf-3993-a168-13d7-c8eba21f2908, NVIDIA GeForce RTX 2080 Ti | 2, GPU-a5dd9dbe-9719-b196-d8e7-e44c4100d1e7, NVIDIA GeForce RTX 2080 Ti | 3, GPU-c1ee1619-6791-a734-bf4c-d0d2c47df580, NVIDIA GeForce RTX 2080 Ti | 4, GPU-d0a54f5d-938c-a148-fff9-c135201e3f61, NVIDIA GeForce RTX 2080 Ti | 5, GPU-9794d733-042f-46a2-fc86-5a3fe32a158a, NVIDIA GeForce RTX 2080 Ti | 6, GPU-04d369ad-47f6-77fc-19df-b9c4273db10f, NVIDIA GeForce RTX 2080 Ti | 7, GPU-da4d4ba8-f4f9-7513-4dc9-87f4c7033d7f, NVIDIA GeForce RTX 2080 Ti"
+command,/data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260605/scripts/stageb/run_d4_clean_shadow.py --task tomato_sauce --state-id 6 --mode reference --attempt-id 1 --episode-dir /data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/tomato_sauce_s6_reference_attempt1 --checkpoint /data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260605/outputs/d1b_training/d1b_detector_best.pt --render-gpu-device-id 2 --model-gpu-device-id -1 --expected-git-head e70507f282239597426bd4967a25da0acb362473 --expected-branch exp/l12-production-streaming-adapter-20260615 --require-clean-worktree
+timestamp,2026-06-15T12:15:25.751769+00:00
+phase_markers,ATTEMPT_STARTED MODEL_LOADED FIRST_ACTION_GENERATED

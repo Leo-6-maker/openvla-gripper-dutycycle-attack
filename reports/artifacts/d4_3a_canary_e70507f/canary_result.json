@@ -1,0 +1,86 @@
+{
+  "result_class": "D4_SHADOW_CANARY_PASS",
+  "canary_pass": true,
+  "n_states": 4,
+  "n_completed": 4,
+  "gate_failures": [],
+  "gpu_visible": "2,6",
+  "gpu_physical_ids": [
+    2,
+    6
+  ],
+  "render_gpu_physical": 2,
+  "target_gpu_uuids": [
+    "GPU-04d369ad-47f6-77fc-19df-b9c4273db10f",
+    "GPU-a5dd9dbe-9719-b196-d8e7-e44c4100d1e7"
+  ],
+  "gpu_procs_before": 0,
+  "gpu_procs_after": 0,
+  "gpu_new_processes": 0,
+  "manifest_sha": "e175c0ff6944cdb27c5efaa1892fed102ba3f1269102929f3fef045a6d0b5d2d",
+  "freeze_runner_sha": "d95da118198618482fee74c83e7fb7142edf74952feeaa3ebfe532dd19490830",
+  "execution_head": "e70507f282239597426bd4967a25da0acb362473",
+  "timestamp": "2026-06-15T12:19:02.472501+00:00",
+  "results": [
+    {
+      "task": "milk",
+      "state_id": 23,
+      "ref_ok": true,
+      "sh_ok": true,
+      "ref_dir": "/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/milk_s23_reference_attempt1",
+      "sh_dir": "/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/milk_s23_shadow_attempt1",
+      "ref_n_steps": 217,
+      "sh_n_steps": 217,
+      "ref_success": 1,
+      "sh_success": 1,
+      "sh_emit_step": 49,
+      "action_identity_ok": true,
+      "invalid_field_steps": 0
+    },
+    {
+      "task": "salad_dressing",
+      "state_id": 19,
+      "ref_ok": true,
+      "sh_ok": true,
+      "ref_dir": "/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/salad_dressing_s19_reference_attempt1",
+      "sh_dir": "/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/salad_dressing_s19_shadow_attempt1",
+      "ref_n_steps": 124,
+      "sh_n_steps": 124,
+      "ref_success": 1,
+      "sh_success": 1,
+      "sh_emit_step": -1,
+      "action_identity_ok": true,
+      "invalid_field_steps": 0
+    },
+    {
+      "task": "bbq_sauce",
+      "state_id": 36,
+      "ref_ok": true,
+      "sh_ok": true,
+      "ref_dir": "/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/bbq_sauce_s36_reference_attempt1",
+      "sh_dir": "/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/bbq_sauce_s36_shadow_attempt1",
+      "ref_n_steps": 165,
+      "sh_n_steps": 165,
+      "ref_success": 1,
+      "sh_success": 1,
+      "sh_emit_step": 49,
+      "action_identity_ok": true,
+      "invalid_field_steps": 0
+    },
+    {
+      "task": "tomato_sauce",
+      "state_id": 6,
+      "ref_ok": true,
+      "sh_ok": true,
+      "ref_dir": "/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/tomato_sauce_s6_reference_attempt1",
+      "sh_dir": "/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/tomato_sauce_s6_shadow_attempt1",
+      "ref_n_steps": 149,
+      "sh_n_steps": 149,
+      "ref_success": 1,
+      "sh_success": 1,
+      "sh_emit_step": -1,
+      "action_identity_ok": true,
+      "invalid_field_steps": 0
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+task,state_id,ref_ok,sh_ok,ref_n_steps,sh_n_steps,ref_success,sh_success,sh_emit_step,action_identity_ok,invalid_field_steps,ref_dir,sh_dir
+milk,23,True,True,217,217,1,1,49,True,0,/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/milk_s23_reference_attempt1,/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/milk_s23_shadow_attempt1
+salad_dressing,19,True,True,124,124,1,1,-1,True,0,/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/salad_dressing_s19_reference_attempt1,/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/salad_dressing_s19_shadow_attempt1
+bbq_sauce,36,True,True,165,165,1,1,49,True,0,/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/bbq_sauce_s36_reference_attempt1,/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/bbq_sauce_s36_shadow_attempt1
+tomato_sauce,6,True,True,149,149,1,1,-1,True,0,/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/tomato_sauce_s6_reference_attempt1,/data/liuyu/outputs/d4_3a_canary_e70507f_cleanroot_r1/tomato_sauce_s6_shadow_attempt1

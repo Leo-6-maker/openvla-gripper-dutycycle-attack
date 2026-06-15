@@ -1,0 +1,39 @@
+{
+  "task": "bbq_sauce",
+  "state_id": 36,
+  "mode": "shadow",
+  "attempt_id": 1,
+  "n_steps": 165,
+  "max_steps": 280,
+  "success_primary": 1,
+  "success_step_primary": 164,
+  "success_done_any": 1,
+  "success_check_any": 1,
+  "done_step": 164,
+  "timeout": false,
+  "infra_status": "ok",
+  "detector_exception": false,
+  "action_identity_fail": false,
+  "invalid_field_steps": [],
+  "n_invalid_field_steps": 0,
+  "detector_emit_step": 49,
+  "detector_n_candidates": 3,
+  "detector_pre_reset": {
+    "next_expected_step": 0,
+    "history_len": 0,
+    "emit_step": -1,
+    "candidate_count": 0
+  },
+  "detector_post_episode": {
+    "next_expected_step": 165,
+    "history_len": 165,
+    "emit_step": 49,
+    "candidate_count": 3
+  },
+  "first_action_generated": true,
+  "total_time_sec": 1781525529.786,
+  "timestamp": "2026-06-15T12:12:09.785537+00:00",
+  "raw_action_sequence_sha256": "2b616f128c5461ce1ae86258f88d3aa0444511ee9b56f72316d3137f8e4c3c2a",
+  "env_action_sequence_sha256": "7b92b8084ec208f811fc80482eaa113b2bcac915322384393a547214a622c7b4",
+  "obs_sequence_sha256": "9506ca43054d44b1dc07a105e3d1fa8028ab65aa8126af9883f6943413f9d424"
+}
