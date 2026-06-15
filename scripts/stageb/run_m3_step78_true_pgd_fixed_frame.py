@@ -88,6 +88,12 @@ TASK_IDX = {
 }
 
 MAIN_CONDITIONS = ["CLEAN", "PGD_DELTA0", "TRUE_PGD_FINAL", "RAND20", "SHUFFLED_GRAD_PGD20"]
+V4_CONDITIONS = [
+    "PGD_DELTA0",
+    "TRUE_PGD_TRAJECTORY21_SELECTIVE",
+    "RAND21_SELECTIVE",
+    "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE",
+]
 PRELIGHT_CLASSES = {
     "SURROGATE_OFFICIAL_SCORE_PATH_MATCH",
     "SURROGATE_OFFICIAL_SCORE_PATH_TIE_EQUIVALENT",
@@ -467,6 +473,208 @@ def collect_condition_row(
     }
 
 
+def arm_prefix_match_count(candidate_arm: list[int], clean_arm: list[int]) -> tuple[int, int]:
+    n = min(len(candidate_arm), len(clean_arm))
+    return sum(int(candidate_arm[i] == clean_arm[i]) for i in range(n)), n
+
+
+def select_hard_feasible_candidate(
+    rows: list[dict[str, Any]],
+    *,
+    arm_gate_min_match_count: int,
+    target_token_id: int,
+) -> dict[str, Any] | None:
+    feasible = [
+        row
+        for row in rows
+        if int(row.get("arm_prefix_match_count", 0) or 0) >= int(arm_gate_min_match_count)
+        and int(row.get("official_gripper_token", -1) or -1) == int(target_token_id)
+        and str(row.get("score_invariant_status", "")) == "PASS"
+    ]
+    if not feasible:
+        return None
+    return sorted(
+        feasible,
+        key=lambda row: (
+            -float(row.get("official_target31744_margin", "-inf")),
+            float(row.get("processor_linf", "inf")),
+            int(row.get("candidate_id", 10**9)),
+        ),
+    )[0]
+
+
+def candidate_row_from_official(
+    *,
+    stage: str,
+    commit: str,
+    condition: str,
+    attack_seed: int,
+    candidate_id: int,
+    candidate_source: str,
+    official: Mapping[str, Any],
+    clean_arm_prefix: list[int],
+    processor_linf: float,
+    delta_sha256: str,
+    processor_input_sha256: str,
+    budget_quantized_correction_count: int,
+    candidate_seed: int | str = "",
+    surrogate_target_margin: float | str = "",
+) -> dict[str, Any]:
+    stats = official["target_stats"]
+    arm_match, arm_den = arm_prefix_match_count([int(x) for x in official["arm_prefix"]], clean_arm_prefix)
+    return {
+        "stage": stage,
+        "commit": commit,
+        "condition": condition,
+        "attack_seed": int(attack_seed),
+        "candidate_id": int(candidate_id),
+        "candidate_source": candidate_source,
+        "candidate_seed": candidate_seed,
+        "official_tokens": json.dumps(official["tokens"]),
+        "official_gripper_token": official["gripper_token"],
+        "official_target31744_score": stats["target_token_score"],
+        "official_best_competitor_token": stats["best_competitor_token_id"],
+        "official_best_competitor_score": stats["best_competitor_score"],
+        "official_target31744_margin": stats.get("target_objective_margin", stats["target_minus_best_competitor_margin"]),
+        "official_target31744_best_competitor_margin": stats["target_minus_best_competitor_margin"],
+        "official_target31744_logratio_margin": stats.get("target_minus_competitor_logsumexp_margin", ""),
+        "surrogate_target31744_margin": surrogate_target_margin,
+        "arm_prefix_match_count": arm_match,
+        "arm_prefix_match_denominator": arm_den,
+        "score_invariant_status": "PASS" if official["score_invariant"]["tie_aware_pass"] else "FAIL",
+        "processor_linf": float(processor_linf),
+        "delta_sha256": delta_sha256,
+        "processor_input_sha256": processor_input_sha256,
+        "budget_quantized_correction_count": int(budget_quantized_correction_count),
+        "feasible": 0,
+        "selected": 0,
+        "selection_reason": "",
+    }
+
+
+def trajectory_candidate_rows_from_debug(
+    *,
+    model: Any,
+    debug: Mapping[str, Any],
+    stage: str,
+    commit: str,
+    condition: str,
+    attack_seed: int,
+    action_dim: int,
+    unnorm_key: str,
+    target_token_id: int,
+    margin: float,
+    tolerance: float,
+    objective: str,
+    clean_arm_prefix: list[int],
+) -> list[dict[str, Any]]:
+    candidates = debug.get("trajectory_candidate_inputs")
+    if not isinstance(candidates, list) or not candidates:
+        raise RuntimeError(f"{condition} missing trajectory_candidate_inputs")
+    rows: list[dict[str, Any]] = []
+    for cand in candidates:
+        if not isinstance(cand, Mapping):
+            raise RuntimeError(f"{condition} has malformed trajectory candidate")
+        official = official_decode(
+            model,
+            {"input_ids": cand["input_ids"], "pixel_values": cand["pixel_values"]},
+            action_dim=action_dim,
+            unnorm_key=unnorm_key,
+            target_token_id=target_token_id,
+            margin=margin,
+            tolerance=tolerance,
+            objective=objective,
+        )
+        rows.append(
+            candidate_row_from_official(
+                stage=stage,
+                commit=commit,
+                condition=condition,
+                attack_seed=attack_seed,
+                candidate_id=int(cand["candidate_index"]),
+                candidate_source=str(cand.get("candidate_source", "")),
+                official=official,
+                clean_arm_prefix=clean_arm_prefix,
+                processor_linf=float(cand.get("pixel_budget_adv_inputs_linf", 0.0) or 0.0),
+                delta_sha256=str(cand.get("delta_sha256", "")),
+                processor_input_sha256=str(cand.get("processor_input_sha256", "")),
+                budget_quantized_correction_count=int(cand.get("pixel_budget_quantized_correction_count", 0) or 0),
+            )
+        )
+    return rows
+
+
+def run_rand21_official_candidates(
+    *,
+    model: Any,
+    processor: Any,
+    cfg: Mapping[str, Any],
+    base_inputs: Mapping[str, torch.Tensor],
+    device: str,
+    seed: int,
+    action_dim: int,
+    clean_arm_prefix: list[int],
+    target_token_id: int,
+    margin: float,
+    tolerance: float,
+    stage: str,
+    commit: str,
+) -> list[dict[str, Any]]:
+    adapter = TokenPrefixPGDAttacker(
+        model,
+        processor,
+        {"attack_optimizer": cfg["attack_optimizer"]},
+        seed=int(seed),
+        preprocess_kwargs=dict(cfg.get("preprocess", {})),
+        device=device,
+    )
+    x = base_inputs["pixel_values"]
+    count = int(cfg["controls"].get("rand21_count", 21))
+    seeds = rand_seed_schedule(int(seed), count=count)
+    rows: list[dict[str, Any]] = []
+    for idx, cand_seed in enumerate(seeds):
+        delta = sample_processor_delta(x.shape, epsilon=float(cfg["attack_optimizer"]["epsilon"]), seed=int(cand_seed), dtype=torch.float32, device=x.device)
+        projected, corrections = project_and_cast_processor_values(x, delta, epsilon=float(cfg["attack_optimizer"]["epsilon"]), candidate_is_delta=True)
+        cand_inputs = {"input_ids": base_inputs["input_ids"], "pixel_values": projected.detach()}
+        stats = surrogate_stats_from_generated_prefix(
+            adapter,
+            cand_inputs["input_ids"],
+            cand_inputs["pixel_values"],
+            action_dim=int(action_dim),
+            target_token_id=int(target_token_id),
+            margin=float(margin),
+        )
+        official = official_decode(
+            model,
+            cand_inputs,
+            action_dim=action_dim,
+            unnorm_key=cfg["model"]["unnorm_key"],
+            target_token_id=target_token_id,
+            margin=margin,
+            tolerance=tolerance,
+            objective=str(cfg["attack_optimizer"]["objective"]),
+        )
+        rows.append(
+            candidate_row_from_official(
+                stage=stage,
+                commit=commit,
+                condition="RAND21_SELECTIVE",
+                attack_seed=seed,
+                candidate_id=idx,
+                candidate_source="processor_random",
+                candidate_seed=int(cand_seed),
+                official=official,
+                clean_arm_prefix=clean_arm_prefix,
+                processor_linf=float((projected.float() - x.float()).abs().max().cpu()),
+                delta_sha256=tensor_sha256((projected - x).detach().float()),
+                processor_input_sha256=tensor_sha256(projected.detach()),
+                budget_quantized_correction_count=int(corrections),
+                surrogate_target_margin=float(stats.get("target_objective_margin", stats["target_minus_best_competitor_margin"])),
+            )
+        )
+    return rows
+
+
 def run_capture_input(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
     from gripper_attack.libero_v4_env_factory import apply_dummy_wait, build_v4_exact_env
     from libero.libero import benchmark, get_libero_path
@@ -580,6 +788,239 @@ def load_frozen_input(input_dir: Path) -> tuple[np.ndarray, dict[str, Any]]:
     return np.load(raw_path), json.loads(gen_path.read_text(encoding="utf-8"))
 
 
+def mark_and_select_candidates(
+    rows: list[dict[str, Any]],
+    *,
+    arm_gate_min_match_count: int,
+    target_token_id: int,
+) -> dict[str, Any] | None:
+    selected = select_hard_feasible_candidate(
+        rows,
+        arm_gate_min_match_count=arm_gate_min_match_count,
+        target_token_id=target_token_id,
+    )
+    for row in rows:
+        feasible = (
+            int(row.get("arm_prefix_match_count", 0) or 0) >= int(arm_gate_min_match_count)
+            and int(row.get("official_gripper_token", -1) or -1) == int(target_token_id)
+            and str(row.get("score_invariant_status", "")) == "PASS"
+        )
+        row["feasible"] = int(feasible)
+        if selected is not None and row is selected:
+            row["selected"] = 1
+            row["selection_reason"] = "max_official_margin_then_min_linf_then_earliest"
+        elif feasible:
+            row["selection_reason"] = "feasible_not_selected"
+        else:
+            row["selection_reason"] = "not_feasible"
+    return selected
+
+
+def selected_condition_row(
+    *,
+    selected: Mapping[str, Any] | None,
+    stage: str,
+    commit: str,
+    condition: str,
+    attack_seed: int,
+    output_dir: Path,
+) -> dict[str, Any]:
+    if selected is None:
+        return {
+            "stage": stage,
+            "commit": commit,
+            "condition": condition,
+            "attack_seed": int(attack_seed),
+            "selected_candidate_id": "",
+            "condition_result": "NO_FEASIBLE_CANDIDATE",
+            "official_tokens": "",
+            "official_gripper_token": "",
+            "official_target31744_margin": "",
+            "arm_prefix_match_count": "",
+            "arm_prefix_match_denominator": "",
+            "processor_linf": "",
+            "output_dir": str(output_dir),
+        }
+    return {
+        "stage": stage,
+        "commit": commit,
+        "condition": condition,
+        "attack_seed": int(attack_seed),
+        "selected_candidate_id": selected["candidate_id"],
+        "condition_result": "SELECTED_FEASIBLE_CANDIDATE",
+        "official_tokens": selected["official_tokens"],
+        "official_gripper_token": selected["official_gripper_token"],
+        "official_target31744_margin": selected["official_target31744_margin"],
+        "arm_prefix_match_count": selected["arm_prefix_match_count"],
+        "arm_prefix_match_denominator": selected["arm_prefix_match_denominator"],
+        "processor_linf": selected["processor_linf"],
+        "output_dir": str(output_dir),
+    }
+
+
+def run_v4_hard_selection(
+    *,
+    output_dir: Path,
+    cfg: Mapping[str, Any],
+    model: Any,
+    processor: Any,
+    raw_image: np.ndarray,
+    instruction: str,
+    clean_action: np.ndarray,
+    clean_gen: Any,
+    base_inputs: Mapping[str, torch.Tensor],
+    clean_official: Mapping[str, Any],
+    device: str,
+    action_dim: int,
+    seed: int,
+) -> None:
+    commit = git_value(["rev-parse", "HEAD"])
+    stage = str(cfg.get("stage", "M3_STEP78_TRUE_PGD_LOGRATIO_ARM_V4_HARD_FEASIBLE_SELECTION"))
+    target_token_id = int(cfg["attack_optimizer"]["target_token_id"])
+    margin = float(cfg["attack_optimizer"]["gripper_margin"])
+    tolerance = float(cfg["gates"]["score_tie_tolerance"])
+    arm_gate = int(cfg["gates"].get("arm_prefix_min_match_count", cfg["attack_optimizer"].get("arm_gate_min_match_count", 5)))
+    clean_arm_prefix = [int(x) for x in clean_official["arm_prefix"]]
+
+    true_info, _true_final_inputs = run_true_pgd_condition(
+        name="TRUE_PGD_TRAJECTORY21_SELECTIVE",
+        model=model,
+        processor=processor,
+        cfg=cfg,
+        raw_image=raw_image,
+        instruction=instruction,
+        clean_action=clean_action,
+        clean_gen=clean_gen,
+        device=device,
+        seed=seed,
+        gradient_transform="none",
+    )
+    true_debug = true_info["debug"]
+    true_rows = trajectory_candidate_rows_from_debug(
+        model=model,
+        debug=true_debug,
+        stage=stage,
+        commit=commit,
+        condition="TRUE_PGD_TRAJECTORY21_SELECTIVE",
+        attack_seed=seed,
+        action_dim=action_dim,
+        unnorm_key=cfg["model"]["unnorm_key"],
+        target_token_id=target_token_id,
+        margin=margin,
+        tolerance=tolerance,
+        objective=str(cfg["attack_optimizer"]["objective"]),
+        clean_arm_prefix=clean_arm_prefix,
+    )
+    true_selected = mark_and_select_candidates(true_rows, arm_gate_min_match_count=arm_gate, target_token_id=target_token_id)
+
+    rand_rows = run_rand21_official_candidates(
+        model=model,
+        processor=processor,
+        cfg=cfg,
+        base_inputs=base_inputs,
+        device=device,
+        seed=seed,
+        action_dim=action_dim,
+        clean_arm_prefix=clean_arm_prefix,
+        target_token_id=target_token_id,
+        margin=margin,
+        tolerance=tolerance,
+        stage=stage,
+        commit=commit,
+    )
+    rand_selected = mark_and_select_candidates(rand_rows, arm_gate_min_match_count=arm_gate, target_token_id=target_token_id)
+
+    shuffled_info, _shuffled_final_inputs = run_true_pgd_condition(
+        name="SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE",
+        model=model,
+        processor=processor,
+        cfg=cfg,
+        raw_image=raw_image,
+        instruction=instruction,
+        clean_action=clean_action,
+        clean_gen=clean_gen,
+        device=device,
+        seed=seed,
+        gradient_transform=str(cfg["controls"]["shuffled_grad_mode"]),
+    )
+    shuffled_debug = shuffled_info["debug"]
+    shuffled_rows = trajectory_candidate_rows_from_debug(
+        model=model,
+        debug=shuffled_debug,
+        stage=stage,
+        commit=commit,
+        condition="SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE",
+        attack_seed=seed,
+        action_dim=action_dim,
+        unnorm_key=cfg["model"]["unnorm_key"],
+        target_token_id=target_token_id,
+        margin=margin,
+        tolerance=tolerance,
+        objective=str(cfg["attack_optimizer"]["objective"]),
+        clean_arm_prefix=clean_arm_prefix,
+    )
+    shuffled_selected = mark_and_select_candidates(shuffled_rows, arm_gate_min_match_count=arm_gate, target_token_id=target_token_id)
+
+    condition_rows = [
+        selected_condition_row(
+            selected=true_selected,
+            stage=stage,
+            commit=commit,
+            condition="TRUE_PGD_TRAJECTORY21_SELECTIVE",
+            attack_seed=seed,
+            output_dir=output_dir,
+        ),
+        selected_condition_row(
+            selected=rand_selected,
+            stage=stage,
+            commit=commit,
+            condition="RAND21_SELECTIVE",
+            attack_seed=seed,
+            output_dir=output_dir,
+        ),
+        selected_condition_row(
+            selected=shuffled_selected,
+            stage=stage,
+            commit=commit,
+            condition="SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE",
+            attack_seed=seed,
+            output_dir=output_dir,
+        ),
+    ]
+    all_candidates = true_rows + rand_rows + shuffled_rows
+
+    result_class = "UNCLASSIFIED"
+    if true_selected is None:
+        result_class = "NO_FEASIBLE_PGD_CANDIDATE"
+    elif rand_selected is not None and float(true_selected["official_target31744_margin"]) <= float(rand_selected["official_target31744_margin"]):
+        result_class = "RANDOM_NOT_BEATEN"
+    elif shuffled_selected is not None and float(true_selected["official_target31744_margin"]) <= float(shuffled_selected["official_target31744_margin"]):
+        result_class = "SHUFFLED_NOT_BEATEN"
+    else:
+        result_class = "FULL_SELECTIVE_V4_SEED_PASS"
+    for row in condition_rows:
+        row["stage_result"] = result_class
+
+    route_rows = []
+    for condition, debug in [
+        ("TRUE_PGD_TRAJECTORY21_SELECTIVE", true_debug),
+        ("SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE", shuffled_debug),
+    ]:
+        route_rows.append({k: debug.get(k, "") for k in [
+            "requested_method", "resolved_adapter_class", "strict_route", "allow_fallback", "fallback_used",
+            "fallback_reason", "requested_objective", "resolved_objective", "target_token_id",
+            "target_execution_class", "num_backwards", "num_loss_forwards", "num_generation_forwards",
+            "adv_inputs_present", "x_adv_is_none", "action_adv_is_none", "pixel_budget_adv_inputs_linf",
+            "trajectory_candidate_count",
+        ]} | {"stage": stage, "commit": commit, "condition": condition, "attack_seed": seed, "status": "PASS"})
+
+    write_csv(output_dir / "m3_v4_selected_results.csv", condition_rows, list(condition_rows[0].keys()))
+    write_csv(output_dir / "m3_v4_candidate_audit.csv", all_candidates, list(all_candidates[0].keys()))
+    write_csv(output_dir / "m3_v4_route_audit.csv", route_rows, list(route_rows[0].keys()))
+    write_json(output_dir / "m3_v4_debug.json", {"true_pgd": true_debug, "shuffled_grad": shuffled_debug})
+    print(json.dumps({"status": "V4_CANARY_COMPLETE", "result_class": result_class, "output_dir": str(output_dir)}, indent=2))
+
+
 def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *, canary: bool) -> None:
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -668,6 +1109,23 @@ def run_preflight_or_canary(args: argparse.Namespace, cfg: Mapping[str, Any], *,
         return
     if not canary:
         print(json.dumps({"status": "PREFLIGHT_PASS", "clean": clean_preflight, "delta0": delta0_preflight}, indent=2))
+        return
+    if cfg.get("conditions") == V4_CONDITIONS:
+        run_v4_hard_selection(
+            output_dir=output_dir,
+            cfg=cfg,
+            model=model,
+            processor=processor,
+            raw_image=raw_image,
+            instruction=instruction,
+            clean_action=clean_action,
+            clean_gen=clean_gen,
+            base_inputs=base_inputs,
+            clean_official=clean_official,
+            device=device,
+            action_dim=action_dim,
+            seed=seed,
+        )
         return
 
     condition_rows = []
@@ -874,7 +1332,7 @@ def write_manifest(args: argparse.Namespace, cfg: Mapping[str, Any]) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--config", default=str(REPO_ROOT / "configs" / "m3_step78_true_pgd_31744.yaml"))
-    ap.add_argument("--mode", choices=["capture_input", "preflight_zero_step", "canary"], required=True)
+    ap.add_argument("--mode", choices=["capture_input", "preflight_zero_step", "canary", "canary_v4"], required=True)
     ap.add_argument("--output_dir", required=True)
     ap.add_argument("--input_dir", default="")
     ap.add_argument("--attack_seed", type=int, default=80)
@@ -885,8 +1343,8 @@ def main() -> None:
     ap.add_argument("--preflight_tolerance", type=float, default=1e-4)
     args = ap.parse_args()
     cfg = load_config(Path(args.config))
-    if cfg.get("conditions") != MAIN_CONDITIONS:
-        raise SystemExit(f"config conditions must be {MAIN_CONDITIONS}")
+    if cfg.get("conditions") != MAIN_CONDITIONS and cfg.get("conditions") != V4_CONDITIONS:
+        raise SystemExit(f"config conditions must be {MAIN_CONDITIONS} or {V4_CONDITIONS}")
     write_manifest(args, cfg)
     if args.mode == "capture_input":
         run_capture_input(args, cfg)
@@ -894,7 +1352,7 @@ def main() -> None:
         if not args.input_dir:
             raise SystemExit("--input_dir is required for preflight_zero_step")
         run_preflight_or_canary(args, cfg, canary=False)
-    elif args.mode == "canary":
+    elif args.mode in {"canary", "canary_v4"}:
         if not args.input_dir:
             raise SystemExit("--input_dir is required for canary")
         run_preflight_or_canary(args, cfg, canary=True)

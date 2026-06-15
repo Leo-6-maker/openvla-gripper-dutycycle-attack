@@ -565,6 +565,14 @@ def test_true_pgd_logratio_arm_v3_records_combined_arm_penalty():
     assert debug["target_token_arm_preservation_loss_final"] is not None
     assert len(debug["target_token_arm_preservation_loss_trajectory"]) == 1
     assert debug["arm_gate_reference"] == "clean_actual_generation"
+    assert debug["trajectory_candidate_count"] == 2
+    assert len(debug["trajectory_candidate_inputs"]) == 2
+    assert debug["trajectory_candidate_inputs"][0]["candidate_index"] == 0
+    assert debug["trajectory_candidate_inputs"][0]["candidate_source"] == "delta0"
+    assert debug["trajectory_candidate_inputs"][1]["candidate_index"] == 1
+    assert debug["trajectory_candidate_inputs"][1]["candidate_source"] == "pgd_iteration"
+    assert debug["trajectory_candidate_inputs"][0]["delta_sha256"]
+    assert debug["trajectory_candidate_inputs"][1]["processor_input_sha256"]
 
 
 def test_rand20_controls_are_reproducible_and_processor_space():
