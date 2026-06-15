@@ -1,0 +1,45 @@
+seed,row_type,step,arm_prefix,arm_match_count,arm_gate_pass,surrogate_target_margin,official_decode_available,official_gripper_token,official_target_margin,interpretation
+81,initial_surrogate_prefix,0,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,-0.25,False,,,surrogate prefix telemetry only; not an official candidate decode
+81,optimization_surrogate_prefix,1,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,-0.25,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,2,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,2.75,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,3,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,6.75,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,4,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,10.0,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,5,"[31914, 31870, 31932, 31882, 31887, 31848]",2,False,24.25,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,6,"[31914, 31870, 31940, 31891, 31928, 31868]",1,False,38.371665954589844,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,7,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,13.249996185302734,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,8,"[31914, 31870, 31940, 31891, 31928, 31868]",1,False,40.746826171875,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,9,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,15.499988555908203,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,10,"[31914, 31870, 31940, 31891, 31928, 31868]",1,False,41.3722038269043,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,11,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,17.249958038330078,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,12,"[31914, 31870, 31940, 31891, 31928, 31868]",1,False,43.044288635253906,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,13,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,18.749923706054688,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,14,"[31914, 31870, 31940, 31891, 31928, 31868]",1,False,43.86998748779297,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,15,"[31900, 31880, 31932, 31882, 31887, 31940]",2,False,30.249996185302734,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,16,"[31914, 31870, 31940, 31891, 31928, 31868]",1,False,45.346107482910156,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,17,"[31900, 31880, 31932, 31882, 31887, 31940]",2,False,31.624988555908203,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,18,"[31914, 31870, 31940, 31891, 31928, 31868]",1,False,46.37053680419922,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,19,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,20.499820709228516,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,optimization_surrogate_prefix,20,"[31914, 31870, 31940, 31891, 31928, 31868]",1,False,47.045387268066406,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+81,final_official_decode,20,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,21.499736785888672,True,31744,21.499736785888672,only final official decode is available in v3 debug json
+82,initial_surrogate_prefix,0,"[31900, 31870, 31915, 31882, 31891, 31834]",4,False,5.75,False,,,surrogate prefix telemetry only; not an official candidate decode
+82,optimization_surrogate_prefix,1,"[31900, 31870, 31915, 31882, 31891, 31834]",4,False,5.75,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,2,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,1.0,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,3,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,4.75,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,4,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,8.25,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,5,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,11.499996185302734,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,6,"[31914, 31870, 31940, 31891, 31928, 31865]",1,False,33.22427749633789,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,7,"[31914, 31870, 31932, 31882, 31887, 31848]",2,False,25.125,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,8,"[31938, 31878, 31932, 31882, 31977, 31915]",1,False,6.25,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,9,"[31938, 31878, 31932, 31882, 31977, 31915]",1,False,9.75,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,10,"[31938, 31878, 31932, 31882, 31977, 31915]",1,False,13.624998092651367,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,11,"[31938, 31878, 31932, 31882, 31977, 31915]",1,False,17.124984741210938,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,12,"[31938, 31878, 31932, 31882, 31977, 31915]",1,False,19.624914169311523,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,13,"[31938, 31870, 31937, 31882, 31982, 31916]",2,False,27.11077117919922,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,14,"[31938, 31870, 31939, 31882, 31981, 31914]",2,False,13.874982833862305,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,15,"[31938, 31870, 31939, 31882, 31981, 31914]",2,False,17.24993324279785,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,16,"[31938, 31870, 31938, 31882, 31999, 31915]",2,False,27.74893569946289,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,17,"[31938, 31870, 31938, 31882, 31999, 31915]",2,False,30.245515823364258,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,18,"[31938, 31870, 31937, 31882, 31982, 31897]",2,False,31.660324096679688,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,19,"[31938, 31870, 31937, 31882, 31982, 31914]",2,False,29.176210403442383,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,optimization_surrogate_prefix,20,"[31900, 31870, 31915, 31882, 31862, 31913]",6,True,17.249996185302734,False,,,prefix used/logged during optimization; not sufficient for v4 candidate selection
+82,final_official_decode,20,"[31938, 31870, 31937, 31882, 31999, 31916]",2,False,29.937013626098633,True,31744,29.937013626098633,only final official decode is available in v3 debug json
