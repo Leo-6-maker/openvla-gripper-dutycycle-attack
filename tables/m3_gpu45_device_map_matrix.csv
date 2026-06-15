@@ -1,0 +1,3 @@
+profile,cuda_visible_devices,same_process_direct_stable,same_process_generation_stable,same_process_gradient_stable,fresh_direct_stable,fresh_generation_stable,fresh_gradient_stable,classification
+C0_AUTO_DEVICE_MAP,4,5,false,false,false,true,false,false,GPU_ORDER_OR_SHARD_PLACEMENT_SENSITIVE_C0_UNSTABLE
+C2_REVERSED_PHYSICAL_ORDER,5,4,true,true,true,true,true,true,STABLE_DEVELOPMENT_PROFILE
