@@ -573,6 +573,12 @@ def main():
 
     is_reference = (args.mode == "reference")
     episode_dir = Path(args.episode_dir)
+    safe_tag = (
+        f"{args.task}_s{args.state_id}_{args.mode}_attempt{args.attempt_id}"
+    )
+    assert episode_dir.name == safe_tag, (
+        f"FATAL: episode_dir name {episode_dir.name} != safe_tag {safe_tag}"
+    )
 
     # ── Phase 1: Create attempt directory atomically (runner OWNS this) ──
     try:
@@ -586,30 +592,40 @@ def main():
         "mode": args.mode, "attempt_id": args.attempt_id,
     })
 
-    # ── Provenance hard gates (fail before model load if wrong env) ──
+    # ── Provenance hard gates (MANDATORY when expected values provided) ──
     git_head = subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True,
     ).stdout.strip()
+    if not git_head:
+        print("FATAL: Could not determine git HEAD")
+        sys.exit(1)
+
     git_branch = subprocess.run(
         ["git", "branch", "--show-current"], capture_output=True, text=True,
     ).stdout.strip()
-    git_dirty = subprocess.run(
-        ["git", "diff", "--quiet"], capture_output=True,
-    ).returncode != 0
 
-    if args.expected_git_head and git_head != args.expected_git_head:
-        print(f"FATAL: Git HEAD mismatch: got {git_head[:16]}..., "
-              f"expected {args.expected_git_head[:16]}...")
-        sys.exit(1)
-    if args.expected_branch and git_branch != args.expected_branch:
-        print(f"FATAL: Branch mismatch: got {git_branch}, "
-              f"expected {args.expected_branch}")
-        sys.exit(1)
-    if args.require_clean_worktree and git_dirty:
-        print("FATAL: Worktree is dirty")
-        sys.exit(1)
+    # Use git status --porcelain to catch tracked AND untracked changes
+    git_status = subprocess.run(
+        ["git", "status", "--porcelain"], capture_output=True, text=True,
+    ).stdout
+    git_clean = (git_status.strip() == "")
 
-    print(f"Git: HEAD={git_head[:16]}... branch={git_branch} dirty={git_dirty}")
+    if args.expected_git_head:
+        assert git_head == args.expected_git_head, (
+            f"FATAL: Git HEAD mismatch: got {git_head[:16]}..., "
+            f"expected {args.expected_git_head[:16]}..."
+        )
+    if args.expected_branch:
+        assert git_branch == args.expected_branch, (
+            f"FATAL: Branch mismatch: got {git_branch}, "
+            f"expected {args.expected_branch}"
+        )
+    if args.require_clean_worktree:
+        assert git_clean, (
+            f"FATAL: Worktree is not clean. git status --porcelain:\n{git_status[:500]}"
+        )
+
+    print(f"Git: HEAD={git_head[:16]}... branch={git_branch} clean={git_clean}")
 
     # ── Verify checkpoint ──
     actual_ckpt = sha256_file(args.checkpoint)

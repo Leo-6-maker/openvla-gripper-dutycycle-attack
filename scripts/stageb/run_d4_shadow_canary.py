@@ -42,6 +42,11 @@ RENDER_GPU_PHYSICAL = 2  # first visible physical GPU
 CANARY_N = 4
 MAX_RETRIES = 1
 
+# Provenance gates — set by main(), read by run_one_episode()
+_PROVENANCE_HEAD = ""
+_PROVENANCE_BRANCH = ""
+_PROVENANCE_CLEAN = False
+
 
 def sha256_file(path: str) -> str:
     if not os.path.isfile(path): return ""
@@ -58,14 +63,17 @@ def sha256_hex(s: str) -> str:
 # ── GPU management ──
 
 def gpu_uuid_map():
-    """Return {physical_index: uuid} for all GPUs."""
+    """Return {physical_index: uuid} for all GPUs. Returns None on query failure."""
     try:
-        out = subprocess.run(
+        result = subprocess.run(
             ["nvidia-smi", "--query-gpu=index,uuid", "--format=csv,noheader"],
             capture_output=True, text=True, timeout=30,
-        ).stdout.strip()
+        )
+        if result.returncode != 0:
+            return None
+        out = result.stdout.strip()
     except Exception:
-        return {}
+        return None
     m = {}
     for line in out.split("\n"):
         parts = [p.strip() for p in line.split(",")]
@@ -78,17 +86,20 @@ def gpu_uuid_map():
 
 
 def gpu_compute_processes(uuids_of_interest):
-    """Return [(gpu_uuid, pid, process_name)] for processes on given UUIDs."""
+    """Return [(gpu_uuid, pid, process_name)] or None on query failure."""
     if not uuids_of_interest:
         return []
     try:
-        out = subprocess.run(
+        result = subprocess.run(
             ["nvidia-smi", "--query-compute-apps=gpu_uuid,pid,process_name",
              "--format=csv,noheader"],
             capture_output=True, text=True, timeout=30,
-        ).stdout.strip()
+        )
+        if result.returncode != 0:
+            return None
+        out = result.stdout.strip()
     except Exception:
-        return None  # query failure — distinct from empty
+        return None
     if not out:
         return []
     procs = []
@@ -129,6 +140,13 @@ def run_one_episode(task, state_id, mode, attempt_id, output_dir, launcher_dir):
         "--render-gpu-device-id", str(RENDER_GPU_PHYSICAL),
         "--model-gpu-device-id", "-1",
     ]
+    # Pass provenance gates to runner (set by main via closure or globals)
+    if _PROVENANCE_HEAD:
+        cmd.extend(["--expected-git-head", _PROVENANCE_HEAD])
+    if _PROVENANCE_BRANCH:
+        cmd.extend(["--expected-branch", _PROVENANCE_BRANCH])
+    if _PROVENANCE_CLEAN:
+        cmd.append("--require-clean-worktree")
 
     # Save command + env snapshot
     with open(os.path.join(log_dir, "command.txt"), "w") as f:
@@ -234,11 +252,37 @@ def main():
     )
     print(f"Freeze runner SHA: {actual_freeze_sha[:16]}... VERIFIED")
 
-    # Verify current commit
+    # ── Provenance verification ──
     current_head = subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True,
     ).stdout.strip()
-    print(f"Execution HEAD: {current_head[:16]}... (expected freeze commit: {args.expected_freeze_commit[:16]}...)")
+    assert current_head, "FATAL: Could not determine git HEAD"
+
+    current_branch = subprocess.run(
+        ["git", "branch", "--show-current"], capture_output=True, text=True,
+    ).stdout.strip()
+
+    git_status = subprocess.run(
+        ["git", "status", "--porcelain"], capture_output=True, text=True,
+    ).stdout
+    worktree_clean = (git_status.strip() == "")
+    assert worktree_clean, (
+        f"FATAL: Worktree not clean before canary:\n{git_status[:500]}"
+    )
+
+    # Freeze commit verification
+    assert current_head == args.expected_freeze_commit, (
+        f"FATAL: Execution HEAD {current_head[:16]}... != "
+        f"expected freeze commit {args.expected_freeze_commit[:16]}..."
+    )
+    print(f"Execution HEAD: {current_head[:16]}... VERIFIED (matches expected freeze commit)")
+    print(f"Branch: {current_branch}  Worktree: clean")
+
+    # Set provenance globals for runner subprocess
+    global _PROVENANCE_HEAD, _PROVENANCE_BRANCH, _PROVENANCE_CLEAN
+    _PROVENANCE_HEAD = current_head
+    _PROVENANCE_BRANCH = current_branch
+    _PROVENANCE_CLEAN = True
 
     # ── Load and verify canary states ──
     manifest_rows = list(csv.DictReader(open(args.canary_manifest)))
@@ -273,6 +317,9 @@ def main():
     # GPU baseline
     gpu_before = gpu_compute_processes(target_uuids)
     assert gpu_before is not None, "FATAL: GPU query failed before canary"
+    assert len(gpu_before) == 0, (
+        f"FATAL: {len(gpu_before)} pre-existing GPU processes on target GPUs: {gpu_before}"
+    )
     gpu_before_snapshot = os.path.join(str(out), "gpu_processes_before.csv")
     with open(gpu_before_snapshot, "w", newline="") as f:
         w = csv.writer(f)
