@@ -1,0 +1,11 @@
+D4.2b RUN LOG
+checkpoint_sha: cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7326f691742b9a438f1174858
+threshold: 0.236312
+n_traces: 46
+step_mismatches: 0
+feature_mismatches: 0
+max_score_diff: 4.7459679999999995
+emit_mismatches: 0
+skipped: 0
+all_gates_pass: True
+runner_sha: 2279e1e716cbd1062ece979d81bf51f47e0274c171584b23118884b94f66a3ec
