@@ -123,6 +123,10 @@ def dirty_status_value() -> str:
     return "CLEAN" if not status else "DIRTY:" + status.replace("\n", "\\n")
 
 
+def current_branch_value() -> str:
+    return git_value(["rev-parse", "--abbrev-ref", "HEAD"])
+
+
 def require_clean_worktree() -> None:
     dirty = dirty_status_value()
     if dirty != "CLEAN":
@@ -136,19 +140,43 @@ def require_runtime_gates(args: argparse.Namespace, *, config_path: Path, ledger
     expected_ledger_sha = str(getattr(args, "expected_ledger_sha256", "") or "")
     expected_pool_sha = str(getattr(args, "expected_pool_csv_sha256", "") or "")
     expected_cuda = str(getattr(args, "expected_cuda_visible_devices", "") or "")
-    if expected_commit and git_value(["rev-parse", "HEAD"]) != expected_commit:
+    expected_gpu_uuids = str(getattr(args, "expected_gpu_uuids", "") or "")
+    required = {
+        "expected_commit": expected_commit,
+        "expected_branch": expected_branch,
+        "expected_config_sha256": expected_config_sha,
+        "expected_ledger_sha256": expected_ledger_sha,
+        "expected_pool_csv_sha256": expected_pool_sha,
+        "expected_cuda_visible_devices": expected_cuda,
+        "expected_gpu_uuids": expected_gpu_uuids,
+    }
+    missing = [key for key, value in required.items() if not value]
+    if missing:
+        raise RuntimeError("V5_RUNTIME_PROVENANCE_INCOMPLETE:" + ",".join(missing))
+    if git_value(["rev-parse", "HEAD"]) != expected_commit:
         raise RuntimeError("HEAD does not match expected commit")
-    if expected_branch and git_value(["branch", "--show-current"]) != expected_branch:
+    branch = current_branch_value()
+    if not branch or branch == "HEAD":
+        raise RuntimeError("branch is empty or detached HEAD")
+    if branch != expected_branch:
         raise RuntimeError("branch does not match expected branch")
-    if expected_config_sha and sha256_file(config_path) != expected_config_sha:
+    if sha256_file(config_path) != expected_config_sha:
         raise RuntimeError("config sha mismatch")
-    if expected_ledger_sha and sha256_file(ledger_path) != expected_ledger_sha:
+    if sha256_file(ledger_path) != expected_ledger_sha:
         raise RuntimeError("ledger sha mismatch")
-    if expected_pool_sha and sha256_file(pool_csv_path) != expected_pool_sha:
+    if sha256_file(pool_csv_path) != expected_pool_sha:
         raise RuntimeError("state pool CSV sha mismatch")
-    if expected_cuda and os.environ.get("CUDA_VISIBLE_DEVICES", "") != expected_cuda:
+    if os.environ.get("CUDA_VISIBLE_DEVICES", "") != expected_cuda:
         raise RuntimeError("CUDA_VISIBLE_DEVICES mismatch")
-    require_valid_gpu_snapshot(gpu_query_snapshot())
+    gpu_snapshot = gpu_query_snapshot()
+    require_valid_gpu_snapshot(gpu_snapshot)
+    expected_uuid_set = {item.strip() for item in expected_gpu_uuids.split(",") if item.strip()}
+    actual_uuid_set = parse_gpu_uuids(gpu_snapshot)
+    missing_uuids = sorted(expected_uuid_set - actual_uuid_set)
+    if missing_uuids:
+        raise RuntimeError(f"expected GPU UUIDs missing from nvidia-smi snapshot: {missing_uuids}")
+    compute_snapshot = gpu_compute_process_snapshot()
+    require_no_compute_processes(compute_snapshot, expected_uuid_set)
 
 
 def gpu_query_snapshot() -> str:
@@ -166,9 +194,48 @@ def gpu_query_snapshot() -> str:
         return "NVIDIA_SMI_UNAVAILABLE"
 
 
+def gpu_compute_process_snapshot() -> str:
+    try:
+        return subprocess.check_output(
+            [
+                "nvidia-smi",
+                "--query-compute-apps=gpu_uuid,pid,process_name",
+                "--format=csv,noheader",
+            ],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        ).strip() or "NVIDIA_SMI_COMPUTE_EMPTY"
+    except Exception:
+        return "NVIDIA_SMI_COMPUTE_UNAVAILABLE"
+
+
 def require_valid_gpu_snapshot(snapshot: str) -> None:
     if not snapshot or snapshot.startswith("NVIDIA_SMI_"):
         raise RuntimeError(f"invalid GPU query snapshot: {snapshot!r}")
+
+
+def parse_gpu_uuids(snapshot: str) -> set[str]:
+    require_valid_gpu_snapshot(snapshot)
+    uuids: set[str] = set()
+    for line in snapshot.splitlines():
+        parts = [part.strip() for part in line.split(",")]
+        if len(parts) >= 2 and parts[1].startswith("GPU-"):
+            uuids.add(parts[1])
+    return uuids
+
+
+def require_no_compute_processes(snapshot: str, expected_gpu_uuids: set[str]) -> None:
+    if not snapshot or snapshot.startswith("NVIDIA_SMI_COMPUTE_UNAVAILABLE"):
+        raise RuntimeError(f"invalid GPU compute process snapshot: {snapshot!r}")
+    if snapshot.startswith("NVIDIA_SMI_COMPUTE_EMPTY"):
+        return
+    conflicts = []
+    for line in snapshot.splitlines():
+        parts = [part.strip() for part in line.split(",")]
+        if parts and parts[0] in expected_gpu_uuids:
+            conflicts.append(line)
+    if conflicts:
+        raise RuntimeError("target GPU has existing compute process:" + ";".join(conflicts))
 
 
 def write_csv(path: Path, rows: Iterable[Mapping[str, Any]], fieldnames: list[str]) -> None:
@@ -220,6 +287,50 @@ def model_bundle_manifest(model_path: str | Path) -> tuple[list[dict[str, Any]],
         raise ValueError(f"model bundle manifest is empty: {root}")
     bundle_sha = canonical_json_sha256(rows)
     return rows, bundle_sha
+
+
+def _safe_relative_path(value: str) -> Path:
+    if not value or Path(value).is_absolute():
+        raise ValueError(f"unsafe relative path: {value!r}")
+    path = Path(value)
+    if any(part in ("", ".", "..") for part in path.parts):
+        raise ValueError(f"unsafe relative path: {value!r}")
+    return path
+
+
+def load_csv_rows(path: Path) -> list[dict[str, Any]]:
+    with path.open("r", encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def verify_model_bundle_manifest(manifest_path: Path, model_path: str | Path) -> str:
+    rows = load_csv_rows(manifest_path)
+    if not rows:
+        raise ValueError(f"model bundle manifest is empty: {manifest_path}")
+    model_root = Path(model_path)
+    normalized: list[dict[str, Any]] = []
+    for row in rows:
+        rel = str(row.get("relative_path", ""))
+        rel_path = _safe_relative_path(rel)
+        path = model_root / rel_path
+        if not path.exists() or not path.is_file():
+            raise ValueError(f"model bundle file missing: {rel}")
+        try:
+            size = int(row.get("size_bytes", ""))
+        except Exception as exc:
+            raise ValueError(f"invalid model bundle size for {rel}") from exc
+        actual_size = path.stat().st_size
+        if actual_size != size:
+            raise ValueError(f"model bundle size mismatch for {rel}")
+        expected_sha = str(row.get("sha256", ""))
+        if not is_sha256_hex(expected_sha):
+            raise ValueError(f"invalid model bundle sha for {rel}")
+        actual_sha = sha256_file(path)
+        if actual_sha != expected_sha:
+            raise ValueError(f"model bundle sha mismatch for {rel}")
+        normalized.append({"relative_path": rel_path.as_posix(), "size_bytes": size, "sha256": expected_sha})
+    normalized.sort(key=lambda item: str(item["relative_path"]))
+    return canonical_json_sha256(normalized)
 
 
 def load_state_pool_csv(path: Path) -> list[V5StateCandidate]:
@@ -333,6 +444,8 @@ def validate_attempt_ledger_policy(
             if status != "FIRST_ACTION_BEFORE_INFRA_FAILURE" or action_taken:
                 raise ValueError(f"retry not allowed for {task}_s{state_id}")
         if clean_records_dir is not None:
+            for row in attempts:
+                validate_attempt_phase_markers(row, capture_root=clean_records_dir)
             for row in captured:
                 rel = str(row.get("clean_records_path", ""))
                 expected_sha = str(row.get("clean_records_sha256", ""))
@@ -486,6 +599,28 @@ def phase_exists(attempt_dir: Path, phase: str) -> bool:
     return (attempt_dir / f"{phase}.marker").exists()
 
 
+def validate_attempt_phase_markers(row: Mapping[str, Any], *, capture_root: Path) -> None:
+    rel = str(row.get("attempt_dir", ""))
+    if not rel:
+        raise ValueError("attempt_dir missing")
+    attempt_dir = _resolve_capture_path(capture_root, rel)
+    if not attempt_dir.exists() or not attempt_dir.is_dir():
+        raise ValueError(f"attempt_dir missing on disk: {rel}")
+    status = str(row.get("attempt_status", ""))
+    if not phase_exists(attempt_dir, "ATTEMPT_STARTED"):
+        raise ValueError(f"missing ATTEMPT_STARTED marker for {rel}")
+    if status == "CAPTURED":
+        for phase in ("MODEL_READY", "ENV_READY", "FIRST_ACTION_GENERATED", "FIRST_ACTION_TAKEN", "CAPTURE_COMPLETED"):
+            if not phase_exists(attempt_dir, phase):
+                raise ValueError(f"missing {phase} marker for CAPTURED attempt {rel}")
+    elif status == "FIRST_ACTION_BEFORE_INFRA_FAILURE":
+        if phase_exists(attempt_dir, "FIRST_ACTION_GENERATED") or phase_exists(attempt_dir, "FIRST_ACTION_TAKEN"):
+            raise ValueError(f"pre-generation retry marker violation for {rel}")
+    elif status:
+        if phase_exists(attempt_dir, "FIRST_ACTION_TAKEN") is False and str(row.get("first_action_taken", "")).lower() == "true":
+            raise ValueError(f"first_action_taken ledger/marker mismatch for {rel}")
+
+
 def load_clean_records(path: Path) -> list[dict[str, Any]]:
     data = json.loads(path.read_text(encoding="utf-8"))
     if isinstance(data, dict) and "records" in data:
@@ -584,6 +719,7 @@ def verify_selected_rows_exact_bindings(
     expected_model_bundle_sha: str = "",
 ) -> tuple[bool, str]:
     seen_artifacts: set[str] = set()
+    bundle_values: set[str] = set()
     try:
         for row in rows:
             verify_exact_input_binding(
@@ -592,11 +728,16 @@ def verify_selected_rows_exact_bindings(
                 expected_commit=expected_commit,
                 expected_model_bundle_sha=expected_model_bundle_sha,
             )
+            bundle_values.add(str(row.get("model_checkpoint_sha256", "")))
             for key in ("raw_image_path", "processed_tensor_path"):
                 resolved = str(_resolve_capture_path(capture_root, str(row[key])))
                 if resolved in seen_artifacts:
                     return False, f"duplicate selected artifact:{key}:{resolved}"
                 seen_artifacts.add(resolved)
+        if len(bundle_values) > 1:
+            return False, "mixed model bundle sha across selected rows"
+        if expected_model_bundle_sha and bundle_values and bundle_values != {expected_model_bundle_sha}:
+            return False, "selected rows do not match expected model bundle sha"
     except Exception as exc:
         return False, str(exc)
     return True, ""
@@ -751,6 +892,10 @@ def run_offline_select(args: argparse.Namespace) -> None:
         pool=pool,
         clean_records_dir=Path(args.clean_records_dir),
     )
+    model_bundle_sha = verify_model_bundle_manifest(
+        Path(args.clean_records_dir) / "m3_arm_v5_model_bundle_manifest.csv",
+        str(cfg["model"]["path"]),
+    )
     write_provenance_manifest(output_dir, config_path=config_path)
     rows, selected, status = select_events_from_clean_record_dir(
         cfg=cfg,
@@ -809,6 +954,7 @@ def run_offline_select(args: argparse.Namespace) -> None:
             selected_rows,
             capture_root=Path(args.clean_records_dir),
             expected_commit=git_value(["rev-parse", "HEAD"]),
+            expected_model_bundle_sha=model_bundle_sha,
         )
         if not ok:
             status = "V5_EXACT_INPUT_BINDING_INCOMPLETE"
@@ -928,6 +1074,7 @@ def run_clean_capture_for_state(
     render_gpu_device_id: int,
     num_steps_wait: int,
     attempt_dir: Path,
+    attempt_index: int,
     model_bundle_sha: str,
 ) -> tuple[str, str]:
     from gripper_attack.libero_v4_env_factory import apply_dummy_wait, build_v4_exact_env
@@ -946,7 +1093,7 @@ def run_clean_capture_for_state(
         "chocolate_pudding": 8,
         "orange_juice": 9,
     }[candidate.task]
-    state_dir = output_dir / "states" / f"{candidate.task}_s{candidate.state_id}"
+    state_dir = output_dir / "states" / f"{candidate.task}_s{candidate.state_id}" / f"attempt_{int(attempt_index)}"
     state_dir.mkdir(parents=True, exist_ok=True)
     source_json_path = state_dir / f"{candidate.task}_s{candidate.state_id}_clean_records.json"
 
@@ -1037,68 +1184,92 @@ def run_capture_clean_pool(args: argparse.Namespace) -> None:
     write_provenance_manifest(output_dir, config_path=config_path, model_fingerprint=model_fp)
     model_dtype = next(model.parameters()).dtype
     attempts: list[dict[str, Any]] = []
+    attempt_fieldnames = [
+        "task",
+        "state_id",
+        "attempt_index",
+        "attempt_status",
+        "first_action_taken",
+        "attempt_dir",
+        "clean_records_path",
+        "clean_records_sha256",
+        "failure_reason",
+    ]
     for candidate in pool:
-        attempt = {
-            "task": candidate.task,
-            "state_id": candidate.state_id,
-            "attempt_index": 0,
-            "attempt_status": "ATTEMPT_STARTED",
-            "first_action_taken": "false",
-            "clean_records_path": "",
-            "clean_records_sha256": "",
-        }
-        attempt_dir = output_dir / "attempts" / f"{candidate.task}_s{candidate.state_id}" / "attempt_0"
-        mark_phase(attempt_dir, "ATTEMPT_STARTED")
-        try:
-            mark_phase(attempt_dir, "MODEL_READY")
-            rel_path, source_sha = run_clean_capture_for_state(
-                cfg=cfg,
-                candidate=candidate,
-                output_dir=output_dir,
-                model=model,
-                processor=processor,
-                device=device,
-                model_dtype=model_dtype,
-                model_fp=model_fp,
-                max_steps=int(args.max_steps),
-                render_gpu_device_id=int(args.render_gpu_device_id),
-                num_steps_wait=int(args.num_steps_wait),
-                attempt_dir=attempt_dir,
-                model_bundle_sha=model_bundle_sha,
-            )
-            mark_phase(attempt_dir, "CAPTURE_COMPLETED")
-            attempt.update(
-                {
-                    "attempt_status": "CAPTURED",
-                    "first_action_taken": "true",
-                    "clean_records_path": rel_path,
-                    "clean_records_sha256": source_sha,
-                }
-            )
-        except Exception as exc:
-            generated = phase_exists(attempt_dir, "FIRST_ACTION_GENERATED")
-            taken = phase_exists(attempt_dir, "FIRST_ACTION_TAKEN")
-            status = "FIRST_ACTION_BEFORE_INFRA_FAILURE" if not generated and not taken else "CAPTURE_FAILED_POST_ACTION"
-            attempt.update(
-                {
-                    "attempt_status": status,
-                    "first_action_taken": "true" if taken else "false",
-                    "failure_reason": repr(exc),
-                }
-            )
-            attempts.append(attempt)
-            write_csv(
-                output_dir / "m3_arm_v5_capture_attempt_ledger.csv",
-                attempts,
-                ["task", "state_id", "attempt_index", "attempt_status", "first_action_taken", "clean_records_path", "clean_records_sha256", "failure_reason"],
-            )
+        captured = False
+        last_exc: Exception | None = None
+        for attempt_index in range(2):
+            attempt_dir = output_dir / "attempts" / f"{candidate.task}_s{candidate.state_id}" / f"attempt_{attempt_index}"
+            attempt = {
+                "task": candidate.task,
+                "state_id": candidate.state_id,
+                "attempt_index": attempt_index,
+                "attempt_status": "ATTEMPT_STARTED",
+                "first_action_taken": "false",
+                "attempt_dir": str(attempt_dir.relative_to(output_dir)),
+                "clean_records_path": "",
+                "clean_records_sha256": "",
+                "failure_reason": "",
+            }
+            mark_phase(attempt_dir, "ATTEMPT_STARTED")
+            try:
+                mark_phase(attempt_dir, "MODEL_READY")
+                rel_path, source_sha = run_clean_capture_for_state(
+                    cfg=cfg,
+                    candidate=candidate,
+                    output_dir=output_dir,
+                    model=model,
+                    processor=processor,
+                    device=device,
+                    model_dtype=model_dtype,
+                    model_fp=model_fp,
+                    max_steps=int(args.max_steps),
+                    render_gpu_device_id=int(args.render_gpu_device_id),
+                    num_steps_wait=int(args.num_steps_wait),
+                    attempt_dir=attempt_dir,
+                    attempt_index=attempt_index,
+                    model_bundle_sha=model_bundle_sha,
+                )
+                mark_phase(attempt_dir, "CAPTURE_COMPLETED")
+                attempt.update(
+                    {
+                        "attempt_status": "CAPTURED",
+                        "first_action_taken": "true",
+                        "clean_records_path": rel_path,
+                        "clean_records_sha256": source_sha,
+                    }
+                )
+                attempts.append(attempt)
+                captured = True
+                break
+            except Exception as exc:
+                last_exc = exc
+                generated = phase_exists(attempt_dir, "FIRST_ACTION_GENERATED")
+                taken = phase_exists(attempt_dir, "FIRST_ACTION_TAKEN")
+                status = "FIRST_ACTION_BEFORE_INFRA_FAILURE" if not generated and not taken else "CAPTURE_FAILED_POST_ACTION"
+                attempt.update(
+                    {
+                        "attempt_status": status,
+                        "first_action_taken": "true" if taken else "false",
+                        "failure_reason": repr(exc),
+                    }
+                )
+                attempts.append(attempt)
+                if status == "FIRST_ACTION_BEFORE_INFRA_FAILURE" and attempt_index == 0:
+                    continue
+                write_csv(output_dir / "m3_arm_v5_capture_attempt_ledger.csv", attempts, attempt_fieldnames)
+                write_artifact_hash_manifest(output_dir)
+                raise
+        if not captured:
+            write_csv(output_dir / "m3_arm_v5_capture_attempt_ledger.csv", attempts, attempt_fieldnames)
             write_artifact_hash_manifest(output_dir)
-            raise
-        attempts.append(attempt)
+            if last_exc is not None:
+                raise last_exc
+            raise RuntimeError(f"capture failed without exception for {candidate.task}_s{candidate.state_id}")
     write_csv(
         output_dir / "m3_arm_v5_capture_attempt_ledger.csv",
         attempts,
-        ["task", "state_id", "attempt_index", "attempt_status", "first_action_taken", "clean_records_path", "clean_records_sha256", "failure_reason"],
+        attempt_fieldnames,
     )
     validate_attempt_ledger_policy(attempts, pool=pool, clean_records_dir=output_dir)
     write_artifact_hash_manifest(output_dir)
@@ -1121,6 +1292,7 @@ def main() -> None:
     ap.add_argument("--expected_ledger_sha256", default="")
     ap.add_argument("--expected_pool_csv_sha256", default="")
     ap.add_argument("--expected_cuda_visible_devices", default="")
+    ap.add_argument("--expected_gpu_uuids", default="")
     args = ap.parse_args()
     if args.mode == "capture_clean_pool":
         run_capture_clean_pool(args)

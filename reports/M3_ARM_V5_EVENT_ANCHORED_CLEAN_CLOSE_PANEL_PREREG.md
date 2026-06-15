@@ -249,9 +249,42 @@ expected config SHA
 expected ledger SHA
 expected state-pool CSV SHA
 expected CUDA_VISIBLE_DEVICES
+expected GPU UUIDs
+no existing compute process on target GPU UUIDs
 valid nvidia-smi GPU snapshot
 clean worktree
 new output directory
+```
+
+V5.0D makes these runtime gates mandatory for `capture_clean_pool`; omitting any
+expected field is `V5_RUNTIME_PROVENANCE_INCOMPLETE`. Branch detection uses
+`git rev-parse --abbrev-ref HEAD` for old server Git compatibility and rejects
+detached `HEAD`.
+
+Offline event selection must verify the capture-root
+`m3_arm_v5_model_bundle_manifest.csv` against the actual model path, recompute
+the canonical bundle SHA, and require every selected event row to bind that same
+bundle SHA.
+
+An independent auditor entrypoint is required before any V5.1 capture evidence
+can be accepted:
+
+```text
+scripts/stageb/audit_m3_arm_v5_clean_capture.py
+```
+
+The auditor reads existing capture artifacts, validates the 20-state frozen
+pool, attempt ledger, phase markers, model bundle, exact selected-input
+bindings, and writes `m3_arm_v5_clean_capture_audit.json`. It is a post-producer
+artifact audit; it does not run capture or attack code.
+
+The capture retry state machine is fixed at:
+
+```text
+max attempts per state = 2
+attempt 1 allowed only if attempt 0 fails before FIRST_ACTION_GENERATED
+post-generation or post-action failures are terminal
+each attempt writes to a distinct state artifact directory
 ```
 
 ## Phase Separation
