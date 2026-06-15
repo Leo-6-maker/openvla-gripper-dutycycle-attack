@@ -4,6 +4,7 @@ selection:
   hash_salt: M3_ARM_V5_CLOSE_PANEL
   state_id_candidates: "0..49"
   states_per_task: 2
+  prior_layer3_state_ledger: tables/m3_arm_v5_prior_layer3_state_ledger.csv
   excluded_development_states:
     butter: [2]
     cream_cheese: [2]
@@ -14,6 +15,10 @@ selection:
   event_rule: first_clean_close_onset
   panel_size: 8
   insufficient_pool_status: V5_CAPTURE_POOL_INSUFFICIENT
+  first_attack_seed:
+    hash_source: "M3_ARM_V5_CLOSE_PANEL|attack_seed|v5.2|seed1"
+    sha256: "f3bfb8e6ca8b7903349099f6803696697ac382dc65611a437388d0592343793e"
+    seed: 428198
 
 task_state_pool:
   - {task: alphabet_soup, state_id: 9, task_rank: 1, state_hash: "012e54319239c1d79e53ae524619a914ec8a5e77792567f1bc1a583770e1981a"}
@@ -45,7 +50,14 @@ event_selector:
   per_state_event: earliest_qualifying_event
   final_panel_rule: first_8_eligible_states_in_global_state_hash_order
   no_replacement_after_freeze: true
-
+  strict_event_selector:
+    input_records: single_contiguous_clean_trajectory
+    step_order: strictly_increasing_unique
+    current_previous_adjacency: previous_step_must_equal_current_step_minus_1
+    explicit_gripper_token_must_match_tokens_last: true
+    score_invariant_status_required: PASS
+    official_argmax_emitted_consistency_required: true
+    invalid_artifact_status: V5_CLEAN_EVENT_INFRA_INVALID
 attack_method_frozen_for_future_v5_2:
   inherited_from: configs/m3_step78_true_pgd_31744_logratio_arm_v4.yaml
   target_token_id: 31744

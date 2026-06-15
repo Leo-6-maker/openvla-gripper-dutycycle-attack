@@ -34,6 +34,16 @@ cream_cheese: 2
 tomato_sauce: 0
 ```
 
+The exclusion source of truth is:
+
+```text
+tables/m3_arm_v5_prior_layer3_state_ledger.csv
+```
+
+Every row with `used_for_development=1` must be excluded from the state pool.
+The helper tests assert that the frozen 20-state pool contains no prior Layer3
+development state; this is not a narrative-only exclusion.
+
 Each task takes the two smallest hashes:
 
 ```text
@@ -56,8 +66,12 @@ the earliest clean CLOSE onset satisfying:
 
 ```text
 min_step <= step <= max_step
+records are strictly increasing and unique
+current step has adjacent previous row: previous_step == current_step - 1
 exact official action tokens == 7
 score invariant == PASS
+explicit gripper token == tokens[-1]
+official processed-score argmax is emitted token
 current gripper token == 31872
 previous step gripper token != 31872
 ```
@@ -70,6 +84,16 @@ max_step = 279
 ```
 
 Each state contributes at most one event: the earliest qualifying event.
+Invalid clean artifacts are not skipped in search of a later event. Duplicate
+steps, step gaps, invalid previous rows, token-field mismatch, score invariant
+failure, or official argmax/emitted mismatch all produce:
+
+```text
+V5_CLEAN_EVENT_INFRA_INVALID
+```
+
+That state remains invalid for V5.1 and cannot be replaced by a non-frozen
+state.
 
 Forbidden during event selection:
 
@@ -94,6 +118,27 @@ STOP
 
 Once the eight exact inputs are frozen, no replacement is allowed.
 
+The capture-only runner for this phase is:
+
+```text
+scripts/stageb/run_m3_arm_v5_clean_capture.py
+```
+
+It is independent from the PGD/RAND/shuffled runners and does not import attack
+adapter or control modules. The runner must read the frozen 20-state manifest,
+produce at most one clean trajectory per state, preserve invalid/missing states
+in its all-state table, and write a hash manifest for capture/preflight
+artifacts.
+
+Capture attempt policy is fail-closed:
+
+```text
+default: one clean trajectory attempt per frozen state
+only retry allowed: FIRST_ACTION_BEFORE_INFRA_FAILURE with first_action_taken=false
+maximum attempts per state: 2
+all failed attempts preserved in the attempt ledger
+```
+
 ## Phase Separation
 
 ```text
@@ -106,7 +151,7 @@ review
 
 V5.2:
   exact 8 frozen inputs
-  one attack seed
+  first attack seed = 428198
   TRUE/RAND/shuffled
   no LIBERO rollout
 
@@ -133,6 +178,16 @@ V5.2, if later authorized, must keep arm-v4 unchanged:
 
 No objective, epsilon, candidate budget, arm gate, frame count, or aggregate
 threshold tuning is allowed in V5.0.
+
+The first V5.2 attack seed is frozen by:
+
+```text
+SHA256("M3_ARM_V5_CLOSE_PANEL|attack_seed|v5.2|seed1")
+= f3bfb8e6ca8b7903349099f6803696697ac382dc65611a437388d0592343793e
+seed = 428198
+```
+
+Seeds `85` and `86` are reserved for arm-v4 and must not be reused.
 
 ## Aggregate Gate Frozen For Future V5.2
 

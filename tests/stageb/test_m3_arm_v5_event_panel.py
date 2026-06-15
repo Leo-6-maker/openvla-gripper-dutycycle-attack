@@ -5,15 +5,21 @@ from pathlib import Path
 import yaml
 
 from gripper_attack.m3_event_panel import (
+    V5_ATTACK_SEED_HASH,
     V5_EVENT_GRIPPER_TOKEN,
     V5_EXCLUDED_DEVELOPMENT_STATES,
+    V5_FROZEN_ATTACK_SEED,
     V5_HASH_SALT,
     V5_MAX_STEP,
     V5_MIN_STEP,
     V5_TASKS,
+    excluded_states_from_prior_ledger,
     find_first_clean_close_onset,
+    find_first_clean_close_onset_with_status,
+    load_prior_layer3_state_ledger,
     select_first_eligible_events_by_hash,
     select_two_states_per_task,
+    validate_state_pool_against_ledger,
     v5_state_hash,
 )
 
@@ -39,6 +45,9 @@ def test_v5_hash_salt_and_state_pool_are_frozen():
     assert cfg["selection"]["min_step"] == V5_MIN_STEP
     assert cfg["selection"]["max_step"] == V5_MAX_STEP
     assert cfg["selection"]["event_gripper_token"] == V5_EVENT_GRIPPER_TOKEN
+    assert cfg["selection"]["prior_layer3_state_ledger"] == "tables/m3_arm_v5_prior_layer3_state_ledger.csv"
+    assert cfg["selection"]["first_attack_seed"]["seed"] == V5_FROZEN_ATTACK_SEED
+    assert cfg["selection"]["first_attack_seed"]["sha256"] == V5_ATTACK_SEED_HASH
     assert len(cfg["task_state_pool"]) == 20
 
 
@@ -59,6 +68,25 @@ def test_v5_excludes_known_development_states():
     for task, states in V5_EXCLUDED_DEVELOPMENT_STATES.items():
         for state in states:
             assert (task, state) not in selected_by_task
+
+
+def test_v5_exclusions_are_loaded_from_prior_layer3_ledger():
+    ledger = load_prior_layer3_state_ledger("tables/m3_arm_v5_prior_layer3_state_ledger.csv")
+    excluded = excluded_states_from_prior_ledger(ledger)
+    assert excluded == V5_EXCLUDED_DEVELOPMENT_STATES
+    validate_state_pool_against_ledger(select_two_states_per_task(), ledger)
+
+    bad_pool = list(select_two_states_per_task())
+    bad_pool[0] = type(bad_pool[0])(
+        task="tomato_sauce",
+        state_id=0,
+        task_rank=1,
+        state_hash=v5_state_hash("tomato_sauce", 0),
+    )
+    import pytest
+
+    with pytest.raises(ValueError, match="prior Layer3 development state"):
+        validate_state_pool_against_ledger(bad_pool, ledger)
 
 
 def test_v5_state_selection_uses_only_task_state_hash():
@@ -93,12 +121,45 @@ def test_clean_close_event_requires_previous_non_close():
     assert find_first_clean_close_onset(no_onset, task="alphabet_soup", state_id=9) is None
 
 
+def test_clean_close_event_requires_strict_adjacent_unique_steps():
+    duplicate = [_record(10, 31744), _record(10, 31872)]
+    result = find_first_clean_close_onset_with_status(duplicate, task="alphabet_soup", state_id=9)
+    assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
+    assert result.reason == "duplicate_step"
+
+    gap = [_record(10, 31744), _record(12, 31872)]
+    result = find_first_clean_close_onset_with_status(gap, task="alphabet_soup", state_id=9)
+    assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
+    assert result.reason == "step_gap"
+
+    non_increasing = [_record(10, 31744), _record(9, 31872)]
+    result = find_first_clean_close_onset_with_status(non_increasing, task="alphabet_soup", state_id=9)
+    assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
+    assert result.reason == "non_increasing_step"
+
+
+def test_clean_close_event_rejects_token_field_mismatch_and_argmax_mismatch():
+    mismatch = [_record(10, 31744), _record(11, 12345, tokens=[1, 2, 3, 4, 5, 6, 31872])]
+    result = find_first_clean_close_onset_with_status(mismatch, task="milk", state_id=35)
+    assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
+    assert result.reason == "gripper_token_mismatch"
+
+    argmax = [_record(10, 31744), _record(11, 31872)]
+    argmax[1]["score_argmax_token_id"] = 31744
+    result = find_first_clean_close_onset_with_status(argmax, task="milk", state_id=35)
+    assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
+    assert result.reason == "official_argmax_emitted_mismatch"
+
+
 def test_clean_close_event_requires_exact7_and_score_invariant():
     bad_tokens = [_record(10, 31744), _record(11, 31872, tokens=[1, 2, 3])]
     assert find_first_clean_close_onset(bad_tokens, task="milk", state_id=35) is None
 
     bad_invariant = [_record(10, 31744), _record(11, 31872, invariant=False)]
     assert find_first_clean_close_onset(bad_invariant, task="milk", state_id=35) is None
+    result = find_first_clean_close_onset_with_status(bad_invariant, task="milk", state_id=35)
+    assert result.status == "V5_CLEAN_EVENT_INFRA_INVALID"
+    assert result.reason == "score_invariant_not_pass"
 
 
 def test_clean_close_event_uses_earliest_qualifying_event_per_state():
@@ -115,8 +176,7 @@ def test_clean_close_event_uses_earliest_qualifying_event_per_state():
 
 def test_clean_close_event_respects_min_max_step():
     records = [
-        _record(4, 31744),
-        _record(5, 31872),
+        _record(8, 31744),
         _record(9, 31744),
         _record(10, 31872),
     ]
