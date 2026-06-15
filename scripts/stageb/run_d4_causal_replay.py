@@ -148,7 +148,7 @@ def run_causal_replay(candidates_by_trace, model, means, stdevs, impute, device,
             tp_step = next((int(c["candidate_step"]) for c in cands if int(c.get("is_teacher_p", 0)) == 1), -1)
             classification = classify_emission(emit_step, tp_step)
             delay = emit_step - tp_step if emit_step >= 0 and tp_step >= 0 else ""
-            abs_delay = abs(delay) if delay != "" and delay >= 0 else ""
+            abs_delay = abs(delay) if delay != "" else ""
             results.append({
                 "trace_id": tid, "task_key": cands[0]["task_key"], "state_id": cands[0]["state_id"],
                 "n_candidates": len(cands), "teacher_p_step": tp_step,
@@ -168,7 +168,7 @@ def run_baseline_replay(candidates_by_trace, threshold):
         tp_step = next((int(c["candidate_step"]) for c in cands if int(c.get("is_teacher_p", 0)) == 1), -1)
         classification = classify_emission(emit_step, tp_step)
         delay = emit_step - tp_step if emit_step >= 0 and tp_step >= 0 else ""
-        abs_delay = abs(delay) if delay != "" and delay >= 0 else ""
+        abs_delay = abs(delay) if delay != "" else ""
         results.append({
             "trace_id": tid, "task_key": cands[0]["task_key"], "state_id": cands[0]["state_id"],
             "n_candidates": len(cands), "teacher_p_step": tp_step,

@@ -1,5 +1,5 @@
 set,policy,n,exact,early,late,abstain,coverage,cond_exact_rate,cond_abs_delay
-test21,model,21,7,4,0,10,11,0.6364,0.0
+test21,model,21,7,4,0,10,11,0.6364,12.4
 test21,baseline,21,0,0,0,21,0,0,NA
-fresh25,model,25,12,5,0,8,17,0.7059,0.0
+fresh25,model,25,12,5,0,8,17,0.7059,14.2
 fresh25,baseline,25,0,0,0,25,0,0,NA
