@@ -1,0 +1,10 @@
+D4.1 RUN LOG
+checkpoint_sha: cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7326f691742b9a438f1174858
+model_tau: 0.236312
+baseline_tau: inf
+test_traces: 21
+fresh_traces: 25
+fresh_tasks: 9
+test_audit: 1616/1616
+fresh_audit: 2352/2352
+runner_sha: 15dbccfeb2e7bc847554c78ab3f460a92af4f3d9cf76fa13210cca79ad6be8d2
