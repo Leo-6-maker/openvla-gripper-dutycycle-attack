@@ -1,0 +1,8 @@
+claim,status,evidence,allowed_language,forbidden_language
+arm-v4 seed83 fixed-frame selective gate,PASS,TRUE_PGD selected candidate 15 emitted 31744 with arm 6/6 and margin 20.249820709228516 greater than RAND21 0.5 and shuffled 0.0,Seed83 passed the v4 fixed-frame hard feasible selection gate,Do not claim closed-loop or task effect
+arm-v4 seed84 fixed-frame selective gate,PASS,TRUE_PGD selected candidate 16 emitted 31744 with arm 6/6 and margin 17.999996185302734 greater than RAND21 0.25 and shuffled 0.5,Seed84 passed the v4 fixed-frame hard feasible selection gate,Do not claim multi-frame robustness
+fresh-seed v4 replication on Tomato step78 development frame,PASS,Seeds 83 and 84 both passed target arm RAND21 and shuffled-gradient gates,arm-v4 replicated across two fresh PGD random starts on one development frame,Do not claim held-out transfer or general Layer3 success
+RAND21 no feasible candidate,HAS_FEASIBLE_CONTROLS,RAND21 had feasible selected candidates for both seeds,RAND21 controls were explicit and feasible,Do not hide control status
+shuffled21 no feasible candidate,HAS_FEASIBLE_CONTROLS,Shuffled-gradient had feasible selected candidates for both seeds,Shuffled controls were explicit and feasible,Do not hide control status
+LIBERO closed-loop effect,NOT_EVALUATED,No LIBERO rollout was run,None,Do not claim physical gripper disruption or task failure
+multi-frame panel robustness,NOT_EVALUATED,Only Tomato state0 step78 was run,None,Do not claim frame robustness
