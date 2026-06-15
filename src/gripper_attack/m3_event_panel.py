@@ -293,6 +293,15 @@ def _event_artifacts(record: Mapping[str, Any], previous_record: Mapping[str, An
     )
     artifacts = {key: record.get(key, "") for key in keys}
     artifacts["previous_official_score_argmax_token_id"] = "" if previous_record is None else previous_record.get("official_score_argmax_token_id", "")
+    for key in (
+        "raw_image_path",
+        "raw_image_sha256",
+        "processed_tensor_path",
+        "processed_tensor_sha256",
+        "prompt_token_ids",
+        "prompt_token_ids_sha256",
+    ):
+        artifacts[f"previous_{key}"] = "" if previous_record is None else previous_record.get(key, "")
     return artifacts
 
 

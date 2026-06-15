@@ -14,6 +14,7 @@ import csv
 import hashlib
 import json
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -52,6 +53,12 @@ V5_EXACT_INPUT_REQUIRED_FIELDS = (
     "processed_tensor_sha256",
     "prompt_token_ids",
     "prompt_token_ids_sha256",
+    "previous_raw_image_path",
+    "previous_raw_image_sha256",
+    "previous_processed_tensor_path",
+    "previous_processed_tensor_sha256",
+    "previous_prompt_token_ids",
+    "previous_prompt_token_ids_sha256",
     "model_fingerprint",
     "model_checkpoint_sha256",
     "processor_config_sha256",
@@ -68,6 +75,8 @@ V5_EXACT_INPUT_REQUIRED_FIELDS = (
     "previous_official_score_argmax_token_id",
 )
 
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+
 
 def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
@@ -79,6 +88,19 @@ def sha256_file(path: Path) -> str:
 
 def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def tensor_sha256(tensor: torch.Tensor) -> str:
+    arr = tensor.detach().cpu().contiguous().numpy()
+    return hashlib.sha256(arr.tobytes()).hexdigest()
+
+
+def canonical_json_sha256(obj: Any) -> str:
+    return sha256_text(json.dumps(obj, sort_keys=True, separators=(",", ":")))
+
+
+def is_sha256_hex(value: Any) -> bool:
+    return bool(SHA256_RE.match(str(value)))
 
 
 def git_value(args: list[str]) -> str:
@@ -107,6 +129,28 @@ def require_clean_worktree() -> None:
         raise RuntimeError(f"dirty worktree is not allowed for V5 clean capture: {dirty}")
 
 
+def require_runtime_gates(args: argparse.Namespace, *, config_path: Path, ledger_path: Path, pool_csv_path: Path) -> None:
+    expected_commit = str(getattr(args, "expected_commit", "") or "")
+    expected_branch = str(getattr(args, "expected_branch", "") or "")
+    expected_config_sha = str(getattr(args, "expected_config_sha256", "") or "")
+    expected_ledger_sha = str(getattr(args, "expected_ledger_sha256", "") or "")
+    expected_pool_sha = str(getattr(args, "expected_pool_csv_sha256", "") or "")
+    expected_cuda = str(getattr(args, "expected_cuda_visible_devices", "") or "")
+    if expected_commit and git_value(["rev-parse", "HEAD"]) != expected_commit:
+        raise RuntimeError("HEAD does not match expected commit")
+    if expected_branch and git_value(["branch", "--show-current"]) != expected_branch:
+        raise RuntimeError("branch does not match expected branch")
+    if expected_config_sha and sha256_file(config_path) != expected_config_sha:
+        raise RuntimeError("config sha mismatch")
+    if expected_ledger_sha and sha256_file(ledger_path) != expected_ledger_sha:
+        raise RuntimeError("ledger sha mismatch")
+    if expected_pool_sha and sha256_file(pool_csv_path) != expected_pool_sha:
+        raise RuntimeError("state pool CSV sha mismatch")
+    if expected_cuda and os.environ.get("CUDA_VISIBLE_DEVICES", "") != expected_cuda:
+        raise RuntimeError("CUDA_VISIBLE_DEVICES mismatch")
+    require_valid_gpu_snapshot(gpu_query_snapshot())
+
+
 def gpu_query_snapshot() -> str:
     try:
         return subprocess.check_output(
@@ -120,6 +164,11 @@ def gpu_query_snapshot() -> str:
         ).strip() or "NVIDIA_SMI_EMPTY"
     except Exception:
         return "NVIDIA_SMI_UNAVAILABLE"
+
+
+def require_valid_gpu_snapshot(snapshot: str) -> None:
+    if not snapshot or snapshot.startswith("NVIDIA_SMI_"):
+        raise RuntimeError(f"invalid GPU query snapshot: {snapshot!r}")
 
 
 def write_csv(path: Path, rows: Iterable[Mapping[str, Any]], fieldnames: list[str]) -> None:
@@ -136,11 +185,41 @@ def write_json(path: Path, obj: Any) -> None:
     path.write_text(json.dumps(obj, indent=2, sort_keys=True), encoding="utf-8")
 
 
+def read_json(path: Path) -> Any:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def load_config(path: Path) -> dict[str, Any]:
     cfg = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(cfg, dict):
         raise ValueError(f"config must be a mapping: {path}")
     return cfg
+
+
+def model_bundle_manifest(model_path: str | Path) -> tuple[list[dict[str, Any]], str]:
+    root = Path(model_path)
+    include_exact = {
+        "config.json",
+        "generation_config.json",
+        "model.safetensors.index.json",
+        "tokenizer.json",
+        "tokenizer.model",
+        "tokenizer_config.json",
+        "special_tokens_map.json",
+        "preprocessor_config.json",
+    }
+    suffixes = {".safetensors", ".bin", ".py"}
+    rows: list[dict[str, Any]] = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(root).as_posix()
+        if rel in include_exact or path.suffix in suffixes:
+            rows.append({"relative_path": rel, "size_bytes": path.stat().st_size, "sha256": sha256_file(path)})
+    if not rows:
+        raise ValueError(f"model bundle manifest is empty: {root}")
+    bundle_sha = canonical_json_sha256(rows)
+    return rows, bundle_sha
 
 
 def load_state_pool_csv(path: Path) -> list[V5StateCandidate]:
@@ -299,7 +378,7 @@ def write_provenance_manifest(output_dir: Path, *, config_path: Path, model_fing
     write_csv(output_dir / "m3_arm_v5_clean_capture_manifest.csv", [row], list(row.keys()))
 
 
-def model_fingerprint(model: Any) -> str:
+def model_fingerprint(model: Any, *, bundle_sha: str = "") -> str:
     cfg = getattr(model, "config", None)
     payload = {
         "model_type": str(getattr(cfg, "model_type", "")),
@@ -307,6 +386,7 @@ def model_fingerprint(model: Any) -> str:
         "pad_to_multiple_of": int(getattr(cfg, "pad_to_multiple_of", 0) or 0),
         "action_bins": int(getattr(getattr(model, "bin_centers", []), "shape", [0])[0] or 0),
         "norm_stats_keys": sorted(list(getattr(model, "norm_stats", {}).keys())),
+        "model_bundle_sha256": bundle_sha,
     }
     return json.dumps(payload, sort_keys=True)
 
@@ -319,7 +399,7 @@ def load_model(model_path: str, model_gpu_device_id: int = -1):
     except Exception:
         from transformers import AutoModelForVision2Seq as AutoModelCls
 
-    processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True, local_files_only=True, use_fast=True)
+    processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True, local_files_only=True, use_fast=False)
     mm = os.environ.get("OPENVLA_CUDA_MAX_MEMORY", "").strip() or "10000MiB"
     if int(model_gpu_device_id) < 0:
         visible = torch.cuda.device_count()
@@ -368,6 +448,44 @@ def write_artifact_hash_manifest(output_dir: Path) -> None:
     )
 
 
+def prepare_generation_inputs(
+    *,
+    raw: np.ndarray,
+    processor: Any,
+    instruction: str,
+    cfg: Mapping[str, Any],
+    device: str,
+    model_dtype: torch.dtype,
+) -> dict[str, torch.Tensor]:
+    from gripper_attack.openvla_preprocess import prepare_openvla_image
+    from v4_run_eval_openvla import prompt
+
+    prep = dict(cfg.get("preprocess", {}))
+    image = prepare_openvla_image(raw, **prep)
+    inputs = processor(prompt(str(instruction).lower()), image, return_tensors="pt")
+    inputs.pop("attention_mask", None)
+    for key, value in list(inputs.items()):
+        if torch.is_tensor(value):
+            if torch.is_floating_point(value):
+                inputs[key] = value.to(device=device, dtype=model_dtype)
+            else:
+                inputs[key] = value.to(device=device)
+    input_ids = inputs["input_ids"]
+    if not torch.all(input_ids[:, -1] == 29871):
+        suffix = torch.tensor([[29871]], dtype=torch.long, device=input_ids.device)
+        inputs["input_ids"] = torch.cat((input_ids, suffix), dim=1)
+    return {"input_ids": inputs["input_ids"], "pixel_values": inputs["pixel_values"]}
+
+
+def mark_phase(attempt_dir: Path, phase: str) -> None:
+    attempt_dir.mkdir(parents=True, exist_ok=True)
+    (attempt_dir / f"{phase}.marker").write_text(phase, encoding="utf-8")
+
+
+def phase_exists(attempt_dir: Path, phase: str) -> bool:
+    return (attempt_dir / f"{phase}.marker").exists()
+
+
 def load_clean_records(path: Path) -> list[dict[str, Any]]:
     data = json.loads(path.read_text(encoding="utf-8"))
     if isinstance(data, dict) and "records" in data:
@@ -375,6 +493,113 @@ def load_clean_records(path: Path) -> list[dict[str, Any]]:
     if not isinstance(data, list):
         raise ValueError(f"clean records must be a list or contain records list: {path}")
     return [dict(row) for row in data]
+
+
+def _resolve_capture_path(capture_root: Path, value: str) -> Path:
+    path = Path(str(value))
+    if not path.is_absolute():
+        path = capture_root / path
+    resolved_root = capture_root.resolve()
+    resolved_path = path.resolve()
+    try:
+        resolved_path.relative_to(resolved_root)
+    except ValueError as exc:
+        raise ValueError(f"artifact path escapes capture root: {value}") from exc
+    return resolved_path
+
+
+def _verify_path_sha(capture_root: Path, path_value: str, sha_value: str, *, field: str) -> None:
+    if not is_sha256_hex(sha_value):
+        raise ValueError(f"{field} sha is not 64-hex")
+    path = _resolve_capture_path(capture_root, path_value)
+    if not path.exists() or not path.is_file():
+        raise ValueError(f"{field} path missing: {path}")
+    actual = sha256_file(path)
+    if actual != sha_value:
+        raise ValueError(f"{field} sha mismatch: {path}")
+
+
+def captured_record_paths_from_ledger(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    pool: Iterable[V5StateCandidate],
+    capture_root: Path,
+) -> dict[tuple[str, int], Path]:
+    validate_attempt_ledger_policy(rows, pool=pool, clean_records_dir=capture_root)
+    result: dict[tuple[str, int], Path] = {}
+    for row in rows:
+        if str(row.get("attempt_status", "")) != "CAPTURED":
+            continue
+        key = (str(row["task"]), int(row["state_id"]))
+        rel = Path(str(row["clean_records_path"]))
+        path = rel if rel.is_absolute() else capture_root / rel
+        _resolve_capture_path(capture_root, str(path))
+        result[key] = path
+    return result
+
+
+def verify_exact_input_binding(
+    row: Mapping[str, Any],
+    *,
+    capture_root: Path,
+    expected_commit: str = "",
+    expected_model_bundle_sha: str = "",
+) -> None:
+    ok, reason = selected_rows_have_exact_binding([row])
+    if not ok:
+        raise ValueError(reason)
+    for key in V5_EXACT_INPUT_REQUIRED_FIELDS:
+        if key.endswith("_sha256") and not is_sha256_hex(row.get(key, "")):
+            raise ValueError(f"{key} is not 64-hex")
+    for prefix in ("", "previous_"):
+        _verify_path_sha(capture_root, str(row[f"{prefix}raw_image_path"]), str(row[f"{prefix}raw_image_sha256"]), field=f"{prefix}raw_image")
+        _verify_path_sha(capture_root, str(row[f"{prefix}processed_tensor_path"]), str(row[f"{prefix}processed_tensor_sha256"]), field=f"{prefix}processed_tensor")
+        prompt_ids = str(row[f"{prefix}prompt_token_ids"])
+        if sha256_text(prompt_ids) != str(row[f"{prefix}prompt_token_ids_sha256"]):
+            raise ValueError(f"{prefix}prompt_token_ids sha mismatch")
+    _verify_path_sha(capture_root, str(row["clean_record_source_path"]), str(row["clean_record_source_sha256"]), field="clean_record_source")
+    source = read_json(_resolve_capture_path(capture_root, str(row["clean_record_source_path"])))
+    if str(source.get("task")) != str(row["task"]):
+        raise ValueError("source task mismatch")
+    if int(source.get("state_id", -1)) != int(row["state_id"]):
+        raise ValueError("source state mismatch")
+    if int(source.get("step", -1)) != int(row["selected_step"]):
+        raise ValueError("source step mismatch")
+    if str(row["worktree_status"]) != "CLEAN":
+        raise ValueError("worktree_status is not CLEAN")
+    require_valid_gpu_snapshot(str(row["gpu_query"]))
+    if expected_commit and str(row["commit"]) != str(expected_commit):
+        raise ValueError("commit mismatch")
+    if expected_model_bundle_sha and str(row["model_checkpoint_sha256"]) != str(expected_model_bundle_sha):
+        raise ValueError("model bundle sha mismatch")
+    if str(row["model_checkpoint_sha256"]) not in str(row["model_fingerprint"]):
+        raise ValueError("model fingerprint does not include bundle sha")
+
+
+def verify_selected_rows_exact_bindings(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    capture_root: Path,
+    expected_commit: str = "",
+    expected_model_bundle_sha: str = "",
+) -> tuple[bool, str]:
+    seen_artifacts: set[str] = set()
+    try:
+        for row in rows:
+            verify_exact_input_binding(
+                row,
+                capture_root=capture_root,
+                expected_commit=expected_commit,
+                expected_model_bundle_sha=expected_model_bundle_sha,
+            )
+            for key in ("raw_image_path", "processed_tensor_path"):
+                resolved = str(_resolve_capture_path(capture_root, str(row[key])))
+                if resolved in seen_artifacts:
+                    return False, f"duplicate selected artifact:{key}:{resolved}"
+                seen_artifacts.add(resolved)
+    except Exception as exc:
+        return False, str(exc)
+    return True, ""
 
 
 def event_to_row(event: V5CleanCloseEvent, state_hash: str, task_rank: int) -> dict[str, Any]:
@@ -398,6 +623,12 @@ def event_to_row(event: V5CleanCloseEvent, state_hash: str, task_rank: int) -> d
         "processed_tensor_sha256": artifacts.get("processed_tensor_sha256", ""),
         "prompt_token_ids": artifacts.get("prompt_token_ids", ""),
         "prompt_token_ids_sha256": artifacts.get("prompt_token_ids_sha256", ""),
+        "previous_raw_image_path": artifacts.get("previous_raw_image_path", ""),
+        "previous_raw_image_sha256": artifacts.get("previous_raw_image_sha256", ""),
+        "previous_processed_tensor_path": artifacts.get("previous_processed_tensor_path", ""),
+        "previous_processed_tensor_sha256": artifacts.get("previous_processed_tensor_sha256", ""),
+        "previous_prompt_token_ids": artifacts.get("previous_prompt_token_ids", ""),
+        "previous_prompt_token_ids_sha256": artifacts.get("previous_prompt_token_ids_sha256", ""),
         "score_invariant_status": "PASS",
         "official_score_argmax_token_id": artifacts.get("official_score_argmax_token_id", ""),
         "previous_official_score_argmax_token_id": artifacts.get("previous_official_score_argmax_token_id", ""),
@@ -438,6 +669,12 @@ def result_to_row(candidate: V5StateCandidate, result: V5EventSelectionResult) -
         "processed_tensor_sha256": "",
         "prompt_token_ids": "",
         "prompt_token_ids_sha256": "",
+        "previous_raw_image_path": "",
+        "previous_raw_image_sha256": "",
+        "previous_processed_tensor_path": "",
+        "previous_processed_tensor_sha256": "",
+        "previous_prompt_token_ids": "",
+        "previous_prompt_token_ids_sha256": "",
         "score_invariant_status": "",
         "official_score_argmax_token_id": "",
         "previous_official_score_argmax_token_id": "",
@@ -468,8 +705,10 @@ def select_events_from_clean_record_dir(
     *,
     cfg: Mapping[str, Any],
     clean_records_dir: Path,
+    attempt_rows: Iterable[Mapping[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[V5CleanCloseEvent], str]:
     pool = validate_frozen_pool_sources(cfg, config_path=REPO_ROOT / "configs" / "m3_arm_v5_clean_close_event_panel.yaml")
+    captured_paths = captured_record_paths_from_ledger(attempt_rows, pool=pool, capture_root=clean_records_dir)
 
     selection = cfg.get("selection", {})
     min_step = int(selection.get("min_step", 0))
@@ -477,8 +716,8 @@ def select_events_from_clean_record_dir(
     results_by_state: dict[tuple[str, int], V5CleanCloseEvent | None] = {}
     rows: list[dict[str, Any]] = []
     for candidate in pool:
-        path = clean_records_dir / f"{candidate.task}_s{candidate.state_id}_clean_records.json"
-        if not path.exists():
+        path = captured_paths.get((candidate.task, candidate.state_id))
+        if path is None or not path.exists():
             result = V5EventSelectionResult("V5_CLEAN_EVENT_INFRA_INVALID", reason="missing_clean_records_file")
         else:
             result = find_first_clean_close_onset_with_status(
@@ -508,7 +747,7 @@ def run_offline_select(args: argparse.Namespace) -> None:
     if not getattr(args, "attempt_ledger", ""):
         raise SystemExit("--attempt_ledger is required for offline_select")
     validate_attempt_ledger_policy(
-        load_attempt_ledger(Path(args.attempt_ledger)),
+        attempt_rows := load_attempt_ledger(Path(args.attempt_ledger)),
         pool=pool,
         clean_records_dir=Path(args.clean_records_dir),
     )
@@ -516,6 +755,7 @@ def run_offline_select(args: argparse.Namespace) -> None:
     rows, selected, status = select_events_from_clean_record_dir(
         cfg=cfg,
         clean_records_dir=Path(args.clean_records_dir),
+        attempt_rows=attempt_rows,
     )
     fieldnames = [
         "task",
@@ -536,6 +776,12 @@ def run_offline_select(args: argparse.Namespace) -> None:
         "processed_tensor_path",
         "prompt_token_ids",
         "prompt_token_ids_sha256",
+        "previous_raw_image_path",
+        "previous_raw_image_sha256",
+        "previous_processed_tensor_path",
+        "previous_processed_tensor_sha256",
+        "previous_prompt_token_ids",
+        "previous_prompt_token_ids_sha256",
         "score_invariant_status",
         "official_score_argmax_token_id",
         "previous_official_score_argmax_token_id",
@@ -559,7 +805,11 @@ def run_offline_select(args: argparse.Namespace) -> None:
         }
     ]
     if status == "V5_EVENT_PANEL_INPUTS_FROZEN":
-        ok, reason = selected_rows_have_exact_binding(selected_rows)
+        ok, reason = verify_selected_rows_exact_bindings(
+            selected_rows,
+            capture_root=Path(args.clean_records_dir),
+            expected_commit=git_value(["rev-parse", "HEAD"]),
+        )
         if not ok:
             status = "V5_EXACT_INPUT_BINDING_INCOMPLETE"
     write_csv(output_dir / "m3_arm_v5_frozen_event_panel.csv", selected_rows, fieldnames)
@@ -592,18 +842,14 @@ def save_clean_step_artifacts(
     action: np.ndarray,
     gen: Any,
     model: Any,
-    processor: Any,
-    instruction: str,
+    prepared_inputs: Mapping[str, torch.Tensor],
     cfg: Mapping[str, Any],
-    device: str,
-    model_dtype: torch.dtype,
     model_fp: str,
+    model_bundle_sha: str,
     init_state_sha: str,
     source_json_path: Path,
 ) -> dict[str, Any]:
-    from gripper_attack.openvla_preprocess import prepare_openvla_image
     from gripper_attack.v3_generation_parity import extract_exact_new_tokens
-    from v4_run_eval_openvla import prompt
 
     step_dir = state_dir / f"step_{int(step):04d}"
     step_dir.mkdir(parents=True, exist_ok=True)
@@ -612,17 +858,22 @@ def save_clean_step_artifacts(
     np.save(raw_npy, raw)
     Image.fromarray(np.asarray(raw).astype(np.uint8)).save(raw_png)
 
-    prep = dict(cfg.get("preprocess", {}))
-    image = prepare_openvla_image(raw, **prep)
-    inputs = processor(prompt(str(instruction).lower()), image, return_tensors="pt")
-    input_ids = inputs["input_ids"]
-    pixel_values = inputs["pixel_values"].to(dtype=model_dtype)
+    input_ids = prepared_inputs["input_ids"].detach().cpu()
+    pixel_values = prepared_inputs["pixel_values"].detach().cpu()
+    gen_prompt_ids = getattr(gen, "prompt_input_ids", None)
+    gen_prompt_len = int(getattr(gen, "prompt_len", int(input_ids.shape[1])))
+    if gen_prompt_ids is None:
+        raise RuntimeError("generation missing prompt_input_ids")
+    if not torch.equal(input_ids.cpu(), gen_prompt_ids.cpu()):
+        raise RuntimeError("saved input_ids do not match generation prompt_input_ids")
+    if gen_prompt_len != int(input_ids.shape[1]):
+        raise RuntimeError("saved input_ids length does not match generation prompt_len")
     tensor_path = step_dir / "processor_inputs.pt"
     torch.save({"input_ids": input_ids.cpu(), "pixel_values": pixel_values.cpu()}, tensor_path)
     prompt_token_ids = [int(x) for x in input_ids[0].detach().cpu().tolist()]
     prompt_ids_text = json.dumps(prompt_token_ids, separators=(",", ":"))
 
-    tokens = extract_exact_new_tokens(gen.sequences, prompt_len=int(input_ids.shape[1]), expected_new_tokens=int(model.get_action_dim(cfg["model"]["unnorm_key"])))
+    tokens = extract_exact_new_tokens(gen.sequences, prompt_len=gen_prompt_len, expected_new_tokens=int(model.get_action_dim(cfg["model"]["unnorm_key"])))
     score_row = gen.scores[-1][0].detach().float().cpu()
     argmax = int(score_row.argmax().item())
     gripper_token = int(tokens[-1])
@@ -644,9 +895,9 @@ def save_clean_step_artifacts(
         "prompt_token_ids": prompt_ids_text,
         "prompt_token_ids_sha256": sha256_text(prompt_ids_text),
         "model_fingerprint": model_fp,
-        "model_checkpoint_sha256": hash_path_if_exists(Path(str(cfg["model"]["path"])) / "config.json"),
+        "model_checkpoint_sha256": model_bundle_sha,
         "processor_config_sha256": hash_path_if_exists(Path(str(cfg["model"]["path"])) / "preprocessor_config.json"),
-        "preprocess_config_sha256": sha256_text(json.dumps(prep, sort_keys=True)),
+        "preprocess_config_sha256": sha256_text(json.dumps(dict(cfg.get("preprocess", {})), sort_keys=True)),
         "task_state_init_sha256": init_state_sha,
         "runner_sha256": sha256_file(Path(__file__).resolve()),
         "config_sha256": sha256_file(Path(str(cfg["_config_path"]))),
@@ -676,10 +927,12 @@ def run_clean_capture_for_state(
     max_steps: int,
     render_gpu_device_id: int,
     num_steps_wait: int,
+    attempt_dir: Path,
+    model_bundle_sha: str,
 ) -> tuple[str, str]:
     from gripper_attack.libero_v4_env_factory import apply_dummy_wait, build_v4_exact_env
     from libero.libero import benchmark, get_libero_path
-    from v4_run_eval_openvla import decode_with_scores, postprocess_openvla_action_for_libero
+    from v4_run_eval_openvla import decode_prepared_inputs_with_scores, postprocess_openvla_action_for_libero
 
     task_idx = {
         "alphabet_soup": 0,
@@ -705,6 +958,7 @@ def run_clean_capture_for_state(
     init_state_sha = sha256_text(np.asarray(init_state).tobytes().hex())
     bddl_file = os.path.join(get_libero_path("bddl_files"), task_obj.problem_folder, task_obj.bddl_file)
     env, obs = build_v4_exact_env(bddl_file, int(render_gpu_device_id), int(max_steps), int(num_steps_wait))
+    mark_phase(attempt_dir, "ENV_READY")
     try:
         obs = env.set_init_state(init_state)
         env, obs = apply_dummy_wait(env, obs, int(num_steps_wait))
@@ -712,19 +966,23 @@ def run_clean_capture_for_state(
         records: list[dict[str, Any]] = []
         for step in range(int(max_steps)):
             raw = np.asarray(obs["agentview_image"]).copy()
-            action, _scores, _dt, gen = decode_with_scores(
+            prepared_inputs = prepare_generation_inputs(
+                raw=raw,
+                processor=processor,
+                instruction=instruction,
+                cfg=cfg,
+                device=device,
+                model_dtype=model_dtype,
+            )
+            action, _scores, _dt, gen = decode_prepared_inputs_with_scores(
                 model,
-                processor,
                 device,
-                raw,
-                instruction,
+                prepared_inputs,
                 cfg["model"]["unnorm_key"],
                 8,
-                libero_official_preprocess=bool(cfg["preprocess"]["libero_official_preprocess"]),
-                center_crop=bool(cfg["preprocess"]["center_crop"]),
-                resize_size=int(cfg["preprocess"]["resize_size"]),
-                libero_preprocess_backend=str(cfg["preprocess"]["libero_preprocess_backend"]),
             )
+            if step == 0:
+                mark_phase(attempt_dir, "FIRST_ACTION_GENERATED")
             records.append(
                 save_clean_step_artifacts(
                     state_dir=state_dir,
@@ -735,16 +993,16 @@ def run_clean_capture_for_state(
                     action=np.asarray(action, dtype=np.float32),
                     gen=gen,
                     model=model,
-                    processor=processor,
-                    instruction=instruction,
+                    prepared_inputs=prepared_inputs,
                     cfg=cfg,
-                    device=device,
-                    model_dtype=model_dtype,
                     model_fp=model_fp,
+                    model_bundle_sha=model_bundle_sha,
                     init_state_sha=init_state_sha,
                     source_json_path=source_json_path,
                 )
             )
+            if step == 0:
+                mark_phase(attempt_dir, "FIRST_ACTION_TAKEN")
             obs, _reward, done, _info = env.step(postprocess_openvla_action_for_libero(action, enabled=True))
             if done:
                 break
@@ -761,10 +1019,21 @@ def run_capture_clean_pool(args: argparse.Namespace) -> None:
     config_path = Path(args.config)
     cfg = load_config(config_path)
     cfg["_config_path"] = str(config_path)
+    ledger_path = Path(str(cfg["selection"]["prior_layer3_state_ledger"]))
+    if not ledger_path.is_absolute():
+        ledger_path = REPO_ROOT / ledger_path
+    pool_csv_path = REPO_ROOT / "tables" / "m3_arm_v5_preregistered_state_pool.csv"
+    require_runtime_gates(args, config_path=config_path, ledger_path=ledger_path, pool_csv_path=pool_csv_path)
     pool = validate_frozen_pool_sources(cfg, config_path=config_path)
     write_provenance_manifest(output_dir, config_path=config_path, model_fingerprint="PENDING_MODEL_LOAD")
+    bundle_manifest, model_bundle_sha = model_bundle_manifest(cfg["model"]["path"])
+    write_csv(
+        output_dir / "m3_arm_v5_model_bundle_manifest.csv",
+        bundle_manifest,
+        ["relative_path", "size_bytes", "sha256"],
+    )
     model, processor, device = load_model(cfg["model"]["path"], int(args.model_gpu_device_id))
-    model_fp = model_fingerprint(model)
+    model_fp = model_fingerprint(model, bundle_sha=model_bundle_sha)
     write_provenance_manifest(output_dir, config_path=config_path, model_fingerprint=model_fp)
     model_dtype = next(model.parameters()).dtype
     attempts: list[dict[str, Any]] = []
@@ -778,7 +1047,10 @@ def run_capture_clean_pool(args: argparse.Namespace) -> None:
             "clean_records_path": "",
             "clean_records_sha256": "",
         }
+        attempt_dir = output_dir / "attempts" / f"{candidate.task}_s{candidate.state_id}" / "attempt_0"
+        mark_phase(attempt_dir, "ATTEMPT_STARTED")
         try:
+            mark_phase(attempt_dir, "MODEL_READY")
             rel_path, source_sha = run_clean_capture_for_state(
                 cfg=cfg,
                 candidate=candidate,
@@ -791,7 +1063,10 @@ def run_capture_clean_pool(args: argparse.Namespace) -> None:
                 max_steps=int(args.max_steps),
                 render_gpu_device_id=int(args.render_gpu_device_id),
                 num_steps_wait=int(args.num_steps_wait),
+                attempt_dir=attempt_dir,
+                model_bundle_sha=model_bundle_sha,
             )
+            mark_phase(attempt_dir, "CAPTURE_COMPLETED")
             attempt.update(
                 {
                     "attempt_status": "CAPTURED",
@@ -801,9 +1076,13 @@ def run_capture_clean_pool(args: argparse.Namespace) -> None:
                 }
             )
         except Exception as exc:
+            generated = phase_exists(attempt_dir, "FIRST_ACTION_GENERATED")
+            taken = phase_exists(attempt_dir, "FIRST_ACTION_TAKEN")
+            status = "FIRST_ACTION_BEFORE_INFRA_FAILURE" if not generated and not taken else "CAPTURE_FAILED_POST_ACTION"
             attempt.update(
                 {
-                    "attempt_status": "CAPTURE_FAILED",
+                    "attempt_status": status,
+                    "first_action_taken": "true" if taken else "false",
                     "failure_reason": repr(exc),
                 }
             )
@@ -836,6 +1115,12 @@ def main() -> None:
     ap.add_argument("--render_gpu_device_id", type=int, default=0)
     ap.add_argument("--max_steps", type=int, default=280)
     ap.add_argument("--num_steps_wait", type=int, default=10)
+    ap.add_argument("--expected_commit", default="")
+    ap.add_argument("--expected_branch", default="")
+    ap.add_argument("--expected_config_sha256", default="")
+    ap.add_argument("--expected_ledger_sha256", default="")
+    ap.add_argument("--expected_pool_csv_sha256", default="")
+    ap.add_argument("--expected_cuda_visible_devices", default="")
     args = ap.parse_args()
     if args.mode == "capture_clean_pool":
         run_capture_clean_pool(args)

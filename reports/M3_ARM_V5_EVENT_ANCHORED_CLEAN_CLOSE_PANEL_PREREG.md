@@ -185,6 +185,38 @@ If any selected field is blank, V5.1 must stop with:
 V5_EXACT_INPUT_BINDING_INCOMPLETE
 ```
 
+V5.0C further requires exact capture provenance, not just non-empty fields:
+
+```text
+prepared inputs are constructed once before generation
+attention_mask is dropped before generation
+prompt suffix 29871 is appended before generation when needed
+processor_inputs.pt stores the exact input_ids and pixel_values sent to generate
+gen.prompt_input_ids must equal the saved input_ids
+gen.prompt_len must equal the saved input length
+exact new action tokens are sliced with gen.prompt_len
+processor uses the official V4 setting use_fast=false
+```
+
+Offline selection must be attempt-ledger driven:
+
+```text
+state -> final legal attempt -> CAPTURED -> clean_records_path -> SHA256
+```
+
+It must not guess filenames or select stale JSON files outside the final
+captured attempt.
+
+Model binding uses a deterministic bundle manifest over config, generation
+config, tokenizer/preprocessor files, remote-code Python files, and all model
+weight shards. `model_checkpoint_sha256` is the canonical manifest SHA, not a
+single `config.json` hash.
+
+The exact-input auditor recomputes raw/tensor/source file SHA256 values,
+verifies prompt-token SHA, rejects path escape, checks current/previous event
+artifacts, requires `worktree_status=CLEAN`, requires a valid `nvidia-smi`
+snapshot, and rejects duplicate selected raw/tensor artifacts.
+
 Capture attempt policy is fail-closed:
 
 ```text
@@ -192,6 +224,34 @@ default: one clean trajectory attempt per frozen state
 only retry allowed: FIRST_ACTION_BEFORE_INFRA_FAILURE with first_action_taken=false
 maximum attempts per state: 2
 all failed attempts preserved in the attempt ledger
+```
+
+The capture runner uses phase markers:
+
+```text
+ATTEMPT_STARTED
+MODEL_READY
+ENV_READY
+FIRST_ACTION_GENERATED
+FIRST_ACTION_TAKEN
+CAPTURE_COMPLETED
+```
+
+Any crash after `FIRST_ACTION_TAKEN` is a post-action failure and cannot be
+automatically retried.
+
+Runtime gates are fail-closed when supplied:
+
+```text
+expected commit
+expected branch
+expected config SHA
+expected ledger SHA
+expected state-pool CSV SHA
+expected CUDA_VISIBLE_DEVICES
+valid nvidia-smi GPU snapshot
+clean worktree
+new output directory
 ```
 
 ## Phase Separation
