@@ -1,0 +1,39 @@
+Input-402: 402 rows, 402 unique keys (internal dups=0)
+Fresh-98: 98 collected rows, 98 unique keys (internal dups=0)
+Merged inventory: 402 + 98 = 500
+  alphabet_soup: 50 states [0-49] OK
+  bbq_sauce: 50 states [0-49] OK
+  butter: 50 states [0-49] OK
+  chocolate_pudding: 50 states [0-49] OK
+  cream_cheese: 50 states [0-49] OK
+  ketchup: 50 states [0-49] OK
+  milk: 50 states [0-49] OK
+  orange_juice: 50 states [0-49] OK
+  salad_dressing: 50 states [0-49] OK
+  tomato_sauce: 50 states [0-49] OK
+D1b exclusions: val=20 (unique=20), test=21 (unique=21), overlap=0
+D2 fresh25 exclusions: 25
+Invalid infrastructure exclusions: 0
+Excluded (unique keys): 66
+Eligible for shadow selection: 434 task-states
+
+Canary (4):
+  milk_s23  hash=00c0519964dc882a...  source=historical_402
+  salad_dressing_s19  hash=0181ca71c22d73ce...  source=historical_402
+  bbq_sauce_s36  hash=01d05e76287fcba1...  source=historical_402
+  tomato_sauce_s6  hash=01ea480edc739c1c...  source=d2_fresh_98
+
+Panel (30):
+  alphabet_soup: 3 states — s34, s11, s7
+  bbq_sauce: 3 states — s31, s48, s2
+  butter: 3 states — s31, s9, s49
+  chocolate_pudding: 3 states — s7, s27, s15
+  cream_cheese: 3 states — s17, s12, s30
+  ketchup: 3 states — s8, s16, s29
+  milk: 3 states — s18, s0, s1
+  orange_juice: 3 states — s15, s17, s48
+  salad_dressing: 3 states — s9, s18, s12
+  tomato_sauce: 3 states — s16, s8, s5
+
+Output: tables/d4_shadow_freeze_v1
+DONE — commit before GPU rollout.
