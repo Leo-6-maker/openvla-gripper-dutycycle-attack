@@ -224,6 +224,8 @@ def main():
     ap.add_argument("--expected-freeze-runner-sha256", required=True)
     ap.add_argument("--expected-freeze-commit", required=True,
                     help="Exact 40-char commit that produced the manifest")
+    ap.add_argument("--expected-branch", required=True,
+                    help="Expected git branch (e.g. exp/l12-production-streaming-adapter-20260615)")
     ap.add_argument("--output-dir", required=True)
     args = ap.parse_args()
 
@@ -268,6 +270,11 @@ def main():
     worktree_clean = (git_status.strip() == "")
     assert worktree_clean, (
         f"FATAL: Worktree not clean before canary:\n{git_status[:500]}"
+    )
+
+    assert current_branch == args.expected_branch, (
+        f"FATAL: Branch mismatch: got {current_branch}, "
+        f"expected {args.expected_branch}"
     )
 
     # Freeze commit verification

@@ -480,9 +480,10 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
     git_head = subprocess.run(
         ["git", "rev-parse", "HEAD"], capture_output=True, text=True,
     ).stdout.strip() or "unknown"
-    git_dirty = subprocess.run(
-        ["git", "diff", "--quiet"], capture_output=True,
-    ).returncode != 0
+    git_status_out = subprocess.run(
+        ["git", "status", "--porcelain"], capture_output=True, text=True,
+    ).stdout
+    git_clean = (git_status_out.strip() == "")
     nvidia_smi = subprocess.run(
         ["nvidia-smi", "--query-gpu=index,uuid,name", "--format=csv,noheader"],
         capture_output=True, text=True,
@@ -492,7 +493,7 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
         w = csv.writer(f)
         w.writerow(["key", "value"])
         w.writerow(["git_HEAD", git_head])
-        w.writerow(["git_dirty", str(git_dirty)])
+        w.writerow(["git_clean", str(git_clean)])
         w.writerow(["branch", subprocess.run(
             ["git", "branch", "--show-current"], capture_output=True, text=True,
         ).stdout.strip()])

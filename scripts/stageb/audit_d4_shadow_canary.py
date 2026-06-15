@@ -1,26 +1,26 @@
 #!/usr/bin/env python3
 """D4.3a: Independent post-hoc canary auditor.
 
-Reads RAW episode artifacts AND launcher logs from canary output directory.
-Recomputes all hard gates independently. Does NOT trust canary_result.json.
+Reads RAW episode artifacts AND launcher logs. Recomputes all hard gates
+independently. Does NOT trust canary_result.json.
 
-Layout (A4+):
+Layout:
   <canary_root>/
     launcher_logs/<safe_tag>/
       command.txt  environment_snapshot.json  stdout.log  stderr.log
       returncode.json  launcher_artifact_hashes.csv
     <safe_tag>/
-      ATTEMPT_STARTED.json  MODEL_LOADED.json  FIRST_ACTION_GENERATED.json
-      step_trace.csv  detector_candidates.csv  detector_emission.json
-      action_identity.csv  latency.csv  provenance.csv
-      episode_manifest.json  artifact_hashes.csv  teacher_sidecar.json
+      ATTEMPT_STARTED.json  [MODEL_LOADED.json]  [FIRST_ACTION_GENERATED.json]
+      [step_trace.csv  detector_candidates.csv  ...]
 
-Audits ALL attempts per (task, state_id, mode). Fails on:
-  - duplicate successful attempts
-  - attempt2 after FIRST_ACTION_GENERATED in attempt1
-  - any missing required artifact (episode OR launcher)
-  - reference/shadow sequence mismatch
-  - reset/invalid-field/abstain-emission/latency/GPU gates
+Two-tier artifact contract:
+  Pre-action failed attempt:
+    launcher logs complete, ATTEMPT_STARTED.json
+    NO FIRST_ACTION_GENERATED.json
+    returncode != 0
+
+  Successful attempt:
+    all phase markers, all episode artifacts, returncode == 0
 """
 
 import argparse
@@ -28,21 +28,43 @@ import csv
 import hashlib
 import json
 import os
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
 
-REQUIRED_EPISODE_ARTIFACTS = [
+# Files required in EVERY attempt (even pre-action failure)
+REQUIRED_LAUNCHER_FILES = [
+    "command.txt", "environment_snapshot.json", "stdout.log", "stderr.log",
+    "returncode.json", "launcher_artifact_hashes.csv",
+]
+
+# Files required in a SUCCESSFUL attempt
+REQUIRED_EPISODE_FILES = [
     "ATTEMPT_STARTED.json", "MODEL_LOADED.json", "FIRST_ACTION_GENERATED.json",
     "step_trace.csv", "detector_candidates.csv", "detector_emission.json",
     "action_identity.csv", "latency.csv", "provenance.csv",
     "episode_manifest.json", "artifact_hashes.csv", "teacher_sidecar.json",
 ]
 
-REQUIRED_LAUNCHER_ARTIFACTS = [
-    "command.txt", "environment_snapshot.json", "stdout.log", "stderr.log",
-    "returncode.json", "launcher_artifact_hashes.csv",
+# Files that must appear in artifact_hashes.csv (excludes the hash manifest itself)
+HASHED_EPISODE_FILES = [
+    "ATTEMPT_STARTED.json", "MODEL_LOADED.json", "FIRST_ACTION_GENERATED.json",
+    "step_trace.csv", "detector_candidates.csv", "detector_emission.json",
+    "action_identity.csv", "latency.csv", "provenance.csv",
+    "episode_manifest.json", "teacher_sidecar.json",
 ]
+
+# Launcher files that must appear in launcher_artifact_hashes.csv
+HASHED_LAUNCHER_FILES = [
+    "command.txt", "environment_snapshot.json", "stdout.log", "stderr.log",
+    "returncode.json",
+]
+
+SAFE_TAG_RE = re.compile(
+    r"^(?P<task>.+)_s(?P<state_id>\d+)_"
+    r"(?P<mode>reference|shadow)_attempt(?P<attempt_id>[12])$"
+)
 
 
 def sha256_file(path: str) -> str:
@@ -63,49 +85,44 @@ def load_csv(path):
     with open(path) as f: return list(csv.DictReader(f))
 
 
-def find_safe_tags(canary_root):
-    """Discover all safe_tags by scanning launcher_logs/ and episode dirs."""
-    root = Path(canary_root)
-    tags = set()
-    launcher_dir = root / "launcher_logs"
-    if launcher_dir.is_dir():
-        for d in launcher_dir.iterdir():
-            if d.is_dir():
-                tags.add(d.name)
-    for d in root.iterdir():
-        if d.is_dir() and d.name != "launcher_logs" and "attempt" in d.name:
-            tags.add(d.name)
-    return sorted(tags)
+def parse_safe_tag(tag, valid_keys):
+    """Parse safe_tag name. Returns dict or None."""
+    m = SAFE_TAG_RE.match(tag)
+    if not m:
+        return None
+    task = m.group("task")
+    state_id = int(m.group("state_id"))
+    mode = m.group("mode")
+    attempt_id = int(m.group("attempt_id"))
+
+    # Must be in frozen canary manifest
+    if (task, state_id) not in valid_keys:
+        return None
+
+    return {
+        "task": task, "state_id": state_id, "mode": mode,
+        "attempt_id": attempt_id, "safe_tag": tag,
+    }
 
 
-def parse_attempt_info(safe_tag):
-    """Parse task, state_id, mode, attempt_id from safe_tag name."""
-    # Format: <task>_s<state_id>_<mode>_attempt<attempt_id>
-    parts = safe_tag.split("_")
-    # Find the mode separator
-    mode_idx = None
-    for i, p in enumerate(parts):
-        if p in ("reference", "shadow"):
-            mode_idx = i
-            break
-    if mode_idx is None:
-        return None
-    task = "_".join(parts[:mode_idx-1])  # everything before _s<state_id>
-    # Actually, task names have underscores (e.g., "alphabet_soup")
-    # Find "_s" pattern
-    s_idx = None
-    for i, p in enumerate(parts):
-        if p == "s" and i > 0 and parts[i+1].isdigit():
-            s_idx = i
-            break
-    if s_idx is None:
-        return None
-    task = "_".join(parts[:s_idx])
-    state_id = int(parts[s_idx + 1])
-    mode = parts[mode_idx]
-    attempt_id = int(parts[-1]) if parts[-1].isdigit() else 1
-    return {"task": task, "state_id": state_id, "mode": mode,
-            "attempt_id": attempt_id, "safe_tag": safe_tag}
+def is_successful_attempt(ep_dir, ll_dir):
+    """Check if an attempt completed successfully."""
+    rc_json = load_json(ll_dir / "returncode.json")
+    ep_manifest = load_json(ep_dir / "episode_manifest.json")
+    if rc_json is None:
+        return False
+    if rc_json.get("returncode", -1) != 0:
+        return False
+    if ep_manifest and ep_manifest.get("fatal"):
+        return False
+    # Must have FIRST_ACTION_GENERATED
+    if not (ep_dir / "FIRST_ACTION_GENERATED.json").exists():
+        return False
+    return True
+
+
+def has_first_action_generated(ep_dir):
+    return (ep_dir / "FIRST_ACTION_GENERATED.json").exists()
 
 
 def main():
@@ -123,126 +140,189 @@ def main():
     print(f"Manifest SHA: {manifest_sha[:16]}... VERIFIED")
 
     canary_rows = [r for r in load_csv(args.canary_manifest) if r["subset"] == "canary"]
-    expected_keys = {(r["task_key"], int(r["state_id"])) for r in canary_rows}
-    assert len(expected_keys) == 4, f"FATAL: expected 4 canary states"
+    valid_keys = {(r["task_key"], int(r["state_id"])) for r in canary_rows}
+    assert len(valid_keys) == 4, f"FATAL: expected 4 canary states, got {len(valid_keys)}"
 
     launcher_dir = out / "launcher_logs"
     gates = []
     all_pass = True
 
-    # ── Discover all attempts ──
-    all_tags = find_safe_tags(str(out))
-    print(f"Found {len(all_tags)} safe_tags: {all_tags}")
+    # ── Discover all safe_tags ──
+    all_tags = set()
+    if launcher_dir.is_dir():
+        for d in launcher_dir.iterdir():
+            if d.is_dir():
+                all_tags.add(d.name)
+    for d in out.iterdir():
+        if d.is_dir() and d.name != "launcher_logs" and "attempt" in d.name:
+            all_tags.add(d.name)
 
-    # Group by (task, state_id, mode)
+    # ── Parse and validate all tags ──
     attempts = defaultdict(list)
-    for tag in all_tags:
-        info = parse_attempt_info(tag)
+    for tag in sorted(all_tags):
+        info = parse_safe_tag(tag, valid_keys)
         if info is None:
-            gates.append((f"PARSE_TAG:{tag}", False))
+            gates.append((f"PARSE_OR_UNKNOWN_TAG:{tag}", False))
             all_pass = False
             continue
         key = (info["task"], info["state_id"], info["mode"])
         attempts[key].append(info)
 
-    # ── Attempt audit ──
+    print(f"Parsed {sum(len(v) for v in attempts.values())} attempts "
+          f"across {len(attempts)} (task,state,mode) keys")
+
+    # ── Verify all 8 expected keys have at least one attempt ──
+    for tk, sid in sorted(valid_keys):
+        for mode in ["reference", "shadow"]:
+            key = (tk, sid, mode)
+            if key not in attempts:
+                gates.append((f"MISSING_KEY:{tk}_s{sid}_{mode}", False))
+                all_pass = False
+
+    # ── Per-key attempt audit ──
     for key, att_list in sorted(attempts.items()):
         tk, sid, mode = key
         tag_base = f"{tk}_s{sid}_{mode}"
         att_list.sort(key=lambda x: x["attempt_id"])
 
+        # Max 2 attempts
         if len(att_list) > 2:
             gates.append((f"ATTEMPT_COUNT:{tag_base}:{len(att_list)}", False))
             all_pass = False
             continue
 
+        # Check each attempt
         success_count = 0
         for att in att_list:
             ep_dir = out / att["safe_tag"]
             ll_dir = launcher_dir / att["safe_tag"]
 
-            # Check launcher artifacts
-            for an in REQUIRED_LAUNCHER_ARTIFACTS:
-                exists = (ll_dir / an).exists()
-                gates.append((f"LAUNCHER_{an}:{att['safe_tag']}", exists))
+            # ── Launcher artifacts (required for ALL attempts) ──
+            for an in REQUIRED_LAUNCHER_FILES:
+                fp = ll_dir / an
+                exists = fp.exists()
+                gates.append((f"LAUNCHER_EXISTS:{att['safe_tag']}:{an}", exists))
                 if not exists: all_pass = False
 
-            # Check episode artifacts
-            m = load_json(ep_dir / "episode_manifest.json")
-            if m is None:
-                gates.append((f"EP_MANIFEST:{att['safe_tag']}", False))
+            # ── Launcher hash verification ──
+            lh_rows = load_csv(ll_dir / "launcher_artifact_hashes.csv")
+            if not lh_rows:
+                gates.append((f"LAUNCHER_HASH_MANIFEST_MISSING:{att['safe_tag']}", False))
                 all_pass = False
-                continue
+            else:
+                lh_names = {r["artifact"] for r in lh_rows}
+                for an in HASHED_LAUNCHER_FILES:
+                    if an not in lh_names:
+                        gates.append((f"LAUNCHER_HASH_ROW_MISSING:{att['safe_tag']}:{an}", False))
+                        all_pass = False
+                for row in lh_rows:
+                    an = row["artifact"]
+                    ap = ll_dir / an
+                    if not ap.exists():
+                        gates.append((f"LAUNCHER_HASH_FILE_MISSING:{att['safe_tag']}:{an}", False))
+                        all_pass = False
+                    else:
+                        actual = sha256_file(str(ap))
+                        if actual != row["sha256"]:
+                            gates.append((f"LAUNCHER_HASH_MISMATCH:{att['safe_tag']}:{an}", False))
+                            all_pass = False
 
-            for an in REQUIRED_EPISODE_ARTIFACTS:
-                exists = (ep_dir / an).exists()
-                gates.append((f"EP_{an}:{att['safe_tag']}", exists))
-                if not exists: all_pass = False
+            # ── Determine attempt type ──
+            is_success = is_successful_attempt(ep_dir, ll_dir)
+            has_fa = has_first_action_generated(ep_dir)
 
-            # Check returncode
-            rc_json = load_json(ll_dir / "returncode.json")
-            is_success = (rc_json and rc_json.get("returncode") == 0
-                          and not m.get("fatal"))
             if is_success:
                 success_count += 1
 
-            # Check FIRST_ACTION_GENERATED
-            fa_marker = ep_dir / "FIRST_ACTION_GENERATED.json"
-            fa_exists = fa_marker.exists()
+                # Successful attempt: ALL episode files required
+                for an in REQUIRED_EPISODE_FILES:
+                    fp = ep_dir / an
+                    exists = fp.exists()
+                    gates.append((f"EP_EXISTS:{att['safe_tag']}:{an}", exists))
+                    if not exists: all_pass = False
+
+                # Episode hash verification
+                eh_rows = load_csv(ep_dir / "artifact_hashes.csv")
+                if not eh_rows:
+                    gates.append((f"EP_HASH_MANIFEST_MISSING:{att['safe_tag']}", False))
+                    all_pass = False
+                else:
+                    eh_names = {r["artifact"] for r in eh_rows}
+                    for an in HASHED_EPISODE_FILES:
+                        if an not in eh_names:
+                            gates.append((f"EP_HASH_ROW_MISSING:{att['safe_tag']}:{an}", False))
+                            all_pass = False
+                    for row in eh_rows:
+                        an = row["artifact"]
+                        ap = ep_dir / an
+                        if not ap.exists():
+                            gates.append((f"EP_HASH_FILE_MISSING:{att['safe_tag']}:{an}", False))
+                            all_pass = False
+                        else:
+                            actual = sha256_file(str(ap))
+                            if actual != row["sha256"]:
+                                gates.append((f"EP_HASH_MISMATCH:{att['safe_tag']}:{an}", False))
+                                all_pass = False
+
+            else:
+                # Failed attempt: must NOT have FIRST_ACTION_GENERATED
+                if has_fa:
+                    gates.append((f"POST_FA_RETRY:{att['safe_tag']}", False))
+                    all_pass = False
+                # Must have ATTEMPT_STARTED
+                if not (ep_dir / "ATTEMPT_STARTED.json").exists():
+                    gates.append((f"NO_STARTED:{att['safe_tag']}", False))
+                    all_pass = False
 
         # ── Retry legality ──
         if len(att_list) == 2:
             a1 = att_list[0]; a2 = att_list[1]
-            a1_fa = (out / a1["safe_tag"] / "FIRST_ACTION_GENERATED.json").exists()
-            if a1_fa:
-                gates.append((f"ILLEGAL_RETRY:{tag_base}", False))
+            a1_dir = out / a1["safe_tag"]
+            if has_first_action_generated(a1_dir):
+                gates.append((f"ILLEGAL_RETRY_AFTER_FA:{tag_base}", False))
                 all_pass = False
 
-        # Only one successful attempt allowed
+        # Exactly one successful attempt
         if success_count != 1:
             gates.append((f"SUCCESS_COUNT:{tag_base}:{success_count}", False))
             all_pass = False
 
-    # ── Per-state paired comparison (only on successful attempts) ──
-    for tk, sid in sorted(expected_keys):
+    # ── Paired reference/shadow comparison (only on successful attempts) ──
+    for tk, sid in sorted(valid_keys):
+        tag = f"{tk}_s{sid}"
         ref_key = (tk, sid, "reference")
         sh_key = (tk, sid, "shadow")
-        tag = f"{tk}_s{sid}"
 
-        if ref_key not in attempts or sh_key not in attempts:
-            gates.append((f"PAIRED:{tag}", False))
-            all_pass = False
-            continue
+        # Find successful attempt for each mode
+        ref_dir = None; sh_dir = None
+        for att in attempts.get(ref_key, []):
+            ep_dir = out / att["safe_tag"]
+            ll_dir = launcher_dir / att["safe_tag"]
+            if is_successful_attempt(ep_dir, ll_dir):
+                ref_dir = ep_dir; break
+        for att in attempts.get(sh_key, []):
+            ep_dir = out / att["safe_tag"]
+            ll_dir = launcher_dir / att["safe_tag"]
+            if is_successful_attempt(ep_dir, ll_dir):
+                sh_dir = ep_dir; break
 
-        # Find successful attempts
-        ref_att = None; sh_att = None
-        for att in attempts[ref_key]:
-            m = load_json(out / att["safe_tag"] / "episode_manifest.json")
-            if m and not m.get("fatal"):
-                ref_att = att; break
-        for att in attempts[sh_key]:
-            m = load_json(out / att["safe_tag"] / "episode_manifest.json")
-            if m and not m.get("fatal"):
-                sh_att = att; break
-
-        if ref_att is None or sh_att is None:
+        if ref_dir is None or sh_dir is None:
             gates.append((f"SUCCESSFUL_PAIR:{tag}", False))
             all_pass = False
             continue
 
-        ref_dir = out / ref_att["safe_tag"]
-        sh_dir = out / sh_att["safe_tag"]
         ref_m = load_json(ref_dir / "episode_manifest.json")
         sh_m = load_json(sh_dir / "episode_manifest.json")
 
         # Sequence identity
         for sk in ["raw_action_sequence_sha256", "env_action_sequence_sha256",
                     "obs_sequence_sha256"]:
-            g = ref_m.get(sk) == sh_m.get(sk) and ref_m.get(sk, "") != ""
+            rv = ref_m.get(sk, ""); sv = sh_m.get(sk, "")
+            g = (rv == sv and rv != "")
             gates.append((f"SEQ_{sk}:{tag}", g))
             if not g: all_pass = False
 
-        # Steps/success/done match
+        # Steps/success/done
         for sk in ["n_steps", "success_primary", "success_done_any",
                     "success_check_any", "success_step_primary", "done_step"]:
             g = ref_m.get(sk) == sh_m.get(sk)
@@ -321,32 +401,6 @@ def main():
                 if med_mod > 0 and med_det / med_mod > 0.05:
                     gates.append((f"LATENCY_OVERHEAD:{tag}", False))
                     all_pass = False
-
-        # Artifact hashes (reference + shadow)
-        for mode_dir, mode_name in [(ref_dir, "ref"), (sh_dir, "sh")]:
-            hash_rows = load_csv(mode_dir / "artifact_hashes.csv")
-            if not hash_rows:
-                gates.append((f"HASH_MANIFEST_MISSING:{tag}_{mode_name}", False))
-                all_pass = False
-                continue
-            hashed_names = {r["artifact"] for r in hash_rows}
-            # Every required episode artifact must have a hash row
-            for an in REQUIRED_EPISODE_ARTIFACTS:
-                if an not in hashed_names:
-                    gates.append((f"HASH_ROW_MISSING:{tag}_{mode_name}:{an}", False))
-                    all_pass = False
-            # Verify every hash
-            for row in hash_rows:
-                an = row["artifact"]
-                ap = mode_dir / an
-                if not ap.exists():
-                    gates.append((f"HASH_FILE_MISSING:{tag}_{mode_name}:{an}", False))
-                    all_pass = False
-                else:
-                    actual = sha256_file(str(ap))
-                    if actual != row["sha256"]:
-                        gates.append((f"HASH_MISMATCH:{tag}_{mode_name}:{an}", False))
-                        all_pass = False
 
     # ── Print audit ──
     print(f"\n{'='*60}")
