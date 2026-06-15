@@ -1,0 +1,57 @@
+# D4.0 — Causal First-Trigger Policy Preregistration
+# Converts offline ranker to strictly causal first-trigger decision.
+# Threshold calibrated on D1b validation 20 traces ONLY.
+
+stage: D4.0
+mode: prereg_and_val_only_calibration
+training_authorized: false
+attack_forbidden: true
+
+base_commit: bd563f1318d4c8882f7df489d7a7c3f0bc9b1ffe
+checkpoint_sha: cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7326f691742b9a438f1174858
+
+policy:
+  type: causal_first_trigger
+  description: >
+    Process CLOSE candidates in chronological order.
+    Emit the FIRST candidate with score >= threshold.
+    At most one emission per trace; no emission → ABSTAIN.
+  forbidden:
+    - future_candidate_lookahead
+    - global_argmax
+    - teacher_p_in_decision
+    - task_specific_threshold
+    - adaptive_rule
+    - second_emission
+    - retroactive_correction
+
+threshold_calibration:
+  data: D1b_validation_20_traces
+  model_score_source: frozen_mlp_output
+  baseline_score_source: frozen_total_score
+  feasibility_gate:
+    max_early_triggers: 2  # out of 20
+  selection_rule:
+    primary: highest_exact_hit_count
+    tiebreak_1: lowest_late_trigger_count
+    tiebreak_2: lowest_total_emissions
+    tiebreak_3: highest_threshold
+  separate_thresholds: true  # model and baseline each get own threshold
+
+feature_causality:
+  audit: prefix_equivalence
+  verify: >
+    For each validation candidate, regenerate all 16 features
+    using only records[:candidate_step+1]. Compare against
+    committed candidate table. Every field must match.
+  gate: CAUSAL_FEATURE_AUDIT_FAIL → STOP
+
+evaluation:
+  val20: threshold_calibration_only
+  test21: NOT_AUTHORIZED_IN_D40
+  fresh25: NOT_AUTHORIZED_IN_D40
+
+stop_rule:
+  commit_artifacts: true
+  then_stop: true
+  do_not_run_test_or_fresh: true
