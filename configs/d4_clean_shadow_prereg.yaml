@@ -1,0 +1,70 @@
+# D4.3 — Clean Shadow Detector Preregistration
+# Infrastructure canary only. No attack. No perturbation. No training.
+
+stage: D4.3
+mode: prereg_only
+shadow_execution: NOT_YET_AUTHORIZED
+attack_forbidden: true
+
+base_commit: 059eda1  # D4.2b production adapter
+checkpoint_sha: cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7326f691742b9a438f1174858
+threshold: 0.236312
+
+# Phase A: Infrastructure canary (D4.3a)
+canary:
+  purpose: >
+    Verify that the production detector can run inside a live
+    OpenVLA/LIBERO rollout without modifying actions, perturbing
+    gripper commands, or changing episode termination.
+  traces: 2-4 clean task-states (pre-declared, not cherry-picked)
+  checks:
+    - action_hash_identical_with_and_without_detector
+    - detector_latency_per_step_us
+    - output_schema_valid
+    - episode_reset_clears_state
+    - gpu_processes_cleanup
+    - no_exception_or_crash
+  max_attempts: 3 per state (infra failure only, not policy failure)
+  forbidden:
+    - adaptive_state_selection
+    - attack_injection
+    - threshold_retuning
+
+# Phase B: Fixed clean shadow panel (D4.3b)
+panel:
+  purpose: >
+    Observe detector behavior on a pre-declared set of clean episodes
+    without modifying any action. Measure emission rate, timing, and
+    input validity. No attack. No training.
+  prerequisites:
+    - D4.3a all checks PASS
+    - D4.3a artifacts committed and audited
+  traces: to be frozen after D4.3a (suggest ~20-30 clean states across tasks)
+  metrics:
+    primary:
+      - emit_rate (fraction of episodes with emission)
+      - early_exact_late_abstain_counts
+      - signed_delay_distribution
+      - absolute_delay_distribution
+    secondary:
+      - candidate_count_per_episode
+      - score_trajectory
+      - input_validity_fraction
+      - detector_latency_per_step
+      - clean_task_success_rate (correlation only, not causal claim)
+    safety:
+      - action_identity_verification (detector must not modify actions)
+      - episode_termination_unchanged
+  forbidden:
+    - modifying_gripper_action
+    - injecting_perturbation
+    - changing_episode_termination
+    - threshold_recalibration_on_shadow_data
+    - state_selection_based_on_detector_output
+    - claiming_attack_effect_from_correlation
+
+# GPU
+gpu:
+  shadow_execution: NOT_YET_AUTHORIZED
+  training: FORBIDDEN
+  attack: FORBIDDEN
