@@ -2,16 +2,36 @@ from __future__ import annotations
 
 import csv
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from scripts.stageb.run_m3_step78_true_pgd_fixed_frame import (
     MAIN_CONDITIONS,
+    PANEL_ALL_CAPTURE_FRAMES,
+    PANEL_FROZEN_OBJECTIVE,
+    PANEL_MAIN_FRAMES,
+    PANEL_POSITIVE_CONTROL_FRAME,
     V4_CONDITIONS,
+    audit_candidate_artifacts,
+    audit_route_artifacts,
+    claim_one_shot_sentinel,
+    clean_frame_eligibility,
     compare_surrogate_official,
+    frame_full_selective_status,
+    frame_status_from_v4_artifacts,
     load_config,
+    panel_aggregate_status,
+    parse_panel_steps,
+    run_panel_seed85,
     select_hard_feasible_candidate,
+    step78_parity_status,
+    validate_panel_seed,
+    validate_manifest_provenance,
+    verify_recursive_artifact_hash_manifest,
     write_csv,
+    write_recursive_artifact_hash_manifest,
+    write_json,
 )
 
 
@@ -205,3 +225,443 @@ def test_hard_feasible_selection_does_not_fallback_to_arm_breaking_candidate():
         },
     ]
     assert select_hard_feasible_candidate(rows, arm_gate_min_match_count=5, target_token_id=31744) is None
+
+
+def test_panel_frame_set_freezes_main_denominator_and_positive_control():
+    assert PANEL_MAIN_FRAMES == [70, 72, 74, 76, 80, 82, 84, 86]
+    assert PANEL_POSITIVE_CONTROL_FRAME == 78
+    assert PANEL_ALL_CAPTURE_FRAMES == [70, 72, 74, 76, 78, 80, 82, 84, 86]
+
+
+def test_clean_already_target_is_ineligible():
+    official = {
+        "tokens": [1, 2, 3, 4, 5, 6, 31744],
+        "gripper_token": 31744,
+        "score_invariant": {"tie_aware_pass": True},
+    }
+    status = clean_frame_eligibility(official)
+    assert status["status"] == "CLEAN_ALREADY_TARGET"
+    assert status["clean_gripper_token"] == 31744
+
+
+def test_clean_non_close_non_target_is_ineligible():
+    official = {
+        "tokens": [1, 2, 3, 4, 5, 6, 12345],
+        "gripper_token": 12345,
+        "score_invariant": {"tie_aware_pass": True},
+    }
+    status = clean_frame_eligibility(official)
+    assert status["status"] == "CLEAN_NOT_CLOSE"
+
+
+def _selected(token=31744, arm=6, margin=1.0, candidate_id=0):
+    return {
+        "condition_result": "SELECTED",
+        "selected_candidate_id": candidate_id,
+        "official_gripper_token": token,
+        "arm_prefix_match_count": arm,
+        "official_target31744_margin": margin,
+    }
+
+
+def test_true_feasible_control_infeasible_is_auto_win_without_paired_margin():
+    row = frame_full_selective_status(
+        true_row=_selected(margin=10.0),
+        rand_row=None,
+        shuffled_row=_selected(margin=1.0),
+    )
+    assert row["status"] == "FRAME_FULL_SELECTIVE_PASS"
+    assert row["rand_control_status"] == "CONTROL_INFEASIBLE_AUTO_WIN"
+    assert row["rand_paired_margin"] == ""
+    assert row["shuffled_paired_margin"] == 9.0
+
+
+def test_true_infeasible_fails_even_when_controls_infeasible():
+    row = frame_full_selective_status(
+        true_row=_selected(token=31872, arm=6, margin=10.0),
+        rand_row=None,
+        shuffled_row=None,
+    )
+    assert row["status"] == "FRAME_FAIL_TRUE_INFEASIBLE"
+    assert row["full_pass"] is False
+
+
+def test_panel_aggregate_requires_same_frame_full_passes():
+    rows = []
+    for frame in PANEL_MAIN_FRAMES[:5]:
+        rows.append(
+            {
+                "frame": frame,
+                "main_denominator": True,
+                "frame_status": "FRAME_FULL_SELECTIVE_PASS",
+                "rand_paired_margin": 1.0,
+                "shuffled_paired_margin": 1.0,
+            }
+        )
+    for frame in PANEL_MAIN_FRAMES[5:]:
+        rows.append(
+            {
+                "frame": frame,
+                "main_denominator": True,
+                "frame_status": "FRAME_FAIL_CONTROL_NOT_BEATEN",
+                "rand_paired_margin": 1.0,
+                "shuffled_paired_margin": 1.0,
+            }
+        )
+    agg = panel_aggregate_status(rows)
+    assert agg["panel_status"] == "PANEL_SINGLE_SEED_FAIL"
+    assert "fewer_than_6_full_selective_pass_frames" in agg["failure_reasons"]
+
+
+def test_panel_aggregate_requires_four_finite_paired_frames_per_control():
+    rows = []
+    for frame in PANEL_MAIN_FRAMES:
+        rows.append(
+            {
+                "frame": frame,
+                "main_denominator": True,
+                "frame_status": "FRAME_FULL_SELECTIVE_PASS",
+                "rand_paired_margin": 1.0 if len(rows) < 3 else "",
+                "shuffled_paired_margin": 1.0,
+            }
+        )
+    agg = panel_aggregate_status(rows)
+    assert agg["panel_status"] == "PANEL_SINGLE_SEED_FAIL"
+    assert "rand_paired_frames_below_4" in agg["failure_reasons"]
+
+
+def test_panel_aggregate_does_not_allow_replacing_multiple_ineligible_frames():
+    rows = []
+    for idx, frame in enumerate(PANEL_MAIN_FRAMES):
+        rows.append(
+            {
+                "frame": frame,
+                "main_denominator": True,
+                "frame_status": "CLEAN_NOT_CLOSE" if idx < 2 else "FRAME_FULL_SELECTIVE_PASS",
+                "rand_paired_margin": 1.0,
+                "shuffled_paired_margin": 1.0,
+            }
+        )
+    agg = panel_aggregate_status(rows)
+    assert agg["panel_status"] == "PANEL_SINGLE_SEED_FAIL"
+    assert "too_many_clean_ineligible_frames" in agg["failure_reasons"]
+
+
+def test_panel_seed_is_frozen_to_85_only():
+    validate_panel_seed(85)
+    with pytest.raises(SystemExit):
+        validate_panel_seed(84)
+    with pytest.raises(SystemExit):
+        validate_panel_seed(86)
+
+
+def test_panel_seed85_entry_rejects_other_seed_before_work(tmp_path):
+    args = SimpleNamespace(
+        attack_seed=84,
+        panel_steps="",
+        output_dir=str(tmp_path),
+        frozen_step78_manifest="",
+    )
+    with pytest.raises(SystemExit):
+        run_panel_seed85(args, load_config(LOGRATIO_ARM_V4_CONFIG))
+    assert not any(tmp_path.iterdir())
+
+
+def test_panel_seed85_entry_rejects_missing_required_args_before_output(tmp_path):
+    args = SimpleNamespace(
+        attack_seed=85,
+        panel_steps="",
+        output_dir=str(tmp_path),
+        frozen_step78_manifest="",
+    )
+    with pytest.raises(SystemExit):
+        run_panel_seed85(args, load_config(LOGRATIO_ARM_V4_CONFIG))
+    assert not any(tmp_path.iterdir())
+
+
+def test_panel_steps_must_match_exact_frozen_set():
+    assert parse_panel_steps("") == PANEL_ALL_CAPTURE_FRAMES
+    assert parse_panel_steps(",".join(str(x) for x in PANEL_ALL_CAPTURE_FRAMES)) == PANEL_ALL_CAPTURE_FRAMES
+    with pytest.raises(SystemExit):
+        parse_panel_steps("70,72,74,76,78,80,82,84")
+    with pytest.raises(SystemExit):
+        parse_panel_steps("70,72,74,76,78,80,82,84,84")
+
+
+def test_step78_parity_mismatch_stops_positive_control():
+    frozen = {
+        "raw_image_sha256": "a",
+        "processed_tensor_sha256": "b",
+        "prompt_token_ids_sha256": "c",
+        "clean_exact_7_tokens": "[1,2,3,4,5,6,31872]",
+        "clean_arm_prefix": "[1,2,3,4,5,6]",
+        "clean_gripper_token": "31872",
+    }
+    new = dict(frozen)
+    assert step78_parity_status(new, frozen) == "POSITIVE_CONTROL_INPUT_MATCH"
+    new["processed_tensor_sha256"] = "changed"
+    assert step78_parity_status(new, frozen) == "POSITIVE_CONTROL_INPUT_MISMATCH"
+
+
+def _candidate_rows(condition, *, selected_id=0, seed=85, commit="abc", linf=0.01, invariant="PASS"):
+    rows = []
+    for idx in range(21):
+        rows.append(
+            {
+                "stage": "test",
+                "commit": commit,
+                "condition": condition,
+                "attack_seed": seed,
+                "candidate_id": idx,
+                "official_tokens": "[1, 2, 3, 4, 5, 6, 31744]",
+                "official_gripper_token": 31744,
+                "official_target31744_margin": 10.0 if idx == selected_id else 1.0,
+                "arm_prefix_match_count": 6,
+                "score_invariant_status": invariant if idx == selected_id else "PASS",
+                "processor_linf": linf,
+                "selected": 1 if idx == selected_id else 0,
+                "feasible": 1,
+            }
+        )
+    return rows
+
+
+def test_candidate_artifact_audit_requires_exact_ids_budget_and_selected_mapping():
+    rows = _candidate_rows("TRUE_PGD_TRAJECTORY21_SELECTIVE")
+    selected = _selected(margin=10.0, candidate_id=0)
+    ok, reason = audit_candidate_artifacts(
+        candidate_rows=rows,
+        selected_row=selected,
+        condition="TRUE_PGD_TRAJECTORY21_SELECTIVE",
+        expected_seed=85,
+        expected_commit="abc",
+        epsilon=6 / 255,
+    )
+    assert ok, reason
+
+    bad_rows = list(rows)
+    bad_rows[0] = dict(bad_rows[0], processor_linf=0.1)
+    ok, reason = audit_candidate_artifacts(
+        candidate_rows=bad_rows,
+        selected_row=selected,
+        condition="TRUE_PGD_TRAJECTORY21_SELECTIVE",
+        expected_seed=85,
+        expected_commit="abc",
+        epsilon=6 / 255,
+    )
+    assert not ok
+    assert "processor_linf_over_budget" in reason
+
+    bad_rows = list(rows)
+    bad_rows[0] = dict(bad_rows[0], score_invariant_status="FAIL")
+    ok, reason = audit_candidate_artifacts(
+        candidate_rows=bad_rows,
+        selected_row=selected,
+        condition="TRUE_PGD_TRAJECTORY21_SELECTIVE",
+        expected_seed=85,
+        expected_commit="abc",
+        epsilon=6 / 255,
+    )
+    assert not ok
+    assert "selected_score_invariant_not_pass" in reason
+
+    bad_rows = list(rows)
+    bad_rows[0] = dict(bad_rows[0], feasible=0)
+    ok, reason = audit_candidate_artifacts(
+        candidate_rows=bad_rows,
+        selected_row=selected,
+        condition="TRUE_PGD_TRAJECTORY21_SELECTIVE",
+        expected_seed=85,
+        expected_commit="abc",
+        epsilon=6 / 255,
+    )
+    assert not ok
+    assert "selected_candidate_not_marked_feasible" in reason
+
+
+def test_candidate_artifact_audit_rejects_duplicate_ids_even_when_count_is_21():
+    rows = _candidate_rows("RAND21_SELECTIVE")
+    rows[20] = dict(rows[20], candidate_id=19, selected=0)
+    ok, reason = audit_candidate_artifacts(
+        candidate_rows=rows,
+        selected_row=_selected(candidate_id=0),
+        condition="RAND21_SELECTIVE",
+        expected_seed=85,
+        expected_commit="abc",
+        epsilon=6 / 255,
+    )
+    assert not ok
+    assert "candidate_ids_not_0_20_unique" in reason
+
+
+def test_route_artifact_audit_requires_counts_objective_target_and_seed(tmp_path):
+    rows = []
+    for condition in ["TRUE_PGD_TRAJECTORY21_SELECTIVE", "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"]:
+        rows.append(
+            {
+                "stage": "test",
+                "commit": "abc",
+                "condition": condition,
+                "attack_seed": "85",
+                "requested_method": "token_prefix_pgd",
+                "resolved_adapter_class": "TokenPrefixPGDAttacker",
+                "strict_route": "true",
+                "allow_fallback": "false",
+                "fallback_used": "false",
+                "requested_objective": PANEL_FROZEN_OBJECTIVE,
+                "resolved_objective": PANEL_FROZEN_OBJECTIVE,
+                "target_token_id": "31744",
+                "num_backwards": "20",
+                "num_loss_forwards": "21",
+                "num_generation_forwards": "21",
+                "trajectory_candidate_count": "21",
+            }
+        )
+    path = tmp_path / "route.csv"
+    write_csv(path, rows, list(rows[0].keys()))
+    ok, reason = audit_route_artifacts(path, expected_seed=85, expected_commit="abc")
+    assert ok, reason
+
+    rows[0]["num_generation_forwards"] = "20"
+    write_csv(path, rows, list(rows[0].keys()))
+    ok, reason = audit_route_artifacts(path, expected_seed=85, expected_commit="abc")
+    assert not ok
+    assert reason == "route_wrong_generation_forward_count"
+
+    rows[0]["num_generation_forwards"] = "21"
+    rows.append(dict(rows[0]))
+    write_csv(path, rows, list(rows[0].keys()))
+    ok, reason = audit_route_artifacts(path, expected_seed=85, expected_commit="abc")
+    assert not ok
+    assert reason == "route_rows_not_exactly_true_and_shuffled"
+
+
+def test_recursive_manifest_verifies_content_changes(tmp_path):
+    (tmp_path / "a.txt").write_text("first", encoding="utf-8")
+    write_recursive_artifact_hash_manifest(tmp_path)
+    verify_recursive_artifact_hash_manifest(tmp_path)
+    (tmp_path / "a.txt").write_text("other", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="sha256 mismatch"):
+        verify_recursive_artifact_hash_manifest(tmp_path)
+
+
+def test_aggregate_rejects_duplicate_or_wrong_main_frame_set():
+    rows = []
+    for idx in range(8):
+        rows.append(
+            {
+                "frame": 70 if idx < 2 else PANEL_MAIN_FRAMES[idx],
+                "main_denominator": True,
+                "frame_status": "FRAME_FULL_SELECTIVE_PASS",
+                "rand_paired_margin": 1.0,
+                "shuffled_paired_margin": 1.0,
+            }
+        )
+    agg = panel_aggregate_status(rows)
+    assert agg["panel_status"] == "PANEL_SINGLE_SEED_FAIL"
+    assert "wrong_main_frame_set" in agg["failure_reasons"]
+
+
+def test_manifest_provenance_fails_closed_on_dirty_or_missing_gpu(tmp_path):
+    row = {
+        "dirty_status": "DIRTY: M file.py",
+        "gpu_query": "0, GPU-uuid, Test, 0 MiB, 1 MiB, 0 %, 30",
+        "model_fingerprint": '{"ok": true}',
+    }
+    write_csv(tmp_path / "m3_step78_manifest.csv", [row], list(row.keys()))
+    write_csv(tmp_path / "m3_artifact_hash_manifest.csv", [{"file": "x", "size_bytes": 1, "sha256": "abc"}], ["file", "size_bytes", "sha256"])
+    with pytest.raises(RuntimeError, match="dirty_status"):
+        validate_manifest_provenance(tmp_path)
+
+    row["dirty_status"] = "CLEAN"
+    row["gpu_query"] = "NVIDIA_SMI_UNAVAILABLE"
+    write_csv(tmp_path / "m3_step78_manifest.csv", [row], list(row.keys()))
+    with pytest.raises(RuntimeError, match="gpu_query"):
+        validate_manifest_provenance(tmp_path)
+
+    row["gpu_query"] = "0, GPU-uuid, Test, 0 MiB, 1 MiB, 0 %, 30"
+    row["model_fingerprint"] = "PENDING_MODEL_LOAD"
+    write_csv(tmp_path / "m3_step78_manifest.csv", [row], list(row.keys()))
+    with pytest.raises(RuntimeError, match="model_fingerprint"):
+        validate_manifest_provenance(tmp_path)
+
+
+def test_one_shot_sentinel_prevents_rerun(tmp_path):
+    claim_one_shot_sentinel(tmp_path, stage="m3_panel_seed85", seed=85)
+    with pytest.raises(RuntimeError, match="one-shot sentinel"):
+        claim_one_shot_sentinel(tmp_path, stage="m3_panel_seed85", seed=85)
+
+
+def test_frame_status_from_real_artifacts_uses_clean_gate_and_candidate_counts(tmp_path):
+    clean_dir = tmp_path / "capture" / "step70"
+    run_dir = tmp_path / "frames" / "step70"
+    clean_dir.mkdir(parents=True)
+    run_dir.mkdir(parents=True)
+    write_json(
+        clean_dir / "clean_generation_step70.json",
+        {
+            "official": {
+                "tokens": [1, 2, 3, 4, 5, 6, 31872],
+                "gripper_token": 31872,
+                "score_invariant": {"tie_aware_pass": True},
+            }
+        },
+    )
+    selected_rows = [
+        _selected(margin=10.0, candidate_id=0) | {"condition": "TRUE_PGD_TRAJECTORY21_SELECTIVE"},
+        _selected(margin=1.0, candidate_id=0) | {"condition": "RAND21_SELECTIVE"},
+        _selected(margin=2.0, candidate_id=0) | {"condition": "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"},
+    ]
+    write_csv(run_dir / "m3_v4_selected_results.csv", selected_rows, list(selected_rows[0].keys()))
+    candidate_rows = []
+    for condition in ["TRUE_PGD_TRAJECTORY21_SELECTIVE", "RAND21_SELECTIVE", "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"]:
+        margin = 10.0 if condition == "TRUE_PGD_TRAJECTORY21_SELECTIVE" else 1.0
+        if condition == "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE":
+            margin = 2.0
+        candidate_rows.extend(_candidate_rows(condition, commit="", selected_id=0))
+        candidate_rows[-21]["official_target31744_margin"] = margin
+    write_csv(run_dir / "m3_v4_candidate_audit.csv", candidate_rows, list(candidate_rows[0].keys()))
+    route_rows = []
+    for condition in ["TRUE_PGD_TRAJECTORY21_SELECTIVE", "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"]:
+        route_rows.append(
+            {
+                "condition": condition,
+                "commit": "",
+                "attack_seed": "85",
+                "strict_route": "true",
+                "allow_fallback": "false",
+                "fallback_used": "false",
+                "resolved_adapter_class": "TokenPrefixPGDAttacker",
+                "requested_objective": PANEL_FROZEN_OBJECTIVE,
+                "resolved_objective": PANEL_FROZEN_OBJECTIVE,
+                "target_token_id": "31744",
+                "num_backwards": "20",
+                "num_loss_forwards": "21",
+                "num_generation_forwards": "21",
+                "trajectory_candidate_count": "21",
+            }
+        )
+    write_csv(run_dir / "m3_v4_route_audit.csv", route_rows, list(route_rows[0].keys()))
+    status = frame_status_from_v4_artifacts(run_dir, step=70, main_denominator=True, clean_dir=clean_dir)
+    assert status["frame_status"] == "FRAME_FULL_SELECTIVE_PASS"
+    assert status["true_candidate_count"] == 21
+
+
+def test_frame_status_skips_attack_artifacts_when_clean_ineligible(tmp_path):
+    clean_dir = tmp_path / "capture" / "step70"
+    run_dir = tmp_path / "frames" / "step70"
+    clean_dir.mkdir(parents=True)
+    run_dir.mkdir(parents=True)
+    write_json(
+        clean_dir / "clean_generation_step70.json",
+        {
+            "official": {
+                "tokens": [1, 2, 3, 4, 5, 6, 31744],
+                "gripper_token": 31744,
+                "score_invariant": {"tie_aware_pass": True},
+            }
+        },
+    )
+    status = frame_status_from_v4_artifacts(run_dir, step=70, main_denominator=True, clean_dir=clean_dir)
+    assert status["frame_status"] == "CLEAN_ALREADY_TARGET"
+    assert status["infra_status"] == "SKIPPED_CLEAN_INELIGIBLE"

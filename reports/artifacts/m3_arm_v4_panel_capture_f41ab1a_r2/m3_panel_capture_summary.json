@@ -1,0 +1,13 @@
+{
+  "attack_run": "NO",
+  "commit": "f41ab1a27e5337b6aceedd104e81a24dd8ff2168",
+  "libero_rollout_attack": "NO",
+  "log_path": "/data/liuyu/outputs/m3_arm_v4_panel_capture_f41ab1a_r2.log",
+  "main_clean_eligible_count": 2,
+  "main_clean_ineligible_count": 6,
+  "new_step78_manifest": "/data/liuyu/outputs/m3_arm_v4_panel_capture_f41ab1a_r2/step78/m3_step78_input_manifest.csv",
+  "old_step78_manifest": "/data/liuyu/outputs/m3_step78_true_pgd_20260614/capture_step78_f18537d_r2/m3_step78_input_manifest.csv",
+  "output_dir": "/data/liuyu/outputs/m3_arm_v4_panel_capture_f41ab1a_r2",
+  "stage": "M3_ARM_V4_PANEL_CAPTURE_ONLY_PREFLIGHT",
+  "step78_parity": "PASS"
+}

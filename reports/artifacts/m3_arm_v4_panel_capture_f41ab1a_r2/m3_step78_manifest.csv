@@ -1,0 +1,9 @@
+stage,commit,dirty_status,config_path,config_sha256,output_dir,model_path,model_fingerprint,python,torch,transformers,cuda_visible_devices,gpu_query,command_line,status
+M3_STEP78_TRUE_PGD_LOGRATIO_ARM_V4_HARD_FEASIBLE_SELECTION,f41ab1a27e5337b6aceedd104e81a24dd8ff2168,CLEAN,configs/m3_step78_true_pgd_31744_logratio_arm_v4.yaml,2dcef93bf2decf742e0c98f321267ae665b57890f3ab03088dfda3686ae8a2a8,/data/liuyu/outputs/m3_arm_v4_panel_capture_f41ab1a_r2,/data/aviary/models/openvla/openvla-7b-finetuned-libero-object,"{""action_bins"": 255, ""model_type"": ""openvla"", ""norm_stats_keys"": [""libero_object""], ""pad_to_multiple_of"": 64, ""vocab_size"": 32064}",/data/aviary/envs/openvla_official_libero_20260525/bin/python,2.2.0+cu121,4.40.1,"1,0","0, GPU-33559d32-c12c-6c20-6159-0b693a28b101, NVIDIA GeForce RTX 2080 Ti, 0 MiB, 11264 MiB, 0 %, 37
+1, GPU-64734dbf-3993-a168-13d7-c8eba21f2908, NVIDIA GeForce RTX 2080 Ti, 0 MiB, 11264 MiB, 0 %, 39
+2, GPU-a5dd9dbe-9719-b196-d8e7-e44c4100d1e7, NVIDIA GeForce RTX 2080 Ti, 0 MiB, 11264 MiB, 0 %, 37
+3, GPU-c1ee1619-6791-a734-bf4c-d0d2c47df580, NVIDIA GeForce RTX 2080 Ti, 0 MiB, 11264 MiB, 0 %, 42
+4, GPU-d0a54f5d-938c-a148-fff9-c135201e3f61, NVIDIA GeForce RTX 2080 Ti, 0 MiB, 11264 MiB, 0 %, 41
+5, GPU-9794d733-042f-46a2-fc86-5a3fe32a158a, NVIDIA GeForce RTX 2080 Ti, 0 MiB, 11264 MiB, 1 %, 33
+6, GPU-04d369ad-47f6-77fc-19df-b9c4273db10f, NVIDIA GeForce RTX 2080 Ti, 0 MiB, 11264 MiB, 0 %, 40
+7, GPU-da4d4ba8-f4f9-7513-4dc9-87f4c7033d7f, NVIDIA GeForce RTX 2080 Ti, 0 MiB, 11264 MiB, 0 %, 38","scripts/stageb/run_m3_step78_true_pgd_fixed_frame.py --config configs/m3_step78_true_pgd_31744_logratio_arm_v4.yaml --mode capture_panel_inputs --output_dir /data/liuyu/outputs/m3_arm_v4_panel_capture_f41ab1a_r2 --panel_steps 70,72,74,76,78,80,82,84,86 --model_gpu_device_id -1 --render_gpu_device_id 1 --max_steps 280 --num_steps_wait 10",capture_panel_inputs

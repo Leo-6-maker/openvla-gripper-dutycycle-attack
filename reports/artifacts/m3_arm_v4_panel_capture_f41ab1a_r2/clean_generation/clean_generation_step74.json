@@ -1,0 +1,84 @@
+{
+  "clean_action": [
+    -0.1826838105916977,
+    -0.0025840436574071646,
+    -0.45588234066963196,
+    -3.151186683680862e-05,
+    -0.053743697702884674,
+    0.0002941146376542747,
+    0.9960784316062927
+  ],
+  "clean_exact_7_tokens": [
+    31934,
+    31870,
+    31934,
+    31882,
+    31939,
+    31834,
+    31744
+  ],
+  "instruction": "pick up the tomato sauce and place it in the basket",
+  "official": {
+    "arm_prefix": [
+      31934,
+      31870,
+      31934,
+      31882,
+      31939,
+      31834
+    ],
+    "gripper_token": 31744,
+    "score_audit": {
+      "argmax_matches_emitted": true,
+      "best_native_boundary_score": null,
+      "best_native_boundary_token": null,
+      "best_native_close_score": 26.5,
+      "best_native_close_token": 31872,
+      "best_native_open_score": 24.0,
+      "best_native_open_token": 31776,
+      "emitted_token": 31744,
+      "generation_score_argmax": 31744,
+      "processed_score_argmax_token": 31744,
+      "score_token_31744": 59.0,
+      "score_token_31872": 26.5,
+      "surrogate_top_score": 26.5,
+      "surrogate_top_token": 31872,
+      "top1_minus_top2_gap": 32.5,
+      "top1_score": 59.0,
+      "top1_token": 31744,
+      "top2_score": 26.5,
+      "top2_token": 31872
+    },
+    "score_invariant": {
+      "argmax_token": 31744,
+      "emitted_score": 59.0,
+      "emitted_token": 31744,
+      "max_score": 59.0,
+      "strict_argmax_match": true,
+      "tie_aware_pass": true
+    },
+    "score_row_sha256": "f88008b5c4ac5fe2b97c5164599bbe37cca764fb3ef0e2a8639706e6edb27d4e",
+    "target_stats": {
+      "allowed_token_count": 32064,
+      "best_competitor_score": 26.5,
+      "best_competitor_token_id": 31872,
+      "competitor_logsumexp_score": 26.589344024658203,
+      "cw_margin_param": null,
+      "target_minus_best_competitor_margin": 32.5,
+      "target_minus_competitor_logsumexp_margin": 32.4106559753418,
+      "target_objective_margin": 32.4106559753418,
+      "target_objective_margin_name": "target_minus_competitor_logsumexp_margin",
+      "target_token_id": 31744,
+      "target_token_score": 59.0
+    },
+    "tokens": [
+      31934,
+      31870,
+      31934,
+      31882,
+      31939,
+      31834,
+      31744
+    ]
+  }
+}
