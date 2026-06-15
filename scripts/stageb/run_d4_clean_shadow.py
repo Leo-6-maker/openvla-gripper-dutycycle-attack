@@ -548,7 +548,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--task", required=True, choices=ALL_TASKS)
     ap.add_argument("--state-id", type=int, required=True)
-    ap.add_argument("--output-dir", required=True)
+    ap.add_argument("--episode-dir", required=True,
+                    help="Exact episode output directory (runner creates this)")
     ap.add_argument("--checkpoint", required=True)
     ap.add_argument("--mode", choices=["reference", "shadow"], default="shadow")
     ap.add_argument("--attempt-id", type=int, default=1)
@@ -561,18 +562,21 @@ def main():
     ap.add_argument("--success-metric", choices=["done", "check_success"],
                     default="check_success")
     ap.add_argument("--seed", type=int, default=0)
+    # Provenance verification (fail-closed)
+    ap.add_argument("--expected-git-head", default="",
+                    help="If set, fail if git HEAD doesn't match")
+    ap.add_argument("--expected-branch", default="",
+                    help="If set, fail if branch doesn't match")
+    ap.add_argument("--require-clean-worktree", action="store_true",
+                    help="If set, fail if worktree is dirty")
     args = ap.parse_args()
 
     is_reference = (args.mode == "reference")
-    out = Path(args.output_dir)
-    out.mkdir(parents=True, exist_ok=True)
+    episode_dir = Path(args.episode_dir)
 
-    safe_tag = f"{args.task}_s{args.state_id}_{args.mode}_attempt{args.attempt_id}"
-    episode_dir = out / safe_tag
-
-    # ── Phase 1: Create attempt directory atomically ──
+    # ── Phase 1: Create attempt directory atomically (runner OWNS this) ──
     try:
-        episode_dir.mkdir(exist_ok=False)
+        episode_dir.mkdir(parents=True, exist_ok=False)
     except FileExistsError:
         print(f"FATAL: Attempt directory already exists: {episode_dir}")
         sys.exit(1)
@@ -581,6 +585,31 @@ def main():
         "task": args.task, "state_id": args.state_id,
         "mode": args.mode, "attempt_id": args.attempt_id,
     })
+
+    # ── Provenance hard gates (fail before model load if wrong env) ──
+    git_head = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True,
+    ).stdout.strip()
+    git_branch = subprocess.run(
+        ["git", "branch", "--show-current"], capture_output=True, text=True,
+    ).stdout.strip()
+    git_dirty = subprocess.run(
+        ["git", "diff", "--quiet"], capture_output=True,
+    ).returncode != 0
+
+    if args.expected_git_head and git_head != args.expected_git_head:
+        print(f"FATAL: Git HEAD mismatch: got {git_head[:16]}..., "
+              f"expected {args.expected_git_head[:16]}...")
+        sys.exit(1)
+    if args.expected_branch and git_branch != args.expected_branch:
+        print(f"FATAL: Branch mismatch: got {git_branch}, "
+              f"expected {args.expected_branch}")
+        sys.exit(1)
+    if args.require_clean_worktree and git_dirty:
+        print("FATAL: Worktree is dirty")
+        sys.exit(1)
+
+    print(f"Git: HEAD={git_head[:16]}... branch={git_branch} dirty={git_dirty}")
 
     # ── Verify checkpoint ──
     actual_ckpt = sha256_file(args.checkpoint)

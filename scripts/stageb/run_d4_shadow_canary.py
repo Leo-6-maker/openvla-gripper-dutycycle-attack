@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 """D4.3a: Canary orchestrator for paired reference/shadow execution.
 
-Reads the frozen 4-state canary manifest. For each state:
-  1. Run CLEAN_REFERENCE (detector disabled).
-  2. Run CLEAN_SHADOW (detector enabled, read-only).
-  3. Compare all hard gates.
-  4. If all pass → CANARY_PASS; else STOP.
+Orchestrator OWNS launcher logs (command, env, stdout, stderr, returncode).
+Runner OWNS episode directory (artifacts, phase markers, provenance).
 
-Retry: only if FIRST_ACTION_GENERATED marker does not exist in attempt dir.
+Orchestrator → launcher_logs/<safe_tag>/
+  command.txt  environment_snapshot.json  stdout.log  stderr.log  returncode.json
+
+Runner → <output_dir>/<safe_tag>/
+  ATTEMPT_STARTED.json  MODEL_LOADED.json  FIRST_ACTION_GENERATED.json
+  step_trace.csv  detector_candidates.csv  ...
+
+Retry: only if FIRST_ACTION_GENERATED.json does not exist in episode dir.
 Max 1 retry per state per mode.
 
-GPU: physical 2,6 only. No attack. No perturbation.
+GPU: physical 2,6 only.
 """
 
 import argparse
@@ -33,7 +37,8 @@ RUNNER = os.path.join(PIPELINE_ROOT, "scripts", "stageb", "run_d4_clean_shadow.p
 CHECKPOINT = os.path.join(PIPELINE_ROOT, "outputs", "d1b_training", "d1b_detector_best.pt")
 
 GPU_VISIBLE = "2,6"
-RENDER_GPU = 2
+GPU_PHYSICAL_IDS = [2, 6]
+RENDER_GPU_PHYSICAL = 2  # first visible physical GPU
 CANARY_N = 4
 MAX_RETRIES = 1
 
@@ -50,28 +55,10 @@ def sha256_hex(s: str) -> str:
     return hashlib.sha256(s.encode()).hexdigest()
 
 
-def gpu_process_count():
-    """Return list of (gpu_uuid, pid, process_name, used_memory) for GPUs 2,6."""
-    try:
-        out = subprocess.run(
-            ["nvidia-smi", "--query-compute-apps=gpu_uuid,pid,process_name,used_memory",
-             "--format=csv,noheader"],
-            capture_output=True, text=True, timeout=30,
-        ).stdout.strip()
-    except Exception:
-        return []
-    if not out:
-        return []
-    procs = []
-    for line in out.split("\n"):
-        parts = [p.strip() for p in line.split(",")]
-        if len(parts) >= 3:
-            procs.append(tuple(parts))
-    return procs
+# ── GPU management ──
 
-
-def gpu_uuids():
-    """Return mapping from GPU index to UUID."""
+def gpu_uuid_map():
+    """Return {physical_index: uuid} for all GPUs."""
     try:
         out = subprocess.run(
             ["nvidia-smi", "--query-gpu=index,uuid", "--format=csv,noheader"],
@@ -79,51 +66,83 @@ def gpu_uuids():
         ).stdout.strip()
     except Exception:
         return {}
-    mapping = {}
+    m = {}
     for line in out.split("\n"):
         parts = [p.strip() for p in line.split(",")]
         if len(parts) >= 2:
-            mapping[int(parts[0])] = parts[1]
-    return mapping
+            try:
+                m[int(parts[0])] = parts[1]
+            except ValueError:
+                pass
+    return m
 
+
+def gpu_compute_processes(uuids_of_interest):
+    """Return [(gpu_uuid, pid, process_name)] for processes on given UUIDs."""
+    if not uuids_of_interest:
+        return []
+    try:
+        out = subprocess.run(
+            ["nvidia-smi", "--query-compute-apps=gpu_uuid,pid,process_name",
+             "--format=csv,noheader"],
+            capture_output=True, text=True, timeout=30,
+        ).stdout.strip()
+    except Exception:
+        return None  # query failure — distinct from empty
+    if not out:
+        return []
+    procs = []
+    for line in out.split("\n"):
+        parts = [p.strip() for p in line.split(",")]
+        if len(parts) >= 3 and parts[0] in uuids_of_interest:
+            procs.append((parts[0], parts[1], parts[2]))
+    return procs
+
+
+# ── Retry ──
 
 def episode_failed_before_first_action(episode_dir):
-    """Retry allowed only if FIRST_ACTION_GENERATED.json does not exist."""
-    marker = os.path.join(episode_dir, "FIRST_ACTION_GENERATED.json")
-    return not os.path.exists(marker)
+    """Only retry if FIRST_ACTION_GENERATED.json does NOT exist."""
+    return not os.path.exists(os.path.join(episode_dir, "FIRST_ACTION_GENERATED.json"))
 
 
-def run_one_episode(task, state_id, mode, attempt_id, output_dir):
-    """Launch one episode via subprocess. Saves full stdout/stderr/command."""
+# ── Episode launcher ──
+
+def run_one_episode(task, state_id, mode, attempt_id, output_dir, launcher_dir):
+    """Launch episode via subprocess.
+
+    Orchestrator writes launcher logs to launcher_dir/<safe_tag>/.
+    Runner creates and owns episode_dir = output_dir/<safe_tag>/.
+    """
     safe_tag = f"{task}_s{state_id}_{mode}_attempt{attempt_id}"
-    episode_dir = os.path.join(output_dir, safe_tag)
+    log_dir = os.path.join(launcher_dir, safe_tag)
+    os.makedirs(log_dir, exist_ok=False)
 
-    # Create attempt directory (orchestrator does this so logs go inside)
-    try:
-        os.makedirs(episode_dir, exist_ok=False)
-    except FileExistsError:
-        return -1, episode_dir  # Should not happen if orchestrator manages attempts
+    episode_dir = os.path.join(output_dir, safe_tag)
 
     cmd = [
         PYTHON, "-u", RUNNER,
         "--task", task, "--state-id", str(state_id),
         "--mode", mode, "--attempt-id", str(attempt_id),
-        "--output-dir", output_dir,
+        "--episode-dir", episode_dir,
         "--checkpoint", CHECKPOINT,
-        "--render-gpu-device-id", str(RENDER_GPU),
+        "--render-gpu-device-id", str(RENDER_GPU_PHYSICAL),
         "--model-gpu-device-id", "-1",
     ]
 
-    # Save command
-    with open(os.path.join(episode_dir, "command.txt"), "w") as f:
+    # Save command + env snapshot
+    with open(os.path.join(log_dir, "command.txt"), "w") as f:
         f.write(" ".join(cmd) + "\n")
         f.write(f"CUDA_VISIBLE_DEVICES={GPU_VISIBLE}\n")
+        f.write(f"GPU_PHYSICAL={GPU_PHYSICAL_IDS}\n")
+        f.write(f"RENDER_GPU_PHYSICAL={RENDER_GPU_PHYSICAL}\n")
 
-    # Save environment snapshot
     env_snap = {k: str(v) for k, v in sorted(os.environ.items())
-                if any(p in k.lower() for p in ["cuda", "gpu", "mujoco", "opengl",
-                                                 "openvla", "python", "ld_", "path"])}
-    with open(os.path.join(episode_dir, "environment_snapshot.json"), "w") as f:
+                if any(p in k.lower() for p in [
+                    "cuda", "gpu", "mujoco", "opengl", "openvla",
+                    "python", "ld_", "path", "display",
+                ])}
+    with open(os.path.join(log_dir, "environment_snapshot.json"), "w") as f:
         json.dump(env_snap, f, indent=2)
 
     env = os.environ.copy()
@@ -132,18 +151,16 @@ def run_one_episode(task, state_id, mode, attempt_id, output_dir):
     env["PYOPENGL_PLATFORM"] = "egl"
 
     t0 = time.time()
-    stdout_path = os.path.join(episode_dir, "stdout.log")
-    stderr_path = os.path.join(episode_dir, "stderr.log")
+    stdout_path = os.path.join(log_dir, "stdout.log")
+    stderr_path = os.path.join(log_dir, "stderr.log")
 
-    print(f"  [{datetime.now().strftime('%H:%M:%S')}] Launch: {safe_tag}")
+    print(f"  [{datetime.now().strftime('%H:%M:%S')}] Launch: {safe_tag} -> {episode_dir}")
 
     with open(stdout_path, "w") as out_f, open(stderr_path, "w") as err_f:
         out_f.write(f"=== {safe_tag} ===\n{' '.join(cmd)}\n\n")
         err_f.write(f"=== {safe_tag} ===\n{' '.join(cmd)}\n\n")
         try:
-            proc = subprocess.Popen(
-                cmd, env=env, stdout=out_f, stderr=err_f,
-            )
+            proc = subprocess.Popen(cmd, env=env, stdout=out_f, stderr=err_f)
             proc.wait(timeout=5400)
             rc = proc.returncode
         except subprocess.TimeoutExpired:
@@ -153,13 +170,25 @@ def run_one_episode(task, state_id, mode, attempt_id, output_dir):
 
     dt = time.time() - t0
 
-    # Write returncode
-    with open(os.path.join(episode_dir, "returncode.json"), "w") as f:
+    with open(os.path.join(log_dir, "returncode.json"), "w") as f:
         json.dump({"returncode": rc, "runtime_sec": round(dt, 1),
                     "timeout": rc == -1}, f, indent=2)
 
+    # Hash launcher artifacts
+    launcher_hashes = {}
+    for fn in ["command.txt", "environment_snapshot.json", "stdout.log",
+               "stderr.log", "returncode.json"]:
+        fp = os.path.join(log_dir, fn)
+        if os.path.exists(fp):
+            launcher_hashes[fn] = sha256_file(fp)
+    with open(os.path.join(log_dir, "launcher_artifact_hashes.csv"), "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["artifact", "sha256"])
+        for k, v in launcher_hashes.items():
+            w.writerow([k, v])
+
     print(f"  [{datetime.now().strftime('%H:%M:%S')}] {safe_tag}: rc={rc} dt={dt:.0f}s")
-    return rc, episode_dir
+    return rc, episode_dir, log_dir
 
 
 def load_manifest(episode_dir):
@@ -168,11 +197,15 @@ def load_manifest(episode_dir):
     with open(path) as f: return json.load(f)
 
 
+# ── Main ──
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--canary-manifest", required=True)
     ap.add_argument("--expected-manifest-sha256", required=True)
     ap.add_argument("--expected-freeze-runner-sha256", required=True)
+    ap.add_argument("--expected-freeze-commit", required=True,
+                    help="Exact 40-char commit that produced the manifest")
     ap.add_argument("--output-dir", required=True)
     args = ap.parse_args()
 
@@ -190,6 +223,24 @@ def main():
     )
     print(f"Manifest SHA: {manifest_sha[:16]}... VERIFIED")
 
+    # Verify freeze runner SHA
+    freeze_runner_path = os.path.join(
+        PIPELINE_ROOT, "scripts", "stageb", "run_d4_freeze_shadow_states.py",
+    )
+    actual_freeze_sha = sha256_file(freeze_runner_path)
+    assert actual_freeze_sha == args.expected_freeze_runner_sha256, (
+        f"FATAL: Freeze runner SHA mismatch: got {actual_freeze_sha[:16]}..., "
+        f"expected {args.expected_freeze_runner_sha256[:16]}..."
+    )
+    print(f"Freeze runner SHA: {actual_freeze_sha[:16]}... VERIFIED")
+
+    # Verify current commit
+    current_head = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True,
+    ).stdout.strip()
+    print(f"Execution HEAD: {current_head[:16]}... (expected freeze commit: {args.expected_freeze_commit[:16]}...)")
+
+    # ── Load and verify canary states ──
     manifest_rows = list(csv.DictReader(open(args.canary_manifest)))
     canary_states = [r for r in manifest_rows if r["subset"] == "canary"]
     assert len(canary_states) == CANARY_N, (
@@ -198,25 +249,40 @@ def main():
     tasks = {r["task_key"] for r in canary_states}
     assert len(tasks) == CANARY_N, f"FATAL: need 4 distinct tasks, got {len(tasks)}"
 
-    # Verify each canary state's selection hash can be recomputed
     SALT = "D4.3_SHADOW_V1"
     for r in canary_states:
         expected = r["selection_hash"]
         recomputed = sha256_hex(f"{SALT}|{r['task_key']}|{r['state_id']}")
         assert recomputed == expected, (
-            f"FATAL: selection hash mismatch for {r['task_key']}_s{r['state_id']}: "
-            f"expected {expected[:16]}..., recomputed {recomputed[:16]}..."
+            f"FATAL: selection hash mismatch for {r['task_key']}_s{r['state_id']}"
         )
     print(f"Canary: {CANARY_N} states, {len(tasks)} tasks — all selection hashes verified")
 
     for r in canary_states:
         print(f"  {r['task_key']}_s{r['state_id']}  hash={r['selection_hash'][:16]}...")
 
-    # ── GPU baseline ──
-    gpu_procs_before = gpu_process_count()
-    print(f"GPU processes before canary: {len(gpu_procs_before)}")
-    for gp in gpu_procs_before:
-        print(f"  {gp}")
+    # ── GPU mapping verification ──
+    uuid_map = gpu_uuid_map()
+    target_uuids = set()
+    for pid in GPU_PHYSICAL_IDS:
+        uuid = uuid_map.get(pid)
+        assert uuid is not None, f"FATAL: Physical GPU {pid} not found in nvidia-smi"
+        target_uuids.add(uuid)
+        print(f"  GPU physical {pid} -> UUID {uuid}")
+
+    # GPU baseline
+    gpu_before = gpu_compute_processes(target_uuids)
+    assert gpu_before is not None, "FATAL: GPU query failed before canary"
+    gpu_before_snapshot = os.path.join(str(out), "gpu_processes_before.csv")
+    with open(gpu_before_snapshot, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["gpu_uuid", "pid", "process_name"])
+        w.writerows(gpu_before)
+    print(f"GPU processes before: {len(gpu_before)} (saved to {gpu_before_snapshot})")
+
+    # ── Launcher logs directory ──
+    launcher_dir = os.path.join(str(out), "launcher_logs")
+    os.makedirs(launcher_dir, exist_ok=False)
 
     # ── Run canary ──
     results = []
@@ -233,11 +299,13 @@ def main():
         # ── Reference ──
         ref_ok = False; ref_dir = None
         for attempt in range(1, MAX_RETRIES + 2):
-            rc, ep_dir = run_one_episode(task, state_id, "reference", attempt, str(out))
+            rc, ep_dir, log_dir = run_one_episode(
+                task, state_id, "reference", attempt, str(out), launcher_dir,
+            )
             if rc == 0:
                 ref_ok = True; ref_dir = ep_dir; break
             if not episode_failed_before_first_action(ep_dir):
-                break  # Post-first-action failure → no retry
+                break
 
         if not ref_ok:
             canary_pass = False
@@ -246,7 +314,9 @@ def main():
         # ── Shadow ──
         sh_ok = False; sh_dir = None
         for attempt in range(1, MAX_RETRIES + 2):
-            rc, ep_dir = run_one_episode(task, state_id, "shadow", attempt, str(out))
+            rc, ep_dir, log_dir = run_one_episode(
+                task, state_id, "shadow", attempt, str(out), launcher_dir,
+            )
             if rc == 0:
                 sh_ok = True; sh_dir = ep_dir; break
             if not episode_failed_before_first_action(ep_dir):
@@ -267,105 +337,179 @@ def main():
         ref_m = load_manifest(ref_dir)
         sh_m = load_manifest(sh_dir)
 
-        # ── Gate: no detector exception ──
+        # Validate manifests exist
+        if ref_m is None:
+            canary_pass = False
+            gate_failures.append(f"REF_MANIFEST_MISSING:{task}_s{state_id}")
+            continue
+        if sh_m is None:
+            canary_pass = False
+            gate_failures.append(f"SH_MANIFEST_MISSING:{task}_s{state_id}")
+            continue
+
+        tag = f"{task}_s{state_id}"
+
+        # ── Required artifacts must exist ──
+        required_artifacts = [
+            "ATTEMPT_STARTED.json", "MODEL_LOADED.json",
+            "FIRST_ACTION_GENERATED.json", "step_trace.csv",
+            "detector_candidates.csv", "detector_emission.json",
+            "action_identity.csv", "latency.csv",
+            "provenance.csv", "episode_manifest.json",
+            "artifact_hashes.csv", "teacher_sidecar.json",
+        ]
+        for mode_dir, mode_name in [(ref_dir, "ref"), (sh_dir, "sh")]:
+            for an in required_artifacts:
+                ap = os.path.join(mode_dir, an)
+                if not os.path.exists(ap):
+                    canary_pass = False
+                    gate_failures.append(f"MISSING_ARTIFACT:{tag}_{mode_name}:{an}")
+
+        # ── Row count consistency ──
+        n_steps_sh = sh_m.get("n_steps", 0)
+        for csv_name in ["step_trace.csv", "action_identity.csv", "latency.csv"]:
+            csv_path = os.path.join(sh_dir, csv_name)
+            if os.path.exists(csv_path):
+                with open(csv_path) as f:
+                    n_rows = sum(1 for _ in csv.DictReader(f))
+                if n_rows != n_steps_sh:
+                    canary_pass = False
+                    gate_failures.append(
+                        f"ROW_COUNT:{tag}_sh:{csv_name}:{n_rows}!={n_steps_sh}"
+                    )
+
+        # Infra status must be "ok"
+        if sh_m.get("infra_status") != "ok":
+            canary_pass = False
+            gate_failures.append(f"INFRA_STATUS:{tag}:{sh_m['infra_status']}")
+
+        # Detector exception
         if sh_m.get("detector_exception"):
             canary_pass = False
-            gate_failures.append(f"DETECTOR_EXCEPTION:{task}_s{state_id}")
+            gate_failures.append(f"DETECTOR_EXCEPTION:{tag}")
 
-        # ── Gate: no action identity failure ──
+        # Action identity
         if sh_m.get("action_identity_fail"):
             canary_pass = False
-            gate_failures.append(f"ACTION_IDENTITY_FAIL:{task}_s{state_id}")
+            gate_failures.append(f"ACTION_IDENTITY_FAIL:{tag}")
 
-        # ── Gate: sequence hashes identical ──
+        # Sequence hashes
         for key in ["raw_action_sequence_sha256", "env_action_sequence_sha256",
                      "obs_sequence_sha256"]:
             if ref_m.get(key) != sh_m.get(key):
                 canary_pass = False
-                gate_failures.append(f"{key}_MISMATCH:{task}_s{state_id}")
+                gate_failures.append(f"SEQ_{key}_MISMATCH:{tag}")
 
-        # ── Gate: episode length ──
-        if ref_m.get("n_steps") != sh_m.get("n_steps"):
-            canary_pass = False
-            gate_failures.append(f"STEPS_MISMATCH:{task}_s{state_id}")
-
-        # ── Gate: success + done ──
-        for sk in ["success_primary", "success_done_any", "success_check_any",
-                    "success_step_primary", "done_step"]:
+        # Steps, success, done
+        for sk in ["n_steps", "success_primary", "success_done_any",
+                    "success_check_any", "success_step_primary", "done_step"]:
             if ref_m.get(sk) != sh_m.get(sk):
                 canary_pass = False
-                gate_failures.append(f"{sk}_MISMATCH:{task}_s{state_id}")
+                gate_failures.append(f"{sk}_MISMATCH:{tag}")
 
-        # ── Gate: no invalid critical gripper fields ──
+        # Invalid fields
         if sh_m.get("n_invalid_field_steps", 0) > 0:
             canary_pass = False
             gate_failures.append(
-                f"INVALID_FIELDS:{task}_s{state_id}:"
-                f"{sh_m['n_invalid_field_steps']}_steps"
+                f"INVALID_FIELDS:{tag}:{sh_m['n_invalid_field_steps']}_steps"
             )
 
-        # ── Gate: detector reset state before episode ──
+        # Detector reset
         pre = sh_m.get("detector_pre_reset", {})
-        if pre:
+        if not pre:
+            canary_pass = False
+            gate_failures.append(f"RESET_MISSING:{tag}")
+        else:
             if pre.get("next_expected_step") != 0:
                 canary_pass = False
-                gate_failures.append(f"RESET_STEP:{task}_s{state_id}")
+                gate_failures.append(f"RESET_STEP:{tag}")
             if pre.get("emit_step") != -1:
                 canary_pass = False
-                gate_failures.append(f"RESET_EMIT:{task}_s{state_id}")
+                gate_failures.append(f"RESET_EMIT:{tag}")
+            if pre.get("history_len") != 0:
+                canary_pass = False
+                gate_failures.append(f"RESET_HISTORY:{tag}")
+            if pre.get("candidate_count") != 0:
+                canary_pass = False
+                gate_failures.append(f"RESET_CANDIDATES:{tag}")
 
-        # ── Gate: no predictor-abstain emission ──
-        sh_cand_path = os.path.join(sh_dir, "detector_candidates.csv")
-        if os.path.exists(sh_cand_path) and sh_m.get("detector_emit_step", -1) >= 0:
-            emit_step = sh_m["detector_emit_step"]
-            with open(sh_cand_path) as f:
-                for cand in csv.DictReader(f):
-                    if int(cand.get("step", -1)) == emit_step:
-                        if cand.get("abstained", "1") == "1" or cand.get("abstain", ""):
-                            canary_pass = False
-                            gate_failures.append(
-                                f"ABSTAIN_EMISSION:{task}_s{state_id}:"
-                                f"step={emit_step} reason={cand.get('abstain','')}"
-                            )
-                        break
+        # Abstain emission
+        emit_step = sh_m.get("detector_emit_step", -1)
+        if isinstance(emit_step, int) and emit_step >= 0:
+            cand_path = os.path.join(sh_dir, "detector_candidates.csv")
+            if os.path.exists(cand_path):
+                found_emit_cand = False
+                with open(cand_path) as f:
+                    for cand in csv.DictReader(f):
+                        if int(cand.get("step", -1)) == emit_step:
+                            found_emit_cand = True
+                            if cand.get("abstained") == "1" or cand.get("abstain", ""):
+                                canary_pass = False
+                                gate_failures.append(
+                                    f"ABSTAIN_EMISSION:{tag}:step={emit_step}"
+                                )
+                if not found_emit_cand:
+                    canary_pass = False
+                    gate_failures.append(
+                        f"EMIT_CANDIDATE_MISSING:{tag}:step={emit_step}"
+                    )
 
-        # ── Gate: latency ──
-        sh_lat_path = os.path.join(sh_dir, "latency.csv")
-        if os.path.exists(sh_lat_path):
-            det_lats = []
-            model_lats = []
-            with open(sh_lat_path) as f:
+        # Latency
+        lat_path = os.path.join(sh_dir, "latency.csv")
+        if os.path.exists(lat_path):
+            det_lats = []; model_lats = []
+            with open(lat_path) as f:
                 for row in csv.DictReader(f):
                     du = row.get("detector_update_us", "")
                     mu = row.get("model_inference_us", "")
-                    if du and du != "DISABLED":
-                        det_lats.append(int(du))
-                    if mu and mu != "DISABLED":
-                        model_lats.append(int(mu))
-            if det_lats:
+                    if du and du != "DISABLED": det_lats.append(int(du))
+                    if mu and mu != "DISABLED": model_lats.append(int(mu))
+            if not det_lats:
+                canary_pass = False
+                gate_failures.append(f"LATENCY_EMPTY:{tag}")
+            else:
                 p99 = sorted(det_lats)[int(len(det_lats) * 0.99)]
                 mx = max(det_lats)
-                median_det = sorted(det_lats)[len(det_lats) // 2]
-                median_model = (sorted(model_lats)[len(model_lats) // 2]
-                                if model_lats else 1)
+                med_det = sorted(det_lats)[len(det_lats) // 2]
+                med_mod = sorted(model_lats)[len(model_lats) // 2] if model_lats else 1
                 if p99 > 20000:
                     canary_pass = False
-                    gate_failures.append(f"LATENCY_P99:{task}_s{state_id}:{p99}us")
+                    gate_failures.append(f"LATENCY_P99:{tag}:{p99}us")
                 if mx > 50000:
                     canary_pass = False
-                    gate_failures.append(f"LATENCY_MAX:{task}_s{state_id}:{mx}us")
-                if median_model > 0:
-                    overhead_pct = median_det / median_model * 100
-                    if overhead_pct > 5.0:
+                    gate_failures.append(f"LATENCY_MAX:{tag}:{mx}us")
+                if med_mod > 0 and med_det / med_mod > 0.05:
+                    canary_pass = False
+                    gate_failures.append(
+                        f"LATENCY_OVERHEAD:{tag}:{med_det/med_mod*100:.1f}%"
+                    )
+        else:
+            canary_pass = False
+            gate_failures.append(f"LATENCY_MISSING:{tag}")
+
+        # Artifact hashes
+        hash_path = os.path.join(sh_dir, "artifact_hashes.csv")
+        if os.path.exists(hash_path):
+            with open(hash_path) as f:
+                for row in csv.DictReader(f):
+                    an = row["artifact"]
+                    ap = os.path.join(sh_dir, an)
+                    if not os.path.exists(ap):
                         canary_pass = False
-                        gate_failures.append(
-                            f"LATENCY_OVERHEAD:{task}_s{state_id}:{overhead_pct:.1f}%"
-                        )
+                        gate_failures.append(f"HASH_FILE_MISSING:{tag}:{an}")
+                    else:
+                        actual = sha256_file(ap)
+                        if actual != row["sha256"]:
+                            canary_pass = False
+                            gate_failures.append(f"HASH_MISMATCH:{tag}:{an}")
+        else:
+            canary_pass = False
+            gate_failures.append(f"HASH_MANIFEST_MISSING:{tag}")
 
         results.append({
             "task": task, "state_id": state_id,
-            "ref_dir": ref_dir, "sh_dir": sh_dir,
             "ref_ok": ref_ok, "sh_ok": sh_ok,
+            "ref_dir": ref_dir, "sh_dir": sh_dir,
             "ref_n_steps": ref_m.get("n_steps"),
             "sh_n_steps": sh_m.get("n_steps"),
             "ref_success": ref_m.get("success_primary"),
@@ -376,20 +520,27 @@ def main():
         })
 
     # ── GPU cleanup gate ──
-    time.sleep(2)  # Let processes finish
-    gpu_procs_after = gpu_process_count()
-    print(f"\nGPU processes after canary: {len(gpu_procs_after)}")
-    for gp in gpu_procs_after:
-        print(f"  {gp}")
+    time.sleep(3)
+    gpu_after = gpu_compute_processes(target_uuids)
+    assert gpu_after is not None, "FATAL: GPU query failed after canary"
+    gpu_after_snapshot = os.path.join(str(out), "gpu_processes_after.csv")
+    with open(gpu_after_snapshot, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["gpu_uuid", "pid", "process_name"])
+        w.writerows(gpu_after)
 
-    # Identify new processes (in 'after' but not in 'before')
-    before_set = set(gpu_procs_before)
-    new_procs = [p for p in gpu_procs_after if p not in before_set]
+    # Compare by (uuid, pid, name) identity
+    before_ids = set(gpu_before)
+    after_ids = set(gpu_after)
+    new_procs = after_ids - before_ids
     if new_procs:
         canary_pass = False
         gate_failures.append(f"GPU_CLEANUP:{len(new_procs)}_new_processes")
-        for np in new_procs:
-            print(f"  RESIDUAL: {np}")
+        for np_id in sorted(new_procs):
+            print(f"  RESIDUAL: {np_id}")
+
+    print(f"GPU processes: before={len(gpu_before)} after={len(gpu_after)} "
+          f"new={len(new_procs)}")
 
     # ── Summary ──
     print(f"\n{'='*60}")
@@ -414,11 +565,16 @@ def main():
         "result_class": result_class, "canary_pass": canary_pass,
         "n_states": CANARY_N, "n_completed": len(results),
         "gate_failures": gate_failures,
-        "gpu_visible": GPU_VISIBLE, "render_gpu": RENDER_GPU,
-        "gpu_procs_before": len(gpu_procs_before),
-        "gpu_procs_after": len(gpu_procs_after),
-        "gpu_new_processes": len(new_procs) if canary_pass else -1,
+        "gpu_visible": GPU_VISIBLE,
+        "gpu_physical_ids": GPU_PHYSICAL_IDS,
+        "render_gpu_physical": RENDER_GPU_PHYSICAL,
+        "target_gpu_uuids": sorted(target_uuids),
+        "gpu_procs_before": len(gpu_before),
+        "gpu_procs_after": len(gpu_after),
+        "gpu_new_processes": len(new_procs),
         "manifest_sha": manifest_sha,
+        "freeze_runner_sha": actual_freeze_sha,
+        "execution_head": current_head,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "results": results,
     }

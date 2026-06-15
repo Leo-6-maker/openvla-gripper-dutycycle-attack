@@ -270,25 +270,41 @@ def main():
         f"FATAL: fresh25 unique keys = {len(fresh25_keys)}, expected 25"
     )
 
-    # 5c. Invalid infrastructure states (must be an explicit file; if none, use frozen empty header)
+    # 5c. Invalid infrastructure states — file MUST exist (even if empty, must have header)
     if not args.invalid_state_manifest:
-        print("FATAL: --invalid-state-manifest is required (even if empty header only)")
+        print("FATAL: --invalid-state-manifest is required")
         sys.exit(1)
-    if os.path.exists(args.invalid_state_manifest):
-        invalid_rows = list(csv.DictReader(open(args.invalid_state_manifest)))
-        n_invalid = 0
-        for r in invalid_rows:
-            key = (r["task_key"], int(r["state_id"]))
-            excluded_keys.add(key)
-            exclusion_records.append({
-                "task_key": key[0], "state_id": str(key[1]),
-                "trace_id": r.get("trace_id", ""),
-                "reason": r.get("reason", "invalid_infrastructure"),
-            })
-            n_invalid += 1
-        print(f"Invalid infrastructure exclusions: {n_invalid}")
-    else:
-        print(f"Invalid infrastructure exclusions: 0 (file not found: {args.invalid_state_manifest})")
+    assert os.path.isfile(args.invalid_state_manifest), (
+        f"FATAL: --invalid-state-manifest file not found: {args.invalid_state_manifest}"
+    )
+    invalid_rows = list(csv.DictReader(open(args.invalid_state_manifest)))
+    # Verify header has required columns
+    header = invalid_rows[0].keys() if invalid_rows else (
+        csv.DictReader(open(args.invalid_state_manifest)).fieldnames
+    )
+    assert "task_key" in (header or []), (
+        "FATAL: invalid-state manifest must have task_key column"
+    )
+    assert "state_id" in (header or []), (
+        "FATAL: invalid-state manifest must have state_id column"
+    )
+    n_invalid = 0
+    invalid_keys = set()
+    for r in invalid_rows:
+        key = (r["task_key"], int(r["state_id"]))
+        assert key in inventory, (
+            f"FATAL: invalid state {key} not in 500-state inventory"
+        )
+        assert key not in invalid_keys, f"FATAL: duplicate invalid key {key}"
+        invalid_keys.add(key)
+        excluded_keys.add(key)
+        exclusion_records.append({
+            "task_key": key[0], "state_id": str(key[1]),
+            "trace_id": r.get("trace_id", ""),
+            "reason": r.get("reason", "invalid_infrastructure"),
+        })
+        n_invalid += 1
+    print(f"Invalid infrastructure exclusions: {n_invalid}")
 
     # ═══════════════════════════════════════════════════════════
     # 6. Build eligible set (exclude by key)
@@ -413,7 +429,7 @@ def main():
         w = csv.writer(f)
         w.writerow(["artifact", "sha256"])
         for label, path in input_hash_files:
-            h = sha256_file(path) if path else "N/A_no_file"
+            h = sha256_file(path)  # path is guaranteed to exist (CLI required or asserted)
             w.writerow([label, h])
         w.writerow(["shadow_state_manifest", sha256_file(str(manifest_path))])
         w.writerow(["exclusion_manifest", sha256_file(str(excl_path))])
