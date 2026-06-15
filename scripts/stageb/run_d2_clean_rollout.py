@@ -9,16 +9,16 @@ and merges final ledger.
 Clean inference only. NO attack. NO training.
 """
 
-import argparse, csv, os, subprocess, sys, time
+import argparse, csv, glob, os, subprocess, sys, time
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
 GPU_GROUPS = [
-    ("A", "0,1", 0),
-    ("B", "2,3", 0),
-    ("C", "4,5", 0),
-    ("D", "6,7", 0),
+    ("A", "0,1", 0),   # render_gpu = first physical GPU in group
+    ("B", "2,3", 2),
+    ("C", "4,5", 4),
+    ("D", "6,7", 6),
 ]
 
 TASK_ALLOCATION = {
