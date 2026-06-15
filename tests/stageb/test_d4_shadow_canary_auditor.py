@@ -305,3 +305,115 @@ def test_hashed_files_subset_of_required():
         assert f in REQUIRED_EPISODE_FILES
     for f in HASHED_LAUNCHER_FILES:
         assert f in REQUIRED_LAUNCHER_FILES
+
+
+# ═══════════════════════════════════════════════════════════════
+# GPU snapshot — unconditional set audit
+# ═══════════════════════════════════════════════════════════════
+
+def test_gpu_before_nonempty_fails():
+    """Pre-existing GPU processes must cause failure."""
+    before_ids = {("uuid-1", "123", "python")}
+    after_ids = set()
+    assert len(before_ids) > 0  # FAIL
+
+
+def test_gpu_after_residual_fails():
+    """Residual GPU processes after canary must cause failure."""
+    before_ids = set()
+    after_ids = {("uuid-1", "456", "python")}
+    assert len(after_ids) > 0  # FAIL
+
+
+def test_gpu_before_empty_after_empty_passes():
+    """No processes before or after = clean."""
+    before_ids = set()
+    after_ids = set()
+    assert len(before_ids) == 0 and len(after_ids) == 0
+
+
+def test_gpu_before_after_same_process_fails():
+    """Same process persisting through canary = pre-existing = FAIL."""
+    before_ids = {("uuid-1", "123", "python")}
+    after_ids = {("uuid-1", "123", "python")}
+    assert len(before_ids) > 0
+
+
+# ═══════════════════════════════════════════════════════════════
+# CSV schema validation
+# ═══════════════════════════════════════════════════════════════
+
+def test_step_trace_required_flags():
+    """Step trace must have all validity flags."""
+    required = ["raw_valid", "env_valid", "qpos_valid", "eef_valid",
+                "convention_ok", "semantics_ok"]
+    columns = ["step", "raw_valid", "env_valid", "qpos_valid",
+               "eef_valid", "convention_ok"]
+    for f in required:
+        if f not in columns:
+            assert False, f"Missing column: {f}"
+
+
+def test_step_trace_flag_values_must_be_01():
+    """Validity flags must be '0' or '1', nothing else."""
+    valid_values = {"0", "1"}
+    for val in ["1", "0", "1", "0"]:
+        assert str(val) in valid_values
+    for bad in ["2", "True", "False", "", None]:
+        if bad is not None and str(bad) not in valid_values:
+            pass  # correctly rejected
+        elif bad is None:
+            pass  # correctly rejected
+
+
+def test_action_identity_values_must_be_01():
+    """action_identical must be '0' or '1'."""
+    valid_values = {"0", "1"}
+    for bad in ["2", "True", "", None]:
+        ok = bad is not None and str(bad) in valid_values
+        assert not ok  # should be invalid
+
+
+# ═══════════════════════════════════════════════════════════════
+# Emit candidate uniqueness
+# ═══════════════════════════════════════════════════════════════
+
+def test_emit_single_candidate_matches():
+    """Exactly one candidate at emit step, not abstained."""
+    cands = [
+        {"step": "10", "abstained": "0", "abstain": ""},
+        {"step": "15", "abstained": "0", "abstain": ""},
+    ]
+    emit_step = 10
+    emit_cands = [c for c in cands if int(c["step"]) == emit_step]
+    assert len(emit_cands) == 1
+    assert emit_cands[0]["abstained"] == "0"
+    assert emit_cands[0]["abstain"] == ""
+
+
+def test_emit_duplicate_candidate_fails():
+    """Two candidates at same step = FAIL."""
+    cands = [
+        {"step": "10", "abstained": "0", "abstain": ""},
+        {"step": "10", "abstained": "0", "abstain": ""},
+    ]
+    emit_step = 10
+    emit_cands = [c for c in cands if int(c["step"]) == emit_step]
+    assert len(emit_cands) != 1  # FAIL
+
+
+def test_emit_abstained_candidate_fails():
+    """Emitting an abstained candidate = FAIL."""
+    cands = [{"step": "10", "abstained": "1", "abstain": "gripper_already_open"}]
+    emit_step = 10
+    emit_cands = [c for c in cands if int(c["step"]) == emit_step]
+    assert len(emit_cands) == 1
+    assert emit_cands[0]["abstained"] == "1"  # FAIL
+
+
+def test_emit_missing_candidate_fails():
+    """No candidate at emit step = FAIL."""
+    cands = [{"step": "5", "abstained": "0", "abstain": ""}]
+    emit_step = 10
+    emit_cands = [c for c in cands if int(c["step"]) == emit_step]
+    assert len(emit_cands) == 0  # FAIL

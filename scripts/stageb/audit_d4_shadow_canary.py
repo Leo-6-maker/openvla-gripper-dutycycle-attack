@@ -378,13 +378,25 @@ def main():
             all_pass = False
 
         # ── Recompute invalid fields from step_trace.csv ──
+        REQUIRED_FLAGS = ["raw_valid", "env_valid", "qpos_valid", "eef_valid",
+                          "convention_ok", "semantics_ok"]
         sh_trace = load_csv(sh_dir / "step_trace.csv")
+        for f in REQUIRED_FLAGS:
+            if f not in (sh_trace[0].keys() if sh_trace else []):
+                gates.append((f"STEP_TRACE_MISSING_COL:{tag}:{f}", False))
+                all_pass = False
         invalid_from_csv = 0
         for row in sh_trace:
-            flags = ["raw_valid", "env_valid", "qpos_valid", "eef_valid",
-                      "convention_ok", "semantics_ok"]
-            if any(row.get(f, "1") in ("0", "False", "false") for f in flags):
-                invalid_from_csv += 1
+            for f in REQUIRED_FLAGS:
+                v = row.get(f, None)
+                if v is None:
+                    gates.append((f"STEP_TRACE_NULL:{tag}:{f}", False))
+                    all_pass = False
+                elif str(v) not in ("0", "1"):
+                    gates.append((f"STEP_TRACE_BAD_VAL:{tag}:{f}={v}", False))
+                    all_pass = False
+                elif v in ("0", "False", "false", 0):
+                    invalid_from_csv += 1
         manifest_invalid = sh_m.get("n_invalid_field_steps", -1)
         if invalid_from_csv != manifest_invalid:
             gates.append((f"INVALID_MISMATCH:{tag}:csv={invalid_from_csv}_manifest={manifest_invalid}", False))
@@ -395,8 +407,16 @@ def main():
 
         # ── Recompute action identity from CSV ──
         sh_id_rows = load_csv(sh_dir / "action_identity.csv")
+        for row in sh_id_rows:
+            v = row.get("action_identical", None)
+            if v is None:
+                gates.append((f"IDENTITY_MISSING_COL:{tag}", False))
+                all_pass = False
+            elif str(v) not in ("0", "1"):
+                gates.append((f"IDENTITY_BAD_VAL:{tag}:{v}", False))
+                all_pass = False
         identity_fail_from_csv = any(
-            row.get("action_identical") in ("0", "False", "false")
+            str(row.get("action_identical", "1")) == "0"
             for row in sh_id_rows
         )
         if identity_fail_from_csv != bool(sh_m.get("action_identity_fail")):
@@ -424,20 +444,23 @@ def main():
                 gates.append((f"RESET_{check}:{tag}", g))
                 if not g: all_pass = False
 
-        # Abstain emission
+        # Emit — must correspond to exactly one non-abstain candidate
         emit_step = sh_m.get("detector_emit_step", -1)
         if isinstance(emit_step, int) and emit_step >= 0:
             sh_cands = load_csv(sh_dir / "detector_candidates.csv")
-            found = False
-            for cand in sh_cands:
-                if int(cand.get("step", -1)) == emit_step:
-                    found = True
-                    if cand.get("abstained") == "1" or cand.get("abstain", ""):
-                        gates.append((f"ABSTAIN_EMISSION:{tag}", False))
-                        all_pass = False
-            if not found:
+            emit_cands = [c for c in sh_cands if int(c.get("step", -1)) == emit_step]
+            n_emit = len(emit_cands)
+            if n_emit == 0:
                 gates.append((f"EMIT_CANDIDATE_MISSING:{tag}", False))
                 all_pass = False
+            elif n_emit > 1:
+                gates.append((f"EMIT_CANDIDATE_DUPLICATE:{tag}:{n_emit}", False))
+                all_pass = False
+            else:
+                cand = emit_cands[0]
+                if cand.get("abstained") == "1" or cand.get("abstain", ""):
+                    gates.append((f"ABSTAIN_EMISSION:{tag}", False))
+                    all_pass = False
 
         # Latency
         lat_rows = load_csv(sh_dir / "latency.csv")
@@ -470,23 +493,27 @@ def main():
                     gates.append((f"LATENCY_OVERHEAD:{tag}", False))
                     all_pass = False
 
-    # ── GPU snapshot independent audit ──
+    # ── GPU snapshot independent audit (unconditional) ──
     for snapshot_name in ["gpu_processes_before.csv", "gpu_processes_after.csv"]:
         sp = out / snapshot_name
         if not sp.exists():
             gates.append((f"GPU_SNAPSHOT_MISSING:{snapshot_name}", False))
             all_pass = False
-    gpu_before_rows = load_csv(out / "gpu_processes_before.csv")
-    gpu_after_rows = load_csv(out / "gpu_processes_after.csv")
-    if gpu_before_rows and gpu_after_rows:
-        before_ids = {(r["gpu_uuid"], r["pid"], r["process_name"])
-                       for r in gpu_before_rows}
-        after_ids = {(r["gpu_uuid"], r["pid"], r["process_name"])
-                      for r in gpu_after_rows}
-        new_procs = after_ids - before_ids
-        if new_procs:
-            gates.append((f"GPU_RESIDUAL:{len(new_procs)}", False))
-            all_pass = False
+
+    gpu_before_rows = load_csv(out / "gpu_processes_before.csv") if (out / "gpu_processes_before.csv").exists() else []
+    gpu_after_rows = load_csv(out / "gpu_processes_after.csv") if (out / "gpu_processes_after.csv").exists() else []
+
+    before_ids = {(r["gpu_uuid"], r["pid"], r["process_name"])
+                   for r in gpu_before_rows} if gpu_before_rows else set()
+    after_ids = {(r["gpu_uuid"], r["pid"], r["process_name"])
+                  for r in gpu_after_rows} if gpu_after_rows else set()
+
+    if before_ids:
+        gates.append((f"GPU_PREEXISTING:{len(before_ids)}", False))
+        all_pass = False
+    if after_ids:
+        gates.append((f"GPU_RESIDUAL:{len(after_ids)}", False))
+        all_pass = False
 
     # ── Print audit ──
     print(f"\n{'='*60}")
