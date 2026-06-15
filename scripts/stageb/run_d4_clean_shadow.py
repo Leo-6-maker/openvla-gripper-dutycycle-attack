@@ -358,6 +358,24 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
             "success_done": int(success_done),
             "success_check": int(success_check),
         }
+
+        # ── Privileged sidecar (read-only, only when enabled) ──
+        if args.enable_privileged_sidecar:
+            obj_after = get_object_pose_safe(env, target_object_name)
+            obj_x = round(float(obj_after[0]), 6) if obj_after is not None else ""
+            obj_y = round(float(obj_after[1]), 6) if obj_after is not None else ""
+            obj_z = round(float(obj_after[2]), 6) if obj_after is not None else ""
+            eef_after_step = eef_pos(env)
+            eef_to_obj = ""
+            if obj_after is not None and eef_after_step is not None:
+                eef_to_obj = round(float(np.linalg.norm(
+                    np.array(eef_after_step) - np.array(obj_after)
+                )), 6)
+            trace_row.update({
+                "obj_x": obj_x, "obj_y": obj_y, "obj_z": obj_z,
+                "eef_to_obj_distance": eef_to_obj,
+            })
+
         step_trace.append(trace_row)
 
         if v["any_invalid"]:
@@ -563,6 +581,8 @@ def main():
     ap.add_argument("--success-metric", choices=["done", "check_success"],
                     default="check_success")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--enable-privileged-sidecar", action="store_true",
+                    help="Record object pose and EEF-object distance (read-only)")
     # Provenance verification (fail-closed)
     ap.add_argument("--expected-git-head", default="",
                     help="If set, fail if git HEAD doesn't match")
