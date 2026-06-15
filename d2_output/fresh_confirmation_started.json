@@ -1,0 +1,9 @@
+{
+  "checkpoint_sha": "cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7326f691742b9a438f1174858",
+  "candidate_table_sha": "77ce9e730dc9ea308f38bef2fc14de76f1efc3749d3b1fb279b304bb4b0c7697",
+  "trace_status_sha": "adf4567adfee513fd68a003ddf787d2ba97c60d72dc2998a5d85364e8639268a",
+  "runner_sha": "388ad9b909e5919d558ba6e962c626bdc969601452ab7b011fe360626e7dab69",
+  "n_eligible_multi": 25,
+  "n_tasks_represented": 9,
+  "timestamp": "2026-06-15T05:07:11"
+}

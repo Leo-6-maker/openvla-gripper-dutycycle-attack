@@ -1,0 +1,14 @@
+metric,value
+n_traces,25
+n_tasks,9
+model_top1_rate,0.72
+baseline_top1_rate,0.08
+model_n_ties,0
+baseline_n_ties,18
+model_cond_mae,5.7
+baseline_cond_mae,42.3
+paired_both_correct,1
+paired_model_only,17
+paired_baseline_only,1
+paired_neither,6
+result_class,FRESH_REPLICATION_GAIN
