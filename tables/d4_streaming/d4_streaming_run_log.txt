@@ -1,0 +1,7 @@
+D4.2a RUN LOG
+checkpoint_sha: cdd3cbe4f42592dab81590d84f5a8ff67b9fc3b7326f691742b9a438f1174858
+threshold: 0.236312
+n_traces: 46
+n_full_match: 46
+all_match: True
+runner_sha: 5f4cdb57377f8994e40cccaa6b679430bbbf6df52d04efdd847af04363c91008
