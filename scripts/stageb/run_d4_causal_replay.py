@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import torch
 
-PIPELINE_ROOT = "/data/liuyu/l12_e4c2_pipeline"
+PIPELINE_ROOT = os.environ.get("L12_PIPELINE_ROOT", "/data/liuyu/l12_e4c2_pipeline")
 sys.path.insert(0, os.path.join(PIPELINE_ROOT, "src"))
 sys.path.insert(0, os.path.join(PIPELINE_ROOT, "scripts", "stageb"))
 

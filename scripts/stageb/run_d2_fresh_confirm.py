@@ -20,7 +20,7 @@ TIE_TOLERANCE = 0.001
 MIN_FRESH_MULTI = 20
 MIN_TASKS_REPRESENTED = 8
 
-PIPELINE_ROOT = "/data/liuyu/l12_e4c2_pipeline"
+PIPELINE_ROOT = os.environ.get("L12_PIPELINE_ROOT", "/data/liuyu/l12_e4c2_pipeline")
 sys.path.insert(0, os.path.join(PIPELINE_ROOT, "scripts", "stageb"))
 
 from train_d1b_detector import CandidateRanker, FEATURE_NAMES, normalize_features
