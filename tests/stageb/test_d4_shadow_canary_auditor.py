@@ -57,8 +57,8 @@ def _make_episode(tmp_path, returncode=0, fatal=False, infra="ok",
     return ep_dir, ll_dir
 
 
-def _make_minimal_canary_root(tmp_path, valid=True):
-    """Create a synthetic canary output tree. Returns (root, manifest_path)."""
+def _make_minimal_canary_root(tmp_path):
+    """Create a synthetic canary output tree. Returns (root, manifest_path, manifest_sha)."""
     root = tmp_path / "canary_root"
     root.mkdir()
     launcher_dir = root / "launcher_logs"
@@ -80,11 +80,8 @@ def _make_minimal_canary_root(tmp_path, valid=True):
     manifest_sha = sha256_file(str(manifest))
 
     # Create 8 episodes (4 ref + 4 shadow)
-    for tk in ALL_4_TASKS:
-        for mode in ["reference", "shadow"]:
-            tag = f"{tk}_s{tk_idx}_attempt1" if tk != "ketchup" else f"{tk}_s3_{mode}_attempt1"
-            # Derive state_id from task index
-            tk_idx = ALL_4_TASKS.index(tk)
+    for tk_idx, tk in enumerate(ALL_4_TASKS):
+        for mode in ("reference", "shadow"):
             tag = f"{tk}_s{tk_idx}_{mode}_attempt1"
 
             ep_dir = root / tag
