@@ -9,9 +9,8 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT / "src"))
-
-from gripper_attack.m3_v5_attack_harness import audit_frame_group, write_json  # noqa: E402
+sys.path.insert(0, str(REPO_ROOT))
+from scripts.stageb.audit_m3_arm_v5_frame_group_independent import audit_frame_group, write_json
 
 
 def main() -> None:

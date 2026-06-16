@@ -545,6 +545,115 @@ def test_independent_capture_auditor_rejects_stale_failed_ledger(tmp_path):
     assert result["audit_status"] == "FAIL"
 
 
+def test_independent_capture_auditor_rejects_eight_captured_and_twelve_not_started(tmp_path):
+    capture_root = tmp_path / "capture"
+    model_dir, manifest_rows, bundle_sha = _make_model_dir(tmp_path)
+    cfg_path = _write_temp_config(tmp_path, model_dir)
+    _write_model_manifest(capture_root, manifest_rows)
+    _write_capture_manifest(capture_root)
+    _write_all_candidate_records(capture_root, model_sha=bundle_sha)
+    candidates = select_two_states_per_task()
+    rows = []
+    for idx, candidate in enumerate(candidates):
+        record_path = capture_root / f"{candidate.task}_s{candidate.state_id}_clean_records.json"
+        attempt_dir = f"attempts/{candidate.task}_s{candidate.state_id}/attempt_0"
+        if idx < 8:
+            _write_capture_markers(capture_root, attempt_dir)
+            rows.append(
+                {
+                    "task": candidate.task,
+                    "state_id": candidate.state_id,
+                    "attempt_index": 0,
+                    "attempt_status": "CAPTURED",
+                    "first_action_taken": "true",
+                    "attempt_dir": attempt_dir,
+                    "clean_records_path": record_path.name,
+                    "clean_records_sha256": _sha_file(record_path),
+                    "failure_reason": "",
+                }
+            )
+        else:
+            rows.append(
+                {
+                    "task": candidate.task,
+                    "state_id": candidate.state_id,
+                    "attempt_index": "",
+                    "attempt_status": "NOT_STARTED",
+                    "first_action_taken": "false",
+                    "attempt_dir": "",
+                    "clean_records_path": "",
+                    "clean_records_sha256": "",
+                    "failure_reason": "not started",
+                }
+            )
+    write_csv(
+        capture_root / "m3_arm_v5_capture_attempt_ledger.csv",
+        rows,
+        ["task", "state_id", "attempt_index", "attempt_status", "first_action_taken", "attempt_dir", "clean_records_path", "clean_records_sha256", "failure_reason"],
+    )
+    result = audit_capture_root(capture_root=capture_root, config_path=cfg_path, expected_commit=_head())
+    assert result["audit_status"] == "FAIL"
+    assert result["captured_count"] == 8
+    assert result["not_started_count"] == 12
+
+
+def test_independent_capture_auditor_requires_ledger_present(tmp_path):
+    capture_root = tmp_path / "capture"
+    model_dir, manifest_rows, bundle_sha = _make_model_dir(tmp_path)
+    cfg_path = _write_temp_config(tmp_path, model_dir)
+    _write_model_manifest(capture_root, manifest_rows)
+    _write_capture_manifest(capture_root)
+    _write_all_candidate_records(capture_root, model_sha=bundle_sha)
+    result = audit_capture_root(capture_root=capture_root, config_path=cfg_path, expected_commit=_head())
+    assert result["audit_status"] == "FAIL"
+    assert result["ledger_present"] is False
+    assert result["full_capture_status"] == "V5_CAPTURE_LEDGER_MISSING"
+
+
+def test_independent_capture_auditor_rejects_captured_infra_invalid_even_with_eight_events(tmp_path):
+    capture_root = tmp_path / "capture"
+    model_dir, manifest_rows, bundle_sha = _make_model_dir(tmp_path)
+    cfg_path = _write_temp_config(tmp_path, model_dir)
+    _write_model_manifest(capture_root, manifest_rows)
+    _write_capture_manifest(capture_root)
+    _write_all_candidate_records(capture_root, model_sha=bundle_sha)
+    candidate = select_two_states_per_task()[9]
+    _write_clean_records(
+        capture_root / f"{candidate.task}_s{candidate.state_id}_clean_records.json",
+        [
+            _record(0, 31744, task=candidate.task, state_id=candidate.state_id, root=capture_root, model_sha=bundle_sha),
+            _record(2, 31872, task=candidate.task, state_id=candidate.state_id, root=capture_root, model_sha=bundle_sha),
+        ],
+    )
+    ledger = capture_root / "m3_arm_v5_capture_attempt_ledger.csv"
+    _write_attempt_ledger(ledger, capture_root)
+    result = audit_capture_root(capture_root=capture_root, config_path=cfg_path, expected_commit=_head())
+    assert result["audit_status"] == "FAIL"
+    assert result["selection_status"] == "V5_CLEAN_EVENT_INFRA_INVALID"
+
+
+def test_independent_capture_auditor_fails_when_only_seven_events_exist(tmp_path):
+    capture_root = tmp_path / "capture"
+    model_dir, manifest_rows, bundle_sha = _make_model_dir(tmp_path)
+    cfg_path = _write_temp_config(tmp_path, model_dir)
+    _write_model_manifest(capture_root, manifest_rows)
+    _write_capture_manifest(capture_root)
+    _write_all_candidate_records(capture_root, event_count=7, model_sha=bundle_sha)
+    for candidate in select_two_states_per_task()[7:]:
+        _write_clean_records(
+            capture_root / f"{candidate.task}_s{candidate.state_id}_clean_records.json",
+            [
+                _record(0, 31744, task=candidate.task, state_id=candidate.state_id, root=capture_root, model_sha=bundle_sha),
+                _record(1, 31744, task=candidate.task, state_id=candidate.state_id, root=capture_root, model_sha=bundle_sha),
+            ],
+        )
+    ledger = capture_root / "m3_arm_v5_capture_attempt_ledger.csv"
+    _write_attempt_ledger(ledger, capture_root)
+    result = audit_capture_root(capture_root=capture_root, config_path=cfg_path, expected_commit=_head())
+    assert result["audit_status"] == "FAIL"
+    assert result["selection_status"] == "V5_CAPTURE_POOL_INSUFFICIENT"
+
+
 def test_independent_capture_auditor_rejects_model_bundle_exact_set_mismatch(tmp_path):
     capture_root = tmp_path / "capture"
     model_dir, manifest_rows, bundle_sha = _make_model_dir(tmp_path)

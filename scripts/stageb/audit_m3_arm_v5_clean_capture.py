@@ -124,6 +124,14 @@ def atomic_write_text(path: Path, text: str) -> None:
             f.flush()
             os.fsync(f.fileno())
         os.replace(str(tmp), str(path))
+        try:
+            dir_fd = os.open(str(path.parent), os.O_RDONLY)
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+        except OSError:
+            pass
     finally:
         if tmp.exists():
             try:
@@ -371,6 +379,53 @@ def validate_attempt_policy(capture_root: Path, rows: Iterable[Mapping[str, Any]
                 raise ValueError(f"clean records sha mismatch: {rel}")
 
 
+def attempt_status_counts(rows: Iterable[Mapping[str, Any]]) -> dict[str, int]:
+    counts = {
+        "captured_count": 0,
+        "not_started_count": 0,
+        "capture_failed_post_action_count": 0,
+        "capture_failed_post_generation_count": 0,
+        "unresolved_pre_generation_failure_count": 0,
+        "terminal_non_captured_count": 0,
+    }
+    for row in rows:
+        status = str(row.get("attempt_status", ""))
+        if status == "CAPTURED":
+            counts["captured_count"] += 1
+        elif status == "NOT_STARTED":
+            counts["not_started_count"] += 1
+            counts["terminal_non_captured_count"] += 1
+        elif status == "CAPTURE_FAILED_POST_ACTION":
+            counts["capture_failed_post_action_count"] += 1
+            counts["terminal_non_captured_count"] += 1
+        elif status == "CAPTURE_FAILED_POST_GENERATION":
+            counts["capture_failed_post_generation_count"] += 1
+            counts["terminal_non_captured_count"] += 1
+        elif status == "FIRST_ACTION_BEFORE_INFRA_FAILURE":
+            counts["unresolved_pre_generation_failure_count"] += 1
+            counts["terminal_non_captured_count"] += 1
+        else:
+            counts["terminal_non_captured_count"] += 1
+    return counts
+
+
+def validate_full_capture_requirements(*, ledger_present: bool, rows: Iterable[Mapping[str, Any]], pool: Iterable[Candidate]) -> tuple[str, str, dict[str, int]]:
+    rows = list(rows)
+    pool = list(pool)
+    counts = attempt_status_counts(rows)
+    if not ledger_present:
+        return "V5_CAPTURE_LEDGER_MISSING", "attempt ledger must be present for fresh V5.1 PASS", counts
+    if len(pool) != 20:
+        return "V5_CAPTURE_POOL_SIZE_INVALID", f"expected pool_size=20, got {len(pool)}", counts
+    if len(rows) != len(pool):
+        return "V5_CAPTURE_ATTEMPT_COUNT_INVALID", f"expected exactly {len(pool)} attempt rows, got {len(rows)}", counts
+    if counts["captured_count"] != len(pool):
+        return "V5_CAPTURE_INCOMPLETE", f"expected captured_count={len(pool)}, got {counts['captured_count']}", counts
+    if counts["terminal_non_captured_count"] != 0:
+        return "V5_CAPTURE_HAS_TERMINAL_FAILURES", "non-CAPTURED attempt statuses are present", counts
+    return "V5_CAPTURE_FULL_PASS", "", counts
+
+
 def enumerate_model_bundle(model_root: Path) -> list[dict[str, Any]]:
     include_exact = {
         "config.json",
@@ -551,6 +606,8 @@ def select_events(capture_root: Path, pool: Iterable[Candidate], attempt_rows: I
         all_rows.append(row)
         if event is not None:
             events.append(event)
+    if any(row["status"] == "V5_CLEAN_EVENT_INFRA_INVALID" for row in all_rows):
+        return all_rows, events, "V5_CLEAN_EVENT_INFRA_INVALID"
     events.sort(key=lambda event: event.state_hash)
     if len(events) < V5_PANEL_SIZE:
         return all_rows, events, "V5_CAPTURE_POOL_INSUFFICIENT"
@@ -627,14 +684,15 @@ def audit_capture_root(*, capture_root: Path, config_path: Path, expected_commit
         model_bundle_sha = verify_model_bundle_exact_set(capture_root / "m3_arm_v5_model_bundle_manifest.csv", Path(str(cfg["model"]["path"])))
         attempt_rows, ledger_present = load_attempt_rows(capture_root, pool)
         validate_attempt_policy(capture_root, attempt_rows, pool)
+        full_capture_status, full_capture_reason, status_counts = validate_full_capture_requirements(ledger_present=ledger_present, rows=attempt_rows, pool=pool)
         all_rows, selected, selection_status = select_events(capture_root, pool, attempt_rows)
         selected_rows = [event_row(event) for event in selected]
-        if selection_status == "V5_EVENT_PANEL_INPUTS_FROZEN":
+        if full_capture_status == "V5_CAPTURE_FULL_PASS" and selection_status == "V5_EVENT_PANEL_INPUTS_FROZEN":
             if len(selected_rows) != V5_PANEL_SIZE:
                 raise ValueError("selected row count mismatch")
             verify_selected_bindings(selected_rows, capture_root=capture_root, expected_commit=capture_commit, expected_model_bundle_sha=model_bundle_sha)
-        audit_status = "PASS" if selection_status == "V5_EVENT_PANEL_INPUTS_FROZEN" else "FAIL"
-        failure_reason = "" if audit_status == "PASS" else selection_status
+        audit_status = "PASS" if full_capture_status == "V5_CAPTURE_FULL_PASS" and selection_status == "V5_EVENT_PANEL_INPUTS_FROZEN" else "FAIL"
+        failure_reason = "" if audit_status == "PASS" else (full_capture_reason or selection_status)
         return {
             "audit_status": audit_status,
             "failure_reason": failure_reason,
@@ -643,11 +701,11 @@ def audit_capture_root(*, capture_root: Path, config_path: Path, expected_commit
             "attempt_rows": len(attempt_rows),
             "ledger_present": ledger_present,
             "pool_size": len(pool),
+            "full_capture_status": full_capture_status,
             "selection_status": selection_status,
             "selected_count": len(selected_rows),
-            "captured_count": sum(1 for row in attempt_rows if str(row.get("attempt_status")) == "CAPTURED"),
-            "post_action_interrupted_count": sum(1 for row in attempt_rows if str(row.get("attempt_status")) == "CAPTURE_FAILED_POST_ACTION"),
-            "not_started_count": sum(1 for row in attempt_rows if str(row.get("attempt_status")) == "NOT_STARTED"),
+            **status_counts,
+            "post_action_interrupted_count": status_counts["capture_failed_post_action_count"],
             "model_bundle_sha256": model_bundle_sha,
             "capture_commit": capture_commit,
             "expected_commit": expected_commit,

@@ -19,6 +19,7 @@ from gripper_attack.m3_v5_attack_harness import (
     select_best_feasible,
     write_candidate_artifact,
 )
+from scripts.stageb.audit_m3_arm_v5_frame_group_independent import audit_frame_group as independent_audit_frame_group
 
 
 def _payload(*, margin=1.0, token=31744, arm=6, linf=0.0):
@@ -104,6 +105,7 @@ def test_frame_group_auditor_rejects_missing_candidate(tmp_path):
 
 def test_mock_frame_group_script_roundtrip(tmp_path):
     out = tmp_path / "mock"
+    frames = ",".join(f"f{i}" for i in range(8))
     cmd = [
         sys.executable,
         "scripts/stageb/run_m3_arm_v5_frame_group.py",
@@ -112,11 +114,79 @@ def test_mock_frame_group_script_roundtrip(tmp_path):
         "--output_dir",
         str(out),
         "--frame_ids",
-        "f0,f1",
+        frames,
         "--seed",
         str(V5_2_FROZEN_SEED),
     ]
     subprocess.check_call(cmd)
     audit = json.loads((out / "m3_arm_v5_frame_group_mock_summary.json").read_text(encoding="utf-8"))
-    assert audit["audit_status"] == "PASS"
-    assert audit["frame_count"] == 2
+    assert audit["artifact_audit_status"] == "PASS"
+    assert audit["scientific_gate_status"] == "PASS"
+    assert audit["frame_count"] == 8
+
+
+def test_frame_group_external_script_uses_independent_auditor():
+    text = Path("scripts/stageb/audit_m3_arm_v5_frame_group.py").read_text(encoding="utf-8")
+    assert "audit_m3_arm_v5_frame_group_independent" in text
+    assert "from gripper_attack.m3_v5_attack_harness import audit_frame_group" not in text
+
+
+def test_independent_auditor_separates_artifact_pass_from_scientific_fail(tmp_path):
+    out = tmp_path / "mock"
+    frames = ",".join(f"f{i}" for i in range(8))
+    subprocess.check_call(
+        [
+            sys.executable,
+            "scripts/stageb/run_m3_arm_v5_frame_group.py",
+            "--mode",
+            "mock_zero_perturbation",
+            "--output_dir",
+            str(out),
+            "--frame_ids",
+            frames,
+            "--seed",
+            str(V5_2_FROZEN_SEED),
+        ]
+    )
+    for path in (out / "frames").glob("*/TRUE_PGD21_SELECTIVE/candidate_*.json"):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload["target_token_score"] = 10.0
+        payload["best_competitor_score"] = 10.0
+        payload["official_target_margin"] = 0.0
+        path.write_text(json.dumps(payload), encoding="utf-8")
+    audit = independent_audit_frame_group(out, frame_ids=[f"f{i}" for i in range(8)], seed=V5_2_FROZEN_SEED)
+    assert audit["artifact_audit_status"] == "PASS"
+    assert audit["scientific_gate_status"] == "FAIL"
+    assert audit["frame_full_selective_pass_count"] == 0
+
+
+def test_independent_auditor_recomputes_arm_linf_and_margin(tmp_path):
+    out = tmp_path / "mock"
+    frames = ",".join(f"f{i}" for i in range(8))
+    subprocess.check_call(
+        [
+            sys.executable,
+            "scripts/stageb/run_m3_arm_v5_frame_group.py",
+            "--mode",
+            "mock_zero_perturbation",
+            "--output_dir",
+            str(out),
+            "--frame_ids",
+            frames,
+            "--seed",
+            str(V5_2_FROZEN_SEED),
+        ]
+    )
+    path = out / "frames" / "f0" / "TRUE_PGD21_SELECTIVE" / "candidate_20.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["arm_match_count"] = 6
+    payload["attacked_arm_prefix"] = [9, 9, 9, 9, 9, 9]
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="attacked arm prefix does not match attacked exact generation"):
+        independent_audit_frame_group(out, frame_ids=[f"f{i}" for i in range(8)], seed=V5_2_FROZEN_SEED)
+
+    payload["attacked_arm_prefix"] = [1, 2, 3, 4, 5, 6]
+    payload["official_target_margin"] = 123.0
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="official target margin"):
+        independent_audit_frame_group(out, frame_ids=[f"f{i}" for i in range(8)], seed=V5_2_FROZEN_SEED)

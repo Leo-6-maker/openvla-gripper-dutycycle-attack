@@ -77,6 +77,14 @@ def atomic_write_text(path: Path, text: str) -> None:
             f.flush()
             os.fsync(f.fileno())
         os.replace(str(tmp), str(path))
+        try:
+            dir_fd = os.open(str(path.parent), os.O_RDONLY)
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+        except OSError:
+            pass
     finally:
         if tmp.exists():
             try:
