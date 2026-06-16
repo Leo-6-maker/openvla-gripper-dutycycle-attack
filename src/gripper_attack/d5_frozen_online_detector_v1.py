@@ -25,7 +25,7 @@ from typing import Optional
 import torch
 
 from .d5_frozen_feature_adapter_v1 import D5FrozenFeatureAdapter, FEATURE_NAMES
-from train_d1b_detector import CandidateRanker, normalize_features
+from .d5_frozen_runtime_v1 import CandidateRankerV1, normalize_features_v1
 
 # ── Frozen binding ──
 FROZEN_CHECKPOINT_SHA = "7eea609f21eae7b91ff790631b656ec88949df8993a89b26b3588468a81e5ee5"
@@ -33,6 +33,9 @@ FROZEN_CONFIG_SHA = "d6f6af61e7ec86216e2f689b1806985cce12fdcc35134388b7c6b96789d
 FROZEN_TAU = 0.050
 DETECTOR_VERSION = "d5_frozen_online_v1"
 
+
+def _sha256_str(s: str) -> str:
+    return hashlib.sha256(s.encode()).hexdigest()
 
 def _sha256_file(path: str) -> str:
     if not os.path.isfile(path):
@@ -80,7 +83,13 @@ class D5FrozenOnlineDetectorV1:
                 f"expected {FEATURE_NAMES[:3]}..."
             )
 
-        self.model = CandidateRanker(n_features=16).to(device)
+        # Verify frozen runtime SHA
+        runtime_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "d5_frozen_runtime_v1.py")
+        runtime_sha = _sha256_file(runtime_path)
+        assert runtime_sha, "FATAL: frozen runtime module not found"
+
+        self.model = CandidateRankerV1(n_features=16).to(device)
         self.model.load_state_dict(ckpt["model_state"])
         self.model.eval()
         self.device = device
@@ -98,6 +107,7 @@ class D5FrozenOnlineDetectorV1:
         # Bind SHAs
         self._checkpoint_sha = ckpt_sha
         self._config_sha = cfg_sha
+        self._runtime_sha = runtime_sha
         self._checkpoint_path = checkpoint_path
         self._config_path = config_path
 
@@ -150,7 +160,7 @@ class D5FrozenOnlineDetectorV1:
         abstained = adapter_result["abstained"]
 
         # ── Normalize + score ──
-        X = normalize_features([features], self.means, self.stdevs, self.impute)
+        X = normalize_features_v1([features], self.means, self.stdevs, self.impute)
         X = X.to(self.device)
         norm_vec = [round(float(v), 10) for v in X[0].cpu().tolist()]
 
@@ -188,6 +198,7 @@ class D5FrozenOnlineDetectorV1:
             "detector_version": DETECTOR_VERSION,
             "checkpoint_sha": self._checkpoint_sha,
             "config_sha": self._config_sha,
+            "runtime_sha": self._runtime_sha,
             "checkpoint_path": self._checkpoint_path,
             "config_path": self._config_path,
             "tau": float(self.tau),
