@@ -1,0 +1,83 @@
+{
+  "bundle_version": "1.0.0-rc1",
+  "detector_version": "d5_frozen_online_v1",
+  "created": "2026-06-17T00:00:00Z",
+  "git_commit": "f4842cb",
+  "git_branch": "exp/l12-production-streaming-adapter-20260615",
+
+  "artifacts": {
+    "detector_file": {
+      "path": "src/gripper_attack/d5_frozen_online_detector_v1.py",
+      "sha256": "af6d58c758e7d38163f1a25298438a6ff64daef9ded9d1ce87eecdde362d116f"
+    },
+    "adapter_file": {
+      "path": "src/gripper_attack/d5_frozen_feature_adapter_v1.py",
+      "sha256": "81ee7fd31db5c02fc148b575599f64d29ca76b04739985b2371d34b2521743d3"
+    },
+    "runtime_file": {
+      "path": "src/gripper_attack/d5_frozen_runtime_v1.py",
+      "sha256": "d8621637287217c08595bf9df635d552e1266b4f6e149c3dd77572f33058811e"
+    },
+    "collector_file": {
+      "path": "scripts/stageb/run_d4_clean_shadow.py",
+      "sha256": "0bffc9a9aa2dc20ac52ba8fa7483c64e2c900e1cede209288f3c4735109fe0f1"
+    },
+    "checkpoint": {
+      "path": "/data/liuyu/outputs/d5_training/d5_candidate_best.pt",
+      "sha256": "7eea609f21eae7b91ff790631b656ec88949df8993a89b26b3588468a81e5ee5"
+    },
+    "config": {
+      "path": "/data/liuyu/outputs/d5_training/d5_frozen_config.json",
+      "sha256": "d6f6af61e7ec86216e2f689b1806985cce12fdcc35134388b7c6b96789dde1d5"
+    },
+    "labels": {
+      "path": "/data/liuyu/outputs/d5_label_generation/d5_teacher_p_labels_v2.csv",
+      "sha256": "e731c27308fbc9d207bccf4c3dabc9e2620916b76fd9f2d11f8f07ad3d020189"
+    },
+    "accepted_manifest": {
+      "path": "/data/liuyu/outputs/d5_label_generation/d44d_accepted_episode_manifest.csv",
+      "sha256": "fe125a555fdc035642bde4818e4cb7475e12bd08501440d90c000dc2351c10d5"
+    },
+    "g3_parity_csv": {
+      "path": "/data/liuyu/outputs/g3r_candidate_parity/g3r_candidate_parity.csv",
+      "sha256": "fd45896286729b7dc86b1a7d01438c2d82a83f20323348182b56785fd54e7536"
+    }
+  },
+
+  "parameters": {
+    "tau": 0.050,
+    "feature_schema": "d5_frozen_v1",
+    "feature_names": [
+      "total_score", "raw_crossing_bonus", "close_streak_bonus", "close_onset_qpos_bonus",
+      "eef_deceleration_bonus", "qpos_ready_bonus", "eef_speed_now", "eef_speed_prev",
+      "eef_deceleration_delta", "close_streak", "raw_crossing", "close_onset",
+      "qpos", "time_since_prev_close", "time_since_last_open", "candidate_index"
+    ],
+    "adapter_source_commit": "44bf7b86bafdda79837b4089dd5250901bb3ae75"
+  },
+
+  "environment": {
+    "python": "3.10.16",
+    "pytorch": "2.2.0+cu121",
+    "transformers": "4.40.1",
+    "openvla_checkpoint": "openvla-7b-finetuned-libero-object",
+    "libero_suite": "libero_object"
+  },
+
+  "gpu": {
+    "authorized_pairs": [["2", "6"]],
+    "authorized_pairs_fallback": [["1", "5"]],
+    "forward_only_pairs": [["5", "7"]],
+    "quarantined_gpus": ["3"],
+    "excluded_gpus": ["0", "4"],
+    "production_rule": "matched OFF/ON MUST use same GPU pair, same device map, same dtype, same attention implementation"
+  },
+
+  "evidence": {
+    "g3_historical_parity": "154/154 functional emit parity",
+    "g4_canonical_canary": "6/6 OFF/ON identity PASS",
+    "adapter_tests": "17/17 PASS",
+    "detector_tests": "22/22 PASS",
+    "s17_waiver": "archival precision waiver — emit unaffected"
+  }
+}
