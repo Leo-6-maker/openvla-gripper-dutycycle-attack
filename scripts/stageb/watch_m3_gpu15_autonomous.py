@@ -114,6 +114,7 @@ class Watcher:
             }
         )
         self.py = str(self.cfg["python"])
+        self.test_py = str(self.cfg.get("test_python", self.py))
 
     def event(self, stage: str, status: str, **payload: Any) -> None:
         self.output_root.mkdir(parents=True, exist_ok=True)
@@ -262,7 +263,7 @@ class Watcher:
         stage.mkdir(parents=True, exist_ok=True)
         cmds = [
             [self.py, "-m", "py_compile", "scripts/stageb/watch_m3_gpu15_autonomous.py", "scripts/stageb/run_m3_step78_true_pgd_fixed_frame.py"],
-            [self.py, "-m", "pytest", "tests/stageb/test_m3_true_pgd_route_contract.py", "-q"],
+            [self.test_py, "-m", "pytest", "tests/stageb/test_m3_true_pgd_route_contract.py", "-q"],
         ]
         for idx, cmd in enumerate(cmds):
             proc = self.run_cmd(f"S2_CPU_BUILD_{idx}", cmd, timeout=240)
