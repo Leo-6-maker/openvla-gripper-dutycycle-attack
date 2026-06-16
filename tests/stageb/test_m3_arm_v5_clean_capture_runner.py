@@ -82,6 +82,42 @@ def _write_model_manifest(records_dir: Path, rows: list[dict]) -> None:
     write_csv(records_dir / "m3_arm_v5_model_bundle_manifest.csv", rows, ["relative_path", "size_bytes", "sha256"])
 
 
+def _write_capture_manifest(records_dir: Path) -> None:
+    write_csv(
+        records_dir / "m3_arm_v5_clean_capture_manifest.csv",
+        [
+            {
+                "stage": "M3_ARM_V5_CLEAN_CAPTURE",
+                "commit": _head(),
+                "dirty_status": "CLEAN",
+                "config_path": str(CONFIG),
+                "config_sha256": _sha("config"),
+                "runner_path": str(RUNNER),
+                "runner_sha256": _sha("runner"),
+                "model_fingerprint": "{}",
+                "gpu_query": "2, GPU-test, test, 0 MiB, 1 MiB, 0 %, 30",
+                "hostname": "test",
+                "python": "test",
+                "cuda_visible_devices": "2,6",
+            }
+        ],
+        [
+            "stage",
+            "commit",
+            "dirty_status",
+            "config_path",
+            "config_sha256",
+            "runner_path",
+            "runner_sha256",
+            "model_fingerprint",
+            "gpu_query",
+            "hostname",
+            "python",
+            "cuda_visible_devices",
+        ],
+    )
+
+
 def _write_marker(root: Path, rel: str, phase: str) -> None:
     path = root / rel / f"{phase}.marker"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -301,6 +337,33 @@ def test_runtime_gate_rejects_wrong_cuda_or_busy_gpu(tmp_path, monkeypatch):
         require_runtime_gates(args, config_path=config, ledger_path=ledger, pool_csv_path=pool)
 
 
+def test_runtime_gate_rejects_unordered_gpu_uuid_match(tmp_path, monkeypatch):
+    config = tmp_path / "config.yaml"
+    ledger = tmp_path / "ledger.csv"
+    pool = tmp_path / "pool.csv"
+    for path in (config, ledger, pool):
+        path.write_text("x", encoding="utf-8")
+    args = SimpleNamespace(
+        expected_commit="commit",
+        expected_branch="branch",
+        expected_config_sha256=_sha_file(config),
+        expected_ledger_sha256=_sha_file(ledger),
+        expected_pool_csv_sha256=_sha_file(pool),
+        expected_cuda_visible_devices="5,4",
+        expected_gpu_uuids="GPU-five,GPU-four",
+    )
+
+    def fake_git(argv):
+        return "commit" if argv == ["rev-parse", "HEAD"] else "branch"
+
+    monkeypatch.setattr("scripts.stageb.run_m3_arm_v5_clean_capture.git_value", fake_git)
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "5,4")
+    monkeypatch.setattr("scripts.stageb.run_m3_arm_v5_clean_capture.gpu_query_snapshot", lambda: "4, GPU-five, A, 0 MiB, 1 MiB, 0 %, 30\n5, GPU-four, B, 0 MiB, 1 MiB, 0 %, 30")
+    monkeypatch.setattr("scripts.stageb.run_m3_arm_v5_clean_capture.gpu_compute_process_snapshot", lambda: "NVIDIA_SMI_COMPUTE_EMPTY")
+    with pytest.raises(RuntimeError, match="ordered GPU UUID binding mismatch"):
+        require_runtime_gates(args, config_path=config, ledger_path=ledger, pool_csv_path=pool)
+
+
 def test_state_pool_rejects_replacement_or_duplicate_state():
     cfg = load_config(CONFIG)
     bad = dict(cfg)
@@ -460,6 +523,7 @@ def test_independent_capture_auditor_passes_producer_style_output(tmp_path):
     model_dir, manifest_rows, bundle_sha = _make_model_dir(tmp_path)
     cfg_path = _write_temp_config(tmp_path, model_dir)
     _write_model_manifest(capture_root, manifest_rows)
+    _write_capture_manifest(capture_root)
     _write_all_candidate_records(capture_root, model_sha=bundle_sha)
     ledger = capture_root / "m3_arm_v5_capture_attempt_ledger.csv"
     _write_attempt_ledger(ledger, capture_root)
@@ -473,6 +537,7 @@ def test_independent_capture_auditor_rejects_stale_failed_ledger(tmp_path):
     model_dir, manifest_rows, bundle_sha = _make_model_dir(tmp_path)
     cfg_path = _write_temp_config(tmp_path, model_dir)
     _write_model_manifest(capture_root, manifest_rows)
+    _write_capture_manifest(capture_root)
     _write_all_candidate_records(capture_root, model_sha=bundle_sha)
     ledger = capture_root / "m3_arm_v5_capture_attempt_ledger.csv"
     _write_attempt_ledger(ledger, capture_root, captured_count=7)
@@ -480,18 +545,35 @@ def test_independent_capture_auditor_rejects_stale_failed_ledger(tmp_path):
     assert result["audit_status"] == "FAIL"
 
 
+def test_independent_capture_auditor_rejects_model_bundle_exact_set_mismatch(tmp_path):
+    capture_root = tmp_path / "capture"
+    model_dir, manifest_rows, bundle_sha = _make_model_dir(tmp_path)
+    cfg_path = _write_temp_config(tmp_path, model_dir)
+    _write_model_manifest(capture_root, manifest_rows)
+    _write_capture_manifest(capture_root)
+    (model_dir / "extra_remote_code.py").write_text("print('extra')", encoding="utf-8")
+    _write_all_candidate_records(capture_root, model_sha=bundle_sha)
+    ledger = capture_root / "m3_arm_v5_capture_attempt_ledger.csv"
+    _write_attempt_ledger(ledger, capture_root)
+    result = audit_capture_root(capture_root=capture_root, config_path=cfg_path, expected_commit=_head())
+    assert result["audit_status"] == "FAIL"
+    assert "exact-set mismatch" in result["failure_reason"]
+
+
 def test_independent_capture_auditor_rejects_phase_marker_mismatch(tmp_path):
     capture_root = tmp_path / "capture"
     model_dir, manifest_rows, bundle_sha = _make_model_dir(tmp_path)
     cfg_path = _write_temp_config(tmp_path, model_dir)
     _write_model_manifest(capture_root, manifest_rows)
+    _write_capture_manifest(capture_root)
     _write_all_candidate_records(capture_root, model_sha=bundle_sha)
     ledger = capture_root / "m3_arm_v5_capture_attempt_ledger.csv"
     _write_attempt_ledger(ledger, capture_root)
     marker = capture_root / "attempts" / "alphabet_soup_s9" / "attempt_0" / "FIRST_ACTION_TAKEN.marker"
     marker.unlink()
-    with pytest.raises(ValueError, match="missing FIRST_ACTION_TAKEN"):
-        audit_capture_root(capture_root=capture_root, config_path=cfg_path, expected_commit=_head())
+    result = audit_capture_root(capture_root=capture_root, config_path=cfg_path, expected_commit=_head())
+    assert result["audit_status"] == "FAIL"
+    assert "missing markers" in result["failure_reason"]
 
 
 def _one_candidate():

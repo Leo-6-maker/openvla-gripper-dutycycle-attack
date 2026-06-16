@@ -19,6 +19,7 @@ import signal
 import socket
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
@@ -171,6 +172,7 @@ def require_runtime_gates(args: argparse.Namespace, *, config_path: Path, ledger
         raise RuntimeError("CUDA_VISIBLE_DEVICES mismatch")
     gpu_snapshot = gpu_query_snapshot()
     require_valid_gpu_snapshot(gpu_snapshot)
+    require_ordered_gpu_binding(gpu_snapshot, expected_cuda=expected_cuda, expected_gpu_uuids=expected_gpu_uuids)
     expected_uuid_set = {item.strip() for item in expected_gpu_uuids.split(",") if item.strip()}
     actual_uuid_set = parse_gpu_uuids(gpu_snapshot)
     missing_uuids = sorted(expected_uuid_set - actual_uuid_set)
@@ -225,6 +227,31 @@ def parse_gpu_uuids(snapshot: str) -> set[str]:
     return uuids
 
 
+def parse_gpu_index_uuid_map(snapshot: str) -> dict[int, str]:
+    require_valid_gpu_snapshot(snapshot)
+    mapping: dict[int, str] = {}
+    for line in snapshot.splitlines():
+        parts = [part.strip() for part in line.split(",")]
+        if len(parts) >= 2 and parts[1].startswith("GPU-"):
+            mapping[int(parts[0])] = parts[1]
+    return mapping
+
+
+def require_ordered_gpu_binding(snapshot: str, *, expected_cuda: str, expected_gpu_uuids: str) -> None:
+    physical_indices = [int(item.strip()) for item in str(expected_cuda).split(",") if item.strip()]
+    ordered_uuids = [item.strip() for item in str(expected_gpu_uuids).split(",") if item.strip()]
+    if not physical_indices or len(physical_indices) != len(ordered_uuids):
+        raise RuntimeError("expected CUDA index list and UUID list must be non-empty and same length")
+    index_to_uuid = parse_gpu_index_uuid_map(snapshot)
+    mismatches = []
+    for physical_index, expected_uuid in zip(physical_indices, ordered_uuids):
+        actual_uuid = index_to_uuid.get(physical_index, "")
+        if actual_uuid != expected_uuid:
+            mismatches.append(f"{physical_index}:expected={expected_uuid}:actual={actual_uuid or 'MISSING'}")
+    if mismatches:
+        raise RuntimeError("ordered GPU UUID binding mismatch:" + ";".join(mismatches))
+
+
 def require_no_compute_processes(snapshot: str, expected_gpu_uuids: set[str]) -> None:
     if not snapshot or snapshot.startswith("NVIDIA_SMI_COMPUTE_UNAVAILABLE"):
         raise RuntimeError(f"invalid GPU compute process snapshot: {snapshot!r}")
@@ -239,13 +266,49 @@ def require_no_compute_processes(snapshot: str, expected_gpu_uuids: set[str]) ->
         raise RuntimeError("target GPU has existing compute process:" + ";".join(conflicts))
 
 
-def write_csv(path: Path, rows: Iterable[Mapping[str, Any]], fieldnames: list[str]) -> None:
+def fsync_dir(path: Path) -> None:
+    try:
+        fd = os.open(str(path), os.O_RDONLY)
+    except Exception:
+        return
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def atomic_write_bytes(path: Path, data: bytes) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        for row in rows:
-            writer.writerow({key: row.get(key, "") for key in fieldnames})
+    fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
+    tmp_path = Path(tmp_name)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(str(tmp_path), str(path))
+        fsync_dir(path.parent)
+    finally:
+        if tmp_path.exists():
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+
+
+def atomic_write_text(path: Path, text: str) -> None:
+    atomic_write_bytes(path, text.encode("utf-8"))
+
+
+def write_csv(path: Path, rows: Iterable[Mapping[str, Any]], fieldnames: list[str]) -> None:
+    import io
+
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=fieldnames)
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({key: row.get(key, "") for key in fieldnames})
+    atomic_write_text(path, buf.getvalue())
 
 
 class CaptureTermination(RuntimeError):
@@ -272,8 +335,7 @@ def restore_signal_handlers(previous: Mapping[int, Any]) -> None:
 
 
 def write_json(path: Path, obj: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(obj, indent=2, sort_keys=True), encoding="utf-8")
+    atomic_write_text(path, json.dumps(obj, indent=2, sort_keys=True))
 
 
 def read_json(path: Path) -> Any:
@@ -626,7 +688,7 @@ def prepare_generation_inputs(
 
 def mark_phase(attempt_dir: Path, phase: str) -> None:
     attempt_dir.mkdir(parents=True, exist_ok=True)
-    (attempt_dir / f"{phase}.marker").write_text(phase, encoding="utf-8")
+    atomic_write_text(attempt_dir / f"{phase}.marker", phase)
 
 
 def phase_exists(attempt_dir: Path, phase: str) -> bool:
