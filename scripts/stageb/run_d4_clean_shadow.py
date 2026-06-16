@@ -237,7 +237,7 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
     # ── Resolve privileged object (after env init, before episode loop) ──
     target_object_name = ""
     object_lookup_ok = True
-    obj_init_z = None
+    obj_init_x = None; obj_init_y = None; obj_init_z = None
     if args.enable_privileged_sidecar:
         target_object_name, object_lookup_ok = resolve_object_name(env, task)
         if not object_lookup_ok:
@@ -620,14 +620,38 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
         ap = episode_dir / an
         if ap.exists():
             hash_rows.append([an, sha256_file(str(ap))])
-    # Teacher sidecar (placeholder)
+    # Teacher sidecar
     ts_path = episode_dir / "teacher_sidecar.json"
-    with open(ts_path, "w") as f:
-        json.dump({
-            "status": "PENDING_SIDECAR",
-            "note": "Teacher-P sidecar requires post-hoc RC1a remap; not yet live",
+    if args.enable_privileged_sidecar:
+        priv_valid_steps = sum(1 for r in step_trace if r.get("privileged_valid") == 1)
+        priv_invalid_steps = sum(1 for r in step_trace if r.get("privileged_valid") == 0)
+        failure_reasons = sorted(set(
+            r.get("privileged_failure_reason", "") for r in step_trace
+            if r.get("privileged_failure_reason", "")
+        ))
+        ts_body = {
+            "status": "COMPLETE",
             "task": task, "state_id": state_id,
-        }, f, indent=2)
+            "sidecar_enabled": True,
+            "target_object_name": target_object_name,
+            "object_lookup_ok": object_lookup_ok,
+            "obj_init_x": round(obj_init_x, 6) if obj_init_x is not None else None,
+            "obj_init_y": round(obj_init_y, 6) if obj_init_y is not None else None,
+            "obj_init_z": round(obj_init_z, 6) if obj_init_z is not None else None,
+            "n_steps_total": len(step_trace),
+            "privileged_valid_steps": priv_valid_steps,
+            "privileged_invalid_steps": priv_invalid_steps,
+            "privileged_valid": 1 if priv_invalid_steps == 0 and priv_valid_steps == len(step_trace) else 0,
+            "privileged_failure_reasons": failure_reasons,
+        }
+    else:
+        ts_body = {
+            "status": "DISABLED",
+            "task": task, "state_id": state_id,
+            "sidecar_enabled": False,
+        }
+    with open(ts_path, "w") as f:
+        json.dump(ts_body, f, indent=2)
     hash_rows.append(["teacher_sidecar.json", sha256_file(str(ts_path))])
     # Manifest itself
     with open(episode_dir / "episode_manifest.json", "w") as f:
