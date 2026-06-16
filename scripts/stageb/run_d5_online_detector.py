@@ -68,10 +68,11 @@ def online_detect(edir, model, means, stdevs, impute, tau):
     candidates = []
     for c in cands:
         step = int(c["step"])
+        abstained = int(c.get("abstained", 0) or 0) == 1
         row = {}
         for fn in FEATURE_NAMES:
             row[fn] = c.get("feat_" + fn, c.get(fn, ""))
-        candidates.append({"step": step, "features": row})
+        candidates.append({"step": step, "features": row, "abstained": abstained})
 
     # Sort by step (causal order)
     candidates.sort(key=lambda x: x["step"])
@@ -82,8 +83,8 @@ def online_detect(edir, model, means, stdevs, impute, tau):
         X = normalize_features(features, means, stdevs, impute)
         with torch.no_grad():
             score = float(model(X).item())
-        all_scores.append({"step": cand["step"], "score": score})
-        if score >= tau:
+        all_scores.append({"step": cand["step"], "score": score, "abstained": cand["abstained"]})
+        if not cand["abstained"] and score >= tau:
             return cand["step"], score, all_scores
 
     # No emission

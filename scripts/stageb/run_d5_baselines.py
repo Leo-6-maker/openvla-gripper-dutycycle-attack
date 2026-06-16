@@ -83,15 +83,21 @@ def main():
         if not cands:
             return -1
         rows = []
-        for c in cands:
+        valid_indices = []
+        for i, c in enumerate(cands):
+            abstained = int(c.get("abstained", 0) or 0) == 1
             row = {}
             for fn in FEATURE_NAMES:
                 row[fn] = c.get("feat_" + fn, c.get(fn, ""))
             rows.append(row)
+            if not abstained:
+                valid_indices.append(i)
+        if not valid_indices:
+            return -1
         X = normalize_features(rows, means, stdevs, impute)
         with torch.no_grad():
             scores = model(X)
-            best = torch.argmax(scores).item()
+            best = max(valid_indices, key=lambda i: scores[i].item())
         return int(cands[best]["step"])
 
     results = []

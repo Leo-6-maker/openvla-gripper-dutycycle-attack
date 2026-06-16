@@ -106,10 +106,14 @@ def main():
             step = int(c["step"])
             dist = abs(step - p_anchor)
             is_positive = 1 if dist == 0 else 0
+            abstained = int(c.get("abstained", 0) or 0) == 1
             row = {"trace_id": tid, "step": step, "is_teacher_p": is_positive,
-                   "distance_to_p": step - p_anchor}
+                   "distance_to_p": step - p_anchor, "abstained": int(abstained)}
             for fn in FEATURE_NAMES:
                 row[fn] = c.get("feat_" + fn, c.get(fn, ""))
+            # Abstained candidates cannot be positive (predictor refused)
+            if abstained and is_positive:
+                row["is_teacher_p"] = 0
             candidate_rows.append(row)
 
     # ── Write manifest ──
@@ -123,7 +127,7 @@ def main():
     # ── Write candidate table ──
     ct_path = os.path.join(OUT, "d5_close_candidates.csv")
     with open(ct_path, "w", newline="") as f:
-        fields = ["trace_id", "step", "is_teacher_p", "distance_to_p"] + FEATURE_NAMES
+        fields = ["trace_id", "step", "is_teacher_p", "distance_to_p", "abstained"] + FEATURE_NAMES
         w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader()
         w.writerows(candidate_rows)
