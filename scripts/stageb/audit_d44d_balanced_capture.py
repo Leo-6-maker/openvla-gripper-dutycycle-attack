@@ -34,7 +34,7 @@ REQUIRED_FILES = [
     "detector_candidates.csv", "action_identity.csv", "provenance.csv",
     "artifact_hashes.csv", "latency.csv",
 ]
-AUTHORIZED_GPUS = {"2,6", "1,3", "5,1", "3,1"}
+AUTHORIZED_GPUS = {"2,6", "1,3", "5,1", "3,1", "5,0"}
 
 
 def sha256_file(path):

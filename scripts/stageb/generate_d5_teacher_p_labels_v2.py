@@ -214,7 +214,11 @@ def classify_state(task, sid, dp, m):
 
     # Step sequence check
     for i, r in enumerate(rows):
-        step = int(safe_float(r.get("step", -1))[0] or -1)
+        step_v, step_ok = safe_float(r.get("step", -1))
+        if not step_ok:
+            return "STEP_SEQUENCE_FAIL", -1, -1, -1, {
+                "reason": "step field invalid at row {}".format(i)}
+        step = int(step_v)
         if step != i:
             return "STEP_SEQUENCE_FAIL", -1, -1, -1, {
                 "reason": "step {} at row {}".format(step, i)}
