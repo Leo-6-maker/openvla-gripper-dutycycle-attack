@@ -574,6 +574,16 @@ def prepare_generation_inputs(
     from v4_run_eval_openvla import prompt
 
     prep = dict(cfg.get("preprocess", {}))
+    prep = {
+        key: prep[key]
+        for key in (
+            "libero_official_preprocess",
+            "center_crop",
+            "resize_size",
+            "libero_preprocess_backend",
+        )
+        if key in prep
+    }
     image = prepare_openvla_image(raw, **prep)
     inputs = processor(prompt(str(instruction).lower()), image, return_tensors="pt")
     inputs.pop("attention_mask", None)
