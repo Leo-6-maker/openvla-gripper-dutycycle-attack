@@ -1,0 +1,6 @@
+task,state_id,n_steps,n_candidates,emit_step,emit_score,avg_detector_us,total_latency_us
+alphabet_soup,2,144,1,55,0,40.9,5894
+bbq_sauce,27,129,2,-1,0,68.2,8794
+butter,2,158,6,-1,0,126.3,19954
+orange_juice,8,111,1,42,0,43.7,4854
+tomato_sauce,2,168,2,97,0,83.4,14014

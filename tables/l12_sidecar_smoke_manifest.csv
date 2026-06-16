@@ -1,0 +1,6 @@
+task,state_id,off_episode_dir,on_episode_dir,off_steps,on_steps,success_match,action_hash_diffs,env_hash_diffs,qpos_mismatch,eef_mismatch,gripper_mismatch,status
+alphabet_soup,2,/data/liuyu/outputs/l12_sidecar_smoke/alphabet_soup_s2_reference_attempt1,/data/liuyu/outputs/l12_sidecar_smoke/alphabet_soup_s2_shadow_attempt1,144,144,True,0,0,0,0,0,PASS
+bbq_sauce,27,/data/liuyu/outputs/l12_sidecar_smoke/bbq_sauce_s27_reference_attempt1,/data/liuyu/outputs/l12_sidecar_smoke/bbq_sauce_s27_shadow_attempt1,129,129,True,0,0,0,0,0,PASS
+butter,2,/data/liuyu/outputs/l12_sidecar_smoke/butter_s2_reference_attempt1,/data/liuyu/outputs/l12_sidecar_smoke/butter_s2_shadow_attempt1,158,158,True,0,0,0,0,0,PASS
+orange_juice,8,/data/liuyu/outputs/l12_sidecar_smoke/orange_juice_s8_reference_attempt1,/data/liuyu/outputs/l12_sidecar_smoke/orange_juice_s8_shadow_attempt1,111,111,True,0,0,0,0,0,PASS
+tomato_sauce,2,/data/liuyu/outputs/l12_sidecar_smoke/tomato_sauce_s2_reference_attempt1,/data/liuyu/outputs/l12_sidecar_smoke/tomato_sauce_s2_shadow_attempt1,168,168,True,0,0,0,0,0,PASS

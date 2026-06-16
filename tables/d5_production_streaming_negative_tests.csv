@@ -1,0 +1,10 @@
+test,expected,actual,pass
+duplicate_step,raise,raise,True
+skipped_step,raise,raise,True
+nan_qpos,None,None,True
+invalid_eef,None,None,True
+semantics_invalid,None,None,True
+decoded_open_invalid,None,None,True
+reset_clears_step,0,0,True
+no_spurious_emit,no_emit,emit=-1,True
+abstained_no_emit,False,False,True

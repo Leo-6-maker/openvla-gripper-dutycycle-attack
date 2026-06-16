@@ -1,0 +1,9 @@
+gpu_index,name,uuid,memory_mib,temp_c,power_w,power_limit_w,sm_clock_mhz,mem_clock_mhz,pstate,matmul_test,production_status,xid_count,notes
+0,RTX 2080 Ti,GPU-33559d32-c12c-6c20-6159-0b693a28b101,11264,34,65,250,1350,7000,P0,NOT TESTED,FAULT,2,Xid 13+43 hardware fault — exclude
+1,RTX 2080 Ti,GPU-64734dbf-3993-a168-13d7-c8eba21f2908,11264,35,67,250,1350,7000,P0,PASS,HEALTHY,0,Full capture + attack capable
+2,RTX 2080 Ti,GPU-a5dd9dbe-9719-b196-d8e7-e44c4100d1e7,11264,35,55,250,1350,7000,P0,PASS,HEALTHY,0,M3 qual PASS — golden reference
+3,RTX 2080 Ti,GPU-c1ee1619-6791-a734-bf4c-d0d2c47df580,11264,38,67,250,1350,7000,P0,PASS,HEALTHY,0,Full capture + attack capable
+4,RTX 2080 Ti,GPU-d0a54f5d-938c-a148-fff9-c135201e3f61,11264,38,62,250,1350,7000,P0,NOT TESTED,FAULT,0,Non-deterministic forward pass — exclude
+5,RTX 2080 Ti,GPU-9794d733-042f-46a2-fc86-5a3fe32a158a,11264,36,58,250,1350,7000,P0,PASS,HEALTHY,0,Full capture + attack capable
+6,RTX 2080 Ti,GPU-04d369ad-47f6-77fc-19df-b9c4273db10f,11264,40,62,250,1350,7000,P0,PASS,HEALTHY,0,M3 qual PASS — golden reference
+7,RTX 2080 Ti,GPU-da4d4ba8-f4f9-7513-4dc9-87f4c7033d7f,11264,43,38,250,1350,7000,P0,PASS,RENDER_ONLY,1,Xid 31 + gradient non-deterministic — forward only

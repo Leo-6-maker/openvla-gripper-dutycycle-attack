@@ -1,0 +1,6 @@
+task,state_id,n_steps_ref,n_steps_sh,n_actions_ref,n_actions_sh,steps_match,action_match,action_diffs,qpos_mismatch,eef_mismatch,gripper_mismatch,env_gripper_mismatch,success_done_match,success_check_match,ref_success_done,sh_success_done,emit_step,n_candidates,infra
+alphabet_soup,2,144,144,144,144,True,True,a; c; t; i; o,0,0,0,0,True,True,1,1,55,1,ok
+bbq_sauce,27,129,129,129,129,True,True,a; c; t; i; o,0,0,0,0,True,True,1,1,-1,2,ok
+butter,2,158,158,158,158,True,True,a; c; t; i; o,0,0,0,0,True,True,1,1,-1,6,ok
+orange_juice,8,111,111,111,111,True,True,a; c; t; i; o,0,0,0,0,True,True,1,1,42,1,ok
+tomato_sauce,2,168,168,168,168,True,True,a; c; t; i; o,0,0,0,0,True,True,1,1,97,2,ok

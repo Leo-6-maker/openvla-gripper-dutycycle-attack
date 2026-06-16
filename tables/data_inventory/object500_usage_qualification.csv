@@ -1,0 +1,8 @@
+category,count,note
+teacher_label_usable,154,"Has privileged object pose + EEF, can generate Teacher-P labels"
+student_train_usable,154,"Has gripper/env/qpos/step, can train detector"
+streaming_replay_usable,154,"Full D4 schema + candidates + provenance, can replay"
+visual_train_usable,0,Has image data for VIS model training (not yet assessed)
+baseline_only,0,"Limited fields, baseline comparison only"
+quarantined,0,Schema/provenance/continuity failure — do not use
+total_unique,154,
