@@ -1,9 +1,10 @@
 {
-  "bundle_version": "1.0.0-rc1",
+  "bundle_version": "1.0.0",
   "detector_version": "d5_frozen_online_v1",
   "created": "2026-06-17T00:00:00Z",
-  "git_commit": "9f68842",
-  "git_branch": "exp/l12-production-streaming-adapter-20260615",
+  "source_code_commit": "09142fb693fe32bb3bec0d1a49ccafb743f4ef4d",
+  "release_branch": "exp/l12-production-streaming-adapter-20260615",
+  "release_tag": "l12-d5-v1-production-20260617",
 
   "artifacts": {
     "detector_file": {
@@ -37,11 +38,48 @@
     "accepted_manifest": {
       "path": "/data/liuyu/outputs/d5_label_generation/d44d_accepted_episode_manifest.csv",
       "sha256": "fe125a555fdc035642bde4818e4cb7475e12bd08501440d90c000dc2351c10d5"
-    },
-    "g3_parity_csv": {
-      "path": "/data/liuyu/outputs/g3r_candidate_parity/g3r_candidate_parity.csv",
-      "sha256": "fd45896286729b7dc86b1a7d01438c2d82a83f20323348182b56785fd54e7536"
     }
+  },
+
+  "evidence": {
+    "g3_candidate_parity_csv": {
+      "path": "tables/g3r_candidate_parity.csv",
+      "sha256": "a6636453c587373a5f2d89590c9c45a52a4915f6"
+    },
+    "g3_s17_diagnostic_csv": {
+      "path": "tables/g3r_s17_diagnostic.csv",
+      "sha256": "c14a90213f414984ca6e3169f74c3733e973e279"
+    },
+    "g3_historical_parity_report": {
+      "path": "reports/LAYER12_G3_HISTORICAL_PARITY.md",
+      "sha256": "9a3fdb37b54485e13182ee9ed237d02a2461da2d"
+    },
+    "g4_canonical_report": {
+      "path": "reports/LAYER12_G4R_CANONICAL_LIVE_CANARY.md",
+      "sha256": "6b62f53cbb2997ea8e4b688078baf3ea93541692"
+    },
+    "g4_parent_manifest": {
+      "path": "tables/d5_g4r_parent_manifest.csv",
+      "sha256": "018eff07e6b65a0049d0c444c6a2e5962af1e542"
+    },
+    "g4_off_on_identity": {
+      "path": "tables/d5_g4r_off_on_identity.csv",
+      "sha256": "4f4b446177ac701bbe5638d3a62987a95d534cf7"
+    },
+    "g4_gpu_variance": {
+      "path": "tables/d5_g4r_gpu_pair_variance.csv",
+      "sha256": "2c5bc5287f4e170b0855583c7d0475bfc366824b"
+    }
+  },
+
+  "evidence_results": {
+    "adapter_tests": "17/17 PASS",
+    "detector_tests": "22/22 PASS",
+    "g3_historical_functional_emit_parity": "154/154 PASS",
+    "g3_live_feature_parity": "153/154 exact + 1 archival precision waiver (alphabet_soup_s17)",
+    "g4_canonical_off_on_canary": "6/6 PASS",
+    "g4_off_on_identity": "6/6 action/env hash exact match",
+    "g5_regression": "alphabet_soup_s2 OFF 144/1 ON 144/1 emit=55"
   },
 
   "parameters": {
@@ -65,19 +103,15 @@
   },
 
   "gpu": {
-    "authorized_pairs": [["2", "6"]],
-    "authorized_pairs_fallback": [["1", "5"]],
-    "forward_only_pairs": [["5", "7"]],
+    "primary_pair": ["2", "6"],
+    "fallback_pair": ["1", "5"],
+    "forward_only_pair": ["5", "7"],
     "quarantined_gpus": ["3"],
     "excluded_gpus": ["0", "4"],
-    "production_rule": "matched OFF/ON MUST use same GPU pair, same device map, same dtype, same attention implementation"
-  },
-
-  "evidence": {
-    "g3_historical_parity": "154/154 functional emit parity",
-    "g4_canonical_canary": "6/6 OFF/ON identity PASS",
-    "adapter_tests": "17/17 PASS",
-    "detector_tests": "22/22 PASS",
-    "s17_waiver": "archival precision waiver — emit unaffected"
+    "production_rules": [
+      "Matched OFF/ON MUST use same GPU pair, same device map, same dtype, same attention implementation",
+      "Never compare conditions across GPU pairs",
+      "GPU7 is render-only (historical Xid 31), not authorized for gradient work"
+    ]
   }
 }
