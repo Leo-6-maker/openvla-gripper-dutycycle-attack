@@ -1,0 +1,7 @@
+task,state_id,off_dir,on_dir,gpu_pair,render_gpu,commit,branch
+alphabet_soup,2,/data/liuyu/outputs/g4r1_preflight/alphabet_soup_s2_reference_attempt1,/data/liuyu/outputs/g4r1_preflight/alphabet_soup_s2_shadow_attempt1,"2,6",6,85bfda1,exp/l12-production-streaming-adapter-20260615
+bbq_sauce,27,/data/liuyu/outputs/g4r2_canary/bbq_sauce_s27_reference_attempt1,/data/liuyu/outputs/g4r2_canary/bbq_sauce_s27_shadow_attempt1,"2,6",6,85bfda1,exp/l12-production-streaming-adapter-20260615
+butter,2,/data/liuyu/outputs/g4r2_canary/butter_s2_reference_attempt1,/data/liuyu/outputs/g4r2_canary/butter_s2_shadow_attempt1,"2,6",6,85bfda1,exp/l12-production-streaming-adapter-20260615
+orange_juice,8,/data/liuyu/outputs/g4r2_canary/orange_juice_s8_reference_attempt1,/data/liuyu/outputs/g4r2_canary/orange_juice_s8_shadow_attempt1,"2,6",6,85bfda1,exp/l12-production-streaming-adapter-20260615
+tomato_sauce,2,/data/liuyu/outputs/g4r2_canary/tomato_sauce_s2_reference_attempt1,/data/liuyu/outputs/g4r2_canary/tomato_sauce_s2_shadow_attempt1,"2,6",6,85bfda1,exp/l12-production-streaming-adapter-20260615
+alphabet_soup,17,/data/liuyu/outputs/g4r2_canary/alphabet_soup_s17_reference_attempt1,/data/liuyu/outputs/g4r2_canary/alphabet_soup_s17_shadow_attempt1,"2,6",6,85bfda1,exp/l12-production-streaming-adapter-20260615

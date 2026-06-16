@@ -1,0 +1,7 @@
+task,state_id,off_steps,off_success,on_steps,on_success,action_hash_diffs,env_action_hash_diffs,obs_hash_diffs,outcome_match,off_gpu,on_gpu,detector_emit,n_candidates
+alphabet_soup,2,144,1,144,1,0,0,0,True,"2,6","2,6",55,1
+bbq_sauce,27,129,1,129,1,0,0,0,True,"2,6","2,6",61,2
+butter,2,158,1,158,1,0,0,0,True,"2,6","2,6",68,6
+orange_juice,8,111,1,111,1,0,0,0,True,"2,6","2,6",42,1
+tomato_sauce,2,168,1,168,1,0,0,1,True,"2,6","2,6",97,2
+alphabet_soup,17,280,0,280,0,0,0,0,True,"2,6","2,6",49,13
