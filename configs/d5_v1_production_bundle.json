@@ -2,7 +2,7 @@
   "bundle_version": "1.0.0",
   "detector_version": "d5_frozen_online_v1",
   "created": "2026-06-17T00:00:00Z",
-  "source_code_commit": "09142fb693fe32bb3bec0d1a49ccafb743f4ef4d",
+  "source_code_commit": "d1463d5241142a44a443f22fe1613dd468dcc0b6",
   "release_branch": "exp/l12-production-streaming-adapter-20260615",
   "release_tag": "l12-d5-v1-production-20260617",
 
@@ -44,31 +44,31 @@
   "evidence": {
     "g3_candidate_parity_csv": {
       "path": "tables/g3r_candidate_parity.csv",
-      "sha256": "a6636453c587373a5f2d89590c9c45a52a4915f6"
+      "sha256": "fd45896286729b7dc86b1a7d01438c2d82a83f20323348182b56785fd54e7536"
     },
     "g3_s17_diagnostic_csv": {
       "path": "tables/g3r_s17_diagnostic.csv",
-      "sha256": "c14a90213f414984ca6e3169f74c3733e973e279"
+      "sha256": "03354fbd7c9c360cb68933dcbc74c0b5b0b13253ae654bc2eaf355f78c5f0fb8"
     },
     "g3_historical_parity_report": {
       "path": "reports/LAYER12_G3_HISTORICAL_PARITY.md",
-      "sha256": "9a3fdb37b54485e13182ee9ed237d02a2461da2d"
+      "sha256": "750d8d3f8527020fe452483483c054a840e4cbc359f112f15aecb4b9f86e4258"
     },
     "g4_canonical_report": {
       "path": "reports/LAYER12_G4R_CANONICAL_LIVE_CANARY.md",
-      "sha256": "6b62f53cbb2997ea8e4b688078baf3ea93541692"
+      "sha256": "959a2356893afe05b8ca080af31b093a9e2d493dbba16a5c031e60f385601d38"
     },
     "g4_parent_manifest": {
       "path": "tables/d5_g4r_parent_manifest.csv",
-      "sha256": "018eff07e6b65a0049d0c444c6a2e5962af1e542"
+      "sha256": "4f231de7bd08f877f19d1c03d653dddbeaa87f4f5a91556a54c12d9c0f24da78"
     },
     "g4_off_on_identity": {
       "path": "tables/d5_g4r_off_on_identity.csv",
-      "sha256": "4f4b446177ac701bbe5638d3a62987a95d534cf7"
+      "sha256": "ebd45b73b0dc21588307a96d783dc164c6ae55b387a49772930a58473ae77266"
     },
     "g4_gpu_variance": {
       "path": "tables/d5_g4r_gpu_pair_variance.csv",
-      "sha256": "2c5bc5287f4e170b0855583c7d0475bfc366824b"
+      "sha256": "36993991e67101e4442d3895faefdbc4cd40e7816cb3cf51e1068a602f0cc9b2"
     }
   },
 
