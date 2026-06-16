@@ -147,6 +147,16 @@ class D5FrozenOnlineDetectorV1:
     def has_emitted(self) -> bool:
         return self.emit_step >= 0
 
+    @property
+    def history(self):
+        """Compatibility with ProductionStreamingDetector interface."""
+        return self.adapter.history
+
+    @property
+    def candidate_features(self):
+        """Compatibility with ProductionStreamingDetector interface."""
+        return self.adapter.candidate_features
+
     def update(self, step_id: int,
                raw_gripper: float, env_gripper: float, gripper_qpos: float,
                eef_x: float, eef_y: float, eef_z: float,

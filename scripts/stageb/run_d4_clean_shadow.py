@@ -29,8 +29,10 @@ import numpy as np
 import torch
 
 PIPELINE_ROOT = os.environ.get("L12_PIPELINE_ROOT", "/data/liuyu/l12_e4c2_pipeline")
-sys.path.insert(0, os.path.join(PIPELINE_ROOT, "src"))
-sys.path.insert(0, os.path.join(PIPELINE_ROOT, "scripts", "stageb"))
+_REPO = os.environ.get("L12_REPO_ROOT", PIPELINE_ROOT)
+sys.path.insert(0, os.path.join(_REPO, "src"))
+sys.path.insert(0, os.path.join(_REPO, "scripts", "stageb"))
+sys.path.insert(0, os.path.join(_REPO, "scripts"))
 
 from train_d1b_detector import CandidateRanker, FEATURE_NAMES, normalize_features
 from run_l12_e4c2b_repair import sha256_file
@@ -675,6 +677,10 @@ def main():
     ap.add_argument("--episode-dir", required=True,
                     help="Exact episode output directory (runner creates this)")
     ap.add_argument("--checkpoint", required=True)
+    ap.add_argument("--detector-mode", choices=["off", "d5_frozen_online_v1"], default="off",
+                    help="off=D1b ProductionStreamingDetector, d5_frozen_online_v1=D5FrozenOnlineDetectorV1")
+    ap.add_argument("--d5-checkpoint", default="/data/liuyu/outputs/d5_training/d5_candidate_best.pt")
+    ap.add_argument("--d5-config", default="/data/liuyu/outputs/d5_training/d5_frozen_config.json")
     ap.add_argument("--mode", choices=["reference", "shadow"], default="shadow")
     ap.add_argument("--attempt-id", type=int, default=1)
     ap.add_argument("--model-path",
@@ -763,22 +769,27 @@ def main():
     # ── Load detector (shadow only) ──
     detector = None
     if not is_reference:
-        device = torch.device("cpu")
-        ckpt = torch.load(args.checkpoint, map_location=device, weights_only=False)
-        means = ckpt["normalization"]["means"]
-        stdevs = ckpt["normalization"]["stdevs"]
-        impute = ckpt["normalization"]["impute"]
+        if args.detector_mode == "d5_frozen_online_v1":
+            from gripper_attack.d5_frozen_online_detector_v1 import D5FrozenOnlineDetectorV1
+            detector = D5FrozenOnlineDetectorV1(args.d5_checkpoint, args.d5_config)
+            print(f"D5FrozenOnlineDetectorV1 loaded (tau=0.050)")
+        else:
+            device = torch.device("cpu")
+            ckpt = torch.load(args.checkpoint, map_location=device, weights_only=False)
+            means = ckpt["normalization"]["means"]
+            stdevs = ckpt["normalization"]["stdevs"]
+            impute = ckpt["normalization"]["impute"]
 
-        detector_model = CandidateRanker(n_features=16).to(device)
-        detector_model.load_state_dict(ckpt["model_state"])
-        detector_model.eval()
+            detector_model = CandidateRanker(n_features=16).to(device)
+            detector_model.load_state_dict(ckpt["model_state"])
+            detector_model.eval()
 
-        from gripper_attack.production_detector import ProductionStreamingDetector
-        detector = ProductionStreamingDetector(
-            detector_model, means, stdevs, impute,
-            threshold=FROZEN_TAU, device=str(device),
-        )
-        print(f"Detector loaded (threshold={FROZEN_TAU})")
+            from gripper_attack.production_detector import ProductionStreamingDetector
+            detector = ProductionStreamingDetector(
+                detector_model, means, stdevs, impute,
+                threshold=FROZEN_TAU, device=str(device),
+            )
+            print(f"Detector loaded (threshold={FROZEN_TAU})")
     else:
         print("Detector DISABLED (reference mode)")
 
