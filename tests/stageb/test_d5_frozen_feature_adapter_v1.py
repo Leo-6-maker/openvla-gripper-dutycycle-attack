@@ -1,5 +1,4 @@
 """G1-R: Independent negative tests for D5FrozenFeatureAdapter."""
-import pytest
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "scripts", "stageb"))
@@ -22,13 +21,19 @@ class TestD5FrozenFeatureAdapter:
 
     def test_duplicate_step_raises(self):
         update(self.adapter, make_valid(0))
-        with pytest.raises(ValueError):
+        try:
             update(self.adapter, make_valid(0))
+            assert False, "expected ValueError"
+        except ValueError:
+            pass
 
     def test_skipped_step_raises(self):
         update(self.adapter, make_valid(0))
-        with pytest.raises(ValueError):
+        try:
             update(self.adapter, make_valid(2))
+            assert False, "expected ValueError"
+        except ValueError:
+            pass
 
     def test_reset_clears_state(self):
         update(self.adapter, make_valid(0))
