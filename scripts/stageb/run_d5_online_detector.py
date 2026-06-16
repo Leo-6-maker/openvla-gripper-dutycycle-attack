@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""D5 online causal stopping detector — first-threshold-crossing.
+# DEPRECATED_DO_NOT_USE — use evaluate_d5_frozen.py instead.
+# This script hardcodes paths, sweeps tau internally, and is NOT the frozen evaluator.
+# It is kept for historical reference only. Running it will produce non-reproducible results.
+import sys
+print("FATAL: DEPRECATED_DO_NOT_USE — run evaluate_d5_frozen.py instead", file=sys.stderr)
+sys.exit(1)
+
+"""D5 online causal stopping detector — first-threshold-crossing.  # noqa: keep for context
 
 Reuses:
   - CandidateRanker from train_d1b_detector.py

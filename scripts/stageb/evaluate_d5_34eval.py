@@ -6,9 +6,16 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
 sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 from evaluate_d5_frozen import load_model, online_detect
 
-ROOT = "/data/liuyu/outputs/d4_34_privileged_replay"
-CONFIG = json.load(open("/data/liuyu/outputs/d5_training/d5_frozen_config.json"))
-OUT = "/data/liuyu/outputs/d5_training"
+import argparse
+ap = argparse.ArgumentParser()
+ap.add_argument("--eval-root", default="/data/liuyu/outputs/d4_34_privileged_replay")
+ap.add_argument("--config", default="/data/liuyu/outputs/d5_training/d5_frozen_config.json")
+ap.add_argument("--output-dir", default="/data/liuyu/outputs/d5_training")
+args = ap.parse_args()
+
+ROOT = args.eval_root
+CONFIG = json.load(open(args.config))
+OUT = args.output_dir
 model, means, stdevs, impute, ckpt = load_model(CONFIG["checkpoint_path"])
 tau = CONFIG["tau"]
 
@@ -26,15 +33,17 @@ def sf(v):
 def teacher_p_anchor(rows):
     streak = 0
     for r in rows:
-        env_v, _ = sf(r.get("env_gripper"))
-        ev, _ = sf(r.get("env_valid"))
-        so, _ = sf(r.get("semantics_ok"))
-        ok = bool(int(ev or 1)) and bool(int(so or 1))
-        cc = 1 if (ok and (env_v or 0) > 0.5) else 0
+        env_v, env_ok = sf(r.get("env_gripper"))
+        ev, ev_ok = sf(r.get("env_valid"))
+        so, so_ok = sf(r.get("semantics_ok"))
+        if not env_ok or not ev_ok or not so_ok:
+            return -1, -1, -1
+        ok = bool(int(ev)) and bool(int(so))
+        cc = 1 if (ok and env_v > 0.5) else 0
         co = 1 if (cc and streak == 0) else 0
         streak = streak + 1 if cc else 0
         r["_co"] = co
-        do_v, _ = sf(r.get("decoded_open"))
+        do_v, do_ok = sf(r.get("decoded_open"))
         r["_dob"] = int(do_v or 0) > 0
 
     for t in range(len(rows)):
