@@ -11,7 +11,14 @@
 | Phase 0 | Post-reboot freeze check | ALL GATES PASS |
 | Phase 1 | GPU qualification | 6/8 usable, 2 faulty documented |
 | Phase 2 | Sidecar OFF/ON smoke | 5/5 identity PASS |
-| Phase 3 | Production streaming parity | PARTIAL — scoring parity PASS, live feature NOT TESTED |
+| Phase 3a | Frozen scoring parity | PASS 154/154 |
+| Phase 3b | Historical live feature parity | 153/154 exact + 1 archival precision waiver |
+| Phase 3c | Historical final emit parity | PASS 154/154 |
+| Phase 4a | Full online detector implementation | PASS |
+| Phase 4b | Fresh runtime smoke | PASS |
+| Phase 4c | Fresh canonical OFF/ON canary | NOT PASSED (timing order + no comparison) |
+| Phase 4d | Adapter/detector negative tests | NOT DONE |
+| Phase 5 | Production freeze (G5) | BLOCKED |
 
 ## 1. LAYER1_CAPTURE_AND_LABELS
 
@@ -45,35 +52,46 @@ Evidence:
 
 ## 3. LAYER2_PRODUCTION_STREAMING_PARITY
 
-**Updated commit 8a73301+ — adapter implemented, partial verification complete**
+### 3a. Frozen Scoring Parity: PASS 154/154
 
-### 3a. LAYER2_FROZEN_SCORING_PARITY: PASS
+Both paths read the same `detector_candidates.csv` features.
+Score diff ≤ 1e-6, emit step match, 0 abstain mismatch across all 154 episodes.
 
-- Internal 120/120: score diff ≤ 1e-6, emit step match, 0 abstain mismatch
-- External 34/34: score diff ≤ 1e-6, emit step match, 0 abstain mismatch
-- Negative fail-closed tests: 9/9 PASS (on ProductionStreamingDetector)
+### 3b. Historical Live Feature Parity: 153/154 exact + 1 waiver
 
-### 3b. LAYER2_LIVE_FEATURE_EXTRACTION_PARITY: CONDITIONAL PASS (153/154)
+`D5FrozenFeatureAdapter` (snapshot of 44bf7b86) verified against CSV features.
+153/154: diff ≤ 2e-6 (CSV serialization precision).
+1 waiver: `alphabet_soup_s17` (see [G3 report](LAYER12_G3_HISTORICAL_PARITY.md)).
 
-`D5FrozenFeatureAdapter` (snapshot of 44bf7b86) verified against `detector_candidates.csv`:
+### 3c. Historical Final Emit Parity: PASS 154/154
 
-- 153/154 states: feature diff ≤ 2e-6 (CSV serialization precision)
-- 1 unresolved exception: `alphabet_soup_s17` total_score 3.3 vs 3.8 (cascade from eef_speed CSV precision at condition boundary)
-- Adapter returns: step, 16 features, abstain, abstained, candidate_reason, schema version, source commit
+`D5FrozenOnlineDetectorV1` vs frozen replay emit_step: 0 mismatches.
+Including `alphabet_soup_s17` — the 0.5 feature diff does not change emit.
 
-### 3c. LAYER2_TRUE_ONLINE_DEPLOYMENT: IN PROGRESS
+### 3d. Adapter/Online Detector Negative Tests: NOT DONE
 
-`D5FrozenOnlineDetectorV1` implemented — full pipeline:
-  adapter → abstain gate → normalization → D5 MLP → tau=0.050 → first-trigger lock
+Current negative tests (9/9) test `ProductionStreamingDetector`, not the new
+`D5FrozenFeatureAdapter` or `D5FrozenOnlineDetectorV1`.
 
+### 3e. Fresh Runtime Smoke: PASS, Fresh Canonical Canary: NOT PASSED
+
+See [G4 report](LAYER12_G4_RUNTIME_SMOKE.md). Detector runs in live loop,
+latency 182–637 μs, SHA gates operational. However:
+- Timing order is post-env.step (should be pre-env.step)
+- No OFF/ON action identity comparison
+- 6/6 success=False (vs expected success=1 for 5/6 parents)
+
+## 4. LAYER2_TRUE_ONLINE_DEPLOYMENT
+
+`D5FrozenOnlineDetectorV1` implemented. Full pipeline:
+adapter → abstain → normalization → D5 MLP → tau=0.050 → first-trigger lock.
 SHA-bound to checkpoint `7eea609f` and config `d6f6af61`.
-Awaiting G3 (historical full parity) and G4 (fresh live canary) verification.
 
-### Unresolved exception
-
-`alphabet_soup_s17`: total_score adapter=3.3, CSV=3.8, diff=0.5. Root cause: eef_speed
-CSV serialization precision at conditional boundary in `rule_based_close_predictor`.
-Not waived — requires branch-boundary diagnostic (G3).
+**Production freeze (G5) is BLOCKED on:**
+- G4-R: corrected canary with standard collector, pre-step timing, OFF/ON comparison
+- G1-R/G2-R: adapter and detector independent negative tests
+- G2-R: frozen runtime module (freeze CandidateRanker + normalize_features)
+- G3-R: full candidate-level parity (not just emit)
 
 ## 4. LAYER2_EXTERNAL_GENERALIZATION
 
@@ -109,12 +127,9 @@ Layer3 trigger is NOT AUTHORIZED. The current detector is a close-event detector
 
 ## Authorized Declarations
 
-"Layer 1/2 engineering chain is operational end-to-end:
-clean rollout → Teacher-P labels → D5 training → frozen replay →
-live non-invasive sidecar → frozen-candidate scoring parity.
-
-True live feature extraction parity requires a frozen feature adapter
-recovering capture-time feature semantics. Blocked on this adapter."
+"Layer 1/2 has a complete online detector (D5FrozenOnlineDetectorV1) with
+154/154 historical emit parity. Fresh canonical canary, independent negative
+tests, and production bundle freeze remain before declaring true online PASS."
 
 ## Prohibited Declarations (NOT made)
 
