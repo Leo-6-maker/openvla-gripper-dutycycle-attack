@@ -30,6 +30,8 @@ from .d5_frozen_runtime_v1 import CandidateRankerV1, normalize_features_v1
 # ── Frozen binding ──
 FROZEN_CHECKPOINT_SHA = "7eea609f21eae7b91ff790631b656ec88949df8993a89b26b3588468a81e5ee5"
 FROZEN_CONFIG_SHA = "d6f6af61e7ec86216e2f689b1806985cce12fdcc35134388b7c6b96789dde1d5"
+FROZEN_RUNTIME_SHA = "d8621637287217c08595bf9df635d552e1266b4f6e149c3dd77572f33058811e"
+FROZEN_ADAPTER_SHA = "81ee7fd31db5c02fc148b575599f64d29ca76b04739985b2371d34b2521743d3"
 FROZEN_TAU = 0.050
 DETECTOR_VERSION = "d5_frozen_online_v1"
 
@@ -83,11 +85,25 @@ class D5FrozenOnlineDetectorV1:
                 f"expected {FEATURE_NAMES[:3]}..."
             )
 
-        # Verify frozen runtime SHA
+        # Verify frozen runtime SHA (strict binding)
         runtime_path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "d5_frozen_runtime_v1.py")
         runtime_sha = _sha256_file(runtime_path)
-        assert runtime_sha, "FATAL: frozen runtime module not found"
+        if runtime_sha != FROZEN_RUNTIME_SHA:
+            raise RuntimeError(
+                f"Runtime SHA mismatch: got {runtime_sha[:16]}..., "
+                f"expected {FROZEN_RUNTIME_SHA[:16]}..."
+            )
+
+        # Verify frozen adapter SHA (strict binding)
+        adapter_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "d5_frozen_feature_adapter_v1.py")
+        adapter_sha = _sha256_file(adapter_path)
+        if adapter_sha != FROZEN_ADAPTER_SHA:
+            raise RuntimeError(
+                f"Adapter SHA mismatch: got {adapter_sha[:16]}..., "
+                f"expected {FROZEN_ADAPTER_SHA[:16]}..."
+            )
 
         self.model = CandidateRankerV1(n_features=16).to(device)
         self.model.load_state_dict(ckpt["model_state"])
@@ -108,6 +124,7 @@ class D5FrozenOnlineDetectorV1:
         self._checkpoint_sha = ckpt_sha
         self._config_sha = cfg_sha
         self._runtime_sha = runtime_sha
+        self._adapter_sha = adapter_sha
         self._checkpoint_path = checkpoint_path
         self._config_path = config_path
 
