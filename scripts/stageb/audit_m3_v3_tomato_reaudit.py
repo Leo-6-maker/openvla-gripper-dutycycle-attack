@@ -57,6 +57,18 @@ def rows_by_condition(rows: list[Mapping[str, str]]) -> dict[str, dict[str, str]
     return {str(row.get("condition", "")): dict(row) for row in rows}
 
 
+def selected_candidate_row(candidate_rows: list[Mapping[str, str]], condition: str, selected: Mapping[str, str]) -> dict[str, str]:
+    selected_id = int(selected.get("selected_candidate_id", -1) or -1)
+    matches = [
+        dict(row)
+        for row in candidate_rows
+        if str(row.get("condition", "")) == condition and int(row.get("candidate_id", -2) or -2) == selected_id
+    ]
+    if len(matches) != 1:
+        raise ValueError(f"{condition}:selected_candidate_not_unique")
+    return matches[0]
+
+
 def artifact_hash_rows(root: Path) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for path in sorted(root.rglob("*")):
@@ -110,6 +122,11 @@ def audit_lambda_dir(lambda_value: str, canary_dir: Path, *, expected_seed: int,
         if selected is None:
             reasons.append(f"{condition}:selected_row_missing")
             continue
+        try:
+            candidate = selected_candidate_row(candidate_rows, condition, selected)
+        except ValueError as exc:
+            reasons.append(str(exc))
+            continue
         arm = read_required_int(
             selected,
             canonical="arm_prefix_match_count",
@@ -118,13 +135,15 @@ def audit_lambda_dir(lambda_value: str, canary_dir: Path, *, expected_seed: int,
         token = int(selected.get("official_gripper_token", -1) or -1)
         margin = float(selected.get("official_target31744_margin", "-inf"))
         linf = float(selected.get("processor_linf", "inf"))
-        invariant = str(selected.get("score_invariant_status", ""))
+        invariant = str(candidate.get("score_invariant_status", ""))
+        exact_tokens = candidate.get("official_tokens", "")
         condition_details[condition] = {
             "arm": arm,
             "token": token,
             "margin": margin,
             "linf": linf,
             "score_invariant": invariant,
+            "official_tokens": exact_tokens,
             "selected_candidate_id": selected.get("selected_candidate_id", ""),
         }
         if token != TARGET_TOKEN:

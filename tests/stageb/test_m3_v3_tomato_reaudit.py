@@ -33,7 +33,7 @@ def _selected(condition: str, margin: float, *, arm: int = 6, token: int = 31744
         "arm_prefix_match_denominator": 6,
         "official_target31744_margin": margin,
         "processor_linf": 0.01,
-        "score_invariant_status": "PASS",
+        "score_invariant_status": "",
     }
 
 
