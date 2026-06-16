@@ -1,0 +1,5 @@
+lambda,reaudit_status,reason,true_token,true_arm_match,true_margin,rand_margin,shuffled_margin,true_minus_rand,true_minus_shuffled,true_linf,strict_route,fallback,canary_dir
+0.25,PASS,,31744,6,17.499969482421875,0.5,0.0,16.999969482421875,17.499969482421875,0.023529052734375,True,False,/data/liuyu/outputs/m3_gpu15_autonomous_20260617_r3/S3_TOMATO_SCREEN/lambda_0.25/canary
+0.5,PASS,,31744,6,21.249820709228516,0.5,0.0,20.749820709228516,21.249820709228516,0.023529052734375,True,False,/data/liuyu/outputs/m3_gpu15_autonomous_20260617_r3/S3_TOMATO_SCREEN/lambda_0.5/canary
+1.0,PASS,,31744,6,24.1228084564209,0.5,0.25,23.6228084564209,23.8728084564209,0.023529052734375,True,False,/data/liuyu/outputs/m3_gpu15_autonomous_20260617_r3/S3_TOMATO_SCREEN/lambda_1.0/canary
+2.0,PASS,,31744,6,30.48320198059082,0.5,0.0,29.98320198059082,30.48320198059082,0.023529052734375,True,False,/data/liuyu/outputs/m3_gpu15_autonomous_20260617_r3/S3_TOMATO_SCREEN/lambda_2.0/canary

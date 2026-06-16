@@ -1,0 +1,35 @@
+{
+  "rows": [
+    {
+      "candidate_counts_json": "{\"RAND21_SELECTIVE\": 21, \"SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE\": 21, \"TRUE_PGD_TRAJECTORY21_SELECTIVE\": 21}",
+      "pass": true,
+      "rand_margin": 0.5,
+      "route_ok": true,
+      "seed": 81,
+      "selected_counts_json": "{\"RAND21_SELECTIVE\": 1, \"SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE\": 1, \"TRUE_PGD_TRAJECTORY21_SELECTIVE\": 1}",
+      "shuffled_margin": 0.0,
+      "true_arm": 6,
+      "true_linf": 0.023529052734375,
+      "true_margin": 30.48320198059082,
+      "true_minus_rand": 29.98320198059082,
+      "true_minus_shuffled": 30.48320198059082,
+      "true_token": 31744
+    },
+    {
+      "candidate_counts_json": "{\"RAND21_SELECTIVE\": 21, \"SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE\": 21, \"TRUE_PGD_TRAJECTORY21_SELECTIVE\": 21}",
+      "pass": true,
+      "rand_margin": 0.25,
+      "route_ok": true,
+      "seed": 82,
+      "selected_counts_json": "{\"RAND21_SELECTIVE\": 1, \"SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE\": 1, \"TRUE_PGD_TRAJECTORY21_SELECTIVE\": 1}",
+      "shuffled_margin": 0.25,
+      "true_arm": 6,
+      "true_linf": 0.023529052734375,
+      "true_margin": 29.61040687561035,
+      "true_minus_rand": 29.36040687561035,
+      "true_minus_shuffled": 29.36040687561035,
+      "true_token": 31744
+    }
+  ],
+  "status": "L3-1_TOMATO_RECONFIRMED"
+}
