@@ -2,7 +2,7 @@
   "bundle_version": "1.0.0-rc1",
   "detector_version": "d5_frozen_online_v1",
   "created": "2026-06-17T00:00:00Z",
-  "git_commit": "f4842cb",
+  "git_commit": "9f68842",
   "git_branch": "exp/l12-production-streaming-adapter-20260615",
 
   "artifacts": {
@@ -20,7 +20,7 @@
     },
     "collector_file": {
       "path": "scripts/stageb/run_d4_clean_shadow.py",
-      "sha256": "0bffc9a9aa2dc20ac52ba8fa7483c64e2c900e1cede209288f3c4735109fe0f1"
+      "sha256": "d3dd1360ec4d19484c2935a5c6fe4e78a1e613dac5629e1e3ac49a1b8ce13e39"
     },
     "checkpoint": {
       "path": "/data/liuyu/outputs/d5_training/d5_candidate_best.pt",
