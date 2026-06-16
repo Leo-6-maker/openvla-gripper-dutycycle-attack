@@ -46,8 +46,10 @@ def get_spatial_tasks():
     bm = benchmark.get_benchmark_dict()
     suite = bm["libero_spatial"]()
     tasks = []
-    for i, tn in enumerate(suite.tasks.keys()):
-        tasks.append((i, tn))
+    task_list = suite.tasks if isinstance(suite.tasks, list) else list(suite.tasks.keys())
+    for i, tn in enumerate(task_list):
+        name = tn.name if hasattr(tn, 'name') else str(tn)
+        tasks.append((i, name))
     return tasks, suite
 
 
