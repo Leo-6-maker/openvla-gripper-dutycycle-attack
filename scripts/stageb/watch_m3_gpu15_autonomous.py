@@ -319,11 +319,13 @@ class Watcher:
         stage.mkdir(parents=True, exist_ok=True)
         seed = int(self.cfg["tomato"]["attack_seed"])
         lambdas = [float(x) for x in self.cfg["tomato"]["lambda_grid"]]
+        render_gpu = str(int(self.cfg.get("render_gpu_device_id", 1)))
+        model_gpu = str(int(self.cfg.get("model_gpu_device_id", -1)))
         input_dir = stage / "input_step78"
         first_cfg = self.lambda_config(lambdas[0])
         self.run_cmd(
             "S3_CAPTURE_INPUT",
-            [self.py, self.cfg["runner"], "--config", str(first_cfg), "--mode", "capture_input", "--output_dir", str(input_dir), "--attack_seed", str(seed), "--model_gpu_device_id", "-1", "--render_gpu_device_id", "0", "--max_steps", "80", "--num_steps_wait", "10"],
+            [self.py, self.cfg["runner"], "--config", str(first_cfg), "--mode", "capture_input", "--output_dir", str(input_dir), "--attack_seed", str(seed), "--model_gpu_device_id", model_gpu, "--render_gpu_device_id", render_gpu, "--max_steps", "80", "--num_steps_wait", "10"],
             timeout=2400,
         )
         result_rows: list[dict[str, Any]] = []
@@ -335,12 +337,12 @@ class Watcher:
             canary_dir = lam_root / "canary"
             self.run_cmd(
                 f"S3_PREFLIGHT_LAMBDA_{lam}",
-                [self.py, self.cfg["runner"], "--config", str(cfg_path), "--mode", "preflight_zero_step", "--input_dir", str(input_dir), "--output_dir", str(preflight_dir), "--attack_seed", str(seed), "--model_gpu_device_id", "-1", "--render_gpu_device_id", "0"],
+                [self.py, self.cfg["runner"], "--config", str(cfg_path), "--mode", "preflight_zero_step", "--input_dir", str(input_dir), "--output_dir", str(preflight_dir), "--attack_seed", str(seed), "--model_gpu_device_id", model_gpu, "--render_gpu_device_id", render_gpu],
                 timeout=1800,
             )
             self.run_cmd(
                 f"S3_CANARY_LAMBDA_{lam}",
-                [self.py, self.cfg["runner"], "--config", str(cfg_path), "--mode", "canary_v4", "--input_dir", str(input_dir), "--output_dir", str(canary_dir), "--attack_seed", str(seed), "--model_gpu_device_id", "-1", "--render_gpu_device_id", "0"],
+                [self.py, self.cfg["runner"], "--config", str(cfg_path), "--mode", "canary_v4", "--input_dir", str(input_dir), "--output_dir", str(canary_dir), "--attack_seed", str(seed), "--model_gpu_device_id", model_gpu, "--render_gpu_device_id", render_gpu],
                 timeout=3600,
             )
             passed, details = self.tomato_pass(canary_dir)

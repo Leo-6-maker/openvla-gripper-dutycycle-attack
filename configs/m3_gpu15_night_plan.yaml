@@ -7,10 +7,12 @@ python: /data/aviary/envs/openvla_official_libero_20260525/bin/python
 test_python: /home/liuyu/.conda/envs/openvla_official_libero_20260525/bin/python
 base_config: configs/m3_step78_true_pgd_31744_logratio_arm_v4.yaml
 runner: scripts/stageb/run_m3_step78_true_pgd_fixed_frame.py
-output_root: /data/liuyu/outputs/m3_gpu15_autonomous_20260617_r2
+output_root: /data/liuyu/outputs/m3_gpu15_autonomous_20260617_r3
 lock_file: /tmp/openvla_m3_gpu15.lock
 deadline_hours: 9.0
 stop_grace_seconds: 120
+render_gpu_device_id: 1
+model_gpu_device_id: -1
 
 tomato:
   task: tomato_sauce
