@@ -677,8 +677,8 @@ def main():
     ap.add_argument("--episode-dir", required=True,
                     help="Exact episode output directory (runner creates this)")
     ap.add_argument("--checkpoint", required=True)
-    ap.add_argument("--detector-mode", choices=["off", "d5_frozen_online_v1"], default="off",
-                    help="off=D1b ProductionStreamingDetector, d5_frozen_online_v1=D5FrozenOnlineDetectorV1")
+    ap.add_argument("--detector-mode", choices=["none", "legacy_d1b", "d5_frozen_online_v1"], default="none",
+                    help="none=no detector (reference only), legacy_d1b=D1b ProductionStreamingDetector, d5_frozen_online_v1=D5FrozenOnlineDetectorV1")
     ap.add_argument("--d5-checkpoint", default="/data/liuyu/outputs/d5_training/d5_candidate_best.pt")
     ap.add_argument("--d5-config", default="/data/liuyu/outputs/d5_training/d5_frozen_config.json")
     ap.add_argument("--mode", choices=["reference", "shadow"], default="shadow")
@@ -704,6 +704,15 @@ def main():
     args = ap.parse_args()
 
     is_reference = (args.mode == "reference")
+
+    # Hard gate: detector mode must be consistent with run mode
+    if is_reference and args.detector_mode != "none":
+        print("FATAL: mode=reference requires --detector-mode none", file=sys.stderr)
+        sys.exit(1)
+    if not is_reference and args.detector_mode == "none":
+        print("FATAL: mode=shadow requires --detector-mode not none", file=sys.stderr)
+        sys.exit(1)
+
     episode_dir = Path(args.episode_dir)
     safe_tag = (
         f"{args.task}_s{args.state_id}_{args.mode}_attempt{args.attempt_id}"
@@ -773,7 +782,7 @@ def main():
             from gripper_attack.d5_frozen_online_detector_v1 import D5FrozenOnlineDetectorV1
             detector = D5FrozenOnlineDetectorV1(args.d5_checkpoint, args.d5_config)
             print(f"D5FrozenOnlineDetectorV1 loaded (tau=0.050)")
-        else:
+        elif args.detector_mode == "legacy_d1b":
             device = torch.device("cpu")
             ckpt = torch.load(args.checkpoint, map_location=device, weights_only=False)
             means = ckpt["normalization"]["means"]

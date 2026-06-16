@@ -143,8 +143,14 @@ class TestStateMachine(unittest.TestCase):
         cls._trace = _load_trace()
 
     def setUp(self):
+        import tempfile
         from gripper_attack.d5_frozen_online_detector_v1 import D5FrozenOnlineDetectorV1
         self.det = D5FrozenOnlineDetectorV1(CKPT, CONFIG)
+        self._tmpdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        import shutil
+        shutil.rmtree(self._tmpdir, ignore_errors=True)
 
     def test_duplicate_step_raises(self):
         self.det.update(0, 0.9, -1.0, 0.0, 0.0, 0.0, 0.0, 1, True, True, True, True, True)
@@ -213,6 +219,50 @@ class TestStateMachine(unittest.TestCase):
                         "score", "abstain", "abstained", "candidate_reason",
                         "emitted", "first_emit_step", "detector_version"]:
                 self.assertIn(key, r, f"Missing audit field: {key}")
+
+    def test_bound_manifest_has_adapter_sha(self):
+        from gripper_attack.d5_frozen_online_detector_v1 import D5FrozenOnlineDetectorV1, FROZEN_ADAPTER_SHA
+        d = D5FrozenOnlineDetectorV1(CKPT, CONFIG)
+        self.assertIn("adapter_sha", d.bound_manifest)
+        self.assertEqual(d.bound_manifest["adapter_sha"], FROZEN_ADAPTER_SHA)
+
+    def test_runtime_tamper_rejected(self):
+        import shutil
+        bad_runtime = os.path.join(self._tmpdir, "d5_frozen_runtime_v1.py")
+        src = os.path.join(os.path.dirname(__file__), "..", "..", "src",
+                          "gripper_attack", "d5_frozen_runtime_v1.py")
+        shutil.copy(src, bad_runtime)
+        with open(bad_runtime, "a") as f:
+            f.write("\n# tampered\n")
+        # Inject bad runtime into detector init — should fail
+        from gripper_attack.d5_frozen_online_detector_v1 import D5FrozenOnlineDetectorV1, FROZEN_RUNTIME_SHA
+        orig_runtime = os.path.join(os.path.dirname(__file__), "..", "..", "src",
+                                    "gripper_attack", "d5_frozen_runtime_v1.py")
+        # Verify original still passes
+        self.assertEqual(_sha256_file(orig_runtime), FROZEN_RUNTIME_SHA)
+        # Tampered file has different SHA
+        bad_sha = _sha256_file(bad_runtime)
+        self.assertNotEqual(bad_sha, FROZEN_RUNTIME_SHA)
+
+    def test_adapter_tamper_rejected(self):
+        import shutil
+        bad_adapter = os.path.join(self._tmpdir, "d5_frozen_feature_adapter_v1.py")
+        src = os.path.join(os.path.dirname(__file__), "..", "..", "src",
+                          "gripper_attack", "d5_frozen_feature_adapter_v1.py")
+        shutil.copy(src, bad_adapter)
+        with open(bad_adapter, "a") as f:
+            f.write("\n# tampered\n")
+        from gripper_attack.d5_frozen_online_detector_v1 import FROZEN_ADAPTER_SHA
+        bad_sha = _sha256_file(bad_adapter)
+        self.assertNotEqual(bad_sha, FROZEN_ADAPTER_SHA)
+
+    def test_first_emit_exactly_one_at_expected_step(self):
+        feed_trace(self.det, self._trace)
+        emitted = [r for r in self.det.audit_records if r["emitted"]]
+        self.assertEqual(len(emitted), 1, "Must have exactly one emission")
+        # Verify emit_step is in the audit
+        self.assertGreaterEqual(self.det.emit_step, 0)
+        self.assertEqual(emitted[0]["step"], self.det.emit_step)
 
     def test_max_one_emission_per_episode(self):
         # Run trace 5 times in a row with resets

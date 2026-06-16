@@ -226,6 +226,7 @@ class D5FrozenOnlineDetectorV1:
             "checkpoint_sha": self._checkpoint_sha,
             "config_sha": self._config_sha,
             "runtime_sha": self._runtime_sha,
+            "adapter_sha": self._adapter_sha,
             "checkpoint_path": self._checkpoint_path,
             "config_path": self._config_path,
             "tau": float(self.tau),
