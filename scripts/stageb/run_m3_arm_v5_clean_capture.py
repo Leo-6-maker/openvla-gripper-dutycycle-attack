@@ -15,6 +15,7 @@ import hashlib
 import json
 import os
 import re
+import signal
 import socket
 import subprocess
 import sys
@@ -245,6 +246,29 @@ def write_csv(path: Path, rows: Iterable[Mapping[str, Any]], fieldnames: list[st
         writer.writeheader()
         for row in rows:
             writer.writerow({key: row.get(key, "") for key in fieldnames})
+
+
+class CaptureTermination(RuntimeError):
+    """Raised from a signal handler so capture can write a terminal ledger row."""
+
+
+def install_capture_termination_handlers() -> dict[int, Any]:
+    previous: dict[int, Any] = {}
+
+    def _handler(signum: int, _frame: Any) -> None:
+        raise CaptureTermination(f"received signal {signum}")
+
+    for signum in (getattr(signal, "SIGTERM", None), getattr(signal, "SIGINT", None)):
+        if signum is None:
+            continue
+        previous[int(signum)] = signal.getsignal(signum)
+        signal.signal(signum, _handler)
+    return previous
+
+
+def restore_signal_handlers(previous: Mapping[int, Any]) -> None:
+    for signum, handler in previous.items():
+        signal.signal(int(signum), handler)
 
 
 def write_json(path: Path, obj: Any) -> None:
@@ -1205,77 +1229,83 @@ def run_capture_clean_pool(args: argparse.Namespace) -> None:
         "clean_records_sha256",
         "failure_reason",
     ]
-    for candidate in pool:
-        captured = False
-        last_exc: Exception | None = None
-        for attempt_index in range(2):
-            attempt_dir = output_dir / "attempts" / f"{candidate.task}_s{candidate.state_id}" / f"attempt_{attempt_index}"
-            attempt = {
-                "task": candidate.task,
-                "state_id": candidate.state_id,
-                "attempt_index": attempt_index,
-                "attempt_status": "ATTEMPT_STARTED",
-                "first_action_taken": "false",
-                "attempt_dir": str(attempt_dir.relative_to(output_dir)),
-                "clean_records_path": "",
-                "clean_records_sha256": "",
-                "failure_reason": "",
-            }
-            mark_phase(attempt_dir, "ATTEMPT_STARTED")
-            try:
-                mark_phase(attempt_dir, "MODEL_READY")
-                rel_path, source_sha = run_clean_capture_for_state(
-                    cfg=cfg,
-                    candidate=candidate,
-                    output_dir=output_dir,
-                    model=model,
-                    processor=processor,
-                    device=device,
-                    model_dtype=model_dtype,
-                    model_fp=model_fp,
-                    max_steps=int(args.max_steps),
-                    render_gpu_device_id=int(args.render_gpu_device_id),
-                    num_steps_wait=int(args.num_steps_wait),
-                    attempt_dir=attempt_dir,
-                    attempt_index=attempt_index,
-                    model_bundle_sha=model_bundle_sha,
-                )
-                mark_phase(attempt_dir, "CAPTURE_COMPLETED")
-                attempt.update(
-                    {
-                        "attempt_status": "CAPTURED",
-                        "first_action_taken": "true",
-                        "clean_records_path": rel_path,
-                        "clean_records_sha256": source_sha,
-                    }
-                )
+    signal_handlers = install_capture_termination_handlers()
+    try:
+        for candidate in pool:
+            captured = False
+            last_exc: Exception | None = None
+            for attempt_index in range(2):
+                attempt_dir = output_dir / "attempts" / f"{candidate.task}_s{candidate.state_id}" / f"attempt_{attempt_index}"
+                attempt = {
+                    "task": candidate.task,
+                    "state_id": candidate.state_id,
+                    "attempt_index": attempt_index,
+                    "attempt_status": "ATTEMPT_STARTED",
+                    "first_action_taken": "false",
+                    "attempt_dir": str(attempt_dir.relative_to(output_dir)),
+                    "clean_records_path": "",
+                    "clean_records_sha256": "",
+                    "failure_reason": "",
+                }
                 attempts.append(attempt)
-                captured = True
-                break
-            except Exception as exc:
-                last_exc = exc
-                generated = phase_exists(attempt_dir, "FIRST_ACTION_GENERATED")
-                taken = phase_exists(attempt_dir, "FIRST_ACTION_TAKEN")
-                status = "FIRST_ACTION_BEFORE_INFRA_FAILURE" if not generated and not taken else "CAPTURE_FAILED_POST_ACTION"
-                attempt.update(
-                    {
-                        "attempt_status": status,
-                        "first_action_taken": "true" if taken else "false",
-                        "failure_reason": repr(exc),
-                    }
-                )
-                attempts.append(attempt)
-                if status == "FIRST_ACTION_BEFORE_INFRA_FAILURE" and attempt_index == 0:
-                    continue
+                mark_phase(attempt_dir, "ATTEMPT_STARTED")
+                write_csv(output_dir / "m3_arm_v5_capture_attempt_ledger.csv", attempts, attempt_fieldnames)
+                try:
+                    mark_phase(attempt_dir, "MODEL_READY")
+                    rel_path, source_sha = run_clean_capture_for_state(
+                        cfg=cfg,
+                        candidate=candidate,
+                        output_dir=output_dir,
+                        model=model,
+                        processor=processor,
+                        device=device,
+                        model_dtype=model_dtype,
+                        model_fp=model_fp,
+                        max_steps=int(args.max_steps),
+                        render_gpu_device_id=int(args.render_gpu_device_id),
+                        num_steps_wait=int(args.num_steps_wait),
+                        attempt_dir=attempt_dir,
+                        attempt_index=attempt_index,
+                        model_bundle_sha=model_bundle_sha,
+                    )
+                    mark_phase(attempt_dir, "CAPTURE_COMPLETED")
+                    attempt.update(
+                        {
+                            "attempt_status": "CAPTURED",
+                            "first_action_taken": "true",
+                            "clean_records_path": rel_path,
+                            "clean_records_sha256": source_sha,
+                        }
+                    )
+                    write_csv(output_dir / "m3_arm_v5_capture_attempt_ledger.csv", attempts, attempt_fieldnames)
+                    captured = True
+                    break
+                except Exception as exc:
+                    last_exc = exc
+                    generated = phase_exists(attempt_dir, "FIRST_ACTION_GENERATED")
+                    taken = phase_exists(attempt_dir, "FIRST_ACTION_TAKEN")
+                    status = "FIRST_ACTION_BEFORE_INFRA_FAILURE" if not generated and not taken else "CAPTURE_FAILED_POST_ACTION"
+                    attempt.update(
+                        {
+                            "attempt_status": status,
+                            "first_action_taken": "true" if taken else "false",
+                            "failure_reason": repr(exc),
+                        }
+                    )
+                    if status == "FIRST_ACTION_BEFORE_INFRA_FAILURE" and attempt_index == 0:
+                        write_csv(output_dir / "m3_arm_v5_capture_attempt_ledger.csv", attempts, attempt_fieldnames)
+                        continue
+                    write_csv(output_dir / "m3_arm_v5_capture_attempt_ledger.csv", attempts, attempt_fieldnames)
+                    write_artifact_hash_manifest(output_dir)
+                    raise
+            if not captured:
                 write_csv(output_dir / "m3_arm_v5_capture_attempt_ledger.csv", attempts, attempt_fieldnames)
                 write_artifact_hash_manifest(output_dir)
-                raise
-        if not captured:
-            write_csv(output_dir / "m3_arm_v5_capture_attempt_ledger.csv", attempts, attempt_fieldnames)
-            write_artifact_hash_manifest(output_dir)
-            if last_exc is not None:
-                raise last_exc
-            raise RuntimeError(f"capture failed without exception for {candidate.task}_s{candidate.state_id}")
+                if last_exc is not None:
+                    raise last_exc
+                raise RuntimeError(f"capture failed without exception for {candidate.task}_s{candidate.state_id}")
+    finally:
+        restore_signal_handlers(signal_handlers)
     write_csv(
         output_dir / "m3_arm_v5_capture_attempt_ledger.csv",
         attempts,

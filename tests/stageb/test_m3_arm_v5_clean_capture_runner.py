@@ -595,6 +595,47 @@ def test_capture_runner_forbids_post_generation_retry(tmp_path, monkeypatch):
     assert rows[0]["attempt_status"] == "CAPTURE_FAILED_POST_ACTION"
 
 
+def test_capture_runner_records_sigterm_as_terminal_post_action(tmp_path, monkeypatch):
+    cfg_path = tmp_path / "config.yaml"
+    cfg_path.write_text(yaml.safe_dump({"model": {"path": str(tmp_path / "model")}, "selection": {"prior_layer3_state_ledger": "ledger.csv"}}), encoding="utf-8")
+    candidate = _one_candidate()[0]
+
+    class FakeModel:
+        config = SimpleNamespace(model_type="mock")
+        bin_centers = torch.zeros(1)
+        norm_stats = {}
+
+        def parameters(self):
+            return iter([torch.zeros(1)])
+
+    def fake_capture(**kwargs):
+        attempt_dir = kwargs["attempt_dir"]
+        root = attempt_dir.parent.parent.parent
+        rel = str(attempt_dir.relative_to(root))
+        _write_marker(root, rel, "FIRST_ACTION_GENERATED")
+        _write_marker(root, rel, "FIRST_ACTION_TAKEN")
+        from scripts.stageb.run_m3_arm_v5_clean_capture import CaptureTermination
+
+        raise CaptureTermination("received signal 15")
+
+    monkeypatch.setattr("scripts.stageb.run_m3_arm_v5_clean_capture.validate_output_dir_new", lambda path: Path(path).mkdir(parents=True, exist_ok=True))
+    monkeypatch.setattr("scripts.stageb.run_m3_arm_v5_clean_capture.require_clean_worktree", lambda: None)
+    monkeypatch.setattr("scripts.stageb.run_m3_arm_v5_clean_capture.require_runtime_gates", lambda *args, **kwargs: None)
+    monkeypatch.setattr("scripts.stageb.run_m3_arm_v5_clean_capture.validate_frozen_pool_sources", lambda *args, **kwargs: [candidate])
+    monkeypatch.setattr("scripts.stageb.run_m3_arm_v5_clean_capture.model_bundle_manifest", lambda _path: ([{"relative_path": "config.json", "size_bytes": 2, "sha256": _sha("m")}], _sha("bundle")))
+    monkeypatch.setattr("scripts.stageb.run_m3_arm_v5_clean_capture.load_model", lambda *args, **kwargs: (FakeModel(), object(), "cpu"))
+    monkeypatch.setattr("scripts.stageb.run_m3_arm_v5_clean_capture.run_clean_capture_for_state", fake_capture)
+    from scripts.stageb.run_m3_arm_v5_clean_capture import run_capture_clean_pool
+
+    with pytest.raises(RuntimeError, match="received signal 15"):
+        run_capture_clean_pool(_mock_capture_args(tmp_path, cfg_path))
+    rows = list(__import__("csv").DictReader((tmp_path / "out" / "m3_arm_v5_capture_attempt_ledger.csv").open(encoding="utf-8", newline="")))
+    assert len(rows) == 1
+    assert rows[0]["attempt_status"] == "CAPTURE_FAILED_POST_ACTION"
+    assert rows[0]["first_action_taken"] == "true"
+    assert "received signal 15" in rows[0]["failure_reason"]
+
+
 def test_offline_select_requires_attempt_ledger(tmp_path):
     records_dir = tmp_path / "records"
     _write_all_candidate_records(records_dir)
