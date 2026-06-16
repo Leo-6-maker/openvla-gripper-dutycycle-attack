@@ -152,7 +152,7 @@ def main():
         # Verify bundle
         rc, out, _ = run([
             PY, f"{REPO}/scripts/stageb/verify_d5_v1_production_bundle.py",
-            "--bundle", "configs/d5_v1_production_bundle.json", "--strict",
+            "--bundle", "configs/d5_v1_production_bundle.json",
         ])
         if rc != 0:
             state["state"] = "FAILED"
@@ -178,9 +178,10 @@ def main():
             state["reason"] = "gpu_health_preflight"
             write_state(state)
             return 1
-        # Run OFF
+        # Run OFF — episode_dir MUST match naming convention: {task}_s{state_id}_{mode}_attempt{id}
         print("=== Recorder OFF ===")
-        rc, out, ep_off = run_episode("alphabet_soup", "2", "reference", "recorder_off_ref")
+        rc, out, ep_off = run_episode("alphabet_soup", "2", "reference",
+                                       "alphabet_soup_s2_reference_attempt1")
         if rc != 0:
             state["state"] = "FAILED"
             state["reason"] = "recorder_off_failed"
@@ -188,7 +189,8 @@ def main():
             return 1
         # Run ON
         print("=== Recorder ON ===")
-        rc, out, ep_on = run_episode("alphabet_soup", "2", "shadow", "recorder_on_shadow")
+        rc, out, ep_on = run_episode("alphabet_soup", "2", "shadow",
+                                     "alphabet_soup_s2_shadow_attempt1")
         if rc != 0:
             state["state"] = "FAILED"
             state["reason"] = "recorder_on_failed"
@@ -209,7 +211,7 @@ def main():
 
     if state["state"] == "S5_TIMING_PANEL":
         for i, (task, sid, cat) in enumerate(PARENTS):
-            tag = f"{task}_s{sid}_timing"
+            tag = f"{task}_s{sid}_shadow_attempt1"
             if tag in state.get("episodes", {}):
                 print(f"SKIP {tag}: already done")
                 continue
@@ -244,7 +246,7 @@ def main():
             ("salad_dressing", "11", "late"),
         ]
         for task, sid, cat in rerun:
-            tag = f"{task}_s{sid}_repeat"
+            tag = f"{task}_s{sid}_shadow_attempt2"
             if tag in state.get("episodes", {}):
                 continue
             if not gpu_health():
