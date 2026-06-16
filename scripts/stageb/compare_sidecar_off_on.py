@@ -50,7 +50,7 @@ for task, state in TASKS:
             action_hash_diffs += 1
         if ra.get("env_action_hash", "") != sa.get("env_action_hash", ""):
             env_hash_diffs += 1
-    action_match = (action_hash_diffs == 0)
+    action_match = (action_hash_diffs == 0 and env_hash_diffs == 0)
     action_diffs = f"action_hash_diffs={action_hash_diffs} env_hash_diffs={env_hash_diffs}"
 
     ref_success_done = ref_rows[-1].get("success_done", "")
@@ -70,7 +70,7 @@ for task, state in TASKS:
         "n_actions_ref": len(ref_act), "n_actions_sh": len(sh_act),
         "steps_match": n_steps == len(sh_rows),
         "action_match": action_match,
-        "action_diffs": "; ".join(action_diffs[:5]),
+        "action_diffs": action_diffs,
         "qpos_mismatch": qpos_mismatch,
         "eef_mismatch": eef_mismatch,
         "gripper_mismatch": gripper_mismatch,

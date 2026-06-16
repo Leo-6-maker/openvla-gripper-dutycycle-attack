@@ -11,7 +11,7 @@
 | Phase 0 | Post-reboot freeze check | ALL GATES PASS |
 | Phase 1 | GPU qualification | 6/8 usable, 2 faulty documented |
 | Phase 2 | Sidecar OFF/ON smoke | 5/5 identity PASS |
-| Phase 3 | Production streaming parity | 154/154 + 9/9 negative PASS |
+| Phase 3 | Production streaming parity | PARTIAL — scoring parity PASS, live feature NOT TESTED |
 
 ## 1. LAYER1_CAPTURE_AND_LABELS
 
@@ -45,16 +45,29 @@ Evidence:
 
 ## 3. LAYER2_PRODUCTION_STREAMING_PARITY
 
-**Status: PASS (scoring pipeline verified)**
+**Status: PARTIAL — scoring parity only**
 
-Full scoring pipeline parity verified:
+### 3a. LAYER2_FROZEN_SCORING_PARITY: PASS
+
+Both paths read the same `detector_candidates.csv` features:
+- Path A: frozen D5 replay (`evaluate_d5_frozen.online_detect`)
+- Path B: direct normalization + MLP scoring on same CSV features
+
 - Internal 120/120: score diff ≤ 1e-6, emit step match, 0 abstain mismatch
 - External 34/34: score diff ≤ 1e-6, emit step match, 0 abstain mismatch
 - Negative fail-closed tests: 9/9 PASS
 
-**Known limitation:** Feature extraction code (`critical_close_selector.py`) has evolved through E1.5/E3.1/E4A/E4B.1 since the D4 capture (commit 44bf7b86). Live feature re-computation via `ProductionStreamingDetector._extract_features()` produces different feature values than the frozen `detector_candidates.csv`. The D5 model was trained on capture-time features. Therefore, D5 scoring in production MUST use the capture-time features (from `detector_candidates.csv`), not live-recomputed features.
+This verifies that normalization and MLP scoring are deterministic.
 
-To restore full production parity with live feature computation, the D5 model would need to be re-trained on features extracted by the CURRENT `ProductionStreamingDetector._extract_features()` code. This is deferred — not required for Layer 1/2 acceptance.
+### 3b. LAYER2_LIVE_FEATURE_EXTRACTION_PARITY: NOT TESTED / KNOWN MISMATCH
+
+Feature extraction code (`critical_close_selector.py`) has evolved through E1.5/E3.1/E4A/E4B.1 since the D4 capture (commit 44bf7b86). Live feature re-computation via `ProductionStreamingDetector._extract_features()` produces different feature values than the frozen `detector_candidates.csv`. The D5 model was trained on capture-time features.
+
+### 3c. LAYER2_TRUE_ONLINE_DEPLOYMENT: BLOCKED ON FROZEN FEATURE ADAPTER
+
+A production deployment cannot read pre-computed `detector_candidates.csv` at inference time. True live streaming parity requires a frozen feature adapter that recovers capture-time feature semantics from step_trace.csv inputs only.
+
+Next step: implement `src/gripper_attack/d5_frozen_feature_adapter_v1.py` and re-run true two-path parity (CSV replay vs live adapter streaming).
 
 Evidence:
 - [d5_production_streaming_parity.csv](../tables/d5_production_streaming_parity.csv)
@@ -96,7 +109,10 @@ Layer3 trigger is NOT AUTHORIZED. The current detector is a close-event detector
 
 "Layer 1/2 engineering chain is operational end-to-end:
 clean rollout → Teacher-P labels → D5 training → frozen replay →
-live non-invasive sidecar → production streaming parity."
+live non-invasive sidecar → frozen-candidate scoring parity.
+
+True live feature extraction parity requires a frozen feature adapter
+recovering capture-time feature semantics. Blocked on this adapter."
 
 ## Prohibited Declarations (NOT made)
 

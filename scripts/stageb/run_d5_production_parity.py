@@ -37,6 +37,7 @@ sys.path.insert(0, os.path.join(_REPO, "scripts", "stageb"))
 
 from train_d1b_detector import CandidateRanker, FEATURE_NAMES, normalize_features
 from evaluate_d5_frozen import online_detect as frozen_replay_detect
+from gripper_attack.d5_frozen_feature_adapter_v1 import D5FrozenFeatureAdapter
 
 # Frozen D5 artifact SHAs (from L12_POST_REBOOT_FREEZE_CHECK.md)
 FROZEN_CHECKPOINT_SHA = "7eea609f21eae7b91ff790631b656ec88949df8993a89b26b3588468a81e5ee5"
@@ -45,6 +46,7 @@ FROZEN_MANIFEST_SHA = "fe125a555fdc035642bde4818e4cb7475e12bd08501440d90c000dc23
 FROZEN_TAU = 0.050
 
 MLP_SCORE_TOLERANCE = 1e-6
+FEATURE_TOLERANCE = 2.01e-6  # 2e-6 accounts for CSV serialization cascade
 
 
 def load_d5_model(ckpt_path):
@@ -152,6 +154,115 @@ def compare_episode(episode_dir, frozen_result, d5_direct_result, csv_candidates
         "emit_d5_direct": d5_emit,
         "emit_match": emit_match,
         "abstained_emission": abstained_emission,
+        "error": None,
+    }
+
+
+def compare_live_feature_adapter(episode_dir, csv_candidates):
+    """Run D5FrozenFeatureAdapter on step_trace.csv, compare features vs CSV.
+
+    Path B (true live streaming): step_trace.csv row-by-row → adapter → features.
+    Compares each adapter-generated feature against detector_candidates.csv.
+    Returns dict with feature mismatch counts and max diff.
+    """
+    trace_path = os.path.join(episode_dir, "step_trace.csv")
+    if not os.path.exists(trace_path):
+        return {"error": "no step_trace.csv", "feature_mismatches": -1, "max_feature_diff": -1}
+
+    rows = list(csv.DictReader(open(trace_path)))
+    if not rows:
+        return {"error": "empty step_trace.csv", "feature_mismatches": -1, "max_feature_diff": -1}
+
+    adapter = D5FrozenFeatureAdapter()
+    adapter.reset()
+
+    adapter_candidates = []
+    for r in rows:
+        step_id = int(r["step"])
+        raw_gripper = float(r["raw_gripper"]) if r.get("raw_gripper", "") else 0.0
+        env_gripper = float(r["env_gripper"]) if r.get("env_gripper", "") else 0.0
+        gripper_qpos = float(r["gripper_qpos_before"]) if r.get("gripper_qpos_before", "") else 0.0
+        eef_x = float(r["eef_x"]) if r.get("eef_x", "") else 0.0
+        eef_y = float(r["eef_y"]) if r.get("eef_y", "") else 0.0
+        eef_z = float(r["eef_z"]) if r.get("eef_z", "") else 0.0
+        decoded_open = int(float(r.get("decoded_open", 0) or 0))
+
+        raw_valid = bool(int(float(r.get("raw_valid", 1) or 1)))
+        env_valid = bool(int(float(r.get("env_valid", 1) or 1)))
+        qpos_valid = bool(int(float(r.get("qpos_valid", 1) or 1)))
+        eef_valid = bool(int(float(r.get("eef_valid", 1) or 1)))
+        semantics_ok = bool(int(float(r.get("semantics_ok", 1) or 1)))
+
+        try:
+            result = adapter.update(
+                step_id=step_id,
+                raw_gripper=raw_gripper, env_gripper=env_gripper,
+                gripper_qpos=gripper_qpos,
+                eef_x=eef_x, eef_y=eef_y, eef_z=eef_z,
+                decoded_open=decoded_open,
+                raw_valid=raw_valid, env_valid=env_valid,
+                qpos_valid=qpos_valid, eef_valid=eef_valid,
+                gripper_semantics_valid=semantics_ok,
+            )
+        except ValueError as e:
+            return {"error": f"step sequence violation at step {step_id}: {e}"}
+        except Exception as e:
+            return {"error": f"adapter exception at step {step_id}: {e}"}
+
+        if result is not None:
+            adapter_candidates.append(result)
+
+    if len(adapter_candidates) != len(csv_candidates):
+        return {
+            "error": f"count mismatch: adapter={len(adapter_candidates)} csv={len(csv_candidates)}",
+            "feature_mismatches": -1, "max_feature_diff": -1,
+        }
+
+    feature_mismatches = 0
+    max_feature_diff = 0.0
+    first_diff_detail = ""
+
+    for ac, cc in zip(adapter_candidates, csv_candidates):
+        # Step match
+        if ac["step"] != cc["step"]:
+            feature_mismatches += 1000  # flag step mismatch prominently
+
+        # Feature comparison
+        af = ac["features"]
+        for fn in FEATURE_NAMES:
+            av = af.get(fn, "")
+            cv_val = cc["features"].get(fn, "")
+            # Both are strings (CSV values) or empty
+            try:
+                av_float = float(av) if av != "" else None
+                cv_float = float(cv_val) if cv_val != "" else None
+            except (ValueError, TypeError):
+                if str(av) != str(cv_val):
+                    feature_mismatches += 1
+                continue
+
+            if av_float is None and cv_float is None:
+                continue
+            if av_float is None or cv_float is None:
+                feature_mismatches += 1
+                if not first_diff_detail:
+                    first_diff_detail = f"{fn}: adapter={av} csv={cv_val}"
+                continue
+
+            diff = abs(av_float - cv_float)
+            if diff > max_feature_diff:
+                max_feature_diff = diff
+            if diff > FEATURE_TOLERANCE:
+                feature_mismatches += 1
+                if not first_diff_detail:
+                    first_diff_detail = f"{fn}: adapter={av_float:.8f} csv={cv_float:.8f} diff={diff:.2e}"
+
+    return {
+        "n_adapter_candidates": len(adapter_candidates),
+        "n_csv_candidates": len(csv_candidates),
+        "feature_mismatches": feature_mismatches,
+        "max_feature_diff": max_feature_diff,
+        "first_diff_detail": first_diff_detail,
         "error": None,
     }
 
@@ -310,17 +421,35 @@ def main():
         int_results.append(cmp)
 
         if cmp.get("error"):
-            int_failures.append(f"{task}_s{sid}: {cmp['error']}")
+            int_failures.append(f"{task}_s{sid}: scoring_error: {cmp['error']}")
         elif not cmp.get("candidate_count_match"):
-            int_failures.append(f"{task}_s{sid}: count mismatch")
+            int_failures.append(f"{task}_s{sid}: scoring count mismatch")
         elif cmp.get("score_max_diff", 0) > 1e-6:
-            int_failures.append(f"{task}_s{sid}: score diff {cmp['score_max_diff']:.2e}")
+            int_failures.append(f"{task}_s{sid}: scoring diff {cmp['score_max_diff']:.2e}")
         elif not cmp.get("emit_match"):
-            int_failures.append(f"{task}_s{sid}: emit mismatch frozen={cmp['emit_frozen']} d5={cmp['emit_d5_direct']}")
+            int_failures.append(f"{task}_s{sid}: scoring emit mismatch frozen={cmp['emit_frozen']} d5={cmp['emit_d5_direct']}")
         elif cmp.get("abstain_mismatches", 0) > 0:
-            int_failures.append(f"{task}_s{sid}: {cmp['abstain_mismatches']} abstain mismatches")
+            int_failures.append(f"{task}_s{sid}: scoring {cmp['abstain_mismatches']} abstain mismatches")
         elif cmp.get("abstained_emission"):
-            int_failures.append(f"{task}_s{sid}: abstained candidate emission at {cmp['emit_d5_direct']}")
+            int_failures.append(f"{task}_s{sid}: scoring abstained emission at {cmp['emit_d5_direct']}")
+
+        # ── Live feature adapter parity ──
+        if not cmp.get("error") and cmp.get("candidate_count_match"):
+            live_cmp = compare_live_feature_adapter(episode_dir, csv_cands)
+            cmp["live_feature_mismatches"] = live_cmp.get("feature_mismatches", -1)
+            cmp["live_max_feature_diff"] = live_cmp.get("max_feature_diff", -1)
+            cmp["live_n_adapter_cands"] = live_cmp.get("n_adapter_candidates", -1)
+            cmp["live_error"] = live_cmp.get("error", "")
+
+            if live_cmp.get("error"):
+                int_failures.append(f"{task}_s{sid}: live_feature_error: {live_cmp['error']}")
+            elif live_cmp.get("feature_mismatches", -1) > 0:
+                int_failures.append(f"{task}_s{sid}: live_feature {live_cmp['feature_mismatches']} mismatches (max diff {live_cmp['max_feature_diff']:.2e}): {live_cmp.get('first_diff_detail','')[:120]}")
+        else:
+            cmp["live_feature_mismatches"] = -1
+            cmp["live_max_feature_diff"] = -1
+            cmp["live_n_adapter_cands"] = -1
+            cmp["live_error"] = "skipped_due_to_scoring_failure"
 
     # ── External 34 ──
     print("\n=== External 34: D5 Scoring Parity ===")
@@ -365,6 +494,25 @@ def main():
                 ext_failures.append(f"{task}_s{sid}: {cmp['abstain_mismatches']} abstain mismatches")
             elif cmp.get("abstained_emission"):
                 ext_failures.append(f"{task}_s{sid}: abstained emission")
+            elif cmp.get("score_max_diff", 0) > 1e-6:
+                ext_failures.append(f"{task}_s{sid}: score diff {cmp['score_max_diff']:.2e}")
+
+            # Live feature adapter parity
+            if not cmp.get("error") and cmp.get("candidate_count_match"):
+                live_cmp = compare_live_feature_adapter(dp, csv_cands)
+                cmp["live_feature_mismatches"] = live_cmp.get("feature_mismatches", -1)
+                cmp["live_max_feature_diff"] = live_cmp.get("max_feature_diff", -1)
+                cmp["live_n_adapter_cands"] = live_cmp.get("n_adapter_candidates", -1)
+                cmp["live_error"] = live_cmp.get("error", "")
+                if live_cmp.get("error"):
+                    ext_failures.append(f"{task}_s{sid}: live_feature_error: {live_cmp['error']}")
+                elif live_cmp.get("feature_mismatches", -1) > 0:
+                    ext_failures.append(f"{task}_s{sid}: live_feature {live_cmp['feature_mismatches']} mismatches")
+            else:
+                cmp["live_feature_mismatches"] = -1
+                cmp["live_max_feature_diff"] = -1
+                cmp["live_n_adapter_cands"] = -1
+                cmp["live_error"] = "skipped_due_to_scoring_failure"
 
     # ── Negative tests ──
     print("\n=== Negative Fail-Closed Tests ===")
@@ -378,7 +526,10 @@ def main():
         "n_candidates", "candidate_count_match",
         "step_mismatches", "score_max_diff", "abstain_mismatches",
         "emit_frozen", "emit_d5_direct", "emit_match",
-        "abstained_emission", "error",
+        "abstained_emission",
+        "live_feature_mismatches", "live_max_feature_diff",
+        "live_n_adapter_cands", "live_error",
+        "error",
     ]
     for r in int_results + ext_results:
         for k in parity_fields:
