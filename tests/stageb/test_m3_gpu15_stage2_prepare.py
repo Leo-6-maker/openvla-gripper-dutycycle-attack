@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.stageb.watch_m3_gpu15_stage2 import (
-    STAGE2_CONDITIONS,
+    STAGE2_PHASES,
     STAGE2_SEEDS,
     Stage2PlanError,
     build_stage2_plan,
@@ -23,6 +23,7 @@ from scripts.stageb.watch_m3_gpu15_stage2 import (
     s6_enabled_from_s5_gate,
     select_multi_parent_rows,
 )
+from gripper_attack.m3_telemetry_schema import TelemetrySchemaError, read_required_int
 
 
 def _write_json(path: Path, obj: dict) -> None:
@@ -144,22 +145,31 @@ def test_stage2_plan_uses_selected_lambda_seeds_conditions_and_gpu_mapping(tmp_p
     gate, results = _write_gate_pair(tmp_path)
     selected = load_selected_lambda(gate, results)
     parents = select_multi_parent_rows(_handoff(tmp_path), max_parents=3)
+    template = yaml.safe_load(Path("configs/m3_step78_true_pgd_31744_logratio_arm_v4.yaml").read_text(encoding="utf-8"))
     cfg = {
         "python": "/env/bin/python",
         "stage2_runner": "runner.py",
         "stage2_config": "config.yaml",
-        "stage2_mode": "canary_v4",
         "stage2_output_root": "/stage2",
     }
-    plan = build_stage2_plan(cfg, selected, parents)
+    plan = build_stage2_plan(cfg, selected, parents, config_dir=tmp_path / "configs", template_config=template)
     rows = flatten_command_rows(plan)
-    assert len(rows) == 3 * len(STAGE2_SEEDS) * len(STAGE2_CONDITIONS)
+    assert len(rows) == 3 * len(STAGE2_PHASES)
     assert {r["selected_lambda"] for r in rows} == {0.25}
     assert {r["cuda_visible_devices"] for r in rows} == {"1,5"}
-    assert {int(r["seed"]) for r in rows} == set(STAGE2_SEEDS)
-    assert {r["condition"] for r in rows} == set(STAGE2_CONDITIONS)
-    assert all("--selected_lambda 0.25" in r["command"] for r in rows)
+    assert {r["phase"] for r in rows} == set(STAGE2_PHASES)
+    assert sum(1 for r in rows if r["phase"] == "capture_input") == 3
+    assert sum(1 for r in rows if r["phase"] == "preflight_zero_step") == 3
+    assert sum(1 for r in rows if r["phase"] == "canary_v4_seed81") == 3
+    assert sum(1 for r in rows if r["phase"] == "canary_v4_seed82") == 3
+    assert all("--condition" not in r["command"] for r in rows)
+    assert all("--selected_lambda" not in r["command"] for r in rows)
+    assert all("--task" not in r["command"] for r in rows)
     assert all("--render_gpu_device_id 1" in r["command"] for r in rows)
+    assert all(Path(r["config_path"]).exists() for r in rows)
+    parent_cfg = yaml.safe_load(Path(rows[0]["config_path"]).read_text(encoding="utf-8"))
+    assert parent_cfg["attack_optimizer"]["arm_preserve_weight"] == 0.25
+    assert parent_cfg["attack_optimizer"]["target_token_id"] == 31744
 
 
 def test_s5_gate_requires_two_seeds_per_parent_and_two_parents_total():
@@ -200,4 +210,18 @@ def test_prepare_entry_writes_plan_without_gpu_execution(tmp_path):
     assert plan["tomato_selected_lambda"] == 0.25
     ledger = (tmp_path / "prepare" / "m3_gpu15_stage2_command_ledger.csv").read_text(encoding="utf-8")
     assert "CUDA_VISIBLE_DEVICES" not in ledger
-    assert "--condition TRUE_PGD" in ledger
+    assert "--mode canary_v4" in ledger
+    assert "--condition" not in ledger
+    assert "--selected_lambda" not in ledger
+
+
+def test_arm_accessor_prefers_canonical_and_accepts_legacy_alias():
+    assert read_required_int({"arm_prefix_match_count": "6", "arm_match_count": "2"}, canonical="arm_prefix_match_count", legacy_aliases=["arm_match_count"]) == 6
+    assert read_required_int({"official_arm_match_count": "5"}, canonical="arm_prefix_match_count", legacy_aliases=["official_arm_match_count", "arm_match_count"]) == 5
+
+
+def test_arm_accessor_missing_or_invalid_is_infra_invalid():
+    with pytest.raises(TelemetrySchemaError, match="missing required telemetry field"):
+        read_required_int({}, canonical="arm_prefix_match_count", legacy_aliases=["arm_match_count"])
+    with pytest.raises(TelemetrySchemaError, match="not an integer"):
+        read_required_int({"arm_prefix_match_count": "nan"}, canonical="arm_prefix_match_count")

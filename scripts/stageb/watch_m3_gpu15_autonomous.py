@@ -28,6 +28,8 @@ from typing import Any, Mapping
 
 import yaml
 
+from gripper_attack.m3_telemetry_schema import read_required_int
+
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TARGET_TOKEN = 31744
@@ -301,7 +303,11 @@ class Watcher:
             "true_margin": f(true, "official_target31744_margin"),
             "rand_margin": f(rand, "official_target31744_margin"),
             "shuffled_margin": f(shuffled, "official_target31744_margin"),
-            "true_arm": int(true.get("official_arm_match_count") or true.get("arm_match_count") or -1),
+            "true_arm": read_required_int(
+                true,
+                canonical="arm_prefix_match_count",
+                legacy_aliases=["official_arm_match_count", "arm_match_count"],
+            ),
             "true_token": int(true.get("official_gripper_token") or -1),
         }
         passed = (

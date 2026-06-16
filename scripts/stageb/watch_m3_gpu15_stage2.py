@@ -13,6 +13,7 @@ import argparse
 import csv
 import hashlib
 import json
+import copy
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,7 +25,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[2]
 TARGET_TOKEN = 31744
 STAGE2_SEEDS = (81, 82)
-STAGE2_CONDITIONS = ("CLEAN", "PGD_DELTA0", "TRUE_PGD", "RAND21", "SHUFFLED")
+STAGE2_PHASES = ("capture_input", "preflight_zero_step", "canary_v4_seed81", "canary_v4_seed82")
 GPU_ENV = "1,5"
 RENDER_PHYSICAL_GPU = 1
 MODEL_GPU_DEVICE_ID = -1
@@ -206,6 +207,8 @@ def build_parent_plan(
     index: int,
     selected_lambda: SelectedLambda,
     cfg: Mapping[str, Any],
+    config_dir: Path | None = None,
+    template_config: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     task = parent_task(row, index)
     state = parent_state(row)
@@ -214,55 +217,144 @@ def build_parent_plan(
         raise Stage2PlanError(f"parent {task} missing step/absolute_step field")
     pid = parent_id(row, index)
     parent_root = f"{cfg['stage2_output_root']}/S5_MULTI_PARENT/{pid}"
+    parent_config = f"{parent_root}/config.yaml"
+    if config_dir is not None:
+        config_dir.mkdir(parents=True, exist_ok=True)
+        parent_config_path = config_dir / f"{pid}.yaml"
+        parent_config = str(parent_config_path)
+        if template_config is not None:
+            cfg_obj = copy.deepcopy(dict(template_config))
+            cfg_obj.setdefault("input", {})
+            cfg_obj["input"]["task"] = task
+            cfg_obj["input"]["state_id"] = int(state)
+            cfg_obj["input"]["absolute_step"] = int(step)
+            cfg_obj.setdefault("attack_optimizer", {})
+            cfg_obj["attack_optimizer"]["arm_preserve_weight"] = float(selected_lambda.value)
+            cfg_obj["attack_optimizer"]["target_token_id"] = TARGET_TOKEN
+            parent_config_path.write_text(yaml.safe_dump(cfg_obj, sort_keys=False), encoding="utf-8")
     jobs = []
+    input_dir = f"{parent_root}/input"
+    capture_cmd = [
+        str(cfg["python"]),
+        str(cfg["stage2_runner"]),
+        "--config",
+        parent_config,
+        "--mode",
+        "capture_input",
+        "--output_dir",
+        input_dir,
+        "--attack_seed",
+        str(STAGE2_SEEDS[0]),
+        "--model_gpu_device_id",
+        str(MODEL_GPU_DEVICE_ID),
+        "--render_gpu_device_id",
+        str(RENDER_PHYSICAL_GPU),
+        "--max_steps",
+        str(int(step) + 2),
+        "--num_steps_wait",
+        "10",
+    ]
+    jobs.append(
+        {
+            "stage": "S5_MULTI_PARENT",
+            "parent_id": pid,
+            "task": task,
+            "state_id": state,
+            "step": step,
+            "phase": "capture_input",
+            "seed": STAGE2_SEEDS[0],
+            "cuda_visible_devices": GPU_ENV,
+            "selected_lambda": selected_lambda.value,
+            "config_path": parent_config,
+            "command": capture_cmd,
+        }
+    )
+    preflight_cmd = [
+        str(cfg["python"]),
+        str(cfg["stage2_runner"]),
+        "--config",
+        parent_config,
+        "--mode",
+        "preflight_zero_step",
+        "--input_dir",
+        input_dir,
+        "--output_dir",
+        f"{parent_root}/preflight",
+        "--attack_seed",
+        str(STAGE2_SEEDS[0]),
+        "--model_gpu_device_id",
+        str(MODEL_GPU_DEVICE_ID),
+        "--render_gpu_device_id",
+        str(RENDER_PHYSICAL_GPU),
+    ]
+    jobs.append(
+        {
+            "stage": "S5_MULTI_PARENT",
+            "parent_id": pid,
+            "task": task,
+            "state_id": state,
+            "step": step,
+            "phase": "preflight_zero_step",
+            "seed": STAGE2_SEEDS[0],
+            "cuda_visible_devices": GPU_ENV,
+            "selected_lambda": selected_lambda.value,
+            "config_path": parent_config,
+            "command": preflight_cmd,
+        }
+    )
     for seed in STAGE2_SEEDS:
-        for condition in STAGE2_CONDITIONS:
-            out_dir = f"{parent_root}/seed{seed}/{condition}"
-            jobs.append(
-                {
-                    "stage": "S5_MULTI_PARENT",
-                    "parent_id": pid,
-                    "task": task,
-                    "state_id": state,
-                    "step": step,
-                    "seed": seed,
-                    "condition": condition,
-                    "cuda_visible_devices": GPU_ENV,
-                    "selected_lambda": selected_lambda.value,
-                    "command": [
-                        str(cfg["python"]),
-                        str(cfg["stage2_runner"]),
-                        "--config",
-                        str(cfg["stage2_config"]),
-                        "--mode",
-                        str(cfg["stage2_mode"]),
-                        "--task",
-                        task,
-                        "--state_id",
-                        str(state),
-                        "--absolute_step",
-                        str(step),
-                        "--condition",
-                        condition,
-                        "--attack_seed",
-                        str(seed),
-                        "--selected_lambda",
-                        str(selected_lambda.value),
-                        "--output_dir",
-                        out_dir,
-                        "--model_gpu_device_id",
-                        str(MODEL_GPU_DEVICE_ID),
-                        "--render_gpu_device_id",
-                        str(RENDER_PHYSICAL_GPU),
-                    ],
-                }
-            )
-    return {"parent_id": pid, "task": task, "state_id": state, "step": step, "source_row": dict(row), "jobs": jobs}
+        jobs.append(
+            {
+                "stage": "S5_MULTI_PARENT",
+                "parent_id": pid,
+                "task": task,
+                "state_id": state,
+                "step": step,
+                "phase": f"canary_v4_seed{seed}",
+                "seed": seed,
+                "cuda_visible_devices": GPU_ENV,
+                "selected_lambda": selected_lambda.value,
+                "config_path": parent_config,
+                "command": [
+                    str(cfg["python"]),
+                    str(cfg["stage2_runner"]),
+                    "--config",
+                    parent_config,
+                    "--mode",
+                    "canary_v4",
+                    "--input_dir",
+                    input_dir,
+                    "--output_dir",
+                    f"{parent_root}/seed{seed}/canary_v4",
+                    "--attack_seed",
+                    str(seed),
+                    "--model_gpu_device_id",
+                    str(MODEL_GPU_DEVICE_ID),
+                    "--render_gpu_device_id",
+                    str(RENDER_PHYSICAL_GPU),
+                ],
+            }
+        )
+    return {"parent_id": pid, "task": task, "state_id": state, "step": step, "config_path": parent_config, "source_row": dict(row), "jobs": jobs}
 
 
-def build_stage2_plan(cfg: Mapping[str, Any], selected: SelectedLambda, parents: list[dict[str, str]]) -> dict[str, Any]:
+def build_stage2_plan(
+    cfg: Mapping[str, Any],
+    selected: SelectedLambda,
+    parents: list[dict[str, str]],
+    *,
+    config_dir: Path | None = None,
+    template_config: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     parent_plans = [
-        build_parent_plan(row, index=index, selected_lambda=selected, cfg=cfg)
+        build_parent_plan(
+            row,
+            index=index,
+            selected_lambda=selected,
+            cfg=cfg,
+            config_dir=config_dir,
+            template_config=template_config,
+        )
         for index, row in enumerate(parents)
     ]
     return {
@@ -273,7 +365,7 @@ def build_stage2_plan(cfg: Mapping[str, Any], selected: SelectedLambda, parents:
         "tomato_selected_output_dir": selected.output_dir,
         "target_token": TARGET_TOKEN,
         "seeds": list(STAGE2_SEEDS),
-        "conditions": list(STAGE2_CONDITIONS),
+        "phases": list(STAGE2_PHASES),
         "parents": parent_plans,
         "s5_gate": {
             "required_parent_passes": 2,
@@ -309,8 +401,9 @@ def flatten_command_rows(plan: Mapping[str, Any]) -> list[dict[str, Any]]:
                     "state_id": job["state_id"],
                     "step": job["step"],
                     "seed": job["seed"],
-                    "condition": job["condition"],
+                    "phase": job["phase"],
                     "selected_lambda": job["selected_lambda"],
+                    "config_path": job["config_path"],
                     "cuda_visible_devices": job["cuda_visible_devices"],
                     "command": " ".join(job["command"]),
                 }
@@ -349,14 +442,15 @@ def run_prepare(args: argparse.Namespace) -> None:
     output_dir = Path(args.output_dir or cfg["prepare_output_dir"])
     selected = load_selected_lambda(gate_path, results_csv)
     parents = select_multi_parent_rows(handoff_csv, max_parents=int(cfg.get("max_parents", 3)))
-    plan = build_stage2_plan(cfg, selected, parents)
     output_dir.mkdir(parents=True, exist_ok=True)
+    template_config = yaml.safe_load(Path(str(cfg["stage2_config"])).read_text(encoding="utf-8"))
+    plan = build_stage2_plan(cfg, selected, parents, config_dir=output_dir / "parent_configs", template_config=template_config)
     write_json(output_dir / "m3_gpu15_stage2_plan.json", plan)
     command_rows = flatten_command_rows(plan)
     write_csv(
         output_dir / "m3_gpu15_stage2_command_ledger.csv",
         command_rows,
-        ["stage", "parent_id", "task", "state_id", "step", "seed", "condition", "selected_lambda", "cuda_visible_devices", "command"],
+        ["stage", "parent_id", "task", "state_id", "step", "seed", "phase", "selected_lambda", "config_path", "cuda_visible_devices", "command"],
     )
     manifest = {
         "created_at": now_iso(),
