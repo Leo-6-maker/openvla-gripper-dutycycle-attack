@@ -45,33 +45,35 @@ Evidence:
 
 ## 3. LAYER2_PRODUCTION_STREAMING_PARITY
 
-**Status: PARTIAL — scoring parity only**
+**Updated commit 8a73301+ — adapter implemented, partial verification complete**
 
 ### 3a. LAYER2_FROZEN_SCORING_PARITY: PASS
 
-Both paths read the same `detector_candidates.csv` features:
-- Path A: frozen D5 replay (`evaluate_d5_frozen.online_detect`)
-- Path B: direct normalization + MLP scoring on same CSV features
-
 - Internal 120/120: score diff ≤ 1e-6, emit step match, 0 abstain mismatch
 - External 34/34: score diff ≤ 1e-6, emit step match, 0 abstain mismatch
-- Negative fail-closed tests: 9/9 PASS
+- Negative fail-closed tests: 9/9 PASS (on ProductionStreamingDetector)
 
-This verifies that normalization and MLP scoring are deterministic.
+### 3b. LAYER2_LIVE_FEATURE_EXTRACTION_PARITY: CONDITIONAL PASS (153/154)
 
-### 3b. LAYER2_LIVE_FEATURE_EXTRACTION_PARITY: NOT TESTED / KNOWN MISMATCH
+`D5FrozenFeatureAdapter` (snapshot of 44bf7b86) verified against `detector_candidates.csv`:
 
-Feature extraction code (`critical_close_selector.py`) has evolved through E1.5/E3.1/E4A/E4B.1 since the D4 capture (commit 44bf7b86). Live feature re-computation via `ProductionStreamingDetector._extract_features()` produces different feature values than the frozen `detector_candidates.csv`. The D5 model was trained on capture-time features.
+- 153/154 states: feature diff ≤ 2e-6 (CSV serialization precision)
+- 1 unresolved exception: `alphabet_soup_s17` total_score 3.3 vs 3.8 (cascade from eef_speed CSV precision at condition boundary)
+- Adapter returns: step, 16 features, abstain, abstained, candidate_reason, schema version, source commit
 
-### 3c. LAYER2_TRUE_ONLINE_DEPLOYMENT: BLOCKED ON FROZEN FEATURE ADAPTER
+### 3c. LAYER2_TRUE_ONLINE_DEPLOYMENT: IN PROGRESS
 
-A production deployment cannot read pre-computed `detector_candidates.csv` at inference time. True live streaming parity requires a frozen feature adapter that recovers capture-time feature semantics from step_trace.csv inputs only.
+`D5FrozenOnlineDetectorV1` implemented — full pipeline:
+  adapter → abstain gate → normalization → D5 MLP → tau=0.050 → first-trigger lock
 
-Next step: implement `src/gripper_attack/d5_frozen_feature_adapter_v1.py` and re-run true two-path parity (CSV replay vs live adapter streaming).
+SHA-bound to checkpoint `7eea609f` and config `d6f6af61`.
+Awaiting G3 (historical full parity) and G4 (fresh live canary) verification.
 
-Evidence:
-- [d5_production_streaming_parity.csv](../tables/d5_production_streaming_parity.csv)
-- [d5_production_streaming_negative_tests.csv](../tables/d5_production_streaming_negative_tests.csv)
+### Unresolved exception
+
+`alphabet_soup_s17`: total_score adapter=3.3, CSV=3.8, diff=0.5. Root cause: eef_speed
+CSV serialization precision at conditional boundary in `rule_based_close_predictor`.
+Not waived — requires branch-boundary diagnostic (G3).
 
 ## 4. LAYER2_EXTERNAL_GENERALIZATION
 

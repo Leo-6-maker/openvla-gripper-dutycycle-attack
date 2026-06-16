@@ -309,14 +309,16 @@ def _extract_features(pred: dict, step: int, close_steps: list[int],
 
 # ── Frozen adapter class ──
 
+FEATURE_SCHEMA_VERSION = "d5_frozen_v1"
+SOURCE_COMMIT = "44bf7b86bafdda79837b4089dd5250901bb3ae75"
+
+
 class D5FrozenFeatureAdapter:
     """Frozen feature adapter recovering capture-time (44bf7b86) semantics.
 
-    Feeds step_trace.csv rows causally. Produces candidate feature dicts
-    that must match detector_candidates.csv exactly.
-
-    Only accepts deployment-safe inputs. No future steps, no Teacher-P,
-    no pre-computed candidate CSV.
+    Returns per-candidate dict:
+      step, features (16), abstain, abstained, candidate_reason,
+      feature_schema_version, source_commit
     """
 
     def __init__(self):
@@ -430,10 +432,28 @@ class D5FrozenFeatureAdapter:
 
         self.close_steps.append(step_id)
 
+        # Determine candidate trigger reason
+        reasons = []
+        if raw_crossing:
+            reasons.append("raw_crossing")
+        if bool(close_onset):
+            reasons.append("close_onset")
+        if self.close_streak == 1:
+            reasons.append("close_streak_first")
+        candidate_reason = "+".join(reasons) if reasons else "unknown"
+
         # Compute features using FROZEN predictor + frozen extractor
         preds = _rule_based_close_predictor(self.history, horizon=PREDICTION_HORIZON, teacher_anchor=-1)
         pred = preds[step_id]
         features = _extract_features(pred, step_id, self.close_steps, self.open_steps)
 
         self.candidate_features.append((step_id, features))
-        return {"step": step_id, "features": features}
+        return {
+            "step": step_id,
+            "features": features,
+            "abstain": pred.get("abstain", ""),
+            "abstained": bool(pred.get("abstain", "")),
+            "candidate_reason": candidate_reason,
+            "feature_schema_version": FEATURE_SCHEMA_VERSION,
+            "source_commit": SOURCE_COMMIT,
+        }

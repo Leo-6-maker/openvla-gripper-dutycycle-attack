@@ -187,11 +187,21 @@ def compare_live_feature_adapter(episode_dir, csv_candidates):
         eef_z = float(r["eef_z"]) if r.get("eef_z", "") else 0.0
         decoded_open = int(float(r.get("decoded_open", 0) or 0))
 
-        raw_valid = bool(int(float(r.get("raw_valid", 1) or 1)))
-        env_valid = bool(int(float(r.get("env_valid", 1) or 1)))
-        qpos_valid = bool(int(float(r.get("qpos_valid", 1) or 1)))
-        eef_valid = bool(int(float(r.get("eef_valid", 1) or 1)))
-        semantics_ok = bool(int(float(r.get("semantics_ok", 1) or 1)))
+        def _parse_valid_flag(val):
+            """Parse validity flag fail-safe: empty/missing → invalid (0)."""
+            s = str(val).strip() if val is not None else ""
+            if s == "":
+                return False
+            try:
+                return bool(int(float(s)))
+            except (ValueError, TypeError):
+                return False
+
+        raw_valid = _parse_valid_flag(r.get("raw_valid", ""))
+        env_valid = _parse_valid_flag(r.get("env_valid", ""))
+        qpos_valid = _parse_valid_flag(r.get("qpos_valid", ""))
+        eef_valid = _parse_valid_flag(r.get("eef_valid", ""))
+        semantics_ok = _parse_valid_flag(r.get("semantics_ok", ""))
 
         try:
             result = adapter.update(
