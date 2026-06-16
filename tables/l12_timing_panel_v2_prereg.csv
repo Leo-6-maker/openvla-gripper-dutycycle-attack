@@ -1,0 +1,15 @@
+task,state_id,split,emit_class,teacher_anchor,d5_emit,role
+butter,11,train,exact,60,60,primary
+ketchup,18,train,exact,52,52,primary
+orange_juice,29,train,exact,62,62,primary
+milk,7,val,exact,47,47,primary
+bbq_sauce,40,val,exact,53,53,primary
+bbq_sauce,27,train,exact,61,61,primary
+tomato_sauce,23,train,early,141,69,primary
+salad_dressing,32,train,early,81,62,primary
+cream_cheese,1,val,early,128,56,primary
+cream_cheese,20,train,early,61,53,primary
+salad_dressing,24,val,early,161,81,primary
+salad_dressing,11,train,late,59,125,primary
+ketchup,34,train,,74,miss,diagnostic
+salad_dressing,45,train,,58,miss,diagnostic
