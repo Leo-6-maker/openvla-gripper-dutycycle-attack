@@ -255,7 +255,7 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
     if not is_reference:
         detector.reset()
         pre_reset_state = {
-            "next_expected_step": detector._next_expected_step,
+            "next_expected_step": detector.next_expected_step,
             "history_len": len(detector.history),
             "emit_step": detector.emit_step,
             "candidate_count": len(detector.candidate_features),
@@ -504,7 +504,7 @@ def run_episode(args, task, state_id, detector, model, processor, device_ov,
     # Detector post-reset state
     if not is_reference:
         post_ep_state = {
-            "next_expected_step": detector._next_expected_step,
+            "next_expected_step": detector.next_expected_step,
             "history_len": len(detector.history),
             "emit_step": detector.emit_step,
             "candidate_count": len(detector.candidate_features),
