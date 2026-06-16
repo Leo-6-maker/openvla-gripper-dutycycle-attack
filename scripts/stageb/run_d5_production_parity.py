@@ -38,6 +38,7 @@ sys.path.insert(0, os.path.join(_REPO, "scripts", "stageb"))
 from train_d1b_detector import CandidateRanker, FEATURE_NAMES, normalize_features
 from evaluate_d5_frozen import online_detect as frozen_replay_detect
 from gripper_attack.d5_frozen_feature_adapter_v1 import D5FrozenFeatureAdapter
+from gripper_attack.d5_frozen_online_detector_v1 import D5FrozenOnlineDetectorV1
 
 # Frozen D5 artifact SHAs (from L12_POST_REBOOT_FREEZE_CHECK.md)
 FROZEN_CHECKPOINT_SHA = "7eea609f21eae7b91ff790631b656ec88949df8993a89b26b3588468a81e5ee5"
@@ -273,6 +274,56 @@ def compare_live_feature_adapter(episode_dir, csv_candidates):
         "feature_mismatches": feature_mismatches,
         "max_feature_diff": max_feature_diff,
         "first_diff_detail": first_diff_detail,
+        "error": None,
+    }
+
+
+def compare_live_online_emit(episode_dir, frozen_emit, checkpoint_path, config_path):
+    """Run D5FrozenOnlineDetectorV1 on step_trace, compare emit_step vs frozen replay."""
+    trace_path = os.path.join(episode_dir, "step_trace.csv")
+    if not os.path.exists(trace_path):
+        return {"emit_match": False, "error": "no step_trace.csv"}
+
+    rows = list(csv.DictReader(open(trace_path)))
+    if not rows:
+        return {"emit_match": False, "error": "empty step_trace"}
+
+    try:
+        detector = D5FrozenOnlineDetectorV1(checkpoint_path, config_path, device="cpu")
+    except RuntimeError as e:
+        return {"emit_match": False, "error": f"detector_init: {e}"}
+
+    detector.reset()
+    for r in rows:
+        step_id = int(r["step"])
+        try:
+            detector.update(
+                step_id=step_id,
+                raw_gripper=float(r["raw_gripper"]) if r.get("raw_gripper", "") else 0.0,
+                env_gripper=float(r["env_gripper"]) if r.get("env_gripper", "") else 0.0,
+                gripper_qpos=float(r["gripper_qpos_before"]) if r.get("gripper_qpos_before", "") else 0.0,
+                eef_x=float(r["eef_x"]) if r.get("eef_x", "") else 0.0,
+                eef_y=float(r["eef_y"]) if r.get("eef_y", "") else 0.0,
+                eef_z=float(r["eef_z"]) if r.get("eef_z", "") else 0.0,
+                decoded_open=int(float(r.get("decoded_open", 0) or 0)),
+                raw_valid=_parse_valid_flag(r.get("raw_valid", "")),
+                env_valid=_parse_valid_flag(r.get("env_valid", "")),
+                qpos_valid=_parse_valid_flag(r.get("qpos_valid", "")),
+                eef_valid=_parse_valid_flag(r.get("eef_valid", "")),
+                gripper_semantics_valid=_parse_valid_flag(r.get("semantics_ok", "")),
+            )
+        except ValueError as e:
+            return {"emit_match": False, "error": f"step_seq: {e}"}
+
+    live_emit = detector.emit_step
+    live_score = detector.emit_score
+    emit_match = (live_emit == frozen_emit)
+    return {
+        "emit_match": emit_match,
+        "live_emit": live_emit,
+        "live_emit_score": live_score,
+        "frozen_emit": frozen_emit,
+        "n_candidates": len(detector.audit_records),
         "error": None,
     }
 
