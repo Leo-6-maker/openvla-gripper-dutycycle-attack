@@ -1,0 +1,25 @@
+stage: M3_GPU15_STAGE2_PREPARE_CPU_ONLY_20260617
+python: /data/aviary/envs/openvla_official_libero_20260525/bin/python
+stage2_runner: scripts/stageb/run_m3_step78_true_pgd_fixed_frame.py
+stage2_config: configs/m3_step78_true_pgd_31744_logratio_arm_v4.yaml
+stage2_mode: canary_v4
+stage2_output_root: /data/liuyu/outputs/m3_gpu15_stage2_20260617_pending
+prepare_output_dir: /data/liuyu/outputs/m3_gpu15_stage2_prepare_20260617
+
+s3_gate_result_path: /data/liuyu/outputs/m3_gpu15_autonomous_20260617_r3/S3_TOMATO_SCREEN/gate_result.json
+s3_results_csv: /data/liuyu/outputs/m3_gpu15_autonomous_20260617_r3/S3_TOMATO_SCREEN/m3_v3_tomato_results.csv
+handoff_csv: /data/liuyu/outputs/m3_gpu15_autonomous_20260617_r3/S5_MULTI_PARENT/l12_to_l3_timing_handoff.csv
+
+max_parents: 3
+authorized_gpu_pair: "1,5"
+render_gpu_device_id: 1
+model_gpu_device_id: -1
+
+execution_policy:
+  cpu_only_prepare: true
+  launch_gpu_jobs: false
+  require_s3_gate_pass: true
+  require_selected_lambda: true
+  require_two_seeds_per_parent: true
+  wait_for_current_watcher_exit_before_execution: true
+  do_not_modify_current_output_root: /data/liuyu/outputs/m3_gpu15_autonomous_20260617_r3
