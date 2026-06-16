@@ -3,9 +3,9 @@
 
 Requires:
   --selection-manifest: frozen 120-state manifest
-  --capture-ledger: authoritative attempt ledger (audit-approved)
-  --capture-roots-manifest: JSON mapping root names to episode dirs
+  --accepted-episode-manifest: d44d_accepted_episode_manifest.csv (SHA-verified)
   --expected-selection-sha256
+  --expected-accepted-manifest-sha256
   --output-dir
 
 Every state MUST produce exactly one classification:
@@ -37,9 +37,9 @@ def sha256_file(path):
 def parse_args():
     ap = argparse.ArgumentParser()
     ap.add_argument("--selection-manifest", required=True)
-    ap.add_argument("--capture-ledger", required=True)
-    ap.add_argument("--capture-roots-manifest", required=True)
+    ap.add_argument("--accepted-episode-manifest", required=True)
     ap.add_argument("--expected-selection-sha256", required=True)
+    ap.add_argument("--expected-accepted-manifest-sha256", required=True)
     ap.add_argument("--output-dir", required=True)
     return ap.parse_args()
 
@@ -146,7 +146,7 @@ def teacher_p_anchor(rows):
         # EEF must be near object
         if dist_v > EEF_NEAR_M: continue
 
-        # Sustained vertical lift within lookahead, with EEF proximity
+        # Sustained CONSECUTIVE vertical lift within lookahead, with EEF proximity
         obj_z_anchor, ok = safe_float(r.get("obj_pre_z"))
         if not ok: continue
 
@@ -155,9 +155,10 @@ def teacher_p_anchor(rows):
             if t + i >= T: break
             fut = rows[t + i]
             obj_z_fut, ok_fut = safe_float(fut.get("obj_pre_z"))
-            if not ok_fut: break
             eef_dist_fut, ok_dist = safe_float(fut.get("eef_to_obj_pre"))
-            if not ok_dist: break
+            if not ok_fut or not ok_dist:
+                sustained_count = 0
+                continue
 
             z_delta = obj_z_fut - obj_z_anchor
             if z_delta >= LIFT_DELTA_M and eef_dist_fut <= EEF_NEAR_M:
@@ -167,23 +168,7 @@ def teacher_p_anchor(rows):
                     we = ws + 10
                     return t, ws, we
             else:
-                # Allow non-consecutive? No — reset on violation
-                pass  # window of lookahead, not consecutive enforcement
-        # Check for 2 consecutive within lookahead
-        for start_i in range(1, LOOKAHEAD_STEPS):
-            if t + start_i + 1 >= T: break
-            r1 = rows[t + start_i]
-            r2 = rows[t + start_i + 1]
-            z1, ok1 = safe_float(r1.get("obj_pre_z"))
-            z2, ok2 = safe_float(r2.get("obj_pre_z"))
-            d1, okd1 = safe_float(r1.get("eef_to_obj_pre"))
-            d2, okd2 = safe_float(r2.get("eef_to_obj_pre"))
-            if not all([ok1, ok2, okd1, okd2]): continue
-            if ((z1 - obj_z_anchor) >= LIFT_DELTA_M and d1 <= EEF_NEAR_M and
-                (z2 - obj_z_anchor) >= LIFT_DELTA_M and d2 <= EEF_NEAR_M):
-                ws = max(0, t - 2)
-                we = ws + 10
-                return t, ws, we
+                sustained_count = 0
 
     return -1, -1, -1
 
@@ -247,23 +232,23 @@ def main():
     args = parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
 
-    # Verify manifest
+    # Verify manifests
     msha = sha256_file(args.selection_manifest)
     assert msha == args.expected_selection_sha256, \
-        "Manifest SHA mismatch: {} != {}".format(msha[:16], args.expected_selection_sha256[:16])
+        "Selection SHA mismatch: {} != {}".format(msha[:16], args.expected_selection_sha256[:16])
+    amsha = sha256_file(args.accepted_episode_manifest)
+    assert amsha == args.expected_accepted_manifest_sha256, \
+        "Accepted manifest SHA mismatch: {} != {}".format(amsha[:16], args.expected_accepted_manifest_sha256[:16])
 
-    # Load manifest
+    # Load selection manifest
     manifest = list(csv.DictReader(open(args.selection_manifest)))
     assert len(manifest) == 120
 
-    # Load capture ledger for OK states
-    ok_states = {}
-    for r in csv.DictReader(open(args.capture_ledger)):
-        if r.get("status") == "OK":
-            ok_states[(r["task"], int(r["state_id"]))] = r
-
-    # Load roots manifest
-    roots = json.load(open(args.capture_roots_manifest))
+    # Load accepted episode manifest
+    accepted = {}
+    for r in csv.DictReader(open(args.accepted_episode_manifest)):
+        if r.get("status") == "BOUND":
+            accepted[(r["task"], int(r["state_id"]))] = r
 
     # Process each manifest state
     results = []
@@ -273,34 +258,36 @@ def main():
         task = r["task_key"]
         sid = int(r["state_id"])
         key = (task, sid)
-        tag = "{}_s{}".format(task, sid)
 
-        if key not in ok_states:
-            status = "UNATTEMPTED"
-            results.append({"task": task, "state_id": sid, "split": r["split"],
-                            "status": status, "anchor": -1, "ws": -1, "we": -1})
-            stats[status] += 1
-            continue
-
-        # Find episode dir
-        edir = None
-        for rname, rpath in roots.items():
-            candidate = os.path.join(rpath, "{}_shadow_attempt1".format(tag))
-            if os.path.isdir(candidate):
-                edir = candidate
-                break
-
-        if edir is None:
+        acc = accepted.get(key)
+        if acc is None:
             status = "CAPTURE_TERMINAL_INVALID"
             results.append({"task": task, "state_id": sid, "split": r["split"],
-                            "status": status, "anchor": -1, "ws": -1, "we": -1})
+                            "status": status, "anchor": -1, "ws": -1, "we": -1,
+                            "details": "not in accepted manifest"})
             stats[status] += 1
             continue
 
-        mf = os.path.join(edir, "episode_manifest.json")
-        m = json.load(open(mf)) if os.path.exists(mf) else {}
+        # Use the exact episode dir from accepted manifest
+        root_name = acc["accepted_root"]
+        roots_map = {
+            "orig": "/data/liuyu/outputs/d5_120_privileged_capture",
+            "gpu13": "/data/liuyu/outputs/d44d_balanced120_gpu13_r1",
+            "gpu26": "/data/liuyu/outputs/d44d_balanced120_gpu26_r1",
+            "gpu50": "/data/liuyu/outputs/d44d_balanced120_gpu50_r1",
+        }
+        rpath = roots_map.get(root_name, "")
+        edir = os.path.join(rpath, acc["accepted_episode_dir"]) if rpath else ""
 
-        status, anchor, ws, we, details = classify_state(task, sid, edir, m)
+        if not edir or not os.path.isdir(edir):
+            status = "CAPTURE_TERMINAL_INVALID"
+            results.append({"task": task, "state_id": sid, "split": r["split"],
+                            "status": status, "anchor": -1, "ws": -1, "we": -1,
+                            "details": "accepted episode dir not found: {}".format(edir)})
+            stats[status] += 1
+            continue
+
+        status, anchor, ws, we, details = classify_state(task, sid, edir, {})
         results.append({"task": task, "state_id": sid, "split": r["split"],
                         "status": status, "anchor": anchor, "ws": ws, "we": we,
                         "details": json.dumps(details) if details else ""})
