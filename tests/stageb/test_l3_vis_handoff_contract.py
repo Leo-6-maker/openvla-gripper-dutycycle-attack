@@ -212,6 +212,7 @@ def test_gate_summary_blocks_when_any_h0_hard_gate_missing(tmp_path):
     summary = summarize_gate(
         frame_audits,
         parent_audits,
+        full_inventory_count=71,
         selected_frame_set_ok=True,
         job_plan_ok=True,
         selected_frame_set_failures=[],
@@ -220,3 +221,22 @@ def test_gate_summary_blocks_when_any_h0_hard_gate_missing(tmp_path):
     assert summary["status"] == "BLOCKED"
     assert summary["gpu_authorized_for_h1"] is False
     assert any("selected_frame_packages_pass_0_of_10" == f for f in summary["failures"])
+
+
+def test_gate_summary_blocks_when_full_inventory_count_is_not_71():
+    summary = summarize_gate(
+        [{"frame_package_status": "PASS", "frame_denominator": "PRIMARY", "clean_gripper_token": "31872"}] * 6
+        + [{"frame_package_status": "PASS", "frame_denominator": "DIAGNOSTIC", "clean_gripper_token": ""}] * 4,
+        [
+            {"parent_id": "butter_s11", "exact_bound_status": "EXACT_BOUND"},
+            {"parent_id": "tomato_sauce_s23", "exact_bound_status": "EXACT_BOUND"},
+            {"parent_id": "salad_dressing_s11", "exact_bound_status": "EXACT_BOUND"},
+        ],
+        full_inventory_count=65,
+        selected_frame_set_ok=True,
+        job_plan_ok=True,
+        selected_frame_set_failures=[],
+        job_plan_failures=[],
+    )
+    assert summary["status"] == "BLOCKED"
+    assert "full_inventory_65_of_71" in summary["failures"]

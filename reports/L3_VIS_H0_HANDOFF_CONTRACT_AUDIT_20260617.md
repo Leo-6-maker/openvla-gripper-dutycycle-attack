@@ -8,7 +8,7 @@ This is a CPU-only handoff contract audit for the Layer3 VIS fixed-frame panel. 
 
 - Branch: `exp/l3-vis-handoff-contract-repair-20260617`
 - Base handoff commit: `50da442c1b033a780b802c6345c376b23d4833b1`
-- Server audit output: `/data/liuyu/outputs/l3_vis_h0_contract_audit_20260617_r1`
+- Server audit output: `/data/liuyu/outputs/l3_vis_h0_contract_audit_20260617_r2`
 - Frame manifest: `/data/liuyu/outputs/l12_frame_handoff_v2_r1/frame_manifest.json`
 - Selected frames: `tables/l3_vis_selected_frames_v1.csv`
 - Job plan: `tables/l3_vis_job_plan_v1.csv`
@@ -20,6 +20,7 @@ This is a CPU-only handoff contract audit for the Layer3 VIS fixed-frame panel. 
 | Selected 10-frame set | PASS |
 | V4 job plan shape | PASS |
 | Parent action/env identity | 3/3 EXACT_BOUND |
+| Full frame inventory | 65/71 PRESENT |
 | Raw frame SHA check | 10/10 PASS |
 | Saved processor tensor SHA check | 10/10 PASS |
 | Canonical attack tensor package | 0/10 PASS |
@@ -34,6 +35,7 @@ The current metadata is sufficient to prove the selected frame files exist and t
 - No selected frame has `clean_generation.json` with exact 7 clean tokens, clean arm prefix, clean gripper token, prompt token SHA, and model fingerprint.
 - No selected frame has a canonical `processor_inputs_attack.pt` package produced by the same attack-runner preprocessing path.
 - `obs_hash` is not present in the frame capture manifest, so the current EXACT_BOUND proof covers action/env identity but not obs-hash identity.
+- The top-level frame inventory contains 65 captured frames, not the expected 71-frame inventory stated in the handoff contract.
 
 ## Allowed Claim
 

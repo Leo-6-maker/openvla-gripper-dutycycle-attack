@@ -31,6 +31,7 @@ V4_CONDITIONS = (
     "RAND21_SELECTIVE",
     "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE",
 )
+EXPECTED_FULL_INVENTORY_COUNT = 71
 
 
 @dataclass(frozen=True)
@@ -599,6 +600,7 @@ def summarize_gate(
     frame_rows: list[Mapping[str, Any]],
     parent_rows: list[Mapping[str, Any]],
     *,
+    full_inventory_count: int,
     selected_frame_set_ok: bool,
     job_plan_ok: bool,
     selected_frame_set_failures: list[str],
@@ -624,6 +626,8 @@ def summarize_gate(
         failures.append(f"exact_bound_parents_{parent_pass}_of_{len(EXPECTED_PARENTS)}")
     if primary_close_pass != len(PRIMARY_FRAME_KEYS):
         failures.append(f"primary_clean_close_{primary_close_pass}_of_{len(PRIMARY_FRAME_KEYS)}")
+    if full_inventory_count != EXPECTED_FULL_INVENTORY_COUNT:
+        failures.append(f"full_inventory_{full_inventory_count}_of_{EXPECTED_FULL_INVENTORY_COUNT}")
     return {
         "stage": "L3_VIS_H0_HANDOFF_CONTRACT",
         "status": "PASS" if not failures else "BLOCKED",
@@ -640,6 +644,8 @@ def summarize_gate(
         "exact_bound_parents_expected": len(EXPECTED_PARENTS),
         "primary_clean_close_pass": primary_close_pass,
         "primary_clean_close_expected": len(PRIMARY_FRAME_KEYS),
+        "full_inventory_count": full_inventory_count,
+        "full_inventory_expected": EXPECTED_FULL_INVENTORY_COUNT,
         "failures": failures,
         "gpu_authorized_for_h1": not failures,
     }
@@ -661,6 +667,7 @@ def write_report(path: Path, summary: Mapping[str, Any]) -> None:
         f"- selected frame packages: {summary['selected_frame_packages_pass']} / {summary['selected_frame_packages_expected']}",
         f"- EXACT_BOUND parents: {summary['exact_bound_parents_pass']} / {summary['exact_bound_parents_expected']}",
         f"- primary clean CLOSE frames: {summary['primary_clean_close_pass']} / {summary['primary_clean_close_expected']}",
+        f"- full frame inventory: {summary['full_inventory_count']} / {summary['full_inventory_expected']}",
         "",
         "## Failures",
         "",
@@ -722,6 +729,7 @@ def main() -> int:
     summary = summarize_gate(
         frame_audit_rows,
         parent_identity_rows,
+        full_inventory_count=len(inventory_rows),
         selected_frame_set_ok=selected_ok,
         job_plan_ok=job_ok,
         selected_frame_set_failures=selected_failures,
