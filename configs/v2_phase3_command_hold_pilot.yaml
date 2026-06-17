@@ -1,0 +1,81 @@
+# Phase 3 Command-Hold Pilot Config
+# Two-state pilot: Butter states 0, 2
+# 5 conditions: CLEAN + 4 hold windows
+# NOT a VIS attack — only env gripper override
+
+pilot:
+  phase: 3
+  type: command_hold
+  parent: butter
+  states: [0, 2]
+  K: 10
+
+conditions:
+  CLEAN:
+    hold: false
+    description: "clean policy, no override"
+
+  HOLD_D5_K10:
+    hold: true
+    window_rule: "D5 contact-onset proxy (grasp_close start)"
+    description: "v1 baseline: OPEN at contact detection"
+
+  HOLD_SG5_K10:
+    hold: true
+    window_rule: "stable_grasp_start + 5"
+    description: "OPEN after grasp established, before lift"
+
+  HOLD_SC5_K10:
+    hold: true
+    window_rule: "stable_carry_start + 5"
+    description: "OPEN during early carry, object airborne"
+
+  HOLD_MID_K10:
+    hold: true
+    window_rule: "mid-carry hazard corridor center"
+    description: "OPEN at midpoint of stable carry window"
+    requires: "hazard_end >= hazard_start"
+    hazard_start: "stable_carry_start + 5"
+    hazard_end: "release_safe_start - K"
+
+gpu_assignment:
+  pair_1_5:
+    physical_gpus: [1, 5]
+    render_gpu: 1
+    state: 0
+
+  pair_2_6:
+    physical_gpus: [2, 6]
+    render_gpu: 1
+    state: 2
+
+contract:
+  arm_delta_zero: true
+  env_open_only: true
+  no_pgd: true
+  no_visual_perturbation: true
+  K_exact: 10
+  anchors_precomputed: true
+  anchors_immutable_after_launch: true
+
+metrics:
+  - arm_delta_max
+  - arm_delta_ok
+  - baseline_eef_median
+  - peak_eef_delta
+  - contact_loss
+  - obj_drop
+  - recovery_latency
+  - task_success
+
+contact_loss_thresholds:
+  eef_distance_increase: 0.04
+  obj_z_drop: 0.03
+  sustain_steps: 2
+
+pilot_pass_criteria:
+  - "arm_delta_ok == true for ALL episodes"
+  - "hold_count == K for ALL hold conditions"
+  - "hold_open == 10/10 for ALL hold conditions"
+  - "at least one carry window (SC5 or MID) shows contact_loss on both states"
+  - "carry window contact/recovery effect > D5 and SG5 windows"
