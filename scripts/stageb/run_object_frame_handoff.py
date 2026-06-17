@@ -73,11 +73,13 @@ def load_model():
 
 def preprocess_for_save(raw_image, processor, instruction):
     """Save processor tensor for attack reproducibility."""
-    prep_inputs = processor(prompt(instruction), raw_image, return_tensors="pt")
+    from PIL import Image
+    pil_img = Image.fromarray(raw_image) if isinstance(raw_image, np.ndarray) else raw_image
+    prep_inputs = processor(prompt(instruction), pil_img, return_tensors="pt")
     prep_inputs.pop("attention_mask", None)
     input_ids = prep_inputs["input_ids"]
     if not torch.all(input_ids[:, -1] == 29871):
-        input_ids = torch.cat([input_ids, torch.tensor([[29871]], dtype=torch.long)], dim=1)
+        input_ids = torch.cat([input_ids, torch.tensor([[29871]], dtype=torch.long, device=input_ids.device)], dim=1)
     return {"input_ids": input_ids, "pixel_values": prep_inputs["pixel_values"]}
 
 
@@ -136,16 +138,20 @@ def run_parent(task, state_id, out_dir):
         env_gripper = -1.0 if raw_gripper > 0.5 else 1.0
         decoded_open = 1 if raw_gripper > 0.5 else 0
 
-        try:
-            qpos_arr = env.sim.data.qpos[env.sim.model.jnt_qposadr[env.sim.model.actuator_trnid[:, 0]]]
-            qpos = float(qpos_arr[0]) if len(qpos_arr) > 0 else 0.0
-        except Exception:
-            qpos = 0.0
-        try:
-            eef_pos = env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_center")]
-            eef_x, eef_y, eef_z = float(eef_pos[0]), float(eef_pos[1]), float(eef_pos[2])
-        except Exception:
-            eef_x = eef_y = eef_z = 0.0
+        # Use EXACT same proprio extraction as standard collector
+        from v4_run_eval_openvla import physical_gripper_state
+        from gripper_attack.grasp import eef_pos as get_eef_pos
+        gs = physical_gripper_state(env, obs)
+        qpos_raw_val = gs.get("qpos") if gs else None
+        if qpos_raw_val is not None and hasattr(qpos_raw_val, '__len__') and len(qpos_raw_val) > 0:
+            qpos = float(np.sum(qpos_raw_val))
+        else:
+            qpos = float("nan")
+        eef_arr = get_eef_pos(env)
+        if eef_arr is not None:
+            eef_x, eef_y, eef_z = float(eef_arr[0]), float(eef_arr[1]), float(eef_arr[2])
+        else:
+            eef_x = eef_y = eef_z = float("nan")
 
         det.update(step_idx, raw_gripper, env_gripper, qpos, eef_x, eef_y, eef_z, decoded_open)
         obs, reward, done_env, info = env.step(env_action)
