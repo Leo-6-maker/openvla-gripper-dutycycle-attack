@@ -1,0 +1,11 @@
+parent_id,step,role,is_primary,pkg_exists,clean_generation_json,raw_frame_npy,processor_pt,clean_action_npy,artifact_manifest,instruction_nonempty,prompt_nonempty,source_commit_nonempty,timing_trace_sha_nonempty,obs_waiver_present,clean_gripper_token,exact_7_tokens,arm_prefix_6,clean_action_dim,eligibility,raw_frame_sha256,raw_frame_shape
+butter_s11,60,teacher_anchor+d5_emit,True,True,True,True,True,True,True,True,True,True,True,True,31872,True,True,7,CLEAN_ELIGIBLE,78e197b704a3e3d5...,"[256, 256, 3]"
+tomato_sauce_s23,141,teacher_anchor,True,True,True,True,True,True,True,True,True,True,True,True,31872,True,True,7,CLEAN_ELIGIBLE,e917aa9067acdfc9...,"[256, 256, 3]"
+salad_dressing_s11,59,teacher_anchor,True,True,True,True,True,True,True,True,True,True,True,True,31872,True,True,7,CLEAN_ELIGIBLE,17a7a1702acb992d...,"[256, 256, 3]"
+butter_s11,58,teacher_ws,False,True,True,True,True,True,True,True,True,True,True,True,31744,True,True,7,CLEAN_CONTEXT_INELIGIBLE,44714e864e0a52c9...,"[256, 256, 3]"
+tomato_sauce_s23,139,teacher_ws,False,True,True,True,True,True,True,True,True,True,True,True,31744,True,True,7,CLEAN_CONTEXT_INELIGIBLE,3bdf9a80626e9839...,"[256, 256, 3]"
+salad_dressing_s11,57,teacher_ws,False,True,True,True,True,True,True,True,True,True,True,True,31744,True,True,7,CLEAN_CONTEXT_INELIGIBLE,9c19f7451532ca3b...,"[256, 256, 3]"
+butter_s11,68,teacher_we,False,True,True,True,True,True,True,True,True,True,True,True,31872,True,True,7,CLEAN_ELIGIBLE,a9af50b42f5afa63...,"[256, 256, 3]"
+tomato_sauce_s23,69,d5_emit,False,True,True,True,True,True,True,True,True,True,True,True,31872,True,True,7,CLEAN_ELIGIBLE,eea6ebaef312f47c...,"[256, 256, 3]"
+salad_dressing_s11,67,teacher_we,False,True,True,True,True,True,True,True,True,True,True,True,31872,True,True,7,CLEAN_ELIGIBLE,a33bc6b5597e37c5...,"[256, 256, 3]"
+salad_dressing_s11,128,d5_emit,False,True,True,True,True,True,True,True,True,True,True,True,31872,True,True,7,CLEAN_ELIGIBLE,733bb296183d8819...,"[256, 256, 3]"

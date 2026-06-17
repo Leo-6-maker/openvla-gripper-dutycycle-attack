@@ -1,0 +1,9 @@
+{
+  "stage": "L3_H2_FINAL",
+  "h0_packages_total": 10,
+  "h0_primary_clean_close": 3,
+  "h2_frame_seed_pass": "6/6",
+  "h2_parent_pass": "3/3",
+  "h2_overall": "L3_VIS_MULTIPARENT_STRONG_PASS",
+  "h3_authorized": true
+}

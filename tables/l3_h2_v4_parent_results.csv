@@ -1,0 +1,4 @@
+parent_id,seeds_pass,n_seeds_pass,parent_result,best_arm,best_margin
+butter_s11,"[81, 82]",2,PARENT_PASS,5/6,17.75
+tomato_sauce_s23,"[81, 82]",2,PARENT_PASS,6/6,21.123817443847656
+salad_dressing_s11,"[81, 82]",2,PARENT_PASS,5/6,15.5

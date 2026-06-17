@@ -1,0 +1,7 @@
+parent_id,step,seed,rand_cand_count,rand_target_hits,rand_arm_pass,rand_feasible,shuffled_cand_count,shuffled_target_hits,shuffled_arm_pass,shuffled_feasible
+butter_s11,60,81,21,1,20,0,21,0,21,0
+butter_s11,60,82,21,0,21,0,21,0,21,0
+tomato_sauce_s23,141,81,21,0,21,0,21,0,21,0
+tomato_sauce_s23,141,82,21,0,21,0,21,0,21,0
+salad_dressing_s11,59,81,21,1,20,0,21,0,21,0
+salad_dressing_s11,59,82,21,1,20,0,21,0,21,0
