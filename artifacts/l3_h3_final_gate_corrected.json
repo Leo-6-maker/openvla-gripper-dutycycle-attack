@@ -1,0 +1,12 @@
+{
+  "stage": "L3_H3_FINAL_CORRECTED",
+  "classification": "H3_POINT_ONLY",
+  "total_steps": 21,
+  "eligible_steps": 9,
+  "frame_seeds_total": 18,
+  "frame_seeds_new": 12,
+  "frame_seeds_reused": 6,
+  "frame_seeds_pass": 7,
+  "parents_with_two_seed_effective_point": "3",
+  "parents_with_width_ge_2": "0"
+}

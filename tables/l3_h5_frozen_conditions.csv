@@ -1,0 +1,9 @@
+parent,task,state_id,attack_step,seed,condition,role
+butter_s11,butter,11,60,81,CLEAN,BASELINE
+butter_s11,butter,11,60,81,TRUE,TREATMENT
+butter_s11,butter,11,60,81,RAND,CONTROL
+butter_s11,butter,11,60,81,SHUFFLED,CONTROL
+butter_s11,butter,11,60,82,CLEAN,BASELINE
+butter_s11,butter,11,60,82,TRUE,TREATMENT
+butter_s11,butter,11,60,82,RAND,CONTROL
+butter_s11,butter,11,60,82,SHUFFLED,CONTROL

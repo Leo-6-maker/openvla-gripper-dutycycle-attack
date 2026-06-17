@@ -1,0 +1,4 @@
+parent_id,first_step,last_step,width,classification,steps,anchor,anchor_in_segment
+butter_s11,60,60,1,POINT_ONLY,[60],60,True
+tomato_sauce_s23,141,141,1,POINT_ONLY,[141],141,True
+salad_dressing_s11,59,59,1,POINT_ONLY,[59],59,True
