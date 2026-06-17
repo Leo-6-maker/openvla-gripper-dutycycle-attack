@@ -1,0 +1,38 @@
+stage: L3_H3_ATTACK_WINDOW_MAPPING
+parents:
+  butter_s11:
+    task: butter
+    state_id: 11
+    anchor: 60
+    range:
+    - 57
+    - 58
+    - 59
+    - 60
+    - 61
+    - 62
+    - 63
+  tomato_sauce_s23:
+    task: tomato_sauce
+    state_id: 23
+    anchor: 141
+    range:
+    - 138
+    - 139
+    - 140
+    - 141
+    - 142
+    - 143
+    - 144
+  salad_dressing_s11:
+    task: salad_dressing
+    state_id: 11
+    anchor: 59
+    range:
+    - 56
+    - 57
+    - 58
+    - 59
+    - 60
+    - 61
+    - 62

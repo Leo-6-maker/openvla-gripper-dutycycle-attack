@@ -1,0 +1,23 @@
+{
+  "worker_a": {
+    "gpu_pair": [
+      1,
+      5
+    ],
+    "uuids": [
+      "GPU-64734dbf-3993-a168-13d7-c8eba21f2908",
+      "GPU-9794d733-042f-46a2-fc86-5a3fe32a158a"
+    ]
+  },
+  "worker_b": {
+    "gpu_pair": [
+      2,
+      6
+    ],
+    "uuids": [
+      "GPU-a5dd9dbe-9719-b196-d8e7-e44c4100d1e7",
+      "GPU-04d369ad-47f6-77fc-19df-b9c4273db10f"
+    ]
+  },
+  "xid_baseline": 5
+}

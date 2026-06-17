@@ -1,0 +1,20 @@
+{
+  "production_tag": "l12-d5-v1-production-20260617",
+  "production_tag_target": "593ffadba7c7d64eadc4305fa818cd5d2c570507",
+  "starting_commit": "bcd945f5e9ff4e4f85479032755ed770226b64e6",
+  "runner_sha256": "215f52334762bf9fd943a876cf558dfd8073f4d139e473a8dfca5b4602dc0da6",
+  "attack_adapter_sha256": "70ab33ccc9eefc759208f1ecc91310e2d24990ec0d46d2ca18573e2b5acb7055",
+  "v4_config_template_sha256": "cfc2b6c141dd0c07e65fed06bbaead3770a313f2128773e1d815e426d0ae9f5a",
+  "frozen_params": {
+    "arm_preserve_weight": 0.5,
+    "epsilon": 0.023529411764705882,
+    "target_token": 31744,
+    "num_steps": 20,
+    "arm_gate": 5,
+    "seeds": [
+      81,
+      82
+    ],
+    "candidate_count": 21
+  }
+}

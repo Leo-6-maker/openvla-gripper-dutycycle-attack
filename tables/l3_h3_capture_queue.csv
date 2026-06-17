@@ -1,0 +1,16 @@
+worker,task,state_id,step,parent_id
+A_GPU15,butter,11,57,butter_s11
+A_GPU15,butter,11,59,butter_s11
+A_GPU15,butter,11,61,butter_s11
+A_GPU15,butter,11,62,butter_s11
+A_GPU15,butter,11,63,butter_s11
+A_GPU15,tomato_sauce,23,138,tomato_sauce_s23
+A_GPU15,tomato_sauce,23,140,tomato_sauce_s23
+A_GPU15,tomato_sauce,23,142,tomato_sauce_s23
+B_GPU26,tomato_sauce,23,143,tomato_sauce_s23
+B_GPU26,tomato_sauce,23,144,tomato_sauce_s23
+B_GPU26,salad_dressing,11,56,salad_dressing_s11
+B_GPU26,salad_dressing,11,58,salad_dressing_s11
+B_GPU26,salad_dressing,11,60,salad_dressing_s11
+B_GPU26,salad_dressing,11,61,salad_dressing_s11
+B_GPU26,salad_dressing,11,62,salad_dressing_s11
