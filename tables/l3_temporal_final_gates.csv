@@ -1,0 +1,3 @@
+seed,G1_emit_window,G2_token_arm,G3_env_duty,G4_physical,G5A_contact,G5B_task,specificity_ok,true_tok,true_env,true_pd,max_ctrl_pd,true_auc,max_ctrl_auc,true_lat,true_sus
+seed81,True,False,True,False,NOT_AUDITABLE,,True,1.0,1.0,0.012774,0.013008,0.18246,0.169449,0,20
+seed82,True,False,True,True,NOT_AUDITABLE,,True,1.0,1.0,0.013792,0.012783,0.208799,0.12012,0,20

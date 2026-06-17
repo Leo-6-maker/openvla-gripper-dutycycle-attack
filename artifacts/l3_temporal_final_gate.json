@@ -1,0 +1,47 @@
+{
+  "classification": "AUDIT_BLOCKED_MISSING_CELLS",
+  "missing_cells": [
+    "seed81/SHUFFLED_TEMPORAL_K10",
+    "seed82/SHUFFLED_TEMPORAL_K10"
+  ],
+  "audit_blocked": true,
+  "gates": [
+    {
+      "seed": "seed81",
+      "G1_emit_window": true,
+      "G2_token_arm": false,
+      "G3_env_duty": true,
+      "G4_physical": "False",
+      "G5A_contact": "NOT_AUDITABLE",
+      "G5B_task": null,
+      "specificity_ok": true,
+      "true_tok": 1.0,
+      "true_env": 1.0,
+      "true_pd": 0.012774,
+      "max_ctrl_pd": 0.013008,
+      "true_auc": 0.18246,
+      "max_ctrl_auc": 0.169449,
+      "true_lat": 0,
+      "true_sus": 20
+    },
+    {
+      "seed": "seed82",
+      "G1_emit_window": true,
+      "G2_token_arm": false,
+      "G3_env_duty": true,
+      "G4_physical": true,
+      "G5A_contact": "NOT_AUDITABLE",
+      "G5B_task": null,
+      "specificity_ok": true,
+      "true_tok": 1.0,
+      "true_env": 1.0,
+      "true_pd": 0.013792,
+      "max_ctrl_pd": 0.012783,
+      "true_auc": 0.208799,
+      "max_ctrl_auc": 0.12012,
+      "true_lat": 0,
+      "true_sus": 20
+    }
+  ],
+  "n_episodes": 8
+}
