@@ -119,12 +119,14 @@ for step in range(MAX_STEPS):
     fpath = str(frame_dir / "step_%04d.png" % step)
     Image.fromarray(raw).save(fpath)
 
+    gripper_width = abs(q7) + abs(q8) if not (np.isnan(q7) or np.isnan(q8)) else float("nan")
     is_wait = step < NUM_WAIT
     telemetry.append({
-        "step": step, "policy_step_idx": -1 if is_wait else step - NUM_WAIT,
-        "phase": "wait" if is_wait else "policy",
+        "step": step, "policy_step_idx": step,  # wait already applied before loop
+        "phase": "policy",
         "raw_gripper": raw_grip, "env_gripper": env_grip,
         "q7": q7, "q8": q8, "qpos_sum": qpos_sum,
+        "gripper_width": gripper_width,
         "eef_x": eef_x, "eef_y": eef_y, "eef_z": eef_z,
         "eef_vx": eef_vx, "eef_vy": eef_vy, "eef_vz": eef_vz,
         "obj_x": obj_x, "obj_y": obj_y, "obj_z": obj_z,
@@ -149,10 +151,10 @@ with open(out / "step_telemetry.csv", "w", newline="") as f:
 with open(out / "step_records.jsonl", "w") as f:
     for r in telemetry:
         rec = {
-            "step_idx": r["step"], "policy_step_idx": r["policy_step_idx"],
-            "phase": r["phase"], "image_path": r["rgb_path"], "image_path_available": True,
+            "step_idx": r["step"], "policy_step_idx": r["step"],
+            "phase": "policy", "image_path": r["rgb_path"], "image_path_available": True,
             "gripper_command": r["raw_gripper"], "gripper_qpos": r["qpos_sum"],
-            "gripper_width": r["qpos_sum"],
+            "gripper_width": r.get("gripper_width", 0),
             "eef_x": r["eef_x"], "eef_y": r["eef_y"], "eef_z": r["eef_z"],
             "eef_vx": r["eef_vx"], "eef_vy": r["eef_vy"], "eef_vz": r["eef_vz"],
             "object_pose_json": json.dumps([r["obj_x"], r["obj_y"], r["obj_z"], 0, 0, 1.0, 0]),

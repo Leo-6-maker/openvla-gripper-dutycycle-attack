@@ -124,9 +124,11 @@ class V2PrivilegedTeacher:
                 obj_z0 = s['obj_z']
 
             cfg = self.cfg
-            gripper_closed = s['gripper_width'] < cfg.gripper_close_threshold
-            close_consecutive = _consecutive_count(hist, 'gripper_width',
-                lambda w: w < cfg.gripper_close_threshold)
+            # Use gripper_command > 0.5 for CLOSE detection (matches D5 semantics,
+            # robust across qpos/qpos_sum/gripper_width encoding differences)
+            gripper_closed = s['gripper_command'] > 0.5
+            close_consecutive = _consecutive_count(hist, 'gripper_command',
+                lambda c: c > 0.5)
             grasp_stable = close_consecutive >= cfg.grasp_sustain_steps
 
             obj_eef_close = s['obj_eef_dist'] < cfg.eef_obj_dist_max
@@ -180,7 +182,9 @@ class V2PrivilegedTeacher:
                 'phase': phase,
                 'failure_critical': phase in FAILURE_CRITICAL_PHASES,
                 'confidence': round(confidence, 3), 'abstain_reason': '',
-                'gripper_width': s['gripper_width'], 'gripper_closed': gripper_closed,
+                'gripper_command': s['gripper_command'],
+                'gripper_width': s.get('gripper_width', 0),
+                'gripper_closed': gripper_closed,
                 'obj_z': round(s['obj_z'], 6), 'obj_z0': round(obj_z0, 6) if obj_z0 else None,
                 'obj_lifted': obj_lifted, 'obj_eef_dist': round(s['obj_eef_dist'], 6),
                 'obj_target_dist': round(s['obj_target_dist'], 6),
