@@ -1,0 +1,4 @@
+parent_id,anchor,range,n_eligible,n_two_seed_pass,max_width,classification,strongest_step,notes
+butter_s11,60,"[57, 63]",4,1,1,PARENT_POINT_ONLY,60,anchor-only; non-anchor steps fail hard-feasible gate
+tomato_sauce_s23,141,"[138, 144]",1,1,1,PARENT_POINT_ONLY,141,anchor-only; non-anchor steps fail hard-feasible gate
+salad_dressing_s11,59,"[56, 62]",4,1,1,PARENT_POINT_ONLY,59,anchor-only; non-anchor steps fail hard-feasible gate

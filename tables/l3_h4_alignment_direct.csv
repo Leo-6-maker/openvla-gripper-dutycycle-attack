@@ -1,0 +1,5 @@
+strategy,butter_s11,tomato_sauce_s23,salad_dressing_s11,hit_rate
+A_direct_d5_emit,hit,early_72,late_69,1/3
+B_d5_plus_global_delay_4,hit,early_68,late_65,1/3
+C_first_close,hit_60,141,hit_59,3/3
+D_teacher_p_oracle,hit_60,hit_141,hit_59,3/3

@@ -1,0 +1,12 @@
+{
+  "stage": "L3_H3_FINAL",
+  "classification": "H3_POINT_ONLY",
+  "parents_with_two_seed_effective_point": "3/3",
+  "parents_with_width_ge_2": "0/3",
+  "h3_attack_window_pass": false,
+  "h3_attack_window_strong_pass": false,
+  "h3_point_only": true,
+  "h4_authorized": true,
+  "h5_authorized": true,
+  "notes": "V4 hard-feasible VIS is exquisitely timing-selective. Only works at D5-emit anchor steps, not adjacent frames. Non-anchor V4 attacks fail hard-feasible gate."
+}
