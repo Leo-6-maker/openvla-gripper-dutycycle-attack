@@ -1,0 +1,15 @@
+parent_id,task,timing_class,d5_emit,teacher_ws,teacher_anchor,teacher_we,direct_hit,distance_to_anchor,inside_teacher_window
+butter_s11,butter,exact,60,58,60,68,exact_anchor_hit,0,True
+ketchup_s18,ketchup,exact,84,83,84,93,exact_anchor_hit,0,True
+orange_juice_s29,orange_juice,exact,47,46,47,55,exact_anchor_hit,0,True
+milk_s7,milk,exact,41,40,41,50,exact_anchor_hit,0,True
+bbq_sauce_s40,bbq_sauce,exact,54,53,54,63,exact_anchor_hit,0,True
+bbq_sauce_s27,bbq_sauce,exact,94,93,94,94,exact_anchor_hit,0,False
+tomato_sauce_s23,tomato_sauce,early,69,139,141,149,early,-72,False
+salad_dressing_s32,salad_dressing,early,56,127,128,148,early,-72,False
+cream_cheese_s1,cream_cheese,early,137,141,142,154,early,-5,False
+cream_cheese_s20,cream_cheese,early,57,106,107,119,early,-50,False
+salad_dressing_s24,salad_dressing,early,57,98,114,120,early,-57,False
+salad_dressing_s11,salad_dressing,late,128,57,59,67,late,69,False
+ketchup_s34,,miss,-1,74,75,77,miss,,
+salad_dressing_s45,,miss,-1,110,111,130,miss,,

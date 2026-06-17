@@ -1,0 +1,9 @@
+task,n_parents,n_exact,n_early,n_late,n_miss,n_valid_emit,n_direct_hits,n_exact_anchor_hits,direct_hit_rate,exact_anchor_rate,mean_abs_distance_to_anchor
+bbq_sauce,2,2,0,0,0,2,1,2,0.5,1.0,0.0
+butter,1,1,0,0,0,1,1,1,1.0,1.0,0.0
+cream_cheese,2,0,2,0,0,2,0,0,0.0,0.0,27.5
+ketchup,2,1,0,0,1,1,1,1,1.0,1.0,0.0
+milk,1,1,0,0,0,1,1,1,1.0,1.0,0.0
+orange_juice,1,1,0,0,0,1,1,1,1.0,1.0,0.0
+salad_dressing,4,0,2,1,1,3,0,0,0.0,0.0,66.0
+tomato_sauce,1,0,1,0,0,1,0,0,0.0,0.0,72.0
