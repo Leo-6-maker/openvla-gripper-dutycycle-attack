@@ -1,0 +1,4 @@
+parent_id,task,state_id,timing_class,clean_success,teacher_ws,teacher_anchor,teacher_we,d5_emit,n_frames,repeatability,missing_frames
+butter_s11,butter,11,exact,1,58,60,68,60,3,PASS,
+tomato_sauce_s23,tomato_sauce,23,early,1,139,141,149,69,3,PASS,teacher_we=149 (episode terminates before this step)
+salad_dressing_s11,salad_dressing,11,late,1,57,59,67,128,4,PASS,
