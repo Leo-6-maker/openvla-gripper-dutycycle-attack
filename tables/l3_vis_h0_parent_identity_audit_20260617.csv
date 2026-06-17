@@ -1,0 +1,4 @@
+parent_id,task,state_id,expected_selected_steps,identity_compared_steps,action_hash_matches,env_action_hash_matches,obs_hash_matches,obs_hash_contract,exact_bound_status
+butter_s11,butter,11,"58,60,68",3,3,3,0,NOT_CAPTURED_IN_FRAME_MANIFEST,EXACT_BOUND
+salad_dressing_s11,salad_dressing,11,"57,59,67,128",4,4,4,0,NOT_CAPTURED_IN_FRAME_MANIFEST,EXACT_BOUND
+tomato_sauce_s23,tomato_sauce,23,"69,139,141",3,3,3,0,NOT_CAPTURED_IN_FRAME_MANIFEST,EXACT_BOUND

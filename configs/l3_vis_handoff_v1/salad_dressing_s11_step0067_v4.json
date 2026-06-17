@@ -1,0 +1,53 @@
+{
+  "attack_optimizer": {
+    "allow_fallback": false,
+    "arm_gate_min_match_count": 5,
+    "epsilon": 0.023529411764705882,
+    "gripper_margin": 5.0,
+    "method": "token_prefix_pgd",
+    "num_steps": 20,
+    "objective": "autoregressive_prefix_gripper_target_token_cw_v1",
+    "prefix_refresh_interval": 1,
+    "random_start": true,
+    "selection_rule": "hard_feasible_official_decode_v4",
+    "step_size": 0.0017647058823529412,
+    "strict_route": true,
+    "target_execution_class": "CLIP_MEDIATED_OPEN",
+    "target_token_id": 31744
+  },
+  "conditions": [
+    "TRUE_PGD_TRAJECTORY21_SELECTIVE",
+    "RAND21_SELECTIVE",
+    "SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE"
+  ],
+  "controls": {
+    "rand21_count": 21,
+    "rand21_selection_metric": "official_target31744_margin_among_hard_feasible",
+    "shuffled_grad_control": "trajectory21_selective"
+  },
+  "gates": {
+    "arm_prefix_min_match_count": 5,
+    "exact_new_tokens": 7,
+    "linf_max": 0.023529411764705882,
+    "score_tie_tolerance": 1e-06
+  },
+  "input": {
+    "absolute_step": 67,
+    "expected_clean_gripper_token": null,
+    "frame_denominator": "DIAGNOSTIC",
+    "frame_role": "teacher_we",
+    "processor_tensor_path": "/data/liuyu/outputs/l12_frame_handoff_v2_r1/salad_dressing_s11_frame/processor_0067.pt",
+    "raw_frame_path": "/data/liuyu/outputs/l12_frame_handoff_v2_r1/salad_dressing_s11_frame/frame_0067.npy",
+    "state_id": 11,
+    "suite": "libero_object",
+    "task": "salad_dressing"
+  },
+  "model": {
+    "attn_implementation": "eager",
+    "path": "/data/aviary/models/openvla/openvla-7b-finetuned-libero-object",
+    "torch_dtype": "bfloat16",
+    "unnorm_key": "libero_object"
+  },
+  "parent_id": "salad_dressing_s11",
+  "stage": "L3_VIS_H0_HANDOFF_FIXED_FRAME_V4"
+}
