@@ -1,0 +1,23 @@
+stage: L3_H5_ORACLE_CLOSED_LOOP
+parent: butter_s11
+task: butter
+state_id: 11
+attack_step: 60
+max_steps: 400
+num_wait: 10
+model_path: /data/aviary/models/openvla/openvla-7b-finetuned-libero-object
+unnorm_key: libero_object
+frozen_raw_sha256: 78e197b704a3e3d5a4b26e1dd7a5d44713924fe449ff03aa8bec1c11d9d23223
+conditions_order:
+- CLEAN
+- 'TRUE'
+- RAND
+- SHUFFLED
+seeds:
+- 81
+- 82
+arm_gate: 5
+target_token: 31744
+physical_open_min_fraction: 0.1
+physical_response_max_latency_steps: 5
+physical_sustain_min_steps: 2

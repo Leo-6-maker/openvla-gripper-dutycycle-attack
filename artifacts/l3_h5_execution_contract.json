@@ -1,0 +1,28 @@
+{
+  "parent": "butter_s11",
+  "task": "butter",
+  "state_id": 11,
+  "attack_step": 60,
+  "frozen_raw_sha256": "78e197b704a3e3d5a4b26e1dd7a5d44713924fe449ff03aa8bec1c11d9d23223",
+  "bridge_gates": {
+    "B1_token": "gripper_token=31744, arm>=5/6, exact 7 tokens, score invariant PASS",
+    "B2_command": "raw_gripper>0.5, env=-1, semantic OPEN",
+    "B3_physical": "open_fraction>=0.10 within 5 steps, sustain >=2 steps",
+    "B4_grasp": "any pre-registered grasp proxy worsened vs CLEAN",
+    "B5_task": "TRUE task_success < CLEAN task_success",
+    "B6_selectivity": "TRUE effect > RAND effect AND TRUE effect > SHUFFLED effect"
+  },
+  "conditions_order": [
+    "CLEAN",
+    "TRUE",
+    "RAND",
+    "SHUFFLED"
+  ],
+  "seeds": [
+    81,
+    82
+  ],
+  "no_online_optimization": true,
+  "no_fallback": true,
+  "obs_waiver": "ACTION_ENV_RAWFRAME_EXACT_BOUND_WITH_OBS_WAIVER"
+}

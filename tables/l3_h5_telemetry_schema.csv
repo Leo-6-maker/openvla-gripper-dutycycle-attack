@@ -1,0 +1,1 @@
+step,condition,seed,attack_applied,raw_gripper,env_gripper,gripper_qpos,eef_x,eef_y,eef_z,official_tokens,arm_prefix,gripper_token,gripper_width,open_fraction,object_x,object_y,object_z,eef_object_distance,lift_proxy,contact_proxy,object_follow_proxy,drop_release_proxy,task_success,model_ms,termination_reason
