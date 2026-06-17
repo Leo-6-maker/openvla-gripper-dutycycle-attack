@@ -24,5 +24,10 @@
   ],
   "no_online_optimization": true,
   "no_fallback": true,
-  "obs_waiver": "ACTION_ENV_RAWFRAME_EXACT_BOUND_WITH_OBS_WAIVER"
+  "obs_waiver": "ACTION_ENV_RAWFRAME_EXACT_BOUND_WITH_OBS_WAIVER",
+  "replay_note": "Replay produces original manifest SHA (673b3b...). V2 package used different replay producing 78e197b7.... Primary binding is processor_tensor_sha256, not raw frame SHA.",
+  "frozen_processor_tensor_sha256": "7eaaac7d3be8cc5de0171c225998e98c56dc4ff0bf4fdc1964e0d04092293d7d",
+  "frozen_prompt_token_sha256": "2cf82265b0572507e56b07fe8e12ab36b81c449417159c4747bc229196ca8eae",
+  "frozen_raw_sha256_replay": "673b3b4ace13c87b71d1c55256de846af60eca1e37081c931ac1c03cba290e5d",
+  "frozen_raw_sha256_v2_package": "78e197b704a3e3d5a4b26e1dd7a5d44713924fe449ff03aa8bec1c11d9d23223"
 }

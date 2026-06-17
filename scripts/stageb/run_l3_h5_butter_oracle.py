@@ -182,7 +182,7 @@ def run_episode(condition, seed, config, model, processor, device, model_dtype, 
         from v4_run_eval_openvla import physical_gripper_state
         gs = physical_gripper_state(env, obs)
         qpos = float(np.sum(gs["qpos"])) if gs and gs.get("qpos") is not None and len(gs.get("qpos", [])) > 0 else float("nan")
-        eef_pos = env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_center")]
+        eef_pos = env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_site")]
         eef_x, eef_y, eef_z = float(eef_pos[0]), float(eef_pos[1]), float(eef_pos[2])
 
         telemetry.append({
@@ -287,7 +287,7 @@ def run_episode(condition, seed, config, model, processor, device, model_dtype, 
 
         gs = physical_gripper_state(env, obs)
         qpos = float(np.sum(gs["qpos"])) if gs and gs.get("qpos") is not None and len(gs.get("qpos", [])) > 0 else float("nan")
-        eef_pos = env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_center")]
+        eef_pos = env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_site")]
         eef_x, eef_y, eef_z = float(eef_pos[0]), float(eef_pos[1]), float(eef_pos[2])
 
         telemetry.append({
