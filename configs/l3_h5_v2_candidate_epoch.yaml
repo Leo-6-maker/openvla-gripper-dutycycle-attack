@@ -1,0 +1,25 @@
+stage: L3_H5_V2_CANDIDATE_SOURCE_EPOCH
+parent: butter_s11
+task: butter
+state_id: 11
+attack_step: 60
+seeds:
+- 81
+- 82
+objective: autoregressive_prefix_gripper_target_token_logratio_arm_v3
+arm_preserve_weight: 0.5
+epsilon: 0.023529411764705882
+num_steps: 20
+target_token: 31744
+arm_gate: 5
+conditions:
+- TRUE_PGD_TRAJECTORY21_SELECTIVE
+- RAND21_SELECTIVE
+- SHUFFLED_GRAD_TRAJECTORY21_SELECTIVE
+gpu_pair:
+- 1
+- 5
+gpu_uuids:
+- GPU-64734dbf-3993-a168-13d7-c8eba21f2908
+- GPU-9794d733-042f-46a2-fc86-5a3fe32a158a
+output_root: /data/liuyu/outputs/l3_h5_v2_candidate_epoch_20260617_r1

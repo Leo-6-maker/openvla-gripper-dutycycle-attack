@@ -1,0 +1,7 @@
+seed,condition,candidate_id,selection_rule,notes
+81,TRUE,PENDING,hard_feasible,token=31744 arm>=5/6 invariant PASS Linf<=6/255
+81,RAND,PENDING,max_arm_then_margin_then_min_linf_then_lowest_id,best-arm control
+81,SHUFFLED,PENDING,max_arm_then_margin_then_min_linf_then_lowest_id,best-arm control
+82,TRUE,PENDING,hard_feasible,token=31744 arm>=5/6 invariant PASS Linf<=6/255
+82,RAND,PENDING,max_arm_then_margin_then_min_linf_then_lowest_id,best-arm control
+82,SHUFFLED,PENDING,max_arm_then_margin_then_min_linf_then_lowest_id,best-arm control
