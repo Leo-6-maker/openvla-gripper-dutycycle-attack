@@ -1,0 +1,12 @@
+{
+  "parent": "butter_s11",
+  "step": 60,
+  "seed81": {
+    "rand_id": 0,
+    "rand_arm": 6,
+    "rand_token": 31872,
+    "shuf_id": 19,
+    "shuf_arm": 6,
+    "shuf_token": 31872
+  }
+}
