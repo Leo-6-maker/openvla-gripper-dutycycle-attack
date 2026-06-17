@@ -100,8 +100,12 @@ def load_model():
     device = "cuda:0"
     if hasattr(model, "hf_device_map"):
         for v in model.hf_device_map.values():
-            if isinstance(v, (int, str)):
-                device = str(v); break
+            if isinstance(v, int):
+                device = f"cuda:{v}"
+                break
+            elif isinstance(v, str) and v.startswith("cuda"):
+                device = str(v)
+                break
     return model, processor, device
 
 
@@ -176,13 +180,7 @@ def process_one_frame(spec: Dict, model, processor, device: str, model_dtype, ou
     env_action = postprocess_openvla_action_for_libero(clean_action, enabled=True)
     np.save(pkg_dir / "clean_action.npy", clean_action)
 
-    # Extract exact 7 tokens
-    from gripper_attack.v3_generation_parity import extract_exact_new_tokens
     action_dim = int(model.get_action_dim(UNNORM_KEY))
-    if hasattr(gen, "sequences"):
-        tokens = extract_exact_new_tokens(gen.sequences, prompt_len=0, expected_new_tokens=action_dim)
-    else:
-        tokens = [0] * action_dim
 
     # Canonical preprocessing — same as attack runner
     preproc_inputs = {}
