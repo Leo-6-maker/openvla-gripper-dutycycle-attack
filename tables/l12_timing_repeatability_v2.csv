@@ -1,1 +1,4 @@
-task_sid,orig_steps,rep_steps,orig_success,rep_success,act_diffs,env_diffs,orig_emit,rep_emit,errors
+task,state_id,orig_steps,rep_steps,orig_success,rep_success,success_match,action_diffs,env_diffs,obs_diffs,candidate_step_diffs,abstain_diffs,max_score_diff,orig_emit,rep_emit,emit_match,status
+butter,11,161,161,1,1,True,0,0,0,0,0,0.0,60,60,True,PASS
+tomato_sauce,23,148,148,1,1,True,0,0,0,0,0,0.0,69,69,True,PASS
+salad_dressing,11,136,136,1,1,True,0,0,0,0,0,0.0,128,128,True,PASS
