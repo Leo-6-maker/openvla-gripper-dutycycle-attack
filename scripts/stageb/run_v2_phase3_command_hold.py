@@ -138,6 +138,9 @@ for step in range(MAX_STEPS):
 
 success = bool(env.check_success()) if hasattr(env, 'check_success') else False
 env.close()
+del model, processor, env
+import gc; gc.collect()
+torch.cuda.empty_cache()
 
 # Write
 with open(out / 'step_telemetry.csv', 'w', newline='') as f:
