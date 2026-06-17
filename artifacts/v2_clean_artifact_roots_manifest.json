@@ -1,0 +1,35 @@
+{
+  "source": "milestone_2e2_object100_privileged_artifact_rich_20260527",
+  "date": "2026-05-28",
+  "suite": "libero_object",
+  "total_runs": 100,
+  "clean_success_runs": 81,
+  "privileged_runs": 100,
+  "rgb_available": 100,
+  "tasks": [
+    "alphabet_soup",
+    "bbq_sauce",
+    "butter",
+    "chocolate_pudding",
+    "cream_cheese",
+    "ketchup",
+    "milk",
+    "orange_juice",
+    "salad_dressing",
+    "tomato_sauce"
+  ],
+  "butter_s11_present": false,
+  "butter_states_available": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "butter_clean_success": 8
+}
