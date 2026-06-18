@@ -1,0 +1,65 @@
+# SC5 split policy — frozen for canonical corpus build.
+# Commit 45aad45 census snapshot.
+version: v2_sc5_split_policy_20260618
+
+# ── Held-out definition (Butter s8, s9, s11) ──
+held_out:
+  rule: "butter_task_with_state_in_set"
+  task_keyword: "butter"
+  state_ids: [8, 9, 11]
+  note: |
+    Butter states 8, 9, 11 are strictly held out.
+    Must NOT appear in: train, validation, calibration, normalization,
+    early stopping, threshold tuning, architecture selection, feature selection.
+
+# ── Special cases ──
+special_cases:
+  butter_s5:
+    status: "CLEAN_FAIL"
+    action: "AUDIT_ONLY"
+    note: "clean failure, not positive corpus"
+
+  butter_s3:
+    status: "NO_VALID_CORRIDOR"
+    action: "SUPPLEMENTARY_ABSTAIN"
+    note: "do not masquerade as regular positive"
+
+# ── Train/val split ──
+train_val_split:
+  method: "episode_level_random"
+  train_ratio: 0.75
+  val_ratio: 0.25
+  seed: 42
+  note: "split is frozen BEFORE Teacher calibration"
+
+# ── Group-level constraint ──
+group_constraints:
+  - name: "init_state_group"
+    key: "initial_state_sha256"
+    rule: "all episodes with same init_state_hash must be in same split"
+  - name: "duplicate_group"
+    key: "trajectory_content_sha256"
+    rule: "duplicates are resolved before split; remaining unique must be in same split"
+  - name: "parent_event_group"
+    key: "parent_episode_id"
+    rule: "events from same multi-stage episode must be in same split"
+
+# ── Dedup priority ──
+dedup_priority:
+  - "clean_status == CLEAN"
+  - "schema_status == PASS"
+  - "has_privileged_sequence_hash"
+  - "manifest_hash_complete"
+  - "newer_schema_version"
+
+# ── Prohibited actions ──
+prohibited:
+  - "train_on_held_out"
+  - "calibrate_teacher_on_held_out"
+  - "normalize_on_held_out"
+  - "tune_thresholds_on_held_out"
+  - "early_stopping_on_held_out"
+  - "feature_selection_on_held_out"
+  - "cross_split_initial_state_group"
+  - "cross_split_duplicate_group"
+  - "cross_split_parent_event"
