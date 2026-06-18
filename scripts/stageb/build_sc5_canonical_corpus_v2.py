@@ -178,11 +178,44 @@ def main():
           f"{len(train_groups)} train groups, {len(val_groups)} val groups, "
           f"split isolation: {'PASS' if iso['valid'] else 'FAIL'}")
 
-    # ── Step 4: Tiered Teacher calibration (Tier A + validated Tier B train-only) ──
-    # Tier C (REQUIRES_EVENT_SEGMENTATION) excluded — unresolved multi-stage
+    # ── Step 4: Tiered Teacher calibration ──
+    # Tier A: always eligible
+    # Tier B (REQUIRES_OBJECT_TARGET_VALIDATION): must pass object/target checks
+    # Tier C (REQUIRES_EVENT_SEGMENTATION): excluded — unresolved multi-stage
+    TIER_A = 'LIBERO_OBJECT_SINGLE_OBJECT_CANDIDATE'
+    TIER_B = 'REQUIRES_OBJECT_TARGET_VALIDATION'
     TIER_C = 'REQUIRES_EVENT_SEGMENTATION'
-    print("4. Calibrating V2PrivilegedTeacher on Tier A+B train-only...")
-    calib_eps = [e for e in train_eps if e.get('candidate_tier') != TIER_C]
+    print("4. Calibrating V2PrivilegedTeacher on Tier A + validated Tier B train-only...")
+
+    tier_b_disposition = defaultdict(list)
+    calib_eps = []; excluded_eps = []
+    for ep in train_eps:
+        tier = ep.get('candidate_tier', '')
+        if tier == TIER_C:
+            excluded_eps.append(('TIER_C_EXCLUDED', ep))
+            continue
+        if tier == TIER_B:
+            # Validate Tier B: must have object + target pose in privileged steps
+            try:
+                with open(ep['jsonl_path']) as f: recs = [json.loads(line) for line in f]
+            except Exception:
+                tier_b_disposition['TIER_B_JSONL_ERROR'].append(ep['episode_id'])
+                excluded_eps.append(('TIER_B_JSONL_ERROR', ep))
+                continue
+            has_obj = any(r.get('object_pose_json', '') for r in recs
+                         if r.get('teacher_privileged_state_available'))
+            has_tgt = any(r.get('target_pose_json', '') for r in recs
+                         if r.get('teacher_privileged_state_available'))
+            if has_obj and has_tgt:
+                tier_b_disposition['TIER_B_VALIDATED'].append(ep['episode_id'])
+                calib_eps.append(ep)
+            else:
+                reason = 'TIER_B_OBJECT_AMBIGUOUS' if not has_obj else 'TIER_B_TARGET_AMBIGUOUS'
+                tier_b_disposition[reason].append(ep['episode_id'])
+                excluded_eps.append((reason, ep))
+        else:
+            calib_eps.append(ep)  # Tier A
+
     valid_paths = []
     for ep in calib_eps:
         try:
@@ -197,8 +230,10 @@ def main():
         if ok: valid_paths.append(ep['jsonl_path'])
     teacher = V2PrivilegedTeacher(calibrate_thresholds(valid_paths))
     tier_c_count = len([e for e in train_eps if e.get('candidate_tier') == TIER_C])
-    print(f"   {len(valid_paths)}/{len(calib_eps)} valid calibration paths "
-          f"({tier_c_count} Tier C excluded)")
+    print(f"   {len(valid_paths)}/{len(calib_eps)} valid calibration paths")
+    print(f"   Tier C excluded: {tier_c_count}")
+    for reason, eps_list in sorted(tier_b_disposition.items()):
+        print(f"   {reason}: {len(eps_list)}")
 
     # ── Step 5: Build dataset with row buffering + two-pass velocity recovery ──
     print("5. Building dataset with mature Layer 1/2 + event segmenter for Tier C...")
