@@ -28,6 +28,13 @@ Interpretation:
 - `SCHEMA_MISSING_FIELDS` appears in 876 excluded rows and may contain recoverable sources after the canonical schema adapter is expanded; those rows are not counted as usable here.
 - The previous handoff count of approximately 1,100 compatible candidates remains a pre-canonical estimate, not the current usable corpus count.
 
+## Repo Provenance
+
+- repo_head: `cc356f30a9444b4c8bcbd8296282c0280207c756`
+- repo_branch: `exp/l2-sc5-census-freeze-fix-codex-20260618`
+- repo_dirty: `CLEAN`
+- repo_provenance: `PASS`
+
 ## Current Minus Historical
 
 - clean_fail: +96

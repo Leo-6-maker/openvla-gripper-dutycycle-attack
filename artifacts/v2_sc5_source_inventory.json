@@ -34,9 +34,10 @@
     "manifests": 2997,
     "step_records": 3008
   },
-  "repo_branch": "",
-  "repo_dirty": "",
-  "repo_head": "",
+  "repo_branch": "exp/l2-sc5-census-freeze-fix-codex-20260618",
+  "repo_dirty": "CLEAN",
+  "repo_head": "cc356f30a9444b4c8bcbd8296282c0280207c756",
+  "repo_provenance": "PASS",
   "status": "SC5_SOURCE_CENSUS_FROZEN_WITH_CURRENT_SCAN_DRIFT",
   "tier_counts": {
     "CONDITIONAL_MULTI_STAGE_CANDIDATE": 110,
