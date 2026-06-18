@@ -117,13 +117,16 @@ prev_delta = None; attack_log = []
 
 for step in range(400):
     img = obs['agentview_image']
-    # VLA decode (same as bridge)
-    with torch.no_grad():
-        inputs = processor(images=img, text=instruction, return_tensors='pt').to(model.device)
-        outputs = model.generate(**inputs, max_new_tokens=16, do_sample=False)
-    raw_action, policy_step_idx, env_action_np, clean_gen = decode_with_scores(
-        model, processor, model.device, outputs[0], instruction, 'libero_object', 8,
-        unnorm_key='libero_object')
+    # VLA decode (identical to VIS bridge — decode_with_scores handles image internally)
+    try:
+        raw_action, policy_step_idx, env_action_np, clean_gen = decode_with_scores(
+            model, processor, model.device, img, instruction, 'libero_object', 8,
+            libero_official_preprocess=False, libero_preprocess_backend='official_pil_lanczos',
+            center_crop=True, resize_size=224, drop_attention_mask=True)
+    except Exception:
+        raw_action, policy_step_idx, env_action_np, clean_gen = decode_with_scores(
+            model, processor, model.device, img, instruction, 'libero_object', 8,
+            unnorm_key='libero_object')
 
     # ── MLP TRIGGER (25D streaming features) ──
     q7_q8 = physical_gripper_state(env)
