@@ -1,0 +1,21 @@
+# SC5 source census roots.
+# This file intentionally lists only source roots; it does not select a training
+# corpus or define labels.
+version: v2_sc5_source_census_20260618
+roots:
+  - path: /data/liuyu/outputs
+    role: primary_server_outputs
+    recursive: true
+exclude_dir_name_substrings:
+  - .git
+  - __pycache__
+  - node_modules
+  - .pytest_cache
+expected_historical_counts:
+  directories_scanned: 8879
+  step_records: 3008
+  manifests: 2997
+  known_clean_success: 798
+  clean_fail: 475
+  initially_unknown_task_names: 1735
+  candidate_sc5_compatible_approx: 1100

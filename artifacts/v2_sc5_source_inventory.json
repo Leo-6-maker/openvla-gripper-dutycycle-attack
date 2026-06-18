@@ -1,0 +1,48 @@
+{
+  "counts": {
+    "clean_fail": 571,
+    "directories_scanned": 11484,
+    "known_clean_success": 1679,
+    "manifests": 3002,
+    "step_records": 3013,
+    "unknown_task_names": 0
+  },
+  "current_minus_historical": {
+    "clean_fail": 96,
+    "directories_scanned": 2605,
+    "initially_unknown_task_names": -1735,
+    "known_clean_success": 881,
+    "manifests": 5,
+    "step_records": 5
+  },
+  "exclusion_counts": {
+    "ATTACK_OR_INTERVENTION": 90,
+    "CLEAN_FAIL_OR_UNKNOWN_SUCCESS": 1244,
+    "INCOMPATIBLE_ARTICULATION_OR_PUSH": 50,
+    "LIBERO_OBJECT_SINGLE_OBJECT_CANDIDATE": 449,
+    "REQUIRES_EVENT_SEGMENTATION": 110,
+    "REQUIRES_OBJECT_TARGET_VALIDATION": 129,
+    "SCHEMA_MISSING_FIELDS": 876,
+    "UNKNOWN_TASK_OR_UNSUPPORTED_SUITE": 65
+  },
+  "historical_expected_counts": {
+    "candidate_sc5_compatible_approx": 1100,
+    "clean_fail": 475,
+    "directories_scanned": 8879,
+    "initially_unknown_task_names": 1735,
+    "known_clean_success": 798,
+    "manifests": 2997,
+    "step_records": 3008
+  },
+  "repo_branch": "",
+  "repo_dirty": "",
+  "repo_head": "",
+  "status": "SC5_SOURCE_CENSUS_FROZEN_WITH_CURRENT_SCAN_DRIFT",
+  "tier_counts": {
+    "CONDITIONAL_MULTI_STAGE_CANDIDATE": 110,
+    "CONDITIONAL_PLACE_CANDIDATE": 129,
+    "EXCLUDED_AUDIT_ONLY": 2275,
+    "OOD_ABSTAIN": 50,
+    "PRIMARY_SC5_POSITIVE_CANDIDATE": 449
+  }
+}

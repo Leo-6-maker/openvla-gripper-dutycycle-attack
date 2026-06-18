@@ -1,0 +1,22 @@
+# Field aliases observed across legacy OpenVLA/LIBERO step schemas.
+version: v2_sc5_schema_aliases_20260618
+required_deployment_fields:
+  gripper_command: [gripper_command, clean_gripper_raw, executed_gripper_raw, raw_gripper]
+  gripper_qpos: [gripper_qpos, gripper_qpos_before, gripper_qpos_abs_sum_before]
+  gripper_opening_proxy: [gripper_opening_proxy, gripper_width, gripper_qpos_abs_sum_before, gripper_qpos_before]
+  eef_x: [eef_x, eef_pre_x]
+  eef_y: [eef_y, eef_pre_y]
+  eef_z: [eef_z, eef_pre_z]
+  eef_vx: [eef_vx]
+  eef_vy: [eef_vy]
+  eef_vz: [eef_vz]
+  action_dx: [action_dx]
+  action_dy: [action_dy]
+  action_dz: [action_dz]
+  action_gripper: [action_gripper, clean_gripper_raw, executed_gripper_raw, raw_gripper]
+forbidden_derivations:
+  - missing_to_zero
+  - attacked_action_as_clean_action
+  - future_row_features
+  - normalized_step
+  - task_or_state_identity_as_feature
