@@ -164,39 +164,37 @@ def build_dataset(episodes, teacher, output_dir, artifacts_dir):
         if sc5['valid']:
             corridor = compute_sc5_valid_start_corridor(labels, sc5['anchor'], K=K)
 
-        # Feature extraction with explicit label lookup
+        # Feature extraction with local contiguous index.
+        # Critical: streaming adapter requires consecutive step IDs.
+        # Skipping invalid steps MUST use a local counter, not raw step_idx gaps.
         adapter = SC5StreamingFeatureAdapterV2()
         schema_adapter = SC5SchemaAdapterV2()
-        first_policy_step = None
+        local_step = 0
         feat_rows = []
+        field_source_audit = Counter()
 
         for r in records:
             if not r.get('teacher_privileged_state_available'):
                 continue
             step_raw = int(r.get('step_idx', r.get('policy_step_idx', 0)))
-            if first_policy_step is None:
-                first_policy_step = step_raw
-            local_step = step_raw - first_policy_step
 
-            # Schema validation (actually called)
+            # Schema validation (actually called, results tracked)
             provenances = schema_adapter.validate_record(r)
+            for name, p in provenances.items():
+                field_source_audit[f"{name}:{p.source_type}"] += 1
             if not schema_adapter.all_valid(provenances):
-                continue
+                continue  # skip invalid step, do NOT increment local_step
 
             # Real env_gripper from env_action, not synthesized
             env_action = r.get('env_action', None)
-            if isinstance(env_action, (list, tuple)) and len(env_action) >= 7:
-                env_grip = float(env_action[6])
-            else:
-                env_grip = float('nan')
+            if not (isinstance(env_action, (list, tuple)) and len(env_action) >= 7):
+                continue
+            env_grip = float(env_action[6])
 
             raw_grip = float(r['gripper_command'])
 
-            # Gripper semantics: independent validation
+            # Gripper semantics: independent validation (raw_close vs env_close)
             raw_close = raw_grip <= 0.5
-            if not (isinstance(env_action, (list, tuple)) and len(env_action) >= 7):
-                continue  # cannot verify semantics, skip
-
             env_close = env_grip > 0
             if raw_close != env_close:
                 continue  # semantic conflict, fail-closed
@@ -218,6 +216,8 @@ def build_dataset(episodes, teacher, output_dir, artifacts_dir):
                 continue
             if not result['valid']:
                 continue
+
+            local_step += 1  # only increment for successfully processed steps
 
             # Label lookup by step_idx (not array index)
             tl = label_by_step.get(step_raw)
@@ -269,6 +269,12 @@ def build_dataset(episodes, teacher, output_dir, artifacts_dir):
     if ep_manifest:
         with open(os.path.join(output_dir, 'v2_sc5_canonical_episodes.csv'), 'w', newline='') as f:
             w = csv.DictWriter(f, fieldnames=list(ep_manifest[0].keys())); w.writeheader(); w.writerows(ep_manifest)
+    if field_source_audit:
+        with open(os.path.join(output_dir, 'v2_sc5_field_source_audit.csv'), 'w', newline='') as f:
+            w = csv.DictWriter(f, fieldnames=['field_source', 'count'])
+            w.writeheader()
+            for (fs, cnt) in field_source_audit.most_common():
+                w.writerow({'field_source': fs, 'count': cnt})
 
     manifest = {'K': K, 'guard': GUARD, 'n_rows': len(rows), 'n_episodes': len(ep_manifest),
                 'held_out_butter': list(HELD_OUT_BUTTER), 'stats': dict(stats)}
@@ -320,9 +326,12 @@ def main():
         # Compute hashes
         hashes = compute_all_hashes(records, inv_row.get('step_records_path', ''))
 
-        # Special case: Butter s5 = AUDIT_ONLY
+        # Special cases per split policy
         if is_butter and state_id == 5:
             disposition['butter_s5_audit_only'].append(inv_row['episode_id'])
+            continue
+        if is_butter and state_id == 3:
+            disposition['butter_s3_supplementary_abstain'].append(inv_row['episode_id'])
             continue
 
         validated.append({
@@ -421,6 +430,8 @@ def main():
     print(f"\n=== Phase 6: Build dataset ===")
     rows, ep_manifest, manifest = build_dataset(unique, teacher, args.output_dir, args.artifacts_dir)
 
+    # Note: field_source_audit.csv is saved inside build_dataset()
+
     print(f"\n=== Final ===")
     print(f"Rows: {len(rows)}, Episodes: {len(ep_manifest)}")
     print(f"Train: {len([e for e in ep_manifest if e['split'] == 'train'])}")
@@ -434,10 +445,26 @@ def main():
 
     # Final disposition reconciliation
     print(f"\n=== Disposition Reconciliation ===")
-    total_accounted = sum(len(v) for v in disposition.values()) + len(validated)
+    # Eligible: all 688 from ELIGIBLE_TIERS
+    eligible_total = len(eligible)
+    # Excluded at load time: 90+1244+876+50+65 = 2325
+    excluded_total = sum(len(v) for v in excluded.values())
+    # Dispositions from validation phase
+    accounted = sum(len(v) for v in disposition.values())
+    total = eligible_total + excluded_total
     print(f"Census total: {len(inv_rows)}")
-    print(f"Accounted for: {total_accounted}")
-    print(f"Missing from accounting: {len(inv_rows) - total_accounted}")
+    print(f"  Eligible (entered validation): {eligible_total}")
+    print(f"  Excluded by tier: {excluded_total}")
+    for tier, eps in sorted(excluded.items()):
+        print(f"    {tier}: {len(eps)}")
+    print(f"Validation dispositions:")
+    for status, eps in sorted(disposition.items()):
+        print(f"  {status}: {len(eps)}")
+    print(f"  Sum of dispositions: {accounted}")
+    print(f"  Entered corpus (ok): {len(validated)}")
+    print(f"Total accounted: {excluded_total} + {accounted} = {excluded_total + accounted}")
+    assert excluded_total + accounted == len(inv_rows), \
+        f"Reconciliation FAILED: {excluded_total + accounted} != {len(inv_rows)}"
 
     return rows, ep_manifest, manifest
 
