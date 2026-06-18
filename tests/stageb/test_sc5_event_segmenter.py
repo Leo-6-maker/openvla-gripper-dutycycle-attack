@@ -178,7 +178,7 @@ def test_object_identity_no_data():
     records = [{} for _ in range(15)]
     result = validate_transported_object(labels, event, records)
     assert not result['unique_object']
-    assert result['reason'] == 'insufficient_data'
+    assert result['reason'] == 'insufficient_pose_data'
     print("PASS: test_object_identity_no_data")
 
 

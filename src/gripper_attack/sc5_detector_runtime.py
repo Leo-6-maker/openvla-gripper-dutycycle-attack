@@ -59,6 +59,10 @@ class SC5DetectorRuntime:
         with open(checkpoint_path, 'rb') as f:
             self.checkpoint_sha256 = hashlib.sha256(f.read()).hexdigest()
 
+        phase_classes = list(ckpt.get("phase_classes", []))
+        if phase_classes != SC5_PHASES:
+            raise ValueError(f"phase_classes mismatch: got {len(phase_classes)}, expected {len(SC5_PHASES)}")
+
         mean = ckpt["mean"]; std = ckpt["std"]
         if mean.shape[0] != 25 or std.shape[0] != 25:
             raise ValueError(f"mean/std shape {mean.shape}")
@@ -88,6 +92,8 @@ class SC5DetectorRuntime:
         if self.emitted:
             return self._decision(step)
         X = np.array([[features_25d[fn] for fn in SC5_FEATURES]], dtype=np.float32)
+        if not np.all(np.isfinite(X)):
+            raise ValueError("NaN/Inf in input features")
         X = (X - self.mean) / (self.std + 1e-8)
         with torch.no_grad():
             out = self.model(torch.tensor(X, dtype=torch.float32))

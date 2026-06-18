@@ -105,9 +105,9 @@ def _extract_state(rec: dict, fail_closed: bool = True) -> Optional[dict]:
         'eef_x': float(rec.get('eef_x', float('nan'))),
         'eef_y': float(rec.get('eef_y', float('nan'))),
         'eef_z': float(rec.get('eef_z', float('nan'))),
-        'eef_vx': float(rec.get('eef_vx', 0.0)),
-        'eef_vy': float(rec.get('eef_vy', 0.0)),
-        'eef_vz': float(rec.get('eef_vz', 0.0)),  # NOW EXTRACTED
+        'eef_vx': float(rec.get('eef_vx', float('nan'))),
+        'eef_vy': float(rec.get('eef_vy', float('nan'))),
+        'eef_vz': float(rec.get('eef_vz', float('nan'))),
         'step_idx': int(rec.get('step_idx', 0)),
         'policy_step_idx': int(rec.get('policy_step_idx', -1)),
         'has_priv': bool(rec.get('teacher_privileged_state_available', False)),

@@ -85,7 +85,7 @@ for eid, rows in sorted(episodes.items()):
     results.append({
         "episode_id": eid, "split": split, "is_held_out": is_held,
         "teacher_anchor": teacher_anchor, "teacher_sc5_valid": teacher_sc5_valid,
-        "emit_step": emit_step, "emit_step": emit_step,
+        "emit_step": emit_step,
         "anchor_error": anchor_err, "false_early": int(false_early),
         "post_release_trigger": int(post_release),
         "k10_contained": int(k10_contained), "triggered": int(emit_step >= 0),

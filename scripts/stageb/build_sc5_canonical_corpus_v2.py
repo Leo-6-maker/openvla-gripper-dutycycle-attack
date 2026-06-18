@@ -78,12 +78,11 @@ def validate_episode(inv_row):
             with open(mp) as f: manifest = json.load(f)
         except Exception: pass
 
-    # Provenance: check every policy step for attack markers
+    # Provenance: check ALL records for attack markers (not just privileged rows)
     adapter = SC5SchemaAdapterV2()
     for rec in records:
-        if rec.get('teacher_privileged_state_available'):
-            if not adapter.validate_clean_provenance(rec, manifest)['clean_provenance']:
-                return records, manifest, "attack_contamination"
+        if not adapter.validate_clean_provenance(rec, manifest)['clean_provenance']:
+            return records, manifest, "attack_contamination"
 
     if not manifest or not manifest.get('success', False):
         return records, manifest, "not_clean_success"
@@ -376,72 +375,14 @@ def main():
                  'reason': tier_b_status.get(parent_ep_id, {}).get('reason', '')})
             continue
 
-        # ── Tier C: event segmentation ──
+        # ── Tier C: all abstain (G-C4 PARTIAL, event pipeline not yet validated) ──
         if tier == TIER_C:
             tier_c_stats['parent_episodes'] += 1
-            seg_result = segmenter.segment(labels, records, K=K, guard=GUARD)
-
-            valid_events = [e for e in seg_result['events'] if e.get('event_valid')]
-            rejected = [e for e in seg_result['events'] if not e.get('event_valid')]
-
-            # Write ALL events to manifest (valid and rejected)
-            for evt in seg_result['events']:
-                evt_sc5 = evt.get('sc5') or {}
-                evt_rows.append({
-                    'parent_episode_id': parent_ep_id,
-                    'event_id': evt['event_id'],
-                    'task': ep['task_name'], 'state_id': ep['state_id'],
-                    'split': split, 'candidate_tier': tier,
-                    'event_valid': evt.get('event_valid', False),
-                    'event_start': evt['start_step'],
-                    'event_end': evt['end_step'],
-                    'phase_order_valid': evt.get('phase_order_valid', False),
-                    'has_all_required_phases': evt.get('has_all_required_phases', False),
-                    'has_stable_carry': evt.get('has_stable_carry', False),
-                    'has_release': evt.get('has_release', False),
-                    'object_verifiable': evt.get('object_verifiable', False),
-                    'object_ok': evt.get('object_ok', False),
-                    'sc5_valid': evt_sc5.get('valid', False),
-                    'sc5_anchor': evt_sc5.get('anchor', -1),
-                    'reject_reason': evt.get('reject_reason', ''),
-                })
-
-            # Parent-prefix adapter: carry causal history across sibling events
-            parent_adapter = SC5StreamingFeatureAdapterV2()
-            parent_schema_adapter = SC5SchemaAdapterV2()
-
-            for evt in valid_events:
-                evt_sc5 = evt.get('sc5', {})
-                evt_corridor = None
-                if evt_sc5.get('valid'):
-                    evt_corridor = compute_sc5_valid_start_corridor(
-                        labels, evt_sc5['anchor'], K=K)
-                evt_rows_list, evt_gap, evt_steps = build_event_rows(
-                    ep, labels, label_by_step, records,
-                    evt_sc5, evt_corridor,
-                    evt['start_step'], evt['end_step'],
-                    (evt['start_step'], evt['end_step']),
-                    evt['event_id'], parent_ep_id,
-                    corpus_class='PRIMARY_SC5_POSITIVE',
-                    adapter=parent_adapter, schema_adapter=parent_schema_adapter)
-
-                if evt_gap:
-                    tier_c_stats['event_timeline_gap'] += 1; continue
-                if evt_steps == 0:
-                    tier_c_stats['event_no_feature_rows'] += 1; continue
-
-                tier_c_stats['valid_events'] += 1
-                rows.extend(evt_rows_list)
-
-            for evt in rejected:
-                tier_c_stats[f'reject_{evt.get("reject_reason","unknown")}'] += 1
-
-            if not valid_events:
-                tier_c_stats['OOD_MULTI_STAGE_ABSTAIN'] += 1
-                post_dedup_disposition['OOD_MULTI_STAGE_ABSTAIN'].append(
-                    {'episode_id': parent_ep_id, 'state_id': ep['state_id'],
-                     'task': ep['task_name'],
-                     'reason': seg_result.get('abstain_reason', 'no_valid_event')})
+            tier_c_stats['OOD_MULTI_STAGE_ABSTAIN'] += 1
+            post_dedup_disposition['OOD_MULTI_STAGE_ABSTAIN'].append(
+                {'episode_id': parent_ep_id, 'state_id': ep['state_id'],
+                 'task': ep['task_name'],
+                 'reason': 'G-C4_PARTIAL_event_segmenter_not_yet_validated_for_production'})
             continue
 
         # ── Tier A+B: whole-episode SC5, full output span ──

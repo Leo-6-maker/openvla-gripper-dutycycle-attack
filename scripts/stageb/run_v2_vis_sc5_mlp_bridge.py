@@ -26,6 +26,7 @@ ap.add_argument("--seed_id", type=int, required=True)
 ap.add_argument("--output_dir", required=True)
 ap.add_argument("--render_gpu", type=int, required=True)
 ap.add_argument("--mlp_path", default="outputs/sc5_canonical_eng/sc5_mlp_s2.pt")
+ap.add_argument("--task_idx", type=int, default=6, help="LIBERO task index (default 6=butter)")
 args = ap.parse_args()
 
 STATE_ID = args.state_id; ANCHOR = args.anchor; IS_ATTACK = args.condition != "CLEAN"
@@ -78,7 +79,7 @@ from gripper_attack.libero_v4_env_factory import apply_dummy_wait, build_v4_exac
 from gripper_attack.v3_generation_parity import extract_exact_new_tokens
 from libero.libero import benchmark, get_libero_path
 
-TASK_IDX = 6
+TASK_IDX = args.task_idx
 bm = benchmark.get_benchmark_dict(); suite = bm["libero_object"]()
 task_obj = suite.get_task(TASK_IDX); init_states = suite.get_task_init_states(TASK_IDX)
 bddl = os.path.join(get_libero_path("bddl_files"), task_obj.problem_folder, task_obj.bddl_file)
@@ -88,7 +89,9 @@ env, obs = build_v4_exact_env(bddl, args.render_gpu, 400, 10)
 obs = env.set_init_state(init_states[STATE_ID])
 env, obs = apply_dummy_wait(env, obs, 10)
 
-obj_sid = env.sim.model.site_name2id("butter_1_default_site")
+_task_name = task_obj.name
+_obj_key = _task_name.replace("pick_up_the_","").replace("_and_place_it_in_the_basket","")
+obj_sid = env.sim.model.site_name2id(f"{_obj_key}_1_default_site")
 obj_z0 = float(env.sim.data.site_xpos[obj_sid][2])
 
 # ── Online streaming adapter (NEW) ──

@@ -147,11 +147,12 @@ def validate_transported_object(labels: List[dict], event: dict,
     """
     positions = []
     object_names = set()
+    record_by_step = {int(r.get('step_idx', -1)): r for r in step_records}
     for l in labels:
         step = l['step_idx']
         if step < event['start_step'] or step > event['end_step']:
             continue
-        rec = step_records[step] if step < len(step_records) else {}
+        rec = record_by_step.get(step, {})
         obj_str = rec.get('object_pose_json', '')
         obj_name = rec.get('object_name', rec.get('transported_object_name', ''))
         if obj_name:

@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
-"""Audit K10 containment + 25D parity from saved rollout telemetry."""
-import csv, json, sys, numpy as np
+"""Cross-trajectory diagnostic — measures trajectory divergence, NOT implementation parity.
+
+CROSS_TRAJECTORY_DIAGNOSTIC_ONLY
+NOT_IMPLEMENTATION_PARITY
+NOT_SAME_TRAJECTORY_SC5_ALIGNMENT
+
+Teacher anchors and derived streak features are trajectory-specific.
+This script compares ONLINE (new rollout) vs OFFLINE (historical clean)
+trajectories — any differences reflect trajectory divergence, not
+implementation bugs in the online feature builder.
+"""
+import argparse, csv, json, sys, numpy as np
 
 SC5_FEATURES = [
     "gripper_command","gripper_qpos","gripper_opening_proxy",
@@ -12,11 +22,13 @@ SC5_FEATURES = [
     "opening_proxy_delta_3","opening_proxy_variance_5","eef_speed_variance_5",
 ]
 
-canon_path = sys.argv[1] if len(sys.argv) > 1 else 'tables/v2_sc5_canonical_dataset.csv'
-tel_paths = sys.argv[2:] if len(sys.argv) > 2 else [
-    '/data/liuyu/outputs/rollout_e2e/step_telemetry.csv',
-    '/data/liuyu/outputs/rollout_e2e_s0/step_telemetry.csv',
-]
+ap = argparse.ArgumentParser(description='Cross-trajectory drift diagnostic')
+ap.add_argument('--canonical', required=True, help='Path to canonical CSV')
+ap.add_argument('--telemetry', nargs='+', required=True, help='Rollout telemetry CSV paths')
+args = ap.parse_args()
+
+canon_path = args.canonical
+tel_paths = args.telemetry
 
 canon = {}
 with open(canon_path) as f:
@@ -44,12 +56,14 @@ for tp in tel_paths:
 
     # Find state_id from telemetry
     sid = 's' + tel[0].get('step','0')  # rough, use path
+    s = {}; anchor = -1
     summary_path = tp.replace('step_telemetry.csv', 'episode_summary.json')
     try:
         with open(summary_path) as f: s = json.load(f)
         sid = 's' + str(s['state_id'])
         anchor = s.get('teacher_anchor', -1)
-    except: anchor = -1
+    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+        pass  # summary unavailable — continue with default anchor=-1
 
     can_rows = canon.get(sid, [])
     if not can_rows:
