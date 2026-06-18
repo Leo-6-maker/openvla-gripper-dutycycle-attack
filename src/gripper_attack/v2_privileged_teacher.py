@@ -209,7 +209,7 @@ class V2PrivilegedTeacher:
             # ── Phase detection ──
             phase = prev_phase
 
-            if near_target and not obj_falling:
+            if near_target and eef_vz_valid and not obj_falling:
                 phase = 'release_safe'
             elif was_lifted and not obj_lifted and obj_eef_close:
                 phase = 'recovery_or_regrasp'

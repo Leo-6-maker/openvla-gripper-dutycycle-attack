@@ -462,15 +462,9 @@ def main():
 
     # Full Teacher config freeze (dataclass fields + calibration metadata)
     from dataclasses import asdict
-    config_full = asdict(teacher.cfg)
-    config_full['guard'] = GUARD; config_full['K'] = K
-    config_full['calibration_tiers'] = 'Tier_A+B_train_only'
-    config_full['tier_c_train_excluded'] = len([e for e in train_eps if e.get('candidate_tier') == TIER_C])
-    config_full['n_calibration_paths'] = len(valid_paths)
-    config_full['n_calibration_episodes'] = len(calib_eps)
-    # Semantic config SHA: parameters + sorted source file SHAs (NO absolute paths)
+    # Semantic config: parameters + SORTED source file SHAs (NO absolute paths)
     calib_sha_list = []
-    calib_path_list = []  # local paths stored separately, not in SHA
+    calib_path_list = []
     for jp in valid_paths:
         try:
             with open(jp, 'rb') as f:
@@ -479,12 +473,20 @@ def main():
             file_sha = 'UNREADABLE'
         calib_sha_list.append(file_sha)
         calib_path_list.append(jp)
-    config_full['calibration_source_sha256_list'] = sorted(calib_sha_list)
-    config_full['calibration_source_paths'] = sorted(calib_path_list)  # non-hash metadata
+    semantic_payload = asdict(teacher.cfg)
+    semantic_payload['guard'] = GUARD; semantic_payload['K'] = K
+    semantic_payload['calibration_tiers'] = 'Tier_A+B_train_only'
+    semantic_payload['tier_c_train_excluded'] = len([e for e in train_eps if e.get('candidate_tier') == TIER_C])
+    semantic_payload['n_calibration_paths'] = len(valid_paths)
+    semantic_payload['n_calibration_episodes'] = len(calib_eps)
+    semantic_payload['calibration_source_sha256_list'] = sorted(calib_sha_list)
+
+    config_full = dict(semantic_payload)  # copy
+    config_full['calibration_source_paths'] = sorted(calib_path_list)  # metadata, not in SHA
     config_path = os.path.join(args.artifacts_dir, 'v2_sc5_teacher_config.json')
     with open(config_path, 'w') as f:
         json.dump(config_full, f, indent=2, default=str)
-    config_sha = hashlib.sha256(json.dumps(config_full, sort_keys=True).encode()).hexdigest()
+    config_sha = hashlib.sha256(json.dumps(semantic_payload, sort_keys=True).encode()).hexdigest()
     with open(os.path.join(args.artifacts_dir, 'v2_sc5_teacher_config.sha256'), 'w') as f:
         f.write(f"{config_sha}  v2_sc5_teacher_config.json\n")
     print(f"  Teacher config frozen: {config_sha[:16]} ({len(valid_paths)} paths)")
