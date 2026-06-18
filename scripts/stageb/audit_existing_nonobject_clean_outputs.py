@@ -670,6 +670,12 @@ def write_report(path: Path, meta: dict[str, Any], root_rows: list[dict[str, Any
         "",
         "## Reusability By Suite",
         "",
+        "```text",
+        f"verified_spatial_unique_clean_states={next((r['unique_clean_task_states'] for r in summary_rows if r['suite'] == 'libero_spatial'), 0)}",
+        f"verified_goal_unique_clean_states={next((r['unique_clean_task_states'] for r in summary_rows if r['suite'] == 'libero_goal'), 0)}",
+        f"verified_libero10_unique_clean_states={next((r['unique_clean_task_states'] for r in summary_rows if r['suite'] == 'libero_10'), 0)}",
+        "```",
+        "",
         "| Suite | Clean usable | Detector usable | Teacher relabel usable | Unique task-states | Missing 10x10 | Missing 10x50 |",
         "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
@@ -844,7 +850,17 @@ def main() -> None:
     write_csv(out / "tables" / "nonobject_task_state_matrix_20260619.csv", task_matrix)
     write_csv(out / "tables" / "nonobject_reusability_summary_20260619.csv", summary)
     write_csv(out / "tables" / "current_cross_suite_300_progress_snapshot.csv", active_end)
-    report_json = {"metadata": meta, "reusability_summary": summary, "tier_counts": dict(Counter(r.get("tier", "") for r in master))}
+    verified = {
+        "verified_spatial_unique_clean_states": next((int(r["unique_clean_task_states"]) for r in summary if r["suite"] == "libero_spatial"), 0),
+        "verified_goal_unique_clean_states": next((int(r["unique_clean_task_states"]) for r in summary if r["suite"] == "libero_goal"), 0),
+        "verified_libero10_unique_clean_states": next((int(r["unique_clean_task_states"]) for r in summary if r["suite"] == "libero_10"), 0),
+    }
+    report_json = {
+        "metadata": meta,
+        "reusability_summary": summary,
+        "tier_counts": dict(Counter(r.get("tier", "") for r in master)),
+        **verified,
+    }
     (out / "reports" / "nonobject_existing_data_audit_20260619.json").write_text(json.dumps(report_json, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
     write_report(out / "reports" / "NONOBJECT_EXISTING_DATA_AUDIT_20260619.md", meta, root_rows, master, active_end, summary)
     print(json.dumps({
