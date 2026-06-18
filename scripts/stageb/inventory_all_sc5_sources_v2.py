@@ -103,11 +103,54 @@ def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def git_value(args: list[str]) -> str:
+def git_output(args: list[str]) -> tuple[bool, str]:
     try:
-        return subprocess.check_output(["git", *args], cwd=REPO_ROOT, text=True, stderr=subprocess.DEVNULL).strip()
+        value = subprocess.check_output(["git", *args], cwd=REPO_ROOT, text=True, stderr=subprocess.DEVNULL).strip()
+        return True, value
     except Exception:
-        return ""
+        return False, ""
+
+
+def git_value(args: list[str]) -> str:
+    ok, value = git_output(args)
+    if ok:
+        return value
+    return ""
+
+
+def git_branch_name() -> str:
+    branch = git_value(["rev-parse", "--abbrev-ref", "HEAD"])
+    if branch and branch != "HEAD":
+        return branch
+    if branch == "HEAD":
+        return "DETACHED_HEAD"
+    return git_value(["symbolic-ref", "--short", "HEAD"]) or "UNKNOWN_BRANCH"
+
+
+def git_dirty_status() -> str:
+    ok, value = git_output(["status", "--porcelain"])
+    if not ok:
+        return "GIT_STATUS_UNAVAILABLE"
+    if not value:
+        return "CLEAN"
+    return f"DIRTY:{sha256_text(value)}"
+
+
+def git_provenance_fields() -> dict[str, str]:
+    head = git_value(["rev-parse", "HEAD"])
+    if not head:
+        return {
+            "repo_head": "",
+            "repo_branch": "",
+            "repo_dirty": "GIT_STATUS_UNAVAILABLE",
+            "repo_provenance": "GIT_PROVENANCE_UNAVAILABLE",
+        }
+    return {
+        "repo_head": head,
+        "repo_branch": git_branch_name(),
+        "repo_dirty": git_dirty_status(),
+        "repo_provenance": "PASS",
+    }
 
 
 def normalize_task(value: Any) -> str:
@@ -428,11 +471,10 @@ def summarize(config: Mapping[str, Any], root_rows: list[Mapping[str, Any]], epi
     status = "SC5_SOURCE_CENSUS_FROZEN"
     if any(v != 0 for v in drift.values()):
         status = "SC5_SOURCE_CENSUS_FROZEN_WITH_CURRENT_SCAN_DRIFT"
+    repo_fields = git_provenance_fields()
     return {
         "status": status,
-        "repo_head": git_value(["rev-parse", "HEAD"]),
-        "repo_branch": git_value(["branch", "--show-current"]),
-        "repo_dirty": git_value(["status", "--porcelain"]),
+        **repo_fields,
         "counts": dict(counts),
         "tier_counts": dict(tier_counts),
         "exclusion_counts": dict(exclusion_counts),

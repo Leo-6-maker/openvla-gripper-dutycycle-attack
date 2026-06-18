@@ -130,6 +130,11 @@ def test_source_inventory_summary_reports_current_scan_drift(tmp_path):
     assert summary["status"] == "SC5_SOURCE_CENSUS_FROZEN_WITH_CURRENT_SCAN_DRIFT"
     assert summary["counts"]["step_records"] == 1
     assert summary["tier_counts"]["PRIMARY_SC5_POSITIVE_CANDIDATE"] == 1
+    assert summary["repo_head"]
+    assert summary["repo_branch"]
+    assert summary["repo_dirty"]
+    assert summary["repo_dirty"] == "CLEAN" or summary["repo_dirty"].startswith("DIRTY:")
+    assert summary["repo_provenance"] == "PASS"
 
 
 def test_suite_inference_does_not_promote_goal_task_to_object_primary(tmp_path):
