@@ -258,6 +258,7 @@ class V2PrivilegedTeacher:
         return labels
 
     def find_teacher_anchor(self, labels: List[dict]) -> dict:
+        """DEPRECATED for SC5: prefers pre_place_unsupported. Use find_sc5_anchor_v2() instead."""
         fc_labels = [l for l in labels if l['failure_critical']]
         if not fc_labels:
             return {'anchor': -1, 'phase': 'none', 'reason': 'no_failure_critical_phase'}
@@ -277,6 +278,54 @@ class V2PrivilegedTeacher:
                     'reason': 'stable_carry_midpoint'}
 
         return {'anchor': -1, 'phase': 'none', 'reason': 'unexpected'}
+
+
+def find_sc5_anchor_v2(labels: List[dict], K: int = 10, guard: int = 5) -> dict:
+    """Phase 3 frozen SC5 rule: earliest stable_carry_start + guard, K10 corridor valid.
+
+    Returns:
+        anchor: int, step index of SC5 attack anchor
+        window: [start, end] if valid
+        valid: bool, whether full K10 corridor is legal
+        reason: str, explanation if invalid
+        stable_carry_start: int
+    """
+    sc_steps = [l['step_idx'] for l in labels if l['phase'] == 'stable_carry']
+    if not sc_steps:
+        return {'anchor': -1, 'window': None, 'valid': False,
+                'reason': 'no_stable_carry_phase', 'stable_carry_start': -1}
+
+    sc_start = sc_steps[0]  # earliest
+    anchor = sc_start + guard
+    window = [anchor, anchor + K - 1]
+
+    # Check: full K10 within episode
+    n_steps = max(l['step_idx'] for l in labels) + 1
+    if window[1] >= n_steps:
+        return {'anchor': anchor, 'window': window, 'valid': False,
+                'reason': 'window_exceeds_episode', 'stable_carry_start': sc_start}
+
+    # Check: K10 does not cross release_safe
+    rs_steps = [l['step_idx'] for l in labels if l['phase'] == 'release_safe']
+    if rs_steps and window[1] >= rs_steps[0]:
+        return {'anchor': anchor, 'window': window, 'valid': False,
+                'reason': 'window_crosses_release_safe', 'stable_carry_start': sc_start}
+
+    # Check: K10 not in recovery/regrasp
+    recovery_steps = {l['step_idx'] for l in labels if l['phase'] == 'recovery_or_regrasp'}
+    corridor_steps = set(range(window[0], window[1] + 1))
+    if corridor_steps & recovery_steps:
+        return {'anchor': anchor, 'window': window, 'valid': False,
+                'reason': 'window_overlaps_recovery', 'stable_carry_start': sc_start}
+
+    # Check: all corridor steps have privileged data (no abstain)
+    abstain_steps = {l['step_idx'] for l in labels if l['phase'] == 'abstain_unsupported'}
+    if corridor_steps & abstain_steps:
+        return {'anchor': anchor, 'window': window, 'valid': False,
+                'reason': 'window_overlaps_abstain', 'stable_carry_start': sc_start}
+
+    return {'anchor': anchor, 'window': window, 'valid': True,
+            'reason': 'sc5_corridor_valid', 'stable_carry_start': sc_start}
 
 
 def calibrate_thresholds(trajectory_paths: List[str]) -> TeacherConfig:
