@@ -254,6 +254,44 @@ def validate_split_isolation(episodes: List[dict], group_key: str = 'initial_sta
     }
 
 
+def validate_multi_split_isolation(episodes: List[dict],
+                                    group_key: str = 'initial_state_sha256',
+                                    split_key: str = 'split') -> dict:
+    """Validate group isolation across ALL split pairs (not just held_out vs rest).
+
+    Checks train↔val, train↔held_out, val↔held_out independently.
+    Returns detailed per-pair audit.
+    """
+    split_values = sorted(set(ep.get(split_key, 'train') for ep in episodes))
+    groups = defaultdict(lambda: defaultdict(int))
+
+    for ep in episodes:
+        gk = ep.get(group_key, '')
+        sp = ep.get(split_key, 'train')
+        if gk:
+            groups[gk][sp] += 1
+
+    violations_by_pair = {}
+    for i, s1 in enumerate(split_values):
+        for s2 in split_values[i+1:]:
+            pair_key = f"{s1}↔{s2}"
+            violating = []
+            for gk, split_counts in groups.items():
+                if split_counts.get(s1, 0) > 0 and split_counts.get(s2, 0) > 0:
+                    violating.append(gk)
+            violations_by_pair[pair_key] = violating
+
+    total_violations = sum(len(v) for v in violations_by_pair.values())
+    return {
+        'valid': total_violations == 0,
+        'split_values': split_values,
+        'violations_by_pair': {k: len(v) for k, v in violations_by_pair.items()},
+        'violation_details': violations_by_pair,
+        'n_violations': total_violations,
+        'n_groups': len(groups),
+    }
+
+
 def write_duplicate_groups_csv(groups: List[dict], output_path: str):
     """Write duplicate groups to CSV for audit."""
     if not groups:

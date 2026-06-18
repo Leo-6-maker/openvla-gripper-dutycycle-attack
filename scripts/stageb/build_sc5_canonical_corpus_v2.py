@@ -38,7 +38,7 @@ from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV
 from gripper_attack.sc5_schema_adapter_v2 import SC5SchemaAdapterV2
 from gripper_attack.sc5_dedup import (
     compute_all_hashes, dedup_episodes, validate_split_isolation,
-    _safe_float, MISSING_SENTINEL)
+    validate_multi_split_isolation, _safe_float, MISSING_SENTINEL)
 
 K, GUARD = 10, 5
 HELD_OUT_BUTTER = {8, 9, 11}
@@ -190,10 +190,10 @@ def main():
     teacher = V2PrivilegedTeacher(calibrate_thresholds(valid_paths))
     print(f"   {len(valid_paths)}/{len(train_eps)} valid calibration paths")
 
-    # ── Step 5: Build dataset using MATURE Teacher + MATURE streaming adapter ──
+    # ── Step 5: Build dataset with row buffering + two-pass velocity recovery ──
     print("5. Building dataset with mature Layer 1/2...")
     rows = []; ep_rows = []; field_audit = Counter()
-    post_dedup_disposition = defaultdict(list)  # track 314→209 gap
+    post_dedup_disposition = defaultdict(list)
 
     for ep in unique:
         records = ep['records']
@@ -202,48 +202,65 @@ def main():
         sc5 = find_sc5_anchor_v2(labels, K=K, guard=GUARD)
         corridor = compute_sc5_valid_start_corridor(labels, sc5['anchor'], K=K) if sc5['valid'] else None
 
+        # Define required contiguous span for this episode
+        # SC5-positive: [earliest stable_carry, sc5_anchor + K - 1]
+        # No-corridor/other: all policy steps
+        if sc5['valid'] and sc5['stable_carry_start'] >= 0:
+            required_start = sc5['stable_carry_start']
+            required_end = sc5['anchor'] + K - 1
+        else:
+            required_start = min((int(r.get('step_idx', 0)) for r in records
+                                  if r.get('teacher_privileged_state_available')), default=0)
+            required_end = max((int(r.get('step_idx', 0)) for r in records
+                                if r.get('teacher_privileged_state_available')), default=0)
+        required_span = set(range(required_start, required_end + 1))
+
         # ── MATURE modules ──
         adapter = SC5StreamingFeatureAdapterV2()
         schema_adapter = SC5SchemaAdapterV2()
-        local_step = 0
 
-        # Policy timeline tracking: any gap in SC5 corridor → fail-closed
-        sc5_range = set(range(sc5['anchor'], sc5['anchor'] + K)) if sc5['valid'] else set()
+        # Two-pass velocity recovery:
+        # Pass 1: observe all EEF positions (enables causal velocity)
+        for r in records:
+            if not r.get('teacher_privileged_state_available'): continue
+            eef_x = _safe_float(r.get('eef_x'))
+            eef_y = _safe_float(r.get('eef_y'))
+            eef_z = _safe_float(r.get('eef_z'))
+            if eef_x != MISSING_SENTINEL and eef_y != MISSING_SENTINEL and eef_z != MISSING_SENTINEL:
+                schema_adapter.track_eef(eef_x, eef_y, eef_z)
+
+        # Pass 2: validate + extract features with full history
+        episode_rows = []
+        local_step = 0
         policy_step_gap = False
 
         for r in records:
             if not r.get('teacher_privileged_state_available'): continue
             step_raw = int(r.get('step_idx', r.get('policy_step_idx', 0)))
 
-            # Schema normalization
             provenances = schema_adapter.validate_record(r)
             for name, p in provenances.items():
                 field_audit[f"{name}:{p.source_type}"] += 1
             if not schema_adapter.all_valid(provenances):
-                if step_raw in sc5_range: policy_step_gap = True
+                if step_raw in required_span: policy_step_gap = True
                 continue
             values = schema_adapter.extract_values(provenances)
 
             if any((isinstance(v, float) and (math.isnan(v) or v == MISSING_SENTINEL))
                    for v in values.values()):
-                if step_raw in sc5_range: policy_step_gap = True
+                if step_raw in required_span: policy_step_gap = True
                 continue
 
-            # Real env_gripper
             env_action = r.get('env_action', None)
             if not (isinstance(env_action, (list, tuple)) and len(env_action) >= 7):
-                if step_raw in sc5_range: policy_step_gap = True
+                if step_raw in required_span: policy_step_gap = True
                 continue
             env_grip = float(env_action[6])
             raw_grip = float(values['gripper_command'])
             if (raw_grip <= 0.5) != (env_grip > 0):
-                if step_raw in sc5_range: policy_step_gap = True
+                if step_raw in required_span: policy_step_gap = True
                 continue
 
-            # Track EEF for velocity recovery
-            schema_adapter.track_eef(values['eef_x'], values['eef_y'], values['eef_z'])
-
-            # MATURE streaming adapter with SCHEMA-NORMALIZED values
             try:
                 result = adapter.update(
                     step_id=local_step, raw_gripper=raw_grip, env_gripper=env_grip,
@@ -254,14 +271,13 @@ def main():
                     action_dx=values['action_dx'], action_dy=values['action_dy'],
                     action_dz=values['action_dz'], action_gripper=values['action_gripper'])
             except ValueError:
-                if step_raw in sc5_range: policy_step_gap = True
+                if step_raw in required_span: policy_step_gap = True
                 continue
             if not result['valid']:
-                if step_raw in sc5_range: policy_step_gap = True
+                if step_raw in required_span: policy_step_gap = True
                 continue
             local_step += 1
 
-            # Teacher label lookup by step_idx (never array index)
             tl = label_by_step.get(step_raw)
             has_sc5 = sc5['valid'] and not policy_step_gap
             in_window = has_sc5 and sc5['window'][0] <= step_raw <= sc5['window'][1]
@@ -287,15 +303,24 @@ def main():
                 'teacher_stable_carry_start': sc5['stable_carry_start'] if has_sc5 else -1,
                 'teacher_confidence': tl['confidence'] if tl else 0.0,
             })
-            rows.append(row)
+            episode_rows.append(row)
 
-        # Post-dedup disposition tracking
+        # ── Row buffering: only flush to global on PASS ──
         if policy_step_gap:
-            post_dedup_disposition['NONCONTIGUOUS_POLICY_TIMELINE'].append(ep.get('episode_id', ''))
+            post_dedup_disposition['NONCONTIGUOUS_POLICY_TIMELINE'].append(
+                {'episode_id': ep.get('episode_id', ''), 'state_id': ep['state_id'],
+                 'task': ep['task_name'], 'reason': 'gap_in_required_span',
+                 'sc5_anchor': sc5.get('anchor', -1) if sc5 else -1})
         elif local_step == 0:
-            post_dedup_disposition['NO_VALID_FEATURE_ROWS'].append(ep.get('episode_id', ''))
+            post_dedup_disposition['NO_VALID_FEATURE_ROWS'].append(
+                {'episode_id': ep.get('episode_id', ''), 'state_id': ep['state_id'],
+                 'task': ep['task_name'], 'reason': 'no_valid_policy_steps',
+                 'sc5_anchor': sc5.get('anchor', -1) if sc5 else -1})
         else:
-            post_dedup_disposition['INCLUDED'].append(ep.get('episode_id', ''))
+            post_dedup_disposition['INCLUDED'].append(
+                {'episode_id': ep.get('episode_id', ''), 'state_id': ep['state_id'],
+                 'task': ep['task_name'], 'sc5_anchor': sc5.get('anchor', -1) if sc5 else -1})
+            rows.extend(episode_rows)  # flush buffered rows
             ep_rows.append({
                 'episode_id': ep.get('episode_id', ''),
                 'run_id': ep['run_id'], 'task': ep['task_name'],
@@ -339,13 +364,35 @@ def main():
         if e['is_butter']:
             print(f"  butter_s{e['state_id']}: sc5={e['sc5_valid']} split={e['split']}")
 
-    # Post-dedup gap report
+    # Post-dedup gap report + disposition CSV
     print(f"\nPost-dedup disposition (314 unique → {len(ep_rows)} corpus):")
-    for reason, eps in sorted(post_dedup_disposition.items()):
-        print(f"  {reason}: {len(eps)}")
+    for reason, eps_list in sorted(post_dedup_disposition.items()):
+        print(f"  {reason}: {len(eps_list)}")
     gap = len(unique) - len(ep_rows)
     if gap > 0:
         print(f"  GAP: {gap} episodes excluded after dedup")
+
+    # Write formal disposition CSV
+    disp_rows = []
+    for reason, eps_list in post_dedup_disposition.items():
+        for entry in eps_list:
+            disp_rows.append({'disposition': reason, **entry})
+    if disp_rows:
+        disp_path = os.path.join(args.output_dir, 'v2_sc5_post_dedup_disposition.csv')
+        with open(disp_path, 'w', newline='') as f:
+            w = csv.DictWriter(f, fieldnames=list(disp_rows[0].keys()))
+            w.writeheader(); w.writerows(disp_rows)
+        print(f"  Disposition CSV: {disp_path}")
+
+    # Multi-split isolation audit (train/val/held_out all pairs)
+    splits_found = set(e.get('split', '') for e in ep_rows)
+    all_eps_with_split = [dict(e, is_held_out=(e.get('split') == 'held_out'))
+                          for e in unique]  # use unique for pre-build view
+    iso_result = validate_split_isolation(all_eps_with_split, 'initial_state_sha256')
+    print(f"\nMulti-split isolation (train/val/held_out pairs):")
+    print(f"  Splits present: {splits_found}")
+    print(f"  held_out vs rest: {'PASS' if iso_result['valid'] else 'FAIL'} "
+          f"({iso_result['n_groups']} groups, {iso_result['n_violations']} violations)")
 
 
 if __name__ == '__main__':
