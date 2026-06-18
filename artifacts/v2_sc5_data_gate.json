@@ -1,0 +1,87 @@
+{
+  "version": "v2_sc5_canonical_corpus_20260618",
+  "branch": "exp/l2-sc5-canonical-corpus-deepseek-20260618",
+  "base_census_commit": "45aad452d4b0ce6554757d7e2d9c8b3bb215e607",
+  "builder_commit": "7a3e9f8",
+  "status": "SC5_CANONICAL_CORPUS_PARTIAL_PASS",
+  "timestamp": "2026-06-18T13:30:00+08:00",
+  "gates": {
+    "G-C0_inventory_reconciliation": {
+      "status": "PARTIAL",
+      "census_total": 3013,
+      "builder_scanned": 662,
+      "builder_unique": 299,
+      "gap": 2351,
+      "note": "Builder scans 6 privileged artifact dirs; 449 PRIMARY census candidates not fully covered"
+    },
+    "G-C1_provenance": {
+      "status": "PASS",
+      "attack_contamination": 0,
+      "clean_success_verified": true
+    },
+    "G-C2_schema": {
+      "status": "PASS",
+      "missing_to_zero": 0,
+      "semantic_conflicts": 0,
+      "action_dy_duplication": 0,
+      "future_derivation": 0
+    },
+    "G-C3_teacher": {
+      "status": "PASS",
+      "train_only_calibration": true,
+      "teacher_config_sha": "54f50e4300ab71191ab9a2779180ef34e73c3a3072fdb82a07eb857fd789457c",
+      "guard": 5,
+      "K": 10,
+      "phase_order_valid": true
+    },
+    "G-C4_object_event_identity": {
+      "status": "PARTIAL",
+      "event_segmenter_exists": true,
+      "event_segmenter_integrated": false,
+      "note": "Event segmenter module written but not yet wired into builder pipeline"
+    },
+    "G-C5_dedup_split": {
+      "status": "PASS",
+      "duplicate_groups": 24,
+      "init_state_groups": 272,
+      "cross_split_violations": 0,
+      "parent_event_tracking": "not_applicable"
+    },
+    "G-C6_strict_heldout": {
+      "status": "PASS_WITH_CAVEAT",
+      "held_out_in_train": 0,
+      "held_out_in_calibration": 0,
+      "butter_s5_issue": "Butter s5 appears in train with SC5-valid; census classifies as CLEAN_FAIL",
+      "butter_s11": "not_in_data"
+    },
+    "G-C7_corpus_diversity": {
+      "status": "PASS",
+      "source_roots": 6,
+      "unique_tasks": 38,
+      "primary_positives": 141,
+      "no_corridor_negatives": 111,
+      "ood_abstain": 30,
+      "conditional_other": 17
+    }
+  },
+  "corpus_classes": {
+    "PRIMARY_SC5_POSITIVE": 141,
+    "NO_CORRIDOR_NEGATIVE": 111,
+    "OOD_ABSTAIN": 30,
+    "CONDITIONAL_OTHER": 17
+  },
+  "blocked_for": [
+    "EXPANDED_MLP",
+    "TCN",
+    "ONLINE_COMMAND_HOLD",
+    "VIS",
+    "ARM_SELECTIVE_CLAIM"
+  ],
+  "next_actions": [
+    "Expand builder to all 449 PRIMARY census candidates",
+    "Integrate event segmenter into builder pipeline",
+    "Fix Butter s5 classification (AUDIT_ONLY)",
+    "Fix mechanism classifier (cabinet != drawer)",
+    "Full G-C0 inventory reconciliation"
+  ]
+}
