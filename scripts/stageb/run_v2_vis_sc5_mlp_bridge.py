@@ -313,10 +313,10 @@ if args.save_video and _video_frames:
     _vfdir = out / "frames"
     if args.save_raw_frames: _vfdir.mkdir(parents=True, exist_ok=True)
     _flist = []
-    _raw_frames = list(_video_frames)  # copy before annotation
+    _raw_frames = [f.copy() for f in _video_frames]  # deep copy before annotation
     _overlay_frames = []
     for i, (_frame, _lbl) in enumerate(zip(_video_frames, _frame_labels)):
-        _img = Image.fromarray(_frame, mode="RGB")
+        _img = Image.fromarray(_frame.copy(), mode="RGB")  # copy to prevent in-place mutation
         _draw = ImageDraw.Draw(_img)
         _lbl["task_success"] = success
         # Top info bar
@@ -376,7 +376,10 @@ if args.save_video and _video_frames:
         "step_telemetry_sha256": tel_sha,
         "frame_semantics": "pre_action_observation",
         "action_applied_after_frame": True,
-        "replay_validation_status": "REPRODUCED_ROLLOUT_DIRECT_CAPTURE"}
+        "replay_validation_status": "REPRODUCED_ROLLOUT_DIRECT_CAPTURE",
+        "source_commit": "8c606c0dec123694402ea8bdd779a0f6c00cf172",
+        "video_fps": args.video_fps, "frame_stride": args.frame_stride,
+        "frame_count": len(_raw_frames)}
     with open(out / "video_manifest.json", "w") as f: json.dump(video_manifest, f, indent=2)
 
 print("%s s%d teacher=%d emit=%d err=%d: steps=%d atk=%d tok=%.2f env=%.2f arm=%.2f succ=%s%s" % (
