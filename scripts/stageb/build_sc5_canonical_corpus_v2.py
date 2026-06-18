@@ -385,13 +385,9 @@ def main():
         out_start = min(policy_steps, default=0)
         out_end = max(policy_steps, default=0)
 
-        # Continuity span: [grasp_close, SC5 anchor + K - 1] for gap detection
-        grasp_close_steps = [l['step_idx'] for l in labels if l['phase'] == 'grasp_close']
-        if sc5['valid'] and sc5['stable_carry_start'] >= 0:
-            c_start = grasp_close_steps[0] if grasp_close_steps else sc5['stable_carry_start']
-            c_end = sc5['anchor'] + K - 1
-        else:
-            c_start = out_start; c_end = out_end
+        # Continuity = output: every output step must be valid.
+        # No silent compression of approach, post-release, or any timeline region.
+        c_start, c_end = out_start, out_end
 
         corpus_class = 'PRIMARY_SC5_POSITIVE' if sc5['valid'] else 'NO_CORRIDOR_NEGATIVE'
 
@@ -462,12 +458,17 @@ def main():
     config_full['tier_c_train_excluded'] = tier_c_count if 'tier_c_count' in dir() else 0
     config_full['n_calibration_paths'] = len(valid_paths)
     config_full['n_calibration_episodes'] = len(calib_eps)
-    # Calibration source hashes (sorted for reproducibility)
-    calib_hashes = []
-    for ep in calib_eps:
-        calib_hashes.append(ep.get('source_file_sha256', '') or
-                           hashlib.sha256(ep['jsonl_path'].encode()).hexdigest())
-    config_full['calibration_source_sha256s'] = sorted(calib_hashes)
+    # Calibration sources: ONLY actually-used paths, with FILE CONTENT SHA
+    calib_sources = []
+    for jp in valid_paths:
+        try:
+            with open(jp, 'rb') as f:
+                file_sha = hashlib.sha256(f.read()).hexdigest()
+        except Exception:
+            file_sha = 'UNREADABLE'
+        calib_sources.append({'jsonl_path': jp, 'source_file_sha256': file_sha})
+    config_full['calibration_sources'] = sorted(calib_sources,
+                                                 key=lambda x: x['jsonl_path'])
     config_path = os.path.join(args.artifacts_dir, 'v2_sc5_teacher_config.json')
     with open(config_path, 'w') as f:
         json.dump(config_full, f, indent=2, default=str)
