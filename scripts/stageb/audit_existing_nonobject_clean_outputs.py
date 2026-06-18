@@ -540,6 +540,8 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
 def aggregate_task_matrix(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     groups: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for r in rows:
+        if r.get("tier") == "CURRENT_IN_PROGRESS":
+            continue
         suite = str(r.get("suite") or r.get("possible_suite") or "")
         task = str(r.get("task_idx") or "")
         if suite:
@@ -572,6 +574,8 @@ def aggregate_task_matrix(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def duplicate_conflicts(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     groups: dict[tuple[str, str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
     for r in rows:
+        if r.get("tier") == "CURRENT_IN_PROGRESS":
+            continue
         key = (
             str(r.get("suite", "")), str(r.get("task_idx", "")), str(r.get("state_id", "")),
             str(r.get("eval_seed", "")), str(r.get("condition", "")),
@@ -609,7 +613,7 @@ def duplicate_conflicts(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def reusability_summary(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     out = []
     for suite in sorted(NONOBJECT_SUITES):
-        rs = [r for r in rows if r.get("suite") == suite]
+        rs = [r for r in rows if r.get("suite") == suite and r.get("tier") != "CURRENT_IN_PROGRESS"]
         clean = [r for r in rs if bool_true(r.get("usable_clean_denominator"))]
         task_states = {(str(r.get("task_idx")), str(r.get("state_id"))) for r in clean if str(r.get("task_idx")) != "" and str(r.get("state_id")) != ""}
         row = {
@@ -731,6 +735,41 @@ def main() -> None:
     master = []
     schema = []
     for row in root_rows:
+        row_path = Path(row["episode_path"])
+        row_is_active = active_root and (row_path == active_root or active_root in row_path.parents)
+        if row_is_active:
+            audited = {
+                **row,
+                "suite": row.get("possible_suite", ""),
+                "condition": row.get("possible_condition", "") or "CONDITION_UNVERIFIED",
+                "tier": "CURRENT_IN_PROGRESS",
+                "usable_clean_denominator": False,
+                "usable_detector_transfer_analysis": False,
+                "usable_teacher_relabeling": False,
+                "usable_visual_feature_extraction": False,
+                "usable_visual_replay": False,
+                "usable_video_manual_audit": False,
+                "usable_same_schema_comparison_with_6379397": False,
+            }
+            master.append(audited)
+            schema.append({
+                "episode_path": audited.get("episode_path", ""),
+                "suite": audited.get("suite", ""),
+                "condition": audited.get("condition", ""),
+                "tier": audited.get("tier", ""),
+                "step_core_complete": False,
+                "features_25d_columns_complete": False,
+                "features_25d_finite_all_rows": False,
+                "detector_fields_complete": False,
+                "sim_state_complete": False,
+                "visual_frames_npz": False,
+                "raw_video_available": False,
+                "privileged_valid": False,
+                "teacher_abstain": False,
+                "same_schema_commit_6379397": False,
+            })
+            continue
+
         clean_candidate = (
             row.get("possible_suite") in NONOBJECT_SUITES
             and row.get("possible_condition") == "CLEAN"
