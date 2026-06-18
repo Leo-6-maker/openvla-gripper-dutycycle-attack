@@ -51,12 +51,27 @@ def load_data(csv_path, seed, legacy_random_split=False):
 
     if legacy_random_split:
         metadata['split_mode'] = 'legacy_random'
-    elif not has_split_col:
-        raise ValueError(
-            f"Canonical mode requires 'split' column. "
-            f"Found columns: {list(fieldnames)[:15]}. "
-            f"Use --legacy_random_split for old datasets without split column.")
+        # Legacy: filter valid rows, random shuffle 75/25 split
+        rows = []; held_rows = []
+        for r in all_rows:
+            ok = all(r.get(fn,"") not in ("","nan",None) for fn in SC5_FEATURES)
+            if not ok: continue
+            is_h = r.get("is_held_out","False") in ("True","true","1")
+            if is_h: held_rows.append(r)
+            else: rows.append(r)
+        eps = sorted(set(r.get("run_id","") for r in rows))
+        random.seed(seed); random.shuffle(eps)
+        n_tr = int(len(eps) * 0.75)
+        tr_set = set(eps[:n_tr]); vl_set = set(eps[n_tr:])
+        tr_rows = [r for r in rows if r.get("run_id","") in tr_set]
+        vl_rows = [r for r in rows if r.get("run_id","") in vl_set]
     else:
+        # Canonical: frozen split column required
+        if not has_split_col:
+            raise ValueError(
+                f"Canonical mode requires 'split' column. "
+                f"Found columns: {list(fieldnames)[:15]}. "
+                f"Use --legacy_random_split for old datasets without split column.")
         metadata['split_mode'] = 'frozen'
         # Route by frozen split column
         tr_rows = []; vl_rows = []; held_rows = []
@@ -68,10 +83,10 @@ def load_data(csv_path, seed, legacy_random_split=False):
             else:
                 raise ValueError(f"Unknown split '{sp}' in row step_idx={r.get('step_idx','?')}")
 
-        # is_held_out ↔ split biconditional (strict values only)
+        # is_held_out ↔ split biconditional: no empty/missing values allowed
         for r in tr_rows + vl_rows:
             is_h_val = r.get('is_held_out', '')
-            if is_h_val not in ('False', 'false', '0', ''):
+            if is_h_val not in ('False', 'false', '0'):
                 raise ValueError(f"train/val row has is_held_out='{is_h_val}': "
                                  f"split={r.get('split')} episode={r.get('episode_id','?')}")
         for r in held_rows:
@@ -92,34 +107,21 @@ def load_data(csv_path, seed, legacy_random_split=False):
             if eid in ep_splits and ep_splits[eid] != sp:
                 raise ValueError(f"Episode {eid} has multiple splits: {ep_splits[eid]} and {sp}")
             ep_splits[eid] = sp
-        grp_splits = {}
-        for r in all_rows:
-            gk = r.get('initial_state_sha256', '')
-            if not gk: continue
-            sp = r.get('split', '')
-            if gk in grp_splits and grp_splits[gk] != sp:
-                raise ValueError(f"Group {gk[:16]} has multiple splits: {grp_splits[gk]} and {sp}")
-            grp_splits[gk] = sp
+        # Group split consistency for both hash types
+        for group_key in ['initial_state_sha256', 'trajectory_content_sha256']:
+            grp_splits = {}
+            for r in all_rows:
+                gk = r.get(group_key, '')
+                if not gk: continue
+                sp = r.get('split', '')
+                if gk in grp_splits and grp_splits[gk] != sp:
+                    raise ValueError(f"Group {gk[:16]} ({group_key}) has multiple splits: "
+                                     f"{grp_splits[gk]} and {sp}")
+                grp_splits[gk] = sp
 
         metadata['train_eps'] = sorted(set(r.get('episode_id', r.get('run_id','')) for r in tr_rows))
         metadata['val_eps'] = sorted(set(r.get('episode_id', r.get('run_id','')) for r in vl_rows))
         metadata['heldout_eps'] = sorted(set(r.get('episode_id', r.get('run_id','')) for r in held_rows))
-    else:
-        # Legacy: filter valid rows, split by is_held_out, random shuffle 75/25
-        rows = []; held_rows = []
-        for r in all_rows:
-            ok = all(r.get(fn,"") not in ("","nan",None) for fn in SC5_FEATURES)
-            if not ok: continue
-            is_h = r.get("is_held_out","False") in ("True","true","1")
-            if is_h: held_rows.append(r)
-            else: rows.append(r)
-
-        eps = sorted(set(r.get("run_id","") for r in rows))
-        random.seed(seed); random.shuffle(eps)
-        n_tr = int(len(eps) * 0.75)
-        tr_set = set(eps[:n_tr]); vl_set = set(eps[n_tr:])
-        tr_rows = [r for r in rows if r.get("run_id","") in tr_set]
-        vl_rows = [r for r in rows if r.get("run_id","") in vl_set]
 
     # Fail-closed: reject rows with missing/invalid feature values
     MISSING_SENTINEL = -999999.0
@@ -150,8 +152,8 @@ def load_data(csv_path, seed, legacy_random_split=False):
     # Label validation: reject unknown teacher_phase
     for r in tr_rows + vl_rows + held_rows:
         phase = r.get('teacher_phase', '')
-        if phase and phase not in SC5_PHASES:
-            raise ValueError(f"Unknown teacher_phase '{phase}' in row "
+        if phase not in SC5_PHASES:
+            raise ValueError(f"Invalid teacher_phase '{phase}' in row "
                              f"step_idx={r.get('step_idx','?')} episode={r.get('episode_id','?')}")
 
     Xtr, Ytr = mk(tr_rows); Xvl, Yvl = mk(vl_rows); Xte, Yte = mk(held_rows)
