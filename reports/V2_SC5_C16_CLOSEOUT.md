@@ -84,17 +84,23 @@
 | K10 containment | 0.974 | ≥0.85 ✅ |
 | No-corridor abstain | 0.954 | ≥0.90 ✅ |
 
-## Layer 3 E2E — DETECTOR-TRIGGERED VIS POC PASS
+## Layer 3 E2E — DETECTOR-TRIGGERED VIS POC + ATTRIBUTION PASS
 
-- 2/2 Butter states: MLP triggered → VIS PGD 10 frames → task FAILED
-- Clean baselines: success=true (Phase 3 verified)
+| State | CLEAN (Phase 3) | VIS_SC5 | RAND_T10 |
+|-------|:---:|:---:|:---:|
+| Butter s0 | ✅ success | ❌ FAILED (8/10 OPEN) | ✅ success (0/10 OPEN) |
+| Butter s2 | ✅ success | ❌ FAILED (9/10 OPEN) | ✅ success (0/10 OPEN) |
+
+- VIS: targeted PGD attack causes task failure
+- RAND: random L∞ perturbation at same ε does not
 - 0 invalid feature steps, 0 privileged/manual input
 - Checkpoint SHA: 66ec2d... , Dataset SHA: f942f4...
+- VIS attack attribution established
 
 ## Status
 
 ```
-C16_CLOSEOUT_COMPLETE
+C16_CLOSEOUT_PARTIAL_FREEZE
 SC5_CANONICAL_CORPUS_BLOCKED_RECONCILIATION → PARTIAL_PASS
 REMAINING: same-trajectory SC5 alignment audit (non-blocking)
 ```
