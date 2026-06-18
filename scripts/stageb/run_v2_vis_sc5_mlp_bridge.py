@@ -26,7 +26,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--condition", required=True, choices=["CLEAN","TRUE_T10","RAND_T10","SHUFFLED_T10"])
 ap.add_argument("--state_id", type=int, required=True)
 ap.add_argument("--anchor", type=int, required=True, help="Teacher anchor (AUDIT ONLY)")
-ap.add_argument("--seed_id", type=int, default=99)
+ap.add_argument("--seed_id", type=int, required=True)
 ap.add_argument("--output_dir", required=True)
 ap.add_argument("--render_gpu", type=int, required=True)
 ap.add_argument("--mlp_path", default="outputs/sc5_canonical_eng/sc5_mlp_s2.pt")
@@ -141,10 +141,11 @@ for step in range(400):
     raw_grip = float(action[-1]); env_grip = -1.0 if raw_grip > 0.5 else 1.0
     env_action_final = postprocess_openvla_action_for_libero(np.asarray(action, dtype=np.float32), enabled=True)
 
-    _feat_valid = False; _feat_error = ""; _feat_25d = {}
+    _feat_attempted = False; _feat_valid = False; _feat_error = ""; _feat_25d = {}
     _det_state = detector.state; _det_cp = None; _det_rp = None; _det_pp = None
 
     if not detector.emitted:
+        _feat_attempted = True
         eef_valid = np.all(np.isfinite([eef_x, eef_y, eef_z]))
         if _prev_eef is not None and eef_valid:
             _vx = eef_x - _prev_eef[0]; _vy = eef_y - _prev_eef[1]; _vz = eef_z - _prev_eef[2]
@@ -251,7 +252,8 @@ for step in range(400):
             "raw_gripper": raw_grip, "env_gripper": env_grip, "qpos_sum": qpos_sum,
             "attack_count": attack_count, "adv_token": adv_token,
             "condition": args.condition, "task_name": task_obj.name, "task_idx": TASK_IDX,
-            "state_id": STATE_ID, "seed_id": args.seed_id, "feat_valid": _feat_valid,
+            "state_id": STATE_ID, "seed_id": args.seed_id,
+            "feat_attempted": _feat_attempted, "feat_valid": _feat_valid,
         })
 
     _tel = {"step": step, "condition": args.condition, "anchor": ANCHOR,
@@ -311,36 +313,53 @@ if args.save_video and _video_frames:
     _vfdir = out / "frames"
     if args.save_raw_frames: _vfdir.mkdir(parents=True, exist_ok=True)
     _flist = []
+    _raw_frames = list(_video_frames)  # copy before annotation
+    _overlay_frames = []
     for i, (_frame, _lbl) in enumerate(zip(_video_frames, _frame_labels)):
         _img = Image.fromarray(_frame, mode="RGB")
         _draw = ImageDraw.Draw(_img)
-        _lbl["task_success"] = success  # set at end
-        # Frame annotation
+        _lbl["task_success"] = success
+        # Top info bar
         _draw.rectangle((0, 0, _img.width, 20), fill=(0, 0, 0))
-        _info = f"t{_lbl['step']:03d} | {_lbl['task_name'][:30]} s{_lbl['state_id']} | {_lbl['condition']}"
+        _info = f"t{_lbl['step']:03d} | {_lbl['task_name'][:28]} s{_lbl['state_id']} | {_lbl['condition']}"
         _draw.text((4, 2), _info, fill=(255, 255, 255))
+        # Red border: attack frame
         if _lbl['attack_this']:
             _draw.rectangle((0, 0, _img.width-1, _img.height-1), outline=(255, 0, 0), width=3)
-        elif _lbl['step'] == _lbl['mlp_emit'] and _lbl['mlp_emit'] >= 0:
-            _draw.rectangle((0, 0, _img.width-1, _img.height-1), outline=(255, 255, 0), width=3)
+        # Yellow top-bar: detector emit (coexists with red via top bar instead of border)
+        if _lbl['step'] == _lbl['mlp_emit'] and _lbl['mlp_emit'] >= 0:
+            _draw.rectangle((0, 20, _img.width, 26), fill=(255, 255, 0))
+        # Blue bottom-line: Teacher anchor
         if _lbl['step'] == _lbl['teacher_anchor']:
-            _draw.rectangle((0, 0, _img.width-1, _img.height-1), outline=(0, 0, 255), width=1)
-        if not _lbl.get('feat_valid', True):
-            _draw.rectangle((0, _img.height-5, _img.width, _img.height), fill=(128, 0, 128))
-        _frame = np.asarray(_img, dtype=np.uint8)
+            _draw.rectangle((0, _img.height-2, _img.width, _img.height), fill=(0, 0, 255))
+        # Purple bottom-bar: attempted AND invalid (not: not-evaluated-after-emit)
+        _attempted = _lbl.get('feat_attempted', False)
+        _valid = _lbl.get('feat_valid', True)
+        if _attempted and not _valid:
+            _draw.rectangle((0, _img.height-6, _img.width, _img.height), fill=(128, 0, 128))
+        _overlay = np.asarray(_img, dtype=np.uint8)
         if args.save_raw_frames:
-            _fpath = _vfdir / f"frame_{i:06d}.png"
-            Image.fromarray(_frame).save(_fpath)
+            Path(str(_vfdir) + "_raw").mkdir(parents=True, exist_ok=True)
+            Image.fromarray(_frame).save(_vfdir.parent / (str(_vfdir.name) + "_raw") / f"frame_{i:06d}.png")
+            Path(str(_vfdir) + "_overlay").mkdir(parents=True, exist_ok=True)
+            Image.fromarray(_overlay).save(_vfdir.parent / (str(_vfdir.name) + "_overlay") / f"frame_{i:06d}.png")
         _flist.append({"frame_idx": i, "step": _lbl["step"], "attack_this": _lbl["attack_this"],
                         "detector_state": _lbl["detector_state"], "mlp_emit": _lbl["mlp_emit"]})
-        _video_frames[i] = _frame  # replace with annotated version
+        _overlay_frames.append(_overlay)
 
     from imageio.v2 import mimwrite as _mimwrite
-    _vpath = out / "rollout_agentview.mp4"
-    _mimwrite(str(_vpath), _video_frames, fps=args.video_fps, codec="libx264", quality=8,
+    # Raw MP4 (no overlay)
+    _raw_path = out / "rollout_raw.mp4"
+    _mimwrite(str(_raw_path), _raw_frames, fps=args.video_fps, codec="libx264", quality=8,
               output_params=["-pix_fmt", "yuv420p", "-preset", "fast"])
-    video_sha = hashlib.sha256(_vpath.read_bytes()).hexdigest()
-    print("Video saved: %s (%d frames, SHA=%s)" % (_vpath, len(_video_frames), video_sha[:16]))
+    _raw_sha = hashlib.sha256(_raw_path.read_bytes()).hexdigest()
+    # Overlay MP4 (annotated)
+    _ov_path = out / "rollout_overlay.mp4"
+    _mimwrite(str(_ov_path), _overlay_frames, fps=args.video_fps, codec="libx264", quality=8,
+              output_params=["-pix_fmt", "yuv420p", "-preset", "fast"])
+    _ov_sha = hashlib.sha256(_ov_path.read_bytes()).hexdigest()
+    print("Video saved: raw=%s (%d frames, SHA=%s) overlay=%s (SHA=%s)" % (
+        _raw_path, len(_raw_frames), _raw_sha[:16], _ov_path, _ov_sha[:16]))
 
     frame_csv_path = out / "frame_index.csv"
     with open(frame_csv_path, "w", newline="") as f:
@@ -353,8 +372,11 @@ if args.save_video and _video_frames:
         "n_steps": len(telemetry), "attack_frames": n_atk, "open_tokens": n_open_token,
         "env_open_frames": n_env_open, "task_success": success,
         "checkpoint_sha256": detector.checkpoint_sha256, "dataset_sha256": detector.dataset_sha256,
-        "video_sha256": video_sha, "step_telemetry_sha256": tel_sha,
-        "replay_validation_status": "ORIGINAL_FRAMES_USED"}
+        "video_raw_sha256": _raw_sha, "video_overlay_sha256": _ov_sha,
+        "step_telemetry_sha256": tel_sha,
+        "frame_semantics": "pre_action_observation",
+        "action_applied_after_frame": True,
+        "replay_validation_status": "REPRODUCED_ROLLOUT_DIRECT_CAPTURE"}
     with open(out / "video_manifest.json", "w") as f: json.dump(video_manifest, f, indent=2)
 
 print("%s s%d teacher=%d emit=%d err=%d: steps=%d atk=%d tok=%.2f env=%.2f arm=%.2f succ=%s%s" % (
