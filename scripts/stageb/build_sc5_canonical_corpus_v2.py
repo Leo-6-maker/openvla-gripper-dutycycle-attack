@@ -207,36 +207,45 @@ def main():
     tier_c_stats = Counter()
     segmenter = SC5EventSegmenterV2(teacher)
 
+    # ── Build record_by_step index (avoids list-index assumption) ──
+    def build_record_index(records):
+        return {int(r.get('step_idx', r.get('policy_step_idx', -1))): r
+                for r in records if r.get('teacher_privileged_state_available')}
+
     # ── Helper: build rows for one event span ──
     def build_event_rows(ep, labels, label_by_step, records, sc5, corridor,
-                         event_start, event_end, event_id, parent_ep_id):
-        """Extract 25D features for a contiguous event span."""
-        adapter = SC5StreamingFeatureAdapterV2()
-        schema_adapter = SC5SchemaAdapterV2()
+                         output_start, output_end, continuity_span,
+                         event_id, parent_ep_id, corpus_class='',
+                         adapter=None, schema_adapter=None):
+        """Extract 25D features. output_span controls what rows are emitted;
+        continuity_span controls where gaps trigger fail-closed.
+        adapter/schema_adapter carry history across events within same parent."""
+        if adapter is None: adapter = SC5StreamingFeatureAdapterV2()
+        if schema_adapter is None: schema_adapter = SC5SchemaAdapterV2()
         local_rows = []; local_step = 0; gap = False
-        rqd = set(range(event_start, event_end + 1))
+        cspan = set(range(continuity_span[0], continuity_span[1] + 1))
 
         for r in records:
             if not r.get('teacher_privileged_state_available'): continue
             step_raw = int(r.get('step_idx', r.get('policy_step_idx', 0)))
-            if step_raw < event_start or step_raw > event_end: continue
+            if step_raw < output_start or step_raw > output_end: continue
 
             provenances = schema_adapter.validate_record_causal(r)
             for name, p in provenances.items():
                 field_audit[f"{name}:{p.source_type}"] += 1
             if not schema_adapter.all_valid(provenances):
-                if step_raw in rqd: gap = True; continue
+                if step_raw in cspan: gap = True; continue
             values = schema_adapter.extract_values(provenances)
             if any((isinstance(v, float) and (math.isnan(v) or v == MISSING_SENTINEL))
                    for v in values.values()):
-                if step_raw in rqd: gap = True; continue
+                if step_raw in cspan: gap = True; continue
             env_action = r.get('env_action', None)
             if not (isinstance(env_action, (list, tuple)) and len(env_action) >= 7):
-                if step_raw in rqd: gap = True; continue
+                if step_raw in cspan: gap = True; continue
             env_grip = float(env_action[6])
             raw_grip = float(values['gripper_command'])
             if (raw_grip <= 0.5) != (env_grip > 0):
-                if step_raw in rqd: gap = True; continue
+                if step_raw in cspan: gap = True; continue
             try:
                 result = adapter.update(
                     step_id=local_step, raw_gripper=raw_grip, env_gripper=env_grip,
@@ -247,9 +256,9 @@ def main():
                     action_dx=values['action_dx'], action_dy=values['action_dy'],
                     action_dz=values['action_dz'], action_gripper=values['action_gripper'])
             except ValueError:
-                if step_raw in rqd: gap = True; continue
+                if step_raw in cspan: gap = True; continue
             if not result['valid']:
-                if step_raw in rqd: gap = True; continue
+                if step_raw in cspan: gap = True; continue
             local_step += 1
 
             tl = label_by_step.get(step_raw)
@@ -267,6 +276,7 @@ def main():
                 'episode_id': parent_ep_id or ep.get('episode_id', ''),
                 'event_id': event_id, 'split': ep.get('split', ''),
                 'candidate_tier': ep.get('candidate_tier', ''),
+                'corpus_class': corpus_class,
                 'initial_state_sha256': ep.get('initial_state_sha256', ''),
                 'trajectory_content_sha256': ep.get('trajectory_content_sha256', ''),
                 'teacher_phase': tl['phase'] if tl else 'abstain',
@@ -294,10 +304,35 @@ def main():
         if tier == TIER_C:
             tier_c_stats['parent_episodes'] += 1
             seg_result = segmenter.segment(labels, records, K=K, guard=GUARD)
-            n_events = seg_result['n_events']
 
             valid_events = [e for e in seg_result['events'] if e.get('event_valid')]
             rejected = [e for e in seg_result['events'] if not e.get('event_valid')]
+
+            # Write ALL events to manifest (valid and rejected)
+            for evt in seg_result['events']:
+                evt_sc5 = evt.get('sc5', {})
+                evt_rows.append({
+                    'parent_episode_id': parent_ep_id,
+                    'event_id': evt['event_id'],
+                    'task': ep['task_name'], 'state_id': ep['state_id'],
+                    'split': split, 'candidate_tier': tier,
+                    'event_valid': evt.get('event_valid', False),
+                    'event_start': evt['start_step'],
+                    'event_end': evt['end_step'],
+                    'phase_order_valid': evt.get('phase_order_valid', False),
+                    'has_all_required_phases': evt.get('has_all_required_phases', False),
+                    'has_stable_carry': evt.get('has_stable_carry', False),
+                    'has_release': evt.get('has_release', False),
+                    'object_verifiable': evt.get('object_verifiable', False),
+                    'object_ok': evt.get('object_ok', False),
+                    'sc5_valid': evt_sc5.get('valid', False),
+                    'sc5_anchor': evt_sc5.get('anchor', -1),
+                    'reject_reason': evt.get('reject_reason', ''),
+                })
+
+            # Parent-prefix adapter: carry causal history across sibling events
+            parent_adapter = SC5StreamingFeatureAdapterV2()
+            parent_schema_adapter = SC5SchemaAdapterV2()
 
             for evt in valid_events:
                 evt_sc5 = evt.get('sc5', {})
@@ -309,29 +344,18 @@ def main():
                     ep, labels, label_by_step, records,
                     evt_sc5, evt_corridor,
                     evt['start_step'], evt['end_step'],
-                    evt['event_id'], parent_ep_id)
+                    (evt['start_step'], evt['end_step']),
+                    evt['event_id'], parent_ep_id,
+                    corpus_class='PRIMARY_SC5_POSITIVE',
+                    adapter=parent_adapter, schema_adapter=parent_schema_adapter)
 
                 if evt_gap:
-                    tier_c_stats['event_timeline_gap'] += 1
-                    continue
+                    tier_c_stats['event_timeline_gap'] += 1; continue
                 if evt_steps == 0:
-                    tier_c_stats['event_no_feature_rows'] += 1
-                    continue
+                    tier_c_stats['event_no_feature_rows'] += 1; continue
 
                 tier_c_stats['valid_events'] += 1
                 rows.extend(evt_rows_list)
-                evt_rows.append({
-                    'parent_episode_id': parent_ep_id,
-                    'event_id': evt['event_id'],
-                    'task': ep['task_name'], 'state_id': ep['state_id'],
-                    'split': split, 'candidate_tier': tier,
-                    'corpus_class': 'PRIMARY_SC5_POSITIVE',
-                    'n_steps': evt_steps,
-                    'sc5_valid': True,
-                    'sc5_anchor': evt_sc5.get('anchor', -1),
-                    'event_start': evt['start_step'],
-                    'event_end': evt['end_step'],
-                })
 
             for evt in rejected:
                 tier_c_stats[f'reject_{evt.get("reject_reason","unknown")}'] += 1
@@ -344,23 +368,30 @@ def main():
                      'reason': seg_result.get('abstain_reason', 'no_valid_event')})
             continue
 
-        # ── Tier A+B: whole-episode SC5 ──
+        # ── Tier A+B: whole-episode SC5, full output span ──
         sc5 = find_sc5_anchor_v2(labels, K=K, guard=GUARD)
         corridor = compute_sc5_valid_start_corridor(labels, sc5['anchor'], K=K) if sc5['valid'] else None
 
+        # Full episode output (all policy steps) — preserves approach/release negatives
+        policy_steps = [int(r.get('step_idx', 0)) for r in records
+                        if r.get('teacher_privileged_state_available')]
+        out_start = min(policy_steps, default=0)
+        out_end = max(policy_steps, default=0)
+
+        # Continuity span: [grasp_close, SC5 anchor + K - 1] for gap detection
         grasp_close_steps = [l['step_idx'] for l in labels if l['phase'] == 'grasp_close']
         if sc5['valid'] and sc5['stable_carry_start'] >= 0:
-            rqd_start = grasp_close_steps[0] if grasp_close_steps else sc5['stable_carry_start']
-            rqd_end = sc5['anchor'] + K - 1
+            c_start = grasp_close_steps[0] if grasp_close_steps else sc5['stable_carry_start']
+            c_end = sc5['anchor'] + K - 1
         else:
-            rqd_start = min((int(r.get('step_idx', 0)) for r in records
-                              if r.get('teacher_privileged_state_available')), default=0)
-            rqd_end = max((int(r.get('step_idx', 0)) for r in records
-                            if r.get('teacher_privileged_state_available')), default=0)
+            c_start = out_start; c_end = out_end
+
+        corpus_class = 'PRIMARY_SC5_POSITIVE' if sc5['valid'] else 'NO_CORRIDOR_NEGATIVE'
 
         episode_rows, policy_step_gap, local_step = build_event_rows(
             ep, labels, label_by_step, records, sc5, corridor,
-            rqd_start, rqd_end, -1, parent_ep_id)
+            out_start, out_end, (c_start, c_end),
+            -1, parent_ep_id, corpus_class=corpus_class)
 
         if policy_step_gap:
             post_dedup_disposition['NONCONTIGUOUS_POLICY_TIMELINE'].append(
