@@ -33,7 +33,7 @@ class SC5MLP(torch.nn.Module):
         return {"phase_logits": self.phase_head(h), "corridor_logit": self.corridor_head(h),
                 "release_logit": self.release_head(h), "confidence_logit": self.confidence_head(h)}
 
-def load_data(csv_path, seed):
+def load_data(csv_path, seed, respect_frozen_split=False):
     rows = []; held_rows = []
     with open(csv_path) as f:
         for r in csv.DictReader(f):
@@ -43,13 +43,26 @@ def load_data(csv_path, seed):
                 if is_h: held_rows.append(r)
                 else: rows.append(r)
 
-    # Split non-held episodes 75/25 train/val
-    eps = sorted(set(r.get("run_id","") for r in rows))
-    random.seed(seed); random.shuffle(eps)
-    n_tr = int(len(eps) * 0.75)
-    tr_set = set(eps[:n_tr]); vl_set = set(eps[n_tr:])
-    tr_rows = [r for r in rows if r.get("run_id","") in tr_set]
-    vl_rows = [r for r in rows if r.get("run_id","") in vl_set]
+    if respect_frozen_split:
+        # Use frozen split column from canonical corpus builder
+        tr_rows = [r for r in rows if r.get('split','') == 'train']
+        vl_rows = [r for r in rows if r.get('split','') == 'val']
+        # Validate: no held_out in train/val, no unknown splits
+        train_splits = set(r.get('split','') for r in rows + held_rows)
+        unknown = train_splits - {'train','val','held_out'}
+        if unknown:
+            raise ValueError(f"Unknown splits in data: {unknown}")
+        held_in_train = [r for r in tr_rows if r.get('is_held_out','False') in ('True','true','1')]
+        if held_in_train:
+            raise ValueError(f"Held-out rows found in train split: {len(held_in_train)} rows")
+    else:
+        # Legacy: random shuffle 75/25 split
+        eps = sorted(set(r.get("run_id","") for r in rows))
+        random.seed(seed); random.shuffle(eps)
+        n_tr = int(len(eps) * 0.75)
+        tr_set = set(eps[:n_tr]); vl_set = set(eps[n_tr:])
+        tr_rows = [r for r in rows if r.get("run_id","") in tr_set]
+        vl_rows = [r for r in rows if r.get("run_id","") in vl_set]
 
     def mk(rl):
         X = np.array([[float(r[fn]) for fn in SC5_FEATURES] for r in rl], dtype=np.float32)
@@ -103,12 +116,16 @@ ap.add_argument("--dataset", default="tables/v2_sc5_dataset_v3.csv")
 ap.add_argument("--output_dir", default="outputs/sc5_v4")
 ap.add_argument("--seed", type=int, default=1)
 ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+ap.add_argument("--respect_frozen_split", action="store_true",
+                help="Use frozen split column from canonical corpus (skip random shuffle)")
 args = ap.parse_args()
 random.seed(args.seed); np.random.seed(args.seed); torch.manual_seed(args.seed)
 
 print(f"Loading {args.dataset}...")
-Xtr, Ytr, Xvl, Yvl, Xte, Yte, n_h, n_tr, n_vl = load_data(args.dataset, args.seed)
-print(f"  train={n_tr} val={n_vl} held_test={n_h}")
+Xtr, Ytr, Xvl, Yvl, Xte, Yte, n_h, n_tr, n_vl = load_data(
+    args.dataset, args.seed, respect_frozen_split=args.respect_frozen_split)
+print(f"  train={n_tr} val={n_vl} held_test={n_h}"
+      f"{' (frozen split)' if args.respect_frozen_split else ' (random split)'}")
 mean = Xtr.mean(0); std = Xtr.std(0) + 1e-8
 Xtr = (Xtr-mean)/std; Xvl = (Xvl-mean)/std; Xte = (Xte-mean)/std
 
