@@ -33,10 +33,14 @@ ap.add_argument("--mlp_path", default="outputs/sc5_canonical_eng/sc5_mlp_s2.pt")
 ap.add_argument("--task_idx", type=int, default=6, help="LIBERO task index (default 6=butter)")
 # ── Video recording (logging-only, no model impact) ──
 ap.add_argument("--save_video", action="store_true", default=False)
+ap.add_argument("--source_commit", default="", help="Git commit SHA (required when --save_video)")
 ap.add_argument("--video_fps", type=int, default=20)
 ap.add_argument("--save_raw_frames", action="store_true", default=False)
 ap.add_argument("--frame_stride", type=int, default=1)
 args = ap.parse_args()
+
+if args.save_video and not args.source_commit:
+    raise ValueError("--source_commit is required when --save_video is enabled")
 
 STATE_ID = args.state_id; ANCHOR = args.anchor; IS_ATTACK = args.condition != "CLEAN"
 IS_RAND = "RAND" in args.condition; IS_SHUFFLED = "SHUFFLED" in args.condition
@@ -377,7 +381,7 @@ if args.save_video and _video_frames:
         "frame_semantics": "pre_action_observation",
         "action_applied_after_frame": True,
         "replay_validation_status": "REPRODUCED_ROLLOUT_DIRECT_CAPTURE",
-        "source_commit": "8c606c0dec123694402ea8bdd779a0f6c00cf172",
+        "source_commit": args.source_commit or "UNKNOWN",
         "video_fps": args.video_fps, "frame_stride": args.frame_stride,
         "frame_count": len(_raw_frames)}
     with open(out / "video_manifest.json", "w") as f: json.dump(video_manifest, f, indent=2)
