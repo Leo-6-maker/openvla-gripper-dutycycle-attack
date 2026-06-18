@@ -10,6 +10,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.stageb.inventory_all_sc5_sources_v2 import (  # noqa: E402
+    normalize_task,
     scan_roots,
     summarize,
 )
@@ -149,3 +150,8 @@ def test_suite_inference_does_not_promote_goal_task_to_object_primary(tmp_path):
     _, episodes = scan_roots(_config(tmp_path), _aliases())
     assert episodes[0]["suite"] == "libero_goal"
     assert episodes[0]["tier"] == "CONDITIONAL_PLACE_CANDIDATE"
+
+
+def test_normalize_task_uses_first_object_mention_deterministically():
+    text = "living_room_scene2_put_both_the_cream_cheese_box_and_the_butter_in_the_basket"
+    assert normalize_task(text) == "cream_cheese"

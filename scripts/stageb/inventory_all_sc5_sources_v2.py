@@ -34,7 +34,7 @@ except Exception:  # pragma: no cover - tests install pyyaml in the project env
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-OBJECT_TASKS = {
+OBJECT_TASKS = (
     "alphabet_soup",
     "cream_cheese",
     "salad_dressing",
@@ -45,7 +45,7 @@ OBJECT_TASKS = {
     "milk",
     "chocolate_pudding",
     "orange_juice",
-}
+)
 
 PLACE_HINTS = ("bowl", "mug", "wine", "rack", "plate", "basket")
 OOD_HINTS = ("drawer", "stove", "button", "turn", "push", "open_", "close_")
@@ -158,9 +158,9 @@ def normalize_task(value: Any) -> str:
     if not text:
         return ""
     text = text.replace("-", "_").replace(" ", "_")
-    for task in OBJECT_TASKS:
-        if task in text:
-            return task
+    matches = [(text.index(task), task) for task in OBJECT_TASKS if task in text]
+    if matches:
+        return sorted(matches, key=lambda item: (item[0], item[1]))[0][1]
     return text
 
 
