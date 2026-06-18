@@ -204,12 +204,31 @@ class V2PrivilegedTeacher:
 
             # ── Object falling (descent velocity) ──
             eef_vz_valid = _is_valid(s.get('eef_vz')) if 'eef_vz' in s else False
+            if not eef_vz_valid:
+                # Fail-closed: cannot determine if object is falling → abstain
+                labels.append({
+                    'step_idx': s['step_idx'], 'policy_step_idx': s['policy_step_idx'],
+                    'phase': 'abstain_unsupported', 'failure_critical': False,
+                    'confidence': 0.0,
+                    'abstain_reason': 'missing_or_nonfinite_eef_vz',
+                    'raw_gripper': s['raw_gripper'],
+                    'gripper_close': s['gripper_close'],
+                    'gripper_opening_proxy': s.get('gripper_opening_proxy', float('nan')),
+                    'opening_proxy_ok': False,
+                    'obj_z': round(s['obj_z'], 6), 'obj_z0': round(obj_z0, 6),
+                    'obj_lifted': obj_lifted, 'obj_eef_dist': round(s['obj_eef_dist'], 6),
+                    'obj_target_dist': round(s['obj_target_dist'], 6),
+                    'close_consecutive': close_consecutive,
+                    'lift_consecutive': lift_consecutive,
+                })
+                prev_phase = 'abstain_unsupported'
+                continue
             obj_falling = (eef_vz_valid and s['eef_vz'] < -0.01) and obj_lifted
 
             # ── Phase detection ──
             phase = prev_phase
 
-            if near_target and eef_vz_valid and not obj_falling:
+            if near_target and not obj_falling:
                 phase = 'release_safe'
             elif was_lifted and not obj_lifted and obj_eef_close:
                 phase = 'recovery_or_regrasp'
