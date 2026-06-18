@@ -15,7 +15,7 @@ Reuses (mature, debugged, never re-implemented):
   - sc5_dedup.py: compute_all_hashes, dedup_episodes, validate_split_isolation
   - build_sc5_student_dataset_v2.py: output CSV schema pattern
 """
-import csv, hashlib, json, os, sys
+import csv, hashlib, json, math, os, sys
 from collections import defaultdict, Counter
 from pathlib import Path
 
@@ -37,7 +37,8 @@ from gripper_attack.v2_privileged_teacher import (
 from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
 from gripper_attack.sc5_schema_adapter_v2 import SC5SchemaAdapterV2
 from gripper_attack.sc5_dedup import (
-    compute_all_hashes, dedup_episodes, validate_split_isolation, _safe_float)
+    compute_all_hashes, dedup_episodes, validate_split_isolation,
+    _safe_float, MISSING_SENTINEL)
 
 K, GUARD = 10, 5
 HELD_OUT_BUTTER = {8, 9, 11}
@@ -182,31 +183,36 @@ def main():
             if not r.get('teacher_privileged_state_available'): continue
             step_raw = int(r.get('step_idx', r.get('policy_step_idx', 0)))
 
-            # Schema normalization (data glue only)
+            # Schema normalization — use adapter's normalized values (NOT raw r.get)
             provenances = schema_adapter.validate_record(r)
             for name, p in provenances.items():
                 field_audit[f"{name}:{p.source_type}"] += 1
-            if not schema_adapter.all_valid(provenances): continue
+            if not schema_adapter.all_valid(provenances):
+                continue  # step fails schema gate, skip (policy timeline preserved)
+            values = schema_adapter.extract_values(provenances)
 
-            # Real env_gripper validation
+            # Sentinel guard: normalized values must not contain MISSING_SENTINEL or nan
+            if any((isinstance(v, float) and (math.isnan(v) or v == MISSING_SENTINEL))
+                   for v in values.values()):
+                continue
+
+            # Real env_gripper validation (not synthesized from raw)
             env_action = r.get('env_action', None)
             if not (isinstance(env_action, (list, tuple)) and len(env_action) >= 7): continue
-            env_grip = float(env_action[6]); raw_grip = float(r['gripper_command'])
+            env_grip = float(env_action[6])
+            raw_grip = float(values['gripper_command'])
             if (raw_grip <= 0.5) != (env_grip > 0): continue  # semantic conflict
 
-            # MATURE: call streaming adapter with normalized fields
+            # MATURE: call streaming adapter with SCHEMA-NORMALIZED values
             try:
                 result = adapter.update(
                     step_id=local_step, raw_gripper=raw_grip, env_gripper=env_grip,
-                    gripper_qpos=_safe_float(r.get('gripper_qpos')),
-                    gripper_opening_proxy=_safe_float(r.get('gripper_width', r.get('gripper_opening_proxy'))),
-                    eef_x=_safe_float(r.get('eef_x')), eef_y=_safe_float(r.get('eef_y')),
-                    eef_z=_safe_float(r.get('eef_z')),
-                    eef_vx=_safe_float(r.get('eef_vx')), eef_vy=_safe_float(r.get('eef_vy')),
-                    eef_vz=_safe_float(r.get('eef_vz')),
-                    action_dx=_safe_float(r.get('action_dx')), action_dy=_safe_float(r.get('action_dy')),
-                    action_dz=_safe_float(r.get('action_dz')),
-                    action_gripper=_safe_float(r.get('action_gripper', r.get('gripper_command'))))
+                    gripper_qpos=values['gripper_qpos'],
+                    gripper_opening_proxy=values['gripper_opening_proxy'],
+                    eef_x=values['eef_x'], eef_y=values['eef_y'], eef_z=values['eef_z'],
+                    eef_vx=values['eef_vx'], eef_vy=values['eef_vy'], eef_vz=values['eef_vz'],
+                    action_dx=values['action_dx'], action_dy=values['action_dy'],
+                    action_dz=values['action_dz'], action_gripper=values['action_gripper'])
             except ValueError: continue
             if not result['valid']: continue
             local_step += 1

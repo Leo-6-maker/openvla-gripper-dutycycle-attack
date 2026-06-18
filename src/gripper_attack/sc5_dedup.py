@@ -85,15 +85,15 @@ def proprio_sequence_hash(records: List[dict]) -> str:
         if not r.get('teacher_privileged_state_available'):
             continue
         row = {
-            'gripper_command': round(_safe_float(r.get('gripper_command', 0)), 4),
-            'gripper_qpos': round(_safe_float(r.get('gripper_qpos', 0)), 6),
+            'gripper_command': round(_safe_float(r.get('gripper_command')), 4),
+            'gripper_qpos': round(_safe_float(r.get('gripper_qpos')), 6),
             'gripper_width': round(_safe_float(r.get('gripper_width', r.get('gripper_opening_proxy', 0))), 6),
-            'eef_x': round(_safe_float(r.get('eef_x', 0)), 4),
-            'eef_y': round(_safe_float(r.get('eef_y', 0)), 4),
-            'eef_z': round(_safe_float(r.get('eef_z', 0)), 4),
-            'eef_vx': round(_safe_float(r.get('eef_vx', 0)), 6),
-            'eef_vy': round(_safe_float(r.get('eef_vy', 0)), 6),
-            'eef_vz': round(_safe_float(r.get('eef_vz', 0)), 6),
+            'eef_x': round(_safe_float(r.get('eef_x')), 4),
+            'eef_y': round(_safe_float(r.get('eef_y')), 4),
+            'eef_z': round(_safe_float(r.get('eef_z')), 4),
+            'eef_vx': round(_safe_float(r.get('eef_vx')), 6),
+            'eef_vy': round(_safe_float(r.get('eef_vy')), 6),
+            'eef_vz': round(_safe_float(r.get('eef_vz')), 6),
             'action_dx': round(_safe_float(r.get('action_dx', 0)), 6),
             'action_dy': round(_safe_float(r.get('action_dy', 0)), 6),
             'action_dz': round(_safe_float(r.get('action_dz', 0)), 6),
@@ -134,10 +134,10 @@ def initial_state_hash(records: List[dict]) -> str:
     state_vec = []
     for r in first_3:
         state_vec.append({
-            'eef_x': round(_safe_float(r.get('eef_x', 0)), 4),
-            'eef_y': round(_safe_float(r.get('eef_y', 0)), 4),
-            'eef_z': round(_safe_float(r.get('eef_z', 0)), 4),
-            'gripper_qpos': round(_safe_float(r.get('gripper_qpos', 0)), 6),
+            'eef_x': round(_safe_float(r.get('eef_x')), 4),
+            'eef_y': round(_safe_float(r.get('eef_y')), 4),
+            'eef_z': round(_safe_float(r.get('eef_z')), 4),
+            'gripper_qpos': round(_safe_float(r.get('gripper_qpos')), 6),
             'obj_z': round(json.loads(r.get('object_pose_json', '[0,0,0]'))[2], 4)
             if r.get('object_pose_json') else 0.0,
         })
