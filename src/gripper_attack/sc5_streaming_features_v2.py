@@ -132,8 +132,11 @@ class SC5StreamingFeatureAdapterV2:
         eef_speed = np.sqrt(eef_vx**2 + eef_vy**2 + eef_vz**2)
 
         # EEF z delta since close
-        eef_z_delta = eef_z - self.history[self._last_close_step]['eef_z'] \
-            if self._last_close_step >= 0 and self._last_close_step < len(self.history) else 0.0
+        if self._last_close_step >= 0 and self._last_close_step < len(self.history):
+            prev_eef_z = self.history[self._last_close_step].get('eef_z', eef_z)
+            eef_z_delta = eef_z - prev_eef_z
+        else:
+            eef_z_delta = 0.0
 
         # Qpos deltas
         qpos_delta_1 = 0.0; qpos_delta_3 = 0.0
@@ -181,6 +184,7 @@ class SC5StreamingFeatureAdapterV2:
         record = {'step': step_id, 'valid': True, 'features': features,
                   'raw_close': raw_close, 'env_close': env_close,
                   'gripper_qpos': gripper_qpos, 'gripper_opening_proxy': gripper_opening_proxy,
+                  'eef_x': eef_x, 'eef_y': eef_y, 'eef_z': eef_z,
                   'eef_vx': eef_vx, 'eef_vy': eef_vy, 'eef_vz': eef_vz}
         self.history.append(record)
         return record
