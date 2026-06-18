@@ -3,11 +3,12 @@
   "branch": "exp/l2-sc5-canonical-corpus-deepseek-20260618",
   "base_census_commit": "45aad452d4b0ce6554757d7e2d9c8b3bb215e607",
   "builder_commit": "7a3e9f8",
-  "status": "SC5_CANONICAL_CORPUS_PARTIAL_PASS",
+  "status": "SC5_CANONICAL_CORPUS_BLOCKED_RECONCILIATION",
+  "secondary_status": "SC5_CANONICAL_CORPUS_BLOCKED_EVENT_AMBIGUITY",
   "timestamp": "2026-06-18T13:30:00+08:00",
   "gates": {
     "G-C0_inventory_reconciliation": {
-      "status": "PARTIAL",
+      "status": "FAIL",
       "census_total": 3013,
       "builder_scanned": 662,
       "builder_unique": 299,
@@ -15,47 +16,49 @@
       "note": "Builder scans 6 privileged artifact dirs; 449 PRIMARY census candidates not fully covered"
     },
     "G-C1_provenance": {
-      "status": "PASS",
+      "status": "NOT_PROVEN",
       "attack_contamination": 0,
       "clean_success_verified": true
     },
     "G-C2_schema": {
-      "status": "PASS",
+      "status": "NOT_PROVEN",
       "missing_to_zero": 0,
       "semantic_conflicts": 0,
       "action_dy_duplication": 0,
       "future_derivation": 0
     },
     "G-C3_teacher": {
-      "status": "PASS",
+      "status": "PARTIAL",
       "train_only_calibration": true,
-      "teacher_config_sha": "54f50e4300ab71191ab9a2779180ef34e73c3a3072fdb82a07eb857fd789457c",
+      "teacher_config_sha": "INVALIDATED_BY_S5_CONTAMINATION",
       "guard": 5,
       "K": 10,
-      "phase_order_valid": true
+      "phase_order_valid": true,
+      "note": "s5 participated in calibration; Teacher SHA must be recomputed after s5 exclusion"
     },
     "G-C4_object_event_identity": {
-      "status": "PARTIAL",
+      "status": "FAIL",
       "event_segmenter_exists": true,
       "event_segmenter_integrated": false,
       "note": "Event segmenter module written but not yet wired into builder pipeline"
     },
     "G-C5_dedup_split": {
-      "status": "PASS",
+      "status": "NOT_PROVEN",
       "duplicate_groups": 24,
       "init_state_groups": 272,
       "cross_split_violations": 0,
       "parent_event_tracking": "not_applicable"
     },
     "G-C6_strict_heldout": {
-      "status": "PASS_WITH_CAVEAT",
+      "status": "FAIL_WITH_POLICY_VIOLATION",
       "held_out_in_train": 0,
       "held_out_in_calibration": 0,
-      "butter_s5_issue": "Butter s5 appears in train with SC5-valid; census classifies as CLEAN_FAIL",
-      "butter_s11": "not_in_data"
+      "butter_s5_issue": "Butter s5 in train with SC5-valid. Config mandates AUDIT_ONLY. Violation invalidates Teacher SHA.",
+      "butter_s11": "not_in_data",
+      "note": "s5 must be excluded from train/val/calibration before Teacher recalibration"
     },
     "G-C7_corpus_diversity": {
-      "status": "PASS",
+      "status": "DESCRIPTIVE_PASS",
       "source_roots": 6,
       "unique_tasks": 38,
       "primary_positives": 141,
