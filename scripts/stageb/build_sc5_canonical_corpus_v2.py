@@ -117,12 +117,14 @@ def main():
             disposition[f'butter_s{sid}_policy_exclude'].append(inv_row['episode_id'])
             continue
 
+        candidate_tier = inv_row.get('exclusion_reason', inv_row.get('tier', ''))
         hashes = compute_all_hashes(records, inv_row.get('step_records_path', ''))
         episodes.append({
             'episode_id': inv_row['episode_id'],
             'run_id': inv_row.get('episode_dir', inv_row.get('run_id', '')),
             'records': records, 'manifest': manifest,
             'task_name': task, 'state_id': sid, 'is_butter': is_butter,
+            'candidate_tier': candidate_tier,
             'jsonl_path': inv_row.get('step_records_path', ''),
             **hashes,
         })
@@ -173,10 +175,13 @@ def main():
           f"{len(train_groups)} train groups, {len(val_groups)} val groups, "
           f"split isolation: {'PASS' if iso['valid'] else 'FAIL'}")
 
-    # ── Step 4: Mature Teacher calibration (train-only) ──
-    print("4. Calibrating V2PrivilegedTeacher on train-only...")
+    # ── Step 4: Tiered Teacher calibration (Tier A + validated Tier B train-only) ──
+    # Tier C (REQUIRES_EVENT_SEGMENTATION) excluded — unresolved multi-stage
+    TIER_C = 'REQUIRES_EVENT_SEGMENTATION'
+    print("4. Calibrating V2PrivilegedTeacher on Tier A+B train-only...")
+    calib_eps = [e for e in train_eps if e.get('candidate_tier') != TIER_C]
     valid_paths = []
-    for ep in train_eps:
+    for ep in calib_eps:
         try:
             with open(ep['jsonl_path']) as f: recs = [json.loads(line) for line in f]
         except Exception: continue
@@ -188,7 +193,9 @@ def main():
             if not ok: break
         if ok: valid_paths.append(ep['jsonl_path'])
     teacher = V2PrivilegedTeacher(calibrate_thresholds(valid_paths))
-    print(f"   {len(valid_paths)}/{len(train_eps)} valid calibration paths")
+    tier_c_count = len([e for e in train_eps if e.get('candidate_tier') == TIER_C])
+    print(f"   {len(valid_paths)}/{len(calib_eps)} valid calibration paths "
+          f"({tier_c_count} Tier C excluded)")
 
     # ── Step 5: Build dataset with row buffering + two-pass velocity recovery ──
     print("5. Building dataset with mature Layer 1/2...")
@@ -384,28 +391,31 @@ def main():
             w.writeheader(); w.writerows(disp_rows)
         print(f"  Disposition CSV: {disp_path}")
 
-    # Multi-split isolation audit: all split pairs independently checked
+    # Multi-split isolation audit: fail-closed + always write machine-readable result
     iso_result = validate_multi_split_isolation(
         ep_rows, group_key='initial_state_sha256', split_key='split')
     print(f"\nMulti-split isolation (train/val/held_out all pairs):")
     print(f"  Valid: {'PASS' if iso_result['valid'] else 'FAIL'}")
     for pair, n_v in iso_result['violations_by_pair'].items():
         print(f"  {pair}: {n_v} violations")
-    if not iso_result['valid']:
-        print(f"  FATAL: Cross-split leakage detected!")
 
-    # Save split isolation audit CSV
-    audit_rows = []
-    for pair, group_ids in iso_result.get('violation_details', {}).items():
-        for gid in group_ids:
-            audit_rows.append({'split_pair': pair, 'group_key': gid[:32],
-                               'group_key_type': 'initial_state_sha256'})
-    if audit_rows:
-        audit_path = os.path.join(args.output_dir, 'v2_sc5_split_isolation_audit.csv')
-        with open(audit_path, 'w', newline='') as f:
-            w = csv.DictWriter(f, fieldnames=['split_pair', 'group_key', 'group_key_type'])
-            w.writeheader(); w.writerows(audit_rows)
-        print(f"  Split audit CSV: {audit_path}")
+    iso_audit = {
+        'status': 'PASS' if iso_result['valid'] else 'FAIL',
+        'group_key': 'initial_state_sha256',
+        'split_values': iso_result['split_values'],
+        'violations': iso_result['violations_by_pair'],
+        'n_groups': iso_result['n_groups'],
+    }
+    iso_path = os.path.join(args.artifacts_dir, 'v2_sc5_split_isolation_audit.json')
+    with open(iso_path, 'w') as f:
+        json.dump(iso_audit, f, indent=2)
+    print(f"  Split isolation audit: {iso_path}")
+
+    if not iso_result['valid']:
+        raise RuntimeError(
+            f"SPLIT_ISOLATION_FAILED: cross-split leakage detected. "
+            f"See {iso_path} for details. "
+            f"Violations: {iso_result['violations_by_pair']}")
 
 
 if __name__ == '__main__':

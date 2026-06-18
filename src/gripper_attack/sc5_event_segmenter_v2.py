@@ -71,11 +71,13 @@ def segment_events_from_labels(labels: List[dict]) -> List[dict]:
             if phase == 'release_safe':
                 current_event['has_release'] = True
 
-            # End event on release or recovery (or if we see a new start phase after carry)
+            # End event on release or recovery
             if phase in EVENT_END_PHASES:
                 current_event['n_steps'] = current_event['end_step'] - current_event['start_step'] + 1
                 current_event['phase_order_valid'] = _validate_phase_order(
                     current_event['phase_seq'])
+                current_event['has_all_required_phases'] = _validate_required_phases(
+                    current_event['phases_seen'])
                 events.append(current_event)
                 current_event = None
 
@@ -84,9 +86,22 @@ def segment_events_from_labels(labels: List[dict]) -> List[dict]:
         current_event['n_steps'] = current_event['end_step'] - current_event['start_step'] + 1
         current_event['phase_order_valid'] = _validate_phase_order(
             current_event['phase_seq'])
+        current_event['has_all_required_phases'] = _validate_required_phases(
+            current_event['phases_seen'])
         events.append(current_event)
 
     return events
+
+
+REQUIRED_EVENT_PHASES = [
+    'grasp_close', 'stable_grasp', 'first_lift',
+    'stable_carry', 'release_safe',
+]
+
+
+def _validate_required_phases(phases_seen: List[str]) -> bool:
+    """All 5 required phases must be present in the event."""
+    return all(p in phases_seen for p in REQUIRED_EVENT_PHASES)
 
 
 def _validate_phase_order(phases: List[str]) -> bool:
@@ -103,24 +118,44 @@ def _validate_phase_order(phases: List[str]) -> bool:
     return True
 
 
+def _count_consecutive_stable_carry(labels: List[dict], event: dict) -> int:
+    """Count max consecutive stable_carry steps within the event span."""
+    max_run = 0; current_run = 0
+    for l in labels:
+        if l['step_idx'] < event['start_step'] or l['step_idx'] > event['end_step']:
+            continue
+        if l['phase'] == 'stable_carry':
+            current_run += 1
+            max_run = max(max_run, current_run)
+        else:
+            current_run = 0
+    return max_run
+
+
 def validate_transported_object(labels: List[dict], event: dict,
                                 step_records: List[dict]) -> dict:
-    """Validate that the transported object is unique throughout the event.
+    """Validate transported object identity within event.
 
-    Uses object_pose_json to track object identity.
+    For multi-object tasks: requires explicit object name/ID or multi-object
+    pose map. Anonymous single object_pose_json stream is INSUFFICIENT for
+    multi-object confirmation — must abstain.
+
     Returns dict with:
-      - unique_object: bool
-      - object_positions: list of (step, x, y, z) for the event span
-      - first_object_hash: str (position hash for dedup)
-      - position_variance: float (max deviation from mean)
+      - unique_object: bool (False if identity unverifiable)
+      - object_positions: list of (step, x, y, z)
+      - verifiable: bool (whether identity can be confidently determined)
     """
     positions = []
+    object_names = set()
     for l in labels:
         step = l['step_idx']
         if step < event['start_step'] or step > event['end_step']:
             continue
         rec = step_records[step] if step < len(step_records) else {}
         obj_str = rec.get('object_pose_json', '')
+        obj_name = rec.get('object_name', rec.get('transported_object_name', ''))
+        if obj_name:
+            object_names.add(str(obj_name))
         if not obj_str:
             continue
         try:
@@ -130,18 +165,31 @@ def validate_transported_object(labels: List[dict], event: dict,
         except (json.JSONDecodeError, (ValueError, IndexError, TypeError)):
             continue
 
-    if len(positions) < 2:
-        return {'unique_object': len(positions) == 1,
-                'object_positions': positions,
-                'first_object_hash': '',
-                'position_variance': 0.0,
-                'reason': 'insufficient_data' if len(positions) < 1 else 'single_point'}
+    # Object identity verifiability:
+    # - Explicit object name/ID present → verifiable
+    # - Single anonymous pose stream with continuous trajectory → weakly verifiable
+    # - Multi-object task with only anonymous pose → NOT verifiable
+    has_explicit_id = len(object_names) > 0
+    has_pose_data = len(positions) >= 2
 
-    # Hash first position as object identity
+    if not has_pose_data:
+        return {'unique_object': False, 'verifiable': False,
+                'object_positions': positions, 'object_names': list(object_names),
+                'first_object_hash': '', 'position_variance': 0.0,
+                'reason': 'insufficient_pose_data'}
+
+    # For tasks with explicit object IDs: verify single object throughout
+    if has_explicit_id:
+        unique = len(object_names) == 1
+        reason = 'explicit_id_verified' if unique else 'multiple_object_names_detected'
+    else:
+        # Anonymous pose stream: position continuity suggests single object
+        # but cannot be proven for multi-object tasks
+        unique = True  # weakly assumed for single-object primary tasks
+        reason = 'anonymous_pose_stream_weak_identity'
+
     x0, y0, z0 = positions[0][1], positions[0][2], positions[0][3]
     first_hash = f"{x0:.4f}_{y0:.4f}_{z0:.4f}"
-
-    # Check position variance
     xs = [p[1] for p in positions]
     ys = [p[2] for p in positions]
     zs = [p[3] for p in positions]
@@ -149,14 +197,16 @@ def validate_transported_object(labels: List[dict], event: dict,
         max(abs(x - sum(xs) / len(xs)) for x in xs),
         max(abs(y - sum(ys) / len(ys)) for y in ys),
         max(abs(z - sum(zs) / len(zs)) for z in zs),
-    )
+    ) if xs else 0.0
 
     return {
-        'unique_object': True,  # single transported object confirmed
+        'unique_object': unique,
+        'verifiable': has_explicit_id,
         'object_positions': positions,
+        'object_names': list(object_names),
         'first_object_hash': first_hash,
         'position_variance': round(max_dev, 6),
-        'reason': 'ok',
+        'reason': reason,
     }
 
 
@@ -227,27 +277,50 @@ class SC5EventSegmenterV2:
         }
 
         for evt in events:
-            evt_result = {
-                **evt,
-                'sc5': None,
-                'object_ok': False,
-            }
+            evt_result = {**evt, 'sc5': None, 'object_ok': False,
+                          'event_valid': False, 'reject_reason': ''}
 
-            # Object identity
+            # Gate 1: required phases
+            if not evt.get('has_all_required_phases', False):
+                evt_result['reject_reason'] = 'missing_required_phases'
+                result['events'].append(evt_result)
+                continue
+
+            # Gate 2: stable_carry minimum length
+            sc_len = _count_consecutive_stable_carry(labels, evt)
+            if sc_len < MIN_STABLE_CARRY_STEPS:
+                evt_result['reject_reason'] = f'stable_carry_too_short({sc_len}<{MIN_STABLE_CARRY_STEPS})'
+                result['events'].append(evt_result)
+                continue
+
+            # Gate 3: object identity
             if step_records:
                 obj_result = validate_transported_object(labels, evt, step_records)
                 evt_result['object_ok'] = obj_result['unique_object']
                 evt_result['object_hash'] = obj_result['first_object_hash']
-                evt_result['object_variance'] = obj_result['position_variance']
-            else:
-                evt_result['object_ok'] = True  # assume ok if no records
+                evt_result['object_verifiable'] = obj_result['verifiable']
 
-            # Event-local SC5
+                # For anonymous pose streams in multi-event episodes: require verifiable identity
+                if result['n_events'] > 1 and not obj_result['verifiable']:
+                    evt_result['reject_reason'] = 'OBJECT_IDENTITY_UNVERIFIABLE'
+                    result['events'].append(evt_result)
+                    continue
+            else:
+                evt_result['object_ok'] = False
+                evt_result['reject_reason'] = 'no_step_records_for_identity'
+                result['events'].append(evt_result)
+                continue
+
+            # Gate 4: event-local SC5
             if evt['has_stable_carry'] and evt_result['object_ok']:
                 sc5 = compute_event_sc5(labels, evt, K=K, guard=guard)
                 evt_result['sc5'] = sc5
-                if sc5['valid'] and result['primary_event_idx'] < 0:
-                    result['primary_event_idx'] = evt['event_id']
+                evt_result['event_valid'] = sc5['valid']
+                if sc5['valid']:
+                    if result['primary_event_idx'] < 0:
+                        result['primary_event_idx'] = evt['event_id']
+                else:
+                    evt_result['reject_reason'] = f'sc5_invalid:{sc5.get("reason","")}'
             else:
                 evt_result['sc5'] = {
                     'anchor': -1, 'window': None, 'valid': False,
@@ -256,6 +329,7 @@ class SC5EventSegmenterV2:
                     'stable_carry_start': evt.get('stable_carry_start', -1),
                     'event_id': evt['event_id'],
                 }
+                evt_result['reject_reason'] = evt_result['sc5']['reason']
 
             result['events'].append(evt_result)
 
