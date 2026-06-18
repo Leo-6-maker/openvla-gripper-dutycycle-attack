@@ -33,8 +33,12 @@ class SC5MLP(torch.nn.Module):
         return {"phase_logits": self.phase_head(h), "corridor_logit": self.corridor_head(h),
                 "release_logit": self.release_head(h), "confidence_logit": self.confidence_head(h)}
 
-def load_data(csv_path, seed, respect_frozen_split=True, legacy_random_split=False):
-    """Load SC5 dataset. Auto-detects frozen split column from canonical corpus."""
+def load_data(csv_path, seed, legacy_random_split=False):
+    """Load SC5 dataset. Returns (Xtr, Ytr, Xvl, Yvl, Xte, Yte, n_h, n_tr, n_vl, metadata).
+
+    Canonical mode (default): requires split column, fail-closed on any issue.
+    Legacy mode (--legacy_random_split): random 75/25 with silent row filtering.
+    """
     all_rows = []
     with open(csv_path) as f:
         reader = csv.DictReader(f)
@@ -43,16 +47,17 @@ def load_data(csv_path, seed, respect_frozen_split=True, legacy_random_split=Fal
             all_rows.append(r)
 
     has_split_col = 'split' in fieldnames
+    metadata = {'split_mode': 'unknown', 'train_eps': [], 'val_eps': [], 'heldout_eps': []}
 
-    # Auto-enable frozen split if column exists, unless explicitly overridden
     if legacy_random_split:
-        respect_frozen_split = False
-    elif has_split_col and respect_frozen_split:
-        pass  # use frozen
+        metadata['split_mode'] = 'legacy_random'
     elif not has_split_col:
-        respect_frozen_split = False
-
-    if respect_frozen_split:
+        raise ValueError(
+            f"Canonical mode requires 'split' column. "
+            f"Found columns: {list(fieldnames)[:15]}. "
+            f"Use --legacy_random_split for old datasets without split column.")
+    else:
+        metadata['split_mode'] = 'frozen'
         # Route by frozen split column
         tr_rows = []; vl_rows = []; held_rows = []
         for r in all_rows:
@@ -63,18 +68,42 @@ def load_data(csv_path, seed, respect_frozen_split=True, legacy_random_split=Fal
             else:
                 raise ValueError(f"Unknown split '{sp}' in row step_idx={r.get('step_idx','?')}")
 
-        # Validate: is_held_out flag consistent with split
+        # is_held_out ↔ split biconditional (strict values only)
         for r in tr_rows + vl_rows:
-            if r.get('is_held_out', 'False') in ('True', 'true', '1'):
-                raise ValueError(f"Held-out row in train/val: split={r.get('split')} "
-                                 f"episode={r.get('episode_id','?')} step={r.get('step_idx','?')}")
+            is_h_val = r.get('is_held_out', '')
+            if is_h_val not in ('False', 'false', '0', ''):
+                raise ValueError(f"train/val row has is_held_out='{is_h_val}': "
+                                 f"split={r.get('split')} episode={r.get('episode_id','?')}")
         for r in held_rows:
-            if r.get('is_held_out', 'True') not in ('True', 'true', '1'):
-                raise ValueError(f"Non-held-out row in held_out split: "
-                                 f"episode={r.get('episode_id','?')} step={r.get('step_idx','?')}")
+            is_h_val = r.get('is_held_out', '')
+            if is_h_val not in ('True', 'true', '1'):
+                raise ValueError(f"held_out row has is_held_out='{is_h_val}': "
+                                 f"episode={r.get('episode_id','?')}")
 
         if not tr_rows: raise ValueError("No train rows found")
         if not vl_rows: raise ValueError("No validation rows found")
+        if not held_rows: raise ValueError("No held-out rows found — strict held-out required")
+
+        # Episode/group split consistency
+        ep_splits = {}
+        for r in all_rows:
+            eid = r.get('episode_id', r.get('run_id', ''))
+            sp = r.get('split', '')
+            if eid in ep_splits and ep_splits[eid] != sp:
+                raise ValueError(f"Episode {eid} has multiple splits: {ep_splits[eid]} and {sp}")
+            ep_splits[eid] = sp
+        grp_splits = {}
+        for r in all_rows:
+            gk = r.get('initial_state_sha256', '')
+            if not gk: continue
+            sp = r.get('split', '')
+            if gk in grp_splits and grp_splits[gk] != sp:
+                raise ValueError(f"Group {gk[:16]} has multiple splits: {grp_splits[gk]} and {sp}")
+            grp_splits[gk] = sp
+
+        metadata['train_eps'] = sorted(set(r.get('episode_id', r.get('run_id','')) for r in tr_rows))
+        metadata['val_eps'] = sorted(set(r.get('episode_id', r.get('run_id','')) for r in vl_rows))
+        metadata['heldout_eps'] = sorted(set(r.get('episode_id', r.get('run_id','')) for r in held_rows))
     else:
         # Legacy: filter valid rows, split by is_held_out, random shuffle 75/25
         rows = []; held_rows = []
@@ -118,8 +147,15 @@ def load_data(csv_path, seed, respect_frozen_split=True, legacy_random_split=Fal
         yr = np.array([float(r.get("teacher_phase","")=="release_safe") for r in rl], dtype=np.float32)
         return X, {"phase": yp, "corridor": yc, "release": yr}
 
+    # Label validation: reject unknown teacher_phase
+    for r in tr_rows + vl_rows + held_rows:
+        phase = r.get('teacher_phase', '')
+        if phase and phase not in SC5_PHASES:
+            raise ValueError(f"Unknown teacher_phase '{phase}' in row "
+                             f"step_idx={r.get('step_idx','?')} episode={r.get('episode_id','?')}")
+
     Xtr, Ytr = mk(tr_rows); Xvl, Yvl = mk(vl_rows); Xte, Yte = mk(held_rows)
-    return Xtr, Ytr, Xvl, Yvl, Xte, Yte, len(held_rows), len(tr_rows), len(vl_rows)
+    return Xtr, Ytr, Xvl, Yvl, Xte, Yte, len(held_rows), len(tr_rows), len(vl_rows), metadata
 
 def train(model, Xtr, Ytr, Xvl, Yvl, epochs=80, lr=0.001, device="cpu"):
     model = model.to(device)
@@ -167,10 +203,9 @@ args = ap.parse_args()
 random.seed(args.seed); np.random.seed(args.seed); torch.manual_seed(args.seed)
 
 print(f"Loading {args.dataset}...")
-Xtr, Ytr, Xvl, Yvl, Xte, Yte, n_h, n_tr, n_vl = load_data(
+Xtr, Ytr, Xvl, Yvl, Xte, Yte, n_h, n_tr, n_vl, meta = load_data(
     args.dataset, args.seed, legacy_random_split=args.legacy_random_split)
-split_mode = 'frozen' if not args.legacy_random_split else 'random'
-print(f"  train={n_tr} val={n_vl} held_test={n_h} ({split_mode} split)")
+print(f"  train={n_tr} val={n_vl} held_test={n_h} ({meta['split_mode']} split)")
 mean = Xtr.mean(0); std = Xtr.std(0) + 1e-8
 Xtr = (Xtr-mean)/std; Xvl = (Xvl-mean)/std; Xte = (Xte-mean)/std
 
@@ -191,19 +226,16 @@ out_dir = Path(args.output_dir); out_dir.mkdir(parents=True, exist_ok=True)
 with open(args.dataset, 'rb') as f:
     dataset_sha = hashlib.sha256(f.read()).hexdigest()
 
-# Extract episode IDs per split for reproducibility
-train_eps = sorted(set(r.get('episode_id', r.get('run_id','')) for r in
-                       (Xtr_rows if 'Xtr_rows' in dir() else []) or []))
-val_eps = sorted(set(r.get('episode_id', r.get('run_id','')) for r in
-                     (Xvl_rows if 'Xvl_rows' in dir() else []) or []))
-
 torch.save({
     "model_state": model.state_dict(), "mean": mean, "std": std,
     "feature_names": SC5_FEATURES, "phase_classes": SC5_PHASES,
     "dataset_sha256": dataset_sha,
     "dataset_path": args.dataset,
-    "split_mode": split_mode,
+    "split_mode": meta['split_mode'],
     "normalization_source": "train_only",
     "n_train": n_tr, "n_val": n_vl, "n_held_test": n_h,
+    "train_episode_ids": meta.get('train_eps', []),
+    "val_episode_ids": meta.get('val_eps', []),
+    "heldout_episode_ids": meta.get('heldout_eps', []),
 }, out_dir / f"sc5_mlp_s{args.seed}.pt")
 print(f"Saved to {out_dir}/sc5_mlp_s{args.seed}.pt (dataset SHA: {dataset_sha[:16]})")
