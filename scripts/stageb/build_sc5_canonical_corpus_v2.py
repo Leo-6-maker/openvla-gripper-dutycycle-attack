@@ -310,8 +310,7 @@ def main():
 
             # Write ALL events to manifest (valid and rejected)
             for evt in seg_result['events']:
-                evt_sc5 = evt.get('sc5', {})
-                evt_rows.append({
+                evt_sc5 = evt.get('sc5') or {}
                     'parent_episode_id': parent_ep_id,
                     'event_id': evt['event_id'],
                     'task': ep['task_name'], 'state_id': ep['state_id'],
