@@ -23,7 +23,6 @@ SC5_FEATURES = [
     "eef_z_delta_since_close","qpos_delta_1","qpos_delta_3",
     "opening_proxy_delta_3","opening_proxy_variance_5","eef_speed_variance_5",
 ]
-SC5_PHASES = SC5_FEATURES  # backwards compat for existing references below
 # Load shared detector runtime
 from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime, SC5_FEATURES
 detector = SC5DetectorRuntime(MODEL_PATH, tau_corridor=0.3, tau_release=0.3, guard=5)

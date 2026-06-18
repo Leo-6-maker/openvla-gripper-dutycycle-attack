@@ -98,6 +98,7 @@ _mlp_emit = -1
 # Initialize _prev_eef from env after dummy-wait (enables valid velocity at step 0)
 _eef_init = env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_site")]
 _prev_eef = (float(_eef_init[0]), float(_eef_init[1]), float(_eef_init[2]))
+_invalid_steps = 0; _first_valid_step = -1  # for parity diagnosis
 
 telemetry = []; attack_count = 0; prev_delta_flags = []
 
@@ -125,6 +126,9 @@ for step in range(400):
     env_action_final = postprocess_openvla_action_for_libero(np.asarray(action, dtype=np.float32), enabled=True)
 
     # ── MLP ONLINE TRIGGER (causal eef velocity, always advances streamer) ──
+    _feat_valid = False; _feat_error = ""; _feat_25d = {}
+    _det_state = detector.state; _det_cp = None; _det_rp = None; _det_pp = None
+
     if not detector.emitted:
         # Causal EEF velocity: backward difference, only when position valid
         eef_valid = np.all(np.isfinite([eef_x, eef_y, eef_z]))
@@ -133,14 +137,13 @@ for step in range(400):
         else:
             _vx = float("nan"); _vy = float("nan"); _vz = float("nan")
         if eef_valid:
-            _prev_eef = (eef_x, eef_y, eef_z)  # only update on valid position
+            _prev_eef = (eef_x, eef_y, eef_z)
 
         gripper_ok = not (np.isnan(q7) or np.isnan(q8) or np.isnan(qpos_sum))
         gripper_w = abs(q7)+abs(q8) if gripper_ok else float("nan")
         gripper_q = float(qpos_sum) if gripper_ok else float("nan")
 
-        # Always call streamer (preserves step sequence).
-        # NaN values → adapter returns valid=False, detector skips this frame.
+        # Always call streamer (preserves step sequence)
         try:
             _res = _streamer.update(step_id=step, raw_gripper=raw_grip, env_gripper=env_grip,
                 gripper_qpos=gripper_q, gripper_opening_proxy=gripper_w,
@@ -149,13 +152,27 @@ for step in range(400):
                 action_dx=float(action[0]), action_dy=float(action[1]),
                 action_dz=float(action[2]), action_gripper=raw_grip)
         except ValueError as e:
-            _res = {"valid": False, "error": f"step_sequence:{e}"}
+            _res = {"valid": False, "error": "step_sequence:%s" % str(e)[:80]}
         except Exception as e:
-            _res = {"valid": False, "error": f"streamer_error:{type(e).__name__}"}
-        if _res.get("valid"):
-            decision = detector.update(_res["features"], step)
-            if decision["emitted"]:
-                _mlp_emit = decision["emit_step"]
+            _res = {"valid": False, "error": "streamer_error:%s" % type(e).__name__}
+
+        _feat_valid = _res.get("valid", False)
+        _feat_error = _res.get("error", "")
+        if _feat_valid:
+            _feat_25d = dict(_res["features"])
+            if _first_valid_step < 0:
+                _first_valid_step = step
+        else:
+            _invalid_steps += 1
+
+        if _feat_valid:
+            _decision = detector.update(_res["features"], step)
+            _det_state = _decision["state"]
+            _det_cp = _decision.get("corridor_p")
+            _det_rp = _decision.get("release_p")
+            _det_pp = _decision.get("pred_phase")
+            if _decision["emitted"]:
+                _mlp_emit = _decision["emit_step"]
 
     # === VIS ATTACK (IDENTICAL to v2 bridge, only trigger condition changed) ===
     attack_this = False; adv_token = None; adv_arm = 0; prev_flag = False
@@ -219,13 +236,20 @@ for step in range(400):
 
     t_vla = time.perf_counter() - t0
 
-    telemetry.append({"step": step, "condition": args.condition, "anchor": ANCHOR,
+    _tel = {"step": step, "condition": args.condition, "anchor": ANCHOR,
         "mlp_emit": _mlp_emit, "raw_gripper": raw_grip, "env_gripper": env_grip,
         "qpos_sum": qpos_sum, "eef_x": eef_x, "eef_y": eef_y, "eef_z": eef_z,
         "obj_x": obj_x, "obj_y": obj_y, "obj_z": obj_z, "eef_obj_dist": eef_obj_dist,
         "attack_count": attack_count, "attack_this": attack_this,
         "adv_token": adv_token if adv_token else "", "adv_arm": adv_arm if attack_this else "",
-        "prev_delta_used": prev_flag, "model_ms": round(t_vla*1000, 2)})
+        "prev_delta_used": prev_flag, "model_ms": round(t_vla*1000, 2),
+        "feat_valid": _feat_valid, "feat_error": _feat_error,
+        "detector_state": _det_state, "corridor_p": _det_cp, "release_p": _det_rp,
+        "pred_phase": _det_pp, "qpos_source": "q7+q8_sum"}
+    if _feat_valid:
+        for fn in SC5_FEATURES:
+            _tel["f_"+fn] = _feat_25d.get(fn, float("nan"))
+    telemetry.append(_tel)
 
     obs, _, done, _ = env.step(env_action_final)
     if done: break
@@ -243,6 +267,10 @@ n_arm_ok = sum(1 for r in atk_rows if str(r.get("adv_arm","")) != "" and int(r["
 summary = {"condition": args.condition, "state_id": STATE_ID, "teacher_anchor": ANCHOR,
     "mlp_emit_step": _mlp_emit, "mlp_triggered": detector.emitted,
     "anchor_error": (_mlp_emit - ANCHOR) if _mlp_emit >= 0 else None,
+    "invalid_feature_steps": _invalid_steps, "first_valid_step": _first_valid_step,
+    "checkpoint_sha256": detector.checkpoint_sha256,
+    "dataset_sha256": detector.dataset_sha256,
+    "manual_anchor_used": False, "privileged_detector_input_used": False,
     "n_steps": len(telemetry), "attack_frames": n_atk,
     "open_tokens": n_open_token, "arm_ok_frames": n_arm_ok, "env_open_frames": n_env_open,
     "token_open_duty": round(n_open_token/n_atk,3) if n_atk>0 else 0,
