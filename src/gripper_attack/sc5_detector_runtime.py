@@ -6,9 +6,7 @@ Frozen trigger logic (matches offline replay 6/6 Gate):
   ARMED → (step >= arm_step + 5 AND corridor_p > tau_c AND release_p < tau_r) → EMITTED
   EMITTED → one-shot latch
 """
-import numpy as np
-import torch
-import torch.nn as nn
+import hashlib, numpy as np, torch, torch.nn as nn
 from typing import Dict
 
 SC5_FEATURES = [
@@ -58,7 +56,8 @@ class SC5DetectorRuntime:
         if not ds_sha:
             raise ValueError("Missing dataset_sha256")
         self.dataset_sha256 = ds_sha
-        self.checkpoint_sha256 = ds_sha  # proxy — real SHA would be file-level
+        with open(checkpoint_path, 'rb') as f:
+            self.checkpoint_sha256 = hashlib.sha256(f.read()).hexdigest()
 
         mean = ckpt["mean"]; std = ckpt["std"]
         if mean.shape[0] != 25 or std.shape[0] != 25:

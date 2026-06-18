@@ -23,30 +23,11 @@ SC5_FEATURES = [
     "eef_z_delta_since_close","qpos_delta_1","qpos_delta_3",
     "opening_proxy_delta_3","opening_proxy_variance_5","eef_speed_variance_5",
 ]
-SC5_PHASES = ["approach","grasp_close","stable_grasp","first_lift","stable_carry",
-              "pre_place_unsupported","release_safe","recovery_or_regrasp","abstain_unsupported"]
-
-# Load model
-ckpt = torch.load(MODEL_PATH, map_location="cpu", weights_only=False)
-
-class SC5MLP(torch.nn.Module):
-    def __init__(self, n_feat, hidden=64):
-        super().__init__()
-        self.shared = torch.nn.Sequential(torch.nn.Linear(n_feat, hidden), torch.nn.ReLU(),
-                                          torch.nn.Linear(hidden, hidden), torch.nn.ReLU())
-        self.phase_head = torch.nn.Linear(hidden, len(SC5_PHASES))
-        self.corridor_head = torch.nn.Linear(hidden, 1)
-        self.release_head = torch.nn.Linear(hidden, 1)
-        self.confidence_head = torch.nn.Linear(hidden, 1)
-    def forward(self, x):
-        h = self.shared(x)
-        return {"phase_logits": self.phase_head(h), "corridor_logit": self.corridor_head(h),
-                "release_logit": self.release_head(h), "confidence_logit": self.confidence_head(h)}
-
-model = SC5MLP(n_feat=len(ckpt["feature_names"]))
-model.load_state_dict(ckpt["model_state"])
-model.eval()
-mean = ckpt["mean"]; std = ckpt["std"]
+SC5_PHASES = SC5_FEATURES  # backwards compat for existing references below
+# Load shared detector runtime
+from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime, SC5_FEATURES
+detector = SC5DetectorRuntime(MODEL_PATH, tau_corridor=0.3, tau_release=0.3, guard=5)
+mean = detector.mean; std = detector.std
 
 # Load dataset grouped by episode
 episodes = defaultdict(list)
@@ -67,26 +48,15 @@ for eid, rows in sorted(episodes.items()):
     is_held = rows[0].get("is_held_out", "False") in ("True", "true", "1")
     split = rows[0].get("split", "?")
 
-    # Trigger state machine
-    state = "MONITORING"; emit_step = -1; emit_anchor = -1
+    # Shared runtime trigger (same as online detector)
+    detector.reset()
+    emit_step = -1
     for r in rows:
-        X = np.array([[float(r[fn]) for fn in SC5_FEATURES]], dtype=np.float32)
-        X = (X - mean) / (std + 1e-8)
-        with torch.no_grad():
-            out = model(torch.tensor(X, dtype=torch.float32))
-        phase_prob = torch.softmax(out["phase_logits"], dim=1)[0]
-        corridor_p = torch.sigmoid(out["corridor_logit"]).item()
-        release_p = torch.sigmoid(out["release_logit"]).item()
-        pred_phase = SC5_PHASES[phase_prob.argmax().item()]
+        feats = {fn: float(r[fn]) for fn in SC5_FEATURES}
         step = int(r["step_idx"])
-
-        # State transitions
-        if state == "MONITORING":
-            if pred_phase == "stable_carry" and corridor_p > TAU_CORRIDOR:
-                state = "ARMED"; arm_step = step
-        elif state == "ARMED":
-            if step >= arm_step + GUARD and corridor_p > TAU_CORRIDOR and release_p < TAU_RELEASE:
-                state = "EMITTED"; emit_step = step; emit_anchor = step
+        decision = detector.update(feats, step)
+        if decision["emitted"]:
+            emit_step = decision["emit_step"]; break
 
     # Metrics
     full_k10 = rows[0].get("teacher_full_k10_valid_at_t", "0")
@@ -99,11 +69,11 @@ for eid, rows in sorted(episodes.items()):
         k10_map = {}
 
     if emit_step >= 0:
-        pred_ws = emit_anchor; pred_we = emit_anchor + K - 1
+        pred_ws = emit_step; pred_we = emit_step + K - 1
         teacher_ws = teacher_anchor
         teacher_we = teacher_anchor + K - 1 if teacher_anchor >= 0 else -1
-        anchor_err = abs(emit_anchor - teacher_anchor) if teacher_anchor >= 0 else -1
-        false_early = emit_anchor < teacher_anchor if teacher_anchor >= 0 else False
+        anchor_err = abs(emit_step - teacher_anchor) if teacher_anchor >= 0 else -1
+        false_early = emit_step < teacher_anchor if teacher_anchor >= 0 else False
         # Post-release: trigger happened AFTER first release_safe
         first_release = next((int(r["step_idx"]) for r in rows
                              if r.get("teacher_phase","") == "release_safe"), None)
@@ -116,7 +86,7 @@ for eid, rows in sorted(episodes.items()):
     results.append({
         "episode_id": eid, "split": split, "is_held_out": is_held,
         "teacher_anchor": teacher_anchor, "teacher_sc5_valid": teacher_sc5_valid,
-        "emit_step": emit_step, "emit_anchor": emit_anchor,
+        "emit_step": emit_step, "emit_step": emit_step,
         "anchor_error": anchor_err, "false_early": int(false_early),
         "post_release_trigger": int(post_release),
         "k10_contained": int(k10_contained), "triggered": int(emit_step >= 0),

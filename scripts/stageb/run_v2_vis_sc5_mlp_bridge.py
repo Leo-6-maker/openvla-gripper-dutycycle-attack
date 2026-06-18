@@ -94,7 +94,10 @@ obj_z0 = float(env.sim.data.site_xpos[obj_sid][2])
 # ── Online streaming adapter (NEW) ──
 from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
 _streamer = SC5StreamingFeatureAdapterV2()
-_mlp_emit = -1; _prev_eef = None  # for causal backward-difference velocity
+_mlp_emit = -1
+# Initialize _prev_eef from env after dummy-wait (enables valid velocity at step 0)
+_eef_init = env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_site")]
+_prev_eef = (float(_eef_init[0]), float(_eef_init[1]), float(_eef_init[2]))
 
 telemetry = []; attack_count = 0; prev_delta_flags = []
 
