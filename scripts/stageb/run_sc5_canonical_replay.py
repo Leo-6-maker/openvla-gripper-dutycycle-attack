@@ -104,9 +104,10 @@ for eid, rows in sorted(episodes.items()):
         teacher_we = teacher_anchor + K - 1 if teacher_anchor >= 0 else -1
         anchor_err = abs(emit_anchor - teacher_anchor) if teacher_anchor >= 0 else -1
         false_early = emit_anchor < teacher_anchor if teacher_anchor >= 0 else False
-        post_release = any(SC5_PHASES.index(r.get("teacher_phase","abstain_unsupported"))
-                          >= SC5_PHASES.index("release_safe")
-                          for r in rows if int(r["step_idx"]) >= emit_step)
+        # Post-release: trigger happened AFTER first release_safe
+        first_release = next((int(r["step_idx"]) for r in rows
+                             if r.get("teacher_phase","") == "release_safe"), None)
+        post_release = (first_release is not None and emit_step > first_release)
         k10_contained = k10_map.get(emit_step, 0) > 0 if k10_map else False
     else:
         pred_ws = -1; pred_we = -1; anchor_err = -1
