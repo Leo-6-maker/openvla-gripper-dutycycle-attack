@@ -372,15 +372,23 @@ def main():
     if gap > 0:
         print(f"  GAP: {gap} episodes excluded after dedup")
 
-    # Write formal disposition CSV
+    # Write formal disposition CSV (consistent fieldnames across all types)
+    DISP_FIELDS = ['disposition', 'episode_id', 'state_id', 'task', 'reason', 'sc5_anchor']
     disp_rows = []
     for reason, eps_list in post_dedup_disposition.items():
         for entry in eps_list:
-            disp_rows.append({'disposition': reason, **entry})
+            disp_rows.append({
+                'disposition': reason,
+                'episode_id': entry.get('episode_id', ''),
+                'state_id': entry.get('state_id', ''),
+                'task': entry.get('task', ''),
+                'reason': entry.get('reason', ''),
+                'sc5_anchor': entry.get('sc5_anchor', ''),
+            })
     if disp_rows:
         disp_path = os.path.join(args.output_dir, 'v2_sc5_post_dedup_disposition.csv')
         with open(disp_path, 'w', newline='') as f:
-            w = csv.DictWriter(f, fieldnames=list(disp_rows[0].keys()))
+            w = csv.DictWriter(f, fieldnames=DISP_FIELDS)
             w.writeheader(); w.writerows(disp_rows)
         print(f"  Disposition CSV: {disp_path}")
 
