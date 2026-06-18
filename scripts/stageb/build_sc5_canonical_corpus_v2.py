@@ -232,13 +232,33 @@ def main():
         if ok: valid_paths.append(ep['jsonl_path'])
     teacher = V2PrivilegedTeacher(calibrate_thresholds(valid_paths))
 
-    # Tier B statistics
+    # Tier B statistics + CSV
     tb_counts = Counter(
         tier_b_status.get(e['episode_id'], {}).get('status', 'UNKNOWN')
         for e in unique if e.get('candidate_tier') == TIER_B)
     print(f"   Calibration: {len(valid_paths)}/{len(calib_eps)} paths")
     for status, cnt in sorted(tb_counts.items()):
         print(f"   {status}: {cnt}")
+
+    # Write Tier B validation CSV (all Tier B episodes, all splits)
+    tier_b_rows = []
+    for ep in unique:
+        if ep.get('candidate_tier') != TIER_B: continue
+        st = tier_b_status.get(ep['episode_id'], {})
+        tier_b_rows.append({
+            'episode_id': ep['episode_id'],
+            'task': ep['task_name'], 'state_id': ep['state_id'],
+            'split': ep['split'],
+            'candidate_tier': TIER_B,
+            'validation_status': st.get('status', 'UNKNOWN'),
+            'validation_reason': st.get('reason', ''),
+            'note': 'FIELD_AVAILABILITY_ONLY_semantic_binding_not_proven',
+        })
+    if tier_b_rows:
+        tb_path = os.path.join(args.output_dir, 'v2_sc5_tier_b_validation.csv')
+        with open(tb_path, 'w', newline='') as f:
+            w = csv.DictWriter(f, fieldnames=list(tier_b_rows[0].keys()))
+            w.writeheader(); w.writerows(tier_b_rows)
 
     # ── Step 5: Build dataset with row buffering + two-pass velocity recovery ──
     print("5. Building dataset with mature Layer 1/2 + event segmenter for Tier C...")
