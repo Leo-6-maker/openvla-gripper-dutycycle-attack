@@ -224,6 +224,7 @@ def main():
         if schema_adapter is None: schema_adapter = SC5SchemaAdapterV2()
         local_rows = []; local_step = 0; gap = False
         cspan = set(range(continuity_span[0], continuity_span[1] + 1))
+        processed_step_ids = set()  # track which step IDs were actually valid
 
         for r in records:
             if not r.get('teacher_privileged_state_available'): continue
@@ -260,6 +261,7 @@ def main():
             if not result['valid']:
                 if step_raw in cspan: gap = True; continue
             local_step += 1
+            processed_step_ids.add(step_raw)
 
             tl = label_by_step.get(step_raw)
             has_sc5 = sc5['valid'] and not gap
@@ -289,6 +291,11 @@ def main():
                 'teacher_confidence': tl['confidence'] if tl else 0.0,
             })
             local_rows.append(row)
+        # Missing step detection: any step ID in continuity span not processed → gap
+        if not gap and cspan:
+            missing_steps = cspan - processed_step_ids
+            if missing_steps:
+                gap = True
         return local_rows, gap, local_step
 
     # ── Main episode loop ──
@@ -447,23 +454,27 @@ def main():
             w = csv.DictWriter(f, fieldnames=['field_source','count']); w.writeheader()
             for fs, cnt in field_audit.most_common(): w.writerow({'field_source': fs, 'count': cnt})
 
-    # Teacher config freeze
-    config_json = {
-        'grasp_close_sustain': teacher.cfg.grasp_close_sustain,
-        'lift_z_threshold': teacher.cfg.lift_z_threshold,
-        'eef_obj_dist_max': teacher.cfg.eef_obj_dist_max,
-        'release_target_dist_max': teacher.cfg.release_target_dist_max,
-        'guard': GUARD, 'K': K,
-        'calibration_tiers': 'Tier_A+B_train_only',
-        'tier_c_excluded': tier_c_stats.get('parent_episodes', 0) if tier_c_stats else 0,
-        'n_calibration_paths': len(valid_paths),
-    }
+    # Full Teacher config freeze (dataclass fields + calibration metadata)
+    from dataclasses import asdict
+    config_full = asdict(teacher.cfg)
+    config_full['guard'] = GUARD; config_full['K'] = K
+    config_full['calibration_tiers'] = 'Tier_A+B_train_only'
+    config_full['tier_c_train_excluded'] = tier_c_count if 'tier_c_count' in dir() else 0
+    config_full['n_calibration_paths'] = len(valid_paths)
+    config_full['n_calibration_episodes'] = len(calib_eps)
+    # Calibration source hashes (sorted for reproducibility)
+    calib_hashes = []
+    for ep in calib_eps:
+        calib_hashes.append(ep.get('source_file_sha256', '') or
+                           hashlib.sha256(ep['jsonl_path'].encode()).hexdigest())
+    config_full['calibration_source_sha256s'] = sorted(calib_hashes)
     config_path = os.path.join(args.artifacts_dir, 'v2_sc5_teacher_config.json')
     with open(config_path, 'w') as f:
-        json.dump(config_json, f, indent=2)
-    config_sha = hashlib.sha256(json.dumps(config_json, sort_keys=True).encode()).hexdigest()
+        json.dump(config_full, f, indent=2, default=str)
+    config_sha = hashlib.sha256(json.dumps(config_full, sort_keys=True).encode()).hexdigest()
     with open(os.path.join(args.artifacts_dir, 'v2_sc5_teacher_config.sha256'), 'w') as f:
         f.write(f"{config_sha}  v2_sc5_teacher_config.json\n")
+    print(f"  Teacher config frozen: {config_sha[:16]} ({len(valid_paths)} paths)")
 
     manifest = {'K': K, 'guard': GUARD, 'n_rows': len(rows), 'n_episodes': len(ep_rows),
                 'n_events': len(evt_rows), 'teacher_sha': config_sha[:16]}
@@ -509,10 +520,10 @@ def main():
             w.writeheader(); w.writerows(disp_rows)
         print(f"  Disposition CSV: {disp_path}")
 
-    # Multi-split isolation audit: fail-closed + always write machine-readable result
+    # Multi-split isolation audit: ALL 314 unique parents + events
     iso_result = validate_multi_split_isolation(
-        ep_rows, group_key='initial_state_sha256', split_key='split')
-    print(f"\nMulti-split isolation (train/val/held_out all pairs):")
+        unique, group_key='initial_state_sha256', split_key='split')
+    print(f"\nMulti-split isolation (314 parents, all pairs):")
     print(f"  Valid: {'PASS' if iso_result['valid'] else 'FAIL'}")
     for pair, n_v in iso_result['violations_by_pair'].items():
         print(f"  {pair}: {n_v} violations")
