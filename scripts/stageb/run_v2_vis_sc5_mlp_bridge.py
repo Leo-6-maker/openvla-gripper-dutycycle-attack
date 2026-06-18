@@ -94,7 +94,7 @@ obj_z0 = float(env.sim.data.site_xpos[obj_sid][2])
 # ── Online streaming adapter (NEW) ──
 from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
 _streamer = SC5StreamingFeatureAdapterV2()
-_mlp_emit = -1  # set by detector, used in trigger condition
+_mlp_emit = -1; _prev_eef = None  # for causal backward-difference velocity
 
 telemetry = []; attack_count = 0; prev_delta_flags = []
 
@@ -121,22 +121,33 @@ for step in range(400):
     raw_grip = float(action[-1]); env_grip = -1.0 if raw_grip > 0.5 else 1.0
     env_action_final = postprocess_openvla_action_for_libero(np.asarray(action, dtype=np.float32), enabled=True)
 
-    # ── MLP ONLINE TRIGGER (NEW — replaces fixed anchor) ──
+    # ── MLP ONLINE TRIGGER (causal eef velocity, fail-closed on missing) ──
     if not detector.emitted:
-        gripper_width = abs(q7) + abs(q8) if not (np.isnan(q7) or np.isnan(q8)) else 0.0
-        try:
-            _res = _streamer.update(step_id=step, raw_gripper=raw_grip, env_gripper=env_grip,
-                gripper_qpos=float(qpos_sum) if not np.isnan(qpos_sum) else 0.0,
-                gripper_opening_proxy=gripper_width,
-                eef_x=eef_x, eef_y=eef_y, eef_z=eef_z,
-                eef_vx=0.0, eef_vy=0.0, eef_vz=0.0,
-                action_dx=float(action[0]), action_dy=float(action[1]), action_dz=float(action[2]),
-                action_gripper=raw_grip)
-        except: _res = {"valid": False}
-        if _res.get("valid"):
-            decision = detector.update(_res["features"], step)
-            if decision["emitted"]:
-                _mlp_emit = decision["emit_step"]
+        gripper_width = abs(q7) + abs(q8) if not (np.isnan(q7) or np.isnan(q8)) else float("nan")
+        # Causal EEF velocity: backward difference, no future, no zero-fill
+        if _prev_eef is not None:
+            _vx = eef_x - _prev_eef[0]; _vy = eef_y - _prev_eef[1]; _vz = eef_z - _prev_eef[2]
+        else:
+            _vx = float("nan"); _vy = float("nan"); _vz = float("nan")
+        _prev_eef = (eef_x, eef_y, eef_z)  # update for next step
+
+        # Fail-closed: missing gripper/EEF → skip detector update
+        if (np.isnan(q7) or np.isnan(q8) or np.isnan(qpos_sum) or
+            np.isnan(eef_x) or np.isnan(gripper_width)):
+            pass  # skip this step's detector update
+        else:
+            try:
+                _res = _streamer.update(step_id=step, raw_gripper=raw_grip, env_gripper=env_grip,
+                    gripper_qpos=float(qpos_sum), gripper_opening_proxy=gripper_width,
+                    eef_x=eef_x, eef_y=eef_y, eef_z=eef_z,
+                    eef_vx=_vx, eef_vy=_vy, eef_vz=_vz,
+                    action_dx=float(action[0]), action_dy=float(action[1]),
+                    action_dz=float(action[2]), action_gripper=raw_grip)
+            except: _res = {"valid": False}
+            if _res.get("valid"):
+                decision = detector.update(_res["features"], step)
+                if decision["emitted"]:
+                    _mlp_emit = decision["emit_step"]
 
     # === VIS ATTACK (IDENTICAL to v2 bridge, only trigger condition changed) ===
     attack_this = False; adv_token = None; adv_arm = 0; prev_flag = False

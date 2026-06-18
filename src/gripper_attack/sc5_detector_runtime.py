@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
-"""SC5 shared detector runtime — online and offline, single state machine.
+"""SC5 shared detector runtime — proper nn.Module, strict loading, single state machine.
 
 Frozen trigger logic (matches offline replay 6/6 Gate):
-  IDLE → (pred_phase==stable_carry AND corridor_p > τ_c) → ARMED
-  ARMED → (step >= arm_step + 5 AND corridor_p > τ_c AND release_p < τ_r) → EMITTED
-  EMITTED → one-shot latch (never re-trigger)
-
-Strict checkpoint loading: feature_names exact match, strict state_dict, dataset_sha256.
+  IDLE → (pred_phase==stable_carry AND corridor_p > tau_c) → ARMED
+  ARMED → (step >= arm_step + 5 AND corridor_p > tau_c AND release_p < tau_r) → EMITTED
+  EMITTED → one-shot latch
 """
-from __future__ import annotations
 import numpy as np
 import torch
-from typing import Optional, Dict, List
+import torch.nn as nn
+from typing import Dict
 
 SC5_FEATURES = [
     "gripper_command","gripper_qpos","gripper_opening_proxy",
@@ -26,110 +24,87 @@ SC5_PHASES = ["approach","grasp_close","stable_grasp","first_lift","stable_carry
               "pre_place_unsupported","release_safe","recovery_or_regrasp","abstain_unsupported"]
 
 
-class SC5DetectorRuntime:
-    """Shared detector: loads frozen MLP, runs causal state machine.
+class SC5MLP(nn.Module):
+    """Exact match to train_sc5_v4.SC5MLP architecture."""
+    def __init__(self, n_feat, hidden=64):
+        super().__init__()
+        self.shared = nn.Sequential(
+            nn.Linear(n_feat, hidden), nn.ReLU(),
+            nn.Linear(hidden, hidden), nn.ReLU())
+        self.phase_head = nn.Linear(hidden, len(SC5_PHASES))
+        self.corridor_head = nn.Linear(hidden, 1)
+        self.release_head = nn.Linear(hidden, 1)
+        self.confidence_head = nn.Linear(hidden, 1)
 
-    Call update() per step. Returns decision dict with emit info.
-    One-shot latch: once emitted, never re-triggers.
-    """
+    def forward(self, x):
+        h = self.shared(x)
+        return {"phase_logits": self.phase_head(h),
+                "corridor_logit": self.corridor_head(h),
+                "release_logit": self.release_head(h)}
+
+
+class SC5DetectorRuntime:
+    """Shared runtime: strict-loads frozen MLP, runs single state machine."""
 
     def __init__(self, checkpoint_path: str, tau_corridor: float = 0.3,
                  tau_release: float = 0.3, guard: int = 5):
-        # ── Strict load ──
         ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
 
-        feat_names = ckpt.get("feature_names", [])
-        if list(feat_names) != SC5_FEATURES:
-            raise ValueError(f"Feature mismatch: checkpoint has {len(feat_names)} features, "
-                             f"expected {len(SC5_FEATURES)} canonical 25D")
-
+        # Strict validation
+        feat_names = list(ckpt.get("feature_names", []))
+        if feat_names != SC5_FEATURES:
+            raise ValueError(f"Feature mismatch: got {len(feat_names)}, expected {len(SC5_FEATURES)}")
         ds_sha = ckpt.get("dataset_sha256", "")
         if not ds_sha:
-            raise ValueError("Checkpoint missing dataset_sha256")
+            raise ValueError("Missing dataset_sha256")
         self.dataset_sha256 = ds_sha
+        self.checkpoint_sha256 = ds_sha  # proxy — real SHA would be file-level
 
         mean = ckpt["mean"]; std = ckpt["std"]
         if mean.shape[0] != 25 or std.shape[0] != 25:
-            raise ValueError(f"mean/std shape {mean.shape}, expected (25,)")
-        if np.any(np.isnan(mean)) or np.any(np.isnan(std)):
-            raise ValueError("NaN in mean/std")
+            raise ValueError(f"mean/std shape {mean.shape}")
+        if not (np.all(np.isfinite(mean)) and np.all(np.isfinite(std))):
+            raise ValueError("NaN/Inf in mean/std")
+        if not np.all(std > 0):
+            raise ValueError("Zero in std")
 
-        # ── Build model ──
-        n_feat = len(SC5_FEATURES)
-        self.model = torch.nn.Sequential(
-            torch.nn.Linear(n_feat, 64), torch.nn.ReLU(),
-            torch.nn.Linear(64, 64), torch.nn.ReLU())
-        self.phase_head = torch.nn.Linear(64, len(SC5_PHASES))
-        self.corridor_head = torch.nn.Linear(64, 1)
-        self.release_head = torch.nn.Linear(64, 1)
-        self.confidence_head = torch.nn.Linear(64, 1)
+        split_mode = ckpt.get("split_mode", "unknown")
+        if split_mode != "frozen":
+            raise ValueError(f"Checkpoint split_mode={split_mode}, expected 'frozen'")
 
-        # Strict load — no missing keys, no unexpected keys
-        state = ckpt["model_state"]
-        own = {}
-        own["model.0.weight"] = state["shared.0.weight"]; own["model.0.bias"] = state["shared.0.bias"]
-        own["model.2.weight"] = state["shared.2.weight"]; own["model.2.bias"] = state["shared.2.bias"]
-        own["phase_head.weight"] = state["phase_head.weight"]; own["phase_head.bias"] = state["phase_head.bias"]
-        own["corridor_head.weight"] = state["corridor_head.weight"]; own["corridor_head.bias"] = state["corridor_head.bias"]
-        own["release_head.weight"] = state["release_head.weight"]; own["release_head.bias"] = state["release_head.bias"]
-        own["confidence_head.weight"] = state.get("confidence_head.weight",
-            torch.zeros_like(state["phase_head.weight"][:1]))
-        own["confidence_head.bias"] = state.get("confidence_head.bias",
-            torch.zeros(1))
-        self.load_state_dict(own)  # custom — see below
-        self.eval()
+        # Build model + strict load
+        self.model = SC5MLP(n_feat=len(SC5_FEATURES))
+        self.model.load_state_dict(ckpt["model_state"], strict=True)
+        self.model.eval()
         self.mean = mean; self.std = std
 
-        # ── Trigger params ──
+        # Trigger params
         self.tau_c = tau_corridor; self.tau_r = tau_release; self.guard = guard
         self.reset()
 
-    def load_state_dict(self, d):
-        self.model[0].weight.data = d["model.0.weight"]; self.model[0].bias.data = d["model.0.bias"]
-        self.model[2].weight.data = d["model.2.weight"]; self.model[2].bias.data = d["model.2.bias"]
-        self.phase_head.weight.data = d["phase_head.weight"]; self.phase_head.bias.data = d["phase_head.bias"]
-        self.corridor_head.weight.data = d["corridor_head.weight"]; self.corridor_head.bias.data = d["corridor_head.bias"]
-        self.release_head.weight.data = d["release_head.weight"]; self.release_head.bias.data = d["release_head.bias"]
-        self.confidence_head.weight.data = d["confidence_head.weight"]; self.confidence_head.bias.data = d["confidence_head.bias"]
-
     def reset(self):
-        self.state = "IDLE"
-        self.arm_step = -1
-        self.emit_step = -1
-        self.emitted = False
+        self.state = "IDLE"; self.arm_step = -1; self.emit_step = -1; self.emitted = False
 
     def update(self, features_25d: Dict[str, float], step: int) -> dict:
-        """Process one step. Returns decision dict with emit info."""
         if self.emitted:
             return self._decision(step)
-
-        # Build input
         X = np.array([[features_25d[fn] for fn in SC5_FEATURES]], dtype=np.float32)
         X = (X - self.mean) / (self.std + 1e-8)
-
         with torch.no_grad():
-            h = self.model(torch.tensor(X, dtype=torch.float32))
-            phase_logits = self.phase_head(h)
-            corridor_logit = self.corridor_head(h)
-            release_logit = self.release_head(h)
+            out = self.model(torch.tensor(X, dtype=torch.float32))
+        cp = torch.sigmoid(out["corridor_logit"]).item()
+        rp = torch.sigmoid(out["release_logit"]).item()
+        pp = SC5_PHASES[out["phase_logits"][0].argmax().item()]
 
-        cp = torch.sigmoid(corridor_logit).item()
-        rp = torch.sigmoid(release_logit).item()
-        pred_phase = SC5_PHASES[phase_logits[0].argmax().item()]
-
-        # State machine
         if self.state == "IDLE":
-            if pred_phase == "stable_carry" and cp > self.tau_c:
+            if pp == "stable_carry" and cp > self.tau_c:
                 self.state = "ARMED"; self.arm_step = step
         elif self.state == "ARMED":
             if step >= self.arm_step + self.guard and cp > self.tau_c and rp < self.tau_r:
                 self.state = "EMITTED"; self.emit_step = step; self.emitted = True
+        return self._decision(step, cp, rp, pp)
 
-        return self._decision(step, cp, rp, pred_phase)
-
-    def _decision(self, step, cp=None, rp=None, phase=None):
-        return {
-            "state": self.state, "arm_step": self.arm_step, "emit_step": self.emit_step,
-            "emitted": self.emitted, "corridor_p": cp, "release_p": rp,
-            "pred_phase": phase, "step": step,
-        }
+    def _decision(self, step, cp=None, rp=None, pp=None):
+        return {"state": self.state, "arm_step": self.arm_step, "emit_step": self.emit_step,
+                "emitted": self.emitted, "corridor_p": cp, "release_p": rp,
+                "pred_phase": pp, "step": step}
