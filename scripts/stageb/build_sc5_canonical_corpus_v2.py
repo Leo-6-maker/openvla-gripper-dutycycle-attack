@@ -202,11 +202,11 @@ def main():
         sc5 = find_sc5_anchor_v2(labels, K=K, guard=GUARD)
         corridor = compute_sc5_valid_start_corridor(labels, sc5['anchor'], K=K) if sc5['valid'] else None
 
-        # Define required contiguous span for this episode
-        # SC5-positive: [earliest stable_carry, sc5_anchor + K - 1]
-        # No-corridor/other: all policy steps
+        # Required contiguous span: [earliest grasp_close, sc5_anchor + K - 1]
+        # Covers the full close→carry→K10 history needed for causal 25D features.
+        grasp_close_steps = [l['step_idx'] for l in labels if l['phase'] == 'grasp_close']
         if sc5['valid'] and sc5['stable_carry_start'] >= 0:
-            required_start = sc5['stable_carry_start']
+            required_start = grasp_close_steps[0] if grasp_close_steps else sc5['stable_carry_start']
             required_end = sc5['anchor'] + K - 1
         else:
             required_start = min((int(r.get('step_idx', 0)) for r in records
@@ -219,17 +219,8 @@ def main():
         adapter = SC5StreamingFeatureAdapterV2()
         schema_adapter = SC5SchemaAdapterV2()
 
-        # Two-pass velocity recovery:
-        # Pass 1: observe all EEF positions (enables causal velocity)
-        for r in records:
-            if not r.get('teacher_privileged_state_available'): continue
-            eef_x = _safe_float(r.get('eef_x'))
-            eef_y = _safe_float(r.get('eef_y'))
-            eef_z = _safe_float(r.get('eef_z'))
-            if eef_x != MISSING_SENTINEL and eef_y != MISSING_SENTINEL and eef_z != MISSING_SENTINEL:
-                schema_adapter.track_eef(eef_x, eef_y, eef_z)
-
-        # Pass 2: validate + extract features with full history
+        # Causal-only: validate_record_causal() resolves velocity from past positions only.
+        # No global pre-load — each step only sees history from previous steps.
         episode_rows = []
         local_step = 0
         policy_step_gap = False
@@ -238,7 +229,8 @@ def main():
             if not r.get('teacher_privileged_state_available'): continue
             step_raw = int(r.get('step_idx', r.get('policy_step_idx', 0)))
 
-            provenances = schema_adapter.validate_record(r)
+            # Causal schema validation (velocity from past positions only, no future)
+            provenances = schema_adapter.validate_record_causal(r)
             for name, p in provenances.items():
                 field_audit[f"{name}:{p.source_type}"] += 1
             if not schema_adapter.all_valid(provenances):
@@ -392,15 +384,28 @@ def main():
             w.writeheader(); w.writerows(disp_rows)
         print(f"  Disposition CSV: {disp_path}")
 
-    # Multi-split isolation audit (train/val/held_out all pairs)
-    splits_found = set(e.get('split', '') for e in ep_rows)
-    all_eps_with_split = [dict(e, is_held_out=(e.get('split') == 'held_out'))
-                          for e in unique]  # use unique for pre-build view
-    iso_result = validate_split_isolation(all_eps_with_split, 'initial_state_sha256')
-    print(f"\nMulti-split isolation (train/val/held_out pairs):")
-    print(f"  Splits present: {splits_found}")
-    print(f"  held_out vs rest: {'PASS' if iso_result['valid'] else 'FAIL'} "
-          f"({iso_result['n_groups']} groups, {iso_result['n_violations']} violations)")
+    # Multi-split isolation audit: all split pairs independently checked
+    iso_result = validate_multi_split_isolation(
+        ep_rows, group_key='initial_state_sha256', split_key='split')
+    print(f"\nMulti-split isolation (train/val/held_out all pairs):")
+    print(f"  Valid: {'PASS' if iso_result['valid'] else 'FAIL'}")
+    for pair, n_v in iso_result['violations_by_pair'].items():
+        print(f"  {pair}: {n_v} violations")
+    if not iso_result['valid']:
+        print(f"  FATAL: Cross-split leakage detected!")
+
+    # Save split isolation audit CSV
+    audit_rows = []
+    for pair, group_ids in iso_result.get('violation_details', {}).items():
+        for gid in group_ids:
+            audit_rows.append({'split_pair': pair, 'group_key': gid[:32],
+                               'group_key_type': 'initial_state_sha256'})
+    if audit_rows:
+        audit_path = os.path.join(args.output_dir, 'v2_sc5_split_isolation_audit.csv')
+        with open(audit_path, 'w', newline='') as f:
+            w = csv.DictWriter(f, fieldnames=['split_pair', 'group_key', 'group_key_type'])
+            w.writeheader(); w.writerows(audit_rows)
+        print(f"  Split audit CSV: {audit_path}")
 
 
 if __name__ == '__main__':

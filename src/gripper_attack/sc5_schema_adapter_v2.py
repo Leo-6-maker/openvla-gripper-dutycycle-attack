@@ -134,6 +134,78 @@ class SC5SchemaAdapterV2:
 
         return provenances
 
+    def validate_record_causal(self, step_record: dict) -> Dict[str, FieldProvenance]:
+        """Validate with causal velocity recovery — NO future leakage.
+
+        Order:
+        1. Resolve current EEF position from record
+        2. Compute velocity = (current_pos - last_history_pos) using PAST ONLY
+        3. Resolve all 13D fields (velocity uses causal derivation)
+        4. Update history with current position for future steps
+
+        This ensures velocity at step t depends ONLY on positions at steps <= t.
+        """
+        # Step 1: resolve current EEF position
+        eef_x_prov = self._resolve_field('eef_x', step_record)
+        eef_y_prov = self._resolve_field('eef_y', step_record)
+        eef_z_prov = self._resolve_field('eef_z', step_record)
+
+        # Step 2: compute causal velocity from past history
+        causal_vx = None; causal_vy = None; causal_vz = None
+        if eef_x_prov.valid and eef_y_prov.valid and eef_z_prov.valid:
+            curr_x = eef_x_prov.value
+            curr_y = eef_y_prov.value
+            curr_z = eef_z_prov.value
+
+            if len(self._eef_history) >= 1:
+                prev = self._eef_history[-1]
+                causal_vx = curr_x - prev['x']
+                causal_vy = curr_y - prev['y']
+                causal_vz = curr_z - prev['z']
+
+            # Step 4 (early): update history with current position
+            # Done BEFORE resolving velocity so fallback can use direct field
+            self._eef_history.append({'x': curr_x, 'y': curr_y, 'z': curr_z})
+
+        # Step 3: resolve all 13D fields
+        provenances = {}
+        for canonical_name in PROPRIO_13D:
+            # Use causal velocity if available and the direct field is missing
+            if canonical_name == 'eef_vx' and causal_vx is not None:
+                direct_prov = self._resolve_field(canonical_name, step_record)
+                if direct_prov.valid:
+                    provenances[canonical_name] = direct_prov
+                else:
+                    provenances[canonical_name] = FieldProvenance(
+                        canonical_name='eef_vx', source_field='eef_x',
+                        source_type=SOURCE_CAUSALLY_DERIVED,
+                        conversion='backward_difference(eef_x, window=2, causal_only)',
+                        unit='meters/step', valid=True, value=causal_vx)
+            elif canonical_name == 'eef_vy' and causal_vy is not None:
+                direct_prov = self._resolve_field(canonical_name, step_record)
+                if direct_prov.valid:
+                    provenances[canonical_name] = direct_prov
+                else:
+                    provenances[canonical_name] = FieldProvenance(
+                        canonical_name='eef_vy', source_field='eef_y',
+                        source_type=SOURCE_CAUSALLY_DERIVED,
+                        conversion='backward_difference(eef_y, window=2, causal_only)',
+                        unit='meters/step', valid=True, value=causal_vy)
+            elif canonical_name == 'eef_vz' and causal_vz is not None:
+                direct_prov = self._resolve_field(canonical_name, step_record)
+                if direct_prov.valid:
+                    provenances[canonical_name] = direct_prov
+                else:
+                    provenances[canonical_name] = FieldProvenance(
+                        canonical_name='eef_vz', source_field='eef_z',
+                        source_type=SOURCE_CAUSALLY_DERIVED,
+                        conversion='backward_difference(eef_z, window=2, causal_only)',
+                        unit='meters/step', valid=True, value=causal_vz)
+            else:
+                provenances[canonical_name] = self._resolve_field(canonical_name, step_record)
+
+        return provenances
+
     def _resolve_field(self, canonical_name: str, step_record: dict) -> FieldProvenance:
         """Resolve a single field from step record using alias chain."""
         aliases = FIELD_ALIASES.get(canonical_name, [canonical_name])
