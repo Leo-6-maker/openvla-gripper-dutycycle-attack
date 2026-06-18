@@ -7,12 +7,16 @@ CHANGES vs run_v2_vis_sc5_bridge.py (only 3):
   3. Trigger condition: step >= _mlp_emit (was: step >= ANCHOR)
 
 ALL VIS attack code preserved exactly. ALL telemetry preserved exactly.
+
+--save_video: logging-only. Saves agentview frames after env step, encodes MP4 at end.
+  Does NOT affect detector, 25D features, checkpoint loading, PGD, decode, or env action.
 """
-import argparse, csv, json, os, sys, time, numpy as np, torch
+import argparse, csv, hashlib, json, os, sys, time, numpy as np, torch
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO)); sys.path.insert(0, str(REPO / "src")); sys.path.insert(0, str(REPO / "scripts"))
+sys.path.insert(0, str(REPO)); sys.path.insert(0, str(REPO / "src"))
+sys.path.insert(0, str(REPO / "scripts"))
 os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "eager")
 
 MODEL_PATH = "/data/aviary/models/openvla/openvla-7b-finetuned-libero-object"
@@ -21,12 +25,17 @@ EPSILON = 0.023529411764705882; TARGET_TOKEN = 31744; ARM_GATE = 5; PGD_STEPS = 
 ap = argparse.ArgumentParser()
 ap.add_argument("--condition", required=True, choices=["CLEAN","TRUE_T10","RAND_T10","SHUFFLED_T10"])
 ap.add_argument("--state_id", type=int, required=True)
-ap.add_argument("--anchor", type=int, required=True, help="Teacher anchor (AUDIT ONLY, not used for trigger)")
-ap.add_argument("--seed_id", type=int, required=True)
+ap.add_argument("--anchor", type=int, required=True, help="Teacher anchor (AUDIT ONLY)")
+ap.add_argument("--seed_id", type=int, default=99)
 ap.add_argument("--output_dir", required=True)
 ap.add_argument("--render_gpu", type=int, required=True)
 ap.add_argument("--mlp_path", default="outputs/sc5_canonical_eng/sc5_mlp_s2.pt")
 ap.add_argument("--task_idx", type=int, default=6, help="LIBERO task index (default 6=butter)")
+# ── Video recording (logging-only, no model impact) ──
+ap.add_argument("--save_video", action="store_true", default=False)
+ap.add_argument("--video_fps", type=int, default=20)
+ap.add_argument("--save_raw_frames", action="store_true", default=False)
+ap.add_argument("--frame_stride", type=int, default=1)
 args = ap.parse_args()
 
 STATE_ID = args.state_id; ANCHOR = args.anchor; IS_ATTACK = args.condition != "CLEAN"
@@ -35,15 +44,12 @@ ATTACK_FRAMES = K if IS_ATTACK else 0
 
 # ── OpenVLA model (identical to v2 bridge) ──
 from transformers import AutoProcessor
-try:
-    from transformers import AutoModelForImageTextToText as AutoModelCls
-except Exception:
-    from transformers import AutoModelForVision2Seq as AutoModelCls
+try: from transformers import AutoModelForImageTextToText as AutoModelCls
+except: from transformers import AutoModelForVision2Seq as AutoModelCls
 processor = AutoProcessor.from_pretrained(MODEL_PATH, trust_remote_code=True, local_files_only=True)
 visible = torch.cuda.device_count()
-model = AutoModelCls.from_pretrained(
-    MODEL_PATH, trust_remote_code=True, local_files_only=True, torch_dtype=torch.bfloat16,
-    low_cpu_mem_usage=True, device_map="auto",
+model = AutoModelCls.from_pretrained(MODEL_PATH, trust_remote_code=True, local_files_only=True,
+    torch_dtype=torch.bfloat16, low_cpu_mem_usage=True, device_map="auto",
     max_memory={idx: "10000MiB" for idx in range(visible)} | {"cpu": "128GiB"}, attn_implementation="eager")
 model_dtype = next(model.parameters()).dtype
 device = "cuda:0"
@@ -52,7 +58,7 @@ for v in model.hf_device_map.values():
 action_dim = int(model.get_action_dim("libero_object"))
 print("Model on %s" % device)
 
-# ── MLP detector (NEW — only change from v2 bridge) ──
+# ── MLP detector ──
 from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime, SC5_FEATURES
 detector = SC5DetectorRuntime(args.mlp_path, tau_corridor=0.3, tau_release=0.3, guard=5)
 print("MLP detector loaded, dataset_sha256=%s" % detector.dataset_sha256[:16])
@@ -89,19 +95,27 @@ env, obs = build_v4_exact_env(bddl, args.render_gpu, 400, 10)
 obs = env.set_init_state(init_states[STATE_ID])
 env, obs = apply_dummy_wait(env, obs, 10)
 
+# Derive object site name from task
 _task_name = task_obj.name
 _obj_key = _task_name.replace("pick_up_the_","").replace("_and_place_it_in_the_basket","")
 obj_sid = env.sim.model.site_name2id(f"{_obj_key}_1_default_site")
 obj_z0 = float(env.sim.data.site_xpos[obj_sid][2])
 
-# ── Online streaming adapter (NEW) ──
+# ── Online streaming adapter ──
 from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
 _streamer = SC5StreamingFeatureAdapterV2()
 _mlp_emit = -1
-# Initialize _prev_eef from env after dummy-wait (enables valid velocity at step 0)
 _eef_init = env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_site")]
 _prev_eef = (float(_eef_init[0]), float(_eef_init[1]), float(_eef_init[2]))
-_invalid_steps = 0; _first_valid_step = -1  # for parity diagnosis
+_invalid_steps = 0; _first_valid_step = -1
+
+# ── Video recording (logging-only, no model impact) ──
+_video_frames = []  # list of np.ndarray (H,W,3) uint8
+_frame_labels = []  # list of dicts with overlay info
+if args.save_video:
+    _video_dir = Path(args.output_dir)
+    _video_dir.mkdir(parents=True, exist_ok=True)
+    print("Video recording ENABLED (fps=%d, stride=%d)" % (args.video_fps, args.frame_stride))
 
 telemetry = []; attack_count = 0; prev_delta_flags = []
 
@@ -120,7 +134,6 @@ for step in range(400):
     obj_x, obj_y, obj_z = float(obj_xyz[0]), float(obj_xyz[1]), float(obj_xyz[2])
     eef_obj_dist = float(np.sqrt((eef_x-obj_x)**2 + (eef_y-obj_y)**2 + (eef_z-obj_z)**2))
 
-    # Clean decode (identical to v2 bridge)
     t0 = time.perf_counter()
     action, _, _, _ = decode_with_scores(model, processor, device, raw, instruction, "libero_object", 8,
         libero_official_preprocess=False, libero_preprocess_backend="official_pil_lanczos",
@@ -128,25 +141,19 @@ for step in range(400):
     raw_grip = float(action[-1]); env_grip = -1.0 if raw_grip > 0.5 else 1.0
     env_action_final = postprocess_openvla_action_for_libero(np.asarray(action, dtype=np.float32), enabled=True)
 
-    # ── MLP ONLINE TRIGGER (causal eef velocity, always advances streamer) ──
     _feat_valid = False; _feat_error = ""; _feat_25d = {}
     _det_state = detector.state; _det_cp = None; _det_rp = None; _det_pp = None
 
     if not detector.emitted:
-        # Causal EEF velocity: backward difference, only when position valid
         eef_valid = np.all(np.isfinite([eef_x, eef_y, eef_z]))
         if _prev_eef is not None and eef_valid:
             _vx = eef_x - _prev_eef[0]; _vy = eef_y - _prev_eef[1]; _vz = eef_z - _prev_eef[2]
         else:
             _vx = float("nan"); _vy = float("nan"); _vz = float("nan")
-        if eef_valid:
-            _prev_eef = (eef_x, eef_y, eef_z)
-
+        if eef_valid: _prev_eef = (eef_x, eef_y, eef_z)
         gripper_ok = not (np.isnan(q7) or np.isnan(q8) or np.isnan(qpos_sum))
         gripper_w = abs(q7)+abs(q8) if gripper_ok else float("nan")
         gripper_q = float(qpos_sum) if gripper_ok else float("nan")
-
-        # Always call streamer (preserves step sequence)
         try:
             _res = _streamer.update(step_id=step, raw_gripper=raw_grip, env_gripper=env_grip,
                 gripper_qpos=gripper_q, gripper_opening_proxy=gripper_w,
@@ -158,26 +165,20 @@ for step in range(400):
             _res = {"valid": False, "error": "step_sequence:%s" % str(e)[:80]}
         except Exception as e:
             _res = {"valid": False, "error": "streamer_error:%s" % type(e).__name__}
-
         _feat_valid = _res.get("valid", False)
         _feat_error = _res.get("error", "")
         if _feat_valid:
             _feat_25d = dict(_res["features"])
-            if _first_valid_step < 0:
-                _first_valid_step = step
-        else:
-            _invalid_steps += 1
-
+            if _first_valid_step < 0: _first_valid_step = step
+        else: _invalid_steps += 1
         if _feat_valid:
             _decision = detector.update(_res["features"], step)
             _det_state = _decision["state"]
             _det_cp = _decision.get("corridor_p")
             _det_rp = _decision.get("release_p")
             _det_pp = _decision.get("pred_phase")
-            if _decision["emitted"]:
-                _mlp_emit = _decision["emit_step"]
+            if _decision["emitted"]: _mlp_emit = _decision["emit_step"]
 
-    # === VIS ATTACK (IDENTICAL to v2 bridge, only trigger condition changed) ===
     attack_this = False; adv_token = None; adv_arm = 0; prev_flag = False
     if IS_ATTACK and _mlp_emit >= 0 and step >= _mlp_emit and attack_count < ATTACK_FRAMES:
         if IS_RAND:
@@ -239,6 +240,20 @@ for step in range(400):
 
     t_vla = time.perf_counter() - t0
 
+    # ── Video frame capture (logging-only, AFTER env_action computed) ──
+    if args.save_video and step % args.frame_stride == 0:
+        _frame = obs["agentview_image"].copy()  # CPU copy, no in-place modification
+        _video_frames.append(np.asarray(_frame, dtype=np.uint8))
+        _frame_labels.append({
+            "step": step, "attack_this": attack_this, "task_success": None,
+            "detector_state": _det_state, "corridor_p": _det_cp, "release_p": _det_rp,
+            "pred_phase": _det_pp, "mlp_emit": _mlp_emit, "teacher_anchor": ANCHOR,
+            "raw_gripper": raw_grip, "env_gripper": env_grip, "qpos_sum": qpos_sum,
+            "attack_count": attack_count, "adv_token": adv_token,
+            "condition": args.condition, "task_name": task_obj.name, "task_idx": TASK_IDX,
+            "state_id": STATE_ID, "seed_id": args.seed_id, "feat_valid": _feat_valid,
+        })
+
     _tel = {"step": step, "condition": args.condition, "anchor": ANCHOR,
         "mlp_emit": _mlp_emit, "raw_gripper": raw_grip, "env_gripper": env_grip,
         "qpos_sum": qpos_sum, "eef_x": eef_x, "eef_y": eef_y, "eef_z": eef_z,
@@ -250,8 +265,7 @@ for step in range(400):
         "detector_state": _det_state, "corridor_p": _det_cp, "release_p": _det_rp,
         "pred_phase": _det_pp, "qpos_source": "q7+q8_sum"}
     if _feat_valid:
-        for fn in SC5_FEATURES:
-            _tel["f_"+fn] = _feat_25d.get(fn, float("nan"))
+        for fn in SC5_FEATURES: _tel["f_"+fn] = _feat_25d.get(fn, float("nan"))
     telemetry.append(_tel)
 
     obs, _, done, _ = env.step(env_action_final)
@@ -260,7 +274,7 @@ for step in range(400):
 success = bool(env.check_success()) if hasattr(env, "check_success") else False
 env.close()
 
-# Metrics (identical to v2 bridge)
+# ── Metrics ──
 atk_rows = [r for r in telemetry if r["attack_this"] == True]
 n_atk = len(atk_rows)
 n_open_token = sum(1 for r in atk_rows if str(r.get("adv_token","")) != "" and int(r["adv_token"]) == TARGET_TOKEN)
@@ -279,15 +293,73 @@ summary = {"condition": args.condition, "state_id": STATE_ID, "teacher_anchor": 
     "token_open_duty": round(n_open_token/n_atk,3) if n_atk>0 else 0,
     "arm_duty": round(n_arm_ok/n_atk,3) if n_atk>0 else 0,
     "env_open_duty": round(n_env_open/n_atk,3) if n_atk>0 else 0,
-    "prev_delta_flags": prev_delta_flags, "task_success": success}
+    "prev_delta_flags": prev_delta_flags, "task_success": success,
+    "task_name": task_obj.name, "task_idx": TASK_IDX, "seed_id": args.seed_id}
 
 out = Path(args.output_dir); out.mkdir(parents=True, exist_ok=True)
-with open(out / "step_telemetry.csv", "w", newline="") as f:
+csv_path = out / "step_telemetry.csv"
+with open(csv_path, "w", newline="") as f:
     w = csv.DictWriter(f, fieldnames=list(telemetry[0].keys())); w.writeheader(); w.writerows(telemetry)
-with open(out / "episode_summary.json", "w") as f:
-    json.dump(summary, f, indent=2, default=str)
-print("%s s%d teacher=%d emit=%d err=%d: steps=%d atk=%d tok=%.2f env=%.2f arm=%.2f succ=%s" % (
+json_path = out / "episode_summary.json"
+with open(json_path, "w") as f: json.dump(summary, f, indent=2, default=str)
+tel_sha = hashlib.sha256(csv_path.read_bytes()).hexdigest()
+
+# ── Video encoding (logging-only, after rollout completes) ──
+video_sha = ""; frame_csv_path = ""; video_manifest = {}
+if args.save_video and _video_frames:
+    from PIL import Image, ImageDraw, ImageFont
+    _vfdir = out / "frames"
+    if args.save_raw_frames: _vfdir.mkdir(parents=True, exist_ok=True)
+    _flist = []
+    for i, (_frame, _lbl) in enumerate(zip(_video_frames, _frame_labels)):
+        _img = Image.fromarray(_frame, mode="RGB")
+        _draw = ImageDraw.Draw(_img)
+        _lbl["task_success"] = success  # set at end
+        # Frame annotation
+        _draw.rectangle((0, 0, _img.width, 20), fill=(0, 0, 0))
+        _info = f"t{_lbl['step']:03d} | {_lbl['task_name'][:30]} s{_lbl['state_id']} | {_lbl['condition']}"
+        _draw.text((4, 2), _info, fill=(255, 255, 255))
+        if _lbl['attack_this']:
+            _draw.rectangle((0, 0, _img.width-1, _img.height-1), outline=(255, 0, 0), width=3)
+        elif _lbl['step'] == _lbl['mlp_emit'] and _lbl['mlp_emit'] >= 0:
+            _draw.rectangle((0, 0, _img.width-1, _img.height-1), outline=(255, 255, 0), width=3)
+        if _lbl['step'] == _lbl['teacher_anchor']:
+            _draw.rectangle((0, 0, _img.width-1, _img.height-1), outline=(0, 0, 255), width=1)
+        if not _lbl.get('feat_valid', True):
+            _draw.rectangle((0, _img.height-5, _img.width, _img.height), fill=(128, 0, 128))
+        _frame = np.asarray(_img, dtype=np.uint8)
+        if args.save_raw_frames:
+            _fpath = _vfdir / f"frame_{i:06d}.png"
+            Image.fromarray(_frame).save(_fpath)
+        _flist.append({"frame_idx": i, "step": _lbl["step"], "attack_this": _lbl["attack_this"],
+                        "detector_state": _lbl["detector_state"], "mlp_emit": _lbl["mlp_emit"]})
+        _video_frames[i] = _frame  # replace with annotated version
+
+    from imageio.v2 import mimwrite as _mimwrite
+    _vpath = out / "rollout_agentview.mp4"
+    _mimwrite(str(_vpath), _video_frames, fps=args.video_fps, codec="libx264", quality=8,
+              output_params=["-pix_fmt", "yuv420p", "-preset", "fast"])
+    video_sha = hashlib.sha256(_vpath.read_bytes()).hexdigest()
+    print("Video saved: %s (%d frames, SHA=%s)" % (_vpath, len(_video_frames), video_sha[:16]))
+
+    frame_csv_path = out / "frame_index.csv"
+    with open(frame_csv_path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=["frame_idx","step","attack_this","detector_state","mlp_emit"])
+        w.writeheader(); w.writerows(_flist)
+
+    video_manifest = {"task_name": task_obj.name, "task_idx": TASK_IDX, "state_id": STATE_ID,
+        "seed_id": args.seed_id, "condition": args.condition,
+        "teacher_anchor": ANCHOR, "mlp_emit_step": _mlp_emit,
+        "n_steps": len(telemetry), "attack_frames": n_atk, "open_tokens": n_open_token,
+        "env_open_frames": n_env_open, "task_success": success,
+        "checkpoint_sha256": detector.checkpoint_sha256, "dataset_sha256": detector.dataset_sha256,
+        "video_sha256": video_sha, "step_telemetry_sha256": tel_sha,
+        "replay_validation_status": "ORIGINAL_FRAMES_USED"}
+    with open(out / "video_manifest.json", "w") as f: json.dump(video_manifest, f, indent=2)
+
+print("%s s%d teacher=%d emit=%d err=%d: steps=%d atk=%d tok=%.2f env=%.2f arm=%.2f succ=%s%s" % (
     args.condition, STATE_ID, ANCHOR, _mlp_emit,
     (_mlp_emit - ANCHOR) if _mlp_emit >= 0 else -1,
     len(telemetry), n_atk, summary["token_open_duty"], summary["env_open_duty"],
-    summary["arm_duty"], success))
+    summary["arm_duty"], success,
+    " [VIDEO]" if args.save_video else ""))
