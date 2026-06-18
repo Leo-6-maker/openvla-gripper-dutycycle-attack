@@ -18,6 +18,20 @@ def sha256_hex(data: str) -> str:
     return hashlib.sha256(data.encode('utf-8')).hexdigest()
 
 
+def _safe_float(v, default=0.0):
+    """Convert to float, handling empty strings, None, nan."""
+    if v is None:
+        return default
+    if isinstance(v, bool):
+        return default
+    if isinstance(v, str) and v.strip() in ('', 'nan', 'NaN', 'NAN', 'inf', '-inf', 'Infinity'):
+        return default
+    try:
+        return float(v)
+    except (ValueError, TypeError):
+        return default
+
+
 def trajectory_content_hash(records: List[dict]) -> str:
     """Full-sequence content hash: task, state_id, EEF, gripper, action, n_steps.
 
@@ -28,10 +42,10 @@ def trajectory_content_hash(records: List[dict]) -> str:
     for r in records:
         row = {
             'step': int(r.get('step_idx', r.get('policy_step_idx', 0))),
-            'eef_x': round(float(r.get('eef_x', 0)), 4),
-            'eef_y': round(float(r.get('eef_y', 0)), 4),
-            'eef_z': round(float(r.get('eef_z', 0)), 4),
-            'gripper': round(float(r.get('gripper_command', 0)), 4),
+            'eef_x': round(_safe_float(r.get('eef_x', 0)), 4),
+            'eef_y': round(_safe_float(r.get('eef_y', 0)), 4),
+            'eef_z': round(_safe_float(r.get('eef_z', 0)), 4),
+            'gripper': round(_safe_float(r.get('gripper_command', 0)), 4),
         }
         content.append(row)
     return sha256_hex(json.dumps(content, sort_keys=True))
@@ -44,19 +58,19 @@ def proprio_sequence_hash(records: List[dict]) -> str:
         if not r.get('teacher_privileged_state_available'):
             continue
         row = {
-            'gripper_command': round(float(r.get('gripper_command', 0)), 4),
-            'gripper_qpos': round(float(r.get('gripper_qpos', 0)), 6),
-            'gripper_width': round(float(r.get('gripper_width', r.get('gripper_opening_proxy', 0))), 6),
-            'eef_x': round(float(r.get('eef_x', 0)), 4),
-            'eef_y': round(float(r.get('eef_y', 0)), 4),
-            'eef_z': round(float(r.get('eef_z', 0)), 4),
-            'eef_vx': round(float(r.get('eef_vx', 0)), 6),
-            'eef_vy': round(float(r.get('eef_vy', 0)), 6),
-            'eef_vz': round(float(r.get('eef_vz', 0)), 6),
-            'action_dx': round(float(r.get('action_dx', 0)), 6),
-            'action_dy': round(float(r.get('action_dy', 0)), 6),
-            'action_dz': round(float(r.get('action_dz', 0)), 6),
-            'action_gripper': round(float(r.get('action_gripper', 0)), 6),
+            'gripper_command': round(_safe_float(r.get('gripper_command', 0)), 4),
+            'gripper_qpos': round(_safe_float(r.get('gripper_qpos', 0)), 6),
+            'gripper_width': round(_safe_float(r.get('gripper_width', r.get('gripper_opening_proxy', 0))), 6),
+            'eef_x': round(_safe_float(r.get('eef_x', 0)), 4),
+            'eef_y': round(_safe_float(r.get('eef_y', 0)), 4),
+            'eef_z': round(_safe_float(r.get('eef_z', 0)), 4),
+            'eef_vx': round(_safe_float(r.get('eef_vx', 0)), 6),
+            'eef_vy': round(_safe_float(r.get('eef_vy', 0)), 6),
+            'eef_vz': round(_safe_float(r.get('eef_vz', 0)), 6),
+            'action_dx': round(_safe_float(r.get('action_dx', 0)), 6),
+            'action_dy': round(_safe_float(r.get('action_dy', 0)), 6),
+            'action_dz': round(_safe_float(r.get('action_dz', 0)), 6),
+            'action_gripper': round(_safe_float(r.get('action_gripper', 0)), 6),
         }
         seq.append(row)
     if not seq:
@@ -75,8 +89,8 @@ def privileged_sequence_hash(records: List[dict]) -> str:
         row = {
             'object_pose': obj_str[:80] if obj_str else '',
             'target_pose': tgt_str[:80] if tgt_str else '',
-            'obj_target_dist': round(float(r.get('object_to_target_distance', 0)), 6),
-            'obj_eef_dist': round(float(r.get('object_eef_distance', 0)), 6),
+            'obj_target_dist': round(_safe_float(r.get('object_to_target_distance', 0)), 6),
+            'obj_eef_dist': round(_safe_float(r.get('object_eef_distance', 0)), 6),
         }
         seq.append(row)
     if not seq:
@@ -93,10 +107,10 @@ def initial_state_hash(records: List[dict]) -> str:
     state_vec = []
     for r in first_3:
         state_vec.append({
-            'eef_x': round(float(r.get('eef_x', 0)), 4),
-            'eef_y': round(float(r.get('eef_y', 0)), 4),
-            'eef_z': round(float(r.get('eef_z', 0)), 4),
-            'gripper_qpos': round(float(r.get('gripper_qpos', 0)), 6),
+            'eef_x': round(_safe_float(r.get('eef_x', 0)), 4),
+            'eef_y': round(_safe_float(r.get('eef_y', 0)), 4),
+            'eef_z': round(_safe_float(r.get('eef_z', 0)), 4),
+            'gripper_qpos': round(_safe_float(r.get('gripper_qpos', 0)), 6),
             'obj_z': round(json.loads(r.get('object_pose_json', '[0,0,0]'))[2], 4)
             if r.get('object_pose_json') else 0.0,
         })
