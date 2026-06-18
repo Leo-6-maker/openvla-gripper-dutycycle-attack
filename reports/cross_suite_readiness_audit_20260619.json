@@ -1,0 +1,100 @@
+{
+  "checks": [
+    {
+      "check": "feature_count_25",
+      "detail": "count=25",
+      "status": "PASS"
+    },
+    {
+      "check": "checkpoint_sha_present",
+      "detail": "detector checkpoint sha",
+      "status": "PASS"
+    },
+    {
+      "check": "dataset_sha_present",
+      "detail": "detector dataset sha",
+      "status": "PASS"
+    },
+    {
+      "check": "normalization_source_object_train",
+      "detail": "object_train_only_checkpoint_mean_std",
+      "status": "PASS"
+    },
+    {
+      "check": "uses_target_suite_training_data",
+      "detail": "value=False",
+      "status": "PASS"
+    },
+    {
+      "check": "uses_target_suite_normalization",
+      "detail": "value=False",
+      "status": "PASS"
+    },
+    {
+      "check": "uses_online_privileged_state",
+      "detail": "value=False",
+      "status": "PASS"
+    },
+    {
+      "check": "uses_attack_outcome_for_selection",
+      "detail": "value=False",
+      "status": "PASS"
+    },
+    {
+      "check": "uses_manual_anchor_for_trigger",
+      "detail": "value=False",
+      "status": "PASS"
+    },
+    {
+      "check": "k_equals_10",
+      "detail": "K=10",
+      "status": "PASS"
+    },
+    {
+      "check": "target_token_31744",
+      "detail": "target=31744",
+      "status": "PASS"
+    },
+    {
+      "check": "pgd_steps_20",
+      "detail": "steps=20",
+      "status": "PASS"
+    },
+    {
+      "check": "epsilon_6_over_255",
+      "detail": "epsilon=0.023529411764705882",
+      "status": "PASS"
+    },
+    {
+      "check": "libero_spatial_checkpoint_declared",
+      "detail": "/data/aviary/models/openvla/openvla-7b-finetuned-libero-spatial",
+      "status": "PASS"
+    },
+    {
+      "check": "libero_spatial_unnorm_key_declared",
+      "detail": "libero_spatial",
+      "status": "PASS"
+    },
+    {
+      "check": "libero_goal_checkpoint_declared",
+      "detail": "/data/aviary/models/openvla/openvla-7b-finetuned-libero-goal",
+      "status": "PASS"
+    },
+    {
+      "check": "libero_goal_unnorm_key_declared",
+      "detail": "libero_goal",
+      "status": "PASS"
+    },
+    {
+      "check": "libero_10_checkpoint_declared",
+      "detail": "/data/aviary/models/openvla/openvla-7b-finetuned-libero-10",
+      "status": "PASS"
+    },
+    {
+      "check": "libero_10_unnorm_key_declared",
+      "detail": "libero_10",
+      "status": "PASS"
+    }
+  ],
+  "status": "PASS"
+}
