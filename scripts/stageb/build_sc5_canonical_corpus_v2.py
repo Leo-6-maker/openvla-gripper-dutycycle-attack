@@ -36,6 +36,9 @@ from gripper_attack.v2_privileged_teacher import (
     find_sc5_anchor_v2, compute_sc5_valid_start_corridor)
 from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
 from gripper_attack.sc5_schema_adapter_v2 import SC5SchemaAdapterV2
+from gripper_attack.sc5_event_segmenter_v2 import (
+    SC5EventSegmenterV2, segment_events_from_labels, compute_event_sc5,
+    _count_consecutive_stable_carry)
 from gripper_attack.sc5_dedup import (
     compute_all_hashes, dedup_episodes, validate_split_isolation,
     validate_multi_split_isolation, _safe_float, MISSING_SENTINEL)
@@ -198,68 +201,42 @@ def main():
           f"({tier_c_count} Tier C excluded)")
 
     # ── Step 5: Build dataset with row buffering + two-pass velocity recovery ──
-    print("5. Building dataset with mature Layer 1/2...")
-    rows = []; ep_rows = []; field_audit = Counter()
+    print("5. Building dataset with mature Layer 1/2 + event segmenter for Tier C...")
+    rows = []; ep_rows = []; evt_rows = []; field_audit = Counter()
     post_dedup_disposition = defaultdict(list)
+    tier_c_stats = Counter()
+    segmenter = SC5EventSegmenterV2(teacher)
 
-    for ep in unique:
-        records = ep['records']
-        labels = teacher.label_trajectory(records)
-        label_by_step = {l['step_idx']: l for l in labels}
-        sc5 = find_sc5_anchor_v2(labels, K=K, guard=GUARD)
-        corridor = compute_sc5_valid_start_corridor(labels, sc5['anchor'], K=K) if sc5['valid'] else None
-
-        # Required contiguous span: [earliest grasp_close, sc5_anchor + K - 1]
-        # Covers the full close→carry→K10 history needed for causal 25D features.
-        grasp_close_steps = [l['step_idx'] for l in labels if l['phase'] == 'grasp_close']
-        if sc5['valid'] and sc5['stable_carry_start'] >= 0:
-            required_start = grasp_close_steps[0] if grasp_close_steps else sc5['stable_carry_start']
-            required_end = sc5['anchor'] + K - 1
-        else:
-            required_start = min((int(r.get('step_idx', 0)) for r in records
-                                  if r.get('teacher_privileged_state_available')), default=0)
-            required_end = max((int(r.get('step_idx', 0)) for r in records
-                                if r.get('teacher_privileged_state_available')), default=0)
-        required_span = set(range(required_start, required_end + 1))
-
-        # ── MATURE modules ──
+    # ── Helper: build rows for one event span ──
+    def build_event_rows(ep, labels, label_by_step, records, sc5, corridor,
+                         event_start, event_end, event_id, parent_ep_id):
+        """Extract 25D features for a contiguous event span."""
         adapter = SC5StreamingFeatureAdapterV2()
         schema_adapter = SC5SchemaAdapterV2()
-
-        # Causal-only: validate_record_causal() resolves velocity from past positions only.
-        # No global pre-load — each step only sees history from previous steps.
-        episode_rows = []
-        local_step = 0
-        policy_step_gap = False
+        local_rows = []; local_step = 0; gap = False
+        rqd = set(range(event_start, event_end + 1))
 
         for r in records:
             if not r.get('teacher_privileged_state_available'): continue
             step_raw = int(r.get('step_idx', r.get('policy_step_idx', 0)))
+            if step_raw < event_start or step_raw > event_end: continue
 
-            # Causal schema validation (velocity from past positions only, no future)
             provenances = schema_adapter.validate_record_causal(r)
             for name, p in provenances.items():
                 field_audit[f"{name}:{p.source_type}"] += 1
             if not schema_adapter.all_valid(provenances):
-                if step_raw in required_span: policy_step_gap = True
-                continue
+                if step_raw in rqd: gap = True; continue
             values = schema_adapter.extract_values(provenances)
-
             if any((isinstance(v, float) and (math.isnan(v) or v == MISSING_SENTINEL))
                    for v in values.values()):
-                if step_raw in required_span: policy_step_gap = True
-                continue
-
+                if step_raw in rqd: gap = True; continue
             env_action = r.get('env_action', None)
             if not (isinstance(env_action, (list, tuple)) and len(env_action) >= 7):
-                if step_raw in required_span: policy_step_gap = True
-                continue
+                if step_raw in rqd: gap = True; continue
             env_grip = float(env_action[6])
             raw_grip = float(values['gripper_command'])
             if (raw_grip <= 0.5) != (env_grip > 0):
-                if step_raw in required_span: policy_step_gap = True
-                continue
-
+                if step_raw in rqd: gap = True; continue
             try:
                 result = adapter.update(
                     step_id=local_step, raw_gripper=raw_grip, env_gripper=env_grip,
@@ -270,18 +247,16 @@ def main():
                     action_dx=values['action_dx'], action_dy=values['action_dy'],
                     action_dz=values['action_dz'], action_gripper=values['action_gripper'])
             except ValueError:
-                if step_raw in required_span: policy_step_gap = True
-                continue
+                if step_raw in rqd: gap = True; continue
             if not result['valid']:
-                if step_raw in required_span: policy_step_gap = True
-                continue
+                if step_raw in rqd: gap = True; continue
             local_step += 1
 
             tl = label_by_step.get(step_raw)
-            has_sc5 = sc5['valid'] and not policy_step_gap
-            in_window = has_sc5 and sc5['window'][0] <= step_raw <= sc5['window'][1]
-            in_corridor = corridor is not None and step_raw in corridor['corridor_active_at_t']
-            k10_valid = (corridor is not None and step_raw < len(corridor['full_k10_valid_at_t'])
+            has_sc5 = sc5['valid'] and not gap
+            in_window = has_sc5 and sc5.get('window') and sc5['window'][0] <= step_raw <= sc5['window'][1]
+            in_corridor = corridor is not None and step_raw in corridor.get('corridor_active_at_t', set())
+            k10_valid = (corridor is not None and step_raw < len(corridor.get('full_k10_valid_at_t', []))
                          and corridor['full_k10_valid_at_t'][step_raw])
 
             row = dict(result['features'])
@@ -289,8 +264,9 @@ def main():
                 'step_idx': step_raw, 'state_id': ep['state_id'],
                 'task_name': ep['task_name'], 'is_butter': ep['is_butter'],
                 'is_held_out': ep['is_held_out'], 'run_id': ep['run_id'],
-                'episode_id': ep.get('episode_id', ''),
-                'split': ep.get('split', ''),
+                'episode_id': parent_ep_id or ep.get('episode_id', ''),
+                'event_id': event_id, 'split': ep.get('split', ''),
+                'candidate_tier': ep.get('candidate_tier', ''),
                 'initial_state_sha256': ep.get('initial_state_sha256', ''),
                 'trajectory_content_sha256': ep.get('trajectory_content_sha256', ''),
                 'teacher_phase': tl['phase'] if tl else 'abstain',
@@ -299,32 +275,115 @@ def main():
                 'teacher_sc5_ready': int(has_sc5 and step_raw == sc5['anchor']),
                 'teacher_sc5_corridor_active': int(in_corridor),
                 'teacher_full_k10_valid_at_t': int(k10_valid),
-                'teacher_stable_carry_start': sc5['stable_carry_start'] if has_sc5 else -1,
+                'teacher_stable_carry_start': sc5.get('stable_carry_start', -1) if has_sc5 else -1,
                 'teacher_confidence': tl['confidence'] if tl else 0.0,
             })
-            episode_rows.append(row)
+            local_rows.append(row)
+        return local_rows, gap, local_step
 
-        # ── Row buffering: only flush to global on PASS ──
+    # ── Main episode loop ──
+    for ep in unique:
+        records = ep['records']
+        labels = teacher.label_trajectory(records)
+        label_by_step = {l['step_idx']: l for l in labels}
+        tier = ep.get('candidate_tier', '')
+        parent_ep_id = ep.get('episode_id', '')
+        split = ep.get('split', '')
+
+        # ── Tier C: event segmentation ──
+        if tier == TIER_C:
+            tier_c_stats['parent_episodes'] += 1
+            seg_result = segmenter.segment(labels, records, K=K, guard=GUARD)
+            n_events = seg_result['n_events']
+
+            valid_events = [e for e in seg_result['events'] if e.get('event_valid')]
+            rejected = [e for e in seg_result['events'] if not e.get('event_valid')]
+
+            for evt in valid_events:
+                evt_sc5 = evt.get('sc5', {})
+                evt_corridor = None
+                if evt_sc5.get('valid'):
+                    evt_corridor = compute_sc5_valid_start_corridor(
+                        labels, evt_sc5['anchor'], K=K)
+                evt_rows_list, evt_gap, evt_steps = build_event_rows(
+                    ep, labels, label_by_step, records,
+                    evt_sc5, evt_corridor,
+                    evt['start_step'], evt['end_step'],
+                    evt['event_id'], parent_ep_id)
+
+                if evt_gap:
+                    tier_c_stats['event_timeline_gap'] += 1
+                    continue
+                if evt_steps == 0:
+                    tier_c_stats['event_no_feature_rows'] += 1
+                    continue
+
+                tier_c_stats['valid_events'] += 1
+                rows.extend(evt_rows_list)
+                evt_rows.append({
+                    'parent_episode_id': parent_ep_id,
+                    'event_id': evt['event_id'],
+                    'task': ep['task_name'], 'state_id': ep['state_id'],
+                    'split': split, 'candidate_tier': tier,
+                    'corpus_class': 'PRIMARY_SC5_POSITIVE',
+                    'n_steps': evt_steps,
+                    'sc5_valid': True,
+                    'sc5_anchor': evt_sc5.get('anchor', -1),
+                    'event_start': evt['start_step'],
+                    'event_end': evt['end_step'],
+                })
+
+            for evt in rejected:
+                tier_c_stats[f'reject_{evt.get("reject_reason","unknown")}'] += 1
+
+            if not valid_events:
+                tier_c_stats['OOD_MULTI_STAGE_ABSTAIN'] += 1
+                post_dedup_disposition['OOD_MULTI_STAGE_ABSTAIN'].append(
+                    {'episode_id': parent_ep_id, 'state_id': ep['state_id'],
+                     'task': ep['task_name'],
+                     'reason': seg_result.get('abstain_reason', 'no_valid_event')})
+            continue
+
+        # ── Tier A+B: whole-episode SC5 ──
+        sc5 = find_sc5_anchor_v2(labels, K=K, guard=GUARD)
+        corridor = compute_sc5_valid_start_corridor(labels, sc5['anchor'], K=K) if sc5['valid'] else None
+
+        grasp_close_steps = [l['step_idx'] for l in labels if l['phase'] == 'grasp_close']
+        if sc5['valid'] and sc5['stable_carry_start'] >= 0:
+            rqd_start = grasp_close_steps[0] if grasp_close_steps else sc5['stable_carry_start']
+            rqd_end = sc5['anchor'] + K - 1
+        else:
+            rqd_start = min((int(r.get('step_idx', 0)) for r in records
+                              if r.get('teacher_privileged_state_available')), default=0)
+            rqd_end = max((int(r.get('step_idx', 0)) for r in records
+                            if r.get('teacher_privileged_state_available')), default=0)
+
+        episode_rows, policy_step_gap, local_step = build_event_rows(
+            ep, labels, label_by_step, records, sc5, corridor,
+            rqd_start, rqd_end, -1, parent_ep_id)
+
         if policy_step_gap:
             post_dedup_disposition['NONCONTIGUOUS_POLICY_TIMELINE'].append(
-                {'episode_id': ep.get('episode_id', ''), 'state_id': ep['state_id'],
+                {'episode_id': parent_ep_id, 'state_id': ep['state_id'],
                  'task': ep['task_name'], 'reason': 'gap_in_required_span',
                  'sc5_anchor': sc5.get('anchor', -1) if sc5 else -1})
         elif local_step == 0:
             post_dedup_disposition['NO_VALID_FEATURE_ROWS'].append(
-                {'episode_id': ep.get('episode_id', ''), 'state_id': ep['state_id'],
+                {'episode_id': parent_ep_id, 'state_id': ep['state_id'],
                  'task': ep['task_name'], 'reason': 'no_valid_policy_steps',
                  'sc5_anchor': sc5.get('anchor', -1) if sc5 else -1})
         else:
             post_dedup_disposition['INCLUDED'].append(
-                {'episode_id': ep.get('episode_id', ''), 'state_id': ep['state_id'],
+                {'episode_id': parent_ep_id, 'state_id': ep['state_id'],
                  'task': ep['task_name'], 'sc5_anchor': sc5.get('anchor', -1) if sc5 else -1})
-            rows.extend(episode_rows)  # flush buffered rows
+            rows.extend(episode_rows)
             ep_rows.append({
-                'episode_id': ep.get('episode_id', ''),
+                'episode_id': parent_ep_id, 'parent_episode_id': '',
+                'event_id': -1,
                 'run_id': ep['run_id'], 'task': ep['task_name'],
                 'state_id': ep['state_id'], 'is_butter': ep['is_butter'],
                 'is_held_out': ep['is_held_out'], 'split': ep['split'],
+                'candidate_tier': tier,
                 'initial_state_sha256': ep.get('initial_state_sha256', ''),
                 'trajectory_content_sha256': ep.get('trajectory_content_sha256', ''),
                 'n_steps': local_step, 'sc5_valid': sc5['valid'] and not policy_step_gap,
@@ -332,6 +391,12 @@ def main():
                 'corridor_start': corridor['corridor_start'] if corridor and not policy_step_gap else -1,
                 'corridor_end': corridor['corridor_end'] if corridor and not policy_step_gap else -1,
             })
+
+    # Tier C statistics
+    if tier_c_stats:
+        print(f"\n  Tier C segmentation:")
+        for k, v in sorted(tier_c_stats.items()):
+            print(f"    {k}: {v}")
 
     # ── Step 6: Write outputs (compatible with train_sc5_student_v2.py) ──
     print("6. Writing outputs...")
@@ -343,12 +408,34 @@ def main():
     if ep_rows:
         with open(os.path.join(args.output_dir, 'v2_sc5_canonical_episodes.csv'), 'w', newline='') as f:
             w = csv.DictWriter(f, fieldnames=list(ep_rows[0].keys())); w.writeheader(); w.writerows(ep_rows)
+    if evt_rows:
+        with open(os.path.join(args.output_dir, 'v2_sc5_canonical_event_manifest.csv'), 'w', newline='') as f:
+            w = csv.DictWriter(f, fieldnames=list(evt_rows[0].keys())); w.writeheader(); w.writerows(evt_rows)
     if field_audit:
         with open(os.path.join(args.output_dir, 'v2_sc5_field_source_audit.csv'), 'w', newline='') as f:
             w = csv.DictWriter(f, fieldnames=['field_source','count']); w.writeheader()
             for fs, cnt in field_audit.most_common(): w.writerow({'field_source': fs, 'count': cnt})
 
-    manifest = {'K': K, 'guard': GUARD, 'n_rows': len(rows), 'n_episodes': len(ep_rows)}
+    # Teacher config freeze
+    config_json = {
+        'grasp_close_sustain': teacher.cfg.grasp_close_sustain,
+        'lift_z_threshold': teacher.cfg.lift_z_threshold,
+        'eef_obj_dist_max': teacher.cfg.eef_obj_dist_max,
+        'release_target_dist_max': teacher.cfg.release_target_dist_max,
+        'guard': GUARD, 'K': K,
+        'calibration_tiers': 'Tier_A+B_train_only',
+        'tier_c_excluded': tier_c_stats.get('parent_episodes', 0) if tier_c_stats else 0,
+        'n_calibration_paths': len(valid_paths),
+    }
+    config_path = os.path.join(args.artifacts_dir, 'v2_sc5_teacher_config.json')
+    with open(config_path, 'w') as f:
+        json.dump(config_json, f, indent=2)
+    config_sha = hashlib.sha256(json.dumps(config_json, sort_keys=True).encode()).hexdigest()
+    with open(os.path.join(args.artifacts_dir, 'v2_sc5_teacher_config.sha256'), 'w') as f:
+        f.write(f"{config_sha}  v2_sc5_teacher_config.json\n")
+
+    manifest = {'K': K, 'guard': GUARD, 'n_rows': len(rows), 'n_episodes': len(ep_rows),
+                'n_events': len(evt_rows), 'teacher_sha': config_sha[:16]}
     with open(os.path.join(args.artifacts_dir, 'v2_sc5_canonical_manifest.json'), 'w') as f:
         json.dump(manifest, f, indent=2)
 

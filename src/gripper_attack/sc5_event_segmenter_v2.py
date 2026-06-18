@@ -280,28 +280,35 @@ class SC5EventSegmenterV2:
             evt_result = {**evt, 'sc5': None, 'object_ok': False,
                           'event_valid': False, 'reject_reason': ''}
 
-            # Gate 1: required phases
+            # Gate 1: required phases exist
             if not evt.get('has_all_required_phases', False):
                 evt_result['reject_reason'] = 'missing_required_phases'
                 result['events'].append(evt_result)
                 continue
 
-            # Gate 2: stable_carry minimum length
+            # Gate 2: phase order valid
+            if not evt.get('phase_order_valid', False):
+                evt_result['reject_reason'] = 'phase_order_invalid'
+                result['events'].append(evt_result)
+                continue
+
+            # Gate 3: stable_carry minimum length
             sc_len = _count_consecutive_stable_carry(labels, evt)
             if sc_len < MIN_STABLE_CARRY_STEPS:
                 evt_result['reject_reason'] = f'stable_carry_too_short({sc_len}<{MIN_STABLE_CARRY_STEPS})'
                 result['events'].append(evt_result)
                 continue
 
-            # Gate 3: object identity
+            # Gate 4: object identity
             if step_records:
                 obj_result = validate_transported_object(labels, evt, step_records)
                 evt_result['object_ok'] = obj_result['unique_object']
                 evt_result['object_hash'] = obj_result['first_object_hash']
                 evt_result['object_verifiable'] = obj_result['verifiable']
 
-                # For anonymous pose streams in multi-event episodes: require verifiable identity
-                if result['n_events'] > 1 and not obj_result['verifiable']:
+                # For multi-stage (Tier C): require verifiable identity.
+                # Anonymous single pose stream is INSUFFICIENT for multi-object.
+                if result['is_multi_stage'] and not obj_result['verifiable']:
                     evt_result['reject_reason'] = 'OBJECT_IDENTITY_UNVERIFIABLE'
                     result['events'].append(evt_result)
                     continue
