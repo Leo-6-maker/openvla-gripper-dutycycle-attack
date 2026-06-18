@@ -1,0 +1,161 @@
+# SC5 canonical schema field aliases and provenance rules.
+# Frozen against commit 45aad45 census snapshot.
+#
+# source_type taxonomy:
+#   direct            - field exists verbatim in step_records.jsonl
+#   vector_extracted  - computed from raw_action or env_action vector
+#   causally_derived  - computed from history[:t] only, no future leakage
+#   missing           - not available in source, must be flagged (never zero-filled)
+#   ambiguous         - field exists but semantic meaning unclear (flag, don't use)
+
+version: "v2_canonical_frozen_20260618"
+frozen_census_commit: "45aad452d4b0ce6554757d7e2d9c8b3bb215e607"
+
+# ── Gripper semantics (frozen) ──
+gripper_semantics:
+  raw_close_threshold: 0.5
+  raw_close_rule: "raw_gripper <= 0.5 = CLOSE intent"
+  raw_open_rule: "raw_gripper > 0.5 = OPEN intent"
+  env_close_rule: "env_gripper > 0 = CLOSE command"
+  env_open_rule: "env_gripper < 0 = OPEN command"
+  semantics_validation: "raw_close must equal env_close"
+  conflict_action: "GRIPPER_SEMANTICS_AMBIGUOUS - exclude from positive corpus"
+
+# ── Field aliases ──
+required_deployment_fields:
+  gripper_command:
+    aliases: [gripper_command]
+    source_type: direct
+    conversion: identity
+    unit: "normalized [0,1]"
+    note: "raw_gripper from OpenVLA decode"
+
+  gripper_qpos:
+    aliases: [gripper_qpos]
+    source_type: direct
+    conversion: identity
+    unit: "radians"
+    note: "sum of absolute finger joint positions"
+
+  gripper_opening_proxy:
+    aliases: [gripper_width, gripper_opening_proxy]
+    source_type: direct
+    conversion: identity
+    unit: "meters"
+    note: "abs(q7)+abs(q8); physical gripper aperture proxy"
+
+  eef_x:
+    aliases: [eef_x]
+    source_type: direct
+    conversion: identity
+    unit: "meters"
+
+  eef_y:
+    aliases: [eef_y]
+    source_type: direct
+    conversion: identity
+    unit: "meters"
+
+  eef_z:
+    aliases: [eef_z]
+    source_type: direct
+    conversion: identity
+    unit: "meters"
+
+  eef_vx:
+    aliases: [eef_vx]
+    source_type: direct
+    conversion: identity
+    unit: "meters/second"
+    recovery:
+      method: backward_difference
+      from: eef_x
+      window: 2
+      dt_assumed: 1
+
+  eef_vy:
+    aliases: [eef_vy]
+    source_type: direct
+    conversion: identity
+    unit: "meters/second"
+    recovery:
+      method: backward_difference
+      from: eef_y
+      window: 2
+      dt_assumed: 1
+
+  eef_vz:
+    aliases: [eef_vz]
+    source_type: direct
+    conversion: identity
+    unit: "meters/second"
+    recovery:
+      method: backward_difference
+      from: eef_z
+      window: 2
+      dt_assumed: 1
+
+  action_dx:
+    aliases: [action_dx]
+    source_type: vector_extracted
+    conversion: "raw_action[0] fallback if action_dx missing"
+    unit: "normalized action delta"
+    note: "MUST validate clean provenance — never use attacked_env_action"
+
+  action_dy:
+    aliases: [action_dy]
+    source_type: vector_extracted
+    conversion: "raw_action[1] fallback if action_dy missing"
+    unit: "normalized action delta"
+
+  action_dz:
+    aliases: [action_dz]
+    source_type: vector_extracted
+    conversion: "raw_action[2] fallback if action_dz missing"
+    unit: "normalized action delta"
+
+  action_gripper:
+    aliases: [action_gripper]
+    source_type: vector_extracted
+    conversion: "raw_action[6] fallback if action_gripper missing"
+    unit: "normalized [-1,1]"
+
+# ── Prohibited derivations ──
+forbidden_derivations:
+  - missing_to_zero: "never fill missing fields with 0"
+  - future_row_features: "never use step[t+1] to compute feature at step[t]"
+  - attacked_action_as_clean_action: "never use attacked_env_action as clean action"
+  - normalized_step: "never use normalized_step or absolute episode position as feature"
+  - task_or_state_identity_as_feature: "never use task/state/run identity as student input"
+  - object_pose_as_feature: "never use object_pose_json as student input"
+  - teacher_anchor_as_feature: "never use teacher_sc5_anchor as student input"
+
+# ── Provenance validation rules ──
+provenance:
+  clean_required: true
+  attack_markers:
+    - attack_applied
+    - attack_condition
+    - attacked_env_action
+    - detector_trigger_now
+    - oracle_attack
+    - manifest_attack_type
+    - manifest_intervention
+  schema_requirements:
+    min_keys: 13
+    required_keys:
+      - gripper_command
+      - gripper_qpos
+      - gripper_width
+      - eef_x
+      - eef_y
+      - eef_z
+      - action_dx
+      - action_dy
+      - action_dz
+      - action_gripper
+    privileged_keys:
+      - object_pose_json
+      - object_to_target_distance
+      - object_eef_distance
+      - teacher_privileged_state_available
