@@ -133,17 +133,44 @@ def main():
 
     if not episodes: print("FATAL: no episodes"); return
 
-    # ── Step 3: Dedup + split ──
-    print("3. Dedup + split assignment...")
+    # ── Step 3: Dedup + grouped split (held-out → train/val 75/25 by init-state group) ──
+    print("3. Dedup + grouped split assignment...")
     unique, dup_groups = dedup_episodes(episodes, 'trajectory_content_sha256')
+
+    # Assign held-out first
     for ep in unique:
         ep['is_held_out'] = ep['is_butter'] and ep['state_id'] in HELD_OUT_BUTTER
-        ep['split'] = 'held_out' if ep['is_held_out'] else 'train'
-    train_eps = [e for e in unique if not e['is_held_out']]
+        ep['split'] = 'held_out' if ep['is_held_out'] else None  # None = to be assigned
+
     held_eps = [e for e in unique if e['is_held_out']]
+    assignable = [e for e in unique if not e['is_held_out']]
+
+    # Group by initial_state_sha256 for split assignment
+    import random
+    random.seed(42)
+    init_groups = defaultdict(list)
+    for ep in assignable:
+        gk = ep.get('initial_state_sha256', '')
+        if gk: init_groups[gk].append(ep)
+        else: ep['split'] = 'train'  # no group key → train
+
+    group_ids = sorted(init_groups.keys())
+    random.shuffle(group_ids)
+    n_train_grp = int(len(group_ids) * 0.75)
+    train_groups = set(group_ids[:n_train_grp])
+    val_groups = set(group_ids[n_train_grp:])
+
+    for gk, members in init_groups.items():
+        split = 'train' if gk in train_groups else 'val'
+        for ep in members:
+            ep['split'] = split
+
+    train_eps = [e for e in assignable if e['split'] == 'train']
+    val_eps = [e for e in assignable if e['split'] == 'val']
     iso = validate_split_isolation(unique, 'initial_state_sha256')
     print(f"   {len(unique)} unique ({len(dup_groups)} dup groups), "
-          f"{len(train_eps)} train, {len(held_eps)} held-out, "
+          f"{len(train_eps)} train, {len(val_eps)} val, {len(held_eps)} held-out, "
+          f"{len(train_groups)} train groups, {len(val_groups)} val groups, "
           f"split isolation: {'PASS' if iso['valid'] else 'FAIL'}")
 
     # ── Step 4: Mature Teacher calibration (train-only) ──
