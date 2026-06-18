@@ -156,8 +156,8 @@ def test_k10_crosses_event_boundary():
     print("PASS: test_k10_crosses_event_boundary")
 
 
-def test_object_identity_same_object():
-    """Same object throughout event validates as unique."""
+def test_object_identity_anonymous_pose_is_unverifiable():
+    """Anonymous pose stream cannot prove transported object identity."""
     labels = [_make_label(i, 'stable_carry') for i in range(5, 15)]
     event = {'start_step': 5, 'end_step': 14}
     records = [
@@ -165,10 +165,31 @@ def test_object_identity_same_object():
         for i in range(20)
     ]
     result = validate_transported_object(labels, event, records)
-    assert result['unique_object']
+    assert not result['unique_object']
+    assert not result['verifiable']
+    assert result['reason'] == 'unverifiable_identity'
     assert result['first_object_hash']
     assert result['position_variance'] < 0.01
-    print("PASS: test_object_identity_same_object")
+    print("PASS: test_object_identity_anonymous_pose_is_unverifiable")
+
+
+def test_object_identity_same_explicit_object():
+    """Same explicit object throughout event validates as unique."""
+    labels = [_make_label(i, 'stable_carry') for i in range(5, 15)]
+    event = {'start_step': 5, 'end_step': 14}
+    records = [
+        {
+            'object_name': 'black_bowl',
+            'object_pose_json': json.dumps([0.1, 0.2, 0.3 + i * 0.001]),
+        }
+        for i in range(20)
+    ]
+    result = validate_transported_object(labels, event, records)
+    assert result['unique_object']
+    assert result['verifiable']
+    assert result['first_object_hash']
+    assert result['position_variance'] < 0.01
+    print("PASS: test_object_identity_same_explicit_object")
 
 
 def test_object_identity_no_data():

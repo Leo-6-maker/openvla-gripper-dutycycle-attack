@@ -96,11 +96,67 @@ def classify_task(suite: str, task_name: str, instruction: str) -> dict[str, str
         "mechanism_type": mechanism,
         "eligible_for_gripper_duty": eligible,
         "expected_event_count": expected,
+        **resolve_primary_entities(instruction, mechanism),
         "object_names": infer_objects(instruction),
         "target_names": infer_targets(instruction),
         "parser_confidence": parser_confidence,
         "reason": ";".join(reason),
         "manual_review_required": manual,
+    }
+
+
+def resolve_primary_entities(instruction: str, mechanism: str) -> dict[str, str]:
+    text = instruction.lower()
+    objects = infer_objects(instruction).split("|") if infer_objects(instruction) else []
+    primary_object = ""
+    primary_target = ""
+    secondary_objects: list[str] = []
+    status = "ABSTAIN"
+    source = "static_instruction_heuristic"
+
+    if mechanism == "single_object_pick_place":
+        if "black_bowl" in objects:
+            primary_object = "black_bowl"
+        elif "cream_cheese" in objects:
+            primary_object = "cream_cheese"
+        elif "wine_bottle" in objects:
+            primary_object = "wine_bottle"
+        elif "book" in objects:
+            primary_object = "book"
+        elif "bowl" in objects:
+            primary_object = "bowl"
+        elif objects:
+            primary_object = objects[0]
+
+        if " on the plate" in text or "place it on the plate" in text:
+            primary_target = "plate"
+        elif " in the bowl" in text:
+            primary_target = "bowl"
+        elif " on the stove" in text:
+            primary_target = "stove"
+        elif " on top of the cabinet" in text:
+            primary_target = "cabinet_top"
+        elif " on the rack" in text:
+            primary_target = "rack"
+        elif " caddy" in text:
+            primary_target = "caddy"
+        elif "basket" in text:
+            primary_target = "basket"
+        status = "RESOLVED" if primary_object and primary_target else "NEEDS_MANUAL_REVIEW"
+    elif mechanism == "multi_object_transfer":
+        primary_object = objects[0] if objects else ""
+        secondary_objects = objects[1:]
+        primary_target = "basket" if "basket" in text else ""
+        status = "EVENT_LEVEL_ONLY"
+    elif mechanism in {"articulated_object", "planar_or_push"}:
+        status = "ABSTAIN_UNSUPPORTED"
+
+    return {
+        "primary_object": primary_object,
+        "primary_target": primary_target,
+        "secondary_objects": "|".join(secondary_objects),
+        "resolver_status": status,
+        "resolver_source": source,
     }
 
 
@@ -154,6 +210,11 @@ def build_smoke_manifest(protocol: dict) -> list[dict[str, str]]:
                     "selection_role": "mechanism_coverage_preregistered",
                     "mechanism_type": inv["mechanism_type"],
                     "eligible_for_gripper_duty": inv["eligible_for_gripper_duty"],
+                    "primary_object": inv["primary_object"],
+                    "primary_target": inv["primary_target"],
+                    "secondary_objects": inv["secondary_objects"],
+                    "resolver_status": inv["resolver_status"],
+                    "resolver_source": inv["resolver_source"],
                     "requires_clean_success_gate": "true",
                     "requires_invalid_feature_steps_zero": "true",
                     "attack_allowed_in_phase1": "false",
