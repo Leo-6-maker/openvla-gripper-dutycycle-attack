@@ -88,7 +88,7 @@ class SC5StreamingFeatureAdapterV2:
             'gripper_qpos': gripper_qpos, 'gripper_opening_proxy': gripper_opening_proxy,
             'eef_x': eef_x, 'eef_y': eef_y, 'eef_z': eef_z,
             'eef_vx': eef_vx, 'eef_vy': eef_vy, 'eef_vz': eef_vz,
-            'action_dx': action_dx, 'action_dy': action_dz, 'action_dz': action_dz,
+            'action_dx': action_dx, 'action_dy': action_dy, 'action_dz': action_dz,
             'action_gripper': action_gripper,
         }
         missing = [k for k, v in required.items() if not _is_valid_float(v)]
@@ -167,7 +167,7 @@ class SC5StreamingFeatureAdapterV2:
             'gripper_opening_proxy': gripper_opening_proxy,
             'eef_x': eef_x, 'eef_y': eef_y, 'eef_z': eef_z,
             'eef_vx': eef_vx, 'eef_vy': eef_vy, 'eef_vz': eef_vz,
-            'action_dx': action_dx, 'action_dy': action_dz, 'action_dz': action_dz,
+            'action_dx': action_dx, 'action_dy': action_dy, 'action_dz': action_dz,
             'action_gripper': action_gripper,
             'recent_close_streak': self._close_streak, 'recent_open_streak': self._open_streak,
             'recent_gripper_flip_count': self._flip_count,

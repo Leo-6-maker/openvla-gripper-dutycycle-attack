@@ -328,6 +328,49 @@ def find_sc5_anchor_v2(labels: List[dict], K: int = 10, guard: int = 5) -> dict:
             'reason': 'sc5_corridor_valid', 'stable_carry_start': sc_start}
 
 
+def compute_sc5_valid_start_corridor(labels: List[dict], sc5_anchor: int,
+                                      K: int = 10) -> dict:
+    """Compute ALL valid K10 start steps from sc5_anchor to episode end.
+
+    A start step t is valid iff the full window [t, t+K-1]:
+      - exists within episode
+      - does not overlap release_safe
+      - does not overlap recovery_or_regrasp
+      - does not overlap abstain_unsupported
+
+    Returns:
+        valid_starts: list of valid start steps
+        corridor_start: first valid start (equals sc5_anchor if valid)
+        corridor_end: last valid start
+        corridor_active_at_t: set of steps where t is a valid start
+        full_k10_valid_at_t: per-step bool list (len = n_steps)
+    """
+    n_steps = max(l['step_idx'] for l in labels) + 1
+    rs_set = {l['step_idx'] for l in labels if l['phase'] == 'release_safe'}
+    rc_set = {l['step_idx'] for l in labels if l['phase'] == 'recovery_or_regrasp'}
+    ab_set = {l['step_idx'] for l in labels if l['phase'] == 'abstain_unsupported'}
+
+    valid_starts = []
+    corridor_active = set()
+    full_k10_valid = [False] * n_steps
+
+    for t in range(sc5_anchor, n_steps - K + 1):
+        window = set(range(t, t + K))
+        if (window & rs_set) or (window & rc_set) or (window & ab_set):
+            continue
+        valid_starts.append(t)
+        corridor_active.add(t)
+        full_k10_valid[t] = True
+
+    return {
+        'valid_starts': valid_starts,
+        'corridor_start': min(valid_starts) if valid_starts else -1,
+        'corridor_end': max(valid_starts) if valid_starts else -1,
+        'corridor_active_at_t': corridor_active,
+        'full_k10_valid_at_t': full_k10_valid,
+    }
+
+
 def calibrate_thresholds(trajectory_paths: List[str]) -> TeacherConfig:
     """Estimate thresholds from clean trajectories. gripper_close uses CLOSE command semantics."""
     cfg = TeacherConfig()
