@@ -1,0 +1,7 @@
+suite,task_idx,discovered_episode_count,unique_states,unique_eval_seeds,clean_success_count,clean_failure_count,TIER_A_count,TIER_B_count,TIER_C_count,TIER_D_count,TIER_X_count,25D_complete_count,sim_state_complete_count,video_available_count,privileged_teacher_label_count
+libero_10,,677,1,1,2,0,0,2,0,0,675,2,1,2,0
+libero_10,5,1,1,1,1,0,0,1,0,0,0,1,0,1,0
+libero_goal,,555,1,1,1,0,0,1,0,0,554,1,0,1,0
+libero_goal,1,1,1,1,1,0,0,1,0,0,0,1,0,1,0
+libero_spatial,,597,1,1,2,0,0,2,0,0,595,2,1,2,0
+libero_spatial,4,2,1,1,2,0,0,2,0,0,0,2,0,2,0

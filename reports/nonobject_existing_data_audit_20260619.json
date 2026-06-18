@@ -1,0 +1,107 @@
+{
+  "metadata": {
+    "active_end": {
+      "active_root": "/data/liuyu/outputs/cross_suite_clean_300_20260619_r1_6379397",
+      "complete_count": 51,
+      "output_root_mtime": 1781809083.258488,
+      "queue_pid": "26816",
+      "queue_status_exists": true,
+      "rows": 52,
+      "running_count": 1
+    },
+    "active_root": "/data/liuyu/outputs/cross_suite_clean_300_20260619_r1_6379397",
+    "active_start": {
+      "active_root": "/data/liuyu/outputs/cross_suite_clean_300_20260619_r1_6379397",
+      "complete_count": 51,
+      "output_root_mtime": 1781809083.258488,
+      "queue_pid": "26816",
+      "queue_status_exists": true,
+      "rows": 52,
+      "running_count": 1
+    },
+    "audit_end_time": "2026-06-19T06:52:59+08:00",
+    "audit_source_commit": "14894f4c04c8269bbb327e51856b0b8e787cf7b1",
+    "audit_start_time": "2026-06-19T06:52:49+08:00",
+    "outputs_root": "/data/liuyu/outputs",
+    "reference_schema_commit": "63793972743f667c6a6bcc12e9700f322f261147",
+    "rules": {
+      "active_root_separate": true,
+      "anonymous_pose_not_identity": true,
+      "condition_unverified_not_clean": true,
+      "metadata_only": true,
+      "no_gpu": true,
+      "no_large_mp4_npz_full_sha": true
+    },
+    "scan_counters": {
+      "bytes_seen": 35921005119,
+      "dirs_scanned": 11669,
+      "files_seen": 462267
+    },
+    "sentinels": [
+      "detector_telemetry.csv",
+      "episode_manifest.json",
+      "episode_records.jsonl",
+      "episode_summary.json",
+      "results.json",
+      "run_manifest.json",
+      "step_records.jsonl",
+      "step_telemetry.csv",
+      "summary.json",
+      "video_manifest.json"
+    ],
+    "server_hostname": "klfy-SYS-4028GR-TR2"
+  },
+  "reusability_summary": [
+    {
+      "discovered": 678,
+      "missing_to_10x10_task_states": 98,
+      "missing_to_10x50_task_states": 498,
+      "suite": "libero_10",
+      "unique_clean_task_states": 2,
+      "usable_clean_denominator": 3,
+      "usable_detector_transfer_analysis": 3,
+      "usable_same_schema_comparison_with_6379397": 0,
+      "usable_teacher_relabeling": 1,
+      "usable_video_manual_audit": 3,
+      "usable_visual_feature_extraction": 3,
+      "usable_visual_replay": 3
+    },
+    {
+      "discovered": 556,
+      "missing_to_10x10_task_states": 98,
+      "missing_to_10x50_task_states": 498,
+      "suite": "libero_goal",
+      "unique_clean_task_states": 2,
+      "usable_clean_denominator": 2,
+      "usable_detector_transfer_analysis": 2,
+      "usable_same_schema_comparison_with_6379397": 0,
+      "usable_teacher_relabeling": 0,
+      "usable_video_manual_audit": 2,
+      "usable_visual_feature_extraction": 2,
+      "usable_visual_replay": 2
+    },
+    {
+      "discovered": 599,
+      "missing_to_10x10_task_states": 98,
+      "missing_to_10x50_task_states": 498,
+      "suite": "libero_spatial",
+      "unique_clean_task_states": 2,
+      "usable_clean_denominator": 4,
+      "usable_detector_transfer_analysis": 4,
+      "usable_same_schema_comparison_with_6379397": 0,
+      "usable_teacher_relabeling": 1,
+      "usable_video_manual_audit": 4,
+      "usable_visual_feature_extraction": 4,
+      "usable_visual_replay": 4
+    }
+  ],
+  "tier_counts": {
+    "CURRENT_IN_PROGRESS": 51,
+    "TIER_B_DETECTOR_COMPATIBLE": 9,
+    "TIER_D_LEGACY_REFERENCE_ONLY": 29,
+    "TIER_X_REJECTED": 3486
+  },
+  "verified_goal_unique_clean_states": 2,
+  "verified_libero10_unique_clean_states": 2,
+  "verified_spatial_unique_clean_states": 2
+}

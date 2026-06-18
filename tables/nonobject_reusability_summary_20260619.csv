@@ -1,0 +1,4 @@
+suite,discovered,usable_clean_denominator,usable_detector_transfer_analysis,usable_teacher_relabeling,usable_visual_feature_extraction,usable_visual_replay,usable_video_manual_audit,usable_same_schema_comparison_with_6379397,unique_clean_task_states,missing_to_10x10_task_states,missing_to_10x50_task_states
+libero_10,678,3,3,1,3,3,3,0,2,98,498
+libero_goal,556,2,2,0,2,2,2,0,2,98,498
+libero_spatial,599,4,4,1,4,4,4,0,2,98,498
