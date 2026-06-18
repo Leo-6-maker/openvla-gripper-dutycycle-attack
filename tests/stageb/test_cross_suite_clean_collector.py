@@ -2,16 +2,20 @@ import json
 from pathlib import Path
 import sys
 
+import numpy as np
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.stageb.run_sc5_cross_suite_clean import (  # noqa: E402
     DEFAULT_MAX_STEPS,
+    build_overlay_frames,
     build_base_manifest,
     fail_if_output_exists,
     max_steps_for_suite,
     parse_args,
     run_clean_collection,
+    write_sim_state_archive,
 )
 
 
@@ -88,3 +92,47 @@ def test_output_dir_fail_closed_when_nonempty(tmp_path):
         assert "non-empty" in str(exc)
     else:
         raise AssertionError("expected SystemExit")
+
+
+def test_overlay_frames_mark_emit_and_invalid_steps():
+    frames = [np.zeros((32, 32, 3), dtype=np.uint8) for _ in range(3)]
+    telemetry = [
+        {"step": 0, "feat_valid": True, "mlp_emit": -1, "mlp_triggered": False},
+        {"step": 1, "feat_valid": False, "mlp_emit": -1, "mlp_triggered": False},
+        {"step": 2, "feat_valid": True, "mlp_emit": 2, "mlp_triggered": True},
+    ]
+    overlay = build_overlay_frames(frames, telemetry)
+    assert len(overlay) == 3
+    assert not np.array_equal(overlay[1], frames[1])
+    assert not np.array_equal(overlay[2], frames[2])
+    assert tuple(overlay[1][0, 0]) == (170, 45, 210)
+    assert tuple(overlay[2][13, 0]) == (255, 220, 0)
+
+
+def test_sim_state_archive_records_generic_arrays(tmp_path):
+    states = [
+        {
+            "qpos": np.zeros((2,), dtype=np.float32),
+            "qvel": np.ones((2,), dtype=np.float32),
+            "body_xpos": np.zeros((3, 3), dtype=np.float32),
+            "body_xquat": np.zeros((3, 4), dtype=np.float32),
+            "site_xpos": np.zeros((4, 3), dtype=np.float32),
+            "ctrl": np.zeros((1,), dtype=np.float32),
+        },
+        {
+            "qpos": np.ones((2,), dtype=np.float32),
+            "qvel": np.zeros((2,), dtype=np.float32),
+            "body_xpos": np.ones((3, 3), dtype=np.float32),
+            "body_xquat": np.ones((3, 4), dtype=np.float32),
+            "site_xpos": np.ones((4, 3), dtype=np.float32),
+            "ctrl": np.ones((1,), dtype=np.float32),
+        },
+    ]
+    manifest = write_sim_state_archive(
+        tmp_path / "sim_state_stream.npz",
+        states,
+        {"body_names": ["a", "b", "c"], "site_names": ["s"], "joint_names": ["j"]},
+    )
+    assert manifest["steps"] == 2
+    assert manifest["arrays"]["qpos"] == [2, 2]
+    assert len(manifest["sha256"]) == 64

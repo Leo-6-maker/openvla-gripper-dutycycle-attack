@@ -27,7 +27,10 @@ Primary GPU26 root:
 /data/liuyu/outputs/cross_suite_clean_20260619_canary_877c9c0
 ```
 
-GPU4 failed attempt root, retained as infra evidence:
+GPU4 failed attempt root, retained as infra evidence. This is the same root as
+the initial parallel canary launch; the failed worker is identified by
+`logs/worker_34.log`, and only its completed `spatial_t4_s0` partial output is
+present there:
 
 ```text
 /data/liuyu/outputs/cross_suite_clean_20260619_canary_877c9c0

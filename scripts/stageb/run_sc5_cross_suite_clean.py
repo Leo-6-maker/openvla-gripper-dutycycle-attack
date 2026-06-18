@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from PIL import Image, ImageDraw
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
@@ -213,6 +214,37 @@ def write_video(path: Path, frames: list[np.ndarray], fps: int = 10) -> str:
     return "WROTE"
 
 
+def build_overlay_frames(frames: list[np.ndarray], telemetry: list[dict[str, Any]]) -> list[np.ndarray]:
+    """Draw lightweight audit overlays for detector emit and invalid features."""
+    overlay: list[np.ndarray] = []
+    for idx, frame in enumerate(frames):
+        arr = np.asarray(frame)
+        image = Image.fromarray(arr.astype(np.uint8)).convert("RGB")
+        draw = ImageDraw.Draw(image)
+        row = telemetry[idx] if idx < len(telemetry) else {}
+        step = int(row.get("step", idx) or idx)
+        feat_valid = bool(row.get("feat_valid", True))
+        emit_step = row.get("mlp_emit", -1)
+        triggered = bool(row.get("mlp_triggered", False))
+        try:
+            emit_step_int = int(emit_step)
+        except Exception:
+            emit_step_int = -1
+
+        if not feat_valid:
+            draw.rectangle([(0, 0), (image.width, 10)], fill=(170, 45, 210))
+        if emit_step_int == step:
+            draw.rectangle([(0, 12), (image.width, 24)], fill=(255, 220, 0))
+        elif triggered and emit_step_int >= 0 and step > emit_step_int:
+            draw.rectangle([(0, 12), (image.width, 18)], fill=(255, 220, 0))
+
+        label = f"step={step} emit={emit_step_int} valid={int(feat_valid)}"
+        draw.rectangle([(0, image.height - 18), (min(image.width, 210), image.height)], fill=(0, 0, 0))
+        draw.text((4, image.height - 15), label, fill=(255, 255, 255))
+        overlay.append(np.asarray(image, dtype=np.uint8))
+    return overlay
+
+
 def make_invalid_privileged_sidecar(reason: str) -> dict[str, Any]:
     return {
         "privileged_valid": False,
@@ -242,6 +274,71 @@ def build_detector_rows(step_row: dict[str, Any], feature_names: list[str]) -> d
     return out
 
 
+def _safe_names(model: Any, count_attr: str, name_fn: str) -> list[str]:
+    count = int(getattr(model, count_attr, 0) or 0)
+    fn = getattr(model, name_fn, None)
+    names: list[str] = []
+    for idx in range(count):
+        name = ""
+        if callable(fn):
+            try:
+                name = str(fn(idx) or "")
+            except Exception:
+                name = ""
+        names.append(name)
+    return names
+
+
+def capture_sim_state(env: Any) -> dict[str, Any]:
+    """Capture generic MuJoCo state without object-specific assumptions."""
+    model = env.sim.model
+    data = env.sim.data
+    state: dict[str, Any] = {
+        "qpos": np.asarray(data.qpos).copy(),
+        "qvel": np.asarray(data.qvel).copy(),
+        "body_xpos": np.asarray(data.body_xpos).copy(),
+        "body_xquat": np.asarray(data.body_xquat).copy(),
+        "site_xpos": np.asarray(data.site_xpos).copy(),
+    }
+    try:
+        state["ctrl"] = np.asarray(data.ctrl).copy()
+    except Exception:
+        state["ctrl"] = np.asarray([], dtype=np.float32)
+    return state
+
+
+def sim_model_metadata(env: Any) -> dict[str, Any]:
+    model = env.sim.model
+    return {
+        "body_names": _safe_names(model, "nbody", "body_id2name"),
+        "site_names": _safe_names(model, "nsite", "site_id2name"),
+        "joint_names": _safe_names(model, "njnt", "joint_id2name"),
+        "nq": int(getattr(model, "nq", 0) or 0),
+        "nv": int(getattr(model, "nv", 0) or 0),
+        "nbody": int(getattr(model, "nbody", 0) or 0),
+        "nsite": int(getattr(model, "nsite", 0) or 0),
+        "njnt": int(getattr(model, "njnt", 0) or 0),
+    }
+
+
+def write_sim_state_archive(path: Path, states: list[dict[str, Any]], metadata: dict[str, Any]) -> dict[str, Any]:
+    arrays: dict[str, np.ndarray] = {}
+    keys = ["qpos", "qvel", "body_xpos", "body_xquat", "site_xpos", "ctrl"]
+    for key in keys:
+        vals = [s.get(key) for s in states if key in s]
+        if vals:
+            arrays[key] = np.stack(vals, axis=0)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    np.savez_compressed(path, **arrays)
+    return {
+        "path": path.name,
+        "sha256": sha256_file(path),
+        "steps": len(states),
+        "arrays": {k: list(v.shape) for k, v in arrays.items()},
+        "metadata": metadata,
+    }
+
+
 def run_clean_collection(args: argparse.Namespace) -> None:
     out = Path(args.output_dir)
     fail_if_output_exists(out)
@@ -255,7 +352,6 @@ def run_clean_collection(args: argparse.Namespace) -> None:
         return
 
     import torch
-    from PIL import Image
     from transformers import AutoProcessor
     try:
         from transformers import AutoModelForImageTextToText as AutoModelCls
@@ -336,6 +432,7 @@ def run_clean_collection(args: argparse.Namespace) -> None:
     env, obs = build_v4_exact_env(bddl, int(args.render_gpu), max_steps, NUM_STEPS_WAIT)
     obs = env.set_init_state(init_states[int(args.state_id)])
     env, obs = apply_dummy_wait(env, obs, NUM_STEPS_WAIT)
+    sim_metadata = sim_model_metadata(env)
 
     eef_init = env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_site")]
     prev_eef = (float(eef_init[0]), float(eef_init[1]), float(eef_init[2]))
@@ -343,6 +440,7 @@ def run_clean_collection(args: argparse.Namespace) -> None:
     invalid_steps = 0
     telemetry: list[dict[str, Any]] = []
     frames: list[np.ndarray] = []
+    sim_states: list[dict[str, Any]] = []
     frame_index: list[dict[str, Any]] = []
     clean_tokens_first: list[int] | None = None
     prompt_ids_sha = ""
@@ -351,6 +449,7 @@ def run_clean_collection(args: argparse.Namespace) -> None:
     for step in range(max_steps):
         if "agentview_image" not in obs:
             break
+        sim_states.append(capture_sim_state(env))
         raw = np.asarray(obs["agentview_image"]).copy()
         if raw.dtype != np.uint8:
             raw = np.clip(raw, 0, 255).astype(np.uint8)
@@ -539,14 +638,17 @@ def run_clean_collection(args: argparse.Namespace) -> None:
 
     if frames:
         np.savez_compressed(out / "agentview_frames_uint8.npz", agentview=np.stack(frames, axis=0))
+    sim_state_manifest = write_sim_state_archive(out / "sim_state_stream.npz", sim_states, sim_metadata)
+    write_json(out / "sim_state_manifest.json", sim_state_manifest)
     video_status = {}
     if args.save_video:
         video_status["rollout_raw.mp4"] = write_video(out / "rollout_raw.mp4", frames, fps=10)
-        video_status["rollout_overlay.mp4"] = write_video(out / "rollout_overlay.mp4", frames, fps=10)
+        overlay_frames = build_overlay_frames(frames, telemetry)
+        video_status["rollout_overlay.mp4"] = write_video(out / "rollout_overlay.mp4", overlay_frames, fps=10)
     else:
         video_status["rollout_raw.mp4"] = "DISABLED"
         video_status["rollout_overlay.mp4"] = "DISABLED"
-    write_json(out / "video_manifest.json", {"video_status": video_status, "overlay_mode": "raw_duplicate_no_text"})
+    write_json(out / "video_manifest.json", {"video_status": video_status, "overlay_mode": "emit_yellow_invalid_purple_text"})
 
     manifest["final_summary_sha256"] = sha256_jsonable(summary)
     manifest["artifact_files"] = []
