@@ -465,20 +465,22 @@ def main():
     config_full = asdict(teacher.cfg)
     config_full['guard'] = GUARD; config_full['K'] = K
     config_full['calibration_tiers'] = 'Tier_A+B_train_only'
-    config_full['tier_c_train_excluded'] = tier_c_count if 'tier_c_count' in dir() else 0
+    config_full['tier_c_train_excluded'] = len([e for e in train_eps if e.get('candidate_tier') == TIER_C])
     config_full['n_calibration_paths'] = len(valid_paths)
     config_full['n_calibration_episodes'] = len(calib_eps)
-    # Calibration sources: ONLY actually-used paths, with FILE CONTENT SHA
-    calib_sources = []
+    # Semantic config SHA: parameters + sorted source file SHAs (NO absolute paths)
+    calib_sha_list = []
+    calib_path_list = []  # local paths stored separately, not in SHA
     for jp in valid_paths:
         try:
             with open(jp, 'rb') as f:
                 file_sha = hashlib.sha256(f.read()).hexdigest()
         except Exception:
             file_sha = 'UNREADABLE'
-        calib_sources.append({'jsonl_path': jp, 'source_file_sha256': file_sha})
-    config_full['calibration_sources'] = sorted(calib_sources,
-                                                 key=lambda x: x['jsonl_path'])
+        calib_sha_list.append(file_sha)
+        calib_path_list.append(jp)
+    config_full['calibration_source_sha256_list'] = sorted(calib_sha_list)
+    config_full['calibration_source_paths'] = sorted(calib_path_list)  # non-hash metadata
     config_path = os.path.join(args.artifacts_dir, 'v2_sc5_teacher_config.json')
     with open(config_path, 'w') as f:
         json.dump(config_full, f, indent=2, default=str)

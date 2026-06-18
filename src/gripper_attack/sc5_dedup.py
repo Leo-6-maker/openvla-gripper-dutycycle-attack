@@ -182,22 +182,20 @@ def build_duplicate_groups(episodes: List[dict],
         if len(members) < 2:
             continue
         # Priority: most complete provenance first (uses builder top-level fields)
-        def priority(ep):
+        def priority_key(item):
+            ep = item[1]
             score = 0
-            # Tier A (single-object primary) is most trusted
             if ep.get('candidate_tier') == 'LIBERO_OBJECT_SINGLE_OBJECT_CANDIDATE':
                 score += 10
             elif ep.get('candidate_tier') == 'REQUIRES_OBJECT_TARGET_VALIDATION':
                 score += 5
-            # Full hashes present
             if ep.get('privileged_sequence_sha256'):
                 score += 3
             if ep.get('proprio_sequence_sha256'):
                 score += 2
-            # Tie-break: deterministic by episode_id
-            return (score, ep.get('episode_id', ''))
+            return (-score, str(ep.get('episode_id', '')))
 
-        sorted_members = sorted(members, key=lambda x: -priority(x[1]))
+        sorted_members = sorted(members, key=priority_key)
         keep_idx = sorted_members[0][0]
         drop_indices = [m[0] for m in sorted_members[1:]]
 

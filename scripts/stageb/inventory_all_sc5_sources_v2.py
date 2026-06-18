@@ -303,8 +303,13 @@ def schema_status(records: list[Mapping[str, Any]], alias_config: Mapping[str, A
     missing: list[str] = []
     # Check first few records because some early rows may be partially initialized.
     sample = records[: min(10, len(records))]
-    for field, names in aliases.items():
-        names = names if isinstance(names, list) else [names]
+    for field, spec in aliases.items():
+        if isinstance(spec, dict):
+            names = spec.get("aliases", [field])
+        elif isinstance(spec, list):
+            names = spec
+        else:
+            names = [str(spec)]
         found = False
         for row in sample:
             for name in names:

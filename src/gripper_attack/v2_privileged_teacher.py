@@ -203,7 +203,8 @@ class V2PrivilegedTeacher:
                 cfg.preplace_target_dist_min <= s['obj_target_dist'] <= cfg.preplace_target_dist_max)
 
             # ── Object falling (descent velocity) ──
-            obj_falling = s.get('eef_vz', 0.0) < -0.01 and obj_lifted
+            eef_vz_valid = _is_valid(s.get('eef_vz')) if 'eef_vz' in s else False
+            obj_falling = (eef_vz_valid and s['eef_vz'] < -0.01) and obj_lifted
 
             # ── Phase detection ──
             phase = prev_phase
