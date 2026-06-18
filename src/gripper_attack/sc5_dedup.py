@@ -18,8 +18,15 @@ def sha256_hex(data: str) -> str:
     return hashlib.sha256(data.encode('utf-8')).hexdigest()
 
 
-def _safe_float(v, default=0.0):
-    """Convert to float, handling empty strings, None, nan."""
+MISSING_SENTINEL = -999999.0  # explicit marker: missing ≠ zero
+
+
+def _safe_float(v, default=MISSING_SENTINEL):
+    """Convert to float, handling empty strings, None, nan.
+
+    Uses explicit sentinel (MISSING_SENTINEL) for missing values,
+    NOT zero — so legitimate zeros and missing values are distinguishable.
+    """
     if v is None:
         return default
     if isinstance(v, bool):
@@ -33,22 +40,42 @@ def _safe_float(v, default=0.0):
 
 
 def trajectory_content_hash(records: List[dict]) -> str:
-    """Full-sequence content hash: task, state_id, EEF, gripper, action, n_steps.
+    """Full-sequence content hash: suite, task, state_id, EEF, gripper, action.
 
-    This is the primary dedup key — two trajectories with the same content hash
-    are considered duplicates.
+    Includes task/state/action identity so different tasks with similar motion
+    are not incorrectly dedup'd. Missing values use MISSING_SENTINEL (-999999.0)
+    to distinguish from legitimate zeros.
     """
-    content = []
+    # Extract identity from first policy step
+    suite = ''; task = ''; state_id = -1
     for r in records:
-        row = {
+        if r.get('teacher_privileged_state_available'):
+            suite = str(r.get('suite', ''))
+            task = str(r.get('task_name', r.get('task_instruction', '')))
+            state_id = int(r.get('state_id', -1))
+            break
+
+    identity = {'suite': suite, 'task': task, 'state_id': state_id,
+                'n_steps': len(records)}
+
+    motion = []
+    for r in records:
+        if not r.get('teacher_privileged_state_available'):
+            continue
+        motion.append({
             'step': int(r.get('step_idx', r.get('policy_step_idx', 0))),
-            'eef_x': round(_safe_float(r.get('eef_x', 0)), 4),
-            'eef_y': round(_safe_float(r.get('eef_y', 0)), 4),
-            'eef_z': round(_safe_float(r.get('eef_z', 0)), 4),
-            'gripper': round(_safe_float(r.get('gripper_command', 0)), 4),
-        }
-        content.append(row)
-    return sha256_hex(json.dumps(content, sort_keys=True))
+            'eef_x': round(_safe_float(r.get('eef_x')), 4),
+            'eef_y': round(_safe_float(r.get('eef_y')), 4),
+            'eef_z': round(_safe_float(r.get('eef_z')), 4),
+            'gripper': round(_safe_float(r.get('gripper_command')), 4),
+            'action_dx': round(_safe_float(r.get('action_dx')), 6),
+            'action_dy': round(_safe_float(r.get('action_dy')), 6),
+            'action_dz': round(_safe_float(r.get('action_dz')), 6),
+            'action_gripper': round(_safe_float(r.get('action_gripper')), 6),
+        })
+
+    return sha256_hex(json.dumps({'identity': identity, 'motion': motion},
+                                  sort_keys=True))
 
 
 def proprio_sequence_hash(records: List[dict]) -> str:
