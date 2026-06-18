@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """SC5 v4: fixed held-out split, best checkpoint, real corridor labels."""
-import csv, json, os, sys, random, numpy as np, torch, copy, argparse
+import csv, hashlib, json, math, os, sys, random, numpy as np, torch, copy, argparse
 from collections import Counter
 from pathlib import Path
 
@@ -33,36 +33,81 @@ class SC5MLP(torch.nn.Module):
         return {"phase_logits": self.phase_head(h), "corridor_logit": self.corridor_head(h),
                 "release_logit": self.release_head(h), "confidence_logit": self.confidence_head(h)}
 
-def load_data(csv_path, seed, respect_frozen_split=False):
-    rows = []; held_rows = []
+def load_data(csv_path, seed, respect_frozen_split=True, legacy_random_split=False):
+    """Load SC5 dataset. Auto-detects frozen split column from canonical corpus."""
+    all_rows = []
     with open(csv_path) as f:
-        for r in csv.DictReader(f):
-            ok = all(r.get(fn,"") not in ("","nan",None) for fn in SC5_FEATURES)
-            if ok:
-                is_h = r.get("is_held_out","False") in ("True","true","1")
-                if is_h: held_rows.append(r)
-                else: rows.append(r)
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames or []
+        for r in reader:
+            all_rows.append(r)
+
+    has_split_col = 'split' in fieldnames
+
+    # Auto-enable frozen split if column exists, unless explicitly overridden
+    if legacy_random_split:
+        respect_frozen_split = False
+    elif has_split_col and respect_frozen_split:
+        pass  # use frozen
+    elif not has_split_col:
+        respect_frozen_split = False
 
     if respect_frozen_split:
-        # Use frozen split column from canonical corpus builder
-        tr_rows = [r for r in rows if r.get('split','') == 'train']
-        vl_rows = [r for r in rows if r.get('split','') == 'val']
-        # Validate: no held_out in train/val, no unknown splits
-        train_splits = set(r.get('split','') for r in rows + held_rows)
-        unknown = train_splits - {'train','val','held_out'}
-        if unknown:
-            raise ValueError(f"Unknown splits in data: {unknown}")
-        held_in_train = [r for r in tr_rows if r.get('is_held_out','False') in ('True','true','1')]
-        if held_in_train:
-            raise ValueError(f"Held-out rows found in train split: {len(held_in_train)} rows")
+        # Route by frozen split column
+        tr_rows = []; vl_rows = []; held_rows = []
+        for r in all_rows:
+            sp = r.get('split', '')
+            if sp == 'train': tr_rows.append(r)
+            elif sp == 'val': vl_rows.append(r)
+            elif sp == 'held_out': held_rows.append(r)
+            else:
+                raise ValueError(f"Unknown split '{sp}' in row step_idx={r.get('step_idx','?')}")
+
+        # Validate: is_held_out flag consistent with split
+        for r in tr_rows + vl_rows:
+            if r.get('is_held_out', 'False') in ('True', 'true', '1'):
+                raise ValueError(f"Held-out row in train/val: split={r.get('split')} "
+                                 f"episode={r.get('episode_id','?')} step={r.get('step_idx','?')}")
+        for r in held_rows:
+            if r.get('is_held_out', 'True') not in ('True', 'true', '1'):
+                raise ValueError(f"Non-held-out row in held_out split: "
+                                 f"episode={r.get('episode_id','?')} step={r.get('step_idx','?')}")
+
+        if not tr_rows: raise ValueError("No train rows found")
+        if not vl_rows: raise ValueError("No validation rows found")
     else:
-        # Legacy: random shuffle 75/25 split
+        # Legacy: filter valid rows, split by is_held_out, random shuffle 75/25
+        rows = []; held_rows = []
+        for r in all_rows:
+            ok = all(r.get(fn,"") not in ("","nan",None) for fn in SC5_FEATURES)
+            if not ok: continue
+            is_h = r.get("is_held_out","False") in ("True","true","1")
+            if is_h: held_rows.append(r)
+            else: rows.append(r)
+
         eps = sorted(set(r.get("run_id","") for r in rows))
         random.seed(seed); random.shuffle(eps)
         n_tr = int(len(eps) * 0.75)
         tr_set = set(eps[:n_tr]); vl_set = set(eps[n_tr:])
         tr_rows = [r for r in rows if r.get("run_id","") in tr_set]
         vl_rows = [r for r in rows if r.get("run_id","") in vl_set]
+
+    # Fail-closed: reject rows with missing/invalid feature values
+    MISSING_SENTINEL = -999999.0
+    def _check_row(r):
+        for fn in SC5_FEATURES:
+            v = r.get(fn, '')
+            if v in ('', 'nan', 'NaN', None):
+                raise ValueError(f"Missing feature '{fn}' in row step_idx={r.get('step_idx','?')}")
+            try:
+                fv = float(v)
+            except (ValueError, TypeError):
+                raise ValueError(f"Non-float feature '{fn}'={v} in row step_idx={r.get('step_idx','?')}")
+            if math.isnan(fv) or math.isinf(fv) or abs(fv - MISSING_SENTINEL) < 1e-6:
+                raise ValueError(f"Invalid feature '{fn}'={fv} in row step_idx={r.get('step_idx','?')}")
+
+    for r in tr_rows + vl_rows + held_rows:
+        _check_row(r)
 
     def mk(rl):
         X = np.array([[float(r[fn]) for fn in SC5_FEATURES] for r in rl], dtype=np.float32)
@@ -112,20 +157,20 @@ def train(model, Xtr, Ytr, Xvl, Yvl, epochs=80, lr=0.001, device="cpu"):
     return model
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--dataset", default="tables/v2_sc5_dataset_v3.csv")
-ap.add_argument("--output_dir", default="outputs/sc5_v4")
+ap.add_argument("--dataset", default="tables/v2_sc5_canonical_dataset.csv")
+ap.add_argument("--output_dir", default="outputs/sc5_canonical")
 ap.add_argument("--seed", type=int, default=1)
 ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
-ap.add_argument("--respect_frozen_split", action="store_true",
-                help="Use frozen split column from canonical corpus (skip random shuffle)")
+ap.add_argument("--legacy_random_split", action="store_true",
+                help="Disable frozen split auto-detection; use legacy random 75/25")
 args = ap.parse_args()
 random.seed(args.seed); np.random.seed(args.seed); torch.manual_seed(args.seed)
 
 print(f"Loading {args.dataset}...")
 Xtr, Ytr, Xvl, Yvl, Xte, Yte, n_h, n_tr, n_vl = load_data(
-    args.dataset, args.seed, respect_frozen_split=args.respect_frozen_split)
-print(f"  train={n_tr} val={n_vl} held_test={n_h}"
-      f"{' (frozen split)' if args.respect_frozen_split else ' (random split)'}")
+    args.dataset, args.seed, legacy_random_split=args.legacy_random_split)
+split_mode = 'frozen' if not args.legacy_random_split else 'random'
+print(f"  train={n_tr} val={n_vl} held_test={n_h} ({split_mode} split)")
 mean = Xtr.mean(0); std = Xtr.std(0) + 1e-8
 Xtr = (Xtr-mean)/std; Xvl = (Xvl-mean)/std; Xte = (Xte-mean)/std
 
@@ -141,7 +186,24 @@ with torch.no_grad():
 print(f"Held-out phase acc: {ta:.3f}")
 
 out_dir = Path(args.output_dir); out_dir.mkdir(parents=True, exist_ok=True)
-torch.save({"model_state": model.state_dict(), "mean": mean, "std": std,
-            "feature_names": SC5_FEATURES, "phase_classes": SC5_PHASES},
-           out_dir / f"sc5_mlp_s{args.seed}.pt")
-print(f"Saved to {out_dir}/sc5_mlp_s{args.seed}.pt")
+
+# Compute dataset SHA for provenance
+with open(args.dataset, 'rb') as f:
+    dataset_sha = hashlib.sha256(f.read()).hexdigest()
+
+# Extract episode IDs per split for reproducibility
+train_eps = sorted(set(r.get('episode_id', r.get('run_id','')) for r in
+                       (Xtr_rows if 'Xtr_rows' in dir() else []) or []))
+val_eps = sorted(set(r.get('episode_id', r.get('run_id','')) for r in
+                     (Xvl_rows if 'Xvl_rows' in dir() else []) or []))
+
+torch.save({
+    "model_state": model.state_dict(), "mean": mean, "std": std,
+    "feature_names": SC5_FEATURES, "phase_classes": SC5_PHASES,
+    "dataset_sha256": dataset_sha,
+    "dataset_path": args.dataset,
+    "split_mode": split_mode,
+    "normalization_source": "train_only",
+    "n_train": n_tr, "n_val": n_vl, "n_held_test": n_h,
+}, out_dir / f"sc5_mlp_s{args.seed}.pt")
+print(f"Saved to {out_dir}/sc5_mlp_s{args.seed}.pt (dataset SHA: {dataset_sha[:16]})")
