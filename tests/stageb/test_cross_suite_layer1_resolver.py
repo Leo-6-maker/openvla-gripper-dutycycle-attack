@@ -10,6 +10,7 @@ sys.path.insert(0, str(REPO))
 
 from scripts.stageb.cross_suite_layer1_resolver import (  # noqa: E402
     RESOLVER_NOT_IMPLEMENTED,
+    bind_unique,
     build_blind_review_manifest,
     build_dev_canary_manifest,
     build_review_package,
@@ -219,6 +220,16 @@ def test_load_step_rows_drops_forbidden_detector_fields(tmp_path):
     assert "raw_gripper" in rows[0]
     for forbidden in ["mlp_emit", "mlp_triggered", "corridor_p", "release_p", "pred_phase"]:
         assert forbidden not in rows[0]
+
+
+def test_structured_prefix_suffix_binding_without_arbitrary_substring():
+    bound = bind_unique(["akita_black_bowl_1_main"], ("black_bowl",))
+    assert bound.status == "BOUND_STRUCTURED_FALLBACK"
+    assert bound.name == "akita_black_bowl_1_main"
+    ambiguous = bind_unique(["akita_black_bowl_1_main", "akita_black_bowl_2_main"], ("black_bowl",))
+    assert ambiguous.status == "AMBIGUOUS"
+    failed = bind_unique(["black_marker_1_main"], ("mug",))
+    assert failed.status == "FAILED"
 
 
 def test_single_object_episode_requires_physical_grasp_lift_carry_target(tmp_path):

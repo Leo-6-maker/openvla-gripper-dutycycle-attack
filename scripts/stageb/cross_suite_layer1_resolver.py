@@ -373,7 +373,10 @@ def bind_unique(names: list[str], aliases: tuple[str, ...]) -> BindingResult:
                 candidates.append((name, idx, "BOUND_EXACT", alias))
             elif norm == alias:
                 candidates.append((name, idx, "BOUND_BDDL_ONTOLOGY", alias))
-            elif low.startswith(alias + "_") and normalize_entity_name(alias) == alias:
+            elif (
+                (low.startswith(alias + "_") or norm.endswith("_" + alias))
+                and normalize_entity_name(alias) == alias
+            ):
                 candidates.append((name, idx, "BOUND_STRUCTURED_FALLBACK", alias))
     unique: dict[str, tuple[str, int, str, str]] = {c[0]: c for c in candidates}
     vals = list(unique.values())
