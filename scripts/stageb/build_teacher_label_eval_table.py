@@ -49,7 +49,12 @@ def build_coverage(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
             "privileged_valid_count": len(privileged),
             "teacher_abstain_count": len(abstain),
             "teacher_label_coverage_rate": round(len(privileged) / len(valid), 6) if valid else "",
-            "usable_for_teacher_timing_eval": len(privileged) > 0,
+            "teacher_timing_label_count": len(privileged),
+            "teacher_timing_eval_status": "REQUIRES_OFFLINE_RESOLVER_AND_PREREG_GATE",
+            "object_target_binding_valid_count": "",
+            "anchor_present_count": "",
+            "event_type_valid_count": "",
+            "anonymous_object_identity_count": "",
             "usable_for_clean_sr_only": len(valid) > 0 and len(privileged) == 0,
         })
     return out

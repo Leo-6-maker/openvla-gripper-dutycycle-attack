@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
+import zipfile
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
@@ -24,6 +26,14 @@ def read_json(path: Path) -> dict[str, Any]:
         return obj if isinstance(obj, dict) else {}
     except Exception:
         return {}
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
 
 
 def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -66,6 +76,13 @@ def csv_row_count(path: Path) -> int:
         return sum(1 for _ in reader)
 
 
+def read_csv_rows(path: Path) -> list[dict[str, str]]:
+    if not path.exists():
+        return []
+    with path.open("r", encoding="utf-8", errors="replace", newline="") as f:
+        return list(csv.DictReader(f))
+
+
 def first_csv_values(path: Path, columns: list[str]) -> dict[str, str]:
     if not path.exists():
         return {col: "" for col in columns}
@@ -78,7 +95,80 @@ def first_csv_values(path: Path, columns: list[str]) -> dict[str, str]:
     return {col: str(row.get(col, "")) for col in columns}
 
 
-def audit_episode(ep: Path) -> dict[str, Any]:
+def npz_members(path: Path) -> str:
+    if not path.exists():
+        return ""
+    try:
+        with zipfile.ZipFile(path, "r") as zf:
+            return "|".join(sorted(zf.namelist()))
+    except Exception as exc:
+        return f"UNREADABLE:{type(exc).__name__}:{exc}"
+
+
+def mp4_frame_count(path: Path) -> str:
+    if not path.exists():
+        return ""
+    try:
+        import imageio.v2 as imageio  # type: ignore
+
+        reader = imageio.get_reader(path)
+        try:
+            return str(reader.count_frames())
+        finally:
+            reader.close()
+    except Exception as exc:
+        return f"UNAVAILABLE:{type(exc).__name__}:{exc}"
+
+
+def deep_integrity(ep: Path, artifact: dict[str, Any], summary: dict[str, Any]) -> dict[str, Any]:
+    files = artifact.get("files", [])
+    checked = 0
+    mismatches: list[str] = []
+    if isinstance(files, list):
+        for item in files:
+            if not isinstance(item, dict):
+                continue
+            rel = str(item.get("path", ""))
+            expected = str(item.get("sha256", ""))
+            if not rel or rel == "artifact_sha256.json":
+                continue
+            path = ep / rel
+            if not path.exists():
+                mismatches.append(rel + ":missing")
+                continue
+            actual = sha256_file(path)
+            checked += 1
+            if expected and actual != expected:
+                mismatches.append(rel)
+    try:
+        n_steps = int(summary.get("n_steps"))
+    except Exception:
+        n_steps = -1
+    sim_manifest = read_json(ep / "sim_state_manifest.json")
+    try:
+        sim_steps = int(sim_manifest.get("steps"))
+    except Exception:
+        sim_steps = -1
+    step_rows = csv_row_count(ep / "step_telemetry.csv")
+    detector_rows = csv_row_count(ep / "detector_telemetry.csv")
+    frame_rows = csv_row_count(ep / "frame_index.csv")
+    return {
+        "deep_integrity_enabled": True,
+        "deep_sha_files_checked": checked,
+        "deep_sha_mismatch_count": len(mismatches),
+        "deep_sha_mismatches": "|".join(mismatches),
+        "deep_step_rows_match_summary": step_rows == n_steps,
+        "deep_detector_rows_match_summary": detector_rows == n_steps,
+        "deep_frame_rows_match_summary": frame_rows == n_steps,
+        "deep_sim_steps_match_summary": sim_steps == n_steps,
+        "deep_agentview_npz_members": npz_members(ep / "agentview_frames_uint8.npz"),
+        "deep_sim_state_npz_members": npz_members(ep / "sim_state_stream.npz"),
+        "deep_raw_video_frame_count": mp4_frame_count(ep / "rollout_raw.mp4"),
+        "deep_overlay_video_frame_count": mp4_frame_count(ep / "rollout_overlay.mp4"),
+    }
+
+
+def audit_episode(ep: Path, *, deep: bool = False) -> dict[str, Any]:
     manifest = read_json(ep / "episode_manifest.json")
     summary = read_json(ep / "episode_summary.json")
     sidecar = read_json(ep / "privileged_sidecar.json")
@@ -118,7 +208,7 @@ def audit_episode(ep: Path) -> dict[str, Any]:
         invalid_feature_steps = -1
     if invalid_feature_steps != 0:
         status = "SCIENTIFIC_INVALID"
-    return {
+    row = {
         "episode_path": str(ep),
         "root_path": str(next((p for p in ep.parents if p.name.startswith("cross_suite_clean_300_20260619")), ep.parent)),
         "suite": manifest.get("suite", summary.get("suite", "")),
@@ -147,6 +237,11 @@ def audit_episode(ep: Path) -> dict[str, Any]:
         "clean_only_contract": clean_only,
         "status": status,
     }
+    if deep:
+        row.update(deep_integrity(ep, artifact, summary))
+    else:
+        row["deep_integrity_enabled"] = False
+    return row
 
 
 def aggregate(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -204,7 +299,157 @@ def duplicate_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
-def write_report(path: Path, roots: list[Path], ledger: list[dict[str, Any]], summary: list[dict[str, Any]], dupes: list[dict[str, Any]]) -> None:
+def canonical_key(row: dict[str, Any]) -> tuple[str, str, str, str, str]:
+    return (
+        str(row.get("suite", "")),
+        str(row.get("task_idx", "")),
+        str(row.get("state_id", "")),
+        str(row.get("eval_seed", "")),
+        str(row.get("condition", "CLEAN") or "CLEAN"),
+    )
+
+
+def key_text(key: tuple[str, str, str, str, str]) -> str:
+    return "|".join(key)
+
+
+def load_planned_rows(paths: list[Path]) -> list[dict[str, Any]]:
+    planned: list[dict[str, Any]] = []
+    for path in paths:
+        for row in read_csv_rows(path):
+            enriched = dict(row)
+            enriched["queue_manifest_path"] = str(path)
+            enriched["condition"] = row.get("condition") or "CLEAN"
+            planned.append(enriched)
+    return planned
+
+
+def load_queue_status_rows(paths: list[Path]) -> dict[str, dict[str, str]]:
+    status: dict[str, dict[str, str]] = {}
+    for manifest in paths:
+        for row in read_csv_rows(manifest.parent / "queue_status.csv"):
+            for key in [row.get("job_id", ""), row.get("output_dir", ""), key_text(canonical_key(row))]:
+                if key:
+                    status[key] = row
+    return status
+
+
+def reconcile_planned(
+    planned: list[dict[str, Any]],
+    ledger: list[dict[str, Any]],
+    queue_status: dict[str, dict[str, str]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    planned_by_key: dict[tuple[str, str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in planned:
+        planned_by_key[canonical_key(row)].append(row)
+    ledger_by_key: dict[tuple[str, str, str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in ledger:
+        ledger_by_key[canonical_key(row)].append(row)
+
+    rows: list[dict[str, Any]] = []
+    for key, planned_rows in sorted(planned_by_key.items(), key=lambda item: key_text(item[0])):
+        p0 = planned_rows[0]
+        found = ledger_by_key.get(key, [])
+        status_row = queue_status.get(str(p0.get("job_id", ""))) or queue_status.get(str(p0.get("output_dir", ""))) or queue_status.get(key_text(key)) or {}
+        if not found:
+            terminal = "INFRA_FAILED" if status_row.get("status") == "INFRA_FAILED" else "MISSING_PLANNED"
+            rows.append({
+                "canonical_key": key_text(key),
+                "suite": key[0],
+                "task_idx": key[1],
+                "state_id": key[2],
+                "eval_seed": key[3],
+                "condition": key[4],
+                "planned_count_for_key": len(planned_rows),
+                "discovered_count_for_key": 0,
+                "reconciliation_status": terminal,
+                "planned_output_dir": p0.get("output_dir", ""),
+                "queue_status": status_row.get("status", ""),
+                "episode_path": "",
+            })
+            continue
+        for item in found:
+            if item.get("status") == "COMPLETE_VALID":
+                terminal = "VALID_CLEAN_FAILURE" if item.get("task_success") is False else "VALID_COMPLETE"
+            else:
+                terminal = "SCHEMA_INVALID"
+            rows.append({
+                "canonical_key": key_text(key),
+                "suite": key[0],
+                "task_idx": key[1],
+                "state_id": key[2],
+                "eval_seed": key[3],
+                "condition": key[4],
+                "planned_count_for_key": len(planned_rows),
+                "discovered_count_for_key": len(found),
+                "reconciliation_status": terminal,
+                "planned_output_dir": p0.get("output_dir", ""),
+                "queue_status": status_row.get("status", ""),
+                "episode_path": item.get("episode_path", ""),
+                "task_success": item.get("task_success", ""),
+                "source_commit": item.get("source_commit", ""),
+                "gpu_pair": item.get("gpu_pair", ""),
+            })
+    for key, found in sorted(ledger_by_key.items(), key=lambda item: key_text(item[0])):
+        if key in planned_by_key:
+            continue
+        for item in found:
+            rows.append({
+                "canonical_key": key_text(key),
+                "suite": key[0],
+                "task_idx": key[1],
+                "state_id": key[2],
+                "eval_seed": key[3],
+                "condition": key[4],
+                "planned_count_for_key": 0,
+                "discovered_count_for_key": len(found),
+                "reconciliation_status": "UNEXPECTED_EXTRA_KEY",
+                "episode_path": item.get("episode_path", ""),
+                "task_success": item.get("task_success", ""),
+                "source_commit": item.get("source_commit", ""),
+                "gpu_pair": item.get("gpu_pair", ""),
+            })
+
+    counts = Counter(str(row.get("reconciliation_status", "")) for row in rows)
+    duplicate_planned = [key_text(key) for key, values in planned_by_key.items() if len(values) > 1]
+    accounted = (
+        counts.get("MISSING_PLANNED", 0)
+        + counts.get("VALID_COMPLETE", 0)
+        + counts.get("VALID_CLEAN_FAILURE", 0)
+        + counts.get("INFRA_FAILED", 0)
+        + counts.get("SCHEMA_INVALID", 0)
+    )
+    summary = {
+        "planned_count": len(planned),
+        "unique_planned_count": len(planned_by_key),
+        "duplicate_planned_key_count": len(duplicate_planned),
+        "duplicate_planned_keys": duplicate_planned,
+        "discovered_count": len(ledger),
+        "unique_discovered_count": len(ledger_by_key),
+        "missing_planned_key_count": counts.get("MISSING_PLANNED", 0),
+        "unexpected_extra_key_count": counts.get("UNEXPECTED_EXTRA_KEY", 0),
+        "valid_complete_count": counts.get("VALID_COMPLETE", 0),
+        "valid_clean_failure_count": counts.get("VALID_CLEAN_FAILURE", 0),
+        "infra_failed_count": counts.get("INFRA_FAILED", 0),
+        "schema_invalid_count": counts.get("SCHEMA_INVALID", 0),
+        "replacement_states": counts.get("UNEXPECTED_EXTRA_KEY", 0),
+        "hard_gate_planned_300": len(planned) == 300,
+        "hard_gate_unique_planned_300": len(planned_by_key) == 300,
+        "hard_gate_accounting_matches_planned": accounted == len(planned_by_key),
+        "hard_gate_no_extra_denominator_keys": counts.get("UNEXPECTED_EXTRA_KEY", 0) == 0,
+        "hard_gate_no_replacement_states": counts.get("UNEXPECTED_EXTRA_KEY", 0) == 0,
+    }
+    return rows, summary
+
+
+def write_report(
+    path: Path,
+    roots: list[Path],
+    ledger: list[dict[str, Any]],
+    summary: list[dict[str, Any]],
+    dupes: list[dict[str, Any]],
+    reconciliation_summary: dict[str, Any] | None,
+) -> None:
     valid = [r for r in ledger if r.get("status") == "COMPLETE_VALID"]
     lines = [
         "# Cross-Suite CLEAN 300 Postrun Audit",
@@ -221,7 +466,19 @@ def write_report(path: Path, roots: list[Path], ledger: list[dict[str, Any]], su
         f"- Valid complete CLEAN episodes: {len(valid)}",
         f"- Duplicate canonical keys: {len(dupes)}",
         f"- Required source commit: `{EXPECTED_SOURCE_COMMIT}`",
+        f"- Audit level: metadata postrun ledger audit{' + deep integrity' if any(str(r.get('deep_integrity_enabled')).lower() == 'true' for r in ledger) else ''}",
         "",
+    ]
+    if reconciliation_summary:
+        lines += [
+            "## Frozen Manifest Reconciliation",
+            "",
+            "```json",
+            json.dumps(reconciliation_summary, indent=2, sort_keys=True),
+            "```",
+            "",
+        ]
+    lines += [
         "## Suite/GPU Summary",
         "",
         "| Suite | GPU pair | Episodes | Valid | Invalid | Unique task-states | Clean success | Detector emit |",
@@ -248,7 +505,9 @@ def write_report(path: Path, roots: list[Path], ledger: list[dict[str, Any]], su
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--roots", nargs="+", required=True, help="Completed or in-progress output roots to scan.")
+    ap.add_argument("--queue-manifest", action="append", default=[], help="Frozen queue_manifest.csv source of truth. May be repeated.")
     ap.add_argument("--output-dir", required=True)
+    ap.add_argument("--deep-integrity", action="store_true", help="Recompute artifact SHA and inspect NPZ/video consistency. Run after collection finishes.")
     ap.add_argument("--no-gpu", action="store_true", required=True)
     return ap.parse_args()
 
@@ -258,19 +517,29 @@ def main() -> None:
     roots = [Path(p) for p in args.roots]
     out = Path(args.output_dir)
     episodes = iter_episode_dirs(roots)
-    ledger = [audit_episode(ep) for ep in episodes]
+    ledger = [audit_episode(ep, deep=args.deep_integrity) for ep in episodes]
     summary = aggregate(ledger)
     dupes = duplicate_rows(ledger)
+    planned = load_planned_rows([Path(p) for p in args.queue_manifest])
+    queue_status = load_queue_status_rows([Path(p) for p in args.queue_manifest])
+    reconciliation_rows: list[dict[str, Any]] = []
+    reconciliation_summary: dict[str, Any] | None = None
+    if planned:
+        reconciliation_rows, reconciliation_summary = reconcile_planned(planned, ledger, queue_status)
     write_csv(out / "tables" / "cross_suite_clean_300_master_ledger.csv", ledger)
     write_csv(out / "tables" / "cross_suite_clean_300_summary.csv", summary)
     write_csv(out / "tables" / "cross_suite_clean_300_duplicate_conflicts.csv", dupes)
+    if reconciliation_rows:
+        write_csv(out / "tables" / "cross_suite_clean_300_reconciliation.csv", reconciliation_rows)
     write_json(out / "reports" / "cross_suite_clean_300_postrun_audit.json", {
         "roots": [str(r) for r in roots],
         "episode_count": len(ledger),
         "valid_complete_count": sum(r.get("status") == "COMPLETE_VALID" for r in ledger),
         "duplicate_count": len(dupes),
+        "reconciliation": reconciliation_summary or {},
+        "deep_integrity": bool(args.deep_integrity),
     })
-    write_report(out / "reports" / "CROSS_SUITE_CLEAN_300_POSTRUN_AUDIT.md", roots, ledger, summary, dupes)
+    write_report(out / "reports" / "CROSS_SUITE_CLEAN_300_POSTRUN_AUDIT.md", roots, ledger, summary, dupes, reconciliation_summary)
     print(json.dumps({"result": "POSTRUN_AUDIT_DONE", "episodes": len(ledger), "valid": sum(r.get("status") == "COMPLETE_VALID" for r in ledger)}, sort_keys=True))
 
 

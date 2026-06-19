@@ -6,7 +6,12 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.stageb.audit_cross_suite_clean_300_postrun import audit_episode, duplicate_rows  # noqa: E402
+from scripts.stageb.audit_cross_suite_clean_300_postrun import (  # noqa: E402
+    audit_episode,
+    duplicate_rows,
+    load_planned_rows,
+    reconcile_planned,
+)
 from scripts.stageb.build_teacher_label_eval_table import build_coverage  # noqa: E402
 from scripts.stageb.build_paper_table_schemas import TABLES  # noqa: E402
 
@@ -101,11 +106,74 @@ def test_teacher_coverage_does_not_infer_labels_from_abstain():
     coverage = build_coverage(rows)
     assert coverage[0]["privileged_valid_count"] == 0
     assert coverage[0]["teacher_abstain_count"] == 2
-    assert coverage[0]["usable_for_teacher_timing_eval"] is False
+    assert coverage[0]["teacher_timing_label_count"] == 0
+    assert coverage[0]["teacher_timing_eval_status"] == "REQUIRES_OFFLINE_RESOLVER_AND_PREREG_GATE"
     assert coverage[0]["usable_for_clean_sr_only"] is True
 
 
 def test_paper_table_schemas_are_empty_claim_boundary_templates():
     assert "table1_end_to_end_attack_results_schema.csv" in TABLES
     assert "condition" in TABLES["table1_end_to_end_attack_results_schema.csv"]
+    assert "preregistered_parent" in TABLES["table1_end_to_end_attack_results_schema.csv"]
     assert "eligible_denominator" in TABLES["table2_detector_localization_transfer_schema.csv"]
+    assert "teacher_window_start" in TABLES["table2_detector_localization_transfer_schema.csv"]
+    assert "visible_detachment" in TABLES["table3_visual_open_qpos_failure_mechanism_schema.csv"]
+    assert "uses_future" in TABLES["table4_timing_payload_ablations_schema.csv"]
+
+
+def test_reconciliation_reports_missing_planned_keys(tmp_path):
+    manifest = tmp_path / "queue_manifest.csv"
+    _write_csv(manifest, [
+        {
+            "job_id": "a",
+            "wave": "A",
+            "suite": "libero_spatial",
+            "task_idx": 0,
+            "state_id": 0,
+            "eval_seed": 0,
+            "output_dir": str(tmp_path / "missing"),
+        }
+    ])
+    planned = load_planned_rows([manifest])
+    rows, summary = reconcile_planned(planned, [], {})
+    assert rows[0]["reconciliation_status"] == "MISSING_PLANNED"
+    assert summary["planned_count"] == 1
+    assert summary["missing_planned_key_count"] == 1
+    assert summary["hard_gate_no_extra_denominator_keys"] is True
+
+
+def test_reconciliation_separates_valid_clean_failure_from_missing(tmp_path):
+    ep = _make_episode(tmp_path, "episode")
+    _write_json(ep / "episode_summary.json", {
+        "condition": "CLEAN",
+        "vis_or_rand_run": False,
+        "task_success": False,
+        "n_steps": 10,
+        "invalid_feature_steps": 0,
+        "mlp_triggered": False,
+        "mlp_emit_step": -1,
+        "checkpoint_sha256": "ckpt",
+        "dataset_sha256": "data",
+        "privileged_valid": False,
+        "teacher_abstain": True,
+    })
+    ledger = [audit_episode(ep)]
+    planned = [{
+        "job_id": "a",
+        "suite": "libero_spatial",
+        "task_idx": "0",
+        "state_id": "0",
+        "eval_seed": "0",
+        "condition": "CLEAN",
+    }]
+    rows, summary = reconcile_planned(planned, ledger, {})
+    assert rows[0]["reconciliation_status"] == "VALID_CLEAN_FAILURE"
+    assert summary["valid_clean_failure_count"] == 1
+
+
+def test_deep_integrity_checks_row_lengths_and_sha(tmp_path):
+    ep = _make_episode(tmp_path, "episode")
+    row = audit_episode(ep, deep=True)
+    assert row["deep_integrity_enabled"] is True
+    assert row["deep_sha_mismatch_count"] == 0
+    assert row["deep_step_rows_match_summary"] is False

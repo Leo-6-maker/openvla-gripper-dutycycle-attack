@@ -1,1 +1,1 @@
-ablation,suite,parent,seed,trigger_policy,payload,epsilon,steps,selected_window,primary_metric,control_metric,pass_fail
+ablation,suite,parent,seed,trigger_policy,payload,uses_future,uses_privileged_online,attack_frames,same_epsilon,same_PGD_steps,same_parent,epsilon,steps,selected_window,primary_metric,control_metric,pass_fail

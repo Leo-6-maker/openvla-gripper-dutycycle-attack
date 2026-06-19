@@ -1,1 +1,1 @@
-cohort,suite,task_idx,state_id,seed,condition,success,failure_taxonomy,target_token_rate,qpos_open_response,arm_selectivity,control_matched,claim_allowed
+cohort,suite,task_idx,state_id,seed,condition,preregistered_parent,clean_valid,mechanism_eligible,detector_emitted,attacked,official_SR,CQFR,CQSR,success,failure_taxonomy,target_token_rate,qpos_open_response,arm_selectivity,attack_frames,attack_duty_cycle,matched_random,matched_fixed_or_heuristic,control_matched,claim_allowed
