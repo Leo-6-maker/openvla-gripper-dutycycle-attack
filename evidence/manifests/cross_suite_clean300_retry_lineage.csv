@@ -1,0 +1,2 @@
+﻿canonical_key,suite,task_idx,state_id,eval_seed,condition,failed_attempt_path,failure_class,retry_path,primary,notes
+libero_spatial|5|7|0|CLEAN,libero_spatial,5,7,0,CLEAN,/data/liuyu/outputs/cross_suite_clean_300_20260619_r1_6379397/B/waveB_libero_spatial_t05_s07,XID31_INFRA,/data/liuyu/outputs/cross_suite_clean_300_20260619_infra_retry_after_cold_gpu26_20260619/waveB_libero_spatial_t05_s07_retry1,true,"Same preregistered key retained; original infra failure quarantined, retry is the primary clean denominator episode."

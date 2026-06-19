@@ -1,0 +1,8 @@
+suite,gpu_pair,episode_count,valid_complete_count,clean_success_count,clean_failure_count,detector_emit_count,privileged_valid_count
+libero_10,"1,5",50,50,21,29,25,0
+libero_10,"2,6",50,50,22,28,33,0
+libero_goal,"1,5",50,50,37,13,2,0
+libero_goal,"2,6",50,50,41,9,1,0
+libero_spatial,"1,3",8,8,5,3,1,0
+libero_spatial,"2,6",85,85,66,19,1,0
+libero_spatial,"5,4",7,7,5,2,1,0
