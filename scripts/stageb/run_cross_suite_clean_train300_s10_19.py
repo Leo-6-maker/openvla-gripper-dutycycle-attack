@@ -22,7 +22,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-REPO = Path(__file__).resolve().parents[2]
+ORCHESTRATION_REPO = Path(__file__).resolve().parents[2]
 PR30_MERGE_COMMIT = "141657fdc5d85c5fd564913c955d61e9e6be9ddc"
 COLLECTOR_SOURCE_COMMIT = "63793972743f667c6a6bcc12e9700f322f261147"
 CONDITION = "CLEAN"
@@ -106,18 +106,18 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         w.writerows(rows)
 
 
-def run_text(cmd: list[str], timeout: int = 30) -> str:
+def run_text(cmd: list[str], timeout: int = 30, cwd: Path | None = None) -> str:
     try:
-        return subprocess.check_output(cmd, cwd=str(REPO), stderr=subprocess.STDOUT, timeout=timeout, text=True).strip()
+        return subprocess.check_output(cmd, cwd=str(cwd or ORCHESTRATION_REPO), stderr=subprocess.STDOUT, timeout=timeout, text=True).strip()
     except Exception as exc:
         return f"UNAVAILABLE:{type(exc).__name__}:{exc}"
 
 
-def require_clean_checkout() -> None:
-    head = run_text(["git", "rev-parse", "HEAD"])
+def require_clean_checkout(repo: Path) -> None:
+    head = run_text(["git", "rev-parse", "HEAD"], cwd=repo)
     if head != PR30_MERGE_COMMIT:
         raise SystemExit(f"HEAD_MISMATCH: got {head}, expected {PR30_MERGE_COMMIT}")
-    status = run_text(["git", "status", "--short"])
+    status = run_text(["git", "status", "--short"], cwd=repo)
     if status.strip():
         raise SystemExit(f"DIRTY_WORKTREE:\n{status}")
 
@@ -196,7 +196,7 @@ def disk_free_gb(path: Path) -> float:
 def command_for_job(args: argparse.Namespace, job: TrainJob) -> list[str]:
     return [
         args.python,
-        "scripts/stageb/run_sc5_cross_suite_clean.py",
+        str(Path(args.collector_repo) / "scripts" / "stageb" / "run_sc5_cross_suite_clean.py"),
         "--suite",
         job.suite,
         "--model_path",
@@ -253,8 +253,8 @@ def audit_episode(output_dir: Path) -> tuple[str, str]:
     return "COMPLETE", "audit_pass"
 
 
-def snapshot_command(output_root: Path, name: str, cmd: list[str]) -> None:
-    text = run_text(cmd, timeout=20)
+def snapshot_command(output_root: Path, name: str, cmd: list[str], *, cwd: Path | None = None) -> None:
+    text = run_text(cmd, timeout=20, cwd=cwd)
     (output_root / "snapshots").mkdir(parents=True, exist_ok=True)
     (output_root / "snapshots" / name).write_text(text + "\n", encoding="utf-8")
 
@@ -297,7 +297,7 @@ def run_worker(args: argparse.Namespace, jobs: list[TrainJob]) -> None:
         write_csv(root / f"queue_status_{spec['worker']}.csv", rows)
         log_path = Path(row["log_path"])
         with log_path.open("w", encoding="utf-8") as log:
-            proc = subprocess.run(command_for_job(args, job), cwd=str(REPO), env=env, stdout=log, stderr=subprocess.STDOUT)
+            proc = subprocess.run(command_for_job(args, job), cwd=str(Path(args.collector_repo)), env=env, stdout=log, stderr=subprocess.STDOUT)
         log_text = log_path.read_text(encoding="utf-8", errors="replace")
         row["returncode"] = proc.returncode
         row["end_time"] = time.strftime("%Y-%m-%dT%H:%M:%S%z")
@@ -324,6 +324,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--cuda_visible_devices", default="")
     ap.add_argument("--render_gpu", type=int, default=-1)
     ap.add_argument("--python", default="/data/aviary/envs/openvla_official_libero_20260525/bin/python")
+    ap.add_argument("--collector_repo", required=True, help="Clean checkout pinned to freeze/cross-suite-clean300-20260619.")
     ap.add_argument("--eval_seed", type=int, default=0)
     ap.add_argument("--min_free_gb", type=float, default=200.0)
     ap.add_argument("--plan_only", action="store_true")
@@ -332,7 +333,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    require_clean_checkout()
+    require_clean_checkout(Path(args.collector_repo))
     root = Path(args.output_root)
     if args.plan_only:
         root.mkdir(parents=True, exist_ok=True)
@@ -369,7 +370,8 @@ def main() -> None:
     )
     snapshot_command(root, "nvidia_smi_before.txt", ["nvidia-smi", "--query-gpu=index,uuid,name,memory.used,memory.total", "--format=csv,noheader"])
     snapshot_command(root, "nvidia_smi_pmon_before.txt", ["nvidia-smi", "pmon", "-c", "1"])
-    snapshot_command(root, "git_status.txt", ["git", "status", "--short"])
+    snapshot_command(root, "collector_git_status.txt", ["git", "status", "--short"], cwd=Path(args.collector_repo))
+    snapshot_command(root, "collector_git_head.txt", ["git", "rev-parse", "HEAD"], cwd=Path(args.collector_repo))
 
     if args.plan_only:
         return
