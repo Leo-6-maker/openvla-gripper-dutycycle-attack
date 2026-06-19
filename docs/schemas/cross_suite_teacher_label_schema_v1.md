@@ -14,15 +14,21 @@ attack fields: `mlp_emit_step`, `mlp_triggered`, `corridor_p`, `release_p`,
 
 | field | required | description |
 | --- | --- | --- |
-| `teacher_run` | yes | Stable run identifier for the derived labeling pass. |
+| `teacher_executed` | yes | Boolean; whether the resolver ran for this episode. |
+| `teacher_run_id` | yes | Stable run identifier for the derived labeling pass. Empty only when `teacher_executed=false`. |
 | `teacher_version` | yes | Teacher implementation version, initially `cross_suite_teacher_v1`. |
 | `ontology_version` | yes | Ontology version, initially `cross_suite_task_ontology_v1`. |
 | `resolver_version` | yes | Resolver code version/SHA. |
+| `episode_key` | yes | Canonical key `suite|task_idx|state_id|eval_seed|condition`. |
+| `suite` | yes | Source suite. |
+| `task_idx` | yes | Integer task id within suite. |
+| `state_id` | yes | Integer initial state id. |
+| `source_episode_relpath` | yes | Episode path relative to the frozen CLEAN300 root registry. |
 | `source_episode_sha` | yes | SHA or recursive artifact hash for the source CLEAN episode. |
 | `mechanism_type` | yes | One of the ontology mechanism classes. |
 | `mechanism_eligible` | yes | Boolean eligibility for positive timing-transfer evaluation. |
-| `object_binding_status` | yes | Object binding result. |
-| `target_binding_status` | yes | Target/site binding result. |
+| `object_binding_status` | yes | Object binding enum. |
+| `target_binding_status` | yes | Target/site binding enum. |
 | `teacher_status` | yes | One of the allowed status classes below. |
 | `teacher_semantic_abstain` | yes | Boolean semantic abstention decision from resolver, not collector placeholder. |
 | `abstain_reason` | yes when abstaining | Reason for abstention or empty string for positive valid events. |
@@ -50,7 +56,18 @@ attack fields: `mlp_emit_step`, `mlp_triggered`, `corridor_p`, `release_p`,
 | `event_valid` | yes | Boolean event validity. |
 | `event_invalid_reason` | yes if invalid | Reason for invalid event row. |
 
-## Allowed Status Classes
+## Allowed Binding Status Enums
+
+```text
+BOUND_EXACT
+BOUND_BDDL_ONTOLOGY
+BOUND_STRUCTURED_FALLBACK
+AMBIGUOUS
+NOT_APPLICABLE
+FAILED
+```
+
+## Allowed Teacher Status Classes
 
 ```text
 ELIGIBLE_EVENT
@@ -62,6 +79,14 @@ MULTI_EVENT_AUDIT_ONLY
 RESOLVER_FAILED
 SCHEMA_INVALID
 ```
+
+## Cross-Field Invariants
+
+- teacher_executed=false implies `teacher_run_id=""`, `teacher_status=RESOLVER_FAILED`, `event_count=0`, and `manual_review_required=true`.
+- teacher_status=ELIGIBLE_EVENT implies `mechanism_eligible=true`, `teacher_semantic_abstain=false`, `object_binding_status` and `target_binding_status` are one of `BOUND_EXACT`, `BOUND_BDDL_ONTOLOGY`, or `BOUND_STRUCTURED_FALLBACK`, and `event_count>=1`.
+- teacher_status=CORRECT_SEMANTIC_ABSTAIN implies `mechanism_eligible=false`, `teacher_semantic_abstain=true`, `event_count=0`, and a nonempty `abstain_reason`.
+- `teacher_status in {OBJECT_BINDING_AMBIGUOUS,TARGET_BINDING_AMBIGUOUS,RESOLVER_FAILED,SCHEMA_INVALID}` implies `mechanism_eligible=false`, `manual_review_required=true`, and no accepted positive event rows.
+- teacher_status=MULTI_EVENT_AUDIT_ONLY implies the mechanism is `multi_object_transfer` or `mixed_articulated_pick_place`, `manual_review_required=true`, and all positive event rows remain supplementary until reviewed.
 
 ## Binding Source Priority
 

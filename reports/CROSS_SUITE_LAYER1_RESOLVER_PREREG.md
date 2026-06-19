@@ -78,8 +78,8 @@ The committed ontology covers all 30 suite/task pairs:
 
 ```text
 libero_spatial: 10 single_object_pick_place
-libero_goal: 6 single_object_pick_place, 3 articulated_only, 1 push_or_planar
-libero_10: 1 single_object_pick_place, 3 multi_object_transfer, 4 articulated_only, 2 unknown_or_low_signal
+libero_goal: 6 single_object_pick_place, 2 articulated_only, 1 mixed_articulated_pick_place, 1 push_or_planar
+libero_10: 1 single_object_pick_place, 6 multi_object_transfer, 3 mixed_articulated_pick_place
 ```
 
 Primary positive tasks currently preregistered:
@@ -90,7 +90,7 @@ Goal: task 1,2,4,6,8,9
 LIBERO-10: task 5
 ```
 
-LIBERO-10 multi-object tasks 0, 1, and 7 are event-level audit only. They may
+LIBERO-10 multi-object tasks 0, 1, 4, 6, 7, and 8 are event-level audit only. Goal task 3 and LIBERO-10 tasks 2, 3, and 9 are mixed articulated pick-place supplementary audit tasks. They may
 produce separate event rows after resolver support and human review, but they do
 not enter the primary positive denominator by default.
 
@@ -168,3 +168,16 @@ audit-only where semantics are unsupported.
 - No Layer 2 zero-shot timing transfer is evaluated.
 - No Layer 3 payload or attack result is evaluated.
 - No manual review is complete.
+
+
+## H1 Review Revision Notes
+
+This revision applies the H1 REQUEST_CHANGES review:
+
+- Role-cleaned aliases so manipulated-object aliases contain manipulated objects only and target aliases contain receptacles, target surfaces, regions, or sites only.
+- Enforced disjoint positive object/target alias sets.
+- Reclassified Goal task 3 and LIBERO-10 tasks 2, 3, and 9 as `mixed_articulated_pick_place` supplementary event-level audit.
+- Reclassified LIBERO-10 tasks 4, 6, and 8 as `multi_object_transfer` supplementary event-level audit.
+- Replaced ambiguous `teacher_run` with `teacher_executed` and `teacher_run_id`.
+- Added stable join/provenance fields and binding-status enums to the Teacher schema.
+- Added cross-field invariants for eligible, abstain, invalid, and multi-event statuses.
