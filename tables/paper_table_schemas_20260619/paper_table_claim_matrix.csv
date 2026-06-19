@@ -1,0 +1,6 @@
+table,allowed_only_after,forbidden_before
+Table 1,VIS/RAND/control attack runs with physical telemetry,clean-only census
+Table 2,clean detector transfer audit with explicit denominator,Teacher labels for cross-suite timing unless privileged_valid
+Table 3,visual-to-token-to-qpos evidence chain,token-only fixed-frame result
+Table 4,preregistered ablation matrix,ad hoc window or lambda tuning
+Table 5,online measured component timings,offline batch timings
