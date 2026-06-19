@@ -147,7 +147,13 @@ def validate_transported_object(labels: List[dict], event: dict,
     """
     positions = []
     object_names = set()
-    record_by_step = {int(r.get('step_idx', -1)): r for r in step_records}
+    record_by_step = {}
+    for idx, rec in enumerate(step_records):
+        raw_step = rec.get('step_idx', rec.get('step', idx))
+        try:
+            record_by_step[int(raw_step)] = rec
+        except (TypeError, ValueError):
+            record_by_step[idx] = rec
     for l in labels:
         step = l['step_idx']
         if step < event['start_step'] or step > event['end_step']:
@@ -167,9 +173,9 @@ def validate_transported_object(labels: List[dict], event: dict,
             continue
 
     # Object identity verifiability:
-    # - Explicit object name/ID present → verifiable
-    # - Single anonymous pose stream with continuous trajectory → weakly verifiable
-    # - Multi-object task with only anonymous pose → NOT verifiable
+    # - Explicit object name/ID present -> verifiable
+    # - Anonymous single pose stream is not sufficient evidence for a unique
+    #   transported object in cross-suite/event-level audits.
     has_explicit_id = len(object_names) > 0
     has_pose_data = len(positions) >= 2
 
@@ -184,10 +190,8 @@ def validate_transported_object(labels: List[dict], event: dict,
         unique = len(object_names) == 1
         reason = 'explicit_id_verified' if unique else 'multiple_object_names_detected'
     else:
-        # Anonymous pose stream: position continuity suggests single object
-        # but cannot be proven for multi-object tasks
-        unique = True  # weakly assumed for single-object primary tasks
-        reason = 'anonymous_pose_stream_weak_identity'
+        unique = False
+        reason = 'unverifiable_identity'
 
     x0, y0, z0 = positions[0][1], positions[0][2], positions[0][3]
     first_hash = f"{x0:.4f}_{y0:.4f}_{z0:.4f}"

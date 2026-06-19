@@ -1,0 +1,20 @@
+check,status,detail
+feature_count_25,PASS,count=25
+checkpoint_sha_present,PASS,detector checkpoint sha
+dataset_sha_present,PASS,detector dataset sha
+normalization_source_object_train,PASS,object_train_only_checkpoint_mean_std
+uses_target_suite_training_data,PASS,value=False
+uses_target_suite_normalization,PASS,value=False
+uses_online_privileged_state,PASS,value=False
+uses_attack_outcome_for_selection,PASS,value=False
+uses_manual_anchor_for_trigger,PASS,value=False
+k_equals_10,PASS,K=10
+target_token_31744,PASS,target=31744
+pgd_steps_20,PASS,steps=20
+epsilon_6_over_255,PASS,epsilon=0.023529411764705882
+libero_spatial_checkpoint_declared,PASS,/data/aviary/models/openvla/openvla-7b-finetuned-libero-spatial
+libero_spatial_unnorm_key_declared,PASS,libero_spatial
+libero_goal_checkpoint_declared,PASS,/data/aviary/models/openvla/openvla-7b-finetuned-libero-goal
+libero_goal_unnorm_key_declared,PASS,libero_goal
+libero_10_checkpoint_declared,PASS,/data/aviary/models/openvla/openvla-7b-finetuned-libero-10
+libero_10_unnorm_key_declared,PASS,libero_10

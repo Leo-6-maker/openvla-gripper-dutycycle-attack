@@ -1,0 +1,63 @@
+{
+  "audit_tool_commit": "2d3ff1c02995eb8090db4e3604d6fa1ad3f7a3dd",
+  "claim_boundary": {
+    "layer1_offline_resolver": "GO_AFTER_DEEP_AUDIT",
+    "more_clean_collection": "NO_GO",
+    "teacher_labels": "NOT_YET_GENERATED",
+    "vis_rand_attack": "NO_GO"
+  },
+  "collector_source_commit": "63793972743f667c6a6bcc12e9700f322f261147",
+  "final_deep_integrity_audit": {
+    "artifact_mismatch_nonzero": 0,
+    "complete_valid_rows": 300,
+    "deep_integrity": true,
+    "missing_required_artifacts": 0,
+    "path": "/data/liuyu/audit_outputs/cross_suite_clean_300_final_deep_integrity_20260619_202447",
+    "result": "PASS"
+  },
+  "final_metadata_audit": {
+    "deep_integrity": false,
+    "path": "/data/liuyu/audit_outputs/cross_suite_clean_300_final_metadata_300of300_20260619_2009",
+    "result": "PASS"
+  },
+  "metadata_reconciliation": {
+    "checkpoint_dataset_mismatch": 0,
+    "clean_failure": 103,
+    "clean_success": 197,
+    "duplicate_primary_keys": 0,
+    "missing_planned_keys": 0,
+    "schema_invalid": 0,
+    "source_commit_mismatch": 0,
+    "unexpected_extra_keys": 0,
+    "valid_episodes": 300
+  },
+  "official_roots": [
+    {
+      "notes": "Frozen queue manifest source of truth; includes Wave A and planned Wave B paths.",
+      "path": "/data/liuyu/outputs/cross_suite_clean_300_20260619_r1_6379397",
+      "role": "primary_wave_a_and_partial_wave_b",
+      "source_commit": "63793972743f667c6a6bcc12e9700f322f261147"
+    },
+    {
+      "notes": "GPU(1,5) detached worker output for Wave B Goal and LIBERO-10.",
+      "path": "/data/liuyu/outputs/cross_suite_clean_300_20260619_waveb_worker15_6379397",
+      "role": "gpu15_wave_b_goal_and_libero10",
+      "source_commit": "63793972743f667c6a6bcc12e9700f322f261147"
+    },
+    {
+      "notes": "Authorized retry after cold reboot for the original GPU2 Xid31 infra failure.",
+      "path": "/data/liuyu/outputs/cross_suite_clean_300_20260619_infra_retry_after_cold_gpu26_20260619",
+      "role": "spatial_t05_s07_infra_retry_primary",
+      "source_commit": "63793972743f667c6a6bcc12e9700f322f261147"
+    },
+    {
+      "notes": "Remaining 22 Spatial Wave B tail episodes split across GPU pairs (1,3), (2,6), and (5,4).",
+      "path": "/data/liuyu/outputs/cross_suite_clean_300_20260619_spatial_tail_parallel_6379397_20260619",
+      "role": "spatial_tail_parallel",
+      "source_commit": "63793972743f667c6a6bcc12e9700f322f261147"
+    }
+  ],
+  "planned_episodes": 300,
+  "schema_version": "cross_suite_clean300_root_registry.v1",
+  "status": "CROSS_SUITE_CLEAN300_COLLECTION_COMPLETE"
+}

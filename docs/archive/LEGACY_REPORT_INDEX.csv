@@ -1,0 +1,5 @@
+lineage,representative_ref,storage_policy,notes
+pre_sc5_vis_crosssuite,archive/pre-sc5-vis-crosssuite-20260602,annotated_tag_then_branch_delete,Early VIS diagnostics and superseded cross-suite prep.
+m3_fixed_frame,archive/m3-fixed-frame-lineage-20260615,annotated_tag_then_branch_delete,Historical fixed-frame negative/development evidence.
+layer123_poc,freeze/layer123-poc-20260618,freeze_tag,Reviewed Layer 1-3 mainline evidence.
+cross_suite_clean300,freeze/cross-suite-clean300-202606XX,release_artifact_after_final_audit,Large clean census evidence should be bundled outside git.

@@ -1,0 +1,132 @@
+{
+  "claim_matrix": [
+    {
+      "allowed_only_after": "VIS/RAND/control attack runs with physical telemetry",
+      "forbidden_before": "clean-only census",
+      "table": "Table 1"
+    },
+    {
+      "allowed_only_after": "clean detector transfer audit with explicit denominator",
+      "forbidden_before": "Teacher labels for cross-suite timing unless privileged_valid",
+      "table": "Table 2"
+    },
+    {
+      "allowed_only_after": "visual-to-token-to-qpos evidence chain",
+      "forbidden_before": "token-only fixed-frame result",
+      "table": "Table 3"
+    },
+    {
+      "allowed_only_after": "preregistered ablation matrix",
+      "forbidden_before": "ad hoc window or lambda tuning",
+      "table": "Table 4"
+    },
+    {
+      "allowed_only_after": "online measured component timings",
+      "forbidden_before": "offline batch timings",
+      "table": "Table 5"
+    }
+  ],
+  "note": "Schemas are intentionally empty until denominators are finalized.",
+  "tables": {
+    "table1_end_to_end_attack_results_schema.csv": [
+      "cohort",
+      "suite",
+      "task_idx",
+      "state_id",
+      "seed",
+      "condition",
+      "preregistered_parent",
+      "clean_valid",
+      "mechanism_eligible",
+      "detector_emitted",
+      "attacked",
+      "official_SR",
+      "CQFR",
+      "CQSR",
+      "success",
+      "failure_taxonomy",
+      "target_token_rate",
+      "qpos_open_response",
+      "arm_selectivity",
+      "attack_frames",
+      "attack_duty_cycle",
+      "matched_random",
+      "matched_fixed_or_heuristic",
+      "control_matched",
+      "claim_allowed"
+    ],
+    "table2_detector_localization_transfer_schema.csv": [
+      "suite",
+      "task_idx",
+      "state_id",
+      "clean_success",
+      "mlp_emit",
+      "mlp_emit_step",
+      "mechanism_type",
+      "teacher_valid",
+      "teacher_anchor_step",
+      "teacher_window_start",
+      "teacher_window_end",
+      "teacher_event_id",
+      "window_hit",
+      "emit_error",
+      "early_trigger",
+      "post_release_trigger",
+      "correct_abstain",
+      "timing_class",
+      "invalid_feature_steps",
+      "eligible_denominator"
+    ],
+    "table3_visual_open_qpos_failure_mechanism_schema.csv": [
+      "parent",
+      "seed",
+      "frame_or_window",
+      "condition",
+      "official_token",
+      "env_gripper",
+      "executed_OPEN_count",
+      "executed_OPEN_streak",
+      "qpos_delta",
+      "qpos_onset_delay",
+      "width_delta",
+      "object_contact_proxy",
+      "visible_detachment",
+      "manual_audit_label",
+      "manual_auditor_agreement",
+      "CQ_failure",
+      "task_outcome",
+      "mechanism_claim_level"
+    ],
+    "table4_timing_payload_ablations_schema.csv": [
+      "ablation",
+      "suite",
+      "parent",
+      "seed",
+      "trigger_policy",
+      "payload",
+      "uses_future",
+      "uses_privileged_online",
+      "attack_frames",
+      "same_epsilon",
+      "same_PGD_steps",
+      "same_parent",
+      "epsilon",
+      "steps",
+      "selected_window",
+      "primary_metric",
+      "control_metric",
+      "pass_fail"
+    ],
+    "table5_online_latency_schema.csv": [
+      "component",
+      "hardware_pair",
+      "suite",
+      "median_ms",
+      "p95_ms",
+      "max_ms",
+      "num_samples",
+      "online_budget_ms",
+      "meets_budget"
+    ]
+  }
+}

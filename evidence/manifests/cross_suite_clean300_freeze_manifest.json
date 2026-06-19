@@ -1,0 +1,42 @@
+{
+  "audit_tool_commit": "2d3ff1c02995eb8090db4e3604d6fa1ad3f7a3dd",
+  "claim_boundary": {
+    "layer1_offline_resolver": "GO_AFTER_DEEP_AUDIT",
+    "layer2_zero_shot_eval": "WAIT_FOR_LAYER1_LABELS",
+    "more_clean_collection": "NO_GO",
+    "vis_rand_attack": "NO_GO"
+  },
+  "clean_failure": 103,
+  "clean_success": 197,
+  "collector_source_commit": "63793972743f667c6a6bcc12e9700f322f261147",
+  "deep_integrity": {
+    "agentview_npz_missing": 0,
+    "artifact_mismatch_nonzero": 0,
+    "audit_output_dir": "/data/liuyu/audit_outputs/cross_suite_clean_300_final_deep_integrity_20260619_202447",
+    "complete_valid_rows": 300,
+    "missing_required_artifacts": 0,
+    "overlay_video_missing": 0,
+    "raw_video_missing": 0,
+    "sim_state_npz_missing": 0
+  },
+  "freeze_status": "CROSS_SUITE_CLEAN300_FINAL_ACCEPTANCE_PASS",
+  "metadata_reconciliation": {
+    "duplicate_primary": 0,
+    "extra": 0,
+    "infra_failed_primary": 0,
+    "missing": 0,
+    "replacement_states": 0,
+    "schema_invalid": 0
+  },
+  "planned_episodes": 300,
+  "roots": [
+    "/data/liuyu/outputs/cross_suite_clean_300_20260619_r1_6379397",
+    "/data/liuyu/outputs/cross_suite_clean_300_20260619_waveb_worker15_6379397",
+    "/data/liuyu/outputs/cross_suite_clean_300_20260619_infra_retry_after_cold_gpu26_20260619",
+    "/data/liuyu/outputs/cross_suite_clean_300_20260619_spatial_tail_parallel_6379397_20260619"
+  ],
+  "schema_version": "cross_suite_clean300_freeze_manifest.v1",
+  "unique_planned": 300,
+  "unique_primary_discovered": 300,
+  "valid_complete_or_clean_failure": 300
+}

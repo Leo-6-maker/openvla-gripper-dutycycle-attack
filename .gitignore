@@ -3,6 +3,10 @@ outputs/
 logs/
 manual_review_packages/
 videos/
+generated/
+audit_outputs/
+paper/generated/
+artifacts/
 *.log
 *.pid
 *.out
