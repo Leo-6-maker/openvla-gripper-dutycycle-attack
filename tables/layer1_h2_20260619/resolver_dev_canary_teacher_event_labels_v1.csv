@@ -1,0 +1,9 @@
+episode_key,event_id,object_body_name,object_joint_name,target_body_or_site_name,binding_source,binding_confidence_class,close_onset_step,grasp_established_step,lift_onset_step,stable_carry_start,teacher_window_start,teacher_anchor_step,teacher_window_end,release_onset_step,timing_status,event_valid,event_invalid_reason
+libero_spatial|4|1|0|CLEAN,libero_spatial|4|1|0|CLEAN|event0,akita_black_bowl_1_main,,main_table_plate_region,ontology_alias_body_site_match,medium,58,58,59,60,56,58,66,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_spatial|9|3|0|CLEAN,libero_spatial|9|3|0|CLEAN|event0,akita_black_bowl_1_main,,main_table_plate_region,ontology_alias_body_site_match,medium,42,42,43,44,40,42,50,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_spatial|3|4|0|CLEAN,libero_spatial|3|4|0|CLEAN|event0,akita_black_bowl_1_main,,main_table_plate_region,ontology_alias_body_site_match,medium,50,50,51,52,48,50,58,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_spatial|2|9|0|CLEAN,libero_spatial|2|9|0|CLEAN|event0,akita_black_bowl_1_main,,main_table_plate_region,ontology_alias_body_site_match,medium,54,54,55,56,52,54,62,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_goal|1|4|0|CLEAN,libero_goal|1|4|0|CLEAN|event0,akita_black_bowl_1_main,,main_table_stove_front_region,ontology_alias_body_site_match,medium,42,42,43,44,40,42,50,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_goal|4|5|0|CLEAN,libero_goal|4|5|0|CLEAN|event0,akita_black_bowl_1_main,,wooden_cabinet_1_cabinet_top,ontology_alias_body_site_match,medium,34,34,35,36,32,34,42,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_10|5|8|0|CLEAN,libero_10|5|8|0|CLEAN|event0,black_book_1_main,,study_table_desk_caddy_init_region,ontology_alias_body_site_match,medium,55,55,56,57,53,55,63,,HEURISTIC_CLOSE_ONSET_WINDOW,True,
+libero_10|5|0|0|CLEAN,libero_10|5|0|0|CLEAN|event0,black_book_1_main,,study_table_desk_caddy_init_region,ontology_alias_body_site_match,medium,63,63,64,65,61,63,71,,HEURISTIC_CLOSE_ONSET_WINDOW,True,

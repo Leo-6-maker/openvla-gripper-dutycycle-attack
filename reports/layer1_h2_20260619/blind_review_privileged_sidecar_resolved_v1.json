@@ -1,0 +1,16 @@
+{
+  "claim_boundary": {
+    "detector_telemetry": "NOT_READ",
+    "full_clean300_batch": "NOT_RUN",
+    "gpu_libero_vis_rand_attack": "NOT_RUN",
+    "manual_review": "NOT_COMPLETE"
+  },
+  "episode_count": 24,
+  "event_count": 12,
+  "failure_count": 0,
+  "failures": [],
+  "manifest": "/data/liuyu/layer1_outputs/h2_layer1_resolver_68f02dd_20260619/manifests/layer1_blind_review_manifest_v1.json",
+  "teacher_run_id": "layer1_blind_review_68f02dd_20260619",
+  "validation_error_count": 0,
+  "validation_errors": []
+}
