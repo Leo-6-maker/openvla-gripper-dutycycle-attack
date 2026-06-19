@@ -9,6 +9,7 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
 from scripts.stageb.cross_suite_layer1_resolver import (  # noqa: E402
+    RESOLVER_NOT_IMPLEMENTED,
     build_blind_review_manifest,
     build_dev_canary_manifest,
     build_review_package,
@@ -37,8 +38,90 @@ def _write_csv(path: Path, rows):
         w.writerows(rows)
 
 
-def _episode(tmp_path: Path, name: str, *, suite="libero_spatial", task_idx=0, state_id=0):
+def _trajectory(kind: str, *, object_count: int = 1, ambiguous_target: bool = False):
+    body_names = ["world"]
+    if object_count == 1:
+        body_names.append("black_bowl_1_main")
+    else:
+        body_names.extend(["alphabet_soup_1_main", "tomato_sauce_1_main"])
+    body_names.append("plate_1_main")
+    site_names = ["plate_1_default_site", "gripper0_grip_site"]
+    if ambiguous_target:
+        site_names.insert(1, "plate_2_default_site")
+
+    n = 6
+    body_xpos = np.zeros((n, len(body_names), 3), dtype=np.float32)
+    site_xpos = np.zeros((n, len(site_names), 3), dtype=np.float32)
+    body_xquat = np.zeros((n, len(body_names), 4), dtype=np.float32)
+    qpos = np.zeros((n, 2), dtype=np.float32)
+    qvel = np.zeros((n, 2), dtype=np.float32)
+    ctrl = np.zeros((n, 2), dtype=np.float32)
+
+    target_site_idx = 0
+    grip_site_idx = site_names.index("gripper0_grip_site")
+    site_xpos[:, target_site_idx, :] = np.array([1.0, 0.0, 0.05], dtype=np.float32)
+    if ambiguous_target:
+        site_xpos[:, 1, :] = np.array([1.1, 0.0, 0.05], dtype=np.float32)
+    body_xpos[:, -1, :] = np.array([1.0, 0.0, 0.0], dtype=np.float32)
+
+    valid_obj = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [0.10, 0.0, 0.01],
+            [0.30, 0.0, 0.04],
+            [0.60, 0.0, 0.05],
+            [0.95, 0.0, 0.05],
+        ],
+        dtype=np.float32,
+    )
+    if kind == "no_grasp":
+        obj = valid_obj.copy()
+        grip = obj + np.array([0.5, 0.0, 0.0], dtype=np.float32)
+    elif kind == "no_lift":
+        obj = valid_obj.copy()
+        obj[:, 2] = 0.0
+        grip = obj.copy()
+    elif kind == "release_far":
+        obj = valid_obj.copy()
+        obj[:, 0] = np.linspace(0.0, 0.3, n, dtype=np.float32)
+        grip = obj.copy()
+    else:
+        obj = valid_obj
+        grip = valid_obj.copy()
+
+    if object_count == 1:
+        body_xpos[:, 1, :] = obj
+    else:
+        body_xpos[:, 1, :] = obj
+        body_xpos[:, 2, :] = obj + np.array([0.0, 0.1, 0.0], dtype=np.float32)
+    site_xpos[:, grip_site_idx, :] = grip
+    return body_names, site_names, body_xpos, body_xquat, site_xpos, qpos, qvel, ctrl
+
+
+def _episode(
+    tmp_path: Path,
+    name: str,
+    *,
+    suite="libero_spatial",
+    task_idx=0,
+    state_id=0,
+    trajectory="valid",
+    object_count=1,
+    ambiguous_object=False,
+    ambiguous_target=False,
+):
     ep = tmp_path / name
+    body_names, site_names, body_xpos, body_xquat, site_xpos, qpos, qvel, ctrl = _trajectory(
+        trajectory,
+        object_count=object_count,
+        ambiguous_target=ambiguous_target,
+    )
+    if ambiguous_object:
+        body_names = ["world", "black_bowl_1_main", "black_bowl_2_main", "plate_1_main"]
+        body_xpos = np.concatenate([body_xpos[:, :2, :], body_xpos[:, 1:2, :] + 0.05, body_xpos[:, -1:, :]], axis=1)
+        body_xquat = np.zeros((len(body_xpos), len(body_names), 4), dtype=np.float32)
+
     _write_json(
         ep / "episode_manifest.json",
         {
@@ -57,30 +140,38 @@ def _episode(tmp_path: Path, name: str, *, suite="libero_spatial", task_idx=0, s
             "task_idx": task_idx,
             "state_id": state_id,
             "eval_seed": 0,
-            "n_steps": 4,
+            "n_steps": 6,
             "task_success": True,
         },
     )
     _write_json(
         ep / "sim_state_manifest.json",
         {
-            "arrays": {"qpos": [4, 2]},
+            "arrays": {
+                "qpos": list(qpos.shape),
+                "qvel": list(qvel.shape),
+                "body_xpos": list(body_xpos.shape),
+                "body_xquat": list(body_xquat.shape),
+                "site_xpos": list(site_xpos.shape),
+                "ctrl": list(ctrl.shape),
+            },
             "metadata": {
-                "body_names": ["world", "black_bowl_1_main", "plate_1_main", "robot0_base"],
-                "site_names": ["plate_1_default_site", "gripper0_grip_site"],
+                "body_names": body_names,
+                "site_names": site_names,
                 "joint_names": ["black_bowl_1_joint0"],
             },
         },
     )
-    _write_csv(
-        ep / "step_telemetry.csv",
-        [
+    rows = []
+    for step in range(6):
+        close = step in {2, 3, 4}
+        rows.append(
             {
-                "step": 0,
-                "raw_gripper": 1.0,
-                "env_gripper": -1.0,
-                "gripper_qpos": 0.03,
-                "gripper_opening_proxy": 0.03,
+                "step": step,
+                "raw_gripper": 0.0 if close else 1.0,
+                "env_gripper": 1.0 if close else -1.0,
+                "gripper_qpos": 0.01 if close else 0.03,
+                "gripper_opening_proxy": 0.01 if close else 0.03,
                 "eef_x": 0,
                 "eef_y": 0,
                 "eef_z": 0,
@@ -89,26 +180,19 @@ def _episode(tmp_path: Path, name: str, *, suite="libero_spatial", task_idx=0, s
                 "corridor_p": 0.9,
                 "release_p": 0.1,
                 "pred_phase": "release",
-            },
-            {
-                "step": 1,
-                "raw_gripper": 0.0,
-                "env_gripper": 1.0,
-                "gripper_qpos": 0.02,
-                "gripper_opening_proxy": 0.02,
-                "eef_x": 0,
-                "eef_y": 0,
-                "eef_z": 0,
-                "mlp_emit": 99,
-                "mlp_triggered": True,
-                "corridor_p": 0.9,
-                "release_p": 0.1,
-                "pred_phase": "release",
-            },
-        ],
-    )
+            }
+        )
+    _write_csv(ep / "step_telemetry.csv", rows)
     (ep / "rollout_raw.mp4").write_bytes(b"video")
-    np.savez(ep / "sim_state_stream.npz", qpos=np.zeros((4, 2), dtype=np.float32))
+    np.savez(
+        ep / "sim_state_stream.npz",
+        qpos=qpos,
+        qvel=qvel,
+        body_xpos=body_xpos,
+        body_xquat=body_xquat,
+        site_xpos=site_xpos,
+        ctrl=ctrl,
+    )
     return ep
 
 
@@ -123,7 +207,7 @@ def _ledger_row(ep: Path, *, suite="libero_spatial", task_idx=0, state_id=0, suc
         "condition": "CLEAN",
         "status": "COMPLETE_VALID",
         "task_success": success,
-        "n_steps": "4",
+        "n_steps": "6",
         "artifact_recursive_sha256": sha,
     }
 
@@ -137,28 +221,93 @@ def test_load_step_rows_drops_forbidden_detector_fields(tmp_path):
         assert forbidden not in rows[0]
 
 
-def test_single_object_episode_resolves_to_manual_review_event(tmp_path):
-    ep = _episode(tmp_path, "ep")
+def test_single_object_episode_requires_physical_grasp_lift_carry_target(tmp_path):
+    ep = _episode(tmp_path, "ep", trajectory="valid")
     ontology = load_ontology(ONTOLOGY)
     task = ontology[("libero_spatial", 0)]
     episode, events = resolve_episode(_ledger_row(ep), task, teacher_run_id="dev")
     assert episode["teacher_status"] == "ELIGIBLE_EVENT"
     assert episode["manual_review_required"] is True
-    assert episode["object_binding_status"] in {"BOUND_EXACT", "BOUND_BDDL_ONTOLOGY"}
-    assert episode["target_binding_status"] in {"BOUND_EXACT", "BOUND_BDDL_ONTOLOGY"}
+    assert episode["object_binding_status"] in {"BOUND_EXACT", "BOUND_BDDL_ONTOLOGY", "BOUND_STRUCTURED_FALLBACK"}
+    assert episode["target_binding_status"] in {"BOUND_EXACT", "BOUND_BDDL_ONTOLOGY", "BOUND_STRUCTURED_FALLBACK"}
     assert len(events) == 1
-    assert events[0]["teacher_anchor_step"] == 1
+    assert events[0]["close_onset_step"] == 2
+    assert events[0]["grasp_established_step"] == 2
+    assert events[0]["lift_onset_step"] == 3
+    assert events[0]["stable_carry_start"] == 3
+    assert events[0]["target_proximity_step"] == 5
+    assert events[0]["event_valid"] is True
 
 
-def test_negative_and_multi_event_status_invariants(tmp_path):
+def test_close_without_grasp_or_lift_is_not_eligible(tmp_path):
+    ontology = load_ontology(ONTOLOGY)
+    task = ontology[("libero_spatial", 0)]
+    no_grasp_ep = _episode(tmp_path, "no_grasp", trajectory="no_grasp")
+    no_lift_ep = _episode(tmp_path, "no_lift", trajectory="no_lift", state_id=1)
+    no_grasp, no_grasp_events = resolve_episode(_ledger_row(no_grasp_ep), task, teacher_run_id="dev")
+    no_lift, no_lift_events = resolve_episode(_ledger_row(no_lift_ep, state_id=1), task, teacher_run_id="dev")
+    assert no_grasp["teacher_status"] == "NO_RELEVANT_GRASP_EVENT"
+    assert "no_grasp_proximity" in no_grasp["abstain_reason"]
+    assert no_grasp_events == []
+    assert no_lift["teacher_status"] == "NO_RELEVANT_GRASP_EVENT"
+    assert "no_object_lift" in no_lift["abstain_reason"]
+    assert no_lift_events == []
+
+
+def test_premature_or_far_release_is_not_target_valid(tmp_path):
+    ontology = load_ontology(ONTOLOGY)
+    task = ontology[("libero_spatial", 0)]
+    ep = _episode(tmp_path, "far_release", trajectory="release_far")
+    episode, events = resolve_episode(_ledger_row(ep), task, teacher_run_id="dev")
+    assert episode["teacher_status"] == "NO_RELEVANT_GRASP_EVENT"
+    assert "no_target_proximity" in episode["abstain_reason"]
+    assert events == []
+
+
+def test_ambiguous_object_or_target_fails_closed(tmp_path):
+    ontology = load_ontology(ONTOLOGY)
+    task = ontology[("libero_spatial", 0)]
+    amb_obj_ep = _episode(tmp_path, "amb_obj", ambiguous_object=True)
+    amb_target_ep = _episode(tmp_path, "amb_target", ambiguous_target=True, state_id=1)
+    amb_obj, _ = resolve_episode(_ledger_row(amb_obj_ep), task, teacher_run_id="dev")
+    amb_target, _ = resolve_episode(_ledger_row(amb_target_ep, state_id=1), task, teacher_run_id="dev")
+    assert amb_obj["teacher_status"] == "OBJECT_BINDING_AMBIGUOUS"
+    assert amb_obj["object_binding_status"] == "AMBIGUOUS"
+    assert amb_target["teacher_status"] == "TARGET_BINDING_AMBIGUOUS"
+    assert amb_target["target_binding_status"] == "AMBIGUOUS"
+
+
+def test_negative_and_supplementary_status_invariants(tmp_path):
     ep_goal = _episode(tmp_path, "goal", suite="libero_goal", task_idx=0)
-    ep_l10 = _episode(tmp_path, "l10", suite="libero_10", task_idx=4)
+    ep_l10 = _episode(tmp_path, "l10", suite="libero_10", task_idx=0, object_count=2)
     ontology = load_ontology(ONTOLOGY)
     neg, _ = resolve_episode(_ledger_row(ep_goal, suite="libero_goal", task_idx=0), ontology[("libero_goal", 0)], teacher_run_id="dev")
-    multi, _ = resolve_episode(_ledger_row(ep_l10, suite="libero_10", task_idx=4), ontology[("libero_10", 4)], teacher_run_id="dev")
+    multi, events = resolve_episode(_ledger_row(ep_l10, suite="libero_10", task_idx=0), ontology[("libero_10", 0)], teacher_run_id="dev")
     assert neg["teacher_status"] == "CORRECT_SEMANTIC_ABSTAIN"
-    assert multi["teacher_status"] == "MULTI_EVENT_AUDIT_ONLY"
+    assert multi["teacher_status"] in {"MULTI_EVENT_AUDIT_ONLY", RESOLVER_NOT_IMPLEMENTED}
+    assert multi["mechanism_eligible"] is False
+    assert multi["teacher_semantic_abstain"] is True
+    assert all(event["supplementary_event"] for event in events)
     assert validate_episode_rows([neg, multi]) == []
+
+
+def test_mixed_and_multi_event_regression_classes(tmp_path):
+    ontology = load_ontology(ONTOLOGY)
+    expected = {
+        ("libero_goal", 3): "mixed_articulated_pick_place",
+        ("libero_10", 2): "mixed_articulated_pick_place",
+        ("libero_10", 3): "mixed_articulated_pick_place",
+        ("libero_10", 9): "mixed_articulated_pick_place",
+        ("libero_10", 4): "multi_object_transfer",
+        ("libero_10", 6): "multi_object_transfer",
+        ("libero_10", 8): "multi_object_transfer",
+    }
+    for key, mechanism in expected.items():
+        assert ontology[key].mechanism_type == mechanism
+        ep = _episode(tmp_path, f"{key[0]}_{key[1]}", suite=key[0], task_idx=key[1])
+        row, _ = resolve_episode(_ledger_row(ep, suite=key[0], task_idx=key[1]), ontology[key], teacher_run_id="dev")
+        assert row["mechanism_eligible"] is False
+        assert row["manual_review_required"] is True
 
 
 def test_dev_and_blind_manifests_are_deterministic_and_disjoint(tmp_path):
@@ -187,7 +336,7 @@ def test_dev_and_blind_manifests_are_deterministic_and_disjoint(tmp_path):
     assert {r["canonical_key"] for r in dev["selected"]}.isdisjoint({r["canonical_key"] for r in blind["selected"]})
 
 
-def test_run_resolver_and_blind_package_outputs(tmp_path):
+def test_run_resolver_and_blind_package_outputs_are_event_level_and_blind(tmp_path):
     ep = _episode(tmp_path, "ep")
     manifest = tmp_path / "manifest.json"
     _write_json(
@@ -203,5 +352,9 @@ def test_run_resolver_and_blind_package_outputs(tmp_path):
     package = build_review_package(manifest, out, tmp_path / "review")
     assert package["review_count"] == 1
     review_csv = (tmp_path / "review" / "blind_review_queue.csv").read_text(encoding="utf-8")
-    assert "human_binding_accept" in review_csv
+    assert "reviewer_id" in review_csv
+    assert "proposed_grasp_established" in review_csv
+    assert "task_success" not in review_csv
     assert "mlp_emit" not in review_csv
+    hidden = (tmp_path / "review" / "blind_review_hidden_audit_manifest.csv").read_text(encoding="utf-8")
+    assert "task_success" in hidden

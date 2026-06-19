@@ -31,6 +31,9 @@ TEACHER_VERSION = "cross_suite_teacher_v1"
 RESOLVER_VERSION = "cross_suite_resolver_v1"
 PRIMARY_MECHANISM = "single_object_pick_place"
 SUPPLEMENTARY_MECHANISMS = {"multi_object_transfer", "mixed_articulated_pick_place"}
+VALID_BINDING_STATUSES = {"BOUND_EXACT", "BOUND_BDDL_ONTOLOGY", "BOUND_STRUCTURED_FALLBACK"}
+ROOT_REGISTRY = REPO / "evidence" / "manifests" / "cross_suite_clean300_root_registry.json"
+RESOLVER_NOT_IMPLEMENTED = "RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM"
 FORBIDDEN_INPUT_FIELDS = {
     "mlp_emit_step",
     "mlp_triggered",
@@ -131,6 +134,33 @@ class OntologyTask:
     manipulated_object_aliases: tuple[str, ...]
     target_aliases: tuple[str, ...]
     articulated_body_aliases: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class BindingResult:
+    name: str
+    index: int
+    status: str
+    source: str
+    candidates: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class PhysicalEvent:
+    status: str
+    close_onset_step: int | str
+    grasp_established_step: int | str
+    lift_onset_step: int | str
+    stable_carry_start: int | str
+    teacher_window_start: int | str
+    teacher_anchor_step: int | str
+    teacher_window_end: int | str
+    release_onset_step: int | str
+    target_proximity_step: int | str
+    object_gripper_min_distance: float | str
+    object_target_min_distance: float | str
+    event_valid: bool
+    event_invalid_reason: str
 
 
 def load_ontology(path: Path) -> dict[tuple[str, int], OntologyTask]:
@@ -315,14 +345,67 @@ def build_blind_review_manifest(
     }
 
 
-def match_alias(names: list[str], aliases: tuple[str, ...]) -> tuple[str, str]:
-    for alias in aliases:
-        normalized = alias.lower()
-        for name in names:
-            low = name.lower()
-            if low == normalized or low.startswith(normalized + "_") or normalized in low:
-                return name, "BOUND_EXACT" if low == normalized else "BOUND_BDDL_ONTOLOGY"
-    return "", "FAILED"
+def normalize_entity_name(name: str) -> str:
+    low = name.lower()
+    for suffix in ["_main", "_default_site", "_contain_region", "_init_region", "_joint0"]:
+        if low.endswith(suffix):
+            low = low[: -len(suffix)]
+    parts = low.split("_")
+    if len(parts) > 2 and parts[-1].isdigit():
+        low = "_".join(parts[:-1])
+    return low
+
+
+def bind_unique(names: list[str], aliases: tuple[str, ...]) -> BindingResult:
+    """Bind by exact or structured names only.
+
+    This deliberately rejects final-positive arbitrary substring matching. If
+    more than one candidate remains, the binding is ambiguous.
+    """
+
+    candidates: list[tuple[str, int, str, str]] = []
+    alias_set = {a.lower() for a in aliases}
+    for idx, name in enumerate(names):
+        low = name.lower()
+        norm = normalize_entity_name(name)
+        for alias in alias_set:
+            if low == alias:
+                candidates.append((name, idx, "BOUND_EXACT", alias))
+            elif norm == alias:
+                candidates.append((name, idx, "BOUND_BDDL_ONTOLOGY", alias))
+            elif low.startswith(alias + "_") and normalize_entity_name(alias) == alias:
+                candidates.append((name, idx, "BOUND_STRUCTURED_FALLBACK", alias))
+    unique: dict[str, tuple[str, int, str, str]] = {c[0]: c for c in candidates}
+    vals = list(unique.values())
+    if len(vals) == 1:
+        name, idx, status, source = vals[0]
+        return BindingResult(name=name, index=idx, status=status, source=source, candidates=tuple(unique))
+    if len(vals) > 1:
+        return BindingResult(name="", index=-1, status="AMBIGUOUS", source="multiple_structured_candidates", candidates=tuple(sorted(unique)))
+    return BindingResult(name="", index=-1, status="FAILED", source="no_structured_candidate", candidates=())
+
+
+def bind_many(names: list[str], aliases: tuple[str, ...]) -> list[BindingResult]:
+    specific_aliases = [a for a in aliases if any(ch.isdigit() for ch in a)]
+    use_aliases = specific_aliases or list(aliases)
+    results: list[BindingResult] = []
+    seen: set[str] = set()
+    for alias in use_aliases:
+        result = bind_unique(names, (alias,))
+        if result.status in VALID_BINDING_STATUSES and result.name not in seen:
+            results.append(result)
+            seen.add(result.name)
+        elif result.status == "AMBIGUOUS":
+            results.append(result)
+    return results
+
+
+def bind_target(site_names: list[str], body_names: list[str], aliases: tuple[str, ...]) -> tuple[BindingResult, str]:
+    site_result = bind_unique(site_names, aliases)
+    if site_result.status in VALID_BINDING_STATUSES or site_result.status == "AMBIGUOUS":
+        return site_result, "site"
+    body_result = bind_unique(body_names, aliases)
+    return body_result, "body"
 
 
 def load_step_rows(path: Path) -> list[dict[str, Any]]:
@@ -344,11 +427,14 @@ def load_episode_context(episode_path: Path) -> dict[str, Any]:
     summary = read_json(episode_path / "episode_summary.json")
     sim_manifest = read_json(episode_path / "sim_state_manifest.json")
     step_rows = load_step_rows(episode_path / "step_telemetry.csv")
+    with np.load(episode_path / "sim_state_stream.npz", allow_pickle=False) as npz:
+        sim_arrays = {k: np.asarray(npz[k]) for k in npz.files}
     return {
         "episode_path": episode_path,
         "manifest": manifest,
         "summary": summary,
         "sim_manifest": sim_manifest,
+        "sim_arrays": sim_arrays,
         "step_rows": step_rows,
     }
 
@@ -402,6 +488,155 @@ def propose_timing(step_rows: list[dict[str, Any]], n_steps: int) -> dict[str, i
     }
 
 
+def first_index(mask: np.ndarray, start: int = 0) -> int | None:
+    idx = np.flatnonzero(mask[max(start, 0) :])
+    if len(idx) == 0:
+        return None
+    return int(idx[0] + max(start, 0))
+
+
+def contiguous_start(mask: np.ndarray, start: int = 0, length: int = 3) -> int | None:
+    arr = np.asarray(mask, dtype=bool)
+    for idx in range(max(start, 0), max(len(arr) - length + 1, 0)):
+        if bool(arr[idx : idx + length].all()):
+            return idx
+    return None
+
+
+def detect_physical_event(
+    *,
+    step_rows: list[dict[str, Any]],
+    sim_arrays: dict[str, np.ndarray],
+    site_names: list[str],
+    object_binding: BindingResult,
+    target_binding: BindingResult,
+    target_kind: str,
+) -> PhysicalEvent:
+    close = find_first_close_onset(step_rows)
+    if close is None:
+        return PhysicalEvent("NO_CLOSE_ONSET", "", "", "", "", "", "", "", "", "", "", "", False, "no_close_onset")
+    body_xpos = sim_arrays.get("body_xpos")
+    site_xpos = sim_arrays.get("site_xpos")
+    if body_xpos is None or site_xpos is None:
+        return PhysicalEvent("SIM_ARRAY_MISSING", close, "", "", "", "", "", "", "", "", "", "", False, "required_sim_arrays_missing")
+    if object_binding.index < 0 or target_binding.index < 0:
+        return PhysicalEvent("BINDING_INVALID", close, "", "", "", "", "", "", "", "", "", "", False, "object_or_target_binding_invalid")
+    obj = np.asarray(body_xpos[:, object_binding.index, :], dtype=float)
+    grip_idx = site_names.index("gripper0_grip_site") if "gripper0_grip_site" in site_names else 0
+    grip = np.asarray(site_xpos[:, grip_idx, :], dtype=float)
+    if target_kind == "site":
+        target = np.asarray(site_xpos[:, target_binding.index, :], dtype=float)
+    else:
+        target = np.asarray(body_xpos[:, target_binding.index, :], dtype=float)
+    n = min(len(obj), len(grip), len(target), len(step_rows))
+    obj, grip, target = obj[:n], grip[:n], target[:n]
+    if n == 0:
+        return PhysicalEvent("EMPTY_TRAJECTORY", close, "", "", "", "", "", "", "", "", "", "", False, "empty_trajectory")
+    obj_grip = np.linalg.norm(obj - grip, axis=1)
+    obj_target = np.linalg.norm(obj - target, axis=1)
+    close_idx = min(int(close), n - 1)
+    near_grip = obj_grip < 0.12
+    grasp = contiguous_start(near_grip, close_idx, 2)
+    lift_mask = obj[:, 2] > (obj[0, 2] + 0.025)
+    lift = first_index(lift_mask, grasp if grasp is not None else close_idx)
+    carry_mask = near_grip & lift_mask
+    carry = contiguous_start(carry_mask, lift if lift is not None else close_idx, 3)
+    near_target = obj_target < 0.14
+    target_step = first_index(near_target, carry if carry is not None else close_idx)
+    release = None
+    if carry is not None:
+        for row in step_rows[carry:n]:
+            step = int(float(row.get("step", -1)))
+            env_grip = _float(row, "env_gripper")
+            raw_grip = _float(row, "raw_gripper")
+            is_open = (math.isfinite(env_grip) and env_grip < 0) or (math.isfinite(raw_grip) and raw_grip > 0.5)
+            if is_open:
+                release = step
+                break
+    valid = all(x is not None for x in [grasp, lift, carry, target_step])
+    invalid = []
+    if grasp is None:
+        invalid.append("no_grasp_proximity")
+    if lift is None:
+        invalid.append("no_object_lift")
+    if carry is None:
+        invalid.append("no_stable_carry")
+    if target_step is None:
+        invalid.append("no_target_proximity")
+    start = max(0, int(grasp if grasp is not None else close_idx) - 2)
+    anchor = int(grasp if grasp is not None else close_idx)
+    end_basis = target_step if target_step is not None else carry if carry is not None else lift if lift is not None else close_idx
+    end = min(n - 1, int(end_basis) + 3)
+    return PhysicalEvent(
+        status="PHYSICAL_EVENT_VALID" if valid else "PHYSICAL_EVENT_INCOMPLETE",
+        close_onset_step=int(close),
+        grasp_established_step="" if grasp is None else int(grasp),
+        lift_onset_step="" if lift is None else int(lift),
+        stable_carry_start="" if carry is None else int(carry),
+        teacher_window_start=start if valid else "",
+        teacher_anchor_step=anchor if valid else "",
+        teacher_window_end=end if valid else "",
+        release_onset_step="" if release is None else int(release),
+        target_proximity_step="" if target_step is None else int(target_step),
+        object_gripper_min_distance=float(np.nanmin(obj_grip)),
+        object_target_min_distance=float(np.nanmin(obj_target)),
+        event_valid=bool(valid),
+        event_invalid_reason="|".join(invalid),
+    )
+
+
+def event_to_row(
+    *,
+    episode_key: str,
+    event_idx: int,
+    object_binding: BindingResult,
+    target_binding: BindingResult,
+    event: PhysicalEvent,
+    supplementary: bool = False,
+) -> dict[str, Any]:
+    return {
+        "episode_key": episode_key,
+        "event_id": f"{episode_key}|event{event_idx}",
+        "object_body_name": object_binding.name,
+        "object_joint_name": "",
+        "target_body_or_site_name": target_binding.name,
+        "binding_source": f"{object_binding.source}->{target_binding.source}",
+        "binding_confidence_class": "high" if object_binding.status == "BOUND_EXACT" and target_binding.status == "BOUND_EXACT" else "medium",
+        "close_onset_step": event.close_onset_step,
+        "grasp_established_step": event.grasp_established_step,
+        "lift_onset_step": event.lift_onset_step,
+        "stable_carry_start": event.stable_carry_start,
+        "teacher_window_start": event.teacher_window_start,
+        "teacher_anchor_step": event.teacher_anchor_step,
+        "teacher_window_end": event.teacher_window_end,
+        "release_onset_step": event.release_onset_step,
+        "target_proximity_step": event.target_proximity_step,
+        "object_gripper_min_distance": event.object_gripper_min_distance,
+        "object_target_min_distance": event.object_target_min_distance,
+        "timing_status": event.status,
+        "event_valid": bool(event.event_valid),
+        "event_invalid_reason": event.event_invalid_reason,
+        "supplementary_event": bool(supplementary),
+    }
+
+
+def source_episode_relpath(episode_path: Path) -> tuple[str, str]:
+    abspath = episode_path.resolve()
+    roots = []
+    if ROOT_REGISTRY.exists():
+        try:
+            registry = read_json(ROOT_REGISTRY)
+            roots = [Path(r["path"]) for r in registry.get("official_roots", [])]
+        except Exception:
+            roots = []
+    for root in roots:
+        try:
+            return str(abspath.relative_to(root)), str(abspath)
+        except ValueError:
+            continue
+    return episode_path.name, str(abspath)
+
+
 def resolve_episode(row: dict[str, Any], task: OntologyTask, *, teacher_run_id: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     episode_path = Path(row["episode_path"])
     ctx = load_episode_context(episode_path)
@@ -411,6 +646,7 @@ def resolve_episode(row: dict[str, Any], task: OntologyTask, *, teacher_run_id: 
     source_sha = str(row.get("source_episode_sha") or row.get("artifact_recursive_sha256") or "")
     episode_key = str(row.get("canonical_key") or canonical_key(row))
     n_steps = int(ctx["summary"].get("n_steps") or row.get("n_steps") or len(ctx["step_rows"]))
+    relpath, abspath_audit = source_episode_relpath(episode_path)
 
     base = {
         "teacher_executed": True,
@@ -422,29 +658,34 @@ def resolve_episode(row: dict[str, Any], task: OntologyTask, *, teacher_run_id: 
         "suite": task.suite,
         "task_idx": task.task_idx,
         "state_id": int(row["state_id"]),
-        "source_episode_relpath": str(episode_path),
+        "source_episode_relpath": relpath,
+        "source_episode_abspath_audit_only": abspath_audit,
         "source_episode_sha": source_sha,
         "mechanism_type": task.mechanism_type,
     }
 
     if task.mechanism_type == PRIMARY_MECHANISM:
-        obj, obj_status = match_alias(body_names, task.manipulated_object_aliases)
-        target, target_status = match_alias(site_names + body_names, task.target_aliases)
-        if obj_status in {"BOUND_EXACT", "BOUND_BDDL_ONTOLOGY", "BOUND_STRUCTURED_FALLBACK"} and target_status in {
-            "BOUND_EXACT",
-            "BOUND_BDDL_ONTOLOGY",
-            "BOUND_STRUCTURED_FALLBACK",
-        }:
-            timing = propose_timing(ctx["step_rows"], n_steps)
-            if timing["timing_status"] == "NO_RELEVANT_CLOSE_ONSET":
+        obj_binding = bind_unique(body_names, task.manipulated_object_aliases)
+        target_binding, target_kind = bind_target(site_names, body_names, task.target_aliases)
+        if obj_binding.status in VALID_BINDING_STATUSES and target_binding.status in VALID_BINDING_STATUSES:
+            event = detect_physical_event(
+                step_rows=ctx["step_rows"],
+                sim_arrays=ctx["sim_arrays"],
+                site_names=site_names,
+                object_binding=obj_binding,
+                target_binding=target_binding,
+                target_kind=target_kind,
+            )
+            if not event.event_valid:
+                status = "NO_RELEVANT_GRASP_EVENT" if event.status != "SIM_ARRAY_MISSING" else "SCHEMA_INVALID"
                 episode = {
                     **base,
                     "mechanism_eligible": False,
-                    "object_binding_status": obj_status,
-                    "target_binding_status": target_status,
-                    "teacher_status": "NO_RELEVANT_GRASP_EVENT",
+                    "object_binding_status": obj_binding.status,
+                    "target_binding_status": target_binding.status,
+                    "teacher_status": status,
                     "teacher_semantic_abstain": True,
-                    "abstain_reason": "no_close_onset_found_in_allowed_clean_step_fields",
+                    "abstain_reason": event.event_invalid_reason or event.status,
                     "event_count": 0,
                     "manual_review_required": True,
                 }
@@ -452,33 +693,30 @@ def resolve_episode(row: dict[str, Any], task: OntologyTask, *, teacher_run_id: 
             episode = {
                 **base,
                 "mechanism_eligible": True,
-                "object_binding_status": obj_status,
-                "target_binding_status": target_status,
+                "object_binding_status": obj_binding.status,
+                "target_binding_status": target_binding.status,
                 "teacher_status": "ELIGIBLE_EVENT",
                 "teacher_semantic_abstain": False,
                 "abstain_reason": "",
                 "event_count": 1,
                 "manual_review_required": True,
             }
-            event = {
-                "episode_key": episode_key,
-                "event_id": f"{episode_key}|event0",
-                "object_body_name": obj,
-                "object_joint_name": "",
-                "target_body_or_site_name": target,
-                "binding_source": "ontology_alias_body_site_match",
-                "binding_confidence_class": "high" if obj_status == "BOUND_EXACT" and target_status == "BOUND_EXACT" else "medium",
-                **timing,
-                "event_valid": True,
-                "event_invalid_reason": "",
-            }
-            return episode, [event]
-        status = "OBJECT_BINDING_AMBIGUOUS" if obj_status == "FAILED" else "TARGET_BINDING_AMBIGUOUS"
+            return episode, [
+                event_to_row(
+                    episode_key=episode_key,
+                    event_idx=0,
+                    object_binding=obj_binding,
+                    target_binding=target_binding,
+                    event=event,
+                    supplementary=False,
+                )
+            ]
+        status = "OBJECT_BINDING_AMBIGUOUS" if obj_binding.status in {"FAILED", "AMBIGUOUS"} else "TARGET_BINDING_AMBIGUOUS"
         episode = {
             **base,
             "mechanism_eligible": False,
-            "object_binding_status": obj_status,
-            "target_binding_status": target_status,
+            "object_binding_status": obj_binding.status,
+            "target_binding_status": target_binding.status,
             "teacher_status": status,
             "teacher_semantic_abstain": True,
             "abstain_reason": "required object or target binding failed",
@@ -488,18 +726,44 @@ def resolve_episode(row: dict[str, Any], task: OntologyTask, *, teacher_run_id: 
         return episode, []
 
     if task.mechanism_type in SUPPLEMENTARY_MECHANISMS:
+        object_bindings = [b for b in bind_many(body_names, task.manipulated_object_aliases) if b.status in VALID_BINDING_STATUSES]
+        target_binding, target_kind = bind_target(site_names, body_names, task.target_aliases)
+        supplementary_events: list[dict[str, Any]] = []
+        if object_bindings and target_binding.status in VALID_BINDING_STATUSES:
+            for event_idx, object_binding in enumerate(object_bindings):
+                event = detect_physical_event(
+                    step_rows=ctx["step_rows"],
+                    sim_arrays=ctx["sim_arrays"],
+                    site_names=site_names,
+                    object_binding=object_binding,
+                    target_binding=target_binding,
+                    target_kind=target_kind,
+                )
+                if event.event_valid:
+                    supplementary_events.append(
+                        event_to_row(
+                            episode_key=episode_key,
+                            event_idx=event_idx,
+                            object_binding=object_binding,
+                            target_binding=target_binding,
+                            event=event,
+                            supplementary=True,
+                        )
+                    )
         episode = {
             **base,
             "mechanism_eligible": False,
             "object_binding_status": "NOT_APPLICABLE",
-            "target_binding_status": "NOT_APPLICABLE",
-            "teacher_status": "MULTI_EVENT_AUDIT_ONLY",
+            "target_binding_status": "NOT_APPLICABLE" if target_binding.status in VALID_BINDING_STATUSES else target_binding.status,
+            "teacher_status": "MULTI_EVENT_AUDIT_ONLY" if supplementary_events else RESOLVER_NOT_IMPLEMENTED,
             "teacher_semantic_abstain": True,
-            "abstain_reason": "supplementary_event_level_audit_not_primary_denominator",
-            "event_count": 0,
+            "abstain_reason": "supplementary_event_level_audit_not_primary_denominator"
+            if supplementary_events
+            else "supplementary_event_segmentation_not_reliably_resolved",
+            "event_count": len(supplementary_events),
             "manual_review_required": True,
         }
-        return episode, []
+        return episode, supplementary_events
 
     episode = {
         **base,
@@ -530,6 +794,9 @@ def validate_episode_rows(rows: list[dict[str, Any]]) -> list[str]:
         elif status == "MULTI_EVENT_AUDIT_ONLY":
             if row.get("mechanism_type") not in SUPPLEMENTARY_MECHANISMS or not row.get("manual_review_required"):
                 errors.append(f"{row.get('episode_key')}: invalid multi-event invariant")
+        elif status == RESOLVER_NOT_IMPLEMENTED:
+            if row.get("mechanism_type") not in SUPPLEMENTARY_MECHANISMS or int(row.get("event_count", -1)) != 0:
+                errors.append(f"{row.get('episode_key')}: invalid resolver-not-implemented invariant")
         elif status in {"OBJECT_BINDING_AMBIGUOUS", "TARGET_BINDING_AMBIGUOUS", "RESOLVER_FAILED", "SCHEMA_INVALID", "NO_RELEVANT_GRASP_EVENT"}:
             if row.get("mechanism_eligible"):
                 errors.append(f"{row.get('episode_key')}: invalid failed/ambiguous invariant")
@@ -583,11 +850,17 @@ def build_review_package(manifest_path: Path, resolver_dir: Path, output_dir: Pa
     output_dir.mkdir(parents=True, exist_ok=True)
     rows = rows_from_manifest(manifest_path)
     label_rows = read_csv_rows(resolver_dir / "teacher_episode_labels_v1.csv")
+    event_rows = read_csv_rows(resolver_dir / "teacher_event_labels_v1.csv")
     labels_by_key = {r["episode_key"]: r for r in label_rows}
+    events_by_key: dict[str, list[dict[str, str]]] = {}
+    for event in event_rows:
+        events_by_key.setdefault(event["episode_key"], []).append(event)
     package_rows: list[dict[str, Any]] = []
+    hidden_rows: list[dict[str, Any]] = []
     for idx, row in enumerate(rows):
         episode_path = Path(row["episode_path"])
         label = labels_by_key.get(row["canonical_key"], {})
+        event_candidates = events_by_key.get(row["canonical_key"], [{}])
         raw_video = episode_path / "rollout_raw.mp4"
         dest_video = output_dir / "videos" / f"review_{idx:03d}_{row['suite']}_t{int(row['task_idx']):02d}_s{int(row['state_id']):02d}.mp4"
         video_status = "missing"
@@ -601,36 +874,73 @@ def build_review_package(manifest_path: Path, resolver_dir: Path, output_dir: Pa
             except Exception:
                 shutil.copy2(raw_video, dest_video)
                 video_status = "copied"
-        package_rows.append(
+        hidden_rows.append(
             {
-                "review_id": f"review_{idx:03d}",
+                "review_id_prefix": f"review_{idx:03d}",
                 "episode_key": row["canonical_key"],
-                "suite": row["suite"],
-                "task_idx": row["task_idx"],
-                "state_id": row["state_id"],
                 "task_success": row.get("task_success", ""),
-                "mechanism_type": row.get("mechanism_type", label.get("mechanism_type", "")),
-                "teacher_status": label.get("teacher_status", ""),
-                "mechanism_eligible": label.get("mechanism_eligible", ""),
-                "object_binding_status": label.get("object_binding_status", ""),
-                "target_binding_status": label.get("target_binding_status", ""),
-                "event_count": label.get("event_count", ""),
-                "source_episode_relpath": row["episode_path"],
-                "blind_video_path": str(dest_video) if raw_video.exists() else "",
-                "video_status": video_status,
-                "human_binding_accept": "",
-                "human_timing_accept": "",
-                "human_notes": "",
+                "source_episode_abspath_audit_only": row["episode_path"],
+                "artifact_recursive_sha256": row.get("artifact_recursive_sha256", ""),
             }
         )
+        for event_idx, event in enumerate(event_candidates):
+            package_rows.append(
+                {
+                    "review_id": f"review_{idx:03d}_event_{event_idx:02d}",
+                    "episode_key": row["canonical_key"],
+                    "suite": row["suite"],
+                    "task_idx": row["task_idx"],
+                    "state_id": row["state_id"],
+                    "mechanism_type": row.get("mechanism_type", label.get("mechanism_type", "")),
+                    "teacher_status": label.get("teacher_status", ""),
+                    "event_id": event.get("event_id", ""),
+                    "proposed_object_body": event.get("object_body_name", ""),
+                    "proposed_target_body_or_site": event.get("target_body_or_site_name", ""),
+                    "proposed_close_onset": event.get("close_onset_step", ""),
+                    "proposed_grasp_established": event.get("grasp_established_step", ""),
+                    "proposed_lift_onset": event.get("lift_onset_step", ""),
+                    "proposed_stable_carry_start": event.get("stable_carry_start", ""),
+                    "proposed_window_start": event.get("teacher_window_start", ""),
+                    "proposed_anchor": event.get("teacher_anchor_step", ""),
+                    "proposed_window_end": event.get("teacher_window_end", ""),
+                    "proposed_release_onset": event.get("release_onset_step", ""),
+                    "blind_video_path": str(dest_video) if raw_video.exists() else "",
+                    "teacher_only_overlay_path": "",
+                    "video_status": video_status,
+                    "reviewer_id": "",
+                    "object_binding_correct": "",
+                    "target_binding_correct": "",
+                    "mechanism_correct": "",
+                    "event_count_correct": "",
+                    "timing_window_correct": "",
+                    "abstention_correct": "",
+                    "corrected_window_start": "",
+                    "corrected_window_end": "",
+                    "disagreement_reason": "",
+                    "review_timestamp": "",
+                }
+            )
     write_csv(output_dir / "blind_review_queue.csv", package_rows)
+    write_csv(output_dir / "blind_review_hidden_audit_manifest.csv", hidden_rows)
     instructions = {
         "package_type": "cross_suite_layer1_blind_review_package_v1",
         "manifest": str(manifest_path),
         "resolver_dir": str(resolver_dir),
         "review_count": len(package_rows),
         "blindness": "No detector telemetry, detector overlay, VIS/RAND/shuffled, or attack outputs are included.",
-        "required_human_fields": ["human_binding_accept", "human_timing_accept", "human_notes"],
+        "required_human_fields": [
+            "reviewer_id",
+            "object_binding_correct",
+            "target_binding_correct",
+            "mechanism_correct",
+            "event_count_correct",
+            "timing_window_correct",
+            "abstention_correct",
+            "corrected_window_start",
+            "corrected_window_end",
+            "disagreement_reason",
+            "review_timestamp",
+        ],
         "manual_review_complete": False,
     }
     write_json(output_dir / "blind_review_instructions.json", instructions)

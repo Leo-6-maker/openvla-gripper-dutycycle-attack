@@ -24,6 +24,7 @@ attack fields: `mlp_emit_step`, `mlp_triggered`, `corridor_p`, `release_p`,
 | `task_idx` | yes | Integer task id within suite. |
 | `state_id` | yes | Integer initial state id. |
 | `source_episode_relpath` | yes | Episode path relative to the frozen CLEAN300 root registry. |
+| `source_episode_abspath_audit_only` | yes | Absolute source path for audit traceability only; reviewer-facing queues must not depend on it. |
 | `source_episode_sha` | yes | SHA or recursive artifact hash for the source CLEAN episode. |
 | `mechanism_type` | yes | One of the ontology mechanism classes. |
 | `mechanism_eligible` | yes | Boolean eligibility for positive timing-transfer evaluation. |
@@ -53,6 +54,10 @@ attack fields: `mlp_emit_step`, `mlp_triggered`, `corridor_p`, `release_p`,
 | `teacher_anchor_step` | optional | Primary anchor step for Layer 2 timing. |
 | `teacher_window_end` | optional | End of Teacher valid timing window. |
 | `release_onset_step` | optional | Release/opening onset. |
+| `target_proximity_step` | optional | First step where the manipulated object is near the bound target. |
+| `object_gripper_min_distance` | optional | Minimum object-to-gripper proxy distance used by the resolver. |
+| `object_target_min_distance` | optional | Minimum object-to-target proxy distance used by the resolver. |
+| `supplementary_event` | yes | Boolean; true for multi/mixed mechanism event proposals that are not primary denominator labels. |
 | `event_valid` | yes | Boolean event validity. |
 | `event_invalid_reason` | yes if invalid | Reason for invalid event row. |
 
@@ -76,6 +81,7 @@ NO_RELEVANT_GRASP_EVENT
 OBJECT_BINDING_AMBIGUOUS
 TARGET_BINDING_AMBIGUOUS
 MULTI_EVENT_AUDIT_ONLY
+RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM
 RESOLVER_FAILED
 SCHEMA_INVALID
 ```
@@ -87,6 +93,7 @@ SCHEMA_INVALID
 - teacher_status=CORRECT_SEMANTIC_ABSTAIN implies `mechanism_eligible=false`, `teacher_semantic_abstain=true`, `event_count=0`, and a nonempty `abstain_reason`.
 - `teacher_status in {OBJECT_BINDING_AMBIGUOUS,TARGET_BINDING_AMBIGUOUS,RESOLVER_FAILED,SCHEMA_INVALID}` implies `mechanism_eligible=false`, `manual_review_required=true`, and no accepted positive event rows.
 - teacher_status=MULTI_EVENT_AUDIT_ONLY implies the mechanism is `multi_object_transfer` or `mixed_articulated_pick_place`, `manual_review_required=true`, and all positive event rows remain supplementary until reviewed.
+- teacher_status=RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM implies a supplementary mechanism where the resolver could not produce reliable event segmentation; it must have `mechanism_eligible=false`, `teacher_semantic_abstain=true`, and `event_count=0`.
 
 ## Binding Source Priority
 
