@@ -20,16 +20,16 @@ metadata and are not required for Teacher carry-window existence.
 
 ```text
 branch = feature/sc5-cross-suite-layer1-resolver-20260619
-tooling_commit = 0c466a9d584e7784db0fceedabd74f197ccddb73
-server_worktree = /data/liuyu/repos/layer1_h2_0c466a9_bundle
-server_output_root = /data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620
+tooling_commit = 6eb88630f20f99aac4d64356974b5a18345c3673
+server_worktree = /data/liuyu/repos/layer1_h2_6eb8863_bundle
+server_output_root = /data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620
 clean300_deep_ledger = /data/liuyu/audit_outputs/cross_suite_clean_300_final_deep_integrity_20260619_202447/tables/cross_suite_clean_300_master_ledger.csv
 python_env = /data/aviary/envs/openvla_official_libero_20260525
 physics_config = configs/cross_suite_teacher_physics_v1.yaml
 ```
 
-Server-side resolver generation was rerun after the region-specific target
-binding repair. The targeted local CPU suite passed:
+Server-side resolver and Teacher-only review package generation were rerun after
+the region-specific target binding repair. The targeted local CPU suite passed:
 
 ```text
 111 passed
@@ -38,15 +38,16 @@ binding repair. The targeted local CPU suite passed:
 ## Outputs
 
 ```text
-/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/manifests/layer1_dev_canary_manifest_v1.json
-/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/manifests/layer1_blind_review_manifest_v1.json
-/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/dev_resolver/teacher_episode_labels_v1.csv
-/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/dev_resolver/teacher_event_labels_v1.csv
-/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/diagnostic_resolver/teacher_episode_labels_v1.csv
-/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/diagnostic_resolver/teacher_event_labels_v1.csv
-/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/diagnostic_review_package/blind_review_queue.csv
-/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/diagnostic_review_package/blind_review_hidden_audit_manifest.csv
-/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/diagnostic_review_package/blind_review_instructions.json
+/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620/manifests/layer1_dev_canary_manifest_v1.json
+/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620/manifests/layer1_blind_review_manifest_v1.json
+/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620/dev_resolver/teacher_episode_labels_v1.csv
+/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620/dev_resolver/teacher_event_labels_v1.csv
+/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620/diagnostic_resolver/teacher_episode_labels_v1.csv
+/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620/diagnostic_resolver/teacher_event_labels_v1.csv
+/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620/diagnostic_review_package/blind_review_queue.csv
+/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620/diagnostic_review_package/blind_review_hidden_audit_manifest.csv
+/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620/diagnostic_review_package/blind_review_instructions.json
+/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620/diagnostic_review_package/teacher_only_overlay_timeline_manifest.csv
 ```
 
 Only small CSV/JSON evidence is committed under `tables/layer1_h2_20260620/`
@@ -112,6 +113,18 @@ The diagnostic holdout package includes non-empty event proposals for review. It
 excludes task-success fields from the reviewer queue; those are kept only in
 `blind_review_hidden_audit_manifest.csv`.
 
+Teacher-only review aids were generated for every diagnostic row:
+
+```text
+teacher_only_timeline_rows = 24 / 24
+teacher_only_overlay_mp4 = 24 / 24
+overlay_manifest_sha256 = 3f9d4b4dee34a8cdd459ce48e33ac9c670af61240499f660e65064d1f6dc2366
+```
+
+The overlays contain only resolver proposal markers. They do not include
+detector telemetry, detector overlays, VIS/RAND/shuffled outputs, attacks, or
+task-success fields.
+
 ## Key Contract Changes
 
 - Event existence requires grasp, lift, and stable carry.
@@ -135,7 +148,7 @@ excludes task-success fields from the reviewer queue; those are kept only in
 ## Region-Specific Binding Refresh
 
 The current evidence tables were regenerated at
-`0c466a9d584e7784db0fceedabd74f197ccddb73`, after the fail-closed target binding
+`6eb88630f20f99aac4d64356974b5a18345c3673`, after the fail-closed target binding
 repair. Accepted region-specific cabinet examples now bind to explicit region
 sites, for example `wooden_cabinet_1_cabinet_top`, rather than generic cabinet
 default sites. LIBERO-10 task 5 remains unresolved: `back_compartment_of_caddy`
@@ -148,6 +161,9 @@ Additional committed audit files:
 tables/layer1_h2_20260620/resolver_region_repair_summary_20260620.csv
 tables/layer1_h2_20260620/resolver_region_repair_fail_closed_rows_20260620.csv
 reports/layer1_h2_20260620/resolver_region_repair_summary_20260620.json
+tables/layer1_h2_20260620/teacher_only_overlay_timeline_manifest.csv
+reports/layer1_h2_20260620/teacher_only_overlay_timeline_summary.json
+tables/layer1_h2_20260620/teacher_timelines/*.csv
 ```
 
 ## Forbidden Field Audit
@@ -171,12 +187,11 @@ Resolver inputs:
   denominator.
 - Some primary episodes remain target-binding ambiguous.
 - Timing alignment has a freeze-candidate contract, but final Teacher freeze
-  still needs Teacher-only overlays, a new final blind package, and independent
-  human review.
+  still needs a new final blind package and independent human review.
 - Event proposal tables remain proposal evidence only. They must not be
   promoted to frozen Teacher labels before H2 approval and human review.
-- Teacher-only overlays are not yet populated; `teacher_only_overlay_path` is
-  present but empty.
+- Teacher-only overlays/timelines are populated for the diagnostic package only;
+  the final unbiased blind package has not been selected or generated.
 
 ## Allowed Claims
 

@@ -1,0 +1,10 @@
+episode_key,teacher_status,event_id,marker,description,step,object_body,target_body_or_site
+libero_spatial|8|7|0|CLEAN,ELIGIBLE_EVENT,libero_spatial|8|7|0|CLEAN|event0,window_start,proposed Teacher window start,46,akita_black_bowl_1_main,plate_1_default_site
+libero_spatial|8|7|0|CLEAN,ELIGIBLE_EVENT,libero_spatial|8|7|0|CLEAN|event0,close_onset,first accepted close onset,48,akita_black_bowl_1_main,plate_1_default_site
+libero_spatial|8|7|0|CLEAN,ELIGIBLE_EVENT,libero_spatial|8|7|0|CLEAN|event0,grasp_established,grasp evidence established,48,akita_black_bowl_1_main,plate_1_default_site
+libero_spatial|8|7|0|CLEAN,ELIGIBLE_EVENT,libero_spatial|8|7|0|CLEAN|event0,lift_onset,object lift onset,86,akita_black_bowl_1_main,plate_1_default_site
+libero_spatial|8|7|0|CLEAN,ELIGIBLE_EVENT,libero_spatial|8|7|0|CLEAN|event0,stable_carry_start,stable carry starts,86,akita_black_bowl_1_main,plate_1_default_site
+libero_spatial|8|7|0|CLEAN,ELIGIBLE_EVENT,libero_spatial|8|7|0|CLEAN|event0,anchor,Teacher anchor step,48,akita_black_bowl_1_main,plate_1_default_site
+libero_spatial|8|7|0|CLEAN,ELIGIBLE_EVENT,libero_spatial|8|7|0|CLEAN|event0,target_proximity,"target proximity, if observed",86,akita_black_bowl_1_main,plate_1_default_site
+libero_spatial|8|7|0|CLEAN,ELIGIBLE_EVENT,libero_spatial|8|7|0|CLEAN|event0,release_onset,"release onset, if observed",107,akita_black_bowl_1_main,plate_1_default_site
+libero_spatial|8|7|0|CLEAN,ELIGIBLE_EVENT,libero_spatial|8|7|0|CLEAN|event0,window_end,proposed Teacher window end,86,akita_black_bowl_1_main,plate_1_default_site

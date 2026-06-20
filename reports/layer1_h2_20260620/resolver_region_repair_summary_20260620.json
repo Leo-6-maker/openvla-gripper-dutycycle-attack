@@ -27,8 +27,8 @@
   ],
   "fail_closed_csv": "tables/layer1_h2_20260620/resolver_region_repair_fail_closed_rows_20260620.csv",
   "fail_closed_sha256": "cb371e0c21a985815a5e1243ecca4ddae31978e45891bc05cef4ea1940775b40",
-  "server_output_root": "/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620",
+  "server_output_root": "/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620",
   "summary_csv": "tables/layer1_h2_20260620/resolver_region_repair_summary_20260620.csv",
   "summary_sha256": "03dc21e6fd3d2976b07e13b0fe975cdf8f10df81b475ed82e04c1f40f0ef8cf6",
-  "tooling_commit": "0c466a9d584e7784db0fceedabd74f197ccddb73"
+  "tooling_commit": "6eb88630f20f99aac4d64356974b5a18345c3673"
 }

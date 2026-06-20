@@ -1,0 +1,8 @@
+{
+  "manifest_path": "/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620/diagnostic_review_package/teacher_only_overlay_timeline_manifest.csv",
+  "manifest_sha256": "3f9d4b4dee34a8cdd459ce48e33ac9c670af61240499f660e65064d1f6dc2366",
+  "overlay_count": 24,
+  "review_rows": 24,
+  "server_output_root": "/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620",
+  "timeline_count": 24
+}

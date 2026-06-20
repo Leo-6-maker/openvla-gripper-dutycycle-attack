@@ -10,7 +10,7 @@
   "failure_count": 0,
   "failures": [],
   "manifest": "/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/manifests/layer1_blind_review_manifest_v1.json",
-  "teacher_run_id": "h2_0c466a9_diagnostic",
+  "teacher_run_id": "h2_6eb8863_diagnostic",
   "validation_error_count": 0,
   "validation_errors": []
 }

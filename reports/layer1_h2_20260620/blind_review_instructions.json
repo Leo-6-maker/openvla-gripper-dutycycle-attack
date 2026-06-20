@@ -1,5 +1,5 @@
 {
-  "blindness": "No detector telemetry, detector overlay, VIS/RAND/shuffled, or attack outputs are included.",
+  "blindness": "No detector telemetry, detector overlay, VIS/RAND/shuffled, or attack outputs are included. Teacher-only overlays contain only resolver proposal markers.",
   "holdout_role": "diagnostic_only_observed_during_resolver_development_not_final_unbiased_validation",
   "manifest": "/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/manifests/layer1_blind_review_manifest_v1.json",
   "manual_review_complete": false,
@@ -17,6 +17,6 @@
     "disagreement_reason",
     "review_timestamp"
   ],
-  "resolver_dir": "/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/diagnostic_resolver",
+  "resolver_dir": "/data/liuyu/layer1_outputs/h2_layer1_resolver_6eb8863_20260620/diagnostic_resolver",
   "review_count": 24
 }
