@@ -589,7 +589,7 @@ def detect_physical_event(
         return PhysicalEvent("EMPTY_TRAJECTORY", close_candidates[0], "", "", "", "", "", "", "", "", "", False, "", "", False, "empty_trajectory")
     obj_grip = np.linalg.norm(obj - grip, axis=1)
     obj_target = np.linalg.norm(obj - target, axis=1) if target is not None else None
-    near_grip = obj_grip < 0.12
+    near_grip = obj_grip < object_gripper_near
     lift_mask = obj[:, 2] > (obj[0, 2] + object_lift_delta)
     target_step_by_close: int | None = None
     best_incomplete: PhysicalEvent | None = None

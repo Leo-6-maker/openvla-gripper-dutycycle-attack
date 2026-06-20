@@ -9,11 +9,13 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
 from scripts.stageb.cross_suite_layer1_resolver import (  # noqa: E402
+    BindingResult,
     RESOLVER_NOT_IMPLEMENTED,
     bind_unique,
     build_blind_review_manifest,
     build_dev_canary_manifest,
     build_review_package,
+    detect_physical_event,
     load_ontology,
     load_step_rows,
     resolve_episode,
@@ -286,6 +288,60 @@ def test_far_from_target_carry_is_valid_event_but_not_placement_complete(tmp_pat
     assert len(events) == 1
     assert events[0]["target_proximity_step"] == ""
     assert events[0]["placement_complete"] is False
+
+
+def test_physics_object_gripper_near_threshold_changes_event_acceptance(tmp_path):
+    body_names, site_names, body_xpos, body_xquat, site_xpos, qpos, qvel, ctrl = _trajectory("valid")
+    site_xpos[:, 1, :] = body_xpos[:, 1, :] + np.array([0.05, 0.0, 0.0], dtype=np.float32)
+    step_rows = []
+    for step in range(6):
+        close = step in {2, 3, 4}
+        step_rows.append(
+            {
+                "step": step,
+                "raw_gripper": 0.0 if close else 1.0,
+                "env_gripper": 1.0 if close else -1.0,
+            }
+        )
+    sim_arrays = {"body_xpos": body_xpos, "site_xpos": site_xpos}
+    object_binding = BindingResult("black_bowl_1_main", 1, "BOUND_EXACT", "test", ("black_bowl_1_main",))
+    target_binding = BindingResult("plate_1_default_site", 0, "BOUND_EXACT", "test", ("plate_1_default_site",))
+    default_physics = {
+        "thresholds": {
+            "object_gripper_near_m": 0.12,
+            "object_gripper_separated_m": 0.18,
+            "object_lift_delta_m": 0.025,
+            "stable_carry_min_frames": 3,
+            "grasp_min_frames": 2,
+            "object_target_near_m": 0.14,
+            "max_close_to_grasp_delay_frames": 1,
+        }
+    }
+    strict_physics = json.loads(json.dumps(default_physics))
+    strict_physics["thresholds"]["object_gripper_near_m"] = 0.001
+
+    accepted = detect_physical_event(
+        step_rows=step_rows,
+        sim_arrays=sim_arrays,
+        site_names=site_names,
+        object_binding=object_binding,
+        target_binding=target_binding,
+        target_kind="site",
+        physics=default_physics,
+    )
+    rejected = detect_physical_event(
+        step_rows=step_rows,
+        sim_arrays=sim_arrays,
+        site_names=site_names,
+        object_binding=object_binding,
+        target_binding=target_binding,
+        target_kind="site",
+        physics=strict_physics,
+    )
+
+    assert accepted.status == "PHYSICAL_EVENT_VALID"
+    assert rejected.status == "PHYSICAL_EVENT_INCOMPLETE"
+    assert "no_grasp_proximity_after_close" in rejected.event_invalid_reason
 
 
 def test_late_valid_close_candidate_is_selected(tmp_path):
