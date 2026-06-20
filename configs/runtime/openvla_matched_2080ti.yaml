@@ -1,0 +1,49 @@
+# 2080Ti Matched Runtime Profile — LIBERO-Spatial
+# Used for MIG2B cross-host static parity (2026-06-21)
+# This matches the historical 2080Ti execution profile
+
+runtime:
+  profile: legacy_2080ti_matched
+  suite: libero_spatial
+  host: klfy-SYS-4028GR-TR2
+  gpu_model: "NVIDIA GeForce RTX 2080 Ti"
+
+model:
+  path: "/data/aviary/models/openvla/openvla-7b-finetuned-libero-spatial"
+  dtype: "float32"
+  attn_implementation: "eager"
+  device_map: "auto"
+  device_count: 4
+  visible_gpus: [0, 1, 2, 3]
+  per_gpu_memory_cap:
+    0: "10000MiB"
+    1: "10000MiB"
+    2: "10000MiB"
+    3: "10000MiB"
+  low_cpu_mem_usage: false
+  local_files_only: true
+  trust_remote_code: true
+  provenance: LOCAL_MODIFIED_SNAPSHOT
+
+environment:
+  python: "3.10"
+  torch: "2.2.0+cu121"
+  transformers: "4.40.1"
+  tokenizers: "0.19.1"
+  cuda_driver: "550.90.12"
+  conda_env: "/data/aviary/envs/openvla_official_libero_20260525"
+
+generation:
+  max_new_tokens: 7
+  do_sample: false
+  unnorm_key: "libero_spatial"
+  lane: "predict_action_official"  # Lane O via predict_action()
+
+input_bundle:
+  sha256: "13d31e707c0b5c3895c61472dee4cc97546b6cdcd0859d1a70dce1ed785ff1ab"
+  path: "/data/liuyu/outputs/cross_host_bundle"
+  frames: 10
+
+result_manifest:
+  csv: "/data/liuyu/outputs/parity_2080ti/2080ti_M_results.csv"
+  sha256: "TBD_COMPUTE"
