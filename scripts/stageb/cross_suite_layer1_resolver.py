@@ -33,6 +33,18 @@ PHYSICS_VERSION = "cross_suite_teacher_physics_v1"
 PRIMARY_MECHANISM = "single_object_pick_place"
 SUPPLEMENTARY_MECHANISMS = {"multi_object_transfer", "mixed_articulated_pick_place"}
 VALID_BINDING_STATUSES = {"BOUND_EXACT", "BOUND_BDDL_ONTOLOGY", "BOUND_STRUCTURED_FALLBACK"}
+REGION_TARGET_ALIASES = {
+    "back_compartment_of_caddy",
+    "bottom_drawer",
+    "cabinet_inside",
+    "cabinet_top",
+    "front_of_stove",
+    "left_plate",
+    "right_of_plate",
+    "right_plate",
+    "stove_front",
+    "top_drawer",
+}
 ROOT_REGISTRY = REPO / "evidence" / "manifests" / "cross_suite_clean300_root_registry.json"
 PHYSICS_CONFIG = REPO / "configs" / "cross_suite_teacher_physics_v1.yaml"
 RESOLVER_NOT_IMPLEMENTED = "RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM"
@@ -424,7 +436,20 @@ def bind_many(names: list[str], aliases: tuple[str, ...]) -> list[BindingResult]
     return results
 
 
+def region_specific_aliases(aliases: tuple[str, ...]) -> tuple[str, ...]:
+    return tuple(alias for alias in aliases if alias in REGION_TARGET_ALIASES)
+
+
 def bind_target(site_names: list[str], body_names: list[str], aliases: tuple[str, ...]) -> tuple[BindingResult, str]:
+    region_aliases = region_specific_aliases(aliases)
+    if region_aliases:
+        site_result = bind_unique(site_names, region_aliases)
+        if site_result.status in VALID_BINDING_STATUSES or site_result.status == "AMBIGUOUS":
+            return site_result, "site"
+        body_result = bind_unique(body_names, region_aliases)
+        if body_result.status in VALID_BINDING_STATUSES or body_result.status == "AMBIGUOUS":
+            return body_result, "body"
+        return BindingResult("", -1, "FAILED", "region_specific_target_missing:" + "|".join(region_aliases), ()), "site"
     site_result = bind_unique(site_names, aliases)
     if site_result.status in VALID_BINDING_STATUSES or site_result.status == "AMBIGUOUS":
         return site_result, "site"

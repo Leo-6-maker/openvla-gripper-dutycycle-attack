@@ -117,6 +117,9 @@ excludes task-success fields from the reviewer queue; those are kept only in
   contract is:
   `sim_state_timing_convention=one_sim_state_row_per_executed_action_step`,
   `sim_row_to_action_step_offset=0`, and `video_frame_to_step_offset=0`.
+- Region-specific target aliases now fail closed when no matching site/body
+  exists. Generic object default sites cannot satisfy targets such as
+  `cabinet_top` or `back_compartment_of_caddy`.
 
 ## Forbidden Field Audit
 
@@ -139,8 +142,12 @@ Resolver inputs:
   denominator.
 - Some primary episodes remain target-binding ambiguous.
 - Timing alignment has a freeze-candidate contract, but final Teacher freeze
-  still needs target-binding review, Teacher-only overlays, a new final blind
-  package, and independent human review.
+  still needs proposal regeneration under the region-specific binding rule,
+  Teacher-only overlays, a new final blind package, and independent human
+  review.
+- Event proposal tables generated before the region-specific binding repair are
+  diagnostic only. They must not be promoted to frozen Teacher labels without a
+  fresh resolver run after H2 rules are finalized and approved.
 - Teacher-only overlays are not yet populated; `teacher_only_overlay_path` is
   present but empty.
 
@@ -154,6 +161,8 @@ Resolver inputs:
   zero internal validation errors.
 - A diagnostic holdout human-review package was generated without detector
   fields, attack outputs, or task-success leakage in the reviewer queue.
+- Region/directional target aliases now fail closed instead of falling back to
+  generic default sites.
 
 ## Forbidden Claims
 
@@ -161,6 +170,8 @@ Resolver inputs:
 - Do not claim human review is complete.
 - Do not claim the current 24-row diagnostic holdout is an unbiased final blind
   validation set.
+- Do not treat pre-repair proposal rows as final Teacher labels after the
+  region-specific binding rule changed.
 - Do not claim Layer 2 timing transfer, detector localization, VIS/RAND, or
   attack effectiveness.
 - Do not use these proposal labels as frozen Teacher labels before H2 approval

@@ -12,6 +12,7 @@ from scripts.stageb.cross_suite_layer1_resolver import (  # noqa: E402
     BindingResult,
     RESOLVER_NOT_IMPLEMENTED,
     bind_unique,
+    bind_target,
     build_blind_review_manifest,
     build_dev_canary_manifest,
     build_review_package,
@@ -244,6 +245,22 @@ def test_structured_prefix_suffix_binding_without_arbitrary_substring():
     assert ambiguous.status == "AMBIGUOUS"
     failed = bind_unique(["black_marker_1_main"], ("mug",))
     assert failed.status == "FAILED"
+
+
+def test_region_specific_target_does_not_fallback_to_generic_default_site():
+    generic_cabinet_site = ["wooden_cabinet_1_default_site"]
+    generic_cabinet_body = ["wooden_cabinet_1_main"]
+    binding, kind = bind_target(generic_cabinet_site, generic_cabinet_body, ("cabinet_top", "cabinet"))
+    assert binding.status == "FAILED"
+    assert binding.source == "region_specific_target_missing:cabinet_top"
+    assert kind == "site"
+
+    generic_caddy_site = ["caddy_1_default_site"]
+    generic_caddy_body = ["caddy_1_main"]
+    caddy, caddy_kind = bind_target(generic_caddy_site, generic_caddy_body, ("back_compartment_of_caddy", "caddy"))
+    assert caddy.status == "FAILED"
+    assert caddy.source == "region_specific_target_missing:back_compartment_of_caddy"
+    assert caddy_kind == "site"
 
 
 def test_single_object_episode_requires_physical_grasp_lift_carry_target(tmp_path):
