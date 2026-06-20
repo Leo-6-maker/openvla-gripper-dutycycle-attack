@@ -21,6 +21,7 @@ from scripts.stageb.cross_suite_layer1_resolver import (  # noqa: E402
     load_step_rows,
     resolve_episode,
     run_resolver,
+    teacher_timeline_rows,
     validate_episode_rows,
 )
 
@@ -470,7 +471,29 @@ def test_run_resolver_and_blind_package_outputs_are_event_level_and_blind(tmp_pa
     review_csv = (tmp_path / "review" / "blind_review_queue.csv").read_text(encoding="utf-8")
     assert "reviewer_id" in review_csv
     assert "proposed_grasp_established" in review_csv
+    assert "teacher_only_timeline_path" in review_csv
+    assert "teacher_only_overlay_status" in review_csv
     assert "task_success" not in review_csv
     assert "mlp_emit" not in review_csv
+    timeline_paths = sorted((tmp_path / "review" / "teacher_timelines").glob("*.csv"))
+    assert len(timeline_paths) == 1
+    timeline_csv = timeline_paths[0].read_text(encoding="utf-8")
+    assert "close_onset" in timeline_csv
+    assert "mlp_emit" not in timeline_csv
     hidden = (tmp_path / "review" / "blind_review_hidden_audit_manifest.csv").read_text(encoding="utf-8")
     assert "task_success" in hidden
+
+
+def test_teacher_timeline_rows_are_teacher_only():
+    label = {"episode_key": "ep", "teacher_status": "ELIGIBLE_EVENT"}
+    event = {
+        "event_id": "ep|event0",
+        "close_onset_step": "7",
+        "teacher_window_start": "5",
+        "teacher_window_end": "12",
+        "object_body_name": "object_main",
+        "target_body_or_site_name": "target_site",
+    }
+    rows = teacher_timeline_rows(label, event)
+    assert {r["marker"] for r in rows} >= {"window_start", "close_onset", "window_end"}
+    assert all("mlp_emit" not in r for r in rows)

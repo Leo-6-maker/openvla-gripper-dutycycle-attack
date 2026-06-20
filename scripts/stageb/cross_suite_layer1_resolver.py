@@ -23,6 +23,7 @@ from typing import Any, Iterable
 
 import numpy as np
 import yaml
+from PIL import Image, ImageDraw
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -1042,6 +1043,115 @@ def run_resolver(manifest_path: Path, ontology_path: Path, output_dir: Path, *, 
     return sidecars
 
 
+def optional_int(value: Any) -> int | None:
+    if value in (None, ""):
+        return None
+    try:
+        return int(float(value))
+    except (TypeError, ValueError):
+        return None
+
+
+def teacher_timeline_rows(label: dict[str, str], event: dict[str, str]) -> list[dict[str, Any]]:
+    marker_fields = [
+        ("window_start", "proposed Teacher window start", "teacher_window_start"),
+        ("close_onset", "first accepted close onset", "close_onset_step"),
+        ("grasp_established", "grasp evidence established", "grasp_established_step"),
+        ("lift_onset", "object lift onset", "lift_onset_step"),
+        ("stable_carry_start", "stable carry starts", "stable_carry_start"),
+        ("anchor", "Teacher anchor step", "teacher_anchor_step"),
+        ("target_proximity", "target proximity, if observed", "target_proximity_step"),
+        ("release_onset", "release onset, if observed", "release_onset_step"),
+        ("window_end", "proposed Teacher window end", "teacher_window_end"),
+    ]
+    rows: list[dict[str, Any]] = []
+    for marker, description, field in marker_fields:
+        step = optional_int(event.get(field))
+        if step is None:
+            continue
+        rows.append(
+            {
+                "episode_key": label.get("episode_key", ""),
+                "teacher_status": label.get("teacher_status", ""),
+                "event_id": event.get("event_id", ""),
+                "marker": marker,
+                "description": description,
+                "step": step,
+                "object_body": event.get("object_body_name", ""),
+                "target_body_or_site": event.get("target_body_or_site_name", ""),
+            }
+        )
+    if not rows:
+        rows.append(
+            {
+                "episode_key": label.get("episode_key", ""),
+                "teacher_status": label.get("teacher_status", ""),
+                "event_id": event.get("event_id", ""),
+                "marker": "no_teacher_event",
+                "description": "no accepted Teacher event row",
+                "step": "",
+                "object_body": "",
+                "target_body_or_site": "",
+            }
+        )
+    return rows
+
+
+def write_teacher_timeline(path: Path, label: dict[str, str], event: dict[str, str]) -> str:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    write_csv(path, teacher_timeline_rows(label, event))
+    return "WROTE"
+
+
+def draw_teacher_overlay(frame: np.ndarray, label: dict[str, str], event: dict[str, str], step: int) -> np.ndarray:
+    image = Image.fromarray(np.asarray(frame).astype(np.uint8)).convert("RGB")
+    draw = ImageDraw.Draw(image)
+    width, height = image.size
+    window_start = optional_int(event.get("teacher_window_start"))
+    window_end = optional_int(event.get("teacher_window_end"))
+    close_step = optional_int(event.get("close_onset_step"))
+    anchor_step = optional_int(event.get("teacher_anchor_step"))
+    release_step = optional_int(event.get("release_onset_step"))
+    if window_start is not None and window_end is not None and window_start <= step <= window_end:
+        draw.rectangle([0, 0, width, 10], fill=(40, 180, 80))
+    if close_step is not None and step == close_step:
+        draw.rectangle([0, 10, width, 20], fill=(220, 60, 50))
+    if anchor_step is not None and step == anchor_step:
+        draw.rectangle([0, 20, width, 30], fill=(255, 220, 0))
+    if release_step is not None and step == release_step:
+        draw.rectangle([0, 30, width, 40], fill=(80, 160, 255))
+    status = label.get("teacher_status", "")
+    event_id = event.get("event_id", "")
+    obj = event.get("object_body_name", "")
+    target = event.get("target_body_or_site_name", "")
+    draw.rectangle([0, max(0, height - 42), width, height], fill=(0, 0, 0))
+    draw.text((4, height - 40), f"step={step} status={status}", fill=(255, 255, 255))
+    draw.text((4, height - 24), f"{event_id} {obj}->{target}", fill=(255, 255, 255))
+    return np.asarray(image, dtype=np.uint8)
+
+
+def write_teacher_overlay_video(raw_video: Path, output_path: Path, label: dict[str, str], event: dict[str, str]) -> str:
+    if not raw_video.exists():
+        return "RAW_VIDEO_MISSING"
+    try:
+        import imageio.v2 as imageio
+    except Exception as exc:
+        return f"IMAGEIO_UNAVAILABLE:{type(exc).__name__}"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        reader = imageio.get_reader(raw_video)
+        meta = reader.get_meta_data()
+        fps = int(meta.get("fps") or 10)
+        frames = [draw_teacher_overlay(frame, label, event, idx) for idx, frame in enumerate(reader)]
+        reader.close()
+        if not frames:
+            return "NO_FRAMES"
+        imageio.mimwrite(output_path, frames, fps=fps)
+        return "WROTE"
+    except Exception as exc:
+        return f"OVERLAY_FAILED:{type(exc).__name__}:{exc}"
+
+
 def build_review_package(manifest_path: Path, resolver_dir: Path, output_dir: Path) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=True)
     rows = rows_from_manifest(manifest_path)
@@ -1080,9 +1190,15 @@ def build_review_package(manifest_path: Path, resolver_dir: Path, output_dir: Pa
             }
         )
         for event_idx, event in enumerate(event_candidates):
+            review_id = f"review_{idx:03d}_event_{event_idx:02d}"
+            timeline_path = output_dir / "teacher_timelines" / f"{review_id}_teacher_timeline.csv"
+            timeline_status = write_teacher_timeline(timeline_path, label, event)
+            overlay_path = output_dir / "teacher_overlays" / f"{review_id}_teacher_overlay.mp4"
+            overlay_status = write_teacher_overlay_video(raw_video, overlay_path, label, event)
+            overlay_public_path = str(overlay_path) if overlay_status == "WROTE" else ""
             package_rows.append(
                 {
-                    "review_id": f"review_{idx:03d}_event_{event_idx:02d}",
+                    "review_id": review_id,
                     "episode_key": row["canonical_key"],
                     "suite": row["suite"],
                     "task_idx": row["task_idx"],
@@ -1101,7 +1217,10 @@ def build_review_package(manifest_path: Path, resolver_dir: Path, output_dir: Pa
                     "proposed_window_end": event.get("teacher_window_end", ""),
                     "proposed_release_onset": event.get("release_onset_step", ""),
                     "blind_video_path": str(dest_video) if raw_video.exists() else "",
-                    "teacher_only_overlay_path": "",
+                    "teacher_only_timeline_path": str(timeline_path),
+                    "teacher_only_timeline_status": timeline_status,
+                    "teacher_only_overlay_path": overlay_public_path,
+                    "teacher_only_overlay_status": overlay_status,
                     "video_status": video_status,
                     "reviewer_id": "",
                     "object_binding_correct": "",
@@ -1124,7 +1243,7 @@ def build_review_package(manifest_path: Path, resolver_dir: Path, output_dir: Pa
         "manifest": str(manifest_path),
         "resolver_dir": str(resolver_dir),
         "review_count": len(package_rows),
-        "blindness": "No detector telemetry, detector overlay, VIS/RAND/shuffled, or attack outputs are included.",
+        "blindness": "No detector telemetry, detector overlay, VIS/RAND/shuffled, or attack outputs are included. Teacher-only overlays contain only resolver proposal markers.",
         "required_human_fields": [
             "reviewer_id",
             "object_binding_correct",
