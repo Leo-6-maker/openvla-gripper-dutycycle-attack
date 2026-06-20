@@ -1,0 +1,34 @@
+{
+  "counts": [
+    {
+      "correct_semantic_abstain": 2,
+      "eligible_event": 6,
+      "episode_rows": 12,
+      "event_rows": 6,
+      "no_relevant_grasp_event": 0,
+      "resolver_not_implemented": 2,
+      "split": "dev",
+      "target_binding_ambiguous": 2,
+      "target_binding_ambiguous_status": 2,
+      "target_binding_failed": 2
+    },
+    {
+      "correct_semantic_abstain": 4,
+      "eligible_event": 6,
+      "episode_rows": 24,
+      "event_rows": 6,
+      "no_relevant_grasp_event": 2,
+      "resolver_not_implemented": 8,
+      "split": "diagnostic",
+      "target_binding_ambiguous": 3,
+      "target_binding_ambiguous_status": 4,
+      "target_binding_failed": 9
+    }
+  ],
+  "fail_closed_csv": "tables/layer1_h2_20260620/resolver_region_repair_fail_closed_rows_20260620.csv",
+  "fail_closed_sha256": "cb371e0c21a985815a5e1243ecca4ddae31978e45891bc05cef4ea1940775b40",
+  "server_output_root": "/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620",
+  "summary_csv": "tables/layer1_h2_20260620/resolver_region_repair_summary_20260620.csv",
+  "summary_sha256": "03dc21e6fd3d2976b07e13b0fe975cdf8f10df81b475ed82e04c1f40f0ef8cf6",
+  "tooling_commit": "0c466a9d584e7784db0fceedabd74f197ccddb73"
+}

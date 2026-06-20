@@ -20,34 +20,33 @@ metadata and are not required for Teacher carry-window existence.
 
 ```text
 branch = feature/sc5-cross-suite-layer1-resolver-20260619
-tooling_commit = a161c1fedde47977e83c9bcb9d504caf3f75d4c6
-server_worktree = /data/liuyu/repos/layer1_h2_a161c1f
-server_output_root = /data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620
+tooling_commit = 0c466a9d584e7784db0fceedabd74f197ccddb73
+server_worktree = /data/liuyu/repos/layer1_h2_0c466a9_bundle
+server_output_root = /data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620
 clean300_deep_ledger = /data/liuyu/audit_outputs/cross_suite_clean_300_final_deep_integrity_20260619_202447/tables/cross_suite_clean_300_master_ledger.csv
 python_env = /data/aviary/envs/openvla_official_libero_20260525
 physics_config = configs/cross_suite_teacher_physics_v1.yaml
 ```
 
-Server-side `py_compile` passed. Server-side pytest was not run because the
-approved OpenVLA environment is missing `pygments` for pytest import. The
-targeted local CPU suite passed:
+Server-side resolver generation was rerun after the region-specific target
+binding repair. The targeted local CPU suite passed:
 
 ```text
-35 passed
+111 passed
 ```
 
 ## Outputs
 
 ```text
-/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/manifests/layer1_dev_canary_manifest_v1.json
-/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/manifests/layer1_blind_review_manifest_v1.json
-/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/dev_resolver/teacher_episode_labels_v1.csv
-/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/dev_resolver/teacher_event_labels_v1.csv
-/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/blind_resolver/teacher_episode_labels_v1.csv
-/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/blind_resolver/teacher_event_labels_v1.csv
-/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/blind_review_package/blind_review_queue.csv
-/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/blind_review_package/blind_review_hidden_audit_manifest.csv
-/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/blind_review_package/blind_review_instructions.json
+/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/manifests/layer1_dev_canary_manifest_v1.json
+/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/manifests/layer1_blind_review_manifest_v1.json
+/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/dev_resolver/teacher_episode_labels_v1.csv
+/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/dev_resolver/teacher_event_labels_v1.csv
+/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/diagnostic_resolver/teacher_episode_labels_v1.csv
+/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/diagnostic_resolver/teacher_event_labels_v1.csv
+/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/diagnostic_review_package/blind_review_queue.csv
+/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/diagnostic_review_package/blind_review_hidden_audit_manifest.csv
+/data/liuyu/layer1_outputs/h2_layer1_resolver_0c466a9_20260620/diagnostic_review_package/blind_review_instructions.json
 ```
 
 Only small CSV/JSON evidence is committed under `tables/layer1_h2_20260620/`
@@ -66,6 +65,12 @@ teacher_status_counts = {
   'CORRECT_SEMANTIC_ABSTAIN': 2,
   'TARGET_BINDING_AMBIGUOUS': 2,
   'RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM': 2
+}
+target_binding_status_counts = {
+  'BOUND_STRUCTURED_FALLBACK': 6,
+  'FAILED': 2,
+  'AMBIGUOUS': 2,
+  'NOT_APPLICABLE': 2
 }
 ```
 
@@ -87,6 +92,12 @@ teacher_status_counts = {
   'NO_RELEVANT_GRASP_EVENT': 2,
   'ELIGIBLE_EVENT': 6,
   'CORRECT_SEMANTIC_ABSTAIN': 4
+}
+target_binding_status_counts = {
+  'FAILED': 9,
+  'AMBIGUOUS': 3,
+  'BOUND_STRUCTURED_FALLBACK': 8,
+  'NOT_APPLICABLE': 4
 }
 ```
 
@@ -121,6 +132,24 @@ excludes task-success fields from the reviewer queue; those are kept only in
   exists. Generic object default sites cannot satisfy targets such as
   `cabinet_top` or `back_compartment_of_caddy`.
 
+## Region-Specific Binding Refresh
+
+The current evidence tables were regenerated at
+`0c466a9d584e7784db0fceedabd74f197ccddb73`, after the fail-closed target binding
+repair. Accepted region-specific cabinet examples now bind to explicit region
+sites, for example `wooden_cabinet_1_cabinet_top`, rather than generic cabinet
+default sites. LIBERO-10 task 5 remains unresolved: `back_compartment_of_caddy`
+has no accepted explicit target binding in this pass and is reported as
+`TARGET_BINDING_AMBIGUOUS` instead of entering the primary Teacher denominator.
+
+Additional committed audit files:
+
+```text
+tables/layer1_h2_20260620/resolver_region_repair_summary_20260620.csv
+tables/layer1_h2_20260620/resolver_region_repair_fail_closed_rows_20260620.csv
+reports/layer1_h2_20260620/resolver_region_repair_summary_20260620.json
+```
+
 ## Forbidden Field Audit
 
 ```text
@@ -142,12 +171,10 @@ Resolver inputs:
   denominator.
 - Some primary episodes remain target-binding ambiguous.
 - Timing alignment has a freeze-candidate contract, but final Teacher freeze
-  still needs proposal regeneration under the region-specific binding rule,
-  Teacher-only overlays, a new final blind package, and independent human
-  review.
-- Event proposal tables generated before the region-specific binding repair are
-  diagnostic only. They must not be promoted to frozen Teacher labels without a
-  fresh resolver run after H2 rules are finalized and approved.
+  still needs Teacher-only overlays, a new final blind package, and independent
+  human review.
+- Event proposal tables remain proposal evidence only. They must not be
+  promoted to frozen Teacher labels before H2 approval and human review.
 - Teacher-only overlays are not yet populated; `teacher_only_overlay_path` is
   present but empty.
 
