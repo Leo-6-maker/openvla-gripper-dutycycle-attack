@@ -1,7 +1,9 @@
 physics_version: cross_suite_teacher_physics_v1
 coordinate_frame: MuJoCo world coordinates from sim_state_stream.npz
-sim_state_timing_convention: unknown_pending_manual_alignment
+sim_state_timing_convention: one_sim_state_row_per_executed_action_step
 sim_row_to_action_step_offset: 0
+video_frame_to_step_offset: 0
+timing_alignment_evidence: reports/layer1_h2_20260620/timing_alignment_contract_20260620.md
 freeze_policy:
   threshold_scope: development_canary_only_until_h2_freeze
   blind_set_tuning: forbidden

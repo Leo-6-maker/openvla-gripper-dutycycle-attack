@@ -111,6 +111,12 @@ excludes task-success fields from the reviewer queue; those are kept only in
 - Gripper site binding is exact and fail-closed; no `site_names[0]` fallback is
   allowed.
 - Thresholds are versioned in `configs/cross_suite_teacher_physics_v1.yaml`.
+- Timing alignment was checked on six development-canary event proposals:
+  `step_telemetry.csv`, `frame_index.csv`, `sim_state_stream.npz`, and
+  `rollout_raw.mp4` all have matching row/frame counts. The freeze-candidate
+  contract is:
+  `sim_state_timing_convention=one_sim_state_row_per_executed_action_step`,
+  `sim_row_to_action_step_offset=0`, and `video_frame_to_step_offset=0`.
 
 ## Forbidden Field Audit
 
@@ -132,9 +138,9 @@ Resolver inputs:
 - Supplementary multi/mixed mechanisms are not promoted to the primary
   denominator.
 - Some primary episodes remain target-binding ambiguous.
-- `sim_state_timing_convention` remains explicitly marked
-  `unknown_pending_manual_alignment` in the physics config; final Teacher
-  freeze still needs timing-alignment review.
+- Timing alignment has a freeze-candidate contract, but final Teacher freeze
+  still needs target-binding review, Teacher-only overlays, a new final blind
+  package, and independent human review.
 - Teacher-only overlays are not yet populated; `teacher_only_overlay_path` is
   present but empty.
 
