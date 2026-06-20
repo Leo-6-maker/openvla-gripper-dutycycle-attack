@@ -3,7 +3,7 @@
 **Date:** 2026-06-20
 **Branch:** `infra/a800-migration-20260620`
 **Gate:** M1A_OFFICIAL_CORE_ENV
-**Status:** PASS (PARTIAL — flash-attn pending)
+**Status:** DEPENDENCY_INSTALL_PASS | HOST_SAFETY_FAIL | RUNTIME_NOT_VALIDATED
 
 ---
 
@@ -27,12 +27,23 @@
 
 ## Root Safety
 
-| Metric | Before | After | Delta |
+| Metric | Before (M1A start) | After (M1A complete) | Delta |
 |---|---|---|---|
-| Root free | ~21 MiB | ~19.6 MiB | ~-1.4 MiB |
-| /mnt/sdc free | ~701 GiB | ~389 GiB | ~-312 GiB |
+| Root free | ~54 MiB | ~23 MiB | ~-31 MiB |
+| /mnt/sdc free | ~701 GiB | ~417 GiB | ~-284 GiB |
 
-Root remained within safe margins (no single step dropped root > 10 MiB). The /mnt/sdc drop includes our env (38 GiB) plus unrelated processes (mmunlearner cache, yangyenan cache, pi0 outputs).
+**Root safety gate failed** because final free space (23 MiB, later 19.6 MiB) was below the 32 MiB threshold. Environment installation completed, but model sync and runtime validation remain blocked.
+
+Root degradation occurred from multiple factors:
+- Conda package metadata writes during environment creation (~172 KiB from our conda create)
+- Pip/torch downloads writing temp files during network timeouts (~33 MiB from multiple failed attempts, stale pip processes)
+- The /mnt/sdc drop includes our env (38 GiB) plus unrelated processes (mmunlearner cache, yangyenan cache, pi0 outputs, dp_grid_results)
+
+### Post-Cleanup (2026-06-20T20:20)
+
+Own-cache cleanup reclaimed 581 MiB on root (model_cache), +12 GiB on /mnt/sdc (uv/vllm/electron). Root at 604 MiB — still below 20 GiB threshold.
+
+Key finding: `/home/dty_user/.cache` is a symlink → `/mnt/sdc/b1/dty_user_home_redirects/.cache`. Most "cache" data previously thought to be on root was already on /mnt/sdc. Only ~16 GB of dty_user data is actually on root, mostly IDE servers.
 
 ## Validation Results
 
