@@ -343,7 +343,8 @@ def build_blind_review_manifest(
         if not progressed:
             break
     return {
-        "manifest_type": "cross_suite_layer1_blind_review_manifest_v1",
+        "manifest_type": "resolver_diagnostic_holdout_v1",
+        "holdout_role": "diagnostic_only_observed_during_resolver_development_not_final_unbiased_validation",
         "selection_rule": "disjoint deterministic round-robin over suite|mechanism_group|task_success strata",
         "source_commit": git_commit(),
         "selected_count": len(selected),
@@ -1093,7 +1094,8 @@ def build_review_package(manifest_path: Path, resolver_dir: Path, output_dir: Pa
     write_csv(output_dir / "blind_review_queue.csv", package_rows)
     write_csv(output_dir / "blind_review_hidden_audit_manifest.csv", hidden_rows)
     instructions = {
-        "package_type": "cross_suite_layer1_blind_review_package_v1",
+        "package_type": "resolver_diagnostic_holdout_review_package_v1",
+        "holdout_role": "diagnostic_only_observed_during_resolver_development_not_final_unbiased_validation",
         "manifest": str(manifest_path),
         "resolver_dir": str(resolver_dir),
         "review_count": len(package_rows),

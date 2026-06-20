@@ -52,7 +52,7 @@ targeted local CPU suite passed:
 
 Only small CSV/JSON evidence is committed under `tables/layer1_h2_20260620/`
 and `reports/layer1_h2_20260620/`. Raw videos remain on the server as symlinks
-in the blind review package.
+in the diagnostic holdout review package.
 
 ## Development Canary Validation
 
@@ -72,7 +72,7 @@ teacher_status_counts = {
 The six accepted event rows are proposal labels only. They still require human
 review before they can become frozen Teacher labels.
 
-## Blind Human-Review Package
+## Diagnostic Holdout Review Package
 
 ```text
 episode_rows = 24
@@ -90,8 +90,15 @@ teacher_status_counts = {
 }
 ```
 
-The blind package now includes non-empty event proposals for review. It excludes
-task-success fields from the reviewer queue; those are kept only in
+This 24-row package is now classified as `resolver_diagnostic_holdout_v1`
+because it was observed during resolver development. It is useful for resolver
+debugging and independent review of proposed event semantics, but it is not the
+final unbiased validation set. A new disjoint final blind package must be
+selected only after resolver code, thresholds, target-binding rules, and timing
+offsets are frozen.
+
+The diagnostic holdout package includes non-empty event proposals for review. It
+excludes task-success fields from the reviewer queue; those are kept only in
 `blind_review_hidden_audit_manifest.csv`.
 
 ## Key Contract Changes
@@ -120,6 +127,8 @@ Resolver inputs:
 ## Remaining Limitations
 
 - Manual review is not complete.
+- The current 24-row package is diagnostic-only and cannot be used as the final
+  unbiased human-validation set.
 - Supplementary multi/mixed mechanisms are not promoted to the primary
   denominator.
 - Some primary episodes remain target-binding ambiguous.
@@ -133,17 +142,19 @@ Resolver inputs:
 
 - Layer 1 resolver-v1 now uses structured binding plus sim-state physical event
   evidence.
-- A deterministic development-canary manifest and disjoint blind-review manifest
-  were generated from the frozen CLEAN300 deep-integrity ledger.
-- Resolver-v1 produced non-empty dev/blind physical-event proposals with zero
-  internal validation errors.
-- A blind human-review package was generated without detector fields, attack
-  outputs, or task-success leakage in the reviewer queue.
+- A deterministic development-canary manifest and disjoint diagnostic holdout
+  manifest were generated from the frozen CLEAN300 deep-integrity ledger.
+- Resolver-v1 produced non-empty dev/diagnostic physical-event proposals with
+  zero internal validation errors.
+- A diagnostic holdout human-review package was generated without detector
+  fields, attack outputs, or task-success leakage in the reviewer queue.
 
 ## Forbidden Claims
 
 - Do not claim full CLEAN300 Teacher labels exist.
 - Do not claim human review is complete.
+- Do not claim the current 24-row diagnostic holdout is an unbiased final blind
+  validation set.
 - Do not claim Layer 2 timing transfer, detector localization, VIS/RAND, or
   attack effectiveness.
 - Do not use these proposal labels as frozen Teacher labels before H2 approval
