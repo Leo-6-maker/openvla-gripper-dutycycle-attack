@@ -1,0 +1,4 @@
+path,fs_type,total_bytes,free_bytes,inode_total,inode_free,owner_writable,persistent,not_root,not_llm_jzm,free_gte_500g,selected,notes
+/mnt/sdc,ext4,3149224534016,153462947840,195354624,190632273,TRUE,TRUE,TRUE,TRUE,FALSE,TRUE,"ONLY candidate; needs pi0 cleanup for >=500G"
+/llm_jzm,ext4,3149224534016,61100000000,,,,FALSE,TRUE,TRUE,FALSE,FALSE,FALSE,"Policy blocked + 98% full"
+/,,,,,FALSE,TRUE,FALSE,,FALSE,FALSE,"Root: 100% full, 76M free"

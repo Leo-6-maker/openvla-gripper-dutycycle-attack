@@ -6,56 +6,190 @@
 
 ---
 
-## Profile A: legacy_2080ti_replay
+## Profile A1: legacy_black_bowl_attack_runtime
 
-**Purpose:** Reproduce old 2080Ti results on A800 hardware, isolating pure GPU differences.
+**Purpose:** Reconstruct the runtime used for historical Black Bowl attack experiments on 2080Ti.
 
-**Status:** DEFINED — not yet validated
+**Status:** DEFINED — PENDING EVIDENCE RECONSTRUCTION
 
-| Parameter | Value |
+| Field | Value |
 |---|---|
-| Python | 3.10 (match legacy env) |
-| PyTorch | 2.2.0 (match legacy) |
-| Model | OpenVLA 7B fine-tuned (4 suites) |
-| Attention | `eager` |
-| Device map | `auto` |
-| Per-GPU memory cap | 10,000 MiB |
-| Dtype | FP32 (match legacy) |
-| Preprocessing | Legacy PIL path (2048×2048→224×224, bicubic) |
-| EOS | Not explicitly appended (legacy behavior) |
-| Action decode | Legacy bin-center with q01/q99 |
-| Unnorm key | Programmatic from action stats |
-| Gripper | Legacy normalize → binarize |
+| Source commit | UNKNOWN_PENDING_EVIDENCE |
+| Runner path | UNKNOWN_PENDING_EVIDENCE |
+| Launch command | UNKNOWN_PENDING_EVIDENCE |
+| Model dtype | UNKNOWN_PENDING_EVIDENCE |
+| Device map | UNKNOWN_PENDING_EVIDENCE |
+| Per-GPU cap | UNKNOWN_PENDING_EVIDENCE |
+| Preprocess backend | UNKNOWN_PENDING_EVIDENCE |
+| EOS behavior | UNKNOWN_PENDING_EVIDENCE |
+| Checkpoint | UNKNOWN_PENDING_EVIDENCE |
+| Unnorm key | UNKNOWN_PENDING_EVIDENCE |
+| Max steps | UNKNOWN_PENDING_EVIDENCE |
+| Gripper semantics | UNKNOWN_PENDING_EVIDENCE |
 
-### Constraints
-- Must reproduce the 2080Ti action token distribution exactly (allowing for minor FP differences)
-- Used ONLY for historical comparison — not for new experiments
+## Profile A2: legacy_cross_suite_clean_runtime
+
+**Purpose:** Reconstruct the runtime used for cross-suite CLEAN300 evaluation on 2080Ti (Codex branch `exp/cross-suite-clean-train300-s10-19-20260620`).
+
+**Status:** DEFINED — PENDING EVIDENCE RECONSTRUCTION
+
+Known partial evidence:
+- Active Codex eval running on 2080Ti GPU 4,5 (2026-06-20)
+- Source commit: `63793972743f667c6a6bcc12e9700f322f261147` (observed from process command)
+- Repo: `train300_collector_freeze_141657f`
+- Runner: `scripts/stageb/run_sc5_cross_suite_clean.py`
+- Env: `/data/aviary/envs/openvla_official_libero_20260525`
+- Model: `/data/aviary/models/openvla/openvla-7b-finetuned-libero-goal`
+- Unnorm key: `libero_goal`
+- Render GPU: 5
+- `--save_video` flag present
+
+| Field | Value |
+|---|---|
+| Source commit | `63793972743f667c6a6bcc12e9700f322f261147` |
+| Runner path | `scripts/stageb/run_sc5_cross_suite_clean.py` |
+| Model dtype | UNKNOWN_PENDING_EVIDENCE |
+| Device map | UNKNOWN_PENDING_EVIDENCE |
+| Per-GPU cap | UNKNOWN_PENDING_EVIDENCE |
+| Preprocess backend | UNKNOWN_PENDING_EVIDENCE |
+| EOS behavior | UNKNOWN_PENDING_EVIDENCE |
+| Max steps | UNKNOWN_PENDING_EVIDENCE |
+| Gripper semantics | UNKNOWN_PENDING_EVIDENCE |
 
 ## Profile B: openvla_official_a800
 
 **Purpose:** Clean OpenVLA reference following upstream README exactly.
 
-**Status:** DEFINED — not yet validated
+**Status:** DEFINED — not yet validated (no model loaded, no rollout run)
 
-| Parameter | Value |
+### B.1 Prompt Contract
+
+| Field | Value |
 |---|---|
-| Python | 3.10.20 |
-| PyTorch | 2.2.0+cu121 |
-| Transformers | 4.40.1 |
-| Tokenizers | 0.19.1 |
-| TIMM | 0.9.10 |
-| Attention (baseline) | `eager` |
-| Attention (optimized) | `flash_attention_2` (separate experiment, M1B) |
-| Dtype | BF16 |
-| Device | Single A800 GPU (no sharding) |
-| Memory cap | None (use full 80 GiB) |
-| Image preprocessing | Official: 180° rotate, RGB, PIL LANCZOS, center crop, no JPEG round-trip |
-| Image size | 224×224 |
-| EOS | Explicitly appended (token 29871) |
-| Prompt | `"What action should the robot take to {task.lower()}?"` + EOS |
-| Action decode | Official: bin-center from action stats, q01/q99 mask |
-| Unnorm key | Matched to suite from model metadata |
-| Gripper | `[0,1] → [-1,1]` normalize → sign binarize → sign inversion (project convention) |
+| **Value** | `"In: What action should the robot take to {task.lower()}?\nOut:"` |
+| **Source file** | `prismatic/vla/constants.py` (ACTION_PROPMPT_TEMPLATE) |
+| **Source commit** | `c8f03f48af692657d3060c19588038c7220e9af9` |
+| **Validation status** | UNVALIDATED — requires model load to verify tokenization |
+| **Note** | The `In:` prefix and `\nOut:` suffix are required by official OpenVLA. Not equivalent to `"What action should the robot take to ..."` without prefix/suffix. |
+
+### B.2 EOS Contract
+
+| Field | Value |
+|---|---|
+| **Value** | Token ID 29871 (`</s>`) appended after prompt |
+| **Source file** | `prismatic/models/vlas/openvla.py` (generate_response) |
+| **Source commit** | `c8f03f48af692657d3060c19588038c7220e9af9` |
+| **Validation status** | UNVALIDATED — requires full tokenization trace |
+| **Note** | EOS is appended during tokenization, NOT as a separate generation step. Tokenizer pads to max_length after EOS. |
+
+### B.3 Image Rotation Contract
+
+| Field | Value |
+|---|---|
+| **Value** | 180° rotation applied to agentview image |
+| **Source file** | `prismatic/vla/datasets/rlds/obs_transforms.py` |
+| **Source commit** | `c8f03f48af692657d3060c19588038c7220e9af9` |
+| **Validation status** | UNVALIDATED — requires raw image comparison |
+| **Note** | Official LIBERO benchmark applies 180° rotation to agentview. Project repo: `99a51fb` ("Align v4 OpenVLA clean preprocessing with corrected official LIBERO eval"). |
+
+### B.4 Resize Contract
+
+| Field | Value |
+|---|---|
+| **Value** | PIL Image.LANCZOS resize to 224×224 |
+| **Source file** | `prismatic/models/vlas/openvla.py` (image_transform) |
+| **Source commit** | `c8f03f48af692657d3060c19588038c7220e9af9` |
+| **Validation status** | UNVALIDATED |
+| **Note** | Official code uses `transforms.Resize((224, 224), interpolation=transforms.InterpolationMode.LANCZOS)`. No bicubic, no bilinear. |
+
+### B.5 Center Crop Contract
+
+| Field | Value |
+|---|---|
+| **Value** | Center crop applied before resize; final output 224×224 |
+| **Source file** | `prismatic/models/vlas/openvla.py` (image_transform) |
+| **Source commit** | `c8f03f48af692657d3060c19588038c7220e9af9` |
+| **Validation status** | UNVALIDATED |
+| **Note** | Official flow: raw → 180° rotate → center crop → LANCZOS 224×224. No JPEG encode/decode round-trip. |
+
+### B.6 Dtype Contract
+
+| Field | Value |
+|---|---|
+| **Value** | `torch.bfloat16` |
+| **Source file** | `prismatic/models/vlas/openvla.py` (load) |
+| **Source commit** | `c8f03f48af692657d3060c19588038c7220e9af9` |
+| **Validation status** | UNVALIDATED — import-only verified |
+| **Note** | Official loads in BF16. Eager attention used for correctness baseline. flash_attention_2 deferred to single-factor experiment. |
+
+### B.7 Attention Contract
+
+| Field | Value |
+|---|---|
+| **Value (baseline)** | `eager` |
+| **Value (optimized)** | `flash_attention_2` (separate experiment, M1B) |
+| **Source file** | `prismatic/models/vlas/openvla.py` (load) |
+| **Source commit** | `c8f03f48af692657d3060c19588038c7220e9af9` |
+| **Validation status** | UNVALIDATED (baseline eager) / NOT INSTALLED (flash_attn 2.5.5) |
+
+### B.8 Action Decode Contract
+
+| Field | Value |
+|---|---|
+| **Value** | Generated token IDs → vocab mapping → bin centers → q01/q99 mask → unnormalize |
+| **Source file** | `prismatic/vla/action_tokenizer.py` (ActionTokenizer.decode) |
+| **Source commit** | `c8f03f48af692657d3060c19588038c7220e9af9` |
+| **Validation status** | UNVALIDATED — requires model load |
+| **Note** | Action dim = 7 (6 EEF + 1 gripper). Bin centers derived from action stats. q01/q99 mask clips to training data range. |
+
+### B.9 Unnorm Key Contract
+
+| Field | Value |
+|---|---|
+| **Value** | Suite-specific from model metadata (`dataset_statistics`) |
+| **Source file** | Model `preprocessor_config.json` / `dataset_statistics.json` |
+| **Options** | `libero_object`, `libero_spatial`, `libero_goal`, `libero_10` |
+| **Validation status** | UNVALIDATED — requires model load and metadata inspection |
+| **Note** | Must be confirmed programmatically from loaded model, not hardcoded. |
+
+### B.10 Gripper Normalize/Invert Contract
+
+| Field | Value |
+|---|---|
+| **Normalize** | Raw `[0, 1]` → `[-1, 1]`: `gripper_action = (raw_gripper * 2) - 1` |
+| **Binarize** | `gripper_action = np.sign(gripper_action)` |
+| **Invert** | `gripper_action = -gripper_action` (project convention; OPEN/CLOSE sign) |
+| **Source file** | Project: `src/gripper_attack/env_factory.py` (unnormalize_action) |
+| **Source commit** | `141657f` (main HEAD) |
+| **Validation status** | UNVALIDATED |
+| **Note** | The sign inversion is a PROJECT convention to match LIBERO environment OPEN/CLOSE. Official OpenVLA may not include this step. Must verify against official action output. |
+
+### B.11 Wait Steps Contract
+
+| Field | Value |
+|---|---|
+| **Value** | 6 dummy wait steps before policy execution |
+| **Source file** | LIBERO benchmark (`libero/libero/envs/bddl_utils.py`) |
+| **Source commit** | `8f1084e3132a39270c3a13ebe37270a43ece2a01` |
+| **Validation status** | UNVALIDATED |
+
+### B.12 Max Policy Steps Contract
+
+| Field | Value |
+|---|---|
+| **Value** | Suite-dependent (typically 400–500) |
+| **Source file** | LIBERO task definitions |
+| **Validation status** | UNVALIDATED — must be confirmed per-suite |
+| **Note** | Must match old server's exact per-task max_step values. Not to be assumed. |
+
+### B.13 Success Predicate Contract
+
+| Field | Value |
+|---|---|
+| **Value** | LIBERO `env.reward` check; `success = reward >= threshold` |
+| **Source file** | `libero/libero/envs/env.py` |
+| **Source commit** | `8f1084e3132a39270c3a13ebe37270a43ece2a01` |
+| **Validation status** | UNVALIDATED |
 
 ### Upstream References
 - OpenVLA: `c8f03f48af692657d3060c19588038c7220e9af9`
@@ -69,7 +203,7 @@
 | LIBERO-Goal | `openvla/openvla-7b-finetuned-libero-goal` | `libero_goal` |
 | LIBERO-10 | `openvla/openvla-7b-finetuned-libero-10` | `libero_10` |
 
-Checkpoint and unnorm key must be confirmed from model metadata at load time, not hardcoded.
+All unnorm keys must be confirmed from model metadata at load time.
 
 ## Profile C: project_a800
 
