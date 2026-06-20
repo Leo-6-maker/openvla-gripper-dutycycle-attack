@@ -21,11 +21,29 @@ from pathlib import Path
 from typing import Any
 
 
-REVIEW_ROUND_ID = "h2_diagnostic_review_round_v2_20260620"
-PROPOSAL_VERSION = "h2_diagnostic_review_package_v2"
+REVIEW_ROUND_ID = "h2_diagnostic_review_round_v2_1_20260621"
+PROPOSAL_VERSION = "h2_diagnostic_review_package_v2_1"
+PACKAGE_CONTENT_COMMIT = "70d0311f786fc598e3cae21dd793a8c5932b4c11"
 ACCEPTED_STATUS = "ELIGIBLE_EVENT"
 STRATA = {"DEV_CANARY", "DIAGNOSTIC_HOLDOUT"}
 JUDGMENT_ENUM = {"", "YES", "NO", "UNCERTAIN", "NA"}
+COMPLETED_EVENT_JUDGMENTS = {"YES", "NO", "UNCERTAIN"}
+TIMELINE_STATUSES = {"WROTE"}
+OVERLAY_STATUSES = {"WROTE"}
+VIDEO_STATUSES = {"source_path", "symlink"}
+CONSTANT_PROVENANCE_FIELDS = [
+    "review_round_id",
+    "proposal_version",
+    "resolver_commit",
+    "ontology_sha256",
+    "teacher_schema_sha256",
+    "physics_config_sha256",
+    "timing_contract_sha256",
+    "teacher_overlay_manifest_sha256",
+    "media_manifest_sha256",
+    "overlay_only_manifest_sha256",
+    "timeline_manifest_sha256",
+]
 FORBIDDEN_REVIEWER_FIELDS = [
     "task_success",
     "detector",
@@ -51,6 +69,9 @@ PROPOSAL_FIELDS = [
     "timing_contract_sha256",
     "source_queue_sha256",
     "teacher_overlay_manifest_sha256",
+    "media_manifest_sha256",
+    "overlay_only_manifest_sha256",
+    "timeline_manifest_sha256",
     "review_id",
     "episode_key",
     "suite",
@@ -400,7 +421,13 @@ def count_by(rows: list[dict[str, str]], *fields: str) -> dict[str, int]:
     return dict(sorted(counts.items()))
 
 
-def build_constants(args: argparse.Namespace, overlay_manifest_sha: str = "") -> dict[str, str]:
+def build_constants(
+    args: argparse.Namespace,
+    *,
+    media_manifest_sha: str = "",
+    overlay_only_manifest_sha: str = "",
+    timeline_manifest_sha: str = "",
+) -> dict[str, str]:
     return {
         "review_round_id": args.review_round_id,
         "proposal_version": PROPOSAL_VERSION,
@@ -409,7 +436,10 @@ def build_constants(args: argparse.Namespace, overlay_manifest_sha: str = "") ->
         "teacher_schema_sha256": sha256_file(Path(args.teacher_schema)),
         "physics_config_sha256": sha256_file(Path(args.physics_config)),
         "timing_contract_sha256": sha256_file(Path(args.timing_contract)),
-        "teacher_overlay_manifest_sha256": overlay_manifest_sha,
+        "teacher_overlay_manifest_sha256": overlay_only_manifest_sha,
+        "media_manifest_sha256": media_manifest_sha,
+        "overlay_only_manifest_sha256": overlay_only_manifest_sha,
+        "timeline_manifest_sha256": timeline_manifest_sha,
     }
 
 
@@ -425,7 +455,45 @@ def forbidden_columns(fields: list[str]) -> list[str]:
     return [field for field in bad if field not in allowed]
 
 
-def validate_review_rows(rows: list[dict[str, str]], *, require_completed: bool = False) -> tuple[list[str], dict[str, Any]]:
+def is_iso8601(value: str) -> bool:
+    if not value:
+        return False
+    try:
+        dt.datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return True
+
+
+def validate_media_manifest_rows(rows: list[dict[str, str]]) -> list[str]:
+    errors: list[str] = []
+    required = {"artifact_type", "review_id", "path", "size_bytes", "sha256", "exists"}
+    if rows:
+        missing = required - set(rows[0])
+        if missing:
+            errors.append("media_manifest.missing_fields:" + "|".join(sorted(missing)))
+    for idx, row in enumerate(rows):
+        if row.get("exists") != "true":
+            errors.append(f"media_manifest.row{idx}.exists:not_true")
+        if not row.get("sha256"):
+            errors.append(f"media_manifest.row{idx}.sha256:required")
+        try:
+            size = int(row.get("size_bytes", "0"))
+        except ValueError:
+            size = 0
+        if size <= 0:
+            errors.append(f"media_manifest.row{idx}.size_bytes:nonzero_required")
+        if not row.get("path"):
+            errors.append(f"media_manifest.row{idx}.path:required")
+    return errors
+
+
+def validate_review_rows(
+    rows: list[dict[str, str]],
+    *,
+    require_completed: bool = False,
+    media_manifest_rows: list[dict[str, str]] | None = None,
+) -> tuple[list[str], dict[str, Any]]:
     errors: list[str] = []
     field_set = set(rows[0].keys()) if rows else set()
     missing_fields = [field for field in REVIEW_FIELDS if field not in field_set]
@@ -440,6 +508,8 @@ def validate_review_rows(rows: list[dict[str, str]], *, require_completed: bool 
     completed = 0
     nonempty_human = nonempty_human_field_count(rows)
     seen_completed_keys = set()
+    seen_review_ids = set()
+    provenance_values: dict[str, set[str]] = {field: set() for field in CONSTANT_PROVENANCE_FIELDS}
     for idx, row in enumerate(rows):
         status = row.get("teacher_status", "")
         is_accepted = status == ACCEPTED_STATUS
@@ -454,6 +524,28 @@ def validate_review_rows(rows: list[dict[str, str]], *, require_completed: bool 
             if key in seen_completed_keys:
                 errors.append(f"row{idx}.duplicate_completed_review_key:{key}")
             seen_completed_keys.add(key)
+
+        review_id = row.get("review_id", "")
+        if not review_id:
+            errors.append(f"row{idx}.review_id:required")
+        elif review_id in seen_review_ids:
+            errors.append(f"row{idx}.review_id:duplicate:{review_id}")
+        seen_review_ids.add(review_id)
+
+        for field, allowed in [
+            ("teacher_only_timeline_status", TIMELINE_STATUSES),
+            ("teacher_only_overlay_status", OVERLAY_STATUSES),
+            ("video_status", VIDEO_STATUSES),
+        ]:
+            value = row.get(field, "")
+            if value not in allowed:
+                errors.append(f"row{idx}.{field}:invalid_status:{value}")
+
+        for field in CONSTANT_PROVENANCE_FIELDS:
+            value = row.get(field, "")
+            if not value:
+                errors.append(f"row{idx}.{field}:required")
+            provenance_values[field].add(value)
 
         for field in JUDGMENT_FIELDS:
             value = row.get(field, "")
@@ -486,12 +578,12 @@ def validate_review_rows(rows: list[dict[str, str]], *, require_completed: bool 
         if require_completed:
             if not reviewer_id:
                 errors.append(f"row{idx}.reviewer_id:required")
-            if not row.get("review_timestamp", ""):
-                errors.append(f"row{idx}.review_timestamp:required")
+            if not is_iso8601(row.get("review_timestamp", "")):
+                errors.append(f"row{idx}.review_timestamp:invalid_iso8601")
             if is_accepted:
                 for field in EVENT_JUDGMENT_FIELDS:
-                    if not row.get(field):
-                        errors.append(f"row{idx}.{field}:required_for_{status}")
+                    if row.get(field) not in COMPLETED_EVENT_JUDGMENTS:
+                        errors.append(f"row{idx}.{field}:must_be_YES_NO_OR_UNCERTAIN_for_{status}")
                 if row.get("abstain_or_fail_closed_correct") != "NA":
                     errors.append(f"row{idx}.abstain_or_fail_closed_correct:must_be_NA_for_{status}")
             else:
@@ -506,11 +598,18 @@ def validate_review_rows(rows: list[dict[str, str]], *, require_completed: bool 
                     errors.append(f"row{idx}.{field}:NO_requires_{corrected}_or_notes")
             if row.get("event_exists") == "NO" and not row.get("reviewer_notes"):
                 errors.append(f"row{idx}.event_exists:NO_requires_notes")
-            if row.get("false_positive_carry") == "NO" and not row.get("reviewer_notes"):
-                errors.append(f"row{idx}.false_positive_carry:NO_requires_notes")
+            if row.get("false_positive_carry") == "YES" and not row.get("reviewer_notes"):
+                errors.append(f"row{idx}.false_positive_carry:YES_requires_notes")
             for field in JUDGMENT_FIELDS:
                 if row.get(field) == "UNCERTAIN" and not row.get("reviewer_notes"):
                     errors.append(f"row{idx}.{field}:UNCERTAIN_requires_notes")
+
+    for field, values in provenance_values.items():
+        if len(values) > 1:
+            errors.append(f"{field}:inconsistent:" + "|".join(sorted(values)))
+
+    if media_manifest_rows is not None:
+        errors.extend(validate_media_manifest_rows(media_manifest_rows))
 
     summary = {
         "row_count": len(rows),
@@ -545,25 +644,30 @@ def build_reviewer_b_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
 
 
 def write_round_manifest(args: argparse.Namespace, rows: list[dict[str, str]], media_manifest: list[dict[str, str]], summary: dict[str, Any]) -> None:
+    source_queue_by_stratum = {
+        key: sorted({row.get("source_queue_sha256", "") for row in rows if row.get("review_stratum") == key})
+        for key in sorted(STRATA)
+    }
     manifest = {
         "review_round_id": args.review_round_id,
         "proposal_version": PROPOSAL_VERSION,
         "creation_timestamp": dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).isoformat(),
-        "pr_head": current_head(),
         "resolver_commit": args.resolver_commit,
+        "package_content_commit": args.package_content_commit,
         "resolver_source_sha256": sha256_file(Path(args.resolver_source)),
         "ontology_sha256": sha256_file(Path(args.ontology)),
         "teacher_schema_sha256": sha256_file(Path(args.teacher_schema)),
         "physics_config_sha256": sha256_file(Path(args.physics_config)),
         "timing_contract_sha256": sha256_file(Path(args.timing_contract)),
-        "dev_source_queue_sha256": sha256_file(Path(args.dev_manifest_csv)),
-        "diagnostic_source_queue_sha256": sha256_file(Path(args.diagnostic_queue_csv)),
+        "dev_source_queue_sha256": sha256_file(Path(args.dev_manifest_csv)) if args.dev_manifest_csv else next(iter(source_queue_by_stratum.get("DEV_CANARY", [""])), ""),
+        "diagnostic_source_queue_sha256": sha256_file(Path(args.diagnostic_queue_csv)) if args.diagnostic_queue_csv else next(iter(source_queue_by_stratum.get("DIAGNOSTIC_HOLDOUT", [""])), ""),
+        "source_queue_sha256_by_stratum": source_queue_by_stratum,
         "review_form_sha256": sha256_file(Path(args.output_csv)),
         "reviewer_a_form_sha256": sha256_file(Path(args.reviewer_a_csv)),
         "reviewer_b_initial_form_sha256": sha256_file(Path(args.reviewer_b_csv)),
+        "media_manifest_sha256": sha256_file(Path(args.media_manifest_csv)),
+        "overlay_only_manifest_sha256": sha256_file(Path(args.overlay_only_manifest_csv)),
         "timeline_manifest_sha256": sha256_file(Path(args.timeline_manifest_csv)),
-        "overlay_manifest_sha256": sha256_file(Path(args.media_manifest_csv)),
-        "teacher_overlay_manifest_sha256": sha256_file(Path(args.media_manifest_csv)),
         "row_counts": {
             "total": len(rows),
             "by_stratum": count_by(rows, "review_stratum"),
@@ -604,16 +708,24 @@ def build_v2_round(args: argparse.Namespace) -> dict[str, Any]:
     )
     rows = dev_rows + diagnostic_rows
     media_manifest = dev_media + diagnostic_media
-    write_csv(Path(args.timeline_manifest_csv), [row for row in media_manifest if row["artifact_type"] == "teacher_timeline_csv"], ["artifact_type", "review_id", "path", "size_bytes", "sha256", "exists"])
-    write_csv(Path(args.media_manifest_csv), media_manifest, ["artifact_type", "review_id", "path", "size_bytes", "sha256", "exists"])
-    overlay_manifest_sha = sha256_file(Path(args.media_manifest_csv))
+    timeline_rows = [row for row in media_manifest if row["artifact_type"] == "teacher_timeline_csv"]
+    overlay_rows = [row for row in media_manifest if row["artifact_type"] == "teacher_overlay_mp4"]
+    media_fields = ["artifact_type", "review_id", "path", "size_bytes", "sha256", "exists"]
+    write_csv(Path(args.timeline_manifest_csv), timeline_rows, media_fields)
+    write_csv(Path(args.overlay_only_manifest_csv), overlay_rows, media_fields)
+    write_csv(Path(args.media_manifest_csv), media_manifest, media_fields)
+    media_manifest_sha = sha256_file(Path(args.media_manifest_csv))
+    overlay_manifest_sha = sha256_file(Path(args.overlay_only_manifest_csv))
     timeline_manifest_sha = sha256_file(Path(args.timeline_manifest_csv))
     for row in rows:
+        row["media_manifest_sha256"] = media_manifest_sha
+        row["overlay_only_manifest_sha256"] = overlay_manifest_sha
+        row["timeline_manifest_sha256"] = timeline_manifest_sha
         row["teacher_overlay_manifest_sha256"] = overlay_manifest_sha
     write_csv(Path(args.output_csv), rows, REVIEW_FIELDS)
     write_csv(Path(args.reviewer_a_csv), rows, REVIEW_FIELDS)
     write_csv(Path(args.reviewer_b_csv), build_reviewer_b_rows(rows), REVIEW_FIELDS)
-    errors, summary = validate_review_rows(rows, require_completed=False)
+    errors, summary = validate_review_rows(rows, require_completed=False, media_manifest_rows=media_manifest)
     summary.update(
         {
             "timestamp": dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).isoformat(),
@@ -624,7 +736,8 @@ def build_v2_round(args: argparse.Namespace) -> dict[str, Any]:
             "reviewer_a_rows": len(rows),
             "reviewer_b_initial_rows": len(build_reviewer_b_rows(rows)),
             "timeline_manifest_sha256": timeline_manifest_sha,
-            "overlay_manifest_sha256": overlay_manifest_sha,
+            "media_manifest_sha256": media_manifest_sha,
+            "overlay_only_manifest_sha256": overlay_manifest_sha,
             "final_blind_selection": "NOT_RUN",
             "layer2_or_attack_execution": "NOT_RUN",
             "errors": errors[:50],
@@ -637,9 +750,85 @@ def build_v2_round(args: argparse.Namespace) -> dict[str, Any]:
     return summary
 
 
+def supersede_v2_round(args: argparse.Namespace) -> dict[str, Any]:
+    rows = read_csv(Path(args.source_form_csv))
+    media_manifest = read_csv(Path(args.source_media_manifest_csv))
+    media_fields = ["artifact_type", "review_id", "path", "size_bytes", "sha256", "exists"]
+    timeline_rows = [row for row in media_manifest if row["artifact_type"] == "teacher_timeline_csv"]
+    overlay_rows = [row for row in media_manifest if row["artifact_type"] == "teacher_overlay_mp4"]
+    if len(rows) != 36 or len(media_manifest) != 108 or len(timeline_rows) != 36 or len(overlay_rows) != 36:
+        raise SystemExit("unexpected v2 source package counts")
+    media_errors = validate_media_manifest_rows(media_manifest)
+    if media_errors:
+        raise SystemExit("source media manifest invalid:" + json.dumps(media_errors[:20], sort_keys=True))
+
+    write_csv(Path(args.media_manifest_csv), media_manifest, media_fields)
+    write_csv(Path(args.overlay_only_manifest_csv), overlay_rows, media_fields)
+    write_csv(Path(args.timeline_manifest_csv), timeline_rows, media_fields)
+    media_manifest_sha = sha256_file(Path(args.media_manifest_csv))
+    overlay_only_manifest_sha = sha256_file(Path(args.overlay_only_manifest_csv))
+    timeline_manifest_sha = sha256_file(Path(args.timeline_manifest_csv))
+
+    for row in rows:
+        row["review_round_id"] = args.review_round_id
+        row["proposal_version"] = PROPOSAL_VERSION
+        row["media_manifest_sha256"] = media_manifest_sha
+        row["overlay_only_manifest_sha256"] = overlay_only_manifest_sha
+        row["timeline_manifest_sha256"] = timeline_manifest_sha
+        row["teacher_overlay_manifest_sha256"] = overlay_only_manifest_sha
+        for field in HUMAN_FIELDS:
+            row[field] = ""
+
+    write_csv(Path(args.output_csv), rows, REVIEW_FIELDS)
+    write_csv(Path(args.reviewer_a_csv), rows, REVIEW_FIELDS)
+    write_csv(Path(args.reviewer_b_csv), build_reviewer_b_rows(rows), REVIEW_FIELDS)
+    errors, summary = validate_review_rows(rows, require_completed=False, media_manifest_rows=media_manifest)
+    summary.update(
+        {
+            "timestamp": dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).isoformat(),
+            "review_round_id": args.review_round_id,
+            "proposal_version": PROPOSAL_VERSION,
+            "dev_rows": sum(1 for row in rows if row["review_stratum"] == "DEV_CANARY"),
+            "diagnostic_rows": sum(1 for row in rows if row["review_stratum"] == "DIAGNOSTIC_HOLDOUT"),
+            "nonaccepted_rows": sum(1 for row in rows if row["teacher_status"] != ACCEPTED_STATUS),
+            "reviewer_a_rows": len(rows),
+            "reviewer_b_initial_rows": len(build_reviewer_b_rows(rows)),
+            "media_manifest_sha256": media_manifest_sha,
+            "overlay_only_manifest_sha256": overlay_only_manifest_sha,
+            "timeline_manifest_sha256": timeline_manifest_sha,
+            "source_review_round_id": "h2_diagnostic_review_round_v2_20260620",
+            "source_review_round_status": "SUPERSEDED_BEFORE_HUMAN_REVIEW",
+            "source_completed_review_rows": 0,
+            "supersede_reason": "provenance and completed-validator corrections",
+            "final_blind_selection": "NOT_RUN",
+            "layer2_or_attack_execution": "NOT_RUN",
+            "errors": errors[:50],
+        }
+    )
+    write_json(Path(args.summary_json), summary)
+    write_round_manifest(args, rows, media_manifest, summary)
+    if args.superseded_json:
+        write_json(
+            Path(args.superseded_json),
+            {
+                "review_round_id": "h2_diagnostic_review_round_v2_20260620",
+                "status": "SUPERSEDED_BEFORE_HUMAN_REVIEW",
+                "completed_review_rows": 0,
+                "reason": "provenance and completed-validator corrections",
+                "superseded_by": args.review_round_id,
+                "proposal_version": "h2_diagnostic_review_package_v2",
+                "new_proposal_version": PROPOSAL_VERSION,
+            },
+        )
+    if errors:
+        raise SystemExit(1)
+    return summary
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--build-v2-round", action="store_true")
+    parser.add_argument("--supersede-v2-round", action="store_true")
     parser.add_argument("--queue-csv")
     parser.add_argument("--output-csv", required=True)
     parser.add_argument("--summary-json", required=True)
@@ -654,9 +843,14 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reviewer-b-csv")
     parser.add_argument("--manifest-json")
     parser.add_argument("--media-manifest-csv")
+    parser.add_argument("--overlay-only-manifest-csv")
     parser.add_argument("--timeline-manifest-csv")
+    parser.add_argument("--source-form-csv")
+    parser.add_argument("--source-media-manifest-csv")
+    parser.add_argument("--superseded-json")
     parser.add_argument("--server-package-root", default="")
     parser.add_argument("--resolver-commit", default="")
+    parser.add_argument("--package-content-commit", default=PACKAGE_CONTENT_COMMIT)
     parser.add_argument("--resolver-source", default="scripts/stageb/cross_suite_layer1_resolver.py")
     parser.add_argument("--ontology", default="configs/cross_suite_task_ontology_v1.yaml")
     parser.add_argument("--teacher-schema", default="docs/schemas/cross_suite_teacher_label_schema_v1.md")
@@ -672,10 +866,15 @@ def main() -> None:
         summary = build_v2_round(args)
         print(json.dumps(summary, indent=2, sort_keys=True))
         return
+    if args.supersede_v2_round:
+        summary = supersede_v2_round(args)
+        print(json.dumps(summary, indent=2, sort_keys=True))
+        return
     if not args.queue_csv:
         raise SystemExit("--queue-csv is required unless --build-v2-round is used")
     rows = read_csv(Path(args.queue_csv))
-    errors, summary = validate_review_rows(rows, require_completed=args.require_completed)
+    media_manifest = read_csv(Path(args.media_manifest_csv)) if args.media_manifest_csv else None
+    errors, summary = validate_review_rows(rows, require_completed=args.require_completed, media_manifest_rows=media_manifest)
     summary.update(
         {
             "timestamp": dt.datetime.now(dt.timezone(dt.timedelta(hours=8))).isoformat(),

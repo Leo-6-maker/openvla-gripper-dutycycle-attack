@@ -1,0 +1,94 @@
+{
+  "creation_timestamp": "2026-06-21T00:52:00.360686+08:00",
+  "dev_source_queue_sha256": "435802e43d53f3777b825e2b34c8203bd6b7a350a13c164856072160913f6903",
+  "diagnostic_source_queue_sha256": "dfcc279b362b8f679484bbb133c991af7d7ba5d61b830229c2cece4bc7346248",
+  "final_blind_selection": "NOT_RUN",
+  "layer2_or_attack_execution": "NOT_RUN",
+  "media_counts": {
+    "raw_video|true": 36,
+    "teacher_overlay_mp4|true": 36,
+    "teacher_timeline_csv|true": 36
+  },
+  "media_manifest_sha256": "01d951d5fc6523a15137f84fcfe6a8cade58bcfdf1c86d75397f1b52713fb3ba",
+  "ontology_sha256": "89bd296b15525c48a4fbd3be84eb4a8c0b269ca11170cfe901b449cc1bb77359",
+  "overlay_only_manifest_sha256": "bc38e00735083d1da26ae8244345138de24c2d9beb6c46d23395d8b763e4b9ad",
+  "package_content_commit": "70d0311f786fc598e3cae21dd793a8c5932b4c11",
+  "physics_config_sha256": "1f5e0dbeb0e227d2c6708a310ef171863c216bf84a5cddda62af992766700059",
+  "proposal_version": "h2_diagnostic_review_package_v2_1",
+  "resolver_commit": "6eb88630f20f99aac4d64356974b5a18345c3673",
+  "resolver_source_sha256": "a51ebc53ad061873c928f7aef59e84beaf76f3dddb81f0559b5eeb0929a67e12",
+  "review_form_sha256": "0340c6aa37bcbe9a92239f3c40c8cd7dbcb4a31e8dbf0552284295a3fbeac3df",
+  "review_round_id": "h2_diagnostic_review_round_v2_1_20260621",
+  "reviewer_a_form_sha256": "0340c6aa37bcbe9a92239f3c40c8cd7dbcb4a31e8dbf0552284295a3fbeac3df",
+  "reviewer_b_initial_form_sha256": "6848e7d6c367b370a86973c5c58ad3daf0fa86d82cd6f8a7535066fa520b7f97",
+  "row_counts": {
+    "by_status": {
+      "CORRECT_SEMANTIC_ABSTAIN": 6,
+      "ELIGIBLE_EVENT": 12,
+      "NO_RELEVANT_GRASP_EVENT": 2,
+      "RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM": 10,
+      "TARGET_BINDING_AMBIGUOUS": 6
+    },
+    "by_stratum": {
+      "DEV_CANARY": 12,
+      "DIAGNOSTIC_HOLDOUT": 24
+    },
+    "by_stratum_status": {
+      "DEV_CANARY|CORRECT_SEMANTIC_ABSTAIN": 2,
+      "DEV_CANARY|ELIGIBLE_EVENT": 6,
+      "DEV_CANARY|RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM": 2,
+      "DEV_CANARY|TARGET_BINDING_AMBIGUOUS": 2,
+      "DIAGNOSTIC_HOLDOUT|CORRECT_SEMANTIC_ABSTAIN": 4,
+      "DIAGNOSTIC_HOLDOUT|ELIGIBLE_EVENT": 6,
+      "DIAGNOSTIC_HOLDOUT|NO_RELEVANT_GRASP_EVENT": 2,
+      "DIAGNOSTIC_HOLDOUT|RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM": 8,
+      "DIAGNOSTIC_HOLDOUT|TARGET_BINDING_AMBIGUOUS": 4
+    },
+    "by_suite": {
+      "libero_10": 12,
+      "libero_goal": 16,
+      "libero_spatial": 8
+    },
+    "total": 36
+  },
+  "source_queue_sha256_by_stratum": {
+    "DEV_CANARY": [
+      "435802e43d53f3777b825e2b34c8203bd6b7a350a13c164856072160913f6903"
+    ],
+    "DIAGNOSTIC_HOLDOUT": [
+      "dfcc279b362b8f679484bbb133c991af7d7ba5d61b830229c2cece4bc7346248"
+    ]
+  },
+  "teacher_schema_sha256": "ac2ffb8b064a502f8b5cab7b0c4183914701c7bf21443dd01189e023403ebca8",
+  "timeline_manifest_sha256": "2beeccab8f087dcbbc632d280d011751de5b1a33046d7fe7bd465e3dc79fc1d9",
+  "timing_contract_sha256": "18b21f9e032fdba410e291f67edba60e649b2c6c4ae3d2f33df08a7c31f6ef60",
+  "validation_summary": {
+    "abstain_or_fail_closed_rows": 24,
+    "accepted_event_rows": 12,
+    "completed_review_rows": 0,
+    "dev_rows": 12,
+    "diagnostic_rows": 24,
+    "errors": [],
+    "final_blind_selection": "NOT_RUN",
+    "layer2_or_attack_execution": "NOT_RUN",
+    "media_manifest_sha256": "01d951d5fc6523a15137f84fcfe6a8cade58bcfdf1c86d75397f1b52713fb3ba",
+    "nonaccepted_rows": 24,
+    "nonempty_human_field_count": 0,
+    "overlay_only_manifest_sha256": "bc38e00735083d1da26ae8244345138de24c2d9beb6c46d23395d8b763e4b9ad",
+    "proposal_version": "h2_diagnostic_review_package_v2_1",
+    "require_completed": false,
+    "review_round_id": "h2_diagnostic_review_round_v2_1_20260621",
+    "reviewer_a_rows": 36,
+    "reviewer_b_initial_rows": 20,
+    "row_count": 36,
+    "source_completed_review_rows": 0,
+    "source_review_round_id": "h2_diagnostic_review_round_v2_20260620",
+    "source_review_round_status": "SUPERSEDED_BEFORE_HUMAN_REVIEW",
+    "supersede_reason": "provenance and completed-validator corrections",
+    "timeline_manifest_sha256": "2beeccab8f087dcbbc632d280d011751de5b1a33046d7fe7bd465e3dc79fc1d9",
+    "timestamp": "2026-06-21T00:52:00.353527+08:00",
+    "validation_error_count": 0,
+    "validation_mode": "template_or_partial",
+    "validation_status": "PASS"
+  }
+}
