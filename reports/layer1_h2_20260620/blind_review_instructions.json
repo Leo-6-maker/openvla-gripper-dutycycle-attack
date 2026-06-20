@@ -1,6 +1,6 @@
 {
   "blindness": "No detector telemetry, detector overlay, VIS/RAND/shuffled, or attack outputs are included.",
-  "manifest": "/data/liuyu/layer1_outputs/h2_layer1_resolver_592adc0_20260620/manifests/layer1_blind_review_manifest_v1.json",
+  "manifest": "/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/manifests/layer1_blind_review_manifest_v1.json",
   "manual_review_complete": false,
   "package_type": "cross_suite_layer1_blind_review_package_v1",
   "required_human_fields": [
@@ -16,6 +16,6 @@
     "disagreement_reason",
     "review_timestamp"
   ],
-  "resolver_dir": "/data/liuyu/layer1_outputs/h2_layer1_resolver_592adc0_20260620/blind_resolver",
+  "resolver_dir": "/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/blind_resolver",
   "review_count": 24
 }

@@ -6,11 +6,11 @@
     "manual_review": "NOT_COMPLETE"
   },
   "episode_count": 12,
-  "event_count": 0,
+  "event_count": 6,
   "failure_count": 0,
   "failures": [],
-  "manifest": "/data/liuyu/layer1_outputs/h2_layer1_resolver_592adc0_20260620/manifests/layer1_dev_canary_manifest_v1.json",
-  "teacher_run_id": "h2_592adc0_dev",
+  "manifest": "/data/liuyu/layer1_outputs/h2_layer1_resolver_a161c1f_20260620/manifests/layer1_dev_canary_manifest_v1.json",
+  "teacher_run_id": "h2_a161c1f_dev",
   "validation_error_count": 0,
   "validation_errors": []
 }
