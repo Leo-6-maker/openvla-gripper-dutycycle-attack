@@ -39,7 +39,7 @@ def _write_csv(path: Path, rows):
         w.writerows(rows)
 
 
-def _trajectory(kind: str, *, object_count: int = 1, ambiguous_target: bool = False):
+def _trajectory(kind: str, *, object_count: int = 1, ambiguous_target: bool = False, missing_gripper_site: bool = False):
     body_names = ["world"]
     if object_count == 1:
         body_names.append("black_bowl_1_main")
@@ -47,6 +47,8 @@ def _trajectory(kind: str, *, object_count: int = 1, ambiguous_target: bool = Fa
         body_names.extend(["alphabet_soup_1_main", "tomato_sauce_1_main"])
     body_names.append("plate_1_main")
     site_names = ["plate_1_default_site", "gripper0_grip_site"]
+    if missing_gripper_site:
+        site_names = ["plate_1_default_site", "not_the_gripper_site"]
     if ambiguous_target:
         site_names.insert(1, "plate_2_default_site")
 
@@ -59,7 +61,7 @@ def _trajectory(kind: str, *, object_count: int = 1, ambiguous_target: bool = Fa
     ctrl = np.zeros((n, 2), dtype=np.float32)
 
     target_site_idx = 0
-    grip_site_idx = site_names.index("gripper0_grip_site")
+    grip_site_idx = 1
     site_xpos[:, target_site_idx, :] = np.array([1.0, 0.0, 0.05], dtype=np.float32)
     if ambiguous_target:
         site_xpos[:, 1, :] = np.array([1.1, 0.0, 0.05], dtype=np.float32)
@@ -87,6 +89,11 @@ def _trajectory(kind: str, *, object_count: int = 1, ambiguous_target: bool = Fa
         obj = valid_obj.copy()
         obj[:, 0] = np.linspace(0.0, 0.3, n, dtype=np.float32)
         grip = obj.copy()
+    elif kind == "late_event":
+        obj = valid_obj.copy()
+        obj[:3] = np.array([0.0, 0.5, 0.0], dtype=np.float32)
+        grip = obj.copy()
+        grip[:3] = obj[:3] + np.array([0.5, 0.0, 0.0], dtype=np.float32)
     else:
         obj = valid_obj
         grip = valid_obj.copy()
@@ -111,12 +118,15 @@ def _episode(
     object_count=1,
     ambiguous_object=False,
     ambiguous_target=False,
+    missing_gripper_site=False,
+    false_close_first=False,
 ):
     ep = tmp_path / name
     body_names, site_names, body_xpos, body_xquat, site_xpos, qpos, qvel, ctrl = _trajectory(
         trajectory,
         object_count=object_count,
         ambiguous_target=ambiguous_target,
+        missing_gripper_site=missing_gripper_site,
     )
     if ambiguous_object:
         body_names = ["world", "black_bowl_1_main", "black_bowl_2_main", "plate_1_main"]
@@ -166,6 +176,8 @@ def _episode(
     rows = []
     for step in range(6):
         close = step in {2, 3, 4}
+        if false_close_first:
+            close = step in {1, 3, 4}
         rows.append(
             {
                 "step": step,
@@ -265,13 +277,33 @@ def test_close_without_grasp_or_lift_is_not_eligible(tmp_path):
     assert no_lift_events == []
 
 
-def test_premature_or_far_release_is_not_target_valid(tmp_path):
+def test_far_from_target_carry_is_valid_event_but_not_placement_complete(tmp_path):
     ontology = load_ontology(ONTOLOGY)
     task = ontology[("libero_spatial", 0)]
     ep = _episode(tmp_path, "far_release", trajectory="release_far")
     episode, events = resolve_episode(_ledger_row(ep), task, teacher_run_id="dev")
+    assert episode["teacher_status"] == "ELIGIBLE_EVENT"
+    assert len(events) == 1
+    assert events[0]["target_proximity_step"] == ""
+    assert events[0]["placement_complete"] is False
+
+
+def test_late_valid_close_candidate_is_selected(tmp_path):
+    ontology = load_ontology(ONTOLOGY)
+    task = ontology[("libero_spatial", 0)]
+    ep = _episode(tmp_path, "late", trajectory="late_event", false_close_first=True)
+    episode, events = resolve_episode(_ledger_row(ep), task, teacher_run_id="dev")
+    assert episode["teacher_status"] == "ELIGIBLE_EVENT"
+    assert events[0]["close_onset_step"] == 3
+
+
+def test_missing_gripper_site_fails_closed(tmp_path):
+    ontology = load_ontology(ONTOLOGY)
+    task = ontology[("libero_spatial", 0)]
+    ep = _episode(tmp_path, "missing_grip", missing_gripper_site=True)
+    episode, events = resolve_episode(_ledger_row(ep), task, teacher_run_id="dev")
     assert episode["teacher_status"] == "NO_RELEVANT_GRASP_EVENT"
-    assert "no_target_proximity" in episode["abstain_reason"]
+    assert "missing_gripper0_grip_site" in episode["abstain_reason"]
     assert events == []
 
 

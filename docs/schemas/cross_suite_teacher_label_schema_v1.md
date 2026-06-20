@@ -55,6 +55,8 @@ attack fields: `mlp_emit_step`, `mlp_triggered`, `corridor_p`, `release_p`,
 | `teacher_window_end` | optional | End of Teacher valid timing window. |
 | `release_onset_step` | optional | Release/opening onset. |
 | `target_proximity_step` | optional | First step where the manipulated object is near the bound target. |
+| `object_gripper_separation_step` | optional | First post-carry step where object-gripper distance exceeds the separation threshold. |
+| `placement_complete` | yes | Boolean placement/outcome metadata; not required for event existence. |
 | `object_gripper_min_distance` | optional | Minimum object-to-gripper proxy distance used by the resolver. |
 | `object_target_min_distance` | optional | Minimum object-to-target proxy distance used by the resolver. |
 | `supplementary_event` | yes | Boolean; true for multi/mixed mechanism event proposals that are not primary denominator labels. |
@@ -90,6 +92,7 @@ SCHEMA_INVALID
 
 - teacher_executed=false implies `teacher_run_id=""`, `teacher_status=RESOLVER_FAILED`, `event_count=0`, and `manual_review_required=true`.
 - teacher_status=ELIGIBLE_EVENT implies `mechanism_eligible=true`, `teacher_semantic_abstain=false`, `object_binding_status` and `target_binding_status` are one of `BOUND_EXACT`, `BOUND_BDDL_ONTOLOGY`, or `BOUND_STRUCTURED_FALLBACK`, and `event_count>=1`.
+- ELIGIBLE_EVENT existence requires physical grasp, lift, and stable carry evidence. Target proximity and `placement_complete` are outcome/placement metadata, not event-existence requirements.
 - teacher_status=CORRECT_SEMANTIC_ABSTAIN implies `mechanism_eligible=false`, `teacher_semantic_abstain=true`, `event_count=0`, and a nonempty `abstain_reason`.
 - `teacher_status in {OBJECT_BINDING_AMBIGUOUS,TARGET_BINDING_AMBIGUOUS,RESOLVER_FAILED,SCHEMA_INVALID}` implies `mechanism_eligible=false`, `manual_review_required=true`, and no accepted positive event rows.
 - teacher_status=MULTI_EVENT_AUDIT_ONLY implies the mechanism is `multi_object_transfer` or `mixed_articulated_pick_place`, `manual_review_required=true`, and all positive event rows remain supplementary until reviewed.
@@ -103,3 +106,10 @@ SCHEMA_INVALID
 4. Fail-closed abstention.
 
 Unconstrained fuzzy matching is not allowed as a final positive binding rule.
+
+## Physics Contract
+
+Resolver thresholds are versioned in `configs/cross_suite_teacher_physics_v1.yaml`.
+Threshold tuning is allowed only on development canaries plus manual physical
+review before H2 freeze. Blind sets, full CLEAN300 labels, and Layer 2 outcomes
+must not be used to tune physics thresholds.

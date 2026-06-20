@@ -29,10 +29,12 @@ REPO = Path(__file__).resolve().parents[2]
 ONTOLOGY_VERSION = "cross_suite_task_ontology_v1"
 TEACHER_VERSION = "cross_suite_teacher_v1"
 RESOLVER_VERSION = "cross_suite_resolver_v1"
+PHYSICS_VERSION = "cross_suite_teacher_physics_v1"
 PRIMARY_MECHANISM = "single_object_pick_place"
 SUPPLEMENTARY_MECHANISMS = {"multi_object_transfer", "mixed_articulated_pick_place"}
 VALID_BINDING_STATUSES = {"BOUND_EXACT", "BOUND_BDDL_ONTOLOGY", "BOUND_STRUCTURED_FALLBACK"}
 ROOT_REGISTRY = REPO / "evidence" / "manifests" / "cross_suite_clean300_root_registry.json"
+PHYSICS_CONFIG = REPO / "configs" / "cross_suite_teacher_physics_v1.yaml"
 RESOLVER_NOT_IMPLEMENTED = "RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM"
 FORBIDDEN_INPUT_FIELDS = {
     "mlp_emit_step",
@@ -157,6 +159,8 @@ class PhysicalEvent:
     teacher_window_end: int | str
     release_onset_step: int | str
     target_proximity_step: int | str
+    object_gripper_separation_step: int | str
+    placement_complete: bool
     object_gripper_min_distance: float | str
     object_target_min_distance: float | str
     event_valid: bool
@@ -181,6 +185,11 @@ def load_ontology(path: Path) -> dict[tuple[str, int], OntologyTask]:
         )
         tasks[(task.suite, task.task_idx)] = task
     return tasks
+
+
+def load_physics_config(path: Path = PHYSICS_CONFIG) -> dict[str, Any]:
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    return dict(data)
 
 
 def canonical_key(row: dict[str, Any]) -> str:
@@ -388,6 +397,17 @@ def bind_unique(names: list[str], aliases: tuple[str, ...]) -> BindingResult:
     return BindingResult(name="", index=-1, status="FAILED", source="no_structured_candidate", candidates=())
 
 
+def bind_candidates(names: list[str], aliases: tuple[str, ...]) -> list[BindingResult]:
+    out: list[BindingResult] = []
+    seen: set[str] = set()
+    for idx, name in enumerate(names):
+        result = bind_unique([name], aliases)
+        if result.status in VALID_BINDING_STATUSES and name not in seen:
+            out.append(BindingResult(name=name, index=idx, status=result.status, source=result.source, candidates=(name,)))
+            seen.add(name)
+    return out
+
+
 def bind_many(names: list[str], aliases: tuple[str, ...]) -> list[BindingResult]:
     specific_aliases = [a for a in aliases if any(ch.isdigit() for ch in a)]
     use_aliases = specific_aliases or list(aliases)
@@ -450,6 +470,12 @@ def _float(row: dict[str, Any], key: str) -> float:
 
 
 def find_first_close_onset(step_rows: list[dict[str, Any]]) -> int | None:
+    onsets = find_close_onsets(step_rows)
+    return onsets[0] if onsets else None
+
+
+def find_close_onsets(step_rows: list[dict[str, Any]]) -> list[int]:
+    onsets: list[int] = []
     prev_close = False
     for row in step_rows:
         step = int(float(row.get("step", -1)))
@@ -457,9 +483,19 @@ def find_first_close_onset(step_rows: list[dict[str, Any]]) -> int | None:
         raw_grip = _float(row, "raw_gripper")
         is_close = (math.isfinite(env_grip) and env_grip > 0) or (math.isfinite(raw_grip) and raw_grip < 0.5)
         if is_close and not prev_close:
-            return step
+            onsets.append(step)
         prev_close = is_close
-    return None
+    return onsets
+
+
+def resolve_gripper_site(site_names: list[str]) -> BindingResult:
+    candidates = [idx for idx, name in enumerate(site_names) if name == "gripper0_grip_site"]
+    if len(candidates) == 1:
+        idx = candidates[0]
+        return BindingResult(site_names[idx], idx, "BOUND_EXACT", "gripper0_grip_site", (site_names[idx],))
+    if len(candidates) > 1:
+        return BindingResult("", -1, "AMBIGUOUS", "multiple_gripper_sites", tuple(site_names[idx] for idx in candidates))
+    return BindingResult("", -1, "FAILED", "missing_gripper0_grip_site", ())
 
 
 def propose_timing(step_rows: list[dict[str, Any]], n_steps: int) -> dict[str, int | str]:
@@ -514,77 +550,128 @@ def detect_physical_event(
     object_binding: BindingResult,
     target_binding: BindingResult,
     target_kind: str,
+    physics: dict[str, Any] | None = None,
 ) -> PhysicalEvent:
-    close = find_first_close_onset(step_rows)
-    if close is None:
-        return PhysicalEvent("NO_CLOSE_ONSET", "", "", "", "", "", "", "", "", "", "", "", False, "no_close_onset")
+    cfg = physics or load_physics_config()
+    thresholds = cfg.get("thresholds", {})
+    object_gripper_near = float(thresholds.get("object_gripper_near_m", 0.12))
+    object_gripper_separated = float(thresholds.get("object_gripper_separated_m", 0.18))
+    object_lift_delta = float(thresholds.get("object_lift_delta_m", 0.025))
+    stable_carry_min = int(thresholds.get("stable_carry_min_frames", 3))
+    grasp_min = int(thresholds.get("grasp_min_frames", 2))
+    object_target_near = float(thresholds.get("object_target_near_m", 0.14))
+    max_close_to_grasp_delay = int(thresholds.get("max_close_to_grasp_delay_frames", 1))
+    close_candidates = find_close_onsets(step_rows)
+    if not close_candidates:
+        return PhysicalEvent("NO_CLOSE_ONSET", "", "", "", "", "", "", "", "", "", "", False, "", "", False, "no_close_onset")
     body_xpos = sim_arrays.get("body_xpos")
     site_xpos = sim_arrays.get("site_xpos")
     if body_xpos is None or site_xpos is None:
-        return PhysicalEvent("SIM_ARRAY_MISSING", close, "", "", "", "", "", "", "", "", "", "", False, "required_sim_arrays_missing")
-    if object_binding.index < 0 or target_binding.index < 0:
-        return PhysicalEvent("BINDING_INVALID", close, "", "", "", "", "", "", "", "", "", "", False, "object_or_target_binding_invalid")
+        return PhysicalEvent("SIM_ARRAY_MISSING", close_candidates[0], "", "", "", "", "", "", "", "", "", False, "", "", False, "required_sim_arrays_missing")
+    if object_binding.index < 0:
+        return PhysicalEvent("BINDING_INVALID", close_candidates[0], "", "", "", "", "", "", "", "", "", False, "", "", False, "object_binding_invalid")
+    gripper_binding = resolve_gripper_site(site_names)
+    if gripper_binding.index < 0:
+        return PhysicalEvent("GRIPPER_SITE_INVALID", close_candidates[0], "", "", "", "", "", "", "", "", "", False, "", "", False, gripper_binding.source)
     obj = np.asarray(body_xpos[:, object_binding.index, :], dtype=float)
-    grip_idx = site_names.index("gripper0_grip_site") if "gripper0_grip_site" in site_names else 0
-    grip = np.asarray(site_xpos[:, grip_idx, :], dtype=float)
-    if target_kind == "site":
+    grip = np.asarray(site_xpos[:, gripper_binding.index, :], dtype=float)
+    target = None
+    target_valid = target_binding.index >= 0
+    if target_valid and target_kind == "site":
         target = np.asarray(site_xpos[:, target_binding.index, :], dtype=float)
-    else:
+    elif target_valid:
         target = np.asarray(body_xpos[:, target_binding.index, :], dtype=float)
-    n = min(len(obj), len(grip), len(target), len(step_rows))
-    obj, grip, target = obj[:n], grip[:n], target[:n]
+    n = min(len(obj), len(grip), len(target) if target is not None else len(obj), len(step_rows))
+    obj, grip = obj[:n], grip[:n]
+    if target is not None:
+        target = target[:n]
     if n == 0:
-        return PhysicalEvent("EMPTY_TRAJECTORY", close, "", "", "", "", "", "", "", "", "", "", False, "empty_trajectory")
+        return PhysicalEvent("EMPTY_TRAJECTORY", close_candidates[0], "", "", "", "", "", "", "", "", "", False, "", "", False, "empty_trajectory")
     obj_grip = np.linalg.norm(obj - grip, axis=1)
-    obj_target = np.linalg.norm(obj - target, axis=1)
-    close_idx = min(int(close), n - 1)
+    obj_target = np.linalg.norm(obj - target, axis=1) if target is not None else None
     near_grip = obj_grip < 0.12
-    grasp = contiguous_start(near_grip, close_idx, 2)
-    lift_mask = obj[:, 2] > (obj[0, 2] + 0.025)
-    lift = first_index(lift_mask, grasp if grasp is not None else close_idx)
-    carry_mask = near_grip & lift_mask
-    carry = contiguous_start(carry_mask, lift if lift is not None else close_idx, 3)
-    near_target = obj_target < 0.14
-    target_step = first_index(near_target, carry if carry is not None else close_idx)
-    release = None
-    if carry is not None:
-        for row in step_rows[carry:n]:
-            step = int(float(row.get("step", -1)))
-            env_grip = _float(row, "env_gripper")
-            raw_grip = _float(row, "raw_gripper")
-            is_open = (math.isfinite(env_grip) and env_grip < 0) or (math.isfinite(raw_grip) and raw_grip > 0.5)
-            if is_open:
-                release = step
-                break
-    valid = all(x is not None for x in [grasp, lift, carry, target_step])
-    invalid = []
-    if grasp is None:
-        invalid.append("no_grasp_proximity")
-    if lift is None:
-        invalid.append("no_object_lift")
-    if carry is None:
-        invalid.append("no_stable_carry")
-    if target_step is None:
-        invalid.append("no_target_proximity")
-    start = max(0, int(grasp if grasp is not None else close_idx) - 2)
-    anchor = int(grasp if grasp is not None else close_idx)
-    end_basis = target_step if target_step is not None else carry if carry is not None else lift if lift is not None else close_idx
-    end = min(n - 1, int(end_basis) + 3)
+    lift_mask = obj[:, 2] > (obj[0, 2] + object_lift_delta)
+    target_step_by_close: int | None = None
+    best_incomplete: PhysicalEvent | None = None
+    for close in close_candidates:
+        close_idx = min(int(close), n - 1)
+        grasp = contiguous_start(near_grip, close_idx, grasp_min)
+        if grasp is not None and int(grasp) - close_idx > max_close_to_grasp_delay:
+            grasp = None
+        lift = first_index(lift_mask, grasp if grasp is not None else close_idx)
+        carry_mask = near_grip & lift_mask
+        carry = contiguous_start(carry_mask, lift if lift is not None else close_idx, stable_carry_min)
+        target_step = None
+        if obj_target is not None:
+            target_step = first_index(obj_target < object_target_near, carry if carry is not None else close_idx)
+            target_step_by_close = target_step_by_close if target_step_by_close is not None else target_step
+        release = None
+        separation = None
+        if carry is not None:
+            for row in step_rows[carry:n]:
+                step = int(float(row.get("step", -1)))
+                env_grip = _float(row, "env_gripper")
+                raw_grip = _float(row, "raw_gripper")
+                is_open = (math.isfinite(env_grip) and env_grip < 0) or (math.isfinite(raw_grip) and raw_grip > 0.5)
+                if is_open:
+                    release = step
+                    break
+            sep = first_index(obj_grip > object_gripper_separated, carry)
+            separation = sep
+        valid = all(x is not None for x in [grasp, lift, carry])
+        invalid = []
+        if grasp is None:
+            invalid.append("no_grasp_proximity_after_close")
+        if lift is None:
+            invalid.append("no_object_lift")
+        if carry is None:
+            invalid.append("no_stable_carry")
+        placement_complete = bool(target_step is not None and release is not None and release >= target_step)
+        start = max(0, int(grasp if grasp is not None else close_idx) - 2)
+        anchor = int(grasp if grasp is not None else close_idx)
+        end_candidates = [x for x in [release, separation, target_step, n - 1] if x is not None]
+        end = int(min(end_candidates)) if end_candidates else min(n - 1, close_idx + 3)
+        candidate = PhysicalEvent(
+            status="PHYSICAL_EVENT_VALID" if valid else "PHYSICAL_EVENT_INCOMPLETE",
+            close_onset_step=int(close),
+            grasp_established_step="" if grasp is None else int(grasp),
+            lift_onset_step="" if lift is None else int(lift),
+            stable_carry_start="" if carry is None else int(carry),
+            teacher_window_start=start if valid else "",
+            teacher_anchor_step=anchor if valid else "",
+            teacher_window_end=end if valid else "",
+            release_onset_step="" if release is None else int(release),
+            target_proximity_step="" if target_step is None else int(target_step),
+            object_gripper_separation_step="" if separation is None else int(separation),
+            placement_complete=placement_complete,
+            object_gripper_min_distance=float(np.nanmin(obj_grip)),
+            object_target_min_distance="" if obj_target is None else float(np.nanmin(obj_target)),
+            event_valid=bool(valid),
+            event_invalid_reason="|".join(invalid),
+        )
+        if valid:
+            return candidate
+        if best_incomplete is None or len(str(candidate.event_invalid_reason).split("|")) < len(str(best_incomplete.event_invalid_reason).split("|")):
+            best_incomplete = candidate
+    if best_incomplete is not None:
+        return best_incomplete
     return PhysicalEvent(
-        status="PHYSICAL_EVENT_VALID" if valid else "PHYSICAL_EVENT_INCOMPLETE",
-        close_onset_step=int(close),
-        grasp_established_step="" if grasp is None else int(grasp),
-        lift_onset_step="" if lift is None else int(lift),
-        stable_carry_start="" if carry is None else int(carry),
-        teacher_window_start=start if valid else "",
-        teacher_anchor_step=anchor if valid else "",
-        teacher_window_end=end if valid else "",
-        release_onset_step="" if release is None else int(release),
-        target_proximity_step="" if target_step is None else int(target_step),
-        object_gripper_min_distance=float(np.nanmin(obj_grip)),
-        object_target_min_distance=float(np.nanmin(obj_target)),
-        event_valid=bool(valid),
-        event_invalid_reason="|".join(invalid),
+        "PHYSICAL_EVENT_INCOMPLETE",
+        close_candidates[0],
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "" if target_step_by_close is None else int(target_step_by_close),
+        "",
+        False,
+        float(np.nanmin(obj_grip)),
+        "" if obj_target is None else float(np.nanmin(obj_target)),
+        False,
+        "no_candidate_close_supported_physical_event",
     )
 
 
@@ -614,6 +701,8 @@ def event_to_row(
         "teacher_window_end": event.teacher_window_end,
         "release_onset_step": event.release_onset_step,
         "target_proximity_step": event.target_proximity_step,
+        "object_gripper_separation_step": event.object_gripper_separation_step,
+        "placement_complete": bool(event.placement_complete),
         "object_gripper_min_distance": event.object_gripper_min_distance,
         "object_target_min_distance": event.object_target_min_distance,
         "timing_status": event.status,
@@ -668,8 +757,86 @@ def resolve_episode(row: dict[str, Any], task: OntologyTask, *, teacher_run_id: 
     }
 
     if task.mechanism_type == PRIMARY_MECHANISM:
+        object_candidates = bind_candidates(body_names, task.manipulated_object_aliases)
         obj_binding = bind_unique(body_names, task.manipulated_object_aliases)
         target_binding, target_kind = bind_target(site_names, body_names, task.target_aliases)
+        if object_candidates and target_binding.status in VALID_BINDING_STATUSES:
+            valid_candidates: list[tuple[BindingResult, PhysicalEvent]] = []
+            incomplete_candidates: list[tuple[BindingResult, PhysicalEvent]] = []
+            for candidate in object_candidates:
+                event = detect_physical_event(
+                    step_rows=ctx["step_rows"],
+                    sim_arrays=ctx["sim_arrays"],
+                    site_names=site_names,
+                    object_binding=candidate,
+                    target_binding=target_binding,
+                    target_kind=target_kind,
+                )
+                if event.event_valid:
+                    valid_candidates.append((candidate, event))
+                else:
+                    incomplete_candidates.append((candidate, event))
+            if len(valid_candidates) > 1:
+                episode = {
+                    **base,
+                    "mechanism_eligible": False,
+                    "object_binding_status": "AMBIGUOUS",
+                    "target_binding_status": target_binding.status,
+                    "teacher_status": "OBJECT_BINDING_AMBIGUOUS",
+                    "teacher_semantic_abstain": True,
+                    "abstain_reason": "multiple_object_candidates_have_physical_events",
+                    "event_count": 0,
+                    "manual_review_required": True,
+                    "object_binding_candidates_json": json.dumps([c.name for c, _ in valid_candidates]),
+                    "target_binding_candidates_json": json.dumps(list(target_binding.candidates)),
+                    "canonical_instance_candidates_json": json.dumps([normalize_entity_name(c.name) for c, _ in valid_candidates]),
+                    "binding_decision_reason": "ambiguous_after_physical_event_filter",
+                }
+                return episode, []
+            if len(valid_candidates) == 1:
+                obj_binding, event = valid_candidates[0]
+                episode = {
+                    **base,
+                    "mechanism_eligible": True,
+                    "object_binding_status": obj_binding.status,
+                    "target_binding_status": target_binding.status,
+                    "teacher_status": "ELIGIBLE_EVENT",
+                    "teacher_semantic_abstain": False,
+                    "abstain_reason": "",
+                    "event_count": 1,
+                    "manual_review_required": True,
+                    "object_binding_candidates_json": json.dumps([c.name for c in object_candidates]),
+                    "target_binding_candidates_json": json.dumps(list(target_binding.candidates)),
+                    "canonical_instance_candidates_json": json.dumps([normalize_entity_name(c.name) for c in object_candidates]),
+                    "binding_decision_reason": "unique_candidate_with_grasp_lift_stable_carry",
+                }
+                return episode, [
+                    event_to_row(
+                        episode_key=episode_key,
+                        event_idx=0,
+                        object_binding=obj_binding,
+                        target_binding=target_binding,
+                        event=event,
+                        supplementary=False,
+                    )
+                ]
+            fallback_event = incomplete_candidates[0][1] if incomplete_candidates else None
+            episode = {
+                **base,
+                "mechanism_eligible": False,
+                "object_binding_status": "FAILED" if not object_candidates else "BOUND_STRUCTURED_FALLBACK",
+                "target_binding_status": target_binding.status,
+                "teacher_status": "NO_RELEVANT_GRASP_EVENT",
+                "teacher_semantic_abstain": True,
+                "abstain_reason": fallback_event.event_invalid_reason if fallback_event is not None else "no_physical_event_candidate",
+                "event_count": 0,
+                "manual_review_required": True,
+                "object_binding_candidates_json": json.dumps([c.name for c in object_candidates]),
+                "target_binding_candidates_json": json.dumps(list(target_binding.candidates)),
+                "canonical_instance_candidates_json": json.dumps([normalize_entity_name(c.name) for c in object_candidates]),
+                "binding_decision_reason": "no_candidate_has_grasp_lift_stable_carry",
+            }
+            return episode, []
         if obj_binding.status in VALID_BINDING_STATUSES and target_binding.status in VALID_BINDING_STATUSES:
             event = detect_physical_event(
                 step_rows=ctx["step_rows"],
