@@ -1,0 +1,20 @@
+{
+  "classification": "PASS_300_VALID",
+  "clean_failure_count": 94,
+  "duplicate_primary_keys": 0,
+  "extra": 0,
+  "failures": [],
+  "integrity_failure_count": 0,
+  "missing": 0,
+  "planned": 300,
+  "primary_complete": 300,
+  "retry_key": "libero_goal|1|11|0|CLEAN",
+  "retry_primary_output": "/data/liuyu/outputs/cross_suite_clean_train300_s10_19_20260620/goal_t01_s11_infra_retry_v1_gpu13_20260620/libero_goal_t01_s11",
+  "state_overlap_with_clean300_states_0_9": 0,
+  "success_count": 206,
+  "test_split": "states 0-9 frozen CLEAN300",
+  "timestamp": "2026-06-20T16:44:55.155095+08:00",
+  "train_split": "states 10-17",
+  "unique_planned": 300,
+  "val_split": "states 18-19"
+}

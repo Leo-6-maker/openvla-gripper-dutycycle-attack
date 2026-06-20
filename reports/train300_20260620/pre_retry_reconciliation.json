@@ -1,0 +1,29 @@
+{
+  "checkpoint_mismatch": 0,
+  "checkpoint_mismatch_keys": [],
+  "complete": 299,
+  "duplicate_complete_primary_candidates": 0,
+  "duplicate_planned_keys": 0,
+  "infra_failed": 1,
+  "infra_failed_keys": [
+    "libero_goal|1|11|0|CLEAN"
+  ],
+  "missing": 0,
+  "missing_keys": [],
+  "ownership_violation_rows": [],
+  "ownership_violations": 0,
+  "planned": 300,
+  "running": 0,
+  "running_keys": [],
+  "shard_A_B_overlap": 0,
+  "shard_A_count": 44,
+  "shard_B_count": 44,
+  "source_commit_mismatch": 0,
+  "source_commit_mismatch_keys": [],
+  "timestamp": "2026-06-20T16:31:12.731995+08:00",
+  "unexpected_extra_keys": 0,
+  "unexpected_extra_keys_list": [],
+  "unique_planned": 300,
+  "unnorm_mismatch": 0,
+  "unnorm_mismatch_keys": []
+}
