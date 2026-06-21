@@ -122,8 +122,14 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
         env.close()
         raise RuntimeError(f"Binding check failed for {label}: obj_key={obj_key} tgt_key={tgt_key}")
 
+    # Track last two EEF positions during wait steps for step-0 velocity
+    wait_eef_positions = []
     for _ in range(wait_steps):
         obs, _, _, _ = env.step([0, 0, 0, 0, 0, 0, -1])
+        eef_p = obs.get("robot0_eef_pos", [0.0]*3)
+        wait_eef_positions.append(np.asarray(eef_p, dtype=np.float64).ravel()[:3].copy())
+        if len(wait_eef_positions) > 2:
+            wait_eef_positions = wait_eef_positions[-2:]
 
     # Canonical feature adapter
     adapter = SC5StreamingFeatureAdapterV2()
@@ -139,20 +145,21 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
         raw_img = obs["agentview_image"]
         processed = prepare_openvla_image(raw_img, libero_preprocess_backend=preprocess_backend,
                                           center_crop=True, resize_size=224)
+        processed_sha = sha256_hex(np.array(processed))
 
         prompt = "In: What action should the robot take to %s?\nOut:" % task_name.lower()
         inputs = proc(prompt, processed, return_tensors="pt")
         ids = inputs["input_ids"].to(device=DEV)
         px = inputs["pixel_values"].to(dtype=model.dtype, device=DEV)
+        ids_sha = sha256_hex(ids)
+        pixel_sha = sha256_hex(px)
 
         result = model.predict_action(input_ids=ids, pixel_values=px,
                                       unnorm_key="libero_spatial", do_sample=False)
         act = np.array(result).flatten() if not isinstance(result, np.ndarray) else result.flatten()
 
         raw_g = float(act[6])
-        norm_g = (raw_g * 2.0) - 1.0
-        bin_g = 1.0 if norm_g >= 0 else -1.0
-        env_g = -bin_g
+        env_g = raw_gripper_to_env_gripper(raw_g)
         env_act = np.zeros(7)
         env_act[:6] = act[:6]
         env_act[6] = env_g
@@ -168,7 +175,14 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
 
         # EEF velocity: causal backward difference from collector's own position history.
         # LIBERO does not expose robot0_eef_vel; compute from sequential eef_pos diffs.
-        if step == 0 or len(eef_pos_history) == 0:
+        # Step 0 uses wait-step positions (final_wait - penultimate_wait). No zero-fill.
+        if step == 0 and len(wait_eef_positions) >= 2:
+            prev_pos = wait_eef_positions[-2]
+            cur_pos = wait_eef_positions[-1]
+            eef_vx = float(cur_pos[0] - prev_pos[0])
+            eef_vy = float(cur_pos[1] - prev_pos[1])
+            eef_vz = float(cur_pos[2] - prev_pos[2])
+        elif step == 0:
             eef_vx, eef_vy, eef_vz = 0.0, 0.0, 0.0
         else:
             prev_pos = eef_pos_history[-1]
@@ -232,8 +246,14 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
             "raw_gripper": str(raw_g), "env_gripper": str(env_g),
             "qpos_scalar": str(qpos_scalar), "opening_proxy": str(opening_proxy),
             "binding_ok": str(binding_ok), "object_key": obj_key, "target_key": tgt_key,
+            "raw_action_json": json.dumps(act.tolist()),
+            "raw_action_sha256": sha256_hex(act.tobytes()),
+            "env_action_json": json.dumps(env_act.tolist()),
+            "env_action_sha256": sha256_hex(env_act.tobytes()),
+            "processed_image_sha256": processed_sha,
+            "processor_pixel_sha256": pixel_sha,
+            "input_ids_sha256": ids_sha,
         }
-        if feat_out.get("valid") and feat_out.get("features"):
             for fn in FEATURE_NAMES:
                 row[fn] = str(feat_out["features"].get(fn, "nan"))
         else:
@@ -297,11 +317,24 @@ def main():
     # Run attrs for resume integrity
     runner_sha = sha256_hex(open(__file__, "rb").read())
     shard_sha = sha256_hex(open(args.episode_manifest, "rb").read())
+
+    # Hash supporting modules
+    preprocess_path = os.path.join(REPO_ROOT, "src", "gripper_attack", "openvla_preprocess.py")
+    features_path = os.path.join(REPO_ROOT, "src", "gripper_attack", "sc5_streaming_features_v2.py")
+    exec_spec_path = os.path.join(REPO_ROOT, "src", "gripper_attack", "openvla_libero_exec_spec.py")
+    binding_path = os.path.join(REPO_ROOT, "configs", "detector", "libero_spatial_object_target_binding.json")
+
     run_attrs = {
         "runner_sha": runner_sha, "shard_sha": shard_sha,
+        "preprocess_sha": sha256_hex(open(preprocess_path, "rb").read()) if os.path.exists(preprocess_path) else "MISSING",
+        "feature_extractor_sha": sha256_hex(open(features_path, "rb").read()) if os.path.exists(features_path) else "MISSING",
+        "gripper_exec_spec_sha": sha256_hex(open(exec_spec_path, "rb").read()) if os.path.exists(exec_spec_path) else "MISSING",
+        "binding_config_sha": sha256_hex(open(binding_path, "rb").read()) if os.path.exists(binding_path) else "MISSING",
         "backend": backend, "dtype": args.dtype, "attn": args.attn,
+        "requested_attn": args.attn, "actual_attn": actual_attn,
         "seed": args.seed, "max_steps": args.max_steps,
         "profile_name": args.profile_name,
+        "model_path": args.model_path,
     }
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -314,20 +347,34 @@ def main():
         done_file = os.path.join(ep_dir, ".done")
         manifest_file = os.path.join(ep_dir, "episode_manifest.json")
 
+        # Resume with fail-closed integrity check
+        skip = False
         if args.resume and os.path.exists(done_file):
             if os.path.exists(manifest_file):
                 stored = json.load(open(manifest_file))
-                ok = all(str(stored.get(k)) == str(run_attrs.get(k))
-                        for k in ["runner_sha", "shard_sha", "backend",
-                                  "dtype", "attn", "seed", "max_steps"])
-                if ok:
+                mismatch = []
+                for k in ["runner_sha", "shard_sha", "preprocess_sha", "feature_extractor_sha",
+                          "gripper_exec_spec_sha", "binding_config_sha",
+                          "backend", "dtype", "requested_attn", "actual_attn",
+                          "seed", "max_steps", "profile_name"]:
+                    sv = str(stored.get(k, ""))
+                    rv = str(run_attrs.get(k, ""))
+                    if sv != rv:
+                        mismatch.append(k)
+                if not mismatch:
                     print("[%d/%d] %s SKIP" % (i + 1, len(episodes), label))
                     if os.path.exists(os.path.join(ep_dir, "result.json")):
                         results.append(json.load(open(os.path.join(ep_dir, "result.json"))))
-                    continue
+                    skip = True
                 else:
-                    print("[%d/%d] %s INTEGRITY_FAIL — re-running" % (i + 1, len(episodes), label))
-                    os.remove(done_file)
+                    print("[%d/%d] %s INTEGRITY_MISMATCH: %s" % (i + 1, len(episodes), label, ",".join(mismatch)))
+                    print("  EXIT: cannot re-run with different contract. Remove .done manually if intentional.")
+                    sys.exit(1)
+            else:
+                print("[%d/%d] %s RESUME_FAIL: .done exists but no episode_manifest.json" % (i + 1, len(episodes), label))
+                sys.exit(1)
+        if skip:
+            continue
 
         os.makedirs(ep_dir, exist_ok=True)
         print("[%d/%d] %s" % (i + 1, len(episodes), label), end=" ", flush=True)
@@ -343,12 +390,17 @@ def main():
         res["runner_sha"] = runner_sha
         results.append(res)
 
-        # Atomic save: episode_manifest, result, trace, .done (last)
+        # Atomic save: write .tmp, os.replace, .done last
         ep_manifest = dict(run_attrs, label=label, task_idx=ti, init_idx=ii,
                           steps=res["steps"], success=res["success"],
                           binding_ok=res.get("binding_ok", False))
-        json.dump(ep_manifest, open(manifest_file, "w"), indent=2)
-        json.dump(res, open(os.path.join(ep_dir, "result.json"), "w"), indent=2)
+
+        result_tmp = os.path.join(ep_dir, "result.json.tmp")
+        trace_tmp = os.path.join(ep_dir, "trace.csv.tmp")
+        manifest_tmp = os.path.join(ep_dir, "episode_manifest.json.tmp")
+
+        json.dump(ep_manifest, open(manifest_tmp, "w"), indent=2)
+        json.dump(res, open(result_tmp, "w"), indent=2)
 
         fieldnames = ["episode_key", "profile", "task_idx", "init_idx",
                       "init_state_sha", "step_idx",
@@ -359,12 +411,19 @@ def main():
                       "reward", "done", "check_success", "termination",
                       "feature_valid", "feature_error",
                       "raw_gripper", "env_gripper", "qpos_scalar", "opening_proxy",
-                      "binding_ok", "object_key", "target_key"] + FEATURE_NAMES
-        with open(os.path.join(ep_dir, "trace.csv"), "w", newline="") as f:
+                      "binding_ok", "object_key", "target_key",
+                      "raw_action_json", "raw_action_sha256",
+                      "env_action_json", "env_action_sha256",
+                      "processed_image_sha256", "processor_pixel_sha256",
+                      "input_ids_sha256"] + FEATURE_NAMES
+        with open(trace_tmp, "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
             w.writeheader()
             w.writerows(rows)
 
+        os.replace(manifest_tmp, manifest_file)
+        os.replace(result_tmp, os.path.join(ep_dir, "result.json"))
+        os.replace(trace_tmp, os.path.join(ep_dir, "trace.csv"))
         with open(done_file, "w") as f:
             f.write("")
 
