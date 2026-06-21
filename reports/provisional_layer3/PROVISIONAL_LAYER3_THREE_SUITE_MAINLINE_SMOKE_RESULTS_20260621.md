@@ -6,6 +6,8 @@
 STAGE: PROVISIONAL_LAYER3_THREE_SUITE_MAINLINE_SMOKE
 RESULT_CLASS: ENGINEERING_PASS
 PROVISIONAL_LAYER123_MAINLINE: ENGINEERING_PASS
+TRACK_C_RUNTIME_CONTRACT_AUDIT: PASS_WITH_ARM_VECTOR_LIMITATION
+TRACK_C_OUTPUT_SEAL: PASS
 H2_SCIENTIFIC_FREEZE: NOT_GRANTED
 VIS_GT_RANDOM: NOT_ESTABLISHED
 ATTACK_EFFECTIVENESS: NOT_ESTABLISHED
@@ -134,6 +136,77 @@ libero_goal: planned 8, complete 8, audit_fail 0
 libero_10: planned 8, complete 8, audit_fail 0
 ```
 
+## Audit V2 and Output Seal
+
+After external review, the auditor was hardened and rerun without rerunning any
+rollouts. Audit V2 adds fail-closed checks for manifest/summary identity,
+worker command ledger parameters, parent four-condition completeness, matched
+Student emit status/step, per-row attack timing, attack counts, full video
+decode, frame-count equality, detector checkpoint file SHA, and a recursive
+output SHA manifest.
+
+Audit V2 artifacts:
+
+```text
+reports/provisional_layer3/three_suite_mainline_smoke_audit_v2_summary_20260621.json
+sha256 = 48622eda4161b984ac9f1c10cb8ec48584953db8b11dc29d48f68d01f5c1f825
+
+tables/provisional_layer3/three_suite_mainline_smoke_audit_v2_rows_20260621.csv
+sha256 = 37364abeb86097a05a247d2f7b7828b18f27c210dd10b6fade847bb47c0e0221
+
+tables/provisional_layer3/three_suite_mainline_smoke_recursive_sha256_manifest_20260621.csv
+sha256 = 904b68218e45286c8b61a0ca37644941123a91c444750d8064c64b993d0e1c81
+```
+
+Audit V2 result:
+
+```text
+stage = PROVISIONAL_LAYER3_THREE_SUITE_MAINLINE_SMOKE_AUDIT_V2
+result_class = ENGINEERING_PASS_CONFIRMED
+planned_jobs = 24
+audited_jobs = 24
+complete_jobs = 24
+duplicate_parent_condition_keys = 0
+sealed_file_count = 123
+```
+
+All Audit V2 fail counts were zero:
+
+```text
+missing_summary = 0
+missing_step_telemetry = 0
+telemetry_length_mismatch = 0
+raw_video_decode_failure = 0
+overlay_video_decode_failure = 0
+video_frame_mismatch = 0
+student_trigger_contract_failure = 0
+attack_timing_contract_failure = 0
+attack_count_contract_failure = 0
+arm_preservation_contract_failure = 0
+invalid_feature_episode_count = 0
+manifest_identity_mismatch = 0
+command_ledger_mismatch = 0
+parent_condition_set_failure = 0
+matched_emit_mismatch = 0
+checkpoint_sha_mismatch = 0
+dataset_sha_mismatch = 0
+```
+
+Runtime contract scope:
+
+```text
+trigger_timing = telemetry_row_audited
+arm_preservation = source_level_and_summary_mode_audited
+arm_vector_runtime_note =
+  step telemetry does not store clean and executed 6D arm vectors,
+  so per-dimension runtime equality is not independently auditable
+  from these outputs.
+```
+
+This means Audit V2 confirms the runtime trigger timing and output sealing from
+the available artifacts. It does not retroactively create per-dimension arm
+vector telemetry that was not written by the rollout runner.
+
 ## Provisional Telemetry
 
 This telemetry is included only to characterize the smoke run. It is not an
@@ -174,6 +247,7 @@ No-emit cases were retained and counted in the denominator.
 
 ```text
 PROVISIONAL_LAYER123_MAINLINE reached ENGINEERING_PASS for this smoke.
+Audit V2 upgrades the engineering result to ENGINEERING_PASS_CONFIRMED for the available runtime contracts and output seal.
 The three-suite Layer1-to-Layer2-to-Layer3 provisional interface ran end to end.
 All 24 planned matched parent-condition jobs completed.
 Spatial, Goal, and LIBERO-10 supplementary-event parents each contributed 8 jobs.
@@ -181,6 +255,7 @@ Student-only trigger contract passed.
 Arm action preservation mode passed.
 Telemetry length, video decode, dataset SHA, and checkpoint SHA audits passed.
 No-emit cases were retained.
+The recursive SHA manifest seals 123 server output files.
 ```
 
 ## Forbidden Claims
@@ -193,6 +268,7 @@ Do not claim VIS > RAND or VIS > SHUFFLED.
 Do not claim attack effectiveness.
 Do not use this as paper evidence beyond engineering pipeline wiring.
 Do not treat LIBERO-10 supplementary bridge as primary single-object evidence.
+Do not claim per-dimension runtime arm equality from Track C artifacts, because the runner did not save clean and executed 6D arm vectors.
 ```
 
 ## Next Action
