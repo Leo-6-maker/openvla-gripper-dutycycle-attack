@@ -35,10 +35,16 @@ from scripts.stageb.cross_suite_layer1_resolver import (  # noqa: E402
 )
 
 PROVISIONAL_SENTINEL = "PROVISIONAL_ENGINEERING_ONLY_NOT_FOR_CLAIMS"
-EXPECTED_COMPONENT_SHA256 = {
+EXPECTED_COMPONENT_WORKTREE_SHA256 = {
     "ontology": "89bd296b15525c48a4fbd3be84eb4a8c0b269ca11170cfe901b449cc1bb77359",
     "physics_config": "1f5e0dbeb0e227d2c6708a310ef171863c216bf84a5cddda62af992766700059",
     "teacher_schema": "ac2ffb8b064a502f8b5cab7b0c4183914701c7bf21443dd01189e023403ebca8",
+    "timing_contract": "18b21f9e032fdba410e291f67edba60e649b2c6c4ae3d2f33df08a7c31f6ef60",
+}
+EXPECTED_COMPONENT_GIT_BLOB_SHA256 = {
+    "ontology": "70f4c03860d617b5fc64e61dbe9e287dae67c1178e57634d5be9d4d2bde99462",
+    "physics_config": "1f5e0dbeb0e227d2c6708a310ef171863c216bf84a5cddda62af992766700059",
+    "teacher_schema": "c5324d46e50b4a84ba23415c55e75c07ef09acbe0bdd8ae2a15f4f425a480a6e",
     "timing_contract": "18b21f9e032fdba410e291f67edba60e649b2c6c4ae3d2f33df08a7c31f6ef60",
 }
 COMPONENT_PATHS = {
@@ -208,10 +214,28 @@ def component_manifest() -> dict[str, Any]:
     rows = {}
     mismatches = {}
     for name, path in COMPONENT_PATHS.items():
-        digest = sha256_file(path)
-        rows[name] = {"path": str(path.relative_to(REPO)), "sha256": digest, "expected_sha256": EXPECTED_COMPONENT_SHA256[name]}
-        if digest != EXPECTED_COMPONENT_SHA256[name]:
-            mismatches[name] = {"actual": digest, "expected": EXPECTED_COMPONENT_SHA256[name]}
+        rel = path.relative_to(REPO).as_posix()
+        worktree_digest = sha256_file(path)
+        blob_bytes = subprocess.check_output(["git", "show", f"HEAD:{rel}"], cwd=REPO)
+        blob_digest = hashlib.sha256(blob_bytes).hexdigest()
+        worktree_match = worktree_digest == EXPECTED_COMPONENT_WORKTREE_SHA256[name]
+        blob_match = blob_digest == EXPECTED_COMPONENT_GIT_BLOB_SHA256[name]
+        rows[name] = {
+            "path": rel,
+            "worktree_sha256": worktree_digest,
+            "expected_handoff_worktree_sha256": EXPECTED_COMPONENT_WORKTREE_SHA256[name],
+            "git_blob_sha256": blob_digest,
+            "expected_git_blob_sha256": EXPECTED_COMPONENT_GIT_BLOB_SHA256[name],
+            "accepted_by": "handoff_worktree_sha256" if worktree_match else ("git_blob_sha256" if blob_match else "NONE"),
+            "line_ending_note": "handoff SHA came from the Windows working tree for some text files; git_blob_sha256 is the cross-platform content identity",
+        }
+        if not (worktree_match or blob_match):
+            mismatches[name] = {
+                "actual_worktree": worktree_digest,
+                "expected_handoff_worktree": EXPECTED_COMPONENT_WORKTREE_SHA256[name],
+                "actual_git_blob": blob_digest,
+                "expected_git_blob": EXPECTED_COMPONENT_GIT_BLOB_SHA256[name],
+            }
     return {"components": rows, "mismatches": mismatches, "status": "PASS" if not mismatches else "FAIL"}
 
 
