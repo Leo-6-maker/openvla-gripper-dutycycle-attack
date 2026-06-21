@@ -116,7 +116,7 @@ def run_episode(model, proc, task_suite, task_idx, init_idx, output_dir, label,
 
         inputs = proc(prompt, processed_img, return_tensors="pt")
         ids = inputs["input_ids"].to(device=DEV)
-        px = inputs["pixel_values"].to(dtype=torch.float32, device=DEV)
+        px = inputs["pixel_values"].to(dtype=dtype, device=DEV)
         pixel_sha = hashlib.sha256(px.float().cpu().numpy().tobytes()).hexdigest()
         ids_sha = hashlib.sha256(ids.cpu().numpy().tobytes()).hexdigest()
 

@@ -13,9 +13,9 @@ def main():
     p.add_argument("--cuda_devices", default="6")
     p.add_argument("--bundle_dir", required=True)
     p.add_argument("--output_csv", required=True)
-    p.add_argument("--num_repeats", type=int, default=3)
+    p.add_argument("--num_repeats", type=int, default=3, help="behavior repeats")
     p.add_argument("--warmup_repeats", type=int, default=5)
-    p.add_argument("--timing_repeats", type=int, default=10)
+    p.add_argument("--timing_repeats", type=int, default=10, help="per-frame timing repeats")
     args = p.parse_args()
 
     os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda_devices
@@ -73,18 +73,13 @@ def main():
         tokens_list = []
         frame_lats = []
 
+        # ---- Behavior repeats ----
+        actions = []
+        tokens_list = []
         for r in range(args.num_repeats):
-            # Timing with proper CUDA sync
-            torch.cuda.synchronize()
-            t0 = time.perf_counter()
             gen = model.generate(input_ids=ids.clone(), pixel_values=px.clone(),
                                  max_new_tokens=action_dim, do_sample=False,
                                  pad_token_id=model.pad_token_id)
-            torch.cuda.synchronize()
-            lat = time.perf_counter() - t0
-            if r == 0:
-                frame_lats.append(lat)  # record all runs for this frame
-
             tokens = gen[0, -action_dim:].cpu().numpy()
             disc = model.vocab_size - tokens
             disc = np.clip(disc - 1, 0, model.bin_centers.shape[0] - 1)
@@ -96,6 +91,20 @@ def main():
         det = all(np.array_equal(actions[0], a) for a in actions[1:])
         rg = actions[0][6]; ng = (rg * 2) - 1; ig = -(1.0 if ng >= 0 else -1.0)
         cls = "OPEN" if ig < 0 else "CLOSE"
+
+        # ---- Timing repeats (independent, synchronized) ----
+        frame_lats = []
+        for _ in range(args.timing_repeats):
+            torch.cuda.synchronize()
+            t0 = time.perf_counter()
+            _ = model.generate(input_ids=ids.clone(), pixel_values=px.clone(),
+                               max_new_tokens=action_dim, do_sample=False,
+                               pad_token_id=model.pad_token_id)
+            torch.cuda.synchronize()
+            frame_lats.append(time.perf_counter() - t0)
+
+        frame_median = float(np.median(frame_lats))
+        frame_p90 = float(np.percentile(frame_lats, 90))
         rows.append({
             "attn": args.attn, "actual_attn": actual_attn,
             "episode": entry["episode"], "step": entry["step"],
@@ -103,7 +112,8 @@ def main():
             "tokens": " ".join(str(x) for x in tokens_list[0]),
             "action": " ".join("%.12f" % x for x in actions[0].tolist()),
             "gripper_class": cls,
-            "latency_median_s": "%.6f" % np.median(frame_lats) if frame_lats else "0",
+            "latency_median_s": "%.6f" % frame_median,
+            "latency_p90_s": "%.6f" % frame_p90,
         })
         latencies_all.extend(frame_lats)
 
