@@ -81,6 +81,42 @@ def select_rows(rows: list[dict[str, str]], *, split: str, suites: set[str]) -> 
     return out
 
 
+def count_selected_rows(rows: list[dict[str, str]], *, split: str, suites: set[str]) -> int:
+    return sum(
+        1
+        for row in rows
+        if row["dataset_split"] == split and row["suite"] in suites and str(row.get("ignore_for_loss", "0")) == "0"
+    )
+
+
+def skipped_run_summary(
+    *,
+    name: str,
+    train_suites: set[str],
+    val_suites: set[str],
+    test_suites: set[str],
+    dataset_rows: list[dict[str, str]],
+    reason: str,
+) -> dict[str, Any]:
+    return {
+        "run_name": name,
+        "run_status": "SKIPPED_NO_SUPERVISED_ROWS",
+        "skip_reason": reason,
+        "train_suites": sorted(train_suites),
+        "val_suites": sorted(val_suites),
+        "test_suites": sorted(test_suites),
+        "n_train_rows": count_selected_rows(dataset_rows, split="train", suites=train_suites),
+        "n_val_rows": count_selected_rows(dataset_rows, split="val", suites=val_suites),
+        "n_test_rows": count_selected_rows(dataset_rows, split="test", suites=test_suites),
+        "checkpoint_path": "",
+        "checkpoint_sha256": "",
+        "selected_threshold": {},
+        "train_metrics": {},
+        "test_metrics": {},
+        "training": {},
+    }
+
+
 def arrays(rows: list[dict[str, str]]) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     x = np.asarray([[finite_float(row[f]) for f in SC5_FEATURES] for row in rows], dtype=np.float32)
     phase = np.asarray([SC5_PHASES.index(row["teacher_phase"]) for row in rows], dtype=np.int64)
@@ -307,9 +343,21 @@ def run_one(
 ) -> dict[str, Any]:
     run_dir = output_dir / name
     run_dir.mkdir(parents=True, exist_ok=False)
-    train_rows = select_rows(dataset_rows, split="train", suites=train_suites)
-    val_rows = select_rows(dataset_rows, split="val", suites=val_suites)
-    test_rows = select_rows(dataset_rows, split="test", suites=test_suites)
+    try:
+        train_rows = select_rows(dataset_rows, split="train", suites=train_suites)
+        val_rows = select_rows(dataset_rows, split="val", suites=val_suites)
+        test_rows = select_rows(dataset_rows, split="test", suites=test_suites)
+    except ValueError as exc:
+        summary = skipped_run_summary(
+            name=name,
+            train_suites=train_suites,
+            val_suites=val_suites,
+            test_suites=test_suites,
+            dataset_rows=dataset_rows,
+            reason=str(exc),
+        )
+        write_json(run_dir / "metrics.json", summary)
+        return summary
     model, mean, std, train_meta = train_model(train_rows=train_rows, val_rows=val_rows, seed=seed, device=device, epochs=epochs)
     val_preds = predict_rows(model, mean, std, val_rows)
     grid = [round(x, 2) for x in np.linspace(0.1, 0.9, 9)]
@@ -343,6 +391,8 @@ def run_one(
     torch.save(ckpt, ckpt_path)
     summary = {
         "run_name": name,
+        "run_status": "COMPLETED",
+        "skip_reason": "",
         "train_suites": sorted(train_suites),
         "val_suites": sorted(val_suites),
         "test_suites": sorted(test_suites),
@@ -397,6 +447,8 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
         "device": args.device,
         "epochs": args.epochs,
         "seed": args.seed,
+        "completed_runs": sum(1 for row in summaries if row.get("run_status") == "COMPLETED"),
+        "skipped_runs": sum(1 for row in summaries if row.get("run_status") == "SKIPPED_NO_SUPERVISED_ROWS"),
         "runs": summaries,
     }
     write_json(output_dir / "provisional_layer2_training_summary.json", report)
@@ -405,17 +457,22 @@ def run_matrix(args: argparse.Namespace) -> dict[str, Any]:
         [
             {
                 "run_name": r["run_name"],
-                "checkpoint_sha256": r["checkpoint_sha256"],
-                "tau_corridor": r["selected_threshold"]["tau_corridor"],
-                "tau_release": r["selected_threshold"]["tau_release"],
-                "val_event_f1": r["selected_threshold"]["event_f1"],
-                "test_event_f1": r["test_metrics"]["event_f1"],
-                "test_event_precision": r["test_metrics"]["event_precision"],
-                "test_event_recall": r["test_metrics"]["event_recall"],
-                "test_false_trigger_episode_rate": r["test_metrics"]["false_trigger_episode_rate"],
-                "test_no_emit_rate": r["test_metrics"]["no_emit_rate"],
-                "test_frame_auroc": r["test_metrics"]["frame_auroc"],
-                "test_frame_auprc": r["test_metrics"]["frame_auprc"],
+                "run_status": r.get("run_status", ""),
+                "skip_reason": r.get("skip_reason", ""),
+                "n_train_rows": r.get("n_train_rows", ""),
+                "n_val_rows": r.get("n_val_rows", ""),
+                "n_test_rows": r.get("n_test_rows", ""),
+                "checkpoint_sha256": r.get("checkpoint_sha256", ""),
+                "tau_corridor": r.get("selected_threshold", {}).get("tau_corridor", ""),
+                "tau_release": r.get("selected_threshold", {}).get("tau_release", ""),
+                "val_event_f1": r.get("selected_threshold", {}).get("event_f1", ""),
+                "test_event_f1": r.get("test_metrics", {}).get("event_f1", ""),
+                "test_event_precision": r.get("test_metrics", {}).get("event_precision", ""),
+                "test_event_recall": r.get("test_metrics", {}).get("event_recall", ""),
+                "test_false_trigger_episode_rate": r.get("test_metrics", {}).get("false_trigger_episode_rate", ""),
+                "test_no_emit_rate": r.get("test_metrics", {}).get("no_emit_rate", ""),
+                "test_frame_auroc": r.get("test_metrics", {}).get("frame_auroc", ""),
+                "test_frame_auprc": r.get("test_metrics", {}).get("frame_auprc", ""),
             }
             for r in summaries
         ],
