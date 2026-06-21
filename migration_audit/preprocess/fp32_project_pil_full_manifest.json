@@ -1,0 +1,10 @@
+{
+  "status": "COMPLETE",
+  "completed": 30,
+  "planned": 30,
+  "success": 24,
+  "profile": "fp32_eager_project_pil",
+  "preprocess_backend": "project_pil_lanczos",
+  "not_valid_as_official": true,
+  "purpose": "PREPROCESSING_SENSITIVITY_ABLATION"
+}
