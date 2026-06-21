@@ -1,0 +1,65 @@
+{
+  "count": 19,
+  "keys": [
+    "task0_init0",
+    "task1_init0",
+    "task1_init1",
+    "task1_init2",
+    "task2_init1",
+    "task2_init2",
+    "task3_init0",
+    "task4_init0",
+    "task5_init0",
+    "task5_init2",
+    "task6_init0",
+    "task6_init1",
+    "task6_init2",
+    "task7_init1",
+    "task7_init2",
+    "task8_init0",
+    "task8_init2",
+    "task9_init0",
+    "task9_init2"
+  ],
+  "task_coverage": {
+    "0": [
+      "task0_init0"
+    ],
+    "1": [
+      "task1_init0",
+      "task1_init1",
+      "task1_init2"
+    ],
+    "2": [
+      "task2_init1",
+      "task2_init2"
+    ],
+    "3": [
+      "task3_init0"
+    ],
+    "4": [
+      "task4_init0"
+    ],
+    "5": [
+      "task5_init0",
+      "task5_init2"
+    ],
+    "6": [
+      "task6_init0",
+      "task6_init1",
+      "task6_init2"
+    ],
+    "7": [
+      "task7_init1",
+      "task7_init2"
+    ],
+    "8": [
+      "task8_init0",
+      "task8_init2"
+    ],
+    "9": [
+      "task9_init0",
+      "task9_init2"
+    ]
+  }
+}

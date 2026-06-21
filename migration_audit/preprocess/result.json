@@ -1,0 +1,11 @@
+{
+  "steps": 220,
+  "success": false,
+  "termination": "timeout",
+  "error": null,
+  "duration_s": 437.3,
+  "gripper_flips": 6,
+  "label": "task9_init2",
+  "task_idx": 9,
+  "init_idx": 2
+}
