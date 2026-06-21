@@ -17,6 +17,8 @@ This run uses provisional Layer1 labels and is not a replacement for H2 human-re
 - Completed runs: 4
 - Skipped runs: 2
 - Skip class: `SKIPPED_NO_SUPERVISED_ROWS`
+- Provisional Layer2 engineering acceptance: `BLOCKED_BY_MISSING_LIBERO10_SUPERVISED_DENOMINATOR`
+- Layer3 engineering smoke: `NO_GO`
 
 Skipped runs:
 
@@ -24,6 +26,8 @@ Skipped runs:
 - `M2_leave_one_suite_out_test_libero_10`: train/val rows exist from Spatial+Goal, but LIBERO-10 has no supervised test rows.
 
 The skip is an explicit denominator result from provisional Layer1 coverage, not a hidden training failure.
+
+The original engineering-bypass gate requires all three leave-one-suite-out M2 checkpoints to exist before declaring `PROVISIONAL_LAYER2_ENGINEERING_PASS`. This run produces Spatial and Goal held-out M2 checkpoints, but cannot produce the LIBERO-10 held-out checkpoint because the provisional Layer1 resolver emitted no supervised LIBERO-10 test rows. Therefore the run stops at Layer2 and does not authorize Layer3 smoke.
 
 ## Primary Metrics
 
@@ -48,4 +52,4 @@ The skip is an explicit denominator result from provisional Layer1 coverage, not
 - This does not validate final Teacher labels.
 - This does not prove detector generalization to LIBERO-10.
 - This does not authorize GPU/LIBERO/VIS/RAND/shuffled/attack execution.
-
+- This does not satisfy the original `all three M2 checkpoints exist` Layer2 engineering gate.
