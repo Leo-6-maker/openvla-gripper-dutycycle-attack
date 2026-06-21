@@ -68,37 +68,34 @@ def _qpos_to_opening_proxy(qpos):
     return float(min(1.0, max(0.0, scalar / max(expected_open_max, 1e-9))))
 
 
-def _read_mujoco_pose(env, body_name):
-    """Read body position from MuJoCo sim. Returns [x,y,z] or [nan]*3."""
-    try:
-        sim = env.sim
-        body_id = sim.model.body_name2id(body_name)
-        pos = sim.data.body_xpos[body_id].copy()
-        return [float(pos[0]), float(pos[1]), float(pos[2])]
-    except Exception:
-        return [float("nan")] * 3
+def _get_obs_keys(obs):
+    """Discover object and target observation keys from LIBERO obs dict.
+    Object is always akita_black_bowl_1; target is plate_1.
+    Returns (obj_pos_key, tgt_pos_key)."""
+    for prefix in ["akita_black_bowl_1", "akita_black_bowl"]:
+        pk = prefix + "_pos"
+        if pk in obs:
+            obj_key = pk
+            break
+    else:
+        obj_key = None
+
+    for prefix in ["plate_1", "plate"]:
+        pk = prefix + "_pos"
+        if pk in obs:
+            tgt_key = pk
+            break
+    else:
+        tgt_key = None
+
+    return obj_key, tgt_key
 
 
-def _verify_binding(env, task_idx):
-    """Verify object/target MuJoCo binding. Returns (obj_name, tgt_name, ok)."""
-    if OBJECT_TARGET_BINDING is None:
-        return "unknown", "unknown", False
-    tasks = OBJECT_TARGET_BINDING.get("tasks", [])
-    if task_idx >= len(tasks):
-        return "unknown", "unknown", False
-    spec = tasks[task_idx]
-    obj_name = spec.get("object", "akita_black_bowl_1")
-    tgt_name = spec.get("target", "plate_region")
-    try:
-        sim = env.sim
-        obj_id = sim.model.body_name2id(obj_name)
-        tgt_id = sim.model.site_name2id(tgt_name) if hasattr(sim.model, 'site_name2id') else None
-        if tgt_id is None:
-            tgt_id = sim.model.body_name2id(tgt_name)
-        ok = obj_id >= 0 and tgt_id >= 0
-    except Exception:
-        ok = False
-    return obj_name, tgt_name, ok
+def _verify_binding(obs):
+    """Verify object/target keys exist in observation. Returns (obj_key, tgt_key, ok)."""
+    obj_key, tgt_key = _get_obs_keys(obs)
+    ok = obj_key is not None and tgt_key is not None
+    return obj_key or "unknown", tgt_key or "unknown", ok
 
 
 def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
@@ -113,17 +110,17 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
     init_state_sha = sha256_hex(init_states[ii])
     label = "task%d_init%d" % (ti, ii)
 
-    # MuJoCo binding verification
+    # MuJoCo binding verification via obs keys
     env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=256, camera_widths=256,
                              has_renderer=True, has_offscreen_renderer=True,
                              render_gpu_device_id=0, use_camera_obs=True)
     env.seed(seed)
     obs = env.reset()
     obs = env.set_init_state(init_states[ii])
-    obj_name, tgt_name, binding_ok = _verify_binding(env, ti)
+    obj_key, tgt_key, binding_ok = _verify_binding(obs)
     if not binding_ok:
         env.close()
-        raise RuntimeError(f"Binding check failed for {label}: obj={obj_name} tgt={tgt_name}")
+        raise RuntimeError(f"Binding check failed for {label}: obj_key={obj_key} tgt_key={tgt_key}")
 
     for _ in range(wait_steps):
         obs, _, _, _ = env.step([0, 0, 0, 0, 0, 0, -1])
@@ -133,6 +130,7 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
     adapter.reset()
 
     rows = []
+    eef_pos_history = []  # for causal backward-diff velocity
     done, success, error = False, False, None
     prev_env_grip = None
     t0 = time.time()
@@ -159,33 +157,25 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
         env_act[:6] = act[:6]
         env_act[6] = env_g
 
-        # --- Privileged state from MuJoCo ---
-        obj_pose = _read_mujoco_pose(env, obj_name)
-        tgt_pose = _read_mujoco_pose(env, tgt_name)
+        # --- Privileged state from obs keys ---
+        obj_pose_raw = obs.get(obj_key, [float("nan")]*3)
+        tgt_pose_raw = obs.get(tgt_key, [float("nan")]*3)
+        obj_pose = np.asarray(obj_pose_raw, dtype=np.float64).ravel()[:3]
+        tgt_pose = np.asarray(tgt_pose_raw, dtype=np.float64).ravel()[:3]
 
         eef_pos = obs.get("robot0_eef_pos", [float("nan")]*3)
         eef_pos_arr = np.asarray(eef_pos, dtype=np.float64).ravel()
-        has_eef = len(eef_pos_arr) >= 3 and not np.any(np.isnan(eef_pos_arr[:3]))
 
-        # EEF velocity: try direct obs key, otherwise causal backward diff
-        eef_vel = None
-        if "robot0_eef_vel" in obs:
-            eef_vel = obs["robot0_eef_vel"]
-        elif "robot0_eef_vel_lin" in obs:
-            eef_vel = obs["robot0_eef_vel_lin"]
-        # Causal backward difference from adapter history if available
-        if eef_vel is None:
-            if len(adapter.history) > 0 and adapter.history[-1].get("valid"):
-                prev = adapter.history[-1]
-                if step == 0:
-                    eef_vel = np.array([float("nan")]*3)
-                else:
-                    eef_vel = np.array([eef_pos_arr[0] - prev["eef_x"],
-                                       eef_pos_arr[1] - prev["eef_y"],
-                                       eef_pos_arr[2] - prev["eef_z"]])
-            else:
-                eef_vel = np.array([float("nan")]*3)
-        eef_vel_arr = np.asarray(eef_vel, dtype=np.float64).ravel()
+        # EEF velocity: causal backward difference from collector's own position history.
+        # LIBERO does not expose robot0_eef_vel; compute from sequential eef_pos diffs.
+        if step == 0 or len(eef_pos_history) == 0:
+            eef_vx, eef_vy, eef_vz = 0.0, 0.0, 0.0
+        else:
+            prev_pos = eef_pos_history[-1]
+            eef_vx = float(eef_pos_arr[0] - prev_pos[0])
+            eef_vy = float(eef_pos_arr[1] - prev_pos[1])
+            eef_vz = float(eef_pos_arr[2] - prev_pos[2])
+        eef_pos_history.append((float(eef_pos_arr[0]), float(eef_pos_arr[1]), float(eef_pos_arr[2])))
 
         qpos_raw = obs.get("robot0_gripper_qpos", np.array([float("nan")]))
         qpos_scalar = _qpos_to_scalar(qpos_raw)
@@ -202,9 +192,7 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
             gripper_qpos=qpos_scalar, gripper_opening_proxy=opening_proxy,
             eef_x=float(eef_pos_arr[0]), eef_y=float(eef_pos_arr[1]),
             eef_z=float(eef_pos_arr[2]),
-            eef_vx=float(eef_vel_arr[0]) if len(eef_vel_arr) > 0 else float("nan"),
-            eef_vy=float(eef_vel_arr[1]) if len(eef_vel_arr) > 1 else float("nan"),
-            eef_vz=float(eef_vel_arr[2]) if len(eef_vel_arr) > 2 else float("nan"),
+            eef_vx=eef_vx, eef_vy=eef_vy, eef_vz=eef_vz,
             action_dx=float(act[0]), action_dy=float(act[1]),
             action_dz=float(act[2]), action_gripper=float(act[6]),
         )
@@ -243,7 +231,7 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
             "feature_error": str(feat_out.get("error", "")),
             "raw_gripper": str(raw_g), "env_gripper": str(env_g),
             "qpos_scalar": str(qpos_scalar), "opening_proxy": str(opening_proxy),
-            "binding_ok": str(binding_ok), "object_name": obj_name, "target_name": tgt_name,
+            "binding_ok": str(binding_ok), "object_key": obj_key, "target_key": tgt_key,
         }
         if feat_out.get("valid") and feat_out.get("features"):
             for fn in FEATURE_NAMES:
@@ -263,7 +251,7 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
         "steps": len(rows), "success": success,
         "termination": "success" if success else ("error" if error else "timeout"),
         "error": error, "duration_s": round(dt, 1),
-        "binding_ok": binding_ok, "object_name": obj_name,
+        "binding_ok": binding_ok, "object_key": obj_key, "target_key": tgt_key,
     }, rows, adapter
 
 
@@ -371,7 +359,7 @@ def main():
                       "reward", "done", "check_success", "termination",
                       "feature_valid", "feature_error",
                       "raw_gripper", "env_gripper", "qpos_scalar", "opening_proxy",
-                      "binding_ok", "object_name", "target_name"] + FEATURE_NAMES
+                      "binding_ok", "object_key", "target_key"] + FEATURE_NAMES
         with open(os.path.join(ep_dir, "trace.csv"), "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
             w.writeheader()
