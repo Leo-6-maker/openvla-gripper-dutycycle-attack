@@ -169,6 +169,13 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
         env_act[:6] = act[:6]
         env_act[6] = env_g
 
+        # === SHADOW OBSERVER ASSERT ===
+        # Deep-copy actions before observer code. Observer MUST NOT mutate them.
+        act_pre = act.copy()
+        env_act_pre = env_act.copy()
+        raw_action_pre_sha = sha256_hex(act_pre.tobytes())
+        env_action_pre_sha = sha256_hex(env_act_pre.tobytes())
+
         # --- Privileged state from obs keys ---
         obj_pose_raw = obs.get(obj_key, [float("nan")]*3)
         tgt_pose_raw = obs.get(tgt_key, [float("nan")]*3)
@@ -216,6 +223,17 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
             action_dz=float(act[2]), action_gripper=float(act[6]),
         )
 
+        # SHADOW OBSERVER ASSERT: verify observer did not mutate actions
+        if not np.array_equal(act, act_pre):
+            raise RuntimeError(
+                "SHADOW_OBSERVER_VIOLATION: raw_action mutated during observer step %d" % step)
+        if not np.array_equal(env_act, env_act_pre):
+            raise RuntimeError(
+                "SHADOW_OBSERVER_VIOLATION: env_action mutated during observer step %d" % step)
+
+        raw_action_post_sha = sha256_hex(act.tobytes())
+        env_action_post_sha = sha256_hex(env_act.tobytes())
+
         # Step environment
         try:
             obs, rew, done, info = env.step(env_act.tolist())
@@ -258,6 +276,10 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
             "processed_image_sha256": processed_sha,
             "processor_pixel_sha256": pixel_sha,
             "input_ids_sha256": ids_sha,
+            "raw_action_pre_observer_sha": raw_action_pre_sha,
+            "raw_action_post_observer_sha": raw_action_post_sha,
+            "env_action_pre_observer_sha": env_action_pre_sha,
+            "env_action_post_observer_sha": env_action_post_sha,
         }
         if feat_out.get("valid") and feat_out.get("features"):
             for fn in FEATURE_NAMES:
@@ -439,7 +461,9 @@ def main():
                       "raw_action_json", "raw_action_sha256",
                       "env_action_json", "env_action_sha256",
                       "processed_image_sha256", "processor_pixel_sha256",
-                      "input_ids_sha256"] + FEATURE_NAMES
+                      "input_ids_sha256",
+                      "raw_action_pre_observer_sha", "raw_action_post_observer_sha",
+                      "env_action_pre_observer_sha", "env_action_post_observer_sha"] + FEATURE_NAMES
         with open(trace_tmp, "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
             w.writeheader()
