@@ -539,6 +539,11 @@ def test_mixed_and_multi_event_regression_classes(tmp_path):
         ep = _episode(tmp_path, f"{key[0]}_{key[1]}", suite=key[0], task_idx=key[1])
         row, events = resolve_episode(_ledger_row(ep, suite=key[0], task_idx=key[1]), ontology[key], teacher_run_id="dev")
         assert row["mechanism_eligible"] is False
+        if key[0] != "libero_10":
+            assert row["teacher_status"] == RESOLVER_NOT_IMPLEMENTED
+            assert row["event_count"] == 0
+            assert events == []
+            continue
         if row["teacher_status"] == SUPPLEMENTARY_EVENT_ELIGIBLE:
             assert row["manual_review_required"] is True
             assert row["label_role"] == "supplementary_multievent_grasp_carry_bridge"

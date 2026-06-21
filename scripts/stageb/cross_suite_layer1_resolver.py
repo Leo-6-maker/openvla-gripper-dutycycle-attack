@@ -1062,6 +1062,23 @@ def resolve_episode(row: dict[str, Any], task: OntologyTask, *, teacher_run_id: 
     if task.mechanism_type in SUPPLEMENTARY_MECHANISMS:
         object_bindings = [b for b in bind_many(body_names, task.manipulated_object_aliases) if b.status in VALID_BINDING_STATUSES]
         target_binding, target_kind = bind_target(site_names, body_names, task.target_aliases)
+        if row.get("suite") != "libero_10":
+            episode = {
+                **base,
+                "mechanism_eligible": False,
+                "primary_teacher_status": "NOT_PRIMARY_DENOMINATOR",
+                "supplementary_teacher_status": RESOLVER_NOT_IMPLEMENTED,
+                "label_role": "ignore",
+                "primary_or_supplementary": "ignore",
+                "object_binding_status": "NOT_APPLICABLE",
+                "target_binding_status": "NOT_APPLICABLE" if target_binding.status in VALID_BINDING_STATUSES else target_binding.status,
+                "teacher_status": RESOLVER_NOT_IMPLEMENTED,
+                "teacher_semantic_abstain": True,
+                "abstain_reason": "supplementary_bridge_restricted_to_libero10",
+                "event_count": 0,
+                "manual_review_required": True,
+            }
+            return episode, []
         supplementary_events: list[dict[str, Any]] = []
         if object_bindings:
             for event_idx, object_binding in enumerate(object_bindings):
