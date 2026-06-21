@@ -1155,8 +1155,15 @@ def validate_episode_rows(rows: list[dict[str, Any]]) -> list[str]:
 
 
 def rows_from_manifest(manifest_path: Path) -> list[dict[str, Any]]:
+    if manifest_path.suffix.lower() == ".csv":
+        return [dict(row) for row in read_csv_rows(manifest_path)]
+    if manifest_path.suffix.lower() != ".json":
+        raise ValueError(f"unsupported manifest format: {manifest_path}")
     obj = read_json(manifest_path)
-    return list(obj.get("selected", []))
+    selected = obj.get("selected", [])
+    if not isinstance(selected, list):
+        raise ValueError(f"manifest selected must be a list: {manifest_path}")
+    return list(selected)
 
 
 def run_resolver(manifest_path: Path, ontology_path: Path, output_dir: Path, *, teacher_run_id: str) -> dict[str, Any]:

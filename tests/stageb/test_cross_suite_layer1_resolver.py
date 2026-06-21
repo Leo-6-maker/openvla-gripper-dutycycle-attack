@@ -649,6 +649,18 @@ def test_run_resolver_and_blind_package_outputs_are_event_level_and_blind(tmp_pa
     assert "task_success" in hidden
 
 
+def test_run_resolver_accepts_csv_manifest(tmp_path):
+    ep = _episode(tmp_path, "ep_csv", suite="libero_10", task_idx=0, object_count=2)
+    manifest = tmp_path / "manifest.csv"
+    _write_csv(manifest, [_ledger_row(ep, suite="libero_10", task_idx=0)])
+    out = tmp_path / "resolver_csv"
+    result = run_resolver(manifest, ONTOLOGY, out, teacher_run_id="dev")
+    assert result["episode_count"] == 1
+    assert result["validation_error_count"] == 0
+    labels = list(csv.DictReader((out / "teacher_episode_labels_v1.csv").open(newline="", encoding="utf-8")))
+    assert labels[0]["teacher_status"] == SUPPLEMENTARY_EVENT_ELIGIBLE
+
+
 def test_teacher_timeline_rows_are_teacher_only():
     label = {"episode_key": "ep", "teacher_status": "ELIGIBLE_EVENT"}
     event = {
