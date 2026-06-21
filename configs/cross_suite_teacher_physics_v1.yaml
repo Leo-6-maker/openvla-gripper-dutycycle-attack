@@ -13,6 +13,7 @@ thresholds:
   object_gripper_near_m: 0.12
   object_gripper_separated_m: 0.18
   object_lift_delta_m: 0.025
+  object_lift_lookahead_frames: 4
   stable_carry_min_frames: 3
   grasp_min_frames: 2
   object_target_near_m: 0.14

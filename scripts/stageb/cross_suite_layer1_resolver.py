@@ -616,6 +616,18 @@ def _orientation_jump_mask(body_xquat: np.ndarray | None, object_index: int, n: 
     return jumps <= max_jump
 
 
+def _future_rise_mask(z: np.ndarray, rise_delta: float, lookahead: int) -> np.ndarray:
+    z = np.asarray(z, dtype=float)
+    mask = np.zeros(len(z), dtype=bool)
+    for idx in range(len(z)):
+        end = min(len(z), idx + max(lookahead, 1) + 1)
+        if end <= idx + 1:
+            continue
+        future_max = float(np.nanmax(z[idx:end]))
+        mask[idx] = bool(np.isfinite(future_max) and future_max - float(z[idx]) >= rise_delta)
+    return mask
+
+
 def detect_physical_event(
     *,
     step_rows: list[dict[str, Any]],
@@ -631,6 +643,7 @@ def detect_physical_event(
     object_gripper_near = float(thresholds.get("object_gripper_near_m", 0.12))
     object_gripper_separated = float(thresholds.get("object_gripper_separated_m", 0.18))
     object_lift_delta = float(thresholds.get("object_lift_delta_m", 0.025))
+    object_lift_lookahead_frames = int(thresholds.get("object_lift_lookahead_frames", 4))
     stable_carry_min = int(thresholds.get("stable_carry_min_frames", 3))
     grasp_min = int(thresholds.get("grasp_min_frames", 2))
     object_target_near = float(thresholds.get("object_target_near_m", 0.14))
@@ -666,11 +679,15 @@ def detect_physical_event(
     obj_grip = np.linalg.norm(obj - grip, axis=1)
     obj_target = np.linalg.norm(obj - target, axis=1) if target is not None else None
     near_grip = obj_grip < object_gripper_near
-    lift_mask = obj[:, 2] > (obj[0, 2] + object_lift_delta)
+    target_near = np.zeros(n, dtype=bool) if obj_target is None else obj_target < object_target_near
+    absolute_lift_mask = obj[:, 2] > (obj[0, 2] + object_lift_delta)
+    future_lift_mask = _future_rise_mask(obj[:, 2], object_lift_delta, object_lift_lookahead_frames)
+    lift_mask = future_lift_mask | (absolute_lift_mask & ~target_near)
+    lifted_state_mask = future_lift_mask | absolute_lift_mask
     closed = _gripper_closed_mask(step_rows, n)
     coupled_motion = _coupled_motion_mask(obj, grip, motion_coupling_max_delta)
     orientation_ok = _orientation_jump_mask(body_xquat, object_binding.index, n, orientation_jump_max)
-    carry_evidence_mask = near_grip & lift_mask & closed & coupled_motion & orientation_ok
+    carry_evidence_mask = near_grip & lifted_state_mask & closed & coupled_motion & orientation_ok
     target_step_by_close: int | None = None
     best_incomplete: PhysicalEvent | None = None
     for close in close_candidates:

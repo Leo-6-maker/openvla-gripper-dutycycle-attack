@@ -98,6 +98,7 @@ def _trajectory(kind: str, *, object_count: int = 1, ambiguous_target: bool = Fa
     elif kind == "late_event":
         obj = valid_obj.copy()
         obj[:3] = np.array([0.0, 0.5, 0.0], dtype=np.float32)
+        obj[3:, 2] = np.array([0.0, 0.0, 0.01, 0.04, 0.05], dtype=np.float32)
         grip = obj.copy()
         grip[:3] = obj[:3] + np.array([0.5, 0.0, 0.0], dtype=np.float32)
     else:
