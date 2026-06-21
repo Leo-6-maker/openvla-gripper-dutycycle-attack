@@ -82,6 +82,7 @@ CORRECT_SEMANTIC_ABSTAIN
 NO_RELEVANT_GRASP_EVENT
 OBJECT_BINDING_AMBIGUOUS
 TARGET_BINDING_AMBIGUOUS
+SUPPLEMENTARY_EVENT_ELIGIBLE
 MULTI_EVENT_AUDIT_ONLY
 RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM
 RESOLVER_FAILED
@@ -95,7 +96,9 @@ SCHEMA_INVALID
 - ELIGIBLE_EVENT existence requires physical grasp, lift, and stable carry evidence. Target proximity and `placement_complete` are outcome/placement metadata, not event-existence requirements.
 - teacher_status=CORRECT_SEMANTIC_ABSTAIN implies `mechanism_eligible=false`, `teacher_semantic_abstain=true`, `event_count=0`, and a nonempty `abstain_reason`.
 - `teacher_status in {OBJECT_BINDING_AMBIGUOUS,TARGET_BINDING_AMBIGUOUS,RESOLVER_FAILED,SCHEMA_INVALID}` implies `mechanism_eligible=false`, `manual_review_required=true`, and no accepted positive event rows.
+- teacher_status=SUPPLEMENTARY_EVENT_ELIGIBLE implies the mechanism is `multi_object_transfer` or `mixed_articulated_pick_place`, `mechanism_eligible=false`, `teacher_semantic_abstain=true`, `event_count>=1`, and `primary_supplementary_event_id` is nonempty. These rows are only eligible for `label_role=supplementary_multievent_grasp_carry_bridge`; they must not enter the primary single-object denominator.
 - teacher_status=MULTI_EVENT_AUDIT_ONLY implies the mechanism is `multi_object_transfer` or `mixed_articulated_pick_place`, `manual_review_required=true`, and all positive event rows remain supplementary until reviewed.
+- teacher_status=NO_RELEVANT_GRASP_EVENT implies no physically valid supplementary grasp-carry event was found. It is negative-only supervision when the label role is supplementary.
 - teacher_status=RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM implies a supplementary mechanism where the resolver could not produce reliable event segmentation; it must have `mechanism_eligible=false`, `teacher_semantic_abstain=true`, and `event_count=0`.
 
 ## Binding Source Priority

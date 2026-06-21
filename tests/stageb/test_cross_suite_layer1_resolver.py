@@ -11,6 +11,7 @@ sys.path.insert(0, str(REPO))
 from scripts.stageb.cross_suite_layer1_resolver import (  # noqa: E402
     BindingResult,
     RESOLVER_NOT_IMPLEMENTED,
+    SUPPLEMENTARY_EVENT_ELIGIBLE,
     bind_unique,
     bind_target,
     build_blind_review_manifest,
@@ -21,6 +22,7 @@ from scripts.stageb.cross_suite_layer1_resolver import (  # noqa: E402
     load_step_rows,
     resolve_episode,
     run_resolver,
+    select_primary_supplementary_event,
     teacher_timeline_rows,
     validate_episode_rows,
 )
@@ -401,11 +403,22 @@ def test_negative_and_supplementary_status_invariants(tmp_path):
     neg, _ = resolve_episode(_ledger_row(ep_goal, suite="libero_goal", task_idx=0), ontology[("libero_goal", 0)], teacher_run_id="dev")
     multi, events = resolve_episode(_ledger_row(ep_l10, suite="libero_10", task_idx=0), ontology[("libero_10", 0)], teacher_run_id="dev")
     assert neg["teacher_status"] == "CORRECT_SEMANTIC_ABSTAIN"
-    assert multi["teacher_status"] in {"MULTI_EVENT_AUDIT_ONLY", RESOLVER_NOT_IMPLEMENTED}
+    assert multi["teacher_status"] in {SUPPLEMENTARY_EVENT_ELIGIBLE, "NO_RELEVANT_GRASP_EVENT"}
     assert multi["mechanism_eligible"] is False
     assert multi["teacher_semantic_abstain"] is True
     assert all(event["supplementary_event"] for event in events)
     assert validate_episode_rows([neg, multi]) == []
+
+
+def test_primary_supplementary_event_selection_is_deterministic():
+    events = [
+        {"event_id": "ep|event1", "stable_carry_start": "20", "close_onset_step": "5", "object_body_name": "b_object"},
+        {"event_id": "ep|event0", "stable_carry_start": "18", "close_onset_step": "9", "object_body_name": "z_object"},
+        {"event_id": "ep|event2", "stable_carry_start": "18", "close_onset_step": "9", "object_body_name": "a_object"},
+    ]
+    selected = select_primary_supplementary_event(events)
+    assert selected is not None
+    assert selected["event_id"] == "ep|event2"
 
 
 def test_mixed_and_multi_event_regression_classes(tmp_path):
@@ -424,7 +437,11 @@ def test_mixed_and_multi_event_regression_classes(tmp_path):
         ep = _episode(tmp_path, f"{key[0]}_{key[1]}", suite=key[0], task_idx=key[1])
         row, _ = resolve_episode(_ledger_row(ep, suite=key[0], task_idx=key[1]), ontology[key], teacher_run_id="dev")
         assert row["mechanism_eligible"] is False
-        assert row["manual_review_required"] is True
+        if row["teacher_status"] == SUPPLEMENTARY_EVENT_ELIGIBLE:
+            assert row["manual_review_required"] is True
+        else:
+            assert row["teacher_status"] == "NO_RELEVANT_GRASP_EVENT"
+            assert row["manual_review_required"] is False
 
 
 def test_dev_and_blind_manifests_are_deterministic_and_disjoint(tmp_path):
@@ -466,6 +483,8 @@ def test_run_resolver_and_blind_package_outputs_are_event_level_and_blind(tmp_pa
     result = run_resolver(manifest, ONTOLOGY, out, teacher_run_id="dev")
     assert result["episode_count"] == 1
     assert result["event_count"] == 1
+    assert (out / "supplementary_teacher_event_labels_v1.csv").exists()
+    assert (out / "primary_supplementary_event_selection_v1.csv").exists()
     package = build_review_package(manifest, out, tmp_path / "review")
     assert package["review_count"] == 1
     review_csv = (tmp_path / "review" / "blind_review_queue.csv").read_text(encoding="utf-8")
