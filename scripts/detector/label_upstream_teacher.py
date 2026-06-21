@@ -45,6 +45,9 @@ for d in train_dirs:
         else:
             split = "held_out"
 
+        # Extract step-0 object Z for lift detection
+        obj_z0 = float(trace[0].get("object_pose_z", "nan"))
+
         # Build teacher trajectory records
         traj_recs = []
         for i, row in enumerate(trace):
@@ -65,6 +68,13 @@ for d in train_dirs:
                 "eef_x": row.get("eef_x", "nan"),
                 "eef_y": row.get("eef_y", "nan"),
                 "eef_z": row.get("eef_z", "nan"),
+                "obj_z0": str(obj_z0),
+                "gripper_qpos": row.get("qpos_scalar", row.get("gripper_qpos", "nan")),
+                "gripper_opening_proxy": row.get("opening_proxy", row.get("gripper_opening_proxy", "nan")),
+                "teacher_privileged_state_available": row.get("teacher_privileged_state_available", "True"),
+                "eef_vx": row.get("eef_vx", "0"),
+                "eef_vy": row.get("eef_vy", "0"),
+                "eef_vz": row.get("eef_vz", "0"),
                 "step": i,
             }
             traj_recs.append(rec)
