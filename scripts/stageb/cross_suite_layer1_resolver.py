@@ -741,8 +741,9 @@ def detect_physical_event(
         placement_complete = bool(target_step is not None and release is not None and release >= target_step)
         start = max(0, int(grasp if grasp is not None else close_idx) - 2)
         anchor = int(grasp if grasp is not None else close_idx)
-        end_candidates = [x for x in [release, separation, target_step, n - 1] if x is not None]
-        end = int(min(end_candidates)) if end_candidates else min(n - 1, close_idx + 3)
+        min_end = min(n - 1, int(carry) + stable_carry_min - 1) if carry is not None else min(n - 1, close_idx + 3)
+        end_candidates = [x for x in [release, separation, target_step, n - 1] if x is not None and int(x) >= min_end]
+        end = int(min(end_candidates)) if end_candidates else min_end
         candidate = PhysicalEvent(
             status="PHYSICAL_EVENT_VALID" if valid else "PHYSICAL_EVENT_INCOMPLETE",
             close_onset_step=int(close),

@@ -441,6 +441,47 @@ def test_owner_phase_order_regression_step86_grasp_not_lift():
     assert int(event.lift_onset_step) > 86
 
 
+def test_window_end_preserves_minimum_stable_carry_duration():
+    body_names, site_names, body_xpos, body_xquat, site_xpos, qpos, qvel, ctrl = _trajectory("valid")
+    n = len(body_xpos)
+    # Target proximity begins at the same frame as carry evidence. The Teacher
+    # window must not be truncated to the carry start before minimum carry duration.
+    body_xpos[:, 1, :] = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [0.01, 0.0, 0.0],
+            [0.02, 0.0, 0.0],
+            [0.04, 0.0, 0.01],
+            [0.06, 0.0, 0.05],
+            [0.06, 0.0, 0.05],
+        ],
+        dtype=np.float32,
+    )
+    site_xpos[:, 0, :] = body_xpos[:, 1, :]
+    site_xpos[:, 1, :] = body_xpos[:, 1, :]
+    rows = []
+    for step in range(n):
+        rows.append(
+            {
+                "step": step,
+                "raw_gripper": 0.0 if step >= 2 else 1.0,
+                "env_gripper": 1.0 if step >= 2 else -1.0,
+            }
+        )
+    event = detect_physical_event(
+        step_rows=rows,
+        sim_arrays={"body_xpos": body_xpos, "body_xquat": body_xquat, "site_xpos": site_xpos},
+        site_names=site_names,
+        object_binding=BindingResult("black_bowl_1_main", 1, "BOUND_EXACT", "test", ("black_bowl_1_main",)),
+        target_binding=BindingResult("plate_1_default_site", 0, "BOUND_EXACT", "test", ("plate_1_default_site",)),
+        target_kind="site",
+    )
+    assert event.event_valid is True
+    assert int(event.teacher_window_end) > int(event.stable_carry_start)
+
+
 def test_missing_gripper_site_fails_closed(tmp_path):
     ontology = load_ontology(ONTOLOGY)
     task = ontology[("libero_spatial", 0)]
