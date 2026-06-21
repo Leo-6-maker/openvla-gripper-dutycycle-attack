@@ -1,0 +1,62 @@
+{
+  "gate": "UPSTREAM_PREPROCESS_ALIGNMENT",
+  "branch": "infra/a800-migration-20260620",
+  "running_code_sha": {
+    "runner": "ef0b2c606b1beafc75410e149f43e85bbf9b42659829c79da35fdffe77567f20",
+    "preprocess_module": "6de76cb53e9b0acdb5b8d877c988fa69aca10a30519270556c6569f3b5f9fdcc",
+    "clean30_plan": "9549ee9a53b23bdc06329b2b8b12a4ed73278bdc7f97a732f2ef00653655219e",
+    "audit_10frame": "307b83e343d1e6204bf6b38e84034f5453610923643a2d7d634a3a9462dc07c1"
+  },
+  "canonical_backends": {
+    "upstream_tf_jpeg": {
+      "description": "Official OpenVLA upstream path: 180 rotate, JPEG round-trip, TF Lanczos3, TF crop_and_resize",
+      "aliases": ["tf_jpeg_legacy"],
+      "requires_tf": true,
+      "matches_upstream": true
+    },
+    "project_pil_lanczos": {
+      "description": "Project PIL approximation: 180 rotate, PIL LANCZOS, integer-pixel centre crop",
+      "aliases": ["official_pil_lanczos"],
+      "requires_tf": false,
+      "matches_upstream": false
+    },
+    "none": {
+      "description": "Pass-through, no preprocessing",
+      "aliases": ["pil_fallback"],
+      "requires_tf": false,
+      "matches_upstream": false
+    }
+  },
+  "audit_result": {
+    "n_frames": 10,
+    "token_match": 0,
+    "action_match": 0,
+    "gripper_match": 5,
+    "max_action_diff": 0.996,
+    "conclusion": "PIL and upstream TF/JPEG paths produce completely different actions on ALL frames"
+  },
+  "upstream_canary_4ep": {
+    "profile": "fp32_eager",
+    "backend": "upstream_tf_jpeg",
+    "success": 3,
+    "total": 4,
+    "rate": 0.75
+  },
+  "clean30_profiles": {
+    "running": ["fp32_eager_upstream_tfjpeg", "bf16_flash2_upstream_tfjpeg"],
+    "deferred": ["bf16_eager_upstream_tfjpeg"]
+  },
+  "contract": {
+    "seed": 42,
+    "max_steps": 220,
+    "wait_steps": 10,
+    "unnorm_key": "libero_spatial",
+    "resize": 224,
+    "center_crop": true,
+    "crop_scale": 0.9,
+    "rotation": "img[::-1, ::-1]",
+    "jpeg_roundtrip": true,
+    "resize_method": "tf_lanczos3_antialias",
+    "crop_method": "tf_crop_and_resize"
+  }
+}

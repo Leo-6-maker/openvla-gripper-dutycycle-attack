@@ -6,7 +6,10 @@ SRC_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(os.path.dirname(SRC_DIR))
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--profile", required=True, choices=["fp32_eager", "bf16_eager", "bf16_flash2"])
+parser.add_argument("--profile", required=True, choices=[
+    "fp32_eager", "bf16_eager", "bf16_flash2",
+    "fp32_upstream", "bf16_upstream", "bf16_flash2_upstream",
+])
 parser.add_argument("--cuda_devices", default="6")
 parser.add_argument("--model_path", required=True)
 parser.add_argument("--output_dir", required=True)
@@ -23,9 +26,12 @@ parser.add_argument("--plan", default=None, help="JSON plan for single-process r
 args = parser.parse_args()
 
 PROFILES = {
-    "fp32_eager": {"dtype": "float32", "attn": "eager", "flash2": False},
-    "bf16_eager": {"dtype": "bfloat16", "attn": "eager", "flash2": False},
-    "bf16_flash2": {"dtype": "bfloat16", "attn": "flash_attention_2", "flash2": True},
+    "fp32_eager": {"dtype": "float32", "attn": "eager", "flash2": False, "backend": "pil"},
+    "bf16_eager": {"dtype": "bfloat16", "attn": "eager", "flash2": False, "backend": "pil"},
+    "bf16_flash2": {"dtype": "bfloat16", "attn": "flash_attention_2", "flash2": True, "backend": "pil"},
+    "fp32_upstream": {"dtype": "float32", "attn": "eager", "flash2": False, "backend": "upstream_tf_jpeg"},
+    "bf16_upstream": {"dtype": "bfloat16", "attn": "eager", "flash2": False, "backend": "upstream_tf_jpeg"},
+    "bf16_flash2_upstream": {"dtype": "bfloat16", "attn": "flash_attention_2", "flash2": True, "backend": "upstream_tf_jpeg"},
 }
 profile = PROFILES[args.profile]
 
@@ -37,6 +43,8 @@ env["TRANSFORMERS_OFFLINE"] = "1"
 env["HOME"] = "/mnt/sdc/dty_user/openvla_attack/sandbox_home"
 env["TMPDIR"] = "/mnt/sdc/dty_user/openvla_attack/tmp"
 env["TOKENIZERS_PARALLELISM"] = "false"
+env["TF_FORCE_GPU_ALLOW_GROWTH"] = "true"
+env["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 if profile["flash2"]:
     overlay = "/mnt/sdc/dty_user/openvla_attack/envs/flash2_overlay"
@@ -52,6 +60,7 @@ if args.plan:
         "--output_dir", args.output_dir,
         "--dtype", profile["dtype"],
         "--attn", profile["attn"],
+        "--preprocess_backend", profile["backend"],
         "--seed", str(args.seed),
         "--max_steps", str(args.max_steps),
         "--start_ep", str(args.start_ep),

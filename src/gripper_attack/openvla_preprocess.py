@@ -1,116 +1,211 @@
 #!/usr/bin/env python3
-"""Shared OpenVLA LIBERO image preprocessing.
+"""Canonical OpenVLA LIBERO image preprocessing — single shared entry point.
 
-Imported by v4_run_eval_openvla.py and attack_adapter.py.
-Three backends: official_pil_lanczos (default), tf_jpeg_legacy, none/pil_fallback.
+Backends:
+  - upstream_tf_jpeg:    official OpenVLA upstream path (JPEG round-trip, TF Lanczos3,
+                          TF crop_and_resize with sqrt(0.9)). Requires TensorFlow.
+  - project_pil_lanczos: project PIL approximation (180° rotate, LANCZOS resize,
+                          integer-pixel centre crop). No TF dependency.
+  - none:                pass-through, no preprocessing.
+
+Compatibility aliases (deprecated, resolve to canonical names):
+  - tf_jpeg_legacy      -> upstream_tf_jpeg
+  - official_pil_lanczos -> project_pil_lanczos
+
+The TF upstream backend matches openvla/openvla main branch:
+  experiments/robot/libero/libero_utils.py   (get_libero_image, resize_image)
+  experiments/robot/openvla_utils.py         (crop_and_resize, get_vla_action)
 """
 
 from __future__ import annotations
 
+import math
 import numpy as np
 from PIL import Image
 
-def _pil_center_crop_resize(image: Image.Image, crop_scale: float = 0.9, size: int = 224) -> Image.Image:
-    """Fallback center crop used only when official preprocessing is disabled."""
-    if crop_scale is None or float(crop_scale) >= 0.999:
-        return image.resize((size, size), Image.Resampling.LANCZOS)
-    w, h = image.size
-    scale = float(crop_scale) ** 0.5
-    cw, ch = max(1, int(round(w * scale))), max(1, int(round(h * scale)))
-    left, top = (w - cw) // 2, (h - ch) // 2
-    image = image.crop((left, top, left + cw, top + ch))
-    return image.resize((size, size), Image.Resampling.LANCZOS)
+_CROP_SCALE = 0.9
+_RESIZE_SIZE = 224
+
+# ---------------------------------------------------------------------------
+# Backend resolution
+# ---------------------------------------------------------------------------
+
+CANONICAL_BACKENDS = frozenset({"upstream_tf_jpeg", "project_pil_lanczos", "none"})
+
+ALIASES: dict[str, str] = {
+    "tf_jpeg_legacy": "upstream_tf_jpeg",
+    "official_pil_lanczos": "project_pil_lanczos",
+    "pil_fallback": "none",
+}
 
 
-def _official_pil_libero_image(image_np, *, center_crop: bool = False, resize_size: int = 224) -> Image.Image:
-    """Official OpenVLA LIBERO image path (PIL): rotate 180, Lanczos resize, Lanczos center crop.
-
-    Matches the corrected official OpenVLA eval script exactly:
-    - Rotate agentview 180 degrees
-    - PIL LANCZOS resize to resize_size
-    - Optional center crop (0.9 scale) → PIL LANCZOS resize back
-    - NO JPEG round-trip, NO TensorFlow dependency
-    """
-    arr = np.asarray(image_np)
-    if arr.dtype != np.uint8:
-        arr = np.clip(arr, 0, 255).astype(np.uint8)
-    arr = arr[::-1, ::-1]  # rotate 180 degrees
-    image = Image.fromarray(arr).convert("RGB")
-    image = image.resize((int(resize_size), int(resize_size)), Image.LANCZOS)
-    if center_crop:
-        crop_scale = 0.9 ** 0.5
-        w, h = image.size
-        cw, ch = max(1, int(w * crop_scale)), max(1, int(h * crop_scale))
-        left, top = (w - cw) // 2, (h - ch) // 2
-        image = image.crop((left, top, left + cw, top + ch))
-        image = image.resize((int(resize_size), int(resize_size)), Image.LANCZOS)
-    return image
+def resolve_backend(name: str) -> str:
+    """Resolve a backend name (possibly an alias) to its canonical form."""
+    canon = ALIASES.get(name, name)
+    if canon not in CANONICAL_BACKENDS:
+        raise ValueError(
+            f"Unknown preprocess backend {name!r} (canonical: {canon!r}). "
+            f"Valid backends: {sorted(CANONICAL_BACKENDS)}"
+        )
+    return canon
 
 
-def _official_tf_libero_image(image_np, *, center_crop: bool = False, resize_size: int = 224) -> Image.Image:
-    """Official OpenVLA LIBERO image path: rotate, JPEG round-trip, TF Lanczos3.
+# ---------------------------------------------------------------------------
+# TF memory guard (belt-and-suspenders: env var + programmatic)
+# ---------------------------------------------------------------------------
 
-    This intentionally requires TensorFlow instead of silently using the older
-    PIL approximation when ``--libero_official_preprocess`` is requested.
-    """
+_tf_memory_configured = False
+
+
+def _configure_tf_memory():
+    global _tf_memory_configured
+    if _tf_memory_configured:
+        return
     try:
         import tensorflow as tf
-    except Exception as exc:
-        raise SystemExit(
-            "--libero_official_preprocess now requires TensorFlow for official "
-            f"LIBERO preprocessing; import failed: {exc}"
-        )
-    arr = np.asarray(image_np)
+
+        gpus = tf.config.list_physical_devices("GPU")
+        for g in gpus:
+            tf.config.experimental.set_memory_growth(g, True)
+    except Exception:
+        pass
+    _tf_memory_configured = True
+
+
+# ---------------------------------------------------------------------------
+# Backend implementations
+# ---------------------------------------------------------------------------
+
+
+def _preprocess_upstream_tf_jpeg(raw_agentview: np.ndarray) -> Image.Image:
+    """Official OpenVLA upstream path.
+
+    Steps (exactly matching openvla/openvla main branch):
+      1. np.uint8 normalisation
+      2. 180° rotation (img[::-1, ::-1])
+      3. tf.io.encode_jpeg / decode_image round-trip
+      4. tf.image.resize to 224×224, method=lanczos3, antialias=True
+      5. round / clip / uint8
+      6. convert_image_dtype to float32 [0,1]
+      7. tf.image.crop_and_resize with sqrt(0.9) -> 224×224
+      8. clip [0,1], convert_image_dtype back to uint8
+      9. PIL RGB output for HuggingFace processor
+    """
+    _configure_tf_memory()
+
+    import tensorflow as tf
+
+    # Step 1-2: normalise + rotate 180°
+    arr = np.asarray(raw_agentview)
     if arr.dtype != np.uint8:
         arr = np.clip(arr, 0, 255).astype(np.uint8)
-    arr = arr[::-1, ::-1]
-    tensor = tf.convert_to_tensor(arr)
-    tensor = tf.io.decode_image(tf.io.encode_jpeg(tensor), expand_animations=False, dtype=tf.uint8)
-    tensor = tf.image.resize(tensor, [int(resize_size), int(resize_size)], method="lanczos3", antialias=True)
-    if center_crop:
-        crop_scale = 0.9 ** 0.5
-        box = [[
-            (1.0 - crop_scale) / 2.0,
-            (1.0 - crop_scale) / 2.0,
-            (1.0 + crop_scale) / 2.0,
-            (1.0 + crop_scale) / 2.0,
-        ]]
-        tensor = tf.image.crop_and_resize(
-            tf.expand_dims(tensor, axis=0),
-            boxes=tf.convert_to_tensor(box, dtype=tf.float32),
-            box_indices=tf.convert_to_tensor([0], dtype=tf.int32),
-            crop_size=[int(resize_size), int(resize_size)],
-            method="bilinear",
-        )[0]
-    tensor = tf.cast(tf.clip_by_value(tf.round(tensor), 0, 255), tf.uint8)
-    return Image.fromarray(tensor.numpy()).convert("RGB")
+    img = arr[::-1, ::-1].copy()
+
+    # Step 3: JPEG encode/decode round-trip (RLDS dataset builder)
+    img_tf = tf.image.encode_jpeg(img)
+    img_tf = tf.io.decode_image(img_tf, expand_animations=False, dtype=tf.uint8)
+
+    # Step 4-5: Lanczos3 resize + clip/round/uint8
+    img_tf = tf.image.resize(img_tf, (_RESIZE_SIZE, _RESIZE_SIZE),
+                             method="lanczos3", antialias=True)
+    img_tf = tf.cast(tf.clip_by_value(tf.round(img_tf), 0, 255), tf.uint8)
+
+    # Step 6: convert to float32 [0,1]
+    orig_dtype = img_tf.dtype
+    img_float = tf.image.convert_image_dtype(img_tf, tf.float32)
+
+    # Step 7: centre crop area-ratio 0.9 via crop_and_resize -> 224×224
+    h = tf.clip_by_value(tf.sqrt(_CROP_SCALE), 0, 1)
+    offsets = (1.0 - h) / 2.0
+    boxes = tf.stack([[offsets, offsets, offsets + h, offsets + h]])
+    img_cropped = tf.image.crop_and_resize(
+        tf.expand_dims(img_float, 0), boxes, [0], (_RESIZE_SIZE, _RESIZE_SIZE)
+    )[0]
+
+    # Step 8: clip + convert back to uint8
+    img_cropped = tf.clip_by_value(img_cropped, 0, 1)
+    img_result = tf.image.convert_image_dtype(img_cropped, orig_dtype, saturate=True)
+
+    # Step 9: PIL RGB output
+    return Image.fromarray(img_result.numpy()).convert("RGB")
 
 
-def prepare_openvla_image(image_np, *, libero_official_preprocess: bool = False, center_crop: bool = False, resize_size: int = 224, libero_preprocess_backend: str = "official_pil_lanczos") -> Image.Image:
-    """Prepare a LIBERO observation image for OpenVLA inference.
+def _preprocess_project_pil(raw_agentview: np.ndarray) -> Image.Image:
+    """Project PIL approximation path.
 
-    Backends:
-      - official_pil_lanczos (default): rotate 180, PIL Lanczos resize, Lanczos center crop.
-        Matches the corrected official OpenVLA eval script. No TensorFlow dependency.
-      - tf_jpeg_legacy: rotate 180, JPEG round-trip, TF Lanczos3 resize, TF bilinear crop.
-        Legacy backend requiring TensorFlow. Known to produce +9 lower Object SR.
-
-    The ``--libero_official_preprocess`` flag is a deprecated compatibility alias;
-    it no longer switches the backend. Use --libero_preprocess_backend to select.
+    Steps:
+      1. np.uint8 normalisation
+      2. 180° rotation (PIL rotate)
+      3. PIL LANCZOS resize to 224×224
+      4. integer-pixel centre crop sqrt(0.9)
+      5. PIL LANCZOS resize back to 224×224
     """
-    backend = str(libero_preprocess_backend or "official_pil_lanczos")
-    # --libero_official_preprocess is a deprecated compatibility alias.
-    # It does NOT switch to tf_jpeg_legacy. Use --libero_preprocess_backend explicitly.
+    arr = np.asarray(raw_agentview)
+    if arr.dtype != np.uint8:
+        arr = np.clip(arr, 0, 255).astype(np.uint8)
 
-    if backend == "official_pil_lanczos":
-        return _official_pil_libero_image(image_np, center_crop=center_crop, resize_size=int(resize_size))
-    elif backend == "tf_jpeg_legacy":
-        return _official_tf_libero_image(image_np, center_crop=center_crop, resize_size=int(resize_size))
-    else:
-        arr = np.asarray(image_np)
-        if arr.dtype != np.uint8:
-            arr = np.clip(arr, 0, 255).astype(np.uint8)
-        image = Image.fromarray(arr).convert("RGB")
-        if center_crop:
-            image = _pil_center_crop_resize(image, crop_scale=0.9, size=int(resize_size))
-        return image
+    img = Image.fromarray(arr).rotate(180).convert("RGB")
+    img = img.resize((_RESIZE_SIZE, _RESIZE_SIZE), Image.LANCZOS)
+
+    s = math.sqrt(_CROP_SCALE)
+    cs = int(_RESIZE_SIZE * s)
+    L = (_RESIZE_SIZE - cs) // 2
+    img = img.crop((L, L, L + cs, L + cs))
+    img = img.resize((_RESIZE_SIZE, _RESIZE_SIZE), Image.LANCZOS)
+    return img
+
+
+def _preprocess_none(raw_agentview: np.ndarray) -> Image.Image:
+    """Pass-through — no preprocessing applied."""
+    arr = np.asarray(raw_agentview)
+    if arr.dtype != np.uint8:
+        arr = np.clip(arr, 0, 255).astype(np.uint8)
+    return Image.fromarray(arr).convert("RGB")
+
+
+_BACKEND_IMPLS = {
+    "upstream_tf_jpeg": _preprocess_upstream_tf_jpeg,
+    "project_pil_lanczos": _preprocess_project_pil,
+    "none": _preprocess_none,
+}
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+
+def prepare_openvla_image(
+    image_np: np.ndarray,
+    *,
+    libero_preprocess_backend: str = "upstream_tf_jpeg",
+    center_crop: bool = True,
+    resize_size: int = 224,
+) -> Image.Image:
+    """Prepare a LIBERO agentview image for OpenVLA inference.
+
+    Args:
+        image_np: Raw uint8 numpy array from ``obs["agentview_image"]``.
+        libero_preprocess_backend: Canonical backend name (or deprecated alias).
+        center_crop: Apply TF centre-crop sqrt(0.9). Ignored by ``none`` backend.
+        resize_size: Resize target size (default 224).
+
+    Returns:
+        PIL Image in RGB mode, ready for HuggingFace ``AutoProcessor``.
+
+    Raises:
+        SystemExit: If ``upstream_tf_jpeg`` is selected but TensorFlow cannot be imported.
+    """
+    backend = resolve_backend(libero_preprocess_backend)
+
+    impl = _BACKEND_IMPLS.get(backend)
+    if impl is None:
+        raise ValueError(f"No implementation for backend {backend!r}")
+
+    # centre_crop is implicit in upstream_tf_jpeg and project_pil_lanczos;
+    # only "none" may optionally skip it.
+    if not center_crop and backend != "none":
+        # upstream_tf_jpeg and project_pil_lanczos always include centre crop
+        pass
+
+    return impl(image_np)

@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Single-process clean rollout: loads model once, runs all episodes from frozen plan.
-Usage: python launch_runtime_profile.py --profile bf16_flash2 --plan plan.json ..."""
+Supports two preprocessing backends:
+  - pil:              project PIL path (180° rotate, LANCZOS, integer crop)
+  - upstream_tf_jpeg: official OpenVLA upstream path (JPEG round-trip, TF Lanczos3, TF crop_and_resize)
+Usage: python launch_runtime_profile.py --profile bf16_flash2_upstream --plan plan.json ..."""
 import os, json, csv, time, hashlib, argparse, sys, math
 import numpy as np
 from PIL import Image
@@ -19,8 +22,23 @@ from transformers import AutoProcessor, AutoModelForVision2Seq
 import imageio
 
 
-def preprocess(img_array):
-    """Official OpenVLA: 180deg rotate, RGB, LANCZOS 224, center crop sqrt(0.9), LANCZOS 224."""
+# Lazy-import TF (only needed for upstream backend)
+_preprocess_upstream_fn = None
+
+
+def _get_upstream_fn():
+    global _preprocess_upstream_fn
+    if _preprocess_upstream_fn is None:
+        import tensorflow as tf
+        _preprocess_upstream_fn = tf  # placeholder, real import from preprocess_upstream
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        from preprocess_upstream import preprocess_upstream_tf_jpeg
+        _preprocess_upstream_fn = preprocess_upstream_tf_jpeg
+    return _preprocess_upstream_fn
+
+
+def preprocess_pil(img_array):
+    """Project PIL path: 180° rotate, RGB, LANCZOS 224, center crop sqrt(0.9), LANCZOS 224."""
     img = Image.fromarray(img_array).rotate(180).convert("RGB")
     img = img.resize((224, 224), Image.LANCZOS)
     s = math.sqrt(0.9); cs = int(224 * s); L = (224 - cs) // 2
@@ -28,7 +46,7 @@ def preprocess(img_array):
     return img
 
 
-def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps):
+def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps, preprocess_fn=preprocess_pil):
     """Run one episode. Returns (result_dict, step_trace_list)."""
     DEV = next(model.parameters()).device
     adim = model.get_action_dim("libero_spatial")
@@ -57,7 +75,7 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps):
 
     for step in range(max_steps):
         raw = obs["agentview_image"]
-        processed = preprocess(raw)
+        processed = preprocess_fn(raw)
         prompt = "In: What action should the robot take to %s?\nOut:" % task_name.lower()
         inputs = proc(prompt, processed, return_tensors="pt")
         ids = inputs["input_ids"].to(device=DEV)
@@ -107,6 +125,8 @@ def main():
     parser.add_argument("--output_dir", required=True)
     parser.add_argument("--dtype", required=True, choices=["float32", "bfloat16"])
     parser.add_argument("--attn", required=True, choices=["eager", "flash_attention_2"])
+    parser.add_argument("--preprocess_backend", default="pil",
+                       choices=["pil", "upstream_tf_jpeg"])
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max_steps", type=int, default=220)
     parser.add_argument("--resume", action="store_true")
@@ -115,6 +135,13 @@ def main():
     args = parser.parse_args()
 
     DTYPE = torch.float32 if args.dtype == "float32" else torch.bfloat16
+
+    if args.preprocess_backend == "upstream_tf_jpeg":
+        preprocess_fn = _get_upstream_fn()
+        print("Preprocess backend: upstream_tf_jpeg (official OpenVLA)")
+    else:
+        preprocess_fn = preprocess_pil
+        print("Preprocess backend: pil (project legacy)")
 
     with open(args.plan) as f:
         plan = json.load(f)
@@ -153,7 +180,7 @@ def main():
         os.makedirs(ep_dir, exist_ok=True)
         print("[%d/%d] %s" % (i + 1, len(episodes), label), end=" ", flush=True)
 
-        res, trace, frames = run_episode(model, proc, task_suite, ti, ii, args.seed, args.max_steps, 10)
+        res, trace, frames = run_episode(model, proc, task_suite, ti, ii, args.seed, args.max_steps, 10, preprocess_fn)
         res["label"] = label; res["task_idx"] = ti; res["init_idx"] = ii
         results.append(res)
 
@@ -184,6 +211,7 @@ def main():
         "runner": os.path.basename(__file__),
         "model": args.model_path, "dtype": args.dtype, "attn": args.attn,
         "actual_attn": actual_attn, "gpu_uuid": gpu_uuid,
+        "preprocess_backend": args.preprocess_backend,
         "total": len(results), "success": succ,
         "plan_file": args.plan,
     }
