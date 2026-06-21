@@ -1,0 +1,41 @@
+{
+  "accepted_engineering_smoke": true,
+  "all_fail_counts_zero": true,
+  "audited_jobs": 24,
+  "by_suite": {
+    "libero_10": {
+      "audit_fail": 0,
+      "complete": 8,
+      "planned": 8
+    },
+    "libero_goal": {
+      "audit_fail": 0,
+      "complete": 8,
+      "planned": 8
+    },
+    "libero_spatial": {
+      "audit_fail": 0,
+      "complete": 8,
+      "planned": 8
+    }
+  },
+  "complete_jobs": 24,
+  "duplicate_parent_condition_keys": 0,
+  "expected_dataset_sha": "b7a6d4bc4dd9106dba4f36e39c6e3058c7a43524f8f6fa84454594780eedecaf",
+  "fail_counts": {
+    "arm_preservation_contract_failure": 0,
+    "checkpoint_sha_mismatch": 0,
+    "dataset_sha_mismatch": 0,
+    "invalid_feature_episode_count": 0,
+    "missing_step_telemetry": 0,
+    "missing_summary": 0,
+    "overlay_video_decode_failure": 0,
+    "raw_video_decode_failure": 0,
+    "student_trigger_contract_failure": 0,
+    "telemetry_length_mismatch": 0
+  },
+  "job_manifest": "/data/liuyu/layer3_outputs/provisional_three_suite_mainline_smoke_20260621/_manifest/provisional_layer3_three_suite_job_manifest.csv",
+  "planned_jobs": 24,
+  "result_class": "ENGINEERING_PASS",
+  "stage": "PROVISIONAL_LAYER3_THREE_SUITE_MAINLINE_SMOKE"
+}

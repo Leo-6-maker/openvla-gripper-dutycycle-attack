@@ -1,0 +1,28 @@
+{
+  "dataset_v2_combined_root": "/data/liuyu/layer2_outputs/provisional_cross_suite_20260621/dataset_v2_libero10_bridge_combined_r1",
+  "dataset_v2_frame_count": 139757,
+  "dataset_v2_label_role_frame_counts": {
+    "ignore": 10311,
+    "negative_only": 68811,
+    "primary_single_object_pick_place": 34536,
+    "supplementary_multievent_grasp_carry_bridge": 26099
+  },
+  "dataset_v2_sha256": "b7a6d4bc4dd9106dba4f36e39c6e3058c7a43524f8f6fa84454594780eedecaf",
+  "dataset_v2_supervised_frame_count": 129446,
+  "dataset_v2_supervised_label_role_frame_counts": {
+    "negative_only": 68811,
+    "primary_single_object_pick_place": 34536,
+    "supplementary_multievent_grasp_carry_bridge": 26099
+  },
+  "layer1_combined_root": "/data/liuyu/layer1_outputs/provisional_layer1_plus_libero10_event_bridge_20260621_r1",
+  "layer1_libero10_bridge_root": "/data/liuyu/layer1_outputs/provisional_libero10_event_bridge_20260621_r1",
+  "layer2_v4_completed_runs": 6,
+  "layer2_v4_root": "/data/liuyu/layer2_outputs/provisional_cross_suite_20260621/mlp_matrix_v4_libero10_bridge_cpu_r1",
+  "layer2_v4_skipped_runs": 0,
+  "m2_checkpoint_sha256": {
+    "M2_leave_one_suite_out_test_libero_10": "e2778bf499a83dfbe0d16826a72a5fad4141fe391d9db3b80b8507795e109f8e",
+    "M2_leave_one_suite_out_test_libero_goal": "2dd37f6eb68d697e6b0aecccf9f09135742917284c8ef176b65a84a0cb70da7b",
+    "M2_leave_one_suite_out_test_libero_spatial": "fd2f45f11f7ceca9c8744a9c9f74cddc7e68f01da2eb4838f05d6a802d7656ef"
+  },
+  "model_input_columns_exactly_sc5_features": true
+}
