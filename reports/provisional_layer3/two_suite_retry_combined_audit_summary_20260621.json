@@ -1,0 +1,24 @@
+{
+  "accepted_engineering_interface_smoke": true,
+  "all_fail_counts_zero": true,
+  "audited_jobs": 16,
+  "complete_jobs": 16,
+  "duplicate_parent_condition_keys": 0,
+  "fail_counts": {
+    "arm_preservation_contract_failure": 0,
+    "checkpoint_sha_mismatch": 0,
+    "dataset_sha_mismatch": 0,
+    "invalid_feature_episode_count": 0,
+    "missing_step_telemetry": 0,
+    "missing_summary": 0,
+    "overlay_video_decode_failure": 0,
+    "raw_video_decode_failure": 0,
+    "student_trigger_contract_failure": 0,
+    "telemetry_length_mismatch": 0
+  },
+  "goal_source": "/data/liuyu/layer3_outputs/provisional_two_suite_interface_smoke_20260621/PAIR_B",
+  "original_pair_a_failure_preserved": "/data/liuyu/layer3_outputs/provisional_two_suite_interface_smoke_20260621/_worker_PAIR_A/worker_command_ledger.csv",
+  "planned_jobs": 16,
+  "spatial_source": "/data/liuyu/layer3_outputs/provisional_two_suite_interface_smoke_20260621_retry_spatial_gpu15_r1/PAIR_RETRY_SPATIAL_GPU15",
+  "stage": "PROVISIONAL_LAYER3_TWO_SUITE_INTERFACE_SMOKE_RETRY_COMBINED_AUDIT"
+}
