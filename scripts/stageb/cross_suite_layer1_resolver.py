@@ -569,6 +569,53 @@ def contiguous_start(mask: np.ndarray, start: int = 0, length: int = 3) -> int |
     return None
 
 
+def _gripper_closed_mask(step_rows: list[dict[str, Any]], n: int) -> np.ndarray:
+    closed = np.zeros(n, dtype=bool)
+    for idx, row in enumerate(step_rows[:n]):
+        env_grip = _float(row, "env_gripper")
+        raw_grip = _float(row, "raw_gripper")
+        closed[idx] = (math.isfinite(env_grip) and env_grip > 0) or (math.isfinite(raw_grip) and raw_grip < 0.5)
+    return closed
+
+
+def _attempt_end_from_close(closed: np.ndarray, close_idx: int) -> int:
+    """Return exclusive attempt end for one uninterrupted close segment."""
+    n = len(closed)
+    for idx in range(close_idx + 1, n):
+        if not bool(closed[idx]):
+            return idx
+    return n
+
+
+def _coupled_motion_mask(obj: np.ndarray, grip: np.ndarray, max_delta_m: float) -> np.ndarray:
+    if len(obj) == 0:
+        return np.zeros(0, dtype=bool)
+    mask = np.ones(len(obj), dtype=bool)
+    if len(obj) > 1:
+        obj_delta = np.linalg.norm(np.diff(obj, axis=0), axis=1)
+        grip_delta = np.linalg.norm(np.diff(grip, axis=0), axis=1)
+        mask[1:] = np.abs(obj_delta - grip_delta) <= max_delta_m
+    return mask
+
+
+def _orientation_jump_mask(body_xquat: np.ndarray | None, object_index: int, n: int, max_jump: float) -> np.ndarray:
+    if body_xquat is None or object_index < 0 or body_xquat.ndim != 3 or body_xquat.shape[0] < n:
+        return np.ones(n, dtype=bool)
+    quat = np.asarray(body_xquat[:n, object_index, :], dtype=float)
+    if quat.shape[1] != 4:
+        return np.ones(n, dtype=bool)
+    norm = np.linalg.norm(quat, axis=1)
+    if not np.isfinite(norm).all() or float(np.nanmax(norm)) <= 0:
+        return np.ones(n, dtype=bool)
+    quat = quat / np.maximum(norm[:, None], 1e-9)
+    jumps = np.zeros(n, dtype=float)
+    if n > 1:
+        # q and -q represent the same orientation; use absolute dot product.
+        dots = np.abs(np.sum(quat[1:] * quat[:-1], axis=1))
+        jumps[1:] = 1.0 - np.clip(dots, 0.0, 1.0)
+    return jumps <= max_jump
+
+
 def detect_physical_event(
     *,
     step_rows: list[dict[str, Any]],
@@ -587,12 +634,14 @@ def detect_physical_event(
     stable_carry_min = int(thresholds.get("stable_carry_min_frames", 3))
     grasp_min = int(thresholds.get("grasp_min_frames", 2))
     object_target_near = float(thresholds.get("object_target_near_m", 0.14))
-    max_close_to_grasp_delay = int(thresholds.get("max_close_to_grasp_delay_frames", 1))
+    motion_coupling_max_delta = float(thresholds.get("motion_coupling_max_delta_m", 0.06))
+    orientation_jump_max = float(thresholds.get("orientation_jump_max", 0.25))
     close_candidates = find_close_onsets(step_rows)
     if not close_candidates:
         return PhysicalEvent("NO_CLOSE_ONSET", "", "", "", "", "", "", "", "", "", "", False, "", "", False, "no_close_onset")
     body_xpos = sim_arrays.get("body_xpos")
     site_xpos = sim_arrays.get("site_xpos")
+    body_xquat = sim_arrays.get("body_xquat")
     if body_xpos is None or site_xpos is None:
         return PhysicalEvent("SIM_ARRAY_MISSING", close_candidates[0], "", "", "", "", "", "", "", "", "", False, "", "", False, "required_sim_arrays_missing")
     if object_binding.index < 0:
@@ -618,16 +667,31 @@ def detect_physical_event(
     obj_target = np.linalg.norm(obj - target, axis=1) if target is not None else None
     near_grip = obj_grip < object_gripper_near
     lift_mask = obj[:, 2] > (obj[0, 2] + object_lift_delta)
+    closed = _gripper_closed_mask(step_rows, n)
+    coupled_motion = _coupled_motion_mask(obj, grip, motion_coupling_max_delta)
+    orientation_ok = _orientation_jump_mask(body_xquat, object_binding.index, n, orientation_jump_max)
+    carry_evidence_mask = near_grip & lift_mask & closed & coupled_motion & orientation_ok
     target_step_by_close: int | None = None
     best_incomplete: PhysicalEvent | None = None
     for close in close_candidates:
         close_idx = min(int(close), n - 1)
-        grasp = contiguous_start(near_grip, close_idx, grasp_min)
-        if grasp is not None and int(grasp) - close_idx > max_close_to_grasp_delay:
+        attempt_end = _attempt_end_from_close(closed, close_idx)
+        attempt_mask = np.zeros(n, dtype=bool)
+        attempt_mask[close_idx:attempt_end] = True
+        if attempt_end <= close_idx + 1:
             grasp = None
-        lift = first_index(lift_mask, grasp if grasp is not None else close_idx)
-        carry_mask = near_grip & lift_mask
-        carry = contiguous_start(carry_mask, lift if lift is not None else close_idx, stable_carry_min)
+            lift = None
+            carry = None
+        else:
+            # Require causal separation: close_onset < grasp < lift <= stable_carry.
+            grasp_mask = near_grip & closed & attempt_mask
+            grasp = contiguous_start(grasp_mask, close_idx + 1, grasp_min)
+            lift = first_index(lift_mask & closed & attempt_mask, (grasp + 1) if grasp is not None else close_idx + 1)
+            carry = contiguous_start(
+                carry_evidence_mask & attempt_mask,
+                lift if lift is not None else close_idx + 1,
+                stable_carry_min,
+            )
         target_step = None
         if obj_target is not None:
             target_step = first_index(obj_target < object_target_near, carry if carry is not None else close_idx)
@@ -645,7 +709,7 @@ def detect_physical_event(
                     break
             sep = first_index(obj_grip > object_gripper_separated, carry)
             separation = sep
-        valid = all(x is not None for x in [grasp, lift, carry])
+        valid = all(x is not None for x in [grasp, lift, carry]) and int(close) < int(grasp) < int(lift) <= int(carry)
         invalid = []
         if grasp is None:
             invalid.append("no_grasp_proximity_after_close")
@@ -653,6 +717,10 @@ def detect_physical_event(
             invalid.append("no_object_lift")
         if carry is None:
             invalid.append("no_stable_carry")
+        if all(x is not None for x in [grasp, lift, carry]) and not (int(close) < int(grasp) < int(lift) <= int(carry)):
+            invalid.append("phase_order_violation")
+        if carry is not None and not bool((coupled_motion & orientation_ok)[int(carry)]):
+            invalid.append("collision_or_orientation_jump_not_carry")
         placement_complete = bool(target_step is not None and release is not None and release >= target_step)
         start = max(0, int(grasp if grasp is not None else close_idx) - 2)
         anchor = int(grasp if grasp is not None else close_idx)

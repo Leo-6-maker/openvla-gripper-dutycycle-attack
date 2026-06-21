@@ -56,7 +56,7 @@ def _trajectory(kind: str, *, object_count: int = 1, ambiguous_target: bool = Fa
     if ambiguous_target:
         site_names.insert(1, "plate_2_default_site")
 
-    n = 6
+    n = 8
     body_xpos = np.zeros((n, len(body_names), 3), dtype=np.float32)
     site_xpos = np.zeros((n, len(site_names), 3), dtype=np.float32)
     body_xquat = np.zeros((n, len(body_names), 4), dtype=np.float32)
@@ -79,6 +79,8 @@ def _trajectory(kind: str, *, object_count: int = 1, ambiguous_target: bool = Fa
             [0.30, 0.0, 0.04],
             [0.60, 0.0, 0.05],
             [0.95, 0.0, 0.05],
+            [0.97, 0.0, 0.05],
+            [0.98, 0.0, 0.05],
         ],
         dtype=np.float32,
     )
@@ -155,7 +157,7 @@ def _episode(
             "task_idx": task_idx,
             "state_id": state_id,
             "eval_seed": 0,
-            "n_steps": 6,
+            "n_steps": len(qpos),
             "task_success": True,
         },
     )
@@ -178,10 +180,10 @@ def _episode(
         },
     )
     rows = []
-    for step in range(6):
-        close = step in {2, 3, 4}
+    for step in range(len(qpos)):
+        close = step in {2, 3, 4, 5, 6}
         if false_close_first:
-            close = step in {1, 3, 4}
+            close = step in {1, 3, 4, 5, 6, 7}
         rows.append(
             {
                 "step": step,
@@ -224,7 +226,7 @@ def _ledger_row(ep: Path, *, suite="libero_spatial", task_idx=0, state_id=0, suc
         "condition": "CLEAN",
         "status": "COMPLETE_VALID",
         "task_success": success,
-        "n_steps": "6",
+        "n_steps": "8",
         "artifact_recursive_sha256": sha,
     }
 
@@ -275,9 +277,9 @@ def test_single_object_episode_requires_physical_grasp_lift_carry_target(tmp_pat
     assert episode["target_binding_status"] in {"BOUND_EXACT", "BOUND_BDDL_ONTOLOGY", "BOUND_STRUCTURED_FALLBACK"}
     assert len(events) == 1
     assert events[0]["close_onset_step"] == 2
-    assert events[0]["grasp_established_step"] == 2
-    assert events[0]["lift_onset_step"] == 3
-    assert events[0]["stable_carry_start"] == 3
+    assert events[0]["grasp_established_step"] == 3
+    assert events[0]["lift_onset_step"] == 4
+    assert events[0]["stable_carry_start"] == 4
     assert events[0]["target_proximity_step"] == 5
     assert events[0]["event_valid"] is True
 
@@ -312,8 +314,8 @@ def test_physics_object_gripper_near_threshold_changes_event_acceptance(tmp_path
     body_names, site_names, body_xpos, body_xquat, site_xpos, qpos, qvel, ctrl = _trajectory("valid")
     site_xpos[:, 1, :] = body_xpos[:, 1, :] + np.array([0.05, 0.0, 0.0], dtype=np.float32)
     step_rows = []
-    for step in range(6):
-        close = step in {2, 3, 4}
+    for step in range(len(body_xpos)):
+        close = step in {2, 3, 4, 5, 6}
         step_rows.append(
             {
                 "step": step,
@@ -333,6 +335,8 @@ def test_physics_object_gripper_near_threshold_changes_event_acceptance(tmp_path
             "grasp_min_frames": 2,
             "object_target_near_m": 0.14,
             "max_close_to_grasp_delay_frames": 1,
+            "motion_coupling_max_delta_m": 0.06,
+            "orientation_jump_max": 0.25,
         }
     }
     strict_physics = json.loads(json.dumps(default_physics))
@@ -369,6 +373,71 @@ def test_late_valid_close_candidate_is_selected(tmp_path):
     episode, events = resolve_episode(_ledger_row(ep), task, teacher_run_id="dev")
     assert episode["teacher_status"] == "ELIGIBLE_EVENT"
     assert events[0]["close_onset_step"] == 3
+
+
+def test_close_attempt_reopen_prevents_merging_failed_grasp_with_later_collision(tmp_path):
+    body_names, site_names, body_xpos, body_xquat, site_xpos, qpos, qvel, ctrl = _trajectory("valid")
+    n = len(body_xpos)
+    # First close has proximity but no lift; gripper reopens. Later close only
+    # collides with/pushes the object while the gripper stays far, so the two
+    # phases must not be merged into one false carry event.
+    body_xpos[:, 1, :] = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [0.0, 0.0, 0.0],
+            [0.2, 0.0, 0.03],
+            [0.5, 0.0, 0.06],
+            [0.6, 0.0, 0.02],
+            [0.6, 0.0, 0.00],
+        ],
+        dtype=np.float32,
+    )
+    site_xpos[:, 1, :] = body_xpos[:, 1, :] + np.array([0.5, 0.0, 0.0], dtype=np.float32)
+    site_xpos[2:4, 1, :] = body_xpos[2:4, 1, :]
+    step_rows = []
+    for step in range(n):
+        close = step in {2, 4, 5, 6}
+        step_rows.append({"step": step, "raw_gripper": 0.0 if close else 1.0, "env_gripper": 1.0 if close else -1.0})
+    event = detect_physical_event(
+        step_rows=step_rows,
+        sim_arrays={"body_xpos": body_xpos, "body_xquat": body_xquat, "site_xpos": site_xpos},
+        site_names=site_names,
+        object_binding=BindingResult("black_bowl_1_main", 1, "BOUND_EXACT", "test", ("black_bowl_1_main",)),
+        target_binding=BindingResult("plate_1_default_site", 0, "BOUND_EXACT", "test", ("plate_1_default_site",)),
+        target_kind="site",
+    )
+    assert event.status == "PHYSICAL_EVENT_INCOMPLETE"
+    assert event.event_valid is False
+    assert "no_stable_carry" in event.event_invalid_reason or "no_grasp_proximity_after_close" in event.event_invalid_reason
+
+
+def test_owner_phase_order_regression_step86_grasp_not_lift():
+    n = 96
+    body_xpos = np.zeros((n, 2, 3), dtype=np.float32)
+    site_xpos = np.zeros((n, 2, 3), dtype=np.float32)
+    body_xquat = np.zeros((n, 2, 4), dtype=np.float32)
+    body_xquat[:, :, 0] = 1.0
+    site_names = ["plate_1_default_site", "gripper0_grip_site"]
+    body_xpos[:, 1, :] = np.array([0.0, 0.0, 0.0], dtype=np.float32)
+    site_xpos[:, 1, :] = np.array([0.5, 0.0, 0.0], dtype=np.float32)
+    site_xpos[86:, 1, :] = body_xpos[86:, 1, :]
+    # Lift starts after the reviewed stable-grasp frame.
+    body_xpos[90:, 1, 2] = 0.04
+    site_xpos[90:, 1, 2] = 0.04
+    step_rows = [{"step": step, "raw_gripper": 0.0 if step >= 48 else 1.0, "env_gripper": 1.0 if step >= 48 else -1.0} for step in range(n)]
+    event = detect_physical_event(
+        step_rows=step_rows,
+        sim_arrays={"body_xpos": body_xpos, "body_xquat": body_xquat, "site_xpos": site_xpos},
+        site_names=site_names,
+        object_binding=BindingResult("black_bowl_1_main", 1, "BOUND_EXACT", "test", ("black_bowl_1_main",)),
+        target_binding=BindingResult("plate_1_default_site", 0, "BOUND_EXACT", "test", ("plate_1_default_site",)),
+        target_kind="site",
+    )
+    assert event.grasp_established_step == 86
+    assert event.lift_onset_step != 86
+    assert int(event.lift_onset_step) > 86
 
 
 def test_missing_gripper_site_fails_closed(tmp_path):

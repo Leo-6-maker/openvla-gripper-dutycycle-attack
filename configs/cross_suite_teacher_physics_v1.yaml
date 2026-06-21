@@ -17,7 +17,11 @@ thresholds:
   grasp_min_frames: 2
   object_target_near_m: 0.14
   max_close_to_grasp_delay_frames: 1
+  motion_coupling_max_delta_m: 0.06
+  orientation_jump_max: 0.25
 notes:
   - Event existence requires grasp, lift, and stable carry.
+  - Event phases must satisfy close_onset < grasp_established < lift_onset <= stable_carry_start < window_end.
+  - Carry requires sustained object-gripper proximity plus coupled object/EEF motion; collision-only displacement is rejected.
   - Target proximity is placement/outcome metadata, not an event-existence requirement.
   - Gripper site binding must be exact and unique; no site-index fallback is allowed.
