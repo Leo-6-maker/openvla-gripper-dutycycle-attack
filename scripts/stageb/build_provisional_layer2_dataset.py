@@ -34,6 +34,10 @@ IGNORE_STATUSES = {
     "SCHEMA_INVALID",
 }
 NEGATIVE_STATUSES = {"CORRECT_SEMANTIC_ABSTAIN", "NO_RELEVANT_GRASP_EVENT"}
+PRIMARY_POSITIVE_STATUS = "ELIGIBLE_EVENT"
+SUPPLEMENTARY_POSITIVE_STATUS = "SUPPLEMENTARY_EVENT_ELIGIBLE"
+POSITIVE_STATUSES = {PRIMARY_POSITIVE_STATUS, SUPPLEMENTARY_POSITIVE_STATUS}
+LABEL_SOURCE_VERSION = "cross_suite_teacher_v1_plus_libero10_supplementary_bridge_v1"
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -105,9 +109,19 @@ def load_split(layer1_root: Path, split: str) -> tuple[list[dict[str, str]], dic
     return manifest, labels_by_key, events_by_key
 
 
+def label_role_for_status(status: str) -> tuple[str, str]:
+    if status == PRIMARY_POSITIVE_STATUS:
+        return "primary_single_object_pick_place", "primary"
+    if status == SUPPLEMENTARY_POSITIVE_STATUS:
+        return "supplementary_multievent_grasp_carry_bridge", "supplementary"
+    if status in NEGATIVE_STATUSES:
+        return "negative_only", "negative"
+    return "ignore", "ignore"
+
+
 def phase_for_step(step: int, label: dict[str, str], event: dict[str, str] | None) -> tuple[str, int, int]:
     status = label.get("teacher_status", "")
-    if status != "ELIGIBLE_EVENT" or event is None:
+    if status not in POSITIVE_STATUSES or event is None:
         return "abstain_unsupported", 0, 0
     close = to_int(event.get("close_onset_step"))
     grasp = to_int(event.get("grasp_established_step"))
@@ -153,14 +167,19 @@ def build_rows_for_episode(
     if not step_path.exists():
         return [], [f"missing_step_telemetry:{episode_path}"]
     step_rows = read_csv(step_path)
-    event = events[0] if events else None
     status = label.get("teacher_status", "")
+    primary_event_id = label.get("primary_supplementary_event_id", "")
+    if status == SUPPLEMENTARY_POSITIVE_STATUS and primary_event_id:
+        event = next((row for row in events if row.get("event_id") == primary_event_id), None)
+    else:
+        event = events[0] if events else None
     ignore = status in IGNORE_STATUSES
-    if status not in IGNORE_STATUSES | NEGATIVE_STATUSES | {"ELIGIBLE_EVENT"}:
+    label_role, primary_or_supplementary = label_role_for_status(status)
+    if status not in IGNORE_STATUSES | NEGATIVE_STATUSES | POSITIVE_STATUSES:
         problems.append(f"unknown_teacher_status:{status}")
         ignore = True
-    if status == "ELIGIBLE_EVENT" and event is None:
-        problems.append("eligible_without_event")
+    if status in POSITIVE_STATUSES and event is None:
+        problems.append("positive_without_event")
         ignore = True
 
     out: list[dict[str, Any]] = []
@@ -178,7 +197,9 @@ def build_rows_for_episode(
             "step": step,
             "teacher_status": status,
             "mechanism_type": label.get("mechanism_type", manifest_row.get("mechanism_type", "")),
-            "task_success": manifest_row.get("task_success", ""),
+            "label_role": label_role,
+            "label_source_version": LABEL_SOURCE_VERSION,
+            "primary_or_supplementary": primary_or_supplementary,
             "ignore_for_loss": int(ignore),
             "teacher_phase": phase if not ignore else "abstain_unsupported",
             "teacher_corridor_active": corridor if not ignore else 0,
@@ -190,6 +211,7 @@ def build_rows_for_episode(
             "grasp_established_step": event.get("grasp_established_step", "") if event else "",
             "lift_onset_step": event.get("lift_onset_step", "") if event else "",
             "stable_carry_start": event.get("stable_carry_start", "") if event else "",
+            "event_id": event.get("event_id", "") if event else "",
         }
         finite = True
         for feature in SC5_FEATURES:
@@ -260,6 +282,7 @@ def build_dataset(args: argparse.Namespace) -> dict[str, Any]:
     }
     rows: list[dict[str, Any]] = []
     problems: list[dict[str, str]] = []
+    evaluator_sidecar_rows: list[dict[str, Any]] = []
     label_status_counts: Counter[str] = Counter()
     for dataset_split, layer1_split in split_map.items():
         manifest, labels_by_key, events_by_key = load_split(layer1_root, layer1_split)
@@ -270,6 +293,20 @@ def build_dataset(args: argparse.Namespace) -> dict[str, Any]:
                 problems.append({"episode_key": key, "problem": "missing_teacher_episode_label"})
                 continue
             label_status_counts[label.get("teacher_status", "")] += 1
+            evaluator_sidecar_rows.append(
+                {
+                    "episode_key": key,
+                    "suite": manifest_row.get("suite", ""),
+                    "task_idx": manifest_row.get("task_idx", ""),
+                    "state_id": manifest_row.get("state_id", ""),
+                    "eval_seed": manifest_row.get("eval_seed", "0"),
+                    "condition": "CLEAN",
+                    "dataset_split": dataset_split,
+                    "teacher_status": label.get("teacher_status", ""),
+                    "label_role": label_role_for_status(label.get("teacher_status", ""))[0],
+                    "task_success": manifest_row.get("task_success", ""),
+                }
+            )
             ep_rows, ep_problems = build_rows_for_episode(
                 manifest_row=manifest_row,
                 label=label,
@@ -291,7 +328,9 @@ def build_dataset(args: argparse.Namespace) -> dict[str, Any]:
         "step",
         "teacher_status",
         "mechanism_type",
-        "task_success",
+        "label_role",
+        "label_source_version",
+        "primary_or_supplementary",
         "ignore_for_loss",
         "teacher_phase",
         "teacher_corridor_active",
@@ -303,12 +342,27 @@ def build_dataset(args: argparse.Namespace) -> dict[str, Any]:
         "grasp_established_step",
         "lift_onset_step",
         "stable_carry_start",
+        "event_id",
         "features_finite",
         *SC5_FEATURES,
     ]
     write_csv(dataset_path, rows, fieldnames)
+    evaluator_sidecar_path = output_dir / "provisional_layer2_evaluator_sidecar.csv"
+    write_csv(evaluator_sidecar_path, evaluator_sidecar_rows)
     audit = leakage_audit(rows)
     dataset_sha = sha256_file(dataset_path)
+    sidecar_sha = sha256_file(evaluator_sidecar_path)
+    model_input_columns = list(SC5_FEATURES)
+    label_role_counts = Counter(str(row.get("label_role", "")) for row in rows)
+    supervised_role_counts = Counter(
+        str(row.get("label_role", ""))
+        for row in rows
+        if int(row["ignore_for_loss"]) == 0
+    )
+    per_suite_role_counts = Counter(
+        (str(row.get("suite", "")), str(row.get("label_role", "")))
+        for row in rows
+    )
     summary = {
         "provisional_engineering_only": True,
         "official_h2_status": "NOT_GRANTED",
@@ -317,15 +371,23 @@ def build_dataset(args: argparse.Namespace) -> dict[str, Any]:
         "layer1_root": str(layer1_root),
         "dataset_path": str(dataset_path),
         "dataset_sha256": dataset_sha,
+        "evaluator_sidecar_path": str(evaluator_sidecar_path),
+        "evaluator_sidecar_sha256": sidecar_sha,
         "frame_count": len(rows),
         "supervised_frame_count": sum(1 for row in rows if int(row["ignore_for_loss"]) == 0),
         "ignore_frame_count": sum(1 for row in rows if int(row["ignore_for_loss"]) == 1),
         "positive_frame_count": sum(1 for row in rows if int(row["teacher_corridor_active"]) == 1 and int(row["ignore_for_loss"]) == 0),
+        "label_source_version": LABEL_SOURCE_VERSION,
+        "label_role_frame_counts": dict(label_role_counts),
+        "supervised_label_role_frame_counts": dict(supervised_role_counts),
+        "per_suite_label_role_frame_counts": {f"{suite}|{role}": count for (suite, role), count in per_suite_role_counts.items()},
         "episode_label_status_counts": dict(label_status_counts),
         "problem_count": len(problems),
         "problems": problems[:100],
         "leakage_audit": audit,
         "feature_names": list(SC5_FEATURES),
+        "model_input_columns": model_input_columns,
+        "model_input_columns_exactly_sc5_features": model_input_columns == list(SC5_FEATURES),
         "phase_classes": list(SC5_PHASES),
         "forbidden_claims": [
             "H2 scientifically frozen",
