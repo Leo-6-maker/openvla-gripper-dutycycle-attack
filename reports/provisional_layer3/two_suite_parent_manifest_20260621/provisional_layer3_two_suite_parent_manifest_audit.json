@@ -1,0 +1,70 @@
+{
+  "allowed_strata": [
+    "DEV_CANARY",
+    "DIAGNOSTIC_HOLDOUT"
+  ],
+  "allowed_suites": [
+    "libero_spatial",
+    "libero_goal"
+  ],
+  "candidate_counts": {
+    "libero_goal": {
+      "candidate_count": 5,
+      "selected_count": 2
+    },
+    "libero_spatial": {
+      "candidate_count": 7,
+      "selected_count": 2
+    }
+  },
+  "forbidden_inputs_not_used": [
+    "RAND_result",
+    "SHUFFLED_result",
+    "Student_emit",
+    "VIS_result",
+    "abstain_or_fail_closed_correct",
+    "anchor_valid",
+    "assistant_review_result",
+    "attack_result",
+    "close_onset_valid",
+    "corridor_p",
+    "event_exists",
+    "false_positive_carry",
+    "grasp_established_valid",
+    "lift_onset_valid",
+    "mlp_emit_step",
+    "object_identity_valid",
+    "pred_phase",
+    "release_p",
+    "release_separation_valid",
+    "review_timestamp",
+    "reviewer_id",
+    "reviewer_notes",
+    "stable_carry_valid",
+    "student_emit",
+    "target_identity_valid",
+    "task_success",
+    "window_end_valid",
+    "window_start_valid"
+  ],
+  "per_suite_target": 2,
+  "provisional_engineering_only": true,
+  "selected_count": 4,
+  "selection_inputs": [
+    "review_round_id",
+    "episode_key",
+    "review_stratum",
+    "suite",
+    "teacher_status"
+  ],
+  "source_form": "tables\\layer1_h2_20260620\\h2_diagnostic_review_round_v2_1_form_template.csv",
+  "source_form_sha256": "0340c6aa37bcbe9a92239f3c40c8cd7dbcb4a31e8dbf0552284295a3fbeac3df",
+  "source_status_counts": {
+    "CORRECT_SEMANTIC_ABSTAIN": 6,
+    "ELIGIBLE_EVENT": 12,
+    "NO_RELEVANT_GRASP_EVENT": 2,
+    "RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM": 10,
+    "TARGET_BINDING_AMBIGUOUS": 6
+  },
+  "status": "PASS"
+}

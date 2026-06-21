@@ -45,7 +45,8 @@ class SC5DetectorRuntime:
     """Shared runtime: strict-loads frozen MLP, runs single state machine."""
 
     def __init__(self, checkpoint_path: str, tau_corridor: float = 0.3,
-                 tau_release: float = 0.3, guard: int = 5):
+                 tau_release: float = 0.3, guard: int = 5,
+                 allowed_split_modes=("frozen",)):
         ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
 
         # Strict validation
@@ -72,8 +73,8 @@ class SC5DetectorRuntime:
             raise ValueError("Zero in std")
 
         split_mode = ckpt.get("split_mode", "unknown")
-        if split_mode != "frozen":
-            raise ValueError(f"Checkpoint split_mode={split_mode}, expected 'frozen'")
+        if split_mode not in set(allowed_split_modes):
+            raise ValueError(f"Checkpoint split_mode={split_mode}, expected one of {sorted(set(allowed_split_modes))}")
 
         # Build model + strict load
         self.model = SC5MLP(n_feat=len(SC5_FEATURES))
