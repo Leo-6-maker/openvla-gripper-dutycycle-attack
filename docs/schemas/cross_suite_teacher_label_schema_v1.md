@@ -31,6 +31,11 @@ attack fields: `mlp_emit_step`, `mlp_triggered`, `corridor_p`, `release_p`,
 | `object_binding_status` | yes | Object binding enum. |
 | `target_binding_status` | yes | Target/site binding enum. |
 | `teacher_status` | yes | One of the allowed status classes below. |
+| `primary_teacher_status` | yes | Primary single-object Teacher status. `NOT_PRIMARY_DENOMINATOR` for supplementary-only mechanisms. |
+| `supplementary_teacher_status` | yes | Supplementary event status. `NOT_APPLICABLE` for primary-only mechanisms. |
+| `label_role` | yes | One of `primary_single_object_pick_place`, `supplementary_multievent_grasp_carry_bridge`, `negative_only`, or `ignore`. |
+| `primary_or_supplementary` | yes | One of `primary`, `supplementary`, `negative`, or `ignore`. |
+| `primary_supplementary_event_id` | yes | Selected supplementary event id for one-shot training/attack semantics; empty outside `SUPPLEMENTARY_EVENT_ELIGIBLE`. |
 | `teacher_semantic_abstain` | yes | Boolean semantic abstention decision from resolver, not collector placeholder. |
 | `abstain_reason` | yes when abstaining | Reason for abstention or empty string for positive valid events. |
 | `event_count` | yes | Number of emitted event rows. |
@@ -78,11 +83,11 @@ FAILED
 
 ```text
 ELIGIBLE_EVENT
+SUPPLEMENTARY_EVENT_ELIGIBLE
 CORRECT_SEMANTIC_ABSTAIN
 NO_RELEVANT_GRASP_EVENT
 OBJECT_BINDING_AMBIGUOUS
 TARGET_BINDING_AMBIGUOUS
-MULTI_EVENT_AUDIT_ONLY
 RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM
 RESOLVER_FAILED
 SCHEMA_INVALID
@@ -93,9 +98,12 @@ SCHEMA_INVALID
 - teacher_executed=false implies `teacher_run_id=""`, `teacher_status=RESOLVER_FAILED`, `event_count=0`, and `manual_review_required=true`.
 - teacher_status=ELIGIBLE_EVENT implies `mechanism_eligible=true`, `teacher_semantic_abstain=false`, `object_binding_status` and `target_binding_status` are one of `BOUND_EXACT`, `BOUND_BDDL_ONTOLOGY`, or `BOUND_STRUCTURED_FALLBACK`, and `event_count>=1`.
 - ELIGIBLE_EVENT existence requires physical grasp, lift, and stable carry evidence. Target proximity and `placement_complete` are outcome/placement metadata, not event-existence requirements.
+- teacher_status=SUPPLEMENTARY_EVENT_ELIGIBLE implies `mechanism_eligible=false`, `teacher_semantic_abstain=true`, `label_role=supplementary_multievent_grasp_carry_bridge`, `primary_or_supplementary=supplementary`, `event_count>=1`, and a nonempty `primary_supplementary_event_id`.
+- SUPPLEMENTARY_EVENT_ELIGIBLE is restricted to `multi_object_transfer` or `mixed_articulated_pick_place`. It establishes supplementary grasp-carry timing only; it is never promoted into the primary single-object denominator.
+- SUPPLEMENTARY_EVENT_ELIGIBLE requires unique manipulated-object physical evidence and stable carry evidence. Target binding is retained as evaluator metadata and is not required for supplementary timing.
+- The selected `primary_supplementary_event_id` must be chosen without detector telemetry, attack results, task success, or visual ease: earliest `stable_carry_start`, then earliest `close_onset_step`, then lexical `object_body_name`, then lexical `event_id`.
 - teacher_status=CORRECT_SEMANTIC_ABSTAIN implies `mechanism_eligible=false`, `teacher_semantic_abstain=true`, `event_count=0`, and a nonempty `abstain_reason`.
 - `teacher_status in {OBJECT_BINDING_AMBIGUOUS,TARGET_BINDING_AMBIGUOUS,RESOLVER_FAILED,SCHEMA_INVALID}` implies `mechanism_eligible=false`, `manual_review_required=true`, and no accepted positive event rows.
-- teacher_status=MULTI_EVENT_AUDIT_ONLY implies the mechanism is `multi_object_transfer` or `mixed_articulated_pick_place`, `manual_review_required=true`, and all positive event rows remain supplementary until reviewed.
 - teacher_status=RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM implies a supplementary mechanism where the resolver could not produce reliable event segmentation; it must have `mechanism_eligible=false`, `teacher_semantic_abstain=true`, and `event_count=0`.
 
 ## Binding Source Priority
