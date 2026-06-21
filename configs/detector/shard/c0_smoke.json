@@ -1,0 +1,7 @@
+{
+  "plan_name": "c0_smoke",
+  "episodes": [
+    {"task_idx": 0, "init_idx": 13, "label": "task0_init13", "split": "c0_smoke"},
+    {"task_idx": 5, "init_idx": 13, "label": "task5_init13", "split": "c0_smoke"}
+  ]
+}
