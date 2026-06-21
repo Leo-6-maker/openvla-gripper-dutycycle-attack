@@ -1,6 +1,12 @@
 {
-  "gate": "UPSTREAM_DETECTOR_TRANSFER_AND_THRESHOLD_AUDIT",
-  "status": "CHECKPOINT_NOT_FOUND",
+  "gate": "UPSTREAM_ARTIFACT_RICH_CORPUS_AND_SC5MLP_INITIAL_TRAINING",
+  "status": "CHECKPOINT_NOT_FOUND_TRAINING_NOT_STARTED",
+  "classification": "BLOCKED_NOT_EVALUABLE_CHECKPOINT_ABSENT",
+  "canonical_teacher": "src/gripper_attack/v2_privileged_teacher.py",
+  "canonical_feature_extractor": "src/gripper_attack/sc5_streaming_features_v2.py",
+  "canonical_schema_adapter": "src/gripper_attack/sc5_schema_adapter_v2.py",
+  "canonical_trainer": "scripts/stageb/train_sc5_v4.py",
+  "legacy_noncanonical_student": "src/utils/proprio_causal_student.py",
   "detector": {
     "name": "ProprioNoStep (SC5MLP)",
     "checkpoint_path": "UNKNOWN — not found in repo or A800",
