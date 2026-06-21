@@ -1,0 +1,66 @@
+{
+  "stage": "PROVISIONAL_LAYER3_TWO_SUITE_INTERFACE_SMOKE",
+  "result_class": "INFRA_FAILED_NOT_ACCEPTED",
+  "branch": "feature/layer3-provisional-two-suite-interface-smoke-20260621",
+  "commit": "592de8d3b65a4314b5104afb2c08c3b137e35271",
+  "base_branch": "feature/layer2-provisional-cross-suite-20260621",
+  "output_root": "/data/liuyu/layer3_outputs/provisional_two_suite_interface_smoke_20260621",
+  "sentinel": "PROVISIONAL_ENGINEERING_ONLY_NOT_FOR_CLAIMS",
+  "planned_jobs": 16,
+  "complete_jobs": 11,
+  "failed_jobs": 1,
+  "not_run_jobs": 4,
+  "completed_episode_summary_count": 11,
+  "workers": {
+    "PAIR_A": {
+      "cuda_visible_devices": "1,3",
+      "planned_jobs": 8,
+      "complete_jobs": 3,
+      "failed_jobs": 1,
+      "not_run_jobs": 4,
+      "failure_job": "libero_spatial_3_4_0_CLEAN_shuffled",
+      "failure_returncode": 1,
+      "failure_class": "CUDA_ILLEGAL_MEMORY_ACCESS_XID31",
+      "xid": {
+        "timestamp": "2026-06-21 12:44:29 CST",
+        "pci": "0000:08:00",
+        "gpu_uuid": "GPU-c1ee1619-6791-a734-bf4c-d0d2c47df580",
+        "pid": 39772,
+        "name": "python",
+        "xid": 31,
+        "fault": "MMU Fault FAULT_PDE ACCESS_TYPE_VIRT_READ"
+      }
+    },
+    "PAIR_B": {
+      "cuda_visible_devices": "5,4",
+      "planned_jobs": 8,
+      "complete_jobs": 8,
+      "failed_jobs": 0,
+      "not_run_jobs": 0
+    }
+  },
+  "suite_status": {
+    "libero_spatial": {
+      "planned_jobs": 8,
+      "complete_jobs": 3,
+      "failed_jobs": 1,
+      "not_run_jobs": 4,
+      "status": "INCOMPLETE_INFRA_FAILED"
+    },
+    "libero_goal": {
+      "planned_jobs": 8,
+      "complete_jobs": 8,
+      "failed_jobs": 0,
+      "not_run_jobs": 0,
+      "status": "COMPLETE"
+    }
+  },
+  "acceptance": {
+    "two_suite_layer3_interface_smoke": "NOT_ACCEPTED",
+    "reason": "All planned keys did not complete because PAIR_A failed with CUDA illegal memory access and Xid 31 before the second Spatial parent.",
+    "attack_effectiveness_claim": "FORBIDDEN",
+    "three_suite_mainline_claim": "FORBIDDEN",
+    "vis_superiority_claim": "FORBIDDEN"
+  },
+  "next_action": "External decision required before any retry or Track C run. Do not use GPU3 as C+G primary in retry planning."
+}
