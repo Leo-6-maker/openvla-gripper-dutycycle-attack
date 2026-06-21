@@ -15,13 +15,24 @@ from transformers import AutoProcessor, AutoModelForVision2Seq
 import imageio
 
 
+import math
+
+
 def preprocess_libero_agentview(raw_agentview):
-    """Official OpenVLA preprocessing: 180deg rotate, RGB, LANCZOS 224x224, center crop."""
+    """Official OpenVLA preprocessing: 180deg rotate, RGB, LANCZOS 224, center crop sqrt(0.9), LANCZOS 224.
+    Audited 2026-06-21: processor does NOT internally center-crop, must be explicit."""
     img = Image.fromarray(raw_agentview)
-    img = img.rotate(180)  # agentview rotation
+    img = img.rotate(180)
     img = img.convert("RGB")
-    img = img.resize((224, 224), Image.LANCZOS)  # LANCZOS (not bicubic)
-    return img  # processor applies center_crop internally
+    img = img.resize((224, 224), Image.LANCZOS)
+    # Official center crop: scale = sqrt(0.9)
+    scale = math.sqrt(0.9)
+    crop_size = int(224 * scale)
+    left = (224 - crop_size) // 2
+    top = (224 - crop_size) // 2
+    img = img.crop((left, top, left + crop_size, top + crop_size))
+    img = img.resize((224, 224), Image.LANCZOS)
+    return img
 
 
 def sha256_bytes(data):
@@ -230,27 +241,29 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", required=True)
     parser.add_argument("--output_dir", required=True)
-    parser.add_argument("--gpu", type=int, default=6)
+    parser.add_argument("--cuda_visible_devices", required=True, help="e.g. 6 or 0,1,2,3")
     parser.add_argument("--stage", default="c0", choices=["c0", "c1", "all"])
     parser.add_argument("--task_idx", type=int, default=None)
     parser.add_argument("--init_state_idx", type=int, default=None)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--max_steps", type=int, default=220)
+    parser.add_argument("--dtype", required=True, choices=["float32", "bfloat16"])
     parser.add_argument("--device_map", default=None, help="e.g. auto for multi-GPU")
     parser.add_argument("--max_memory", default=None, help="JSON dict for per-GPU caps")
+    parser.add_argument("--attn_implementation", default="eager")
     args = parser.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.cuda_visible_devices
     dtype = torch.float32 if args.dtype == "float32" else torch.bfloat16
 
     os.makedirs(f"{args.output_dir}/videos", exist_ok=True)
     os.makedirs(f"{args.output_dir}/traces", exist_ok=True)
 
     print(f"Model: {args.model_path}")
-    print(f"Dtype: {args.dtype}  GPU: {args.gpu}  Stage: {args.stage}")
+    print(f"Dtype: {args.dtype}  GPU: {args.cuda_visible_devices}  Stage: {args.stage}")
 
     load_kwargs = dict(
-        torch_dtype=dtype, attn_implementation="eager",
+        torch_dtype=dtype, attn_implementation=args.attn_implementation,
         local_files_only=True, trust_remote_code=True, low_cpu_mem_usage=True,
         device_map=args.device_map or "cuda:0",
     )
