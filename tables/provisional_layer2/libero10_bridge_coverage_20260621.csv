@@ -1,0 +1,4 @@
+split,episodes,tasks_represented,SUPPLEMENTARY_EVENT_ELIGIBLE,NO_RELEVANT_GRASP_EVENT,OBJECT_BINDING_AMBIGUOUS,TARGET_BINDING_AMBIGUOUS,other_ignored_statuses,event_count,multi_event_episode_count,positive_task_coverage
+train300_train_s10_17,80,10,33,39,0,8,0,47,14,6
+train300_val_s18_19,20,10,10,8,0,2,0,14,4,6
+clean300_test_s0_9,100,10,41,49,0,10,0,56,15,6

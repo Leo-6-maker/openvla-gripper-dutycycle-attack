@@ -33,6 +33,7 @@ RESOLVER_VERSION = "cross_suite_resolver_v1"
 PHYSICS_VERSION = "cross_suite_teacher_physics_v1"
 PRIMARY_MECHANISM = "single_object_pick_place"
 SUPPLEMENTARY_MECHANISMS = {"multi_object_transfer", "mixed_articulated_pick_place"}
+SUPPLEMENTARY_EVENT_ELIGIBLE = "SUPPLEMENTARY_EVENT_ELIGIBLE"
 VALID_BINDING_STATUSES = {"BOUND_EXACT", "BOUND_BDDL_ONTOLOGY", "BOUND_STRUCTURED_FALLBACK"}
 REGION_TARGET_ALIASES = {
     "back_compartment_of_caddy",
@@ -739,6 +740,28 @@ def event_to_row(
     }
 
 
+def _event_int(row: dict[str, Any], key: str, default: int = 10**9) -> int:
+    value = row.get(key, "")
+    if value in ("", None):
+        return default
+    return int(float(value))
+
+
+def select_primary_supplementary_event(events: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Select the one-shot supplementary event without using detector or outcomes."""
+    if not events:
+        return None
+    return sorted(
+        events,
+        key=lambda row: (
+            _event_int(row, "stable_carry_start"),
+            _event_int(row, "close_onset_step"),
+            str(row.get("object_body_name", "")),
+            str(row.get("event_id", "")),
+        ),
+    )[0]
+
+
 def source_episode_relpath(episode_path: Path) -> tuple[str, str]:
     abspath = episode_path.resolve()
     roots = []
@@ -926,7 +949,7 @@ def resolve_episode(row: dict[str, Any], task: OntologyTask, *, teacher_run_id: 
         object_bindings = [b for b in bind_many(body_names, task.manipulated_object_aliases) if b.status in VALID_BINDING_STATUSES]
         target_binding, target_kind = bind_target(site_names, body_names, task.target_aliases)
         supplementary_events: list[dict[str, Any]] = []
-        if object_bindings and target_binding.status in VALID_BINDING_STATUSES:
+        if object_bindings:
             for event_idx, object_binding in enumerate(object_bindings):
                 event = detect_physical_event(
                     step_rows=ctx["step_rows"],
@@ -947,18 +970,21 @@ def resolve_episode(row: dict[str, Any], task: OntologyTask, *, teacher_run_id: 
                             supplementary=True,
                         )
                     )
+        primary_supplementary_event = select_primary_supplementary_event(supplementary_events)
         episode = {
             **base,
             "mechanism_eligible": False,
-            "object_binding_status": "NOT_APPLICABLE",
+            "object_binding_status": "BOUND_SUPPLEMENTARY_EVENT" if supplementary_events else "NOT_APPLICABLE",
             "target_binding_status": "NOT_APPLICABLE" if target_binding.status in VALID_BINDING_STATUSES else target_binding.status,
-            "teacher_status": "MULTI_EVENT_AUDIT_ONLY" if supplementary_events else RESOLVER_NOT_IMPLEMENTED,
+            "teacher_status": SUPPLEMENTARY_EVENT_ELIGIBLE if supplementary_events else "NO_RELEVANT_GRASP_EVENT",
             "teacher_semantic_abstain": True,
-            "abstain_reason": "supplementary_event_level_audit_not_primary_denominator"
+            "abstain_reason": "supplementary_event_eligible_not_primary_denominator"
             if supplementary_events
-            else "supplementary_event_segmentation_not_reliably_resolved",
+            else "no_relevant_supplementary_grasp_carry_event",
             "event_count": len(supplementary_events),
-            "manual_review_required": True,
+            "primary_supplementary_event_id": primary_supplementary_event.get("event_id", "") if primary_supplementary_event else "",
+            "label_role": "supplementary_multievent_grasp_carry_bridge",
+            "manual_review_required": bool(supplementary_events),
         }
         return episode, supplementary_events
 
@@ -988,9 +1014,13 @@ def validate_episode_rows(rows: list[dict[str, Any]]) -> list[str]:
         elif status == "CORRECT_SEMANTIC_ABSTAIN":
             if row.get("mechanism_eligible") or not row.get("teacher_semantic_abstain") or int(row.get("event_count", -1)) != 0:
                 errors.append(f"{row.get('episode_key')}: invalid abstain invariant")
-        elif status == "MULTI_EVENT_AUDIT_ONLY":
-            if row.get("mechanism_type") not in SUPPLEMENTARY_MECHANISMS or not row.get("manual_review_required"):
-                errors.append(f"{row.get('episode_key')}: invalid multi-event invariant")
+        elif status == SUPPLEMENTARY_EVENT_ELIGIBLE:
+            if row.get("mechanism_type") not in SUPPLEMENTARY_MECHANISMS:
+                errors.append(f"{row.get('episode_key')}: invalid supplementary mechanism")
+            if not row.get("teacher_semantic_abstain") or int(row.get("event_count", 0)) < 1:
+                errors.append(f"{row.get('episode_key')}: invalid supplementary invariant")
+            if not row.get("primary_supplementary_event_id"):
+                errors.append(f"{row.get('episode_key')}: missing primary supplementary event")
         elif status == RESOLVER_NOT_IMPLEMENTED:
             if row.get("mechanism_type") not in SUPPLEMENTARY_MECHANISMS or int(row.get("event_count", -1)) != 0:
                 errors.append(f"{row.get('episode_key')}: invalid resolver-not-implemented invariant")
@@ -1023,11 +1053,34 @@ def run_resolver(manifest_path: Path, ontology_path: Path, output_dir: Path, *, 
     validation_errors = validate_episode_rows(episode_rows)
     write_csv(output_dir / "teacher_episode_labels_v1.csv", episode_rows)
     write_csv(output_dir / "teacher_event_labels_v1.csv", event_rows)
+    supplementary_events = [row for row in event_rows if str(row.get("supplementary_event", "")).lower() == "true"]
+    write_csv(output_dir / "supplementary_teacher_event_labels_v1.csv", supplementary_events)
+    primary_rows: list[dict[str, Any]] = []
+    for episode in episode_rows:
+        if episode.get("teacher_status") != SUPPLEMENTARY_EVENT_ELIGIBLE:
+            continue
+        candidates = [row for row in supplementary_events if row.get("episode_key") == episode.get("episode_key")]
+        selected = select_primary_supplementary_event(candidates)
+        primary_rows.append(
+            {
+                "episode_key": episode.get("episode_key", ""),
+                "teacher_status": episode.get("teacher_status", ""),
+                "selected_event_id": selected.get("event_id", "") if selected else "",
+                "selection_rule": "earliest stable_carry_start; earliest close_onset_step; lexical object_body_name; lexical event_id",
+                "candidate_count": len(candidates),
+                "stable_carry_start": selected.get("stable_carry_start", "") if selected else "",
+                "close_onset_step": selected.get("close_onset_step", "") if selected else "",
+                "object_body_name": selected.get("object_body_name", "") if selected else "",
+            }
+        )
+    write_csv(output_dir / "primary_supplementary_event_selection_v1.csv", primary_rows)
     sidecars = {
         "teacher_run_id": teacher_run_id,
         "manifest": str(manifest_path),
         "episode_count": len(episode_rows),
         "event_count": len(event_rows),
+        "supplementary_event_count": len(supplementary_events),
+        "primary_supplementary_event_count": len(primary_rows),
         "failure_count": len(failures),
         "validation_error_count": len(validation_errors),
         "failures": failures,
