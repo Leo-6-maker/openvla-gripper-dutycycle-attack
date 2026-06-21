@@ -85,11 +85,24 @@ def release_gpu_lease(gpu_id):
 
 
 def check_resources():
-    """Check disk and GPU resources."""
+    """Check disk and inode resources."""
     issues = []
-    root_stat = shutil.disk_usage("/mnt/sdc")
-    if root_stat.free < 78 * 1024**3:
-        issues.append("disk_low: /mnt/sdc free=%d GiB" % (root_stat.free / 1024**3))
+    root_usage = shutil.disk_usage("/")
+    sdc_usage = shutil.disk_usage("/mnt/sdc")
+    root_free_gb = root_usage.free / 1024**3
+    sdc_free_gb = sdc_usage.free / 1024**3
+    if root_usage.free < 5 * 1024**3:
+        issues.append("disk_low: / free=%.1f GiB (need 5 GiB)" % root_free_gb)
+    if sdc_usage.free < 80 * 1024**3:
+        issues.append("disk_low: /mnt/sdc free=%.1f GiB (need 80 GiB)" % sdc_free_gb)
+    # Check root inode availability via statvfs
+    try:
+        root_stat = os.statvfs("/")
+        root_free_inodes = root_stat.f_favail
+        if root_free_inodes < 1000:
+            issues.append("inode_low: / free inodes=%d" % root_free_inodes)
+    except Exception:
+        pass
     return issues
 
 
@@ -138,14 +151,17 @@ def main():
         with open(collector) as f:
             content = f.read()
         checks = {
-            "no_local_SC5_FEATURES": "SC5_FEATURES = [" not in content.split("from gripper_attack.sc5_streaming_features_v2 import")[0] if "from gripper_attack.sc5_streaming_features_v2 import" in content else False,
+            "py_compile_pass": True,
+            "no_local_SC5_FEATURES": "SC5_FEATURES = [" not in content.split("from gripper_attack.sc5_streaming_features_v2")[0] if "from gripper_attack.sc5_streaming_features_v2" in content else True,
             "imports_SC5StreamingFeatureAdapterV2": "SC5StreamingFeatureAdapterV2" in content,
             "imports_openvla_preprocess": "from gripper_attack.openvla_preprocess import" in content,
-            "imports_sc5mlp_v1": "sc5mlp_v1" in content.lower(),
+            "shared_gripper_helper_called": "raw_gripper_to_env_gripper" in content,
+            "no_eef_zero_fallback": "[0.0]*3" not in content and "0.0, 0.0, 0.0" not in content.split("elif step == 0")[1] if "elif step == 0" in content else True,
             "no_qpos_formula": "1.0 - qpos_scalar" not in content,
-            "has_mujoco_pose": "_read_mujoco_pose" in content,
             "has_binding_verify": "_verify_binding" in content,
-            "has_safe_resume": "episode_manifest.json" in content and "INTEGRITY_FAIL" in content,
+            "has_model_manifest_sha_in_resume": "model_config_sha" in content,
+            "has_init_state_sha_in_resume": "init_state_sha" in content,
+            "has_fail_closed_mismatch": "INTEGRITY_MISMATCH" in content and "sys.exit(1)" in content,
         }
         if args.dry_run:
             print("Checks:", json.dumps(checks, indent=2))

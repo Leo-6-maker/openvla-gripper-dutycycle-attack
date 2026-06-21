@@ -122,12 +122,17 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
         env.close()
         raise RuntimeError(f"Binding check failed for {label}: obj_key={obj_key} tgt_key={tgt_key}")
 
-    # Track last two EEF positions during wait steps for step-0 velocity
+    # Track last two EEF positions during wait steps for step-0 velocity.
+    # No silent zero-fill: fail on missing/invalid position.
     wait_eef_positions = []
     for _ in range(wait_steps):
         obs, _, _, _ = env.step([0, 0, 0, 0, 0, 0, -1])
-        eef_p = obs.get("robot0_eef_pos", [0.0]*3)
-        wait_eef_positions.append(np.asarray(eef_p, dtype=np.float64).ravel()[:3].copy())
+        if "robot0_eef_pos" not in obs:
+            raise RuntimeError("missing_robot0_eef_pos_during_wait")
+        eef_p = np.asarray(obs["robot0_eef_pos"], dtype=np.float64).ravel()
+        if len(eef_p) < 3 or not np.all(np.isfinite(eef_p[:3])):
+            raise RuntimeError("invalid_robot0_eef_pos_during_wait")
+        wait_eef_positions.append(eef_p[:3].copy())
         if len(wait_eef_positions) > 2:
             wait_eef_positions = wait_eef_positions[-2:]
 
@@ -176,14 +181,14 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
         # EEF velocity: causal backward difference from collector's own position history.
         # LIBERO does not expose robot0_eef_vel; compute from sequential eef_pos diffs.
         # Step 0 uses wait-step positions (final_wait - penultimate_wait). No zero-fill.
-        if step == 0 and len(wait_eef_positions) >= 2:
+        if step == 0:
+            if len(wait_eef_positions) < 2:
+                raise RuntimeError("insufficient_wait_history_for_step0_velocity")
             prev_pos = wait_eef_positions[-2]
             cur_pos = wait_eef_positions[-1]
             eef_vx = float(cur_pos[0] - prev_pos[0])
             eef_vy = float(cur_pos[1] - prev_pos[1])
             eef_vz = float(cur_pos[2] - prev_pos[2])
-        elif step == 0:
-            eef_vx, eef_vy, eef_vz = 0.0, 0.0, 0.0
         else:
             prev_pos = eef_pos_history[-1]
             eef_vx = float(eef_pos_arr[0] - prev_pos[0])
@@ -254,6 +259,7 @@ def run_episode(model, proc, task_suite, ti, ii, seed, max_steps, wait_steps,
             "processor_pixel_sha256": pixel_sha,
             "input_ids_sha256": ids_sha,
         }
+        if feat_out.get("valid") and feat_out.get("features"):
             for fn in FEATURE_NAMES:
                 row[fn] = str(feat_out["features"].get(fn, "nan"))
         else:
@@ -335,6 +341,7 @@ def main():
         "seed": args.seed, "max_steps": args.max_steps,
         "profile_name": args.profile_name,
         "model_path": args.model_path,
+        "model_config_sha": sha256_hex(open(os.path.join(args.model_path, "config.json"), "rb").read()) if os.path.exists(os.path.join(args.model_path, "config.json")) else "MISSING",
     }
 
     os.makedirs(args.output_dir, exist_ok=True)
@@ -347,18 +354,34 @@ def main():
         done_file = os.path.join(ep_dir, ".done")
         manifest_file = os.path.join(ep_dir, "episode_manifest.json")
 
+        # Compute init_state_sha before resume check
+        init_states = task_suite.get_task_init_states(ti)
+        ep_init_state_sha = sha256_hex(init_states[ii])
+
         # Resume with fail-closed integrity check
+        resume_integrity_keys = [
+            "runner_sha", "shard_sha", "preprocess_sha", "feature_extractor_sha",
+            "gripper_exec_spec_sha", "binding_config_sha", "model_config_sha",
+            "backend", "dtype", "requested_attn", "actual_attn",
+            "seed", "max_steps", "profile_name",
+            "init_state_sha", "task_idx", "init_idx", "label",
+        ]
         skip = False
         if args.resume and os.path.exists(done_file):
             if os.path.exists(manifest_file):
                 stored = json.load(open(manifest_file))
                 mismatch = []
-                for k in ["runner_sha", "shard_sha", "preprocess_sha", "feature_extractor_sha",
-                          "gripper_exec_spec_sha", "binding_config_sha",
-                          "backend", "dtype", "requested_attn", "actual_attn",
-                          "seed", "max_steps", "profile_name"]:
+                for k in resume_integrity_keys:
                     sv = str(stored.get(k, ""))
-                    rv = str(run_attrs.get(k, ""))
+                    rv = str(run_attrs.get(k, "")) if k in run_attrs else ""
+                    if k == "init_state_sha":
+                        rv = ep_init_state_sha
+                    elif k == "task_idx":
+                        rv = str(ti)
+                    elif k == "init_idx":
+                        rv = str(ii)
+                    elif k == "label":
+                        rv = label
                     if sv != rv:
                         mismatch.append(k)
                 if not mismatch:
@@ -392,6 +415,7 @@ def main():
 
         # Atomic save: write .tmp, os.replace, .done last
         ep_manifest = dict(run_attrs, label=label, task_idx=ti, init_idx=ii,
+                          init_state_sha=ep_init_state_sha,
                           steps=res["steps"], success=res["success"],
                           binding_ok=res.get("binding_ok", False))
 
