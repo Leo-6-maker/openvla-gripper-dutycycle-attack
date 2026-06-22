@@ -11,6 +11,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from dataclasses import dataclass, asdict
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -19,6 +20,7 @@ ACTION_DIM = 7
 ARM_DIM = 6
 LAYER3_BRANCH_CONDITIONS = ("CLEAN_REPLAY", "VIS", "RAND", "SHUFFLED")
 DEFAULT_REQUIRED_PILOT_CONDITIONS = ("CLEAN_REPLAY", "VIS", "RAND")
+SHA256_RE = re.compile(r"[0-9a-f]{64}")
 
 
 class Layer3BranchingContractError(ValueError):
@@ -28,6 +30,11 @@ class Layer3BranchingContractError(ValueError):
 def sha256_jsonable(obj: Any) -> str:
     data = json.dumps(obj, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
     return hashlib.sha256(data).hexdigest()
+
+
+def require_sha256(value: str, *, field: str) -> None:
+    if not isinstance(value, str) or SHA256_RE.fullmatch(value) is None:
+        raise Layer3BranchingContractError(f"{field} must be a 64-character lowercase hex SHA256")
 
 
 def _float_list(values: Sequence[Any], *, name: str, exact_len: int = ACTION_DIM) -> list[float]:
@@ -70,9 +77,7 @@ class PrefixBranchSnapshot:
             "detector_state_sha256",
             "feature_history_sha256",
         ):
-            value = getattr(self, field)
-            if not isinstance(value, str) or len(value) < 16:
-                raise Layer3BranchingContractError(f"{field} is missing or too short")
+            require_sha256(getattr(self, field), field=field)
 
     @property
     def snapshot_sha256(self) -> str:
