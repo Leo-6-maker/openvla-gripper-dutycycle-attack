@@ -2,7 +2,7 @@
   "gate": "M0_OBJECT_CHECKPOINT_A800_FINAL_CLASSIFICATION",
   "timestamp_utc": "2026-06-22T06:00:00Z",
   "branch": "migration/object-checkpoint-a800-20260622",
-  "head": "828d8e2",
+  "head": "b4c8a057e9b4d252a208a0bc92e2c431aefd168a",
 
   "checkpoint": {
     "sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
@@ -82,7 +82,14 @@
     "M0_S2_ROOT_CAUSE_ESTABLISHED": true
   },
 
-  "s2_root_cause": "MuJoCo 3.8.0 (old) vs 3.9.0 (A800) rendering differences produce slightly different VLA input images from step 0. Despite identical model weights (all 4 safetensors match) and identical first 4 policy actions, the accumulated rendering difference causes first action divergence at step 4 (act_dx: 0.0888 vs 0.1106). After step 4, both action and EEF trajectories completely diverge: old proceeds to grasp and approach the object, A800 wanders sideways at constant Z. The device_map difference (auto vs cuda:0) is ruled out because first 4 actions match. The detector's false-early trigger at step 33 on A800 is a downstream consequence of the diverged trajectory. Supporting evidence: python (3.10.18 vs 3.10.20), torch (2.6.0 vs 2.2.0), robosuite (1.4.1 vs 1.4.0) also differ and may contribute.",
+  "s2_root_cause": "MuJoCo 3.8.0 (old) vs 3.9.0 (A800) and robosuite 1.4.1 vs 1.4.0 rendering and environment-version drift is the leading hypothesis. Despite identical model weights (all 4 safetensors match) and identical first 4 policy actions, accumulated rendering/environment differences cause first action divergence at step 4. After step 4, trajectories completely diverge. The device_map difference (auto vs cuda:0) is ruled out because first 4 actions match. NOTE: This is established as a divergence class, not proven through single-variable experimental isolation — Python (3.10.18 vs 3.10.20) and torch (2.6.0 vs 2.2.0) also differ and may contribute.",
+
+  "s2_divergence_class": {
+    "M0_S2_DIVERGENCE_CLASS_ESTABLISHED": true,
+    "M0_S2_PRIMARY_HYPOTHESIS": "MuJoCo/robosuite rendering and environment-version drift",
+    "M0_S2_EXACT_CAUSAL_ISOLATION": false,
+    "M0_S2_CONTRIBUTING_FACTORS": ["MuJoCo 3.8.0→3.9.0", "robosuite 1.4.1→1.4.0", "Python 3.10.18→3.10.20", "torch 2.6.0→2.2.0"]
+  },
 
   "next_gate": "APPROVE_GATE_M1_A800_LOCAL_PAIRED_RUNTIME_STUDY",
   "next_gate_note": "M1 must use A800-local Object manifest with A800-local baseline. Since root cause is environmental (MuJoCo rendering versions), M1 should compare runtime profiles (BF16/Flash2/FP32) within the A800 environment rather than trying to match old 2080Ti behavior. Baseline = BF16-Eager s0+s2 A800 results already collected. All new profiles use same manifest.",
