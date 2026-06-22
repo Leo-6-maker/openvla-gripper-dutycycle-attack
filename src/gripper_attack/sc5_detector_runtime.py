@@ -20,6 +20,7 @@ SC5_FEATURES = [
 ]
 SC5_PHASES = ["approach","grasp_close","stable_grasp","first_lift","stable_carry",
               "pre_place_unsupported","release_safe","recovery_or_regrasp","abstain_unsupported"]
+ACCEPTED_FROZEN_SPLIT_MODES = {"frozen", "provisional_cross_suite_frozen"}
 
 
 class SC5MLP(nn.Module):
@@ -72,8 +73,11 @@ class SC5DetectorRuntime:
             raise ValueError("Zero in std")
 
         split_mode = ckpt.get("split_mode", "unknown")
-        if split_mode != "frozen":
-            raise ValueError(f"Checkpoint split_mode={split_mode}, expected 'frozen'")
+        if split_mode not in ACCEPTED_FROZEN_SPLIT_MODES:
+            raise ValueError(
+                f"Checkpoint split_mode={split_mode}, expected one of {sorted(ACCEPTED_FROZEN_SPLIT_MODES)}"
+            )
+        self.split_mode = split_mode
 
         # Build model + strict load
         self.model = SC5MLP(n_feat=len(SC5_FEATURES))
