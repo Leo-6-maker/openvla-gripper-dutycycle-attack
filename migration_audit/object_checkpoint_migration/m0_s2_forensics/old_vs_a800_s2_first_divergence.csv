@@ -1,12 +1,38 @@
-field,value
-status,OLD_STEP_TRACE_NOT_AVAILABLE
-reason,Old vla server (10.60.133.4) unreachable via SSH from both local machine and A800 relay; jump host (10.60.133.3) rejects vla key authentication
-old_c16_repo,/data/liuyu/repos/sc5_census_freeze_cc356f3_20260618/
-checkpoint_sha,66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628 (VERIFIED match between A800 and contract)
-first_observation_divergence_step,UNKNOWN
-first_pixel_divergence_step,UNKNOWN
-first_action_divergence_step,UNKNOWN
-first_env_state_divergence_step,UNKNOWN
-first_detector_divergence_step,UNKNOWN
-cannot_compare,step-level old s2 clean trajectory trace; per-step observation/image/action SHA; old BDDL SHA; old init-state SHAs; old model manifest SHAs; old software versions
-note,Without old s2 clean step-level trace cannot determine whether divergence starts at step 0 (init/observation difference) or later (closed-loop numerical accumulation)
+field,old_value,a800_value,match
+old_server,klfy-SYS-4028GR-TR2 liuyu@10.60.133.4,pm-364c0001 dty_user@10.60.2.56,DIFFERENT
+old_server_reachable,TRUE via ProxyCommand (scene@10.60.133.3),N/A,OK
+python,3.10.18,3.10.20,DIFFERENT
+torch,2.6.0+cu124,2.2.0+cu121,DIFFERENT
+cuda,12.4,12.1,DIFFERENT
+transformers,4.40.1,4.40.1,MATCH
+mujoco,3.8.0,3.9.0,DIFFERENT
+robosuite,1.4.1,1.4.0,DIFFERENT
+vla_model_path,/data/aviary/models/openvla/openvla-7b-finetuned-libero-object,/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object,DIFFERENT
+model_safetensors_00001,1748e292...,1748e292...,MATCH
+model_safetensors_00002,1a468feb...,1a468feb...,MATCH
+model_safetensors_00003,f4958ff6...,f4958ff6...,MATCH
+model_safetensors_00004,eccbc048...,eccbc048...,MATCH
+processing_prismatic.py,938ef87a...,938ef87a...,MATCH
+modeling_prismatic.py,2e672e75...,2e672e75...,MATCH
+configuration_prismatic.py,68cc5ae3...,68cc5ae3...,MATCH
+config.json,44c03b83...,72566b15...,DIFFERENT (_name_or_path only)
+device_map,auto (multi-GPU 2080Ti 10GB),cuda:0 (single A800),DIFFERENT
+attention,eager,eager,MATCH
+preprocess,project_pil_lanczos,project_pil_lanczos,MATCH
+dtype,BF16,BF16,MATCH
+init_state_s2_sha,NOT_YET_RETRIEVED,c21cc2b537e2701898d990680eaa7565df3530e8ed95ae858310c013f3cc09dc,UNKNOWN
+bddl_sha,NOT_YET_RETRIEVED,5d8053b40ff33246fdbcc38548db84032c6bb647b4b88b6646d9cf6b73a5006c,UNKNOWN
+first_action_divergence_step,policy_step=4,TBD,DIFFERENT
+first_action_divergence_detail,"act_dx=0.0888 act=(0.0888,-0.0026,0.0441,0.0000)","act_dx=0.1106 act=(0.1106,-0.0026,0.0441,0.0000)",DIFFERENT
+eef_at_divergence_old,"(-0.157155,-0.000712,0.252630)","(-0.157167,-0.000745,0.252614)","MATCH within 35um"
+first_observation_divergence_step,TBD (need rendered image SHA from old trace),TBD,N/A
+first_pixel_divergence_step,TBD (old trace has no image SHA),TBD,N/A
+first_input_token_divergence_step,TBD,TBD,N/A
+first_detector_divergence_step,N/A (old trace has no detector),step 28 (ARMED) vs old likely N/A,N/A
+root_cause_hypothesis,"MuJoCo 3.8.0 vs 3.9.0 rendering differences cause slightly different VLA input images starting from step 0, accumulating to first action divergence at step 4, then closed-loop trajectory completely diverges"
+old_trace_source,/data/liuyu/outputs/milestone_2e2_object100_privileged_artifact_rich_20260527/runs/libero_object/pick_up_the_butter_and_place_it_in_the_basket_state2/step_records.jsonl,N/A,N/A
+old_trace_date,2026-05-27,N/A,N/A
+old_trace_steps,208 (policy steps 0-197),400 (timeout),DIFFERENT
+old_trace_success,unknown (success_so_far=False at step 207),False,DIFFERENT
+old_c16_poc_step_trace,NOT_FOUND,N/A,N/A
+note,"Original C16 POC (freeze/layer123-poc-20260618, commit 54ea19a) step-level E2E telemetry was not found on old server. The milestone_2e2 data used for comparison is from May 27, 2025 — same model weights, same task, but different date and possibly different LIBERO/MuJoCo versions. The C16 POC anchor=96 was verified on the canonical dataset but the actual E2E step trace was not archived."

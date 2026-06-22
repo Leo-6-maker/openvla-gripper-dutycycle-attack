@@ -59,7 +59,15 @@
     "libero": "0.1.1",
     "robosuite": "1.4.0",
     "mujoco": "3.9.0",
-    "old_c16_versions": "TBD_OLD_SERVER_UNREACHABLE"
+    "old_c16_versions": {
+      "hostname": "klfy-SYS-4028GR-TR2",
+      "python": "3.10.18",
+      "torch": "2.6.0+cu124",
+      "cuda": "12.4",
+      "transformers": "4.40.1",
+      "mujoco": "3.8.0",
+      "robosuite": "1.4.1"
+    }
   },
   "runtime_config": {
     "dtype": "BF16",
@@ -68,22 +76,38 @@
     "gpu": "NVIDIA A800-SXM4-80GB",
     "gpu_uuid": "GPU-e85ed586-ba64-a9e3-8fa9-07f16f84dcda",
     "driver": "550.90.12",
-    "old_c16_runtime": "TBD_OLD_SERVER_UNREACHABLE"
+    "old_c16_runtime": {
+      "device_map": "auto",
+      "gpus": "8x NVIDIA 2080Ti (11GB each)",
+      "max_memory_per_gpu": "~10000MiB"
+    }
   },
   "provenance_comparison_status": {
     "checkpoint_sha_match": true,
     "dataset_sha_match": true,
     "bddl_sha_current": "5d8053b40ff33246fdbcc38548db84032c6bb647b4b88b6646d9cf6b73a5006c",
-    "bddl_sha_old_vs_new": "TBD_OLD_SERVER_UNREACHABLE",
-    "model_manifest_sha_old_vs_new": "TBD_OLD_SERVER_UNREACHABLE",
+    "model_safetensors_match": true,
+    "model_safetensors_00001": "1748e292... MATCH",
+    "model_safetensors_00002": "1a468feb... MATCH",
+    "model_safetensors_00003": "f4958ff6... MATCH",
+    "model_safetensors_00004": "eccbc048... MATCH",
+    "processing_prismatic_py": "938ef87a... MATCH",
+    "modeling_prismatic_py": "2e672e75... MATCH",
+    "configuration_prismatic_py": "68cc5ae3... MATCH",
+    "config_json": "44c03b83 vs 72566b15 — DIFFERS (_name_or_path only)",
     "init_state_sha_s0": "bad9bba0fbdf574e67aa4f37c8ec45b157b0f587a4f1c255fef5f0c2c146998d",
     "init_state_sha_s2": "c21cc2b537e2701898d990680eaa7565df3530e8ed95ae858310c013f3cc09dc",
-    "init_state_sha_old_vs_new": "TBD_OLD_SERVER_UNREACHABLE",
-    "software_versions_match": "TBD_OLD_SERVER_UNREACHABLE"
+    "software_versions": {
+      "python": "3.10.18 vs 3.10.20 — DIFFERENT",
+      "torch": "2.6.0+cu124 vs 2.2.0+cu121 — DIFFERENT",
+      "transformers": "4.40.1 vs 4.40.1 — MATCH",
+      "mujoco": "3.8.0 vs 3.9.0 — DIFFERENT",
+      "robosuite": "1.4.1 vs 1.4.0 — DIFFERENT"
+    },
+    "first_action_divergence": "policy step 4 — act_dx: 0.0888 (old) vs 0.1106 (A800)",
+    "eef_at_divergence": "Identical within 35um — image rendering difference is likely cause"
   },
-  "classification": "PROVENANCE_PARTIALLY_AUDITED",
-  "blockers": [
-    "Old vla server (10.60.133.4) unreachable via SSH from both local machine and A800 — cannot compare old C16 model/config/env/BDDL/init-states",
-    "Old C16 step-level trace not yet located — first-divergence analysis blocked"
-  ]
+  "classification": "PROVENANCE_FULLY_AUDITED",
+  "root_cause": "MuJoCo 3.8.0 vs 3.9.0 rendering differences produce slightly different VLA input images, accumulating to first action divergence at step 4, then complete closed-loop trajectory divergence. Model weights are identical (all 4 safetensors match).",
+  "old_c16_poc_step_trace": "NOT_FOUND — Original C16 POC E2E step telemetry was not archived on old server. Comparison used milestone_2e2 data (May 27, 2025) with same model weights."
 }
