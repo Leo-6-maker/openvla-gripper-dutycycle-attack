@@ -116,6 +116,144 @@ def test_frame_dataset_excludes_task_success_and_uses_primary_supplementary_even
     assert "task_success" not in rows[0]
 
 
+def test_supplementary_positive_requires_selected_event_id(tmp_path):
+    ep = tmp_path / "episode"
+    ep.mkdir()
+    fields = ["step", *SC5_FEATURES]
+    with (ep / "step_telemetry.csv").open("w", newline="", encoding="utf-8") as f:
+        import csv
+
+        writer = csv.DictWriter(f, fieldnames=fields)
+        writer.writeheader()
+        writer.writerow({"step": "16", **{name: "0.0" for name in SC5_FEATURES}})
+    manifest_row = {
+        "episode_path": str(ep),
+        "canonical_key": "libero_10|4|10|0|CLEAN",
+        "suite": "libero_10",
+        "task_idx": "4",
+        "state_id": "10",
+        "eval_seed": "0",
+    }
+    label = {
+        "teacher_status": SUPPLEMENTARY_POSITIVE_STATUS,
+        "mechanism_type": "multi_object_transfer",
+        "label_role": "supplementary_multievent_grasp_carry_bridge",
+        "primary_or_supplementary": "supplementary",
+        "primary_supplementary_event_id": "",
+    }
+    events = [
+        {
+            "event_id": "event_a",
+            "close_onset_step": "1",
+            "grasp_established_step": "2",
+            "lift_onset_step": "3",
+            "stable_carry_start": "4",
+            "teacher_window_start": "0",
+            "teacher_window_end": "5",
+            "teacher_anchor_step": "2",
+            "release_onset_step": "",
+        }
+    ]
+    rows, problems = build_rows_for_episode(manifest_row=manifest_row, label=label, events=events, split="train")
+    assert "supplementary_positive_missing_primary_event_id" in problems
+    assert "positive_without_event" in problems
+    assert rows[0]["ignore_for_loss"] == 1
+    assert rows[0]["event_id"] == ""
+
+
+def test_supplementary_positive_rejects_missing_or_duplicate_selected_event(tmp_path):
+    ep = tmp_path / "episode"
+    ep.mkdir()
+    fields = ["step", *SC5_FEATURES]
+    with (ep / "step_telemetry.csv").open("w", newline="", encoding="utf-8") as f:
+        import csv
+
+        writer = csv.DictWriter(f, fieldnames=fields)
+        writer.writeheader()
+        writer.writerow({"step": "16", **{name: "0.0" for name in SC5_FEATURES}})
+    manifest_row = {
+        "episode_path": str(ep),
+        "canonical_key": "libero_10|4|10|0|CLEAN",
+        "suite": "libero_10",
+        "task_idx": "4",
+        "state_id": "10",
+        "eval_seed": "0",
+    }
+    label = {
+        "teacher_status": SUPPLEMENTARY_POSITIVE_STATUS,
+        "mechanism_type": "multi_object_transfer",
+        "label_role": "supplementary_multievent_grasp_carry_bridge",
+        "primary_or_supplementary": "supplementary",
+        "primary_supplementary_event_id": "event_missing",
+    }
+    rows, problems = build_rows_for_episode(manifest_row=manifest_row, label=label, events=[], split="train")
+    assert "supplementary_primary_event_id_not_found:event_missing" in problems
+    assert rows[0]["ignore_for_loss"] == 1
+
+    event = {
+        "event_id": "event_dup",
+        "close_onset_step": "1",
+        "grasp_established_step": "2",
+        "lift_onset_step": "3",
+        "stable_carry_start": "4",
+        "teacher_window_start": "0",
+        "teacher_window_end": "5",
+        "teacher_anchor_step": "2",
+        "release_onset_step": "",
+    }
+    label["primary_supplementary_event_id"] = "event_dup"
+    rows, problems = build_rows_for_episode(
+        manifest_row=manifest_row,
+        label=label,
+        events=[dict(event), dict(event)],
+        split="train",
+    )
+    assert "supplementary_primary_event_id_not_unique:event_dup:2" in problems
+    assert rows[0]["ignore_for_loss"] == 1
+
+
+def test_resolver_label_role_mismatch_is_dataset_problem(tmp_path):
+    ep = tmp_path / "episode"
+    ep.mkdir()
+    fields = ["step", *SC5_FEATURES]
+    with (ep / "step_telemetry.csv").open("w", newline="", encoding="utf-8") as f:
+        import csv
+
+        writer = csv.DictWriter(f, fieldnames=fields)
+        writer.writeheader()
+        writer.writerow({"step": "16", **{name: "0.0" for name in SC5_FEATURES}})
+    manifest_row = {
+        "episode_path": str(ep),
+        "canonical_key": "libero_10|4|10|0|CLEAN",
+        "suite": "libero_10",
+        "task_idx": "4",
+        "state_id": "10",
+        "eval_seed": "0",
+    }
+    label = {
+        "teacher_status": SUPPLEMENTARY_POSITIVE_STATUS,
+        "mechanism_type": "multi_object_transfer",
+        "label_role": "primary_single_object_pick_place",
+        "primary_or_supplementary": "primary",
+        "primary_supplementary_event_id": "event_a",
+    }
+    event = {
+        "event_id": "event_a",
+        "close_onset_step": "1",
+        "grasp_established_step": "2",
+        "lift_onset_step": "3",
+        "stable_carry_start": "4",
+        "teacher_window_start": "0",
+        "teacher_window_end": "5",
+        "teacher_anchor_step": "2",
+        "release_onset_step": "",
+    }
+    rows, problems = build_rows_for_episode(manifest_row=manifest_row, label=label, events=[event], split="train")
+    assert "label_role_mismatch:primary_single_object_pick_place!=supplementary_multievent_grasp_carry_bridge" in problems
+    assert "primary_or_supplementary_mismatch:primary!=supplementary" in problems
+    assert rows[0]["ignore_for_loss"] == 1
+
+
 def test_leakage_audit_rejects_split_state_overlap_and_duplicate_frames():
     rows = [
         {"dataset_split": "train", "episode_key": "a", "suite": "libero_spatial", "task_idx": 0, "state_id": 10, "step": 0, "features_finite": 1},
