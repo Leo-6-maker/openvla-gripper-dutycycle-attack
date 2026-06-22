@@ -138,13 +138,99 @@ EXACT_RESTORE_3X: NOT_RUN
 RESTORE_REPLAY_MISMATCH: NOT_EVALUATED
 ```
 
+## Canonical Feature-Path Rerun
+
+The restore runner previously used `sim.data.qpos[0:2]` for gripper state. That
+was repaired by sharing the clean collector's canonical physical-state path:
+
+```text
+extract_sc5_physical_state()
+physical_gripper_state(env, obs)
+```
+
+Rerun:
+
+```text
+/data/liuyu/layer3_outputs/real_clean_restore_known_goal_t4_s1_a5a3b35_gpu13_20260622_194215
+```
+
+Result:
+
+```text
+candidate_status: SELECTED
+online_emit_step: 51
+failure: CUDA OOM while loading replay model
+classification: INFRA_INVALID_AFTER_ONLINE_EMIT
+```
+
+This showed the online feature path repair was sufficient to reproduce the
+Student emit. It did not adjudicate restore replay.
+
+## Restore Replay Rerun
+
+The runner was then repaired to release the reference OpenVLA model before
+loading replay models.
+
+Rerun:
+
+```text
+/data/liuyu/layer3_outputs/real_clean_restore_known_goal_t4_s1_92893f8_gpu13_20260622_194706
+```
+
+Result:
+
+```text
+candidate_status: SELECTED
+online_emit_step: 51
+prefix_observation_sha256: c813f3e05ed295c09328e3ec08d8fb3fdf17806a19d721f32238fd1adb1ef10e
+failure: restored observation hash does not match prefix
+classification: EXACT_RESTORE_OBSERVATION_RECONSTRUCTION_FAIL
+```
+
+This is the first run in this sequence to pass the online Student emit gate and
+enter exact restore. It failed at the restore observation reconstruction gate,
+before replay action identity could be evaluated.
+
+## Online/Offline Feature Trajectory Audit
+
+Output:
+
+```text
+/data/liuyu/layer3_outputs/online_offline_feature_audit_goal_t4_s1_92893f8_20260622_195320
+```
+
+Result:
+
+```text
+classification: FEATURE_TRAJECTORY_MATCH
+shared_step_count: 52
+first_shared_step: 0
+last_shared_step: 51
+raw_fields_with_diff: 0 / 12
+feature25d_fields_with_diff: 0 / 25
+online_emit_step: 51
+```
+
+This answers the immediate concern from the previous review: after using the
+canonical gripper-state path, the online trajectory features match the frozen
+offline dataset exactly through the emit step. The current blocker is no longer
+detector/runtime parity or online feature extraction.
+
 ## Current Gate
 
-The system now has a repaired checkpoint-threshold runtime and a passing
-offline evaluator/runtime parity audit. However, the preselected offline
-Goal emitter did not reproduce as an online natural Student emit in the real
-LIBERO clean replay. Because the snapshot boundary was never reached, the
-3/3 exact restore replay gate was not entered.
+The system now has a repaired checkpoint-threshold runtime, passing
+offline evaluator/runtime parity, and passing online/offline feature trajectory
+parity for the known Goal emitter through the emit step. The preselected Goal
+episode now reproduces the natural online Student emit at step 51.
+
+The current blocker is:
+
+```text
+EXACT_RESTORE_OBSERVATION_RECONSTRUCTION_FAIL
+```
+
+The 3/3 exact restore replay gate is still not passed because replay A failed
+before action identity comparison.
 
 ## Allowed Claims
 
@@ -153,14 +239,16 @@ LIBERO clean replay. Because the snapshot boundary was never reached, the
 - Runtime/evaluator parity passes on the frozen Goal test predictions at
   row-level phase/probability tolerance and episode-level emit decisions.
 - The previous 40-candidate R1 scan remains diagnostic only.
-- One known offline-emitter Goal episode was tested online and did not produce
-  an eligible natural Student emit.
+- One known offline-emitter Goal episode now reproduces online Student emit
+  after the canonical feature-path repair.
+- Online/offline raw and 25D SC5 features match exactly through the emit step
+  for `libero_goal|4|1|0|CLEAN`.
 
 ## Forbidden Claims
 
 - Do not claim exact restore qualification passed.
-- Do not claim online Goal Student trigger is established.
-- Do not claim restore replay failed; replay was not entered.
+- Do not claim exact restore action identity passed.
+- Do not claim restore replay action mismatch; replay action comparison was not reached.
 - Do not claim VIS/RAND/shuffled/oracle/attack evidence.
 - Do not expand the candidate pool or start R2 without a new gate.
 
@@ -173,6 +261,6 @@ HUMAN_GATE_REQUIRED
 Recommended review question:
 
 ```text
-Should the next step be an online/offline feature-trajectory mismatch audit
+Should the next step diagnose observation reconstruction after MuJoCo/env restore
 for libero_goal|4|1|0|CLEAN, or should the Goal exact-restore line stop here?
 ```
