@@ -32,6 +32,7 @@ from scripts.stageb.layer3_exact_restore_runner import (
     compare_observation_values,
     compare_policy_input_fingerprints,
     diff_state_dicts,
+    first_transition_diff,
     model_norm_stat_keys,
     parse_cuda_visible_devices,
     query_ordered_visible_gpu_uuids,
@@ -173,6 +174,23 @@ def test_diff_state_dicts_reports_nested_changes():
 )
 def test_classify_transition_diff(field, expected):
     assert classify_transition_diff(field) == expected
+
+
+def test_first_transition_diff_prefers_actionable_controller_state():
+    first = first_transition_diff(
+        [
+            {"field": "mujoco.qacc.head[0]", "classification": "MUJOCO_SOLVER_STATE_MISSING"},
+            {
+                "field": "robots[0].controller_selected_attrs.goal_pos.sha256",
+                "classification": "CONTROLLER_GOAL_STATE_MISSING",
+            },
+        ],
+        [],
+    )
+
+    assert first["first_divergence_phase"] == "PRE_STEP"
+    assert first["classification"] == "CONTROLLER_GOAL_STATE_MISSING"
+    assert first["field"] == "robots[0].controller_selected_attrs.goal_pos.sha256"
 
 
 def test_transition_state_audit_known_parent_fail_closed():

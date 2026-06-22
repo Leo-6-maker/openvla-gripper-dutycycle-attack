@@ -372,6 +372,44 @@ def classify_transition_diff(field: str) -> str:
     return "UNKNOWN_TRANSITION_STATE"
 
 
+TRANSITION_CLASS_PRIORITY = (
+    "CONTROLLER_GOAL_STATE_MISSING",
+    "INTERPOLATOR_STATE_MISSING",
+    "PREVIOUS_ACTION_STATE_MISSING",
+    "CONTROL_COUNTER_MISSING",
+    "ACTION_REPEAT_STATE_MISSING",
+    "MUJOCO_SOLVER_STATE_MISSING",
+    "UNKNOWN_TRANSITION_STATE",
+)
+
+
+def annotate_transition_diffs(rows: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    out = []
+    for row in rows:
+        annotated = dict(row)
+        annotated["classification"] = classify_transition_diff(str(row.get("field", "")))
+        out.append(annotated)
+    return out
+
+
+def transition_classification_counts(rows: Sequence[Mapping[str, Any]]) -> dict[str, int]:
+    counts = {name: 0 for name in TRANSITION_CLASS_PRIORITY}
+    for row in rows:
+        cls = str(row.get("classification") or classify_transition_diff(str(row.get("field", ""))))
+        counts[cls] = counts.get(cls, 0) + 1
+    return {key: value for key, value in counts.items() if value}
+
+
+def primary_transition_diff(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any] | None:
+    if not rows:
+        return None
+    priority = {name: idx for idx, name in enumerate(TRANSITION_CLASS_PRIORITY)}
+    return min(
+        (dict(row) for row in rows),
+        key=lambda row: (priority.get(str(row.get("classification")), 999), str(row.get("field", ""))),
+    )
+
+
 def validate_transition_state_audit_known_parent(snapshot: ExactRestoreSnapshotPayload) -> None:
     parent = snapshot.parent_manifest
     if (
@@ -519,14 +557,14 @@ def capture_transition_state(
 
 def first_transition_diff(pre_diff: Sequence[Mapping[str, Any]], post_diff: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     if pre_diff:
-        row = dict(pre_diff[0])
+        row = primary_transition_diff(pre_diff) or dict(pre_diff[0])
         row["first_divergence_phase"] = "PRE_STEP"
-        row["classification"] = classify_transition_diff(str(row.get("field", "")))
+        row["classification"] = str(row.get("classification") or classify_transition_diff(str(row.get("field", ""))))
         return row
     if post_diff:
-        row = dict(post_diff[0])
+        row = primary_transition_diff(post_diff) or dict(post_diff[0])
         row["first_divergence_phase"] = "POST_STEP"
-        row["classification"] = classify_transition_diff(str(row.get("field", "")))
+        row["classification"] = str(row.get("classification") or classify_transition_diff(str(row.get("field", ""))))
         return row
     return {
         "first_divergence_phase": "NONE",
@@ -2385,8 +2423,8 @@ def run_transition_state_audit(
             pass
         release_real_policy(replay_policy)
 
-    pre_diff = diff_state_dicts(reference_pre, replay_pre)
-    post_diff = diff_state_dicts(reference_post, replay_post)
+    pre_diff = annotate_transition_diffs(diff_state_dicts(reference_pre, replay_pre))
+    post_diff = annotate_transition_diffs(diff_state_dicts(reference_post, replay_post))
     first = first_transition_diff(pre_diff, post_diff)
     summary = {
         "stage": "TRANSITION_STATE_AUDIT_ONLY",
@@ -2415,6 +2453,8 @@ def run_transition_state_audit(
         "replay_step": replay_step,
         "pre_diff_count": len(pre_diff),
         "post_diff_count": len(post_diff),
+        "pre_diff_classification_counts": transition_classification_counts(pre_diff),
+        "post_diff_classification_counts": transition_classification_counts(post_diff),
         "first_divergence_phase": first.get("first_divergence_phase"),
         "first_divergence_field": first.get("field"),
         "transition_state_classification": first.get("classification"),
