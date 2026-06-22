@@ -1,0 +1,12 @@
+field,value
+status,OLD_STEP_TRACE_NOT_AVAILABLE
+reason,Old vla server (10.60.133.4) unreachable via SSH from both local machine and A800 relay; jump host (10.60.133.3) rejects vla key authentication
+old_c16_repo,/data/liuyu/repos/sc5_census_freeze_cc356f3_20260618/
+checkpoint_sha,66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628 (VERIFIED match between A800 and contract)
+first_observation_divergence_step,UNKNOWN
+first_pixel_divergence_step,UNKNOWN
+first_action_divergence_step,UNKNOWN
+first_env_state_divergence_step,UNKNOWN
+first_detector_divergence_step,UNKNOWN
+cannot_compare,step-level old s2 clean trajectory trace; per-step observation/image/action SHA; old BDDL SHA; old init-state SHAs; old model manifest SHAs; old software versions
+note,Without old s2 clean step-level trace cannot determine whether divergence starts at step 0 (init/observation difference) or later (closed-loop numerical accumulation)
