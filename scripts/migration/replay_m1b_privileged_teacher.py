@@ -89,31 +89,33 @@ def replay_one(episode_key, profile, gpu, save_video=False):
     init_states = suite.get_task_init_states(task_idx)
     bddl = os.path.join(get_libero_path("bddl_files"), task_obj.problem_folder, task_obj.bddl_file)
 
-    # Parse BDDL for object and target names
+    # Build env FIRST, then resolve body names from available bodies
+    env, obs = build_v4_exact_env(bddl, gpu, 400, 10)
+    available = set(env.sim.model.body_names)
+
+    # Parse BDDL for object and target names, resolve against MuJoCo bodies
     bddl_content = open(bddl).read()
-    obj_name = None
-    target_name = None
+    obj_body_name = None
+    target_body_name = None
     for line in bddl_content.split('\n'):
         line = line.strip()
-        # Object: first entry in (:objects ...) section, format: name - type
-        if not obj_name and line and not line.startswith('(:') and ' - ' in line:
+        if line and not line.startswith('(:') and ' - ' in line:
             parts = line.split(' - ')
-            if parts[1].strip() not in ['basket', 'bin']:
-                obj_name = parts[0].strip()
-        # Target basket: look for basket in objects section
-        if line and 'basket' in line.lower() and ' - basket' in line:
-            target_name = line.split(' - ')[0].strip()
+            obj_type = parts[1].strip()
+            main_name = parts[0].strip() + "_main"
+            if obj_type in ['basket', 'bin']:
+                if main_name in available:
+                    target_body_name = main_name
+            elif not obj_body_name and main_name in available:
+                obj_body_name = main_name
 
-    if obj_name is None:
-        return {"_error": "TARGET_BINDING_AMBIGUOUS", "reason": "could not parse object from BDDL"}
-    if target_name is None:
-        target_name = "basket_1"  # fallback
+    if obj_body_name is None:
+        env.close()
+        return {"_error": "TARGET_BINDING_AMBIGUOUS", "reason": f"no object body in: {sorted(available)}"}
+    if target_body_name is None:
+        env.close()
+        return {"_error": "TARGET_BINDING_AMBIGUOUS", "reason": f"no basket body in: {sorted(available)}"}
 
-    # MuJoCo appends _main suffix to body names
-    obj_body_name = obj_name + "_main"
-    target_body_name = target_name + "_main"
-
-    env, obs = build_v4_exact_env(bddl, gpu, 400, 10)
     obs = env.set_init_state(init_states[state_id])
     env, obs = apply_dummy_wait(env, obs, 10)
 
