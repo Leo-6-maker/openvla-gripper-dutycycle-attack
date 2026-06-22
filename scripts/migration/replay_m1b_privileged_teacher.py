@@ -109,6 +109,10 @@ def replay_one(episode_key, profile, gpu, save_video=False):
     if target_name is None:
         target_name = "basket_1"  # fallback
 
+    # MuJoCo appends _main suffix to body names
+    obj_body_name = obj_name + "_main"
+    target_body_name = target_name + "_main"
+
     env, obs = build_v4_exact_env(bddl, gpu, 400, 10)
     obs = env.set_init_state(init_states[state_id])
     env, obs = apply_dummy_wait(env, obs, 10)
@@ -131,10 +135,10 @@ def replay_one(episode_key, profile, gpu, save_video=False):
                                 float(orig_tel[t].get("eef_z", 0))])
 
         # Object pose
-        obj_pos = np.array(env.sim.data.body_xpos[env.sim.model.body_name2id(obj_name)])
+        obj_pos = np.array(env.sim.data.body_xpos[env.sim.model.body_name2id(obj_body_name)])
 
         # Target/basket pose
-        target_pos = np.array(env.sim.data.body_xpos[env.sim.model.body_name2id(target_name)])
+        target_pos = np.array(env.sim.data.body_xpos[env.sim.model.body_name2id(target_body_name)])
 
         # Gripper qpos from joint sensors
         try:
