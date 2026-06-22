@@ -182,6 +182,7 @@ def main():
     ap.add_argument("--episode", required=True)
     ap.add_argument("--profile", required=True, choices=["B0", "D1"])
     ap.add_argument("--gpu", type=int, default=3)
+    ap.add_argument("--output_dir", default=None, help="Override output directory")
     args = ap.parse_args()
 
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
@@ -189,7 +190,7 @@ def main():
     os.environ["HOME"] = "/mnt/sdc/dty_user/openvla_attack/sandbox_home"
     os.environ["TMPDIR"] = "/mnt/sdc/dty_user/openvla_attack/tmp"
 
-    out_dir = OUT_BASE / "replay_canary" / args.episode / args.profile
+    out_dir = Path(args.output_dir) if args.output_dir else (OUT_BASE / "replay_canary" / args.episode / args.profile)
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"Replay: {args.episode}/{args.profile} GPU={args.gpu}")
