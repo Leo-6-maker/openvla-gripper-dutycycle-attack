@@ -180,6 +180,7 @@ def test_first_transition_diff_prefers_actionable_controller_state():
     first = first_transition_diff(
         [
             {"field": "mujoco.qacc.head[0]", "classification": "MUJOCO_SOLVER_STATE_MISSING"},
+            {"field": "robots[0].attrs.controller.repr", "classification": "CONTROLLER_GOAL_STATE_MISSING"},
             {
                 "field": "robots[0].controller_selected_attrs.goal_pos.sha256",
                 "classification": "CONTROLLER_GOAL_STATE_MISSING",

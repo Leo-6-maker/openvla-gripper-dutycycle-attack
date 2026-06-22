@@ -264,7 +264,11 @@ def compact_state_value(value: Any, *, depth: int = 0, max_depth: int = 3) -> An
             "head": [compact_state_value(v, depth=depth + 1, max_depth=max_depth) for v in list(value)[:8]],
             "tail": [compact_state_value(v, depth=depth + 1, max_depth=max_depth) for v in list(value)[-8:]],
         }
-    return {"type": type(value).__name__, "repr": repr(value)[:240]}
+    text = repr(value)[:240]
+    payload = {"type": type(value).__name__, "module": getattr(value.__class__, "__module__", "")}
+    if " object at 0x" not in text:
+        payload["repr"] = text
+    return payload
 
 
 def capture_object_state(obj: Any, *, max_depth: int = 2) -> dict[str, Any]:
@@ -406,7 +410,11 @@ def primary_transition_diff(rows: Sequence[Mapping[str, Any]]) -> dict[str, Any]
     priority = {name: idx for idx, name in enumerate(TRANSITION_CLASS_PRIORITY)}
     return min(
         (dict(row) for row in rows),
-        key=lambda row: (priority.get(str(row.get("classification")), 999), str(row.get("field", ""))),
+        key=lambda row: (
+            priority.get(str(row.get("classification")), 999),
+            1 if str(row.get("field", "")).endswith(".repr") else 0,
+            str(row.get("field", "")),
+        ),
     )
 
 
