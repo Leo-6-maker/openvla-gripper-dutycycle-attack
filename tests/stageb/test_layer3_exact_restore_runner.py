@@ -8,9 +8,11 @@ import numpy as np
 import pytest
 
 from scripts.stageb.layer3_exact_restore_runner import (
+    EXPECTED_M2_CHECKPOINT_SHA256_BY_SUITE,
     EXPECTED_LAYER2_DATASET_SHA256,
     ExactRestoreSnapshotPayload,
     ExactRestoreError,
+    Layer3RuntimeReceipt,
     Layer3ParentDependencyManifest,
     _MockEnv,
     _MockPolicy,
@@ -21,15 +23,19 @@ from scripts.stageb.layer3_exact_restore_runner import (
     capture_mujoco_state,
     capture_policy_rng_state,
     capture_student_state,
+    get_observation_after_restore,
     compare_step_sequences,
     restore_env_internal_state,
     restore_feature_history,
     restore_mujoco_state,
     restore_policy_rng_state,
     restore_snapshot,
+    restore_snapshot_and_recapture_observation,
     restore_student_state,
     rollout_clean_steps,
+    update_student_for_step,
     validate_clean_restore_pair,
+    validate_dependency_sha_values,
 )
 
 
@@ -43,7 +49,7 @@ def make_parent(**overrides):
         openvla_model_sha256="a" * 64,
         unnorm_key="libero_spatial",
         layer2_dataset_sha256=EXPECTED_LAYER2_DATASET_SHA256,
-        detector_checkpoint_sha256="c" * 64,
+        detector_checkpoint_sha256=EXPECTED_M2_CHECKPOINT_SHA256_BY_SUITE["libero_spatial"],
         tau_corridor=0.3,
         tau_release=0.3,
         libero_version="mock",
@@ -66,6 +72,7 @@ def test_parent_manifest_requires_sha_dependencies():
     [
         ({"suite": "libero_object", "parent_key": "libero_object|0|20|0|CLEAN"}, "unsupported suite"),
         ({"layer2_dataset_sha256": "b" * 64}, "frozen v3 dataset"),
+        ({"detector_checkpoint_sha256": "c" * 64}, "frozen libero_spatial M2 checkpoint"),
         ({"unnorm_key": "wrong"}, "unnorm_key"),
         ({"parent_key": "libero_spatial|1|20|0|CLEAN"}, "parent_key"),
         ({"tau_corridor": float("nan")}, "tau_corridor"),
@@ -151,6 +158,13 @@ def test_feature_history_round_trip():
     assert student.snapshot_feature_history() == saved
 
 
+def test_student_update_changes_state_and_feature_history_during_rollout():
+    case = build_mock_restore_case()
+    rows = case["reference"]
+    assert len({row.detector_state_sha256 for row in rows}) == 5
+    assert len({row.feature_history_sha256 for row in rows}) == 5
+
+
 def test_missing_env_student_and_feature_hooks_fail_closed():
     class NoEnvHooks:
         pass
@@ -170,6 +184,35 @@ def test_missing_env_student_and_feature_hooks_fail_closed():
         capture_feature_history(NoStudentHooks())
     with pytest.raises(ExactRestoreError, match="restore_feature_history"):
         restore_feature_history(NoStudentHooks(), [])
+    with pytest.raises(ExactRestoreError, match="per-step update"):
+        update_student_for_step(NoStudentHooks(), step=0, obs={}, action=[0] * 7, tokens=[0] * 7)
+
+
+def test_restore_observation_must_be_recaptured_from_env():
+    case = build_mock_restore_case()
+    snapshot = case["snapshot"]
+    env = _MockEnv()
+    student = _MockStudent()
+    policy = _MockPolicy()
+    restored_obs = restore_snapshot_and_recapture_observation(env, student, snapshot, policy)
+    assert restored_obs == snapshot.observation
+    env.internal["step"] = 999
+    with pytest.raises(ExactRestoreError, match="restored observation hash"):
+        get_observation_after_restore(env, snapshot)
+
+
+def test_missing_restored_observation_hook_fail_closed():
+    class NoObservationEnv(_MockEnv):
+        def get_observation_after_restore(self):  # type: ignore[no-untyped-def]
+            raise AttributeError("not available")
+
+    class TrulyNoObservationEnv:
+        def __init__(self):
+            self.sim = _MockEnv().sim
+
+    case = build_mock_restore_case()
+    with pytest.raises(ExactRestoreError, match="get_observation_after_restore"):
+        get_observation_after_restore(TrulyNoObservationEnv(), case["snapshot"])
 
 
 def test_payload_prefix_hash_inconsistency_rejected():
@@ -197,7 +240,7 @@ def test_recaptured_branch_record_uses_actual_post_restore_state():
     env = _MockEnv()
     student = _MockStudent()
     restore_snapshot(env, student, snapshot, policy)
-    env.sim.data.qpos[:] = 42.0
+    env.sim.data.qvel[:] = 42.0
     from scripts.stageb.layer3_exact_restore_runner import recapture_branch_record
     from scripts.stageb.layer3_exact_branching_contract import validate_branch_records
 
@@ -207,7 +250,6 @@ def test_recaptured_branch_record_uses_actual_post_restore_state():
         env=env,
         student=student,
         policy=policy,
-        observation=snapshot.observation,
     )
     with pytest.raises(Exception, match="sim_state hash mismatch"):
         validate_branch_records(snapshot.prefix, [record], required_conditions=("CLEAN_REPLAY",))
@@ -284,6 +326,61 @@ def test_mujoco_warmstart_and_applied_force_state_restored():
     assert env.sim.data.qfrc_applied.tolist() == [3.0, 4.0]
     assert float(env.sim.data.xfrc_applied[0, 0]) == 5.0
     assert env.sim.data.eq_active.tolist() == [0]
+
+
+def test_dependency_sha_value_validation():
+    parent = make_parent(openvla_model_sha256="a" * 64)
+    result = validate_dependency_sha_values(
+        parent,
+        actual_openvla_model_sha256="a" * 64,
+        actual_detector_checkpoint_sha256=EXPECTED_M2_CHECKPOINT_SHA256_BY_SUITE["libero_spatial"],
+    )
+    assert result["dependency_sha_validation_pass"] is True
+    with pytest.raises(ExactRestoreError, match="OpenVLA model SHA"):
+        validate_dependency_sha_values(
+            parent,
+            actual_openvla_model_sha256="b" * 64,
+            actual_detector_checkpoint_sha256=EXPECTED_M2_CHECKPOINT_SHA256_BY_SUITE["libero_spatial"],
+        )
+
+
+def test_runtime_receipt_requires_deterministic_gpu_order_and_generation():
+    receipt = Layer3RuntimeReceipt(
+        cuda_visible_devices="1,3",
+        ordered_gpu_uuids=["GPU-a", "GPU-b"],
+        device_count=2,
+        torch_version="mock",
+        cuda_runtime="mock",
+        driver_version="mock",
+        libero_version="mock",
+        mujoco_version="mock",
+        openvla_generation_kwargs={"do_sample": False, "temperature": 0.0},
+    )
+    assert receipt.receipt_sha256
+    with pytest.raises(ExactRestoreError, match="device_count"):
+        Layer3RuntimeReceipt(
+            cuda_visible_devices="1,3",
+            ordered_gpu_uuids=["GPU-a"],
+            device_count=2,
+            torch_version="mock",
+            cuda_runtime="mock",
+            driver_version="mock",
+            libero_version="mock",
+            mujoco_version="mock",
+            openvla_generation_kwargs={"do_sample": False, "temperature": 0.0},
+        )
+    with pytest.raises(ExactRestoreError, match="do_sample"):
+        Layer3RuntimeReceipt(
+            cuda_visible_devices="1",
+            ordered_gpu_uuids=["GPU-a"],
+            device_count=1,
+            torch_version="mock",
+            cuda_runtime="mock",
+            driver_version="mock",
+            libero_version="mock",
+            mujoco_version="mock",
+            openvla_generation_kwargs={"do_sample": True, "temperature": 0.0},
+        )
 
 
 def test_mock_cli_writes_result(tmp_path):

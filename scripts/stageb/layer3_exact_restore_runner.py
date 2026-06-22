@@ -10,9 +10,12 @@ from __future__ import annotations
 
 import argparse
 import copy
+import hashlib
 import json
 import math
+import os
 import random
+import subprocess
 import sys
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -43,6 +46,11 @@ FLOAT_TOLERANCE = 1e-7
 RESTORE_STEPS = 5
 SUPPORTED_SUITES = {"libero_spatial", "libero_goal", "libero_10"}
 EXPECTED_LAYER2_DATASET_SHA256 = "6252fd699010005e48f5dff24c631262fb4939d9b76314a9afb82efe7f2cd0b2"
+EXPECTED_M2_CHECKPOINT_SHA256_BY_SUITE = {
+    "libero_spatial": "d229e3db0a3b15cf68712a4582817c30a1bedd9f424b1ea7c68120f00e61134a",
+    "libero_goal": "3826a64530d25078441c214e2667d25b32eee98a05581da943bb978ff6bfee98",
+    "libero_10": "9f6759b916b0ab612a1b3ebcef4186677197a27c73e55ee4c1653d7828c30df9",
+}
 MUJOCO_STATE_FIELDS = (
     "qpos",
     "qvel",
@@ -104,6 +112,11 @@ class Layer3ParentDependencyManifest:
             require_sha256(getattr(self, field), field=field)
         if self.layer2_dataset_sha256 != EXPECTED_LAYER2_DATASET_SHA256:
             raise ExactRestoreError("layer2_dataset_sha256 does not match frozen v3 dataset")
+        expected_ckpt = EXPECTED_M2_CHECKPOINT_SHA256_BY_SUITE[self.suite]
+        if self.detector_checkpoint_sha256 != expected_ckpt:
+            raise ExactRestoreError(
+                f"detector_checkpoint_sha256 does not match frozen {self.suite} M2 checkpoint"
+            )
         if not self.unnorm_key:
             raise ExactRestoreError("unnorm_key is required")
         if self.unnorm_key != self.suite:
@@ -172,6 +185,69 @@ def hash_array(value: Any) -> str:
 
 def hash_jsonable(value: Any) -> str:
     return sha256_jsonable(_json_clone(value))
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def sha256_path(path: Path) -> str:
+    """Hash a file or directory dependency in a deterministic manifest form."""
+
+    if path.is_file():
+        return sha256_file(path)
+    if not path.is_dir():
+        raise ExactRestoreError(f"dependency path does not exist: {path}")
+    rows: list[dict[str, str | int]] = []
+    for child in sorted(p for p in path.rglob("*") if p.is_file()):
+        rows.append(
+            {
+                "relpath": child.relative_to(path).as_posix(),
+                "size": child.stat().st_size,
+                "sha256": sha256_file(child),
+            }
+        )
+    if not rows:
+        raise ExactRestoreError(f"dependency directory is empty: {path}")
+    return hash_jsonable(rows)
+
+
+def validate_dependency_sha_values(
+    parent: Layer3ParentDependencyManifest,
+    *,
+    actual_openvla_model_sha256: str,
+    actual_detector_checkpoint_sha256: str,
+) -> dict[str, Any]:
+    require_sha256(actual_openvla_model_sha256, field="actual_openvla_model_sha256")
+    require_sha256(actual_detector_checkpoint_sha256, field="actual_detector_checkpoint_sha256")
+    if actual_openvla_model_sha256 != parent.openvla_model_sha256:
+        raise ExactRestoreError("actual OpenVLA model SHA does not match parent manifest")
+    if actual_detector_checkpoint_sha256 != parent.detector_checkpoint_sha256:
+        raise ExactRestoreError("actual detector checkpoint SHA does not match parent manifest")
+    return {
+        "openvla_model_sha256": actual_openvla_model_sha256,
+        "detector_checkpoint_sha256": actual_detector_checkpoint_sha256,
+        "dependency_sha_validation_pass": True,
+    }
+
+
+def validate_dependency_files(
+    parent: Layer3ParentDependencyManifest,
+    *,
+    openvla_model_path: str | Path,
+    detector_checkpoint_path: str | Path,
+) -> dict[str, Any]:
+    model_path = Path(openvla_model_path)
+    ckpt_path = Path(detector_checkpoint_path)
+    return validate_dependency_sha_values(
+        parent,
+        actual_openvla_model_sha256=sha256_path(model_path),
+        actual_detector_checkpoint_sha256=sha256_path(ckpt_path),
+    )
 
 
 def capture_python_rng_state() -> dict[str, Any]:
@@ -403,6 +479,97 @@ class ExactRestoreSnapshotPayload:
         )
 
 
+@dataclass(frozen=True)
+class Layer3RuntimeReceipt:
+    cuda_visible_devices: str
+    ordered_gpu_uuids: Sequence[str]
+    device_count: int
+    torch_version: str
+    cuda_runtime: str
+    driver_version: str
+    libero_version: str
+    mujoco_version: str
+    openvla_generation_kwargs: Mapping[str, Any]
+
+    def __post_init__(self) -> None:
+        if int(self.device_count) != len(list(self.ordered_gpu_uuids)):
+            raise ExactRestoreError("runtime receipt device_count does not match ordered_gpu_uuids")
+        if int(self.device_count) > 0 and not self.cuda_visible_devices:
+            raise ExactRestoreError("runtime receipt missing CUDA_VISIBLE_DEVICES for CUDA run")
+        for field in ("torch_version", "cuda_runtime", "driver_version", "libero_version", "mujoco_version"):
+            if not str(getattr(self, field)):
+                raise ExactRestoreError(f"runtime receipt missing {field}")
+        if bool(self.openvla_generation_kwargs.get("do_sample", False)):
+            raise ExactRestoreError("runtime receipt requires deterministic generation: do_sample must be false")
+        temperature = self.openvla_generation_kwargs.get("temperature", 0.0)
+        if temperature not in (None, 0, 0.0):
+            raise ExactRestoreError("runtime receipt requires deterministic generation temperature")
+
+    @property
+    def receipt_sha256(self) -> str:
+        return sha256_jsonable(asdict(self))
+
+
+def capture_runtime_receipt(
+    *,
+    libero_version: str,
+    mujoco_version: str,
+    openvla_generation_kwargs: Mapping[str, Any],
+    ordered_gpu_uuids: Sequence[str] | None = None,
+    driver_version: str | None = None,
+) -> Layer3RuntimeReceipt:
+    cuda_visible = os.environ.get("CUDA_VISIBLE_DEVICES", "")
+    if torch is not None and torch.cuda.is_available():
+        device_count = int(torch.cuda.device_count())
+        cuda_runtime = str(torch.version.cuda or "")
+    else:
+        device_count = 0
+        cuda_runtime = "cpu"
+    uuids = list(ordered_gpu_uuids or [])
+    if not uuids and device_count > 0:
+        uuids = query_ordered_gpu_uuids()
+    return Layer3RuntimeReceipt(
+        cuda_visible_devices=cuda_visible,
+        ordered_gpu_uuids=uuids,
+        device_count=device_count,
+        torch_version=str(getattr(torch, "__version__", "unavailable")) if torch is not None else "unavailable",
+        cuda_runtime=cuda_runtime,
+        driver_version=driver_version or query_nvidia_driver_version() or "cpu",
+        libero_version=libero_version,
+        mujoco_version=mujoco_version,
+        openvla_generation_kwargs=_json_clone(dict(openvla_generation_kwargs)),
+    )
+
+
+def query_ordered_gpu_uuids() -> list[str]:
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader"],
+            check=True,
+            text=True,
+            capture_output=True,
+            timeout=10,
+        )
+    except Exception:
+        return []
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+
+
+def query_nvidia_driver_version() -> str:
+    try:
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader"],
+            check=True,
+            text=True,
+            capture_output=True,
+            timeout=10,
+        )
+    except Exception:
+        return ""
+    versions = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    return versions[0] if versions else ""
+
+
 def build_prefix_snapshot(
     *,
     parent: Layer3ParentDependencyManifest,
@@ -437,6 +604,35 @@ def restore_snapshot(env: Any, student: Any, snapshot: ExactRestoreSnapshotPaylo
     restore_policy_rng_state(policy, snapshot.policy_rng_state, strict=True)
 
 
+def get_observation_after_restore(env: Any, snapshot: ExactRestoreSnapshotPayload) -> Any:
+    """Rebuild obs_t from the restored env, then verify it matches the prefix.
+
+    Real adapters must not feed the saved obs_t back into policy execution. They
+    must reconstruct/render the observation from restored simulator/env state.
+    """
+
+    if hasattr(env, "get_observation_after_restore"):
+        obs = env.get_observation_after_restore()
+    elif hasattr(env, "get_observation"):
+        obs = env.get_observation()
+    else:
+        raise ExactRestoreError("env adapter missing get_observation_after_restore")
+    obs_hash = hash_jsonable(obs)
+    if obs_hash != snapshot.prefix.observation_sha256:
+        raise ExactRestoreError("restored observation hash does not match prefix")
+    return _json_clone(obs)
+
+
+def restore_snapshot_and_recapture_observation(
+    env: Any,
+    student: Any,
+    snapshot: ExactRestoreSnapshotPayload,
+    policy: Any | None = None,
+) -> Any:
+    restore_snapshot(env, student, snapshot, policy)
+    return get_observation_after_restore(env, snapshot)
+
+
 def recapture_branch_record(
     *,
     condition: str,
@@ -444,7 +640,6 @@ def recapture_branch_record(
     env: Any,
     student: Any,
     policy: Any | None,
-    observation: Any,
 ) -> BranchRunRecord:
     """Construct a BranchRunRecord from actual post-restore state."""
 
@@ -452,12 +647,13 @@ def recapture_branch_record(
     actual_policy_rng = capture_policy_rng_state(policy)
     actual_student = capture_student_state(student, strict=True)
     actual_history = capture_feature_history(student, strict=True)
+    actual_observation = get_observation_after_restore(env, snapshot)
     return BranchRunRecord(
         condition=condition,
         prefix_snapshot_sha256=snapshot.prefix.snapshot_sha256,
         branch_source="EXACT_PREFIX_RESTORE",
         restored_sim_state_sha256=hash_jsonable(actual_mujoco),
-        restored_observation_sha256=hash_jsonable(observation),
+        restored_observation_sha256=hash_jsonable(actual_observation),
         restored_policy_rng_sha256=hash_jsonable(actual_policy_rng),
         restored_detector_state_sha256=hash_jsonable(actual_student),
         restored_feature_history_sha256=hash_jsonable(actual_history),
@@ -501,6 +697,18 @@ def observe_step(
         detector_state_sha256=hash_jsonable(capture_student_state(student, strict=True)),
         feature_history_sha256=hash_jsonable(feature_history),
     )
+
+
+def update_student_for_step(student: Any, *, step: int, obs: Any, action: Sequence[float], tokens: Sequence[int]) -> Any:
+    """Advance Student/FSM state for one clean step using an explicit adapter hook."""
+
+    if hasattr(student, "update_for_step"):
+        return student.update_for_step(step=step, obs=copy.deepcopy(obs), action=list(action), tokens=list(tokens))
+    if hasattr(student, "step"):
+        return student.step(step=step, obs=copy.deepcopy(obs), action=list(action), tokens=list(tokens))
+    if hasattr(student, "update"):
+        return student.update(step=step, obs=copy.deepcopy(obs), action=list(action), tokens=list(tokens))
+    raise ExactRestoreError("student adapter missing per-step update hook")
 
 
 def compare_step_sequences(
@@ -600,6 +808,7 @@ def rollout_clean_steps(
                 expected_action=expected_first_action,
                 expected_tokens=expected_first_tokens,
             )
+        update_student_for_step(student, step=start_step + offset, obs=obs, action=action, tokens=tokens)
         next_obs, reward, done, info = env.step(action)
         success = bool(info.get("success", False)) if isinstance(info, Mapping) else False
         feature_history = capture_feature_history(student, strict=True)
@@ -709,6 +918,15 @@ class _MockEnv:
     def set_internal_state(self, state: Mapping[str, Any]) -> None:
         self.internal = copy.deepcopy(dict(state))
 
+    def get_observation_after_restore(self) -> dict[str, Any]:
+        step = int(self.internal["step"])
+        return {
+            "rgb": [step, 0],
+            "proprio": {"qpos": self.sim.data.qpos.tolist()},
+            "eef_pose": [0, 0, 0],
+            "gripper_width": 1.0,
+        }
+
     def step(self, action: Sequence[float]) -> tuple[dict[str, Any], float, bool, dict[str, Any]]:
         self.internal["step"] += 1
         self.sim.data.time += 1.0
@@ -745,20 +963,33 @@ class _MockStudent:
     def __init__(self) -> None:
         self.state = "EMITTED"
         self.armed_step = 58
+        self.update_count = 0
         self.feature_history = [{"step": 56}, {"step": 57}, {"step": 58}]
 
     def snapshot_state(self) -> dict[str, Any]:
-        return {"state": self.state, "armed_step": self.armed_step}
+        return {"state": self.state, "armed_step": self.armed_step, "update_count": self.update_count}
 
     def restore_state(self, state: Mapping[str, Any]) -> None:
         self.state = str(state["state"])
         self.armed_step = int(state["armed_step"])
+        self.update_count = int(state.get("update_count", 0))
 
     def snapshot_feature_history(self) -> list[dict[str, Any]]:
         return copy.deepcopy(self.feature_history)
 
     def restore_feature_history(self, history: Sequence[Mapping[str, Any]]) -> None:
         self.feature_history = [copy.deepcopy(dict(row)) for row in history]
+
+    def update_for_step(self, *, step: int, obs: Any, action: Sequence[float], tokens: Sequence[int]) -> None:
+        self.update_count += 1
+        self.feature_history.append(
+            {
+                "step": int(step),
+                "rgb0": int(obs.get("rgb", [0])[0]) if isinstance(obs, Mapping) else -1,
+                "gripper_token": int(list(tokens)[-1]),
+                "update_count": self.update_count,
+            }
+        )
 
 
 def build_mock_restore_case() -> dict[str, Any]:
@@ -771,7 +1002,7 @@ def build_mock_restore_case() -> dict[str, Any]:
         openvla_model_sha256="a" * 64,
         unnorm_key="libero_spatial",
         layer2_dataset_sha256=EXPECTED_LAYER2_DATASET_SHA256,
-        detector_checkpoint_sha256="c" * 64,
+        detector_checkpoint_sha256=EXPECTED_M2_CHECKPOINT_SHA256_BY_SUITE["libero_spatial"],
         tau_corridor=0.3,
         tau_release=0.3,
         libero_version="mock",
@@ -781,7 +1012,7 @@ def build_mock_restore_case() -> dict[str, Any]:
     env = _MockEnv(step=58)
     student = _MockStudent()
     policy = _MockPolicy()
-    obs_t = {"rgb": [58, 0], "proprio": {"qpos": [0.0, 0.0]}, "eef_pose": [0, 0, 0], "gripper_width": 1.0}
+    obs_t = env.get_observation_after_restore()
     clean_action_t, clean_tokens_t = policy.act(obs_t)
     mujoco_state = capture_mujoco_state(env)
     env_state = capture_env_internal_state(env)
@@ -810,43 +1041,43 @@ def build_mock_restore_case() -> dict[str, Any]:
         clean_action_t=clean_action_t,
         clean_tokens_t=clean_tokens_t,
     )
+    reference_obs_t = get_observation_after_restore(env, snapshot)
     reference = rollout_clean_steps(
         env=env,
         student=student,
         policy=policy,
-        initial_obs=obs_t,
+        initial_obs=reference_obs_t,
         start_step=58,
         expected_first_action=snapshot.clean_action_t,
         expected_first_tokens=snapshot.clean_tokens_t,
     )
     replay_student_a = _MockStudent()
     replay_env_a = _MockEnv()
-    restore_snapshot(replay_env_a, replay_student_a, snapshot, policy)
+    replay_obs_a = restore_snapshot_and_recapture_observation(replay_env_a, replay_student_a, snapshot, policy)
     branch = recapture_branch_record(
         condition="CLEAN_REPLAY",
         snapshot=snapshot,
         env=replay_env_a,
         student=replay_student_a,
         policy=policy,
-        observation=obs_t,
     )
     replay_a = rollout_clean_steps(
         env=replay_env_a,
         student=replay_student_a,
         policy=policy,
-        initial_obs=obs_t,
+        initial_obs=replay_obs_a,
         start_step=58,
         expected_first_action=snapshot.clean_action_t,
         expected_first_tokens=snapshot.clean_tokens_t,
     )
     replay_student_b = _MockStudent()
     replay_env_b = _MockEnv()
-    restore_snapshot(replay_env_b, replay_student_b, snapshot, policy)
+    replay_obs_b = restore_snapshot_and_recapture_observation(replay_env_b, replay_student_b, snapshot, policy)
     replay_b = rollout_clean_steps(
         env=replay_env_b,
         student=replay_student_b,
         policy=policy,
-        initial_obs=obs_t,
+        initial_obs=replay_obs_b,
         start_step=58,
         expected_first_action=snapshot.clean_action_t,
         expected_first_tokens=snapshot.clean_tokens_t,
