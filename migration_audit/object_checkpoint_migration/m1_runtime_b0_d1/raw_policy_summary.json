@@ -1,0 +1,378 @@
+{
+  "gate": "M1B_RAW_POLICY_RESULTS",
+  "source_commit": "37f1a9c",
+  "n_episodes": 30,
+  "n_runs": 60,
+  "profiles": {
+    "B0": {
+      "n": 30,
+      "success": 23,
+      "fail": 7,
+      "fatal": 0
+    },
+    "D1": {
+      "n": 30,
+      "success": 26,
+      "fail": 4,
+      "fatal": 0
+    }
+  },
+  "S_B0": [
+    "alphabet_soup_s0",
+    "alphabet_soup_s1",
+    "alphabet_soup_s2",
+    "bbq_sauce_s0",
+    "bbq_sauce_s1",
+    "butter_s0",
+    "chocolate_pudding_s0",
+    "chocolate_pudding_s2",
+    "cream_cheese_s1",
+    "cream_cheese_s2",
+    "ketchup_s0",
+    "ketchup_s1",
+    "ketchup_s2",
+    "milk_s0",
+    "milk_s1",
+    "milk_s2",
+    "orange_juice_s0",
+    "orange_juice_s1",
+    "salad_dressing_s0",
+    "salad_dressing_s1",
+    "salad_dressing_s2",
+    "tomato_sauce_s1",
+    "tomato_sauce_s2"
+  ],
+  "S_B0_count": 23,
+  "S_D1_success": [
+    "alphabet_soup_s0",
+    "alphabet_soup_s2",
+    "bbq_sauce_s0",
+    "bbq_sauce_s1",
+    "butter_s0",
+    "chocolate_pudding_s0",
+    "chocolate_pudding_s1",
+    "chocolate_pudding_s2",
+    "cream_cheese_s0",
+    "cream_cheese_s1",
+    "cream_cheese_s2",
+    "ketchup_s0",
+    "ketchup_s1",
+    "ketchup_s2",
+    "milk_s0",
+    "milk_s1",
+    "milk_s2",
+    "orange_juice_s0",
+    "orange_juice_s1",
+    "orange_juice_s2",
+    "salad_dressing_s0",
+    "salad_dressing_s1",
+    "salad_dressing_s2",
+    "tomato_sauce_s0",
+    "tomato_sauce_s1",
+    "tomato_sauce_s2"
+  ],
+  "S_common": [
+    "alphabet_soup_s0",
+    "alphabet_soup_s2",
+    "bbq_sauce_s0",
+    "bbq_sauce_s1",
+    "butter_s0",
+    "chocolate_pudding_s0",
+    "chocolate_pudding_s2",
+    "cream_cheese_s1",
+    "cream_cheese_s2",
+    "ketchup_s0",
+    "ketchup_s1",
+    "ketchup_s2",
+    "milk_s0",
+    "milk_s1",
+    "milk_s2",
+    "orange_juice_s0",
+    "orange_juice_s1",
+    "salad_dressing_s0",
+    "salad_dressing_s1",
+    "salad_dressing_s2",
+    "tomato_sauce_s1",
+    "tomato_sauce_s2"
+  ],
+  "S_common_count": 22,
+  "S_both_fail": [
+    "bbq_sauce_s2",
+    "butter_s1",
+    "butter_s2"
+  ],
+  "B0_success_only_avg_steps": 151.2173913043478,
+  "D1_success_only_avg_steps": 154.07692307692307,
+  "S_common_step_deltas": [
+    {
+      "episode_key": "butter_s0",
+      "B0_steps": 180,
+      "D1_steps": 129,
+      "delta": -51
+    },
+    {
+      "episode_key": "tomato_sauce_s2",
+      "B0_steps": 216,
+      "D1_steps": 186,
+      "delta": -30
+    },
+    {
+      "episode_key": "orange_juice_s0",
+      "B0_steps": 136,
+      "D1_steps": 119,
+      "delta": -17
+    },
+    {
+      "episode_key": "ketchup_s2",
+      "B0_steps": 152,
+      "D1_steps": 140,
+      "delta": -12
+    },
+    {
+      "episode_key": "bbq_sauce_s1",
+      "B0_steps": 170,
+      "D1_steps": 161,
+      "delta": -9
+    },
+    {
+      "episode_key": "bbq_sauce_s0",
+      "B0_steps": 118,
+      "D1_steps": 111,
+      "delta": -7
+    },
+    {
+      "episode_key": "chocolate_pudding_s0",
+      "B0_steps": 147,
+      "D1_steps": 143,
+      "delta": -4
+    },
+    {
+      "episode_key": "salad_dressing_s1",
+      "B0_steps": 124,
+      "D1_steps": 120,
+      "delta": -4
+    },
+    {
+      "episode_key": "salad_dressing_s2",
+      "B0_steps": 131,
+      "D1_steps": 130,
+      "delta": -1
+    },
+    {
+      "episode_key": "tomato_sauce_s1",
+      "B0_steps": 135,
+      "D1_steps": 135,
+      "delta": 0
+    },
+    {
+      "episode_key": "ketchup_s1",
+      "B0_steps": 134,
+      "D1_steps": 137,
+      "delta": 3
+    },
+    {
+      "episode_key": "milk_s0",
+      "B0_steps": 125,
+      "D1_steps": 130,
+      "delta": 5
+    },
+    {
+      "episode_key": "orange_juice_s1",
+      "B0_steps": 111,
+      "D1_steps": 117,
+      "delta": 6
+    },
+    {
+      "episode_key": "salad_dressing_s0",
+      "B0_steps": 121,
+      "D1_steps": 132,
+      "delta": 11
+    },
+    {
+      "episode_key": "milk_s1",
+      "B0_steps": 125,
+      "D1_steps": 140,
+      "delta": 15
+    },
+    {
+      "episode_key": "ketchup_s0",
+      "B0_steps": 154,
+      "D1_steps": 176,
+      "delta": 22
+    },
+    {
+      "episode_key": "alphabet_soup_s2",
+      "B0_steps": 140,
+      "D1_steps": 166,
+      "delta": 26
+    },
+    {
+      "episode_key": "chocolate_pudding_s2",
+      "B0_steps": 153,
+      "D1_steps": 186,
+      "delta": 33
+    },
+    {
+      "episode_key": "alphabet_soup_s0",
+      "B0_steps": 171,
+      "D1_steps": 208,
+      "delta": 37
+    },
+    {
+      "episode_key": "cream_cheese_s1",
+      "B0_steps": 140,
+      "D1_steps": 189,
+      "delta": 49
+    },
+    {
+      "episode_key": "cream_cheese_s2",
+      "B0_steps": 134,
+      "D1_steps": 193,
+      "delta": 59
+    },
+    {
+      "episode_key": "milk_s2",
+      "B0_steps": 168,
+      "D1_steps": 247,
+      "delta": 79
+    }
+  ],
+  "S_common_delta_median": 4.0,
+  "S_common_delta_min": -51,
+  "S_common_delta_max": 79,
+  "S_common_emit_deltas": [
+    {
+      "episode_key": "alphabet_soup_s0",
+      "B0_emit": 101,
+      "D1_emit": 138,
+      "delta": 37
+    },
+    {
+      "episode_key": "alphabet_soup_s2",
+      "B0_emit": 74,
+      "D1_emit": 76,
+      "delta": 2
+    },
+    {
+      "episode_key": "bbq_sauce_s0",
+      "B0_emit": 77,
+      "D1_emit": 72,
+      "delta": -5
+    },
+    {
+      "episode_key": "bbq_sauce_s1",
+      "B0_emit": 128,
+      "D1_emit": 122,
+      "delta": -6
+    },
+    {
+      "episode_key": "butter_s0",
+      "B0_emit": 102,
+      "D1_emit": 73,
+      "delta": -29
+    },
+    {
+      "episode_key": "chocolate_pudding_s0",
+      "B0_emit": 78,
+      "D1_emit": 75,
+      "delta": -3
+    },
+    {
+      "episode_key": "chocolate_pudding_s2",
+      "B0_emit": 86,
+      "D1_emit": 85,
+      "delta": -1
+    },
+    {
+      "episode_key": "cream_cheese_s1",
+      "B0_emit": 81,
+      "D1_emit": 98,
+      "delta": 17
+    },
+    {
+      "episode_key": "cream_cheese_s2",
+      "B0_emit": 80,
+      "D1_emit": 117,
+      "delta": 37
+    },
+    {
+      "episode_key": "ketchup_s0",
+      "B0_emit": 89,
+      "D1_emit": 86,
+      "delta": -3
+    },
+    {
+      "episode_key": "ketchup_s1",
+      "B0_emit": 83,
+      "D1_emit": 82,
+      "delta": -1
+    },
+    {
+      "episode_key": "ketchup_s2",
+      "B0_emit": 87,
+      "D1_emit": 85,
+      "delta": -2
+    },
+    {
+      "episode_key": "milk_s0",
+      "B0_emit": 75,
+      "D1_emit": 74,
+      "delta": -1
+    },
+    {
+      "episode_key": "milk_s1",
+      "B0_emit": 73,
+      "D1_emit": 81,
+      "delta": 8
+    },
+    {
+      "episode_key": "milk_s2",
+      "B0_emit": 94,
+      "D1_emit": 184,
+      "delta": 90
+    },
+    {
+      "episode_key": "orange_juice_s0",
+      "B0_emit": 82,
+      "D1_emit": 72,
+      "delta": -10
+    },
+    {
+      "episode_key": "orange_juice_s1",
+      "B0_emit": 63,
+      "D1_emit": 66,
+      "delta": 3
+    },
+    {
+      "episode_key": "salad_dressing_s0",
+      "B0_emit": 76,
+      "D1_emit": 83,
+      "delta": 7
+    },
+    {
+      "episode_key": "salad_dressing_s1",
+      "B0_emit": 82,
+      "D1_emit": 80,
+      "delta": -2
+    },
+    {
+      "episode_key": "salad_dressing_s2",
+      "B0_emit": 84,
+      "D1_emit": 83,
+      "delta": -1
+    },
+    {
+      "episode_key": "tomato_sauce_s1",
+      "B0_emit": 78,
+      "D1_emit": 78,
+      "delta": 0
+    },
+    {
+      "episode_key": "tomato_sauce_s2",
+      "B0_emit": 162,
+      "D1_emit": 120,
+      "delta": -42
+    }
+  ],
+  "S_common_emit_delta_median": -1.0
+}
