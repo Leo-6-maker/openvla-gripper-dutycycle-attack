@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import csv
 import hashlib
 import json
 import math
@@ -185,6 +186,11 @@ def hash_array(value: Any) -> str:
 
 def hash_jsonable(value: Any) -> str:
     return sha256_jsonable(_json_clone(value))
+
+
+def write_json(path: Path, obj: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(obj, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
 
 
 def sha256_file(path: Path) -> str:
@@ -823,6 +829,7 @@ def rollout_clean_steps(
     count: int = RESTORE_STEPS,
     expected_first_action: Sequence[float] | None = None,
     expected_first_tokens: Sequence[int] | None = None,
+    first_step_student_already_updated: bool = False,
 ) -> list[StepObservation]:
     obs = copy.deepcopy(initial_obs)
     rows: list[StepObservation] = []
@@ -835,7 +842,8 @@ def rollout_clean_steps(
                 expected_action=expected_first_action,
                 expected_tokens=expected_first_tokens,
             )
-        update_student_for_step(student, step=start_step + offset, obs=obs, action=action, tokens=tokens)
+        if not (offset == 0 and first_step_student_already_updated):
+            update_student_for_step(student, step=start_step + offset, obs=obs, action=action, tokens=tokens)
         next_obs, reward, done, info = env.step(action)
         success = bool(info.get("success", False)) if isinstance(info, Mapping) else False
         feature_history = capture_feature_history(student, strict=True)
@@ -889,10 +897,708 @@ def validate_clean_restore_pair(
     }
 
 
+REAL_PREPROCESS_KWARGS = {
+    "libero_official_preprocess": False,
+    "libero_preprocess_backend": "official_pil_lanczos",
+    "center_crop": True,
+    "resize_size": 224,
+    "drop_attention_mask": True,
+}
+NUM_STEPS_WAIT = 10
+
+
+def openvla_prompt(instruction: str) -> str:
+    return f"In: What action should the robot take to {instruction}?\nOut:"
+
+
+def model_float_dtype(model: Any) -> Any:
+    dtype = getattr(model, "dtype", None)
+    if dtype is not None:
+        return dtype
+    return next(model.parameters()).dtype
+
+
+def postprocess_openvla_action_for_libero(action: Sequence[float]) -> np.ndarray:
+    env_action = np.asarray(action, dtype=np.float32).copy()
+    env_action[..., -1] = 2.0 * env_action[..., -1] - 1.0
+    env_action[..., -1] = np.sign(env_action[..., -1])
+    env_action[..., -1] = 1.0 if env_action[..., -1] == 0 else env_action[..., -1]
+    env_action[..., -1] = -1.0 * env_action[..., -1]
+    return np.clip(env_action, -1.0, 1.0).astype(np.float32)
+
+
+def decode_action_from_token_ids(model: Any, token_ids: Sequence[int], unnorm_key: str) -> np.ndarray:
+    token_array = np.asarray([int(x) for x in token_ids], dtype=np.int64)
+    vocab_size = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of)
+    discretized = np.clip(vocab_size - token_array - 1, a_min=0, a_max=model.bin_centers.shape[0] - 1)
+    norm_actions = model.bin_centers[discretized]
+    stats = model.get_action_stats(unnorm_key)
+    mask = stats.get("mask", np.ones_like(stats["q01"], dtype=bool))
+    high, low = np.asarray(stats["q99"]), np.asarray(stats["q01"])
+    return np.where(mask, 0.5 * (norm_actions + 1) * (high - low) + low, norm_actions).astype(np.float32)
+
+
+class RealOpenVLAPolicyAdapter:
+    def __init__(self, *, model: Any, processor: Any, device: str, instruction: str, unnorm_key: str, action_dim: int):
+        self.model = model
+        self.processor = processor
+        self.device = device
+        self.instruction = instruction
+        self.unnorm_key = unnorm_key
+        self.action_dim = int(action_dim)
+
+    def rng_state(self) -> dict[str, Any]:
+        return {"generation_kwargs": {"do_sample": False, "temperature": 0.0}}
+
+    def set_rng_state(self, state: Mapping[str, Any]) -> None:
+        kwargs = dict(state.get("generation_kwargs", {}))
+        if kwargs.get("do_sample", False):
+            raise ExactRestoreError("policy RNG restore rejected nondeterministic generation kwargs")
+
+    def act(self, obs: Any) -> tuple[Sequence[float], Sequence[int]]:
+        if not isinstance(obs, Mapping) or "agentview_image" not in obs:
+            raise ExactRestoreError("observation missing agentview_image")
+        from gripper_attack.openvla_preprocess import prepare_openvla_image
+        from gripper_attack.v3_generation_parity import extract_exact_new_tokens
+        import torch
+
+        raw = np.asarray(obs["agentview_image"]).copy()
+        proc_image = prepare_openvla_image(
+            raw,
+            libero_official_preprocess=REAL_PREPROCESS_KWARGS["libero_official_preprocess"],
+            center_crop=REAL_PREPROCESS_KWARGS["center_crop"],
+            resize_size=REAL_PREPROCESS_KWARGS["resize_size"],
+            libero_preprocess_backend=REAL_PREPROCESS_KWARGS["libero_preprocess_backend"],
+        )
+        inputs = self.processor(openvla_prompt(self.instruction.lower()), proc_image, return_tensors="pt")
+        if REAL_PREPROCESS_KWARGS["drop_attention_mask"]:
+            inputs.pop("attention_mask", None)
+        for key, val in list(inputs.items()):
+            if torch.is_tensor(val):
+                if torch.is_floating_point(val):
+                    inputs[key] = val.to(device=self.device, dtype=model_float_dtype(self.model))
+                else:
+                    inputs[key] = val.to(device=self.device)
+        input_ids = inputs.get("input_ids")
+        if input_ids is not None and not torch.all(input_ids[:, -1] == 29871):
+            inputs["input_ids"] = torch.cat(
+                (input_ids, torch.unsqueeze(torch.tensor([29871], device=input_ids.device).long(), dim=0)),
+                dim=1,
+            )
+        with torch.inference_mode():
+            gen = self.model.generate(
+                **inputs,
+                max_new_tokens=self.action_dim,
+                do_sample=False,
+                return_dict_in_generate=True,
+                output_scores=True,
+            )
+        prompt_len = int(inputs["input_ids"].shape[1])
+        tokens = extract_exact_new_tokens(gen.sequences, prompt_len=prompt_len, expected_new_tokens=self.action_dim)
+        action = decode_action_from_token_ids(self.model, tokens, self.unnorm_key)
+        return [float(x) for x in action.tolist()], [int(x) for x in tokens]
+
+
+class RealLiberoEnvAdapter:
+    def __init__(self, env: Any):
+        self.env = env
+        self.sim = env.sim
+        self.frames: list[np.ndarray] = []
+
+    def get_internal_state(self) -> dict[str, Any]:
+        inner = getattr(self.env, "env", self.env)
+        state: dict[str, Any] = {"sim_flat_state_sha256": hash_array(self.env.get_sim_state())}
+        for name in ("timestep", "_timestep", "cur_time", "_elapsed_steps", "done"):
+            if hasattr(inner, name):
+                value = getattr(inner, name)
+                if isinstance(value, (int, float, bool, str)) or value is None:
+                    state[name] = value
+        return _json_clone(state)
+
+    def set_internal_state(self, state: Mapping[str, Any]) -> None:
+        inner = getattr(self.env, "env", self.env)
+        for name, value in state.items():
+            if name == "sim_flat_state_sha256":
+                continue
+            if hasattr(inner, name):
+                setattr(inner, name, copy.deepcopy(value))
+
+    def get_observation_after_restore(self) -> Any:
+        inner = getattr(self.env, "env", self.env)
+        self.env.sim.forward()
+        if hasattr(self.env, "_post_process"):
+            self.env._post_process()
+        if hasattr(self.env, "_update_observables"):
+            self.env._update_observables(force=True)
+        if hasattr(inner, "_get_observations"):
+            return inner._get_observations()
+        raise ExactRestoreError("LIBERO env inner object missing _get_observations")
+
+    def step(self, action: Sequence[float]) -> tuple[Any, float, bool, Mapping[str, Any]]:
+        env_action = postprocess_openvla_action_for_libero(action)
+        obs, reward, done, info = self.env.step(env_action)
+        if isinstance(obs, Mapping) and "agentview_image" in obs:
+            self.frames.append(np.asarray(obs["agentview_image"]).copy())
+        return obs, reward, done, info
+
+    def close(self) -> None:
+        self.env.close()
+
+
+class RealSC5StudentAdapter:
+    def __init__(self, *, detector: Any, streamer: Any, env_adapter: RealLiberoEnvAdapter):
+        self.detector = detector
+        self.streamer = streamer
+        self.env_adapter = env_adapter
+        self.prev_eef: tuple[float, float, float] | None = None
+        self.invalid_steps = 0
+
+    def snapshot_state(self) -> dict[str, Any]:
+        return {
+            "detector_state": self.detector.state,
+            "detector_arm_step": int(self.detector.arm_step),
+            "detector_emit_step": int(self.detector.emit_step),
+            "detector_emitted": bool(self.detector.emitted),
+            "prev_eef": list(self.prev_eef) if self.prev_eef is not None else None,
+            "invalid_steps": int(self.invalid_steps),
+        }
+
+    def restore_state(self, state: Mapping[str, Any]) -> None:
+        self.detector.state = str(state["detector_state"])
+        self.detector.arm_step = int(state["detector_arm_step"])
+        self.detector.emit_step = int(state["detector_emit_step"])
+        self.detector.emitted = bool(state["detector_emitted"])
+        prev = state.get("prev_eef")
+        self.prev_eef = tuple(float(x) for x in prev) if prev is not None else None
+        self.invalid_steps = int(state.get("invalid_steps", 0))
+
+    def snapshot_feature_history(self) -> dict[str, Any]:
+        return {
+            "streamer_history": _json_clone(getattr(self.streamer, "history", [])),
+            "next_expected_step": int(getattr(self.streamer, "next_expected_step")),
+            "close_streak": int(getattr(self.streamer, "_close_streak", 0)),
+            "open_streak": int(getattr(self.streamer, "_open_streak", 0)),
+            "flip_count": int(getattr(self.streamer, "_flip_count", 0)),
+            "last_close_step": int(getattr(self.streamer, "_last_close_step", -1)),
+            "prev_gripper_close": getattr(self.streamer, "_prev_gripper_close", None),
+            "onset_detected": bool(getattr(self.streamer, "_onset_detected", False)),
+        }
+
+    def restore_feature_history(self, history: Mapping[str, Any]) -> None:
+        self.streamer.history = copy.deepcopy(list(history["streamer_history"]))
+        self.streamer._next_expected_step = int(history["next_expected_step"])
+        self.streamer._close_streak = int(history["close_streak"])
+        self.streamer._open_streak = int(history["open_streak"])
+        self.streamer._flip_count = int(history["flip_count"])
+        self.streamer._last_close_step = int(history["last_close_step"])
+        self.streamer._prev_gripper_close = history["prev_gripper_close"]
+        self.streamer._onset_detected = bool(history["onset_detected"])
+
+    def update_for_step(self, *, step: int, obs: Any, action: Sequence[float], tokens: Sequence[int]) -> None:
+        env_action = postprocess_openvla_action_for_libero(action)
+        raw_grip = float(action[-1])
+        env_grip = float(env_action[-1])
+        qpos = np.asarray(getattr(self.env_adapter.env.sim.data, "qpos", []), dtype=np.float64).reshape(-1)
+        qpos_sum = float(qpos[0] + qpos[1]) if qpos.size >= 2 else float("nan")
+        opening_proxy = float(abs(qpos[0]) + abs(qpos[1])) if qpos.size >= 2 else float("nan")
+        eef_pos = self.env_adapter.env.sim.data.site_xpos[
+            self.env_adapter.env.sim.model.site_name2id("gripper0_grip_site")
+        ]
+        eef = (float(eef_pos[0]), float(eef_pos[1]), float(eef_pos[2]))
+        if self.prev_eef is None:
+            eef_v = (0.0, 0.0, 0.0)
+        else:
+            eef_v = (eef[0] - self.prev_eef[0], eef[1] - self.prev_eef[1], eef[2] - self.prev_eef[2])
+        self.prev_eef = eef
+        feat_res = self.streamer.update(
+            step_id=int(step),
+            raw_gripper=raw_grip,
+            env_gripper=env_grip,
+            gripper_qpos=qpos_sum,
+            gripper_opening_proxy=opening_proxy,
+            eef_x=eef[0],
+            eef_y=eef[1],
+            eef_z=eef[2],
+            eef_vx=eef_v[0],
+            eef_vy=eef_v[1],
+            eef_vz=eef_v[2],
+            action_dx=float(action[0]),
+            action_dy=float(action[1]),
+            action_dz=float(action[2]),
+            action_gripper=raw_grip,
+        )
+        if not bool(feat_res.get("valid", False)):
+            self.invalid_steps += 1
+            return
+        self.detector.update(dict(feat_res["features"]), int(step))
+
+
+def write_jsonl(path: Path, rows: Sequence[Any]) -> None:
+    with path.open("w", encoding="utf-8") as fh:
+        for row in rows:
+            payload = asdict(row) if hasattr(row, "__dataclass_fields__") else row
+            fh.write(json.dumps(payload, sort_keys=True, default=str) + "\n")
+
+
+def write_real_video(path: Path, frames: Sequence[np.ndarray]) -> str:
+    if not frames:
+        return "NO_FRAMES"
+    try:
+        import imageio.v2 as imageio
+        imageio.mimwrite(path, list(frames), fps=10)
+        return "WROTE"
+    except Exception as exc:
+        return f"VIDEO_WRITE_FAILED:{type(exc).__name__}:{exc}"
+
+
+def recursive_manifest(root: Path) -> list[dict[str, Any]]:
+    rows = []
+    for path in sorted(p for p in root.rglob("*") if p.is_file()):
+        rel = path.relative_to(root).as_posix()
+        if rel == "recursive_sha256_manifest.csv":
+            continue
+        rows.append({"path": rel, "size": path.stat().st_size, "sha256": sha256_file(path)})
+    return rows
+
+
+def write_recursive_manifest(root: Path) -> str:
+    rows = recursive_manifest(root)
+    path = root / "recursive_sha256_manifest.csv"
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=["path", "size", "sha256"])
+        writer.writeheader()
+        writer.writerows(rows)
+    return hash_jsonable(rows)
+
+
+def make_candidate_order(*, suite: str, state_start: int, state_end: int, task_count: int, eval_seed: int) -> list[dict[str, Any]]:
+    rows = []
+    protocol_id = "REAL_LIBERO_SINGLE_PARENT_CLEAN_RESTORE_R1"
+    for task_idx in range(int(task_count)):
+        for state_id in range(int(state_start), int(state_end) + 1):
+            key = f"{protocol_id}|{suite}|{task_idx}|{state_id}|{eval_seed}"
+            rows.append(
+                {
+                    "protocol_id": protocol_id,
+                    "suite": suite,
+                    "task_idx": task_idx,
+                    "state_id": state_id,
+                    "eval_seed": int(eval_seed),
+                    "selection_hash": hashlib.sha256(key.encode("utf-8")).hexdigest(),
+                }
+            )
+    return sorted(rows, key=lambda r: r["selection_hash"])
+
+
+def write_candidate_manifest(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        fieldnames = ["protocol_id", "suite", "task_idx", "state_id", "eval_seed", "selection_hash", "status", "reason"]
+        writer = csv.DictWriter(fh, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            payload = {k: row.get(k, "") for k in fieldnames}
+            writer.writerow(payload)
+
+
+def build_real_env_for_candidate(*, suite: str, task_idx: int, state_id: int, render_gpu: int, max_steps: int):
+    from libero.libero import benchmark, get_libero_path
+    from gripper_attack.libero_v4_env_factory import apply_dummy_wait, build_v4_exact_env
+
+    bm = benchmark.get_benchmark_dict()
+    suite_obj = bm[suite]()
+    task_obj = suite_obj.get_task(int(task_idx))
+    init_states = suite_obj.get_task_init_states(int(task_idx))
+    if int(state_id) >= len(init_states):
+        raise ExactRestoreError(f"state_id {state_id} out of range for {suite} task {task_idx}")
+    bddl = os.path.join(get_libero_path("bddl_files"), task_obj.problem_folder, task_obj.bddl_file)
+    env, obs = build_v4_exact_env(bddl, int(render_gpu), int(max_steps), NUM_STEPS_WAIT)
+    obs = env.set_init_state(init_states[int(state_id)])
+    env, obs = apply_dummy_wait(env, obs, NUM_STEPS_WAIT)
+    return env, obs, task_obj, bddl
+
+
+def load_real_policy_and_student(args: argparse.Namespace, *, env_adapter: RealLiberoEnvAdapter, instruction: str):
+    import torch
+    from transformers import AutoProcessor
+    try:
+        from transformers import AutoModelForImageTextToText as AutoModelCls
+    except Exception:
+        from transformers import AutoModelForVision2Seq as AutoModelCls
+    from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime
+    from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
+
+    np.random.seed(int(args.eval_seed))
+    random.seed(int(args.eval_seed))
+    torch.manual_seed(int(args.eval_seed))
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(int(args.eval_seed))
+
+    processor = AutoProcessor.from_pretrained(args.model_path, trust_remote_code=True, local_files_only=True)
+    visible = torch.cuda.device_count()
+    if visible <= 0:
+        raise ExactRestoreError("no CUDA device visible")
+    model = AutoModelCls.from_pretrained(
+        args.model_path,
+        trust_remote_code=True,
+        local_files_only=True,
+        torch_dtype=torch.bfloat16,
+        low_cpu_mem_usage=True,
+        device_map="auto",
+        max_memory={idx: "10000MiB" for idx in range(visible)} | {"cpu": "128GiB"},
+        attn_implementation="eager",
+    )
+    model.eval()
+    device = "cuda:0"
+    for v in getattr(model, "hf_device_map", {}).values():
+        if isinstance(v, int):
+            device = f"cuda:{v}"
+            break
+    action_dim = int(model.get_action_dim(args.unnorm_key))
+    policy = RealOpenVLAPolicyAdapter(
+        model=model,
+        processor=processor,
+        device=device,
+        instruction=instruction,
+        unnorm_key=args.unnorm_key,
+        action_dim=action_dim,
+    )
+    detector = SC5DetectorRuntime(args.detector_path, tau_corridor=0.3, tau_release=0.3, guard=5)
+    student = RealSC5StudentAdapter(
+        detector=detector,
+        streamer=SC5StreamingFeatureAdapterV2(),
+        env_adapter=env_adapter,
+    )
+    return policy, student, model, detector
+
+
+def build_parent_manifest_for_candidate(args: argparse.Namespace, *, task_idx: int, state_id: int, instruction: str) -> Layer3ParentDependencyManifest:
+    model_sha = sha256_path(Path(args.model_path))
+    detector_sha = sha256_path(Path(args.detector_path))
+    return Layer3ParentDependencyManifest(
+        suite=args.suite,
+        task_idx=int(task_idx),
+        state_id=int(state_id),
+        eval_seed=int(args.eval_seed),
+        parent_key=f"{args.suite}|{int(task_idx)}|{int(state_id)}|{int(args.eval_seed)}|CLEAN",
+        openvla_model_sha256=model_sha,
+        unnorm_key=args.unnorm_key,
+        layer2_dataset_sha256=EXPECTED_LAYER2_DATASET_SHA256,
+        detector_checkpoint_sha256=detector_sha,
+        tau_corridor=0.3,
+        tau_release=0.3,
+        libero_version="openvla_official_libero_20260525",
+        mujoco_version="runtime_recorded",
+        task_instruction_sha256=hash_jsonable({"instruction": instruction}),
+    )
+
+
+def find_emit_snapshot_for_candidate(
+    *,
+    args: argparse.Namespace,
+    candidate: Mapping[str, Any],
+    attempt_dir: Path,
+    repetition: int,
+) -> dict[str, Any]:
+    env = None
+    try:
+        env, obs, task_obj, bddl = build_real_env_for_candidate(
+            suite=args.suite,
+            task_idx=int(candidate["task_idx"]),
+            state_id=int(candidate["state_id"]),
+            render_gpu=int(args.render_gpu),
+            max_steps=int(args.max_steps),
+        )
+        env_adapter = RealLiberoEnvAdapter(env)
+        instruction = str(task_obj.language)
+        policy, student, model, detector = load_real_policy_and_student(args, env_adapter=env_adapter, instruction=instruction)
+        dependency = validate_dependency_files(
+            build_parent_manifest_for_candidate(
+                args, task_idx=int(candidate["task_idx"]), state_id=int(candidate["state_id"]), instruction=instruction
+            ),
+            openvla_model_path=args.model_path,
+            detector_checkpoint_path=args.detector_path,
+        )
+        parent = build_parent_manifest_for_candidate(
+            args, task_idx=int(candidate["task_idx"]), state_id=int(candidate["state_id"]), instruction=instruction
+        )
+        runtime = capture_runtime_receipt(
+            libero_version=parent.libero_version,
+            mujoco_version=parent.mujoco_version,
+            openvla_generation_kwargs={"do_sample": False, "temperature": 0.0, "max_new_tokens": 7},
+        )
+        selected: dict[str, Any] | None = None
+        first_valid_step = -1
+        for step in range(int(args.max_steps)):
+            action, tokens = policy.act(obs)
+            update_student_for_step(student, step=step, obs=obs, action=action, tokens=tokens)
+            if first_valid_step < 0 and student.invalid_steps == 0:
+                first_valid_step = step
+            if detector.emitted and detector.emit_step == step:
+                if int(args.max_steps) - step < RESTORE_STEPS:
+                    raise ExactRestoreError("emit occurred without five remaining steps")
+                mujoco_state = capture_mujoco_state(env_adapter)
+                env_state = capture_env_internal_state(env_adapter)
+                policy_rng = capture_policy_rng_state(policy)
+                student_state = capture_student_state(student)
+                feature_history = capture_feature_history(student)
+                prefix = build_prefix_snapshot(
+                    parent=parent,
+                    emit_step=step,
+                    observation=obs,
+                    mujoco_state=mujoco_state,
+                    policy_rng_state=policy_rng,
+                    student_state=student_state,
+                    feature_history=feature_history,
+                    source_episode_relpath=f"{args.suite}/task{candidate['task_idx']}/state{candidate['state_id']}",
+                )
+                snapshot = ExactRestoreSnapshotPayload(
+                    prefix=prefix,
+                    parent_manifest=parent,
+                    mujoco_state=mujoco_state,
+                    env_internal_state=env_state,
+                    policy_rng_state=policy_rng,
+                    student_state=student_state,
+                    feature_history=feature_history,
+                    observation=obs,
+                    clean_action_t=action,
+                    clean_tokens_t=tokens,
+                )
+                selected = {
+                    "snapshot": snapshot,
+                    "policy": policy,
+                    "student": student,
+                    "env_adapter": env_adapter,
+                    "obs_t": obs,
+                    "parent": parent,
+                    "runtime": runtime,
+                    "dependency": dependency,
+                    "instruction": instruction,
+                    "bddl": bddl,
+                    "first_valid_step": first_valid_step,
+                }
+                break
+            obs, _reward, done, _info = env_adapter.step(action)
+            if done:
+                break
+        if selected is None:
+            raise ExactRestoreError("candidate did not produce eligible natural Student emit")
+        return selected
+    except Exception:
+        if env is not None:
+            try:
+                env.close()
+            except Exception:
+                pass
+        raise
+
+
+def new_env_policy_student_for_snapshot(args: argparse.Namespace, selected: Mapping[str, Any]):
+    snapshot: ExactRestoreSnapshotPayload = selected["snapshot"]
+    env, _obs, task_obj, _bddl = build_real_env_for_candidate(
+        suite=snapshot.parent_manifest.suite,
+        task_idx=snapshot.parent_manifest.task_idx,
+        state_id=snapshot.parent_manifest.state_id,
+        render_gpu=int(args.render_gpu),
+        max_steps=int(args.max_steps),
+    )
+    env_adapter = RealLiberoEnvAdapter(env)
+    policy, student, _model, _detector = load_real_policy_and_student(
+        args, env_adapter=env_adapter, instruction=str(task_obj.language)
+    )
+    return env_adapter, policy, student
+
+
+def run_selected_parent_attempt(args: argparse.Namespace, selected: Mapping[str, Any], attempt_dir: Path, repetition: int) -> dict[str, Any]:
+    attempt_dir.mkdir(parents=True, exist_ok=False)
+    snapshot: ExactRestoreSnapshotPayload = selected["snapshot"]
+    env_adapter: RealLiberoEnvAdapter = selected["env_adapter"]
+    policy: RealOpenVLAPolicyAdapter = selected["policy"]
+    student: RealSC5StudentAdapter = selected["student"]
+    obs_t = selected["obs_t"]
+    (attempt_dir / "stdout.log").write_text("", encoding="utf-8")
+    (attempt_dir / "stderr.log").write_text("", encoding="utf-8")
+    write_json(attempt_dir / "parent_dependency_manifest.json", asdict(selected["parent"]))
+    write_json(attempt_dir / "runtime_receipt.json", asdict(selected["runtime"]))
+    write_json(attempt_dir / "dependency_sha_receipt.json", selected["dependency"])
+    write_json(attempt_dir / "prefix_snapshot_manifest.json", asdict(snapshot.prefix))
+
+    reference = rollout_clean_steps(
+        env=env_adapter,
+        student=student,
+        policy=policy,
+        initial_obs=obs_t,
+        start_step=snapshot.prefix.emit_step,
+        expected_first_action=snapshot.clean_action_t,
+        expected_first_tokens=snapshot.clean_tokens_t,
+        first_step_student_already_updated=True,
+    )
+    reference_frames = list(env_adapter.frames)
+    env_adapter.close()
+
+    replay_env_a, replay_policy_a, replay_student_a = new_env_policy_student_for_snapshot(args, selected)
+    replay_obs_a = restore_snapshot_and_recapture_observation(replay_env_a, replay_student_a, snapshot, replay_policy_a)
+    branch_record = recapture_branch_record(
+        condition="CLEAN_REPLAY",
+        snapshot=snapshot,
+        env=replay_env_a,
+        student=replay_student_a,
+        policy=replay_policy_a,
+    )
+    replay_a = rollout_clean_steps(
+        env=replay_env_a,
+        student=replay_student_a,
+        policy=replay_policy_a,
+        initial_obs=replay_obs_a,
+        start_step=snapshot.prefix.emit_step,
+        expected_first_action=snapshot.clean_action_t,
+        expected_first_tokens=snapshot.clean_tokens_t,
+        first_step_student_already_updated=True,
+    )
+    replay_a_frames = list(replay_env_a.frames)
+    replay_env_a.close()
+
+    replay_env_b, replay_policy_b, replay_student_b = new_env_policy_student_for_snapshot(args, selected)
+    replay_obs_b = restore_snapshot_and_recapture_observation(replay_env_b, replay_student_b, snapshot, replay_policy_b)
+    replay_b = rollout_clean_steps(
+        env=replay_env_b,
+        student=replay_student_b,
+        policy=replay_policy_b,
+        initial_obs=replay_obs_b,
+        start_step=snapshot.prefix.emit_step,
+        expected_first_action=snapshot.clean_action_t,
+        expected_first_tokens=snapshot.clean_tokens_t,
+        first_step_student_already_updated=True,
+    )
+    replay_b_frames = list(replay_env_b.frames)
+    replay_env_b.close()
+
+    result = validate_clean_restore_pair(
+        snapshot=snapshot,
+        branch_records=[branch_record],
+        reference=reference,
+        replay_a=replay_a,
+        replay_b=replay_b,
+    )
+    write_json(attempt_dir / "branch_records.json", [asdict(branch_record)])
+    write_jsonl(attempt_dir / "reference_steps.jsonl", reference)
+    write_jsonl(attempt_dir / "replay_a_steps.jsonl", replay_a)
+    write_jsonl(attempt_dir / "replay_b_steps.jsonl", replay_b)
+    write_json(attempt_dir / "numeric_drift_report.json", {"reference_vs_replay": [], "replay_a_vs_replay_b": []})
+    write_real_video(attempt_dir / "raw_reference.mp4", reference_frames)
+    write_real_video(attempt_dir / "raw_replay_a.mp4", replay_a_frames)
+    write_real_video(attempt_dir / "raw_replay_b.mp4", replay_b_frames)
+    summary = {
+        **result,
+        "attempt_id": attempt_dir.name,
+        "repetition": repetition,
+        "suite": snapshot.parent_manifest.suite,
+        "task_idx": snapshot.parent_manifest.task_idx,
+        "state_id": snapshot.parent_manifest.state_id,
+        "emit_step": snapshot.prefix.emit_step,
+    }
+    write_json(attempt_dir / "attempt_summary.json", summary)
+    write_recursive_manifest(attempt_dir)
+    return summary
+
+
+def run_real_libero_single_parent(args: argparse.Namespace) -> None:
+    out = Path(args.output_dir)
+    if out.exists() and any(out.iterdir()):
+        raise ExactRestoreError(f"output dir exists and is non-empty: {out}")
+    out.mkdir(parents=True, exist_ok=True)
+    candidates = make_candidate_order(
+        suite=args.suite,
+        state_start=args.state_start,
+        state_end=args.state_end,
+        task_count=args.task_count,
+        eval_seed=args.eval_seed,
+    )
+    candidate_rows = [dict(row, status="PLANNED", reason="") for row in candidates]
+    write_candidate_manifest(out / "candidate_manifest.csv", candidate_rows)
+    selected: dict[str, Any] | None = None
+    selected_idx = -1
+    for idx, cand in enumerate(candidates):
+        try:
+            selected = find_emit_snapshot_for_candidate(args=args, candidate=cand, attempt_dir=out, repetition=0)
+            selected_idx = idx
+            candidate_rows[idx]["status"] = "SELECTED"
+            break
+        except Exception as exc:
+            candidate_rows[idx]["status"] = "INELIGIBLE"
+            candidate_rows[idx]["reason"] = f"{type(exc).__name__}:{str(exc)[:180]}"
+            write_candidate_manifest(out / "candidate_manifest.csv", candidate_rows)
+            continue
+    if selected is None:
+        write_json(out / "single_parent_restore_qualification_summary.json", {"result": "NO_ELIGIBLE_GOAL_RESTORE_PARENT"})
+        raise ExactRestoreError("NO_ELIGIBLE_GOAL_RESTORE_PARENT")
+    write_candidate_manifest(out / "candidate_manifest.csv", candidate_rows)
+    summaries = []
+    try:
+        first_summary = run_selected_parent_attempt(args, selected, out / "attempt_00", 0)
+        summaries.append(first_summary)
+        for rep in range(1, int(args.repetitions)):
+            fresh_selected = find_emit_snapshot_for_candidate(
+                args=args,
+                candidate=candidates[selected_idx],
+                attempt_dir=out,
+                repetition=rep,
+            )
+            summaries.append(run_selected_parent_attempt(args, fresh_selected, out / f"attempt_{rep:02d}", rep))
+    finally:
+        try:
+            selected["env_adapter"].close()
+        except Exception:
+            pass
+    passed = sum(1 for s in summaries if s.get("clean_restore_pass") is True)
+    final = {
+        "stage": "REAL_LIBERO_SINGLE_PARENT_CLEAN_RESTORE_QUALIFICATION",
+        "completed": len(summaries),
+        "passed": passed,
+        "failed": len(summaries) - passed,
+        "result": "SINGLE_PARENT_REAL_LIBERO_RESTORE_ENGINEERING_PASS"
+        if len(summaries) == int(args.repetitions) and passed == int(args.repetitions)
+        else "SINGLE_PARENT_REAL_LIBERO_RESTORE_FAIL",
+        "selected_candidate": candidates[selected_idx],
+        "attempts": summaries,
+    }
+    write_json(out / "single_parent_restore_qualification_summary.json", final)
+    report = [
+        "# Single Parent Real LIBERO Clean Restore Qualification",
+        "",
+        f"- result: `{final['result']}`",
+        f"- completed: {final['completed']}",
+        f"- passed: {final['passed']}",
+        f"- selected: `{candidates[selected_idx]}`",
+        "",
+        "Forbidden claims: VIS/RAND/shuffled/oracle/attack effectiveness.",
+    ]
+    (out / "single_parent_restore_qualification_report.md").write_text("\n".join(report) + "\n", encoding="utf-8")
+    seal = write_recursive_manifest(out)
+    final["recursive_sha256_manifest_sha256"] = seal
+    write_json(out / "single_parent_restore_qualification_summary.json", final)
+    print(json.dumps(final, sort_keys=True, default=str))
+
+
 def parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--output-dir", required=True)
     ap.add_argument("--mock", action="store_true", help="Run the CPU mock restore smoke; no LIBERO/OpenVLA/GPU.")
+    ap.add_argument(
+        "--real-libero-single-parent",
+        action="store_true",
+        help="Run authorized clean-only real LIBERO single-parent exact-restore qualification.",
+    )
+    ap.add_argument("--suite", default="libero_goal", choices=sorted(SUPPORTED_SUITES))
+    ap.add_argument("--model-path", default="")
+    ap.add_argument("--unnorm-key", default="")
+    ap.add_argument("--detector-path", default="")
+    ap.add_argument("--render-gpu", type=int, default=-1)
+    ap.add_argument("--eval-seed", type=int, default=0)
+    ap.add_argument("--state-start", type=int, default=20)
+    ap.add_argument("--state-end", type=int, default=23)
+    ap.add_argument("--task-count", type=int, default=10)
+    ap.add_argument("--max-steps", type=int, default=400)
+    ap.add_argument("--repetitions", type=int, default=3)
     return ap.parse_args()
 
 
@@ -1114,9 +1820,15 @@ def build_mock_restore_case() -> dict[str, Any]:
 
 def main() -> None:
     args = parse_args()
-    if not args.mock:
-        raise SystemExit("Only --mock is implemented in this CPU PR. GPU/LIBERO restore smoke remains a later gate.")
-    run_mock(Path(args.output_dir))
+    if args.mock and args.real_libero_single_parent:
+        raise SystemExit("choose exactly one of --mock or --real-libero-single-parent")
+    if args.mock:
+        run_mock(Path(args.output_dir))
+        return
+    if args.real_libero_single_parent:
+        run_real_libero_single_parent(args)
+        return
+    raise SystemExit("Specify --mock or --real-libero-single-parent.")
 
 
 if __name__ == "__main__":
