@@ -1090,11 +1090,14 @@ class RealLiberoEnvAdapter:
 
 class RealSC5StudentAdapter:
     def __init__(self, *, detector: Any, streamer: Any, env_adapter: RealLiberoEnvAdapter):
+        from gripper_attack.sc5_online_feature_state import initialize_sc5_prev_eef
+
         self.detector = detector
         self.streamer = streamer
         self.env_adapter = env_adapter
-        self.prev_eef: tuple[float, float, float] | None = None
+        self.prev_eef: tuple[float, float, float] | None = initialize_sc5_prev_eef(env_adapter.env)
         self.invalid_steps = 0
+        self.scan_telemetry: list[dict[str, Any]] = []
 
     def snapshot_state(self) -> dict[str, Any]:
         return {
@@ -1138,42 +1141,75 @@ class RealSC5StudentAdapter:
         self.streamer._onset_detected = bool(history["onset_detected"])
 
     def update_for_step(self, *, step: int, obs: Any, action: Sequence[float], tokens: Sequence[int]) -> None:
+        from gripper_attack.sc5_online_feature_state import extract_sc5_physical_state
+
         env_action = postprocess_openvla_action_for_libero(action)
         raw_grip = float(action[-1])
         env_grip = float(env_action[-1])
-        qpos = np.asarray(getattr(self.env_adapter.env.sim.data, "qpos", []), dtype=np.float64).reshape(-1)
-        qpos_sum = float(qpos[0] + qpos[1]) if qpos.size >= 2 else float("nan")
-        opening_proxy = float(abs(qpos[0]) + abs(qpos[1])) if qpos.size >= 2 else float("nan")
-        eef_pos = self.env_adapter.env.sim.data.site_xpos[
-            self.env_adapter.env.sim.model.site_name2id("gripper0_grip_site")
-        ]
-        eef = (float(eef_pos[0]), float(eef_pos[1]), float(eef_pos[2]))
-        if self.prev_eef is None:
-            eef_v = (0.0, 0.0, 0.0)
-        else:
-            eef_v = (eef[0] - self.prev_eef[0], eef[1] - self.prev_eef[1], eef[2] - self.prev_eef[2])
-        self.prev_eef = eef
+        phys = extract_sc5_physical_state(env=self.env_adapter.env, obs=obs, prev_eef=self.prev_eef)
+        self.prev_eef = phys.next_prev_eef
         feat_res = self.streamer.update(
             step_id=int(step),
             raw_gripper=raw_grip,
             env_gripper=env_grip,
-            gripper_qpos=qpos_sum,
-            gripper_opening_proxy=opening_proxy,
-            eef_x=eef[0],
-            eef_y=eef[1],
-            eef_z=eef[2],
-            eef_vx=eef_v[0],
-            eef_vy=eef_v[1],
-            eef_vz=eef_v[2],
+            gripper_qpos=phys.gripper_qpos,
+            gripper_opening_proxy=phys.gripper_opening_proxy,
+            eef_x=phys.eef_x,
+            eef_y=phys.eef_y,
+            eef_z=phys.eef_z,
+            eef_vx=phys.eef_vx,
+            eef_vy=phys.eef_vy,
+            eef_vz=phys.eef_vz,
             action_dx=float(action[0]),
             action_dy=float(action[1]),
             action_dz=float(action[2]),
             action_gripper=raw_grip,
         )
+        row: dict[str, Any] = {
+            "step": int(step),
+            "raw_gripper": raw_grip,
+            "env_gripper": env_grip,
+            "action_dx": float(action[0]),
+            "action_dy": float(action[1]),
+            "action_dz": float(action[2]),
+            "action_gripper": raw_grip,
+            "exact_new_tokens_json": json.dumps([int(t) for t in tokens]),
+            "feat_valid": bool(feat_res.get("valid", False)),
+            "feat_error": str(feat_res.get("error", "")),
+            "detector_state_before": self.detector.state,
+            "detector_emit_step_before": int(self.detector.emit_step),
+            "detector_emitted_before": bool(self.detector.emitted),
+            **phys.as_dict(),
+        }
         if not bool(feat_res.get("valid", False)):
             self.invalid_steps += 1
+            row.update(
+                {
+                    "detector_state_after": self.detector.state,
+                    "detector_emit_step_after": int(self.detector.emit_step),
+                    "detector_emitted_after": bool(self.detector.emitted),
+                    "corridor_p": "",
+                    "release_p": "",
+                    "pred_phase": "",
+                }
+            )
+            self.scan_telemetry.append(row)
             return
-        self.detector.update(dict(feat_res["features"]), int(step))
+        features = dict(feat_res["features"])
+        decision = self.detector.update(features, int(step))
+        row.update(
+            {
+                "detector_state_after": decision["state"],
+                "detector_emit_step_after": int(decision["emit_step"]),
+                "detector_emitted_after": bool(decision["emitted"]),
+                "corridor_p": decision.get("corridor_p"),
+                "release_p": decision.get("release_p"),
+                "pred_phase": decision.get("pred_phase"),
+            }
+        )
+        for name, value in features.items():
+            row["f_" + name] = value
+        self.scan_telemetry.append(row)
 
 
 def write_jsonl(path: Path, rows: Sequence[Any]) -> None:
@@ -1181,6 +1217,19 @@ def write_jsonl(path: Path, rows: Sequence[Any]) -> None:
         for row in rows:
             payload = asdict(row) if hasattr(row, "__dataclass_fields__") else row
             fh.write(json.dumps(payload, sort_keys=True, default=str) + "\n")
+
+
+def write_dict_csv(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames: list[str] = []
+    for row in rows:
+        for key in row:
+            if key not in fieldnames:
+                fieldnames.append(key)
+    with path.open("w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=fieldnames, extrasaction="ignore")
+        writer.writeheader()
+        writer.writerows(rows)
 
 
 def write_real_video(path: Path, frames: Sequence[np.ndarray]) -> str:
@@ -1471,6 +1520,11 @@ def find_emit_snapshot_for_candidate(
             obs, _reward, done, _info = env_adapter.step(action)
             if done:
                 break
+        telemetry_name = (
+            f"candidate_scan_task{int(candidate['task_idx'])}_state{int(candidate['state_id'])}_"
+            f"rep{int(repetition)}.csv"
+        )
+        write_dict_csv(attempt_dir / telemetry_name, getattr(student, "scan_telemetry", []))
         if selected is None:
             raise ExactRestoreError("candidate did not produce eligible natural Student emit")
         return selected

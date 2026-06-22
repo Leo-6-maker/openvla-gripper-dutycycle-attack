@@ -360,11 +360,11 @@ def run_clean_collection(args: argparse.Namespace) -> None:
     from libero.libero import benchmark, get_libero_path
     from gripper_attack.libero_v4_env_factory import apply_dummy_wait, build_v4_exact_env
     from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime, SC5_FEATURES
+    from gripper_attack.sc5_online_feature_state import extract_sc5_physical_state, initialize_sc5_prev_eef
     from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
     from gripper_attack.openvla_preprocess import prepare_openvla_image
     from v4_run_eval_openvla import (
         decode_with_scores,
-        physical_gripper_state,
         postprocess_openvla_action_for_libero,
         prompt,
     )
@@ -434,8 +434,7 @@ def run_clean_collection(args: argparse.Namespace) -> None:
     env, obs = apply_dummy_wait(env, obs, NUM_STEPS_WAIT)
     sim_metadata = sim_model_metadata(env)
 
-    eef_init = env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_site")]
-    prev_eef = (float(eef_init[0]), float(eef_init[1]), float(eef_init[2]))
+    prev_eef = initialize_sc5_prev_eef(env)
     first_valid_step = -1
     invalid_steps = 0
     telemetry: list[dict[str, Any]] = []
@@ -503,22 +502,12 @@ def run_clean_collection(args: argparse.Namespace) -> None:
         env_action = postprocess_openvla_action_for_libero(np.asarray(action, dtype=np.float32), enabled=True)
         raw_grip = float(action[-1])
         env_grip = float(env_action[-1])
-        gs = physical_gripper_state(env, obs)
-        qpos = gs.get("qpos", []) if gs else []
-        q7 = float(qpos[0]) if len(qpos) > 0 else float("nan")
-        q8 = float(qpos[1]) if len(qpos) > 1 else float("nan")
-        qpos_sum = q7 + q8 if np.isfinite(q7) and np.isfinite(q8) else float("nan")
-        opening_proxy = abs(q7) + abs(q8) if np.isfinite(q7) and np.isfinite(q8) else float("nan")
-        eef_pos = env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_site")]
-        eef_x, eef_y, eef_z = float(eef_pos[0]), float(eef_pos[1]), float(eef_pos[2])
-        if prev_eef is not None and np.all(np.isfinite([eef_x, eef_y, eef_z])):
-            eef_vx = eef_x - prev_eef[0]
-            eef_vy = eef_y - prev_eef[1]
-            eef_vz = eef_z - prev_eef[2]
-        else:
-            eef_vx = eef_vy = eef_vz = float("nan")
-        if np.all(np.isfinite([eef_x, eef_y, eef_z])):
-            prev_eef = (eef_x, eef_y, eef_z)
+        phys = extract_sc5_physical_state(env=env, obs=obs, prev_eef=prev_eef)
+        prev_eef = phys.next_prev_eef
+        qpos_sum = phys.gripper_qpos
+        opening_proxy = phys.gripper_opening_proxy
+        eef_x, eef_y, eef_z = phys.eef_x, phys.eef_y, phys.eef_z
+        eef_vx, eef_vy, eef_vz = phys.eef_vx, phys.eef_vy, phys.eef_vz
 
         feat_valid = False
         feat_error = ""
