@@ -1233,6 +1233,41 @@ def make_candidate_order(*, suite: str, state_start: int, state_end: int, task_c
     return sorted(rows, key=lambda r: r["selection_hash"])
 
 
+def read_candidate_manifest(path: Path, *, suite: str, eval_seed: int) -> list[dict[str, Any]]:
+    with path.open(newline="", encoding="utf-8") as fh:
+        rows = list(csv.DictReader(fh))
+    if not rows:
+        raise ExactRestoreError("candidate manifest is empty")
+    required = {"protocol_id", "suite", "task_idx", "state_id", "eval_seed", "selection_hash"}
+    missing = required - set(rows[0])
+    if missing:
+        raise ExactRestoreError(f"candidate manifest missing columns: {','.join(sorted(missing))}")
+    out: list[dict[str, Any]] = []
+    for idx, row in enumerate(rows):
+        if str(row["suite"]) != suite:
+            raise ExactRestoreError(f"candidate manifest row {idx} suite mismatch: {row['suite']} != {suite}")
+        if int(row["eval_seed"]) != int(eval_seed):
+            raise ExactRestoreError(f"candidate manifest row {idx} eval_seed mismatch: {row['eval_seed']} != {eval_seed}")
+        protocol_id = str(row["protocol_id"])
+        task_idx = int(row["task_idx"])
+        state_id = int(row["state_id"])
+        expected_key = f"{protocol_id}|{suite}|{task_idx}|{state_id}|{int(eval_seed)}"
+        expected_hash = hashlib.sha256(expected_key.encode("utf-8")).hexdigest()
+        if str(row["selection_hash"]) != expected_hash:
+            raise ExactRestoreError(f"candidate manifest row {idx} selection_hash mismatch")
+        out.append(
+            {
+                "protocol_id": protocol_id,
+                "suite": suite,
+                "task_idx": task_idx,
+                "state_id": state_id,
+                "eval_seed": int(eval_seed),
+                "selection_hash": expected_hash,
+            }
+        )
+    return out
+
+
 def write_candidate_manifest(path: Path, rows: Sequence[Mapping[str, Any]]) -> None:
     with path.open("w", newline="", encoding="utf-8") as fh:
         fieldnames = ["protocol_id", "suite", "task_idx", "state_id", "eval_seed", "selection_hash", "status", "reason"]
@@ -1565,13 +1600,16 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
         unnorm_key=args.unnorm_key,
     )
     write_json(out / "openvla_model_binding_receipt.json", model_binding)
-    candidates = make_candidate_order(
-        suite=args.suite,
-        state_start=args.state_start,
-        state_end=args.state_end,
-        task_count=args.task_count,
-        eval_seed=args.eval_seed,
-    )
+    if args.candidate_manifest:
+        candidates = read_candidate_manifest(Path(args.candidate_manifest), suite=args.suite, eval_seed=args.eval_seed)
+    else:
+        candidates = make_candidate_order(
+            suite=args.suite,
+            state_start=args.state_start,
+            state_end=args.state_end,
+            task_count=args.task_count,
+            eval_seed=args.eval_seed,
+        )
     candidate_rows = [dict(row, status="PLANNED", reason="") for row in candidates]
     write_candidate_manifest(out / "candidate_manifest.csv", candidate_rows)
     selected: dict[str, Any] | None = None
@@ -1656,6 +1694,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--state-start", type=int, default=20)
     ap.add_argument("--state-end", type=int, default=23)
     ap.add_argument("--task-count", type=int, default=10)
+    ap.add_argument("--candidate-manifest", default="")
     ap.add_argument("--max-steps", type=int, default=400)
     ap.add_argument("--repetitions", type=int, default=3)
     return ap.parse_args()

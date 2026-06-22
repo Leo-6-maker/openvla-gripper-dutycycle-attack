@@ -2,6 +2,8 @@ import json
 import random
 import subprocess
 import sys
+import csv
+import hashlib
 from dataclasses import replace
 
 import numpy as np
@@ -26,6 +28,7 @@ from scripts.stageb.layer3_exact_restore_runner import (
     model_norm_stat_keys,
     parse_cuda_visible_devices,
     query_ordered_visible_gpu_uuids,
+    read_candidate_manifest,
     get_observation_after_restore,
     compare_step_sequences,
     restore_env_internal_state,
@@ -64,11 +67,65 @@ def make_parent(**overrides):
     return Layer3ParentDependencyManifest(**data)
 
 
+def _write_candidate_manifest(path, *, bad_hash: bool = False):
+    protocol_id = "REAL_LIBERO_SINGLE_PARENT_CLEAN_RESTORE_R1_KNOWN_EMITTER"
+    suite = "libero_goal"
+    task_idx = 4
+    state_id = 1
+    eval_seed = 0
+    key = f"{protocol_id}|{suite}|{task_idx}|{state_id}|{eval_seed}"
+    selection_hash = hashlib.sha256(key.encode("utf-8")).hexdigest()
+    if bad_hash:
+        selection_hash = "0" * 64
+    with path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["protocol_id", "suite", "task_idx", "state_id", "eval_seed", "selection_hash"],
+        )
+        writer.writeheader()
+        writer.writerow(
+            {
+                "protocol_id": protocol_id,
+                "suite": suite,
+                "task_idx": task_idx,
+                "state_id": state_id,
+                "eval_seed": eval_seed,
+                "selection_hash": selection_hash,
+            }
+        )
+
+
 def test_parent_manifest_requires_sha_dependencies():
     with pytest.raises(Exception, match="SHA256"):
         make_parent(
             openvla_model_sha256="not-a-sha",
         )
+
+
+def test_read_candidate_manifest_accepts_exact_known_emitter(tmp_path):
+    path = tmp_path / "candidate.csv"
+    _write_candidate_manifest(path)
+
+    rows = read_candidate_manifest(path, suite="libero_goal", eval_seed=0)
+
+    assert rows == [
+        {
+            "protocol_id": "REAL_LIBERO_SINGLE_PARENT_CLEAN_RESTORE_R1_KNOWN_EMITTER",
+            "suite": "libero_goal",
+            "task_idx": 4,
+            "state_id": 1,
+            "eval_seed": 0,
+            "selection_hash": rows[0]["selection_hash"],
+        }
+    ]
+
+
+def test_read_candidate_manifest_rejects_hash_mismatch(tmp_path):
+    path = tmp_path / "candidate.csv"
+    _write_candidate_manifest(path, bad_hash=True)
+
+    with pytest.raises(ExactRestoreError, match="selection_hash mismatch"):
+        read_candidate_manifest(path, suite="libero_goal", eval_seed=0)
 
 
 @pytest.mark.parametrize(
