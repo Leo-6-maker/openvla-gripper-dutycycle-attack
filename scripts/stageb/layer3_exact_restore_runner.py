@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import copy
 import csv
+import gc
 import hashlib
 import json
 import math
@@ -1042,6 +1043,17 @@ class RealOpenVLAPolicyAdapter:
         return [float(x) for x in action.tolist()], [int(x) for x in tokens]
 
 
+def release_real_policy(policy: Any | None) -> None:
+    if policy is not None:
+        if hasattr(policy, "model"):
+            policy.model = None
+        if hasattr(policy, "processor"):
+            policy.processor = None
+    gc.collect()
+    if torch is not None and torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+
 class RealLiberoEnvAdapter:
     def __init__(self, env: Any):
         self.env = env
@@ -1579,6 +1591,10 @@ def run_selected_parent_attempt(args: argparse.Namespace, selected: Mapping[str,
     )
     reference_frames = list(env_adapter.frames)
     env_adapter.close()
+    release_real_policy(policy)
+    selected["policy"] = None
+    selected["student"] = None
+    selected["env_adapter"] = None
 
     replay_env_a, replay_policy_a, replay_student_a = new_env_policy_student_for_snapshot(args, selected)
     replay_obs_a = restore_snapshot_and_recapture_observation(replay_env_a, replay_student_a, snapshot, replay_policy_a)
@@ -1601,6 +1617,7 @@ def run_selected_parent_attempt(args: argparse.Namespace, selected: Mapping[str,
     )
     replay_a_frames = list(replay_env_a.frames)
     replay_env_a.close()
+    release_real_policy(replay_policy_a)
 
     replay_env_b, replay_policy_b, replay_student_b = new_env_policy_student_for_snapshot(args, selected)
     replay_obs_b = restore_snapshot_and_recapture_observation(replay_env_b, replay_student_b, snapshot, replay_policy_b)
@@ -1616,6 +1633,7 @@ def run_selected_parent_attempt(args: argparse.Namespace, selected: Mapping[str,
     )
     replay_b_frames = list(replay_env_b.frames)
     replay_env_b.close()
+    release_real_policy(replay_policy_b)
 
     result = validate_clean_restore_pair(
         snapshot=snapshot,
