@@ -49,7 +49,7 @@ def replay_one(episode_key, profile, gpu):
     # Load originals
     orig_tel = list(csv.DictReader(open(os.path.join(cell_dir, "step_telemetry.csv"))))
     orig_summary = json.load(open(os.path.join(cell_dir, "episode_summary.json")))
-    recorded_actions = [np.array(json.loads(r.get("env_action_7d", r.get("raw_action_7d", "[]")), dtype=np.float64))
+    recorded_actions = [np.array(json.loads(r.get("env_action_7d", r.get("raw_action_7d", "[]"))), dtype=np.float64)
                         for r in orig_tel]
 
     # Build env (same as bridge)
