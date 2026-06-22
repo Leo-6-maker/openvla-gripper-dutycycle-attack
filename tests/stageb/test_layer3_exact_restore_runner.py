@@ -24,16 +24,20 @@ from scripts.stageb.layer3_exact_restore_runner import (
     capture_env_internal_state,
     capture_feature_history,
     capture_mujoco_state,
+    classify_transition_diff,
+    compact_state_value,
     capture_policy_rng_state,
     capture_student_state,
     captured_prefix_branch_record,
     compare_observation_values,
     compare_policy_input_fingerprints,
+    diff_state_dicts,
     model_norm_stat_keys,
     parse_cuda_visible_devices,
     query_ordered_visible_gpu_uuids,
     read_candidate_manifest,
     get_observation_after_restore,
+    hash_array,
     hash_typed_observation,
     compare_step_sequences,
     restore_env_internal_state,
@@ -49,6 +53,7 @@ from scripts.stageb.layer3_exact_restore_runner import (
     validate_clean_restore_pair,
     validate_dependency_sha_values,
     validate_real_openvla_model_binding,
+    validate_transition_state_audit_known_parent,
 )
 
 
@@ -128,6 +133,78 @@ def test_typed_observation_hash_preserves_array_dtype():
     obs_int64 = {"agentview_image": np.array([[1, 2]], dtype=np.int64)}
 
     assert hash_typed_observation(obs_uint8) != hash_typed_observation(obs_int64)
+
+
+def test_compact_state_value_records_array_identity():
+    arr = np.arange(4, dtype=np.float32).reshape(2, 2)
+    compact = compact_state_value(arr)
+
+    assert compact["type"] == "ndarray"
+    assert compact["shape"] == [2, 2]
+    assert compact["dtype"] == "float32"
+    assert compact["sha256"] == hash_array(arr)
+    assert compact["values"] == [0.0, 1.0, 2.0, 3.0]
+
+
+def test_diff_state_dicts_reports_nested_changes():
+    rows = diff_state_dicts(
+        {"controller": {"goal_pos": [1, 2]}, "same": 1},
+        {"controller": {"goal_pos": [1, 3]}, "same": 1, "extra": True},
+    )
+    by_field = {row["field"]: row for row in rows}
+
+    assert "controller.goal_pos[1]" in by_field
+    assert by_field["controller.goal_pos[1]"]["reference_present"] is True
+    assert by_field["extra"]["reference_present"] is False
+    assert by_field["extra"]["replay_present"] is True
+
+
+@pytest.mark.parametrize(
+    ("field", "expected"),
+    [
+        ("robots[0].controller.attrs.goal_pos.sha256", "CONTROLLER_GOAL_STATE_MISSING"),
+        ("robots[0].controller_selected_attrs.interpolator_pos.sha256", "INTERPOLATOR_STATE_MISSING"),
+        ("env_inner.attrs.last_action.sha256", "PREVIOUS_ACTION_STATE_MISSING"),
+        ("env_inner.attrs._elapsed_steps", "CONTROL_COUNTER_MISSING"),
+        ("mujoco.qacc_warmstart.sha256", "MUJOCO_SOLVER_STATE_MISSING"),
+        ("env_wrapper.attrs.action_repeat", "ACTION_REPEAT_STATE_MISSING"),
+        ("flat_sim_state.get_sim_state.sha256", "UNKNOWN_TRANSITION_STATE"),
+    ],
+)
+def test_classify_transition_diff(field, expected):
+    assert classify_transition_diff(field) == expected
+
+
+def test_transition_state_audit_known_parent_fail_closed():
+    case = build_mock_restore_case()
+    valid = replace(
+        case["snapshot"],
+        parent_manifest=make_parent(
+            suite="libero_goal",
+            task_idx=4,
+            state_id=1,
+            eval_seed=0,
+            parent_key="libero_goal|4|1|0|CLEAN",
+            unnorm_key="libero_goal",
+            detector_checkpoint_sha256=EXPECTED_M2_CHECKPOINT_SHA256_BY_SUITE["libero_goal"],
+        ),
+    )
+    validate_transition_state_audit_known_parent(valid)
+
+    invalid = replace(
+        valid,
+        parent_manifest=make_parent(
+            suite="libero_goal",
+            task_idx=4,
+            state_id=2,
+            eval_seed=0,
+            parent_key="libero_goal|4|2|0|CLEAN",
+            unnorm_key="libero_goal",
+            detector_checkpoint_sha256=EXPECTED_M2_CHECKPOINT_SHA256_BY_SUITE["libero_goal"],
+        ),
+    )
+    with pytest.raises(ExactRestoreError, match="known parent"):
+        validate_transition_state_audit_known_parent(invalid)
 
 
 def test_typed_prefix_artifact_roundtrip_preserves_agentview(tmp_path):

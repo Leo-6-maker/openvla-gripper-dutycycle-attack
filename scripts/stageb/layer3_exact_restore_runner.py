@@ -229,6 +229,312 @@ def clone_typed_observation(value: Any) -> Any:
     return copy.deepcopy(value)
 
 
+def compact_state_value(value: Any, *, depth: int = 0, max_depth: int = 3) -> Any:
+    if depth > max_depth:
+        return {"type": type(value).__name__, "truncated": True}
+    if isinstance(value, np.ndarray):
+        flat = value.reshape(-1)
+        out: dict[str, Any] = {
+            "type": "ndarray",
+            "shape": list(value.shape),
+            "dtype": str(value.dtype),
+            "sha256": hash_array(value),
+        }
+        if flat.size <= 16:
+            out["values"] = flat.tolist()
+        else:
+            out["head"] = flat[:8].tolist()
+            out["tail"] = flat[-8:].tolist()
+        return out
+    if torch is not None and torch.is_tensor(value):
+        return compact_state_value(value.detach().cpu().numpy(), depth=depth, max_depth=max_depth)
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return _json_clone(value)
+    if isinstance(value, Mapping):
+        return {
+            str(k): compact_state_value(v, depth=depth + 1, max_depth=max_depth)
+            for k, v in sorted(value.items(), key=lambda item: str(item[0]))
+        }
+    if isinstance(value, (list, tuple)):
+        if len(value) <= 32:
+            return [compact_state_value(v, depth=depth + 1, max_depth=max_depth) for v in value]
+        return {
+            "type": type(value).__name__,
+            "len": len(value),
+            "head": [compact_state_value(v, depth=depth + 1, max_depth=max_depth) for v in list(value)[:8]],
+            "tail": [compact_state_value(v, depth=depth + 1, max_depth=max_depth) for v in list(value)[-8:]],
+        }
+    return {"type": type(value).__name__, "repr": repr(value)[:240]}
+
+
+def capture_object_state(obj: Any, *, max_depth: int = 2) -> dict[str, Any]:
+    state: dict[str, Any] = {
+        "class": obj.__class__.__name__,
+        "module": getattr(obj.__class__, "__module__", ""),
+    }
+    try:
+        raw_attrs = vars(obj)
+    except Exception:
+        raw_attrs = {}
+    attrs: dict[str, Any] = {}
+    interesting = (
+        "goal",
+        "current",
+        "start",
+        "step",
+        "total",
+        "ramp",
+        "last",
+        "prev",
+        "action",
+        "control",
+        "counter",
+        "timestep",
+        "interpolator",
+        "controller",
+        "torque",
+        "qpos",
+        "qvel",
+        "input",
+        "output",
+    )
+    for name, value in sorted(raw_attrs.items()):
+        lname = str(name).lower()
+        if name.startswith("__"):
+            continue
+        if not any(tok in lname for tok in interesting) and not isinstance(value, (int, float, bool, str, np.ndarray)):
+            continue
+        if callable(value):
+            continue
+        attrs[str(name)] = compact_state_value(value, max_depth=max_depth)
+    state["attrs"] = attrs
+    return state
+
+
+def flatten_state(prefix: str, value: Any, out: dict[str, str]) -> None:
+    if isinstance(value, Mapping):
+        for key in sorted(value):
+            next_prefix = f"{prefix}.{key}" if prefix else str(key)
+            flatten_state(next_prefix, value[key], out)
+        return
+    if isinstance(value, list):
+        for idx, item in enumerate(value):
+            flatten_state(f"{prefix}[{idx}]", item, out)
+        return
+    out[prefix] = json.dumps(value, sort_keys=True, default=str, separators=(",", ":"))
+
+
+def diff_state_dicts(reference: Mapping[str, Any], replay: Mapping[str, Any]) -> list[dict[str, Any]]:
+    left: dict[str, str] = {}
+    right: dict[str, str] = {}
+    flatten_state("", reference, left)
+    flatten_state("", replay, right)
+    rows: list[dict[str, Any]] = []
+    for key in sorted(set(left) | set(right)):
+        lval = left.get(key, "")
+        rval = right.get(key, "")
+        if lval == rval:
+            continue
+        rows.append(
+            {
+                "field": key,
+                "reference_present": key in left,
+                "replay_present": key in right,
+                "reference_sha256": hashlib.sha256(lval.encode("utf-8")).hexdigest() if lval else "",
+                "replay_sha256": hashlib.sha256(rval.encode("utf-8")).hexdigest() if rval else "",
+                "reference_value": lval[:1000],
+                "replay_value": rval[:1000],
+            }
+        )
+    return rows
+
+
+def classify_transition_diff(field: str) -> str:
+    name = field.lower()
+    if "interpolator" in name:
+        return "INTERPOLATOR_STATE_MISSING"
+    if "controller" in name or "goal" in name:
+        return "CONTROLLER_GOAL_STATE_MISSING"
+    if "previous" in name or "prev" in name or "last_action" in name or "action_buffer" in name:
+        return "PREVIOUS_ACTION_STATE_MISSING"
+    if "counter" in name or "timestep" in name or "elapsed" in name or "cur_time" in name or "control_freq" in name:
+        return "CONTROL_COUNTER_MISSING"
+    if (
+        name.startswith("mujoco.qacc")
+        or name.startswith("mujoco.qacc_warmstart")
+        or name.startswith("mujoco.qfrc")
+        or name.startswith("mujoco.xfrc")
+        or name.startswith("mujoco.eq_active")
+    ):
+        return "MUJOCO_SOLVER_STATE_MISSING"
+    if "repeat" in name or "action_repeat" in name:
+        return "ACTION_REPEAT_STATE_MISSING"
+    return "UNKNOWN_TRANSITION_STATE"
+
+
+def validate_transition_state_audit_known_parent(snapshot: ExactRestoreSnapshotPayload) -> None:
+    parent = snapshot.parent_manifest
+    if (
+        parent.suite != "libero_goal"
+        or int(parent.task_idx) != 4
+        or int(parent.state_id) != 1
+        or int(parent.eval_seed) != 0
+    ):
+        raise ExactRestoreError(
+            "transition-state audit is authorized only for known parent "
+            "libero_goal|4|1|0|CLEAN"
+        )
+
+
+def _object_attr_state(obj: Any, attr_names: Sequence[str], *, max_depth: int = 2) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for name in attr_names:
+        if not hasattr(obj, name):
+            continue
+        try:
+            value = getattr(obj, name)
+        except Exception as exc:
+            out[name] = {"error": f"{type(exc).__name__}:{exc}"}
+            continue
+        if callable(value):
+            continue
+        out[name] = compact_state_value(value, max_depth=max_depth)
+    return out
+
+
+def capture_robot_control_state(env_adapter: "RealLiberoEnvAdapter") -> list[dict[str, Any]]:
+    env = env_adapter.env
+    inner = getattr(env, "env", env)
+    robots = getattr(inner, "robots", getattr(env, "robots", []))
+    rows: list[dict[str, Any]] = []
+    for idx, robot in enumerate(list(robots) if robots is not None else []):
+        row = capture_object_state(robot, max_depth=2)
+        row["robot_index"] = int(idx)
+        row["robot_selected_attrs"] = _object_attr_state(
+            robot,
+            (
+                "recent_qpos",
+                "recent_qvel",
+                "recent_torques",
+                "recent_ee_forcetorques",
+                "recent_ee_pose",
+                "recent_ee_vel",
+                "_joint_positions",
+                "_joint_velocities",
+                "action_limits",
+            ),
+            max_depth=2,
+        )
+        for attr in ("controller", "gripper", "robot_model"):
+            if hasattr(robot, attr):
+                try:
+                    child = getattr(robot, attr)
+                except Exception as exc:
+                    row[attr] = {"error": f"{type(exc).__name__}:{exc}"}
+                    continue
+                row[attr] = capture_object_state(child, max_depth=3)
+                if attr == "controller":
+                    row["controller_selected_attrs"] = _object_attr_state(
+                        child,
+                        (
+                            "goal_pos",
+                            "goal_ori",
+                            "goal_orientation",
+                            "input_min",
+                            "input_max",
+                            "output_min",
+                            "output_max",
+                            "control_limits",
+                            "interpolator_pos",
+                            "interpolator_ori",
+                            "interpolator",
+                            "_interpolator",
+                        ),
+                        max_depth=3,
+                    )
+        rows.append(row)
+    return rows
+
+
+def capture_transition_state(
+    *,
+    phase: str,
+    env_adapter: "RealLiberoEnvAdapter",
+    student: Any,
+    policy: Any,
+    obs: Any,
+    action: Sequence[float],
+    tokens: Sequence[int],
+) -> dict[str, Any]:
+    env = env_adapter.env
+    inner = getattr(env, "env", env)
+    env_action = postprocess_openvla_action_for_libero(action)
+    policy_fingerprint: dict[str, Any] = {}
+    if hasattr(policy, "policy_input_fingerprint"):
+        try:
+            policy_fingerprint = policy.policy_input_fingerprint(obs)
+        except Exception as exc:
+            policy_fingerprint = {"error": f"{type(exc).__name__}:{exc}"}
+    sim = getattr(env, "sim", None)
+    mujoco_state: dict[str, Any] = {}
+    if sim is not None and hasattr(sim, "data"):
+        data = sim.data
+        for name in MUJOCO_STATE_FIELDS:
+            if hasattr(data, name):
+                try:
+                    mujoco_state[name] = compact_state_value(getattr(data, name), max_depth=1)
+                except Exception as exc:
+                    mujoco_state[name] = {"error": f"{type(exc).__name__}:{exc}"}
+        if hasattr(data, "qacc"):
+            mujoco_state["qacc"] = compact_state_value(getattr(data, "qacc"), max_depth=1)
+    flat_sim: dict[str, Any] = {}
+    if hasattr(env, "get_sim_state"):
+        try:
+            flat_sim["get_sim_state"] = compact_state_value(np.asarray(env.get_sim_state()).copy(), max_depth=1)
+        except Exception as exc:
+            flat_sim["get_sim_state"] = {"error": f"{type(exc).__name__}:{exc}"}
+    return {
+        "phase": str(phase),
+        "policy": {
+            "observation_sha256": hash_typed_observation(obs),
+            "policy_input_fingerprint": policy_fingerprint,
+            "action": [float(x) for x in action],
+            "action_sha256": hash_jsonable([float(x) for x in action]),
+            "tokens": [int(x) for x in tokens],
+            "tokens_sha256": hash_jsonable([int(x) for x in tokens]),
+            "env_action": [float(x) for x in env_action.tolist()],
+            "env_action_sha256": hash_jsonable([float(x) for x in env_action.tolist()]),
+        },
+        "mujoco": mujoco_state,
+        "flat_sim_state": flat_sim,
+        "env_wrapper": capture_object_state(env, max_depth=2),
+        "env_inner": capture_object_state(inner, max_depth=2),
+        "robots": capture_robot_control_state(env_adapter),
+        "env_internal_state": capture_env_internal_state(env_adapter, strict=False),
+        "student_state": capture_student_state(student, strict=False),
+        "feature_history": capture_feature_history(student, strict=False),
+        "frame_sha256": hash_array(np.asarray(obs["agentview_image"])) if isinstance(obs, Mapping) and "agentview_image" in obs else "",
+    }
+
+
+def first_transition_diff(pre_diff: Sequence[Mapping[str, Any]], post_diff: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    if pre_diff:
+        row = dict(pre_diff[0])
+        row["first_divergence_phase"] = "PRE_STEP"
+        row["classification"] = classify_transition_diff(str(row.get("field", "")))
+        return row
+    if post_diff:
+        row = dict(post_diff[0])
+        row["first_divergence_phase"] = "POST_STEP"
+        row["classification"] = classify_transition_diff(str(row.get("field", "")))
+        return row
+    return {
+        "first_divergence_phase": "NONE",
+        "field": "",
+        "classification": "NO_TRANSITION_STATE_DIVERGENCE",
+    }
+
+
 def observation_value_summary(value: Any) -> dict[str, Any]:
     out: dict[str, Any] = {"type": type(value).__name__}
     try:
@@ -1976,6 +2282,158 @@ def new_env_policy_student_for_snapshot(args: argparse.Namespace, selected: Mapp
     return env_adapter, policy, student
 
 
+def run_transition_state_audit(
+    args: argparse.Namespace,
+    selected: Mapping[str, Any],
+    output_dir: Path,
+) -> dict[str, Any]:
+    output_dir.mkdir(parents=True, exist_ok=False)
+    snapshot: ExactRestoreSnapshotPayload = selected["snapshot"]
+    validate_transition_state_audit_known_parent(snapshot)
+
+    env_adapter: RealLiberoEnvAdapter = selected["env_adapter"]
+    policy: RealOpenVLAPolicyAdapter = selected["policy"]
+    student: RealSC5StudentAdapter = selected["student"]
+    obs_t = clone_typed_observation(selected["obs_t"])
+
+    write_json(output_dir / "parent_dependency_manifest.json", asdict(selected["parent"]))
+    write_json(output_dir / "runtime_receipt.json", asdict(selected["runtime"]))
+    write_json(output_dir / "dependency_sha_receipt.json", selected["dependency"])
+    write_json(output_dir / "prefix_snapshot_manifest.json", asdict(snapshot.prefix))
+    typed_manifest = save_typed_prefix_observation_artifacts(
+        output_dir / "captured_prefix",
+        snapshot=snapshot,
+        policy=policy,
+    )
+
+    reference_action, reference_tokens = policy.act(obs_t)
+    if [int(x) for x in reference_tokens] != [int(x) for x in snapshot.clean_tokens_t]:
+        raise ExactRestoreError("transition-state audit first token mismatch before reference step")
+    if not np.allclose(np.asarray(reference_action, dtype=np.float64), np.asarray(snapshot.clean_action_t, dtype=np.float64)):
+        raise ExactRestoreError("transition-state audit first action mismatch before reference step")
+
+    reference_pre = capture_transition_state(
+        phase="PRE_STEP",
+        env_adapter=env_adapter,
+        student=student,
+        policy=policy,
+        obs=obs_t,
+        action=snapshot.clean_action_t,
+        tokens=snapshot.clean_tokens_t,
+    )
+    reference_next_obs, reference_reward, reference_done, reference_info = env_adapter.step(snapshot.clean_action_t)
+    reference_post = capture_transition_state(
+        phase="POST_STEP",
+        env_adapter=env_adapter,
+        student=student,
+        policy=policy,
+        obs=reference_next_obs,
+        action=snapshot.clean_action_t,
+        tokens=snapshot.clean_tokens_t,
+    )
+    reference_step = {
+        "reward": float(reference_reward),
+        "done": bool(reference_done),
+        "info": _json_clone(reference_info),
+        "next_observation_sha256": hash_typed_observation(reference_next_obs),
+    }
+    env_adapter.close()
+    release_real_policy(policy)
+    selected["env_adapter"] = None
+    selected["policy"] = None
+    selected["student"] = None
+
+    replay_env, replay_policy, replay_student = new_env_policy_student_for_snapshot(args, selected)
+    try:
+        restore_snapshot(replay_env, replay_student, snapshot, replay_policy)
+        replay_obs = clone_typed_observation(snapshot.observation)
+        replay_action, replay_tokens = replay_policy.act(replay_obs)
+        if [int(x) for x in replay_tokens] != [int(x) for x in snapshot.clean_tokens_t]:
+            raise ExactRestoreError("transition-state audit first token mismatch before replay step")
+        if not np.allclose(np.asarray(replay_action, dtype=np.float64), np.asarray(snapshot.clean_action_t, dtype=np.float64)):
+            raise ExactRestoreError("transition-state audit first action mismatch before replay step")
+
+        replay_pre = capture_transition_state(
+            phase="PRE_STEP",
+            env_adapter=replay_env,
+            student=replay_student,
+            policy=replay_policy,
+            obs=replay_obs,
+            action=snapshot.clean_action_t,
+            tokens=snapshot.clean_tokens_t,
+        )
+        replay_next_obs, replay_reward, replay_done, replay_info = replay_env.step(snapshot.clean_action_t)
+        replay_post = capture_transition_state(
+            phase="POST_STEP",
+            env_adapter=replay_env,
+            student=replay_student,
+            policy=replay_policy,
+            obs=replay_next_obs,
+            action=snapshot.clean_action_t,
+            tokens=snapshot.clean_tokens_t,
+        )
+        replay_step = {
+            "reward": float(replay_reward),
+            "done": bool(replay_done),
+            "info": _json_clone(replay_info),
+            "next_observation_sha256": hash_typed_observation(replay_next_obs),
+        }
+    finally:
+        try:
+            replay_env.close()
+        except Exception:
+            pass
+        release_real_policy(replay_policy)
+
+    pre_diff = diff_state_dicts(reference_pre, replay_pre)
+    post_diff = diff_state_dicts(reference_post, replay_post)
+    first = first_transition_diff(pre_diff, post_diff)
+    summary = {
+        "stage": "TRANSITION_STATE_AUDIT_ONLY",
+        "result": "TRANSITION_STATE_AUDIT_COMPLETE",
+        "forbidden_paths_not_run": [
+            "formal_restore_3x",
+            "R2",
+            "VIS",
+            "RAND",
+            "SHUFFLED",
+            "ORACLE",
+            "ATTACK",
+            "A800_FORMAL",
+        ],
+        "suite": snapshot.parent_manifest.suite,
+        "task_idx": int(snapshot.parent_manifest.task_idx),
+        "state_id": int(snapshot.parent_manifest.state_id),
+        "eval_seed": int(snapshot.parent_manifest.eval_seed),
+        "emit_step": int(snapshot.prefix.emit_step),
+        "prefix_snapshot_sha256": snapshot.prefix.snapshot_sha256,
+        "snapshot_payload_sha256": snapshot.payload_sha256,
+        "typed_prefix_manifest_sha256": hash_jsonable(typed_manifest),
+        "first_action_tokens_exact": True,
+        "first_action_exact": True,
+        "reference_step": reference_step,
+        "replay_step": replay_step,
+        "pre_diff_count": len(pre_diff),
+        "post_diff_count": len(post_diff),
+        "first_divergence_phase": first.get("first_divergence_phase"),
+        "first_divergence_field": first.get("field"),
+        "transition_state_classification": first.get("classification"),
+        "first_divergence_reference_sha256": first.get("reference_sha256", ""),
+        "first_divergence_replay_sha256": first.get("replay_sha256", ""),
+    }
+    write_json(output_dir / "transition_state_reference_pre.json", reference_pre)
+    write_json(output_dir / "transition_state_replay_pre.json", replay_pre)
+    write_json(output_dir / "transition_state_reference_post.json", reference_post)
+    write_json(output_dir / "transition_state_replay_post.json", replay_post)
+    write_dict_csv(output_dir / "transition_state_pre_diff.csv", pre_diff)
+    write_dict_csv(output_dir / "transition_state_post_diff.csv", post_diff)
+    write_json(output_dir / "transition_state_audit_summary.json", summary)
+    seal = write_recursive_manifest(output_dir)
+    summary["recursive_sha256_manifest_sha256"] = seal
+    write_json(output_dir / "transition_state_audit_summary.json", summary)
+    return summary
+
+
 def run_selected_parent_attempt(args: argparse.Namespace, selected: Mapping[str, Any], attempt_dir: Path, repetition: int) -> dict[str, Any]:
     attempt_dir.mkdir(parents=True, exist_ok=False)
     snapshot: ExactRestoreSnapshotPayload = selected["snapshot"]
@@ -2219,6 +2677,31 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
         write_json(out / "single_parent_restore_qualification_summary.json", {"result": "NO_ELIGIBLE_GOAL_RESTORE_PARENT"})
         raise ExactRestoreError("NO_ELIGIBLE_GOAL_RESTORE_PARENT")
     write_candidate_manifest(out / "candidate_manifest.csv", candidate_rows)
+    if args.transition_state_audit_only:
+        try:
+            audit_summary = run_transition_state_audit(
+                args=args,
+                selected=selected,
+                output_dir=out / "transition_state_audit",
+            )
+        finally:
+            try:
+                if selected.get("env_adapter") is not None:
+                    selected["env_adapter"].close()
+            except Exception:
+                pass
+            release_real_policy(selected.get("policy"))
+        final = {
+            "stage": "TRANSITION_STATE_AUDIT_ONLY",
+            "result": "TRANSITION_STATE_AUDIT_COMPLETE",
+            "selected_candidate": candidates[selected_idx],
+            "audit_summary": audit_summary,
+        }
+        seal = write_recursive_manifest(out)
+        final["recursive_sha256_manifest_sha256"] = seal
+        write_json(out / "single_parent_restore_qualification_summary.json", final)
+        print(json.dumps(final, sort_keys=True, default=str))
+        return
     if args.observation_audit_only:
         audit_summary = run_observation_reconstruction_audit(
             args=args,
@@ -2340,6 +2823,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--candidate-manifest", default="")
     ap.add_argument("--observation-audit-only", action="store_true")
     ap.add_argument("--captured-prefix-canary-only", action="store_true")
+    ap.add_argument("--transition-state-audit-only", action="store_true")
     ap.add_argument("--max-steps", type=int, default=400)
     ap.add_argument("--repetitions", type=int, default=3)
     return ap.parse_args()
