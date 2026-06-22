@@ -8,7 +8,7 @@ CHANGES vs run_v2_vis_sc5_bridge.py (only 3):
 
 ALL VIS attack code preserved exactly. ALL telemetry preserved exactly.
 """
-import argparse, csv, json, os, sys, time, numpy as np, torch
+import argparse, copy, csv, hashlib, json, os, sys, time, numpy as np, torch
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -27,7 +27,14 @@ ap.add_argument("--output_dir", required=True)
 ap.add_argument("--render_gpu", type=int, required=True)
 ap.add_argument("--mlp_path", default="outputs/sc5_canonical_eng/sc5_mlp_s2.pt")
 ap.add_argument("--task_idx", type=int, default=6, help="LIBERO task index (default 6=butter)")
+ap.add_argument("--save_video", action="store_true", default=False)
+ap.add_argument("--source_commit", default="", help="Git commit SHA (required when --save_video)")
+ap.add_argument("--video_fps", type=int, default=20)
+ap.add_argument("--frame_stride", type=int, default=1)
 args = ap.parse_args()
+
+if args.save_video and not args.source_commit:
+    raise ValueError("--source_commit is required when --save_video is enabled")
 
 STATE_ID = args.state_id; ANCHOR = args.anchor; IS_ATTACK = args.condition != "CLEAN"
 IS_RAND = "RAND" in args.condition; IS_SHUFFLED = "SHUFFLED" in args.condition
@@ -40,11 +47,23 @@ try:
 except Exception:
     from transformers import AutoModelForVision2Seq as AutoModelCls
 processor = AutoProcessor.from_pretrained(MODEL_PATH, trust_remote_code=True, local_files_only=True)
+# M1: dtype and attention from env vars with fail-closed validation
+_dtype_name = os.environ.get("OPENVLA_DTYPE", "bfloat16")
+_attn_name = os.environ.get("OPENVLA_ATTN_IMPLEMENTATION", "eager")
+_dtype_map = {"bfloat16": torch.bfloat16, "float32": torch.float32}
+if _dtype_name not in _dtype_map:
+    raise RuntimeError("OPENVLA_DTYPE must be bfloat16 or float32, got: %s" % _dtype_name)
+_torch_dtype = _dtype_map[_dtype_name]
 model = AutoModelCls.from_pretrained(
-    MODEL_PATH, trust_remote_code=True, local_files_only=True, torch_dtype=torch.bfloat16,
-    low_cpu_mem_usage=True, device_map="cuda:0", attn_implementation="eager")
+    MODEL_PATH, trust_remote_code=True, local_files_only=True, torch_dtype=_torch_dtype,
+    low_cpu_mem_usage=True, device_map="cuda:0", attn_implementation=_attn_name)
 model_dtype = next(model.parameters()).dtype
 device = "cuda:0"
+# Runtime self-attestation
+_actual_dtype_str = str(model_dtype).replace("torch.", "")
+_actual_attn = getattr(model.config, "_attn_implementation", "unknown")
+print("Model on %s dtype=%s attn=%s (requested: dtype=%s attn=%s)" % (
+    device, _actual_dtype_str, _actual_attn, _dtype_name, _attn_name))
 action_dim = int(model.get_action_dim("libero_object"))
 print("Model on %s" % device)
 
@@ -52,6 +71,10 @@ print("Model on %s" % device)
 from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime, SC5_FEATURES
 detector = SC5DetectorRuntime(args.mlp_path, tau_corridor=0.3, tau_release=0.3, guard=5)
 print("MLP detector loaded, dataset_sha256=%s" % detector.dataset_sha256[:16])
+
+_video_raw_frames = []
+if args.save_video:
+    print("Video recording ENABLED (fps=%d, stride=%d)" % (args.video_fps, args.frame_stride))
 
 # ── Persistent attacker (identical to v2 bridge) ──
 attacker = None
@@ -244,13 +267,23 @@ for step in range(400):
         "prev_delta_used": prev_flag, "model_ms": round(t_vla*1000, 2),
         "feat_valid": _feat_valid, "feat_error": _feat_error,
         "detector_state": _det_state, "corridor_p": _det_cp, "release_p": _det_rp,
-        "pred_phase": _det_pp, "qpos_source": "q7+q8_sum"}
+        "pred_phase": _det_pp, "qpos_source": "q7+q8_sum",
+        "raw_action_7d": json.dumps([float(x) for x in action]),
+        "env_action_7d": json.dumps([float(x) for x in env_action_final])}
     if _feat_valid:
         for fn in SC5_FEATURES:
             _tel["f_"+fn] = _feat_25d.get(fn, float("nan"))
     telemetry.append(_tel)
 
     obs, _, done, _ = env.step(env_action_final)
+    if args.save_video and step % args.frame_stride == 0:
+        try:
+            _raw = obs.get("agentview_image", None)
+            if _raw is not None:
+                _raw_copy = copy.deepcopy(_raw)
+                _video_raw_frames.append(np.asarray(_raw_copy))
+        except Exception:
+            pass
     if done: break
 
 success = bool(env.check_success()) if hasattr(env, "check_success") else False
@@ -277,13 +310,40 @@ summary = {"condition": args.condition, "state_id": STATE_ID, "teacher_anchor": 
     "env_open_duty": round(n_env_open/n_atk,3) if n_atk>0 else 0,
     "prev_delta_flags": prev_delta_flags, "task_success": success}
 
+_video_manifest = {}
+if args.save_video and _video_raw_frames:
+    try:
+        from imageio.v2 import mimwrite as _mimwrite
+        out_vdir = Path(args.output_dir)
+        out_vdir.mkdir(parents=True, exist_ok=True)
+        _raw_path = out_vdir / "rollout_raw.mp4"
+        _mimwrite(str(_raw_path), [np.asarray(f) for f in _video_raw_frames],
+                  fps=args.video_fps, codec="libx264", quality=8,
+                  output_params=["-preset", "fast"])
+        print("Video saved: %s (%d frames)" % (_raw_path, len(_video_raw_frames)))
+        _video_manifest = {
+            "raw_video_path": str(_raw_path),
+            "frame_count": len(_video_raw_frames),
+            "fps": args.video_fps,
+            "stride": args.frame_stride,
+            "source_commit": args.source_commit,
+        }
+    except Exception as _ve:
+        print("Video encoding failed: %s" % _ve)
+
 out = Path(args.output_dir); out.mkdir(parents=True, exist_ok=True)
 with open(out / "step_telemetry.csv", "w", newline="") as f:
     w = csv.DictWriter(f, fieldnames=list(telemetry[0].keys())); w.writeheader(); w.writerows(telemetry)
+summary["requested_dtype"] = _dtype_name
+summary["actual_dtype"] = _actual_dtype_str
+summary["requested_attn"] = _attn_name
+summary["actual_attn"] = _actual_attn
+if _video_manifest:
+    summary["video"] = _video_manifest
 with open(out / "episode_summary.json", "w") as f:
     json.dump(summary, f, indent=2, default=str)
-print("%s s%d teacher=%d emit=%d err=%d: steps=%d atk=%d tok=%.2f env=%.2f arm=%.2f succ=%s" % (
+print("%s s%d teacher=%d emit=%d err=%d: steps=%d atk=%d tok=%.2f env=%.2f arm=%.2f succ=%s%s" % (
     args.condition, STATE_ID, ANCHOR, _mlp_emit,
     (_mlp_emit - ANCHOR) if _mlp_emit >= 0 else -1,
     len(telemetry), n_atk, summary["token_open_duty"], summary["env_open_duty"],
-    summary["arm_duty"], success))
+    summary["arm_duty"], success, " [VIDEO]" if args.save_video else ""))

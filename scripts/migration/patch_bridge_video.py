@@ -53,14 +53,14 @@ print("P3 OK")
 # P4: Frame capture after env.step
 old = 'obs, _, done, _ = env.step(env_action_final)'
 new = ('obs, _, done, _ = env.step(env_action_final)\n'
-       '            if args.save_video and step % args.frame_stride == 0:\n'
-       '                try:\n'
-       '                    _raw = obs.get("agentview_image", None)\n'
-       '                    if _raw is not None:\n'
-       '                        _raw_copy = copy.deepcopy(_raw)\n'
-       '                        _video_raw_frames.append(np.asarray(_raw_copy))\n'
-       '                except Exception:\n'
-       '                    pass')
+       '    if args.save_video and step % args.frame_stride == 0:\n'
+       '        try:\n'
+       '            _raw = obs.get("agentview_image", None)\n'
+       '            if _raw is not None:\n'
+       '                _raw_copy = copy.deepcopy(_raw)\n'
+       '                _video_raw_frames.append(np.asarray(_raw_copy))\n'
+       '        except Exception:\n'
+       '            pass')
 assert old in code, "P4: old env.step line not found"
 code = code.replace(old, new)
 patches_ok += 1
