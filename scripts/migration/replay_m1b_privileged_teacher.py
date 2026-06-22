@@ -37,14 +37,16 @@ def replay_one(episode_key, profile, gpu):
 
     cell_dir = os.path.join(OUT_BASE, cell["relative_path"])
 
-    # Verify source hashes
+    # Verify source hashes — ALL must exist and match
     for fname, sha_key in [("step_telemetry.csv", "telemetry_sha256"),
-                           ("episode_summary.json", "episode_summary_sha256")]:
+                           ("episode_summary.json", "episode_summary_sha256"),
+                           (".done", "done_sha256")]:
         fpath = os.path.join(cell_dir, fname)
-        if os.path.exists(fpath):
-            actual = hashlib.sha256(open(fpath, "rb").read()).hexdigest()
-            if actual != cell.get(sha_key, ""):
-                return {"_error": f"SOURCE_HASH_MISMATCH: {fname}"}
+        if not os.path.exists(fpath):
+            return {"_error": f"SOURCE_ARTIFACT_MISSING: {fname}"}
+        actual = hashlib.sha256(open(fpath, "rb").read()).hexdigest()
+        if actual != cell.get(sha_key, ""):
+            return {"_error": f"SOURCE_ARTIFACT_HASH_MISMATCH: {fname} expected={cell.get(sha_key,'')[:16]} actual={actual[:16]}"}
 
     # Load originals
     orig_tel = list(csv.DictReader(open(os.path.join(cell_dir, "step_telemetry.csv"))))
@@ -65,7 +67,10 @@ def replay_one(episode_key, profile, gpu):
     env, obs = build_v4_exact_env(bddl, gpu, 400, 10)
     available = set(env.sim.model.body_names)
 
-    # Resolve object & basket body names from BDDL + available MuJoCo bodies
+    # Resolve object: extract object keyword from task name, match against BDDL bodies
+    task_keyword = task_obj.name.replace("pick_up_the_", "").replace("_and_place_it_in_the_basket", "")
+    # Normalize: "alphabet_soup" → "alphabet_soup", butter → butter
+    # BDDL uses "butter_1_main", task keyword is "butter"
     obj_body = None
     basket_body = None
     for line in open(bddl).read().split('\n'):
@@ -76,8 +81,11 @@ def replay_one(episode_key, profile, gpu):
             if parts[1].strip() in ['basket', 'bin']:
                 if main_name in available:
                     basket_body = main_name
-            elif not obj_body and main_name in available:
-                obj_body = main_name
+            elif main_name in available:
+                # Check if this object matches the task keyword
+                base_name = parts[0].strip()  # e.g. "butter_1"
+                if task_keyword in base_name or base_name.startswith(task_keyword):
+                    obj_body = main_name
 
     if not obj_body:
         env.close()
@@ -158,13 +166,15 @@ def replay_one(episode_key, profile, gpu):
     labels = teacher.label_trajectory(records)
     anchor = find_sc5_anchor_v2(labels, K=tc.K, guard=tc.guard)
 
-    return {"parity": parity, "teacher": {"teacher_supported": anchor.get("anchor", -1) >= 0,
-                                          "teacher_anchor": anchor.get("anchor", -1),
-                                          "stable_carry_start": anchor.get("stable_carry_start", -1),
-                                          "K10_valid": anchor.get("K10_valid", False),
-                                          "reason": anchor.get("reason", "unknown"),
-                                          "teacher_config_sha": tc.config_sha},
-            "target_binding": {"obj_body": obj_body, "basket_body": basket_body}}
+    return {"parity": parity, "teacher": {
+        "stable_carry_present": anchor.get("stable_carry_start", -1) >= 0,
+        "stable_carry_start": anchor.get("stable_carry_start", -1),
+        "anchor_candidate": anchor.get("anchor", -1),
+        "full_k10_valid": anchor.get("valid", False),
+        "k10_invalid_reason": anchor.get("reason", ""),
+        "teacher_config_sha": tc.config_sha,
+        "corridor_window": anchor.get("window", None),
+    }, "target_binding": {"obj_body": obj_body, "basket_body": basket_body}}
 
 
 def main():
@@ -192,7 +202,7 @@ def main():
         print(f"  Parity: steps={p['n_steps_match']} succ={p['success_match']} "
               f"eef={p['max_eef_error']:.2e} obj={p['max_obj_error']:.2e} ALL={'PASS' if p['all_parity_pass'] else 'FAIL'}")
         t = result["teacher"]
-        print(f"  Teacher: supported={t['teacher_supported']} anchor={t['teacher_anchor']} sc_start={t['stable_carry_start']} K10={t['K10_valid']}")
+        print(f"  Teacher: sc_present={t['stable_carry_present']} anchor={t['anchor_candidate']} sc_start={t['stable_carry_start']} K10={t['full_k10_valid']}")
 
     json.dump(result.get("parity", {}), open(out_dir / "replay_parity.json", "w"), indent=2)
     json.dump(result.get("teacher", {}), open(out_dir / "teacher_summary.json", "w"), indent=2)
