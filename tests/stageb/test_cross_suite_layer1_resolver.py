@@ -11,6 +11,7 @@ sys.path.insert(0, str(REPO))
 from scripts.stageb.cross_suite_layer1_resolver import (  # noqa: E402
     BindingResult,
     RESOLVER_NOT_IMPLEMENTED,
+    SUPPLEMENTARY_EVENT_ELIGIBLE,
     bind_unique,
     bind_target,
     build_blind_review_manifest,
@@ -512,9 +513,12 @@ def test_negative_and_supplementary_status_invariants(tmp_path):
     neg, _ = resolve_episode(_ledger_row(ep_goal, suite="libero_goal", task_idx=0), ontology[("libero_goal", 0)], teacher_run_id="dev")
     multi, events = resolve_episode(_ledger_row(ep_l10, suite="libero_10", task_idx=0), ontology[("libero_10", 0)], teacher_run_id="dev")
     assert neg["teacher_status"] == "CORRECT_SEMANTIC_ABSTAIN"
-    assert multi["teacher_status"] in {"MULTI_EVENT_AUDIT_ONLY", RESOLVER_NOT_IMPLEMENTED}
+    assert multi["teacher_status"] == SUPPLEMENTARY_EVENT_ELIGIBLE
     assert multi["mechanism_eligible"] is False
     assert multi["teacher_semantic_abstain"] is True
+    assert multi["label_role"] == "supplementary_multievent_grasp_carry_bridge"
+    assert multi["primary_or_supplementary"] == "supplementary"
+    assert multi["primary_supplementary_event_id"]
     assert all(event["supplementary_event"] for event in events)
     assert validate_episode_rows([neg, multi]) == []
 
@@ -533,9 +537,64 @@ def test_mixed_and_multi_event_regression_classes(tmp_path):
     for key, mechanism in expected.items():
         assert ontology[key].mechanism_type == mechanism
         ep = _episode(tmp_path, f"{key[0]}_{key[1]}", suite=key[0], task_idx=key[1])
-        row, _ = resolve_episode(_ledger_row(ep, suite=key[0], task_idx=key[1]), ontology[key], teacher_run_id="dev")
+        row, events = resolve_episode(_ledger_row(ep, suite=key[0], task_idx=key[1]), ontology[key], teacher_run_id="dev")
         assert row["mechanism_eligible"] is False
-        assert row["manual_review_required"] is True
+        if key[0] != "libero_10":
+            assert row["teacher_status"] == RESOLVER_NOT_IMPLEMENTED
+            assert row["event_count"] == 0
+            assert events == []
+            continue
+        if row["teacher_status"] == SUPPLEMENTARY_EVENT_ELIGIBLE:
+            assert row["manual_review_required"] is True
+            assert row["label_role"] == "supplementary_multievent_grasp_carry_bridge"
+            assert row["primary_or_supplementary"] == "supplementary"
+            assert row["primary_supplementary_event_id"]
+            assert all(event["supplementary_event"] for event in events)
+        else:
+            assert row["teacher_status"] == "NO_RELEVANT_GRASP_EVENT"
+            assert row["manual_review_required"] is False
+
+
+def test_supplementary_event_does_not_require_target_binding(tmp_path):
+    ontology = load_ontology(ONTOLOGY)
+    ep = _episode(tmp_path, "supp_target_missing", suite="libero_10", task_idx=0, object_count=2)
+    row, events = resolve_episode(_ledger_row(ep, suite="libero_10", task_idx=0), ontology[("libero_10", 0)], teacher_run_id="dev")
+    assert row["teacher_status"] == SUPPLEMENTARY_EVENT_ELIGIBLE
+    assert row["target_binding_status"] == "NOT_REQUIRED_FOR_SUPPLEMENTARY"
+    assert row["mechanism_eligible"] is False
+    assert row["label_role"] == "supplementary_multievent_grasp_carry_bridge"
+    assert row["primary_supplementary_event_id"]
+    assert len(events) >= 1
+    assert validate_episode_rows([row]) == []
+
+
+def test_supplementary_primary_event_selection_is_deterministic(tmp_path):
+    ontology = load_ontology(ONTOLOGY)
+    ep = _episode(tmp_path, "supp_multi", suite="libero_10", task_idx=0, object_count=2)
+    row, events = resolve_episode(_ledger_row(ep, suite="libero_10", task_idx=0), ontology[("libero_10", 0)], teacher_run_id="dev")
+    assert row["teacher_status"] == SUPPLEMENTARY_EVENT_ELIGIBLE
+    assert len(events) == 2
+    selected = sorted(
+        events,
+        key=lambda e: (
+            int(e["stable_carry_start"]),
+            int(e["close_onset_step"]),
+            e["object_body_name"],
+            e["event_id"],
+        ),
+    )[0]
+    assert row["primary_supplementary_event_id"] == selected["event_id"]
+
+
+def test_supplementary_no_grasp_carry_is_negative_only(tmp_path):
+    ontology = load_ontology(ONTOLOGY)
+    ep = _episode(tmp_path, "supp_no_grasp", suite="libero_10", task_idx=0, object_count=2, trajectory="no_grasp")
+    row, events = resolve_episode(_ledger_row(ep, suite="libero_10", task_idx=0), ontology[("libero_10", 0)], teacher_run_id="dev")
+    assert row["teacher_status"] == "NO_RELEVANT_GRASP_EVENT"
+    assert row["label_role"] == "negative_only"
+    assert row["primary_or_supplementary"] == "negative"
+    assert row["event_count"] == 0
+    assert events == []
 
 
 def test_dev_and_blind_manifests_are_deterministic_and_disjoint(tmp_path):
@@ -593,6 +652,18 @@ def test_run_resolver_and_blind_package_outputs_are_event_level_and_blind(tmp_pa
     assert "mlp_emit" not in timeline_csv
     hidden = (tmp_path / "review" / "blind_review_hidden_audit_manifest.csv").read_text(encoding="utf-8")
     assert "task_success" in hidden
+
+
+def test_run_resolver_accepts_csv_manifest(tmp_path):
+    ep = _episode(tmp_path, "ep_csv", suite="libero_10", task_idx=0, object_count=2)
+    manifest = tmp_path / "manifest.csv"
+    _write_csv(manifest, [_ledger_row(ep, suite="libero_10", task_idx=0)])
+    out = tmp_path / "resolver_csv"
+    result = run_resolver(manifest, ONTOLOGY, out, teacher_run_id="dev")
+    assert result["episode_count"] == 1
+    assert result["validation_error_count"] == 0
+    labels = list(csv.DictReader((out / "teacher_episode_labels_v1.csv").open(newline="", encoding="utf-8")))
+    assert labels[0]["teacher_status"] == SUPPLEMENTARY_EVENT_ELIGIBLE
 
 
 def test_teacher_timeline_rows_are_teacher_only():

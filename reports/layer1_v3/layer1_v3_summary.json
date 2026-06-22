@@ -1,0 +1,25 @@
+{
+  "claim_boundary": {
+    "allowed": "Layer1 generation root and rebuilt Layer2 dataset are separately identified for engineering dependency review.",
+    "forbidden": [
+      "H2 scientifically frozen",
+      "final Teacher ground truth",
+      "VIS/RAND attack effectiveness"
+    ]
+  },
+  "dataset_build_commit": "0d7e89f007bec55691abec94174c18ff04ad74c1",
+  "dataset_build_root": "/data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/cross_suite_layer2_dataset_v3_owner_ai_frozen_0d7e89f",
+  "dataset_builder_sha256": "5690a8110cade2e4081af3e81ecbf93d8264857e93433951d8c7b3a2fc220a5d",
+  "dataset_manifest_sha256": "ce6fb28d54fb6cba6be58279060bf37c3777f22d2efaf7d5135756b196cfb972",
+  "dataset_sha256": "6252fd699010005e48f5dff24c631262fb4939d9b76314a9afb82efe7f2cd0b2",
+  "evidence_seal_commit": "ba459d5d9dfc43a96f65fb6ee65add853a31d0de",
+  "label_source_version": "cross_suite_teacher_owner_ai_repair_v2_plus_libero10_supplementary_bridge_v2",
+  "layer1_generation_commit": "e2e21c79450b34bb779f6e9f3cfb7389c9597ccb",
+  "layer1_generation_root": "/data/liuyu/layer1_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/full_layer1_dataset_v3_e2e21c7",
+  "layer1_ontology_sha256": "70f4c03860d617b5fc64e61dbe9e287dae67c1178e57634d5be9d4d2bde99462",
+  "layer1_physics_sha256": "7e7957aa253fa82bc4d51a850f149aa7f8fa46822568ccd1c717204fb059ce8a",
+  "layer1_resolver_sha256": "ff5ed5b06c7cc3c9c51437d1bc40927db07423b86992aee1d71b6133a94b7f7c",
+  "layer1_schema_sha256": "551fa2c182f5fe251f9b277f5e6fcec2ad33a96252d20a095159898efe2cb109",
+  "provenance_schema": "layer1_v3_generation_and_layer2_dataset_build_v2",
+  "spatial_goal_drift_count": 0
+}

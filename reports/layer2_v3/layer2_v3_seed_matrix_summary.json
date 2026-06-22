@@ -1,0 +1,49 @@
+{
+  "checkpoint_manifest_rows": 15,
+  "completed_runs": 24,
+  "dataset_root": "/data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/cross_suite_layer2_dataset_v3_owner_ai_frozen_0d7e89f",
+  "dataset_sha256": "6252fd699010005e48f5dff24c631262fb4939d9b76314a9afb82efe7f2cd0b2",
+  "deployment_checkpoints": [
+    {
+      "checkpoint_path": "/data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/mlp_seed_matrix_v2_0d7e89f_cpu_r3/M2_leave_one_suite_out_test_libero_spatial_seed1/model.pt",
+      "checkpoint_sha256": "d229e3db0a3b15cf68712a4582817c30a1bedd9f424b1ea7c68120f00e61134a",
+      "heldout_suite": "libero_spatial",
+      "selected_run": "M2_leave_one_suite_out_test_libero_spatial_seed1",
+      "val_event_f1": "0.9268292682926829",
+      "val_false_trigger_episode_rate": "0.05555555555555555",
+      "val_median_latency": "16.0"
+    },
+    {
+      "checkpoint_path": "/data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/mlp_seed_matrix_v2_0d7e89f_cpu_r3/M2_leave_one_suite_out_test_libero_goal_seed3/model.pt",
+      "checkpoint_sha256": "3826a64530d25078441c214e2667d25b32eee98a05581da943bb978ff6bfee98",
+      "heldout_suite": "libero_goal",
+      "selected_run": "M2_leave_one_suite_out_test_libero_goal_seed3",
+      "val_event_f1": "0.9473684210526316",
+      "val_false_trigger_episode_rate": "0.07894736842105263",
+      "val_median_latency": "17.0"
+    },
+    {
+      "checkpoint_path": "/data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/mlp_seed_matrix_v2_0d7e89f_cpu_r3/M2_leave_one_suite_out_test_libero_10_seed1/model.pt",
+      "checkpoint_sha256": "9f6759b916b0ab612a1b3ebcef4186677197a27c73e55ee4c1653d7828c30df9",
+      "heldout_suite": "libero_10",
+      "selected_run": "M2_leave_one_suite_out_test_libero_10_seed1",
+      "val_event_f1": "0.896551724137931",
+      "val_false_trigger_episode_rate": "0.13157894736842105",
+      "val_median_latency": "17.0"
+    }
+  ],
+  "forbidden_claims": [
+    "H2 scientifically frozen",
+    "final Teacher ground truth",
+    "VIS/RAND/shuffled attack effectiveness",
+    "confirmatory detector generalization"
+  ],
+  "metrics_rows": 24,
+  "official_h2_status": "NOT_GRANTED",
+  "output_root": "/data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/mlp_seed_matrix_v2_0d7e89f_cpu_r3",
+  "planned_runs": 24,
+  "provisional_engineering_only": true,
+  "skipped_runs": 0,
+  "source_commit": "0d7e89f007bec55691abec94174c18ff04ad74c1",
+  "stage": "LAYER2_V3_SEED_MATRIX_RESULTS_20260622"
+}

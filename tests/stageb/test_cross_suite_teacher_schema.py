@@ -45,7 +45,8 @@ STATUSES = [
     "NO_RELEVANT_GRASP_EVENT",
     "OBJECT_BINDING_AMBIGUOUS",
     "TARGET_BINDING_AMBIGUOUS",
-    "MULTI_EVENT_AUDIT_ONLY",
+    "SUPPLEMENTARY_EVENT_ELIGIBLE",
+    "RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM",
     "RESOLVER_FAILED",
     "SCHEMA_INVALID",
 ]
@@ -84,8 +85,8 @@ def test_teacher_schema_join_fields_binding_enums_and_invariants():
     for phrase in [
         "teacher_executed=false implies",
         "teacher_status=ELIGIBLE_EVENT implies",
+        "teacher_status=SUPPLEMENTARY_EVENT_ELIGIBLE implies",
         "teacher_status=CORRECT_SEMANTIC_ABSTAIN implies",
-        "teacher_status=MULTI_EVENT_AUDIT_ONLY implies",
     ]:
         assert phrase in text
     assert "teacher_run`" not in text
