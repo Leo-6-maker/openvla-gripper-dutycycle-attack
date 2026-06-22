@@ -66,5 +66,7 @@
     "B0: butter_s1, butter_s2, chocolate_pudding_s1, cream_cheese_s0",
     "D1: butter_s1, bbq_sauce_s2",
     "strategy_divergent: alphabet_soup_s1, orange_juice_s2, tomato_sauce_s0"
-  ]
+  ],
+  "final_freeze_commit": "865fb30196066e30e509ae6584262c374c8212d5",
+  "M1B_formal_metric_classification": "CLOSED"
 }
