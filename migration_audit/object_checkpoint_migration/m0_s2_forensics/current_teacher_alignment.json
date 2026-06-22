@@ -1,0 +1,43 @@
+{
+  "gate": "M0_S2_CURRENT_TEACHER_ALIGNMENT",
+  "timestamp_utc": "2026-06-22T05:30:00Z",
+  "source": "Step telemetry analysis of butter_s2_clean (400 steps)",
+  "method": "Telemetry-based offline analysis (privileged teacher requires MuJoCo replay — NOT YET RUN)",
+  "analysis_type": "OFFLINE_TELEMETRY_INSPECTION",
+  "findings": {
+    "current_teacher_supported": false,
+    "current_stable_carry_start": -1,
+    "current_teacher_anchor": -1,
+    "current_release_safe_start": -1,
+    "current_k10_map": "NOT_APPLICABLE",
+    "current_mechanism_status": "NO_VALID_CORRIDOR"
+  },
+  "telemetry_evidence": {
+    "min_eef_obj_distance": 0.3354,
+    "min_eef_obj_distance_step": 13,
+    "max_object_z": 0.0087,
+    "object_ever_lifted": false,
+    "gripper_ever_closed": false,
+    "eef_z_range": [0.254, 0.255],
+    "eef_z_constant": true,
+    "eef_movement_description": "EEF moves only in XY plane (X: -0.11 to -0.09, Y: 0.05 to 0.15) at constant z=0.254. Robot wanders sideways, never descends toward object.",
+    "gripper_command_range": [0.0, 0.0],
+    "object_z_range": [0.0087, 0.0087]
+  },
+  "detector_behavior": {
+    "trigger_step": 33,
+    "armed_at_step": 28,
+    "corridor_p_at_emit": 0.9106,
+    "predicted_phase_at_emit": "stable_carry",
+    "false_early_trigger": true,
+    "false_early_rationale": "Detector predicts stable_carry with corridor_p=0.91 but object is on table (obj_z=0.0087), EEF is far (dist=0.45), gripper is fully open (grip=0.0), and EEF z hasn't changed from initial position."
+  },
+  "classification": "CASE_C",
+  "classification_detail": "Current clean rollout did not produce the original C16 grasp/transport event. The old anchor=96 cannot be used as ground truth for this trajectory. The detector's early trigger at step 33 is a secondary symptom — even without the detector triggering, the robot would have timed out at 400 steps because it never grasped the object.",
+  "root_cause_candidates": [
+    "VLA closed-loop policy divergence on state_id=2 vs state_id=0 on A800 hardware",
+    "Possible initial state difference causing different first action and subsequent trajectory divergence",
+    "BF16 eager numerical non-determinism accumulating over closed-loop steps"
+  ],
+  "next_step": "Same-GPU repeatability diagnosis (s2 CLEAN × 3) to determine if this is deterministic or non-deterministic on A800"
+}
