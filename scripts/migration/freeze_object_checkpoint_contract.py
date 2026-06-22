@@ -3,8 +3,8 @@
 import hashlib, json, os, sys, numpy as np, torch
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-CKPT_PATH = os.path.join(REPO, "artifacts", "detector", "sc5_mlp_s2.pt")
 sys.path.insert(0, os.path.join(REPO, "src"))
+CKPT_PATH = os.path.join(REPO, "artifacts", "detector", "sc5_mlp_s2.pt")
 from gripper_attack.sc5_detector_runtime import SC5_FEATURES, SC5_PHASES
 
 
@@ -68,8 +68,6 @@ def main():
     print(f"Default thresholds: tau_c=0.3 tau_r=0.3 guard=5 K=10")
 
     # Strict load verification
-    import copy
-    sys.path.insert(0, os.path.join(REPO, "src"))
     from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime
     try:
         detector = SC5DetectorRuntime(CKPT_PATH, tau_corridor=0.3, tau_release=0.3, guard=5)
