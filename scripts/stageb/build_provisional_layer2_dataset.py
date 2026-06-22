@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """Build provisional Layer2 frame dataset from provisional Layer1 labels.
 
 CPU-only. Reads clean step telemetry and provisional Teacher labels. Detector
@@ -37,7 +37,7 @@ NEGATIVE_STATUSES = {"CORRECT_SEMANTIC_ABSTAIN", "NO_RELEVANT_GRASP_EVENT"}
 PRIMARY_POSITIVE_STATUS = "ELIGIBLE_EVENT"
 SUPPLEMENTARY_POSITIVE_STATUS = "SUPPLEMENTARY_EVENT_ELIGIBLE"
 POSITIVE_STATUSES = {PRIMARY_POSITIVE_STATUS, SUPPLEMENTARY_POSITIVE_STATUS}
-LABEL_SOURCE_VERSION = "cross_suite_teacher_v1_plus_libero10_supplementary_bridge_v1"
+LABEL_SOURCE_VERSION = "cross_suite_teacher_owner_ai_repair_v2_plus_libero10_supplementary_bridge_v2"
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -121,6 +121,49 @@ def label_role_for_status(status: str) -> tuple[str, str]:
     return "ignore", "ignore"
 
 
+def _nonempty(value: Any) -> bool:
+    return str(value or "").strip() != ""
+
+
+def sha256_optional(path: Path) -> str:
+    return sha256_file(path) if path.exists() else ""
+
+
+def validate_resolver_role_fields(label: dict[str, str], problems: list[str]) -> tuple[str, str]:
+    status = label.get("teacher_status", "")
+    expected_label_role, expected_primary = label_role_for_status(status)
+    resolver_label_role = str(label.get("label_role", "") or "")
+    resolver_primary = str(label.get("primary_or_supplementary", "") or "")
+    if resolver_label_role and resolver_label_role != expected_label_role:
+        problems.append(f"label_role_mismatch:{resolver_label_role}!={expected_label_role}")
+    if resolver_primary and resolver_primary != expected_primary:
+        problems.append(f"primary_or_supplementary_mismatch:{resolver_primary}!={expected_primary}")
+    return expected_label_role, expected_primary
+
+
+def select_event_for_label(label: dict[str, str], events: list[dict[str, str]], problems: list[str]) -> dict[str, str] | None:
+    status = label.get("teacher_status", "")
+    if status == SUPPLEMENTARY_POSITIVE_STATUS:
+        primary_event_id = str(label.get("primary_supplementary_event_id", "") or "").strip()
+        if not primary_event_id:
+            problems.append("supplementary_positive_missing_primary_event_id")
+            return None
+        matches = [row for row in events if row.get("event_id") == primary_event_id]
+        if not matches:
+            problems.append(f"supplementary_primary_event_id_not_found:{primary_event_id}")
+            return None
+        if len(matches) != 1:
+            problems.append(f"supplementary_primary_event_id_not_unique:{primary_event_id}:{len(matches)}")
+            return None
+        return matches[0]
+    if status == PRIMARY_POSITIVE_STATUS:
+        if len(events) != 1:
+            problems.append(f"primary_positive_event_count_not_one:{len(events)}")
+            return None
+        return events[0]
+    return None
+
+
 def phase_for_step(step: int, label: dict[str, str], event: dict[str, str] | None) -> tuple[str, int, int]:
     status = label.get("teacher_status", "")
     if status not in POSITIVE_STATUSES or event is None:
@@ -170,13 +213,10 @@ def build_rows_for_episode(
         return [], [f"missing_step_telemetry:{episode_path}"]
     step_rows = read_csv(step_path)
     status = label.get("teacher_status", "")
-    primary_event_id = label.get("primary_supplementary_event_id", "")
-    if status == SUPPLEMENTARY_POSITIVE_STATUS and primary_event_id:
-        event = next((row for row in events if row.get("event_id") == primary_event_id), None)
-    else:
-        event = events[0] if events else None
-    ignore = status in IGNORE_STATUSES
-    label_role, primary_or_supplementary = label_role_for_status(status)
+    role_problem_count_before = len(problems)
+    label_role, primary_or_supplementary = validate_resolver_role_fields(label, problems)
+    event = select_event_for_label(label, events, problems)
+    ignore = status in IGNORE_STATUSES or len(problems) > role_problem_count_before
     if status not in IGNORE_STATUSES | NEGATIVE_STATUSES | POSITIVE_STATUSES:
         problems.append(f"unknown_teacher_status:{status}")
         ignore = True
@@ -305,7 +345,9 @@ def build_dataset(args: argparse.Namespace) -> dict[str, Any]:
                     "condition": "CLEAN",
                     "dataset_split": dataset_split,
                     "teacher_status": label.get("teacher_status", ""),
-                    "label_role": label_role_for_status(label.get("teacher_status", ""))[0],
+                    "label_role": label.get("label_role", "") or label_role_for_status(label.get("teacher_status", ""))[0],
+                    "primary_or_supplementary": label.get("primary_or_supplementary", "") or label_role_for_status(label.get("teacher_status", ""))[1],
+                    "primary_supplementary_event_id": label.get("primary_supplementary_event_id", ""),
                     "task_success": manifest_row.get("task_success", ""),
                 }
             )
@@ -365,6 +407,11 @@ def build_dataset(args: argparse.Namespace) -> dict[str, Any]:
         (str(row.get("suite", "")), str(row.get("label_role", "")))
         for row in rows
     )
+    ontology_path = REPO / "configs" / "cross_suite_task_ontology_v1.yaml"
+    physics_path = REPO / "configs" / "cross_suite_teacher_physics_v1.yaml"
+    schema_path = REPO / "docs" / "schemas" / "cross_suite_teacher_label_schema_v1.md"
+    resolver_path = REPO / "scripts" / "stageb" / "cross_suite_layer1_resolver.py"
+    builder_path = REPO / "scripts" / "stageb" / "build_provisional_layer2_dataset.py"
     summary = {
         "provisional_engineering_only": True,
         "official_h2_status": "NOT_GRANTED",
@@ -380,6 +427,15 @@ def build_dataset(args: argparse.Namespace) -> dict[str, Any]:
         "ignore_frame_count": sum(1 for row in rows if int(row["ignore_for_loss"]) == 1),
         "positive_frame_count": sum(1 for row in rows if int(row["teacher_corridor_active"]) == 1 and int(row["ignore_for_loss"]) == 0),
         "label_source_version": LABEL_SOURCE_VERSION,
+        "component_provenance": {
+            "resolver_commit": git_commit(),
+            "ontology_sha256": sha256_optional(ontology_path),
+            "physics_sha256": sha256_optional(physics_path),
+            "schema_sha256": sha256_optional(schema_path),
+            "resolver_sha256": sha256_optional(resolver_path),
+            "dataset_builder_sha256": sha256_optional(builder_path),
+            "label_source_version": LABEL_SOURCE_VERSION,
+        },
         "label_role_frame_counts": dict(label_role_counts),
         "supervised_label_role_frame_counts": dict(supervised_role_counts),
         "per_suite_label_role_frame_counts": {f"{suite}|{role}": count for (suite, role), count in per_suite_role_counts.items()},

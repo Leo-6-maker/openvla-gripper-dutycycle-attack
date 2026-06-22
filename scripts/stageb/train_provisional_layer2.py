@@ -210,6 +210,8 @@ def predict_rows(model: SC5MLP, mean: np.ndarray, std: np.ndarray, rows: list[di
                 "dataset_split": row["dataset_split"],
                 "step": int(float(row["step"])),
                 "teacher_status": row["teacher_status"],
+                "label_role": row.get("label_role", ""),
+                "primary_or_supplementary": row.get("primary_or_supplementary", ""),
                 "teacher_phase": row["teacher_phase"],
                 "teacher_corridor_active": int(float(row["teacher_corridor_active"])),
                 "teacher_release_active": int(float(row["teacher_release_active"])),
@@ -273,6 +275,12 @@ def metrics(preds: list[dict[str, Any]], tau_c: float, tau_r: float) -> dict[str
     hits = 0
     false_triggers = 0
     no_emit = 0
+    positive_no_emit = 0
+    negative_episodes = 0
+    negative_false_emit = 0
+    role_eligible: defaultdict[str, int] = defaultdict(int)
+    role_hits: defaultdict[str, int] = defaultdict(int)
+    role_no_emit: defaultdict[str, int] = defaultdict(int)
     latencies: list[int] = []
     for ep_rows in by_ep.values():
         emit = episode_emit(ep_rows, tau_c, tau_r)
@@ -280,6 +288,8 @@ def metrics(preds: list[dict[str, Any]], tau_c: float, tau_r: float) -> dict[str
         is_eligible = bool(event_rows)
         if is_eligible:
             eligible += 1
+            role = str(event_rows[0].get("label_role", ""))
+            role_eligible[role] += 1
             start = min(int(float(r["teacher_window_start"])) for r in event_rows if str(r["teacher_window_start"]) != "")
             end = max(int(float(r["teacher_window_end"])) for r in event_rows if str(r["teacher_window_end"]) != "")
             anchors = [int(float(r["teacher_anchor_step"])) for r in event_rows if str(r["teacher_anchor_step"]) != ""]
@@ -288,19 +298,27 @@ def metrics(preds: list[dict[str, Any]], tau_c: float, tau_r: float) -> dict[str
                 emits += 1
                 if start <= emit <= end:
                     hits += 1
+                    role_hits[role] += 1
                     latencies.append(emit - anchor)
                 else:
                     false_triggers += 1
             else:
                 no_emit += 1
+                positive_no_emit += 1
+                role_no_emit[role] += 1
         elif emit >= 0:
             emits += 1
             false_triggers += 1
+            negative_episodes += 1
+            negative_false_emit += 1
         else:
             no_emit += 1
+            negative_episodes += 1
     precision = hits / emits if emits else 0.0
     recall = hits / eligible if eligible else 0.0
     f1 = (2 * precision * recall / (precision + recall)) if precision + recall else 0.0
+    primary_role = "primary_single_object_pick_place"
+    supplementary_role = "supplementary_multievent_grasp_carry_bridge"
     return {
         "frame_auroc": auroc(y, s),
         "frame_auprc": auprc(y, s),
@@ -312,6 +330,15 @@ def metrics(preds: list[dict[str, Any]], tau_c: float, tau_r: float) -> dict[str
         "hit_count": hits,
         "false_trigger_episode_rate": false_triggers / max(len(by_ep), 1),
         "no_emit_rate": no_emit / max(len(by_ep), 1),
+        "positive_event_no_emit_rate": positive_no_emit / max(eligible, 1),
+        "negative_episode_count": negative_episodes,
+        "negative_episode_false_emit_rate": negative_false_emit / max(negative_episodes, 1),
+        "primary_positive_emit_recall": role_hits[primary_role] / max(role_eligible[primary_role], 1),
+        "supplementary_positive_emit_recall": role_hits[supplementary_role] / max(role_eligible[supplementary_role], 1),
+        "primary_positive_episode_count": role_eligible[primary_role],
+        "supplementary_positive_episode_count": role_eligible[supplementary_role],
+        "primary_positive_no_emit_rate": role_no_emit[primary_role] / max(role_eligible[primary_role], 1),
+        "supplementary_positive_no_emit_rate": role_no_emit[supplementary_role] / max(role_eligible[supplementary_role], 1),
         "median_latency": float(np.median(latencies)) if latencies else float("inf"),
         "tau_corridor": tau_c,
         "tau_release": tau_r,
