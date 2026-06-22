@@ -1,5 +1,6 @@
 {
-  "branch": "UNAVAILABLE:CalledProcessError:Command '['git', 'branch', '--show-current']' returned non-zero exit status 129.",
+  "branch": "DETACHED_HEAD",
+  "branch_resolution_method": "git symbolic-ref --short HEAD || DETACHED_HEAD",
   "command": "/data/aviary/envs/openvla_official_libero_20260525/bin/python scripts/stageb/run_provisional_layer2_seed_matrix.py --dataset /data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/cross_suite_layer2_dataset_v3_owner_ai_frozen_0d7e89f/provisional_layer2_frame_dataset.csv --output-dir /data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/mlp_seed_matrix_v2_0d7e89f_cpu_r3 --device cpu --epochs 60",
   "dataset": "/data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/cross_suite_layer2_dataset_v3_owner_ai_frozen_0d7e89f/provisional_layer2_frame_dataset.csv",
   "device": "cpu",
@@ -8,5 +9,6 @@
   "gpu_used": false,
   "output_dir": "/data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/mlp_seed_matrix_v2_0d7e89f_cpu_r3",
   "source_commit": "0d7e89f007bec55691abec94174c18ff04ad74c1",
+  "source_ref": "feature/layer1-v3-libero10-supplementary-repair-20260622@0d7e89f007bec55691abec94174c18ff04ad74c1",
   "working_dir": "/data/liuyu/repos/layer1_supp_bridge_0d7e89f"
 }
