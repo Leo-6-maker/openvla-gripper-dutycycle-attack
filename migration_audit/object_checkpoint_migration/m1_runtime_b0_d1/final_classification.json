@@ -1,54 +1,70 @@
 {
   "gate": "M1B_FINAL_CLASSIFICATION",
   "branch": "migration/object-checkpoint-a800-20260622",
-  "head": "1f11798",
+  "analysis_source_commit": "1f117985f99cf5d69fac1d97b1b50dcf990899db",
+  "classification_commit": "056a6402a898f493f5e564f6f267cda9583b21ed",
   "B0_metrics": {
     "n_total": 30,
     "teacher_valid": 23,
     "no_corridor": 7,
+    "total_triggered": 27,
+    "teacher_valid_triggered": 23,
     "coverage": 1.0,
-    "false_early": 0.0435,
+    "false_early": 0.037,
+    "false_early_note": "1/27 (all triggered episodes)",
     "post_release": 0.0,
     "k10_containment": 0.9565,
     "median_anchor_error": 2,
     "no_corridor_abstain": 0.4286,
-    "triggered_count": 23,
-    "false_early_count": 1,
-    "post_release_count": 0,
-    "k10_count": 22,
-    "n_anchor_errors": 23
+    "no_corridor_abstain_note": "3/7",
+    "false_triggers_no_corridor": [
+      "butter_s1: emit=112",
+      "chocolate_pudding_s1: emit=42",
+      "cream_cheese_s0: emit=149",
+      "butter_s2: emit=33"
+    ]
   },
   "D1_metrics": {
     "n_total": 30,
     "teacher_valid": 26,
     "no_corridor": 4,
+    "total_triggered": 28,
+    "teacher_valid_triggered": 26,
     "coverage": 1.0,
     "false_early": 0.0,
+    "false_early_note": "0/28 (all triggered episodes)",
     "post_release": 0.0,
     "k10_containment": 1.0,
     "median_anchor_error": 2.0,
     "no_corridor_abstain": 0.5,
-    "triggered_count": 26,
-    "false_early_count": 0,
-    "post_release_count": 0,
-    "k10_count": 26,
-    "n_anchor_errors": 26
+    "no_corridor_abstain_note": "2/4",
+    "false_triggers_no_corridor": [
+      "butter_s1: emit=92",
+      "bbq_sauce_s2: emit=210"
+    ]
   },
   "B0_absolute_gates": {
-    "coverage >= 0.80": true,
-    "false_early <= 0.10": true,
-    "post_release <= 0.05": true,
-    "K10 >= 0.85": true,
-    "median_err <= 8": true,
-    "no_corridor_abstain >= 0.90": false
+    "coverage": true,
+    "false_early": true,
+    "post_release": true,
+    "K10_containment": true,
+    "median_anchor_error": true,
+    "no_corridor_abstain": false
   },
   "B0_all_pass": false,
+  "failing_gate": "no_corridor_abstain",
   "classification": "M1B_BASELINE_INVALID",
-  "classification_reason": "B0 no-corridor abstention = 0.4286 < 0.90. 5/6 gates PASS. Only abstention fails.",
+  "observed_decisive_failure_mode": "B0 failed the preregistered no-corridor abstention threshold (0.429 < 0.90). The detector exhibits high recall on teacher-valid carry trajectories (coverage=1.000, K10=0.957, median error=2.0 steps) but insufficient selectivity: 4 of 7 no-corridor failed trajectories triggered falsely. The bottleneck is abstention, not recall. Deeper model or data root causes (e.g. calibration distribution mismatch, spurious feature similarity on failed trajectories) have not been isolated in this study.",
   "clean_policy_nondegradation": "PASS",
-  "clean_policy_statement": "FP32 did not degrade clean policy SR. B0=23/30, D1=26/30, S_common=22. Observed +10pp directional, not statistically significant (McNemar p=0.375).",
+  "clean_policy_statement": "FP32 did not degrade clean policy SR. B0=23/30 (77%), D1=26/30 (87%), S_common=22. Observed +10pp is directional but not statistically significant (McNemar p=0.375).",
   "detector_transfer": "CANNOT_BE_ISSUED",
-  "detector_transfer_reason": "B0 baseline does not satisfy preregistered absolute detector thresholds. FP32 transfer cannot be declared from an invalid baseline.",
+  "detector_transfer_reason": "B0 baseline does not satisfy all six preregistered absolute detector thresholds. FP32 detector transfer cannot be declared from an invalid baseline.",
   "a1_flash2": "A1_FLASH2_RUNTIME_UNAVAILABLE",
-  "M1_PARTIAL_RUNTIME_STUDY_COMPLETE": true
+  "M1_PARTIAL_RUNTIME_STUDY_COMPLETE": true,
+  "diagnostic_videos_pending": true,
+  "diagnostic_video_episodes": [
+    "B0: butter_s1, butter_s2, chocolate_pudding_s1, cream_cheese_s0",
+    "D1: butter_s1, bbq_sauce_s2",
+    "strategy_divergent: alphabet_soup_s1, orange_juice_s2, tomato_sauce_s0"
+  ]
 }
