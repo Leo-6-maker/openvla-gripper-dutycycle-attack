@@ -1305,7 +1305,7 @@ def load_real_policy_and_student(args: argparse.Namespace, *, env_adapter: RealL
         unnorm_key=args.unnorm_key,
         action_dim=action_dim,
     )
-    detector = SC5DetectorRuntime(args.detector_path, tau_corridor=0.3, tau_release=0.3, guard=5)
+    detector = SC5DetectorRuntime(args.detector_path, guard=5)
     student = RealSC5StudentAdapter(
         detector=detector,
         streamer=SC5StreamingFeatureAdapterV2(),
@@ -1314,7 +1314,15 @@ def load_real_policy_and_student(args: argparse.Namespace, *, env_adapter: RealL
     return policy, student, model, detector
 
 
-def build_parent_manifest_for_candidate(args: argparse.Namespace, *, task_idx: int, state_id: int, instruction: str) -> Layer3ParentDependencyManifest:
+def build_parent_manifest_for_candidate(
+    args: argparse.Namespace,
+    *,
+    task_idx: int,
+    state_id: int,
+    instruction: str,
+    tau_corridor: float,
+    tau_release: float,
+) -> Layer3ParentDependencyManifest:
     model_sha = sha256_path(Path(args.model_path))
     detector_sha = sha256_path(Path(args.detector_path))
     return Layer3ParentDependencyManifest(
@@ -1327,8 +1335,8 @@ def build_parent_manifest_for_candidate(args: argparse.Namespace, *, task_idx: i
         unnorm_key=args.unnorm_key,
         layer2_dataset_sha256=EXPECTED_LAYER2_DATASET_SHA256,
         detector_checkpoint_sha256=detector_sha,
-        tau_corridor=0.3,
-        tau_release=0.3,
+        tau_corridor=float(tau_corridor),
+        tau_release=float(tau_release),
         libero_version="openvla_official_libero_20260525",
         mujoco_version="runtime_recorded",
         task_instruction_sha256=hash_jsonable({"instruction": instruction}),
@@ -1353,16 +1361,18 @@ def find_emit_snapshot_for_candidate(
         )
         env_adapter = RealLiberoEnvAdapter(env)
         instruction = str(task_obj.language)
-        policy, student, model, detector = load_real_policy_and_student(args, env_adapter=env_adapter, instruction=instruction)
+        parent = build_parent_manifest_for_candidate(
+            args,
+            task_idx=int(candidate["task_idx"]),
+            state_id=int(candidate["state_id"]),
+            instruction=instruction,
+            tau_corridor=float(detector.tau_c),
+            tau_release=float(detector.tau_r),
+        )
         dependency = validate_dependency_files(
-            build_parent_manifest_for_candidate(
-                args, task_idx=int(candidate["task_idx"]), state_id=int(candidate["state_id"]), instruction=instruction
-            ),
+            parent,
             openvla_model_path=args.model_path,
             detector_checkpoint_path=args.detector_path,
-        )
-        parent = build_parent_manifest_for_candidate(
-            args, task_idx=int(candidate["task_idx"]), state_id=int(candidate["state_id"]), instruction=instruction
         )
         runtime = capture_runtime_receipt(
             libero_version=parent.libero_version,
