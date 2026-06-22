@@ -166,6 +166,13 @@ def replay_one(episode_key, profile, gpu):
     labels = teacher.label_trajectory(records)
     anchor = find_sc5_anchor_v2(labels, K=tc.K, guard=tc.guard)
 
+    # Per-step label summary for metrics
+    label_summary = []
+    for l in labels:
+        label_summary.append({"step_idx": l.get("step_idx", -1),
+                              "phase": l.get("phase", "?"),
+                              "confidence": l.get("confidence", 0)})
+
     return {"parity": parity, "teacher": {
         "stable_carry_present": anchor.get("stable_carry_start", -1) >= 0,
         "stable_carry_start": anchor.get("stable_carry_start", -1),
@@ -174,7 +181,8 @@ def replay_one(episode_key, profile, gpu):
         "k10_invalid_reason": anchor.get("reason", ""),
         "teacher_config_sha": tc.config_sha,
         "corridor_window": anchor.get("window", None),
-    }, "target_binding": {"obj_body": obj_body, "basket_body": basket_body}}
+    }, "target_binding": {"obj_body": obj_body, "basket_body": basket_body},
+        "privileged_records": records, "teacher_labels": label_summary}
 
 
 def main():
@@ -207,7 +215,17 @@ def main():
 
     json.dump(result.get("parity", {}), open(out_dir / "replay_parity.json", "w"), indent=2)
     json.dump(result.get("teacher", {}), open(out_dir / "teacher_summary.json", "w"), indent=2)
-    json.dump(result, open(out_dir / "replay_summary.json", "w"), indent=2, default=str)
+    if "privileged_records" in result:
+        with open(out_dir / "privileged_step_records.jsonl", "w") as f:
+            for rec in result["privileged_records"]:
+                f.write(json.dumps(rec, default=str) + "\n")
+    if "teacher_labels" in result:
+        with open(out_dir / "teacher_labels.jsonl", "w") as f:
+            for lab in result["teacher_labels"]:
+                f.write(json.dumps(lab) + "\n")
+    # Strip large arrays from summary
+    result_small = {k: v for k, v in result.items() if k not in ["privileged_records", "teacher_labels"]}
+    json.dump(result_small, open(out_dir / "replay_summary.json", "w"), indent=2, default=str)
     print(f"  Output: {out_dir}")
 
 
