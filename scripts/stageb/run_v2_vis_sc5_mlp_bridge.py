@@ -15,7 +15,7 @@ REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO)); sys.path.insert(0, str(REPO / "src")); sys.path.insert(0, str(REPO / "scripts"))
 os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "eager")
 
-MODEL_PATH = "/data/aviary/models/openvla/openvla-7b-finetuned-libero-object"
+MODEL_PATH = os.environ.get("OPENVLA_MODEL_PATH", "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object")
 EPSILON = 0.023529411764705882; TARGET_TOKEN = 31744; ARM_GATE = 5; PGD_STEPS = 20; K = 10
 
 ap = argparse.ArgumentParser()
@@ -40,15 +40,11 @@ try:
 except Exception:
     from transformers import AutoModelForVision2Seq as AutoModelCls
 processor = AutoProcessor.from_pretrained(MODEL_PATH, trust_remote_code=True, local_files_only=True)
-visible = torch.cuda.device_count()
 model = AutoModelCls.from_pretrained(
     MODEL_PATH, trust_remote_code=True, local_files_only=True, torch_dtype=torch.bfloat16,
-    low_cpu_mem_usage=True, device_map="auto",
-    max_memory={idx: "10000MiB" for idx in range(visible)} | {"cpu": "128GiB"}, attn_implementation="eager")
+    low_cpu_mem_usage=True, device_map="cuda:0", attn_implementation="eager")
 model_dtype = next(model.parameters()).dtype
 device = "cuda:0"
-for v in model.hf_device_map.values():
-    if isinstance(v, int): device = "cuda:%d" % v; break
 action_dim = int(model.get_action_dim("libero_object"))
 print("Model on %s" % device)
 
