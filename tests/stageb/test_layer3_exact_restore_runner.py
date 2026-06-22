@@ -25,6 +25,8 @@ from scripts.stageb.layer3_exact_restore_runner import (
     capture_mujoco_state,
     capture_policy_rng_state,
     capture_student_state,
+    compare_observation_values,
+    compare_policy_input_fingerprints,
     model_norm_stat_keys,
     parse_cuda_visible_devices,
     query_ordered_visible_gpu_uuids,
@@ -100,6 +102,21 @@ def test_parent_manifest_requires_sha_dependencies():
         make_parent(
             openvla_model_sha256="not-a-sha",
         )
+
+
+def test_observation_value_compare_reports_array_diffs():
+    row = compare_observation_values(np.array([1, 2, 3]), np.array([1, 4, 3]))
+    assert row["sha_match"] is False
+    assert row["max_abs_diff"] == 2.0
+    assert row["nonzero_diff_count"] == 1
+    assert row["first_diff_index"] == [1]
+
+
+def test_policy_input_fingerprint_compare_reports_mismatches():
+    rows = compare_policy_input_fingerprints({"a": "same", "b": "left"}, {"a": "same", "b": "right"})
+    by_key = {row["key"]: row for row in rows}
+    assert by_key["a"]["match"] is True
+    assert by_key["b"]["match"] is False
 
 
 def test_read_candidate_manifest_accepts_exact_known_emitter(tmp_path):

@@ -196,6 +196,107 @@ def hash_jsonable(value: Any) -> str:
     return sha256_jsonable(_json_clone(value))
 
 
+def observation_value_summary(value: Any) -> dict[str, Any]:
+    out: dict[str, Any] = {"type": type(value).__name__}
+    try:
+        arr = np.asarray(value)
+        if arr.dtype != object:
+            out.update(
+                {
+                    "shape": "x".join(map(str, arr.shape)),
+                    "dtype": str(arr.dtype),
+                    "sha256": hash_array(arr),
+                }
+            )
+            return out
+    except Exception:
+        pass
+    try:
+        out["sha256"] = hash_jsonable(value)
+    except Exception as exc:
+        out["sha256"] = f"UNHASHABLE:{type(exc).__name__}"
+    return out
+
+
+def compare_observation_values(a: Any, b: Any) -> dict[str, Any]:
+    left = observation_value_summary(a)
+    right = observation_value_summary(b)
+    row: dict[str, Any] = {
+        "left_type": left.get("type", ""),
+        "right_type": right.get("type", ""),
+        "left_shape": left.get("shape", ""),
+        "right_shape": right.get("shape", ""),
+        "left_dtype": left.get("dtype", ""),
+        "right_dtype": right.get("dtype", ""),
+        "left_sha256": left.get("sha256", ""),
+        "right_sha256": right.get("sha256", ""),
+        "sha_match": left.get("sha256") == right.get("sha256"),
+        "max_abs_diff": "",
+        "mean_abs_diff": "",
+        "nonzero_diff_count": "",
+        "first_diff_index": "",
+    }
+    try:
+        aa = np.asarray(a)
+        bb = np.asarray(b)
+        if aa.shape == bb.shape and aa.dtype != object and bb.dtype != object:
+            diff = np.abs(aa.astype(np.float64) - bb.astype(np.float64))
+            nz = np.argwhere(diff != 0)
+            row["max_abs_diff"] = float(diff.max()) if diff.size else 0.0
+            row["mean_abs_diff"] = float(diff.mean()) if diff.size else 0.0
+            row["nonzero_diff_count"] = int(nz.shape[0])
+            row["first_diff_index"] = nz[0].tolist() if nz.size else ""
+    except Exception:
+        pass
+    return row
+
+
+def observation_diff_rows(left: Mapping[str, Any], right: Mapping[str, Any]) -> list[dict[str, Any]]:
+    keys = sorted(set(left) | set(right))
+    rows: list[dict[str, Any]] = []
+    for key in keys:
+        row = {"key": key, "left_present": key in left, "right_present": key in right}
+        if key in left and key in right:
+            row.update(compare_observation_values(left[key], right[key]))
+        rows.append(row)
+    return rows
+
+
+def write_agentview_diff_artifacts(output_dir: Path, *, prefix: Mapping[str, Any], restored: Mapping[str, Any], label: str) -> dict[str, Any]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if "agentview_image" not in prefix or "agentview_image" not in restored:
+        return {"label": label, "agentview_available": False}
+    a = np.asarray(prefix["agentview_image"])
+    b = np.asarray(restored["agentview_image"])
+    summary: dict[str, Any] = {
+        "label": label,
+        "agentview_available": True,
+        "prefix_shape": list(a.shape),
+        "restored_shape": list(b.shape),
+        "prefix_sha256": hash_array(a),
+        "restored_sha256": hash_array(b),
+        "shape_match": a.shape == b.shape,
+    }
+    try:
+        from PIL import Image
+
+        Image.fromarray(np.clip(a, 0, 255).astype(np.uint8)).save(output_dir / f"{label}_prefix_agentview.png")
+        Image.fromarray(np.clip(b, 0, 255).astype(np.uint8)).save(output_dir / f"{label}_restored_agentview.png")
+        if a.shape == b.shape:
+            diff = np.abs(a.astype(np.int16) - b.astype(np.int16)).astype(np.uint8)
+            Image.fromarray(diff).save(output_dir / f"{label}_agentview_absdiff.png")
+            summary.update(
+                {
+                    "pixel_diff_count": int(np.count_nonzero(diff)),
+                    "pixel_max_abs_diff": int(diff.max()) if diff.size else 0,
+                    "pixel_mean_abs_diff": float(diff.mean()) if diff.size else 0.0,
+                }
+            )
+    except Exception as exc:
+        summary["png_write_error"] = f"{type(exc).__name__}:{exc}"
+    return summary
+
+
 def write_json(path: Path, obj: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(obj, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
@@ -696,7 +797,10 @@ def get_observation_after_restore(env: Any, snapshot: ExactRestoreSnapshotPayloa
         raise ExactRestoreError("env adapter missing get_observation_after_restore")
     obs_hash = hash_jsonable(obs)
     if obs_hash != snapshot.prefix.observation_sha256:
-        raise ExactRestoreError("restored observation hash does not match prefix")
+        raise ExactRestoreError(
+            "restored observation hash does not match prefix: "
+            f"expected={snapshot.prefix.observation_sha256} actual={obs_hash}"
+        )
     return _json_clone(obs)
 
 
@@ -999,6 +1103,47 @@ class RealOpenVLAPolicyAdapter:
         if kwargs.get("do_sample", False):
             raise ExactRestoreError("policy RNG restore rejected nondeterministic generation kwargs")
 
+    def policy_input_fingerprint(self, obs: Any) -> dict[str, Any]:
+        if not isinstance(obs, Mapping) or "agentview_image" not in obs:
+            raise ExactRestoreError("observation missing agentview_image")
+        from gripper_attack.openvla_preprocess import prepare_openvla_image
+        import torch
+
+        raw = np.asarray(obs["agentview_image"]).copy()
+        proc_image = prepare_openvla_image(
+            raw,
+            libero_official_preprocess=REAL_PREPROCESS_KWARGS["libero_official_preprocess"],
+            center_crop=REAL_PREPROCESS_KWARGS["center_crop"],
+            resize_size=REAL_PREPROCESS_KWARGS["resize_size"],
+            libero_preprocess_backend=REAL_PREPROCESS_KWARGS["libero_preprocess_backend"],
+        )
+        inputs = self.processor(openvla_prompt(self.instruction.lower()), proc_image, return_tensors="pt")
+        if REAL_PREPROCESS_KWARGS["drop_attention_mask"]:
+            inputs.pop("attention_mask", None)
+        input_ids = inputs.get("input_ids")
+        if input_ids is not None and not torch.all(input_ids[:, -1] == 29871):
+            inputs["input_ids"] = torch.cat(
+                (input_ids, torch.unsqueeze(torch.tensor([29871]).long(), dim=0)),
+                dim=1,
+            )
+        pixel_values = inputs.get("pixel_values")
+        out: dict[str, Any] = {
+            "raw_agentview_sha256": hash_array(raw),
+            "raw_agentview_shape": list(raw.shape),
+            "raw_agentview_dtype": str(raw.dtype),
+            "prepared_image_sha256": hash_array(np.asarray(proc_image)),
+            "prepared_image_shape": list(np.asarray(proc_image).shape),
+            "prompt": openvla_prompt(self.instruction.lower()),
+        }
+        if input_ids is not None:
+            out["input_ids_sha256"] = hash_array(input_ids.detach().cpu().numpy())
+            out["input_ids_shape"] = list(input_ids.shape)
+        if pixel_values is not None:
+            out["pixel_values_sha256"] = hash_array(pixel_values.detach().cpu().numpy())
+            out["pixel_values_shape"] = list(pixel_values.shape)
+            out["pixel_values_dtype"] = str(pixel_values.dtype)
+        return out
+
     def act(self, obs: Any) -> tuple[Sequence[float], Sequence[int]]:
         if not isinstance(obs, Mapping) or "agentview_image" not in obs:
             raise ExactRestoreError("observation missing agentview_image")
@@ -1062,7 +1207,13 @@ class RealLiberoEnvAdapter:
 
     def get_internal_state(self) -> dict[str, Any]:
         inner = getattr(self.env, "env", self.env)
-        state: dict[str, Any] = {"sim_flat_state_sha256": hash_array(self.env.get_sim_state())}
+        sim_flat = np.asarray(self.env.get_sim_state()).copy()
+        state: dict[str, Any] = {
+            "sim_flat_state_sha256": hash_array(sim_flat),
+            "sim_flat_state_shape": list(sim_flat.shape),
+            "sim_flat_state_dtype": str(sim_flat.dtype),
+            "sim_flat_state_values": sim_flat.tolist(),
+        }
         for name in ("timestep", "_timestep", "cur_time", "_elapsed_steps", "done"):
             if hasattr(inner, name):
                 value = getattr(inner, name)
@@ -1073,7 +1224,7 @@ class RealLiberoEnvAdapter:
     def set_internal_state(self, state: Mapping[str, Any]) -> None:
         inner = getattr(self.env, "env", self.env)
         for name, value in state.items():
-            if name == "sim_flat_state_sha256":
+            if name in {"sim_flat_state_sha256", "sim_flat_state_shape", "sim_flat_state_dtype", "sim_flat_state_values"}:
                 continue
             if hasattr(inner, name):
                 setattr(inner, name, copy.deepcopy(value))
@@ -1439,6 +1590,138 @@ def build_parent_manifest_for_candidate(
     )
 
 
+def compare_policy_input_fingerprints(left: Mapping[str, Any], right: Mapping[str, Any]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for key in sorted(set(left) | set(right)):
+        rows.append(
+            {
+                "key": key,
+                "left": left.get(key, ""),
+                "right": right.get(key, ""),
+                "match": left.get(key) == right.get(key),
+            }
+        )
+    return rows
+
+
+def run_single_observation_diff(
+    *,
+    output_dir: Path,
+    label: str,
+    prefix_obs: Mapping[str, Any],
+    candidate_obs: Mapping[str, Any],
+    policy: RealOpenVLAPolicyAdapter,
+) -> dict[str, Any]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    obs_rows = observation_diff_rows(prefix_obs, candidate_obs)
+    write_dict_csv(output_dir / f"{label}_observation_field_diff.csv", obs_rows)
+    image_summary = write_agentview_diff_artifacts(output_dir, prefix=prefix_obs, restored=candidate_obs, label=label)
+    prefix_policy = policy.policy_input_fingerprint(prefix_obs)
+    candidate_policy = policy.policy_input_fingerprint(candidate_obs)
+    policy_rows = compare_policy_input_fingerprints(prefix_policy, candidate_policy)
+    write_dict_csv(output_dir / f"{label}_policy_input_diff.csv", policy_rows)
+    summary = {
+        "label": label,
+        "prefix_observation_sha256": hash_jsonable(prefix_obs),
+        "candidate_observation_sha256": hash_jsonable(candidate_obs),
+        "observation_hash_match": hash_jsonable(prefix_obs) == hash_jsonable(candidate_obs),
+        "field_mismatch_count": sum(1 for r in obs_rows if not r.get("sha_match", False)),
+        "policy_input_mismatch_count": sum(1 for r in policy_rows if not r.get("match", False)),
+        "image": image_summary,
+    }
+    write_json(output_dir / f"{label}_summary.json", summary)
+    return summary
+
+
+def run_observation_reconstruction_audit(
+    *,
+    args: argparse.Namespace,
+    selected: Mapping[str, Any],
+    output_dir: Path,
+) -> dict[str, Any]:
+    output_dir.mkdir(parents=True, exist_ok=False)
+    snapshot: ExactRestoreSnapshotPayload = selected["snapshot"]
+    prefix_obs = _json_clone(snapshot.observation)
+    env_adapter: RealLiberoEnvAdapter = selected["env_adapter"]
+    policy: RealOpenVLAPolicyAdapter = selected["policy"]
+    student: RealSC5StudentAdapter = selected["student"]
+    summaries: list[dict[str, Any]] = []
+
+    sim_before_o1 = hash_array(env_adapter.env.get_sim_state())
+    same_env_obs = env_adapter.get_observation_after_restore()
+    sim_after_o1 = hash_array(env_adapter.env.get_sim_state())
+    o1 = run_single_observation_diff(
+        output_dir=output_dir,
+        label="O1_same_env_recapture_no_restore",
+        prefix_obs=prefix_obs,
+        candidate_obs=same_env_obs,
+        policy=policy,
+    )
+    o1["sim_state_before_sha256"] = sim_before_o1
+    o1["sim_state_after_sha256"] = sim_after_o1
+    o1["sim_state_changed_by_recapture"] = sim_before_o1 != sim_after_o1
+    write_json(output_dir / "O1_same_env_recapture_no_restore_summary.json", o1)
+    summaries.append(o1)
+
+    # O2: perturb the current env by one clean step, then restore snapshot in the same env.
+    try:
+        env_adapter.step(snapshot.clean_action_t)
+    except Exception as exc:
+        write_json(output_dir / "O2_same_env_restore_error.json", {"stage": "perturb_step", "error": f"{type(exc).__name__}:{exc}"})
+    restore_snapshot(env_adapter, student, snapshot, policy)
+    same_env_restored_obs = env_adapter.get_observation_after_restore()
+    o2 = run_single_observation_diff(
+        output_dir=output_dir,
+        label="O2_same_env_restore",
+        prefix_obs=prefix_obs,
+        candidate_obs=same_env_restored_obs,
+        policy=policy,
+    )
+    o2["restored_flat_sim_state_sha256"] = hash_array(env_adapter.env.get_sim_state())
+    o2["prefix_flat_sim_state_sha256"] = selected.get("prefix_flat_sim_state_sha256", "")
+    summaries.append(o2)
+
+    # The fresh-env path loads a second OpenVLA instance. Release the prefix
+    # scan model before O3 so the audit does not fail from avoidable GPU OOM.
+    try:
+        env_adapter.close()
+    except Exception:
+        pass
+    release_real_policy(policy)
+    selected["policy"] = None
+    selected["student"] = None
+    selected["env_adapter"] = None
+
+    # O3: fresh env restore, matching the formal path.
+    fresh_env, fresh_policy, fresh_student = new_env_policy_student_for_snapshot(args, selected)
+    restore_snapshot(fresh_env, fresh_student, snapshot, fresh_policy)
+    fresh_obs = fresh_env.get_observation_after_restore()
+    o3 = run_single_observation_diff(
+        output_dir=output_dir,
+        label="O3_fresh_env_restore",
+        prefix_obs=prefix_obs,
+        candidate_obs=fresh_obs,
+        policy=fresh_policy,
+    )
+    o3["restored_flat_sim_state_sha256"] = hash_array(fresh_env.env.get_sim_state())
+    summaries.append(o3)
+    fresh_env.close()
+    release_real_policy(fresh_policy)
+
+    summary = {
+        "stage": "OBSERVATION_RECONSTRUCTION_AUDIT_O1_O2_O3",
+        "suite": snapshot.parent_manifest.suite,
+        "task_idx": snapshot.parent_manifest.task_idx,
+        "state_id": snapshot.parent_manifest.state_id,
+        "emit_step": snapshot.prefix.emit_step,
+        "summaries": summaries,
+        "all_observation_hash_match": all(s.get("observation_hash_match") for s in summaries),
+        "all_policy_inputs_match": all(s.get("policy_input_mismatch_count") == 0 for s in summaries),
+    }
+    write_json(output_dir / "observation_reconstruction_audit_summary.json", summary)
+    return summary
+
+
 def find_emit_snapshot_for_candidate(
     *,
     args: argparse.Namespace,
@@ -1527,6 +1810,7 @@ def find_emit_snapshot_for_candidate(
                     "instruction": instruction,
                     "bddl": bddl,
                     "first_valid_step": first_valid_step,
+                    "prefix_flat_sim_state_sha256": hash_array(env.get_sim_state()),
                 }
                 break
             obs, _reward, done, _info = env_adapter.step(action)
@@ -1704,6 +1988,36 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
         write_json(out / "single_parent_restore_qualification_summary.json", {"result": "NO_ELIGIBLE_GOAL_RESTORE_PARENT"})
         raise ExactRestoreError("NO_ELIGIBLE_GOAL_RESTORE_PARENT")
     write_candidate_manifest(out / "candidate_manifest.csv", candidate_rows)
+    if args.observation_audit_only:
+        audit_summary = run_observation_reconstruction_audit(
+            args=args,
+            selected=selected,
+            output_dir=out / "observation_reconstruction_audit",
+        )
+        write_json(
+            out / "single_parent_restore_qualification_summary.json",
+            {
+                "result": "OBSERVATION_RECONSTRUCTION_AUDIT_ONLY",
+                "selected_candidate": candidates[selected_idx],
+                "audit_summary": audit_summary,
+            },
+        )
+        try:
+            selected["env_adapter"].close()
+        except Exception:
+            pass
+        release_real_policy(selected.get("policy"))
+        seal = write_recursive_manifest(out)
+        write_json(
+            out / "single_parent_restore_qualification_summary.json",
+            {
+                "result": "OBSERVATION_RECONSTRUCTION_AUDIT_ONLY",
+                "selected_candidate": candidates[selected_idx],
+                "audit_summary": audit_summary,
+                "recursive_sha256_manifest_sha256": seal,
+            },
+        )
+        return
     summaries = []
     try:
         first_summary = run_selected_parent_attempt(args, selected, out / "attempt_00", 0)
@@ -1770,6 +2084,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--state-end", type=int, default=23)
     ap.add_argument("--task-count", type=int, default=10)
     ap.add_argument("--candidate-manifest", default="")
+    ap.add_argument("--observation-audit-only", action="store_true")
     ap.add_argument("--max-steps", type=int, default=400)
     ap.add_argument("--repetitions", type=int, default=3)
     return ap.parse_args()
