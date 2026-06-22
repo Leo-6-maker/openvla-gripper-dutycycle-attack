@@ -1,0 +1,4 @@
+split_name,ledger_kind,expected_count,selected_count,status,duplicate_count,rejected_count
+train300_train_s10_17,train300,240,240,PASS,0,0
+train300_val_s18_19,train300,60,60,PASS,0,0
+clean300_test_s0_9,clean300,300,300,PASS,0,0

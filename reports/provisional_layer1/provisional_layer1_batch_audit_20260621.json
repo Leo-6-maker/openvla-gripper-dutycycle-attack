@@ -1,0 +1,213 @@
+{
+  "audit_type": "provisional_layer1_full_batch_v1",
+  "clean300_ledger": "/data/liuyu/audit_outputs/cross_suite_clean_300_final_deep_integrity_20260619_202447/tables/cross_suite_clean_300_master_ledger.csv",
+  "component_manifest": {
+    "components": {
+      "ontology": {
+        "accepted_by": "git_blob_sha256",
+        "expected_git_blob_sha256": "70f4c03860d617b5fc64e61dbe9e287dae67c1178e57634d5be9d4d2bde99462",
+        "expected_handoff_worktree_sha256": "89bd296b15525c48a4fbd3be84eb4a8c0b269ca11170cfe901b449cc1bb77359",
+        "git_blob_sha256": "70f4c03860d617b5fc64e61dbe9e287dae67c1178e57634d5be9d4d2bde99462",
+        "line_ending_note": "handoff SHA came from the Windows working tree for some text files; git_blob_sha256 is the cross-platform content identity",
+        "path": "configs/cross_suite_task_ontology_v1.yaml",
+        "worktree_sha256": "70f4c03860d617b5fc64e61dbe9e287dae67c1178e57634d5be9d4d2bde99462"
+      },
+      "physics_config": {
+        "accepted_by": "handoff_worktree_sha256",
+        "expected_git_blob_sha256": "1f5e0dbeb0e227d2c6708a310ef171863c216bf84a5cddda62af992766700059",
+        "expected_handoff_worktree_sha256": "1f5e0dbeb0e227d2c6708a310ef171863c216bf84a5cddda62af992766700059",
+        "git_blob_sha256": "1f5e0dbeb0e227d2c6708a310ef171863c216bf84a5cddda62af992766700059",
+        "line_ending_note": "handoff SHA came from the Windows working tree for some text files; git_blob_sha256 is the cross-platform content identity",
+        "path": "configs/cross_suite_teacher_physics_v1.yaml",
+        "worktree_sha256": "1f5e0dbeb0e227d2c6708a310ef171863c216bf84a5cddda62af992766700059"
+      },
+      "teacher_schema": {
+        "accepted_by": "git_blob_sha256",
+        "expected_git_blob_sha256": "c5324d46e50b4a84ba23415c55e75c07ef09acbe0bdd8ae2a15f4f425a480a6e",
+        "expected_handoff_worktree_sha256": "ac2ffb8b064a502f8b5cab7b0c4183914701c7bf21443dd01189e023403ebca8",
+        "git_blob_sha256": "c5324d46e50b4a84ba23415c55e75c07ef09acbe0bdd8ae2a15f4f425a480a6e",
+        "line_ending_note": "handoff SHA came from the Windows working tree for some text files; git_blob_sha256 is the cross-platform content identity",
+        "path": "docs/schemas/cross_suite_teacher_label_schema_v1.md",
+        "worktree_sha256": "c5324d46e50b4a84ba23415c55e75c07ef09acbe0bdd8ae2a15f4f425a480a6e"
+      },
+      "timing_contract": {
+        "accepted_by": "handoff_worktree_sha256",
+        "expected_git_blob_sha256": "18b21f9e032fdba410e291f67edba60e649b2c6c4ae3d2f33df08a7c31f6ef60",
+        "expected_handoff_worktree_sha256": "18b21f9e032fdba410e291f67edba60e649b2c6c4ae3d2f33df08a7c31f6ef60",
+        "git_blob_sha256": "18b21f9e032fdba410e291f67edba60e649b2c6c4ae3d2f33df08a7c31f6ef60",
+        "line_ending_note": "handoff SHA came from the Windows working tree for some text files; git_blob_sha256 is the cross-platform content identity",
+        "path": "reports/layer1_h2_20260620/timing_alignment_contract_20260620.md",
+        "worktree_sha256": "18b21f9e032fdba410e291f67edba60e649b2c6c4ae3d2f33df08a7c31f6ef60"
+      }
+    },
+    "mismatches": {},
+    "status": "PASS"
+  },
+  "git_commit": "d1321845131e71e1a30315e48bbc67155f602230",
+  "git_dirty_status": "",
+  "human_review_status": "DEFERRED_NONBLOCKING_FOR_ENGINEERING",
+  "manifest_summaries": [
+    {
+      "duplicate_count": 0,
+      "expected_count": 240,
+      "ledger_kind": "train300",
+      "rejected_count": 0,
+      "selected_count": 240,
+      "split_name": "train300_train_s10_17",
+      "status": "PASS"
+    },
+    {
+      "duplicate_count": 0,
+      "expected_count": 60,
+      "ledger_kind": "train300",
+      "rejected_count": 0,
+      "selected_count": 60,
+      "split_name": "train300_val_s18_19",
+      "status": "PASS"
+    },
+    {
+      "duplicate_count": 0,
+      "expected_count": 300,
+      "ledger_kind": "clean300",
+      "rejected_count": 0,
+      "selected_count": 300,
+      "split_name": "clean300_test_s0_9",
+      "status": "PASS"
+    }
+  ],
+  "official_h2_status": "NOT_GRANTED",
+  "paper_claims": "FORBIDDEN",
+  "provisional_engineering_only": true,
+  "resolver_summaries": {
+    "clean300_test_s0_9": {
+      "labels": {
+        "eligible_event_count": 131,
+        "episode_count": 300,
+        "event_count": 131,
+        "ignore_mask_status_count": 110,
+        "mechanism_counts": {
+          "articulated_only": 20,
+          "mixed_articulated_pick_place": 40,
+          "multi_object_transfer": 60,
+          "push_or_planar": 10,
+          "single_object_pick_place": 170
+        },
+        "suite_counts": {
+          "libero_10": 100,
+          "libero_goal": 100,
+          "libero_spatial": 100
+        },
+        "teacher_status_counts": {
+          "CORRECT_SEMANTIC_ABSTAIN": 30,
+          "ELIGIBLE_EVENT": 131,
+          "NO_RELEVANT_GRASP_EVENT": 29,
+          "RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM": 100,
+          "TARGET_BINDING_AMBIGUOUS": 10
+        }
+      },
+      "sidecar": {
+        "claim_boundary": {
+          "detector_telemetry": "NOT_READ",
+          "full_clean300_batch": "NOT_RUN",
+          "gpu_libero_vis_rand_attack": "NOT_RUN",
+          "manual_review": "NOT_COMPLETE"
+        },
+        "episode_count": 300,
+        "event_count": 131,
+        "failure_count": 0,
+        "failures": [],
+        "manifest": "/data/liuyu/layer1_outputs/provisional_layer1_6eb8863_20260621_r2/manifests/clean300_test_s0_9_manifest.json",
+        "teacher_run_id": "provisional_layer1_6eb8863_20260621_clean300_test_s0_9",
+        "validation_error_count": 0,
+        "validation_errors": []
+      }
+    },
+    "train300_train_s10_17": {
+      "labels": {
+        "eligible_event_count": 105,
+        "episode_count": 240,
+        "event_count": 105,
+        "ignore_mask_status_count": 88,
+        "mechanism_counts": {
+          "articulated_only": 16,
+          "mixed_articulated_pick_place": 32,
+          "multi_object_transfer": 48,
+          "push_or_planar": 8,
+          "single_object_pick_place": 136
+        },
+        "suite_counts": {
+          "libero_10": 80,
+          "libero_goal": 80,
+          "libero_spatial": 80
+        },
+        "teacher_status_counts": {
+          "CORRECT_SEMANTIC_ABSTAIN": 24,
+          "ELIGIBLE_EVENT": 105,
+          "NO_RELEVANT_GRASP_EVENT": 23,
+          "RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM": 80,
+          "TARGET_BINDING_AMBIGUOUS": 8
+        }
+      },
+      "sidecar": {
+        "claim_boundary": {
+          "detector_telemetry": "NOT_READ",
+          "full_clean300_batch": "NOT_RUN",
+          "gpu_libero_vis_rand_attack": "NOT_RUN",
+          "manual_review": "NOT_COMPLETE"
+        },
+        "episode_count": 240,
+        "event_count": 105,
+        "failure_count": 0,
+        "failures": [],
+        "manifest": "/data/liuyu/layer1_outputs/provisional_layer1_6eb8863_20260621_r2/manifests/train300_train_s10_17_manifest.json",
+        "teacher_run_id": "provisional_layer1_6eb8863_20260621_train300_train_s10_17",
+        "validation_error_count": 0,
+        "validation_errors": []
+      }
+    },
+    "train300_val_s18_19": {
+      "labels": {
+        "eligible_event_count": 27,
+        "episode_count": 60,
+        "event_count": 27,
+        "ignore_mask_status_count": 22,
+        "mechanism_counts": {
+          "articulated_only": 4,
+          "mixed_articulated_pick_place": 8,
+          "multi_object_transfer": 12,
+          "push_or_planar": 2,
+          "single_object_pick_place": 34
+        },
+        "suite_counts": {
+          "libero_10": 20,
+          "libero_goal": 20,
+          "libero_spatial": 20
+        },
+        "teacher_status_counts": {
+          "CORRECT_SEMANTIC_ABSTAIN": 6,
+          "ELIGIBLE_EVENT": 27,
+          "NO_RELEVANT_GRASP_EVENT": 5,
+          "RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM": 20,
+          "TARGET_BINDING_AMBIGUOUS": 2
+        }
+      },
+      "sidecar": {
+        "claim_boundary": {
+          "detector_telemetry": "NOT_READ",
+          "full_clean300_batch": "NOT_RUN",
+          "gpu_libero_vis_rand_attack": "NOT_RUN",
+          "manual_review": "NOT_COMPLETE"
+        },
+        "episode_count": 60,
+        "event_count": 27,
+        "failure_count": 0,
+        "failures": [],
+        "manifest": "/data/liuyu/layer1_outputs/provisional_layer1_6eb8863_20260621_r2/manifests/train300_val_s18_19_manifest.json",
+        "teacher_run_id": "provisional_layer1_6eb8863_20260621_train300_val_s18_19",
+        "validation_error_count": 0,
+        "validation_errors": []
+      }
+    }
+  },
+  "train_ledger": "tables/train300_20260620/final_primary_ledger.csv"
+}
