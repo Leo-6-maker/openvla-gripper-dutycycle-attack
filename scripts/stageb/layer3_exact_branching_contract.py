@@ -99,6 +99,9 @@ class BranchRunRecord:
     trigger_step: int
     first_env_step: int
     snapshot_boundary: str = "PRE_ACTION_OBS_T_AFTER_STUDENT_EMIT_BEFORE_ENV_STEP_T"
+    branch_input_source: str = "RECAPTURED_ENV_OBSERVATION"
+    branch_policy_input_sha256: str = ""
+    diagnostic_recaptured_observation_sha256: str = ""
 
     def __post_init__(self) -> None:
         if self.condition not in LAYER3_BRANCH_CONDITIONS:
@@ -216,6 +219,13 @@ def validate_branch_records(
             raise Layer3BranchingContractError(f"{rec.condition} trigger_step does not match emit_step")
         if int(rec.first_env_step) != int(snapshot.emit_step):
             raise Layer3BranchingContractError(f"{rec.condition} first_env_step does not match emit_step")
+        if rec.branch_input_source == "CAPTURED_PREFIX_OBSERVATION":
+            if rec.branch_policy_input_sha256 != snapshot.observation_sha256:
+                raise Layer3BranchingContractError(f"{rec.condition} branch policy input hash mismatch")
+            if rec.restored_observation_sha256 != snapshot.observation_sha256:
+                raise Layer3BranchingContractError(
+                    f"{rec.condition} restored_observation_sha256 must record captured prefix input"
+                )
         seen[rec.condition] = rec
 
     invalid_required = [name for name in required_conditions if name not in LAYER3_BRANCH_CONDITIONS]

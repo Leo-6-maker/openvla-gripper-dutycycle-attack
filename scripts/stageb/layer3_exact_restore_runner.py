@@ -196,6 +196,39 @@ def hash_jsonable(value: Any) -> str:
     return sha256_jsonable(_json_clone(value))
 
 
+def typed_value_manifest(value: Any) -> Any:
+    if isinstance(value, np.ndarray):
+        return {
+            "__ndarray__": True,
+            "shape": list(value.shape),
+            "dtype": str(value.dtype),
+            "sha256": hash_array(value),
+        }
+    if isinstance(value, Mapping):
+        return {str(k): typed_value_manifest(v) for k, v in sorted(value.items(), key=lambda item: str(item[0]))}
+    if isinstance(value, tuple):
+        return {"__tuple__": [typed_value_manifest(v) for v in value]}
+    if isinstance(value, list):
+        return [typed_value_manifest(v) for v in value]
+    return _json_clone(value)
+
+
+def hash_typed_observation(value: Any) -> str:
+    return sha256_jsonable(typed_value_manifest(value))
+
+
+def clone_typed_observation(value: Any) -> Any:
+    if isinstance(value, np.ndarray):
+        return value.copy()
+    if isinstance(value, Mapping):
+        return {k: clone_typed_observation(v) for k, v in value.items()}
+    if isinstance(value, tuple):
+        return tuple(clone_typed_observation(v) for v in value)
+    if isinstance(value, list):
+        return [clone_typed_observation(v) for v in value]
+    return copy.deepcopy(value)
+
+
 def observation_value_summary(value: Any) -> dict[str, Any]:
     out: dict[str, Any] = {"type": type(value).__name__}
     try:
@@ -605,7 +638,7 @@ class ExactRestoreSnapshotPayload:
             raise ExactRestoreError("payload student_state hash does not match prefix")
         if self.prefix.feature_history_sha256 != hash_jsonable(self.feature_history):
             raise ExactRestoreError("payload feature_history hash does not match prefix")
-        if self.prefix.observation_sha256 != hash_jsonable(self.observation):
+        if self.prefix.observation_sha256 != hash_typed_observation(self.observation):
             raise ExactRestoreError("payload observation hash does not match prefix")
         if len(list(self.clean_action_t)) != 7 or not all(math.isfinite(float(x)) for x in self.clean_action_t):
             raise ExactRestoreError("clean_action_t must be exact finite 7D")
@@ -623,7 +656,7 @@ class ExactRestoreSnapshotPayload:
                 "policy_rng_state_sha256": hash_jsonable(self.policy_rng_state),
                 "student_state_sha256": hash_jsonable(self.student_state),
                 "feature_history_sha256": hash_jsonable(self.feature_history),
-                "observation_sha256": hash_jsonable(self.observation),
+                "observation_sha256": hash_typed_observation(self.observation),
                 "clean_action_t": list(self.clean_action_t),
                 "clean_tokens_t": list(self.clean_tokens_t),
             }
@@ -765,7 +798,7 @@ def build_prefix_snapshot(
         state_id=parent.state_id,
         eval_seed=parent.eval_seed,
         emit_step=int(emit_step),
-        observation_sha256=hash_jsonable(observation),
+        observation_sha256=hash_typed_observation(observation),
         sim_state_sha256=hash_jsonable(mujoco_state),
         policy_rng_sha256=hash_jsonable(policy_rng_state),
         detector_state_sha256=hash_jsonable(student_state),
@@ -795,13 +828,13 @@ def get_observation_after_restore(env: Any, snapshot: ExactRestoreSnapshotPayloa
         obs = env.get_observation()
     else:
         raise ExactRestoreError("env adapter missing get_observation_after_restore")
-    obs_hash = hash_jsonable(obs)
+    obs_hash = hash_typed_observation(obs)
     if obs_hash != snapshot.prefix.observation_sha256:
         raise ExactRestoreError(
             "restored observation hash does not match prefix: "
             f"expected={snapshot.prefix.observation_sha256} actual={obs_hash}"
         )
-    return _json_clone(obs)
+    return clone_typed_observation(obs)
 
 
 def restore_snapshot_and_recapture_observation(
@@ -834,12 +867,47 @@ def recapture_branch_record(
         prefix_snapshot_sha256=snapshot.prefix.snapshot_sha256,
         branch_source="EXACT_PREFIX_RESTORE",
         restored_sim_state_sha256=hash_jsonable(actual_mujoco),
-        restored_observation_sha256=hash_jsonable(actual_observation),
+        restored_observation_sha256=hash_typed_observation(actual_observation),
         restored_policy_rng_sha256=hash_jsonable(actual_policy_rng),
         restored_detector_state_sha256=hash_jsonable(actual_student),
         restored_feature_history_sha256=hash_jsonable(actual_history),
         trigger_step=snapshot.prefix.emit_step,
         first_env_step=snapshot.prefix.emit_step,
+    )
+
+
+def captured_prefix_branch_record(
+    *,
+    condition: str,
+    snapshot: ExactRestoreSnapshotPayload,
+    env: Any,
+    student: Any,
+    policy: Any | None,
+) -> BranchRunRecord:
+    actual_mujoco = capture_mujoco_state(env)
+    actual_policy_rng = capture_policy_rng_state(policy)
+    actual_student = capture_student_state(student, strict=True)
+    actual_history = capture_feature_history(student, strict=True)
+    diagnostic_obs_sha = ""
+    if hasattr(env, "get_observation_after_restore"):
+        try:
+            diagnostic_obs_sha = hash_typed_observation(env.get_observation_after_restore())
+        except Exception as exc:
+            diagnostic_obs_sha = f"DIAGNOSTIC_RECAPTURE_FAILED:{type(exc).__name__}"
+    return BranchRunRecord(
+        condition=condition,
+        prefix_snapshot_sha256=snapshot.prefix.snapshot_sha256,
+        branch_source="EXACT_PREFIX_RESTORE",
+        restored_sim_state_sha256=hash_jsonable(actual_mujoco),
+        restored_observation_sha256=snapshot.prefix.observation_sha256,
+        restored_policy_rng_sha256=hash_jsonable(actual_policy_rng),
+        restored_detector_state_sha256=hash_jsonable(actual_student),
+        restored_feature_history_sha256=hash_jsonable(actual_history),
+        trigger_step=snapshot.prefix.emit_step,
+        first_env_step=snapshot.prefix.emit_step,
+        branch_input_source="CAPTURED_PREFIX_OBSERVATION",
+        branch_policy_input_sha256=snapshot.prefix.observation_sha256,
+        diagnostic_recaptured_observation_sha256=diagnostic_obs_sha,
     )
 
 
@@ -858,7 +926,7 @@ def observe_step(
 ) -> StepObservation:
     return StepObservation(
         step=int(step),
-        observation_sha256=hash_jsonable(obs),
+        observation_sha256=hash_typed_observation(obs),
         proprio_sha256=hash_jsonable(obs.get("proprio", {}) if isinstance(obs, Mapping) else {}),
         action_sha256=hash_jsonable(list(action)),
         token_sha256=hash_jsonable(list(tokens)),
@@ -1604,6 +1672,65 @@ def compare_policy_input_fingerprints(left: Mapping[str, Any], right: Mapping[st
     return rows
 
 
+def save_typed_prefix_observation_artifacts(
+    output_dir: Path,
+    *,
+    snapshot: ExactRestoreSnapshotPayload,
+    policy: Any | None = None,
+) -> dict[str, Any]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    obs = clone_typed_observation(snapshot.observation)
+    manifest: dict[str, Any] = {
+        "branch_input_source": "CAPTURED_PREFIX_OBSERVATION",
+        "captured_prefix_observation_sha256": hash_typed_observation(obs),
+        "prefix_snapshot_observation_sha256": snapshot.prefix.observation_sha256,
+        "typed_observation_manifest": typed_value_manifest(obs),
+    }
+    if manifest["captured_prefix_observation_sha256"] != snapshot.prefix.observation_sha256:
+        raise ExactRestoreError("typed prefix observation hash does not match snapshot")
+    if isinstance(obs, Mapping) and "agentview_image" in obs:
+        agent = np.asarray(obs["agentview_image"])
+        npy_path = output_dir / "prefix_agentview.npy"
+        np.save(npy_path, agent)
+        loaded = np.load(npy_path, allow_pickle=False)
+        if loaded.shape != agent.shape or loaded.dtype != agent.dtype or hash_array(loaded) != hash_array(agent):
+            raise ExactRestoreError("prefix agentview npy round-trip mismatch")
+        manifest.update(
+            {
+                "prefix_agentview_npy": npy_path.name,
+                "prefix_agentview_shape": list(agent.shape),
+                "prefix_agentview_dtype": str(agent.dtype),
+                "prefix_agentview_sha256": hash_array(agent),
+                "prefix_agentview_roundtrip_sha256": hash_array(loaded),
+                "prefix_agentview_roundtrip_exact": True,
+            }
+        )
+        try:
+            from PIL import Image
+
+            Image.fromarray(np.clip(agent, 0, 255).astype(np.uint8)).save(output_dir / "prefix_agentview.png")
+            manifest["prefix_agentview_png"] = "prefix_agentview.png"
+        except Exception as exc:
+            manifest["prefix_agentview_png_error"] = f"{type(exc).__name__}:{exc}"
+    npz_arrays: dict[str, np.ndarray] = {}
+    if isinstance(obs, Mapping):
+        for key, value in obs.items():
+            if isinstance(value, np.ndarray):
+                safe_key = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in str(key))
+                npz_arrays[safe_key] = value
+    if npz_arrays:
+        np.savez_compressed(output_dir / "prefix_observation_diagnostic.npz", **npz_arrays)
+        manifest["prefix_observation_diagnostic_npz"] = "prefix_observation_diagnostic.npz"
+        manifest["prefix_observation_diagnostic_keys"] = sorted(npz_arrays)
+    if policy is not None and hasattr(policy, "policy_input_fingerprint"):
+        policy_fp = policy.policy_input_fingerprint(obs)
+        write_json(output_dir / "prefix_policy_input_manifest.json", policy_fp)
+        manifest["captured_policy_input_sha256"] = hash_jsonable(policy_fp)
+        manifest["prefix_policy_input_manifest"] = "prefix_policy_input_manifest.json"
+    write_json(output_dir / "prefix_typed_observation_manifest.json", manifest)
+    return manifest
+
+
 def run_single_observation_diff(
     *,
     output_dir: Path,
@@ -1622,9 +1749,9 @@ def run_single_observation_diff(
     write_dict_csv(output_dir / f"{label}_policy_input_diff.csv", policy_rows)
     summary = {
         "label": label,
-        "prefix_observation_sha256": hash_jsonable(prefix_obs),
-        "candidate_observation_sha256": hash_jsonable(candidate_obs),
-        "observation_hash_match": hash_jsonable(prefix_obs) == hash_jsonable(candidate_obs),
+        "prefix_observation_sha256": hash_typed_observation(prefix_obs),
+        "candidate_observation_sha256": hash_typed_observation(candidate_obs),
+        "observation_hash_match": hash_typed_observation(prefix_obs) == hash_typed_observation(candidate_obs),
         "field_mismatch_count": sum(1 for r in obs_rows if not r.get("sha_match", False)),
         "policy_input_mismatch_count": sum(1 for r in policy_rows if not r.get("match", False)),
         "image": image_summary,
@@ -1641,7 +1768,7 @@ def run_observation_reconstruction_audit(
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=False)
     snapshot: ExactRestoreSnapshotPayload = selected["snapshot"]
-    prefix_obs = _json_clone(snapshot.observation)
+    prefix_obs = clone_typed_observation(snapshot.observation)
     env_adapter: RealLiberoEnvAdapter = selected["env_adapter"]
     policy: RealOpenVLAPolicyAdapter = selected["policy"]
     student: RealSC5StudentAdapter = selected["student"]
@@ -1948,6 +2075,110 @@ def run_selected_parent_attempt(args: argparse.Namespace, selected: Mapping[str,
     return summary
 
 
+def run_captured_prefix_canary_attempt(
+    args: argparse.Namespace,
+    selected: Mapping[str, Any],
+    attempt_dir: Path,
+) -> dict[str, Any]:
+    attempt_dir.mkdir(parents=True, exist_ok=False)
+    snapshot: ExactRestoreSnapshotPayload = selected["snapshot"]
+    env_adapter: RealLiberoEnvAdapter = selected["env_adapter"]
+    policy: RealOpenVLAPolicyAdapter = selected["policy"]
+    student: RealSC5StudentAdapter = selected["student"]
+    obs_t = clone_typed_observation(selected["obs_t"])
+    (attempt_dir / "stdout.log").write_text("", encoding="utf-8")
+    (attempt_dir / "stderr.log").write_text("", encoding="utf-8")
+    write_json(attempt_dir / "parent_dependency_manifest.json", asdict(selected["parent"]))
+    write_json(attempt_dir / "runtime_receipt.json", asdict(selected["runtime"]))
+    write_json(attempt_dir / "dependency_sha_receipt.json", selected["dependency"])
+    write_json(attempt_dir / "prefix_snapshot_manifest.json", asdict(snapshot.prefix))
+    typed_manifest = save_typed_prefix_observation_artifacts(
+        attempt_dir / "captured_prefix",
+        snapshot=snapshot,
+        policy=policy,
+    )
+
+    reference = rollout_clean_steps(
+        env=env_adapter,
+        student=student,
+        policy=policy,
+        initial_obs=obs_t,
+        start_step=snapshot.prefix.emit_step,
+        expected_first_action=snapshot.clean_action_t,
+        expected_first_tokens=snapshot.clean_tokens_t,
+        first_step_student_already_updated=True,
+    )
+    reference_frames = list(env_adapter.frames)
+    env_adapter.close()
+    release_real_policy(policy)
+    selected["policy"] = None
+    selected["student"] = None
+    selected["env_adapter"] = None
+
+    replay_env, replay_policy, replay_student = new_env_policy_student_for_snapshot(args, selected)
+    restore_snapshot(replay_env, replay_student, snapshot, replay_policy)
+    branch = captured_prefix_branch_record(
+        condition="CLEAN_REPLAY",
+        snapshot=snapshot,
+        env=replay_env,
+        student=replay_student,
+        policy=replay_policy,
+    )
+    replay = rollout_clean_steps(
+        env=replay_env,
+        student=replay_student,
+        policy=replay_policy,
+        initial_obs=clone_typed_observation(snapshot.observation),
+        start_step=snapshot.prefix.emit_step,
+        expected_first_action=snapshot.clean_action_t,
+        expected_first_tokens=snapshot.clean_tokens_t,
+        first_step_student_already_updated=True,
+    )
+    replay_frames = list(replay_env.frames)
+    replay_env.close()
+    release_real_policy(replay_policy)
+
+    problems = [f"reference_vs_replay:{p}" for p in compare_step_sequences(reference, replay)]
+    branch_summary = validate_branch_records(snapshot.prefix, [branch], required_conditions=("CLEAN_REPLAY",))
+    result = {
+        "captured_prefix_canary_pass": not problems,
+        "restore_steps": len(reference),
+        "prefix_snapshot_sha256": snapshot.prefix.snapshot_sha256,
+        "snapshot_payload_sha256": snapshot.payload_sha256,
+        "branch_summary": branch_summary,
+        "reference_vs_replay_mismatch_count": len(problems),
+        "reference_vs_replay_problems": problems,
+        "typed_prefix_manifest_sha256": hash_jsonable(typed_manifest),
+        "branch_input_source": "CAPTURED_PREFIX_OBSERVATION",
+    }
+    if problems:
+        write_json(attempt_dir / "branch_records.json", [asdict(branch)])
+        write_jsonl(attempt_dir / "reference_steps.jsonl", reference)
+        write_jsonl(attempt_dir / "replay_steps.jsonl", replay)
+        write_real_video(attempt_dir / "raw_reference.mp4", reference_frames)
+        write_real_video(attempt_dir / "raw_replay.mp4", replay_frames)
+        write_json(attempt_dir / "attempt_summary.json", result)
+        write_recursive_manifest(attempt_dir)
+        raise ExactRestoreError(";".join(problems))
+    write_json(attempt_dir / "branch_records.json", [asdict(branch)])
+    write_jsonl(attempt_dir / "reference_steps.jsonl", reference)
+    write_jsonl(attempt_dir / "replay_steps.jsonl", replay)
+    write_real_video(attempt_dir / "raw_reference.mp4", reference_frames)
+    write_real_video(attempt_dir / "raw_replay.mp4", replay_frames)
+    write_json(attempt_dir / "numeric_drift_report.json", {"reference_vs_replay": []})
+    summary = {
+        **result,
+        "attempt_id": attempt_dir.name,
+        "suite": snapshot.parent_manifest.suite,
+        "task_idx": snapshot.parent_manifest.task_idx,
+        "state_id": snapshot.parent_manifest.state_id,
+        "emit_step": snapshot.prefix.emit_step,
+    }
+    write_json(attempt_dir / "attempt_summary.json", summary)
+    write_recursive_manifest(attempt_dir)
+    return summary
+
+
 def run_real_libero_single_parent(args: argparse.Namespace) -> None:
     out = Path(args.output_dir)
     if out.exists() and any(out.iterdir()):
@@ -2018,6 +2249,29 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
             },
         )
         return
+    if args.captured_prefix_canary_only:
+        try:
+            canary_summary = run_captured_prefix_canary_attempt(args, selected, out / "captured_prefix_canary_00")
+        finally:
+            try:
+                if selected.get("env_adapter") is not None:
+                    selected["env_adapter"].close()
+            except Exception:
+                pass
+            release_real_policy(selected.get("policy"))
+        final = {
+            "stage": "CAPTURED_PREFIX_SINGLE_RESTORE_CANARY",
+            "result": "SINGLE_RESTORE_CANARY_PASS"
+            if canary_summary.get("captured_prefix_canary_pass") is True
+            else "SINGLE_RESTORE_CANARY_FAIL",
+            "selected_candidate": candidates[selected_idx],
+            "canary": canary_summary,
+        }
+        seal = write_recursive_manifest(out)
+        final["recursive_sha256_manifest_sha256"] = seal
+        write_json(out / "single_parent_restore_qualification_summary.json", final)
+        print(json.dumps(final, sort_keys=True, default=str))
+        return
     summaries = []
     try:
         first_summary = run_selected_parent_attempt(args, selected, out / "attempt_00", 0)
@@ -2085,6 +2339,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--task-count", type=int, default=10)
     ap.add_argument("--candidate-manifest", default="")
     ap.add_argument("--observation-audit-only", action="store_true")
+    ap.add_argument("--captured-prefix-canary-only", action="store_true")
     ap.add_argument("--max-steps", type=int, default=400)
     ap.add_argument("--repetitions", type=int, default=3)
     return ap.parse_args()

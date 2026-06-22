@@ -20,11 +20,13 @@ from scripts.stageb.layer3_exact_restore_runner import (
     _MockPolicy,
     _MockStudent,
     build_mock_restore_case,
+    build_prefix_snapshot,
     capture_env_internal_state,
     capture_feature_history,
     capture_mujoco_state,
     capture_policy_rng_state,
     capture_student_state,
+    captured_prefix_branch_record,
     compare_observation_values,
     compare_policy_input_fingerprints,
     model_norm_stat_keys,
@@ -32,6 +34,7 @@ from scripts.stageb.layer3_exact_restore_runner import (
     query_ordered_visible_gpu_uuids,
     read_candidate_manifest,
     get_observation_after_restore,
+    hash_typed_observation,
     compare_step_sequences,
     restore_env_internal_state,
     restore_feature_history,
@@ -41,6 +44,7 @@ from scripts.stageb.layer3_exact_restore_runner import (
     restore_snapshot_and_recapture_observation,
     restore_student_state,
     rollout_clean_steps,
+    save_typed_prefix_observation_artifacts,
     update_student_for_step,
     validate_clean_restore_pair,
     validate_dependency_sha_values,
@@ -117,6 +121,52 @@ def test_policy_input_fingerprint_compare_reports_mismatches():
     by_key = {row["key"]: row for row in rows}
     assert by_key["a"]["match"] is True
     assert by_key["b"]["match"] is False
+
+
+def test_typed_observation_hash_preserves_array_dtype():
+    obs_uint8 = {"agentview_image": np.array([[1, 2]], dtype=np.uint8)}
+    obs_int64 = {"agentview_image": np.array([[1, 2]], dtype=np.int64)}
+
+    assert hash_typed_observation(obs_uint8) != hash_typed_observation(obs_int64)
+
+
+def test_typed_prefix_artifact_roundtrip_preserves_agentview(tmp_path):
+    parent = make_parent()
+    obs = {"agentview_image": np.arange(12, dtype=np.uint8).reshape(2, 2, 3)}
+    mujoco_state = {"qpos": np.zeros(1), "qvel": np.zeros(1), "time": 0.0}
+    policy_rng = capture_policy_rng_state()
+    student_state = {"state": "EMITTED"}
+    feature_history = []
+    prefix = build_prefix_snapshot(
+        parent=parent,
+        emit_step=0,
+        observation=obs,
+        mujoco_state=mujoco_state,
+        policy_rng_state=policy_rng,
+        student_state=student_state,
+        feature_history=feature_history,
+        source_episode_relpath="mock",
+    )
+    snapshot = ExactRestoreSnapshotPayload(
+        prefix=prefix,
+        parent_manifest=parent,
+        mujoco_state=mujoco_state,
+        env_internal_state={},
+        policy_rng_state=policy_rng,
+        student_state=student_state,
+        feature_history=feature_history,
+        observation=obs,
+        clean_action_t=[0, 0, 0, 0, 0, 0, 0],
+        clean_tokens_t=[1, 2, 3, 4, 5, 6, 7],
+    )
+
+    manifest = save_typed_prefix_observation_artifacts(tmp_path, snapshot=snapshot)
+
+    loaded = np.load(tmp_path / "prefix_agentview.npy", allow_pickle=False)
+    assert loaded.dtype == np.uint8
+    assert loaded.shape == (2, 2, 3)
+    assert manifest["prefix_agentview_roundtrip_exact"] is True
+    assert manifest["captured_prefix_observation_sha256"] == prefix.observation_sha256
 
 
 def test_read_candidate_manifest_accepts_exact_known_emitter(tmp_path):
@@ -218,6 +268,27 @@ def test_mock_restore_case_passes_five_step_reference_and_replays():
     assert result["restore_steps"] == 5
     assert result["reference_vs_replay_mismatch_count"] == 0
     assert result["replay_a_vs_replay_b_mismatch_count"] == 0
+
+
+def test_captured_prefix_branch_record_uses_prefix_input_hash():
+    case = build_mock_restore_case()
+    snapshot = case["snapshot"]
+    env = _MockEnv(step=58)
+    student = _MockStudent()
+    policy = _MockPolicy()
+    restore_snapshot(env, student, snapshot, policy)
+
+    record = captured_prefix_branch_record(
+        condition="CLEAN_REPLAY",
+        snapshot=snapshot,
+        env=env,
+        student=student,
+        policy=policy,
+    )
+
+    assert record.branch_input_source == "CAPTURED_PREFIX_OBSERVATION"
+    assert record.branch_policy_input_sha256 == snapshot.prefix.observation_sha256
+    assert record.restored_observation_sha256 == snapshot.prefix.observation_sha256
 
 
 def test_restore_comparison_rejects_observation_mismatch():
