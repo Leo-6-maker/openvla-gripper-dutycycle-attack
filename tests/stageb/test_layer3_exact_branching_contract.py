@@ -1,6 +1,7 @@
 import pytest
 
 from scripts.stageb.layer3_exact_branching_contract import (
+    DEFAULT_REQUIRED_PILOT_CONDITIONS,
     LAYER3_BRANCH_CONDITIONS,
     BranchRunRecord,
     Layer3BranchingContractError,
@@ -36,6 +37,8 @@ def _records(snapshot: PrefixBranchSnapshot) -> list[BranchRunRecord]:
             restored_sim_state_sha256=snapshot.sim_state_sha256,
             restored_observation_sha256=snapshot.observation_sha256,
             restored_policy_rng_sha256=snapshot.policy_rng_sha256,
+            restored_detector_state_sha256=snapshot.detector_state_sha256,
+            restored_feature_history_sha256=snapshot.feature_history_sha256,
             trigger_step=snapshot.emit_step,
             first_env_step=snapshot.emit_step,
         )
@@ -65,6 +68,53 @@ def test_gripper_only_action_preserves_clean_arm_and_attacked_gripper():
     assert row["clean_gripper"] == -1.0
     assert row["attacked_gripper"] == 1.0
     assert row["executed_gripper"] == 1.0
+    assert row["executed_gripper_expected_source"] == "attacked"
+    assert row["gripper_abs_diff"] == 0.0
+
+
+def test_clean_replay_requires_clean_gripper():
+    clean = [0, 0, 0, 0, 0, 0, -1]
+    attacked = [0, 0, 0, 0, 0, 0, 1]
+    row = arm_preservation_telemetry(
+        step=58,
+        condition="CLEAN_REPLAY",
+        clean_action=clean,
+        attacked_decoded_action=attacked,
+        executed_action=clean,
+    )
+    assert row["executed_gripper_expected_source"] == "clean"
+    with pytest.raises(Layer3BranchingContractError, match="clean gripper"):
+        arm_preservation_telemetry(
+            step=58,
+            condition="CLEAN_REPLAY",
+            clean_action=clean,
+            attacked_decoded_action=attacked,
+            executed_action=make_gripper_only_executed_action(clean, attacked),
+        )
+
+
+def test_attack_conditions_reject_clean_gripper_execution():
+    clean = [0, 0, 0, 0, 0, 0, -1]
+    attacked = [0, 0, 0, 0, 0, 0, 1]
+    with pytest.raises(Layer3BranchingContractError, match="attacked gripper"):
+        arm_preservation_telemetry(
+            step=58,
+            condition="VIS",
+            clean_action=clean,
+            attacked_decoded_action=attacked,
+            executed_action=clean,
+        )
+
+
+def test_actions_must_be_exact_7d_and_finite():
+    clean = [0, 0, 0, 0, 0, 0, -1]
+    attacked = [0, 0, 0, 0, 0, 0, 1]
+    with pytest.raises(Layer3BranchingContractError, match="exactly 7"):
+        make_gripper_only_executed_action(clean + [99], attacked)
+    bad = list(clean)
+    bad[0] = float("nan")
+    with pytest.raises(Layer3BranchingContractError, match="non-finite"):
+        make_gripper_only_executed_action(bad, attacked)
 
 
 def test_arm_preservation_rejects_runtime_arm_drift():
@@ -88,7 +138,17 @@ def test_validate_branch_records_requires_all_conditions_same_snapshot():
 
     assert result["exact_prefix_branching_pass"] is True
     assert result["condition_count"] == 4
-    assert result["conditions"] == list(LAYER3_BRANCH_CONDITIONS)
+    assert result["required_conditions"] == list(DEFAULT_REQUIRED_PILOT_CONDITIONS)
+    assert result["conditions"] == sorted(LAYER3_BRANCH_CONDITIONS)
+    assert result["snapshot_boundary"] == "PRE_ACTION_OBS_T_AFTER_STUDENT_EMIT_BEFORE_ENV_STEP_T"
+
+
+def test_validate_branch_records_accepts_minimal_3_condition_pilot_bundle():
+    snapshot = _snapshot()
+    records = [r for r in _records(snapshot) if r.condition in DEFAULT_REQUIRED_PILOT_CONDITIONS]
+    result = validate_branch_records(snapshot, records)
+    assert result["condition_count"] == 3
+    assert result["required_conditions"] == list(DEFAULT_REQUIRED_PILOT_CONDITIONS)
 
 
 def test_validate_branch_records_rejects_independent_restart():
@@ -104,6 +164,8 @@ def test_validate_branch_records_rejects_independent_restart():
             restored_sim_state_sha256=bad.restored_sim_state_sha256,
             restored_observation_sha256=bad.restored_observation_sha256,
             restored_policy_rng_sha256=bad.restored_policy_rng_sha256,
+            restored_detector_state_sha256=bad.restored_detector_state_sha256,
+            restored_feature_history_sha256=bad.restored_feature_history_sha256,
             trigger_step=bad.trigger_step,
             first_env_step=bad.first_env_step,
         )
@@ -120,6 +182,8 @@ def test_validate_branch_records_rejects_prefix_hash_mismatch():
         restored_sim_state_sha256=bad.restored_sim_state_sha256,
         restored_observation_sha256=bad.restored_observation_sha256,
         restored_policy_rng_sha256=bad.restored_policy_rng_sha256,
+        restored_detector_state_sha256=bad.restored_detector_state_sha256,
+        restored_feature_history_sha256=bad.restored_feature_history_sha256,
         trigger_step=bad.trigger_step,
         first_env_step=bad.first_env_step,
     )
@@ -130,9 +194,66 @@ def test_validate_branch_records_rejects_prefix_hash_mismatch():
 
 def test_validate_branch_records_rejects_missing_condition():
     snapshot = _snapshot()
-    records = _records(snapshot)[:-1]
+    records = [r for r in _records(snapshot) if r.condition != "RAND"]
 
     with pytest.raises(Layer3BranchingContractError, match="missing branch conditions"):
+        validate_branch_records(snapshot, records)
+
+
+def test_validate_branch_records_rejects_detector_and_feature_restore_mismatch():
+    snapshot = _snapshot()
+    records = _records(snapshot)
+    bad = records[1]
+    records[1] = BranchRunRecord(
+        condition=bad.condition,
+        prefix_snapshot_sha256=bad.prefix_snapshot_sha256,
+        branch_source=bad.branch_source,
+        restored_sim_state_sha256=bad.restored_sim_state_sha256,
+        restored_observation_sha256=bad.restored_observation_sha256,
+        restored_policy_rng_sha256=bad.restored_policy_rng_sha256,
+        restored_detector_state_sha256="0" * 64,
+        restored_feature_history_sha256=bad.restored_feature_history_sha256,
+        trigger_step=bad.trigger_step,
+        first_env_step=bad.first_env_step,
+    )
+    with pytest.raises(Layer3BranchingContractError, match="detector state"):
+        validate_branch_records(snapshot, records)
+
+    records = _records(snapshot)
+    bad = records[2]
+    records[2] = BranchRunRecord(
+        condition=bad.condition,
+        prefix_snapshot_sha256=bad.prefix_snapshot_sha256,
+        branch_source=bad.branch_source,
+        restored_sim_state_sha256=bad.restored_sim_state_sha256,
+        restored_observation_sha256=bad.restored_observation_sha256,
+        restored_policy_rng_sha256=bad.restored_policy_rng_sha256,
+        restored_detector_state_sha256=bad.restored_detector_state_sha256,
+        restored_feature_history_sha256="1" * 64,
+        trigger_step=bad.trigger_step,
+        first_env_step=bad.first_env_step,
+    )
+    with pytest.raises(Layer3BranchingContractError, match="feature history"):
+        validate_branch_records(snapshot, records)
+
+
+def test_validate_branch_records_rejects_first_env_step_off_by_one():
+    snapshot = _snapshot()
+    records = _records(snapshot)
+    bad = records[0]
+    records[0] = BranchRunRecord(
+        condition=bad.condition,
+        prefix_snapshot_sha256=bad.prefix_snapshot_sha256,
+        branch_source=bad.branch_source,
+        restored_sim_state_sha256=bad.restored_sim_state_sha256,
+        restored_observation_sha256=bad.restored_observation_sha256,
+        restored_policy_rng_sha256=bad.restored_policy_rng_sha256,
+        restored_detector_state_sha256=bad.restored_detector_state_sha256,
+        restored_feature_history_sha256=bad.restored_feature_history_sha256,
+        trigger_step=bad.trigger_step,
+        first_env_step=bad.first_env_step + 1,
+    )
+    with pytest.raises(Layer3BranchingContractError, match="first_env_step"):
         validate_branch_records(snapshot, records)
 
 

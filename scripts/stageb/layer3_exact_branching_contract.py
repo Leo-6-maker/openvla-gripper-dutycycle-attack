@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from dataclasses import dataclass, asdict
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -17,6 +18,7 @@ ARM_TOLERANCE = 1e-7
 ACTION_DIM = 7
 ARM_DIM = 6
 LAYER3_BRANCH_CONDITIONS = ("CLEAN_REPLAY", "VIS", "RAND", "SHUFFLED")
+DEFAULT_REQUIRED_PILOT_CONDITIONS = ("CLEAN_REPLAY", "VIS", "RAND")
 
 
 class Layer3BranchingContractError(ValueError):
@@ -28,10 +30,12 @@ def sha256_jsonable(obj: Any) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
-def _float_list(values: Sequence[Any], *, name: str, min_len: int = ACTION_DIM) -> list[float]:
+def _float_list(values: Sequence[Any], *, name: str, exact_len: int = ACTION_DIM) -> list[float]:
     out = [float(v) for v in values]
-    if len(out) < min_len:
-        raise Layer3BranchingContractError(f"{name} must have at least {min_len} values; got {len(out)}")
+    if len(out) != exact_len:
+        raise Layer3BranchingContractError(f"{name} must have exactly {exact_len} values; got {len(out)}")
+    if not all(math.isfinite(v) for v in out):
+        raise Layer3BranchingContractError(f"{name} contains non-finite values")
     return out
 
 
@@ -50,10 +54,15 @@ class PrefixBranchSnapshot:
     detector_state_sha256: str
     feature_history_sha256: str
     source_episode_relpath: str
+    snapshot_boundary: str = "PRE_ACTION_OBS_T_AFTER_STUDENT_EMIT_BEFORE_ENV_STEP_T"
 
     def __post_init__(self) -> None:
         if int(self.emit_step) < 0:
             raise Layer3BranchingContractError("emit_step must be non-negative for exact branching")
+        if self.snapshot_boundary != "PRE_ACTION_OBS_T_AFTER_STUDENT_EMIT_BEFORE_ENV_STEP_T":
+            raise Layer3BranchingContractError(
+                "snapshot_boundary must be PRE_ACTION_OBS_T_AFTER_STUDENT_EMIT_BEFORE_ENV_STEP_T"
+            )
         for field in (
             "observation_sha256",
             "sim_state_sha256",
@@ -80,8 +89,11 @@ class BranchRunRecord:
     restored_sim_state_sha256: str
     restored_observation_sha256: str
     restored_policy_rng_sha256: str
+    restored_detector_state_sha256: str
+    restored_feature_history_sha256: str
     trigger_step: int
     first_env_step: int
+    snapshot_boundary: str = "PRE_ACTION_OBS_T_AFTER_STUDENT_EMIT_BEFORE_ENV_STEP_T"
 
     def __post_init__(self) -> None:
         if self.condition not in LAYER3_BRANCH_CONDITIONS:
@@ -89,6 +101,10 @@ class BranchRunRecord:
         if self.branch_source != "EXACT_PREFIX_RESTORE":
             raise Layer3BranchingContractError(
                 f"{self.condition} branch_source must be EXACT_PREFIX_RESTORE, got {self.branch_source}"
+            )
+        if self.snapshot_boundary != "PRE_ACTION_OBS_T_AFTER_STUDENT_EMIT_BEFORE_ENV_STEP_T":
+            raise Layer3BranchingContractError(
+                f"{self.condition} snapshot_boundary must be PRE_ACTION_OBS_T_AFTER_STUDENT_EMIT_BEFORE_ENV_STEP_T"
             )
         if int(self.trigger_step) < 0 or int(self.first_env_step) < 0:
             raise Layer3BranchingContractError("trigger_step and first_env_step must be non-negative")
@@ -102,7 +118,7 @@ def make_gripper_only_executed_action(
 
     clean = _float_list(clean_env_action, name="clean_env_action")
     attacked = _float_list(attacked_env_action, name="attacked_env_action")
-    executed = list(clean[:ACTION_DIM])
+    executed = list(clean)
     executed[-1] = attacked[-1]
     return executed
 
@@ -144,10 +160,23 @@ def arm_preservation_telemetry(
     row["clean_gripper"] = float(clean[-1])
     row["attacked_gripper"] = float(attacked[-1])
     row["executed_gripper"] = float(executed[-1])
+    if condition in {"CLEAN", "CLEAN_REPLAY"}:
+        expected_gripper = row["clean_gripper"]
+        expected_source = "clean"
+    else:
+        expected_gripper = row["attacked_gripper"]
+        expected_source = "attacked"
+    row["executed_gripper_expected_source"] = expected_source
+    row["gripper_abs_diff"] = abs(row["executed_gripper"] - expected_gripper)
     row["arm_preservation_pass"] = bool(row["arm_max_abs_diff"] <= tolerance)
     if not row["arm_preservation_pass"]:
         raise Layer3BranchingContractError(
             f"executed arm differs from clean arm by {row['arm_max_abs_diff']:.9g} > {tolerance}"
+        )
+    if row["gripper_abs_diff"] > tolerance:
+        raise Layer3BranchingContractError(
+            f"{condition} executed gripper differs from {expected_source} gripper by "
+            f"{row['gripper_abs_diff']:.9g} > {tolerance}"
         )
     return row
 
@@ -155,6 +184,8 @@ def arm_preservation_telemetry(
 def validate_branch_records(
     snapshot: PrefixBranchSnapshot,
     records: Iterable[BranchRunRecord | Mapping[str, Any]],
+    *,
+    required_conditions: Sequence[str] = DEFAULT_REQUIRED_PILOT_CONDITIONS,
 ) -> dict[str, Any]:
     """Validate that all conditions branch from exactly the same prefix."""
 
@@ -172,19 +203,28 @@ def validate_branch_records(
             raise Layer3BranchingContractError(f"{rec.condition} restored observation hash mismatch")
         if rec.restored_policy_rng_sha256 != snapshot.policy_rng_sha256:
             raise Layer3BranchingContractError(f"{rec.condition} restored policy RNG hash mismatch")
+        if rec.restored_detector_state_sha256 != snapshot.detector_state_sha256:
+            raise Layer3BranchingContractError(f"{rec.condition} restored detector state hash mismatch")
+        if rec.restored_feature_history_sha256 != snapshot.feature_history_sha256:
+            raise Layer3BranchingContractError(f"{rec.condition} restored feature history hash mismatch")
         if int(rec.trigger_step) != int(snapshot.emit_step):
             raise Layer3BranchingContractError(f"{rec.condition} trigger_step does not match emit_step")
         if int(rec.first_env_step) != int(snapshot.emit_step):
             raise Layer3BranchingContractError(f"{rec.condition} first_env_step does not match emit_step")
         seen[rec.condition] = rec
 
-    missing = [name for name in LAYER3_BRANCH_CONDITIONS if name not in seen]
+    invalid_required = [name for name in required_conditions if name not in LAYER3_BRANCH_CONDITIONS]
+    if invalid_required:
+        raise Layer3BranchingContractError(f"invalid required conditions: {','.join(invalid_required)}")
+    missing = [name for name in required_conditions if name not in seen]
     if missing:
         raise Layer3BranchingContractError(f"missing branch conditions: {','.join(missing)}")
     return {
         "prefix_snapshot_sha256": expected_sha,
         "condition_count": len(seen),
-        "conditions": list(LAYER3_BRANCH_CONDITIONS),
+        "required_conditions": list(required_conditions),
+        "conditions": sorted(seen),
+        "snapshot_boundary": snapshot.snapshot_boundary,
         "exact_prefix_branching_pass": True,
     }
 
