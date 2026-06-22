@@ -1,0 +1,30 @@
+{
+  "gate": "M1B_TEACHER_CONFIG_FREEZE",
+  "source": "C16 freeze repo: /data/liuyu/repos/sc5_census_freeze_cc356f3_20260618/artifacts/v2_sc5_teacher_config.json",
+  "version": "v2_teacher_fixed_semantics",
+  "calibrated_from": "123_butter_clean_trajectories",
+  "guard": 5,
+  "K": 10,
+  "thresholds": {
+    "grasp_close_sustain": 3,
+    "grasp_open_proxy_max": 0.0327,
+    "eef_obj_dist_max": 0.0638,
+    "eef_obj_dist_stable_var": 0.005,
+    "lift_z_threshold": 0.088,
+    "lift_sustain_steps": 2,
+    "carry_obj_z_var_max": 0.01,
+    "carry_window": 8,
+    "preplace_target_dist_min": 0.05,
+    "preplace_target_dist_max": 0.3618,
+    "release_target_dist_max": 0.1516,
+    "regrasp_eef_obj_dist_max": 0.1,
+    "stability_window": 5
+  },
+  "calibration_tiers": "Tier_A+B_train_only",
+  "tier_c_train_excluded": 0,
+  "n_calibration_paths": 123,
+  "n_calibration_episodes": 123,
+  "note": "This is the EXACT C16 frozen Teacher configuration. NOT draft defaults. Must be used for all M1B Teacher alignment computations. Do NOT recalibrate.",
+  "replay_evaluator": "scripts/stageb/run_sc5_canonical_replay.py (SHA: bc928554e9264e758745372ccdcc2ff3ceb13f58b6b69ca36f20949ef976ca70 on A800)",
+  "anchor_rule": "earliest stable_carry start + guard=5, K=10, must not span release_safe/recovery/abstain"
+}
