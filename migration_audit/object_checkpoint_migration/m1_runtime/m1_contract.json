@@ -1,0 +1,175 @@
+{
+  "gate": "M1_A800_LOCAL_RUNTIME_PROFILE_STUDY",
+  "version": "1.0",
+  "timestamp_utc": "2026-06-22T08:00:00Z",
+  "branch": "migration/object-checkpoint-a800-20260622",
+
+  "research_question": "On fixed A800 hardware, fixed Object checkpoint, fixed LIBERO env and preprocessing, does changing only dtype or attention implementation preserve clean policy and frozen Object detector stability?",
+
+  "scope": "CLEAN ONLY — no VIS, RANDOM, or Oracle attack",
+
+  "frozen_invariants": {
+    "hardware": "Single A800-SXM4-80GB (GPU2 for main matrix)",
+    "suite": "libero_object",
+    "task_count": 10,
+    "states_per_task": 3,
+    "total_episodes": 30,
+    "checkpoint_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+    "checkpoint_params": 6604,
+    "checkpoint_architecture": "25-64-64-9+1+1+1",
+    "tau_corridor": 0.3,
+    "tau_release": 0.3,
+    "guard": 5,
+    "K": 10,
+    "detector_mean_std": "checkpoint original, NOT recalibrated",
+    "feature_order": "original 25D",
+    "vla_safetensor_00001": "1748e2921c82a8b80febb9a0d7f1659c556b0769ff54225c5f1905fcd47d5107",
+    "vla_safetensor_00002": "1a468feb31f2edbe8876c8571e5682406aeb169b80916d5952408a6fb20f017c",
+    "vla_safetensor_00003": "f4958ff679f5d7f600a2369b52ee81818e9992fb6584e40ba6f79e1f786f6e1d",
+    "vla_safetensor_00004": "eccbc0482e076cf5a502b51707e0581c19a111e376206febd5d0c4efe6f74b09",
+    "processor_code_sha": "938ef87ac9284069b782776792efb065f0e2c9d50c09a507dda132e97d5c08c0",
+    "preprocess": "project_pil_lanczos",
+    "center_crop": "original contract",
+    "dummy_wait": "original contract (10 steps)",
+    "prompt": "original contract",
+    "mujoco": "A800 current version",
+    "robosuite": "A800 current version",
+    "python": "A800 current environment",
+    "torch": "A800 current environment",
+    "cuda": "A800 current environment"
+  },
+
+  "profiles": {
+    "B0": {"dtype": "BF16", "attention": "eager", "role": "baseline"},
+    "A1": {"dtype": "BF16", "attention": "flash_attention_2", "role": "flash2 swap"},
+    "D1": {"dtype": "FP32", "attention": "eager", "role": "fp32 swap"}
+  },
+
+  "profiles_excluded": ["FP32 + FlashAttention2 — deferred to later round"],
+
+  "manifest": {
+    "path": "migration_audit/object_checkpoint_migration/manifests/m1_object_30.json",
+    "tasks": [
+      "pick_up_the_alphabet_soup_and_place_it_in_the_basket",
+      "pick_up_the_cream_cheese_and_place_it_in_the_basket",
+      "pick_up_the_salad_dressing_and_place_it_in_the_basket",
+      "pick_up_the_bbq_sauce_and_place_it_in_the_basket",
+      "pick_up_the_ketchup_and_place_it_in_the_basket",
+      "pick_up_the_tomato_sauce_and_place_it_in_the_basket",
+      "pick_up_the_butter_and_place_it_in_the_basket",
+      "pick_up_the_milk_and_place_it_in_the_basket",
+      "pick_up_the_chocolate_pudding_and_place_it_in_the_basket",
+      "pick_up_the_orange_juice_and_place_it_in_the_basket"
+    ],
+    "states": [0, 1, 2],
+    "total_episodes": 30,
+    "hard_gates": {
+      "unique_task_state": true,
+      "no_duplicates": true,
+      "no_post_hoc_replacement": true,
+      "no_removed_baseline_failure": true,
+      "butter_s0_s2_included": true
+    }
+  },
+
+  "execution": {
+    "main_gpu": 2,
+    "main_gpu_uuid": "TBD_AT_RUNTIME",
+    "sentinel_gpu": 3,
+    "latin_square_order": {
+      "group_1": ["B0", "A1", "D1"],
+      "group_2": ["A1", "D1", "B0"],
+      "group_3": ["D1", "B0", "A1"]
+    },
+    "group_size": 10,
+    "sequential_per_gpu": true,
+    "env_recreate_per_episode": true,
+    "flash_attention_fallback_detection": "If actual_attn != requested_attn, mark A1 INVALID immediately"
+  },
+
+  "per_step_recording": [
+    "episode_key", "profile", "step_idx",
+    "processed_image_sha", "pixel_tensor_sha", "input_ids_sha",
+    "raw_action_7d", "env_action_7d",
+    "gripper_qpos", "gripper_opening_proxy",
+    "eef_x", "eef_y", "eef_z", "eef_vx", "eef_vy", "eef_vz",
+    "25D_features", "phase_logits", "corridor_p", "release_p", "confidence_p",
+    "detector_state", "emit_step",
+    "reward", "official_success", "termination"
+  ],
+
+  "teacher_evaluation": {
+    "per_profile_per_trajectory": true,
+    "frozen_teacher": "same privileged teacher run on each profile's own trajectory",
+    "outputs": ["teacher_supported", "stable_carry_start", "teacher_anchor", "release_safe_start", "full_K10_valid", "no_corridor"]
+  },
+
+  "denominators": {
+    "all_30": "all episodes reported, no removal of B0 failures",
+    "S_B0": "BF16-Eager clean-success episodes, frozen before A1/D1 run",
+    "S_common": "episodes where B0, A1, D1 all clean-succeed"
+  },
+
+  "detector_thresholds_absolute": {
+    "feature_valid_steps": ">= 99%",
+    "coverage": ">= 0.80",
+    "false_early": "<= 0.10",
+    "post_release": "<= 0.05",
+    "median_anchor_error": "<= 8",
+    "K10_containment": ">= 0.85",
+    "no_corridor_abstain": ">= 0.90"
+  },
+
+  "relative_to_B0_thresholds": {
+    "clean_SR_drop": "<= 10 pp",
+    "coverage_drop": "<= 0.10",
+    "K10_containment_drop": "<= 0.10",
+    "post_release_increase": "<= 0.05"
+  },
+
+  "interpretability_gate": {
+    "min_common_success_episodes": 15
+  },
+
+  "baseline_invalid_gate": "If B0 fails absolute thresholds on A800-local, STOP — M1_BASELINE_INVALID, do not evaluate A1/D1",
+
+  "classifications": [
+    "M1_RUNTIME_PROFILE_TRANSFER_PASS",
+    "M1_FLASH2_TRANSFER_FAIL",
+    "M1_FP32_TRANSFER_FAIL",
+    "M1_BOTH_TRANSFER_FAIL",
+    "M1_BASELINE_INVALID"
+  ],
+
+  "sentinel": {
+    "gpu": 3,
+    "episodes": 6,
+    "repeats_per_profile": 2,
+    "criteria": ["2 easy-success", "2 borderline", "1 known A800 fail (butter_s2)", "1 no-corridor/abstain"],
+    "purpose": "profile-internal repeatability, first divergence, closed-loop sensitivity",
+    "not_for_replacing_main_results": true
+  },
+
+  "output_directory": "migration_audit/object_checkpoint_migration/m1_runtime/",
+  "output_files": [
+    "m1_contract.json",
+    "manifest_ledger.csv",
+    "episode_results.csv",
+    "teacher_alignment.csv",
+    "paired_profile_results.csv",
+    "sentinel_repeatability.csv",
+    "profile_summary.json",
+    "failure_ledger.json",
+    "artifact_manifest.json"
+  ],
+
+  "stop_after": "M1 complete — do NOT auto-enter M2",
+  "forbidden": [
+    "modify checkpoint weights",
+    "recalibrate thresholds",
+    "retrain detector",
+    "change mean/std",
+    "cherry-pick successful episodes",
+    "remove B0 clean failures"
+  ]
+}
