@@ -145,7 +145,7 @@ class SC5DetectorRuntime:
         X = np.array([[features_25d[fn] for fn in SC5_FEATURES]], dtype=np.float32)
         if not np.all(np.isfinite(X)):
             raise ValueError("NaN/Inf in input features")
-        X = (X - self.mean) / (self.std + 1e-8)
+        X = (X - self.mean) / self.std
         with torch.no_grad():
             out = self.model(torch.tensor(X, dtype=torch.float32))
         cp = torch.sigmoid(out["corridor_logit"]).item()

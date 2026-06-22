@@ -91,3 +91,40 @@ def test_runtime_allows_explicit_diagnostic_threshold_override(tmp_path):
     assert runtime.override_reason == "diagnostic_zero_emit_reproduction"
     assert runtime.tau_c == pytest.approx(0.3)
     assert runtime.tau_r == pytest.approx(0.3)
+
+
+def test_runtime_uses_checkpoint_std_without_extra_epsilon(tmp_path):
+    ckpt = tmp_path / "std_contract.pt"
+    model = SC5MLP(n_feat=len(SC5_FEATURES))
+    with torch.no_grad():
+        for param in model.parameters():
+            param.zero_()
+        model.shared[0].weight[0, 0] = 1.0
+        model.shared[2].weight[0, 0] = 1.0
+        model.corridor_head.weight[0, 0] = 1.0
+        model.phase_head.bias[SC5_PHASES.index("stable_carry")] = 1.0
+        model.release_head.bias[0] = -1.0
+    mean = np.zeros(len(SC5_FEATURES), dtype=np.float32)
+    std = np.ones(len(SC5_FEATURES), dtype=np.float32)
+    std[0] = 1e-7
+    torch.save(
+        {
+            "feature_names": list(SC5_FEATURES),
+            "phase_classes": list(SC5_PHASES),
+            "dataset_sha256": "d" * 64,
+            "split_mode": "provisional_cross_suite_frozen",
+            "selected_tau_corridor": 0.9,
+            "selected_tau_release": 0.1,
+            "mean": mean,
+            "std": std,
+            "model_state": model.state_dict(),
+        },
+        ckpt,
+    )
+
+    runtime = SC5DetectorRuntime(str(ckpt))
+    features = {name: 0.0 for name in SC5_FEATURES}
+    features[SC5_FEATURES[0]] = 1e-7
+    out = runtime.update(features, 0)
+
+    assert out["corridor_p"] == pytest.approx(float(torch.sigmoid(torch.tensor(1.0))), abs=1e-6)

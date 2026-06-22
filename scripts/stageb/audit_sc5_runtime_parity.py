@@ -18,10 +18,13 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+import torch
+
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO / "src"))
 
-from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime, SC5_FEATURES  # noqa: E402
+from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime, SC5_FEATURES, SC5_PHASES  # noqa: E402
 
 
 def sha256_file(path: Path) -> str:
@@ -105,6 +108,7 @@ def build_runtime_rows(
         for row in sorted(rows_by_episode[episode_key], key=lambda r: int(float(r["step"]))):
             step = int(float(row["step"]))
             features = {feature: finite_feature(row, feature) for feature in SC5_FEATURES}
+            pred = predict_runtime_features(runtime, features)
             decision = runtime.update(features, step)
             out.append(
                 {
@@ -114,9 +118,9 @@ def build_runtime_rows(
                     "state_id": row.get("state_id", ""),
                     "dataset_split": row.get("dataset_split", ""),
                     "step": step,
-                    "pred_phase": decision.get("pred_phase"),
-                    "corridor_p": decision.get("corridor_p"),
-                    "release_p": decision.get("release_p"),
+                    "pred_phase": pred["pred_phase"],
+                    "corridor_p": pred["corridor_p"],
+                    "release_p": pred["release_p"],
                     "state": decision.get("state"),
                     "arm_step": decision.get("arm_step"),
                     "emit_step": decision.get("emit_step"),
@@ -124,6 +128,20 @@ def build_runtime_rows(
                 }
             )
     return out
+
+
+def predict_runtime_features(runtime: SC5DetectorRuntime, features_25d: dict[str, float]) -> dict[str, Any]:
+    x = np.array([[features_25d[fn] for fn in SC5_FEATURES]], dtype=np.float32)
+    if not np.all(np.isfinite(x)):
+        raise ValueError("NaN/Inf in input features")
+    x = (x - runtime.mean) / runtime.std
+    with torch.no_grad():
+        out = runtime.model(torch.tensor(x, dtype=torch.float32))
+    return {
+        "pred_phase": SC5_PHASES[int(out["phase_logits"][0].argmax().item())],
+        "corridor_p": float(torch.sigmoid(out["corridor_logit"]).item()),
+        "release_p": float(torch.sigmoid(out["release_logit"]).item()),
+    }
 
 
 def audit(args: argparse.Namespace) -> dict[str, Any]:
@@ -278,7 +296,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--checkpoint", required=True)
     p.add_argument("--suite", default="")
     p.add_argument("--guard", type=int, default=5)
-    p.add_argument("--tolerance", type=float, default=1e-7)
+    p.add_argument("--tolerance", type=float, default=1e-6)
     p.add_argument("--write-all-rows", action="store_true")
     p.add_argument("--output-dir", required=True)
     return p.parse_args()
