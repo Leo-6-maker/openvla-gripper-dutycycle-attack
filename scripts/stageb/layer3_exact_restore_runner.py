@@ -1396,6 +1396,9 @@ def find_emit_snapshot_for_candidate(
         )
         env_adapter = RealLiberoEnvAdapter(env)
         instruction = str(task_obj.language)
+        policy, student, _model, detector = load_real_policy_and_student(
+            args, env_adapter=env_adapter, instruction=instruction
+        )
         parent = build_parent_manifest_for_candidate(
             args,
             task_idx=int(candidate["task_idx"]),
