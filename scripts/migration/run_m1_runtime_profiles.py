@@ -6,22 +6,24 @@ Evaluates clean policy + frozen Object detector under 3 profiles on same GPU:
   A1: BF16 + FlashAttention2
   D1: FP32 + Eager
 
-Manifest: 30 episodes (10 tasks × states 0,1,2) from libero_object.
-Latin-square ordering to mitigate order/cache/warmup confounding.
+Manifest: 30 episodes (10 tasks x states 0,1,2) from libero_object.
+Latin-square ordering. Sentinel repeatability on separate GPU.
+Evidence directories are isolated: smoke/, sentinel/<ep>/<profile>/repeat_N/, main/<group>/<ep>/<profile/
+
+Flash2 fallback = immediate full stop. anchor=null for clean.
 """
-import os, sys, json, hashlib, time, csv, argparse, subprocess
-from collections import defaultdict
+import os, sys, json, hashlib, time, csv, argparse, subprocess, shutil
+from pathlib import Path
 
-REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-sys.path.insert(0, os.path.join(REPO, "src"))
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO / "src"))
 
-MANIFEST_PATH = os.path.join(REPO, "migration_audit", "object_checkpoint_migration", "manifests", "m1_object_30.json")
-CONTRACT_PATH = os.path.join(REPO, "migration_audit", "object_checkpoint_migration", "m1_runtime", "m1_contract.json")
-OUT_DIR = os.path.join(REPO, "migration_audit", "object_checkpoint_migration", "m1_runtime")
-EVIDENCE_DIR = os.path.join(REPO, "evidence", "object_checkpoint_migration", "m1_runtime")
-
-MODEL_PATH = os.environ.get("OPENVLA_MODEL_PATH", os.path.join(REPO, "models", "openvla-7b-finetuned-libero-object"))
-CKPT_PATH = os.path.join(REPO, "artifacts", "detector", "sc5_mlp_s2.pt")
+MANIFEST_PATH = REPO / "migration_audit/object_checkpoint_migration/manifests/m1_object_30.json"
+OUT_BASE = REPO / "evidence/object_checkpoint_migration/m1_runtime"
+BRIDGE = REPO / "scripts/stageb/run_v2_vis_sc5_mlp_bridge.py"
+CKPT = REPO / "artifacts/detector/sc5_mlp_s2.pt"
+MODEL_PATH = os.environ.get("OPENVLA_MODEL_PATH", str(REPO / "models/openvla-7b-finetuned-libero-object"))
+PYTHON = "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python3"
 
 PROFILES = {
     "B0": {"dtype": "bfloat16", "attn": "eager", "label": "BF16+Eager"},
@@ -29,72 +31,20 @@ PROFILES = {
     "D1": {"dtype": "float32", "attn": "eager", "label": "FP32+Eager"},
 }
 
-# Latin-square groups: (group_id, [profile_order])
-# 30 episodes → 3 groups of 10
 LATIN_SQUARE = [
     (1, ["B0", "A1", "D1"]),
     (2, ["A1", "D1", "B0"]),
     (3, ["D1", "B0", "A1"]),
 ]
 
-# Sentinel episodes
 SENTINEL_KEYS = [
-    "butter_s0",       # known A800 success
-    "butter_s2",       # known A800 fail
-    "ketchup_s1",      # borderline
-    "tomato_sauce_s1", # borderline
-    "milk_s0",         # easy-success candidate
-    "orange_juice_s0", # easy-success candidate
+    "butter_s0", "butter_s2", "ketchup_s1",
+    "tomato_sauce_s1", "milk_s0", "orange_juice_s0",
 ]
 
 
-def load_manifest():
-    return json.load(open(MANIFEST_PATH))
-
-
-def build_latin_square_schedule(manifest):
-    """Assign each episode to a Latin-square group and order profiles."""
-    episodes = manifest["episodes"]
-    schedule = []
-    for i, ep in enumerate(episodes):
-        group_idx = i % 3
-        group_id, profile_order = LATIN_SQUARE[group_idx]
-        for profile in profile_order:
-            schedule.append({
-                "episode": ep,
-                "profile": profile,
-                "group": group_id,
-            })
-    return schedule
-
-
-def run_episode(ep, profile_key, gpu):
-    """Run one episode with the given profile on the specified GPU.
-
-    Returns dict with results or None on failure.
-    Uses subprocess to call the bridge with profile-specific env vars.
-    """
-    profile = PROFILES[profile_key]
-    episode_key = ep["episode_key"]
-    label = f"{episode_key}_{profile_key}"
-    cell_dir = os.path.join(EVIDENCE_DIR, label)
-    os.makedirs(cell_dir, exist_ok=True)
-
-    bridge = os.path.join(REPO, "scripts", "stageb", "run_v2_vis_sc5_mlp_bridge.py")
-    python = "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python3"
-
-    cmd = [
-        python, bridge,
-        "--condition", "CLEAN",
-        "--state_id", str(ep["state_id"]),
-        "--task_idx", str(ep["task_idx"]),
-        "--anchor", "999",  # dummy — CLEAN mode ignores anchor
-        "--seed_id", "42",
-        "--output_dir", cell_dir,
-        "--render_gpu", str(gpu),
-        "--mlp_path", CKPT_PATH,
-    ]
-
+def env_for_profile(profile_key, gpu):
+    p = PROFILES[profile_key]
     env = os.environ.copy()
     env["CUDA_VISIBLE_DEVICES"] = str(gpu)
     env["MUJOCO_GL"] = "egl"
@@ -102,173 +52,243 @@ def run_episode(ep, profile_key, gpu):
     env["TRANSFORMERS_OFFLINE"] = "1"
     env["HOME"] = "/mnt/sdc/dty_user/openvla_attack/sandbox_home"
     env["TMPDIR"] = "/mnt/sdc/dty_user/openvla_attack/tmp"
-    env["OPENVLA_ATTN_IMPLEMENTATION"] = profile["attn"]
-    env["OPENVLA_DTYPE"] = profile["dtype"]
+    env["OPENVLA_DTYPE"] = p["dtype"]
+    env["OPENVLA_ATTN_IMPLEMENTATION"] = p["attn"]
     env["OPENVLA_MODEL_PATH"] = MODEL_PATH
+    return env
+
+
+def run_episode(ep, profile_key, gpu, output_dir, source_commit, save_video=False):
+    """Run one episode. Returns result dict. Raises on critical failure."""
+    cell_dir = Path(output_dir)
+    done_file = cell_dir / ".done"
+
+    if done_file.exists():
+        existing = json.load(open(done_file))
+        if existing.get("telemetry_sha") and existing["telemetry_sha"] != "MISSING":
+            print(f"    SKIP: already complete (telemetry_sha={existing['telemetry_sha'][:12]})")
+            return existing
+
+    # Clean incomplete dir
+    if cell_dir.exists():
+        shutil.rmtree(cell_dir)
+    cell_dir.mkdir(parents=True)
+
+    cmd = [
+        PYTHON, str(BRIDGE),
+        "--condition", "CLEAN",
+        "--state_id", str(ep["state_id"]),
+        "--task_idx", str(ep["task_idx"]),
+        "--anchor", "0",  # null anchor — CLEAN ignores it; error computed later from Teacher
+        "--seed_id", "42",
+        "--output_dir", str(cell_dir),
+        "--render_gpu", str(gpu),
+        "--mlp_path", str(CKPT),
+    ]
+    if save_video:
+        cmd.extend(["--save_video", "--source_commit", source_commit])
 
     t0 = time.time()
-    result = subprocess.run(cmd, cwd=REPO, env=env, capture_output=True, text=True)
+    result = subprocess.run(cmd, cwd=str(REPO), env=env_for_profile(profile_key, gpu),
+                            capture_output=True, text=True)
     dt = time.time() - t0
 
     # Save logs
-    with open(os.path.join(cell_dir, "stdout.log"), "w") as f:
-        f.write(result.stdout)
-    with open(os.path.join(cell_dir, "stderr.log"), "w") as f:
-        f.write(result.stderr)
+    (cell_dir / "stdout.log").write_text(result.stdout)
+    (cell_dir / "stderr.log").write_text(result.stderr)
 
-    # Parse result
-    summary_path = os.path.join(cell_dir, "episode_summary.json")
-    summary = json.load(open(summary_path)) if os.path.exists(summary_path) else {}
+    # Parse
+    summary_path = cell_dir / "episode_summary.json"
+    summary = json.load(open(summary_path)) if summary_path.exists() else {}
+    telemetry_path = cell_dir / "step_telemetry.csv"
+    telemetry_sha = hashlib.sha256(open(telemetry_path, "rb").read()).hexdigest() if telemetry_path.exists() else "MISSING"
 
-    # Detect FlashAttention2 fallback
-    actual_attn = "unknown"
-    if profile_key == "A1":
-        stderr_lower = result.stderr.lower()
-        if "flash attention" in stderr_lower and "not support" in stderr_lower:
-            actual_attn = "fallback_eager"
-        elif "flash" in stderr_lower:
-            actual_attn = "flash_attention_2"
-        else:
-            # Check stdout for model loading message
-            stdout_lower = result.stdout.lower()
-            if "flash" in stdout_lower:
-                actual_attn = "flash_attention_2"
-            else:
-                actual_attn = "unknown"
-
-    telemetry_path = os.path.join(cell_dir, "step_telemetry.csv")
-    telemetry_sha = hashlib.sha256(open(telemetry_path, "rb").read()).hexdigest() if os.path.exists(telemetry_path) else "MISSING"
-
-    return {
-        "episode_key": episode_key,
-        "task_idx": ep["task_idx"],
-        "task_name": ep["task_name"],
-        "state_id": ep["state_id"],
+    r = {
+        "episode_key": ep["episode_key"], "task_idx": ep["task_idx"],
+        "task_name": ep["task_name"], "state_id": ep["state_id"],
         "profile": profile_key,
-        "requested_dtype": profile["dtype"],
-        "requested_attn": profile["attn"],
-        "actual_attn": actual_attn,
-        "exit_code": result.returncode,
-        "duration_s": round(dt, 1),
+        "requested_dtype": PROFILES[profile_key]["dtype"],
+        "requested_attn": PROFILES[profile_key]["attn"],
+        "actual_dtype": summary.get("actual_dtype", "unknown"),
+        "actual_attn": summary.get("actual_attn", "unknown"),
+        "exit_code": result.returncode, "duration_s": round(dt, 1),
         "telemetry_sha": telemetry_sha,
         "success": summary.get("task_success", False),
         "emit_step": summary.get("mlp_emit_step", -1),
         "steps": summary.get("n_steps", -1),
-        "anchor_error": summary.get("anchor_error", None),
         "attack_frames": summary.get("attack_frames", 0),
+        "checkpoint_sha": summary.get("checkpoint_sha256", "")[:16],
         "gpu": gpu,
+        "output_dir": str(cell_dir),
     }
 
+    # Validate runtime attestation
+    if profile_key == "A1":
+        if r["actual_attn"] != "flash_attention_2":
+            r["flash2_fallback"] = True
+            r["flash2_actual"] = r["actual_attn"]
+            print(f"    FATAL: Flash2 fallback! actual_attn={r['actual_attn']}")
+            # Write done file with failure marker
+            r["_fatal"] = "flash2_fallback"
+            json.dump(r, open(done_file, "w"))
+            return r
+    if profile_key == "D1":
+        if r["actual_dtype"] != "float32":
+            r["fp32_fallback"] = True
+            print(f"    FATAL: FP32 fallback! actual_dtype={r['actual_dtype']}")
+            r["_fatal"] = "fp32_fallback"
+            json.dump(r, open(done_file, "w"))
+            return r
 
-def main():
-    ap = argparse.ArgumentParser(description="M1 Runtime Profile Study")
-    ap.add_argument("--main_gpu", type=int, default=2, help="GPU for main matrix")
-    ap.add_argument("--sentinel_gpu", type=int, default=3, help="GPU for sentinel repeats")
-    ap.add_argument("--dry_run", action="store_true", help="Validate schedule without running")
-    ap.add_argument("--sentinel_only", action="store_true", help="Run only sentinel episodes")
-    ap.add_argument("--profile", choices=["B0","A1","D1"], help="Run only one profile")
-    args = ap.parse_args()
+    # Validate basics
+    if result.returncode != 0:
+        r["_fatal"] = f"exit_code={result.returncode}"
+        print(f"    FATAL: non-zero exit code {result.returncode}")
+    if telemetry_sha == "MISSING":
+        r["_fatal"] = "telemetry_missing"
+        print(f"    FATAL: telemetry missing")
+    if r["attack_frames"] != 0:
+        r["_fatal"] = "attack_frames_nonzero"
+        print(f"    FATAL: attack_frames={r['attack_frames']}")
 
-    manifest = load_manifest()
-    schedule = build_latin_square_schedule(manifest)
+    json.dump(r, open(done_file, "w"))
+    return r
 
-    print(f"M1 Runtime Profile Study")
-    print(f"  Manifest: {MANIFEST_PATH}")
-    print(f"  Episodes: {len(manifest['episodes'])}")
-    print(f"  Total runs (main): {len(schedule)}")
-    print(f"  Main GPU: {args.main_gpu}")
-    print(f"  Sentinel GPU: {args.sentinel_gpu}")
-    print(f"  Profiles: {list(PROFILES.keys())}")
 
-    if args.profile:
-        schedule = [s for s in schedule if s["profile"] == args.profile]
-        print(f"  Filtered to profile {args.profile}: {len(schedule)} runs")
+def run_smoke(source_commit, gpu):
+    """Three-profile smoke on butter_s0."""
+    manifest = json.load(open(MANIFEST_PATH))
+    ep = [e for e in manifest["episodes"] if e["episode_key"] == "butter_s0"][0]
+    results = {}
+    for pk in ["B0", "A1", "D1"]:
+        out_dir = OUT_BASE / "smoke" / pk / "butter_s0"
+        print(f"\n=== SMOKE {pk} ===")
+        r = run_episode(ep, pk, gpu, str(out_dir), source_commit, save_video=True)
+        results[pk] = r
+        if r.get("_fatal"):
+            print(f"SMOKE {pk} FAILED: {r['_fatal']}")
+            if pk == "A1" and r.get("flash2_fallback"):
+                print("FLASH2 NOT AVAILABLE — stopping M1")
+                sys.exit(1)
+    return results
 
-    if args.dry_run:
-        print("\nSchedule (dry run):")
-        for i, s in enumerate(schedule):
-            print(f"  {i:3d}: {s['episode']['episode_key']:25s} {s['profile']} group={s['group']}")
-        print("\nSentinel episodes:")
-        for sk in SENTINEL_KEYS:
-            print(f"  {sk}")
-        return
 
-    # --- Sentinel repeatability (run first to fail fast) ---
-    sentinel_results = []
-    if not args.sentinel_only or True:  # Always run sentinel
-        print("\n=== Sentinel Repeatability (GPU {}) ===".format(args.sentinel_gpu))
-        sentinel_eps = [ep for ep in manifest["episodes"] if ep["episode_key"] in SENTINEL_KEYS]
-        for profile_key in (["B0", "A1", "D1"] if not args.profile else [args.profile]):
-            for ep in sentinel_eps:
-                for repeat in range(2):
-                    label = f"sentinel_{ep['episode_key']}_{profile_key}_r{repeat}"
-                    print(f"  {label}...")
-                    result = run_episode(ep, profile_key, args.sentinel_gpu)
-                    result["sentinel_repeat"] = repeat
-                    sentinel_results.append(result)
-                    if result["telemetry_sha"] == "MISSING":
-                        print(f"    WARNING: telemetry missing — bridge may have crashed")
+def run_sentinel(source_commit, gpu):
+    """6 episodes x 3 profiles x 2 repeats."""
+    manifest = json.load(open(MANIFEST_PATH))
+    sentinel_eps = [e for e in manifest["episodes"] if e["episode_key"] in SENTINEL_KEYS]
+    all_results = []
+    for pk in PROFILES:
+        for ep in sentinel_eps:
+            for repeat in range(2):
+                out_dir = OUT_BASE / "sentinel" / ep["episode_key"] / pk / f"repeat_{repeat}"
+                label = f"sentinel/{ep['episode_key']}/{pk}/r{repeat}"
+                print(f"\n=== SENTINEL {label} ===")
+                r = run_episode(ep, pk, gpu, str(out_dir), source_commit, save_video=True)
+                r["sentinel_repeat"] = repeat
+                all_results.append(r)
+                if r.get("_fatal"):
+                    print(f"SENTINEL FATAL: {r['_fatal']}")
+                    if r.get("flash2_fallback"):
+                        sys.exit(1)
+    # Write summary
+    csv_path = OUT_BASE / "sentinel_repeatability.csv"
+    with open(csv_path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=all_results[0].keys())
+        w.writeheader()
+        w.writerows(all_results)
+    print(f"\nSentinel results: {csv_path}")
+    return all_results
 
-        # Write sentinel results
-        sentinel_path = os.path.join(OUT_DIR, "sentinel_repeatability.csv")
-        with open(sentinel_path, "w", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=sentinel_results[0].keys())
-            w.writeheader()
-            w.writerows(sentinel_results)
-        print(f"  Sentinel results: {sentinel_path}")
 
-    if args.sentinel_only:
-        return
+def run_main_matrix(source_commit, gpu):
+    """30 episodes x 3 profiles with Latin-square ordering."""
+    manifest = json.load(open(MANIFEST_PATH))
+    episodes = manifest["episodes"]
 
-    # --- Main matrix (GPU2) ---
-    print(f"\n=== Main Matrix (GPU {args.main_gpu}) ===")
-    print(f"  Schedule: {len(schedule)} runs, Latin-square groups")
+    # Build Latin-square schedule
+    schedule = []
+    for i, ep in enumerate(episodes):
+        group_idx = i % 3
+        group_id, profile_order = LATIN_SQUARE[group_idx]
+        for pk in profile_order:
+            schedule.append({"episode": ep, "profile": pk, "group": group_id})
 
     all_results = []
-    failure_ledger = []
+    fatal_count = 0
     for i, s in enumerate(schedule):
         ep = s["episode"]
-        profile_key = s["profile"]
-        label = f"{ep['episode_key']}_{profile_key}"
-        print(f"\n[{i+1}/{len(schedule)}] {label} (group={s['group']})")
+        pk = s["profile"]
+        out_dir = OUT_BASE / "main" / f"group_{s['group']}" / ep["episode_key"] / pk
+        label = f"[{i+1}/{len(schedule)}] g{s['group']} {ep['episode_key']}/{pk}"
+        print(f"\n{label}")
 
-        result = run_episode(ep, profile_key, args.main_gpu)
-        all_results.append(result)
+        r = run_episode(ep, pk, gpu, str(out_dir), source_commit, save_video=False)
+        r["group"] = s["group"]
+        r["schedule_index"] = i
+        all_results.append(r)
 
-        if result["telemetry_sha"] == "MISSING":
-            failure_ledger.append({
-                "index": i,
-                "episode_key": ep["episode_key"],
-                "profile": profile_key,
-                "error": "telemetry_missing",
-            })
-            print(f"    FAILED: telemetry missing")
+        if r.get("_fatal"):
+            fatal_count += 1
+            if r.get("flash2_fallback"):
+                print("FLASH2 FALLBACK — stopping main matrix")
+                break
 
-        # Flush results incrementally
-        results_path = os.path.join(OUT_DIR, "episode_results.csv")
-        with open(results_path, "w", newline="") as f:
+        # Incremental save
+        csv_path = OUT_BASE / "episode_results.csv"
+        with open(csv_path, "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=all_results[0].keys())
             w.writeheader()
             w.writerows(all_results)
 
-        # Check FlashAttention2 fallback
-        if profile_key == "A1" and result.get("actual_attn") == "fallback_eager":
-            print(f"    FATAL: FlashAttention2 fallback detected — marking A1 INVALID")
-            failure_ledger.append({
-                "index": i,
-                "episode_key": ep["episode_key"],
-                "profile": profile_key,
-                "error": "flash_attention_fallback",
-            })
+        # Heartbeat
+        heartbeat = {"last_episode": ep["episode_key"], "last_profile": pk,
+                     "completed": i+1, "total": len(schedule), "fatal_count": fatal_count,
+                     "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S")}
+        json.dump(heartbeat, open(OUT_BASE / "heartbeat.json", "w"))
 
-    # Save final outputs
-    json.dump(all_results, open(os.path.join(OUT_DIR, "profile_results.json"), "w"), indent=2)
-    json.dump(failure_ledger, open(os.path.join(OUT_DIR, "failure_ledger.json"), "w"), indent=2)
+    return all_results
 
-    print(f"\n=== Complete ===")
-    print(f"  Total runs: {len(all_results)}")
-    print(f"  Failures: {len(failure_ledger)}")
-    print(f"  Results: {OUT_DIR}")
+
+def main():
+    ap = argparse.ArgumentParser(description="M1 Runtime Profile Study")
+    ap.add_argument("--source_commit", required=True, help="Git commit SHA for provenance")
+    ap.add_argument("--main_gpu", type=int, default=2)
+    ap.add_argument("--sentinel_gpu", type=int, default=3)
+    ap.add_argument("--smoke_only", action="store_true")
+    ap.add_argument("--sentinel_only", action="store_true")
+    ap.add_argument("--main_only", action="store_true")
+    ap.add_argument("--profile", choices=["B0","A1","D1"])
+    args = ap.parse_args()
+
+    OUT_BASE.mkdir(parents=True, exist_ok=True)
+    print(f"M1 Runtime Profile Study — commit={args.source_commit}")
+    print(f"  Output: {OUT_BASE}")
+
+    # Smoke
+    if not args.sentinel_only and not args.main_only:
+        smoke_results = run_smoke(args.source_commit, args.main_gpu)
+        json.dump(smoke_results, open(OUT_BASE / "smoke_results.json", "w"), indent=2)
+        print("\n=== SMOKE COMPLETE ===")
+        for pk, r in smoke_results.items():
+            status = "PASS" if not r.get("_fatal") else f"FAIL({r['_fatal']})"
+            print(f"  {pk}: {status} succ={r['success']} dtype={r['actual_dtype']} attn={r['actual_attn']}")
+    if args.smoke_only:
+        return
+
+    # Sentinel
+    if not args.main_only:
+        sentinel_results = run_sentinel(args.source_commit, args.sentinel_gpu)
+        print(f"\n=== SENTINEL COMPLETE: {len(sentinel_results)} runs ===")
+    if args.sentinel_only:
+        return
+
+    # Main matrix
+    main_results = run_main_matrix(args.source_commit, args.main_gpu)
+    print(f"\n=== MAIN MATRIX COMPLETE: {len(main_results)} runs ===")
+
+    json.dump(main_results, open(OUT_BASE / "profile_results.json", "w"), indent=2)
+    print(f"Results: {OUT_BASE}")
 
 
 if __name__ == "__main__":
