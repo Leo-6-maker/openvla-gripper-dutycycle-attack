@@ -48,6 +48,11 @@ SNAPSHOT_BOUNDARY = "PRE_ACTION_OBS_T_AFTER_STUDENT_EMIT_BEFORE_ENV_STEP_T"
 FLOAT_TOLERANCE = 1e-7
 RESTORE_STEPS = 5
 SUPPORTED_SUITES = {"libero_spatial", "libero_goal", "libero_10"}
+EXPECTED_OPENVLA_MODEL_DIR_BY_SUITE = {
+    "libero_spatial": "openvla-7b-finetuned-libero-spatial",
+    "libero_goal": "openvla-7b-finetuned-libero-goal",
+    "libero_10": "openvla-7b-finetuned-libero-10",
+}
 EXPECTED_LAYER2_DATASET_SHA256 = "6252fd699010005e48f5dff24c631262fb4939d9b76314a9afb82efe7f2cd0b2"
 EXPECTED_M2_CHECKPOINT_SHA256_BY_SUITE = {
     "libero_spatial": "d229e3db0a3b15cf68712a4582817c30a1bedd9f424b1ea7c68120f00e61134a",
@@ -222,6 +227,42 @@ def sha256_path(path: Path) -> str:
     if not rows:
         raise ExactRestoreError(f"dependency directory is empty: {path}")
     return hash_jsonable(rows)
+
+
+def model_norm_stat_keys(model_path: str | Path) -> list[str]:
+    stats_path = Path(model_path) / "dataset_statistics.json"
+    if not stats_path.is_file():
+        raise ExactRestoreError(f"missing dataset_statistics.json in model path: {model_path}")
+    try:
+        payload = json.loads(stats_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        raise ExactRestoreError(f"cannot read model dataset_statistics.json: {exc}") from exc
+    if not isinstance(payload, dict):
+        raise ExactRestoreError("model dataset_statistics.json is not a mapping")
+    return sorted(str(key) for key in payload)
+
+
+def validate_real_openvla_model_binding(*, suite: str, model_path: str | Path, unnorm_key: str) -> dict[str, Any]:
+    if suite not in SUPPORTED_SUITES:
+        raise ExactRestoreError(f"unsupported suite: {suite}")
+    path = Path(model_path)
+    expected_dir = EXPECTED_OPENVLA_MODEL_DIR_BY_SUITE[suite]
+    if path.name != expected_dir:
+        raise ExactRestoreError(
+            f"model_path {path} is not suite-matched for {suite}; expected directory name {expected_dir}"
+        )
+    keys = model_norm_stat_keys(path)
+    if unnorm_key not in keys:
+        raise ExactRestoreError(
+            f"unnorm_key {unnorm_key} unavailable in {path / 'dataset_statistics.json'}; available={keys}"
+        )
+    return {
+        "suite": suite,
+        "model_path": str(path),
+        "expected_model_dir": expected_dir,
+        "unnorm_key": unnorm_key,
+        "available_norm_keys": keys,
+    }
 
 
 def validate_dependency_sha_values(
@@ -1508,6 +1549,12 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
     if out.exists() and any(out.iterdir()):
         raise ExactRestoreError(f"output dir exists and is non-empty: {out}")
     out.mkdir(parents=True, exist_ok=True)
+    model_binding = validate_real_openvla_model_binding(
+        suite=args.suite,
+        model_path=args.model_path,
+        unnorm_key=args.unnorm_key,
+    )
+    write_json(out / "openvla_model_binding_receipt.json", model_binding)
     candidates = make_candidate_order(
         suite=args.suite,
         state_start=args.state_start,

@@ -23,6 +23,7 @@ from scripts.stageb.layer3_exact_restore_runner import (
     capture_mujoco_state,
     capture_policy_rng_state,
     capture_student_state,
+    model_norm_stat_keys,
     parse_cuda_visible_devices,
     query_ordered_visible_gpu_uuids,
     get_observation_after_restore,
@@ -38,6 +39,7 @@ from scripts.stageb.layer3_exact_restore_runner import (
     update_student_for_step,
     validate_clean_restore_pair,
     validate_dependency_sha_values,
+    validate_real_openvla_model_binding,
 )
 
 
@@ -86,6 +88,47 @@ def test_parent_manifest_requires_sha_dependencies():
 def test_parent_manifest_strict_validation(overrides, match):
     with pytest.raises(ExactRestoreError, match=match):
         make_parent(**overrides)
+
+
+def test_real_openvla_binding_rejects_non_suite_matched_model_dir(tmp_path):
+    model_dir = tmp_path / "openvla-7b-finetuned-libero-object"
+    model_dir.mkdir()
+    (model_dir / "dataset_statistics.json").write_text('{"libero_object": {}}\n', encoding="utf-8")
+
+    with pytest.raises(ExactRestoreError, match="suite-matched"):
+        validate_real_openvla_model_binding(
+            suite="libero_goal",
+            model_path=model_dir,
+            unnorm_key="libero_goal",
+        )
+
+
+def test_real_openvla_binding_rejects_missing_unnorm_key(tmp_path):
+    model_dir = tmp_path / "openvla-7b-finetuned-libero-goal"
+    model_dir.mkdir()
+    (model_dir / "dataset_statistics.json").write_text('{"libero_object": {}}\n', encoding="utf-8")
+
+    assert model_norm_stat_keys(model_dir) == ["libero_object"]
+    with pytest.raises(ExactRestoreError, match="unnorm_key libero_goal unavailable"):
+        validate_real_openvla_model_binding(
+            suite="libero_goal",
+            model_path=model_dir,
+            unnorm_key="libero_goal",
+        )
+
+
+def test_real_openvla_binding_accepts_suite_matched_stats(tmp_path):
+    model_dir = tmp_path / "openvla-7b-finetuned-libero-goal"
+    model_dir.mkdir()
+    (model_dir / "dataset_statistics.json").write_text('{"libero_goal": {}}\n', encoding="utf-8")
+
+    receipt = validate_real_openvla_model_binding(
+        suite="libero_goal",
+        model_path=model_dir,
+        unnorm_key="libero_goal",
+    )
+    assert receipt["expected_model_dir"] == "openvla-7b-finetuned-libero-goal"
+    assert receipt["available_norm_keys"] == ["libero_goal"]
 
 
 def test_mock_restore_case_passes_five_step_reference_and_replays():
