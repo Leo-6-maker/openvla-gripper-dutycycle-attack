@@ -3,10 +3,10 @@
   "source_commit": "ad931e2",
   "branch": "migration/object-checkpoint-a800-20260622",
   "gpu2_uuid": "GPU-e85ed586-ba64-a9e3-8fa9-07f16f84dcda",
-  "sentinel_gpu3_uuid": "TBD",
+  "sentinel_gpu3_uuid": "GPU-41cd4b75-e3d4-92b8-ec37-ddca13e3761a",
   "checkpoint_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
   "canonical_manifest_sha256": "d83cfc96923e5ef62f1db8331d2a598f1468fb5c04072958097e1965fa22d3c4",
-  "contract_addendum_sha256": "MISSING",
+  "contract_addendum_sha256": "c1d985d9eedddc3158e972f962c29ae6bef3397329d658189e0467491e888882",
   "runner_sha256": "263e081e1cd78a8442c177d75a402016b428176f54f0f8041a0855d6725b880a",
   "bridge_sha256": "fd594b3f9b38f4545d7b19202b380c0f4eeb0e9d95cb566f2fbca7b1852b208e",
   "vla_safetensors": {

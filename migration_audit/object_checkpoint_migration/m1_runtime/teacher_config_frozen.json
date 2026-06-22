@@ -21,7 +21,8 @@
     "stability_window": 5
   },
   "calibration_tiers": "Tier_A+B_train_only",
-  "tier_c_train_excluded": 0,
+  "tier_c_train_included": 0,
+  "tier_c_train_excluded": "ALL — Teacher calibrated on Tier A and validated Tier B from train split only",
   "n_calibration_paths": 123,
   "n_calibration_episodes": 123,
   "note": "This is the EXACT C16 frozen Teacher configuration. NOT draft defaults. Must be used for all M1B Teacher alignment computations. Do NOT recalibrate.",
