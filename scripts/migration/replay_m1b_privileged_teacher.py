@@ -89,6 +89,26 @@ def replay_one(episode_key, profile, gpu, save_video=False):
     init_states = suite.get_task_init_states(task_idx)
     bddl = os.path.join(get_libero_path("bddl_files"), task_obj.problem_folder, task_obj.bddl_file)
 
+    # Parse BDDL for object and target names
+    bddl_content = open(bddl).read()
+    obj_name = None
+    target_name = None
+    for line in bddl_content.split('\n'):
+        line = line.strip()
+        # Object: first entry in (:objects ...) section, format: name - type
+        if not obj_name and line and not line.startswith('(:') and ' - ' in line:
+            parts = line.split(' - ')
+            if parts[1].strip() not in ['basket', 'bin']:
+                obj_name = parts[0].strip()
+        # Target basket: look for basket in objects section
+        if line and 'basket' in line.lower() and ' - basket' in line:
+            target_name = line.split(' - ')[0].strip()
+
+    if obj_name is None:
+        return {"_error": "TARGET_BINDING_AMBIGUOUS", "reason": "could not parse object from BDDL"}
+    if target_name is None:
+        target_name = "basket_1"  # fallback
+
     env, obs = build_v4_exact_env(bddl, gpu, 400, 10)
     obs = env.set_init_state(init_states[state_id])
     env, obs = apply_dummy_wait(env, obs, 10)
@@ -101,23 +121,26 @@ def replay_one(episode_key, profile, gpu, save_video=False):
 
     for t in range(n_steps):
         # Read state BEFORE step
-        eef_pos = np.array(env.get_sim_state().get_joint_pos("robot0_right_hand")[:3])
-        obj_name = task_obj.object_name if hasattr(task_obj, 'object_name') else None
-
-        # Get object pose from env
+        # EEF position from MuJoCo
         try:
-            obj_pos = np.array(env.sim.data.body_xpos[env.sim.model.body_name2id(obj_name)])
+            eef_body_id = env.sim.model.body_name2id("gripper0_right_gripper")
+            eef_pos = np.array(env.sim.data.body_xpos[eef_body_id])
         except Exception:
-            obj_pos = np.array([float(orig_tel[t].get("obj_x", 0)),
-                                float(orig_tel[t].get("obj_y", 0)),
-                                float(orig_tel[t].get("obj_z", 0))])
+            eef_pos = np.array([float(orig_tel[t].get("eef_x", 0)),
+                                float(orig_tel[t].get("eef_y", 0)),
+                                float(orig_tel[t].get("eef_z", 0))])
 
-        # Get target pose
+        # Object pose
+        obj_pos = np.array(env.sim.data.body_xpos[env.sim.model.body_name2id(obj_name)])
+
+        # Target/basket pose
+        target_pos = np.array(env.sim.data.body_xpos[env.sim.model.body_name2id(target_name)])
+
+        # Gripper qpos from joint sensors
         try:
-            target_name = task_obj.target_name if hasattr(task_obj, 'target_name') else "basket"
-            target_pos = np.array(env.sim.data.body_xpos[env.sim.model.body_name2id(target_name)])
+            grip_qpos = float(env.sim.data.qpos[-2:].sum())
         except Exception:
-            target_pos = np.array([0.0, 0.0, 0.0])
+            grip_qpos = float(orig_tel[t].get("qpos_sum", 0))
 
         # Verify parity with original telemetry
         orig_eef = np.array([float(orig_tel[t].get("eef_x", 0)),
@@ -138,22 +161,21 @@ def replay_one(episode_key, profile, gpu, save_video=False):
             "policy_step_idx": t,
             "phase": "policy",
             "teacher_privileged_state_available": True,
-            "object_pose_json": json.dumps(obj_pos.tolist()),
-            "target_pose_json": json.dumps(target_pos.tolist()),
+            "object_pose_json": json.dumps([float(obj_pos[0]), float(obj_pos[1]), float(obj_pos[2])]),
+            "target_pose_json": json.dumps([float(target_pos[0]), float(target_pos[1]), float(target_pos[2])]),
             "object_to_target_distance": float(np.linalg.norm(obj_pos - target_pos)),
             "object_eef_distance": float(np.linalg.norm(obj_pos - eef_pos)),
-            "gripper_qpos": float(env.get_sim_state().get_joint_qpos()[-2:].sum()),
+            "gripper_qpos": grip_qpos,
+            "gripper_width": grip_qpos,
+            "gripper_opening_proxy": grip_qpos,
+            "gripper_command": float(orig_tel[t].get("raw_gripper", 0)),
             "eef_x": float(eef_pos[0]), "eef_y": float(eef_pos[1]), "eef_z": float(eef_pos[2]),
-            "eef_vx": 0.0 if t == 0 else float(eef_pos[0] - prev_eef[0]),
-            "eef_vy": 0.0 if t == 0 else float(eef_pos[1] - prev_eef[1]),
-            "eef_vz": 0.0 if t == 0 else float(eef_pos[2] - prev_eef[2]),
+            "eef_vx": float("nan") if t == 0 else float(eef_pos[0] - prev_eef[0]),
+            "eef_vy": float("nan") if t == 0 else float(eef_pos[1] - prev_eef[1]),
+            "eef_vz": float("nan") if t == 0 else float(eef_pos[2] - prev_eef[2]),
             "replay_eef_err": float(eef_err),
             "replay_obj_err": float(obj_err),
         }
-        if t == 0:
-            rec["eef_vx"] = float("nan")
-            rec["eef_vy"] = float("nan")
-            rec["eef_vz"] = float("nan")
         replay_records.append(rec)
         prev_eef = eef_pos.copy()
 
