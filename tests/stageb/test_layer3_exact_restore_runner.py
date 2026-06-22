@@ -23,6 +23,8 @@ from scripts.stageb.layer3_exact_restore_runner import (
     capture_mujoco_state,
     capture_policy_rng_state,
     capture_student_state,
+    parse_cuda_visible_devices,
+    query_ordered_visible_gpu_uuids,
     get_observation_after_restore,
     compare_step_sequences,
     restore_env_internal_state,
@@ -369,6 +371,30 @@ def test_runtime_receipt_requires_deterministic_gpu_order_and_generation():
             mujoco_version="mock",
             openvla_generation_kwargs={"do_sample": False, "temperature": 0.0},
         )
+
+
+def test_ordered_gpu_uuid_query_uses_cuda_visible_devices_order(monkeypatch):
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(list(cmd))
+        token = cmd[2]
+
+        class Result:
+            stdout = f"GPU-{token}\n"
+
+        return Result()
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    assert parse_cuda_visible_devices("5,1") == ["5", "1"]
+    assert query_ordered_visible_gpu_uuids("5,1") == ["GPU-5", "GPU-1"]
+    assert calls[0][:3] == ["nvidia-smi", "-i", "5"]
+    assert calls[1][:3] == ["nvidia-smi", "-i", "1"]
+
+
+def test_ordered_gpu_uuid_query_rejects_missing_visible_devices():
+    with pytest.raises(ExactRestoreError, match="CUDA_VISIBLE_DEVICES"):
+        query_ordered_visible_gpu_uuids("")
     with pytest.raises(ExactRestoreError, match="do_sample"):
         Layer3RuntimeReceipt(
             cuda_visible_devices="1",

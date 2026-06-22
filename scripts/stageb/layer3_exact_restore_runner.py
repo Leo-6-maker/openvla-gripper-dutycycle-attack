@@ -527,7 +527,7 @@ def capture_runtime_receipt(
         cuda_runtime = "cpu"
     uuids = list(ordered_gpu_uuids or [])
     if not uuids and device_count > 0:
-        uuids = query_ordered_gpu_uuids()
+        uuids = query_ordered_visible_gpu_uuids(cuda_visible)
     return Layer3RuntimeReceipt(
         cuda_visible_devices=cuda_visible,
         ordered_gpu_uuids=uuids,
@@ -541,18 +541,45 @@ def capture_runtime_receipt(
     )
 
 
-def query_ordered_gpu_uuids() -> list[str]:
+def parse_cuda_visible_devices(cuda_visible_devices: str) -> list[str]:
+    """Return CUDA_VISIBLE_DEVICES tokens in exact runtime order."""
+
+    return [token.strip() for token in str(cuda_visible_devices).split(",") if token.strip()]
+
+
+def query_ordered_visible_gpu_uuids(cuda_visible_devices: str | None = None) -> list[str]:
+    """Query UUIDs in CUDA_VISIBLE_DEVICES order.
+
+    Plain `nvidia-smi --query-gpu=uuid` returns all physical GPUs on the
+    machine, which does not match `torch.cuda.device_count()` under a restricted
+    CUDA_VISIBLE_DEVICES setting. Scientific receipts must record the ordered
+    physical devices used by this process.
+    """
+
+    tokens = parse_cuda_visible_devices(cuda_visible_devices or os.environ.get("CUDA_VISIBLE_DEVICES", ""))
+    if not tokens:
+        raise ExactRestoreError("CUDA_VISIBLE_DEVICES is required to derive ordered GPU UUIDs")
+    uuids: list[str] = []
+    for token in tokens:
+        uuids.append(query_gpu_uuid_by_index(token))
+    return uuids
+
+
+def query_gpu_uuid_by_index(index_token: str) -> str:
     try:
         result = subprocess.run(
-            ["nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader"],
+            ["nvidia-smi", "-i", str(index_token), "--query-gpu=uuid", "--format=csv,noheader"],
             check=True,
             text=True,
             capture_output=True,
             timeout=10,
         )
-    except Exception:
-        return []
-    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    except Exception as exc:
+        raise ExactRestoreError(f"failed to query UUID for CUDA_VISIBLE_DEVICES token {index_token}") from exc
+    uuids = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    if len(uuids) != 1:
+        raise ExactRestoreError(f"expected one UUID for CUDA_VISIBLE_DEVICES token {index_token}, got {len(uuids)}")
+    return uuids[0]
 
 
 def query_nvidia_driver_version() -> str:
