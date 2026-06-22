@@ -1,0 +1,38 @@
+{
+  "components": {
+    "dataset": {
+      "path": "/data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/cross_suite_layer2_dataset_v3_owner_ai_frozen_e2e21c7/provisional_layer2_frame_dataset.csv",
+      "sha256": "3b9ff383d4fc293f0d2afd8e30f88aae3d780eaa193c06352a17e7101668bb3b"
+    },
+    "dataset_builder": {
+      "path": "/data/liuyu/repos/layer1_supp_bridge_e2e21c7/scripts/stageb/build_provisional_layer2_dataset.py",
+      "sha256": "43f3859d75331f50cff79b58fd4a7aa567ac2df0e96263bc30f5b0ee1b582561"
+    },
+    "dataset_manifest": {
+      "path": "/data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/cross_suite_layer2_dataset_v3_owner_ai_frozen_e2e21c7/provisional_layer2_dataset_manifest.json",
+      "sha256": "a580d16f5cea5b87b2cf5cd75309ec499cf14285e52491a43416e114a24eeb30"
+    },
+    "evaluator_sidecar": {
+      "path": "/data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/cross_suite_layer2_dataset_v3_owner_ai_frozen_e2e21c7/provisional_layer2_evaluator_sidecar.csv",
+      "sha256": "4262ad09e82cd8375e33dd39f49cf081ec2a372cf0cb1fc36c42b12e52c35b52"
+    },
+    "ontology": {
+      "path": "/data/liuyu/repos/layer1_supp_bridge_e2e21c7/configs/cross_suite_task_ontology_v1.yaml",
+      "sha256": "70f4c03860d617b5fc64e61dbe9e287dae67c1178e57634d5be9d4d2bde99462"
+    },
+    "physics": {
+      "path": "/data/liuyu/repos/layer1_supp_bridge_e2e21c7/configs/cross_suite_teacher_physics_v1.yaml",
+      "sha256": "7e7957aa253fa82bc4d51a850f149aa7f8fa46822568ccd1c717204fb059ce8a"
+    },
+    "resolver": {
+      "path": "/data/liuyu/repos/layer1_supp_bridge_e2e21c7/scripts/stageb/cross_suite_layer1_resolver.py",
+      "sha256": "ff5ed5b06c7cc3c9c51437d1bc40927db07423b86992aee1d71b6133a94b7f7c"
+    },
+    "schema": {
+      "path": "/data/liuyu/repos/layer1_supp_bridge_e2e21c7/docs/schemas/cross_suite_teacher_label_schema_v1.md",
+      "sha256": "551fa2c182f5fe251f9b277f5e6fcec2ad33a96252d20a095159898efe2cb109"
+    }
+  },
+  "repo_commit": "e2e21c79450b34bb779f6e9f3cfb7389c9597ccb",
+  "spatial_goal_drift_count": 0
+}

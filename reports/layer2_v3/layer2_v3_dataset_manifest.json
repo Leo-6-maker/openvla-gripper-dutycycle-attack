@@ -1,0 +1,158 @@
+{
+  "component_provenance": {
+    "dataset_builder_sha256": "5690a8110cade2e4081af3e81ecbf93d8264857e93433951d8c7b3a2fc220a5d",
+    "label_source_version": "cross_suite_teacher_owner_ai_repair_v2_plus_libero10_supplementary_bridge_v2",
+    "ontology_sha256": "70f4c03860d617b5fc64e61dbe9e287dae67c1178e57634d5be9d4d2bde99462",
+    "physics_sha256": "7e7957aa253fa82bc4d51a850f149aa7f8fa46822568ccd1c717204fb059ce8a",
+    "resolver_commit": "0d7e89f007bec55691abec94174c18ff04ad74c1",
+    "resolver_sha256": "ff5ed5b06c7cc3c9c51437d1bc40927db07423b86992aee1d71b6133a94b7f7c",
+    "schema_sha256": "551fa2c182f5fe251f9b277f5e6fcec2ad33a96252d20a095159898efe2cb109"
+  },
+  "dataset_path": "/data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/cross_suite_layer2_dataset_v3_owner_ai_frozen_0d7e89f/provisional_layer2_frame_dataset.csv",
+  "dataset_sha256": "6252fd699010005e48f5dff24c631262fb4939d9b76314a9afb82efe7f2cd0b2",
+  "episode_label_status_counts": {
+    "CORRECT_SEMANTIC_ABSTAIN": 60,
+    "ELIGIBLE_EVENT": 263,
+    "NO_RELEVANT_GRASP_EVENT": 153,
+    "RESOLVER_NOT_IMPLEMENTED_FOR_MECHANISM": 20,
+    "SUPPLEMENTARY_EVENT_ELIGIBLE": 84,
+    "TARGET_BINDING_AMBIGUOUS": 20
+  },
+  "evaluator_sidecar_path": "/data/liuyu/layer2_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/cross_suite_layer2_dataset_v3_owner_ai_frozen_0d7e89f/provisional_layer2_evaluator_sidecar.csv",
+  "evaluator_sidecar_sha256": "e27e92aa5f00cb7f5753b9f70a4bf0748ccd9d375b5325c4d0402782419e597b",
+  "feature_names": [
+    "gripper_command",
+    "gripper_qpos",
+    "gripper_opening_proxy",
+    "eef_x",
+    "eef_y",
+    "eef_z",
+    "eef_vx",
+    "eef_vy",
+    "eef_vz",
+    "action_dx",
+    "action_dy",
+    "action_dz",
+    "action_gripper",
+    "recent_close_streak",
+    "recent_open_streak",
+    "recent_gripper_flip_count",
+    "close_onset",
+    "time_since_close",
+    "eef_speed",
+    "eef_z_delta_since_close",
+    "qpos_delta_1",
+    "qpos_delta_3",
+    "opening_proxy_delta_3",
+    "opening_proxy_variance_5",
+    "eef_speed_variance_5"
+  ],
+  "forbidden_claims": [
+    "H2 scientifically frozen",
+    "Teacher labels are final ground truth",
+    "cross-suite detector generalization confirmed",
+    "VIS/RAND/shuffled attack effectiveness established"
+  ],
+  "frame_count": 139757,
+  "git_commit": "0d7e89f007bec55691abec94174c18ff04ad74c1",
+  "git_dirty_status": "",
+  "ignore_frame_count": 10311,
+  "label_role_frame_counts": {
+    "ignore": 10311,
+    "negative_only": 69152,
+    "primary_single_object_pick_place": 34195,
+    "supplementary_multievent_grasp_carry_bridge": 26099
+  },
+  "label_source_version": "cross_suite_teacher_owner_ai_repair_v2_plus_libero10_supplementary_bridge_v2",
+  "layer1_root": "/data/liuyu/layer1_outputs/frozen_owner_ai_v2_libero10_bridge_20260622/full_layer1_dataset_v3_e2e21c7",
+  "leakage_audit": {
+    "duplicate_frame_count": 0,
+    "failures": [],
+    "nonfinite_feature_rows": 0,
+    "split_episode_counts": {
+      "test": 300,
+      "train": 240,
+      "val": 60
+    },
+    "split_overlap": {
+      "test__train": {
+        "canonical_key_overlap": 0,
+        "state_overlap": 0
+      },
+      "test__val": {
+        "canonical_key_overlap": 0,
+        "state_overlap": 0
+      },
+      "train__val": {
+        "canonical_key_overlap": 0,
+        "state_overlap": 0
+      }
+    },
+    "split_state_counts": {
+      "test": 300,
+      "train": 240,
+      "val": 60
+    },
+    "status": "PASS"
+  },
+  "model_input_columns": [
+    "gripper_command",
+    "gripper_qpos",
+    "gripper_opening_proxy",
+    "eef_x",
+    "eef_y",
+    "eef_z",
+    "eef_vx",
+    "eef_vy",
+    "eef_vz",
+    "action_dx",
+    "action_dy",
+    "action_dz",
+    "action_gripper",
+    "recent_close_streak",
+    "recent_open_streak",
+    "recent_gripper_flip_count",
+    "close_onset",
+    "time_since_close",
+    "eef_speed",
+    "eef_z_delta_since_close",
+    "qpos_delta_1",
+    "qpos_delta_3",
+    "opening_proxy_delta_3",
+    "opening_proxy_variance_5",
+    "eef_speed_variance_5"
+  ],
+  "model_input_columns_exactly_sc5_features": true,
+  "official_h2_status": "NOT_GRANTED",
+  "per_suite_label_role_frame_counts": {
+    "libero_10|ignore": 5094,
+    "libero_10|negative_only": 36290,
+    "libero_10|supplementary_multievent_grasp_carry_bridge": 26099,
+    "libero_goal|ignore": 5217,
+    "libero_goal|negative_only": 20062,
+    "libero_goal|primary_single_object_pick_place": 11640,
+    "libero_spatial|negative_only": 12800,
+    "libero_spatial|primary_single_object_pick_place": 22555
+  },
+  "phase_classes": [
+    "approach",
+    "grasp_close",
+    "stable_grasp",
+    "first_lift",
+    "stable_carry",
+    "pre_place_unsupported",
+    "release_safe",
+    "recovery_or_regrasp",
+    "abstain_unsupported"
+  ],
+  "positive_frame_count": 17985,
+  "problem_count": 0,
+  "problems": [],
+  "provisional_engineering_only": true,
+  "supervised_frame_count": 129446,
+  "supervised_label_role_frame_counts": {
+    "negative_only": 69152,
+    "primary_single_object_pick_place": 34195,
+    "supplementary_multievent_grasp_carry_bridge": 26099
+  }
+}
