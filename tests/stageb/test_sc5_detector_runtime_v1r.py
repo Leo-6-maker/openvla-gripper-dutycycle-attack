@@ -242,7 +242,16 @@ def test_r2_n_candidate_3_arms_third_frame():
     r = d.update_from_scores(0.9, 0.001, "stable_carry", 1)
     assert r["state"] == "CANDIDATE"
     r = d.update_from_scores(0.9, 0.001, "stable_carry", 2)
-    assert r["state"] == "ARMED"  # cleared on arm
+    assert r["state"] == "ARMED"
+
+def test_r2_armed_feat_invalid_disarm():
+    """R2 ARMED: feat_valid=false with valid cp/rp/phase → FEATURE_INVALID disarm."""
+    d = _make_detector("v1r_r2", n_candidate=1)
+    d.update_from_scores(0.9, 0.001, "stable_carry", 0)  # n_candidate=1 → ARM directly
+    assert d.state == "ARMED"
+    r = d.update_from_scores(0.9, 0.001, "stable_carry", 1, feat_valid=False)
+    assert r["state"] == "IDLE"
+    assert r["disarm_reason"] == "FEATURE_INVALID"  # cleared on arm
 
 def test_r2_candidate_break_to_idle():
     d = _make_detector("v1r_r2")

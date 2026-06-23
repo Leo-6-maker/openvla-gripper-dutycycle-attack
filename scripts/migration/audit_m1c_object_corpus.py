@@ -101,15 +101,56 @@ def main():
     errors = defaultdict(list)
     per_cell_rows = []
 
+    # ── Blind directory check (not silently skipped) ─────────────────
+    blind_dir = corpus_root / "blind"
+    blind_count = 0
+    if blind_dir.exists():
+        blind_cells = [d for d in blind_dir.iterdir() if d.is_dir()]
+        blind_count = len(blind_cells)
+        if blind_count > 0:
+            errors["blind_excluded"].append(f"found {blind_count} blind cells (expected 0)")
+    # Malformed directories
+    for pool_dir in corpus_root.iterdir():
+        if not pool_dir.is_dir(): continue
+        if pool_dir.name in ("smoke",):
+            continue
+        for cell_dir in pool_dir.iterdir():
+            if not cell_dir.is_dir(): continue
+            try:
+                parts = cell_dir.name.split("_")
+                int(parts[0].replace("task",""))
+                int(parts[1].replace("state",""))
+            except (ValueError, IndexError):
+                errors["malformed_directory"].append(str(cell_dir.relative_to(corpus_root)))
+
     # ── Completeness ─────────────────────────────────────────────────
     for pool, task, state in planned:
-        key = cell_key(task, state)
+        key = storage_key(pool, task, state)
         if key not in actual:
-            errors["missing"].append(f"{pool}/{key}")
+            errors["missing"].append(key)
     for key, cell in actual.items():
         tk = (cell["pool"], cell["task"], cell["state"])
         if tk not in planned:
-            errors["unexpected"].append(f"{cell['pool']}/{key}")
+            errors["unexpected"].append(key)
+    # Split manifest validation
+    sm_train_states = set()
+    sm_val_states = set()
+    sa = split_manifest.get("split_assignment", {})
+    for pn in ["train","validation"]:
+        pi = sa.get(pn,{})
+        for t in pi.get("tasks",[]):
+            rng = pi.get("states","")
+            if "-" in str(rng):
+                lo, hi = map(int, rng.split("-"))
+                for s in range(lo, hi+1):
+                    if pn == "train": sm_train_states.add((t,s))
+                    else: sm_val_states.add((t,s))
+    ex_train = {(t,s) for p,t,s in planned if p=="train"}
+    ex_val = {(t,s) for p,t,s in planned if p=="validation"}
+    if ex_train != sm_train_states:
+        errors["split_manifest_mismatch"].append(f"train: exec={len(ex_train)} vs split={len(sm_train_states)}")
+    if ex_val != sm_val_states:
+        errors["split_manifest_mismatch"].append(f"validation: exec={len(ex_val)} vs split={len(sm_val_states)}")
 
     # ── Per-cell checks ──────────────────────────────────────────────
     all_initial_hashes = {}
@@ -188,15 +229,13 @@ def main():
                 errors["csv_parse"].append(f"{key}:{e}")
                 row["n_issues"] += 1
 
-        # Asset SHA
+        # Asset SHA — strict: must be exactly 64-char and match
         actual_sha = ep_data.get("checkpoint_sha256", "") if ep_data else ""
-        if actual_sha:
-            expected = EXPECTED_ASSETS["detector_checkpoint"]
-            if len(actual_sha) == 64 and actual_sha != expected:
-                errors["asset_sha"].append(f"{key}:ckpt={actual_sha[:16]}")
-                row["n_issues"] += 1
-        else:
+        if not actual_sha or len(actual_sha) != 64:
             errors["missing_checkpoint_sha"].append(key)
+            row["n_issues"] += 1
+        elif actual_sha != EXPECTED_ASSETS["detector_checkpoint"]:
+            errors["asset_sha"].append(f"{key}:ckpt={actual_sha[:16]}")
             row["n_issues"] += 1
 
         # Collect hashes for split check
@@ -234,13 +273,12 @@ def main():
     # ── Pool counts ──────────────────────────────────────────────────
     train_actual = sum(1 for c in actual.values() if c["pool"] == "train")
     val_actual = sum(1 for c in actual.values() if c["pool"] == "validation")
-    blind_actual = sum(1 for c in actual.values() if c["pool"] == "blind")
     if train_actual != ex_manifest.get("train_planned", 250):
         errors["pool_count"].append(f"train:{train_actual}≠250")
     if val_actual != ex_manifest.get("validation_planned", 100):
         errors["pool_count"].append(f"validation:{val_actual}≠100")
-    if blind_actual != 0:
-        errors["pool_count"].append(f"blind:{blind_actual}≠0")
+    if blind_count != 0:
+        errors["pool_count"].append(f"blind:{blind_count}≠0")
 
     # ── Summary ──────────────────────────────────────────────────────
     total_issues = sum(len(v) for v in errors.values())

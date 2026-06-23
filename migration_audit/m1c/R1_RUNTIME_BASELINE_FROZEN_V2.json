@@ -4,7 +4,7 @@
   "frozen_at": "2026-06-23T19:30:00+08:00",
   "supersedes": "migration_audit/m1c/R1_RUNTIME_BASELINE_FROZEN.json",
   "change_log": "V2: Added feat_valid gate — R1 now disarms on feat_valid=false even when cp/rp are finite and phase=stable_carry. This corrects a gap where the old code could remain ARMED with invalid feature data.",
-  "source_runtime_commit": "d0066b1 (v1r hardening)",
+  "source_runtime_commit": "7a507685bbd31094bd37540786964aa89fa8cd98",
   "fsm_version": "v1r_r1",
   "class_name": "SC5DetectorRuntimeV1R",
   "runtime_file": "src/gripper_attack/sc5_detector_runtime_v1r.py",

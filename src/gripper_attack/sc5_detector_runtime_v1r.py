@@ -316,13 +316,17 @@ class SC5DetectorRuntimeV1R:
 
         elif self.state == "ARMED":
             disarm = False
-            keep = self._check_keep_evidence(cp, rp, pp)
-            if not keep:
+            if not self._check_feat_ok(feat_valid, cp, rp):
                 disarm = True
-                self.disarm_reason = self._classify_disarm(feat_valid, cp, rp, pp)
-            elif self.arm_age >= self.max_arm_age:
-                disarm = True
-                self.disarm_reason = "ARM_TIMEOUT"
+                self.disarm_reason = "FEATURE_INVALID"
+            else:
+                keep = self._check_keep_evidence(cp, rp, pp)
+                if not keep:
+                    disarm = True
+                    self.disarm_reason = self._classify_disarm(feat_valid, cp, rp, pp)
+                elif self.arm_age >= self.max_arm_age:
+                    disarm = True
+                    self.disarm_reason = "ARM_TIMEOUT"
 
             if disarm:
                 self.state = "IDLE"
