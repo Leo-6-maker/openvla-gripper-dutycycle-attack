@@ -112,6 +112,12 @@ def main():
                                               center_crop=True, resize_size=224)
         env_action = np.array(action, dtype=np.float64)
 
+        # EEF and object positions (needed for detector)
+        eef_pos = np.array(env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_site")])
+        obj_body_name = f"{task_obj.name.split('_')[-2]}_main"
+        obj_pos = np.array(env.sim.data.body_xpos[env.sim.model.body_name2id(obj_body_name)])
+        qpos_sum = float(env.sim.data.qpos[-2:].sum())
+
         # Detector
         from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
         if step == 0:
@@ -122,7 +128,6 @@ def main():
         eef_vy = eef_pos[1] - _prev_eef[1] if _prev_eef is not None else 0.0
         eef_vz = eef_pos[2] - _prev_eef[2] if _prev_eef is not None else 0.0
         _prev_eef = eef_pos.copy()
-        qpos_sum = float(env.sim.data.qpos[-2:].sum())
         feat_res = streamer.update(
             step_id=step, raw_gripper=float(action[-1]), env_gripper=float(env_action[-1]),
             gripper_qpos=qpos_sum, gripper_opening_proxy=qpos_sum,
@@ -144,12 +149,12 @@ def main():
             "perturbation_seed": args.base_seed, "perturbation_spec": args.perturbation_template,
             "language_instruction": instruction,
             "raw_gripper": float(action[-1]), "gripper_qpos": qpos_sum,
-            "gripper_opening_proxy": qpos_sum,
-            "eef_x": float(eef_pos[0]), "eef_y": float(eef_pos[1]), "eef_z": float(eef_pos[2]),
-            "object_x": float(obj_pos[0]), "object_y": float(obj_pos[1]), "object_z": float(obj_pos[2]),
+            "gripper_opening_proxy": post_qpos,
+            "eef_x": float(post_eef[0]), "eef_y": float(post_eef[1]), "eef_z": float(post_eef[2]),
+            "object_x": float(post_obj[0]), "object_y": float(post_obj[1]), "object_z": float(post_obj[2]),
             "target_x": target_x, "target_y": target_y, "target_z": target_z,
-            "object_eef_distance": float(np.linalg.norm(obj_pos - eef_pos)),
-            "object_target_distance": float(np.linalg.norm(obj_pos - np.array([target_x, target_y, target_z]))),
+            "object_eef_distance": float(np.linalg.norm(post_obj - post_eef)),
+            "object_target_distance": float(np.linalg.norm(post_obj - np.array([target_x, target_y, target_z]))),
             "corridor_p": dec.get("corridor_p"), "release_p": dec.get("release_p"),
             "pred_phase": dec.get("pred_phase"), "feat_valid": feat_res.get("valid", False),
             "condition": args.condition, "attack_frames": 0,
