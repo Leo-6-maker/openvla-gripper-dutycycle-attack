@@ -19,6 +19,7 @@ from scripts.stageb.layer3_exact_restore_runner import (
     _MockEnv,
     _MockPolicy,
     _MockStudent,
+    apply_control_ablation_state,
     build_mock_restore_case,
     build_prefix_snapshot,
     capture_env_internal_state,
@@ -33,6 +34,8 @@ from scripts.stageb.layer3_exact_restore_runner import (
     compare_policy_input_fingerprints,
     diff_state_dicts,
     first_transition_diff,
+    refresh_derived_controller_state,
+    snapshot_control_ablation_state,
     model_norm_stat_keys,
     parse_cuda_visible_devices,
     query_ordered_visible_gpu_uuids,
@@ -231,6 +234,95 @@ def test_transition_state_audit_known_parent_fail_closed():
     )
     with pytest.raises(ExactRestoreError, match="known parent"):
         validate_transition_state_audit_known_parent(invalid)
+
+
+class _FakeController:
+    def __init__(self):
+        self.goal_pos = np.array([1.0, 2.0, 3.0], dtype=np.float64)
+        self.goal_ori = np.eye(3, dtype=np.float64)
+        self.J_full = np.zeros((2, 2), dtype=np.float64)
+        self.update_calls = 0
+
+    def update(self, force=False):
+        assert force is True
+        self.update_calls += 1
+        self.J_full[:] = 7.0
+
+
+class _FakeRobot:
+    def __init__(self):
+        self.controller = _FakeController()
+
+
+class _FakeC2Data:
+    def __init__(self):
+        self.qacc = np.array([0.0, 0.0], dtype=np.float64)
+
+
+class _FakeC2Sim:
+    def __init__(self):
+        self.data = _FakeC2Data()
+
+
+class _FakeC2Inner:
+    def __init__(self):
+        self.robots = [_FakeRobot()]
+        self._elapsed_steps = 3
+
+
+class _FakeC2Env:
+    def __init__(self):
+        self.env = _FakeC2Inner()
+        self.sim = _FakeC2Sim()
+
+
+class _FakeC2Adapter:
+    def __init__(self):
+        self.env = _FakeC2Env()
+
+
+def test_control_ablation_state_restores_only_whitelisted_mutable_state():
+    reference = _FakeC2Adapter()
+    reference.env.env.robots[0].controller.goal_pos[:] = [4.0, 5.0, 6.0]
+    reference.env.env.robots[0].controller.goal_ori[:] = np.eye(3) * 2.0
+    reference.env.sim.data.qacc[:] = [0.25, -0.5]
+    state = snapshot_control_ablation_state(reference)
+
+    replay = _FakeC2Adapter()
+    replay.env.env.robots[0].controller.goal_pos[:] = [0.0, 0.0, 0.0]
+    replay.env.env.robots[0].controller.goal_ori[:] = np.eye(3)
+    replay.env.env.robots[0].controller.J_full[:] = 123.0
+
+    applied = apply_control_ablation_state(replay, state, restore_goal=True, refresh_derived=True)
+
+    np.testing.assert_allclose(replay.env.env.robots[0].controller.goal_pos, [4.0, 5.0, 6.0])
+    np.testing.assert_allclose(replay.env.env.robots[0].controller.goal_ori, np.eye(3) * 2.0)
+    np.testing.assert_allclose(replay.env.env.robots[0].controller.J_full, np.ones((2, 2)) * 7.0)
+    np.testing.assert_allclose(replay.env.sim.data.qacc, [0.0, 0.0])
+    assert "mujoco.qacc" not in applied["actions"]
+    assert "robot0.controller.update(force=True)" in applied["actions"]
+
+
+def test_control_ablation_qacc_is_explicit_opt_in():
+    reference = _FakeC2Adapter()
+    reference.env.sim.data.qacc[:] = [0.25, -0.5]
+    state = snapshot_control_ablation_state(reference)
+    replay = _FakeC2Adapter()
+
+    apply_control_ablation_state(replay, state, restore_qacc=False, refresh_derived=False)
+    np.testing.assert_allclose(replay.env.sim.data.qacc, [0.0, 0.0])
+
+    applied = apply_control_ablation_state(replay, state, restore_qacc=True, refresh_derived=False)
+    np.testing.assert_allclose(replay.env.sim.data.qacc, [0.25, -0.5])
+    assert "mujoco.qacc" in applied["actions"]
+
+
+def test_refresh_derived_controller_state_calls_update_force_only():
+    adapter = _FakeC2Adapter()
+    refreshed = refresh_derived_controller_state(adapter)
+
+    assert refreshed == ["robot0.controller.update(force=True)"]
+    assert adapter.env.env.robots[0].controller.update_calls == 1
 
 
 def test_typed_prefix_artifact_roundtrip_preserves_agentview(tmp_path):

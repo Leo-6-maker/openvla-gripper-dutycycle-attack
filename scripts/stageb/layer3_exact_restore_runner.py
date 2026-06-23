@@ -516,6 +516,189 @@ def capture_robot_control_state(env_adapter: "RealLiberoEnvAdapter") -> list[dic
     return rows
 
 
+CONTROL_MUTABLE_GOAL_ATTRS = ("goal_pos", "goal_ori", "goal_orientation", "goal_qpos")
+INTERPOLATOR_MUTABLE_ATTRS = ("start", "goal", "step", "total_steps", "ori_interpolate")
+ROBOT_ACTION_HISTORY_ATTRS = ("recent_actions",)
+ENV_COUNTER_ATTRS = ("timestep", "_timestep", "cur_time", "_elapsed_steps")
+
+
+def snapshot_simple_object_attrs(obj: Any, attrs: Sequence[str]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for name in attrs:
+        if not hasattr(obj, name):
+            continue
+        value = getattr(obj, name)
+        if isinstance(value, np.ndarray):
+            out[name] = value.copy()
+        elif isinstance(value, (int, float, bool, str)) or value is None:
+            out[name] = copy.deepcopy(value)
+    return out
+
+
+def snapshot_mutable_interpolator_state(interpolator: Any | None) -> dict[str, Any] | None:
+    if interpolator is None:
+        return None
+    return snapshot_simple_object_attrs(interpolator, INTERPOLATOR_MUTABLE_ATTRS)
+
+
+def snapshot_action_history_buffer(buffer: Any | None) -> dict[str, Any] | None:
+    if buffer is None:
+        return None
+    try:
+        raw_attrs = vars(buffer)
+    except Exception:
+        return None
+    out: dict[str, Any] = {}
+    for name, value in raw_attrs.items():
+        if isinstance(value, np.ndarray):
+            out[name] = value.copy()
+        elif isinstance(value, (list, tuple)):
+            cloned = []
+            ok = True
+            for item in value:
+                if isinstance(item, np.ndarray):
+                    cloned.append(item.copy())
+                elif isinstance(item, (int, float, bool, str)) or item is None:
+                    cloned.append(copy.deepcopy(item))
+                else:
+                    ok = False
+                    break
+            if ok:
+                out[name] = type(value)(cloned) if isinstance(value, tuple) else cloned
+        elif isinstance(value, (int, float, bool, str)) or value is None:
+            out[name] = copy.deepcopy(value)
+    return out
+
+
+def restore_simple_object_attrs(obj: Any, values: Mapping[str, Any]) -> list[str]:
+    restored = []
+    for name, value in values.items():
+        if not hasattr(obj, name):
+            continue
+        current = getattr(obj, name)
+        if isinstance(current, np.ndarray):
+            current[...] = np.asarray(value, dtype=current.dtype)
+        else:
+            setattr(obj, name, copy.deepcopy(value))
+        restored.append(str(name))
+    return restored
+
+
+def restore_action_history_buffer(buffer: Any | None, values: Mapping[str, Any] | None) -> list[str]:
+    if buffer is None or values is None:
+        return []
+    restored = []
+    for name, value in values.items():
+        if not hasattr(buffer, name):
+            continue
+        current = getattr(buffer, name)
+        if isinstance(current, np.ndarray):
+            current[...] = np.asarray(value, dtype=current.dtype)
+        else:
+            setattr(buffer, name, copy.deepcopy(value))
+        restored.append(str(name))
+    return restored
+
+
+def get_env_robots(env_adapter: "RealLiberoEnvAdapter") -> list[Any]:
+    env = env_adapter.env
+    inner = getattr(env, "env", env)
+    robots = getattr(inner, "robots", getattr(env, "robots", []))
+    return list(robots) if robots is not None else []
+
+
+def snapshot_control_ablation_state(env_adapter: "RealLiberoEnvAdapter") -> dict[str, Any]:
+    env = env_adapter.env
+    inner = getattr(env, "env", env)
+    robots_out = []
+    for robot in get_env_robots(env_adapter):
+        ctrl = getattr(robot, "controller", None)
+        row: dict[str, Any] = {
+            "controller_goal": snapshot_simple_object_attrs(ctrl, CONTROL_MUTABLE_GOAL_ATTRS) if ctrl is not None else {},
+            "interpolator_pos": snapshot_mutable_interpolator_state(getattr(ctrl, "interpolator_pos", None))
+            if ctrl is not None
+            else None,
+            "interpolator_ori": snapshot_mutable_interpolator_state(getattr(ctrl, "interpolator_ori", None))
+            if ctrl is not None
+            else None,
+            "action_history": {
+                name: snapshot_action_history_buffer(getattr(robot, name, None))
+                for name in ROBOT_ACTION_HISTORY_ATTRS
+                if hasattr(robot, name)
+            },
+        }
+        robots_out.append(row)
+    qacc = None
+    if hasattr(env.sim.data, "qacc"):
+        qacc = np.asarray(env.sim.data.qacc).copy()
+    return {
+        "robots": robots_out,
+        "env_counters": snapshot_simple_object_attrs(inner, ENV_COUNTER_ATTRS),
+        "qacc": qacc,
+    }
+
+
+def refresh_derived_controller_state(env_adapter: "RealLiberoEnvAdapter") -> list[str]:
+    refreshed = []
+    for idx, robot in enumerate(get_env_robots(env_adapter)):
+        ctrl = getattr(robot, "controller", None)
+        if ctrl is not None and hasattr(ctrl, "update"):
+            ctrl.update(force=True)
+            refreshed.append(f"robot{idx}.controller.update(force=True)")
+    return refreshed
+
+
+def apply_control_ablation_state(
+    env_adapter: "RealLiberoEnvAdapter",
+    reference_state: Mapping[str, Any],
+    *,
+    restore_goal: bool = False,
+    restore_interpolator: bool = False,
+    restore_action_history: bool = False,
+    restore_qacc: bool = False,
+    refresh_derived: bool = True,
+) -> dict[str, Any]:
+    actions: list[str] = []
+    robots = get_env_robots(env_adapter)
+    ref_robots = list(reference_state.get("robots", []))
+    for idx, robot in enumerate(robots):
+        if idx >= len(ref_robots):
+            continue
+        ref_robot = ref_robots[idx]
+        ctrl = getattr(robot, "controller", None)
+        if restore_goal and ctrl is not None:
+            for attr in restore_simple_object_attrs(ctrl, ref_robot.get("controller_goal", {})):
+                actions.append(f"robot{idx}.controller.{attr}")
+        if restore_interpolator and ctrl is not None:
+            for name in ("interpolator_pos", "interpolator_ori"):
+                interp = getattr(ctrl, name, None)
+                state = ref_robot.get(name)
+                if interp is not None and state is not None:
+                    for attr in restore_simple_object_attrs(interp, state):
+                        actions.append(f"robot{idx}.controller.{name}.{attr}")
+        if restore_action_history:
+            for name, state in dict(ref_robot.get("action_history", {})).items():
+                for attr in restore_action_history_buffer(getattr(robot, name, None), state):
+                    actions.append(f"robot{idx}.{name}.{attr}")
+    if restore_action_history:
+        inner = getattr(env_adapter.env, "env", env_adapter.env)
+        for attr in restore_simple_object_attrs(inner, reference_state.get("env_counters", {})):
+            actions.append(f"env_inner.{attr}")
+    if restore_qacc and reference_state.get("qacc") is not None and hasattr(env_adapter.env.sim.data, "qacc"):
+        env_adapter.env.sim.data.qacc[...] = np.asarray(reference_state["qacc"], dtype=env_adapter.env.sim.data.qacc.dtype)
+        actions.append("mujoco.qacc")
+    if refresh_derived:
+        actions.extend(refresh_derived_controller_state(env_adapter))
+    return {
+        "restore_goal": bool(restore_goal),
+        "restore_interpolator": bool(restore_interpolator),
+        "restore_action_history": bool(restore_action_history),
+        "restore_qacc": bool(restore_qacc),
+        "refresh_derived": bool(refresh_derived),
+        "actions": actions,
+    }
+
+
 def capture_transition_state(
     *,
     phase: str,
@@ -2496,6 +2679,230 @@ def run_transition_state_audit(
     return summary
 
 
+C2_ABLATIONS = (
+    ("A0_BASELINE", {}),
+    ("A1_DERIVED_RECOMPUTE", {"refresh_derived": True}),
+    ("A2_GOAL_STATE", {"restore_goal": True, "refresh_derived": True}),
+    (
+        "A3_GOAL_INTERPOLATOR_STATE",
+        {"restore_goal": True, "restore_interpolator": True, "refresh_derived": True},
+    ),
+    (
+        "A4_GOAL_INTERPOLATOR_ACTION_HISTORY",
+        {
+            "restore_goal": True,
+            "restore_interpolator": True,
+            "restore_action_history": True,
+            "refresh_derived": True,
+        },
+    ),
+    (
+        "A5_QACC_ABLATION",
+        {
+            "restore_goal": True,
+            "restore_interpolator": True,
+            "restore_action_history": True,
+            "restore_qacc": True,
+            "refresh_derived": True,
+        },
+    ),
+)
+
+
+def qpos_qvel_gate(reference_post: Mapping[str, Any], replay_post: Mapping[str, Any]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for name in ("qpos", "qvel"):
+        ref = reference_post.get("mujoco", {}).get(name, {})
+        rep = replay_post.get("mujoco", {}).get(name, {})
+        out[f"{name}_sha_match"] = ref.get("sha256", "") == rep.get("sha256", "")
+        ref_vals = ref.get("values")
+        rep_vals = rep.get("values")
+        if isinstance(ref_vals, list) and isinstance(rep_vals, list) and len(ref_vals) == len(rep_vals):
+            diffs = [abs(float(a) - float(b)) for a, b in zip(ref_vals, rep_vals)]
+            out[f"{name}_max_abs_diff"] = max(diffs) if diffs else 0.0
+            out[f"{name}_nonzero_diff_count"] = sum(1 for value in diffs if value != 0)
+        else:
+            out[f"{name}_max_abs_diff"] = ""
+            out[f"{name}_nonzero_diff_count"] = ""
+    out["qpos_qvel_exact"] = bool(out.get("qpos_sha_match") and out.get("qvel_sha_match"))
+    return out
+
+
+def run_control_state_causal_ablation(
+    args: argparse.Namespace,
+    selected: Mapping[str, Any],
+    output_dir: Path,
+) -> dict[str, Any]:
+    output_dir.mkdir(parents=True, exist_ok=False)
+    snapshot: ExactRestoreSnapshotPayload = selected["snapshot"]
+    validate_transition_state_audit_known_parent(snapshot)
+
+    env_adapter: RealLiberoEnvAdapter = selected["env_adapter"]
+    policy: RealOpenVLAPolicyAdapter = selected["policy"]
+    student: RealSC5StudentAdapter = selected["student"]
+    obs_t = clone_typed_observation(selected["obs_t"])
+
+    write_json(output_dir / "parent_dependency_manifest.json", asdict(selected["parent"]))
+    write_json(output_dir / "runtime_receipt.json", asdict(selected["runtime"]))
+    write_json(output_dir / "dependency_sha_receipt.json", selected["dependency"])
+    write_json(output_dir / "prefix_snapshot_manifest.json", asdict(snapshot.prefix))
+    typed_manifest = save_typed_prefix_observation_artifacts(
+        output_dir / "captured_prefix",
+        snapshot=snapshot,
+        policy=policy,
+    )
+
+    reference_action, reference_tokens = policy.act(obs_t)
+    if [int(x) for x in reference_tokens] != [int(x) for x in snapshot.clean_tokens_t]:
+        raise ExactRestoreError("C2 first token mismatch before reference step")
+    if not np.allclose(np.asarray(reference_action, dtype=np.float64), np.asarray(snapshot.clean_action_t, dtype=np.float64)):
+        raise ExactRestoreError("C2 first action mismatch before reference step")
+
+    reference_mutable_state = snapshot_control_ablation_state(env_adapter)
+    reference_pre = capture_transition_state(
+        phase="PRE_STEP",
+        env_adapter=env_adapter,
+        student=student,
+        policy=policy,
+        obs=obs_t,
+        action=snapshot.clean_action_t,
+        tokens=snapshot.clean_tokens_t,
+    )
+    reference_next_obs, reference_reward, reference_done, reference_info = env_adapter.step(snapshot.clean_action_t)
+    reference_post = capture_transition_state(
+        phase="POST_STEP",
+        env_adapter=env_adapter,
+        student=student,
+        policy=policy,
+        obs=reference_next_obs,
+        action=snapshot.clean_action_t,
+        tokens=snapshot.clean_tokens_t,
+    )
+    reference_step = {
+        "reward": float(reference_reward),
+        "done": bool(reference_done),
+        "info": _json_clone(reference_info),
+        "next_observation_sha256": hash_typed_observation(reference_next_obs),
+    }
+    write_json(output_dir / "reference_mutable_control_state.json", compact_state_value(reference_mutable_state, max_depth=5))
+    write_json(output_dir / "reference_pre.json", reference_pre)
+    write_json(output_dir / "reference_post.json", reference_post)
+    env_adapter.close()
+    release_real_policy(policy)
+    selected["env_adapter"] = None
+    selected["policy"] = None
+    selected["student"] = None
+
+    rows: list[dict[str, Any]] = []
+    for ablation_name, options in C2_ABLATIONS:
+        ablation_dir = output_dir / ablation_name
+        ablation_dir.mkdir(parents=True, exist_ok=False)
+        replay_env, replay_policy, replay_student = new_env_policy_student_for_snapshot(args, selected)
+        try:
+            restore_snapshot(replay_env, replay_student, snapshot, replay_policy)
+            replay_obs = clone_typed_observation(snapshot.observation)
+            applied = apply_control_ablation_state(replay_env, reference_mutable_state, **options)
+            replay_action, replay_tokens = replay_policy.act(replay_obs)
+            tokens_exact = [int(x) for x in replay_tokens] == [int(x) for x in snapshot.clean_tokens_t]
+            action_exact = bool(
+                np.allclose(np.asarray(replay_action, dtype=np.float64), np.asarray(snapshot.clean_action_t, dtype=np.float64))
+            )
+            if not tokens_exact or not action_exact:
+                raise ExactRestoreError(f"C2 {ablation_name} first action/tokens mismatch")
+            replay_pre = capture_transition_state(
+                phase="PRE_STEP",
+                env_adapter=replay_env,
+                student=replay_student,
+                policy=replay_policy,
+                obs=replay_obs,
+                action=snapshot.clean_action_t,
+                tokens=snapshot.clean_tokens_t,
+            )
+            replay_next_obs, replay_reward, replay_done, replay_info = replay_env.step(snapshot.clean_action_t)
+            replay_post = capture_transition_state(
+                phase="POST_STEP",
+                env_adapter=replay_env,
+                student=replay_student,
+                policy=replay_policy,
+                obs=replay_next_obs,
+                action=snapshot.clean_action_t,
+                tokens=snapshot.clean_tokens_t,
+            )
+            pre_diff = annotate_transition_diffs(diff_state_dicts(reference_pre, replay_pre))
+            post_diff = annotate_transition_diffs(diff_state_dicts(reference_post, replay_post))
+            first = first_transition_diff(pre_diff, post_diff)
+            gate = qpos_qvel_gate(reference_post, replay_post)
+            row = {
+                "ablation": ablation_name,
+                "tokens_exact": tokens_exact,
+                "action_exact": action_exact,
+                "first_divergence_phase": first.get("first_divergence_phase"),
+                "first_divergence_field": first.get("field"),
+                "classification": first.get("classification"),
+                "pre_diff_count": len(pre_diff),
+                "post_diff_count": len(post_diff),
+                "pre_diff_classification_counts": json.dumps(
+                    transition_classification_counts(pre_diff), sort_keys=True
+                ),
+                "post_diff_classification_counts": json.dumps(
+                    transition_classification_counts(post_diff), sort_keys=True
+                ),
+                "reference_next_observation_sha256": reference_step["next_observation_sha256"],
+                "replay_next_observation_sha256": hash_typed_observation(replay_next_obs),
+                "replay_reward": float(replay_reward),
+                "replay_done": bool(replay_done),
+                "replay_info": json.dumps(_json_clone(replay_info), sort_keys=True),
+                "applied_actions": ";".join(applied["actions"]),
+                **gate,
+            }
+            write_json(ablation_dir / "applied_ablation.json", applied)
+            write_json(ablation_dir / "replay_pre.json", replay_pre)
+            write_json(ablation_dir / "replay_post.json", replay_post)
+            write_dict_csv(ablation_dir / "pre_diff.csv", pre_diff)
+            write_dict_csv(ablation_dir / "post_diff.csv", post_diff)
+            write_json(ablation_dir / "ablation_summary.json", row)
+            rows.append(row)
+        finally:
+            try:
+                replay_env.close()
+            except Exception:
+                pass
+            release_real_policy(replay_policy)
+
+    passed = [row for row in rows if row.get("qpos_qvel_exact") is True and row.get("replay_next_observation_sha256") == reference_step["next_observation_sha256"]]
+    summary = {
+        "stage": "C2_CONTROL_STATE_CAUSAL_ABLATION",
+        "result": "C2_ONE_STEP_POST_ACTION_EXACT" if passed else "C2_ONE_STEP_POST_ACTION_STILL_DIVERGES",
+        "forbidden_paths_not_run": [
+            "formal_restore_3x",
+            "R2",
+            "VIS",
+            "RAND",
+            "SHUFFLED",
+            "ORACLE",
+            "ATTACK",
+            "A800_FORMAL",
+        ],
+        "suite": snapshot.parent_manifest.suite,
+        "task_idx": int(snapshot.parent_manifest.task_idx),
+        "state_id": int(snapshot.parent_manifest.state_id),
+        "eval_seed": int(snapshot.parent_manifest.eval_seed),
+        "emit_step": int(snapshot.prefix.emit_step),
+        "typed_prefix_manifest_sha256": hash_jsonable(typed_manifest),
+        "reference_step": reference_step,
+        "ablation_count": len(rows),
+        "passing_ablation_count": len(passed),
+        "passing_ablations": [row["ablation"] for row in passed],
+        "ablations": rows,
+    }
+    write_dict_csv(output_dir / "c2_ablation_results.csv", rows)
+    write_json(output_dir / "c2_control_state_ablation_summary.json", summary)
+    seal = write_recursive_manifest(output_dir)
+    summary["recursive_sha256_manifest_sha256"] = seal
+    write_json(output_dir / "c2_control_state_ablation_summary.json", summary)
+    return summary
+
+
 def run_selected_parent_attempt(args: argparse.Namespace, selected: Mapping[str, Any], attempt_dir: Path, repetition: int) -> dict[str, Any]:
     attempt_dir.mkdir(parents=True, exist_ok=False)
     snapshot: ExactRestoreSnapshotPayload = selected["snapshot"]
@@ -2764,6 +3171,31 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
         write_json(out / "single_parent_restore_qualification_summary.json", final)
         print(json.dumps(final, sort_keys=True, default=str))
         return
+    if args.control_state_ablation_only:
+        try:
+            ablation_summary = run_control_state_causal_ablation(
+                args=args,
+                selected=selected,
+                output_dir=out / "control_state_causal_ablation",
+            )
+        finally:
+            try:
+                if selected.get("env_adapter") is not None:
+                    selected["env_adapter"].close()
+            except Exception:
+                pass
+            release_real_policy(selected.get("policy"))
+        final = {
+            "stage": "C2_CONTROL_STATE_CAUSAL_ABLATION",
+            "result": ablation_summary.get("result"),
+            "selected_candidate": candidates[selected_idx],
+            "ablation_summary": ablation_summary,
+        }
+        seal = write_recursive_manifest(out)
+        final["recursive_sha256_manifest_sha256"] = seal
+        write_json(out / "single_parent_restore_qualification_summary.json", final)
+        print(json.dumps(final, sort_keys=True, default=str))
+        return
     if args.observation_audit_only:
         audit_summary = run_observation_reconstruction_audit(
             args=args,
@@ -2886,6 +3318,7 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--observation-audit-only", action="store_true")
     ap.add_argument("--captured-prefix-canary-only", action="store_true")
     ap.add_argument("--transition-state-audit-only", action="store_true")
+    ap.add_argument("--control-state-ablation-only", action="store_true")
     ap.add_argument("--max-steps", type=int, default=400)
     ap.add_argument("--repetitions", type=int, default=3)
     return ap.parse_args()
