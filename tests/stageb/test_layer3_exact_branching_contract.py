@@ -4,8 +4,11 @@ from scripts.stageb.layer3_exact_branching_contract import (
     DEFAULT_REQUIRED_PILOT_CONDITIONS,
     LAYER3_BRANCH_CONDITIONS,
     BranchRunRecord,
+    ExactActionPrefixReplayPayload,
     Layer3BranchingContractError,
     PrefixBranchSnapshot,
+    PrefixReplayStep,
+    sha256_jsonable,
     arm_preservation_telemetry,
     make_gripper_only_executed_action,
     validate_branch_records,
@@ -191,6 +194,97 @@ def test_exact_action_prefix_replay_requires_prefix_provenance():
             restored_feature_history_sha256=snapshot.feature_history_sha256,
             trigger_step=snapshot.emit_step,
             first_env_step=snapshot.emit_step,
+        )
+
+
+def _prefix_step(step: int = 0, *, token_offset: int = 0) -> PrefixReplayStep:
+    tokens = tuple([31000 + token_offset, 31001, 31002, 31003, 31004, 31005, 31744])
+    return PrefixReplayStep(
+        step=step,
+        raw_action_sha256="a" * 64,
+        env_action_sha256="b" * 64,
+        tokens=tokens,
+        tokens_sha256=sha256_jsonable(list(tokens)),
+        observation_sha256="c" * 64,
+        policy_input_sha256="d" * 64,
+        qpos_sha256="e" * 64,
+        qvel_sha256="f" * 64,
+        flat_sim_state_sha256="1" * 64,
+        student_state_sha256="2" * 64,
+        feature_history_sha256="3" * 64,
+        reward=0.0,
+        done=False,
+    )
+
+
+def _prefix_payload(**overrides) -> ExactActionPrefixReplayPayload:
+    steps = tuple(_prefix_step(i, token_offset=i) for i in range(2))
+    data = dict(
+        protocol_version="C3_EXACT_ACTION_PREFIX_REPLAY_V1",
+        parent_key="libero_goal|4|1|0|CLEAN",
+        init_state_sha256="4" * 64,
+        dummy_wait_contract_sha256="5" * 64,
+        prefix_steps=steps,
+        prefix_step_count=2,
+        last_prefix_step=1,
+        branch_step=2,
+        prefix_trace_sha256="6" * 64,
+        expected_branch_observation_sha256="7" * 64,
+        expected_branch_policy_input_sha256="8" * 64,
+        expected_branch_student_state_sha256="9" * 64,
+        expected_branch_feature_history_sha256="a" * 64,
+        expected_pre_branch_qpos_sha256="b" * 64,
+        expected_pre_branch_qvel_sha256="c" * 64,
+        expected_pre_branch_flat_sim_state_sha256="d" * 64,
+    )
+    data.update(overrides)
+    return ExactActionPrefixReplayPayload(**data)
+
+
+def test_exact_action_prefix_replay_payload_accepts_complete_provenance():
+    payload = _prefix_payload()
+    assert payload.prefix_step_count == 2
+    assert payload.last_prefix_step == payload.branch_step - 1
+    assert len(payload.payload_sha256) == 64
+
+
+def test_exact_action_prefix_replay_payload_rejects_missing_prefix_trace_sha():
+    with pytest.raises(Layer3BranchingContractError, match="prefix_trace_sha256"):
+        _prefix_payload(prefix_trace_sha256="")
+
+
+def test_exact_action_prefix_replay_payload_rejects_wrong_step_count():
+    with pytest.raises(Layer3BranchingContractError, match="prefix_step_count"):
+        _prefix_payload(prefix_step_count=3)
+
+
+def test_exact_action_prefix_replay_payload_rejects_wrong_last_prefix_step():
+    with pytest.raises(Layer3BranchingContractError, match="last_prefix_step"):
+        _prefix_payload(last_prefix_step=0)
+
+
+def test_exact_action_prefix_replay_payload_rejects_malformed_sha():
+    with pytest.raises(Layer3BranchingContractError, match="init_state_sha256"):
+        _prefix_payload(init_state_sha256="abc123")
+
+
+def test_prefix_replay_step_rejects_mutated_token_sha():
+    with pytest.raises(Layer3BranchingContractError, match="tokens_sha256"):
+        PrefixReplayStep(
+            step=0,
+            raw_action_sha256="a" * 64,
+            env_action_sha256="b" * 64,
+            tokens=(1, 2, 3, 4, 5, 6, 7),
+            tokens_sha256="c" * 64,
+            observation_sha256="d" * 64,
+            policy_input_sha256="e" * 64,
+            qpos_sha256="f" * 64,
+            qvel_sha256="1" * 64,
+            flat_sim_state_sha256="2" * 64,
+            student_state_sha256="3" * 64,
+            feature_history_sha256="4" * 64,
+            reward=0.0,
+            done=False,
         )
 
 

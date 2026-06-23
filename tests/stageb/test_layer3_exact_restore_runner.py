@@ -1,10 +1,12 @@
 import json
+import inspect
 import random
 import subprocess
 import sys
 import csv
 import hashlib
 from dataclasses import replace
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -20,6 +22,7 @@ from scripts.stageb.layer3_exact_restore_runner import (
     _MockPolicy,
     _MockStudent,
     action_identity_report,
+    assert_array_exact,
     apply_control_ablation_state,
     build_mock_restore_case,
     build_prefix_snapshot,
@@ -43,7 +46,9 @@ from scripts.stageb.layer3_exact_restore_runner import (
     read_candidate_manifest,
     get_observation_after_restore,
     hash_array,
+    hash_jsonable,
     hash_typed_observation,
+    prefix_replay_state_hashes,
     compare_step_sequences,
     restore_env_internal_state,
     restore_feature_history,
@@ -52,9 +57,13 @@ from scripts.stageb.layer3_exact_restore_runner import (
     restore_snapshot,
     restore_snapshot_and_recapture_observation,
     restore_student_state,
+    run_exact_action_prefix_replay_canary,
+    run_exact_action_prefix_replay_from_trace,
     rollout_clean_steps,
     save_typed_prefix_observation_artifacts,
     update_student_for_step,
+    validate_known_goal_candidate,
+    validate_mode_gates,
     validate_clean_restore_pair,
     validate_dependency_sha_values,
     validate_real_openvla_model_binding,
@@ -359,6 +368,233 @@ def test_action_identity_report_rejects_allclose_dtype_match():
     assert report["byte_sha_exact"] is False
     assert report["exact"] is False
     assert float(report["max_abs_diff"]) == 0.0
+
+
+def test_assert_array_exact_rejects_one_bit_value_mismatch():
+    expected = np.asarray([1.0, 2.0], dtype=np.float64)
+    candidate = expected.copy()
+    candidate[1] = np.nextafter(candidate[1], 3.0)
+
+    with pytest.raises(ExactRestoreError, match="one_bit"):
+        assert_array_exact(candidate, expected, name="one_bit")
+
+
+def test_assert_array_exact_accepts_exact_array_and_sha():
+    expected = np.asarray([1.0, 2.0], dtype=np.float64)
+    report = assert_array_exact(expected.copy(), expected, name="exact")
+    assert report["shape_match"] is True
+    assert report["dtype_match"] is True
+    assert report["array_equal"] is True
+    assert report["byte_sha_exact"] is True
+    assert report["exact"] is True
+
+
+class _CountingPolicy(_MockPolicy):
+    def __init__(self) -> None:
+        super().__init__()
+        self.calls = 0
+
+    def act(self, obs):  # type: ignore[no-untyped-def]
+        self.calls += 1
+        return super().act(obs)
+
+
+def _build_prefix_replay_fixture(*, branch_step: int = 2, raw_differs_from_env: bool = False):
+    env = _MockEnv(step=0)
+    student = _MockStudent()
+    policy = _MockPolicy()
+    obs = env.get_observation_after_restore()
+    prefix = []
+    for step in range(branch_step):
+        pre = prefix_replay_state_hashes(env=env, obs=obs, student=student)
+        action, tokens = policy.act(obs)
+        raw_action = [-99.0] * 7 if raw_differs_from_env else list(action)
+        env_action = list(action)
+        update_student_for_step(student, step=step, obs=obs, action=raw_action, tokens=tokens)
+        obs_next, reward, done, info = env.step(env_action)
+        post = prefix_replay_state_hashes(env=env, obs=obs_next, student=student)
+        prefix.append(
+            {
+                "step": step,
+                "raw_action": raw_action,
+                "env_action": env_action,
+                "tokens": [int(x) for x in tokens],
+                "tokens_sha256": hash_jsonable([int(x) for x in tokens]),
+                **pre,
+                "post_qpos_sha256": post["qpos_sha256"],
+                "post_qvel_sha256": post["qvel_sha256"],
+                "post_flat_sim_state_sha256": post["flat_sim_state_sha256"],
+                "next_observation_sha256": post["observation_sha256"],
+                "post_student_state_sha256": post["student_state_sha256"],
+                "post_feature_history_sha256": post["feature_history_sha256"],
+                "reward": float(reward),
+                "done": bool(done),
+            }
+        )
+        obs = obs_next
+    branch_pre = prefix_replay_state_hashes(env=env, obs=obs, student=student)
+    branch_action, branch_tokens = policy.act(obs)
+    obs_52, reward_51, done_51, info_51 = env.step(branch_action)
+    post_branch = prefix_replay_state_hashes(env=env, obs=obs_52, student=student)
+    branch_reference = {
+        "observation_sha256": branch_pre["observation_sha256"],
+        "policy_input_sha256": branch_pre["observation_sha256"],
+        "qpos_sha256": branch_pre["qpos_sha256"],
+        "qvel_sha256": branch_pre["qvel_sha256"],
+        "flat_sim_state_sha256": branch_pre["flat_sim_state_sha256"],
+        "student_state_sha256": branch_pre["student_state_sha256"],
+        "feature_history_sha256": branch_pre["feature_history_sha256"],
+        "post_branch_qpos_sha256": post_branch["qpos_sha256"],
+        "post_branch_qvel_sha256": post_branch["qvel_sha256"],
+        "post_branch_flat_sim_state_sha256": post_branch["flat_sim_state_sha256"],
+        "post_branch_observation_sha256": post_branch["observation_sha256"],
+        "post_branch_reward": float(reward_51),
+        "post_branch_done": bool(done_51),
+    }
+    return prefix, branch_reference, list(branch_action), [int(x) for x in branch_tokens]
+
+
+def test_prefix_replay_uses_env_action_not_raw_action_and_calls_policy_only_at_branch():
+    prefix, branch_reference, branch_action, branch_tokens = _build_prefix_replay_fixture(
+        raw_differs_from_env=True
+    )
+    replay_env = _MockEnv(step=0)
+    replay_student = _MockStudent()
+    replay_policy = _CountingPolicy()
+
+    result = run_exact_action_prefix_replay_from_trace(
+        env=replay_env,
+        student=replay_student,
+        policy=replay_policy,
+        initial_obs=replay_env.get_observation_after_restore(),
+        prefix_steps=prefix,
+        branch_step=2,
+        expected_branch_action=np.asarray(branch_action),
+        expected_branch_tokens=branch_tokens,
+        expected_branch_env_action=branch_action,
+        branch_reference=branch_reference,
+    )
+
+    assert result["result"] == "PASS"
+    assert result["prefix_steps_completed"] == 2
+    assert replay_policy.calls == 1
+
+
+def test_prefix_replay_fails_at_first_pre_step_mismatch():
+    prefix, branch_reference, branch_action, branch_tokens = _build_prefix_replay_fixture()
+    prefix[1]["qpos_sha256"] = "0" * 64
+
+    with pytest.raises(ExactRestoreError, match="PREFIX_REPLAY_PRE_STEP_DIVERGENCE"):
+        run_exact_action_prefix_replay_from_trace(
+            env=_MockEnv(step=0),
+            student=_MockStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=_MockEnv(step=0).get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=branch_action,
+            branch_reference=branch_reference,
+        )
+
+
+def test_prefix_replay_fails_at_first_post_step_mismatch():
+    prefix, branch_reference, branch_action, branch_tokens = _build_prefix_replay_fixture()
+    prefix[0]["post_qvel_sha256"] = "0" * 64
+
+    with pytest.raises(ExactRestoreError, match="PREFIX_REPLAY_POST_STEP_DIVERGENCE"):
+        run_exact_action_prefix_replay_from_trace(
+            env=_MockEnv(step=0),
+            student=_MockStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=_MockEnv(step=0).get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=branch_action,
+            branch_reference=branch_reference,
+        )
+
+
+def test_prefix_replay_fails_on_student_state_mismatch():
+    prefix, branch_reference, branch_action, branch_tokens = _build_prefix_replay_fixture()
+    prefix[0]["student_state_sha256"] = "0" * 64
+
+    with pytest.raises(ExactRestoreError, match="student_state_sha256"):
+        run_exact_action_prefix_replay_from_trace(
+            env=_MockEnv(step=0),
+            student=_MockStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=_MockEnv(step=0).get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=branch_action,
+            branch_reference=branch_reference,
+        )
+
+
+def test_prefix_replay_fails_on_policy_input_mismatch_at_branch():
+    prefix, branch_reference, branch_action, branch_tokens = _build_prefix_replay_fixture()
+    branch_reference["policy_input_sha256"] = "0" * 64
+
+    with pytest.raises(ExactRestoreError, match="PREFIX_REPLAY_POLICY_INPUT_MISMATCH"):
+        run_exact_action_prefix_replay_from_trace(
+            env=_MockEnv(step=0),
+            student=_MockStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=_MockEnv(step=0).get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=branch_action,
+            branch_reference=branch_reference,
+        )
+
+
+def test_c3_mode_gates_are_mutually_exclusive_and_known_parent_only():
+    args = SimpleNamespace(
+        observation_audit_only=True,
+        captured_prefix_canary_only=False,
+        transition_state_audit_only=False,
+        control_state_ablation_only=False,
+        exact_action_prefix_replay_canary_only=True,
+        repetitions=1,
+        real_libero_single_parent=True,
+        suite="libero_goal",
+        eval_seed=0,
+    )
+    with pytest.raises(ExactRestoreError, match="mutually exclusive"):
+        validate_mode_gates(args)
+
+    args.observation_audit_only = False
+    args.repetitions = 3
+    with pytest.raises(ExactRestoreError, match="repetitions"):
+        validate_mode_gates(args)
+
+    args.repetitions = 1
+    args.suite = "libero_spatial"
+    with pytest.raises(ExactRestoreError, match="libero_goal"):
+        validate_mode_gates(args)
+
+
+def test_c3_known_parent_validator_rejects_other_parent():
+    validate_known_goal_candidate({"suite": "libero_goal", "task_idx": 4, "state_id": 1, "eval_seed": 0})
+    with pytest.raises(ExactRestoreError, match="known parent"):
+        validate_known_goal_candidate({"suite": "libero_goal", "task_idx": 4, "state_id": 2, "eval_seed": 0})
+
+
+def test_c3_prefix_replay_runtime_does_not_call_snapshot_restore():
+    replay_source = inspect.getsource(run_exact_action_prefix_replay_from_trace)
+    canary_source = inspect.getsource(run_exact_action_prefix_replay_canary)
+    assert "restore_snapshot(" not in replay_source
+    assert "restore_snapshot(" not in canary_source
+    assert "get_observation_after_restore(" not in replay_source
+    assert "get_observation_after_restore(" not in canary_source
 
 
 def test_typed_prefix_artifact_roundtrip_preserves_agentview(tmp_path):

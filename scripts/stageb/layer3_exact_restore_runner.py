@@ -37,8 +37,10 @@ except Exception:  # pragma: no cover - exercised only in minimal environments.
 
 from scripts.stageb.layer3_exact_branching_contract import (
     BranchRunRecord,
+    ExactActionPrefixReplayPayload,
     Layer3BranchingContractError,
     PrefixBranchSnapshot,
+    PrefixReplayStep,
     arm_preservation_telemetry,
     require_sha256,
     sha256_jsonable,
@@ -78,6 +80,18 @@ MUJOCO_STATE_FIELDS = (
 
 class ExactRestoreError(RuntimeError):
     """Raised when clean restore cannot be trusted."""
+
+
+class NoNaturalStudentEmit(ExactRestoreError):
+    """Raised only when the authorized parent never reaches natural Student emit."""
+
+
+class PrefixReplayDivergence(ExactRestoreError):
+    """Raised when exact action-prefix replay diverges from the reference trace."""
+
+
+class InfraInvalidError(ExactRestoreError):
+    """Raised for infrastructure/provenance failures that invalidate the run."""
 
 
 class RestoreEnv(Protocol):
@@ -190,6 +204,81 @@ def hash_array(value: Any) -> str:
         "bytes": arr.tobytes().hex(),
     }
     return sha256_jsonable(payload)
+
+
+def _finite_max_abs_diff(actual: np.ndarray, expected: np.ndarray) -> float | str:
+    if actual.shape != expected.shape:
+        return ""
+    try:
+        if actual.size == 0:
+            return 0.0
+        return float(np.max(np.abs(actual.astype(np.float64) - expected.astype(np.float64))))
+    except Exception:
+        return ""
+
+
+def assert_array_exact(actual: Any, expected: Any, *, name: str) -> dict[str, Any]:
+    """Fail-closed byte-exact array identity gate.
+
+    Numeric closeness is reported only as diagnostics. Passing requires exact
+    shape, exact dtype, exact element equality, and matching canonical byte SHA.
+    """
+
+    actual_arr = np.asarray(actual)
+    expected_arr = np.asarray(expected)
+    shape_match = tuple(actual_arr.shape) == tuple(expected_arr.shape)
+    dtype_match = str(actual_arr.dtype) == str(expected_arr.dtype)
+    actual_sha = hash_array(actual_arr)
+    expected_sha = hash_array(expected_arr)
+    array_equal = bool(shape_match and dtype_match and np.array_equal(actual_arr, expected_arr))
+    nonzero_diff_count: int | str = ""
+    if shape_match:
+        try:
+            nonzero_diff_count = int(np.count_nonzero(actual_arr != expected_arr))
+        except Exception:
+            nonzero_diff_count = ""
+    report = {
+        "name": str(name),
+        "shape_match": bool(shape_match),
+        "dtype_match": bool(dtype_match),
+        "array_equal": bool(array_equal),
+        "actual_sha256": actual_sha,
+        "expected_sha256": expected_sha,
+        "byte_sha_exact": bool(actual_sha == expected_sha),
+        "max_abs_diff": _finite_max_abs_diff(actual_arr, expected_arr),
+        "nonzero_diff_count": nonzero_diff_count,
+    }
+    report["exact"] = bool(
+        report["shape_match"] and report["dtype_match"] and report["array_equal"] and report["byte_sha_exact"]
+    )
+    if not report["exact"]:
+        raise PrefixReplayDivergence(
+            f"{name} exact mismatch "
+            f"(shape={report['shape_match']}, dtype={report['dtype_match']}, "
+            f"array_equal={report['array_equal']}, sha={report['byte_sha_exact']})"
+        )
+    return report
+
+
+def assert_tokens_exact(actual: Sequence[Any], expected: Sequence[Any], *, name: str) -> dict[str, Any]:
+    actual_tokens = tuple(int(x) for x in actual)
+    expected_tokens = tuple(int(x) for x in expected)
+    if len(actual_tokens) != 7 or len(expected_tokens) != 7:
+        raise PrefixReplayDivergence(f"{name} token sequences must both have exactly 7 tokens")
+    actual_sha = hash_jsonable(list(actual_tokens))
+    expected_sha = hash_jsonable(list(expected_tokens))
+    exact = actual_tokens == expected_tokens and actual_sha == expected_sha
+    report = {
+        "name": str(name),
+        "actual_tokens": list(actual_tokens),
+        "expected_tokens": list(expected_tokens),
+        "actual_sha256": actual_sha,
+        "expected_sha256": expected_sha,
+        "exact": bool(exact),
+    }
+    if not exact:
+        raise PrefixReplayDivergence(f"{name} token mismatch")
+    return report
 
 
 def action_identity_report(candidate: Any, expected: Any) -> dict[str, Any]:
@@ -487,6 +576,16 @@ def validate_transition_state_audit_known_parent(snapshot: ExactRestoreSnapshotP
             "transition-state audit is authorized only for known parent "
             "libero_goal|4|1|0|CLEAN"
         )
+
+
+def validate_known_goal_candidate(candidate: Mapping[str, Any]) -> None:
+    if (
+        str(candidate.get("suite")) != "libero_goal"
+        or int(candidate.get("task_idx", -1)) != 4
+        or int(candidate.get("state_id", -1)) != 1
+        or int(candidate.get("eval_seed", -1)) != 0
+    ):
+        raise ExactRestoreError("C3 is authorized only for known parent libero_goal|4|1|0|CLEAN")
 
 
 def _object_attr_state(obj: Any, attr_names: Sequence[str], *, max_depth: int = 2) -> dict[str, Any]:
@@ -1596,6 +1695,226 @@ def compare_step_sequences(
     return problems
 
 
+def hash_flat_sim_state(env: Any) -> str:
+    """Hash the flat simulator state when available, otherwise hash MuJoCo fields."""
+
+    if hasattr(env, "get_sim_state"):
+        return hash_array(np.asarray(env.get_sim_state()))
+    inner = getattr(env, "env", None)
+    if inner is not None and hasattr(inner, "get_sim_state"):
+        return hash_array(np.asarray(inner.get_sim_state()))
+    return hash_jsonable(capture_mujoco_state(env))
+
+
+def prefix_replay_state_hashes(*, env: Any, obs: Any, student: Any) -> dict[str, str]:
+    return {
+        "observation_sha256": hash_typed_observation(obs),
+        "qpos_sha256": hash_array(getattr(env.sim.data, "qpos", [])),
+        "qvel_sha256": hash_array(getattr(env.sim.data, "qvel", [])),
+        "flat_sim_state_sha256": hash_flat_sim_state(env),
+        "student_state_sha256": hash_jsonable(capture_student_state(student, strict=True)),
+        "feature_history_sha256": hash_jsonable(capture_feature_history(student, strict=True)),
+    }
+
+
+def _first_present(row: Mapping[str, Any], *names: str) -> Any:
+    for name in names:
+        if name in row:
+            return row[name]
+    return None
+
+
+def _require_hash_match(
+    *,
+    actual: Mapping[str, str],
+    expected: Mapping[str, Any],
+    actual_field: str,
+    expected_field: str,
+    step: int,
+    phase: str,
+    failure_class: str,
+) -> None:
+    expected_value = expected.get(expected_field, "")
+    if not expected_value:
+        return
+    actual_value = actual.get(actual_field, "")
+    if actual_value != expected_value:
+        raise PrefixReplayDivergence(
+            json.dumps(
+                {
+                    "failure_class": failure_class,
+                    "first_divergence_step": int(step),
+                    "first_divergence_phase": phase,
+                    "first_divergence_field": expected_field,
+                    "reference_sha256": expected_value,
+                    "replay_sha256": actual_value,
+                },
+                sort_keys=True,
+            )
+        )
+
+
+def _step_env_action_without_double_postprocess(env: Any, env_action: Sequence[float]) -> tuple[Any, float, bool, Mapping[str, Any]]:
+    if hasattr(env, "step_env_action"):
+        return env.step_env_action(env_action)
+    return env.step(env_action)
+
+
+def run_exact_action_prefix_replay_from_trace(
+    *,
+    env: Any,
+    student: Any,
+    policy: Any,
+    initial_obs: Any,
+    prefix_steps: Sequence[Mapping[str, Any]],
+    branch_step: int,
+    expected_branch_action: Any,
+    expected_branch_tokens: Sequence[int],
+    expected_branch_env_action: Any | None = None,
+    branch_reference: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Replay a recorded action prefix and execute one exact branch action.
+
+    The prefix path never calls policy.act. It uses recorded raw action/tokens
+    only for Student reconstruction, and recorded env_action for env.step.
+    """
+
+    if int(branch_step) <= 0:
+        raise PrefixReplayDivergence("branch_step must be positive")
+    if len(prefix_steps) != int(branch_step):
+        raise PrefixReplayDivergence(f"prefix_steps must contain exactly branch_step rows ({branch_step})")
+    obs = copy.deepcopy(initial_obs)
+    replay_rows: list[dict[str, Any]] = []
+    for step, record in enumerate(prefix_steps):
+        if int(record.get("step", -1)) != step:
+            raise PrefixReplayDivergence(f"prefix step order mismatch at index {step}")
+        pre = prefix_replay_state_hashes(env=env, obs=obs, student=student)
+        for field in (
+            "observation_sha256",
+            "qpos_sha256",
+            "qvel_sha256",
+            "flat_sim_state_sha256",
+            "student_state_sha256",
+            "feature_history_sha256",
+        ):
+            _require_hash_match(
+                actual=pre,
+                expected=record,
+                actual_field=field,
+                expected_field=field,
+                step=step,
+                phase="pre_step",
+                failure_class="PREFIX_REPLAY_PRE_STEP_DIVERGENCE",
+            )
+        raw_action = _first_present(record, "raw_action", "action")
+        env_action = _first_present(record, "env_action")
+        tokens = _first_present(record, "tokens")
+        if raw_action is None or env_action is None or tokens is None:
+            raise PrefixReplayDivergence(f"prefix step {step} missing raw_action/env_action/tokens")
+        assert_tokens_exact(tokens, record.get("tokens", tokens), name=f"prefix_step_{step}_tokens")
+        update_student_for_step(student, step=step, obs=obs, action=raw_action, tokens=tokens)
+        obs_next, reward, done, info = _step_env_action_without_double_postprocess(env, env_action)
+        post = prefix_replay_state_hashes(env=env, obs=obs_next, student=student)
+        for actual_field, expected_field in (
+            ("qpos_sha256", "post_qpos_sha256"),
+            ("qvel_sha256", "post_qvel_sha256"),
+            ("flat_sim_state_sha256", "post_flat_sim_state_sha256"),
+            ("observation_sha256", "next_observation_sha256"),
+            ("student_state_sha256", "post_student_state_sha256"),
+            ("feature_history_sha256", "post_feature_history_sha256"),
+        ):
+            _require_hash_match(
+                actual=post,
+                expected=record,
+                actual_field=actual_field,
+                expected_field=expected_field,
+                step=step,
+                phase="post_step",
+                failure_class="PREFIX_REPLAY_POST_STEP_DIVERGENCE",
+            )
+        if "reward" in record and record["reward"] is not None and float(record["reward"]) != float(reward):
+            raise PrefixReplayDivergence(f"PREFIX_REPLAY_REWARD_MISMATCH at step {step}")
+        if "done" in record and bool(record["done"]) != bool(done):
+            raise PrefixReplayDivergence(f"PREFIX_REPLAY_EARLY_DONE at step {step}")
+        if done and step != len(prefix_steps) - 1:
+            raise PrefixReplayDivergence(f"PREFIX_REPLAY_EARLY_DONE at step {step}")
+        replay_rows.append(
+            {
+                "step": step,
+                "pre_observation_sha256": pre["observation_sha256"],
+                "post_observation_sha256": post["observation_sha256"],
+                "reward": float(reward),
+                "done": bool(done),
+                "info": _json_clone(info),
+            }
+        )
+        obs = obs_next
+
+    branch_reference = dict(branch_reference or {})
+    branch_pre = prefix_replay_state_hashes(env=env, obs=obs, student=student)
+    for field in (
+        "observation_sha256",
+        "policy_input_sha256",
+        "qpos_sha256",
+        "qvel_sha256",
+        "flat_sim_state_sha256",
+        "student_state_sha256",
+        "feature_history_sha256",
+    ):
+        actual_field = "observation_sha256" if field == "policy_input_sha256" else field
+        _require_hash_match(
+            actual=branch_pre,
+            expected=branch_reference,
+            actual_field=actual_field,
+            expected_field=field,
+            step=int(branch_step),
+            phase="branch_boundary",
+            failure_class="PREFIX_REPLAY_POLICY_INPUT_MISMATCH"
+            if field == "policy_input_sha256"
+            else "PREFIX_REPLAY_PRE_STEP_DIVERGENCE",
+        )
+
+    branch_action, branch_tokens = policy.act(obs)
+    token_report = assert_tokens_exact(branch_tokens, expected_branch_tokens, name="branch_action_tokens")
+    action_report = assert_array_exact(branch_action, expected_branch_action, name="branch_raw_action")
+    env_action = expected_branch_action if expected_branch_env_action is None else expected_branch_env_action
+    obs_52, reward_51, done_51, info_51 = _step_env_action_without_double_postprocess(env, env_action)
+    post_branch = prefix_replay_state_hashes(env=env, obs=obs_52, student=student)
+    for actual_field, expected_field in (
+        ("qpos_sha256", "post_branch_qpos_sha256"),
+        ("qvel_sha256", "post_branch_qvel_sha256"),
+        ("flat_sim_state_sha256", "post_branch_flat_sim_state_sha256"),
+        ("observation_sha256", "post_branch_observation_sha256"),
+    ):
+        _require_hash_match(
+            actual=post_branch,
+            expected=branch_reference,
+            actual_field=actual_field,
+            expected_field=expected_field,
+            step=int(branch_step),
+            phase="post_branch",
+            failure_class="POST_BRANCH_TRANSITION_MISMATCH",
+        )
+    if "post_branch_reward" in branch_reference and float(branch_reference["post_branch_reward"]) != float(reward_51):
+        raise PrefixReplayDivergence("POST_BRANCH_TRANSITION_MISMATCH reward")
+    if "post_branch_done" in branch_reference and bool(branch_reference["post_branch_done"]) != bool(done_51):
+        raise PrefixReplayDivergence("POST_BRANCH_TRANSITION_MISMATCH done")
+    return {
+        "stage": "C3_EXACT_ACTION_PREFIX_REPLAY_ONE_STEP",
+        "result": "PASS",
+        "prefix_steps_completed": len(replay_rows),
+        "branch_step": int(branch_step),
+        "first_divergence": None,
+        "branch_action_tokens_exact": bool(token_report["exact"]),
+        "branch_action_exact": bool(action_report["exact"]),
+        "post_branch_qpos_exact": post_branch.get("qpos_sha256") == branch_reference.get("post_branch_qpos_sha256", post_branch.get("qpos_sha256")),
+        "post_branch_qvel_exact": post_branch.get("qvel_sha256") == branch_reference.get("post_branch_qvel_sha256", post_branch.get("qvel_sha256")),
+        "post_branch_sim_state_exact": post_branch.get("flat_sim_state_sha256")
+        == branch_reference.get("post_branch_flat_sim_state_sha256", post_branch.get("flat_sim_state_sha256")),
+        "replay_prefix_rows": replay_rows,
+    }
+
+
 def max_abs_diff(left: Sequence[float], right: Sequence[float]) -> float:
     a = np.asarray(left, dtype=np.float64).reshape(-1)
     b = np.asarray(right, dtype=np.float64).reshape(-1)
@@ -1902,6 +2221,16 @@ class RealLiberoEnvAdapter:
 
     def step(self, action: Sequence[float]) -> tuple[Any, float, bool, Mapping[str, Any]]:
         env_action = postprocess_openvla_action_for_libero(action)
+        return self.step_env_action(env_action)
+
+    def step_env_action(self, env_action: Sequence[float]) -> tuple[Any, float, bool, Mapping[str, Any]]:
+        """Step using an already postprocessed LIBERO env action.
+
+        C3 exact action-prefix replay must not run postprocess twice. The
+        original continuous rollout records postprocessed env actions; fresh
+        replay sends those bytes directly to the environment.
+        """
+
         obs, reward, done, info = self.env.step(env_action)
         if isinstance(obs, Mapping) and "agentview_image" in obs:
             self.frames.append(np.asarray(obs["agentview_image"]).copy())
@@ -2482,8 +2811,12 @@ def find_emit_snapshot_for_candidate(
         )
         selected: dict[str, Any] | None = None
         first_valid_step = -1
+        prefix_trace: list[dict[str, Any]] = []
         for step in range(int(args.max_steps)):
+            pre_hashes = prefix_replay_state_hashes(env=env_adapter, obs=obs, student=student)
             action, tokens = policy.act(obs)
+            raw_action_arr = np.asarray(action)
+            env_action_arr = postprocess_openvla_action_for_libero(action)
             update_student_for_step(student, step=step, obs=obs, action=action, tokens=tokens)
             if first_valid_step < 0 and student.invalid_steps == 0:
                 first_valid_step = step
@@ -2530,9 +2863,36 @@ def find_emit_snapshot_for_candidate(
                     "bddl": bddl,
                     "first_valid_step": first_valid_step,
                     "prefix_flat_sim_state_sha256": hash_array(env.get_sim_state()),
+                    "prefix_trace": prefix_trace,
+                    "branch_boundary_hashes": prefix_replay_state_hashes(env=env_adapter, obs=obs, student=student),
                 }
                 break
-            obs, _reward, done, _info = env_adapter.step(action)
+            obs_next, reward, done, info = env_adapter.step_env_action(env_action_arr)
+            post_hashes = prefix_replay_state_hashes(env=env_adapter, obs=obs_next, student=student)
+            prefix_trace.append(
+                {
+                    "step": int(step),
+                    "raw_action": raw_action_arr.tolist(),
+                    "raw_action_dtype": str(raw_action_arr.dtype),
+                    "raw_action_sha256": hash_array(raw_action_arr),
+                    "env_action": env_action_arr.tolist(),
+                    "env_action_dtype": str(env_action_arr.dtype),
+                    "env_action_sha256": hash_array(env_action_arr),
+                    "tokens": [int(x) for x in tokens],
+                    "tokens_sha256": hash_jsonable([int(x) for x in tokens]),
+                    **pre_hashes,
+                    "post_qpos_sha256": post_hashes["qpos_sha256"],
+                    "post_qvel_sha256": post_hashes["qvel_sha256"],
+                    "post_flat_sim_state_sha256": post_hashes["flat_sim_state_sha256"],
+                    "next_observation_sha256": post_hashes["observation_sha256"],
+                    "post_student_state_sha256": post_hashes["student_state_sha256"],
+                    "post_feature_history_sha256": post_hashes["feature_history_sha256"],
+                    "reward": float(reward),
+                    "done": bool(done),
+                    "success": bool(info.get("success", False)) if isinstance(info, Mapping) else False,
+                }
+            )
+            obs = obs_next
             if done:
                 break
         telemetry_name = (
@@ -2541,7 +2901,7 @@ def find_emit_snapshot_for_candidate(
         )
         write_dict_csv(attempt_dir / telemetry_name, getattr(student, "scan_telemetry", []))
         if selected is None:
-            raise ExactRestoreError("candidate did not produce eligible natural Student emit")
+            raise NoNaturalStudentEmit("candidate did not produce eligible natural Student emit")
         return selected
     except Exception:
         if env is not None:
@@ -2962,6 +3322,111 @@ def run_control_state_causal_ablation(
     return summary
 
 
+def run_exact_action_prefix_replay_canary(
+    *,
+    args: argparse.Namespace,
+    selected: Mapping[str, Any],
+    output_dir: Path,
+) -> dict[str, Any]:
+    output_dir.mkdir(parents=True, exist_ok=False)
+    snapshot: ExactRestoreSnapshotPayload = selected["snapshot"]
+    validate_transition_state_audit_known_parent(snapshot)
+    prefix_trace = [dict(row) for row in selected.get("prefix_trace", [])]
+    if len(prefix_trace) != int(snapshot.prefix.emit_step):
+        raise PrefixReplayDivergence(
+            f"prefix trace length {len(prefix_trace)} != emit step {snapshot.prefix.emit_step}"
+        )
+    write_json(output_dir / "parent_dependency_manifest.json", asdict(snapshot.parent_manifest))
+    write_json(output_dir / "runtime_receipt.json", asdict(selected["runtime"]))
+    write_json(output_dir / "dependency_receipt.json", selected["dependency"])
+    write_jsonl(output_dir / "original_prefix_trace.jsonl", prefix_trace)
+    prefix_trace_sha = sha256_jsonable(prefix_trace)
+    (output_dir / "prefix_trace_sha256.txt").write_text(prefix_trace_sha + "\n", encoding="utf-8")
+
+    reference_env: RealLiberoEnvAdapter = selected["env_adapter"]
+    reference_student: RealSC5StudentAdapter = selected["student"]
+    reference_branch_pre = prefix_replay_state_hashes(env=reference_env, obs=selected["obs_t"], student=reference_student)
+    reference_next_obs, reference_reward, reference_done, reference_info = reference_env.step_env_action(
+        postprocess_openvla_action_for_libero(snapshot.clean_action_t)
+    )
+    reference_post = prefix_replay_state_hashes(env=reference_env, obs=reference_next_obs, student=reference_student)
+    branch_reference = {
+        "observation_sha256": reference_branch_pre["observation_sha256"],
+        "policy_input_sha256": reference_branch_pre["observation_sha256"],
+        "qpos_sha256": reference_branch_pre["qpos_sha256"],
+        "qvel_sha256": reference_branch_pre["qvel_sha256"],
+        "flat_sim_state_sha256": reference_branch_pre["flat_sim_state_sha256"],
+        "student_state_sha256": reference_branch_pre["student_state_sha256"],
+        "feature_history_sha256": reference_branch_pre["feature_history_sha256"],
+        "post_branch_qpos_sha256": reference_post["qpos_sha256"],
+        "post_branch_qvel_sha256": reference_post["qvel_sha256"],
+        "post_branch_flat_sim_state_sha256": reference_post["flat_sim_state_sha256"],
+        "post_branch_observation_sha256": reference_post["observation_sha256"],
+        "post_branch_reward": float(reference_reward),
+        "post_branch_done": bool(reference_done),
+        "post_branch_info": _json_clone(reference_info),
+    }
+    write_json(output_dir / "branch_boundary_manifest.json", reference_branch_pre)
+    write_json(output_dir / "post_branch_reference_state.json", branch_reference)
+
+    replay_env = None
+    replay_policy = None
+    try:
+        replay_env, replay_initial_obs, _task_obj, _bddl = build_real_env_for_candidate(
+            suite=snapshot.parent_manifest.suite,
+            task_idx=snapshot.parent_manifest.task_idx,
+            state_id=snapshot.parent_manifest.state_id,
+            render_gpu=int(args.render_gpu),
+            max_steps=int(args.max_steps),
+        )
+        replay_adapter = RealLiberoEnvAdapter(replay_env)
+        replay_policy, replay_student, _model, _detector = load_real_policy_and_student(
+            args, env_adapter=replay_adapter, instruction=str(selected["instruction"])
+        )
+        result = run_exact_action_prefix_replay_from_trace(
+            env=replay_adapter,
+            student=replay_student,
+            policy=replay_policy,
+            initial_obs=replay_initial_obs,
+            prefix_steps=prefix_trace,
+            branch_step=int(snapshot.prefix.emit_step),
+            expected_branch_action=np.asarray(snapshot.clean_action_t),
+            expected_branch_tokens=snapshot.clean_tokens_t,
+            expected_branch_env_action=postprocess_openvla_action_for_libero(snapshot.clean_action_t),
+            branch_reference=branch_reference,
+        )
+        result["parent_key"] = snapshot.parent_manifest.parent_key
+        result["prefix_trace_sha256"] = prefix_trace_sha
+        write_json(output_dir / "post_branch_replay_state.json", result)
+        write_json(output_dir / "c3_prefix_replay_summary.json", result)
+        write_dict_csv(output_dir / "prefix_replay_step_diff.csv", result["replay_prefix_rows"])
+        write_json(output_dir / "prefix_replay_first_divergence.json", {"first_divergence": None})
+    except PrefixReplayDivergence as exc:
+        failure = {
+            "stage": "C3_EXACT_ACTION_PREFIX_REPLAY_ONE_STEP",
+            "result": "FAIL",
+            "failure_class": "PREFIX_REPLAY_DIVERGENCE",
+            "error": str(exc),
+            "parent_key": snapshot.parent_manifest.parent_key,
+            "prefix_trace_sha256": prefix_trace_sha,
+        }
+        write_json(output_dir / "c3_prefix_replay_summary.json", failure)
+        write_json(output_dir / "prefix_replay_first_divergence.json", failure)
+        raise
+    finally:
+        try:
+            if replay_env is not None:
+                replay_env.close()
+        except Exception:
+            pass
+        release_real_policy(replay_policy)
+    seal = write_recursive_manifest(output_dir)
+    summary = json.loads((output_dir / "c3_prefix_replay_summary.json").read_text(encoding="utf-8"))
+    summary["recursive_sha256_manifest_sha256"] = seal
+    write_json(output_dir / "c3_prefix_replay_summary.json", summary)
+    return summary
+
+
 def run_selected_parent_attempt(args: argparse.Namespace, selected: Mapping[str, Any], attempt_dir: Path, repetition: int) -> dict[str, Any]:
     attempt_dir.mkdir(parents=True, exist_ok=False)
     snapshot: ExactRestoreSnapshotPayload = selected["snapshot"]
@@ -3186,6 +3651,12 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
             task_count=args.task_count,
             eval_seed=args.eval_seed,
         )
+    if args.exact_action_prefix_replay_canary_only:
+        if not args.candidate_manifest:
+            raise ExactRestoreError("C3 exact action-prefix replay requires an explicit candidate manifest")
+        if len(candidates) != 1:
+            raise ExactRestoreError("C3 exact action-prefix replay candidate manifest must have exactly one row")
+        validate_known_goal_candidate(candidates[0])
     candidate_rows = [dict(row, status="PLANNED", reason="") for row in candidates]
     write_candidate_manifest(out / "candidate_manifest.csv", candidate_rows)
     selected: dict[str, Any] | None = None
@@ -3197,6 +3668,8 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
             candidate_rows[idx]["status"] = "SELECTED"
             break
         except Exception as exc:
+            if args.exact_action_prefix_replay_canary_only and not isinstance(exc, NoNaturalStudentEmit):
+                raise
             candidate_rows[idx]["status"] = "INELIGIBLE"
             candidate_rows[idx]["reason"] = f"{type(exc).__name__}:{str(exc)[:180]}"
             write_candidate_manifest(out / "candidate_manifest.csv", candidate_rows)
@@ -3249,6 +3722,42 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
             "result": ablation_summary.get("result"),
             "selected_candidate": candidates[selected_idx],
             "ablation_summary": ablation_summary,
+        }
+        seal = write_recursive_manifest(out)
+        final["recursive_sha256_manifest_sha256"] = seal
+        write_json(out / "single_parent_restore_qualification_summary.json", final)
+        print(json.dumps(final, sort_keys=True, default=str))
+        return
+    if args.exact_action_prefix_replay_canary_only:
+        try:
+            c3_summary = run_exact_action_prefix_replay_canary(
+                args=args,
+                selected=selected,
+                output_dir=out / "exact_action_prefix_replay_canary",
+            )
+        finally:
+            try:
+                if selected.get("env_adapter") is not None:
+                    selected["env_adapter"].close()
+            except Exception:
+                pass
+            release_real_policy(selected.get("policy"))
+        final = {
+            "stage": "C3_EXACT_ACTION_PREFIX_REPLAY_ONE_STEP",
+            "result": c3_summary.get("result"),
+            "selected_candidate": candidates[selected_idx],
+            "c3_summary": c3_summary,
+            "forbidden_paths_not_run": [
+                "five_step",
+                "formal_restore_3x",
+                "R2",
+                "VIS",
+                "RAND",
+                "SHUFFLED",
+                "ORACLE",
+                "ATTACK",
+                "A800_FORMAL",
+            ],
         }
         seal = write_recursive_manifest(out)
         final["recursive_sha256_manifest_sha256"] = seal
@@ -3378,9 +3887,30 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--captured-prefix-canary-only", action="store_true")
     ap.add_argument("--transition-state-audit-only", action="store_true")
     ap.add_argument("--control-state-ablation-only", action="store_true")
+    ap.add_argument("--exact-action-prefix-replay-canary-only", action="store_true")
     ap.add_argument("--max-steps", type=int, default=400)
     ap.add_argument("--repetitions", type=int, default=3)
     return ap.parse_args()
+
+
+def validate_mode_gates(args: argparse.Namespace) -> None:
+    exact_modes = [
+        "observation_audit_only",
+        "captured_prefix_canary_only",
+        "transition_state_audit_only",
+        "control_state_ablation_only",
+        "exact_action_prefix_replay_canary_only",
+    ]
+    enabled = [name for name in exact_modes if bool(getattr(args, name, False))]
+    if len(enabled) > 1:
+        raise ExactRestoreError(f"exact restore modes are mutually exclusive: {enabled}")
+    if bool(getattr(args, "exact_action_prefix_replay_canary_only", False)):
+        if int(getattr(args, "repetitions", 1)) != 1:
+            raise ExactRestoreError("C3 exact action-prefix replay forbids formal repetitions; set --repetitions 1")
+        if not bool(getattr(args, "real_libero_single_parent", False)):
+            raise ExactRestoreError("C3 exact action-prefix replay must run under --real-libero-single-parent")
+        if str(getattr(args, "suite", "")) != "libero_goal" or int(getattr(args, "eval_seed", -1)) != 0:
+            raise ExactRestoreError("C3 exact action-prefix replay accepts only libero_goal eval_seed 0")
 
 
 def run_mock(output_dir: Path) -> None:
@@ -3601,6 +4131,7 @@ def build_mock_restore_case() -> dict[str, Any]:
 
 def main() -> None:
     args = parse_args()
+    validate_mode_gates(args)
     if args.mock and args.real_libero_single_parent:
         raise SystemExit("choose exactly one of --mock or --real-libero-single-parent")
     if args.mock:
