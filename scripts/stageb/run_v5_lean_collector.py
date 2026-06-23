@@ -149,7 +149,7 @@ def main():
             dec = detector.update(feat_res["features"], step)
 
         eef_pos = np.array(env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_site")])
-        obj_pos = np.array(env.sim.data.body_xpos[env.sim.model.body_name2id(f"{task_obj.name.split('_')[-2]}_main")])
+        post_obj = np.array(env.sim.data.body_xpos[env.sim.model.body_name2id(obj_body_name)])
         qpos_sum = float(env.sim.data.qpos[-2:].sum())
 
         tel = {
