@@ -20,7 +20,7 @@ sys.path.insert(0, str(REPO / "src")); sys.path.insert(0, str(REPO))
 R1_FREEZE_PATH = REPO / "migration_audit/m1c/R1_RUNTIME_BASELINE_FROZEN_V2.json"
 R2_GRID_PATH = REPO / "migration_audit/m1c/r2_validation_grid.json"
 CORPUS_ROOT = REPO / "evidence/m1c/object_clean_corpus"
-LABELS_PATH = REPO / "evidence/m1c/object_teacher_labels_v1/per_cell_teacher_labels.csv"
+LABELS_PATH = REPO / "evidence/m1c/object_teacher_labels_v2/per_cell_teacher_labels.csv"
 
 GATE_DIRECTIONS = {
     "coverage": ">=", "k10_containment": ">=", "no_corridor_abstain": ">=",
@@ -94,8 +94,10 @@ def evaluate_fsm(detector_cls, config, val_cells, teacher_labels):
             if d.emitted and emit_step is None: emit_step = step
         if d.state == "ARMED" and not d.emitted: silent_stalls += 1
         total_disarms += dec.get("disarm_count", 0)
-        n_steps = len(rows)
-        if n_steps > 0: total_fv_cells += 1; total_fv_steps += fv_ok_steps
+        cell_n_steps = len(rows)
+        if cell_n_steps > 0:
+            total_fv_cells += 1; total_fv_steps += fv_ok_steps
+            cell["fv_cell_pass"] = (fv_ok_steps / cell_n_steps) >= 0.99
 
         if emit_step is not None:
             age = abs(emit_step - anchor) if anchor >= 0 else None
@@ -115,20 +117,45 @@ def evaluate_fsm(detector_cls, config, val_cells, teacher_labels):
     ages = [t["age"] for t in tv_triggered if t.get("age") is not None]
     median_age = float(np.median(ages)) if ages else -1
     fe = sum(1 for t in tv_triggered if t.get("false_early") is True)
-    fe_rate = fe / n_all_trig if n_all_trig > 0 else 0
+    fe_rate = fe / n_tv_trig if n_tv_trig > 0 else 0  # denominator: TV-triggered only
     pr = sum(1 for t in tv_triggered if t.get("post_release") is True)
-    pr_rate = pr / n_all_trig if n_all_trig > 0 else 0
+    pr_rate = pr / n_tv_trig if n_tv_trig > 0 else 0  # denominator: TV-triggered only
     nc_abstained = n_nc - n_nc_trig
     nc_rate = nc_abstained / n_nc if n_nc > 0 else 0
-    fv_rate = total_fv_steps / max(1, sum(len(list(csv.DictReader(open(c["path"]/"step_telemetry.csv")))) for c in val_cells))
+    total_steps_all = sum(len(list(csv.DictReader(open(c["path"]/"step_telemetry.csv")))) for c in val_cells)
+    fv_step_rate = total_fv_steps / total_steps_all if total_steps_all > 0 else 0
+    fv_cells_ok = sum(1 for c in val_cells if c.get("fv_cell_pass", False))
+    fv_cell_rate = fv_cells_ok / len(val_cells) if val_cells else 0
 
+    timing_evaluable = (n_tv_trig > 0 and len(ages) > 0)
     gates = {
         "coverage": coverage, "k10_containment": k10_rate, "no_corridor_abstain": nc_rate,
-        "feature_valid_rate": fv_rate, "false_early": fe_rate, "post_release": pr_rate,
-        "median_anchor_error": median_age, "silent_stalls": silent_stalls,
+        "feature_valid_step_rate": fv_step_rate, "feature_valid_cell_rate": fv_cell_rate,
+        "false_early": fe_rate, "post_release": pr_rate,
+        "median_anchor_error": median_age if timing_evaluable else None,
+        "silent_stalls": silent_stalls,
     }
-    passes = {k: check_gate(k, v) for k, v in gates.items()}
+    # K10/FE/PR/anchor are only evaluable with valid anchors
+    timing_passes = {}
+    if not timing_evaluable:
+        timing_passes = {"k10_containment": False, "false_early": False, "post_release": False, "median_anchor_error": False}
+    passes = {k: check_gate(k, v) for k, v in gates.items() if k in GATE_THRESHOLDS and v is not None}
+    passes.update(timing_passes)
     all_pass = all(passes.values())
+
+    ci = {}
+    for k in ["coverage","k10_containment","no_corridor_abstain","false_early","post_release"]:
+        if k == "coverage": n, d = n_tv_trig, n_tv
+        elif k == "k10_containment": n, d = k10_ok, n_tv_trig
+        elif k == "no_corridor_abstain": n, d = nc_abstained, n_nc
+        elif k == "false_early": n, d = fe, n_tv_trig
+        elif k == "post_release": n, d = pr, n_tv_trig
+        else: continue
+        lo, hi = wilson_ci(n, d)
+        ci[k] = {"lo": round(lo, 4), "hi": round(hi, 4), "n": n, "d": d}
+    # Feature-valid CI uses actual step-level stats
+    lo_fv, hi_fv = wilson_ci(total_fv_steps, total_steps_all)
+    ci["feature_valid_step_rate"] = {"lo": round(lo_fv, 4), "hi": round(hi_fv, 4), "n": total_fv_steps, "d": total_steps_all}
 
     ci = {}
     for k in ["coverage","k10_containment","no_corridor_abstain","feature_valid_rate","false_early","post_release"]:
@@ -163,12 +190,18 @@ def main():
     out_root = Path(args.output_root); out_root.mkdir(parents=True, exist_ok=True)
 
     teacher_labels = {}
+    dup_check = set()
     for r in csv.DictReader(open(args.teacher_labels)):
         if r["pool"] != "validation": continue
-        teacher_labels[(int(r["task"]), int(r["state"]))] = {
-            "teacher_valid": r["teacher_valid"] == "True",
-            "teacher_anchor": int(r["teacher_anchor"]),
-        }
+        key = (int(r["task"]), int(r["state"]))
+        if key in dup_check:
+            raise SystemExit(f"DUPLICATE_LABEL: {key}")
+        dup_check.add(key)
+        tv = r["teacher_valid"] == "True"
+        anchor = int(r["teacher_anchor"])
+        if tv and anchor < 0:
+            raise SystemExit(f"INVARIANT_VIOLATION: {key} teacher_valid=True but anchor={anchor}")
+        teacher_labels[key] = {"teacher_valid": tv, "teacher_anchor": anchor}
 
     val_dir = Path(args.validation_root)
     val_cells = []
@@ -180,7 +213,16 @@ def main():
         except (ValueError, IndexError): continue
         val_cells.append({"task": task, "state": state, "path": cell_dir})
 
-    print(f"P5 v2: {len(val_cells)} validation cells, {len(teacher_labels)} labels")
+    val_keys = {(c["task"], c["state"]) for c in val_cells}
+    label_keys = set(teacher_labels.keys())
+    missing_cells = val_keys - label_keys
+    extra_labels = label_keys - val_keys
+    if missing_cells:
+        raise SystemExit(f"MISSING_VALIDATION_LABELS: {len(missing_cells)} cells without labels")
+    if extra_labels:
+        raise SystemExit(f"EXTRA_VALIDATION_LABELS: {len(extra_labels)} labels without cells")
+
+    print(f"P5 v2: {len(val_cells)} cells, {len(teacher_labels)} labels (validated)")
 
     from gripper_attack.sc5_detector_runtime_v1r import SC5DetectorRuntimeV1R
 
@@ -198,7 +240,8 @@ def main():
     r2_grid = json.load(open(args.r2_grid))["configs"]
     r2_results = []
     for cfg in r2_grid:
-        fsm_cfg = {"fsm_version": "v1r_r2", "guard": 5, "tau_release": 0.3, **cfg}
+        grid_params = {k: v for k, v in cfg.items() if k != "id"}
+        fsm_cfg = {"fsm_version": "v1r_r2", "guard": 5, "tau_release": 0.3, **grid_params}
         result = evaluate_fsm(SC5DetectorRuntimeV1R, fsm_cfg, val_cells, teacher_labels)
         result["id"] = cfg["id"]; result["config"] = fsm_cfg
         r2_results.append(result)
