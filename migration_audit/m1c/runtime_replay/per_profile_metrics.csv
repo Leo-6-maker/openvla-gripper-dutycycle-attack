@@ -1,0 +1,16 @@
+metric,R0_B0,R0_D1,R0_combined,R1_B0,R1_D1,R1_combined,R2_combined
+n_teacher_valid,23,26,49,23,26,49,49
+n_no_corridor,7,4,11,7,4,11,11
+n_triggered_total,27,28,55,25,28,53,0
+coverage,1.000,1.000,1.000,1.000,1.000,1.000,0.000
+false_early_abs,1,0,1,1,0,1,0
+false_early_rate,0.037,0.000,0.018,0.040,0.000,0.019,0.000
+post_release,0.000,0.000,0.000,0.000,0.000,0.000,0.000
+k10_containment,0.957,1.000,0.980,0.957,1.000,0.980,0.000
+median_anchor_error,2.0,2.0,0.0,2.0,2.0,0.0,-1
+no_corridor_abstain_abs,3,2,5,5,2,7,11
+no_corridor_abstain_rate,0.429,0.500,0.455,0.714,0.500,0.636,1.000
+silent_arm_stalls,1,0,1,0,0,0,0
+mean_disarm_count,0.00,0.00,0.00,0.13,0.00,0.07,0.92
+total_disarms,0,0,0,4,0,4,55
+feature_valid_rate,0.99,0.99,0.99,0.99,0.99,0.99,0.99
