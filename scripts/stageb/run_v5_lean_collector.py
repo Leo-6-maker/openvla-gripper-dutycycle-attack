@@ -114,17 +114,16 @@ def main():
 
         # EEF and object positions (needed for detector)
         eef_pos = np.array(env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_site")])
-        # Find actual object body from BDDL
+        # Find object body: match task keyword against available bodies
+        task_keyword = task_obj.name.replace("pick_up_the_", "").replace("_and_place_it_in_the_basket", "")
+        available = set(env.sim.model.body_names)
         obj_body_name = None
-        for line in open(bddl_path).read().split('\n'):
-            line = line.strip()
-            if line and not line.startswith('(:') and ' - ' in line:
-                parts = line.split(' - ')
-                mn = parts[0].strip() + "_main"
-                if parts[1].strip() not in ['basket', 'bin'] and mn in set(env.sim.model.body_names):
-                    obj_body_name = mn; break
+        for name in sorted(available):
+            if "basket" in name or "bin" in name: continue
+            if task_keyword in name and name.endswith("_main"):
+                obj_body_name = name; break
         if obj_body_name is None:
-            raise ValueError(f"Cannot find object body for task {args.task_idx}")
+            raise ValueError(f"Cannot find object body for task {args.task_idx}: keyword={task_keyword}")
         obj_pos = np.array(env.sim.data.body_xpos[env.sim.model.body_name2id(obj_body_name)])
         qpos_sum = float(env.sim.data.qpos[-2:].sum())
 
