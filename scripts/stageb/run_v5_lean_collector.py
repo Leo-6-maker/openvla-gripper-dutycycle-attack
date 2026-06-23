@@ -114,7 +114,17 @@ def main():
 
         # EEF and object positions (needed for detector)
         eef_pos = np.array(env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_site")])
-        obj_body_name = f"{task_obj.name.split('_')[-2]}_main"
+        # Find actual object body from BDDL
+        obj_body_name = None
+        for line in open(bddl_path).read().split('\n'):
+            line = line.strip()
+            if line and not line.startswith('(:') and ' - ' in line:
+                parts = line.split(' - ')
+                mn = parts[0].strip() + "_main"
+                if parts[1].strip() not in ['basket', 'bin'] and mn in set(env.sim.model.body_names):
+                    obj_body_name = mn; break
+        if obj_body_name is None:
+            raise ValueError(f"Cannot find object body for task {args.task_idx}")
         obj_pos = np.array(env.sim.data.body_xpos[env.sim.model.body_name2id(obj_body_name)])
         qpos_sum = float(env.sim.data.qpos[-2:].sum())
 
