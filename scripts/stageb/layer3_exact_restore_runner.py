@@ -684,11 +684,11 @@ def apply_control_ablation_state(
         inner = getattr(env_adapter.env, "env", env_adapter.env)
         for attr in restore_simple_object_attrs(inner, reference_state.get("env_counters", {})):
             actions.append(f"env_inner.{attr}")
+    if refresh_derived:
+        actions.extend(refresh_derived_controller_state(env_adapter))
     if restore_qacc and reference_state.get("qacc") is not None and hasattr(env_adapter.env.sim.data, "qacc"):
         env_adapter.env.sim.data.qacc[...] = np.asarray(reference_state["qacc"], dtype=env_adapter.env.sim.data.qacc.dtype)
         actions.append("mujoco.qacc")
-    if refresh_derived:
-        actions.extend(refresh_derived_controller_state(env_adapter))
     return {
         "restore_goal": bool(restore_goal),
         "restore_interpolator": bool(restore_interpolator),

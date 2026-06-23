@@ -317,6 +317,18 @@ def test_control_ablation_qacc_is_explicit_opt_in():
     assert "mujoco.qacc" in applied["actions"]
 
 
+def test_control_ablation_qacc_is_applied_after_refresh():
+    reference = _FakeC2Adapter()
+    reference.env.sim.data.qacc[:] = [0.25, -0.5]
+    state = snapshot_control_ablation_state(reference)
+    replay = _FakeC2Adapter()
+
+    applied = apply_control_ablation_state(replay, state, restore_qacc=True, refresh_derived=True)
+
+    np.testing.assert_allclose(replay.env.sim.data.qacc, [0.25, -0.5])
+    assert applied["actions"][-1] == "mujoco.qacc"
+
+
 def test_refresh_derived_controller_state_calls_update_force_only():
     adapter = _FakeC2Adapter()
     refreshed = refresh_derived_controller_state(adapter)
