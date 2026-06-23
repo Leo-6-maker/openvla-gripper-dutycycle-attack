@@ -113,9 +113,9 @@ def main():
         env_action = np.array(action, dtype=np.float64)
 
         # Detector
-        from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeaturesV2
+        from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
         if step == 0:
-            streamer = SC5StreamingFeaturesV2()
+            streamer = SC5StreamingFeatureAdapterV2()
             _first_valid = -1
         feat_res = streamer.update(env_action, obs, step == 0)
         if feat_res.get("valid"):
