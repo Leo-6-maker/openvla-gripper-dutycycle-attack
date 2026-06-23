@@ -11,6 +11,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+import scripts.stageb.layer3_exact_restore_runner as runner_mod
 from scripts.stageb.layer3_exact_restore_runner import (
     EXPECTED_M2_CHECKPOINT_SHA256_BY_SUITE,
     EXPECTED_LAYER2_DATASET_SHA256,
@@ -49,6 +50,7 @@ from scripts.stageb.layer3_exact_restore_runner import (
     hash_jsonable,
     hash_typed_observation,
     prefix_replay_state_hashes,
+    postprocess_openvla_action_for_libero,
     compare_step_sequences,
     restore_env_internal_state,
     restore_feature_history,
@@ -399,6 +401,33 @@ class _CountingPolicy(_MockPolicy):
         return super().act(obs)
 
 
+class _CountingEnv(_MockEnv):
+    def __init__(self, *, step: int = 0) -> None:
+        super().__init__(step=step)
+        self.step_env_action_calls = 0
+
+    def step_env_action(self, env_action):  # type: ignore[no-untyped-def]
+        self.step_env_action_calls += 1
+        return super().step_env_action(env_action)
+
+
+class _NonEmittingStudent(_MockStudent):
+    def snapshot_state(self) -> dict[str, object]:
+        state = super().snapshot_state()
+        if self.update_count >= 3:
+            state["state"] = "ARMED"
+        return state
+
+
+class _WrongEmitStepStudent(_MockStudent):
+    def snapshot_state(self) -> dict[str, object]:
+        state = super().snapshot_state()
+        if self.update_count >= 3:
+            state["detector_emitted"] = True
+            state["detector_emit_step"] = 99
+        return state
+
+
 def _build_prefix_replay_fixture(*, branch_step: int = 2, raw_differs_from_env: bool = False):
     env = _MockEnv(step=0)
     student = _MockStudent()
@@ -406,18 +435,24 @@ def _build_prefix_replay_fixture(*, branch_step: int = 2, raw_differs_from_env: 
     obs = env.get_observation_after_restore()
     prefix = []
     for step in range(branch_step):
-        pre = prefix_replay_state_hashes(env=env, obs=obs, student=student)
+        pre = prefix_replay_state_hashes(env=env, obs=obs, student=student, policy=policy)
         action, tokens = policy.act(obs)
         raw_action = [-99.0] * 7 if raw_differs_from_env else list(action)
-        env_action = list(action)
+        raw_action_arr = np.asarray(raw_action)
+        env_action_arr = postprocess_openvla_action_for_libero(action)
+        env_action = env_action_arr.tolist()
         update_student_for_step(student, step=step, obs=obs, action=raw_action, tokens=tokens)
-        obs_next, reward, done, info = env.step(env_action)
-        post = prefix_replay_state_hashes(env=env, obs=obs_next, student=student)
+        obs_next, reward, done, info = env.step_env_action(env_action)
+        post = prefix_replay_state_hashes(env=env, obs=obs_next, student=student, policy=policy)
         prefix.append(
             {
                 "step": step,
                 "raw_action": raw_action,
+                "raw_action_dtype": str(raw_action_arr.dtype),
+                "raw_action_sha256": hash_array(raw_action_arr),
                 "env_action": env_action,
+                "env_action_dtype": str(env_action_arr.dtype),
+                "env_action_sha256": hash_array(env_action_arr),
                 "tokens": [int(x) for x in tokens],
                 "tokens_sha256": hash_jsonable([int(x) for x in tokens]),
                 **pre,
@@ -432,18 +467,23 @@ def _build_prefix_replay_fixture(*, branch_step: int = 2, raw_differs_from_env: 
             }
         )
         obs = obs_next
-    branch_pre = prefix_replay_state_hashes(env=env, obs=obs, student=student)
+    branch_pre = prefix_replay_state_hashes(env=env, obs=obs, student=student, policy=policy)
     branch_action, branch_tokens = policy.act(obs)
-    obs_52, reward_51, done_51, info_51 = env.step(branch_action)
-    post_branch = prefix_replay_state_hashes(env=env, obs=obs_52, student=student)
+    update_student_for_step(student, step=branch_step, obs=obs, action=branch_action, tokens=branch_tokens)
+    branch_post_update = prefix_replay_state_hashes(env=env, obs=obs, student=student, policy=policy)
+    branch_env_action = postprocess_openvla_action_for_libero(branch_action).tolist()
+    obs_52, reward_51, done_51, info_51 = env.step_env_action(branch_env_action)
+    post_branch = prefix_replay_state_hashes(env=env, obs=obs_52, student=student, policy=policy)
     branch_reference = {
         "observation_sha256": branch_pre["observation_sha256"],
-        "policy_input_sha256": branch_pre["observation_sha256"],
+        "policy_input_sha256": branch_pre["policy_input_sha256"],
         "qpos_sha256": branch_pre["qpos_sha256"],
         "qvel_sha256": branch_pre["qvel_sha256"],
         "flat_sim_state_sha256": branch_pre["flat_sim_state_sha256"],
         "student_state_sha256": branch_pre["student_state_sha256"],
         "feature_history_sha256": branch_pre["feature_history_sha256"],
+        "branch_post_student_update_state_sha256": branch_post_update["student_state_sha256"],
+        "branch_post_student_update_feature_history_sha256": branch_post_update["feature_history_sha256"],
         "post_branch_qpos_sha256": post_branch["qpos_sha256"],
         "post_branch_qvel_sha256": post_branch["qvel_sha256"],
         "post_branch_flat_sim_state_sha256": post_branch["flat_sim_state_sha256"],
@@ -451,11 +491,11 @@ def _build_prefix_replay_fixture(*, branch_step: int = 2, raw_differs_from_env: 
         "post_branch_reward": float(reward_51),
         "post_branch_done": bool(done_51),
     }
-    return prefix, branch_reference, list(branch_action), [int(x) for x in branch_tokens]
+    return prefix, branch_reference, list(branch_action), [int(x) for x in branch_tokens], branch_env_action
 
 
 def test_prefix_replay_uses_env_action_not_raw_action_and_calls_policy_only_at_branch():
-    prefix, branch_reference, branch_action, branch_tokens = _build_prefix_replay_fixture(
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture(
         raw_differs_from_env=True
     )
     replay_env = _MockEnv(step=0)
@@ -471,17 +511,239 @@ def test_prefix_replay_uses_env_action_not_raw_action_and_calls_policy_only_at_b
         branch_step=2,
         expected_branch_action=np.asarray(branch_action),
         expected_branch_tokens=branch_tokens,
-        expected_branch_env_action=branch_action,
+        expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
+        expected_prefix_trace_sha256=hash_jsonable(prefix),
         branch_reference=branch_reference,
     )
 
     assert result["result"] == "PASS"
     assert result["prefix_steps_completed"] == 2
     assert replay_policy.calls == 1
+    assert replay_student.update_count == 3
+    assert branch_reference["policy_input_sha256"] != branch_reference["observation_sha256"]
+
+
+def test_prefix_replay_rejects_raw_action_bit_mutation():
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
+    prefix[0]["raw_action"][0] = float(prefix[0]["raw_action"][0]) + 1.0
+
+    with pytest.raises(ExactRestoreError, match="raw_action_sha256"):
+        run_exact_action_prefix_replay_from_trace(
+            env=_MockEnv(step=0),
+            student=_MockStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=_MockEnv(step=0).get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
+            branch_reference=branch_reference,
+        )
+
+
+def test_prefix_replay_rejects_env_action_sha_mutation():
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
+    prefix[0]["env_action_sha256"] = "0" * 64
+
+    with pytest.raises(ExactRestoreError, match="env_action_sha256"):
+        run_exact_action_prefix_replay_from_trace(
+            env=_MockEnv(step=0),
+            student=_MockStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=_MockEnv(step=0).get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
+            branch_reference=branch_reference,
+        )
+
+
+def test_prefix_replay_rejects_tokens_sha_mutation():
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
+    prefix[0]["tokens_sha256"] = "0" * 64
+
+    with pytest.raises(ExactRestoreError, match="tokens_sha256"):
+        run_exact_action_prefix_replay_from_trace(
+            env=_MockEnv(step=0),
+            student=_MockStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=_MockEnv(step=0).get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
+            branch_reference=branch_reference,
+        )
+
+
+def test_prefix_replay_rejects_prefix_trace_sha_mismatch():
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
+
+    with pytest.raises(ExactRestoreError, match="prefix trace SHA"):
+        run_exact_action_prefix_replay_from_trace(
+            env=_MockEnv(step=0),
+            student=_MockStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=_MockEnv(step=0).get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
+            expected_prefix_trace_sha256="0" * 64,
+            branch_reference=branch_reference,
+        )
+
+
+def test_prefix_replay_rejects_missing_required_field():
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
+    del prefix[0]["policy_input_sha256"]
+
+    with pytest.raises(ExactRestoreError, match="PREFIX_REPLAY_SCHEMA_INVALID"):
+        run_exact_action_prefix_replay_from_trace(
+            env=_MockEnv(step=0),
+            student=_MockStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=_MockEnv(step=0).get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
+            branch_reference=branch_reference,
+        )
+
+
+def test_prefix_replay_rejects_any_prefix_done_true():
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
+    prefix[1]["done"] = True
+
+    with pytest.raises(ExactRestoreError, match="PREFIX_REPLAY_EARLY_DONE"):
+        run_exact_action_prefix_replay_from_trace(
+            env=_MockEnv(step=0),
+            student=_MockStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=_MockEnv(step=0).get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
+            branch_reference=branch_reference,
+        )
+
+
+def test_prefix_replay_requires_step_env_action_method():
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
+
+    class NoDirectEnv(_MockEnv):
+        step_env_action = None
+
+    with pytest.raises(ExactRestoreError, match="step_env_action"):
+        run_exact_action_prefix_replay_from_trace(
+            env=NoDirectEnv(step=0),
+            student=_MockStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=NoDirectEnv(step=0).get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
+            branch_reference=branch_reference,
+        )
+
+
+def test_prefix_replay_rejects_missing_branch_env_action():
+    prefix, branch_reference, branch_action, branch_tokens, _branch_env_action = _build_prefix_replay_fixture()
+
+    with pytest.raises(ExactRestoreError, match="expected_branch_env_action"):
+        run_exact_action_prefix_replay_from_trace(
+            env=_MockEnv(step=0),
+            student=_MockStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=_MockEnv(step=0).get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=None,
+            branch_reference=branch_reference,
+        )
+
+
+def test_branch_student_non_emit_prevents_branch_env_step():
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
+    env = _CountingEnv(step=0)
+    with pytest.raises(ExactRestoreError, match="PREFIX_REPLAY_STUDENT_DIVERGENCE"):
+        run_exact_action_prefix_replay_from_trace(
+            env=env,
+            student=_NonEmittingStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=env.get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
+            branch_reference=branch_reference,
+        )
+    assert env.step_env_action_calls == 2
+
+
+def test_branch_wrong_emit_step_prevents_branch_env_step():
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
+    env = _CountingEnv(step=0)
+    wrong_student = _WrongEmitStepStudent()
+    wrong_student.update_count = 3
+    branch_reference["branch_post_student_update_state_sha256"] = hash_jsonable(wrong_student.snapshot_state())
+    with pytest.raises(ExactRestoreError, match="PREFIX_REPLAY_STUDENT_DIVERGENCE"):
+        run_exact_action_prefix_replay_from_trace(
+            env=env,
+            student=_WrongEmitStepStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=env.get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
+            branch_reference=branch_reference,
+        )
+    assert env.step_env_action_calls == 2
+
+
+def test_prefix_replay_forbidden_paths_are_not_called(monkeypatch):
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
+
+    def forbidden(*_args, **_kwargs):  # type: ignore[no-untyped-def]
+        raise AssertionError("forbidden restore path called")
+
+    monkeypatch.setattr(runner_mod, "restore_snapshot", forbidden)
+    monkeypatch.setattr(runner_mod, "restore_mujoco_state", forbidden)
+    monkeypatch.setattr(runner_mod, "get_observation_after_restore", forbidden)
+
+    result = run_exact_action_prefix_replay_from_trace(
+        env=_MockEnv(step=0),
+        student=_MockStudent(),
+        policy=_CountingPolicy(),
+        initial_obs=_MockEnv(step=0).get_observation_after_restore(),
+        prefix_steps=prefix,
+        branch_step=2,
+        expected_branch_action=np.asarray(branch_action),
+        expected_branch_tokens=branch_tokens,
+        expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
+        branch_reference=branch_reference,
+    )
+    assert result["result"] == "PASS"
 
 
 def test_prefix_replay_fails_at_first_pre_step_mismatch():
-    prefix, branch_reference, branch_action, branch_tokens = _build_prefix_replay_fixture()
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
     prefix[1]["qpos_sha256"] = "0" * 64
 
     with pytest.raises(ExactRestoreError, match="PREFIX_REPLAY_PRE_STEP_DIVERGENCE"):
@@ -494,13 +756,13 @@ def test_prefix_replay_fails_at_first_pre_step_mismatch():
             branch_step=2,
             expected_branch_action=np.asarray(branch_action),
             expected_branch_tokens=branch_tokens,
-            expected_branch_env_action=branch_action,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
             branch_reference=branch_reference,
         )
 
 
 def test_prefix_replay_fails_at_first_post_step_mismatch():
-    prefix, branch_reference, branch_action, branch_tokens = _build_prefix_replay_fixture()
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
     prefix[0]["post_qvel_sha256"] = "0" * 64
 
     with pytest.raises(ExactRestoreError, match="PREFIX_REPLAY_POST_STEP_DIVERGENCE"):
@@ -513,13 +775,13 @@ def test_prefix_replay_fails_at_first_post_step_mismatch():
             branch_step=2,
             expected_branch_action=np.asarray(branch_action),
             expected_branch_tokens=branch_tokens,
-            expected_branch_env_action=branch_action,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
             branch_reference=branch_reference,
         )
 
 
 def test_prefix_replay_fails_on_student_state_mismatch():
-    prefix, branch_reference, branch_action, branch_tokens = _build_prefix_replay_fixture()
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
     prefix[0]["student_state_sha256"] = "0" * 64
 
     with pytest.raises(ExactRestoreError, match="student_state_sha256"):
@@ -532,13 +794,13 @@ def test_prefix_replay_fails_on_student_state_mismatch():
             branch_step=2,
             expected_branch_action=np.asarray(branch_action),
             expected_branch_tokens=branch_tokens,
-            expected_branch_env_action=branch_action,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
             branch_reference=branch_reference,
         )
 
 
 def test_prefix_replay_fails_on_policy_input_mismatch_at_branch():
-    prefix, branch_reference, branch_action, branch_tokens = _build_prefix_replay_fixture()
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
     branch_reference["policy_input_sha256"] = "0" * 64
 
     with pytest.raises(ExactRestoreError, match="PREFIX_REPLAY_POLICY_INPUT_MISMATCH"):
@@ -551,7 +813,7 @@ def test_prefix_replay_fails_on_policy_input_mismatch_at_branch():
             branch_step=2,
             expected_branch_action=np.asarray(branch_action),
             expected_branch_tokens=branch_tokens,
-            expected_branch_env_action=branch_action,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
             branch_reference=branch_reference,
         )
 
