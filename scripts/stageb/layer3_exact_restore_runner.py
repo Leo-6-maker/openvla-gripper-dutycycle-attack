@@ -355,34 +355,48 @@ def diff_state_dicts(reference: Mapping[str, Any], replay: Mapping[str, Any]) ->
 
 def classify_transition_diff(field: str) -> str:
     name = field.lower()
+    if "repr" in name:
+        return "OBJECT_IDENTITY_OR_REPR_NOISE"
+    if "j_full" in name or "j_pos" in name or "j_ori" in name or "mass_matrix" in name:
+        return "CONTROLLER_DERIVED_CACHE"
+    if "goal_pos" in name or "goal_ori" in name or "goal_orientation" in name or "goal_qpos" in name:
+        return "CONTROLLER_MUTABLE_GOAL_STATE"
     if "interpolator" in name:
-        return "INTERPOLATOR_STATE_MISSING"
-    if "controller" in name or "goal" in name:
-        return "CONTROLLER_GOAL_STATE_MISSING"
+        return "INTERPOLATOR_MUTABLE_STATE"
     if "previous" in name or "prev" in name or "last_action" in name or "action_buffer" in name:
-        return "PREVIOUS_ACTION_STATE_MISSING"
+        return "ROBOT_ACTION_HISTORY"
     if "counter" in name or "timestep" in name or "elapsed" in name or "cur_time" in name or "control_freq" in name:
-        return "CONTROL_COUNTER_MISSING"
+        return "CONTROL_LOOP_COUNTER"
+    if name.startswith("mujoco.qacc_warmstart") or name.startswith("mujoco.qfrc") or name.startswith("mujoco.xfrc"):
+        return "MUJOCO_WARMSTART_STATE"
+    if name.startswith("mujoco.qacc"):
+        return "MUJOCO_DERIVED_ACCELERATION"
+    if name.startswith("mujoco.eq_active"):
+        return "MUJOCO_WARMSTART_STATE"
     if (
-        name.startswith("mujoco.qacc")
-        or name.startswith("mujoco.qacc_warmstart")
-        or name.startswith("mujoco.qfrc")
-        or name.startswith("mujoco.xfrc")
-        or name.startswith("mujoco.eq_active")
+        "input_min" in name
+        or "input_max" in name
+        or "output_min" in name
+        or "output_max" in name
+        or "control_limits" in name
+        or "config" in name
     ):
-        return "MUJOCO_SOLVER_STATE_MISSING"
+        return "STATIC_CONFIG_DIFFERENCE"
     if "repeat" in name or "action_repeat" in name:
-        return "ACTION_REPEAT_STATE_MISSING"
+        return "CONTROL_LOOP_COUNTER"
     return "UNKNOWN_TRANSITION_STATE"
 
 
 TRANSITION_CLASS_PRIORITY = (
-    "CONTROLLER_GOAL_STATE_MISSING",
-    "INTERPOLATOR_STATE_MISSING",
-    "PREVIOUS_ACTION_STATE_MISSING",
-    "CONTROL_COUNTER_MISSING",
-    "ACTION_REPEAT_STATE_MISSING",
-    "MUJOCO_SOLVER_STATE_MISSING",
+    "CONTROLLER_MUTABLE_GOAL_STATE",
+    "INTERPOLATOR_MUTABLE_STATE",
+    "ROBOT_ACTION_HISTORY",
+    "CONTROL_LOOP_COUNTER",
+    "MUJOCO_WARMSTART_STATE",
+    "MUJOCO_DERIVED_ACCELERATION",
+    "CONTROLLER_DERIVED_CACHE",
+    "STATIC_CONFIG_DIFFERENCE",
+    "OBJECT_IDENTITY_OR_REPR_NOISE",
     "UNKNOWN_TRANSITION_STATE",
 )
 

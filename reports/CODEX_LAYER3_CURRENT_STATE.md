@@ -5,8 +5,8 @@
 ```text
 CODEX_SERVER: 2080Ti
 CURRENT_PARENT: libero_goal|4|1|0|CLEAN
-CURRENT_GATE: TRANSITION_STATE_ROOT_CAUSE
-CURRENT_FAILURE: POST_ACTION_ENV_RESTORE_FAIL
+CURRENT_GATE: C2_CONTROL_STATE_CAUSAL_ABLATION_PREP
+CURRENT_FAILURE: PRE_STEP_CONTROL_STACK_STATE_MISMATCH
 
 Layer1: FROZEN_PASS
 Layer2: FROZEN_ENGINEERING_PASS
@@ -15,6 +15,7 @@ Goal online/offline feature parity: PASS
 Known Goal online emit: PASS
 Captured-prefix first action/tokens: PASS
 Post-action environment transition: FAIL
+C1 transition-state audit: PASS
 
 R2: NO_GO
 FORMAL_RESTORE_3X: NO_GO
@@ -26,7 +27,7 @@ A800_FORMAL_CROSS_SUITE: NO_GO
 
 ```text
 PR: #38
-current head at C0 freeze: 95fd8c1e0b736901f6a4116e88b78885eeb6497c
+current head after C1 report: 608d15f899c170c7065a66c0397b5748b8d455a4
 
 known parent:
 libero_goal|4|1|0|CLEAN
@@ -77,12 +78,35 @@ step0 qvel_max_abs_diff: 0.483355472
 This means the current blocker is after policy inference and during the
 environment transition.
 
+## C1 Transition Audit
+
+```text
+commit: 342bbeb3d21b67b179b97537561d7c4fd2809874
+output:
+/data/liuyu/layer3_outputs/transition_state_audit_goal_t4_s1_342bbeb_gpu13_20260623_010656
+
+first_action_exact: true
+first_action_tokens_exact: true
+first_divergence_phase: PRE_STEP
+refined_primary_blocker: PRE_STEP_CONTROL_STACK_STATE_MISMATCH
+unique_root_attribute_count: 18
+mutable_goal_roots: 4
+derived_cache_roots: 4
+qacc_roots: 1
+```
+
+The C1 result proves control-stack state mismatch before `env.step(action_51)`.
+It does not prove that `J_full` is authoritative state, that controller goal is
+the unique root cause, or that `qacc` must be permanently added to the restore
+payload.
+
 ## Next Authorized Work
 
 ```text
-Implement and run --transition-state-audit-only
+C2_CONTROL_STATE_CAUSAL_ABLATION
+Condition: remote CI green after moving codex_known_parent_manifest out of artifacts/
 Scope: same known Goal parent only
-Purpose: identify first internal transition-state divergence at action_51
+Method: derived-cache recompute first, then strict mutable-state ablations
 ```
 
 Forbidden until a later gate:

@@ -163,12 +163,15 @@ def test_diff_state_dicts_reports_nested_changes():
 @pytest.mark.parametrize(
     ("field", "expected"),
     [
-        ("robots[0].controller.attrs.goal_pos.sha256", "CONTROLLER_GOAL_STATE_MISSING"),
-        ("robots[0].controller_selected_attrs.interpolator_pos.sha256", "INTERPOLATOR_STATE_MISSING"),
-        ("env_inner.attrs.last_action.sha256", "PREVIOUS_ACTION_STATE_MISSING"),
-        ("env_inner.attrs._elapsed_steps", "CONTROL_COUNTER_MISSING"),
-        ("mujoco.qacc_warmstart.sha256", "MUJOCO_SOLVER_STATE_MISSING"),
-        ("env_wrapper.attrs.action_repeat", "ACTION_REPEAT_STATE_MISSING"),
+        ("robots[0].controller.attrs.goal_pos.sha256", "CONTROLLER_MUTABLE_GOAL_STATE"),
+        ("robots[0].controller.attrs.J_full.head[0]", "CONTROLLER_DERIVED_CACHE"),
+        ("robots[0].controller_selected_attrs.interpolator_pos.sha256", "INTERPOLATOR_MUTABLE_STATE"),
+        ("env_inner.attrs.last_action.sha256", "ROBOT_ACTION_HISTORY"),
+        ("env_inner.attrs._elapsed_steps", "CONTROL_LOOP_COUNTER"),
+        ("mujoco.qacc_warmstart.sha256", "MUJOCO_WARMSTART_STATE"),
+        ("mujoco.qacc.sha256", "MUJOCO_DERIVED_ACCELERATION"),
+        ("env_wrapper.attrs.action_repeat", "CONTROL_LOOP_COUNTER"),
+        ("robots[0].attrs.controller.repr", "OBJECT_IDENTITY_OR_REPR_NOISE"),
         ("flat_sim_state.get_sim_state.sha256", "UNKNOWN_TRANSITION_STATE"),
     ],
 )
@@ -176,22 +179,26 @@ def test_classify_transition_diff(field, expected):
     assert classify_transition_diff(field) == expected
 
 
-def test_first_transition_diff_prefers_actionable_controller_state():
+def test_first_transition_diff_prefers_mutable_goal_over_derived_cache():
     first = first_transition_diff(
         [
-            {"field": "mujoco.qacc.head[0]", "classification": "MUJOCO_SOLVER_STATE_MISSING"},
-            {"field": "robots[0].attrs.controller.repr", "classification": "CONTROLLER_GOAL_STATE_MISSING"},
+            {"field": "mujoco.qacc.head[0]", "classification": "MUJOCO_DERIVED_ACCELERATION"},
+            {"field": "robots[0].attrs.controller.repr", "classification": "OBJECT_IDENTITY_OR_REPR_NOISE"},
             {
-                "field": "robots[0].controller_selected_attrs.goal_pos.sha256",
-                "classification": "CONTROLLER_GOAL_STATE_MISSING",
+                "field": "robots[0].controller.attrs.J_full.head[0]",
+                "classification": "CONTROLLER_DERIVED_CACHE",
+            },
+            {
+                "field": "robots[0].controller.attrs.goal_pos.sha256",
+                "classification": "CONTROLLER_MUTABLE_GOAL_STATE",
             },
         ],
         [],
     )
 
     assert first["first_divergence_phase"] == "PRE_STEP"
-    assert first["classification"] == "CONTROLLER_GOAL_STATE_MISSING"
-    assert first["field"] == "robots[0].controller_selected_attrs.goal_pos.sha256"
+    assert first["classification"] == "CONTROLLER_MUTABLE_GOAL_STATE"
+    assert first["field"] == "robots[0].controller.attrs.goal_pos.sha256"
 
 
 def test_transition_state_audit_known_parent_fail_closed():

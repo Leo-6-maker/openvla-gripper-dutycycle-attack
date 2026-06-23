@@ -29,26 +29,38 @@ The transition state is already divergent before the first replayed
 
 ```text
 first_divergence_phase: PRE_STEP
-transition_state_classification: CONTROLLER_GOAL_STATE_MISSING
-first_divergence_field: robots[0].controller.attrs.J_full.head[0]
-pre_diff_count: 158
-post_diff_count: 271
+pre_diff_count: 158 leaf rows
+post_diff_count: 271 leaf rows
 ```
 
-Pre-step classification counts:
+The original C1 run reported the first sorted field as:
 
 ```text
-CONTROLLER_GOAL_STATE_MISSING: 134
-MUJOCO_SOLVER_STATE_MISSING: 13
-UNKNOWN_TRANSITION_STATE: 11
+robots[0].controller.attrs.J_full.head[0]
 ```
 
-Post-step classification counts:
+That field is a controller-derived cache, not proof that `J_full` itself is an
+authoritative mutable state to restore. A posthoc root-attribute aggregation of
+the same pre-step diff rows gives:
 
 ```text
-CONTROLLER_GOAL_STATE_MISSING: 109
-MUJOCO_SOLVER_STATE_MISSING: 26
-UNKNOWN_TRANSITION_STATE: 136
+unique_root_attribute_count: 18
+CONTROLLER_MUTABLE_GOAL_STATE: 4 roots / 28 leaf rows
+CONTROLLER_DERIVED_CACHE: 4 roots / 60 leaf rows
+MUJOCO_DERIVED_ACCELERATION: 1 root / 13 leaf rows
+UNKNOWN_TRANSITION_STATE: 9 roots / 57 leaf rows
+```
+
+Key root attributes include:
+
+```text
+robots[0].controller.attrs.goal_pos
+robots[0].controller.attrs.goal_ori
+robots[0].controller.attrs.J_full
+robots[0].controller.attrs.J_pos
+robots[0].controller.attrs.J_ori
+robots[0].controller.attrs.mass_matrix
+mujoco.qacc
 ```
 
 The replay next observation hash differs from the reference:
@@ -63,15 +75,17 @@ replay_next_observation_sha256:
 
 ## Interpretation
 
-The prior blocker is not policy-input restore. The current blocker is missing
-pre-step transition state inside the robosuite control stack. The state mismatch
-includes controller/Jacobian/goal-state fields and MuJoCo solver acceleration
-state. This supports the next engineering route:
+The prior blocker is not policy-input restore. The current blocker is pre-step
+control-stack state mismatch inside robosuite. The state mismatch includes both
+mutable controller goal fields and derived controller cache fields, plus MuJoCo
+derived acceleration (`qacc`). This supports a causal ablation route, not a blind
+full controller dictionary restore:
 
 ```text
 C2_ROUTE_RECOMMENDATION:
-  controller/robot-control-state snapshot restoration first
-  include MuJoCo qacc in the restore payload
+  first recompute derived controller caches from restored sim state
+  then ablate strict mutable controller/interpolator/action-history groups
+  evaluate qacc restore as a separate ablation, not as a permanent payload change
 ```
 
 It does not authorize R2, formal restore 3x, VIS/RAND/shuffled/oracle/attack, or
@@ -85,6 +99,7 @@ Key files:
 run/transition_state_audit/transition_state_audit_summary.json
 run/transition_state_audit/transition_state_pre_diff.csv
 run/transition_state_audit/transition_state_post_diff.csv
+tables/real_restore_transition_state_root_attribute_summary_20260623.csv
 run/transition_state_audit/recursive_sha256_manifest.csv
 run/single_parent_restore_qualification_summary.json
 ```
@@ -104,15 +119,19 @@ e9a81abc0c6891c1ffe20ee583c294ba595eec22f6156df297bec3737495a311
 ```text
 Captured-prefix first action/tokens remain exact for the known Goal parent.
 Reference and replay transition state diverge before env.step(action_51).
-The dominant pre-step divergence category is controller goal/control state.
-The current root-cause route should target controller/robot-control restore,
-with MuJoCo qacc included in the state payload.
+PRE_STEP_CONTROL_STACK_STATE_MISMATCH is established.
+CONTROLLER_GOAL_STATE_MISSING is a leading hypothesis, not final proof.
+J_full and related Jacobian/mass-matrix fields are derived-cache differences.
+qacc is a derived acceleration difference and must be tested as a separate ablation.
 ```
 
 ## Forbidden Claims
 
 ```text
 Clean restore solved.
+J_full proven to be an authoritative hidden state.
+Controller goal proven to be the unique root cause.
+Permanent qacc restore authorized.
 R2 authorized.
 VIS/RAND/shuffled/oracle/attack authorized.
 Layer3 attack effectiveness established.
