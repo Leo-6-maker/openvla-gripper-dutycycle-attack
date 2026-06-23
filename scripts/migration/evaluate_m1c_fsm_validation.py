@@ -41,6 +41,8 @@ def wilson_ci(numerator, denominator, z=1.96):
     return max(0, lo), min(1, hi)
 
 
+CKPT = None  # set by main
+
 def evaluate_fsm(detector_cls, config, val_cells, teacher_labels):
     """Replay FSM on validation telemetry and compute all metrics."""
     n_tv = 0; n_nc = 0; triggered = []
@@ -54,7 +56,7 @@ def evaluate_fsm(detector_cls, config, val_cells, teacher_labels):
         if tv: n_tv += 1
         else: n_nc += 1
 
-        d = detector_cls(str(CKPT_PATH), **config)
+        d = detector_cls(str(CKPT), **config)
         tel = cell["path"] / "step_telemetry.csv"
         if not tel.exists(): continue
         rows = list(csv.DictReader(open(tel)))
@@ -140,6 +142,7 @@ def evaluate_fsm(detector_cls, config, val_cells, teacher_labels):
 
 def main():
     ap = argparse.ArgumentParser(description="P5 R1/R2 Validation Evaluation")
+    ap.add_argument("--ckpt", default=str(CKPT_PATH), help="Detector checkpoint path")
     ap.add_argument("--validation-root", default=str(CORPUS_ROOT / "validation"))
     ap.add_argument("--teacher-labels", default=str(LABELS_PATH))
     ap.add_argument("--r1-freeze", default=str(R1_FREEZE_PATH))
@@ -147,6 +150,8 @@ def main():
     ap.add_argument("--output-root", default=str(REPO / "evidence/m1c/validation_fsm_eval"))
     args = ap.parse_args()
 
+    global CKPT
+    CKPT = Path(args.ckpt)
     out_root = Path(args.output_root)
     out_root.mkdir(parents=True, exist_ok=True)
 
