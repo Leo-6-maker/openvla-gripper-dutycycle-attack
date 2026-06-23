@@ -7,8 +7,19 @@ Adds two new FSM versions:
   R1 ("v1r_r1"): Minimal disarm — ARMED→IDLE on evidence loss.
   R2 ("v1r_r2"): Full candidate-machine with hysteresis and arm timeout.
 
+R2 timing: N_min - 1 + guard steps from first on-evidence frame to earliest
+possible emit (3 - 1 + 5 = 7 steps with defaults). This is by design — the
+candidate phase requires sustained evidence before arming.
+
 Shared with legacy: SC5MLP model, SC5_FEATURES, SC5_PHASES, tau defaults.
 Only the state machine transition logic differs.
+
+Usage:
+  detector = SC5DetectorRuntimeV1R(ckpt_path, fsm_version="v1r_r1")
+  # Online: model inference
+  decision = detector.update(features_25d, step)
+  # Offline: replay from recorded scores (no model, no GPU)
+  decision = detector.update_from_scores(cp, rp, phase, step, feat_valid=True)
 """
 import hashlib, numpy as np, torch, torch.nn as nn
 from typing import Dict, Optional
@@ -110,7 +121,20 @@ class SC5DetectorRuntimeV1R:
         self.n_candidate = n_candidate
         self.max_arm_age = max_arm_age
 
+        self._validate_config()
+
         self.reset()
+
+    def _validate_config(self):
+        """Reject nonsensical parameter combinations."""
+        if self.tau_on <= self.tau_off:
+            raise ValueError(f"tau_on ({self.tau_on}) must be > tau_off ({self.tau_off})")
+        if self.n_candidate < 1:
+            raise ValueError(f"n_candidate ({self.n_candidate}) must be >= 1")
+        if self.guard < 0:
+            raise ValueError(f"guard ({self.guard}) must be >= 0")
+        if self.max_arm_age < 1:
+            raise ValueError(f"max_arm_age ({self.max_arm_age}) must be >= 1")
 
     # ── Public API ─────────────────────────────────────────────────
 
@@ -119,6 +143,9 @@ class SC5DetectorRuntimeV1R:
         self.arm_step = -1
         self.emit_step = -1
         self.emitted = False
+        # History for telemetry cleanliness
+        self.last_arm_step = -1
+        self.last_candidate_step = -1
         # R1/R2 fields
         self.candidate_step = -1
         self.candidate_streak = 0
@@ -129,6 +156,7 @@ class SC5DetectorRuntimeV1R:
         self.disarm_reason = ""
 
     def update(self, features_25d: Dict[str, float], step: int) -> dict:
+        """Online: compute model predictions, then run FSM."""
         if self.emitted:
             return self._decision(step)
 
@@ -142,6 +170,26 @@ class SC5DetectorRuntimeV1R:
         rp = torch.sigmoid(out["release_logit"]).item()
         pp = SC5_PHASES[out["phase_logits"][0].argmax().item()]
 
+        return self.update_from_scores(cp, rp, pp, step, feat_valid=True)
+
+    def update_from_scores(self, corridor_p: float, release_p: float,
+                           pred_phase: str, step: int,
+                           feat_valid: bool = True) -> dict:
+        """Offline: run FSM directly from recorded scores. No model, no GPU.
+
+        This is the authoritative FSM entry point — update() delegates to it.
+        """
+        if self.emitted:
+            return self._decision(step, corridor_p, release_p, pred_phase)
+
+        cp = corridor_p; rp = release_p; pp = pred_phase
+
+        # Validate NaN
+        if cp is None or (isinstance(cp, float) and np.isnan(cp)):
+            cp = float("nan")
+        if rp is None or (isinstance(rp, float) and np.isnan(rp)):
+            rp = float("nan")
+
         self.evidence_valid = self._check_arm_evidence(cp, rp, pp)
 
         # Compute arm_age before FSM update so timeout check uses current step
@@ -153,9 +201,9 @@ class SC5DetectorRuntimeV1R:
         if self.fsm_version == "legacy_v1":
             self._update_legacy(step, cp, rp, pp)
         elif self.fsm_version == "v1r_r1":
-            self._update_r1(step, cp, rp, pp)
+            self._update_r1(step, cp, rp, pp, feat_valid)
         elif self.fsm_version == "v1r_r2":
-            self._update_r2(step, cp, rp, pp)
+            self._update_r2(step, cp, rp, pp, feat_valid)
 
         return self._decision(step, cp, rp, pp)
 
@@ -168,64 +216,73 @@ class SC5DetectorRuntimeV1R:
 
     def _check_keep_evidence(self, cp, rp, pp):
         """Conditions required to STAY armed (keep conditions)."""
-        return (pp == "stable_carry"
-                and cp is not None and not np.isnan(cp) and cp > self.tau_off
-                and rp is not None and not np.isnan(rp) and rp < self.tau_r)
+        if cp is None or np.isnan(cp):
+            return False
+        if rp is None or np.isnan(rp):
+            return False
+        return (pp == "stable_carry" and cp > self.tau_off and rp < self.tau_r)
 
     def _check_on_evidence(self, cp, rp, pp):
         """Stricter conditions for entering candidate state (R2)."""
-        return (pp == "stable_carry"
-                and cp is not None and not np.isnan(cp) and cp > self.tau_on
-                and rp is not None and not np.isnan(rp) and rp < self.tau_r)
+        if cp is None or np.isnan(cp):
+            return False
+        if rp is None or np.isnan(rp):
+            return False
+        return (pp == "stable_carry" and cp > self.tau_on and rp < self.tau_r)
 
     # ── FSM implementations ────────────────────────────────────────
 
     def _update_legacy(self, step, cp, rp, pp):
         """Original frozen logic — no disarm path."""
         if self.state == "IDLE":
-            if pp == "stable_carry" and cp > self.tau_c:
-                self.state = "ARMED"; self.arm_step = step
+            if pp == "stable_carry" and not np.isnan(cp) and cp > self.tau_c:
+                self.state = "ARMED"; self.arm_step = step; self.disarm_reason = ""
         elif self.state == "ARMED":
-            if step >= self.arm_step + self.guard and cp > self.tau_c and rp < self.tau_r:
+            if step >= self.arm_step + self.guard and not np.isnan(cp) and cp > self.tau_c and not np.isnan(rp) and rp < self.tau_r:
                 self.state = "EMITTED"; self.emit_step = step; self.emitted = True
 
-    def _update_r1(self, step, cp, rp, pp):
+    def _update_r1(self, step, cp, rp, pp, feat_valid):
         """R1: Minimal disarm on evidence loss. Same arm conditions as legacy."""
         if self.state == "IDLE":
             if self._check_arm_evidence(cp, rp, pp):
-                self.state = "ARMED"; self.arm_step = step
+                self.state = "ARMED"; self.arm_step = step; self.disarm_reason = ""
 
         elif self.state == "ARMED":
-            # Disarm checks
             disarm = False
             keep = self._check_keep_evidence(cp, rp, pp)
             if not keep:
                 disarm = True
-                self.disarm_reason = self._classify_disarm(True, cp, rp, pp, False)
+                self.disarm_reason = self._classify_disarm(feat_valid, cp, rp, pp)
             if disarm:
                 self.state = "IDLE"
                 self.disarm_count += 1
                 self.last_disarm_step = step
-            elif step >= self.arm_step + self.guard and cp > self.tau_c and rp < self.tau_r:
+                self.last_arm_step = self.arm_step
+                self.arm_step = -1
+                self.arm_age = 0
+            elif step >= self.arm_step + self.guard and not np.isnan(cp) and cp > self.tau_c and not np.isnan(rp) and rp < self.tau_r:
                 self.state = "EMITTED"; self.emit_step = step; self.emitted = True
 
-    def _update_r2(self, step, cp, rp, pp):
+    def _update_r2(self, step, cp, rp, pp, feat_valid):
         """R2: Full candidate-machine with hysteresis + timeout."""
         if self.state == "IDLE":
             if self._check_on_evidence(cp, rp, pp):
                 self.state = "CANDIDATE"
                 self.candidate_step = step
                 self.candidate_streak = 1
+                self.disarm_reason = ""
 
         elif self.state == "CANDIDATE":
             if self._check_on_evidence(cp, rp, pp):
                 self.candidate_streak += 1
                 if self.candidate_streak >= self.n_candidate:
                     self.state = "ARMED"; self.arm_step = step
-                    self.candidate_streak = 0
+                    self.candidate_streak = 0; self.disarm_reason = ""
             else:
                 self.disarm_reason = "CANDIDATE_BREAK"
+                self.last_candidate_step = self.candidate_step
                 self.state = "IDLE"
+                self.candidate_step = -1
                 self.candidate_streak = 0
 
         elif self.state == "ARMED":
@@ -233,7 +290,7 @@ class SC5DetectorRuntimeV1R:
             keep = self._check_keep_evidence(cp, rp, pp)
             if not keep:
                 disarm = True
-                self.disarm_reason = self._classify_disarm(True, cp, rp, pp, False)
+                self.disarm_reason = self._classify_disarm(feat_valid, cp, rp, pp)
             elif self.arm_age >= self.max_arm_age:
                 disarm = True
                 self.disarm_reason = "ARM_TIMEOUT"
@@ -242,12 +299,15 @@ class SC5DetectorRuntimeV1R:
                 self.state = "IDLE"
                 self.disarm_count += 1
                 self.last_disarm_step = step
+                self.last_arm_step = self.arm_step
+                self.arm_step = -1
+                self.arm_age = 0
             elif step >= self.arm_step + self.guard:
                 self.state = "EMITTED"; self.emit_step = step; self.emitted = True
 
     # ── Helpers ────────────────────────────────────────────────────
 
-    def _classify_disarm(self, feat_valid, cp, rp, pp, keep_ok):
+    def _classify_disarm(self, feat_valid, cp, rp, pp):
         """Classify disarm reason for telemetry."""
         if not feat_valid:
             return "FEATURE_INVALID"
