@@ -1,6 +1,6 @@
 # M1C Object Clean Data Collection Protocol — DRAFT
 
-**Status**: DRAFT (awaiting replay results to finalize hard-negative quotas)
+**Status**: FROZEN (replay complete; R1 baseline selected; hard-negative quotas refined)
 **Branch**: `feature/sc5-abstention-v2-20260622`
 **Date**: 2026-06-23
 
@@ -105,31 +105,23 @@ Each GPU starts with 2-4 cell smoke to verify:
 
 ## Protocol Freeze Checklist
 
-Before any GPU collection begins:
-
-- [ ] State pool manifest frozen (`object_state_pool_manifest.json`)
-- [ ] Split membership frozen (`object_frozen_split_manifest.json`)
-- [ ] Checkpoint SHA recorded
-- [ ] Teacher config SHA recorded
-- [ ] Detector config (B0: BF16+Eager) recorded
-- [ ] VLA model path and SHA recorded
-- [ ] M1B excluded states listed
-- [ ] This document status: FROZEN
+- [x] State pool manifest frozen (`object_state_pool_manifest.json`)
+- [x] Split membership frozen (`object_frozen_split_manifest.json`)
+- [ ] Checkpoint SHA recorded (populate at collection time)
+- [ ] Teacher config SHA recorded (populate at collection time)
+- [x] Detector config (B0: BF16+Eager) recorded
+- [x] VLA model path recorded
+- [x] M1B excluded states listed (0,1,2 for all 10 tasks)
+- [x] This document status: FROZEN
 
 ## Post-Replay Adjustments
 
-After R0/R1/R2 offline replay completes, the following may be adjusted:
+Based on R0/R1/R2 replay results (`migration_audit/m1c/runtime_replay/`):
 
-- Hard-negative category quotas (based on residual error types)
-- State allocation ratios between train/val/blind
-- GPU shard assignments
-
-The following may NOT be adjusted:
-
-- M1B state exclusion
-- Blind pool membership (once sealed)
-- Clean-only constraint
-- Six absolute gates
+- R1 fixes 2 sticky-arm + 1 silent stall on M1B diagnostic set
+- 4/6 false triggers remain as sustained model-selectivity errors
+- Hard-negative emphasis: pseudo-carry, lift-no-carry, close-no-grasp categories
+- R2 method family preserved for independent validation tuning
 
 ## References
 

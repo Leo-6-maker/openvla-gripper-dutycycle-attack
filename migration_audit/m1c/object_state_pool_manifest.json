@@ -1,0 +1,52 @@
+{
+  "gate": "M1C_OBJECT_STATE_POOL_MANIFEST",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-23",
+  "suite": "libero_object",
+  "n_tasks": 10,
+  "states_per_task": 50,
+  "m1b_excluded_states": [0, 1, 2],
+  "m1b_exclusion_note": "M1B 30-cell experiment used states 0,1,2 for all 10 tasks. These are observed and excluded from all M1C pools.",
+  "available_states": "3-49 (47 per task, 470 total)",
+  "tasks": [
+    {"task_idx": 0, "name": "pick_up_the_alphabet_soup_and_place_it_in_the_basket"},
+    {"task_idx": 1, "name": "pick_up_the_cream_cheese_and_place_it_in_the_basket"},
+    {"task_idx": 2, "name": "pick_up_the_salad_dressing_and_place_it_in_the_basket"},
+    {"task_idx": 3, "name": "pick_up_the_bbq_sauce_and_place_it_in_the_basket"},
+    {"task_idx": 4, "name": "pick_up_the_ketchup_and_place_it_in_the_basket"},
+    {"task_idx": 5, "name": "pick_up_the_tomato_sauce_and_place_it_in_the_basket"},
+    {"task_idx": 6, "name": "pick_up_the_butter_and_place_it_in_the_basket"},
+    {"task_idx": 7, "name": "pick_up_the_milk_and_place_it_in_the_basket"},
+    {"task_idx": 8, "name": "pick_up_the_chocolate_pudding_and_place_it_in_the_basket"},
+    {"task_idx": 9, "name": "pick_up_the_orange_juice_and_place_it_in_the_basket"}
+  ],
+  "pools": {
+    "train": {
+      "state_range": [3, 27],
+      "states_per_task": 25,
+      "total_states": 250,
+      "gpu_assignment": {"GPU2": "shard_A", "GPU3": "shard_B"},
+      "note": "Shard A and B are complementary subsets. Exact split TBD at collection time."
+    },
+    "validation": {
+      "state_range": [28, 37],
+      "states_per_task": 10,
+      "total_states": 100,
+      "gpu_assignment": {"GPU4": "validation"},
+      "note": "Used for threshold selection and model comparison. Can be inspected during development."
+    },
+    "blind": {
+      "state_range": [38, 47],
+      "states_per_task": 10,
+      "total_states": 100,
+      "gpu_assignment": {"GPU6": "sealed_blind"},
+      "note": "SEALED — opened exactly ONCE for final evaluation. initial_state_sha256 recorded before rollout. Membership frozen before any results are seen."
+    }
+  },
+  "unused_buffer": {
+    "state_range": [48, 49],
+    "states_per_task": 2,
+    "total_states": 20,
+    "note": "Reserved for future expansion or replacement of compromised blind states."
+  }
+}
