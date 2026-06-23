@@ -118,8 +118,12 @@ def build_records_from_telemetry(tel_path, task_idx, state_id):
         eef_to_obj = float(np.linalg.norm(np.array([obj_x, obj_y, obj_z]) - np.array([eef_x, eef_y, eef_z])))
         qpos_sum = float(r.get("qpos_sum", 0))
         raw_grip = float(r.get("raw_gripper", 0))
-        # Use feature gripper_opening_proxy if available, else qpos_sum
-        grip_open = float(r.get("f_gripper_opening_proxy", qpos_sum))
+        # Use feature gripper_opening_proxy if available and non-empty, else qpos_sum
+        f_grip = r.get("f_gripper_opening_proxy", "")
+        if f_grip and f_grip != "":
+            grip_open = float(f_grip)
+        else:
+            grip_open = qpos_sum
 
         rec = {
             "step_idx": t, "policy_step_idx": t, "phase": "policy",
