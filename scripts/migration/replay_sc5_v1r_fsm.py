@@ -141,20 +141,22 @@ def replay_cell(cell, detector_ckpt_path):
         # Silent ARM stall: armed but never emitted by episode end
         silent_stall = (detector.state == "ARMED" and not detector.emitted)
 
-        # K10 check: did emit fall within teacher anchor K-window?
+        # K10 check
         k10_ok = None
         teacher_anchor = None
         teacher_valid = None
+        teacher_anchor_error = None
         if teacher_summary:
             teacher_anchor = teacher_summary.get("anchor_candidate")
             teacher_valid = teacher_summary.get("full_k10_valid", False)
             if emit_step is not None and teacher_anchor is not None and teacher_anchor >= 0:
                 k10_ok = (teacher_anchor <= emit_step < teacher_anchor + 10)
+                teacher_anchor_error = abs(emit_step - teacher_anchor)
             elif emit_step is not None and (teacher_anchor is None or teacher_anchor < 0):
                 k10_ok = False
 
-        # Anchor error (relative to original M1B emit — used for regression check)
-        anchor_error = (emit_step - original_emit) if (emit_step is not None and original_emit >= 0) else None
+        # Replay regression error (relative to original M1B emit)
+        replay_regression_error = (emit_step - original_emit) if (emit_step is not None and original_emit >= 0) else None
 
         results[label] = {
             "label": label,
@@ -165,6 +167,7 @@ def replay_cell(cell, detector_ckpt_path):
             "state_id": cell["state_id"],
             "success": cell.get("success", False),
             "n_steps": n,
+            "n_feat_valid": sum(1 for r in rows if r.get("feat_valid", "") == "True"),
             "original_emit": original_emit,
             "replay_emit": emit_step,
             "emit_changed": (emit_step != original_emit),
@@ -179,7 +182,8 @@ def replay_cell(cell, detector_ckpt_path):
             "teacher_valid": teacher_valid,
             "teacher_anchor": teacher_anchor,
             "teacher_k10_pass": k10_ok,
-            "anchor_error": anchor_error,
+            "teacher_anchor_error": teacher_anchor_error,
+            "replay_regression_error": replay_regression_error,
             "final_state": detector.state,
         }
 
@@ -206,10 +210,10 @@ def compute_aggregate(all_results, teacher_data):
         k10_ok = [c for c in tv_triggered if c.get("teacher_k10_pass") is True]
         k10_rate = len(k10_ok) / len(tv_triggered) if tv_triggered else 0
 
-        # Anchor errors
-        errors = [c["anchor_error"] for c in tv_triggered
-                  if c.get("anchor_error") is not None]
-        median_err = float(np.median(errors)) if errors else -1
+        # Teacher anchor absolute error (only for teacher-valid triggered)
+        anchor_errors = [c["teacher_anchor_error"] for c in tv_triggered
+                         if c.get("teacher_anchor_error") is not None]
+        median_anchor_err = float(np.median(anchor_errors)) if anchor_errors else -1
 
         # False-early: emit < teacher_anchor (denominator = all triggered)
         triggered = [c for c in cells if c["replay_emit"] is not None]
@@ -219,8 +223,17 @@ def compute_aggregate(all_results, teacher_data):
                                 and c["replay_emit"] < c["teacher_anchor"])
         false_early_rate = false_early_count / len(triggered) if triggered else 0
 
-        # Post-release (all triggered have 0 in this dataset — no formal check)
-        post_release_count = 0  # placeholder
+        # Post-release: emit >= teacher_anchor + K (K=10)
+        post_release_count = sum(1 for c in triggered
+                                 if c.get("teacher_anchor") is not None
+                                 and c["teacher_anchor"] >= 0
+                                 and c["replay_emit"] >= c["teacher_anchor"] + 10)
+        post_release_rate = post_release_count / len(triggered) if triggered else 0
+
+        # Feature-valid rate: cells with ≥99% valid steps
+        feature_ok = sum(1 for c in cells
+                         if c.get("n_feat_valid", 0) >= c.get("n_steps", 1) * 0.99)
+        feature_valid_rate = feature_ok / len(cells) if cells else 0
 
         # No-corridor abstain
         nc_abstained = [c for c in nc_cells if c["replay_emit"] is None]
@@ -241,9 +254,11 @@ def compute_aggregate(all_results, teacher_data):
             "coverage": round(coverage, 4),
             "false_early": round(false_early_rate, 4),
             "false_early_count": false_early_count,
-            "post_release": post_release_count,
+            "post_release": round(post_release_rate, 4),
+            "post_release_count": post_release_count,
             "k10_containment": round(k10_rate, 4),
-            "median_anchor_error": median_err,
+            "median_teacher_anchor_error": median_anchor_err,
+            "feature_valid_rate": round(feature_valid_rate, 4),
             "no_corridor_abstain": round(nc_abstain_rate, 4),
             "silent_arm_stalls": silent_stalls,
             "mean_disarm_count": round(mean_disarms, 2),
@@ -255,8 +270,8 @@ def compute_aggregate(all_results, teacher_data):
 def build_regression_table(agg, all_results):
     """Compare R0/R1/R2 metrics side by side."""
     metrics = ["coverage", "false_early", "post_release", "k10_containment",
-               "median_anchor_error", "no_corridor_abstain", "silent_arm_stalls",
-               "mean_disarm_count"]
+               "median_teacher_anchor_error", "no_corridor_abstain", "feature_valid_rate",
+               "silent_arm_stalls", "mean_disarm_count"]
     rows = []
     for m in metrics:
         row = {"metric": m}
