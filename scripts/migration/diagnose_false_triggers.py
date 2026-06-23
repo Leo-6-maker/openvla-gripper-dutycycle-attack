@@ -50,6 +50,16 @@ TAU_R = 0.3
 GUARD = 5
 WINDOW = 20
 
+
+def _safe_float(val, default=float("nan")):
+    """Parse float from CSV, handling empty strings from pre-init steps."""
+    if val is None or val == "":
+        return default
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
 # ── Pre-registered false triggers (from M1B final classification) ──
 FALSE_TRIGGER_KEYS = [
     ("butter_s1", "B0"),
@@ -134,8 +144,8 @@ def extract_state_machine_trace(rows):
 
     for i, r in enumerate(rows):
         det_state = r.get("detector_state", "")
-        cp = float(r.get("corridor_p", "nan"))
-        rp = float(r.get("release_p", "nan"))
+        cp = _safe_float(r.get("corridor_p", "nan"))
+        rp = _safe_float(r.get("release_p", "nan"))
         pp = r.get("pred_phase", "")
         fv = r.get("feat_valid", "") == "True"
 
@@ -212,8 +222,8 @@ def extract_window(rows, center_step):
     window_rows = []
     for i in range(lo, hi):
         r = rows[i]
-        cp = float(r.get("corridor_p", "nan"))
-        rp = float(r.get("release_p", "nan"))
+        cp = _safe_float(r.get("corridor_p", "nan"))
+        rp = _safe_float(r.get("release_p", "nan"))
 
         entry = {
             "step": i,
@@ -224,18 +234,18 @@ def extract_window(rows, center_step):
             "pred_phase": r.get("pred_phase", ""),
             "mlp_emit": int(r.get("mlp_emit", -1)),
             "feat_valid": r.get("feat_valid", "") == "True",
-            "gripper_raw": float(r.get("raw_gripper", "nan")),
-            "gripper_env": float(r.get("env_gripper", "nan")),
-            "qpos_sum": float(r.get("qpos_sum", "nan")),
-            "eef_x": float(r.get("eef_x", "nan")),
-            "eef_y": float(r.get("eef_y", "nan")),
-            "eef_z": float(r.get("eef_z", "nan")),
-            "obj_x": float(r.get("obj_x", "nan")),
-            "obj_y": float(r.get("obj_y", "nan")),
-            "obj_z": float(r.get("obj_z", "nan")),
+            "gripper_raw": _safe_float(r.get("raw_gripper", "nan")),
+            "gripper_env": _safe_float(r.get("env_gripper", "nan")),
+            "qpos_sum": _safe_float(r.get("qpos_sum", "nan")),
+            "eef_x": _safe_float(r.get("eef_x", "nan")),
+            "eef_y": _safe_float(r.get("eef_y", "nan")),
+            "eef_z": _safe_float(r.get("eef_z", "nan")),
+            "obj_x": _safe_float(r.get("obj_x", "nan")),
+            "obj_y": _safe_float(r.get("obj_y", "nan")),
+            "obj_z": _safe_float(r.get("obj_z", "nan")),
         }
         for fn in SC5_FEATURES:
-            entry["f_" + fn] = float(r.get("f_" + fn, "nan"))
+            entry["f_" + fn] = _safe_float(r.get("f_" + fn, "nan"))
         window_rows.append(entry)
     return window_rows
 
@@ -261,8 +271,8 @@ def compute_arm_interval_metrics(rows, arm_step, emit_step):
 
     for r in pre_emit:
         pp = r.get("pred_phase", "")
-        cp = float(r.get("corridor_p", "nan"))
-        rp = float(r.get("release_p", "nan"))
+        cp = _safe_float(r.get("corridor_p", "nan"))
+        rp = _safe_float(r.get("release_p", "nan"))
         fv = r.get("feat_valid", "") == "True"
 
         phase_ok = (pp == "stable_carry")
@@ -312,11 +322,11 @@ def compute_emit_point_metrics(rows, arm_step, emit_step):
     emit_r = rows[emit_step] if 0 <= emit_step < len(rows) else {}
 
     def _cp(r):
-        v = float(r.get("corridor_p", "nan"))
+        v = _safe_float(r.get("corridor_p", "nan"))
         return v if not np.isnan(v) else None
 
     def _rp(r):
-        v = float(r.get("release_p", "nan"))
+        v = _safe_float(r.get("release_p", "nan"))
         return v if not np.isnan(v) else None
 
     return {
@@ -395,7 +405,7 @@ def process_cell(cell, group):
     # Full-trajectory summary stats
     first_cp_high = -1
     for r in rows:
-        cp = float(r.get("corridor_p", "nan"))
+        cp = _safe_float(r.get("corridor_p", "nan"))
         if not np.isnan(cp) and cp > TAU_C:
             first_cp_high = int(r.get("step", -1))
             break
@@ -407,8 +417,8 @@ def process_cell(cell, group):
             break
 
     n_cp_high_total = sum(1 for r in rows
-                          if not np.isnan(float(r.get("corridor_p", "nan")))
-                          and float(r.get("corridor_p", "nan")) > TAU_C)
+                          if not np.isnan(_safe_float(r.get("corridor_p", "nan")))
+                          and _safe_float(r.get("corridor_p", "nan")) > TAU_C)
     n_sc_total = sum(1 for r in rows if r.get("pred_phase", "") == "stable_carry")
     n_feat_valid = sum(1 for r in rows if r.get("feat_valid", "") == "True")
 
