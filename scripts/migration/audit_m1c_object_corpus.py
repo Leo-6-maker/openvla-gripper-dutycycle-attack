@@ -37,18 +37,24 @@ def _safe_json(p):
         return None, str(e)
 
 
-def cell_key(task, state, profile="B0"):
+def storage_key(pool, task, state, profile="B0"):
+    return f"{pool}/{profile}_task{task}_state{state}"
+
+
+def semantic_key(task, state, profile="B0"):
     return f"{profile}_task{task}_state{state}"
 
 
 def scan_filesystem(output_root):
-    """Scan actual filesystem for cells. Returns {cell_key: {pool, task, state, path}}."""
+    """Scan filesystem. Returns {storage_key: {pool, task, state, path}}."""
     cells = {}
     root = Path(output_root)
     for pool_dir in root.iterdir():
         if not pool_dir.is_dir():
             continue
         pool = pool_dir.name
+        if pool in ("smoke", "blind"):
+            continue  # skip non-collection directories
         for cell_dir in pool_dir.iterdir():
             if not cell_dir.is_dir():
                 continue
@@ -58,7 +64,9 @@ def scan_filesystem(output_root):
                 state = int(parts[1].replace("state", ""))
             except (ValueError, IndexError):
                 continue
-            key = cell_key(task, state)
+            key = storage_key(pool, task, state)
+            if key in cells:
+                raise SystemExit(f"DUPLICATE_STORAGE_KEY: {key} appears in multiple locations")
             cells[key] = {"pool": pool, "task": task, "state": state, "path": cell_dir}
     return cells
 
@@ -89,6 +97,7 @@ def main():
     corpus_root = Path(ex_manifest["output_root"])
     planned = build_planned_set(ex_manifest)
     actual = scan_filesystem(str(corpus_root))
+    split_manifest = json.load(open(args.split_manifest))
     errors = defaultdict(list)
     per_cell_rows = []
 
@@ -168,7 +177,10 @@ def main():
                 if rows_data and rows_data[-1].get("step", "") == "":
                     errors["truncated_csv"].append(key)
                     row["n_issues"] += 1
-                if ep_data and n_steps > 0 and len(rows_data) != n_steps:
+                if n_steps <= 0:
+                    errors["n_steps_missing"].append(key)
+                    row["n_issues"] += 1
+                elif len(rows_data) != n_steps:
                     errors["n_steps_mismatch"].append(
                         f"{key}:csv={len(rows_data)}!={n_steps}")
                     row["n_issues"] += 1
@@ -195,7 +207,10 @@ def main():
             errors["missing_initial_sha"].append(key)
             row["n_issues"] += 1
         tsha = ep_data.get("trajectory_content_sha256", "") if ep_data else ""
-        if tsha and len(tsha) == 64:
+        if not tsha or len(tsha) != 64:
+            errors["trajectory_sha_missing"].append(key)
+            row["n_issues"] += 1
+        else:
             all_trajectory_hashes[tsha].append(key)
 
         per_cell_rows.append(row)
@@ -231,7 +246,7 @@ def main():
     total_issues = sum(len(v) for v in errors.values())
     planned_count = len(planned)
     actual_count = len(actual)
-    gate_pass = (actual_count >= planned_count and total_issues == 0)
+    gate_pass = (actual_count == planned_count == 350 and total_issues == 0)
 
     summary = {
         "gate": "M1C_OBJECT_CORPUS_INTEGRITY",

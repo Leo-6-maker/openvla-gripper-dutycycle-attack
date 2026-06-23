@@ -214,6 +214,16 @@ class SC5DetectorRuntimeV1R:
         return (pp == "stable_carry" and cp is not None
                 and not np.isnan(cp) and cp > self.tau_c)
 
+    def _check_feat_ok(self, feat_valid, cp, rp):
+        """Feature data is usable: feat_valid flag AND no NaN values."""
+        if not feat_valid:
+            return False
+        if cp is None or np.isnan(cp):
+            return False
+        if rp is None or np.isnan(rp):
+            return False
+        return True
+
     def _check_keep_evidence(self, cp, rp, pp):
         """Conditions required to STAY armed (keep conditions)."""
         if cp is None or np.isnan(cp):
@@ -244,11 +254,21 @@ class SC5DetectorRuntimeV1R:
     def _update_r1(self, step, cp, rp, pp, feat_valid):
         """R1: Minimal disarm on evidence loss. Same arm conditions as legacy."""
         if self.state == "IDLE":
-            if self._check_arm_evidence(cp, rp, pp):
+            if self._check_arm_evidence(cp, rp, pp) and self._check_feat_ok(feat_valid, cp, rp):
                 self.state = "ARMED"; self.arm_step = step; self.disarm_reason = ""
 
         elif self.state == "ARMED":
             disarm = False
+            if not self._check_feat_ok(feat_valid, cp, rp):
+                disarm = True
+                self.disarm_reason = "FEATURE_INVALID"
+                self.disarm_count += 1
+                self.last_disarm_step = step
+                self.last_arm_step = self.arm_step
+                self.state = "IDLE"
+                self.arm_step = -1
+                self.arm_age = 0
+                return
             keep = self._check_keep_evidence(cp, rp, pp)
             if not keep:
                 disarm = True
@@ -266,7 +286,7 @@ class SC5DetectorRuntimeV1R:
     def _update_r2(self, step, cp, rp, pp, feat_valid):
         """R2: Full candidate-machine with hysteresis + timeout."""
         if self.state == "IDLE":
-            if self._check_on_evidence(cp, rp, pp):
+            if self._check_on_evidence(cp, rp, pp) and self._check_feat_ok(feat_valid, cp, rp):
                 if self.n_candidate <= 1:
                     self.state = "ARMED"; self.arm_step = step; self.disarm_reason = ""
                 else:
@@ -276,7 +296,13 @@ class SC5DetectorRuntimeV1R:
                     self.disarm_reason = ""
 
         elif self.state == "CANDIDATE":
-            if self._check_on_evidence(cp, rp, pp):
+            if not self._check_feat_ok(feat_valid, cp, rp):
+                self.disarm_reason = "FEATURE_INVALID"
+                self.last_candidate_step = self.candidate_step
+                self.state = "IDLE"
+                self.candidate_step = -1
+                self.candidate_streak = 0
+            elif self._check_on_evidence(cp, rp, pp):
                 self.candidate_streak += 1
                 if self.candidate_streak >= self.n_candidate:
                     self.state = "ARMED"; self.arm_step = step

@@ -118,67 +118,74 @@ def monitor(manifest_path, output_path=None):
         state_start, state_end = map(int, gpu_info["state_range"].split("-"))
         pool_dir = out_root / pool
 
-        # Scan filesystem for actual done cells
-        done_files = list(pool_dir.rglob(".done"))
-        done_count = len(done_files)
+        # Scan filesystem for actual done cells WITHIN shard state range
+        done_count = 0
+        last_done_mtime = None
+        for task in range(10):
+            for state in range(state_start, state_end + 1):
+                df = pool_dir / f"task{task}_state{state}" / ".done"
+                if df.exists():
+                    done_count += 1
+                    mt = os.path.getmtime(str(df))
+                    if last_done_mtime is None or mt > last_done_mtime:
+                        last_done_mtime = mt
 
-        # .done mtime (not directory mtime!)
+        # .done mtime
         last_done_time = None
-        if done_files:
-            latest = max(done_files, key=lambda p: os.path.getmtime(str(p)))
-            last_done_time = datetime.fromtimestamp(os.path.getmtime(str(latest)))
+        if last_done_mtime is not None:
+            last_done_time = datetime.fromtimestamp(last_done_mtime)
 
-        # Heartbeat: latest .done write within threshold
-        heartbeat_ok = True
-        if done_files and last_done_time:
+        # Heartbeat
+        if done_count > 0 and last_done_time:
             age = (now - last_done_time).total_seconds()
-            if age > ALERT_CONDITIONS["heartbeat_stale_10min"]:
+            if age > ALERT_CONDITIONS["heartbeat_stale_10min"] and done_count < planned:
                 alerts.append(f"HEARTBEAT_STALE:{pool} last={last_done_time.strftime('%H:%M')}")
-                heartbeat_ok = False
 
-        # Non-zero RC (fail-closed: corrupt JSON = alert)
+        # Non-zero RC (fail-closed)
         non_zero_rc = 0
-        for d in done_files:
-            data, err = _safe_json(d)
-            if err:
-                non_zero_rc += 1
-                alerts.append(f"CORRUPT_DONE:{d}")
-            elif data.get("exit_code", -999) != 0:
-                non_zero_rc += 1
-                alerts.append(f"NON_ZERO_RC:{d} rc={data['exit_code']}")
+        for task in range(10):
+            for state in range(state_start, state_end + 1):
+                d = pool_dir / f"task{task}_state{state}" / ".done"
+                if not d.exists(): continue
+                data, err = _safe_json(d)
+                if err:
+                    non_zero_rc += 1; alerts.append(f"CORRUPT_DONE:{d}")
+                elif data.get("exit_code", -999) != 0:
+                    non_zero_rc += 1; alerts.append(f"NON_ZERO_RC:{d} rc={data['exit_code']}")
 
-        # Attack check (each cell dir in pool)
+        # Attack check
         attack_nonzero = 0
-        for cell_dir in pool_dir.iterdir():
-            if not cell_dir.is_dir():
-                continue
-            ep = cell_dir / "episode_summary.json"
-            if ep.exists():
+        for task in range(10):
+            for state in range(state_start, state_end + 1):
+                ep = pool_dir / f"task{task}_state{state}" / "episode_summary.json"
+                if not ep.exists(): continue
                 s, err = _safe_json(ep)
                 if err:
-                    attack_nonzero += 1
-                    alerts.append(f"CORRUPT_SUMMARY:{cell_dir}")
+                    attack_nonzero += 1; alerts.append(f"CORRUPT_SUMMARY:{pool}/task{task}_state{state}")
                 elif s.get("attack_frames", -1) is not None and s.get("attack_frames", -1) > 0:
-                    attack_nonzero += 1
-                    alerts.append(f"ATTACK_FRAMES_NONZERO:{cell_dir.name}")
+                    attack_nonzero += 1; alerts.append(f"ATTACK_FRAMES_NONZERO:{pool}/task{task}_state{state}")
+                    non_zero_rc += 1
                 elif s.get("condition", "") != "CLEAN":
-                    attack_nonzero += 1
-                    alerts.append(f"CONDITION_NOT_CLEAN:{cell_dir.name}")
+                    attack_nonzero += 1; alerts.append(f"CONDITION_NOT_CLEAN:{pool}/task{task}_state{state}")
 
-        # Duplicate: claim/cell key collision across pools
-        cells_seen = set()
-        dupes = 0
-        for d in done_files:
-            cell_name = str(d.parent.relative_to(out_root))
-            if cell_name in cells_seen:
-                dupes += 1
-            cells_seen.add(cell_name)
+        # Duplicate: cross-pool cell key collision (full scan)
+        all_keys = []
+        for p in [d for d in out_root.iterdir() if d.is_dir() and d.name != "smoke"]:
+            for cell_dir in p.iterdir():
+                if cell_dir.is_dir():
+                    all_keys.append(f"{p.name}/{cell_dir.name}")
+        dupes = len(all_keys) - len(set(all_keys))
         if dupes > 0:
-            alerts.append(f"DUPLICATE_CELLS:{pool} count={dupes}")
+            alerts.append(f"DUPLICATE_CELLS: {dupes} cross-pool duplicates")
 
-        # Process alive
-        gpu_idx = int(gpu_key.replace("gpu", ""))
-        proc_alive = gpu_idx in gpu_stats
+        # Process alive — check actual PID from provenance
+        proc_alive = False
+        if "v4_subprocess_pids" in manifest:
+            for entry in manifest.get("v4_subprocess_pids", []):
+                if entry.get("gpu") == gpu_key:
+                    pid = entry.get("pid", 0)
+                    proc_alive = os.path.exists(f"/proc/{pid}") if pid else False
+                    break
         if not proc_alive and planned > done_count:
             alerts.append(f"GPU_PROCESS_GONE:{gpu_key}")
 
@@ -187,6 +194,7 @@ def monitor(manifest_path, output_path=None):
             alerts.append(f"DISK_LOW:{disk_free_gb:.0f}GB")
 
         # GPU-specific stats
+        gpu_idx = int(gpu_key.replace("gpu", ""))
         gs = gpu_stats.get(gpu_idx, {})
         gpu_util = gs.get("util_pct", -1)
         gpu_mem = gs.get("mem_free_mb", -1) / 1024 if gs.get("mem_free_mb", -1) >= 0 else -1
