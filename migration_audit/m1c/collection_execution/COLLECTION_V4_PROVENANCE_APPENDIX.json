@@ -1,0 +1,45 @@
+{
+  "gate": "M1C_COLLECTION_V4_PROVENANCE_APPENDIX",
+  "status": "FROZEN_DURING_EXECUTION",
+  "created_at": "2026-06-23T16:15:00+08:00",
+  "parent_amendment": "COLLECTION_V4_AMENDMENT.json",
+  "launcher": {
+    "path": "/tmp/launch_v4.sh",
+    "frozen_copy": "migration_audit/m1c/collection_execution/launch_v4_frozen.sh",
+    "sha256": "b57142317e017e8522dc7f71c4ea7e43650fbb17d313fc64b82c01b35c7d0c10",
+    "note": "SCP'd from A800 at 2026-06-23 16:15 CST. Original in /tmp — not persistent."
+  },
+  "evaluation_runner": {
+    "path": "scripts/stageb/run_v2_vis_sc5_mlp_bridge.py",
+    "sha256": "fd594b3f9b38f4545d7b19202b380c0f4eeb0e9d95cb566f2fbca7b1852b208e"
+  },
+  "v4_processes": {
+    "main_pid": 3819063,
+    "tmux_session": "m1c_v4 (originally m1c_collect_v2)",
+    "bash_parent": "bash /tmp/launch_v4.sh",
+    "subprocesses": [
+      {"pid": 3819081, "role": "bash launcher"},
+      {"pid": 3819124, "role": "GPU2 train 3-9"},
+      {"pid": 3819130, "role": "GPU5 train 10-15"},
+      {"pid": 3819131, "role": "GPU3 train 16-27"},
+      {"pid": 3819133, "role": "GPU4 validation 28-37"}
+    ],
+    "command_template": "CUDA_VISIBLE_DEVICES=<N> python scripts/stageb/run_v2_vis_sc5_mlp_bridge.py --condition CLEAN --state_id <S> --task_idx <T> --anchor 0 --seed_id 42 --output_dir <OUT> --render_gpu <N> --mlp_path artifacts/detector/sc5_mlp_s2.pt"
+  },
+  "output_roots": {
+    "train": "/mnt/sdc/dty_user/openvla_attack/evidence/m1c/object_clean_corpus/train",
+    "validation": "/mnt/sdc/dty_user/openvla_attack/evidence/m1c/object_clean_corpus/validation"
+  },
+  "per_gpu_pids": {
+    "gpu2": 3819124,
+    "gpu3": 3819131,
+    "gpu4": 3819133,
+    "gpu5": 3819130
+  },
+  "per_shard_command_sha256": {
+    "train_3_9": "from launch_v4.sh: run_batch 2 train 3 9",
+    "train_10_15": "from launch_v4.sh: run_batch 5 train 10 15",
+    "train_16_27": "from launch_v4.sh: run_batch 3 train 16 27",
+    "validation_28_37": "from launch_v4.sh: run_batch 4 validation 28 37"
+  }
+}
