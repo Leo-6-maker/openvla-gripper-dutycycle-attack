@@ -25,7 +25,7 @@ jobs:
           python -m compileall -q scripts/stageb
       - name: Run Stage-B CPU tests
         run: |
-          pytest tests/stageb -q
+          PYTHONPATH=. pytest tests/stageb -q
       - name: Block generated evidence dumps in git
         shell: python
         run: |
