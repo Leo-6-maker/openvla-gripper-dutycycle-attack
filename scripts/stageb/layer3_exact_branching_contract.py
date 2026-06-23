@@ -20,6 +20,7 @@ ACTION_DIM = 7
 ARM_DIM = 6
 LAYER3_BRANCH_CONDITIONS = ("CLEAN_REPLAY", "VIS", "RAND", "SHUFFLED")
 DEFAULT_REQUIRED_PILOT_CONDITIONS = ("CLEAN_REPLAY", "VIS", "RAND")
+ALLOWED_BRANCH_SOURCES = ("EXACT_PREFIX_RESTORE", "EXACT_ACTION_PREFIX_REPLAY")
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
 
 
@@ -102,13 +103,21 @@ class BranchRunRecord:
     branch_input_source: str = "RECAPTURED_ENV_OBSERVATION"
     branch_policy_input_sha256: str = ""
     diagnostic_recaptured_observation_sha256: str = ""
+    prefix_trace_sha256: str = ""
+    init_state_sha256: str = ""
+    dummy_wait_contract_sha256: str = ""
+    prefix_step_count: int = 0
+    last_prefix_step: int = -1
+    pre_branch_sim_state_sha256: str = ""
+    pre_branch_student_state_sha256: str = ""
+    pre_branch_feature_history_sha256: str = ""
 
     def __post_init__(self) -> None:
         if self.condition not in LAYER3_BRANCH_CONDITIONS:
             raise Layer3BranchingContractError(f"unexpected condition: {self.condition}")
-        if self.branch_source != "EXACT_PREFIX_RESTORE":
+        if self.branch_source not in ALLOWED_BRANCH_SOURCES:
             raise Layer3BranchingContractError(
-                f"{self.condition} branch_source must be EXACT_PREFIX_RESTORE, got {self.branch_source}"
+                f"{self.condition} branch_source must be one of {ALLOWED_BRANCH_SOURCES}, got {self.branch_source}"
             )
         if self.snapshot_boundary != "PRE_ACTION_OBS_T_AFTER_STUDENT_EMIT_BEFORE_ENV_STEP_T":
             raise Layer3BranchingContractError(
@@ -116,6 +125,22 @@ class BranchRunRecord:
             )
         if int(self.trigger_step) < 0 or int(self.first_env_step) < 0:
             raise Layer3BranchingContractError("trigger_step and first_env_step must be non-negative")
+        if self.branch_source == "EXACT_ACTION_PREFIX_REPLAY":
+            for field in (
+                "prefix_trace_sha256",
+                "init_state_sha256",
+                "dummy_wait_contract_sha256",
+                "pre_branch_sim_state_sha256",
+                "pre_branch_student_state_sha256",
+                "pre_branch_feature_history_sha256",
+            ):
+                require_sha256(getattr(self, field), field=field)
+            if int(self.prefix_step_count) <= 0:
+                raise Layer3BranchingContractError("EXACT_ACTION_PREFIX_REPLAY prefix_step_count must be positive")
+            if int(self.last_prefix_step) != int(self.first_env_step) - 1:
+                raise Layer3BranchingContractError(
+                    "EXACT_ACTION_PREFIX_REPLAY last_prefix_step must be first_env_step - 1"
+                )
 
 
 def make_gripper_only_executed_action(

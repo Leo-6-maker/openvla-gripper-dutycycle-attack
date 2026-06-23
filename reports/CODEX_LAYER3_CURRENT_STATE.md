@@ -28,7 +28,9 @@ A800_FORMAL_CROSS_SUITE: NO_GO
 
 ```text
 PR: #38
-current head: fc369ee4d04970c1a0f159108de77a1af089637e
+executed_code_commit: fc369ee4d04970c1a0f159108de77a1af089637e
+original_c2_evidence_report_commit: 8fcbbd91f74e162e521582eadd1377069bb48732
+current_branch_head: see PR #38 head
 C0_EVIDENCE_FREEZE: PASS
 
 known parent:
@@ -129,8 +131,15 @@ A5_QACC_ABLATION
 
 No ablation recovered one-step post-action qpos/qvel exactness. Restoring
 controller goal state reduced the pre-step mismatch, but the transition still
-diverged. Interpolator, action-history/counter, and explicit qacc ablation also
-failed to recover the transition.
+diverged. Post-hoc application audit showed that A3/A4/A5 did not contain
+applicable interpolator mutable state, so those rows must not be interpreted as
+an exercised interpolator intervention. Action-history/counter restore and
+explicit qacc ablation were exercised and also failed to recover the transition.
+
+```text
+application_audit:
+tables/real_restore_c2_control_state_ablation_application_audit_20260623.csv
+```
 
 ## Next Gate
 

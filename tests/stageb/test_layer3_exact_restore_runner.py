@@ -19,6 +19,7 @@ from scripts.stageb.layer3_exact_restore_runner import (
     _MockEnv,
     _MockPolicy,
     _MockStudent,
+    action_identity_report,
     apply_control_ablation_state,
     build_mock_restore_case,
     build_prefix_snapshot,
@@ -344,6 +345,20 @@ def test_refresh_derived_controller_state_calls_update_force_only():
 
     assert refreshed == ["robot0.controller.update(force=True)"]
     assert adapter.env.env.robots[0].controller.update_calls == 1
+
+
+def test_action_identity_report_rejects_allclose_dtype_match():
+    expected = np.asarray([1.0, 2.0], dtype=np.float64)
+    candidate = np.asarray([1.0, 2.0], dtype=np.float32)
+
+    report = action_identity_report(candidate, expected)
+
+    assert report["shape_exact"] is True
+    assert report["array_equal"] is False
+    assert report["dtype_exact"] is False
+    assert report["byte_sha_exact"] is False
+    assert report["exact"] is False
+    assert float(report["max_abs_diff"]) == 0.0
 
 
 def test_typed_prefix_artifact_roundtrip_preserves_agentview(tmp_path):

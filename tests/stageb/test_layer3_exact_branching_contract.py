@@ -151,12 +151,55 @@ def test_validate_branch_records_accepts_minimal_3_condition_pilot_bundle():
     assert result["required_conditions"] == list(DEFAULT_REQUIRED_PILOT_CONDITIONS)
 
 
+def test_branch_record_accepts_exact_action_prefix_replay_contract():
+    snapshot = _snapshot()
+    record = BranchRunRecord(
+        condition="VIS",
+        prefix_snapshot_sha256=snapshot.snapshot_sha256,
+        branch_source="EXACT_ACTION_PREFIX_REPLAY",
+        restored_sim_state_sha256=snapshot.sim_state_sha256,
+        restored_observation_sha256=snapshot.observation_sha256,
+        restored_policy_rng_sha256=snapshot.policy_rng_sha256,
+        restored_detector_state_sha256=snapshot.detector_state_sha256,
+        restored_feature_history_sha256=snapshot.feature_history_sha256,
+        trigger_step=snapshot.emit_step,
+        first_env_step=snapshot.emit_step,
+        prefix_trace_sha256="1" * 64,
+        init_state_sha256="2" * 64,
+        dummy_wait_contract_sha256="3" * 64,
+        prefix_step_count=snapshot.emit_step,
+        last_prefix_step=snapshot.emit_step - 1,
+        pre_branch_sim_state_sha256="4" * 64,
+        pre_branch_student_state_sha256="5" * 64,
+        pre_branch_feature_history_sha256="6" * 64,
+    )
+
+    assert record.branch_source == "EXACT_ACTION_PREFIX_REPLAY"
+
+
+def test_exact_action_prefix_replay_requires_prefix_provenance():
+    snapshot = _snapshot()
+    with pytest.raises(Layer3BranchingContractError, match="prefix_trace_sha256"):
+        BranchRunRecord(
+            condition="VIS",
+            prefix_snapshot_sha256=snapshot.snapshot_sha256,
+            branch_source="EXACT_ACTION_PREFIX_REPLAY",
+            restored_sim_state_sha256=snapshot.sim_state_sha256,
+            restored_observation_sha256=snapshot.observation_sha256,
+            restored_policy_rng_sha256=snapshot.policy_rng_sha256,
+            restored_detector_state_sha256=snapshot.detector_state_sha256,
+            restored_feature_history_sha256=snapshot.feature_history_sha256,
+            trigger_step=snapshot.emit_step,
+            first_env_step=snapshot.emit_step,
+        )
+
+
 def test_validate_branch_records_rejects_independent_restart():
     snapshot = _snapshot()
     records = _records(snapshot)
     bad = records[1]
 
-    with pytest.raises(Layer3BranchingContractError, match="EXACT_PREFIX_RESTORE"):
+    with pytest.raises(Layer3BranchingContractError, match="branch_source"):
         BranchRunRecord(
             condition=bad.condition,
             prefix_snapshot_sha256=bad.prefix_snapshot_sha256,

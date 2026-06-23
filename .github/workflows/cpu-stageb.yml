@@ -28,15 +28,13 @@ jobs:
             scripts/stageb/audit_existing_nonobject_clean_outputs.py \
             scripts/stageb/build_paper_table_schemas.py \
             scripts/stageb/build_teacher_label_eval_table.py \
-            scripts/stageb/audit_github_branch_pr_hygiene.py
-      - name: Run targeted CPU tests
+            scripts/stageb/audit_github_branch_pr_hygiene.py \
+            scripts/stageb/layer3_exact_branching_contract.py \
+            scripts/stageb/layer3_exact_restore_runner.py \
+            scripts/stageb/audit_c2_control_ablation_application.py
+      - name: Run Stage-B CPU tests
         run: |
-          pytest \
-            tests/stageb/test_cross_suite_postrun_audit_tools.py \
-            tests/stageb/test_cross_suite_clean_queue.py \
-            tests/stageb/test_cross_suite_clean_collector.py \
-            tests/stageb/test_cross_suite_task_inventory.py \
-            -q
+          pytest tests/stageb -q
       - name: Block generated evidence dumps in git
         shell: python
         run: |

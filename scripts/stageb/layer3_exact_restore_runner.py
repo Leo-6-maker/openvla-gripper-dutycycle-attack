@@ -192,6 +192,49 @@ def hash_array(value: Any) -> str:
     return sha256_jsonable(payload)
 
 
+def action_identity_report(candidate: Any, expected: Any) -> dict[str, Any]:
+    """Strict action identity report for exact-restore branch gates.
+
+    This intentionally does not cast either side before comparing. A numeric
+    allclose pass is useful diagnostics, but it is not enough for exact replay.
+    """
+    candidate_arr = np.asarray(candidate)
+    expected_arr = np.asarray(expected)
+    same_shape = tuple(candidate_arr.shape) == tuple(expected_arr.shape)
+    same_dtype = str(candidate_arr.dtype) == str(expected_arr.dtype)
+    candidate_sha = hash_array(candidate_arr)
+    expected_sha = hash_array(expected_arr)
+    array_equal = bool(same_shape and same_dtype and np.array_equal(candidate_arr, expected_arr))
+    max_abs_diff = ""
+    if same_shape:
+        try:
+            max_abs_diff = float(np.max(np.abs(candidate_arr.astype(np.float64) - expected_arr.astype(np.float64))))
+        except Exception:
+            max_abs_diff = ""
+    return {
+        "shape_exact": bool(same_shape),
+        "dtype_exact": bool(same_dtype),
+        "array_equal": bool(array_equal),
+        "candidate_action_sha256": candidate_sha,
+        "expected_action_sha256": expected_sha,
+        "byte_sha_exact": bool(candidate_sha == expected_sha),
+        "max_abs_diff": max_abs_diff,
+        "exact": bool(array_equal and candidate_sha == expected_sha),
+    }
+
+
+def require_action_byte_exact(candidate: Any, expected: Any, *, context: str) -> dict[str, Any]:
+    report = action_identity_report(candidate, expected)
+    if not report["exact"]:
+        raise ExactRestoreError(
+            f"{context} action byte identity mismatch "
+            f"(shape_exact={report['shape_exact']}, dtype_exact={report['dtype_exact']}, "
+            f"array_equal={report['array_equal']}, byte_sha_exact={report['byte_sha_exact']}, "
+            f"max_abs_diff={report['max_abs_diff']})"
+        )
+    return report
+
+
 def hash_jsonable(value: Any) -> str:
     return sha256_jsonable(_json_clone(value))
 
@@ -2552,8 +2595,11 @@ def run_transition_state_audit(
     reference_action, reference_tokens = policy.act(obs_t)
     if [int(x) for x in reference_tokens] != [int(x) for x in snapshot.clean_tokens_t]:
         raise ExactRestoreError("transition-state audit first token mismatch before reference step")
-    if not np.allclose(np.asarray(reference_action, dtype=np.float64), np.asarray(snapshot.clean_action_t, dtype=np.float64)):
-        raise ExactRestoreError("transition-state audit first action mismatch before reference step")
+    require_action_byte_exact(
+        reference_action,
+        snapshot.clean_action_t,
+        context="transition-state audit reference first",
+    )
 
     reference_pre = capture_transition_state(
         phase="PRE_STEP",
@@ -2593,8 +2639,11 @@ def run_transition_state_audit(
         replay_action, replay_tokens = replay_policy.act(replay_obs)
         if [int(x) for x in replay_tokens] != [int(x) for x in snapshot.clean_tokens_t]:
             raise ExactRestoreError("transition-state audit first token mismatch before replay step")
-        if not np.allclose(np.asarray(replay_action, dtype=np.float64), np.asarray(snapshot.clean_action_t, dtype=np.float64)):
-            raise ExactRestoreError("transition-state audit first action mismatch before replay step")
+        require_action_byte_exact(
+            replay_action,
+            snapshot.clean_action_t,
+            context="transition-state audit replay first",
+        )
 
         replay_pre = capture_transition_state(
             phase="PRE_STEP",
@@ -2755,8 +2804,11 @@ def run_control_state_causal_ablation(
     reference_action, reference_tokens = policy.act(obs_t)
     if [int(x) for x in reference_tokens] != [int(x) for x in snapshot.clean_tokens_t]:
         raise ExactRestoreError("C2 first token mismatch before reference step")
-    if not np.allclose(np.asarray(reference_action, dtype=np.float64), np.asarray(snapshot.clean_action_t, dtype=np.float64)):
-        raise ExactRestoreError("C2 first action mismatch before reference step")
+    reference_action_identity = require_action_byte_exact(
+        reference_action,
+        snapshot.clean_action_t,
+        context="C2 reference first",
+    )
 
     reference_mutable_state = snapshot_control_ablation_state(env_adapter)
     reference_pre = capture_transition_state(
@@ -2804,9 +2856,8 @@ def run_control_state_causal_ablation(
             applied = apply_control_ablation_state(replay_env, reference_mutable_state, **options)
             replay_action, replay_tokens = replay_policy.act(replay_obs)
             tokens_exact = [int(x) for x in replay_tokens] == [int(x) for x in snapshot.clean_tokens_t]
-            action_exact = bool(
-                np.allclose(np.asarray(replay_action, dtype=np.float64), np.asarray(snapshot.clean_action_t, dtype=np.float64))
-            )
+            action_identity = action_identity_report(replay_action, snapshot.clean_action_t)
+            action_exact = bool(action_identity["exact"])
             if not tokens_exact or not action_exact:
                 raise ExactRestoreError(f"C2 {ablation_name} first action/tokens mismatch")
             replay_pre = capture_transition_state(
@@ -2836,6 +2887,13 @@ def run_control_state_causal_ablation(
                 "ablation": ablation_name,
                 "tokens_exact": tokens_exact,
                 "action_exact": action_exact,
+                "action_shape_exact": action_identity["shape_exact"],
+                "action_dtype_exact": action_identity["dtype_exact"],
+                "action_array_equal": action_identity["array_equal"],
+                "action_byte_sha_exact": action_identity["byte_sha_exact"],
+                "action_candidate_sha256": action_identity["candidate_action_sha256"],
+                "action_expected_sha256": action_identity["expected_action_sha256"],
+                "action_max_abs_diff": action_identity["max_abs_diff"],
                 "first_divergence_phase": first.get("first_divergence_phase"),
                 "first_divergence_field": first.get("field"),
                 "classification": first.get("classification"),
@@ -2889,6 +2947,7 @@ def run_control_state_causal_ablation(
         "eval_seed": int(snapshot.parent_manifest.eval_seed),
         "emit_step": int(snapshot.prefix.emit_step),
         "typed_prefix_manifest_sha256": hash_jsonable(typed_manifest),
+        "reference_action_identity": reference_action_identity,
         "reference_step": reference_step,
         "ablation_count": len(rows),
         "passing_ablation_count": len(passed),
