@@ -1706,8 +1706,8 @@ def hash_flat_sim_state(env: Any) -> str:
     return hash_jsonable(capture_mujoco_state(env))
 
 
-def prefix_replay_state_hashes(*, env: Any, obs: Any, student: Any) -> dict[str, str]:
-    return {
+def prefix_replay_state_hashes(*, env: Any, obs: Any, student: Any, policy: Any | None = None) -> dict[str, str]:
+    out = {
         "observation_sha256": hash_typed_observation(obs),
         "qpos_sha256": hash_array(getattr(env.sim.data, "qpos", [])),
         "qvel_sha256": hash_array(getattr(env.sim.data, "qvel", [])),
@@ -1715,6 +1715,11 @@ def prefix_replay_state_hashes(*, env: Any, obs: Any, student: Any) -> dict[str,
         "student_state_sha256": hash_jsonable(capture_student_state(student, strict=True)),
         "feature_history_sha256": hash_jsonable(capture_feature_history(student, strict=True)),
     }
+    if policy is not None:
+        if not hasattr(policy, "policy_input_fingerprint"):
+            raise InfraInvalidError("policy object missing policy_input_fingerprint for C3")
+        out["policy_input_sha256"] = hash_jsonable(policy.policy_input_fingerprint(obs))
+    return out
 
 
 def _first_present(row: Mapping[str, Any], *names: str) -> Any:
@@ -1722,6 +1727,89 @@ def _first_present(row: Mapping[str, Any], *names: str) -> Any:
         if name in row:
             return row[name]
     return None
+
+
+REQUIRED_PREFIX_STEP_FIELDS = (
+    "step",
+    "raw_action",
+    "raw_action_sha256",
+    "env_action",
+    "env_action_sha256",
+    "tokens",
+    "tokens_sha256",
+    "observation_sha256",
+    "policy_input_sha256",
+    "qpos_sha256",
+    "qvel_sha256",
+    "flat_sim_state_sha256",
+    "student_state_sha256",
+    "feature_history_sha256",
+    "post_qpos_sha256",
+    "post_qvel_sha256",
+    "post_flat_sim_state_sha256",
+    "next_observation_sha256",
+    "post_student_state_sha256",
+    "post_feature_history_sha256",
+    "reward",
+    "done",
+)
+
+REQUIRED_BRANCH_REFERENCE_FIELDS = (
+    "observation_sha256",
+    "policy_input_sha256",
+    "qpos_sha256",
+    "qvel_sha256",
+    "flat_sim_state_sha256",
+    "student_state_sha256",
+    "feature_history_sha256",
+    "branch_post_student_update_state_sha256",
+    "branch_post_student_update_feature_history_sha256",
+    "post_branch_qpos_sha256",
+    "post_branch_qvel_sha256",
+    "post_branch_flat_sim_state_sha256",
+    "post_branch_observation_sha256",
+    "post_branch_reward",
+    "post_branch_done",
+)
+
+
+def _schema_invalid(message: str) -> PrefixReplayDivergence:
+    return PrefixReplayDivergence(
+        json.dumps({"failure_class": "PREFIX_REPLAY_SCHEMA_INVALID", "error": message}, sort_keys=True)
+    )
+
+
+def _require_fields(row: Mapping[str, Any], fields: Sequence[str], *, context: str) -> None:
+    missing = [field for field in fields if field not in row or row[field] in (None, "")]
+    if missing:
+        raise _schema_invalid(f"{context} missing required fields: {','.join(missing)}")
+
+
+def _array_from_trace(row: Mapping[str, Any], *, value_field: str, dtype_field: str) -> np.ndarray:
+    value = row.get(value_field)
+    if value is None:
+        raise _schema_invalid(f"missing {value_field}")
+    dtype = row.get(dtype_field)
+    if dtype:
+        try:
+            return np.asarray(value, dtype=np.dtype(str(dtype)))
+        except Exception as exc:
+            raise _schema_invalid(f"{value_field} dtype decode failed: {exc}") from exc
+    return np.asarray(value)
+
+
+def _require_trace_content_hashes(record: Mapping[str, Any], *, step: int) -> None:
+    raw_action = _array_from_trace(record, value_field="raw_action", dtype_field="raw_action_dtype")
+    env_action = _array_from_trace(record, value_field="env_action", dtype_field="env_action_dtype")
+    if hash_array(raw_action) != str(record["raw_action_sha256"]):
+        raise _schema_invalid(f"step {step} raw_action_sha256 does not bind raw_action bytes")
+    if hash_array(env_action) != str(record["env_action_sha256"]):
+        raise _schema_invalid(f"step {step} env_action_sha256 does not bind env_action bytes")
+    tokens = [int(x) for x in record["tokens"]]
+    if len(tokens) != 7:
+        raise _schema_invalid(f"step {step} tokens must have exactly 7 ids")
+    if hash_jsonable(tokens) != str(record["tokens_sha256"]):
+        raise _schema_invalid(f"step {step} tokens_sha256 does not bind token sequence")
 
 
 def _require_hash_match(
@@ -1755,9 +1843,25 @@ def _require_hash_match(
 
 
 def _step_env_action_without_double_postprocess(env: Any, env_action: Sequence[float]) -> tuple[Any, float, bool, Mapping[str, Any]]:
-    if hasattr(env, "step_env_action"):
-        return env.step_env_action(env_action)
-    return env.step(env_action)
+    step_env_action = getattr(env, "step_env_action", None)
+    if callable(step_env_action):
+        return step_env_action(env_action)
+    raise InfraInvalidError("C3 requires env adapter with step_env_action; no fallback to step() is allowed")
+
+
+def _student_emit_status(student: Any, *, branch_step: int) -> dict[str, Any]:
+    state = capture_student_state(student, strict=True)
+    emitted = state.get("detector_emitted")
+    emit_step = state.get("detector_emit_step")
+    if emitted is None:
+        emitted = str(state.get("state", "")).upper() == "EMITTED"
+    if emit_step is None:
+        emit_step = state.get("emit_step", branch_step)
+    return {
+        "state": state,
+        "emitted": bool(emitted),
+        "emit_step": int(emit_step),
+    }
 
 
 def run_exact_action_prefix_replay_from_trace(
@@ -1770,7 +1874,8 @@ def run_exact_action_prefix_replay_from_trace(
     branch_step: int,
     expected_branch_action: Any,
     expected_branch_tokens: Sequence[int],
-    expected_branch_env_action: Any | None = None,
+    expected_branch_env_action: Any,
+    expected_prefix_trace_sha256: str | None = None,
     branch_reference: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Replay a recorded action prefix and execute one exact branch action.
@@ -1783,14 +1888,23 @@ def run_exact_action_prefix_replay_from_trace(
         raise PrefixReplayDivergence("branch_step must be positive")
     if len(prefix_steps) != int(branch_step):
         raise PrefixReplayDivergence(f"prefix_steps must contain exactly branch_step rows ({branch_step})")
+    if expected_branch_env_action is None:
+        raise _schema_invalid("expected_branch_env_action is required")
+    if expected_prefix_trace_sha256 is not None and sha256_jsonable([dict(row) for row in prefix_steps]) != expected_prefix_trace_sha256:
+        raise _schema_invalid("prefix trace SHA does not bind prefix_steps")
     obs = copy.deepcopy(initial_obs)
     replay_rows: list[dict[str, Any]] = []
     for step, record in enumerate(prefix_steps):
+        _require_fields(record, REQUIRED_PREFIX_STEP_FIELDS, context=f"prefix step {step}")
         if int(record.get("step", -1)) != step:
             raise PrefixReplayDivergence(f"prefix step order mismatch at index {step}")
-        pre = prefix_replay_state_hashes(env=env, obs=obs, student=student)
+        _require_trace_content_hashes(record, step=step)
+        if bool(record["done"]):
+            raise PrefixReplayDivergence(f"PREFIX_REPLAY_EARLY_DONE at step {step}")
+        pre = prefix_replay_state_hashes(env=env, obs=obs, student=student, policy=policy)
         for field in (
             "observation_sha256",
+            "policy_input_sha256",
             "qpos_sha256",
             "qvel_sha256",
             "flat_sim_state_sha256",
@@ -1814,7 +1928,7 @@ def run_exact_action_prefix_replay_from_trace(
         assert_tokens_exact(tokens, record.get("tokens", tokens), name=f"prefix_step_{step}_tokens")
         update_student_for_step(student, step=step, obs=obs, action=raw_action, tokens=tokens)
         obs_next, reward, done, info = _step_env_action_without_double_postprocess(env, env_action)
-        post = prefix_replay_state_hashes(env=env, obs=obs_next, student=student)
+        post = prefix_replay_state_hashes(env=env, obs=obs_next, student=student, policy=policy)
         for actual_field, expected_field in (
             ("qpos_sha256", "post_qpos_sha256"),
             ("qvel_sha256", "post_qvel_sha256"),
@@ -1834,9 +1948,9 @@ def run_exact_action_prefix_replay_from_trace(
             )
         if "reward" in record and record["reward"] is not None and float(record["reward"]) != float(reward):
             raise PrefixReplayDivergence(f"PREFIX_REPLAY_REWARD_MISMATCH at step {step}")
-        if "done" in record and bool(record["done"]) != bool(done):
+        if bool(done):
             raise PrefixReplayDivergence(f"PREFIX_REPLAY_EARLY_DONE at step {step}")
-        if done and step != len(prefix_steps) - 1:
+        if "done" in record and bool(record["done"]) != bool(done):
             raise PrefixReplayDivergence(f"PREFIX_REPLAY_EARLY_DONE at step {step}")
         replay_rows.append(
             {
@@ -1851,7 +1965,8 @@ def run_exact_action_prefix_replay_from_trace(
         obs = obs_next
 
     branch_reference = dict(branch_reference or {})
-    branch_pre = prefix_replay_state_hashes(env=env, obs=obs, student=student)
+    _require_fields(branch_reference, REQUIRED_BRANCH_REFERENCE_FIELDS, context="branch_reference")
+    branch_pre = prefix_replay_state_hashes(env=env, obs=obs, student=student, policy=policy)
     for field in (
         "observation_sha256",
         "policy_input_sha256",
@@ -1861,11 +1976,10 @@ def run_exact_action_prefix_replay_from_trace(
         "student_state_sha256",
         "feature_history_sha256",
     ):
-        actual_field = "observation_sha256" if field == "policy_input_sha256" else field
         _require_hash_match(
             actual=branch_pre,
             expected=branch_reference,
-            actual_field=actual_field,
+            actual_field=field,
             expected_field=field,
             step=int(branch_step),
             phase="branch_boundary",
@@ -1877,9 +1991,45 @@ def run_exact_action_prefix_replay_from_trace(
     branch_action, branch_tokens = policy.act(obs)
     token_report = assert_tokens_exact(branch_tokens, expected_branch_tokens, name="branch_action_tokens")
     action_report = assert_array_exact(branch_action, expected_branch_action, name="branch_raw_action")
-    env_action = expected_branch_action if expected_branch_env_action is None else expected_branch_env_action
-    obs_52, reward_51, done_51, info_51 = _step_env_action_without_double_postprocess(env, env_action)
-    post_branch = prefix_replay_state_hashes(env=env, obs=obs_52, student=student)
+    branch_env_action = postprocess_openvla_action_for_libero(branch_action)
+    env_action_report = assert_array_exact(branch_env_action, expected_branch_env_action, name="branch_env_action")
+    update_student_for_step(student, step=int(branch_step), obs=obs, action=branch_action, tokens=branch_tokens)
+    branch_post_update = prefix_replay_state_hashes(env=env, obs=obs, student=student, policy=policy)
+    _require_hash_match(
+        actual=branch_post_update,
+        expected=branch_reference,
+        actual_field="student_state_sha256",
+        expected_field="branch_post_student_update_state_sha256",
+        step=int(branch_step),
+        phase="branch_student_update",
+        failure_class="PREFIX_REPLAY_STUDENT_DIVERGENCE",
+    )
+    _require_hash_match(
+        actual=branch_post_update,
+        expected=branch_reference,
+        actual_field="feature_history_sha256",
+        expected_field="branch_post_student_update_feature_history_sha256",
+        step=int(branch_step),
+        phase="branch_student_update",
+        failure_class="PREFIX_REPLAY_STUDENT_DIVERGENCE",
+    )
+    emit_status = _student_emit_status(student, branch_step=int(branch_step))
+    if not emit_status["emitted"] or int(emit_status["emit_step"]) != int(branch_step):
+        raise PrefixReplayDivergence(
+            json.dumps(
+                {
+                    "failure_class": "PREFIX_REPLAY_STUDENT_DIVERGENCE",
+                    "first_divergence_step": int(branch_step),
+                    "first_divergence_phase": "branch_student_update",
+                    "first_divergence_field": "detector_emit_step",
+                    "expected": int(branch_step),
+                    "actual": emit_status,
+                },
+                sort_keys=True,
+            )
+        )
+    obs_52, reward_51, done_51, info_51 = _step_env_action_without_double_postprocess(env, branch_env_action)
+    post_branch = prefix_replay_state_hashes(env=env, obs=obs_52, student=student, policy=policy)
     for actual_field, expected_field in (
         ("qpos_sha256", "post_branch_qpos_sha256"),
         ("qvel_sha256", "post_branch_qvel_sha256"),
@@ -1907,6 +2057,8 @@ def run_exact_action_prefix_replay_from_trace(
         "first_divergence": None,
         "branch_action_tokens_exact": bool(token_report["exact"]),
         "branch_action_exact": bool(action_report["exact"]),
+        "branch_env_action_exact": bool(env_action_report["exact"]),
+        "branch_student_emit_exact": True,
         "post_branch_qpos_exact": post_branch.get("qpos_sha256") == branch_reference.get("post_branch_qpos_sha256", post_branch.get("qpos_sha256")),
         "post_branch_qvel_exact": post_branch.get("qvel_sha256") == branch_reference.get("post_branch_qvel_sha256", post_branch.get("qvel_sha256")),
         "post_branch_sim_state_exact": post_branch.get("flat_sim_state_sha256")
@@ -2813,11 +2965,14 @@ def find_emit_snapshot_for_candidate(
         first_valid_step = -1
         prefix_trace: list[dict[str, Any]] = []
         for step in range(int(args.max_steps)):
-            pre_hashes = prefix_replay_state_hashes(env=env_adapter, obs=obs, student=student)
+            pre_hashes = prefix_replay_state_hashes(env=env_adapter, obs=obs, student=student, policy=policy)
             action, tokens = policy.act(obs)
             raw_action_arr = np.asarray(action)
             env_action_arr = postprocess_openvla_action_for_libero(action)
             update_student_for_step(student, step=step, obs=obs, action=action, tokens=tokens)
+            post_student_update_hashes = prefix_replay_state_hashes(
+                env=env_adapter, obs=obs, student=student, policy=policy
+            )
             if first_valid_step < 0 and student.invalid_steps == 0:
                 first_valid_step = step
             if detector.emitted and detector.emit_step == step:
@@ -2864,11 +3019,12 @@ def find_emit_snapshot_for_candidate(
                     "first_valid_step": first_valid_step,
                     "prefix_flat_sim_state_sha256": hash_array(env.get_sim_state()),
                     "prefix_trace": prefix_trace,
-                    "branch_boundary_hashes": prefix_replay_state_hashes(env=env_adapter, obs=obs, student=student),
+                    "branch_pre_hashes": pre_hashes,
+                    "branch_post_student_update_hashes": post_student_update_hashes,
                 }
                 break
             obs_next, reward, done, info = env_adapter.step_env_action(env_action_arr)
-            post_hashes = prefix_replay_state_hashes(env=env_adapter, obs=obs_next, student=student)
+            post_hashes = prefix_replay_state_hashes(env=env_adapter, obs=obs_next, student=student, policy=policy)
             prefix_trace.append(
                 {
                     "step": int(step),
@@ -3345,19 +3501,26 @@ def run_exact_action_prefix_replay_canary(
 
     reference_env: RealLiberoEnvAdapter = selected["env_adapter"]
     reference_student: RealSC5StudentAdapter = selected["student"]
-    reference_branch_pre = prefix_replay_state_hashes(env=reference_env, obs=selected["obs_t"], student=reference_student)
+    reference_branch_pre = dict(selected.get("branch_pre_hashes", {}))
+    reference_branch_post_update = dict(selected.get("branch_post_student_update_hashes", {}))
+    if not reference_branch_pre or not reference_branch_post_update:
+        raise _schema_invalid("selected parent missing branch pre/post Student update hashes")
     reference_next_obs, reference_reward, reference_done, reference_info = reference_env.step_env_action(
         postprocess_openvla_action_for_libero(snapshot.clean_action_t)
     )
-    reference_post = prefix_replay_state_hashes(env=reference_env, obs=reference_next_obs, student=reference_student)
+    reference_post = prefix_replay_state_hashes(
+        env=reference_env, obs=reference_next_obs, student=reference_student, policy=selected["policy"]
+    )
     branch_reference = {
         "observation_sha256": reference_branch_pre["observation_sha256"],
-        "policy_input_sha256": reference_branch_pre["observation_sha256"],
+        "policy_input_sha256": reference_branch_pre["policy_input_sha256"],
         "qpos_sha256": reference_branch_pre["qpos_sha256"],
         "qvel_sha256": reference_branch_pre["qvel_sha256"],
         "flat_sim_state_sha256": reference_branch_pre["flat_sim_state_sha256"],
         "student_state_sha256": reference_branch_pre["student_state_sha256"],
         "feature_history_sha256": reference_branch_pre["feature_history_sha256"],
+        "branch_post_student_update_state_sha256": reference_branch_post_update["student_state_sha256"],
+        "branch_post_student_update_feature_history_sha256": reference_branch_post_update["feature_history_sha256"],
         "post_branch_qpos_sha256": reference_post["qpos_sha256"],
         "post_branch_qvel_sha256": reference_post["qvel_sha256"],
         "post_branch_flat_sim_state_sha256": reference_post["flat_sim_state_sha256"],
@@ -3393,6 +3556,7 @@ def run_exact_action_prefix_replay_canary(
             expected_branch_action=np.asarray(snapshot.clean_action_t),
             expected_branch_tokens=snapshot.clean_tokens_t,
             expected_branch_env_action=postprocess_openvla_action_for_libero(snapshot.clean_action_t),
+            expected_prefix_trace_sha256=prefix_trace_sha,
             branch_reference=branch_reference,
         )
         result["parent_key"] = snapshot.parent_manifest.parent_key
@@ -3985,6 +4149,9 @@ class _MockEnv:
         done = self.internal["step"] >= 99
         return obs, float(self.internal["step"]), done, {"success": False}
 
+    def step_env_action(self, env_action: Sequence[float]) -> tuple[dict[str, Any], float, bool, dict[str, Any]]:
+        return self.step(env_action)
+
 
 class _MockPolicy:
     def __init__(self) -> None:
@@ -4001,6 +4168,9 @@ class _MockPolicy:
         action = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, -1.0 if step % 2 == 0 else 1.0]
         tokens = [31000 + step, 31001, 31002, 31003, 31004, 31005, 31872 if action[-1] > 0 else 31744]
         return action, tokens
+
+    def policy_input_fingerprint(self, obs: Any) -> dict[str, Any]:
+        return {"mock_policy_input": _json_clone(obs)}
 
 
 class _MockStudent:
