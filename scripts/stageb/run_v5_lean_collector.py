@@ -51,12 +51,11 @@ def main():
     task_obj = suite.get_task(args.task_idx)
     init_states = suite.get_task_init_states(args.task_idx)
 
+    from libero.libero import get_libero_path
     from gripper_attack.libero_v4_env_factory import build_v4_exact_env, apply_dummy_wait
     from gripper_attack.v5_perturbation import apply_perturbation, compute_initial_state_hash
-    env, obs = build_v4_exact_env(
-        os.path.join(os.environ.get("LIBERO_PATH", ""), "bddl_files",
-                     task_obj.problem_folder, task_obj.bddl_file),
-        args.render_gpu, 400, 10)
+    bddl_path = os.path.join(get_libero_path("bddl_files"), task_obj.problem_folder, task_obj.bddl_file)
+    env, obs = build_v4_exact_env(bddl_path, args.render_gpu, 400, 10)
 
     # Capture original state hash
     original_state_sha = compute_initial_state_hash(env)
@@ -70,7 +69,7 @@ def main():
 
     # Resolve target position
     target_x = target_y = target_z = 0.0
-    from gripper_attack.label_m1c_object_teacher import resolve_target_position
+    from label_m1c_object_teacher import resolve_target_position
     tgt = resolve_target_position(args.task_idx, args.state_id)
     if tgt: target_x, target_y, target_z = tgt
 
