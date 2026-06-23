@@ -1,0 +1,38 @@
+{
+  "gate": "M1C_V4_COLLECTION_CLOSURE",
+  "status": "COMPLETE",
+  "closed_at": "2026-06-24T00:33:46+08:00",
+  "parent_amendment": "COLLECTION_V4_AMENDMENT.json",
+  "final_counts": {
+    "train": 250,
+    "validation": 100,
+    "blind": 0,
+    "total": 350
+  },
+  "final_checks": {
+    "running_residue": 0,
+    "non_zero_rc": 0,
+    "attack_frames_nonzero": 0,
+    "disk_free_gb": 82
+  },
+  "gpu0_repair": {
+    "pid": 2743345,
+    "started": "2026-06-24T00:05:00+08:00",
+    "completed": "2026-06-24T00:33:46+08:00",
+    "cells_completed": 52,
+    "cells_replaced_list": "see GPU0_REPAIR_LIVE_SNAPSHOT.json",
+    "fill_log": "/mnt/sdc/dty_user/openvla_attack/evidence/m1c/object_clean_corpus/train_fill.log",
+    "fill_log_sha256": "860f635a5d18c6b8244dbe019dc339d930c831338efb2def82ca79e9b7ed6c7e"
+  },
+  "asset_shas": {
+    "detector_checkpoint": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+    "bridge_script": "fd594b3f9b38f4545d7b19202b380c0f4eeb0e9d95cb566f2fbca7b1852b208e",
+    "teacher_config": "ebc1ccda21cdfeae0f70f90ef0e433be3474ef0baa9cf52f609d620f863ce87a",
+    "fill_launcher": "0dc8fd604ea9a3e63f919f2c38f90987bf0db7bb9f3eae19e3d43dabebee5c98",
+    "v4_launcher": "b57142317e017e8522dc7f71c4ea7e43650fbb17d313fc64b82c01b35c7d0c10"
+  },
+  "collection_logs": {
+    "v4_main": "/mnt/sdc/dty_user/openvla_attack/evidence/m1c/object_clean_corpus/collection_v4.log",
+    "gpu0_fill": "/mnt/sdc/dty_user/openvla_attack/evidence/m1c/object_clean_corpus/train_fill.log"
+  }
+}
