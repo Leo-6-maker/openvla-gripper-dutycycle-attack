@@ -3627,6 +3627,14 @@ def run_exact_action_prefix_replay_canary(
     }
     write_json(output_dir / "branch_boundary_manifest.json", reference_branch_pre)
     write_json(output_dir / "post_branch_reference_state.json", branch_reference)
+    try:
+        reference_env.close()
+    except Exception:
+        pass
+    release_real_policy(selected.get("policy"))
+    if isinstance(selected, dict):
+        selected["env_adapter"] = None
+        selected["policy"] = None
 
     replay_env = None
     replay_policy = None
