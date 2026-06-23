@@ -31,6 +31,7 @@ SMOKE_STATES = [3]  # one per task, state=3
 
 
 def sha256_file(p):
+    if isinstance(p, str): p = Path(p)
     if not p.exists(): return "MISSING"
     with open(p, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()
