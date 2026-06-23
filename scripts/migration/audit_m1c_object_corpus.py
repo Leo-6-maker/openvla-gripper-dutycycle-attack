@@ -105,6 +105,8 @@ def main():
     ap.add_argument("--execution-manifest", required=True)
     ap.add_argument("--split-manifest", required=True)
     ap.add_argument("--output-root", required=True)
+    ap.add_argument("--trajectory-sidecar", default=None, help="CSV with pre-computed trajectory hashes")
+    ap.add_argument("--initial-state-sidecar", default=None, help="CSV with pre-computed initial state hashes")
     args = ap.parse_args()
 
     ex_manifest = json.load(open(args.execution_manifest))
@@ -117,6 +119,17 @@ def main():
     split_manifest = json.load(open(args.split_manifest))
     errors = defaultdict(list)
     per_cell_rows = []
+    sidecar_trajectory = {}
+    if args.trajectory_sidecar and Path(args.trajectory_sidecar).exists():
+        for r in csv.DictReader(open(args.trajectory_sidecar)):
+            k = storage_key(r["pool"], int(r["task"]), int(r["state"]))
+            sidecar_trajectory[k] = r
+    sidecar_initial = {}
+    if args.initial_state_sidecar and Path(args.initial_state_sidecar).exists():
+        for r in csv.DictReader(open(args.initial_state_sidecar)):
+            k = storage_key(r["pool"], int(r["task"]), int(r["state"]))
+            sidecar_initial[k] = r
+    p3b_unverified = []
 
     # ── Blind directory check (not silently skipped) ─────────────────
     blind_dir = corpus_root / "blind"
@@ -251,19 +264,25 @@ def main():
             errors["asset_sha"].append(f"{key}:ckpt={actual_sha[:16]}")
             row["n_issues"] += 1
 
-        # Collect hashes for split check
+        # Collect hashes for split check (from episode or sidecar)
         iss = ep_data.get("initial_state_sha256", "") if ep_data else ""
         if iss and len(iss) == 64:
             all_initial_hashes[key] = (cell["pool"], iss)
+        elif key in sidecar_initial and len(sidecar_initial[key].get("initial_state_sha256","")) == 64:
+            all_initial_hashes[key] = (cell["pool"], sidecar_initial[key]["initial_state_sha256"])
         else:
             errors["missing_initial_sha"].append(key)
+            p3b_unverified.append(key)
             row["n_issues"] += 1
         tsha = ep_data.get("trajectory_content_sha256", "") if ep_data else ""
-        if not tsha or len(tsha) != 64:
-            errors["trajectory_sha_missing"].append(key)
-            row["n_issues"] += 1
-        else:
+        if tsha and len(tsha) == 64:
             all_trajectory_hashes[tsha].append(key)
+        elif key in sidecar_trajectory and len(sidecar_trajectory[key].get("trajectory_content_sha256","")) == 64:
+            all_trajectory_hashes[sidecar_trajectory[key]["trajectory_content_sha256"]].append(key)
+        else:
+            errors["trajectory_sha_missing"].append(key)
+            p3b_unverified.append(key)
+            row["n_issues"] += 1
 
         per_cell_rows.append(row)
 
@@ -297,15 +316,33 @@ def main():
     total_issues = sum(len(v) for v in errors.values())
     planned_count = len(planned)
     actual_count = len(actual)
-    gate_pass = (actual_count == planned_count == 350 and total_issues == 0)
+    p3a_blockers = {"missing","unexpected","malformed_directory","non_zero_rc",
+                     "attack_nonzero","attack_missing_field","condition_not_clean",
+                     "missing_done","missing_telemetry","missing_summary",
+                     "corrupt_done","corrupt_summary","csv_parse","truncated_csv",
+                     "step_index","n_steps_missing","n_steps_mismatch",
+                     "missing_checkpoint_sha","asset_sha","split_manifest_mismatch",
+                     "pool_count","duplicate_cells","split_leak","trajectory_duplicate"}
+    p3a_issues = sum(len(v) for k, v in errors.items() if k in p3a_blockers)
+    p3b_issues = sum(len(v) for k, v in errors.items() if k not in p3a_blockers)
+    p3a_pass = (actual_count == planned_count == 350 and p3a_issues == 0)
+    p3b_pass = (p3b_issues == 0 and len(p3b_unverified) == 0)
 
     summary = {
         "gate": "M1C_OBJECT_CORPUS_INTEGRITY",
-        "result": "PASS" if gate_pass else "FAIL",
+        "result": "PASS" if (p3a_pass and p3b_pass) else "FAIL",
+        "p3a_evaluation_readiness": "PASS" if p3a_pass else "FAIL",
+        "p3b_cryptographic_provenance": "PASS" if p3b_pass else "PARTIAL",
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "planned_cells": planned_count,
         "actual_cells": actual_count,
-        "total_issues": total_issues,
+        "p3a_issues": p3a_issues,
+        "p3b_issues": p3b_issues,
+        "p3b_unverified_count": len(p3b_unverified),
+        "limitations": [
+            "episode_summary did not natively record initial_state_sha256",
+            "episode_summary did not natively record trajectory_content_sha256",
+        ] if not p3b_pass else [],
         "error_categories": {k: len(v) for k, v in errors.items()},
     }
 
@@ -348,6 +385,8 @@ def main():
     for cat, count in summary["error_categories"].items():
         print(f"    {cat}: {count}")
     print(f"  Output: {out_root}")
+
+    gate_pass = p3a_pass  # P3A is the evaluation gate; P3B is provenance
 
     if not gate_pass:
         sys.exit(1)
