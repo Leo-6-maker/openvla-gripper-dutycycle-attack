@@ -1,6 +1,6 @@
 # M1C: Clean-Only Abstention Repair — Pre-Registration Draft
 
-**Status**: DRAFT (awaiting Phase A results for freeze)
+**Status**: FROZEN_AFTER_PHASE_A (selected route: M1C-RM)
 **Branch**: `feature/sc5-abstention-v2-20260622`
 **Parent commit**: `9ab9f26` (M1B formal close)
 **Date**: 2026-06-23
@@ -10,23 +10,38 @@
 > Can we raise `no-corridor abstain` from 0.429 (B0) / 0.500 (D1) to ≥ 0.90
 > while maintaining teacher-valid corridor recall (coverage ≥ 0.80, K10 ≥ 0.85)?
 
-## Decision Tree (to be resolved by Phase A)
+## Decision Tree — RESOLVED
 
 ```
-Phase A result = STICKY_ARM dominant
-    → M1C-R: Runtime-only state machine repair
-    → Implement revocable IDLE↔CANDIDATE↔ARMED hysteresis
-    → Re-evaluate on frozen SC5-v1 model
+Phase A result: A_STICKY=2, B_MODEL=4 (n=6)
+→ Strict majority: MODEL_SELECTIVITY
+→ Clinical picture: MIXED (2 sticky-arm + 1 silent ARM stall)
+→ Selected route: M1C-RM
 
-Phase A result = MODEL_SELECTIVITY dominant
-    → M1C-M: Train SC5-v2 with abstention head
-    → Hard-negative curriculum + temporal consistency loss
-    → SC5-v1 frozen as negative baseline
-
-Phase A result = MIXED
-    → M1C-RM: State machine repair first
-    → Re-evaluate; retrain only for residuals
+  Phase A report: migration_audit/m1c/phase_a/PHASE_A_REPORT.md
+  Classification: migration_audit/m1c/phase_a/hypothesis_classification.json
+  External evidence: /mnt/sdc/dty_user/openvla_attack/evidence/m1c/phase_a/
 ```
+
+### M1C-RM Execution Order
+
+1. **R0**: Frozen SC5-v1 state machine (baseline, already measured)
+2. **R1**: Immediate-disarm reversible state machine
+3. **R2**: Candidate + hysteresis + arm timeout
+4. **Offline replay**: Replay R1/R2 on existing M1B 60-cell telemetry (zero GPU cost)
+5. **Evaluate**: If no-corridor abstain still < 0.90 on independent validation → SC5-v2 retrain
+6. **SC5-v2**: Only for residual model-selectivity errors after runtime fix exhausted
+
+### State Machine Design Constraints
+
+Must add:
+- `IDLE → CANDIDATE` (N consecutive frames before ARM)
+- `CANDIDATE → IDLE` (evidence lost)
+- `ARMED → IDLE` (phase≠stable_carry, cp≤tau_off, rp≥tau_r, feat invalid)
+- `max_arm_age` timeout (prevent silent ARM stall like orange_juice_s2/B0)
+
+Must record telemetry:
+- `candidate_streak`, `arm_age`, `disarm_count`, `last_disarm_step`, `disarm_reason`, `evidence_valid`
 
 ## Six Absolute Gates (unchanged from M1B)
 
