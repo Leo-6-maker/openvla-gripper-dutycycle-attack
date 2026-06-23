@@ -1,0 +1,83 @@
+{
+  "gate": "SC5_V2_DATA_EXPANSION_PROTOCOL",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-24T02:00:00+08:00",
+  "parent_branch": "feature/sc5-abstention-v2-20260622",
+  "parent_commit": "c642446",
+  "v4_closure_commit": "853336d",
+  "p4_v2_labels": "evidence/m1c/object_teacher_labels_v2/per_cell_teacher_labels.csv",
+  "constraints": {
+    "condition": "CLEAN",
+    "attack_frames": 0,
+    "profile": "B0 (BF16+Eager)",
+    "max_disk_budget_gb": 30,
+    "min_free_disk_gb": 40,
+    "no_video": true,
+    "no_blind": true,
+    "no_validation_28_37_touch": true,
+    "no_compromised_blind": true
+  },
+  "split_assignments": {
+    "sc5_v2_train_parent_states": "3-22",
+    "sc5_v2_dev_parent_states": "23-27",
+    "legacy_validation": "28-37 (read-only, confirmatory only)",
+    "future_blind_v2": "38-49 (HOLD)"
+  },
+  "primary_collection": {
+    "t2_train": {"tasks": 10, "cells_per_task": 16, "total": 160, "parent_states": "3-22"},
+    "v2_dev": {"tasks": 10, "cells_per_task": 12, "total": 120, "parent_states": "23-27"},
+    "total": 280
+  },
+  "reserve_collection": {
+    "t2_train_reserve": {"tasks": 10, "cells_per_task": 8, "total": 80},
+    "v2_dev_reserve": {"tasks": 10, "cells_per_task": 8, "total": 80},
+    "trigger_train": "train NC < 80 after primary labeling",
+    "trigger_dev": "dev TV < 30 OR dev NC < 20 after primary labeling"
+  },
+  "perturbation_templates": {
+    "P0": "original state, new UUID only",
+    "P1": "object x +5mm",
+    "P2": "object x -5mm",
+    "P3": "object y +5mm",
+    "P4": "object y -5mm",
+    "P5": "object yaw +5deg",
+    "P6": "object yaw -5deg",
+    "P7": "object xy joint offset ≤10mm"
+  },
+  "lean_schema": {
+    "required_files": ["step_telemetry.csv", "episode_summary.json", ".done"],
+    "optional_qa": "3 QA frames (start, first_close, final)",
+    "step_telemetry_native_fields": [
+      "step", "task_idx", "parent_state_id", "perturbation_seed", "perturbation_spec",
+      "language_instruction", "raw_gripper", "gripper_qpos", "gripper_opening_proxy",
+      "eef_x/y/z", "eef_vx/vy/vz", "object_x/y/z", "target_x/y/z",
+      "object_eef_distance", "object_target_distance",
+      "corridor_p", "release_p", "pred_phase", "feat_valid",
+      "condition", "attack_frames"
+    ],
+    "episode_summary_native_fields": [
+      "run_uuid", "cell_uuid", "pool", "task_idx", "parent_state_id",
+      "perturbation_seed", "perturbation_family", "n_steps", "exit_code",
+      "condition", "attack_frames", "initial_state_sha256", "perturbed_initial_state_sha256",
+      "trajectory_content_sha256", "checkpoint_sha256", "vla_model_sha256",
+      "teacher_config_sha256", "bridge_sha256", "runner_sha256", "target_resolver_sha256",
+      "perturbation_generator_sha256"
+    ]
+  },
+  "training_readiness_gate": {
+    "data_integrity": "PASS",
+    "train_parent_states": "3-22 only",
+    "dev_parent_states": "23-27 only",
+    "parent_state_overlap": 0,
+    "perturbation_seed_overlap": 0,
+    "train_tv_min": 120,
+    "train_nc_min": 80,
+    "dev_tv_min": 30,
+    "dev_nc_min": 20,
+    "target_resolution_pct": 100,
+    "initial_state_sha_pct": 100,
+    "trajectory_sha_unique_pct": 100,
+    "attack_frames": 0,
+    "asset_drift": 0
+  }
+}

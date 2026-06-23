@@ -1,0 +1,22 @@
+{
+  "gate": "SC5_V2_PERTURBATION_SPEC_V1",
+  "version": "v1",
+  "frozen_at": "2026-06-24T02:00:00+08:00",
+  "templates": [
+    {"id": "P0", "name": "identity", "dx_mm": 0, "dy_mm": 0, "dyaw_deg": 0, "note": "Original state, new collection UUID only"},
+    {"id": "P1", "name": "obj_x_plus_5mm", "dx_mm": 5, "dy_mm": 0, "dyaw_deg": 0},
+    {"id": "P2", "name": "obj_x_minus_5mm", "dx_mm": -5, "dy_mm": 0, "dyaw_deg": 0},
+    {"id": "P3", "name": "obj_y_plus_5mm", "dx_mm": 0, "dy_mm": 5, "dyaw_deg": 0},
+    {"id": "P4", "name": "obj_y_minus_5mm", "dx_mm": 0, "dy_mm": -5, "dyaw_deg": 0},
+    {"id": "P5", "name": "obj_yaw_plus_5deg", "dx_mm": 0, "dy_mm": 0, "dyaw_deg": 5},
+    {"id": "P6", "name": "obj_yaw_minus_5deg", "dx_mm": 0, "dy_mm": 0, "dyaw_deg": -5},
+    {"id": "P7", "name": "obj_xy_joint", "dx_mm": "≤10", "dy_mm": "≤10", "dyaw_deg": 0, "note": "Random xy offset within 10mm radius"}
+  ],
+  "seed_rule": "perturbation_seed = base_seed * 100 + template_id * 10 + cell_index",
+  "applicable_tasks": "all 10 LIBERO Object tasks",
+  "forbidden_modifications": [
+    "action noise", "gripper command override", "observation patch",
+    "adversarial token", "force/physics modification", "target body swap",
+    "runtime intervention", "state randomization beyond specified offsets"
+  ]
+}
