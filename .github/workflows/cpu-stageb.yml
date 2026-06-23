@@ -22,17 +22,7 @@ jobs:
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
       - name: Compile Stage-B tooling
         run: |
-          python -m py_compile \
-            scripts/stageb/run_sc5_cross_suite_clean.py \
-            scripts/stageb/run_sc5_cross_suite_clean_queue.py \
-            scripts/stageb/audit_cross_suite_clean_300_postrun.py \
-            scripts/stageb/audit_existing_nonobject_clean_outputs.py \
-            scripts/stageb/build_paper_table_schemas.py \
-            scripts/stageb/build_teacher_label_eval_table.py \
-            scripts/stageb/audit_github_branch_pr_hygiene.py \
-            scripts/stageb/layer3_exact_branching_contract.py \
-            scripts/stageb/layer3_exact_restore_runner.py \
-            scripts/stageb/audit_c2_control_ablation_application.py
+          python -m compileall -q scripts/stageb
       - name: Run Stage-B CPU tests
         run: |
           pytest tests/stageb -q
