@@ -303,6 +303,15 @@ def test_control_ablation_state_restores_only_whitelisted_mutable_state():
     assert "robot0.controller.update(force=True)" in applied["actions"]
 
 
+def test_control_ablation_default_does_not_refresh_or_restore():
+    replay = _FakeC2Adapter()
+    state = snapshot_control_ablation_state(_FakeC2Adapter())
+    applied = apply_control_ablation_state(replay, state)
+
+    assert applied["actions"] == []
+    assert replay.env.env.robots[0].controller.update_calls == 0
+
+
 def test_control_ablation_qacc_is_explicit_opt_in():
     reference = _FakeC2Adapter()
     reference.env.sim.data.qacc[:] = [0.25, -0.5]

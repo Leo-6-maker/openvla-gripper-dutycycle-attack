@@ -656,7 +656,7 @@ def apply_control_ablation_state(
     restore_interpolator: bool = False,
     restore_action_history: bool = False,
     restore_qacc: bool = False,
-    refresh_derived: bool = True,
+    refresh_derived: bool = False,
 ) -> dict[str, Any]:
     actions: list[str] = []
     robots = get_env_robots(env_adapter)
