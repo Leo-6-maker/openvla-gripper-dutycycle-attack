@@ -1,0 +1,12 @@
+ablation,requested_group,reference_field_present,applied_action_count,actual_applied_actions,target_state_match_after_apply,was_effective_intervention,status,evidence_note
+A1_DERIVED_RECOMPUTE,derived_refresh,True,1,robot0.controller.update(force=True),True,True,APPLIED_AND_MATCHED,matching applied action recorded and no post-apply pre-step diff for this group
+A2_GOAL_STATE,goal,True,2,robot0.controller.goal_pos;robot0.controller.goal_ori,True,True,APPLIED_AND_MATCHED,matching applied action recorded and no post-apply pre-step diff for this group
+A3_GOAL_INTERPOLATOR_STATE,goal,True,2,robot0.controller.goal_pos;robot0.controller.goal_ori,True,True,APPLIED_AND_MATCHED,matching applied action recorded and no post-apply pre-step diff for this group
+A3_GOAL_INTERPOLATOR_STATE,interpolator,False,0,,False,False,NO_APPLICABLE_INTERPOLATOR_STATE,requested group absent from reference snapshot
+A4_GOAL_INTERPOLATOR_ACTION_HISTORY,goal,True,2,robot0.controller.goal_pos;robot0.controller.goal_ori,True,True,APPLIED_AND_MATCHED,matching applied action recorded and no post-apply pre-step diff for this group
+A4_GOAL_INTERPOLATOR_ACTION_HISTORY,interpolator,False,0,,False,False,NO_APPLICABLE_INTERPOLATOR_STATE,requested group absent from reference snapshot
+A4_GOAL_INTERPOLATOR_ACTION_HISTORY,action_history,True,5,robot0.recent_actions.dim;robot0.recent_actions.last;robot0.recent_actions.current;env_inner.timestep;env_inner.cur_time,True,True,APPLIED_AND_MATCHED,matching applied action recorded and no post-apply pre-step diff for this group
+A5_QACC_ABLATION,goal,True,2,robot0.controller.goal_pos;robot0.controller.goal_ori,True,True,APPLIED_AND_MATCHED,matching applied action recorded and no post-apply pre-step diff for this group
+A5_QACC_ABLATION,interpolator,False,0,,False,False,NO_APPLICABLE_INTERPOLATOR_STATE,requested group absent from reference snapshot
+A5_QACC_ABLATION,action_history,True,5,robot0.recent_actions.dim;robot0.recent_actions.last;robot0.recent_actions.current;env_inner.timestep;env_inner.cur_time,True,True,APPLIED_AND_MATCHED,matching applied action recorded and no post-apply pre-step diff for this group
+A5_QACC_ABLATION,qacc,True,1,mujoco.qacc,True,True,APPLIED_AND_MATCHED,matching applied action recorded and no post-apply pre-step diff for this group

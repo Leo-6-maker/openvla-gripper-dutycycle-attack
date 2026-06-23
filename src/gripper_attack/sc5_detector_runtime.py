@@ -6,7 +6,7 @@ Frozen trigger logic (matches offline replay 6/6 Gate):
   ARMED → (step >= arm_step + 5 AND corridor_p > tau_c AND release_p < tau_r) → EMITTED
   EMITTED → one-shot latch
 """
-import hashlib, numpy as np, torch, torch.nn as nn
+import hashlib, math, numpy as np, torch, torch.nn as nn
 from typing import Dict
 
 SC5_FEATURES = [
@@ -20,6 +20,7 @@ SC5_FEATURES = [
 ]
 SC5_PHASES = ["approach","grasp_close","stable_grasp","first_lift","stable_carry",
               "pre_place_unsupported","release_safe","recovery_or_regrasp","abstain_unsupported"]
+ACCEPTED_FROZEN_SPLIT_MODES = {"frozen", "provisional_cross_suite_frozen"}
 
 
 class SC5MLP(nn.Module):
@@ -44,8 +45,10 @@ class SC5MLP(nn.Module):
 class SC5DetectorRuntime:
     """Shared runtime: strict-loads frozen MLP, runs single state machine."""
 
-    def __init__(self, checkpoint_path: str, tau_corridor: float = 0.3,
-                 tau_release: float = 0.3, guard: int = 5):
+    def __init__(self, checkpoint_path: str, tau_corridor: float | None = None,
+                 tau_release: float | None = None, guard: int = 5,
+                 allow_threshold_override: bool = False,
+                 override_reason: str = ""):
         ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
 
         # Strict validation
@@ -72,8 +75,56 @@ class SC5DetectorRuntime:
             raise ValueError("Zero in std")
 
         split_mode = ckpt.get("split_mode", "unknown")
-        if split_mode != "frozen":
-            raise ValueError(f"Checkpoint split_mode={split_mode}, expected 'frozen'")
+        if split_mode not in ACCEPTED_FROZEN_SPLIT_MODES:
+            raise ValueError(
+                f"Checkpoint split_mode={split_mode}, expected one of {sorted(ACCEPTED_FROZEN_SPLIT_MODES)}"
+            )
+        self.split_mode = split_mode
+
+        if "selected_tau_corridor" not in ckpt or "selected_tau_release" not in ckpt:
+            raise ValueError("Missing checkpoint-selected detector thresholds")
+        self.checkpoint_tau_corridor = float(ckpt["selected_tau_corridor"])
+        self.checkpoint_tau_release = float(ckpt["selected_tau_release"])
+        for name, value in (
+            ("selected_tau_corridor", self.checkpoint_tau_corridor),
+            ("selected_tau_release", self.checkpoint_tau_release),
+        ):
+            if not (math.isfinite(value) and 0.0 <= value <= 1.0):
+                raise ValueError(f"Invalid checkpoint {name}={value}")
+        if tau_corridor is None:
+            effective_tau_corridor = self.checkpoint_tau_corridor
+            corridor_source = "checkpoint"
+        else:
+            effective_tau_corridor = float(tau_corridor)
+            corridor_source = "override"
+        if tau_release is None:
+            effective_tau_release = self.checkpoint_tau_release
+            release_source = "checkpoint"
+        else:
+            effective_tau_release = float(tau_release)
+            release_source = "override"
+        for name, value in (
+            ("effective_tau_corridor", effective_tau_corridor),
+            ("effective_tau_release", effective_tau_release),
+        ):
+            if not (math.isfinite(value) and 0.0 <= value <= 1.0):
+                raise ValueError(f"Invalid {name}={value}")
+        override_requested = (
+            abs(effective_tau_corridor - self.checkpoint_tau_corridor) > 1e-12
+            or abs(effective_tau_release - self.checkpoint_tau_release) > 1e-12
+            or corridor_source == "override"
+            or release_source == "override"
+        )
+        if override_requested and not allow_threshold_override:
+            raise ValueError(
+                "Detector threshold override requires allow_threshold_override=True; "
+                f"checkpoint=({self.checkpoint_tau_corridor},{self.checkpoint_tau_release}) "
+                f"effective=({effective_tau_corridor},{effective_tau_release})"
+            )
+        if allow_threshold_override and override_requested and not override_reason:
+            raise ValueError("Detector threshold override requires override_reason")
+        self.threshold_source = "override" if override_requested else "checkpoint"
+        self.override_reason = override_reason
 
         # Build model + strict load
         self.model = SC5MLP(n_feat=len(SC5_FEATURES))
@@ -82,7 +133,7 @@ class SC5DetectorRuntime:
         self.mean = mean; self.std = std
 
         # Trigger params
-        self.tau_c = tau_corridor; self.tau_r = tau_release; self.guard = guard
+        self.tau_c = effective_tau_corridor; self.tau_r = effective_tau_release; self.guard = guard
         self.reset()
 
     def reset(self):
@@ -94,7 +145,7 @@ class SC5DetectorRuntime:
         X = np.array([[features_25d[fn] for fn in SC5_FEATURES]], dtype=np.float32)
         if not np.all(np.isfinite(X)):
             raise ValueError("NaN/Inf in input features")
-        X = (X - self.mean) / (self.std + 1e-8)
+        X = (X - self.mean) / self.std
         with torch.no_grad():
             out = self.model(torch.tensor(X, dtype=torch.float32))
         cp = torch.sigmoid(out["corridor_logit"]).item()
