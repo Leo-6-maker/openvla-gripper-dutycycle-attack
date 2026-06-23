@@ -27,7 +27,8 @@ A800_FORMAL_CROSS_SUITE: NO_GO
 
 ```text
 PR: #38
-current head after C1 report: 608d15f899c170c7065a66c0397b5748b8d455a4
+current head: 03a7a63963068c27db6ae315f0f5b71f52e6cfe7
+C0_EVIDENCE_FREEZE: PASS
 
 known parent:
 libero_goal|4|1|0|CLEAN
@@ -81,7 +82,7 @@ environment transition.
 ## C1 Transition Audit
 
 ```text
-commit: 342bbeb3d21b67b179b97537561d7c4fd2809874
+commit: 3a008fb38fa4e257e8945a967768f8c66b7d91cd
 output:
 /data/liuyu/layer3_outputs/transition_state_audit_goal_t4_s1_342bbeb_gpu13_20260623_010656
 
