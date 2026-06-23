@@ -330,7 +330,7 @@ def main():
 
     summary = {
         "gate": "M1C_OBJECT_CORPUS_INTEGRITY",
-        "result": "PASS" if (p3a_pass and p3b_pass) else "FAIL",
+        "result": "P3A_PASS__P3B_PARTIAL" if (p3a_pass and not p3b_pass) else ("PASS" if (p3a_pass and p3b_pass) else "FAIL"),
         "p3a_evaluation_readiness": "PASS" if p3a_pass else "FAIL",
         "p3b_cryptographic_provenance": "PASS" if p3b_pass else "PARTIAL",
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),

@@ -1,0 +1,15 @@
+{
+  "gate": "M1C_BLIND_QUARANTINE_MANIFEST",
+  "status": "COMPLETE",
+  "quarantined_at": "2026-06-24T00:38:00+08:00",
+  "original_location": "/mnt/sdc/dty_user/openvla_attack/evidence/m1c/object_clean_corpus/blind",
+  "quarantine_location": "/mnt/sdc/dty_user/openvla_attack/evidence/m1c/compromised_blind_quarantine/blind",
+  "cell_count": 12,
+  "file_count": 62,
+  "disposition": "BLIND_COMPROMISED_DIAGNOSTIC_ONLY",
+  "formal_blind_count": 0,
+  "files_deleted": 0,
+  "before_sha_list": "/tmp/compromised_blind_before.sha256",
+  "after_sha_list": "/tmp/compromised_blind_after.sha256",
+  "note": "All 62 files preserved. Moved atomically. SHA lists captured before and after."
+}
