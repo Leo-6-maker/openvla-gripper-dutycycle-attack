@@ -1,0 +1,5 @@
+gpu_index,gpu_uuid,pool,task_idx_start,task_idx_end,state_start,state_end,planned_cells,output_root,launch_command_sha256,status
+2,GPU-7b06162a-27e4-2552-e891-d201e3fae6b9,train,0,9,3,9,70,/mnt/sdc/dty_user/openvla_attack/evidence/m1c/object_clean_corpus/train,b57142317e017e8522dc7f71c4ea7e43650fbb17d313fc64b82c01b35c7d0c10,RUNNING
+5,GPU-185b30c0-074c-6f07-aa8b-a67d00e8e4a9,train,0,9,10,15,60,/mnt/sdc/dty_user/openvla_attack/evidence/m1c/object_clean_corpus/train,b57142317e017e8522dc7f71c4ea7e43650fbb17d313fc64b82c01b35c7d0c10,RUNNING
+3,GPU-41cd4b75-e3d4-92b8-ec37-ddca13e3761a,train,0,9,16,27,120,/mnt/sdc/dty_user/openvla_attack/evidence/m1c/object_clean_corpus/train,b57142317e017e8522dc7f71c4ea7e43650fbb17d313fc64b82c01b35c7d0c10,RUNNING
+4,GPU-e85ed586-ba64-a9e3-8fa9-07f16f84dcda,validation,0,9,28,37,100,/mnt/sdc/dty_user/openvla_attack/evidence/m1c/object_clean_corpus/validation,b57142317e017e8522dc7f71c4ea7e43650fbb17d313fc64b82c01b35c7d0c10,RUNNING
