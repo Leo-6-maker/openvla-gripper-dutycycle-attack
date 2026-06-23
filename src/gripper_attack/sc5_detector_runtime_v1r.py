@@ -267,10 +267,13 @@ class SC5DetectorRuntimeV1R:
         """R2: Full candidate-machine with hysteresis + timeout."""
         if self.state == "IDLE":
             if self._check_on_evidence(cp, rp, pp):
-                self.state = "CANDIDATE"
-                self.candidate_step = step
-                self.candidate_streak = 1
-                self.disarm_reason = ""
+                if self.n_candidate <= 1:
+                    self.state = "ARMED"; self.arm_step = step; self.disarm_reason = ""
+                else:
+                    self.state = "CANDIDATE"
+                    self.candidate_step = step
+                    self.candidate_streak = 1
+                    self.disarm_reason = ""
 
         elif self.state == "CANDIDATE":
             if self._check_on_evidence(cp, rp, pp):

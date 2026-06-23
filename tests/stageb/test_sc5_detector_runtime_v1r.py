@@ -215,7 +215,34 @@ def test_r2_candidate_to_armed():
     assert r["state"] == "ARMED"
     assert d.arm_step == 2
     assert d.candidate_streak == 0
-    assert d.disarm_reason == ""  # cleared on arm
+    assert d.disarm_reason == ""
+
+def test_r2_n_candidate_1_arms_first_frame():
+    """n_candidate=1 should arm on the very first on-evidence frame."""
+    d = _make_detector("v1r_r2", n_candidate=1)
+    r = d.update_from_scores(0.9, 0.001, "stable_carry", 0)
+    assert r["state"] == "ARMED"
+    assert d.arm_step == 0
+    assert d.candidate_streak == 0
+
+def test_r2_n_candidate_2_arms_second_frame():
+    """n_candidate=2: first frame CANDIDATE, second frame ARM."""
+    d = _make_detector("v1r_r2", n_candidate=2)
+    r = d.update_from_scores(0.9, 0.001, "stable_carry", 0)
+    assert r["state"] == "CANDIDATE"
+    assert d.candidate_streak == 1
+    r = d.update_from_scores(0.9, 0.001, "stable_carry", 1)
+    assert r["state"] == "ARMED"
+
+def test_r2_n_candidate_3_arms_third_frame():
+    """n_candidate=3: first two frames CANDIDATE, third frame ARM."""
+    d = _make_detector("v1r_r2", n_candidate=3)
+    r = d.update_from_scores(0.9, 0.001, "stable_carry", 0)
+    assert r["state"] == "CANDIDATE"
+    r = d.update_from_scores(0.9, 0.001, "stable_carry", 1)
+    assert r["state"] == "CANDIDATE"
+    r = d.update_from_scores(0.9, 0.001, "stable_carry", 2)
+    assert r["state"] == "ARMED"  # cleared on arm
 
 def test_r2_candidate_break_to_idle():
     d = _make_detector("v1r_r2")

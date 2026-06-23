@@ -1,113 +1,93 @@
 #!/usr/bin/env python3
-"""Tests for M1C corpus integrity auditor — duplicate, missing, attack, split leakage."""
-import json, tempfile, csv, os
+"""Tests for M1C corpus integrity auditor v2."""
+import json, tempfile, os, sys
 from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
-sys_path = str(REPO)
-import sys; sys.path.insert(0, sys_path)
+sys.path.insert(0, str(REPO))
 
 from scripts.migration.audit_m1c_object_corpus import (
-    check_cell_uniqueness, check_file_completeness, check_step_integrity,
-    check_safety, check_asset_consistency, check_no_excluded_states,
-    cell_key, EXCLUDED_STATES, COMPROMISED_BLIND,
+    scan_filesystem, build_planned_set, cell_key,
 )
 
 
-def _make_cell(tmpdir, task, state, pool="train", files=None):
-    d = Path(tmpdir) / pool / f"task{task}_state{state}"
-    d.mkdir(parents=True)
-    if files:
-        for fname, content in files.items():
-            (d / fname).write_text(content)
-    return {"task_idx": task, "state_id": state, "pool": pool, "profile": "B0", "_cell_dir": d}
+def _make_fs(tmpdir, cells):
+    """Create cells on filesystem. cells = [(pool, task, state), ...]."""
+    for pool, task, state in cells:
+        d = Path(tmpdir) / pool / f"task{task}_state{state}"
+        d.mkdir(parents=True)
+        (d / ".done").write_text('{"exit_code":0,"telemetry_sha":"aa"}')
+        (d / "step_telemetry.csv").write_text("step,col\n0,a\n")
+        ep = {"condition": "CLEAN", "attack_frames": 0, "checkpoint_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628"}
+        (d / "episode_summary.json").write_text(json.dumps(ep))
+    return str(Path(tmpdir))
 
 
-def test_duplicate_detection():
-    cells = [
-        {"task_idx": 0, "state_id": 3, "profile": "B0"},
-        {"task_idx": 0, "state_id": 3, "profile": "B0"},
-    ]
-    dupes = check_cell_uniqueness(cells, None)
-    assert len(dupes) == 1
+def _make_manifest(tmpdir, train_range="3-9", val_range="28-37"):
+    return {
+        "output_root": str(Path(tmpdir) / "corpus"),
+        "total_planned_cells": 350,
+        "train_planned": 250,
+        "validation_planned": 100,
+        "gpu_assignments": {
+            "gpu2": {"pool": "train", "state_range": train_range, "planned_cells": 70},
+            "gpu3": {"pool": "train", "state_range": "16-27", "planned_cells": 120},
+            "gpu4": {"pool": "validation", "state_range": val_range, "planned_cells": 100},
+        },
+    }
 
 
-def test_no_duplicate():
-    cells = [
-        {"task_idx": 0, "state_id": 3, "profile": "B0"},
-        {"task_idx": 0, "state_id": 4, "profile": "B0"},
-    ]
-    assert check_cell_uniqueness(cells, None) == []
-
-
-def test_file_completeness_ok():
+def test_scan_finds_cells():
     with tempfile.TemporaryDirectory() as tmp:
-        c = _make_cell(tmp, 0, 3, files={
-            "step_telemetry.csv": "step,col\n0,a\n",
-            "episode_summary.json": '{"ok":true}',
-            ".done": '{"exit_code":0}',
-        })
-        issues = check_file_completeness(c, c["_cell_dir"])
-        assert issues == []
+        fs = _make_fs(tmp, [("train", 0, 3), ("validation", 0, 28)])
+        actual = scan_filesystem(fs)
+        assert cell_key(0, 3) in actual
+        assert cell_key(0, 28) in actual
 
 
-def test_file_completeness_missing():
+def test_scan_excludes_non_cell_dirs():
     with tempfile.TemporaryDirectory() as tmp:
-        c = _make_cell(tmp, 0, 3)
-        issues = check_file_completeness(c, c["_cell_dir"])
-        assert len(issues) == 3
+        Path(tmp).mkdir(exist_ok=True)
+        (Path(tmp) / "not_a_cell").mkdir()
+        actual = scan_filesystem(str(tmp))
+        assert len(actual) == 0
 
 
-def test_step_integrity_ok():
+def test_planned_matches_manifest():
+    manifest = _make_manifest("/tmp/test")
+    planned = build_planned_set(manifest)
+    assert ("train", 3, 3) in planned
+    assert ("validation", 5, 30) in planned
+    assert ("blind", 0, 40) not in planned
+
+
+def test_missing_cell_detected():
     with tempfile.TemporaryDirectory() as tmp:
-        tel = "step,corridor_p\n0,0.5\n1,0.6\n2,0.7\n"
-        c = _make_cell(tmp, 0, 3, files={"step_telemetry.csv": tel})
-        issues = check_step_integrity(c["_cell_dir"])
-        assert issues == []
+        fs = _make_fs(tmp, [("train", 0, 3)])  # only one cell
+        manifest = _make_manifest(str(tmp))
+        manifest["output_root"] = fs
+        actual = scan_filesystem(fs)
+        planned = build_planned_set(manifest)
+        missing_keys = []
+        for pool, task, state in planned:
+            if cell_key(task, state) not in actual:
+                missing_keys.append(f"{pool}/{cell_key(task,state)}")
+        assert len(missing_keys) > 0  # most cells are missing
 
 
-def test_step_integrity_gap():
+def test_unexpected_cell_detected():
     with tempfile.TemporaryDirectory() as tmp:
-        tel = "step,corridor_p\n0,0.5\n2,0.7\n"
-        c = _make_cell(tmp, 0, 3, files={"step_telemetry.csv": tel})
-        issues = check_step_integrity(c["_cell_dir"])
-        assert len(issues) > 0
-
-
-def test_safety_attack_frames():
-    with tempfile.TemporaryDirectory() as tmp:
-        c = _make_cell(tmp, 0, 3, files={
-            "episode_summary.json": '{"condition":"CLEAN","attack_frames":5}',
-        })
-        issues = check_safety(c["_cell_dir"])
-        assert any("attack_frames" in i for i in issues)
-
-
-def test_safety_ok():
-    with tempfile.TemporaryDirectory() as tmp:
-        c = _make_cell(tmp, 0, 3, files={
-            "episode_summary.json": '{"condition":"CLEAN","attack_frames":0}',
-        })
-        issues = check_safety(c["_cell_dir"])
-        assert issues == []
-
-
-def test_excluded_m1b_state():
-    cells = [{"task_idx": 0, "state_id": 1}]
-    issues = check_no_excluded_states(cells)
-    assert len(issues) == 1
-
-
-def test_excluded_compromised_blind():
-    cells = [{"task_idx": 0, "state_id": 40}]
-    issues = check_no_excluded_states(cells)
-    assert len(issues) == 1
-
-
-def test_no_excluded():
-    cells = [{"task_idx": 0, "state_id": 5}]
-    assert check_no_excluded_states(cells) == []
+        fs = _make_fs(tmp, [("train", 0, 40)])  # state 40 is compromised blind!
+        manifest = _make_manifest(str(tmp))
+        manifest["output_root"] = fs
+        actual = scan_filesystem(fs)
+        planned = build_planned_set(manifest)
+        unexpected = []
+        for key, cell in actual.items():
+            if (cell["pool"], cell["task"], cell["state"]) not in planned:
+                unexpected.append(key)
+        assert len(unexpected) > 0
 
 
 if __name__ == "__main__":

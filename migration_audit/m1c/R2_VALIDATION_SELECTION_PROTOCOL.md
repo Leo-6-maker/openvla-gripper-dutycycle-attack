@@ -1,7 +1,22 @@
 # M1C R2 Validation Selection Protocol
 
-**Status**: FROZEN_BEFORE_VALIDATION
+**Status**: FROZEN_BEFORE_VALIDATION (PRE_VALIDATION_IMPLEMENTATION_CORRECTION applied)
 **Date**: 2026-06-23
+
+## PRE_VALIDATION_IMPLEMENTATION_CORRECTION
+
+The original implementation had a semantic error: `n_candidate=1` required a second
+frame to arm (first frame entered CANDIDATE, second frame incremented streak to 2
+which satisfied `streak >= 1`). This made `n_candidate=1` and `n_candidate=2`
+equivalent. Fixed before any validation run:
+
+- `n_candidate=1`: arms on the FIRST on-evidence frame (bypasses CANDIDATE)
+- `n_candidate=2`: arms on the SECOND consecutive on-evidence frame
+- `n_candidate=3`: arms on the THIRD consecutive on-evidence frame
+
+This is an implementation correction, not a grid modification. The 72-config grid
+is unchanged; the fix only ensures the three n_candidate levels are truly distinct.
+Three additional tests verify the corrected behavior.
 **Reference**: M1C Protocol `migration_audit/m1c/M1C_PROTOCOL_DRAFT.md` (FROZEN_AFTER_PHASE_A)
 
 ## Purpose
