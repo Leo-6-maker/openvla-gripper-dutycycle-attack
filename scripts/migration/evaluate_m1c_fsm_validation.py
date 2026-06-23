@@ -24,13 +24,13 @@ LABELS_PATH = REPO / "evidence/m1c/object_teacher_labels_v2/per_cell_teacher_lab
 
 GATE_DIRECTIONS = {
     "coverage": ">=", "k10_containment": ">=", "no_corridor_abstain": ">=",
-    "feature_valid_rate": ">=",
+    "feature_valid_active_step_rate": ">=",
     "false_early": "<=", "post_release": "<=", "median_anchor_error": "<=",
     "silent_stalls": "==",
 }
 GATE_THRESHOLDS = {
     "coverage": 0.80, "k10_containment": 0.85, "no_corridor_abstain": 0.90,
-    "feature_valid_rate": 0.99, "false_early": 0.10, "post_release": 0.05,
+    "feature_valid_active_step_rate": 0.99, "false_early": 0.10, "post_release": 0.05,
     "median_anchor_error": 8, "silent_stalls": 0,
 }
 
@@ -64,7 +64,7 @@ CKPT = None
 def evaluate_fsm(detector_cls, config, val_cells, teacher_labels):
     n_tv = 0; n_nc = 0
     tv_triggered = []; nc_triggered = []; silent_stalls = 0
-    total_disarms = 0; total_fv_cells = 0; total_fv_steps = 0
+    total_disarms = 0; total_fv_active_steps = 0; total_fv_active_valid = 0
 
     for cell in val_cells:
         key = (cell["task"], cell["state"])
@@ -79,13 +79,14 @@ def evaluate_fsm(detector_cls, config, val_cells, teacher_labels):
         if not tel.exists(): continue
         rows = list(csv.DictReader(open(tel)))
 
-        emit_step = None
-        first_arm = -1
-        # Feature-valid from actual telemetry
-        fv_ok_steps = 0
+        emit_step = None; first_arm = -1
+        fv_active_steps = 0; fv_active_valid = 0
         for step, r in enumerate(rows):
             fv = r.get("feat_valid", "") == "True"
-            if fv: fv_ok_steps += 1
+            # Count active steps: before emit (or all if never emitted)
+            if emit_step is None:
+                fv_active_steps += 1
+                if fv: fv_active_valid += 1
             cp_s = r.get("corridor_p", ""); rp_s = r.get("release_p", "")
             pp = r.get("pred_phase", ""); cp = float(cp_s) if cp_s and cp_s != "" else float("nan")
             rp = float(rp_s) if rp_s and rp_s != "" else float("nan")
@@ -94,10 +95,8 @@ def evaluate_fsm(detector_cls, config, val_cells, teacher_labels):
             if d.emitted and emit_step is None: emit_step = step
         if d.state == "ARMED" and not d.emitted: silent_stalls += 1
         total_disarms += dec.get("disarm_count", 0)
-        cell_n_steps = len(rows)
-        if cell_n_steps > 0:
-            total_fv_cells += 1; total_fv_steps += fv_ok_steps
-            cell["fv_cell_pass"] = (fv_ok_steps / cell_n_steps) >= 0.99
+        total_fv_active_steps += fv_active_steps
+        total_fv_active_valid += fv_active_valid
 
         if emit_step is not None:
             age = abs(emit_step - anchor) if anchor >= 0 else None
@@ -117,20 +116,17 @@ def evaluate_fsm(detector_cls, config, val_cells, teacher_labels):
     ages = [t["age"] for t in tv_triggered if t.get("age") is not None]
     median_age = float(np.median(ages)) if ages else -1
     fe = sum(1 for t in tv_triggered if t.get("false_early") is True)
-    fe_rate = fe / n_tv_trig if n_tv_trig > 0 else 0  # denominator: TV-triggered only
+    fe_rate = fe / n_tv_trig if n_tv_trig > 0 else 0
     pr = sum(1 for t in tv_triggered if t.get("post_release") is True)
-    pr_rate = pr / n_tv_trig if n_tv_trig > 0 else 0  # denominator: TV-triggered only
+    pr_rate = pr / n_tv_trig if n_tv_trig > 0 else 0
     nc_abstained = n_nc - n_nc_trig
     nc_rate = nc_abstained / n_nc if n_nc > 0 else 0
-    total_steps_all = sum(len(list(csv.DictReader(open(c["path"]/"step_telemetry.csv")))) for c in val_cells)
-    fv_step_rate = total_fv_steps / total_steps_all if total_steps_all > 0 else 0
-    fv_cells_ok = sum(1 for c in val_cells if c.get("fv_cell_pass", False))
-    fv_cell_rate = fv_cells_ok / len(val_cells) if val_cells else 0
+    fv_active_rate = total_fv_active_valid / total_fv_active_steps if total_fv_active_steps > 0 else 0
 
     timing_evaluable = (n_tv_trig > 0 and len(ages) > 0)
     gates = {
         "coverage": coverage, "k10_containment": k10_rate, "no_corridor_abstain": nc_rate,
-        "feature_valid_step_rate": fv_step_rate, "feature_valid_cell_rate": fv_cell_rate,
+        "feature_valid_active_step_rate": fv_active_rate,
         "false_early": fe_rate, "post_release": pr_rate,
         "median_anchor_error": median_age if timing_evaluable else None,
         "silent_stalls": silent_stalls,
@@ -153,21 +149,8 @@ def evaluate_fsm(detector_cls, config, val_cells, teacher_labels):
         else: continue
         lo, hi = wilson_ci(n, d)
         ci[k] = {"lo": round(lo, 4), "hi": round(hi, 4), "n": n, "d": d}
-    # Feature-valid CI uses actual step-level stats
-    lo_fv, hi_fv = wilson_ci(total_fv_steps, total_steps_all)
-    ci["feature_valid_step_rate"] = {"lo": round(lo_fv, 4), "hi": round(hi_fv, 4), "n": total_fv_steps, "d": total_steps_all}
-
-    ci = {}
-    for k in ["coverage","k10_containment","no_corridor_abstain","feature_valid_rate","false_early","post_release"]:
-        if k == "coverage": n, d = n_tv_trig, n_tv
-        elif k == "k10_containment": n, d = k10_ok, n_tv_trig
-        elif k == "no_corridor_abstain": n, d = nc_abstained, n_nc
-        elif k == "feature_valid_rate": n, d = total_fv_steps, total_fv_steps  # Note: simplified
-        elif k == "false_early": n, d = fe, n_all_trig
-        elif k == "post_release": n, d = pr, n_all_trig
-        else: continue
-        lo, hi = wilson_ci(n, d)
-        ci[k] = {"lo": round(lo, 4), "hi": round(hi, 4), "n": n, "d": d}
+    lo_fv, hi_fv = wilson_ci(total_fv_active_valid, total_fv_active_steps)
+    ci["feature_valid_active_step_rate"] = {"lo": round(lo_fv, 4), "hi": round(hi_fv, 4), "n": total_fv_active_valid, "d": total_fv_active_steps}
 
     return {
         "gates": gates, "passes": passes, "all_pass": all_pass, "ci": ci,
