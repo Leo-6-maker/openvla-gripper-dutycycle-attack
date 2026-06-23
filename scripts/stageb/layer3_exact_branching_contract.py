@@ -85,6 +85,15 @@ class PrefixBranchSnapshot:
         return sha256_jsonable(asdict(self))
 
 
+def _require_token_tuple(values: Sequence[Any], *, field: str, exact_len: int = ACTION_DIM) -> tuple[int, ...]:
+    out = tuple(int(v) for v in values)
+    if len(out) != exact_len:
+        raise Layer3BranchingContractError(f"{field} must have exactly {exact_len} token ids; got {len(out)}")
+    if any(v < 0 for v in out):
+        raise Layer3BranchingContractError(f"{field} contains a negative token id")
+    return out
+
+
 @dataclass(frozen=True)
 class BranchRunRecord:
     """Per-condition provenance record for one branch from a saved prefix."""
@@ -141,6 +150,115 @@ class BranchRunRecord:
                 raise Layer3BranchingContractError(
                     "EXACT_ACTION_PREFIX_REPLAY last_prefix_step must be first_env_step - 1"
                 )
+
+
+@dataclass(frozen=True)
+class PrefixReplayStep:
+    """Per-step provenance for exact action-prefix replay.
+
+    This is a contract object only. Runtime replay artifacts may carry the
+    actual arrays alongside these hashes, but the scientific record must retain
+    full 64-character hashes and exact seven-token provenance for every prefix
+    step.
+    """
+
+    step: int
+    raw_action_sha256: str
+    env_action_sha256: str
+    tokens: tuple[int, ...]
+    tokens_sha256: str
+    observation_sha256: str
+    policy_input_sha256: str
+    qpos_sha256: str
+    qvel_sha256: str
+    flat_sim_state_sha256: str
+    student_state_sha256: str
+    feature_history_sha256: str
+    reward: float | None
+    done: bool
+
+    def __post_init__(self) -> None:
+        if int(self.step) < 0:
+            raise Layer3BranchingContractError("PrefixReplayStep.step must be non-negative")
+        object.__setattr__(self, "tokens", _require_token_tuple(self.tokens, field="tokens"))
+        for field in (
+            "raw_action_sha256",
+            "env_action_sha256",
+            "tokens_sha256",
+            "observation_sha256",
+            "policy_input_sha256",
+            "qpos_sha256",
+            "qvel_sha256",
+            "flat_sim_state_sha256",
+            "student_state_sha256",
+            "feature_history_sha256",
+        ):
+            require_sha256(getattr(self, field), field=field)
+        expected_tokens_sha = sha256_jsonable(list(self.tokens))
+        if self.tokens_sha256 != expected_tokens_sha:
+            raise Layer3BranchingContractError("tokens_sha256 must match the exact seven-token sequence")
+        if self.reward is not None and not math.isfinite(float(self.reward)):
+            raise Layer3BranchingContractError("reward must be finite when present")
+
+
+@dataclass(frozen=True)
+class ExactActionPrefixReplayPayload:
+    """Immutable provenance contract for C3 exact action-prefix replay."""
+
+    protocol_version: str
+    parent_key: str
+    init_state_sha256: str
+    dummy_wait_contract_sha256: str
+    prefix_steps: tuple[PrefixReplayStep, ...]
+    prefix_step_count: int
+    last_prefix_step: int
+    branch_step: int
+    prefix_trace_sha256: str
+    expected_branch_observation_sha256: str
+    expected_branch_policy_input_sha256: str
+    expected_branch_student_state_sha256: str
+    expected_branch_feature_history_sha256: str
+    expected_pre_branch_qpos_sha256: str
+    expected_pre_branch_qvel_sha256: str
+    expected_pre_branch_flat_sim_state_sha256: str
+
+    def __post_init__(self) -> None:
+        if not self.protocol_version:
+            raise Layer3BranchingContractError("protocol_version is required")
+        if not self.parent_key or self.parent_key.count("|") != 4:
+            raise Layer3BranchingContractError("parent_key must be canonical suite|task|state|seed|condition")
+        object.__setattr__(self, "prefix_steps", tuple(self.prefix_steps))
+        if int(self.prefix_step_count) != len(self.prefix_steps):
+            raise Layer3BranchingContractError("prefix_step_count must equal len(prefix_steps)")
+        if int(self.prefix_step_count) <= 0:
+            raise Layer3BranchingContractError("prefix_step_count must be positive")
+        if int(self.last_prefix_step) != int(self.branch_step) - 1:
+            raise Layer3BranchingContractError("last_prefix_step must be branch_step - 1")
+        expected_steps = tuple(range(self.prefix_step_count))
+        actual_steps = tuple(int(step.step) for step in self.prefix_steps)
+        if actual_steps != expected_steps:
+            raise Layer3BranchingContractError(
+                f"prefix_steps must be contiguous from 0; got {actual_steps[:5]}...{actual_steps[-5:]}"
+            )
+        if int(self.last_prefix_step) != actual_steps[-1]:
+            raise Layer3BranchingContractError("last_prefix_step must equal the final PrefixReplayStep.step")
+        for field in (
+            "init_state_sha256",
+            "dummy_wait_contract_sha256",
+            "prefix_trace_sha256",
+            "expected_branch_observation_sha256",
+            "expected_branch_policy_input_sha256",
+            "expected_branch_student_state_sha256",
+            "expected_branch_feature_history_sha256",
+            "expected_pre_branch_qpos_sha256",
+            "expected_pre_branch_qvel_sha256",
+            "expected_pre_branch_flat_sim_state_sha256",
+        ):
+            require_sha256(getattr(self, field), field=field)
+
+    @property
+    def payload_sha256(self) -> str:
+        return sha256_jsonable(asdict(self))
 
 
 def make_gripper_only_executed_action(
