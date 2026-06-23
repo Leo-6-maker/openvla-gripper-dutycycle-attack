@@ -86,25 +86,29 @@ def evaluate_fsm(detector_cls, config, val_cells, teacher_labels):
             })
         total_disarms += n_disarm
 
-    # Coverage
-    n_trig = len(triggered)
-    coverage = n_trig / n_tv if n_tv > 0 else 0
+    # Episode-level aggregation — each cell contributes at most one event
     tv_triggered = [t for t in triggered if t["tv"]]
-    # K10
+    nc_triggered = [t for t in triggered if not t["tv"]]
+    n_tv_trig = len(tv_triggered)
+    n_nc_trig = len(nc_triggered)
+    n_all_trig = len(triggered)
+
+    coverage = n_tv_trig / n_tv if n_tv > 0 else 0
     k10_ok = sum(1 for t in tv_triggered if t.get("k10") is True)
     k10_rate = k10_ok / len(tv_triggered) if tv_triggered else 0
-    # Anchor error
     ages = [t["age"] for t in tv_triggered if t.get("age") is not None]
     median_age = float(np.median(ages)) if ages else -1
-    # False-early
-    fe = sum(1 for t in triggered if t.get("false_early") is True)
-    fe_rate = fe / len(triggered) if triggered else 0
-    # Post-release
-    pr = sum(1 for t in triggered if t.get("post_release") is True)
-    pr_rate = pr / len(triggered) if triggered else 0
-    # No-corridor abstain
-    nc_abstained = n_nc - sum(1 for t in triggered if not t["tv"])
+    fe_count = sum(1 for t in triggered if t.get("false_early") is True)
+    fe_rate = fe_count / n_all_trig if n_all_trig else 0
+    pr_count = sum(1 for t in triggered if t.get("post_release") is True)
+    pr_rate = pr_count / n_all_trig if n_all_trig else 0
+    nc_abstained = n_nc - n_nc_trig
     nc_rate = nc_abstained / n_nc if n_nc > 0 else 0
+
+    # Assertions
+    assert 0.0 <= coverage <= 1.0, f"coverage={coverage} out of [0,1]"
+    assert 0.0 <= nc_rate <= 1.0, f"nc_rate={nc_rate} out of [0,1]"
+    assert 0.0 <= k10_rate <= 1.0, f"k10={k10_rate} out of [0,1]"
     # Feature valid
     fv_ok = sum(1 for c in val_cells if c.get("fv_ok", True))
     fv_rate = fv_ok / len(val_cells) if val_cells else 0
@@ -123,10 +127,10 @@ def evaluate_fsm(detector_cls, config, val_cells, teacher_labels):
 
     ci = {}
     for k in ["coverage", "false_early", "post_release", "k10_containment", "no_corridor_abstain", "feature_valid_rate"]:
-        if k == "coverage": n, d = n_trig, n_tv
+        if k == "coverage": n, d = n_tv_trig, n_tv
         elif k == "k10_containment": n, d = k10_ok, len(tv_triggered) if tv_triggered else 0
-        elif k == "false_early": n, d = fe, len(triggered) if triggered else 0
-        elif k == "post_release": n, d = pr, len(triggered) if triggered else 0
+        elif k == "false_early": n, d = fe_count, n_all_trig
+        elif k == "post_release": n, d = pr_count, n_all_trig
         elif k == "no_corridor_abstain": n, d = nc_abstained, n_nc
         elif k == "feature_valid_rate": n, d = fv_ok, len(val_cells)
         else: continue
@@ -135,7 +139,7 @@ def evaluate_fsm(detector_cls, config, val_cells, teacher_labels):
 
     return {
         "gates": gates, "all_pass": all_pass, "passes": passes, "ci": ci,
-        "n_tv": n_tv, "n_nc": n_nc, "n_trig": n_trig,
+        "n_tv": n_tv, "n_nc": n_nc, "n_trig": n_all_trig,
         "silent_stalls": silent_stalls, "total_disarms": total_disarms,
     }
 
