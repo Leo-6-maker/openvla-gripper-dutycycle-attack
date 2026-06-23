@@ -61,7 +61,7 @@ def main():
     original_state_sha = compute_initial_state_hash(env)
 
     # Apply perturbation
-    env, obs, pert_spec = apply_perturbation(env, obs, args.perturbation_template, args.base_seed)
+    env, obs, pert_spec = apply_perturbation(env, obs, args.perturbation_template, args.base_seed, task_obj=task_obj)
     perturbed_state_sha = compute_initial_state_hash(env)
 
     obs = env.set_init_state(init_states[args.state_id])

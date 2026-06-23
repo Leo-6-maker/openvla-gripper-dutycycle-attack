@@ -34,19 +34,12 @@ def get_perturbation(template_id, base_seed=42):
     return dx, dy, dyaw
 
 
-def apply_perturbation(env, obs, template_id, base_seed=42, verify=True):
+def apply_perturbation(env, obs, template_id, base_seed=42, task_obj=None, verify=True):
     """Apply perturbation to initial state. Returns (env, obs, spec_dict)."""
     dx, dy, dyaw = get_perturbation(template_id, base_seed)
 
     # Get object body name from BDDL
-    from libero.libero import benchmark, get_libero_path
-    task_obj = None
-    for t in benchmark.get_benchmark_dict()["libero_object"]().tasks:
-        if t.name == env.task_name:
-            task_obj = t
-            break
-    if task_obj is None:
-        raise ValueError(f"Task not found: {env.task_name}")
+    from libero.libero import get_libero_path
 
     obj_body = None
     bddl_path = Path(get_libero_path("bddl_files")) / task_obj.problem_folder / task_obj.bddl_file
