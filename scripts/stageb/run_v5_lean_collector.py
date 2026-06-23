@@ -117,7 +117,20 @@ def main():
         if step == 0:
             streamer = SC5StreamingFeatureAdapterV2()
             _first_valid = -1
-        feat_res = streamer.update(env_action, obs, step == 0)
+            _prev_eef = None
+        eef_vx = eef_pos[0] - _prev_eef[0] if _prev_eef is not None else 0.0
+        eef_vy = eef_pos[1] - _prev_eef[1] if _prev_eef is not None else 0.0
+        eef_vz = eef_pos[2] - _prev_eef[2] if _prev_eef is not None else 0.0
+        _prev_eef = eef_pos.copy()
+        qpos_sum = float(env.sim.data.qpos[-2:].sum())
+        feat_res = streamer.update(
+            step_id=step, raw_gripper=float(action[-1]), env_gripper=float(env_action[-1]),
+            gripper_qpos=qpos_sum, gripper_opening_proxy=qpos_sum,
+            eef_x=float(eef_pos[0]), eef_y=float(eef_pos[1]), eef_z=float(eef_pos[2]),
+            eef_vx=eef_vx, eef_vy=eef_vy, eef_vz=eef_vz,
+            action_dx=float(env_action[0]), action_dy=float(env_action[1]),
+            action_dz=float(env_action[2]), action_gripper=float(env_action[-1]),
+            is_first=(step == 0))
         if feat_res.get("valid"):
             if _first_valid < 0: _first_valid = step
             dec = detector.update(feat_res["features"], step)
