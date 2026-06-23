@@ -859,6 +859,147 @@ def test_c3_prefix_replay_runtime_does_not_call_snapshot_restore():
     assert "get_observation_after_restore(" not in canary_source
 
 
+def _build_c3_canary_selected_fixture():
+    branch_step = 2
+    parent = make_parent(
+        suite="libero_goal",
+        task_idx=4,
+        state_id=1,
+        eval_seed=0,
+        parent_key="libero_goal|4|1|0|CLEAN",
+        unnorm_key="libero_goal",
+        detector_checkpoint_sha256=EXPECTED_M2_CHECKPOINT_SHA256_BY_SUITE["libero_goal"],
+    )
+    prefix_trace, _branch_reference, branch_action, branch_tokens, _branch_env_action = _build_prefix_replay_fixture(
+        branch_step=branch_step
+    )
+    reference_env = _MockEnv(step=0)
+    reference_student = _MockStudent()
+    policy = _MockPolicy()
+    obs = reference_env.get_observation_after_restore()
+    for step, row in enumerate(prefix_trace):
+        update_student_for_step(reference_student, step=step, obs=obs, action=row["raw_action"], tokens=row["tokens"])
+        obs, _reward, _done, _info = reference_env.step_env_action(row["env_action"])
+    branch_pre = prefix_replay_state_hashes(env=reference_env, obs=obs, student=reference_student, policy=policy)
+    update_student_for_step(reference_student, step=branch_step, obs=obs, action=branch_action, tokens=branch_tokens)
+    branch_post_update = prefix_replay_state_hashes(
+        env=reference_env, obs=obs, student=reference_student, policy=policy
+    )
+    prefix = build_prefix_snapshot(
+        parent=parent,
+        emit_step=branch_step,
+        observation=obs,
+        mujoco_state=capture_mujoco_state(reference_env),
+        policy_rng_state=capture_policy_rng_state(policy),
+        student_state=capture_student_state(reference_student),
+        feature_history=capture_feature_history(reference_student),
+        source_episode_relpath="mock_c3",
+    )
+    snapshot = ExactRestoreSnapshotPayload(
+        prefix=prefix,
+        parent_manifest=parent,
+        mujoco_state=capture_mujoco_state(reference_env),
+        env_internal_state=capture_env_internal_state(reference_env),
+        policy_rng_state=capture_policy_rng_state(policy),
+        student_state=capture_student_state(reference_student),
+        feature_history=capture_feature_history(reference_student),
+        observation=obs,
+        clean_action_t=branch_action,
+        clean_tokens_t=branch_tokens,
+    )
+    runtime = Layer3RuntimeReceipt(
+        cuda_visible_devices="",
+        ordered_gpu_uuids=[],
+        device_count=0,
+        torch_version="mock",
+        cuda_runtime="mock",
+        driver_version="mock",
+        libero_version="mock",
+        mujoco_version="mock",
+        openvla_generation_kwargs={"do_sample": False, "temperature": 0.0},
+    )
+    return {
+        "snapshot": snapshot,
+        "prefix_trace": prefix_trace,
+        "env_adapter": reference_env,
+        "student": reference_student,
+        "policy": policy,
+        "runtime": runtime,
+        "dependency": {"mock_dependency": "1" * 64},
+        "branch_pre_hashes": branch_pre,
+        "branch_post_student_update_hashes": branch_post_update,
+        "instruction": "mock instruction",
+    }
+
+
+def test_c3_canary_writes_required_artifacts(tmp_path, monkeypatch):
+    selected = _build_c3_canary_selected_fixture()
+    replay_env = _MockEnv(step=0)
+
+    monkeypatch.setattr(runner_mod, "RealLiberoEnvAdapter", lambda env: env)
+    monkeypatch.setattr(
+        runner_mod,
+        "build_real_env_for_candidate",
+        lambda **_kwargs: (replay_env, replay_env.get_observation_after_restore(), object(), object()),
+    )
+    monkeypatch.setattr(
+        runner_mod,
+        "load_real_policy_and_student",
+        lambda *_args, **_kwargs: (_MockPolicy(), _MockStudent(), object(), object()),
+    )
+    monkeypatch.setattr(runner_mod, "release_real_policy", lambda _policy: None)
+
+    args = SimpleNamespace(
+        output_dir=str(tmp_path),
+        mock=False,
+        real_libero_single_parent=True,
+        suite="libero_goal",
+        model_path="/mock/model",
+        unnorm_key="libero_goal",
+        detector_path="/mock/detector.pt",
+        render_gpu=1,
+        eval_seed=0,
+        state_start=1,
+        state_end=1,
+        task_count=10,
+        candidate_manifest="/mock/candidate.csv",
+        observation_audit_only=False,
+        captured_prefix_canary_only=False,
+        transition_state_audit_only=False,
+        control_state_ablation_only=False,
+        exact_action_prefix_replay_canary_only=True,
+        max_steps=400,
+        repetitions=1,
+    )
+
+    output_dir = tmp_path / "canary"
+    result = run_exact_action_prefix_replay_canary(args=args, selected=selected, output_dir=output_dir)
+
+    assert result["result"] == "PASS"
+    required = {
+        "run_manifest.json",
+        "parent_dependency_manifest.json",
+        "runtime_receipt.json",
+        "dependency_receipt.json",
+        "dummy_wait_trace.jsonl",
+        "original_prefix_trace.jsonl",
+        "replay_prefix_trace.jsonl",
+        "prefix_replay_step_diff.csv",
+        "prefix_replay_first_divergence.json",
+        "branch_boundary_manifest.json",
+        "branch_action_exactness.json",
+        "post_branch_reference_state.json",
+        "post_branch_replay_state.json",
+        "post_branch_diff.csv",
+        "c3_prefix_replay_summary.json",
+        "recursive_sha256_manifest.csv",
+    }
+    assert required <= {p.name for p in output_dir.iterdir() if p.is_file()}
+    seal_rows = list(csv.DictReader((output_dir / "recursive_sha256_manifest.csv").open(newline="", encoding="utf-8")))
+    sealed = {row["path"] for row in seal_rows}
+    assert required - {"recursive_sha256_manifest.csv"} <= sealed
+
+
 def test_typed_prefix_artifact_roundtrip_preserves_agentview(tmp_path):
     parent = make_parent()
     obs = {"agentview_image": np.arange(12, dtype=np.uint8).reshape(2, 2, 3)}

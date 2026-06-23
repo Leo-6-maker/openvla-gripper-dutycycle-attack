@@ -16,9 +16,11 @@ import hashlib
 import json
 import math
 import os
+import platform
 import random
 import subprocess
 import sys
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Callable, Mapping, Protocol, Sequence
@@ -1024,6 +1026,64 @@ def write_agentview_diff_artifacts(output_dir: Path, *, prefix: Mapping[str, Any
 def write_json(path: Path, obj: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(obj, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+
+
+def _safe_command_text(command: Sequence[str], *, timeout: int = 15) -> str:
+    try:
+        proc = subprocess.run(
+            list(command),
+            check=False,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=timeout,
+        )
+        return proc.stdout
+    except Exception as exc:
+        return f"COMMAND_FAILED:{type(exc).__name__}:{exc}\n"
+
+
+def _safe_git_text(args: Sequence[str]) -> str:
+    return _safe_command_text(["git", *args], timeout=10).strip()
+
+
+def write_text_snapshot(path: Path, command: Sequence[str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("$ " + " ".join(command) + "\n" + _safe_command_text(command), encoding="utf-8")
+
+
+def write_gpu_and_kernel_snapshots(output_dir: Path, *, suffix: str) -> None:
+    write_text_snapshot(output_dir / f"GPU_{suffix}.txt", ["nvidia-smi"])
+    if os.name == "nt":
+        (output_dir / f"dmesg_{suffix}.txt").write_text("NOT_AVAILABLE_ON_WINDOWS\n", encoding="utf-8")
+    else:
+        write_text_snapshot(output_dir / f"dmesg_{suffix}.txt", ["bash", "-lc", "dmesg --ctime | tail -n 200"])
+
+
+def write_run_manifest(output_dir: Path, args: argparse.Namespace, *, stage: str) -> None:
+    env_keys = (
+        "CUDA_VISIBLE_DEVICES",
+        "CUDA_DEVICE_ORDER",
+        "PYTHONHASHSEED",
+        "CUBLAS_WORKSPACE_CONFIG",
+        "OPENVLA_ATTN_IMPLEMENTATION",
+        "TOKENIZERS_PARALLELISM",
+    )
+    manifest = {
+        "stage": stage,
+        "argv": list(sys.argv),
+        "args": vars(args),
+        "cwd": str(Path.cwd()),
+        "repo": str(REPO),
+        "git_head": _safe_git_text(["rev-parse", "HEAD"]),
+        "git_branch": _safe_git_text(["branch", "--show-current"]),
+        "git_status_short": _safe_git_text(["status", "--short"]),
+        "python": sys.version,
+        "platform": platform.platform(),
+        "time_unix": time.time(),
+        "environment": {key: os.environ.get(key, "") for key in env_keys},
+    }
+    write_json(output_dir / "run_manifest.json", manifest)
 
 
 def sha256_file(path: Path) -> str:
@@ -2049,6 +2109,24 @@ def run_exact_action_prefix_replay_from_trace(
         raise PrefixReplayDivergence("POST_BRANCH_TRANSITION_MISMATCH reward")
     if "post_branch_done" in branch_reference and bool(branch_reference["post_branch_done"]) != bool(done_51):
         raise PrefixReplayDivergence("POST_BRANCH_TRANSITION_MISMATCH done")
+    post_branch_diff_rows = []
+    for actual_field, expected_field in (
+        ("qpos_sha256", "post_branch_qpos_sha256"),
+        ("qvel_sha256", "post_branch_qvel_sha256"),
+        ("flat_sim_state_sha256", "post_branch_flat_sim_state_sha256"),
+        ("observation_sha256", "post_branch_observation_sha256"),
+    ):
+        actual_value = post_branch.get(actual_field, "")
+        expected_value = branch_reference.get(expected_field, "")
+        post_branch_diff_rows.append(
+            {
+                "field": actual_field,
+                "expected_field": expected_field,
+                "actual": actual_value,
+                "expected": expected_value,
+                "exact": bool(actual_value == expected_value),
+            }
+        )
     return {
         "stage": "C3_EXACT_ACTION_PREFIX_REPLAY_ONE_STEP",
         "result": "PASS",
@@ -2064,6 +2142,13 @@ def run_exact_action_prefix_replay_from_trace(
         "post_branch_sim_state_exact": post_branch.get("flat_sim_state_sha256")
         == branch_reference.get("post_branch_flat_sim_state_sha256", post_branch.get("flat_sim_state_sha256")),
         "replay_prefix_rows": replay_rows,
+        "branch_action_exactness": {
+            "tokens": token_report,
+            "raw_action": action_report,
+            "env_action": env_action_report,
+            "student_emit_exact": True,
+        },
+        "post_branch_diff_rows": post_branch_diff_rows,
     }
 
 
@@ -3485,6 +3570,7 @@ def run_exact_action_prefix_replay_canary(
     output_dir: Path,
 ) -> dict[str, Any]:
     output_dir.mkdir(parents=True, exist_ok=False)
+    write_run_manifest(output_dir, args, stage="C3_EXACT_ACTION_PREFIX_REPLAY_ONE_STEP")
     snapshot: ExactRestoreSnapshotPayload = selected["snapshot"]
     validate_transition_state_audit_known_parent(snapshot)
     prefix_trace = [dict(row) for row in selected.get("prefix_trace", [])]
@@ -3496,6 +3582,16 @@ def run_exact_action_prefix_replay_canary(
     write_json(output_dir / "runtime_receipt.json", asdict(selected["runtime"]))
     write_json(output_dir / "dependency_receipt.json", selected["dependency"])
     write_jsonl(output_dir / "original_prefix_trace.jsonl", prefix_trace)
+    write_jsonl(
+        output_dir / "dummy_wait_trace.jsonl",
+        [
+            {
+                "stage": "C3_EXACT_ACTION_PREFIX_REPLAY_ONE_STEP",
+                "status": "NOT_RUN",
+                "reason": "exact action-prefix replay uses recorded env_action prefix, not dummy wait restore",
+            }
+        ],
+    )
     prefix_trace_sha = sha256_jsonable(prefix_trace)
     (output_dir / "prefix_trace_sha256.txt").write_text(prefix_trace_sha + "\n", encoding="utf-8")
 
@@ -3564,6 +3660,9 @@ def run_exact_action_prefix_replay_canary(
         write_json(output_dir / "post_branch_replay_state.json", result)
         write_json(output_dir / "c3_prefix_replay_summary.json", result)
         write_dict_csv(output_dir / "prefix_replay_step_diff.csv", result["replay_prefix_rows"])
+        write_jsonl(output_dir / "replay_prefix_trace.jsonl", result["replay_prefix_rows"])
+        write_json(output_dir / "branch_action_exactness.json", result["branch_action_exactness"])
+        write_dict_csv(output_dir / "post_branch_diff.csv", result["post_branch_diff_rows"])
         write_json(output_dir / "prefix_replay_first_divergence.json", {"first_divergence": None})
     except PrefixReplayDivergence as exc:
         failure = {
@@ -3799,6 +3898,8 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
     if out.exists() and any(out.iterdir()):
         raise ExactRestoreError(f"output dir exists and is non-empty: {out}")
     out.mkdir(parents=True, exist_ok=True)
+    write_run_manifest(out, args, stage="REAL_LIBERO_SINGLE_PARENT")
+    write_gpu_and_kernel_snapshots(out, suffix="before")
     model_binding = validate_real_openvla_model_binding(
         suite=args.suite,
         model_path=args.model_path,
@@ -3862,6 +3963,7 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
             "selected_candidate": candidates[selected_idx],
             "audit_summary": audit_summary,
         }
+        write_gpu_and_kernel_snapshots(out, suffix="after")
         seal = write_recursive_manifest(out)
         final["recursive_sha256_manifest_sha256"] = seal
         write_json(out / "single_parent_restore_qualification_summary.json", final)
@@ -3887,6 +3989,7 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
             "selected_candidate": candidates[selected_idx],
             "ablation_summary": ablation_summary,
         }
+        write_gpu_and_kernel_snapshots(out, suffix="after")
         seal = write_recursive_manifest(out)
         final["recursive_sha256_manifest_sha256"] = seal
         write_json(out / "single_parent_restore_qualification_summary.json", final)
@@ -3923,6 +4026,7 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
                 "A800_FORMAL",
             ],
         }
+        write_gpu_and_kernel_snapshots(out, suffix="after")
         seal = write_recursive_manifest(out)
         final["recursive_sha256_manifest_sha256"] = seal
         write_json(out / "single_parent_restore_qualification_summary.json", final)
@@ -3947,6 +4051,7 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
         except Exception:
             pass
         release_real_policy(selected.get("policy"))
+        write_gpu_and_kernel_snapshots(out, suffix="after")
         seal = write_recursive_manifest(out)
         write_json(
             out / "single_parent_restore_qualification_summary.json",
@@ -3976,6 +4081,7 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
             "selected_candidate": candidates[selected_idx],
             "canary": canary_summary,
         }
+        write_gpu_and_kernel_snapshots(out, suffix="after")
         seal = write_recursive_manifest(out)
         final["recursive_sha256_manifest_sha256"] = seal
         write_json(out / "single_parent_restore_qualification_summary.json", final)
@@ -4022,6 +4128,7 @@ def run_real_libero_single_parent(args: argparse.Namespace) -> None:
         "Forbidden claims: VIS/RAND/shuffled/oracle/attack effectiveness.",
     ]
     (out / "single_parent_restore_qualification_report.md").write_text("\n".join(report) + "\n", encoding="utf-8")
+    write_gpu_and_kernel_snapshots(out, suffix="after")
     seal = write_recursive_manifest(out)
     final["recursive_sha256_manifest_sha256"] = seal
     write_json(out / "single_parent_restore_qualification_summary.json", final)
