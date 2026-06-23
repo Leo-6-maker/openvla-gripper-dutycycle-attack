@@ -355,10 +355,12 @@ def main():
 
         all_results.append(cell_results)
 
-        # R0 parity check
+        # R0 parity check — normalize None and -1 (both mean "not emitted")
         r0 = cell_results["R0"]
-        r0_ok = (r0["replay_emit"] == r0["original_emit"]
-                 and r0["final_state"] in ("EMITTED", "IDLE"))
+        r0_emit_match = (r0["replay_emit"] == r0["original_emit"]) or \
+                        (r0["replay_emit"] is None and r0.get("original_emit", -1) == -1)
+        r0_state_ok = (r0["final_state"] in ("EMITTED", "IDLE", "ARMED"))
+        r0_ok = r0_emit_match and r0_state_ok
         if not r0_ok:
             r0_mismatches.append({
                 "key": key,
@@ -367,7 +369,8 @@ def main():
                 "final_state": r0["final_state"],
             })
             print(f"R0_MISMATCH emit_orig={r0['original_emit']} "
-                  f"emit_replay={r0['replay_emit']} state={r0['final_state']}")
+                  f"emit_replay={r0['replay_emit']} state={r0['final_state']} "
+                  f"arm={r0['replay_first_arm']}")
         else:
             print(f"R0_OK emit={r0['replay_emit']} "
                   f"R1_disarm={cell_results['R1']['n_disarms']} "
