@@ -1,0 +1,36 @@
+{
+  "gate": "M1C_V4_GPU0_REPAIR_LIVE_SNAPSHOT",
+  "captured_at": "2026-06-24T00:05:00+08:00",
+  "status": "RUNNING_AT_CAPTURE",
+  "gpu": {
+    "index": 0,
+    "uuid": "GPU-bf4309d3-8cba-437e-8d87-cee9f1e6d232",
+    "name": "NVIDIA A800-SXM4-80GB"
+  },
+  "reason": "GPU3 (index 3) hit CUDA OOM at task5_state24. 52 remaining cells reassigned to GPU0.",
+  "original_shard": "GPU3 train states 16-27",
+  "remaining_cells": [
+    {"task": 5, "state": 24}, {"task": 5, "state": 25}, {"task": 5, "state": 26}, {"task": 5, "state": 27},
+    {"task": 6, "state": 16}, {"task": 6, "state": 17}, {"task": 6, "state": 18}, {"task": 6, "state": 19},
+    {"task": 6, "state": 20}, {"task": 6, "state": 21}, {"task": 6, "state": 22}, {"task": 6, "state": 23},
+    {"task": 6, "state": 24}, {"task": 6, "state": 25}, {"task": 6, "state": 26}, {"task": 6, "state": 27},
+    {"task": 7, "state": 16}, {"task": 7, "state": 17}, {"task": 7, "state": 18}, {"task": 7, "state": 19},
+    {"task": 7, "state": 20}, {"task": 7, "state": 21}, {"task": 7, "state": 22}, {"task": 7, "state": 23},
+    {"task": 7, "state": 24}, {"task": 7, "state": 25}, {"task": 7, "state": 26}, {"task": 7, "state": 27},
+    {"task": 8, "state": 16}, {"task": 8, "state": 17}, {"task": 8, "state": 18}, {"task": 8, "state": 19},
+    {"task": 8, "state": 20}, {"task": 8, "state": 21}, {"task": 8, "state": 22}, {"task": 8, "state": 23},
+    {"task": 8, "state": 24}, {"task": 8, "state": 25}, {"task": 8, "state": 26}, {"task": 8, "state": 27},
+    {"task": 9, "state": 16}, {"task": 9, "state": 17}, {"task": 9, "state": 18}, {"task": 9, "state": 19},
+    {"task": 9, "state": 20}, {"task": 9, "state": 21}, {"task": 9, "state": 22}, {"task": 9, "state": 23},
+    {"task": 9, "state": 24}, {"task": 9, "state": 25}, {"task": 9, "state": 26}, {"task": 9, "state": 27}
+  ],
+  "total_remaining": 52,
+  "asset_shas": {
+    "detector_checkpoint": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+    "bridge_script": "fd594b3f9b38f4545d7b19202b380c0f4eeb0e9d95cb566f2fbca7b1852b208e",
+    "launch_script": "0dc8fd604ea9a3e63f919f2c38f90987bf0db7bb9f3eae19e3d43dabebee5c98",
+    "v4_runner_local": "20a54f68efd63d7cf61bc81233e325615f8a3d90f0bbfbb66b904e9c1b106e7e"
+  },
+  "launch_command": "bash /tmp/launch_train_fill.sh (modifed from launch_v4 to only run GPU0 on states 16-27)",
+  "output_log": "/mnt/sdc/dty_user/openvla_attack/evidence/m1c/object_clean_corpus/train_fill.log"
+}

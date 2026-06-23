@@ -6,7 +6,7 @@ full 64-char asset SHA, n_steps consistency, trajectory duplicate, per-pool
 counts, cross-split two-pass leakage, recursive output SHA manifest.
 Fail-closed: any anomaly → non-zero exit.
 """
-import os, sys, json, csv, hashlib, argparse
+import os, sys, json, csv, hashlib, argparse, re
 from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
@@ -45,6 +45,25 @@ def semantic_key(task, state, profile="B0"):
     return f"{profile}_task{task}_state{state}"
 
 
+def parse_state_range(value):
+    """Parse '3-27' or '28-37 inclusive' → (lo, hi). Fails on garbage."""
+    m = re.fullmatch(r"\s*(\d+)\s*-\s*(\d+)(?:\s+inclusive)?\s*", str(value))
+    if not m:
+        raise ValueError(f"Invalid state range: {value!r}")
+    lo, hi = int(m.group(1)), int(m.group(2))
+    if lo > hi:
+        raise ValueError(f"Reversed state range: {value!r}")
+    return lo, hi
+
+
+def _malformed_cell_name(name):
+    """Check cell dir name format: task<N>_state<N>. Returns (task,state) or None."""
+    m = re.fullmatch(r"task(\d+)_state(\d+)", name)
+    if not m:
+        return None
+    return int(m.group(1)), int(m.group(2))
+
+
 def scan_filesystem(output_root):
     """Scan filesystem. Returns {storage_key: {pool, task, state, path}}."""
     cells = {}
@@ -58,12 +77,10 @@ def scan_filesystem(output_root):
         for cell_dir in pool_dir.iterdir():
             if not cell_dir.is_dir():
                 continue
-            try:
-                parts = cell_dir.name.split("_")
-                task = int(parts[0].replace("task", ""))
-                state = int(parts[1].replace("state", ""))
-            except (ValueError, IndexError):
+            parsed = _malformed_cell_name(cell_dir.name)
+            if parsed is None:
                 continue
+            task, state = parsed
             key = storage_key(pool, task, state)
             if key in cells:
                 raise SystemExit(f"DUPLICATE_STORAGE_KEY: {key} appears in multiple locations")
@@ -116,11 +133,7 @@ def main():
             continue
         for cell_dir in pool_dir.iterdir():
             if not cell_dir.is_dir(): continue
-            try:
-                parts = cell_dir.name.split("_")
-                int(parts[0].replace("task",""))
-                int(parts[1].replace("state",""))
-            except (ValueError, IndexError):
+            if _malformed_cell_name(cell_dir.name) is None:
                 errors["malformed_directory"].append(str(cell_dir.relative_to(corpus_root)))
 
     # ── Completeness ─────────────────────────────────────────────────
@@ -141,7 +154,7 @@ def main():
         for t in pi.get("tasks",[]):
             rng = pi.get("states","")
             if "-" in str(rng):
-                lo, hi = map(int, rng.split("-"))
+                lo, hi = parse_state_range(str(rng))
                 for s in range(lo, hi+1):
                     if pn == "train": sm_train_states.add((t,s))
                     else: sm_val_states.add((t,s))
