@@ -5,8 +5,8 @@
 ```text
 CODEX_SERVER: 2080Ti
 CURRENT_PARENT: libero_goal|4|1|0|CLEAN
-CURRENT_GATE: C2_CONTROL_STATE_CAUSAL_ABLATION_PREP
-CURRENT_FAILURE: PRE_STEP_CONTROL_STACK_STATE_MISMATCH
+CURRENT_GATE: C2_CONTROL_STATE_CAUSAL_ABLATION
+CURRENT_FAILURE: ONE_STEP_POST_ACTION_EXACT_FAIL
 
 Layer1: FROZEN_PASS
 Layer2: FROZEN_ENGINEERING_PASS
@@ -16,6 +16,7 @@ Known Goal online emit: PASS
 Captured-prefix first action/tokens: PASS
 Post-action environment transition: FAIL
 C1 transition-state audit: PASS
+C2 control-state causal ablation: FAIL
 
 R2: NO_GO
 FORMAL_RESTORE_3X: NO_GO
@@ -27,7 +28,7 @@ A800_FORMAL_CROSS_SUITE: NO_GO
 
 ```text
 PR: #38
-current head: 03a7a63963068c27db6ae315f0f5b71f52e6cfe7
+current head: fc369ee4d04970c1a0f159108de77a1af089637e
 C0_EVIDENCE_FREEZE: PASS
 
 known parent:
@@ -101,14 +102,50 @@ It does not prove that `J_full` is authoritative state, that controller goal is
 the unique root cause, or that `qacc` must be permanently added to the restore
 payload.
 
-## Next Authorized Work
+## C2 Control-State Causal Ablation
 
 ```text
-C2_CONTROL_STATE_CAUSAL_ABLATION
-Condition: remote CI green after moving codex_known_parent_manifest out of artifacts/
-Scope: same known Goal parent only
-Method: derived-cache recompute first, then strict mutable-state ablations
+commit: fc369ee4d04970c1a0f159108de77a1af089637e
+output:
+/data/liuyu/layer3_outputs/control_state_ablation_goal_t4_s1_fc369ee_gpu13_20260623_095011
+
+result: C2_ONE_STEP_POST_ACTION_STILL_DIVERGES
+passing_ablation_count: 0
+passing_ablations: []
+recursive_sha256_manifest_sha256:
+6ddd1e5bac89db3aac953b4e59d0d3fff46f1f07b42b66872c16418cf450d4e8
 ```
+
+C2 tested the approved whitelist sequence on the same known Goal parent:
+
+```text
+A0_BASELINE
+A1_DERIVED_RECOMPUTE
+A2_GOAL_STATE
+A3_GOAL_INTERPOLATOR_STATE
+A4_GOAL_INTERPOLATOR_ACTION_HISTORY
+A5_QACC_ABLATION
+```
+
+No ablation recovered one-step post-action qpos/qvel exactness. Restoring
+controller goal state reduced the pre-step mismatch, but the transition still
+diverged. Interpolator, action-history/counter, and explicit qacc ablation also
+failed to recover the transition.
+
+## Next Gate
+
+```text
+FIVE_STEP_CANARY: NO_GO
+FORMAL_RESTORE_3X: NO_GO
+R2: NO_GO
+VIS_RAND_SHUFFLED_ATTACK: NO_GO
+```
+
+Given the stop-loss policy, the controller snapshot route should stop here
+pending review. A likely next engineering direction is `EXACT_ACTION_PREFIX_REPLAY`,
+which would rebuild controller goals, interpolator phase, previous action
+buffers, derived caches, and solver history through the action prefix instead
+of attempting to serialize a wider controller state.
 
 Forbidden until a later gate:
 
