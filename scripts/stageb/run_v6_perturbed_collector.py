@@ -33,10 +33,13 @@ ap.add_argument("--output_dir", required=True)
 ap.add_argument("--render_gpu", type=int, required=True)
 ap.add_argument("--mlp_path", default="outputs/sc5_canonical_eng/sc5_mlp_s2.pt")
 ap.add_argument("--perturbation_template", default="P0", choices=["P0","P1","P2","P3","P4","P5","P6","P7"])
+ap.add_argument("--pool", default="smoke", choices=["train","dev","smoke"], help="Split pool (written to telemetry + summary + .done)")
+ap.add_argument("--vla_manifest_sha256", default="", help="Pre-computed VLA model manifest SHA (avoids re-hashing 7B shards)")
 args = ap.parse_args()
 
 STATE_ID = args.state_id; ANCHOR = 0  # dummy — CLEAN only
 CONDITION = "CLEAN"; ATTACK_FRAMES = 0
+POOL = args.pool
 
 run_uuid = str(uuid.uuid4())[:8]
 cell_uuid = str(uuid.uuid4())[:12]
@@ -200,7 +203,38 @@ if actual_body_pos[2] < 0.01:
     env.close()
     raise ValueError("Perturbation pushed object below table: z=%.4f" % actual_body_pos[2])
 
-env, obs = apply_dummy_wait(env, obs, 10)
+# Pose tolerance assertions (fail-closed)
+if pert_template != "P0":
+    actual_dx = float(actual_body_pos[0] - orig_body_pos[0])
+    actual_dy = float(actual_body_pos[1] - orig_body_pos[1])
+    tol_xy = 0.001  # 1mm tolerance
+    if abs(actual_dx - dx) > tol_xy:
+        env.close()
+        raise RuntimeError("POSE_DX_MISMATCH: requested=%.4f actual=%.4f" % (dx, actual_dx))
+    if abs(actual_dy - dy) > tol_xy:
+        env.close()
+        raise RuntimeError("POSE_DY_MISMATCH: requested=%.4f actual=%.4f" % (dy, actual_dy))
+    if dyaw != 0:
+        from scipy.spatial.transform import Rotation
+        actual_rot = Rotation.from_quat([
+            float(actual_body_quat[1]), float(actual_body_quat[2]),
+            float(actual_body_quat[3]), float(actual_body_quat[0])])
+        orig_rot = Rotation.from_quat([
+            float(orig_body_quat[1]), float(orig_body_quat[2]),
+            float(orig_body_quat[3]), float(orig_body_quat[0])])
+        actual_dyaw = float((orig_rot.inv() * actual_rot).as_euler('xyz')[2])
+        if abs(actual_dyaw - dyaw) > np.deg2rad(1.0):
+            env.close()
+            raise RuntimeError("POSE_DYAW_MISMATCH: requested=%.4f actual=%.4f" % (dyaw, actual_dyaw))
+
+# ── Post-dummy-wait state capture ──
+rollout_start_sha = _state_sha256(env)
+rollout_start_body_pos = env.sim.data.body_xpos[body_id].copy()
+rollout_start_body_quat = env.sim.data.body_xquat[body_id].copy()
+
+print("Post-wait: sha=%s pos=(%.4f,%.4f,%.4f)" % (
+    rollout_start_sha[:16],
+    float(rollout_start_body_pos[0]), float(rollout_start_body_pos[1]), float(rollout_start_body_pos[2])))
 
 _task_name = task_obj.name
 _obj_key = _task_name.replace("pick_up_the_","").replace("_and_place_it_in_the_basket","")
@@ -321,16 +355,32 @@ target_resolver_sha = hashlib.sha256(target_resolver_path.read_bytes()).hexdiges
 pert_gen_path = REPO / "src/gripper_attack/v5_perturbation.py"
 pert_gen_sha = hashlib.sha256(pert_gen_path.read_bytes()).hexdigest() if pert_gen_path.exists() else "MISSING"
 
-# ── VLA model manifest SHA (hash of sorted shard list + config) ──
-model_dir = Path(MODEL_PATH)
-vla_manifest_lines = sorted(
-    "%s %s" % (f.relative_to(model_dir), hashlib.sha256(f.read_bytes()).hexdigest())
-    for f in model_dir.rglob("*") if f.is_file())
-vla_manifest_sha = hashlib.sha256("\n".join(vla_manifest_lines).encode()).hexdigest()
+# ── VLA model manifest SHA ──
+if args.vla_manifest_sha256:
+    vla_manifest_sha = args.vla_manifest_sha256
+else:
+    model_dir = Path(MODEL_PATH)
+    vla_manifest_lines = sorted(
+        "%s %s" % (f.relative_to(model_dir), hashlib.sha256(f.read_bytes()).hexdigest())
+        for f in model_dir.rglob("*") if f.is_file())
+    vla_manifest_sha = hashlib.sha256("\n".join(vla_manifest_lines).encode()).hexdigest()
+    print("VLA manifest SHA computed: %s (pass --vla_manifest_sha256 to skip)" % vla_manifest_sha[:16])
 
 # ── Atomic completion protocol ──
 final_dir = Path(args.output_dir)
-tmp_dir = final_dir.with_name(final_dir.name + ".tmp")
+done_file = final_dir / ".done"
+
+# P0-4: fail-closed on existing complete cell
+if done_file.exists():
+    raise RuntimeError("CELL_ALREADY_COMPLETE: %s exists — refusing to overwrite" % str(done_file))
+
+# Remove stale partial (no .done) — quarantine instead of rmtree
+if final_dir.exists() and not done_file.exists():
+    stale_dir = final_dir.with_name(final_dir.name + ".stale_" + run_uuid)
+    os.rename(str(final_dir), str(stale_dir))
+    print("Moved stale partial to %s" % stale_dir)
+
+tmp_dir = final_dir.with_name(final_dir.name + ".tmp." + run_uuid)
 if tmp_dir.exists():
     shutil.rmtree(str(tmp_dir))
 tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -340,13 +390,14 @@ tel_path = tmp_dir / "step_telemetry.csv"
 with open(tel_path, "w", newline="") as f:
     w = csv.DictWriter(f, fieldnames=list(telemetry[0].keys()))
     w.writeheader(); w.writerows(telemetry)
+    f.flush(); os.fsync(f.fileno())
 tel_bytes = tel_path.read_bytes()
 tel_sha = hashlib.sha256(tel_bytes).hexdigest()
 
 # Build summary
 summary = {
     "run_uuid": run_uuid, "cell_uuid": cell_uuid, "exit_code": 0,
-    "pool": "train", "task_idx": TASK_IDX, "parent_state_id": STATE_ID,
+    "pool": POOL, "task_idx": TASK_IDX, "parent_state_id": STATE_ID,
     "condition": CONDITION, "attack_frames": 0,
     "n_steps": len(telemetry), "task_success": success,
     "perturbation_template": pert_template,
@@ -358,6 +409,7 @@ summary = {
     "invalid_feature_steps": _invalid_steps, "first_valid_step": _first_valid_step,
     "initial_state_sha256": original_state_sha,
     "perturbed_initial_state_sha256": perturbed_state_sha,
+    "rollout_start_post_wait_sha256": rollout_start_sha,
     "trajectory_content_sha256": tel_sha,
     "checkpoint_sha256": ckpt_sha,
     "dataset_sha256": detector.dataset_sha256,
@@ -376,6 +428,7 @@ summary = {
 ep_path = tmp_dir / "episode_summary.json"
 with open(ep_path, "w") as f:
     json.dump(summary, f, indent=2, default=str)
+    f.flush(); os.fsync(f.fileno())
 ep_bytes = ep_path.read_bytes()
 ep_sha = hashlib.sha256(ep_bytes).hexdigest()
 
@@ -391,24 +444,35 @@ if summary["attack_frames"] != 0:
     shutil.rmtree(str(tmp_dir))
     raise RuntimeError("ATTACK_FRAMES_NONZERO: %d" % summary["attack_frames"])
 
+# fsync tmp dir before rename
+os.fsync(os.open(str(tmp_dir), os.O_RDONLY))
+
 # Atomic rename
-if final_dir.exists():
-    shutil.rmtree(str(final_dir))
 os.rename(str(tmp_dir), str(final_dir))
 
-# .done LAST
+# fsync parent dir
+parent_dir = final_dir.parent
+os.fsync(os.open(str(parent_dir), os.O_RDONLY))
+
+# .done LAST — atomic via tmp + rename
+done_tmp = final_dir / ".done.tmp"
 done = {
     "exit_code": 0,
-    "telemetry_sha256": tel_sha,
+    "telemetry_sha": tel_sha,         # legacy schema (v2 bridge compat)
+    "telemetry_sha256": tel_sha,      # current schema
     "summary_sha256": ep_sha,
     "completed": time.strftime("%Y-%m-%dT%H:%M:%S+08:00"),
     "run_uuid": run_uuid, "cell_uuid": cell_uuid,
+    "pool": POOL,
 }
-with open(final_dir / ".done", "w") as f:
+with open(done_tmp, "w") as f:
     json.dump(done, f)
+    f.flush(); os.fsync(f.fileno())
+os.rename(str(done_tmp), str(done_file))
+os.fsync(os.open(str(final_dir), os.O_RDONLY))
 
-print("%s task=%d s%d emit=%d err=%d steps=%d succ=%s pert=%s orig_sha=%s pert_sha=%s" % (
-    CONDITION, TASK_IDX, STATE_ID, _mlp_emit,
+print("%s pool=%s task=%d s%d emit=%d err=%d steps=%d succ=%s pert=%s orig_sha=%s pert_sha=%s" % (
+    CONDITION, POOL, TASK_IDX, STATE_ID, _mlp_emit,
     (_mlp_emit - ANCHOR) if _mlp_emit >= 0 else -1,
     len(telemetry), success, pert_template,
     original_state_sha[:16], perturbed_state_sha[:16]))

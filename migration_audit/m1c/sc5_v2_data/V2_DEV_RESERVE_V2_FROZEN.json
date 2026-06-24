@@ -31,7 +31,7 @@
       "No yaw perturbations in dev (preserves simpler perturbation space for model selection)",
       "Actual (dx,dy,dyaw) recorded in episode_summary"
     ],
-    "base_seeds": {"P1": 50, "P2": 51, "P3": 52, "P4": 53}
+    "base_seeds": {"P1": 1000, "P2": 1001, "P3": 1002, "P4": 1003}
   },
 
   "latin_square_rule": {
