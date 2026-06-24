@@ -1,0 +1,15 @@
+{
+  "frozen_at": "2026-06-24T14:54:42+08:00",
+  "git_commit": "b0a5bf5",
+  "git_branch": "feature/sc5-video-export-20260618",
+  "bridge_script": "scripts/stageb/run_v2_vis_sc5_mlp_bridge.py",
+  "bridge_sha256": "fd594b3f9b38f4545d7b19202b380c0f4eeb0e9d95cb566f2fbca7b1852b208e",
+  "checkpoint_path": "artifacts/detector/sc5_mlp_s2.pt",
+  "checkpoint_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+  "launcher": "tmp/sc5_v2_collect.sh + tmp/sc5_v2_repair.sh",
+  "server": "pm-364c0001",
+  "collection_start": "2026-06-24T08:59:00+08:00",
+  "collection_end": "2026-06-24T12:44:22+08:00",
+  "teacher_labeling_end": "2026-06-24T12:50:00+08:00",
+  "integrity_verified_at": "2026-06-24T14:22:00+08:00"
+}

@@ -1,0 +1,62 @@
+{
+  "gate": "V2_DEV_RESERVE_V2",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-24T14:45:00+08:00",
+  "parent_commit": "b0a5bf5",
+  "amends": "SC5_V2_PRIMARY_250_AMENDMENT.json",
+
+  "constraints": {
+    "parent_states": "23-27 only (dev split)",
+    "no_legacy_validation_28_37": true,
+    "no_future_blind_38_49": true,
+    "condition": "CLEAN",
+    "attack_frames": 0,
+    "total_cells": 40,
+    "tasks": [0,1,2,3,4,5,6,7,8,9],
+    "profile": "B0 (BF16+Eager)"
+  },
+
+  "design_rationale": {
+    "why_40": "4 cells per task × 10 tasks = 40; protocol reserve spec called 80 but dev NC gap is only 6",
+    "why_uniform": [
+      "Dev labels CANNOT be used for targeted negative mining (dev is for model selection)",
+      "All task×state×perturbation combos pre-fixed before any dev label inspection",
+      "Uniform design ensures no selection bias toward NC or TV"
+    ],
+    "perturbation_strategy": [
+      "4 cells per task = 4 perturbation templates × 1 state each",
+      "Templates P1-P4 used (smaller set, deliberate: P5-P7 rotation may be too aggressive for dev)",
+      "Each task uses a different parent state from 23-27 to spread coverage",
+      "Actual (dx,dy,dyaw) recorded in episode_summary"
+    ]
+  },
+
+  "per_task_allocation": {
+    "task0": {"parent_state": 23, "templates": ["P1","P2","P3","P4"], "cells": 4},
+    "task1": {"parent_state": 24, "templates": ["P1","P2","P3","P4"], "cells": 4},
+    "task2": {"parent_state": 25, "templates": ["P1","P2","P3","P4"], "cells": 4},
+    "task3": {"parent_state": 26, "templates": ["P1","P2","P3","P4"], "cells": 4},
+    "task4": {"parent_state": 27, "templates": ["P1","P2","P3","P4"], "cells": 4},
+    "task5": {"parent_state": 23, "templates": ["P1","P2","P3","P4"], "cells": 4},
+    "task6": {"parent_state": 24, "templates": ["P1","P2","P3","P4"], "cells": 4},
+    "task7": {"parent_state": 25, "templates": ["P1","P2","P3","P4"], "cells": 4},
+    "task8": {"parent_state": 26, "templates": ["P1","P2","P3","P4"], "cells": 4},
+    "task9": {"parent_state": 27, "templates": ["P1","P2","P3","P4"], "cells": 4}
+  },
+
+  "perturbation_templates": {
+    "P1": {"dx_m": 0.005, "dy_m": 0.0, "dyaw_rad": 0.0},
+    "P2": {"dx_m": -0.005, "dy_m": 0.0, "dyaw_rad": 0.0},
+    "P3": {"dx_m": 0.0, "dy_m": 0.005, "dyaw_rad": 0.0},
+    "P4": {"dx_m": 0.0, "dy_m": -0.005, "dyaw_rad": 0.0}
+  },
+
+  "base_seeds": {
+    "P1": 42, "P2": 43, "P3": 44, "P4": 45
+  },
+
+  "collector_requirements": {
+    "same_as_train_reserve": true,
+    "verification": "Part of 10-task combined smoke"
+  }
+}
