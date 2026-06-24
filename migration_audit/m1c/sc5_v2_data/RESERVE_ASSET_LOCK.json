@@ -1,0 +1,25 @@
+{
+  "gate": "RESERVE_ASSET_LOCK",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-24T20:30:00+08:00",
+  "parent_commit": "cbcef7b",
+  "source": "Extracted from FORMAL_SMOKE_22_V2_RUN2 cell smoke_P0_t0_s3/episode_summary.json. All 22 cells were verified to have identical values (cross-cell auditor check PASS).",
+  "launcher_requirement": "Train reserve 80 launcher MUST fail-closed before first cell if any asset SHA does not match this lock.",
+
+  "assets": {
+    "collector_sha256": "d86e4fdaae0bb6b31cf6b6718f8ac316bb663c7d2baf8db0ba81b23b8bcaa4a7",
+    "bridge_sha256": "d86e4fdaae0bb6b31cf6b6718f8ac316bb663c7d2baf8db0ba81b23b8bcaa4a7",
+    "runner_sha256": "d86e4fdaae0bb6b31cf6b6718f8ac316bb663c7d2baf8db0ba81b23b8bcaa4a7",
+    "checkpoint_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+    "teacher_config_sha256": "ebc1ccda21cdfeae0f70f90ef0e433be3474ef0baa9cf52f609d620f863ce87a",
+    "target_resolver_sha256": "6394fe168c727c5ee82e995a52fa14f4d94dd15fc4344fdca85c30a776fc421a",
+    "perturbation_generator_sha256": "4761b004aa57282233fde5eb01c9860b0eb5ec1af00d8778d0bf36dd3950e4fc",
+    "vla_model_manifest_sha256": "7ee5316a971cfb47d5b11ec470803280e6b719c703b8fa3c3f3389616ae088a5",
+    "dataset_sha256": "f942f4b0856d3449fa4e98f6d6e74ac8d5e8e9af7082373f961f79b0a6930cd9",
+    "launcher_sha256": "9c061ba733e7dc7e3c42a9c00a9d05580ca6ab0394f5d0256b62cde4a94a7265",
+    "manifest_sha256": "b4dd3b886e5b3ab27ba4465b1ea1ec59df24ac38b94e45c58765fda8ca305423",
+    "auditor_sha256": "7c72420fdaf4d5803c194658af4c5fc514ce1d4726fda571072a16974707b772"
+  },
+
+  "verification_rule": "Before launching first reserve cell, compute SHA of each asset file and compare to frozen value. Mismatch on any of the 12 assets -> abort."
+}
