@@ -15,11 +15,15 @@ CANONICAL_FIELDS = [
 
 def canonical_hash(tel_path):
     rows = list(csv.DictReader(open(tel_path)))
-    h = hashlib.sha256()
-    for r in rows:
-        vals = [str(r.get(f, "")) for f in CANONICAL_FIELDS]
-        h.update("\x00".join(vals).encode())
-    return h.hexdigest()
+    if not rows:
+        return "EMPTY_CSV"
+    header = set(rows[0].keys())
+    missing = set(CANONICAL_FIELDS) - header
+    if missing:
+        return "MISSING_COLUMNS:" + ",".join(sorted(missing))
+    payload = [{f: row[f] for f in CANONICAL_FIELDS} for row in rows]
+    serialized = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(serialized).hexdigest()
 
 def wrap_pi(x):
     return (x + math.pi) % (2 * math.pi) - math.pi
@@ -197,10 +201,10 @@ def main():
                 errors += fail("[%d] %s row%d: template" % (i, out_name, j))
             if int(tr.get("perturbation_seed",-1)) != exp_seed:
                 errors += fail("[%d] %s row%d: seed" % (i, out_name, j))
-            # attack_this: field must exist and be False/0
+            # attack_this: field must exist and be False/0 (not empty)
             if "attack_this" not in tr:
                 errors += fail("[%d] %s row%d: missing attack_this" % (i, out_name, j))
-            elif tr["attack_this"] not in ("False", "0", ""):
+            elif tr["attack_this"] not in ("False", "0"):
                 errors += fail("[%d] %s row%d: attack_this=%s" % (i, out_name, j, tr["attack_this"]))
             # attack_count: field must exist and be 0
             if "attack_count" not in tr:
@@ -275,7 +279,7 @@ def main():
             post_dx = post_pos[0] - orig_pos[0]
             post_dy = post_pos[1] - orig_pos[1]
             if abs(post_dx - exp_dx) > 0.003:
-                errors += fail("[%d] %s: post-wait dx lost: exp=%.6f post_vs_orig=%.6f" % (i, out_name, exp_dx, post_dy))
+                errors += fail("[%d] %s: post-wait dx lost: exp=%.6f post_vs_orig=%.6f" % (i, out_name, exp_dx, post_dx))
             if abs(post_dy - exp_dy) > 0.003:
                 errors += fail("[%d] %s: post-wait dy lost: exp=%.6f post_vs_orig=%.6f" % (i, out_name, exp_dy, post_dy))
             drift = math.sqrt(sum((post_pos[j] - pert_pos[j])**2 for j in range(3)))
@@ -323,6 +327,10 @@ def main():
                     errors += fail("[%d] %s: P7 spec.dx_m mismatch manifest=%.15f spec=%.15f" % (i, out_name, exp_dx, float(ps["dx_m"])))
                 if "dy_m" in ps and abs(float(ps["dy_m"]) - exp_dy) > 1e-9:
                     errors += fail("[%d] %s: P7 spec.dy_m mismatch manifest=%.15f spec=%.15f" % (i, out_name, exp_dy, float(ps["dy_m"])))
+                if "template_id" in ps and ps["template_id"] != exp_tmpl:
+                    errors += fail("[%d] %s: P7 spec.template_id=%s expected=%s" % (i, out_name, ps["template_id"], exp_tmpl))
+                if "base_seed" in ps and int(ps["base_seed"]) != exp_seed:
+                    errors += fail("[%d] %s: P7 spec.base_seed=%s expected=%d" % (i, out_name, ps["base_seed"], exp_seed))
 
         # ── Replay canonical hash ──
         rg = row["replay_group"]
@@ -331,8 +339,9 @@ def main():
             replay_hashes[rg].append({"cell": out_name, "canonical_hash": ch})
 
     # ═══ Cross-cell asset SHA consistency ═══
-    asset_keys = ["bridge_sha256","checkpoint_sha256","teacher_config_sha256",
-                  "target_resolver_sha256","perturbation_generator_sha256",
+    asset_keys = ["bridge_sha256","runner_sha256","checkpoint_sha256",
+                  "teacher_config_sha256","target_resolver_sha256",
+                  "perturbation_generator_sha256",
                   "vla_model_manifest_sha256","dataset_sha256"]
     for key in asset_keys:
         values = set()

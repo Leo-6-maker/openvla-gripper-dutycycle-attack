@@ -111,7 +111,7 @@ with open('$OUTBASE/negative_duplicate_test.json','w') as f:
         'final_ep_sha': '$NEW_EP_SHA',
     }, f, indent=2)
 "
-echo "Negative test: rc=$NEG_RC CELL_MSG=$NEG_HAS_CELL files_unchanged=$FILES_UNCHANGED"
+echo "Negative test: rc=$NEG_RC CELL_MSG=$NEG_HAS_CELL files_unchanged=$FILES_UNCHANGED_STR"
 
 # Run auditor
 echo "=== AUDITOR $(date) ==="
