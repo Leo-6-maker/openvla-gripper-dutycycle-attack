@@ -29,8 +29,9 @@
       "NC parent states selected from primary labels (train TV=159 NC=41)"
     ],
     "coverage_rules": [
-      "10 tasks × 2 cells per task = 20 cells",
-      "Selection: parent states with fewest primary samples per task",
+      "20 coverage cells total, allocated label-independently to tasks without sufficient NC capacity",
+      "Allocation is NOT uniform 2 per task: tasks with many NC states get 0 coverage, tasks with few NC get more",
+      "Selection: parent states with fewest primary samples per task, never from known NC list",
       "Coverage cell selection is label-independent (does not use NC/TV)"
     ],
     "perturbation_rules": [

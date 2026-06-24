@@ -1,0 +1,23 @@
+{
+  "gate": "FORMAL_SMOKE_22",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-24T17:00:00+08:00",
+  "parent_commit": "8203a3d",
+  "total_cells": 22,
+  "coverage": "10\u00d7P0 + 10\u00d7nonzero(P1-P7) + 1\u00d7P0_replay + 1\u00d7P7_replay",
+  "collector": "run_v6_perturbed_collector.py",
+  "pool": "smoke",
+  "audit_checks": [
+    "22/22 .done exists",
+    "condition=CLEAN, pool=smoke, attack_frames=0",
+    "telemetry rows == summary.n_steps",
+    "telemetry/summary/.done UUID consistent",
+    "P0: original_sha == perturbed_sha",
+    "P1-P7: original_sha != perturbed_sha",
+    "pre-wait pose delta matches manifest",
+    "post-wait object perturbation preserved (drift < 1mm)",
+    "replay groups A and B identical",
+    "duplicate run rejected (CELL_ALREADY_COMPLETE)",
+    "no states 28-49"
+  ]
+}

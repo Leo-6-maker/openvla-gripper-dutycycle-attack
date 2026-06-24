@@ -239,6 +239,21 @@ print("Post-wait: sha=%s pos=(%.4f,%.4f,%.4f)" % (
     rollout_start_sha[:16],
     float(rollout_start_body_pos[0]), float(rollout_start_body_pos[1]), float(rollout_start_body_pos[2])))
 
+# Compute post-wait drift vs pre-wait perturbed pose
+_post_wait_translation_drift = float(np.linalg.norm(rollout_start_body_pos[:2] - actual_body_pos[:2]))
+_post_wait_rotation_drift = 0.0
+if pert_template != "P0" and dyaw != 0:
+    from scipy.spatial.transform import Rotation as _Rot
+    _pre_rot = _Rot.from_quat([float(actual_body_quat[1]), float(actual_body_quat[2]),
+                                float(actual_body_quat[3]), float(actual_body_quat[0])])
+    _post_rot = _Rot.from_quat([float(rollout_start_body_quat[1]), float(rollout_start_body_quat[2]),
+                                 float(rollout_start_body_quat[3]), float(rollout_start_body_quat[0])])
+    _post_wait_rotation_drift = float(abs((_pre_rot.inv() * _post_rot).as_euler('xyz')[2]))
+    _post_wait_rotation_drift = min(_post_wait_rotation_drift, 2*np.pi - _post_wait_rotation_drift)
+
+print("Post-wait drift: translation=%.6f m rotation=%.6f rad" % (
+    _post_wait_translation_drift, _post_wait_rotation_drift))
+
 _task_name = task_obj.name
 _obj_key = _task_name.replace("pick_up_the_","").replace("_and_place_it_in_the_basket","")
 obj_sid = env.sim.model.site_name2id("%s_1_default_site" % _obj_key)
@@ -415,7 +430,13 @@ summary = {
     "invalid_feature_steps": _invalid_steps, "first_valid_step": _first_valid_step,
     "selected_original_state_sha256": original_state_sha,
     "perturbed_pre_wait_sha256": perturbed_state_sha,
+    "perturbed_pre_wait_body_pos": orig_body_pos.tolist(),
+    "perturbed_pre_wait_body_quat": orig_body_quat.tolist(),
     "rollout_start_post_wait_sha256": rollout_start_sha,
+    "rollout_start_post_wait_body_pos": rollout_start_body_pos.tolist(),
+    "rollout_start_post_wait_body_quat": rollout_start_body_quat.tolist(),
+    "post_wait_translation_drift_m": _post_wait_translation_drift,
+    "post_wait_rotation_drift_rad": _post_wait_rotation_drift,
     "trajectory_content_sha256": tel_sha,
     "checkpoint_sha256": ckpt_sha,
     "dataset_sha256": detector.dataset_sha256,
