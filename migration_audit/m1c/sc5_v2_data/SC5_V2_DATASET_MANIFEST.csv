@@ -1,5 +1,3 @@
-Warning: Permanently added '10.60.133.3' (ED25519) to the list of known hosts.
-Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known hosts.
 sample_id,split,source_pool,task_idx,parent_state_id,perturbation_template,perturbation_seed,teacher_label,teacher_anchor,run_uuid,cell_uuid,telemetry_sha256,summary_sha256,teacher_config_sha256,labeler_sha256,hard_negative_category,task_success
 train_task0_state10,train,primary,0,10,P0,42,TV,73,,,b2875ea640db99027349d59b902403e4067eb82b8be2be82becd0393156e0b23,1a2e2dd096fe6bd46d1ec2851c7ef3472272b553f402062538729f9e25fb0ffd,ebc1ccda21cdfeae0f70f90ef0e433be3474ef0baa9cf52f609d620f863ce87a,6394fe168c727c5ee82e995a52fa14f4d94dd15fc4344fdca85c30a776fc421a,other,True
 train_task0_state11,train,primary,0,11,P0,42,NC,393,,,1ef48746ed4beb04554605d7763390fd9e8849ee32f916030f1d5742173fdbb6,764c817fb50f956adcd66d331d0440798259c0dfbcbda66f487d42afc223258c,ebc1ccda21cdfeae0f70f90ef0e433be3474ef0baa9cf52f609d620f863ce87a,6394fe168c727c5ee82e995a52fa14f4d94dd15fc4344fdca85c30a776fc421a,other,False

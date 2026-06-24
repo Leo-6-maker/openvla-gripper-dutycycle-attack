@@ -2,15 +2,30 @@
   "gate": "SC5_V2_TRAINING_PROTOCOL",
   "status": "FROZEN",
   "frozen_at": "2026-06-25T00:45:00+08:00",
-  "parent_commit": "e4f92c5",
+  "parent_commit": "51df7c3",
+
+  "split_mapping": {
+    "train": "train split (states 3-22, 280 episodes)",
+    "val": "dev split mapped to val (states 23-27, 90 episodes)",
+    "held_out": "NOT USED in V2 — all 370 episodes assigned to train or val",
+    "note": "train_sc5_v2.py maps 'dev' manifest entries to split='val'. No held-out set."
+  },
 
   "architecture": {
     "name": "SC5_MLP_v2",
     "input_dim": 25,
-    "hidden_layers": [64, 64],
-    "output_dim": 11,
+    "hidden_dim": 64,
+    "shared_trunk": "Linear(25,64) -> ReLU -> Linear(64,64) -> ReLU",
+    "heads": {
+      "phase_head": {"outputs": 9, "type": "Linear(64,9)", "supervised": true},
+      "corridor_head": {"outputs": 1, "type": "Linear(64,1)", "supervised": true},
+      "release_head": {"outputs": 1, "type": "Linear(64,1)", "supervised": true},
+      "confidence_head": {"outputs": 1, "type": "Linear(64,1)", "supervised": false}
+    },
+    "parameterized_outputs": 12,
+    "supervised_outputs": 11,
     "parameter_count": 6604,
-    "description": "25D proprio/action features -> Linear(25,64) -> ReLU -> Linear(64,64) -> ReLU -> Linear(64,11) -> phase(9)+corridor(1)+release(1)+confidence(1)",
+    "note_confidence": "Confidence head retained for v1 architecture compatibility. No loss, no gradient, unused at inference.",
     "identical_to_v1": true,
     "note": "Architecture is IDENTICAL to SC5-v1. Only weights change via retraining on new data."
   },
@@ -39,14 +54,23 @@
     "feature_schema": "25D SC5 streaming features (see sc5_streaming_features_v2.py)"
   },
 
-  "training_hyperparameters": {
-    "loss": "cross_entropy (multi-class, 11-way classification)",
+  "training": {
+    "loss": {
+      "type": "multi_task",
+      "components": {
+        "phase": {"loss": "CrossEntropyLoss", "weight": 1.0, "class_weight": "inverse_frequency", "note": "9-class phase classification with auto-computed inverse-frequency class weights"},
+        "corridor": {"loss": "BCEWithLogitsLoss", "weight": 0.5, "pos_weight": 5.0, "note": "Binary corridor-active detection, pos_weight=5 to counter class imbalance"},
+        "release": {"loss": "BCEWithLogitsLoss", "weight": 0.3, "pos_weight": 5.0, "note": "Binary release-safe detection, pos_weight=5"}
+      },
+      "confidence_head": {"trained": false, "note": "No loss, no gradient — retained for v1 checkpoint compatibility only"},
+      "total_loss_formula": "1.0 * phase_CE + 0.5 * corridor_BCE(pos_weight=5) + 0.3 * release_BCE(pos_weight=5)"
+    },
     "optimizer": "Adam",
     "learning_rate": 0.001,
+    "weight_decay": 0.0001,
     "batch_size": 64,
-    "max_epochs": 200,
-    "early_stopping_patience": 20,
-    "early_stopping_metric": "dev_loss",
+    "max_epochs": 80,
+    "early_stopping": {"metric": "val_phase_CE", "mode": "min", "note": "Save checkpoint with lowest validation phase cross-entropy"},
     "random_seeds": [42, 123, 456, 789, 1024],
     "note_seeds": "5 fixed seeds to assess initialization sensitivity. Report mean ± std across seeds."
   },
