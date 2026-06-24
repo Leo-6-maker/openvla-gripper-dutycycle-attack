@@ -34,10 +34,10 @@ class SC5MLP(torch.nn.Module):
         return {"phase_logits": self.phase_head(h), "corridor_logit": self.corridor_head(h),
                 "release_logit": self.release_head(h), "confidence_logit": self.confidence_head(h)}
 
-EXPECTED_DATASET_SHA = "c086c0c8107622161bc620ed17035d8d2aea37764b8602bf87d8d30ff7373de9"
-EXPECTED_TRAIN_STEPS = 73764
-EXPECTED_VAL_STEPS = 27451
-EXPECTED_TOTAL_STEPS = 101215
+EXPECTED_DATASET_SHA = "05f6f9e9b2ac5720ff00714199e4c67c2f44f55ed01d40fc0459ff323af04e0e"
+EXPECTED_TRAIN_STEPS = 59773
+EXPECTED_VAL_STEPS = 24242
+EXPECTED_TOTAL_STEPS = 84015
 EXPECTED_TRAIN_EPS = 280
 EXPECTED_VAL_EPS = 90
 
@@ -220,6 +220,7 @@ def main():
         "seed": args.seed, "dataset_sha256": dataset_sha,
         "n_train_steps": n_tr, "n_val_steps": n_vl,
         "n_train_eps": meta['n_train_eps'], "n_val_eps": meta['n_val_eps'],
+        "train_eps": meta['train_eps'], "val_eps": meta['val_eps'],
         "best_epoch": best_epoch, "n_params": n_params,
     }
 
@@ -227,16 +228,31 @@ def main():
     ckpt_path = out_dir / "sc5_mlp_v2.pt"
     ckpt_sha = export_checkpoint(model, str(ckpt_path), dataset_sha, _mean, _std, metadata)
 
-    # ── Runtime strict-load verification ──
+    # ── Runtime strict-load verification (subprocess, avoids CUDA context issues) ──
     print("Verifying runtime strict-load...")
-    from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime
-    try:
-        runtime = SC5DetectorRuntime(str(ckpt_path), tau_corridor=0.3, tau_release=0.3, guard=5)
-        print("  Runtime loaded OK: dataset_sha=%s n_features=%d" % (
-            runtime.dataset_sha256[:16] if hasattr(runtime,'dataset_sha256') else '?',
-            getattr(runtime,'n_features','?')))
-    except Exception as e:
-        print("  RUNTIME_LOAD_FAILED: %s" % e)
+    import subprocess
+    verify_script = """
+import sys; sys.path.insert(0, '%s'); sys.path.insert(0, '%s/src')
+from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime
+import traceback
+try:
+    rt = SC5DetectorRuntime('%s', tau_corridor=0.3, tau_release=0.3, guard=5)
+    print('RUNTIME_STRICT_LOAD=PASS')
+    print('dataset_sha256=%s' % rt.dataset_sha256[:16])
+except Exception as e:
+    traceback.print_exc()
+    print('RUNTIME_STRICT_LOAD=FAIL')
+    sys.exit(1)
+""" % (REPO, REPO, ckpt_path)
+    proc = subprocess.run(
+        [sys.executable, "-c", verify_script],
+        capture_output=True, text=True, timeout=60,
+        env={**os.environ, "CUDA_VISIBLE_DEVICES": ""})
+    print(proc.stdout)
+    if proc.stderr:
+        print(proc.stderr[-500:])
+    if "RUNTIME_STRICT_LOAD=PASS" not in proc.stdout:
+        print("RUNTIME_LOAD_FAILED")
         sys.exit(1)
 
     # Save training log
