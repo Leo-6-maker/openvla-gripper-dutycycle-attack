@@ -182,6 +182,9 @@ def main():
 
         # ── Per-row telemetry fields ──
         for j, tr in enumerate(tel_rows):
+            for fld in ["condition","pool","perturbation_template"]:
+                if fld not in tr:
+                    errors += fail("[%d] %s row%d: missing field '%s'" % (i, out_name, j, fld))
             if tr.get("condition","") != "CLEAN":
                 errors += fail("[%d] %s row%d: condition" % (i, out_name, j))
             if tr.get("pool","") != "smoke":
@@ -194,9 +197,15 @@ def main():
                 errors += fail("[%d] %s row%d: template" % (i, out_name, j))
             if int(tr.get("perturbation_seed",-1)) != exp_seed:
                 errors += fail("[%d] %s row%d: seed" % (i, out_name, j))
-            if tr.get("attack_this","") not in ("", "False", "0"):
-                errors += fail("[%d] %s row%d: attack_this=%s" % (i, out_name, j, tr.get("attack_this")))
-            if int(tr.get("attack_count",0)) != 0:
+            # attack_this: field must exist and be False/0
+            if "attack_this" not in tr:
+                errors += fail("[%d] %s row%d: missing attack_this" % (i, out_name, j))
+            elif tr["attack_this"] not in ("False", "0", ""):
+                errors += fail("[%d] %s row%d: attack_this=%s" % (i, out_name, j, tr["attack_this"]))
+            # attack_count: field must exist and be 0
+            if "attack_count" not in tr:
+                errors += fail("[%d] %s row%d: missing attack_count" % (i, out_name, j))
+            elif int(tr.get("attack_count",-1)) != 0:
                 errors += fail("[%d] %s row%d: attack_count=%s" % (i, out_name, j, tr.get("attack_count")))
 
         # ── Hash invariants ──
@@ -239,11 +248,13 @@ def main():
                 else:
                     errors += fail("[%d] %s: missing quat for dyaw check" % (i, out_name))
 
-            # Yaw check: P1-P4,P7 should have near-zero rotation
+            # Yaw check: P1-P4,P0,P7 should have near-zero rotation
             if exp_dyaw == 0:
                 orig_q = ep_data.get("selected_original_body_quat",[])
                 pert_q = ep_data.get("perturbed_pre_wait_body_quat",[])
-                if len(orig_q) >= 4 and len(pert_q) >= 4:
+                if len(orig_q) < 4 or len(pert_q) < 4:
+                    errors += fail("[%d] %s: missing quat for zero-yaw rotation check" % (i, out_name))
+                else:
                     from scipy.spatial.transform import Rotation
                     orig_rot = Rotation.from_quat([orig_q[1],orig_q[2],orig_q[3],orig_q[0]])
                     pert_rot = Rotation.from_quat([pert_q[1],pert_q[2],pert_q[3],pert_q[0]])
@@ -255,22 +266,46 @@ def main():
 
         # ── Post-wait perturbation preservation ──
         post_pos = ep_data.get("rollout_start_post_wait_body_pos",[])
-        if len(post_pos) >= 3 and len(orig_pos) >= 3:
-            # Check: post-wait pose relative to ORIGINAL still matches requested perturbation
+        post_q = ep_data.get("rollout_start_post_wait_body_quat",[])
+        if len(post_pos) < 3:
+            errors += fail("[%d] %s: missing rollout_start_post_wait_body_pos" % (i, out_name))
+        elif len(orig_pos) < 3:
+            errors += fail("[%d] %s: missing selected_original_body_pos" % (i, out_name))
+        else:
             post_dx = post_pos[0] - orig_pos[0]
             post_dy = post_pos[1] - orig_pos[1]
             if abs(post_dx - exp_dx) > 0.003:
-                errors += fail("[%d] %s: post-wait dx lost: exp=%.6f post_vs_orig=%.6f" % (i, out_name, exp_dx, post_dx))
+                errors += fail("[%d] %s: post-wait dx lost: exp=%.6f post_vs_orig=%.6f" % (i, out_name, exp_dx, post_dy))
             if abs(post_dy - exp_dy) > 0.003:
                 errors += fail("[%d] %s: post-wait dy lost: exp=%.6f post_vs_orig=%.6f" % (i, out_name, exp_dy, post_dy))
-            # Drift diagnostic (pre→post)
             drift = math.sqrt(sum((post_pos[j] - pert_pos[j])**2 for j in range(3)))
             if drift > 0.01:
                 errors += fail("[%d] %s: post-wait drift %.6f m > 10mm" % (i, out_name, drift))
 
+        # Post-wait yaw preservation
+        orig_q = ep_data.get("selected_original_body_quat",[])
+        if len(post_q) < 4:
+            errors += fail("[%d] %s: missing rollout_start_post_wait_body_quat" % (i, out_name))
+        elif len(orig_q) >= 4:
+            from scipy.spatial.transform import Rotation
+            orig_rot = Rotation.from_quat([orig_q[1],orig_q[2],orig_q[3],orig_q[0]])
+            post_rot = Rotation.from_quat([post_q[1],post_q[2],post_q[3],post_q[0]])
+            post_rel = orig_rot.inv() * post_rot
+            post_yaw = wrap_pi(post_rel.as_euler("xyz")[2])
+            post_rot_mag = float(np.linalg.norm(post_rel.as_rotvec()))
+            if exp_dyaw != 0:
+                if abs(wrap_pi(post_yaw - exp_dyaw)) > math.radians(3):
+                    errors += fail("[%d] %s: post-wait yaw lost: exp=%.6f post_vs_orig=%.6f" % (
+                        i, out_name, exp_dyaw, post_yaw))
+            else:
+                if post_rot_mag > math.radians(2):
+                    errors += fail("[%d] %s: post-wait unexpected rotation %.4f deg" % (
+                        i, out_name, math.degrees(post_rot_mag)))
+
         # ── Asset SHAs ──
         for key in ["bridge_sha256","checkpoint_sha256","teacher_config_sha256",
-                     "target_resolver_sha256","perturbation_generator_sha256"]:
+                     "target_resolver_sha256","perturbation_generator_sha256",
+                     "vla_model_manifest_sha256","dataset_sha256","runner_sha256"]:
             val = ep_data.get(key,"")
             if not val or val in ("MISSING","NOT_COMPUTED"):
                 errors += fail("[%d] %s: %s=%s" % (i, out_name, key, val or "empty"))
@@ -278,18 +313,38 @@ def main():
         # ── Perturbation spec exact match for P7 ──
         if exp_tmpl == "P7":
             ps = ep_data.get("perturbation_spec",{})
-            if isinstance(ps, dict):
-                spec_dx = ps.get("dx_m",None); spec_dy = ps.get("dy_m",None)
-                if spec_dx is not None and abs(float(spec_dx) - exp_dx) > 1e-9:
-                    errors += fail("[%d] %s: P7 spec.dx_m mismatch manifest=%.15f spec=%.15f" % (i, out_name, exp_dx, float(spec_dx)))
-                if spec_dy is not None and abs(float(spec_dy) - exp_dy) > 1e-9:
-                    errors += fail("[%d] %s: P7 spec.dy_m mismatch manifest=%.15f spec=%.15f" % (i, out_name, exp_dy, float(spec_dy)))
+            if not isinstance(ps, dict):
+                errors += fail("[%d] %s: perturbation_spec missing or not dict" % (i, out_name))
+            else:
+                for fld in ["dx_m","dy_m","base_seed","template_id"]:
+                    if fld not in ps:
+                        errors += fail("[%d] %s: P7 perturbation_spec missing '%s'" % (i, out_name, fld))
+                if "dx_m" in ps and abs(float(ps["dx_m"]) - exp_dx) > 1e-9:
+                    errors += fail("[%d] %s: P7 spec.dx_m mismatch manifest=%.15f spec=%.15f" % (i, out_name, exp_dx, float(ps["dx_m"])))
+                if "dy_m" in ps and abs(float(ps["dy_m"]) - exp_dy) > 1e-9:
+                    errors += fail("[%d] %s: P7 spec.dy_m mismatch manifest=%.15f spec=%.15f" % (i, out_name, exp_dy, float(ps["dy_m"])))
 
         # ── Replay canonical hash ──
         rg = row["replay_group"]
         if rg:
             ch = canonical_hash(str(tel))
             replay_hashes[rg].append({"cell": out_name, "canonical_hash": ch})
+
+    # ═══ Cross-cell asset SHA consistency ═══
+    asset_keys = ["bridge_sha256","checkpoint_sha256","teacher_config_sha256",
+                  "target_resolver_sha256","perturbation_generator_sha256",
+                  "vla_model_manifest_sha256","dataset_sha256"]
+    for key in asset_keys:
+        values = set()
+        for row in manifest:
+            ep_data = json.loads((base / row["output"] / "episode_summary.json").read_text())
+            v = ep_data.get(key,"")
+            if v and v not in ("MISSING","NOT_COMPUTED"):
+                values.add(v)
+        if len(values) == 0:
+            errors += fail("Asset %s: no valid value in any cell" % key)
+        elif len(values) > 1:
+            errors += fail("Asset %s: inconsistent across cells (%d unique values)" % (key, len(values)))
 
     # ═══ Replay consistency ═══
     for g in ["A","B"]:
@@ -305,17 +360,21 @@ def main():
 
     # ═══ Negative completion test ═══
     neg_test_file = base / "negative_duplicate_test.json"
-    if neg_test_file.exists():
-        neg = json.loads(neg_test_file.read_text())
-        if neg.get("collector_nonzero_exit") != True:
-            errors += fail("negative_test: collector did not exit non-zero on duplicate")
-        if not neg.get("stderr_contains_CELL_ALREADY_COMPLETE"):
-            errors += fail("negative_test: stderr missing CELL_ALREADY_COMPLETE")
-        if neg.get("files_unchanged") != True:
-            errors += fail("negative_test: original files were modified by duplicate invocation")
-        print("NEGATIVE_COMPLETION_TEST: PASS")
+    if not neg_test_file.exists():
+        errors += fail("negative_duplicate_test.json not found")
     else:
-        errors += fail("negative_duplicate_test.json not found — test not executed")
+        neg = json.loads(neg_test_file.read_text())
+        neg_ok = True
+        if neg.get("collector_nonzero_exit") != True:
+            errors += fail("negative_test: collector did not exit non-zero"); neg_ok = False
+        if not neg.get("stderr_contains_CELL_ALREADY_COMPLETE"):
+            errors += fail("negative_test: stderr missing CELL_ALREADY_COMPLETE"); neg_ok = False
+        if neg.get("files_unchanged") != True:
+            errors += fail("negative_test: original files modified"); neg_ok = False
+        if neg_ok:
+            print("NEGATIVE_COMPLETION_TEST: PASS")
+        else:
+            print("NEGATIVE_COMPLETION_TEST: FAIL")
 
     print("\n=== FORMAL SMOKE 22 AUDIT ===")
     print("Total: %d cells, %d errors" % (len(manifest), errors))

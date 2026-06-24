@@ -86,19 +86,23 @@ NEW_DONE_SHA=$(sha256sum "$TEST_CELL/.done" | awk '{print $1}')
 NEW_TEL_SHA=$(sha256sum "$TEST_CELL/step_telemetry.csv" | awk '{print $1}')
 NEW_EP_SHA=$(sha256sum "$TEST_CELL/episode_summary.json" | awk '{print $1}')
 
-FILES_UNCHANGED=false
+FILES_UNCHANGED_STR=false
 if [ "$TEST_DONE_SHA" = "$NEW_DONE_SHA" ] && [ "$TEST_TEL_SHA" = "$NEW_TEL_SHA" ] && [ "$TEST_EP_SHA" = "$NEW_EP_SHA" ]; then
-    FILES_UNCHANGED=true
+    FILES_UNCHANGED_STR=true
 fi
 
+# Use Python to write JSON (avoids Bash true/false lowercase NameError)
 $PY -c "
 import json
+files_ok = '$FILES_UNCHANGED_STR' == 'true'
+neg_rc = $NEG_RC
+has_cell = $NEG_HAS_CELL
 with open('$OUTBASE/negative_duplicate_test.json','w') as f:
     json.dump({
-        'collector_nonzero_exit': $NEG_RC != 0,
-        'collector_exit_code': $NEG_RC,
-        'stderr_contains_CELL_ALREADY_COMPLETE': bool($NEG_HAS_CELL > 0),
-        'files_unchanged': $FILES_UNCHANGED,
+        'collector_nonzero_exit': neg_rc != 0,
+        'collector_exit_code': neg_rc,
+        'stderr_contains_CELL_ALREADY_COMPLETE': has_cell > 0,
+        'files_unchanged': files_ok,
         'original_done_sha': '$TEST_DONE_SHA',
         'original_tel_sha': '$TEST_TEL_SHA',
         'original_ep_sha': '$TEST_EP_SHA',
