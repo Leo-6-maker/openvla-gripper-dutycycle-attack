@@ -2,7 +2,7 @@
   "gate": "FORMAL_SMOKE_22",
   "status": "FROZEN",
   "frozen_at": "2026-06-24T18:00:00+08:00",
-  "parent_commit": "3f5459d",
+  "parent_commit": "bf80039",
   "total_cells": 22,
   "breakdown": "10 P0 base + 10 nonzero base (P1-P7 all covered) + 2 replay (1 P0 + 1 P7)",
   "pool": "smoke",

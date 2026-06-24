@@ -16,11 +16,18 @@ CANONICAL_FIELDS = [
 def canonical_hash(tel_path):
     rows = list(csv.DictReader(open(tel_path)))
     if not rows:
-        return "EMPTY_CSV"
+        raise ValueError("EMPTY_CSV")
     header = set(rows[0].keys())
     missing = set(CANONICAL_FIELDS) - header
     if missing:
-        return "MISSING_COLUMNS:" + ",".join(sorted(missing))
+        raise ValueError("MISSING_COLUMNS:" + ",".join(sorted(missing)))
+    # Reject None values in canonical fields (short/malformed rows)
+    malformed = {
+        field for field in CANONICAL_FIELDS
+        if any(row[field] is None for row in rows)
+    }
+    if malformed:
+        raise ValueError("MALFORMED_COLUMNS:" + ",".join(sorted(malformed)))
     payload = [{f: row[f] for f in CANONICAL_FIELDS} for row in rows]
     serialized = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(serialized).hexdigest()
@@ -335,7 +342,11 @@ def main():
         # ── Replay canonical hash ──
         rg = row["replay_group"]
         if rg:
-            ch = canonical_hash(str(tel))
+            try:
+                ch = canonical_hash(str(tel))
+            except ValueError as exc:
+                errors += fail("[%d] %s: canonical_hash %s" % (i, out_name, exc))
+                ch = "ERROR:" + str(exc)[:80]
             replay_hashes[rg].append({"cell": out_name, "canonical_hash": ch})
 
     # ═══ Cross-cell asset SHA consistency ═══
