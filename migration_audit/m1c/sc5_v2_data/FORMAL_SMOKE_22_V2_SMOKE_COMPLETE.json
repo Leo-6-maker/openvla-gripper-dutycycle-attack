@@ -1,0 +1,10 @@
+Warning: Permanently added '10.60.133.3' (ED25519) to the list of known hosts.
+Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known hosts.
+{
+  "completed_at": "2026-06-24T20:14:55+08:00",
+  "manifest_sha256": "b4dd3b886e5b3ab27ba4465b1ea1ec59df24ac38b94e45c58765fda8ca305423",
+  "collector_sha256": "d86e4fdaae0bb6b31cf6b6718f8ac316bb663c7d2baf8db0ba81b23b8bcaa4a7",
+  "auditor_sha256": "7c72420fdaf4d5803c194658af4c5fc514ce1d4726fda571072a16974707b772",
+  "launcher_sha256": "9c061ba733e7dc7e3c42a9c00a9d05580ca6ab0394f5d0256b62cde4a94a7265",
+  "audit_result": "PASS"
+}

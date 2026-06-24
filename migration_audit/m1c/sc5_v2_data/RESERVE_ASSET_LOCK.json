@@ -1,25 +1,76 @@
 {
   "gate": "RESERVE_ASSET_LOCK",
   "status": "FROZEN",
-  "frozen_at": "2026-06-24T20:30:00+08:00",
-  "parent_commit": "cbcef7b",
-  "source": "Extracted from FORMAL_SMOKE_22_V2_RUN2 cell smoke_P0_t0_s3/episode_summary.json. All 22 cells were verified to have identical values (cross-cell auditor check PASS).",
-  "launcher_requirement": "Train reserve 80 launcher MUST fail-closed before first cell if any asset SHA does not match this lock.",
+  "frozen_at": "2026-06-24T21:00:00+08:00",
+  "parent_commit": "f85ffd8",
+  "source": "Extracted from FORMAL_SMOKE_22_V2_RUN2 cell smoke_P0_t0_s3/episode_summary.json. All 22 cells verified identical (cross-cell auditor check PASS).",
 
-  "assets": {
-    "collector_sha256": "d86e4fdaae0bb6b31cf6b6718f8ac316bb663c7d2baf8db0ba81b23b8bcaa4a7",
-    "bridge_sha256": "d86e4fdaae0bb6b31cf6b6718f8ac316bb663c7d2baf8db0ba81b23b8bcaa4a7",
-    "runner_sha256": "d86e4fdaae0bb6b31cf6b6718f8ac316bb663c7d2baf8db0ba81b23b8bcaa4a7",
-    "checkpoint_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
-    "teacher_config_sha256": "ebc1ccda21cdfeae0f70f90ef0e433be3474ef0baa9cf52f609d620f863ce87a",
-    "target_resolver_sha256": "6394fe168c727c5ee82e995a52fa14f4d94dd15fc4344fdca85c30a776fc421a",
-    "perturbation_generator_sha256": "4761b004aa57282233fde5eb01c9860b0eb5ec1af00d8778d0bf36dd3950e4fc",
-    "vla_model_manifest_sha256": "7ee5316a971cfb47d5b11ec470803280e6b719c703b8fa3c3f3389616ae088a5",
-    "dataset_sha256": "f942f4b0856d3449fa4e98f6d6e74ac8d5e8e9af7082373f961f79b0a6930cd9",
-    "launcher_sha256": "9c061ba733e7dc7e3c42a9c00a9d05580ca6ab0394f5d0256b62cde4a94a7265",
-    "manifest_sha256": "b4dd3b886e5b3ab27ba4465b1ea1ec59df24ac38b94e45c58765fda8ca305423",
-    "auditor_sha256": "7c72420fdaf4d5803c194658af4c5fc514ce1d4726fda571072a16974707b772"
+  "verification_rule": "Before launching first reserve cell, compute SHA of each asset and compare to frozen expected_sha256. Mismatch on any asset -> abort with non-zero exit.",
+
+  "asset_specs": {
+    "collector_sha256": {
+      "expected_sha256": "d86e4fdaae0bb6b31cf6b6718f8ac316bb663c7d2baf8db0ba81b23b8bcaa4a7",
+      "source_path": "scripts/stageb/run_v6_perturbed_collector.py",
+      "algorithm": "sha256", "scope": "file_bytes",
+      "note": "Collector script. bridge_sha256 and runner_sha256 are identical to this value (collector computes bridge_sha from __file__ and copies to runner_sha256)."
+    },
+    "checkpoint_sha256": {
+      "expected_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+      "source_path": "artifacts/detector/sc5_mlp_s2.pt",
+      "algorithm": "sha256", "scope": "file_bytes"
+    },
+    "teacher_config_sha256": {
+      "expected_sha256": "ebc1ccda21cdfeae0f70f90ef0e433be3474ef0baa9cf52f609d620f863ce87a",
+      "source_path": "migration_audit/object_checkpoint_migration/m1_runtime/teacher_config_frozen.json",
+      "algorithm": "sha256", "scope": "file_bytes"
+    },
+    "target_resolver_sha256": {
+      "expected_sha256": "6394fe168c727c5ee82e995a52fa14f4d94dd15fc4344fdca85c30a776fc421a",
+      "source_path": "scripts/migration/label_m1c_object_teacher.py",
+      "algorithm": "sha256", "scope": "file_bytes"
+    },
+    "perturbation_generator_sha256": {
+      "expected_sha256": "4761b004aa57282233fde5eb01c9860b0eb5ec1af00d8778d0bf36dd3950e4fc",
+      "source_path": "src/gripper_attack/v5_perturbation.py",
+      "algorithm": "sha256", "scope": "file_bytes"
+    },
+    "vla_model_manifest_sha256": {
+      "expected_sha256": "7ee5316a971cfb47d5b11ec470803280e6b719c703b8fa3c3f3389616ae088a5",
+      "source_path": "models/openvla-7b-finetuned-libero-object/ (all files)",
+      "algorithm": "sha256", "scope": "sorted_manifest_of_all_shard_files",
+      "note": "SHA256 of sorted newline-joined '<relpath> <file_sha256>' manifest, NOT a single file hash."
+    },
+    "dataset_sha256": {
+      "expected_sha256": "f942f4b0856d3449fa4e98f6d6e74ac8d5e8e9af7082373f961f79b0a6930cd9",
+      "source_path": "embedded in artifacts/detector/sc5_mlp_s2.pt detector metadata",
+      "algorithm": "sha256", "scope": "detector.dataset_sha256 runtime attribute"
+    },
+    "launcher_sha256": {
+      "expected_sha256": "9c061ba733e7dc7e3c42a9c00a9d05580ca6ab0394f5d0256b62cde4a94a7265",
+      "source_path": "tmp/launch_formal_smoke_22.sh",
+      "algorithm": "sha256", "scope": "file_bytes",
+      "note": "Smoke launcher SHA. Train reserve uses a different launcher."
+    },
+    "manifest_sha256": {
+      "expected_sha256": "b4dd3b886e5b3ab27ba4465b1ea1ec59df24ac38b94e45c58765fda8ca305423",
+      "source_path": "migration_audit/m1c/sc5_v2_data/FORMAL_SMOKE_22_EXACT_MANIFEST.csv",
+      "algorithm": "sha256", "scope": "file_bytes"
+    },
+    "auditor_sha256": {
+      "expected_sha256": "7c72420fdaf4d5803c194658af4c5fc514ce1d4726fda571072a16974707b772",
+      "source_path": "scripts/stageb/audit_formal_smoke_22.py",
+      "algorithm": "sha256", "scope": "file_bytes"
+    }
   },
 
-  "verification_rule": "Before launching first reserve cell, compute SHA of each asset file and compare to frozen value. Mismatch on any of the 12 assets -> abort."
+  "distinct_asset_count": 10,
+  "note_distinct": "10 distinct assets (collector/bridge/runner are identical single file; launcher differs for reserve but smoke launcher SHA is tracked for provenance)",
+
+  "preflight_verified": {
+    "verified_before_first_cell": true,
+    "verified_at": "2026-06-24T20:38:04+08:00",
+    "result": "PASS",
+    "checked_keys": ["collector", "checkpoint", "vla_model_manifest", "teacher_config", "target_resolver", "perturbation_generator"],
+    "evidence_log": "tmp/train_reserve_80.log (lines: 'Asset lock: ALL 3 core assets VERIFIED', 'Asset lock: ALL assets VERIFIED')"
+  }
 }

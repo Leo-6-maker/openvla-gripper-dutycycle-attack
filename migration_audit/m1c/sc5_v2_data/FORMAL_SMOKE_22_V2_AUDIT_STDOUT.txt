@@ -1,0 +1,7 @@
+Warning: Permanently added '10.60.133.3' (ED25519) to the list of known hosts.
+Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known hosts.
+=== FORMAL SMOKE 22 AUDIT ===
+Total: 22 cells, 0 errors
+RESULT: PASS
+=== .smoke_complete CREATED ===
+=== FORMAL SMOKE 22 COMPLETE Wed Jun 24 08:14:55 PM CST 2026 ===
