@@ -34,16 +34,41 @@ class SC5MLP(torch.nn.Module):
         return {"phase_logits": self.phase_head(h), "corridor_logit": self.corridor_head(h),
                 "release_logit": self.release_head(h), "confidence_logit": self.confidence_head(h)}
 
-def load_data(csv_path):
+EXPECTED_DATASET_SHA = "c086c0c8107622161bc620ed17035d8d2aea37764b8602bf87d8d30ff7373de9"
+EXPECTED_TRAIN_STEPS = 73764
+EXPECTED_VAL_STEPS = 27451
+EXPECTED_TOTAL_STEPS = 101215
+EXPECTED_TRAIN_EPS = 280
+EXPECTED_VAL_EPS = 90
+
+def load_data(csv_path, expected_sha=None):
     """Load SC5-V2 step dataset. Returns (Xtr,Ytr,Xvl,Yvl,n_tr,n_vl,metadata)."""
+    actual_sha = hashlib.sha256(open(csv_path,"rb").read()).hexdigest()
+    if expected_sha and actual_sha != expected_sha:
+        raise RuntimeError("DATASET_SHA_MISMATCH: actual=%s expected=%s" % (actual_sha, expected_sha))
+
     all_rows = list(csv.DictReader(open(csv_path)))
     if 'split' not in (all_rows[0].keys() if all_rows else []):
         raise ValueError("Dataset missing 'split' column")
 
-    tr_rows = [r for r in all_rows if r.get('split','') == 'train']
-    vl_rows = [r for r in all_rows if r.get('split','') == 'val']
+    VALID_SPLITS = {'train', 'val'}
+    tr_rows = []; vl_rows = []
+    for r in all_rows:
+        sp = r.get('split','')
+        if sp not in VALID_SPLITS:
+            raise ValueError("Unknown split '%s' in row step_idx=%s" % (sp, r.get('step_idx','?')))
+        eid = r.get('episode_id','')
+        if not eid:
+            raise ValueError("Empty episode_id in row step_idx=%s" % r.get('step_idx','?'))
+        if sp == 'train': tr_rows.append(r)
+        else: vl_rows.append(r)
+
     if not tr_rows: raise ValueError("No train rows")
     if not vl_rows: raise ValueError("No val rows")
+    if len(tr_rows) != EXPECTED_TRAIN_STEPS:
+        raise RuntimeError("TRAIN_STEP_COUNT_MISMATCH: %d != %d" % (len(tr_rows), EXPECTED_TRAIN_STEPS))
+    if len(vl_rows) != EXPECTED_VAL_STEPS:
+        raise RuntimeError("VAL_STEP_COUNT_MISMATCH: %d != %d" % (len(vl_rows), EXPECTED_VAL_STEPS))
 
     # Fail-closed: check all features present and valid
     for r in tr_rows + vl_rows:
@@ -136,21 +161,25 @@ def train(model, Xtr, Ytr, Xvl, Yvl, lr=0.001, weight_decay=1e-4, epochs=80, bat
     print("Best: epoch=%d vl_ce=%.3f" % (best_epoch, best_vl))
     return model, best_epoch, log
 
-def export_checkpoint(model, ckpt_path, dataset_sha, metadata):
-    """Export checkpoint in torch.save format compatible with SC5DetectorRuntime strict=True."""
-    sd = model.state_dict()
-    # Flatten module prefix if present
-    out = {}
-    for k, v in sd.items():
-        out[k] = v
+def export_checkpoint(model, ckpt_path, dataset_sha, mean, std, metadata):
+    """Export checkpoint compatible with SC5DetectorRuntime strict=True."""
     payload = {
-        "model_state_dict": out,
+        "model_state": model.state_dict(),
+        "mean": mean.astype(np.float32),
+        "std": std.astype(np.float32),
         "feature_names": SC5_FEATURES,
-        "phase_labels": SC5_PHASES,
-        "n_features": len(SC5_FEATURES),
-        "hidden_dim": 64,
-        "parameter_count": sum(p.numel() for p in model.parameters()),
+        "phase_classes": SC5_PHASES,
         "dataset_sha256": dataset_sha,
+        "dataset_path": str(Path(ckpt_path).parent.parent / "migration_audit/m1c/sc5_v2_data/SC5_V2_STEP_DATASET.csv"),
+        "split_mode": "frozen",
+        "normalization_source": "train_only",
+        "n_train_steps": metadata["n_train_steps"],
+        "n_val_steps": metadata["n_val_steps"],
+        "n_held_test": 0,
+        "n_params": sum(p.numel() for p in model.parameters()),
+        "train_episode_ids": metadata["train_eps"],
+        "val_episode_ids": metadata["val_eps"],
+        "heldout_episode_ids": [],
         "training_metadata": metadata,
     }
     os.makedirs(os.path.dirname(ckpt_path) or ".", exist_ok=True)
@@ -165,17 +194,19 @@ def main():
     ap.add_argument("--output_dir", required=True)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
+    ap.add_argument("--expected_dataset_sha256", default=EXPECTED_DATASET_SHA,
+                    help="Fail-closed if dataset SHA does not match")
     args = ap.parse_args()
 
     random.seed(args.seed); np.random.seed(args.seed); torch.manual_seed(args.seed)
 
     print("Loading %s..." % args.dataset)
-    Xtr, Ytr, Xvl, Yvl, n_tr, n_vl, meta = load_data(args.dataset)
+    Xtr, Ytr, Xvl, Yvl, n_tr, n_vl, meta = load_data(args.dataset, expected_sha=args.expected_dataset_sha256)
     print("  train=%d steps (%d eps)  val=%d steps (%d eps)" % (n_tr, meta['n_train_eps'], n_vl, meta['n_val_eps']))
 
     # Normalize
-    mean = Xtr.mean(0); std = Xtr.std(0) + 1e-8
-    Xtr = (Xtr-mean)/std; Xvl = (Xvl-mean)/std
+    _mean = Xtr.mean(0); _std = Xtr.std(0) + 1e-8
+    Xtr_norm = (Xtr-_mean)/_std; Xvl_norm = (Xvl-_mean)/_std
 
     model = SC5MLP(n_feat=len(SC5_FEATURES))
     n_params = sum(p.numel() for p in model.parameters())
@@ -183,7 +214,7 @@ def main():
 
     dataset_sha = hashlib.sha256(open(args.dataset,"rb").read()).hexdigest()
 
-    model, best_epoch, log = train(model, Xtr, Ytr, Xvl, Yvl, device=args.device)
+    model, best_epoch, log = train(model, Xtr_norm, Ytr, Xvl_norm, Yvl, device=args.device)
 
     metadata = {
         "seed": args.seed, "dataset_sha256": dataset_sha,
@@ -194,7 +225,19 @@ def main():
 
     out_dir = Path(args.output_dir); out_dir.mkdir(parents=True, exist_ok=True)
     ckpt_path = out_dir / "sc5_mlp_v2.pt"
-    ckpt_sha = export_checkpoint(model, str(ckpt_path), dataset_sha, metadata)
+    ckpt_sha = export_checkpoint(model, str(ckpt_path), dataset_sha, _mean, _std, metadata)
+
+    # ── Runtime strict-load verification ──
+    print("Verifying runtime strict-load...")
+    from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime
+    try:
+        runtime = SC5DetectorRuntime(str(ckpt_path), tau_corridor=0.3, tau_release=0.3, guard=5)
+        print("  Runtime loaded OK: dataset_sha=%s n_features=%d" % (
+            runtime.dataset_sha256[:16] if hasattr(runtime,'dataset_sha256') else '?',
+            getattr(runtime,'n_features','?')))
+    except Exception as e:
+        print("  RUNTIME_LOAD_FAILED: %s" % e)
+        sys.exit(1)
 
     # Save training log
     log_path = out_dir / "training_log.csv"
@@ -209,6 +252,7 @@ def main():
         "final_val_phase_acc": log[best_epoch]["val_phase_acc"],
         "dataset_sha256": dataset_sha, "checkpoint_sha256": ckpt_sha,
         "trainer_sha256": hashlib.sha256(open(__file__,"rb").read()).hexdigest(),
+        "runtime_strict_load": "PASS",
     }
     with open(out_dir / "training_summary.json", "w") as f:
         json.dump(summary, f, indent=2)

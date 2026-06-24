@@ -1,0 +1,105 @@
+{
+  "gate": "SC5_V2_TRAINING_PROTOCOL_V2",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-25T02:00:00+08:00",
+  "parent_commit": "9d0f616",
+  "supersedes": "SC5_V2_TRAINING_FROZEN.json at 51df7c3",
+  "change_log": "V2 fixes: checkpoint schema (model_state/mean/std/phase_classes/split_mode), dataset SHA verification, split validation, runtime strict-load postcondition, step dataset SHA frozen",
+
+  "architecture": {
+    "name": "SC5_MLP_v2",
+    "input_dim": 25,
+    "hidden_dim": 64,
+    "shared_trunk": "Linear(25,64)->ReLU->Linear(64,64)->ReLU",
+    "heads": {
+      "phase_head": {"outputs": 9, "type": "Linear(64,9)", "supervised": true},
+      "corridor_head": {"outputs": 1, "type": "Linear(64,1)", "supervised": true},
+      "release_head": {"outputs": 1, "type": "Linear(64,1)", "supervised": true},
+      "confidence_head": {"outputs": 1, "type": "Linear(64,1)", "supervised": false}
+    },
+    "parameterized_outputs": 12,
+    "supervised_outputs": 11,
+    "parameter_count": 6604,
+    "identical_to_v1": true
+  },
+
+  "vla_model": {"status": "FROZEN", "model": "openvla-7b-finetuned-libero-object", "dtype": "bfloat16", "attention": "eager"},
+
+  "teacher": {"status": "FROZEN", "config": "teacher_config_frozen.json (C16, guard=5, K=10)", "usage": "Offline labeling only"},
+
+  "dataset": {
+    "manifest_sha256": "19f1714750d41336a9ae0874ef853aeb40da77adc06ac668d10dcad346a7144c",
+    "total_episodes": 370,
+    "train_split": {"tv": 159, "nc": 121, "total": 280},
+    "dev_split": {"tv": 36, "nc": 54, "total": 90},
+    "step_dataset_sha256": "c086c0c8107622161bc620ed17035d8d2aea37764b8602bf87d8d30ff7373de9",
+    "train_steps": 73764,
+    "val_steps": 27451,
+    "total_steps": 101215,
+    "phase_distribution": {
+      "approach": 50313, "grasp_close": 31528, "stable_grasp": 5466,
+      "first_lift": 0, "stable_carry": 8324,
+      "pre_place_unsupported": 4614, "release_safe": 277,
+      "recovery_or_regrasp": 323, "abstain_unsupported": 370
+    },
+    "note_first_lift": "first_lift class support = 0. SC5-v2 does not claim improvement on first_lift phase classification."
+  },
+
+  "split_mapping": {
+    "train": "train split (states 3-22, 280 episodes)",
+    "val": "dev split mapped to val (states 23-27, 90 episodes)"
+  },
+
+  "training": {
+    "loss": {
+      "phase": {"loss": "CrossEntropyLoss", "weight": 1.0, "class_weight": "inverse_frequency"},
+      "corridor": {"loss": "BCEWithLogitsLoss", "weight": 0.5, "pos_weight": 5.0},
+      "release": {"loss": "BCEWithLogitsLoss", "weight": 0.3, "pos_weight": 5.0},
+      "confidence_head": "no loss, no gradient"
+    },
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 64,
+    "max_epochs": 80,
+    "early_stopping": {"metric": "val_phase_CE", "mode": "min"},
+    "random_seeds": [42, 123, 456, 789, 1024]
+  },
+
+  "checkpoint_schema": {
+    "required_keys": ["model_state", "mean", "std", "feature_names", "phase_classes", "split_mode"],
+    "split_mode": "frozen",
+    "runtime_thresholds": {"tau_corridor": 0.3, "tau_release": 0.3, "guard": 5},
+    "strict_load_postcondition": "trainer MUST verify SC5DetectorRuntime(strict=True) load succeeds before declaring training complete"
+  },
+
+  "data_validation": {
+    "dataset_sha_check": "trainer MUST verify actual dataset SHA == c086c0c810... before loading",
+    "split_check": "reject any split not in {train, val}",
+    "episode_id_check": "reject empty episode_id",
+    "step_count_check": "verify train=73764, val=27451, total=101215"
+  },
+
+  "checkpoint_selection": {
+    "step_1": "TV coverage on primary dev must not be significantly below SC5-v1",
+    "step_2": "Among qualifying checkpoints, minimize NC false-trigger rate",
+    "step_3": "Prefer primary-dev metrics over reserve-dev for tiebreak"
+  },
+
+  "evaluation_slices": {
+    "primary_dev_50": {"tv": 36, "nc": 14},
+    "reserve_dev_40": {"tv": 0, "nc": 40},
+    "combined_dev_90": {"tv": 36, "nc": 54}
+  },
+
+  "abstention_targets": {
+    "primary_dev_nc_abstain": ">= 0.90",
+    "primary_dev_tv_coverage": ">= 0.80"
+  },
+
+  "outputs": {
+    "checkpoint": "artifacts/detector/sc5_mlp_v2.pt",
+    "training_log": "evidence/m1c/sc5_v2_training_log.csv",
+    "evaluation_report": "evidence/m1c/sc5_v2_eval_report.json"
+  }
+}
