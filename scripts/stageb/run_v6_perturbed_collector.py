@@ -239,17 +239,15 @@ print("Post-wait: sha=%s pos=(%.4f,%.4f,%.4f)" % (
     rollout_start_sha[:16],
     float(rollout_start_body_pos[0]), float(rollout_start_body_pos[1]), float(rollout_start_body_pos[2])))
 
-# Compute post-wait drift vs pre-wait perturbed pose
-_post_wait_translation_drift = float(np.linalg.norm(rollout_start_body_pos[:2] - actual_body_pos[:2]))
-_post_wait_rotation_drift = 0.0
-if pert_template != "P0" and dyaw != 0:
-    from scipy.spatial.transform import Rotation as _Rot
-    _pre_rot = _Rot.from_quat([float(actual_body_quat[1]), float(actual_body_quat[2]),
-                                float(actual_body_quat[3]), float(actual_body_quat[0])])
-    _post_rot = _Rot.from_quat([float(rollout_start_body_quat[1]), float(rollout_start_body_quat[2]),
-                                 float(rollout_start_body_quat[3]), float(rollout_start_body_quat[0])])
-    _post_wait_rotation_drift = float(abs((_pre_rot.inv() * _post_rot).as_euler('xyz')[2]))
-    _post_wait_rotation_drift = min(_post_wait_rotation_drift, 2*np.pi - _post_wait_rotation_drift)
+# Compute post-wait drift vs pre-wait perturbed pose (all templates, full XYZ)
+_post_wait_translation_drift = float(np.linalg.norm(rollout_start_body_pos - actual_body_pos))
+from scipy.spatial.transform import Rotation as _Rot
+_pre_rot = _Rot.from_quat([float(actual_body_quat[1]), float(actual_body_quat[2]),
+                            float(actual_body_quat[3]), float(actual_body_quat[0])])
+_post_rot = _Rot.from_quat([float(rollout_start_body_quat[1]), float(rollout_start_body_quat[2]),
+                             float(rollout_start_body_quat[3]), float(rollout_start_body_quat[0])])
+_rel_rot = _pre_rot.inv() * _post_rot
+_post_wait_rotation_drift = float(np.linalg.norm(_rel_rot.as_rotvec()))
 
 print("Post-wait drift: translation=%.6f m rotation=%.6f rad" % (
     _post_wait_translation_drift, _post_wait_rotation_drift))
@@ -430,8 +428,10 @@ summary = {
     "invalid_feature_steps": _invalid_steps, "first_valid_step": _first_valid_step,
     "selected_original_state_sha256": original_state_sha,
     "perturbed_pre_wait_sha256": perturbed_state_sha,
-    "perturbed_pre_wait_body_pos": orig_body_pos.tolist(),
-    "perturbed_pre_wait_body_quat": orig_body_quat.tolist(),
+    "selected_original_body_pos": orig_body_pos.tolist(),
+    "selected_original_body_quat": orig_body_quat.tolist(),
+    "perturbed_pre_wait_body_pos": actual_body_pos.tolist(),
+    "perturbed_pre_wait_body_quat": actual_body_quat.tolist(),
     "rollout_start_post_wait_sha256": rollout_start_sha,
     "rollout_start_post_wait_body_pos": rollout_start_body_pos.tolist(),
     "rollout_start_post_wait_body_quat": rollout_start_body_quat.tolist(),

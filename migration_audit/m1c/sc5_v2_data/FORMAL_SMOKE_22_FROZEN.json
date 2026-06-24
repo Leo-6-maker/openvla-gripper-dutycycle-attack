@@ -1,23 +1,65 @@
 {
   "gate": "FORMAL_SMOKE_22",
   "status": "FROZEN",
-  "frozen_at": "2026-06-24T17:00:00+08:00",
-  "parent_commit": "8203a3d",
+  "frozen_at": "2026-06-24T17:30:00+08:00",
+  "parent_commit": "936e3ff",
   "total_cells": 22,
-  "coverage": "10\u00d7P0 + 10\u00d7nonzero(P1-P7) + 1\u00d7P0_replay + 1\u00d7P7_replay",
-  "collector": "run_v6_perturbed_collector.py",
+  "breakdown": "10×P0 + 10×nonzero(P1-P7 all covered) + 2×replay(1×P0_A + 1×P7_B)",
   "pool": "smoke",
-  "audit_checks": [
-    "22/22 .done exists",
-    "condition=CLEAN, pool=smoke, attack_frames=0",
-    "telemetry rows == summary.n_steps",
-    "telemetry/summary/.done UUID consistent",
-    "P0: original_sha == perturbed_sha",
-    "P1-P7: original_sha != perturbed_sha",
-    "pre-wait pose delta matches manifest",
-    "post-wait object perturbation preserved (drift < 1mm)",
-    "replay groups A and B identical",
-    "duplicate run rejected (CELL_ALREADY_COMPLETE)",
-    "no states 28-49"
-  ]
+  "collector": "run_v6_perturbed_collector.py",
+  "output_base": "evidence/m1c/formal_smoke_22",
+
+  "replay_groups": {
+    "A": {"task": 0, "state": 3, "template": "P0", "seed": 42, "cells": 2},
+    "B": {"task": 6, "state": 5, "template": "P7", "seed": 48, "cells": 2}
+  },
+
+  "audit_gates": {
+    "manifest_preflight": [
+      "exactly 22 rows with unique output paths",
+      "10 P0 base + 10 nonzero base + 2 replay cells",
+      "P1-P7 all represented in nonzero base",
+      "replay groups A,B each exactly 2 cells with identical config",
+      "no states 28-49",
+      "P7 effective dx/dy pre-computed as numeric values"
+    ],
+    "per_cell_integrity": [
+      ".done, telemetry, summary all present",
+      ".done exit_code=0",
+      ".done telemetry_sha matches actual telemetry file SHA",
+      ".done summary_sha matches actual summary file SHA",
+      "n_steps matches CSV row count",
+      "condition=CLEAN, pool=smoke, attack_frames=0 (summary + all telemetry rows)",
+      "task/state/template/seed match manifest",
+      "run_uuid and cell_uuid present and identical across summary, .done, and all telemetry rows",
+      "P0: selected_original_state_sha256 == perturbed_pre_wait_sha256",
+      "P1-P7: selected_original_state_sha256 != perturbed_pre_wait_sha256",
+      "pre-wait pose delta matches manifest dx/dy (tolerance 2mm)",
+      "post-wait perturbation preserved: drift from pre-wait pose < 10mm",
+      "required asset SHAs non-missing"
+    ],
+    "replay_consistency": [
+      "canonical hash computed over deterministic fields (excludes run_uuid, cell_uuid, model_ms)",
+      "group A: both cells produce identical canonical hash",
+      "group B: both cells produce identical canonical hash"
+    ],
+    "negative_completion_test": [
+      "duplicate invocation rejected with non-zero exit",
+      "original files unchanged"
+    ],
+    "evidence_append_only": [
+      "launcher refuses to overwrite completed output base",
+      "stale partial moved to quarantine, not deleted"
+    ]
+  },
+
+  "canonical_replay_fields": [
+    "step", "raw_gripper", "env_gripper", "qpos_sum",
+    "eef_x", "eef_y", "eef_z", "obj_x", "obj_y", "obj_z",
+    "eef_obj_dist", "target_x", "target_y", "target_z",
+    "detector_state", "corridor_p", "release_p", "pred_phase",
+    "mlp_emit", "perturbation_template", "perturbation_seed",
+    "raw_action_7d", "env_action_7d", "feat_valid"
+  ],
+  "excluded_from_replay_comparison": ["run_uuid", "cell_uuid", "model_ms"]
 }

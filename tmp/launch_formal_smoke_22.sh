@@ -24,7 +24,16 @@ VLA_SHA=$($PY -c "import hashlib; from pathlib import Path; d=Path('$OPENVLA_MOD
 echo "=== FORMAL SMOKE 22 $(date) ==="
 echo "VLA manifest SHA: $VLA_SHA"
 
-rm -rf "$OUTBASE"
+# Fail-closed: refuse to overwrite existing evidence
+if [ -d "$OUTBASE" ]; then
+    if [ -f "$OUTBASE/.smoke_complete" ]; then
+        echo "FATAL: OUTBASE exists and .smoke_complete present - refusing to overwrite"
+        exit 2
+    fi
+    STALE_DIR="${OUTBASE}.stale.$(date +%Y%m%d_%H%M%S)"
+    echo "Moving stale partial to $STALE_DIR"
+    mv "$OUTBASE" "$STALE_DIR"
+fi
 mkdir -p "$OUTBASE"
 
 total=0
