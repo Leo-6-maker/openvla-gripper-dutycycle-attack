@@ -55,9 +55,9 @@
   },
 
   "per_task_allocation": {
-    "task0": {"hard_negative": 6, "coverage": 2, "total": 8},
-    "task1": {"hard_negative": 2, "coverage": 6, "total": 8},
-    "task2": {"hard_negative": 2, "coverage": 6, "total": 8},
+    "task0": {"hard_negative": 8, "coverage": 0, "total": 8},
+    "task1": {"hard_negative": 4, "coverage": 4, "total": 8},
+    "task2": {"hard_negative": 4, "coverage": 4, "total": 8},
     "task3": {"hard_negative": 8, "coverage": 0, "total": 8},
     "task4": {"hard_negative": 0, "coverage": 8, "total": 8},
     "task5": {"hard_negative": 6, "coverage": 2, "total": 8},
@@ -66,6 +66,8 @@
     "task8": {"hard_negative": 6, "coverage": 2, "total": 8},
     "task9": {"hard_negative": 8, "coverage": 0, "total": 8}
   },
+  "verified_totals": {"hard_negative": 60, "coverage": 20, "total": 80},
+  "hard_negative_invariant": "Every cell with selection_source=hard_negative MUST have parent_state in per_task_nc_parent_states[task] — verified at manifest generation time",
 
   "perturbation_bank": {
     "P1": {"dx_m": 0.005, "dy_m": 0.0, "dyaw_rad": 0.0},

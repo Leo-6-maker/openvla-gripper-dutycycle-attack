@@ -227,6 +227,9 @@ if pert_template != "P0":
             env.close()
             raise RuntimeError("POSE_DYAW_MISMATCH: requested=%.4f actual=%.4f" % (dyaw, actual_dyaw))
 
+# ── Dummy wait (MUST happen before post-wait capture) ──
+env, obs = apply_dummy_wait(env, obs, 10)
+
 # ── Post-dummy-wait state capture ──
 rollout_start_sha = _state_sha256(env)
 rollout_start_body_pos = env.sim.data.body_xpos[body_id].copy()
@@ -317,7 +320,10 @@ for step in range(400):
 
     t_vla = time.perf_counter() - t0
 
-    _tel = {"step": step, "condition": CONDITION, "anchor": ANCHOR,
+    _tel = {"step": step, "condition": CONDITION, "pool": POOL,
+        "task_idx": TASK_IDX, "parent_state_id": STATE_ID,
+        "run_uuid": run_uuid, "cell_uuid": cell_uuid,
+        "anchor": ANCHOR,
         "mlp_emit": _mlp_emit, "raw_gripper": raw_grip, "env_gripper": env_grip,
         "qpos_sum": qpos_sum, "eef_x": eef_x, "eef_y": eef_y, "eef_z": eef_z,
         "obj_x": obj_x, "obj_y": obj_y, "obj_z": obj_z, "eef_obj_dist": eef_obj_dist,
@@ -407,8 +413,8 @@ summary = {
     "mlp_emit_step": _mlp_emit, "mlp_triggered": detector.emitted,
     "anchor_error": (_mlp_emit - ANCHOR) if _mlp_emit >= 0 else None,
     "invalid_feature_steps": _invalid_steps, "first_valid_step": _first_valid_step,
-    "initial_state_sha256": original_state_sha,
-    "perturbed_initial_state_sha256": perturbed_state_sha,
+    "selected_original_state_sha256": original_state_sha,
+    "perturbed_pre_wait_sha256": perturbed_state_sha,
     "rollout_start_post_wait_sha256": rollout_start_sha,
     "trajectory_content_sha256": tel_sha,
     "checkpoint_sha256": ckpt_sha,
