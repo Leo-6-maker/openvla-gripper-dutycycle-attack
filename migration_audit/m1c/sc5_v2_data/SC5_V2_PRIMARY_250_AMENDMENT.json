@@ -69,7 +69,10 @@
 
   "teacher_labeling": {
     "labeler": "label_m1c_object_teacher.py (P4 v2)",
-    "labeler_sha256": "computed_at_label_time",
+    "labeler_sha256": "6394fe168c727c5ee82e995a52fa14f4d94dd15fc4344fdca85c30a776fc421a",
+    "labels_csv_sha256": "0bd13a4f65c274b3549364af396e223b198f4a736b0786d8d7709d0725bbda39",
+    "launcher_sha256": "e91a49ffe51511f13d16415f43af7b14a97d7957e085fb2f2fdfd8eba8fbb4ff",
+    "repair_launcher_sha256": "2567bf8e923eeb92eca9271e4eef69d79a4307570277b1fd0b73382179f31a79",
     "teacher_config": "teacher_config_frozen.json (C16, guard=5, K=10)",
     "teacher_config_sha256": "ebc1ccda21cdfeae0f70f90ef0e433be3474ef0baa9cf52f609d620f863ce87a",
     "labeled_at": "2026-06-24T12:50:00+08:00",

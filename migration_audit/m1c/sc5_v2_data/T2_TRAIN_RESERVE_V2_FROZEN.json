@@ -1,8 +1,8 @@
 {
   "gate": "T2_TRAIN_RESERVE_V2",
   "status": "FROZEN",
-  "frozen_at": "2026-06-24T14:45:00+08:00",
-  "parent_commit": "b0a5bf5",
+  "frozen_at": "2026-06-24T16:00:00+08:00",
+  "parent_commit": "5020122",
   "amends": "SC5_V2_PRIMARY_250_AMENDMENT.json",
 
   "constraints": {
@@ -13,40 +13,61 @@
     "attack_frames": 0,
     "total_cells": 80,
     "tasks": [0,1,2,3,4,5,6,7,8,9],
-    "profile": "B0 (BF16+Eager)"
+    "profile": "B0 (BF16+Eager)",
+    "collector": "run_v6_perturbed_collector.py"
   },
 
   "design_rationale": {
-    "why_80": "Protocol reserve spec: 8 cells per task × 10 tasks = 80",
-    "state_selection": [
-      "60 cells from known NC parent states (hard-negative mining from primary labels)",
-      "20 cells from TV parent states (exploration: verify TV stability under perturbation)",
-      "NC parent states identified per-task from primary Teacher labels",
-      "Per-task NC state selection capped at max 4 NC states per task to avoid skew",
-      "Remaining slots filled from unexplored parent states within 3-22"
+    "hard_negative_cells": 60,
+    "coverage_balancing_cells": 20,
+    "total": 80,
+    "nc_mining_rules": [
+      "Uses train split Teacher NC labels ONLY (dev/validation/blind labels NOT read)",
+      "Per-task NC cell cap: max 8 hard-negative cells per task",
+      "Per-parent-state cap: max 4 reserve cells per parent state",
+      "If a task has no known NC parent states, zero hard-negative cells for that task",
+      "NC parent states selected from primary labels (train TV=159 NC=41)"
     ],
-    "perturbation_strategy": [
-      "Each cell uses a unique (parent_state, perturbation_template, perturbation_seed) triple",
-      "Templates P1-P7 applied after set_init_state, before dummy_wait",
-      "P0 excluded (already collected in primary at density=1 per state)",
-      "Actual (dx,dy,dyaw) recorded in episode_summary, not just template name"
+    "coverage_rules": [
+      "10 tasks × 2 cells per task = 20 cells",
+      "Selection: parent states with fewest primary samples per task",
+      "Coverage cell selection is label-independent (does not use NC/TV)"
+    ],
+    "perturbation_rules": [
+      "Each cell specifies exact (dx_m, dy_m, dyaw_rad), NOT just template name",
+      "Perturbation applied to free-joint qpos AFTER set_init_state, BEFORE dummy_wait",
+      "P0 excluded (already collected at density=1 per state in primary)",
+      "Templates: P1(+5mm x), P2(-5mm x), P3(+5mm y), P4(-5mm y), P5(+5deg yaw), P6(-5deg yaw), P7(random_10mm)"
     ]
   },
 
-  "per_task_allocation": {
-    "task0": {"nc_states": [5,6,11], "nc_cells": 6, "explore_cells": 2, "total": 8},
-    "task1": {"nc_states": [16], "nc_cells": 2, "explore_cells": 6, "total": 8},
-    "task2": {"nc_states": [15], "nc_cells": 2, "explore_cells": 6, "total": 8},
-    "task3": {"nc_states": [3,4,5,6,7,8,9,12,17,18,19,20,21], "nc_cells": 8, "explore_cells": 0, "total": 8},
-    "task4": {"nc_states": [], "nc_cells": 0, "explore_cells": 8, "total": 8},
-    "task5": {"nc_states": [7,11,17], "nc_cells": 6, "explore_cells": 2, "total": 8},
-    "task6": {"nc_states": [4,9,16,17,20], "nc_cells": 8, "explore_cells": 0, "total": 8},
-    "task7": {"nc_states": [8,9,10,13,14], "nc_cells": 8, "explore_cells": 0, "total": 8},
-    "task8": {"nc_states": [8,13,19], "nc_cells": 6, "explore_cells": 2, "total": 8},
-    "task9": {"nc_states": [5,17,18,20,22], "nc_cells": 8, "explore_cells": 0, "total": 8}
+  "per_task_nc_parent_states": {
+    "task0": [5, 6, 11],
+    "task1": [16],
+    "task2": [15],
+    "task3": [3, 4, 5, 6, 7, 8, 9, 12, 17, 18, 19, 20, 21],
+    "task4": [],
+    "task5": [7, 11, 17],
+    "task6": [4, 9, 16, 17, 20],
+    "task7": [8, 9, 10, 13, 14],
+    "task8": [8, 13, 19],
+    "task9": [5, 17, 18, 20, 22]
   },
 
-  "perturbation_templates": {
+  "per_task_allocation": {
+    "task0": {"hard_negative": 6, "coverage": 2, "total": 8},
+    "task1": {"hard_negative": 2, "coverage": 6, "total": 8},
+    "task2": {"hard_negative": 2, "coverage": 6, "total": 8},
+    "task3": {"hard_negative": 8, "coverage": 0, "total": 8},
+    "task4": {"hard_negative": 0, "coverage": 8, "total": 8},
+    "task5": {"hard_negative": 6, "coverage": 2, "total": 8},
+    "task6": {"hard_negative": 8, "coverage": 0, "total": 8},
+    "task7": {"hard_negative": 8, "coverage": 0, "total": 8},
+    "task8": {"hard_negative": 6, "coverage": 2, "total": 8},
+    "task9": {"hard_negative": 8, "coverage": 0, "total": 8}
+  },
+
+  "perturbation_bank": {
     "P1": {"dx_m": 0.005, "dy_m": 0.0, "dyaw_rad": 0.0},
     "P2": {"dx_m": -0.005, "dy_m": 0.0, "dyaw_rad": 0.0},
     "P3": {"dx_m": 0.0, "dy_m": 0.005, "dyaw_rad": 0.0},
@@ -56,25 +77,13 @@
     "P7": {"dx_m": "random_10mm", "dy_m": "random_10mm", "dyaw_rad": 0.0}
   },
 
-  "manifest_generation": {
-    "method": "generate_reserve_manifest() in amendment script",
-    "rules": [
-      "Each (task, parent_state, template) appears at most once",
-      "NC cells: for each task, pick from nc_states list, cycling through P1-P7 + varying seed",
-      "Explore cells: pick parent states NOT in primary NC list, cycling through P1-P7",
-      "seeds: [42, 43, 44, 45, 46, 47, 48, 49] for P1-P6; [100, 101, ...] for P7",
-      "Output: CSV with task,parent_state,template,base_seed,expected_dx,expected_dy,expected_dyaw"
-    ]
+  "effective_duplicate_check": {
+    "key_fields": ["task", "parent_state", "dx_m", "dy_m", "dyaw_rad", "perturbation_seed"],
+    "must_be_unique": true,
+    "note": "All 80 cells must have unique (task, parent_state, effective_dx, effective_dy, effective_dyaw) in primary+reserve combined set"
   },
 
-  "collector_requirements": {
-    "base": "run_v2_vis_sc5_mlp_bridge.py (proven V4 bridge)",
-    "modifications": [
-      "Add perturbation AFTER set_init_state, BEFORE apply_dummy_wait",
-      "Add target position resolution (fail-closed: RuntimeError if unresolved)",
-      "Add initial_state_sha256 computation (qpos+qvel+act hash after perturbation)",
-      "Record actual (dx,dy,dyaw) in episode_summary"
-    ],
-    "verification": "10-task smoke before full collection"
-  }
+  "exact_member_manifest": "T2_TRAIN_RESERVE_V2_EXACT_MANIFEST.csv (generated by freeze script, 80 rows)",
+
+  "collection_rule": "All 80 cells must be collected. Collection stops only after all 80 complete or a hard error. Must NOT stop early after reaching NC=39."
 }
