@@ -198,8 +198,8 @@ print("Perturbation: %s dx=%.4f dy=%.4f dyaw=%.4f orig_sha=%s pert_sha=%s pos_de
     float(actual_body_pos[1] - orig_body_pos[1]),
     float(actual_body_pos[2] - orig_body_pos[2])))
 
-# Check object not below table
-if actual_body_pos[2] < 0.01:
+# Check object not below table (table surface ≈ z=0 in MuJoCo; z=0 is on table, z<0 is penetration)
+if actual_body_pos[2] < -0.01:
     env.close()
     raise ValueError("Perturbation pushed object below table: z=%.4f" % actual_body_pos[2])
 
