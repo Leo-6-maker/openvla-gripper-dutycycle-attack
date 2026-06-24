@@ -51,7 +51,21 @@
     "train_split": {"tv": 159, "nc": 121, "total": 280},
     "dev_split": {"tv": 36, "nc": 54, "total": 90},
     "audit": "SC5_V2_DATASET_AUDIT.json (leakage=0, teacher validity=PASS)",
-    "feature_schema": "25D SC5 streaming features (see sc5_streaming_features_v2.py)"
+    "feature_schema": "25D SC5 streaming features (see sc5_streaming_features_v2.py)",
+    "step_dataset": {
+      "path": "migration_audit/m1c/sc5_v2_data/SC5_V2_STEP_DATASET.csv",
+      "sha256": "c086c0c8107622161bc620ed17035d8d2aea37764b8602bf87d8d30ff7373de9",
+      "total_steps": 101215,
+      "train_eps": 280, "train_steps": 73764,
+      "val_eps": 90, "val_steps": 27451,
+      "phase_distribution": {
+        "approach": 50313, "grasp_close": 31528, "stable_grasp": 5466,
+        "first_lift": 0, "stable_carry": 8324,
+        "pre_place_unsupported": 4614, "release_safe": 277,
+        "recovery_or_regrasp": 323, "abstain_unsupported": 370
+      },
+      "generation_errors": 0
+    }
   },
 
   "training": {
