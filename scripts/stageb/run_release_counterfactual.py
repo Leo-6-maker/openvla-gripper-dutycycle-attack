@@ -32,15 +32,12 @@ def extract_probs(model, x_norm):
         return phase_idx, cp, rp
 
 
-def counterfactual_replay(rt_v1, rt_v2, rows):
-    """Replay one trajectory through both V1 and V2 runtimes.
-    At each step, also compute raw probs to attribute any disagreement.
+def replay_one(rt, rows):
+    """Replay one trajectory through a single runtime independently.
+    Returns emit/arm results and per-step probs for analysis.
     """
-    rt_v1.reset(); rt_v2.reset()
-
-    release_block_events = []
-    per_step_deltas = []
-
+    rt.reset()
+    per_step = []
     for r in rows:
         feats = {}
         ok = True
@@ -60,70 +57,104 @@ def counterfactual_replay(rt_v1, rt_v2, rows):
             continue
 
         step = int(r.get("step_idx", 0))
-
-        # Raw probs from both models (before state machine update)
-        x_v1 = (x - rt_v1.mean) / (rt_v1.std + 1e-8)
-        x_v2 = (x - rt_v2.mean) / (rt_v2.std + 1e-8)
-        ph_v1, cp_v1, rp_v1 = extract_probs(rt_v1.model, x_v1)
-        ph_v2, cp_v2, rp_v2 = extract_probs(rt_v2.model, x_v2)
-
-        pre_v1_armed = rt_v1.state == "ARMED"
-        pre_v2_armed = rt_v2.state == "ARMED"
+        x_norm = (x - rt.mean) / (rt.std + 1e-8)
+        ph, cp, rp = extract_probs(rt.model, x_norm)
+        was_armed = rt.state == "ARMED"
 
         feat_dict = {fn: float(x[i]) for i, fn in enumerate(SC5_FEATURES)}
-        dec_v1 = rt_v1.update(feat_dict, step)
-        dec_v2 = rt_v2.update(feat_dict, step)
+        dec = rt.update(feat_dict, step)
 
-        post_v1_armed = rt_v1.state == "ARMED"
-        post_v2_armed = rt_v2.state == "ARMED"
-
-        # Detect arming disagreement and attribute cause
-        if post_v1_armed and not post_v2_armed:
-            release_block_events.append({
-                "step": step, "blocked_model": "V2",
-                "v1_release_p": round(rp_v1, 6), "v2_release_p": round(rp_v2, 6),
-                "v1_corridor_p": round(cp_v1, 6), "v2_corridor_p": round(cp_v2, 6),
-                "v1_phase": ph_v1, "v2_phase": ph_v2,
-                "release_cross": (rp_v1 >= TAU_R) != (rp_v2 >= TAU_R),
-                "corridor_cross": (cp_v1 >= TAU_C) != (cp_v2 >= TAU_C),
-                "phase_disagree": ph_v1 != ph_v2,
-            })
-        elif post_v2_armed and not post_v1_armed:
-            release_block_events.append({
-                "step": step, "blocked_model": "V1",
-                "v1_release_p": round(rp_v1, 6), "v2_release_p": round(rp_v2, 6),
-                "v1_corridor_p": round(cp_v1, 6), "v2_corridor_p": round(cp_v2, 6),
-                "v1_phase": ph_v1, "v2_phase": ph_v2,
-                "release_cross": (rp_v1 >= TAU_R) != (rp_v2 >= TAU_R),
-                "corridor_cross": (cp_v1 >= TAU_C) != (cp_v2 >= TAU_C),
-                "phase_disagree": ph_v1 != ph_v2,
-            })
-
-        per_step_deltas.append({
-            "step": step,
-            "rp_v1": rp_v1, "rp_v2": rp_v2, "rp_delta": rp_v2 - rp_v1,
-            "cp_v1": cp_v1, "cp_v2": cp_v2, "cp_delta": cp_v2 - cp_v1,
-            "phase_agree": ph_v1 == ph_v2,
+        per_step.append({
+            "step": step, "phase": ph, "corridor_p": cp, "release_p": rp,
+            "was_armed": was_armed, "became_armed": rt.state == "ARMED" and not was_armed,
         })
 
-        if dec_v1.get("emitted") or dec_v2.get("emitted"):
+        if dec.get("emitted"):
             break
 
-    rp_deltas = [d["rp_delta"] for d in per_step_deltas]
-    cp_deltas = [d["cp_delta"] for d in per_step_deltas]
+    rp_vals = [d["release_p"] for d in per_step]
+    return {
+        "armed": rt.arm_step >= 0, "emitted": rt.emitted,
+        "arm_step": rt.arm_step, "emit_step": rt.emit_step,
+        "per_step": per_step, "n_steps": len(per_step),
+        "rp_mae": float(np.mean(np.abs(np.array(rp_vals) - np.array(rp_vals)))) if rp_vals else 0,
+    }
+
+
+def counterfactual_replay(rt_v1, rt_v2, rows):
+    """Replay one trajectory through V1 and V2 independently.
+    Then compare arming/emit decisions. Also compute cross-model per-step
+    deltas for release-block attribution.
+    """
+    res_v1 = replay_one(rt_v1, rows)
+    res_v2 = replay_one(rt_v2, rows)
+
+    # Cross-model release comparison: at V2's arm step, check V1 probs
+    release_block_events = []
+    # Find steps where one armed but the other didn't (or armed at different steps)
+    v1_arm = res_v1["arm_step"]
+    v2_arm = res_v2["arm_step"]
+    v1_steps = {d["step"]: d for d in res_v1["per_step"]}
+    v2_steps = {d["step"]: d for d in res_v2["per_step"]}
+
+    # Check arm step differences
+    if v1_arm >= 0 and v2_arm >= 0 and v1_arm != v2_arm:
+        s1 = v1_steps.get(v1_arm, {})
+        s2 = v2_steps.get(v2_arm, {})
+        release_block_events.append({
+            "step_v1": v1_arm, "step_v2": v2_arm,
+            "blocked_model": "V2" if v2_arm > v1_arm else "V1",
+            "v1_release_p": round(s1.get("release_p", 0), 6),
+            "v2_release_p": round(s2.get("release_p", 0) if v2_arm in v2_steps else v1_steps.get(v2_arm, {}).get("release_p", 0), 6),
+            "v1_corridor_p": round(s1.get("corridor_p", 0), 6),
+            "v2_corridor_p": round(s2.get("corridor_p", 0) if v2_arm in v2_steps else v1_steps.get(v2_arm, {}).get("corridor_p", 0), 6),
+            "release_cross": False, "corridor_cross": False, "phase_disagree": False,
+            "note": "different arm steps, not necessarily release-block",
+        })
+    elif v1_arm >= 0 and v2_arm < 0:
+        s = v1_steps.get(v1_arm, {})
+        release_block_events.append({
+            "step": v1_arm, "blocked_model": "V2",
+            "v1_release_p": round(s.get("release_p", 0), 6),
+            "v2_release_p": 0.0,
+            "v1_corridor_p": round(s.get("corridor_p", 0), 6),
+            "v2_corridor_p": 0.0,
+            "v1_phase": s.get("phase", -1), "v2_phase": -1,
+            "release_cross": False, "corridor_cross": False, "phase_disagree": True,
+            "note": "V2 never armed",
+        })
+    elif v2_arm >= 0 and v1_arm < 0:
+        s = v2_steps.get(v2_arm, {})
+        release_block_events.append({
+            "step": v2_arm, "blocked_model": "V1",
+            "v2_release_p": round(s.get("release_p", 0), 6),
+            "v1_release_p": 0.0,
+            "v2_corridor_p": round(s.get("corridor_p", 0), 6),
+            "v1_corridor_p": 0.0,
+            "v2_phase": s.get("phase", -1), "v1_phase": -1,
+            "release_cross": False, "corridor_cross": False, "phase_disagree": True,
+            "note": "V1 never armed",
+        })
+
+    # Per-step deltas (up to min emit step)
+    min_steps = min(res_v1["n_steps"], res_v2["n_steps"])
+    rp_deltas = []
+    for i in range(min_steps):
+        s1 = res_v1["per_step"][i]
+        s2 = res_v2["per_step"][i]
+        rp_deltas.append(s2["release_p"] - s1["release_p"])
 
     return {
-        "v1_armed": rt_v1.state == "ARMED", "v1_emitted": rt_v1.emitted,
-        "v2_armed": rt_v2.state == "ARMED", "v2_emitted": rt_v2.emitted,
-        "v1_emit_step": rt_v1.emit_step, "v2_emit_step": rt_v2.emit_step,
+        "v1_armed": res_v1["armed"], "v1_emitted": res_v1["emitted"],
+        "v1_arm_step": res_v1["arm_step"], "v1_emit_step": res_v1["emit_step"],
+        "v2_armed": res_v2["armed"], "v2_emitted": res_v2["emitted"],
+        "v2_arm_step": res_v2["arm_step"], "v2_emit_step": res_v2["emit_step"],
         "release_block_events": release_block_events,
         "n_release_block_events": len(release_block_events),
         "rp_mae": float(np.mean(np.abs(rp_deltas))) if rp_deltas else 0,
         "rp_max_abs": float(np.max(np.abs(rp_deltas))) if rp_deltas else 0,
-        "cp_mae": float(np.mean(np.abs(cp_deltas))) if cp_deltas else 0,
-        "phase_disagree_count": sum(1 for d in per_step_deltas if not d["phase_agree"]),
-        "phase_disagree_frac": sum(1 for d in per_step_deltas if not d["phase_agree"]) / max(len(per_step_deltas), 1),
-        "n_steps": len(per_step_deltas),
+        "n_steps_v1": res_v1["n_steps"],
+        "n_steps_v2": res_v2["n_steps"],
     }
 
 
@@ -242,8 +273,6 @@ def main():
         "aggregate_metrics": {
             "rp_mae_mean": float(np.mean([r["rp_mae"] for r in results.values()])),
             "rp_max_abs_max": float(np.max([r["rp_max_abs"] for r in results.values()])),
-            "cp_mae_mean": float(np.mean([r["cp_mae"] for r in results.values()])),
-            "phase_disagree_frac_mean": float(np.mean([r["phase_disagree_frac"] for r in results.values()])),
         },
     }
 
@@ -256,17 +285,17 @@ def main():
     print(f"  Episodes evaluated: {len(dev_episodes)}")
     print(f"  Emit disagreement: {n_emit_disagree}/90")
     print(f"  Release-attributable emit disagreements: {n_release_attributable}")
-    print(f"  Release-block events (arming level): {summary['release_block']['total_events']}")
+    print(f"  Arming-level block events: {summary['release_block']['total_events']}")
     print(f"  Release-cross events: {summary['release_block']['release_cross_events']}")
     print(f"  RP MAE (mean): {summary['aggregate_metrics']['rp_mae_mean']:.6f}")
     print(f"  GATE (emit_disagree <= 1): {'PASS' if n_emit_disagree <= 1 else 'FAIL'}")
 
     # ── Per-episode CSV ──
     csv_path = os.path.join(args.output_dir, "release_counterfactual_per_episode.csv")
-    fields = ["episode_id", "v1_armed", "v1_emitted", "v1_emit_step",
-              "v2_armed", "v2_emitted", "v2_emit_step",
-              "emit_agree", "n_release_block_events", "rp_mae", "rp_max_abs",
-              "phase_disagree_frac", "n_steps"]
+    fields = ["episode_id", "v1_armed", "v1_emitted", "v1_arm_step", "v1_emit_step",
+              "v2_armed", "v2_emitted", "v2_arm_step", "v2_emit_step",
+              "emit_agree", "arm_agree", "n_release_block_events",
+              "rp_mae", "rp_max_abs", "n_steps_v1", "n_steps_v2"]
     with open(csv_path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fields)
         w.writeheader()
@@ -274,14 +303,17 @@ def main():
             r = results[eid]
             w.writerow({
                 "episode_id": eid,
-                "v1_armed": r["v1_armed"], "v1_emitted": r["v1_emitted"], "v1_emit_step": r["v1_emit_step"],
-                "v2_armed": r["v2_armed"], "v2_emitted": r["v2_emitted"], "v2_emit_step": r["v2_emit_step"],
+                "v1_armed": r["v1_armed"], "v1_emitted": r["v1_emitted"],
+                "v1_arm_step": r.get("v1_arm_step", -1), "v1_emit_step": r["v1_emit_step"],
+                "v2_armed": r["v2_armed"], "v2_emitted": r["v2_emitted"],
+                "v2_arm_step": r.get("v2_arm_step", -1), "v2_emit_step": r["v2_emit_step"],
                 "emit_agree": r["v1_emitted"] == r["v2_emitted"],
+                "arm_agree": r["v1_armed"] == r["v2_armed"],
                 "n_release_block_events": r["n_release_block_events"],
                 "rp_mae": round(r["rp_mae"], 6),
                 "rp_max_abs": round(r["rp_max_abs"], 6),
-                "phase_disagree_frac": round(r["phase_disagree_frac"], 6),
-                "n_steps": r["n_steps"],
+                "n_steps_v1": r["n_steps_v1"],
+                "n_steps_v2": r["n_steps_v2"],
             })
 
     # Also save detailed block events for episodes with them
