@@ -3725,8 +3725,7 @@ def run_exact_action_prefix_replay_canary(
         }
         write_json(output_dir / "c3_prefix_replay_summary.json", failure)
         write_json(output_dir / "prefix_replay_first_divergence.json", failure)
-        failure["recursive_sha256_manifest_sha256"] = write_recursive_manifest(output_dir)
-        write_json(output_dir / "c3_prefix_replay_summary.json", failure)
+        write_recursive_manifest(output_dir)
         raise
     finally:
         try:
@@ -3735,10 +3734,8 @@ def run_exact_action_prefix_replay_canary(
         except Exception:
             pass
         release_real_policy(replay_policy)
-    seal = write_recursive_manifest(output_dir)
     summary = json.loads((output_dir / "c3_prefix_replay_summary.json").read_text(encoding="utf-8"))
-    summary["recursive_sha256_manifest_sha256"] = seal
-    write_json(output_dir / "c3_prefix_replay_summary.json", summary)
+    write_recursive_manifest(output_dir)
     return summary
 
 

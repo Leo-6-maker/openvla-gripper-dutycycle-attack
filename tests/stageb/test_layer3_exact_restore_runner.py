@@ -1036,6 +1036,10 @@ def test_c3_canary_writes_required_artifacts(tmp_path, monkeypatch):
     seal_rows = list(csv.DictReader((output_dir / "recursive_sha256_manifest.csv").open(newline="", encoding="utf-8")))
     sealed = {row["path"] for row in seal_rows}
     assert required - {"recursive_sha256_manifest.csv"} <= sealed
+    summary_row = next(row for row in seal_rows if row["path"] == "c3_prefix_replay_summary.json")
+    summary_path = output_dir / "c3_prefix_replay_summary.json"
+    assert int(summary_row["size"]) == summary_path.stat().st_size
+    assert summary_row["sha256"] == runner.sha256_file(summary_path)
 
 
 def test_typed_prefix_artifact_roundtrip_preserves_agentview(tmp_path):
