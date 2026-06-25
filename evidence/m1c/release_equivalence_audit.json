@@ -1,0 +1,76 @@
+Warning: Permanently added '10.60.133.3' (ED25519) to the list of known hosts.
+Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known hosts.
+{
+  "gate": "RELEASE_EQUIVALENCE_AUDIT",
+  "v1_checkpoint_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+  "tau_release": 0.3,
+  "val_steps": 121210,
+  "per_seed": {
+    "42": {
+      "n_steps": 24242,
+      "mae": 0.002137794768961462,
+      "rmse": 0.02363573059247824,
+      "p95_ae": 0.0035175369819648084,
+      "pearson_corr": 0.021618220852440542,
+      "threshold_agreement": 0.9990099826746968,
+      "false_low": 24,
+      "false_high": 0,
+      "mean_v1": 0.0013474670641222624,
+      "mean_v2": 0.0008481399671438617
+    },
+    "123": {
+      "n_steps": 24242,
+      "mae": 0.012005197141742493,
+      "rmse": 0.041395474523612294,
+      "p95_ae": 0.06208078413126771,
+      "pearson_corr": 0.12361152866520632,
+      "threshold_agreement": 0.9973187030773039,
+      "false_low": 19,
+      "false_high": 46,
+      "mean_v1": 0.0013474670641222624,
+      "mean_v2": 0.011178084679904467
+    },
+    "456": {
+      "n_steps": 24242,
+      "mae": 0.0026214597445859576,
+      "rmse": 0.026721714142271015,
+      "p95_ae": 0.004672443214196558,
+      "pearson_corr": -0.002465461506084014,
+      "threshold_agreement": 0.9982262189588318,
+      "false_low": 24,
+      "false_high": 19,
+      "mean_v1": 0.0013474670641222624,
+      "mean_v2": 0.0013061229853931647
+    },
+    "789": {
+      "n_steps": 24242,
+      "mae": 0.0030020660074991513,
+      "rmse": 0.027313523547525607,
+      "p95_ae": 0.00798634944797432,
+      "pearson_corr": 0.0046389410250816535,
+      "threshold_agreement": 0.9981437175150565,
+      "false_low": 24,
+      "false_high": 21,
+      "mean_v1": 0.0013474670641222624,
+      "mean_v2": 0.0017409263177163878
+    },
+    "1024": {
+      "n_steps": 24242,
+      "mae": 0.0023877695102397325,
+      "rmse": 0.024600715728287224,
+      "p95_ae": 0.004305031727844131,
+      "pearson_corr": -0.001939636336844265,
+      "threshold_agreement": 0.9988862305090339,
+      "false_low": 24,
+      "false_high": 3,
+      "mean_v1": 0.0013474670641222624,
+      "mean_v2": 0.0010835470146249168
+    }
+  },
+  "all_pass": true,
+  "gates": {
+    "mae_le_0.05": true,
+    "p95_le_0.15": true,
+    "threshold_agreement_ge_0.99": true
+  }
+}
