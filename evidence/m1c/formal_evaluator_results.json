@@ -1,0 +1,216 @@
+Warning: Permanently added '10.60.133.3' (ED25519) to the list of known hosts.
+Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known hosts.
+{
+  "gate": "SC5_V2_FORMAL_EVALUATOR",
+  "tau_corridor": 0.3,
+  "tau_release": 0.3,
+  "guard": 5,
+  "v1_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+  "dataset_sha256": "a3f9a388e94e7fab295160b11ebaa811cbd3fc4e8e254f7a909a28580e696bc2",
+  "results": {
+    "primary_dev": {
+      "V1": {
+        "tv_recall": 0.9722222222222222,
+        "tv_total": 36,
+        "tv_triggered": 35,
+        "nc_abstain": 0.7142857142857143,
+        "nc_total": 14,
+        "nc_false_trigger": 4,
+        "total_eps": 50,
+        "armed_count": 40,
+        "emitted_count": 39
+      },
+      "V2_s42": {
+        "tv_recall": 0.9722222222222222,
+        "tv_total": 36,
+        "tv_triggered": 35,
+        "nc_abstain": 1.0,
+        "nc_total": 14,
+        "nc_false_trigger": 0,
+        "total_eps": 50,
+        "armed_count": 35,
+        "emitted_count": 35
+      },
+      "V2_s123": {
+        "tv_recall": 0.75,
+        "tv_total": 36,
+        "tv_triggered": 27,
+        "nc_abstain": 1.0,
+        "nc_total": 14,
+        "nc_false_trigger": 0,
+        "total_eps": 50,
+        "armed_count": 33,
+        "emitted_count": 27
+      },
+      "V2_s456": {
+        "tv_recall": 0.9722222222222222,
+        "tv_total": 36,
+        "tv_triggered": 35,
+        "nc_abstain": 1.0,
+        "nc_total": 14,
+        "nc_false_trigger": 0,
+        "total_eps": 50,
+        "armed_count": 35,
+        "emitted_count": 35
+      },
+      "V2_s789": {
+        "tv_recall": 0.9722222222222222,
+        "tv_total": 36,
+        "tv_triggered": 35,
+        "nc_abstain": 1.0,
+        "nc_total": 14,
+        "nc_false_trigger": 0,
+        "total_eps": 50,
+        "armed_count": 36,
+        "emitted_count": 35
+      },
+      "V2_s1024": {
+        "tv_recall": 0.9444444444444444,
+        "tv_total": 36,
+        "tv_triggered": 34,
+        "nc_abstain": 1.0,
+        "nc_total": 14,
+        "nc_false_trigger": 0,
+        "total_eps": 50,
+        "armed_count": 34,
+        "emitted_count": 34
+      }
+    },
+    "reserve_dev": {
+      "V1": {
+        "tv_recall": 0.0,
+        "tv_total": 0,
+        "tv_triggered": 0,
+        "nc_abstain": 1.0,
+        "nc_total": 40,
+        "nc_false_trigger": 0,
+        "total_eps": 40,
+        "armed_count": 0,
+        "emitted_count": 0
+      },
+      "V2_s42": {
+        "tv_recall": 0.0,
+        "tv_total": 0,
+        "tv_triggered": 0,
+        "nc_abstain": 1.0,
+        "nc_total": 40,
+        "nc_false_trigger": 0,
+        "total_eps": 40,
+        "armed_count": 0,
+        "emitted_count": 0
+      },
+      "V2_s123": {
+        "tv_recall": 0.0,
+        "tv_total": 0,
+        "tv_triggered": 0,
+        "nc_abstain": 1.0,
+        "nc_total": 40,
+        "nc_false_trigger": 0,
+        "total_eps": 40,
+        "armed_count": 0,
+        "emitted_count": 0
+      },
+      "V2_s456": {
+        "tv_recall": 0.0,
+        "tv_total": 0,
+        "tv_triggered": 0,
+        "nc_abstain": 1.0,
+        "nc_total": 40,
+        "nc_false_trigger": 0,
+        "total_eps": 40,
+        "armed_count": 0,
+        "emitted_count": 0
+      },
+      "V2_s789": {
+        "tv_recall": 0.0,
+        "tv_total": 0,
+        "tv_triggered": 0,
+        "nc_abstain": 1.0,
+        "nc_total": 40,
+        "nc_false_trigger": 0,
+        "total_eps": 40,
+        "armed_count": 0,
+        "emitted_count": 0
+      },
+      "V2_s1024": {
+        "tv_recall": 0.0,
+        "tv_total": 0,
+        "tv_triggered": 0,
+        "nc_abstain": 1.0,
+        "nc_total": 40,
+        "nc_false_trigger": 0,
+        "total_eps": 40,
+        "armed_count": 0,
+        "emitted_count": 0
+      }
+    },
+    "combined_dev": {
+      "V1": {
+        "tv_recall": 0.9722222222222222,
+        "tv_total": 36,
+        "tv_triggered": 35,
+        "nc_abstain": 0.9259259259259259,
+        "nc_total": 54,
+        "nc_false_trigger": 4,
+        "total_eps": 90,
+        "armed_count": 40,
+        "emitted_count": 39
+      },
+      "V2_s42": {
+        "tv_recall": 0.9722222222222222,
+        "tv_total": 36,
+        "tv_triggered": 35,
+        "nc_abstain": 1.0,
+        "nc_total": 54,
+        "nc_false_trigger": 0,
+        "total_eps": 90,
+        "armed_count": 35,
+        "emitted_count": 35
+      },
+      "V2_s123": {
+        "tv_recall": 0.75,
+        "tv_total": 36,
+        "tv_triggered": 27,
+        "nc_abstain": 1.0,
+        "nc_total": 54,
+        "nc_false_trigger": 0,
+        "total_eps": 90,
+        "armed_count": 33,
+        "emitted_count": 27
+      },
+      "V2_s456": {
+        "tv_recall": 0.9722222222222222,
+        "tv_total": 36,
+        "tv_triggered": 35,
+        "nc_abstain": 1.0,
+        "nc_total": 54,
+        "nc_false_trigger": 0,
+        "total_eps": 90,
+        "armed_count": 35,
+        "emitted_count": 35
+      },
+      "V2_s789": {
+        "tv_recall": 0.9722222222222222,
+        "tv_total": 36,
+        "tv_triggered": 35,
+        "nc_abstain": 1.0,
+        "nc_total": 54,
+        "nc_false_trigger": 0,
+        "total_eps": 90,
+        "armed_count": 36,
+        "emitted_count": 35
+      },
+      "V2_s1024": {
+        "tv_recall": 0.9444444444444444,
+        "tv_total": 36,
+        "tv_triggered": 34,
+        "nc_abstain": 1.0,
+        "nc_total": 54,
+        "nc_false_trigger": 0,
+        "total_eps": 90,
+        "armed_count": 34,
+        "emitted_count": 34
+      }
+    }
+  }
+}
