@@ -76,7 +76,7 @@ def _pil_center_crop_resize(image: Image.Image, crop_scale: float = 0.9, size: i
 
 def prepare_openvla_image_for_attack(image_np, *, libero_official_preprocess: bool = False, center_crop: bool = False, resize_size: int = 224, libero_preprocess_backend: str = "official_pil_lanczos", **kwargs) -> Image.Image:
     from gripper_attack.openvla_preprocess import prepare_openvla_image
-    return prepare_openvla_image(image_np, libero_official_preprocess=libero_official_preprocess,
+    return prepare_openvla_image(image_np,
                                  center_crop=center_crop, resize_size=resize_size,
                                  libero_preprocess_backend=libero_preprocess_backend)
 
