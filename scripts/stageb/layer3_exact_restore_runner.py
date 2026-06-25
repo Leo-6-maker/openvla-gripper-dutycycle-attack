@@ -2776,6 +2776,7 @@ def load_real_policy_and_student(args: argparse.Namespace, *, env_adapter: RealL
     visible = torch.cuda.device_count()
     if visible <= 0:
         raise ExactRestoreError("no CUDA device visible")
+    max_memory_mib = int(os.environ.get("OPENVLA_MAX_MEMORY_MIB", "10000"))
     model = AutoModelCls.from_pretrained(
         args.model_path,
         trust_remote_code=True,
@@ -2783,7 +2784,7 @@ def load_real_policy_and_student(args: argparse.Namespace, *, env_adapter: RealL
         torch_dtype=torch.bfloat16,
         low_cpu_mem_usage=True,
         device_map="auto",
-        max_memory={idx: "10000MiB" for idx in range(visible)} | {"cpu": "128GiB"},
+        max_memory={idx: f"{max_memory_mib}MiB" for idx in range(visible)} | {"cpu": "128GiB"},
         attn_implementation="eager",
     )
     model.eval()
