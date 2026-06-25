@@ -41,8 +41,11 @@ EXPECTED_TOTAL_STEPS = 84015
 EXPECTED_TRAIN_EPS = 280
 EXPECTED_VAL_EPS = 90
 
-def load_data(csv_path, expected_sha=None):
-    """Load SC5-V2 step dataset. Returns (Xtr,Ytr,Xvl,Yvl,n_tr,n_vl,metadata)."""
+def load_data(csv_path, expected_sha=None, exp_train_steps=None, exp_val_steps=None,
+              exp_train_eps=None, exp_val_eps=None):
+    """Load SC5-V2 step dataset. Returns (Xtr,Ytr,Xvl,Yvl,n_tr,n_vl,metadata).
+    If expected_* parameters are None, uses hardcoded defaults (full dataset).
+    """
     actual_sha = hashlib.sha256(open(csv_path,"rb").read()).hexdigest()
     if expected_sha and actual_sha != expected_sha:
         raise RuntimeError("DATASET_SHA_MISMATCH: actual=%s expected=%s" % (actual_sha, expected_sha))
@@ -65,10 +68,13 @@ def load_data(csv_path, expected_sha=None):
 
     if not tr_rows: raise ValueError("No train rows")
     if not vl_rows: raise ValueError("No val rows")
-    if len(tr_rows) != EXPECTED_TRAIN_STEPS:
-        raise RuntimeError("TRAIN_STEP_COUNT_MISMATCH: %d != %d" % (len(tr_rows), EXPECTED_TRAIN_STEPS))
-    if len(vl_rows) != EXPECTED_VAL_STEPS:
-        raise RuntimeError("VAL_STEP_COUNT_MISMATCH: %d != %d" % (len(vl_rows), EXPECTED_VAL_STEPS))
+
+    _etr = exp_train_steps if exp_train_steps is not None else EXPECTED_TRAIN_STEPS
+    _evl = exp_val_steps if exp_val_steps is not None else EXPECTED_VAL_STEPS
+    if len(tr_rows) != _etr:
+        raise RuntimeError("TRAIN_STEP_COUNT_MISMATCH: %d != %d" % (len(tr_rows), _etr))
+    if len(vl_rows) != _evl:
+        raise RuntimeError("VAL_STEP_COUNT_MISMATCH: %d != %d" % (len(vl_rows), _evl))
 
     # Fail-closed: check all features present and valid
     for r in tr_rows + vl_rows:
@@ -97,6 +103,13 @@ def load_data(csv_path, expected_sha=None):
 
     tr_eps = sorted(set(r['episode_id'] for r in tr_rows))
     vl_eps = sorted(set(r['episode_id'] for r in vl_rows))
+
+    _etr_eps = exp_train_eps if exp_train_eps is not None else EXPECTED_TRAIN_EPS
+    _evl_eps = exp_val_eps if exp_val_eps is not None else EXPECTED_VAL_EPS
+    if len(tr_eps) != _etr_eps:
+        raise RuntimeError("TRAIN_EPISODE_COUNT_MISMATCH: %d != %d" % (len(tr_eps), _etr_eps))
+    if len(vl_eps) != _evl_eps:
+        raise RuntimeError("VAL_EPISODE_COUNT_MISMATCH: %d != %d" % (len(vl_eps), _evl_eps))
 
     def mk(rl):
         X = np.array([[float(r[fn]) for fn in SC5_FEATURES] for r in rl], dtype=np.float32)
@@ -211,6 +224,14 @@ def main():
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--expected_dataset_sha256", default=EXPECTED_DATASET_SHA,
                     help="Fail-closed if dataset SHA does not match")
+    ap.add_argument("--expected_train_steps", type=int, default=None,
+                    help="Override expected train step count (for ablation datasets)")
+    ap.add_argument("--expected_val_steps", type=int, default=None,
+                    help="Override expected val step count")
+    ap.add_argument("--expected_train_eps", type=int, default=None,
+                    help="Override expected train episode count")
+    ap.add_argument("--expected_val_eps", type=int, default=None,
+                    help="Override expected val episode count")
     ap.add_argument("--v1_checkpoint", default="artifacts/detector/sc5_mlp_s2.pt",
                     help="SC5-V1 checkpoint for release head injection")
     args = ap.parse_args()
@@ -218,7 +239,10 @@ def main():
     random.seed(args.seed); np.random.seed(args.seed); torch.manual_seed(args.seed)
 
     print("Loading %s..." % args.dataset)
-    Xtr, Ytr, Xvl, Yvl, n_tr, n_vl, meta = load_data(args.dataset, expected_sha=args.expected_dataset_sha256)
+    Xtr, Ytr, Xvl, Yvl, n_tr, n_vl, meta = load_data(
+        args.dataset, expected_sha=args.expected_dataset_sha256,
+        exp_train_steps=args.expected_train_steps, exp_val_steps=args.expected_val_steps,
+        exp_train_eps=args.expected_train_eps, exp_val_eps=args.expected_val_eps)
     print("  train=%d steps (%d eps)  val=%d steps (%d eps)" % (n_tr, meta['n_train_eps'], n_vl, meta['n_val_eps']))
 
     # Normalize
