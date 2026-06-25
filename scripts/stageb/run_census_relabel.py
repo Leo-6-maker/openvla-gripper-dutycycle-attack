@@ -120,7 +120,8 @@ def main():
     print("=== 1. Census Completion Audit ===")
     all_cells = sorted([os.path.basename(d) for d in glob.glob(CENSUS_DIR + "/*")
                         if os.path.isdir(d)])
-    done_cells = sorted([os.path.basename(d) for d in glob.glob(CENSUS_DIR + "/*/.done")])
+    done_dirs = glob.glob(CENSUS_DIR + "/*/.done")
+    done_cells = sorted([os.path.basename(os.path.dirname(d)) for d in done_dirs])
 
     # Parse task/state from cell names
     task_state_pairs = set()
@@ -187,7 +188,17 @@ def main():
 
         rows = load_telemetry(d)
         summary = load_summary(d)
-        label = teacher_label(rows, summary)
+        try:
+            label = teacher_label(rows, summary)
+        except Exception as e:
+            label = {"category": "U", "corridor_valid": False, "task_success": False,
+                     "lifted": False, "lift_delta": 0.0, "grasped": False,
+                     "teacher_anchor": -1, "reason": "label_error:%s" % str(e)[:80]}
+        # Safety: ensure all required keys exist
+        for k in ["category", "corridor_valid", "task_success", "lifted", "lift_delta",
+                  "grasped", "teacher_anchor", "reason"]:
+            if k not in label:
+                label[k] = "U" if k == "category" else (False if k != "lift_delta" and k != "teacher_anchor" and k != "reason" else (0.0 if k == "lift_delta" else (-1 if k == "teacher_anchor" else "")))
 
         # Also extract V2 emit for cross-tabulation (but NOT for Teacher decision)
         emit_step = summary.get("mlp_emit", summary.get("mlp_emit_step", -1))
