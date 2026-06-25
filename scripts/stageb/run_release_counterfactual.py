@@ -319,11 +319,12 @@ def main():
     # Also save detailed block events for episodes with them
     if release_block_eps:
         block_csv = os.path.join(args.output_dir, "release_block_events_detail.csv")
-        block_fields = ["episode_id", "step", "blocked_model",
+        block_fields = ["episode_id", "step", "step_v1", "step_v2", "blocked_model",
                         "v1_release_p", "v2_release_p", "v1_corridor_p", "v2_corridor_p",
-                        "v1_phase", "v2_phase", "release_cross", "corridor_cross", "phase_disagree"]
+                        "v1_phase", "v2_phase", "release_cross", "corridor_cross",
+                        "phase_disagree", "note"]
         with open(block_csv, "w", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=block_fields)
+            w = csv.DictWriter(f, fieldnames=block_fields, extrasaction="ignore")
             w.writeheader()
             for eid in release_block_eps:
                 for ev in results[eid]["release_block_events"]:
