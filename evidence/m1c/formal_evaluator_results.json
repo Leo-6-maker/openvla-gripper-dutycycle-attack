@@ -1,13 +1,14 @@
 Warning: Permanently added '10.60.133.3' (ED25519) to the list of known hosts.
 Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known hosts.
 {
-  "gate": "SC5_V2_FORMAL_EVALUATOR_V2",
+  "gate": "SC5_V2_FORMAL_EVALUATOR_V3",
   "tau_corridor": 0.3,
   "tau_release": 0.3,
   "guard": 5,
   "v1_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+  "v2_seed42_sha256": "b679e4e072531c70511a336ed68c563cf746938f6864b3cbd14f333e4f0eb09c",
   "dataset_sha256": "a3f9a388e94e7fab295160b11ebaa811cbd3fc4e8e254f7a909a28580e696bc2",
-  "slice_results": {
+  "per_slice": {
     "primary_dev": {
       "V1": {
         "tv_recall": 0.9722222222222222,
@@ -16,9 +17,8 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "nc_abstain": 0.7142857142857143,
         "nc_total": 14,
         "nc_false_trigger": 4,
-        "emit_inside_corridor": 35,
-        "emit_before_corridor": 0,
-        "total_eps": 50,
+        "emit_inside": 35,
+        "emit_before": 0,
         "armed_count": 40,
         "emitted_count": 39
       },
@@ -29,9 +29,8 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "nc_abstain": 1.0,
         "nc_total": 14,
         "nc_false_trigger": 0,
-        "emit_inside_corridor": 20,
-        "emit_before_corridor": 15,
-        "total_eps": 50,
+        "emit_inside": 20,
+        "emit_before": 15,
         "armed_count": 35,
         "emitted_count": 35
       },
@@ -42,9 +41,8 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "nc_abstain": 1.0,
         "nc_total": 14,
         "nc_false_trigger": 0,
-        "emit_inside_corridor": 25,
-        "emit_before_corridor": 2,
-        "total_eps": 50,
+        "emit_inside": 25,
+        "emit_before": 2,
         "armed_count": 33,
         "emitted_count": 27
       },
@@ -55,9 +53,8 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "nc_abstain": 1.0,
         "nc_total": 14,
         "nc_false_trigger": 0,
-        "emit_inside_corridor": 19,
-        "emit_before_corridor": 16,
-        "total_eps": 50,
+        "emit_inside": 19,
+        "emit_before": 16,
         "armed_count": 35,
         "emitted_count": 35
       },
@@ -68,9 +65,8 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "nc_abstain": 1.0,
         "nc_total": 14,
         "nc_false_trigger": 0,
-        "emit_inside_corridor": 21,
-        "emit_before_corridor": 14,
-        "total_eps": 50,
+        "emit_inside": 21,
+        "emit_before": 14,
         "armed_count": 36,
         "emitted_count": 35
       },
@@ -81,9 +77,8 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "nc_abstain": 1.0,
         "nc_total": 14,
         "nc_false_trigger": 0,
-        "emit_inside_corridor": 29,
-        "emit_before_corridor": 5,
-        "total_eps": 50,
+        "emit_inside": 29,
+        "emit_before": 5,
         "armed_count": 34,
         "emitted_count": 34
       }
@@ -96,11 +91,10 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "nc_abstain": 1.0,
         "nc_total": 40,
         "nc_false_trigger": 0,
-        "emit_inside_corridor": 0,
-        "emit_before_corridor": 0,
-        "total_eps": 40,
-        "armed_count": 40,
-        "emitted_count": 39
+        "emit_inside": 0,
+        "emit_before": 0,
+        "armed_count": 0,
+        "emitted_count": 0
       },
       "V2_s42": {
         "tv_recall": 0.0,
@@ -109,11 +103,10 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "nc_abstain": 1.0,
         "nc_total": 40,
         "nc_false_trigger": 0,
-        "emit_inside_corridor": 0,
-        "emit_before_corridor": 0,
-        "total_eps": 40,
-        "armed_count": 35,
-        "emitted_count": 35
+        "emit_inside": 0,
+        "emit_before": 0,
+        "armed_count": 0,
+        "emitted_count": 0
       },
       "V2_s123": {
         "tv_recall": 0.0,
@@ -122,11 +115,10 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "nc_abstain": 1.0,
         "nc_total": 40,
         "nc_false_trigger": 0,
-        "emit_inside_corridor": 0,
-        "emit_before_corridor": 0,
-        "total_eps": 40,
-        "armed_count": 33,
-        "emitted_count": 27
+        "emit_inside": 0,
+        "emit_before": 0,
+        "armed_count": 0,
+        "emitted_count": 0
       },
       "V2_s456": {
         "tv_recall": 0.0,
@@ -135,11 +127,10 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "nc_abstain": 1.0,
         "nc_total": 40,
         "nc_false_trigger": 0,
-        "emit_inside_corridor": 0,
-        "emit_before_corridor": 0,
-        "total_eps": 40,
-        "armed_count": 35,
-        "emitted_count": 35
+        "emit_inside": 0,
+        "emit_before": 0,
+        "armed_count": 0,
+        "emitted_count": 0
       },
       "V2_s789": {
         "tv_recall": 0.0,
@@ -148,11 +139,10 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "nc_abstain": 1.0,
         "nc_total": 40,
         "nc_false_trigger": 0,
-        "emit_inside_corridor": 0,
-        "emit_before_corridor": 0,
-        "total_eps": 40,
-        "armed_count": 36,
-        "emitted_count": 35
+        "emit_inside": 0,
+        "emit_before": 0,
+        "armed_count": 0,
+        "emitted_count": 0
       },
       "V2_s1024": {
         "tv_recall": 0.0,
@@ -161,11 +151,10 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "nc_abstain": 1.0,
         "nc_total": 40,
         "nc_false_trigger": 0,
-        "emit_inside_corridor": 0,
-        "emit_before_corridor": 0,
-        "total_eps": 40,
-        "armed_count": 34,
-        "emitted_count": 34
+        "emit_inside": 0,
+        "emit_before": 0,
+        "armed_count": 0,
+        "emitted_count": 0
       }
     },
     "combined_dev": {
@@ -175,12 +164,7 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "tv_triggered": 35,
         "nc_abstain": 0.9259259259259259,
         "nc_total": 54,
-        "nc_false_trigger": 4,
-        "emit_inside_corridor": 35,
-        "emit_before_corridor": 0,
-        "total_eps": 90,
-        "armed_count": 40,
-        "emitted_count": 39
+        "nc_false_trigger": 4
       },
       "V2_s42": {
         "tv_recall": 0.9722222222222222,
@@ -188,12 +172,7 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "tv_triggered": 35,
         "nc_abstain": 1.0,
         "nc_total": 54,
-        "nc_false_trigger": 0,
-        "emit_inside_corridor": 20,
-        "emit_before_corridor": 15,
-        "total_eps": 90,
-        "armed_count": 35,
-        "emitted_count": 35
+        "nc_false_trigger": 0
       },
       "V2_s123": {
         "tv_recall": 0.75,
@@ -201,12 +180,7 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "tv_triggered": 27,
         "nc_abstain": 1.0,
         "nc_total": 54,
-        "nc_false_trigger": 0,
-        "emit_inside_corridor": 25,
-        "emit_before_corridor": 2,
-        "total_eps": 90,
-        "armed_count": 33,
-        "emitted_count": 27
+        "nc_false_trigger": 0
       },
       "V2_s456": {
         "tv_recall": 0.9722222222222222,
@@ -214,12 +188,7 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "tv_triggered": 35,
         "nc_abstain": 1.0,
         "nc_total": 54,
-        "nc_false_trigger": 0,
-        "emit_inside_corridor": 19,
-        "emit_before_corridor": 16,
-        "total_eps": 90,
-        "armed_count": 35,
-        "emitted_count": 35
+        "nc_false_trigger": 0
       },
       "V2_s789": {
         "tv_recall": 0.9722222222222222,
@@ -227,12 +196,7 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "tv_triggered": 35,
         "nc_abstain": 1.0,
         "nc_total": 54,
-        "nc_false_trigger": 0,
-        "emit_inside_corridor": 21,
-        "emit_before_corridor": 14,
-        "total_eps": 90,
-        "armed_count": 36,
-        "emitted_count": 35
+        "nc_false_trigger": 0
       },
       "V2_s1024": {
         "tv_recall": 0.9444444444444444,
@@ -240,12 +204,7 @@ Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known h
         "tv_triggered": 34,
         "nc_abstain": 1.0,
         "nc_total": 54,
-        "nc_false_trigger": 0,
-        "emit_inside_corridor": 29,
-        "emit_before_corridor": 5,
-        "total_eps": 90,
-        "armed_count": 34,
-        "emitted_count": 34
+        "nc_false_trigger": 0
       }
     }
   }
