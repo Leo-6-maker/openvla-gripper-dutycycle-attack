@@ -1,0 +1,98 @@
+{
+  "gate": "PHASE6C_WAVE1_STATUS",
+  "timestamp": "2026-06-25T19:00:00+08:00",
+  "commit": "14e9758",
+  "branch": "feature/sc5-abstention-v2-20260622",
+
+  "summary": "Wave 1 GPU deployment: Official V1/V2 CLEAN complete, NC controls reveal online false-trigger crisis, Legacy regression paused due to runtime drift.",
+
+  "completed": {
+    "official_v2_clean": {
+      "status": "COMPLETE",
+      "backend": "upstream_tf_jpeg",
+      "cells": 11,
+      "checkpoint": "b679e4e072531c70511a336ed68c563cf746938f6864b3cbd14f333e4f0eb09c"
+    },
+    "official_v1_clean": {
+      "status": "COMPLETE",
+      "backend": "upstream_tf_jpeg",
+      "cells": 10,
+      "checkpoint": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628"
+    },
+    "api_compatibility_smoke": {
+      "status": "PASS",
+      "backend": "project_pil_lanczos",
+      "note": "API_COMPATIBILITY_SMOKE only, not formal evidence"
+    },
+    "official_aligned_smoke": {
+      "status": "PASS",
+      "backend": "upstream_tf_jpeg",
+      "cells": 6,
+      "v1_clean": true, "v1_rand": true, "v1_vis": false,
+      "v2_clean": true, "v2_rand": true, "v2_vis": false
+    }
+  },
+
+  "in_progress": {
+    "nc_online_controls": {
+      "status": "RUNNING",
+      "backend": "upstream_tf_jpeg",
+      "checkpoint": "V2 seed42",
+      "condition": "TRUE_T10",
+      "target": 25,
+      "completed": 12,
+      "false_triggers": 9,
+      "correct_abstains": 3,
+      "false_trigger_rate": "9/12 = 75%",
+      "critical_finding": "Online NC false-trigger rate (75%) massively exceeds offline replay (0/54 dev, 0/300 diagnostic). Likely due to: (a) arbitrary unlabeled states used as NC without teacher verification, or (b) genuine online-vs-offline feature distribution gap.",
+      "false_trigger_cells": [
+        {"cell": "nc_p_t0_s7", "task": 0, "state": 7, "emit": 102, "atk": 10, "succ": false},
+        {"cell": "nc_p_t1_s3", "task": 1, "state": 3, "emit": 101, "atk": 10, "succ": true, "note": "VIS attack accidentally caused task SUCCESS on NC trajectory"},
+        {"cell": "nc_p_t1_s7", "task": 1, "state": 7, "emit": 80, "atk": 10, "succ": true, "note": "VIS attack accidentally caused task SUCCESS on NC trajectory"},
+        {"cell": "nc_p_t2_s3", "task": 2, "state": 3, "emit": 88, "atk": 10, "succ": false},
+        {"cell": "nc_p_t2_s7", "task": 2, "state": 7, "emit": 73, "atk": 10, "succ": false},
+        {"cell": "nc_p_t4_s3", "task": 4, "state": 3, "emit": 126, "atk": 10, "succ": false},
+        {"cell": "nc_p_t4_s7", "task": 4, "state": 7, "emit": "TBD", "atk": "TBD", "succ": "running"},
+        {"cell": "nc_r_t2_s8", "task": 2, "state": 8, "emit": "TBD", "atk": "TBD", "succ": "running"},
+        {"cell": "nc_x_t3_s9", "task": 3, "state": 9, "emit": "TBD", "atk": "TBD", "succ": "running"}
+      ],
+      "correct_abstain_cells": [
+        {"cell": "nc_p_t0_s3", "task": 0, "state": 3, "emit": -1, "atk": 0},
+        {"cell": "nc_p_t3_s3", "task": 3, "state": 3, "emit": -1, "atk": 0},
+        {"cell": "nc_p_t3_s7", "task": 3, "state": 7, "emit": -1, "atk": 0}
+      ]
+    },
+    "rvc_clean": {
+      "status": "RUNNING",
+      "backend": "upstream_tf_jpeg",
+      "target": 15,
+      "completed": 9,
+      "note": "tv_miss": "rvc_t7_s24 emit=-1 (V2 missed a previously-emitted TV trajectory under official backend)"
+    }
+  },
+
+  "paused": {
+    "legacy_regression": {
+      "status": "PAUSED",
+      "reason": "RUNTIME_DRIFT",
+      "detail": "cream_cheese_s0 V1 CLEAN on current commit with project_pil_lanczos: emit=149, steps=400, succ=False. Historical: emit=107, steps=153, succ=True. Same V1 checkpoint, same nominal backend, different commit → 42-step emit shift and task outcome reversal. V1 baseline not reproducible on current runtime.",
+      "completed_cells": "~6 (QUARANTINED_RUNTIME_DRIFT)",
+      "next": "First-divergence audit needed: old commit vs current commit, same V1 checkpoint, same task/state"
+    }
+  },
+
+  "gates_affected": {
+    "FULL_ATTACK_BENCHMARK": "HOLD — NC online controls show 75% false-trigger rate",
+    "RAW_VS_CLAMPED_ATTACK": "HOLD — pending RvC CLEAN completion + NC resolution",
+    "LEGACY_REGRESSION": "PAUSED — runtime drift",
+    "DETECTOR_MODIFICATION": "HOLD",
+    "BLIND_V2": "HOLD"
+  },
+
+  "immediate_actions": [
+    "1. Verify whether NC false-trigger cells are actually no-corridor (teacher evaluation needed)",
+    "2. If genuine NC false triggers: root-cause the online-vs-offline gap",
+    "3. First-divergence audit for Legacy runtime drift",
+    "4. Complete RvC CLEAN and freeze official anchors"
+  ]
+}
