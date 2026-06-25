@@ -1,7 +1,8 @@
 {
   "gate": "PHASE6C_WAVE1_STATUS",
   "timestamp": "2026-06-25T19:00:00+08:00",
-  "commit": "14e9758",
+  "execution_commit": "14e9758",
+  "report_commit": "6442804",
   "branch": "feature/sc5-abstention-v2-20260622",
 
   "summary": "Wave 1 GPU deployment: Official V1/V2 CLEAN complete, NC controls reveal online false-trigger crisis, Legacy regression paused due to runtime drift.",
@@ -47,8 +48,8 @@
       "critical_finding": "Online NC false-trigger rate (75%) massively exceeds offline replay (0/54 dev, 0/300 diagnostic). Likely due to: (a) arbitrary unlabeled states used as NC without teacher verification, or (b) genuine online-vs-offline feature distribution gap.",
       "false_trigger_cells": [
         {"cell": "nc_p_t0_s7", "task": 0, "state": 7, "emit": 102, "atk": 10, "succ": false},
-        {"cell": "nc_p_t1_s3", "task": 1, "state": 3, "emit": 101, "atk": 10, "succ": true, "note": "VIS attack accidentally caused task SUCCESS on NC trajectory"},
-        {"cell": "nc_p_t1_s7", "task": 1, "state": 7, "emit": 80, "atk": 10, "succ": true, "note": "VIS attack accidentally caused task SUCCESS on NC trajectory"},
+        {"cell": "nc_p_t1_s3", "task": 1, "state": 3, "emit": 101, "atk": 10, "succ": true, "note": "VIS-treated rollout succeeded; causal improvement not established (no matched CLEAN counterfactual)"},
+        {"cell": "nc_p_t1_s7", "task": 1, "state": 7, "emit": 80, "atk": 10, "succ": true, "note": "VIS-treated rollout succeeded; causal improvement not established (no matched CLEAN counterfactual)"},
         {"cell": "nc_p_t2_s3", "task": 2, "state": 3, "emit": 88, "atk": 10, "succ": false},
         {"cell": "nc_p_t2_s7", "task": 2, "state": 7, "emit": 73, "atk": 10, "succ": false},
         {"cell": "nc_p_t4_s3", "task": 4, "state": 3, "emit": 126, "atk": 10, "succ": false},
@@ -67,7 +68,7 @@
       "backend": "upstream_tf_jpeg",
       "target": 15,
       "completed": 9,
-      "note": "tv_miss": "rvc_t7_s24 emit=-1 (V2 missed a previously-emitted TV trajectory under official backend)"
+      "note": "rvc_t7_s24 emit=-1 — needs Teacher corridor verification before classifying as TV miss"
     }
   },
 
