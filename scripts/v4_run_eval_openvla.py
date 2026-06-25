@@ -571,7 +571,7 @@ def _model_float_dtype(model):
 
 
 def decode_with_scores(model, processor, device, image_np, instruction, unnorm_key, k, *, libero_official_preprocess=False, center_crop=False, resize_size=224, drop_attention_mask=True, libero_preprocess_backend="official_pil_lanczos"):
-    image=prepare_openvla_image(image_np, libero_official_preprocess=libero_official_preprocess, center_crop=center_crop, resize_size=resize_size, libero_preprocess_backend=libero_preprocess_backend)
+    image=prepare_openvla_image(image_np, center_crop=center_crop, resize_size=resize_size, libero_preprocess_backend=libero_preprocess_backend)
     inputs=processor(prompt(str(instruction).lower()), image, return_tensors="pt")
     if drop_attention_mask:
         # OpenVLA's Prismatic generation code inserts visual tokens internally.
