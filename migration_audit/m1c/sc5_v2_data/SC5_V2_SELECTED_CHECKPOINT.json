@@ -1,0 +1,185 @@
+{
+  "gate": "SC5_V2_SELECTED_CHECKPOINT_FREEZE",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-25T14:00:00+08:00",
+  "parent_commit": "239e240",
+  "selected_seed": 42,
+  "checkpoint_path": "outputs/sc5_v2_seed42/sc5_mlp_v2.pt",
+  "checkpoint_sha256": "b679e4e072531c70511a336ed68c563cf746938f6864b3cbd14f333e4f0eb09c",
+  "v1_checkpoint_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+  "dataset_sha256": "a3f9a388e94e7fab295160b11ebaa811cbd3fc4e8e254f7a909a28580e696bc2",
+  "dataset_path": "migration_audit/m1c/sc5_v2_data/SC5_V2_STEP_DATASET.csv",
+  "runtime_thresholds": {
+    "tau_corridor": 0.3,
+    "tau_release": 0.3,
+    "guard": 5
+  },
+  "architecture": {
+    "name": "SC5_MLP_v2_Hybrid",
+    "input_dim": 25,
+    "hidden_dim": 64,
+    "parameter_count": 6604,
+    "heads": {
+      "phase_head": {"trained": true, "supervised": true},
+      "corridor_head": {"trained": true, "supervised": true},
+      "release_head": {"trained": false, "source": "SC5-V1 frozen injection"},
+      "confidence_head": {"trained": false, "source": "SC5-V1 frozen injection"}
+    }
+  },
+  "selection_rule": {
+    "method": "constraint-based + tie-break",
+    "gate_tv_recall": ">= max(0.80, V1_recall - 0.05) = 0.922",
+    "gate_nc_abstain": ">= 0.90",
+    "tie_break_order": [
+      "1. Primary TV + NC gate",
+      "2. armed_not_emitted = 0 (no armed-but-silent TV episodes)",
+      "3. emit_inside > competitor (more precise corridor timing)",
+      "4. emit_before < competitor (fewer early emissions)",
+      "5. smallest seed (deterministic tie-break)"
+    ]
+  },
+  "candidate_comparison": {
+    "seed42": {
+      "primary_tv_recall": 0.9722,
+      "primary_tv_triggered": 35,
+      "primary_tv_total": 36,
+      "primary_nc_abstain": 1.0,
+      "primary_nc_false_trigger": 0,
+      "primary_nc_total": 14,
+      "emit_inside": 20,
+      "emit_before": 15,
+      "armed_count": 35,
+      "emitted_count": 35,
+      "armed_not_emit": 0,
+      "reserve_nc_false_trigger": 0,
+      "combined_nc_false_trigger": 0,
+      "release_equivalence_mae": 0.00214,
+      "release_threshold_agreement": 0.9990,
+      "verdict": "SELECTED"
+    },
+    "seed456": {
+      "primary_tv_recall": 0.9722,
+      "primary_tv_triggered": 35,
+      "primary_tv_total": 36,
+      "primary_nc_abstain": 1.0,
+      "primary_nc_false_trigger": 0,
+      "primary_nc_total": 14,
+      "emit_inside": 19,
+      "emit_before": 16,
+      "armed_count": 35,
+      "emitted_count": 35,
+      "armed_not_emit": 0,
+      "reserve_nc_false_trigger": 0,
+      "combined_nc_false_trigger": 0,
+      "release_equivalence_mae": 0.00262,
+      "release_threshold_agreement": 0.9982,
+      "verdict": "REJECTED: fewer emit_inside (19 vs 20), more emit_before (16 vs 15), lower release agreement"
+    },
+    "seed789": {
+      "primary_tv_recall": 0.9722,
+      "primary_tv_triggered": 35,
+      "primary_tv_total": 36,
+      "primary_nc_abstain": 1.0,
+      "primary_nc_false_trigger": 0,
+      "primary_nc_total": 14,
+      "emit_inside": 21,
+      "emit_before": 14,
+      "armed_count": 36,
+      "emitted_count": 35,
+      "armed_not_emit": 1,
+      "reserve_nc_false_trigger": 0,
+      "combined_nc_false_trigger": 0,
+      "release_equivalence_mae": 0.00300,
+      "release_threshold_agreement": 0.9981,
+      "verdict": "REJECTED: armed_not_emit=1 (tie-break rule 2 violation)"
+    },
+    "seed123": {
+      "primary_tv_recall": 0.75,
+      "primary_tv_triggered": 27,
+      "primary_tv_total": 36,
+      "primary_nc_abstain": 1.0,
+      "primary_nc_false_trigger": 0,
+      "emit_inside": 25,
+      "emit_before": 2,
+      "armed_count": 33,
+      "emitted_count": 27,
+      "verdict": "REJECTED: TV recall 0.75 < 0.922 gate"
+    },
+    "seed1024": {
+      "primary_tv_recall": 0.9444,
+      "primary_tv_triggered": 34,
+      "primary_tv_total": 36,
+      "primary_nc_abstain": 1.0,
+      "primary_nc_false_trigger": 0,
+      "emit_inside": 29,
+      "emit_before": 5,
+      "armed_count": 34,
+      "emitted_count": 34,
+      "verdict": "PASS gate but not tie-broken: seed42 preferred (smaller seed, armed_not_emit=0)"
+    }
+  },
+  "selected_metrics": {
+    "primary_dev": {
+      "tv_recall": "35/36 = 0.9722",
+      "nc_abstain": "14/14 = 1.0000",
+      "nc_false_trigger": 0
+    },
+    "reserve_dev": {
+      "nc_abstain": "40/40 = 1.0000",
+      "nc_false_trigger": 0
+    },
+    "combined_dev": {
+      "tv_recall": "35/36 = 0.9722",
+      "nc_abstain": "54/54 = 1.0000",
+      "nc_false_trigger": 0
+    },
+    "diagnostic_300": {
+      "all_nc": true,
+      "v1_armed": 1,
+      "v1_emitted": 0,
+      "v2_armed": 0,
+      "v2_emitted": 0
+    },
+    "release_equivalence": {
+      "mae": 0.00214,
+      "rmse": 0.02364,
+      "p95_ae": 0.00352,
+      "threshold_agreement": 0.9990,
+      "false_low": 24,
+      "false_high": 0
+    },
+    "task_level_tv_recall": {
+      "task0": "4/4 = 1.000",
+      "task1": "3/4 = 0.750",
+      "task2": "4/4 = 1.000",
+      "task3": "1/1 = 1.000",
+      "task4": "4/4 = 1.000",
+      "task5": "5/5 = 1.000",
+      "task6": "4/4 = 1.000",
+      "task7": "3/3 = 1.000",
+      "task8": "3/3 = 1.000",
+      "task9": "4/4 = 1.000"
+    },
+    "early_emission_summary": {
+      "count": 15,
+      "max_offset_steps": 3,
+      "min_offset_steps": 1,
+      "note": "All 15 early emissions are 1-3 steps before teacher anchor. Requires Phase 6B state audit to classify benign vs premature."
+    }
+  },
+  "known_gaps": [
+    "Early-emission timing: 15/35 TV triggers occur 1-3 steps before teacher anchor (Phase 6B audit pending)",
+    "Release trajectory counterfactual: V2 phase+corridor with hybrid release vs full V1 release path not yet measured",
+    "Held-out TV generalization: all 300 diagnostic cells are NC-only; no held-out TV coverage test",
+    "Data ablation: Primary-only vs Primary+Reserve not yet run"
+  ],
+  "evidence_files": {
+    "formal_evaluator_results": "evidence/m1c/formal_evaluator_results.json",
+    "per_episode_results": "evidence/m1c/per_episode_results.csv",
+    "release_equivalence_audit": "evidence/m1c/release_equivalence_audit.json",
+    "diagnostic_300_eval": "evidence/m1c/diagnostic_300_eval_results.json",
+    "training_protocol": "migration_audit/m1c/sc5_v2_data/SC5_V2_TRAINING_FROZEN_V4.json",
+    "training_run_index": "migration_audit/m1c/sc5_v2_data/SC5_V2_TRAINING_RUN_INDEX_V2.csv",
+    "release_injection_audit": "migration_audit/m1c/sc5_v2_data/SC5_V2_RELEASE_INJECTION_AUDIT.json"
+  }
+}

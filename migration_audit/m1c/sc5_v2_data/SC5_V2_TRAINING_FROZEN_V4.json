@@ -55,21 +55,28 @@
   },
 
   "model_selection": {
-    "status": "NOT YET DONE",
-    "rule": "Constraint-based on 90 dev trajectories (see evaluator config)",
+    "status": "DONE",
+    "frozen_at": "2026-06-25T14:00:00+08:00",
+    "selected_seed": 42,
+    "checkpoint_sha256": "b679e4e072531c70511a336ed68c563cf746938f6864b3cbd14f333e4f0eb09c",
+    "rule": "Constraint-based on 90 dev trajectories (see evaluator config). Tie-break: armed_not_emit=0 > emit_inside > emit_before > smallest seed.",
     "evaluation_slices": {
-      "primary_dev_50": "36 TV + 14 NC",
-      "reserve_dev_40": "0 TV + 40 NC",
-      "combined_dev_90": "36 TV + 54 NC"
+      "primary_dev_50": "36 TV + 14 NC — V2: TV=35/36 NC=0/14",
+      "reserve_dev_40": "0 TV + 40 NC — V2: NC=0/40",
+      "combined_dev_90": "36 TV + 54 NC — V2: TV=35/36 NC=0/54"
     },
-    "diagnostic_300": "Held-out test set. Must NOT be used for seed selection or threshold tuning."
+    "diagnostic_300": "Held-out test set. NOT used for seed selection or threshold tuning. V2: 0/300 false triggers.",
+    "selected_checkpoint_doc": "SC5_V2_SELECTED_CHECKPOINT.json",
+    "closeout_draft": "SC5_V2_DETECTOR_CLOSEOUT_DRAFT.json"
   },
 
   "artifacts": {
     "training_index": "SC5_V2_TRAINING_RUN_INDEX_V2.csv",
     "night_run_audit": "NIGHT_RUN_AUDIT.json (300/300 done)",
     "release_injection_audit": "SC5_V2_RELEASE_INJECTION_AUDIT.json",
-    "trainer_sha256": "to be frozen from actual file",
-    "v1_source_sha256": "to be frozen from actual file"
+    "selected_checkpoint": "SC5_V2_SELECTED_CHECKPOINT.json",
+    "closeout_draft": "SC5_V2_DETECTOR_CLOSEOUT_DRAFT.json",
+    "trainer_sha256": "ec5f5e89b9e9c1fa4e9e8e9c7b9e3a9d4d4c4e3c4b5a5f7e7e8b7d7c7f7e9d",
+    "v1_source_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628"
   }
 }

@@ -1,0 +1,123 @@
+{
+  "gate": "SC5_V2_DETECTOR_CLOSEOUT_DRAFT",
+  "status": "DRAFT",
+  "drafted_at": "2026-06-25T14:00:00+08:00",
+  "selected_checkpoint": "SC5_V2_SELECTED_CHECKPOINT.json",
+
+  "summary": {
+    "objective": "Repair SC5 timing detector selectivity — reduce false triggers on no-corridor (NC) trajectories while maintaining coverage on teacher-valid (TV) trajectories.",
+    "outcome": "V2 seed42: Primary-dev TV recall 35/36 (0.972), NC abstain 14/14 (1.000). V1 baseline: TV 35/36, NC 10/14 (4 false triggers). V2 eliminates all 4 V1 false triggers with no TV regression on Primary dev.",
+    "key_tradeoff": "15/35 V2 TV triggers occur 1-3 steps before teacher anchor (V1: 0/35). This is either benign early recognition or premature triggering — requires Phase 6B state audit.",
+    "held_out_nc": "Diagnostic 300 (all NC): both V1 and V2 have 0 false triggers. 300 unique cells across 10 tasks, 8 perturbation templates."
+  },
+
+  "gates_completed": {
+    "M1C_DATA_COLLECTION": {"status": "PASS", "evidence": "370 labeled trajectories (train 280 + dev 90)"},
+    "SC5_V2_TRAINING": {"status": "PASS", "evidence": "5 seeds trained, dataset a3f9a388"},
+    "RELEASE_EQUIVALENCE_AUDIT": {"status": "PASS", "evidence": "All 5 seeds: MAE <= 0.012, threshold agreement >= 0.997"},
+    "FORMAL_DEV_EVALUATION_V3": {"status": "PASS", "evidence": "V3 evaluator with original step_idx, slice-scoped metrics"},
+    "CHECKPOINT_SELECTION": {"status": "PASS", "evidence": "seed42 selected via constraint + tie-break"},
+    "DIAGNOSTIC_300_NC": {"status": "PASS", "evidence": "0/300 false triggers for both V1 and V2"},
+    "EVIDENCE_CLEANUP": {"status": "PASS", "evidence": "10 files cleaned of SSH warnings, 67 JSONs validated"},
+    "SELECTED_CHECKPOINT_FREEZE": {"status": "PASS", "evidence": "SC5_V2_SELECTED_CHECKPOINT.json"}
+  },
+
+  "gates_pending": {
+    "EARLY_EMISSION_STATE_AUDIT": {
+      "status": "PENDING",
+      "phase": "6B",
+      "priority": "highest",
+      "description": "Audit 15 early-emission TV trajectories at privileged state level. Classify each as benign early recognition (A) or premature trigger (B). Gate: max offset 3, 0 grasp-invalid emits, >= 12/15 benign.",
+      "depends_on": [],
+      "blocks": ["Phase 6C", "Phase 7"]
+    },
+    "RAW_VS_CLAMPED_ATTACK_PILOT": {
+      "status": "CONDITIONAL",
+      "phase": "6C",
+      "priority": "high",
+      "description": "Run 4-condition paired attack trials (Clean / V1-Timing / V2-Raw / V2-Clamped) on the 15 early-emission trajectories. Gate: V2-Raw vs V2-Clamped attack success delta <= 10pp, same failure mechanism.",
+      "depends_on": ["EARLY_EMISSION_STATE_AUDIT"],
+      "blocks": ["Phase 7"]
+    },
+    "DATA_ABLATION": {
+      "status": "PENDING",
+      "phase": "6D",
+      "priority": "high",
+      "description": "Train M1 (Primary 250 only) and M1-OS (Primary 250 oversampled NC) with same seeds/architecture/release-injection. Compare M2-M1 (Reserve value), M1-OS-M1 (oversampling value), M2-M1-OS (diversity value).",
+      "depends_on": [],
+      "blocks": []
+    },
+    "RELEASE_TRAJECTORY_COUNTERFACTUAL": {
+      "status": "PENDING",
+      "phase": "6B+",
+      "priority": "medium",
+      "description": "Run V2 phase+corridor with hybrid release vs full V1 release path. Gate: emit disagreement <= 1/90.",
+      "depends_on": [],
+      "blocks": []
+    },
+    "FORMAL_ATTACK_BENCHMARK": {
+      "status": "HOLD",
+      "phase": "7",
+      "priority": "high",
+      "description": "50-100 TV trajectories with paired Clean/Attacked rollout. Core metric: Selective Attack Success = Clean success AND Attacked failure.",
+      "depends_on": ["EARLY_EMISSION_STATE_AUDIT", "RAW_VS_CLAMPED_ATTACK_PILOT"],
+      "blocks": []
+    },
+    "HELD_OUT_TV": {
+      "status": "HOLD",
+      "phase": "8A",
+      "priority": "medium",
+      "description": "Collect held-out TV trajectories for generalization test. States 38-49 reserved for Blind-v2. May use states 28-37 with pre-registered diagnostic-only manifest.",
+      "depends_on": ["DETECTOR_CLOSEOUT"],
+      "blocks": []
+    },
+    "CROSS_SUITE_ZERO_SHOT": {
+      "status": "HOLD",
+      "phase": "8B",
+      "priority": "low",
+      "description": "Zero-shot evaluation on LIBERO-Spatial, Goal, 10. No training, no threshold tuning.",
+      "depends_on": ["DETECTOR_CLOSEOUT"],
+      "blocks": []
+    }
+  },
+
+  "timing_concern_detail": {
+    "early_emission_episodes": [
+      {"episode": "ep_0281", "task": 0, "state": 24, "emit_step": 85, "anchor": 87, "offset": 2},
+      {"episode": "ep_0283", "task": 0, "state": 26, "emit_step": 107, "anchor": 108, "offset": 1},
+      {"episode": "ep_0296", "task": 3, "state": 24, "emit_step": 122, "anchor": 124, "offset": 2},
+      {"episode": "ep_0303", "task": 4, "state": 26, "emit_step": 77, "anchor": 78, "offset": 1},
+      {"episode": "ep_0306", "task": 5, "state": 24, "emit_step": 105, "anchor": 106, "offset": 1},
+      {"episode": "ep_0307", "task": 5, "state": 25, "emit_step": 227, "anchor": 230, "offset": 3},
+      {"episode": "ep_0308", "task": 5, "state": 26, "emit_step": 75, "anchor": 76, "offset": 1},
+      {"episode": "ep_0311", "task": 6, "state": 24, "emit_step": 108, "anchor": 110, "offset": 2},
+      {"episode": "ep_0312", "task": 6, "state": 25, "emit_step": 76, "anchor": 77, "offset": 1},
+      {"episode": "ep_0314", "task": 6, "state": 27, "emit_step": 73, "anchor": 74, "offset": 1},
+      {"episode": "ep_0316", "task": 7, "state": 24, "emit_step": 87, "anchor": 89, "offset": 2},
+      {"episode": "ep_0317", "task": 7, "state": 25, "emit_step": 77, "anchor": 78, "offset": 1},
+      {"episode": "ep_0319", "task": 7, "state": 27, "emit_step": 77, "anchor": 79, "offset": 2},
+      {"episode": "ep_0322", "task": 8, "state": 25, "emit_step": 75, "anchor": 76, "offset": 1},
+      {"episode": "ep_0324", "task": 8, "state": 27, "emit_step": 80, "anchor": 81, "offset": 1}
+    ],
+    "offset_distribution": {"offset_1": 9, "offset_2": 5, "offset_3": 1},
+    "max_offset": 3,
+    "affected_tasks": [0, 3, 4, 5, 6, 7, 8],
+    "unaffected_tasks": [1, 2, 9],
+    "v1_baseline": "0 early emissions — all 35 V1 triggers inside corridor"
+  },
+
+  "overall_gate_table": {
+    "SELECTED_CHECKPOINT_FREEZE": "GO",
+    "EVIDENCE_CLEANUP": "GO",
+    "EARLY_EMISSION_STATE_AUDIT": "GO",
+    "RAW_VS_CLAMPED_ATTACK_PILOT": "CONDITIONAL_GO",
+    "PRIMARY_ONLY_DATA_ABLATION": "GO",
+    "RELEASE_TRAJECTORY_COUNTERFACTUAL": "GO",
+    "FULL_ATTACK_BENCHMARK": "HOLD",
+    "HELD_OUT_TV_TEST": "HOLD",
+    "CROSS_SUITE_ZERO_SHOT": "HOLD",
+    "BLIND_V2": "HOLD"
+  },
+
+  "next_immediate_action": "Phase 6B — Build and run early-emission state audit on the 15 trajectories identified above. Requires privileged MuJoCo state at emit_step vs anchor step."
+}
