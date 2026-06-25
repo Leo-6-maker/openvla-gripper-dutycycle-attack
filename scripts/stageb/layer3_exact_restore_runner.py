@@ -2356,7 +2356,7 @@ class RealOpenVLAPolicyAdapter:
         if kwargs.get("do_sample", False):
             raise ExactRestoreError("policy RNG restore rejected nondeterministic generation kwargs")
 
-    def policy_input_fingerprint(self, obs: Any) -> dict[str, Any]:
+    def policy_input_stages(self, obs: Any) -> tuple[np.ndarray, np.ndarray, dict[str, Any]]:
         if not isinstance(obs, Mapping) or "agentview_image" not in obs:
             raise ExactRestoreError("observation missing agentview_image")
         from gripper_attack.openvla_preprocess import prepare_openvla_image
@@ -2379,13 +2379,18 @@ class RealOpenVLAPolicyAdapter:
                 (input_ids, torch.unsqueeze(torch.tensor([29871]).long(), dim=0)),
                 dim=1,
             )
+        return raw, np.asarray(proc_image).copy(), inputs
+
+    def policy_input_fingerprint(self, obs: Any) -> dict[str, Any]:
+        raw, prepared, inputs = self.policy_input_stages(obs)
+        input_ids = inputs.get("input_ids")
         pixel_values = inputs.get("pixel_values")
         out: dict[str, Any] = {
             "raw_agentview_sha256": hash_array(raw),
             "raw_agentview_shape": list(raw.shape),
             "raw_agentview_dtype": str(raw.dtype),
-            "prepared_image_sha256": hash_array(np.asarray(proc_image)),
-            "prepared_image_shape": list(np.asarray(proc_image).shape),
+            "prepared_image_sha256": hash_array(prepared),
+            "prepared_image_shape": list(prepared.shape),
             "prompt": openvla_prompt(self.instruction.lower()),
         }
         if input_ids is not None:
@@ -2398,35 +2403,16 @@ class RealOpenVLAPolicyAdapter:
         return out
 
     def act(self, obs: Any) -> tuple[Sequence[float], Sequence[int]]:
-        if not isinstance(obs, Mapping) or "agentview_image" not in obs:
-            raise ExactRestoreError("observation missing agentview_image")
-        from gripper_attack.openvla_preprocess import prepare_openvla_image
         from gripper_attack.v3_generation_parity import extract_exact_new_tokens
         import torch
 
-        raw = np.asarray(obs["agentview_image"]).copy()
-        proc_image = prepare_openvla_image(
-            raw,
-            libero_official_preprocess=REAL_PREPROCESS_KWARGS["libero_official_preprocess"],
-            center_crop=REAL_PREPROCESS_KWARGS["center_crop"],
-            resize_size=REAL_PREPROCESS_KWARGS["resize_size"],
-            libero_preprocess_backend=REAL_PREPROCESS_KWARGS["libero_preprocess_backend"],
-        )
-        inputs = self.processor(openvla_prompt(self.instruction.lower()), proc_image, return_tensors="pt")
-        if REAL_PREPROCESS_KWARGS["drop_attention_mask"]:
-            inputs.pop("attention_mask", None)
+        _raw, _prepared, inputs = self.policy_input_stages(obs)
         for key, val in list(inputs.items()):
             if torch.is_tensor(val):
                 if torch.is_floating_point(val):
                     inputs[key] = val.to(device=self.device, dtype=model_float_dtype(self.model))
                 else:
                     inputs[key] = val.to(device=self.device)
-        input_ids = inputs.get("input_ids")
-        if input_ids is not None and not torch.all(input_ids[:, -1] == 29871):
-            inputs["input_ids"] = torch.cat(
-                (input_ids, torch.unsqueeze(torch.tensor([29871], device=input_ids.device).long(), dim=0)),
-                dim=1,
-            )
         with torch.inference_mode():
             gen = self.model.generate(
                 **inputs,
