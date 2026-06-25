@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any, Mapping
@@ -13,6 +14,13 @@ from typing import Any, Mapping
 import numpy as np
 
 from scripts.stageb import layer3_exact_restore_runner as exact
+
+
+def require_single_visible_gpu() -> str:
+    visible = [item.strip() for item in os.environ.get("CUDA_VISIBLE_DEVICES", "").split(",") if item.strip()]
+    if len(visible) != 1:
+        raise exact.ExactRestoreError("C3R requires exactly one CUDA_VISIBLE_DEVICES entry per process")
+    return visible[0]
 
 
 def array_diff(reference: np.ndarray, candidate: np.ndarray, prefix: str) -> dict[str, Any]:
@@ -472,6 +480,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    require_single_visible_gpu()
     if args.mode == "same-process":
         if not args.candidate_manifest:
             raise SystemExit("--candidate-manifest is required")

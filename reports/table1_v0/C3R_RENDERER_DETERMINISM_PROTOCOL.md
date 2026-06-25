@@ -13,10 +13,14 @@ STATIC_FRESH_PROCESSES: 10
 PREFIX_CALIBRATION_REPETITIONS: 20
 PREFIX_HELDOUT_FRESH_PROCESSES: 10
 ATTACKS: FORBIDDEN
+GPU_PLACEMENT: ONE_PHYSICAL_GPU_PER_PROCESS
 ```
 
 This qualification uses only the frozen clean Goal C3 parent. No attack
 outcome may influence a tolerance, parent, repetition, or acceptance rule.
+Each process exposes exactly one physical A800, so `device_map=auto` cannot
+split one model across multiple GPUs. Multiple fresh-process workers may share
+that same physical GPU when memory permits.
 
 ## Render Stages
 

@@ -4,7 +4,7 @@ import numpy as np
 import torch
 
 from scripts.stageb.audit_c3r_renderer_determinism import audit_seal
-from scripts.stageb.run_c3r_renderer_determinism import action_exactness, array_diff
+from scripts.stageb.run_c3r_renderer_determinism import action_exactness, array_diff, require_single_visible_gpu
 from scripts.stageb.layer3_exact_restore_runner import RealOpenVLAPolicyAdapter
 
 
@@ -84,3 +84,13 @@ def test_policy_input_stages_are_the_fingerprint_source():
     assert fingerprint["raw_agentview_sha256"]
     assert fingerprint["prepared_image_sha256"]
     assert fingerprint["pixel_values_sha256"]
+
+
+def test_c3r_requires_one_visible_gpu(monkeypatch):
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "2")
+    assert require_single_visible_gpu() == "2"
+    monkeypatch.setenv("CUDA_VISIBLE_DEVICES", "2,4")
+    import pytest
+
+    with pytest.raises(Exception, match="exactly one"):
+        require_single_visible_gpu()
