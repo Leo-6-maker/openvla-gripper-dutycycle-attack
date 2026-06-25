@@ -348,9 +348,25 @@ def main():
     ap.add_argument("--telemetry_dir", required=True, help="Directory containing episode telemetry subdirs")
     ap.add_argument("--output_dir", required=True, help="Output directory for audit results")
     ap.add_argument("--episode_ids", nargs="*", help="Specific episodes to audit (default: all 15)")
+    ap.add_argument("--allow_overwrite", action="store_true", help="Allow overwriting existing output directory")
     args = ap.parse_args()
 
+    out_dir = Path(args.output_dir)
+    if out_dir.exists() and any(out_dir.iterdir()):
+        if not args.allow_overwrite:
+            print(f"ERROR: Output directory {out_dir} exists and is non-empty. Use --allow_overwrite to proceed.")
+            sys.exit(1)
+        print(f"WARNING: Overwriting existing output directory {out_dir}")
     os.makedirs(args.output_dir, exist_ok=True)
+
+    # Record commit SHA
+    import subprocess
+    try:
+        commit_sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=str(REPO), text=True).strip()
+    except Exception:
+        commit_sha = "unknown"
+
     telemetry_dir = Path(args.telemetry_dir)
 
     targets = EARLY_EMISSION
@@ -419,6 +435,9 @@ def main():
 
     summary = {
         "gate": "SC5_V2_EARLY_EMISSION_STATE_AUDIT",
+        "run_commit_sha": commit_sha,
+        "dataset_sha256": hashlib.sha256(open(args.dataset_csv, "rb").read()).hexdigest(),
+        "script_sha256": hashlib.sha256(open(__file__, "rb").read()).hexdigest(),
         "total_episodes": len(results),
         "telemetry_available": tel_avail,
         "telemetry_missing": len(results) - tel_avail,

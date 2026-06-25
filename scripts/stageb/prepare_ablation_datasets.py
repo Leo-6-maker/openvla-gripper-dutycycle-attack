@@ -12,6 +12,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from copy import deepcopy
 
+REPO = Path(__file__).resolve().parents[2]
+
 
 def load_dataset(csv_path):
     """Load step dataset, return (all_rows, train_episodes, val_episodes)."""
@@ -46,9 +48,31 @@ def main():
     ap.add_argument("--dataset_csv", required=True, help="Path to full SC5_V2_STEP_DATASET.csv")
     ap.add_argument("--labels_csv", required=True, help="Path to train+dev combined labels CSV")
     ap.add_argument("--output_dir", required=True)
+    ap.add_argument("--allow_overwrite", action="store_true", help="Allow overwriting existing output directory")
     args = ap.parse_args()
 
+    out_dir = Path(args.output_dir)
+    if out_dir.exists() and any(out_dir.iterdir()):
+        if not args.allow_overwrite:
+            print(f"ERROR: Output directory {out_dir} exists and is non-empty. Use --allow_overwrite to proceed.")
+            sys.exit(1)
+        print(f"WARNING: Overwriting existing output directory {out_dir}")
     os.makedirs(args.output_dir, exist_ok=True)
+
+    # Record commit SHA
+    import subprocess
+    try:
+        commit_sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=str(REPO), text=True).strip()
+    except Exception:
+        commit_sha = "unknown"
+
+    # Input SHAs
+    dataset_full_sha = hashlib.sha256(open(args.dataset_csv, "rb").read()).hexdigest()
+    labels_sha = hashlib.sha256(open(args.labels_csv, "rb").read()).hexdigest()
+    script_sha = hashlib.sha256(open(__file__, "rb").read()).hexdigest()
+    print(f"Source dataset SHA: {dataset_full_sha[:16]}")
+    print(f"Labels SHA: {labels_sha[:16]}")
 
     # Load labels
     labels = {}
@@ -125,9 +149,9 @@ def main():
 
     print(f"Primary NC episodes: {len(primary_nc_eps)}, TV episodes: {len(primary_tv_eps)}")
 
-    # Duplicate NC episodes proportionally until we reach the target
+    # Duplicate NC episodes deterministically (sorted episode IDs, round-robin)
     oversampled_rows = list(primary_only_rows)  # start with M1
-    nc_ep_list = list(primary_nc_eps.items())
+    nc_ep_list = sorted(primary_nc_eps.items(), key=lambda x: x[0])  # sort by episode_id
     added = 0
     idx = 0
     while added < oversample_needed and nc_ep_list:
@@ -168,6 +192,19 @@ def main():
     # ── Save config ──
     config = {
         "gate": "SC5_V2_DATA_ABLATION_CONFIG",
+        "run_commit_sha": commit_sha,
+        "script_sha256": script_sha,
+        "source_dataset_sha256": dataset_full_sha,
+        "source_labels_sha256": labels_sha,
+        "oversampling": {
+            "method": "deterministic_round_robin",
+            "seed": "none (sorted episode_id order)",
+            "nc_episode_order": [eid for eid, _ in nc_ep_list],
+            "nc_episodes_available": len(nc_ep_list),
+            "episodes_copied": idx if idx > 0 else 0,
+            "rows_added": added,
+            "rows_target": oversample_needed,
+        },
         "models": {
             "M0": {"name": "SC5-V1", "training_data": "N/A (pre-existing)", "steps": "N/A"},
             "M1": {"name": "Primary-only", "dataset": m1_path, "sha256": m1_sha,

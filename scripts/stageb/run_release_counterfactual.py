@@ -136,9 +136,24 @@ def main():
     ap.add_argument("--dev_labels_csv", required=True)
     ap.add_argument("--output_dir", required=True)
     ap.add_argument("--episode_ids", nargs="*", help="Specific episodes (default: all dev)")
+    ap.add_argument("--allow_overwrite", action="store_true", help="Allow overwriting existing output directory")
     args = ap.parse_args()
 
+    out_dir = Path(args.output_dir)
+    if out_dir.exists() and any(out_dir.iterdir()):
+        if not args.allow_overwrite:
+            print(f"ERROR: Output directory {out_dir} exists and is non-empty. Use --allow_overwrite to proceed.")
+            sys.exit(1)
+        print(f"WARNING: Overwriting existing output directory {out_dir}")
     os.makedirs(args.output_dir, exist_ok=True)
+
+    # Record commit SHA
+    import subprocess
+    try:
+        commit_sha = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=str(REPO), text=True).strip()
+    except Exception:
+        commit_sha = "unknown"
 
     print("Loading runtimes...")
     rt_v1 = SC5DetectorRuntime(args.v1_checkpoint, tau_corridor=TAU_C, tau_release=TAU_R, guard=GUARD)
@@ -200,7 +215,12 @@ def main():
 
     summary = {
         "gate": "RELEASE_TRAJECTORY_COUNTERFACTUAL",
+        "run_commit_sha": commit_sha,
+        "script_sha256": hashlib.sha256(open(__file__, "rb").read()).hexdigest(),
+        "dataset_sha256": hashlib.sha256(open(args.dataset_csv, "rb").read()).hexdigest(),
+        "v1_checkpoint_path": args.v1_checkpoint,
         "v1_checkpoint_sha256": rt_v1.checkpoint_sha256,
+        "v2_checkpoint_path": args.v2_checkpoint,
         "v2_checkpoint_sha256": rt_v2.checkpoint_sha256,
         "total_episodes": len(dev_episodes),
         "emit_disagreement": {
