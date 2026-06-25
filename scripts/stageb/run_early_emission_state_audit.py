@@ -55,13 +55,20 @@ CARRY_STABLE_EEF_OBJ_DIST_VAR_MAX = 0.02 # eef_obj_dist variance over 5-step win
 WINDOW = 5                                # steps for stability window
 
 
-def load_telemetry(telemetry_dir, episode_id):
-    """Load telemetry CSV for an episode. Returns list of dicts sorted by step."""
-    # Try to find the telemetry file — could be in different directory structures
+def load_telemetry(telemetry_dir, episode_id, task=None, state=None):
+    """Load telemetry CSV for an episode. Returns list of dicts sorted by step.
+    Searches standard directory patterns: task{task}_state{state}, episode_id, etc.
+    """
     candidates = [
         telemetry_dir / f"{episode_id}" / "step_telemetry.csv",
         telemetry_dir / f"{episode_id}.tmp" / "step_telemetry.csv",
     ]
+    # Standard V6 collector directory pattern: task{task}_state{state}
+    if task is not None and state is not None:
+        for prefix in ["", "dev/", "train/", "primary/", "reserve/"]:
+            candidates.append(
+                telemetry_dir / prefix / f"task{task}_state{state}" / "step_telemetry.csv")
+
     # Also search subdirectories
     if telemetry_dir.exists():
         for p in telemetry_dir.rglob(f"*{episode_id}*"):
@@ -69,6 +76,13 @@ def load_telemetry(telemetry_dir, episode_id):
                 tel = p / "step_telemetry.csv"
                 if tel.exists():
                     candidates.append(tel)
+        # Also search for task_state pattern recursively
+        if task is not None and state is not None:
+            for p in telemetry_dir.rglob(f"task{task}_state{state}"):
+                if p.is_dir():
+                    tel = p / "step_telemetry.csv"
+                    if tel.exists() and str(tel) not in [str(c) for c in candidates]:
+                        candidates.append(tel)
 
     for cand in candidates:
         if cand.exists():
@@ -385,7 +399,7 @@ def main():
         print(f"  emit_step={ep['emit_step']}  anchor={ep['anchor']}  offset={ep['offset']}")
 
         # Load data
-        tel_rows, tel_path = load_telemetry(telemetry_dir, eid)
+        tel_rows, tel_path = load_telemetry(telemetry_dir, eid, task=ep["task"], state=ep["state"])
         if tel_rows:
             print(f"  Telemetry: {tel_path} ({len(tel_rows)} steps)")
         else:
