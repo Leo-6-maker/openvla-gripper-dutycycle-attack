@@ -10,7 +10,7 @@ Approach: Load both V1 and V2 runtimes from checkpoints, replay each trajectory
 through both. At each step, extract raw logits to determine which head (phase,
 corridor, or release) caused any arming/emit disagreement.
 """
-import csv, json, math, os, sys, numpy as np, torch
+import csv, hashlib, json, math, os, sys, numpy as np, torch
 from pathlib import Path
 from collections import defaultdict
 
