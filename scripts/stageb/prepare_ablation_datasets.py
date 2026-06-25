@@ -29,12 +29,22 @@ def load_dataset(csv_path):
     return rows, tr_eps, vl_eps
 
 
+def make_label_key(rows):
+    """Build label lookup key from episode rows. Labels keyed by (task, state, source)."""
+    r0 = rows[0]
+    task = int(r0["task_idx"])
+    state = int(r0["parent_state_id"])
+    source = r0.get("source_pool", "primary")
+    return (task, state, source)
+
+
 def count_nc_steps(ep_rows, labels):
     """Count total steps in NC (no-corridor) episodes."""
     nc = 0
     tv = 0
     for eid, rows in ep_rows.items():
-        lbl = labels.get(eid, {})
+        key = make_label_key(rows)
+        lbl = labels.get(key, {})
         is_tv = lbl.get("teacher_valid") == "True"
         if is_tv:
             tv += len(rows)
@@ -137,10 +147,7 @@ def main():
     primary_nc_eps = {}
     primary_tv_eps = {}
     for eid, rows in primary_eps.items():
-        task = int(rows[0]["task_idx"])
-        state = int(rows[0]["parent_state_id"])
-        source = rows[0].get("source_pool", "primary")
-        key = (task, state, source)
+        key = make_label_key(rows)
         lbl = labels.get(key, {})
         if lbl.get("teacher_valid") == "True":
             primary_tv_eps[eid] = rows
