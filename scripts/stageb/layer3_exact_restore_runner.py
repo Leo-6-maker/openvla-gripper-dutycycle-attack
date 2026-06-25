@@ -1937,6 +1937,8 @@ def run_exact_action_prefix_replay_from_trace(
     expected_branch_env_action: Any,
     expected_prefix_trace_sha256: str | None = None,
     branch_reference: Mapping[str, Any] | None = None,
+    expected_next_observations: Sequence[Mapping[str, Any]] | None = None,
+    observation_drift_output_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Replay a recorded action prefix and execute one exact branch action.
 
@@ -1993,7 +1995,6 @@ def run_exact_action_prefix_replay_from_trace(
             ("qpos_sha256", "post_qpos_sha256"),
             ("qvel_sha256", "post_qvel_sha256"),
             ("flat_sim_state_sha256", "post_flat_sim_state_sha256"),
-            ("observation_sha256", "next_observation_sha256"),
             ("student_state_sha256", "post_student_state_sha256"),
             ("feature_history_sha256", "post_feature_history_sha256"),
         ):
@@ -2002,6 +2003,42 @@ def run_exact_action_prefix_replay_from_trace(
                 expected=record,
                 actual_field=actual_field,
                 expected_field=expected_field,
+                step=step,
+                phase="post_step",
+                failure_class="PREFIX_REPLAY_POST_STEP_DIVERGENCE",
+            )
+        if post["observation_sha256"] != record["next_observation_sha256"]:
+            if (
+                expected_next_observations is not None
+                and step < len(expected_next_observations)
+                and observation_drift_output_dir is not None
+            ):
+                drift_dir = observation_drift_output_dir / f"step_{step:04d}"
+                expected_obs = expected_next_observations[step]
+                write_dict_csv(
+                    drift_dir / "observation_field_diff.csv",
+                    observation_diff_rows(expected_obs, obs_next),
+                )
+                image_summary = write_agentview_diff_artifacts(
+                    drift_dir,
+                    prefix=expected_obs,
+                    restored=obs_next,
+                    label="reference_vs_replay",
+                )
+                write_json(
+                    drift_dir / "observation_drift_summary.json",
+                    {
+                        "step": int(step),
+                        "expected_observation_sha256": record["next_observation_sha256"],
+                        "actual_observation_sha256": post["observation_sha256"],
+                        "agentview": image_summary,
+                    },
+                )
+            _require_hash_match(
+                actual=post,
+                expected=record,
+                actual_field="observation_sha256",
+                expected_field="next_observation_sha256",
                 step=step,
                 phase="post_step",
                 failure_class="PREFIX_REPLAY_POST_STEP_DIVERGENCE",
@@ -3049,6 +3086,7 @@ def find_emit_snapshot_for_candidate(
         selected: dict[str, Any] | None = None
         first_valid_step = -1
         prefix_trace: list[dict[str, Any]] = []
+        prefix_next_observations: list[dict[str, Any]] = []
         for step in range(int(args.max_steps)):
             pre_hashes = prefix_replay_state_hashes(env=env_adapter, obs=obs, student=student, policy=policy)
             action, tokens = policy.act(obs)
@@ -3104,6 +3142,7 @@ def find_emit_snapshot_for_candidate(
                     "first_valid_step": first_valid_step,
                     "prefix_flat_sim_state_sha256": hash_array(env.get_sim_state()),
                     "prefix_trace": prefix_trace,
+                    "prefix_next_observations": prefix_next_observations,
                     "branch_pre_hashes": pre_hashes,
                     "branch_post_student_update_hashes": post_student_update_hashes,
                 }
@@ -3133,6 +3172,7 @@ def find_emit_snapshot_for_candidate(
                     "success": bool(info.get("success", False)) if isinstance(info, Mapping) else False,
                 }
             )
+            prefix_next_observations.append(clone_typed_observation(obs_next))
             obs = obs_next
             if done:
                 break
@@ -3662,6 +3702,8 @@ def run_exact_action_prefix_replay_canary(
             expected_branch_env_action=postprocess_openvla_action_for_libero(snapshot.clean_action_t),
             expected_prefix_trace_sha256=prefix_trace_sha,
             branch_reference=branch_reference,
+            expected_next_observations=selected.get("prefix_next_observations"),
+            observation_drift_output_dir=output_dir / "prefix_observation_drift",
         )
         result["parent_key"] = snapshot.parent_manifest.parent_key
         result["prefix_trace_sha256"] = prefix_trace_sha
@@ -3683,6 +3725,8 @@ def run_exact_action_prefix_replay_canary(
         }
         write_json(output_dir / "c3_prefix_replay_summary.json", failure)
         write_json(output_dir / "prefix_replay_first_divergence.json", failure)
+        failure["recursive_sha256_manifest_sha256"] = write_recursive_manifest(output_dir)
+        write_json(output_dir / "c3_prefix_replay_summary.json", failure)
         raise
     finally:
         try:

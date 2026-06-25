@@ -780,6 +780,44 @@ def test_prefix_replay_fails_at_first_post_step_mismatch():
         )
 
 
+def test_prefix_replay_writes_visual_drift_artifacts_before_fail_closed(tmp_path):
+    prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
+    expected_env = _MockEnv(step=0)
+    expected_observations = []
+    for row in prefix:
+        obs, _reward, _done, _info = expected_env.step_env_action(row["env_action"])
+        obs["agentview_image"] = np.zeros((2, 2, 3), dtype=np.uint8)
+        expected_observations.append(obs)
+
+    class VisualDriftEnv(_MockEnv):
+        def step_env_action(self, action):
+            obs, reward, done, info = super().step_env_action(action)
+            obs["agentview_image"] = np.zeros((2, 2, 3), dtype=np.uint8)
+            obs["agentview_image"][0, 0, 0] = 1
+            return obs, reward, done, info
+
+    with pytest.raises(ExactRestoreError, match="next_observation_sha256"):
+        run_exact_action_prefix_replay_from_trace(
+            env=VisualDriftEnv(step=0),
+            student=_MockStudent(),
+            policy=_CountingPolicy(),
+            initial_obs=_MockEnv(step=0).get_observation_after_restore(),
+            prefix_steps=prefix,
+            branch_step=2,
+            expected_branch_action=np.asarray(branch_action),
+            expected_branch_tokens=branch_tokens,
+            expected_branch_env_action=np.asarray(branch_env_action, dtype=np.float32),
+            branch_reference=branch_reference,
+            expected_next_observations=expected_observations,
+            observation_drift_output_dir=tmp_path,
+        )
+
+    drift_dir = tmp_path / "step_0000"
+    assert (drift_dir / "observation_field_diff.csv").is_file()
+    assert (drift_dir / "observation_drift_summary.json").is_file()
+    assert (drift_dir / "reference_vs_replay_agentview_absdiff.png").is_file()
+
+
 def test_prefix_replay_fails_on_student_state_mismatch():
     prefix, branch_reference, branch_action, branch_tokens, branch_env_action = _build_prefix_replay_fixture()
     prefix[0]["student_state_sha256"] = "0" * 64
