@@ -34,7 +34,7 @@ class SC5MLP(torch.nn.Module):
         return {"phase_logits": self.phase_head(h), "corridor_logit": self.corridor_head(h),
                 "release_logit": self.release_head(h), "confidence_logit": self.confidence_head(h)}
 
-EXPECTED_DATASET_SHA = "05f6f9e9b2ac5720ff00714199e4c67c2f44f55ed01d40fc0459ff323af04e0e"
+EXPECTED_DATASET_SHA = "a3f9a388e94e7fab295160b11ebaa811cbd3fc4e8e254f7a909a28580e696bc2"
 EXPECTED_TRAIN_STEPS = 59773
 EXPECTED_VAL_STEPS = 24242
 EXPECTED_TOTAL_STEPS = 84015
@@ -136,9 +136,9 @@ def train(model, Xtr, Ytr, Xvl, Yvl, lr=0.001, weight_decay=1e-4, epochs=80, bat
             cpu_idx = idx.cpu().numpy()
             yp = torch.tensor(Ytr["phase"][cpu_idx], dtype=torch.long, device=device)
             yc = torch.tensor(Ytr["corridor"][cpu_idx], dtype=torch.float32, device=device).unsqueeze(1)
-            yr = torch.tensor(Ytr["release"][cpu_idx], dtype=torch.float32, device=device).unsqueeze(1)
             out = model(xb)
-            loss = pl(out["phase_logits"], yp) + 0.5*bce(out["corridor_logit"], yc) + 0.3*bce(out["release_logit"], yr)
+            # Phase + corridor only (release head uses frozen V1 weights — release_safe=0 in 05f6)
+            loss = pl(out["phase_logits"], yp) + 0.5*bce(out["corridor_logit"], yc)
             opt.zero_grad(); loss.backward(); opt.step()
             tl += loss.item(); nb += 1
 
@@ -161,10 +161,23 @@ def train(model, Xtr, Ytr, Xvl, Yvl, lr=0.001, weight_decay=1e-4, epochs=80, bat
     print("Best: epoch=%d vl_ce=%.3f" % (best_epoch, best_vl))
     return model, best_epoch, log
 
-def export_checkpoint(model, ckpt_path, dataset_sha, mean, std, metadata):
-    """Export checkpoint compatible with SC5DetectorRuntime strict=True."""
+def export_checkpoint(model, ckpt_path, dataset_sha, mean, std, metadata, v1_ckpt_path=None):
+    """Export checkpoint compatible with SC5DetectorRuntime strict=True.
+    If v1_ckpt_path is provided, inject V1 release head + confidence head weights
+    (release_safe=0 in 05f6 dataset, so release head cannot be trained on V2 data).
+    """
+    state = model.state_dict()
+
+    if v1_ckpt_path:
+        v1 = torch.load(v1_ckpt_path, map_location="cpu", weights_only=False)
+        for k in ["release_head.weight", "release_head.bias",
+                   "confidence_head.weight", "confidence_head.bias"]:
+            if k in v1["model_state"]:
+                state[k] = v1["model_state"][k]
+        print("Injected V1 release + confidence heads from %s" % v1_ckpt_path)
+
     payload = {
-        "model_state": model.state_dict(),
+        "model_state": state,
         "mean": mean.astype(np.float32),
         "std": std.astype(np.float32),
         "feature_names": SC5_FEATURES,
@@ -181,6 +194,8 @@ def export_checkpoint(model, ckpt_path, dataset_sha, mean, std, metadata):
         "val_episode_ids": metadata["val_eps"],
         "heldout_episode_ids": [],
         "training_metadata": metadata,
+        "release_head_source": "SC5-V1 (frozen, not trained on V2 data)",
+        "note_release_head": "05f6 dataset has release_safe=0 (post-emit steps lack valid streaming features). Release head weights copied from V1 checkpoint.",
     }
     os.makedirs(os.path.dirname(ckpt_path) or ".", exist_ok=True)
     torch.save(payload, ckpt_path)
@@ -196,6 +211,8 @@ def main():
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     ap.add_argument("--expected_dataset_sha256", default=EXPECTED_DATASET_SHA,
                     help="Fail-closed if dataset SHA does not match")
+    ap.add_argument("--v1_checkpoint", default="artifacts/detector/sc5_mlp_s2.pt",
+                    help="SC5-V1 checkpoint for release head injection")
     args = ap.parse_args()
 
     random.seed(args.seed); np.random.seed(args.seed); torch.manual_seed(args.seed)
@@ -226,24 +243,25 @@ def main():
 
     out_dir = Path(args.output_dir); out_dir.mkdir(parents=True, exist_ok=True)
     ckpt_path = out_dir / "sc5_mlp_v2.pt"
-    ckpt_sha = export_checkpoint(model, str(ckpt_path), dataset_sha, _mean, _std, metadata)
+    ckpt_sha = export_checkpoint(model, str(ckpt_path), dataset_sha, _mean, _std, metadata,
+                                  v1_ckpt_path=args.v1_checkpoint)
 
     # ── Runtime strict-load verification (subprocess, avoids CUDA context issues) ──
     print("Verifying runtime strict-load...")
     import subprocess
-    verify_script = """
-import sys; sys.path.insert(0, '%s'); sys.path.insert(0, '%s/src')
-from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime
-import traceback
-try:
-    rt = SC5DetectorRuntime('%s', tau_corridor=0.3, tau_release=0.3, guard=5)
-    print('RUNTIME_STRICT_LOAD=PASS')
-    print('dataset_sha256=%s' % rt.dataset_sha256[:16])
-except Exception as e:
-    traceback.print_exc()
-    print('RUNTIME_STRICT_LOAD=FAIL')
-    sys.exit(1)
-""" % (REPO, REPO, ckpt_path)
+    verify_script = (
+        "import sys; sys.path.insert(0, '{repo}'); sys.path.insert(0, '{repo}/src')\n"
+        "from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime\n"
+        "import traceback, sys as _sys\n"
+        "try:\n"
+        "    rt = SC5DetectorRuntime('{ckpt}', tau_corridor=0.3, tau_release=0.3, guard=5)\n"
+        "    print('RUNTIME_STRICT_LOAD=PASS')\n"
+        "    print('dataset_sha256=' + rt.dataset_sha256[:16])\n"
+        "except Exception as e:\n"
+        "    traceback.print_exc()\n"
+        "    print('RUNTIME_STRICT_LOAD=FAIL')\n"
+        "    _sys.exit(1)\n"
+    ).format(repo=REPO, ckpt=ckpt_path)
     proc = subprocess.run(
         [sys.executable, "-c", verify_script],
         capture_output=True, text=True, timeout=60,

@@ -1,0 +1,18 @@
+Warning: Permanently added '10.60.133.3' (ED25519) to the list of known hosts.
+Warning: Permanently added '[10.60.2.56]:33571' (ED25519) to the list of known hosts.
+{
+  "gate": "DIAGNOSTIC_28_37_NIGHT_20260625_AUDIT",
+  "planned_unique": 300,
+  "done_unique": 300,
+  "batch_A_done": 100,
+  "batch_B_done": 100,
+  "batch_C_done": 100,
+  "quarantine_unique": 0,
+  "claimed_without_terminal_state": 0,
+  "extra_directories": 0,
+  "tmp_directories": 308,
+  "duplicate_outputs": 0,
+  "train_dev_contamination": 0,
+  "manifest_sha256": "06277f3d6b8a3af98c3fa269c268a8fa3151132e922c34e74ad2a2549fc0fb67",
+  "collector_sha256": "d86e4fdaae0bb6b31cf6b6718f8ac316bb663c7d2baf8db0ba81b23b8bcaa4a7"
+}
