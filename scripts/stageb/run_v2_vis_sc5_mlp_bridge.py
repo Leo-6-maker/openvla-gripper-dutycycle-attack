@@ -31,10 +31,19 @@ ap.add_argument("--save_video", action="store_true", default=False)
 ap.add_argument("--source_commit", default="", help="Git commit SHA (required when --save_video)")
 ap.add_argument("--video_fps", type=int, default=20)
 ap.add_argument("--frame_stride", type=int, default=1)
+ap.add_argument("--libero_preprocess_backend", default="upstream_tf_jpeg",
+                choices=["upstream_tf_jpeg", "project_pil_lanczos", "none"],
+                help="Preprocessing backend (canonical names only, no aliases)")
 args = ap.parse_args()
 
 if args.save_video and not args.source_commit:
     raise ValueError("--source_commit is required when --save_video is enabled")
+
+# Resolve backend (import validation)
+from gripper_attack.openvla_preprocess import resolve_backend, CANONICAL_BACKENDS
+PREPROCESS_BACKEND = resolve_backend(args.libero_preprocess_backend)
+USES_JPEG_ROUNDTRIP = (PREPROCESS_BACKEND == "upstream_tf_jpeg")
+print(f"Preprocess backend: requested={args.libero_preprocess_backend} resolved={PREPROCESS_BACKEND} jpeg_roundtrip={USES_JPEG_ROUNDTRIP}")
 
 STATE_ID = args.state_id; ANCHOR = args.anchor; IS_ATTACK = args.condition != "CLEAN"
 IS_RAND = "RAND" in args.condition; IS_SHUFFLED = "SHUFFLED" in args.condition
@@ -89,8 +98,7 @@ if IS_ATTACK and not IS_RAND:
            "target_execution_class": "CLIP_MEDIATED_OPEN"}
     if IS_SHUFFLED: opt["gradient_transform"] = "permute"; opt["gradient_transform_seed"] = args.seed_id + 100000
     attacker = OpenVLAVisualAttacker(model=model, processor=processor, config={"attack_optimizer": opt},
-        seed=args.seed_id, preprocess_kwargs={"libero_official_preprocess": False,
-            "libero_preprocess_backend": "official_pil_lanczos", "center_crop": True, "resize_size": 224}, device=device)
+        seed=args.seed_id, preprocess_kwargs={"libero_preprocess_backend": PREPROCESS_BACKEND, "center_crop": True, "resize_size": 224}, device=device)
 
 # ── Env (identical to v2 bridge) ──
 from v4_run_eval_openvla import decode_with_scores, prompt, postprocess_openvla_action_for_libero
@@ -142,7 +150,7 @@ for step in range(400):
     # Clean decode (identical to v2 bridge)
     t0 = time.perf_counter()
     action, _, _, _ = decode_with_scores(model, processor, device, raw, instruction, "libero_object", 8,
-        libero_official_preprocess=False, libero_preprocess_backend="official_pil_lanczos",
+        libero_preprocess_backend=PREPROCESS_BACKEND,
         center_crop=True, resize_size=224, drop_attention_mask=True)
     raw_grip = float(action[-1]); env_grip = -1.0 if raw_grip > 0.5 else 1.0
     env_action_final = postprocess_openvla_action_for_libero(np.asarray(action, dtype=np.float32), enabled=True)
@@ -202,8 +210,8 @@ for step in range(400):
         if IS_RAND:
             from gripper_attack.m3_controls import sample_processor_delta, project_and_cast_processor_values
             from gripper_attack.attack_adapter import prepare_openvla_image_for_attack
-            proc_image = prepare_openvla_image_for_attack(raw, libero_official_preprocess=False,
-                libero_preprocess_backend="official_pil_lanczos", center_crop=True, resize_size=224)
+            proc_image = prepare_openvla_image_for_attack(raw,
+                libero_preprocess_backend=PREPROCESS_BACKEND, center_crop=True, resize_size=224)
             inputs = processor(prompt(instruction), proc_image, return_tensors="pt")
             inputs.pop("attention_mask", None)
             iids = inputs["input_ids"].to(device)
@@ -220,8 +228,8 @@ for step in range(400):
             from gripper_attack.attack_adapter import prepare_openvla_image_for_attack, get_adv_inputs_from_attack_result
             from gripper_attack.route_contract import validate_true_pgd_attack_result
             clean_action_np = np.asarray(action, dtype=np.float32)
-            proc_image = prepare_openvla_image_for_attack(raw, libero_official_preprocess=False,
-                libero_preprocess_backend="official_pil_lanczos", center_crop=True, resize_size=224)
+            proc_image = prepare_openvla_image_for_attack(raw,
+                libero_preprocess_backend=PREPROCESS_BACKEND, center_crop=True, resize_size=224)
             inputs = processor(prompt(instruction), proc_image, return_tensors="pt")
             inputs.pop("attention_mask", None)
             iids = inputs["input_ids"].to(device)
@@ -338,6 +346,9 @@ summary["requested_dtype"] = _dtype_name
 summary["actual_dtype"] = _actual_dtype_str
 summary["requested_attn"] = _attn_name
 summary["actual_attn"] = _actual_attn
+summary["preprocess_backend_requested"] = args.libero_preprocess_backend
+summary["preprocess_backend_resolved"] = PREPROCESS_BACKEND
+summary["preprocess_uses_jpeg_roundtrip"] = USES_JPEG_ROUNDTRIP
 if _video_manifest:
     summary["video"] = _video_manifest
 with open(out / "episode_summary.json", "w") as f:
