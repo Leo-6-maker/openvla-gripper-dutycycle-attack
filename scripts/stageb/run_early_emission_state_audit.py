@@ -8,7 +8,7 @@ at V2 emit_step vs teacher anchor step. Classify as:
 Requires: step dataset CSV + raw telemetry CSVs for the 15 episodes.
 Run on GPU server with access to telemetry files.
 """
-import argparse, csv, json, math, os, sys, numpy as np
+import argparse, csv, hashlib, json, math, os, sys, numpy as np
 from pathlib import Path
 from collections import defaultdict
 
@@ -45,12 +45,13 @@ EARLY_EMISSION = [
     {"episode_id": "ep_0324", "task": 8, "state": 27, "emit_step": 80, "anchor": 81, "offset": 1},
 ]
 
-# ── Classification thresholds ──
-GRASP_VALID_GRIPPER_QPOS_MIN = 0.03      # qpos_sum >= this → fingers closed enough
-GRASP_VALID_EEF_OBJ_DIST_MAX = 0.15      # eef_obj_dist <= this → object near gripper
-GRASP_VALID_CLOSE_ONSET = True            # close_onset must be True
-LIFT_VALID_OBJ_Z_DELTA_MIN = 0.01        # obj_z increase from episode start
-CARRY_STABLE_OPENING_VAR_MAX = 0.005     # opening_proxy_variance_5 below this
+# ── Classification thresholds (calibrated for LIBERO gripper) ──
+# gripper_opening_proxy = abs(q7)+abs(q8): ~0.078 (open) → ~0.063 (closed/grasping)
+GRASP_VALID_OPENING_PROXY_MAX = 0.070   # opening_proxy <= this → gripper closed enough
+GRASP_VALID_EEF_OBJ_DIST_MAX = 0.15     # eef_obj_dist <= this → object near gripper
+GRASP_VALID_CLOSE_STREAK_MIN = 3         # recent_close_streak >= this → grasp maintained
+LIFT_VALID_OBJ_Z_DELTA_MIN = 0.01       # obj_z increase from episode start
+CARRY_STABLE_OPENING_VAR_MAX = 0.005    # opening_proxy_variance_5 below this
 CARRY_STABLE_EEF_OBJ_DIST_VAR_MAX = 0.02 # eef_obj_dist variance over 5-step window
 WINDOW = 5                                # steps for stability window
 
@@ -222,25 +223,27 @@ def audit_trajectory(ep_info, tel_rows, ds_rows):
     checks = []
 
     # Check 1: Grasp established at emit time
-    grasp_qpos_ok = True
-    if "emit_qpos_sum" in result and result["emit_qpos_sum"] is not None:
-        if not math.isnan(result["emit_qpos_sum"]):
-            grasp_qpos_ok = result["emit_qpos_sum"] >= GRASP_VALID_GRIPPER_QPOS_MIN
+    # Use gripper_opening_proxy (SC5 feature) — open≈0.078, closed≈0.063
+    grasp_open_proxy_ok = True
+    if "emit_gripper_opening_proxy" in result and result["emit_gripper_opening_proxy"] is not None:
+        if not math.isnan(result["emit_gripper_opening_proxy"]):
+            grasp_open_proxy_ok = result["emit_gripper_opening_proxy"] <= GRASP_VALID_OPENING_PROXY_MAX
 
     grasp_dist_ok = True
     if "emit_eef_obj_dist" in result and result["emit_eef_obj_dist"] is not None:
         if not math.isnan(result["emit_eef_obj_dist"]):
             grasp_dist_ok = result["emit_eef_obj_dist"] <= GRASP_VALID_EEF_OBJ_DIST_MAX
 
-    grasp_close_onset_ok = True
-    if "emit_close_onset" in result and result["emit_close_onset"] is not None:
-        grasp_close_onset_ok = result["emit_close_onset"] > 0.5
+    grasp_streak_ok = True
+    if "emit_recent_close_streak" in result and result["emit_recent_close_streak"] is not None:
+        if not math.isnan(result["emit_recent_close_streak"]):
+            grasp_streak_ok = result["emit_recent_close_streak"] >= GRASP_VALID_CLOSE_STREAK_MIN
 
-    grasp_established = grasp_qpos_ok and grasp_dist_ok and grasp_close_onset_ok
+    grasp_established = grasp_open_proxy_ok and grasp_dist_ok and grasp_streak_ok
     checks.append({
         "check": "grasp_established",
         "pass": grasp_established,
-        "details": f"qpos={grasp_qpos_ok} dist={grasp_dist_ok} close_onset={grasp_close_onset_ok}"
+        "details": f"open_proxy={grasp_open_proxy_ok} dist={grasp_dist_ok} close_streak={grasp_streak_ok}"
     })
 
     # Check 2: Object lift begun (obj_z above initial)
@@ -300,16 +303,16 @@ def audit_trajectory(ep_info, tel_rows, ds_rows):
         "details": f"offset={offset}"
     })
 
-    # Check 6: Gripper not still closing (gripper_qpos delta small)
+    # Check 6: Gripper not still closing (opening_proxy delta small)
     not_still_closing = True
-    if "emit_qpos_delta_1" in result:
-        qd1 = result["emit_qpos_delta_1"]
-        if qd1 is not None and not math.isnan(qd1):
-            not_still_closing = abs(qd1) <= 0.01  # small recent change
+    if "emit_opening_proxy_delta_3" in result:
+        od3 = result["emit_opening_proxy_delta_3"]
+        if od3 is not None and not math.isnan(od3):
+            not_still_closing = abs(od3) <= 0.002  # small recent change in gripper width
     checks.append({
         "check": "not_still_closing",
         "pass": not_still_closing,
-        "details": f"qpos_delta_1={result.get('emit_qpos_delta_1', 'N/A')}"
+        "details": f"opening_proxy_delta_3={result.get('emit_opening_proxy_delta_3', 'N/A')}"
     })
 
     # ── Final classification ──
