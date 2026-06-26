@@ -535,10 +535,9 @@ summary = {
     "n_steps": len(telemetry),
     "attack_frames": n_atk,
     "open_tokens": n_open_token,
-    "arm_ok_frames": n_arm_ok,
     "env_open_frames": n_env_open,
     "token_open_duty": round(n_open_token/n_atk, 3) if n_atk>0 else 0,
-    "arm_duty": round(n_arm_ok/n_atk, 3) if n_atk>0 else 0,
+    "arm_duty": None, "arm_duty_available": False,
     "env_open_duty": round(n_env_open/n_atk, 3) if n_atk>0 else 0,
     "prev_delta_flags": prev_delta_flags,
     "task_success": success,
@@ -577,4 +576,4 @@ print("%s s%d teacher=%d emit=%d err=%d: steps=%d atk=%d tok=%.2f env=%.2f arm=%
     args.condition, STATE_ID, ANCHOR, _mlp_emit,
     (_mlp_emit - ANCHOR) if _mlp_emit >= 0 else -1,
     len(telemetry), n_atk, summary["token_open_duty"], summary["env_open_duty"],
-    summary["arm_duty"], success, " [VIDEO]" if args.save_video else ""))
+    "N/A", success, " [VIDEO]" if args.save_video else ""))

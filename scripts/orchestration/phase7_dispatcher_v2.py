@@ -244,7 +244,8 @@ def claim_job(conn, gpu_id):
             conn.execute("ROLLBACK")
             return None
         cur2 = conn.execute("""
-            UPDATE jobs SET status='CLAIMED', gpu_id=?, claimed_at=?, retry_count = retry_count + 1
+            UPDATE jobs SET status='CLAIMED', gpu_id=?, claimed_at=?,
+            retry_count = CASE WHEN status = 'FAILED_RETRYABLE' THEN retry_count + 1 ELSE retry_count END
             WHERE job_id=? AND (status = 'PENDING'
                 OR (status = 'FAILED_RETRYABLE' AND retry_count < max_retries))
         """, (gpu_id, now_iso(), row[0]))
@@ -287,12 +288,11 @@ def build_worker_cmd(job, gpu_id, source_commit=""):
     ]
     if job['arm_lock']:
         bridge_args.append("--arm_lock")
-    if job['trigger_step_override'] >= 0:
+    bridge_args.extend(["--eval_seed", str(job.get('eval_seed', 0))])
+    if job.get('trigger_step_override', -1) >= 0 and job.get('timing', 'student') != 'student':
         bridge_args.extend(["--trigger_step_override", str(job['trigger_step_override'])])
-    if job['keep_running']:
+    if job.get('keep_running'):
         bridge_args.append("--keep_running")
-    if job['timing'] != 'student':
-        bridge_args.extend(["--trigger_step_override", str(job['trigger_step_override'])])
 
     return {
         'cmd': bridge_args,
@@ -320,12 +320,24 @@ def launch_worker(conn, job, gpu_id, source_commit=""):
 
     stdout_f = open(wspec['stdout'], 'w')
     stderr_f = open(wspec['stderr'], 'w')
-
-    proc = subprocess.Popen(
-        wspec['cmd'],
-        stdout=stdout_f, stderr=stderr_f,
-        env=env, cwd=REPO_ROOT,
-    )
+    proc = None
+    try:
+        proc = subprocess.Popen(
+            wspec['cmd'],
+            stdout=stdout_f, stderr=stderr_f,
+            env=env, cwd=REPO_ROOT,
+        )
+    except Exception as e:
+        conn.execute("UPDATE jobs SET status='FAILED_RETRYABLE', notes=? WHERE job_id=?",
+                     (f"Popen failed: {e}", job['job_id']))
+        conn.commit()
+        stdout_f.close()
+        stderr_f.close()
+        raise
+    finally:
+        if proc is not None:
+            stdout_f.close()
+            stderr_f.close()
 
     conn.execute("""
         UPDATE jobs SET status='RUNNING', worker_pid=?, started_at=?
@@ -580,17 +592,38 @@ def recover_abandoned(conn):
 
     for job_id, pid, out_dir in claimed:
         if pid and pid not in running_pids:
-            # Worker died — check if output is complete
             complete = Path(out_dir) / "COMPLETE.json"
             if complete.exists():
                 conn.execute("UPDATE jobs SET status='AUDITING' WHERE job_id=?", (job_id,))
-                log_event(conn, 'RECOVERY_AUDIT', job_id=job_id, detail="Abandoned job with COMPLETE.json")
+                log_event(conn, 'RECOVERY_AUDIT', job_id=job_id, detail="Abandoned with COMPLETE")
             else:
                 conn.execute("""
                     UPDATE jobs SET status='FAILED_RETRYABLE', notes='Worker died before COMPLETE'
                     WHERE job_id=?
                 """, (job_id,))
-                log_event(conn, 'RECOVERY_FAILED', job_id=job_id, detail="No COMPLETE.json found")
+                log_event(conn, 'RECOVERY_FAILED', job_id=job_id, detail="No COMPLETE")
+        elif pid is None:
+            conn.execute("""
+                UPDATE jobs SET status='FAILED_RETRYABLE', notes='CLAIMED but worker_pid NULL (Popen failed)'
+                WHERE job_id=?
+            """, (job_id,))
+            log_event(conn, 'RECOVERY_CLAIMED_NULL', job_id=job_id, detail="CLAIMED + pid=NULL")
+        elif pid in running_pids:
+            log_event(conn, 'RECOVERY_ALIVE', job_id=job_id, detail=f"Worker pid={pid} still alive")
+    conn.commit()
+
+    # Scan for orphaned RUNNING jobs not in CLAIMED/RUNNING query scope
+    orphaned = conn.execute("""
+        SELECT job_id, worker_pid, output_dir FROM jobs
+        WHERE status='RUNNING' AND worker_pid IS NOT NULL
+    """).fetchall()
+    for job_id, pid, out_dir in orphaned:
+        if pid and pid not in running_pids:
+            complete = Path(out_dir) / "COMPLETE.json"
+            if complete.exists():
+                conn.execute("UPDATE jobs SET status='AUDITING' WHERE job_id=?", (job_id,))
+            else:
+                conn.execute("UPDATE jobs SET status='FAILED_RETRYABLE', notes='Orphaned RUNNING worker died' WHERE job_id=?", (job_id,))
     conn.commit()
 
     # Clean stale worker registry entries
@@ -662,7 +695,15 @@ def main_loop(conn, lockfile_path, source_commit=""):
                     job = conn.execute("SELECT * FROM jobs WHERE job_id=?", (jid,)).fetchone()
                     if job:
                         job_dict = {desc[0]: val for desc, val in zip(conn.execute("SELECT * FROM jobs LIMIT 0").description, job)}
-                        ok, issues = audit_job(conn, job_dict, gid)
+                        ok, issues, is_critical = audit_job(conn, job_dict, gid)
+                        if is_critical:
+                            print(f"[{now_iso()}] CRITICAL AUDIT FAILURE GPU{gid} job={jid}: {issues}")
+                            dispatch_enabled = False
+                            incident_reason = f"GPU{gid} job={jid}: {'; '.join(issues)}"
+                            log_event(conn, 'STOPPED_BY_INCIDENT', gpu_id=gid, job_id=jid, detail=incident_reason)
+                            gpu_state[gid] = {'status': 'STOPPED_BY_INCIDENT', 'job_id': jid, 'pid': None, 'last_seen': time.time()}
+                            # Allow other running workers to complete, stop new claims
+                            break
                         if ok:
                             print(f"[{now_iso()}] GPU{gid}: AUDIT PASS job={jid}")
                             gpu_state[gid] = {'status': 'IDLE_WAITING_FOR_JOB', 'job_id': None, 'pid': None, 'last_seen': time.time()}
