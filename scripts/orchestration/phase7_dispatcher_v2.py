@@ -226,7 +226,8 @@ def claim_job(conn, gpu_id):
                    objective, arm_lock, timing, trigger_step_override, keep_running,
                    output_dir, anchor, task_idx, eval_seed, scientific_key
             FROM jobs
-            WHERE status IN ('PENDING', 'FAILED_RETRYABLE')
+            WHERE (status = 'PENDING'
+                OR (status = 'FAILED_RETRYABLE' AND retry_count < max_retries))
             AND (
                 gate_dependency IS NULL
                 OR EXISTS (
@@ -243,8 +244,9 @@ def claim_job(conn, gpu_id):
             conn.execute("ROLLBACK")
             return None
         cur2 = conn.execute("""
-            UPDATE jobs SET status='CLAIMED', gpu_id=?, claimed_at=?
-            WHERE job_id=? AND status IN ('PENDING', 'FAILED_RETRYABLE')
+            UPDATE jobs SET status='CLAIMED', gpu_id=?, claimed_at=?, retry_count = retry_count + 1
+            WHERE job_id=? AND (status = 'PENDING'
+                OR (status = 'FAILED_RETRYABLE' AND retry_count < max_retries))
         """, (gpu_id, now_iso(), row[0]))
         if cur2.rowcount != 1:
             conn.execute("ROLLBACK")
@@ -480,17 +482,93 @@ def audit_job(conn, job, gpu_id):
         except Exception:
             pass
 
-    audit_result = 'PASS' if not issues else 'FAIL: ' + '; '.join(issues)
+    # 9. Check identity: summary must match job parameters
+    if summary_path.exists():
+        try:
+            summary = json.load(open(summary_path))
+            identity_checks = {
+                'task_idx': ('task_idx', job.get('task_idx')),
+                'state_id': ('state_id', job.get('state_id')),
+                'perturbation_seed': ('perturbation_seed', job.get('perturbation_seed')),
+                'objective_id': ('objective_id', job.get('objective')),
+                'arm_lock': ('arm_lock', bool(job.get('arm_lock'))),
+                'condition': ('condition', job.get('condition')),
+                'timing_policy': ('timing_policy', job.get('timing', 'student')),
+                'eval_seed': ('eval_seed', job.get('eval_seed', 0)),
+            }
+            for summary_key, (db_key, expected_val) in identity_checks.items():
+                actual_val = summary.get(summary_key)
+                if actual_val is None:
+                    issues.append(f"identity missing field: {summary_key}")
+                elif actual_val != expected_val:
+                    issues.append(f"identity mismatch: {summary_key}={actual_val} expected={expected_val} (db.{db_key})")
+        except Exception as e:
+            issues.append(f"identity audit error: {e}")
+
+    # 10. Check OS exit code from jobs table
+    try:
+        db_exit = conn.execute("SELECT exit_code FROM jobs WHERE job_id=?", (job['job_id'],)).fetchone()
+        if db_exit and db_exit[0] is not None and db_exit[0] != 0:
+            issues.append(f"OS exit_code={db_exit[0]} (expected 0)")
+    except Exception:
+        pass
+
+    # 11. Check telemetry content integrity
+    if csv_path.exists():
+        try:
+            import csv as _csv
+            with open(csv_path) as f:
+                reader = _csv.DictReader(f)
+                rows = list(reader)
+            n_csv = len(rows)
+            expected_n = summary.get('n_steps', 0) if summary_path.exists() else 0
+            if expected_n > 0 and n_csv != expected_n:
+                issues.append(f"telemetry row count mismatch: csv={n_csv} summary={expected_n}")
+            # Check step continuity
+            steps = [int(r.get('step', -1)) for r in rows if r.get('step', '').isdigit()]
+            if steps and steps != list(range(min(steps), max(steps)+1)):
+                issues.append("telemetry steps not continuous")
+            # Check attack_this count
+            atk_rows = [r for r in rows if r.get('attack_this') == 'True']
+            expected_atk = summary.get('attack_frames', 0) if summary_path.exists() else 0
+            if len(atk_rows) != expected_atk:
+                issues.append(f"attack_this count mismatch: {len(atk_rows)} vs summary.attack_frames={expected_atk}")
+            # For ArmLock: verify attack rows have required fields
+            if job.get('arm_lock'):
+                missing_fields = 0
+                for r in atk_rows:
+                    if not r.get('clean_policy_action_7d') or not r.get('executed_policy_action_7d_after_lock'):
+                        missing_fields += 1
+                if missing_fields > 0:
+                    issues.append(f"ArmLock: {missing_fields} attack rows missing required action fields")
+        except Exception as e:
+            issues.append(f"telemetry content audit error: {e}")
+
+    CRITICAL_PATTERNS = [
+        'ArmLock violation', 'checkpoint SHA mismatch', 'bridge SHA mismatch',
+        'config mismatch', 'protocol mismatch', 'identity mismatch',
+        'duplicate scientific key', 'attack_frames mismatch',
+        'wrong task', 'wrong state', 'wrong seed', 'wrong objective',
+    ]
+    is_critical = any(p.lower() in ' '.join(issues).lower() for p in CRITICAL_PATTERNS)
+    audit_result = 'PASS' if not issues else ('CRITICAL: ' if is_critical else 'FAIL: ') + '; '.join(issues)
+
+    if is_critical:
+        new_status = 'QUARANTINED'
+    elif issues:
+        new_status = 'FAILED_RETRYABLE'
+    else:
+        new_status = 'SUCCESS'
+
     conn.execute("""
         UPDATE jobs SET status=?, audit_result=?, last_audit_at=?, completed_at=?
         WHERE job_id=?
-    """, ('SUCCESS' if not issues else 'QUARANTINED',
-          audit_result, now_iso(), now_iso(), job['job_id']))
+    """, (new_status, audit_result, now_iso(), now_iso(), job['job_id']))
     conn.commit()
 
     log_event(conn, 'AUDIT_COMPLETE', gpu_id=gpu_id, job_id=job['job_id'],
               detail=audit_result)
-    return not issues, issues
+    return not issues, issues, is_critical
 
 
 # ── Restart recovery ──
@@ -559,7 +637,7 @@ def main_loop(conn, lockfile_path, source_commit=""):
             try:
                 wpid, wstatus = os.waitpid(-1, os.WNOHANG)
                 while wpid > 0:
-                    exit_code = wstatus >> 8
+                    exit_code = os.waitstatus_to_exitcode(wstatus)
                     gid = running_workers.pop(wpid, None)
                     if gid is not None:
                         job_row = conn.execute(

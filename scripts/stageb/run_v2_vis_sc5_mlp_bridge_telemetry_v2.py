@@ -40,7 +40,7 @@ ap.add_argument("--attack_objective", default="autoregressive_prefix_gripper_tar
 ap.add_argument("--arm_lock", action="store_true", default=False)
 ap.add_argument("--keep_running", action="store_true", default=False)
 ap.add_argument("--trigger_step_override", type=int, default=-1)
-ap.add_argument("--eval_seed", type=int, default=-1, help="Environment eval seed (defaults to seed_id if -1)")
+ap.add_argument("--eval_seed", type=int, default=-1, help="Environment seed metadata; current fixed protocol requires 0")
 args = ap.parse_args()
 
 if args.save_video and not args.source_commit:
@@ -55,6 +55,8 @@ except Exception:
     pass
 _bridge_sha = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 _eval_seed = args.eval_seed if args.eval_seed >= 0 else 0
+if args.eval_seed not in (-1, 0):
+    raise ValueError(f"--eval_seed must be -1 or 0 in current fixed-env protocol, got {args.eval_seed}")
 _timing_policy = "student"
 _trigger_source = "mlp_detector"
 if args.trigger_step_override >= 0:
@@ -453,7 +455,7 @@ atk_rows = [r for r in telemetry if r["attack_this"] == True]
 n_atk = len(atk_rows)
 n_open_token = sum(1 for r in atk_rows if str(r.get("adv_token","")) != "" and str(r["adv_token"]) == str(TARGET_TOKEN))
 n_env_open = sum(1 for r in atk_rows if float(r["env_gripper"]) < 0)
-n_arm_ok = sum(1 for r in atk_rows if str(r.get("adv_arm","")) != "" and int(r["adv_arm"]) >= ARM_GATE)
+n_arm_ok = 0  # arm_duty removed — adv_arm never populated in telemetry v2
 
 # ── Video ──
 _video_manifest = {}
