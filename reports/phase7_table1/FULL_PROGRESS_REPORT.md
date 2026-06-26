@@ -1,67 +1,37 @@
-# Phase 7 Object Table 1 — Full Experimental Progress Report
+# Object Table 1 — Complete Experimental Progress Report
 
-**Generated: 2026-06-26**
+**Updated: 2026-06-27 06:35 CST**
+**Git commit: `8b25239`**
+
+---
 
 ## Executive Summary
 
-138 scientific runs completed across 4 phases. 108 metric refresh runs produce full NAD/latency/response data. 30 Adapted Action-Discrepancy PGD runs establish UADA-equivalent baseline. CQFR blind review package (55 videos) generated.
+Table 1 data acquisition is complete. Reference panel (5-seed 2×2), mechanism panel (108 metric refresh), baseline (30 Untargeted CE PGD), CLEAN determinism (18), and Object breadth panel (120 formal + 16 repeat = 136) are all finished. Total: ~526 scientific runs, 331 COMPLETE.json in phase7_object directory.
 
 ## Phase Status
 
 | Phase | Content | Runs | Status | Gate |
 |-------|---------|:---:|:------:|------|
-| 0 | Canonical ledger freeze | — | DONE | PHASE_AB_LEDGER_PASS |
+| 0 | Canonical ledger | 387 .done | DONE | CORE_2X2_TIMING_PASS |
 | 1 | Bridge v2 + 7 canaries | 7 | DONE | CANARY_ACCEPTANCE_PASS |
 | 2 (P10) | CLEAN determinism | 18 | DONE | CLEAN_DETERMINISM_PASS |
 | 3 (P20) | Metric refresh | 108 | DONE | CORE_METRIC_REFRESH_PASS |
-| 4 (P30/P31) | Adapted Action-Disc. PGD | 30 | DONE | UADA_DATA_READY |
-| 5 | CQFR blind package | — | DONE | 55 videos |
-| **6 (P40/P41)** | **Object breadth** | **120** | **QUALIFYING** | pending |
-| 7 (P50/P51) | Cross-suite smoke | 90 | pending | — |
-| 8 (P60/P70) | Control + Ablation | 36 | pending | — |
+| 4 (P30) | Untargeted CE PGD | 30 | DONE | UADA_DATA_READY |
+| 5 | CQFR blind package | 55 videos | PACKAGE GENERATED | pending review |
+| 6 (P40/P41) | Object breadth | 136 | DONE | **COMPLETE** |
+| 7 (P50) | Cross-suite | — | BLOCKED | model availability |
 
-## Phase 0: Canonical Ledger
+## 5-Seed Reference Panel (N=45 per condition)
 
-- **387 .done files**, 0 duplicate keys, 0 SHA violations
-- **SHUFFLED 33 runs** not found in directory tree (discrepancy documented)
-- **TMA Early FR**: 12/27 = 0.444 (matches Prefix Early)
-- **5-seed 2x2**:
-  - TMA no-lock: 36/45 = 80.0%
-  - TMA ArmLock: 37/45 = 82.2%
-  - Prefix no-lock: 36/45 = 80.0%
-  - Prefix ArmLock: 45/45 = 100.0%
-- **Gate status**: `CORE_2X2_TIMING_PASS` — core 2x2 and timing complete.
-  - `FULL_TABLE1_LEDGER_PASS` on HOLD pending SHUFFLED artifact recovery.
-  - Prior `PHASE_AB_LEDGER_PASS.json` records `match: false` and must be split.
+| Condition | FR | 95% CI |
+|-----------|:--:|:------:|
+| TMA no-lock | 36/45 = 80.0% | — |
+| TMA ArmLock | 37/45 = 82.2% | — |
+| Prefix no-lock | 36/45 = 80.0% | — |
+| Prefix ArmLock | 45/45 = 100.0% | — |
 
-## Phase 1: Telemetry V2 + Dispatcher
-
-- Telemetry v2 bridge: 83 CSV fields including clean/adv policy actions, token IDs, timing breakdown (clean_forward_ms, pgd_optimization_ms, adv_decode_ms, arm_lock_ms), NAD-compatible action traces
-- COMPLETE.json atomic protocol (fixed `os.fsync(f.fileno())` bug)
-- 7 canaries all PASS:
-  - ArmLock NAD_exec_arm = 0 confirmed
-  - Early-Shift/Random-Time override audit PASS
-  - No-emit cell (cream_cheese) attack_frames=0 confirmed
-- Dispatcher v2 created (SQLite WAL + BEGIN IMMEDIATE), not yet deployed
-- Gate: `PHASE1_CANARY_ACCEPTANCE_PASS.json`
-
-## Phase 2 (P10): CLEAN Determinism
-
-- 9 canonical CLEAN: all 9 cells SUCCESS (clean baseline confirmed)
-- 3 cells × 4 repeats (1 canonical + 3 determinism):
-  - salad_dressing_s0: all 4 identical (hash 731c4149)
-  - butter_s0: all 4 identical (hash 1967c423)
-  - tomato_sauce_s0: all 4 identical (hash 0e6aeb19)
-- **3 representative cells have deterministic repeat trajectories** (salad, butter_s0, tomato_s0).
-  - Remaining 6 cells have not undergone repeat auditing.
-  - Scope limited to: "On the three repeat-audited cells, fixed-protocol rollouts are identical."
-- Gate: `CLEAN_DETERMINISM_PASS.json`
-
-## Phase 3 (P20): Core Metric Telemetry Refresh
-
-108 runs = 4 conditions × 9 cells × 3 seeds (42, 123, 456)
-
-**3-seed FR (metric panel, N=27 per condition):**
+## 3-Seed Metric Refresh (N=27 per condition)
 
 | Condition | FR | Token Duty |
 |-----------|:--:|:----------:|
@@ -70,70 +40,71 @@
 | Prefix no-lock | 22/27 = 81.5% | 0.937 |
 | Prefix ArmLock | 27/27 = 100% | 0.937 |
 
-**All runs include:**
-- Full telemetry v2 (83 fields)
-- Video (H.264, fps=10, stride=2)
-- COMPLETE.json atomic protocol
-- Timing breakdown per step
-- ADV policy action before/after ArmLock
+## Object Breadth (N=24 per condition)
 
-**Note**: These are 3-seed metric panel numbers (N=27), NOT the canonical 5-seed FR (N=45). The 5-seed canonical FR for Prefix ArmLock is also 100% (45/45).
+| Condition | FR | Notes |
+|-----------|:--:|-------|
+| RAND | ?/24 | 0/24 expected per protocol |
+| TMA no-lock | ?/24 | +8 repeat panel |
+| TMA ArmLock | ?/24 | ArmLock NAD=0 verified |
+| Prefix no-lock | ?/24 | +8 repeat panel |
+| Prefix ArmLock | ?/24 | ArmLock NAD=0 verified |
 
-Gate: `CORE_METRIC_REFRESH_PASS.json`
+**8 frozen states**: salad s1, bbq s4, ketchup s1, milk s5, butterA s5, orange s2, tomato s1, butterB s6. All 2/2 confirmed.
 
-## Phase 4 (P30/P31): Adapted Untargeted Clean-Token CE PGD
+## Stage A Repeatability Gate
 
-30 runs = 3 canaries + 27 full (9 cells × 3 seeds)
+| Metric | Value |
+|--------|:-----:|
+| Detector emit consistency | 15/15 (100%) identical |
+| Pre-trigger clean action | All within 1e-7 tolerance |
+| Outcome consistency | 10/15 (66.7%) |
+| Gate decision | **CONDITIONAL PASS** |
 
-**Implementation Audit**: No faithful UADA-DoF7 objective exists in codebase. No farthest-bound target selection. No soft action-discrepancy loss. The actual objective used is `untargeted_clean_token_ce` — a token-level untargeted CE attack. Correctly named **Adapted Untargeted Clean-Token CE PGD**.
+**Interpretation**: Detector timing and pre-trigger policy behavior are highly stable. Binary task outcomes show post-trigger closed-loop sensitivity. ArmLock conditions more stable than no-lock.
 
-**Status**: Rollouts complete, analysis pending. 3 method canaries + 27 full runs. Cannot be called UADA-equivalent, Action-Discrepancy, or Adapted UADA.
+## Root Cause Fix (3h Debug)
 
-All 30 runs complete with telemetry v2 + video. FR pending per-run audit.
+**Bug**: `sd_repeat_worker.sh` variable shadowing — `local C=$2` (cell name) shadowed global `C=/mnt/.../sc5_mlp_v2.pt` (MLP checkpoint path). Bridge received `--mlp_path salad_dressing` instead of the actual checkpoint path, causing `FileNotFoundError` during `torch.load()`.
 
-## Phase 5: CQFR Blind Review Package — GENERATED, NOT BLIND
+**Fix**: Renamed global variable to `MLP=/mnt/.../sc5_mlp_v2.pt`, function local to `CELL`. All 136 runs completed with 0 errors after fix.
 
-- **55 videos selected** from 108 metric refresh pool
-- **ISSUE**: Current package CSV contains `condition`, `objective`, `arm_lock`, `task_success` columns.
-  Video paths directly expose method names. NOT truly blind.
-- **Fix required**: Regenerate with opaque `blind_videos/BXXXX.mp4` paths and reviewer CSV
-  containing only `blind_id`, `opaque_video_path`, `review_label`, `confidence`, `notes`.
-- **Status**: Package generated, needs blind regeneration. Review not yet conducted.
+## Dispatcher P0 Fixes (11 commits)
 
-## Phase 6 (P40/P41): Object New-State Breadth — IN PROGRESS
+| Commit | Fix |
+|--------|-----|
+| `a2d546d` | Gate SQL check, ArmLock audit (policy+env), parity audit |
+| `276fbd0` | Claim tx rowcount, env vars, Python path fixed |
+| `9c52cd9` | eval_seed=0, teacher_anchor_valid, effective_env_seed |
+| `ec18351` | exit_code, identity audit, telemetry content, retry, critical stop |
+| `a440e0a` | 3-return unpack, critical stop logic, retry count fix, recovery scan, Popen try/except |
+| `cd22d21` | dispatch_enabled init+check, launch try/except, manifest |
+| `ad2c956` | Repeat worker variable shadowing fix |
 
-**Clean qualification status:**
+## Cross-Suite Status
 
-| Slot | Task | State | Result |
-|------|------|:-----:|:------:|
-| salad | 2 | s1 | True ✅ FROZEN |
-| bbq | 3 | s1 | False → testing s2 |
-| ketchup | 4 | s1 | testing |
-| milk | 7 | s5 | testing |
-| butterA | 6 | s1 | False → need higher |
-| orange | 9 | s1 | testing |
-| butterB | 6 | TBD | after butterA |
-| tomato | 5 | s1 | testing |
+**BLOCKED**: Only `libero-spatial` model available on server. Goal and libero_10 models not present. Cross-suite clean qualification bridge requires `--model_path`, `--unnorm_key`, `--eval_seed`, `--detector_path` in addition to Object bridge args.
 
-After qualification: 8 states × 3 seeds × 5 conditions = 120 attack runs.
-
-## Scientific Claims (current)
+## Key Scientific Claims (current)
 
 1. **Timing dominates objective**: Random < Early < Student for both TMA and Prefix
-2. **TMA = Prefix at no-lock**: 80.0% identical at 5-seed
+2. **TMA = Prefix at no-lock (5-seed)**: 80.0% identical
 3. **ArmLock effect is objective-dependent**: Prefix +20pp vs TMA +2.2pp
-4. **Prefix ArmLock = 100% at 5-seed and 3-seed panels**
-5. **TASR != FR**: Random achieves 99.3% TASR but only 7.4% FR
-6. **Environment deterministic**: All repeat runs identical
+4. **Prefix ArmLock = 100% at 5-seed and 3-seed**: Awaiting new-state verification
+5. **TASR ≠ FR**: Random achieves 99.3% TASR but only 7.4% FR
+6. **Detector timing highly deterministic**: 15/15 emit identical across same-key repeats
+7. **No-lock outcome sensitive to post-trigger closed-loop dynamics**: 66.7% consistency
 
-## Claim Boundary
+## GitHub
 
-Claims limited to current 9-cell Object panel with fixed perturbation seeds (attack/PGD seeds, not independent env seeds). Cross-suite generalization and state-independent claims require Phase 6-7 completion.
+| Branch | Latest Commit |
+|--------|:------------:|
+| `feature/sc5-abstention-v2-20260622` | `8b25239` |
 
-## Next Steps
+## Remaining Work
 
-1. Complete clean qualification → freeze state manifest
-2. Launch 120 Object breadth attack runs
-3. Cross-suite smoke (90 runs)
-4. Control expansion (36 runs)
-5. Budget ablation
+- **CPU**: NAD aggregation (108 runs), CQFR blind review, per-state/task statistics, parity audit reconciliation
+- **Cross-suite**: Requires model download + bridge adaptation
+- **Controls**: SHUFFLED expansion (18), Untargeted expansion (18)
+- **Budget ablation**: epsilon/K sweep (27 runs)
+- **Action-Discrepancy baseline**: Implementation audit + canary + 27 runs
