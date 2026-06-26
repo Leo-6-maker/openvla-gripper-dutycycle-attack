@@ -1,0 +1,10 @@
+{
+  "gate": "STAGE_A_REPEATABILITY_GATE",
+  "timestamp": "2026-06-27T00:29:33.636657",
+  "decision": "CONDITIONAL_PASS",
+  "detail": "emit steps identical, pre-trigger clean actions consistent. 10 /15 outcome match (66.7%). Consistent with post-trigger closed-loop divergence.",
+  "emit_all_match": true,
+  "pre_trigger_clean_action_consistent": true,
+  "outcome_match": "10/15",
+  "outcome_match_pct": 66.7
+}
