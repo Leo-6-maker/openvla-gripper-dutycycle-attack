@@ -913,7 +913,7 @@ class TokenPrefixPGDAttacker:
         objective = str(getattr(self, "objective", "targeted_directional_ce"))
         is_untargeted = objective in {"untargeted_clean_token_ce", "untargeted_clean_ce", "maximize_clean_ce", "untargeted_arm_clean_token_ce", "ctrl_random_direction_arm_only"}
         is_arm_only_untargeted = objective in {"untargeted_arm_clean_token_ce", "ctrl_random_direction_arm_only"}
-        is_force_gripper_open = objective in {"force_gripper_open_token_ce", "force_gripper_open", "targeted_gripper_open_ce", "adaptive_anti_gripper_token_ce"}
+        is_force_gripper_open = objective in {"force_gripper_open_token_ce", "force_gripper_open", "targeted_gripper_open_ce", "adaptive_anti_gripper_token_ce", "vanilla_tma_gripper_open_ce"}
         is_force_open_z_down = objective in {"force_open_z_down_token_ce"}
         is_force_open_region_z_down = objective in {"force_open_region_z_down_ce"}  # corrected hybrid
         is_gripper_margin = objective in {"gripper_logit_margin_cw"}
@@ -1014,7 +1014,13 @@ class TokenPrefixPGDAttacker:
             for label_pos in label_positions:
                 masked[:, label_pos] = labels[:, label_pos]
             labels = masked
-            if is_gripper_margin:
+            if objective == "vanilla_tma_gripper_open_ce":
+                if self.target_token_id is None:
+                    raise RouteContractError("vanilla_tma_gripper_open_ce requires target_token_id")
+                gripper_label_pos = int(labels.shape[1] - action_dim + gripper_dim)
+                labels[:, gripper_label_pos] = int(self.target_token_id)
+                token_label_source = "vanilla_tma_gripper_open_ce_target_token_31744"
+            elif is_gripper_margin:
                 token_label_source = "gripper_logit_margin_cw_target_action_gripper_only"
             elif is_gripper_region:
                 token_label_source = "gripper_open_region_ce_target_action_gripper_only"
