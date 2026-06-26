@@ -1,7 +1,8 @@
 {
   "gate": "TABLE1_METRIC_CONTRACT_FREEZE",
   "timestamp": "2026-06-26T03:00:00+08:00",
-  "status": "FROZEN_BEFORE_TMA_UADA_LAUNCH",
+  "status": "FROZEN_DURING_PARTIAL_EXECUTION_BEFORE_FINAL_AGGREGATION",
+  "status_note": "Original label claimed pre-TMA freeze but Git history shows TMA canary completed and 11-19/27 TMA runs done before contract commit 1429ae4. Corrected to honest timeline.",
 
   "denominators": {
     "qualified_expanded": {
