@@ -661,11 +661,17 @@ def main_loop(conn, lockfile_path, source_commit=""):
     for gid in gpus:
         gpu_state[gid] = {'status': 'IDLE_WAITING_FOR_JOB', 'job_id': None, 'pid': None, 'last_seen': time.time()}
 
+    dispatch_enabled = True
+    incident_reason = None
     print(f"[{now_iso()}] Dispatcher V2 started. GPUs: {list(gpu_state.keys())}")
     log_event(conn, 'DISPATCHER_START', detail=f"GPUs: {list(gpu_state.keys())}")
 
     try:
         while True:
+            if not dispatch_enabled:
+                # Allow running workers to finish, audit them, but claim nothing new
+                time.sleep(POLL_INTERVAL)
+                continue
             # 1. Reap any finished workers
             try:
                 wpid, wstatus = os.waitpid(-1, os.WNOHANG)
@@ -752,10 +758,17 @@ def main_loop(conn, lockfile_path, source_commit=""):
                         gpu_state[gid]['status'] = 'IDLE_WAITING_FOR_JOB'
                         continue
 
-                    # Attempt claim
+                    # Attempt claim (respect dispatch_enabled)
+                    if not dispatch_enabled:
+                        continue
                     job = claim_job(conn, gid)
                     if job:
-                        pid = launch_worker(conn, job, gid, source_commit)
+                        try:
+                            pid = launch_worker(conn, job, gid, source_commit)
+                        except Exception as e:
+                            log_event(conn, 'LAUNCH_FAILED', gpu_id=gid, job_id=job['job_id'], detail=str(e))
+                            gpu_state[gid] = {'status': 'IDLE_WAITING_FOR_JOB', 'job_id': None, 'pid': None, 'last_seen': time.time()}
+                            continue
                         running_workers[pid] = gid
                         gpu_state[gid] = {'status': 'RUNNING', 'job_id': job['job_id'], 'pid': pid, 'last_seen': time.time()}
                         print(f"[{now_iso()}] GPU{gid}: launched job={job['job_id']} {job['method']} {job['task']} s{job['state_id']} seed={job['perturbation_seed']} pid={pid}")
