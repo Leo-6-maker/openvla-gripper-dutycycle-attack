@@ -218,34 +218,35 @@ def check_disk():
 # ── Job claiming ──
 def claim_job(conn, gpu_id):
     """Atomically claim the highest-priority eligible job for a GPU."""
-    cur = conn.execute("""
-        SELECT job_id, phase, method, task, state_id, perturbation_seed, condition,
-               objective, arm_lock, timing, trigger_step_override, keep_running,
-               output_dir, anchor, task_idx, eval_seed, scientific_key
-        FROM jobs
-        WHERE status IN ('PENDING', 'FAILED_RETRYABLE')
-        AND (
-            gate_dependency IS NULL
-            OR EXISTS (
-                SELECT 1 FROM gates
-                WHERE gate_name = jobs.gate_dependency
-                AND status = 'PASS'
-            )
-        )
-        ORDER BY priority ASC, phase ASC, method ASC, task ASC, state_id ASC, job_id ASC
-        LIMIT 1
-    """)
-    row = cur.fetchone()
-    if not row:
-        return None
-    # BEGIN IMMEDIATE for atomic claim
     conn.execute("BEGIN IMMEDIATE")
     try:
-        conn.execute("""
+        # Select inside transaction for atomic claim
+        cur = conn.execute("""
+            SELECT job_id, phase, method, task, state_id, perturbation_seed, condition,
+                   objective, arm_lock, timing, trigger_step_override, keep_running,
+                   output_dir, anchor, task_idx, eval_seed, scientific_key
+            FROM jobs
+            WHERE status IN ('PENDING', 'FAILED_RETRYABLE')
+            AND (
+                gate_dependency IS NULL
+                OR EXISTS (
+                    SELECT 1 FROM gates
+                    WHERE gate_name = jobs.gate_dependency
+                    AND status = 'PASS'
+                )
+            )
+            ORDER BY priority ASC, phase ASC, method ASC, task ASC, state_id ASC, job_id ASC
+            LIMIT 1
+        """)
+        row = cur.fetchone()
+        if not row:
+            conn.execute("ROLLBACK")
+            return None
+        cur2 = conn.execute("""
             UPDATE jobs SET status='CLAIMED', gpu_id=?, claimed_at=?
             WHERE job_id=? AND status IN ('PENDING', 'FAILED_RETRYABLE')
         """, (gpu_id, now_iso(), row[0]))
-        if conn.total_changes == 0:
+        if cur2.rowcount != 1:
             conn.execute("ROLLBACK")
             return None
         conn.execute("COMMIT")
@@ -268,7 +269,7 @@ def build_worker_cmd(job, gpu_id, source_commit=""):
     stderr_path = out_dir / "stderr.log"
 
     bridge_args = [
-        "python3", BRIDGE_SCRIPT,
+        "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python3", BRIDGE_SCRIPT,
         "--condition", job['condition'],
         "--state_id", str(job['state_id']),
         "--anchor", str(job['anchor']),
@@ -303,6 +304,13 @@ def launch_worker(conn, job, gpu_id, source_commit=""):
     wspec = build_worker_cmd(job, gpu_id, source_commit)
     env = os.environ.copy()
     env['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
+    env['MUJOCO_GL'] = 'egl'
+    env['HF_HUB_OFFLINE'] = '1'
+    env['TRANSFORMERS_OFFLINE'] = '1'
+    env['OPENVLA_DTYPE'] = 'bfloat16'
+    env['OPENVLA_ATTN_IMPLEMENTATION'] = 'eager'
+    env['OPENVLA_MODEL_PATH'] = '/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object'
+    env['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
     env['HOME'] = '/mnt/sdc/dty_user/openvla_attack/sandbox_home'
     env['TMPDIR'] = '/mnt/sdc/dty_user/openvla_attack/tmp'
     env['HF_HOME'] = '/mnt/sdc/dty_user/openvla_attack/hf_cache'
@@ -387,31 +395,62 @@ def audit_job(conn, job, gpu_id):
         except Exception:
             pass
 
-    # 6. Check ArmLock violations
+    # 6. Check ArmLock violations (policy + env actions, all attack frames)
     if job.get('arm_lock'):
         if csv_path.exists():
             import csv
             import json as _json
-            violations = 0
-            max_abs_diff = 0.0
+            policy_violations = 0
+            env_violations = 0
+            max_policy_diff = 0.0
+            max_env_diff = 0.0
+            audited_attack_frames = 0
+            missing_policy_action = 0
+            missing_env_action = 0
             try:
                 with open(csv_path) as f:
                     reader = csv.DictReader(f)
                     for row in reader:
                         if row.get('attack_this') != 'True':
                             continue
-                        executed = _json.loads(row.get('executed_policy_action_7d_after_lock', '[]'))
-                        clean = _json.loads(row.get('clean_policy_action_7d', '[]'))
-                        if len(executed) < 6 or len(clean) < 6:
-                            continue
-                        for i in range(6):
-                            diff = abs(executed[i] - clean[i])
-                            if diff > max_abs_diff:
-                                max_abs_diff = diff
-                            if diff > 1e-7:
-                                violations += 1
-                if violations > 0 or max_abs_diff > 1e-7:
-                    issues.append(f"ArmLock violations: {violations} frame-dof discrepancies, max_abs_diff={max_abs_diff:.2e}")
+                        audited_attack_frames += 1
+                        # Policy action audit
+                        executed_pol = _json.loads(row.get('executed_policy_action_7d_after_lock', '[]'))
+                        clean_pol = _json.loads(row.get('clean_policy_action_7d', '[]'))
+                        if len(executed_pol) < 6 or len(clean_pol) < 6:
+                            missing_policy_action += 1
+                        else:
+                            for i in range(6):
+                                diff = abs(executed_pol[i] - clean_pol[i])
+                                if diff > max_policy_diff:
+                                    max_policy_diff = diff
+                                if diff > 1e-7:
+                                    policy_violations += 1
+                        # Environment action audit
+                        executed_env = _json.loads(row.get('executed_env_action_7d', '[]'))
+                        clean_env = _json.loads(row.get('clean_env_action_7d', '[]'))
+                        if len(executed_env) < 6 or len(clean_env) < 6:
+                            missing_env_action += 1
+                        else:
+                            for i in range(6):
+                                diff = abs(executed_env[i] - clean_env[i])
+                                if diff > max_env_diff:
+                                    max_env_diff = diff
+                                if diff > 1e-7:
+                                    env_violations += 1
+
+                # Verify audited frames match expected
+                expected_atk_frames = 10 if (summary_path.exists() and json.load(open(summary_path)).get('mlp_emit_step', -1) >= 0) else 0
+                if audited_attack_frames != expected_atk_frames:
+                    issues.append(f"ArmLock audit frame mismatch: audited {audited_attack_frames} attack frames, expected {expected_atk_frames}")
+                if missing_policy_action > 0:
+                    issues.append(f"ArmLock: {missing_policy_action} attack frames missing policy action fields")
+                if missing_env_action > 0:
+                    issues.append(f"ArmLock: {missing_env_action} attack frames missing env action fields")
+                if policy_violations > 0 or max_policy_diff > 1e-7:
+                    issues.append(f"ArmLock policy violations: {policy_violations} frame-dof, max_diff={max_policy_diff:.2e}")
+                if env_violations > 0 or max_env_diff > 1e-7:
+                    issues.append(f"ArmLock env violations: {env_violations} frame-dof, max_diff={max_env_diff:.2e}")
             except Exception as e:
                 issues.append(f"ArmLock audit error: {e}")
 
