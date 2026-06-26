@@ -30,7 +30,9 @@
   - TMA ArmLock: 37/45 = 82.2%
   - Prefix no-lock: 36/45 = 80.0%
   - Prefix ArmLock: 45/45 = 100.0%
-- Gate: `PHASE_AB_LEDGER_PASS.json`
+- **Gate status**: `CORE_2X2_TIMING_PASS` — core 2x2 and timing complete.
+  - `FULL_TABLE1_LEDGER_PASS` on HOLD pending SHUFFLED artifact recovery.
+  - Prior `PHASE_AB_LEDGER_PASS.json` records `match: false` and must be split.
 
 ## Phase 1: Telemetry V2 + Dispatcher
 
@@ -50,7 +52,9 @@
   - salad_dressing_s0: all 4 identical (hash 731c4149)
   - butter_s0: all 4 identical (hash 1967c423)
   - tomato_sauce_s0: all 4 identical (hash 0e6aeb19)
-- **Environment fully deterministic** — one canonical clean rollout per cell sufficient
+- **3 representative cells have deterministic repeat trajectories** (salad, butter_s0, tomato_s0).
+  - Remaining 6 cells have not undergone repeat auditing.
+  - Scope limited to: "On the three repeat-audited cells, fixed-protocol rollouts are identical."
 - Gate: `CLEAN_DETERMINISM_PASS.json`
 
 ## Phase 3 (P20): Core Metric Telemetry Refresh
@@ -77,30 +81,24 @@
 
 Gate: `CORE_METRIC_REFRESH_PASS.json`
 
-## Phase 4 (P30/P31): Adapted Action-Discrepancy PGD
+## Phase 4 (P30/P31): Adapted Untargeted Clean-Token CE PGD
 
 30 runs = 3 canaries + 27 full (9 cells × 3 seeds)
 
-**Implementation Audit**: No faithful UADA-DoF7 objective exists in codebase. Used `untargeted_clean_token_ce` as closest available match under the name "Adapted Action-Discrepancy PGD" per user rename protocol.
+**Implementation Audit**: No faithful UADA-DoF7 objective exists in codebase. No farthest-bound target selection. No soft action-discrepancy loss. The actual objective used is `untargeted_clean_token_ce` — a token-level untargeted CE attack. Correctly named **Adapted Untargeted Clean-Token CE PGD**.
 
-**3-seed FR (N=27):**
+**Status**: Rollouts complete, analysis pending. 3 method canaries + 27 full runs. Cannot be called UADA-equivalent, Action-Discrepancy, or Adapted UADA.
 
-| Condition | FR |
-|-----------|:--:|
-| Adapted Action-Disc. PGD | PENDING_AUDIT |
+All 30 runs complete with telemetry v2 + video. FR pending per-run audit.
 
-All 30 runs complete with telemetry v2 + video.
-
-## Phase 5: CQFR Blind Review Package
+## Phase 5: CQFR Blind Review Package — GENERATED, NOT BLIND
 
 - **55 videos selected** from 108 metric refresh pool
-- Selection criteria:
-  - All successes with TASR_episode=1 (8 videos)
-  - All TMA-vs-Prefix discordant pairs (22 → included)
-  - All lock-vs-no-lock discordant pairs (35 → included)
-  - 20% random sample per method (~11 TMA + ~11 Prefix)
-- Blind mapping generated (`CQFR_BLIND_MAP.json`)
-- Review labels: premature_release, drop_after_lift, object_detach, unstable_transport, uncontrolled_final_drop, generic_timeout, other_failure, clean_success
+- **ISSUE**: Current package CSV contains `condition`, `objective`, `arm_lock`, `task_success` columns.
+  Video paths directly expose method names. NOT truly blind.
+- **Fix required**: Regenerate with opaque `blind_videos/BXXXX.mp4` paths and reviewer CSV
+  containing only `blind_id`, `opaque_video_path`, `review_label`, `confidence`, `notes`.
+- **Status**: Package generated, needs blind regeneration. Review not yet conducted.
 
 ## Phase 6 (P40/P41): Object New-State Breadth — IN PROGRESS
 

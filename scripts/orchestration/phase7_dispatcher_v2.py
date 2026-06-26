@@ -224,6 +224,14 @@ def claim_job(conn, gpu_id):
                output_dir, anchor, task_idx, eval_seed, scientific_key
         FROM jobs
         WHERE status IN ('PENDING', 'FAILED_RETRYABLE')
+        AND (
+            gate_dependency IS NULL
+            OR EXISTS (
+                SELECT 1 FROM gates
+                WHERE gate_name = jobs.gate_dependency
+                AND status = 'PASS'
+            )
+        )
         ORDER BY priority ASC, phase ASC, method ASC, task ASC, state_id ASC, job_id ASC
         LIMIT 1
     """)
@@ -383,20 +391,55 @@ def audit_job(conn, job, gpu_id):
     if job.get('arm_lock'):
         if csv_path.exists():
             import csv
+            import json as _json
             violations = 0
+            max_abs_diff = 0.0
             try:
                 with open(csv_path) as f:
                     reader = csv.DictReader(f)
                     for row in reader:
-                        if row.get('attack_this') == 'True':
-                            before = json.loads(row.get('adv_policy_action_7d_before_lock', '[]'))
-                            after = json.loads(row.get('executed_policy_action_7d_after_lock', '[]'))
-                            if before and after:
-                                max_diff = max(abs(before[i] - after[i]) for i in range(min(6, len(before))))
-                                if max_diff < 1e-7:
-                                    pass  # arm lock applied
+                        if row.get('attack_this') != 'True':
+                            continue
+                        executed = _json.loads(row.get('executed_policy_action_7d_after_lock', '[]'))
+                        clean = _json.loads(row.get('clean_policy_action_7d', '[]'))
+                        if len(executed) < 6 or len(clean) < 6:
+                            continue
+                        for i in range(6):
+                            diff = abs(executed[i] - clean[i])
+                            if diff > max_abs_diff:
+                                max_abs_diff = diff
+                            if diff > 1e-7:
+                                violations += 1
+                if violations > 0 or max_abs_diff > 1e-7:
+                    issues.append(f"ArmLock violations: {violations} frame-dof discrepancies, max_abs_diff={max_abs_diff:.2e}")
             except Exception as e:
                 issues.append(f"ArmLock audit error: {e}")
+
+    # 7. Check protocol params vs expected
+    if summary_path.exists():
+        try:
+            summary = json.load(open(summary_path))
+            expected = {
+                'epsilon': 0.023529411764705882,
+                'pgd_steps': 20,
+                'K': 10,
+                'target_token': 31744,
+            }
+            for key, exp_val in expected.items():
+                actual = summary.get(key)
+                if actual is not None and abs(float(actual) - exp_val) > 1e-9:
+                    issues.append(f"protocol mismatch: {key}={actual} expected={exp_val}")
+        except Exception:
+            pass
+
+    # 8. Check exit code
+    if complete_path.exists():
+        try:
+            comp = json.load(open(complete_path))
+            if comp.get('exit_code', 0) != 0:
+                issues.append(f"non-zero exit_code: {comp.get('exit_code')}")
+        except Exception:
+            pass
 
     audit_result = 'PASS' if not issues else 'FAIL: ' + '; '.join(issues)
     conn.execute("""
