@@ -54,7 +54,7 @@ try:
 except Exception:
     pass
 _bridge_sha = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
-_eval_seed = args.eval_seed if args.eval_seed >= 0 else args.seed_id
+_eval_seed = args.eval_seed if args.eval_seed >= 0 else 0
 _timing_policy = "student"
 _trigger_source = "mlp_detector"
 if args.trigger_step_override >= 0:
@@ -497,15 +497,18 @@ summary = {
     "timing_policy": _timing_policy,
     "trigger_source": _trigger_source,
     # Detector
-    "teacher_anchor": ANCHOR,
+    "teacher_anchor": ANCHOR if ANCHOR > 0 else None,
+    "teacher_anchor_valid": ANCHOR > 0,
     "mlp_emit_step": _mlp_emit,
     "mlp_triggered": detector.emitted,
     "effective_trigger_step": _trigger_step if _trigger_step >= 0 else -1,
-    "anchor_error": (_mlp_emit - ANCHOR) if _mlp_emit >= 0 else None,
+    "anchor_error": (_mlp_emit - ANCHOR) if _mlp_emit >= 0 and ANCHOR > 0 else None,
     "invalid_feature_steps": _invalid_steps,
     "first_valid_step": _first_valid_step,
     "manual_anchor_used": False,
     "privileged_detector_input_used": False,
+    "effective_env_seed": 0,
+    "env_seed_applied": True,
     # Protocol
     "epsilon": EPSILON,
     "pgd_steps": PGD_STEPS,
