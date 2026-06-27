@@ -29,8 +29,7 @@ run_one() {
     --suite $SU --task_idx $TI --state_id $ST --eval_seed 0 \
     --model_path $M --unnorm_key libero_spatial \
     --output_dir "$OUT" --render_gpu $G \
-    --detector_path $D --source_commit $COMMIT \
-    --save_video \
+    --detector_path $D --source_commit $COMMIT
     > /tmp/spatial_stdout_$$.log 2> /tmp/spatial_stderr_$$.log
   mv /tmp/spatial_stdout_$$.log "$OUT/stdout.log" 2>/dev/null
   mv /tmp/spatial_stderr_$$.log "$OUT/stderr.log" 2>/dev/null
