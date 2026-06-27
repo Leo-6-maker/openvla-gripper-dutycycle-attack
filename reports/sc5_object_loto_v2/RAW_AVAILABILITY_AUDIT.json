@@ -1,0 +1,13 @@
+{
+  "total_expected_episodes": 370,
+  "step_records_jsonl_found": 0,
+  "privileged_step_records_jsonl_found": 60,
+  "tasks_with_privileged": 10,
+  "step_csv_has_teacher_input": false,
+  "step_csv_has_teacher_labels": true,
+  "step_csv_has_student_features": true,
+  "situation": "PARTIAL_RAW_PRIVILEGED_ONLY",
+  "full_re_labeling_possible": false,
+  "threshold_comparison_possible": true,
+  "recommendation": "Accept STUDENT_ONLY canary. For strict V2: collect privileged records or use RAW_ENOUGH_CSV."
+}

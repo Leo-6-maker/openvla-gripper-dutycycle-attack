@@ -1,0 +1,11 @@
+task_idx,task_name,csv_episodes,csv_rows,step_records_jsonl,privileged_jsonl,has_teacher_input,has_student_features,status
+0,butter,37,8729,0,6,False,True,PARTIAL
+1,ketchup,37,7167,0,6,False,True,PARTIAL
+2,milk,37,7501,0,6,False,True,PARTIAL
+3,orange_juice,37,12059,0,6,False,True,PARTIAL
+4,alphabet_soup,37,7358,0,6,False,True,PARTIAL
+5,tomato_sauce,37,8272,0,6,False,True,PARTIAL
+6,cream_cheese,37,7906,0,6,False,True,PARTIAL
+7,salad_dressing,37,8013,0,6,False,True,PARTIAL
+8,bbq_sauce,37,7736,0,6,False,True,PARTIAL
+9,chocolate_pudding,37,9274,0,6,False,True,PARTIAL
