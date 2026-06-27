@@ -31,7 +31,7 @@ run_one() {
   mkdir -p "$OUT"
   echo "GPU$G: $SU task$TI s$ST $(date)"
   env CUDA_VISIBLE_DEVICES=$G $PY -u $B \
-    --suite $SU --task_idx $TI --state_id $ST --seed 42 \
+    --suite $SU --task_idx $TI --state_id $ST --eval_seed 0 \
     --model_path $M --unnorm_key libero_spatial \
     --output_dir "$OUT" --render_gpu $G \
     --mlp_path $C --source_commit $COMMIT \
