@@ -22,14 +22,14 @@ run_one() {
     echo "SKIP: $OUT already complete"
     return 0
   fi
-  mkdir -p "$OUT"
+  rm -rf "$OUT" 2>/dev/null  # clean any stale partial dir
   echo "GPU$G: $SU task$TI s$ST $(date)"
   env CUDA_VISIBLE_DEVICES=$G $PY -u $B \
     --suite $SU --task_idx $TI --state_id $ST --eval_seed 0 \
     --model_path $M --unnorm_key libero_spatial \
     --output_dir "$OUT" --render_gpu $G \
     --detector_path $D --source_commit $COMMIT \
-    --save_video --video_fps 10 --frame_stride 2 \
+    --save_video \
     > "$OUT/stdout.log" 2> "$OUT/stderr.log"
   local EC=$?
   echo "GPU$G: $SU task$TI s$ST exit=$EC $(date)"
