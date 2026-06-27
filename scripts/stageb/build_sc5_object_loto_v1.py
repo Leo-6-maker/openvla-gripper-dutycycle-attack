@@ -125,36 +125,41 @@ print('Actual val tasks:     {}'.format(sorted(actual_val)))
 print('Expected held tasks:  {}'.format(sorted(HELD_OUT_TASKS)))
 print('Actual held tasks:    {}'.format(sorted(actual_held)))
 
-# Leakage checks
-train_set = set(task_by_split['train'].keys())
-val_set = set(task_by_split['val'].keys())
-held_set = set(task_by_split['held_out'].keys())
+# ── Leakage checks ──
+train_tasks_actual = set(task_by_split['train'].keys())
+val_tasks_actual = set(task_by_split['val'].keys())
+held_tasks_actual = set(task_by_split['held_out'].keys())
 
-leakage = []
-if train_set & val_set:
-    leakage.append('TRAIN ∩ VAL: {}'.format(train_set & val_set))
-if train_set & held_set:
-    leakage.append('TRAIN ∩ HELD_OUT: {}'.format(train_set & held_set))
-if val_set & held_set:
-    leakage.append('VAL ∩ HELD_OUT: {}'.format(val_set & held_set))
-if actual_train != TRAIN_TASKS:
-    leakage.append('TRAIN MISMATCH: expected={} actual={}'.format(TRAIN_TASKS, actual_train))
-if actual_val != VAL_TASKS:
-    leakage.append('VAL MISMATCH: expected={} actual={}'.format(VAL_TASKS, actual_val))
-if actual_held != HELD_OUT_TASKS:
-    leakage.append('HELD_OUT MISMATCH: expected={} actual={}'.format(HELD_OUT_TASKS, actual_held))
+task_isolation_pass = True
+isolation_issues = []
 
-if leakage:
-    print('\n*** LEAKAGE DETECTED ***')
-    for l in leakage:
-        print('  {}'.format(l))
-    print('GATE: FAIL')
+if train_tasks_actual & val_tasks_actual:
+    isolation_issues.append('TASK_LEAK: train ∩ val = {}'.format(train_tasks_actual & val_tasks_actual))
+    task_isolation_pass = False
+if train_tasks_actual & held_tasks_actual:
+    isolation_issues.append('TASK_LEAK: train ∩ held_out = {}'.format(train_tasks_actual & held_tasks_actual))
+    task_isolation_pass = False
+if val_tasks_actual & held_tasks_actual:
+    isolation_issues.append('TASK_LEAK: val ∩ held_out = {}'.format(val_tasks_actual & held_tasks_actual))
+    task_isolation_pass = False
+if train_tasks_actual != TRAIN_TASKS:
+    isolation_issues.append('TRAIN_MISMATCH: expected={} actual={}'.format(TRAIN_TASKS, train_tasks_actual))
+    task_isolation_pass = False
+if val_tasks_actual != VAL_TASKS:
+    isolation_issues.append('VAL_MISMATCH: expected={} actual={}'.format(VAL_TASKS, val_tasks_actual))
+    task_isolation_pass = False
+if held_tasks_actual != HELD_OUT_TASKS:
+    isolation_issues.append('HELD_OUT_MISMATCH: expected={} actual={}'.format(HELD_OUT_TASKS, held_tasks_actual))
+    task_isolation_pass = False
+
+print('\nTask isolation: {}'.format('PASS' if task_isolation_pass else 'FAIL'))
+for issue in isolation_issues:
+    print('  {}'.format(issue))
+if not task_isolation_pass:
     sys.exit(1)
-else:
-    print('\nGATE: PASS — No task leakage')
 
-# Episode-level audit
-print('\n=== Episode audit ===')
+# ── Episode-level audit ──
+print('\n=== Episode-level audit ===')
 ep_by_split = defaultdict(set)
 for ep_id, info in episodes.items():
     ti = info['task_idx']
@@ -165,12 +170,40 @@ for ep_id, info in episodes.items():
     elif ti in HELD_OUT_TASKS:
         ep_by_split['held_out'].add(ep_id)
 
+# Episode leakage: check for cross-split episode IDs
+ep_isolation_pass = True
+ep_overlap_issues = []
+train_eps = ep_by_split['train']
+val_eps = ep_by_split['val']
+held_eps = ep_by_split['held_out']
+
+if train_eps & val_eps:
+    ep_overlap_issues.append('EP_LEAK: train ∩ val = {} episodes'.format(len(train_eps & val_eps)))
+    ep_isolation_pass = False
+if train_eps & held_eps:
+    ep_overlap_issues.append('EP_LEAK: train ∩ held_out = {} episodes'.format(len(train_eps & held_eps)))
+    ep_isolation_pass = False
+if val_eps & held_eps:
+    ep_overlap_issues.append('EP_LEAK: val ∩ held_out = {} episodes'.format(len(val_eps & held_eps)))
+    ep_isolation_pass = False
+
+print('Episode isolation: {}'.format('PASS' if ep_isolation_pass else 'FAIL'))
+for issue in ep_overlap_issues:
+    print('  {}'.format(issue))
+
 for split_name in ['train', 'val', 'held_out']:
     eps = ep_by_split[split_name]
     tasks_in_split = set()
     for ep in eps:
         tasks_in_split.add(episodes[ep]['task_idx'])
     print('  {}: {} episodes across tasks {}'.format(split_name, len(eps), sorted(tasks_in_split)))
+
+# Gate
+if not task_isolation_pass or not ep_isolation_pass:
+    print('\nGATE: FAIL')
+    sys.exit(1)
+print('\nGATE: PASS — Student row isolation verified')
+print('NOTE: Teacher labels inherited from old all-task calibration. This is a STUDENT-ONLY isolation canary.')
 
 # ── 4. Write outputs ──
 print('\n=== STEP 4: Write outputs ===')
@@ -203,17 +236,24 @@ print('Membership: {} episodes'.format(len(episodes)))
 # Split audit JSON
 audit = {
     'protocol': 'sc5_object_loto_v1_fold00',
-    'split_type': 'task_level_811',
+    'split_type': 'task_level_811_student_only',
+    'isolation_level': 'STUDENT_ROW_ONLY',
     'train_tasks': sorted(TRAIN_TASKS),
     'val_tasks': sorted(VAL_TASKS),
     'held_out_tasks': sorted(HELD_OUT_TASKS),
-    'task_leakage': len(leakage) == 0,
-    'episode_leakage': len(leakage) == 0,
+    'task_isolation_pass': task_isolation_pass,
+    'episode_isolation_pass': ep_isolation_pass,
+    'teacher_calibration_source': 'inherited_from_old_all_task_build',
+    'teacher_isolation_note': (
+        'Teacher calibration and per-row labels were produced by the original build_sc5_canonical_corpus_v2.py '
+        'which had access to all 10 Object tasks. Student row split is strict 8/1/1, but teacher labels may '
+        'carry indirect information about val/held_out tasks through calibration thresholds. '
+        'This is a STUDENT-ONLY isolation canary. Full teacher-isolated LOTO requires re-running '
+        'privileged teacher calibration on train tasks only, which needs raw step_records.jsonl files.'
+    ),
     'rows': {k: sum(v.values()) for k, v in task_by_split.items()},
     'episodes': {k: len(v) for k, v in ep_by_split.items()},
-    'teacher_calibration_source': 'inherited_from_old_build',
-    'teacher_isolation_note': 'CANARY ONLY — old teacher saw all tasks. Full re-teacher isolation will be done for 10-fold.',
-    'gate_pass': len(leakage) == 0,
+    'gate_pass': task_isolation_pass and ep_isolation_pass,
 }
 audit_path = REPORT_DIR / 'sc5_object_loto_fold00_split_audit.json'
 with open(audit_path, 'w') as f:
