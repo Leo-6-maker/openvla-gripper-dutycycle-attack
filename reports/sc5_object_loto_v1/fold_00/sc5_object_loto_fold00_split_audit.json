@@ -1,0 +1,35 @@
+{
+  "protocol": "sc5_object_loto_v1_fold00",
+  "split_type": "task_level_811",
+  "train_tasks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "val_tasks": [
+    0
+  ],
+  "held_out_tasks": [
+    9
+  ],
+  "task_leakage": true,
+  "episode_leakage": true,
+  "rows": {
+    "val": 8729,
+    "train": 66012,
+    "held_out": 9274
+  },
+  "episodes": {
+    "val": 37,
+    "train": 296,
+    "held_out": 37
+  },
+  "teacher_calibration_source": "inherited_from_old_build",
+  "teacher_isolation_note": "CANARY ONLY \u2014 old teacher saw all tasks. Full re-teacher isolation will be done for 10-fold.",
+  "gate_pass": true
+}

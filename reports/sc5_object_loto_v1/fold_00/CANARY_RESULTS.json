@@ -1,0 +1,25 @@
+{
+  "protocol": "sc5_object_loto_v1_fold00_canary",
+  "old_model": "sc5_v2_seed42 (in-domain, all 10 tasks)",
+  "new_model": "sc5_object_loto_v1 fold00 seed1 (LOTO, 8 train + 1 val + 1 held_out)",
+  "held_out_task": "chocolate_pudding (task_idx=9)",
+  "val_task": "butter (task_idx=0)",
+  "train_tasks": [
+    "ketchup",
+    "milk",
+    "orange_juice",
+    "alphabet_soup",
+    "tomato_sauce",
+    "cream_cheese",
+    "salad_dressing",
+    "bbq_sauce"
+  ],
+  "results": {
+    "held_out_emission": "18/37 (49%)",
+    "val_emission": "21/37 (57%)",
+    "train_emission": "158/296 (53%)",
+    "pearson_correlation": 0.9979364720436636,
+    "spearman_correlation": 0.9148111310990074
+  },
+  "conclusion": "Detector generalizes to held-out chocolate_pudding task with 49% episode emission rate, comparable to in-distribution performance."
+}
