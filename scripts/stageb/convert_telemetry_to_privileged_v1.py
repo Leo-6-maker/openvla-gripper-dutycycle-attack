@@ -11,11 +11,9 @@ def convert(telemetry_path, output_path, task_name=''):
         for r in reader:
             rows.append(r)
 
-    # Determine target position: for Object tasks, target = basket (0,0,0 approx)
-    # Better: use the object's final position or a known basket location
-    # For Object tasks, basket is at roughly x≈0, y≈0, z≈0.9
-    # For simplicity, use the last object position as reference or compute from known basket
-    target_x = 0.0; target_y = 0.0; target_z = 0.9  # approximate basket center
+    # Check if telemetry has real target fields (patched bridge) or needs approximate fallback
+    has_target = all(k in rows[0] for k in ['target_x', 'target_y', 'target_z']) if rows else False
+    has_gripper_qpos = 'gripper_qpos' in rows[0] if rows else False
 
     records = []
     skipped = 0
@@ -30,26 +28,33 @@ def convert(telemetry_path, output_path, task_name=''):
             eef_vx = float(r['eef_vx']); eef_vy = float(r['eef_vy']); eef_vz = float(r['eef_vz'])
             obj_x = float(r['object_x']); obj_y = float(r['object_y']); obj_z = float(r['object_z'])
             obj_eef_dist = float(r['object_eef_distance'])
+
+            if has_target:
+                tgt_x = float(r['target_x']); tgt_y = float(r['target_y']); tgt_z = float(r['target_z'])
+                obj_tgt_dist = float(r.get('object_to_target_distance', np.sqrt((obj_x-tgt_x)**2 + (obj_y-tgt_y)**2 + (obj_z-tgt_z)**2)))
+            else:
+                tgt_x = 0.0; tgt_y = 0.0; tgt_z = 0.9
+                obj_tgt_dist = np.sqrt((obj_x-tgt_x)**2 + (obj_y-tgt_y)**2 + (obj_z-tgt_z)**2)
+
+            grip_qpos = float(r['gripper_qpos']) if has_gripper_qpos else (grip_left + grip_right)
         except (ValueError, KeyError, TypeError):
             skipped += 1
             continue
-
-        obj_target_dist = np.sqrt((obj_x - target_x)**2 + (obj_y - target_y)**2 + (obj_z - target_z)**2)
 
         records.append({
             'step_idx': step_idx,
             'policy_step_idx': int(r.get('step', step_idx)),
             'teacher_privileged_state_available': True,
             'gripper_command': raw_grip,
-            'gripper_qpos': grip_left,
+            'gripper_qpos': grip_qpos,
             'gripper_width': grip_width,
             'gripper_opening_proxy': grip_width,
             'eef_x': eef_x, 'eef_y': eef_y, 'eef_z': eef_z,
             'eef_vx': eef_vx, 'eef_vy': eef_vy, 'eef_vz': eef_vz,
             'object_eef_distance': obj_eef_dist,
-            'object_to_target_distance': obj_target_dist,
+            'object_to_target_distance': obj_tgt_dist,
             'object_pose_json': json.dumps([obj_x, obj_y, obj_z]),
-            'target_pose_json': json.dumps([target_x, target_y, target_z]),
+            'target_pose_json': json.dumps([tgt_x, tgt_y, tgt_z]),
         })
 
     with open(output_path, 'w') as f:

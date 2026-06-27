@@ -189,6 +189,20 @@ print(f"Object site: suite={_suite_key} task={_task_key} -> {OBJ_SITE_NAME}", fl
 obj_sid = env.sim.model.site_name2id(OBJ_SITE_NAME)
 obj_z0 = float(env.sim.data.site_xpos[obj_sid][2])
 
+# ── Basket target lookup (for privileged_step_records.jsonl) ──
+_target_site_name = "basket_1_default_site"
+try:
+    _target_sid = env.sim.model.site_name2id(_target_site_name)
+    _txyz = env.sim.data.site_xpos[_target_sid].copy()
+    _target_x, _target_y, _target_z = float(_txyz[0]), float(_txyz[1]), float(_txyz[2])
+    _target_valid = True
+except ValueError:
+    _candidates = [env.sim.model.site_id2name(i) for i in range(env.sim.model.nsite)
+                   if 'basket' in (env.sim.model.site_id2name(i) or '').lower()]
+    print(f"WARNING: basket_1_default_site not found. candidates={_candidates}", flush=True)
+    _target_x = _target_y = _target_z = float('nan')
+    _target_valid = False
+
 # ── Streaming adapter ──
 from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
 _streamer = SC5StreamingFeatureAdapterV2()
@@ -425,6 +439,10 @@ for step in range(args.max_env_steps):
         # Object
         "object_x": obj_x, "object_y": obj_y, "object_z": obj_z,
         "object_eef_distance": eef_obj_dist,
+        # Target (basket) + gripper qpos
+        "target_x": _target_x, "target_y": _target_y, "target_z": _target_z,
+        "object_to_target_distance": float(np.sqrt((obj_x-_target_x)**2 + (obj_y-_target_y)**2 + (obj_z-_target_z)**2)) if _target_valid else float('nan'),
+        "gripper_qpos": float(qpos_sum) if not (np.isnan(q7) or np.isnan(q8)) else float('nan'),
         # Timing
         "clean_forward_ms": clean_fwd_ms,
         "pgd_optimization_ms": pgd_opt_ms,
