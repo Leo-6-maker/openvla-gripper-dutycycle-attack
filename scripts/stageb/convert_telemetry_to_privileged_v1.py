@@ -18,17 +18,20 @@ def convert(telemetry_path, output_path, task_name=''):
     target_x = 0.0; target_y = 0.0; target_z = 0.9  # approximate basket center
 
     records = []
+    skipped = 0
     for step_idx, r in enumerate(rows):
+        # Fail closed: all fields must exist and be finite
         try:
-            grip_left = float(r.get('gripper_qpos_left', 0))
-            grip_right = float(r.get('gripper_qpos_right', 0))
-            grip_width = float(r.get('gripper_width', 0))
-            raw_grip = float(r.get('raw_gripper', 0))
-            eef_x = float(r.get('eef_x', 0)); eef_y = float(r.get('eef_y', 0)); eef_z = float(r.get('eef_z', 0))
-            eef_vx = float(r.get('eef_vx', 0)); eef_vy = float(r.get('eef_vy', 0)); eef_vz = float(r.get('eef_vz', 0))
-            obj_x = float(r.get('object_x', 0)); obj_y = float(r.get('object_y', 0)); obj_z = float(r.get('object_z', 0))
-            obj_eef_dist = float(r.get('object_eef_distance', 0))
-        except (ValueError, KeyError):
+            grip_left = float(r['gripper_qpos_left'])
+            grip_right = float(r['gripper_qpos_right'])
+            grip_width = float(r['gripper_width'])
+            raw_grip = float(r['raw_gripper'])
+            eef_x = float(r['eef_x']); eef_y = float(r['eef_y']); eef_z = float(r['eef_z'])
+            eef_vx = float(r['eef_vx']); eef_vy = float(r['eef_vy']); eef_vz = float(r['eef_vz'])
+            obj_x = float(r['object_x']); obj_y = float(r['object_y']); obj_z = float(r['object_z'])
+            obj_eef_dist = float(r['object_eef_distance'])
+        except (ValueError, KeyError, TypeError):
+            skipped += 1
             continue
 
         obj_target_dist = np.sqrt((obj_x - target_x)**2 + (obj_y - target_y)**2 + (obj_z - target_z)**2)
@@ -40,14 +43,13 @@ def convert(telemetry_path, output_path, task_name=''):
             'gripper_command': raw_grip,
             'gripper_qpos': grip_left,
             'gripper_width': grip_width,
-            'gripper_opening_proxy': grip_width,  # same value, correct key
+            'gripper_opening_proxy': grip_width,
             'eef_x': eef_x, 'eef_y': eef_y, 'eef_z': eef_z,
             'eef_vx': eef_vx, 'eef_vy': eef_vy, 'eef_vz': eef_vz,
             'object_eef_distance': obj_eef_dist,
             'object_to_target_distance': obj_target_dist,
-            'object_pose_json': json.dumps({'x': obj_x, 'y': obj_y, 'z': obj_z}),
-            'target_pose_json': json.dumps({'x': target_x, 'y': target_y, 'z': target_z}),
-            'phase': 'wait',
+            'object_pose_json': json.dumps([obj_x, obj_y, obj_z]),
+            'target_pose_json': json.dumps([target_x, target_y, target_z]),
         })
 
     with open(output_path, 'w') as f:
