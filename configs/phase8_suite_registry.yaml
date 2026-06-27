@@ -1,32 +1,34 @@
-# Phase 8 Cross-Suite Generalization — Suite Registry
+# Phase 8 Cross-Suite Generalization — Suite Registry V2
 # Generated: 2026-06-27
 
 suites:
   libero_spatial:
     model_path: "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620"
     unnorm_key: "libero_spatial"
+    suite_name: "libero_spatial"
     max_env_steps: 400
     n_tasks: 10
-    task_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     available: true
+    display_name: "LIBERO-Spatial"
 
   libero_goal:
-    model_path: "MISSING"
+    model_path: "/mnt/sdc/dty_user/openvla_attack/models/libero-goal"
     unnorm_key: "libero_goal"
+    suite_name: "libero_goal"
     max_env_steps: 400
     n_tasks: 10
-    task_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    available: false
-    blocker: "Model checkpoint not present on server"
+    available: true
+    display_name: "LIBERO-Goal"
 
-  libero_long:
-    model_path: "MISSING"
-    unnorm_key: "libero_long"
-    max_env_steps: 500
+  libero_10:
+    model_path: "/mnt/sdc/dty_user/openvla_attack/models/libero-10"
+    unnorm_key: "libero_10"
+    suite_name: "libero_10"
+    max_env_steps: 400
     n_tasks: 10
-    task_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     available: false
-    blocker: "Model checkpoint not present on server"
+    blocker: "Model transfer in progress (SCP from local cache)"
+    display_name: "LIBERO-Long"
 
 conditions:
   - id: CLEAN
@@ -64,7 +66,10 @@ frozen_protocol:
   target_token: 31744
   preprocess_backend: upstream_tf_jpeg
   detector_checkpoint: "/mnt/sdc/dty_user/openvla_attack/outputs/sc5_v2_seed42/sc5_mlp_v2.pt"
-  detector_threshold: frozen
   evaluation_seeds: [42, 123, 456]
-  teacher_anchor_valid: false
   eval_seed: 0
+  teacher_anchor_valid: false
+
+manifest:
+  path: "evidence/phase8_cross_suite_v1/manifests/ALL_630_JOBS.jsonl"
+  sha256: "fce2bc3da942e6d0daab3ab04685b582c5030cb5e4ae45eb9a4aab5da8dd3ebb"
