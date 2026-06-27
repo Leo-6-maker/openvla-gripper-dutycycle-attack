@@ -2,7 +2,8 @@
 
 **Date**: 2026-06-27
 **Status**: NAD + CQFR analysis products frozen
-**Git HEAD**: `01d19779ef770135e1ad01fd8541e75e56181057`
+**Experiment input HEAD**: `01d19779ef770135e1ad01fd8541e75e56181057`
+**Analysis freeze commit**: `904a26a0a984ec52660143b0b151d3d536c99212`
 
 ---
 
@@ -48,30 +49,32 @@
 
 ---
 
-## Table 2 — NAD Mechanism (Frozen, metric refresh N=27/condition)
+## Table 2 — rNAD Mechanism (Frozen, metric refresh N=27/condition)
 
-NAD definition: `NAD_i = |a^exec_i - a^clean_i| / action_range_i`
-Action ranges from LIBERO model action_stats (Q01/Q99).
+rNAD definition: `rNAD_i = |a^exec_i - a^clean_i| / action_range_i`
+where `action_range_i = Q99_i - Q01_i` (fixed per-DoF LIBERO action bounds).
+Name: **Range-Normalized Action Discrepancy (rNAD)** to distinguish from the
+clean-reference NAD in the codebase which uses a dynamic clean-dependent denominator.
 
 | Metric | TMA no-lock | TMA ArmLock | Prefix no-lock | Prefix ArmLock |
 |--------|:----------:|:----------:|:--------------:|:--------------:|
-| NAD_pol_arm (mean) | 0.1622 | 0.1720 | 0.1065 | 0.1063 |
-| NAD_pol_arm (max) | 0.4986 | 0.5945 | 0.4909 | 0.4853 |
-| NAD_pol_grip (mean) | 0.3913 | 0.3820 | 0.4043 | 0.3987 |
-| NAD_exec_arm (mean) | 0.1622 | **0.0000** | 0.1065 | **0.0000** |
-| NAD_exec_grip (mean) | 0.1697 | 0.1939 | 0.1622 | 0.1846 |
+| rNAD_pol_arm (mean) | 0.1622 | 0.1720 | 0.1065 | 0.1063 |
+| rNAD_pol_arm (max) | 0.4986 | 0.5945 | 0.4909 | 0.4853 |
+| rNAD_pol_grip (mean) | 0.3913 | 0.3820 | 0.4043 | 0.3987 |
+| rNAD_exec_arm (mean) | 0.1622 | **0.0000** | 0.1065 | **0.0000** |
+| rNAD_exec_grip (mean) | 0.1697 | 0.1939 | 0.1622 | 0.1846 |
 | attack_prep (ms) | 12277 | 11110 | 35399 | 39041 |
 | total_step (ms) | 13687 | 12416 | 36558 | 40419 |
 
-**ArmLock invariant**: 540 attack frames across 54 ArmLock runs, 0 violations (NAD_exec_arm = 0 to within 1e-9).
+**ArmLock invariant**: 540 attack frames across 54 ArmLock runs, 0 violations (rNAD_exec_arm = 0 to within 1e-9).
 
 ### Paired NAD Deltas (ArmLock - NoLock, N=27)
 
 | Metric | TMA delta [95% CI] | Prefix delta [95% CI] |
 |--------|:---|:---|
-| NAD_exec_arm | **-0.162 [-0.203, -0.127]*** | **-0.106 [-0.131, -0.083]*** |
-| NAD_exec_grip | +0.024 [-0.002, +0.048] n.s. | +0.022 [0.000, +0.045] n.s. |
-| NAD_pol_arm | +0.010 [-0.012, +0.034] n.s. | -0.000 [-0.019, +0.018] n.s. |
+| rNAD_exec_arm | **-0.162 [-0.203, -0.127]*** | **-0.106 [-0.131, -0.083]*** |
+| rNAD_exec_grip | +0.024 [-0.002, +0.048] n.s. | +0.022 [0.000, +0.045] n.s. |
+| rNAD_pol_arm | +0.010 [-0.012, +0.034] n.s. | -0.000 [-0.019, +0.018] n.s. |
 | attack_prep_ms | -1168 [-2399, +40] n.s. | **+3642 [+1937, +5460]*** |
 | total_step_ms | -1270 [-2627, +47] n.s. | **+3861 [+2064, +5763]*** |
 
@@ -92,12 +95,12 @@ Prefix/TMA attack prep ratio: ~2.9-3.1x (median), ~3.2-3.3x (mean).
 
 ## Frozen Scientific Claims
 
-1. **ArmLock perfectly zeros executed arm discrepancy**: NAD_exec_arm = 0 across all 540 ArmLock attack frames.
+1. **ArmLock perfectly zeros executed arm discrepancy**: rNAD_exec_arm = 0 across all 540 ArmLock attack frames.
 2. **TMA produces larger policy-arm NAD than Prefix** (0.162-0.172 vs 0.106), consistent with the more focused log-ratio objective.
 3. **Executed gripper NAD is not significantly different between ArmLock and no-lock** (paired bootstrap CIs cross or barely exclude zero, 11-14/27 pairs show zero difference).
-4. **Prefix ArmLock is significantly slower than Prefix no-lock** (paired delta +3.6s, 95% CI [+2.0s, +5.8s]).
+4. **Prefix ArmLock shows descriptively higher latency than Prefix no-lock** (paired bootstrap interval entirely positive, +3.6s [95% CI: +2.0s, +5.8s], N=27 scientific-key pairs).
 5. **Prefix attack preparation is ~3x TMA** (35-39s vs 11-12s).
-6. **New-state breadth confirms attack generalizes** with conditional FR 81-91% across conditions, limited primarily by detector coverage (87.5%).
+6. **The attack transfers across eight clean-qualified, previously unevaluated state slots within LIBERO-Object**, with conditional FR 81-91% across conditions, limited primarily by detector coverage (87.5%). Cross-suite, cross-model, and cross-robot generalization remain unevaluated.
 
 ---
 
