@@ -274,5 +274,97 @@
       "resolution_method": "task_name_instruction_heuristic",
       "verified": false
     }
+  },
+  "libero_object": {
+    "0": {
+      "task_name": "pick_up_the_alphabet_soup_and_place_it_in_the_basket",
+      "task_instruction": "pick up the alphabet soup and place it in the basket",
+      "problem_folder": "libero_object",
+      "primary_object_site": "alphabet_soup_1_default_site",
+      "object_key": "alphabet_soup",
+      "resolution_method": "task_name_match",
+      "verified": false
+    },
+    "1": {
+      "task_name": "pick_up_the_bbq_sauce_and_place_it_in_the_basket",
+      "task_instruction": "pick up the bbq sauce and place it in the basket",
+      "problem_folder": "libero_object",
+      "primary_object_site": "bbq_sauce_1_default_site",
+      "object_key": "bbq_sauce",
+      "resolution_method": "task_name_match",
+      "verified": false
+    },
+    "2": {
+      "task_name": "pick_up_the_butter_and_place_it_in_the_basket",
+      "task_instruction": "pick up the butter and place it in the basket",
+      "problem_folder": "libero_object",
+      "primary_object_site": "butter_1_default_site",
+      "object_key": "butter",
+      "resolution_method": "task_name_match",
+      "verified": false
+    },
+    "3": {
+      "task_name": "pick_up_the_chocolate_pudding_and_place_it_in_the_basket",
+      "task_instruction": "pick up the chocolate pudding and place it in the basket",
+      "problem_folder": "libero_object",
+      "primary_object_site": "chocolate_pudding_1_default_site",
+      "object_key": "chocolate_pudding",
+      "resolution_method": "task_name_match",
+      "verified": false
+    },
+    "4": {
+      "task_name": "pick_up_the_cream_cheese_and_place_it_in_the_basket",
+      "task_instruction": "pick up the cream cheese and place it in the basket",
+      "problem_folder": "libero_object",
+      "primary_object_site": "cream_cheese_1_default_site",
+      "object_key": "cream_cheese",
+      "resolution_method": "task_name_match",
+      "verified": false
+    },
+    "5": {
+      "task_name": "pick_up_the_ketchup_and_place_it_in_the_basket",
+      "task_instruction": "pick up the ketchup and place it in the basket",
+      "problem_folder": "libero_object",
+      "primary_object_site": "ketchup_1_default_site",
+      "object_key": "ketchup",
+      "resolution_method": "task_name_match",
+      "verified": false
+    },
+    "6": {
+      "task_name": "pick_up_the_milk_and_place_it_in_the_basket",
+      "task_instruction": "pick up the milk and place it in the basket",
+      "problem_folder": "libero_object",
+      "primary_object_site": "milk_1_default_site",
+      "object_key": "milk",
+      "resolution_method": "task_name_match",
+      "verified": false
+    },
+    "7": {
+      "task_name": "pick_up_the_orange_juice_and_place_it_in_the_basket",
+      "task_instruction": "pick up the orange juice and place it in the basket",
+      "problem_folder": "libero_object",
+      "primary_object_site": "orange_juice_1_default_site",
+      "object_key": "orange_juice",
+      "resolution_method": "task_name_match",
+      "verified": false
+    },
+    "8": {
+      "task_name": "pick_up_the_salad_dressing_and_place_it_in_the_basket",
+      "task_instruction": "pick up the salad dressing and place it in the basket",
+      "problem_folder": "libero_object",
+      "primary_object_site": "salad_dressing_1_default_site",
+      "object_key": "salad_dressing",
+      "resolution_method": "task_name_match",
+      "verified": false
+    },
+    "9": {
+      "task_name": "pick_up_the_tomato_sauce_and_place_it_in_the_basket",
+      "task_instruction": "pick up the tomato sauce and place it in the basket",
+      "problem_folder": "libero_object",
+      "primary_object_site": "tomato_sauce_1_default_site",
+      "object_key": "tomato_sauce",
+      "resolution_method": "task_name_match",
+      "verified": false
+    }
   }
 }

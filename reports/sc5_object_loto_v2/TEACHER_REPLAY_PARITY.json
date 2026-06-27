@@ -1,0 +1,61 @@
+{
+  "total_episodes": 60,
+  "total_steps": 11884,
+  "phase_agree_steps": 11884,
+  "overall_agreement": 1.0,
+  "episodes_below_99pct": 0,
+  "per_task": {
+    "alphabet_soup": {
+      "agree": 1378,
+      "total": 1378,
+      "rate": 1.0
+    },
+    "bbq_sauce": {
+      "agree": 1360,
+      "total": 1360,
+      "rate": 1.0
+    },
+    "butter": {
+      "agree": 1909,
+      "total": 1909,
+      "rate": 1.0
+    },
+    "chocolate_pudding": {
+      "agree": 1198,
+      "total": 1198,
+      "rate": 1.0
+    },
+    "cream_cheese": {
+      "agree": 1206,
+      "total": 1206,
+      "rate": 1.0
+    },
+    "ketchup": {
+      "agree": 893,
+      "total": 893,
+      "rate": 1.0
+    },
+    "milk": {
+      "agree": 935,
+      "total": 935,
+      "rate": 1.0
+    },
+    "orange_juice": {
+      "agree": 1021,
+      "total": 1021,
+      "rate": 1.0
+    },
+    "salad_dressing": {
+      "agree": 758,
+      "total": 758,
+      "rate": 1.0
+    },
+    "tomato_sauce": {
+      "agree": 1226,
+      "total": 1226,
+      "rate": 1.0
+    }
+  },
+  "gate_pass": true,
+  "note": "Frozen teacher replay vs saved teacher_labels.jsonl \u2014 implementation consistency check, NOT ground-truth accuracy"
+}
