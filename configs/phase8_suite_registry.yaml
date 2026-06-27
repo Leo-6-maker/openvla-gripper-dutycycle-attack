@@ -1,0 +1,70 @@
+# Phase 8 Cross-Suite Generalization — Suite Registry
+# Generated: 2026-06-27
+
+suites:
+  libero_spatial:
+    model_path: "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620"
+    unnorm_key: "libero_spatial"
+    max_env_steps: 400
+    n_tasks: 10
+    task_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    available: true
+
+  libero_goal:
+    model_path: "MISSING"
+    unnorm_key: "libero_goal"
+    max_env_steps: 400
+    n_tasks: 10
+    task_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    available: false
+    blocker: "Model checkpoint not present on server"
+
+  libero_long:
+    model_path: "MISSING"
+    unnorm_key: "libero_long"
+    max_env_steps: 500
+    n_tasks: 10
+    task_indices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    available: false
+    blocker: "Model checkpoint not present on server"
+
+conditions:
+  - id: CLEAN
+    attack_enabled: false
+    arm_lock: false
+  - id: RANDOM
+    attack_enabled: true
+    condition: RAND_T10
+    arm_lock: false
+  - id: UNTARGETED_CE
+    attack_enabled: true
+    objective: untargeted_clean_token_ce
+    arm_lock: false
+  - id: TMA_NOLOCK
+    attack_enabled: true
+    objective: vanilla_tma_gripper_open_ce
+    arm_lock: false
+  - id: TMA_ARMLOCK
+    attack_enabled: true
+    objective: vanilla_tma_gripper_open_ce
+    arm_lock: true
+  - id: PREFIX_NOLOCK
+    attack_enabled: true
+    objective: autoregressive_prefix_gripper_target_token_logratio_arm_v3
+    arm_lock: false
+  - id: PREFIX_ARMLOCK
+    attack_enabled: true
+    objective: autoregressive_prefix_gripper_target_token_logratio_arm_v3
+    arm_lock: true
+
+frozen_protocol:
+  epsilon: 0.023529411764705882
+  pgd_steps: 20
+  K: 10
+  target_token: 31744
+  preprocess_backend: upstream_tf_jpeg
+  detector_checkpoint: "/mnt/sdc/dty_user/openvla_attack/outputs/sc5_v2_seed42/sc5_mlp_v2.pt"
+  detector_threshold: frozen
+  evaluation_seeds: [42, 123, 456]
+  teacher_anchor_valid: false
+  eval_seed: 0
