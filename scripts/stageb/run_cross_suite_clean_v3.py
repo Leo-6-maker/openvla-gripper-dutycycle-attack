@@ -380,7 +380,7 @@ with open(out / "artifact_sha256.json", "w") as f:
     shas["collector_sha256"] = collector_sha
     shas["collector_commit"] = collector_commit
     shas["git_head"] = _git_head
-    shas["git_dirty"] = False
+    shas["git_dirty_check"] = "NOT_PERFORMED"
     shas["model_path"] = str(MODEL_PATH)
     shas["model_fingerprint_sha256"] = _model_fp
     json.dump(shas, f, indent=2)
