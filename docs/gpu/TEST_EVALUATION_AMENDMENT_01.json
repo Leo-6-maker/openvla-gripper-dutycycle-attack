@@ -1,0 +1,17 @@
+{
+  "gate": "TEST_EVALUATION_AMENDMENT_01",
+  "invalidates": "Step F V1 (official held-out evaluation, 3 seeds × 50 episodes)",
+  "verdict": "TRAINING_PIPELINE_BUG — evaluation result invalid",
+  "root_cause": "Corridor head trained on all-negative labels (lab.get('is_corridor', False) with absent field)",
+  "observed": {
+    "train_emissions": 0,
+    "val_butter_emissions": 0,
+    "test_chocolate_emissions": 0,
+    "corridor_p_range": [0.001, 0.0086],
+    "conclusion": "Model never learned corridor — NOT a held-out generalization failure"
+  },
+  "independent_audit_verdict": "C — TRAINING_PIPELINE_BUG",
+  "previous_conclusion_withdrawn": "held-out generalization failure → model never functional on any split",
+  "evaluation_archive": "evaluation/ remains unchanged as V1 invalidated record",
+  "corrected_evaluation": "pending V2 training + train/val replay gates + new held-out evaluation"
+}
