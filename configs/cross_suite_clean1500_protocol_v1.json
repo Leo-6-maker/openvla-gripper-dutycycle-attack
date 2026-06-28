@@ -1,0 +1,55 @@
+{
+  "gate": "CROSS_SUITE_CLEAN1500_PROTOCOL_V1",
+  "protocol_id": "CROSS_SUITE_CLEAN1500_V1",
+  "source_commit": "0280c8564773a5e6ca0482c740891d8f9eddad84",
+  "suites": {
+    "libero_spatial": {
+      "tasks": [0,1,2,3,4,5,6,7,8,9],
+      "states": {"start": 0, "end": 49},
+      "model": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620",
+      "gpu": 4,
+      "episodes": 500
+    },
+    "libero_goal": {
+      "tasks": [0,1,2,3,4,5,6,7,8,9],
+      "states": {"start": 0, "end": 49},
+      "model": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+      "gpu": 5,
+      "episodes": 500
+    },
+    "libero_10": {
+      "tasks": [0,1,2,3,4,5,6,7,8,9],
+      "states": {"start": 0, "end": 49},
+      "model": "/mnt/sdc/dty_user/openvla_attack/models/libero-10/openvla-7b-finetuned-libero-10",
+      "gpu": 6,
+      "episodes": 500
+    }
+  },
+  "total_planned": 1500,
+  "eval_seed": 0,
+  "max_steps": 400,
+  "condition": "CLEAN",
+  "clean_only": true,
+  "retain_success_and_failure": true,
+  "replacement_states": false,
+  "detector_selection": false,
+  "attack_enabled": false,
+  "video_policy": "qa_subset_only",
+  "video_qa_subset": "task 0 state 0, task 0 state 25, per task per suite",
+  "retry_policy": {
+    "max_infra_retries": 1,
+    "same_key_retry": true,
+    "reset_attempt_on_infra": true,
+    "scientific_failure_is_not_infra": true
+  },
+  "output_root": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_cross_suite_clean1500_v1",
+  "detector_path": "/mnt/sdc/dty_user/openvla_attack/outputs/sc5_v2_seed42/sc5_mlp_v2.pt",
+  "registry_path": "configs/cross_suite_object_target_registry_v1.json",
+  "canary_jobs": [
+    {"suite": "libero_spatial", "task_idx": 0, "state_id": 0, "note": "single-obj pick-place: bowl→plate"},
+    {"suite": "libero_goal", "task_idx": 1, "state_id": 0, "note": "single-obj pick-place: bowl→stove"},
+    {"suite": "libero_10", "task_idx": 5, "state_id": 0, "note": "single-obj pick-place: book→caddy"},
+    {"suite": "libero_goal", "task_idx": 0, "state_id": 0, "note": "ABSTAIN: open drawer, no pick-place"},
+    {"suite": "libero_10", "task_idx": 0, "state_id": 0, "note": "MULTI-OBJECT: two items→basket"}
+  ]
+}

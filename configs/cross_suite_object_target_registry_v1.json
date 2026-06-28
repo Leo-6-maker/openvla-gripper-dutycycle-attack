@@ -1,0 +1,53 @@
+{
+  "gate": "CROSS_SUITE_OBJECT_TARGET_REGISTRY_V1",
+  "description": "Per-suite, per-task object and target site bindings for MuJoCo scene lookup. Target sites are verified against LIBERO BDDL/scene files. Entries marked teacher_eligible=false must produce telemetry with target=NaN and abstain_reason set.",
+  "libero_spatial": {
+    "0": {"task_name": "pick_up_the_black_bowl_between_the_plate_and_the_ramekin_and_place_it_on_the_plate", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": "plate_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "1": {"task_name": "pick_up_the_black_bowl_next_to_the_ramekin_and_place_it_on_the_plate", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": "plate_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "2": {"task_name": "pick_up_the_black_bowl_from_table_center_and_place_it_on_the_plate", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": "plate_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "3": {"task_name": "pick_up_the_black_bowl_on_the_cookie_box_and_place_it_on_the_plate", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": "plate_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "4": {"task_name": "pick_up_the_black_bowl_in_the_top_drawer_of_the_wooden_cabinet_and_place_it_on_the_plate", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": "plate_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "5": {"task_name": "pick_up_the_black_bowl_on_the_ramekin_and_place_it_on_the_plate", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": "plate_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "6": {"task_name": "pick_up_the_black_bowl_next_to_the_cookie_box_and_place_it_on_the_plate", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": "plate_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "7": {"task_name": "pick_up_the_black_bowl_on_the_stove_and_place_it_on_the_plate", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": "plate_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "8": {"task_name": "pick_up_the_black_bowl_next_to_the_plate_and_place_it_on_the_plate", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": "plate_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "9": {"task_name": "pick_up_the_black_bowl_on_the_wooden_cabinet_and_place_it_on_the_plate", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": "plate_1_default_site", "target_type": "site", "teacher_eligible": true}
+  },
+  "libero_goal": {
+    "0": {"task_name": "open_the_middle_drawer_of_the_cabinet", "primary_object_site": "wooden_cabinet_1_default_site", "target_site": null, "target_type": "articulated", "teacher_eligible": false, "abstain_reason": "articulated_task_no_pick_place"},
+    "1": {"task_name": "put_the_bowl_on_the_stove", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": "flat_stove_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "2": {"task_name": "put_the_wine_bottle_on_top_of_the_cabinet", "primary_object_site": "wine_bottle_1_default_site", "target_site": "wooden_cabinet_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "3": {"task_name": "open_the_top_drawer_and_put_the_bowl_inside", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": null, "target_type": "multi_stage_articulated", "teacher_eligible": false, "abstain_reason": "multi_stage_open_drawer_then_place"},
+    "4": {"task_name": "put_the_bowl_on_top_of_the_cabinet", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": "wooden_cabinet_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "5": {"task_name": "push_the_plate_to_the_front_of_the_stove", "primary_object_site": "plate_1_default_site", "target_site": null, "target_type": "push_region", "teacher_eligible": false, "abstain_reason": "push_task_not_pick_place"},
+    "6": {"task_name": "put_the_cream_cheese_in_the_bowl", "primary_object_site": "cream_cheese_1_default_site", "target_site": "akita_black_bowl_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "7": {"task_name": "turn_on_the_stove", "primary_object_site": "flat_stove_1_default_site", "target_site": null, "target_type": "articulated", "teacher_eligible": false, "abstain_reason": "articulated_task_no_pick_place"},
+    "8": {"task_name": "put_the_bowl_on_the_plate", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": "plate_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "9": {"task_name": "put_the_wine_bottle_on_the_rack", "primary_object_site": "wine_bottle_1_default_site", "target_site": "wine_rack_1_default_site", "target_type": "site", "teacher_eligible": true}
+  },
+  "libero_10": {
+    "0": {"task_name": "put_both_the_alphabet_soup_and_the_tomato_sauce_in_the_basket", "primary_object_site": "alphabet_soup_1_default_site", "target_site": "basket_1_default_site", "target_type": "site", "teacher_eligible": false, "abstain_reason": "multi_object_two_items"},
+    "1": {"task_name": "put_both_the_cream_cheese_box_and_the_butter_in_the_basket", "primary_object_site": "cream_cheese_1_default_site", "target_site": "basket_1_default_site", "target_type": "site", "teacher_eligible": false, "abstain_reason": "multi_object_two_items"},
+    "2": {"task_name": "turn_on_the_stove_and_put_the_moka_pot_on_it", "primary_object_site": "moka_pot_1_default_site", "target_site": "flat_stove_1_default_site", "target_type": "site", "teacher_eligible": false, "abstain_reason": "multi_stage_turn_on_then_place"},
+    "3": {"task_name": "put_the_black_bowl_in_the_bottom_drawer_of_the_cabinet_and_close_it", "primary_object_site": "akita_black_bowl_1_default_site", "target_site": null, "target_type": "multi_stage_articulated", "teacher_eligible": false, "abstain_reason": "multi_stage_place_then_close_drawer"},
+    "4": {"task_name": "put_the_white_mug_on_the_left_plate_and_put_the_yellow_and_white_mug_on_the_right_plate", "primary_object_site": "porcelain_mug_1_default_site", "target_site": null, "target_type": "multi_object", "teacher_eligible": false, "abstain_reason": "multi_object_two_different_targets"},
+    "5": {"task_name": "pick_up_the_book_and_place_it_in_the_back_compartment_of_the_caddy", "primary_object_site": "black_book_1_default_site", "target_site": "caddy_1_default_site", "target_type": "site", "teacher_eligible": true},
+    "6": {"task_name": "put_the_white_mug_on_the_plate_and_put_the_chocolate_pudding_to_the_right_of_the_plate", "primary_object_site": "porcelain_mug_1_default_site", "target_site": "plate_1_default_site", "target_type": "site", "teacher_eligible": false, "abstain_reason": "multi_object_two_items_different_targets"},
+    "7": {"task_name": "put_both_the_alphabet_soup_and_the_cream_cheese_box_in_the_basket", "primary_object_site": "alphabet_soup_1_default_site", "target_site": "basket_1_default_site", "target_type": "site", "teacher_eligible": false, "abstain_reason": "multi_object_two_items"},
+    "8": {"task_name": "put_both_moka_pots_on_the_stove", "primary_object_site": "moka_pot_1_default_site", "target_site": "flat_stove_1_default_site", "target_type": "site", "teacher_eligible": false, "abstain_reason": "multi_object_two_items"},
+    "9": {"task_name": "put_the_yellow_and_white_mug_in_the_microwave_and_close_it", "primary_object_site": "white_yellow_mug_1_default_site", "target_site": "microwave_1_default_site", "target_type": "site", "teacher_eligible": false, "abstain_reason": "multi_stage_place_then_close"}
+  },
+  "teacher_eligibility_summary": {
+    "libero_spatial": {"eligible": 10, "abstain": 0, "total": 10},
+    "libero_goal": {"eligible": 5, "abstain": 5, "total": 10},
+    "libero_10": {"eligible": 1, "abstain": 9, "total": 10},
+    "total_eligible": 16,
+    "total_abstain": 14
+  },
+  "target_resolution_rules": {
+    "site_lookup": "env.sim.model.site_name2id(target_site) → env.sim.data.site_xpos[sid]",
+    "fallback_on_missing": "NEVER — fail-closed with NaN and target_binding_valid=false",
+    "approximate_target_prohibited": true,
+    "basket_only_hardcode_prohibited": true
+  }
+}
