@@ -1,0 +1,86 @@
+{
+  "gate": "LOTO_VIS_STATE_SELECTION_V1",
+  "status": "RULES_FROZEN_BEFORE_STATE_SELECTION",
+  "created_utc": "2026-06-29T00:00:00Z",
+  "binds_to": {
+    "vis_preregistration": "LOTO_VIS_HELDOUT_PREREGISTRATION_V1",
+    "phase_b_results_freeze": "LOTO_PHASE_B_RESULTS_FREEZE_V1"
+  },
+
+  "selection_rules": {
+    "states_per_fold": 2,
+    "total_states": 18,
+    "selection_method": "Per fold: sort state_id ascending (0..49). Select first 2 states satisfying ALL eligibility criteria. If fewer than 2 states eligible, select all eligible and record shortfall.",
+    "frozen_before_any_vis": true,
+    "no_post_hoc_reselection": true,
+    "same_states_for_all_conditions": true,
+    "rationale": "States are fixed per fold. All 6 conditions run on the SAME states. This controls for state-level variation across conditions."
+  },
+
+  "eligibility_criteria": {
+    "clean_success": {
+      "required": true,
+      "definition": "CLEAN rollout task_success=true (official LIBERO check_success)",
+      "source": "CLEAN1500 episode COMPLETE.json or Phase B held-out rollout"
+    },
+    "teacher_positive": {
+      "required": true,
+      "definition": "Episode has at least one valid corridor start (teacher_positive=true in held-out labels)",
+      "source": "Held-out episode anchors (FOLDxx_heldout_episode_anchors.json)"
+    },
+    "trace_complete": {
+      "required": true,
+      "definition": "All steps have valid 25D features, no NaN, no missing steps, step_idx contiguous from 0",
+      "source": "HELDOUT_FEATURE_DATASET.csv"
+    },
+    "target_valid": {
+      "required": true,
+      "definition": "Teacher target site is valid and found in MuJoCo (for teacher-eligible tasks)",
+      "source": "Target registry + privileged_step_records"
+    },
+    "detector_emits_on_at_least_one_seed": {
+      "required": false,
+      "preference": "PREFER states where >=2 of 3 detector seeds emit. But do NOT filter exclusively. Record emit pattern for all selected states.",
+      "rationale": "States with detector emission are more informative for VIS validation, but excluding no-emission states would bias the ITT analysis."
+    }
+  },
+
+  "selection_procedure": {
+    "step_1": "For each fold, load HELDOUT_FEATURE_DATASET.csv and FOLDxx_heldout_episode_anchors.json",
+    "step_2": "For each state_id 0..49, check eligibility criteria",
+    "step_3": "Record eligibility for ALL 50 states (transparency)",
+    "step_4": "Select first 2 eligible states per fold",
+    "step_5": "For each selected state, record: detector emit status per seed, teacher_anchor, corridor_active_steps, clean task_success, n_steps",
+    "step_6": "Write LOTO_VIS_STATE_SELECTION_V1.json with selected state_ids and all eligibility data",
+    "step_7": "Freeze. NO changes after this point."
+  },
+
+  "expected_output": {
+    "per_fold": {
+      "fold_id": "01",
+      "test_task": 9,
+      "test_task_name": "orange_juice",
+      "n_eligible_states": "computed",
+      "selected_state_ids": [0, 1],
+      "selected_state_details": [
+        {
+          "state_id": 0,
+          "clean_success": true,
+          "teacher_positive": true,
+          "teacher_anchor": "computed",
+          "corridor_active_steps": "computed",
+          "n_steps": "computed",
+          "detector_emit_seed_1": true,
+          "detector_emit_seed_2": true,
+          "detector_emit_seed_3": false
+        }
+      ]
+    }
+  },
+
+  "caveats": {
+    "clean_success_source": "CLEAN1500 collection currently in progress (~89/1500). States without CLEAN1500 data may need dedicated clean rollouts. If CLEAN1500 data is incomplete for a fold's task, run a clean rollout with identical collector configuration.",
+    "state_id_only": "Selected by state_id within the held-out task. Episodes come from Wave1 (s0-4) or Wave2 (s5-49) privileged corpus.",
+    "not_selected_by_vis_performance": "Selection is purely by sort order + eligibility. VIS success is NOT a selection criterion."
+  }
+}

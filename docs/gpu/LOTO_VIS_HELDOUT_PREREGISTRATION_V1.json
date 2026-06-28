@@ -1,0 +1,144 @@
+{
+  "gate": "LOTO_VIS_HELDOUT_PREREGISTRATION_V1",
+  "status": "FROZEN_BEFORE_ANY_VIS_RUN",
+  "created_utc": "2026-06-29T00:00:00Z",
+  "binds_to": {
+    "phase_b_results_freeze": "LOTO_PHASE_B_RESULTS_FREEZE_V1",
+    "phase_b_results_freeze_sha256": "89911600e0bdc08e46e21f1ebfa85ab37c1d16fb741d4fe7c52409d7e76cd241",
+    "checkpoint_freeze": "LOTO_30_CHECKPOINT_GLOBAL_FREEZE_V1",
+    "evaluator_freeze": "LOTO_PHASE_B_EVALUATOR_FREEZE_V1"
+  },
+
+  "purpose": "End-to-end causal validation: test whether frozen detector-triggered VIS attacks can selectively cause gripper-mediated task failures on held-out objects, above matched random-time controls.",
+
+  "design": {
+    "phase_a_canary": {
+      "purpose": "Engineering smoke test only. NOT included in formal results.",
+      "folds": ["03", "05", "06", "09"],
+      "rationale": "Cover four distinct detector behavior profiles: HIGH_FRAME_FPR, LOW_COVERAGE, TIMING_DEVIATION, SCORE_SATURATION",
+      "checks": [
+        "VIS gradient computes without NaN",
+        "Target OPEN token logit increases under perturbation",
+        "Gripper qpos/width responds to attacked action",
+        "Arm action does not diverge catastrophically",
+        "Artifacts (telemetry, video, features) are complete"
+      ]
+    },
+    "phase_b_formal": {
+      "purpose": "Formal held-out VIS validation. All 9 confirmatory folds.",
+      "folds": ["01","02","03","04","05","06","07","08","09"],
+      "states_per_fold": 2,
+      "detector_seeds": [1, 2, 3],
+      "perturbation_seeds": [0, 1, 2],
+      "total_rollouts_per_condition": "9 folds x 2 states x 3 detector_seeds x 3 pert_seeds = 162 (state chosen once per fold, reused across conditions)",
+      "state_selection_rules": "See LOTO_VIS_STATE_SELECTION_V1.json. States selected BEFORE any VIS run. Selection criteria: state_id sorted ascending, pick first two states with clean_success=true, teacher_positive=true, trace_complete=true, target_valid=true."
+    }
+  },
+
+  "conditions": [
+    {
+      "id": "clean",
+      "name": "CLEAN",
+      "description": "Unmodified OpenVLA rollout. Baseline for task success rate and gripper behavior.",
+      "attack_enabled": false
+    },
+    {
+      "id": "vis_student_trigger",
+      "name": "VIS + Student Trigger",
+      "description": "Prefix Log-Ratio VIS attack targeting gripper OPEN. Attack triggered at detector EMIT step. If no EMIT, no attack (ITT).",
+      "attack_enabled": true,
+      "attack_method": "prefix_log_ratio",
+      "attack_target": "gripper OPEN",
+      "trigger_source": "SC5DetectorRuntime EMIT step",
+      "trigger_fallback": "no attack if no EMIT (ITT)"
+    },
+    {
+      "id": "vis_random_time",
+      "name": "VIS + Random-Time Control",
+      "description": "Same VIS payload. Trigger time sampled uniformly from [guard, episode_length - K]. Same window length as student trigger.",
+      "attack_enabled": true,
+      "attack_method": "prefix_log_ratio",
+      "attack_target": "gripper OPEN",
+      "trigger_source": "random step, sampled per episode",
+      "trigger_sampling": "uniform(guard_step, max_step - K_SC5)"
+    },
+    {
+      "id": "matched_rand_student_trigger",
+      "name": "Matched RAND + Student Trigger",
+      "description": "Matched-random gripper perturbation (not targeted OPEN). Same trigger timing as student trigger. Controls for: is VIS specifically needed, or any gripper perturbation at that time works?",
+      "attack_enabled": true,
+      "attack_method": "matched_random_gripper_perturbation",
+      "trigger_source": "SC5DetectorRuntime EMIT step"
+    },
+    {
+      "id": "adapted_tma_student_trigger",
+      "name": "Adapted TMA + Student Trigger",
+      "description": "Token-manipulation attack adapted for gripper. Same trigger timing. Controls for: is the Prefix Log-Ratio method specifically needed?",
+      "attack_enabled": true,
+      "attack_method": "adapted_tma_gripper",
+      "trigger_source": "SC5DetectorRuntime EMIT step"
+    },
+    {
+      "id": "vis_early_shift",
+      "name": "VIS + Early-Shift Control",
+      "description": "Same VIS payload. Trigger K steps BEFORE student EMIT. Controls for: is the student-chosen window specifically more effective than a nearby window?",
+      "attack_enabled": true,
+      "attack_method": "prefix_log_ratio",
+      "attack_target": "gripper OPEN",
+      "trigger_source": "max(guard_step, student_EMIT_step - K_SC5)"
+    }
+  ],
+
+  "itt_definition": {
+    "description": "Intent-to-Treat: ALL pre-registered episodes are included in the denominator, regardless of whether the detector emitted.",
+    "detector_no_emit_handling": "If detector does not EMIT on an episode, the episode is recorded as NO_INTERVENTION for that condition. It is NOT excluded from the denominator.",
+    "primary_analysis": "ITT Task-ASR = (task failures) / (all pre-registered episodes)",
+    "secondary_analysis": "Conditional Task-ASR = (task failures) / (episodes where detector emitted AND attack executed)",
+    "report_both": true,
+    "note": "ITT will be lower than conditional for folds with low detector coverage (Fold 05, 07). This reflects real end-to-end system performance."
+  },
+
+  "primary_endpoints": {
+    "ep1": {
+      "name": "Task-ASR (ITT)",
+      "definition": "Fraction of all pre-registered episodes where task_success=false (by official LIBERO check_success AND manual CQFR review). ITT denominator includes all episodes regardless of detector emission.",
+      "comparison": "VIS+StudentTrigger vs VIS+RandomTime: difference in ITT Task-ASR. One-sided: student > random?"
+    },
+    "ep2": {
+      "name": "TASR (gripper OPEN rate)",
+      "definition": "Fraction of attacked steps where gripper_command > 0 (OPEN). Measures whether VIS successfully controls the gripper token.",
+      "comparison": "VIS conditions vs CLEAN baseline"
+    },
+    "ep3": {
+      "name": "NAD_gripper vs NAD_arm",
+      "definition": "Normalized Action Deviation for gripper dimension vs mean of 6 arm dimensions. Measures selectivity of the attack's effect on actions.",
+      "comparison": "VIS conditions: NAD_gripper should be substantially larger than NAD_arm"
+    }
+  },
+
+  "secondary_endpoints": {
+    "conditional_task_asr": "Task-ASR conditional on detector EMIT",
+    "cqfr_components": "drop rate, premature-release rate, bad-placement rate (manual review)",
+    "end_to_end_latency": "detector EMIT step -> first attacked action step -> first gripper OPEN action step -> first physical gripper response",
+    "sustained_open_duration": "Number of consecutive steps with gripper OPEN after attack",
+    "attack_optimization_steps": "VIS convergence steps",
+    "target_logit_margin": "OPEN logit - CLOSE logit after perturbation"
+  },
+
+  "analysis_requirements": {
+    "no_post_hoc_fold_exclusion": "All 9 folds included in primary analysis. No fold dropped based on VIS results.",
+    "no_post_hoc_state_exclusion": "Pre-selected states retained regardless of outcome.",
+    "subgroup_analysis": "Pre-registered: report results by detector failure mode (CLEAN, LOW_COVERAGE, TIMING_DEVIATION, HIGH_FRAME_FPR, SCORE_SATURATION).",
+    "random_time_comparison": "Student Trigger ASR > Random-Time ASR is necessary (not sufficient) for claiming detector identifies causally-relevant windows.",
+    "manual_cqfr_required": "LIBERO check_success() is NOT sufficient. Manual video review for contact-quality failure classification is required for all attack episodes."
+  },
+
+  "prohibited_actions": [
+    "Selecting folds with high VIS success and calling it confirmatory",
+    "Excluding no-emission episodes from ITT denominator",
+    "Changing state selection after seeing VIS results",
+    "Tuning detector threshold based on VIS success",
+    "Re-training detector after seeing VIS results",
+    "Using official SR without manual CQFR for attack episodes"
+  ]
+}
