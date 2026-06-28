@@ -1,0 +1,77 @@
+{
+  "gate": "LOTO_METRIC_SCHEMA_V1",
+  "naming_convention": {
+    "CW": "correct-window emission on teacher-positive episode",
+    "FE": "false-early emission on teacher-positive episode (emit_step < corridor_start)",
+    "LI": "late-or-invalid emission on teacher-positive episode (emit_step > corridor_end)",
+    "MP": "missed positive (teacher-positive, no emission)",
+    "FPn": "false positive on no-corridor negative episode (no corridor, emitted)",
+    "TN": "true negative / correct abstention (no corridor, no emission)"
+  },
+  "positive_episode_metrics": {
+    "coverage": {
+      "formula": "CW / teacher_positive_episodes",
+      "description": "Fraction of teacher-positive episodes with correct-window emission"
+    },
+    "false_early_rate": {
+      "formula": "FE / teacher_positive_episodes",
+      "description": "Fraction of teacher-positive episodes where emit occurs before corridor_start"
+    },
+    "late_or_invalid_rate": {
+      "formula": "LI / teacher_positive_episodes",
+      "description": "Fraction where emit occurs after corridor_end"
+    },
+    "missed_positive_rate": {
+      "formula": "MP / teacher_positive_episodes",
+      "description": "Fraction of teacher-positive episodes with no emission"
+    },
+    "k10_containment": {
+      "formula": "K10_contained / teacher_positive_episodes",
+      "description": "Emit step t such that [t, t+K-1] fully within [corridor_start, corridor_end]. Redundant with CW under current corridor_active_at_t definition."
+    }
+  },
+  "negative_episode_metrics": {
+    "no_corridor_fpr": {
+      "formula": "FPn / (FPn + TN)",
+      "description": "False positive rate on teacher-negative episodes"
+    },
+    "correct_abstention": {
+      "formula": "TN / (FPn + TN)",
+      "description": "Fraction of teacher-negative episodes correctly abstained"
+    }
+  },
+  "timing_metrics": {
+    "signed_error": {
+      "formula": "emit_step - teacher_anchor",
+      "description": "Positive = emit AFTER anchor. Computed only on teacher-positive emitted episodes.",
+      "teacher_anchor_definition": "first stable_carry step + guard=5"
+    },
+    "absolute_error": {
+      "formula": "abs(emit_step - teacher_anchor)"
+    },
+    "required_per_fold_per_seed": [
+      "median_signed_error",
+      "mean_signed_error",
+      "median_absolute_error",
+      "mean_absolute_error",
+      "iqr_absolute_error",
+      "p05_signed_error",
+      "p95_signed_error",
+      "min_signed_error",
+      "max_signed_error",
+      "extreme_early_count (signed_error < -K)"
+    ]
+  },
+  "overall_metrics": {
+    "overall_emission_rate": {
+      "formula": "total_emitted / total_episodes (50)",
+      "description": "Fraction of all held-out episodes with any emission"
+    }
+  },
+  "aggregation": {
+    "per_fold": "mean ± std across 3 seeds",
+    "per_seed": "individual seed values reported",
+    "cross_fold": "task-macro mean, episode-micro mean, task-level std, worst-task, best-task",
+    "bootstrap_ci": "episode-level bootstrap, 10000 resamples, 95% CI"
+  }
+}
