@@ -192,9 +192,9 @@ def main():
     assert runtime_cfg.get("guard") == GUARD_SC5
     assert runtime_cfg.get("K") == K_SC5
 
-    epochs = training_cfg.get("epochs", 80)
-    lr = training_cfg.get("learning_rate", 1e-3)
-    batch_size = training_cfg.get("batch_size", 64)
+    epochs = int(training_cfg["epochs"])
+    lr = float(training_cfg["learning_rate"])
+    batch_size = int(training_cfg["batch_size"])
     print("Protocol freeze enforced: seeds=%s epochs=%d lr=%.4f batch=%d metric=%s" % (
         training_cfg.get("seeds"), epochs, lr, batch_size, training_cfg.get("checkpoint_selection_metric")))
 
@@ -260,6 +260,13 @@ def main():
 
     print("  Train: %d rows, %d eps  Val: %d rows, %d eps  Test rows: 0" % (
         len(tr_rows), len(tr_eps), len(vl_rows), len(vl_eps)))
+
+    # Key-set equality: every feature row must have exactly one teacher label
+    dataset_keys = {(int(r["task_idx"]), int(r["state_id"]), int(r["step"])) for r in all_rows}
+    label_keys = set(teacher_labels_raw.keys())
+    assert label_keys == dataset_keys, (
+        "Key-set mismatch: extra_labels=%d missing_labels=%d" % (
+            len(label_keys - dataset_keys), len(dataset_keys - label_keys)))
 
     # ── Build labels ──
     print("\nBuilding labels (SC5 corridor protocol)...")
@@ -355,7 +362,9 @@ def main():
         epoch_metrics.append({"epoch":ep,"train_loss":tl/max(nb,1),
                               "val_phase_loss":vl_phase_loss,"val_phase_acc":float(vl_phase_acc)})
         if vl_phase_loss < best_vl:
-            best_vl = vl_phase_loss; best_state = copy.deepcopy(model.state_dict()); best_epoch = ep
+            best_vl = vl_phase_loss
+            best_state = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}
+            best_epoch = ep
         if ep % 20 == 0 or ep == epochs-1:
             print("  e%d: tr=%.3f vl=%.3f acc=%.3f" % (ep, tl/max(nb,1), vl_phase_loss, vl_phase_acc))
 
@@ -367,7 +376,7 @@ def main():
     with open(args.normalization, "rb") as f: nm_sha = hashlib.sha256(f.read()).hexdigest()
     training_script_sha = hashlib.sha256(open(__file__, "rb").read()).hexdigest()
 
-    # ── P0-1 FIX: Save checkpoint BEFORE runtime check, with ALL required fields ──
+    # ── Atomic checkpoint: save to .unvalidated.pt, validate, then rename ──
     ckpt = {
         "model_state": best_state, "mean": saved_mean, "std": saved_std_safe,
         "feature_names": SC5_FEATURES, "phase_classes": SC5_PHASES,
@@ -387,16 +396,19 @@ def main():
         "test_accessed": False,
         "training_version": "V2_corridor_label_fixed",
     }
-    ckpt_path = out_dir / "best_model.pt"
-    torch.save(ckpt, ckpt_path)
-    print("  Saved: %s" % ckpt_path)
+    tmp_path = out_dir / "best_model.unvalidated.pt"
+    final_path = out_dir / "best_model.pt"
+    torch.save(ckpt, tmp_path)
 
-    # ── P0-1 FIX: Runtime check loads the SAVED checkpoint ──
-    rt = SC5DetectorRuntime(str(ckpt_path), tau_corridor=0.3, tau_release=0.3, guard=GUARD_SC5)
+    # Runtime validation
+    rt = SC5DetectorRuntime(str(tmp_path), tau_corridor=0.3, tau_release=0.3, guard=GUARD_SC5)
     rt_state = rt.model.state_dict()
-    max_sd_err = max((best_state[k] - rt_state[k]).abs().max().item() for k in best_state)
+    max_sd_err = max((best_state[k] - rt_state[k].cpu()).abs().max().item() for k in best_state)
     assert max_sd_err < 1e-12, "Runtime load FAIL: sd_err=%.2e" % max_sd_err
     print("  Runtime load: PASS (sd_err=%.2e)" % max_sd_err)
+
+    os.replace(tmp_path, final_path)
+    print("  Saved: %s" % final_path)
 
     # ── Outputs ──
     with open(out_dir / "TRAIN_EPOCH_METRICS.csv", "w", newline="") as f:
