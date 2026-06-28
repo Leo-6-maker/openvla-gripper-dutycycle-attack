@@ -45,7 +45,12 @@ def main(argv=None):
     fold_id = args.fold
     out_dir = Path(args.output_dir); out_dir.mkdir(parents=True, exist_ok=True)
 
-    # ── 1. Verify test_open_event ──
+    # ── 1. Load manifest FIRST (required for event validation) ──
+    with open(args.fold_manifest) as f:
+        manifest = json.load(f)
+    assert manifest["fold"] == fold_id
+
+    # ── 2. Verify test_open_event ──
     with open(args.test_open_event) as f:
         event = json.load(f)
     assert event["gate"] == "LOTO_TEST_OPEN_EVENT_V1", "Invalid open event"
@@ -71,9 +76,7 @@ def main(argv=None):
     with open(args.test_open_event, "rb") as f:
         event_sha = hashlib.sha256(f.read()).hexdigest()
 
-    # ── 2. Load fold manifest, verify teacher_config SHA ──
-    with open(args.fold_manifest) as f: manifest = json.load(f)
-    assert manifest["fold"] == fold_id
+    # ── 3. Verify teacher_config SHA from manifest ──
     test_task = manifest["test_task"]
     tc_path = os.path.join(os.path.dirname(args.fold_manifest),
                            "FOLD%s_teacher_config.json" % fold_id)
