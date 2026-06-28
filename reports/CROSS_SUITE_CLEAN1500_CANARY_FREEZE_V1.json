@@ -1,0 +1,23 @@
+{
+  "gate": "CROSS_SUITE_CLEAN1500_CANARY_FREEZE_V1",
+  "collector_commit": "17c2ff8",
+  "canary_count": 5,
+  "all_passed": true,
+  "results": [
+    {"suite": "libero_spatial", "task_idx": 0, "state_id": 0, "eligible": true, "steps": 92, "gate_pass": true, "task_success": true, "target_site": "plate_1_default_site"},
+    {"suite": "libero_goal", "task_idx": 1, "state_id": 0, "eligible": true, "steps": 82, "gate_pass": true, "task_success": true, "target_site": "flat_stove_1_default_site"},
+    {"suite": "libero_10", "task_idx": 5, "state_id": 0, "eligible": true, "steps": 400, "gate_pass": true, "task_success": false, "target_site": "desk_caddy_1_back_contain_region"},
+    {"suite": "libero_goal", "task_idx": 0, "state_id": 0, "eligible": false, "steps": 400, "gate_pass": true, "abstain_reason": "articulated_task_no_pick_place"},
+    {"suite": "libero_10", "task_idx": 0, "state_id": 0, "eligible": false, "steps": 386, "gate_pass": true, "abstain_reason": "multi_object_two_items"}
+  ],
+  "gates_verified": {
+    "eligible_target_fail_closed": true,
+    "abstain_no_target": true,
+    "clean_success_retained": true,
+    "clean_failure_retained": true,
+    "25d_features_present": true,
+    "gripper_nan_fail_closed": true,
+    "atomic_complete": true,
+    "nonempty_dir_refused": true
+  }
+}
