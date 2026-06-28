@@ -1,0 +1,51 @@
+{
+  "gate": "LOTO_10FOLD_PROTOCOL_AMENDMENT_01",
+  "amends": "LOTO_10FOLD_PROTOCOL_FREEZE_V1.json",
+  "changes": {
+    "P0-1_per_fold_label_regeneration": {
+      "v1_issue": "Builder split old combined teacher labels by task without re-running teacher.label_trajectory() with fold-specific config",
+      "v2_fix": "build_sc5_loto_fold_v2.py now runs calibrate_thresholds() on 400 train privileged records, creates V2PrivilegedTeacher(cfg), and calls teacher.label_trajectory() on each train and val episode. Combined teacher labels JSONL is NOT used as supervision source.",
+      "builder_script": "scripts/stageb/build_sc5_loto_fold_v2.py"
+    },
+    "P0-2_metric_CW_definition": {
+      "v1_issue": "CW used corridor_start <= emit_step <= corridor_end as interval, ignoring gaps in valid-start set",
+      "v2_fix": "CW = emit_step IN corridor_active_at_t (valid-start set membership). Updated in LOTO_METRIC_SCHEMA_V2.json.",
+      "metric_schema": "docs/gpu/LOTO_METRIC_SCHEMA_V2.json"
+    },
+    "P0-3_generic_trainer": {
+      "v1_issue": "train_sc5_loto_v2.py referenced in protocol but did not exist",
+      "v2_fix": "Generic trainer created: scripts/stageb/train_sc5_loto_v2.py. Reads per-fold artifacts, no hardcoded task sets. Reuses V2 training logic (CPU best_state, atomic checkpoint, corridor label protocol).",
+      "trainer_script": "scripts/stageb/train_sc5_loto_v2.py"
+    },
+    "P0-4_heldout_label_materialization": {
+      "v1_issue": "No path defined for generating test teacher labels from fold-specific frozen teacher config",
+      "v2_fix": "materialize_sc5_loto_heldout_labels_v1.py — Phase B only. Loads frozen FOLDxx_teacher_config.json, runs V2PrivilegedTeacher on 50 held-out privileged records, outputs labels + episode anchors with valid-start sets.",
+      "materializer_script": "scripts/stageb/materialize_sc5_loto_heldout_labels_v1.py"
+    },
+    "P1-2_calibration_fail_closed": {
+      "v1_issue": "if os.path.exists() could silently skip missing paths",
+      "v2_fix": "assert len(train_paths) == 400, assert per-task count == 50, FileNotFoundError on missing path"
+    },
+    "P1-3_single_truth_source": {
+      "v1_issue": "FOLD_MATRIX duplicated in JSON, CSV, and builder",
+      "v2_fix": "FOLD_MATRIX defined in build_sc5_loto_fold_v2.py as single source. Protocol JSON references builder."
+    },
+    "selection_metric_string": {
+      "v1_issue": "phase_cross_entropy_val_only vs val_phase_cross_entropy",
+      "v2_fix": "Unified to phase_cross_entropy_val_only (matching Fold 0 V2 trainer)"
+    }
+  },
+  "unchanged": {
+    "fold_matrix": "identical to V1 (val = (test-2) mod 10)",
+    "training_hyperparams": "identical (seeds [1,2,3], epochs=80, lr=0.001, batch=64)",
+    "runtime_params": "identical (tau_c=0.3, tau_r=0.3, guard=5, K=10)",
+    "two_phase_test_open": "identical concept, now with heldout materializer for Phase B"
+  },
+  "new_files": [
+    "scripts/stageb/build_sc5_loto_fold_v2.py",
+    "scripts/stageb/train_sc5_loto_v2.py",
+    "scripts/stageb/materialize_sc5_loto_heldout_labels_v1.py",
+    "docs/gpu/LOTO_METRIC_SCHEMA_V2.json",
+    "tests/stageb/test_fold00_golden_parity.py"
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "gate": "LOTO_METRIC_SCHEMA_V2",
+  "amends": "LOTO_METRIC_SCHEMA_V1",
+  "amendment_reason": "P0-2: CW definition must use valid-start set membership, not [start,end] range interval. corridor_start/end are min/max of valid starts but intermediate steps may have gaps (recovery/abstain).",
+  "positive_episode_categories": {
+    "CW_correct_window": {
+      "definition": "teacher-positive AND emitted AND emit_step IN corridor_active_at_t",
+      "formula": "CW / teacher_positive_episodes"
+    },
+    "FE_false_early": {
+      "definition": "teacher-positive AND emitted AND emit_step < min(corridor_active_at_t)",
+      "formula": "FE / teacher_positive_episodes"
+    },
+    "LI_late_or_invalid": {
+      "definition": "teacher-positive AND emitted AND emit_step NOT IN corridor_active_at_t AND emit_step >= min(corridor_active_at_t)",
+      "formula": "LI / teacher_positive_episodes"
+    },
+    "MP_missed_positive": {
+      "definition": "teacher-positive AND NOT emitted",
+      "formula": "MP / teacher_positive_episodes"
+    }
+  },
+  "mutual_exclusivity": "CW, FE, LI, MP are mutually exclusive and exhaustive for teacher-positive episodes",
+  "k10_containment": {
+    "definition": "emit_step IN corridor_active_at_t (redundant with CW under valid-start definition)",
+    "note": "corridor_active_at_t already requires [t, t+K-1] to not overlap release/recovery/abstain"
+  },
+  "negative_episode_categories": {
+    "FPn_false_positive_negative": {
+      "definition": "teacher-negative (no corridor) AND emitted",
+      "formula": "FPn / teacher_negative_episodes"
+    },
+    "TN_true_negative": {
+      "definition": "teacher-negative AND NOT emitted",
+      "formula": "TN / teacher_negative_episodes"
+    }
+  },
+  "timing": {
+    "signed_error": "emit_step - teacher_anchor (teacher_anchor = first stable_carry step + guard=5)",
+    "absolute_error": "abs(emit_step - teacher_anchor)",
+    "computed_on": "teacher-positive emitted episodes only",
+    "required_per_fold_per_seed": [
+      "median_signed_error", "mean_signed_error",
+      "median_absolute_error", "mean_absolute_error",
+      "iqr_absolute_error", "p05_signed_error", "p95_signed_error",
+      "min_signed_error", "max_signed_error",
+      "extreme_early_count (signed_error < -K)"
+    ]
+  },
+  "overall": {
+    "emission_rate": "total_emitted / 50 episodes"
+  },
+  "bootstrap_ci": {
+    "method": "paired/hierarchical per-fold: sample 50 episode IDs with replacement, retain all 3 seed results for sampled episodes. 10000 resamples, 95% CI.",
+    "cross_fold": "sample tasks/folds, then sample episodes within task, retain all seed results"
+  }
+}
