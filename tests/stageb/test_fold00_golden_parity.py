@@ -163,25 +163,25 @@ class TestFold00GoldenParity:
         assert r_sup["release_neg"] == f_sup["release_neg"]
         print("  release_pos=%d (PASS)" % r_sup["release_pos"])
 
-    # ── 4. Teacher config exact ──
+    # ── 4. Teacher config parity (read from frozen file) ──
     def test_teacher_config_full_parity(self, rebuilt):
         with open(rebuilt + "/FOLD00_teacher_config.json") as f:
             new_tc = json.load(f)
-        # Compare all thresholds to known Fold 00 frozen values
-        frozen_th = {
-            "grasp_close_sustain": 3, "grasp_open_proxy_max": 0.0639,
-            "eef_obj_dist_max": 0.1515, "eef_obj_dist_stable_var": 0.005,
-            "lift_z_threshold": 0.0934, "lift_sustain_steps": 2,
-            "carry_obj_z_var_max": 0.01, "carry_window": 8,
-            "preplace_target_dist_min": 0.05, "preplace_target_dist_max": 0.3718,
-            "release_target_dist_max": 0.1611, "regrasp_eef_obj_dist_max": 0.1,
-            "stability_window": 5,
-        }
-        for k, expected in frozen_th.items():
-            actual = new_tc["thresholds"][k]
+        with open(FROZEN_TC) as f:
+            frozen_tc = json.load(f)
+        new_th = new_tc["thresholds"]; frozen_th = frozen_tc["thresholds"]
+
+        assert new_th.keys() == frozen_th.keys(), \
+            "Threshold key sets differ: new=%s frozen=%s" % (
+                sorted(new_th.keys()), sorted(frozen_th.keys()))
+
+        for k in frozen_th:
+            actual = new_th[k]; expected = frozen_th[k]
             abs_err = abs(actual - expected)
-            assert abs_err < 0.01, "%s: rebuilt=%.4f frozen=%.4f (abs_err=%.4f)" % (
-                k, actual, expected, abs_err)
+            # Use 1e-12 tolerance for exact float match; relax to 1e-4 only if JSON roundtrip
+            tol = 1e-12 if abs_err < 1e-12 else 1e-4
+            assert abs_err <= tol, \
+                "%s: rebuilt=%.8f frozen=%.8f (abs_err=%.2e)" % (k, actual, expected, abs_err)
 
     # ── 5. Normalization mean + std parity ──
     def test_normalization_mean_and_std(self, rebuilt):

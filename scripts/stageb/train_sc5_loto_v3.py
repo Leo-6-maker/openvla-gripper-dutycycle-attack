@@ -125,8 +125,21 @@ def main(argv=None):
     assert actual_tl_sha == manifest["teacher_labels_sha256"], "Labels SHA mismatch"
     assert actual_nm_sha == manifest["normalization_sha256"], "Norm SHA mismatch"
 
+    # Verify manifest was built from THIS protocol (single truth source)
+    assert manifest["protocol_sha256"] == proto_sha, \
+        "Manifest built from different protocol"
+    assert manifest["gate"] == "LOTO_FOLD%s_MANIFEST_V3" % manifest["fold"]
+
     fold_id = manifest["fold"]; test_task = manifest["test_task"]
     val_task = manifest["val_task"]; train_tasks = set(manifest["train_tasks"])
+
+    # Cross-verify manifest against protocol fold matrix
+    fc = protocol["fold_matrix"][fold_id]
+    assert int(manifest["test_task"]) == int(fc["test"])
+    assert int(manifest["val_task"]) == int(fc["val"])
+    assert set(manifest["train_tasks"]) == set(fc["train"])
+    assert protocol["scripts"]["trainer"] == "scripts/stageb/train_sc5_loto_v3.py"
+
     assert manifest["train_episodes"] == 400 and manifest["val_episodes"] == 50
 
     # ── Determinism ──

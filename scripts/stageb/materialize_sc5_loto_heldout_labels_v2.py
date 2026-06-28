@@ -49,9 +49,25 @@ def main(argv=None):
     with open(args.test_open_event) as f:
         event = json.load(f)
     assert event["gate"] == "LOTO_TEST_OPEN_EVENT_V1", "Invalid open event"
-    assert fold_id in event.get("folds_authorized", []) or event.get("all_folds", False), \
-        "Fold %s not authorized in open event" % fold_id
     assert event.get("phase_b_authorized", False), "Phase B not authorized"
+    assert fold_id in event.get("folds_authorized", []), \
+        "Fold %s not authorized in open event" % fold_id
+
+    # Verify protocol SHA consistency
+    assert event.get("protocol_sha256") == manifest["protocol_sha256"], \
+        "Event protocol SHA mismatch"
+
+    # Verify 27 checkpoint SHAs frozen (Fold 01-09 × 3 seeds)
+    checkpoints = event.get("checkpoints", [])
+    expected_cks = {(f"{f:02d}", s) for f in range(1, 10) for s in (1, 2, 3)}
+    observed_cks = {(c["fold"], int(c["seed"])) for c in checkpoints}
+    assert observed_cks == expected_cks, \
+        "Checkpoint set mismatch: missing=%s extra=%s" % (
+            expected_cks - observed_cks, observed_cks - expected_cks)
+    assert len(checkpoints) == 27
+    for c in checkpoints:
+        assert len(c["sha256"]) == 64, "Invalid SHA length for fold %s seed %s" % (c["fold"], c["seed"])
+
     with open(args.test_open_event, "rb") as f:
         event_sha = hashlib.sha256(f.read()).hexdigest()
 
