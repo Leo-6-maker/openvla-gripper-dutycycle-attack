@@ -43,6 +43,7 @@ os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
 BASE = "/mnt/sdc/dty_user/openvla_attack"
+WT = "/mnt/sdc/dty_user/worktrees/sc5_wave1_0280c85"  # frozen worktree for git provenance
 sys.path.insert(0, os.path.join(BASE, "scripts"))
 sys.path.insert(0, os.path.join(BASE, "src"))
 
@@ -59,7 +60,7 @@ registry = json.loads(reg_raw)
 # ── P0-7: Validate all protocol constraints ──
 def _git(*args):
     import subprocess as _sp
-    r = _sp.run(["git","-C",BASE,*args], text=True, capture_output=True, check=True)
+    r = _sp.run(["git","-C",WT,*args], text=True, capture_output=True, check=True)
     return r.stdout.strip()
 
 _git_head = _git("rev-parse","HEAD")
