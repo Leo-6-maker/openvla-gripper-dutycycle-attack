@@ -55,6 +55,19 @@ protocol = json.loads(proto_raw)
 registry = json.loads(reg_raw)
 
 # ── P0-7: Validate all protocol constraints ──
+import subprocess as _sp
+_git_head = _sp.run(["git","-C",BASE,"rev-parse","HEAD"], capture_output=True, text=True).stdout.strip()
+_git_dirty = _sp.run(["git","-C",BASE,"status","--porcelain"], capture_output=True, text=True).stdout.strip()
+assert not _git_dirty, "Git worktree is dirty — commit before collecting"
+collector_commit = _git_head
+
+# Model fingerprint (hash the file listing + sizes, not full 15GB)
+_model_files = sorted(Path(MODEL_PATH).rglob("*"))
+_model_fp = hashlib.sha256(
+    "|".join("%s:%d" % (str(f.relative_to(MODEL_PATH)), f.stat().st_size if f.is_file() else 0)
+             for f in _model_files).encode()
+).hexdigest()
+
 proto_gate = protocol.get("gate", "")
 assert proto_gate == "CROSS_SUITE_CLEAN1500_PROTOCOL_V1", "Wrong protocol gate: %s" % proto_gate
 reg_gate = registry.get("gate", "")
@@ -89,7 +102,8 @@ import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = OpenVLAForActionPrediction.from_pretrained(MODEL_PATH, local_files_only=True)
 processor = AutoProcessor.from_pretrained(MODEL_PATH, trust_remote_code=True, local_files_only=True)
-action_dim = model.config.action_dim
+action_dim = int(model.get_action_dim(args.suite))
+assert action_dim == 7, "Expected 7-dim action, got %d" % action_dim
 model = model.to(dtype=torch.bfloat16, device=device)
 model.eval()
 print("Model loaded (action_dim=%d)" % action_dim, flush=True)
@@ -108,6 +122,10 @@ bddl = os.path.join(get_libero_path("bddl_files"), task_obj.problem_folder, task
 env, obs = build_v4_exact_env(bddl, args.render_gpu, args.max_steps, 10)
 obs = env.set_init_state(init_states[args.state_id])
 env, obs = apply_dummy_wait(env, obs, 10)
+
+# P1: task_name must match registry
+assert task_obj.name == task_reg["task_name"], \
+    "Task name mismatch: LIBERO='%s' registry='%s'" % (task_obj.name, task_reg["task_name"])
 
 # Object site
 obj_sid = env.sim.model.site_name2id(primary_object_site)
@@ -204,10 +222,10 @@ for step in range(args.max_steps):
     action_dz = float(action[2]) if len(action) > 2 else 0.0
     action_gripper = raw_gripper
 
+    # P0-1: pass NaN directly to streamer (no 0.0 substitution)
     try:
         feat_result = streamer.update(step, raw_gripper, env_gripper,
-            qpos_sum if gripper_valid else 0.0,
-            grip_width if gripper_valid else 0.0,
+            qpos_sum, grip_width,
             eef_x, eef_y, eef_z, eef_vx, eef_vy, eef_vz,
             action_dx, action_dy, action_dz, action_gripper)
         feat_valid = feat_result["valid"]
@@ -278,20 +296,23 @@ except Exception:
     task_success = False
 env.close()
 
-# ── Schema gate ──
+# ── Schema gate (P0-2: p2p is diagnostic only, NOT a validity gate) ──
 n_steps = len(telemetry_rows)
+all_gripper_valid = all(r.get("gripper_valid") for r in telemetry_rows)
+all_feat_valid = all(r.get("feat_valid") for r in telemetry_rows)
+
+if teacher_eligible:
+    all_target_valid = all(r.get("target_binding_valid") for r in telemetry_rows)
+else:
+    all_target_valid = True
+
+# Diagnostic: gripper width variation (informational, not gating)
 widths = [r["gripper_width"] for r in privileged_records
           if not (math.isnan(r["gripper_width"]) or r["gripper_width"] is None)]
 p2p = max(widths) - min(widths) if len(widths) > 1 else 0.0
-gripper_ok = p2p > 1e-4
 
-if teacher_eligible:
-    # P0-1: eligible episodes MUST have valid target at every step
-    all_target_valid = all(r.get("target_binding_valid") for r in telemetry_rows)
-else:
-    all_target_valid = True  # ineligible = abstain is correct
-
-gate_pass = n_steps > 10 and gripper_ok and all_target_valid
+gate_pass = (n_steps > 10 and all_gripper_valid and all_feat_valid
+             and all_target_valid)
 
 # ── Write output ──
 with open(out / "step_telemetry.csv", "w", newline="") as f:
@@ -335,7 +356,11 @@ with open(out / "artifact_sha256.json", "w") as f:
     shas["protocol_sha256"] = proto_sha
     shas["registry_sha256"] = reg_sha
     shas["collector_sha256"] = collector_sha
+    shas["collector_commit"] = collector_commit
+    shas["git_head"] = _git_head
+    shas["git_dirty"] = False
     shas["model_path"] = MODEL_PATH
+    shas["model_fingerprint_sha256"] = _model_fp
     json.dump(shas, f, indent=2)
 
 print("DONE: steps=%d p2p=%.4f gate=%s success=%s eligible=%s target=%s" % (
