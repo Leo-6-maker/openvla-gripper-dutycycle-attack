@@ -43,9 +43,20 @@ os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
 BASE = "/mnt/sdc/dty_user/openvla_attack"
-WT = "/mnt/sdc/dty_user/worktrees/sc5_wave1_0280c85"  # frozen worktree for git provenance
+REPO_ROOT = str(Path(__file__).resolve().parents[2])  # script's own git repo
 sys.path.insert(0, os.path.join(BASE, "scripts"))
 sys.path.insert(0, os.path.join(BASE, "src"))
+
+# ── Git provenance (use script's own repo, NOT hardcoded worktree) ──
+def _git(*args):
+    import subprocess as _sp
+    r = _sp.run(["git","-C",REPO_ROOT,*args], text=True, capture_output=True, check=True)
+    return r.stdout.strip()
+
+_git_head = _git("rev-parse","HEAD")
+collector_commit = _git_head
+_git_dirty = _git("status","--porcelain","--untracked-files=no")
+assert not _git_dirty, "Git worktree has tracked changes — commit before collecting"
 
 # ── Load + hash protocol + registry ──
 with open(args.protocol, "rb") as f: proto_raw = f.read()
@@ -56,17 +67,6 @@ collector_sha = hashlib.sha256(open(__file__, "rb").read()).hexdigest()
 
 protocol = json.loads(proto_raw)
 registry = json.loads(reg_raw)
-
-# ── P0-7: Validate all protocol constraints ──
-def _git(*args):
-    import subprocess as _sp
-    r = _sp.run(["git","-C",WT,*args], text=True, capture_output=True, check=True)
-    return r.stdout.strip()
-
-_git_head = _git("rev-parse","HEAD")
-collector_commit = _git_head
-_git_dirty = _git("status","--porcelain","--untracked-files=no")
-assert not _git_dirty, "Git worktree has tracked changes — commit before collecting"
 
 proto_gate = protocol.get("gate", "")
 assert proto_gate == "CROSS_SUITE_CLEAN1500_PROTOCOL_V1", "Wrong protocol gate: %s" % proto_gate
