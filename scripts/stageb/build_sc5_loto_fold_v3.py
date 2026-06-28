@@ -42,14 +42,14 @@ def load_privileged_paths(task_filter):
     return paths
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--fold", required=True)
     ap.add_argument("--output_dir", required=True)
     ap.add_argument("--feature_dataset", required=True)
     ap.add_argument("--protocol", required=True,
                     help="LOTO_10FOLD_PROTOCOL_FREEZE_V2.json (single truth source)")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     fold_id = args.fold
     with open(args.protocol) as f:
