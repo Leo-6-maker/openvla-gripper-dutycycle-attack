@@ -63,6 +63,7 @@ def _git(*args):
     return r.stdout.strip()
 
 _git_head = _git("rev-parse","HEAD")
+collector_commit = _git_head
 _git_dirty = _git("status","--porcelain","--untracked-files=no")
 assert not _git_dirty, "Git worktree has tracked changes — commit before collecting"
 
@@ -85,6 +86,8 @@ if not MODEL_PATH.is_dir():
 
 # Model fingerprint (file listing hash, not full 15GB)
 _model_files = sorted(p for p in MODEL_PATH.rglob("*") if p.is_file())
+if not _model_files:
+    raise SystemExit("MODEL_FILES_EMPTY: %s" % MODEL_PATH)
 _model_fp = hashlib.sha256(
     "|".join("%s:%d" % (p.relative_to(MODEL_PATH).as_posix(), p.stat().st_size)
              for p in _model_files).encode()).hexdigest()
@@ -345,7 +348,7 @@ summary = {"suite": args.suite, "task_idx": args.task_idx,
     "eval_seed": args.eval_seed, "n_steps": n_steps,
     "condition": "CLEAN", "task_success": task_success,
     "teacher_eligible": teacher_eligible, "target_valid": all_target_valid,
-    "gripper_valid": gripper_ok, "gate_pass": gate_pass,
+    "gripper_valid": all_gripper_valid, "gate_pass": gate_pass,
     "target_site": target_site, "primary_object_site": primary_object_site,
     "abstain_reason": abstain_reason if not teacher_eligible else ""}
 with open(out / "episode_summary.json", "w") as f:
@@ -355,7 +358,7 @@ with open(out / "episode_summary.json", "w") as f:
 complete = {"status": "COMPLETE" if gate_pass else "SCHEMA_FAIL",
     "n_steps": n_steps, "gate_pass": gate_pass,
     "teacher_eligible": teacher_eligible, "target_valid": all_target_valid,
-    "gripper_valid": gripper_ok, "task_success": task_success,
+    "gripper_valid": all_gripper_valid, "task_success": task_success,
     "timestamp": time.time()}
 tmp = out / "COMPLETE.json.tmp"
 final = out / ("COMPLETE.json" if gate_pass else "SCHEMA_FAIL.json")
@@ -376,7 +379,7 @@ with open(out / "artifact_sha256.json", "w") as f:
     shas["collector_commit"] = collector_commit
     shas["git_head"] = _git_head
     shas["git_dirty"] = False
-    shas["model_path"] = MODEL_PATH
+    shas["model_path"] = str(MODEL_PATH)
     shas["model_fingerprint_sha256"] = _model_fp
     json.dump(shas, f, indent=2)
 
