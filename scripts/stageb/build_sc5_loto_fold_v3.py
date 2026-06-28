@@ -150,11 +150,20 @@ def main(argv=None):
     print("  Train: %d rows, stable_carry=%d" % (len(train_labels), tr_corr))
     print("  Val:   %d rows, stable_carry=%d" % (len(val_labels), vl_corr))
 
-    # ── 4. Write teacher labels ──
+    # ── 4. Write teacher labels (convert numpy scalars) ──
+    def to_native(obj):
+        if isinstance(obj, dict):
+            return {k: to_native(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [to_native(v) for v in obj]
+        if hasattr(obj, "item"):  # numpy scalar
+            return obj.item()
+        return obj
+
     tl_path = out_dir / ("FOLD%s_teacher_labels_train_val.jsonl" % fold_id)
     with open(tl_path, "w") as f:
         for lab in train_labels + val_labels:
-            f.write(json.dumps(lab) + "\n")
+            f.write(json.dumps(to_native(lab)) + "\n")
 
     # ── 5. Train-only normalization ──
     print("\nTrain-only normalization...")
