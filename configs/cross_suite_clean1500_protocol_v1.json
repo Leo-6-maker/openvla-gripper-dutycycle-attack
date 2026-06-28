@@ -42,7 +42,7 @@
     "reset_attempt_on_infra": true,
     "scientific_failure_is_not_infra": true
   },
-  "output_root": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_cross_suite_clean1500_v1",
+  "output_root": "/mnt/sdc/dty_user/openvla_attack_evidence/sc5_cross_suite_clean1500_v1",
   "detector_path": "/mnt/sdc/dty_user/openvla_attack/outputs/sc5_v2_seed42/sc5_mlp_v2.pt",
   "registry_path": "configs/cross_suite_object_target_registry_v1.json",
   "canary_jobs": [

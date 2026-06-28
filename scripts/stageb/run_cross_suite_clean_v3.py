@@ -27,6 +27,8 @@ ap.add_argument("--max_steps", type=int, default=400)
 ap.add_argument("--protocol", required=True)
 ap.add_argument("--registry", required=True)
 ap.add_argument("--canary", action="store_true")
+ap.add_argument("--preflight_only", action="store_true",
+    help="Validate config/registry/provenance without loading model or env")
 args = ap.parse_args()
 
 # ── P0-8: Refuse non-empty output dir ──
@@ -55,18 +57,14 @@ protocol = json.loads(proto_raw)
 registry = json.loads(reg_raw)
 
 # ── P0-7: Validate all protocol constraints ──
-import subprocess as _sp
-_git_head = _sp.run(["git","-C",BASE,"rev-parse","HEAD"], capture_output=True, text=True).stdout.strip()
-_git_dirty = _sp.run(["git","-C",BASE,"status","--porcelain"], capture_output=True, text=True).stdout.strip()
-assert not _git_dirty, "Git worktree is dirty — commit before collecting"
-collector_commit = _git_head
+def _git(*args):
+    import subprocess as _sp
+    r = _sp.run(["git","-C",BASE,*args], text=True, capture_output=True, check=True)
+    return r.stdout.strip()
 
-# Model fingerprint (hash the file listing + sizes, not full 15GB)
-_model_files = sorted(Path(MODEL_PATH).rglob("*"))
-_model_fp = hashlib.sha256(
-    "|".join("%s:%d" % (str(f.relative_to(MODEL_PATH)), f.stat().st_size if f.is_file() else 0)
-             for f in _model_files).encode()
-).hexdigest()
+_git_head = _git("rev-parse","HEAD")
+_git_dirty = _git("status","--porcelain","--untracked-files=no")
+assert not _git_dirty, "Git worktree has tracked changes — commit before collecting"
 
 proto_gate = protocol.get("gate", "")
 assert proto_gate == "CROSS_SUITE_CLEAN1500_PROTOCOL_V1", "Wrong protocol gate: %s" % proto_gate
@@ -81,7 +79,15 @@ assert args.max_steps == protocol["max_steps"], "max_steps mismatch"
 assert args.render_gpu == suite_cfg["gpu"], "GPU mismatch: expected %d, got %d" % (
     suite_cfg["gpu"], args.render_gpu)
 
-MODEL_PATH = suite_cfg["model"]
+MODEL_PATH = Path(suite_cfg["model"])
+if not MODEL_PATH.is_dir():
+    raise SystemExit("MODEL_PATH_NOT_FOUND: %s" % MODEL_PATH)
+
+# Model fingerprint (file listing hash, not full 15GB)
+_model_files = sorted(p for p in MODEL_PATH.rglob("*") if p.is_file())
+_model_fp = hashlib.sha256(
+    "|".join("%s:%d" % (p.relative_to(MODEL_PATH).as_posix(), p.stat().st_size)
+             for p in _model_files).encode()).hexdigest()
 task_reg = registry[args.suite][str(args.task_idx)]
 primary_object_site = task_reg["primary_object_site"]
 target_site = task_reg.get("target_site")
@@ -92,6 +98,11 @@ abstain_reason = task_reg.get("abstain_reason", "")
 print("Suite: %s task=%d state=%d eligible=%s" % (
     args.suite, args.task_idx, args.state_id, teacher_eligible), flush=True)
 
+if args.preflight_only:
+    print("PREFLIGHT PASS: protocol=%s registry=%s model=%s git=%s" % (
+        proto_sha[:12], reg_sha[:12], _model_fp[:12], _git_head[:8]), flush=True)
+    sys.exit(0)
+
 # ── Model ──
 from transformers import AutoProcessor
 from prismatic.extern.hf.configuration_prismatic import OpenVLAConfig
@@ -100,8 +111,8 @@ from prismatic.extern.hf.processing_prismatic import PrismaticProcessor
 import torch
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = OpenVLAForActionPrediction.from_pretrained(MODEL_PATH, local_files_only=True)
-processor = AutoProcessor.from_pretrained(MODEL_PATH, trust_remote_code=True, local_files_only=True)
+model = OpenVLAForActionPrediction.from_pretrained(str(MODEL_PATH), local_files_only=True)
+processor = AutoProcessor.from_pretrained(str(MODEL_PATH), trust_remote_code=True, local_files_only=True)
 action_dim = int(model.get_action_dim(args.suite))
 assert action_dim == 7, "Expected 7-dim action, got %d" % action_dim
 model = model.to(dtype=torch.bfloat16, device=device)
@@ -313,6 +324,12 @@ p2p = max(widths) - min(widths) if len(widths) > 1 else 0.0
 
 gate_pass = (n_steps > 10 and all_gripper_valid and all_feat_valid
              and all_target_valid)
+
+# ── Zero-row protection ──
+if not telemetry_rows:
+    with open(out / "SCHEMA_FAIL.json", "w") as f:
+        json.dump({"status": "SCHEMA_FAIL", "reason": "zero_telemetry_rows"}, f, indent=2)
+    raise SystemExit("ZERO_TELEMETRY_ROWS")
 
 # ── Write output ──
 with open(out / "step_telemetry.csv", "w", newline="") as f:
