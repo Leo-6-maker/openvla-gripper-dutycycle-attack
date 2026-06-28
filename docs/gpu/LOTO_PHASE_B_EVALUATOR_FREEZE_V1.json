@@ -2,7 +2,7 @@
   "gate": "LOTO_PHASE_B_EVALUATOR_FREEZE_V1",
   "status": "FROZEN_BEFORE_HELDOUT_OPEN",
   "created_utc": "2026-06-29T00:00:00Z",
-  "git_commit": "2a6a9c93013a07b924fe05a949b2f73bd51df773",
+  "git_commit": "9636609fa228221a71a2cad5761669220bba6dab",
 
   "frozen_artifacts": {
     "evaluator": {
