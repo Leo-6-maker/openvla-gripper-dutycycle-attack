@@ -1,0 +1,56 @@
+{
+  "gate": "LOTO_30_CHECKPOINT_GLOBAL_FREEZE_V1",
+  "total_checkpoints": 30,
+  "fold00_role": "PILOT_DIAGNOSTIC",
+  "confirmatory_folds": ["01","02","03","04","05","06","07","08","09"],
+  "held_out_opened_before_freeze": 0,
+  "post_freeze_retraining_allowed": false,
+  "post_freeze_threshold_tuning_allowed": false,
+  "runtime": {"tau_corridor": 0.3, "tau_release": 0.3, "guard": 5, "K": 10},
+  "functional_replay_summary": {
+    "folds_passed": 10, "folds_failed": 0,
+    "all_train_armed": true, "all_val_armed": true,
+    "all_cp_p99_finite": true, "no_corridor_collapse": true
+  },
+  "checkpoints": [
+    {"fold":"00","seed":1,"role":"PILOT","test_task":8,"test_name":"chocolate_pudding","val_task":6,"val_name":"butter","sha256":"98aac32523a7e7d16e5622e940c4d9e266c557736de0cf50290aaa38742b17fa","best_epoch":0,"val_loss":1.3050,"train_emit":319,"val_emit":45,"cp_p99":0.932,"replay":"PASS"},
+    {"fold":"00","seed":2,"role":"PILOT","test_task":8,"val_task":6,"sha256":"1bc9865f73ff6234241cb73340afde5a05d89f94029e3e17e538065f54ea5093","best_epoch":0,"val_loss":1.2937,"train_emit":320,"val_emit":44,"cp_p99":0.906,"replay":"PASS"},
+    {"fold":"00","seed":3,"role":"PILOT","test_task":8,"val_task":6,"sha256":"066f3ce3a4d961732a377730936dfe4878f07aff516f5952a7ef89fcdfb82199","best_epoch":0,"val_loss":1.0871,"train_emit":315,"val_emit":45,"cp_p99":0.926,"replay":"PASS"},
+
+    {"fold":"01","seed":1,"role":"CONFIRMATORY","test_task":9,"test_name":"orange_juice","val_task":7,"val_name":"milk","sha256":"3074d67c961b0a6a4f24ec3fc3138a9cd015e9d7fc0f5c7c630a1625c688a987","best_epoch":1,"val_loss":0.9360,"train_emit":306,"val_emit":37,"cp_p99":0.885,"replay":"PASS"},
+    {"fold":"01","seed":2,"role":"CONFIRMATORY","test_task":9,"val_task":7,"sha256":"872de54c623c1350279871b9b37e6bc68604f2a4977f75cb15f025d3eccc65e6","best_epoch":2,"val_loss":0.9294,"train_emit":295,"val_emit":37,"cp_p99":0.947,"replay":"PASS"},
+    {"fold":"01","seed":3,"role":"CONFIRMATORY","test_task":9,"val_task":7,"sha256":"6de60fb52ab21ee8d47706d2fff832d630119697321ad117cde0559f9b7f011a","best_epoch":0,"val_loss":0.8976,"train_emit":306,"val_emit":37,"cp_p99":0.892,"replay":"PASS"},
+
+    {"fold":"02","seed":1,"role":"CONFIRMATORY","test_task":0,"test_name":"alphabet_soup","val_task":8,"val_name":"chocolate_pudding","sha256":"6839682ebb6cebdfcb5e88cdd8f56526d4dc6484390a9024fdb79200aed9a3a3","best_epoch":0,"val_loss":2.1460,"train_emit":313,"val_emit":45,"cp_p99":0.867,"replay":"PASS"},
+    {"fold":"02","seed":2,"role":"CONFIRMATORY","test_task":0,"val_task":8,"sha256":"57275a11874c5606451a41f193f28059f55829eb92325601eb154faf62b0d2f4","best_epoch":0,"val_loss":1.8729,"train_emit":313,"val_emit":45,"cp_p99":0.872,"replay":"PASS"},
+    {"fold":"02","seed":3,"role":"CONFIRMATORY","test_task":0,"val_task":8,"sha256":"b9e604d8ed302fafef9afa9951ad97371bcad3c1c322ec66638cb26cf32284a6","best_epoch":0,"val_loss":1.9469,"train_emit":304,"val_emit":33,"cp_p99":0.903,"replay":"PASS"},
+
+    {"fold":"03","seed":1,"role":"CONFIRMATORY","test_task":1,"test_name":"cream_cheese","val_task":9,"val_name":"orange_juice","sha256":"c63d6380ee6527737a56279d86283edecd242068f41362ea236d5ef09da13dfa","best_epoch":0,"val_loss":0.9059,"train_emit":312,"val_emit":38,"cp_p99":0.903,"replay":"PASS"},
+    {"fold":"03","seed":2,"role":"CONFIRMATORY","test_task":1,"val_task":9,"sha256":"f44fcfdf43b320dac318eba2facb8790f6116c2ef183b7c96f60cb4e3086d21f","best_epoch":0,"val_loss":0.7751,"train_emit":316,"val_emit":38,"cp_p99":0.885,"replay":"PASS"},
+    {"fold":"03","seed":3,"role":"CONFIRMATORY","test_task":1,"val_task":9,"sha256":"97f9efee1bf3340165dbd6765b117dce30a18a4585da80a0e9315eeb6f537905","best_epoch":0,"val_loss":1.1940,"train_emit":310,"val_emit":38,"cp_p99":0.917,"replay":"PASS"},
+
+    {"fold":"04","seed":1,"role":"CONFIRMATORY","test_task":2,"test_name":"salad_dressing","val_task":0,"val_name":"alphabet_soup","sha256":"f5bac2a328581f1eb9030e856bdcf42e41d80815baf26fc5e0d2f6f8c2000d60","train_emit":290,"val_emit":44,"cp_p99":0.846,"replay":"PASS"},
+    {"fold":"04","seed":2,"role":"CONFIRMATORY","test_task":2,"val_task":0,"sha256":"003749831d4ba112c5c3ec8a443beff5d50bd0124c4a55a6ecf3176abc60aa93","train_emit":298,"val_emit":44,"cp_p99":0.827,"replay":"PASS"},
+    {"fold":"04","seed":3,"role":"CONFIRMATORY","test_task":2,"val_task":0,"sha256":"cbefb8e9e4cf06c2a679d84695c7641482db512f717591e2f8dc41114b976a2a","train_emit":290,"val_emit":44,"cp_p99":0.867,"replay":"PASS"},
+
+    {"fold":"05","seed":1,"role":"CONFIRMATORY","test_task":3,"test_name":"bbq_sauce","val_task":1,"val_name":"cream_cheese","sha256":"3eaeac48410987217710c1af93b6b8913ad8bc4b3a213da9bdab4243a3239876","train_emit":291,"val_emit":7,"cp_p99":1.000,"replay":"PASS"},
+    {"fold":"05","seed":2,"role":"CONFIRMATORY","test_task":3,"val_task":1,"sha256":"346e69c9b25505b4a2e9718bad73485b49b649d98a4d141e8bbc94a036e17fe5","train_emit":288,"val_emit":2,"cp_p99":0.999,"replay":"PASS"},
+    {"fold":"05","seed":3,"role":"CONFIRMATORY","test_task":3,"val_task":1,"sha256":"cb1e31990b0d667b1d4a27bf496f69f35a8a5fd13cf4abfd6dc903ec935180a5","train_emit":288,"val_emit":5,"cp_p99":0.999,"replay":"PASS"},
+
+    {"fold":"06","seed":1,"role":"CONFIRMATORY","test_task":4,"test_name":"ketchup","val_task":2,"val_name":"salad_dressing","sha256":"678f47086caa6f7a6d0a1f6a38fb6db5fb705dfb6631cf2192444ab0cbd3ffa7","train_emit":283,"val_emit":48,"cp_p99":0.879,"replay":"PASS"},
+    {"fold":"06","seed":2,"role":"CONFIRMATORY","test_task":4,"val_task":2,"sha256":"2e68a8a50289a7c5d24196972d34961017b14d235d4dabe526fc152ffed1c622","train_emit":284,"val_emit":48,"cp_p99":0.810,"replay":"PASS"},
+    {"fold":"06","seed":3,"role":"CONFIRMATORY","test_task":4,"val_task":2,"sha256":"4e0b89260f94ae6ea14610c5aa004e10463d3fc85900e2183c6ef54f24d81bae","train_emit":289,"val_emit":48,"cp_p99":0.873,"replay":"PASS"},
+
+    {"fold":"07","seed":1,"role":"CONFIRMATORY","test_task":5,"test_name":"tomato_sauce","val_task":3,"val_name":"bbq_sauce","sha256":"c9baad703cacd3588a93d7f045febc5a9da93206f217ac5c16362cf2225cb8db","train_emit":286,"val_emit":17,"cp_p99":0.999,"replay":"PASS"},
+    {"fold":"07","seed":2,"role":"CONFIRMATORY","test_task":5,"val_task":3,"sha256":"d15dab4d56b449e1ff89577ba198e1f683cd67c66aa31a2dc0767c7268165967","train_emit":282,"val_emit":14,"cp_p99":0.999,"replay":"PASS"},
+    {"fold":"07","seed":3,"role":"CONFIRMATORY","test_task":5,"val_task":3,"sha256":"40fcc8b8b6757fc6645200e09cfbece899de43c1efc39bc4b4ed2f21519264c3","train_emit":287,"val_emit":13,"cp_p99":0.999,"replay":"PASS"},
+
+    {"fold":"08","seed":1,"role":"CONFIRMATORY","test_task":6,"test_name":"butter","val_task":4,"val_name":"ketchup","sha256":"566b8e0dfa846bbb75e56f943bdfe1f2159100fca70d51b26ac639fb8fe4081e","train_emit":247,"val_emit":48,"cp_p99":1.000,"replay":"PASS"},
+    {"fold":"08","seed":2,"role":"CONFIRMATORY","test_task":6,"val_task":4,"sha256":"597a30c6ed25c3bdf537e3e822c98fb1cb51e29d7885a18bdde029077756c140","train_emit":225,"val_emit":48,"cp_p99":0.999,"replay":"PASS"},
+    {"fold":"08","seed":3,"role":"CONFIRMATORY","test_task":6,"val_task":4,"sha256":"e2ce1306316bd2a31b00750136482f5e64263869181777584415ccf18af4578a","train_emit":262,"val_emit":48,"cp_p99":0.998,"replay":"PASS"},
+
+    {"fold":"09","seed":1,"role":"CONFIRMATORY","test_task":7,"test_name":"milk","val_task":5,"val_name":"tomato_sauce","sha256":"be1be64c5e813215de69337420664bf8a6217b3d70113a940f9c67258a96e721","train_emit":268,"val_emit":17,"cp_p99":0.999,"replay":"PASS"},
+    {"fold":"09","seed":2,"role":"CONFIRMATORY","test_task":7,"val_task":5,"sha256":"cff089782b7ad200514b839e7d5eda63e78febe9b15295b5aa4d883769471778","train_emit":275,"val_emit":23,"cp_p99":0.999,"replay":"PASS"},
+    {"fold":"09","seed":3,"role":"CONFIRMATORY","test_task":7,"val_task":5,"sha256":"d9904e4f1348bcf12e516530d4552816d1b4009ef7137b94e07f920249605478","train_emit":258,"val_emit":13,"cp_p99":1.000,"replay":"PASS"}
+  ]
+}
