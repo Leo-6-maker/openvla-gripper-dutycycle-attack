@@ -31,10 +31,10 @@ ap.add_argument("--preflight_only", action="store_true",
     help="Validate config/registry/provenance without loading model or env")
 args = ap.parse_args()
 
-# ── P0-8: Refuse non-empty output dir ──
+# ── P0-8: Refuse if COMPLETE/SCHEMA_FAIL already exist ──
 out = Path(args.output_dir)
-if out.exists() and any(out.iterdir()):
-    raise FileExistsError("Output directory not empty: %s" % out)
+if (out / "COMPLETE.json").exists() or (out / "SCHEMA_FAIL.json").exists():
+    raise FileExistsError("Output already has COMPLETE/SCHEMA_FAIL: %s" % out)
 out.mkdir(parents=True, exist_ok=True)
 
 # ── Environment ──
