@@ -73,8 +73,8 @@ def _validate_commit_field(value, field_name):
 
 
 def _validate_finite_float(value, field_name, lo=None, hi=None):
-    if not isinstance(value, (int, float)):
-        raise ValueError("{} must be numeric, got {}".format(field_name, type(value).__name__))
+    if isinstance(value, bool) or not isinstance(value, (int, float, np.floating, np.integer)):
+        raise ValueError("{} must be numeric (not bool), got {}".format(field_name, type(value).__name__))
     fv = float(value)
     if not np.isfinite(fv):
         raise ValueError("{} must be finite, got {}".format(field_name, fv))
@@ -87,13 +87,16 @@ def _validate_finite_float(value, field_name, lo=None, hi=None):
 
 def _validate_int(value, field_name, lo=None):
     if isinstance(value, bool) or not isinstance(value, (int, np.integer)):
-        raise ValueError("{} must be integer, got {}: {}".format(field_name, type(value).__name__, value))
+        raise ValueError("{} must be integer (not bool), got {}: {}".format(field_name, type(value).__name__, value))
     iv = int(value)
     if float(value) != float(iv):
         raise ValueError("{}={} is not an exact integer".format(field_name, value))
     if lo is not None and iv < lo:
         raise ValueError("{}={} < {}".format(field_name, iv, lo))
     return iv
+
+
+VALID_CHECKPOINT_METRICS = {"val_loss", "val_suite_macro_event_f1"}
 
 
 def compute_normalization_sha(mean, std):
@@ -128,10 +131,16 @@ def load_checkpoint_strict(path: str, provided_files: dict = None):
     if missing:
         raise ValueError("Missing required keys: {}".format(missing))
 
-    # Git must be clean for formal training
-    if ckpt["git_dirty"] not in (False, "false", 0):
-        raise ValueError("git_dirty={} — formal training requires clean checkout".format(ckpt["git_dirty"]))
+    # Git must be clean (strict type: only bool False accepted)
+    gd = ckpt["git_dirty"]
+    if not (isinstance(gd, bool) and gd is False):
+        raise ValueError("git_dirty must be bool False, got {}: {}".format(type(gd).__name__, gd))
     _validate_commit_field(ckpt["repo_commit"], "repo_commit")
+
+    # Checkpoint metric allowlist
+    cm = ckpt.get("checkpoint_metric")
+    if cm not in VALID_CHECKPOINT_METRICS:
+        raise ValueError("checkpoint_metric={} not in {}".format(cm, VALID_CHECKPOINT_METRICS))
 
     # FSM version
     if ckpt.get("fsm_version") != "legacy_v1":
@@ -226,12 +235,17 @@ def load_checkpoint_strict(path: str, provided_files: dict = None):
         if state[k].shape != ref_state[k].shape:
             raise ValueError("Shape mismatch {}: ckpt={} ref={}".format(
                 k, tuple(state[k].shape), tuple(ref_state[k].shape)))
+        if state[k].dtype != ref_state[k].dtype:
+            raise ValueError("Dtype mismatch {}: ckpt={} ref={}".format(
+                k, state[k].dtype, ref_state[k].dtype))
+        if not torch.isfinite(state[k]).all():
+            raise ValueError("Non-finite values in tensor: {}".format(k))
 
     model = SC5MLPV1()
     model.load_state_dict(state, strict=True)
     model.eval()
 
-    return model, mean, std, tau_c, tau_r, guard, ckpt
+    return model, mean, std, tau_c, tau_r, guard, K, ckpt
 
 
 def evaluate_episode(model, features, teacher_info, tau_c, tau_r, guard, K=10):
@@ -331,7 +345,7 @@ def main():
         "episode_index": args.episode_index,
         "split_file": args.split_file,
     }
-    model, mean, std, tau_c, tau_r, guard, ckpt_meta = load_checkpoint_strict(args.checkpoint, provided)
+    model, mean, std, tau_c, tau_r, guard, K, ckpt_meta = load_checkpoint_strict(args.checkpoint, provided)
 
     # Thresholds: CLI override must match checkpoint, or be unset
     for cli_val, ckpt_val, name in [
@@ -342,7 +356,12 @@ def main():
         if cli_val is not None and cli_val != ckpt_val:
             sys.exit("CLI {}={} conflicts with checkpoint value={}".format(name, cli_val, ckpt_val))
 
-    print("Checkpoint thresholds: tau_c={} tau_r={} guard={}".format(tau_c, tau_r, guard))
+    # Formal evaluation: always use test split, K from checkpoint
+    split_key = "test"
+    if args.split_key != "test":
+        print("WARNING: overriding split_key={} to 'test' for formal evaluation".format(args.split_key))
+
+    print("Checkpoint: tau_c={} tau_r={} guard={} K={}".format(tau_c, tau_r, guard, K))
     print("Checkpoint metric: {}".format(ckpt_meta.get("checkpoint_metric", "unknown")))
 
     print("Loading episode index: {}".format(args.episode_index))
@@ -355,7 +374,7 @@ def main():
     with open(args.split_file) as f:
         split = json.load(f)
 
-    eval_keys = split["splits"].get(args.split_key, [])
+    eval_keys = split["splits"].get(split_key, [])
     missing_feat = sorted([e for e in eval_keys if e not in features])
     missing_event = sorted([e for e in eval_keys if e not in events])
     errors = []
@@ -384,18 +403,19 @@ def main():
     results = []
     for ek in eval_keys:
         teacher_info = events[ek]
-        r = evaluate_episode(model, features[ek], teacher_info, tau_c, tau_r, guard)
+        r = evaluate_episode(model, features[ek], teacher_info, tau_c, tau_r, guard, K)
         r["episode_key"] = ek
         results.append(r)
 
     metrics = compute_metrics(results)
-    metrics["split_key"] = args.split_key
+    metrics["split_key"] = split_key
     metrics["checkpoint_sha256"] = sha256_file(args.checkpoint)
     metrics["checkpoint_metric"] = ckpt_meta.get("checkpoint_metric", "unknown")
     metrics["checkpoint_epoch"] = ckpt_meta.get("epoch", -1)
     metrics["tau_corridor"] = tau_c
     metrics["tau_release"] = tau_r
     metrics["guard"] = guard
+    metrics["K"] = K
     metrics["input_binding"] = {
         "feature_csv_sha256": sha256_file(args.feature_csv),
         "label_csv_sha256": sha256_file(args.label_csv),
