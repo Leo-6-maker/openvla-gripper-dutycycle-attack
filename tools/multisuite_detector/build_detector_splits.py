@@ -1,169 +1,203 @@
 #!/usr/bin/env python3
-"""Build detector splits: episode-grouped, task-grouped, and LOSO.
+"""Build detector splits with strict parent/episode/suite isolation.
 
-All windows from the same episode/parent MUST belong to the same split.
-LOSO test suite excluded from all training-time statistics.
-NO live data. Reads only frozen CLEAN2000 manifest + episode index.
+ALL episodes sharing a parent_key belong to the same split.
+Split at parent level to prevent leakage.
+LOSO test suite excluded from all training statistics.
 """
 from __future__ import annotations
-import argparse, json, hashlib, sys
+import argparse, hashlib, json, sys
 from collections import defaultdict
 from pathlib import Path
 
 SUITES = ["libero_object", "libero_spatial", "libero_goal", "libero_10"]
 LOSO_FOLDS = {
-    "loso_libero10": {"train": ["libero_object", "libero_spatial", "libero_goal"], "test": "libero_10"},
-    "loso_goal": {"train": ["libero_object", "libero_spatial", "libero_10"], "test": "libero_goal"},
-    "loso_spatial": {"train": ["libero_object", "libero_goal", "libero_10"], "test": "libero_spatial"},
-    "loso_object": {"train": ["libero_spatial", "libero_goal", "libero_10"], "test": "libero_object"},
+    "loso_libero10": {"train": ["libero_object","libero_spatial","libero_goal"], "test": "libero_10"},
+    "loso_goal": {"train": ["libero_object","libero_spatial","libero_10"], "test": "libero_goal"},
+    "loso_spatial": {"train": ["libero_object","libero_goal","libero_10"], "test": "libero_spatial"},
+    "loso_object": {"train": ["libero_spatial","libero_goal","libero_10"], "test": "libero_object"},
 }
 
 
 def load_episodes(path: str) -> list[dict]:
-    episodes = []
+    eps = []
     with open(path) as f:
         for line in f:
-            episodes.append(json.loads(line))
-    return episodes
+            eps.append(json.loads(line))
+    for ep in eps:
+        if "episode_key" not in ep:
+            raise ValueError(f"Episode missing episode_key: {ep}")
+        if "suite" not in ep:
+            raise ValueError(f"Episode missing suite: {ep}")
+    return eps
 
 
-def validate_no_cross_split_leakage(splits: dict, episodes: list[dict]) -> list[str]:
-    """Check: same episode_key or parent_key in multiple splits."""
+def validate_no_parent_leakage(splits: dict, episodes: list[dict]) -> list[str]:
+    """Enforce: same parent_key must be in exactly one split."""
     errors = []
-    seen_ep = {}
-    seen_parent = {}
-    for split_name, ep_keys in splits.items():
-        for ek in ep_keys:
-            if ek in seen_ep:
-                errors.append(f"LEAK: episode {ek} in both {seen_ep[ek]} and {split_name}")
-            seen_ep[ek] = split_name
+    ep_to_split = {}
+    for sn in ["train", "val", "test"]:
+        for ek in splits.get(sn, []):
+            if ek in ep_to_split:
+                errors.append(f"DUPLICATE_EPISODE: {ek} in both {ep_to_split[ek]} and {sn}")
+            ep_to_split[ek] = sn
+
+    parent_to_split = {}
     for ep in episodes:
-        pk = ep.get("parent_key", ep["episode_key"])
-        if pk:
-            if pk in seen_parent:
-                if seen_parent[pk] != splits.get("train", []):
-                    pass
-            seen_parent[pk] = ep["episode_key"]
+        ek = ep["episode_key"]
+        actual = ep_to_split.get(ek)
+        if actual is None:
+            errors.append(f"MISSING_FROM_SPLITS: {ek}")
+            continue
+        pk = ep.get("parent_key") or ek
+        if pk in parent_to_split:
+            expected = parent_to_split[pk]
+            if actual != expected:
+                errors.append(f"PARENT_LEAK: parent {pk} in {expected}, child {ek} in {actual}")
+        else:
+            parent_to_split[pk] = actual
+
+    all_manifest = {ep["episode_key"] for ep in episodes}
+    all_split = set(ep_to_split.keys())
+    missing = all_manifest - all_split
+    unknown = all_split - all_manifest
+    if missing:
+        errors.append(f"MISSING_EPISODES: {len(missing)} in index but not in any split: {sorted(list(missing))[:5]}...")
+    if unknown:
+        errors.append(f"UNKNOWN_EPISODES: {len(unknown)} in splits but not in index: {sorted(list(unknown))[:5]}...")
+
     return errors
 
 
 def build_episode_grouped(episodes: list[dict], seed: int = 42) -> dict:
-    """Random episode-level split stratified by suite. 60/20/20."""
     import random
     rng = random.Random(seed)
-    by_suite = defaultdict(list)
+    parent_groups = defaultdict(set)
+    ek_to_parent = {}
     for ep in episodes:
-        by_suite[ep["suite"]].append(ep["episode_key"])
+        ek = ep["episode_key"]
+        pk = ep.get("parent_key") or ek
+        ek_to_parent[ek] = pk
+        parent_groups[ep["suite"]].add(pk)
+
     splits = {"train": [], "val": [], "test": []}
-    for suite, keys in by_suite.items():
-        rng.shuffle(keys)
-        n = len(keys)
-        n_train = int(n * 0.6)
-        n_val = int(n * 0.2)
-        splits["train"].extend(keys[:n_train])
-        splits["val"].extend(keys[n_train:n_train + n_val])
-        splits["test"].extend(keys[n_train + n_val:])
+    for suite in SUITES:
+        parents = sorted(parent_groups.get(suite, set()))
+        if not parents:
+            continue
+        rng.shuffle(parents)
+        n = len(parents)
+        n_train = max(1, int(n * 0.6))
+        n_val = max(1, int(n * 0.2))
+        train_p = set(parents[:n_train])
+        val_p = set(parents[n_train:n_train + n_val])
+        test_p = set(parents[n_train + n_val:])
+        for ep in episodes:
+            if ep["suite"] != suite:
+                continue
+            pk = ek_to_parent[ep["episode_key"]]
+            if pk in train_p:
+                splits["train"].append(ep["episode_key"])
+            elif pk in val_p:
+                splits["val"].append(ep["episode_key"])
+            elif pk in test_p:
+                splits["test"].append(ep["episode_key"])
     return splits
 
 
 def build_task_grouped(episodes: list[dict], seed: int = 42) -> dict:
-    """Task-level split: all episodes of a task in same split."""
     import random
     rng = random.Random(seed)
-    by_task = defaultdict(list)
+    tasks = defaultdict(list)
     for ep in episodes:
-        key = (ep["suite"], ep["task_id"])
-        by_task[key].append(ep["episode_key"])
-    tasks = list(by_task.keys())
-    rng.shuffle(tasks)
-    n = len(tasks)
+        tasks[(ep["suite"], ep["task_id"])].append(ep["episode_key"])
+    task_keys = sorted(tasks.keys())
+    rng.shuffle(task_keys)
+    n = len(task_keys)
     n_train = int(n * 0.7)
     n_val = int(n * 0.15)
     splits = {"train": [], "val": [], "test": []}
-    for task in tasks[:n_train]:
-        splits["train"].extend(by_task[task])
-    for task in tasks[n_train:n_train + n_val]:
-        splits["val"].extend(by_task[task])
-    for task in tasks[n_train + n_val:]:
-        splits["test"].extend(by_task[task])
+    for tk in task_keys[:n_train]:
+        splits["train"].extend(tasks[tk])
+    for tk in task_keys[n_train:n_train + n_val]:
+        splits["val"].extend(tasks[tk])
+    for tk in task_keys[n_train + n_val:]:
+        splits["test"].extend(tasks[tk])
     return splits
 
 
 def build_loso(episodes: list[dict], fold_name: str) -> dict:
-    """Leave-One-Suite-Out split."""
     if fold_name not in LOSO_FOLDS:
         raise ValueError(f"Unknown LOSO fold: {fold_name}")
     config = LOSO_FOLDS[fold_name]
     by_suite = defaultdict(list)
+    ek_to_parent = {}
     for ep in episodes:
-        by_suite[ep["suite"]].append(ep["episode_key"])
-    train_keys = []
+        ek = ep["episode_key"]
+        pk = ep.get("parent_key") or ek
+        ek_to_parent[ek] = pk
+        by_suite[ep["suite"]].append(ek)
+
+    train_eks = []
     for s in config["train"]:
-        train_keys.extend(by_suite.get(s, []))
-    test_keys = by_suite.get(config["test"], [])
+        train_eks.extend(by_suite.get(s, []))
+
+    train_parents = sorted({ek_to_parent[ek] for ek in train_eks})
     import random
     rng = random.Random(42)
-    rng.shuffle(train_keys)
-    n = len(train_keys)
+    rng.shuffle(train_parents)
+    n = len(train_parents)
     n_train = int(n * 0.8)
+    train_p = set(train_parents[:n_train])
+    val_p = set(train_parents[n_train:])
+
+    train_final, val_final = [], []
+    for ep in episodes:
+        ek = ep["episode_key"]
+        if ek not in train_eks:
+            continue
+        pk = ek_to_parent[ek]
+        if pk in train_p:
+            train_final.append(ek)
+        elif pk in val_p:
+            val_final.append(ek)
+
+    test_final = by_suite.get(config["test"], [])
+
     return {
-        "train": train_keys[:n_train],
-        "val": train_keys[n_train:],
-        "test": test_keys,
-        "test_suite": config["test"],
-        "train_suites": config["train"],
+        "train": train_final, "val": val_final, "test": test_final,
+        "test_suite": config["test"], "train_suites": config["train"],
     }
-
-
-def validate_loso_isolation(splits: dict, episodes: list[dict]) -> list[str]:
-    """Check: test suite not in normalization, train, or val statistics."""
-    errors = []
-    test_suite = splits.get("test_suite")
-    if not test_suite:
-        return ["No test_suite specified for LOSO split"]
-    ep_by_key = {ep["episode_key"]: ep for ep in episodes}
-    for ek in splits["train"] + splits["val"]:
-        ep = ep_by_key.get(ek)
-        if ep and ep["suite"] == test_suite:
-            errors.append(f"LOSO LEAK: test suite {test_suite} episode {ek} in train/val")
-    for ek in splits["test"]:
-        ep = ep_by_key.get(ek)
-        if ep and ep["suite"] != test_suite:
-            errors.append(f"LOSO MISMATCH: non-{test_suite} episode {ek} in test set")
-    return errors
 
 
 def main():
     ap = argparse.ArgumentParser(description="Build detector splits")
-    ap.add_argument("--episode_index", required=True, help="Frozen CLEAN2000 episode index JSONL")
-    ap.add_argument("--split_type", required=True,
-                    choices=["episode_grouped", "task_grouped", "loso"])
-    ap.add_argument("--loso_fold", help="LOSO fold name (required when split_type=loso)")
+    ap.add_argument("--episode_index", required=True)
+    ap.add_argument("--split_type", required=True, choices=["episode_grouped","task_grouped","loso"])
+    ap.add_argument("--loso_fold")
     ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--output_dir", required=True, help="Output directory for split manifests")
+    ap.add_argument("--output_dir", required=True)
     args = ap.parse_args()
 
     episodes = load_episodes(args.episode_index)
-    print(f"Loaded {len(episodes)} episodes from index")
+    print(f"Loaded {len(episodes)} episodes")
 
     if args.split_type == "loso":
         if not args.loso_fold:
-            sys.exit("--loso_fold required for LOSO splits")
+            sys.exit("--loso_fold required")
         splits = build_loso(episodes, args.loso_fold)
-        errors = validate_loso_isolation(splits, episodes)
     elif args.split_type == "episode_grouped":
         splits = build_episode_grouped(episodes, args.seed)
-        errors = validate_no_cross_split_leakage(splits, episodes)
     elif args.split_type == "task_grouped":
         splits = build_task_grouped(episodes, args.seed)
-        errors = validate_no_cross_split_leakage(splits, episodes)
     else:
-        sys.exit(f"Unknown split type: {args.split_type}")
+        sys.exit(f"Unknown: {args.split_type}")
 
+    errors = validate_no_parent_leakage(splits, episodes)
     if errors:
         print(f"SPLIT VALIDATION FAILED: {len(errors)} errors")
-        for e in errors:
-            print(f"  {e}")
+        for e in errors[:20]:
+            print(f"  FAIL: {e}")
         sys.exit(1)
 
     out_dir = Path(args.output_dir)
@@ -173,11 +207,12 @@ def main():
         "split_type": args.split_type,
         "loso_fold": args.loso_fold if args.split_type == "loso" else None,
         "seed": args.seed,
-        "splits": {k: v for k, v in splits.items() if k in ("train", "val", "test")},
-        "counts": {k: len(v) for k, v in splits.items() if k in ("train", "val", "test")},
+        "splits": {k: v for k, v in splits.items() if k in ("train","val","test")},
+        "counts": {k: len(v) for k, v in splits.items() if k in ("train","val","test")},
         "test_suite": splits.get("test_suite"),
         "train_suites": splits.get("train_suites"),
         "validation_passed": True,
+        "parent_leakage_checked": True,
     }
     sha = hashlib.sha256(json.dumps(output, sort_keys=True).encode()).hexdigest()
     output["split_sha256"] = sha
@@ -185,10 +220,9 @@ def main():
         json.dump(output, f, indent=2)
         f.write("\n")
     print(f"Wrote {out_path}")
-    print(f"  Train: {output['counts']['train']} episodes")
-    print(f"  Val:   {output['counts']['val']} episodes")
-    print(f"  Test:  {output['counts']['test']} episodes")
-    print(f"  SHA256: {sha}")
+    for k in ["train","val","test"]:
+        print(f"  {k}: {output['counts'][k]} episodes")
+    print(f"  SHA256: {sha[:16]}")
 
 
 if __name__ == "__main__":

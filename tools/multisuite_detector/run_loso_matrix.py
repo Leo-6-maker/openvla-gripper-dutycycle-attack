@@ -1,25 +1,26 @@
 #!/usr/bin/env python3
-"""Run the full 4-fold LOSO matrix: train on 3 suites, evaluate on held-out suite.
+"""Run the full 4-fold LOSO matrix with correct path handling.
 
-For each fold, the held-out suite is excluded from training, normalization,
-threshold selection, and early stopping. Validation is drawn from 3 training suites.
+Each fold: build split (named split_loso.json), train, evaluate.
+Config is passed through to training. dry_run stops after split build.
 """
 from __future__ import annotations
 import argparse, json, subprocess, sys, time
 from pathlib import Path
 
 LOSO_FOLDS = [
-    {"name": "loso_libero10", "train_suites": ["libero_object", "libero_spatial", "libero_goal"], "test_suite": "libero_10"},
-    {"name": "loso_goal", "train_suites": ["libero_object", "libero_spatial", "libero_10"], "test_suite": "libero_goal"},
-    {"name": "loso_spatial", "train_suites": ["libero_object", "libero_goal", "libero_10"], "test_suite": "libero_spatial"},
-    {"name": "loso_object", "train_suites": ["libero_spatial", "libero_goal", "libero_10"], "test_suite": "libero_object"},
+    {"name": "loso_libero10", "train": ["libero_object","libero_spatial","libero_goal"], "test": "libero_10"},
+    {"name": "loso_goal", "train": ["libero_object","libero_spatial","libero_10"], "test": "libero_goal"},
+    {"name": "loso_spatial", "train": ["libero_object","libero_goal","libero_10"], "test": "libero_spatial"},
+    {"name": "loso_object", "train": ["libero_spatial","libero_goal","libero_10"], "test": "libero_object"},
 ]
 
+TOOLS = Path(__file__).resolve().parent
 
-def run_fold(fold: dict, args) -> dict:
-    """Run one LOSO fold: build split, train, evaluate."""
+
+def run_fold(fold, args):
     fold_name = fold["name"]
-    test_suite = fold["test_suite"]
+    test_suite = fold["test"]
     out_dir = Path(args.output_dir) / fold_name
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -27,25 +28,29 @@ def run_fold(fold: dict, args) -> dict:
     print(f"Fold: {fold_name} (test={test_suite})")
     print(f"{'='*60}")
 
-    # Step 1: Build LOSO split
-    split_file = out_dir / "split.json"
+    # Step 1: Build LOSO split → split_loso.json
+    split_file = out_dir / "split_loso.json"
     cmd = [
-        sys.executable, str(Path(__file__).parent / "build_detector_splits.py"),
+        sys.executable, str(TOOLS / "build_detector_splits.py"),
         "--episode_index", args.episode_index,
-        "--split_type", "loso",
-        "--loso_fold", fold_name,
-        "--output_dir", str(out_dir),
-        "--seed", str(args.seed),
+        "--split_type", "loso", "--loso_fold", fold_name,
+        "--output_dir", str(out_dir), "--seed", str(args.seed),
     ]
-    print(f"Building split: {' '.join(cmd)}")
+    print(f"Build split: {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
 
-    # Step 2: Train
-    ckpt_file = out_dir / f"best_model.pt"
+    if args.dry_run:
+        print(f"DRY_RUN: split built, skipping training and evaluation.")
+        return {"fold": fold_name, "test_suite": test_suite, "dry_run": True}
+
+    # Step 2: Train → best_model.pt
+    ckpt_file = out_dir / "best_model.pt"
     train_cmd = [
-        sys.executable, str(Path(__file__).parent / "train_detector.py"),
+        sys.executable, str(TOOLS / "train_detector.py"),
+        "--config", args.config,
         "--feature_csv", args.feature_csv,
         "--label_csv", args.label_csv,
+        "--episode_index", args.episode_index,
         "--split_file", str(split_file),
         "--output_dir", str(out_dir),
         "--seed", str(args.seed),
@@ -53,18 +58,20 @@ def run_fold(fold: dict, args) -> dict:
         "--batch_size", str(args.batch_size),
         "--patience", str(args.patience),
     ]
-    if args.dry_run:
-        train_cmd.append("--dry_run")
-    print(f"Training: python {' '.join(train_cmd[1:])}")
+    print(f"Train: python {' '.join(train_cmd[1:])}")
     subprocess.run(train_cmd, check=True)
+
+    if not ckpt_file.exists():
+        raise RuntimeError(f"Training did not produce checkpoint: {ckpt_file}")
 
     # Step 3: Evaluate
     eval_file = out_dir / "test_metrics.json"
     eval_cmd = [
-        sys.executable, str(Path(__file__).parent / "evaluate_detector.py"),
+        sys.executable, str(TOOLS / "evaluate_detector.py"),
         "--checkpoint", str(ckpt_file),
         "--feature_csv", args.feature_csv,
         "--label_csv", args.label_csv,
+        "--episode_index", args.episode_index,
         "--split_file", str(split_file),
         "--split_key", "test",
         "--output", str(eval_file),
@@ -72,23 +79,20 @@ def run_fold(fold: dict, args) -> dict:
         "--tau_release", str(args.tau_release),
         "--guard", str(args.guard),
     ]
-    print(f"Evaluating: python {' '.join(eval_cmd[1:])}")
+    print(f"Evaluate: python {' '.join(eval_cmd[1:])}")
     subprocess.run(eval_cmd, check=True)
 
     with open(eval_file) as f:
         metrics = json.load(f)
 
-    return {
-        "fold": fold_name,
-        "test_suite": test_suite,
-        "train_suites": fold["train_suites"],
-        "metrics": metrics,
-        "checkpoint": str(ckpt_file),
-    }
+    return {"fold": fold_name, "test_suite": test_suite,
+            "train_suites": fold["train"], "metrics": metrics,
+            "checkpoint": str(ckpt_file)}
 
 
 def main():
     ap = argparse.ArgumentParser(description="Run full LOSO matrix")
+    ap.add_argument("--config", required=True, help="Detector config YAML")
     ap.add_argument("--episode_index", required=True)
     ap.add_argument("--feature_csv", required=True)
     ap.add_argument("--label_csv", required=True)
@@ -110,16 +114,11 @@ def main():
         result["wall_time_s"] = time.time() - t0
         results.append(result)
 
-    summary = {
-        "gate": "LOSO_MATRIX_COMPLETE",
-        "n_folds": len(results),
-        "folds": results,
-        "aggregate": {},
-    }
+    summary = {"gate": "LOSO_MATRIX_COMPLETE", "n_folds": len(results), "folds": results}
     summary_path = Path(args.output_dir) / "loso_summary.json"
     with open(summary_path, "w") as f:
-        json.dump(summary, f, indent=2)
-    print(f"\nLOSO matrix written to {summary_path}")
+        json.dump(summary, f, indent=2, default=str)
+    print(f"\nLOSO matrix: {summary_path}")
 
 
 if __name__ == "__main__":
