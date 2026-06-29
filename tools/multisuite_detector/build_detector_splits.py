@@ -126,7 +126,7 @@ def build_task_grouped(episodes: list[dict], seed: int = 42) -> dict:
     return splits
 
 
-def build_loso(episodes: list[dict], fold_name: str) -> dict:
+def build_loso(episodes: list[dict], fold_name: str, seed: int = 42) -> dict:
     if fold_name not in LOSO_FOLDS:
         raise ValueError(f"Unknown LOSO fold: {fold_name}")
     config = LOSO_FOLDS[fold_name]
@@ -138,29 +138,32 @@ def build_loso(episodes: list[dict], fold_name: str) -> dict:
         ek_to_parent[ek] = pk
         by_suite[ep["suite"]].append(ek)
 
-    train_eks = []
-    for s in config["train"]:
-        train_eks.extend(by_suite.get(s, []))
-
-    train_parents = sorted({ek_to_parent[ek] for ek in train_eks})
     import random
-    rng = random.Random(42)
-    rng.shuffle(train_parents)
-    n = len(train_parents)
-    n_train = int(n * 0.8)
-    train_p = set(train_parents[:n_train])
-    val_p = set(train_parents[n_train:])
+    rng = random.Random(seed)
 
+    # Per-suite stratification: split train/val within each training suite
     train_final, val_final = [], []
-    for ep in episodes:
-        ek = ep["episode_key"]
-        if ek not in train_eks:
-            continue
-        pk = ek_to_parent[ek]
-        if pk in train_p:
-            train_final.append(ek)
-        elif pk in val_p:
-            val_final.append(ek)
+    for s in config["train"]:
+        suite_eks = by_suite.get(s, [])
+        suite_parents = sorted({ek_to_parent[ek] for ek in suite_eks})
+        rng.shuffle(suite_parents)
+        n = len(suite_parents)
+        n_train = max(1, int(n * 0.8))
+        train_p = set(suite_parents[:n_train])
+        val_p = set(suite_parents[n_train:])
+        if not train_p:
+            raise ValueError("LOSO fold {} suite {} has no training parents".format(fold_name, s))
+        if not val_p:
+            raise ValueError("LOSO fold {} suite {} has no validation parents".format(fold_name, s))
+        for ep in episodes:
+            ek = ep["episode_key"]
+            if ek not in suite_eks:
+                continue
+            pk = ek_to_parent[ek]
+            if pk in train_p:
+                train_final.append(ek)
+            elif pk in val_p:
+                val_final.append(ek)
 
     test_final = by_suite.get(config["test"], [])
 
@@ -185,7 +188,7 @@ def main():
     if args.split_type == "loso":
         if not args.loso_fold:
             sys.exit("--loso_fold required")
-        splits = build_loso(episodes, args.loso_fold)
+        splits = build_loso(episodes, args.loso_fold, args.seed)
     elif args.split_type == "episode_grouped":
         splits = build_episode_grouped(episodes, args.seed)
     elif args.split_type == "task_grouped":
