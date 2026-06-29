@@ -23,67 +23,116 @@ from gripper_attack.sc5mlp_v1 import SC5MLPV1, SC5_FEATURES, SC5_PHASES, N_FEATU
 from score_fsm_legacy_v1 import run_fsm_legacy_v1, model_to_scores
 
 
+# Dynamically extract expected state keys from reference model
+_ref = SC5MLPV1()
+SC5MLPV1_STATE_KEYS = set(_ref.state_dict().keys())
+del _ref
+
+CHECKPOINT_SCHEMA_VERSION = "sc5mlp_v1.0"
+
 REQUIRED_CHECKPOINT_KEYS = {
+    "schema_version", "model_type",
     "model_state", "mean", "std", "feature_names", "phase_classes",
+    "tau_corridor", "tau_release", "guard",
+    "split_mode", "normalization_source",
+    "feature_csv_sha256", "label_csv_sha256",
+    "episode_index_sha256", "split_file_sha256",
+    "seed", "n_train", "n_val",
+    "repo_commit",
 }
-SC5MLPV1_STATE_KEYS = {"shared.0.weight", "shared.0.bias", "shared.2.weight", "shared.2.bias",
-                         "phase_head.weight", "phase_head.bias",
-                         "corridor_head.weight", "corridor_head.bias",
-                         "release_head.weight", "release_head.bias"}
+
+CHECKPOINT_SHA_BINDINGS = [
+    ("feature_csv_sha256", "feature_csv"),
+    ("label_csv_sha256", "label_csv"),
+    ("episode_index_sha256", "episode_index"),
+    ("split_file_sha256", "split_file"),
+]
 
 
 def sha256_file(path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def load_checkpoint_strict(path: str):
-    """Load checkpoint with strict validation. Fails on any mismatch."""
+def load_checkpoint_strict(path: str, provided_files: dict = None):
+    """Load checkpoint with strict validation + SHA cross-verification.
+
+    provided_files: dict mapping checkpoint SHA key to file path for cross-verification.
+    Fails on: missing keys, wrong schema, state mismatch, SHA mismatch, invalid params.
+    """
     ckpt = torch.load(path, map_location="cpu", weights_only=False)
 
-    for key in REQUIRED_CHECKPOINT_KEYS:
-        if key not in ckpt:
-            raise ValueError("Checkpoint missing required key: {}".format(key))
+    # Schema version
+    sv = ckpt.get("schema_version")
+    if sv != CHECKPOINT_SCHEMA_VERSION:
+        raise ValueError("schema_version={} expected={}".format(sv, CHECKPOINT_SCHEMA_VERSION))
+    if ckpt.get("model_type") != "SC5MLPV1":
+        raise ValueError("model_type must be SC5MLPV1")
 
-    mean = ckpt["mean"]
-    std = ckpt["std"]
-    if mean is None or std is None:
-        raise ValueError("Checkpoint missing mean/std")
-    if hasattr(mean, 'shape'):
-        mean = np.asarray(mean, dtype=np.float32)
-        std = np.asarray(std, dtype=np.float32)
+    # All required keys must be present (no defaults)
+    missing = sorted(REQUIRED_CHECKPOINT_KEYS - set(ckpt.keys()))
+    if missing:
+        raise ValueError("Checkpoint missing required keys: {}".format(missing))
+
+    # Validate split_mode and normalization_source
+    if ckpt["split_mode"] != "frozen":
+        raise ValueError("split_mode={} expected=frozen".format(ckpt["split_mode"]))
+    if ckpt["normalization_source"] != "train_only":
+        raise ValueError("normalization_source={} expected=train_only".format(ckpt["normalization_source"]))
+
+    mean = np.asarray(ckpt["mean"], dtype=np.float32)
+    std = np.asarray(ckpt["std"], dtype=np.float32)
     if mean.shape != (25,) or std.shape != (25,):
         raise ValueError("mean/std shape != (25,)")
     if not np.all(np.isfinite(mean)) or not np.all(np.isfinite(std)):
         raise ValueError("NaN/Inf in mean/std")
     if not np.all(std > 0):
-        raise ValueError("Zero or negative in std")
+        raise ValueError("Zero or negative std entries")
 
     if list(ckpt["feature_names"]) != list(SC5_FEATURES):
         raise ValueError("feature_names mismatch")
     if list(ckpt["phase_classes"]) != list(SC5_PHASES):
         raise ValueError("phase_classes mismatch")
 
-    # Strict model state loading
+    # SHA cross-verification against provided files
+    if provided_files:
+        for ckpt_key, file_key in CHECKPOINT_SHA_BINDINGS:
+            file_path = provided_files.get(file_key)
+            if file_path:
+                actual = sha256_file(str(file_path))
+                expected = ckpt.get(ckpt_key, "")
+                if expected and actual != expected:
+                    raise ValueError(
+                        "SHA MISMATCH: checkpoint {}={} but file {} sha={}".format(
+                            ckpt_key, expected[:16], file_key, actual[:16]))
+
+    # Strict model state: dynamic key extraction from reference model
     state = ckpt["model_state"]
-    state_keys = set(state.keys())
-    if state_keys != SC5MLPV1_STATE_KEYS:
-        extra = state_keys - SC5MLPV1_STATE_KEYS
-        missing = SC5MLPV1_STATE_KEYS - state_keys
-        msg = []
+    expected_keys = SC5MLPV1_STATE_KEYS
+    actual_keys = set(state.keys())
+    if actual_keys != expected_keys:
+        extra = sorted(actual_keys - expected_keys)
+        missing_keys = sorted(expected_keys - actual_keys)
+        parts = []
         if extra:
-            msg.append("extra keys: {}".format(sorted(extra)))
-        if missing:
-            msg.append("missing keys: {}".format(sorted(missing)))
-        raise ValueError("model_state key mismatch: {}".format("; ".join(msg)))
+            parts.append("extra: {}".format(extra))
+        if missing_keys:
+            parts.append("missing: {}".format(missing_keys))
+        raise ValueError("model_state key mismatch: {}".format("; ".join(parts)))
+
+    # Verify tensor shapes match reference
+    ref_state = SC5MLPV1().state_dict()
+    for k in expected_keys:
+        if state[k].shape != ref_state[k].shape:
+            raise ValueError("Shape mismatch for {}: checkpoint={} reference={}".format(
+                k, tuple(state[k].shape), tuple(ref_state[k].shape)))
 
     model = SC5MLPV1()
     model.load_state_dict(state, strict=True)
     model.eval()
 
-    # Thresholds: use checkpoint values if present, else require CLI to match defaults
-    tau_c = float(ckpt.get("tau_corridor", 0.3))
-    tau_r = float(ckpt.get("tau_release", 0.3))
-    guard = int(ckpt.get("guard", 5))
+    tau_c = float(ckpt["tau_corridor"])
+    tau_r = float(ckpt["tau_release"])
+    guard = int(ckpt["guard"])
 
     return model, mean, std, tau_c, tau_r, guard, ckpt
 
@@ -178,8 +227,14 @@ def main():
     ap.add_argument("--guard", type=int, default=None)
     args = ap.parse_args()
 
-    # Strict checkpoint load
-    model, mean, std, tau_c, tau_r, guard, ckpt_meta = load_checkpoint_strict(args.checkpoint)
+    # Strict checkpoint load with SHA cross-verification
+    provided = {
+        "feature_csv": args.feature_csv,
+        "label_csv": args.label_csv,
+        "episode_index": args.episode_index,
+        "split_file": args.split_file,
+    }
+    model, mean, std, tau_c, tau_r, guard, ckpt_meta = load_checkpoint_strict(args.checkpoint, provided)
 
     # Thresholds: CLI override must match checkpoint, or be unset
     for cli_val, ckpt_val, name in [

@@ -342,11 +342,12 @@ def main():
             out_dir.mkdir(parents=True, exist_ok=True)
             saved_ckpt_path = out_dir / "best_model.pt"
             ckpt = {
+                "schema_version": "sc5mlp_v1.0",
+                "model_type": "SC5MLPV1",
                 "model_state": model.state_dict(),
                 "mean": mean, "std": std,
                 "feature_names": list(SC5_FEATURES),
                 "phase_classes": list(SC5_PHASES),
-                "dataset_sha256": sha256_file(args.feature_csv),
                 "split_mode": "frozen",
                 "normalization_source": "train_only",
                 "normalization_sha256": norm_sha,
@@ -357,6 +358,7 @@ def main():
                 "tau_corridor": args.tau_corridor,
                 "tau_release": args.tau_release,
                 "guard": args.guard,
+                "K": 10,
                 "fsm_version": "legacy_v1",
                 "cohort": args.cohort,
                 "feature_csv_sha256": sha256_file(args.feature_csv),
