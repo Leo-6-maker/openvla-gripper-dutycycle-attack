@@ -7,7 +7,8 @@ Scope: read-only repository and live-server audit for Issue #41 handoff. No roll
 ## A. Verified GitHub facts
 
 - Local audit branch: `codex/table1-continuation-audit-v1`
-- Local audit HEAD: `93e2373bc06db7598eeb8f36ec0a0fbde349d319`
+- Audit base commit: `93e2373bc06db7598eeb8f36ec0a0fbde349d319`
+- Initial audit report commit: `6721f0762c51f261170f0b18d19969df199859e3`
 - Base branch checked: `origin/experiments/cross-suite-generalization-v1`
 - Merge commit containment: PASS. `origin/experiments/cross-suite-generalization-v1` contains `93e2373bc06db7598eeb8f36ec0a0fbde349d319`; at audit time it resolves to that commit.
 - Relevant commit graph:
@@ -33,8 +34,8 @@ Key committed file SHA256:
 
 Verified committed facts:
 
-- Phase B pooled counts are documented in the handoff and Table 1 plan, but the raw committed table needed to recompute them was not found on the GitHub branch during this audit. Marked `UNVERIFIED_FROM_COMMITTED_RAW_TABLES`.
-- Expected Phase B freeze SHA `89911600e0bdc08e46e21f1ebfa85ab37c1d16fb741d4fe7c52409d7e76cd241` matches the live server artifact, not a committed file under that exact path.
+- Phase B freeze integrity: expected Phase B freeze SHA `89911600e0bdc08e46e21f1ebfa85ab37c1d16fb741d4fe7c52409d7e76cd241` matches the live server artifact, not a committed file under that exact path.
+- Phase B independent raw-table recomputation: the raw committed table needed to recompute pooled counts was not found on the GitHub branch during this audit. Marked `UNVERIFIED_FROM_COMMITTED_RAW_TABLES`.
 - VIS engineering canary facts are documented in handoff prose and live server freeze artifact. The live server artifact SHA is `91f313ef365bd1c86b1ef921fdb79bc8110e9f87f20cf9e5bf46690755fa77e5`.
 - Legacy Table 1 `TABLE1_FINAL_V3_4.md` uses N=24/27-style earlier panels. It is superseded context and must not feed the LOTO 162-row formal matrix.
 
@@ -58,6 +59,7 @@ Live repo:
 - HEAD: `ace1876281a9ad6ed68e1229a6e17346356766e9`
 - This live repo does not contain commit `93e2373bc06db7598eeb8f36ec0a0fbde349d319`.
 - The live repo is dirty and lacks the handoff/Table 1 files listed in section A.
+- The branch name alone is not a provenance verdict. Runtime behavior must be reconciled by exact executable/config/checkpoint/manifest SHA binding before future Batch A launch.
 
 Golden bundle:
 
@@ -97,6 +99,13 @@ CLEAN1500:
 - Malformed JSON: 0 in scanned JSON
 - Active CLEAN1500 processes were present during audit.
 
+DeepSeek-reported progress snapshot, pending artifact verification:
+
+- Timestamp/source: PR #42 comment created `2026-06-29T04:48:22Z`.
+- CLEAN1500 reported: Spatial `297/500`, Goal `255/500`, L10 `194/500`, total `746/1500`, `SCHEMA_FAIL=0`.
+- Formal CLEAN reported: `132/162` complete, about 30 jobs remaining, concentrated in Fold 09 / milk.
+- These are not converted into verified unique scientific trajectory counts until synced artifacts are deduplicated and validated.
+
 Provenance SHA observed on live server:
 
 | Artifact | SHA256 |
@@ -122,7 +131,8 @@ Server resource state:
 
 | Activity | Status | Verified evidence | Missing requirement | Next gate | Launch authorized |
 |---|---|---|---|---|---|
-| Phase B detector evaluation | PASS | Live Phase B freeze SHA matches handoff | committed raw recomputation table | none for audit | no new compute |
+| Phase B freeze integrity | PASS | Live Phase B freeze SHA matches handoff | committed copy of same artifact still absent | preserve SHA binding | no new compute |
+| Phase B raw-table recomputation | HOLD | handoff/table prose only | committed raw table for independent recomputation | sync or locate raw table | no new compute |
 | Post-Phase-B detector tuning | PROHIBITED | handoff, prereg draft, freeze docs | none | never tune from formal outcomes | no |
 | VIS engineering canary | PASS | live canary SHA `91f313ef...` | committed raw recomputation table | keep separate from formal | no new canary needed |
 | Formal CLEAN | IN PROGRESS | 162-row manifest, 107 summaries, active workers | 55 summaries and freeze bundle | close and freeze | only current CLEAN workers observed; no new attack |
@@ -146,9 +156,9 @@ Server resource state:
 
 | item | source_a | source_b | impact | severity | resolution_required | launch_blocking |
 |---|---|---|---|---|---|---|
-| live repo branch | GitHub base `experiments/cross-suite-generalization-v1 @ 93e2373` | server `/mnt/sdc/dty_user/openvla_attack` is `feature/sc5-abstention-v2-20260622 @ ace18762` | live workers are not running from the handoff branch | P0 | bind live worker SHA to accepted freeze or redeploy reviewed branch before new formal baselines | true |
+| live runtime identity | GitHub base `experiments/cross-suite-generalization-v1 @ 93e2373` | server `/mnt/sdc/dty_user/openvla_attack` is `feature/sc5-abstention-v2-20260622 @ ace18762` with observed runner/config SHAs | branch differs; provenance must be decided by file-level SHA reconciliation, not branch name alone | P1 | bind live worker/config/checkpoint SHAs through Bubble snapshot before new formal baselines | true |
 | handoff files | present on GitHub branch | missing in live repo | server cannot be assumed to know Issue #41 rules | P1 | sync docs or record server-side command bundle | true for new launches |
-| Formal CLEAN status | handoff says audit/complete-then-freeze | live has 107/162 summaries and active workers | not closed | P0 | wait for terminal outcomes and freeze | true |
+| Formal CLEAN status | handoff says audit/complete-then-freeze | live audit had 107/162 summaries; DeepSeek later reported 132/162 pending artifact verification | not closed | P0 | wait for terminal outcomes and freeze | true |
 | freeze bundle | required per condition | CLEAN has only `MANIFEST.jsonl` | no immutable clean baseline | P0 | generate freeze bundle after completion | true |
 | preregistration | draft has many null fields | live has some concrete SHAs | not frozen, values not registered | P1 | fill from verified sources and freeze | true |
 | legacy Table 1 | `TABLE1_FINAL_V3_4.md` N=24/27 | current LOTO design N=162/condition | denominator mismatch | P0 if mixed | keep legacy context only | true |
@@ -159,7 +169,7 @@ Server resource state:
 
 P0:
 
-- New formal baseline launch from live server would use a branch that does not contain the audited handoff commit.
+- New formal baseline launch is blocked until server executable/config/checkpoint/manifest SHAs are reconciled against GitHub or explicitly accepted.
 - Formal CLEAN is not closed: 55/162 summaries missing during audit.
 - CLEAN freeze bundle is absent.
 - Legacy Phase 7 Table 1 could contaminate LOTO Table 1 if copied into the new matrix.
@@ -170,7 +180,7 @@ P1:
 - Baseline preregistration remains `DRAFT_NOT_AUTHORIZED` with null path/SHA/budget/manifest fields.
 - UADA and UPA are not verified as faithful implementations.
 - Server storage pressure and zombie-process count raise reliability risk.
-- CLEAN1500 has multiple count surfaces: 1470 COMPLETE by status JSON scan, 736 `episode_summary.json`; the final audit must define the authoritative ledger.
+- CLEAN1500 has multiple count surfaces: 1470 COMPLETE by broad status JSON scan, 736 `episode_summary.json` in the live audit, and a later DeepSeek-reported `746/1500`; the final audit must deduplicate and define the authoritative scientific trajectory ledger.
 - Current live repo is dirty, so script SHA rather than commit alone must be used for provenance.
 
 P2:
@@ -218,7 +228,7 @@ Summary:
 1. Let current Formal CLEAN finish; do not start attacks while it is incomplete.
 2. Run a read-only closure validator over the completed CLEAN root: 162 summaries, 54 parents, 3 reps each, no malformed/zero-byte output, no duplicate output dirs, no replacement states.
 3. Generate the Formal CLEAN freeze bundle only after closure passes.
-4. Resolve live-code mismatch: either sync the audited `93e2373` lineage to server or explicitly freeze the live script SHAs and document why `ace18762` is accepted for the already-running CLEAN line.
+4. Resolve live runtime identity by Bubble-syncing selected server source/config/manifest files, verifying `SHA256SUMS.txt`, and writing file-level reconciliation. Do not rely on branch name alone.
 5. Fill preregistration nulls from verified files only; keep unverified fields as HOLD.
 6. Freeze Batch A condition specs before any baseline launch: `PREFIX_STUDENT`, `RAND_LINF_STUDENT`, `ADAPTED_TMA_OPEN_STUDENT`, `PREFIX_RANDOM_TIME`.
 7. Defer UADA, UPA, FreezeVLA, original-protocol TMA, cross-suite VIS, defense, real-robot, and detector changes.
