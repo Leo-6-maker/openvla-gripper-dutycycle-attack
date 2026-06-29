@@ -267,7 +267,7 @@ def evaluate_episode(model, features, teacher_info, tau_c, tau_r, guard, K=10):
         "in_window": in_window,
         "early": bool(emitted and anchor >= 0 and emit_step < wstart),
         "late": bool(emitted and anchor >= 0 and emit_step > wend),
-        "k10_contained": bool(emitted and anchor >= 0 and wstart <= emit_step <= wstart + K),
+        "k_contained": bool(emitted and anchor >= 0 and wstart <= emit_step <= wstart + K),
         "has_teacher_event": has_event,
         "event_type": teacher_info.get("event_type", "unknown"),
     }
@@ -285,18 +285,22 @@ def compute_metrics(results):
     fn = sum(1 for r in results if r["has_teacher_event"] and not r["in_window"])
     tn = sum(1 for r in results if not r["has_teacher_event"] and not r["emitted"])
     in_window_emit = [r for r in emitted if r.get("in_window")]
-    k10 = [r for r in emitted if r.get("k10_contained")]
+    k_hit = [r for r in emitted if r.get("k_contained")]
     correct_abstention = sum(1 for r in no_emit if not r.get("has_teacher_event"))
 
+    prec = tp / max(1, tp + fp)
+    rec = tp / max(1, tp + fn)
+    f1 = 2 * prec * rec / max(0.001, prec + rec)
     m = {
         "n_episodes": len(results), "n_emitted": len(emitted),
         "n_no_emission": len(no_emit),
         "n_teacher_positive": len(has_event), "n_teacher_negative": len(no_event),
         "tp": tp, "fp": fp, "fn": fn, "tn": tn,
         "emission_rate": len(emitted) / n,
-        "event_precision": tp / max(1, tp + fp),
-        "event_recall": tp / max(1, tp + fn),
-        "k10_containment_rate": len(k10) / max(1, len(emitted)),
+        "event_precision": prec,
+        "event_recall": rec,
+        "event_f1": f1,
+        "k_containment_rate": len(k_hit) / max(1, len(emitted)),
         "false_emits_per_episode": fp / n,
         "correct_abstention_rate": correct_abstention / max(1, len(no_event)) if no_event else 0,
     }
@@ -375,6 +379,12 @@ def main():
         split = json.load(f)
 
     eval_keys = split["splits"].get(split_key, [])
+    if not eval_keys:
+        sys.exit("Empty test partition in split — formal evaluation requires non-empty test set")
+    if split_key not in split["splits"]:
+        sys.exit("Missing '{}' partition in split".format(split_key))
+    if args.split_key != "test":
+        sys.exit("Formal evaluation requires --split_key test, got: {}".format(args.split_key))
     missing_feat = sorted([e for e in eval_keys if e not in features])
     missing_event = sorted([e for e in eval_keys if e not in events])
     errors = []
@@ -423,6 +433,8 @@ def main():
         "split_file_sha256": sha256_file(args.split_file),
     }
     metrics["per_suite"] = per_suite_metrics(results, suite_map)
+    suite_f1s = [m2["event_f1"] for m2 in metrics["per_suite"].values() if m2["n_episodes"] > 0]
+    metrics["suite_macro_event_f1"] = float(np.mean(suite_f1s)) if suite_f1s else 0.0
 
     out = json.dumps(metrics, indent=2)
     if args.output == "-":
@@ -434,9 +446,11 @@ def main():
 
     print("\nEpisodes: {}  TP: {}  FP: {}  FN: {}  TN: {}".format(
         metrics["n_episodes"], metrics["tp"], metrics["fp"], metrics["fn"], metrics["tn"]))
-    print("Precision: {:.3f}  Recall: {:.3f}  K10: {:.3f}  Abstention: {:.3f}".format(
-        metrics["event_precision"], metrics["event_recall"],
-        metrics["k10_containment_rate"], metrics["correct_abstention_rate"]))
+    print("F1: {:.3f}  Precision: {:.3f}  Recall: {:.3f}  Suite-macro F1: {:.3f}".format(
+        metrics["event_f1"], metrics["event_precision"], metrics["event_recall"],
+        metrics.get("suite_macro_event_f1", 0.0)))
+    print("K={}: containment {:.3f}  Abstention: {:.3f}".format(
+        K, metrics["k_containment_rate"], metrics["correct_abstention_rate"]))
     for s, m in sorted(metrics.get("per_suite", {}).items()):
         print("  {}: n={} TP={} FP={} FN={} prec={:.3f} rec={:.3f}".format(
             s, m["n_episodes"], m["tp"], m["fp"], m["fn"], m["event_precision"], m["event_recall"]))

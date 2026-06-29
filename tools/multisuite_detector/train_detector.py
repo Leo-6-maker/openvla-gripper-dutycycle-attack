@@ -224,6 +224,8 @@ def main():
     lr = tc.get("lr", args.lr)
     patience = tc.get("patience", args.patience)
     ckpt_metric = tc.get("checkpoint_metric", args.checkpoint_metric)
+    if ckpt_metric not in ("val_loss", "val_suite_macro_event_f1"):
+        sys.exit("Invalid checkpoint_metric: {} (must be val_loss or val_suite_macro_event_f1)".format(ckpt_metric))
 
     # Reject output_dir if non-empty (only in non-dry_run mode)
     out_dir = Path(args.output_dir)
@@ -265,6 +267,10 @@ def main():
         sys.exit("F1 checkpoint selection only supports fsm_version=legacy_v1. Got: {}".format(args.fsm_version))
 
     git_info = get_git_info(REPO)
+
+    # Pre-training guards: reject before any GPU work
+    if git_info["dirty"]:
+        sys.exit("Git checkout is dirty — formal training requires clean checkout")
 
     print("Config: {}, metric: {}, cohort: {}, FSM: {}".format(args.config, ckpt_metric, args.cohort, args.fsm_version))
 
