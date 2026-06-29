@@ -80,6 +80,7 @@ ${PYTHON} "${TOOLS}/launch_condition.py" \
     --mode formal \
     --expected_worker_sha "${EXPECTED_WORKER}" \
     --expected_bridge_sha "${EXPECTED_BRIDGE}" \
+    --expected_manifest_sha "${MANIFEST_SHA}" \
     --execute
 
 echo ""

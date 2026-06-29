@@ -98,8 +98,10 @@ def main():
     ap.add_argument("--launch_dir", required=True)
     ap.add_argument("--mode", default="formal", choices=["formal", "canary"],
                     help="formal=exact 162 jobs, canary=any count")
-    ap.add_argument("--expected_worker_sha", help="Required worker SHA-256 (reject on mismatch)")
-    ap.add_argument("--expected_bridge_sha", help="Required bridge SHA-256 (reject on mismatch)")
+    ap.add_argument("--expected_worker_sha", help="Required worker SHA-256")
+    ap.add_argument("--expected_bridge_sha", help="Required bridge SHA-256")
+    ap.add_argument("--expected_manifest_sha", help="Pre-approved manifest SHA (reject on mismatch)")
+    ap.add_argument("--gpus", type=int, nargs="*", help="Approved GPU list (default: auto-detect)")
     ap.add_argument("--execute", action="store_true", help="Actually launch")
     args = ap.parse_args()
 
@@ -142,35 +144,51 @@ def main():
     print(f"Bridge SHA: {prov['bridge_sha256'][:16]}...")
     print(f"Manifest SHA: {prov['manifest_sha256'][:16]}...")
 
+    # ── Manifest SHA approval ──
+    manifest_sha = prov["manifest_sha256"]
+    if args.expected_manifest_sha:
+        if manifest_sha != args.expected_manifest_sha:
+            sys.exit(f"Manifest SHA mismatch: expected {args.expected_manifest_sha[:16]}... "
+                     f"got {manifest_sha[:16]}... — manifest must be pre-approved")
+    elif args.execute:
+        sys.exit("--execute requires --expected_manifest_sha (pre-approved manifest SHA)")
+
     # ── Check existing outputs ──
     existing = check_existing_outputs(jobs, args.mode)
     if existing:
-        if args.mode == "formal":
-            print(f"ERROR: {len(existing)} jobs have existing output (formal mode rejects):")
-            for e in existing[:10]:
-                print(f"  {e}")
-            sys.exit("Cannot launch formal over existing outputs. Use recovery procedure.")
-        else:
-            print(f"WARNING: {len(existing)} jobs have existing output (canary mode continues):")
-            for e in existing[:5]:
-                print(f"  {e}")
+        print(f"ERROR: {len(existing)} jobs have existing output (rejected in all modes):")
+        for e in existing[:10]:
+            print(f"  {e}")
+        sys.exit("Cannot launch over existing outputs. Use recovery procedure.")
 
     # ── GPU check ──
     gpu_free = get_gpu_free()
     print(f"GPU free (MB): {gpu_free}")
-    available = [g for g, mb in sorted(gpu_free.items())
-                 if g not in GPU_DENYLIST and mb >= MIN_FREE_MB]
+    if args.gpus:
+        approved_gpus = set(args.gpus)
+        for g in approved_gpus:
+            if g in GPU_DENYLIST:
+                sys.exit(f"GPU {g} is denylisted")
+            if gpu_free.get(g, 0) < MIN_FREE_MB:
+                sys.exit(f"GPU {g} has {gpu_free.get(g, 0)} MB < {MIN_FREE_MB}")
+        available = sorted(approved_gpus)
+    else:
+        available = [g for g, mb in sorted(gpu_free.items())
+                     if g not in GPU_DENYLIST and mb >= MIN_FREE_MB]
     for gpu, mb in sorted(gpu_free.items()):
-        tag = "DENYLIST" if gpu in GPU_DENYLIST else ("OK" if gpu in available else f"SKIP ({mb}<{MIN_FREE_MB})")
+        tag = "DENYLIST" if gpu in GPU_DENYLIST else ("APPROVED" if gpu in available else f"SKIP")
         print(f"  GPU {gpu}: {mb} MB — {tag}")
     if not available:
         sys.exit("No GPUs available")
 
     # ── Split jobs ──
-    n_workers = len(available)
+    n_workers = min(len(jobs), len(available))  # never more workers than jobs
     splits = [[] for _ in range(n_workers)]
     for i, j in enumerate(jobs):
         splits[i % n_workers].append(j)
+    empty_splits = [i for i, s in enumerate(splits) if len(s) == 0]
+    if empty_splits:
+        sys.exit(f"Empty worker splits: indices {empty_splits}. n_jobs={len(jobs)} n_workers={n_workers}")
 
     os.makedirs(args.launch_dir, exist_ok=True)
 
@@ -195,7 +213,7 @@ def main():
         with open(running_marker, "w") as f:
             json.dump(running_info, f)
 
-        launch_plan = {"manifest_sha256": prov["manifest_sha256"],
+        launch_plan = {"manifest_sha256": manifest_sha,
                        "condition_id": args.condition_id, "mode": args.mode,
                        "timestamp": running_info["started"],
                        "provenance": prov, "gpus": available, "workers": []}

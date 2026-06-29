@@ -92,11 +92,18 @@ def get_episode_metadata(job: dict) -> dict:
     if not os.path.exists(ep_path):
         raise FileNotFoundError(f"episode_summary.json missing: {ep_path}")
     d = json.loads(open(ep_path).read())
-    n_valid = d.get("n_valid_steps", d.get("n_steps"))
-    if n_valid is None or not isinstance(n_valid, (int, float)) or n_valid < 1:
-        raise ValueError(f"Invalid n_valid_steps in {job.get('job_key','?')}: {n_valid}")
+    n_steps_raw = d.get("n_steps")
+    invalid = int(d.get("invalid_feature_steps", 0))
+    if n_steps_raw is None or not isinstance(n_steps_raw, (int, float)) or int(n_steps_raw) < 1:
+        raise ValueError(f"Invalid n_steps in {job.get('job_key','?')}: {n_steps_raw}")
+    n_valid = int(n_steps_raw) - invalid
+    if n_valid < 1:
+        raise ValueError(f"n_valid_steps={n_valid} (n_steps={n_steps_raw} - invalid={invalid}) "
+                         f"too small in {job.get('job_key','?')}")
     return {
-        "n_valid_steps": int(n_valid),
+        "n_valid_steps": n_valid,
+        "n_steps_raw": int(n_steps_raw),
+        "invalid_feature_steps": invalid,
         "mlp_emit_step": int(d.get("mlp_emit_step", -1)),
         "mlp_triggered": bool(d.get("mlp_triggered", False)),
     }
