@@ -352,12 +352,13 @@ def main():
                 "normalization_source": "train_only",
                 "normalization_sha256": norm_sha,
                 "n_train": len(train_eks), "n_val": len(val_eks),
+                "n_suites": len(set(suite_map.values())),
                 "seed": args.seed, "epoch": epoch,
                 "val_loss": val_loss,
                 "checkpoint_metric": ckpt_metric,
-                "tau_corridor": args.tau_corridor,
-                "tau_release": args.tau_release,
-                "guard": args.guard,
+                "tau_corridor": float(args.tau_corridor),
+                "tau_release": float(args.tau_release),
+                "guard": int(args.guard),
                 "K": 10,
                 "fsm_version": "legacy_v1",
                 "cohort": args.cohort,
@@ -368,8 +369,7 @@ def main():
                 "split_definition_sha256": sha256_bytes(json.dumps(split, sort_keys=True).encode()),
                 "config_sha256": sha256_file(args.config),
                 "repo_commit": git_info["commit"],
-                "git_dirty": git_info["dirty"],
-                "n_suites": len(set(suite_map.values())),
+                "git_dirty": bool(git_info["dirty"]),
             }
             # Bind selection metrics
             if ckpt_metric == "val_suite_macro_event_f1":
