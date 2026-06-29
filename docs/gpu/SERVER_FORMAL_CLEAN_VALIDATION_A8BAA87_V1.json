@@ -1,0 +1,2360 @@
+{
+  "accepted_count": 162,
+  "accepted_job_keys": [
+    "vis_formal_f01_s0_d1_p0_CLEAN",
+    "vis_formal_f01_s0_d1_p1_CLEAN",
+    "vis_formal_f01_s0_d1_p2_CLEAN",
+    "vis_formal_f01_s0_d2_p0_CLEAN",
+    "vis_formal_f01_s0_d2_p1_CLEAN",
+    "vis_formal_f01_s0_d2_p2_CLEAN",
+    "vis_formal_f01_s0_d3_p0_CLEAN",
+    "vis_formal_f01_s0_d3_p1_CLEAN",
+    "vis_formal_f01_s0_d3_p2_CLEAN",
+    "vis_formal_f01_s2_d1_p0_CLEAN",
+    "vis_formal_f01_s2_d1_p1_CLEAN",
+    "vis_formal_f01_s2_d1_p2_CLEAN",
+    "vis_formal_f01_s2_d2_p0_CLEAN",
+    "vis_formal_f01_s2_d2_p1_CLEAN",
+    "vis_formal_f01_s2_d2_p2_CLEAN",
+    "vis_formal_f01_s2_d3_p0_CLEAN",
+    "vis_formal_f01_s2_d3_p1_CLEAN",
+    "vis_formal_f01_s2_d3_p2_CLEAN",
+    "vis_formal_f02_s0_d1_p0_CLEAN",
+    "vis_formal_f02_s0_d1_p1_CLEAN",
+    "vis_formal_f02_s0_d1_p2_CLEAN",
+    "vis_formal_f02_s0_d2_p0_CLEAN",
+    "vis_formal_f02_s0_d2_p1_CLEAN",
+    "vis_formal_f02_s0_d2_p2_CLEAN",
+    "vis_formal_f02_s0_d3_p0_CLEAN",
+    "vis_formal_f02_s0_d3_p1_CLEAN",
+    "vis_formal_f02_s0_d3_p2_CLEAN",
+    "vis_formal_f02_s1_d1_p0_CLEAN",
+    "vis_formal_f02_s1_d1_p1_CLEAN",
+    "vis_formal_f02_s1_d1_p2_CLEAN",
+    "vis_formal_f02_s1_d2_p0_CLEAN",
+    "vis_formal_f02_s1_d2_p1_CLEAN",
+    "vis_formal_f02_s1_d2_p2_CLEAN",
+    "vis_formal_f02_s1_d3_p0_CLEAN",
+    "vis_formal_f02_s1_d3_p1_CLEAN",
+    "vis_formal_f02_s1_d3_p2_CLEAN",
+    "vis_formal_f03_s1_d1_p0_CLEAN",
+    "vis_formal_f03_s1_d1_p1_CLEAN",
+    "vis_formal_f03_s1_d1_p2_CLEAN",
+    "vis_formal_f03_s1_d2_p0_CLEAN",
+    "vis_formal_f03_s1_d2_p1_CLEAN",
+    "vis_formal_f03_s1_d2_p2_CLEAN",
+    "vis_formal_f03_s1_d3_p0_CLEAN",
+    "vis_formal_f03_s1_d3_p1_CLEAN",
+    "vis_formal_f03_s1_d3_p2_CLEAN",
+    "vis_formal_f03_s3_d1_p0_CLEAN",
+    "vis_formal_f03_s3_d1_p1_CLEAN",
+    "vis_formal_f03_s3_d1_p2_CLEAN",
+    "vis_formal_f03_s3_d2_p0_CLEAN",
+    "vis_formal_f03_s3_d2_p1_CLEAN",
+    "vis_formal_f03_s3_d2_p2_CLEAN",
+    "vis_formal_f03_s3_d3_p0_CLEAN",
+    "vis_formal_f03_s3_d3_p1_CLEAN",
+    "vis_formal_f03_s3_d3_p2_CLEAN",
+    "vis_formal_f04_s0_d1_p0_CLEAN",
+    "vis_formal_f04_s0_d1_p1_CLEAN",
+    "vis_formal_f04_s0_d1_p2_CLEAN",
+    "vis_formal_f04_s0_d2_p0_CLEAN",
+    "vis_formal_f04_s0_d2_p1_CLEAN",
+    "vis_formal_f04_s0_d2_p2_CLEAN",
+    "vis_formal_f04_s0_d3_p0_CLEAN",
+    "vis_formal_f04_s0_d3_p1_CLEAN",
+    "vis_formal_f04_s0_d3_p2_CLEAN",
+    "vis_formal_f04_s1_d1_p0_CLEAN",
+    "vis_formal_f04_s1_d1_p1_CLEAN",
+    "vis_formal_f04_s1_d1_p2_CLEAN",
+    "vis_formal_f04_s1_d2_p0_CLEAN",
+    "vis_formal_f04_s1_d2_p1_CLEAN",
+    "vis_formal_f04_s1_d2_p2_CLEAN",
+    "vis_formal_f04_s1_d3_p0_CLEAN",
+    "vis_formal_f04_s1_d3_p1_CLEAN",
+    "vis_formal_f04_s1_d3_p2_CLEAN",
+    "vis_formal_f05_s0_d1_p0_CLEAN",
+    "vis_formal_f05_s0_d1_p1_CLEAN",
+    "vis_formal_f05_s0_d1_p2_CLEAN",
+    "vis_formal_f05_s0_d2_p0_CLEAN",
+    "vis_formal_f05_s0_d2_p1_CLEAN",
+    "vis_formal_f05_s0_d2_p2_CLEAN",
+    "vis_formal_f05_s0_d3_p0_CLEAN",
+    "vis_formal_f05_s0_d3_p1_CLEAN",
+    "vis_formal_f05_s0_d3_p2_CLEAN",
+    "vis_formal_f05_s4_d1_p0_CLEAN",
+    "vis_formal_f05_s4_d1_p1_CLEAN",
+    "vis_formal_f05_s4_d1_p2_CLEAN",
+    "vis_formal_f05_s4_d2_p0_CLEAN",
+    "vis_formal_f05_s4_d2_p1_CLEAN",
+    "vis_formal_f05_s4_d2_p2_CLEAN",
+    "vis_formal_f05_s4_d3_p0_CLEAN",
+    "vis_formal_f05_s4_d3_p1_CLEAN",
+    "vis_formal_f05_s4_d3_p2_CLEAN",
+    "vis_formal_f06_s0_d1_p0_CLEAN",
+    "vis_formal_f06_s0_d1_p1_CLEAN",
+    "vis_formal_f06_s0_d1_p2_CLEAN",
+    "vis_formal_f06_s0_d2_p0_CLEAN",
+    "vis_formal_f06_s0_d2_p1_CLEAN",
+    "vis_formal_f06_s0_d2_p2_CLEAN",
+    "vis_formal_f06_s0_d3_p0_CLEAN",
+    "vis_formal_f06_s0_d3_p1_CLEAN",
+    "vis_formal_f06_s0_d3_p2_CLEAN",
+    "vis_formal_f06_s1_d1_p0_CLEAN",
+    "vis_formal_f06_s1_d1_p1_CLEAN",
+    "vis_formal_f06_s1_d1_p2_CLEAN",
+    "vis_formal_f06_s1_d2_p0_CLEAN",
+    "vis_formal_f06_s1_d2_p1_CLEAN",
+    "vis_formal_f06_s1_d2_p2_CLEAN",
+    "vis_formal_f06_s1_d3_p0_CLEAN",
+    "vis_formal_f06_s1_d3_p1_CLEAN",
+    "vis_formal_f06_s1_d3_p2_CLEAN",
+    "vis_formal_f07_s0_d1_p0_CLEAN",
+    "vis_formal_f07_s0_d1_p1_CLEAN",
+    "vis_formal_f07_s0_d1_p2_CLEAN",
+    "vis_formal_f07_s0_d2_p0_CLEAN",
+    "vis_formal_f07_s0_d2_p1_CLEAN",
+    "vis_formal_f07_s0_d2_p2_CLEAN",
+    "vis_formal_f07_s0_d3_p0_CLEAN",
+    "vis_formal_f07_s0_d3_p1_CLEAN",
+    "vis_formal_f07_s0_d3_p2_CLEAN",
+    "vis_formal_f07_s1_d1_p0_CLEAN",
+    "vis_formal_f07_s1_d1_p1_CLEAN",
+    "vis_formal_f07_s1_d1_p2_CLEAN",
+    "vis_formal_f07_s1_d2_p0_CLEAN",
+    "vis_formal_f07_s1_d2_p1_CLEAN",
+    "vis_formal_f07_s1_d2_p2_CLEAN",
+    "vis_formal_f07_s1_d3_p0_CLEAN",
+    "vis_formal_f07_s1_d3_p1_CLEAN",
+    "vis_formal_f07_s1_d3_p2_CLEAN",
+    "vis_formal_f08_s0_d1_p0_CLEAN",
+    "vis_formal_f08_s0_d1_p1_CLEAN",
+    "vis_formal_f08_s0_d1_p2_CLEAN",
+    "vis_formal_f08_s0_d2_p0_CLEAN",
+    "vis_formal_f08_s0_d2_p1_CLEAN",
+    "vis_formal_f08_s0_d2_p2_CLEAN",
+    "vis_formal_f08_s0_d3_p0_CLEAN",
+    "vis_formal_f08_s0_d3_p1_CLEAN",
+    "vis_formal_f08_s0_d3_p2_CLEAN",
+    "vis_formal_f08_s2_d1_p0_CLEAN",
+    "vis_formal_f08_s2_d1_p1_CLEAN",
+    "vis_formal_f08_s2_d1_p2_CLEAN",
+    "vis_formal_f08_s2_d2_p0_CLEAN",
+    "vis_formal_f08_s2_d2_p1_CLEAN",
+    "vis_formal_f08_s2_d2_p2_CLEAN",
+    "vis_formal_f08_s2_d3_p0_CLEAN",
+    "vis_formal_f08_s2_d3_p1_CLEAN",
+    "vis_formal_f08_s2_d3_p2_CLEAN",
+    "vis_formal_f09_s0_d1_p0_CLEAN",
+    "vis_formal_f09_s0_d1_p1_CLEAN",
+    "vis_formal_f09_s0_d1_p2_CLEAN",
+    "vis_formal_f09_s0_d2_p0_CLEAN",
+    "vis_formal_f09_s0_d2_p1_CLEAN",
+    "vis_formal_f09_s0_d2_p2_CLEAN",
+    "vis_formal_f09_s0_d3_p0_CLEAN",
+    "vis_formal_f09_s0_d3_p1_CLEAN",
+    "vis_formal_f09_s0_d3_p2_CLEAN",
+    "vis_formal_f09_s1_d1_p0_CLEAN",
+    "vis_formal_f09_s1_d1_p1_CLEAN",
+    "vis_formal_f09_s1_d1_p2_CLEAN",
+    "vis_formal_f09_s1_d2_p0_CLEAN",
+    "vis_formal_f09_s1_d2_p1_CLEAN",
+    "vis_formal_f09_s1_d2_p2_CLEAN",
+    "vis_formal_f09_s1_d3_p0_CLEAN",
+    "vis_formal_f09_s1_d3_p1_CLEAN",
+    "vis_formal_f09_s1_d3_p2_CLEAN"
+  ],
+  "accepted_job_keys_sha256": "d968f8fb59dff6285b811fea1c61df89124588f46e42e00fb4e828eacb8b9b82",
+  "artifact_inventory_digest": "b81f430ab11a8acc3ec6b9eec8ac70eb4e4728bd1bfca90fa4b3358cee94c316",
+  "closure_pass": true,
+  "condition_root": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN",
+  "condition_root_identity": "1e123c69a66283c9df0e1d133617a1c0e4ad5cd57daf4918e14c266de709e288",
+  "contracts": {
+    "global_freeze": {
+      "actual_sha256": "e80413ff6b2348d1d18df06aa5948b0a63ecd605fb421c130bfa3236ea42f0e3",
+      "path": "/mnt/sdc/dty_user/openvla_project/tooling/normalized_contracts_v2/global_freeze.adapter.json",
+      "schema_version": "global_freeze.v1"
+    },
+    "required_artifact_schema": {
+      "actual_sha256": "754a55f019406440ac6e6038288743760183e02e5db487e0d25859edc10a8509",
+      "content_digest": "eea23edcdb421e1fac0d7d06eaed265c46ef30aa2aeb7c2a533ef8e94f6b02ae",
+      "extras": [],
+      "kind": "required_artifact_schema",
+      "path": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/ARTIFACT_SCHEMA.json",
+      "schema_version": "required_artifact_schema.v1"
+    },
+    "retry_policy": {
+      "actual_sha256": "b8df633635dd869b670224a0c4e27f35b73a54d394ff7c00c5544893a5facc05",
+      "content_digest": "b845c4aa4bfeb563b6d6c75bead71856ec1e6b9e73722ba23cf14b9250ec8b0f",
+      "extras": [],
+      "kind": "retry_policy",
+      "path": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/RETRY_POLICY.json",
+      "schema_version": "retry_policy.v1"
+    },
+    "runtime_lock": {
+      "actual_sha256": "b395fd0e08d7b972c6148c29849daef8e6c360e0ae867db1886e1ca5c4789f11",
+      "content_digest": "5512d9a0e9ff1e6ecacb251991df6d859c6f093d595a7aed8c2923d9f1fa3840",
+      "extras": [],
+      "kind": "runtime_lock",
+      "path": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/RUNTIME_LOCK.json",
+      "schema_version": "runtime_lock.v1"
+    },
+    "state_selection": {
+      "actual_sha256": "d265525dccf34cf5b79fe9ff0baafb18dbf67ef88f048bacf1149c916665a6da",
+      "path": "/mnt/sdc/dty_user/openvla_project/tooling/normalized_contracts_v2/state_selection.adapter.json",
+      "schema_version": "state_selection.v1"
+    }
+  },
+  "expected_parents": 54,
+  "expected_rows": 162,
+  "global_freeze_sha256": "e80413ff6b2348d1d18df06aa5948b0a63ecd605fb421c130bfa3236ea42f0e3",
+  "manifest": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/FORMAL_CLEAN_MANIFEST_ENRICHED_V2.jsonl",
+  "manifest_parse_problem_count": 0,
+  "manifest_sha256": "b94f21b9b38750a3c46050909395f329259732a21c1a6cb48694209a73e57a55",
+  "parent_count": 54,
+  "problems": [],
+  "provenance": {
+    "bridge_sha256": [
+      "cf125d2393f2ca0a5ec1b62610b22b8d5c17733a647b9824edd2aab19995daa6"
+    ],
+    "global_freeze_sha256": [
+      "bd3a4e57a637d12f03004ff9751a73f16335e1740065fb067668aa3e3c3c0fbf"
+    ],
+    "manifest_sha256": [
+      "b94f21b9b38750a3c46050909395f329259732a21c1a6cb48694209a73e57a55"
+    ],
+    "metric_schema_sha256": [
+      "313532df1a877898f616363ca9d6d192598b9615889fc5f5f3a564a1a35cfb83"
+    ],
+    "protocol_sha256": [
+      "7998c9f425b26f3b9638d3944a7f517c57cbee3e684c5f7d32b033444e8bea4c"
+    ],
+    "runner_sha256": [
+      "a7bd8601a32fe835ced3af681d036861ba246c19ad2edcfea5797749890e0928"
+    ],
+    "state_selection_sha256": [
+      "457aadd2c93192418f0558249423889bb8def9e27198699dbaf39820187b5719"
+    ],
+    "worker_sha256": [
+      "a7bd8601a32fe835ced3af681d036861ba246c19ad2edcfea5797749890e0928"
+    ]
+  },
+  "required_artifact_schema_sha256": "754a55f019406440ac6e6038288743760183e02e5db487e0d25859edc10a8509",
+  "retry_policy_sha256": "b8df633635dd869b670224a0c4e27f35b73a54d394ff7c00c5544893a5facc05",
+  "row_classes": {
+    "complete": 162
+  },
+  "row_count": 162,
+  "rows": [
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s0_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_0/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "01",
+        "9",
+        "0",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s0_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_0/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "01",
+        "9",
+        "0",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s2_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_2/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "01",
+        "9",
+        "2",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s0_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_0/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "02",
+        "0",
+        "0",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s1_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_1/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "02",
+        "0",
+        "1",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s1_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_1/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "03",
+        "1",
+        "1",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s3_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_3/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "03",
+        "1",
+        "3",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s0_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_0/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "04",
+        "2",
+        "0",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s1_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_1/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "04",
+        "2",
+        "1",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s0_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_0/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "05",
+        "3",
+        "0",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s0_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_0/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "05",
+        "3",
+        "0",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s4_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_4/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "05",
+        "3",
+        "4",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s0_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_0/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "06",
+        "4",
+        "0",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s1_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_1/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "06",
+        "4",
+        "1",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s0_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_0/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "07",
+        "5",
+        "0",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s1_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_1/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "07",
+        "5",
+        "1",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s0_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_0/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "08",
+        "6",
+        "0",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s2_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_2/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "08",
+        "6",
+        "2",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s0_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_0/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "09",
+        "7",
+        "0",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s0_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_0/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "09",
+        "7",
+        "0",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s1_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_1/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "09",
+        "7",
+        "1",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s0_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_0/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "01",
+        "9",
+        "0",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s2_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_2/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "01",
+        "9",
+        "2",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s0_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_0/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "02",
+        "0",
+        "0",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s1_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_1/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "02",
+        "0",
+        "1",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s1_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_1/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "03",
+        "1",
+        "1",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s1_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_1/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "03",
+        "1",
+        "1",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s3_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_3/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "03",
+        "1",
+        "3",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s0_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_0/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "04",
+        "2",
+        "0",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s1_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_1/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "04",
+        "2",
+        "1",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s0_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_0/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "05",
+        "3",
+        "0",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s4_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_4/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "05",
+        "3",
+        "4",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s0_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_0/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "06",
+        "4",
+        "0",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s1_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_1/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "06",
+        "4",
+        "1",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s0_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_0/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "07",
+        "5",
+        "0",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s0_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_0/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "07",
+        "5",
+        "0",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s1_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_1/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "07",
+        "5",
+        "1",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s0_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_0/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "08",
+        "6",
+        "0",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s2_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_2/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "08",
+        "6",
+        "2",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s0_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_0/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "09",
+        "7",
+        "0",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s1_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_1/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "09",
+        "7",
+        "1",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s0_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_0/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "01",
+        "9",
+        "0",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s2_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_2/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "01",
+        "9",
+        "2",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s0_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_0/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "02",
+        "0",
+        "0",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s0_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_0/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "02",
+        "0",
+        "0",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s1_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_1/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "02",
+        "0",
+        "1",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s1_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_1/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "03",
+        "1",
+        "1",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s3_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_3/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "03",
+        "1",
+        "3",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s0_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_0/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "04",
+        "2",
+        "0",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s1_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_1/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "04",
+        "2",
+        "1",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s0_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_0/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "05",
+        "3",
+        "0",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s4_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_4/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "05",
+        "3",
+        "4",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s0_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_0/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "06",
+        "4",
+        "0",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s0_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_0/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "06",
+        "4",
+        "0",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s1_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_1/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "06",
+        "4",
+        "1",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s0_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_0/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "07",
+        "5",
+        "0",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s1_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_1/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "07",
+        "5",
+        "1",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s0_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_0/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "08",
+        "6",
+        "0",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s2_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_2/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "08",
+        "6",
+        "2",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s0_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_0/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "09",
+        "7",
+        "0",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s1_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_1/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "09",
+        "7",
+        "1",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s0_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_0/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "01",
+        "9",
+        "0",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s2_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_2/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "01",
+        "9",
+        "2",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s0_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_0/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "02",
+        "0",
+        "0",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s1_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_1/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "02",
+        "0",
+        "1",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s1_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_1/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "03",
+        "1",
+        "1",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s3_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_3/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "03",
+        "1",
+        "3",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s0_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_0/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "04",
+        "2",
+        "0",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s0_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_0/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "04",
+        "2",
+        "0",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s1_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_1/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "04",
+        "2",
+        "1",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s0_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_0/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "05",
+        "3",
+        "0",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s4_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_4/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "05",
+        "3",
+        "4",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s0_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_0/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "06",
+        "4",
+        "0",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s1_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_1/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "06",
+        "4",
+        "1",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s0_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_0/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "07",
+        "5",
+        "0",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s1_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_1/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "07",
+        "5",
+        "1",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s0_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_0/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "08",
+        "6",
+        "0",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s0_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_0/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "08",
+        "6",
+        "0",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s2_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_2/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "08",
+        "6",
+        "2",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s0_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_0/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "09",
+        "7",
+        "0",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s1_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_1/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "09",
+        "7",
+        "1",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s0_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_0/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "01",
+        "9",
+        "0",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s2_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_2/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "01",
+        "9",
+        "2",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s0_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_0/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "02",
+        "0",
+        "0",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s1_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_1/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "02",
+        "0",
+        "1",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s1_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_1/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "02",
+        "0",
+        "1",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s1_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_1/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "03",
+        "1",
+        "1",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s3_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_3/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "03",
+        "1",
+        "3",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s0_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_0/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "04",
+        "2",
+        "0",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s1_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_1/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "04",
+        "2",
+        "1",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s0_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_0/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "05",
+        "3",
+        "0",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s4_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_4/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "05",
+        "3",
+        "4",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s0_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_0/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "06",
+        "4",
+        "0",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s1_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_1/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "06",
+        "4",
+        "1",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s1_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_1/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "06",
+        "4",
+        "1",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s0_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_0/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "07",
+        "5",
+        "0",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s1_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_1/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "07",
+        "5",
+        "1",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s0_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_0/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "08",
+        "6",
+        "0",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s2_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_2/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "08",
+        "6",
+        "2",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s0_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_0/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "09",
+        "7",
+        "0",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s1_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_1/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "09",
+        "7",
+        "1",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s0_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_0/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "01",
+        "9",
+        "0",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s2_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_2/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "01",
+        "9",
+        "2",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s0_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_0/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "02",
+        "0",
+        "0",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s1_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_1/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "02",
+        "0",
+        "1",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s1_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_1/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "03",
+        "1",
+        "1",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s3_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_3/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "03",
+        "1",
+        "3",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s0_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_0/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "04",
+        "2",
+        "0",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s1_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_1/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "04",
+        "2",
+        "1",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s1_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_1/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "04",
+        "2",
+        "1",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s0_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_0/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "05",
+        "3",
+        "0",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s4_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_4/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "05",
+        "3",
+        "4",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s0_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_0/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "06",
+        "4",
+        "0",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s1_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_1/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "06",
+        "4",
+        "1",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s0_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_0/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "07",
+        "5",
+        "0",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s1_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_1/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "07",
+        "5",
+        "1",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s0_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_0/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "08",
+        "6",
+        "0",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s2_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_2/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "08",
+        "6",
+        "2",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s2_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_2/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "08",
+        "6",
+        "2",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s0_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_0/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "09",
+        "7",
+        "0",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s1_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_1/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "09",
+        "7",
+        "1",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s0_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_0/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "01",
+        "9",
+        "0",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s2_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_2/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "01",
+        "9",
+        "2",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s2_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_2/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "01",
+        "9",
+        "2",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s0_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_0/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "02",
+        "0",
+        "0",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s1_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_1/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "02",
+        "0",
+        "1",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s1_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_1/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "03",
+        "1",
+        "1",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s3_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_3/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "03",
+        "1",
+        "3",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s0_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_0/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "04",
+        "2",
+        "0",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s1_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_1/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "04",
+        "2",
+        "1",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s0_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_0/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "05",
+        "3",
+        "0",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s4_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_4/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "05",
+        "3",
+        "4",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s4_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_4/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "05",
+        "3",
+        "4",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s0_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_0/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "06",
+        "4",
+        "0",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s1_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_1/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "06",
+        "4",
+        "1",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s0_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_0/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "07",
+        "5",
+        "0",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s1_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_1/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "07",
+        "5",
+        "1",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s0_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_0/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "08",
+        "6",
+        "0",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s2_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_2/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "08",
+        "6",
+        "2",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s0_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_0/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "09",
+        "7",
+        "0",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s1_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_1/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "09",
+        "7",
+        "1",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s1_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_1/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "09",
+        "7",
+        "1",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s0_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_0/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "01",
+        "9",
+        "0",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f01_s2_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_01/state_2/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "01",
+        "9",
+        "2",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s0_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_0/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "02",
+        "0",
+        "0",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f02_s1_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_02/state_1/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "02",
+        "0",
+        "1",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s1_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_1/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "03",
+        "1",
+        "1",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s3_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_3/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "03",
+        "1",
+        "3",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f03_s3_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_03/state_3/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "03",
+        "1",
+        "3",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s0_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_0/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "04",
+        "2",
+        "0",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f04_s1_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_04/state_1/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "04",
+        "2",
+        "1",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s0_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_0/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "05",
+        "3",
+        "0",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f05_s4_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_05/state_4/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "05",
+        "3",
+        "4",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s0_d2_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_0/det_seed_2/pert_seed_0",
+      "parent_key": [
+        "06",
+        "4",
+        "0",
+        "2"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f06_s1_d1_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_06/state_1/det_seed_1/pert_seed_2",
+      "parent_key": [
+        "06",
+        "4",
+        "1",
+        "1"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s0_d1_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_0/det_seed_1/pert_seed_1",
+      "parent_key": [
+        "07",
+        "5",
+        "0",
+        "1"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s1_d1_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_1/det_seed_1/pert_seed_0",
+      "parent_key": [
+        "07",
+        "5",
+        "1",
+        "1"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f07_s1_d3_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_07/state_1/det_seed_3/pert_seed_2",
+      "parent_key": [
+        "07",
+        "5",
+        "1",
+        "3"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s0_d3_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_0/det_seed_3/pert_seed_1",
+      "parent_key": [
+        "08",
+        "6",
+        "0",
+        "3"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f08_s2_d3_p0_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_08/state_2/det_seed_3/pert_seed_0",
+      "parent_key": [
+        "08",
+        "6",
+        "2",
+        "3"
+      ],
+      "replicate": "0",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s0_d2_p2_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_0/det_seed_2/pert_seed_2",
+      "parent_key": [
+        "09",
+        "7",
+        "0",
+        "2"
+      ],
+      "replicate": "2",
+      "retry_attempt": null
+    },
+    {
+      "class": "complete",
+      "job_key": "vis_formal_f09_s1_d2_p1_CLEAN",
+      "output_dir": "/mnt/sdc/dty_user/openvla_project/bubble_snapshot_v2_closure_pack/condition_root_enriched/CLEAN/fold_09/state_1/det_seed_2/pert_seed_1",
+      "parent_key": [
+        "09",
+        "7",
+        "1",
+        "2"
+      ],
+      "replicate": "1",
+      "retry_attempt": null
+    }
+  ],
+  "runtime_lock_sha256": "b395fd0e08d7b972c6148c29849daef8e6c360e0ae867db1886e1ca5c4789f11",
+  "state_selection_sha256": "d265525dccf34cf5b79fe9ff0baafb18dbf67ef88f048bacf1149c916665a6da",
+  "validator_schema_version": "formal_clean_closure_validator.v2",
+  "validator_source_sha256": "c25dc4e0eb8ba69b6fe28a764ac07f5e9d7210c9d5dad4ef3cd749b385b8c8c4"
+}

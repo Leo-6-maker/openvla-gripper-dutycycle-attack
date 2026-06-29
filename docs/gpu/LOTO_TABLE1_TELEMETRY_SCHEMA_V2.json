@@ -1,0 +1,54 @@
+{
+  "gate": "LOTO_TABLE1_TELEMETRY_SCHEMA_V2",
+  "supersedes": "V1 (implicit from bridge output, never formally versioned)",
+  "created_utc": "2026-06-29T00:00:00Z",
+  "binds_to": {
+    "bridge_sha256": "4ef2a919ee650cf35b35eaa5b9c2152c0d7d18f43710c246ce14dd1c8a83e468",
+    "bridge_path": "scripts/stageb/run_v2_vis_sc5_mlp_bridge.py"
+  },
+  "action_fields": {
+    "clean_action_7d": {
+      "description": "Counterfactual clean policy action. Same-state forward pass BEFORE any attack perturbation. Raw model output in normalized LIBERO action space [-1, 1].",
+      "dimensionality": 7,
+      "format": "JSON array of 7 float32 values",
+      "space": "normalized policy space"
+    },
+    "clean_env_action_7d": {
+      "description": "Counterfactual clean execution action. clean_action_7d passed through standard postprocessing (unnormalize, clip, discretize, gripper convert). Same pipeline as attack env_action_7d, without attack-specific modifications.",
+      "dimensionality": 7,
+      "format": "JSON array of 7 float32 values",
+      "space": "execution space (unnormalized, clipped, discretized)"
+    },
+    "raw_action_7d": {
+      "description": "Attack policy action. Model output after perturbation applied, before any postprocessing.",
+      "dimensionality": 7,
+      "format": "JSON array of 7 float32 values",
+      "space": "normalized policy space"
+    },
+    "env_action_7d": {
+      "description": "Final attack execution action sent to MuJoCo environment. After unnormalization, clipping, discretization, gripper conversion, and optional arm_lock.",
+      "dimensionality": 7,
+      "format": "JSON array of 7 float32 values",
+      "space": "execution space (unnormalized, clipped, discretized)"
+    }
+  },
+  "execution_metadata": {
+    "postprocessing_pipeline": [
+      "unnormalize: 0.5*(action+1)*(q99-q01)+q01",
+      "clip to action bounds",
+      "discretize via bin_centers",
+      "gripper: convert continuous to binary via postprocess_openvla_action_for_libero"
+    ],
+    "arm_lock": {
+      "description": "Optional. When enabled, attack_action[0:6] = clean_action_np[0:6].copy(). env_action_7d reflects post-lock state.",
+      "mode": "disabled (arm_lock=False for TRUE_T10 baseline)"
+    }
+  },
+  "nad_computation": {
+    "policy_nad": "compare(raw_action_7d, clean_action_7d) — both in normalized policy space",
+    "execution_nad": "compare(env_action_7d, clean_env_action_7d) — both in execution space",
+    "arm_dims": [0, 1, 2, 3, 4, 5],
+    "gripper_dim": 6,
+    "note": "ARM NAD is macro-average over 6 arm dimensions. Gripper NAD is reported separately. Never average all 7 dimensions together."
+  }
+}
