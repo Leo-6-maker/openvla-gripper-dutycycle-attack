@@ -45,6 +45,31 @@ Required copied files:
 - `WORKER_VALID_ROW_EQUIVALENCE_REPORT.json`
 - `GPU2_PROJECT_PROCESS_AUDIT.json`
 
+`WORKER_RUNTIME_PROVENANCE.json` must have one physical-attempt row per observed attempt and exactly one accepted row per canonical manifest `job_key`. Each row must include:
+
+- `job_key`
+- `attempt`
+- `accepted`
+- `pid`
+- `start_time`
+- `actual_loaded_worker_sha`
+- `bridge_sha`
+- `manifest_sha`
+- `telemetry_schema_sha`
+- `provenance_source`
+- `provenance_evidence_sha256`
+
+Allowed `provenance_source` values are:
+
+- `immutable_deployment_copy`
+- `container_image_digest`
+- `launch_bundle_checksum`
+- `episode_recorded_worker_sha`
+- `verified_pyc_source_pairing`
+- `process_specific_deployment_tree`
+
+`WORKER_VALID_ROW_EQUIVALENCE_REPORT.json` must bind old/new worker SHA, manifest SHA, bridge SHA, harness SHA, test-vector inventory SHA, tested/expected valid-row counts, zero diff counts for condition resolution, attack activation, env action, arm lock, termination, retry behavior, and `overall_pass=true`.
+
 Required snapshot control files:
 
 - `FILES.json`

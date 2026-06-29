@@ -696,35 +696,128 @@ class SnapshotAndRegistryTests(unittest.TestCase):
 class WorkerRuntimeBindingTests(unittest.TestCase):
     SPEC = "4" * 64
     DISK = "e" * 64
+    MANIFEST = "c" * 64
+    BRIDGE = "b" * 64
+    TELEMETRY = "d" * 64
+    EVIDENCE = "f" * 64
 
-    def row(self, job_key: str, sha: str) -> dict:
-        return {
+    def manifest(self, *keys: str) -> list[dict]:
+        return [{"job_key": k} for k in keys]
+
+    def equivalence(self, **overrides) -> dict:
+        data = {
+            "old_worker_sha256": self.SPEC,
+            "new_worker_sha256": self.DISK,
+            "manifest_sha256": self.MANIFEST,
+            "bridge_sha256": self.BRIDGE,
+            "test_harness_sha256": "1" * 64,
+            "test_vector_inventory_sha256": "2" * 64,
+            "tested_valid_row_count": 1,
+            "expected_valid_row_count": 1,
+            "condition_resolution_diff_count": 0,
+            "attack_activation_diff_count": 0,
+            "env_action_diff_count": 0,
+            "arm_lock_diff_count": 0,
+            "termination_diff_count": 0,
+            "retry_behavior_diff_count": 0,
+            "overall_pass": True,
+        }
+        data.update(overrides)
+        return data
+
+    def eval(self, rows: list[dict], *, manifest=None, equivalence=None, expected_jobs=1):
+        return evaluate_worker_binding(
+            rows,
+            spec_worker_sha=self.SPEC,
+            disk_worker_sha=self.DISK,
+            expected_jobs=expected_jobs,
+            expected_manifest_sha=self.MANIFEST,
+            expected_bridge_sha=self.BRIDGE,
+            expected_telemetry_schema_sha=self.TELEMETRY,
+            manifest_rows=manifest if manifest is not None else self.manifest("a"),
+            equivalence=equivalence,
+        )
+
+    def row(self, job_key: str, sha: str, *, attempt=0, accepted=True, **overrides) -> dict:
+        row = {
             "job_key": job_key,
-            "attempt": 0,
+            "attempt": attempt,
+            "accepted": accepted,
             "pid": 123,
             "start_time": "2026-06-29T00:00:00Z",
             "actual_loaded_worker_sha": sha,
-            "bridge_sha": "b" * 64,
-            "manifest_sha": "c" * 64,
-            "provenance_source": "episode_summary",
+            "bridge_sha": self.BRIDGE,
+            "manifest_sha": self.MANIFEST,
+            "telemetry_schema_sha": self.TELEMETRY,
+            "provenance_source": "immutable_deployment_copy",
+            "provenance_evidence_sha256": self.EVIDENCE,
         }
+        row.update(overrides)
+        return row
+
+    def assertProblem(self, result, name):
+        self.assertIn(name, {p["class"] for p in result["problems"]})
 
     def test_spec_bound_worker_is_case_a(self):
-        result = evaluate_worker_binding([self.row("a", self.SPEC)], spec_worker_sha=self.SPEC, disk_worker_sha=self.DISK, expected_jobs=1)
+        result = self.eval([self.row("a", self.SPEC)])
         self.assertEqual(result["worker_binding_status"], "CASE_A_SPEC_BOUND_WORKER")
 
     def test_disk_worker_without_equivalence_stays_p0_hold(self):
-        result = evaluate_worker_binding([self.row("a", self.DISK)], spec_worker_sha=self.SPEC, disk_worker_sha=self.DISK, expected_jobs=1)
+        result = self.eval([self.row("a", self.DISK)])
         self.assertEqual(result["worker_binding_status"], "RUNTIME_BINDING_P0_HOLD")
-        self.assertIn("disk_worker_without_valid_row_equivalence", {p["class"] for p in result["problems"]})
+        self.assertProblem(result, "disk_worker_without_valid_row_equivalence")
 
-    def test_disk_worker_with_equivalence_is_case_b_review(self):
-        result = evaluate_worker_binding([self.row("a", self.DISK)], spec_worker_sha=self.SPEC, disk_worker_sha=self.DISK, expected_jobs=1, equivalence={"valid_row_equivalence_pass": True})
+    def test_disk_worker_with_strict_equivalence_is_case_b_review(self):
+        result = self.eval([self.row("a", self.DISK)], equivalence=self.equivalence())
         self.assertEqual(result["worker_binding_status"], "CASE_B_POSTLAUNCH_RUNTIME_DEVIATION_REVIEW")
 
-    def test_mixed_workers_quarantine(self):
-        result = evaluate_worker_binding([self.row("a", self.SPEC), self.row("b", self.DISK)], spec_worker_sha=self.SPEC, disk_worker_sha=self.DISK, expected_jobs=2)
+    def test_bare_equivalence_boolean_rejected(self):
+        result = self.eval([self.row("a", self.DISK)], equivalence={"execution_equivalent": True})
+        self.assertEqual(result["worker_binding_status"], "RUNTIME_BINDING_P0_HOLD")
+        self.assertProblem(result, "equivalence_report_missing_field")
+
+    def test_equivalence_wrong_worker_sha_rejected(self):
+        result = self.eval([self.row("a", self.DISK)], equivalence=self.equivalence(old_worker_sha256="9" * 64))
+        self.assertEqual(result["worker_binding_status"], "RUNTIME_BINDING_P0_HOLD")
+        self.assertProblem(result, "equivalence_report_sha_mismatch")
+
+    def test_missing_canonical_job_rejected_even_with_same_count(self):
+        rows = [self.row("a", self.SPEC), self.row("a", self.SPEC, attempt=1)]
+        result = self.eval(rows, manifest=self.manifest("a", "b"), expected_jobs=2)
+        self.assertProblem(result, "duplicate_canonical_accepted_job")
+        self.assertProblem(result, "canonical_job_set_mismatch")
+
+    def test_wrong_manifest_or_bridge_sha_rejected(self):
+        result = self.eval([self.row("a", self.SPEC, bridge_sha="9" * 64)])
+        self.assertProblem(result, "runtime_sha_mismatch")
+
+    def test_untrusted_provenance_source_rejected(self):
+        result = self.eval([self.row("a", self.SPEC, provenance_source="episode_summary")])
+        self.assertProblem(result, "untrusted_provenance_source")
+
+    def test_mixed_workers_quarantine_even_with_missing_field(self):
+        bad = self.row("b", self.DISK)
+        bad.pop("pid")
+        result = self.eval([self.row("a", self.SPEC), bad], manifest=self.manifest("a", "b"), expected_jobs=2)
         self.assertEqual(result["worker_binding_status"], "VIS_RUNTIME_QUARANTINE_HOLD")
+        self.assertProblem(result, "mixed_worker_versions")
+
+    def test_spec_equals_disk_rejected(self):
+        result = evaluate_worker_binding(
+            [self.row("a", self.SPEC)],
+            spec_worker_sha=self.SPEC,
+            disk_worker_sha=self.SPEC,
+            expected_jobs=1,
+            expected_manifest_sha=self.MANIFEST,
+            expected_bridge_sha=self.BRIDGE,
+            expected_telemetry_schema_sha=self.TELEMETRY,
+            manifest_rows=self.manifest("a"),
+        )
+        self.assertProblem(result, "spec_worker_equals_disk_worker")
+
+    def test_invalid_expected_jobs_rejected(self):
+        result = self.eval([], manifest=[], expected_jobs=0)
+        self.assertProblem(result, "invalid_expected_jobs")
 
 
 if __name__ == "__main__":
