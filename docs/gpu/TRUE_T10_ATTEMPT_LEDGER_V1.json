@@ -1,0 +1,93 @@
+{
+  "gate": "TRUE_T10_ATTEMPT_LEDGER_V1",
+  "created_utc": "2026-06-29T13:15:00Z",
+  "snapshot_episode_count": 100,
+  "total_canonical_job_keys": 162,
+  "immutable_rules": {
+    "oom_attempts_total_is_monotonic": true,
+    "wave1_attempts_are_REJECTED_INFRASTRUCTURE": true,
+    "no_silent_deletion": true,
+    "no_attempt_merging_across_workers": true,
+    "failed_attempts_stay_in_ledger": true
+  },
+
+  "oom_ledger": {
+    "oom_attempts_total": 16,
+    "oom_attempts_original_gpu0": 13,
+    "oom_attempts_gpu3_retry": 3,
+    "oom_retries_completed": 7,
+    "oom_retries_pending": 6,
+    "oom_canonical_jobs_lost": 0,
+    "oom_root_cause": "CUDA OOM during VIS attack phase (KV-cache accumulation near step 400, multiple bridges competing on shared GPU)",
+    "note": "Original 13 OOM on GPU0. 7 successfully retried on GPU3. 3 new OOM on GPU3 retry (fold_06, fold_09 — GPU3 memory 63.9/80GB under load). 6 total pending retry."
+  },
+
+  "wave1_rejected_attempts": {
+    "status": "REJECTED_INFRASTRUCTURE_ATTEMPT",
+    "reason": "Schema mismatch — worker e21f7fbe expects canonical manifest format (condition_id, task_id, fold) but Wave 1 manifests (MANIFEST_gpu*_even.jsonl / MANIFEST_gpu*_odd.jsonl) were in legacy Codex format with gpu field and without condition_id. All Wave 1 bridge runs failed with MISSING_CONDITION exit=1.",
+    "manifest_format": "legacy Codex (pre-canonical migration)",
+    "worker_sha_loaded": "e21f7fbe7f78003ac2e626bfe9ddb047c194022727bb4d9bc19b9ce0876e337c",
+    "not_in_canonical_162_outcomes": true,
+    "preserved_in_ledger": true,
+    "wave1_attempts": [
+      {"source": "worker_gpu0_even.log", "manifest": "MANIFEST_gpu0_even.jsonl", "total_jobs": 14, "first_job": "f01_s0_d1_p0_CLEAN", "first_result": "FAILED exit=1 (701s)"},
+      {"source": "worker_gpu0_odd.log", "manifest": "MANIFEST_gpu0_odd.jsonl", "total_jobs": 13, "attempts": ["[1/13] FAILED (387s)", "[2/13] FAILED (314s)", "[3/13] FAILED (273s)", "[4/13] FAILED (267s)", "[5/13] FAILED (312s)", "[6/13] FAILED (...)"], "at_least_6_failed": true},
+      {"source": "worker_gpu6_even.log", "manifest": "MANIFEST_gpu6_even.jsonl", "total_jobs": 14, "first_result": "FAILED"},
+      {"source": "worker_gpu6_odd.log", "manifest": "MANIFEST_gpu6_odd.jsonl", "total_jobs": 13, "attempts": ["[1/13] FAILED (459s)", "[2/13] FAILED (320s)", "[3/13] FAILED (...)"], "at_least_3_failed": true},
+      {"source": "worker_gpu7_even.log", "manifest": "MANIFEST_gpu7_even.jsonl", "total_jobs": 14, "attempts": ["[1/14] FAILED (77s)", "[2/14] FAILED (81s)", "[3/14] FAILED (523s)", "[4/14] FAILED (...)"], "at_least_4_failed": true},
+      {"source": "worker_gpu7_odd.log", "manifest": "MANIFEST_gpu7_odd.jsonl", "total_jobs": 13, "attempts": ["[1/13] FAILED (78s)", "[2/13] FAILED (78s)", "[3/13] FAILED (297s)", "[4/13] FAILED (...)"], "at_least_4_failed": true},
+      {"source": "worker_gpu1_even.log", "manifest": "MANIFEST_gpu1_even.jsonl", "total_jobs": 27, "result": "aborted after first job (no COMPLETE/FAILED logged)"},
+      {"source": "worker_gpu4_even.log", "manifest": "MANIFEST_gpu4_even.jsonl", "total_jobs": 27, "result": "aborted after first job"},
+      {"source": "worker_gpu5_even.log", "manifest": "MANIFEST_gpu5_even.jsonl", "total_jobs": 27, "result": "aborted after first job"},
+      {"source": "worker_gpu1_odd.log", "manifest": "MANIFEST_gpu1_odd.jsonl", "total_jobs": 27, "result": "aborted after first job"},
+      {"source": "worker_gpu4_odd.log", "manifest": "MANIFEST_gpu4_odd.jsonl", "total_jobs": 27, "result": "aborted after first job"},
+      {"source": "worker_gpu5_odd.log", "manifest": "MANIFEST_gpu5_odd.jsonl", "total_jobs": 27, "result": "aborted after first job"}
+    ],
+    "total_estimated_attempts": 54,
+    "confirmed_failed": 20,
+    "aborted_early": 34,
+    "total_cpu_seconds_wasted": "~20000s (approx 5.6 hours)"
+  },
+
+  "wave2_canonical_attempts": {
+    "status": "ACTIVE_RUNNING",
+    "launch_time_utc": "2026-06-29T10:16:35Z",
+    "manifest_format": "canonical (condition_id, task_id, fold, state_id, detector_seed, perturbation_seed)",
+    "worker_sha": "e21f7fbe7f78003ac2e626bfe9ddb047c194022727bb4d9bc19b9ce0876e337c",
+    "bridge_sha": "4ef2a919ee650cf35b35eaa5b9c2152c0d7d18f43710c246ce14dd1c8a83e468",
+    "manifest_sha": "64e20b8ff248fc078d705532aab6d4ec5ea186c143c8b6137fa90d41bdf7a6e4",
+    "original_gpu_assignment": {
+      "gpu0": 18, "gpu1": 36, "gpu4": 36, "gpu5": 36, "gpu6": 18, "gpu7": 18
+    },
+    "gpu0_migration": {
+      "reason": "CUDA OOM (13 failures on GPU0)",
+      "migrated_to": "gpu3",
+      "jobs_migrated": 14,
+      "migration_time_utc": "2026-06-29T12:17:00Z"
+    },
+    "completed_at_snapshot": 100,
+    "oom_during_wave2": 16,
+    "active_workers": 10,
+    "active_bridges": 10
+  },
+
+  "current_oom_pending_dirs": [
+    "fold_01/state_0/det_seed_2/pert_seed_1",
+    "fold_01/state_0/det_seed_2/pert_seed_0",
+    "fold_02/state_0/det_seed_2/pert_seed_0",
+    "fold_06/state_1/det_seed_2/pert_seed_1",
+    "fold_06/state_0/det_seed_2/pert_seed_1",
+    "fold_09/state_1/det_seed_2/pert_seed_0"
+  ],
+
+  "retry_state": {
+    "gpu": 3,
+    "workers": 3,
+    "total_retry_jobs": 27,
+    "completed": 13,
+    "remaining": 14,
+    "new_ooms_during_retry": 3,
+    "gpu3_memory_at_snapshot": "63.9/80GB",
+    "risk": "GPU3 at 80% usage. 3 new OOMs on fold_06 and fold_09 suggest peak KV-cache still exceeds available memory for some episodes."
+  }
+}

@@ -1,0 +1,82 @@
+{
+  "gate": "GPU2_REQUALIFICATION_PACKAGE_V1",
+  "package_type": "INDEPENDENT_REQUALIFICATION_BUBBLE",
+  "created_utc": "2026-06-29T10:48:00Z",
+  "gpu_id": 2,
+  "gpu_model": "NVIDIA A800-SXM4-80GB",
+
+  "quarantine_history": {
+    "original_isolation_reason": "GPU2 was quaranined during TRUE_T10 launch preparation. The condition spec V2 includes gpu_denylist=[2] citing prior instability with OpenVLA-7B model loading on this GPU causing InternalError (CUDA/PTX miscompilation).",
+    "quarantine_date": "2026-06-28 (approx)",
+    "quarantine_trigger": "22 InternalError failures during CLEAN1500 collection on GPU2, with symptoms pointing to ptxas 10.1.243 miscompilation of XLA code. The ptxas version on the server is older than the required 11.1, causing intermittent incorrect results or invalid-address errors on GPU2's SM configuration.",
+    "symptoms_summary": "22 InternalError occurrences — XLA JIT compilation falling back from PTX to driver compilation. ptxas 10.1.243 is known to miscompile for A800 SM_80 architecture in edge cases. GPU2 may have a specific microarchitectural variant or thermal profile that triggers the miscompilation more frequently than other GPUs.",
+    "error_signature": "E external/local_xla/xla/stream_executor/gpu/asm_compiler.cc:115] *** WARNING *** You are using ptxas 10.1.243, which is older than 11.1. ptxas before 11.1 is known to miscompile XLA code, leading to incorrect results or invalid-address errors.",
+    "impact": "CLEAN1500 jobs on GPU2 would fail non-deterministically with InternalError, causing queue stalls and requiring manual retry. Jobs were redistributed to GPUs 3,4,5,6,7."
+  },
+
+  "internal_error_summary": {
+    "total_count": 22,
+    "error_type": "InternalError / CUDA_ERROR / XLA miscompilation",
+    "root_cause": "ptxas 10.1.243 < 11.1 requirement for A800 SM_80",
+    "affected_workload": "CLEAN1500 cross-suite clean collection (OpenVLA-7B inference)",
+    "non_deterministic": true,
+    "other_gpus_affected": false,
+    "note": "All other GPUs (0,1,3,4,5,6,7) also show the same ptxas warnings but do NOT produce InternalError. GPU2 may have a specific hardware or thermal characteristic that triggers the edge case."
+  },
+
+  "remediation_actions_taken": {
+    "primary_action": "GPU2 quarantined — removed from TRUE_T10 launch per gpu_denylist=[2] in condition spec",
+    "secondary_action": "GPU2 CLEAN1500 jobs redistributed to GPUs 3,4,5,6,7",
+    "no_driver_update": "ptxas update would require CUDA toolkit upgrade, which risks breaking the conda environment's prebuilt XLA/TF wheels",
+    "no_model_change": "OpenVLA-7B bfloat16/eager configuration unchanged",
+    "no_microarch_mitigation": "No GPU2-specific XLA flags applied"
+  },
+
+  "current_gpu2_state": {
+    "snapshot_utc": "2026-06-29T10:47:40Z",
+    "memory_used_mb": 39758,
+    "memory_total_mb": 81920,
+    "memory_free_mb": 41465,
+    "gpu_util_pct": 52,
+    "temperature_c": 47,
+    "power_draw_w": 187,
+    "processes": [
+      {"pid": 6687, "type": "G", "name": "Xorg", "memory_mb": 4},
+      {"pid": 365449, "type": "C", "name": "isaac-gr00t-n1.7 python3", "memory_mb": 27800},
+      {"pid": 1568053, "type": "C", "name": "python", "memory_mb": 5234},
+      {"pid": 2812220, "type": "C", "name": "python", "memory_mb": 6688}
+    ],
+    "our_workloads": "NONE — GPU2 has no TRUE_T10 or CLEAN1500 processes",
+    "external_workloads": ["isaac-gr00t-n1.7 (27.8GB) — external project, not ours"],
+    "pcie_link": "0000:49:00.0",
+    "ecc_errors": 0
+  },
+
+  "requalification_plan": {
+    "step_1_command": "CUDA_VISIBLE_DEVICES=2 python -c 'import tensorflow as tf; print(tf.random.normal((1000,1000)))'  # Basic TF op on GPU2",
+    "step_2_command": "Run single CLEAN1500 canary job on GPU2 (libero_10 task_00 state_00) and verify no InternalError",
+    "step_3_command": "Run 5 CLEAN1500 jobs sequentially on GPU2 covering different suites (10, spatial, goal) and verify all pass",
+    "step_4_pass_criteria": "0 InternalError / 0 CUDA_ERROR / 0 ptxas fatal errors across all test jobs",
+    "step_5_requalification_time": "Upon successful completion of step 4, GPU2 may be removed from denylist for future conditions (NOT for current TRUE_T10)"
+  },
+
+  "gpu2_jobs_if_requalified": {
+    "note": "If GPU2 is requalified, it would be available for future Table 1 conditions (RAND, TMA, etc.) but NOT for TRUE_T10 which is already running to completion on GPUs 0,1,4,5,6,7.",
+    "available_vram": "41.5GB free (but 27.8GB is isaac-gr00t workload — actual available depends on whether that workload can be migrated)",
+    "estimated_capacity": "1-2 TRUE_T10 bridges (each ~16GB) if external workloads are cleaned up"
+  },
+
+  "requalification_log": {
+    "status": "NOT_YET_EXECUTED",
+    "validation_command": null,
+    "validation_log_path": null,
+    "pass_criteria_met": false,
+    "unquarantine_time": null
+  },
+
+  "immutability": {
+    "this_document_is": "FROZEN_SNAPSHOT",
+    "do_not_modify": true,
+    "requalification_results_go_in": "SEPARATE_GPU2_REQUALIFICATION_RESULT_V1.json"
+  }
+}
