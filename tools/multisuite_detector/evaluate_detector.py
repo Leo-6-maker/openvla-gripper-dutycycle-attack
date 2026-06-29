@@ -356,7 +356,7 @@ def _validate_f1_evidence(ckpt_meta):
     # Match trainer field names exactly
     required_per_suite = {"tp", "fp", "fn", "tn",
                            "n_input_episodes", "n_scored_episodes", "excluded_multi_event",
-                           "precision", "recall", "f1"}
+                           "precision", "recall", "f1", "outcome_buckets"}
 
     for s, d in sorted(f1d.items()):
         if not isinstance(d, dict):
@@ -389,9 +389,34 @@ def _validate_f1_evidence(ckpt_meta):
             raise ValueError("Suite {}: stored metrics (p={:.4f} r={:.4f} f1={:.4f}) "
                              "diverge from TP/FP/FN (p={:.4f} r={:.4f} f1={:.4f})".format(
                                  s, prec, rec, f1, exp_prec, exp_rec, exp_f1))
-        # Note: TP+FP+FN+TN may exceed n_scored when wrong-time positive exists
-        # (one episode contributes both FP and FN). Conservation verified via
-        # mutually-exclusive outcome categories in the metrics output.
+
+        # Verify 5-bucket partition conservation
+        buckets = d["outcome_buckets"]
+        bucket_keys = {"tp_in_window", "wrong_time_positive", "missed_positive",
+                        "false_emit_negative", "tn_negative", "partition_sum"}
+        missing_b = bucket_keys - set(buckets.keys())
+        if missing_b:
+            raise ValueError("Suite {} outcome_buckets missing: {}".format(s, sorted(missing_b)))
+        b_tp = _validate_int(buckets["tp_in_window"], "suite.{}.tp_in_window".format(s), 0)
+        b_wt = _validate_int(buckets["wrong_time_positive"], "suite.{}.wrong_time_positive".format(s), 0)
+        b_miss = _validate_int(buckets["missed_positive"], "suite.{}.missed_positive".format(s), 0)
+        b_fe = _validate_int(buckets["false_emit_negative"], "suite.{}.false_emit_negative".format(s), 0)
+        b_tn = _validate_int(buckets["tn_negative"], "suite.{}.tn_negative".format(s), 0)
+        b_sum = _validate_int(buckets["partition_sum"], "suite.{}.partition_sum".format(s), 0)
+        if b_sum != b_tp + b_wt + b_miss + b_fe + b_tn:
+            raise ValueError("Suite {}: partition_sum({}) != sum of buckets({})".format(
+                s, b_sum, b_tp + b_wt + b_miss + b_fe + b_tn))
+        if b_sum != n_sc:
+            raise ValueError("Suite {}: partition_sum({}) != n_scored({})".format(s, b_sum, n_sc))
+        # Verify TP/FP/FN/TN derived from buckets
+        if tp != b_tp:
+            raise ValueError("Suite {}: tp({}) != tp_in_window({})".format(s, tp, b_tp))
+        if fp != b_wt + b_fe:
+            raise ValueError("Suite {}: fp({}) != wrong_time({}) + false_emit_neg({})".format(s, fp, b_wt, b_fe))
+        if fn != b_wt + b_miss:
+            raise ValueError("Suite {}: fn({}) != wrong_time({}) + missed({})".format(s, fn, b_wt, b_miss))
+        if tn != b_tn:
+            raise ValueError("Suite {}: tn({}) != tn_negative({})".format(s, tn, b_tn))
 
         sum_excl += n_ex
         sum_scored += n_sc

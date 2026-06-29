@@ -152,13 +152,29 @@ def compute_val_event_f1(model, features, labels, episode_keys, suite_map, tau_c
         fp = sum(1 for r in rs if r["emitted"] and not r["in_window"])
         fn = sum(1 for r in rs if r["has_teacher"] and not r["in_window"])
         tn = sum(1 for r in rs if not r["has_teacher"] and not r["emitted"])
+
+        # Mutually-exclusive outcome buckets (partition of n_scored)
+        tp_in = sum(1 for r in rs if r["has_teacher"] and r["emitted"] and r["in_window"])
+        wt_pos = sum(1 for r in rs if r["has_teacher"] and r["emitted"] and not r["in_window"])
+        missed = sum(1 for r in rs if r["has_teacher"] and not r["emitted"])
+        fe_neg = sum(1 for r in rs if not r["has_teacher"] and r["emitted"])
+        tn_neg = sum(1 for r in rs if not r["has_teacher"] and not r["emitted"])
+        partition_sum = tp_in + wt_pos + missed + fe_neg + tn_neg
         prec = tp / max(1, tp + fp)
         rec = tp / max(1, tp + fn)
         f1 = 2 * prec * rec / max(0.001, prec + rec)
         per_suite[s] = {"tp": tp, "fp": fp, "fn": fn, "tn": tn,
                          "precision": float(prec), "recall": float(rec), "f1": float(f1),
                          "n_input_episodes": n_in, "n_scored_episodes": n_scored,
-                         "excluded_multi_event": n_excl}
+                         "excluded_multi_event": n_excl,
+                         "outcome_buckets": {
+                             "tp_in_window": tp_in,
+                             "wrong_time_positive": wt_pos,
+                             "missed_positive": missed,
+                             "false_emit_negative": fe_neg,
+                             "tn_negative": tn_neg,
+                             "partition_sum": partition_sum,
+                         }}
 
     # Verify all expected training suites have at least some scored validation episodes
     expected_suites = set(suite_map.values())
@@ -428,8 +444,9 @@ def main():
                 ckpt["val_suite_macro_event_f1_details"] = {
                     s: {"tp": d["tp"], "fp": d["fp"], "fn": d["fn"], "tn": d["tn"],
                         "precision": d["precision"], "recall": d["recall"], "f1": d["f1"],
-                        "n_input": d["n_input_episodes"], "n_scored": d["n_scored_episodes"],
-                        "excluded_multi_event": d["excluded_multi_event"]}
+                        "n_input_episodes": d["n_input_episodes"], "n_scored_episodes": d["n_scored_episodes"],
+                        "excluded_multi_event": d["excluded_multi_event"],
+                        "outcome_buckets": d["outcome_buckets"]}
                     for s, d in f1_details.items()}
                 ckpt["selection_false_emits_per_episode"] = float(best_false_emits)
                 ckpt["multi_event_excluded_total"] = int(f1_excluded)
