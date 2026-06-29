@@ -183,41 +183,46 @@ def main():
         print(f"Condition: {cond_id} [{spec['execution_status']}] — {spec['description']}")
         print(f"  Root: {cond_root}")
 
-        # Canary: filter source jobs BEFORE building
-        selected = src_jobs
+        # ALWAYS build full 162 trigger map first (canary/formal consistency)
+        full_jobs, full_report = build_manifest(src_jobs, spec, args.evidence_root, artifact_root, args.seed)
+
+        # Canary: filter from full map
+        selected = full_jobs
         if args.canary_job_keys:
             approved = set(args.canary_job_keys)
-            # Map: new job_key = source key with TRUE_T10→cond_id
-            src_by_new = {}
-            for s in src_jobs:
-                nk = s["job_key"].replace("TRUE_T10", cond_id)
-                src_by_new[nk] = s
+            full_by_key = {j["job_key"]: j for j in full_jobs}
             selected = []
+            missing = []
             for ak in sorted(approved):
-                if ak not in src_by_new:
-                    sys.exit(f"Approved canary key not in source: {ak}")
-                selected.append(src_by_new[ak])
-            print(f"  Canary: {len(selected)}/{len(src_jobs)} source jobs selected")
+                if ak in full_by_key:
+                    selected.append(full_by_key[ak])
+                else:
+                    missing.append(ak)
+            if missing:
+                sys.exit(f"Canary keys not found in full manifest: {missing}")
+            print(f"  Canary: {len(selected)}/{len(full_jobs)} jobs (from full 162 trigger map)")
 
-        jobs, report = build_manifest(selected, spec, args.evidence_root, artifact_root, args.seed)
+        jobs = selected
+        n_jobs = len(jobs)
+        n_parents = len(set((str(j["fold"]), str(j["state_id"]), str(j["detector_seed"])) for j in jobs))
+        n_trigger = sum(1 for j in jobs if j.get("trigger_step_override", -1) >= 0)
 
         # Formal count enforcement
         if not args.canary:
-            if report["n_jobs"] != 162:
-                sys.exit(f"Formal requires 162 jobs, got {report['n_jobs']}")
-            if report["n_parents"] != 54:
-                sys.exit(f"Formal requires 54 parents, got {report['n_parents']}")
+            if n_jobs != 162:
+                sys.exit(f"Formal requires 162 jobs, got {n_jobs}")
+            if n_parents != 54:
+                sys.exit(f"Formal requires 54 parents, got {n_parents}")
         if not args.canary and not args.canary_job_keys:
-            # Verify per-fold
             from collections import Counter
             bf = Counter(str(j["fold"]) for j in jobs)
             for f in sorted(bf):
                 if bf[f] != 18:
                     sys.exit(f"fold_{f}: {bf[f]} != 18")
 
-        print(f"  Jobs: {report['n_jobs']}, Parents: {report['n_parents']}")
-        print(f"  Trigger: {report['n_trigger']}, Skip: {report['n_skip']}")
-        print(f"  Added: {report['added']}, Changed: {report['changed']}")
+        print(f"  Jobs: {n_jobs}, Parents: {n_parents}")
+        print(f"  Trigger: {n_trigger}, Skip: {n_jobs - n_trigger}")
+        print(f"  Added: {full_report['added']}, Changed: {full_report['changed']}")
 
         if args.execute:
             if spec["execution_status"] != "FROZEN":

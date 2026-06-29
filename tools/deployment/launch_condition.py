@@ -50,19 +50,6 @@ def main():
     for j in jobs:
         if j.get("condition_id")!=args.condition_id: sys.exit(f"condition_id mismatch")
 
-    # RUNNING marker — atomic claim via O_CREAT|O_EXCL (no TOCTOU)
-    marker=os.path.join(args.launch_dir,"RUNNING")
-    if args.execute:
-        try:
-            fd=os.open(marker, os.O_WRONLY|os.O_CREAT|os.O_EXCL, 0o600)
-        except FileExistsError:
-            try: ri=json.load(open(marker)); sys.exit(f"Already RUNNING since {ri.get('started','?')}")
-            except Exception as e: sys.exit(f"Corrupt RUNNING marker: {e}. Manual recovery required.")
-    else:
-        if os.path.exists(marker):
-            try: ri=json.load(open(marker)); print(f"Note: RUNNING since {ri.get('started','?')}")
-            except Exception: print("Note: corrupt RUNNING marker exists")
-
     # Pre-execute gates
     if args.execute:
         for name,val in [("--gpus",args.gpus),("--condition_spec",args.condition_spec),
@@ -132,9 +119,20 @@ def main():
     if not args.execute: print("\nDRY_RUN. Use --execute to launch."); return
 
     # ── Execute ──
+    # Atomic RUNNING claim (after all checks pass, launch_dir exists)
+    marker=os.path.join(args.launch_dir,"RUNNING")
+    try:
+        fd=os.open(marker, os.O_WRONLY|os.O_CREAT|os.O_EXCL, 0o600)
+    except FileExistsError:
+        try: ri=json.load(open(marker)); sys.exit(f"Already RUNNING since {ri.get('started','?')}")
+        except Exception as e: sys.exit(f"Corrupt RUNNING: {e}. Recovery required.")
     running_info={"started":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
                   "condition_id":args.condition_id,"mode":args.mode,"pid":os.getpid()}
-    with os.fdopen(fd,"w") as mf: json.dump(running_info,mf)
+    try:
+        with os.fdopen(fd,"w") as mf: json.dump(running_info,mf)
+    except Exception:
+        os.unlink(marker)
+        raise
 
     plan={"manifest_sha256":manifest_sha,"condition_id":args.condition_id,"mode":args.mode,
           "timestamp":running_info["started"],"gpus":available,"workers":[],
