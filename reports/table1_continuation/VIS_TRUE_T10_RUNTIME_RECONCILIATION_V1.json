@@ -1,0 +1,61 @@
+{
+  "schema_version": "vis_true_t10_runtime_reconciliation.v1",
+  "decision_state": "VIS_RUNNING_UNDER_POSTLAUNCH_AUDIT",
+  "result_acceptance": "RESULT_ACCEPTANCE_HOLD",
+  "new_condition_launch": "NEW_CONDITION_LAUNCH_HOLD",
+  "server_facts_status": "REPORTED_UNVERIFIED_UNTIL_BUBBLE_SNAPSHOT",
+  "reported_server": {
+    "commit_abbrev": "7b85877",
+    "clean1500_progress": "1006/1500",
+    "true_t10_progress_at_report": "0/162",
+    "true_t10_workers": 12,
+    "gpus_reported": ["0", "1", "4", "5", "6", "7"],
+    "gpu2": "REPORTED_QUARANTINED",
+    "canary": {
+      "fold": "04",
+      "attack_frames": 10,
+      "open_frames": 10,
+      "task_success": false
+    }
+  },
+  "reported_runtime_sha256": {
+    "bridge": "4ef2a919ee650cf35b35eaa5b9c2152c0d7d18f43710c246ce14dd1c8a83e468",
+    "worker": "e21f7fbe7f78003ac2e626bfe9ddb047c194022727bb4d9bc19b9ce0876e337c",
+    "condition_spec_v2": "7feae7d25a952e7fc018a68205f6cf8e23223ab940b5a897a6734a56563881e1",
+    "canonical_manifest": "64e20b8ff248fc078d705532aab6d4ec5ea186c143c8b6137fa90d41bdf7a6e4",
+    "validator": "921e0e714157c195ed4302bacc003a81daeea22ce13556f3c99b36a89cc003cd",
+    "telemetry_schema_v2": "b94194659274d7020e35cf69aca3f3054c5f6fb1d0c8921e6b02f93f213d8d8a"
+  },
+  "github_reconciliation": {
+    "pr42_head": "a8baa87b87ebe8d841eb187bb89197c9fc282426",
+    "reported_commit_7b85877_in_github_refs": false,
+    "method": "git ls-remote origin matched PR head a8baa87 and did not match 7b85877",
+    "server_tree_dirty": "SERVER_SNAPSHOT_REQUIRED",
+    "diff_from_pr42_head": "SERVER_SNAPSHOT_REQUIRED",
+    "diff_from_previous_reported_server_head": "SERVER_SNAPSHOT_REQUIRED"
+  },
+  "runtime_quarantine_checks": {
+    "previous_frozen_worker_sha256": "41eb3843eb4c6414068cfca3be9dc2bb730b49684832a1ddc333d92589e7dceb",
+    "reported_running_worker_sha256": "e21f7fbe7f78003ac2e626bfe9ddb047c194022727bb4d9bc19b9ce0876e337c",
+    "byte_diff": "SERVER_SNAPSHOT_REQUIRED",
+    "semantic_diff": "SERVER_SNAPSHOT_REQUIRED",
+    "canary_worker_equals_running_worker": "SERVER_SNAPSHOT_REQUIRED",
+    "actual_worker_equals_spec_bound_worker": "SERVER_SNAPSHOT_REQUIRED",
+    "actual_worker_equals_all_manifest_rows": "SERVER_SNAPSHOT_REQUIRED"
+  },
+  "manifest_audit": {
+    "reported_manifest_sha256": "64e20b8ff248fc078d705532aab6d4ec5ea186c143c8b6137fa90d41bdf7a6e4",
+    "status": "SERVER_SNAPSHOT_REQUIRED"
+  },
+  "gpu_concurrency_audit": {
+    "status": "SERVER_SNAPSHOT_REQUIRED",
+    "clean1500_true_t10_overlap": "SERVER_SNAPSHOT_REQUIRED",
+    "gpu2_zero_processes": "SERVER_SNAPSHOT_REQUIRED"
+  },
+  "explicit_confirmations": {
+    "no_result_driven_tuning_performed_by_codex": true,
+    "no_job_replaced_with_different_state_or_seed_by_codex": true,
+    "gpu2_remained_quarantined": "REPORTED_UNVERIFIED",
+    "no_new_table1_condition_launched_by_codex": true
+  }
+}

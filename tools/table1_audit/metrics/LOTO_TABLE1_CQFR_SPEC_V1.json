@@ -1,0 +1,21 @@
+{
+  "schema_version": "loto_table1_cqfr_spec.v1",
+  "freeze_timing": "POST_TRUE_T10_LAUNCH_PRE_AGGREGATE_OUTCOME_INSPECTION",
+  "status": "FROZEN_FOR_SYNTHETIC_VALIDATION",
+  "inputs": {
+    "format": "csv",
+    "required_columns": ["job_key", "condition_id", "detector_emitted", "contact_quality_failure"],
+    "contact_quality_failure_values": ["true", "false", "unknown"]
+  },
+  "outputs": [
+    "cqfr_itt",
+    "cqfr_conditional_emitted",
+    "unknown_count",
+    "no_emission_count"
+  ],
+  "denominators": {
+    "itt": "all canonical manifest rows, including no-emission",
+    "conditional_emitted": "rows where detector_emitted is true"
+  },
+  "unknown_policy": "unknown labels stay in denominator and are reported separately"
+}

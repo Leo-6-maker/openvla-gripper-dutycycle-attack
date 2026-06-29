@@ -39,15 +39,19 @@ jobs:
             -q
       - name: Compile Table 1 audit tooling
         run: |
-          python -m py_compile tools/table1_audit/*.py
+          python -m py_compile tools/table1_audit/*.py tools/table1_audit/metrics/*.py
       - name: Run Table 1 audit tests
         run: |
-          python -m unittest tests.table1_audit.test_table1_audit_tools -v
+          python -m unittest \
+            tests.table1_audit.test_table1_audit_tools \
+            tests.table1_audit.test_table1_metric_freeze \
+            -v
       - name: Guard Table 1 tests from live/server paths
         shell: python
         run: |
           from pathlib import Path
-          text = Path("tests/table1_audit/test_table1_audit_tools.py").read_text(encoding="utf-8")
+          paths = sorted(Path("tests/table1_audit").glob("test_*.py"))
+          text = "\n".join(p.read_text(encoding="utf-8") for p in paths)
           forbidden = ["/mnt/sdc", "/llm_jzm", "ssh ", "socket.", "requests.", "urllib."]
           bad = [x for x in forbidden if x in text]
           if bad:
