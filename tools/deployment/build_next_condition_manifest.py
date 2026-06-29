@@ -1,17 +1,22 @@
 #!/usr/bin/env python3
 """Generate manifests for next Table 1 conditions from TRUE_T10 canonical manifest.
 
-P0 fixes round 2:
-- Episode metadata: strict, no defaults. Missing/bad → reject.
-- output_root properly resolved per condition.
-- Parameters inherited from TRUE_T10 manifest, not hardcoded.
-- Random trigger range uses n_valid_steps, rejects if too short.
+Strict field-diff: only approved fields may change from TRUE_T10 template.
+Parameters inherited from TRUE_T10 manifest, not hardcoded.
 """
 from __future__ import annotations
 import argparse, hashlib, json, os, sys
 from pathlib import Path
 
 import numpy as np
+
+# Fields that MAY differ between TRUE_T10 and matched controls
+APPROVED_CHANGE_ALLOWLIST = {
+    "condition_id", "bridge_condition", "attack_objective",
+    "job_key", "output_dir", "trigger_step_override",
+    "source_true_t10_job_key", "n_valid_steps",
+    "trigger_skip_reason",
+}
 
 CONDITIONS = {
     "RANDOM_TIME": {
@@ -211,11 +216,31 @@ def build_manifest(true_t10_jobs: list[dict], condition_spec: dict,
     if len(new_jobs) != 162:
         raise ValueError(f"Job count: {len(new_jobs)} != 162")
 
+    # Field-diff: verify only approved fields changed
+    t10_keys = set(true_t10_jobs[0].keys())
+    new_keys = set(new_jobs[0].keys())
+    added = new_keys - t10_keys
+    removed = t10_keys - new_keys
+    changed = set()
+    for k in t10_keys & new_keys:
+        if k in ("job_key", "output_dir", "condition_id"):
+            continue  # Expected to differ
+        if true_t10_jobs[0].get(k) != new_jobs[0].get(k):
+            changed.add(k)
+    unauthorized = (added | changed) - APPROVED_CHANGE_ALLOWLIST
+    if unauthorized:
+        raise ValueError(
+            f"Unauthorized field changes (not in allowlist): {sorted(unauthorized)}. "
+            f"Added: {sorted(added)}, Changed: {sorted(changed)}")
+
     report = {
         "n_jobs": len(new_jobs), "n_parents": len(parents),
         "n_with_trigger": sum(1 for j in new_jobs if j.get("trigger_step_override", -1) >= 0),
         "n_skip": sum(1 for j in new_jobs if j.get("trigger_step_override", -1) < 0),
         "inherited_params": inherited,
+        "field_diff": {"added": sorted(added), "removed": sorted(removed),
+                       "changed": sorted(changed), "unauthorized": sorted(unauthorized),
+                       "allowlist": sorted(APPROVED_CHANGE_ALLOWLIST)},
     }
     return new_jobs, report
 

@@ -61,18 +61,33 @@ def check_existing_outputs(jobs: list[dict], mode: str) -> list[str]:
     return issues
 
 
-def verify_provenance(manifest_path: str, condition_id: str) -> dict:
-    """Verify worker/bridge SHA at launch time."""
+def verify_provenance(manifest_path: str, condition_id: str,
+                      expected_worker: str = None, expected_bridge: str = None) -> dict:
+    """Verify worker/bridge SHA at launch time. Fails on expected mismatch."""
     manifest_sha = sha256_file(manifest_path)
     worker_sha = sha256_file(WORKER) if os.path.exists(WORKER) else "MISSING"
-    bridge_sha = sha256_file(os.path.join(os.path.dirname(WORKER), "run_v2_vis_sc5_mlp_bridge.py"))
+    bridge_path = os.path.join(os.path.dirname(WORKER), "run_v2_vis_sc5_mlp_bridge.py")
+    bridge_sha = sha256_file(bridge_path) if os.path.exists(bridge_path) else "MISSING"
+
+    errors = []
+    if expected_worker and worker_sha != expected_worker:
+        errors.append(f"Worker SHA mismatch: expected {expected_worker[:16]}... got {worker_sha[:16]}...")
+    if expected_bridge and bridge_sha != expected_bridge:
+        errors.append(f"Bridge SHA mismatch: expected {expected_bridge[:16]}... got {bridge_sha[:16]}...")
+    if errors:
+        for e in errors:
+            print(f"PROVENANCE FAIL: {e}")
+        raise RuntimeError("Provenance verification failed — worker/bridge may have drifted")
+
     return {
         "manifest_sha256": manifest_sha,
         "worker_sha256": worker_sha,
         "bridge_sha256": bridge_sha,
         "condition_id": condition_id,
         "worker_path": WORKER,
-        "bridge_path": os.path.join(os.path.dirname(WORKER), "run_v2_vis_sc5_mlp_bridge.py"),
+        "bridge_path": bridge_path,
+        "expected_worker_sha256": expected_worker,
+        "expected_bridge_sha256": expected_bridge,
     }
 
 
@@ -83,6 +98,8 @@ def main():
     ap.add_argument("--launch_dir", required=True)
     ap.add_argument("--mode", default="formal", choices=["formal", "canary"],
                     help="formal=exact 162 jobs, canary=any count")
+    ap.add_argument("--expected_worker_sha", help="Required worker SHA-256 (reject on mismatch)")
+    ap.add_argument("--expected_bridge_sha", help="Required bridge SHA-256 (reject on mismatch)")
     ap.add_argument("--execute", action="store_true", help="Actually launch")
     args = ap.parse_args()
 
@@ -103,7 +120,13 @@ def main():
             sys.exit(f"condition_id mismatch: {j.get('condition_id')} != {args.condition_id}")
 
     # ── Provenance binding ──
-    prov = verify_provenance(args.manifest, args.condition_id)
+    if args.execute and not args.expected_worker_sha:
+        sys.exit("--execute requires --expected_worker_sha and --expected_bridge_sha")
+    if args.execute and not args.expected_bridge_sha:
+        sys.exit("--execute requires --expected_worker_sha and --expected_bridge_sha")
+
+    prov = verify_provenance(args.manifest, args.condition_id,
+                              args.expected_worker_sha, args.expected_bridge_sha)
     print(f"Worker SHA: {prov['worker_sha256'][:16]}...")
     print(f"Bridge SHA: {prov['bridge_sha256'][:16]}...")
     print(f"Manifest SHA: {prov['manifest_sha256'][:16]}...")

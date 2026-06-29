@@ -60,26 +60,28 @@ COND_MANIFEST="${EVIDENCE}/${CONDITION}/formal_manifest.jsonl"
 if [ "${EXECUTE}" = "--execute" ]; then
     JOB_COUNT=$(wc -l < "${COND_MANIFEST}")
     echo "  Manifest: ${COND_MANIFEST} (${JOB_COUNT} jobs)"
+    MANIFEST_SHA=$(sha256sum "${COND_MANIFEST}" | awk '{print $1}')
+    echo "  SHA256: ${MANIFEST_SHA}"
 else
     echo "  DRY_RUN: would write ${COND_MANIFEST}"
+    echo ""
+    echo "Pipeline DRY_RUN complete. Re-run with --execute to write manifests and launch."
+    echo "  bash tools/deployment/pipeline_next_condition.sh ${CONDITION} --execute"
+    exit 0
 fi
 
-# Step 3: Launch
+# Step 3: Launch (only in execute mode)
 echo ""
 echo "[3/3] Launching ${CONDITION}..."
-LAUNCH_EXEC=""
-if [ "${EXECUTE}" = "--execute" ]; then
-    LAUNCH_EXEC="--execute"
-fi
 ${PYTHON} "${TOOLS}/launch_condition.py" \
     --manifest "${COND_MANIFEST}" \
     --condition_id "${CONDITION}" \
     --launch_dir "${EVIDENCE}/${CONDITION}/launch" \
     --mode formal \
-    ${LAUNCH_EXEC}
+    --expected_worker_sha "${EXPECTED_WORKER}" \
+    --expected_bridge_sha "${EXPECTED_BRIDGE}" \
+    --execute
 
 echo ""
-echo "Pipeline complete."
-if [ "${EXECUTE}" != "--execute" ]; then
-    echo "DRY_RUN only. Re-run with --execute to actually launch."
-fi
+echo "Pipeline complete. Monitor:"
+echo "  tail -f ${EVIDENCE}/${CONDITION}/launch/worker_*.log"
