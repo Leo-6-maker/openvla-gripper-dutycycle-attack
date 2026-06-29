@@ -1,16 +1,22 @@
 {
   "schema_version": "vis_true_t10_runtime_reconciliation.v1",
   "decision_state": "VIS_RUNNING_UNDER_POSTLAUNCH_AUDIT",
+  "worker_runtime_binding": "RUNTIME_BINDING_P0_HOLD",
   "result_acceptance": "RESULT_ACCEPTANCE_HOLD",
   "new_condition_launch": "NEW_CONDITION_LAUNCH_HOLD",
+  "gpu2_status": "GPU2_QUARANTINE_ACTIVE",
   "server_facts_status": "REPORTED_UNVERIFIED_UNTIL_BUBBLE_SNAPSHOT",
+  "snapshot_package_status": "SNAPSHOT_METADATA_ONLY_REPORTED",
   "reported_server": {
     "commit_abbrev": "7b85877",
-    "clean1500_progress": "1006/1500",
-    "true_t10_progress_at_report": "0/162",
-    "true_t10_workers": 12,
+    "clean1500_progress": "REPORTED_UNVERIFIED",
+    "true_t10_progress_at_report": "REPORTED_UNVERIFIED",
+    "true_t10_workers": "REPORTED_UNVERIFIED",
     "gpus_reported": ["0", "1", "4", "5", "6", "7"],
-    "gpu2": "REPORTED_QUARANTINED",
+    "gpu2": "GPU2_QUARANTINE_ACTIVE",
+    "gpu2_project_job_count": 0,
+    "gpu2_requalification": "GPU2_REQUALIFICATION_NOT_RUN",
+    "gpu2_external_workload": "isaac-gr00t-n1.7",
     "canary": {
       "fold": "04",
       "attack_frames": 10,
@@ -35,13 +41,25 @@
     "diff_from_previous_reported_server_head": "SERVER_SNAPSHOT_REQUIRED"
   },
   "runtime_quarantine_checks": {
-    "previous_frozen_worker_sha256": "41eb3843eb4c6414068cfca3be9dc2bb730b49684832a1ddc333d92589e7dceb",
-    "reported_running_worker_sha256": "e21f7fbe7f78003ac2e626bfe9ddb047c194022727bb4d9bc19b9ce0876e337c",
+    "spec_bound_worker_sha256": "41eb3843eb4c6414068cfca3be9dc2bb730b49684832a1ddc333d92589e7dceb",
+    "reported_disk_worker_sha256": "e21f7fbe7f78003ac2e626bfe9ddb047c194022727bb4d9bc19b9ce0876e337c",
+    "status": "RUNTIME_BINDING_P0_HOLD",
     "byte_diff": "SERVER_SNAPSHOT_REQUIRED",
     "semantic_diff": "SERVER_SNAPSHOT_REQUIRED",
     "canary_worker_equals_running_worker": "SERVER_SNAPSHOT_REQUIRED",
     "actual_worker_equals_spec_bound_worker": "SERVER_SNAPSHOT_REQUIRED",
-    "actual_worker_equals_all_manifest_rows": "SERVER_SNAPSHOT_REQUIRED"
+    "actual_worker_equals_all_manifest_rows": "SERVER_SNAPSHOT_REQUIRED",
+    "post_hoc_spec_rebinding": "PROHIBITED"
+  },
+  "required_next_artifacts": {
+    "bubble_snapshot_sha256sums": "BUBBLE_SNAPSHOT_SHA256SUMS.txt",
+    "bubble_snapshot_files": "BUBBLE_SNAPSHOT_FILES.json",
+    "spec_worker_copy": "worker_41eb3843....py",
+    "disk_worker_copy": "worker_e21f7fbe....py",
+    "worker_diff": "WORKER_41EB_TO_E21.diff",
+    "runtime_provenance": "WORKER_RUNTIME_PROVENANCE.json",
+    "valid_row_equivalence": "WORKER_VALID_ROW_EQUIVALENCE_REPORT.json",
+    "gpu2_project_process_audit": "GPU2_PROJECT_PROCESS_AUDIT.json"
   },
   "manifest_audit": {
     "reported_manifest_sha256": "64e20b8ff248fc078d705532aab6d4ec5ea186c143c8b6137fa90d41bdf7a6e4",
@@ -50,12 +68,13 @@
   "gpu_concurrency_audit": {
     "status": "SERVER_SNAPSHOT_REQUIRED",
     "clean1500_true_t10_overlap": "SERVER_SNAPSHOT_REQUIRED",
-    "gpu2_zero_processes": "SERVER_SNAPSHOT_REQUIRED"
+    "gpu2_project_processes": "REPORTED_ZERO",
+    "gpu2_direct_result_blocker": "NO_IF_ZERO_CANONICAL_CLEAN_VIS_JOBS_USED_GPU2"
   },
   "explicit_confirmations": {
     "no_result_driven_tuning_performed_by_codex": true,
     "no_job_replaced_with_different_state_or_seed_by_codex": true,
-    "gpu2_remained_quarantined": "REPORTED_UNVERIFIED",
+    "gpu2_quarantine_active": "REPORTED_UNVERIFIED",
     "no_new_table1_condition_launched_by_codex": true
   }
 }

@@ -14,6 +14,7 @@ from tools.table1_audit.validate_batch_a_registry import validate as validate_re
 from tools.table1_audit.validate_formal_clean_closure import validate
 from tools.table1_audit.verify_condition_freeze_bundle import finalize, verify as verify_bundle, verify_final
 from tools.table1_audit.verify_server_runtime_snapshot import verify as verify_snapshot
+from tools.table1_audit.validate_worker_runtime_binding import evaluate as evaluate_worker_binding
 
 
 H = "a" * 64
@@ -690,6 +691,40 @@ class SnapshotAndRegistryTests(unittest.TestCase):
             p.write_text("condition_id,authorized,launch_gate,victim_checkpoint_sha256,detector_global_freeze_sha256,state_selection_sha256,protocol_sha256,runner_sha256,worker_sha256,bridge_sha256,metric_schema_sha256,retry_policy_sha256,condition_spec_sha256,manifest_sha256,arm_lock_mode,output_root\nA,false,HOLD,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,NO_ARM_LOCK,out\nB,false,HOLD,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,NO_ARM_LOCK,out\n", encoding="utf-8")
             result = validate_registry(p)
             self.assertIn("output_root_overlap", {p["class"] for p in result["problems"]})
+
+
+class WorkerRuntimeBindingTests(unittest.TestCase):
+    SPEC = "4" * 64
+    DISK = "e" * 64
+
+    def row(self, job_key: str, sha: str) -> dict:
+        return {
+            "job_key": job_key,
+            "attempt": 0,
+            "pid": 123,
+            "start_time": "2026-06-29T00:00:00Z",
+            "actual_loaded_worker_sha": sha,
+            "bridge_sha": "b" * 64,
+            "manifest_sha": "c" * 64,
+            "provenance_source": "episode_summary",
+        }
+
+    def test_spec_bound_worker_is_case_a(self):
+        result = evaluate_worker_binding([self.row("a", self.SPEC)], spec_worker_sha=self.SPEC, disk_worker_sha=self.DISK, expected_jobs=1)
+        self.assertEqual(result["worker_binding_status"], "CASE_A_SPEC_BOUND_WORKER")
+
+    def test_disk_worker_without_equivalence_stays_p0_hold(self):
+        result = evaluate_worker_binding([self.row("a", self.DISK)], spec_worker_sha=self.SPEC, disk_worker_sha=self.DISK, expected_jobs=1)
+        self.assertEqual(result["worker_binding_status"], "RUNTIME_BINDING_P0_HOLD")
+        self.assertIn("disk_worker_without_valid_row_equivalence", {p["class"] for p in result["problems"]})
+
+    def test_disk_worker_with_equivalence_is_case_b_review(self):
+        result = evaluate_worker_binding([self.row("a", self.DISK)], spec_worker_sha=self.SPEC, disk_worker_sha=self.DISK, expected_jobs=1, equivalence={"valid_row_equivalence_pass": True})
+        self.assertEqual(result["worker_binding_status"], "CASE_B_POSTLAUNCH_RUNTIME_DEVIATION_REVIEW")
+
+    def test_mixed_workers_quarantine(self):
+        result = evaluate_worker_binding([self.row("a", self.SPEC), self.row("b", self.DISK)], spec_worker_sha=self.SPEC, disk_worker_sha=self.DISK, expected_jobs=2)
+        self.assertEqual(result["worker_binding_status"], "VIS_RUNTIME_QUARANTINE_HOLD")
 
 
 if __name__ == "__main__":
