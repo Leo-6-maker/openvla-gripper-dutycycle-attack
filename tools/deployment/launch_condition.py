@@ -119,6 +119,17 @@ def main():
         if j.get("condition_id") != args.condition_id:
             sys.exit(f"condition_id mismatch: {j.get('condition_id')} != {args.condition_id}")
 
+    # Execution status gate: check RUNNING marker from prior launch
+    running_marker = os.path.join(args.launch_dir, "RUNNING")
+    if os.path.exists(running_marker):
+        try:
+            with open(running_marker) as f:
+                running_info = json.load(f)
+            sys.exit(f"Condition already RUNNING since {running_info.get('started','?')}. "
+                     f"Wait for completion or use recovery procedure.")
+        except Exception:
+            pass
+
     # ── Provenance binding ──
     if args.execute and not args.expected_worker_sha:
         sys.exit("--execute requires --expected_worker_sha and --expected_bridge_sha")
@@ -177,9 +188,16 @@ def main():
         sys.exit(f"Launch lock held by another process: {args.launch_dir}/LAUNCH.lock")
 
     try:
+        # Write durable RUNNING marker before spawning workers
+        running_info = {"started": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        "condition_id": args.condition_id, "mode": args.mode,
+                        "pid": os.getpid()}
+        with open(running_marker, "w") as f:
+            json.dump(running_info, f)
+
         launch_plan = {"manifest_sha256": prov["manifest_sha256"],
                        "condition_id": args.condition_id, "mode": args.mode,
-                       "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                       "timestamp": running_info["started"],
                        "provenance": prov, "gpus": available, "workers": []}
 
         for wi, split in enumerate(splits):

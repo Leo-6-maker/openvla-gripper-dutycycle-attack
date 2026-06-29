@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
 """Generate manifests for next Table 1 conditions from TRUE_T10 canonical manifest.
 
-Strict field-diff: only approved fields may change from TRUE_T10 template.
-Parameters inherited from TRUE_T10 manifest, not hardcoded.
+Architecture: deepcopy source job → patch only approved fields → per-job diff validation.
+No field removal. No parameter hardcoding. No silent defaults.
 """
 from __future__ import annotations
-import argparse, hashlib, json, os, sys
+import argparse, copy, hashlib, json, os, sys
 from pathlib import Path
 
 import numpy as np
 
-# Fields that MAY differ between TRUE_T10 and matched controls
-APPROVED_CHANGE_ALLOWLIST = {
-    "condition_id", "bridge_condition", "attack_objective",
-    "job_key", "output_dir", "trigger_step_override",
-    "source_true_t10_job_key", "n_valid_steps",
-    "trigger_skip_reason",
+# Fields that MAY be ADDED (don't exist in TRUE_T10 source manifest)
+APPROVED_ADDITIONS = {
+    "n_valid_steps", "trigger_skip_reason", "source_true_t10_job_key",
+    "bridge_condition", "attack_objective", "trigger_step_override",
+}
+
+# Fields that MAY be CHANGED from source values
+APPROVED_CHANGES = {
+    "condition_id", "job_key", "output_dir",
 }
 
 CONDITIONS = {
@@ -24,6 +27,7 @@ CONDITIONS = {
         "bridge_condition": "TRUE_T10",
         "attack_objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
         "description": "VIS + Random-Time Control",
+        "execution_status": "FROZEN",
         "random_trigger": True,
     },
     "RAND_LINF": {
@@ -31,12 +35,16 @@ CONDITIONS = {
         "bridge_condition": "RAND_T10",
         "attack_objective": None,
         "description": "RAND Linf + Student Trigger",
+        "execution_status": "DRY_RUN_ONLY",
+        "note": "Spec not yet frozen",
     },
     "EARLY_SHIFT": {
         "condition_id": "EARLY_SHIFT",
         "bridge_condition": "TRUE_T10",
         "attack_objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
         "description": "VIS + Early-Shift (K steps BEFORE student emit)",
+        "execution_status": "DRY_RUN_ONLY",
+        "note": "Spec not yet frozen",
         "early_shift": True,
     },
     "SHUFFLED": {
@@ -44,21 +52,24 @@ CONDITIONS = {
         "bridge_condition": "SHUFFLED_T10",
         "attack_objective": None,
         "description": "Shuffled Gradient + Student Trigger",
-        "note": "Spec not yet frozen — dry_run only",
+        "execution_status": "DRY_RUN_ONLY",
+        "note": "Spec not yet frozen",
     },
     "TMA": {
         "condition_id": "TMA",
         "bridge_condition": "TRUE_T10",
         "attack_objective": "vanilla_tma_gripper_open_ce",
         "description": "Adapted TMA + Student Trigger",
-        "note": "Spec not yet frozen — dry_run only",
+        "execution_status": "DRY_RUN_ONLY",
+        "note": "Spec not yet frozen",
     },
     "UMA": {
         "condition_id": "UMA",
         "bridge_condition": "TRUE_T10",
         "attack_objective": "untargeted_clean_token_ce",
         "description": "UMA Untargeted CE-PGD + Student Trigger",
-        "note": "Spec not yet frozen — dry_run only",
+        "execution_status": "DRY_RUN_ONLY",
+        "note": "Spec not yet frozen",
     },
 }
 
@@ -76,7 +87,7 @@ def load_true_t10_jobs(path: str) -> list[dict]:
 
 
 def get_episode_metadata(job: dict) -> dict:
-    """Read per-episode metadata STRICTLY. Missing/bad → raises."""
+    """Read per-episode metadata STRICTLY. Missing/bad → raise."""
     ep_path = os.path.join(job["output_dir"], "episode_summary.json")
     if not os.path.exists(ep_path):
         raise FileNotFoundError(f"episode_summary.json missing: {ep_path}")
@@ -84,128 +95,130 @@ def get_episode_metadata(job: dict) -> dict:
     n_valid = d.get("n_valid_steps", d.get("n_steps"))
     if n_valid is None or not isinstance(n_valid, (int, float)) or n_valid < 1:
         raise ValueError(f"Invalid n_valid_steps in {job.get('job_key','?')}: {n_valid}")
-    n_valid = int(n_valid)
-    mlp_emit = int(d.get("mlp_emit_step", -1))
-    triggered = bool(d.get("mlp_triggered", False))
-    return {"n_valid_steps": n_valid, "mlp_emit_step": mlp_emit, "mlp_triggered": triggered}
+    return {
+        "n_valid_steps": int(n_valid),
+        "mlp_emit_step": int(d.get("mlp_emit_step", -1)),
+        "mlp_triggered": bool(d.get("mlp_triggered", False)),
+    }
 
 
-def resolve_output_dir(true_t10_output: str, condition_id: str, evidence_root: str) -> str:
-    """Resolve output_dir for new condition from TRUE_T10 path."""
+def resolve_output_dir(source_output: str, condition_id: str, evidence_root: str) -> str:
     cond_root = os.path.join(evidence_root, condition_id)
-    # Replace TRUE_T10 with condition_id in the path
-    new_path = true_t10_output.replace("/TRUE_T10/", f"/{condition_id}/")
-    if new_path == true_t10_output:
-        raise ValueError(f"Path replacement failed: {true_t10_output}")
+    new_path = source_output.replace("/TRUE_T10/", f"/{condition_id}/")
+    if new_path == source_output:
+        raise ValueError(f"Path replacement failed: {source_output}")
     resolved = os.path.normpath(new_path)
-    cond_root_resolved = os.path.normpath(cond_root)
-    if not resolved.startswith(cond_root_resolved + os.sep):
-        raise ValueError(f"Output {resolved} not under {cond_root_resolved}")
+    if not resolved.startswith(os.path.normpath(cond_root) + os.sep):
+        raise ValueError(f"Output {resolved} not under {cond_root}")
     return resolved
 
 
 def generate_random_trigger(n_valid_list: list[int], seed: int = 42) -> list[int | None]:
-    """Generate random trigger steps. Returns None for episodes too short."""
     rng = np.random.RandomState(seed)
     results = []
     for ns in n_valid_list:
         if ns < GUARD + K_DEFAULT:
-            results.append(None)  # Episode too short for random trigger
+            results.append(None)
         else:
             results.append(int(rng.randint(GUARD, ns - K_DEFAULT + 1)))
     return results
 
 
 def generate_early_shift(emit_steps: list[int], n_valid_list: list[int]) -> list[int | None]:
-    """EARLY_SHIFT: trigger = mlp_emit - K. None if invalid."""
     results = []
     for emit, ns in zip(emit_steps, n_valid_list):
         if emit < 0:
             results.append(None)
         else:
             ts = emit - K_DEFAULT
-            if ts >= GUARD and ts + K_DEFAULT <= ns:
-                results.append(ts)
-            else:
-                results.append(None)
+            results.append(ts if (ts >= GUARD and ts + K_DEFAULT <= ns) else None)
     return results
 
 
-def build_manifest(true_t10_jobs: list[dict], condition_spec: dict,
-                    evidence_root: str, seed: int = 42) -> tuple[list[dict], dict]:
-    """Build manifest with strict validation. Returns (jobs, report)."""
-    cond_id = condition_spec["condition_id"]
+def build_one_job(source: dict, cond_id: str, evidence_root: str,
+                   cond_spec: dict, trigger_step: int | None,
+                   n_valid: int) -> tuple[dict, dict]:
+    """Build one new job by deepcopy+patch. Returns (job, diff_report)."""
+    new = copy.deepcopy(source)
 
-    # Strict metadata collection
-    metas = []
+    # Patch approved fields
+    new["condition_id"] = cond_id
+    new["bridge_condition"] = cond_spec["bridge_condition"]
+    if cond_spec.get("attack_objective"):
+        new["attack_objective"] = cond_spec["attack_objective"]
+    new["job_key"] = source["job_key"].replace("TRUE_T10", cond_id)
+    new["output_dir"] = resolve_output_dir(source["output_dir"], cond_id, evidence_root)
+    new["trigger_step_override"] = trigger_step if trigger_step is not None else -1
+
+    # Add approved metadata
+    new["source_true_t10_job_key"] = source["job_key"]
+    new["n_valid_steps"] = n_valid
+    if trigger_step is None:
+        new["trigger_skip_reason"] = "episode_too_short_or_no_emission"
+
+    # Diff report: compare with source
+    source_keys = set(source.keys())
+    new_keys = set(new.keys())
+    added = new_keys - source_keys
+    removed = source_keys - new_keys
+    changed = []
+    for k in source_keys & new_keys:
+        if source.get(k) != new.get(k):
+            changed.append(k)
+
+    # Verify: no removed fields, only approved additions/changes
     errors = []
-    for j in true_t10_jobs:
-        try:
-            metas.append(get_episode_metadata(j))
-        except Exception as e:
-            errors.append(f"{j.get('job_key','?')}: {e}")
-    if errors:
-        for e in errors[:10]:
-            print(f"METADATA ERROR: {e}")
-        raise RuntimeError(f"{len(errors)} episodes failed metadata extraction")
+    if removed:
+        errors.append(f"REMOVED fields (forbidden): {sorted(removed)}")
+    unauthorized_add = added - APPROVED_ADDITIONS
+    if unauthorized_add:
+        errors.append(f"Unauthorized ADDITIONS: {sorted(unauthorized_add)}")
+    unauthorized_change = set(changed) - APPROVED_CHANGES
+    if unauthorized_change:
+        errors.append(f"Unauthorized CHANGES: {sorted(unauthorized_change)}")
 
+    if errors:
+        raise ValueError(f"Job {source.get('job_key','?')}: {'; '.join(errors)}")
+
+    diff = {"added": sorted(added), "changed": sorted(changed),
+            "removed": sorted(removed), "errors": errors}
+    return new, diff
+
+
+def build_manifest(source_jobs: list[dict], cond_spec: dict,
+                    evidence_root: str, seed: int = 42) -> tuple[list[dict], dict]:
+    """Build full manifest with per-job deepcopy+diff validation."""
+    cond_id = cond_spec["condition_id"]
+
+    # Strict metadata
+    metas = [get_episode_metadata(j) for j in source_jobs]
     n_valid_list = [m["n_valid_steps"] for m in metas]
     emit_steps = [m["mlp_emit_step"] for m in metas]
 
-    if condition_spec.get("random_trigger"):
+    if cond_spec.get("random_trigger"):
         trigger_steps = generate_random_trigger(n_valid_list, seed=seed)
-    elif condition_spec.get("early_shift"):
+    elif cond_spec.get("early_shift"):
         trigger_steps = generate_early_shift(emit_steps, n_valid_list)
     else:
-        trigger_steps = [None] * len(true_t10_jobs)
-
-    # Inherit attack parameters from TRUE_T10 manifest (first job as template)
-    t10_j0 = true_t10_jobs[0]
-    inherited = {
-        "K": t10_j0.get("K", K_DEFAULT),
-        "arm_lock": t10_j0.get("arm_lock", False),
-        "epsilon": t10_j0.get("epsilon", 0.023529411764705882),
-        "optimization_steps": t10_j0.get("optimization_steps", 20),
-        "preprocessing_backend": t10_j0.get("preprocessing_backend", "upstream_tf_jpeg"),
-        "target_token": t10_j0.get("target_token", 31744),
-    }
+        trigger_steps = [None] * len(source_jobs)
 
     new_jobs = []
+    all_diffs = []
     seen_keys = set()
     seen_dirs = set()
 
-    for i, job in enumerate(true_t10_jobs):
-        new_out = resolve_output_dir(job["output_dir"], cond_id, evidence_root)
-        jk = job["job_key"].replace("TRUE_T10", cond_id)
-        if jk in seen_keys:
-            raise ValueError(f"Duplicate job_key: {jk}")
-        seen_keys.add(jk)
-        if new_out in seen_dirs:
-            raise ValueError(f"Duplicate output_dir: {new_out}")
-        seen_dirs.add(new_out)
-
+    for i, src in enumerate(source_jobs):
         ts = trigger_steps[i] if i < len(trigger_steps) else None
-        new_job = {
-            "condition_id": cond_id,
-            "bridge_condition": condition_spec["bridge_condition"],
-            "attack_objective": condition_spec.get("attack_objective"),
-            "fold": job["fold"], "state_id": job["state_id"],
-            "task_id": job.get("task_id", 0),
-            "detector_seed": job["detector_seed"], "perturbation_seed": job["perturbation_seed"],
-            "output_dir": new_out,
-            "trigger_step_override": ts if ts is not None else -1,
-            "job_key": jk,
-            "source_true_t10_job_key": job["job_key"],
-            "n_valid_steps": n_valid_list[i],
-        }
-        # Inherit attack parameters (not hardcoded)
-        for k, v in inherited.items():
-            new_job[k] = v
-        if ts is None:
-            new_job["trigger_step_override"] = -1
-            new_job["trigger_skip_reason"] = "episode_too_short" if condition_spec.get("random_trigger") else \
-                ("no_emission_or_out_of_bounds" if condition_spec.get("early_shift") else "not_applicable")
+        new_job, diff = build_one_job(src, cond_id, evidence_root, cond_spec,
+                                       ts, n_valid_list[i])
+        if new_job["job_key"] in seen_keys:
+            raise ValueError(f"Duplicate job_key: {new_job['job_key']}")
+        seen_keys.add(new_job["job_key"])
+        if new_job["output_dir"] in seen_dirs:
+            raise ValueError(f"Duplicate output_dir: {new_job['output_dir']}")
+        seen_dirs.add(new_job["output_dir"])
         new_jobs.append(new_job)
+        all_diffs.append(diff)
 
     # Verify counts
     parents = set()
@@ -216,31 +229,26 @@ def build_manifest(true_t10_jobs: list[dict], condition_spec: dict,
     if len(new_jobs) != 162:
         raise ValueError(f"Job count: {len(new_jobs)} != 162")
 
-    # Field-diff: verify only approved fields changed
-    t10_keys = set(true_t10_jobs[0].keys())
-    new_keys = set(new_jobs[0].keys())
-    added = new_keys - t10_keys
-    removed = t10_keys - new_keys
-    changed = set()
-    for k in t10_keys & new_keys:
-        if k in ("job_key", "output_dir", "condition_id"):
-            continue  # Expected to differ
-        if true_t10_jobs[0].get(k) != new_jobs[0].get(k):
-            changed.add(k)
-    unauthorized = (added | changed) - APPROVED_CHANGE_ALLOWLIST
-    if unauthorized:
-        raise ValueError(
-            f"Unauthorized field changes (not in allowlist): {sorted(unauthorized)}. "
-            f"Added: {sorted(added)}, Changed: {sorted(changed)}")
+    # Aggregate diff report
+    all_added = set()
+    all_changed = set()
+    for d in all_diffs:
+        all_added.update(d["added"])
+        all_changed.update(d["changed"])
+    any_errors = [d for d in all_diffs if d["errors"]]
 
     report = {
         "n_jobs": len(new_jobs), "n_parents": len(parents),
         "n_with_trigger": sum(1 for j in new_jobs if j.get("trigger_step_override", -1) >= 0),
         "n_skip": sum(1 for j in new_jobs if j.get("trigger_step_override", -1) < 0),
-        "inherited_params": inherited,
-        "field_diff": {"added": sorted(added), "removed": sorted(removed),
-                       "changed": sorted(changed), "unauthorized": sorted(unauthorized),
-                       "allowlist": sorted(APPROVED_CHANGE_ALLOWLIST)},
+        "execution_status": cond_spec.get("execution_status", "DRY_RUN_ONLY"),
+        "field_diff": {
+            "added_fields": sorted(all_added),
+            "changed_fields": sorted(all_changed),
+            "approved_additions": sorted(APPROVED_ADDITIONS),
+            "approved_changes": sorted(APPROVED_CHANGES),
+            "jobs_with_errors": len(any_errors),
+        },
     }
     return new_jobs, report
 
@@ -255,10 +263,10 @@ def main():
     ap.add_argument("--execute", action="store_true", help="Actually write manifests")
     args = ap.parse_args()
 
-    true_t10_jobs = load_true_t10_jobs(args.true_t10_manifest)
-    print(f"TRUE_T10 manifest: {len(true_t10_jobs)} jobs")
-    if len(true_t10_jobs) != 162:
-        sys.exit(f"ERROR: expected 162 jobs, got {len(true_t10_jobs)}")
+    source_jobs = load_true_t10_jobs(args.true_t10_manifest)
+    print(f"TRUE_T10 manifest: {len(source_jobs)} jobs")
+    if len(source_jobs) != 162:
+        sys.exit(f"ERROR: expected 162 jobs, got {len(source_jobs)}")
 
     for cond_id in args.conditions:
         spec = CONDITIONS[cond_id]
@@ -267,18 +275,22 @@ def main():
 
         print(f"\n{'='*60}")
         print(f"Condition: {cond_id} — {spec['description']}")
+        print(f"  Status: {spec.get('execution_status', 'DRY_RUN_ONLY')}")
         if spec.get("note"):
             print(f"  NOTE: {spec['note']}")
-        print(f"  Root: {cond_root}")
 
-        new_jobs, report = build_manifest(true_t10_jobs, spec, args.evidence_root, args.seed)
+        new_jobs, report = build_manifest(source_jobs, spec, args.evidence_root, args.seed)
         print(f"  Jobs: {report['n_jobs']}, Parents: {report['n_parents']}")
         print(f"  Trigger: {report['n_with_trigger']}, Skip: {report['n_skip']}")
-        print(f"  Inherited: K={report['inherited_params']['K']}, "
-              f"eps={report['inherited_params']['epsilon']:.4f}, "
-              f"arm_lock={report['inherited_params']['arm_lock']}")
+        diff = report["field_diff"]
+        print(f"  Added: {diff['added_fields']}, Changed: {diff['changed_fields']}")
+        if diff["jobs_with_errors"] > 0:
+            print(f"  ERRORS: {diff['jobs_with_errors']} jobs")
 
         if args.execute:
+            if spec.get("execution_status") != "FROZEN":
+                sys.exit(f"ERROR: {cond_id} execution_status={spec.get('execution_status')} "
+                         f"(must be FROZEN for --execute)")
             if os.path.exists(manifest_path):
                 sys.exit(f"ERROR: manifest already exists: {manifest_path}")
             os.makedirs(cond_root, exist_ok=True)
@@ -290,10 +302,6 @@ def main():
             print(f"  SHA256: {sha}")
         else:
             print(f"  DRY_RUN: would write {manifest_path}")
-            # Show first job sample
-            j0 = new_jobs[0]
-            print(f"  Sample: {j0['job_key']} trigger={j0['trigger_step_override']} "
-                  f"n_valid={j0['n_valid_steps']}")
 
 
 if __name__ == "__main__":
