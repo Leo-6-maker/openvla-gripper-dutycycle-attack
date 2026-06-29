@@ -80,8 +80,12 @@ def get_meta(job, require_invalid_zero=False):
             "mlp_emit_step": int(d.get("mlp_emit_step", -1)), "mlp_triggered": bool(d.get("mlp_triggered", False))}
 
 def resolve_output(source_out, cond_id, artifact_root):
-    new = source_out.replace("/TRUE_T10/formal_v1/", f"/{cond_id}/{artifact_root}/")
-    if new == source_out: raise ValueError(f"Path replacement failed: {source_out}")
+    """Replace /TRUE_T10/formal_v1/ with /{cond_id}/{artifact_root}/ in source path.
+    artifact_root is relative: e.g. 'formal_v1' or 'canary_v1/formal_v1'."""
+    target = f"/{cond_id}/{artifact_root}/"
+    new = source_out.replace("/TRUE_T10/formal_v1/", target)
+    if new == source_out:
+        raise ValueError(f"Path replacement failed: {source_out} → {target}")
     return os.path.normpath(new)
 
 def random_triggers(n_valid_list, seed=42):
@@ -99,8 +103,7 @@ def build_one(src, cond_id, evidence_root, artifact_root, cond_spec, ts, n_valid
     new["bridge_condition"] = cond_spec["bridge_condition"]
     if cond_spec.get("attack_objective"): new["attack_objective"] = cond_spec["attack_objective"]
     new["job_key"] = src["job_key"].replace("TRUE_T10", cond_id)
-    new["output_dir"] = resolve_output(src["output_dir"], cond_id,
-                                        os.path.join(evidence_root, cond_id, artifact_root))
+    new["output_dir"] = resolve_output(src["output_dir"], cond_id, artifact_root)
     new["trigger_step_override"] = ts if ts is not None else -1
     new["source_true_t10_job_key"] = src["job_key"]
     new["n_valid_steps"] = n_valid
@@ -180,22 +183,41 @@ def main():
         print(f"Condition: {cond_id} [{spec['execution_status']}] — {spec['description']}")
         print(f"  Root: {cond_root}")
 
-        jobs, report = build_manifest(src_jobs, spec, args.evidence_root, artifact_root, args.seed)
+        # Canary: filter source jobs BEFORE building
+        selected = src_jobs
+        if args.canary_job_keys:
+            approved = set(args.canary_job_keys)
+            # Map: new job_key = source key with TRUE_T10→cond_id
+            src_by_new = {}
+            for s in src_jobs:
+                nk = s["job_key"].replace("TRUE_T10", cond_id)
+                src_by_new[nk] = s
+            selected = []
+            for ak in sorted(approved):
+                if ak not in src_by_new:
+                    sys.exit(f"Approved canary key not in source: {ak}")
+                selected.append(src_by_new[ak])
+            print(f"  Canary: {len(selected)}/{len(src_jobs)} source jobs selected")
+
+        jobs, report = build_manifest(selected, spec, args.evidence_root, artifact_root, args.seed)
+
+        # Formal count enforcement
+        if not args.canary:
+            if report["n_jobs"] != 162:
+                sys.exit(f"Formal requires 162 jobs, got {report['n_jobs']}")
+            if report["n_parents"] != 54:
+                sys.exit(f"Formal requires 54 parents, got {report['n_parents']}")
+        if not args.canary and not args.canary_job_keys:
+            # Verify per-fold
+            from collections import Counter
+            bf = Counter(str(j["fold"]) for j in jobs)
+            for f in sorted(bf):
+                if bf[f] != 18:
+                    sys.exit(f"fold_{f}: {bf[f]} != 18")
+
         print(f"  Jobs: {report['n_jobs']}, Parents: {report['n_parents']}")
         print(f"  Trigger: {report['n_trigger']}, Skip: {report['n_skip']}")
         print(f"  Added: {report['added']}, Changed: {report['changed']}")
-
-        # Canary job key validation
-        if args.canary_job_keys:
-            jk_set = set(j["job_key"] for j in jobs)
-            approved = set(args.canary_job_keys)
-            if jk_set != approved:
-                extra = jk_set - approved; missing = approved - jk_set
-                parts = []
-                if extra: parts.append(f"extra in manifest: {sorted(extra)}")
-                if missing: parts.append(f"missing from manifest: {sorted(missing)}")
-                sys.exit("Canary allowlist mismatch: " + "; ".join(parts))
-            print(f"  Canary allowlist: {len(approved)} jobs — MATCH")
 
         if args.execute:
             if spec["execution_status"] != "FROZEN":
@@ -206,8 +228,20 @@ def main():
             with open(manifest_path, "w") as f:
                 for j in jobs: f.write(json.dumps(j) + "\n")
             sha = hashlib.sha256(open(manifest_path, "rb").read()).hexdigest()
-            print(f"  WRITTEN: {manifest_path}")
-            print(f"  SHA256: {sha}")
+            # Write condition_spec.json alongside manifest
+            spec_path = os.path.join(cond_root, "condition_spec.json")
+            spec_out = {
+                "condition_id": cond_id, "execution_status": spec["execution_status"],
+                "bridge_condition": spec["bridge_condition"],
+                "attack_objective": spec.get("attack_objective"),
+                "description": spec["description"],
+                "K": K_DEFAULT, "guard": GUARD, "arm_lock": False,
+                "source_true_t10_manifest_sha256": hashlib.sha256(
+                    open(args.true_t10_manifest, "rb").read()).hexdigest(),
+            }
+            with open(spec_path, "w") as f: json.dump(spec_out, f, indent=2)
+            print(f"  WRITTEN: {manifest_path} (SHA={sha[:16]}...)")
+            print(f"  WRITTEN: {spec_path}")
         else:
             print(f"  DRY_RUN: {manifest_path}")
 

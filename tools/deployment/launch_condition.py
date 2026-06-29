@@ -50,11 +50,18 @@ def main():
     for j in jobs:
         if j.get("condition_id")!=args.condition_id: sys.exit(f"condition_id mismatch")
 
-    # RUNNING marker (fail-closed on any parse error)
+    # RUNNING marker — atomic claim via O_CREAT|O_EXCL (no TOCTOU)
     marker=os.path.join(args.launch_dir,"RUNNING")
-    if os.path.exists(marker):
-        try: ri=json.load(open(marker)); sys.exit(f"Already RUNNING since {ri.get('started','?')}")
-        except Exception as e: sys.exit(f"Corrupt RUNNING marker: {e}. Manual recovery required.")
+    if args.execute:
+        try:
+            fd=os.open(marker, os.O_WRONLY|os.O_CREAT|os.O_EXCL, 0o600)
+        except FileExistsError:
+            try: ri=json.load(open(marker)); sys.exit(f"Already RUNNING since {ri.get('started','?')}")
+            except Exception as e: sys.exit(f"Corrupt RUNNING marker: {e}. Manual recovery required.")
+    else:
+        if os.path.exists(marker):
+            try: ri=json.load(open(marker)); print(f"Note: RUNNING since {ri.get('started','?')}")
+            except Exception: print("Note: corrupt RUNNING marker exists")
 
     # Pre-execute gates
     if args.execute:
@@ -126,8 +133,8 @@ def main():
 
     # ── Execute ──
     running_info={"started":time.strftime("%Y-%m-%dT%H:%M:%SZ",time.gmtime()),
-                  "condition_id":args.condition_id,"mode":args.mode}
-    with open(marker,"w") as mf: json.dump(running_info,mf)
+                  "condition_id":args.condition_id,"mode":args.mode,"pid":os.getpid()}
+    with os.fdopen(fd,"w") as mf: json.dump(running_info,mf)
 
     plan={"manifest_sha256":manifest_sha,"condition_id":args.condition_id,"mode":args.mode,
           "timestamp":running_info["started"],"gpus":available,"workers":[],
