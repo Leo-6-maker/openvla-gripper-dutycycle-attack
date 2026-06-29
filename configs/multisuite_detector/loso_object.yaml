@@ -1,0 +1,36 @@
+# LOSO: Leave-One-Suite-Out — test on libero_object
+gate: LOSO_OBJECT_V1
+detector_type: loso
+test_suite: libero_object
+status: CODE_PREPARATION_ONLY
+
+architecture:
+  model: SC5MLPV1
+  input_dim: 25
+  hidden_dim: 64
+  n_layers: 2
+  heads: [phase_9, corridor_1, release_1]
+
+sampling:
+  method: suite_balanced
+  strategy: uniform_suite_then_uniform_episode
+
+fsm:
+  version: legacy_v1
+  tau_corridor: 0.3
+  tau_release: 0.3
+  guard: 5
+  K: 10
+
+training_config:
+  seed: [42, 123, 456]
+  epochs: 100
+  batch_size: 32
+  lr: 0.001
+  patience: 20
+
+isolation:
+  normalization_from_train_suites_only: true
+  threshold_from_train_suites_only: true
+  checkpoint_from_train_suites_only: true
+  early_stopping_on_train_suites_val_only: true
