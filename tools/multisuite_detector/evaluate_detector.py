@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Multi-suite detector evaluation using model logits + inline FSM replay.
+"""Multi-suite detector evaluation using shared score_fsm_legacy_v1.
 
-Shares the same score-only FSM path as train_detector F1 checkpoint selection.
-No runtime dependency — avoids 3-head/4-head state_dict incompatibility.
+Strict checkpoint loading: fails on any state_dict mismatch.
+Thresholds bound from checkpoint, CLI override rejected in formal mode.
+Input SHAs cross-bound in output for provenance.
 """
 from __future__ import annotations
-import argparse, json, sys, torch
+import argparse, hashlib, json, sys, torch
 from collections import defaultdict
 from pathlib import Path
 
@@ -19,45 +20,84 @@ from strict_loader import (
     load_episode_index, load_features, load_teacher_events, VALID_SUITES,
 )
 from gripper_attack.sc5mlp_v1 import SC5MLPV1, SC5_FEATURES, SC5_PHASES, N_FEATURES, N_PHASES
+from score_fsm_legacy_v1 import run_fsm_legacy_v1, model_to_scores
 
 
-def run_fsm(corridor_p, release_p, phase_names, tau_c, tau_r, guard):
-    """Run legacy_v1 FSM: IDLE→ARMED→EMITTED. Returns (emitted, emit_step)."""
-    state = "IDLE"
-    arm_step = -1
-    n = len(corridor_p)
-    for step in range(n):
-        if state == "IDLE":
-            if phase_names[step] == "stable_carry" and corridor_p[step] > tau_c:
-                state = "ARMED"
-                arm_step = step
-        elif state == "ARMED":
-            if step >= arm_step + guard and corridor_p[step] > tau_c and release_p[step] < tau_r:
-                return True, step
-    return False, -1
+REQUIRED_CHECKPOINT_KEYS = {
+    "model_state", "mean", "std", "feature_names", "phase_classes",
+}
+SC5MLPV1_STATE_KEYS = {"shared.0.weight", "shared.0.bias", "shared.2.weight", "shared.2.bias",
+                         "phase_head.weight", "phase_head.bias",
+                         "corridor_head.weight", "corridor_head.bias",
+                         "release_head.weight", "release_head.bias"}
 
 
-def evaluate_episode_with_model(model, features, teacher_info, tau_c, tau_r, guard, K=10):
-    """Evaluate one episode using model logits + inline FSM."""
+def sha256_file(path) -> str:
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def load_checkpoint_strict(path: str):
+    """Load checkpoint with strict validation. Fails on any mismatch."""
+    ckpt = torch.load(path, map_location="cpu", weights_only=False)
+
+    for key in REQUIRED_CHECKPOINT_KEYS:
+        if key not in ckpt:
+            raise ValueError("Checkpoint missing required key: {}".format(key))
+
+    mean = ckpt["mean"]
+    std = ckpt["std"]
+    if mean is None or std is None:
+        raise ValueError("Checkpoint missing mean/std")
+    if hasattr(mean, 'shape'):
+        mean = np.asarray(mean, dtype=np.float32)
+        std = np.asarray(std, dtype=np.float32)
+    if mean.shape != (25,) or std.shape != (25,):
+        raise ValueError("mean/std shape != (25,)")
+    if not np.all(np.isfinite(mean)) or not np.all(np.isfinite(std)):
+        raise ValueError("NaN/Inf in mean/std")
+    if not np.all(std > 0):
+        raise ValueError("Zero or negative in std")
+
+    if list(ckpt["feature_names"]) != list(SC5_FEATURES):
+        raise ValueError("feature_names mismatch")
+    if list(ckpt["phase_classes"]) != list(SC5_PHASES):
+        raise ValueError("phase_classes mismatch")
+
+    # Strict model state loading
+    state = ckpt["model_state"]
+    state_keys = set(state.keys())
+    if state_keys != SC5MLPV1_STATE_KEYS:
+        extra = state_keys - SC5MLPV1_STATE_KEYS
+        missing = SC5MLPV1_STATE_KEYS - state_keys
+        msg = []
+        if extra:
+            msg.append("extra keys: {}".format(sorted(extra)))
+        if missing:
+            msg.append("missing keys: {}".format(sorted(missing)))
+        raise ValueError("model_state key mismatch: {}".format("; ".join(msg)))
+
+    model = SC5MLPV1()
+    model.load_state_dict(state, strict=True)
+    model.eval()
+
+    # Thresholds: use checkpoint values if present, else require CLI to match defaults
+    tau_c = float(ckpt.get("tau_corridor", 0.3))
+    tau_r = float(ckpt.get("tau_release", 0.3))
+    guard = int(ckpt.get("guard", 5))
+
+    return model, mean, std, tau_c, tau_r, guard, ckpt
+
+
+def evaluate_episode(model, features, teacher_info, tau_c, tau_r, guard, K=10):
     feats = torch.from_numpy(features)
-    with torch.no_grad():
-        out = model(feats)
-    cp = torch.sigmoid(out["corridor_logit"]).squeeze(-1).numpy()
-    rp = torch.sigmoid(out["release_logit"]).squeeze(-1).numpy()
-    phase_idx = out["phase_logits"].argmax(dim=-1).numpy()
-    phase_names = [SC5_PHASES[p] for p in phase_idx]
-
-    emitted, emit_step = run_fsm(cp, rp, phase_names, tau_c, tau_r, guard)
+    cp, rp, phase_names = model_to_scores(model, feats)
+    emitted, emit_step = run_fsm_legacy_v1(cp, rp, phase_names, tau_c, tau_r, guard)
 
     anchor = teacher_info.get("anchor", -1)
     wstart = teacher_info.get("window_start", anchor)
     wend = teacher_info.get("window_end", anchor + K)
     has_event = teacher_info.get("has_event", anchor >= 0)
-
-    if emitted and anchor >= 0:
-        in_window = wstart <= emit_step <= wend
-    else:
-        in_window = False
+    in_window = bool(emitted and anchor >= 0 and wstart <= emit_step <= wend)
 
     return {
         "emitted": emitted, "emit_step": emit_step, "n_steps": len(features),
@@ -65,9 +105,9 @@ def evaluate_episode_with_model(model, features, teacher_info, tau_c, tau_r, gua
         "anchor_error": emit_step - anchor if (emitted and anchor >= 0) else None,
         "absolute_error": abs(emit_step - anchor) if (emitted and anchor >= 0) else None,
         "in_window": in_window,
-        "early": (emitted and anchor >= 0 and emit_step < wstart),
-        "late": (emitted and anchor >= 0 and emit_step > wend),
-        "k10_contained": (emitted and anchor >= 0 and wstart <= emit_step <= wstart + K),
+        "early": bool(emitted and anchor >= 0 and emit_step < wstart),
+        "late": bool(emitted and anchor >= 0 and emit_step > wend),
+        "k10_contained": bool(emitted and anchor >= 0 and wstart <= emit_step <= wstart + K),
         "has_teacher_event": has_event,
         "event_type": teacher_info.get("event_type", "unknown"),
     }
@@ -80,22 +120,20 @@ def compute_metrics(results):
     has_event = [r for r in results if r.get("has_teacher_event")]
     no_event = [r for r in results if not r.get("has_teacher_event")]
 
-    # Correct accounting: wrong-time emission = FP (bad detection) + missed real event = FN
     tp = sum(1 for r in results if r["has_teacher_event"] and r["emitted"] and r["in_window"])
     fp = sum(1 for r in results if r["emitted"] and not r["in_window"])
     fn = sum(1 for r in results if r["has_teacher_event"] and not r["in_window"])
     tn = sum(1 for r in results if not r["has_teacher_event"] and not r["emitted"])
-    in_window = [r for r in emitted if r.get("in_window")]
+    in_window_emit = [r for r in emitted if r.get("in_window")]
     k10 = [r for r in emitted if r.get("k10_contained")]
     correct_abstention = sum(1 for r in no_emit if not r.get("has_teacher_event"))
 
     m = {
-        "n_episodes": len(results),
-        "n_emitted": len(emitted), "n_no_emission": len(no_emit),
+        "n_episodes": len(results), "n_emitted": len(emitted),
+        "n_no_emission": len(no_emit),
         "n_teacher_positive": len(has_event), "n_teacher_negative": len(no_event),
         "tp": tp, "fp": fp, "fn": fn, "tn": tn,
         "emission_rate": len(emitted) / n,
-        "no_emission_rate": len(no_emit) / n,
         "event_precision": tp / max(1, tp + fp),
         "event_recall": tp / max(1, tp + fn),
         "k10_containment_rate": len(k10) / max(1, len(emitted)),
@@ -127,27 +165,33 @@ def per_suite_metrics(results, suite_map):
 
 def main():
     ap = argparse.ArgumentParser(description="Evaluate multi-suite detector")
-    ap.add_argument("--checkpoint", required=True, help="SC5MLPV1 checkpoint .pt")
+    ap.add_argument("--checkpoint", required=True)
     ap.add_argument("--feature_csv", required=True)
-    ap.add_argument("--label_csv", required=True, help="Teacher event CSV (per-episode)")
+    ap.add_argument("--label_csv", required=True)
     ap.add_argument("--episode_index", required=True)
     ap.add_argument("--split_file", required=True)
     ap.add_argument("--split_key", default="test")
     ap.add_argument("--output", default="-")
-    ap.add_argument("--tau_corridor", type=float, default=0.3)
-    ap.add_argument("--tau_release", type=float, default=0.3)
-    ap.add_argument("--guard", type=int, default=5)
+    ap.add_argument("--tau_corridor", type=float, default=None,
+                    help="Override (must equal checkpoint value in formal mode)")
+    ap.add_argument("--tau_release", type=float, default=None)
+    ap.add_argument("--guard", type=int, default=None)
     args = ap.parse_args()
 
-    print("Loading checkpoint: {}".format(args.checkpoint))
-    ckpt = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
-    model = SC5MLPV1()
-    state = {k: v for k, v in ckpt["model_state"].items() if not k.startswith("confidence_head")}
-    model.load_state_dict(state, strict=False)
-    model.eval()
+    # Strict checkpoint load
+    model, mean, std, tau_c, tau_r, guard, ckpt_meta = load_checkpoint_strict(args.checkpoint)
 
-    mean = ckpt.get("mean")
-    std = ckpt.get("std")
+    # Thresholds: CLI override must match checkpoint, or be unset
+    for cli_val, ckpt_val, name in [
+        (args.tau_corridor, tau_c, "tau_corridor"),
+        (args.tau_release, tau_r, "tau_release"),
+        (args.guard, guard, "guard"),
+    ]:
+        if cli_val is not None and cli_val != ckpt_val:
+            sys.exit("CLI {}={} conflicts with checkpoint value={}".format(name, cli_val, ckpt_val))
+
+    print("Checkpoint thresholds: tau_c={} tau_r={} guard={}".format(tau_c, tau_r, guard))
+    print("Checkpoint metric: {}".format(ckpt_meta.get("checkpoint_metric", "unknown")))
 
     print("Loading episode index: {}".format(args.episode_index))
     ep_index = load_episode_index(args.episode_index)
@@ -164,9 +208,9 @@ def main():
     missing_event = sorted([e for e in eval_keys if e not in events])
     errors = []
     if missing_feat:
-        errors.append("{} eval episodes MISSING features: {}...".format(len(missing_feat), missing_feat[:5]))
+        errors.append("{} eval episodes MISSING features".format(len(missing_feat)))
     if missing_event:
-        errors.append("{} eval episodes MISSING teacher events: {}...".format(len(missing_event), missing_event[:5]))
+        errors.append("{} eval episodes MISSING teacher events".format(len(missing_event)))
     if errors:
         for e in errors:
             print("FAIL: {}".format(e))
@@ -174,10 +218,9 @@ def main():
 
     print("Evaluating {} episodes".format(len(eval_keys)))
 
-    # Normalize
-    if mean is not None and std is not None:
-        for ek in list(features.keys()):
-            features[ek] = (features[ek] - mean.astype(np.float32)) / np.maximum(std.astype(np.float32), 1e-8)
+    # Normalize with checkpoint mean/std
+    for ek in list(features.keys()):
+        features[ek] = (features[ek] - mean) / np.maximum(std, 1e-8)
 
     suite_map = {}
     for ek in eval_keys:
@@ -189,14 +232,24 @@ def main():
     results = []
     for ek in eval_keys:
         teacher_info = events[ek]
-        r = evaluate_episode_with_model(model, features[ek], teacher_info,
-                                         args.tau_corridor, args.tau_release, args.guard)
+        r = evaluate_episode(model, features[ek], teacher_info, tau_c, tau_r, guard)
         r["episode_key"] = ek
         results.append(r)
 
     metrics = compute_metrics(results)
     metrics["split_key"] = args.split_key
-    metrics["checkpoint_metric"] = ckpt.get("checkpoint_metric", "unknown")
+    metrics["checkpoint_sha256"] = sha256_file(args.checkpoint)
+    metrics["checkpoint_metric"] = ckpt_meta.get("checkpoint_metric", "unknown")
+    metrics["checkpoint_epoch"] = ckpt_meta.get("epoch", -1)
+    metrics["tau_corridor"] = tau_c
+    metrics["tau_release"] = tau_r
+    metrics["guard"] = guard
+    metrics["input_binding"] = {
+        "feature_csv_sha256": sha256_file(args.feature_csv),
+        "label_csv_sha256": sha256_file(args.label_csv),
+        "episode_index_sha256": sha256_file(args.episode_index),
+        "split_file_sha256": sha256_file(args.split_file),
+    }
     metrics["per_suite"] = per_suite_metrics(results, suite_map)
 
     out = json.dumps(metrics, indent=2)

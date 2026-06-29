@@ -23,6 +23,7 @@ from strict_loader import (
     compute_normalization, SC5_FEATURES, SC5_PHASES, N_FEATURES, N_PHASES, VALID_SUITES,
 )
 from gripper_attack.sc5mlp_v1 import SC5MLPV1
+from score_fsm_legacy_v1 import run_fsm_legacy_v1, model_to_scores
 
 
 def parse_config(path: str) -> dict:
@@ -86,29 +87,8 @@ def compute_val_event_f1(model, features, labels, episode_keys, suite_map, tau_c
     with torch.no_grad():
         for ek in episode_keys:
             feats = torch.from_numpy(features[ek])
-            out = model(feats)
-            cp = torch.sigmoid(out["corridor_logit"]).squeeze(-1).numpy()
-            rp = torch.sigmoid(out["release_logit"]).squeeze(-1).numpy()
-            phase_idx = out["phase_logits"].argmax(dim=-1).numpy()
-            phase_names = [SC5_PHASES[p] for p in phase_idx]
-
-            # FSM: legacy_v1 IDLE→ARMED→EMITTED
-            state = "IDLE"
-            arm_step = -1
-            emit_step = -1
-            emitted = False
-            n = len(cp)
-            for step in range(n):
-                if state == "IDLE":
-                    if phase_names[step] == "stable_carry" and cp[step] > tau_c:
-                        state = "ARMED"
-                        arm_step = step
-                elif state == "ARMED":
-                    if step >= arm_step + guard and cp[step] > tau_c and rp[step] < tau_r:
-                        state = "EMITTED"
-                        emit_step = step
-                        emitted = True
-                        break
+            cp, rp, phase_names = model_to_scores(model, feats)
+            emitted, emit_step = run_fsm_legacy_v1(cp, rp, phase_names, tau_c, tau_r, guard)
 
             labs = labels[ek]
             n_steps = len(labs["phase"])
