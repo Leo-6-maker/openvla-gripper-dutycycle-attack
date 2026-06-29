@@ -1,28 +1,29 @@
 #!/bin/bash
 # TRUE_T10 Closure → Next Condition Pipeline
-# Run AFTER TRUE_T10 reaches 162/162.
+# Default: dry_run only. Requires --execute for each step.
 #
-# Usage: bash tools/deployment/pipeline_next_condition.sh <CONDITION_ID>
-#   CONDITION_ID: RANDOM_TIME | RAND_LINF | SHUFFLED | TMA | UMA | EARLY_SHIFT
-#
-# Steps:
-#   1. Validate TRUE_T10 closure (162/162 check)
-#   2. Generate condition manifest from TRUE_T10 template
-#   3. Launch condition across idle GPUs
-
+# Usage: bash tools/deployment/pipeline_next_condition.sh <CONDITION_ID> [--execute]
 set -euo pipefail
 
-CONDITION="${1:?Usage: $0 <CONDITION_ID>}"
+CONDITION="${1:?Usage: $0 <CONDITION_ID> [--execute]}"
+EXECUTE="${2:-}"
 REPO="/mnt/sdc/dty_user/openvla_attack"
 EVIDENCE="${REPO}/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1"
 PYTHON="${REPO}/envs/openvla-official-a800/bin/python"
 TOOLS="${REPO}/tools/deployment"
 
 TRUE_T10_MANIFEST="${EVIDENCE}/TRUE_T10/formal_manifest.jsonl"
-CLOSURE_REPORT="${EVIDENCE}/TRUE_T10/launch/CLOSURE_REPORT.json"
+CLOSURE_REPORT="${EVIDENCE}/TRUE_T10/launch/CLOSURE_REPORT_V2.json"
+EXPECTED_BRIDGE="4ef2a919ee650cf35b35eaa5b9c2152c0d7d18f43710c246ce14dd1c8a83e468"
+EXPECTED_WORKER="e21f7fbe7f78003ac2e626bfe9ddb047c194022727bb4d9bc19b9ce0876e337c"
 
 echo "========================================="
 echo "TRUE_T10 Closure → ${CONDITION} Pipeline"
+if [ "${EXECUTE}" = "--execute" ]; then
+    echo "MODE: EXECUTE"
+else
+    echo "MODE: DRY_RUN (add --execute to launch)"
+fi
 echo "========================================="
 
 # Step 1: Closure validation
@@ -30,12 +31,13 @@ echo ""
 echo "[1/3] Validating TRUE_T10 closure..."
 ${PYTHON} "${TOOLS}/validate_true_t10_closure.py" \
     --manifest "${TRUE_T10_MANIFEST}" \
-    --output "${CLOSURE_REPORT}" \
-    --fail_on_missing
+    --expected_bridge_sha "${EXPECTED_BRIDGE}" \
+    --expected_worker_sha "${EXPECTED_WORKER}" \
+    --output "${CLOSURE_REPORT}"
 
-MISSING=$(python3 -c "import json; print(json.load(open('${CLOSURE_REPORT}'))['missing'])")
-if [ "${MISSING}" != "0" ]; then
-    echo "ERROR: ${MISSING} episodes missing. Cannot proceed."
+CLOSURE_OK=$(${PYTHON} -c "import json; print(json.load(open('${CLOSURE_REPORT}'))['closure_pass'])")
+if [ "${CLOSURE_OK}" != "True" ]; then
+    echo "ERROR: Closure validation failed. See ${CLOSURE_REPORT}"
     exit 1
 fi
 echo "  Closure: PASS (162/162)"
@@ -43,25 +45,41 @@ echo "  Closure: PASS (162/162)"
 # Step 2: Generate condition manifest
 echo ""
 echo "[2/3] Generating ${CONDITION} manifest..."
-COND_MANIFEST="${EVIDENCE}/${CONDITION}/formal_manifest.jsonl"
+MANIFEST_EXEC=""
+if [ "${EXECUTE}" = "--execute" ]; then
+    MANIFEST_EXEC="--execute"
+fi
 ${PYTHON} "${TOOLS}/build_next_condition_manifest.py" \
     --true_t10_manifest "${TRUE_T10_MANIFEST}" \
     --conditions "${CONDITION}" \
-    --output_root "${EVIDENCE}"
+    --evidence_root "${EVIDENCE}" \
+    ${MANIFEST_EXEC}
 
-JOB_COUNT=$(wc -l < "${COND_MANIFEST}")
-echo "  Manifest: ${COND_MANIFEST} (${JOB_COUNT} jobs)"
+COND_MANIFEST="${EVIDENCE}/${CONDITION}/formal_manifest.jsonl"
+
+if [ "${EXECUTE}" = "--execute" ]; then
+    JOB_COUNT=$(wc -l < "${COND_MANIFEST}")
+    echo "  Manifest: ${COND_MANIFEST} (${JOB_COUNT} jobs)"
+else
+    echo "  DRY_RUN: would write ${COND_MANIFEST}"
+fi
 
 # Step 3: Launch
 echo ""
 echo "[3/3] Launching ${CONDITION}..."
-LAUNCH_DIR="${EVIDENCE}/${CONDITION}/launch"
+LAUNCH_EXEC=""
+if [ "${EXECUTE}" = "--execute" ]; then
+    LAUNCH_EXEC="--execute"
+fi
 ${PYTHON} "${TOOLS}/launch_condition.py" \
     --manifest "${COND_MANIFEST}" \
     --condition_id "${CONDITION}" \
-    --launch_dir "${LAUNCH_DIR}"
+    --launch_dir "${EVIDENCE}/${CONDITION}/launch" \
+    --mode formal \
+    ${LAUNCH_EXEC}
 
 echo ""
-echo "Pipeline complete. Monitor:"
-echo "  tail -f ${LAUNCH_DIR}/worker_*.log"
-echo "  watch -n 30 'find ${EVIDENCE}/${CONDITION}/formal_v1/ -name episode_summary.json | wc -l'"
+echo "Pipeline complete."
+if [ "${EXECUTE}" != "--execute" ]; then
+    echo "DRY_RUN only. Re-run with --execute to actually launch."
+fi
