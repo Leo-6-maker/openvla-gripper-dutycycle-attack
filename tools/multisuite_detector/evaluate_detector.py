@@ -434,7 +434,7 @@ def main():
     }
     metrics["per_suite"] = per_suite_metrics(results, suite_map)
     suite_f1s = [m2["event_f1"] for m2 in metrics["per_suite"].values() if m2["n_episodes"] > 0]
-    metrics["micro_event_f1"] = metrics["event_f1"]
+    metrics["micro_event_f1"] = metrics.pop("event_f1")
     metrics["suite_macro_event_f1"] = float(np.mean(suite_f1s)) if suite_f1s else 0.0
     if suite_f1s:
         metrics["worst_suite_event_f1"] = float(np.min(suite_f1s))

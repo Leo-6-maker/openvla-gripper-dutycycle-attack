@@ -23,6 +23,7 @@ PRIMARY_ELIGIBLE_REQUIRED = {
     "teacher_label_valid": True,
     "mechanism_eligible": True,
     "schema_fail": False,
+    "telemetry_complete": True,
 }
 
 

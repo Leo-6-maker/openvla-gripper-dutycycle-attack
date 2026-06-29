@@ -6,7 +6,7 @@ Checkpoint selection: val_loss (default) or val_suite_macro_event_f1 (via detect
 Fail-closed on F1 if detector runtime unavailable.
 """
 from __future__ import annotations
-import argparse, hashlib, json, os, subprocess, sys, time
+import argparse, hashlib, json, os, re, subprocess, sys, time
 from collections import defaultdict
 from pathlib import Path
 
@@ -50,7 +50,7 @@ def get_git_info(repo: Path) -> dict:
     try:
         commit = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True, stderr=subprocess.DEVNULL).strip()
         dirty_out = subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain"], text=True, stderr=subprocess.DEVNULL).strip()
-        if not commit or len(commit) != 40:
+        if not re.fullmatch(r"[0-9a-f]{40}", commit):
             raise RuntimeError("Invalid git commit: {}".format(commit[:20]))
         dirty = bool(dirty_out)
         return {"commit": commit, "dirty": dirty, "dirty_files": len(dirty_out.split(chr(10))) if dirty_out else 0}
@@ -111,9 +111,8 @@ def compute_val_event_f1(model, features, labels, episode_keys, suite_map, tau_c
                     corridor_active_steps = set(range(wstart, wend + 1))
                     in_window = emitted and (emit_step in corridor_active_steps)
                 elif len(starts) > 1:
-                    # Multi-event: REJECT from primary F1 computation
-                    has_teacher = 0  # treated as teacher-negative (cannot determine which event)
-                    in_window = False
+                    # Multi-event: SKIP from primary F1 (excluded, not relabeled)
+                    continue
 
             by_suite[suite_map[ek]].append({
                 "emitted": emitted, "in_window": in_window,
@@ -122,24 +121,28 @@ def compute_val_event_f1(model, features, labels, episode_keys, suite_map, tau_c
             })
 
     per_suite = {}
+    total_excluded = 0
     for s in sorted(by_suite):
         rs = by_suite[s]
-        tp = sum(1 for r in rs if r["has_teacher"] and r["emitted"] and r["in_window"])
-        fp = sum(1 for r in rs if r["emitted"] and not r["in_window"])
-        fn = sum(1 for r in rs if r["has_teacher"] and not r["in_window"])
-        tn = sum(1 for r in rs if not r["has_teacher"] and not r["emitted"])
+        excluded = sum(1 for r in rs if r.get("n_corridor_regions", 1) > 1 or r.get("excluded", False))
+        scored_rs = [r for r in rs if not r.get("excluded", False) and r.get("n_corridor_regions", 1) <= 1]
+        total_excluded += excluded
+        tp = sum(1 for r in scored_rs if r["has_teacher"] and r["emitted"] and r["in_window"])
+        fp = sum(1 for r in scored_rs if r["emitted"] and not r["in_window"])
+        fn = sum(1 for r in scored_rs if r["has_teacher"] and not r["in_window"])
+        tn = sum(1 for r in scored_rs if not r["has_teacher"] and not r["emitted"])
         prec = tp / max(1, tp + fp)
         rec = tp / max(1, tp + fn)
         f1 = 2 * prec * rec / max(0.001, prec + rec)
-        multi_event = sum(1 for r in rs if r.get("n_corridor_regions", 1) > 1)
         per_suite[s] = {"tp": tp, "fp": fp, "fn": fn, "tn": tn,
                          "precision": float(prec), "recall": float(rec), "f1": float(f1),
-                         "n_episodes": len(rs), "multi_event_episodes": multi_event}
+                         "n_input_episodes": len(rs), "n_scored_episodes": len(scored_rs),
+                         "excluded_multi_event": excluded}
 
     if not per_suite:
-        return 0.0, {}
+        return 0.0, {}, 0
     macro_f1 = float(np.mean([v["f1"] for v in per_suite.values()]))
-    return macro_f1, per_suite
+    return macro_f1, per_suite, total_excluded
 
 
 def train_epoch(model, features, labels, episode_keys, suite_map, optimizer, batch_size, rng):
@@ -235,6 +238,13 @@ def main():
         existing = [p.name for p in out_dir.iterdir()]
         sys.exit("Output directory not empty: {} (existing: {})".format(out_dir, existing[:10]))
 
+    # Pre-training environment checks (before any data loading)
+    git_info = get_git_info(REPO)
+    if git_info["dirty"]:
+        sys.exit("Git checkout is dirty ({} files) — formal training requires clean checkout".format(git_info["dirty_files"]))
+    if not re.fullmatch(r"[0-9a-f]{40}", git_info["commit"]):
+        sys.exit("Invalid repo_commit: {}".format(git_info["commit"]))
+
     print("Loading episode index: {} [cohort={}]".format(args.episode_index, args.cohort))
     episode_index = load_episode_index(args.episode_index, cohort=args.cohort)
     print("  {} episodes in cohort".format(len(episode_index)))
@@ -268,14 +278,6 @@ def main():
     if args.fsm_version != "legacy_v1":
         sys.exit("F1 checkpoint selection only supports fsm_version=legacy_v1. Got: {}".format(args.fsm_version))
 
-    git_info = get_git_info(REPO)
-
-    # Pre-training guards: get_git_info already raises if git unavailable
-    if git_info["dirty"]:
-        sys.exit("Git checkout is dirty ({} files) — formal training requires clean checkout".format(git_info["dirty_files"]))
-    if not git_info["commit"] or len(git_info["commit"]) != 40:
-        sys.exit("Invalid repo_commit: {}".format(git_info.get("commit", "MISSING")))
-
     print("Config: {}, metric: {}, cohort: {}, FSM: {}".format(args.config, ckpt_metric, args.cohort, args.fsm_version))
 
     if args.dry_run:
@@ -303,7 +305,7 @@ def main():
 
         # Compute checkpoint selection metric with tie-breaker
         if ckpt_metric == "val_suite_macro_event_f1":
-            current_metric, f1_details = compute_val_event_f1(
+            current_metric, f1_details, f1_excluded = compute_val_event_f1(
                 model, features, labels, val_eks, suite_map,
                 args.tau_corridor, args.tau_release, args.guard)
 
@@ -334,9 +336,9 @@ def main():
 
             if epoch == 1 or improved:
                 for s, d in sorted(f1_details.items()):
-                    print("  val F1 {}: tp={} fp={} fn={} tn={} prec={:.3f} rec={:.3f} f1={:.3f}{}".format(
+                    print("  val F1 {}: tp={} fp={} fn={} tn={} prec={:.3f} rec={:.3f} f1={:.3f} in={} scored={} excl={}".format(
                         s, d["tp"], d["fp"], d["fn"], d["tn"], d["precision"], d["recall"], d["f1"],
-                        " MULTI_EVENT" if d.get("multi_event_episodes", 0) > 0 else ""))
+                        d["n_input_episodes"], d["n_scored_episodes"], d["excluded_multi_event"]))
             print("  val F1 (suite-macro): {:.4f}  best: {:.4f}  false_emits/ep: {:.3f}".format(
                 current_metric, best_metric if best_metric != float("-inf") else 0.0, false_emits_per_ep))
         else:
@@ -386,9 +388,12 @@ def main():
                 ckpt["val_suite_macro_event_f1"] = float(best_metric)
                 ckpt["val_suite_macro_event_f1_details"] = {
                     s: {"tp": d["tp"], "fp": d["fp"], "fn": d["fn"], "tn": d["tn"],
-                        "precision": d["precision"], "recall": d["recall"], "f1": d["f1"]}
+                        "precision": d["precision"], "recall": d["recall"], "f1": d["f1"],
+                        "n_input": d["n_input_episodes"], "n_scored": d["n_scored_episodes"],
+                        "excluded_multi_event": d["excluded_multi_event"]}
                     for s, d in f1_details.items()}
                 ckpt["selection_false_emits_per_episode"] = float(best_false_emits)
+                ckpt["multi_event_excluded_total"] = int(f1_excluded)
                 ckpt["selection_tie_breaker"] = "macro_f1 > best+0.001; within delta: lower false_emits"
             torch.save(ckpt, saved_ckpt_path)
         else:
