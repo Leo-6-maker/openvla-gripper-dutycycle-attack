@@ -274,7 +274,13 @@ def main():
         sys.exit("Output directory not empty: {} (existing: {})".format(out_dir, existing[:10]))
 
     # Pre-training environment checks (before any data loading)
-    git_info = get_git_info(REPO)
+    try:
+        git_info = get_git_info(REPO)
+    except Exception as e:
+        if args.dry_run:
+            git_info = {"commit": "DRY_RUN", "dirty": False, "dirty_files": 0}
+        else:
+            sys.exit("Git unavailable — formal training requires a clean git worktree: {}".format(e))
     if not args.dry_run:
         if git_info["dirty"]:
             sys.exit("Git checkout is dirty ({} files) — formal training requires clean checkout".format(git_info["dirty_files"]))

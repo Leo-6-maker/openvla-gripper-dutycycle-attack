@@ -351,6 +351,21 @@ def main():
     }
     model, mean, std, tau_c, tau_r, guard, K, ckpt_meta = load_checkpoint_strict(args.checkpoint, provided)
 
+    # Conditional F1 evidence: required when checkpoint_metric == val_suite_macro_event_f1
+    if ckpt_meta.get("checkpoint_metric") == "val_suite_macro_event_f1":
+        f1_req = ["val_suite_macro_event_f1", "val_suite_macro_event_f1_details",
+                   "multi_event_excluded_total", "multi_event_excluded_keys_sha256",
+                   "selection_false_emits_per_episode", "selection_tie_breaker"]
+        missing_f1 = sorted(set(f1_req) - set(ckpt_meta.keys()))
+        if missing_f1:
+            raise ValueError("F1 checkpoint missing required evidence: {}".format(missing_f1))
+        _validate_sha_field(ckpt_meta["multi_event_excluded_keys_sha256"], "multi_event_excluded_keys_sha256")
+        # Verify per-suite input = scored + excluded
+        f1d = ckpt_meta["val_suite_macro_event_f1_details"]
+        for s, d in f1d.items():
+            if d.get("n_input", d.get("n_input_episodes", 0)) != d.get("n_scored", d.get("n_scored_episodes", 0)) + d.get("excluded_multi_event", 0):
+                raise ValueError("Suite {} F1 detail mismatch: n_input != n_scored + excluded".format(s))
+
     # Thresholds: CLI override must match checkpoint, or be unset
     for cli_val, ckpt_val, name in [
         (args.tau_corridor, tau_c, "tau_corridor"),
