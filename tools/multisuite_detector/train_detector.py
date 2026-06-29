@@ -86,9 +86,17 @@ def compute_val_event_f1(model, features, labels, episode_keys, suite_map, tau_c
     """
     model.eval()
 
+    # Track input/excluded/scored separately (excluded counted BEFORE continue)
+    n_input_by_suite = defaultdict(int)
+    n_excluded_by_suite = defaultdict(int)
+    excluded_keys = []
     by_suite = defaultdict(list)
+
     with torch.no_grad():
         for ek in episode_keys:
+            s = suite_map[ek]
+            n_input_by_suite[s] += 1
+
             feats = torch.from_numpy(features[ek])
             cp, rp, phase_names = model_to_scores(model, feats)
             emitted, emit_step = run_fsm_legacy_v1(cp, rp, phase_names, tau_c, tau_r, guard)
@@ -96,53 +104,71 @@ def compute_val_event_f1(model, features, labels, episode_keys, suite_map, tau_c
             labs = labels[ek]
             n_steps = len(labs["phase"])
 
-            # Primary event: exactly one contiguous corridor=1 region
             corr = labs["corridor"][:n_steps]
             has_teacher = int(corr.any())
-            in_window = False
-            corridor_active_steps = None
+
+            # Multi-event detection (counted before exclude)
+            n_regions = 1
             if has_teacher:
-                # Find single contiguous positive region
                 diff = np.diff(np.concatenate([[0], corr, [0]]))
                 starts = np.where(diff == 1)[0]
                 ends = np.where(diff == -1)[0]
-                if len(starts) == 1 and len(ends) == 1:
-                    wstart, wend = starts[0], ends[0] - 1
-                    corridor_active_steps = set(range(wstart, wend + 1))
-                    in_window = emitted and (emit_step in corridor_active_steps)
-                elif len(starts) > 1:
-                    # Multi-event: SKIP from primary F1 (excluded, not relabeled)
-                    continue
+                n_regions = len(starts)
 
-            by_suite[suite_map[ek]].append({
+            if n_regions > 1:
+                n_excluded_by_suite[s] += 1
+                excluded_keys.append(ek)
+                continue
+
+            in_window = False
+            if has_teacher and n_regions == 1:
+                wstart, wend = starts[0], ends[0] - 1
+                in_window = emitted and (emit_step >= wstart and emit_step <= wend)
+
+            by_suite[s].append({
                 "emitted": emitted, "in_window": in_window,
                 "has_teacher": has_teacher,
-                "n_corridor_regions": len(starts) if has_teacher else 1,
+                "n_corridor_regions": n_regions,
             })
 
+    # Compute per-suite F1 with verified input/scored/excluded counts
     per_suite = {}
-    total_excluded = 0
-    for s in sorted(by_suite):
-        rs = by_suite[s]
-        excluded = sum(1 for r in rs if r.get("n_corridor_regions", 1) > 1 or r.get("excluded", False))
-        scored_rs = [r for r in rs if not r.get("excluded", False) and r.get("n_corridor_regions", 1) <= 1]
-        total_excluded += excluded
-        tp = sum(1 for r in scored_rs if r["has_teacher"] and r["emitted"] and r["in_window"])
-        fp = sum(1 for r in scored_rs if r["emitted"] and not r["in_window"])
-        fn = sum(1 for r in scored_rs if r["has_teacher"] and not r["in_window"])
-        tn = sum(1 for r in scored_rs if not r["has_teacher"] and not r["emitted"])
+    total_excluded = sum(n_excluded_by_suite.values())
+    for s in sorted(n_input_by_suite):
+        n_in = n_input_by_suite[s]
+        n_excl = n_excluded_by_suite[s]
+        rs = by_suite.get(s, [])
+        n_scored = len(rs)
+
+        if n_scored == 0:
+            raise RuntimeError(
+                "Suite {} has 0 scored episodes ({} input, {} excluded). "
+                "All validation episodes excluded — cannot compute F1.".format(s, n_in, n_excl))
+        if n_in != n_scored + n_excl:
+            raise RuntimeError(
+                "Suite {} count mismatch: input={} scored={} excluded={}".format(s, n_in, n_scored, n_excl))
+
+        tp = sum(1 for r in rs if r["has_teacher"] and r["emitted"] and r["in_window"])
+        fp = sum(1 for r in rs if r["emitted"] and not r["in_window"])
+        fn = sum(1 for r in rs if r["has_teacher"] and not r["in_window"])
+        tn = sum(1 for r in rs if not r["has_teacher"] and not r["emitted"])
         prec = tp / max(1, tp + fp)
         rec = tp / max(1, tp + fn)
         f1 = 2 * prec * rec / max(0.001, prec + rec)
         per_suite[s] = {"tp": tp, "fp": fp, "fn": fn, "tn": tn,
                          "precision": float(prec), "recall": float(rec), "f1": float(f1),
-                         "n_input_episodes": len(rs), "n_scored_episodes": len(scored_rs),
-                         "excluded_multi_event": excluded}
+                         "n_input_episodes": n_in, "n_scored_episodes": n_scored,
+                         "excluded_multi_event": n_excl}
 
     if not per_suite:
-        return 0.0, {}, 0
+        raise RuntimeError("No suites with scored episodes — cannot compute F1")
+
+    # Bind excluded episode keys SHA for auditability
+    excluded_keys.sort()
+    excluded_sha = hashlib.sha256(json.dumps(excluded_keys, sort_keys=True).encode()).hexdigest()
+
     macro_f1 = float(np.mean([v["f1"] for v in per_suite.values()]))
-    return macro_f1, per_suite, total_excluded
+    return macro_f1, per_suite, total_excluded, excluded_keys, excluded_sha
 
 
 def train_epoch(model, features, labels, episode_keys, suite_map, optimizer, batch_size, rng):
@@ -305,7 +331,7 @@ def main():
 
         # Compute checkpoint selection metric with tie-breaker
         if ckpt_metric == "val_suite_macro_event_f1":
-            current_metric, f1_details, f1_excluded = compute_val_event_f1(
+            current_metric, f1_details, f1_excluded, f1_excluded_keys, f1_excluded_sha = compute_val_event_f1(
                 model, features, labels, val_eks, suite_map,
                 args.tau_corridor, args.tau_release, args.guard)
 
@@ -394,6 +420,7 @@ def main():
                     for s, d in f1_details.items()}
                 ckpt["selection_false_emits_per_episode"] = float(best_false_emits)
                 ckpt["multi_event_excluded_total"] = int(f1_excluded)
+                ckpt["multi_event_excluded_keys_sha256"] = f1_excluded_sha
                 ckpt["selection_tie_breaker"] = "macro_f1 > best+0.001; within delta: lower false_emits"
             torch.save(ckpt, saved_ckpt_path)
         else:
