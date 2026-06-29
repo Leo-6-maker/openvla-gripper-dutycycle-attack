@@ -56,13 +56,16 @@ ${PYTHON} "${TOOLS}/build_next_condition_manifest.py" \
     --evidence_root "${EVIDENCE}" \
     ${MANIFEST_EXEC}
 
-COND_MANIFEST="${EVIDENCE}/${CONDITION}/formal_manifest.jsonl"
+COND_MANIFEST="${EVIDENCE}/${CONDITION}/manifest.jsonl"
+COND_SPEC="${EVIDENCE}/${CONDITION}/condition_spec.json"
 
 if [ "${EXECUTE}" = "--execute" ]; then
     JOB_COUNT=$(wc -l < "${COND_MANIFEST}")
     echo "  Manifest: ${COND_MANIFEST} (${JOB_COUNT} jobs)"
     MANIFEST_SHA=$(sha256sum "${COND_MANIFEST}" | awk '{print $1}')
-    echo "  SHA256: ${MANIFEST_SHA}"
+    SPEC_SHA=$(sha256sum "${COND_SPEC}" | awk '{print $1}')
+    echo "  Manifest SHA: ${MANIFEST_SHA}"
+    echo "  Spec SHA: ${SPEC_SHA}"
 else
     echo "  DRY_RUN: would write ${COND_MANIFEST}"
     echo ""
@@ -85,6 +88,7 @@ ${PYTHON} "${TOOLS}/launch_condition.py" \
     --expected_worker_sha "${EXPECTED_WORKER}" \
     --expected_bridge_sha "${EXPECTED_BRIDGE}" \
     --expected_manifest_sha "${MANIFEST_SHA}" \
+    --expected_condition_spec_sha "${SPEC_SHA}" \
     --execute
 
 echo ""
