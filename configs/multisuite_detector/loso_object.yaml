@@ -1,7 +1,7 @@
-# LOSO: Leave-One-Suite-Out — test on libero_object
 gate: LOSO_OBJECT_V1
 detector_type: loso
 test_suite: libero_object
+train_suites: [libero_spatial, libero_goal, libero_10]
 status: CODE_PREPARATION_ONLY
 
 architecture:
@@ -23,11 +23,12 @@ fsm:
   K: 10
 
 training_config:
-  seed: [42, 123, 456]
+  seeds: [42, 123, 456]
   epochs: 100
   batch_size: 32
   lr: 0.001
   patience: 20
+  checkpoint_metric: val_suite_macro_event_f1
 
 isolation:
   normalization_from_train_suites_only: true

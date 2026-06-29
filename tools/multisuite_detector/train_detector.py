@@ -69,59 +69,83 @@ def suite_balanced_sampler(episode_keys, suite_map, batch_size, rng):
         yield batch
 
 
-def compute_val_event_f1(checkpoint_path, features, labels, episode_keys, suite_map, fsm_version, tau_c, tau_r, guard):
-    """Compute validation suite-macro event F1 using detector runtime replay."""
-    try:
-        sys.path.insert(0, str(REPO / "src"))
-        from gripper_attack.sc5_detector_runtime_v1r import SC5DetectorRuntimeV1R
-    except ImportError:
-        raise RuntimeError("F1 checkpoint metric requires detector runtime (src/gripper_attack/sc5_detector_runtime_v1r.py)")
+def compute_val_event_f1(model, features, labels, episode_keys, suite_map, tau_c, tau_r, guard):
+    """Compute validation suite-macro event F1 using model logits + FSM replay.
 
-    detector = SC5DetectorRuntimeV1R(checkpoint_path, tau_corridor=tau_c, tau_release=tau_r, guard=guard, fsm_version=fsm_version)
+    Uses model logits directly (no temp checkpoint, no runtime dependency).
+    Applies sigmoid to corridor/release, argmax to phase, then runs
+    the legacy_v1 FSM: IDLE→ARMED→EMITTED.
+    Avoids 3-head/4-head state_dict incompatibility and double normalization.
+    """
+    model.eval()
+    SC5_PHASES_LIST = [
+        "approach", "grasp_close", "stable_grasp", "first_lift",
+        "stable_carry", "pre_place_unsupported", "release_safe",
+        "recovery_or_regrasp", "abstain_unsupported",
+    ]
 
-    by_suite_results = defaultdict(list)
-    for ek in episode_keys:
-        detector.reset()
-        feats = features[ek]
-        labs = labels[ek]
-        n = min(len(feats), len(labs["phase"]))
-        emitted = False
-        emit_step = -1
-        for step in range(n):
-            d = detector.update(feats[step], step)
-            if d.get("emitted"):
-                emitted = True
-                emit_step = d.get("emit_step", -1)
-                break
-        # Determine if episode has a teacher event (any corridor_active=1 step)
-        has_teacher = int((labs["corridor"][:n] == 1).any())
-        # Determine if emit is within teacher corridor window
-        in_window = False
-        if emitted and has_teacher:
-            corridor_steps = np.where(labs["corridor"][:n] == 1)[0]
-            if len(corridor_steps) > 0:
-                wstart = corridor_steps[0]
-                wend = corridor_steps[-1]
-                in_window = wstart <= emit_step <= wend
-        by_suite_results[suite_map[ek]].append({
-            "emitted": emitted, "in_window": in_window,
-            "has_teacher": has_teacher,
-        })
+    by_suite = defaultdict(list)
+    with torch.no_grad():
+        for ek in episode_keys:
+            feats = torch.from_numpy(features[ek])
+            out = model(feats)
+            cp = torch.sigmoid(out["corridor_logit"]).squeeze(-1).numpy()
+            rp = torch.sigmoid(out["release_logit"]).squeeze(-1).numpy()
+            phase_idx = out["phase_logits"].argmax(dim=-1).numpy()
+            phase_names = [SC5_PHASES_LIST[p] for p in phase_idx]
 
-    per_suite_f1 = {}
-    for s in sorted(by_suite_results):
-        rs = by_suite_results[s]
+            # FSM: legacy_v1 IDLE→ARMED→EMITTED
+            state = "IDLE"
+            arm_step = -1
+            emit_step = -1
+            emitted = False
+            n = len(cp)
+            for step in range(n):
+                if state == "IDLE":
+                    if phase_names[step] == "stable_carry" and cp[step] > tau_c:
+                        state = "ARMED"
+                        arm_step = step
+                elif state == "ARMED":
+                    if step >= arm_step + guard and cp[step] > tau_c and rp[step] < tau_r:
+                        state = "EMITTED"
+                        emit_step = step
+                        emitted = True
+                        break
+
+            labs = labels[ek]
+            n_steps = len(labs["phase"])
+            has_teacher = int((labs["corridor"][:n_steps] == 1).any())
+            in_window = False
+            if emitted and has_teacher:
+                corridor_steps = np.where(labs["corridor"][:n_steps] == 1)[0]
+                if len(corridor_steps) > 0:
+                    wstart = corridor_steps[0]
+                    wend = corridor_steps[-1]
+                    in_window = wstart <= emit_step <= wend
+
+            by_suite[suite_map[ek]].append({
+                "emitted": emitted, "in_window": in_window,
+                "has_teacher": has_teacher,
+            })
+
+    per_suite = {}
+    for s in sorted(by_suite):
+        rs = by_suite[s]
         tp = sum(1 for r in rs if r["emitted"] and r["in_window"])
         fp = sum(1 for r in rs if r["emitted"] and not r["in_window"])
         fn = sum(1 for r in rs if not r["emitted"] and r["has_teacher"])
+        tn = sum(1 for r in rs if not r["emitted"] and not r["has_teacher"])
         prec = tp / max(1, tp + fp)
         rec = tp / max(1, tp + fn)
         f1 = 2 * prec * rec / max(0.001, prec + rec)
-        per_suite_f1[s] = f1
+        per_suite[s] = {"tp": tp, "fp": fp, "fn": fn, "tn": tn,
+                         "precision": float(prec), "recall": float(rec), "f1": float(f1),
+                         "n_episodes": len(rs)}
 
-    if not per_suite_f1:
-        return 0.0
-    return float(np.mean(list(per_suite_f1.values())))
+    if not per_suite:
+        return 0.0, {}
+    macro_f1 = float(np.mean([v["f1"] for v in per_suite.values()]))
+    return macro_f1, per_suite
 
 
 def train_epoch(model, features, labels, episode_keys, suite_map, optimizer, batch_size, rng):
@@ -197,13 +221,9 @@ def main():
     ap.add_argument("--dry_run", action="store_true")
     args = ap.parse_args()
 
-    # Fail early if F1 requested but may be unavailable (checked at first save)
-    if args.checkpoint_metric == "val_suite_macro_event_f1":
-        try:
-            sys.path.insert(0, str(REPO / "src"))
-            from gripper_attack.sc5_detector_runtime_v1r import SC5DetectorRuntimeV1R  # noqa: F401
-        except ImportError:
-            sys.exit("F1 checkpoint metric requires detector runtime. Use --checkpoint_metric val_loss or install runtime.")
+    # F1 checkpoint metric uses model logits + inline FSM — no runtime dependency needed
+    if args.checkpoint_metric not in ("val_loss", "val_suite_macro_event_f1"):
+        sys.exit("Unknown checkpoint_metric: {}".format(args.checkpoint_metric))
 
     config = parse_config(args.config)
     tc = config.get("training_config", config)
@@ -213,9 +233,9 @@ def main():
     patience = tc.get("patience", args.patience)
     ckpt_metric = tc.get("checkpoint_metric", args.checkpoint_metric)
 
-    # Reject output_dir if non-empty (prevent cross-fold contamination)
+    # Reject output_dir if non-empty (only in non-dry_run mode)
     out_dir = Path(args.output_dir)
-    if out_dir.exists() and list(out_dir.iterdir()):
+    if not args.dry_run and out_dir.exists() and list(out_dir.iterdir()):
         existing = [p.name for p in out_dir.iterdir()]
         sys.exit("Output directory not empty: {} (existing: {})".format(out_dir, existing[:10]))
 
@@ -276,19 +296,14 @@ def main():
 
         # Compute checkpoint selection metric
         if ckpt_metric == "val_suite_macro_event_f1":
-            # Save temp checkpoint for detector runtime to load
-            tmp_ckpt = out_dir / ".tmp_ckpt.pt"
-            out_dir.mkdir(parents=True, exist_ok=True)
-            torch.save({"model_state": model.state_dict(), "mean": mean, "std": std,
-                        "feature_names": SC5_FEATURES, "phase_classes": SC5_PHASES,
-                        "dataset_sha256": sha256_file(args.feature_csv),
-                        "split_mode": "frozen", "normalization_source": "train_only",
-                        "n_train": len(train_eks), "n_val": len(val_eks), "seed": args.seed}, tmp_ckpt)
-            current_metric = compute_val_event_f1(str(tmp_ckpt), features, labels, val_eks,
-                                                   suite_map, args.fsm_version,
-                                                   args.tau_corridor, args.tau_release, args.guard)
-            tmp_ckpt.unlink(missing_ok=True)
+            current_metric, f1_details = compute_val_event_f1(
+                model, features, labels, val_eks, suite_map,
+                args.tau_corridor, args.tau_release, args.guard)
             improved = current_metric > best_metric
+            if epoch == 1 or improved:
+                for s, d in sorted(f1_details.items()):
+                    print("  val F1 {}: tp={} fp={} fn={} prec={:.3f} rec={:.3f} f1={:.3f}".format(
+                        s, d["tp"], d["fp"], d["fn"], d["precision"], d["recall"], d["f1"]))
             print("  val F1 (suite-macro): {:.4f}  best: {:.4f}".format(current_metric, best_metric))
         else:
             current_metric = val_loss

@@ -95,12 +95,14 @@ def run_fold(fold, args, config_path):
     config_sha = sha256_file(config_path)
     print("Config SHA: {}".format(config_sha[:16]))
 
-    # Step 1: Build LOSO split
-    split_file = out_dir / "split_loso.json"
+    # Step 1: Build LOSO split → split/ subdirectory
+    split_dir = out_dir / "split"
+    split_dir.mkdir(parents=True, exist_ok=True)
+    split_file = split_dir / "split_loso.json"
     cmd = [sys.executable, str(TOOLS / "build_detector_splits.py"),
            "--episode_index", args.episode_index,
            "--split_type", "loso", "--loso_fold", fold_name,
-           "--output_dir", str(out_dir), "--seed", str(args.seed)]
+           "--output_dir", str(split_dir), "--seed", str(args.seed)]
     print("Build split")
     subprocess.run(cmd, check=True)
 
@@ -109,15 +111,16 @@ def run_fold(fold, args, config_path):
         return {"fold": fold_name, "test_suite": fold["test"], "dry_run": True,
                 "config_path": config_path, "config_sha256": config_sha}
 
-    # Step 2: Train with exact resolved config path
-    ckpt_file = out_dir / "best_model.pt"
+    # Step 2: Train → train/ subdirectory (must be empty)
+    train_dir = out_dir / "train"
+    ckpt_file = train_dir / "best_model.pt"
     train_cmd = [sys.executable, str(TOOLS / "train_detector.py"),
                  "--config", config_path,
                  "--feature_csv", args.feature_csv,
                  "--label_csv", args.label_csv,
                  "--episode_index", args.episode_index,
                  "--split_file", str(split_file),
-                 "--output_dir", str(out_dir),
+                 "--output_dir", str(train_dir),
                  "--seed", str(args.seed),
                  "--epochs", str(args.epochs),
                  "--batch_size", str(args.batch_size),

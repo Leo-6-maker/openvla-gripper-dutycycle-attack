@@ -246,7 +246,16 @@ def compute_normalization(features, episode_keys):
     std = np.maximum(std, 1e-8)
     if not np.all(np.isfinite(mean)) or not np.all(np.isfinite(std)):
         raise ValueError("NaN/Inf in normalization mean/std")
-    norm_sha = _array_sha256(mean) + _array_sha256(std)
+
+    # Canonical normalization artifact → SHA-256 of JSON bytes
+    import hashlib
+    artifact = {
+        "feature_names": list(SC5_FEATURES),
+        "dtype": "float32",
+        "mean": [float(x) for x in mean],
+        "std": [float(x) for x in std],
+    }
+    norm_sha = hashlib.sha256(json.dumps(artifact, sort_keys=True).encode()).hexdigest()
     return mean, std, norm_sha
 
 
