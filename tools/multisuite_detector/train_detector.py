@@ -49,10 +49,13 @@ def sha256_bytes(data: bytes) -> str:
 def get_git_info(repo: Path) -> dict:
     try:
         commit = subprocess.check_output(["git", "-C", str(repo), "rev-parse", "HEAD"], text=True, stderr=subprocess.DEVNULL).strip()
-        dirty = subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain"], text=True, stderr=subprocess.DEVNULL).strip()
-        return {"commit": commit, "dirty": bool(dirty), "dirty_files": len(dirty.split(chr(10))) if dirty else 0}
-    except Exception:
-        return {"commit": "UNAVAILABLE", "dirty": None, "dirty_files": 0}
+        dirty_out = subprocess.check_output(["git", "-C", str(repo), "status", "--porcelain"], text=True, stderr=subprocess.DEVNULL).strip()
+        if not commit or len(commit) != 40:
+            raise RuntimeError("Invalid git commit: {}".format(commit[:20]))
+        dirty = bool(dirty_out)
+        return {"commit": commit, "dirty": dirty, "dirty_files": len(dirty_out.split(chr(10))) if dirty_out else 0}
+    except Exception as e:
+        raise RuntimeError("Git unavailable — formal training requires a clean git worktree: {}".format(e))
 
 
 def suite_balanced_sampler(episode_keys, suite_map, batch_size, rng):
@@ -108,10 +111,9 @@ def compute_val_event_f1(model, features, labels, episode_keys, suite_map, tau_c
                     corridor_active_steps = set(range(wstart, wend + 1))
                     in_window = emitted and (emit_step in corridor_active_steps)
                 elif len(starts) > 1:
-                    # Multi-event: use first contiguous region, flag as warning
-                    wstart, wend = starts[0], ends[0] - 1
-                    corridor_active_steps = set(range(wstart, wend + 1))
-                    in_window = emitted and (emit_step in corridor_active_steps)
+                    # Multi-event: REJECT from primary F1 computation
+                    has_teacher = 0  # treated as teacher-negative (cannot determine which event)
+                    in_window = False
 
             by_suite[suite_map[ek]].append({
                 "emitted": emitted, "in_window": in_window,
@@ -268,9 +270,11 @@ def main():
 
     git_info = get_git_info(REPO)
 
-    # Pre-training guards: reject before any GPU work
+    # Pre-training guards: get_git_info already raises if git unavailable
     if git_info["dirty"]:
-        sys.exit("Git checkout is dirty — formal training requires clean checkout")
+        sys.exit("Git checkout is dirty ({} files) — formal training requires clean checkout".format(git_info["dirty_files"]))
+    if not git_info["commit"] or len(git_info["commit"]) != 40:
+        sys.exit("Invalid repo_commit: {}".format(git_info.get("commit", "MISSING")))
 
     print("Config: {}, metric: {}, cohort: {}, FSM: {}".format(args.config, ckpt_metric, args.cohort, args.fsm_version))
 

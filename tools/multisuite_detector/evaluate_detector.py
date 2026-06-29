@@ -434,7 +434,11 @@ def main():
     }
     metrics["per_suite"] = per_suite_metrics(results, suite_map)
     suite_f1s = [m2["event_f1"] for m2 in metrics["per_suite"].values() if m2["n_episodes"] > 0]
+    metrics["micro_event_f1"] = metrics["event_f1"]
     metrics["suite_macro_event_f1"] = float(np.mean(suite_f1s)) if suite_f1s else 0.0
+    if suite_f1s:
+        metrics["worst_suite_event_f1"] = float(np.min(suite_f1s))
+        metrics["best_suite_event_f1"] = float(np.max(suite_f1s))
 
     out = json.dumps(metrics, indent=2)
     if args.output == "-":
@@ -446,9 +450,10 @@ def main():
 
     print("\nEpisodes: {}  TP: {}  FP: {}  FN: {}  TN: {}".format(
         metrics["n_episodes"], metrics["tp"], metrics["fp"], metrics["fn"], metrics["tn"]))
-    print("F1: {:.3f}  Precision: {:.3f}  Recall: {:.3f}  Suite-macro F1: {:.3f}".format(
-        metrics["event_f1"], metrics["event_precision"], metrics["event_recall"],
-        metrics.get("suite_macro_event_f1", 0.0)))
+    print("F1: micro={:.3f} macro={:.3f} worst={:.3f}  Precision: {:.3f}  Recall: {:.3f}".format(
+        metrics.get("micro_event_f1", 0.0), metrics.get("suite_macro_event_f1", 0.0),
+        metrics.get("worst_suite_event_f1", 0.0),
+        metrics["event_precision"], metrics["event_recall"]))
     print("K={}: containment {:.3f}  Abstention: {:.3f}".format(
         K, metrics["k_containment_rate"], metrics["correct_abstention_rate"]))
     for s, m in sorted(metrics.get("per_suite", {}).items()):
