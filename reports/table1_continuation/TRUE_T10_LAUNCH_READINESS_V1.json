@@ -1,0 +1,25 @@
+{
+  "schema_version": "true_t10_launch_readiness.v1",
+  "overall_verdict": "TRUE_T10_LAUNCH_HOLD",
+  "snapshot_verification": "SERVER_SNAPSHOT_REQUIRED",
+  "formal_clean_independent_verdict": "HOLD",
+  "server_manifest_sha": "SERVER_SNAPSHOT_REQUIRED",
+  "codex_canonical_manifest_sha": "NOT_GENERATED",
+  "items": [
+    {"gate": "Formal CLEAN closure", "status": "HOLD", "reason": "Bubble snapshot and offline validator run required"},
+    {"gate": "18-cluster / 54-parent reconciliation", "status": "HOLD", "reason": "offline Formal CLEAN artifacts required"},
+    {"gate": "retry lineage", "status": "HOLD", "reason": "offline terminal ledger required"},
+    {"gate": "no-emission ITT preservation", "status": "HOLD", "reason": "offline aggregate required"},
+    {"gate": "server runtime reconciliation", "status": "HOLD", "reason": "server snapshot required"},
+    {"gate": "CLEAN freeze verification", "status": "HOLD", "reason": "candidate and final-envelope verification required"},
+    {"gate": "TRUE_T10 condition spec", "status": "HOLD", "reason": "authorized condition spec not present"},
+    {"gate": "TRUE_T10 manifest canonical equality", "status": "HOLD", "reason": "server manifest and Codex preview unavailable"},
+    {"gate": "output-root isolation", "status": "HOLD", "reason": "authorized output root not bound"},
+    {"gate": "storage", "status": "HOLD", "reason": "server disk risk unresolved"},
+    {"gate": "GPU health", "status": "HOLD", "reason": "not checked from Codex by request"},
+    {"gate": "CLEAN1500 resource overlap", "status": "HOLD", "reason": "server-side state required"},
+    {"gate": "engineering canary validity", "status": "HOLD", "reason": "must be bound to reconciled runtime"},
+    {"gate": "Batch-A registry", "status": "PASS", "reason": "registry validator passes with all rows unauthorized/HOLD"},
+    {"gate": "formal launch authorization", "status": "PROHIBITED", "reason": "user has not authorized launch"}
+  ]
+}

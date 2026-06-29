@@ -1,0 +1,41 @@
+{
+  "schema_version": "loto_table1_rnad_spec.v1",
+  "freeze_timing": "POST_TRUE_T10_LAUNCH_PRE_AGGREGATE_OUTCOME_INSPECTION",
+  "status": "FROZEN_FOR_SYNTHETIC_VALIDATION",
+  "inputs": {
+    "telemetry_format": "csv",
+    "required_columns": [
+      "job_key",
+      "condition_id",
+      "detector_emitted",
+      "attack_active",
+      "clean_policy_action_7d",
+      "policy_action_7d",
+      "clean_env_action_7d",
+      "env_action_7d"
+    ],
+    "action_vector_length": 7,
+    "arm_indices": [0, 1, 2, 3, 4, 5],
+    "gripper_index": 6,
+    "normalizer": "mean_abs_delta_per_dimension"
+  },
+  "outputs": [
+    "policy_arm_itt",
+    "execution_arm_itt",
+    "policy_gripper_itt",
+    "execution_gripper_itt",
+    "policy_arm_attack_active",
+    "execution_arm_attack_active",
+    "policy_gripper_attack_active",
+    "execution_gripper_attack_active"
+  ],
+  "denominators": {
+    "itt_full_episode": "all canonical manifest rows, including no-emission episodes",
+    "attack_active_conditional": "rows where attack_active is true"
+  },
+  "execution_rnad_required_comparison": "env_action_7d vs clean_env_action_7d",
+  "prohibited": [
+    "dropping no-emission episodes from ITT",
+    "choosing thresholds after TRUE_T10 aggregate outcome inspection"
+  ]
+}

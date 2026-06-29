@@ -1,0 +1,17 @@
+{
+  "schema_version": "loto_table1_aggregation_spec.v1",
+  "freeze_timing": "POST_TRUE_T10_LAUNCH_PRE_AGGREGATE_OUTCOME_INSPECTION",
+  "status": "FROZEN_FOR_SYNTHETIC_VALIDATION",
+  "primary_group_keys": ["condition_id"],
+  "required_metric_files": ["RNAD", "CQFR"],
+  "denominator_policy": {
+    "itt": "preserve all canonical rows, including no-emission",
+    "conditional": "report separately; never replace ITT"
+  },
+  "output_schema": {
+    "condition_id": "string",
+    "row_count": "integer",
+    "rnad": "object",
+    "cqfr": "object"
+  }
+}
