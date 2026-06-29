@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import json
 import tempfile
@@ -8,10 +8,11 @@ from types import SimpleNamespace
 
 from tools.table1_audit.build_condition_freeze_bundle import build as build_bundle
 from tools.table1_audit.build_true_t10_manifest import build as build_true_t10
+from tools.table1_audit.adapt_authoritative_artifacts import adapt_global_freeze, adapt_metric_schema, adapt_state_selection
 from tools.table1_audit.common import canonical_json, load_json, load_jsonl, sha256_file, write_json, write_jsonl
 from tools.table1_audit.validate_batch_a_registry import validate as validate_registry
 from tools.table1_audit.validate_formal_clean_closure import validate
-from tools.table1_audit.verify_condition_freeze_bundle import finalize, verify as verify_bundle
+from tools.table1_audit.verify_condition_freeze_bundle import finalize, verify as verify_bundle, verify_final
 from tools.table1_audit.verify_server_runtime_snapshot import verify as verify_snapshot
 
 
@@ -26,6 +27,7 @@ def _write_contracts(root: Path):
         "schema_version": "state_selection.v1",
         "folds": folds,
         "states_by_fold": {f: ["0", "1"] for f in folds},
+        "tasks_by_fold": {f: [f"task_{f}"] for f in folds},
         "detector_seeds": [1, 2, 3],
         "perturbation_seeds": [0, 1, 2],
     }
@@ -151,8 +153,11 @@ def make_bundle(root: Path):
     verification_json = root / "verification.json"
     verification = verify_bundle(SimpleNamespace(bundle=dest))
     write_json(verification_json, verification)
-    finalize(SimpleNamespace(bundle=dest, bundle_verification=verification_json))
-    return dest, verification_json, paths
+    final_dir = root / "final" / "clean"
+    finalize(SimpleNamespace(bundle=dest, bundle_verification=verification_json, final_dir=final_dir))
+    final_verification_json = root / "final_verification.json"
+    write_json(final_verification_json, verify_final(SimpleNamespace(bundle=final_dir)))
+    return final_dir, final_verification_json, paths
 
 
 class FormalCleanValidatorTests(unittest.TestCase):
@@ -262,6 +267,19 @@ class FormalCleanValidatorTests(unittest.TestCase):
             result = run_validate(manifest, condition, paths)
             self.assertProblem(result, "missing_required_provenance_field")
 
+    def test_observed_runtime_sha_does_not_fallback_to_manifest_expected(self):
+        with tempfile.TemporaryDirectory() as d:
+            manifest, condition, paths = make_clean_tree(Path(d))
+            rows = load_jsonl(manifest)
+            rows[0]["runner_sha256"] = "1" * 64
+            write_jsonl(manifest, rows)
+            p = Path(rows[0]["output_dir"], "episode_summary.json")
+            data = load_json(p)
+            data.pop("runner_sha256")
+            write_json(p, data)
+            result = run_validate(manifest, condition, paths)
+            self.assertProblem(result, "missing_required_provenance_field")
+
     def test_checkpoint_does_not_match_global_freeze_fails(self):
         with tempfile.TemporaryDirectory() as d:
             manifest, condition, paths = make_clean_tree(Path(d))
@@ -271,6 +289,17 @@ class FormalCleanValidatorTests(unittest.TestCase):
             write_json(p, data)
             result = run_validate(manifest, condition, paths)
             self.assertProblem(result, "global_freeze_checkpoint_mismatch")
+
+    def test_global_freeze_zero_and_multiple_matches_fail_closed(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            manifest, condition, paths = make_clean_tree(root)
+            freeze = load_json(paths["freeze"])
+            freeze["victim_checkpoint_sha256"].pop("01|1")
+            freeze["detector_checkpoint_sha256"]["01"] = "7" * 64
+            write_json(paths["freeze"], freeze)
+            result = run_validate(manifest, condition, paths)
+            self.assertProblem(result, "global_freeze_checkpoint_match_count")
 
     def test_attempt_zero_is_preserved(self):
         with tempfile.TemporaryDirectory() as d:
@@ -288,6 +317,23 @@ class FormalCleanValidatorTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             result = run_validate(*make_clean_tree(Path(d), mutate=mutate))
             self.assertProblem(result, "terminal_ledger_job_key_mismatch")
+
+    def test_retry_duplicate_attempt_fails(self):
+        def mutate(rows, *_):
+            out = Path(rows[0]["output_dir"])
+            write_json(out / "terminal_ledger.json", {
+                "job_key": rows[0]["job_key"],
+                "terminal_status": "SCIENTIFIC_INVALID",
+                "terminal_reason": "MAX_RETRY_EXHAUSTED",
+                "no_retry_remaining": True,
+                "attempt_history": [
+                    {"attempt": 0, "accepted": False, "quarantined": True},
+                    {"attempt": 0, "accepted": True},
+                ],
+            })
+        with tempfile.TemporaryDirectory() as d:
+            result = run_validate(*make_clean_tree(Path(d), mutate=mutate))
+            self.assertProblem(result, "duplicate_retry_attempt")
 
     def test_malformed_manifest_row_does_not_crash_validator(self):
         with tempfile.TemporaryDirectory() as d:
@@ -353,6 +399,16 @@ class FreezeBuilderVerifierTests(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 build_bundle(SimpleNamespace(validator_json=vjson, manifest=manifest, condition_root=condition, state_selection=paths["state"], global_freeze=paths["freeze"], runtime_lock=paths["runtime"], retry_policy=paths["retry"], required_artifact_schema=paths["artifacts"], freeze_root=root / "freezes", dest=root / "freezes" / "x", condition_id="CLEAN", dry_run=False))
 
+    def test_source_artifact_modified_after_validation_rejected(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            manifest, condition, paths = make_clean_tree(root)
+            vjson = root / "v.json"
+            write_json(vjson, run_validate(manifest, condition, paths))
+            next(condition.rglob("step_telemetry.csv")).write_text("step\n0\n1\n", encoding="utf-8")
+            with self.assertRaises(SystemExit):
+                build_bundle(SimpleNamespace(validator_json=vjson, manifest=manifest, condition_root=condition, state_selection=paths["state"], global_freeze=paths["freeze"], runtime_lock=paths["runtime"], retry_policy=paths["retry"], required_artifact_schema=paths["artifacts"], freeze_root=root / "freezes", dest=root / "freezes" / "x", condition_id="CLEAN", dry_run=False))
+
     def test_destination_exists_empty_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
@@ -401,9 +457,10 @@ class FreezeBuilderVerifierTests(unittest.TestCase):
 
     def test_bundle_checksum_tampering_detected(self):
         with tempfile.TemporaryDirectory() as d:
-            dest, _, _ = make_bundle(Path(d))
-            (dest / "accepted_job_keys.txt").write_text("tampered\n", encoding="utf-8")
-            result = verify_bundle(SimpleNamespace(bundle=dest))
+            final_dir, _, _ = make_bundle(Path(d))
+            candidate = Path(load_json(final_dir / "CONDITION_FREEZE_FINAL.json")["candidate_bundle"])
+            (candidate / "accepted_job_keys.txt").write_text("tampered\n", encoding="utf-8")
+            result = verify_bundle(SimpleNamespace(bundle=candidate))
             self.assertFalse(result["verification_pass"])
             self.assertIn("bundle_checksum_mismatch", {p["class"] for p in result["problems"]})
 
@@ -415,6 +472,7 @@ class TrueT10Tests(unittest.TestCase):
             "status": status,
             "condition_id": "TRUE_T10",
             "allowed_output_root": str(root / "allowed"),
+            "allowed_manifest_root": str(root / "manifests"),
             "clean_identity_allowlist": ["fold", "task_id", "state_id", "detector_seed", "perturbation_seed", "checkpoint_sha256", "detector_checkpoint_sha256"],
             "clean_result_denylist": ["task_success", "failure", "status", "terminal_status", "result_status", "reward", "done", "output_dir"],
             "bound_contract_sha256": {
@@ -423,6 +481,7 @@ class TrueT10Tests(unittest.TestCase):
                 "bridge_sha256": "3" * 64,
                 "protocol_sha256": "4" * 64,
                 "metric_schema_sha256": "5" * 64,
+                "victim_checkpoint_sha256": "6" * 64,
                 "state_selection_sha256": sha256_file(paths["state"]),
                 "retry_policy_sha256": sha256_file(paths["retry"]),
                 "detector_global_freeze_sha256": sha256_file(paths["freeze"]),
@@ -432,7 +491,21 @@ class TrueT10Tests(unittest.TestCase):
                 "states_by_fold": {f"{i:02d}": ["0", "1"] for i in range(1, 10)},
                 "detector_seeds": [1, 2, 3],
                 "perturbation_seeds": [0, 1, 2],
-                "attack": {"objective_id": "prefix_log_ratio_open", "K": 10, "no_emission_policy": "ITT_RETAIN", "arm_lock_mode": "PRESERVE_ARM_QPOS"},
+                "attack": {
+                    "objective_id": "prefix_log_ratio_open",
+                    "objective_semantics_version": "v1",
+                    "epsilon": "synthetic",
+                    "epsilon_space": "processor_linf",
+                    "step_size": "synthetic",
+                    "optimization_steps": 10,
+                    "initialization": "zero",
+                    "K": 10,
+                    "timing_policy": "Student trigger",
+                    "arm_lock_mode": "PRESERVE_ARM_QPOS",
+                    "preprocessing_backend": "synthetic",
+                    "termination_policy": "fixed_steps",
+                    "no_emission_policy": "ITT_RETAIN",
+                },
             },
         }
         p = root / "spec.json"
@@ -445,7 +518,7 @@ class TrueT10Tests(unittest.TestCase):
             bundle, verification, paths = make_bundle(root)
             spec = self._spec(root, paths)
             out_root = root / "allowed" / "true_t10"
-            out = root / "manifest.jsonl"
+            out = root / "manifests" / "manifest.jsonl"
             a = build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec, output_root=out_root, output_manifest=out, write=False))
             b = build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec, output_root=out_root, output_manifest=out, write=False))
             self.assertEqual(a["row_count"], 162)
@@ -461,7 +534,7 @@ class TrueT10Tests(unittest.TestCase):
             bundle, verification, paths = make_bundle(root)
             spec = self._spec(root, paths, status="DRAFT_NOT_AUTHORIZED")
             with self.assertRaises(SystemExit):
-                build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec, output_root=root / "allowed" / "x", output_manifest=root / "x.jsonl", write=True))
+                build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec, output_root=root / "allowed" / "x", output_manifest=root / "manifests" / "x.jsonl", write=True))
 
     def test_non_hex_64_character_sha_rejected(self):
         with tempfile.TemporaryDirectory() as d:
@@ -472,7 +545,18 @@ class TrueT10Tests(unittest.TestCase):
             spec_path = root / "bad_spec.json"
             write_json(spec_path, spec)
             with self.assertRaises(ValueError):
-                build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec_path, output_root=root / "allowed" / "x", output_manifest=root / "x.jsonl", write=False))
+                build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec_path, output_root=root / "allowed" / "x", output_manifest=root / "manifests" / "x.jsonl", write=False))
+
+    def test_attack_spec_cannot_override_reserved_manifest_key(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            bundle, verification, paths = make_bundle(root)
+            spec_path = self._spec(root, paths)
+            spec = load_json(spec_path)
+            spec["fields"]["attack"]["job_key"] = "bad"
+            write_json(spec_path, spec)
+            with self.assertRaises(SystemExit):
+                build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec_path, output_root=root / "allowed" / "x", output_manifest=root / "manifests" / "x.jsonl", write=False))
 
     def test_relative_output_root_rejected(self):
         with tempfile.TemporaryDirectory() as d:
@@ -480,7 +564,7 @@ class TrueT10Tests(unittest.TestCase):
             bundle, verification, paths = make_bundle(root)
             spec = self._spec(root, paths)
             with self.assertRaises(SystemExit):
-                build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec, output_root=Path("relative"), output_manifest=root / "x.jsonl", write=False))
+                build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec, output_root=Path("relative"), output_manifest=root / "manifests" / "x.jsonl", write=False))
 
     def test_fake_frozen_json_without_verifier_rejected(self):
         with tempfile.TemporaryDirectory() as d:
@@ -492,7 +576,7 @@ class TrueT10Tests(unittest.TestCase):
             write_json(verification, {"verification_pass": True})
             spec = self._spec(root, _write_contracts(root)[0])
             with self.assertRaises(SystemExit):
-                build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec, output_root=root / "allowed" / "x", output_manifest=root / "x.jsonl", write=False))
+                build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec, output_root=root / "allowed" / "x", output_manifest=root / "manifests" / "x.jsonl", write=False))
 
     def test_shared_output_root_rejected(self):
         with tempfile.TemporaryDirectory() as d:
@@ -504,7 +588,7 @@ class TrueT10Tests(unittest.TestCase):
             spec["occupied_output_roots"] = [str(out_root)]
             write_json(spec_path, spec)
             with self.assertRaises(SystemExit):
-                build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec_path, output_root=out_root, output_manifest=root / "x.jsonl", write=False))
+                build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec_path, output_root=out_root, output_manifest=root / "manifests" / "x.jsonl", write=False))
 
     def test_condition_spec_change_changes_manifest_digest(self):
         with tempfile.TemporaryDirectory() as d:
@@ -515,9 +599,31 @@ class TrueT10Tests(unittest.TestCase):
             spec_data["fields"]["attack"]["K"] = 11
             spec_b = root / "spec_b.json"
             write_json(spec_b, spec_data)
-            a = build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec_a, output_root=root / "allowed" / "a", output_manifest=root / "a.jsonl", write=False))
-            b = build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec_b, output_root=root / "allowed" / "b", output_manifest=root / "b.jsonl", write=False))
+            a = build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec_a, output_root=root / "allowed" / "a", output_manifest=root / "manifests" / "a.jsonl", write=False))
+            b = build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec_b, output_root=root / "allowed" / "b", output_manifest=root / "manifests" / "b.jsonl", write=False))
             self.assertNotEqual(a["would_be_manifest_sha256"], b["would_be_manifest_sha256"])
+
+    def test_reported_manifest_sha_is_actual_jsonl_bytes_sha(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            bundle, verification, paths = make_bundle(root)
+            spec = self._spec(root, paths)
+            out = root / "manifests" / "manifest.jsonl"
+            result = build_true_t10(SimpleNamespace(clean_bundle=bundle, bundle_verification=verification, authorized_condition_spec=spec, output_root=root / "allowed" / "x", output_manifest=out, write=True))
+            self.assertEqual(result["would_be_manifest_sha256"], sha256_file(out))
+
+    def test_authoritative_artifact_adapters_bind_source_sha(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            freeze = root / "freeze.json"
+            protocol = root / "protocol.json"
+            metric = root / "metric.json"
+            write_json(freeze, {"gate": "G", "checkpoints": [{"fold": "01", "seed": 1, "sha256": "1" * 64}]})
+            write_json(protocol, {"fold_matrix": {"01": {"test": 7}}, "training": {"seeds": [1, 2, 3]}})
+            write_json(metric, {"gate": "M", "x": 1})
+            self.assertEqual(adapt_global_freeze(freeze)["source_sha256"], sha256_file(freeze))
+            self.assertEqual(adapt_state_selection(protocol)["source_sha256"], sha256_file(protocol))
+            self.assertEqual(adapt_metric_schema(metric)["source_sha256"], sha256_file(metric))
 
 
 class SnapshotAndRegistryTests(unittest.TestCase):
@@ -576,14 +682,14 @@ class SnapshotAndRegistryTests(unittest.TestCase):
             p = Path(d) / "registry.csv"
             p.write_text("condition_id,authorized,launch_gate,victim_checkpoint_sha256,detector_global_freeze_sha256,state_selection_sha256,protocol_sha256,runner_sha256,worker_sha256,bridge_sha256,metric_schema_sha256,retry_policy_sha256,condition_spec_sha256,manifest_sha256,arm_lock_mode,output_root\nX,false,HOLD,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,optional,out\n", encoding="utf-8")
             result = validate_registry(p)
-            self.assertIn("optional_arm_lock", {p["class"] for p in result["problems"]})
+            self.assertIn("invalid_arm_lock", {p["class"] for p in result["problems"]})
 
     def test_registry_duplicate_output_roots_rejected(self):
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "registry.csv"
             p.write_text("condition_id,authorized,launch_gate,victim_checkpoint_sha256,detector_global_freeze_sha256,state_selection_sha256,protocol_sha256,runner_sha256,worker_sha256,bridge_sha256,metric_schema_sha256,retry_policy_sha256,condition_spec_sha256,manifest_sha256,arm_lock_mode,output_root\nA,false,HOLD,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,NO_ARM_LOCK,out\nB,false,HOLD,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,UNVERIFIED,NO_ARM_LOCK,out\n", encoding="utf-8")
             result = validate_registry(p)
-            self.assertIn("duplicate_output_root", {p["class"] for p in result["problems"]})
+            self.assertIn("output_root_overlap", {p["class"] for p in result["problems"]})
 
 
 if __name__ == "__main__":

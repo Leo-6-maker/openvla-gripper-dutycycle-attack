@@ -43,6 +43,9 @@ def _must_match(validation: dict, manifest: Path, condition_root: Path, args: ar
     accepted = validation.get("accepted_job_keys") or []
     if len(accepted) != 162 or len(set(accepted)) != 162:
         raise SystemExit("refusing freeze bundle: accepted job-key set is not exactly 162 unique keys")
+    actual_inventory_digest = canonical_digest(recursive_inventory(condition_root))
+    if validation.get("artifact_inventory_digest") != actual_inventory_digest:
+        raise SystemExit("refusing freeze bundle: artifact inventory digest changed after validation")
 
 
 def _artifact_inventory(condition_root: Path, rows: list[dict]) -> list[dict]:

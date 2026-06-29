@@ -152,6 +152,13 @@ def atomic_write_text(path: Path, text: str) -> None:
     tmp.replace(path)
 
 
+def atomic_create_text(path: Path, text: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL)
+    with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+
+
 def parse_manifest(path: Path) -> tuple[list[dict], list[dict]]:
     rows: list[dict] = []
     problems: list[dict] = []

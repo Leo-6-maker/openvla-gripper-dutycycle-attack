@@ -74,7 +74,20 @@ def _state_design(state_selection: dict) -> tuple[set[str], set[tuple[str, str]]
     return folds, fold_states, det, pert
 
 
-def _checkpoint_for(global_freeze: dict, row: dict, field: str) -> str | None:
+def _expected_parent_set(state_selection: dict) -> set[tuple[str, str, str, str]]:
+    tasks = state_selection.get("tasks_by_fold")
+    if not isinstance(tasks, dict):
+        return set()
+    return {
+        (str(f), str(task), str(s), str(d))
+        for f in state_selection["folds"]
+        for task in tasks.get(str(f), [])
+        for s in state_selection["states_by_fold"].get(str(f), [])
+        for d in state_selection["detector_seeds"]
+    }
+
+
+def _checkpoint_match(global_freeze: dict, row: dict, field: str) -> tuple[str, str | None]:
     mapping = global_freeze.get(field, {})
     keys = [
         f"{row.get('fold')}|{row.get('detector_seed')}",
@@ -82,10 +95,12 @@ def _checkpoint_for(global_freeze: dict, row: dict, field: str) -> str | None:
         str(row.get("fold")),
         "default",
     ]
-    for key in keys:
-        if key in mapping:
-            return str(mapping[key])
-    return None
+    matches = [str(mapping[key]) for key in keys if key in mapping]
+    if len(matches) == 0:
+        return "zero", None
+    if len(matches) > 1:
+        return "ambiguous", None
+    return "one", matches[0]
 
 
 def _read_terminal_ledger(out: Path) -> dict | None:
@@ -93,6 +108,31 @@ def _read_terminal_ledger(out: Path) -> dict | None:
     if not p.exists():
         return None
     return load_json(p)
+
+
+def _validate_attempt_history(row: dict, ledger: dict, retry_policy: dict, problems: list[dict]) -> None:
+    attempts = ledger.get("attempt_history")
+    max_attempts = int(retry_policy["max_attempts"])
+    if not isinstance(attempts, list) or not attempts:
+        _problem(problems, "terminal_ledger_missing_attempt_history", row)
+        return
+    ids = [a.get("attempt") for a in attempts if isinstance(a, dict)]
+    if len(ids) != len(attempts) or any(not isinstance(x, int) for x in ids):
+        _problem(problems, "retry_attempt_sequence_invalid", row, attempts=ids)
+        return
+    if len(set(ids)) != len(ids):
+        _problem(problems, "duplicate_retry_attempt", row, attempts=ids)
+    if ids != list(range(min(ids), max(ids) + 1)) or min(ids) != 0:
+        _problem(problems, "retry_attempt_sequence_invalid", row, attempts=ids)
+    if max(ids) + 1 > max_attempts:
+        _problem(problems, "retry_attempt_exceeds_policy", row, attempts=ids, max_attempts=max_attempts)
+    accepted = [a for a in attempts if isinstance(a, dict) and a.get("accepted") is True]
+    if len(accepted) != 1:
+        _problem(problems, "canonical_accepted_attempt_invalid", row, count=len(accepted))
+    failed = [a for a in attempts if isinstance(a, dict) and a.get("accepted") is not True]
+    for a in failed:
+        if a.get("quarantined") is not True:
+            _problem(problems, "failed_attempt_not_quarantined", row, attempt=a.get("attempt"))
 
 
 def _classify(row: dict, out: Path, retry_policy: dict, artifact_schema: dict, problems: list[dict]) -> tuple[str, dict | None]:
@@ -147,9 +187,7 @@ def _classify(row: dict, out: Path, retry_policy: dict, artifact_schema: dict, p
         return "hold", None
     if str(ledger.get("job_key")) != job_key(row):
         _problem(problems, "terminal_ledger_job_key_mismatch", row, ledger_job_key=ledger.get("job_key"))
-    attempts = ledger.get("attempt_history")
-    if not isinstance(attempts, list) or not attempts:
-        _problem(problems, "terminal_ledger_missing_attempt_history", row)
+    _validate_attempt_history(row, ledger, retry_policy, problems)
     if ledger.get("no_retry_remaining") is not True:
         _problem(problems, "terminal_invalid_retry_remaining", row)
     if str(ledger.get("terminal_reason") or "") not in {str(r) for r in retry_policy["terminal_reasons"]}:
@@ -171,6 +209,9 @@ def validate(args: argparse.Namespace) -> dict:
     rows, problems = parse_manifest(manifest)
     manifest_sha = sha256_file(manifest)
     folds_expected, fold_states_expected, det_expected, pert_expected = _state_design(state_selection)
+    parents_expected = _expected_parent_set(state_selection)
+    if not parents_expected:
+        problems.append({"class": "state_selection_missing_tasks_by_fold"})
 
     contracts = {
         "state_selection": state_meta,
@@ -225,6 +266,12 @@ def validate(args: argparse.Namespace) -> dict:
         reps = Counter(replicate_key(r) for r in items)
         if len(items) != args.expected_replicates or set(reps) != pert_expected or any(v != 1 for v in reps.values()):
             problems.append({"class": "replicate_count", "parent": list(key), "count": len(items), "replicates": dict(reps)})
+    if parents_expected:
+        actual_parent_set = set(parents)
+        missing_parents = sorted(parents_expected - actual_parent_set)
+        extra_parents = sorted(actual_parent_set - parents_expected)
+        if missing_parents or extra_parents:
+            problems.append({"class": "parent_set_mismatch", "missing": [list(x) for x in missing_parents], "extra": [list(x) for x in extra_parents]})
 
     baseline_problem_count = len(problems)
     for row in rows:
@@ -248,7 +295,7 @@ def validate(args: argparse.Namespace) -> dict:
             if "state_id" in evidence and str(evidence.get("state_id")) != str(row.get("state_id")):
                 _problem(problems, "replaced_state", row, manifest_state_id=row.get("state_id"), artifact_state_id=evidence.get("state_id"))
             for field in PROVENANCE_FIELDS:
-                val = first_non_none(evidence.get(field), row.get(field))
+                val = evidence.get(field)
                 if val is None:
                     _problem(problems, "missing_required_provenance_field", row, field=field)
                     continue
@@ -259,13 +306,15 @@ def validate(args: argparse.Namespace) -> dict:
             if str(first_non_none(evidence.get("manifest_sha256"), row.get("manifest_sha256"), "")) != manifest_sha:
                 _problem(problems, "manifest_sha_mismatch", row, expected=manifest_sha, actual=first_non_none(evidence.get("manifest_sha256"), row.get("manifest_sha256")))
             for field, expected_sha in runtime.data["required_sha256"].items():
-                actual = first_non_none(evidence.get(field), row.get(field))
+                actual = evidence.get(field)
                 if actual != expected_sha:
                     _problem(problems, "runtime_lock_mismatch", row, field=field, expected=expected_sha, actual=actual)
             for field, map_name in [("checkpoint_sha256", "victim_checkpoint_sha256"), ("detector_checkpoint_sha256", "detector_checkpoint_sha256")]:
-                expected = _checkpoint_for(global_freeze, row, map_name)
-                actual = first_non_none(evidence.get(field), row.get(field))
-                if expected and actual != expected:
+                match, expected = _checkpoint_match(global_freeze, row, map_name)
+                actual = evidence.get(field)
+                if match != "one":
+                    _problem(problems, "global_freeze_checkpoint_match_count", row, field=field, match=match)
+                elif actual != expected:
                     _problem(problems, "global_freeze_checkpoint_mismatch", row, field=field, expected=expected, actual=actual)
         for p in out.rglob("*") if out.exists() else []:
             if p.is_symlink():

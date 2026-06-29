@@ -99,6 +99,7 @@ class ConditionSpec(Contract):
         "status",
         "condition_id",
         "allowed_output_root",
+        "allowed_manifest_root",
         "fields",
         "clean_identity_allowlist",
         "clean_result_denylist",

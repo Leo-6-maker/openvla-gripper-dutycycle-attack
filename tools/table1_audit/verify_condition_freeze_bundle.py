@@ -88,19 +88,44 @@ def finalize(args: argparse.Namespace) -> dict:
     if not verification.get("verification_pass"):
         raise SystemExit("refusing finalize: verifier did not pass")
     bundle = args.bundle.resolve()
+    final_dir = args.final_dir.resolve()
+    if final_dir.exists():
+        raise SystemExit("refusing finalize: final envelope destination exists")
     freeze = load_json(bundle / "CONDITION_FREEZE.json")
     if freeze.get("status") != "FREEZE_CANDIDATE":
         raise SystemExit("refusing finalize: bundle is not a freeze candidate")
     final = {
         **freeze,
         "status": "FROZEN",
-        "verifier_report_sha256": sha256_file(args.bundle_verification.resolve()),
+        "candidate_bundle": str(bundle),
+        "candidate_verifier_report_sha256": sha256_file(args.bundle_verification.resolve()),
     }
-    out = bundle / "CONDITION_FREEZE_FINAL.json"
-    if out.exists():
-        raise SystemExit("refusing finalize overwrite")
+    final_dir.mkdir(parents=True, exist_ok=False)
+    out = final_dir / "CONDITION_FREEZE_FINAL.json"
     write_json(out, final)
-    return {"finalized": True, "path": str(out), "status": "FROZEN"}
+    (final_dir / "FINAL_ENVELOPE_SHA256SUMS.txt").write_text(f"{sha256_file(out)}  CONDITION_FREEZE_FINAL.json\n", encoding="utf-8")
+    return {"finalized": True, "path": str(out), "status": "FROZEN", "final_dir": str(final_dir)}
+
+
+def verify_final(args: argparse.Namespace) -> dict:
+    final_dir = args.bundle.resolve()
+    problems: list[dict] = []
+    final = final_dir / "CONDITION_FREEZE_FINAL.json"
+    sums = final_dir / "FINAL_ENVELOPE_SHA256SUMS.txt"
+    if not final.exists() or not sums.exists():
+        problems.append({"class": "missing_final_envelope_file"})
+    else:
+        expected = sums.read_text(encoding="utf-8").split()[0]
+        actual = sha256_file(final)
+        if expected != actual:
+            problems.append({"class": "final_envelope_checksum_mismatch", "expected": expected, "actual": actual})
+        data = load_json(final)
+        if data.get("status") != "FROZEN":
+            problems.append({"class": "final_envelope_not_frozen"})
+        candidate = data.get("candidate_bundle")
+        if not candidate or not Path(candidate).exists():
+            problems.append({"class": "final_candidate_bundle_missing"})
+    return {"schema_version": "final_envelope_verification.v1", "bundle": str(final_dir), "verification_pass": not problems, "final_envelope_sha256": sha256_file(final) if final.exists() else "", "problems": problems}
 
 
 def main() -> int:
@@ -109,11 +134,19 @@ def main() -> int:
     add_path_arg(ap, "--output-json")
     add_path_arg(ap, "--output-md")
     add_path_arg(ap, "--bundle-verification")
+    add_path_arg(ap, "--final-dir")
     ap.add_argument("--finalize", action="store_true")
+    ap.add_argument("--verify-final", action="store_true")
     args = ap.parse_args()
     if args.finalize:
         print(canonical_json(finalize(args)), end="")
         return 0
+    if args.verify_final:
+        result = verify_final(args)
+        if args.output_json:
+            write_json(args.output_json, result)
+        print(canonical_json(result), end="")
+        return 0 if result["verification_pass"] else 2
     result = verify(args)
     if args.output_json:
         write_json(args.output_json, result)

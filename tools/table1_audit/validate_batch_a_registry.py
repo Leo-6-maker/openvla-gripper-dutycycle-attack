@@ -7,10 +7,29 @@ from pathlib import Path
 from tools.table1_audit.common import add_path_arg, canonical_json, is_valid_sha256, write_json
 
 
+EXPECTED_CONDITIONS = {
+    "CLEAN",
+    "RAND_LINF",
+    "SHUFFLED_GRADIENT",
+    "UMA_UNTARGETED_CE_PGD",
+    "ADAPTED_TMA_OPEN",
+    "PREFIX_LOG_RATIO_OPEN_TRUE_T10",
+}
 REQUIRED_COLUMNS = [
     "condition_id",
     "authorized",
     "launch_gate",
+    "script_sha256",
+    "config_sha256",
+    "epsilon",
+    "epsilon_space",
+    "step_size",
+    "optimization_steps",
+    "K",
+    "timing_policy",
+    "initialization",
+    "preprocessing_backend",
+    "termination_policy",
     "victim_checkpoint_sha256",
     "detector_global_freeze_sha256",
     "state_selection_sha256",
@@ -26,6 +45,8 @@ REQUIRED_COLUMNS = [
     "output_root",
 ]
 UNRESOLVED = {"UNVERIFIED", "SERVER_SNAPSHOT_REQUIRED", "MISSING", ""}
+ARM_LOCK = {"NOT_APPLICABLE", "NO_ARM_LOCK", "PRESERVE_ARM_QPOS"}
+TIMING = {"NOT_APPLICABLE", "Student trigger"}
 
 
 def validate(path: Path) -> dict:
@@ -35,15 +56,22 @@ def validate(path: Path) -> dict:
     missing_cols = sorted(set(REQUIRED_COLUMNS) - set(rows[0].keys() if rows else []))
     if missing_cols:
         problems.append({"class": "missing_registry_columns", "columns": missing_cols})
+    ids = [r.get("condition_id", "") for r in rows]
+    if set(ids) != EXPECTED_CONDITIONS:
+        problems.append({"class": "condition_id_set_mismatch", "expected": sorted(EXPECTED_CONDITIONS), "actual": sorted(set(ids))})
+    if len(ids) != len(set(ids)):
+        problems.append({"class": "duplicate_condition_id"})
     outputs = {}
     for row in rows:
         cid = row.get("condition_id", "")
         auth = str(row.get("authorized", "")).lower() == "true"
         launchable = auth and row.get("launch_gate") != "HOLD"
-        if row.get("arm_lock_mode") == "optional":
-            problems.append({"class": "optional_arm_lock", "condition_id": cid})
+        if row.get("arm_lock_mode") not in ARM_LOCK:
+            problems.append({"class": "invalid_arm_lock", "condition_id": cid, "value": row.get("arm_lock_mode")})
+        if row.get("timing_policy") not in TIMING:
+            problems.append({"class": "invalid_timing_policy", "condition_id": cid, "value": row.get("timing_policy")})
         if cid == "CLEAN":
-            for field in ["epsilon", "step_size", "optimization_steps", "K"]:
+            for field in ["epsilon", "epsilon_space", "step_size", "optimization_steps", "K", "initialization", "preprocessing_backend", "termination_policy"]:
                 if row.get(field) not in {"NOT_APPLICABLE", ""}:
                     problems.append({"class": "clean_attack_field_not_applicable", "condition_id": cid, "field": field})
         if launchable:
@@ -58,8 +86,9 @@ def validate(path: Path) -> dict:
                     problems.append({"class": "authorized_invalid_sha256", "condition_id": cid, "field": field})
         out = row.get("output_root", "")
         if out and out != "SERVER_SNAPSHOT_REQUIRED":
-            if out in outputs:
-                problems.append({"class": "duplicate_output_root", "condition_id": cid, "other": outputs[out], "output_root": out})
+            for seen, other in outputs.items():
+                if out == seen or out.startswith(seen.rstrip("/") + "/") or seen.startswith(out.rstrip("/") + "/"):
+                    problems.append({"class": "output_root_overlap", "condition_id": cid, "other": other, "output_root": out})
             outputs[out] = cid
         if not auth and row.get("launch_gate") != "HOLD":
             problems.append({"class": "unauthorized_row_not_hold", "condition_id": cid})
