@@ -160,6 +160,15 @@ def compute_val_event_f1(model, features, labels, episode_keys, suite_map, tau_c
                          "n_input_episodes": n_in, "n_scored_episodes": n_scored,
                          "excluded_multi_event": n_excl}
 
+    # Verify all expected training suites have at least some scored validation episodes
+    expected_suites = set(suite_map.values())
+    actual_suites = set(per_suite.keys())
+    missing_suites = expected_suites - actual_suites
+    if missing_suites:
+        raise RuntimeError(
+            "Validation missing expected suites: {}. Expected: {}. Actual: {}".format(
+                sorted(missing_suites), sorted(expected_suites), sorted(actual_suites)))
+
     if not per_suite:
         raise RuntimeError("No suites with scored episodes — cannot compute F1")
 
@@ -266,10 +275,11 @@ def main():
 
     # Pre-training environment checks (before any data loading)
     git_info = get_git_info(REPO)
-    if git_info["dirty"]:
-        sys.exit("Git checkout is dirty ({} files) — formal training requires clean checkout".format(git_info["dirty_files"]))
-    if not re.fullmatch(r"[0-9a-f]{40}", git_info["commit"]):
-        sys.exit("Invalid repo_commit: {}".format(git_info["commit"]))
+    if not args.dry_run:
+        if git_info["dirty"]:
+            sys.exit("Git checkout is dirty ({} files) — formal training requires clean checkout".format(git_info["dirty_files"]))
+        if not re.fullmatch(r"[0-9a-f]{40}", git_info["commit"]):
+            sys.exit("Invalid repo_commit: {}".format(git_info["commit"]))
 
     print("Loading episode index: {} [cohort={}]".format(args.episode_index, args.cohort))
     episode_index = load_episode_index(args.episode_index, cohort=args.cohort)
@@ -337,12 +347,9 @@ def main():
 
             # Tie-breaker tuple: (macro_f1, -false_emits, -post_release, -epoch)
             total_fp = sum(d["fp"] for d in f1_details.values())
-            total_episodes = sum(d["n_episodes"] for d in f1_details.values())
-            false_emits_per_ep = total_fp / max(1, total_episodes)
-            # post_release_rate approximated by late_rate on val set
-            post_release_rate = sum(
-                sum(1 for r in [] if False) for _ in f1_details.values()
-            ) / max(1, total_episodes)
+            # Denominator: scored episodes only (excluded multi-event not in population)
+            total_scored = sum(d["n_scored_episodes"] for d in f1_details.values())
+            false_emits_per_ep = total_fp / max(1, total_scored)
             current_tuple = (round(current_metric, 4), -false_emits_per_ep, epoch)
 
             if best_metric == float("-inf"):
