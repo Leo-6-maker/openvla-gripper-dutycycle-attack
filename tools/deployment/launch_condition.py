@@ -101,7 +101,9 @@ def main():
     ap.add_argument("--expected_worker_sha", help="Required worker SHA-256")
     ap.add_argument("--expected_bridge_sha", help="Required bridge SHA-256")
     ap.add_argument("--expected_manifest_sha", help="Pre-approved manifest SHA (reject on mismatch)")
-    ap.add_argument("--gpus", type=int, nargs="*", help="Approved GPU list (default: auto-detect)")
+    ap.add_argument("--gpus", type=int, nargs="*", help="Approved GPU list (REQUIRED for --execute)")
+    ap.add_argument("--condition_spec", help="Condition spec JSON (REQUIRED for --execute)")
+    ap.add_argument("--expected_condition_spec_sha", help="Pre-approved condition spec SHA-256")
     ap.add_argument("--execute", action="store_true", help="Actually launch")
     args = ap.parse_args()
 
@@ -121,16 +123,16 @@ def main():
         if j.get("condition_id") != args.condition_id:
             sys.exit(f"condition_id mismatch: {j.get('condition_id')} != {args.condition_id}")
 
-    # Execution status gate: check RUNNING marker from prior launch
+    # Execution status gate: check RUNNING marker
     running_marker = os.path.join(args.launch_dir, "RUNNING")
     if os.path.exists(running_marker):
         try:
-            with open(running_marker) as f:
-                running_info = json.load(f)
+            running_info = json.load(f)
             sys.exit(f"Condition already RUNNING since {running_info.get('started','?')}. "
                      f"Wait for completion or use recovery procedure.")
-        except Exception:
-            pass
+        except (json.JSONDecodeError, KeyError) as e:
+            sys.exit(f"Corrupt RUNNING marker at {running_marker}: {e}. "
+                     f"Manual recovery required.")
 
     # ── Provenance binding ──
     if args.execute and not args.expected_worker_sha:
@@ -161,9 +163,30 @@ def main():
             print(f"  {e}")
         sys.exit("Cannot launch over existing outputs. Use recovery procedure.")
 
+    # ── Condition spec gate ──
+    if args.execute:
+        if not args.condition_spec:
+            sys.exit("--execute requires --condition_spec")
+        if not os.path.exists(args.condition_spec):
+            sys.exit(f"Condition spec not found: {args.condition_spec}")
+        spec = json.loads(open(args.condition_spec).read())
+        if spec.get("execution_status") != "FROZEN":
+            sys.exit(f"Condition execution_status={spec.get('execution_status')} (must be FROZEN)")
+        if spec.get("condition_id") != args.condition_id:
+            sys.exit(f"Spec condition_id={spec.get('condition_id')} != {args.condition_id}")
+        if args.expected_condition_spec_sha:
+            actual_spec_sha = sha256_file(args.condition_spec)
+            if actual_spec_sha != args.expected_condition_spec_sha:
+                sys.exit(f"Condition spec SHA mismatch: expected {args.expected_condition_spec_sha[:16]}... "
+                         f"got {actual_spec_sha[:16]}...")
+
     # ── GPU check ──
     gpu_free = get_gpu_free()
     print(f"GPU free (MB): {gpu_free}")
+    if args.execute and args.gpus is None:
+        sys.exit("--execute requires --gpus (explicit GPU allowlist)")
+    if args.gpus is not None and len(args.gpus) == 0:
+        sys.exit("--gpus cannot be empty")
     if args.gpus:
         approved_gpus = set(args.gpus)
         for g in approved_gpus:

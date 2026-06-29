@@ -16,6 +16,7 @@ TRUE_T10_MANIFEST="${EVIDENCE}/TRUE_T10/formal_manifest.jsonl"
 CLOSURE_REPORT="${EVIDENCE}/TRUE_T10/launch/CLOSURE_REPORT_V2.json"
 EXPECTED_BRIDGE="4ef2a919ee650cf35b35eaa5b9c2152c0d7d18f43710c246ce14dd1c8a83e468"
 EXPECTED_WORKER="e21f7fbe7f78003ac2e626bfe9ddb047c194022727bb4d9bc19b9ce0876e337c"
+APPROVED_GPUS="0 1 3 4 5 6 7"  # all except quarantined GPU2
 
 echo "========================================="
 echo "TRUE_T10 Closure → ${CONDITION} Pipeline"
@@ -70,7 +71,8 @@ else
     exit 0
 fi
 
-# Step 3: Launch (only in execute mode)
+# Step 3: Launch (only in execute mode; requires condition spec)
+COND_SPEC="${EVIDENCE}/${CONDITION}/condition_spec.json"
 echo ""
 echo "[3/3] Launching ${CONDITION}..."
 ${PYTHON} "${TOOLS}/launch_condition.py" \
@@ -78,6 +80,8 @@ ${PYTHON} "${TOOLS}/launch_condition.py" \
     --condition_id "${CONDITION}" \
     --launch_dir "${EVIDENCE}/${CONDITION}/launch" \
     --mode formal \
+    --gpus ${APPROVED_GPUS} \
+    --condition_spec "${COND_SPEC}" \
     --expected_worker_sha "${EXPECTED_WORKER}" \
     --expected_bridge_sha "${EXPECTED_BRIDGE}" \
     --expected_manifest_sha "${MANIFEST_SHA}" \

@@ -92,14 +92,31 @@ def get_episode_metadata(job: dict) -> dict:
     if not os.path.exists(ep_path):
         raise FileNotFoundError(f"episode_summary.json missing: {ep_path}")
     d = json.loads(open(ep_path).read())
-    n_steps_raw = d.get("n_steps")
-    invalid = int(d.get("invalid_feature_steps", 0))
-    if n_steps_raw is None or not isinstance(n_steps_raw, (int, float)) or int(n_steps_raw) < 1:
-        raise ValueError(f"Invalid n_steps in {job.get('job_key','?')}: {n_steps_raw}")
-    n_valid = int(n_steps_raw) - invalid
-    if n_valid < 1:
-        raise ValueError(f"n_valid_steps={n_valid} (n_steps={n_steps_raw} - invalid={invalid}) "
-                         f"too small in {job.get('job_key','?')}")
+    # Strict integer validation — no bool, no float, no missing
+    for field in ["n_steps", "invalid_feature_steps"]:
+        v = d.get(field)
+        if v is None:
+            raise ValueError(f"{field} MISSING in {job.get('job_key','?')}")
+        if isinstance(v, bool) or not isinstance(v, (int, float)):
+            raise ValueError(f"{field}={v} ({type(v).__name__}) not a valid integer in {job.get('job_key','?')}")
+        if float(v) != int(v):
+            raise ValueError(f"{field}={v} not an exact integer in {job.get('job_key','?')}")
+
+    n_steps_raw = int(d["n_steps"])
+    invalid = int(d["invalid_feature_steps"])
+    if n_steps_raw < 1:
+        raise ValueError(f"n_steps={n_steps_raw} < 1 in {job.get('job_key','?')}")
+    if invalid < 0 or invalid > n_steps_raw:
+        raise ValueError(f"invalid_feature_steps={invalid} out of [0, {n_steps_raw}] in {job.get('job_key','?')}")
+
+    # For formal RANDOM_TIME: require zero invalid steps (simplest safe contract)
+    if invalid != 0:
+        raise ValueError(
+            f"invalid_feature_steps={invalid} != 0 in {job.get('job_key','?')}. "
+            f"Random trigger range requires contiguous valid steps. "
+            f"If all 162 episodes have invalid==0, consider enforcing this at spec level.")
+
+    n_valid = n_steps_raw
     return {
         "n_valid_steps": n_valid,
         "n_steps_raw": int(n_steps_raw),
@@ -110,8 +127,10 @@ def get_episode_metadata(job: dict) -> dict:
 
 
 def resolve_output_dir(source_output: str, condition_id: str, evidence_root: str) -> str:
+    is_canary = "/canary_" in evidence_root or "/canary" in evidence_root
     cond_root = os.path.join(evidence_root, condition_id)
-    new_path = source_output.replace("/TRUE_T10/", f"/{condition_id}/")
+    replace_target = f"/{condition_id}/canary_v1/formal_v1/" if is_canary else f"/{condition_id}/formal_v1/"
+    new_path = source_output.replace("/TRUE_T10/formal_v1/", replace_target)
     if new_path == source_output:
         raise ValueError(f"Path replacement failed: {source_output}")
     resolved = os.path.normpath(new_path)
@@ -266,6 +285,7 @@ def main():
     ap.add_argument("--conditions", nargs="*", default=["RANDOM_TIME"],
                     choices=list(CONDITIONS.keys()))
     ap.add_argument("--evidence_root", default=DEFAULT_EVIDENCE_ROOT)
+    ap.add_argument("--canary", action="store_true", help="Use canary output root (separate from formal)")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--execute", action="store_true", help="Actually write manifests")
     args = ap.parse_args()
@@ -275,10 +295,13 @@ def main():
     if len(source_jobs) != 162:
         sys.exit(f"ERROR: expected 162 jobs, got {len(source_jobs)}")
 
+    canary_tag = "canary_v1" if args.canary else ""
     for cond_id in args.conditions:
         spec = CONDITIONS[cond_id]
         cond_root = os.path.join(args.evidence_root, cond_id)
-        manifest_path = os.path.join(cond_root, "formal_manifest.jsonl")
+        if canary_tag:
+            cond_root = os.path.join(cond_root, canary_tag)
+        manifest_path = os.path.join(cond_root, "manifest.jsonl")
 
         print(f"\n{'='*60}")
         print(f"Condition: {cond_id} — {spec['description']}")
