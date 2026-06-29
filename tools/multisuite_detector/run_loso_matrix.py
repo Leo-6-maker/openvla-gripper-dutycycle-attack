@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Run 4-fold LOSO matrix with per-suite validation stratification.
+"""Run 4-fold LOSO matrix with per-fold config resolution and hash binding.
 
-Each fold uses a fold-specific config that must declare matching test_suite.
-Validation split is stratified within each training suite (not pooled).
+Resolves fold-specific config path, validates against fold declaration,
+passes same exact path to trainer, records path+SHA in fold summary.
 """
 from __future__ import annotations
-import argparse, json, subprocess, sys, time
+import argparse, hashlib, json, subprocess, sys, time
 from pathlib import Path
 
 LOSO_FOLDS = [
@@ -30,34 +30,70 @@ def parse_config(path: str) -> dict:
         return json.load(f)
 
 
+def sha256_file(path) -> str:
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def resolve_fold_config_path(base_path: str, fold: dict) -> str:
+    """Resolve fold-specific config. Returns absolute path to config file."""
+    base = Path(base_path)
+
+    # If base is a directory, look for fold-specific files
+    if base.is_dir():
+        candidates = [
+            base / "{}.yaml".format(fold["name"]),
+            base / "{}.yml".format(fold["name"]),
+            base / "loso_{}.yaml".format(fold["test"].replace("libero_", "")),
+        ]
+        for c in candidates:
+            if c.exists():
+                return str(c.resolve())
+        raise FileNotFoundError("No fold config found in {} for {} (tried: {})".format(base, fold["name"], [c.name for c in candidates]))
+
+    # If base is a file, use it for all folds
+    if base.is_file():
+        return str(base.resolve())
+
+    raise FileNotFoundError("Config not found: {}".format(base_path))
+
+
 def validate_fold_config(config: dict, fold: dict) -> list[str]:
-    """Verify config test_suite and train_suites match fold declaration."""
+    """Verify config declares matching test_suite and train_suites."""
     errors = []
     cfg_test = config.get("test_suite")
-    if cfg_test and cfg_test != fold["test"]:
+    if cfg_test is None:
+        errors.append("Config missing REQUIRED field: test_suite")
+    elif cfg_test != fold["test"]:
         errors.append("Config test_suite={} != fold test_suite={}".format(cfg_test, fold["test"]))
+
     cfg_train = config.get("train_suites") or config.get("training_suites")
-    if cfg_train and sorted(cfg_train) != sorted(fold["train"]):
-        errors.append("Config train_suites mismatch")
+    if cfg_train is None:
+        errors.append("Config missing REQUIRED field: train_suites")
+    elif sorted(cfg_train) != sorted(fold["train"]):
+        errors.append("Config train_suites={} != fold train_suites={}".format(sorted(cfg_train), sorted(fold["train"])))
     return errors
 
 
-def run_fold(fold, args, config):
+def run_fold(fold, args, config_path):
     fold_name = fold["name"]
-    test_suite = fold["test"]
     out_dir = Path(args.output_dir) / fold_name
     out_dir.mkdir(parents=True, exist_ok=True)
 
     print("\n" + "=" * 60)
-    print("Fold: {} (test={})".format(fold_name, test_suite))
+    print("Fold: {} (test={})".format(fold_name, fold["test"]))
+    print("Config: {}".format(config_path))
     print("=" * 60)
 
     # Validate config matches fold
+    config = parse_config(config_path)
     cfg_errors = validate_fold_config(config, fold)
     if cfg_errors:
         for e in cfg_errors:
             print("CONFIG ERROR: {}".format(e))
-        raise ValueError("Fold config mismatch")
+        raise ValueError("Fold config mismatch for {}".format(fold_name))
+
+    config_sha = sha256_file(config_path)
+    print("Config SHA: {}".format(config_sha[:16]))
 
     # Step 1: Build LOSO split
     split_file = out_dir / "split_loso.json"
@@ -65,17 +101,18 @@ def run_fold(fold, args, config):
            "--episode_index", args.episode_index,
            "--split_type", "loso", "--loso_fold", fold_name,
            "--output_dir", str(out_dir), "--seed", str(args.seed)]
-    print("Build split: " + " ".join(cmd))
+    print("Build split")
     subprocess.run(cmd, check=True)
 
     if args.dry_run:
         print("DRY_RUN: split built, skipping train/eval.")
-        return {"fold": fold_name, "test_suite": test_suite, "dry_run": True}
+        return {"fold": fold_name, "test_suite": fold["test"], "dry_run": True,
+                "config_path": config_path, "config_sha256": config_sha}
 
-    # Step 2: Train
+    # Step 2: Train with exact resolved config path
     ckpt_file = out_dir / "best_model.pt"
     train_cmd = [sys.executable, str(TOOLS / "train_detector.py"),
-                 "--config", args.config,
+                 "--config", config_path,
                  "--feature_csv", args.feature_csv,
                  "--label_csv", args.label_csv,
                  "--episode_index", args.episode_index,
@@ -84,11 +121,12 @@ def run_fold(fold, args, config):
                  "--seed", str(args.seed),
                  "--epochs", str(args.epochs),
                  "--batch_size", str(args.batch_size),
-                 "--patience", str(args.patience)]
+                 "--patience", str(args.patience),
+                 "--checkpoint_metric", str(args.checkpoint_metric)]
     print("Train: python " + " ".join(train_cmd[1:]))
     subprocess.run(train_cmd, check=True)
     if not ckpt_file.exists():
-        raise RuntimeError("Training did not produce: {}".format(ckpt_file))
+        raise RuntimeError("No checkpoint: {}".format(ckpt_file))
 
     # Step 3: Evaluate
     eval_file = out_dir / "test_metrics.json"
@@ -108,14 +146,15 @@ def run_fold(fold, args, config):
 
     with open(eval_file) as f:
         metrics = json.load(f)
-    return {"fold": fold_name, "test_suite": test_suite,
+    return {"fold": fold_name, "test_suite": fold["test"],
             "train_suites": fold["train"], "metrics": metrics,
-            "checkpoint": str(ckpt_file)}
+            "checkpoint": str(ckpt_file),
+            "config_path": config_path, "config_sha256": config_sha}
 
 
 def main():
     ap = argparse.ArgumentParser(description="Run full LOSO matrix")
-    ap.add_argument("--config", required=True, help="Base config or config directory")
+    ap.add_argument("--config", required=True, help="Base config path or config directory")
     ap.add_argument("--episode_index", required=True)
     ap.add_argument("--feature_csv", required=True)
     ap.add_argument("--label_csv", required=True)
@@ -124,30 +163,19 @@ def main():
     ap.add_argument("--epochs", type=int, default=100)
     ap.add_argument("--batch_size", type=int, default=32)
     ap.add_argument("--patience", type=int, default=20)
+    ap.add_argument("--checkpoint_metric", default="val_loss",
+                    choices=["val_loss", "val_suite_macro_event_f1"])
     ap.add_argument("--tau_corridor", type=float, default=0.3)
     ap.add_argument("--tau_release", type=float, default=0.3)
     ap.add_argument("--guard", type=int, default=5)
     ap.add_argument("--dry_run", action="store_true")
     args = ap.parse_args()
 
-    # Load base config
-    base_config = parse_config(args.config) if Path(args.config).is_file() else {}
-
     results = []
     for fold in LOSO_FOLDS:
-        # Try fold-specific config: config_dir/loso_object.yaml etc.
-        config = base_config
-        config_dir = Path(args.config).parent if Path(args.config).is_file() else Path(args.config)
-        fold_config_path = config_dir / "{}.yaml".format(fold["name"])
-        if fold_config_path.exists():
-            config = parse_config(str(fold_config_path))
-        elif config_dir.is_dir():
-            alt = config_dir / "loso_{}.yaml".format(fold["test"].replace("libero_", ""))
-            if alt.exists():
-                config = parse_config(str(alt))
-
+        config_path = resolve_fold_config_path(args.config, fold)
         t0 = time.time()
-        result = run_fold(fold, args, config)
+        result = run_fold(fold, args, config_path)
         result["wall_time_s"] = time.time() - t0
         results.append(result)
 

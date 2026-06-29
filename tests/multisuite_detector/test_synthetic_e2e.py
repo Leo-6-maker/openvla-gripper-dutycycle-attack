@@ -134,10 +134,11 @@ def main():
 
     # Test 3: train --dry_run
     print("\n=== TEST 3: train_detector --dry_run ===")
+    train_out = os.path.join(tmp, "train_output")
     ok = run([sys.executable, os.path.join(TOOLS, "train_detector.py"),
               "--config", config_path, "--feature_csv", feat_path,
               "--label_csv", label_path, "--episode_index", ep_path,
-              "--split_file", split_file, "--output_dir", tmp, "--dry_run"])
+              "--split_file", split_file, "--output_dir", train_out, "--dry_run"])
     if not ok:
         sys.exit(1)
     print("PASS")
@@ -152,7 +153,7 @@ def main():
     r = subprocess.run([sys.executable, os.path.join(TOOLS, "train_detector.py"),
                         "--config", config_path, "--feature_csv", bad_feat,
                         "--label_csv", label_path, "--episode_index", ep_path,
-                        "--split_file", split_file, "--output_dir", tmp, "--dry_run"],
+                        "--split_file", split_file, "--output_dir", train_out + "_bad1", "--dry_run"],
                        capture_output=True, text=True)
     if r.returncode == 0:
         print("FAIL: missing feature columns not rejected")
@@ -172,7 +173,7 @@ def main():
     r = subprocess.run([sys.executable, os.path.join(TOOLS, "train_detector.py"),
                         "--config", config_path, "--feature_csv", nan_feat,
                         "--label_csv", label_path, "--episode_index", ep_path,
-                        "--split_file", split_file, "--output_dir", tmp, "--dry_run"],
+                        "--split_file", split_file, "--output_dir", train_out + "_bad2", "--dry_run"],
                        capture_output=True, text=True)
     if r.returncode == 0:
         print("FAIL: NaN feature not rejected")
