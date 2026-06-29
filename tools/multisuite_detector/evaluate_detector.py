@@ -316,6 +316,80 @@ def compute_metrics(results):
     return m
 
 
+def _validate_f1_evidence(ckpt_meta):
+    """Strict F1 evidence validation: no defaults, cross-verify aggregates."""
+    f1_req = ["val_suite_macro_event_f1", "val_suite_macro_event_f1_details",
+               "multi_event_excluded_total", "multi_event_excluded_keys_sha256",
+               "selection_false_emits_per_episode", "selection_tie_breaker"]
+    missing_f1 = sorted(set(f1_req) - set(ckpt_meta.keys()))
+    if missing_f1:
+        raise ValueError("F1 checkpoint missing: {}".format(missing_f1))
+
+    _validate_sha_field(ckpt_meta["multi_event_excluded_keys_sha256"], "multi_event_excluded_keys_sha256")
+    macro_f1 = _validate_finite_float(ckpt_meta["val_suite_macro_event_f1"], "val_suite_macro_event_f1", 0.0, 1.0)
+    excl_total = _validate_int(ckpt_meta["multi_event_excluded_total"], "multi_event_excluded_total", 0)
+    false_emits = _validate_finite_float(ckpt_meta["selection_false_emits_per_episode"], "selection_false_emits_per_episode", 0.0)
+
+    f1d = ckpt_meta["val_suite_macro_event_f1_details"]
+    if not isinstance(f1d, dict) or len(f1d) == 0:
+        raise ValueError("val_suite_macro_event_f1_details is empty or not dict")
+
+    sum_excl = 0
+    sum_scored = 0
+    sum_fp = 0
+    suite_f1s = []
+    required_per_suite = {"tp", "fp", "fn", "tn", "n_input_episodes", "n_scored_episodes",
+                           "excluded_multi_event", "precision", "recall", "f1"}
+
+    for s, d in sorted(f1d.items()):
+        if not isinstance(d, dict):
+            raise ValueError("Suite {} details is not dict: {}".format(s, type(d).__name__))
+        missing_keys = required_per_suite - set(d.keys())
+        if missing_keys:
+            raise ValueError("Suite {} missing keys: {}".format(s, sorted(missing_keys)))
+
+        tp = _validate_int(d["tp"], "suite.{}.tp".format(s), 0)
+        fp = _validate_int(d["fp"], "suite.{}.fp".format(s), 0)
+        fn = _validate_int(d["fn"], "suite.{}.fn".format(s), 0)
+        tn = _validate_int(d["tn"], "suite.{}.tn".format(s), 0)
+        n_in = _validate_int(d["n_input_episodes"], "suite.{}.n_input".format(s), 0)
+        n_sc = _validate_int(d["n_scored_episodes"], "suite.{}.n_scored".format(s), 1)
+        n_ex = _validate_int(d["excluded_multi_event"], "suite.{}.excluded".format(s), 0)
+        prec = _validate_finite_float(d["precision"], "suite.{}.precision".format(s), 0.0, 1.0)
+        rec = _validate_finite_float(d["recall"], "suite.{}.recall".format(s), 0.0, 1.0)
+        f1 = _validate_finite_float(d["f1"], "suite.{}.f1".format(s), 0.0, 1.0)
+
+        if n_in != n_sc + n_ex:
+            raise ValueError("Suite {}: n_input({}) != n_scored({}) + excluded({})".format(s, n_in, n_sc, n_ex))
+        if n_sc == 0:
+            raise ValueError("Suite {}: n_scored_episodes=0".format(s))
+
+        # Cross-verify derived metrics
+        exp_prec = tp / max(1, tp + fp)
+        exp_rec = tp / max(1, tp + fn)
+        exp_f1 = 2 * exp_prec * exp_rec / max(0.001, exp_prec + exp_rec)
+        if abs(prec - exp_prec) > 0.001 or abs(rec - exp_rec) > 0.001 or abs(f1 - exp_f1) > 0.001:
+            raise ValueError("Suite {}: stored metrics (p={:.4f} r={:.4f} f1={:.4f}) "
+                             "diverge from TP/FP/FN (p={:.4f} r={:.4f} f1={:.4f})".format(
+                                 s, prec, rec, f1, exp_prec, exp_rec, exp_f1))
+        if fp + fn != n_sc - tp - tn:
+            raise ValueError("Suite {}: fp({})+fn({})+tp({})+tn({}) != n_scored({})".format(s, fp, fn, tp, tn, n_sc))
+
+        sum_excl += n_ex
+        sum_scored += n_sc
+        sum_fp += fp
+        suite_f1s.append(f1)
+
+    if sum_excl != excl_total:
+        raise ValueError("excluded_total({}) != sum per-suite({})".format(excl_total, sum_excl))
+    exp_macro_f1 = float(np.mean(suite_f1s))
+    if abs(macro_f1 - exp_macro_f1) > 0.001:
+        raise ValueError("macro F1({:.4f}) != mean per-suite F1({:.4f})".format(macro_f1, exp_macro_f1))
+    exp_false = sum_fp / max(1, sum_scored)
+    if abs(false_emits - exp_false) > 0.001:
+        raise ValueError("false_emits({:.4f}) != sum_fp/scored({:.4f})".format(false_emits, exp_false))
+
+
 def per_suite_metrics(results, suite_map):
     by_suite = defaultdict(list)
     for r in results:
@@ -353,18 +427,7 @@ def main():
 
     # Conditional F1 evidence: required when checkpoint_metric == val_suite_macro_event_f1
     if ckpt_meta.get("checkpoint_metric") == "val_suite_macro_event_f1":
-        f1_req = ["val_suite_macro_event_f1", "val_suite_macro_event_f1_details",
-                   "multi_event_excluded_total", "multi_event_excluded_keys_sha256",
-                   "selection_false_emits_per_episode", "selection_tie_breaker"]
-        missing_f1 = sorted(set(f1_req) - set(ckpt_meta.keys()))
-        if missing_f1:
-            raise ValueError("F1 checkpoint missing required evidence: {}".format(missing_f1))
-        _validate_sha_field(ckpt_meta["multi_event_excluded_keys_sha256"], "multi_event_excluded_keys_sha256")
-        # Verify per-suite input = scored + excluded
-        f1d = ckpt_meta["val_suite_macro_event_f1_details"]
-        for s, d in f1d.items():
-            if d.get("n_input", d.get("n_input_episodes", 0)) != d.get("n_scored", d.get("n_scored_episodes", 0)) + d.get("excluded_multi_event", 0):
-                raise ValueError("Suite {} F1 detail mismatch: n_input != n_scored + excluded".format(s))
+        _validate_f1_evidence(ckpt_meta)
 
     # Thresholds: CLI override must match checkpoint, or be unset
     for cli_val, ckpt_val, name in [
@@ -375,10 +438,10 @@ def main():
         if cli_val is not None and cli_val != ckpt_val:
             sys.exit("CLI {}={} conflicts with checkpoint value={}".format(name, cli_val, ckpt_val))
 
-    # Formal evaluation: always use test split, K from checkpoint
-    split_key = "test"
+    # Formal evaluation: must use test split, K from checkpoint
     if args.split_key != "test":
-        print("WARNING: overriding split_key={} to 'test' for formal evaluation".format(args.split_key))
+        sys.exit("Formal evaluation requires --split_key test, got: {}".format(args.split_key))
+    split_key = "test"
 
     print("Checkpoint: tau_c={} tau_r={} guard={} K={}".format(tau_c, tau_r, guard, K))
     print("Checkpoint metric: {}".format(ckpt_meta.get("checkpoint_metric", "unknown")))
