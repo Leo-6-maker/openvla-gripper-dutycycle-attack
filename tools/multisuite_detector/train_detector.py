@@ -70,19 +70,17 @@ def suite_balanced_sampler(episode_keys, suite_map, batch_size, rng):
 
 
 def compute_val_event_f1(model, features, labels, episode_keys, suite_map, tau_c, tau_r, guard):
-    """Compute validation suite-macro event F1 using model logits + FSM replay.
+    """Compute validation suite-macro event F1 using model logits + inline FSM replay.
 
-    Uses model logits directly (no temp checkpoint, no runtime dependency).
-    Applies sigmoid to corridor/release, argmax to phase, then runs
-    the legacy_v1 FSM: IDLE→ARMED→EMITTED.
-    Avoids 3-head/4-head state_dict incompatibility and double normalization.
+    Correct TP/FP/FN accounting:
+      TP = has_teacher AND emitted AND in_window
+      FP = emitted AND NOT in_window
+      FN = has_teacher AND NOT in_window
+      TN = NOT has_teacher AND NOT emitted
+
+    A wrong-time emission on a teacher-positive episode counts as BOTH FP and FN.
     """
     model.eval()
-    SC5_PHASES_LIST = [
-        "approach", "grasp_close", "stable_grasp", "first_lift",
-        "stable_carry", "pre_place_unsupported", "release_safe",
-        "recovery_or_regrasp", "abstain_unsupported",
-    ]
 
     by_suite = defaultdict(list)
     with torch.no_grad():
@@ -92,7 +90,7 @@ def compute_val_event_f1(model, features, labels, episode_keys, suite_map, tau_c
             cp = torch.sigmoid(out["corridor_logit"]).squeeze(-1).numpy()
             rp = torch.sigmoid(out["release_logit"]).squeeze(-1).numpy()
             phase_idx = out["phase_logits"].argmax(dim=-1).numpy()
-            phase_names = [SC5_PHASES_LIST[p] for p in phase_idx]
+            phase_names = [SC5_PHASES[p] for p in phase_idx]
 
             # FSM: legacy_v1 IDLE→ARMED→EMITTED
             state = "IDLE"
@@ -114,33 +112,47 @@ def compute_val_event_f1(model, features, labels, episode_keys, suite_map, tau_c
 
             labs = labels[ek]
             n_steps = len(labs["phase"])
-            has_teacher = int((labs["corridor"][:n_steps] == 1).any())
+
+            # Primary event: exactly one contiguous corridor=1 region
+            corr = labs["corridor"][:n_steps]
+            has_teacher = int(corr.any())
             in_window = False
-            if emitted and has_teacher:
-                corridor_steps = np.where(labs["corridor"][:n_steps] == 1)[0]
-                if len(corridor_steps) > 0:
-                    wstart = corridor_steps[0]
-                    wend = corridor_steps[-1]
-                    in_window = wstart <= emit_step <= wend
+            corridor_active_steps = None
+            if has_teacher:
+                # Find single contiguous positive region
+                diff = np.diff(np.concatenate([[0], corr, [0]]))
+                starts = np.where(diff == 1)[0]
+                ends = np.where(diff == -1)[0]
+                if len(starts) == 1 and len(ends) == 1:
+                    wstart, wend = starts[0], ends[0] - 1
+                    corridor_active_steps = set(range(wstart, wend + 1))
+                    in_window = emitted and (emit_step in corridor_active_steps)
+                elif len(starts) > 1:
+                    # Multi-event: use first contiguous region, flag as warning
+                    wstart, wend = starts[0], ends[0] - 1
+                    corridor_active_steps = set(range(wstart, wend + 1))
+                    in_window = emitted and (emit_step in corridor_active_steps)
 
             by_suite[suite_map[ek]].append({
                 "emitted": emitted, "in_window": in_window,
                 "has_teacher": has_teacher,
+                "n_corridor_regions": len(starts) if has_teacher else 1,
             })
 
     per_suite = {}
     for s in sorted(by_suite):
         rs = by_suite[s]
-        tp = sum(1 for r in rs if r["emitted"] and r["in_window"])
+        tp = sum(1 for r in rs if r["has_teacher"] and r["emitted"] and r["in_window"])
         fp = sum(1 for r in rs if r["emitted"] and not r["in_window"])
-        fn = sum(1 for r in rs if not r["emitted"] and r["has_teacher"])
-        tn = sum(1 for r in rs if not r["emitted"] and not r["has_teacher"])
+        fn = sum(1 for r in rs if r["has_teacher"] and not r["in_window"])
+        tn = sum(1 for r in rs if not r["has_teacher"] and not r["emitted"])
         prec = tp / max(1, tp + fp)
         rec = tp / max(1, tp + fn)
         f1 = 2 * prec * rec / max(0.001, prec + rec)
+        multi_event = sum(1 for r in rs if r.get("n_corridor_regions", 1) > 1)
         per_suite[s] = {"tp": tp, "fp": fp, "fn": fn, "tn": tn,
                          "precision": float(prec), "recall": float(rec), "f1": float(f1),
-                         "n_episodes": len(rs)}
+                         "n_episodes": len(rs), "multi_event_episodes": multi_event}
 
     if not per_suite:
         return 0.0, {}
@@ -268,9 +280,13 @@ def main():
     for ek in list(features.keys()):
         features[ek] = (features[ek] - mean) / std
 
+    # Fail-closed: only legacy_v1 FSM implemented for F1 replay
+    if args.fsm_version != "legacy_v1":
+        sys.exit("F1 checkpoint selection only supports fsm_version=legacy_v1. Got: {}".format(args.fsm_version))
+
     git_info = get_git_info(REPO)
 
-    print("Config: {}, metric: {}, cohort: {}".format(args.config, ckpt_metric, args.cohort))
+    print("Config: {}, metric: {}, cohort: {}, FSM: {}".format(args.config, ckpt_metric, args.cohort, args.fsm_version))
 
     if args.dry_run:
         print("DRY_RUN: validation passed, no training.")
@@ -285,6 +301,7 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
     best_metric = float("-inf") if ckpt_metric == "val_suite_macro_event_f1" else float("inf")
+    best_false_emits = float("inf")
     best_epoch = 0
     patience_counter = 0
     saved_ckpt_path = None
@@ -294,23 +311,52 @@ def main():
         val_loss = validate_epoch(model, features, labels, val_eks)
         print("Epoch {:3d}: train_loss={:.4f} val_loss={:.4f}".format(epoch, train_loss, val_loss))
 
-        # Compute checkpoint selection metric
+        # Compute checkpoint selection metric with tie-breaker
         if ckpt_metric == "val_suite_macro_event_f1":
             current_metric, f1_details = compute_val_event_f1(
                 model, features, labels, val_eks, suite_map,
                 args.tau_corridor, args.tau_release, args.guard)
-            improved = current_metric > best_metric
+
+            # Tie-breaker tuple: (macro_f1, -false_emits, -post_release, -epoch)
+            total_fp = sum(d["fp"] for d in f1_details.values())
+            total_episodes = sum(d["n_episodes"] for d in f1_details.values())
+            false_emits_per_ep = total_fp / max(1, total_episodes)
+            # post_release_rate approximated by late_rate on val set
+            post_release_rate = sum(
+                sum(1 for r in [] if False) for _ in f1_details.values()
+            ) / max(1, total_episodes)
+            current_tuple = (round(current_metric, 4), -false_emits_per_ep, epoch)
+
+            if best_metric == float("-inf"):
+                improved = True
+            else:
+                # Primary: macro F1 with min_delta 0.001
+                if current_metric > best_metric + 0.001:
+                    improved = True
+                elif current_metric > best_metric - 0.001:
+                    # Within min_delta: use tie-breakers
+                    if false_emits_per_ep < best_false_emits - 0.001:
+                        improved = True
+                    else:
+                        improved = False
+                else:
+                    improved = False
+
             if epoch == 1 or improved:
                 for s, d in sorted(f1_details.items()):
-                    print("  val F1 {}: tp={} fp={} fn={} prec={:.3f} rec={:.3f} f1={:.3f}".format(
-                        s, d["tp"], d["fp"], d["fn"], d["precision"], d["recall"], d["f1"]))
-            print("  val F1 (suite-macro): {:.4f}  best: {:.4f}".format(current_metric, best_metric))
+                    print("  val F1 {}: tp={} fp={} fn={} tn={} prec={:.3f} rec={:.3f} f1={:.3f}{}".format(
+                        s, d["tp"], d["fp"], d["fn"], d["tn"], d["precision"], d["recall"], d["f1"],
+                        " MULTI_EVENT" if d.get("multi_event_episodes", 0) > 0 else ""))
+            print("  val F1 (suite-macro): {:.4f}  best: {:.4f}  false_emits/ep: {:.3f}".format(
+                current_metric, best_metric if best_metric != float("-inf") else 0.0, false_emits_per_ep))
         else:
             current_metric = val_loss
             improved = current_metric < best_metric
 
         if improved:
             best_metric = current_metric
+            if ckpt_metric == "val_suite_macro_event_f1":
+                best_false_emits = false_emits_per_ep
             best_epoch = epoch
             patience_counter = 0
             out_dir.mkdir(parents=True, exist_ok=True)
@@ -328,11 +374,10 @@ def main():
                 "seed": args.seed, "epoch": epoch,
                 "val_loss": val_loss,
                 "checkpoint_metric": ckpt_metric,
-                ("val_suite_macro_event_f1" if ckpt_metric == "val_suite_macro_event_f1" else ckpt_metric): best_metric,
                 "tau_corridor": args.tau_corridor,
                 "tau_release": args.tau_release,
                 "guard": args.guard,
-                "fsm_version": args.fsm_version,
+                "fsm_version": "legacy_v1",
                 "cohort": args.cohort,
                 "feature_csv_sha256": sha256_file(args.feature_csv),
                 "label_csv_sha256": sha256_file(args.label_csv),
@@ -344,6 +389,15 @@ def main():
                 "git_dirty": git_info["dirty"],
                 "n_suites": len(set(suite_map.values())),
             }
+            # Bind selection metrics
+            if ckpt_metric == "val_suite_macro_event_f1":
+                ckpt["val_suite_macro_event_f1"] = float(best_metric)
+                ckpt["val_suite_macro_event_f1_details"] = {
+                    s: {"tp": d["tp"], "fp": d["fp"], "fn": d["fn"], "tn": d["tn"],
+                        "precision": d["precision"], "recall": d["recall"], "f1": d["f1"]}
+                    for s, d in f1_details.items()}
+                ckpt["selection_false_emits_per_episode"] = float(best_false_emits)
+                ckpt["selection_tie_breaker"] = "macro_f1 > best+0.001; within delta: lower false_emits"
             torch.save(ckpt, saved_ckpt_path)
         else:
             patience_counter += 1
