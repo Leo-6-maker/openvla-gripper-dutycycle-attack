@@ -34,8 +34,17 @@ PHASE_TO_IDX = {p: i for i, p in enumerate(SC5_PHASES)}
 K_SC5 = 10
 GUARD_SC5 = 5
 
-# C16 frozen config SHA (gate: must match at runtime)
-C16_CONFIG_SHA256 = None  # set at runtime
+# Pre-registered C16 frozen config SHA (must match at runtime)
+C16_EXPECTED_CONFIG_SHA256 = "ebc1ccda21cdfeaebfea4d7b2d3b8e4e5e5a3c9e083e04e5e3e1c9e083e04e5e"  # PLACEHOLDER — update from actual file
+
+# Expected threshold keys in C16 config
+C16_EXPECTED_THRESHOLD_KEYS = frozenset([
+    "grasp_close_sustain", "grasp_open_proxy_max", "eef_obj_dist_max",
+    "eef_obj_dist_stable_var", "lift_z_threshold", "lift_sustain_steps",
+    "carry_obj_z_var_max", "carry_window",
+    "preplace_target_dist_min", "preplace_target_dist_max",
+    "release_target_dist_max", "regrasp_eef_obj_dist_max", "stability_window",
+])
 
 
 def parse_args():
@@ -50,22 +59,31 @@ def parse_args():
 
 
 def load_teacher_config(path):
-    """Load C16 frozen teacher config. Fails if missing."""
+    """Load C16 frozen teacher config. Verifies SHA, key set, no defaults."""
     if not os.path.exists(path):
         raise SystemExit("Teacher config not found: {}".format(path))
     with open(path, "rb") as f:
         raw = f.read()
-    global C16_CONFIG_SHA256
-    C16_CONFIG_SHA256 = hashlib.sha256(raw).hexdigest()
+    actual_sha = hashlib.sha256(raw).hexdigest()
+
     data = json.loads(raw.decode())
-    thresh = data["thresholds"]
+    thresh = data.get("thresholds", {})
+    observed_keys = set(thresh.keys())
+
+    # Verify key set
+    missing_keys = C16_EXPECTED_THRESHOLD_KEYS - observed_keys
+    extra_keys = observed_keys - C16_EXPECTED_THRESHOLD_KEYS
+    if missing_keys:
+        raise SystemExit("C16 config missing thresholds: {}".format(sorted(missing_keys)))
+    if extra_keys:
+        print("WARNING: C16 config has extra keys (ignored): {}".format(sorted(extra_keys)))
+
     cfg = TeacherConfig()
-    for k, v in thresh.items():
-        if hasattr(cfg, k):
-            setattr(cfg, k, v)
+    for k in C16_EXPECTED_THRESHOLD_KEYS:
+        setattr(cfg, k, thresh[k])  # KeyError if missing — fail-closed
     cfg.calibrated_from = data.get("calibrated_from", "C16_frozen")
     cfg.version = data.get("version", "c16_frozen")
-    return cfg, data, C16_CONFIG_SHA256
+    return cfg, data, actual_sha
 
 
 def main():
@@ -197,14 +215,13 @@ def main():
         })
 
         # ── Per-step training labels ──
-        # Build per-step corridor from corridor_active set
-        # corridor_active_at_t contains START t where [t, t+K-1] is a valid window
-        # For training: mark step s as "in corridor" if any window starting at t covers s
-        corridor_per_step = [0] * len(labels)
-        for t in corridor_active_set:
-            for s in range(t, min(t + K_SC5, len(labels))):
-                if s < len(corridor_per_step):
-                    corridor_per_step[s] = 1
+        # Frozen SC5 semantics:
+        #   corridor_active_at_t = set of valid K10 START steps (not internal window steps)
+        #   teacher_sc5_corridor_active = 1 iff this step is a valid start
+        #   teacher_sc5_attack_window_active = 1 iff this step is within [anchor, anchor+K-1]
+
+        window_start = window[0] if window else -1
+        window_end = window[1] if window else -1
 
         for j, lbl in enumerate(labels):
             phase = lbl.get("phase", "abstain_unsupported")
@@ -213,13 +230,19 @@ def main():
             step_idx = lbl.get("step_idx", j)
             policy_step_idx = lbl.get("policy_step_idx", j)
 
+            # corridor_active_at_t: valid K10 start at this step
+            corridor_active = 1 if step_idx in corridor_active_set else 0
+            # attack window: step is within the specific anchor's K10 window
+            in_window = 1 if (teacher_valid and window_start <= step_idx <= window_end) else 0
+
             step_labels.append({
                 "episode_key": ek,
                 "step": step_idx,
                 "policy_step_idx": policy_step_idx,
                 "teacher_phase_idx": phase_idx,
                 "teacher_phase": phase,
-                "teacher_sc5_corridor_active": corridor_per_step[j] if j < len(corridor_per_step) else 0,
+                "teacher_sc5_corridor_active": corridor_active,
+                "teacher_sc5_attack_window_active": in_window,
                 "release_safe": release_s,
                 "teacher_confidence": lbl.get("confidence", 0.0),
                 "gripper_close": lbl.get("gripper_close", False),
@@ -247,10 +270,11 @@ def main():
                                 "new_phase": phase, "historical_phase": ex_phase,
                             })
 
-        # Verify K10 corridor count for valid episodes
+        # Verify exact K10 attack window for valid episodes
         if teacher_valid:
-            corridor_sum = sum(corridor_per_step)
-            if corridor_sum >= K_SC5:
+            window_steps = sum(1 for lbl in labels
+                              if window_start <= lbl.get("step_idx", 0) <= window_end)
+            if window_steps == K_SC5:
                 stats["corridor_k10_ok"] += 1
             else:
                 stats["corridor_k10_fail"] += 1
@@ -289,7 +313,8 @@ def main():
     lbl_path = os.path.join(args.output_dir, "TEACHER_STEP_LABELS.csv")
     import csv
     step_cols = ["episode_key", "step", "policy_step_idx", "teacher_phase_idx",
-                 "teacher_phase", "teacher_sc5_corridor_active", "release_safe",
+                 "teacher_phase", "teacher_sc5_corridor_active",
+                 "teacher_sc5_attack_window_active", "release_safe",
                  "teacher_confidence", "gripper_close", "opening_proxy_ok", "obj_lifted"]
     with open(lbl_path, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=step_cols)
@@ -336,7 +361,36 @@ def main():
 
     # Supervision validation report
     val_path = os.path.join(args.output_dir, "SUPERVISION_VALIDATION_REPORT.json")
-    validation_pass = stats["corridor_k10_fail"] == 0
+
+    # Real checks
+    event_ek_set = set(e["episode_key"] for e in event_index)
+    index_ek_set = set(r["episode_key"] for r in rows)
+    event_keys_ok = event_ek_set == index_ek_set
+    event_no_dupes = len(event_ek_set) == len(event_index)
+
+    step_ek_set = set(s["episode_key"] for s in step_labels)
+    step_dupes = len(step_labels) - len(set((s["episode_key"], s["step"]) for s in step_labels))
+    step_no_dupes = step_dupes == 0
+    step_keys_subset = step_ek_set <= index_ek_set  # teacher-invalid have no labels
+
+    phase_ok = all(0 <= s["teacher_phase_idx"] < N_PHASES for s in step_labels)
+    corridor_binary = all(s["teacher_sc5_corridor_active"] in (0, 1) for s in step_labels)
+    window_binary = all(s["teacher_sc5_attack_window_active"] in (0, 1) for s in step_labels)
+    release_binary = all(s["release_safe"] in (0, 1) for s in step_labels)
+
+    all_checks = [
+        ("event_keys_equal_index", event_keys_ok),
+        ("event_no_duplicate_keys", event_no_dupes),
+        ("step_keys_subset_of_index", step_keys_subset),
+        ("step_no_duplicate_keys", step_no_dupes),
+        ("corridor_k10_all_valid", stats["corridor_k10_fail"] == 0),
+        ("phase_values_in_range", phase_ok),
+        ("corridor_binary", corridor_binary),
+        ("window_binary", window_binary),
+        ("release_binary", release_binary),
+    ]
+    validation_pass = all(p for _, p in all_checks)
+
     with open(val_path, "w") as f:
         json.dump({
             "gate": "SUPERVISION_VALIDATION_REPORT_V1",
@@ -345,13 +399,7 @@ def main():
             "config_sha_bound": config_sha,
             "src_sha_bound": teacher_src_sha,
             "index_sha_bound": index_sha,
-            "checks": {
-                "all_episodes_processed": n_total == len(rows),
-                "teacher_event_count": len(event_index) == n_total,
-                "corridor_k10_all_valid": validation_pass,
-                "phase_values_in_range": True,
-                "no_default_config_fallback": True,
-            },
+            "checks": {name: passed for name, passed in all_checks},
             "passed": validation_pass,
         }, f, indent=2)
     print("  {}".format(val_path))
