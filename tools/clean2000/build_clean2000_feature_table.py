@@ -227,13 +227,48 @@ def run_golden_parity(obj500_root, golden_csv):
     if not golden:
         return False, {"error": "no_golden_data"}
 
-    # Find Object500 episodes that have entries in the golden set
+    # Find Object500 episodes and build (task, state) -> ep_dir map
     from object500_adapter import list_episode_dirs
     ep_dirs = list_episode_dirs(obj500_root)
     print("Object500 episode dirs: {}".format(len(ep_dirs)))
 
+    # Reverse selection: use golden CSV (task, state) pairs to select episodes
+    golden_pairs = set()
+    for (tid, sid, _) in golden:
+        golden_pairs.add((tid, sid))
+    print("Golden (task, state) pairs: {}".format(len(golden_pairs)))
+
+    episode_map = {}  # (task_id, state_id) -> ep_dir
+    for ep_dir in ep_dirs:
+        parts = ep_dir.split("/")
+        task_d = [p for p in parts if p.startswith("task_")]
+        state_d = [p for p in parts if p.startswith("state_")]
+        if not task_d or not state_d:
+            continue
+        tid = int(task_d[-1].split("_")[1])
+        sid = int(state_d[-1].split("_")[1])
+        key = (tid, sid)
+        if key in episode_map:
+            # Multiple attempts for same (task, state) — use the first found
+            continue
+        episode_map[key] = ep_dir
+
+    # Verify all golden pairs have episodes
+    missing_episodes = golden_pairs - set(episode_map)
+    if missing_episodes:
+        print("FATAL: {} golden (task,state) pairs have no episode dir".format(
+            len(missing_episodes)))
+        for p in sorted(missing_episodes)[:10]:
+            print("  {}".format(p))
+        return False, {"error": "missing_episodes", "missing": sorted(str(p) for p in missing_episodes)}
+
+    # Select episodes from golden pairs (use all golden pairs for parity)
+    selected_pairs = sorted(golden_pairs)
+    print("Testing {} episodes (golden-driven selection)".format(len(selected_pairs)))
+
     results = {
         "total_golden_keys": len(golden),
+        "golden_pairs": len(golden_pairs),
         "episodes_compared": 0,
         "steps_compared": 0,
         "exact_matches": 0,
@@ -244,15 +279,8 @@ def run_golden_parity(obj500_root, golden_csv):
     }
     max_diffs = {}
 
-    for ep_dir in sorted(ep_dirs)[:50]:  # Test first 50 Object500 episodes
-        # Extract task_idx and state_id from path
-        parts = ep_dir.split("/")
-        task_d = [p for p in parts if p.startswith("task_")]
-        state_d = [p for p in parts if p.startswith("state_")]
-        if not task_d or not state_d:
-            continue
-        task_idx = int(task_d[-1].split("_")[1])
-        state_id = int(state_d[-1].split("_")[1])
+    for (task_idx, state_id) in selected_pairs:
+        ep_dir = episode_map[(task_idx, state_id)]
 
         # Replay
         features = replay_telemetry(ep_dir)
@@ -313,24 +341,17 @@ def run_golden_parity(obj500_root, golden_csv):
     # ── Fail-closed gate ──
     # Replay keys must exactly match golden keys for compared episodes
     replay_key_set = set()
-    for ep_dir in sorted(ep_dirs)[:50]:
-        parts = ep_dir.split("/")
-        task_d = [p for p in parts if p.startswith("task_")]
-        state_d = [p for p in parts if p.startswith("state_")]
-        if not task_d or not state_d:
-            continue
-        tid = int(task_d[-1].split("_")[1])
-        sid = int(state_d[-1].split("_")[1])
+    replay_row_count = 0
+    for (tid, sid) in selected_pairs:
+        ep_dir = episode_map[(tid, sid)]
         feats = replay_telemetry(ep_dir)
+        replay_row_count += len(feats)
         for fr in feats:
             replay_key_set.add((tid, sid, fr["step"]))
 
     golden_key_set = set()
     for (tid, sid, step), _ in golden.items():
-        if (tid, sid) in {(int(p.split("/")[-3].split("_")[1]),
-                           int(p.split("/")[-2].split("_")[1]))
-                          for p in sorted(ep_dirs)[:50]
-                          if "task_" in p and "state_" in p}:
+        if (tid, sid) in set(selected_pairs):
             golden_key_set.add((tid, sid, step))
 
     missing_from_golden = replay_key_set - golden_key_set
@@ -340,10 +361,9 @@ def run_golden_parity(obj500_root, golden_csv):
 
     nan_count = 0
     non_finite = 0
-    replay_row_count = 0
-    for ep_dir in sorted(ep_dirs)[:50]:
+    for (tid, sid) in selected_pairs:
+        ep_dir = episode_map[(tid, sid)]
         feats = replay_telemetry(ep_dir)
-        replay_row_count += len(feats)
         for fr in feats:
             for col in CANONICAL_25D:
                 v = fr.get(col)
@@ -371,17 +391,8 @@ def run_golden_parity(obj500_root, golden_csv):
                 golden_nan += 1
 
     # Row-level duplicate check (per tested episodes only)
-    golden_row_count_tested = len(golden_key_set)  # should match if no dupes
     replay_key_dupes = len(replay_key_set) < replay_row_count
-    # Count golden rows only for tested (task, state) pairs
-    tested_pairs = set()
-    for ep_dir in sorted(ep_dirs)[:50]:
-        parts = ep_dir.split("/")
-        td = [p for p in parts if p.startswith("task_")]
-        sd = [p for p in parts if p.startswith("state_")]
-        if td and sd:
-            tested_pairs.add((int(td[-1].split("_")[1]), int(sd[-1].split("_")[1])))
-    golden_row_count_tested = sum(1 for (tid, sid, _) in golden if (tid, sid) in tested_pairs)
+    golden_row_count_tested = sum(1 for (tid, sid, _) in golden if (tid, sid) in set(selected_pairs))
     golden_key_dupes = len(golden_key_set) < golden_row_count_tested
 
     key_coverage = (
