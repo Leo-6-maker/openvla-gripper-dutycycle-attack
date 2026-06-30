@@ -107,11 +107,20 @@ def classify(row, teacher_row):
     if not row.get("teacher_eligible", False):
         return ("SAFETY_ABSTENTION", "teacher_ineligible")
 
-    # Check teacher label
-    if teacher_row:
-        if not teacher_row.get("teacher_label_valid", False):
-            return ("SAFETY_ABSTENTION", "teacher_label_invalid: {}".format(
-                teacher_row.get("teacher_invalid_reason", "unknown")))
+    # Fail-closed: teacher_eligible episodes MUST have a teacher row
+    if not teacher_row:
+        return ("EXCLUDED_INFRA", "missing_teacher_label_row")
+    if not teacher_row.get("teacher_label_valid", False):
+        return ("SAFETY_ABSTENTION", "teacher_label_invalid: {}".format(
+            teacher_row.get("teacher_invalid_reason", "unknown")))
+
+    # ── EXCLUDED_TELEMETRY: valid step quality ──
+    if not row.get("valid_steps_contiguous", False):
+        return ("EXCLUDED_TELEMETRY", "valid_steps_not_contiguous")
+    if row.get("n_valid_steps", 0) <= 0:
+        return ("EXCLUDED_TELEMETRY", "no_valid_steps")
+    if row.get("invalid_feature_steps", 0) < 0:
+        return ("EXCLUDED_TELEMETRY", "negative_invalid_feature_steps")
 
     # ── PRIMARY ──
     if not row.get("task_success", False):
@@ -132,6 +141,21 @@ def main():
     print("Loading teacher index: {}".format(args.teacher_index))
     teacher_by_key = load_index_by_key(args.teacher_index)
     print("  {} teacher labels".format(len(teacher_by_key)))
+
+    # ── Exact key equality gate ──
+    index_keys = set(r["episode_key"] for r in rows)
+    teacher_keys = set(teacher_by_key.keys())
+    missing_teacher = index_keys - teacher_keys
+    extra_teacher = teacher_keys - index_keys
+    if missing_teacher:
+        print("FATAL: {} episodes missing from teacher index".format(len(missing_teacher)))
+        for ek in sorted(missing_teacher)[:10]:
+            print("  {}".format(ek))
+        sys.exit(1)
+    if extra_teacher:
+        print("FATAL: {} extra episodes in teacher index".format(len(extra_teacher)))
+        sys.exit(1)
+    print("  Key equality: PASS")
 
     # Classify
     print("Classifying...")
@@ -171,7 +195,12 @@ def main():
     # ── Closure check ──
     total_classified = sum(len(v) for v in sets.values()) + len(unclassified)
     expected = len(rows)
-    intersection_free = True
+
+    # Compute actual intersections
+    used_keys = []
+    for name in sets:
+        used_keys.extend(e["episode_key"] for e in sets[name])
+    intersection_free = (len(used_keys) == len(set(used_keys)))
 
     print()
     print("Set counts:")

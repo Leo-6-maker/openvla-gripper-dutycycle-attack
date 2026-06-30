@@ -60,6 +60,7 @@ def analyze_telemetry(ep_dir):
 
     # Collect initial state values for hashing
     init_vals = []
+    valid_step_ids = []
 
     with open(p) as f:
         reader = csv.DictReader(f)
@@ -70,6 +71,7 @@ def analyze_telemetry(ep_dir):
             steps.append(step_idx)
             if feat_valid:
                 n_valid += 1
+                valid_step_ids.append(step_idx)
                 if first_valid < 0:
                     first_valid = step_idx
             else:
@@ -86,9 +88,8 @@ def analyze_telemetry(ep_dir):
     missing = expected_max + 1 - len(steps_sorted) if steps_sorted else 0
     contiguous = (duplicates == 0 and missing == 0)
 
-    # Valid steps contiguous
-    valid_steps = sorted(set(s for s in steps if s >= first_valid and first_valid >= 0))
-    valid_contiguous = _check_valid_contiguous(valid_steps, first_valid)
+    # Valid steps contiguous — uses actual feat_valid=True step IDs
+    valid_contiguous = _check_valid_contiguous(sorted(set(valid_step_ids)), first_valid)
 
     # Initial state hash
     obs_sha = _hash_initial_state(init_vals)

@@ -305,14 +305,70 @@ def run_golden_parity(obj500_root, golden_csv):
     results["max_abs_diff_per_column"] = {k: float(v) if isinstance(v, (int, float)) else str(v)
                                           for k, v in max_diffs.items()}
 
-    # Summary
+    # ── Fail-closed gate ──
+    # Replay keys must exactly match golden keys for compared episodes
+    replay_key_set = set()
+    for ep_dir in sorted(ep_dirs)[:50]:
+        parts = ep_dir.split("/")
+        task_d = [p for p in parts if p.startswith("task_")]
+        state_d = [p for p in parts if p.startswith("state_")]
+        if not task_d or not state_d:
+            continue
+        tid = int(task_d[-1].split("_")[1])
+        sid = int(state_d[-1].split("_")[1])
+        feats = replay_telemetry(ep_dir)
+        for fr in feats:
+            replay_key_set.add((tid, sid, fr["step"]))
+
+    golden_key_set = set()
+    for (tid, sid, step), _ in golden.items():
+        if (tid, sid) in {(int(p.split("/")[-3].split("_")[1]),
+                           int(p.split("/")[-2].split("_")[1]))
+                          for p in sorted(ep_dirs)[:50]
+                          if "task_" in p and "state_" in p}:
+            golden_key_set.add((tid, sid, step))
+
+    missing_from_golden = replay_key_set - golden_key_set
+    missing_from_replay = golden_key_set - replay_key_set
+    results["missing_from_golden"] = sorted(str(k) for k in missing_from_golden)
+    results["missing_from_replay"] = sorted(str(k) for k in missing_from_replay)
+
+    nan_count = 0
+    non_finite = 0
+    for ep_dir in sorted(ep_dirs)[:50]:
+        for fr in replay_telemetry(ep_dir):
+            for col in CANONICAL_25D:
+                v = fr.get(col)
+                if v is None or (isinstance(v, float) and math.isnan(v)):
+                    nan_count += 1
+                elif isinstance(v, float) and math.isinf(v):
+                    non_finite += 1
+
+    key_coverage = (
+        len(missing_from_golden) == 0 and
+        len(missing_from_replay) == 0 and
+        len(replay_key_set) > 0
+    )
+    all_finite = nan_count == 0 and non_finite == 0
     total_compared = results["exact_matches"] + len(results["mismatches"])
-    passed = len(results["mismatches"]) == 0 and results["episodes_compared"] > 0
+    passed = (
+        len(results["mismatches"]) == 0 and
+        results["episodes_compared"] > 0 and
+        key_coverage and
+        all_finite and
+        total_compared == len(golden_key_set)
+    )
 
     print("  Episodes compared: {}".format(results["episodes_compared"]))
     print("  Steps compared:    {}".format(results["steps_compared"]))
     print("  Exact matches:     {}".format(results["exact_matches"]))
     print("  Mismatches:        {}".format(len(results["mismatches"])))
+    print("  Missing golden:    {}".format(len(missing_from_golden)))
+    print("  Missing replay:    {}".format(len(missing_from_replay)))
+    print("  NaN values:        {}".format(nan_count))
+    print("  Inf values:        {}".format(non_finite))
+    print("  Key coverage:      {}".format("PASS" if key_coverage else "FAIL"))
+    print("  All finite:        {}".format("PASS" if all_finite else "FAIL"))
     print("  Max diffs per column:")
     for col, diff in sorted(results["max_abs_diff_per_column"].items()):
         if isinstance(diff, float):
