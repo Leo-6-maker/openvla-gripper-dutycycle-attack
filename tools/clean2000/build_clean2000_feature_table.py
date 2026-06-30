@@ -39,25 +39,18 @@ from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV
 from gripper_attack.sc5mlp_v1 import SC5_FEATURES, N_FEATURES
 
 # Canonical feature order (matches SC5_FEATURES with f_ prefix convention)
-# The training pipeline uses f_ prefixed names
-CANONICAL_25D = [
-    "f_gripper_command", "f_gripper_qpos", "f_gripper_opening_proxy",
-    "f_eef_x", "f_eef_y", "f_eef_z", "f_eef_vx", "f_eef_vy", "f_eef_vz",
-    "f_action_dx", "f_action_dy", "f_action_dz", "f_action_gripper",
-    "f_recent_close_streak", "f_recent_open_streak", "f_recent_gripper_flip_count",
-    "f_close_onset", "f_time_since_close", "f_eef_speed",
-    "f_eef_z_delta_since_close", "f_qpos_delta_1", "f_qpos_delta_3",
-    "f_opening_proxy_delta_3", "f_opening_proxy_variance_5", "f_eef_speed_variance_5",
-]
+# Training column names: match frozen SC5_FEATURES (no f_ prefix)
+TRAINING_COLUMNS = list(SC5_FEATURES)  # e.g. "gripper_command", "eef_x", ...
+assert len(TRAINING_COLUMNS) == N_FEATURES, \
+    "TRAINING_COLUMNS length {} != N_FEATURES {}".format(len(TRAINING_COLUMNS), N_FEATURES)
 
-assert len(CANONICAL_25D) == N_FEATURES, \
-    "CANONICAL_25D length {} != N_FEATURES {}".format(len(CANONICAL_25D), N_FEATURES)
+# Golden CSV column names: with f_ prefix (matches FOLD00_FEATURE_DATASET.csv)
+GOLDEN_COLUMNS = ["f_" + name for name in TRAINING_COLUMNS]
 
-# Mapping from SC5_FEATURES names (no f_ prefix) to CANONICAL_25D names (with f_ prefix)
-FEATURE_TO_CANONICAL = {}
-for cf in CANONICAL_25D:
-    base = cf[2:] if cf.startswith("f_") else cf  # strip f_ prefix
-    FEATURE_TO_CANONICAL[base] = cf
+# Mapping from adapter internal names (base) to golden column names
+FEATURE_TO_GOLDEN = {}
+for i, name in enumerate(TRAINING_COLUMNS):
+    FEATURE_TO_GOLDEN[name] = GOLDEN_COLUMNS[i]
 
 
 def parse_args():
@@ -174,7 +167,7 @@ def replay_telemetry(ep_dir):
             if result.get("valid") and result.get("features"):
                 feat = result["features"]
                 for base_name, value in feat.items():
-                    canonical_name = FEATURE_TO_CANONICAL.get(base_name, "f_" + base_name)
+                    canonical_name = FEATURE_TO_GOLDEN.get(base_name, "f_" + base_name)
                     row_features[canonical_name] = value
             else:
                 # Fallback: fill 13D base features directly from telemetry
@@ -187,10 +180,10 @@ def replay_telemetry(ep_dir):
                     ("action_dx", "f_action_dx"), ("action_dy", "f_action_dy"),
                     ("action_dz", "f_action_dz"), ("action_gripper", "f_action_gripper"),
                 ]:
-                    canonical_name = FEATURE_TO_CANONICAL.get(base_name, "f_" + base_name)
+                    canonical_name = FEATURE_TO_GOLDEN.get(base_name, "f_" + base_name)
                     row_features[canonical_name] = _safe_float(row.get(tel_col, 0))
                 # Derived features: NaN (cannot compute without valid history)
-                for cf in CANONICAL_25D:
+                for cf in GOLDEN_COLUMNS:
                     if cf not in row_features:
                         row_features[cf] = float("nan")
             features.append(row_features)
@@ -303,7 +296,7 @@ def run_golden_parity(obj500_root, golden_csv):
 
             gold_row = golden[key]
             match = True
-            for col in CANONICAL_25D:
+            for col in GOLDEN_COLUMNS:
                 replay_val = feat_row.get(col, None)
                 gold_val_str = gold_row.get(col, "")
                 if replay_val is None:
@@ -367,7 +360,7 @@ def run_golden_parity(obj500_root, golden_csv):
         ep_dir = episode_map[(tid, sid)]
         feats = replay_telemetry(ep_dir)
         for fr in feats:
-            for col in CANONICAL_25D:
+            for col in GOLDEN_COLUMNS:
                 v = fr.get(col)
                 try:
                     fv = float(v)
@@ -383,7 +376,7 @@ def run_golden_parity(obj500_root, golden_csv):
     # Check golden values too
     golden_nan = 0
     for key, gr in golden.items():
-        for col in CANONICAL_25D:
+        for col in GOLDEN_COLUMNS:
             try:
                 fv = float(gr.get(col, ""))
             except (TypeError, ValueError):
@@ -499,26 +492,37 @@ def main():
     index_keys = set(r["episode_key"] for r in index_rows)
 
     # Generate features for every episode
-    csv_path = os.path.join(args.output_dir, "CLEAN2000_FEATURES_25D.csv")
+    all_csv_path = os.path.join(args.output_dir, "CLEAN2000_FEATURES_25D_ALL_STEPS.csv")
+    valid_csv_path = os.path.join(args.output_dir, "CLEAN2000_FEATURES_25D_VALID_ONLY.csv")
     report_path = os.path.join(args.output_dir, "CLEAN2000_FEATURE_TABLE_REPORT.json")
 
-    output_columns = ["episode_key", "suite", "task_id", "state_id", "step"] + CANONICAL_25D + ["feat_valid"]
+    # Training columns: match frozen SC5_FEATURES (no f_ prefix)
+    all_output_cols = ["episode_key", "suite", "task_id", "state_id", "step"] + TRAINING_COLUMNS + ["feat_valid"]
+    valid_output_cols = ["episode_key", "suite", "task_id", "state_id", "step", "source_step"] + TRAINING_COLUMNS
 
-    total_steps = 0
+    total_all_steps = 0
+    total_valid_steps = 0
     total_episodes = 0
     failed_episodes = []
     episode_keys_seen = set()
     step_keys_seen = set()
     nan_count = 0
     inf_count = 0
+    per_suite_valid_steps = {}
+    per_suite_invalid_steps = {}
 
-    with open(csv_path, "w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=output_columns)
-        writer.writeheader()
+    with open(all_csv_path, "w", newline="") as f_all, \
+         open(valid_csv_path, "w", newline="") as f_valid:
+
+        writer_all = csv.DictWriter(f_all, fieldnames=all_output_cols)
+        writer_valid = csv.DictWriter(f_valid, fieldnames=valid_output_cols)
+        writer_all.writeheader()
+        writer_valid.writeheader()
 
         for row in index_rows:
             ek = row["episode_key"]
             ep_dir = row["source_root"]
+            suite = row["suite"]
             features = replay_telemetry(ep_dir)
 
             if not features:
@@ -528,7 +532,6 @@ def main():
                     sys.exit(1)
                 continue
 
-            # Verify step count matches telemetry
             if len(features) != row.get("n_telemetry_rows", -1):
                 failed_episodes.append({"episode_key": ek,
                     "error": "step_count_mismatch: features={} telemetry={}".format(
@@ -538,6 +541,7 @@ def main():
                     sys.exit(1)
                 continue
 
+            valid_step_idx = 0
             for feat_row in features:
                 step = feat_row["step"]
                 step_key = (ek, step)
@@ -549,19 +553,24 @@ def main():
                     continue
                 step_keys_seen.add(step_key)
 
+                is_valid = feat_row.get("valid", False)
+
+                # ALL_STEPS row
                 out_row = {
-                    "episode_key": ek,
-                    "suite": row["suite"],
-                    "task_id": row["task_id"],
-                    "state_id": row["state_id"],
+                    "episode_key": ek, "suite": suite,
+                    "task_id": row["task_id"], "state_id": row["state_id"],
                     "step": step,
-                    "feat_valid": "true" if feat_row.get("valid", False) else "false",
+                    "feat_valid": "true" if is_valid else "false",
                 }
-                for col in CANONICAL_25D:
-                    v = feat_row.get(col)
+                for col in TRAINING_COLUMNS:
+                    # Look up value in feat_row using both training name and golden name
+                    v = feat_row.get(col) or feat_row.get("f_" + col)
                     try:
-                        fv = float(v)
+                        fv = float(v) if v is not None else None
                     except (TypeError, ValueError):
+                        if args.formal:
+                            print("FATAL: {} step {} col {} — unparseable value".format(ek, step, col))
+                            sys.exit(1)
                         nan_count += 1
                         fv = None
                     if fv is not None:
@@ -570,9 +579,28 @@ def main():
                         elif np.isinf(fv):
                             inf_count += 1
                     out_row[col] = "{:.15e}".format(fv) if fv is not None else ""
+                writer_all.writerow(out_row)
+                total_all_steps += 1
 
-                writer.writerow(out_row)
-                total_steps += 1
+                # VALID_ONLY row
+                if is_valid:
+                    valid_row = {
+                        "episode_key": ek, "suite": suite,
+                        "task_id": row["task_id"], "state_id": row["state_id"],
+                        "step": valid_step_idx,
+                        "source_step": step,
+                    }
+                    for col in TRAINING_COLUMNS:
+                        valid_row[col] = out_row[col]
+                    writer_valid.writerow(valid_row)
+                    valid_step_idx += 1
+                    total_valid_steps += 1
+
+            # Per-suite stats
+            n_valid = valid_step_idx
+            n_invalid = len(features) - n_valid
+            per_suite_valid_steps[suite] = per_suite_valid_steps.get(suite, 0) + n_valid
+            per_suite_invalid_steps[suite] = per_suite_invalid_steps.get(suite, 0) + n_invalid
 
             episode_keys_seen.add(ek)
             total_episodes += 1
@@ -586,13 +614,17 @@ def main():
         "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "total_episodes_expected": len(index_rows),
         "total_episodes_generated": total_episodes,
-        "total_steps": total_steps,
+        "total_all_steps": total_all_steps,
+        "total_valid_steps": total_valid_steps,
+        "per_suite_valid_steps": per_suite_valid_steps,
+        "per_suite_invalid_steps": per_suite_invalid_steps,
+        "feature_columns": TRAINING_COLUMNS,
+        "n_features": N_FEATURES,
         "missing_episodes": sorted(missing_eps),
         "extra_episodes": sorted(extra_eps),
         "failed_episodes": failed_episodes,
         "nan_values": nan_count,
         "inf_values": inf_count,
-        "duplicate_step_keys": 0,  # already caught above
         "golden_parity_passed": passed if 'passed' in dir() else None,
     }
 
@@ -603,13 +635,20 @@ def main():
 
     with open(report_path, "w") as f:
         json.dump(report, f, indent=2)
-    print("  {}".format(csv_path))
+    print("  {}".format(all_csv_path))
+    print("  {}".format(valid_csv_path))
     print("  {}".format(report_path))
     print()
 
     print("=== Feature Table Summary ===")
     print("  Episodes: {}/{}".format(total_episodes, len(index_rows)))
-    print("  Total steps: {}".format(total_steps))
+    print("  All steps:   {}".format(total_all_steps))
+    print("  Valid steps: {}".format(total_valid_steps))
+    print("  Invalid steps: {}".format(total_all_steps - total_valid_steps))
+    for suite in sorted(per_suite_valid_steps):
+        v = per_suite_valid_steps[suite]
+        iv = per_suite_invalid_steps.get(suite, 0)
+        print("  {}: valid={}, invalid={}".format(suite, v, iv))
     print("  NaN values: {}".format(nan_count))
     print("  Inf values: {}".format(inf_count))
     print("  Failed episodes: {}".format(len(failed_episodes)))
