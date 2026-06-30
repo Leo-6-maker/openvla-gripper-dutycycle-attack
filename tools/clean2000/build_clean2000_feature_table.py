@@ -70,6 +70,8 @@ def parse_args():
                    help="Path to sc5_object_privileged_loto_v1 (for golden parity)")
     p.add_argument("--golden_only", action="store_true",
                    help="Only run golden parity test, skip full table generation")
+    p.add_argument("--formal", action="store_true",
+                   help="Require golden parity. Fail on any episode error.")
     return p.parse_args()
 
 
@@ -446,7 +448,11 @@ def main():
     args = parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
 
-    # ── Golden parity test (always run if golden CSV provided) ──
+    # ── Golden parity test ──
+    if args.formal and not (args.object_golden_csv and args.object500_root):
+        print("FATAL: --formal requires --object_golden_csv and --object500_root")
+        sys.exit(1)
+
     if args.object_golden_csv and args.object500_root:
         passed, parity_report = run_golden_parity(args.object500_root, args.object_golden_csv)
 
@@ -473,10 +479,145 @@ def main():
 
         if args.golden_only:
             return
+    elif args.formal:
+        print("FATAL: --formal mode requires golden parity to pass first")
+        sys.exit(1)
 
-    # ── Full feature table generation (skipped for now, P0-1 focuses on golden parity) ──
+    # ── Full feature table generation ──
     print()
-    print("Golden parity PASSED. Ready for full feature table generation on CLEAN2000 closure.")
+    print("=== Full 25D Feature Table Generation ===")
+
+    # Load index
+    index_rows = []
+    with open(args.index) as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                index_rows.append(json.loads(line))
+    print("Index episodes: {}".format(len(index_rows)))
+
+    index_keys = set(r["episode_key"] for r in index_rows)
+
+    # Generate features for every episode
+    csv_path = os.path.join(args.output_dir, "CLEAN2000_FEATURES_25D.csv")
+    report_path = os.path.join(args.output_dir, "CLEAN2000_FEATURE_TABLE_REPORT.json")
+
+    output_columns = ["episode_key", "suite", "task_id", "state_id", "step"] + CANONICAL_25D + ["feat_valid"]
+
+    total_steps = 0
+    total_episodes = 0
+    failed_episodes = []
+    episode_keys_seen = set()
+    step_keys_seen = set()
+    nan_count = 0
+    inf_count = 0
+
+    with open(csv_path, "w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=output_columns)
+        writer.writeheader()
+
+        for row in index_rows:
+            ek = row["episode_key"]
+            ep_dir = row["source_root"]
+            features = replay_telemetry(ep_dir)
+
+            if not features:
+                failed_episodes.append({"episode_key": ek, "error": "no_features_generated"})
+                if args.formal:
+                    print("FATAL: {} — no features generated".format(ek))
+                    sys.exit(1)
+                continue
+
+            # Verify step count matches telemetry
+            if len(features) != row.get("n_telemetry_rows", -1):
+                failed_episodes.append({"episode_key": ek,
+                    "error": "step_count_mismatch: features={} telemetry={}".format(
+                        len(features), row.get("n_telemetry_rows"))})
+                if args.formal:
+                    print("FATAL: {} — {}".format(ek, failed_episodes[-1]["error"]))
+                    sys.exit(1)
+                continue
+
+            for feat_row in features:
+                step = feat_row["step"]
+                step_key = (ek, step)
+                if step_key in step_keys_seen:
+                    failed_episodes.append({"episode_key": ek, "error": "duplicate_step_{}".format(step)})
+                    if args.formal:
+                        print("FATAL: duplicate step {}".format(step_key))
+                        sys.exit(1)
+                    continue
+                step_keys_seen.add(step_key)
+
+                out_row = {
+                    "episode_key": ek,
+                    "suite": row["suite"],
+                    "task_id": row["task_id"],
+                    "state_id": row["state_id"],
+                    "step": step,
+                    "feat_valid": "true" if feat_row.get("valid", False) else "false",
+                }
+                for col in CANONICAL_25D:
+                    v = feat_row.get(col)
+                    try:
+                        fv = float(v)
+                    except (TypeError, ValueError):
+                        nan_count += 1
+                        fv = None
+                    if fv is not None:
+                        if np.isnan(fv):
+                            nan_count += 1
+                        elif np.isinf(fv):
+                            inf_count += 1
+                    out_row[col] = "{:.15e}".format(fv) if fv is not None else ""
+
+                writer.writerow(out_row)
+                total_steps += 1
+
+            episode_keys_seen.add(ek)
+            total_episodes += 1
+
+    # Verification
+    missing_eps = index_keys - episode_keys_seen
+    extra_eps = episode_keys_seen - index_keys
+
+    report = {
+        "gate": "CLEAN2000_FEATURE_TABLE_REPORT_V1",
+        "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "total_episodes_expected": len(index_rows),
+        "total_episodes_generated": total_episodes,
+        "total_steps": total_steps,
+        "missing_episodes": sorted(missing_eps),
+        "extra_episodes": sorted(extra_eps),
+        "failed_episodes": failed_episodes,
+        "nan_values": nan_count,
+        "inf_values": inf_count,
+        "duplicate_step_keys": 0,  # already caught above
+        "golden_parity_passed": passed if 'passed' in dir() else None,
+    }
+
+    all_ok = (len(missing_eps) == 0 and len(extra_eps) == 0 and
+              len(failed_episodes) == 0 and nan_count == 0 and inf_count == 0)
+
+    report["all_checks_pass"] = all_ok
+
+    with open(report_path, "w") as f:
+        json.dump(report, f, indent=2)
+    print("  {}".format(csv_path))
+    print("  {}".format(report_path))
+    print()
+
+    print("=== Feature Table Summary ===")
+    print("  Episodes: {}/{}".format(total_episodes, len(index_rows)))
+    print("  Total steps: {}".format(total_steps))
+    print("  NaN values: {}".format(nan_count))
+    print("  Inf values: {}".format(inf_count))
+    print("  Failed episodes: {}".format(len(failed_episodes)))
+    print("  Missing episodes: {}".format(len(missing_eps)))
+    print("  All checks: {}".format("PASS" if all_ok else "FAIL"))
+
+    if not all_ok:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
