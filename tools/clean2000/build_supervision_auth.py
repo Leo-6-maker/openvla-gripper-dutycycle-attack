@@ -34,8 +34,8 @@ PHASE_TO_IDX = {p: i for i, p in enumerate(SC5_PHASES)}
 K_SC5 = 10
 GUARD_SC5 = 5
 
-# Pre-registered C16 frozen config SHA (must match at runtime)
-C16_EXPECTED_CONFIG_SHA256 = "ebc1ccda21cdfeaebfea4d7b2d3b8e4e5e5a3c9e083e04e5e3e1c9e083e04e5e"  # PLACEHOLDER — update from actual file
+# Pre-registered C16 frozen config SHA (migration_audit/.../teacher_config_frozen.json)
+C16_EXPECTED_CONFIG_SHA256 = "ebc1ccda21cdfeae0f70f90ef0e433be3474ef0baa9cf52f609d620f863ce87a"
 
 # Expected threshold keys in C16 config
 C16_EXPECTED_THRESHOLD_KEYS = frozenset([
@@ -70,13 +70,19 @@ def load_teacher_config(path):
     thresh = data.get("thresholds", {})
     observed_keys = set(thresh.keys())
 
-    # Verify key set
+    # Verify exact SHA identity
+    if actual_sha != C16_EXPECTED_CONFIG_SHA256:
+        raise SystemExit(
+            "C16 config SHA mismatch: expected {}, got {}".format(
+                C16_EXPECTED_CONFIG_SHA256[:16], actual_sha[:16]))
+
+    # Verify exact key set
     missing_keys = C16_EXPECTED_THRESHOLD_KEYS - observed_keys
     extra_keys = observed_keys - C16_EXPECTED_THRESHOLD_KEYS
     if missing_keys:
         raise SystemExit("C16 config missing thresholds: {}".format(sorted(missing_keys)))
     if extra_keys:
-        print("WARNING: C16 config has extra keys (ignored): {}".format(sorted(extra_keys)))
+        raise SystemExit("C16 config has unknown thresholds: {}".format(sorted(extra_keys)))
 
     cfg = TeacherConfig()
     for k in C16_EXPECTED_THRESHOLD_KEYS:
@@ -378,11 +384,27 @@ def main():
     window_binary = all(s["teacher_sc5_attack_window_active"] in (0, 1) for s in step_labels)
     release_binary = all(s["release_safe"] in (0, 1) for s in step_labels)
 
+    # Step continuity: for each labeled episode, steps must be 0..n-1 contiguous
+    from collections import defaultdict
+    ep_steps = defaultdict(list)
+    for s in step_labels:
+        ep_steps[s["episode_key"]].append(s["step"])
+    step_contiguous = True
+    for ek, steps in ep_steps.items():
+        steps_sorted = sorted(set(steps))
+        if steps_sorted != list(range(len(steps_sorted))):
+            step_contiguous = False
+            break
+        if len(steps) != len(steps_sorted):
+            step_contiguous = False
+            break
+
     all_checks = [
         ("event_keys_equal_index", event_keys_ok),
         ("event_no_duplicate_keys", event_no_dupes),
         ("step_keys_subset_of_index", step_keys_subset),
         ("step_no_duplicate_keys", step_no_dupes),
+        ("step_contiguous_per_episode", step_contiguous),
         ("corridor_k10_all_valid", stats["corridor_k10_fail"] == 0),
         ("phase_values_in_range", phase_ok),
         ("corridor_binary", corridor_binary),
@@ -404,10 +426,23 @@ def main():
         }, f, indent=2)
     print("  {}".format(val_path))
 
-    # Supervision envelope
-    env_path = os.path.join(args.output_dir, "SUPERVISION_ENVELOPE.json")
+    # ── Final envelope (only written after all validation passes) ──
+    if not validation_pass:
+        failed_checks = [name for name, p in all_checks if not p]
+        msg = "VALIDATION FAILED: {}".format(", ".join(failed_checks))
+        print(msg)
+        # Write FAILED envelope, not AUTHORITATIVE
+        env_path = os.path.join(args.output_dir, "SUPERVISION_ENVELOPE.json")
+        with open(env_path, "w") as f:
+            json.dump({
+                "gate": "CLEAN2000_SUPERVISION_AUTH_V1_2",
+                "status": "FAILED",
+                "failed_checks": failed_checks,
+            }, f, indent=2)
+        sys.exit(1)
+
     envelope = {
-        "gate": "CLEAN2000_SUPERVISION_AUTH_V1_1",
+        "gate": "CLEAN2000_SUPERVISION_AUTH_V1_2",
         "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "route": "B — TEACHER_V2_PREREGISTERED",
         "teacher_valid": n_valid,
@@ -419,17 +454,16 @@ def main():
         "historical_phase_agreement": float(hist_rate),
         "historical_comparison": "diagnostic only",
         "sc5_anchor_rule": "find_sc5_anchor_v2 (stable_carry_start + guard=5)",
-        "sc5_corridor_rule": "compute_sc5_valid_start_corridor (K=10 window)",
+        "sc5_corridor_start_rule": "compute_sc5_valid_start_corridor (step in corridor_active_at_t)",
+        "sc5_attack_window_rule": "exact K10 [anchor, anchor+9]",
         "status": "AUTHORITATIVE",
     }
+    env_path = os.path.join(args.output_dir, "SUPERVISION_ENVELOPE.json")
     with open(env_path, "w") as f:
         json.dump(envelope, f, indent=2)
     print("  {}".format(env_path))
 
     print()
-    if not validation_pass:
-        print("VALIDATION FAILED: {} episodes with corridor < K10".format(stats["corridor_k10_fail"]))
-        sys.exit(1)
     print("Route B supervision: AUTHORITATIVE (historical agreement: {:.1f}% diagnostic)".format(100 * hist_rate))
     print("DONE.")
 
