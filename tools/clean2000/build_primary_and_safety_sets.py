@@ -52,15 +52,21 @@ def load_jsonl(path):
 
 
 def load_index_by_key(path):
-    """Load JSONL and index by episode_key."""
+    """Load JSONL and index by episode_key. Fails on duplicate keys."""
     d = {}
+    line_no = 0
     with open(path) as f:
         for line in f:
+            line_no += 1
             line = line.strip()
             if not line:
                 continue
             row = json.loads(line)
-            d[row["episode_key"]] = row
+            ek = row["episode_key"]
+            if ek in d:
+                raise ValueError("Duplicate episode_key '{}' at line {} in {}".format(
+                    ek, line_no, path))
+            d[ek] = row
     return d
 
 
@@ -88,7 +94,7 @@ def classify(row, teacher_row):
     if row.get("condition", "") != "CLEAN":
         return ("EXCLUDED_SCHEMA", "not_clean_condition")
 
-    # ── EXCLUDED_TELEMETRY: telemetry issues ──
+    # ── EXCLUDED_TELEMETRY (ALL checks before mechanism/teacher) ──
     if row.get("n_steps", 0) <= 0:
         return ("EXCLUDED_TELEMETRY", "n_steps_zero")
     if not row.get("step_index_contiguous", False):
@@ -99,6 +105,16 @@ def classify(row, teacher_row):
         return ("EXCLUDED_TELEMETRY", "duplicate_steps")
     if row.get("missing_step_count", 0) > 0:
         return ("EXCLUDED_TELEMETRY", "missing_steps")
+    if not row.get("valid_steps_contiguous", False):
+        return ("EXCLUDED_TELEMETRY", "valid_steps_not_contiguous")
+    if row.get("n_valid_steps", 0) <= 0:
+        return ("EXCLUDED_TELEMETRY", "no_valid_steps")
+    if row.get("invalid_feature_steps", 0) < 0:
+        return ("EXCLUDED_TELEMETRY", "negative_invalid_feature_steps")
+
+    # ── Fail-closed: teacher_eligible episodes MUST have a teacher row ──
+    if not teacher_row:
+        return ("EXCLUDED_INFRA", "missing_teacher_label_row")
 
     # ── SAFETY_ABSTENTION: teacher or mechanism issues ──
     if not row.get("mechanism_eligible", False):
@@ -106,21 +122,9 @@ def classify(row, teacher_row):
             row.get("abstain_reason", "unknown")))
     if not row.get("teacher_eligible", False):
         return ("SAFETY_ABSTENTION", "teacher_ineligible")
-
-    # Fail-closed: teacher_eligible episodes MUST have a teacher row
-    if not teacher_row:
-        return ("EXCLUDED_INFRA", "missing_teacher_label_row")
     if not teacher_row.get("teacher_label_valid", False):
         return ("SAFETY_ABSTENTION", "teacher_label_invalid: {}".format(
             teacher_row.get("teacher_invalid_reason", "unknown")))
-
-    # ── EXCLUDED_TELEMETRY: valid step quality ──
-    if not row.get("valid_steps_contiguous", False):
-        return ("EXCLUDED_TELEMETRY", "valid_steps_not_contiguous")
-    if row.get("n_valid_steps", 0) <= 0:
-        return ("EXCLUDED_TELEMETRY", "no_valid_steps")
-    if row.get("invalid_feature_steps", 0) < 0:
-        return ("EXCLUDED_TELEMETRY", "negative_invalid_feature_steps")
 
     # ── PRIMARY ──
     if not row.get("task_success", False):
@@ -226,14 +230,25 @@ def main():
             print("  {}".format(path))
 
     # Closure report
+    index_keys = set(r["episode_key"] for r in rows)
+    all_used_keys = set(used_keys)
+    full_coverage = (all_used_keys == index_keys and len(all_used_keys) == len(index_keys))
+    closure_pass = (
+        total_classified == expected and
+        len(unclassified) == 0 and
+        intersection_free and
+        full_coverage
+    )
+
     report = {
         "gate": "CLEAN2000_SET_CLOSURE_REPORT_V1",
         "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "total_episodes": expected,
         "per_set": {name: len(entries) for name, entries in sorted(sets.items())},
         "unclassified": len(unclassified),
-        "closure_pass": (total_classified == expected and len(unclassified) == 0),
+        "closure_pass": closure_pass,
         "intersection_free": intersection_free,
+        "full_coverage": full_coverage,
     }
     report_path = os.path.join(args.output_dir, "CLEAN2000_SET_CLOSURE_REPORT.json")
     with open(report_path, "w") as f:
@@ -257,6 +272,7 @@ def main():
 
     print()
     print("DONE.")
+    sys.exit(0 if closure_pass else 1)
 
 
 if __name__ == "__main__":

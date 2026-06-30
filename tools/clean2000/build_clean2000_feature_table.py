@@ -197,16 +197,21 @@ def replay_telemetry(ep_dir):
 
 
 def load_golden_features(csv_path):
-    """Load FOLD00_FEATURE_DATASET.csv as list of dicts keyed by (task_idx, state_id, step)."""
+    """Load FOLD00_FEATURE_DATASET.csv as list of dicts keyed by (task_idx, state_id, step).
+    Fails on duplicate keys."""
     if not csv_path or not os.path.exists(csv_path):
-        return {}
+        return {}, 0
     golden = {}
+    row_count = 0
     with open(csv_path) as f:
         reader = csv.DictReader(f)
         for row in reader:
             key = (int(row["task_idx"]), int(row["state_id"]), int(row["step"]))
+            if key in golden:
+                raise ValueError("Duplicate golden key: {}".format(key))
             golden[key] = row
-    return golden
+            row_count += 1
+    return golden, row_count
 
 
 def run_golden_parity(obj500_root, golden_csv):
@@ -216,7 +221,7 @@ def run_golden_parity(obj500_root, golden_csv):
     """
     print("=== Golden Parity Test ===")
     print("Golden CSV: {}".format(golden_csv))
-    golden = load_golden_features(golden_csv)
+    golden, golden_row_count = load_golden_features(golden_csv)
     print("Golden rows: {}".format(len(golden)))
 
     if not golden:
@@ -335,27 +340,67 @@ def run_golden_parity(obj500_root, golden_csv):
 
     nan_count = 0
     non_finite = 0
+    replay_row_count = 0
     for ep_dir in sorted(ep_dirs)[:50]:
-        for fr in replay_telemetry(ep_dir):
+        feats = replay_telemetry(ep_dir)
+        replay_row_count += len(feats)
+        for fr in feats:
             for col in CANONICAL_25D:
                 v = fr.get(col)
-                if v is None or (isinstance(v, float) and math.isnan(v)):
+                try:
+                    fv = float(v)
+                except (TypeError, ValueError):
                     nan_count += 1
-                elif isinstance(v, float) and math.isinf(v):
-                    non_finite += 1
+                    continue
+                if not np.isfinite(fv):
+                    if np.isnan(fv):
+                        nan_count += 1
+                    else:
+                        non_finite += 1
+
+    # Check golden values too
+    golden_nan = 0
+    for key, gr in golden.items():
+        for col in CANONICAL_25D:
+            try:
+                fv = float(gr.get(col, ""))
+            except (TypeError, ValueError):
+                golden_nan += 1
+                continue
+            if not np.isfinite(fv):
+                golden_nan += 1
+
+    # Row-level duplicate check (per tested episodes only)
+    golden_row_count_tested = len(golden_key_set)  # should match if no dupes
+    replay_key_dupes = len(replay_key_set) < replay_row_count
+    # Count golden rows only for tested (task, state) pairs
+    tested_pairs = set()
+    for ep_dir in sorted(ep_dirs)[:50]:
+        parts = ep_dir.split("/")
+        td = [p for p in parts if p.startswith("task_")]
+        sd = [p for p in parts if p.startswith("state_")]
+        if td and sd:
+            tested_pairs.add((int(td[-1].split("_")[1]), int(sd[-1].split("_")[1])))
+    golden_row_count_tested = sum(1 for (tid, sid, _) in golden if (tid, sid) in tested_pairs)
+    golden_key_dupes = len(golden_key_set) < golden_row_count_tested
 
     key_coverage = (
         len(missing_from_golden) == 0 and
         len(missing_from_replay) == 0 and
         len(replay_key_set) > 0
     )
-    all_finite = nan_count == 0 and non_finite == 0
+    all_finite = (nan_count == 0 and non_finite == 0 and golden_nan == 0)
+    no_duplicate_rows = (not replay_key_dupes and not golden_key_dupes)
+    row_count_matches = (replay_row_count == len(replay_key_set) and
+                         not golden_key_dupes)
     total_compared = results["exact_matches"] + len(results["mismatches"])
     passed = (
         len(results["mismatches"]) == 0 and
         results["episodes_compared"] > 0 and
         key_coverage and
         all_finite and
+        no_duplicate_rows and
+        row_count_matches and
         total_compared == len(golden_key_set)
     )
 
@@ -367,8 +412,13 @@ def run_golden_parity(obj500_root, golden_csv):
     print("  Missing replay:    {}".format(len(missing_from_replay)))
     print("  NaN values:        {}".format(nan_count))
     print("  Inf values:        {}".format(non_finite))
+    print("  Golden NaN:        {}".format(golden_nan))
+    print("  Replay row dupes:  {}".format("YES" if replay_key_dupes else "no"))
+    print("  Golden row dupes:  {}".format("YES" if golden_key_dupes else "no"))
     print("  Key coverage:      {}".format("PASS" if key_coverage else "FAIL"))
     print("  All finite:        {}".format("PASS" if all_finite else "FAIL"))
+    print("  No dupes:          {}".format("PASS" if no_duplicate_rows else "FAIL"))
+    print("  Row count match:   {}".format("PASS" if row_count_matches else "FAIL"))
     print("  Max diffs per column:")
     for col, diff in sorted(results["max_abs_diff_per_column"].items()):
         if isinstance(diff, float):
