@@ -415,6 +415,9 @@ if n_atk > 0 and _attack_provenance:
     summary["temporal_init_set"] = sorted(_all_tinit)
     summary["temporal_prev_delta_used_any"] = _all_prev_delta
     summary["delta_final_sha256_set"] = sorted(_all_delta_shas) if _all_delta_shas else []
+    summary["provenance_frame_count"] = len(_attack_provenance)
+    summary["actual_linf_per_frame"] = [round(v, 6) for v in _all_linf]
+    summary["delta_sha_present_count"] = sum(1 for p in _attack_provenance if p.get("delta_final_sha256"))
 
 _video_manifest = {}
 if args.save_video and _video_raw_frames:

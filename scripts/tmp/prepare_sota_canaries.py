@@ -121,29 +121,35 @@ for cond_name, spec in CONDITIONS.items():
         if os.path.isdir(v3_manifest_dir):
             import hashlib as _hl
             v3_sha = _hl.sha256()
+            v3_raw_rows = 0
+            v3_dup_keys = []
             for mf in sorted(os.listdir(v3_manifest_dir)):
                 if not mf.endswith('.jsonl'): continue
                 with open(os.path.join(v3_manifest_dir, mf), 'rb') as _f:
                     v3_sha.update(_f.read())
                 for line in open(os.path.join(v3_manifest_dir, mf)):
+                    v3_raw_rows += 1
                     jj = json.loads(line.strip())
                     kk = (jj['fold'], jj['state_id'], jj['detector_seed'], jj['perturbation_seed'])
+                    if kk in v3_triggers:
+                        v3_dup_keys.append(str(kk))
                     v3_triggers[kk] = jj.get('trigger_step_override', -1)
-            # Verify 162-key exact match
+            # Verify 162-key exact match + no duplicates
             v3_keys = set(v3_triggers.keys())
             tt_keys = set((j['fold'], j['state_id'], j['detector_seed'], j['perturbation_seed']) for j in src_jobs)
-            if v3_keys != tt_keys:
-                print(f"  ERROR: V3 key mismatch: V3={len(v3_keys)} TT={len(tt_keys)}")
-                print(f"  Extra in V3: {len(v3_keys - tt_keys)}")
-                print(f"  Missing in V3: {len(tt_keys - v3_keys)}")
-                sys.exit(1)
-            # Verify all 162 triggers valid
+            errors = []
+            if v3_raw_rows != 162: errors.append(f"V3 raw_rows={v3_raw_rows} != 162")
+            if len(v3_keys) != 162: errors.append(f"V3 unique_keys={len(v3_keys)} != 162")
+            if v3_dup_keys: errors.append(f"V3 duplicates: {v3_dup_keys}")
+            if v3_keys != tt_keys: errors.append(f"V3-TT key mismatch")
             invalid = [k for k, t in v3_triggers.items() if t < 0]
-            if invalid:
-                print(f"  ERROR: V3 has {len(invalid)} invalid triggers (expected 0)")
+            if invalid: errors.append(f"V3 invalid triggers: {len(invalid)}")
+            if errors:
+                for e in errors: print(f"  ERROR: {e}")
                 sys.exit(1)
             triggers = v3_triggers
-            print(f"  TMA Random-Time: using frozen V3 schedule SHA={v3_sha.hexdigest()[:16]}, {len(triggers)} keys")
+            v3_schedule_sha = v3_sha.hexdigest()
+            print(f"  TMA Random-Time: V3 schedule SHA={v3_schedule_sha[:16]}, {len(triggers)} keys, keep_running=true")
         else:
             print(f"  ERROR: V3 manifest directory not found: {v3_manifest_dir}")
             sys.exit(1)
@@ -167,6 +173,7 @@ for cond_name, spec in CONDITIONS.items():
         nj['attack_enabled'] = bool(ts >= 0)
         if timing == 'random_trigger':
             nj['trigger_policy'] = "v3_frozen_random_schedule"
+            nj['keep_running'] = True
         elif ts >= 0:
             nj['trigger_policy'] = "frozen_student_emit_replay"
         else:
@@ -197,7 +204,7 @@ for cond_name, spec in CONDITIONS.items():
             for j in gpu_jobs[gpu]:
                 f.write(json.dumps(j) + '\n')
 
-    # Generate 9-fold canary
+    # Generate 9-fold canary with isolated canary_v1 output dirs
     canary = []
     folds_seen = set()
     is_student = spec.get('timing') == 'student_trigger'
@@ -212,11 +219,18 @@ for cond_name, spec in CONDITIONS.items():
                 folds_seen.add(fold)
                 break
 
+    # Canary jobs get isolated output dirs (canary_v1, not formal_v1)
+    canary_jobs = []
+    for j in canary:
+        cj = dict(j)
+        cj["output_dir"] = cj["output_dir"].replace("/formal_v1/", "/canary_v1/")
+        canary_jobs.append(cj)
+
     canary_dir = os.path.join(CANARY, output_ns)
     os.makedirs(canary_dir, exist_ok=True)
     canary_path = os.path.join(canary_dir, 'manifest_canary.jsonl')
     with open(canary_path, 'w') as f:
-        for j in canary:
+        for j in canary_jobs:
             f.write(json.dumps(j) + '\n')
 
     print(f"  Canary: {len(canary)} jobs, folds: {sorted(folds_seen)}")

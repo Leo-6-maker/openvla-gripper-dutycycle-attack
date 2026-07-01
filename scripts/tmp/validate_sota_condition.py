@@ -167,10 +167,28 @@ def validate_vis_attack(ep_data, spec, job):
     if len(delta_shas) != len(set(delta_shas)):
         errors.append("delta_final_sha256_set: not all frames have same delta SHA")
 
-    # Per-frame provenance count must match attack rows
-    # (bridge writes _attack_provenance for each attack frame)
-    if len(req_obj_set) != K:
-        errors.append(f"provenance frame count mismatch")
+    # Provenance frame count must equal attack frame count
+    prov_count = summary.get("provenance_frame_count")
+    if prov_count is None:
+        errors.append("provenance_frame_count: MISSING")
+    elif prov_count != K:
+        errors.append(f"provenance_frame_count={prov_count} != {K}")
+
+    # Per-frame linf: all 10 values must be present and bounded
+    linf_per_frame = summary.get("actual_linf_per_frame")
+    if linf_per_frame is None:
+        errors.append("actual_linf_per_frame: MISSING")
+    elif len(linf_per_frame) != K:
+        errors.append(f"actual_linf_per_frame count={len(linf_per_frame)} != {K}")
+    elif not all(0 < v <= EPSILON + EPSILON_TOL for v in linf_per_frame):
+        errors.append(f"actual_linf_per_frame out of bounds")
+
+    # Delta SHA: must have 10 present values (not necessarily identical)
+    dsha_count = summary.get("delta_sha_present_count")
+    if dsha_count is None:
+        errors.append("delta_sha_present_count: MISSING")
+    elif dsha_count != K:
+        errors.append(f"delta_sha_present_count={dsha_count} != {K}")
 
     return errors
 

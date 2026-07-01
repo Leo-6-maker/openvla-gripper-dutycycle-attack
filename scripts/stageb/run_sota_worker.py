@@ -65,10 +65,27 @@ failed_jobs = []
 for idx, job in enumerate(jobs):
     out_dir = job['output_dir']
     ep_path = os.path.join(out_dir, 'episode_summary.json')
-    # Overwrite protection: skip if already completed, fail if partial
+    # Overwrite protection: validated skip if completed with matching provenance
     if os.path.exists(ep_path):
-        print('[SKIP] {} already has episode_summary.json'.format(job.get('job_key', '?')))
-        continue
+        try:
+            existing = json.load(open(ep_path))
+            existing_cond = existing.get("condition", "")
+            expected_cond = job.get("condition", job.get("condition_id", ""))
+            if existing_cond == expected_cond:
+                print('[VALIDATED_SKIP] {} — existing summary matches condition={}'.format(
+                    job.get('job_key', '?'), expected_cond))
+                continue
+            else:
+                print('[STALE] {} — existing condition={} != expected={}'.format(
+                    job.get('job_key', '?'), existing_cond, expected_cond))
+                failed_jobs.append({"job_key": job.get('job_key', '?'), "exit_code": -2,
+                                    "output_dir": out_dir, "elapsed_s": 0, "reason": "stale_artifact"})
+                continue
+        except Exception:
+            print('[FAIL] {} — cannot read existing episode_summary'.format(job.get('job_key', '?')))
+            failed_jobs.append({"job_key": job.get('job_key', '?'), "exit_code": -3,
+                                "output_dir": out_dir, "elapsed_s": 0, "reason": "unreadable_artifact"})
+            continue
     if os.path.exists(out_dir) and os.listdir(out_dir):
         print('[FAIL] {} has partial output — refusing to overwrite'.format(job.get('job_key', '?')))
         failed_jobs.append({"job_key": job.get('job_key', '?'), "exit_code": -1,
