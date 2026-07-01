@@ -88,6 +88,22 @@ if [ "$VALIDATION_FAILED" -ne 0 ]; then
     exit 1
 fi
 
+# STOP_AFTER_CANARY gate: set env var to prevent automatic formal launch
+if [ "${STOP_AFTER_CANARY:-0}" = "1" ]; then
+    log "STOP_AFTER_CANARY=1 — canary complete, formal launch withheld"
+    exit 0
+fi
+
+# Formal dir must be empty (no stale artifacts)
+for cond_ns in TMA TMA_RANDOM_TIME UMA SHUFFLED; do
+    FORMAL_DIR=/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/$cond_ns/formal_v1
+    if [ -d "$FORMAL_DIR" ] && [ "$(ls -A "$FORMAL_DIR" 2>/dev/null)" ]; then
+        log "FATAL: Formal directory not empty: $FORMAL_DIR"
+        log "  Clean or move existing artifacts before launching formal full"
+        exit 1
+    fi
+done
+
 log "Canary gate PASS. Advancing to Stage 3..."
 if [ -x "$NEXT_SCRIPT" ]; then
     exec bash "$NEXT_SCRIPT"

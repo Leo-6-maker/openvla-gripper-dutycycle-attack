@@ -294,6 +294,11 @@ for step in range(400):
                 "temporal_init": str(_adb.get("temporal_init", "none")),
                 "temporal_prev_delta_used": bool(prev_flag),
                 "delta_final_sha256": str(_adb.get("delta_final_sha256", _adb.get("delta_sha256", ""))),
+                # Loss semantics (TMA/UMA/Prefix discrimination)
+                "loss_direction": str(_adb.get("loss_direction", _adb.get("token_loss_direction", ""))),
+                "token_label_source": str(_adb.get("token_label_source", "")),
+                "attack_target_gripper_token_id": int(_adb.get("attack_target_gripper_token_id", _adb.get("target_gripper_token_id", -1))),
+                "gripper_only_loss": bool(_adb.get("gripper_only_loss", False)),
             }
             _attack_provenance.append(_prov)
 
@@ -418,6 +423,16 @@ if n_atk > 0 and _attack_provenance:
     summary["provenance_frame_count"] = len(_attack_provenance)
     summary["actual_linf_per_frame"] = [round(v, 6) for v in _all_linf]
     summary["delta_sha_present_count"] = sum(1 for p in _attack_provenance if p.get("delta_final_sha256"))
+    # Loss semantics (TMA/UMA/Prefix discrimination)
+    _all_loss_dir = set(p["loss_direction"] for p in _attack_provenance if p.get("loss_direction"))
+    _all_label_src = set(p["token_label_source"] for p in _attack_provenance if p.get("token_label_source"))
+    _all_target_tok = set(p["attack_target_gripper_token_id"] for p in _attack_provenance if p.get("attack_target_gripper_token_id", -1) >= 0)
+    _all_grip_only = all(p.get("gripper_only_loss", False) for p in _attack_provenance)
+    summary["loss_direction_set"] = sorted(_all_loss_dir)
+    summary["token_label_source_set"] = sorted(_all_label_src)
+    summary["attack_target_gripper_token_id_set"] = sorted(_all_target_tok)
+    summary["gripper_only_loss"] = _all_grip_only
+    summary["clean_token_label_ids_present_count"] = sum(1 for p in _attack_provenance if "clean" in str(p.get("token_label_source", "")).lower())
 
 _video_manifest = {}
 if args.save_video and _video_raw_frames:

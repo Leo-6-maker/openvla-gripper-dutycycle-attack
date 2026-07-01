@@ -20,15 +20,15 @@ CONDITION_SPECS = {
     },
     "TMA_STUDENT": {
         "mode": "student_triggered", "attack_objective": "vanilla_tma_gripper_open_ce",
-        "checks": ["vis_attack_runtime", "targeted_open_semantics"],
+        "checks": ["vis_attack_runtime", "tma_semantics"],
     },
     "TMA_RANDOM_TIME": {
         "mode": "random_time", "attack_objective": "vanilla_tma_gripper_open_ce",
-        "checks": ["vis_attack_runtime", "targeted_open_semantics", "random_window_legal"],
+        "checks": ["vis_attack_runtime", "tma_semantics", "random_window_legal"],
     },
     "UMA_STUDENT": {
         "mode": "student_triggered", "attack_objective": "untargeted_clean_token_ce",
-        "checks": ["vis_attack_runtime", "untargeted_semantics"],
+        "checks": ["vis_attack_runtime", "uma_semantics"],
     },
     "SHUFFLED_STUDENT": {
         "mode": "student_triggered",
@@ -193,23 +193,44 @@ def validate_vis_attack(ep_data, spec, job):
     return errors
 
 
-def validate_targeted_open(ep_data, spec, job):
-    """TMA: verify targeted OPEN token CE semantics."""
+def validate_tma_semantics(ep_data, spec, job):
+    """TMA: strict semantics — token 31744 CE, minimize loss, gripper_only."""
     errors = []
     summary = ep_data.get("summary", {})
-    res_obj = summary.get("resolved_objective_set", [])
-    if res_obj and "vanilla_tma_gripper_open_ce" not in res_obj:
-        errors.append(f"not TMA objective: {res_obj}")
+    # Loss direction: minimize
+    ld_set = summary.get("loss_direction_set")
+    if ld_set is None: errors.append("loss_direction_set: MISSING")
+    elif ld_set != ["minimize"]: errors.append(f"loss_direction_set={ld_set} != [minimize]")
+    # Target token
+    tok_set = summary.get("attack_target_gripper_token_id_set")
+    if tok_set is None: errors.append("attack_target_gripper_token_id_set: MISSING")
+    elif tok_set != [31744]: errors.append(f"target_token_id_set={tok_set} != [31744]")
+    # Label source
+    ls_set = summary.get("token_label_source_set")
+    if ls_set is None: errors.append("token_label_source_set: MISSING")
+    elif not any("vanilla_tma_gripper_open_ce" in s for s in ls_set):
+        errors.append(f"token_label_source_set={ls_set}, expected vanilla_tma_gripper_open_ce")
+    # Gripper only
+    go = summary.get("gripper_only_loss")
+    if go is None: errors.append("gripper_only_loss: MISSING")
+    elif go is not True: errors.append(f"gripper_only_loss={go} != True")
     return errors
 
 
-def validate_untargeted(ep_data, spec, job):
-    """UMA: verify untargeted semantics."""
+def validate_uma_semantics(ep_data, spec, job):
+    """UMA: strict semantics — maximize clean CE, untargeted, clean labels."""
     errors = []
     summary = ep_data.get("summary", {})
-    res_obj = summary.get("resolved_objective_set", [])
-    if res_obj and "untargeted" not in str(res_obj[0]) if res_obj else False:
-        errors.append(f"not untargeted: {res_obj}")
+    ld_set = summary.get("loss_direction_set")
+    if ld_set is None: errors.append("loss_direction_set: MISSING")
+    elif ld_set != ["maximize"]: errors.append(f"loss_direction_set={ld_set} != [maximize]")
+    ls_set = summary.get("token_label_source_set")
+    if ls_set is None: errors.append("token_label_source_set: MISSING")
+    elif not any("clean" in str(s).lower() for s in ls_set):
+        errors.append(f"token_label_source_set={ls_set}, expected clean model output labels")
+    cl_count = summary.get("clean_token_label_ids_present_count")
+    if cl_count is None: errors.append("clean_token_label_ids_present_count: MISSING")
+    elif cl_count != 10: errors.append(f"clean_token_label_ids_present_count={cl_count} != 10")
     return errors
 
 
@@ -249,8 +270,8 @@ def validate_random_window(ep_data, spec, job):
 CHECK_FNS = {
     "oracle_per_row": validate_oracle,
     "vis_attack_runtime": validate_vis_attack,
-    "targeted_open_semantics": validate_targeted_open,
-    "untargeted_semantics": validate_untargeted,
+    "tma_semantics": validate_tma_semantics,
+    "uma_semantics": validate_uma_semantics,
     "gradient_transform_is_permute": validate_permute,
     "random_window_legal": validate_random_window,
 }
