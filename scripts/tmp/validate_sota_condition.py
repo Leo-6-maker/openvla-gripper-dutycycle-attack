@@ -1,216 +1,273 @@
 #!/usr/bin/env python3
-"""Scientific canary/formal validator for SOTA conditions.
+"""Scientific canary/formal validator for SOTA conditions — fail-closed.
 
-Checks per-episode: attack execution, objective, budget, fallback, trigger, timing.
-Writes CANARY_PASS.json or FORMAL_PASS.json only when all gates pass.
-Fail-closed: sys.exit(1) on any failure.
+Validates per-episode: attack execution, objective, budget, fallback, trigger, timing.
+Consumes runtime provenance from episode_summary (bridge writes from attack_result.debug).
+Writes CANARY_PASS.json / FORMAL_PASS.json only when all gates pass. sys.exit(1) on fail.
 """
-import argparse, json, os, sys, csv, time, hashlib
+import argparse, json, os, sys, csv, time, hashlib, subprocess as _sp
 from collections import defaultdict
 
-# ── Condition-specific requirements ──
+EPSILON = 0.023529411764705882  # 2/255
+EPSILON_TOL = 1e-6
+EXPECTED_PGD = 20
+K = 10
+
 CONDITION_SPECS = {
     "COMMAND_OPEN_ORACLE": {
-        "mode": "oracle",
-        "attack_channel": "environment_command_override",
-        "expected_attack_frames": 10,
-        "checks": ["attack_channel", "env_override", "arm_diff", "token_metric_false"],
+        "mode": "oracle", "attack_channel": "environment_command_override",
+        "checks": ["oracle_per_row"],
     },
     "TMA_STUDENT": {
-        "mode": "student_triggered",
-        "attack_objective": "vanilla_tma_gripper_open_ce",
-        "expected_attack_frames": 10,
-        "checks": ["objective_match", "no_fallback", "pgd_steps", "epsilon_bound"],
+        "mode": "student_triggered", "attack_objective": "vanilla_tma_gripper_open_ce",
+        "checks": ["vis_attack_runtime", "targeted_open_semantics"],
     },
     "TMA_RANDOM_TIME": {
-        "mode": "random_time",
-        "attack_objective": "vanilla_tma_gripper_open_ce",
-        "expected_attack_frames": 10,
-        "checks": ["objective_match", "no_fallback", "pgd_steps", "epsilon_bound", "random_window_legal"],
+        "mode": "random_time", "attack_objective": "vanilla_tma_gripper_open_ce",
+        "checks": ["vis_attack_runtime", "targeted_open_semantics", "random_window_legal"],
     },
     "UMA_STUDENT": {
-        "mode": "student_triggered",
-        "attack_objective": "untargeted_clean_token_ce",
-        "expected_attack_frames": 10,
-        "checks": ["objective_match", "no_fallback", "pgd_steps", "epsilon_bound", "untargeted_semantics"],
+        "mode": "student_triggered", "attack_objective": "untargeted_clean_token_ce",
+        "checks": ["vis_attack_runtime", "untargeted_semantics"],
     },
     "SHUFFLED_STUDENT": {
         "mode": "student_triggered",
         "attack_objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
-        "expected_attack_frames": 10,
-        "checks": ["objective_match", "no_fallback", "pgd_steps", "epsilon_bound", "gradient_transform_present"],
+        "checks": ["vis_attack_runtime", "gradient_transform_is_permute"],
     },
-}
-
-EPSILON = 0.023529411764705882  # 2/255
-EPSILON_TOLERANCE = 0.001
-EXPECTED_PGD_STEPS = 20
-
-# ── Per-condition validators ──
-def check_attack_channel(ep_data, spec):
-    atk_rows = ep_data.get("attack_rows", [])
-    if not atk_rows:
-        return False, "no attack rows"
-    all_ok = all(r.get("attack_channel", "") == spec["attack_channel"] for r in atk_rows)
-    return all_ok, f"attack_channel mismatch" if not all_ok else "ok"
-
-def check_env_override(ep_data, spec):
-    atk_rows = ep_data.get("attack_rows", [])
-    if len(atk_rows) != 10:
-        return False, f"expected 10 attack rows, got {len(atk_rows)}"
-    all_active = all(r.get("oracle_env_override_active") == "True" for r in atk_rows)
-    all_minus_one = all(float(r.get("oracle_env_action_after_override", 0)) <= -0.99 for r in atk_rows)
-    return (all_active and all_minus_one), f"override check: active={all_active} grip=-1={all_minus_one}"
-
-def check_arm_diff(ep_data, spec):
-    atk_rows = ep_data.get("attack_rows", [])
-    diffs = [float(r.get("oracle_arm_max_abs_diff", 0)) for r in atk_rows if r.get("oracle_arm_max_abs_diff")]
-    if len(diffs) != 10:
-        return False, f"expected 10 arm_diff values, got {len(diffs)}"
-    max_diff = max(diffs)
-    return max_diff <= 1e-7, f"max_arm_diff={max_diff:.2e}"
-
-def check_token_metric_false(ep_data, spec):
-    summary = ep_data.get("summary", {})
-    ok = summary.get("token_metric_applicable") == False
-    return ok, f"token_metric_applicable={summary.get('token_metric_applicable')}"
-
-def check_objective_match(ep_data, spec):
-    summary = ep_data.get("summary", {})
-    requested = summary.get("attack_objective", summary.get("requested_objective", ""))
-    resolved = summary.get("resolved_objective", requested)
-    expected = spec.get("attack_objective", "")
-    if requested != expected:
-        return False, f"requested={requested} != expected={expected}"
-    if resolved != requested and resolved:
-        return False, f"resolved={resolved} != requested={requested}"
-    return True, "ok"
-
-def check_no_fallback(ep_data, spec):
-    summary = ep_data.get("summary", {})
-    fb = summary.get("fallback_used", summary.get("fallback_used_any"))
-    if fb is None:
-        return True, "fallback field missing (pre-provenance bridge)"
-    return not fb, f"fallback_used={fb}"
-
-def check_pgd_steps(ep_data, spec):
-    summary = ep_data.get("summary", {})
-    steps = summary.get("num_backwards_min")
-    if steps is None:
-        return True, "pgd_steps field missing (pre-provenance bridge)"
-    return steps == EXPECTED_PGD_STEPS, f"pgd_steps={steps} != {EXPECTED_PGD_STEPS}"
-
-def check_epsilon_bound(ep_data, spec):
-    summary = ep_data.get("summary", {})
-    actual = summary.get("actual_linf_max")
-    if actual is None:
-        return True, "epsilon field missing (pre-provenance bridge)"
-    return float(actual) <= EPSILON + EPSILON_TOLERANCE, f"actual_linf={actual} > epsilon+tol"
-
-def check_random_window_legal(ep_data, spec):
-    summary = ep_data.get("summary", {})
-    trigger = summary.get("requested_trigger_step", -1)
-    n_steps = summary.get("n_steps", 0)
-    if trigger < 0:
-        return True, "no trigger (no-emission)"
-    if trigger < 5 or trigger + 10 > n_steps:
-        return False, f"illegal window: trigger={trigger}, n_steps={n_steps}"
-    return True, "ok"
-
-def check_untargeted_semantics(ep_data, spec):
-    """UMA: verify it's maximizing clean CE (untargeted), not targeted OPEN."""
-    summary = ep_data.get("summary", {})
-    obj = summary.get("attack_objective", summary.get("requested_objective", ""))
-    if "untargeted" not in obj:
-        return False, f"objective not untargeted: {obj}"
-    return True, "ok"
-
-def check_gradient_transform_present(ep_data, spec):
-    """SHUFFLED: verify gradient_transform was active."""
-    summary = ep_data.get("summary", {})
-    gt = summary.get("gradient_transform", "")
-    if not gt or gt == "none":
-        return False, f"gradient_transform missing or none: {gt}"
-    return True, f"gradient_transform={gt}"
-
-
-CHECK_FUNCTIONS = {
-    "attack_channel": check_attack_channel,
-    "env_override": check_env_override,
-    "arm_diff": check_arm_diff,
-    "token_metric_false": check_token_metric_false,
-    "objective_match": check_objective_match,
-    "no_fallback": check_no_fallback,
-    "pgd_steps": check_pgd_steps,
-    "epsilon_bound": check_epsilon_bound,
-    "random_window_legal": check_random_window_legal,
-    "untargeted_semantics": check_untargeted_semantics,
-    "gradient_transform_present": check_gradient_transform_present,
 }
 
 
 def load_episode(artifact_dir):
-    """Load episode_summary + attack telemetry rows from artifact directory."""
     ep_path = os.path.join(artifact_dir, "episode_summary.json")
     tel_path = os.path.join(artifact_dir, "step_telemetry.csv")
     if not os.path.exists(ep_path):
         return None
-
     summary = json.load(open(ep_path))
     atk_rows = []
     if os.path.exists(tel_path):
         for row in csv.DictReader(open(tel_path)):
             if row.get("attack_this") == "True":
                 atk_rows.append(row)
-
     return {"summary": summary, "attack_rows": atk_rows, "artifact_dir": artifact_dir}
 
 
-def validate_episode(ep_data, spec, manifest_job):
-    """Run all specified checks on one episode. Returns (passed, errors)."""
+def validate_oracle(ep_data, spec, job):
+    """Oracle: per-row validation on all 10 attack rows."""
     errors = []
-    for check_name in spec.get("checks", []):
-        fn = CHECK_FUNCTIONS.get(check_name)
-        if fn is None:
-            continue
-        ok, msg = fn(ep_data, spec)
-        if not ok:
-            errors.append(f"{check_name}: {msg}")
+    atk_rows = ep_data.get("attack_rows", [])
+    summary = ep_data.get("summary", {})
 
-    # Basic checks
+    if len(atk_rows) != 10:
+        errors.append(f"attack_rows={len(atk_rows)} != 10"); return errors
+
+    # Per-row
+    if not all(r.get("attack_channel", "") == "environment_command_override" for r in atk_rows):
+        errors.append("not all rows have correct attack_channel")
+    if not all(r.get("oracle_env_override_active") in ("True", "true", True) for r in atk_rows):
+        errors.append("not all rows have override_active")
+    if not all(float(r.get("oracle_env_action_after_override", 0)) <= -0.99 for r in atk_rows):
+        errors.append("not all rows have grip==-1.0")
+    diffs = [float(r["oracle_arm_max_abs_diff"]) for r in atk_rows if r.get("oracle_arm_max_abs_diff") not in (None, "")]
+    if len(diffs) != 10:
+        errors.append(f"arm_diff count={len(diffs)} != 10")
+    if diffs and max(diffs) > 1e-7:
+        errors.append(f"max_arm_diff={max(diffs):.2e} > 1e-7")
+    # Contiguous steps
+    steps = sorted(int(r["step"]) for r in atk_rows)
+    if steps != list(range(steps[0], steps[0] + 10)):
+        errors.append(f"steps not contiguous: {steps}")
+    # Trigger match
+    tt_emit = summary.get("mlp_emit_step", -1)
+    if steps[0] != tt_emit:
+        errors.append(f"trigger={steps[0]} != tt_emit={tt_emit}")
+    # Condition + token_metric
+    if summary.get("condition") != "COMMAND_OPEN_ORACLE":
+        errors.append("condition mismatch")
+    if summary.get("token_metric_applicable") is not False:
+        errors.append("token_metric_applicable != false")
+    return errors
+
+
+def validate_vis_attack(ep_data, spec, job):
+    """VIS attack: strict runtime provenance consumption. All fields required."""
+    errors = []
     summary = ep_data.get("summary", {})
     atk_rows = ep_data.get("attack_rows", [])
 
     # Attack frames count
-    expected = spec.get("expected_attack_frames", 10)
-    if len(atk_rows) != expected:
-        errors.append(f"attack_rows count: {len(atk_rows)} != {expected}")
+    if len(atk_rows) != K:
+        errors.append(f"attack_rows={len(atk_rows)} != {K}")
+        return errors
 
-    # Trigger step match with manifest
-    manifest_trigger = manifest_job.get("trigger_step_override", -1)
-    if manifest_trigger >= 0 and atk_rows:
-        actual_trigger = min(int(r["step"]) for r in atk_rows)
-        if actual_trigger != manifest_trigger:
-            errors.append(f"trigger_step: actual={actual_trigger} != manifest={manifest_trigger}")
+    # Contiguous steps
+    steps = sorted(int(r["step"]) for r in atk_rows)
+    if steps != list(range(steps[0], steps[0] + K)):
+        errors.append(f"steps not contiguous: {steps}")
 
-    # Attack steps must be contiguous
-    if atk_rows:
-        steps = sorted(int(r["step"]) for r in atk_rows)
-        expected_steps = list(range(steps[0], steps[0] + len(steps)))
-        if steps != expected_steps:
-            errors.append(f"attack steps not contiguous: {steps}")
+    # Trigger match with manifest
+    manifest_trigger = job.get("trigger_step_override", -1)
+    if manifest_trigger >= 0 and steps[0] != manifest_trigger:
+        errors.append(f"trigger mismatch: actual={steps[0]} manifest={manifest_trigger}")
 
-    return len(errors) == 0, errors
+    # ── Runtime provenance (STRICT: missing = FAIL) ──
+    req_obj_set = summary.get("requested_objective_set")
+    res_obj_set = summary.get("resolved_objective_set")
+    fallback = summary.get("fallback_used_any")
+    nb_set = summary.get("num_backwards_set")
+    adapter_set = summary.get("resolved_adapter_class_set")
+    linf_max = summary.get("actual_linf_max")
+    gt = summary.get("gradient_transform")
+    delta_shas = summary.get("delta_final_sha256_set", [])
+    method_set = summary.get("attack_method_set", [])
+
+    expected_obj = spec.get("attack_objective", "")
+    if req_obj_set is None:
+        errors.append("requested_objective_set: MISSING")
+    elif req_obj_set != [expected_obj]:
+        errors.append(f"requested_objective_set={req_obj_set} != [{expected_obj}]")
+
+    if res_obj_set is None:
+        errors.append("resolved_objective_set: MISSING")
+    elif res_obj_set != [expected_obj]:
+        errors.append(f"resolved_objective_set={res_obj_set} != [{expected_obj}]")
+
+    if fallback is None:
+        errors.append("fallback_used_any: MISSING")
+    elif fallback is not False:
+        reasons = summary.get("fallback_reasons", [])
+        errors.append(f"fallback_used_any=true, reasons={reasons}")
+
+    if nb_set is None:
+        errors.append("num_backwards_set: MISSING")
+    elif nb_set != [EXPECTED_PGD]:
+        errors.append(f"num_backwards_set={nb_set} != [{EXPECTED_PGD}]")
+
+    if adapter_set is None:
+        errors.append("resolved_adapter_class_set: MISSING")
+    elif "TokenPrefixPGDAttacker" not in str(adapter_set):
+        errors.append(f"adapter_class_set={adapter_set}, expected TokenPrefixPGDAttacker")
+
+    if linf_max is None:
+        errors.append("actual_linf_max: MISSING")
+    elif not (0 < float(linf_max) <= EPSILON + EPSILON_TOL):
+        errors.append(f"actual_linf_max={linf_max} not in (0, {EPSILON + EPSILON_TOL}]")
+
+    if gt is None:
+        errors.append("gradient_transform: MISSING")
+    # Specific checks per condition handled below
+
+    if method_set is None:
+        errors.append("attack_method_set: MISSING")
+    elif not any("token_prefix_pgd" in str(m).lower() for m in method_set):
+        errors.append(f"attack_method_set={method_set}, expected token_prefix_pgd")
+
+    if not delta_shas:
+        errors.append("delta_final_sha256_set: empty")
+    if len(delta_shas) != len(set(delta_shas)):
+        errors.append("delta_final_sha256_set: not all frames have same delta SHA")
+
+    # Per-frame provenance count must match attack rows
+    # (bridge writes _attack_provenance for each attack frame)
+    if len(req_obj_set) != K:
+        errors.append(f"provenance frame count mismatch")
+
+    return errors
+
+
+def validate_targeted_open(ep_data, spec, job):
+    """TMA: verify targeted OPEN token CE semantics."""
+    errors = []
+    summary = ep_data.get("summary", {})
+    res_obj = summary.get("resolved_objective_set", [])
+    if res_obj and "vanilla_tma_gripper_open_ce" not in res_obj:
+        errors.append(f"not TMA objective: {res_obj}")
+    return errors
+
+
+def validate_untargeted(ep_data, spec, job):
+    """UMA: verify untargeted semantics."""
+    errors = []
+    summary = ep_data.get("summary", {})
+    res_obj = summary.get("resolved_objective_set", [])
+    if res_obj and "untargeted" not in str(res_obj[0]) if res_obj else False:
+        errors.append(f"not untargeted: {res_obj}")
+    return errors
+
+
+def validate_permute(ep_data, spec, job):
+    """SHUFFLED: gradient_transform must be exactly 'permute'."""
+    errors = []
+    summary = ep_data.get("summary", {})
+    gt = summary.get("gradient_transform")
+    if gt is None:
+        errors.append("gradient_transform: MISSING")
+    elif gt != "permute":
+        errors.append(f"gradient_transform={gt} != permute")
+    gts = summary.get("gradient_transform_seed_set")
+    if gts is None:
+        errors.append("gradient_transform_seed_set: MISSING")
+    elif len(gts) == 0 or -1 in gts:
+        errors.append(f"gradient_transform_seed invalid: {gts}")
+    return errors
+
+
+def validate_random_window(ep_data, spec, job):
+    """TMA Random-Time: verify legal window."""
+    errors = []
+    summary = ep_data.get("summary", {})
+    trigger = summary.get("requested_trigger_step", job.get("trigger_step_override", -1))
+    n_steps = summary.get("n_steps", 0)
+    if trigger < 5:
+        errors.append(f"random trigger={trigger} < guard=5")
+    if trigger + K > n_steps:
+        errors.append(f"window [{trigger}, {trigger+K}) exceeds n_steps={n_steps}")
+    tp = job.get("trigger_policy", summary.get("timing_policy", ""))
+    if tp != "v3_frozen_random_schedule":
+        errors.append(f"trigger_policy={tp} != v3_frozen_random_schedule")
+    return errors
+
+
+CHECK_FNS = {
+    "oracle_per_row": validate_oracle,
+    "vis_attack_runtime": validate_vis_attack,
+    "targeted_open_semantics": validate_targeted_open,
+    "untargeted_semantics": validate_untargeted,
+    "gradient_transform_is_permute": validate_permute,
+    "random_window_legal": validate_random_window,
+}
+
+
+def validate_no_emission(ep_data, job):
+    """Validate a no-emission-disposition episode."""
+    errors = []
+    summary = ep_data.get("summary", {})
+    atk_rows = ep_data.get("attack_rows", [])
+
+    if len(atk_rows) != 0:
+        errors.append(f"no-emission episode has {len(atk_rows)} attack rows")
+    if job.get("attack_enabled") is not False:
+        errors.append("attack_enabled != false")
+    tp = job.get("trigger_policy", "")
+    if tp != "disabled_no_emission_disposition":
+        errors.append(f"trigger_policy={tp} != disabled_no_emission_disposition")
+    ts = job.get("trigger_step_override", -1)
+    if ts >= 0:
+        errors.append(f"trigger_step_override={ts} >= 0 on no-emission")
+    # Summary should have no attack provenance
+    if summary.get("attack_frames", 0) != 0:
+        errors.append("attack_frames != 0 on no-emission")
+    return errors
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--condition", required=True, choices=list(CONDITION_SPECS.keys()))
-    ap.add_argument("--manifest", required=True, help="Path to canary/formal manifest JSONL")
-    ap.add_argument("--artifact_root", required=True, help="Root of output directories")
-    ap.add_argument("--expected", type=int, required=True, help="Expected number of jobs")
+    ap.add_argument("--manifest", required=True)
+    ap.add_argument("--artifact_root", required=True)
+    ap.add_argument("--expected", type=int, required=True)
     ap.add_argument("--mode", choices=["canary", "formal"], default="canary")
-    ap.add_argument("--output", required=True, help="Path to write PASS/FAIL JSON")
+    ap.add_argument("--output", required=True)
     args = ap.parse_args()
 
     spec = CONDITION_SPECS[args.condition]
@@ -220,98 +277,105 @@ def main():
         print(f"FATAL: manifest has {len(manifest_jobs)} jobs, expected {args.expected}")
         sys.exit(1)
 
-    # Map manifest jobs by output_dir
-    job_by_dir = {}
-    dupes = []
+    # Dedup check
+    seen = set(); dupes = []
     for j in manifest_jobs:
-        d = j["output_dir"]
-        if d in job_by_dir:
-            dupes.append(d)
-        job_by_dir[d] = j
+        k = (j["fold"], str(j["state_id"]), str(j["detector_seed"]), str(j["perturbation_seed"]))
+        if k in seen: dupes.append(str(k))
+        seen.add(k)
     if dupes:
-        print(f"FATAL: {len(dupes)} duplicate output_dirs in manifest")
+        print(f"FATAL: {len(dupes)} duplicate keys in manifest")
         sys.exit(1)
 
-    # Validate each job
-    results = []
-    missing = 0
+    # ── Separate emission vs no-emission for student-triggered ──
+    is_student = spec.get("mode") == "student_triggered"
+    emit_jobs = []; noemit_jobs = []
+    if is_student:
+        for j in manifest_jobs:
+            if j.get("attack_enabled", True):
+                emit_jobs.append(j)
+            else:
+                noemit_jobs.append(j)
+        print(f"Student disposition: {len(emit_jobs)} emission + {len(noemit_jobs)} no-emission")
+        if args.mode == "formal":
+            if len(emit_jobs) != 141 or len(noemit_jobs) != 21:
+                print(f"FATAL: expected 141+21, got {len(emit_jobs)}+{len(noemit_jobs)}")
+                sys.exit(1)
+
+    # ── Validate emission episodes ──
     all_errors = {}
-    for j in manifest_jobs:
+    n_emit_pass = 0
+    for j in (emit_jobs if is_student else manifest_jobs):
         ep = load_episode(j["output_dir"])
         if ep is None:
-            missing += 1
-            all_errors[j.get("job_key", "?")] = ["episode_summary.json missing"]
+            all_errors[j.get("job_key", "?")] = ["episode_summary missing"]
             continue
-        passed, errors = validate_episode(ep, spec, j)
-        results.append({"job_key": j.get("job_key", "?"), "passed": passed, "errors": errors})
-        if not passed:
+        errors = []
+        for ck in spec.get("checks", []):
+            fn = CHECK_FNS.get(ck)
+            if fn:
+                errors.extend(fn(ep, spec, j))
+        if errors:
             all_errors[j.get("job_key", "?")] = errors
+        else:
+            n_emit_pass += 1
 
-    # Summary
-    n_total = len(manifest_jobs)
-    n_passed = sum(1 for r in results if r["passed"])
-    n_failed = n_total - n_passed - missing
+    # ── Validate no-emission episodes ──
+    n_noemit_pass = 0
+    for j in noemit_jobs:
+        ep = load_episode(j["output_dir"])
+        if ep is None:
+            all_errors[j.get("job_key", "?")] = ["episode_summary missing (no-emit)"]
+            continue
+        errors = validate_no_emission(ep, j)
+        if errors:
+            all_errors[j.get("job_key", "?")] = errors
+        else:
+            n_noemit_pass += 1
 
-    print(f"Validator: {args.condition} [{args.mode}]")
-    print(f"  Total: {n_total}, Passed: {n_passed}, Failed: {n_failed}, Missing: {missing}")
-
-    gate_pass = (n_passed == n_total and missing == 0 and n_failed == 0)
-
-    # For student-triggered formal: verify emission/no-emission disposition
-    emission_keys = 0
-    no_emission_keys = 0
-    if spec.get("mode") == "student_triggered" and args.mode == "formal":
-        for j in manifest_jobs:
-            ep = load_episode(j["output_dir"])
-            if ep and len(ep.get("attack_rows", [])) > 0:
-                emission_keys += 1
-            else:
-                no_emission_keys += 1
-        print(f"  Emission: {emission_keys}, No-emission: {no_emission_keys}")
-        if emission_keys != 141 or no_emission_keys != 21:
-            gate_pass = False
-            print(f"  FATAL: expected 141 emission + 21 no-emission")
-
-    # For random-time formal: 162/162 executed
+    # ── Random-time: all 162 must have executed ──
     if spec.get("mode") == "random_time" and args.mode == "formal":
         executed = sum(1 for j in manifest_jobs
                        if load_episode(j["output_dir"]) and len(load_episode(j["output_dir"]).get("attack_rows", [])) > 0)
-        print(f"  Attack executed: {executed}/162")
         if executed != 162:
-            gate_pass = False
+            all_errors["random_time"] = [f"{executed}/162 executed"]
+        print(f"  Random-time executed: {executed}/162")
+
+    n_total = len(manifest_jobs)
+    n_passed = n_emit_pass + n_noemit_pass
+    n_failed = n_total - n_passed
+    gate_pass = (n_passed == n_total and len(all_errors) == 0)
+
+    print(f"Validator: {args.condition} [{args.mode}]")
+    print(f"  Total: {n_total}, Passed: {n_passed}, Failed: {n_failed}")
+    if is_student:
+        print(f"  Emission pass: {n_emit_pass}/{len(emit_jobs)}, No-emission pass: {n_noemit_pass}/{len(noemit_jobs)}")
 
     if all_errors:
         print(f"\n  Errors ({len(all_errors)} episodes):")
-        for key, errs in list(all_errors.items())[:10]:
-            print(f"    {key}: {'; '.join(errs)}")
+        for key, errs in list(all_errors.items())[:15]:
+            print(f"    {key}: {'; '.join(errs[:3])}")
 
-    # SHA bindings
-    import subprocess as _sp
+    # ── SHA bindings ──
     _repo = "/mnt/sdc/dty_user/openvla_attack"
     _commit = _sp.run(["git", "-C", _repo, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     _bridge_sha = hashlib.sha256(open(os.path.join(_repo, "scripts/stageb/run_v2_vis_sc5_mlp_bridge.py"), "rb").read()).hexdigest()
     _worker_sha = hashlib.sha256(open(os.path.join(_repo, "scripts/stageb/run_sota_worker.py"), "rb").read()).hexdigest()
     _val_sha = hashlib.sha256(open(__file__, "rb").read()).hexdigest()
+    _mf_sha = hashlib.sha256(open(args.manifest, "rb").read()).hexdigest()
 
-    # Write output
     output = {
-        "condition": args.condition,
-        "mode": args.mode,
+        "condition": args.condition, "mode": args.mode,
         "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "manifest_sha256": hashlib.sha256(open(args.manifest, "rb").read()).hexdigest(),
-        "commit_sha": _commit,
-        "bridge_sha256": _bridge_sha,
-        "worker_sha256": _worker_sha,
+        "manifest_sha256": _mf_sha, "commit_sha": _commit,
+        "bridge_sha256": _bridge_sha, "worker_sha256": _worker_sha,
         "validator_sha256": _val_sha,
-        "total": n_total, "passed": n_passed, "failed": n_failed, "missing": missing,
+        "total": n_total, "passed": n_passed, "failed": n_failed,
+        "emit_pass": n_emit_pass, "noemit_pass": n_noemit_pass,
         "gate_pass": gate_pass,
         "spec": {"attack_objective": spec.get("attack_objective"),
-                 "expected_attack_frames": spec.get("expected_attack_frames"),
-                 "checks": spec.get("checks", [])},
+                 "checks": spec.get("checks", []), "mode": spec.get("mode")},
     }
-    if spec.get("mode") == "student_triggered":
-        output["emission_keys"] = emission_keys
-        output["no_emission_keys"] = no_emission_keys
 
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
     with open(args.output, "w") as f:

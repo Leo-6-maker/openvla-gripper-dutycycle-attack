@@ -279,7 +279,8 @@ for step in range(400):
             _prov = {
                 "requested_objective": _adb.get("requested_objective", args.attack_objective),
                 "resolved_objective": _adb.get("resolved_objective", _adb.get("requested_objective", "")),
-                "attack_method": _adb.get("attack_method", ""),
+                "attack_method": str(getattr(attack_result, "attack_method", _adb.get("requested_method", ""))),
+                "requested_method": _adb.get("requested_method", _adb.get("attack_method", "")),
                 "resolved_adapter_class": _adb.get("resolved_adapter_class", ""),
                 "fallback_used": bool(_adb.get("fallback_used", False)),
                 "fallback_reason": _adb.get("fallback_reason", ""),

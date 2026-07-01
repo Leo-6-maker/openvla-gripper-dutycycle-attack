@@ -46,8 +46,9 @@ if [ "$FAILED" -gt 0 ] || [ "$DONE" -ne 162 ]; then
     log "FATAL: UMA process gate FAILED"; exit 1
 fi
 # Formal validator
+python3 "$MF_BUILDER" "$SOTA_MF/UMA" "$FORMAL_MF_DIR/UMA_formal_162.jsonl" || { log "FATAL: manifest build failed"; exit 1; }
 log "Running formal validator on UMA..."
-python3 "$VALIDATOR" --condition UMA_STUDENT --manifest "$SOTA_MF/UMA/manifest_gpu0.jsonl" \
+python3 "$VALIDATOR" --condition UMA_STUDENT --manifest "$FORMAL_MF_DIR/UMA_formal_162.jsonl" \
     --artifact_root /mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1 \
     --expected 162 --mode formal \
     --output "$FORMAL_PASS_DIR/UMA_STUDENT_FORMAL_PASS.json" || {
@@ -76,8 +77,9 @@ if [ "$FAILED" -gt 0 ] || [ "$DONE" -ne 162 ]; then
     log "FATAL: SHUFFLED process gate FAILED"; exit 1
 fi
 # Formal validator
+python3 "$MF_BUILDER" "$SOTA_MF/SHUFFLED" "$FORMAL_MF_DIR/SHUFFLED_formal_162.jsonl" || { log "FATAL: manifest build failed"; exit 1; }
 log "Running formal validator on SHUFFLED..."
-python3 "$VALIDATOR" --condition SHUFFLED_STUDENT --manifest "$SOTA_MF/SHUFFLED/manifest_gpu0.jsonl" \
+python3 "$VALIDATOR" --condition SHUFFLED_STUDENT --manifest "$FORMAL_MF_DIR/SHUFFLED_formal_162.jsonl" \
     --artifact_root /mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1 \
     --expected 162 --mode formal \
     --output "$FORMAL_PASS_DIR/SHUFFLED_STUDENT_FORMAL_PASS.json" || {

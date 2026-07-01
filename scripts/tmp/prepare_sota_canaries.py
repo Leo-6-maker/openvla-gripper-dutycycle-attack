@@ -165,7 +165,12 @@ for cond_name, spec in CONDITIONS.items():
         nj['trigger_step_override'] = ts if ts >= 0 else -1
         # Explicit no-emission disposition for episodes without valid trigger
         nj['attack_enabled'] = bool(ts >= 0)
-        nj['trigger_policy'] = "frozen_student_emit_replay" if ts >= 0 else "disabled_no_emission_disposition"
+        if timing == 'random_trigger':
+            nj['trigger_policy'] = "v3_frozen_random_schedule"
+        elif ts >= 0:
+            nj['trigger_policy'] = "frozen_student_emit_replay"
+        else:
+            nj['trigger_policy'] = "disabled_no_emission_disposition"
         nj['job_key'] = j['job_key'].replace('RANDOM_TIME', output_ns).replace('TRUE_T10', output_ns)
         nj['output_dir'] = j['output_dir'].replace('RANDOM_TIME', output_ns).replace('TRUE_T10', output_ns)
         nj['bridge_condition'] = spec.get('bridge_condition', cond_id)
