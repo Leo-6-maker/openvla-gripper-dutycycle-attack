@@ -295,6 +295,7 @@ for step in range(400):
 
     t_vla = time.perf_counter() - t0
 
+    _clean_env = postprocess_openvla_action_for_libero(_clean_candidate.copy(), enabled=True)
     _tel = {"step": step, "condition": args.condition, "anchor": ANCHOR,
         "mlp_emit": _mlp_emit, "raw_gripper": raw_grip, "env_gripper": env_grip,
         "qpos_sum": qpos_sum, "eef_x": eef_x, "eef_y": eef_y, "eef_z": eef_z,
@@ -307,7 +308,8 @@ for step in range(400):
         "pred_phase": _det_pp, "qpos_source": "q7+q8_sum",
         "raw_action_7d": json.dumps([float(x) for x in action]),
         "env_action_7d": json.dumps([float(x) for x in env_action_final]),
-        "clean_action_7d": json.dumps([float(x) for x in _clean_candidate])}
+        "clean_action_7d": json.dumps([float(x) for x in _clean_candidate]),
+        "clean_env_action_7d": json.dumps([float(x) for x in _clean_env])}
     if _feat_valid:
         for fn in SC5_FEATURES:
             _tel["f_"+fn] = _feat_25d.get(fn, float("nan"))

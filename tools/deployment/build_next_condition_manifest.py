@@ -17,39 +17,45 @@ APPROVED_CHANGES = {"condition_id", "job_key", "output_dir"}
 
 CONDITIONS = {
     "RANDOM_TIME": {
-        "condition_id": "RANDOM_TIME", "execution_status": "FROZEN",
+        "condition_id": "TRUE_T10", "execution_status": "FROZEN",
+        "output_namespace": "RANDOM_TIME",
         "bridge_condition": "TRUE_T10",
         "attack_objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
         "description": "VIS + Random-Time Control",
         "random_trigger": True, "require_invalid_steps_zero": True,
     },
     "RAND_LINF": {
-        "condition_id": "RAND_LINF", "execution_status": "DRY_RUN_ONLY",
+        "condition_id": "RAND_T10", "execution_status": "FROZEN",
+        "output_namespace": "RAND_LINF",
         "bridge_condition": "RAND_T10", "attack_objective": None,
-        "description": "RAND Linf + Student Trigger", "note": "Spec not frozen",
-    },
-    "EARLY_SHIFT": {
-        "condition_id": "EARLY_SHIFT", "execution_status": "DRY_RUN_ONLY",
-        "bridge_condition": "TRUE_T10",
-        "attack_objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
-        "description": "VIS + Early-Shift", "early_shift": True, "note": "Spec not frozen",
+        "description": "RAND Linf + Student Trigger",
     },
     "SHUFFLED": {
-        "condition_id": "SHUFFLED", "execution_status": "DRY_RUN_ONLY",
+        "condition_id": "SHUFFLED_T10", "execution_status": "FROZEN",
+        "output_namespace": "SHUFFLED",
         "bridge_condition": "SHUFFLED_T10", "attack_objective": None,
-        "description": "Shuffled Gradient", "note": "Spec not frozen",
+        "description": "Shuffled Gradient",
+    },
+    "EARLY_SHIFT": {
+        "condition_id": "TRUE_T10", "execution_status": "FROZEN",
+        "output_namespace": "EARLY_SHIFT",
+        "bridge_condition": "TRUE_T10",
+        "attack_objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+        "description": "VIS + Early-Shift", "early_shift": True,
     },
     "TMA": {
-        "condition_id": "TMA", "execution_status": "DRY_RUN_ONLY",
+        "condition_id": "TRUE_T10", "execution_status": "FROZEN",
+        "output_namespace": "TMA",
         "bridge_condition": "TRUE_T10",
         "attack_objective": "vanilla_tma_gripper_open_ce",
-        "description": "Adapted TMA", "note": "Spec not frozen",
+        "description": "Adapted TMA",
     },
     "UMA": {
-        "condition_id": "UMA", "execution_status": "DRY_RUN_ONLY",
+        "condition_id": "TRUE_T10", "execution_status": "FROZEN",
+        "output_namespace": "UMA",
         "bridge_condition": "TRUE_T10",
         "attack_objective": "untargeted_clean_token_ce",
-        "description": "UMA Untargeted CE-PGD", "note": "Spec not frozen",
+        "description": "UMA Untargeted CE-PGD",
     },
 }
 
@@ -97,13 +103,13 @@ def early_shift_triggers(emit_list, n_valid_list):
     return [(e - K_DEFAULT) if (e >= 0 and (e - K_DEFAULT) >= GUARD and e <= ns) else None
             for e, ns in zip(emit_list, n_valid_list)]
 
-def build_one(src, cond_id, evidence_root, artifact_root, cond_spec, ts, n_valid):
+def build_one(src, cond_id, output_ns, evidence_root, artifact_root, cond_spec, ts, n_valid):
     new = copy.deepcopy(src)
-    new["condition_id"] = cond_id
+    new["condition_id"] = cond_id  # Must be bridge-compatible (e.g. "TRUE_T10")
     new["bridge_condition"] = cond_spec["bridge_condition"]
     if cond_spec.get("attack_objective"): new["attack_objective"] = cond_spec["attack_objective"]
-    new["job_key"] = src["job_key"].replace("TRUE_T10", cond_id)
-    new["output_dir"] = resolve_output(src["output_dir"], cond_id, artifact_root)
+    new["job_key"] = src["job_key"].replace("TRUE_T10", output_ns)
+    new["output_dir"] = resolve_output(src["output_dir"], output_ns, artifact_root)
     new["trigger_step_override"] = ts if ts is not None else -1
     new["source_true_t10_job_key"] = src["job_key"]
     new["n_valid_steps"] = n_valid
@@ -123,6 +129,7 @@ def build_one(src, cond_id, evidence_root, artifact_root, cond_spec, ts, n_valid
 
 def build_manifest(src_jobs, cond_spec, evidence_root, artifact_root, seed=42):
     cond_id = cond_spec["condition_id"]
+    output_ns = cond_spec.get("output_namespace", cond_id)
     req_zero = cond_spec.get("require_invalid_steps_zero", False)
     metas = [get_meta(j, require_invalid_zero=req_zero) for j in src_jobs]
     nv = [m["n_valid_steps"] for m in metas]
@@ -134,7 +141,7 @@ def build_manifest(src_jobs, cond_spec, evidence_root, artifact_root, seed=42):
 
     jobs, diffs, seen_k, seen_d = [], [], set(), set()
     for i, src in enumerate(src_jobs):
-        j, diff = build_one(src, cond_id, evidence_root, artifact_root, cond_spec,
+        j, diff = build_one(src, cond_id, output_ns, evidence_root, artifact_root, cond_spec,
                             triggers[i] if i < len(triggers) else None, nv[i])
         if j["job_key"] in seen_k: raise ValueError(f"Dup key: {j['job_key']}")
         if j["output_dir"] in seen_d: raise ValueError(f"Dup dir: {j['output_dir']}")
