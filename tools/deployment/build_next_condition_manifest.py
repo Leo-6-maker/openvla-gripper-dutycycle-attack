@@ -13,7 +13,7 @@ APPROVED_ADDITIONS = {
     "n_valid_steps", "trigger_skip_reason", "source_true_t10_job_key",
     "bridge_condition", "attack_objective", "trigger_step_override",
 }
-APPROVED_CHANGES = {"condition_id", "job_key", "output_dir"}
+APPROVED_CHANGES = {"condition_id", "condition", "job_key", "output_dir"}
 
 CONDITIONS = {
     "RANDOM_TIME": {
@@ -233,9 +233,12 @@ def main():
         print(f"  Added: {full_report['added']}, Changed: {full_report['changed']}")
 
         if args.execute:
-            allowed = {"PREPARED", "CANARY_READY", "CANARY_PASS", "FORMAL_AUTHORIZED", "FROZEN"}
+            if args.canary:
+                allowed = {"PREPARED", "CANARY_READY", "CANARY_PASS"}
+            else:
+                allowed = {"CANARY_PASS", "FORMAL_AUTHORIZED"}
             if spec["execution_status"] not in allowed:
-                sys.exit(f"ERROR: {cond_id} status={spec['execution_status']} (must be in {allowed})")
+                sys.exit(f"ERROR: {cond_id} status={spec['execution_status']} not in {allowed} (canary={args.canary})")
             if os.path.exists(manifest_path):
                 sys.exit(f"ERROR: manifest exists: {manifest_path}")
             os.makedirs(cond_root, exist_ok=True)

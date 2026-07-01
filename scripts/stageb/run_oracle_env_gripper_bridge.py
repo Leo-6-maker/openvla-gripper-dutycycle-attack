@@ -170,24 +170,23 @@ for step in range(400):
                 _mlp_emit = _decision["emit_step"]
 
     # === ORACLE OVERRIDE: force gripper OPEN at environment level ===
-    attack_this = False; oracle_forced = False
+    attack_this = False; oracle_forced = False; _arm_diff = 0.0
     _trigger_step = args.trigger_step_override if args.trigger_step_override >= 0 else _mlp_emit
     _clean_candidate = np.asarray(action, dtype=np.float32)
+    _clean_env = postprocess_openvla_action_for_libero(_clean_candidate.copy(), enabled=True)
     _env_before_override = float(env_action_final[-1])
 
     if IS_ORACLE and _trigger_step >= 0 and step >= _trigger_step and attack_count < ATTACK_FRAMES:
-        env_action_final = np.asarray(env_action_final, dtype=np.float32).copy()
+        env_action_final = _clean_env.copy()
         env_action_final[-1] = np.clip(-1.0, -1.0, 1.0)  # -1.0 = OPEN in LIBERO postprocessed space
         oracle_forced = True
         attack_this = True
         attack_count += 1
-        # Compute arm diff: max absolute difference in first 6 DoF (arm) between clean and override
+        # Arm diff: max abs difference in first 6 DoF — must be 0 since only gripper[-1] changed
         _arm_diff = float(np.max(np.abs(env_action_final[:6] - _clean_env[:6])))
         env_grip = float(env_action_final[-1])
 
     t_vla = time.perf_counter() - t0
-
-    _clean_env = postprocess_openvla_action_for_libero(_clean_candidate.copy(), enabled=True)
     _tel = {"step": step, "condition": args.condition, "anchor": ANCHOR,
         "mlp_emit": _mlp_emit, "raw_gripper": raw_grip, "env_gripper": env_grip,
         "qpos_sum": qpos_sum, "eef_x": eef_x, "eef_y": eef_y, "eef_z": eef_z,
@@ -237,7 +236,7 @@ summary = {"condition": args.condition, "state_id": STATE_ID, "teacher_anchor": 
     "env_open_frames": n_env_open,
     "env_override_duty": round(n_env_open/n_atk, 3) if n_atk > 0 else 0,
     "arm_max_abs_diff": max_arm_diff,
-    "arm_preserved": bool(max_arm_diff < 0.01),
+    "arm_preserved": bool(max_arm_diff <= 1e-7),
     "prev_delta_flags": [], "task_success": success,
     "oracle_protocol": "env_gripper_force_open_continuous",
     "requested_dtype": _dtype_name, "actual_dtype": _actual_dtype_str,

@@ -1,42 +1,58 @@
 #!/bin/bash
-# CHAIN Stage 4: Launch UMA + SHUFFLED Full, sleep 3h, call stage5
+# CHAIN Stage 4: UMA Full (8 GPU, 162) → SHUFFLED Full (8 GPU, 162) sequential, hard gates
 set -uo pipefail
-EXEC=/mnt/sdc/dty_user/table1_sota_execution_v1
-LOGDIR=$EXEC/logs; mkdir -p $LOGDIR
+EXEC=/mnt/sdc/dty_user/table1_sota_execution_v1; LOGDIR=$EXEC/logs; mkdir -p $LOGDIR
 PYTHON=/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python
 SOTA_WORKER=$EXEC/commands/run_sota_worker.py
-SOTA_MF=$EXEC/manifests
-NEXT_SCRIPT=$EXEC/commands/chain_stage5_aggregate.sh
+SOTA_MF=$EXEC/manifests; NEXT_SCRIPT=$EXEC/commands/chain_stage5_aggregate.sh
 
 log() { echo "$(date -Iseconds) [STAGE4] $*" | tee -a $LOGDIR/chain.log; }
 
-log "=== LAUNCHING UMA (GPU0-3) + SHUFFLED (GPU4-7) ==="
-for pair in "UMA:uma:0:4" "SHUFFLED:shuffled:4:8"; do
-    IFS=':' read -r cond label g_start g_end <<< "$pair"
-    for gpu in $(seq $g_start $((g_end - 1))); do
-        MF=$SOTA_MF/$cond/manifest_gpu${gpu}.jsonl
-        [ -f "$MF" ] && nohup $PYTHON -u $SOTA_WORKER $gpu $MF > $LOGDIR/full_${label}_gpu${gpu}.log 2>&1 &
-        log "GPU $gpu ($cond) PID=$!"
-    done
+# ── UMA: 8 GPUs, 162 jobs ──
+log "=== UMA (8 GPUs, 162 jobs) ==="
+for gpu in 0 1 2 3 4 5 6 7; do
+    MF=$SOTA_MF/UMA/manifest_gpu${gpu}.jsonl
+    [ -f "$MF" ] && nohup $PYTHON -u $SOTA_WORKER $gpu $MF > $LOGDIR/full_uma_gpu${gpu}.log 2>&1 &
+    log "GPU $gpu UMA PID=$!"
 done
 
-US_MIN=180
-log "Sleeping ${US_MIN}min for UMA+SHUFFLED (324 jobs)..."
-sleep $((US_MIN * 60))
-
+log "Waiting for UMA workers..."
+wait
 DONE=0; FAILED=0
-for label in uma shuffled; do
-    for gpu in 0 1 2 3 4 5 6 7; do
-        lf="$LOGDIR/full_${label}_gpu${gpu}.log"
-        [ -f "$lf" ] && DONE=$((DONE + $(grep -c 'COMPLETE' "$lf" 2>/dev/null || echo 0)))
-        [ -f "$lf" ] && FAILED=$((FAILED + $(grep -c 'FAILED' "$lf" 2>/dev/null || echo 0)))
-    done
+for gpu in 0 1 2 3 4 5 6 7; do
+    lf="$LOGDIR/full_uma_gpu${gpu}.log"
+    [ -f "$lf" ] && DONE=$((DONE + $(grep -c 'COMPLETE' "$lf" 2>/dev/null || echo 0)))
+    [ -f "$lf" ] && FAILED=$((FAILED + $(grep -c 'FAILED' "$lf" 2>/dev/null || echo 0)))
 done
-log "UMA+SHUFFLED: $DONE/324 COMPLETE, $FAILED FAILED"
+log "UMA: $DONE/162 COMPLETE, $FAILED FAILED"
+if [ "$FAILED" -gt 0 ] || [ "$DONE" -ne 162 ]; then
+    log "FATAL: UMA gate FAILED"; exit 1
+fi
 
+# ── SHUFFLED: 8 GPUs, 162 jobs ──
+log "=== SHUFFLED (8 GPUs, 162 jobs) ==="
+for gpu in 0 1 2 3 4 5 6 7; do
+    MF=$SOTA_MF/SHUFFLED/manifest_gpu${gpu}.jsonl
+    [ -f "$MF" ] && nohup $PYTHON -u $SOTA_WORKER $gpu $MF > $LOGDIR/full_shuffled_gpu${gpu}.log 2>&1 &
+    log "GPU $gpu SHUFFLED PID=$!"
+done
+
+log "Waiting for SHUFFLED workers..."
+wait
+DONE=0; FAILED=0
+for gpu in 0 1 2 3 4 5 6 7; do
+    lf="$LOGDIR/full_shuffled_gpu${gpu}.log"
+    [ -f "$lf" ] && DONE=$((DONE + $(grep -c 'COMPLETE' "$lf" 2>/dev/null || echo 0)))
+    [ -f "$lf" ] && FAILED=$((FAILED + $(grep -c 'FAILED' "$lf" 2>/dev/null || echo 0)))
+done
+log "SHUFFLED: $DONE/162 COMPLETE, $FAILED FAILED"
+if [ "$FAILED" -gt 0 ] || [ "$DONE" -ne 162 ]; then
+    log "FATAL: SHUFFLED gate FAILED"; exit 1
+fi
+
+log "UMA+SHUFFLED gates PASS. Advancing to Stage 5..."
 if [ -x "$NEXT_SCRIPT" ]; then
-    log "Calling Stage 5..."
     exec bash "$NEXT_SCRIPT"
 else
-    log "ERROR: Next script not found: $NEXT_SCRIPT"
+    log "ERROR: $NEXT_SCRIPT not found"; exit 1
 fi

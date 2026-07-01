@@ -1,12 +1,11 @@
 #!/bin/bash
-# CHAIN Stage 5: Final TABLE1_SOTA_V1 aggregation
+# CHAIN Stage 5: TABLE1_SOTA_V1 aggregation — UNVERIFIED preview only (not freeze)
 set -uo pipefail
 EXEC=/mnt/sdc/dty_user/table1_sota_execution_v1
 LOGDIR=$EXEC/logs
-
 log() { echo "$(date -Iseconds) [STAGE5] $*" | tee -a $LOGDIR/chain.log; }
 
-log "=== TABLE1_SOTA_V1 FINAL AGGREGATION ==="
+log "=== TABLE1_SOTA_V1 AGGREGATION (UNVERIFIED PREVIEW) ==="
 
 python3 << 'PYEOF'
 import os, json, time
@@ -34,27 +33,37 @@ def collect(path):
                 key = os.path.relpath(root, path)
                 data[key] = {"success": d.get("task_success", False),
                              "n_steps": d.get("n_steps", 0),
-                             "attack_frames": d.get("attack_frames", 0)}
+                             "attack_frames": d.get("attack_frames", 0),
+                             "condition": d.get("condition", "")}
     return data
 
 rows = []
 for name, rel_path in CONDITIONS.items():
     data = collect(os.path.join(EVID, rel_path))
     n = len(data)
+    expected = 162 if name != "COMMAND_OPEN_ORACLE" else 141
     sr = round(sum(1 for v in data.values() if v["success"]) / max(1, n), 4)
     atk = sum(v["attack_frames"] for v in data.values())
-    rows.append({"condition": name, "n": n, "success_rate": sr, "total_attack_frames": atk})
-    print(f"  {name}: n={n} SR={sr} atk={atk}")
+    rows.append({"condition": name, "n": n, "expected": expected,
+                 "complete": n >= expected,
+                 "success_rate": sr if n > 0 else None,
+                 "total_attack_frames": atk})
+    status = "OK" if n >= expected else "INCOMPLETE" if n > 0 else "MISSING"
+    print(f"  {name}: n={n}/{expected} SR={sr} atk={atk} [{status}]")
 
-envelope = {"gate": "TABLE1_SOTA_V1",
-            "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "panel": rows}
-with open(os.path.join(OUT, "FREEZE_ENVELOPE.json"), "w") as f:
+envelope = {
+    "gate": "TABLE1_SOTA_V1",
+    "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+    "status": "UNVERIFIED_PREVIEW",
+    "panel": rows,
+}
+with open(os.path.join(OUT, "TABLE1_SOTA_PREVIEW.json"), "w") as f:
     json.dump(envelope, f, indent=2)
 with open(os.path.join(OUT, "TABLE1_SOTA_PANEL.csv"), "w") as f:
-    f.write("condition,n,success_rate,total_attack_frames\n")
-    for r in rows: f.write(f"{r['condition']},{r['n']},{r['success_rate']},{r['total_attack_frames']}\n")
-print(f"TABLE1_SOTA_V1 saved to {OUT}")
+    f.write("condition,n,expected,complete,success_rate,total_attack_frames\n")
+    for r in rows:
+        f.write(f"{r['condition']},{r['n']},{r['expected']},{r['complete']},{r['success_rate']},{r['total_attack_frames']}\n")
+print(f"TABLE1_SOTA_V1 preview saved to {OUT} (status: UNVERIFIED)")
 PYEOF
 
-log "=== ALL DONE ==="
+log "=== ALL DONE (Preview only — formal freeze requires separate validator) ==="
