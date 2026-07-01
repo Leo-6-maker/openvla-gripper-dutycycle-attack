@@ -115,11 +115,38 @@ for cond_name, spec in CONDITIONS.items():
             key = (j['fold'], j['state_id'], j['detector_seed'], j['perturbation_seed'])
             triggers[key] = tt_emissions.get(key, -1)
     elif timing == 'random_trigger':
-        # Generate random windows
-        keys_ordered = [(j['fold'], j['state_id'], j['detector_seed'], j['perturbation_seed']) for j in src_jobs]
-        valid = [tt_valid.get(k, 400) for k in keys_ordered]
-        raw_triggers = random_triggers(valid, K=10, guard=5, seed=42)
-        triggers = {k: (t if t is not None else -1) for k, t in zip(keys_ordered, raw_triggers)}
+        # Load frozen RANDOM_TIME_V3 schedule (review-mandated matched timing)
+        v3_manifest_dir = EVID + '/RANDOM_TIME_V3/launch'
+        v3_triggers = {}
+        if os.path.isdir(v3_manifest_dir):
+            import hashlib as _hl
+            v3_sha = _hl.sha256()
+            for mf in sorted(os.listdir(v3_manifest_dir)):
+                if not mf.endswith('.jsonl'): continue
+                with open(os.path.join(v3_manifest_dir, mf), 'rb') as _f:
+                    v3_sha.update(_f.read())
+                for line in open(os.path.join(v3_manifest_dir, mf)):
+                    jj = json.loads(line.strip())
+                    kk = (jj['fold'], jj['state_id'], jj['detector_seed'], jj['perturbation_seed'])
+                    v3_triggers[kk] = jj.get('trigger_step_override', -1)
+            # Verify 162-key exact match
+            v3_keys = set(v3_triggers.keys())
+            tt_keys = set((j['fold'], j['state_id'], j['detector_seed'], j['perturbation_seed']) for j in src_jobs)
+            if v3_keys != tt_keys:
+                print(f"  ERROR: V3 key mismatch: V3={len(v3_keys)} TT={len(tt_keys)}")
+                print(f"  Extra in V3: {len(v3_keys - tt_keys)}")
+                print(f"  Missing in V3: {len(tt_keys - v3_keys)}")
+                sys.exit(1)
+            # Verify all 162 triggers valid
+            invalid = [k for k, t in v3_triggers.items() if t < 0]
+            if invalid:
+                print(f"  ERROR: V3 has {len(invalid)} invalid triggers (expected 0)")
+                sys.exit(1)
+            triggers = v3_triggers
+            print(f"  TMA Random-Time: using frozen V3 schedule SHA={v3_sha.hexdigest()[:16]}, {len(triggers)} keys")
+        else:
+            print(f"  ERROR: V3 manifest directory not found: {v3_manifest_dir}")
+            sys.exit(1)
     else:
         triggers = {}
 
@@ -135,7 +162,10 @@ for cond_name, spec in CONDITIONS.items():
         if spec.get('attack_objective'):
             nj['attack_objective'] = spec['attack_objective']
             nj['objective_id'] = spec['attack_objective']
-        nj['trigger_step_override'] = ts
+        nj['trigger_step_override'] = ts if ts >= 0 else -1
+        # Explicit no-emission disposition for episodes without valid trigger
+        nj['attack_enabled'] = bool(ts >= 0)
+        nj['trigger_policy'] = "frozen_student_emit_replay" if ts >= 0 else "disabled_no_emission_disposition"
         nj['job_key'] = j['job_key'].replace('RANDOM_TIME', output_ns).replace('TRUE_T10', output_ns)
         nj['output_dir'] = j['output_dir'].replace('RANDOM_TIME', output_ns).replace('TRUE_T10', output_ns)
         nj['bridge_condition'] = spec.get('bridge_condition', cond_id)

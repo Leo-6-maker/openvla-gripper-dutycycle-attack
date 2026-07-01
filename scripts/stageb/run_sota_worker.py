@@ -111,6 +111,11 @@ for idx, job in enumerate(jobs):
         cmd.append('--arm_lock')
     if keep_running:
         cmd.append('--keep_running')
+    # Explicit no-emission disposition
+    atk_enabled = job.get("attack_enabled", True)
+    if not atk_enabled:
+        cmd.append('--attack_enabled')
+        cmd.append('false')
 
     label = '[{}/{}] {}'.format(idx+1, len(jobs), job.get('job_key', '?'))
     print('{} START'.format(label))

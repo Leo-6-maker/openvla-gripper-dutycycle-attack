@@ -285,12 +285,24 @@ def main():
         for key, errs in list(all_errors.items())[:10]:
             print(f"    {key}: {'; '.join(errs)}")
 
+    # SHA bindings
+    import subprocess as _sp
+    _repo = "/mnt/sdc/dty_user/openvla_attack"
+    _commit = _sp.run(["git", "-C", _repo, "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    _bridge_sha = hashlib.sha256(open(os.path.join(_repo, "scripts/stageb/run_v2_vis_sc5_mlp_bridge.py"), "rb").read()).hexdigest()
+    _worker_sha = hashlib.sha256(open(os.path.join(_repo, "scripts/stageb/run_sota_worker.py"), "rb").read()).hexdigest()
+    _val_sha = hashlib.sha256(open(__file__, "rb").read()).hexdigest()
+
     # Write output
     output = {
         "condition": args.condition,
         "mode": args.mode,
         "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "manifest_sha256": hashlib.sha256(open(args.manifest, "rb").read()).hexdigest(),
+        "commit_sha": _commit,
+        "bridge_sha256": _bridge_sha,
+        "worker_sha256": _worker_sha,
+        "validator_sha256": _val_sha,
         "total": n_total, "passed": n_passed, "failed": n_failed, "missing": missing,
         "gate_pass": gate_pass,
         "spec": {"attack_objective": spec.get("attack_objective"),

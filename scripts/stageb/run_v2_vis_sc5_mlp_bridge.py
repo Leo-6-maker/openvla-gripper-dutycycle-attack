@@ -40,6 +40,8 @@ ap.add_argument("--arm_lock", action="store_true", default=False,
                 help="Arm Execution Lock: executed_arm = clean_candidate_arm (first 6 DoF from clean decode)")
 ap.add_argument("--keep_running", action="store_true", default=False, help="Dont break on done (for random-time supplement)")
 ap.add_argument("--trigger_step_override", type=int, default=-1, help="If >= 0, overrides MLP emit for trigger (supplement use)")
+ap.add_argument("--attack_enabled", type=lambda x: x.lower() != "false", default=True,
+                help="Set to false for no-emission disposition episodes (never trigger)")
 args = ap.parse_args()
 
 if args.save_video and not args.source_commit:
@@ -148,7 +150,7 @@ _eef_init = env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_sit
 _prev_eef = (float(_eef_init[0]), float(_eef_init[1]), float(_eef_init[2]))
 _invalid_steps = 0; _first_valid_step = -1  # for parity diagnosis
 
-telemetry = []; attack_count = 0; prev_delta_flags = []
+telemetry = []; attack_count = 0; prev_delta_flags = []; _attack_provenance = []
 
 for step in range(400):
     if "agentview_image" not in obs: break
@@ -225,6 +227,8 @@ for step in range(400):
     # === VIS ATTACK (IDENTICAL to v2 bridge, only trigger condition changed) ===
     attack_this = False; adv_token = None; adv_arm = 0; prev_flag = False
     _trigger_step = args.trigger_step_override if args.trigger_step_override >= 0 else _mlp_emit
+    if not args.attack_enabled:
+        _trigger_step = -1  # Explicit no-emission disposition — never trigger
     _clean_candidate = np.asarray(action, dtype=np.float32)
     if IS_ATTACK and _trigger_step >= 0 and step >= _trigger_step and attack_count < ATTACK_FRAMES:
         # _clean_candidate already initialized above
@@ -270,6 +274,27 @@ for step in range(400):
                 go_adv = model.generate(input_ids=iids, pixel_values=adv_pv.to(device=device, dtype=model_dtype), max_new_tokens=action_dim, do_sample=False, return_dict_in_generate=True, output_scores=True)
             adv_tokens = extract_exact_new_tokens(go_adv.sequences, prompt_len=int(iids.shape[1]), expected_new_tokens=action_dim)
             prev_flag = attack_result.debug.get("temporal_prev_delta_used", False) if hasattr(attack_result, "debug") else False
+            # ── Capture runtime provenance from attack_result.debug ──
+            _adb = dict(attack_result.debug) if hasattr(attack_result, "debug") and attack_result.debug else {}
+            _prov = {
+                "requested_objective": _adb.get("requested_objective", args.attack_objective),
+                "resolved_objective": _adb.get("resolved_objective", _adb.get("requested_objective", "")),
+                "attack_method": _adb.get("attack_method", ""),
+                "resolved_adapter_class": _adb.get("resolved_adapter_class", ""),
+                "fallback_used": bool(_adb.get("fallback_used", False)),
+                "fallback_reason": _adb.get("fallback_reason", ""),
+                "strict_route": bool(_adb.get("strict_route", True)),
+                "allow_fallback": bool(_adb.get("allow_fallback", False)),
+                "actual_linf": float(_adb.get("pixel_budget_adv_inputs_linf", _adb.get("actual_linf_max", 0.0))),
+                "num_backwards": int(_adb.get("num_backwards", _adb.get("num_backwards_min", 0))),
+                "num_loss_forwards": int(_adb.get("num_loss_forwards", 0)),
+                "gradient_transform": str(_adb.get("gradient_transform", "none")),
+                "gradient_transform_seed": int(_adb.get("gradient_transform_seed", -1)),
+                "temporal_init": str(_adb.get("temporal_init", "none")),
+                "temporal_prev_delta_used": bool(prev_flag),
+                "delta_final_sha256": str(_adb.get("delta_final_sha256", _adb.get("delta_sha256", ""))),
+            }
+            _attack_provenance.append(_prov)
 
         grip = int(adv_tokens[-1])
         vocab_size = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of)
@@ -355,20 +380,40 @@ summary = {"condition": args.condition, "state_id": STATE_ID, "teacher_anchor": 
     "epsilon": EPSILON, "step_size": EPSILON * 0.075, "K": K,
     "pgd_steps_requested": PGD_STEPS}
 
-# Add attack provenance from attacker config + result debug (only when attack executed)
-if n_atk > 0 and attacker is not None:
-    cfg = getattr(attacker, 'config', {})
-    opt = cfg.get('attack_optimizer', {}) if isinstance(cfg, dict) else {}
-    summary["gradient_transform"] = opt.get("gradient_transform", "none")
-    summary["gradient_transform_seed"] = opt.get("gradient_transform_seed")
-    # Collect from attack debug if available (from any last attack_result)
-    # These are stored in prev_delta_flags — we don't have per-frame debug here.
-    # Use the attacker's own last-known state.
-    summary["attack_method"] = opt.get("method", "token_prefix_pgd")
-    summary["objective"] = opt.get("objective", args.attack_objective)
-    summary["epsilon_configured"] = opt.get("epsilon", EPSILON)
-    summary["step_size_configured"] = opt.get("step_size", EPSILON * 0.075)
-    summary["num_steps_configured"] = opt.get("num_steps", PGD_STEPS)
+# Add attack provenance from runtime debug (not config stubs)
+if n_atk > 0 and _attack_provenance:
+    _prov0 = _attack_provenance[0]
+    # Aggregate over all attack frames
+    _all_req_obj = set(p["requested_objective"] for p in _attack_provenance)
+    _all_res_obj = set(p["resolved_objective"] for p in _attack_provenance)
+    _all_methods = set(p["attack_method"] for p in _attack_provenance)
+    _all_adapters = set(p["resolved_adapter_class"] for p in _attack_provenance)
+    _all_fallback = any(p["fallback_used"] for p in _attack_provenance)
+    _all_fallback_reasons = [p["fallback_reason"] for p in _attack_provenance if p["fallback_reason"]]
+    _all_strict = all(p["strict_route"] for p in _attack_provenance)
+    _all_linf = [p["actual_linf"] for p in _attack_provenance if p["actual_linf"] > 0]
+    _all_nb = set(p["num_backwards"] for p in _attack_provenance)
+    _all_gt = set(p["gradient_transform"] for p in _attack_provenance)
+    _all_gt_seeds = set(p["gradient_transform_seed"] for p in _attack_provenance)
+    _all_tinit = set(p["temporal_init"] for p in _attack_provenance)
+    _all_prev_delta = any(p["temporal_prev_delta_used"] for p in _attack_provenance)
+    _all_delta_shas = set(p["delta_final_sha256"] for p in _attack_provenance if p["delta_final_sha256"])
+
+    summary["requested_objective_set"] = sorted(_all_req_obj)
+    summary["resolved_objective_set"] = sorted(_all_res_obj)
+    summary["attack_method_set"] = sorted(_all_methods)
+    summary["resolved_adapter_class_set"] = sorted(_all_adapters)
+    summary["fallback_used_any"] = _all_fallback
+    summary["fallback_reasons"] = _all_fallback_reasons
+    summary["strict_route"] = _all_strict
+    summary["actual_linf_max"] = round(max(_all_linf), 6) if _all_linf else 0.0
+    summary["num_backwards_set"] = sorted(_all_nb)
+    summary["num_loss_forwards"] = int(_prov0.get("num_loss_forwards", 0))
+    summary["gradient_transform"] = sorted(_all_gt)[0] if len(_all_gt) == 1 else sorted(_all_gt)
+    summary["gradient_transform_seed_set"] = sorted(_all_gt_seeds)
+    summary["temporal_init_set"] = sorted(_all_tinit)
+    summary["temporal_prev_delta_used_any"] = _all_prev_delta
+    summary["delta_final_sha256_set"] = sorted(_all_delta_shas) if _all_delta_shas else []
 
 _video_manifest = {}
 if args.save_video and _video_raw_frames:
