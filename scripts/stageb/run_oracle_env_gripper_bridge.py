@@ -18,7 +18,7 @@ MODEL_PATH = os.environ.get("OPENVLA_MODEL_PATH", "/mnt/sdc/dty_user/openvla_att
 K = 10  # attack window length (matched to VIS protocol)
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--condition", required=True, choices=["CLEAN","TRUE_T10","COMMAND_OPEN_ORACLE"])
+ap.add_argument("--condition", required=True, choices=["CLEAN","COMMAND_OPEN_ORACLE"])
 ap.add_argument("--state_id", type=int, required=True)
 ap.add_argument("--anchor", type=int, required=True, help="Teacher anchor (telemetry only)")
 ap.add_argument("--seed_id", type=int, required=True)
@@ -181,7 +181,8 @@ for step in range(400):
         oracle_forced = True
         attack_this = True
         attack_count += 1
-        raw_grip = 1.0  # OPEN token equivalent
+        # Compute arm diff: max absolute difference in first 6 DoF (arm) between clean and override
+        _arm_diff = float(np.max(np.abs(env_action_final[:6] - _clean_env[:6])))
         env_grip = float(env_action_final[-1])
 
     t_vla = time.perf_counter() - t0
@@ -192,8 +193,10 @@ for step in range(400):
         "qpos_sum": qpos_sum, "eef_x": eef_x, "eef_y": eef_y, "eef_z": eef_z,
         "obj_x": obj_x, "obj_y": obj_y, "obj_z": obj_z, "eef_obj_dist": eef_obj_dist,
         "attack_count": attack_count, "attack_this": attack_this,
-        "adv_token": 31744 if oracle_forced else "", "adv_arm": "",
+        "attack_channel": "environment_command_override" if oracle_forced else "none",
+        "adv_token": "", "adv_arm": "",
         "prev_delta_used": False, "model_ms": round(t_vla*1000, 2),
+        "oracle_arm_max_abs_diff": _arm_diff if oracle_forced else 0.0,
         "feat_valid": _feat_valid, "feat_error": _feat_error,
         "detector_state": _det_state, "corridor_p": _det_cp, "release_p": _det_rp,
         "pred_phase": _det_pp, "qpos_source": "q7+q8_sum",
@@ -218,6 +221,8 @@ env.close()
 atk_rows = [r for r in telemetry if r["attack_this"] == True]
 n_atk = len(atk_rows)
 n_env_open = sum(1 for r in atk_rows if r.get("oracle_env_override_active", False))
+arm_diffs = [r["oracle_arm_max_abs_diff"] for r in atk_rows if r.get("oracle_arm_max_abs_diff", 0) is not None]
+max_arm_diff = float(max(arm_diffs)) if arm_diffs else 0.0
 
 summary = {"condition": args.condition, "state_id": STATE_ID, "teacher_anchor": ANCHOR,
     "mlp_emit_step": _mlp_emit, "mlp_triggered": detector.emitted,
@@ -227,9 +232,13 @@ summary = {"condition": args.condition, "state_id": STATE_ID, "teacher_anchor": 
     "dataset_sha256": detector.dataset_sha256,
     "manual_anchor_used": False, "privileged_detector_input_used": False,
     "n_steps": len(telemetry), "attack_frames": n_atk,
-    "open_tokens": n_atk, "arm_ok_frames": n_atk, "env_open_frames": n_env_open,
-    "token_open_duty": 1.0 if n_atk > 0 else 0, "env_open_duty": round(n_env_open/n_atk, 3) if n_atk > 0 else 0,
-    "arm_duty": 1.0, "prev_delta_flags": [], "task_success": success,
+    "attack_channel": "environment_command_override",
+    "token_metric_applicable": False,
+    "env_open_frames": n_env_open,
+    "env_override_duty": round(n_env_open/n_atk, 3) if n_atk > 0 else 0,
+    "arm_max_abs_diff": max_arm_diff,
+    "arm_preserved": bool(max_arm_diff < 0.01),
+    "prev_delta_flags": [], "task_success": success,
     "oracle_protocol": "env_gripper_force_open_continuous",
     "requested_dtype": _dtype_name, "actual_dtype": _actual_dtype_str,
     "requested_attn": _attn_name, "actual_attn": _actual_attn,

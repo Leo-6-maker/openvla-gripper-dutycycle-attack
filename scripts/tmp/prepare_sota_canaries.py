@@ -87,10 +87,7 @@ CONDITIONS = {
 # ── Load source TRUE_T10 manifest for reference ──
 src_mf = EVID + '/TRUE_T10/formal_v1/manifest.jsonl'
 if not os.path.exists(src_mf):
-    # No single manifest — reconstruct from individual jobs
-    src_mf = EVID + '/RANDOM_TIME_INVALID_V1/original_manifest.jsonl'
-if not os.path.exists(src_mf):
-    print(f"ERROR: No source manifest found")
+    print(f"ERROR: TRUE_T10 source manifest not found: {src_mf}")
     sys.exit(1)
 
 src_jobs = [json.loads(l) for l in open(src_mf)]
@@ -168,10 +165,14 @@ for cond_name, spec in CONDITIONS.items():
     # Generate 9-fold canary
     canary = []
     folds_seen = set()
+    is_student = spec.get('timing') == 'student_trigger'
     for fold_int in range(1, 10):
         fold = f'{fold_int:02d}'
         for j in jobs:
             if j['fold'] == fold and fold not in folds_seen:
+                # Student-triggered: must be an emission key (trigger_step >= 0)
+                if is_student and j.get('trigger_step_override', -1) < 0:
+                    continue
                 canary.append(j)
                 folds_seen.add(fold)
                 break

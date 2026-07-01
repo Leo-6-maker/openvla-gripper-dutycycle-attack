@@ -61,6 +61,7 @@ def resolve_condition(job):
     raise SystemExit('MISSING_CONDITION in job %s' % job.get('job_key', '?'))
 
 t0_total = time.time()
+failed_jobs = []
 for idx, job in enumerate(jobs):
     os.makedirs(job['output_dir'], exist_ok=True)
     cond = resolve_condition(job)
@@ -114,5 +115,17 @@ for idx, job in enumerate(jobs):
         print('{} COMPLETE ({:.0f}s)'.format(label, elapsed))
     else:
         print('{} FAILED exit={} ({:.0f}s)'.format(label, proc.returncode, elapsed))
+        failed_jobs.append({"job_key": job.get('job_key', '?'), "exit_code": proc.returncode,
+                            "output_dir": job['output_dir'], "elapsed_s": int(elapsed)})
 
-print('GPU {} DONE: {} jobs in {:.0f}s'.format(GPU, len(jobs), time.time() - t0_total))
+# Write failure ledger
+if failed_jobs:
+    with open(os.path.join(os.path.dirname(MANIFEST) if MANIFEST else '/tmp',
+              'failure_ledger_gpu{}.json'.format(GPU)), 'w') as f:
+        json.dump({"gpu": GPU, "manifest": MANIFEST, "n_total": len(jobs),
+                   "n_failed": len(failed_jobs), "failed_jobs": failed_jobs}, f, indent=2)
+
+print('GPU {} DONE: {} jobs in {:.0f}s, {} FAILED'.format(
+    GPU, len(jobs), time.time() - t0_total, len(failed_jobs)))
+if failed_jobs:
+    sys.exit(1)

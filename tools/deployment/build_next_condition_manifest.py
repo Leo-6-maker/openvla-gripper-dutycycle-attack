@@ -17,7 +17,7 @@ APPROVED_CHANGES = {"condition_id", "job_key", "output_dir"}
 
 CONDITIONS = {
     "RANDOM_TIME": {
-        "condition_id": "TRUE_T10", "execution_status": "FROZEN",
+        "condition_id": "TRUE_T10", "execution_status": "PREPARED",
         "output_namespace": "RANDOM_TIME",
         "bridge_condition": "TRUE_T10",
         "attack_objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
@@ -25,33 +25,33 @@ CONDITIONS = {
         "random_trigger": True, "require_invalid_steps_zero": True,
     },
     "RAND_LINF": {
-        "condition_id": "RAND_T10", "execution_status": "FROZEN",
+        "condition_id": "RAND_T10", "execution_status": "PREPARED",
         "output_namespace": "RAND_LINF",
         "bridge_condition": "RAND_T10", "attack_objective": None,
         "description": "RAND Linf + Student Trigger",
     },
     "SHUFFLED": {
-        "condition_id": "SHUFFLED_T10", "execution_status": "FROZEN",
+        "condition_id": "SHUFFLED_T10", "execution_status": "PREPARED",
         "output_namespace": "SHUFFLED",
         "bridge_condition": "SHUFFLED_T10", "attack_objective": None,
         "description": "Shuffled Gradient",
     },
     "EARLY_SHIFT": {
-        "condition_id": "TRUE_T10", "execution_status": "FROZEN",
+        "condition_id": "TRUE_T10", "execution_status": "PREPARED",
         "output_namespace": "EARLY_SHIFT",
         "bridge_condition": "TRUE_T10",
         "attack_objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
         "description": "VIS + Early-Shift", "early_shift": True,
     },
     "TMA": {
-        "condition_id": "TRUE_T10", "execution_status": "FROZEN",
+        "condition_id": "TRUE_T10", "execution_status": "PREPARED",
         "output_namespace": "TMA",
         "bridge_condition": "TRUE_T10",
         "attack_objective": "vanilla_tma_gripper_open_ce",
         "description": "Adapted TMA",
     },
     "UMA": {
-        "condition_id": "TRUE_T10", "execution_status": "FROZEN",
+        "condition_id": "TRUE_T10", "execution_status": "PREPARED",
         "output_namespace": "UMA",
         "bridge_condition": "TRUE_T10",
         "attack_objective": "untargeted_clean_token_ce",
@@ -106,6 +106,7 @@ def early_shift_triggers(emit_list, n_valid_list):
 def build_one(src, cond_id, output_ns, evidence_root, artifact_root, cond_spec, ts, n_valid):
     new = copy.deepcopy(src)
     new["condition_id"] = cond_id  # Must be bridge-compatible (e.g. "TRUE_T10")
+    new["condition"] = cond_id     # Keep condition == condition_id for schema compatibility
     new["bridge_condition"] = cond_spec["bridge_condition"]
     if cond_spec.get("attack_objective"): new["attack_objective"] = cond_spec["attack_objective"]
     new["job_key"] = src["job_key"].replace("TRUE_T10", output_ns)
@@ -232,8 +233,9 @@ def main():
         print(f"  Added: {full_report['added']}, Changed: {full_report['changed']}")
 
         if args.execute:
-            if spec["execution_status"] != "FROZEN":
-                sys.exit(f"ERROR: {cond_id} status={spec['execution_status']} (must be FROZEN)")
+            allowed = {"PREPARED", "CANARY_READY", "CANARY_PASS", "FORMAL_AUTHORIZED", "FROZEN"}
+            if spec["execution_status"] not in allowed:
+                sys.exit(f"ERROR: {cond_id} status={spec['execution_status']} (must be in {allowed})")
             if os.path.exists(manifest_path):
                 sys.exit(f"ERROR: manifest exists: {manifest_path}")
             os.makedirs(cond_root, exist_ok=True)

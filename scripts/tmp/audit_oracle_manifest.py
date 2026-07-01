@@ -1,5 +1,5 @@
 """Audit COMMAND_OPEN_ORACLE manifest against TRUE_T10 emission keys."""
-import os, json, sys
+import os, json, sys, time
 
 TRUE = '/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/TRUE_T10/formal_v1'
 ORACLE_MF = '/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/COMMAND_OPEN_ORACLE_T10/launch'
@@ -28,14 +28,19 @@ for fold in sorted(os.listdir(TRUE)):
                     else:
                         tt_noemit.add(key)
 
-# Collect oracle manifest keys
+# Collect oracle manifest keys (with duplicate detection)
 oracle_keys = {}
 oracle_emit_steps = {}
+oracle_raw_lines = 0
+duplicates = []
 for mf in sorted(os.listdir(ORACLE_MF)):
     if not mf.endswith('.jsonl'): continue
     for line in open(os.path.join(ORACLE_MF, mf)):
+        oracle_raw_lines += 1
         j = json.loads(line.strip())
         k = (j['fold'], j['state_id'], j['detector_seed'], j['perturbation_seed'])
+        if k in oracle_keys:
+            duplicates.append(str(k))
         oracle_keys[k] = j
         oracle_emit_steps[k] = j.get('trigger_step_override', -1)
 
@@ -87,15 +92,33 @@ for k in noemit_21[:5]:
     print(f'  {k}')
 print(f'  ... ({len(noemit_21)} total)')
 
+# Compute manifest SHA
+import hashlib
+manifest_sha = hashlib.sha256()
+for mf in sorted(os.listdir(ORACLE_MF)):
+    if not mf.endswith('.jsonl'): continue
+    with open(os.path.join(ORACLE_MF, mf), 'rb') as f:
+        manifest_sha.update(f.read())
+
 # Write output
 OUT = '/mnt/sdc/dty_user/table1_sota_execution_v1/audits'
 os.makedirs(OUT, exist_ok=True)
+
+verdict_pass = (len(set(oracle_keys.keys()) & tt_emit) == 141
+                and len(set(oracle_keys.keys()) - tt_emit) == 0
+                and mismatches == 0
+                and len(duplicates) == 0
+                and oracle_raw_lines == 141)
+
 with open(os.path.join(OUT, 'ORACLE_MANIFEST_AUDIT.json'), 'w') as f:
     json.dump({
-        'audit_timestamp': '2026-07-01T08:57:00Z',
+        'audit_timestamp': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
         'manifest_path': ORACLE_MF,
+        'manifest_sha256': manifest_sha.hexdigest(),
         'true_t10_path': TRUE,
-        'total_manifest_jobs': len(oracle_keys),
+        'raw_line_count': oracle_raw_lines,
+        'unique_key_count': len(oracle_keys),
+        'duplicate_keys': duplicates,
         'emission_keys_match': len(set(oracle_keys.keys()) & tt_emit),
         'extra_in_oracle': len(set(oracle_keys.keys()) - tt_emit),
         'missing_from_oracle': len(tt_emit - set(oracle_keys.keys())),
@@ -104,8 +127,11 @@ with open(os.path.join(OUT, 'ORACLE_MANIFEST_AUDIT.json'), 'w') as f:
         'fold_distribution': dict(sorted(fold_dist.items())),
         'no_emission_keys': [f'{k[0]}_{k[1]}_{k[2]}_{k[3]}' for k in sorted(tt_noemit)],
         'condition_labels': [list(c) for c in conditions],
-        'verdict': 'PASS' if len(set(oracle_keys.keys()) & tt_emit) == 141 and len(set(oracle_keys.keys()) - tt_emit) == 0 and mismatches == 0 else 'FAIL'
+        'verdict': 'PASS' if verdict_pass else 'FAIL'
     }, f, indent=2)
 
 print(f'\nAudit saved to {OUT}/ORACLE_MANIFEST_AUDIT.json')
-print(f'VERDICT: {"PASS" if len(set(oracle_keys.keys()) & tt_emit) == 141 and len(set(oracle_keys.keys()) - tt_emit) == 0 and mismatches == 0 else "FAIL"}')
+print(f'VERDICT: {"PASS" if verdict_pass else "FAIL"}')
+if not verdict_pass:
+    print('Audit FAILED — exiting with code 1')
+    sys.exit(1)
