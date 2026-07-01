@@ -47,7 +47,18 @@ PYTHON = '/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python
 t0_total = time.time()
 failed_jobs = []
 for idx, job in enumerate(jobs):
-    os.makedirs(job['output_dir'], exist_ok=True)
+    out_dir = job['output_dir']
+    ep_path = os.path.join(out_dir, 'episode_summary.json')
+    # Overwrite protection
+    if os.path.exists(ep_path):
+        print('[SKIP] {} already has episode_summary.json'.format(job.get('job_key', '?')))
+        continue
+    if os.path.exists(out_dir) and os.listdir(out_dir):
+        print('[FAIL] {} has partial output — refusing to overwrite'.format(job.get('job_key', '?')))
+        failed_jobs.append({"job_key": job.get('job_key', '?'), "exit_code": -1,
+                            "output_dir": out_dir, "elapsed_s": 0, "reason": "partial_output_exists"})
+        continue
+    os.makedirs(out_dir, exist_ok=True)
     cond = job.get('condition', 'COMMAND_OPEN_ORACLE')
     fold = str(job['fold'])
     state = int(job['state_id'])

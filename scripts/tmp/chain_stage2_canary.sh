@@ -47,11 +47,44 @@ for label in tma_student tma_random uma shuffled; do
 done
 log "Canary results: $TOTAL_DONE/36 COMPLETE, $TOTAL_FAILED FAILED"
 
-# Hard gate
+# Hard gate — process level
 if [ -n "$FAILED_CONDS" ] || [ "$TOTAL_FAILED" -gt 0 ] || [ "$TOTAL_DONE" -ne 36 ]; then
     log "FATAL: Canary gate FAILED — not advancing to Stage 3"
     log "  Failed conditions:$FAILED_CONDS"
     log "  Done=$TOTAL_DONE/36 Failed=$TOTAL_FAILED"
+    exit 1
+fi
+
+# Scientific validator — per condition
+log "Running scientific validator on canary results..."
+VALIDATOR=$EXEC/commands/validate_sota_condition.py
+CANARY_PASS_DIR=$EXEC/canary_pass
+mkdir -p $CANARY_PASS_DIR
+
+declare -A COND_MAP=(
+    ["tma_student"]="TMA_STUDENT:TMA:0"
+    ["tma_random"]="TMA_RANDOM_TIME:TMA_RANDOM_TIME:1"
+    ["uma"]="UMA_STUDENT:UMA:2"
+    ["shuffled"]="SHUFFLED_STUDENT:SHUFFLED:3"
+)
+VALIDATION_FAILED=0
+for label in tma_student tma_random uma shuffled; do
+    IFS=':' read -r cond_name cond_ns gpu <<< "${COND_MAP[$label]}"
+    MF=$CANARY/$cond_ns/manifest_canary.jsonl
+    PASS_FILE=$CANARY_PASS_DIR/${cond_name}_CANARY_PASS.json
+    log "  Validating $cond_name (manifest=$MF)..."
+    if python3 "$VALIDATOR" --condition "$cond_name" --manifest "$MF" \
+        --artifact_root /mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1 \
+        --expected 9 --mode canary --output "$PASS_FILE"; then
+        log "  $cond_name: CANARY_PASS"
+    else
+        log "  $cond_name: CANARY_FAILED"
+        VALIDATION_FAILED=1
+    fi
+done
+
+if [ "$VALIDATION_FAILED" -ne 0 ]; then
+    log "FATAL: Scientific canary validation FAILED"
     exit 1
 fi
 

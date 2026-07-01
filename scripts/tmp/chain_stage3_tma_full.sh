@@ -8,6 +8,21 @@ SOTA_MF=$EXEC/manifests; NEXT_SCRIPT=$EXEC/commands/chain_stage4_uma_shuffled.sh
 
 log() { echo "$(date -Iseconds) [STAGE3] $*" | tee -a $LOGDIR/chain.log; }
 
+# ── Authorization gate: check CANARY_PASS files exist ──
+CANARY_PASS_DIR=$EXEC/canary_pass
+for pass_file in "$CANARY_PASS_DIR/TMA_STUDENT_CANARY_PASS.json" "$CANARY_PASS_DIR/TMA_RANDOM_TIME_CANARY_PASS.json"; do
+    if [ ! -f "$pass_file" ]; then
+        log "FATAL: Missing canary authorization: $pass_file"
+        exit 1
+    fi
+    gate=$(python3 -c "import json; print(json.load(open('$pass_file')).get('gate_pass', False))" 2>/dev/null || echo "False")
+    if [ "$gate" != "True" ]; then
+        log "FATAL: Canary gate not passed: $pass_file"
+        exit 1
+    fi
+    log "Authorization: $(basename $pass_file) PASS"
+done
+
 # ── TMA Student: 8 GPUs, 162 jobs ──
 log "=== TMA STUDENT (8 GPUs, 162 jobs) ==="
 for gpu in 0 1 2 3 4 5 6 7; do

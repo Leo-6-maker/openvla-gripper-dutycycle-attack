@@ -58,45 +58,50 @@ for fold in sorted(os.listdir(ORACLE)):
                 d = json.load(open(ep))
 
                 tel = os.path.join(dp, pd, "step_telemetry.csv")
-                atk_frames = 0; env_open_frames = 0
-                arm_diffs = []
-                override_active = False
-                trigger_steps_seen = set()
+                atk_rows = []
                 if os.path.exists(tel):
                     for row in csv.DictReader(open(tel)):
                         if row.get("attack_this") == "True":
-                            atk_frames += 1
-                            if float(row.get("env_gripper", 0)) < 0:
-                                env_open_frames += 1
-                            if row.get("attack_channel", "") == "environment_command_override":
-                                override_active = True
-                            ad = row.get("oracle_arm_max_abs_diff")
-                            if ad is not None and ad != "":
-                                arm_diffs.append(float(ad))
-                            ts = row.get("step")
-                            if ts is not None:
-                                trigger_steps_seen.add(int(ts))
+                            atk_rows.append(row)
 
-                # Per-episode validation
+                # ── Per-episode per-row validation ──
                 errors = []
-                if atk_frames != 10:
-                    errors.append(f"attack_frames={atk_frames} (expected 10)")
-                if env_open_frames != 10:
-                    errors.append(f"env_open_frames={env_open_frames} (expected 10)")
-                if not override_active:
-                    errors.append("attack_channel != environment_command_override on attack frames")
+                if len(atk_rows) != 10:
+                    errors.append(f"attack_rows={len(atk_rows)} (expected 10)")
+
+                # Per-row checks on all 10 attack rows
+                all_channel_ok = all(r.get("attack_channel", "") == "environment_command_override" for r in atk_rows)
+                all_override_active = all(r.get("oracle_env_override_active") in ("True", "true", True) for r in atk_rows)
+                all_grip_minus_one = all(float(r.get("oracle_env_action_after_override", 0)) <= -0.99 for r in atk_rows)
+                arm_diffs = [float(r["oracle_arm_max_abs_diff"]) for r in atk_rows if r.get("oracle_arm_max_abs_diff") not in (None, "")]
+                attack_steps = sorted(int(r["step"]) for r in atk_rows)
+
+                if not all_channel_ok:
+                    errors.append("not all rows have attack_channel==environment_command_override")
+                if not all_override_active:
+                    errors.append("not all rows have oracle_env_override_active==True")
+                if not all_grip_minus_one:
+                    errors.append("not all rows have oracle_env_action_after_override==-1.0")
+                if len(arm_diffs) != 10:
+                    errors.append(f"arm_diff values={len(arm_diffs)} (expected 10)")
+                max_ad = max(arm_diffs) if arm_diffs else 0.0
+                if max_ad > 1e-7:
+                    errors.append(f"arm_max_abs_diff={max_ad:.2e} > 1e-7")
+
+                # Attack steps must be contiguous [emit, emit+1, ..., emit+9]
+                tt_emit = tt_emit_steps.get(k, -1)
+                oracle_trigger = attack_steps[0] if attack_steps else -1
+                expected_steps = list(range(oracle_trigger, oracle_trigger + 10)) if oracle_trigger >= 0 else []
+                if attack_steps and attack_steps != expected_steps:
+                    errors.append(f"attack steps not contiguous: {attack_steps}, expected {expected_steps}")
+                if tt_emit >= 0 and oracle_trigger >= 0 and tt_emit != oracle_trigger:
+                    errors.append(f"trigger_step mismatch: oracle={oracle_trigger} tt_emit={tt_emit}")
+
+                # Summary-level checks
                 if d.get("token_metric_applicable") is not False:
                     errors.append("token_metric_applicable != false")
                 if d.get("condition") != "COMMAND_OPEN_ORACLE":
                     errors.append(f"condition={d.get('condition')} != COMMAND_OPEN_ORACLE")
-                max_ad = max(arm_diffs) if arm_diffs else 0.0
-                if max_ad > 1e-7:
-                    errors.append(f"arm_max_abs_diff={max_ad:.2e} > 1e-7")
-                # Verify trigger_step matches TRUE_T10 emit
-                tt_emit = tt_emit_steps.get(k, -1)
-                oracle_trigger = min(trigger_steps_seen) if trigger_steps_seen else -1
-                if tt_emit >= 0 and oracle_trigger >= 0 and tt_emit != oracle_trigger:
-                    errors.append(f"trigger_step mismatch: oracle={oracle_trigger} tt_emit={tt_emit}")
 
                 if errors:
                     validation_errors.append({"key": str(k), "errors": errors})
@@ -104,8 +109,8 @@ for fold in sorted(os.listdir(ORACLE)):
                 oracle_data[k] = {
                     "success": d.get("task_success", False),
                     "n_steps": d.get("n_steps", 0),
-                    "attack_frames": atk_frames,
-                    "env_open_frames": env_open_frames,
+                    "attack_frames": len(atk_rows),
+                    "env_open_frames": sum(1 for r in atk_rows if float(r.get("env_gripper", 0)) < 0),
                     "arm_max_abs_diff": max_ad,
                     "trigger_step": oracle_trigger,
                     "condition": d.get("condition", ""),

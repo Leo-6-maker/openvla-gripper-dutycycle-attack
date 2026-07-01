@@ -348,7 +348,27 @@ summary = {"condition": args.condition, "state_id": STATE_ID, "teacher_anchor": 
     "token_open_duty": round(n_open_token/n_atk,3) if n_atk>0 else 0,
     "arm_duty": round(n_arm_ok/n_atk,3) if n_atk>0 else 0,
     "env_open_duty": round(n_env_open/n_atk,3) if n_atk>0 else 0,
-    "prev_delta_flags": prev_delta_flags, "task_success": success}
+    "prev_delta_flags": prev_delta_flags, "task_success": success,
+    "requested_objective": args.attack_objective,
+    "requested_trigger_step": args.trigger_step_override if args.trigger_step_override >= 0 else _mlp_emit,
+    "timing_policy": "student_trigger" if args.trigger_step_override < 0 else "manifest_override",
+    "epsilon": EPSILON, "step_size": EPSILON * 0.075, "K": K,
+    "pgd_steps_requested": PGD_STEPS}
+
+# Add attack provenance from attacker config + result debug (only when attack executed)
+if n_atk > 0 and attacker is not None:
+    cfg = getattr(attacker, 'config', {})
+    opt = cfg.get('attack_optimizer', {}) if isinstance(cfg, dict) else {}
+    summary["gradient_transform"] = opt.get("gradient_transform", "none")
+    summary["gradient_transform_seed"] = opt.get("gradient_transform_seed")
+    # Collect from attack debug if available (from any last attack_result)
+    # These are stored in prev_delta_flags — we don't have per-frame debug here.
+    # Use the attacker's own last-known state.
+    summary["attack_method"] = opt.get("method", "token_prefix_pgd")
+    summary["objective"] = opt.get("objective", args.attack_objective)
+    summary["epsilon_configured"] = opt.get("epsilon", EPSILON)
+    summary["step_size_configured"] = opt.get("step_size", EPSILON * 0.075)
+    summary["num_steps_configured"] = opt.get("num_steps", PGD_STEPS)
 
 _video_manifest = {}
 if args.save_video and _video_raw_frames:
