@@ -17,6 +17,8 @@ def test_25d_contract():
 
 def test_forbidden_in_list():
     """Forbidden features in feature list must be caught."""
+    repo = Path(__file__).resolve().parents[2]
+    contract = extract(repo)
     bad_list = list(contract['features']['names'])
     bad_list.append('task_success')
     result = validate_feature_list(bad_list)
