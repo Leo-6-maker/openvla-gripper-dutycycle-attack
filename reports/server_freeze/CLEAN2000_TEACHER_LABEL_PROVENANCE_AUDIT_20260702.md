@@ -2,24 +2,26 @@
 
 Status: CENSUS_READY_TIMING_TRAINING_HOLD.
 
-CLEAN2000 cohort decomposition:
+CLEAN2000 cohort decomposition remains accepted:
 
-```json
-{
-  "outcome": {"CLEAN_FAILURE": 608, "CLEAN_SUCCESS": 1392},
-  "mechanism": {"MECHANISM_ELIGIBLE": 1350, "MECHANISM_INELIGIBLE": 650},
-  "cohort": {"ELIGIBLE_CLEAN_FAILURE": 307, "MECHANISM_INELIGIBLE_ABSTENTION": 650, "PRIMARY_SUCCESS_ELIGIBLE": 1043}
-}
+```text
+Outcome: CLEAN_SUCCESS=1392, CLEAN_FAILURE=608
+Mechanism: MECHANISM_ELIGIBLE=1350, MECHANISM_INELIGIBLE=650
+Cohort: PRIMARY_SUCCESS_ELIGIBLE=1043, ELIGIBLE_CLEAN_FAILURE=307, MECHANISM_INELIGIBLE_ABSTENTION=650
 ```
 
 Required identity holds: 1043 + 307 + 650 = 2000.
 
-`NON_PRIMARY_SAFETY_TOTAL=957` is a derived total only; it combines 307 eligible clean failures and 650 mechanism-ineligible abstentions and must not be treated as one label semantics class.
+Revision 5 source semantics:
 
-Official LIBERO registry reconciliation: 40/40 exact BDDL matches.
+- source_record_found: 2000
+- source_positive_anchor_valid: 803
+- source_no_event: 1197
+- source_explicit_abstention: 650
+- source_clean_failure_no_event: 276
+- shared_fields_match: 0
+- uncomparable_due_to_missing_fields: 2000
 
-Artifacts:
+`canonical/source exact matches = 0/2000` is not used as a scientific mismatch claim because source confidence and event-id fields are missing. The scientifically relevant count is valid positive source timing coverage, currently `803/2000` in the extracted source table.
 
-- `tables/server_freeze/clean2000_episode_census.csv`
-- `tables/server_freeze/clean2000_teacher_source_availability.csv`
-- `tables/server_freeze/clean2000_task_registry_reconciliation.csv`
+Official LIBERO registry reconciliation remains PASS: 40/40 exact BDDL matches.

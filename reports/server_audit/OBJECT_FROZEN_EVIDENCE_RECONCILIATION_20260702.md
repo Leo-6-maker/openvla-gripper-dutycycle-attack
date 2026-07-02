@@ -2,7 +2,13 @@
 
 Object results are preserved as legacy empirical evidence under a partially recovered protocol.
 
-Attack execution evidence has been recomputed from the frozen summaries plus telemetry indicators. The raw `attack_applied` field is not trusted until its writer semantics are sealed.
+Revision 5 corrections:
+
+- Raw `attack_applied` remains untrusted.
+- Telemetry/key presence is not independent attack-execution evidence.
+- Multi-source attack confirmation is HOLD.
+- RAND_T10 final classification is `RAND_FIELD_CONFLICT_BOUNDED`.
+- Object protocol source attribution now separates `value_source_*` from `binding_source_*`.
 
 See:
 
@@ -11,3 +17,4 @@ See:
 - `reports/server_freeze/OBJECT_ACTUAL_PROTOCOL_AUDIT_20260702.md`
 - `tables/server_freeze/object_frozen_master_ledger.csv`
 - `tables/server_freeze/object_condition_summary.csv`
+- `tables/server_freeze/object_protocol_provenance_ledger.csv`

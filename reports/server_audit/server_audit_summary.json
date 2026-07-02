@@ -1,13 +1,22 @@
 {
-  "audit_freeze_status": "EXISTING_EVIDENCE_FREEZE_READY_FOR_REVIEW",
+  "attack_execution_multi_source_confirmation": "HOLD",
+  "audit_freeze_status": "HOLD_AUDIT_INCOMPLETE",
   "backup_target": "/data/liuyu/openvla_gripper_freeze/20260702_codex_verified_v3",
   "backup_verified": true,
   "clean2000": "AUTHORITATIVE_CENSUS_TIMING_TRAINING_HOLD",
+  "clean2000_teacher_source_semantics": "HOLD",
   "experiment_authorization_status": "NOT_AUTHORIZED",
   "no_gpu_job_launched": true,
   "no_new_experiment_launched": true,
   "no_source_scientific_artifact_modified": true,
   "object_protocol": "PARTIAL_BOUNDED",
+  "object_protocol_source_attribution": "HOLD",
+  "rand_t10_classification": "RAND_FIELD_CONFLICT_BOUNDED",
+  "remaining_p0": [
+    "ATTACK_EXECUTION_MULTI_SOURCE_CONFIRMATION_HOLD",
+    "OBJECT_PROTOCOL_SOURCE_ATTRIBUTION_HOLD",
+    "CLEAN2000_TEACHER_SOURCE_SEMANTICS_HOLD"
+  ],
   "scientific_claim_status": "LEGACY_PROTOCOL_LIMITED",
   "server_identity": {
     "host": "pm-364c0001",

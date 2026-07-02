@@ -1,5 +1,6 @@
 {
-  "audit_freeze_status": "EXISTING_EVIDENCE_FREEZE_READY_FOR_REVIEW",
+  "attack_execution_multi_source_confirmation": "HOLD",
+  "audit_freeze_status": "HOLD_AUDIT_INCOMPLETE",
   "backup": {
     "clean2000": {
       "destination_file_count": 16,
@@ -40,13 +41,20 @@
     "MECHANISM_INELIGIBLE_ABSTENTION": 650,
     "PRIMARY_SUCCESS_ELIGIBLE": 1043
   },
+  "clean2000_teacher_source_semantics": "HOLD",
   "experiment_authorization_status": "NOT_AUTHORIZED",
   "no_gpu_job_launched": true,
   "no_new_experiment_launched": true,
   "no_source_scientific_artifact_modified": true,
   "object_final_classification": "FROZEN_EMPIRICAL_RESULTS_PROTOCOL_PARTIAL_BOUNDED",
+  "object_protocol_source_attribution": "HOLD",
   "official_libero_registry_match": "PASS",
-  "rand_t10_classification": "RAND_PERTURBATION_EXECUTION_CONFIRMED_PROTOCOL_PARTIAL",
+  "rand_t10_classification": "RAND_FIELD_CONFLICT_BOUNDED",
   "raw_attack_applied_trusted": false,
+  "remaining_p0": [
+    "ATTACK_EXECUTION_MULTI_SOURCE_CONFIRMATION_HOLD",
+    "OBJECT_PROTOCOL_SOURCE_ATTRIBUTION_HOLD",
+    "CLEAN2000_TEACHER_SOURCE_SEMANTICS_HOLD"
+  ],
   "scientific_claim_status": "LEGACY_PROTOCOL_LIMITED"
 }

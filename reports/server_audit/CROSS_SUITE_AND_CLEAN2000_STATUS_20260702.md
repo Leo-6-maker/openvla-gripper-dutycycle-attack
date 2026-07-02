@@ -2,9 +2,9 @@
 
 CLEAN300 is archived and superseded. DTY CLEAN2000 is the authoritative cross-suite census corpus.
 
-CLEAN2000 status:
+Accepted:
 
-- total: 2000
+- CLEAN2000 total: 2000
 - CLEAN_SUCCESS: 1392
 - CLEAN_FAILURE: 608
 - MECHANISM_ELIGIBLE: 1350
@@ -13,5 +13,12 @@ CLEAN2000 status:
 - ELIGIBLE_CLEAN_FAILURE: 307
 - MECHANISM_INELIGIBLE_ABSTENTION: 650
 - official LIBERO registry match: PASS (40/40 exact)
+- backup: PASS
 
-Training remains HOLD. No pooled, LOSO, threshold tuning, or timing detector training was authorized or started.
+Still HOLD:
+
+- canonical timing usability: FAIL / NOT AUTHORIZED
+- source positive timing coverage: 803/2000 from extracted source table
+- builder lineage: BUILDER_LINEAGE_UNRECOVERABLE_AFTER_TARGETED_SEARCH
+
+No pooled, LOSO, threshold tuning, or timing detector training was authorized or started.
