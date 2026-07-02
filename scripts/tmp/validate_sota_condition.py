@@ -257,7 +257,9 @@ def validate_random_window(ep_data, spec, job):
     summary = ep_data.get("summary", {})
     trigger = job.get("trigger_step_override", -1)
     n_steps = summary.get("n_steps", 0)
-    # V3 schedule already frozen & validated; only check window bounds
+    # V3 schedule frozen & validated; require non-negative, check window bounds
+    if trigger < 0:
+        errors.append(f"V3 random trigger={trigger} < 0")
     if trigger + K > n_steps:
         errors.append(f"window [{trigger}, {trigger+K}) exceeds n_steps={n_steps}")
     tp = job.get("trigger_policy", summary.get("timing_policy", ""))
