@@ -1,27 +1,25 @@
 # CLEAN2000 Teacher Label Provenance Audit 2026-07-02
 
-Source: authoritative `CLEAN2000_CANONICAL_V1` files on dty-server.
+Status: CENSUS_READY_TIMING_TRAINING_HOLD.
 
-## File-Level Counts
+CLEAN2000 cohort decomposition:
 
-- CLEAN2000 index rows: 2000
-- teacher label rows: 2000
-- primary rows: 1043
-- safety rows: 957
-- suite counts: `{'libero_object': 500, 'libero_10': 500, 'libero_spatial': 500, 'libero_goal': 500}`
+```json
+{
+  "outcome": {"CLEAN_FAILURE": 608, "CLEAN_SUCCESS": 1392},
+  "mechanism": {"MECHANISM_ELIGIBLE": 1350, "MECHANISM_INELIGIBLE": 650},
+  "cohort": {"ELIGIBLE_CLEAN_FAILURE": 307, "MECHANISM_INELIGIBLE_ABSTENTION": 650, "PRIMARY_SUCCESS_ELIGIBLE": 1043}
+}
+```
 
-## Timing Fields
+Required identity holds: 1043 + 307 + 650 = 2000.
 
-- anchor_zero_count: 1350
-- confidence_0_5_count: 1350
-- window_0_10_count: 1350
-- event_id_nonempty_count: 0
-- placeholder_default_suspected_count: 1350
+`NON_PRIMARY_SAFETY_TOTAL=957` is a derived total only; it combines 307 eligible clean failures and 650 mechanism-ineligible abstentions and must not be treated as one label semantics class.
 
-## Finding
+Official LIBERO registry reconciliation: 40/40 exact BDDL matches.
 
-`CONSTANT_DEFAULT_LIKE_TIMING_FIELDS`
+Artifacts:
 
-The teacher label file has per-episode records, but the positive timing fields are constant/default-like for the 1350 positive labels: anchor 0, confidence 0.5, window [0,10], and no non-empty teacher event id recovered by this parser.
-
-`TIMING_DETECTOR_TRAINING_READY = NO`
+- `tables/server_freeze/clean2000_episode_census.csv`
+- `tables/server_freeze/clean2000_teacher_source_availability.csv`
+- `tables/server_freeze/clean2000_task_registry_reconciliation.csv`

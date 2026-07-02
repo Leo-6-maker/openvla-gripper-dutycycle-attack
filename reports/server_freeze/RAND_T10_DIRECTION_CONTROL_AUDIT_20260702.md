@@ -1,25 +1,26 @@
 # RAND_T10 Direction Control Audit 2026-07-02
 
-Source: server episode_summary.json files under the authoritative Object evidence root.
+Final classification: RAND_PERTURBATION_EXECUTION_CONFIRMED_PROTOCOL_PARTIAL.
 
-## Accounting
+RAND_T10 row accounting from frozen Object artifacts:
 
-- RAND_total: 162
-- RAND_emitted: 141
-- RAND_no_emission: 21
-- RAND_attack_applied_field_true: 0
-- RAND_attack_frames_positive: 141
-- RAND_success_total: 162
-- RAND_success_with_attack_frames_positive: 141
-- RAND_success_without_attack_frames_positive: 21
-- RAND_failure_total: 0
+- total: 162
+- emitted: 141
+- no-emission: 21
+- raw `attack_applied=True`: 0
+- `attack_frames>0`: 141
+- multi-source attack confirmed: 141
+- task success: 162
+- task failure: 0
 
-## Finding
+Recovered protocol evidence:
 
-The raw server summaries contain a field-level ambiguity:
+- Existing breadth manifest entries bind `condition=RAND_T10`, `method=RAND`, `objective=random_linf_control`, `timing=student`, epsilon `0.023529411764705882` (6/255), `pgd_steps=20`, `K=10`, and `target_token=31744`.
+- Frozen formal summaries and telemetry support attack execution for the 141 emitted rows and no attack execution for the 21 no-emission rows.
+- The raw `attack_applied` field conflicts with attack-frame/telemetry evidence and is not used as the acceptance criterion.
 
-- `attack_applied` is `False` for all 162 RAND_T10 summaries.
-- `attack_frames=10` is present for 141 RAND_T10 summaries.
-- `mlp_triggered=True` is present for the same 141-row emitted set.
+Boundary:
 
-Therefore this audit does **not** mark RAND_T10 protocol semantics sealed. The accounting supports 162/162 task success and 141 rows with positive attack-frame telemetry, but the implementation definition still requires config/manifest/launch evidence before calling it a sealed random-direction control.
+RAND_T10 is preserved as a historical perturbation control with confirmed emitted-row perturbation execution, but it is not upgraded to a fully sealed direction/selectivity control because the formal Object protocol binding remains partial and the raw writer semantics are not sealed.
+
+Artifact: `tables/server_freeze/rand_t10_episode_accounting.csv` and `tables/server_freeze/object_frozen_master_ledger.csv`.

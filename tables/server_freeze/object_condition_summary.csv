@@ -1,7 +1,7 @@
-condition,total_leaves,attack_applied_count,mlp_triggered_count,attack_and_mlp,attack_not_mlp,no_attack_mlp,no_attack_no_mlp,success_count,failure_count,claimed_success,claimed_total,claimed_fr,match
-CLEAN,162,0,141,0,0,141,21,162,0,162,162,0.0%,PASS
-RAND_T10,162,141,141,141,0,0,21,162,0,162,162,0.0%,PASS
-RANDOM_TIME_V3,162,162,126,126,36,0,0,119,43,119,162,26.5%,PASS
-EARLY_SHIFT_T10,141,141,99,99,42,0,0,98,43,98,141,30.5%,PASS
-TRUE_T10,162,141,141,141,0,0,21,21,141,21,162,87.0% ITT / 100.0% emitted,PASS
-COMMAND_OPEN_ORACLE_T10,141,141,141,141,0,0,0,0,141,0,141,100.0%,PASS
+condition,planned,artifact_complete,emitted,no_emission,attack_applied_raw_true,attack_frames_positive,attack_execution_confirmed,attack_execution_supported_only,attack_execution_conflict,attack_execution_unknown,success,failure,itt_fr,emitted_fr,execution_confirmed_fr,validator_status,notes,success_when_frames_positive,failure_when_frames_positive,success_when_frames_zero,failure_when_frames_zero
+CLEAN,162,162,141,21,0,0,0,0,0,162,162,0,0.000000,0.000000,UNKNOWN,RECOMPUTED_CODEX_CLOSEOUT,raw attack_applied retained but not trusted as sole execution evidence,0,0,162,0
+COMMAND_OPEN_ORACLE_T10,141,141,141,0,0,141,141,0,141,0,0,141,1.000000,1.000000,1.000000,RECOMPUTED_CODEX_CLOSEOUT,raw attack_applied retained but not trusted as sole execution evidence,0,141,0,0
+EARLY_SHIFT_T10,141,141,99,42,0,141,141,0,141,0,98,43,0.304965,0.040404,0.304965,RECOMPUTED_CODEX_CLOSEOUT,raw attack_applied retained but not trusted as sole execution evidence,98,43,0,0
+RANDOM_TIME_V3,162,162,126,36,0,162,162,0,162,0,119,43,0.265432,0.198413,0.265432,RECOMPUTED_CODEX_CLOSEOUT,raw attack_applied retained but not trusted as sole execution evidence,119,43,0,0
+RAND_T10,162,162,141,21,0,141,141,0,141,21,162,0,0.000000,0.000000,0.000000,RECOMPUTED_CODEX_CLOSEOUT,raw attack_applied retained but not trusted as sole execution evidence,141,0,21,0
+TRUE_T10,162,162,141,21,0,141,141,0,141,21,21,141,0.870370,1.000000,1.000000,RECOMPUTED_CODEX_CLOSEOUT,raw attack_applied retained but not trusted as sole execution evidence,0,141,21,0

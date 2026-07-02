@@ -1,37 +1,24 @@
 # Object Actual Protocol Audit 2026-07-02
 
-Source: authoritative server Object evidence root, independently parsed from `episode_summary.json`.
+Final classification: FROZEN_EMPIRICAL_RESULTS_PROTOCOL_PARTIAL_BOUNDED.
 
-## Recovered
+Recovered fields include the Object runtime commit where present, checkpoint SHA, dataset SHA, preprocessing backend from episode summaries, and RAND_T10 breadth-manifest protocol values where the manifest binds the historical Object output roots.
 
-- preprocessing_backend_requested: `['upstream_tf_jpeg']`
-- preprocessing_backend_resolved: `['upstream_tf_jpeg']`
-- preprocess_uses_jpeg: `['True']`
-- actual_attn: `['eager']`
-- actual_dtype: `['bfloat16']`
-- checkpoint SHA values: 27 unique
-- dataset SHA values: 9 unique
+Resolution status counts:
 
-## Unresolved
+```json
+{
+  "RECOVERED": 35,
+  "UNRECOVERABLE_AFTER_TARGETED_SEARCH": 115
+}
+```
 
-The following fields remain `UNVERIFIED` because this pass did not recover sealed config/command evidence:
+Unrecoverable boundary:
 
-- epsilon
-- epsilon_space
-- PGD steps
-- step size
-- K
-- target token
-- objective
-- strict route
-- fallback policy
-- arm gate
-- attack config version
-- launch command
-- aggregation script
+Fields still marked `UNRECOVERABLE_AFTER_TARGETED_SEARCH` were checked against artifact metadata, condition roots, manifests, launch/log/script candidates, output-root string search, and git/runtime inventory evidence. They are closed as negative evidence for this audit, not silently inferred from current code or later PR drafts.
 
-## Classification
+Claim boundary:
 
-`FROZEN_EMPIRICAL_RESULTS_PROTOCOL_PARTIAL`
+The Object results remain empirical legacy evidence. They are not promoted to a freshly preregistered fully recovered protocol. No Object rerun was started.
 
-Existing Object artifacts reproduce the reported outcome totals under an empirically recovered legacy preprocessing pipeline using `upstream_tf_jpeg`. The remaining attack hyperparameters and historical execution provenance are not fully sealed.
+Artifact: `tables/server_freeze/object_protocol_provenance_ledger.csv`.
