@@ -1,101 +1,118 @@
-# Object Frozen Evidence Reconciliation — 2026-07-02 (AMENDED 2026-07-02T20:00)
+# Object Frozen Evidence Reconciliation — 2026-07-02 (REVISION 3)
 
 ## Status
 
 **FROZEN_REPORTED_RESULT_WITH_PROVENANCE_SEAL_PENDING**
 
-Condition-level totals independently verified from episode_summary.json files.
-Per-episode master ledger committed (`tables/server_freeze/object_frozen_master_ledger.csv`, 930 rows across 6 conditions).
-Full provenance seal (config/manifest/checkpoint/command SHA chain) still pending.
+Condition totals and episode sets independently verified from episode_summary.json.
+Cross-condition key matching confirmed: 162 keys, 0 mismatches.
+Full protocol provenance seal is HOLD due to preprocessing deviation and incomplete config/manifest SHA chain.
 
 ---
 
-## Independent Verification Results
+## Independent Verification
 
-All numbers re-computed from `episode_summary.json` in every leaf artifact directory.
-See `tables/server_freeze/object_frozen_master_ledger.csv` for per-episode data.
+All numbers re-computed from `episode_summary.json` via `tables/server_freeze/object_frozen_master_ledger.csv` (930 rows, 29 fields).
 
-| Condition | Leaf Dirs | Emitted | No-Emission | Success | Failure | Claimed | Match |
-|---|---|---|---|---|---|---|---|
-| CLEAN | 162 | 141 | 21 | 162 | 0 | 162/162 (0% FR) | PASS |
-| RAND_T10 | 162 | 141 | 21 | 162 | 0 | 162/162 (0% FR) | PASS |
-| RANDOM_TIME_V3 | 162 | 126 | 36 | 119 | 43 | 119/162 (26.5% FR) | PASS |
-| EARLY_SHIFT_T10 | 141 | 99 | 42 | 98 | 43 | 98/141 (30.5% FR) | PASS |
-| TRUE_T10 | 162 | 141 | 21 | 21 | 141 | 21/162 ITT (87.0% FR) | PASS |
-| COMMAND_OPEN_ORACLE_T10 | 141 | 141 | 0 | 0 | 141 | 0/141 (100% FR) | PASS |
+| Condition | Leaves | Emitted | No-Emission | Attack Applied | Success | Failure | Claimed | Match |
+|---|---|---|---|---|---|---|---|---|
+| CLEAN | 162 | 141 | 21 | 0 | 162 | 0 | 162/162 | PASS |
+| RAND_T10 | 162 | 141 | 21 | 0 | 162 | 0 | 162/162 | PASS |
+| RANDOM_TIME_V3 | 162 | 126 | 36 | 162 | 119 | 43 | 119/162 | PASS |
+| EARLY_SHIFT_T10 | 141 | 99 | 42 | 141 | 98 | 43 | 98/141 | PASS |
+| TRUE_T10 | 162 | 141 | 21 | 141 | 21 | 141 | 21/162 ITT, 0/141 emitted | PASS |
+| COMMAND_OPEN_ORACLE_T10 | 141 | 141 | 0 | 141 | 0 | 141 | 0/141 | PASS |
 
 **OBJECT_CONDITION_TOTAL_REAGGREGATION = PASS**
 
 ---
 
-## Emission-Matched Denominator
+## Cross-Condition Key Reconciliation
 
-The 141 emitted denominator for EARLY_SHIFT_T10 and COMMAND_OPEN_ORACLE_T10 is inherited from TRUE_T10's emission cohort.
+`tables/server_freeze/object_cross_condition_key_reconciliation.csv` (162 rows) proves:
 
-TRUE_T10 emitted set = 141 episodes across 17 fold/state parent keys.
-TRUE_T10 no-emission set = 21 episodes across 3 fold/state parent keys.
+```
+MATCH=162 MISMATCH=0
+TRUE_MINUS_EARLY=0 EARLY_MINUS_TRUE=0
+TRUE_MINUS_ORACLE=0 ORACLE_MINUS_TRUE=0
+```
 
-These 3 parents have no-emission for SOME detector/perturbation seed combinations (not all 9).
-Some parents have both emitted and no-emission seeds — the emission decision is per-seed, not per-parent.
+All 162 (fold, state, detector_seed, perturbation_seed) tuples in TRUE_T10 emitted set are present in EARLY_SHIFT_T10 and COMMAND_OPEN_ORACLE_T10, and vice versa.
 
-- `tables/server_freeze/object_true_t10_emitted_141.csv` — 141 rows, one per emitted episode
-- `tables/server_freeze/object_true_t10_no_emission_21.csv` — 21 rows, one per no-emission episode
-
-### EARLY_SHIFT_T10 Emission Detail
-
-EARLY_SHIFT_T10 runs the same 141 parent episodes as TRUE_T10's emitted cohort ("inherited from TRUE_T10 emitted cohort").
-Under the EARLY_SHIFT condition (T=10 steps before contact):
-- 99/141 episodes show mlp_triggered=True (detector fires at the shifted position)
-- 42/141 episodes show mlp_triggered=False (detector does not fire at the shifted position)
-
-The "emission" field in EARLY_SHIFT refers to the detector's own runtime behavior under the shifted timing — it is NOT the same as TRUE_T10's emission.
-
-Success breakdown: 95 of 99 emitted succeed (attack at early shift is harmless), 3 of 42 no-emission succeed (natural difficulty of those episodes).
-
-This supports the **timing specificity** claim: perturbation at the early shift position does NOT cause failure.
+**OBJECT_CROSS_CONDITION_KEY_MATCH = PASS**
 
 ---
 
-## Provenance Gaps (Still Open)
+## Emission Semantics (CORRECTED)
 
-### What IS verified:
-- Per-episode task_success from episode_summary.json — MATCH
-- Per-episode mlp_triggered (emission) status — CAPTURED
-- Cross-condition parent key matching — VERIFIED
-- Condition-level totals — MATCH
-- Per-episode summary SHA256 — CAPTURED in master ledger
+### TRUE_T10
+- `mlp_triggered=True` means the detector fired and the attack was applied (141 episodes)
+- `mlp_triggered=False` means the detector did NOT fire and the attack was NOT applied (21 episodes)
+- `attack_applied` = `attack_frames > 0` — in TRUE_T10, this matches `mlp_triggered` exactly
+- 21 no-emission episodes: attack NOT applied, all 21 succeed
 
-### What is NOT yet verified:
-- Config files for each condition (epsilon, PGD steps, K, target_token, preprocessing, route, fallback, arm gate)
-- Per-fold checkpoint SHA256 (only Fold 01 has SHA256SUMS.txt)
-- Aggregation script path and SHA
-- Historical launch commands for each condition
-- Whether the server's current dirty code (attack_adapter.py diff) was the code that generated these artifacts
-- PIL Lanczos preprocessing confirmation from actual runtime logs
-- Attack frame count verification against claimed protocol
+### EARLY_SHIFT_T10 (CORRECTED)
+- ALL 141 episodes have `attack_applied=True` (attack_frames=10 for all)
+- `mlp_triggered` in EARLY_SHIFT is a diagnostic/post-treatment variable — it records whether the detector fires at the shifted timing position, NOT whether the attack is applied
+- 99 episodes: detector fires at shifted position → 95 succeed, 4 fail
+- 42 episodes: detector does NOT fire at shifted position → 3 succeed, 39 fail
+- **The 42 "no-emission" episodes are actually "attack applied but detector silent"**
+- **Previous claim that failure in these 42 is "natural difficulty" is INCORRECT** — the attack IS applied to all 141
 
-### Evidence Chain Status
-
-| Chain | Condition Totals | Episode Set | Protocol Provenance | Overall |
-|---|---|---|---|---|
-| Timing specificity | PASS | PASS | HOLD | PARTIAL |
-| Direction/selectivity | PASS | PASS | HOLD | PARTIAL |
-| Clean-only causal deployment | PASS | PASS | HOLD | PARTIAL |
-| OPEN-command mechanism sufficiency | PASS | PASS | HOLD | PARTIAL |
+Correct framing:
+> EARLY_SHIFT_T10 applies the perturbation at T=10 steps before contact to all 141 TRUE-emitted episodes. The detector fires on 99 and is silent on 42. Overall FR is 30.5% (43/141), significantly lower than TRUE_T10 emitted-only FR of 100%, consistent with timing specificity. However, the 39/42 failure rate in the detector-silent subgroup means early-shift is not "harmless" and the causal pathway requires further analysis.
 
 ---
 
-## Object Artifact Evidence Location
+## Preprocessing Protocol Deviation (CRITICAL)
 
-**Server only**: `/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/`
+All 930 episodes across all 6 conditions used:
 
-No local copy exists. Single point of failure until backup is executed.
+```
+preprocess_backend_requested  = upstream_tf_jpeg
+preprocess_backend_resolved   = upstream_tf_jpeg
+preprocess_uses_jpeg_roundtrip = True
+```
+
+This is the **PR #43 draft protocol** (epsilon=2/255 + upstream_tf_jpeg), NOT the claimed frozen protocol (epsilon=6/255 + official_pil_lanczos).
+
+| Protocol Element | Claimed (Frozen) | Actual (from artifact) | Match |
+|---|---|---|---|
+| Preprocessing | official_pil_lanczos | upstream_tf_jpeg | **MISMATCH** |
+| JPEG roundtrip | No | Yes (preprocess_uses_jpeg=True) | **MISMATCH** |
+| Epsilon | 6/255 (claimed) | Unknown (not in episode_summary) | UNVERIFIED |
+| PGD steps | 20 (claimed) | Unknown | UNVERIFIED |
+| K | 10 (claimed) | Unknown | UNVERIFIED |
+| Target token | 31744 (claimed) | Unknown | UNVERIFIED |
+| Route | strict (claimed) | Unknown | UNVERIFIED |
+| Fallback | none (claimed) | Unknown | UNVERIFIED |
+| Arm gate | 5/6 (claimed) | Unknown | UNVERIFIED |
+
+The preprocessing field is recorded in every episode_summary.json. The mismatch between claimed `official_pil_lanczos` and actual `upstream_tf_jpeg` means the frozen attack protocol description is incorrect for the actual generated artifacts.
 
 ---
 
-## Summary
+## Remaining Provenance Gaps
 
-Object numbers are verified at the per-episode level from actual artifacts. The emission-matched denominator (141) is correct. Row-level ledgers committed. Full protocol provenance seal requires config/manifest/checkpoint SHA chain and historical command capture — these remain open but do NOT require re-running any experiment.
+1. **Preprocessing**: artifacts use `upstream_tf_jpeg`, not `official_pil_lanczos` — protocol description must be corrected OR artifacts were generated under a different protocol version
+2. **Epsilon**: not recorded in episode_summary.json — needs config file or launch command recovery
+3. **PGD steps / K / target_token**: not recorded in episode_summary.json
+4. **Route / fallback / arm gate**: not recorded in episode_summary.json
+5. **Config file SHA per condition**: not captured
+6. **Manifest SHA per condition**: 32 manifests hashed but not individually listed with condition mapping
+7. **Checkpoint SHA**: present in episode_summary (`d15dab4d56b4...`) but not cross-referenced against model files
+8. **Aggregation script**: path and SHA not captured
+9. **Historical launch commands**: not captured
+
+---
+
+## Evidence Location
+
+Server only: `/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/`
+
+No local copy. Single point of failure.
+
+---
 
 NO NEW EXPERIMENT WAS LAUNCHED.
 NO LIVE SCIENTIFIC ARTIFACT WAS MODIFIED.

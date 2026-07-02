@@ -1,13 +1,13 @@
-experiment,condition,planned_manifest_rows,attempted_rows,process_exit_success_rows,persisted_episode_summary_count,scientifically_valid_rows,leaf_artifact_count_from_dir_walk,ep_summary_success_count,ep_summary_failure_count,formal_status,paper_usable,output_root_status,recommendation
-TMA_STUDENT_SOTA,TMA_STUDENT,162,162,162,0,0,0,N/A,N/A,EXPLORATORY_CANARY,NO,outputs/ dir empty (0 ep_summary),"Retain as canary; persisted_complete_artifact_rows=0"
-TMA_RT_SOTA,TMA_RANDOM_TIME,162,162,161,0,0,0,N/A,N/A,EXPLORATORY_CANARY,NO,outputs/ dir empty,Retain as canary; missing 1 episode
-UMA_SOTA,UMA,162,162,43,0,0,0,N/A,N/A,FAILED_ENGINEERING_ATTEMPT,NO,outputs/ dir empty,"FUTURE_RESUME=NO_UNLESS_HUMAN_REAUTHORIZES"
-SHUFFLED_SOTA,SHUFFLED,162,162,16,0,0,0,N/A,N/A,FAILED_ENGINEERING_ATTEMPT,NO,outputs/ dir empty,"FUTURE_RESUME=NO_UNLESS_HUMAN_REAUTHORIZES"
-TMA_OBJECT,TMA,162,162,162,171,171,282,34,137,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/TMA (171 ep_summary in 282 dirs),Object-level canary; 171 leaves found (not 282)
-TMA_RT_OBJECT,TMA_RANDOM_TIME,162,162,162,170,170,281,128,42,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/TMA_RANDOM_TIME (170 ep_summary in 281 dirs),Object-level canary; 170 leaves found (not 281)
-UMA_OBJECT,UMA_CLEAN,162,162,162,55,55,270,55,0,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/UMA (55 ep_summary in 270 dirs),CLEAN-only; 55 leaves found (not 270); all success
-SHUFFLED_OBJECT,SHUFFLED_CLEAN,162,162,162,28,28,242,28,0,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/SHUFFLED (28 ep_summary in 242 dirs),CLEAN-only; 28 leaves found (not 242); all success
-EARLY_SHIFT_OBJECT,EARLY_SHIFT,162,162,162,27,27,147,0,27,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/EARLY_SHIFT (27 ep_summary in 147 dirs),Older variant; ALL failed; superseded by EARLY_SHIFT_T10
-RAND_LINF_OBJECT,RAND_LINF,162,162,162,100,100,155,100,0,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/RAND_LINF (100 ep_summary in 155 dirs),CLEAN-only; all success
-RANDOM_TIME_V1_OBJECT,RANDOM_TIME,162,162,162,162,162,247,146,16,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/RANDOM_TIME (162 ep_summary in 247 dirs),Older variant; superseded by RANDOM_TIME_V3
-RANDOM_TIME_INVALID_OBJECT,RANDOM_TIME_INVALID_V1,unknown,unknown,unknown,95,95,425,90,5,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/RANDOM_TIME_INVALID_V1 (95 ep_summary in 425 dirs),INVALIDATED version
+experiment,condition,planned_manifest_rows,attempted_rows,persisted_ep_summary_count,scientifically_valid_rows,success_count,failure_count,formal_status,paper_usable,note
+TMA_STUDENT_SOTA,TMA_STUDENT,162,162,0,0,N/A,N/A,EXPLORATORY_CANARY,NO,outputs/ dir empty; formal pass points to empty root
+TMA_RT_SOTA,TMA_RANDOM_TIME,162,162,0,0,N/A,N/A,EXPLORATORY_CANARY,NO,outputs/ dir empty; 1 episode missing
+UMA_SOTA,UMA,162,162,0,0,N/A,N/A,FAILED_ENGINEERING_ATTEMPT,NO,"FUTURE_RESUME=NO_UNLESS_HUMAN_REAUTHORIZES"
+SHUFFLED_SOTA,SHUFFLED,162,162,0,0,N/A,N/A,FAILED_ENGINEERING_ATTEMPT,NO,"FUTURE_RESUME=NO_UNLESS_HUMAN_REAUTHORIZES"
+TMA_OBJECT,TMA,162,162,171,UNKNOWN,34,137,EXPLORATORY_CANARY,NO,171 > 162 planned indicates retry/duplicate/canary artifacts
+TMA_RT_OBJECT,TMA_RANDOM_TIME,162,162,170,UNKNOWN,128,42,EXPLORATORY_CANARY,NO,170 > 162 planned indicates retry/duplicate/canary artifacts
+UMA_OBJECT,UMA,162,162,55,UNKNOWN,55,0,EXPLORATORY_CANARY,NO,CLEAN-only; incomplete (55/162)
+SHUFFLED_OBJECT,SHUFFLED,162,162,28,UNKNOWN,28,0,EXPLORATORY_CANARY,NO,CLEAN-only; incomplete (28/162)
+EARLY_SHIFT_OBJECT,EARLY_SHIFT,162,162,27,UNKNOWN,0,27,EXPLORATORY_CANARY,NO,Superseded by EARLY_SHIFT_T10
+RAND_LINF_OBJECT,RAND_LINF,162,162,100,UNKNOWN,100,0,EXPLORATORY_CANARY,NO,CLEAN-only; all success
+RANDOM_TIME_V1_OBJECT,RANDOM_TIME,162,162,162,UNKNOWN,146,16,EXPLORATORY_CANARY,NO,Superseded by RANDOM_TIME_V3
+RANDOM_TIME_INVALID_OBJECT,RANDOM_TIME_INVALID_V1,unknown,unknown,95,UNKNOWN,90,5,EXPLORATORY_CANARY,NO,INVALIDATED version

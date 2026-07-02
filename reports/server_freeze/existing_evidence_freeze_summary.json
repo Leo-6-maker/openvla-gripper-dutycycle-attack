@@ -1,9 +1,10 @@
 {
-  "freeze_timestamp": "2026-07-02T20:00:00+08:00",
+  "freeze_timestamp": "2026-07-02T21:00:00+08:00",
   "audit_branch": "audit/server-experiment-state-20260702",
   "draft_pr": "#47",
-  "pr_head_commit": "63ee2dfd64ea448bc6f51e86fd14120e9a7c1bda",
-  "pr_changed_files": 22,
+  "pr_head_commit": "22252c6d49e047a0971bd7b55674145adeb8ca9e",
+  "pr_changed_files": 30,
+  "pr_commits": 3,
   "server_quiescence": {
     "SERVER_EXECUTION_QUIESCENT": "PASS",
     "PROCESS_STOPPED": "PASS",
@@ -11,93 +12,85 @@
   },
   "clean300": {
     "status": "ARCHIVED_SUPERSEDED_DATA",
-    "scientific_authority": "NONE",
-    "future_use": "HISTORICAL_REFERENCE_ONLY"
+    "scientific_authority": "NONE"
   },
   "object_frozen": {
     "status": "FROZEN_REPORTED_RESULT_WITH_PROVENANCE_SEAL_PENDING",
     "condition_totals_reaggregation": "PASS",
-    "episode_set_reconciliation": "PASS",
-    "emitted_141_rows_committed": true,
-    "no_emission_21_rows_committed": true,
-    "master_ledger_rows_committed": 930,
+    "cross_condition_key_match": "PASS (162 keys, 0 mismatches)",
+    "true_t10_emission_split": "PASS",
+    "master_ledger_rows": 930,
+    "master_ledger_fields": 29,
     "protocol_provenance": "HOLD",
+    "critical_finding": "All artifacts used upstream_tf_jpeg preprocessing, not official_pil_lanczos as claimed in frozen protocol",
     "provenance_gaps": [
+      "preprocessing: actual=upstream_tf_jpeg, claimed=official_pil_lanczos",
+      "epsilon not recorded in episode_summary.json",
+      "PGD steps/K/target_token not recorded in episode_summary.json",
+      "route/fallback/arm_gate not recorded in episode_summary.json",
       "config SHA per condition not captured",
       "manifest SHA per condition not individually listed",
-      "per-fold checkpoint SHA incomplete (only Fold 01)",
-      "aggregation script path and SHA not captured",
-      "historical launch commands not captured",
-      "PIL Lanczos preprocessing not confirmed from runtime logs",
-      "epsilon/PGD/K/token/route/fallback/arm_gate not confirmed from runtime configs"
+      "aggregation script path/SHA not captured",
+      "historical launch commands not captured"
     ]
   },
   "clean2000": {
-    "status": "CLEAN2000_FROZEN_WITH_LABEL_GAPS",
-    "total_episodes": 2000,
-    "episode_census_rows_committed": 2000,
+    "status": "CLEAN2000_FROZEN_CENSUS_ONLY",
+    "census_complete": true,
+    "episode_census_rows": 2000,
     "primary_eligible": 1043,
     "clean_failure_safety": 307,
     "supplementary_event": 650,
-    "label_semantics_corrected": true,
+    "label_critical_finding": "All 1350 valid labels are placeholder defaults (anchor=0, confidence=0.5, window=[0-10])",
+    "label_timing_usable": false,
+    "label_timing_blocking_reason": "No real anchor step variation; all 1350 share identical placeholder values",
     "label_present_in_index": 2000,
-    "teacher_label_valid": 1350,
-    "explicit_abstention": 650,
-    "actual_label_gaps": 0,
-    "per_suite": {
-      "libero_spatial": {"total": 500, "primary": 411, "failure": 89, "supplementary": 0, "teacher_eligible": 500},
-      "libero_object": {"total": 500, "primary": 367, "failure": 133, "supplementary": 0, "teacher_eligible": 500},
-      "libero_goal": {"total": 500, "primary": 234, "failure": 66, "supplementary": 200, "teacher_eligible": 300},
-      "libero_10": {"total": 500, "primary": 31, "failure": 19, "supplementary": 450, "teacher_eligible": 50}
+    "supplementary_abstention_valid": true,
+    "actual_label_gaps": 0
+  },
+  "task_registry": {
+    "consistency": "INDEX task names are authoritative; census names match INDEX",
+    "tasks_with_teacher_eligibility": {
+      "libero_spatial": 10,
+      "libero_object": 10,
+      "libero_goal": 6,
+      "libero_10": 1
     }
   },
   "historical_canaries": {
-    "tma_object": {"ep_summary_count": 171, "success": 34, "failure": 137},
-    "tma_rt_object": {"ep_summary_count": 170, "success": 128, "failure": 42},
-    "uma_object": {"ep_summary_count": 55, "success": 55, "failure": 0, "clean_only": true},
-    "shuffled_object": {"ep_summary_count": 28, "success": 28, "failure": 0, "clean_only": true},
-    "uma_sota": "FAILED_ENGINEERING_ATTEMPT",
-    "shuffled_sota": "FAILED_ENGINEERING_ATTEMPT",
-    "all_paper_usable": false
+    "tma_object": {"ep_summary_count": 171, "scientifically_valid_rows": "UNKNOWN"},
+    "tma_rt_object": {"ep_summary_count": 170, "scientifically_valid_rows": "UNKNOWN"},
+    "uma_sota": "FAILED_ENGINEERING_ATTEMPT (0 artifacts)",
+    "shuffled_sota": "FAILED_ENGINEERING_ATTEMPT (0 artifacts)"
   },
   "runtime_code": {
     "fingerprinted": "PARTIAL",
     "frozen": "NO",
-    "dirty_tracked_files_with_full_metadata": 4,
-    "diff_shas_captured": 4,
-    "base_blob_shas_captured": 4,
-    "patch_files_saved": false,
+    "blob_direction_corrected": true,
+    "patch_files_saved": 4,
     "manifest_shas_individually_listed": false
   },
   "backup": {
     "executed": false,
-    "object_evidence_size_measured": false,
-    "clean2000_size": "574 MB",
-    "secondary_candidate": "vla:/data/liuyu (1.1T free)",
     "status": "BACKUP_NOT_EXECUTED"
   },
   "gates": {
     "SERVER_EXECUTION_QUIESCENT": "PASS",
     "CLEAN300_ARCHIVED": "PASS",
     "OBJECT_CONDITION_TOTALS": "PASS",
-    "OBJECT_EPISODE_SET_RECONCILIATION": "PASS",
+    "TRUE_T10_EMISSION_SPLIT": "PASS",
+    "OBJECT_CROSS_CONDITION_KEY_MATCH": "PASS",
     "OBJECT_PROTOCOL_PROVENANCE": "HOLD",
     "CLEAN2000_AGGREGATE_CENSUS": "PASS",
-    "CLEAN2000_ROW_LEVEL_AND_LABEL_SEMANTICS": "RESOLVED",
+    "CLEAN2000_LABEL_TIMING_AND_TASK_REGISTRY": "HOLD",
     "RUNTIME_CODE_FREEZE": "HOLD",
     "BACKUP": "HOLD"
   },
   "final_gate": "HOLD_AUDIT_INCOMPLETE",
   "sub_blocks": [
     "HOLD_OBJECT_PROVENANCE_RECONCILIATION",
+    "HOLD_CLEAN2000_RECONCILIATION",
     "HOLD_RUNTIME_CODE_SNAPSHOT_MISSING",
     "HOLD_BACKUP_NOT_SECURED"
-  ],
-  "hard_constraints_upheld": [
-    "NO_NEW_EXPERIMENT_WAS_LAUNCHED",
-    "NO_LIVE_SCIENTIFIC_ARTIFACT_WAS_MODIFIED",
-    "CLEAN300_IS_ARCHIVED_AND_SUPERSEDED",
-    "DTY_CLEAN2000_IS_AUTHORITATIVE_CROSS_SUITE_CORPUS",
-    "EXPERIMENT_EXECUTION_REMAINS_NOT_AUTHORIZED"
   ]
 }
