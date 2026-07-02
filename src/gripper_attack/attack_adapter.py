@@ -1556,7 +1556,11 @@ class TokenPrefixPGDAttacker:
             if is_force_gripper_open or is_force_open_z_down or is_gripper_margin or is_gripper_region or is_prefix_locked or is_corrected_hybrid or is_generated_prefix_v3 or is_target_token_objective:
                 debug.update({
                     "target_gripper_token_id": None if is_target_token_objective else (int(token_list[-1]) if token_list else None),
-                    "attack_target_gripper_token_id": int(self.target_token_id) if is_target_token_objective else (int(token_list[-1]) if token_list else None),
+                    "attack_target_gripper_token_id": (
+                        int(self.target_token_id)
+                        if (is_target_token_objective or is_force_gripper_open or is_gripper_margin or is_gripper_region)
+                        else (int(token_list[-1]) if token_list else None)
+                    ),
                     "arm_reference_retokenized_gripper_token_id": int(token_list[-1]) if token_list else None,
                     "gripper_only_loss": bool(is_force_gripper_open or is_gripper_margin or is_gripper_region or is_prefix_locked or is_generated_prefix_v3 or is_target_token_objective),
                     "z_and_gripper_loss": bool(is_force_open_z_down),

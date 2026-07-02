@@ -226,8 +226,8 @@ def validate_uma_semantics(ep_data, spec, job):
     elif ld_set != ["maximize"]: errors.append(f"loss_direction_set={ld_set} != [maximize]")
     ls_set = summary.get("token_label_source_set")
     if ls_set is None: errors.append("token_label_source_set: MISSING")
-    elif not any("clean" in str(s).lower() for s in ls_set):
-        errors.append(f"token_label_source_set={ls_set}, expected clean model output labels")
+    elif ls_set != ["clean_model_output_sequences"]:
+        errors.append(f"token_label_source_set={ls_set} != [clean_model_output_sequences]")
     cl_count = summary.get("clean_token_label_ids_present_count")
     if cl_count is None: errors.append("clean_token_label_ids_present_count: MISSING")
     elif cl_count != 10: errors.append(f"clean_token_label_ids_present_count={cl_count} != 10")
