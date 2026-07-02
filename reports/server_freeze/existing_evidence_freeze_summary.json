@@ -1,96 +1,193 @@
 {
-  "freeze_timestamp": "2026-07-02T21:00:00+08:00",
-  "audit_branch": "audit/server-experiment-state-20260702",
-  "draft_pr": "#47",
-  "pr_head_commit": "22252c6d49e047a0971bd7b55674145adeb8ca9e",
-  "pr_changed_files": 30,
-  "pr_commits": 3,
-  "server_quiescence": {
-    "SERVER_EXECUTION_QUIESCENT": "PASS",
-    "PROCESS_STOPPED": "PASS",
-    "LAST_ARTIFACT_ATOMICITY": "UNKNOWN"
+  "server_ssh_access": "PASS",
+  "object_condition_counts": {
+    "CLEAN": 162,
+    "COMMAND_OPEN_ORACLE_T10": 141,
+    "EARLY_SHIFT_T10": 141,
+    "RANDOM_TIME_V3": 162,
+    "RAND_T10": 162,
+    "TRUE_T10": 162
   },
-  "clean300": {
-    "status": "ARCHIVED_SUPERSEDED_DATA",
-    "scientific_authority": "NONE"
+  "object_set_summary": {
+    "full_universe": 162,
+    "TRUE_selected": 141,
+    "TRUE_excluded": 21,
+    "EARLY_execution_set": 141,
+    "ORACLE_execution_set": 141,
+    "TRUE_SELECTED_MINUS_EARLY": [],
+    "EARLY_MINUS_TRUE_SELECTED": [],
+    "TRUE_SELECTED_MINUS_ORACLE": [],
+    "ORACLE_MINUS_TRUE_SELECTED": []
   },
-  "object_frozen": {
-    "status": "FROZEN_REPORTED_RESULT_WITH_PROVENANCE_SEAL_PENDING",
-    "condition_totals_reaggregation": "PASS",
-    "cross_condition_key_match": "PASS (162 keys, 0 mismatches)",
-    "true_t10_emission_split": "PASS",
-    "master_ledger_rows": 930,
-    "master_ledger_fields": 29,
-    "protocol_provenance": "HOLD",
-    "critical_finding": "All artifacts used upstream_tf_jpeg preprocessing, not official_pil_lanczos as claimed in frozen protocol",
-    "provenance_gaps": [
-      "preprocessing: actual=upstream_tf_jpeg, claimed=official_pil_lanczos",
-      "epsilon not recorded in episode_summary.json",
-      "PGD steps/K/target_token not recorded in episode_summary.json",
-      "route/fallback/arm_gate not recorded in episode_summary.json",
-      "config SHA per condition not captured",
-      "manifest SHA per condition not individually listed",
-      "aggregation script path/SHA not captured",
-      "historical launch commands not captured"
+  "rand_t10": {
+    "total": 162,
+    "emitted": 141,
+    "no_emission": 21,
+    "attack_applied": 0,
+    "success": 162
+  },
+  "object_preprocessing": {
+    "requested": [
+      "upstream_tf_jpeg"
+    ],
+    "resolved": [
+      "upstream_tf_jpeg"
+    ],
+    "jpeg": [
+      "True"
     ]
   },
   "clean2000": {
-    "status": "CLEAN2000_FROZEN_CENSUS_ONLY",
-    "census_complete": true,
-    "episode_census_rows": 2000,
-    "primary_eligible": 1043,
-    "clean_failure_safety": 307,
-    "supplementary_event": 650,
-    "label_critical_finding": "All 1350 valid labels are placeholder defaults (anchor=0, confidence=0.5, window=[0-10])",
-    "label_timing_usable": false,
-    "label_timing_blocking_reason": "No real anchor step variation; all 1350 share identical placeholder values",
-    "label_present_in_index": 2000,
-    "supplementary_abstention_valid": true,
-    "actual_label_gaps": 0
-  },
-  "task_registry": {
-    "consistency": "INDEX task names are authoritative; census names match INDEX",
-    "tasks_with_teacher_eligibility": {
-      "libero_spatial": 10,
-      "libero_object": 10,
-      "libero_goal": 6,
-      "libero_10": 1
-    }
-  },
-  "historical_canaries": {
-    "tma_object": {"ep_summary_count": 171, "scientifically_valid_rows": "UNKNOWN"},
-    "tma_rt_object": {"ep_summary_count": 170, "scientifically_valid_rows": "UNKNOWN"},
-    "uma_sota": "FAILED_ENGINEERING_ATTEMPT (0 artifacts)",
-    "shuffled_sota": "FAILED_ENGINEERING_ATTEMPT (0 artifacts)"
-  },
-  "runtime_code": {
-    "fingerprinted": "PARTIAL",
-    "frozen": "NO",
-    "blob_direction_corrected": true,
-    "patch_files_saved": 4,
-    "manifest_shas_individually_listed": false
-  },
-  "backup": {
-    "executed": false,
-    "status": "BACKUP_NOT_EXECUTED"
-  },
-  "gates": {
-    "SERVER_EXECUTION_QUIESCENT": "PASS",
-    "CLEAN300_ARCHIVED": "PASS",
-    "OBJECT_CONDITION_TOTALS": "PASS",
-    "TRUE_T10_EMISSION_SPLIT": "PASS",
-    "OBJECT_CROSS_CONDITION_KEY_MATCH": "PASS",
-    "OBJECT_PROTOCOL_PROVENANCE": "HOLD",
-    "CLEAN2000_AGGREGATE_CENSUS": "PASS",
-    "CLEAN2000_LABEL_TIMING_AND_TASK_REGISTRY": "HOLD",
-    "RUNTIME_CODE_FREEZE": "HOLD",
-    "BACKUP": "HOLD"
+    "total_index_rows": 2000,
+    "total_teacher_label_rows": 2000,
+    "total_primary_rows": 1043,
+    "total_safety_rows": 957,
+    "suite_counts": {
+      "libero_object": 500,
+      "libero_10": 500,
+      "libero_spatial": 500,
+      "libero_goal": 500
+    },
+    "task_success_true": 1392,
+    "task_success_false": 608,
+    "placeholder_default_suspected_count": 1350,
+    "anchor_zero_count": 1350,
+    "confidence_0_5_count": 1350,
+    "window_0_10_count": 1350,
+    "event_id_nonempty_count": 0,
+    "timing_detector_training_ready": "NO",
+    "finding": "CONSTANT_DEFAULT_LIKE_TIMING_FIELDS",
+    "clean_root_file_meta": [
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_ATTEMPT_LEDGER.jsonl",
+        "name": "CLEAN2000_ATTEMPT_LEDGER.jsonl",
+        "size": 508500,
+        "mtime": 1782818505.221705,
+        "sha256": "a415cba2b56350481bb3f8f812632b8d95e7aa6c58a0fd848d95d5197282b9e9",
+        "line_count": 2000
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_BUILD_MANIFEST.json",
+        "name": "CLEAN2000_BUILD_MANIFEST.json",
+        "size": 460,
+        "mtime": 1782818501.2176437,
+        "sha256": "2e71d736523b5eb6a386ca04f6dcd68fdec1d3c95acf4415da9891693d85c82a",
+        "line_count": "UNKNOWN"
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_FEATURES_25D_ALL_STEPS.csv",
+        "name": "CLEAN2000_FEATURES_25D_ALL_STEPS.csv",
+        "size": 287308703,
+        "mtime": 1782818502.7176666,
+        "sha256": "3474cf0a8016b3b9c3bbdfba3aef2bd5c9b6a29c63f6ddceb63fd146fd5fe072",
+        "line_count": 455647
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_FEATURES_25D_VALID_ONLY.csv",
+        "name": "CLEAN2000_FEATURES_25D_VALID_ONLY.csv",
+        "size": 286638122,
+        "mtime": 1782818504.7776983,
+        "sha256": "2461a95be535dcaf2955977354a9da49fe25ef34849d628cda5d04bf258de123",
+        "line_count": 455647
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_FEATURE_GOLDEN_PARITY.json",
+        "name": "CLEAN2000_FEATURE_GOLDEN_PARITY.json",
+        "size": 1009,
+        "mtime": 1782818505.221705,
+        "sha256": "22864208cc46d31882e81af694af56a4c5fed7b1209dc93f9ba775c6460c0984",
+        "line_count": "UNKNOWN"
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_FEATURE_TABLE_REPORT.json",
+        "name": "CLEAN2000_FEATURE_TABLE_REPORT.json",
+        "size": 1242,
+        "mtime": 1782818505.221705,
+        "sha256": "72834f75b33db4382bf37eadf386f4a6b00345185f852a3b5ccbee86ceb1db17",
+        "line_count": "UNKNOWN"
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_INDEX_DRAFT.jsonl",
+        "name": "CLEAN2000_INDEX_DRAFT.jsonl",
+        "size": 3487802,
+        "mtime": 1782818501.2096436,
+        "sha256": "e4fafbb01e70418ec04b7dc19294b1f6b9c0b52ecc0d8aaa5b56997c3ba53691",
+        "line_count": 2000
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_PRIMARY.jsonl",
+        "name": "CLEAN2000_PRIMARY.jsonl",
+        "size": 340315,
+        "mtime": 1782818501.221644,
+        "sha256": "8482ea625b4ecf09420bc1dc34828736d011881af3af54e6099ecf36f6749542",
+        "line_count": 1043
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_SAFETY_ABSTENTION.jsonl",
+        "name": "CLEAN2000_SAFETY_ABSTENTION.jsonl",
+        "size": 338585,
+        "mtime": 1782818501.2376442,
+        "sha256": "459761bc6116b66c79811f31a7fbe483bbab52062e5a4d1226903efac329bee1",
+        "line_count": 957
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_SET_CLOSURE_REPORT.json",
+        "name": "CLEAN2000_SET_CLOSURE_REPORT.json",
+        "size": 365,
+        "mtime": 1782818501.2376442,
+        "sha256": "89b31415d52392a066190cc2823c59934391d5523469267168b9d1a1af58b350",
+        "line_count": "UNKNOWN"
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_SOURCE_INVENTORY.json",
+        "name": "CLEAN2000_SOURCE_INVENTORY.json",
+        "size": 488,
+        "mtime": 1782818501.2176437,
+        "sha256": "8f8a51d4136d0a198a188164bf678fc0ff850a039aca3d74d3a55d0d806236bc",
+        "line_count": "UNKNOWN"
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_TEACHER_CROSS_VALIDATION.json",
+        "name": "CLEAN2000_TEACHER_CROSS_VALIDATION.json",
+        "size": 23821,
+        "mtime": 1782818501.221644,
+        "sha256": "6c41172c826e136fc6fee04b9ff966c6a3e00232036ed249399217e701fa656f",
+        "line_count": "UNKNOWN"
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_TEACHER_LABEL_INDEX.jsonl",
+        "name": "CLEAN2000_TEACHER_LABEL_INDEX.jsonl",
+        "size": 929411,
+        "mtime": 1782818501.2176437,
+        "sha256": "e4f051755d8640e6539aca1361b31399164c07c408f52d503a4187335b92bc70",
+        "line_count": 2000
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/CLEAN2000_VALIDATION_REPORT.json",
+        "name": "CLEAN2000_VALIDATION_REPORT.json",
+        "size": 974,
+        "mtime": 1782818501.2176437,
+        "sha256": "07f5cfcfdb43d76d1ebb1e4b0786462286eb6a3bfd6b802171ec9afce5d3f816",
+        "line_count": "UNKNOWN"
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/FREEZE_ENVELOPE.json",
+        "name": "FREEZE_ENVELOPE.json",
+        "size": 4638,
+        "mtime": 1782819917.2472568,
+        "sha256": "efe1c000435051ec8d785f0f12e939a883a218f99a9b53c661aec5b0f2fb28c1",
+        "line_count": "UNKNOWN"
+      },
+      {
+        "path": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1/SHA256SUMS.txt",
+        "name": "SHA256SUMS.txt",
+        "size": 1394,
+        "mtime": 1782818505.221705,
+        "sha256": "5565e9b37a42761f7e076555a5e4adb11750e2577eba8307ee88ab4513af4475",
+        "line_count": 14
+      }
+    ]
   },
   "final_gate": "HOLD_AUDIT_INCOMPLETE",
-  "sub_blocks": [
-    "HOLD_OBJECT_PROVENANCE_RECONCILIATION",
-    "HOLD_CLEAN2000_RECONCILIATION",
-    "HOLD_RUNTIME_CODE_SNAPSHOT_MISSING",
-    "HOLD_BACKUP_NOT_SECURED"
-  ]
+  "backup_executed": false
 }

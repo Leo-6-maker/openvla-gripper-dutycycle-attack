@@ -1,0 +1,11 @@
+{
+  "full_universe": 162,
+  "TRUE_selected": 141,
+  "TRUE_excluded": 21,
+  "EARLY_execution_set": 141,
+  "ORACLE_execution_set": 141,
+  "TRUE_SELECTED_MINUS_EARLY": [],
+  "EARLY_MINUS_TRUE_SELECTED": [],
+  "TRUE_SELECTED_MINUS_ORACLE": [],
+  "ORACLE_MINUS_TRUE_SELECTED": []
+}

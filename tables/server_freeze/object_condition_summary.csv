@@ -1,7 +1,7 @@
-condition,fold,state,detector_seed,perturbation_seed,parent_key,mlp_triggered,mlp_emit_step,attack_frames,task_success,n_steps,teacher_anchor,summary_sha256
-CLEAN,162,162,141,21,162,0,0.0%,PASS
-RAND_T10,162,162,141,21,162,0,0.0%,PASS
-RANDOM_TIME_V3,162,162,126,36,119,43,26.5%,PASS
-EARLY_SHIFT_T10,141,141,99,42,98,43,30.5% (emission-matched),PASS
-TRUE_T10,162,162,141,21,21,141,87.0% (ITT) / 100.0% (emitted-only),PASS
-COMMAND_OPEN_ORACLE_T10,141,141,141,0,0,141,100.0% (emission-matched),PASS
+condition,planned,artifact_complete,emitted,no_emission,attack_applied,attack_not_applied,success,failure,itt_fr,emitted_fr,attacked_fr,validator_status,notes
+CLEAN,162,162,141,21,0,162,162,0,0.000000,0.000000,UNKNOWN,RECOMPUTED_FROM_EPISODE_SUMMARY,second-party Codex recomputation
+COMMAND_OPEN_ORACLE_T10,141,141,141,0,0,141,0,141,1.000000,1.000000,UNKNOWN,RECOMPUTED_FROM_EPISODE_SUMMARY,second-party Codex recomputation
+EARLY_SHIFT_T10,141,141,99,42,0,141,98,43,0.304965,0.040404,UNKNOWN,RECOMPUTED_FROM_EPISODE_SUMMARY,second-party Codex recomputation
+RANDOM_TIME_V3,162,162,126,36,0,162,119,43,0.265432,0.198413,UNKNOWN,RECOMPUTED_FROM_EPISODE_SUMMARY,second-party Codex recomputation
+RAND_T10,162,162,141,21,0,162,162,0,0.000000,0.000000,UNKNOWN,RECOMPUTED_FROM_EPISODE_SUMMARY,second-party Codex recomputation
+TRUE_T10,162,162,141,21,0,162,21,141,0.870370,1.000000,UNKNOWN,RECOMPUTED_FROM_EPISODE_SUMMARY,second-party Codex recomputation
