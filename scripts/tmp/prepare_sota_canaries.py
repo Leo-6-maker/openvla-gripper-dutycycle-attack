@@ -85,7 +85,7 @@ CONDITIONS = {
 }
 
 # ── Load source TRUE_T10 manifest for reference ──
-src_mf = EVID + '/TRUE_T10/formal_v1/manifest.jsonl'
+src_mf = EVID + '/TRUE_T10/formal_manifest.jsonl'
 if not os.path.exists(src_mf):
     print(f"ERROR: TRUE_T10 source manifest not found: {src_mf}")
     sys.exit(1)

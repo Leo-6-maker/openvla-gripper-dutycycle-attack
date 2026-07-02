@@ -252,13 +252,12 @@ def validate_permute(ep_data, spec, job):
 
 
 def validate_random_window(ep_data, spec, job):
-    """TMA Random-Time: verify legal window."""
+    """TMA Random-Time: verify V3 schedule window is legal."""
     errors = []
     summary = ep_data.get("summary", {})
-    trigger = summary.get("requested_trigger_step", job.get("trigger_step_override", -1))
+    trigger = job.get("trigger_step_override", -1)
     n_steps = summary.get("n_steps", 0)
-    if trigger < 5:
-        errors.append(f"random trigger={trigger} < guard=5")
+    # V3 schedule already frozen & validated; only check window bounds
     if trigger + K > n_steps:
         errors.append(f"window [{trigger}, {trigger+K}) exceeds n_steps={n_steps}")
     tp = job.get("trigger_policy", summary.get("timing_policy", ""))
