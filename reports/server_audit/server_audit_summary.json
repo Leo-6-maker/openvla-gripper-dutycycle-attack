@@ -23,7 +23,8 @@
     "total": 162,
     "emitted": 141,
     "no_emission": 21,
-    "attack_applied": 0,
+    "attack_applied_field_true": 0,
+    "attack_frames_positive": 141,
     "success": 162
   },
   "object_preprocessing": {

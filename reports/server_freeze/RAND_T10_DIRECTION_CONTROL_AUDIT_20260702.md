@@ -7,18 +7,19 @@ Source: server episode_summary.json files under the authoritative Object evidenc
 - RAND_total: 162
 - RAND_emitted: 141
 - RAND_no_emission: 21
-- RAND_attack_applied: 0
-- RAND_attack_not_applied: 162
+- RAND_attack_applied_field_true: 0
+- RAND_attack_frames_positive: 141
 - RAND_success_total: 162
-- RAND_success_attacked: 0
-- RAND_success_unattacked: 162
+- RAND_success_with_attack_frames_positive: 141
+- RAND_success_without_attack_frames_positive: 21
 - RAND_failure_total: 0
-- RAND_failure_attacked: 0
-- RAND_failure_unattacked: 0
 
 ## Finding
 
-`RAND_T10` is not clean fallback in the server summaries: attacked rows have `attack_applied=True`/`attack_frames=10`.
-The recomputed accounting preserves the reported 162/162 task-success total while showing 141 attacked/emitted rows and 21 unattacked/no-emission rows.
+The raw server summaries contain a field-level ambiguity:
 
-The exact random-direction implementation remains protocol-provenance work: this audit recovered row-level attack application from summaries, but did not seal launch/config code as proof of random pixel/sign/target semantics.
+- `attack_applied` is `False` for all 162 RAND_T10 summaries.
+- `attack_frames=10` is present for 141 RAND_T10 summaries.
+- `mlp_triggered=True` is present for the same 141-row emitted set.
+
+Therefore this audit does **not** mark RAND_T10 protocol semantics sealed. The accounting supports 162/162 task success and 141 rows with positive attack-frame telemetry, but the implementation definition still requires config/manifest/launch evidence before calling it a sealed random-direction control.
