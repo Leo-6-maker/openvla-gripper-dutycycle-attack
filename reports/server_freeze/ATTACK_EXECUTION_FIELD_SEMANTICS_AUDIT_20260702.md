@@ -1,8 +1,8 @@
 # Attack Execution Field Semantics Audit 2026-07-02
 
-Status: ATTACK_EXECUTION_MULTI_SOURCE_CONFIRMATION_HOLD.
+Status: PASS_WITH_LEDGER_RENAME_REQUIRED.
 
-Revision 5 correction: telemetry/key-presence booleans are not independent perturbation evidence. CLEAN and no-emission RAND rows can contain telemetry columns and nonzero non-attack quantities while `attack_frames_raw=0`. Therefore emitted rows are no longer marked `CONFIRMED_MULTI_SOURCE`.
+Review6 correction: subgroup metrics now separate emitted, no-emission, and frames-positive denominators. `emitted_fr` is `emitted_failure / emitted`; `no_emission_fr` and `frames_positive_fr` are separate fields.
 
 Raw writer status:
 
@@ -11,19 +11,23 @@ RAW_ATTACK_APPLIED_WRITER = UNRECOVERABLE_AFTER_TARGETED_SEARCH
 ATTACK_EXECUTION_FIELD_LINEAGE_TABLE = ATTACK_FIELD_SEARCH_INVENTORY
 ```
 
-The raw `attack_applied` field is retained but not trusted as a semantic source. Until numeric per-step evidence is sealed (`max_linf_delta`, nonzero perturbation-frame count, attacked frame indices, actual image delta, condition-specific override, or per-step execution flag), the audit uses only frames-only support.
+The raw `attack_applied` field is retained but not trusted. Existing schema/key-presence columns are explicitly marked by `deprecated_not_execution_evidence=True`; new aliases clarify that these are key/schema presence, not execution evidence:
 
-| condition | planned | emitted | no emission | attack_frames positive | multi-source confirmed | frames-only supported | field conflict | success | failure |
+- `telemetry_schema_present`
+- `perturbation_norm_key_present`
+- `command_override_key_present`
+
+| condition | planned | emitted | emitted_failure | emitted_fr | no_emission | no_emission_failure | no_emission_fr | frames_positive | frames_positive_fr |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| CLEAN | 162 | 141 | 21 | 0 | 0 | 0 | 0 | 162 | 0 |
-| COMMAND_OPEN_ORACLE_T10 | 141 | 141 | 0 | 141 | 0 | 141 | 141 | 0 | 141 |
-| EARLY_SHIFT_T10 | 141 | 99 | 42 | 141 | 0 | 141 | 141 | 98 | 43 |
-| RANDOM_TIME_V3 | 162 | 126 | 36 | 162 | 0 | 162 | 162 | 119 | 43 |
-| RAND_T10 | 162 | 141 | 21 | 141 | 0 | 141 | 141 | 162 | 0 |
-| TRUE_T10 | 162 | 141 | 21 | 141 | 0 | 141 | 141 | 21 | 141 |
+| CLEAN | 162 | 141 | 0 | 0.000000 | 21 | 0 | 0.000000 | 0 | UNKNOWN |
+| COMMAND_OPEN_ORACLE_T10 | 141 | 141 | 141 | 1.000000 | 0 | 0 | UNKNOWN | 141 | 1.000000 |
+| EARLY_SHIFT_T10 | 141 | 99 | 4 | 0.040404 | 42 | 39 | 0.928571 | 141 | 0.304965 |
+| RANDOM_TIME_V3 | 162 | 126 | 25 | 0.198413 | 36 | 18 | 0.500000 | 162 | 0.265432 |
+| RAND_T10 | 162 | 141 | 0 | 0.000000 | 21 | 0 | 0.000000 | 141 | 0.000000 |
+| TRUE_T10 | 162 | 141 | 141 | 1.000000 | 21 | 0 | 0.000000 | 141 | 1.000000 |
 
 Artifacts:
 
-- `tables/server_freeze/attack_execution_field_lineage.csv`
 - `tables/server_freeze/object_frozen_master_ledger.csv`
 - `tables/server_freeze/object_condition_summary.csv`
+- `tables/server_freeze/rand_t10_episode_accounting.csv`

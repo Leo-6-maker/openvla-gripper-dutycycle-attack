@@ -13,10 +13,15 @@
   "object_protocol_source_attribution": "HOLD",
   "rand_t10_classification": "RAND_FIELD_CONFLICT_BOUNDED",
   "remaining_p0": [
-    "ATTACK_EXECUTION_MULTI_SOURCE_CONFIRMATION_HOLD",
-    "OBJECT_PROTOCOL_SOURCE_ATTRIBUTION_HOLD",
-    "CLEAN2000_TEACHER_SOURCE_SEMANTICS_HOLD"
+    "OBJECT_PROTOCOL_NEGATIVE_SEARCH_PROVENANCE_HOLD",
+    "CLEAN2000_BUILDER_SEARCH_PROVENANCE_HOLD"
   ],
+  "review6": {
+    "clean2000_source_event_crosstab": "FIXED",
+    "master_ledger_field_rename": "FIXED_WITH_DEPRECATED_MARKER",
+    "object_protocol_negative_search_provenance": "DEMOTED_TO_UNRESOLVED_NO_FORMAL_BINDING_EVIDENCE",
+    "object_subgroup_metrics": "FIXED"
+  },
   "scientific_claim_status": "LEGACY_PROTOCOL_LIMITED",
   "server_identity": {
     "host": "pm-364c0001",

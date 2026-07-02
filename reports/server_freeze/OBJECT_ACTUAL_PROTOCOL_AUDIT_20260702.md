@@ -2,7 +2,13 @@
 
 Final classification: FROZEN_EMPIRICAL_RESULTS_PROTOCOL_PARTIAL_BOUNDED.
 
-Revision 5 correction: source attribution is split into value source and formal binding source. Candidate values from `object_breadth_120.jsonl` are not called recovered unless binding to frozen formal Object artifacts is proven.
+Review6 correction: weak negative-search claims are demoted. Fields without formal value/binding evidence now use:
+
+```text
+UNRESOLVED_NO_FORMAL_BINDING_EVIDENCE
+```
+
+rather than `UNRECOVERABLE_AFTER_TARGETED_SEARCH`, because the committed ledger does not contain reproducible file counts, exact command ledger, candidate paths, or script SHA sufficient for a stronger negative proof.
 
 Resolution status counts:
 
@@ -10,7 +16,7 @@ Resolution status counts:
 {
   "CANDIDATE_PROTOCOL_VALUE_UNBOUND": 5,
   "RECOVERED": 30,
-  "UNRECOVERABLE_AFTER_TARGETED_SEARCH": 115
+  "UNRESOLVED_NO_FORMAL_BINDING_EVIDENCE": 115
 }
 ```
 
@@ -24,16 +30,14 @@ Binding status counts:
 }
 ```
 
-Rules now used:
+Checkpoint/dataset rows now include actual SHA sets via:
 
-- `FORMAL_ARTIFACT_BOUND`: value came from frozen formal episode summaries or per-row Object ledger SHA.
-- `CANDIDATE_PROTOCOL_VALUE_UNBOUND`: value came from a candidate manifest, but formal binding is not proven.
-- `NO_VALUE_TO_BIND`: targeted search found no usable value source.
+- `unique_sha_count`
+- `sha_value`
+- `episode_count`
 
-Negative search ledger:
+Additional artifacts:
 
+- `tables/server_freeze/object_protocol_provenance_ledger.csv`
 - `tables/server_freeze/object_protocol_negative_search_ledger.csv`
-
-Claim boundary:
-
-The Object results remain empirical legacy evidence. They are not promoted to a freshly preregistered fully recovered protocol. No Object rerun was started.
+- `tables/server_freeze/object_protocol_sha_sets.csv`
