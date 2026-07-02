@@ -1,6 +1,10 @@
 # Server Experiment Status Audit — 2026-07-02
 
-## Executive Summary
+> **SUPERSEDED_BY: `reports/server_freeze/EXISTING_EVIDENCE_FREEZE_REPORT_20260702.md`**
+> This file's gate, classification, and evidence status sections are superseded.
+> See the freeze report for current gate (HOLD_AUDIT_INCOMPLETE), corrected CLEAN2000 label semantics, verified Object per-episode data, and historical canary leaf counts.
+
+## Executive Summary (retained for server environment and process inventory only)
 
 This audit provides a reconciled snapshot of all OpenVLA Gripper Duty-Cycle Attack experiments on the A800 compute server (`dty-server`, 10.60.2.56:33571) as of 2026-07-02T17:52+08:00.
 

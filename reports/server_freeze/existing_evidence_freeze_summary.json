@@ -1,71 +1,97 @@
 {
-  "freeze_timestamp": "2026-07-02T19:01:29+08:00",
+  "freeze_timestamp": "2026-07-02T20:00:00+08:00",
   "audit_branch": "audit/server-experiment-state-20260702",
   "draft_pr": "#47",
-  "server_quiescence": "SERVER_EXECUTION_QUIESCENT_PASS",
-  "source_of_truth": {
-    "server": "dty-server (10.60.2.56:33571)",
-    "repo": "/mnt/sdc/dty_user/openvla_attack",
-    "branch": "feature/sc5-abstention-v2-20260622",
-    "commit": "ace1876281a9ad6ed68e1229a6e17346356766e9",
-    "dirty": true
+  "pr_head_commit": "63ee2dfd64ea448bc6f51e86fd14120e9a7c1bda",
+  "pr_changed_files": 22,
+  "server_quiescence": {
+    "SERVER_EXECUTION_QUIESCENT": "PASS",
+    "PROCESS_STOPPED": "PASS",
+    "LAST_ARTIFACT_ATOMICITY": "UNKNOWN"
   },
   "clean300": {
     "status": "ARCHIVED_SUPERSEDED_DATA",
-    "authority": "NONE",
+    "scientific_authority": "NONE",
     "future_use": "HISTORICAL_REFERENCE_ONLY"
   },
   "object_frozen": {
     "status": "FROZEN_REPORTED_RESULT_WITH_PROVENANCE_SEAL_PENDING",
-    "reaggregation_match": "PASS",
-    "all_six_conditions_verified": true,
-    "emitted_set_141": "VERIFIED",
-    "no_emission_set_21": "VERIFIED",
-    "cross_condition_parent_matching": "PASS",
-    "evidence_location": "dty-server only (single point of failure)"
+    "condition_totals_reaggregation": "PASS",
+    "episode_set_reconciliation": "PASS",
+    "emitted_141_rows_committed": true,
+    "no_emission_21_rows_committed": true,
+    "master_ledger_rows_committed": 930,
+    "protocol_provenance": "HOLD",
+    "provenance_gaps": [
+      "config SHA per condition not captured",
+      "manifest SHA per condition not individually listed",
+      "per-fold checkpoint SHA incomplete (only Fold 01)",
+      "aggregation script path and SHA not captured",
+      "historical launch commands not captured",
+      "PIL Lanczos preprocessing not confirmed from runtime logs",
+      "epsilon/PGD/K/token/route/fallback/arm_gate not confirmed from runtime configs"
+    ]
   },
   "clean2000": {
     "status": "CLEAN2000_FROZEN_WITH_LABEL_GAPS",
     "total_episodes": 2000,
+    "episode_census_rows_committed": 2000,
     "primary_eligible": 1043,
     "clean_failure_safety": 307,
     "supplementary_event": 650,
-    "teacher_labels_valid": 1350,
-    "teacher_labels_invalid": 650,
-    "per_suite_primary": {
-      "libero_spatial": 411,
-      "libero_object": 367,
-      "libero_goal": 234,
-      "libero_10": 31
-    },
-    "exclusion_mutually_exclusive_sum_to_2000": true,
-    "no_schema_or_infra_failures": true
+    "label_semantics_corrected": true,
+    "label_present_in_index": 2000,
+    "teacher_label_valid": 1350,
+    "explicit_abstention": 650,
+    "actual_label_gaps": 0,
+    "per_suite": {
+      "libero_spatial": {"total": 500, "primary": 411, "failure": 89, "supplementary": 0, "teacher_eligible": 500},
+      "libero_object": {"total": 500, "primary": 367, "failure": 133, "supplementary": 0, "teacher_eligible": 500},
+      "libero_goal": {"total": 500, "primary": 234, "failure": 66, "supplementary": 200, "teacher_eligible": 300},
+      "libero_10": {"total": 500, "primary": 31, "failure": 19, "supplementary": 450, "teacher_eligible": 50}
+    }
   },
   "historical_canaries": {
-    "tma_student": "EXPLORATORY_CANARY",
-    "tma_random_time": "EXPLORATORY_CANARY",
+    "tma_object": {"ep_summary_count": 171, "success": 34, "failure": 137},
+    "tma_rt_object": {"ep_summary_count": 170, "success": 128, "failure": 42},
+    "uma_object": {"ep_summary_count": 55, "success": 55, "failure": 0, "clean_only": true},
+    "shuffled_object": {"ep_summary_count": 28, "success": 28, "failure": 0, "clean_only": true},
     "uma_sota": "FAILED_ENGINEERING_ATTEMPT",
     "shuffled_sota": "FAILED_ENGINEERING_ATTEMPT",
     "all_paper_usable": false
   },
   "runtime_code": {
-    "dirty_files_captured": 4,
-    "attack_adapter_diff_analyzed": true,
-    "all_command_shas_captured": true,
-    "all_manifest_shas_captured": true
+    "fingerprinted": "PARTIAL",
+    "frozen": "NO",
+    "dirty_tracked_files_with_full_metadata": 4,
+    "diff_shas_captured": 4,
+    "base_blob_shas_captured": 4,
+    "patch_files_saved": false,
+    "manifest_shas_individually_listed": false
   },
   "backup": {
     "executed": false,
-    "status": "HOLD_NO_SAFE_SECONDARY_STORAGE",
-    "secondary_candidate": "vla:/data/liuyu (1.1T free)"
+    "object_evidence_size_measured": false,
+    "clean2000_size": "574 MB",
+    "secondary_candidate": "vla:/data/liuyu (1.1T free)",
+    "status": "BACKUP_NOT_EXECUTED"
   },
-  "blocking_issues": [
-    "backup_not_executed"
-  ],
-  "final_gate": "HOLD_BACKUP_NOT_SECURED",
-  "ready_for_review_after": [
-    "Execute rsync of Object evidence to vla server",
-    "Verify SHA after copy"
+  "gates": {
+    "SERVER_EXECUTION_QUIESCENT": "PASS",
+    "CLEAN300_ARCHIVED": "PASS",
+    "OBJECT_CONDITION_TOTALS": "PASS",
+    "OBJECT_EPISODE_SET_RECONCILIATION": "PASS",
+    "OBJECT_PROTOCOL_PROVENANCE": "HOLD",
+    "CLEAN2000_AGGREGATE_CENSUS": "PASS",
+    "CLEAN2000_ROW_LEVEL_AND_LABEL_SEMANTICS": "RESOLVED",
+    "RUNTIME_CODE_FREEZE": "HOLD",
+    "BACKUP": "HOLD"
+  },
+  "final_gate": "HOLD_AUDIT_INCOMPLETE",
+  "sub_blocks": [
+    "HOLD_OBJECT_PROVENANCE_RECONCILIATION",
+    "HOLD_RUNTIME_CODE_SNAPSHOT_MISSING",
+    "HOLD_BACKUP_NOT_SECURED"
   ],
   "hard_constraints_upheld": [
     "NO_NEW_EXPERIMENT_WAS_LAUNCHED",
