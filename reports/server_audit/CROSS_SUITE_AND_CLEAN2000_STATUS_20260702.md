@@ -2,17 +2,16 @@
 
 CLEAN300 is archived and superseded. DTY CLEAN2000 is the authoritative cross-suite census corpus.
 
-Accepted:
+Closed:
 
-- CLEAN2000 total: 2000
-- cohort decomposition: PASS
+- CLEAN2000 cohort decomposition: PASS
 - source event crosstab: PASS, unexplained_no_event = 0
 - official LIBERO registry match: PASS (40/40 exact)
 - backup: PASS
 
-Still HOLD:
+Bounded limitations:
 
 - canonical timing usability: FAIL / NOT AUTHORIZED
-- builder lineage: BUILDER_LINEAGE_UNRECOVERABLE_AFTER_TARGETED_SEARCH
+- builder lineage: BUILDER_LINEAGE_UNRESOLVED_NO_REPRODUCIBLE_SEARCH_EVIDENCE
 
 No pooled, LOSO, threshold tuning, or timing detector training was authorized or started.

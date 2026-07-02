@@ -2,42 +2,16 @@
 
 Final classification: FROZEN_EMPIRICAL_RESULTS_PROTOCOL_PARTIAL_BOUNDED.
 
-Review6 correction: weak negative-search claims are demoted. Fields without formal value/binding evidence now use:
+Status vocabulary normalized:
 
-```text
-UNRESOLVED_NO_FORMAL_BINDING_EVIDENCE
-```
+- OBJECT_PROTOCOL_SOURCE_ATTRIBUTION = PASS_PARTIAL_BOUNDED
+- OBJECT_PROTOCOL_MISSING_FIELDS = UNRESOLVED_BOUNDED
+- Missing historical fields are permanent legacy limitations, not active P0 blockers.
 
-rather than `UNRECOVERABLE_AFTER_TARGETED_SEARCH`, because the committed ledger does not contain reproducible file counts, exact command ledger, candidate paths, or script SHA sufficient for a stronger negative proof.
+Candidate values from `object_breadth_120.jsonl` remain `CANDIDATE_PROTOCOL_VALUE_UNBOUND` unless formal Object binding is proven.
 
-Resolution status counts:
+Checkpoint/dataset SHA coverage is recorded in long format, one SHA per row:
 
-```json
-{
-  "CANDIDATE_PROTOCOL_VALUE_UNBOUND": 5,
-  "RECOVERED": 30,
-  "UNRESOLVED_NO_FORMAL_BINDING_EVIDENCE": 115
-}
-```
-
-Binding status counts:
-
-```json
-{
-  "CANDIDATE_VALUE_NOT_FORMALLY_BOUND": 5,
-  "FORMAL_ARTIFACT_BOUND": 30,
-  "NO_VALUE_TO_BIND": 115
-}
-```
-
-Checkpoint/dataset rows now include actual SHA sets via:
-
-- `unique_sha_count`
-- `sha_value`
-- `episode_count`
-
-Additional artifacts:
-
-- `tables/server_freeze/object_protocol_provenance_ledger.csv`
-- `tables/server_freeze/object_protocol_negative_search_ledger.csv`
 - `tables/server_freeze/object_protocol_sha_sets.csv`
+
+No Object rerun was started.

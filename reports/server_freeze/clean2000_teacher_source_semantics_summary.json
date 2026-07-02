@@ -1,5 +1,5 @@
 {
-  "builder_lineage_status": "BUILDER_LINEAGE_UNRECOVERABLE_AFTER_TARGETED_SEARCH",
+  "builder_lineage_status": "BUILDER_LINEAGE_UNRESOLVED_NO_REPRODUCIBLE_SEARCH_EVIDENCE",
   "canonical_timing_usability": "FAIL_NOT_AUTHORIZED",
   "crosstab": [
     {

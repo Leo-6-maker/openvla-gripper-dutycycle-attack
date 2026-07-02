@@ -2,7 +2,7 @@
 
 > **SUPERSEDED_BY: `reports/server_freeze/EXISTING_EVIDENCE_FREEZE_REPORT_20260702.md`**
 > This file's gate, classification, and evidence status sections are superseded.
-> See the freeze report for current gate (HOLD_AUDIT_INCOMPLETE), corrected CLEAN2000 label semantics, verified Object per-episode data, and historical canary leaf counts.
+> See the freeze report for current gate (EXISTING_EVIDENCE_FREEZE_READY_FOR_REVIEW), corrected CLEAN2000 label semantics, verified Object per-episode data, and historical canary leaf counts.
 
 ## Executive Summary (retained for server environment and process inventory only)
 
