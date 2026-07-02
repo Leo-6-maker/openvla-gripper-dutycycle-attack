@@ -1,0 +1,12 @@
+category,count,percent,task_success,teacher_eligible,mechanism_eligible,description
+PRIMARY_ELIGIBLE,1043,52.15%,True,True,True,"All checks passed: clean success + teachable + mechanism analyzable"
+CLEAN_FAILURE_SAFETY,307,15.35%,False,True,True,"Clean task failed but mechanism analyzable (e.g. dropped object, collision)"
+SUPPLEMENTARY_multi_object_two_items,200,10.00%,mixed,False,False,"Task requires manipulating 2 identical objects (not single-object pick-place)"
+SUPPLEMENTARY_articulated_task_no_pick_place,100,5.00%,mixed,False,False,"Task involves articulated objects (doors, drawers, stoves)"
+SUPPLEMENTARY_multi_object_two_different_targets,100,5.00%,mixed,False,False,"Task requires manipulating 2 different objects to different targets"
+SUPPLEMENTARY_multi_stage_place_then_close,50,2.50%,mixed,False,False,"Multi-stage: place object then close container"
+SUPPLEMENTARY_multi_stage_place_then_close_drawer,50,2.50%,mixed,False,False,"Multi-stage: place in drawer then close it"
+SUPPLEMENTARY_push_task_not_pick_place,50,2.50%,mixed,False,False,"Pushing task (not pick-place manipulation)"
+SUPPLEMENTARY_multi_stage_open_drawer_then_place,50,2.50%,mixed,False,False,"Multi-stage: open drawer then place object inside"
+SUPPLEMENTARY_multi_stage_turn_on_then_place,50,2.50%,mixed,False,False,"Multi-stage: turn on appliance then place object"
+TOTAL,2000,100.00%,,,,

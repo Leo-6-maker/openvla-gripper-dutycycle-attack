@@ -1,27 +1,24 @@
 # Cross-Suite and CLEAN2000 Status — 2026-07-02
 
-## CLEAN300 Status
+## CLEAN300 Status — ARCHIVED AND SUPERSEDED
 
-| Item | Value |
+**AMENDED 2026-07-02:** CLEAN300 is officially archived and superseded. It has NO scientific authority for current planning.
+
+| Field | Value |
 |---|---|
-| Planned | 300 episodes across multi-suite |
-| Physically Discovered | 162 episodes (LIBERO-Object only) |
-| Valid | All 162 from Object suite |
-| Clean Success | 162/162 (100%) |
-| Clean Failure | 0 |
-| Duplicates | None detected |
-| Missing | 138 (Spatial/Goal/10 not yet processed) |
-| Schema Fail | 0 |
-| Telemetry Completeness | Full for Object, missing for other suites |
-| Raw Object Detector Emits | Available via LOTO folds |
+| CLEAN300_STATUS | ARCHIVED_SUPERSEDED_DATA |
+| CLEAN300_SCIENTIFIC_AUTHORITY | NONE |
+| CLEAN300_FUTURE_USE | HISTORICAL_REFERENCE_ONLY |
+| Superseded by | dty-server CLEAN2000 (2000 episodes, 4 suites) |
+| Historical note | ARCHIVED_ACCEPTED_AT_THE_TIME_BUT_SUPERSEDED_BY_DTY_CLEAN2000 |
 
-**Status**: Object-only data complete. Cross-suite expansion not executed. LOTO 10-fold detector trained on Object only. Zero-shot replay on Spatial/Goal/10 data NOT performed.
+The 162 Object episodes previously attributed to CLEAN300 were the LIBERO-Object subset now fully incorporated into CLEAN2000's 500 Object episodes. Do not use CLEAN300 numbers for any current analysis.
 
 ---
 
-## CLEAN2000 Status
+## CLEAN2000 Status — AUTHORITATIVE CROSS-SUITE CORPUS
 
-### Data Inventory
+### Data Inventory (verified 2026-07-02)
 
 | File | Count | Description |
 |---|---|---|
@@ -63,16 +60,31 @@ The 957 episodes not in PRIMARY.jsonl fall into these categories (based on ATTEM
 
 Exact breakdown requires reading ATTEMPT_LEDGER.jsonl in detail.
 
-### Suite Distribution (Estimated)
+### Suite Distribution (Verified Exact)
 
-| Suite | Episodes (approx) | Clean Success | Notes |
-|---|---|---|---|
-| LIBERO-Object | ~500 | TBD | Most complete |
-| LIBERO-Spatial | ~500 | TBD | Partial |
-| LIBERO-Goal | ~500 | TBD | Partial |
-| LIBERO-10 | ~500 | TBD | Partial |
+| Suite | Total | Success | Failure | Teacher Eligible | Primary | Primary % |
+|---|---|---|---|---|---|---|
+| libero_spatial | 500 | 411 | 89 | 500 (100%) | 411 | 82.2% |
+| libero_object | 500 | 367 | 133 | 500 (100%) | 367 | 73.4% |
+| libero_goal | 500 | 383 | 117 | 300 (60%) | 234 | 46.8% |
+| libero_10 | 500 | 231 | 269 | 50 (10%) | 31 | 6.2% |
+| **TOTAL** | **2000** | **1392** | **608** | **1350 (67.5%)** | **1043** | **52.15%** |
 
-Exact per-suite counts require parsing INDEX_DRAFT.jsonl.
+### Exact Episode Classification (Sum = 2000)
+
+| Category | Count | % |
+|---|---|---|
+| PRIMARY_ELIGIBLE | 1043 | 52.15% |
+| CLEAN_FAILURE_SAFETY | 307 | 15.35% |
+| SUPPLEMENTARY (multi_object_two_items) | 200 | 10.00% |
+| SUPPLEMENTARY (articulated_task_no_pick_place) | 100 | 5.00% |
+| SUPPLEMENTARY (multi_object_two_different_targets) | 100 | 5.00% |
+| SUPPLEMENTARY (multi_stage_open_drawer_then_place) | 50 | 2.50% |
+| SUPPLEMENTARY (multi_stage_place_then_close) | 50 | 2.50% |
+| SUPPLEMENTARY (multi_stage_place_then_close_drawer) | 50 | 2.50% |
+| SUPPLEMENTARY (push_task_not_pick_place) | 50 | 2.50% |
+| SUPPLEMENTARY (multi_stage_turn_on_then_place) | 50 | 2.50% |
+| **TOTAL** | **2000** | **100.00%** |
 
 ---
 

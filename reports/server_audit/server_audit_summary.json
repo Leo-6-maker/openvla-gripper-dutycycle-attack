@@ -1,8 +1,12 @@
 {
-  "audit_timestamp": "2026-07-02T17:52:00+08:00",
-  "auditor": "local-windows-dev",
+  "audit_timestamp": "2026-07-02T19:01:29+08:00",
+  "amended_timestamp": "2026-07-02T19:01:29+08:00",
   "repo_commit": "9f7d711a08c96083c446e7dcb333ff382e52c11c",
   "repo_branch": "feature/multisuite-clean2000-detector-prep-v1",
+  "clean300_status": "ARCHIVED_SUPERSEDED_DATA",
+  "clean300_scientific_authority": "NONE",
+  "clean300_future_use": "HISTORICAL_REFERENCE_ONLY",
+  "clean2000_authoritative_corpus": "/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1",
   "server_checkouts": [
     {
       "host": "dty-server",
@@ -17,47 +21,11 @@
         "src/gripper_attack/attack_adapter.py"
       ],
       "dirty_files_untracked_count": 50
-    },
-    {
-      "host": "vla",
-      "path": "/data/liuyu/repos/codex_stageb_openvla_alignment_rc1a_20260607",
-      "branch": "exp/vis-prefix-margin-repair-20260603",
-      "commit": "a8e14ba78cdd057de4c92d49d9aa2f0dfc8359bc",
-      "dirty": true
-    },
-    {
-      "host": "vla",
-      "path": "/data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260605",
-      "branch": "exp/l12-production-streaming-adapter-20260615",
-      "commit": "52bdc33507a584e158581f9eded6dc657ac71029",
-      "dirty": true
     }
   ],
   "active_jobs": [],
-  "paused_jobs": [
-    {
-      "condition": "UMA",
-      "gpus": [3, 4, 6],
-      "completed": 43,
-      "failed": 104,
-      "incomplete": 15,
-      "planned": 162,
-      "status": "INCOMPLETE_PAUSED_NOT_FOR_SCIENTIFIC_USE",
-      "bridges_at_kill": [912119, 913458, 914525, 914593],
-      "bridge_status": "unknown"
-    },
-    {
-      "condition": "SHUFFLED",
-      "gpus": [3, 4, 6],
-      "completed": 16,
-      "failed": 103,
-      "incomplete": 43,
-      "planned": 162,
-      "status": "INCOMPLETE_PAUSED_NOT_FOR_SCIENTIFIC_USE",
-      "bridges_at_kill": [887833, 909658],
-      "bridge_status": "unknown"
-    }
-  ],
+  "paused_jobs": [],
+  "server_quiescence": "SERVER_EXECUTION_QUIESCENT_PASS",
   "completed_jobs": [
     {
       "condition": "TMA_STUDENT",
@@ -65,7 +33,9 @@
       "failed": 7,
       "planned": 162,
       "formal_pass": true,
-      "status": "EXPLORATORY_CANARY"
+      "status": "EXPLORATORY_CANARY",
+      "persisted_artifacts": 0,
+      "formal_pass_not_sufficient": true
     },
     {
       "condition": "TMA_RANDOM_TIME",
@@ -73,45 +43,71 @@
       "failed": 9,
       "planned": 162,
       "formal_pass": false,
-      "status": "EXPLORATORY_CANARY"
+      "status": "EXPLORATORY_CANARY",
+      "persisted_artifacts": 0
+    }
+  ],
+  "incomplete_evidence": [
+    {
+      "condition": "UMA",
+      "completed": 43,
+      "failed": 104,
+      "incomplete": 15,
+      "planned": 162,
+      "status": "FAILED_ENGINEERING_ATTEMPT",
+      "paper_usable": "NO",
+      "future_resume": "NO_UNLESS_HUMAN_REAUTHORIZES"
+    },
+    {
+      "condition": "SHUFFLED",
+      "completed": 16,
+      "failed": 103,
+      "incomplete": 43,
+      "planned": 162,
+      "status": "FAILED_ENGINEERING_ATTEMPT",
+      "paper_usable": "NO",
+      "future_resume": "NO_UNLESS_HUMAN_REAUTHORIZES"
     }
   ],
   "formal_evidence": [
-    "CLEAN",
-    "RAND_T10",
-    "RANDOM_TIME_V3",
-    "EARLY_SHIFT_T10",
-    "TRUE_T10",
-    "COMMAND_OPEN_ORACLE"
+    {"condition": "CLEAN", "verified_count": 162, "success": 162, "reaggregation": "PASS"},
+    {"condition": "RAND_T10", "verified_count": 162, "success": 162, "reaggregation": "PASS"},
+    {"condition": "RANDOM_TIME_V3", "verified_count": 162, "success": 119, "reaggregation": "PASS"},
+    {"condition": "EARLY_SHIFT_T10", "verified_count": 141, "success": 98, "reaggregation": "PASS", "denominator": "emission-matched"},
+    {"condition": "TRUE_T10", "verified_count": 162, "success_itt": 21, "success_emitted": 0, "reaggregation": "PASS", "emitted": 141, "no_emission": 21},
+    {"condition": "COMMAND_OPEN_ORACLE_T10", "verified_count": 141, "success": 0, "reaggregation": "PASS", "denominator": "emission-matched"}
   ],
-  "exploratory_evidence": [
-    "TMA_STUDENT",
-    "TMA_RANDOM_TIME",
-    "EARLY_SHIFT",
-    "RAND_LINF",
-    "RANDOM_TIME",
-    "RANDOM_TIME_INVALID_V1",
-    "SHUFFLED"
-  ],
-  "incomplete_evidence": [
-    "UMA",
-    "SHUFFLED"
-  ],
-  "clean300_status": "DATA_PRESENT_NOT_YET_AGGREGATED",
-  "clean2000_status": "DATA_COLLECTED_NOT_READY_FOR_TRAINING",
-  "clean2000_primary_count": 1043,
-  "clean2000_total_count": 2000,
-  "object_status": "FROZEN_FORMAL_EVIDENCE_PRESENT_SERVER_ONLY",
-  "object_artifact_count": 3495,
+  "object_status": "FROZEN_REPORTED_RESULT_WITH_PROVENANCE_SEAL_PENDING",
+  "object_reaggregation_match": "PASS",
+  "object_emitted_set_141_verified": true,
+  "object_no_emission_set_21_verified": true,
+  "object_cross_condition_parent_matching": "PASS",
+  "clean2000_status": "CLEAN2000_FROZEN_WITH_LABEL_GAPS",
+  "clean2000_total_episodes": 2000,
+  "clean2000_primary": 1043,
+  "clean2000_clean_failure_safety": 307,
+  "clean2000_supplementary": 650,
+  "clean2000_teacher_labels_valid": 1350,
+  "clean2000_teacher_labels_invalid": 650,
+  "clean2000_per_suite_primary": {
+    "libero_spatial": 411,
+    "libero_object": 367,
+    "libero_goal": 234,
+    "libero_10": 31
+  },
   "disk_usage_percent": 95,
-  "disk_free_gb": 167,
+  "disk_free_gb": 162,
+  "backup_status": "HOLD_NO_SAFE_SECONDARY_STORAGE",
+  "backup_candidate": "vla:/data/liuyu (1.1T free)",
   "blocking_issues": [
-    "disk_95_percent_full",
-    "no_local_evidence_copy",
-    "server_git_divergence",
-    "uma_shuffled_massive_failure",
-    "tma_random_time_formal_validator_missing",
-    "clean2000_only_52_percent_primary"
+    "backup_not_executed"
   ],
-  "final_gate": "HOLD_ACTIVE_JOBS_NOT_SAFELY_PAUSED"
+  "final_gate": "HOLD_BACKUP_NOT_SECURED",
+  "hard_constraints": {
+    "no_new_experiment_launched": true,
+    "no_live_artifact_modified": true,
+    "clean300_archived_and_superseded": true,
+    "dty_clean2000_is_authoritative": true,
+    "experiment_execution_not_authorized": true
+  }
 }

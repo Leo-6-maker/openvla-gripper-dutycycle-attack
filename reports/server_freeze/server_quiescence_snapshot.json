@@ -1,0 +1,61 @@
+{
+  "snapshot_t0": "2026-07-02T18:57:57+08:00",
+  "snapshot_t1": "2026-07-02T19:01:29+08:00",
+  "interval_seconds": 212,
+  "server": {
+    "hostname": "pm-364c0001",
+    "uptime_days": 89,
+    "load_average": [177.35, 176.43, 175.14]
+  },
+  "openvla_processes": {
+    "t0": 0,
+    "t1": 0,
+    "verdict": "NONE_RUNNING"
+  },
+  "bridge_pids": {
+    "887833": "DEAD",
+    "909658": "DEAD",
+    "912119": "DEAD",
+    "913458": "DEAD",
+    "914525": "DEAD",
+    "914593": "DEAD",
+    "verdict": "ALL_DEAD"
+  },
+  "outputs_directory": {
+    "t0_bytes": 4096,
+    "t1_bytes": 4096,
+    "stable": true,
+    "verdict": "EMPTY_DIRECTORY"
+  },
+  "log_files": {
+    "count": 80,
+    "size_changed": false,
+    "verdict": "STABLE"
+  },
+  "evidence_files_modified_15min": {
+    "object": 0,
+    "clean2000": 0,
+    "verdict": "NO_RECENT_WRITES"
+  },
+  "gpu_state": {
+    "all_occupied_by_other_users": true,
+    "no_openvla_gpu_memory": true
+  },
+  "watchers": {
+    "watch_understandingonly_b28": {
+      "pid": 3034782,
+      "project": "modal-aphasia-textadv",
+      "threat_to_openvla": false,
+      "status": "RUNNING_BUT_HARMLESS"
+    }
+  },
+  "cron": "EMPTY",
+  "tmux": ["sc5_wave1_0280c85 (stale, Jun 28)", "watch-understandingonly-b28 (harmless watcher)"],
+  "screen": "NONE",
+  "final_verdict": {
+    "SERVER_EXECUTION_QUIESCENT": "PASS",
+    "PROCESS_STOPPED": "PASS",
+    "LAST_ARTIFACT_ATOMICITY": "UNKNOWN",
+    "NO_AUTO_RESUME_RISK": "PASS"
+  }
+}

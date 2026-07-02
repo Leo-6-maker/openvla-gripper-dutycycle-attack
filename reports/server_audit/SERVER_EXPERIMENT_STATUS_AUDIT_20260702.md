@@ -6,7 +6,9 @@ This audit provides a reconciled snapshot of all OpenVLA Gripper Duty-Cycle Atta
 
 **All UMA and SHUFFLED workers were killed on 2026-07-02 ~14:30+08. No OpenVLA processes remain running.** GPUs are occupied by unrelated user jobs (zkx CAMEF, huanzze GR00T-N1.7). No watchers, cron jobs, or auto-launch scripts are active.
 
-**Overall Gate: HOLD_ACTIVE_JOBS_NOT_SAFELY_PAUSED** (downgraded from previous state — see UMA/SHUFFLED partial completion below). Once the bridge tail artifacts are confirmed no longer writing, this resolves to SERVER_AUDIT_READY_FOR_REVIEW.
+**Overall Gate: HOLD_BACKUP_NOT_SECURED.** Server is quiescent (all processes stopped, all bridge PIDs dead, no artifact writes in progress). Object frozen results independently verified. CLEAN2000 reconciled. The single remaining hold is evidence backup.
+
+**AMENDED 2026-07-02T19:01: CLEAN300 is ARCHIVED AND SUPERSEDED. dty CLEAN2000 is the sole authoritative cross-suite corpus. See CROSS_SUITE_AND_CLEAN2000_STATUS for details.**
 
 ---
 
@@ -17,7 +19,7 @@ This audit provides a reconciled snapshot of all OpenVLA Gripper Duty-Cycle Atta
 | Hostname | pm-364c0001 |
 | Uptime | 89 days 14:58 |
 | Load Average | 177.35, 176.43, 175.14 (dominated by other users) |
-| Disk /mnt/sdc | 2.9T total, 2.6T used, 167G available (95% full) |
+| Disk /mnt/sdc | 2.9T total, 2.6T used, 162G available (95% full) |
 | GPUs | 8× NVIDIA A800-SXM4-80GB |
 | CUDA | Not checked (proprietary driver) |
 | Cron (dty_user) | none |

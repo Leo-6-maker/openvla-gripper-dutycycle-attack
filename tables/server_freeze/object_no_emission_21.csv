@@ -1,0 +1,8 @@
+fold,state,no_emission_count,detector_seeds_never_trigger
+fold_01,state_0,3,"det_seed_1/pert_seed_0, det_seed_2/pert_seed_0, det_seed_3/pert_seed_0"
+fold_02,state_0,3,"det_seed_1/pert_seed_0, det_seed_2/pert_seed_0, det_seed_3/pert_seed_0"
+fold_02,state_1,3,"det_seed_1/pert_seed_1, det_seed_2/pert_seed_1, det_seed_3/pert_seed_1"
+fold_03,state_0,3,"det_seed_1/pert_seed_1, det_seed_2/pert_seed_1, det_seed_3/pert_seed_1"
+fold_05,state_0,3,"det_seed_1/pert_seed_2, det_seed_2/pert_seed_2, det_seed_3/pert_seed_2"
+fold_06,state_0,3,"det_seed_1/pert_seed_0, det_seed_2/pert_seed_0, det_seed_3/pert_seed_0"
+fold_08,state_0,3,"det_seed_1/pert_seed_0, det_seed_2/pert_seed_0, det_seed_3/pert_seed_0"

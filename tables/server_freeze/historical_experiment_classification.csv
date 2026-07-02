@@ -1,0 +1,13 @@
+experiment,condition,planned_manifest_rows,attempted_rows,process_exit_success_rows,persisted_complete_artifact_rows,validator_accepted_rows,scientifically_valid_rows,formal_status,paper_usable,output_root_status,formal_pass_status,recommendation
+TMA_STUDENT_SOTA,TMA_STUDENT,162,162,162,0,162,0,EXPLORATORY_CANARY,NO,outputs/ dir empty (0 artifacts),FORMAL_PASS_FILE_NOT_SUFFICIENT,Retain as canary; formal pass points to empty root
+TMA_RT_SOTA,TMA_RANDOM_TIME,162,162,161,0,0,0,EXPLORATORY_CANARY,NO,outputs/ dir empty,NOT_RUN,Retain as canary; missing 1 episode; formal validator not run
+UMA_SOTA,UMA,162,162,43,0,0,0,FAILED_ENGINEERING_ATTEMPT,NO,outputs/ dir empty,NOT_RUN,"Do NOT recover; 70% failure rate; FUTURE_RESUME=NO_UNLESS_HUMAN_REAUTHORIZES"
+SHUFFLED_SOTA,SHUFFLED,162,162,16,0,0,0,FAILED_ENGINEERING_ATTEMPT,NO,outputs/ dir empty,NOT_RUN,"Do NOT recover; 85% failure rate; FUTURE_RESUME=NO_UNLESS_HUMAN_REAUTHORIZES"
+TMA_OBJECT,TMA,162,162,162,282,0,0,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/TMA has 282 dirs,N/A,Object-level exploratory; different protocol from SOTA TMA
+UMA_OBJECT,UMA,162,162,162,270,0,0,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/UMA has 270 dirs,N/A,Object-level exploratory; different protocol from SOTA UMA
+SHUFFLED_OBJECT,SHUFFLED,162,162,162,242,0,0,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/SHUFFLED has 242 dirs,N/A,Object-level exploratory; different protocol from SOTA SHUFFLED
+TMA_RT_OBJECT,TMA_RANDOM_TIME,162,162,162,281,0,0,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/TMA_RANDOM_TIME has 281 dirs,N/A,Object-level exploratory
+EARLY_SHIFT_OBJECT,EARLY_SHIFT,162,162,162,147,0,0,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/EARLY_SHIFT has 147 dirs,N/A,Older variant; superseded by EARLY_SHIFT_T10
+RAND_LINF_OBJECT,RAND_LINF,162,162,162,155,0,0,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/RAND_LINF has 155 dirs,N/A,Exploratory random L-inf attack
+RANDOM_TIME_V1_OBJECT,RANDOM_TIME,162,162,162,247,0,0,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/RANDOM_TIME has 247 dirs,N/A,Older variant; superseded by RANDOM_TIME_V3
+RANDOM_TIME_INVALID_OBJECT,RANDOM_TIME_INVALID_V1,unknown,unknown,unknown,425,0,0,EXPLORATORY_CANARY,NO,vis_heldout_formal_v1/RANDOM_TIME_INVALID_V1 has 425 dirs,N/A,INVALIDATED version; do not use
