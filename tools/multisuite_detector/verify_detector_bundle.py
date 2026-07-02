@@ -6,9 +6,24 @@ from pathlib import Path
 
 REQUIRED_FILES = [
     "detector_config.json", "feature_contract.json",
+    "data_contract.json", "normalization.json",
     "checkpoint.pt", "checkpoint_metadata.json",
     "FILES.json", "SHA256SUMS.txt",
 ]
+
+
+def load_sums(path: Path) -> dict[str, str]:
+    declared = {}
+    for line in path.read_text().splitlines():
+        if not line.strip():
+            continue
+        try:
+            sha, name = line.strip().split("  ", 1)
+        except ValueError:
+            declared[line] = ""
+            continue
+        declared[name] = sha
+    return declared
 
 
 def main():
@@ -30,21 +45,36 @@ def main():
         sys.exit(1)
 
     files_json = json.loads((bundle / "FILES.json").read_text())
-    sums_txt = (bundle / "SHA256SUMS.txt").read_text().strip().split("\n")
-    declared = {}
-    for line in sums_txt:
-        sha, name = line.strip().split("  ", 1)
-        declared[name] = sha
+    files = files_json.get("files", {})
+    declared = load_sums(bundle / "SHA256SUMS.txt")
 
-    for name, expected_sha in files_json.get("files", {}).items():
-        actual = hashlib.sha256((bundle / name).read_bytes()).hexdigest()
-        if actual != expected_sha:
+    for name in REQUIRED_FILES:
+        if name not in files:
+            errors.append(f"FILES MISSING ENTRY: {name}")
+        if name not in declared:
+            errors.append(f"SUMS MISSING ENTRY: {name}")
+
+    for name in sorted(set(files) | set(declared)):
+        p = bundle / name
+        if not p.exists():
+            errors.append(f"DECLARED FILE MISSING: {name}")
+            continue
+        actual = hashlib.sha256(p.read_bytes()).hexdigest()
+        expected_sha = files.get(name)
+        if expected_sha is None:
+            errors.append(f"FILES MISSING ENTRY: {name}")
+        elif actual != expected_sha:
             errors.append(f"SHA MISMATCH: {name} expected={expected_sha[:16]} actual={actual[:16]}")
-        if name in declared and declared[name] != expected_sha:
-            errors.append(f"SUMS MISMATCH: {name}")
+        declared_sha = declared.get(name)
+        if declared_sha is None:
+            errors.append(f"SUMS MISSING ENTRY: {name}")
+        elif actual != declared_sha:
+            errors.append(f"SHA256SUMS MISMATCH: {name} expected={declared_sha[:16]} actual={actual[:16]}")
+        if expected_sha and declared_sha and declared_sha != expected_sha:
+            errors.append(f"FILES/SUMS DISAGREE: {name}")
 
-    import torch
     try:
+        import torch
         ckpt = torch.load(str(bundle / "checkpoint.pt"), map_location="cpu", weights_only=False)
         required_keys = ["model_state", "mean", "std", "feature_names", "phase_classes"]
         for k in required_keys:

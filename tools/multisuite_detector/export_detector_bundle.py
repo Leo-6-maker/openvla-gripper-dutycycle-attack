@@ -24,10 +24,32 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def load_config(path: str) -> dict:
+    p = Path(path)
+    if p.suffix.lower() == ".json":
+        return json.loads(p.read_text())
+    if p.suffix.lower() in {".yaml", ".yml"}:
+        try:
+            import yaml
+        except ImportError as exc:
+            raise SystemExit("PyYAML required for YAML config input") from exc
+        return yaml.safe_load(p.read_text()) or {}
+    raise SystemExit(f"Unsupported config type: {p.suffix}")
+
+
+def copy_required(src: str, dst: Path) -> None:
+    p = Path(src)
+    if not p.exists():
+        raise SystemExit(f"Required bundle input missing: {p}")
+    shutil.copy2(p, dst)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Export frozen detector bundle")
     ap.add_argument("--checkpoint", required=True, help="Trained checkpoint .pt")
     ap.add_argument("--feature_contract", required=True, help="Feature contract JSON")
+    ap.add_argument("--data_contract", required=True, help="Data contract JSON")
+    ap.add_argument("--normalization", required=True, help="Normalization JSON")
     ap.add_argument("--config", required=True, help="Detector config JSON/YAML")
     ap.add_argument("--output_dir", required=True, help="Bundle output directory")
     ap.add_argument("--metadata", help="Optional metadata JSON")
@@ -43,6 +65,8 @@ def main():
 
     fc_src = Path(args.feature_contract)
     shutil.copy2(fc_src, out / "feature_contract.json")
+    copy_required(args.data_contract, out / "data_contract.json")
+    copy_required(args.normalization, out / "normalization.json")
 
     import torch
     ckpt = torch.load(str(ckpt_src), map_location="cpu", weights_only=False)
@@ -60,7 +84,7 @@ def main():
     with open(out / "checkpoint_metadata.json", "w") as f:
         json.dump(meta, f, indent=2)
 
-    config = json.loads(Path(args.config).read_text()) if args.config.endswith(".json") else {}
+    config = load_config(args.config)
     config["checkpoint_sha256"] = sha256_file(out / "checkpoint.pt")
     config["feature_contract_sha256"] = sha256_file(out / "feature_contract.json")
     with open(out / "detector_config.json", "w") as f:
