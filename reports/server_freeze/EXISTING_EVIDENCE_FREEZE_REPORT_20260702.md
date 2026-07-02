@@ -1,11 +1,8 @@
-# Existing Evidence Freeze Report — 2026-07-02 (REVISION 3)
-
-> This report supersedes `reports/server_audit/SERVER_EXPERIMENT_STATUS_AUDIT_20260702.md` for gate, classification, and evidence status.
-> Previous aggregate files `object_emitted_parent_set_141.csv` and `object_no_emission_21.csv` are superseded by per-episode CSVs and cross-condition reconciliation.
+# Existing Evidence Freeze Report — 2026-07-02 (REVISION 4)
 
 ## Executive Summary
 
-Object condition totals verified. Cross-condition key matching confirmed (162 keys, 0 mismatches). CLEAN2000 census committed (2000 rows). **Critical finding: all Object artifacts used `upstream_tf_jpeg` preprocessing, not `official_pil_lanczos`** — protocol description must be corrected. **All 1350 teacher labels are placeholder defaults** (anchor=0, confidence=0.5, window=[0-10]) — CLEAN2000 cannot be used for detector timing training.
+Object condition totals independently verified. Cross-condition selection-mask equality confirmed (141 selected, 21 excluded). **RAND_T10 correction: attack_applied=True for 141 emitted episodes (all succeed).** Actual preprocessing confirmed as `upstream_tf_jpeg` (not `official_pil_lanczos`). Epsilon/PGD/K/token remain UNKNOWN. Teacher labels are constant default-like values — CLEAN2000 is CENSUS_ONLY.
 
 **Gate: HOLD_AUDIT_INCOMPLETE**
 
@@ -13,7 +10,7 @@ Object condition totals verified. Cross-condition key matching confirmed (162 ke
 
 ## Server Quiescence
 
-SERVER_EXECUTION_QUIESCENT = PASS. PROCESS_STOPPED = PASS. LAST_ARTIFACT_ATOMICITY = UNKNOWN.
+SERVER_EXECUTION_QUIESCENT = PASS. PROCESS_STOPPED = PASS.
 
 ---
 
@@ -23,118 +20,118 @@ SERVER_EXECUTION_QUIESCENT = PASS. PROCESS_STOPPED = PASS. LAST_ARTIFACT_ATOMICI
 
 ## Object Frozen Evidence
 
-**Status: FROZEN_REPORTED_RESULT_WITH_PROVENANCE_SEAL_PENDING**
+**Status: FROZEN_EMPIRICAL_RESULTS_UNDER_LEGACY_PROTOCOL_DRIFT**
+
+See `reports/server_audit/OBJECT_FROZEN_EVIDENCE_RECONCILIATION_20260702.md` (Revision 4) for full detail.
 
 ### Verified
-- OBJECT_CONDITION_TOTAL_REAGGREGATION = PASS (all 6 conditions match)
-- OBJECT_CROSS_CONDITION_KEY_MATCH = PASS (162 keys, TRUE=EARLY=ORACLE, 0 mismatches)
-- TRUE_T10_EMISSION_SPLIT = PASS (141 emitted + 21 no-emission, per-episode rows)
-- 930-row master ledger with 29 fields including full 64-char SHA256, artifact paths, episode keys
+- OBJECT_CONDITION_TOTAL_REAGGREGATION = PASS (all 6 conditions, corrected RAND_T10 accounting)
+- TRUE_SELECTION_MASK_RECONCILIATION = PASS (141 selected, 21 excluded, selection masks equal)
+- TRUE_T10_EMISSION_SPLIT = PASS (141 emitted, 21 no-emission)
 
-### Protocol Deviation (CRITICAL)
-All episodes record `preprocess_backend = upstream_tf_jpeg` with `preprocess_uses_jpeg=True`.
-Claimed frozen protocol says `official_pil_lanczos`. This is the PR #43 draft protocol.
-Epsilon, PGD steps, K, token, route, fallback, arm gate NOT recorded in episode_summary.json.
+### Attack Accounting (corrected)
 
-### EARLY_SHIFT Correction
-All 141 EARLY_SHIFT episodes have `attack_applied=True`. The 42 "no-emission" episodes are "attack applied but detector silent" — previous "natural difficulty" framing was incorrect. FR=30.5% (43/141), lower than TRUE_T10 emitted-only 100%, consistent with timing specificity but early-shift is not "harmless."
+| Condition | Total | Attack Applied | AA+mlp | AA+no_mlp | NoAA+mlp | NoAA+no_mlp | Success |
+|---|---|---|---|---|---|---|---|
+| CLEAN | 162 | 0 | 0 | 0 | 141 | 21 | 162 |
+| RAND_T10 | 162 | 141 | 141 | 0 | 0 | 21 | 162 |
+| RANDOM_TIME_V3 | 162 | 162 | 126 | 36 | 0 | 0 | 119 |
+| EARLY_SHIFT_T10 | 141 | 141 | 99 | 42 | 0 | 0 | 98 |
+| TRUE_T10 | 162 | 141 | 141 | 0 | 0 | 21 | 21 |
+| COMMAND_OPEN_ORACLE_T10 | 141 | 141 | 141 | 0 | 0 | 0 | 0 |
+
+### Protocol Status
+
+| Parameter | Value |
+|---|---|
+| preprocessing | `upstream_tf_jpeg` (CONFIRMED from episode_summary.json) |
+| jpeg_roundtrip | True (CONFIRMED) |
+| epsilon | UNKNOWN |
+| PGD steps | UNKNOWN |
+| K | UNKNOWN |
+| target_token | UNKNOWN |
+| route | UNKNOWN |
+| fallback | UNKNOWN |
+| arm_gate | UNKNOWN |
+
+Claimed frozen protocol (`official_pil_lanczos`, `epsilon=6/255`) does NOT match actual artifacts. The `upstream_tf_jpeg` preprocessing does NOT imply epsilon=2/255 — epsilon is independently unknown.
 
 ---
 
 ## CLEAN2000 Authority Census
 
-**Status: CLEAN2000_FROZEN — CENSUS ONLY. NOT READY FOR DETECTOR TIMING TRAINING.**
+**Status: CENSUS_ONLY. TIMING_TRAINING = FORBIDDEN.**
 
-### Classification (Mutually Exclusive, Sum = 2000)
+### Classification (2000 rows)
 
 | Category | Count |
 |---|---|
-| PRIMARY_ELIGIBLE (task_success=True, teacher_eligible=True) | 1043 |
-| CLEAN_FAILURE_SAFETY (task_success=False, teacher_eligible=True) | 307 |
-| SUPPLEMENTARY_EVENT (teacher_eligible=False — task type out of scope) | 650 |
-| **TOTAL** | **2000** |
+| PRIMARY_ELIGIBLE | 1043 |
+| CLEAN_FAILURE_SAFETY | 307 |
+| SUPPLEMENTARY_EVENT | 650 |
 
-### Teacher Label Audit (CRITICAL)
+### Teacher Label Audit
 
-**All 1350 "valid" teacher labels are placeholder defaults:**
+| Metric | Value |
+|---|---|
+| Label index entries | 2000 (100% coverage) |
+| teacher_label_valid=True | 1350 |
+| teacher_label_valid=False | 650 |
+| anchor_step = 0 (all valid) | 1350 (100% of valid) |
+| anchor_step = -1 (all invalid) | 650 (100% of invalid) |
+| confidence = 0.5 (all valid) | 1350 (100% of valid) |
+| confidence = 0.0 (all invalid) | 650 (100% of invalid) |
+| n_unique_anchors (valid) | 1 |
+| n_unique_confidences (valid) | 1 |
 
-| Field | Value | Notes |
-|---|---|---|
-| teacher_anchor_step | 0 (100% of valid labels) | Single unique value across all 1350 |
-| teacher_confidence | 0.5 (100% of valid labels) | Single unique value; matches default threshold |
-| teacher_window | [0-10] (100%) | Identical window for every episode |
-| n_unique_anchors | 1 | All 1350 share anchor=0 |
-| n_unique_confidences | 1 | All 1350 share confidence=0.5 |
+All 1350 teacher_label_valid=True entries have identical anchor=0, confidence=0.5. These are **CONSTANT_DEFAULT_LIKE_TIMING_FIELDS** — no timing variation exists. Whether these are placeholder defaults, absolute-step-0 coordinates, or cropped-trace local coordinates cannot be determined without the generator script and source privileged records.
 
-These are NOT real teacher timing labels. They are placeholder defaults — likely filled when the teacher model could not produce genuine anchor-step predictions. The index has 2000 entries with valid JSON schema, but the 1350 "valid" entries contain no timing signal.
+**CLEAN2000_TIMING_SIGNAL = NOT_USABLE_AS_CURRENTLY_STORED**
 
-**CLEAN2000 can be used for:**
-- Success/failure census ✓
-- Mechanism scope (which tasks are pick-place) ✓
-- Per-suite/per-task statistics ✓
+See `tables/server_freeze/clean2000_teacher_label_audit.csv` (2000 rows) and `tables/server_freeze/clean2000_episode_census.csv` (2000 rows).
 
-**CLEAN2000 CANNOT be used for:**
-- Detector timing training (no real anchor steps)
-- Confidence-weighted loss (no real confidence)
-- Per-episode mechanism analysis (no real teacher_event_id)
-- Window-based feature extraction (window=[0-10] is constant)
+### Abstention Semantics
 
-### Supplementary Episodes (650)
+The 650 SUPPLEMENTARY_EVENT entries have:
+- `label_present_in_index = True` (record exists)
+- `teacher_label_valid = False` (no positive anchor)
+- `teacher_anchor_step = -1` (structured abstention marker)
+- `teacher_confidence = 0.0`
+- `teacher_invalid_reason = "teacher_ineligible"` (explicit reason)
 
-These have `teacher_label_valid=False`, `teacher_anchor_step=-1`, `teacher_confidence=0.0`, `teacher_invalid_reason="teacher_ineligible"`. The schema supports this abstention pattern: the record exists (`label_present_in_index=True`), the schema is valid for abstention records, and the reason is explicit. These are **valid explicit abstentions** for mechanism-ineligible tasks, not label gaps.
+These are valid structured abstentions for mechanism-ineligible tasks. To fully resolve the abstention schema, four independent fields would be needed: `label_record_present`, `record_schema_valid`, `positive_anchor_valid`, `explicit_abstention_valid`. Current JSONL uses two fields (`teacher_label_valid`, `teacher_invalid_reason`) which conflate these semantics.
 
-### Per-Suite
+### Usable For
 
-| Suite | Total | Teacher Eligible | PRIMARY | CLEAN_FAILURE | SUPPLEMENTARY |
-|---|---|---|---|---|---|
-| libero_spatial | 500 | 500 | 411 | 89 | 0 |
-| libero_object | 500 | 500 | 367 | 133 | 0 |
-| libero_goal | 500 | 300 | 234 | 66 | 200 |
-| libero_10 | 500 | 50 | 31 | 19 | 450 |
-
----
-
-## Task Registry
-
-The INDEX_DRAFT.jsonl contains canonical task names for all 40 tasks. Per-task primary counts and teacher eligibility match between INDEX, PRIMARY, and TEACHER_LABEL_INDEX files. Task identity is consistent across all three files. See `tables/server_freeze/clean2000_suite_task_summary.csv` for per-task breakdown with INDEX-authoritative names.
+| Use Case | Status |
+|---|---|
+| Suite/task census | YES |
+| Clean success/failure | YES |
+| Mechanism scope (pick-place vs other) | YES |
+| Eligible/ineligible task taxonomy | YES |
+| Timing detector training | NO (CONSTANT_DEFAULT_LIKE_TIMING_FIELDS) |
+| Pooled detector training | FORBIDDEN |
+| LOSO detector training | FORBIDDEN |
 
 ---
 
 ## Historical Canary Classification
 
-| Experiment | ep_summary Count | Success | Failure | scientifically_valid_rows |
-|---|---|---|---|---|
-| TMA (Object) | 171 | 34 | 137 | UNKNOWN (exceeds planned 162) |
-| TMA_RT (Object) | 170 | 128 | 42 | UNKNOWN (exceeds planned 162) |
-| UMA (Object) | 55 | 55 | 0 | UNKNOWN (CLEAN-only, incomplete) |
-| SHUFFLED (Object) | 28 | 28 | 0 | UNKNOWN (CLEAN-only, incomplete) |
-| UMA (SOTA) | 0 | N/A | N/A | 0 (FAILED_ENGINEERING_ATTEMPT) |
-| SHUFFLED (SOTA) | 0 | N/A | N/A | 0 (FAILED_ENGINEERING_ATTEMPT) |
-
-Counts exceeding planned=162 (TMA=171, TMA_RT=170) indicate retry/duplicate/canary artifacts.
+All paper_usable=NO. SOTA UMA/SHUFFLED = FAILED_ENGINEERING_ATTEMPT (0 artifacts). Object-level TMA/UMA/SHUFFLED = EXPLORATORY_CANARY (scientifically_valid_rows=UNKNOWN where count > planned).
 
 ---
 
 ## Runtime Code Freeze
 
-**RUNTIME_CODE_FINGERPRINTED = PARTIAL. RUNTIME_CODE_FROZEN = NO.**
-
-Corrected blob registry:
-
-| File | base_blob | current_blob | diff_sha256 |
-|---|---|---|---|
-| attack_adapter.py | b05737c9 | efb42788 | 0e994bd6... |
-| run_v2_vis_sc5_mlp_bridge.py | 4deb0019 | 634b0edf | 482c47d1... |
-| v4_run_eval_openvla.py | 6c06d60b | e886a84f | 1db05b03... |
-| run_sc5_cross_suite_clean.py | 6cf4ac4f | 6f4d2a0d | 0f5383a8... |
-
-4 patch files saved. Previous registry had base/current swapped — corrected.
+RUNTIME_CODE_FINGERPRINTED = PARTIAL. RUNTIME_CODE_FROZEN = NO.
+4 dirty patch files saved. Blob direction corrected.
+`tables/server_freeze/runtime_code_sha_registry.csv` has corrected base vs current blob SHAs.
 
 ---
 
 ## Backup
 
-BACKUP_NOT_EXECUTED. vla server /data/liuyu has 1.1T free. CLEAN2000 is ~574 MB.
+BACKUP_NOT_EXECUTED. vla:/data/liuyu has 1.1T free.
 
 ---
 
@@ -143,24 +140,28 @@ BACKUP_NOT_EXECUTED. vla server /data/liuyu has 1.1T free. CLEAN2000 is ~574 MB.
 ```
 SERVER_EXECUTION_QUIESCENT: PASS
 CLEAN300_ARCHIVED: PASS
-OBJECT_CONDITION_TOTALS: PASS
-TRUE_T10_EMISSION_SPLIT: PASS
-OBJECT_CROSS_CONDITION_KEY_MATCH: PASS
-OBJECT_PROTOCOL_PROVENANCE: HOLD (preprocessing deviation upstream_tf_jpeg vs official_pil_lanczos)
-CLEAN2000_AGGREGATE_CENSUS: PASS
-CLEAN2000_LABEL_TIMING: HOLD (all 1350 labels are placeholder defaults)
-RUNTIME_CODE_FREEZE: HOLD (blob direction corrected, patch files saved)
-BACKUP: HOLD (not executed)
+
+OBJECT_RESULT_TOTALS: PASS
+TRUE_SELECTION_MASK_RECONCILIATION: PASS
+RAND_CONTROL_ATTACK_ACCOUNTING: CORRECTED (141/141 attacked, all succeed)
+OBJECT_ACTUAL_PREPROCESSING: PASS (confirmed upstream_tf_jpeg)
+OBJECT_FULL_PROTOCOL_PROVENANCE: HOLD (epsilon/PGD/K/token/route/fallback/arm_gate UNKNOWN)
+
+CLEAN2000_CENSUS: PASS
+CLEAN2000_TIMING_LABEL_PROVENANCE: HOLD (constant default-like, generator provenance unknown)
+
+RUNTIME_CODE_FREEZE: HOLD
+BACKUP: HOLD
 ```
 
 **HOLD_AUDIT_INCOMPLETE**
-
-Sub-blocks: HOLD_OBJECT_PROVENANCE_RECONCILIATION, HOLD_CLEAN2000_RECONCILIATION, HOLD_RUNTIME_CODE_SNAPSHOT_MISSING, HOLD_BACKUP_NOT_SECURED.
 
 ---
 
 CLEAN300 IS ARCHIVED AND SUPERSEDED.
 DTY CLEAN2000 IS THE AUTHORITATIVE CROSS-SUITE CORPUS.
+CLEAN2000 TIMING LABELS ARE CONSTANT DEFAULT-LIKE — TIMING TRAINING FORBIDDEN.
+RAND_T10: 141/141 ATTACKED EPISODES ALL SUCCEED — PERTURBATION DIRECTION MATTERS.
 NO NEW EXPERIMENT WAS LAUNCHED.
 NO LIVE SCIENTIFIC ARTIFACT WAS MODIFIED.
 EXPERIMENT EXECUTION REMAINS NOT AUTHORIZED.

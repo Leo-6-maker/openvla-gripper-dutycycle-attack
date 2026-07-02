@@ -1,10 +1,11 @@
 {
-  "freeze_timestamp": "2026-07-02T21:00:00+08:00",
+  "freeze_timestamp": "2026-07-02T22:00:00+08:00",
+  "revision": 4,
   "audit_branch": "audit/server-experiment-state-20260702",
   "draft_pr": "#47",
-  "pr_head_commit": "22252c6d49e047a0971bd7b55674145adeb8ca9e",
-  "pr_changed_files": 30,
-  "pr_commits": 3,
+  "pr_head_commit": "9bc816daa8bbdb26788bfebd23b2082f0823a959",
+  "pr_commits": 4,
+  "pr_changed_files": 29,
   "server_quiescence": {
     "SERVER_EXECUTION_QUIESCENT": "PASS",
     "PROCESS_STOPPED": "PASS",
@@ -15,76 +16,58 @@
     "scientific_authority": "NONE"
   },
   "object_frozen": {
-    "status": "FROZEN_REPORTED_RESULT_WITH_PROVENANCE_SEAL_PENDING",
-    "condition_totals_reaggregation": "PASS",
-    "cross_condition_key_match": "PASS (162 keys, 0 mismatches)",
-    "true_t10_emission_split": "PASS",
-    "master_ledger_rows": 930,
-    "master_ledger_fields": 29,
-    "protocol_provenance": "HOLD",
-    "critical_finding": "All artifacts used upstream_tf_jpeg preprocessing, not official_pil_lanczos as claimed in frozen protocol",
-    "provenance_gaps": [
-      "preprocessing: actual=upstream_tf_jpeg, claimed=official_pil_lanczos",
-      "epsilon not recorded in episode_summary.json",
-      "PGD steps/K/target_token not recorded in episode_summary.json",
-      "route/fallback/arm_gate not recorded in episode_summary.json",
-      "config SHA per condition not captured",
-      "manifest SHA per condition not individually listed",
-      "aggregation script path/SHA not captured",
-      "historical launch commands not captured"
-    ]
+    "status": "FROZEN_EMPIRICAL_RESULTS_UNDER_LEGACY_PROTOCOL_DRIFT",
+    "condition_totals": "PASS",
+    "selection_mask_reconciliation": "PASS (141 selected, 21 excluded, masks equal)",
+    "true_t10_emission_split": "PASS (141 emitted, 21 no-emission)",
+    "rand_t10_correction": "attack_applied=True for 141 emitted (all succeed)",
+    "actual_preprocessing": "upstream_tf_jpeg (CONFIRMED)",
+    "epsilon": "UNKNOWN",
+    "pgd_steps": "UNKNOWN",
+    "K": "UNKNOWN",
+    "target_token": "UNKNOWN",
+    "route": "UNKNOWN",
+    "fallback": "UNKNOWN",
+    "arm_gate": "UNKNOWN"
   },
   "clean2000": {
-    "status": "CLEAN2000_FROZEN_CENSUS_ONLY",
+    "status": "CENSUS_ONLY",
+    "timing_training": "FORBIDDEN",
     "census_complete": true,
-    "episode_census_rows": 2000,
     "primary_eligible": 1043,
     "clean_failure_safety": 307,
     "supplementary_event": 650,
-    "label_critical_finding": "All 1350 valid labels are placeholder defaults (anchor=0, confidence=0.5, window=[0-10])",
-    "label_timing_usable": false,
-    "label_timing_blocking_reason": "No real anchor step variation; all 1350 share identical placeholder values",
-    "label_present_in_index": 2000,
-    "supplementary_abstention_valid": true,
-    "actual_label_gaps": 0
-  },
-  "task_registry": {
-    "consistency": "INDEX task names are authoritative; census names match INDEX",
-    "tasks_with_teacher_eligibility": {
-      "libero_spatial": 10,
-      "libero_object": 10,
-      "libero_goal": 6,
-      "libero_10": 1
+    "teacher_labels": {
+      "valid_count": 1350,
+      "constant_default_like": true,
+      "unique_anchor_values": 1,
+      "unique_confidence_values": 1,
+      "all_anchors_zero": true,
+      "all_confidences_point_five": true,
+      "usable_for_timing": false,
+      "label_audit_csv": "tables/server_freeze/clean2000_teacher_label_audit.csv"
+    },
+    "abstention_semantics": {
+      "records_present": 650,
+      "anchor_minus_one": 650,
+      "confidence_zero": 650,
+      "reason_explicit": "teacher_ineligible",
+      "schema_conflation_note": "teacher_label_valid=False conflates 'no anchor' with 'invalid record'"
     }
   },
   "historical_canaries": {
-    "tma_object": {"ep_summary_count": 171, "scientifically_valid_rows": "UNKNOWN"},
-    "tma_rt_object": {"ep_summary_count": 170, "scientifically_valid_rows": "UNKNOWN"},
-    "uma_sota": "FAILED_ENGINEERING_ATTEMPT (0 artifacts)",
-    "shuffled_sota": "FAILED_ENGINEERING_ATTEMPT (0 artifacts)"
+    "uma_sota": "FAILED_ENGINEERING_ATTEMPT",
+    "shuffled_sota": "FAILED_ENGINEERING_ATTEMPT",
+    "object_level_all": "EXPLORATORY_CANARY"
   },
   "runtime_code": {
     "fingerprinted": "PARTIAL",
     "frozen": "NO",
-    "blob_direction_corrected": true,
-    "patch_files_saved": 4,
-    "manifest_shas_individually_listed": false
+    "patch_files": 4,
+    "blob_direction_corrected": true
   },
   "backup": {
-    "executed": false,
-    "status": "BACKUP_NOT_EXECUTED"
-  },
-  "gates": {
-    "SERVER_EXECUTION_QUIESCENT": "PASS",
-    "CLEAN300_ARCHIVED": "PASS",
-    "OBJECT_CONDITION_TOTALS": "PASS",
-    "TRUE_T10_EMISSION_SPLIT": "PASS",
-    "OBJECT_CROSS_CONDITION_KEY_MATCH": "PASS",
-    "OBJECT_PROTOCOL_PROVENANCE": "HOLD",
-    "CLEAN2000_AGGREGATE_CENSUS": "PASS",
-    "CLEAN2000_LABEL_TIMING_AND_TASK_REGISTRY": "HOLD",
-    "RUNTIME_CODE_FREEZE": "HOLD",
-    "BACKUP": "HOLD"
+    "executed": false
   },
   "final_gate": "HOLD_AUDIT_INCOMPLETE",
   "sub_blocks": [
@@ -92,5 +75,12 @@
     "HOLD_CLEAN2000_RECONCILIATION",
     "HOLD_RUNTIME_CODE_SNAPSHOT_MISSING",
     "HOLD_BACKUP_NOT_SECURED"
+  ],
+  "hard_constraints_upheld": [
+    "NO_NEW_EXPERIMENT_WAS_LAUNCHED",
+    "NO_LIVE_SCIENTIFIC_ARTIFACT_WAS_MODIFIED",
+    "CLEAN300_IS_ARCHIVED_AND_SUPERSEDED",
+    "DTY_CLEAN2000_IS_AUTHORITATIVE_CROSS_SUITE_CORPUS",
+    "EXPERIMENT_EXECUTION_REMAINS_NOT_AUTHORIZED"
   ]
 }

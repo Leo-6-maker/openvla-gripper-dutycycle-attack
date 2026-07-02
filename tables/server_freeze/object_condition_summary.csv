@@ -1,7 +1,7 @@
-condition,fold,state,detector_seed,perturbation_seed,parent_key,mlp_triggered,mlp_emit_step,attack_frames,task_success,n_steps,teacher_anchor,summary_sha256
-CLEAN,162,162,141,21,162,0,0.0%,PASS
-RAND_T10,162,162,141,21,162,0,0.0%,PASS
-RANDOM_TIME_V3,162,162,126,36,119,43,26.5%,PASS
-EARLY_SHIFT_T10,141,141,99,42,98,43,30.5% (emission-matched),PASS
-TRUE_T10,162,162,141,21,21,141,87.0% (ITT) / 100.0% (emitted-only),PASS
-COMMAND_OPEN_ORACLE_T10,141,141,141,0,0,141,100.0% (emission-matched),PASS
+condition,total_leaves,attack_applied_count,mlp_triggered_count,attack_and_mlp,attack_not_mlp,no_attack_mlp,no_attack_no_mlp,success_count,failure_count,claimed_success,claimed_total,claimed_fr,match
+CLEAN,162,0,141,0,0,141,21,162,0,162,162,0.0%,PASS
+RAND_T10,162,141,141,141,0,0,21,162,0,162,162,0.0%,PASS
+RANDOM_TIME_V3,162,162,126,126,36,0,0,119,43,119,162,26.5%,PASS
+EARLY_SHIFT_T10,141,141,99,99,42,0,0,98,43,98,141,30.5%,PASS
+TRUE_T10,162,141,141,141,0,0,21,21,141,21,162,87.0% ITT / 100.0% emitted,PASS
+COMMAND_OPEN_ORACLE_T10,141,141,141,141,0,0,0,0,141,0,141,100.0%,PASS
