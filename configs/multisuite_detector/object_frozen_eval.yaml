@@ -1,0 +1,28 @@
+gate: OBJECT_FROZEN_EVAL_V1
+detector_type: object_only_frozen
+training: none
+checkpoint_source: byte_identical_to_sc5_object_detector
+normalization_source: byte_identical_to_sc5_object_detector
+threshold_source: byte_identical_to_sc5_object_detector
+
+architecture:
+  model: SC5MLPV1
+  input_dim: 25
+  hidden_dim: 64
+  n_layers: 2
+  activation: ReLU
+  heads: [phase_9, corridor_1, release_1]
+
+fsm:
+  version: legacy_v1
+  tau_corridor: 0.3
+  tau_release: 0.3
+  guard: 5
+  K: 10
+  one_shot: true
+
+evaluation:
+  suites: [libero_object, libero_spatial, libero_goal, libero_10]
+  claim: zero_shot_cross_suite
+
+status: CODE_PREPARATION_ONLY

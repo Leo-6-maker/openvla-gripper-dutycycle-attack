@@ -1,0 +1,37 @@
+gate: BALANCED_POOLED_V1
+detector_type: balanced_pooled
+training: supervised_all_4_suites
+
+architecture:
+  model: SC5MLPV1
+  input_dim: 25
+  hidden_dim: 64
+  n_layers: 2
+  activation: ReLU
+  heads: [phase_9, corridor_1, release_1]
+
+sampling:
+  method: suite_balanced
+  strategy: uniform_suite_then_uniform_episode
+
+fsm:
+  version: legacy_v1
+  tau_corridor: 0.3
+  tau_release: 0.3
+  guard: 5
+  K: 10
+
+training_config:
+  seeds: [42, 123, 456]
+  epochs: 100
+  batch_size: 32
+  lr: 0.001
+  patience: 20
+  checkpoint_metric: val_loss
+  loss: phase_CE_and_0.5_corridor_BCE_and_0.3_release_BCE
+
+evaluation:
+  suites: [libero_object, libero_spatial, libero_goal, libero_10]
+  claim: supervised_multi_suite_interpolation
+
+status: CODE_PREPARATION_ONLY
