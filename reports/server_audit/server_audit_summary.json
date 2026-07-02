@@ -1,0 +1,117 @@
+{
+  "audit_timestamp": "2026-07-02T17:52:00+08:00",
+  "auditor": "local-windows-dev",
+  "repo_commit": "9f7d711a08c96083c446e7dcb333ff382e52c11c",
+  "repo_branch": "feature/multisuite-clean2000-detector-prep-v1",
+  "server_checkouts": [
+    {
+      "host": "dty-server",
+      "path": "/mnt/sdc/dty_user/openvla_attack",
+      "branch": "feature/sc5-abstention-v2-20260622",
+      "commit": "ace1876281a9ad6ed68e1229a6e17346356766e9",
+      "dirty": true,
+      "dirty_files_modified": [
+        "scripts/stageb/run_sc5_cross_suite_clean.py",
+        "scripts/stageb/run_v2_vis_sc5_mlp_bridge.py",
+        "scripts/v4_run_eval_openvla.py",
+        "src/gripper_attack/attack_adapter.py"
+      ],
+      "dirty_files_untracked_count": 50
+    },
+    {
+      "host": "vla",
+      "path": "/data/liuyu/repos/codex_stageb_openvla_alignment_rc1a_20260607",
+      "branch": "exp/vis-prefix-margin-repair-20260603",
+      "commit": "a8e14ba78cdd057de4c92d49d9aa2f0dfc8359bc",
+      "dirty": true
+    },
+    {
+      "host": "vla",
+      "path": "/data/liuyu/repos/openvla-gripper-dutycycle-attack-reviewed-20260605",
+      "branch": "exp/l12-production-streaming-adapter-20260615",
+      "commit": "52bdc33507a584e158581f9eded6dc657ac71029",
+      "dirty": true
+    }
+  ],
+  "active_jobs": [],
+  "paused_jobs": [
+    {
+      "condition": "UMA",
+      "gpus": [3, 4, 6],
+      "completed": 43,
+      "failed": 104,
+      "incomplete": 15,
+      "planned": 162,
+      "status": "INCOMPLETE_PAUSED_NOT_FOR_SCIENTIFIC_USE",
+      "bridges_at_kill": [912119, 913458, 914525, 914593],
+      "bridge_status": "unknown"
+    },
+    {
+      "condition": "SHUFFLED",
+      "gpus": [3, 4, 6],
+      "completed": 16,
+      "failed": 103,
+      "incomplete": 43,
+      "planned": 162,
+      "status": "INCOMPLETE_PAUSED_NOT_FOR_SCIENTIFIC_USE",
+      "bridges_at_kill": [887833, 909658],
+      "bridge_status": "unknown"
+    }
+  ],
+  "completed_jobs": [
+    {
+      "condition": "TMA_STUDENT",
+      "completed": 162,
+      "failed": 7,
+      "planned": 162,
+      "formal_pass": true,
+      "status": "EXPLORATORY_CANARY"
+    },
+    {
+      "condition": "TMA_RANDOM_TIME",
+      "completed": 161,
+      "failed": 9,
+      "planned": 162,
+      "formal_pass": false,
+      "status": "EXPLORATORY_CANARY"
+    }
+  ],
+  "formal_evidence": [
+    "CLEAN",
+    "RAND_T10",
+    "RANDOM_TIME_V3",
+    "EARLY_SHIFT_T10",
+    "TRUE_T10",
+    "COMMAND_OPEN_ORACLE"
+  ],
+  "exploratory_evidence": [
+    "TMA_STUDENT",
+    "TMA_RANDOM_TIME",
+    "EARLY_SHIFT",
+    "RAND_LINF",
+    "RANDOM_TIME",
+    "RANDOM_TIME_INVALID_V1",
+    "SHUFFLED"
+  ],
+  "incomplete_evidence": [
+    "UMA",
+    "SHUFFLED"
+  ],
+  "clean300_status": "DATA_PRESENT_NOT_YET_AGGREGATED",
+  "clean2000_status": "DATA_COLLECTED_NOT_READY_FOR_TRAINING",
+  "clean2000_primary_count": 1043,
+  "clean2000_total_count": 2000,
+  "object_status": "FROZEN_FORMAL_EVIDENCE_PRESENT_SERVER_ONLY",
+  "object_artifact_count": 3495,
+  "disk_usage_percent": 95,
+  "disk_free_gb": 167,
+  "blocking_issues": [
+    "disk_95_percent_full",
+    "no_local_evidence_copy",
+    "server_git_divergence",
+    "uma_shuffled_massive_failure",
+    "tma_random_time_formal_validator_missing",
+    "clean2000_only_52_percent_primary"
+  ],
+  "final_gate": "HOLD_ACTIVE_JOBS_NOT_SAFELY_PAUSED"
+}

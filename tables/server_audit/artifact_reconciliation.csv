@@ -1,0 +1,20 @@
+condition,evidence_path,manifest_path,manifest_rows,artifact_dirs,expected_dirs,dir_ratio,aggregation_present,formal_pass,sha_present,notes
+CLEAN,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/CLEAN,unknown,unknown,244,162,1.51,unknown,unknown,NO,"Includes fold dirs, logs, canary subdirs. 244 = 162 + overhead."
+RAND_T10,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/RAND_T10,unknown,unknown,246,162,1.52,unknown,unknown,NO,Similar structure to CLEAN
+RANDOM_TIME_V3,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/RANDOM_TIME_V3,unknown,unknown,245,162,1.51,unknown,unknown,NO,"43 failures (26.5% FR) — need to verify each failed artifact has corresponding failure marker"
+EARLY_SHIFT_T10,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/EARLY_SHIFT_T10,unknown,unknown,217,141,1.54,unknown,unknown,NO,"Emission-matched: 141 not 162. Need per-episode emission verification"
+TRUE_T10,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/TRUE_T10,formal_manifest.jsonl present,unknown,263,162,1.62,unknown,unknown,NO,"Has formal_v1/ subdirectory (244 dirs). By-denominator: ITT=162, emitted=141"
+COMMAND_OPEN_ORACLE_T10,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/COMMAND_OPEN_ORACLE_T10,unknown,unknown,216,141,1.53,unknown,unknown,NO,"Oracle condition — need injection method documentation"
+EARLY_SHIFT,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/EARLY_SHIFT,unknown,unknown,147,162,0.91,unknown,unknown,NO,Below expected count — may be incomplete
+RAND_LINF,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/RAND_LINF,unknown,unknown,155,162,0.96,unknown,unknown,NO,Below expected count
+RANDOM_TIME,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/RANDOM_TIME,unknown,unknown,247,162,1.52,unknown,unknown,NO,"Older version, superseded by RANDOM_TIME_V3"
+RANDOM_TIME_INVALID_V1,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/RANDOM_TIME_INVALID_V1,unknown,unknown,425,unknown,unknown,unknown,unknown,NO,"INVALIDATED — 425 dirs, marked as invalid version"
+SHUFFLED,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/SHUFFLED,unknown,unknown,242,162,1.49,unknown,unknown,NO,Object-level SHUFFLED (not the incomplete SOTA SHUFFLED from table1)
+TMA,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/TMA,unknown,unknown,282,162,1.74,unknown,unknown,NO,Object-level TMA (not the SOTA TMA from table1)
+TMA_RANDOM_TIME,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/TMA_RANDOM_TIME,unknown,unknown,281,162,1.73,unknown,unknown,NO,Object-level TMA_RT (not the SOTA TMA_RT from table1)
+UMA,/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/UMA,unknown,unknown,270,162,1.67,unknown,unknown,NO,Object-level UMA (not the incomplete SOTA UMA from table1)
+CLEAN2000,/evidence/CLEAN2000_CANONICAL_V1,CLEAN2000_INDEX_DRAFT.jsonl,2000,multiple,2000,1.00,"CLEAN2000_PRIMARY.jsonl (1043), CLEAN2000_BUILD_MANIFEST.json",unknown,YES (SHA256SUMS.txt),"1043/2000 primary validation rate. Features and labels present."
+TMA_SOTA,table1_sota_execution_v1/outputs,manifests/TMA/*.jsonl,162,0,162,0.00,NOT RUN,YES (TMA_STUDENT_FORMAL_PASS.json),NO,"No output artifacts! Logs show 162 completed but outputs/ dir empty. Bridges may have written then cleaned up."
+TMA_RT_SOTA,table1_sota_execution_v1/outputs,manifests/TMA_RANDOM_TIME/*.jsonl,162,0,162,0.00,NOT RUN,NO,NO,"No output artifacts. 161 completed. Formal validator not run."
+UMA_SOTA,table1_sota_execution_v1/outputs,manifests/UMA/*.jsonl,162,0,162,0.00,NOT RUN,NO,NO,"No output artifacts. 43 completed. INCOMPLETE_PAUSED."
+SHUFFLED_SOTA,table1_sota_execution_v1/outputs,manifests/SHUFFLED/*.jsonl,162,0,162,0.00,NOT RUN,NO,NO,"No output artifacts. 16 completed. INCOMPLETE_PAUSED."
