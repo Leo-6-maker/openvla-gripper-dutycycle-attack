@@ -30,12 +30,15 @@ exact_prefix_state_identity
 - Ours: detector-triggered gripper target
 - RAND_DIRECTION: same timing, random direction, same epsilon and K
 - RANDOM_TIME: same payload, random time, same epsilon and K
+- Adapted TMA-OPEN: same victim, epsilon, K, prefix, preprocessing, denominator
 
 ## Mechanism Controls
 
 - EARLY_SHIFT
 - ARM_TARGETED
 - COMMAND_OPEN_ORACLE
+- SHUFFLED_GRADIENT
+- UNTARGETED_PGD
 
 ## Required Runtime Telemetry
 
@@ -55,3 +58,29 @@ prefix_hash
 simulator_state_hash
 ```
 
+## Parameter Freeze
+
+Default formal values are:
+
+```text
+K = 10
+PGD steps = 20
+one global preprocessing backend
+one global target objective
+one global threshold
+one global attack parameter set across suites
+```
+
+Epsilon may be selected once on an independent calibration split from
+`{2/255, 4/255, 6/255}`. Selection must use the smallest epsilon satisfying the
+pre-registered gripper-duty effect, weak matched RAND, arm NAD ceiling, and
+complete actual-Linf telemetry. Test suites cannot retune epsilon.
+
+The main experiment uses gripper-only loss and reports actual arm NAD. Arm lock
+is ablation-only.
+
+## Random-Time Rule
+
+Before results are inspected, select a same-episode, same-K, same-horizon,
+mechanism-legal random window that excludes the detector window plus the frozen
+margin. If no legal window exists, label the branch `RANDOM_TIME_INELIGIBLE`.

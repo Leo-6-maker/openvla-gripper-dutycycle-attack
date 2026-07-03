@@ -4,9 +4,15 @@ Status: PLANNING_ONLY
 
 ## Unit Of Separation
 
-`parent_key` is the split unit. No child, seed, condition, normalization stat,
-checkpoint selection signal, or threshold-selection signal may cross split
-boundaries.
+`parent_key` and initial state hash are split units. No child, seed,
+condition, state hash, normalization stat, checkpoint selection signal, or
+threshold-selection signal may cross split boundaries.
+
+## Required Split Manifests
+
+- `parent_random_split_v1` for pooled detector train/val/test.
+- `object_leave_task_out_v1` for Object task-timing memorization checks.
+- `suite_loso_split_v1` for held-out suite evaluation.
 
 ## Detector Regimes
 
@@ -21,4 +27,3 @@ boundaries.
 Validation may set thresholds before test access. Test results cannot change
 thresholds, detector architecture, feature normalization, attack protocol, or
 metric definitions.
-

@@ -23,10 +23,15 @@ duty cycle more than arm trajectory.
 Matched gripper payloads are more damaging in the detector window than at
 random or early-shift times.
 
-4. Cross-suite generalization
+4a. Detector transfer
 
-The detector and attack mechanism must be measured across Object, Spatial,
-Goal, and LIBERO-10 before any cross-suite generalization claim.
+An Object-trained causal detector must be evaluated zero-shot on legal events
+from other suites before any detector-transfer claim.
+
+4b. Attack transfer
+
+On legal events, the targeted gripper payload must beat matched controls across
+suites before any attack-transfer claim.
 
 ## Current Claim Boundary
 
@@ -39,6 +44,7 @@ Current evidence does not support:
 - formal cross-suite attack success;
 - pooled or LOSO detector conclusions;
 - final paper-level confirmatory Object benchmark.
+- attack effectiveness on mechanism-ineligible or multi-event tasks.
 
 ## Gate
 
@@ -47,4 +53,3 @@ AUDIT_FREEZE_STATUS = EXISTING_EVIDENCE_FREEZE_READY_FOR_REVIEW
 SCIENTIFIC_CLAIM_STATUS = LEGACY_PROTOCOL_LIMITED
 EXPERIMENT_AUTHORIZATION_STATUS = NOT_AUTHORIZED
 ```
-

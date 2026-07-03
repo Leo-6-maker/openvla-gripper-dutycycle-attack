@@ -1,0 +1,16 @@
+experiment_id,phase,table_id,cell_id,population_id,suite,mechanism_type,expected_parent_n,condition,perturbation_seed_n,expected_branch_n,primary_contrast,manual_audit_required,artifact_manifest_path,authorization_scope,abort_rule,rollout_authorized
+P0_CLAIM_FREEZE,P0,ALL,ALL,N/A,ALL,N/A,0,N/A,0,0,N/A,false,docs/paper_driven_multisuite_confirmatory_v1/PAPER_CLAIM_FREEZE.md,planning_only,planning_review_reject,false
+P1_LABEL_V2_BUILD,P1,Table2,T2_LABEL_V2_ALL,ALL,ALL,ALL,2000,CLEAN2000_LABEL_V2,0,0,N/A,true,TBD,label_builder_cpu_only,row_count_or_sha_mismatch,false
+P1_SPLIT_MANIFESTS,P1,Table2,T2_SPLITS,ALL,ALL,ALL,2000,SPLIT_FREEZE,0,0,N/A,false,TBD,split_builder_cpu_only,parent_or_state_leakage,false
+P2_DET_OBJECT_ONLY,P2,Table2,T2_OBJECT_ONLY,PRIMARY_ATTACK,ALL,gripper_transfer,0,DETECTOR_ONLY_OBJECT_ONLY,3,0,N/A,false,TBD,detector_cpu_only,gate_c_fail,false
+P2_DET_POOLED,P2,Table2,T2_POOLED,PRIMARY_ATTACK,ALL,gripper_transfer,0,DETECTOR_ONLY_POOLED,3,0,N/A,false,TBD,detector_cpu_only,gate_c_fail,false
+P2_DET_LOSO,P2,Table2,T2_LOSO,PRIMARY_ATTACK,ALL,gripper_transfer,0,DETECTOR_ONLY_LOSO,12,0,N/A,false,TBD,detector_cpu_only,gate_c_fail,false
+P2_DET_OBJECT_LOTO,P2,Table2,T2_OBJECT_LOTO,PRIMARY_ATTACK,Object,gripper_transfer,0,DETECTOR_ONLY_OBJECT_LOTO,30,0,N/A,false,TBD,detector_cpu_only,gate_c_fail,false
+P3_EXACT_PREFIX_SMOKE,P3,Table3,T3_SMOKE,PRIMARY_ATTACK,ALL,gripper_transfer,8,CLEAN_REPLAY/Ours/RAND_DIRECTION/Adapted_TMA_OPEN/Shuffled_or_Untargeted,1,40,N/A,true,TBD,engineering_smoke_only,telemetry_or_hash_mismatch,false
+P4_MAIN_OBJECT,P4,Table1,T1_OBJECT_MAIN,PRIMARY_ATTACK,Object,gripper_transfer,20,Clean/Ours/RAND_DIRECTION/RANDOM_TIME/Adapted_TMA_OPEN,1,100,Ours_vs_controls,true,TBD,formal_attack_hold,gate_f_missing,false
+P4_MAIN_SPATIAL,P4,Table1,T1_SPATIAL_MAIN,PRIMARY_ATTACK,Spatial,gripper_transfer,20,Clean/Ours/RAND_DIRECTION/RANDOM_TIME/Adapted_TMA_OPEN,1,100,Ours_vs_controls,true,TBD,formal_attack_hold,gate_f_missing,false
+P4_MAIN_GOAL,P4,Table1,T1_GOAL_MAIN,PRIMARY_ATTACK,Goal,gripper_transfer,20,Clean/Ours/RAND_DIRECTION/RANDOM_TIME/Adapted_TMA_OPEN,1,100,Ours_vs_controls,true,TBD,formal_attack_hold,gate_f_missing,false
+P4_MAIN_LIBERO10,P4,Table1,T1_LIBERO10_MAIN,PRIMARY_ATTACK,LIBERO-10,gripper_transfer,20,Clean/Ours/RAND_DIRECTION/RANDOM_TIME/Adapted_TMA_OPEN,1,100,Ours_vs_controls,true,TBD,formal_attack_hold,gate_f_missing,false
+P4_SEED_ROBUSTNESS,P4,Table1,T1_SEED_ROBUSTNESS,PRIMARY_ATTACK,ALL,gripper_transfer,20,Ours/RAND_DIRECTION/RANDOM_TIME/Adapted_TMA_OPEN,2,160,seed_robustness,false,TBD,formal_attack_hold,gate_f_missing,false
+P4_MECHANISM_SUBSET,P4,Table3,T3_MECHANISM,PRIMARY_ATTACK,ALL,gripper_transfer,20,SHUFFLED_GRADIENT/UNTARGETED_PGD/EARLY_SHIFT/ARM_TARGETED/COMMAND_OPEN_ORACLE,1,100,mechanism_chain,true,TBD,formal_attack_hold,gate_f_missing,false
+P5_CONTACT_QUALITY,P5,Table5,T5_CQ,PRIMARY_ATTACK,ALL,gripper_transfer,80,EVALUATION_ONLY,0,0,official_sr_vs_cq,true,TBD,evaluation_only,cq_kappa_below_0_80,false
