@@ -89,6 +89,10 @@ FORMAL_EXPECTED_COUNTS = {
     "ELIGIBLE_CLEAN_FAILURE": {"positive": 31, "no_event": 276, "total": 307},
     "MECHANISM_INELIGIBLE_ABSTENTION": {"positive": 0, "no_event": 650, "total": 650},
 }
+FORMAL_OUTPUT_FILES = {
+    "label_v2.csv", "build_manifest.json", "validation_summary.json",
+    "manual_audit_sample_manifest.csv", "SHA256SUMS",
+}
 ALLOWED_COHORTS = set(FORMAL_EXPECTED_COUNTS)
 MECHANISM_TYPE_BY_SCOPE = {
     "MECHANISM_ELIGIBLE": "GRIPPER_TRANSFER_ELIGIBLE",
@@ -142,14 +146,20 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def validate_sha_arg(value: str, label: str) -> None:
+def validate_sha_arg(value: str | None, label: str) -> str:
+    if value is None:
+        fail(f"{label} is required")
     if not SHA256_RE.fullmatch(value):
         fail(f"{label} must be 64 lowercase hex characters")
+    return value
 
 
-def validate_git_sha_arg(value: str, label: str) -> None:
+def validate_git_sha_arg(value: str | None, label: str) -> str:
+    if value is None:
+        fail(f"{label} is required")
     if not GIT_SHA_RE.fullmatch(value):
         fail(f"{label} must be 40 lowercase hex characters")
+    return value
 
 
 def parse_bool(value: str, field: str, episode: str) -> bool:
@@ -245,9 +255,7 @@ def git_sha(repo: Path) -> str:
         ).strip()
     except Exception:
         fail("unable to determine git HEAD")
-    if not GIT_SHA_RE.fullmatch(value):
-        fail(f"git HEAD is not a 40-hex SHA: {value}")
-    return value
+    return validate_git_sha_arg(value, "git HEAD")
 
 
 def require_clean_worktree(repo: Path) -> None:
@@ -485,6 +493,8 @@ def validate_counts(
     counts = {cohort: {"positive": 0, "no_event": 0, "total": 0} for cohort in ALLOWED_COHORTS}
     for row in rows:
         cohort = row["cohort_class"]
+        if cohort not in counts:
+            fail(f"unsupported row cohort: {cohort}")
         counts[cohort]["total"] += 1
         key = "positive" if row["event_present"] == "true" else "no_event"
         counts[cohort][key] += 1
@@ -540,7 +550,7 @@ def manual_audit_sample(
     by_task: dict[tuple[str, str], list[dict[str, str]]] = {}
     for row in rows:
         by_task.setdefault((row["suite"], row["task_id"]), []).append(row)
-    if enforce_quota and len(by_task) != 40:
+    if enforce_quota and len(by_task) != FORMAL_SUITE_TASK_UNITS:
         fail(f"manual audit quota requires 40 suite-task units, got {len(by_task)}")
     picked = []
     for suite, task in sorted(by_task):
@@ -588,36 +598,6 @@ def write_csv(path: Path, columns: list[str], rows: list[dict[str, str]]) -> Non
         writer.writerows(rows)
 
 
-def resolve_mode(args: argparse.Namespace) -> str:
-    if args.mode:
-        return args.mode
-    if args.synthetic and args.dry_run:
-        return "synthetic-dry-run"
-    fail("specify --mode synthetic-dry-run or --mode formal-ledger-build")
-
-
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--mode", choices=["synthetic-dry-run", "formal-ledger-build", "validate-formal-output", "self-test-closeout"])
-    parser.add_argument("--source-manifest")
-    parser.add_argument("--episode-census")
-    parser.add_argument("--source-crosstab")
-    parser.add_argument("--output-root")
-    parser.add_argument("--synthetic-fixture-root")
-    parser.add_argument("--synthetic-output-root")
-    parser.add_argument("--expected-source-sha256", required=True)
-    parser.add_argument("--expected-census-sha256", required=True)
-    parser.add_argument("--expected-crosstab-sha256", required=True)
-    parser.add_argument("--expected-git-commit-sha")
-    parser.add_argument("--expected-builder-sha256")
-    parser.add_argument("--require-clean-worktree", action="store_true")
-    parser.add_argument("--expected-manual-sample-n", type=int)
-    parser.add_argument("--enforce-manual-quota", action="store_true")
-    parser.add_argument("--synthetic", action="store_true")
-    parser.add_argument("--dry-run", action="store_true")
-    return parser
-
-
 def compare_sha(path: Path, expected: str, label: str) -> str:
     actual = sha256_file(path)
     if actual != expected:
@@ -625,11 +605,20 @@ def compare_sha(path: Path, expected: str, label: str) -> str:
     return actual
 
 
-def verify_paths(args: argparse.Namespace, mode: str) -> tuple[Path, Path, Path, Path]:
+def require_input_args(args: argparse.Namespace) -> tuple[str, str, str]:
+    return (
+        validate_sha_arg(args.expected_source_sha256, "expected-source-sha256"),
+        validate_sha_arg(args.expected_census_sha256, "expected-census-sha256"),
+        validate_sha_arg(args.expected_crosstab_sha256, "expected-crosstab-sha256"),
+    )
+
+
+def verify_build_paths(args: argparse.Namespace, mode: str) -> tuple[Path, Path, Path, Path]:
     for field in ["source_manifest", "episode_census", "source_crosstab", "output_root"]:
-        if not getattr(args, field):
+        value = getattr(args, field)
+        if not value:
             fail(f"{field.replace('_', '-')} is required")
-        reject_path_traversal(getattr(args, field))
+        reject_path_traversal(value)
     source = Path(args.source_manifest)
     census = Path(args.episode_census)
     crosstab = Path(args.source_crosstab)
@@ -650,8 +639,11 @@ def verify_paths(args: argparse.Namespace, mode: str) -> tuple[Path, Path, Path,
         for path in [source, census, crosstab]:
             require_descendant(path, fixture_root, "input")
         require_descendant(output, output_base, "output root")
-        if output.exists() and any(output.iterdir()):
-            fail(f"output root must be empty: {output}")
+        if output.exists():
+            if not output.is_dir():
+                fail(f"output root must be a directory: {output}")
+            if any(output.iterdir()):
+                fail(f"output root must be empty: {output}")
     else:
         if args.synthetic or args.dry_run:
             fail("formal-ledger-build must not use --synthetic or --dry-run")
@@ -663,42 +655,18 @@ def verify_paths(args: argparse.Namespace, mode: str) -> tuple[Path, Path, Path,
             fail("formal-ledger-build output root must be outside the git repository")
         except ValueError:
             pass
-        if output.exists() and any(output.iterdir()):
-            fail(f"output root must be empty: {output}")
+        if output.exists():
+            fail("formal-ledger-build output root must not already exist")
+        if not output.parent.is_dir():
+            fail("formal-ledger-build output parent must already exist")
     return source, census, crosstab, output
 
 
-def build_once(args: argparse.Namespace, mode: str) -> int:
-    source, census, crosstab, output = verify_paths(args, mode)
-    for value, label in [
-        (args.expected_source_sha256, "expected-source-sha256"),
-        (args.expected_census_sha256, "expected-census-sha256"),
-        (args.expected_crosstab_sha256, "expected-crosstab-sha256"),
-    ]:
-        validate_sha_arg(value, label)
-    source_sha = compare_sha(source, args.expected_source_sha256, "source manifest")
-    census_sha = compare_sha(census, args.expected_census_sha256, "episode census")
-    crosstab_sha = compare_sha(crosstab, args.expected_crosstab_sha256, "source crosstab")
-
-    builder_path = Path(__file__).resolve()
-    builder_sha = sha256_file(builder_path)
-    repo = builder_path.parents[2]
-    head = git_sha(repo)
-    if mode == "formal-ledger-build":
-        if not args.expected_git_commit_sha:
-            fail("formal-ledger-build requires --expected-git-commit-sha")
-        if not args.expected_builder_sha256:
-            fail("formal-ledger-build requires --expected-builder-sha256")
-        validate_git_sha_arg(args.expected_git_commit_sha, "expected-git-commit-sha")
-        validate_sha_arg(args.expected_builder_sha256, "expected-builder-sha256")
-        if head != args.expected_git_commit_sha:
-            fail(f"git HEAD mismatch: expected {args.expected_git_commit_sha}, got {head}")
-        if builder_sha != args.expected_builder_sha256:
-            fail(f"builder SHA256 mismatch: expected {args.expected_builder_sha256}, got {builder_sha}")
-        if not args.require_clean_worktree:
-            fail("formal-ledger-build requires --require-clean-worktree")
-        require_clean_worktree(repo)
-
+def read_bound_inputs(
+    source: Path,
+    census: Path,
+    crosstab: Path,
+) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
     availability = read_csv_strict(source, AVAILABILITY_COLUMNS, {"source_event_id", "notes"})
     census_rows = read_csv_strict(census, EPISODE_CENSUS_COLUMNS, {
         "teacher_event_id", "abstain_reason", "model_split",
@@ -706,6 +674,32 @@ def build_once(args: argparse.Namespace, mode: str) -> int:
         "normalization_source_status",
     })
     crosstab_rows = read_csv_strict(crosstab, CROSSTAB_COLUMNS)
+    return availability, census_rows, crosstab_rows
+
+
+def build_once(args: argparse.Namespace, mode: str) -> int:
+    source, census, crosstab, output = verify_build_paths(args, mode)
+    expected_source, expected_census, expected_crosstab = require_input_args(args)
+    source_sha = compare_sha(source, expected_source, "source manifest")
+    census_sha = compare_sha(census, expected_census, "episode census")
+    crosstab_sha = compare_sha(crosstab, expected_crosstab, "source crosstab")
+
+    builder_path = Path(__file__).resolve()
+    builder_sha = sha256_file(builder_path)
+    repo = builder_path.parents[2]
+    head = git_sha(repo)
+    if mode == "formal-ledger-build":
+        expected_git = validate_git_sha_arg(args.expected_git_commit_sha, "expected-git-commit-sha")
+        expected_builder = validate_sha_arg(args.expected_builder_sha256, "expected-builder-sha256")
+        if head != expected_git:
+            fail(f"git HEAD mismatch: expected {expected_git}, got {head}")
+        if builder_sha != expected_builder:
+            fail(f"builder SHA256 mismatch: expected {expected_builder}, got {builder_sha}")
+        if not args.require_clean_worktree:
+            fail("formal-ledger-build requires --require-clean-worktree")
+        require_clean_worktree(repo)
+
+    availability, census_rows, crosstab_rows = read_bound_inputs(source, census, crosstab)
     max_rows = MAX_SYNTHETIC_ROWS if mode == "synthetic-dry-run" else FORMAL_ROW_COUNT
     adapted = adapt_rows(availability, census_rows, builder_sha, head, max_rows)
     output_rows = validate_and_transform(adapted)
@@ -719,10 +713,6 @@ def build_once(args: argparse.Namespace, mode: str) -> int:
     target = output
     staging = None
     if mode == "formal-ledger-build":
-        if output.exists():
-            if any(output.iterdir()):
-                fail(f"output root must be empty: {output}")
-            output.rmdir()
         staging = output.parent / f".{output.name}.staging-{os.getpid()}"
         if staging.exists():
             fail(f"staging output already exists: {staging}")
@@ -766,7 +756,7 @@ def build_once(args: argparse.Namespace, mode: str) -> int:
                 "episode_census": {"path": str(census), "sha256": census_sha},
                 "source_crosstab": {"path": str(crosstab), "sha256": crosstab_sha},
             },
-            "outputs": ["label_v2.csv", "build_manifest.json", "validation_summary.json", "manual_audit_sample_manifest.csv", "SHA256SUMS"],
+            "outputs": sorted(FORMAL_OUTPUT_FILES),
         }
         manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         sums = [f"{sha256_file(path)}  {path.name}" for path in [label_path, manifest_path, summary_path, manual_path]]
@@ -780,20 +770,195 @@ def build_once(args: argparse.Namespace, mode: str) -> int:
         raise
 
 
+def verify_sums(output: Path) -> None:
+    sums_path = output / "SHA256SUMS"
+    entries: dict[str, str] = {}
+    for line in sums_path.read_text(encoding="utf-8").splitlines():
+        parts = line.split("  ", 1)
+        if len(parts) != 2 or not SHA256_RE.fullmatch(parts[0]):
+            fail(f"malformed SHA256SUMS line: {line}")
+        digest, name = parts
+        if name in entries:
+            fail(f"duplicate SHA256SUMS entry: {name}")
+        entries[name] = digest
+    expected_names = FORMAL_OUTPUT_FILES - {"SHA256SUMS"}
+    if set(entries) != expected_names:
+        fail("SHA256SUMS file set mismatch")
+    for name, expected in entries.items():
+        path = output / name
+        reject_symlink(path)
+        if not path.is_file():
+            fail(f"missing output file: {path}")
+        if sha256_file(path) != expected:
+            fail(f"output SHA256 mismatch for {name}")
+
+
+def validate_manual_output(
+    actual: list[dict[str, str]],
+    expected: list[dict[str, str]],
+) -> None:
+    if actual != expected:
+        fail("manual audit sample does not match deterministic recomputation")
+    if len(actual) != FORMAL_MANUAL_SAMPLE_N:
+        fail("manual audit sample must contain exactly 160 rows")
+
+
+def validate_formal_output(args: argparse.Namespace) -> dict[str, object]:
+    for field in ["source_manifest", "episode_census", "source_crosstab", "output_root"]:
+        value = getattr(args, field)
+        if not value:
+            fail(f"{field.replace('_', '-')} is required")
+        reject_path_traversal(value)
+    source = Path(args.source_manifest)
+    census = Path(args.episode_census)
+    crosstab = Path(args.source_crosstab)
+    output = Path(args.output_root)
+    for path in [source, census, crosstab]:
+        reject_symlink(path)
+        if not path.is_file():
+            fail(f"validator input file does not exist: {path}")
+    if not output.is_absolute() or not output.is_dir():
+        fail("validator output root must be an absolute directory")
+    reject_symlink(output)
+    if {path.name for path in output.iterdir()} != FORMAL_OUTPUT_FILES:
+        fail("formal output file set mismatch")
+
+    expected_source, expected_census, expected_crosstab = require_input_args(args)
+    compare_sha(source, expected_source, "source manifest")
+    compare_sha(census, expected_census, "episode census")
+    compare_sha(crosstab, expected_crosstab, "source crosstab")
+    expected_git = validate_git_sha_arg(args.expected_git_commit_sha, "expected-git-commit-sha")
+    expected_builder = validate_sha_arg(args.expected_builder_sha256, "expected-builder-sha256")
+    verify_sums(output)
+
+    availability, census_rows, crosstab_rows = read_bound_inputs(source, census, crosstab)
+    expected_rows = validate_and_transform(adapt_rows(
+        availability, census_rows, expected_builder, expected_git, FORMAL_ROW_COUNT,
+    ))
+    expected_counts = validate_counts(expected_rows, crosstab_rows)
+    validate_formal_closure(expected_rows, expected_counts)
+    actual_rows = read_csv_strict(
+        output / "label_v2.csv", OUTPUT_COLUMNS,
+        {"event_source", "invalid_reason", "abstain_reason", "manual_audit_reason"},
+    )
+    if actual_rows != expected_rows:
+        fail("label_v2.csv does not match deterministic input recomputation")
+    expected_manual = manual_audit_sample(expected_rows, True, FORMAL_MANUAL_SAMPLE_N)
+    actual_manual = read_csv_strict(
+        output / "manual_audit_sample_manifest.csv", MANUAL_COLUMNS,
+        {"fallback_reason"},
+    )
+    validate_manual_output(actual_manual, expected_manual)
+
+    summary = json.loads((output / "validation_summary.json").read_text(encoding="utf-8"))
+    if summary.get("status") != "PASS" or summary.get("mode") != "formal-ledger-build":
+        fail("validation_summary.json status or mode mismatch")
+    if summary.get("row_count") != FORMAL_ROW_COUNT or summary.get("counts") != expected_counts:
+        fail("validation_summary.json closure mismatch")
+    if summary.get("manual_audit_sample_n") != FORMAL_MANUAL_SAMPLE_N:
+        fail("validation_summary.json manual sample mismatch")
+    if summary.get("unexplained_disposition_rows") != 0:
+        fail("validation_summary.json unexplained disposition mismatch")
+
+    manifest = json.loads((output / "build_manifest.json").read_text(encoding="utf-8"))
+    expected_manifest = {
+        "schema_version": SCHEMA_VERSION,
+        "mode": "formal-ledger-build",
+        "synthetic_only": False,
+        "builder_git_sha": expected_git,
+        "builder_sha256": expected_builder,
+        "source_semantics_authority": SOURCE_SEMANTICS_AUTHORITY,
+        "source_jsonl_check_mode": SOURCE_JSONL_CHECK_MODE,
+        "v2_episode_table_scope": V2_EPISODE_TABLE_SCOPE,
+        "multi_event_policy": MULTI_EVENT_POLICY,
+        "confidence_policy": CONFIDENCE_POLICY,
+        "event_id_policy": EVENT_ID_POLICY,
+        "source_window_end_semantics": SOURCE_WINDOW_END_SEMANTICS,
+        "manual_fallback_policy": MANUAL_FALLBACK_ORDER,
+        "formal_output_root": str(output),
+        "atomic_publish": True,
+        "outputs": sorted(FORMAL_OUTPUT_FILES),
+    }
+    for key, value in expected_manifest.items():
+        if manifest.get(key) != value:
+            fail(f"build_manifest.json mismatch: {key}")
+    try:
+        datetime.fromisoformat(str(manifest["created_at_utc"]))
+    except (KeyError, ValueError):
+        fail("build_manifest.json created_at_utc is invalid")
+    input_manifest = manifest.get("inputs")
+    expected_inputs = {
+        "source_manifest": {"path": str(source), "sha256": expected_source},
+        "episode_census": {"path": str(census), "sha256": expected_census},
+        "source_crosstab": {"path": str(crosstab), "sha256": expected_crosstab},
+    }
+    if input_manifest != expected_inputs:
+        fail("build_manifest.json input binding mismatch")
+
+    return {
+        "status": "PASS",
+        "schema_version": SCHEMA_VERSION,
+        "row_count": FORMAL_ROW_COUNT,
+        "manual_audit_sample_n": FORMAL_MANUAL_SAMPLE_N,
+        "counts": expected_counts,
+        "unexplained_disposition_rows": 0,
+        "builder_git_sha": expected_git,
+        "builder_sha256": expected_builder,
+        "output_root": str(output),
+        "validator_git_sha": git_sha(Path(__file__).resolve().parents[2]),
+        "validator_file_sha256": sha256_file(Path(__file__).resolve()),
+    }
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--mode", choices=[
+        "synthetic-dry-run", "formal-ledger-build",
+        "validate-formal-output", "self-test-closeout",
+    ])
+    parser.add_argument("--source-manifest")
+    parser.add_argument("--episode-census")
+    parser.add_argument("--source-crosstab")
+    parser.add_argument("--output-root")
+    parser.add_argument("--synthetic-fixture-root")
+    parser.add_argument("--synthetic-output-root")
+    parser.add_argument("--expected-source-sha256")
+    parser.add_argument("--expected-census-sha256")
+    parser.add_argument("--expected-crosstab-sha256")
+    parser.add_argument("--expected-git-commit-sha")
+    parser.add_argument("--expected-builder-sha256")
+    parser.add_argument("--require-clean-worktree", action="store_true")
+    parser.add_argument("--expected-manual-sample-n", type=int)
+    parser.add_argument("--enforce-manual-quota", action="store_true")
+    parser.add_argument("--synthetic", action="store_true")
+    parser.add_argument("--dry-run", action="store_true")
+    return parser
+
+
+def resolve_mode(args: argparse.Namespace) -> str:
+    if args.mode:
+        return args.mode
+    if args.synthetic and args.dry_run:
+        return "synthetic-dry-run"
+    fail("specify --mode synthetic-dry-run or --mode formal-ledger-build")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
         mode = resolve_mode(args)
         if mode == "self-test-closeout":
-            if any(set(order) != set(MANUAL_PRIORITIES) for order in MANUAL_FALLBACK_ORDER.values()):
+            categories = set(MANUAL_PRIORITIES)
+            if any(set(order) != categories or len(order) != 4 for order in MANUAL_FALLBACK_ORDER.values()):
                 fail("manual fallback matrix is not total")
             print("Label V2 closeout self-test: PASS")
             return 0
         if mode == "validate-formal-output":
-            fail("validate-formal-output requires the finalized authorization command")
+            print(json.dumps(validate_formal_output(args), indent=2, sort_keys=True))
+            return 0
         return build_once(args, mode)
-    except BuildError as exc:
+    except (BuildError, OSError, json.JSONDecodeError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 
