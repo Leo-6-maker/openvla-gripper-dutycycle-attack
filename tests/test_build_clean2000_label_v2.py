@@ -65,10 +65,42 @@ def git_head():
 
 
 def tracked_worktree_dirty():
-    return (
-        subprocess.run(["git", "diff", "--quiet"], cwd=ROOT).returncode != 0
-        or subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0
+    return bool(
+        subprocess.check_output(
+            ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+            cwd=ROOT,
+            text=True,
+        ).strip()
     )
+
+
+def formal_command(fixture, output, *extra, builder_sha=None):
+    return [
+        sys.executable,
+        str(BUILDER),
+        "--mode",
+        "formal-ledger-build",
+        "--source-manifest",
+        str(fixture / "source_manifest.csv"),
+        "--episode-census",
+        str(fixture / "episode_census.csv"),
+        "--source-crosstab",
+        str(fixture / "source_event_crosstab.csv"),
+        "--output-root",
+        str(output),
+        "--expected-source-sha256",
+        sha256(fixture / "source_manifest.csv"),
+        "--expected-census-sha256",
+        sha256(fixture / "episode_census.csv"),
+        "--expected-crosstab-sha256",
+        sha256(fixture / "source_event_crosstab.csv"),
+        "--expected-git-commit-sha",
+        git_head(),
+        "--expected-builder-sha256",
+        builder_sha or sha256(BUILDER),
+        "--require-clean-worktree",
+        *extra,
+    ]
 
 
 def read_rows(path):
@@ -89,6 +121,13 @@ def write_rows(path, rows):
         writer.writerows(rows)
 
 
+def load_builder_module():
+    spec = importlib.util.spec_from_file_location("builder", BUILDER)
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    return builder
+
+
 def test_synthetic_dry_run_outputs(tmp_path):
     fixture = copy_fixture(tmp_path)
     output = tmp_path / "out"
@@ -106,6 +145,7 @@ def test_synthetic_dry_run_outputs(tmp_path):
     rows = read_rows(output / "label_v2.csv")
     assert len(rows) == 6
     by_episode = {row["episode_key"]: row for row in rows}
+    assert by_episode["ep_valid_positive"]["cohort_class"] == "PRIMARY_SUCCESS_ELIGIBLE"
     assert by_episode["ep_valid_positive"]["window_end"] == "14"
     assert by_episode["ep_valid_positive"]["source_sha256"] == sha256(fixture / "source_records.jsonl")
     assert by_episode["ep_valid_positive"]["mechanism_type"] == "GRIPPER_TRANSFER_ELIGIBLE"
@@ -123,6 +163,7 @@ def test_synthetic_dry_run_outputs(tmp_path):
     manual = read_rows(output / "manual_audit_sample_manifest.csv")
     assert manual
     assert "suite" in manual[0]
+    assert {"cohort_class", "clean_success", "mechanism_eligible", "event_present", "label_validity_status"} <= set(manual[0])
     assert {"requested_priority", "actual_selected_category", "fallback_used", "fallback_reason"} <= set(manual[0])
     assert "label_v2.csv" in (output / "SHA256SUMS").read_text(encoding="utf-8")
 
@@ -761,33 +802,8 @@ def test_formal_mode_closes_2000_row_ledger(tmp_path):
         pytest.skip("formal mode requires a clean tracked worktree")
     fixture = make_formal_fixture(tmp_path)
     output = tmp_path / "formal-out"
-    cmd = [
-        sys.executable,
-        str(BUILDER),
-        "--mode",
-        "formal-ledger-build",
-        "--source-manifest",
-        str(fixture / "source_manifest.csv"),
-        "--episode-census",
-        str(fixture / "episode_census.csv"),
-        "--source-crosstab",
-        str(fixture / "source_event_crosstab.csv"),
-        "--output-root",
-        str(output),
-        "--expected-source-sha256",
-        sha256(fixture / "source_manifest.csv"),
-        "--expected-census-sha256",
-        sha256(fixture / "episode_census.csv"),
-        "--expected-crosstab-sha256",
-        sha256(fixture / "source_event_crosstab.csv"),
-        "--expected-git-commit-sha",
-        git_head(),
-        "--expected-builder-sha256",
-        sha256(BUILDER),
-        "--require-clean-worktree",
-    ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True)
+    result = subprocess.run(formal_command(fixture, output), capture_output=True, text=True)
 
     assert result.returncode == 0, result.stderr
     rows = read_rows(output / "label_v2.csv")
@@ -798,12 +814,125 @@ def test_formal_mode_closes_2000_row_ledger(tmp_path):
     assert summary["counts"]["PRIMARY_SUCCESS_ELIGIBLE"] == {"positive": 772, "no_event": 271, "total": 1043}
     assert summary["counts"]["ELIGIBLE_CLEAN_FAILURE"] == {"positive": 31, "no_event": 276, "total": 307}
     assert summary["counts"]["MECHANISM_INELIGIBLE_ABSTENTION"] == {"positive": 0, "no_event": 650, "total": 650}
+    assert any(row["cohort_class"] == "ELIGIBLE_CLEAN_FAILURE" for row in rows)
+    assert {"cohort_class", "clean_success", "mechanism_eligible", "event_present", "label_validity_status"} <= set(manual[0])
+
+
+def test_formal_mode_rejects_relative_output(tmp_path):
+    fixture = make_formal_fixture(tmp_path)
+    cmd = formal_command(fixture, Path("relative-output"))
+
+    result = subprocess.run(cmd, cwd=tmp_path, capture_output=True, text=True)
+
+    assert result.returncode != 0
+    assert "output root must be absolute" in result.stderr
+
+
+def test_formal_mode_rejects_wrong_git_or_builder_identity(tmp_path):
+    if tracked_worktree_dirty():
+        pytest.skip("formal mode requires a clean tracked worktree")
+    fixture = make_formal_fixture(tmp_path)
+
+    result = subprocess.run(
+        formal_command(fixture, tmp_path / "bad-builder", builder_sha="0" * 64),
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode != 0
+    assert "builder SHA256 mismatch" in result.stderr
+
+    cmd = formal_command(fixture, tmp_path / "bad-commit")
+    cmd[cmd.index("--expected-git-commit-sha") + 1] = "0" * 40
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    assert result.returncode != 0
+    assert "git HEAD mismatch" in result.stderr
+
+
+def test_formal_mode_rejects_untracked_worktree(tmp_path):
+    if tracked_worktree_dirty():
+        pytest.skip("formal mode requires a clean tracked worktree before injecting untracked probe")
+    fixture = make_formal_fixture(tmp_path)
+    probe = ROOT / "_label_v2_untracked_probe.tmp"
+    probe.write_text("dirty", encoding="utf-8")
+    try:
+        result = subprocess.run(
+            formal_command(fixture, tmp_path / "dirty-out"),
+            capture_output=True,
+            text=True,
+        )
+    finally:
+        probe.unlink(missing_ok=True)
+
+    assert result.returncode != 0
+    assert "worktree must be clean" in result.stderr
+
+
+def test_formal_mode_rejects_1999_rows(tmp_path):
+    if tracked_worktree_dirty():
+        pytest.skip("formal mode requires a clean tracked worktree")
+    fixture = make_formal_fixture(tmp_path)
+    write_rows(fixture / "episode_census.csv", read_rows(fixture / "episode_census.csv")[:-1])
+    write_rows(fixture / "source_manifest.csv", read_rows(fixture / "source_manifest.csv")[:-1])
+    (fixture / "source_event_crosstab.csv").write_text(
+        "cohort_class,source_positive,source_no_event,total\n"
+        "PRIMARY_SUCCESS_ELIGIBLE,772,271,1043\n"
+        "ELIGIBLE_CLEAN_FAILURE,31,276,307\n"
+        "MECHANISM_INELIGIBLE_ABSTENTION,0,649,649\n",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(formal_command(fixture, tmp_path / "out"), capture_output=True, text=True)
+
+    assert result.returncode != 0
+    assert "requires 2000 rows, got 1999" in result.stderr
+
+
+def test_formal_mode_rejects_2001_rows(tmp_path):
+    if tracked_worktree_dirty():
+        pytest.skip("formal mode requires a clean tracked worktree")
+    fixture = make_formal_fixture(tmp_path)
+    census_rows = read_rows(fixture / "episode_census.csv")
+    availability_rows = read_rows(fixture / "source_manifest.csv")
+    census_rows.append(dict(census_rows[-1], episode_key="extra_episode"))
+    availability_rows.append(dict(availability_rows[-1], episode_key="extra_episode"))
+    write_rows(fixture / "episode_census.csv", census_rows)
+    write_rows(fixture / "source_manifest.csv", availability_rows)
+    (fixture / "source_event_crosstab.csv").write_text(
+        "cohort_class,source_positive,source_no_event,total\n"
+        "PRIMARY_SUCCESS_ELIGIBLE,772,271,1043\n"
+        "ELIGIBLE_CLEAN_FAILURE,31,276,307\n"
+        "MECHANISM_INELIGIBLE_ABSTENTION,0,651,651\n",
+        encoding="utf-8",
+    )
+
+    result = subprocess.run(formal_command(fixture, tmp_path / "out"), capture_output=True, text=True)
+
+    assert result.returncode != 0
+    assert "input row count exceeds 2000: 2001" in result.stderr
+
+
+def test_formal_mode_rejects_bad_suite_task_closure(tmp_path):
+    if tracked_worktree_dirty():
+        pytest.skip("formal mode requires a clean tracked worktree")
+    fixture = make_formal_fixture(tmp_path)
+    write_rows(
+        fixture / "episode_census.csv",
+        [dict(r, suite="Object", task_id="task_00") for r in read_rows(fixture / "episode_census.csv")],
+    )
+    write_rows(
+        fixture / "source_manifest.csv",
+        [dict(r, suite="Object", task_id="task_00") for r in read_rows(fixture / "source_manifest.csv")],
+    )
+
+    result = subprocess.run(formal_command(fixture, tmp_path / "out"), capture_output=True, text=True)
+
+    assert result.returncode != 0
+    assert "requires 40 suite-task units, got 1" in result.stderr
 
 
 def test_manual_category_prefers_ineligible_over_failure():
-    spec = importlib.util.spec_from_file_location("builder", BUILDER)
-    builder = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(builder)
+    builder = load_builder_module()
     assert builder.row_category(
         {
             "event_present": "false",
@@ -812,6 +941,52 @@ def test_manual_category_prefers_ineligible_over_failure():
             "label_validity_status": "INVALID_WINDOW",
         }
     ) == "abstention_or_ineligible"
+
+
+def test_manual_category_marks_clean_failures_as_boundary():
+    builder = load_builder_module()
+    base = {
+        "clean_success": "false",
+        "mechanism_eligible": "true",
+        "label_validity_status": "VALID",
+    }
+    assert builder.row_category({**base, "event_present": "true"}) == "failure_or_boundary"
+    assert builder.row_category({**base, "event_present": "false"}) == "failure_or_boundary"
+
+
+def test_manual_fallback_uses_allowed_category_order():
+    builder = load_builder_module()
+
+    def row(episode, category):
+        values = {
+            "episode_key": episode,
+            "suite": "Object",
+            "task_id": "task_00",
+            "cohort_class": "PRIMARY_SUCCESS_ELIGIBLE",
+            "clean_success": "true",
+            "mechanism_eligible": "true",
+            "event_present": "false",
+            "label_validity_status": "VALID",
+        }
+        if category == "positive_clean_success":
+            values["event_present"] = "true"
+        elif category == "failure_or_boundary":
+            values["clean_success"] = "false"
+            values["cohort_class"] = "ELIGIBLE_CLEAN_FAILURE"
+        return values
+
+    sample = builder.manual_audit_sample(
+        [
+            row("ep_pos_1", "positive_clean_success"),
+            row("ep_pos_2", "positive_clean_success"),
+            row("ep_noevent", "eligible_no_event"),
+            row("ep_failure", "failure_or_boundary"),
+        ]
+    )
+    by_request = {item["requested_priority"]: item for item in sample}
+    assert by_request["failure_or_boundary"]["actual_selected_category"] == "failure_or_boundary"
+    assert by_request["abstention_or_ineligible"]["actual_selected_category"] == "positive_clean_success"
+    assert by_request["abstention_or_ineligible"]["fallback_used"] == "true"
 
 
 def test_symlink_input_rejected(tmp_path):

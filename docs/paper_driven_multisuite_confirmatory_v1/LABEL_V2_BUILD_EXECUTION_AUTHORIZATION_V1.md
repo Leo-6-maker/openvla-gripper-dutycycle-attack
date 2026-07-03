@@ -13,7 +13,7 @@ CLEAN2000 Label V2 ledger build. It does not authorize execution.
 | reviewed_builder_commit_sha | `TBD_AFTER_FORMAL_MODE_REVIEW` |
 | builder_file_sha256 | `TBD_AFTER_FORMAL_MODE_REVIEW` |
 | expected_git_commit_sha | `TBD_AFTER_FORMAL_MODE_REVIEW` |
-| clean_worktree_required | `true` |
+| clean_worktree_required | `true`; `git status --porcelain=v1 --untracked-files=all` must be empty |
 | source_manifest_path | `tables/server_freeze/clean2000_teacher_source_availability.csv` |
 | source_manifest_sha256 | `268ec095aae19a5aca62141b162c0719706b885c96c84122174fe425493426e4` |
 | episode_census_path | `tables/server_freeze/clean2000_episode_census.csv` |

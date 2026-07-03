@@ -89,6 +89,7 @@ OUTPUT_COLUMNS = [
     "parent_key",
     "suite",
     "task_id",
+    "cohort_class",
     "clean_success",
     "mechanism_eligible",
     "event_present",
@@ -165,12 +166,38 @@ MANUAL_COLUMNS = [
     "suite",
     "task_id",
     "episode_key",
+    "cohort_class",
+    "clean_success",
+    "mechanism_eligible",
+    "event_present",
+    "label_validity_status",
     "requested_priority",
     "actual_selected_category",
     "fallback_used",
     "fallback_reason",
     "sampling_seed",
 ]
+MANUAL_PRIORITIES = [
+    "positive_clean_success",
+    "eligible_no_event",
+    "failure_or_boundary",
+    "abstention_or_ineligible",
+]
+MANUAL_FALLBACK_ORDER = {
+    "positive_clean_success": [
+        "positive_clean_success",
+        "eligible_no_event",
+        "failure_or_boundary",
+        "abstention_or_ineligible",
+    ],
+    "eligible_no_event": ["eligible_no_event", "positive_clean_success"],
+    "failure_or_boundary": ["failure_or_boundary", "positive_clean_success"],
+    "abstention_or_ineligible": [
+        "abstention_or_ineligible",
+        "positive_clean_success",
+        "eligible_no_event",
+    ],
+}
 
 
 class BuildError(RuntimeError):
@@ -293,12 +320,15 @@ def git_sha(repo: Path) -> str:
 
 def require_clean_tracked_worktree(repo: Path) -> None:
     try:
-        unstaged = subprocess.run(["git", "diff", "--quiet"], cwd=repo)
-        staged = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=repo)
+        status = subprocess.check_output(
+            ["git", "status", "--porcelain=v1", "--untracked-files=all"],
+            cwd=repo,
+            text=True,
+        )
     except Exception:
         fail("unable to check git worktree cleanliness")
-    if unstaged.returncode != 0 or staged.returncode != 0:
-        fail("tracked git worktree must be clean for formal ledger build")
+    if status.strip():
+        fail("git worktree must be clean for formal ledger build")
 
 
 def unique_by_episode(rows: list[dict[str, str]], label: str) -> dict[str, dict[str, str]]:
@@ -614,12 +644,12 @@ def validate_formal_closure(rows: list[dict[str, str]], counts: dict[str, dict[s
 def row_category(row: dict[str, str]) -> str:
     if row["mechanism_eligible"] == "false":
         return "abstention_or_ineligible"
-    if row["event_present"] == "true" and row["clean_success"] == "true":
-        return "positive_clean_success"
-    if row["event_present"] == "false" and row["mechanism_eligible"] == "true":
-        return "eligible_no_event"
     if row["clean_success"] == "false" or row["label_validity_status"] != "VALID":
         return "failure_or_boundary"
+    if row["event_present"] == "true":
+        return "positive_clean_success"
+    if row["event_present"] == "false":
+        return "eligible_no_event"
     return "other"
 
 
@@ -635,32 +665,40 @@ def manual_audit_sample(rows: list[dict[str, str]], enforce_quota: bool = False,
     for suite, task in sorted(by_task):
         task_rows = sorted(by_task[(suite, task)], key=lambda r: r["episode_key"])
         rng.shuffle(task_rows)
-        priorities = [
-            ("positive_clean_success", lambda r: row_category(r) == "positive_clean_success"),
-            ("eligible_no_event", lambda r: row_category(r) == "eligible_no_event"),
-            ("failure_or_boundary", lambda r: row_category(r) == "failure_or_boundary"),
-            ("abstention_or_ineligible", lambda r: row_category(r) == "abstention_or_ineligible"),
-        ]
         used = set()
-        for label, predicate in priorities:
-            match = next((r for r in task_rows if r["episode_key"] not in used and predicate(r)), None)
-            fallback = False
-            if match is None:
-                match = next((r for r in task_rows if r["episode_key"] not in used), None)
-                fallback = match is not None
+        for label in MANUAL_PRIORITIES:
+            match = None
+            actual = ""
+            for allowed in MANUAL_FALLBACK_ORDER[label]:
+                match = next(
+                    (
+                        r
+                        for r in task_rows
+                        if r["episode_key"] not in used and row_category(r) == allowed
+                    ),
+                    None,
+                )
+                if match is not None:
+                    actual = allowed
+                    break
             if match is None:
                 continue
             used.add(match["episode_key"])
-            actual = row_category(match)
+            fallback = actual != label
             picked.append(
                 {
                     "suite": suite,
                     "task_id": task,
                     "episode_key": match["episode_key"],
+                    "cohort_class": match["cohort_class"],
+                    "clean_success": match["clean_success"],
+                    "mechanism_eligible": match["mechanism_eligible"],
+                    "event_present": match["event_present"],
+                    "label_validity_status": match["label_validity_status"],
                     "requested_priority": label,
                     "actual_selected_category": actual,
                     "fallback_used": "true" if fallback else "false",
-                    "fallback_reason": "" if not fallback else f"missing_{label}",
+                    "fallback_reason": "" if not fallback else f"missing_{label}_used_{actual}",
                     "sampling_seed": str(MANUAL_AUDIT_SEED),
                 }
             )

@@ -41,6 +41,7 @@ episode_key
 parent_key
 suite
 task_id
+cohort_class
 clean_success
 mechanism_eligible
 event_present
@@ -71,6 +72,24 @@ window_valid
 label_validity_status
 manual_audit_status
 manual_audit_reason
+```
+
+`manual_audit_sample_manifest.csv` must include row-level audit context:
+
+```text
+suite
+task_id
+episode_key
+cohort_class
+clean_success
+mechanism_eligible
+event_present
+label_validity_status
+requested_priority
+actual_selected_category
+fallback_used
+fallback_reason
+sampling_seed
 ```
 
 ## Coordinate Semantics
