@@ -11,7 +11,7 @@ EXPERIMENT_AUTHORIZATION_STATUS = NOT_AUTHORIZED
 
 | Field | Value |
 |---|---|
-| authorized_commit_sha | `8c8226959a7007968568f22d69da2c80e0abfcf0` |
+| authorization_basis_commit_sha | `8c8226959a7007968568f22d69da2c80e0abfcf0` |
 | input_manifest_path | `tables/server_freeze/clean2000_teacher_source_availability.csv` |
 | input_manifest_git_blob_sha1 | `22d54409bb01db489d5b2edc0640efafcb6a6408` |
 | input_manifest_repo_content_sha256_lf | `268ec095aae19a5aca62141b162c0719706b885c96c84122174fe425493426e4` |
