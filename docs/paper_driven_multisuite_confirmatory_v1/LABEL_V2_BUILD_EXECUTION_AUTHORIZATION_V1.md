@@ -1,46 +1,84 @@
 # Label V2 Build Execution Authorization V1
 
-Status: NOT_AUTHORIZED_DRAFT
+Status: NOT_AUTHORIZED_DRAFT_READY_FOR_SERVER_BINDING
 
-This file defines the required authorization record for a future formal
-CLEAN2000 Label V2 ledger build. It does not authorize execution.
+This record prepares a future formal CLEAN2000 Label V2 ledger build. It does
+not authorize execution. The reviewed implementation is complete; the remaining
+fields require an exact server checkout, output-path allocation, and final
+execution authorization.
 
 ## Implementation Review Binding
 
 | Field | Value |
 |---|---|
 | formal_ledger_mode_review | `PASS_IMPLEMENTATION_ONLY` |
-| reviewed_builder_commit_sha | `2366d47d545e21b6f7aac8a702b3de900b6d20b7` |
-| immutable_core_commit_sha | `35e17855c57277f866142c34129425e0259ece5b` |
-| immutable_core_path | `tools/multisuite_detector/build_clean2000_label_v2.py` |
-| full_git_history_required | `true`; immutable core commit must resolve locally |
-| builder_file_sha256 | `TBD_FINAL_IDENTITY_FREEZE` |
-| expected_git_commit_sha | `TBD_FINAL_IDENTITY_FREEZE` |
+| semantic_adapter_review | `PASS` |
+| build_input_closure | `PASS_LEDGER_ONLY` |
+| formal_builder_implementation_commit_sha | `22a68974015f5c3ee1d2e8e49eda82789d1efa59` |
+| ci_closeout_commit_sha | `c91d6e340021c83e9fbce40201e5c457142c841f` |
+| builder_path | `tools/multisuite_detector/build_clean2000_label_v2.py` |
+| builder_design | `SELF_CONTAINED_NO_RUNTIME_GIT_SOURCE_LOADING` |
+| builder_file_sha256 | `TBD_SERVER_IDENTITY_CAPTURE` |
+| expected_git_commit_sha | `TBD_SERVER_CHECKOUT_HEAD` |
+| ci_status | `cpu-stageb PASS`; targeted tests, closeout self-test, and identity-report step completed |
+| independent_validator | `IMPLEMENTED_AS_validate-formal-output_MODE` |
 
-## Required Execution Binding
+The server identity capture must run only after checking out the exact approved
+commit and before editing this record into an authorized state.
+
+## Frozen Input Binding
 
 | Field | Value |
 |---|---|
-| authorization_status | `NOT_AUTHORIZED` |
-| clean_worktree_required | `true`; `git status --porcelain=v1 --untracked-files=all` must be empty |
 | source_manifest_path | `tables/server_freeze/clean2000_teacher_source_availability.csv` |
 | source_manifest_sha256 | `268ec095aae19a5aca62141b162c0719706b885c96c84122174fe425493426e4` |
 | episode_census_path | `tables/server_freeze/clean2000_episode_census.csv` |
 | episode_census_sha256 | `6d3696465f3e09cd736677f25ac57d83135774229bd75c5a17b38801c7e956ba` |
 | source_crosstab_path | `tables/server_freeze/clean2000_source_event_crosstab.csv` |
 | source_crosstab_sha256 | `0b78c0749cdf4a17c93ce28859094c0733741f9892f0b9493894bece26cb25a1` |
+| source_semantics_authority | `SOURCE_AVAILABILITY_LEDGER` |
+| source_jsonl_runtime_read | `PROHIBITED` |
+
+## Required Server Binding
+
+| Field | Value |
+|---|---|
+| authorization_status | `NOT_AUTHORIZED` |
+| server_host | `TBD_SERVER` |
+| repository_absolute_path | `TBD_SERVER` |
 | output_host_absolute_path | `TBD_SERVER_NEW_NONEXISTENT_DIRECTORY` |
 | output_must_be_outside_repo | `true` |
-| atomic_publish_required | `true`; stage as hidden sibling and rename only after closure |
+| output_must_not_exist | `true` |
+| clean_worktree_required | `true`; `git status --porcelain=v1 --untracked-files=all` must be empty |
+| atomic_publish_required | `true`; hidden sibling staging followed by final rename |
 | cpu_limit | `TBD_SERVER` |
 | gpu_allowed | `false` |
 | maximum_runtime | `TBD_SERVER` |
 | maximum_storage | `TBD_SERVER` |
 | retry_rule | `new nonexistent output path only` |
-| abort_rule | `any input SHA, row-count, crosstab, manual-sample, disposition-closure, producer-identity, immutable-core, worktree, staging, or validator failure` |
-| independent_validator_command | `defined below` |
-| authorization_record_sha256 | `TBD_AFTER_FINAL_RECORD_FREEZE` |
+| abort_rule | `any input SHA, producer identity, worktree, row-count, crosstab, manual-sample, source-disposition, staging, output-SHA, or validator failure` |
+| validator_report_path | `TBD_SERVER_OUTSIDE_IMMUTABLE_OUTPUT` |
+| authorization_record_sha256 | `TBD_AFTER_FINAL_AUTHORIZATION_RECORD_FREEZE` |
 | authorization_expiry | `TBD_SERVER` |
+
+## Server Identity Capture — Read Only
+
+These commands do not build Label V2 and do not read live source JSONL:
+
+```text
+git rev-parse HEAD
+git status --porcelain=v1 --untracked-files=all
+sha256sum tools/multisuite_detector/build_clean2000_label_v2.py
+sha256sum tables/server_freeze/clean2000_teacher_source_availability.csv
+sha256sum tables/server_freeze/clean2000_episode_census.csv
+sha256sum tables/server_freeze/clean2000_source_event_crosstab.csv
+python tools/multisuite_detector/build_clean2000_label_v2.py --mode self-test-closeout
+```
+
+The captured Git SHA and builder SHA must be copied into this record in a new
+reviewed authorization-only commit. That later commit must still state
+`NOT_AUTHORIZED` until host/path/resources/expiry are complete and an explicit
+execution authorization is issued.
 
 ## Formal Build Command Shape
 
@@ -54,18 +92,14 @@ python tools/multisuite_detector/build_clean2000_label_v2.py \
   --expected-source-sha256 268ec095aae19a5aca62141b162c0719706b885c96c84122174fe425493426e4 \
   --expected-census-sha256 6d3696465f3e09cd736677f25ac57d83135774229bd75c5a17b38801c7e956ba \
   --expected-crosstab-sha256 0b78c0749cdf4a17c93ce28859094c0733741f9892f0b9493894bece26cb25a1 \
-  --expected-git-commit-sha <expected_git_commit_sha> \
-  --expected-builder-sha256 <builder_file_sha256> \
+  --expected-git-commit-sha <server_captured_git_sha> \
+  --expected-builder-sha256 <server_captured_builder_sha256> \
   --require-clean-worktree
 ```
 
-The formal output is first written to a hidden sibling staging directory. The
-requested output path is created only by a final directory rename after all
-builder-side checks and metadata generation succeed.
-
 ## Independent Validator Command Shape
 
-Run this only after the formal build command exits successfully:
+Run only after an authorized build exits successfully:
 
 ```text
 python tools/multisuite_detector/build_clean2000_label_v2.py \
@@ -77,15 +111,15 @@ python tools/multisuite_detector/build_clean2000_label_v2.py \
   --expected-source-sha256 268ec095aae19a5aca62141b162c0719706b885c96c84122174fe425493426e4 \
   --expected-census-sha256 6d3696465f3e09cd736677f25ac57d83135774229bd75c5a17b38801c7e956ba \
   --expected-crosstab-sha256 0b78c0749cdf4a17c93ce28859094c0733741f9892f0b9493894bece26cb25a1 \
-  --expected-git-commit-sha <expected_git_commit_sha> \
-  --expected-builder-sha256 <builder_file_sha256>
+  --expected-git-commit-sha <server_captured_git_sha> \
+  --expected-builder-sha256 <server_captured_builder_sha256>
 ```
 
-The validator reads the three frozen inputs and all five output files, verifies
-`SHA256SUMS`, rechecks episode joins and source-to-output semantics, verifies the
-manual sample and fallback policy, and prints a JSON PASS report to standard
-output. Redirect that report to a separate authorization evidence directory;
-do not place it inside the immutable five-file build output.
+The validator independently re-reads all three frozen inputs and all five
+output files, verifies `SHA256SUMS`, deterministically reconstructs the 2000
+label rows and 160-row manual sample, checks the manifest/summary bindings, and
+prints a JSON PASS report. Redirect the report outside the immutable output
+directory.
 
 ## Required Closure
 
@@ -107,14 +141,12 @@ SHA256SUMS verification = PASS
 independent validator = PASS
 ```
 
-Source JSONL path and SHA fields remain frozen-ledger provenance claims only.
-The formal ledger build and validator must not open live server JSONL paths or
-claim independent JSONL byte re-verification.
-
 ## Still Prohibited
 
 ```text
+Server identity capture may be performed read-only after explicit server access.
 Real CLEAN2000 build execution before final authorization = PROHIBITED
+Formal Label V2 artifact generation = PROHIBITED
 Detector training = PROHIBITED
 OpenVLA inference = PROHIBITED
 Rollout / attack = PROHIBITED
