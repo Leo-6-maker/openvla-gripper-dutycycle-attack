@@ -32,7 +32,13 @@ jobs:
             scripts/stageb/build_teacher_label_eval_table.py \
             scripts/stageb/audit_github_branch_pr_hygiene.py \
             tools/multisuite_detector/build_clean2000_label_v2.py \
-            tools/multisuite_detector/load_label_v2_artifact.py
+            tools/multisuite_detector/load_label_v2_artifact.py \
+            tools/multisuite_detector/detector_dataset_closure_v1.py \
+            tools/multisuite_detector/load_frozen_clean_features.py \
+            tools/multisuite_detector/build_detector_dataset_manifest_v1.py \
+            tools/multisuite_detector/build_detector_splits_v1.py \
+            tools/multisuite_detector/build_detector_normalization_v1.py \
+            tools/multisuite_detector/validate_detector_dataset_manifest_v1.py
       - name: Run targeted CPU tests
         run: |
           pytest \
@@ -42,6 +48,7 @@ jobs:
             tests/stageb/test_cross_suite_task_inventory.py \
             tests/test_build_clean2000_label_v2.py \
             tests/test_load_label_v2_artifact.py \
+            tests/multisuite_detector/test_detector_dataset_closure_v1.py \
             -q
       - name: Run Label V2 closeout self-test
         run: python tools/multisuite_detector/build_clean2000_label_v2.py --mode self-test-closeout
