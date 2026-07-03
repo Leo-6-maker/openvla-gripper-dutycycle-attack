@@ -252,6 +252,14 @@ def test_valid_formal_artifact_loads(tmp_path):
     assert len(loaded["manual_audit_rows"]) == 160
 
 
+def test_valid_synthetic_artifact_loads(tmp_path):
+    root = make_artifact(tmp_path, mode="synthetic-dry-run")
+    report = validate_label_v2_artifact(root, expected_mode="synthetic-dry-run")
+    assert report["status"] == "PASS"
+    assert report["mode"] == "synthetic-dry-run"
+    assert report["row_count"] == 8
+
+
 @pytest.mark.parametrize("name", ["label_v2.csv", "build_manifest.json", "validation_summary.json", "manual_audit_sample_manifest.csv", "SHA256SUMS"])
 def test_rejects_missing_files(tmp_path, name):
     root = make_artifact(tmp_path)
@@ -276,6 +284,17 @@ def test_rejects_duplicate_sums_entry(tmp_path):
     with (root / "SHA256SUMS").open("a", encoding="utf-8") as handle:
         handle.write(f"{'0' * 64}  label_v2.csv\n")
     expect_fail(root, "duplicate")
+
+
+def test_rejects_malformed_and_missing_sums_entries(tmp_path):
+    root = make_artifact(tmp_path)
+    (root / "SHA256SUMS").write_text("not-a-sha  label_v2.csv\n", encoding="utf-8")
+    expect_fail(root, "malformed SHA256SUMS")
+
+    root = make_artifact(tmp_path / "missing")
+    lines = (root / "SHA256SUMS").read_text(encoding="utf-8").splitlines()
+    (root / "SHA256SUMS").write_text("\n".join(lines[:-1]) + "\n", encoding="utf-8")
+    expect_fail(root, "entry set")
 
 
 def test_rejects_header_mismatch(tmp_path):
@@ -318,6 +337,15 @@ def test_rejects_mode_and_builder_mismatch(tmp_path):
         validate_label_v2_artifact(root, expected_mode="formal-ledger-build", expected_builder_sha256="d" * 64)
 
 
+def test_rejects_schema_version_mismatch(tmp_path):
+    root = make_artifact(tmp_path)
+    manifest = json.loads((root / "build_manifest.json").read_text(encoding="utf-8"))
+    manifest["schema_version"] = "wrong"
+    (root / "build_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    write_sums(root)
+    expect_fail(root, "schema_version")
+
+
 def test_rejects_summary_crosstab_mismatch(tmp_path):
     root = make_artifact(tmp_path)
     summary = json.loads((root / "validation_summary.json").read_text(encoding="utf-8"))
@@ -325,6 +353,15 @@ def test_rejects_summary_crosstab_mismatch(tmp_path):
     (root / "validation_summary.json").write_text(json.dumps(summary), encoding="utf-8")
     write_sums(root)
     expect_fail(root, "summary")
+
+
+def test_rejects_invalid_window_count_mismatch(tmp_path):
+    root = make_artifact(tmp_path)
+    summary = json.loads((root / "validation_summary.json").read_text(encoding="utf-8"))
+    summary["invalid_window_rows"] = 1
+    (root / "validation_summary.json").write_text(json.dumps(summary), encoding="utf-8")
+    write_sums(root)
+    expect_fail(root, "invalid_window_rows")
 
 
 def test_rejects_formal_exact_count_mismatch(tmp_path):
@@ -383,6 +420,17 @@ def test_rejects_manual_duplicate_and_quota_mismatch(tmp_path):
     expect_fail(root, "160")
 
 
+def test_rejects_manual_duplicate_requested_priority_within_unit(tmp_path):
+    root = make_artifact(tmp_path)
+    rows = read_csv(root / "manual_audit_sample_manifest.csv")
+    rows[1]["requested_priority"] = rows[0]["requested_priority"]
+    rows[1]["fallback_used"] = "true"
+    rows[1]["fallback_reason"] = "forced_duplicate_requested_priority"
+    write_csv(root / "manual_audit_sample_manifest.csv", MANUAL_COLUMNS, rows)
+    write_sums(root)
+    expect_fail(root, "duplicate manual requested_priority")
+
+
 def test_rejects_wrong_semantics_authority_or_jsonl_mode(tmp_path):
     root = make_artifact(tmp_path)
     mutate_csv(root / "label_v2.csv", lambda rows: rows[0].update({"source_jsonl_check_mode": "RUNTIME_READ"}))
@@ -395,6 +443,52 @@ def test_rejects_wrong_semantics_authority_or_jsonl_mode(tmp_path):
     (root / "build_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
     write_sums(root)
     expect_fail(root, "source_semantics_authority")
+
+
+@pytest.mark.parametrize(
+    "field,value,message",
+    [
+        ("event_source", "source_availability", "no-event event_source"),
+        ("mechanism_type", "MECHANISM_UNSUPPORTED", "mechanism_type"),
+        ("event_id_provenance", "SOURCE_AVAILABILITY", "no-event event_id_provenance"),
+        ("confidence_provenance", "SOURCE_AVAILABILITY", "unavailable confidence_provenance"),
+        ("invalid_reason", "BAD_REASON", "invalid_reason"),
+        ("coordinate_semantics", "wrong", "coordinate_semantics"),
+        ("source_schema_version", "wrong", "source_schema_version"),
+        ("manual_audit_status", "DONE", "manual_audit_status"),
+    ],
+)
+def test_rejects_disposition_semantic_field_tamper(tmp_path, field, value, message):
+    root = make_artifact(tmp_path)
+    def change(rows):
+        target = next(row for row in rows if row["event_present"] == "false" and row["mechanism_eligible"] == "true")
+        target[field] = value
+    mutate_csv(root / "label_v2.csv", change)
+    write_sums(root)
+    expect_fail(root, message)
+
+
+def test_cli_reports_malformed_json_without_traceback(tmp_path):
+    root = make_artifact(tmp_path)
+    (root / "build_manifest.json").write_text("{bad", encoding="utf-8")
+    write_sums(root)
+    result = subprocess.run(
+        [sys.executable, str(LOADER), "--artifact-root", str(root), "--expected-mode", "formal-ledger-build"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 1
+    assert "Traceback" not in result.stderr
+
+
+def test_rejects_root_symlink(tmp_path):
+    root = make_artifact(tmp_path)
+    link = tmp_path / "artifact_link"
+    try:
+        os.symlink(root, link, target_is_directory=True)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlink creation unavailable")
+    expect_fail(link, "symlink")
 
 
 def test_rejects_child_symlink(tmp_path):

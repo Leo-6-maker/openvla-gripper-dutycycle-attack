@@ -46,6 +46,16 @@ FORMAL_COUNTS = {
     "ELIGIBLE_CLEAN_FAILURE": {"positive": 31, "no_event": 276, "total": 307},
     "MECHANISM_INELIGIBLE_ABSTENTION": {"positive": 0, "no_event": 650, "total": 650},
 }
+SCHEMA_VERSION = "clean2000_label_v2_episode_primary_event_v1"
+COORDINATE_SEMANTICS = "zero_based_observation_before_action_start_inclusive_end_exclusive_full_trajectory"
+SOURCE_SCHEMA_VERSION = "source_availability_ledger_v1"
+KNOWN_INVALID_REASONS = {
+    "MISSING_SOURCE_RECORD",
+    "SOURCE_SCHEMA_INVALID",
+    "ANCHOR_INVALID",
+    "WINDOW_COORDINATE_INVALID",
+    "TRUNCATED_TRACE",
+}
 MANUAL_CATEGORIES = {
     "positive_clean_success",
     "eligible_no_event",
@@ -165,12 +175,13 @@ def verify_sums(root: Path) -> dict[str, str]:
     return entries
 
 
-def validate_rows(rows: list[dict[str, str]]) -> tuple[dict[str, dict[str, int]], set[tuple[str, str]], str, str]:
+def validate_rows(rows: list[dict[str, str]]) -> tuple[dict[str, dict[str, int]], set[tuple[str, str]], str, str, int]:
     seen: set[str] = set()
     counts = {cohort: {"positive": 0, "no_event": 0, "total": 0} for cohort in FORMAL_COUNTS}
     suite_tasks: set[tuple[str, str]] = set()
     builder_git_sha = ""
     builder_sha256 = ""
+    invalid_window_rows = 0
     for row in rows:
         episode = row["episode_key"]
         if episode in seen:
@@ -205,6 +216,14 @@ def validate_rows(rows: list[dict[str, str]]) -> tuple[dict[str, dict[str, int]]
             fail(f"{episode}: wrong source semantics authority")
         if row["source_jsonl_check_mode"] != "LEDGER_PROVENANCE_ONLY_NO_RUNTIME_READ":
             fail(f"{episode}: wrong source JSONL check mode")
+        if row["coordinate_semantics"] != COORDINATE_SEMANTICS:
+            fail(f"{episode}: wrong coordinate_semantics")
+        if row["source_schema_version"] != SOURCE_SCHEMA_VERSION:
+            fail(f"{episode}: wrong source_schema_version")
+        if row["manual_audit_status"] != "PENDING":
+            fail(f"{episode}: manual_audit_status must be PENDING")
+        if row["invalid_reason"] and row["invalid_reason"] not in KNOWN_INVALID_REASONS:
+            fail(f"{episode}: unknown invalid_reason")
 
         trace_length = parse_int(row["trace_length"], "trace_length", episode)
         if trace_length <= 0:
@@ -214,31 +233,51 @@ def validate_rows(rows: list[dict[str, str]]) -> tuple[dict[str, dict[str, int]]
         end = parse_int(row["window_end"], "window_end", episode)
         rank = parse_int(row["event_rank"], "event_rank", episode)
         if event_present:
+            if row["event_source"] != "source_availability":
+                fail(f"{episode}: event row must use source_availability event_source")
             if window_valid and not (0 <= start <= anchor < end <= trace_length):
                 fail(f"{episode}: event window must be start <= anchor < exclusive end <= trace_length")
             if row["event_id"] == "NO_EVENT" or row["segment_id"] == "NO_EVENT" or rank < 1:
                 fail(f"{episode}: event identifiers are inconsistent")
+            if row["event_id_provenance"] not in {"SOURCE_AVAILABILITY", "EPISODE_PRIMARY_EVENT_FALLBACK"}:
+                fail(f"{episode}: event_id_provenance is inconsistent")
         else:
+            if row["event_source"]:
+                fail(f"{episode}: no-event event_source must be empty")
             if (anchor, start, end) != (-1, -1, -1):
                 fail(f"{episode}: no-event coordinates must be -1")
             if row["event_id"] != "NO_EVENT" or row["segment_id"] != "NO_EVENT" or rank != 0:
                 fail(f"{episode}: no-event identifiers are inconsistent")
+            if row["event_id_provenance"] != "NOT_APPLICABLE":
+                fail(f"{episode}: no-event event_id_provenance must be NOT_APPLICABLE")
         if row["label_validity_status"] not in {"VALID", "INVALID_WINDOW"}:
             fail(f"{episode}: unknown label_validity_status")
         if (row["label_validity_status"] == "VALID") != window_valid:
             fail(f"{episode}: window_valid/status mismatch")
+        if window_valid and row["invalid_reason"]:
+            fail(f"{episode}: valid row must not carry invalid_reason")
+        if not window_valid:
+            invalid_window_rows += 1
         if confidence_available and row["teacher_confidence"] == "UNKNOWN":
             fail(f"{episode}: confidence availability mismatch")
+        if confidence_available and row["confidence_provenance"] != "SOURCE_AVAILABILITY":
+            fail(f"{episode}: confidence_provenance mismatch")
+        if not confidence_available and row["confidence_provenance"] != "UNAVAILABLE":
+            fail(f"{episode}: unavailable confidence_provenance mismatch")
+        expected_mechanism = "GRIPPER_TRANSFER_ELIGIBLE" if mechanism_eligible else "MECHANISM_UNSUPPORTED"
+        if row["mechanism_type"] != expected_mechanism:
+            fail(f"{episode}: mechanism_type mismatch")
 
         counts[row["cohort_class"]]["total"] += 1
         counts[row["cohort_class"]]["positive" if event_present else "no_event"] += 1
         suite_tasks.add((row["suite"], row["task_id"]))
-    return counts, suite_tasks, builder_git_sha, builder_sha256
+    return counts, suite_tasks, builder_git_sha, builder_sha256, invalid_window_rows
 
 
 def validate_manual(rows: list[dict[str, str]], label_rows: list[dict[str, str]], formal: bool) -> None:
     by_episode = {row["episode_key"]: row for row in label_rows}
     by_unit: dict[tuple[str, str], set[str]] = {}
+    requested_by_unit: dict[tuple[str, str], set[str]] = {}
     for row in rows:
         episode = row["episode_key"]
         label = by_episode.get(episode)
@@ -261,14 +300,20 @@ def validate_manual(rows: list[dict[str, str]], label_rows: list[dict[str, str]]
             fail(f"{episode}: manual fallback reason must be empty")
         unit = (row["suite"], row["task_id"])
         by_unit.setdefault(unit, set())
+        requested_by_unit.setdefault(unit, set())
         if episode in by_unit[unit]:
             fail(f"{episode}: duplicate manual episode within suite-task unit")
+        if row["requested_priority"] in requested_by_unit[unit]:
+            fail(f"{episode}: duplicate manual requested_priority within suite-task unit")
         by_unit[unit].add(episode)
+        requested_by_unit[unit].add(row["requested_priority"])
     if formal:
         if len(rows) != 160:
             fail("formal manual sample must contain 160 rows")
         if len(by_unit) != 40 or any(len(episodes) != 4 for episodes in by_unit.values()):
             fail("formal manual sample must contain 40 suite-task units with four rows each")
+        if any(priorities != MANUAL_CATEGORIES for priorities in requested_by_unit.values()):
+            fail("formal manual sample must contain each requested priority once per suite-task unit")
 
 
 def validate_manifest(
@@ -281,6 +326,7 @@ def validate_manifest(
     builder_sha256: str,
 ) -> None:
     required = {
+        "schema_version": SCHEMA_VERSION,
         "mode": expected_mode,
         "builder_git_sha": builder_git_sha,
         "builder_sha256": builder_sha256,
@@ -319,6 +365,7 @@ def validate_summary(
     row_count: int,
     counts: dict[str, dict[str, int]],
     manual_count: int,
+    invalid_window_rows: int,
 ) -> None:
     if summary.get("status") != "PASS" or summary.get("mode") != expected_mode:
         fail("validation_summary.json status/mode mismatch")
@@ -326,6 +373,8 @@ def validate_summary(
         fail("validation_summary.json recomputed closure mismatch")
     if summary.get("manual_audit_sample_n") != manual_count:
         fail("validation_summary.json manual sample mismatch")
+    if summary.get("invalid_window_rows") != invalid_window_rows:
+        fail("validation_summary.json invalid_window_rows mismatch")
     if summary.get("unexplained_disposition_rows") != 0:
         fail("validation_summary.json unexplained disposition mismatch")
 
@@ -336,6 +385,7 @@ def validate_label_v2_artifact(
     expected_mode: str,
     expected_builder_git_sha: str | None = None,
     expected_builder_sha256: str | None = None,
+    _include_contents: bool = False,
 ) -> dict[str, object]:
     root = Path(artifact_root)
     if expected_mode not in {"synthetic-dry-run", "formal-ledger-build"}:
@@ -348,7 +398,7 @@ def validate_label_v2_artifact(
         {"event_source", "invalid_reason", "abstain_reason", "manual_audit_reason"},
     )
     manual = read_csv_strict(root / "manual_audit_sample_manifest.csv", MANUAL_COLUMNS, {"fallback_reason"})
-    counts, suite_tasks, builder_git_sha, builder_sha256 = validate_rows(rows)
+    counts, suite_tasks, builder_git_sha, builder_sha256, invalid_window_rows = validate_rows(rows)
     formal = expected_mode == "formal-ledger-build"
     if formal:
         if len(rows) != 2000:
@@ -374,8 +424,9 @@ def validate_label_v2_artifact(
         row_count=len(rows),
         counts=counts,
         manual_count=len(manual),
+        invalid_window_rows=invalid_window_rows,
     )
-    return {
+    report: dict[str, object] = {
         "status": "PASS",
         "five_file_internal_closure": "PASS",
         "source_ledger_reverification": "NOT_PERFORMED_BY_THIS_LOADER",
@@ -385,9 +436,18 @@ def validate_label_v2_artifact(
         "counts": counts,
         "suite_task_units": len(suite_tasks),
         "manual_audit_sample_n": len(manual),
+        "invalid_window_rows": invalid_window_rows,
         "builder_git_sha": builder_git_sha,
         "builder_sha256": builder_sha256,
     }
+    if _include_contents:
+        report.update({
+            "_label_rows": rows,
+            "_manual_audit_rows": manual,
+            "_manifest": manifest,
+            "_validation_summary": summary,
+        })
+    return report
 
 
 def load_label_v2_artifact(
@@ -402,18 +462,18 @@ def load_label_v2_artifact(
         expected_mode=expected_mode,
         expected_builder_git_sha=expected_builder_git_sha,
         expected_builder_sha256=expected_builder_sha256,
+        _include_contents=True,
     )
-    root = Path(artifact_root)
+    label_rows = report.pop("_label_rows")
+    manual_rows = report.pop("_manual_audit_rows")
+    manifest = report.pop("_manifest")
+    summary = report.pop("_validation_summary")
     return {
         "report": report,
-        "label_rows": read_csv_strict(
-            root / "label_v2.csv",
-            LABEL_COLUMNS,
-            {"event_source", "invalid_reason", "abstain_reason", "manual_audit_reason"},
-        ),
-        "manual_audit_rows": read_csv_strict(root / "manual_audit_sample_manifest.csv", MANUAL_COLUMNS, {"fallback_reason"}),
-        "manifest": json.loads((root / "build_manifest.json").read_text(encoding="utf-8")),
-        "validation_summary": json.loads((root / "validation_summary.json").read_text(encoding="utf-8")),
+        "label_rows": label_rows,
+        "manual_audit_rows": manual_rows,
+        "manifest": manifest,
+        "validation_summary": summary,
     }
 
 
@@ -431,10 +491,11 @@ def main(argv: list[str] | None = None) -> int:
             expected_builder_git_sha=args.expected_builder_git_sha,
             expected_builder_sha256=args.expected_builder_sha256,
         )
-    except LabelV2ArtifactError as exc:
+    except (OSError, json.JSONDecodeError, csv.Error, LabelV2ArtifactError) as exc:
         print(str(exc), file=sys.stderr)
         return 1
-    print(json.dumps(report, sort_keys=True))
+    public_report = {key: value for key, value in report.items() if not key.startswith("_")}
+    print(json.dumps(public_report, sort_keys=True))
     return 0
 
 
