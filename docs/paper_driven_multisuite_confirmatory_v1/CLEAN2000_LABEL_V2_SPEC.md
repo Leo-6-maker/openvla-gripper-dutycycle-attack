@@ -125,6 +125,44 @@ Total: 803 positive, 1197 no-event.
 - The 650 mechanism-ineligible abstentions go to abstention and boundary evaluation.
 - The 31 clean-failure positives are auxiliary robustness rows, not the main attack population.
 
+## Source-Disposition Closure
+
+The frozen source ledger must form a complete, explained disposition partition:
+
+```text
+PRIMARY_SUCCESS_ELIGIBLE + positive
+  source_positive_anchor_valid = true
+  source_no_event = false
+  source_explicit_abstention = false
+  source_clean_failure_no_event = false
+
+PRIMARY_SUCCESS_ELIGIBLE + no-event
+  source_no_event = true
+  source_explicit_abstention = false
+  source_clean_failure_no_event = false
+
+ELIGIBLE_CLEAN_FAILURE + positive
+  source_positive_anchor_valid = true
+  source_no_event = false
+  source_explicit_abstention = false
+  source_clean_failure_no_event = false
+
+ELIGIBLE_CLEAN_FAILURE + no-event
+  source_clean_failure_no_event = true
+  source_explicit_abstention = false
+  source_no_event may be either false or true as a redundant generic marker
+
+MECHANISM_INELIGIBLE_ABSTENTION
+  event_present = false
+  source_explicit_abstention = true
+  source_clean_failure_no_event = false
+  source_no_event may be either false or true as a redundant generic marker
+```
+
+Any row outside this partition is an unexplained disposition and the formal
+build must fail. The formal summary and manifest must record
+`unexplained_disposition_rows = 0` and the disposition subtype counts.
+
 ## Minimum Checks
 
 - exact row count and cohort crosstab;
@@ -145,15 +183,48 @@ sampling_seed = 20260703
 quota = 40 tasks x 4 rows/task
 ```
 
-Per task, sample in this priority order:
+Per task, request in this priority order:
 
 1. one positive clean-success row;
 2. one eligible no-event row;
 3. one clean-failure or boundary row;
-4. one abstention/ineligible row, else a second positive row.
+4. one abstention/ineligible row.
 
-If a cohort is absent for a task, fill from the next available priority without
-crossing task boundaries. Emit `manual_audit_sample_manifest.csv` and bind its
+Selections are distinct and never cross `(suite, task_id)` boundaries. When a
+requested category is unavailable, use the first available category in the
+following total deterministic fallback matrix:
+
+```text
+positive_clean_success:
+  positive_clean_success
+  eligible_no_event
+  failure_or_boundary
+  abstention_or_ineligible
+
+eligible_no_event:
+  eligible_no_event
+  failure_or_boundary
+  abstention_or_ineligible
+  positive_clean_success
+
+failure_or_boundary:
+  failure_or_boundary
+  abstention_or_ineligible
+  positive_clean_success
+  eligible_no_event
+
+abstention_or_ineligible:
+  abstention_or_ineligible
+  positive_clean_success
+  eligible_no_event
+  failure_or_boundary
+```
+
+The fourth quota therefore uses a second positive row first when the requested
+abstention/ineligible category is absent. The matrix is total: any task with at
+least four eligible rows produces four distinct sampled episodes even if all
+rows belong to one category. Emit `manual_audit_sample_manifest.csv`, record the
+requested and actual categories plus truthful fallback metadata, and bind its
 SHA256 before review.
 
 ## Gate B
