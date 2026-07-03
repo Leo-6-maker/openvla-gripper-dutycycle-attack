@@ -4,15 +4,34 @@ Status: PLANNING_ONLY
 
 This phase runs detector-only experiments. It does not run attacks.
 
-## Main Model Rule
+## Main Model Freeze
 
-Freeze the actual production detector implementation before training. If the
-runtime implementation is the 13D ProprioNoStep causal TCN, it is the main
-model. If the runtime implementation is the 25D MLP, it is the main model and
-the TCN is an ablation.
+The main detector is fixed to the current repository production path:
 
-The freeze must record feature order, history length, hidden size, layer count,
-heads, normalization, threshold, and guard duration.
+| Field | Value |
+|---|---|
+| main_model_name | `SC5MLPV1` |
+| source_git_sha | `2525779bdb4d5f4f48b96f3d784550df3ad1bf27` |
+| source_path | `src/gripper_attack/sc5mlp_v1.py` |
+| source_sha256 | `0cb0ffd08290a058cbba289d87128662cb7c90568e0e056c48340d69a2d5de3a` |
+| train_path | `tools/multisuite_detector/train_detector.py` |
+| train_sha256 | `12019f05aabcabfc372e4e99864041c84c575c0b9cd5326c01a78a1827fc2539` |
+| eval_path | `tools/multisuite_detector/evaluate_detector.py` |
+| eval_sha256 | `f63d9d3240f445e7128f1bee13814b4479fc6dff3288a7408d8e54233ba628b5` |
+| feature_order | `SC5_FEATURES`, 25 canonical features |
+| history construction | causal features from current and past telemetry only |
+| hidden dimensions | 64, 64 |
+| heads | phase(9), corridor(1), release(1) |
+| loss functions | phase CE + 0.5 corridor BCE(pos_weight=5.0) + 0.3 release BCE |
+| class weighting | corridor positive weight 5.0; release unweighted |
+| normalization | train-only mean/std |
+| threshold | `tau_corridor=0.3`, `tau_release=0.3` |
+| guard duration | 5 steps |
+| checkpoint-selection rule | validation loss or validation suite-macro event F1, preselected before training |
+| FSM | `legacy_v1` |
+
+TCN or revocable FSM variants are ablations only; they cannot replace the main
+model after results are inspected.
 
 ## Baselines
 

@@ -10,6 +10,9 @@ Status: PLANNING_ONLY
 | ELIGIBLE_NO_EVENT | mechanism eligible AND no valid event | detector false-trigger and abstention evaluation |
 | MECHANISM_INELIGIBLE | articulated, planar, unsupported, or mechanism absent | abstention and boundary evaluation |
 | MULTI_EVENT | multiple object-transfer events | event-level exploratory evaluation |
+| DETECTOR_ELIGIBLE | mechanism-eligible positives plus mechanism-eligible no-event rows | detector recall, precision, false-trigger, and no-emit metrics |
+| DETECTOR_SAFETY | mechanism-ineligible and unsupported rows | correct abstention and safety metrics |
+| DETECTOR_MULTI_EVENT | multi-event rows scored at event level | exploratory event-level detector analysis |
 
 Cross-suite attack claims apply only to `PRIMARY_ATTACK`. Unsupported tasks must
 not be used to fill attack denominators.

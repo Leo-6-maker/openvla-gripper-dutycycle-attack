@@ -24,6 +24,8 @@ random_seed_semantics
 exact_prefix_state_identity
 ```
 
+`exact_prefix_state_identity` is defined in `EXACT_PREFIX_BRANCHING_SPEC_V1.md`.
+
 ## Primary Conditions
 
 - Clean exact-prefix replay
@@ -82,5 +84,5 @@ is ablation-only.
 ## Random-Time Rule
 
 Before results are inspected, select a same-episode, same-K, same-horizon,
-mechanism-legal random window that excludes the detector window plus the frozen
-margin. If no legal window exists, label the branch `RANDOM_TIME_INELIGIBLE`.
+mechanism-legal random window using `EXACT_PREFIX_BRANCHING_SPEC_V1.md`. If no
+legal window exists, label the branch `RANDOM_TIME_INELIGIBLE`.

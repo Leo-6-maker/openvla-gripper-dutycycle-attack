@@ -8,19 +8,20 @@ Each non-header row must map to `docs/paper_driven_multisuite_confirmatory_v1/EX
 
 | experiment_id | Suite | Method | eligible n | emit coverage | ITT CQFR | Official FR | delta open duty | Arm NAD | Linf actual |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|
-| P4_MAIN_OBJECT | Object | Clean/RAND/RANDOM_TIME/TMA/Ours |  |  |  |  |  |  |  |
-| P4_MAIN_SPATIAL | Spatial | Clean/RAND/RANDOM_TIME/TMA/Ours |  |  |  |  |  |  |  |
-| P4_MAIN_GOAL | Goal | Clean/RAND/RANDOM_TIME/TMA/Ours |  |  |  |  |  |  |  |
-| P4_MAIN_LIBERO10 | LIBERO-10 | Clean/RAND/RANDOM_TIME/TMA/Ours |  |  |  |  |  |  |  |
-| P4_MAIN_OBJECT/P4_MAIN_SPATIAL/P4_MAIN_GOAL/P4_MAIN_LIBERO10 | Macro | Macro average |  |  |  |  |  |  |  |
+| P4_OBJECT_* | Object | Clean/RAND/RANDOM_TIME/TMA/Ours |  |  |  |  |  |  |  |
+| P4_SPATIAL_* | Spatial | Clean/RAND/RANDOM_TIME/TMA/Ours |  |  |  |  |  |  |  |
+| P4_GOAL_* | Goal | Clean/RAND/RANDOM_TIME/TMA/Ours |  |  |  |  |  |  |  |
+| P4_LIBERO10_* | LIBERO-10 | Clean/RAND/RANDOM_TIME/TMA/Ours |  |  |  |  |  |  |  |
+| P4_* | Macro | Macro average |  |  |  |  |  |  |  |
 
 ## Table 2: Detector Generalization
 
 | experiment_id | Train regime | Test suite | Positive n | No-event n | Recall | Precision/F1 | +/-10 recall | False trigger | Correct abstain | Median error |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| P2_DET_OBJECT_ONLY | Object-only | each suite |  |  |  |  |  |  |  |  |
-| P2_DET_POOLED | Pooled | each suite |  |  |  |  |  |  |  |  |
-| P2_DET_LOSO | LOSO | held-out suite |  |  |  |  |  |  |  |  |
+| P2_OBJECT_ONLY_ELIGIBLE | Object-only | each suite |  |  |  |  |  |  |  |  |
+| P2_OBJECT_ONLY_SAFETY | Object-only | safety |  |  |  |  |  |  |  |  |
+| P2_POOLED_ELIGIBLE | Pooled | each suite |  |  |  |  |  |  |  |  |
+| P2_LOSO_ELIGIBLE | LOSO | held-out suite |  |  |  |  |  |  |  |  |
 
 ## Table 3: Selectivity And Timing Mechanism
 
