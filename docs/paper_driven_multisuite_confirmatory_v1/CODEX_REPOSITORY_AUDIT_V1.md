@@ -16,7 +16,7 @@ Current audit classification:
 | Area | Classification |
 |---|---|
 | Label V2 formal ledger builder and independent output validator | EXISTS_AND_REVIEWED |
-| Label V2 downstream five-file ingestion | MISSING_IMPLEMENTATION |
+| Label V2 downstream five-file ingestion | EXISTS_AND_REVIEWED_AFTER_C1 |
 | 25D SC5 feature schema | EXISTS_AND_REVIEWED |
 | Frozen feature artifact ingestion and Label V2 feature join | MISSING_IMPLEMENTATION |
 | Parent split tooling | EXISTS_NEEDS_HARDENING |
@@ -40,7 +40,8 @@ training, inference, rollout, attack, A800 query, or GPU work was run.
 ```text
 repository = D:/vla_attack/repo_work/pr47_closeout_codex
 branch = plan/codex-gated-experiment-v1
-HEAD = 4d1a646100738ca4b5bc86076a080cfd1b895465
+audited_source_head = 4d1a646100738ca4b5bc86076a080cfd1b895465
+audit_commit = 59ba119901a1019e37c69cde7ae68a9fa2f530ad
 base producer = af8217c934e5894c87d3db73b031a93f2536624d
 ```
 
@@ -71,7 +72,7 @@ The controlling documents reviewed were:
 | Component | Classification | Current path / entry | Evidence | Audit result |
 |---|---|---|---|---|
 | Label V2 ledger build and validation | EXISTS_AND_REVIEWED | `tools/multisuite_detector/build_clean2000_label_v2.py` blob `2d7059e` CLI modes `synthetic-dry-run`, `formal-ledger-build`, `validate-formal-output`, `self-test-closeout` | `tests/test_build_clean2000_label_v2.py` blob `257dafb`; `py_compile` PASS | Covers ledger-only source semantics, exact 2000-row formal closure, five-file output, atomic publish, manual sample, SHA256SUMS, and independent validation. Execution remains NOT_AUTHORIZED. |
-| Label V2 downstream ingestion | MISSING_IMPLEMENTATION | none found | no tests found | Formal artifact consumers do not yet parse the five-file output as a bound input to detector dataset construction. |
+| Label V2 downstream ingestion | EXISTS_AND_REVIEWED_AFTER_C1 | `tools/multisuite_detector/load_label_v2_artifact.py` | `tests/test_load_label_v2_artifact.py` | C1 adds a read-only five-file consumer with file-set/SHA, row invariant, formal-count, manual-sample, manifest, summary, and CLI validation. It does not read source ledgers or feature artifacts. |
 | 25D SC5 feature order | EXISTS_AND_REVIEWED | `src/gripper_attack/sc5mlp_v1.py` blob `72db0d5`, `SC5_FEATURES`, `SC5MLPV1` | `tests/multisuite_detector/test_feature_contract.py` blob present; direct run blocked because local Python lacks `torch` | Canonical 25D order and 64-64 three-head MLP exist. |
 | Streaming feature extraction | EXISTS_NEEDS_HARDENING | `src/gripper_attack/sc5_streaming_features_v2.py` blob `bcb243d`, `SC5StreamingFeatureAdapterV2` | no formal artifact-ingestion test found | Causal feature adapter exists, but no formal frozen feature artifact reader/manifest validator joins it to Label V2. |
 | Exact-set episode joins | EXISTS_NEEDS_HARDENING | `tools/multisuite_detector/strict_loader.py`, `strict_join()` | used by `train_detector.py` and `evaluate_detector.py` | Joins split episodes to features/labels, but accepts legacy JSONL/CSV schemas rather than the formal Label V2 five-file artifact plus frozen feature artifact. |
