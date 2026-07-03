@@ -43,6 +43,10 @@ jobs:
             -q
       - name: Run Label V2 closeout self-test
         run: python tools/multisuite_detector/build_clean2000_label_v2.py --mode self-test-closeout
+      - name: Report Label V2 producer identity
+        run: |
+          git rev-parse HEAD
+          sha256sum tools/multisuite_detector/build_clean2000_label_v2.py
       - name: Block generated evidence dumps in git
         shell: python
         run: |
