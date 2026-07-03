@@ -125,11 +125,12 @@ CROSSTAB_COLUMNS = ["cohort_class", "source_positive", "source_no_event", "total
 COORDINATE_SEMANTICS = "zero_based_observation_before_action_start_inclusive_end_exclusive_full_trajectory"
 SOURCE_SCHEMA_VERSION = "source_availability_v1_presence_only_jsonl_v1"
 SOURCE_SEMANTICS_AUTHORITY = "SOURCE_AVAILABILITY_LEDGER"
-SOURCE_JSONL_CHECK_MODE = "PROVENANCE_PRESENCE_ONLY"
+SOURCE_JSONL_CHECK_MODE = "LEDGER_PROVENANCE_ONLY_NO_RUNTIME_READ"
 V2_EPISODE_TABLE_SCOPE = "PRIMARY_EVENT_ONLY"
 MULTI_EVENT_POLICY = "MULTI_EVENT_TABLE_SEPARATE_ARTIFACT"
 CONFIDENCE_POLICY = "SOURCE_AVAILABILITY_ONLY_NO_CENSUS_BACKFILL"
 EVENT_ID_POLICY = "SOURCE_EVENT_ID_OR_EPISODE_PRIMARY_EVENT_FALLBACK"
+SOURCE_WINDOW_END_SEMANTICS = "INCLUSIVE_CONVERTED_TO_V2_EXCLUSIVE"
 MANUAL_AUDIT_SEED = 20260703
 MAX_SYNTHETIC_ROWS = 200
 SENTINEL_NAME = ".label_v2_synthetic_fixture.json"
@@ -141,8 +142,8 @@ ALLOWED_COHORTS = {
     "MECHANISM_INELIGIBLE_ABSTENTION",
 }
 MECHANISM_TYPE_BY_SCOPE = {
-    "MECHANISM_ELIGIBLE": "SINGLE_OBJECT_TRANSFER",
-    "MECHANISM_INELIGIBLE": "UNSUPPORTED",
+    "MECHANISM_ELIGIBLE": "GRIPPER_TRANSFER_ELIGIBLE",
+    "MECHANISM_INELIGIBLE": "MECHANISM_UNSUPPORTED",
 }
 INVALID_PRECEDENCE = [
     "MISSING_SOURCE_RECORD",
@@ -345,7 +346,6 @@ def event_present_from(availability: dict[str, str]) -> bool:
 
 
 def invalid_reason_from(availability: dict[str, str], event_present: bool) -> str:
-    episode = availability["episode_key"]
     if not bool_field(availability, "real_source_label_found") or not bool_field(availability, "source_record_found"):
         return "MISSING_SOURCE_RECORD"
     if not bool_field(availability, "source_schema_valid"):
@@ -354,70 +354,25 @@ def invalid_reason_from(availability: dict[str, str], event_present: bool) -> st
         return "ANCHOR_INVALID"
     if event_present and not bool_field(availability, "source_timing_fields_present"):
         return "WINDOW_COORDINATE_INVALID"
-    try:
-        canonical = json.loads(availability["canonical_index_label"])
-    except json.JSONDecodeError:
-        return "SOURCE_SCHEMA_INVALID"
-    reason = str(canonical.get("teacher_invalid_reason", ""))
-    if reason:
-        if reason not in INVALID_PRECEDENCE:
-            fail(f"{episode}: UNKNOWN_INVALID_REASON: {reason}")
-        return reason
     return ""
 
 
-def load_source_records(path: Path, cache: dict[Path, dict[str, dict]]) -> dict[str, dict]:
-    if path in cache:
-        return cache[path]
-    records = {}
-    with path.open(encoding="utf-8") as f:
-        for line_no, line in enumerate(f, start=1):
-            if not line.strip():
-                continue
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError as exc:
-                fail(f"{path.name}:{line_no}: invalid source JSONL: {exc}")
-            episode = record.get("episode_key")
-            if not episode:
-                fail(f"{path.name}:{line_no}: missing episode_key")
-            if episode in records:
-                fail(f"{path.name}:{line_no}: duplicate source episode_key: {episode}")
-            records[episode] = record
-    cache[path] = records
-    return records
-
-
-def validate_source_file(availability: dict[str, str], fixture_root: Path, cache: dict[Path, dict[str, dict]]) -> dict:
+def validate_source_ledger_reference(availability: dict[str, str]) -> None:
     source_path = availability["source_label_path"]
     source_sha = availability["source_label_sha256"]
     episode = availability["episode_key"]
     validate_sha_arg(source_sha, f"{episode} source_label_sha256")
     reject_path_traversal(source_path)
-    path = fixture_root / source_path
-    reject_symlink(path)
-    require_descendant(path, fixture_root, "source label")
-    if not path.is_file():
-        fail(f"{episode}: source label file does not exist: {source_path}")
-    actual = sha256_file(path)
-    if actual != source_sha:
-        fail(f"{episode}: source label SHA256 mismatch: expected {source_sha}, got {actual}")
-    records = load_source_records(path, cache)
-    if episode not in records:
-        fail(f"{episode}: source label record not found in {source_path}")
-    return records[episode]
 
 
-def validate_availability_census_audit_flags(availability: dict[str, str], census: dict[str, str]) -> None:
+def validate_source_disposition_invariants(availability: dict[str, str], census: dict[str, str], clean_success: bool, event_present: bool) -> None:
     episode = census["episode_key"]
-    pairs = [
-        ("source_record_found", "label_record_present"),
-        ("source_schema_valid", "record_schema_valid"),
-        ("source_positive_anchor_valid", "positive_anchor_valid"),
-    ]
-    for availability_field, census_field in pairs:
-        if bool_field(availability, availability_field) != bool_field(census, census_field):
-            fail(f"{episode}: availability/census audit flag mismatch: {availability_field} vs {census_field}")
+    explicit_abstention = bool_field(availability, "source_explicit_abstention")
+    clean_failure_no_event = bool_field(availability, "source_clean_failure_no_event")
+    if explicit_abstention and census["cohort_class"] != "MECHANISM_INELIGIBLE_ABSTENTION":
+        fail(f"{episode}: source explicit abstention requires MECHANISM_INELIGIBLE_ABSTENTION")
+    if clean_failure_no_event and (clean_success or event_present):
+        fail(f"{episode}: source clean-failure no-event disposition is inconsistent")
 
 
 def adapt_rows(
@@ -425,13 +380,11 @@ def adapt_rows(
     census_rows: list[dict[str, str]],
     builder_sha: str,
     git_head: str,
-    fixture_root: Path,
 ) -> list[dict[str, str]]:
     if len(census_rows) > MAX_SYNTHETIC_ROWS:
         fail(f"synthetic fixture row count exceeds {MAX_SYNTHETIC_ROWS}: {len(census_rows)}")
     availability = unique_by_episode(availability_rows, "availability")
     census = unique_by_episode(census_rows, "census")
-    source_cache: dict[Path, dict[str, dict]] = {}
     if set(availability) != set(census):
         fail("episode_key set mismatch between availability and census")
 
@@ -441,12 +394,12 @@ def adapt_rows(
         a = availability[episode]
         if a["suite"] != c["suite"] or a["task_id"] != c["task_id"]:
             fail(f"{episode}: availability/census suite-task mismatch")
-        validate_source_file(a, fixture_root, source_cache)
-        validate_availability_census_audit_flags(a, c)
+        validate_source_ledger_reference(a)
 
         clean_success = clean_success_from(c)
         mechanism_eligible = mechanism_eligible_from(c)
         event_present = event_present_from(a)
+        validate_source_disposition_invariants(a, c, clean_success, event_present)
         validate_cohort(c, clean_success, mechanism_eligible, event_present)
 
         invalid_reason = invalid_reason_from(a, event_present)
@@ -463,7 +416,7 @@ def adapt_rows(
         event_rank = 1 if event_present else 0
         if event_present:
             if a["source_event_id"] and a["source_event_id"] != "UNKNOWN":
-                event_id = a["source_event_id"]
+                event_id = f"{episode}#{a['source_event_id']}"
                 event_id_provenance = "SOURCE_AVAILABILITY"
             else:
                 event_id = f"{episode}#event_{event_rank}"
@@ -785,7 +738,7 @@ def main(argv: list[str] | None = None) -> int:
             },
         )
         crosstab_rows = read_csv_strict(crosstab, CROSSTAB_COLUMNS)
-        adapted_rows = adapt_rows(availability_rows, census_rows, builder_sha, git_head, fixture_root)
+        adapted_rows = adapt_rows(availability_rows, census_rows, builder_sha, git_head)
         output_rows = validate_and_transform(adapted_rows, builder_sha, git_head)
         counts = validate_counts(adapted_rows, crosstab_rows)
 
@@ -819,6 +772,7 @@ def main(argv: list[str] | None = None) -> int:
             "multi_event_policy": MULTI_EVENT_POLICY,
             "confidence_policy": CONFIDENCE_POLICY,
             "event_id_policy": EVENT_ID_POLICY,
+            "source_window_end_semantics": SOURCE_WINDOW_END_SEMANTICS,
             "inputs": {
                 "source_manifest": {"path": str(source), "sha256": source_sha},
                 "episode_census": {"path": str(census), "sha256": census_sha},

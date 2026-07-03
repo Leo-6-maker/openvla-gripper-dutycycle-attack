@@ -97,19 +97,17 @@ def test_synthetic_dry_run_outputs(tmp_path):
     by_episode = {row["episode_key"]: row for row in rows}
     assert by_episode["ep_valid_positive"]["window_end"] == "14"
     assert by_episode["ep_valid_positive"]["source_sha256"] == sha256(fixture / "source_records.jsonl")
-    assert by_episode["ep_valid_positive"]["mechanism_type"] == "SINGLE_OBJECT_TRANSFER"
+    assert by_episode["ep_valid_positive"]["mechanism_type"] == "GRIPPER_TRANSFER_ELIGIBLE"
+    assert by_episode["ep_valid_positive"]["event_id"] == "ep_valid_positive#event_1"
     assert by_episode["ep_valid_positive"]["segment_id"] == "ep_valid_positive#segment_1"
     assert by_episode["ep_valid_positive"]["source_schema_version"] == "source_availability_v1_presence_only_jsonl_v1"
     assert by_episode["ep_valid_positive"]["source_semantics_authority"] == "SOURCE_AVAILABILITY_LEDGER"
-    assert by_episode["ep_valid_positive"]["source_jsonl_check_mode"] == "PROVENANCE_PRESENCE_ONLY"
+    assert by_episode["ep_valid_positive"]["source_jsonl_check_mode"] == "LEDGER_PROVENANCE_ONLY_NO_RUNTIME_READ"
     assert by_episode["ep_eligible_no_event"]["event_id"] == "NO_EVENT"
     assert by_episode["ep_eligible_no_event"]["teacher_confidence"] == "UNKNOWN"
     assert by_episode["ep_eligible_no_event"]["confidence_available"] == "false"
-    assert by_episode["ep_mechanism_ineligible"]["mechanism_type"] == "UNSUPPORTED"
-    assert {r["episode_key"] for r in rows if r["label_validity_status"] == "INVALID_WINDOW"} == {
-        "ep_invalid_window",
-        "ep_truncated_trace",
-    }
+    assert by_episode["ep_mechanism_ineligible"]["mechanism_type"] == "MECHANISM_UNSUPPORTED"
+    assert {r["episode_key"] for r in rows if r["label_validity_status"] == "INVALID_WINDOW"} == {"ep_invalid_window"}
     assert all(r["builder_sha256"] for r in rows)
     manual = read_rows(output / "manual_audit_sample_manifest.csv")
     assert manual
@@ -119,8 +117,9 @@ def test_synthetic_dry_run_outputs(tmp_path):
 
     manifest = json.loads((output / "build_manifest.json").read_text(encoding="utf-8"))
     assert manifest["source_semantics_authority"] == "SOURCE_AVAILABILITY_LEDGER"
-    assert manifest["source_jsonl_check_mode"] == "PROVENANCE_PRESENCE_ONLY"
+    assert manifest["source_jsonl_check_mode"] == "LEDGER_PROVENANCE_ONLY_NO_RUNTIME_READ"
     assert manifest["v2_episode_table_scope"] == "PRIMARY_EVENT_ONLY"
+    assert manifest["source_window_end_semantics"] == "INCLUSIVE_CONVERTED_TO_V2_EXCLUSIVE"
 
 
 def test_trace_length_uses_full_trajectory_not_valid_step_count(tmp_path):
@@ -391,16 +390,16 @@ def test_crosstab_mismatch_rejected(tmp_path):
     assert "crosstab mismatch" in result.stderr
 
 
-def test_per_row_source_sha_rejected(tmp_path):
+def test_per_row_source_sha_format_rejected(tmp_path):
     fixture = copy_fixture(tmp_path)
     rewrite_source(
         fixture / "source_manifest.csv",
-        lambda rows: [dict(r, source_label_sha256="0" * 64) if i == 0 else r for i, r in enumerate(rows)],
+        lambda rows: [dict(r, source_label_sha256="not-a-sha") if i == 0 else r for i, r in enumerate(rows)],
     )
 
     result = run_builder(fixture, tmp_path / "out", expect_ok=False)
 
-    assert "source label SHA256 mismatch" in result.stderr
+    assert "source_label_sha256 must be 64 lowercase hex" in result.stderr
 
 
 def test_cohort_invariant_rejected(tmp_path):
@@ -415,35 +414,46 @@ def test_cohort_invariant_rejected(tmp_path):
     assert "cohort invariant failed" in result.stderr
 
 
-def test_unknown_invalid_reason_rejected(tmp_path):
+def test_canonical_invalid_reason_does_not_control_v2_validity(tmp_path):
     fixture = copy_fixture(tmp_path)
     rewrite_source(
         fixture / "source_manifest.csv",
         lambda rows: [
-            dict(r, canonical_index_label='{"teacher_invalid_reason":"SURPRISE_REASON"}')
+            dict(r, canonical_index_label='{"teacher_invalid_reason":"TRUNCATED_TRACE"}')
             if r["episode_key"] == "ep_valid_positive"
             else r
             for r in rows
         ],
     )
 
-    result = run_builder(fixture, tmp_path / "out", expect_ok=False)
+    output = tmp_path / "out"
+    run_builder(fixture, output)
 
-    assert "UNKNOWN_INVALID_REASON" in result.stderr
+    row = {r["episode_key"]: r for r in read_rows(output / "label_v2.csv")}["ep_valid_positive"]
+    assert row["invalid_reason"] == ""
+    assert row["label_validity_status"] == "VALID"
 
 
-def test_availability_census_audit_flag_mismatch_rejected(tmp_path):
+def test_source_no_event_with_canonical_positive_uses_source_semantics(tmp_path):
     fixture = copy_fixture(tmp_path)
     census = fixture / "episode_census.csv"
     rows = read_rows(census)
     for row in rows:
-        if row["episode_key"] == "ep_valid_positive":
-            row["positive_anchor_valid"] = "False"
+        if row["episode_key"] == "ep_eligible_no_event":
+            row["teacher_positive_label_valid"] = "True"
+            row["positive_anchor_valid"] = "True"
+            row["teacher_anchor_step"] = "12"
+            row["teacher_window_start"] = "10"
+            row["teacher_window_end"] = "14"
     write_rows(census, rows)
 
-    result = run_builder(fixture, tmp_path / "out", expect_ok=False)
+    output = tmp_path / "out"
+    run_builder(fixture, output)
 
-    assert "availability/census audit flag mismatch" in result.stderr
+    row = {r["episode_key"]: r for r in read_rows(output / "label_v2.csv")}["ep_eligible_no_event"]
+    assert row["event_present"] == "false"
+    assert row["event_id"] == "NO_EVENT"
+    assert row["label_validity_status"] == "VALID"
 
 
 def test_duplicate_census_episode_and_crosstab_cohort_rejected(tmp_path):
