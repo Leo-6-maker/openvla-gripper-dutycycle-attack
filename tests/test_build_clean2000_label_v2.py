@@ -1,5 +1,6 @@
 import csv
 import hashlib
+import importlib.util
 import shutil
 import subprocess
 import sys
@@ -88,6 +89,9 @@ def test_synthetic_dry_run_outputs(tmp_path):
     assert expected == {p.name for p in output.iterdir()}
     rows = read_rows(output / "label_v2.csv")
     assert len(rows) == 6
+    by_episode = {row["episode_key"]: row for row in rows}
+    assert by_episode["ep_valid_positive"]["window_end"] == "14"
+    assert by_episode["ep_valid_positive"]["source_sha256"] == sha256(fixture / "source_records.jsonl")
     assert {r["episode_key"] for r in rows if r["label_validity_status"] == "INVALID_WINDOW"} == {
         "ep_invalid_window",
         "ep_truncated_trace",
@@ -105,44 +109,48 @@ def test_synthetic_dry_run_outputs(tmp_path):
     [
         (
             lambda p: rewrite_source(p, lambda rows: rows + [dict(rows[0])]),
-            "duplicate episode_key",
+            "duplicate availability episode_key",
         ),
         (
             lambda p: p.write_text(
-                p.read_text(encoding="utf-8").replace(",teacher_confidence\n", "\n"), encoding="utf-8"
-            ),
-            "expected columns",
-        ),
-        (
-            lambda p: p.write_text(
-                p.read_text(encoding="utf-8").replace("teacher_confidence\n", "teacher_confidence,extra\n"),
+                p.read_text(encoding="utf-8").replace(",source_mechanism_eligible_schema_valid\n", "\n"),
                 encoding="utf-8",
             ),
             "expected columns",
         ),
         (
-            lambda p: p.write_text(p.read_text(encoding="utf-8").replace("0.95\n", "0.95,extra\n", 1), encoding="utf-8"),
+            lambda p: p.write_text(
+                p.read_text(encoding="utf-8").replace(
+                    "source_mechanism_eligible_schema_valid\n",
+                    "source_mechanism_eligible_schema_valid,extra\n",
+                ),
+                encoding="utf-8",
+            ),
+            "expected columns",
+        ),
+        (
+            lambda p: p.write_text(p.read_text(encoding="utf-8").replace(",True\n", ",True,extra\n", 1), encoding="utf-8"),
             "extra cells",
         ),
         (
-            lambda p: p.write_text(p.read_text(encoding="utf-8").replace(",0.95\n", "\n", 1), encoding="utf-8"),
+            lambda p: p.write_text(p.read_text(encoding="utf-8").replace(",True\n", "\n", 1), encoding="utf-8"),
             "missing cells",
         ),
         (
-            lambda p: rewrite_source(p, lambda rows: [dict(r, clean_success="maybe") if i == 0 else r for i, r in enumerate(rows)]),
+            lambda p: rewrite_source(p, lambda rows: [dict(r, real_source_label_found="maybe") if i == 0 else r for i, r in enumerate(rows)]),
             "illegal bool",
         ),
         (
             lambda p: rewrite_source(
                 p,
                 lambda rows: [
-                    dict(r, event_present="false", anchor_absolute_step="3", window_start="2", window_end="5", event_source="")
+                    dict(r, source_no_event="True")
                     if i == 0
                     else r
                     for i, r in enumerate(rows)
                 ],
             ),
-            "no-event row has non-empty anchor/window",
+            "positive/no-event source flags conflict",
         ),
     ],
 )
@@ -321,12 +329,41 @@ def test_crosstab_mismatch_rejected(tmp_path):
     assert "crosstab mismatch" in result.stderr
 
 
-def test_duplicate_census_and_crosstab_cohort_rejected(tmp_path):
+def test_per_row_source_sha_rejected(tmp_path):
+    fixture = copy_fixture(tmp_path)
+    rewrite_source(
+        fixture / "source_manifest.csv",
+        lambda rows: [dict(r, source_label_sha256="0" * 64) if i == 0 else r for i, r in enumerate(rows)],
+    )
+
+    result = run_builder(fixture, tmp_path / "out", expect_ok=False)
+
+    assert "source label SHA256 mismatch" in result.stderr
+
+
+def test_cohort_invariant_rejected(tmp_path):
     fixture = copy_fixture(tmp_path)
     census = fixture / "episode_census.csv"
-    census.write_text(census.read_text(encoding="utf-8") + "PRIMARY_SUCCESS_ELIGIBLE,4\n", encoding="utf-8")
+    rows = read_rows(census)
+    rows[0]["outcome_class"] = "CLEAN_FAILURE"
+    with census.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=rows[0].keys())
+        writer.writeheader()
+        writer.writerows(rows)
+
+    result = run_builder(fixture, tmp_path / "out", expect_ok=False)
+
+    assert "cohort invariant failed" in result.stderr
+
+
+def test_duplicate_census_episode_and_crosstab_cohort_rejected(tmp_path):
+    fixture = copy_fixture(tmp_path)
+    census = fixture / "episode_census.csv"
+    rows = read_rows(census)
+    with census.open("a", encoding="utf-8") as f:
+        f.write(",".join(rows[0].values()) + "\n")
     result = run_builder(fixture, tmp_path / "out1", expect_ok=False)
-    assert "duplicate census cohort" in result.stderr
+    assert "duplicate census episode_key" in result.stderr
 
     fixture = copy_fixture(tmp_path / "second")
     crosstab = fixture / "source_event_crosstab.csv"
@@ -340,56 +377,104 @@ def make_160_fixture(tmp_path):
     fixture.mkdir()
     shutil.copy(FIXTURE / ".label_v2_synthetic_fixture.json", fixture / ".label_v2_synthetic_fixture.json")
     suites = ["Object", "Spatial", "Goal", "LIBERO-10"]
-    rows = []
+    suffixes = ["pos", "noevent", "failure", "ineligible"]
+    source_records = fixture / "source_records.jsonl"
+    source_records.write_text(
+        "".join(
+            f'{{"episode_key":"{suite}_task_{task_idx:02d}_{suffix}"}}\n'
+            for suite in suites
+            for task_idx in range(10)
+            for suffix in suffixes
+        ),
+        encoding="utf-8",
+    )
+    source_record_sha = sha256(source_records)
+    availability_rows = []
+    census_rows = []
     for suite in suites:
         for task_idx in range(10):
             task = f"task_{task_idx:02d}"
-            base = {
-                "suite": suite,
-                "task_id": task,
-                "coordinate_semantics": "zero_based_observation_before_action_start_inclusive_end_exclusive_full_trajectory",
-                "trace_length": "50",
-                "source_schema_version": "synthetic_v1",
-                "mechanism_type": "single_object_transfer",
-                "segment_id": f"{suite}_{task}",
-            }
             variants = [
-                ("pos", "PRIMARY_SUCCESS_ELIGIBLE", "true", "true", "true", "10", "8", "14", "teacher_rule", "", "", "positive_clean_success"),
-                ("noevent", "PRIMARY_SUCCESS_ELIGIBLE", "true", "true", "false", "-1", "-1", "-1", "", "", "NO_TEACHER_EVENT", "eligible_no_event"),
-                ("failure", "ELIGIBLE_CLEAN_FAILURE", "false", "true", "true", "11", "9", "15", "teacher_rule", "", "", "failure_or_boundary"),
-                ("ineligible", "MECHANISM_INELIGIBLE_ABSTENTION", "true", "false", "false", "-1", "-1", "-1", "", "", "UNSUPPORTED_MECHANISM", "abstention_or_ineligible"),
+                ("pos", "CLEAN_SUCCESS", "MECHANISM_ELIGIBLE", "PRIMARY_SUCCESS_ELIGIBLE", True, False, False, False, "10", "8", "13", "event_1", ""),
+                ("noevent", "CLEAN_SUCCESS", "MECHANISM_ELIGIBLE", "PRIMARY_SUCCESS_ELIGIBLE", False, True, False, False, "-1", "-1", "-1", "", "NO_TEACHER_EVENT"),
+                ("failure", "CLEAN_FAILURE", "MECHANISM_ELIGIBLE", "ELIGIBLE_CLEAN_FAILURE", True, False, False, False, "11", "9", "14", "event_2", ""),
+                ("ineligible", "CLEAN_SUCCESS", "MECHANISM_INELIGIBLE", "MECHANISM_INELIGIBLE_ABSTENTION", False, False, True, False, "-1", "-1", "-1", "", "UNSUPPORTED_MECHANISM"),
             ]
-            for suffix, cohort, clean, eligible, present, anchor, start, end, event_source, invalid, abstain, _category in variants:
+            for suffix, outcome, scope, cohort, positive, no_event, abstention, clean_failure_no_event, anchor, start, end, event_id, abstain in variants:
                 episode = f"{suite}_{task}_{suffix}"
-                rows.append({
-                    **base,
+                availability_rows.append({
+                    "suite": suite,
+                    "task_id": task,
+                    "episode_key": episode,
+                    "canonical_index_label": '{"teacher_invalid_reason":""}',
+                    "real_source_label_found": "True",
+                    "source_label_path": "source_records.jsonl",
+                    "source_label_sha256": source_record_sha,
+                    "source_anchor": anchor,
+                    "source_window_start": start,
+                    "source_window_end": end,
+                    "source_confidence": "0.9" if positive else "UNKNOWN",
+                    "source_event_id": event_id,
+                    "matches_canonical": "True",
+                    "notes": "",
+                    "source_record_found": "True",
+                    "source_schema_valid": "True",
+                    "source_positive_anchor_valid": str(positive),
+                    "source_no_event": str(no_event),
+                    "source_explicit_abstention": str(abstention),
+                    "source_clean_failure_no_event": str(clean_failure_no_event),
+                    "shared_fields_comparable": "True",
+                    "shared_fields_match": "True",
+                    "uncomparable_due_to_missing_fields": "False",
+                    "source_timing_fields_present": str(positive),
+                    "source_mechanism_eligible_schema_valid": "True",
+                })
+                census_rows.append({
                     "episode_key": episode,
                     "parent_key": f"{suite}_{task}_{suffix}_parent",
+                    "suite": suite,
+                    "task_id": task,
+                    "task_name": "synthetic_task",
+                    "state_id": "0",
+                    "outcome_class": outcome,
+                    "mechanism_scope_class": scope,
                     "cohort_class": cohort,
-                    "clean_success": clean,
-                    "mechanism_eligible": eligible,
-                    "event_present": present,
-                    "anchor_absolute_step": anchor,
-                    "window_start": start,
-                    "window_end": end,
-                    "event_source": event_source,
-                    "source_path": f"synthetic/{episode}.json",
-                    "source_sha256": "a" * 64,
-                    "invalid_reason": invalid,
+                    "label_record_present": "True",
+                    "record_schema_valid": "True",
+                    "teacher_positive_label_valid": str(positive),
+                    "positive_anchor_valid": str(positive),
+                    "explicit_abstention_valid": str(abstention),
+                    "timing_signal_usable": str(positive),
+                    "teacher_anchor_step": anchor,
+                    "teacher_window_start": start,
+                    "teacher_window_end": str(int(end) + 1) if positive else "-1",
+                    "teacher_confidence": "0.9" if positive else "0.0",
+                    "teacher_event_id": event_id,
                     "abstain_reason": abstain,
-                    "event_id": "event_1" if present == "true" else "event_none",
-                    "event_rank": "1" if present == "true" else "0",
-                    "teacher_confidence": "0.9" if present == "true" else "0.0",
+                    "feature_schema_sha256": "a" * 64,
+                    "source_manifest_sha256": "b" * 64,
+                    "artifact_inventory_sha256": "c" * 64,
+                    "n_steps": "50",
+                    "n_valid_steps": "50",
+                    "first_valid_step": "0",
+                    "invalid_feature_steps": "0",
+                    "feature_25d_join_ok": "True",
+                    "cohort_set": "SYNTHETIC",
+                    "model_split": "UNKNOWN",
+                    "parent_leakage_status": "UNKNOWN",
+                    "task_leakage_status": "UNKNOWN",
+                    "normalization_source_status": "UNKNOWN",
                 })
     with (fixture / "source_manifest.csv").open("w", newline="", encoding="utf-8") as f:
         fieldnames = (FIXTURE / "source_manifest.csv").read_text(encoding="utf-8").splitlines()[0].split(",")
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
-        writer.writerows(rows)
-    (fixture / "episode_census.csv").write_text(
-        "cohort_class,total\nPRIMARY_SUCCESS_ELIGIBLE,80\nELIGIBLE_CLEAN_FAILURE,40\nMECHANISM_INELIGIBLE_ABSTENTION,40\n",
-        encoding="utf-8",
-    )
+        writer.writerows(availability_rows)
+    with (fixture / "episode_census.csv").open("w", newline="", encoding="utf-8") as f:
+        fieldnames = (FIXTURE / "episode_census.csv").read_text(encoding="utf-8").splitlines()[0].split(",")
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(census_rows)
     (fixture / "source_event_crosstab.csv").write_text(
         "cohort_class,source_positive,source_no_event,total\nPRIMARY_SUCCESS_ELIGIBLE,40,40,80\nELIGIBLE_CLEAN_FAILURE,40,0,40\nMECHANISM_INELIGIBLE_ABSTENTION,0,40,40\n",
         encoding="utf-8",
@@ -411,6 +496,20 @@ def test_manual_audit_uses_suite_task_key_and_enforces_160_quota(tmp_path):
     assert len(groups) == 40
     assert all(len(rows) == 4 for rows in groups.values())
     assert len([key for key in groups if key[1] == "task_00"]) == 4
+
+
+def test_manual_category_prefers_ineligible_over_failure():
+    spec = importlib.util.spec_from_file_location("builder", BUILDER)
+    builder = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(builder)
+    assert builder.row_category(
+        {
+            "event_present": "false",
+            "clean_success": "false",
+            "mechanism_eligible": "false",
+            "label_validity_status": "INVALID_WINDOW",
+        }
+    ) == "abstention_or_ineligible"
 
 
 def test_symlink_input_rejected(tmp_path):

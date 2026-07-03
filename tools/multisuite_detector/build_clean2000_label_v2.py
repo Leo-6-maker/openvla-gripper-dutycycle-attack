@@ -19,31 +19,69 @@ import sys
 from pathlib import Path
 
 
-SOURCE_COLUMNS = [
+AVAILABILITY_COLUMNS = [
+    "suite",
+    "task_id",
+    "episode_key",
+    "canonical_index_label",
+    "real_source_label_found",
+    "source_label_path",
+    "source_label_sha256",
+    "source_anchor",
+    "source_window_start",
+    "source_window_end",
+    "source_confidence",
+    "source_event_id",
+    "matches_canonical",
+    "notes",
+    "source_record_found",
+    "source_schema_valid",
+    "source_positive_anchor_valid",
+    "source_no_event",
+    "source_explicit_abstention",
+    "source_clean_failure_no_event",
+    "shared_fields_comparable",
+    "shared_fields_match",
+    "uncomparable_due_to_missing_fields",
+    "source_timing_fields_present",
+    "source_mechanism_eligible_schema_valid",
+]
+
+EPISODE_CENSUS_COLUMNS = [
     "episode_key",
     "parent_key",
     "suite",
     "task_id",
+    "task_name",
+    "state_id",
+    "outcome_class",
+    "mechanism_scope_class",
     "cohort_class",
-    "clean_success",
-    "mechanism_eligible",
-    "event_present",
-    "anchor_absolute_step",
-    "window_start",
-    "window_end",
-    "event_source",
-    "source_path",
-    "source_sha256",
-    "invalid_reason",
-    "abstain_reason",
-    "mechanism_type",
-    "event_id",
-    "segment_id",
-    "event_rank",
-    "coordinate_semantics",
-    "trace_length",
-    "source_schema_version",
+    "label_record_present",
+    "record_schema_valid",
+    "teacher_positive_label_valid",
+    "positive_anchor_valid",
+    "explicit_abstention_valid",
+    "timing_signal_usable",
+    "teacher_anchor_step",
+    "teacher_window_start",
+    "teacher_window_end",
     "teacher_confidence",
+    "teacher_event_id",
+    "abstain_reason",
+    "feature_schema_sha256",
+    "source_manifest_sha256",
+    "artifact_inventory_sha256",
+    "n_steps",
+    "n_valid_steps",
+    "first_valid_step",
+    "invalid_feature_steps",
+    "feature_25d_join_ok",
+    "cohort_set",
+    "model_split",
+    "parent_leakage_status",
+    "task_leakage_status",
+    "normalization_source_status",
 ]
 
 OUTPUT_COLUMNS = [
@@ -78,7 +116,6 @@ OUTPUT_COLUMNS = [
     "manual_audit_reason",
 ]
 
-CENSUS_COLUMNS = ["cohort_class", "total"]
 CROSSTAB_COLUMNS = ["cohort_class", "source_positive", "source_no_event", "total"]
 COORDINATE_SEMANTICS = "zero_based_observation_before_action_start_inclusive_end_exclusive_full_trajectory"
 MANUAL_AUDIT_SEED = 20260703
@@ -86,6 +123,18 @@ MAX_SYNTHETIC_ROWS = 200
 SENTINEL_NAME = ".label_v2_synthetic_fixture.json"
 SENTINEL_SHA256 = "dae3e444c0c8693d5a80e20fd0761ddd4d559ae038ef7ecb6cfef054ab69f482"
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
+ALLOWED_COHORTS = {
+    "PRIMARY_SUCCESS_ELIGIBLE",
+    "ELIGIBLE_CLEAN_FAILURE",
+    "MECHANISM_INELIGIBLE_ABSTENTION",
+}
+INVALID_PRECEDENCE = [
+    "MISSING_SOURCE_RECORD",
+    "SOURCE_SCHEMA_INVALID",
+    "ANCHOR_INVALID",
+    "WINDOW_COORDINATE_INVALID",
+    "TRUNCATED_TRACE",
+]
 MANUAL_COLUMNS = [
     "suite",
     "task_id",
@@ -141,13 +190,13 @@ def reject_path_traversal(path_text: str) -> None:
 
 def reject_symlink(path: Path) -> None:
     probe = path
-    existing = []
+    candidates = []
     while True:
-        existing.append(probe)
-        if probe.exists() or probe.parent == probe:
+        candidates.append(probe)
+        if probe.parent == probe:
             break
         probe = probe.parent
-    for candidate in existing:
+    for candidate in candidates:
         if candidate.is_symlink():
             fail(f"symlink path is not allowed: {candidate}")
 
@@ -170,9 +219,9 @@ def require_sentinel(root: Path) -> None:
 
 
 def parse_bool(value: str, field: str, episode_key: str) -> bool:
-    if value == "true":
+    if value in {"true", "True"}:
         return True
-    if value == "false":
+    if value in {"false", "False"}:
         return False
     fail(f"{episode_key}: illegal bool for {field}: {value}")
 
@@ -197,13 +246,226 @@ def parse_float(value: str, field: str, episode_key: str) -> float:
     return parsed
 
 
+def parse_confidence(value: str, field: str, episode_key: str) -> str:
+    if value == "UNKNOWN":
+        return value
+    return str(parse_float(value, field, episode_key))
+
+
 def git_sha(repo: Path) -> str:
     try:
-        return subprocess.check_output(
+        head = subprocess.check_output(
             ["git", "rev-parse", "HEAD"], cwd=repo, text=True, stderr=subprocess.DEVNULL
         ).strip()
+        if not re.fullmatch(r"[0-9a-f]{40}", head):
+            fail(f"git HEAD is not a 40-hex SHA: {head}")
+        return head
     except Exception:
-        return "UNKNOWN"
+        fail("unable to determine git HEAD")
+    raise AssertionError("unreachable")
+
+
+def unique_by_episode(rows: list[dict[str, str]], label: str) -> dict[str, dict[str, str]]:
+    out = {}
+    for row in rows:
+        episode = row["episode_key"]
+        if episode in out:
+            fail(f"duplicate {label} episode_key: {episode}")
+        out[episode] = row
+    return out
+
+
+def bool_field(row: dict[str, str], field: str) -> bool:
+    return parse_bool(row[field], field, row["episode_key"])
+
+
+def clean_success_from(census: dict[str, str]) -> bool:
+    outcome = census["outcome_class"]
+    if outcome == "CLEAN_SUCCESS":
+        return True
+    if outcome == "CLEAN_FAILURE":
+        return False
+    fail(f"{census['episode_key']}: unsupported outcome_class: {outcome}")
+    raise AssertionError("unreachable")
+
+
+def mechanism_eligible_from(census: dict[str, str]) -> bool:
+    scope = census["mechanism_scope_class"]
+    if scope == "MECHANISM_ELIGIBLE":
+        return True
+    if scope == "MECHANISM_INELIGIBLE":
+        return False
+    fail(f"{census['episode_key']}: unsupported mechanism_scope_class: {scope}")
+    raise AssertionError("unreachable")
+
+
+def validate_cohort(census: dict[str, str], clean_success: bool, mechanism_eligible: bool, event_present: bool) -> None:
+    cohort = census["cohort_class"]
+    episode = census["episode_key"]
+    if cohort not in ALLOWED_COHORTS:
+        fail(f"{episode}: unsupported cohort_class: {cohort}")
+    if cohort == "PRIMARY_SUCCESS_ELIGIBLE" and (not clean_success or not mechanism_eligible):
+        fail(f"{episode}: cohort invariant failed for PRIMARY_SUCCESS_ELIGIBLE")
+    if cohort == "ELIGIBLE_CLEAN_FAILURE" and (clean_success or not mechanism_eligible):
+        fail(f"{episode}: cohort invariant failed for ELIGIBLE_CLEAN_FAILURE")
+    if cohort == "MECHANISM_INELIGIBLE_ABSTENTION" and (mechanism_eligible or event_present):
+        fail(f"{episode}: cohort invariant failed for MECHANISM_INELIGIBLE_ABSTENTION")
+
+
+def event_present_from(availability: dict[str, str]) -> bool:
+    episode = availability["episode_key"]
+    positive = bool_field(availability, "source_positive_anchor_valid")
+    no_event = bool_field(availability, "source_no_event")
+    explicit_abstention = bool_field(availability, "source_explicit_abstention")
+    clean_failure_no_event = bool_field(availability, "source_clean_failure_no_event")
+    if positive and (no_event or explicit_abstention or clean_failure_no_event):
+        fail(f"{episode}: positive/no-event source flags conflict")
+    if positive:
+        return True
+    if no_event or explicit_abstention or clean_failure_no_event:
+        return False
+    fail(f"{episode}: no source event disposition flag is set")
+    raise AssertionError("unreachable")
+
+
+def invalid_reason_from(availability: dict[str, str], event_present: bool) -> str:
+    if not bool_field(availability, "real_source_label_found") or not bool_field(availability, "source_record_found"):
+        return "MISSING_SOURCE_RECORD"
+    if not bool_field(availability, "source_schema_valid"):
+        return "SOURCE_SCHEMA_INVALID"
+    if event_present and not bool_field(availability, "source_positive_anchor_valid"):
+        return "ANCHOR_INVALID"
+    if event_present and not bool_field(availability, "source_timing_fields_present"):
+        return "WINDOW_COORDINATE_INVALID"
+    try:
+        canonical = json.loads(availability["canonical_index_label"])
+    except json.JSONDecodeError:
+        return "SOURCE_SCHEMA_INVALID"
+    reason = str(canonical.get("teacher_invalid_reason", ""))
+    if reason:
+        return reason
+    return ""
+
+
+def load_source_records(path: Path, cache: dict[Path, dict[str, dict]]) -> dict[str, dict]:
+    if path in cache:
+        return cache[path]
+    records = {}
+    with path.open(encoding="utf-8") as f:
+        for line_no, line in enumerate(f, start=1):
+            if not line.strip():
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError as exc:
+                fail(f"{path.name}:{line_no}: invalid source JSONL: {exc}")
+            episode = record.get("episode_key")
+            if not episode:
+                fail(f"{path.name}:{line_no}: missing episode_key")
+            if episode in records:
+                fail(f"{path.name}:{line_no}: duplicate source episode_key: {episode}")
+            records[episode] = record
+    cache[path] = records
+    return records
+
+
+def validate_source_file(availability: dict[str, str], fixture_root: Path, cache: dict[Path, dict[str, dict]]) -> dict:
+    source_path = availability["source_label_path"]
+    source_sha = availability["source_label_sha256"]
+    episode = availability["episode_key"]
+    validate_sha_arg(source_sha, f"{episode} source_label_sha256")
+    reject_path_traversal(source_path)
+    path = fixture_root / source_path
+    reject_symlink(path)
+    require_descendant(path, fixture_root, "source label")
+    if not path.is_file():
+        fail(f"{episode}: source label file does not exist: {source_path}")
+    actual = sha256_file(path)
+    if actual != source_sha:
+        fail(f"{episode}: source label SHA256 mismatch: expected {source_sha}, got {actual}")
+    records = load_source_records(path, cache)
+    if episode not in records:
+        fail(f"{episode}: source label record not found in {source_path}")
+    return records[episode]
+
+
+def adapt_rows(
+    availability_rows: list[dict[str, str]],
+    census_rows: list[dict[str, str]],
+    builder_sha: str,
+    git_head: str,
+    fixture_root: Path,
+) -> list[dict[str, str]]:
+    if len(census_rows) > MAX_SYNTHETIC_ROWS:
+        fail(f"synthetic fixture row count exceeds {MAX_SYNTHETIC_ROWS}: {len(census_rows)}")
+    availability = unique_by_episode(availability_rows, "availability")
+    census = unique_by_episode(census_rows, "census")
+    source_cache: dict[Path, dict[str, dict]] = {}
+    if set(availability) != set(census):
+        fail("episode_key set mismatch between availability and census")
+
+    output = []
+    for episode in sorted(census):
+        c = census[episode]
+        a = availability[episode]
+        if a["suite"] != c["suite"] or a["task_id"] != c["task_id"]:
+            fail(f"{episode}: availability/census suite-task mismatch")
+        validate_source_file(a, fixture_root, source_cache)
+
+        clean_success = clean_success_from(c)
+        mechanism_eligible = mechanism_eligible_from(c)
+        event_present = event_present_from(a)
+        validate_cohort(c, clean_success, mechanism_eligible, event_present)
+
+        invalid_reason = invalid_reason_from(a, event_present)
+        if event_present:
+            anchor = parse_int(a["source_anchor"], "source_anchor", episode)
+            window_start = parse_int(a["source_window_start"], "source_window_start", episode)
+            source_window_end = parse_int(a["source_window_end"], "source_window_end", episode)
+            window_end = source_window_end + 1
+            event_source = "source_availability"
+        else:
+            anchor = window_start = window_end = -1
+            event_source = ""
+
+        event_id = a["source_event_id"] if a["source_event_id"] and a["source_event_id"] != "UNKNOWN" else c["teacher_event_id"]
+        if not event_id:
+            event_id = "event_1" if event_present else "event_none"
+        confidence = parse_confidence(a["source_confidence"], "source_confidence", episode)
+        if confidence == "UNKNOWN":
+            confidence = parse_confidence(c["teacher_confidence"], "teacher_confidence", episode)
+
+        output.append(
+            {
+                "episode_key": episode,
+                "parent_key": c["parent_key"],
+                "suite": c["suite"],
+                "task_id": c["task_id"],
+                "cohort_class": c["cohort_class"],
+                "clean_success": "true" if clean_success else "false",
+                "mechanism_eligible": "true" if mechanism_eligible else "false",
+                "event_present": "true" if event_present else "false",
+                "anchor_absolute_step": str(anchor),
+                "window_start": str(window_start),
+                "window_end": str(window_end),
+                "event_source": event_source,
+                "source_path": a["source_label_path"],
+                "source_sha256": a["source_label_sha256"],
+                "builder_git_sha": git_head,
+                "builder_sha256": builder_sha,
+                "invalid_reason": invalid_reason,
+                "abstain_reason": c["abstain_reason"] or ("MECHANISM_INELIGIBLE" if not mechanism_eligible else ""),
+                "mechanism_type": c["mechanism_scope_class"],
+                "event_id": event_id,
+                "segment_id": c["parent_key"],
+                "event_rank": "1" if event_present else "0",
+                "coordinate_semantics": COORDINATE_SEMANTICS,
+                "trace_length": c["n_valid_steps"],
+                "source_schema_version": "synthetic_v1",
+                "teacher_confidence": confidence,
+            }
+        )
+    return output
 
 
 def validate_and_transform(rows: list[dict[str, str]], builder_sha: str, git_head: str) -> list[dict[str, str]]:
@@ -227,13 +489,13 @@ def validate_and_transform(rows: list[dict[str, str]], builder_sha: str, git_hea
         window_end = parse_int(row["window_end"], "window_end", episode)
         event_rank = parse_int(row["event_rank"], "event_rank", episode)
         trace_length = parse_int(row["trace_length"], "trace_length", episode)
-        confidence = parse_float(row["teacher_confidence"], "teacher_confidence", episode)
+        confidence = parse_confidence(row["teacher_confidence"], "teacher_confidence", episode)
 
         if row["source_schema_version"] != "synthetic_v1":
             fail(f"{episode}: source_schema_version must be synthetic_v1")
         if row["coordinate_semantics"] != COORDINATE_SEMANTICS:
             fail(f"{episode}: unexpected coordinate_semantics")
-        if not 0.0 <= confidence <= 1.0:
+        if confidence != "UNKNOWN" and not 0.0 <= float(confidence) <= 1.0:
             fail(f"{episode}: teacher_confidence outside [0, 1]")
         if event_rank < 0:
             fail(f"{episode}: negative event_rank")
@@ -246,7 +508,9 @@ def validate_and_transform(rows: list[dict[str, str]], builder_sha: str, git_hea
         if not mechanism_eligible and not row["abstain_reason"]:
             fail(f"{episode}: mechanism-ineligible row requires abstain_reason")
 
-        if event_present:
+        if row["invalid_reason"] in INVALID_PRECEDENCE:
+            window_valid = False
+        elif event_present:
             window_valid = (
                 trace_length > 0
                 and window_start >= 0
@@ -272,7 +536,7 @@ def validate_and_transform(rows: list[dict[str, str]], builder_sha: str, git_hea
     return out
 
 
-def validate_counts(rows: list[dict[str, str]], census_rows: list[dict[str, str]], crosstab_rows: list[dict[str, str]]) -> dict[str, dict[str, int]]:
+def validate_counts(rows: list[dict[str, str]], crosstab_rows: list[dict[str, str]]) -> dict[str, dict[str, int]]:
     counts: dict[str, dict[str, int]] = {}
     for row in rows:
         cohort = row["cohort_class"]
@@ -284,18 +548,6 @@ def validate_counts(rows: list[dict[str, str]], census_rows: list[dict[str, str]
         else:
             fail(f"{row['episode_key']}: event_present must be validated before counts")
         bucket["total"] += 1
-
-    census = {}
-    for row in census_rows:
-        cohort = row["cohort_class"]
-        if cohort in census:
-            fail(f"duplicate census cohort: {cohort}")
-        census[cohort] = parse_int(row["total"], "total", cohort)
-    for cohort, bucket in counts.items():
-        if census.get(cohort) != bucket["total"]:
-            fail(f"census mismatch for {cohort}: expected {census.get(cohort)}, got {bucket['total']}")
-    if set(census) != set(counts):
-        fail(f"census cohort set mismatch: expected {sorted(census)}, got {sorted(counts)}")
 
     seen_crosstab = set()
     for row in crosstab_rows:
@@ -321,14 +573,14 @@ def validate_counts(rows: list[dict[str, str]], census_rows: list[dict[str, str]
 
 
 def row_category(row: dict[str, str]) -> str:
+    if row["mechanism_eligible"] == "false":
+        return "abstention_or_ineligible"
     if row["event_present"] == "true" and row["clean_success"] == "true":
         return "positive_clean_success"
     if row["event_present"] == "false" and row["mechanism_eligible"] == "true":
         return "eligible_no_event"
     if row["clean_success"] == "false" or row["label_validity_status"] != "VALID":
         return "failure_or_boundary"
-    if row["mechanism_eligible"] == "false":
-        return "abstention_or_ineligible"
     return "other"
 
 
@@ -382,7 +634,7 @@ def manual_audit_sample(rows: list[dict[str, str]], enforce_quota: bool = False,
 
 def write_csv(path: Path, columns: list[str], rows: list[dict[str, str]]) -> None:
     with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=columns)
+        writer = csv.DictWriter(f, fieldnames=columns, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
 
@@ -392,7 +644,7 @@ def validate_sha_arg(value: str, label: str) -> None:
         fail(f"{label} must be 64 lowercase hex characters")
 
 
-def verify_inputs(args: argparse.Namespace) -> tuple[Path, Path, Path, Path]:
+def verify_inputs(args: argparse.Namespace) -> tuple[Path, Path, Path, Path, Path]:
     for text in [args.source_manifest, args.episode_census, args.source_crosstab, args.output_root, args.synthetic_fixture_root, args.synthetic_output_root]:
         reject_path_traversal(text)
     if not args.synthetic or not args.dry_run:
@@ -421,7 +673,7 @@ def verify_inputs(args: argparse.Namespace) -> tuple[Path, Path, Path, Path]:
     require_descendant(output_root, output_base, "output root")
     if output_root.exists() and any(output_root.iterdir()):
         fail(f"output root must be empty: {output_root}")
-    return source, census, crosstab, output_root
+    return source, census, crosstab, output_root, fixture_root
 
 
 def compare_sha(path: Path, expected: str, label: str) -> str:
@@ -449,7 +701,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        source, census, crosstab, output_root = verify_inputs(args)
+        source, census, crosstab, output_root, fixture_root = verify_inputs(args)
         source_sha = compare_sha(source, args.expected_source_sha256, "source manifest")
         census_sha = compare_sha(census, args.expected_census_sha256, "episode census")
         crosstab_sha = compare_sha(crosstab, args.expected_crosstab_sha256, "source crosstab")
@@ -459,11 +711,27 @@ def main(argv: list[str] | None = None) -> int:
         repo = builder_path.parents[2]
         git_head = git_sha(repo)
 
-        source_rows = read_csv_strict(source, SOURCE_COLUMNS, {"event_source", "invalid_reason", "abstain_reason"})
-        census_rows = read_csv_strict(census, CENSUS_COLUMNS)
+        availability_rows = read_csv_strict(
+            source,
+            AVAILABILITY_COLUMNS,
+            {"source_event_id", "notes"},
+        )
+        census_rows = read_csv_strict(
+            census,
+            EPISODE_CENSUS_COLUMNS,
+            {
+                "teacher_event_id",
+                "abstain_reason",
+                "model_split",
+                "parent_leakage_status",
+                "task_leakage_status",
+                "normalization_source_status",
+            },
+        )
         crosstab_rows = read_csv_strict(crosstab, CROSSTAB_COLUMNS)
-        output_rows = validate_and_transform(source_rows, builder_sha, git_head)
-        counts = validate_counts(source_rows, census_rows, crosstab_rows)
+        adapted_rows = adapt_rows(availability_rows, census_rows, builder_sha, git_head, fixture_root)
+        output_rows = validate_and_transform(adapted_rows, builder_sha, git_head)
+        counts = validate_counts(adapted_rows, crosstab_rows)
 
         output_root.mkdir(parents=True, exist_ok=True)
         label_path = output_root / "label_v2.csv"
