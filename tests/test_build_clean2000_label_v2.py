@@ -60,6 +60,17 @@ def run_builder(fixture_dir, output_root, *extra, expect_ok=True):
     return result
 
 
+def git_head():
+    return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+
+
+def tracked_worktree_dirty():
+    return (
+        subprocess.run(["git", "diff", "--quiet"], cwd=ROOT).returncode != 0
+        or subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode != 0
+    )
+
+
 def read_rows(path):
     with path.open(newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
@@ -100,7 +111,7 @@ def test_synthetic_dry_run_outputs(tmp_path):
     assert by_episode["ep_valid_positive"]["mechanism_type"] == "GRIPPER_TRANSFER_ELIGIBLE"
     assert by_episode["ep_valid_positive"]["event_id"] == "ep_valid_positive#event_1"
     assert by_episode["ep_valid_positive"]["segment_id"] == "ep_valid_positive#segment_1"
-    assert by_episode["ep_valid_positive"]["source_schema_version"] == "source_availability_v1_presence_only_jsonl_v1"
+    assert by_episode["ep_valid_positive"]["source_schema_version"] == "source_availability_ledger_v1"
     assert by_episode["ep_valid_positive"]["source_semantics_authority"] == "SOURCE_AVAILABILITY_LEDGER"
     assert by_episode["ep_valid_positive"]["source_jsonl_check_mode"] == "LEDGER_PROVENANCE_ONLY_NO_RUNTIME_READ"
     assert by_episode["ep_eligible_no_event"]["event_id"] == "NO_EVENT"
@@ -582,6 +593,124 @@ def make_160_fixture(tmp_path):
     return fixture
 
 
+def make_formal_fixture(tmp_path):
+    fixture = tmp_path / "formal_ledger"
+    fixture.mkdir()
+    suites = ["Object", "Spatial", "Goal", "LIBERO-10"]
+    groups = [(suite, f"task_{task_idx:02d}") for suite in suites for task_idx in range(10)]
+    availability_rows = []
+    census_rows = []
+
+    def add_row(group_idx, suffix, outcome, scope, cohort, positive, no_event, abstention, clean_failure_no_event):
+        suite, task = groups[group_idx % len(groups)]
+        idx = len(census_rows)
+        episode = f"{suite}_{task}_{suffix}_{idx:04d}"
+        anchor = str(10 + idx % 20) if positive else "-1"
+        start = str(8 + idx % 20) if positive else "-1"
+        end = str(13 + idx % 20) if positive else "-1"
+        event_id = f"event_{idx:04d}" if positive else ""
+        availability_rows.append({
+            "suite": suite,
+            "task_id": task,
+            "episode_key": episode,
+            "canonical_index_label": '{"teacher_invalid_reason":"TRUNCATED_TRACE"}' if idx == 0 else '{"teacher_invalid_reason":""}',
+            "real_source_label_found": "True",
+            "source_label_path": "CLEAN2000_SUPERVISION_AUTH_V1_2/TEACHER_EVENT_INDEX.jsonl",
+            "source_label_sha256": "d" * 64,
+            "source_anchor": anchor,
+            "source_window_start": start,
+            "source_window_end": end,
+            "source_confidence": "0.9" if positive else "UNKNOWN",
+            "source_event_id": event_id,
+            "matches_canonical": "False" if no_event else "True",
+            "notes": "",
+            "source_record_found": "True",
+            "source_schema_valid": "True",
+            "source_positive_anchor_valid": str(positive),
+            "source_no_event": str(no_event),
+            "source_explicit_abstention": str(abstention),
+            "source_clean_failure_no_event": str(clean_failure_no_event),
+            "shared_fields_comparable": "True",
+            "shared_fields_match": "False" if no_event else "True",
+            "uncomparable_due_to_missing_fields": "False",
+            "source_timing_fields_present": str(positive),
+            "source_mechanism_eligible_schema_valid": "True",
+        })
+        census_rows.append({
+            "episode_key": episode,
+            "parent_key": f"{suite}_{task}_{suffix}_parent_{idx:04d}",
+            "suite": suite,
+            "task_id": task,
+            "task_name": "formal_synthetic_task",
+            "state_id": str(idx),
+            "outcome_class": outcome,
+            "mechanism_scope_class": scope,
+            "cohort_class": cohort,
+            "label_record_present": "True",
+            "record_schema_valid": "True",
+            "teacher_positive_label_valid": "True" if (positive or no_event) else "False",
+            "positive_anchor_valid": "True" if (positive or no_event) else "False",
+            "explicit_abstention_valid": str(abstention),
+            "timing_signal_usable": str(positive),
+            "teacher_anchor_step": anchor if positive else "11",
+            "teacher_window_start": start if positive else "9",
+            "teacher_window_end": str(int(end) + 1) if positive else "14",
+            "teacher_confidence": "0.9" if positive else "0.0",
+            "teacher_event_id": event_id,
+            "abstain_reason": "UNSUPPORTED_MECHANISM" if abstention else ("NO_TEACHER_EVENT" if (no_event or clean_failure_no_event) else ""),
+            "feature_schema_sha256": "a" * 64,
+            "source_manifest_sha256": "b" * 64,
+            "artifact_inventory_sha256": "c" * 64,
+            "n_steps": "50",
+            "n_valid_steps": "40",
+            "first_valid_step": "0",
+            "invalid_feature_steps": "0",
+            "feature_25d_join_ok": "True",
+            "cohort_set": "FORMAL_SYNTHETIC",
+            "model_split": "UNKNOWN",
+            "parent_leakage_status": "UNKNOWN",
+            "task_leakage_status": "UNKNOWN",
+            "normalization_source_status": "UNKNOWN",
+        })
+
+    baseline = [
+        ("primary_pos", "CLEAN_SUCCESS", "MECHANISM_ELIGIBLE", "PRIMARY_SUCCESS_ELIGIBLE", True, False, False, False),
+        ("primary_noevent", "CLEAN_SUCCESS", "MECHANISM_ELIGIBLE", "PRIMARY_SUCCESS_ELIGIBLE", False, True, False, False),
+        ("failure_noevent", "CLEAN_FAILURE", "MECHANISM_ELIGIBLE", "ELIGIBLE_CLEAN_FAILURE", False, False, False, True),
+        ("ineligible", "CLEAN_SUCCESS", "MECHANISM_INELIGIBLE", "MECHANISM_INELIGIBLE_ABSTENTION", False, False, True, False),
+    ]
+    for group_idx in range(40):
+        for row in baseline:
+            add_row(group_idx, *row)
+    extras = [
+        (732, "primary_pos", "CLEAN_SUCCESS", "MECHANISM_ELIGIBLE", "PRIMARY_SUCCESS_ELIGIBLE", True, False, False, False),
+        (231, "primary_noevent", "CLEAN_SUCCESS", "MECHANISM_ELIGIBLE", "PRIMARY_SUCCESS_ELIGIBLE", False, True, False, False),
+        (31, "failure_pos", "CLEAN_FAILURE", "MECHANISM_ELIGIBLE", "ELIGIBLE_CLEAN_FAILURE", True, False, False, False),
+        (236, "failure_noevent", "CLEAN_FAILURE", "MECHANISM_ELIGIBLE", "ELIGIBLE_CLEAN_FAILURE", False, False, False, True),
+        (610, "ineligible", "CLEAN_SUCCESS", "MECHANISM_INELIGIBLE", "MECHANISM_INELIGIBLE_ABSTENTION", False, False, True, False),
+    ]
+    for count, *row in extras:
+        for i in range(count):
+            add_row(i, *row)
+
+    with (fixture / "source_manifest.csv").open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=(FIXTURE / "source_manifest.csv").read_text(encoding="utf-8").splitlines()[0].split(","))
+        writer.writeheader()
+        writer.writerows(availability_rows)
+    with (fixture / "episode_census.csv").open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=(FIXTURE / "episode_census.csv").read_text(encoding="utf-8").splitlines()[0].split(","))
+        writer.writeheader()
+        writer.writerows(census_rows)
+    (fixture / "source_event_crosstab.csv").write_text(
+        "cohort_class,source_positive,source_no_event,total\n"
+        "PRIMARY_SUCCESS_ELIGIBLE,772,271,1043\n"
+        "ELIGIBLE_CLEAN_FAILURE,31,276,307\n"
+        "MECHANISM_INELIGIBLE_ABSTENTION,0,650,650\n",
+        encoding="utf-8",
+    )
+    return fixture
+
+
 def test_manual_audit_uses_suite_task_key_and_enforces_160_quota(tmp_path):
     fixture = make_160_fixture(tmp_path)
     output = tmp_path / "approved" / "out"
@@ -596,6 +725,79 @@ def test_manual_audit_uses_suite_task_key_and_enforces_160_quota(tmp_path):
     assert len(groups) == 40
     assert all(len(rows) == 4 for rows in groups.values())
     assert len([key for key in groups if key[1] == "task_00"]) == 4
+
+
+def test_formal_mode_requires_producer_identity(tmp_path):
+    fixture = copy_fixture(tmp_path)
+    cmd = [
+        sys.executable,
+        str(BUILDER),
+        "--mode",
+        "formal-ledger-build",
+        "--source-manifest",
+        str(fixture / "source_manifest.csv"),
+        "--episode-census",
+        str(fixture / "episode_census.csv"),
+        "--source-crosstab",
+        str(fixture / "source_event_crosstab.csv"),
+        "--output-root",
+        str(tmp_path / "formal-out"),
+        "--expected-source-sha256",
+        sha256(fixture / "source_manifest.csv"),
+        "--expected-census-sha256",
+        sha256(fixture / "episode_census.csv"),
+        "--expected-crosstab-sha256",
+        sha256(fixture / "source_event_crosstab.csv"),
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    assert result.returncode != 0
+    assert "expected-git-commit-sha" in result.stderr
+
+
+def test_formal_mode_closes_2000_row_ledger(tmp_path):
+    if tracked_worktree_dirty():
+        pytest.skip("formal mode requires a clean tracked worktree")
+    fixture = make_formal_fixture(tmp_path)
+    output = tmp_path / "formal-out"
+    cmd = [
+        sys.executable,
+        str(BUILDER),
+        "--mode",
+        "formal-ledger-build",
+        "--source-manifest",
+        str(fixture / "source_manifest.csv"),
+        "--episode-census",
+        str(fixture / "episode_census.csv"),
+        "--source-crosstab",
+        str(fixture / "source_event_crosstab.csv"),
+        "--output-root",
+        str(output),
+        "--expected-source-sha256",
+        sha256(fixture / "source_manifest.csv"),
+        "--expected-census-sha256",
+        sha256(fixture / "episode_census.csv"),
+        "--expected-crosstab-sha256",
+        sha256(fixture / "source_event_crosstab.csv"),
+        "--expected-git-commit-sha",
+        git_head(),
+        "--expected-builder-sha256",
+        sha256(BUILDER),
+        "--require-clean-worktree",
+    ]
+
+    result = subprocess.run(cmd, capture_output=True, text=True)
+
+    assert result.returncode == 0, result.stderr
+    rows = read_rows(output / "label_v2.csv")
+    manual = read_rows(output / "manual_audit_sample_manifest.csv")
+    summary = json.loads((output / "validation_summary.json").read_text(encoding="utf-8"))
+    assert len(rows) == 2000
+    assert len(manual) == 160
+    assert summary["counts"]["PRIMARY_SUCCESS_ELIGIBLE"] == {"positive": 772, "no_event": 271, "total": 1043}
+    assert summary["counts"]["ELIGIBLE_CLEAN_FAILURE"] == {"positive": 31, "no_event": 276, "total": 307}
+    assert summary["counts"]["MECHANISM_INELIGIBLE_ABSTENTION"] == {"positive": 0, "no_event": 650, "total": 650}
 
 
 def test_manual_category_prefers_ineligible_over_failure():

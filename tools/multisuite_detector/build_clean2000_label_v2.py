@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Build CLEAN2000 Label V2 from synthetic fixtures only.
+"""Build CLEAN2000 Label V2 from source-availability ledger CSVs.
 
-This implementation is intentionally limited to Gate A1 CPU-only validation:
-it refuses non-synthetic inputs and never reads CLEAN2000 live/backup sources.
+The default path remains synthetic-only. Formal ledger mode is implemented for
+review, but execution still requires a separate authorization record.
 """
 
 from __future__ import annotations
@@ -123,7 +123,7 @@ OUTPUT_COLUMNS = [
 
 CROSSTAB_COLUMNS = ["cohort_class", "source_positive", "source_no_event", "total"]
 COORDINATE_SEMANTICS = "zero_based_observation_before_action_start_inclusive_end_exclusive_full_trajectory"
-SOURCE_SCHEMA_VERSION = "source_availability_v1_presence_only_jsonl_v1"
+SOURCE_SCHEMA_VERSION = "source_availability_ledger_v1"
 SOURCE_SEMANTICS_AUTHORITY = "SOURCE_AVAILABILITY_LEDGER"
 SOURCE_JSONL_CHECK_MODE = "LEDGER_PROVENANCE_ONLY_NO_RUNTIME_READ"
 V2_EPISODE_TABLE_SCOPE = "PRIMARY_EVENT_ONLY"
@@ -133,9 +133,18 @@ EVENT_ID_POLICY = "SOURCE_EVENT_ID_OR_EPISODE_PRIMARY_EVENT_FALLBACK"
 SOURCE_WINDOW_END_SEMANTICS = "INCLUSIVE_CONVERTED_TO_V2_EXCLUSIVE"
 MANUAL_AUDIT_SEED = 20260703
 MAX_SYNTHETIC_ROWS = 200
+FORMAL_ROW_COUNT = 2000
+FORMAL_MANUAL_SAMPLE_N = 160
+FORMAL_SUITE_TASK_UNITS = 40
+FORMAL_EXPECTED_COUNTS = {
+    "PRIMARY_SUCCESS_ELIGIBLE": {"positive": 772, "no_event": 271, "total": 1043},
+    "ELIGIBLE_CLEAN_FAILURE": {"positive": 31, "no_event": 276, "total": 307},
+    "MECHANISM_INELIGIBLE_ABSTENTION": {"positive": 0, "no_event": 650, "total": 650},
+}
 SENTINEL_NAME = ".label_v2_synthetic_fixture.json"
 SENTINEL_SHA256 = "dae3e444c0c8693d5a80e20fd0761ddd4d559ae038ef7ecb6cfef054ab69f482"
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
+GIT_SHA_RE = re.compile(r"[0-9a-f]{40}")
 ALLOWED_COHORTS = {
     "PRIMARY_SUCCESS_ELIGIBLE",
     "ELIGIBLE_CLEAN_FAILURE",
@@ -282,6 +291,16 @@ def git_sha(repo: Path) -> str:
     raise AssertionError("unreachable")
 
 
+def require_clean_tracked_worktree(repo: Path) -> None:
+    try:
+        unstaged = subprocess.run(["git", "diff", "--quiet"], cwd=repo)
+        staged = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=repo)
+    except Exception:
+        fail("unable to check git worktree cleanliness")
+    if unstaged.returncode != 0 or staged.returncode != 0:
+        fail("tracked git worktree must be clean for formal ledger build")
+
+
 def unique_by_episode(rows: list[dict[str, str]], label: str) -> dict[str, dict[str, str]]:
     out = {}
     for row in rows:
@@ -380,9 +399,10 @@ def adapt_rows(
     census_rows: list[dict[str, str]],
     builder_sha: str,
     git_head: str,
+    max_rows: int,
 ) -> list[dict[str, str]]:
-    if len(census_rows) > MAX_SYNTHETIC_ROWS:
-        fail(f"synthetic fixture row count exceeds {MAX_SYNTHETIC_ROWS}: {len(census_rows)}")
+    if len(census_rows) > max_rows:
+        fail(f"input row count exceeds {max_rows}: {len(census_rows)}")
     availability = unique_by_episode(availability_rows, "availability")
     census = unique_by_episode(census_rows, "census")
     if set(availability) != set(census):
@@ -467,11 +487,11 @@ def adapt_rows(
     return output
 
 
-def validate_and_transform(rows: list[dict[str, str]], builder_sha: str, git_head: str) -> list[dict[str, str]]:
+def validate_and_transform(rows: list[dict[str, str]], builder_sha: str, git_head: str, max_rows: int) -> list[dict[str, str]]:
     seen = set()
     out = []
-    if len(rows) > MAX_SYNTHETIC_ROWS:
-        fail(f"synthetic fixture row count exceeds {MAX_SYNTHETIC_ROWS}: {len(rows)}")
+    if len(rows) > max_rows:
+        fail(f"input row count exceeds {max_rows}: {len(rows)}")
     for row in rows:
         episode = row["episode_key"]
         if not episode:
@@ -581,6 +601,16 @@ def validate_counts(rows: list[dict[str, str]], crosstab_rows: list[dict[str, st
     return counts
 
 
+def validate_formal_closure(rows: list[dict[str, str]], counts: dict[str, dict[str, int]]) -> None:
+    if len(rows) != FORMAL_ROW_COUNT:
+        fail(f"formal ledger build requires {FORMAL_ROW_COUNT} rows, got {len(rows)}")
+    if counts != FORMAL_EXPECTED_COUNTS:
+        fail(f"formal cohort counts mismatch: expected {FORMAL_EXPECTED_COUNTS}, got {counts}")
+    suite_tasks = {(row["suite"], row["task_id"]) for row in rows}
+    if len(suite_tasks) != FORMAL_SUITE_TASK_UNITS:
+        fail(f"formal manual audit requires {FORMAL_SUITE_TASK_UNITS} suite-task units, got {len(suite_tasks)}")
+
+
 def row_category(row: dict[str, str]) -> str:
     if row["mechanism_eligible"] == "false":
         return "abstention_or_ineligible"
@@ -653,36 +683,72 @@ def validate_sha_arg(value: str, label: str) -> None:
         fail(f"{label} must be 64 lowercase hex characters")
 
 
-def verify_inputs(args: argparse.Namespace) -> tuple[Path, Path, Path, Path, Path]:
-    for text in [args.source_manifest, args.episode_census, args.source_crosstab, args.output_root, args.synthetic_fixture_root, args.synthetic_output_root]:
+def validate_git_sha_arg(value: str, label: str) -> None:
+    if not GIT_SHA_RE.fullmatch(value):
+        fail(f"{label} must be 40 lowercase hex characters")
+
+
+def resolve_mode(args: argparse.Namespace) -> str:
+    if args.mode:
+        return args.mode
+    if args.synthetic and args.dry_run:
+        return "synthetic-dry-run"
+    fail("specify --mode synthetic-dry-run or --mode formal-ledger-build")
+    raise AssertionError("unreachable")
+
+
+def verify_inputs(args: argparse.Namespace) -> tuple[str, Path, Path, Path, Path]:
+    mode = resolve_mode(args)
+    path_texts = [args.source_manifest, args.episode_census, args.source_crosstab, args.output_root]
+    if mode == "synthetic-dry-run":
+        if not args.synthetic_fixture_root or not args.synthetic_output_root:
+            fail("synthetic-dry-run requires --synthetic-fixture-root and --synthetic-output-root")
+        path_texts.extend([args.synthetic_fixture_root, args.synthetic_output_root])
+    for text in path_texts:
         reject_path_traversal(text)
-    if not args.synthetic or not args.dry_run:
-        fail("Gate A1 implementation allows only --synthetic --dry-run")
     for value, label in [
         (args.expected_source_sha256, "expected-source-sha256"),
         (args.expected_census_sha256, "expected-census-sha256"),
         (args.expected_crosstab_sha256, "expected-crosstab-sha256"),
     ]:
         validate_sha_arg(value, label)
+    if mode == "synthetic-dry-run" and (not args.synthetic or not args.dry_run):
+        fail("synthetic-dry-run requires --synthetic --dry-run")
+    if mode == "formal-ledger-build":
+        if args.synthetic or args.dry_run:
+            fail("formal-ledger-build must not use --synthetic or --dry-run")
+        if args.expected_git_commit_sha is None:
+            fail("formal-ledger-build requires --expected-git-commit-sha")
+        if args.expected_builder_sha256 is None:
+            fail("formal-ledger-build requires --expected-builder-sha256")
+        validate_git_sha_arg(args.expected_git_commit_sha, "expected-git-commit-sha")
+        validate_sha_arg(args.expected_builder_sha256, "expected-builder-sha256")
+        if not args.require_clean_worktree:
+            fail("formal-ledger-build requires --require-clean-worktree")
     source = Path(args.source_manifest)
     census = Path(args.episode_census)
     crosstab = Path(args.source_crosstab)
     output_root = Path(args.output_root)
-    fixture_root = Path(args.synthetic_fixture_root)
-    output_base = Path(args.synthetic_output_root)
-    reject_symlink(fixture_root)
-    reject_symlink(output_base)
-    require_sentinel(fixture_root)
     for path in [source, census, crosstab]:
         reject_symlink(path)
-        require_descendant(path, fixture_root, "input")
         if not path.is_file():
             fail(f"input file does not exist: {path}")
     reject_symlink(output_root)
-    require_descendant(output_root, output_base, "output root")
+    if mode == "synthetic-dry-run":
+        fixture_root = Path(args.synthetic_fixture_root)
+        output_base = Path(args.synthetic_output_root)
+        reject_symlink(fixture_root)
+        reject_symlink(output_base)
+        require_sentinel(fixture_root)
+        for path in [source, census, crosstab]:
+            require_descendant(path, fixture_root, "input")
+        require_descendant(output_root, output_base, "output root")
+    else:
+        if not output_root.is_absolute():
+            fail("formal-ledger-build output root must be absolute")
     if output_root.exists() and any(output_root.iterdir()):
         fail(f"output root must be empty: {output_root}")
-    return source, census, crosstab, output_root, fixture_root
+    return mode, source, census, crosstab, output_root
 
 
 def compare_sha(path: Path, expected: str, label: str) -> str:
@@ -694,15 +760,19 @@ def compare_sha(path: Path, expected: str, label: str) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--mode", choices=["synthetic-dry-run", "formal-ledger-build"])
     parser.add_argument("--source-manifest", required=True)
     parser.add_argument("--episode-census", required=True)
     parser.add_argument("--source-crosstab", required=True)
     parser.add_argument("--output-root", required=True)
-    parser.add_argument("--synthetic-fixture-root", required=True)
-    parser.add_argument("--synthetic-output-root", required=True)
+    parser.add_argument("--synthetic-fixture-root")
+    parser.add_argument("--synthetic-output-root")
     parser.add_argument("--expected-source-sha256", required=True)
     parser.add_argument("--expected-census-sha256", required=True)
     parser.add_argument("--expected-crosstab-sha256", required=True)
+    parser.add_argument("--expected-git-commit-sha")
+    parser.add_argument("--expected-builder-sha256")
+    parser.add_argument("--require-clean-worktree", action="store_true")
     parser.add_argument("--expected-manual-sample-n", type=int)
     parser.add_argument("--enforce-manual-quota", action="store_true")
     parser.add_argument("--synthetic", action="store_true")
@@ -710,7 +780,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        source, census, crosstab, output_root, fixture_root = verify_inputs(args)
+        mode, source, census, crosstab, output_root = verify_inputs(args)
         source_sha = compare_sha(source, args.expected_source_sha256, "source manifest")
         census_sha = compare_sha(census, args.expected_census_sha256, "episode census")
         crosstab_sha = compare_sha(crosstab, args.expected_crosstab_sha256, "source crosstab")
@@ -719,6 +789,12 @@ def main(argv: list[str] | None = None) -> int:
         builder_sha = sha256_file(builder_path)
         repo = builder_path.parents[2]
         git_head = git_sha(repo)
+        if mode == "formal-ledger-build":
+            if git_head != args.expected_git_commit_sha:
+                fail(f"git HEAD mismatch: expected {args.expected_git_commit_sha}, got {git_head}")
+            if builder_sha != args.expected_builder_sha256:
+                fail(f"builder SHA256 mismatch: expected {args.expected_builder_sha256}, got {builder_sha}")
+            require_clean_tracked_worktree(repo)
 
         availability_rows = read_csv_strict(
             source,
@@ -738,9 +814,12 @@ def main(argv: list[str] | None = None) -> int:
             },
         )
         crosstab_rows = read_csv_strict(crosstab, CROSSTAB_COLUMNS)
-        adapted_rows = adapt_rows(availability_rows, census_rows, builder_sha, git_head)
-        output_rows = validate_and_transform(adapted_rows, builder_sha, git_head)
+        max_rows = MAX_SYNTHETIC_ROWS if mode == "synthetic-dry-run" else FORMAL_ROW_COUNT
+        adapted_rows = adapt_rows(availability_rows, census_rows, builder_sha, git_head, max_rows)
+        output_rows = validate_and_transform(adapted_rows, builder_sha, git_head, max_rows)
         counts = validate_counts(adapted_rows, crosstab_rows)
+        if mode == "formal-ledger-build":
+            validate_formal_closure(output_rows, counts)
 
         output_root.mkdir(parents=True, exist_ok=True)
         label_path = output_root / "label_v2.csv"
@@ -750,11 +829,13 @@ def main(argv: list[str] | None = None) -> int:
         sums_path = output_root / "SHA256SUMS"
 
         write_csv(label_path, OUTPUT_COLUMNS, output_rows)
-        manual_rows = manual_audit_sample(output_rows, args.enforce_manual_quota, args.expected_manual_sample_n)
+        enforce_manual_quota = args.enforce_manual_quota or mode == "formal-ledger-build"
+        expected_manual_sample_n = FORMAL_MANUAL_SAMPLE_N if mode == "formal-ledger-build" else args.expected_manual_sample_n
+        manual_rows = manual_audit_sample(output_rows, enforce_manual_quota, expected_manual_sample_n)
         write_csv(manual_path, MANUAL_COLUMNS, manual_rows)
         summary = {
             "status": "PASS",
-            "mode": "synthetic_dry_run",
+            "mode": mode,
             "row_count": len(output_rows),
             "counts": counts,
             "invalid_window_rows": sum(1 for r in output_rows if r["label_validity_status"] == "INVALID_WINDOW"),
@@ -762,8 +843,8 @@ def main(argv: list[str] | None = None) -> int:
         }
         summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         manifest = {
-            "mode": "synthetic_dry_run",
-            "synthetic_only": True,
+            "mode": mode,
+            "synthetic_only": mode == "synthetic-dry-run",
             "builder_git_sha": git_head,
             "builder_sha256": builder_sha,
             "source_semantics_authority": SOURCE_SEMANTICS_AUTHORITY,

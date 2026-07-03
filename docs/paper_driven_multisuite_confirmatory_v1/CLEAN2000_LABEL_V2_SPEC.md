@@ -21,10 +21,11 @@ remain historical and must not be overwritten.
 | primary_source_root | `vla:/data/liuyu/openvla_gripper_freeze/20260702_codex_verified_v3/clean2000/CLEAN2000_CANONICAL_V1` |
 | live_source_root | `dty-server:/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1` read-only parity check only |
 | future_builder_output_root | `vla:/data/liuyu/openvla_gripper_freeze/20260702_codex_verified_v3/derived/clean2000_teacher_labels_v2/{authorized_commit_sha}_{source_manifest_sha256_12}` |
-| builder_command_contract | `python tools/multisuite_detector/build_clean2000_label_v2.py --source-manifest <path> --episode-census <path> --source-crosstab <path> --synthetic-fixture-root <fixture-root> --synthetic-output-root <temp-output-root> --output-root <empty-new-dir> --expected-source-sha256 <sha256> --expected-census-sha256 <sha256> --expected-crosstab-sha256 <sha256> --synthetic --dry-run` |
+| synthetic_command_contract | `python tools/multisuite_detector/build_clean2000_label_v2.py --mode synthetic-dry-run --source-manifest <path> --episode-census <path> --source-crosstab <path> --synthetic-fixture-root <fixture-root> --synthetic-output-root <temp-output-root> --output-root <empty-new-dir> --expected-source-sha256 <sha256> --expected-census-sha256 <sha256> --expected-crosstab-sha256 <sha256> --synthetic --dry-run` |
+| formal_command_contract | `python tools/multisuite_detector/build_clean2000_label_v2.py --mode formal-ledger-build --source-manifest <path> --episode-census <path> --source-crosstab <path> --output-root <host:absolute_empty_output_dir> --expected-source-sha256 <sha256> --expected-census-sha256 <sha256> --expected-crosstab-sha256 <sha256> --expected-git-commit-sha <sha> --expected-builder-sha256 <sha256> --require-clean-worktree` |
 
-The current builder implementation is synthetic-only. Formal CLEAN2000 source
-reads and the 2000-row build require a later build-execution authorization.
+Formal CLEAN2000 build execution still requires a later build-execution
+authorization.
 
 For the current implementation review, the committed source-availability ledger
 is the semantic authority. Source JSONL path and SHA fields are retained as
