@@ -1,0 +1,33 @@
+{
+  "builder_lineage_status": "BUILDER_LINEAGE_UNRESOLVED_NO_REPRODUCIBLE_SEARCH_EVIDENCE",
+  "canonical_timing_usability": "FAIL_NOT_AUTHORIZED",
+  "crosstab": [
+    {
+      "cohort_class": "PRIMARY_SUCCESS_ELIGIBLE",
+      "source_no_event": 271,
+      "source_positive": 772,
+      "total": 1043
+    },
+    {
+      "cohort_class": "ELIGIBLE_CLEAN_FAILURE",
+      "source_no_event": 276,
+      "source_positive": 31,
+      "total": 307
+    },
+    {
+      "cohort_class": "MECHANISM_INELIGIBLE_ABSTENTION",
+      "source_no_event": 650,
+      "source_positive": 0,
+      "total": 650
+    }
+  ],
+  "source_clean_failure_no_event": 276,
+  "source_explicit_abstention": 650,
+  "source_mechanism_eligible_schema_valid": 1350,
+  "source_no_event": 1197,
+  "source_positive_anchor_valid": 803,
+  "source_record_found": 2000,
+  "source_timing_fields_present": 1350,
+  "total": 2000,
+  "unexplained_no_event": 0
+}
