@@ -1,186 +1,295 @@
 # Codex Implementation Authorization V1
 
-Status: AUTHORIZED_C1_LABEL_V2_INGESTION_CPU_CI_ONLY
+Status: AUTHORIZED_C2_DETECTOR_DATASET_CPU_CI_ONLY
 
-This authorization follows review of commit
-`59ba119901a1019e37c69cde7ae68a9fa2f530ad`, which completed `C0_01`,
-`C0_02`, and `C0_03`. It authorizes the next smallest repository-only batch:
-a read-only downstream parser and internal-closure validator for the Label V2
-five-file artifact. It is not a scientific execution authorization.
+This authorization follows final review of C1 commit
+`d884a247f7a21caf6d088c31356124c3475989ea`. It authorizes the next
+repository-only implementation batch for detector dataset, population, split,
+normalization, and leakage-closure tooling. It does not authorize construction
+from real artifacts or any server/GPU scientific execution.
 
-## Reviewed Audit Binding
+## Reviewed Binding
 
 ```text
 C0_01_REPOSITORY_PATH_INVENTORY = PASS
 C0_02_IMPLEMENTATION_GAP_MATRIX = PASS
 C0_03_ARTIFACT_DEPENDENCY_GRAPH = PASS
-CODEX_INITIAL_REPOSITORY_AUDIT = PASS
-reviewed_audit_commit = 59ba119901a1019e37c69cde7ae68a9fa2f530ad
-review_id = 4627119421
+C1_01_LABEL_V2_DOWNSTREAM_INGESTION_SCHEMA = PASS
+C1_02_LABEL_V2_INGESTION_VALIDATOR = PASS
+CODEX_C1_LABEL_V2_INGESTION = PASS_CPU_CI
+reviewed_c1_commit = d884a247f7a21caf6d088c31356124c3475989ea
+review_id = 4627438633
+cpu_stageb_run = 181 PASS
 ```
 
 ## Authorized Task IDs
 
 ```text
-C1_01 Label V2 downstream ingestion schema
-C1_02 Label V2 ingestion validator
+C2_01 Detector dataset join builder
+C2_02 Parent/state split builders
+C2_03 Train-only normalization builder
+C2_04 Detector dataset closure validator
 ```
 
-No other task-matrix row is authorized by this record.
+No C2 formal server build and no C3-or-later task is authorized by this record.
 
-## Authorized Deliverables
+## Authorized Scope
 
-Codex may create or modify only the smallest coherent file set needed for the
-following deliverables:
+Codex may implement and test, using temporary synthetic fixtures only:
+
+- a strict read-only frozen clean-feature artifact reader/contract;
+- exact-set `episode_key` joins between the validated Label V2 consumer and
+  synthetic feature artifacts;
+- exact canonical 25D feature-order binding to `SC5_FEATURES`;
+- deterministic population derivation for:
 
 ```text
-tools/multisuite_detector/load_label_v2_artifact.py
-tests/test_load_label_v2_artifact.py
+DETECTOR_ELIGIBLE
+DETECTOR_SAFETY
+DETECTOR_MULTI_EVENT
+```
+
+- deterministic schemas/builders for:
+
+```text
+parent_random_split_v1
+object_leave_task_out_v1
+suite_loso_split_v1
+```
+
+- parent-key and initial-state-hash leakage validation;
+- train-partition-only normalization statistics;
+- manifest and SHA256 provenance generation;
+- a fail-closed closure validator and JSON-reporting CLI;
+- unit tests, synthetic integration tests, `py_compile`, and CPU CI.
+
+The implementation must consume `load_label_v2_artifact()` rather than bypassing
+or duplicating its five-file internal-closure checks.
+
+## Expected Deliverables
+
+Codex may create or harden the smallest coherent file set under:
+
+```text
+tools/multisuite_detector/
+  load_frozen_clean_features.py
+  build_detector_dataset_manifest_v1.py
+  build_detector_splits_v1.py
+  build_detector_normalization_v1.py
+  validate_detector_dataset_manifest_v1.py
+
+tests/multisuite_detector/
+  test_frozen_feature_artifact_contract.py
+  test_detector_dataset_manifest_v1.py
+  test_detector_splits_v1.py
+  test_detector_normalization_v1.py
+  test_detector_dataset_closure_v1.py
+
 .github/workflows/cpu-stageb.yml
 
 docs/paper_driven_multisuite_confirmatory_v1/
-  CODEX_LABEL_V2_INGESTION_HANDOFF_V1.md
-  CODEX_REPOSITORY_AUDIT_V1.md        # identity clarification only
-  CODEX_IMPLEMENTATION_GAP_MATRIX_V1.csv  # G001 status/evidence only
+  CODEX_DETECTOR_DATASET_CLOSURE_HANDOFF_V1.md
+  CODEX_IMPLEMENTATION_GAP_MATRIX_V1.csv   # only C2 gap evidence/status
+  CODEX_REPOSITORY_AUDIT_V1.md             # path/status maintenance only
 ```
 
-A small schema helper module or synthetic fixture factory may be added only when
-it is clearly necessary and remains within `tools/multisuite_detector/` or
-`tests/`. Generated scientific artifacts must not be committed.
+Equivalent names are allowed only when they preserve the same separated
+contracts. Existing legacy loaders/split tools may be hardened instead of
+creating duplicates, but legacy behavior must remain clearly isolated from the
+formal V1 path.
 
-The frozen producer must not be modified:
+## Frozen Feature Contract
+
+The primary detector feature order is exactly the 25-element `SC5_FEATURES`
+constant from the reviewed runtime/model source. The builder must record and
+validate:
 
 ```text
-tools/multisuite_detector/build_clean2000_label_v2.py = IMMUTABLE_IN_THIS_BATCH
+feature_names ordered list
+feature_count = 25
+feature_schema_sha256
+episode_key
+parent_key
+suite
+task_id
+initial_state_hash
+trace_length
+feature artifact path and SHA256
 ```
 
-## Required Loader Contract
+If the repository does not contain a frozen, unambiguous definition for the
+real feature artifact file set or `initial_state_hash`, Codex must define only a
+schema/validator interface and stop for scientific review; it must not invent a
+real-data convention.
 
-The implementation must be read-only and fail closed. At minimum it must:
+All feature vectors and required metadata in synthetic tests must be finite and
+strictly typed. Unknown/extra feature columns, reordered features, duplicate
+steps, malformed lengths, or inconsistent episode metadata must fail closed.
 
-1. Require an artifact root containing exactly:
+## Join and Population Contract
+
+The formal join key is `episode_key` with exact-set closure:
 
 ```text
-label_v2.csv
-build_manifest.json
-validation_summary.json
-manual_audit_sample_manifest.csv
-SHA256SUMS
+Label V2 episode set == feature episode set
+missing Label V2 rows = 0
+missing feature rows = 0
+duplicate episode keys = 0
+suite/task/parent identity mismatch = 0
+trace-length mismatch = 0
 ```
 
-2. Reject symlinks, missing files, extra files, malformed hash lines, duplicate
-   hash entries, and SHA256 mismatches.
-3. Validate exact CSV headers and strict field encodings.
-4. Validate manifest/summary mode agreement and require explicit caller choice
-   between `synthetic-dry-run` and `formal-ledger-build`.
-5. For formal mode, require:
+Population derivation must follow `POPULATION_DEFINITION_V1.md` and must not use
+attack outcomes or future attack telemetry:
 
 ```text
-schema_version = clean2000_label_v2_episode_primary_event_v1
-synthetic_only = false
-atomic_publish = true
-source_semantics_authority = SOURCE_AVAILABILITY_LEDGER
-source_jsonl_check_mode = LEDGER_PROVENANCE_ONLY_NO_RUNTIME_READ
-row_count = 2000
-manual_audit_sample_n = 160
-PRIMARY_SUCCESS_ELIGIBLE = 772 positive / 271 no-event
-ELIGIBLE_CLEAN_FAILURE = 31 positive / 276 no-event
-MECHANISM_INELIGIBLE_ABSTENTION = 0 positive / 650 no-event
+DETECTOR_ELIGIBLE = mechanism-eligible positive and no-event rows
+DETECTOR_SAFETY = mechanism-ineligible / unsupported rows
+DETECTOR_MULTI_EVENT = separate event-level artifact only
 ```
 
-6. Recompute internal row counts and cohort/event crosstabs from
-   `label_v2.csv`; do not trust summary counts alone.
-7. Require unique `episode_key` values.
-8. Enforce event/no-event coordinate semantics, including exclusive
-   `window_end`, full-trajectory `trace_length`, and no-event coordinates of
-   `-1`.
-9. Enforce cohort, clean outcome, mechanism eligibility, event disposition,
-   window-validity, and builder-identity consistency that can be checked from
-   the five files alone.
-10. Verify every manual-audit row references a Label V2 row and matches its
-    suite, task, cohort, outcome, mechanism, event, and validity fields.
-11. In formal mode, require 40 suite-task units and four distinct manual rows per
-    unit with the four requested priority categories.
-12. Validate expected builder Git SHA and builder file SHA256 when supplied by
-    the caller.
-13. Validate that manifest input entries contain well-formed path/SHA ledger
-    bindings, but do not read source JSONL or re-read the three source ledgers.
-14. Return a typed or structured read-only result suitable for a later detector
-    dataset builder.
-15. Provide a CLI that prints a JSON validation report to stdout and does not
-    mutate the artifact directory.
+The current Label V2 episode-primary table must not be relabeled or expanded
+into multi-event examples. If a separate multi-event artifact is absent, the
+formal `DETECTOR_MULTI_EVENT` population is represented as unavailable, not
+fabricated from episode-primary rows.
 
-The loader is an internal-closure consumer, not a replacement for the already
-implemented independent source-based validator.
+## Split Contract
 
-## Required Tests
-
-Tests must use only temporary synthetic artifacts or repository synthetic
-fixtures. They must not read the bound server artifact path.
-
-Required positive coverage:
+The unit of separation is the connected component induced by both:
 
 ```text
-valid synthetic five-file artifact
-explicit synthetic mode
-formal contract fixture generated entirely inside a temporary test directory
-expected builder identity match
-manual sample reference closure
+parent_key
+initial_state_hash
 ```
 
-Required negative coverage includes at least:
+No parent or initial-state hash may cross train/validation/test. Split builders
+must be deterministic from an explicit seed and input manifest SHA.
+
+Required schemas:
+
+1. `parent_random_split_v1`
+   - pooled parent/state groups;
+   - train/validation/test partitions;
+   - deterministic assignment and documented ratios supplied by the caller;
+   - no implicit default ratio in the formal CLI.
+
+2. `object_leave_task_out_v1`
+   - one Object task held out per fold;
+   - every parent/state group for that task remains outside training;
+   - fold identities and held-out task are explicit.
+
+3. `suite_loso_split_v1`
+   - one entire suite held out;
+   - held-out suite contributes no normalization, weight, checkpoint-selection,
+     or threshold-selection signal.
+
+The implementation must validate exact manifest coverage and reject unknown
+split labels, duplicate assignments, missing groups, or target leakage.
+
+## Normalization Contract
+
+Normalization is computed only from training rows/steps for the selected split
+and population. Record:
 
 ```text
-missing file
-extra file
-symlink entry
-malformed or duplicate SHA256SUMS entry
-hash mismatch
-wrong CSV header
-duplicate episode_key
-manifest/summary mode mismatch
-unexpected builder Git SHA or builder SHA256
-wrong row count or cohort crosstab
-invalid exclusive-end window
-no-event coordinate not -1
-manual row missing from Label V2
-manual context mismatch
-wrong source semantics authority
-formal manual quota/unit failure
+feature_names
+count per feature
+mean
+std
+finite status
+zero-variance disposition
+source dataset manifest SHA256
+source split manifest SHA256
+population_id
+fold/regime identifier
 ```
 
-The CI workflow must compile the loader and run its test file.
+Zero variance must fail closed or use a separately reviewed explicit policy; it
+must not silently add epsilon and continue. Validation/test rows may be
+transformed but must never contribute statistics.
+
+## Required Validators and Reports
+
+The closure validator must independently re-read the generated synthetic
+manifests and recompute at least:
+
+```text
+exact episode-set join
+feature-order and schema SHA
+population counts
+parent leakage
+initial-state-hash leakage
+split coverage
+held-out task/suite exclusion
+normalization source membership
+finite mean/std
+artifact file SHA256 bindings
+```
+
+The success report must distinguish:
+
+```text
+synthetic_contract_validation = PASS
+real_artifact_validation = NOT_PERFORMED
+formal_detector_dataset_build = NOT_PERFORMED
+server_execution = NOT_PERFORMED
+```
+
+## Required Negative Tests
+
+At minimum cover:
+
+```text
+missing/extra/duplicate episode
+suite/task/parent mismatch
+trace-length mismatch
+feature reorder or wrong count
+unknown/extra feature
+NaN/Inf feature
+malformed or missing initial_state_hash
+parent leakage
+state-hash leakage across different parents
+missing or duplicate split assignment
+Object held-out-task leakage
+LOSO held-out-suite leakage
+normalization using validation/test rows
+normalization manifest SHA mismatch
+zero variance
+attack/future telemetry field rejection
+attempt to fabricate multi-event rows
+```
+
+The workflow must compile every formal C2 module and run the complete C2 test
+set in addition to the existing C1 and builder tests.
 
 ## Explicitly Prohibited
 
 Codex must not in this batch:
 
-- modify the Label V2 builder or its frozen semantics;
-- run `formal-ledger-build` or the independent validator against server paths;
-- read the real five-file Label V2 output, because it does not yet exist;
-- read real frozen clean feature artifacts;
-- implement feature ingestion, Label V2-feature joins, populations, splits, or
-  normalization (`C2_*`);
-- modify detector train/eval/FSM code (`C3_*`);
+- read the real Label V2 output or real frozen clean-feature artifact;
+- run the formal Label V2 build or source-based validator;
+- construct formal detector manifests on the server;
+- modify Label V2 producer semantics;
+- modify detector model, training, evaluation, checkpoint selection, thresholds,
+  or FSM (`C3_*`);
 - implement exact-prefix, attack, CQ, statistics, tables, or figures;
-- access a server checkout;
-- train a detector;
-- load OpenVLA or launch LIBERO;
-- run a rollout or attack;
-- query, reserve, or use A800 GPUs;
-- change any frozen denominator, label semantics, threshold, split, metric,
-  attack parameter, or paper claim;
+- SSH to or execute in a server checkout;
+- train a detector or load OpenVLA;
+- launch LIBERO, rollout, or attack;
+- query, reserve, allocate, or use A800 GPUs;
+- choose a real split ratio, checkpoint rule, threshold, attack parameter, or
+  paper claim from observed outcomes;
 - mark Gate A1, Gate A2, Gate A3, or experiment execution as authorized.
 
 ## Commit Requirements
 
-The implementation commit must state:
+Every C2 implementation commit must state:
 
 ```text
-Task IDs = C1_01, C1_02
+Task IDs = C2_01, C2_02, C2_03, C2_04
 Scientific settings changed = NONE
-Formal builder modified = NO
 Real scientific artifacts read = NONE
+Formal dataset build = NONE
 Server execution = NONE
 GPU execution = NONE
 Experiment authorization status = NOT_AUTHORIZED
@@ -189,27 +298,29 @@ Tests = exact commands and results
 
 ## Stop Rules
 
-Codex must stop and request review when:
+Stop and request review when:
 
-- five-file fields are insufficient to verify a proposed invariant;
-- a requirement would duplicate source-ledger reconstruction rather than
-  internal artifact closure;
-- the builder contract and frozen documentation disagree;
-- supporting formal mode would require reading real server artifacts;
-- implementation would cross into any `C2_*` or later task;
-- `C1_01` and `C1_02` are complete.
+- the real feature artifact contract or initial-state-hash source is ambiguous;
+- the formal population definition cannot be derived without inventing fields;
+- a proposed split ratio or zero-variance policy is not frozen;
+- supporting C2 requires detector-model or C3 changes;
+- any test demonstrates parent/state/normalization leakage;
+- C2_01 through C2_04 are complete.
 
 ## Current State
 
 ```text
 CODEX_EXPERIMENT_PLAN_REVIEW = PASS
 CODEX_INITIAL_REPOSITORY_AUDIT = PASS
-CODEX_C1_LABEL_V2_INGESTION = AUTHORIZED_CPU_CI_ONLY
-CODEX_C2_AND_LATER_IMPLEMENTATION = NOT_AUTHORIZED
+CODEX_C1_LABEL_V2_INGESTION = PASS_CPU_CI
+CODEX_C2_DETECTOR_DATASET_CLOSURE = AUTHORIZED_CPU_CI_ONLY
+CODEX_C3_AND_LATER_IMPLEMENTATION = NOT_AUTHORIZED
 CODEX_SERVER_EXECUTION = NOT_AUTHORIZED
 LABEL_V2_BUILD_EXECUTION_AUTHORIZATION = NOT_AUTHORIZED
+A800_HARDWARE_ONLY_QUALIFICATION = PLANNED_NOT_AUTHORIZED
 DETECTOR_TRAINING_EXECUTION = NOT_AUTHORIZED
 A800_GPU_EXPERIMENT_EXECUTION = NOT_AUTHORIZED
+GATE_A1_LABEL_ARTIFACT = HOLD_PENDING_FORMAL_BUILD_AND_MANUAL_AUDIT
 GATE_A2_DETECTOR = HOLD
 GATE_A3_ATTACK = HOLD
 EXPERIMENT_AUTHORIZATION_STATUS = NOT_AUTHORIZED
