@@ -10,13 +10,17 @@ remain historical and must not be overwritten.
 | Field | Value |
 |---|---|
 | source_manifest_path | `tables/server_freeze/clean2000_teacher_source_availability.csv` |
-| source_manifest_sha256 | `09cefaa3f50d552adde6f3040fe25e11e295b8f97f71f05745d8cec710b5d962` |
+| source_manifest_git_blob_sha1 | `22d54409bb01db489d5b2edc0640efafcb6a6408` |
+| source_manifest_repo_content_sha256_lf | `268ec095aae19a5aca62141b162c0719706b885c96c84122174fe425493426e4` |
 | supporting_census_path | `tables/server_freeze/clean2000_episode_census.csv` |
-| supporting_census_sha256 | `06a4baf446a7f2600425630a0acf35e344423647ea54e9f097675fec1753ef38` |
+| supporting_census_git_blob_sha1 | `bb8fe57c14816477d5844e611c86017397a6111c` |
+| supporting_census_repo_content_sha256_lf | `6d3696465f3e09cd736677f25ac57d83135774229bd75c5a17b38801c7e956ba` |
 | supporting_crosstab_path | `tables/server_freeze/clean2000_source_event_crosstab.csv` |
-| supporting_crosstab_sha256 | `31b7377aa81e1a28b347ba38e92ee9be312e133edc5e6b288c82b440302b27a0` |
-| allowed_source_roots | `/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1`; verified backup `/data/liuyu/openvla_gripper_freeze/20260702_codex_verified_v3` |
-| builder_output_root | `outputs/clean2000_teacher_labels_v2/{authorized_commit_sha}_{source_manifest_sha256_12}` |
+| supporting_crosstab_git_blob_sha1 | `c4ac870079ff5f84b1da7f38412e8028203247de` |
+| supporting_crosstab_repo_content_sha256_lf | `0b78c0749cdf4a17c93ce28859094c0733741f9892f0b9493894bece26cb25a1` |
+| primary_source_root | `vla:/data/liuyu/openvla_gripper_freeze/20260702_codex_verified_v3/clean2000/CLEAN2000_CANONICAL_V1` |
+| live_source_root | `dty-server:/mnt/sdc/dty_user/openvla_attack/evidence/CLEAN2000_CANONICAL_V1` read-only parity check only |
+| future_builder_output_root | `vla:/data/liuyu/openvla_gripper_freeze/20260702_codex_verified_v3/derived/clean2000_teacher_labels_v2/{authorized_commit_sha}_{source_manifest_sha256_12}` |
 | builder_command_contract | `python tools/multisuite_detector/build_clean2000_label_v2.py --source-manifest <path> --episode-census <path> --output-root <empty-new-dir> --dry-run` |
 
 The builder path is a contract for the next CPU-only implementation step; this
@@ -96,6 +100,25 @@ Total: 803 positive, 1197 no-event.
 - all schema anomalies manually audited;
 - 25% second-reviewer overlap;
 - reproducible builder SHA and git SHA recorded.
+
+## Manual Audit Sampling
+
+```text
+manual_audit_sample_n = 160
+sampling_seed = 20260703
+quota = 40 tasks x 4 rows/task
+```
+
+Per task, sample in this priority order:
+
+1. one positive clean-success row;
+2. one eligible no-event row;
+3. one clean-failure or boundary row;
+4. one abstention/ineligible row, else a second positive row.
+
+If a cohort is absent for a task, fill from the next available priority without
+crossing task boundaries. Emit `manual_audit_sample_manifest.csv` and bind its
+SHA256 before review.
 
 ## Gate B
 
