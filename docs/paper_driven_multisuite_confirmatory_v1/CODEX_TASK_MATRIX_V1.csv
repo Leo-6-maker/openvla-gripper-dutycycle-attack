@@ -1,0 +1,46 @@
+task_id,phase,title,depends_on,deliverables,allowed_scope,server_required,gpu_required,execution_authorized,review_gate,abort_rule
+C0_01,C0,Repository path inventory,NONE,CODEX_REPOSITORY_AUDIT_V1.md,repo_read_only,false,false,true,C0_REVIEW,formal_path_unenumerated
+C0_02,C0,Implementation gap matrix,C0_01,CODEX_IMPLEMENTATION_GAP_MATRIX_V1.csv,repo_read_only,false,false,true,C0_REVIEW,scientific_setting_changed
+C0_03,C0,Artifact dependency graph,C0_01,CODEX_REPOSITORY_AUDIT_V1.md,repo_read_only,false,false,true,C0_REVIEW,table_cell_unbound
+C1_01,C1,Label V2 downstream ingestion schema,C0_02,parser_schema_and_tests,repo_cpu_ci,false,false,true,C1_IMPLEMENTATION_REVIEW,formal_artifact_read_attempted
+C1_02,C1,Label V2 ingestion validator,C1_01,validator_and_synthetic_tests,repo_cpu_ci,false,false,true,C1_IMPLEMENTATION_REVIEW,live_artifact_mutation
+C1_03,C1,Formal Label V2 build,C1_02,five_file_artifact,cpu_one_shot_server,true,false,false,LABEL_V2_ACTIVATION,not_explicitly_authorized
+C1_04,C1,Formal Label V2 independent validation,C1_03,validator_report_json,cpu_one_shot_server,true,false,false,LABEL_V2_ACTIVATION,build_not_passed
+C1_05,C1,Label V2 manual audit,C1_04,manual_audit_decisions_and_kappa,human_review,true,false,false,GATE_A1_REVIEW,validator_not_passed
+C2_01,C2,Detector dataset join builder,C1_05,dataset_manifest_builder_and_tests,repo_cpu_ci,false,false,true,C2_IMPLEMENTATION_REVIEW,label_v2_not_frozen
+C2_02,C2,Parent/state split builders,C2_01,three_split_builders_and_tests,repo_cpu_ci,false,false,true,C2_IMPLEMENTATION_REVIEW,leakage_detected
+C2_03,C2,Train-only normalization builder,C2_02,normalization_builder_and_tests,repo_cpu_ci,false,false,true,C2_IMPLEMENTATION_REVIEW,test_partition_used
+C2_04,C2,Detector dataset closure validator,C2_03,closure_validator_and_schema,repo_cpu_ci,false,false,true,C2_IMPLEMENTATION_REVIEW,join_or_schema_mismatch
+C2_05,C2,Formal detector dataset build,C2_04,detector_manifests,cpu_server,true,false,false,DETECTOR_DATASET_AUTH,not_explicitly_authorized
+C3_01,C3,Train CLI identity hardening,C0_02,train_cli_and_tests,repo_cpu_ci,false,false,true,C3_IMPLEMENTATION_REVIEW,unbound_manifest
+C3_02,C3,Eval CLI identity hardening,C0_02,eval_cli_and_tests,repo_cpu_ci,false,false,true,C3_IMPLEMENTATION_REVIEW,unbound_checkpoint
+C3_03,C3,Event and timing metrics,C3_02,metrics_module_and_tests,repo_cpu_ci,false,false,true,C3_IMPLEMENTATION_REVIEW,frame_only_primary_metric
+C3_04,C3,Validation-only threshold selection,C3_03,threshold_selector_and_tests,repo_cpu_ci,false,false,true,C3_IMPLEMENTATION_REVIEW,test_label_access
+C3_05,C3,Synthetic detector end-to-end smoke,C3_01|C3_02|C3_03|C3_04,synthetic_smoke_report,repo_cpu_ci,false,false,true,C3_REVIEW,smoke_failure
+C4_01,C4,A800 identity and topology probe,C3_05,topology_manifest,server_read_only,true,true,false,A800_QUALIFICATION_AUTH,not_explicitly_authorized
+C4_02,C4,Single-GPU clean and backward canary,C4_01,gpu_canary_report,server_gpu,true,true,false,A800_QUALIFICATION_AUTH,oom_or_parity_failure
+C4_03,C4,Worker parity and output isolation,C4_02,worker_parity_report,server_gpu,true,true,false,A800_QUALIFICATION_REVIEW,hardware_confounded
+C5_01,C5,Detector run scheduler,C3_05,scheduler_and_dry_run_tests,repo_cpu_ci,false,false,true,C5_IMPLEMENTATION_REVIEW,condition_by_gpu_confounding
+C5_02,C5,Object-only detector runs,C2_05|C4_03,checkpoints_and_eval_reports,server_gpu,true,true,false,DETECTOR_TRAINING_AUTH,gate_c_fail
+C5_03,C5,Pooled detector runs,C2_05|C4_03,checkpoints_and_eval_reports,server_gpu,true,true,false,DETECTOR_TRAINING_AUTH,gate_c_fail
+C5_04,C5,LOSO detector runs,C2_05|C4_03,checkpoints_and_eval_reports,server_gpu,true,true,false,DETECTOR_TRAINING_AUTH,held_out_leakage
+C5_05,C5,Object leave-one-task-out runs,C2_05|C4_03,checkpoints_and_eval_reports,server_gpu,true,true,false,DETECTOR_TRAINING_AUTH,task_leakage
+C5_06,C5,Detector aggregate and Gate A2 report,C5_02|C5_03|C5_04|C5_05,gate_a2_report,analysis_cpu,true,false,false,GATE_A2_REVIEW,threshold_changed_after_test
+C6_01,C6,Freeze detector checkpoint and thresholds,C5_06,frozen_detector_manifest,human_review,true,false,false,GATE_A2_REVIEW,gate_a2_not_passed
+C7_01,C7,Exact-prefix snapshot schema,C0_02,snapshot_schema_and_tests,repo_cpu_ci,false,false,true,C7_IMPLEMENTATION_REVIEW,identity_field_missing
+C7_02,C7,Exact-prefix restore validator,C7_01,restore_validator_and_tests,repo_cpu_ci,false,false,true,C7_IMPLEMENTATION_REVIEW,off_by_one_or_hash_mismatch
+C7_03,C7,Matched branch queue builder,C7_02,queue_builder_and_tests,repo_cpu_ci,false,false,true,C7_IMPLEMENTATION_REVIEW,parent_split_across_workers
+C7_04,C7,Runtime telemetry validator,C7_03,telemetry_validator_and_tests,repo_cpu_ci,false,false,true,C7_IMPLEMENTATION_REVIEW,actual_budget_missing
+C7_05,C7,Eight-parent attack canary,C6_01|C4_03|C7_04,forty_branch_canary,server_gpu,true,true,false,ATTACK_SMOKE_AUTH,clean_replay_or_branch_family_fail
+C8_01,C8,Primary parent selector,C1_05,selection_manifest_builder_and_tests,repo_cpu_ci,false,false,true,C8_IMPLEMENTATION_REVIEW,result_aware_selection
+C8_02,C8,Formal attack matrix generator,C6_01|C8_01,formal_queue_manifest,repo_cpu_ci,false,false,true,C8_IMPLEMENTATION_REVIEW,protocol_parameter_unbound
+C8_03,C8,Main confirmatory matrix,C7_05|C8_02,matched_rollout_artifacts,server_gpu,true,true,false,FORMAL_ATTACK_AUTH,canary_not_passed
+C8_04,C8,Seed robustness subset,C8_03,seed_robustness_artifacts,server_gpu,true,true,false,FORMAL_ATTACK_AUTH,main_matrix_not_complete
+C8_05,C8,Mechanism control subset,C8_03,mechanism_control_artifacts,server_gpu,true,true,false,MECHANISM_AUTH,main_matrix_not_frozen
+C9_01,C9,CQ automatic evaluator,C0_02,cq_evaluator_and_tests,repo_cpu_ci,false,false,true,C9_IMPLEMENTATION_REVIEW,telemetry_used_as_detector_feature
+C9_02,C9,Blind audit manifest builder,C9_01,audit_manifest_and_blinding_tests,repo_cpu_ci,false,false,true,C9_IMPLEMENTATION_REVIEW,condition_identity_leak
+C9_03,C9,Human CQ audit,C8_03|C9_02,manual_labels_and_kappa,human_review,true,false,false,CQ_AUDIT_AUTH,kappa_below_0_80
+C10_01,C10,Statistical analysis implementation,C0_02,paired_statistics_and_tests,repo_cpu_ci,false,false,true,C10_IMPLEMENTATION_REVIEW,seed_treated_as_parent
+C10_02,C10,Paper table builders,C10_01,table_builders_and_schema_tests,repo_cpu_ci,false,false,true,C10_IMPLEMENTATION_REVIEW,denominator_or_ci_missing
+C10_03,C10,Figure data builders,C10_01,figure_data_and_schema_tests,repo_cpu_ci,false,false,true,C10_IMPLEMENTATION_REVIEW,post_hoc_metric_change
+C10_04,C10,Final analysis run,C8_03|C9_03|C10_02|C10_03,paper_tables_figures_and_report,analysis_cpu,true,false,false,FINAL_ANALYSIS_AUTH,incomplete_audit_or_manifest
