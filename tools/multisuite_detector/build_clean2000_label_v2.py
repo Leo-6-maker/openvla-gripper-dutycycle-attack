@@ -12,8 +12,8 @@ import csv
 import hashlib
 import json
 import math
-import os
 import random
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -82,6 +82,20 @@ CENSUS_COLUMNS = ["cohort_class", "total"]
 CROSSTAB_COLUMNS = ["cohort_class", "source_positive", "source_no_event", "total"]
 COORDINATE_SEMANTICS = "zero_based_observation_before_action_start_inclusive_end_exclusive_full_trajectory"
 MANUAL_AUDIT_SEED = 20260703
+MAX_SYNTHETIC_ROWS = 200
+SENTINEL_NAME = ".label_v2_synthetic_fixture.json"
+SENTINEL_SHA256 = "dae3e444c0c8693d5a80e20fd0761ddd4d559ae038ef7ecb6cfef054ab69f482"
+SHA256_RE = re.compile(r"[0-9a-f]{64}")
+MANUAL_COLUMNS = [
+    "suite",
+    "task_id",
+    "episode_key",
+    "requested_priority",
+    "actual_selected_category",
+    "fallback_used",
+    "fallback_reason",
+    "sampling_seed",
+]
 
 
 class BuildError(RuntimeError):
@@ -100,12 +114,24 @@ def sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
-def read_csv_strict(path: Path, columns: list[str]) -> list[dict[str, str]]:
+def read_csv_strict(path: Path, columns: list[str], allow_empty: set[str] | None = None) -> list[dict[str, str]]:
+    allow_empty = allow_empty or set()
     with path.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         if reader.fieldnames != columns:
             fail(f"{path.name}: expected columns {columns}, got {reader.fieldnames}")
-        return list(reader)
+        rows = []
+        for line_no, row in enumerate(reader, start=2):
+            if None in row:
+                fail(f"{path.name}:{line_no}: row has extra cells")
+            missing = [key for key, value in row.items() if value is None]
+            if missing:
+                fail(f"{path.name}:{line_no}: row has missing cells: {missing}")
+            empty = [key for key, value in row.items() if value == "" and key not in allow_empty]
+            if empty:
+                fail(f"{path.name}:{line_no}: required fields are empty: {empty}")
+            rows.append(row)
+        return rows
 
 
 def reject_path_traversal(path_text: str) -> None:
@@ -126,9 +152,21 @@ def reject_symlink(path: Path) -> None:
             fail(f"symlink path is not allowed: {candidate}")
 
 
-def require_synthetic_path(path: Path) -> None:
-    if "label_v2_synthetic" not in path.resolve().parts:
-        fail(f"non-synthetic path input is not authorized: {path}")
+def require_descendant(path: Path, root: Path, label: str) -> None:
+    try:
+        path.resolve().relative_to(root.resolve())
+    except ValueError:
+        fail(f"{label} must be under declared synthetic root: {path}")
+
+
+def require_sentinel(root: Path) -> None:
+    sentinel = root / SENTINEL_NAME
+    reject_symlink(sentinel)
+    if not sentinel.is_file():
+        fail(f"synthetic fixture sentinel missing: {sentinel}")
+    actual = sha256_file(sentinel)
+    if actual != SENTINEL_SHA256:
+        fail(f"synthetic fixture sentinel SHA256 mismatch: {actual}")
 
 
 def parse_bool(value: str, field: str, episode_key: str) -> bool:
@@ -171,6 +209,8 @@ def git_sha(repo: Path) -> str:
 def validate_and_transform(rows: list[dict[str, str]], builder_sha: str, git_head: str) -> list[dict[str, str]]:
     seen = set()
     out = []
+    if len(rows) > MAX_SYNTHETIC_ROWS:
+        fail(f"synthetic fixture row count exceeds {MAX_SYNTHETIC_ROWS}: {len(rows)}")
     for row in rows:
         episode = row["episode_key"]
         if not episode:
@@ -189,6 +229,8 @@ def validate_and_transform(rows: list[dict[str, str]], builder_sha: str, git_hea
         trace_length = parse_int(row["trace_length"], "trace_length", episode)
         confidence = parse_float(row["teacher_confidence"], "teacher_confidence", episode)
 
+        if row["source_schema_version"] != "synthetic_v1":
+            fail(f"{episode}: source_schema_version must be synthetic_v1")
         if row["coordinate_semantics"] != COORDINATE_SEMANTICS:
             fail(f"{episode}: unexpected coordinate_semantics")
         if not 0.0 <= confidence <= 1.0:
@@ -243,15 +285,24 @@ def validate_counts(rows: list[dict[str, str]], census_rows: list[dict[str, str]
             fail(f"{row['episode_key']}: event_present must be validated before counts")
         bucket["total"] += 1
 
-    census = {row["cohort_class"]: parse_int(row["total"], "total", row["cohort_class"]) for row in census_rows}
+    census = {}
+    for row in census_rows:
+        cohort = row["cohort_class"]
+        if cohort in census:
+            fail(f"duplicate census cohort: {cohort}")
+        census[cohort] = parse_int(row["total"], "total", cohort)
     for cohort, bucket in counts.items():
         if census.get(cohort) != bucket["total"]:
             fail(f"census mismatch for {cohort}: expected {census.get(cohort)}, got {bucket['total']}")
     if set(census) != set(counts):
         fail(f"census cohort set mismatch: expected {sorted(census)}, got {sorted(counts)}")
 
+    seen_crosstab = set()
     for row in crosstab_rows:
         cohort = row["cohort_class"]
+        if cohort in seen_crosstab:
+            fail(f"duplicate crosstab cohort: {cohort}")
+        seen_crosstab.add(cohort)
         expected = counts.get(cohort)
         if expected is None:
             fail(f"crosstab unknown cohort: {cohort}")
@@ -269,39 +320,64 @@ def validate_counts(rows: list[dict[str, str]], census_rows: list[dict[str, str]
     return counts
 
 
-def manual_audit_sample(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+def row_category(row: dict[str, str]) -> str:
+    if row["event_present"] == "true" and row["clean_success"] == "true":
+        return "positive_clean_success"
+    if row["event_present"] == "false" and row["mechanism_eligible"] == "true":
+        return "eligible_no_event"
+    if row["clean_success"] == "false" or row["label_validity_status"] != "VALID":
+        return "failure_or_boundary"
+    if row["mechanism_eligible"] == "false":
+        return "abstention_or_ineligible"
+    return "other"
+
+
+def manual_audit_sample(rows: list[dict[str, str]], enforce_quota: bool = False, expected_n: int | None = None) -> list[dict[str, str]]:
     rng = random.Random(MANUAL_AUDIT_SEED)
-    by_task: dict[str, list[dict[str, str]]] = {}
+    by_task: dict[tuple[str, str], list[dict[str, str]]] = {}
     for row in rows:
-        by_task.setdefault(row["task_id"], []).append(row)
+        by_task.setdefault((row["suite"], row["task_id"]), []).append(row)
 
     picked = []
-    for task in sorted(by_task):
-        task_rows = sorted(by_task[task], key=lambda r: r["episode_key"])
+    if enforce_quota and len(by_task) != 40:
+        fail(f"manual audit quota requires 40 suite-task units, got {len(by_task)}")
+    for suite, task in sorted(by_task):
+        task_rows = sorted(by_task[(suite, task)], key=lambda r: r["episode_key"])
         rng.shuffle(task_rows)
         priorities = [
-            ("positive_clean_success", lambda r: r["event_present"] == "true" and r["clean_success"] == "true"),
-            ("eligible_no_event", lambda r: r["event_present"] == "false" and r["mechanism_eligible"] == "true"),
-            ("failure_or_boundary", lambda r: r["clean_success"] == "false" or r["label_validity_status"] != "VALID"),
-            ("abstention_or_ineligible", lambda r: r["mechanism_eligible"] == "false"),
+            ("positive_clean_success", lambda r: row_category(r) == "positive_clean_success"),
+            ("eligible_no_event", lambda r: row_category(r) == "eligible_no_event"),
+            ("failure_or_boundary", lambda r: row_category(r) == "failure_or_boundary"),
+            ("abstention_or_ineligible", lambda r: row_category(r) == "abstention_or_ineligible"),
         ]
         used = set()
         for label, predicate in priorities:
             match = next((r for r in task_rows if r["episode_key"] not in used and predicate(r)), None)
+            fallback = False
             if match is None:
                 match = next((r for r in task_rows if r["episode_key"] not in used), None)
+                fallback = match is not None
             if match is None:
                 continue
             used.add(match["episode_key"])
+            actual = row_category(match)
             picked.append(
                 {
-                    "episode_key": match["episode_key"],
+                    "suite": suite,
                     "task_id": task,
-                    "audit_priority": label,
+                    "episode_key": match["episode_key"],
+                    "requested_priority": label,
+                    "actual_selected_category": actual,
+                    "fallback_used": "true" if fallback else "false",
+                    "fallback_reason": "" if not fallback else f"missing_{label}",
                     "sampling_seed": str(MANUAL_AUDIT_SEED),
                 }
             )
-    return sorted(picked, key=lambda r: (r["task_id"], r["audit_priority"], r["episode_key"]))
+        if enforce_quota and len(used) != 4:
+            fail(f"manual audit quota requires 4 rows for {suite}/{task}, got {len(used)}")
+    if expected_n is not None and len(picked) != expected_n:
+        fail(f"manual audit sample count mismatch: expected {expected_n}, got {len(picked)}")
+    return sorted(picked, key=lambda r: (r["suite"], r["task_id"], r["requested_priority"], r["episode_key"]))
 
 
 def write_csv(path: Path, columns: list[str], rows: list[dict[str, str]]) -> None:
@@ -311,29 +387,46 @@ def write_csv(path: Path, columns: list[str], rows: list[dict[str, str]]) -> Non
         writer.writerows(rows)
 
 
+def validate_sha_arg(value: str, label: str) -> None:
+    if not SHA256_RE.fullmatch(value):
+        fail(f"{label} must be 64 lowercase hex characters")
+
+
 def verify_inputs(args: argparse.Namespace) -> tuple[Path, Path, Path, Path]:
-    for text in [args.source_manifest, args.episode_census, args.source_crosstab, args.output_root]:
+    for text in [args.source_manifest, args.episode_census, args.source_crosstab, args.output_root, args.synthetic_fixture_root, args.synthetic_output_root]:
         reject_path_traversal(text)
+    if not args.synthetic or not args.dry_run:
+        fail("Gate A1 implementation allows only --synthetic --dry-run")
+    for value, label in [
+        (args.expected_source_sha256, "expected-source-sha256"),
+        (args.expected_census_sha256, "expected-census-sha256"),
+        (args.expected_crosstab_sha256, "expected-crosstab-sha256"),
+    ]:
+        validate_sha_arg(value, label)
     source = Path(args.source_manifest)
     census = Path(args.episode_census)
     crosstab = Path(args.source_crosstab)
     output_root = Path(args.output_root)
+    fixture_root = Path(args.synthetic_fixture_root)
+    output_base = Path(args.synthetic_output_root)
+    reject_symlink(fixture_root)
+    reject_symlink(output_base)
+    require_sentinel(fixture_root)
     for path in [source, census, crosstab]:
         reject_symlink(path)
-        require_synthetic_path(path)
+        require_descendant(path, fixture_root, "input")
         if not path.is_file():
             fail(f"input file does not exist: {path}")
     reject_symlink(output_root)
+    require_descendant(output_root, output_base, "output root")
     if output_root.exists() and any(output_root.iterdir()):
         fail(f"output root must be empty: {output_root}")
-    if not args.synthetic or not args.dry_run:
-        fail("Gate A1 implementation allows only --synthetic --dry-run")
     return source, census, crosstab, output_root
 
 
-def compare_sha(path: Path, expected: str | None, label: str) -> str:
+def compare_sha(path: Path, expected: str, label: str) -> str:
     actual = sha256_file(path)
-    if expected and actual != expected:
+    if actual != expected:
         fail(f"{label} SHA256 mismatch: expected {expected}, got {actual}")
     return actual
 
@@ -344,9 +437,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--episode-census", required=True)
     parser.add_argument("--source-crosstab", required=True)
     parser.add_argument("--output-root", required=True)
-    parser.add_argument("--expected-source-sha256")
-    parser.add_argument("--expected-census-sha256")
-    parser.add_argument("--expected-crosstab-sha256")
+    parser.add_argument("--synthetic-fixture-root", required=True)
+    parser.add_argument("--synthetic-output-root", required=True)
+    parser.add_argument("--expected-source-sha256", required=True)
+    parser.add_argument("--expected-census-sha256", required=True)
+    parser.add_argument("--expected-crosstab-sha256", required=True)
+    parser.add_argument("--expected-manual-sample-n", type=int)
+    parser.add_argument("--enforce-manual-quota", action="store_true")
     parser.add_argument("--synthetic", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args(argv)
@@ -362,7 +459,7 @@ def main(argv: list[str] | None = None) -> int:
         repo = builder_path.parents[2]
         git_head = git_sha(repo)
 
-        source_rows = read_csv_strict(source, SOURCE_COLUMNS)
+        source_rows = read_csv_strict(source, SOURCE_COLUMNS, {"event_source", "invalid_reason", "abstain_reason"})
         census_rows = read_csv_strict(census, CENSUS_COLUMNS)
         crosstab_rows = read_csv_strict(crosstab, CROSSTAB_COLUMNS)
         output_rows = validate_and_transform(source_rows, builder_sha, git_head)
@@ -376,14 +473,15 @@ def main(argv: list[str] | None = None) -> int:
         sums_path = output_root / "SHA256SUMS"
 
         write_csv(label_path, OUTPUT_COLUMNS, output_rows)
-        write_csv(manual_path, ["episode_key", "task_id", "audit_priority", "sampling_seed"], manual_audit_sample(output_rows))
+        manual_rows = manual_audit_sample(output_rows, args.enforce_manual_quota, args.expected_manual_sample_n)
+        write_csv(manual_path, MANUAL_COLUMNS, manual_rows)
         summary = {
             "status": "PASS",
             "mode": "synthetic_dry_run",
             "row_count": len(output_rows),
             "counts": counts,
             "invalid_window_rows": sum(1 for r in output_rows if r["label_validity_status"] == "INVALID_WINDOW"),
-            "manual_audit_sample_n": len(read_csv_strict(manual_path, ["episode_key", "task_id", "audit_priority", "sampling_seed"])),
+            "manual_audit_sample_n": len(read_csv_strict(manual_path, MANUAL_COLUMNS, {"fallback_reason"})),
         }
         summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         manifest = {
