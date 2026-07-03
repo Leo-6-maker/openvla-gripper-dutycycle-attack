@@ -26,6 +26,12 @@ remain historical and must not be overwritten.
 The current builder implementation is synthetic-only. Formal CLEAN2000 source
 reads and the 2000-row build require a later build-execution authorization.
 
+For the current implementation review, the committed source-availability ledger
+is the semantic authority. Source JSONL files are checked only for byte-bound
+provenance presence, not for independent event semantics. The V2 episode table
+is primary-event-only; multi-event event-level labels require a separate
+artifact before they can support MULTI_EVENT analysis.
+
 ## Required Row Fields
 
 ```text
@@ -54,6 +60,11 @@ coordinate_semantics
 trace_length
 source_schema_version
 teacher_confidence
+confidence_available
+confidence_provenance
+event_id_provenance
+source_semantics_authority
+source_jsonl_check_mode
 window_valid
 label_validity_status
 manual_audit_status
@@ -68,6 +79,8 @@ manual_audit_reason
 - `window_start` is inclusive.
 - `window_end` is exclusive.
 - Coordinates refer to the original full clean trajectory, not a trimmed segment.
+- `trace_length` is the full trajectory length (`n_steps`), not the count of
+  valid feature rows.
 - A window is invalid if `window_start < 0`, `window_end <= window_start`,
   `window_end > trace_length`, or the source trajectory is truncated.
 - Invalid windows remain in the 2000-row output with `window_valid=false` and

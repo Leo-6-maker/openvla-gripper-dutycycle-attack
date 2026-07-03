@@ -1,6 +1,7 @@
 import csv
 import hashlib
 import importlib.util
+import json
 import shutil
 import subprocess
 import sys
@@ -67,6 +68,10 @@ def read_rows(path):
 def rewrite_source(path, transform):
     rows = read_rows(path)
     rows = transform(rows)
+    write_rows(path, rows)
+
+
+def write_rows(path, rows):
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=rows[0].keys())
         writer.writeheader()
@@ -92,6 +97,15 @@ def test_synthetic_dry_run_outputs(tmp_path):
     by_episode = {row["episode_key"]: row for row in rows}
     assert by_episode["ep_valid_positive"]["window_end"] == "14"
     assert by_episode["ep_valid_positive"]["source_sha256"] == sha256(fixture / "source_records.jsonl")
+    assert by_episode["ep_valid_positive"]["mechanism_type"] == "SINGLE_OBJECT_TRANSFER"
+    assert by_episode["ep_valid_positive"]["segment_id"] == "ep_valid_positive#segment_1"
+    assert by_episode["ep_valid_positive"]["source_schema_version"] == "source_availability_v1_presence_only_jsonl_v1"
+    assert by_episode["ep_valid_positive"]["source_semantics_authority"] == "SOURCE_AVAILABILITY_LEDGER"
+    assert by_episode["ep_valid_positive"]["source_jsonl_check_mode"] == "PROVENANCE_PRESENCE_ONLY"
+    assert by_episode["ep_eligible_no_event"]["event_id"] == "NO_EVENT"
+    assert by_episode["ep_eligible_no_event"]["teacher_confidence"] == "UNKNOWN"
+    assert by_episode["ep_eligible_no_event"]["confidence_available"] == "false"
+    assert by_episode["ep_mechanism_ineligible"]["mechanism_type"] == "UNSUPPORTED"
     assert {r["episode_key"] for r in rows if r["label_validity_status"] == "INVALID_WINDOW"} == {
         "ep_invalid_window",
         "ep_truncated_trace",
@@ -102,6 +116,54 @@ def test_synthetic_dry_run_outputs(tmp_path):
     assert "suite" in manual[0]
     assert {"requested_priority", "actual_selected_category", "fallback_used", "fallback_reason"} <= set(manual[0])
     assert "label_v2.csv" in (output / "SHA256SUMS").read_text(encoding="utf-8")
+
+    manifest = json.loads((output / "build_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["source_semantics_authority"] == "SOURCE_AVAILABILITY_LEDGER"
+    assert manifest["source_jsonl_check_mode"] == "PROVENANCE_PRESENCE_ONLY"
+    assert manifest["v2_episode_table_scope"] == "PRIMARY_EVENT_ONLY"
+
+
+def test_trace_length_uses_full_trajectory_not_valid_step_count(tmp_path):
+    fixture = copy_fixture(tmp_path)
+    availability_rows = read_rows(fixture / "source_manifest.csv")
+    census_rows = read_rows(fixture / "episode_census.csv")
+    for row in availability_rows:
+        if row["episode_key"] == "ep_valid_positive":
+            row["source_anchor"] = "109"
+            row["source_window_start"] = "109"
+            row["source_window_end"] = "118"
+    for row in census_rows:
+        if row["episode_key"] == "ep_valid_positive":
+            row["teacher_anchor_step"] = "109"
+            row["teacher_window_start"] = "109"
+            row["teacher_window_end"] = "119"
+            row["n_steps"] = "175"
+            row["n_valid_steps"] = "109"
+    write_rows(fixture / "source_manifest.csv", availability_rows)
+    write_rows(fixture / "episode_census.csv", census_rows)
+
+    output = tmp_path / "out"
+    run_builder(fixture, output)
+
+    row = {r["episode_key"]: r for r in read_rows(output / "label_v2.csv")}["ep_valid_positive"]
+    assert row["trace_length"] == "175"
+    assert row["window_end"] == "119"
+    assert row["label_validity_status"] == "VALID"
+
+
+def test_missing_source_event_id_gets_episode_scoped_primary_fallback(tmp_path):
+    fixture = copy_fixture(tmp_path)
+    rewrite_source(
+        fixture / "source_manifest.csv",
+        lambda rows: [dict(r, source_event_id="UNKNOWN") if r["episode_key"] == "ep_valid_positive" else r for r in rows],
+    )
+
+    output = tmp_path / "out"
+    run_builder(fixture, output)
+
+    row = {r["episode_key"]: r for r in read_rows(output / "label_v2.csv")}["ep_valid_positive"]
+    assert row["event_id"] == "ep_valid_positive#event_1"
+    assert row["event_id_provenance"] == "EPISODE_PRIMARY_EVENT_FALLBACK"
 
 
 @pytest.mark.parametrize(
@@ -346,14 +408,42 @@ def test_cohort_invariant_rejected(tmp_path):
     census = fixture / "episode_census.csv"
     rows = read_rows(census)
     rows[0]["outcome_class"] = "CLEAN_FAILURE"
-    with census.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=rows[0].keys())
-        writer.writeheader()
-        writer.writerows(rows)
+    write_rows(census, rows)
 
     result = run_builder(fixture, tmp_path / "out", expect_ok=False)
 
     assert "cohort invariant failed" in result.stderr
+
+
+def test_unknown_invalid_reason_rejected(tmp_path):
+    fixture = copy_fixture(tmp_path)
+    rewrite_source(
+        fixture / "source_manifest.csv",
+        lambda rows: [
+            dict(r, canonical_index_label='{"teacher_invalid_reason":"SURPRISE_REASON"}')
+            if r["episode_key"] == "ep_valid_positive"
+            else r
+            for r in rows
+        ],
+    )
+
+    result = run_builder(fixture, tmp_path / "out", expect_ok=False)
+
+    assert "UNKNOWN_INVALID_REASON" in result.stderr
+
+
+def test_availability_census_audit_flag_mismatch_rejected(tmp_path):
+    fixture = copy_fixture(tmp_path)
+    census = fixture / "episode_census.csv"
+    rows = read_rows(census)
+    for row in rows:
+        if row["episode_key"] == "ep_valid_positive":
+            row["positive_anchor_valid"] = "False"
+    write_rows(census, rows)
+
+    result = run_builder(fixture, tmp_path / "out", expect_ok=False)
+
+    assert "availability/census audit flag mismatch" in result.stderr
 
 
 def test_duplicate_census_episode_and_crosstab_cohort_rejected(tmp_path):

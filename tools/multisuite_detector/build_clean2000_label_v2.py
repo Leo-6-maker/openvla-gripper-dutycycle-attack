@@ -110,6 +110,11 @@ OUTPUT_COLUMNS = [
     "trace_length",
     "source_schema_version",
     "teacher_confidence",
+    "confidence_available",
+    "confidence_provenance",
+    "event_id_provenance",
+    "source_semantics_authority",
+    "source_jsonl_check_mode",
     "window_valid",
     "label_validity_status",
     "manual_audit_status",
@@ -118,6 +123,13 @@ OUTPUT_COLUMNS = [
 
 CROSSTAB_COLUMNS = ["cohort_class", "source_positive", "source_no_event", "total"]
 COORDINATE_SEMANTICS = "zero_based_observation_before_action_start_inclusive_end_exclusive_full_trajectory"
+SOURCE_SCHEMA_VERSION = "source_availability_v1_presence_only_jsonl_v1"
+SOURCE_SEMANTICS_AUTHORITY = "SOURCE_AVAILABILITY_LEDGER"
+SOURCE_JSONL_CHECK_MODE = "PROVENANCE_PRESENCE_ONLY"
+V2_EPISODE_TABLE_SCOPE = "PRIMARY_EVENT_ONLY"
+MULTI_EVENT_POLICY = "MULTI_EVENT_TABLE_SEPARATE_ARTIFACT"
+CONFIDENCE_POLICY = "SOURCE_AVAILABILITY_ONLY_NO_CENSUS_BACKFILL"
+EVENT_ID_POLICY = "SOURCE_EVENT_ID_OR_EPISODE_PRIMARY_EVENT_FALLBACK"
 MANUAL_AUDIT_SEED = 20260703
 MAX_SYNTHETIC_ROWS = 200
 SENTINEL_NAME = ".label_v2_synthetic_fixture.json"
@@ -127,6 +139,10 @@ ALLOWED_COHORTS = {
     "PRIMARY_SUCCESS_ELIGIBLE",
     "ELIGIBLE_CLEAN_FAILURE",
     "MECHANISM_INELIGIBLE_ABSTENTION",
+}
+MECHANISM_TYPE_BY_SCOPE = {
+    "MECHANISM_ELIGIBLE": "SINGLE_OBJECT_TRANSFER",
+    "MECHANISM_INELIGIBLE": "UNSUPPORTED",
 }
 INVALID_PRECEDENCE = [
     "MISSING_SOURCE_RECORD",
@@ -329,6 +345,7 @@ def event_present_from(availability: dict[str, str]) -> bool:
 
 
 def invalid_reason_from(availability: dict[str, str], event_present: bool) -> str:
+    episode = availability["episode_key"]
     if not bool_field(availability, "real_source_label_found") or not bool_field(availability, "source_record_found"):
         return "MISSING_SOURCE_RECORD"
     if not bool_field(availability, "source_schema_valid"):
@@ -343,6 +360,8 @@ def invalid_reason_from(availability: dict[str, str], event_present: bool) -> st
         return "SOURCE_SCHEMA_INVALID"
     reason = str(canonical.get("teacher_invalid_reason", ""))
     if reason:
+        if reason not in INVALID_PRECEDENCE:
+            fail(f"{episode}: UNKNOWN_INVALID_REASON: {reason}")
         return reason
     return ""
 
@@ -389,6 +408,18 @@ def validate_source_file(availability: dict[str, str], fixture_root: Path, cache
     return records[episode]
 
 
+def validate_availability_census_audit_flags(availability: dict[str, str], census: dict[str, str]) -> None:
+    episode = census["episode_key"]
+    pairs = [
+        ("source_record_found", "label_record_present"),
+        ("source_schema_valid", "record_schema_valid"),
+        ("source_positive_anchor_valid", "positive_anchor_valid"),
+    ]
+    for availability_field, census_field in pairs:
+        if bool_field(availability, availability_field) != bool_field(census, census_field):
+            fail(f"{episode}: availability/census audit flag mismatch: {availability_field} vs {census_field}")
+
+
 def adapt_rows(
     availability_rows: list[dict[str, str]],
     census_rows: list[dict[str, str]],
@@ -411,6 +442,7 @@ def adapt_rows(
         if a["suite"] != c["suite"] or a["task_id"] != c["task_id"]:
             fail(f"{episode}: availability/census suite-task mismatch")
         validate_source_file(a, fixture_root, source_cache)
+        validate_availability_census_audit_flags(a, c)
 
         clean_success = clean_success_from(c)
         mechanism_eligible = mechanism_eligible_from(c)
@@ -428,12 +460,21 @@ def adapt_rows(
             anchor = window_start = window_end = -1
             event_source = ""
 
-        event_id = a["source_event_id"] if a["source_event_id"] and a["source_event_id"] != "UNKNOWN" else c["teacher_event_id"]
-        if not event_id:
-            event_id = "event_1" if event_present else "event_none"
+        event_rank = 1 if event_present else 0
+        if event_present:
+            if a["source_event_id"] and a["source_event_id"] != "UNKNOWN":
+                event_id = a["source_event_id"]
+                event_id_provenance = "SOURCE_AVAILABILITY"
+            else:
+                event_id = f"{episode}#event_{event_rank}"
+                event_id_provenance = "EPISODE_PRIMARY_EVENT_FALLBACK"
+        else:
+            event_id = "NO_EVENT"
+            event_id_provenance = "NOT_APPLICABLE"
+
         confidence = parse_confidence(a["source_confidence"], "source_confidence", episode)
-        if confidence == "UNKNOWN":
-            confidence = parse_confidence(c["teacher_confidence"], "teacher_confidence", episode)
+        confidence_available = confidence != "UNKNOWN"
+        confidence_provenance = "SOURCE_AVAILABILITY" if confidence_available else "UNAVAILABLE"
 
         output.append(
             {
@@ -455,14 +496,19 @@ def adapt_rows(
                 "builder_sha256": builder_sha,
                 "invalid_reason": invalid_reason,
                 "abstain_reason": c["abstain_reason"] or ("MECHANISM_INELIGIBLE" if not mechanism_eligible else ""),
-                "mechanism_type": c["mechanism_scope_class"],
+                "mechanism_type": MECHANISM_TYPE_BY_SCOPE[c["mechanism_scope_class"]],
                 "event_id": event_id,
-                "segment_id": c["parent_key"],
-                "event_rank": "1" if event_present else "0",
+                "segment_id": f"{episode}#segment_{event_rank}" if event_present else "NO_EVENT",
+                "event_rank": str(event_rank),
                 "coordinate_semantics": COORDINATE_SEMANTICS,
-                "trace_length": c["n_valid_steps"],
-                "source_schema_version": "synthetic_v1",
+                "trace_length": c["n_steps"],
+                "source_schema_version": SOURCE_SCHEMA_VERSION,
                 "teacher_confidence": confidence,
+                "confidence_available": "true" if confidence_available else "false",
+                "confidence_provenance": confidence_provenance,
+                "event_id_provenance": event_id_provenance,
+                "source_semantics_authority": SOURCE_SEMANTICS_AUTHORITY,
+                "source_jsonl_check_mode": SOURCE_JSONL_CHECK_MODE,
             }
         )
     return output
@@ -491,10 +537,18 @@ def validate_and_transform(rows: list[dict[str, str]], builder_sha: str, git_hea
         trace_length = parse_int(row["trace_length"], "trace_length", episode)
         confidence = parse_confidence(row["teacher_confidence"], "teacher_confidence", episode)
 
-        if row["source_schema_version"] != "synthetic_v1":
-            fail(f"{episode}: source_schema_version must be synthetic_v1")
+        if row["source_schema_version"] != SOURCE_SCHEMA_VERSION:
+            fail(f"{episode}: source_schema_version must be {SOURCE_SCHEMA_VERSION}")
         if row["coordinate_semantics"] != COORDINATE_SEMANTICS:
             fail(f"{episode}: unexpected coordinate_semantics")
+        if row.get("source_semantics_authority") != SOURCE_SEMANTICS_AUTHORITY:
+            fail(f"{episode}: source_semantics_authority must be {SOURCE_SEMANTICS_AUTHORITY}")
+        if row.get("source_jsonl_check_mode") != SOURCE_JSONL_CHECK_MODE:
+            fail(f"{episode}: source_jsonl_check_mode must be {SOURCE_JSONL_CHECK_MODE}")
+        if row.get("confidence_provenance") not in {"SOURCE_AVAILABILITY", "UNAVAILABLE"}:
+            fail(f"{episode}: invalid confidence_provenance")
+        if parse_bool(row.get("confidence_available", ""), "confidence_available", episode) != (confidence != "UNKNOWN"):
+            fail(f"{episode}: confidence_available does not match teacher_confidence")
         if confidence != "UNKNOWN" and not 0.0 <= float(confidence) <= 1.0:
             fail(f"{episode}: teacher_confidence outside [0, 1]")
         if event_rank < 0:
@@ -508,6 +562,8 @@ def validate_and_transform(rows: list[dict[str, str]], builder_sha: str, git_hea
         if not mechanism_eligible and not row["abstain_reason"]:
             fail(f"{episode}: mechanism-ineligible row requires abstain_reason")
 
+        if row["invalid_reason"] and row["invalid_reason"] not in INVALID_PRECEDENCE:
+            fail(f"{episode}: UNKNOWN_INVALID_REASON: {row['invalid_reason']}")
         if row["invalid_reason"] in INVALID_PRECEDENCE:
             window_valid = False
         elif event_present:
@@ -757,6 +813,12 @@ def main(argv: list[str] | None = None) -> int:
             "synthetic_only": True,
             "builder_git_sha": git_head,
             "builder_sha256": builder_sha,
+            "source_semantics_authority": SOURCE_SEMANTICS_AUTHORITY,
+            "source_jsonl_check_mode": SOURCE_JSONL_CHECK_MODE,
+            "v2_episode_table_scope": V2_EPISODE_TABLE_SCOPE,
+            "multi_event_policy": MULTI_EVENT_POLICY,
+            "confidence_policy": CONFIDENCE_POLICY,
+            "event_id_policy": EVENT_ID_POLICY,
             "inputs": {
                 "source_manifest": {"path": str(source), "sha256": source_sha},
                 "episode_census": {"path": str(census), "sha256": census_sha},
