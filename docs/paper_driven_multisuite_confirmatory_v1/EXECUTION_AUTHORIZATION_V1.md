@@ -5,7 +5,7 @@ Status: PLANNING_ONLY
 ## Current State
 
 ```text
-GATE_A1_LABEL = HOLD
+GATE_A1_LABEL = PASS
 GATE_A2_DETECTOR = HOLD
 GATE_A3_ATTACK = HOLD
 EXPERIMENT_AUTHORIZATION_STATUS = NOT_AUTHORIZED
@@ -51,3 +51,7 @@ authorization_scope
 After Gate A1 review, the first possible execution scope is Label V2 builder
 and CPU validation. Detector training, rollout, attack launch, and server GPU
 jobs remain unauthorized.
+
+## Authorization Records
+
+- `LABEL_V2_CPU_ONLY_AUTHORIZATION_V1.md`

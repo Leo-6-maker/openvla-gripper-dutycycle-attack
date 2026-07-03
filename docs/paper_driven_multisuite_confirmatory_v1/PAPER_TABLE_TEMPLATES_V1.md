@@ -8,40 +8,59 @@ Each non-header row must map to `docs/paper_driven_multisuite_confirmatory_v1/EX
 
 | experiment_id | Suite | Method | eligible n | emit coverage | ITT CQFR | Official FR | delta open duty | Arm NAD | Linf actual |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|
-| P4_OBJECT_* | Object | Clean/RAND/RANDOM_TIME/TMA/Ours |  |  |  |  |  |  |  |
-| P4_SPATIAL_* | Spatial | Clean/RAND/RANDOM_TIME/TMA/Ours |  |  |  |  |  |  |  |
-| P4_GOAL_* | Goal | Clean/RAND/RANDOM_TIME/TMA/Ours |  |  |  |  |  |  |  |
-| P4_LIBERO10_* | LIBERO-10 | Clean/RAND/RANDOM_TIME/TMA/Ours |  |  |  |  |  |  |  |
-| P4_* | Macro | Macro average |  |  |  |  |  |  |  |
+| P4_OBJECT_CLEAN | Object | Clean |  |  |  |  |  |  |  |
+| P4_OBJECT_OURS | Object | Ours |  |  |  |  |  |  |  |
+| P4_OBJECT_RAND_DIRECTION | Object | RAND_DIRECTION |  |  |  |  |  |  |  |
+| P4_OBJECT_RANDOM_TIME | Object | RANDOM_TIME |  |  |  |  |  |  |  |
+| P4_OBJECT_TMA_OPEN | Object | Adapted TMA-OPEN |  |  |  |  |  |  |  |
+| P4_SPATIAL_CLEAN | Spatial | Clean |  |  |  |  |  |  |  |
+| P4_SPATIAL_OURS | Spatial | Ours |  |  |  |  |  |  |  |
+| P4_SPATIAL_RAND_DIRECTION | Spatial | RAND_DIRECTION |  |  |  |  |  |  |  |
+| P4_SPATIAL_RANDOM_TIME | Spatial | RANDOM_TIME |  |  |  |  |  |  |  |
+| P4_SPATIAL_TMA_OPEN | Spatial | Adapted TMA-OPEN |  |  |  |  |  |  |  |
+| P4_GOAL_CLEAN | Goal | Clean |  |  |  |  |  |  |  |
+| P4_GOAL_OURS | Goal | Ours |  |  |  |  |  |  |  |
+| P4_GOAL_RAND_DIRECTION | Goal | RAND_DIRECTION |  |  |  |  |  |  |  |
+| P4_GOAL_RANDOM_TIME | Goal | RANDOM_TIME |  |  |  |  |  |  |  |
+| P4_GOAL_TMA_OPEN | Goal | Adapted TMA-OPEN |  |  |  |  |  |  |  |
+| P4_LIBERO10_CLEAN | LIBERO-10 | Clean |  |  |  |  |  |  |  |
+| P4_LIBERO10_OURS | LIBERO-10 | Ours |  |  |  |  |  |  |  |
+| P4_LIBERO10_RAND_DIRECTION | LIBERO-10 | RAND_DIRECTION |  |  |  |  |  |  |  |
+| P4_LIBERO10_RANDOM_TIME | LIBERO-10 | RANDOM_TIME |  |  |  |  |  |  |  |
+| P4_LIBERO10_TMA_OPEN | LIBERO-10 | Adapted TMA-OPEN |  |  |  |  |  |  |  |
 
 ## Table 2: Detector Generalization
 
 | experiment_id | Train regime | Test suite | Positive n | No-event n | Recall | Precision/F1 | +/-10 recall | False trigger | Correct abstain | Median error |
 |---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| P2_OBJECT_ONLY_ELIGIBLE | Object-only | each suite |  |  |  |  |  |  |  |  |
+| P2_OBJECT_ONLY_ELIGIBLE | Object-only | eligible |  |  |  |  |  |  |  |  |
 | P2_OBJECT_ONLY_SAFETY | Object-only | safety |  |  |  |  |  |  |  |  |
-| P2_POOLED_ELIGIBLE | Pooled | each suite |  |  |  |  |  |  |  |  |
-| P2_LOSO_ELIGIBLE | LOSO | held-out suite |  |  |  |  |  |  |  |  |
+| P2_OBJECT_ONLY_MULTI_EVENT | Object-only | multi-event |  |  |  |  |  |  |  |  |
+| P2_POOLED_ELIGIBLE | Pooled | eligible |  |  |  |  |  |  |  |  |
+| P2_POOLED_SAFETY | Pooled | safety |  |  |  |  |  |  |  |  |
+| P2_LOSO_ELIGIBLE | LOSO | eligible |  |  |  |  |  |  |  |  |
+| P2_LOSO_SAFETY | LOSO | safety |  |  |  |  |  |  |  |  |
+| P2_OBJECT_LOTO_ELIGIBLE | Object LOTO | eligible |  |  |  |  |  |  |  |  |
 
 ## Table 3: Selectivity And Timing Mechanism
 
 | experiment_id | Stage | Ours | RAND | Random time | TMA | Oracle | Arm preservation |
 |---|---|---:|---:|---:|---:|---:|---:|
-| P4_MECHANISM_SUBSET | detector emit |  |  |  |  |  |  |
-| P4_MECHANISM_SUBSET | target objective achieved |  |  |  |  |  |  |
-| P4_MECHANISM_SUBSET | executed OPEN duty |  |  |  |  |  |  |
-| P4_MECHANISM_SUBSET | qpos/width response |  |  |  |  |  |  |
-| P4_MECHANISM_SUBSET | detach/drop |  |  |  |  |  |  |
-| P4_MECHANISM_SUBSET | CQ failure |  |  |  |  |  |  |
+| P4_MECH_SHUFFLED_GRADIENT | shuffled gradient |  |  |  |  |  |  |
+| P4_MECH_UNTARGETED_PGD | untargeted PGD |  |  |  |  |  |  |
+| P4_MECH_EARLY_SHIFT | early shift |  |  |  |  |  |  |
+| P4_MECH_ARM_TARGETED | arm targeted |  |  |  |  |  |  |
+| P4_MECH_COMMAND_OPEN_ORACLE | command-open oracle |  |  |  |  |  |  |
 
 ## Table 4: Detector And Attack Ablations
 
 | experiment_id | Panel | Variant | Event recall | False trigger | CQFR | Runtime | Notes |
 |---|---|---|---:|---:|---:|---:|---|
-| P2_DET_OBJECT_ONLY | Detector | fixed time |  |  |  |  |  |
-| P2_DET_OBJECT_ONLY | Detector | rule |  |  |  |  |  |
-| P2_DET_OBJECT_ONLY | Detector | linear/main/teacher |  |  |  |  |  |
-| P4_MECHANISM_SUBSET | Attack | RAND/shuffled/untargeted/TMA/ours/early/arm |  |  |  |  |  |
+| P2_OBJECT_ONLY_ELIGIBLE | Detector | fixed time / rule / linear / main / teacher |  |  |  |  |  |
+| P4_MECH_SHUFFLED_GRADIENT | Attack | shuffled |  |  |  |  |  |
+| P4_MECH_UNTARGETED_PGD | Attack | untargeted |  |  |  |  |  |
+| P4_MECH_EARLY_SHIFT | Attack | early |  |  |  |  |  |
+| P4_MECH_ARM_TARGETED | Attack | arm targeted |  |  |  |  |  |
 
 ## Table 5: Official SR Versus Contact Quality
 
