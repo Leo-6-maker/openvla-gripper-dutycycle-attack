@@ -222,6 +222,8 @@ def validate_rows(rows: list[dict[str, str]]) -> tuple[dict[str, dict[str, int]]
             fail(f"{episode}: wrong source_schema_version")
         if row["manual_audit_status"] != "PENDING":
             fail(f"{episode}: manual_audit_status must be PENDING")
+        if row["manual_audit_reason"]:
+            fail(f"{episode}: manual_audit_reason must be empty while PENDING")
         if row["invalid_reason"] and row["invalid_reason"] not in KNOWN_INVALID_REASONS:
             fail(f"{episode}: unknown invalid_reason")
 
@@ -237,7 +239,7 @@ def validate_rows(rows: list[dict[str, str]]) -> tuple[dict[str, dict[str, int]]
                 fail(f"{episode}: event row must use source_availability event_source")
             if window_valid and not (0 <= start <= anchor < end <= trace_length):
                 fail(f"{episode}: event window must be start <= anchor < exclusive end <= trace_length")
-            if row["event_id"] == "NO_EVENT" or row["segment_id"] == "NO_EVENT" or rank < 1:
+            if row["event_id"] == "NO_EVENT" or row["segment_id"] == "NO_EVENT" or rank != 1:
                 fail(f"{episode}: event identifiers are inconsistent")
             if row["event_id_provenance"] not in {"SOURCE_AVAILABILITY", "EPISODE_PRIMARY_EVENT_FALLBACK"}:
                 fail(f"{episode}: event_id_provenance is inconsistent")
@@ -258,8 +260,18 @@ def validate_rows(rows: list[dict[str, str]]) -> tuple[dict[str, dict[str, int]]
             fail(f"{episode}: valid row must not carry invalid_reason")
         if not window_valid:
             invalid_window_rows += 1
-        if confidence_available and row["teacher_confidence"] == "UNKNOWN":
-            fail(f"{episode}: confidence availability mismatch")
+        if row["teacher_confidence"] == "UNKNOWN":
+            if confidence_available:
+                fail(f"{episode}: confidence availability mismatch")
+        else:
+            try:
+                confidence = float(row["teacher_confidence"])
+            except ValueError:
+                fail(f"{episode}: teacher_confidence must be finite numeric or UNKNOWN")
+            if confidence != confidence or confidence in {float("inf"), float("-inf")}:
+                fail(f"{episode}: teacher_confidence must be finite numeric or UNKNOWN")
+            if not confidence_available:
+                fail(f"{episode}: confidence availability mismatch")
         if confidence_available and row["confidence_provenance"] != "SOURCE_AVAILABILITY":
             fail(f"{episode}: confidence_provenance mismatch")
         if not confidence_available and row["confidence_provenance"] != "UNAVAILABLE":

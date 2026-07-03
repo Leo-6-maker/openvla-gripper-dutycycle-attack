@@ -386,6 +386,42 @@ def test_rejects_no_event_coordinates(tmp_path):
     expect_fail(root, "no-event coordinates")
 
 
+def test_rejects_event_rank_other_than_one(tmp_path):
+    root = make_artifact(tmp_path)
+    mutate_csv(root / "label_v2.csv", lambda rows: rows[0].update({"event_rank": "2"}))
+    write_sums(root)
+    expect_fail(root, "event identifiers")
+
+
+@pytest.mark.parametrize(
+    "confidence,available,provenance",
+    [
+        ("0.9", "false", "UNAVAILABLE"),
+        ("UNKNOWN", "true", "SOURCE_AVAILABILITY"),
+        ("nan", "true", "SOURCE_AVAILABILITY"),
+    ],
+)
+def test_rejects_confidence_availability_mismatch(tmp_path, confidence, available, provenance):
+    root = make_artifact(tmp_path)
+    mutate_csv(
+        root / "label_v2.csv",
+        lambda rows: rows[0].update({
+            "teacher_confidence": confidence,
+            "confidence_available": available,
+            "confidence_provenance": provenance,
+        }),
+    )
+    write_sums(root)
+    expect_fail(root, "confidence")
+
+
+def test_rejects_pending_manual_audit_reason(tmp_path):
+    root = make_artifact(tmp_path)
+    mutate_csv(root / "label_v2.csv", lambda rows: rows[0].update({"manual_audit_reason": "already reviewed"}))
+    write_sums(root)
+    expect_fail(root, "manual_audit_reason")
+
+
 def test_rejects_manual_missing_and_context_mismatch(tmp_path):
     root = make_artifact(tmp_path)
     rows = read_csv(root / "manual_audit_sample_manifest.csv")
