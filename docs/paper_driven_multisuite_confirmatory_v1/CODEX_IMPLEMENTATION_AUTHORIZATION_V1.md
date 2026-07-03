@@ -1,121 +1,211 @@
 # Codex Implementation Authorization V1
 
-Status: AUTHORIZED_REPOSITORY_AUDIT_ONLY
+Status: AUTHORIZED_C1_LABEL_V2_INGESTION_CPU_CI_ONLY
 
-This authorization allows Codex to perform the first repository-only audit
-batch defined in `CODEX_EXPERIMENT_PLAN_V1.md` and
-`CODEX_TASK_MATRIX_V1.csv`. It is not a scientific execution authorization and
-does not yet authorize implementation changes outside the audit deliverables.
+This authorization follows review of commit
+`59ba119901a1019e37c69cde7ae68a9fa2f530ad`, which completed `C0_01`,
+`C0_02`, and `C0_03`. It authorizes the next smallest repository-only batch:
+a read-only downstream parser and internal-closure validator for the Label V2
+five-file artifact. It is not a scientific execution authorization.
 
-## Authorized Scope
-
-The first Codex batch is restricted to:
-
-```text
-C0_01 Repository path inventory
-C0_02 Implementation gap matrix
-C0_03 Artifact dependency graph
-```
-
-Authorized activities are limited to:
-
-- inspect repository code, tests, workflows, and planning documents;
-- classify formal paths as `EXISTS_AND_REVIEWED`,
-  `EXISTS_NEEDS_HARDENING`, `MISSING_IMPLEMENTATION`, or
-  `LEGACY_NOT_FORMAL`;
-- trace frozen input artifacts to detector, attack, CQ, analysis, and paper-table
-  outputs;
-- create or update only:
+## Reviewed Audit Binding
 
 ```text
-docs/paper_driven_multisuite_confirmatory_v1/CODEX_REPOSITORY_AUDIT_V1.md
-docs/paper_driven_multisuite_confirmatory_v1/CODEX_IMPLEMENTATION_GAP_MATRIX_V1.csv
-docs/paper_driven_multisuite_confirmatory_v1/CODEX_INITIAL_AUDIT_HANDOFF_V1.md
+C0_01_REPOSITORY_PATH_INVENTORY = PASS
+C0_02_IMPLEMENTATION_GAP_MATRIX = PASS
+C0_03_ARTIFACT_DEPENDENCY_GRAPH = PASS
+CODEX_INITIAL_REPOSITORY_AUDIT = PASS
+reviewed_audit_commit = 59ba119901a1019e37c69cde7ae68a9fa2f530ad
+review_id = 4627119421
 ```
 
-- run read-only repository searches, `py_compile`, existing unit tests, and CPU
-  CI only when needed to verify current behavior;
-- commit the audit deliverables and request review.
+## Authorized Task IDs
 
-Codex must honor task dependencies and stop after C0_01-C0_03. Later
-repository-only task rows require a second implementation authorization after
-the audit is reviewed.
+```text
+C1_01 Label V2 downstream ingestion schema
+C1_02 Label V2 ingestion validator
+```
 
-## Prohibited Scope
+No other task-matrix row is authorized by this record.
 
-Codex must not:
+## Authorized Deliverables
 
-- implement or modify detector, attack, CQ, exact-prefix, split, training,
-  evaluation, or analysis code in this first batch;
-- run `formal-ledger-build` or `validate-formal-output` against bound server
-  artifact paths;
-- access, edit, delete, copy, or normalize live scientific artifacts;
-- SSH to a server or run commands in a server checkout;
-- create the formal Label V2 artifact;
-- train a detector on real data;
-- load OpenVLA weights for inference;
-- launch LIBERO;
-- execute any attack or rollout;
-- reserve, query, or use A800 GPUs;
-- change frozen scientific settings;
+Codex may create or modify only the smallest coherent file set needed for the
+following deliverables:
+
+```text
+tools/multisuite_detector/load_label_v2_artifact.py
+tests/test_load_label_v2_artifact.py
+.github/workflows/cpu-stageb.yml
+
+docs/paper_driven_multisuite_confirmatory_v1/
+  CODEX_LABEL_V2_INGESTION_HANDOFF_V1.md
+  CODEX_REPOSITORY_AUDIT_V1.md        # identity clarification only
+  CODEX_IMPLEMENTATION_GAP_MATRIX_V1.csv  # G001 status/evidence only
+```
+
+A small schema helper module or synthetic fixture factory may be added only when
+it is clearly necessary and remains within `tools/multisuite_detector/` or
+`tests/`. Generated scientific artifacts must not be committed.
+
+The frozen producer must not be modified:
+
+```text
+tools/multisuite_detector/build_clean2000_label_v2.py = IMMUTABLE_IN_THIS_BATCH
+```
+
+## Required Loader Contract
+
+The implementation must be read-only and fail closed. At minimum it must:
+
+1. Require an artifact root containing exactly:
+
+```text
+label_v2.csv
+build_manifest.json
+validation_summary.json
+manual_audit_sample_manifest.csv
+SHA256SUMS
+```
+
+2. Reject symlinks, missing files, extra files, malformed hash lines, duplicate
+   hash entries, and SHA256 mismatches.
+3. Validate exact CSV headers and strict field encodings.
+4. Validate manifest/summary mode agreement and require explicit caller choice
+   between `synthetic-dry-run` and `formal-ledger-build`.
+5. For formal mode, require:
+
+```text
+schema_version = clean2000_label_v2_episode_primary_event_v1
+synthetic_only = false
+atomic_publish = true
+source_semantics_authority = SOURCE_AVAILABILITY_LEDGER
+source_jsonl_check_mode = LEDGER_PROVENANCE_ONLY_NO_RUNTIME_READ
+row_count = 2000
+manual_audit_sample_n = 160
+PRIMARY_SUCCESS_ELIGIBLE = 772 positive / 271 no-event
+ELIGIBLE_CLEAN_FAILURE = 31 positive / 276 no-event
+MECHANISM_INELIGIBLE_ABSTENTION = 0 positive / 650 no-event
+```
+
+6. Recompute internal row counts and cohort/event crosstabs from
+   `label_v2.csv`; do not trust summary counts alone.
+7. Require unique `episode_key` values.
+8. Enforce event/no-event coordinate semantics, including exclusive
+   `window_end`, full-trajectory `trace_length`, and no-event coordinates of
+   `-1`.
+9. Enforce cohort, clean outcome, mechanism eligibility, event disposition,
+   window-validity, and builder-identity consistency that can be checked from
+   the five files alone.
+10. Verify every manual-audit row references a Label V2 row and matches its
+    suite, task, cohort, outcome, mechanism, event, and validity fields.
+11. In formal mode, require 40 suite-task units and four distinct manual rows per
+    unit with the four requested priority categories.
+12. Validate expected builder Git SHA and builder file SHA256 when supplied by
+    the caller.
+13. Validate that manifest input entries contain well-formed path/SHA ledger
+    bindings, but do not read source JSONL or re-read the three source ledgers.
+14. Return a typed or structured read-only result suitable for a later detector
+    dataset builder.
+15. Provide a CLI that prints a JSON validation report to stdout and does not
+    mutate the artifact directory.
+
+The loader is an internal-closure consumer, not a replacement for the already
+implemented independent source-based validator.
+
+## Required Tests
+
+Tests must use only temporary synthetic artifacts or repository synthetic
+fixtures. They must not read the bound server artifact path.
+
+Required positive coverage:
+
+```text
+valid synthetic five-file artifact
+explicit synthetic mode
+formal contract fixture generated entirely inside a temporary test directory
+expected builder identity match
+manual sample reference closure
+```
+
+Required negative coverage includes at least:
+
+```text
+missing file
+extra file
+symlink entry
+malformed or duplicate SHA256SUMS entry
+hash mismatch
+wrong CSV header
+duplicate episode_key
+manifest/summary mode mismatch
+unexpected builder Git SHA or builder SHA256
+wrong row count or cohort crosstab
+invalid exclusive-end window
+no-event coordinate not -1
+manual row missing from Label V2
+manual context mismatch
+wrong source semantics authority
+formal manual quota/unit failure
+```
+
+The CI workflow must compile the loader and run its test file.
+
+## Explicitly Prohibited
+
+Codex must not in this batch:
+
+- modify the Label V2 builder or its frozen semantics;
+- run `formal-ledger-build` or the independent validator against server paths;
+- read the real five-file Label V2 output, because it does not yet exist;
+- read real frozen clean feature artifacts;
+- implement feature ingestion, Label V2-feature joins, populations, splits, or
+  normalization (`C2_*`);
+- modify detector train/eval/FSM code (`C3_*`);
+- implement exact-prefix, attack, CQ, statistics, tables, or figures;
+- access a server checkout;
+- train a detector;
+- load OpenVLA or launch LIBERO;
+- run a rollout or attack;
+- query, reserve, or use A800 GPUs;
+- change any frozen denominator, label semantics, threshold, split, metric,
+  attack parameter, or paper claim;
 - mark Gate A1, Gate A2, Gate A3, or experiment execution as authorized.
-
-## Audit Requirements
-
-The audit must cover at least:
-
-```text
-Label V2 ingestion and downstream schema
-feature artifact and 25D SC5 feature order
-parent/state split builders and leakage checks
-detector train/eval CLIs and checkpoint provenance
-validation-only threshold selection
-exact-prefix snapshot and restore identity
-matched branch queue generation
-OURS / RAND_DIRECTION / RANDOM_TIME / Adapted TMA-OPEN implementations
-runtime attack telemetry and actual-budget validation
-CQ evaluator and blind-audit manifest generation
-paired statistics, table builders, and figure-data builders
-server/GPU authorization boundaries
-```
-
-Every formal path must cite its repository path, source commit/blob identity
-when available, tests, current limitations, and the exact downstream paper
-cell or gate it supports.
 
 ## Commit Requirements
 
-The Codex audit commit must include:
+The implementation commit must state:
 
 ```text
-Task IDs = C0_01, C0_02, C0_03
-Files changed = audit deliverables only
+Task IDs = C1_01, C1_02
 Scientific settings changed = NONE
-Tests or searches run with exact command/result
+Formal builder modified = NO
+Real scientific artifacts read = NONE
 Server execution = NONE
 GPU execution = NONE
 Experiment authorization status = NOT_AUTHORIZED
+Tests = exact commands and results
 ```
-
-Generated scientific artifacts must not be committed to Git.
 
 ## Stop Rules
 
 Codex must stop and request review when:
 
-- a frozen document conflicts with implementation behavior;
-- a relevant path cannot be verified from the repository;
-- a task requires real Label V2 output, real clean features, server paths, GPU
-  identity, OpenVLA, LIBERO, or attack execution;
-- the audit reveals a scientific-semantic ambiguity;
-- C0_01-C0_03 are complete.
+- five-file fields are insufficient to verify a proposed invariant;
+- a requirement would duplicate source-ledger reconstruction rather than
+  internal artifact closure;
+- the builder contract and frozen documentation disagree;
+- supporting formal mode would require reading real server artifacts;
+- implementation would cross into any `C2_*` or later task;
+- `C1_01` and `C1_02` are complete.
 
 ## Current State
 
 ```text
 CODEX_EXPERIMENT_PLAN_REVIEW = PASS
-CODEX_INITIAL_REPOSITORY_AUDIT = AUTHORIZED_CPU_CI_ONLY
-CODEX_IMPLEMENTATION_AFTER_AUDIT = NOT_AUTHORIZED
+CODEX_INITIAL_REPOSITORY_AUDIT = PASS
+CODEX_C1_LABEL_V2_INGESTION = AUTHORIZED_CPU_CI_ONLY
+CODEX_C2_AND_LATER_IMPLEMENTATION = NOT_AUTHORIZED
 CODEX_SERVER_EXECUTION = NOT_AUTHORIZED
 LABEL_V2_BUILD_EXECUTION_AUTHORIZATION = NOT_AUTHORIZED
 DETECTOR_TRAINING_EXECUTION = NOT_AUTHORIZED
