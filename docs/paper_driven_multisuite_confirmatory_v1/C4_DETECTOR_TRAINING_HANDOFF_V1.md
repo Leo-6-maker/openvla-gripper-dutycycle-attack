@@ -68,6 +68,27 @@ victim_inference = NOT_PERFORMED
 paper_main_table = NOT_PERFORMED
 ```
 
+## Direct Codex execution plan generator
+
+Codex can generate the next-step JSON plan and a shell skeleton directly from the repository:
+
+```bash
+python tools/multisuite_detector/prepare_c4_codex_execution_plan_v1.py \
+  --output-json /mnt/sdc/dty_user/openvla_attack_evidence/detector_training/c4_codex_execution_plan_d03560a.json \
+  --output-bash /mnt/sdc/dty_user/openvla_attack_evidence/detector_training/c4_codex_execution_plan_d03560a.sh
+```
+
+The generated plan is `PLAN_ONLY`. It prepares commands for:
+
+```text
+C4_2_BUNDLE_AUDIT_VALIDATE
+C4_3A_OBJECT_TASK_HELDOUT_SPLIT_BUILD
+C4_3B_SUITE_LOSO_SPLIT_BUILD
+C4_3C_DETECTOR_FREEZE_VALIDATE
+```
+
+The plan intentionally does not authorize OpenVLA, LIBERO, rollout, attack, exact-prefix replay, victim inference, or paper main-table claims.
+
 ## Required next gate: C4-2 bundle audit and safety calibration
 
 C4-2 must audit the C4-1 detector bundle before any replay or attack work.
@@ -108,6 +129,53 @@ per-suite and per-task metrics are reported
 DETECTOR_SAFETY false-trigger behavior is reported
 no NaN/Inf
 OpenVLA/LIBERO/rollout/attack remain NOT_PERFORMED
+```
+
+C4-2 validator command:
+
+```bash
+python tools/multisuite_detector/validate_c4_bundle_audit_v1.py \
+  --audit-root /mnt/sdc/dty_user/openvla_attack_evidence/detector_training/c4_2_bundle_audit_d03560a \
+  --expected-checkpoint-sha256 5747a9c967b5b08f0e4b8fc8ba0cbf47c13533ffb5e347c38470e84efe17d79b \
+  --expected-dataset-csv-sha256 f7808c4ef2a74887689804758c131a19a7fecbbc0e5400bcc3322d08c796010a \
+  --expected-split-csv-sha256 df23607b3791e414d0e07900508c095bda6a190e8f6500502b056f0988e02673 \
+  --expected-state-index-sha256 e4fafbb01e70418ec04b7dc19294b1f6b9c0b52ecc0d8aaa5b56997c3ba53691 \
+  --expected-threshold 0.95 \
+  --output-json /mnt/sdc/dty_user/openvla_attack_evidence/detector_training/c4_2_bundle_audit_d03560a/validator_report.json
+```
+
+## C4-3 scientific split build
+
+After C4-2 passes, Codex should build scientific splits from the formal detector dataset:
+
+```bash
+mkdir -p /mnt/sdc/dty_user/openvla_attack_evidence/detector_dataset/c4_scientific_splits_d03560a
+
+python tools/multisuite_detector/build_c4_scientific_splits_v1.py \
+  build-object-task-heldout \
+  --dataset-csv /mnt/sdc/dty_user/openvla_attack_evidence/detector_dataset/formal_detector_dataset_d03560a/detector_dataset_manifest_v1.csv \
+  --output /mnt/sdc/dty_user/openvla_attack_evidence/detector_dataset/c4_scientific_splits_d03560a/object_task_heldout_with_val_v1.csv \
+  --seed 2026070401 \
+  --val-ratio 0.15
+
+python tools/multisuite_detector/build_c4_scientific_splits_v1.py \
+  validate \
+  --dataset-csv /mnt/sdc/dty_user/openvla_attack_evidence/detector_dataset/formal_detector_dataset_d03560a/detector_dataset_manifest_v1.csv \
+  --split-csv /mnt/sdc/dty_user/openvla_attack_evidence/detector_dataset/c4_scientific_splits_d03560a/object_task_heldout_with_val_v1.csv \
+  --output-json /mnt/sdc/dty_user/openvla_attack_evidence/detector_dataset/c4_scientific_splits_d03560a/object_task_heldout_validator_report.json
+
+python tools/multisuite_detector/build_c4_scientific_splits_v1.py \
+  build-suite-loso \
+  --dataset-csv /mnt/sdc/dty_user/openvla_attack_evidence/detector_dataset/formal_detector_dataset_d03560a/detector_dataset_manifest_v1.csv \
+  --output /mnt/sdc/dty_user/openvla_attack_evidence/detector_dataset/c4_scientific_splits_d03560a/suite_loso_with_val_v1.csv \
+  --seed 2026070401 \
+  --val-ratio 0.15
+
+python tools/multisuite_detector/build_c4_scientific_splits_v1.py \
+  validate \
+  --dataset-csv /mnt/sdc/dty_user/openvla_attack_evidence/detector_dataset/formal_detector_dataset_d03560a/detector_dataset_manifest_v1.csv \
+  --split-csv /mnt/sdc/dty_user/openvla_attack_evidence/detector_dataset/c4_scientific_splits_d03560a/suite_loso_with_val_v1.csv \
+  --output-json /mnt/sdc/dty_user/openvla_attack_evidence/detector_dataset/c4_scientific_splits_d03560a/suite_loso_validator_report.json
 ```
 
 ## After C4-2
