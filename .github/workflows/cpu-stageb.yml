@@ -38,7 +38,10 @@ jobs:
             tools/multisuite_detector/build_detector_dataset_manifest_v1.py \
             tools/multisuite_detector/build_detector_splits_v1.py \
             tools/multisuite_detector/build_detector_normalization_v1.py \
-            tools/multisuite_detector/validate_detector_dataset_manifest_v1.py
+            tools/multisuite_detector/validate_detector_dataset_manifest_v1.py \
+            tools/multisuite_detector/extract_formal_25d_features_v1.py \
+            tools/multisuite_detector/validate_formal_25d_features_v1.py \
+            tools/multisuite_detector/audit_clean_rollout_feature_sources_v1.py
       - name: Run targeted CPU tests
         run: |
           pytest \
@@ -49,6 +52,9 @@ jobs:
             tests/test_build_clean2000_label_v2.py \
             tests/test_load_label_v2_artifact.py \
             tests/multisuite_detector/test_detector_dataset_closure_v1.py \
+            tests/multisuite_detector/test_extract_formal_25d_features_v1.py \
+            tests/multisuite_detector/test_validate_formal_25d_features_v1.py \
+            tests/multisuite_detector/test_initial_state_hash_provenance_v1.py \
             -q
       - name: Run Label V2 closeout self-test
         run: python tools/multisuite_detector/build_clean2000_label_v2.py --mode self-test-closeout
