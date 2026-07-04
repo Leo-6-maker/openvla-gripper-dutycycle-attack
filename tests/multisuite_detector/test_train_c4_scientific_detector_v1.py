@@ -6,12 +6,11 @@ from pathlib import Path
 
 import pytest
 
-from src.gripper_attack.sc5mlp_v1 import SC5_FEATURES
 from tools.multisuite_detector.build_c4_scientific_splits_v1 import (
     build_object_task_heldout_split,
     build_suite_loso_with_val_split,
 )
-from tools.multisuite_detector.detector_dataset_closure_v1 import sha256_file
+from tools.multisuite_detector.detector_dataset_closure_v1 import SC5_FEATURES, sha256_file
 from tools.multisuite_detector.train_c4_scientific_detector_v1 import C4ScientificTrainingError, run_training
 
 DATASET_COLUMNS = ["episode_key", "parent_key", "suite", "task_id", "initial_state_hash", "trace_length", "population_id"]
