@@ -49,7 +49,8 @@ jobs:
             tools/multisuite_detector/feature_binding_summary_report_v1.py \
             tools/multisuite_detector/validate_c4_bundle_audit_v1.py \
             tools/multisuite_detector/build_c4_scientific_splits_v1.py \
-            tools/multisuite_detector/validate_c4_detector_freeze_v1.py
+            tools/multisuite_detector/validate_c4_detector_freeze_v1.py \
+            tools/multisuite_detector/prepare_c4_codex_execution_plan_v1.py
       - name: Run targeted CPU tests
         run: |
           pytest \
@@ -69,6 +70,7 @@ jobs:
             tests/multisuite_detector/test_validate_c4_bundle_audit_v1.py \
             tests/multisuite_detector/test_build_c4_scientific_splits_v1.py \
             tests/multisuite_detector/test_validate_c4_detector_freeze_v1.py \
+            tests/multisuite_detector/test_prepare_c4_codex_execution_plan_v1.py \
             -q
       - name: Run Label V2 closeout self-test
         run: python tools/multisuite_detector/build_clean2000_label_v2.py --mode self-test-closeout
