@@ -48,7 +48,7 @@ def artifact_sums_status(label_root: Path, expected_label_mode: str) -> dict[str
     return {
         "status": "PASS",
         "label_rows": len(artifact["label_rows"]),
-        "manual_rows": len(artifact["manual_rows"]),
+        "manual_rows": len(artifact["manual_audit_rows"]),
         "artifact_sha256sums_sha256": sha256_file(label_root / "SHA256SUMS"),
     }
 

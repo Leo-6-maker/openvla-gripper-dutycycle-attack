@@ -1,5 +1,9 @@
 import json
+import sys
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 
 from tests.multisuite_detector.test_detector_dataset_closure_v1 import make_label_artifact
 from tests.multisuite_detector.test_extract_formal_25d_features_v1 import make_sources, rewrite
@@ -7,7 +11,6 @@ from tools.multisuite_detector.prepare_formal_25d_feature_extraction_readiness_v
     build_readiness_report,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
 EXTRACTOR = ROOT / "tools/multisuite_detector/extract_formal_25d_features_v1.py"
 VALIDATOR = ROOT / "tools/multisuite_detector/validate_formal_25d_features_v1.py"
 
