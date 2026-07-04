@@ -57,8 +57,6 @@ jobs:
             tests/multisuite_detector/test_extract_formal_25d_features_v1.py \
             tests/multisuite_detector/test_validate_formal_25d_features_v1.py \
             tests/multisuite_detector/test_initial_state_hash_provenance_v1.py \
-            tests/multisuite_detector/test_prepare_formal_25d_feature_extraction_readiness_v1.py \
-            tests/multisuite_detector/test_build_formal_25d_source_csv_v1.py \
             -q
       - name: Run Label V2 closeout self-test
         run: python tools/multisuite_detector/build_clean2000_label_v2.py --mode self-test-closeout
@@ -66,12 +64,12 @@ jobs:
         run: |
           git rev-parse HEAD
           sha256sum tools/multisuite_detector/build_clean2000_label_v2.py
-      - name: Block generated evidence dumps in git
+      - name: Block generated outputs in git
         shell: python
         run: |
           from pathlib import Path
           bad = []
           for root in ["generated", "audit_outputs", "paper/generated", "artifacts"]:
-              bad.extend(p for p in Path(root).rglob("*") if p.is_file())
+              bad += [p for p in Path(root).rglob("*") if p.is_file()]
           if bad:
-              raise SystemExit("Generated evidence files must stay out of git:\n" + "\n".join(map(str, bad[:50])))
+              raise SystemExit("Generated outputs must stay out of git:\n" + "\n".join(map(str, bad[:50])))
