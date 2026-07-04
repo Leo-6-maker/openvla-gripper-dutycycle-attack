@@ -49,14 +49,14 @@ def make_fixture(tmp_path: Path):
                     "task_id": task,
                     "initial_state_hash": state(idx),
                     "trace_length": "4",
-                    "population_id": "DETECTOR_ELIGIBLE" if rep < 2 else "DETECTOR_SAFETY",
+                    "population_id": "DETECTOR_ELIGIBLE",
                 })
                 label_rows.append({
                     "episode_key": ep,
-                    "event_present": "true" if rep < 2 else "false",
-                    "window_valid": "true" if rep < 2 else "false",
-                    "window_start": "1" if rep < 2 else "-1",
-                    "window_end": "3" if rep < 2 else "-1",
+                    "event_present": "true",
+                    "window_valid": "true",
+                    "window_start": "1",
+                    "window_end": "3",
                 })
                 for step in range(4):
                     row = {"episode_key": ep, "step": str(step)}
