@@ -337,6 +337,75 @@ def test_closure_validator_rejects_normalization_sha_tamper(tmp_path):
         validate_dataset_closure(dataset_csv, feature_csv, split_csv, norm_json)
 
 
+@pytest.mark.parametrize("field,value,message", [
+    ("parent_key", "tampered", "parent_key"),
+    ("suite", "tampered", "suite"),
+    ("task_id", "tampered", "task_id"),
+    ("initial_state_hash", "0" * 64, "initial_state_hash"),
+    ("trace_length", "9", "trace_length"),
+    ("population_id", "DETECTOR_SAFETY", "population_id"),
+])
+def test_closure_validator_rejects_dataset_row_tamper(tmp_path, field, value, message):
+    _, feature_csv, dataset_csv, _ = build_dataset(tmp_path)
+    rows = read_csv(dataset_csv)
+    target = next(row for row in rows if row["population_id"] == "DETECTOR_ELIGIBLE")
+    target[field] = value
+    write_csv(dataset_csv, rows[0].keys(), rows)
+    with pytest.raises(DetectorDatasetClosureError, match=message):
+        validate_dataset_closure(dataset_csv, feature_csv)
+
+
+def test_closure_validator_rejects_duplicate_or_unknown_population(tmp_path):
+    _, feature_csv, dataset_csv, _ = build_dataset(tmp_path)
+    rows = read_csv(dataset_csv)
+    rows[1]["episode_key"] = rows[0]["episode_key"]
+    write_csv(dataset_csv, rows[0].keys(), rows)
+    with pytest.raises(DetectorDatasetClosureError, match="duplicate"):
+        validate_dataset_closure(dataset_csv, feature_csv)
+
+    _, feature_csv, dataset_csv, _ = build_dataset(tmp_path / "unknown")
+    rows = read_csv(dataset_csv)
+    rows[0]["population_id"] = "PRIMARY_ATTACK"
+    write_csv(dataset_csv, rows[0].keys(), rows)
+    with pytest.raises(DetectorDatasetClosureError, match="unknown population_id"):
+        validate_dataset_closure(dataset_csv, feature_csv)
+
+
+def test_split_validator_rejects_group_id_tamper(tmp_path):
+    _, _, dataset_csv, _ = build_dataset(tmp_path)
+    split_csv = tmp_path / "parent_random_split_v1.csv"
+    build_parent_random_split(dataset_csv, split_csv, seed=7, train_ratio=0.5, val_ratio=0.25)
+    rows = read_csv(split_csv)
+    rows[0]["group_id"] = "badgroup"
+    write_csv(split_csv, rows[0].keys(), rows)
+    with pytest.raises(DetectorDatasetClosureError, match="group_id"):
+        validate_split(dataset_csv, split_csv)
+
+
+@pytest.mark.parametrize("mutate,message", [
+    (lambda n: n.update({"schema_version": "wrong"}), "schema_version"),
+    (lambda n: n.update({"feature_names": list(reversed(n["feature_names"]))}), "feature order"),
+    (lambda n: n.update({"count_per_feature": n["count_per_feature"][:-1]}), "count_per_feature"),
+    (lambda n: n.update({"mean": [float("nan")] + n["mean"][1:]}), "mean"),
+    (lambda n: n.update({"std": [0.0] + n["std"][1:]}), "std"),
+    (lambda n: n.update({"normalization_source": "all_rows"}), "normalization_source"),
+    (lambda n: n.update({"population_id": "PRIMARY_ATTACK"}), "population_id"),
+    (lambda n: n.update({"fold_id": ""}), "fold_id"),
+    (lambda n: n.update({"source_feature_artifact_sha256": "0" * 64}), "feature artifact SHA"),
+])
+def test_closure_validator_rejects_normalization_tamper(tmp_path, mutate, message):
+    _, feature_csv, dataset_csv, _ = build_dataset(tmp_path)
+    split_csv = tmp_path / "parent_random_split_v1.csv"
+    build_parent_random_split(dataset_csv, split_csv, seed=2, train_ratio=0.5, val_ratio=0.25)
+    norm_json = tmp_path / "detector_normalization_v1.json"
+    build_normalization(feature_csv, dataset_csv, split_csv, norm_json, population_id="DETECTOR_ELIGIBLE", fold_id="parent_random")
+    norm = json.loads(norm_json.read_text(encoding="utf-8"))
+    mutate(norm)
+    norm_json.write_text(json.dumps(norm), encoding="utf-8")
+    with pytest.raises(DetectorDatasetClosureError, match=message):
+        validate_dataset_closure(dataset_csv, feature_csv, split_csv, norm_json)
+
+
 def test_cli_json_success_and_concise_failure(tmp_path):
     _, feature_csv, dataset_csv, _ = build_dataset(tmp_path)
     ok = subprocess.run(

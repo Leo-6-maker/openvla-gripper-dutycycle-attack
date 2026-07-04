@@ -209,6 +209,7 @@ def build_dataset_manifest(label_artifact_root: str | Path, feature_csv: str | P
             **population_counts,
             "DETECTOR_MULTI_EVENT": "UNAVAILABLE_SEPARATE_ARTIFACT_REQUIRED",
         },
+        "population_by_episode": {row["episode_key"]: row["population_id"] for row in rows},
         "dataset_manifest_path": str(out),
         "dataset_manifest_sha256": sha256_file(out),
         "synthetic_contract_validation": "PASS",
@@ -221,7 +222,35 @@ def build_dataset_manifest(label_artifact_root: str | Path, feature_csv: str | P
 
 
 def load_dataset_manifest(path: str | Path) -> list[dict[str, str]]:
-    return read_csv(Path(path), ["episode_key", "parent_key", "suite", "task_id", "initial_state_hash", "trace_length", "population_id"])
+    rows = read_csv(Path(path), ["episode_key", "parent_key", "suite", "task_id", "initial_state_hash", "trace_length", "population_id"])
+    seen = set()
+    for row in rows:
+        episode = row["episode_key"]
+        if episode in seen:
+            fail(f"duplicate dataset episode_key: {episode}")
+        seen.add(episode)
+        validate_state_hash(row["initial_state_hash"], episode)
+        if row["population_id"] not in POPULATIONS:
+            fail(f"{episode}: unknown population_id")
+        if parse_int(row["trace_length"], "trace_length", episode) <= 0:
+            fail(f"{episode}: trace_length must be positive")
+    return rows
+
+
+def validate_dataset_rows(rows: list[dict[str, str]], features: dict[str, object], expected_populations: dict[str, str] | None = None) -> None:
+    feature_rows = features["episodes"]
+    if set(r["episode_key"] for r in rows) != set(feature_rows):
+        fail("dataset/feature episode set mismatch")
+    for row in rows:
+        episode = row["episode_key"]
+        feature = feature_rows[episode]
+        for field in ["parent_key", "suite", "task_id", "initial_state_hash"]:
+            if row[field] != feature[field]:
+                fail(f"{episode}: dataset {field} mismatch")
+        if int(row["trace_length"]) != int(feature["trace_length"]):
+            fail(f"{episode}: dataset trace_length mismatch")
+        if expected_populations is not None and expected_populations.get(episode) != row["population_id"]:
+            fail(f"{episode}: population_id mismatch")
 
 
 def connected_groups(rows: list[dict[str, str]]) -> list[dict[str, object]]:
@@ -332,11 +361,21 @@ def validate_split(dataset_csv: str | Path, split_csv: str | Path) -> dict[str, 
     rows = load_dataset_manifest(dataset_csv)
     split_rows = read_csv(Path(split_csv), ["split_type", "fold_id", "group_id", "episode_key", "split"])
     by_episode = {r["episode_key"]: r for r in rows}
-    groups = {g["group_id"]: set(g["episodes"]) for g in connected_groups(rows)}
+    groups_list = connected_groups(rows)
+    groups = {g["group_id"]: set(g["episodes"]) for g in groups_list}
+    expected_group_by_episode = {
+        episode: group["group_id"]
+        for group in groups_list
+        for episode in group["episodes"]
+    }
     by_fold: dict[str, dict[str, str]] = defaultdict(dict)
     for row in split_rows:
         if row["episode_key"] not in by_episode:
             fail(f"split references unknown episode: {row['episode_key']}")
+        if row["group_id"] != expected_group_by_episode[row["episode_key"]]:
+            fail(f"{row['episode_key']}: split group_id mismatch")
+        if row["group_id"] not in groups:
+            fail(f"unknown split group_id: {row['group_id']}")
         if row["split"] not in SPLITS:
             fail(f"unknown split: {row['split']}")
         fold = by_fold[row["fold_id"]]
@@ -406,11 +445,49 @@ def build_normalization(feature_csv: str | Path, dataset_csv: str | Path, split_
     return report
 
 
+def validate_normalization(norm: dict[str, object], dataset_csv: str | Path, feature_csv: str | Path, split_csv: str | Path) -> None:
+    if norm.get("schema_version") != "detector_normalization_v1":
+        fail("normalization schema_version mismatch")
+    if norm.get("feature_names") != SC5_FEATURES:
+        fail("normalization feature order mismatch")
+    if norm.get("normalization_source") != "train_only":
+        fail("normalization_source must be train_only")
+    if norm.get("source_dataset_manifest_sha256") != sha256_file(Path(dataset_csv)):
+        fail("normalization dataset SHA mismatch")
+    if norm.get("source_split_manifest_sha256") != sha256_file(Path(split_csv)):
+        fail("normalization split SHA mismatch")
+    if norm.get("source_feature_artifact_sha256") != sha256_file(Path(feature_csv)):
+        fail("normalization feature artifact SHA mismatch")
+    if norm.get("population_id") not in POPULATIONS:
+        fail("normalization population_id mismatch")
+    if not norm.get("fold_id"):
+        fail("normalization fold_id missing")
+    for field in ["count_per_feature", "mean", "std"]:
+        values = norm.get(field)
+        if not isinstance(values, list) or len(values) != len(SC5_FEATURES):
+            fail(f"normalization {field} length mismatch")
+    for count in norm["count_per_feature"]:
+        if not isinstance(count, int) or count <= 0:
+            fail("normalization count_per_feature must be positive integers")
+    for value in norm["mean"]:
+        if not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+            fail("normalization mean must be finite")
+    for value in norm["std"]:
+        if not isinstance(value, (int, float)) or not math.isfinite(float(value)) or float(value) <= 0:
+            fail("normalization std must be finite positive")
+
+
 def validate_dataset_closure(dataset_csv: str | Path, feature_csv: str | Path, split_csv: str | Path | None = None, normalization_json: str | Path | None = None) -> dict[str, object]:
     dataset_rows = load_dataset_manifest(dataset_csv)
     features = load_feature_artifact(feature_csv)
-    if set(r["episode_key"] for r in dataset_rows) != set(features["episodes"]):
-        fail("dataset/feature episode set mismatch")
+    sidecar = Path(dataset_csv).with_suffix(".json")
+    if not sidecar.is_file():
+        fail("dataset sidecar manifest missing")
+    dataset_manifest = json.loads(sidecar.read_text(encoding="utf-8"))
+    expected_populations = dataset_manifest.get("population_by_episode")
+    if not isinstance(expected_populations, dict):
+        fail("dataset sidecar population_by_episode missing")
+    validate_dataset_rows(dataset_rows, features, expected_populations)
     report = {
         "status": "PASS",
         "synthetic_contract_validation": "PASS",
@@ -423,15 +500,10 @@ def validate_dataset_closure(dataset_csv: str | Path, feature_csv: str | Path, s
     if split_csv:
         report["split_validation"] = validate_split(dataset_csv, split_csv)
     if normalization_json:
+        if not split_csv:
+            fail("normalization validation requires split manifest")
         norm = json.loads(Path(normalization_json).read_text(encoding="utf-8"))
-        if norm.get("source_dataset_manifest_sha256") != sha256_file(Path(dataset_csv)):
-            fail("normalization dataset SHA mismatch")
-        if norm.get("source_split_manifest_sha256") != sha256_file(Path(split_csv)):
-            fail("normalization split SHA mismatch")
-        if norm.get("feature_names") != SC5_FEATURES:
-            fail("normalization feature order mismatch")
-        if any(float(x) == 0 for x in norm.get("std", [])):
-            fail("normalization contains zero std")
+        validate_normalization(norm, dataset_csv, feature_csv, split_csv)
         report["normalization_validation"] = "PASS"
     return report
 
