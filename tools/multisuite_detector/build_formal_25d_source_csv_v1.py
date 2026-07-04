@@ -190,6 +190,8 @@ def build_source_csv(
         "episode_count": len(label_rows),
         "row_count": len(out_rows),
         "feature_count": len(SC5_FEATURES),
+        "source_columns": list(SOURCE_COLUMNS),
+        "source_columns_count": len(SOURCE_COLUMNS),
         "exact_source_csv_build": "PASS",
         "formal_feature_extraction": "NOT_PERFORMED",
         "formal_detector_dataset_build": "NOT_PERFORMED",
