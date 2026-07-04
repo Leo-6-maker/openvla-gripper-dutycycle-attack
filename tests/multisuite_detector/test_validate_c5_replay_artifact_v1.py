@@ -57,6 +57,15 @@ def call(root: Path):
     return validate(root, FREEZE, CKPT, DATASET, SPLIT, STATE, 0.95)
 
 
+def strip_non_actions(root: Path):
+    for name in ["replay_manifest.json", "detector_freeze_identity.json", "dataset_identity.json", "threshold_identity.json", "replay_config.json", "metrics_overall.json", "timing_error_report.json", "emission_rate_report.json", "safety_false_trigger_report.json"]:
+        path = root / name
+        obj = json.loads(path.read_text())
+        for key in NON_ACTIONS:
+            obj.pop(key, None)
+        write_json(path, obj)
+
+
 def test_c5_replay_artifact_positive(tmp_path):
     report = call(make_root(tmp_path))
     assert report["status"] == "PASS"
@@ -88,13 +97,7 @@ def test_c5_replay_artifact_rejects_sha_tamper(tmp_path):
 
 def test_c5_replay_artifact_rejects_missing_non_action(tmp_path):
     root = make_root(tmp_path)
-    for name in ["replay_manifest.json", "detector_freeze_identity.json", "dataset_identity.json", "threshold_identity.json", "replay_config.json", "metrics_overall.json", "timing_error_report.json", "emission_rate_report.json", "safety_false_trigger_report.json"]:
-        obj = json.loads((root / name).read_text())
-        obj.clear()
-        obj["status"] = "PASS"
-        if name == "replay_config.json":
-            obj.update({"exact_prefix": True, "detector_only": True})
-        write_json(root / name, obj)
+    strip_non_actions(root)
     write_sums(root)
     with pytest.raises(C5ReplayValidationError, match="missing non-action markers"):
         call(root)
