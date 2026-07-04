@@ -62,6 +62,17 @@ def test_object_task_heldout_split_positive(tmp_path):
         assert all(f"Object_{held}_" in ep for ep in test_eps)
 
 
+def test_object_task_heldout_accepts_formal_libero_object_suite_alias(tmp_path):
+    dataset = write_dataset(tmp_path)
+    text = dataset.read_text(encoding="utf-8").replace(",Object,", ",libero_object,")
+    dataset.write_text(text, encoding="utf-8")
+    split = tmp_path / "object_task_heldout.csv"
+    build_object_task_heldout_split(dataset, split, seed=7, val_ratio=0.25)
+    validation = validate_scientific_split(dataset, split)
+    assert validation["status"] == "PASS"
+    assert validation["fold_count"] == 3
+
+
 def test_suite_loso_split_positive(tmp_path):
     dataset = write_dataset(tmp_path)
     split = tmp_path / "suite_loso.csv"

@@ -35,6 +35,7 @@ from tools.multisuite_detector.detector_dataset_closure_v1 import (  # noqa: E40
 SPLIT_COLUMNS = ["split_type", "fold_id", "group_id", "episode_key", "split"]
 SPLITS = {"train", "val", "test"}
 POPULATIONS = {"DETECTOR_ELIGIBLE", "DETECTOR_SAFETY"}
+OBJECT_SUITE_ALIASES = {"Object", "libero_object"}
 
 
 class C4ScientificSplitError(ValueError):
@@ -117,6 +118,10 @@ def rows_from_assignments(groups: list[dict[str, Any]], assignments: dict[str, s
     return sorted(out, key=lambda row: (row["split_type"], row["fold_id"], row["split"], row["episode_key"]))
 
 
+def is_object_suite(suite: str) -> bool:
+    return suite in OBJECT_SUITE_ALIASES
+
+
 def write_split_with_report(output: str | Path, rows: list[dict[str, str]], dataset_csv: str | Path, extra: dict[str, Any]) -> dict[str, Any]:
     if not rows:
         fail("refusing to write empty split")
@@ -151,7 +156,7 @@ def build_object_task_heldout_split(
 ) -> dict[str, Any]:
     rows = load_dataset_manifest(dataset_csv)
     groups, by_episode = group_rows(rows)
-    object_tasks = sorted({row["task_id"] for row in rows if row["suite"] == "Object"})
+    object_tasks = sorted({row["task_id"] for row in rows if is_object_suite(row["suite"])})
     if not object_tasks:
         fail("dataset contains no Object tasks")
     out: list[dict[str, str]] = []
@@ -161,7 +166,7 @@ def build_object_task_heldout_split(
         for group in groups:
             gid = str(group["group_id"])
             group_eps = [by_episode[str(ep)] for ep in group["episodes"]]
-            is_held = any(row["suite"] == "Object" and row["task_id"] == task for row in group_eps)
+            is_held = any(is_object_suite(row["suite"]) and row["task_id"] == task for row in group_eps)
             assignments[gid] = "test" if is_held else "train"
         assign_validation(assignments, [str(g["group_id"]) for g in groups], seed=seed, fold_id=fold_id, val_ratio=val_ratio)
         out.extend(rows_from_assignments(groups, assignments, "object_task_heldout_with_val_v1", fold_id))
@@ -253,7 +258,7 @@ def validate_scientific_split(
             held_task = fold_id.replace("object_task_heldout_", "")
             for episode, split_row in assigned_rows.items():
                 row = by_episode[episode]
-                is_held = row["suite"] == "Object" and row["task_id"] == held_task
+                is_held = is_object_suite(row["suite"]) and row["task_id"] == held_task
                 if is_held and split_row["split"] != "test":
                     fail(f"{fold_id}: held-out Object task leakage")
                 if (not is_held) and split_row["split"] == "test":
