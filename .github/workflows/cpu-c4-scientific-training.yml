@@ -9,6 +9,8 @@ on:
 jobs:
   c4-training-cpu:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
