@@ -13,9 +13,12 @@ from tests.multisuite_detector.test_detector_dataset_closure_v1 import make_labe
 from tools.multisuite_detector.detector_dataset_closure_v1 import SC5_FEATURES
 from tools.multisuite_detector.extract_formal_25d_features_v1 import (
     FormalFeatureError,
+    MANIFEST,
+    OUTPUT_CSV,
     SOURCE_COLUMNS,
     audit_source_schema,
     build_feature_artifact,
+    sha256_file,
     validate_feature_artifact,
 )
 
@@ -58,6 +61,28 @@ def read_rows(path):
 
 def rewrite(path, rows, columns=SOURCE_COLUMNS):
     write_csv(path, columns, [{col: row[col] for col in columns if col in row} for row in rows])
+
+
+def rewrite_artifact_sums(root, names=(OUTPUT_CSV, MANIFEST)):
+    (root / "SHA256SUMS").write_text("".join(f"{sha256_file(root / name)}  {name}\n" for name in names), encoding="utf-8")
+
+
+def patch_manifest(root, **updates):
+    path = root / MANIFEST
+    obj = json.loads(path.read_text(encoding="utf-8"))
+    obj.update(updates)
+    path.write_text(json.dumps(obj, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    rewrite_artifact_sums(root)
+    return obj
+
+
+def positive_artifact(tmp_path):
+    label_root, label_rows = make_label_artifact(tmp_path)
+    approved_root, source_csv, rows = make_sources(tmp_path, label_rows)
+    out = tmp_path / "feature_artifact"
+    build_feature_artifact(source_csv, label_root, out, approved_root)
+    assert validate_feature_artifact(out, label_root)["status"] == "PASS"
+    return label_root, approved_root, source_csv, rows, out
 
 
 def test_positive_end_to_end_extraction_and_validation(tmp_path):
@@ -158,3 +183,75 @@ def test_validator_catches_sha_manifest_and_output_mutation(tmp_path):
             f.write(f"{hashlib.sha256((out2 / name).read_bytes()).hexdigest()}  {name}\n")
     with pytest.raises(FormalFeatureError, match="source CSV SHA mismatch"):
         validate_feature_artifact(out2, label_root)
+
+
+def test_validator_revalidates_source_provenance(tmp_path):
+    label_root, approved_root, source_csv, rows, out = positive_artifact(tmp_path)
+    rows = [
+        dict(row, initial_state_hash_provenance="REVIEWED_BUT_NOT_ALLOWED")
+        if row["episode_key"] == "ep_obj_a"
+        else row
+        for row in rows
+    ]
+    rewrite(source_csv, rows)
+    patch_manifest(out, source_csv_sha256=sha256_file(source_csv))
+
+    with pytest.raises(FormalFeatureError, match="provenance is not bound"):
+        validate_feature_artifact(out, label_root)
+
+
+def test_validator_compares_feature_csv_to_source_projection(tmp_path):
+    label_root, approved_root, source_csv, rows, out = positive_artifact(tmp_path)
+    feature_csv = out / OUTPUT_CSV
+    output_rows = read_rows(feature_csv)
+    output_rows[0][SC5_FEATURES[0]] = "123.456"
+    write_csv(feature_csv, output_rows[0].keys(), output_rows)
+    patch_manifest(out, feature_csv_sha256=sha256_file(feature_csv))
+
+    with pytest.raises(FormalFeatureError, match="source projection"):
+        validate_feature_artifact(out, label_root)
+
+
+@pytest.mark.parametrize("field,value,match", [
+    ("feature_names", ["wrong"], "feature_names mismatch"),
+    ("feature_count", 24, "feature_count mismatch"),
+    ("exact_set_join", "HOLD", "exact_set_join mismatch"),
+    ("formal_feature_artifact_build", "NOT_PERFORMED", "formal_feature_artifact_build mismatch"),
+    ("row_count", 1, "row_count mismatch"),
+])
+def test_validator_catches_manifest_field_tamper(tmp_path, field, value, match):
+    label_root, approved_root, source_csv, rows, out = positive_artifact(tmp_path)
+    patch_manifest(out, **{field: value})
+
+    with pytest.raises(FormalFeatureError, match=match):
+        validate_feature_artifact(out, label_root)
+
+
+@pytest.mark.parametrize("body,match", [
+    (
+        lambda out: (out / "SHA256SUMS").read_text(encoding="utf-8")
+        + (out / "SHA256SUMS").read_text(encoding="utf-8").splitlines()[0]
+        + "\n",
+        "duplicate file entry",
+    ),
+    (
+        lambda out: "z" * 64 + f"  {OUTPUT_CSV}\n" + f"{sha256_file(out / MANIFEST)}  {MANIFEST}\n",
+        "malformed digest",
+    ),
+    (
+        lambda out: (out / "SHA256SUMS").read_text(encoding="utf-8")
+        + hashlib.sha256(b"x").hexdigest()
+        + "  unexpected.txt\n",
+        "unexpected file",
+    ),
+    (
+        lambda out: f"{sha256_file(out / OUTPUT_CSV)}  ../{OUTPUT_CSV}\n{sha256_file(out / MANIFEST)}  {MANIFEST}\n",
+        "unsafe path",
+    ),
+])
+def test_validator_catches_sha256sums_structure_tamper(tmp_path, body, match):
+    label_root, approved_root, source_csv, rows, out = positive_artifact(tmp_path)
+    (out / "SHA256SUMS").write_text(body(out), encoding="utf-8")
+
+    with pytest.raises(FormalFeatureError, match=match):
+        validate_feature_artifact(out, label_root)

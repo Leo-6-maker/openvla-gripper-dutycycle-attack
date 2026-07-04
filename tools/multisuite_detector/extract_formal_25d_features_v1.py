@@ -241,15 +241,37 @@ def label_artifact_sha(label_root: Path) -> str:
 
 
 def validate_sha256sums(root: Path) -> None:
+    expected = {OUTPUT_CSV, MANIFEST}
     seen = set()
     with (root / SHA_FILE).open(encoding="utf-8") as f:
-        for line in f:
-            digest, name = line.strip().split(maxsplit=1)
+        for line_no, line in enumerate(f, start=1):
+            parts = line.rstrip("\n").split(maxsplit=1)
+            if len(parts) != 2:
+                fail(f"SHA256SUMS:{line_no}: malformed line")
+            digest, name = parts
+            if len(digest) != 64 or any(ch not in HEX for ch in digest):
+                fail(f"SHA256SUMS:{line_no}: malformed digest")
+            name_path = Path(name)
+            if name_path.is_absolute() or ".." in name_path.parts:
+                fail(f"SHA256SUMS:{line_no}: unsafe path")
+            if name not in expected:
+                fail(f"SHA256SUMS:{line_no}: unexpected file")
+            if name in seen:
+                fail(f"SHA256SUMS:{line_no}: duplicate file entry")
             seen.add(name)
             if sha256_file(root / name) != digest:
                 fail(f"SHA256SUMS mismatch: {name}")
-    if seen != {OUTPUT_CSV, MANIFEST}:
+    if seen != expected:
         fail("SHA256SUMS file set mismatch")
+
+
+def sorted_output_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    return sorted(rows, key=lambda row: (row["episode_key"], int(row["step"])))
+
+
+def require_manifest(manifest: dict[str, object], key: str, expected: object) -> None:
+    if manifest.get(key) != expected:
+        fail(f"manifest {key} mismatch")
 
 
 def validate_feature_artifact(artifact_root: str | Path, label_root: str | Path, *, expected_label_mode: str = "synthetic-dry-run") -> dict[str, object]:
@@ -257,22 +279,31 @@ def validate_feature_artifact(artifact_root: str | Path, label_root: str | Path,
     label_root = Path(label_root)
     validate_sha256sums(artifact_root)
     manifest = json.loads((artifact_root / MANIFEST).read_text(encoding="utf-8"))
-    if manifest.get("schema_version") != SCHEMA_VERSION:
-        fail("manifest schema_version mismatch")
-    if manifest.get("feature_schema_sha256") != FEATURE_SCHEMA_SHA256:
-        fail("feature schema SHA mismatch")
-    if manifest.get("label_v2_artifact_sha256") != label_artifact_sha(label_root):
-        fail("label artifact SHA mismatch")
-    if manifest.get("initial_state_hash_provenance") != "BOUND":
-        fail("initial_state_hash provenance is not BOUND")
-    if manifest.get("formal_detector_dataset_build") != "NOT_PERFORMED" or manifest.get("training") != "NOT_PERFORMED" or manifest.get("gpu") != "NOT_PERFORMED":
-        fail("manifest execution boundary mismatch")
-    feature_csv = artifact_root / manifest["feature_csv"]
+    require_manifest(manifest, "schema_version", SCHEMA_VERSION)
+    require_manifest(manifest, "feature_schema_sha256", FEATURE_SCHEMA_SHA256)
+    require_manifest(manifest, "feature_names", list(SC5_FEATURES))
+    require_manifest(manifest, "feature_count", len(SC5_FEATURES))
+    require_manifest(manifest, "feature_csv", OUTPUT_CSV)
+    require_manifest(manifest, "label_v2_artifact_sha256", label_artifact_sha(label_root))
+    require_manifest(manifest, "initial_state_hash_provenance", "BOUND")
+    require_manifest(manifest, "exact_set_join", "PASS")
+    require_manifest(manifest, "finite_feature_values", "PASS")
+    require_manifest(manifest, "formal_feature_artifact_build", "PASS")
+    require_manifest(manifest, "formal_detector_dataset_build", "NOT_PERFORMED")
+    require_manifest(manifest, "training", "NOT_PERFORMED")
+    require_manifest(manifest, "gpu", "NOT_PERFORMED")
+    feature_csv = artifact_root / OUTPUT_CSV
     if manifest.get("feature_csv_sha256") != sha256_file(feature_csv):
         fail("feature CSV SHA mismatch")
     source_csv = Path(manifest["source_csv_path"])
     if not source_csv.is_file() or manifest.get("source_csv_sha256") != sha256_file(source_csv):
         fail("source CSV SHA mismatch")
+    source_rows = load_source_rows(source_csv, Path(manifest["approved_source_root"]))
+    validate_against_label(source_rows, label_root, expected_label_mode)
+    expected_rows = sorted_output_rows([{col: row[col] for col in OUTPUT_COLUMNS} for row in source_rows])
+    actual_rows = sorted_output_rows(read_csv_strict(feature_csv, OUTPUT_COLUMNS))
+    if actual_rows != expected_rows:
+        fail("feature CSV does not match source projection")
     features = load_feature_artifact(feature_csv)
     label = load_label_v2_artifact(label_root, expected_mode=expected_label_mode)
     label_rows = {row["episode_key"]: row for row in label["label_rows"]}
@@ -283,6 +314,11 @@ def validate_feature_artifact(artifact_root: str | Path, label_root: str | Path,
         for field in ("parent_key", "suite", "task_id", "trace_length"):
             if str(feature[field]) != str(label_row[field]):
                 fail(f"{episode}: {field} mismatch against Label V2")
+    row_count = sum(len(record["steps"]) for record in features["episodes"].values())
+    if manifest.get("episode_count") != len(features["episodes"]):
+        fail("manifest episode_count mismatch")
+    if manifest.get("row_count") != row_count:
+        fail("manifest row_count mismatch")
     report = {
         "status": "PASS",
         "schema_version": SCHEMA_VERSION,
@@ -290,7 +326,7 @@ def validate_feature_artifact(artifact_root: str | Path, label_root: str | Path,
         "feature_csv_sha256": sha256_file(feature_csv),
         "feature_schema_sha256": FEATURE_SCHEMA_SHA256,
         "episode_count": len(features["episodes"]),
-        "row_count": sum(len(record["steps"]) for record in features["episodes"].values()),
+        "row_count": row_count,
         "initial_state_hash_provenance": "BOUND",
         "exact_set_join": "PASS",
         "finite_feature_values": "PASS",
