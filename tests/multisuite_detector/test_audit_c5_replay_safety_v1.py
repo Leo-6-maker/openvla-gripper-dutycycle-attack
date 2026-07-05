@@ -30,14 +30,24 @@ def write_sums(root: Path):
     (root / "SHA256SUMS.sha256").write_text(f"{sha(sums)}  SHA256SUMS\n", encoding="utf-8")
 
 
-def make_c5(root: Path, object_safety="0.10", l10_safety="0.56"):
+def make_c5(root: Path, object_safety="0.10", spatial_safety="0.12", l10_safety="0.56", omit_primary_safety=False):
     root.mkdir()
     write_json(root / "replay_manifest.json", {"status": "PASS"})
     write_json(root / "metrics_overall.json", {"status": "PASS", "hit_rate": 0.64, "emission_rate": 0.56, "safety_false_trigger_rate": 0.42})
+    write_json(root / "safety_false_trigger_report.json", {
+        "status": "PASS",
+        "by_suite": [
+            {"suite": "libero_object", "safety_false_trigger_rate": object_safety},
+            {"suite": "libero_spatial", "safety_false_trigger_rate": spatial_safety},
+            {"suite": "libero_10", "safety_false_trigger_rate": l10_safety},
+        ],
+    })
+    object_metric = "" if omit_primary_safety else object_safety
+    spatial_metric = "" if omit_primary_safety else spatial_safety
     write_csv(root / "metrics_by_suite.csv", [
         {"suite": "libero_goal", "role": "primary_positive", "positive_support": "100", "hit_rate": "0.64", "emission_rate": "0.31", "safety_false_trigger_rate": "0.095"},
-        {"suite": "libero_object", "role": "primary_positive", "positive_support": "100", "hit_rate": "0.56", "emission_rate": "0.75", "safety_false_trigger_rate": object_safety},
-        {"suite": "libero_spatial", "role": "primary_positive", "positive_support": "100", "hit_rate": "0.73", "emission_rate": "0.69", "safety_false_trigger_rate": "0.12"},
+        {"suite": "libero_object", "role": "primary_positive", "positive_support": "100", "hit_rate": "0.56", "emission_rate": "0.75", "safety_false_trigger_rate": object_metric},
+        {"suite": "libero_spatial", "role": "primary_positive", "positive_support": "100", "hit_rate": "0.73", "emission_rate": "0.69", "safety_false_trigger_rate": spatial_metric},
         {"suite": "libero_10", "role": "diagnostic_only", "positive_support": "0", "hit_rate": "NOT_APPLICABLE", "emission_rate": "0.50", "safety_false_trigger_rate": l10_safety},
     ])
     write_sums(root)
@@ -67,3 +77,12 @@ def test_c5_safety_triage_primary_hold(tmp_path):
     make_c5(root, object_safety="0.30", l10_safety="0.20")
     report = call(root, tmp_path / "out")
     assert report["status"] == "HOLD_PRIMARY_SAFETY"
+
+
+def test_c5_safety_triage_uses_safety_report_fallback(tmp_path):
+    root = tmp_path / "c5"
+    make_c5(root, omit_primary_safety=True)
+    report = call(root, tmp_path / "out")
+    assert report["status"] == "PASS_PRIMARY_HOLD_DIAGNOSTIC"
+    assert "libero_object" in report["fallback_safety_suites"]
+    assert report["missing_primary_safety_suites"] == []
