@@ -11,6 +11,7 @@ def test_duplicate_same_path_passes():
         {"is_concrete_binding": True, "resolved_path": "/tmp/a.json", "resolved_path_exists": True, "index_fields": "{}"},
     ]
     assert m.decide_status(rows, []) == m.PASS_STATE_PATH
+    assert m.unique_handles(rows) == {"path:/tmp/a.json"}
 
 
 def test_single_index_passes():
