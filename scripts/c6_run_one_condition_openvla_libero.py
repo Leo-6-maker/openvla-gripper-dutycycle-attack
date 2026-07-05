@@ -25,8 +25,20 @@ def base_report(args: argparse.Namespace, work: Path) -> dict:
         "task_id": args.task_id,
         "condition": args.condition,
         "initial_state_hash": args.initial_state_hash,
+        "state_id": args.state_id,
         "legacy_runner": args.legacy_runner,
         "work_dir": str(work),
+    }
+
+
+def not_performed_boundary() -> dict:
+    return {
+        "legacy_runner_execution": "NOT_PERFORMED",
+        "OpenVLA": "NOT_PERFORMED",
+        "LIBERO": "NOT_PERFORMED",
+        "rollout": "NOT_PERFORMED",
+        "intervention": "NOT_PERFORMED",
+        "attack_condition": "NOT_PERFORMED",
     }
 
 
@@ -43,6 +55,7 @@ def main() -> int:
     ap.add_argument("--model-path")
     ap.add_argument("--benchmark-root")
     ap.add_argument("--initial-state-hash")
+    ap.add_argument("--state-id", type=int)
     ap.add_argument("--seed", type=int, default=2026070401)
     ap.add_argument("--max-steps", type=int)
     ap.add_argument("--dry-run", action="store_true")
@@ -63,38 +76,24 @@ def main() -> int:
                 {
                     "status": "HOLD_RESET_FIELD_MISSING",
                     "reason": "Dry-run reset binding proof requires --initial-state-hash.",
-                    "boundary": {
-                        "legacy_runner_execution": "NOT_PERFORMED",
-                        "OpenVLA": "NOT_PERFORMED",
-                        "LIBERO": "NOT_PERFORMED",
-                        "rollout": "NOT_PERFORMED",
-                        "intervention": "NOT_PERFORMED",
-                        "attack_condition": "NOT_PERFORMED",
-                    },
+                    "boundary": not_performed_boundary(),
+                    "boundaries": not_performed_boundary(),
                 }
             )
             write_json(args.output_json, report)
             return 2
+        status = "PASS_SHIM_DRY_RUN_STATE_ID_BOUND" if args.state_id is not None else "PASS_SHIM_DRY_RUN_RESET_ARGS_BOUND"
         report.update(
             {
-                "status": "PASS_SHIM_DRY_RUN_RESET_ARGS_BOUND",
+                "status": status,
                 "legacy_runner_execution": "NOT_PERFORMED",
-                "boundary": {
-                    "legacy_runner_execution": "NOT_PERFORMED",
-                    "OpenVLA": "NOT_PERFORMED",
-                    "LIBERO": "NOT_PERFORMED",
-                    "rollout": "NOT_PERFORMED",
-                    "intervention": "NOT_PERFORMED",
-                    "attack_condition": "NOT_PERFORMED",
+                "state_id_binding": {
+                    "provided": args.state_id is not None,
+                    "state_id": args.state_id,
+                    "binding_mode": "DRY_RUN_METADATA_ONLY" if args.state_id is not None else "NOT_PROVIDED",
                 },
-                "boundaries": {
-                    "legacy_runner_execution": "NOT_PERFORMED",
-                    "OpenVLA": "NOT_PERFORMED",
-                    "LIBERO": "NOT_PERFORMED",
-                    "rollout": "NOT_PERFORMED",
-                    "intervention": "NOT_PERFORMED",
-                    "attack_condition": "NOT_PERFORMED",
-                },
+                "boundary": not_performed_boundary(),
+                "boundaries": not_performed_boundary(),
                 "raw_logs": {
                     "work_dir": str(work),
                     "legacy_runner": args.legacy_runner,
@@ -114,22 +113,8 @@ def main() -> int:
                 "condition execution, or C6 metric extraction. Refusing to run instead "
                 "of fabricating legacy_result_json."
             ),
-            "boundary": {
-                "legacy_runner_execution": "NOT_PERFORMED",
-                "OpenVLA": "NOT_PERFORMED",
-                "LIBERO": "NOT_PERFORMED",
-                "rollout": "NOT_PERFORMED",
-                "intervention": "NOT_PERFORMED",
-                "attack_condition": "NOT_PERFORMED",
-            },
-            "boundaries": {
-                "legacy_runner_execution": "NOT_PERFORMED",
-                "OpenVLA": "NOT_PERFORMED",
-                "LIBERO": "NOT_PERFORMED",
-                "rollout": "NOT_PERFORMED",
-                "intervention": "NOT_PERFORMED",
-                "attack_condition": "NOT_PERFORMED",
-            },
+            "boundary": not_performed_boundary(),
+            "boundaries": not_performed_boundary(),
         }
     )
     write_json(args.output_json, report)
