@@ -112,7 +112,10 @@ def normalize_dest(flag: str) -> str:
 
 def line_records(path: Path, root: Path, terms: list[str]) -> list[dict[str, Any]]:
     text = path.read_text(encoding="utf-8", errors="replace")
-    rel = str(path.relative_to(root)) if path.is_relative_to(root) else str(path)
+    try:
+        rel = str(path.relative_to(root))
+    except ValueError:
+        rel = str(path)
     rows = []
     for lineno, line in enumerate(text.splitlines(), start=1):
         matched = [term for term in terms if term in line]
