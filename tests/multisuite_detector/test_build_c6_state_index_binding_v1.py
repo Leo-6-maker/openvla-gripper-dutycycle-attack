@@ -112,3 +112,19 @@ def test_no_binding_holds(tmp_path):
     assert rc != 0
     report = load(out / "state_index_binding_audit.json")
     assert report["status"] == "HOLD_NO_PARENT_STATE_BINDING"
+
+
+def test_ambiguous_index_holds(tmp_path):
+    c6 = write_c6_1g(tmp_path)
+    meta = tmp_path / "meta"
+    meta.mkdir()
+    (meta / "index.csv").write_text(
+        "parent_id,episode_idx\n"
+        "libero_goal/task_01/state_000,7\n"
+        "libero_goal/task_01/state_000,8\n",
+        encoding="utf-8",
+    )
+    rc, out = run_tool(tmp_path, c6, sha256(c6), meta)
+    assert rc != 0
+    report = load(out / "state_index_binding_audit.json")
+    assert report["status"] == "HOLD_AMBIGUOUS_STATE_BINDING"
