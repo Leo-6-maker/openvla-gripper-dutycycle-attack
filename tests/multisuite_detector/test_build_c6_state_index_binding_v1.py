@@ -43,6 +43,7 @@ def test_multiple_exact_file_matches_ambiguous():
 def test_missing_path_holds():
     rows = [{"is_concrete_binding": True, "resolved_path": "/tmp/missing.json", "resolved_path_exists": False, "index_fields": "{}"}]
     assert m.decide_status(rows, []) == m.HOLD_PATH_MISSING
+    assert "missing" in m.recommendation(m.HOLD_PATH_MISSING)
 
 
 def test_no_binding_holds():
