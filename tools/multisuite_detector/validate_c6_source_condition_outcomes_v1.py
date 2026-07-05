@@ -61,7 +61,7 @@ def b(value: str, field: str, key: str) -> bool:
 
 def f(value: str, field: str, key: str) -> float:
     if value is None or value == "" or str(value).upper() in {"NA", "N/A", "NOT_APPLICABLE"}:
-        return float("nan")
+        fail(f"{key}: {field} must be present and finite")
     try:
         out = float(value)
     except ValueError:
@@ -134,6 +134,7 @@ def validate_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "libero_10_positive_denominator": "EXCLUDED",
         "exact_prefix_shared": True,
         "clean_success_parent_denominator": True,
+        "metric_fields_finite": True,
         "label_mutation": "NOT_PERFORMED",
         "detector_training": "NOT_PERFORMED",
     }
