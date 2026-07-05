@@ -17,7 +17,7 @@ def test_task_and_state_tokens():
 
 
 def test_collect_fields_path_and_index():
-    fields = m.collect_fields({"outer": {"state_path": "a.json", "episode_idx": 7}})
+    fields = m.collect_fields({"outer": [{"state_path": "a.json", "episode_idx": 7}]})
     assert fields["state_path"] == "a.json"
     assert fields["episode_idx"] == "7"
 
