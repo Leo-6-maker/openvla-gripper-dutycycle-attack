@@ -18,6 +18,12 @@ def load(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def check_sha256sum(sum_file: Path) -> None:
+    for line in sum_file.read_text(encoding="utf-8").splitlines():
+        expected, rel = line.split(maxsplit=1)
+        assert sha256(sum_file.parent / rel) == expected
+
+
 def write_c6_1g(tmp_path: Path, reset: str = RESET) -> Path:
     p = tmp_path / "c6_1g.json"
     p.write_text(
@@ -128,3 +134,21 @@ def test_ambiguous_index_holds(tmp_path):
     assert rc != 0
     report = load(out / "state_index_binding_audit.json")
     assert report["status"] == "HOLD_AMBIGUOUS_STATE_BINDING"
+
+
+def test_checksum_report_consistency(tmp_path):
+    c6 = write_c6_1g(tmp_path)
+    meta = tmp_path / "meta"
+    meta.mkdir()
+    (meta / "index.csv").write_text(
+        "episode_key,episode_idx\nlibero_goal/task_01/state_000/clean/attempt_01,7\n",
+        encoding="utf-8",
+    )
+    rc, out = run_tool(tmp_path, c6, sha256(c6), meta)
+    assert rc == 0
+    check_sha256sum(out / "SHA256SUMS")
+    check_sha256sum(out / "SHA256SUMS.sha256")
+    checksum_report = load(out / "checksum_report.json")
+    assert checksum_report["self_referential_checksum_fields"] == "ABSENT_BY_DESIGN"
+    for rel, expected in checksum_report["reported_files"].items():
+        assert sha256(out / rel) == expected
