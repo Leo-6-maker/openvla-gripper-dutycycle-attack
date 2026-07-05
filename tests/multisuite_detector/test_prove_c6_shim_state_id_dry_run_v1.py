@@ -63,6 +63,11 @@ def test_state_id_dry_run_passes(tmp_path):
     assert shim["status"] == m.PASS
     assert shim["state_id"] == 0
     assert shim["state_id_binding"]["binding_mode"] == "DRY_RUN_METADATA_ONLY"
+    assert shim["legacy_task_id"] == "libero_goal_open_middle_drawer"
+    assert shim["legacy_task_binding"]["legacy_task_id"] == "libero_goal_open_middle_drawer"
+    argv = shim["legacy_runner_argv_preview"]
+    assert "--task_id" in argv
+    assert argv[argv.index("--task_id") + 1] == "libero_goal_open_middle_drawer"
 
 
 def test_hash_mismatch_holds(tmp_path):
