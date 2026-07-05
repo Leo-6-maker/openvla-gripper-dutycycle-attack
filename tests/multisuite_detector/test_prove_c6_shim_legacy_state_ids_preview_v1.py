@@ -43,7 +43,10 @@ def test_preview_passes(tmp_path):
     report = load(out / "shim_legacy_state_ids_preview_binding.json")
     assert rc == 0
     assert report["status"] == m.PASS
-    assert "--state_ids" in report["legacy_runner_argv_preview"]
+    argv = report["legacy_runner_argv_preview"]
+    assert "--state_ids" in argv
+    assert "--task_id" in argv
+    assert argv[argv.index("--task_id") + 1] == "libero_goal_open_middle_drawer"
 
 
 def test_hash_mismatch_holds(tmp_path):
