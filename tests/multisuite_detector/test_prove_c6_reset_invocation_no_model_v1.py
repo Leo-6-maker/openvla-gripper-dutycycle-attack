@@ -21,6 +21,12 @@ def load(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def check_sha256sum(sum_file: Path) -> None:
+    for line in sum_file.read_text(encoding="utf-8").splitlines():
+        expected, rel = line.split(maxsplit=1)
+        assert sha256(sum_file.parent / rel) == expected
+
+
 def shim_cmd(tmp_path: Path, *extra: str) -> list[str]:
     return [
         sys.executable,
@@ -144,8 +150,24 @@ def test_c6_1f_uses_c6_1e_constructed_argv(tmp_path):
     assert proof["executed_command"]["returncode"] == 0
     assert "{legacy_result_json}" not in proof["executed_command"]["argv"]
     assert shim["initial_state_hash"] == RESET
+    assert (out / "checksum_report.json").exists()
     assert (out / "SHA256SUMS").exists()
     assert (out / "SHA256SUMS.sha256").exists()
+
+
+def test_c6_1f_checksum_report_matches_final_files(tmp_path):
+    c6_1e = write_c6_1e(tmp_path)
+    proc, out = run_proof(tmp_path, c6_1e, sha256(c6_1e))
+    assert proc.returncode == 0
+    checksum_report = load(out / "checksum_report.json")
+    assert checksum_report["self_referential_checksum_fields"] == "ABSENT_BY_DESIGN"
+    for rel, expected in checksum_report["reported_files"].items():
+        assert sha256(out / rel) == expected
+    check_sha256sum(out / "SHA256SUMS")
+    check_sha256sum(out / "SHA256SUMS.sha256")
+    proof = load(out / "reset_invocation_no_model_no_attack_proof.json")
+    assert "SHA256SUMS_sha256" not in proof
+    assert "SHA256SUMS_sidecar_sha256" not in proof
 
 
 def test_c6_1f_rejects_hash_mismatch(tmp_path):
