@@ -118,7 +118,7 @@ def test_hash_exists_but_no_state_artifact_index(tmp_path):
     write_runner(tmp_path, "def run(env):\n    env.reset()\n")
     meta = tmp_path / "meta"
     meta.mkdir()
-    (meta / "audit.json").write_text(json.dumps({"initial_state_hash": RESET}), encoding="utf-8")
+    (meta / "audit.json").write_text(json.dumps({"initial_state_hash": RESET}, indent=2), encoding="utf-8")
     proc, out = run_audit(tmp_path, c6, shim, sha256(c6), search_root=meta)
     report = load(out / "legacy_runner_source_reset_adapter_static_audit.json")
     assert proc.returncode != 0
@@ -138,6 +138,50 @@ def test_patchable_adapter_case(tmp_path):
     assert proc.returncode == 0
     assert report["status"] == "PASS_STATIC_RESET_ADAPTER_PATCHABLE"
     assert report["adapter_classification"] == "ADAPTER_NEEDED_HASH_TO_STATE_PATH"
+
+
+def test_multiline_json_state_path_resolves(tmp_path):
+    c6, shim = write_c6_1f(tmp_path)
+    write_runner(tmp_path, "def run(env):\n    env.reset()\n")
+    meta = tmp_path / "meta"
+    meta.mkdir()
+    (meta / "state_index.json").write_text(
+        json.dumps(
+            {
+                "records": [
+                    {
+                        "parent_id": "libero_goal/task_01/state_000",
+                        "initial_state_hash": RESET,
+                        "state_path": "/tmp/state.pkl",
+                    }
+                ]
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    proc, out = run_audit(tmp_path, c6, shim, sha256(c6), search_root=meta)
+    report = load(out / "legacy_runner_source_reset_adapter_static_audit.json")
+    assert proc.returncode == 0
+    assert report["status"] == "PASS_STATIC_RESET_ADAPTER_PATCHABLE"
+    assert "state_path" in report["reset_resolution"]["candidate_fields"]
+    assert any(row["source_kind"] == "json_object" for row in report["reset_resolution"]["candidate_artifacts"])
+
+
+def test_jsonl_nested_episode_idx_resolves(tmp_path):
+    c6, shim = write_c6_1f(tmp_path)
+    write_runner(tmp_path, "def run(env):\n    env.reset()\n")
+    meta = tmp_path / "meta"
+    meta.mkdir()
+    (meta / "state_index.jsonl").write_text(
+        json.dumps({"record": {"initial_state_hash": RESET, "episode_idx": 7}}) + "\n",
+        encoding="utf-8",
+    )
+    proc, out = run_audit(tmp_path, c6, shim, sha256(c6), search_root=meta)
+    report = load(out / "legacy_runner_source_reset_adapter_static_audit.json")
+    assert proc.returncode == 0
+    assert report["status"] == "PASS_STATIC_RESET_ADAPTER_PATCHABLE"
+    assert "episode_idx" in report["reset_resolution"]["candidate_fields"]
 
 
 def test_no_adapter_needed_case(tmp_path):
