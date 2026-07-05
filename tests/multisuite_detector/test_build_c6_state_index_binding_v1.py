@@ -5,6 +5,11 @@ def test_gate_name():
     assert m.GATE == "C6_1H_STATE_INDEX_BINDING_AUDIT_BUILD"
 
 
+def test_task_and_state_tokens():
+    assert m.task_token(1) == "task_01"
+    assert m.state_token("libero_goal/task_01/state_000") == "state_000"
+
+
 def test_identity_match_reason_parent_fields():
     parent = {"parent_id": "libero_goal/task_01/state_000", "episode_key": "episode_A", "suite": "libero_goal", "task_id": 1}
     reasons = m.identity_match_reason({"parent_id": "libero_goal/task_01/state_000", "state_path": "x.json"}, parent)
