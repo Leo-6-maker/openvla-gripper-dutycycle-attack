@@ -40,7 +40,13 @@ BOUNDARIES = {
     "attack_condition": "NOT_PERFORMED",
     "artifact_mutation": "NOT_PERFORMED",
 }
-OUT_FILES = ["state_index_binding_audit.json", "state_index_binding_candidates.csv", "artifact_file_candidates.csv", "adapter_recommendation.json", "checksum_report.json"]
+OUT_FILES = [
+    "state_index_binding_audit.json",
+    "state_index_binding_candidates.csv",
+    "artifact_file_candidates.csv",
+    "adapter_recommendation.json",
+    "checksum_report.json",
+]
 
 
 def sha256_file(path: str | Path) -> str:
@@ -164,6 +170,7 @@ def json_candidates(path: Path, parent: dict[str, Any], roots: list[Path]) -> li
     except Exception:
         return []
     rows: list[dict[str, Any]] = []
+
     def visit(node: Any, loc: str) -> None:
         row = candidate_from_obj(node, path, 0, "json_object", parent, roots)
         if row:
@@ -175,6 +182,7 @@ def json_candidates(path: Path, parent: dict[str, Any], roots: list[Path]) -> li
         elif isinstance(node, list):
             for i, v in enumerate(node):
                 visit(v, f"{loc}[{i}]")
+
     visit(obj, "")
     return rows
 
@@ -337,18 +345,7 @@ def write_checksums(out: Path) -> None:
     (out / "SHA256SUMS.sha256").write_text(f"{sha256_file(sums)}  SHA256SUMS\n", encoding="utf-8")
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--input-c6-1g-json", required=True)
-    ap.add_argument("--expected-c6-1g-sha256", required=True)
-    ap.add_argument("--search-root", action="append", default=[])
-    ap.add_argument("--output-root", required=True)
-    ap.add_argument("--max-files", type=int, default=100000)
-    ap.add_argument("--max-file-bytes", type=int, default=64 * 1024 * 1024)
-    ap.add_argument("--git-commit", required=True)
-    ap.add_argument("--files-changed", action="append", default=[])
-    ap.add_argument("--tests", action="append", default=[])
-    args = ap.parse_args()
+def main_from_args(args: argparse.Namespace) -> int:
     out = Path(args.output_root)
     out.mkdir(parents=True, exist_ok=True)
     observed = sha256_file(args.input_c6_1g_json)
@@ -397,6 +394,20 @@ def main() -> int:
     write_checksums(out)
     print(json.dumps(report, sort_keys=True))
     return 0 if status.startswith("PASS_") else 2
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--input-c6-1g-json", required=True)
+    ap.add_argument("--expected-c6-1g-sha256", required=True)
+    ap.add_argument("--search-root", action="append", default=[])
+    ap.add_argument("--output-root", required=True)
+    ap.add_argument("--max-files", type=int, default=100000)
+    ap.add_argument("--max-file-bytes", type=int, default=64 * 1024 * 1024)
+    ap.add_argument("--git-commit", required=True)
+    ap.add_argument("--files-changed", action="append", default=[])
+    ap.add_argument("--tests", action="append", default=[])
+    return main_from_args(ap.parse_args())
 
 
 if __name__ == "__main__":
