@@ -23,5 +23,10 @@ def test_exact_file_match_passes():
     assert m.decide_status([], files) == m.PASS_FILE_HASH
 
 
+def test_missing_path_holds():
+    rows = [{"is_concrete_binding": True, "resolved_path": "/tmp/missing.json", "resolved_path_exists": False, "index_fields": "{}"}]
+    assert m.decide_status(rows, []) == m.HOLD_PATH_MISSING
+
+
 def test_no_binding_holds():
     assert m.decide_status([], []) == m.HOLD_NO_BINDING
