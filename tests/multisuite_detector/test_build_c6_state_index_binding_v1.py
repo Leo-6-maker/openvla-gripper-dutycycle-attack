@@ -10,6 +10,12 @@ def test_task_and_state_tokens():
     assert m.state_token("libero_goal/task_01/state_000") == "state_000"
 
 
+def test_collect_fields_path_and_index():
+    fields = m.collect_fields({"outer": {"state_path": "a.json", "episode_idx": 7}})
+    assert fields["state_path"] == "a.json"
+    assert fields["episode_idx"] == "7"
+
+
 def test_identity_match_reason_parent_fields():
     parent = {"parent_id": "libero_goal/task_01/state_000", "episode_key": "episode_A", "suite": "libero_goal", "task_id": 1}
     reasons = m.identity_match_reason({"parent_id": "libero_goal/task_01/state_000", "state_path": "x.json"}, parent)
