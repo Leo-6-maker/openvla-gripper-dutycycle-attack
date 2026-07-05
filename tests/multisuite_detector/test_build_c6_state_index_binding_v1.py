@@ -95,6 +95,17 @@ def test_parent_metadata_binds_episode_idx(tmp_path):
     assert report["binding_summary"]["unique_handles"] == ["episode_idx:7"]
 
 
+def test_exact_file_hash_match(tmp_path):
+    artifact = tmp_path / "artifact.json"
+    artifact.write_text("exact artifact", encoding="utf-8")
+    c6 = write_c6_1g(tmp_path, reset=sha256(artifact))
+    rc, out = run_tool(tmp_path, c6, sha256(c6), tmp_path)
+    assert rc == 0
+    report = load(out / "state_index_binding_audit.json")
+    assert report["status"] == "PASS_STATE_HASH_FILE_SHA256_MATCH"
+    assert report["binding_summary"]["exact_file_sha256_match_count"] == 1
+
+
 def test_missing_path_holds(tmp_path):
     c6 = write_c6_1g(tmp_path)
     meta = tmp_path / "meta"
