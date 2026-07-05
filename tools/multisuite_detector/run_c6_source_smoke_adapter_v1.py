@@ -1,17 +1,9 @@
 #!/usr/bin/env python3
-"""Adapter for C6 primary-three-suite source smoke execution.
-
-This script binds a discovered external OpenVLA/LIBERO runner to the C6 source
-schema. The repository does not assume a concrete simulator entrypoint; instead
-Codex must provide a runner_config.json with a command_template. If no executable
-runner config is supplied, this script writes HOLD_NO_EXECUTION_RUNNER and exits
-without fabricating source rows.
-"""
+"""Adapter for C6 primary-three-suite source smoke execution."""
 from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import json
 import subprocess
 import sys
@@ -21,7 +13,7 @@ from typing import Any
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
-from tools.multisuite_detector.validate_c6_source_condition_outcomes_v1 import COLUMNS, CONDITIONS, PRIMARY, read_rows, validate_rows, sha256_file  # noqa: E402
+from tools.multisuite_detector.validate_c6_source_condition_outcomes_v1 import COLUMNS, PRIMARY, read_rows, validate_rows, sha256_file  # noqa: E402
 
 CONDITION_ORDER = ["CLEAN", "TRUE_T10", "RAND_T10", "RANDOM_TIME", "EARLY_SHIFT", "ORACLE"]
 
@@ -85,7 +77,7 @@ def load_parents(path: str | Path) -> list[dict[str, str]]:
         out.append({k: str(item.get(k, "")) for k in sorted(set(item) | required)})
     seen_suites = {p["suite"] for p in out}
     if seen_suites != PRIMARY:
-        fail("selected parents must include exactly one or more parent for each primary suite")
+        fail("selected parents must include all primary suites")
     return out
 
 
@@ -100,15 +92,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     root = Path(args.output_root)
     root.mkdir(parents=True, exist_ok=True)
     if not args.runner_config_json or not Path(args.runner_config_json).is_file():
-        report = {
-            "status": "HOLD_NO_EXECUTION_RUNNER",
-            "reason": "runner_config_json missing",
-            "OpenVLA": "NOT_PERFORMED",
-            "LIBERO": "NOT_PERFORMED",
-            "rollout": "NOT_PERFORMED",
-            "intervention": "NOT_PERFORMED",
-            "source_condition_outcomes": "NOT_CREATED",
-        }
+        report = {"status": "HOLD_NO_EXECUTION_RUNNER", "reason": "runner_config_json missing", "OpenVLA": "NOT_PERFORMED", "LIBERO": "NOT_PERFORMED", "rollout": "NOT_PERFORMED", "intervention": "NOT_PERFORMED", "source_condition_outcomes": "NOT_CREATED"}
         write_json(root / "execution_capability_report.json", report)
         return report
     config = load_config(args.runner_config_json)
@@ -119,13 +103,18 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     run_dir.mkdir(parents=True, exist_ok=True)
     for parent in parents:
         for condition in CONDITION_ORDER:
-            result_path = run_dir / f"{parent['parent_id']}_{condition}.json"
-            mapping = {**parent, "condition": condition, "result_json": str(result_path), "output_json": str(result_path)}
+            safe_parent = parent["parent_id"].replace("/", "_")
+            work_dir = run_dir / f"{safe_parent}_{condition}"
+            work_dir.mkdir(parents=True, exist_ok=True)
+            result_path = work_dir / "result.json"
+            mapping = {**parent, "condition": condition, "result_json": str(result_path), "output_json": str(result_path), "work_dir": str(work_dir), "raw_output_dir": str(work_dir), "legacy_result_json": str(work_dir / "legacy_result.json")}
             cmd = format_cmd(config["command_template"], mapping)
             completed = subprocess.run(cmd, text=True, capture_output=True, timeout=int(config.get("timeout_seconds", args.timeout_seconds)))
-            raw_runs.append({"parent_id": parent["parent_id"], "suite": parent["suite"], "condition": condition, "returncode": completed.returncode, "result_json": str(result_path)})
+            (work_dir / "stdout.txt").write_text(completed.stdout[-20000:], encoding="utf-8")
+            (work_dir / "stderr.txt").write_text(completed.stderr[-20000:], encoding="utf-8")
+            raw_runs.append({"parent_id": parent["parent_id"], "suite": parent["suite"], "condition": condition, "returncode": completed.returncode, "result_json": str(result_path), "work_dir": str(work_dir)})
             if completed.returncode != 0:
-                write_json(root / "raw_condition_runs_manifest.json", {"status": "HOLD_RUNNER_FAILED", "runs": raw_runs, "stderr": completed.stderr[-4000:]})
+                write_json(root / "raw_condition_runs_manifest.json", {"status": "HOLD_RUNNER_FAILED", "runs": raw_runs})
                 fail("external runner failed")
             if not result_path.is_file():
                 fail("external runner did not write result_json")
@@ -146,19 +135,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     write_json(root / "source_schema_validation_report.json", validation)
     write_json(root / "selected_smoke_parents.json", {"parents": parents})
     write_json(root / "raw_condition_runs_manifest.json", {"status": "PASS", "runs": raw_runs})
-    manifest = {
-        "status": "PASS_SOURCE_SMOKE_READY",
-        "source_condition_outcomes_sha256": sha256_file(source),
-        "row_count": len(rows),
-        "parent_count": len(parents),
-        "conditions": CONDITION_ORDER,
-        "primary_suites": sorted(PRIMARY),
-        "libero_10_positive_denominator": "EXCLUDED",
-        "OpenVLA": "PERFORMED_SMOKE",
-        "LIBERO": "PERFORMED_SMOKE",
-        "rollout": "PERFORMED_SMOKE",
-        "intervention": "PERFORMED_SMOKE",
-    }
+    manifest = {"status": "PASS_SOURCE_SMOKE_READY", "source_condition_outcomes_sha256": sha256_file(source), "row_count": len(rows), "parent_count": len(parents), "conditions": CONDITION_ORDER, "primary_suites": sorted(PRIMARY), "libero_10_positive_denominator": "EXCLUDED", "OpenVLA": "PERFORMED_SMOKE", "LIBERO": "PERFORMED_SMOKE", "rollout": "PERFORMED_SMOKE", "intervention": "PERFORMED_SMOKE"}
     write_json(root / "source_smoke_manifest.json", manifest)
     sums, side = write_sums(root, ["source_condition_outcomes.csv", "source_smoke_manifest.json", "source_schema_validation_report.json", "raw_condition_runs_manifest.json", "selected_smoke_parents.json"])
     manifest["SHA256SUMS"] = sums
