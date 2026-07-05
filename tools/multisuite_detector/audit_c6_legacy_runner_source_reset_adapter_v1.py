@@ -46,9 +46,17 @@ STATE_ARTIFACT_FIELDS = [
     "state_file",
     "initial_state_path",
     "initial_state_file",
+    "init_state_path",
+    "init_state_file",
+    "reset_state_path",
+    "reset_state_file",
     "state_id",
+    "state_key",
+    "initial_state_id",
     "episode_idx",
     "episode_index",
+    "benchmark_episode_idx",
+    "benchmark_initial_state_index",
 ]
 OUTPUT_FILES = [
     "legacy_runner_source_reset_adapter_static_audit.json",
@@ -175,33 +183,195 @@ def candidate_fields_from_line(line: str) -> list[str]:
     return [field for field in STATE_ARTIFACT_FIELDS if field in line]
 
 
-def scan_resolution_candidates(search_roots: list[Path], state_hash: str) -> list[dict[str, Any]]:
+def contains_hash(obj: Any, state_hash: str) -> bool:
+    if isinstance(obj, dict):
+        return any(contains_hash(k, state_hash) or contains_hash(v, state_hash) for k, v in obj.items())
+    if isinstance(obj, list):
+        return any(contains_hash(v, state_hash) for v in obj)
+    return state_hash in str(obj)
+
+
+def collect_artifact_fields(obj: Any) -> dict[str, str]:
+    found: dict[str, str] = {}
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            key = str(k)
+            if key in STATE_ARTIFACT_FIELDS and v not in (None, ""):
+                found[key] = str(v)
+            for child_key, child_value in collect_artifact_fields(v).items():
+                found.setdefault(child_key, child_value)
+    elif isinstance(obj, list):
+        for item in obj:
+            for child_key, child_value in collect_artifact_fields(item).items():
+                found.setdefault(child_key, child_value)
+    return found
+
+
+def preview_json(obj: Any) -> str:
+    try:
+        return json.dumps(obj, sort_keys=True, ensure_ascii=False)[:600]
+    except TypeError:
+        return str(obj)[:600]
+
+
+def structured_json_candidates(path: Path, state_hash: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    suffixes = {".json", ".jsonl", ".csv", ".txt", ".md"}
-    for root in search_roots:
-        if not root.exists():
+    try:
+        obj = read_json(path)
+    except Exception:
+        return rows
+
+    def visit(node: Any, locator: str) -> None:
+        if isinstance(node, dict):
+            if contains_hash(node, state_hash):
+                fields = collect_artifact_fields(node)
+                rows.append(
+                    {
+                        "path": str(path),
+                        "line": 0,
+                        "source_kind": "json_object",
+                        "hash_found": True,
+                        "candidate_fields": ";".join(sorted(fields)),
+                        "candidate_values": json.dumps(fields, sort_keys=True),
+                        "resolves_to_state_artifact": bool(fields),
+                        "text": preview_json(node),
+                    }
+                )
+            for key, value in node.items():
+                visit(value, f"{locator}.{key}" if locator else str(key))
+        elif isinstance(node, list):
+            for idx, value in enumerate(node):
+                visit(value, f"{locator}[{idx}]")
+
+    visit(obj, "")
+    return rows
+
+
+def structured_jsonl_candidates(path: Path, state_hash: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return rows
+    for lineno, line in enumerate(lines, start=1):
+        if state_hash not in line:
             continue
-        files = [root] if root.is_file() else [p for p in root.rglob("*") if p.is_file() and p.suffix in suffixes]
-        for path in files:
-            try:
-                lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-            except OSError:
-                continue
-            header_fields = candidate_fields_from_line(lines[0]) if path.suffix.lower() == ".csv" and lines else []
-            for lineno, line in enumerate(lines, start=1):
-                if state_hash not in line:
+        try:
+            obj = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        fields = collect_artifact_fields(obj) if contains_hash(obj, state_hash) else {}
+        rows.append(
+            {
+                "path": str(path),
+                "line": lineno,
+                "source_kind": "jsonl_object",
+                "hash_found": True,
+                "candidate_fields": ";".join(sorted(fields)),
+                "candidate_values": json.dumps(fields, sort_keys=True),
+                "resolves_to_state_artifact": bool(fields),
+                "text": preview_json(obj),
+            }
+        )
+    return rows
+
+
+def structured_csv_candidates(path: Path, state_hash: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    try:
+        with path.open("r", newline="", encoding="utf-8", errors="replace") as f:
+            reader = csv.DictReader(f)
+            fieldnames = reader.fieldnames or []
+            artifact_fields = [field for field in fieldnames if field in STATE_ARTIFACT_FIELDS]
+            for lineno, row in enumerate(reader, start=2):
+                if not any(state_hash in str(value) for value in row.values()):
                     continue
-                fields = sorted(set(candidate_fields_from_line(line) + header_fields))
+                values = {field: row.get(field, "") for field in artifact_fields if row.get(field, "") not in (None, "")}
                 rows.append(
                     {
                         "path": str(path),
                         "line": lineno,
+                        "source_kind": "csv_row",
                         "hash_found": True,
-                        "candidate_fields": ";".join(fields),
-                        "resolves_to_state_artifact": bool(fields),
-                        "text": line.strip()[:600],
+                        "candidate_fields": ";".join(sorted(values)),
+                        "candidate_values": json.dumps(values, sort_keys=True),
+                        "resolves_to_state_artifact": bool(values),
+                        "text": json.dumps(row, sort_keys=True)[:600],
                     }
                 )
+    except OSError:
+        return rows
+    return rows
+
+
+def line_scan_candidates(path: Path, state_hash: str) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return rows
+    header_fields = candidate_fields_from_line(lines[0]) if path.suffix.lower() == ".csv" and lines else []
+    for lineno, line in enumerate(lines, start=1):
+        if state_hash not in line:
+            continue
+        fields = sorted(set(candidate_fields_from_line(line) + header_fields))
+        rows.append(
+            {
+                "path": str(path),
+                "line": lineno,
+                "source_kind": "line_scan",
+                "hash_found": True,
+                "candidate_fields": ";".join(fields),
+                "candidate_values": "{}",
+                "resolves_to_state_artifact": bool(fields),
+                "text": line.strip()[:600],
+            }
+        )
+    return rows
+
+
+def candidate_key(row: dict[str, Any]) -> tuple[str, str, str, str]:
+    return (str(row.get("path")), str(row.get("line")), str(row.get("source_kind")), str(row.get("text")))
+
+
+def scan_resolution_candidates(
+    search_roots: list[Path],
+    state_hash: str,
+    *,
+    max_files: int,
+    max_file_bytes: int,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str, str]] = set()
+    suffixes = {".json", ".jsonl", ".csv", ".txt", ".md"}
+    scanned = 0
+    for root in search_roots:
+        if not root.exists():
+            continue
+        files = [root] if root.is_file() else [p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in suffixes]
+        for path in files:
+            if scanned >= max_files:
+                return rows
+            try:
+                if path.stat().st_size > max_file_bytes:
+                    continue
+            except OSError:
+                continue
+            scanned += 1
+            suffix = path.suffix.lower()
+            candidates: list[dict[str, Any]] = []
+            if suffix == ".json":
+                candidates.extend(structured_json_candidates(path, state_hash))
+            elif suffix == ".jsonl":
+                candidates.extend(structured_jsonl_candidates(path, state_hash))
+            elif suffix == ".csv":
+                candidates.extend(structured_csv_candidates(path, state_hash))
+            candidates.extend(line_scan_candidates(path, state_hash))
+            for row in candidates:
+                key = candidate_key(row)
+                if key not in seen:
+                    seen.add(key)
+                    rows.append(row)
     return rows
 
 
@@ -285,8 +455,17 @@ def audit(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, Any]
 
     roots = [Path(p).resolve() for p in args.search_root]
     roots.extend([c6_1f_path.parent, repo_root / "reports", repo_root / "docs"])
-    candidates = scan_resolution_candidates(roots, state_hash) if state_hash else []
-    resolves = any(str(r.get("resolves_to_state_artifact")) == "True" for r in candidates)
+    candidates = (
+        scan_resolution_candidates(
+            roots,
+            state_hash,
+            max_files=args.max_files,
+            max_file_bytes=args.max_file_bytes,
+        )
+        if state_hash
+        else []
+    )
+    resolves = any(bool(r.get("resolves_to_state_artifact")) for r in candidates)
     hash_found = bool(candidates)
 
     status = status_from(accepted_reset_args, bool(usage), resolves, bool(insertion))
@@ -334,6 +513,9 @@ def audit(args: argparse.Namespace) -> tuple[dict[str, Any], list[dict[str, Any]
             "resolves_to_state_artifact": resolves,
             "candidate_fields": sorted({field for row in candidates for field in str(row.get("candidate_fields", "")).split(";") if field}),
             "candidate_artifacts": candidates,
+            "structured_resolution_enabled": True,
+            "max_files": args.max_files,
+            "max_file_bytes": args.max_file_bytes,
         },
         "adapter_classification": classification,
         "recommended_next_patch": recommendation["recommended_next_patch"],
@@ -355,7 +537,7 @@ def empty_report(args: argparse.Namespace, status: str, reason: str) -> dict[str
         "selected_parent": {},
         "shim": {},
         "legacy_runner": {"source_exists": False, "accepted_reset_args": [], "accepted_parent_or_state_args": [], "uses_reset_arg_for_env_reset": False, "reset_code_evidence": []},
-        "reset_resolution": {"initial_state_hash_found": False, "resolves_to_state_artifact": False, "candidate_fields": [], "candidate_artifacts": []},
+        "reset_resolution": {"initial_state_hash_found": False, "resolves_to_state_artifact": False, "candidate_fields": [], "candidate_artifacts": [], "structured_resolution_enabled": True},
         "adapter_classification": "BLOCKED_NO_RESET_ENTRYPOINT" if status == "HOLD_LEGACY_RUNNER_SOURCE_NOT_FOUND" else "BLOCKED_HASH_NOT_RESOLVABLE",
         "recommended_next_patch": "Resolve the blocking HOLD before patching runtime execution.",
         "boundaries": dict(BOUNDARIES),
@@ -389,6 +571,8 @@ def main() -> int:
     p.add_argument("--shim-result-json")
     p.add_argument("--legacy-runner")
     p.add_argument("--search-root", action="append", default=[])
+    p.add_argument("--max-files", type=int, default=20000)
+    p.add_argument("--max-file-bytes", type=int, default=5_000_000)
     p.add_argument("--output-root", required=True)
     p.add_argument("--repo-root", default=".")
     p.add_argument("--git-commit", required=True)
@@ -406,7 +590,11 @@ def main() -> int:
         rc = 2
     write_json(output_root / "legacy_runner_source_reset_adapter_static_audit.json", report)
     write_csv(output_root / "source_matches.csv", matches, ["path", "line", "matched_terms", "text"])
-    write_csv(output_root / "reset_resolution_candidates.csv", candidates, ["path", "line", "hash_found", "candidate_fields", "resolves_to_state_artifact", "text"])
+    write_csv(
+        output_root / "reset_resolution_candidates.csv",
+        candidates,
+        ["path", "line", "source_kind", "hash_found", "candidate_fields", "candidate_values", "resolves_to_state_artifact", "text"],
+    )
     write_json(output_root / "adapter_recommendation.json", recommendation)
     write_checksum_artifacts(output_root)
     print(json.dumps(report, sort_keys=True))
