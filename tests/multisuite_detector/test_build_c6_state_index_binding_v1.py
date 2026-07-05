@@ -48,3 +48,4 @@ def test_missing_path_holds():
 
 def test_no_binding_holds():
     assert m.decide_status([], []) == m.HOLD_NO_BINDING
+    assert "No concrete" in m.recommendation(m.HOLD_NO_BINDING)
