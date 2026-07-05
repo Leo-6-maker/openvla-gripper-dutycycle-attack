@@ -4,11 +4,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
 PRIMARY = {"libero_goal", "libero_object", "libero_spatial"}
 CONDS = {"CLEAN", "TRUE_T10", "RAND_T10", "RANDOM_TIME", "EARLY_SHIFT", "ORACLE"}
+LEGACY_TASK_ID_BY_SUITE_INDEX = {
+    ("libero_goal", 1): "libero_goal_open_middle_drawer",
+    ("libero_object", 1): "libero_object_alphabet_soup",
+    ("libero_spatial", 1): "libero_spatial_black_bowl",
+}
 
 
 def write_json(path: str | Path, obj: dict) -> None:
@@ -17,12 +23,43 @@ def write_json(path: str | Path, obj: dict) -> None:
     p.write_text(json.dumps(obj, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def parent_suffix_task_index(parent_id: str) -> int | None:
+    m = re.search(r"(?:^|/)task_(\d+)(?:/|$)", str(parent_id or ""))
+    if not m:
+        return None
+    return int(m.group(1))
+
+
+def parse_task_index(args: argparse.Namespace) -> int | None:
+    from_parent = parent_suffix_task_index(args.parent_id)
+    if from_parent is not None:
+        return from_parent
+    try:
+        return int(str(args.task_id))
+    except ValueError:
+        return None
+
+
+def resolve_legacy_task_id(args: argparse.Namespace) -> str:
+    override = str(getattr(args, "legacy_task_id", "") or "").strip()
+    if override:
+        return override
+    task_index = parse_task_index(args)
+    if task_index is not None:
+        mapped = LEGACY_TASK_ID_BY_SUITE_INDEX.get((str(args.suite), int(task_index)))
+        if mapped:
+            return mapped
+    return str(args.task_id)
+
+
 def base_report(args: argparse.Namespace, work: Path) -> dict:
+    legacy_task_id = resolve_legacy_task_id(args)
     return {
         "parent_id": args.parent_id,
         "episode_key": args.episode_key,
         "suite": args.suite,
         "task_id": args.task_id,
+        "legacy_task_id": legacy_task_id,
         "condition": args.condition,
         "initial_state_hash": args.initial_state_hash,
         "state_id": args.state_id,
@@ -43,11 +80,12 @@ def not_performed_boundary() -> dict:
 
 
 def legacy_runner_argv_preview(args: argparse.Namespace, work: Path) -> list[str]:
+    legacy_task_id = resolve_legacy_task_id(args)
     argv = [
         sys.executable,
         args.legacy_runner,
         "--task_id",
-        str(args.task_id),
+        str(legacy_task_id),
         "--trigger",
         "state_id_binding_preview_only",
         "--rho",
@@ -71,6 +109,7 @@ def main() -> int:
     ap.add_argument("--episode-key", required=True)
     ap.add_argument("--suite", required=True)
     ap.add_argument("--task-id", required=True)
+    ap.add_argument("--legacy-task-id", default="")
     ap.add_argument("--condition", required=True)
     ap.add_argument("--output-json", required=True)
     ap.add_argument("--work-dir", required=True)
@@ -114,6 +153,12 @@ def main() -> int:
                     "provided": args.state_id is not None,
                     "state_id": args.state_id,
                     "binding_mode": "DRY_RUN_METADATA_ONLY" if args.state_id is not None else "NOT_PROVIDED",
+                },
+                "legacy_task_binding": {
+                    "source_task_id": str(args.task_id),
+                    "source_parent_id": str(args.parent_id),
+                    "legacy_task_id": resolve_legacy_task_id(args),
+                    "binding_mode": "STATIC_PARENT_TASK_TO_LEGACY_TASK_ID",
                 },
                 "legacy_runner_argv_preview": legacy_runner_argv_preview(args, work),
                 "legacy_runner_argv_preview_mode": "NOT_EXECUTED_DRY_RUN_METADATA_ONLY",
