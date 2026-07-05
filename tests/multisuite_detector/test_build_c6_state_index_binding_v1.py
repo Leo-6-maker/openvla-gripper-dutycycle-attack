@@ -64,6 +64,14 @@ def test_gate_name():
     assert m.GATE == "C6_1H_STATE_INDEX_BINDING_AUDIT_BUILD"
 
 
+def test_hash_mismatch_holds(tmp_path):
+    c6 = write_c6_1g(tmp_path)
+    rc, out = run_tool(tmp_path, c6, "0" * 64, tmp_path)
+    assert rc != 0
+    report = load(out / "state_index_binding_audit.json")
+    assert report["status"] == "HOLD_C6_1G_HASH_MISMATCH"
+
+
 def test_parent_metadata_binds_existing_state_path(tmp_path):
     c6 = write_c6_1g(tmp_path)
     artifact = tmp_path / "artifact.json"
