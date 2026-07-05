@@ -13,6 +13,16 @@ from typing import Any
 GATE = "C6_1E_LEGACY_RUNNER_RESET_BINDING_PATCH"
 PASS = "PASS_STATIC_SHIM_ARG_BINDING"
 RESET_ARGS = ["--initial-state-hash", "--initial_state_hash", "--initial-state", "--initial_state", "--reset-state-hash", "--reset_state_hash"]
+REQUIRED_ARGS = {
+    "--parent-id",
+    "--episode-key",
+    "--suite",
+    "--task-id",
+    "--condition",
+    "--output-json",
+    "--work-dir",
+    "--dry-run",
+}
 
 
 def sha256_file(path: str | Path) -> str:
@@ -54,6 +64,8 @@ def status_for(parent: dict[str, Any], accepted: set[str]) -> str:
         return "HOLD_RESET_FIELD_MISSING"
     if not any(arg in accepted for arg in RESET_ARGS):
         return "HOLD_RESET_ARG_NOT_ACCEPTED_BY_RUNNER"
+    if not REQUIRED_ARGS.issubset(accepted):
+        return "HOLD_RUNNER_REQUIRED_ARGS_NOT_ACCEPTED"
     return PASS
 
 
