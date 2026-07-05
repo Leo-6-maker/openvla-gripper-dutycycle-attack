@@ -7,6 +7,7 @@ import gc
 import hashlib
 import json
 import os
+import re
 import socket
 import sys
 import time
@@ -39,6 +40,7 @@ ACCEPTED_INPUT = {
 }
 PASS = "PASS_MULTISUITE_SINGLE_CLEAN_DECODE_NO_STEP"
 OUT_FILES = ["multisuite_single_clean_decode_no_step.json", "clean_decode_records.jsonl", "clean_decode_summary.csv", "checksum_report.json"]
+ENV_REF_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)")
 
 
 def sha256_file(path):
@@ -86,6 +88,23 @@ def load_yaml(path):
 
 def expand_path(text):
     return os.path.expandvars(os.path.expanduser(str(text or "")))
+
+
+def unresolved_env_vars(text):
+    return sorted({a or b for a, b in ENV_REF_RE.findall(str(text or ""))})
+
+
+def apply_model_env_overrides(args):
+    applied = {}
+    if str(getattr(args, "openvla_model_root", "") or "").strip():
+        value = expand_path(args.openvla_model_root)
+        os.environ["OPENVLA_MODEL_ROOT"] = value
+        applied["OPENVLA_MODEL_ROOT"] = value
+    if str(getattr(args, "openvla_base_model_dir", "") or "").strip():
+        value = expand_path(args.openvla_base_model_dir)
+        os.environ["OPENVLA_BASE_MODEL_DIR"] = value
+        applied["OPENVLA_BASE_MODEL_DIR"] = value
+    return applied
 
 
 def load_tasks(tasks_config, task_ids_text):
@@ -142,11 +161,15 @@ def validate_parent(args):
 
 def resolve_model_path(attack_cfg, task, explicit_model_path):
     if str(explicit_model_path or "").strip():
-        return expand_path(explicit_model_path)
-    paths = dict((attack_cfg or {}).get("model_paths", {}) or {})
-    suite = str(task.get("suite", ""))
-    model_path = paths.get(suite) or paths.get("base") or paths.get("libero_goal") or ""
-    return expand_path(model_path)
+        model_path = expand_path(explicit_model_path)
+    else:
+        paths = dict((attack_cfg or {}).get("model_paths", {}) or {})
+        suite = str(task.get("suite", ""))
+        model_path = expand_path(paths.get(suite) or paths.get("base") or paths.get("libero_goal") or "")
+    unresolved = unresolved_env_vars(model_path)
+    if unresolved:
+        raise EnvironmentError(f"unresolved model path environment variables for task={task.get('task_id')}: {unresolved}; path={model_path}")
+    return model_path
 
 
 def obs_image(obs, camera_key):
@@ -273,6 +296,7 @@ def run(args):
     status = PASS
     reason = ""
     records = []
+    env_overrides = apply_model_env_overrides(args)
     q_sha, hold, hold_reason = validate_parent(args)
     if hold:
         status = hold
@@ -322,6 +346,11 @@ def run(args):
         "preprocess_backend": resolve_backend(args.preprocess_backend),
         "attack_config": str(args.attack_config),
         "tasks_config": str(args.tasks_config),
+        "model_env_overrides": env_overrides,
+        "model_env_snapshot": {
+            "OPENVLA_MODEL_ROOT": os.environ.get("OPENVLA_MODEL_ROOT", ""),
+            "OPENVLA_BASE_MODEL_DIR": os.environ.get("OPENVLA_BASE_MODEL_DIR", ""),
+        },
         "record_count": len(records),
         "cuda_available": cuda_ok,
         "cuda_error": cuda_error,
@@ -364,6 +393,8 @@ def main():
     p.add_argument("--render-gpu-device-id", type=int, default=0)
     p.add_argument("--model-gpu-device-id", type=int, default=-1)
     p.add_argument("--model-path", default="")
+    p.add_argument("--openvla-model-root", default="")
+    p.add_argument("--openvla-base-model-dir", default="")
     p.add_argument("--horizon", type=int, default=5)
     p.add_argument("--env-seed", type=int, default=0)
     p.add_argument("--sim-forward", action="store_true")
