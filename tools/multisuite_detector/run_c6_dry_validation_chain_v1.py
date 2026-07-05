@@ -52,15 +52,17 @@ def argv_value(argv, flag):
     return ""
 
 
-def preview_precheck(c6_1l_json, expected_task_id, expected_state_id):
+def preview_precheck(c6_1l_json, expected_task_id, expected_state_id, expected_trigger):
     obj = read_json(c6_1l_json)
     argv = list(obj.get("legacy_runner_argv_preview") or [])
     return {
         "preview_argv": argv,
         "task_id": argv_value(argv, "--task_id"),
         "state_ids": argv_value(argv, "--state_ids"),
+        "trigger": argv_value(argv, "--trigger"),
         "task_id_ok": argv_value(argv, "--task_id") == str(expected_task_id),
         "state_ids_ok": argv_value(argv, "--state_ids") == str(expected_state_id),
+        "trigger_ok": argv_value(argv, "--trigger") == str(expected_trigger),
         "dry_run_ok": "--dry_run" in argv,
     }
 
@@ -141,13 +143,15 @@ def run(args):
 
     precheck = {}
     if status == PASS:
-        precheck = preview_precheck(l_json, args.expected_legacy_task_id, args.expected_state_id)
+        precheck = preview_precheck(l_json, args.expected_legacy_task_id, args.expected_state_id, args.expected_trigger)
         if not precheck["dry_run_ok"]:
             status = "HOLD_C6_1L_PREVIEW_NOT_DRY_RUN"
         elif not precheck["task_id_ok"]:
             status = "HOLD_C6_1L_PREVIEW_TASK_ID_MISMATCH"
         elif not precheck["state_ids_ok"]:
             status = "HOLD_C6_1L_PREVIEW_STATE_ID_MISMATCH"
+        elif not precheck["trigger_ok"]:
+            status = "HOLD_C6_1L_PREVIEW_TRIGGER_MISMATCH"
         if status != PASS:
             reason = json.dumps(precheck, sort_keys=True)
 
@@ -188,6 +192,7 @@ def main():
     p.add_argument("--expected-c6-1i-sha256", required=True)
     p.add_argument("--expected-legacy-task-id", default="libero_goal_open_middle_drawer")
     p.add_argument("--expected-state-id", default="0")
+    p.add_argument("--expected-trigger", default="clean")
     p.add_argument("--validate-env", action="store_true")
     p.add_argument("--require-cuda", action="store_true")
     p.add_argument("--run-c6-1k", action="store_true")
