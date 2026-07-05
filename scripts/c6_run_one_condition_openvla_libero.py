@@ -42,6 +42,29 @@ def not_performed_boundary() -> dict:
     }
 
 
+def legacy_runner_argv_preview(args: argparse.Namespace, work: Path) -> list[str]:
+    argv = [
+        sys.executable,
+        args.legacy_runner,
+        "--task_id",
+        str(args.task_id),
+        "--trigger",
+        "state_id_binding_preview_only",
+        "--rho",
+        "0.0",
+        "--episodes",
+        "1",
+        "--output_root",
+        str(work / "legacy_preview"),
+        "--dry_run",
+    ]
+    if args.state_id is not None:
+        argv.extend(["--state_ids", str(args.state_id)])
+    if args.model_path:
+        argv.extend(["--model_path", str(args.model_path)])
+    return argv
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--parent-id", required=True)
@@ -92,6 +115,8 @@ def main() -> int:
                     "state_id": args.state_id,
                     "binding_mode": "DRY_RUN_METADATA_ONLY" if args.state_id is not None else "NOT_PROVIDED",
                 },
+                "legacy_runner_argv_preview": legacy_runner_argv_preview(args, work),
+                "legacy_runner_argv_preview_mode": "NOT_EXECUTED_DRY_RUN_METADATA_ONLY",
                 "boundary": not_performed_boundary(),
                 "boundaries": not_performed_boundary(),
                 "raw_logs": {
