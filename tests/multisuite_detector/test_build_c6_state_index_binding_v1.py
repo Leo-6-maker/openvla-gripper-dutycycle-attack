@@ -24,12 +24,12 @@ def check_sha256sum(sum_file: Path) -> None:
         assert sha256(sum_file.parent / rel) == expected
 
 
-def write_c6_1g(tmp_path: Path, reset: str = RESET) -> Path:
+def write_c6_1g(tmp_path: Path, reset: str = RESET, status: str = "HOLD_RESET_HASH_NOT_RESOLVABLE_TO_STATE_ARTIFACT") -> Path:
     p = tmp_path / "c6_1g.json"
     p.write_text(
         json.dumps(
             {
-                "status": "HOLD_RESET_HASH_NOT_RESOLVABLE_TO_STATE_ARTIFACT",
+                "status": status,
                 "selected_parent": {
                     "parent_id": "libero_goal/task_01/state_000",
                     "episode_key": "libero_goal/task_01/state_000/clean/attempt_01",
@@ -70,6 +70,14 @@ def test_hash_mismatch_holds(tmp_path):
     assert rc != 0
     report = load(out / "state_index_binding_audit.json")
     assert report["status"] == "HOLD_C6_1G_HASH_MISMATCH"
+
+
+def test_unexpected_c6_1g_status_holds(tmp_path):
+    c6 = write_c6_1g(tmp_path, status="HOLD_OTHER")
+    rc, out = run_tool(tmp_path, c6, sha256(c6), tmp_path)
+    assert rc != 0
+    report = load(out / "state_index_binding_audit.json")
+    assert report["status"] == "HOLD_C6_1G_STATUS_UNEXPECTED"
 
 
 def test_parent_metadata_binds_existing_state_path(tmp_path):
