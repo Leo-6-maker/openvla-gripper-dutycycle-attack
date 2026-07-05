@@ -12,8 +12,8 @@ GATE = "C6_1K_STATE_ID_SOURCE_STATIC_AUDIT"
 INPUT_PASS = "PASS_SHIM_DRY_RUN_STATE_ID_BOUND"
 PASS_PATCHABLE = "PASS_STATIC_STATE_ID_SOURCE_PATCHABLE"
 PASS_DIRECT = "PASS_STATIC_STATE_ID_SOURCE_DIRECT"
-STATE_FLAGS = {"--state-id", "--state_id", "--episode-idx", "--episode_idx"}
-TERMS = ["set_init_state", "initial_states", "env.reset", "set_state"]
+STATE_FLAGS = {"--state-id", "--state_id", "--state-ids", "--state_ids", "--episode-idx", "--episode_idx"}
+TERMS = ["set_init_state", "initial_states", "env.reset", "set_state", "state_ids"]
 OUT_FILES = ["state_id_source_static_audit.json", "source_matches.csv", "checksum_report.json"]
 
 
