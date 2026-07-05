@@ -32,6 +32,17 @@ def test_resolve_path_relative_to_source(tmp_path):
     assert exists is True
 
 
+def test_candidate_from_obj_marks_concrete_path(tmp_path):
+    source = tmp_path / "index.json"
+    source.write_text("{}", encoding="utf-8")
+    artifact = tmp_path / "artifact.json"
+    artifact.write_text("{}", encoding="utf-8")
+    parent = {"parent_id": "libero_goal/task_01/state_000", "suite": "libero_goal", "task_id": 1}
+    row = m.candidate_from_obj({"parent_id": "libero_goal/task_01/state_000", "state_path": "artifact.json"}, source, 1, "json_object", parent, [tmp_path])
+    assert row["is_concrete_binding"] is True
+    assert row["resolved_path_exists"] is True
+
+
 def test_identity_match_reason_parent_fields():
     parent = {"parent_id": "libero_goal/task_01/state_000", "episode_key": "episode_A", "suite": "libero_goal", "task_id": 1}
     reasons = m.identity_match_reason({"parent_id": "libero_goal/task_01/state_000", "state_path": "x.json"}, parent)
