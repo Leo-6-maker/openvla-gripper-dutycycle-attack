@@ -184,10 +184,11 @@ def scan_resolution_candidates(search_roots: list[Path], state_hash: str) -> lis
                 lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
             except OSError:
                 continue
+            header_fields = candidate_fields_from_line(lines[0]) if path.suffix.lower() == ".csv" and lines else []
             for lineno, line in enumerate(lines, start=1):
                 if state_hash not in line:
                     continue
-                fields = candidate_fields_from_line(line)
+                fields = sorted(set(candidate_fields_from_line(line) + header_fields))
                 rows.append(
                     {
                         "path": str(path),
