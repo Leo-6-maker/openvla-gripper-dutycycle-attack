@@ -21,6 +21,12 @@ BOUNDARY_KEYS = [
     "intervention",
     "attack_condition",
 ]
+CORE_OUTPUTS = [
+    "reset_invocation_no_model_no_attack_proof.json",
+    "shim_result.json",
+    "stdout.txt",
+    "stderr.txt",
+]
 
 
 class Hold(Exception):
@@ -138,17 +144,24 @@ def selected_parent_with_hash(c6_1e: dict[str, Any]) -> dict[str, Any]:
     return parent
 
 
-def write_checksums(output_root: Path) -> tuple[str, str]:
-    files = [
-        "reset_invocation_no_model_no_attack_proof.json",
-        "shim_result.json",
-        "stdout.txt",
-        "stderr.txt",
-    ]
-    existing = [name for name in files if (output_root / name).exists()]
+def existing_hashes(output_root: Path, names: list[str]) -> dict[str, str]:
+    return {name: sha256_file(output_root / name) for name in names if (output_root / name).exists()}
+
+
+def write_checksum_artifacts(output_root: Path) -> tuple[str, str]:
+    """Write checksum_report.json and SHA256SUMS without self-referential JSON fields."""
+    core_hashes = existing_hashes(output_root, CORE_OUTPUTS)
+    checksum_report = {
+        "algorithm": "sha256",
+        "reported_files": core_hashes,
+        "self_referential_checksum_fields": "ABSENT_BY_DESIGN",
+        "note": "checksum_report.json intentionally excludes itself and SHA256SUMS files to avoid a checksum loop.",
+    }
+    write_json(output_root / "checksum_report.json", checksum_report)
+    files_for_sums = [*CORE_OUTPUTS, "checksum_report.json"]
+    present = [name for name in files_for_sums if (output_root / name).exists()]
     sums = output_root / "SHA256SUMS"
-    lines = [f"{sha256_file(output_root / name)}  {name}\n" for name in existing]
-    sums.write_text("".join(lines), encoding="utf-8")
+    sums.write_text("".join(f"{sha256_file(output_root / name)}  {name}\n" for name in present), encoding="utf-8")
     sidecar = output_root / "SHA256SUMS.sha256"
     sidecar.write_text(f"{sha256_file(sums)}  SHA256SUMS\n", encoding="utf-8")
     return sha256_file(sums), sha256_file(sidecar)
@@ -246,11 +259,7 @@ def main() -> int:
         }
         rc = 2
     write_json(output_root / "reset_invocation_no_model_no_attack_proof.json", report)
-    sums_sha, sidecar_sha = write_checksums(output_root)
-    report["SHA256SUMS_sha256"] = sums_sha
-    report["SHA256SUMS_sidecar_sha256"] = sidecar_sha
-    write_json(output_root / "reset_invocation_no_model_no_attack_proof.json", report)
-    write_checksums(output_root)
+    write_checksum_artifacts(output_root)
     print(json.dumps(report, sort_keys=True))
     return rc
 
