@@ -44,6 +44,14 @@ def has_pair(argv, flag, value):
     return False
 
 
+def value_after(argv, flag):
+    argv = list(argv or [])
+    for i, x in enumerate(argv[:-1]):
+        if x == flag:
+            return str(argv[i + 1])
+    return ""
+
+
 def effective_argv(argv, python_override):
     out = list(argv or [])
     if out and str(python_override or "").strip():
@@ -97,6 +105,7 @@ def run(args):
     argv = []
     rc = None
     state_id = None
+    legacy_task_id = ""
     python_version = ""
     python_error = ""
     status = PASS
@@ -107,6 +116,7 @@ def run(args):
         state_id = c6.get("state_id")
         preview_argv = list(c6.get("legacy_runner_argv_preview") or [])
         argv = effective_argv(preview_argv, args.python)
+        legacy_task_id = value_after(argv, "--task_id")
         if c6.get("status") != INPUT_PASS:
             status = "HOLD_C6_1L_STATUS_NOT_PASS"
         elif state_id is None:
@@ -117,6 +127,10 @@ def run(args):
             status = "HOLD_LEGACY_ARGV_NOT_DRY_RUN"
         elif not has_pair(argv, "--state_ids", state_id):
             status = "HOLD_LEGACY_ARGV_STATE_IDS_MISSING"
+        elif not legacy_task_id:
+            status = "HOLD_LEGACY_ARGV_TASK_ID_MISSING"
+        elif legacy_task_id.isdigit():
+            status = "HOLD_LEGACY_ARGV_TASK_ID_NUMERIC"
         else:
             python_version, python_error = interpreter_version(argv[0])
             if python_error:
@@ -136,6 +150,7 @@ def run(args):
         "input_c6_1l_json_sha256": observed,
         "expected_c6_1l_json_sha256": args.expected_c6_1l_sha256,
         "state_id": state_id,
+        "legacy_task_id": legacy_task_id,
         "python_override": str(args.python or ""),
         "python_version": python_version,
         "python_error": python_error,
