@@ -1,3 +1,4 @@
+from pathlib import Path
 from tools.multisuite_detector import build_c6_state_index_binding_v1 as m
 
 
@@ -19,6 +20,16 @@ def test_collect_fields_path_and_index():
     fields = m.collect_fields({"outer": {"state_path": "a.json", "episode_idx": 7}})
     assert fields["state_path"] == "a.json"
     assert fields["episode_idx"] == "7"
+
+
+def test_resolve_path_relative_to_source(tmp_path):
+    source = tmp_path / "meta" / "index.json"
+    source.parent.mkdir()
+    artifact = source.parent / "artifact.json"
+    artifact.write_text("{}", encoding="utf-8")
+    resolved, exists = m.resolve_path("artifact.json", source, [tmp_path])
+    assert Path(resolved) == artifact.resolve()
+    assert exists is True
 
 
 def test_identity_match_reason_parent_fields():
