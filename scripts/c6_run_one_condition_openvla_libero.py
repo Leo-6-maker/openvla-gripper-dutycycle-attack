@@ -29,6 +29,7 @@ def main() -> int:
     ap.add_argument("--legacy-runner", default="scripts/v4_run_eval_openvla.py")
     ap.add_argument("--model-path")
     ap.add_argument("--benchmark-root")
+    ap.add_argument("--initial-state-hash")
     ap.add_argument("--seed", type=int, default=2026070401)
     ap.add_argument("--max-steps", type=int)
     ap.add_argument("--dry-run", action="store_true")
@@ -48,6 +49,7 @@ def main() -> int:
         "suite": args.suite,
         "task_id": args.task_id,
         "condition": args.condition,
+        "initial_state_hash": args.initial_state_hash,
         "legacy_runner": args.legacy_runner,
         "work_dir": str(work),
         "reason": (
