@@ -48,6 +48,17 @@ def test_direct_state_arg(tmp_path):
     assert report["accepted_state_flags"] == ["--state-id"]
 
 
+def test_direct_legacy_state_ids_arg(tmp_path):
+    c6 = write_c6(tmp_path)
+    source = tmp_path / "source.py"
+    source.write_text('ap.add_argument("--state_ids")\nstate_ids=args.state_ids\nenv.set_init_state(init_states[int(sid)])\n', encoding="utf-8")
+    rc, out = run_tool(tmp_path, c6, source, sha256(c6))
+    assert rc == 0
+    report = load(out / "state_id_source_static_audit.json")
+    assert report["status"] == m.PASS_DIRECT
+    assert report["accepted_state_flags"] == ["--state_ids"]
+
+
 def test_patchable_anchor(tmp_path):
     c6 = write_c6(tmp_path)
     source = tmp_path / "source.py"
