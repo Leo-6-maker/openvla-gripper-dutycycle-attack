@@ -19,6 +19,7 @@ from typing import Any
 
 PRIMARY = {"libero_goal", "libero_object", "libero_spatial"}
 DIAGNOSTIC_ONLY = {"libero_10"}
+SAFETY_FIELD_CANDIDATES = ["safety_false_trigger_rate", "false_trigger_rate", "safety_rate"]
 
 
 class C5SafetyAuditError(ValueError):
@@ -32,7 +33,7 @@ def fail(message: str) -> None:
 def sha256_file(path: Path) -> str:
     h = hashlib.sha256()
     with path.open("rb") as f:
-        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+        for chunk in iter(lambda: f.read(1024 * 1024), b=""):
             h.update(chunk)
     return h.hexdigest()
 
@@ -69,7 +70,7 @@ def write_csv(path: Path, columns: list[str], rows: list[dict[str, Any]]) -> Non
 
 
 def parse_float(value: Any, default: float | None = None) -> float | None:
-    if value is None or value == "" or str(value).upper() in {"NA", "N/A", "NOT_APPLICABLE"}:
+    if value is None or value == "" or str(value).upper() in {"NA", "N/A", "NOT_APPLICABLE", "NONE"}:
         return default
     try:
         return float(value)
@@ -78,13 +79,40 @@ def parse_float(value: Any, default: float | None = None) -> float | None:
 
 
 def get_any(row: dict[str, Any], names: list[str]) -> Any:
-    lower = {k.lower(): v for k, v in row.items()}
+    lower = {str(k).lower(): v for k, v in row.items()}
     for name in names:
         if name in row:
             return row[name]
         if name.lower() in lower:
             return lower[name.lower()]
     return None
+
+
+def iter_dicts(obj: Any):
+    if isinstance(obj, dict):
+        yield obj
+        for value in obj.values():
+            yield from iter_dicts(value)
+    elif isinstance(obj, list):
+        for value in obj:
+            yield from iter_dicts(value)
+
+
+def suite_safety_fallback(report: dict[str, Any]) -> dict[str, float]:
+    """Extract per-suite safety rates from flexible JSON schemas."""
+    out: dict[str, float] = {}
+    for node in iter_dicts(report):
+        suite = get_any(node, ["suite", "suite_name", "name", "dataset"])
+        if suite is None:
+            continue
+        suite = str(suite).strip()
+        if not suite:
+            continue
+        rate = parse_float(get_any(node, SAFETY_FIELD_CANDIDATES))
+        if rate is None:
+            continue
+        out[suite] = rate
+    return out
 
 
 def validate_sums(root: Path) -> dict[str, Any]:
@@ -112,14 +140,21 @@ def validate_sums(root: Path) -> dict[str, Any]:
     return {"entry_count": entries, "SHA256SUMS": sha256_file(sums), "SHA256SUMS.sha256": sha256_file(side)}
 
 
-def extract_suite_rows(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
+def extract_suite_rows(rows: list[dict[str, str]], fallback_safety: dict[str, float]) -> list[dict[str, Any]]:
     out = []
     for row in rows:
         suite = str(get_any(row, ["suite", "name", "dataset"])).strip()
         if not suite:
             continue
         role = str(get_any(row, ["role", "suite_role"]) or ("diagnostic_only" if suite in DIAGNOSTIC_ONLY else "primary_positive"))
-        safety = parse_float(get_any(row, ["safety_false_trigger_rate", "false_trigger_rate", "safety_rate"]))
+        raw_safety = parse_float(get_any(row, SAFETY_FIELD_CANDIDATES))
+        safety_source = "metrics_by_suite.csv"
+        safety = raw_safety
+        if safety is None and suite in fallback_safety:
+            safety = fallback_safety[suite]
+            safety_source = "safety_false_trigger_report.json"
+        elif safety is None:
+            safety_source = "missing"
         emission = parse_float(get_any(row, ["emission_rate", "emit_rate"]))
         hit = parse_float(get_any(row, ["hit_rate", "positive_hit_rate"]))
         positive = parse_float(get_any(row, ["positive_support", "positive_episode_count"]), default=0.0)
@@ -130,6 +165,7 @@ def extract_suite_rows(rows: list[dict[str, str]]) -> list[dict[str, Any]]:
             "hit_rate": hit,
             "emission_rate": emission,
             "safety_false_trigger_rate": safety,
+            "safety_rate_source": safety_source,
             "is_primary_positive_suite": suite in PRIMARY,
             "is_diagnostic_only_suite": suite in DIAGNOSTIC_ONLY,
         })
@@ -166,7 +202,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     out.mkdir(parents=True, exist_ok=True)
     sums = validate_sums(root)
     overall = read_json(root / "metrics_overall.json")
-    suite_rows = extract_suite_rows(read_csv(root / "metrics_by_suite.csv"))
+    safety_report = read_json(root / "safety_false_trigger_report.json") if (root / "safety_false_trigger_report.json").is_file() else {}
+    fallback = suite_safety_fallback(safety_report)
+    suite_rows = extract_suite_rows(read_csv(root / "metrics_by_suite.csv"), fallback)
     status, reasons = decision(suite_rows, args.max_primary_safety_false_trigger, args.max_diagnostic_safety_false_trigger)
     table_rows = []
     for row in suite_rows:
@@ -177,8 +215,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "hit_rate": row["hit_rate"],
             "emission_rate": row["emission_rate"],
             "safety_false_trigger_rate": row["safety_false_trigger_rate"],
+            "safety_rate_source": row["safety_rate_source"],
         })
-    write_csv(out / "primary_suite_safety_table.csv", ["suite", "role", "positive_support", "hit_rate", "emission_rate", "safety_false_trigger_rate"], table_rows)
+    write_csv(out / "primary_suite_safety_table.csv", ["suite", "role", "positive_support", "hit_rate", "emission_rate", "safety_false_trigger_rate", "safety_rate_source"], table_rows)
     report = {
         "status": status,
         "schema_version": "c5_replay_safety_triage_v1",
@@ -192,6 +231,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "decision_reasons": reasons,
         "primary_positive_suites": sorted(PRIMARY),
         "diagnostic_only_suites": sorted(DIAGNOSTIC_ONLY),
+        "fallback_safety_suites": sorted(fallback),
+        "missing_primary_safety_suites": sorted(r["suite"] for r in suite_rows if r["suite"] in PRIMARY and r["safety_false_trigger_rate"] is None),
         "c5_sha256sums": sums,
         "new_training": "NOT_PERFORMED",
         "OpenVLA": "NOT_PERFORMED",
