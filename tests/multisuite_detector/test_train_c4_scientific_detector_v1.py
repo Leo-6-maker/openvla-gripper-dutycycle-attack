@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from tools.multisuite_detector.build_c4_scientific_splits_v1 import (
+    build_all_suite_stratified_split,
     build_object_task_heldout_split,
     build_suite_loso_with_val_split,
 )
@@ -118,6 +119,16 @@ def test_suite_loso_training_smoke(tmp_path):
     assert report["status"] == "PASS"
     assert report["split_type"] == "suite_loso_with_val_v1"
     assert report["test"]["count"] > 0
+
+
+def test_all_suite_stratified_training_smoke(tmp_path):
+    dataset, features, labels = make_fixture(tmp_path)
+    split = tmp_path / "all_suite_stratified_parent_split_v1.csv"
+    build_all_suite_stratified_split(dataset, labels, split, seed=7, val_ratio=0.25, test_ratio=0.25)
+    report = run_wrapper(dataset, features, labels, split, "all_suite_stratified", tmp_path / "out_all_suite")
+    assert report["status"] == "PASS"
+    assert report["split_type"] == "all_suite_stratified_parent_split_v1"
+    assert report["threshold_source"] == "validation"
 
 
 def test_training_wrapper_cli(tmp_path):

@@ -22,6 +22,13 @@ jobs:
           python -m pip install -e .
           python -m pip install pytest numpy
       - name: Compile wrapper
-        run: python -m py_compile tools/multisuite_detector/train_c4_scientific_detector_v1.py
+        run: |
+          python -m py_compile \
+            tools/multisuite_detector/build_c4_scientific_splits_v1.py \
+            tools/multisuite_detector/train_c4_scientific_detector_v1.py
       - name: Run wrapper tests
-        run: pytest tests/multisuite_detector/test_train_c4_scientific_detector_v1.py -q
+        run: |
+          pytest \
+            tests/multisuite_detector/test_build_c4_scientific_splits_v1.py \
+            tests/multisuite_detector/test_train_c4_scientific_detector_v1.py \
+            -q

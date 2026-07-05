@@ -36,6 +36,7 @@ SPLIT_COLUMNS = ["split_type", "fold_id", "group_id", "episode_key", "split"]
 SPLITS = {"train", "val", "test"}
 POPULATIONS = {"DETECTOR_ELIGIBLE", "DETECTOR_SAFETY"}
 OBJECT_SUITE_ALIASES = {"Object", "libero_object"}
+ALL_SUITE_STRATIFIED_SPLIT = "all_suite_stratified_parent_split_v1"
 
 
 class C4ScientificSplitError(ValueError):
@@ -122,6 +123,27 @@ def is_object_suite(suite: str) -> bool:
     return suite in OBJECT_SUITE_ALIASES
 
 
+def read_label_positive(path: str | Path) -> dict[str, bool]:
+    path = Path(path)
+    with path.open(newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        required = {"episode_key", "event_present", "window_valid", "window_start", "window_end"}
+        if not reader.fieldnames or not required <= set(reader.fieldnames):
+            fail(f"{path.name}: missing label support columns")
+        out: dict[str, bool] = {}
+        for line_no, row in enumerate(reader, start=2):
+            episode = row["episode_key"]
+            if episode in out:
+                fail(f"{path.name}:{line_no}: duplicate label episode")
+            try:
+                start = int(row["window_start"])
+                end = int(row["window_end"])
+            except ValueError:
+                fail(f"{path.name}:{line_no}: non-integer window")
+            out[episode] = row["event_present"] == "true" and row["window_valid"] == "true" and end > start
+        return out
+
+
 def write_split_with_report(output: str | Path, rows: list[dict[str, str]], dataset_csv: str | Path, extra: dict[str, Any]) -> dict[str, Any]:
     if not rows:
         fail("refusing to write empty split")
@@ -199,17 +221,97 @@ def build_suite_loso_with_val_split(
     return write_split_with_report(output, out, dataset_csv, {"held_out_suites": suites, "seed": seed, "val_ratio": val_ratio})
 
 
+def build_all_suite_stratified_split(
+    dataset_csv: str | Path,
+    label_csv: str | Path,
+    output: str | Path,
+    *,
+    seed: int = 2026070401,
+    val_ratio: float = 0.15,
+    test_ratio: float = 0.15,
+) -> dict[str, Any]:
+    if not (0 < val_ratio < 1) or not (0 < test_ratio < 1) or val_ratio + test_ratio >= 1:
+        fail("val_ratio and test_ratio must be in (0, 1) and sum below 1")
+    rows = load_dataset_manifest(dataset_csv)
+    groups, by_episode = group_rows(rows)
+    labels = read_label_positive(label_csv)
+    missing_labels = set(by_episode) - set(labels)
+    if missing_labels:
+        fail(f"label CSV missing dataset episodes: {len(missing_labels)}")
+    suites = sorted({row["suite"] for row in rows})
+    if len(suites) < 2:
+        fail("all-suite split requires at least two suites")
+    group_suites: dict[str, set[str]] = {}
+    group_positive_suites: dict[str, set[str]] = {}
+    for group in groups:
+        gid = str(group["group_id"])
+        group_rows_for_gid = [by_episode[str(ep)] for ep in group["episodes"]]
+        group_suites[gid] = {row["suite"] for row in group_rows_for_gid}
+        group_positive_suites[gid] = {
+            row["suite"]
+            for row in group_rows_for_gid
+            if row["population_id"] == "DETECTOR_ELIGIBLE" and labels[row["episode_key"]]
+        }
+    feasible_positive_suites = {suite for suite in suites if any(suite in group_positive_suites[str(group["group_id"])] for group in groups)}
+    group_ids = [str(group["group_id"]) for group in groups]
+    assignments = {gid: "train" for gid in group_ids}
+    ordered = stable_group_order(group_ids, seed=seed, fold_id="all_suite_stratified")
+
+    def assign_one(split: str, suite: str, *, prefer_positive: bool) -> bool:
+        candidates = [
+            gid for gid in ordered
+            if assignments[gid] == "train"
+            and suite in group_suites[gid]
+            and ((suite in group_positive_suites[gid]) if prefer_positive else True)
+        ]
+        if not candidates:
+            return False
+        assignments[candidates[0]] = split
+        return True
+
+    for split in ["val", "test"]:
+        for suite in suites:
+            if suite in feasible_positive_suites:
+                assign_one(split, suite, prefer_positive=True) or assign_one(split, suite, prefer_positive=False)
+            else:
+                assign_one(split, suite, prefer_positive=False)
+
+    targets = {
+        "val": max(len(suites), int(round(len(group_ids) * val_ratio))),
+        "test": max(len(suites), int(round(len(group_ids) * test_ratio))),
+    }
+    for split in ["val", "test"]:
+        for gid in ordered:
+            if sum(1 for value in assignments.values() if value == split) >= targets[split]:
+                break
+            if assignments[gid] == "train":
+                assignments[gid] = split
+
+    out = rows_from_assignments(groups, assignments, ALL_SUITE_STRATIFIED_SPLIT, "all_suite_stratified")
+    return write_split_with_report(output, out, dataset_csv, {
+        "seed": seed,
+        "val_ratio": val_ratio,
+        "test_ratio": test_ratio,
+        "suites": suites,
+        "positive_support_feasible_suites": sorted(feasible_positive_suites),
+        "label_csv_sha256": sha256_file(Path(label_csv)),
+    })
+
+
 def validate_scientific_split(
     dataset_csv: str | Path,
     split_csv: str | Path,
     *,
+    label_csv: str | Path | None = None,
     min_eligible_train: int = 1,
     min_eligible_val: int = 1,
     min_eligible_test: int = 1,
 ) -> dict[str, Any]:
     dataset_rows = load_dataset_manifest(dataset_csv)
     split_rows = read_split_csv(split_csv)
+    label_positive = read_label_positive(label_csv) if label_csv else {}
     groups, by_episode = group_rows(dataset_rows)
+    all_suites = sorted({row["suite"] for row in dataset_rows})
     group_by_episode = {str(ep): str(group["group_id"]) for group in groups for ep in group["episodes"]}
     group_episodes = {str(group["group_id"]): {str(ep) for ep in group["episodes"]} for group in groups}
     all_eps = set(by_episode)
@@ -272,6 +374,27 @@ def validate_scientific_split(
                     fail(f"{fold_id}: held-out suite leakage")
                 if (not is_held) and split_row["split"] == "test":
                     fail(f"{fold_id}: non-held suite episode placed in test")
+        elif split_type == ALL_SUITE_STRATIFIED_SPLIT:
+            suite_by_split: dict[str, set[str]] = {split: set() for split in SPLITS}
+            positive_by_split: dict[str, set[str]] = {split: set() for split in SPLITS}
+            feasible_positive_suites: set[str] = set()
+            for episode, split_row in assigned_rows.items():
+                row = by_episode[episode]
+                suite = row["suite"]
+                split = split_row["split"]
+                suite_by_split[split].add(suite)
+                if label_positive and row["population_id"] == "DETECTOR_ELIGIBLE" and label_positive.get(episode, False):
+                    positive_by_split[split].add(suite)
+                    feasible_positive_suites.add(suite)
+            for split in SPLITS:
+                missing = set(all_suites) - suite_by_split[split]
+                if missing:
+                    fail(f"{fold_id}: {split} missing suites {sorted(missing)}")
+            if label_positive:
+                for split in ["val", "test"]:
+                    missing_positive = feasible_positive_suites - positive_by_split[split]
+                    if missing_positive:
+                        fail(f"{fold_id}: {split} missing positive support for suites {sorted(missing_positive)}")
         else:
             fail(f"{fold_id}: unsupported scientific split type {split_type}")
         fold_reports[fold_id] = {
@@ -309,9 +432,17 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--output", required=True)
     p.add_argument("--seed", type=int, default=2026070401)
     p.add_argument("--val-ratio", type=float, default=0.15)
+    p = sub.add_parser("build-all-suite-stratified")
+    p.add_argument("--dataset-csv", required=True)
+    p.add_argument("--label-csv", required=True)
+    p.add_argument("--output", required=True)
+    p.add_argument("--seed", type=int, default=2026070401)
+    p.add_argument("--val-ratio", type=float, default=0.15)
+    p.add_argument("--test-ratio", type=float, default=0.15)
     p = sub.add_parser("validate")
     p.add_argument("--dataset-csv", required=True)
     p.add_argument("--split-csv", required=True)
+    p.add_argument("--label-csv")
     p.add_argument("--min-eligible-train", type=int, default=1)
     p.add_argument("--min-eligible-val", type=int, default=1)
     p.add_argument("--min-eligible-test", type=int, default=1)
@@ -322,10 +453,13 @@ def main(argv: list[str] | None = None) -> int:
             report = build_object_task_heldout_split(args.dataset_csv, args.output, seed=args.seed, val_ratio=args.val_ratio)
         elif args.cmd == "build-suite-loso":
             report = build_suite_loso_with_val_split(args.dataset_csv, args.output, seed=args.seed, val_ratio=args.val_ratio)
+        elif args.cmd == "build-all-suite-stratified":
+            report = build_all_suite_stratified_split(args.dataset_csv, args.label_csv, args.output, seed=args.seed, val_ratio=args.val_ratio, test_ratio=args.test_ratio)
         else:
             report = validate_scientific_split(
                 args.dataset_csv,
                 args.split_csv,
+                label_csv=args.label_csv,
                 min_eligible_train=args.min_eligible_train,
                 min_eligible_val=args.min_eligible_val,
                 min_eligible_test=args.min_eligible_test,

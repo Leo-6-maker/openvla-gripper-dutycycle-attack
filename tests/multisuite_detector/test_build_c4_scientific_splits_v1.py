@@ -5,6 +5,7 @@ import pytest
 
 from tools.multisuite_detector.build_c4_scientific_splits_v1 import (
     C4ScientificSplitError,
+    build_all_suite_stratified_split,
     build_object_task_heldout_split,
     build_suite_loso_with_val_split,
     read_split_csv,
@@ -43,6 +44,22 @@ def write_dataset(tmp_path: Path) -> Path:
                 idx += 1
     path = tmp_path / "detector_dataset_manifest_v1.csv"
     write_csv(path, DATASET_COLUMNS, rows)
+    return path
+
+
+def write_labels(tmp_path: Path, dataset: Path) -> Path:
+    rows = []
+    for row in csv.DictReader(dataset.open(newline="", encoding="utf-8")):
+        is_positive = row["population_id"] == "DETECTOR_ELIGIBLE" and row["episode_key"].endswith("_0")
+        rows.append({
+            "episode_key": row["episode_key"],
+            "event_present": "true" if is_positive else "false",
+            "window_valid": "true" if is_positive else "false",
+            "window_start": "1" if is_positive else "-1",
+            "window_end": "3" if is_positive else "-1",
+        })
+    path = tmp_path / "label_v2.csv"
+    write_csv(path, ["episode_key", "event_present", "window_valid", "window_start", "window_end"], rows)
     return path
 
 
@@ -87,6 +104,23 @@ def test_suite_loso_split_positive(tmp_path):
         test_eps = {r["episode_key"] for r in rows if r["fold_id"] == fold_id and r["split"] == "test"}
         assert test_eps
         assert all(ep.startswith(f"{held}_") for ep in test_eps)
+
+
+def test_all_suite_stratified_split_positive(tmp_path):
+    dataset = write_dataset(tmp_path)
+    labels = write_labels(tmp_path, dataset)
+    split = tmp_path / "all_suite_stratified.csv"
+    report = build_all_suite_stratified_split(dataset, labels, split, seed=13, val_ratio=0.20, test_ratio=0.20)
+    assert "all_suite_stratified_parent_split_v1" in report["split_types"]
+    validation = validate_scientific_split(dataset, split, label_csv=labels)
+    assert validation["status"] == "PASS"
+    assert validation["fold_count"] == 1
+    rows = read_split_csv(split)
+    suites = {row["suite"] for row in csv.DictReader(dataset.open(newline="", encoding="utf-8"))}
+    by_episode = {row["episode_key"]: row for row in csv.DictReader(dataset.open(newline="", encoding="utf-8"))}
+    for split_name in {"train", "val", "test"}:
+        split_suites = {by_episode[row["episode_key"]]["suite"] for row in rows if row["split"] == split_name}
+        assert split_suites == suites
 
 
 def test_scientific_split_rejects_group_leakage(tmp_path):

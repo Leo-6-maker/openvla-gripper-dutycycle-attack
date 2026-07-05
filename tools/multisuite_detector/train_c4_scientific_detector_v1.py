@@ -35,7 +35,7 @@ from tools.multisuite_detector.detector_dataset_closure_v1 import (  # noqa: E40
     sha256_file,
 )
 
-SCI_SPLIT_TYPES = {"object_task_heldout_with_val_v1", "suite_loso_with_val_v1"}
+SCI_SPLIT_TYPES = {"object_task_heldout_with_val_v1", "suite_loso_with_val_v1", "all_suite_stratified_parent_split_v1"}
 SPLITS = {"train", "val", "test"}
 POPULATIONS = {"DETECTOR_ELIGIBLE", "DETECTOR_SAFETY"}
 LABEL_COLUMNS = {"episode_key", "event_present", "window_valid", "window_start", "window_end"}
