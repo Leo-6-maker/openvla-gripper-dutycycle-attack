@@ -15,6 +15,7 @@ LEGACY_TASK_ID_BY_SUITE_INDEX = {
     ("libero_object", 1): "libero_object_alphabet_soup",
     ("libero_spatial", 1): "libero_spatial_black_bowl",
 }
+LEGACY_DRY_RUN_TRIGGER = "clean"
 
 
 def write_json(path: str | Path, obj: dict) -> None:
@@ -87,7 +88,7 @@ def legacy_runner_argv_preview(args: argparse.Namespace, work: Path) -> list[str
         "--task_id",
         str(legacy_task_id),
         "--trigger",
-        "state_id_binding_preview_only",
+        LEGACY_DRY_RUN_TRIGGER,
         "--rho",
         "0.0",
         "--episodes",
@@ -159,6 +160,10 @@ def main() -> int:
                     "source_parent_id": str(args.parent_id),
                     "legacy_task_id": resolve_legacy_task_id(args),
                     "binding_mode": "STATIC_PARENT_TASK_TO_LEGACY_TASK_ID",
+                },
+                "legacy_trigger_binding": {
+                    "legacy_trigger": LEGACY_DRY_RUN_TRIGGER,
+                    "binding_mode": "EXISTING_V4_CLEAN_TRIGGER_FOR_DRY_RUN_ONLY",
                 },
                 "legacy_runner_argv_preview": legacy_runner_argv_preview(args, work),
                 "legacy_runner_argv_preview_mode": "NOT_EXECUTED_DRY_RUN_METADATA_ONLY",
