@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import py_compile
+import re
 from pathlib import Path
 
 import yaml
@@ -30,6 +31,7 @@ REQUIRED_SOURCE_TERMS = [
     "attack_condition",
     "SINGLE_CLEAN_DECODE_ONLY",
 ]
+ENV_REF_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)")
 
 
 def sha256_file(path):
@@ -67,6 +69,23 @@ def load_yaml(path):
 
 def expand_path(text):
     return os.path.expandvars(os.path.expanduser(str(text or "")))
+
+
+def unresolved_env_vars(text):
+    return sorted({a or b for a, b in ENV_REF_RE.findall(str(text or ""))})
+
+
+def apply_model_env_overrides(args):
+    applied = {}
+    if str(getattr(args, "openvla_model_root", "") or "").strip():
+        value = expand_path(args.openvla_model_root)
+        os.environ["OPENVLA_MODEL_ROOT"] = value
+        applied["OPENVLA_MODEL_ROOT"] = value
+    if str(getattr(args, "openvla_base_model_dir", "") or "").strip():
+        value = expand_path(args.openvla_base_model_dir)
+        os.environ["OPENVLA_BASE_MODEL_DIR"] = value
+        applied["OPENVLA_BASE_MODEL_DIR"] = value
+    return applied
 
 
 def load_tasks(tasks_config, task_ids_text):
@@ -134,6 +153,7 @@ def model_path_rows(tasks, attack_config, explicit_model_path, require_exists):
         suite = str(task.get("suite", ""))
         raw = str(explicit_model_path or "").strip() or str(paths.get(suite) or paths.get("base") or paths.get("libero_goal") or "")
         expanded = expand_path(raw)
+        unresolved = unresolved_env_vars(expanded)
         rows.append({
             "task_id": str(task.get("task_id", "")),
             "suite": suite,
@@ -141,7 +161,9 @@ def model_path_rows(tasks, attack_config, explicit_model_path, require_exists):
             "default_unnorm_key": str(task.get("default_unnorm_key", "")),
             "raw_model_path": raw,
             "expanded_model_path": expanded,
-            "model_path_exists": Path(expanded).exists(),
+            "unresolved_env_vars": ";".join(unresolved),
+            "env_unresolved": bool(unresolved),
+            "model_path_exists": False if unresolved else Path(expanded).exists(),
             "require_exists": bool(require_exists),
         })
     return rows
@@ -163,6 +185,7 @@ def run(args):
     status = PASS
     reason = ""
     q_sha = ""
+    env_overrides = apply_model_env_overrides(args)
 
     if status == PASS:
         try:
@@ -206,7 +229,10 @@ def run(args):
         try:
             tasks = load_tasks(repo / args.tasks_config, args.task_ids)
             model_rows = model_path_rows(tasks, repo / args.attack_config, args.model_path, args.require_model_paths_exist)
-            if args.require_model_paths_exist and any(not row["model_path_exists"] for row in model_rows):
+            if args.require_model_paths_exist and any(row["env_unresolved"] for row in model_rows):
+                status = "HOLD_MODEL_PATH_ENV_UNRESOLVED"
+                reason = json.dumps(model_rows, sort_keys=True)
+            elif args.require_model_paths_exist and any(not row["model_path_exists"] for row in model_rows):
                 status = "HOLD_MODEL_PATHS_MISSING"
                 reason = json.dumps(model_rows, sort_keys=True)
         except Exception as exc:
@@ -214,7 +240,7 @@ def run(args):
             reason = f"{type(exc).__name__}: {exc}"
 
     write_csv(out / "source_boundary_audit.csv", source_rows, ["path", "line", "matched_terms", "text"])
-    write_csv(out / "task_model_path_audit.csv", model_rows, ["task_id", "suite", "task_name", "default_unnorm_key", "raw_model_path", "expanded_model_path", "model_path_exists", "require_exists"])
+    write_csv(out / "task_model_path_audit.csv", model_rows, ["task_id", "suite", "task_name", "default_unnorm_key", "raw_model_path", "expanded_model_path", "unresolved_env_vars", "env_unresolved", "model_path_exists", "require_exists"])
 
     report = {
         "gate": GATE,
@@ -225,6 +251,11 @@ def run(args):
         "repo_root": str(repo),
         "task_ids": [str(t.get("task_id")) for t in tasks],
         "model_path_rows": model_rows,
+        "model_env_overrides": env_overrides,
+        "model_env_snapshot": {
+            "OPENVLA_MODEL_ROOT": os.environ.get("OPENVLA_MODEL_ROOT", ""),
+            "OPENVLA_BASE_MODEL_DIR": os.environ.get("OPENVLA_BASE_MODEL_DIR", ""),
+        },
         "compile_rows": compile_rows,
         "source_audit_match_count": len(source_rows),
         "next_gate": "C6_1R_MULTISUITE_SINGLE_CLEAN_DECODE_NO_STEP",
@@ -260,6 +291,8 @@ def main():
     p.add_argument("--attack-config", default="configs/v4_attack.yaml")
     p.add_argument("--task-ids", default="libero_spatial_black_bowl,libero_object_alphabet_soup,libero_goal_open_middle_drawer,libero10_moka_pots")
     p.add_argument("--model-path", default="")
+    p.add_argument("--openvla-model-root", default="")
+    p.add_argument("--openvla-base-model-dir", default="")
     p.add_argument("--require-model-paths-exist", action="store_true")
     p.add_argument("--output-root", required=True)
     p.add_argument("--git-commit", required=True)
