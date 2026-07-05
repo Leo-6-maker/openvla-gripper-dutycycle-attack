@@ -12,11 +12,13 @@ def test_duplicate_same_path_passes():
     ]
     assert m.decide_status(rows, []) == m.PASS_STATE_PATH
     assert m.unique_handles(rows) == {"path:/tmp/a.json"}
+    assert "state_path" in m.recommendation(m.PASS_STATE_PATH)
 
 
 def test_single_index_passes():
     rows = [{"is_concrete_binding": True, "resolved_path": "", "resolved_path_exists": False, "index_fields": "{\"episode_idx\": \"7\"}"}]
     assert m.decide_status(rows, []) == m.PASS_STATE_INDEX
+    assert "state index" in m.recommendation(m.PASS_STATE_INDEX)
 
 
 def test_distinct_indices_are_ambiguous():
@@ -30,6 +32,7 @@ def test_distinct_indices_are_ambiguous():
 def test_exact_file_match_passes():
     files = [{"sha256_matches_initial_state_hash": True}]
     assert m.decide_status([], files) == m.PASS_FILE_HASH
+    assert "SHA" in m.recommendation(m.PASS_FILE_HASH)
 
 
 def test_multiple_exact_file_matches_ambiguous():
