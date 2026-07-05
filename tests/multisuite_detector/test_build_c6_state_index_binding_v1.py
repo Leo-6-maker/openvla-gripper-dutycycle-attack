@@ -96,6 +96,22 @@ def test_parent_metadata_binds_existing_state_path(tmp_path):
     assert report["status"] == "PASS_PARENT_METADATA_BINDS_STATE_PATH"
 
 
+def test_csv_parent_metadata_binds_existing_state_path(tmp_path):
+    c6 = write_c6_1g(tmp_path)
+    artifact = tmp_path / "artifact.json"
+    artifact.write_text("{}", encoding="utf-8")
+    meta = tmp_path / "meta"
+    meta.mkdir()
+    (meta / "index.csv").write_text(
+        f"parent_id,state_path\nlibero_goal/task_01/state_000,{artifact}\n",
+        encoding="utf-8",
+    )
+    rc, out = run_tool(tmp_path, c6, sha256(c6), meta)
+    assert rc == 0
+    report = load(out / "state_index_binding_audit.json")
+    assert report["status"] == "PASS_PARENT_METADATA_BINDS_STATE_PATH"
+
+
 def test_parent_metadata_binds_episode_idx(tmp_path):
     c6 = write_c6_1g(tmp_path)
     meta = tmp_path / "meta"
