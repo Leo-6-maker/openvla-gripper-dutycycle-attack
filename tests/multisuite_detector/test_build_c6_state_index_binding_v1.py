@@ -21,6 +21,16 @@ def test_distinct_indices_are_ambiguous():
     assert m.decide_status(rows, []) == m.HOLD_AMBIGUOUS
 
 
+def test_exact_file_match_passes():
+    files = [{"sha256_matches_initial_state_hash": True}]
+    assert m.decide_status([], files) == m.PASS_FILE_HASH
+
+
+def test_multiple_exact_file_matches_are_ambiguous():
+    files = [{"sha256_matches_initial_state_hash": True}, {"sha256_matches_initial_state_hash": True}]
+    assert m.decide_status([], files) == m.HOLD_AMBIGUOUS
+
+
 def test_missing_path_holds():
     rows = [{"is_concrete_binding": True, "resolved_path": "/tmp/missing.json", "resolved_path_exists": False, "index_fields": "{}"}]
     assert m.decide_status(rows, []) == m.HOLD_PATH_MISSING
