@@ -1,0 +1,188 @@
+protocol_id: clean2000_multisuite_detector_v2
+version: 1
+purpose: >-
+  CPU-only preregistration for retraining a clean-only four-suite Layer-2
+  detector from recoverable CLEAN2000 source records.  This protocol replaces
+  the earlier object-trained zero-shot transfer question for the main
+  cross-suite detector line.
+
+claim_boundary:
+  allowed_before_rollout:
+    - CLEAN2000 source-record recovery audit
+    - teacher-label-v2 schema and coverage audit
+    - detector dataset-v2 freezing
+    - grouped split and leakage audit
+    - offline streaming replay
+  forbidden_before_detector_freeze:
+    - cross_suite_detector_generalization_proven
+    - table1_mainline_rollout
+    - VIS_or_RAND_attack_effectiveness
+    - attack_outcome_selected_windows
+    - manual_anchor_selected_windows
+    - exact_pixel_prefix_claim_for_nondeterministic_suites
+
+data_source:
+  primary_corpus: CLEAN2000
+  expected_episode_count: 2000
+  status: recoverable_source_records_required
+  canonical_timing_labels: do_not_use_directly
+  teacher_labels: rebuild_v2_from_recovered_sources
+
+suites:
+  common_single_event_like:
+    - libero_spatial
+    - libero_goal
+    - libero_object
+  multisegment:
+    - libero_10
+
+feature_policy:
+  base_feature_set: sc5_25d_no_timestep
+  use_current_sc5_feature_order: true
+  allowed_input_features:
+    - gripper_command
+    - gripper_qpos
+    - gripper_opening_proxy
+    - eef_x
+    - eef_y
+    - eef_z
+    - eef_vx
+    - eef_vy
+    - eef_vz
+    - action_dx
+    - action_dy
+    - action_dz
+    - action_gripper
+    - recent_close_streak
+    - recent_open_streak
+    - recent_gripper_flip_count
+    - close_onset
+    - time_since_close
+    - eef_speed
+    - eef_z_delta_since_close
+    - qpos_delta_1
+    - qpos_delta_3
+    - opening_proxy_delta_3
+    - opening_proxy_variance_5
+    - eef_speed_variance_5
+  optional_ablation_only:
+    - mechanism_type
+    - suite_id
+    - task_language_embedding
+  forbidden_model_inputs:
+    - normalized_step
+    - timestep
+    - task_id
+    - state_id
+    - episode_key
+    - run_id
+    - parent_id
+    - object_pose
+    - target_pose
+    - object_to_target_distance
+    - teacher_window_start
+    - teacher_window_end
+    - teacher_anchor_step
+    - attack_outcome
+    - rand_outcome
+    - manual_anchor
+    - oracle_window
+
+teacher_label_v2:
+  common_required_episode_fields:
+    - parent_id
+    - suite
+    - task_id
+    - state_id
+    - episode_key
+    - clean_success
+    - mechanism_type
+    - source_record_status
+    - teacher_label_status
+  common_required_event_fields:
+    - event_id
+    - event_role
+    - event_status
+    - teacher_anchor_step
+    - teacher_window_start
+    - teacher_window_end
+    - phase_label
+    - corridor_label
+    - release_safe_label
+    - label_confidence
+  label_status_values:
+    - VALID_PRIMARY
+    - VALID_AUXILIARY
+    - NO_EVENT
+    - CLEAN_FAILURE_NO_POSITIVE
+    - UNSUPPORTED_MECHANISM
+    - AMBIGUOUS
+    - RECOVERY_FAILED
+  event_roles:
+    - primary_attackable
+    - auxiliary_manipulation
+    - distractor_or_setup
+    - unsupported_or_abstain
+
+libero10_multisegment_policy:
+  problem_statement: >-
+    LIBERO-10 often contains multiple manipulation segments.  A detector trained
+    on object-like single-event trajectories can emit on a valid-looking but
+    non-primary segment, so LIBERO-10 must be labeled and evaluated at the
+    segment/event level rather than as a single global window.
+  required_for_training: true
+  require_segment_fields_for_libero10: true
+  segment_fields:
+    - segment_id
+    - segment_index
+    - segment_start_step
+    - segment_end_step
+    - segment_role
+    - subtask_index
+    - event_id
+    - event_role
+  allowed_runtime_behavior:
+    - one_shot_primary_emission
+    - optional_multicandidate_logging_no_intervention
+  forbidden_runtime_behavior:
+    - future_best_segment_selection
+    - attack_outcome_based_segment_selection
+    - manual_segment_anchor_at_runtime
+    - suite_specific_threshold_tuning_without_preregistration
+  recommended_detector_heads:
+    - phase_head
+    - corridor_head
+    - release_head
+    - event_role_or_abstain_head
+
+splits:
+  split_unit: episode_or_task_state_group
+  forbid_timestep_random_split: true
+  main_split: suite_stratified_grouped_70_15_15
+  diagnostics:
+    - object_only_baseline_zero_shot
+    - pooled_four_suite
+    - leave_one_suite_out
+    - leave_task_out_within_suite
+
+replay_metrics:
+  primary:
+    - per_suite_window_recall
+    - per_suite_false_early_rate
+    - per_suite_miss_rate
+    - worst_suite_window_f1
+    - median_emit_delay_to_anchor
+    - false_emits_per_episode
+    - abstain_rate
+  libero10_extra:
+    - correct_primary_segment_emit_rate
+    - auxiliary_segment_false_emit_rate
+    - first_emit_primary_rate
+    - multisegment_no_emit_rate
+
+minimum_go_no_go:
+  require_clean2000_recovery_total: 2000
+  require_forbidden_input_leakage_zero: true
+  require_libero10_segment_audit_before_training: true
+  require_offline_replay_before_rollout: true
+  require_object_regression_before_main_table: true
