@@ -5,8 +5,6 @@ import argparse
 import csv
 import hashlib
 import json
-import os
-import re
 import time
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -20,11 +18,11 @@ OUT_FILES = [
     "clean2000_multisuite_detector_v2_readiness.json",
     "clean2000_suite_summary.csv",
     "clean2000_libero10_segment_policy_audit.csv",
-    "clean2000_forbidden_input_audit.csv",
+    "clean2000_label_only_metadata_audit.csv",
     "checksum_report.json",
 ]
 SUITES = ["libero_spatial", "libero_goal", "libero_object", "libero_10"]
-FORBIDDEN_HINTS = [
+LABEL_ONLY_OR_FORBIDDEN_MODEL_INPUT_HINTS = [
     "normalized_step",
     "timestep",
     "task_id",
@@ -183,13 +181,20 @@ def has_any_field(row: Dict[str, Any], fields: Iterable[str]) -> bool:
     return any(field in row and row[field] not in (None, "") for field in fields)
 
 
-def forbidden_columns(row: Dict[str, Any]) -> List[str]:
+def label_only_columns(row: Dict[str, Any]) -> List[str]:
+    """Return metadata/label/eval columns that must be excluded from model inputs.
+
+    These columns are legal in recovered source records.  This D0 audit records
+    them as advisory schema information; it does not fail on their presence.
+    Dataset-freeze gates must later prove that none of them are included in the
+    final feature matrix.
+    """
     cols = []
     for key in row.keys():
         low = str(key).lower()
         if low.startswith("__"):
             continue
-        for hint in FORBIDDEN_HINTS:
+        for hint in LABEL_ONLY_OR_FORBIDDEN_MODEL_INPUT_HINTS:
             if hint in low:
                 cols.append(str(key))
                 break
@@ -201,7 +206,7 @@ def summarize(records: List[Dict[str, Any]], expected_total: int, require_libero
     ids = Counter(record_id(r) for r in records)
     duplicate_ids = [rid for rid, n in ids.items() if n > 1]
     lib10_rows: List[Dict[str, Any]] = []
-    forbidden_rows: List[Dict[str, Any]] = []
+    label_only_rows: List[Dict[str, Any]] = []
     for row in records:
         suite = infer_suite(row)
         suite_counts[suite]["records"] += 1
@@ -229,12 +234,12 @@ def summarize(records: List[Dict[str, Any]], expected_total: int, require_libero
                 "source_file": row.get("__source_file", ""),
                 "source_line": row.get("__source_line", ""),
             })
-        bad_cols = forbidden_columns(row)
-        if bad_cols:
-            forbidden_rows.append({
+        advisory_cols = label_only_columns(row)
+        if advisory_cols:
+            label_only_rows.append({
                 "record_id": record_id(row),
                 "suite": suite,
-                "forbidden_columns_present": ";".join(bad_cols),
+                "label_only_or_forbidden_model_input_columns_present": ";".join(advisory_cols),
                 "source_file": row.get("__source_file", ""),
                 "source_line": row.get("__source_line", ""),
             })
@@ -266,10 +271,7 @@ def summarize(records: List[Dict[str, Any]], expected_total: int, require_libero
     elif require_libero10_segments and any(not r["has_segment_fields"] for r in lib10_rows):
         status = "HOLD_LIBERO10_SEGMENT_FIELDS_MISSING"
         reason = "LIBERO-10 records require segment/event fields before detector-v2 training"
-    elif forbidden_rows:
-        status = "HOLD_FORBIDDEN_INPUT_COLUMNS_PRESENT"
-        reason = "recovered rows contain fields that must not become model inputs; move them to label/eval-only schema before dataset freeze"
-    return status, reason, suite_rows, lib10_rows, forbidden_rows
+    return status, reason, suite_rows, lib10_rows, label_only_rows
 
 
 def write_checksums(out: Path) -> None:
@@ -290,10 +292,10 @@ def run(args: argparse.Namespace) -> int:
     if args.allow_libero10_unsegmented_diagnostic:
         require_lib10 = False
     records = read_records(args.clean2000_records)
-    status, reason, suite_rows, lib10_rows, forbidden_rows = summarize(records, expected_total, require_lib10)
+    status, reason, suite_rows, lib10_rows, label_only_rows = summarize(records, expected_total, require_lib10)
     write_csv(out / "clean2000_suite_summary.csv", suite_rows, ["suite", "records", "clean_success_true", "clean_success_false", "clean_success_unknown", "source_found_true", "source_found_false", "source_found_unknown"])
     write_csv(out / "clean2000_libero10_segment_policy_audit.csv", lib10_rows, ["record_id", "suite", "has_segment_fields", "present_segment_fields", "source_file", "source_line"])
-    write_csv(out / "clean2000_forbidden_input_audit.csv", forbidden_rows, ["record_id", "suite", "forbidden_columns_present", "source_file", "source_line"])
+    write_csv(out / "clean2000_label_only_metadata_audit.csv", label_only_rows, ["record_id", "suite", "label_only_or_forbidden_model_input_columns_present", "source_file", "source_line"])
     report = {
         "gate": GATE,
         "status": status,
@@ -307,9 +309,9 @@ def run(args: argparse.Namespace) -> int:
         "suite_summary": suite_rows,
         "libero10_record_count": len(lib10_rows),
         "libero10_missing_segment_count": sum(1 for r in lib10_rows if not r["has_segment_fields"]),
-        "forbidden_input_row_count": len(forbidden_rows),
+        "label_only_metadata_row_count": len(label_only_rows),
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
-        "interpretation": "CPU-only readiness audit for CLEAN2000 detector-v2 recovery. PASS means source records are count-consistent, suite-resolved, and LIBERO-10 has segment/event fields ready for label-v2 rebuild.",
+        "interpretation": "CPU-only readiness audit for CLEAN2000 detector-v2 recovery. PASS means source records are count-consistent and suite-resolved, and LIBERO-10 has segment/event fields ready for label-v2 rebuild. Label-only metadata is recorded but not treated as a D0 failure.",
         "boundaries": {
             "CUDA_required": "NOT_REQUIRED",
             "OpenVLA_model": "NOT_LOADED",
