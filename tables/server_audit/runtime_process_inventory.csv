@@ -1,0 +1,40 @@
+job_id,condition,role,gpu_id,pid,start_time,last_activity,status,completed_count,failed_count,planned_count,log_file,command_summary,kill_status
+UMA-GPU0,UMA,worker_launcher,0,503569,2026-07-02T14:30,2026-07-02T14:36,failed_fast,0,21,21,full_uma_gpu0.log,run_sota_worker.py GPU0 UMA/manifest_gpu0.jsonl,KILLED 2026-07-02T14:30
+UMA-GPU1,UMA,worker_launcher,1,503570,2026-07-02T14:30,2026-07-02T14:36,failed_fast,0,21,21,full_uma_gpu1.log,run_sota_worker.py GPU1 UMA/manifest_gpu1.jsonl,KILLED 2026-07-02T14:30
+UMA-GPU2,UMA,worker_launcher,2,503571,2026-07-02T14:30,2026-07-02T14:36,failed_fast,0,20,20,full_uma_gpu2.log,run_sota_worker.py GPU2 UMA/manifest_gpu2.jsonl,KILLED 2026-07-02T14:30
+UMA-GPU3,UMA,worker_launcher,3,503572,2026-07-02T14:30,2026-07-02T14:30,interrupted_mid_job,15,0,20,full_uma_gpu3.log,run_sota_worker.py GPU3 UMA/manifest_gpu3.jsonl,KILLED 2026-07-02T14:30
+UMA-GPU4,UMA,worker_launcher,4,503573,2026-07-02T14:30,2026-07-02T14:30,interrupted_mid_job,14,2,20,full_uma_gpu4.log,run_sota_worker.py GPU4 UMA/manifest_gpu4.jsonl,KILLED 2026-07-02T14:30
+UMA-GPU5,UMA,worker_launcher,5,503574,2026-07-02T14:30,2026-07-02T14:36,failed_fast,0,20,20,full_uma_gpu5.log,run_sota_worker.py GPU5 UMA/manifest_gpu5.jsonl,KILLED 2026-07-02T14:30
+UMA-GPU6,UMA,worker_launcher,6,503575,2026-07-02T14:30,2026-07-02T14:30,interrupted_mid_job,14,0,20,full_uma_gpu6.log,run_sota_worker.py GPU6 UMA/manifest_gpu6.jsonl,KILLED 2026-07-02T14:30
+UMA-GPU7,UMA,worker_launcher,7,503576,2026-07-02T14:30,2026-07-02T14:36,failed_fast,0,20,20,full_uma_gpu7.log,run_sota_worker.py GPU7 UMA/manifest_gpu7.jsonl,KILLED 2026-07-02T14:30
+UMA-BRIDGE-1,UMA,bridge_process,3,912119,unknown,2026-07-02T14:30,unknown_at_kill,unknown,unknown,unknown,unknown,unknown,UNKNOWN_SSH_DISCONNECTED
+UMA-BRIDGE-2,UMA,bridge_process,4,913458,unknown,2026-07-02T14:30,unknown_at_kill,unknown,unknown,unknown,unknown,unknown,UNKNOWN_SSH_DISCONNECTED
+UMA-BRIDGE-3,UMA,bridge_process,6,914525,unknown,2026-07-02T14:30,unknown_at_kill,unknown,unknown,unknown,unknown,unknown,UNKNOWN_SSH_DISCONNECTED
+UMA-BRIDGE-4,UMA,bridge_process,6,914593,unknown,2026-07-02T14:30,unknown_at_kill,unknown,unknown,unknown,unknown,unknown,UNKNOWN_SSH_DISCONNECTED
+SHUFFLED-GPU0,SHUFFLED,worker_launcher,0,503569,2026-07-02T14:30,2026-07-02T14:36,failed_fast,0,21,21,full_shuffled_gpu0.log,run_sota_worker.py GPU0 SHUFFLED/manifest_gpu0.jsonl,KILLED 2026-07-02T14:30
+SHUFFLED-GPU1,SHUFFLED,worker_launcher,1,503570,2026-07-02T14:30,2026-07-02T14:36,failed_fast,0,21,21,full_shuffled_gpu1.log,run_sota_worker.py GPU1 SHUFFLED/manifest_gpu1.jsonl,KILLED 2026-07-02T14:30
+SHUFFLED-GPU2,SHUFFLED,worker_launcher,2,503571,2026-07-02T14:30,2026-07-02T14:36,failed_fast,0,20,20,full_shuffled_gpu2.log,run_sota_worker.py GPU2 SHUFFLED/manifest_gpu2.jsonl,KILLED 2026-07-02T14:30
+SHUFFLED-GPU3,SHUFFLED,worker_launcher,3,503572,2026-07-02T14:30,2026-07-02T14:30,interrupted_mid_job,6,0,20,full_shuffled_gpu3.log,run_sota_worker.py GPU3 SHUFFLED/manifest_gpu3.jsonl,KILLED 2026-07-02T14:30
+SHUFFLED-GPU4,SHUFFLED,worker_launcher,4,503573,2026-07-02T14:30,2026-07-02T14:30,interrupted_mid_job,5,1,20,full_shuffled_gpu4.log,run_sota_worker.py GPU4 SHUFFLED/manifest_gpu4.jsonl,KILLED 2026-07-02T14:30
+SHUFFLED-GPU5,SHUFFLED,worker_launcher,5,503574,2026-07-02T14:30,2026-07-02T14:36,failed_fast,0,20,20,full_shuffled_gpu5.log,run_sota_worker.py GPU5 SHUFFLED/manifest_gpu5.jsonl,KILLED 2026-07-02T14:30
+SHUFFLED-GPU6,SHUFFLED,worker_launcher,6,503575,2026-07-02T14:30,2026-07-02T14:30,interrupted_mid_job,5,0,20,full_shuffled_gpu6.log,run_sota_worker.py GPU6 SHUFFLED/manifest_gpu6.jsonl,KILLED 2026-07-02T14:30
+SHUFFLED-GPU7,SHUFFLED,worker_launcher,7,503576,2026-07-02T14:30,2026-07-02T14:36,failed_fast,0,20,20,full_shuffled_gpu7.log,run_sota_worker.py GPU7 SHUFFLED/manifest_gpu7.jsonl,KILLED 2026-07-02T14:30
+SHUFFLED-BRIDGE-1,SHUFFLED,bridge_process,3,887833,unknown,2026-07-02T14:30,unknown_at_kill,unknown,unknown,unknown,unknown,unknown,UNKNOWN_SSH_DISCONNECTED
+SHUFFLED-BRIDGE-2,SHUFFLED,bridge_process,4,909658,unknown,2026-07-02T14:30,unknown_at_kill,unknown,unknown,unknown,unknown,unknown,UNKNOWN_SSH_DISCONNECTED
+TMA-S-GPU0,TMA_STUDENT,worker,0,unknown,2026-07-02T14:30,unknown,completed,21,1,21,full_tma_student_gpu0.log,run_sota_worker.py GPU0 TMA/manifest_gpu0.jsonl,COMPLETED_NATURALLY
+TMA-S-GPU1,TMA_STUDENT,worker,1,unknown,2026-07-02T14:30,unknown,completed,21,1,21,full_tma_student_gpu1.log,run_sota_worker.py GPU1 TMA/manifest_gpu1.jsonl,COMPLETED_NATURALLY
+TMA-S-GPU2,TMA_STUDENT,worker,2,unknown,2026-07-02T14:30,unknown,completed,20,1,20,full_tma_student_gpu2.log,run_sota_worker.py GPU2 TMA/manifest_gpu2.jsonl,COMPLETED_NATURALLY
+TMA-S-GPU3,TMA_STUDENT,worker,3,unknown,2026-07-02T14:30,unknown,completed,20,1,20,full_tma_student_gpu3.log,run_sota_worker.py GPU3 TMA/manifest_gpu3.jsonl,COMPLETED_NATURALLY
+TMA-S-GPU4,TMA_STUDENT,worker,4,unknown,2026-07-02T14:30,unknown,completed,20,1,20,full_tma_student_gpu4.log,run_sota_worker.py GPU4 TMA/manifest_gpu4.jsonl,COMPLETED_NATURALLY
+TMA-S-GPU5,TMA_STUDENT,worker,5,unknown,2026-07-02T14:30,unknown,completed,20,1,20,full_tma_student_gpu5.log,run_sota_worker.py GPU5 TMA/manifest_gpu5.jsonl,COMPLETED_NATURALLY
+TMA-S-GPU6,TMA_STUDENT,worker,6,unknown,2026-07-02T14:30,unknown,completed,20,1,20,full_tma_student_gpu6.log,run_sota_worker.py GPU6 TMA/manifest_gpu6.jsonl,COMPLETED_NATURALLY
+TMA-S-GPU7,TMA_STUDENT,worker,7,unknown,2026-07-02T14:30,unknown,completed,20,1,20,full_tma_student_gpu7.log,run_sota_worker.py GPU7 TMA/manifest_gpu7.jsonl,COMPLETED_NATURALLY
+TMA-RT-GPU0,TMA_RANDOM_TIME,worker,0,unknown,2026-07-02T14:30,unknown,completed,21,1,21,full_tma_random_gpu0.log,run_sota_worker.py GPU0 TMA_RANDOM_TIME/manifest_gpu0.jsonl,COMPLETED_NATURALLY
+TMA-RT-GPU1,TMA_RANDOM_TIME,worker,1,unknown,2026-07-02T14:30,unknown,completed,21,1,21,full_tma_random_gpu1.log,run_sota_worker.py GPU1 TMA_RANDOM_TIME/manifest_gpu1.jsonl,COMPLETED_NATURALLY
+TMA-RT-GPU2,TMA_RANDOM_TIME,worker,2,unknown,2026-07-02T14:30,unknown,completed,20,1,20,full_tma_random_gpu2.log,run_sota_worker.py GPU2 TMA_RANDOM_TIME/manifest_gpu2.jsonl,COMPLETED_NATURALLY
+TMA-RT-GPU3,TMA_RANDOM_TIME,worker,3,unknown,2026-07-02T14:30,unknown,completed,20,1,20,full_tma_random_gpu3.log,run_sota_worker.py GPU3 TMA_RANDOM_TIME/manifest_gpu3.jsonl,COMPLETED_NATURALLY
+TMA-RT-GPU4,TMA_RANDOM_TIME,worker,4,unknown,2026-07-02T14:30,unknown,completed,20,1,20,full_tma_random_gpu4.log,run_sota_worker.py GPU4 TMA_RANDOM_TIME/manifest_gpu4.jsonl,COMPLETED_NATURALLY
+TMA-RT-GPU5,TMA_RANDOM_TIME,worker,5,unknown,2026-07-02T14:30,unknown,completed,20,1,20,full_tma_random_gpu5.log,run_sota_worker.py GPU5 TMA_RANDOM_TIME/manifest_gpu5.jsonl,COMPLETED_NATURALLY
+TMA-RT-GPU6,TMA_RANDOM_TIME,worker,6,unknown,2026-07-02T14:30,unknown,failed_retry,0,3,20,full_tma_random_gpu6.log,run_sota_worker.py GPU6 TMA_RANDOM_TIME/manifest_gpu6.jsonl,COMPLETED_NATURALLY
+TMA-RT-GPU6R,TMA_RANDOM_TIME,worker_retry,6,unknown,unknown,unknown,completed,19,1,20,full_tma_random_gpu6_r2.log,run_sota_worker.py GPU6 TMA_RANDOM_TIME/manifest_gpu6_retry.jsonl,COMPLETED_NATURALLY
+TMA-RT-GPU7,TMA_RANDOM_TIME,worker,7,unknown,2026-07-02T14:30,unknown,completed,20,1,20,full_tma_random_gpu7.log,run_sota_worker.py GPU7 TMA_RANDOM_TIME/manifest_gpu7.jsonl,COMPLETED_NATURALLY
