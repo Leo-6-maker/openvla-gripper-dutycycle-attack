@@ -40,7 +40,7 @@ def is_finite(v):
         return False
 
 
-def check_window_complete(trows, start_idx, end_idx, is_repaired):
+def check_window_complete(trows, start_idx, end_idx, is_repaired, suite):
     """Check that ALL rows in [start_idx, end_idx] have complete finite 25D features."""
     if start_idx < 0 or end_idx >= len(trows):
         return False, f"window_out_of_bounds:[{start_idx},{end_idx}]_n={len(trows)}", 0
@@ -58,11 +58,10 @@ def check_window_complete(trows, start_idx, end_idx, is_repaired):
                     break
             if all_ok:
                 complete_count += 1
-        else:
-            # Use raw column extraction (for Object files) or try f_ columns first
+        elif suite == "libero_object":
+            # Object files: use raw column extraction
             feats, missing = extract_base13_from_raw(row)
             if not missing:
-                # quick check: all base13 extracted
                 all_ok = True
                 for feat in BASE13:
                     if not is_finite(feats.get(feat)):
@@ -70,6 +69,18 @@ def check_window_complete(trows, start_idx, end_idx, is_repaired):
                         break
                 if all_ok:
                     complete_count += 1
+        else:
+            # Non-Object suites: try v3 compute_features first, then check f_ columns
+            all_ok = True
+            # Check f_-prefixed columns for all 25D features
+            for feat in SC5_V2_FEATURES:
+                f_col = f"f_{feat}"
+                v = row.get(f_col, row.get(feat, ""))
+                if not v or v == "None" or not is_finite(v):
+                    all_ok = False
+                    break
+            if all_ok:
+                complete_count += 1
 
     window_ok = complete_count == (end_idx - start_idx + 1)
     return window_ok, "" if window_ok else f"{complete_count}/{end_idx-start_idx+1}_rows_complete", complete_count
@@ -189,7 +200,7 @@ def main():
                 all_windows_ok = False
                 continue
 
-            ok, detail, _ = check_window_complete(trows, start_idx, endpoint, is_repaired)
+            ok, detail, _ = check_window_complete(trows, start_idx, endpoint, is_repaired, suite)
             window_results[f"W{W}"] = "PASS" if ok else f"INCOMPLETE:{detail}"
             if not ok:
                 all_windows_ok = False
