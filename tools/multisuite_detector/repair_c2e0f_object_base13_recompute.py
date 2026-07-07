@@ -196,11 +196,13 @@ def compute_derived_features(base13_stream: List[Dict[str, float]]) -> List[Dict
             eef_vx_vals[i]**2 + eef_vy_vals[i]**2 + eef_vz_vals[i]**2
         ))
 
-    # close_onset: detect when gripper_command transitions from open to close
-    # "close" = command > 0.5 (positive direction = closing)
+    # close_onset: detect when gripper transitions from OPEN to CLOSE
+    # SC5 frozen semantics: raw_gripper > 0.5 = OPEN, < 0.5 = CLOSE
+    # close_onset = crossing from OPEN (>0.5) to CLOSE (<0.5)
+    OPEN_THRESHOLD = 0.5
     close_onset = [0] * n
     for i in range(1, n):
-        if cmd_vals[i] > 0.5 and cmd_vals[i-1] <= 0.5:
+        if cmd_vals[i] < OPEN_THRESHOLD and cmd_vals[i-1] >= OPEN_THRESHOLD:
             close_onset[i] = 1
     # Propagate: first close onset sets the reference
     first_close_idx = None
@@ -262,31 +264,33 @@ def compute_derived_features(base13_stream: List[Dict[str, float]]) -> List[Dict
         variance = sum((x - mean) ** 2 for x in window) / len(window)
         derived[i]["eef_speed_variance_5"] = variance
 
-    # recent_close_streak: consecutive steps where gripper_command > 0.5
+    # recent_close_streak: consecutive steps where gripper_command < 0.5 (SC5 CLOSE)
     streak = 0
     for i in range(n):
-        if cmd_vals[i] > 0.5:
+        if cmd_vals[i] < OPEN_THRESHOLD:
             streak += 1
         else:
             streak = 0
         derived[i]["recent_close_streak"] = float(streak)
 
-    # recent_open_streak: consecutive steps where gripper_command < -0.5
+    # recent_open_streak: consecutive steps where gripper_command > 0.5 (SC5 OPEN)
     streak = 0
     for i in range(n):
-        if cmd_vals[i] < -0.5:
+        if cmd_vals[i] > OPEN_THRESHOLD:
             streak += 1
         else:
             streak = 0
         derived[i]["recent_open_streak"] = float(streak)
 
-    # recent_gripper_flip_count: number of direction changes in last 5 steps
+    # recent_gripper_flip_count: number of OPEN↔CLOSE direction changes in last 5 steps
     for i in range(n):
         start = max(0, i - 4)
         window = cmd_vals[start:i+1]
         flips = 0
         for j in range(1, len(window)):
-            if (window[j] > 0.5 and window[j-1] < -0.5) or (window[j] < -0.5 and window[j-1] > 0.5):
+            crossed_open_to_close = (window[j-1] > OPEN_THRESHOLD and window[j] < OPEN_THRESHOLD)
+            crossed_close_to_open = (window[j-1] < OPEN_THRESHOLD and window[j] > OPEN_THRESHOLD)
+            if crossed_open_to_close or crossed_close_to_open:
                 flips += 1
         derived[i]["recent_gripper_flip_count"] = float(flips)
 
