@@ -222,7 +222,7 @@ def run_episode(args: argparse.Namespace) -> Dict[str, Any]:
                             _gr_emit = step
 
             # ── ATTACK (copied from v2 bridge, only trigger changed) ──
-            attack_this = False; adv_token = None; adv_arm = 0
+            attack_this = False; adv_tokens = None; adv_token = None; adv_arm = 0
             _trigger_step = args.trigger_step_override if args.trigger_step_override >= 0 else _gr_emit
             _clean_candidate = np.asarray(action, dtype=np.float32)
 
@@ -245,10 +245,11 @@ def run_episode(args: argparse.Namespace) -> Dict[str, Any]:
                     adv_tokens = extract_exact_new_tokens(go.sequences, prompt_len=int(iids.shape[1]), expected_new_tokens=action_dim)
                 elif is_oracle:
                     # Command-open oracle: set env action gripper to -1.0 (open)
-                    oracle_action = list(action)
+                    oracle_action = np.asarray(action, dtype=np.float32).copy()
                     oracle_action[-1] = -1.0
-                    env_action_final = np.array(oracle_action, dtype=np.float32)
+                    env_action_final = postprocess_openvla_action_for_libero(oracle_action, enabled=True)
                     attack_this = True
+                    attack_count += 1
                 else:
                     # TRUE_T10: VIS targeted attack (copied from v2 bridge)
                     from gripper_attack.attack_adapter import prepare_openvla_image_for_attack, get_adv_inputs_from_attack_result
@@ -274,17 +275,19 @@ def run_episode(args: argparse.Namespace) -> Dict[str, Any]:
                     adv_tokens = extract_exact_new_tokens(go2.sequences, prompt_len=int(iids.shape[1]), expected_new_tokens=action_dim)
 
                 if adv_tokens is not None:
-                    from gripper_attack.m3_controls import decode_action_tokens, compute_arm_selection_mask
-                    adv_decoded = decode_action_tokens(adv_tokens, unnorm_key=unnorm_key)
-                    _clean_6 = np.asarray(action[:6], dtype=np.float32)
-                    _adv_all = np.asarray(adv_decoded, dtype=np.float32)
-                    _arm_mask = compute_arm_selection_mask(_clean_6, _adv_all[:6], ARM_GATE)
-                    adv_arm = int(_arm_mask.sum())
-                    _final_6 = np.where(_arm_mask, _adv_all[:6], _clean_6)
-                    _final = np.concatenate([_final_6, _adv_all[6:]])
-                    env_action_final = postprocess_openvla_action_for_libero(_final, enabled=True)
-                    attack_this = True
-                    attack_count += 1
+                    # Token decode (copied from v2 bridge)
+                    grip = int(adv_tokens[-1])
+                    vocab_size = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of)
+                    disc = np.clip(vocab_size - np.array([int(t) for t in adv_tokens]) - 1, 0, model.bin_centers.shape[0] - 1)
+                    na = model.bin_centers[disc]
+                    s = model.get_action_stats(unnorm_key)
+                    lo = np.asarray(s["q01"], dtype=np.float32); hi = np.asarray(s["q99"], dtype=np.float32)
+                    mk = np.asarray(s.get("mask", np.ones_like(lo, dtype=bool)), dtype=bool)
+                    attack_action = np.where(mk, 0.5 * (na + 1) * (hi - lo) + lo, na).astype(np.float32)
+                    env_action_final = postprocess_openvla_action_for_libero(attack_action, enabled=True)
+                    raw_grip = float(attack_action[-1])
+                    adv_token = grip
+                    attack_this = True; attack_count += 1
 
             # ── env.step (exactly once per timestep, copied from v2 bridge) ──
             obs, reward, done, info = env.step(env_action_final)
