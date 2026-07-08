@@ -65,6 +65,9 @@ def main():
     ap.add_argument("--queue-manifest", required=True)
     ap.add_argument("--episode-dir", required=True)
     ap.add_argument("--output-dir", required=True)
+    ap.add_argument("--expected-detector-sha256", default="")
+    ap.add_argument("--expected-threshold-sha256", default="")
+    ap.add_argument("--expected-source-commit", default="")
     ap.add_argument("--git-commit", required=True)
     args = ap.parse_args()
 
@@ -148,25 +151,25 @@ def main():
                 "issue": f"clean has attack_frames={ar['attack_frames']}",
             })
 
-    # ========== Check 4: Detector SHA consistency ==========
+    # ========== Check 4: Detector SHA consistency (all episodes) ==========
     sha_violations = []
-    # Collect expected SHAs from the first completed episode
-    ref_detector_sha = ""
-    ref_threshold_sha = ""
+    exp_det = args.expected_detector_sha256
+    exp_thr = args.expected_threshold_sha256
+    exp_src = args.expected_source_commit
     for ar in audit_rows:
-        if ar.get("completed"):
-            ep_dir = episode_dir / ar["suite"] / ar["condition"] / ar["parent_key"]
-            summary = read_json(ep_dir / "episode_summary.json")
-            if summary:
-                ref_detector_sha = ref_detector_sha or str(summary.get("detector_checkpoint_sha256", ""))
-                ref_threshold_sha = ref_threshold_sha or str(summary.get("threshold_sha256", ""))
-                det_sha = str(summary.get("detector_checkpoint_sha256", ""))
-                thr_sha = str(summary.get("threshold_sha256", ""))
-                if det_sha and ref_detector_sha and det_sha != ref_detector_sha:
-                    sha_violations.append({"parent_key": ar["parent_key"], "issue": f"detector_sha mismatch: {det_sha} != {ref_detector_sha}"})
-                if thr_sha and ref_threshold_sha and thr_sha != ref_threshold_sha:
-                    sha_violations.append({"parent_key": ar["parent_key"], "issue": f"threshold_sha mismatch: {thr_sha} != {ref_threshold_sha}"})
-                break  # Just need one reference
+        if not ar.get("completed"): continue
+        ep_dir = episode_dir / ar["suite"] / ar["condition"] / ar["parent_key"]
+        summary = read_json(ep_dir / "episode_summary.json")
+        if not summary: continue
+        det_sha = str(summary.get("detector_checkpoint_sha256", ""))
+        thr_sha = str(summary.get("threshold_sha256", ""))
+        src = str(summary.get("source_commit", ""))
+        if exp_det and det_sha and det_sha != exp_det:
+            sha_violations.append({"parent_key": ar["parent_key"], "issue": f"detector_sha mismatch: {det_sha[:16]} != expected {exp_det[:16]}"})
+        if exp_thr and thr_sha and thr_sha != exp_thr:
+            sha_violations.append({"parent_key": ar["parent_key"], "issue": f"threshold_sha mismatch: {thr_sha[:16]} != expected {exp_thr[:16]}"})
+        if exp_src and src and src != exp_src:
+            sha_violations.append({"parent_key": ar["parent_key"], "issue": f"source_commit mismatch: {src[:12]} != expected {exp_src[:12]}"})
 
     # ========== Summary ==========
     violations = []
