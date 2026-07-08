@@ -19,14 +19,14 @@ os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "eager")
 
 # ============ Suite Registry ============
 SUITE_MODELS = {
-    "libero_10": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-10",
-    "libero_goal": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-goal",
+    "libero_10": "/mnt/sdc/dty_user/openvla_attack/models/libero-10",
+    "libero_goal": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
     "libero_object": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
-    "libero_spatial": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-spatial",
+    "libero_spatial": "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial",
 }
 SUITE_UNNORM = {s: s for s in SUITE_MODELS}
 SUITE_BM = {s: s for s in SUITE_MODELS}
-K = 10; EPSILON = 0.023529411764705882; TARGET_TOKEN = 31744; ARM_GATE = 5; PGD_STEPS = 20; MAX_STEPS = 400
+K = 10; EPSILON = 0.023529411764705882; TARGET_TOKEN = 31744; ARM_GATE = 5; PGD_STEPS = 20; MAX_STEPS = 300
 
 
 def sha256_str(s: str) -> str: return hashlib.sha256(s.encode()).hexdigest()
@@ -291,6 +291,9 @@ def run_episode(args: argparse.Namespace) -> Dict[str, Any]:
 
             # ── env.step (exactly once per timestep, copied from v2 bridge) ──
             obs, reward, done, info = env.step(env_action_final)
+
+            if step % 50 == 0:
+                print(f"  step {step}/{MAX_STEPS} emitted={_gr_emit>=0} attack={attack_count}", flush=True)
 
             # Telemetry
             obj_z = float(env.sim.data.site_xpos[obj_sid][2]) if obj_sid is not None else float("nan")
