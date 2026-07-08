@@ -23,7 +23,10 @@ import numpy as np
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO)); sys.path.insert(0, str(REPO / "src"))
 
-from scripts.stageb.collect_c2f_observation_clean_rollouts import StepRecord, RuntimeAdapter
+try:
+    from scripts.stageb.collect_c2f_observation_clean_rollouts import StepRecord, RuntimeAdapter
+except ImportError:
+    from collect_c2f_observation_clean_rollouts import StepRecord, RuntimeAdapter
 
 CANONICAL_25D_FEATURES = [
     "gripper_command", "gripper_qpos", "gripper_opening_proxy",
