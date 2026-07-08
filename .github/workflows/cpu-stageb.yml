@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -28,7 +30,8 @@ jobs:
             scripts/stageb/audit_existing_nonobject_clean_outputs.py \
             scripts/stageb/build_paper_table_schemas.py \
             scripts/stageb/build_teacher_label_eval_table.py \
-            scripts/stageb/audit_github_branch_pr_hygiene.py
+            scripts/stageb/audit_github_branch_pr_hygiene.py \
+            tools/multisuite_detector/build_clean2000_label_v2.py
       - name: Run targeted CPU tests
         run: |
           pytest \
@@ -36,7 +39,14 @@ jobs:
             tests/stageb/test_cross_suite_clean_queue.py \
             tests/stageb/test_cross_suite_clean_collector.py \
             tests/stageb/test_cross_suite_task_inventory.py \
+            tests/test_build_clean2000_label_v2.py \
             -q
+      - name: Run Label V2 closeout self-test
+        run: python tools/multisuite_detector/build_clean2000_label_v2.py --mode self-test-closeout
+      - name: Report Label V2 producer identity
+        run: |
+          git rev-parse HEAD
+          sha256sum tools/multisuite_detector/build_clean2000_label_v2.py
       - name: Block generated evidence dumps in git
         shell: python
         run: |
