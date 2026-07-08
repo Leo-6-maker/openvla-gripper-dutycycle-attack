@@ -1,6 +1,6 @@
 # Experiment Status Report — 2026-07-08 21:30 CST
 
-**Commit**: `36712cc` | **Branch**: `plan/codex-gated-experiment-v1-c2e0`
+**Report commit**: `d747cea` | **Infrastructure base**: `36712cc` | **Branch**: `plan/codex-gated-experiment-v1-c2e0`
 
 ## 1. D7 Table1 — Main Experiment (COMPLETE)
 
