@@ -103,7 +103,7 @@ class C2fLiberoOpenVLAAdapter(RuntimeAdapter):
         task_bddl = str(Path(get_libero_path("bddl_files")) / task.problem_folder / task.bddl_file)
 
         env, obs = build_v4_exact_env(str(task_bddl), 0, MAX_STEPS, 10)
-        apply_dummy_wait(env)
+        env, obs = apply_dummy_wait(env, obs, 10)
 
         teacher = _TeacherLabeler(env, task_language)
         _prev_eef = None
