@@ -23,7 +23,7 @@ import numpy as np
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO)); sys.path.insert(0, str(REPO / "src"))
 
-from collect_c2f_observation_clean_rollouts import StepRecord, RuntimeAdapter
+from scripts.stageb.collect_c2f_observation_clean_rollouts import StepRecord, RuntimeAdapter
 
 CANONICAL_25D_FEATURES = [
     "gripper_command", "gripper_qpos", "gripper_opening_proxy",
@@ -135,11 +135,10 @@ class C2fLiberoOpenVLAAdapter(RuntimeAdapter):
                 if rgb.ndim == 2:
                     rgb = np.stack([rgb]*3, axis=-1)
             else:
-                try:
-                    img = env.sim.render(224, 224, camera_name="frontview")
-                    rgb = np.asarray(img, dtype=np.uint8)
-                except Exception:
-                    rgb = np.zeros((224, 224, 3), dtype=np.uint8)
+                img = env.sim.render(224, 224, camera_name="frontview")
+                rgb = np.asarray(img, dtype=np.uint8)
+            if rgb is None or rgb.size == 0 or np.max(rgb) < 5:
+                raise RuntimeError(f"C2f RGB capture failed at step {step}: image is blank or missing")
 
             # 25D features via SC5StreamingFeatureAdapterV2
             eef_pos = np.zeros(3)
@@ -157,7 +156,7 @@ class C2fLiberoOpenVLAAdapter(RuntimeAdapter):
 
             qpos = env.sim.data.qpos
             gw = abs(float(qpos[7])) + abs(float(qpos[8]))
-            gq = float(qpos.sum())
+            gq = float(qpos[7] + qpos[8])
 
             try:
                 _res = _streamer.update(
@@ -208,7 +207,9 @@ class C2fLiberoOpenVLAAdapter(RuntimeAdapter):
 class _TeacherLabeler:
     """Produces teacher labels from clean privileged simulator state.
 
-    Labels are conservative: defaults to unsupported_or_abstain when uncertain.
+    Conservative: defaults to unsupported_or_abstain when object grounding fails.
+    Does NOT mark all stable_carry as primary — requires object identity match.
+
     Privileged state NEVER exposed in student features.
     """
 
@@ -217,19 +218,24 @@ class _TeacherLabeler:
         self._task_language = task_language
         self._prev_grasp = False
         self._phase = "approach"
+        self._grasped_object_name = ""
 
     def label(self, step: int) -> Dict[str, Any]:
         env = self._env
+        result = {"hazard": 0, "primary_attackable": 0, "release_safe": 0,
+                  "event_role": "unsupported_or_abstain", "phase": "unknown"}
+
         try:
             gripper_qpos = env.sim.data.qpos[7:9]
             gripper_closed = float(gripper_qpos[0] + gripper_qpos[1]) < 0.04
             eef_sid = env.sim.model.site_name2id("gripper0_grip_site")
             eef_z = float(env.sim.data.site_xpos[eef_sid][2])
         except Exception:
-            return self._fallback()
+            return result
 
         is_grasping = gripper_closed
 
+        # Phase detection
         if is_grasping and not self._prev_grasp:
             self._phase = "grasp_close"
         elif is_grasping and self._prev_grasp:
@@ -240,26 +246,94 @@ class _TeacherLabeler:
             self._phase = "approach"
 
         self._prev_grasp = is_grasping
+        result["phase"] = self._phase
 
-        hazard = 1 if self._phase == "stable_carry" else 0
-        primary = 1 if hazard == 1 else 0
-        release_safe = 1 if self._phase == "release_safe" else 0
+        # Release safe
+        if self._phase == "release_safe":
+            result["release_safe"] = 1
+            result["event_role"] = "unsupported_or_abstain"
+            return result
 
-        if primary and hazard:
-            role = "primary_attackable"
-        elif is_grasping and not hazard:
-            role = "auxiliary_manipulation"
+        # Hazard window: only during stable_carry (potential attackable phase)
+        is_hazard_phase = self._phase == "stable_carry"
+
+        # Try to identify grasped object from simulator state
+        grasped_obj = self._identify_grasped_object()
+        self._grasped_object_name = grasped_obj if grasped_obj else self._grasped_object_name
+
+        # Primary event: stable_carry AND grasped object matches task language target
+        matches_target = self._object_matches_task_target(grasped_obj)
+
+        if is_hazard_phase and matches_target:
+            result["hazard"] = 1
+            result["primary_attackable"] = 1
+            result["event_role"] = "primary_attackable"
+        elif is_hazard_phase and grasped_obj and not matches_target:
+            # Carrying something, but NOT the task target → distractor/auxiliary
+            result["hazard"] = 0
+            result["primary_attackable"] = 0
+            result["event_role"] = "distractor_or_setup"
+        elif is_hazard_phase and not grasped_obj:
+            # In stable_carry phase but can't identify object → abstain
+            result["hazard"] = 0
+            result["primary_attackable"] = 0
+            result["event_role"] = "unsupported_or_abstain"
+        elif is_grasping and not is_hazard_phase:
+            result["event_role"] = "auxiliary_manipulation"
         elif self._phase == "approach":
-            role = "distractor_or_setup"
+            result["event_role"] = "distractor_or_setup"
         else:
-            role = "unsupported_or_abstain"
+            result["event_role"] = "unsupported_or_abstain"
 
-        return {"hazard": hazard, "primary_attackable": primary,
-                "release_safe": release_safe, "event_role": role, "phase": self._phase}
+        return result
 
-    def _fallback(self) -> Dict[str, Any]:
-        return {"hazard": 0, "primary_attackable": 0, "release_safe": 0,
-                "event_role": "unsupported_or_abstain", "phase": "unknown"}
+    def _identify_grasped_object(self) -> str:
+        """Try to identify which object is grasped using simulator contact/distance.
+
+        Returns object name if identifiable, empty string otherwise.
+        Conservative: returns "" when uncertain.
+        """
+        env = self._env
+        try:
+            eef_sid = env.sim.model.site_name2id("gripper0_grip_site")
+            eef_pos = env.sim.data.site_xpos[eef_sid]
+
+            # Check distance from gripper to each object body
+            closest_obj = ""
+            closest_dist = float("inf")
+            for body_name in env.sim.model.body_names:
+                # Filter for manipulable objects (exclude robot, floor, etc.)
+                if any(skip in body_name for skip in ["robot", "floor", "world", "gripper", "link", "collision", "visual"]):
+                    continue
+                try:
+                    bid = env.sim.model.body_name2id(body_name)
+                    body_pos = env.sim.data.body_xpos[bid]
+                    dist = float(np.linalg.norm(eef_pos - body_pos))
+                    if dist < 0.15 and dist < closest_dist:
+                        closest_dist = dist
+                        closest_obj = body_name
+                except Exception:
+                    continue
+            return closest_obj
+        except Exception:
+            return ""
+
+    def _object_matches_task_target(self, grasped_obj: str) -> bool:
+        """Check if grasped object name appears in task language instruction.
+
+        Simple substring matching against LIBERO task language.
+        Example: "pick up the black bowl" → "black_bowl" matches "bowl"
+        """
+        if not grasped_obj:
+            return False
+        lang_lower = self._task_language.lower()
+        # Extract object name parts from simulator body name
+        obj_parts = grasped_obj.lower().replace("_", " ").split()
+        # Check if any meaningful object part appears in task language
+        for part in obj_parts:
+            if len(part) > 2 and part in lang_lower:
+                return True
+        return False
 
 
 def make_adapter(args):
