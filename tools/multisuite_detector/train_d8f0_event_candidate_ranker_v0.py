@@ -110,7 +110,7 @@ def margin_ranking_loss(
 ) -> torch.Tensor:
     """For each positive, loss = max(0, margin - pos_score + max_neg_score)."""
     if neg_scores.numel() == 0:
-        return torch.tensor(0.0, device=pos_scores.device)
+        return pos_scores.sum() * 0.0  # keep grad, zero loss
     max_neg = neg_scores.max()
     # For each positive, penalize if max_neg_score + margin > pos_score
     losses = torch.clamp(margin + max_neg - pos_scores, min=0.0)
