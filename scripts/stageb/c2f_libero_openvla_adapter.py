@@ -102,17 +102,7 @@ class C2fLiberoOpenVLAAdapter(RuntimeAdapter):
         task_language = task.language
         task_bddl = str(Path(get_libero_path("bddl_files")) / task.problem_folder / task.bddl_file)
 
-        env_args = {
-            "task_name": task.name, "task_bddl_file": str(task_bddl),
-            "robots": "Panda", "controller": "OSC_POSE",
-            "has_renderer": False, "has_offscreen_renderer": True,
-            "use_camera_obs": True, "camera_names": ["frontview"],
-            "camera_heights": 224, "camera_widths": 224,
-            "control_freq": 20, "env_state_init_seed": state_id,
-        }
-        env = build_v4_exact_env(**env_args)
-        env.seed(seed)
-        obs = env.reset()
+        env, obs = build_v4_exact_env(str(task_bddl), 0, MAX_STEPS, 10)
         apply_dummy_wait(env)
 
         teacher = _TeacherLabeler(env, task_language)
