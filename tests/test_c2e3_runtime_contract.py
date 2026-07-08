@@ -15,7 +15,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[1]
+assert (REPO / "src" / "gripper_attack").exists(), f"REPO not found at {REPO}"
 sys.path.insert(0, str(REPO)); sys.path.insert(0, str(REPO / "src"))
 
 from gripper_attack.c2e3_gru_detector_runtime import (

@@ -46,22 +46,29 @@ def safe_float(val: Any, default: float = float("nan")) -> float:
 def classify_episode(
     summary: Dict[str, Any],
     telemetry_path: Optional[Path] = None,
+    clean_success: Optional[bool] = None,  # parent-paired CLEAN success for oracle sensitivity
 ) -> str:
-    """Classify a single L10 episode into taxonomy bucket."""
+    """Classify a single episode into taxonomy bucket."""
     emitted = str(summary.get("detector_emitted", "")).lower() in ("true", "1")
     attack_frames = int(summary.get("attack_frames", 0) or 0)
     n_steps = int(summary.get("n_steps", 0) or 0)
     condition = str(summary.get("condition", ""))
     task_success = str(summary.get("task_success", "")).lower() in ("true", "1")
     error = str(summary.get("error", ""))
+    emit_step = int(summary.get("emit_step", -1) or -1)
+
+    tau_emit = 0.33
+    tau_suppress = 0.67
 
     if error:
         return "RUNTIME_ERROR"
 
-    # ── Oracle sensitivity ──
+    # ── Oracle sensitivity (parent-paired) ──
     if condition == "COMMAND_OPEN_ORACLE":
-        if not task_success and attack_frames >= 10:
+        if clean_success is True and not task_success:
             return "ORACLE_SENSITIVE"
+        elif clean_success is False and not task_success:
+            return "ORACLE_UNINFORMATIVE_CLEAN_FAIL"
         else:
             return "ORACLE_NOT_SENSITIVE"
 
@@ -76,21 +83,34 @@ def classify_episode(
     if n_steps < 16:
         return "NO_EMIT_SHORT_EPISODE"
 
-    # Check telemetry for feature validity
+    # Read telemetry for fine-grained diagnosis
+    max_emit_p = 0.0
+    min_suppress_p = 1.0
+    n_valid_steps = 0
     if telemetry_path is not None and telemetry_path.exists():
         try:
             trows = list(csv.DictReader(open(telemetry_path)))
-            has_valid = any(
-                str(r.get("valid", "")).lower() in ("true", "1")
-                for r in trows
-            )
-            if not has_valid:
-                return "NO_EMIT_INVALID_FEATURES"
+            for r in trows:
+                ep = safe_float(r.get("gr_emit_p", 0), -1.0)
+                sp = safe_float(r.get("gr_suppress_p", 0), -1.0)
+                if ep >= 0 and sp >= 0:
+                    n_valid_steps += 1
+                    max_emit_p = max(max_emit_p, ep)
+                    min_suppress_p = min(min_suppress_p, sp)
         except Exception:
             pass
 
-    # Default: low signal (emit_p never hit threshold, or suppress_p blocked)
-    return "NO_EMIT_LOW_SIGNAL"
+    if n_valid_steps == 0:
+        return "NO_EMIT_UNKNOWN_VALIDITY"
+
+    if max_emit_p < tau_emit:
+        return "NO_EMIT_LOW_EMIT_P"
+    if max_emit_p >= tau_emit and min_suppress_p > tau_suppress:
+        return "NO_EMIT_HIGH_SUPPRESS_P"
+    if emit_step > 250:
+        return "EMIT_LATE_AFTER_STEP_250"
+
+    return "NO_EMIT_OTHER"
 
 
 def main():
@@ -116,6 +136,13 @@ def main():
     ]
     print(f"D8B: {len(l10_rows)} completed {args.suite} episodes")
 
+    # Build parent-paired CLEAN success lookup for oracle sensitivity
+    clean_success_by_parent: Dict[str, bool] = {}
+    for ar in l10_rows:
+        if ar.get("condition") == "CLEAN":
+            pk = ar.get("parent_key", "")
+            clean_success_by_parent[pk] = ar.get("task_success", "").lower() in ("true", "1")
+
     taxonomy: Dict[str, int] = defaultdict(int)
     rows: List[Dict[str, Any]] = []
 
@@ -124,7 +151,10 @@ def main():
         summary = read_json(ep_dir / "episode_summary.json")
         telemetry = ep_dir / "step_telemetry.csv"
 
-        bucket = classify_episode(summary, telemetry)
+        pk = ar.get("parent_key", "")
+        clean_ok = clean_success_by_parent.get(pk)
+
+        bucket = classify_episode(summary, telemetry, clean_success=clean_ok)
         taxonomy[bucket] += 1
 
         rows.append({
