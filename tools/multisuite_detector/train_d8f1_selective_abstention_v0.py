@@ -194,7 +194,7 @@ def main():
     ap.add_argument("--epochs", type=int, default=50)
     ap.add_argument("--batch-size", type=int, default=256)
     ap.add_argument("--fp-penalty", type=float, default=0.5)
-    ap.add_argument("--abstain-penalty", type=float, default=0.3)
+    ap.add_argument("--abstain-weight", type=float, default=0.3)
     ap.add_argument("--tau-emit", type=float, default=0.33)
     ap.add_argument("--tau-suppress", type=float, default=0.67)
     ap.add_argument("--tau-abstain", type=float, default=0.5)
@@ -243,6 +243,10 @@ def main():
     # ── Training ──
     best_val_f1 = 0.0
     best_state = None
+    best_state_fp25 = None  # best recall under FP <= 25%
+    best_state_fp30 = None  # best recall under FP <= 30%
+    best_recall_fp25 = 0.0
+    best_recall_fp30 = 0.0
     n_train = len(xt_train)
 
     for epoch in range(args.epochs):
@@ -259,7 +263,7 @@ def main():
 
             el, sl, al = model(bx, bc)
             loss, loss_info = abstention_loss(el, sl, al, by,
-                                              args.fp_penalty, args.abstain_penalty)
+                                              args.fp_penalty, args.abstain_weight)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
@@ -279,6 +283,15 @@ def main():
             best_val_f1 = val_m["f1"]
             best_state = {k: v.cpu().clone() for k, v in model.state_dict().items()}
 
+        # Constrained best: recall under FP <= 25%
+        if val_m["fp_rate"] <= 0.25 and val_m["recall"] > best_recall_fp25:
+            best_recall_fp25 = val_m["recall"]
+            best_state_fp25 = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+        # Constrained best: recall under FP <= 30%
+        if val_m["fp_rate"] <= 0.30 and val_m["recall"] > best_recall_fp30:
+            best_recall_fp30 = val_m["recall"]
+            best_state_fp30 = {k: v.cpu().clone() for k, v in model.state_dict().items()}
+
         if epoch % 5 == 0 or is_best:
             print(f"  epoch {epoch:3d}: loss={avg_loss:.4f} "
                   f"val_recall={val_m['recall']:.4f} val_fp={val_m['fp_rate']:.4f} "
@@ -287,38 +300,58 @@ def main():
                   flush=True)
 
     # ── Save ──
-    # Load best state before final evaluation (not last-epoch model)
-    if best_state is not None:
-        model.load_state_dict(best_state)
-    val_final = compute_metrics(model, xt_val, xc_val, y_val, suite_val,
-                                tau_emit=args.tau_emit, tau_suppress=args.tau_suppress,
-                                tau_abstain=args.tau_abstain, device=device)
+    def eval_variant(state_dict, label):
+        if state_dict is not None:
+            model.load_state_dict(state_dict)
+        return compute_metrics(model, xt_val, xc_val, y_val, suite_val,
+                               tau_emit=args.tau_emit, tau_suppress=args.tau_suppress,
+                               tau_abstain=args.tau_abstain, device=device)
+
+    val_best_f1 = eval_variant(best_state, "best_f1")
+    val_best_fp25 = eval_variant(best_state_fp25, "best_fp25")
+    val_best_fp30 = eval_variant(best_state_fp30, "best_fp30")
 
     checkpoint = {
         "model_state_dict": best_state,
+        "model_state_dict_fp25": best_state_fp25,
+        "model_state_dict_fp30": best_state_fp30,
         "config": {
             "model": "ThreeHeadGRU",
             "window": w, "hidden": args.hidden, "dropout": args.dropout,
-            "lr": args.lr, "fp_penalty": args.fp_penalty, "abstain_penalty": args.abstain_penalty,
+            "lr": args.lr, "fp_penalty": args.fp_penalty, "abstain_penalty": args.abstain_weight,
             "tau_emit": args.tau_emit, "tau_suppress": args.tau_suppress, "tau_abstain": args.tau_abstain,
             "seed": args.seed, "n_features": 25, "n_context": int(xc_all.shape[1]),
         },
-        "val_metrics": {k: v for k, v in val_final.items() if k != "per_suite"},
+        "val_best_f1": {k: v for k, v in val_best_f1.items() if k != "per_suite"},
+        "val_best_fp25": {k: v for k, v in val_best_fp25.items() if k != "per_suite"},
+        "val_best_fp30": {k: v for k, v in val_best_fp30.items() if k != "per_suite"},
     }
     torch.save(checkpoint, str(out / "d8f1_selective_abstention.pt"))
 
     report = {
         "gate": "D8F1_SELECTIVE_ABSTENTION_V0",
         "status": "PASS_D8F1_TRAINED",
-        "val_recall": val_final["recall"],
-        "val_fp_rate": val_final["fp_rate"],
-        "val_f1": val_final["f1"],
-        "val_abstain_rate": val_final["abstain_rate"],
-        "val_per_suite": val_final["per_suite"],
+        "variants": {
+            "best_f1": {
+                "recall": val_best_f1["recall"], "fp_rate": val_best_f1["fp_rate"],
+                "f1": val_best_f1["f1"], "abstain_rate": val_best_f1["abstain_rate"],
+                "per_suite": val_best_f1["per_suite"],
+            },
+            "best_fp25": {
+                "recall": val_best_fp25["recall"], "fp_rate": val_best_fp25["fp_rate"],
+                "f1": val_best_fp25["f1"], "abstain_rate": val_best_fp25["abstain_rate"],
+                "per_suite": val_best_fp25["per_suite"],
+            },
+            "best_fp30": {
+                "recall": val_best_fp30["recall"], "fp_rate": val_best_fp30["fp_rate"],
+                "f1": val_best_fp30["f1"], "abstain_rate": val_best_fp30["abstain_rate"],
+                "per_suite": val_best_fp30["per_suite"],
+            },
+        },
         "created_at_unix": time.time(),
         "runtime_seconds": time.time() - t0,
         "git_commit": args.git_commit,
-        "note": "three_head_abstention — can refuse to emit on ambiguous windows, trading FP for recall",
+        "note": "constrained_multi_variant — Pareto selection: best_f1, best recall under FP<=25%, FP<=30%",
         "boundaries": {
             "CUDA_required": "NOT_REQUIRED",
             "OpenVLA_model": "NOT_LOADED",
@@ -328,8 +361,15 @@ def main():
     with open(out / "d8f1_training_report.json", "w") as f:
         json.dump(report, f, indent=2, sort_keys=True, default=str)
 
-    print(f"\nD8F1 done: val_recall={val_final['recall']:.4f} val_fp={val_final['fp_rate']:.4f} "
-          f"val_f1={val_final['f1']:.4f}  saved to {out}")
+    print(f"\nD8F1 done:")
+    print(f"  best_f1:  recall={val_best_f1['recall']:.4f} fp={val_best_f1['fp_rate']:.4f} f1={val_best_f1['f1']:.4f} abstain={val_best_f1['abstain_rate']:.3f}")
+    print(f"  best_fp25: recall={val_best_fp25['recall']:.4f} fp={val_best_fp25['fp_rate']:.4f} f1={val_best_fp25['f1']:.4f} abstain={val_best_fp25['abstain_rate']:.3f}")
+    print(f"  best_fp30: recall={val_best_fp30['recall']:.4f} fp={val_best_fp30['fp_rate']:.4f} f1={val_best_fp30['f1']:.4f} abstain={val_best_fp30['abstain_rate']:.3f}")
+    for s in sorted(val_best_f1["per_suite"].keys()):
+        print(f"  {s}: f1_recall={val_best_f1['per_suite'][s]['recall']:.4f} fp={val_best_f1['per_suite'][s]['fp_rate']:.4f}"
+              f" | fp25_recall={val_best_fp25['per_suite'][s]['recall']:.4f}"
+              f" | fp30_recall={val_best_fp30['per_suite'][s]['recall']:.4f}")
+    print(f"  saved to {out}")
     return 0
 
 
