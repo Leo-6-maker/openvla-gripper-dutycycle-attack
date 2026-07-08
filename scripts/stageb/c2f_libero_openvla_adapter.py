@@ -48,6 +48,70 @@ SUITE_MODELS = {
 MAX_STEPS = 300
 
 
+def _visible_gpu_id() -> int:
+    """Return the first visible GPU id for LIBERO env construction.
+
+    D7 workers usually run with a single CUDA_VISIBLE_DEVICES value.  This
+    helper keeps the adapter robust to values like "5,1" while the model still
+    uses process-local cuda:0.
+    """
+    raw = os.environ.get("CUDA_VISIBLE_DEVICES", "0").split(",")[0].strip()
+    try:
+        return int(raw)
+    except Exception:
+        return 0
+
+
+def _rgb_from_obs(obs: Dict[str, Any], step: int) -> np.ndarray:
+    """Return the victim-aligned RGB frame used by OpenVLA.
+
+    D7 reads obs["agentview_image"] for OpenVLA decoding.  C2f should save the
+    same camera stream instead of a different frontview fallback; otherwise the
+    visual detector would be trained on a view that is not the attacked input.
+    """
+    if "agentview_image" not in obs:
+        raise RuntimeError(f"C2f RGB capture failed at step {step}: obs lacks agentview_image")
+    rgb = np.asarray(obs["agentview_image"])
+    if rgb.ndim == 2:
+        rgb = np.stack([rgb] * 3, axis=-1)
+    if rgb.ndim == 3 and rgb.shape[0] in (3, 4) and rgb.shape[-1] not in (3, 4):
+        rgb = np.moveaxis(rgb, 0, -1)
+    if rgb.dtype != np.uint8:
+        if np.nanmax(rgb) <= 1.0:
+            rgb = np.clip(rgb * 255.0, 0, 255).astype(np.uint8)
+        else:
+            rgb = np.clip(rgb, 0, 255).astype(np.uint8)
+    if rgb.ndim != 3 or rgb.shape[-1] < 3 or rgb.size == 0 or np.max(rgb[..., :3]) < 5:
+        raise RuntimeError(f"C2f RGB capture failed at step {step}: image is blank or malformed, shape={rgb.shape}")
+    return rgb[..., :3].copy()
+
+
+def _extract_gripper_qpos(gs: Any, env: Any) -> Tuple[float, float]:
+    """Extract physical gripper qpos from D7-compatible physical_gripper_state.
+
+    D7 calls physical_gripper_state(env, obs) and expects a mapping with a
+    qpos field.  Older call signatures or fallback paths may return arrays, so
+    keep a conservative fallback to sim.data.qpos[7:9].
+    """
+    q = None
+    if isinstance(gs, dict):
+        q = gs.get("qpos", None)
+    elif hasattr(gs, "get"):
+        q = gs.get("qpos", None)
+    elif isinstance(gs, (list, tuple, np.ndarray)):
+        q = gs
+    try:
+        if q is not None and len(q) >= 2:
+            return float(q[0]), float(q[1])
+    except Exception:
+        pass
+    try:
+        sim_q = env.sim.data.qpos
+        return float(sim_q[7]), float(sim_q[8])
+    except Exception:
+        return float("nan"), float("nan")
+
+
 class C2fLiberoOpenVLAAdapter(RuntimeAdapter):
     """Runs clean OpenVLA episodes and yields per-step observation records."""
 
@@ -78,7 +142,7 @@ class C2fLiberoOpenVLAAdapter(RuntimeAdapter):
 
     def run_clean_episode(self, episode_cfg: Dict[str, Any]) -> Iterable[StepRecord]:
         import torch
-        from v4_run_eval_openvla import decode_with_scores, prompt, postprocess_openvla_action_for_libero, physical_gripper_state
+        from v4_run_eval_openvla import decode_with_scores, postprocess_openvla_action_for_libero, physical_gripper_state
         from gripper_attack.libero_v4_env_factory import build_v4_exact_env, apply_dummy_wait
         from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
         from libero.libero import benchmark, get_libero_path
@@ -99,83 +163,79 @@ class C2fLiberoOpenVLAAdapter(RuntimeAdapter):
         bm = benchmark.get_benchmark_dict()
         task_suite = bm[suite]()
         task = task_suite.get_task(task_idx)
+        init_states = task_suite.get_task_init_states(task_idx)
+        if state_id < 0 or state_id >= len(init_states):
+            raise IndexError(f"state_id={state_id} out of range for {suite} task_idx={task_idx}; n_init_states={len(init_states)}")
         task_language = task.language
         task_bddl = str(Path(get_libero_path("bddl_files")) / task.problem_folder / task.bddl_file)
 
-        env, obs = build_v4_exact_env(str(task_bddl), 0, MAX_STEPS, 10)
+        # Match D7 persistent worker order exactly:
+        #   build env -> set_init_state(init_states[state_id]) -> dummy wait.
+        env, obs = build_v4_exact_env(str(task_bddl), _visible_gpu_id(), MAX_STEPS, 10)
+        obs = env.set_init_state(init_states[state_id])
         env, obs = apply_dummy_wait(env, obs, 10)
 
         teacher = _TeacherLabeler(env, task_language)
-        _prev_eef = None
         _streamer = SC5StreamingFeatureAdapterV2()
+        eef_sid = env.sim.model.site_name2id("gripper0_grip_site")
+        _eef_init = env.sim.data.site_xpos[eef_sid]
+        _prev_eef = (float(_eef_init[0]), float(_eef_init[1]), float(_eef_init[2]))
 
         for step in range(MAX_STEPS):
-            raw = obs
-            raw_grip = physical_gripper_state(env)
+            raw = _rgb_from_obs(obs, step)
+            gs = physical_gripper_state(env, obs)
+            q7, q8 = _extract_gripper_qpos(gs, env)
+            qpos_sum = q7 + q8 if np.isfinite(q7) and np.isfinite(q8) else float("nan")
+
             action, _, _, _ = decode_with_scores(
                 vla_model, processor, device, raw, task_language, unnorm_key, 8,
                 libero_preprocess_backend="upstream_tf_jpeg", center_crop=True,
                 resize_size=224, drop_attention_mask=True,
             )
+            raw_grip = float(action[-1])
             env_action = postprocess_openvla_action_for_libero(
                 np.asarray(action, dtype=np.float32), enabled=True,
             )
 
-            # RGB from frontview camera
-            rgb = obs.get("frontview_image", None)
-            if rgb is not None:
-                rgb = np.asarray(rgb, dtype=np.uint8)
-                if rgb.ndim == 2:
-                    rgb = np.stack([rgb]*3, axis=-1)
-            else:
-                img = env.sim.render(224, 224, camera_name="frontview")
-                rgb = np.asarray(img, dtype=np.uint8)
-            if rgb is None or rgb.size == 0 or np.max(rgb) < 5:
-                raise RuntimeError(f"C2f RGB capture failed at step {step}: image is blank or missing")
-
-            # 25D features via SC5StreamingFeatureAdapterV2
-            eef_pos = np.zeros(3)
-            try:
-                eef_sid = env.sim.model.site_name2id("gripper0_grip_site")
-                eef_pos = env.sim.data.site_xpos[eef_sid]
-            except Exception:
-                pass
+            # 25D features via the same streaming adapter inputs used by D7.
+            eef_pos = env.sim.data.site_xpos[eef_sid]
             eef_x, eef_y, eef_z = float(eef_pos[0]), float(eef_pos[1]), float(eef_pos[2])
-
-            if _prev_eef is None:
+            eef_valid = np.all(np.isfinite([eef_x, eef_y, eef_z]))
+            _vx = eef_x - _prev_eef[0] if _prev_eef and eef_valid else float("nan")
+            _vy = eef_y - _prev_eef[1] if _prev_eef and eef_valid else float("nan")
+            _vz = eef_z - _prev_eef[2] if _prev_eef and eef_valid else float("nan")
+            if eef_valid:
                 _prev_eef = (eef_x, eef_y, eef_z)
-            _vx = eef_x - _prev_eef[0]; _vy = eef_y - _prev_eef[1]; _vz = eef_z - _prev_eef[2]
-            _prev_eef = (eef_x, eef_y, eef_z)
 
-            qpos = env.sim.data.qpos
-            gw = abs(float(qpos[7])) + abs(float(qpos[8]))
-            gq = float(qpos[7] + qpos[8])
+            gw = abs(q7) + abs(q8) if np.isfinite(q7) and np.isfinite(q8) else float("nan")
+            gq = float(qpos_sum) if np.isfinite(qpos_sum) else float("nan")
 
             try:
                 _res = _streamer.update(
-                    step_id=step, raw_gripper=raw_grip,
+                    step_id=step,
+                    raw_gripper=raw_grip,
                     env_gripper=-1.0 if raw_grip > 0.5 else 1.0,
-                    gripper_qpos=gq, gripper_opening_proxy=gw,
+                    gripper_qpos=gq,
+                    gripper_opening_proxy=gw,
                     eef_x=eef_x, eef_y=eef_y, eef_z=eef_z,
                     eef_vx=_vx, eef_vy=_vy, eef_vz=_vz,
                     action_dx=float(action[0]), action_dy=float(action[1]),
                     action_dz=float(action[2]), action_gripper=raw_grip,
                 )
-            except Exception:
-                _res = {"valid": False}
+            except Exception as e:
+                raise RuntimeError(f"C2f 25D feature construction failed at step {step}: {e}") from e
 
-            fv = {}
-            if _res.get("valid"):
-                fv = {f: float(_res["features"].get(f, 0.0) or 0.0) for f in CANONICAL_25D_FEATURES}
-            else:
-                fv = {f: 0.0 for f in CANONICAL_25D_FEATURES}
+            if not _res.get("valid"):
+                raise RuntimeError(f"C2f 25D feature construction invalid at step {step}")
+
+            fv = {f: float(_res["features"].get(f, 0.0) or 0.0) for f in CANONICAL_25D_FEATURES}
             features_25d = [fv[f] for f in CANONICAL_25D_FEATURES]
 
             t = teacher.label(step)
 
             rec = StepRecord(
                 step=step,
-                rgb_array=rgb,
+                rgb_array=raw,
                 rgb_path=None,
                 features_25d=features_25d,
                 task_language=task_language,
