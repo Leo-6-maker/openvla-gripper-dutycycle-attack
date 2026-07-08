@@ -8,10 +8,10 @@ Layout follows the Object Table 1 PDF format:
 """
 from __future__ import annotations
 
-import argparse, csv, hashlib, json, sys, time
+import argparse, csv, hashlib, json, math, sys, time
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 
 def sha256_file(path: Path) -> str:
@@ -25,6 +25,15 @@ def sha256_file(path: Path) -> str:
 def write_json(path: Path, obj: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(obj, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+
+
+def wilson_ci(successes: int, n: int, z: float = 1.96) -> Tuple[float, float]:
+    if n == 0: return (0.0, 0.0)
+    p = successes / n
+    denominator = 1 + z ** 2 / n
+    center = (p + z ** 2 / (2 * n)) / denominator
+    margin = z * math.sqrt((p * (1 - p) + z ** 2 / (4 * n)) / n) / denominator
+    return (max(0.0, center - margin), min(1.0, center + margin))
 
 
 def read_csv(path: str) -> List[Dict[str, str]]:
@@ -43,7 +52,7 @@ CONDITION_NAMES = {
     "CLEAN": "Clean",
     "TRUE_T10": "TRUE-T10 (C2e3 GRU)",
     "RAND_T10": "RAND-T10",
-    "COMMAND_OPEN_ORACLE": "Command-Open Oracle",
+    "COMMAND_OPEN_ORACLE": "COMMAND_OPEN_ORACLE",
 }
 
 
@@ -68,8 +77,8 @@ def render_markdown(panel_a: List[Dict[str, str]]) -> str:
         suite_name = SUITE_NAMES.get(suite, suite)
         lines.append(f"### {suite_name} (N={sum(int(r.get('N',0) or 0) for r in rows)} episodes)")
         lines.append("")
-        lines.append("| Condition | Intervention | Timing | Eval | Success/N | SR | FR | 95% CI | Attack Frames | Trigger Rate | Status |")
-        lines.append("|---|---|---|---|---|---|---|---|---|---|---|")
+        lines.append("| Condition | Intervention | Timing | Eval | Success/N | SR | FR | 95% CI | Attack Frames | Detector Emit Rate | Attack Delivery Rate | Status |")
+        lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
 
         for r in rows:
             cond = CONDITION_NAMES.get(r["Condition"], r["Condition"])
@@ -78,12 +87,54 @@ def render_markdown(panel_a: List[Dict[str, str]]) -> str:
             ci_low = r.get("CI_95_low", "")
             ci_high = r.get("CI_95_high", "")
             ci = f"[{ci_low}, {ci_high}]" if ci_low and ci_high else ""
+            emit_rate = r.get('Trigger_Rate', '')
+            attack_delivery = "0.0000" if r.get('Condition') == 'CLEAN' else emit_rate
             lines.append(
                 f"| {cond} | {r.get('Intervention','')} | {r.get('Timing','')} | {r.get('Eval','')} | "
                 f"{r.get('Success','')}/{r.get('N','')} | {sr} | {fr} | {ci} | "
-                f"{r.get('Attack_Frames','')} | {r.get('Trigger_Rate','')} | {r.get('Status','')} |"
+                f"{r.get('Attack_Frames','')} | {emit_rate} | {attack_delivery} | {r.get('Status','')} |"
             )
         lines.append("")
+
+    # ── Panel A-summary: O/G/S pooled (clean-stable suites) ──
+    clean_suites = ["libero_object", "libero_goal", "libero_spatial"]
+    lines.append("## Panel A-summary — Clean-Stable Suites (Object + Goal + Spatial)")
+    lines.append("")
+    for cond in ["CLEAN", "TRUE_T10", "RAND_T10", "COMMAND_OPEN_ORACLE"]:
+        total_success = 0; total_n = 0; total_af = 0
+        for s in clean_suites:
+            for r in by_suite.get(s, []):
+                if r["Condition"] == cond:
+                    total_success += int(r.get("Success", 0) or 0)
+                    total_n += int(r.get("N", 0) or 0)
+                    total_af += int(r.get("Attack_Frames", 0) or 0)
+        if total_n > 0:
+            sr = f"{total_success/total_n:.4f}"; fr = f"{1-total_success/total_n:.4f}"
+            ci_low, ci_high = wilson_ci(total_success, total_n)
+            ci = f"[{ci_low:.4f}, {ci_high:.4f}]"
+            cond_name = CONDITION_NAMES.get(cond, cond)
+            lines.append(f"| {cond_name} | | | ITT | {total_success}/{total_n} | {sr} | {fr} | {ci} | {total_af} | | | |")
+    lines.append("")
+
+    # ── Panel A-summary: All suites including L10 ──
+    lines.append("## Panel A-summary — All Suites (including L10)")
+    lines.append("")
+    lines.append("| Condition | Success/N | SR | FR | 95% CI |")
+    lines.append("|---|---|---|---|---|")
+    for cond in ["CLEAN", "TRUE_T10", "RAND_T10", "COMMAND_OPEN_ORACLE"]:
+        total_success = 0; total_n = 0
+        for s in ["libero_object", "libero_goal", "libero_spatial", "libero_10"]:
+            for r in by_suite.get(s, []):
+                if r["Condition"] == cond:
+                    total_success += int(r.get("Success", 0) or 0)
+                    total_n += int(r.get("N", 0) or 0)
+        if total_n > 0:
+            sr = f"{total_success/total_n:.4f}"; fr = f"{1-total_success/total_n:.4f}"
+            ci_low, ci_high = wilson_ci(total_success, total_n)
+            ci = f"[{ci_low:.4f}, {ci_high:.4f}]"
+            cond_name = CONDITION_NAMES.get(cond, cond)
+            lines.append(f"| {cond_name} | {total_success}/{total_n} | {sr} | {fr} | {ci} |")
+    lines.append("")
 
     # Advisor interpretation
     lines.append("## Advisor-Ready Interpretation")
