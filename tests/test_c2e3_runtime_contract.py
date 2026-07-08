@@ -362,6 +362,75 @@ def test_summary_error_blocks_d7d():
     print("  PASS test_summary_error_blocks_d7d")
 
 
+# ── D8B taxonomy logic tests ──
+
+def test_oracle_sensitive_requires_attack_frames():
+    """ORACLE_SENSITIVE must have attack_frames>=10; no-trigger failure is not SENSITIVE."""
+    # Simulate oracle with trigger
+    summary_triggered = {"condition": "COMMAND_OPEN_ORACLE", "detector_emitted": True,
+                          "task_success": False, "attack_frames": 10,
+                          "n_steps": 300, "error": "", "emit_step": 50}
+    # oracle fail + clean success + attack_frames=10 → SENSITIVE
+    from scripts.stageb.analyze_d7_l10_no_emit_taxonomy import classify_episode
+    r = classify_episode(summary_triggered, clean_success=True)
+    assert r == "ORACLE_SENSITIVE", f"expected ORACLE_SENSITIVE, got {r}"
+
+    # Same but no trigger (attack_frames=0)
+    summary_no_trigger = {**summary_triggered, "attack_frames": 0, "detector_emitted": False}
+    r2 = classify_episode(summary_no_trigger, clean_success=True)
+    assert r2 == "ORACLE_NO_TRIGGER_UNINFORMATIVE", f"expected ORACLE_NO_TRIGGER_UNINFORMATIVE, got {r2}"
+
+    # Oracle success + trigger
+    summary_ok = {**summary_triggered, "task_success": True}
+    r3 = classify_episode(summary_ok, clean_success=True)
+    assert r3 == "ORACLE_NOT_SENSITIVE", f"expected ORACLE_NOT_SENSITIVE, got {r3}"
+    print("  PASS test_oracle_sensitive_requires_attack_frames")
+
+
+def test_clean_fail_oracle_uninformative():
+    """When CLEAN also failed, oracle failure is uninformative."""
+    summary = {"condition": "COMMAND_OPEN_ORACLE", "detector_emitted": True,
+               "task_success": False, "attack_frames": 10,
+               "n_steps": 300, "error": "", "emit_step": 50}
+    from scripts.stageb.analyze_d7_l10_no_emit_taxonomy import classify_episode
+    r = classify_episode(summary, clean_success=False)
+    assert r == "ORACLE_UNINFORMATIVE_CLEAN_FAIL", f"expected UNINFORMATIVE_CLEAN_FAIL, got {r}"
+    print("  PASS test_clean_fail_oracle_uninformative")
+
+
+def test_emit_late_after_250():
+    """Emitted=true but emit_step > 250 → EMIT_LATE_AFTER_STEP_250."""
+    summary = {"condition": "TRUE_T10", "detector_emitted": True,
+               "task_success": False, "attack_frames": 10,
+               "n_steps": 300, "error": "", "emit_step": 270}
+    from scripts.stageb.analyze_d7_l10_no_emit_taxonomy import classify_episode
+    r = classify_episode(summary)
+    assert r == "EMIT_LATE_AFTER_STEP_250", f"expected EMIT_LATE_AFTER_STEP_250, got {r}"
+    print("  PASS test_emit_late_after_250")
+
+
+def test_no_emit_short_episode():
+    """Episodes < 16 steps with no emission → NO_EMIT_SHORT_EPISODE."""
+    summary = {"condition": "TRUE_T10", "detector_emitted": False,
+               "task_success": False, "attack_frames": 0,
+               "n_steps": 10, "error": "", "emit_step": -1}
+    from scripts.stageb.analyze_d7_l10_no_emit_taxonomy import classify_episode
+    r = classify_episode(summary)
+    assert r == "NO_EMIT_SHORT_EPISODE", f"expected NO_EMIT_SHORT_EPISODE, got {r}"
+    print("  PASS test_no_emit_short_episode")
+
+
+def test_runtime_error_blocks_taxonomy():
+    """Non-empty error → RUNTIME_ERROR regardless of everything else."""
+    summary = {"condition": "TRUE_T10", "detector_emitted": True,
+               "task_success": True, "attack_frames": 10,
+               "n_steps": 300, "error": "CUDA OOM", "emit_step": 50}
+    from scripts.stageb.analyze_d7_l10_no_emit_taxonomy import classify_episode
+    r = classify_episode(summary)
+    assert r == "RUNTIME_ERROR", f"expected RUNTIME_ERROR, got {r}"
+    print("  PASS test_runtime_error_blocks_taxonomy")
+
+
 # ── runner ──
 
 def main():
@@ -384,6 +453,11 @@ def main():
         test_no_trigger_attack_frames_zero_is_valid,
         test_emitted_but_no_attack_frames_is_violation,
         test_summary_error_blocks_d7d,
+        test_oracle_sensitive_requires_attack_frames,
+        test_clean_fail_oracle_uninformative,
+        test_emit_late_after_250,
+        test_no_emit_short_episode,
+        test_runtime_error_blocks_taxonomy,
     ]
     failed = 0
     for t in tests:
