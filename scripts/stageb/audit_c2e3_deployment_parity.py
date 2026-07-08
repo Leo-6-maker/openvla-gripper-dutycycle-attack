@@ -75,8 +75,8 @@ def main():
     # ── Load data ──
     print("Loading C2e1 dataset...")
     npz = np.load(args.c2e1_dataset, allow_pickle=True)
-    Xt_all = np.asarray(npz["X_temporal"], dtype=np.float32)   # (N, 16, 25)  already normalized in dataset
-    Xc_all = np.asarray(npz["X_context"], dtype=np.float32)    # (N, 108)      already normalized in dataset
+    Xt_raw_all = np.asarray(npz["X_temporal"], dtype=np.float32)   # (N, 16, 25)  RAW (not normalized)
+    Xc_raw_all = np.asarray(npz["X_context"], dtype=np.float32)    # (N, 108)     RAW (not normalized)
     suites_all = np.asarray(npz["suite"]).astype(str)
     splits_all = np.asarray(npz["split"]).astype(str)
 
@@ -115,7 +115,7 @@ def main():
 
     # ── Select samples ──
     rng = np.random.RandomState(args.seed)
-    n_total = len(Xt_all)
+    n_total = len(Xt_raw_all)
     indices = rng.choice(n_total, min(args.n_samples, n_total), replace=False)
 
     print(f"Running parity on {len(indices)} samples...")
@@ -125,59 +125,38 @@ def main():
     max_abs_diff_12 = 0.0  # raw vs training
 
     for idx in indices:
-        xt_norm = Xt_all[idx]           # (16, 25) already normalized
-        xc_norm = Xc_all[idx]           # (108,) already normalized
+        xt_raw = Xt_raw_all[idx]          # (16, 25) raw
+        xc_raw = Xc_raw_all[idx]          # (108,) raw
         s = suites_all[idx]
 
-        # Determine task_index from context one-hot (positions 68-107)
-        task_oh = xc_norm[68:108]  # this is normalized, but one-hot should still be identifiable
-        # Actually, xc_norm is normalized so the one-hot is distorted. Let's use the raw context.
-        # We need raw context to determine task_index. Let's use context_lookup.
-        # Find task by checking which (suite, task) context matches
+        # Determine task_index from context lookup (match raw context to lookup)
         task_idx = 0
+        ctx_raw_lookup = None
+        best_dist = float("inf")
         for (ls, lt), lvec in context_lookup.items():
-            if ls == s:
-                # Check if normalized version of lvec matches xc_norm
-                lvec_norm = (lvec - c_mean.flatten()) / c_std.flatten()
-                if np.allclose(lvec_norm, xc_norm, atol=0.01):
-                    task_idx = lt
-                    break
-
-        # Also try from the data directly — find the un-normalized context
-        # The X_context in the npz is ALREADY normalized (see normalize_data in training)
-        # So we need to work in normalized space.
-
-        # For context comparison, re-normalize the raw lookup context
-        ctx_raw = context_lookup.get((s, task_idx))
-        if ctx_raw is None:
-            # Fallback: find task by brute force
-            best_dist = float("inf")
-            for (ls, lt), lvec in context_lookup.items():
-                if ls != s:
-                    continue
-                lvec_norm = (lvec.reshape(1, -1) - c_mean) / c_std
-                dist = np.sum((lvec_norm.flatten() - xc_norm.flatten()) ** 2)
-                if dist < best_dist:
-                    best_dist = dist
-                    task_idx = lt
-                    ctx_raw = lvec
-
-        if ctx_raw is None:
+            if ls != s:
+                continue
+            dist = np.sum((lvec - xc_raw) ** 2)
+            if dist < best_dist:
+                best_dist = dist
+                task_idx = lt
+                ctx_raw_lookup = lvec
+        if ctx_raw_lookup is None:
             continue
 
-        # ── Path 1: training-equivalent (pre-normalized) ──
+        # ── Path 1: training-equivalent (raw → normalize → GRU) ──
+        xt1 = (xt_raw.astype(np.float32) - t_mean) / t_std
+        xc1 = (xc_raw.astype(np.float32).reshape(1, -1) - c_mean) / c_std
         with torch.no_grad():
             logits1 = model_norm(
-                torch.from_numpy(xt_norm.reshape(1, 16, 25)),
-                torch.from_numpy(xc_norm.reshape(1, 108)),
+                torch.from_numpy(xt1.reshape(1, 16, 25)),
+                torch.from_numpy(xc1.reshape(1, 108)),
             ).numpy()[0]
         ep1 = sigmoid(logits1[0])
         sp1 = sigmoid(logits1[1])
         e1 = bool(ep1 >= tau_emit and sp1 <= tau_suppress)
 
-        # ── Path 2: old D7 raw path (raw 25D + zero ctx) ──
-        # Un-normalize xt: xt_raw = xt_norm * t_std + t_mean
-        xt_raw = xt_norm * t_std.reshape(16, 25) + t_mean.reshape(16, 25)
+        # ── Path 2: old D7 raw path (raw 25D + zero ctx, no normalization) ──
         ctx_zero = np.zeros((1, 108), dtype=np.float32)
         with torch.no_grad():
             logits2 = model_raw(
@@ -188,13 +167,13 @@ def main():
         sp2 = sigmoid(logits2[1])
         e2 = bool(ep2 >= tau_emit and sp2 <= tau_suppress)
 
-        # ── Path 3: patched deployment (raw → normalize → GRU) ──
-        xt_patched = (xt_raw.astype(np.float32) - t_mean) / t_std
-        ctx_patched = (ctx_raw.astype(np.float32).reshape(1, -1) - c_mean) / c_std
+        # ── Path 3: patched deployment (raw → runtime normalize → context lookup → normalize → GRU) ──
+        xt3 = (xt_raw.astype(np.float32) - t_mean) / t_std
+        xc3 = (ctx_raw_lookup.astype(np.float32).reshape(1, -1) - c_mean) / c_std
         with torch.no_grad():
             logits3 = model_norm(
-                torch.from_numpy(xt_patched.reshape(1, 16, 25)),
-                torch.from_numpy(ctx_patched.reshape(1, 108)),
+                torch.from_numpy(xt3.reshape(1, 16, 25)),
+                torch.from_numpy(xc3.reshape(1, 108)),
             ).numpy()[0]
         ep3 = sigmoid(logits3[0])
         sp3 = sigmoid(logits3[1])
