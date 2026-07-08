@@ -101,7 +101,7 @@ def build_panel_a(
                 timing = "n/a"
                 eval_type = "ITT"
             elif condition == "TRUE_T10":
-                intervention = "Force-Gripper-Open (Token-CE, ε=0.25, K=10)"
+                intervention = "Force-Gripper-Open (Token-CE, ε=6/255, K=10)"
                 timing = f"Detector trigger (C2e3 GRU)"
                 eval_type = "ITT"
             elif condition == "RAND_T10":
@@ -111,7 +111,7 @@ def build_panel_a(
             elif condition == "COMMAND_OPEN_ORACLE":
                 intervention = "Command-Open Oracle (K=10)"
                 timing = "Same trigger as TRUE_T10"
-                eval_type = "Emission-matched"
+                eval_type = "ITT"
 
             status = "PASS" if condition == "CLEAN" and sr >= 0.80 else (
                 "ORACLE" if condition == "COMMAND_OPEN_ORACLE" else "MAIN")
