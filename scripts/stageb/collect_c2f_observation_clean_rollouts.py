@@ -146,6 +146,8 @@ def save_rgb_png(path: Path, rgb_array: Any) -> None:
 def validate_step(row: Dict[str, Any]) -> None:
     if len(row.get("features_25d", [])) != 25:
         raise ValueError(f"features_25d must have length 25, got {len(row.get('features_25d', []))}")
+    if not str(row.get("task_language", "")).strip():
+        raise ValueError("task_language must be non-empty for C2f visual-language grounding")
     role = row.get("teacher_event_role", "")
     if role not in EVENT_ROLES:
         raise ValueError(f"Invalid teacher_event_role={role!r}; expected one of {sorted(EVENT_ROLES)}")
@@ -168,7 +170,9 @@ def collect_one_episode(adapter: RuntimeAdapter, out_root: Path, episode_cfg: Di
     ep_dir.mkdir(parents=True, exist_ok=True)
 
     n_steps = 0
-    clean_success = bool(episode_cfg.get("clean_success", False))
+    clean_success_manifest = bool(episode_cfg.get("clean_success", False))
+    clean_success = clean_success_manifest
+    first_task_language = ""
     t0 = time.time()
 
     for rec in adapter.run_clean_episode(episode_cfg):
@@ -188,19 +192,30 @@ def collect_one_episode(adapter: RuntimeAdapter, out_root: Path, episode_cfg: Di
             "teacher_phase": str(rec.teacher_phase),
         }
         validate_step(row)
+        if not first_task_language and row["task_language"].strip():
+            first_task_language = row["task_language"].strip()
         append_jsonl(step_jsonl, row)
         n_steps += 1
+
+    adapter_info = getattr(adapter, "_last_episode_info", {}) or {}
+    if "clean_success_observed" in adapter_info:
+        clean_success = bool(adapter_info.get("clean_success_observed", False))
+    resolved_task_language = str(adapter_info.get("task_language") or first_task_language or episode_cfg.get("task_language", ""))
 
     meta = {
         "schema": SCHEMA,
         "suite": suite,
         "task_index": int(episode_cfg.get("task_index", -1)),
-        "task_name": str(episode_cfg.get("task_name", "")),
-        "task_language": str(episode_cfg.get("task_language", "")),
+        "task_name": str(episode_cfg.get("task_name") or adapter_info.get("task_name_resolved", "")),
+        "task_language": resolved_task_language,
+        "task_language_source": str(adapter_info.get("task_language_source", "")),
         "parent_key": parent_key,
         "condition": "CLEAN",
         "n_steps": n_steps,
         "clean_success": clean_success,
+        "clean_success_manifest": clean_success_manifest,
+        "clean_success_observed": bool(adapter_info.get("clean_success_observed", False)),
+        "adapter_episode_info": adapter_info,
         "student_allowed_modalities": ["rgb", "task_language", "features_25d", "context_108d"],
         "student_forbidden_modalities": ["object_pose", "target_pose", "attack_outcome", "manual_failure_label"],
         "source_commit": args.source_commit,
