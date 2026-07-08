@@ -14,7 +14,7 @@ Privileged values are NEVER exposed in student-accessible fields.
 
 from __future__ import annotations
 
-import os, sys, time
+import os, re, sys, time
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
@@ -60,6 +60,62 @@ def _visible_gpu_id() -> int:
         return int(raw)
     except Exception:
         return 0
+
+
+def _clean_language_candidate(value: Any) -> str:
+    """Normalize a LIBERO task-language candidate.
+
+    LIBERO task objects differ across versions.  Some expose a natural-language
+    `.language`, while others leave it blank and keep the usable instruction in
+    `.name`, the BDDL stem, or manifest fields.  This helper converts those
+    fallbacks into OpenVLA-compatible natural text.
+    """
+    if value is None:
+        return ""
+    text = str(value).strip()
+    if not text or text.lower() in {"none", "null", "nan"}:
+        return ""
+    text = Path(text).name if "/" in text or "\\" in text else text
+    text = re.sub(r"\.bddl$", "", text, flags=re.IGNORECASE)
+    # Common LIBERO BDDL/name stems: KITCHEN_SCENE3_put_the_black_bowl_...
+    text = re.sub(r"^(?:[A-Z]+_)*SCENE\d+_", "", text)
+    text = re.sub(r"^(?:LIBERO[_-]?)?(?:10|GOAL|OBJECT|SPATIAL)[_-]", "", text, flags=re.IGNORECASE)
+    text = text.replace("_", " ").replace("-", " ")
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
+
+
+def _resolve_task_language(task: Any, episode_cfg: Dict[str, Any]) -> Tuple[str, str]:
+    """Resolve the natural-language instruction robustly.
+
+    Preference order:
+      1. explicit manifest fields, if present and non-empty;
+      2. natural-language fields on the LIBERO task object;
+      3. `task.name` / `problem_name` / `bddl_file` fallback.
+
+    The function raises rather than returning an empty string because an empty
+    instruction makes both OpenVLA decoding and C2f teacher grounding invalid.
+    """
+    manifest_keys = ["task_language", "language", "instruction", "task_instruction", "task_name", "name"]
+    for key in manifest_keys:
+        text = _clean_language_candidate(episode_cfg.get(key, ""))
+        if text:
+            return text, f"manifest.{key}"
+
+    attr_keys = [
+        "language", "task_language", "instruction", "task_instruction",
+        "natural_language", "description", "name", "problem_name", "bddl_file",
+    ]
+    for key in attr_keys:
+        if hasattr(task, key):
+            text = _clean_language_candidate(getattr(task, key))
+            if text:
+                return text, f"task.{key}"
+
+    raise RuntimeError(
+        "Could not resolve non-empty LIBERO task language from manifest or task object; "
+        f"task_attrs={sorted([a for a in dir(task) if not a.startswith('_')])[:80]}"
+    )
 
 
 def _rgb_from_obs(obs: Dict[str, Any], step: int) -> np.ndarray:
@@ -119,6 +175,7 @@ class C2fLiberoOpenVLAAdapter(RuntimeAdapter):
         super().__init__()
         self._model_cache: Dict[str, Any] = {}
         self._args = args
+        self._last_episode_info: Dict[str, Any] = {}
 
     def _load_model(self, suite: str):
         if suite in self._model_cache:
@@ -166,8 +223,15 @@ class C2fLiberoOpenVLAAdapter(RuntimeAdapter):
         init_states = task_suite.get_task_init_states(task_idx)
         if state_id < 0 or state_id >= len(init_states):
             raise IndexError(f"state_id={state_id} out of range for {suite} task_idx={task_idx}; n_init_states={len(init_states)}")
-        task_language = task.language
+        task_language, task_language_source = _resolve_task_language(task, episode_cfg)
         task_bddl = str(Path(get_libero_path("bddl_files")) / task.problem_folder / task.bddl_file)
+        self._last_episode_info = {
+            "task_language": task_language,
+            "task_language_source": task_language_source,
+            "task_name_resolved": _clean_language_candidate(getattr(task, "name", "")),
+            "task_bddl": task_bddl,
+            "clean_success_observed": False,
+        }
 
         # Match D7 persistent worker order exactly:
         #   build env -> set_init_state(init_states[state_id]) -> dummy wait.
@@ -180,78 +244,93 @@ class C2fLiberoOpenVLAAdapter(RuntimeAdapter):
         eef_sid = env.sim.model.site_name2id("gripper0_grip_site")
         _eef_init = env.sim.data.site_xpos[eef_sid]
         _prev_eef = (float(_eef_init[0]), float(_eef_init[1]), float(_eef_init[2]))
+        last_info: Dict[str, Any] = {}
+        n_yielded = 0
 
-        for step in range(MAX_STEPS):
-            raw = _rgb_from_obs(obs, step)
-            gs = physical_gripper_state(env, obs)
-            q7, q8 = _extract_gripper_qpos(gs, env)
-            qpos_sum = q7 + q8 if np.isfinite(q7) and np.isfinite(q8) else float("nan")
+        try:
+            for step in range(MAX_STEPS):
+                raw = _rgb_from_obs(obs, step)
+                gs = physical_gripper_state(env, obs)
+                q7, q8 = _extract_gripper_qpos(gs, env)
+                qpos_sum = q7 + q8 if np.isfinite(q7) and np.isfinite(q8) else float("nan")
 
-            action, _, _, _ = decode_with_scores(
-                vla_model, processor, device, raw, task_language, unnorm_key, 8,
-                libero_preprocess_backend="upstream_tf_jpeg", center_crop=True,
-                resize_size=224, drop_attention_mask=True,
-            )
-            raw_grip = float(action[-1])
-            env_action = postprocess_openvla_action_for_libero(
-                np.asarray(action, dtype=np.float32), enabled=True,
-            )
-
-            # 25D features via the same streaming adapter inputs used by D7.
-            eef_pos = env.sim.data.site_xpos[eef_sid]
-            eef_x, eef_y, eef_z = float(eef_pos[0]), float(eef_pos[1]), float(eef_pos[2])
-            eef_valid = np.all(np.isfinite([eef_x, eef_y, eef_z]))
-            _vx = eef_x - _prev_eef[0] if _prev_eef and eef_valid else float("nan")
-            _vy = eef_y - _prev_eef[1] if _prev_eef and eef_valid else float("nan")
-            _vz = eef_z - _prev_eef[2] if _prev_eef and eef_valid else float("nan")
-            if eef_valid:
-                _prev_eef = (eef_x, eef_y, eef_z)
-
-            gw = abs(q7) + abs(q8) if np.isfinite(q7) and np.isfinite(q8) else float("nan")
-            gq = float(qpos_sum) if np.isfinite(qpos_sum) else float("nan")
-
-            try:
-                _res = _streamer.update(
-                    step_id=step,
-                    raw_gripper=raw_grip,
-                    env_gripper=-1.0 if raw_grip > 0.5 else 1.0,
-                    gripper_qpos=gq,
-                    gripper_opening_proxy=gw,
-                    eef_x=eef_x, eef_y=eef_y, eef_z=eef_z,
-                    eef_vx=_vx, eef_vy=_vy, eef_vz=_vz,
-                    action_dx=float(action[0]), action_dy=float(action[1]),
-                    action_dz=float(action[2]), action_gripper=raw_grip,
+                action, _, _, _ = decode_with_scores(
+                    vla_model, processor, device, raw, task_language, unnorm_key, 8,
+                    libero_preprocess_backend="upstream_tf_jpeg", center_crop=True,
+                    resize_size=224, drop_attention_mask=True,
                 )
-            except Exception as e:
-                raise RuntimeError(f"C2f 25D feature construction failed at step {step}: {e}") from e
+                raw_grip = float(action[-1])
+                env_action = postprocess_openvla_action_for_libero(
+                    np.asarray(action, dtype=np.float32), enabled=True,
+                )
 
-            if not _res.get("valid"):
-                raise RuntimeError(f"C2f 25D feature construction invalid at step {step}")
+                # 25D features via the same streaming adapter inputs used by D7.
+                eef_pos = env.sim.data.site_xpos[eef_sid]
+                eef_x, eef_y, eef_z = float(eef_pos[0]), float(eef_pos[1]), float(eef_pos[2])
+                eef_valid = np.all(np.isfinite([eef_x, eef_y, eef_z]))
+                _vx = eef_x - _prev_eef[0] if _prev_eef and eef_valid else float("nan")
+                _vy = eef_y - _prev_eef[1] if _prev_eef and eef_valid else float("nan")
+                _vz = eef_z - _prev_eef[2] if _prev_eef and eef_valid else float("nan")
+                if eef_valid:
+                    _prev_eef = (eef_x, eef_y, eef_z)
 
-            fv = {f: float(_res["features"].get(f, 0.0) or 0.0) for f in CANONICAL_25D_FEATURES}
-            features_25d = [fv[f] for f in CANONICAL_25D_FEATURES]
+                gw = abs(q7) + abs(q8) if np.isfinite(q7) and np.isfinite(q8) else float("nan")
+                gq = float(qpos_sum) if np.isfinite(qpos_sum) else float("nan")
 
-            t = teacher.label(step)
+                try:
+                    _res = _streamer.update(
+                        step_id=step,
+                        raw_gripper=raw_grip,
+                        env_gripper=-1.0 if raw_grip > 0.5 else 1.0,
+                        gripper_qpos=gq,
+                        gripper_opening_proxy=gw,
+                        eef_x=eef_x, eef_y=eef_y, eef_z=eef_z,
+                        eef_vx=_vx, eef_vy=_vy, eef_vz=_vz,
+                        action_dx=float(action[0]), action_dy=float(action[1]),
+                        action_dz=float(action[2]), action_gripper=raw_grip,
+                    )
+                except Exception as e:
+                    raise RuntimeError(f"C2f 25D feature construction failed at step {step}: {e}") from e
 
-            rec = StepRecord(
-                step=step,
-                rgb_array=raw,
-                rgb_path=None,
-                features_25d=features_25d,
-                task_language=task_language,
-                teacher_hazard=t["hazard"],
-                teacher_primary_attackable=t["primary_attackable"],
-                teacher_release_safe=t["release_safe"],
-                teacher_event_role=t["event_role"],
-                teacher_phase=t["phase"],
+                if not _res.get("valid"):
+                    raise RuntimeError(f"C2f 25D feature construction invalid at step {step}")
+
+                fv = {f: float(_res["features"].get(f, 0.0) or 0.0) for f in CANONICAL_25D_FEATURES}
+                features_25d = [fv[f] for f in CANONICAL_25D_FEATURES]
+
+                t = teacher.label(step)
+
+                rec = StepRecord(
+                    step=step,
+                    rgb_array=raw,
+                    rgb_path=None,
+                    features_25d=features_25d,
+                    task_language=task_language,
+                    teacher_hazard=t["hazard"],
+                    teacher_primary_attackable=t["primary_attackable"],
+                    teacher_release_safe=t["release_safe"],
+                    teacher_event_role=t["event_role"],
+                    teacher_phase=t["phase"],
+                )
+                n_yielded += 1
+                yield rec
+
+                obs, reward, done, info = env.step(env_action)
+                last_info = dict(info or {})
+                if done:
+                    break
+        finally:
+            success = bool(
+                last_info.get("success", False)
+                or last_info.get("task_success", False)
+                or last_info.get("is_success", False)
             )
-            yield rec
-
-            obs, reward, done, info = env.step(env_action)
-            if done:
-                break
-
-        env.close()
+            self._last_episode_info.update({
+                "clean_success_observed": success,
+                "last_info_keys": sorted(list(last_info.keys())),
+                "n_steps_observed": n_yielded,
+            })
+            env.close()
 
     def close(self) -> None:
         self._model_cache.clear()
