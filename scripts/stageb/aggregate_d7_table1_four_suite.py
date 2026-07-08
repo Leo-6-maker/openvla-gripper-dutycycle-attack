@@ -139,9 +139,13 @@ def build_panel_a(
 def main():
     ap = argparse.ArgumentParser(description="D7 Table1 four-suite aggregator")
     ap.add_argument("--postrun-audit-csv", required=True)
+    ap.add_argument("--postrun-audit-report", default="",
+                    help="JSON audit report (for runtime_contract_status guard)")
     ap.add_argument("--queue-manifest", required=True)
     ap.add_argument("--output-dir", required=True)
     ap.add_argument("--git-commit", required=True)
+    ap.add_argument("--force", action="store_true",
+                    help="Force aggregation even if audit contract FAIL (emergency only)")
     args = ap.parse_args()
 
     t0 = time.time()
@@ -150,6 +154,22 @@ def main():
 
     audit_rows = read_csv(args.postrun_audit_csv)
     queue_rows = read_csv(args.queue_manifest)
+
+    # ── D7D contract guard: only aggregate if runtime contract PASS ──
+    contract_pass = True
+    if args.postrun_audit_report:
+        audit_report = read_json(Path(args.postrun_audit_report))
+        contract_status = audit_report.get("runtime_contract_status", "MISSING")
+        d7d_blocked = audit_report.get("d7d_aggregation_blocked", False)
+        if d7d_blocked or contract_status != "PASS":
+            contract_pass = False
+            if not args.force:
+                print(f"FATAL: D7D aggregation blocked by audit contract status={contract_status}")
+                print(f"  Reason: {audit_report.get('d7d_block_reason', 'runtime contract mismatch')}")
+                print(f"  Use --force to override (emergency only, results will be marked QUARANTINED)")
+                return 1
+            else:
+                print(f"WARNING: aggregation forced despite contract status={contract_status}")
 
     # Determine suites and conditions from manifest
     suites = sorted(set(r["suite"] for r in queue_rows))
@@ -182,14 +202,15 @@ def main():
     # Report
     report = {
         "gate": "D7_TABLE1_AGGREGATION",
-        "status": "PASS_D7_AGGREGATION_BUILT",
+        "status": "PASS_D7_AGGREGATION_BUILT" if contract_pass else "QUARANTINED_D7_AGGREGATION_CONTRACT_MISMATCH",
+        "runtime_contract_pass": contract_pass,
         "created_at_unix": time.time(),
         "runtime_seconds": time.time() - t0,
         "git_commit": args.git_commit,
         "suites": suites,
         "conditions": conditions,
         "total_episodes": len(audit_rows),
-        "recommendation": "render_panel_a_markdown",
+        "recommendation": "render_panel_a_markdown" if contract_pass else "DO_NOT_RENDER_FIX_CONTRACT_FIRST",
         "boundaries": {
             "CUDA_required": "NOT_REQUIRED",
             "OpenVLA_model": "NOT_LOADED",

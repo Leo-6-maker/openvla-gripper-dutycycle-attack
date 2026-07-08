@@ -39,24 +39,13 @@ def write_json(path, obj):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(obj, indent=2, sort_keys=True, default=str) + "\n")
 
-def load_c2e3(checkpoint_path):
-    import torch; from torch import nn
-    class GRU(nn.Module):
-        def __init__(self, nf=25, nc=108, hidden=128):
-            super().__init__()
-            self.gru = nn.GRU(nf, hidden, 1, batch_first=True)
-            self.head = nn.Linear(hidden+nc, 2)
-        def forward(self, xt, xc):
-            _, h = self.gru(xt); return self.head(torch.cat([h[-1], xc], dim=1))
-    ckpt = torch.load(checkpoint_path, map_location="cpu")
-    state = ckpt.get("model_state_dict") or ckpt.get("state_dict")
-    cfg = ckpt["config"]; cfg_th = ckpt.get("threshold", {})
-    model = GRU(25, 108, cfg.get("channels", cfg.get("hidden", 128)))
-    model.load_state_dict(state); model.cpu().eval()
-    return model, float(cfg_th.get("tau_emit", 0.33)), float(cfg_th.get("tau_suppress", 0.67))
+def load_c2e3(package_dir: str):
+    """Load C2e3 GRU detector with normalization + context contract."""
+    from gripper_attack.c2e3_gru_detector_runtime import C2e3GRUDetectorRuntime
+    return C2e3GRUDetectorRuntime(package_dir)
 
 
-def run_episode(model, processor, vla_model, device, model_dtype, action_dim, unnorm_key, bm_key, task_idx, state_id, seed, condition, trigger_override, out_dir, source_commit, tau_emit, tau_suppress, det_model):
+def run_episode(model, processor, vla_model, device, model_dtype, action_dim, unnorm_key, bm_key, task_idx, state_id, seed, condition, trigger_override, out_dir, source_commit, detector):
     """Execute one episode with pre-loaded models (persistent)."""
     import torch
     from v4_run_eval_openvla import decode_with_scores, prompt, postprocess_openvla_action_for_libero, physical_gripper_state
@@ -143,13 +132,9 @@ def run_episode(model, processor, vla_model, device, model_dtype, action_dim, un
                     fv = [float(_res["features"].get(f, 0.0) or 0.0) for f in SC5_F]
                     _feature_buffer.append(fv)
                     if len(_feature_buffer) >= W:
-                        window = np.array(_feature_buffer[-W:], dtype=np.float32).reshape(1, W, 25)
-                        ctx = np.zeros((1, 108), dtype=np.float32)
-                        with torch.no_grad():
-                            logits = det_model(torch.from_numpy(window), torch.from_numpy(ctx)).numpy()[0]
-                        _gr_ep = 1.0/(1.0+np.exp(-np.clip(float(logits[0]), -50, 50)))
-                        _gr_sp = 1.0/(1.0+np.exp(-np.clip(float(logits[1]), -50, 50)))
-                        if _gr_ep >= tau_emit and _gr_sp <= tau_suppress: _gr_emit = step
+                        window = np.array(_feature_buffer[-W:], dtype=np.float32)
+                        _gr_ep, _gr_sp, _gr_emitted = detector.predict(window, suite=unnorm_key, task_index=task_idx)
+                        if _gr_emitted: _gr_emit = step
 
             # Attack
             attack_this = False; adv_tokens = None
@@ -219,11 +204,22 @@ def run_episode(model, processor, vla_model, device, model_dtype, action_dim, un
         import traceback; traceback.print_exc()
         result["error"] = f"{type(e).__name__}: {str(e)[:300]}"; result["failure_taxonomy"] = "runtime_error"
 
-    result["detector_checkpoint_sha256"] = ""
+    prov = detector.provenance
+    result["detector_checkpoint_sha256"] = prov["checkpoint_sha256"]
+    result["normalization_stats_sha256"] = prov["normalization_sha256"]
+    result["config_sha256"] = prov["config_sha256"]
+    result["context_lookup_sha256"] = prov["context_lookup_sha256"]
+    result["normalization_applied"] = True
+    result["context_policy"] = prov["context_policy"]
+    result["tau_emit"] = prov["tau_emit"]
+    result["tau_suppress"] = prov["tau_suppress"]
     write_json(out_dir / "episode_summary.json", result)
-    for fn in sorted(out_dir.glob("*")):
-        if fn.is_file() and fn.name != "artifact_sha256.json": pass  # skip for speed
-    write_json(out_dir / "artifact_sha256.json", {})
+    write_json(out_dir / "artifact_sha256.json", {
+        "detector_checkpoint_sha256": prov["checkpoint_sha256"],
+        "normalization_stats_sha256": prov["normalization_sha256"],
+        "config_sha256": prov["config_sha256"],
+        "context_lookup_sha256": prov["context_lookup_sha256"],
+    })
     return result
 
 
@@ -231,7 +227,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--gpu", type=int, required=True)
     ap.add_argument("--manifest", required=True)
-    ap.add_argument("--detector-checkpoint", required=True)
+    ap.add_argument("--detector-package", required=True,
+                    help="C2e3 package directory (contains model, config, normalization stats, context lookup)")
     ap.add_argument("--output-root", required=True)
     ap.add_argument("--source-commit", required=True)
     ap.add_argument("--start-row", type=int, default=0)
@@ -247,8 +244,11 @@ def main():
     rows = rows[args.start_row:min(args.end_row, len(rows))]
     print(f"Worker GPU {args.gpu}: {len(rows)} episodes to process", flush=True)
 
-    # Load C2e3 once
-    det_model, tau_emit, tau_suppress = load_c2e3(args.detector_checkpoint)
+    # Load C2e3 detector runtime once (includes model + normalization + context lookup)
+    detector = load_c2e3(args.detector_package)
+    print(f"Detector loaded: checkpoint={detector.checkpoint_sha256[:16]}... "
+          f"norm={detector.normalization_sha256[:16]}... "
+          f"tau_emit={detector.tau_emit} tau_suppress={detector.tau_suppress}", flush=True)
 
     # Track current suite to avoid reloading
     current_suite = None
@@ -283,7 +283,7 @@ def main():
         print(f"  [{idx+1}/{len(rows)}] {suite}/{condition} task={task_idx}", flush=True, end=" ")
         result = run_episode(vla_model, processor, vla_model, device, model_dtype, action_dim,
             unnorm_key, bm_key, task_idx, state_id, seed, condition, trigger_override,
-            out_dir, args.source_commit, tau_emit, tau_suppress, det_model)
+            out_dir, args.source_commit, detector)
         if result.get("error"): errors += 1
         completed += 1
         print(f"success={result['task_success']} steps={result['n_steps']} attack={result['attack_frames']} "

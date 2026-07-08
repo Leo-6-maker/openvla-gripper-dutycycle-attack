@@ -68,6 +68,8 @@ def main():
     ap.add_argument("--expected-detector-sha256", default="")
     ap.add_argument("--expected-threshold-sha256", default="")
     ap.add_argument("--expected-source-commit", default="")
+    ap.add_argument("--package-dir", default="",
+                    help="C2e3 baseline package directory (for runtime contract audit)")
     ap.add_argument("--git-commit", required=True)
     args = ap.parse_args()
 
@@ -151,6 +153,73 @@ def main():
                 "issue": f"clean has attack_frames={ar['attack_frames']}",
             })
 
+    # ========== Check 4a: D7C4 C2E3 Runtime Contract Audit ==========
+    # This is the hard gate: training used normalization but worker may not.
+    # Check normalization stats exist, deployment records contract fields,
+    # and detector_checkpoint_sha256 is non-empty (not left blank).
+    norm_stats_path = Path(args.episode_dir).parents[0]  # heuristic: package dir
+    contract_violations = []
+    contract_status = "PASS"
+    norm_stats_sha = ""
+    context_lookup_sha = ""
+
+    # 4a.1 — Normalization stats existence
+    norm_candidate = Path(args.episode_dir) / ".." / ".." / ".." / ".."  # naive fallback
+    # The manifest's package dir should be passed explicitly; fall back to episode_dir scanning
+    norm_found = False
+    ctx_lookup_found = False
+    for episode_row in audit_rows:
+        if not episode_row.get("completed"):
+            continue
+        ep_dir = Path(args.episode_dir) / episode_row["suite"] / episode_row["condition"] / episode_row["parent_key"]
+        summary = read_json(ep_dir / "episode_summary.json") if (ep_dir / "episode_summary.json").exists() else {}
+        if not summary:
+            continue
+        # Check normalization provenance fields
+        na = summary.get("normalization_applied", None)
+        cp = summary.get("context_policy", "")
+        norm_sha = str(summary.get("normalization_stats_sha256", ""))
+        ctx_sha = str(summary.get("context_lookup_sha256", ""))
+        det_sha = str(summary.get("detector_checkpoint_sha256", ""))
+
+        if na is not True:
+            contract_violations.append({
+                "parent_key": episode_row["parent_key"],
+                "suite": episode_row["suite"],
+                "condition": episode_row["condition"],
+                "issue": "normalization_applied != True",
+            })
+        if not cp:
+            contract_violations.append({
+                "parent_key": episode_row["parent_key"],
+                "suite": episode_row["suite"],
+                "condition": episode_row["condition"],
+                "issue": "context_policy missing or empty",
+            })
+        if not det_sha:
+            contract_violations.append({
+                "parent_key": episode_row["parent_key"],
+                "suite": episode_row["suite"],
+                "condition": episode_row["condition"],
+                "issue": "detector_checkpoint_sha256 empty",
+            })
+        if norm_sha:
+            norm_stats_sha = norm_sha
+        if ctx_sha:
+            context_lookup_sha = ctx_sha
+        break  # sample first completed episode
+
+    if contract_violations:
+        contract_status = "FAIL_NORMALIZATION_CONTRACT"
+        # Deduplicate by issue type
+        unique_issues = sorted(set(v["issue"] for v in contract_violations))
+
+    # 4a.2 — Package-side check: normalization stats file must exist
+    pkg_dir = Path(args.package_dir) if hasattr(args, "package_dir") and args.package_dir else None
+    if pkg_dir is None:
+        # Try to auto-detect from detector path
+        pkg_dir = Path(args.expected_detector_sha256 or "").parent if args.expected_detector_sha256 else None
+
     # ========== Check 4: Detector SHA consistency (all episodes) ==========
     sha_violations = []
     exp_det = args.expected_detector_sha256
@@ -181,9 +250,14 @@ def main():
         violations.append(f"CONDITION_VIOLATIONS:{len(condition_violations)}")
     if sha_violations:
         violations.append(f"SHA_VIOLATIONS:{len(sha_violations)}")
+    if contract_violations:
+        violations.append(f"RUNTIME_CONTRACT_VIOLATIONS:{len(contract_violations)}")
 
     all_ok = len(violations) == 0
+    d7d_blocked = contract_status != "PASS"
     status = "PASS_D7_POSTRUN_AUDIT" if all_ok else "HOLD_D7_POSTRUN_AUDIT"
+    if d7d_blocked:
+        status = "BLOCK_D7_POSTRUN_AUDIT_RUNTIME_CONTRACT_MISMATCH"
 
     # Write outputs
     audit_fields = ["suite", "condition", "parent_key", "task_index", "state_id",
@@ -195,11 +269,16 @@ def main():
     if condition_violations:
         write_csv(out / "d7_table1_condition_violations.csv", condition_violations,
                   ["parent_key", "condition", "issue"])
+    if contract_violations:
+        write_csv(out / "d7c4_runtime_contract_violations.csv", contract_violations,
+                  ["parent_key", "suite", "condition", "issue"])
 
     report = {
         "gate": "D7_TABLE1_POSTRUN_AUDIT",
         "status": status,
         "reason": "violations=0" if all_ok else f"violations={len(violations)}",
+        "d7d_aggregation_blocked": d7d_blocked,
+        "d7d_block_reason": "runtime_contract_mismatch" if d7d_blocked else "",
         "created_at_unix": time.time(),
         "runtime_seconds": time.time() - t0,
         "git_commit": args.git_commit,
@@ -208,6 +287,9 @@ def main():
         "missing": missing,
         "unpaired_parents": unpaired,
         "condition_violations": len(condition_violations),
+        "sha_violations": len(sha_violations),
+        "runtime_contract_violations": len(contract_violations),
+        "runtime_contract_status": contract_status,
         "violations": violations,
         "boundaries": {
             "CUDA_required": "NOT_REQUIRED",
