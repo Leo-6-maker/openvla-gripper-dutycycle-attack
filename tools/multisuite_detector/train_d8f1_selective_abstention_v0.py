@@ -79,35 +79,38 @@ def abstention_loss(
     abstain_logit: torch.Tensor,
     y: torch.Tensor,
     fp_penalty_weight: float = 0.5,
-    abstain_penalty: float = 0.3,
+    abstain_weight: float = 0.3,
 ) -> Tuple[torch.Tensor, Dict[str, float]]:
-    """Combined loss with FP penalty and abstain regularization.
+    """Selective abstention loss.
 
     - BCE on emit (hazard=1, safe=0)
     - BCE on suppress (release/unsafe=1, stable=0)
     - FP penalty: when y=0 but emit_p is high, penalize
-    - Abstain: when model is uncertain (abstain_p high), reduce emit pressure
+    - Selective abstain: encourage abstain_p=1 on hard false-positive-prone
+      windows (y=0 with emit_prob > 0.25), abstain_p=0 on y=1.
     """
     bce_emit = nn.functional.binary_cross_entropy_with_logits(emit_logit.squeeze(-1), y.float())
     bce_suppress = nn.functional.binary_cross_entropy_with_logits(
-        suppress_logit.squeeze(-1), (1 - y.float()))  # suppress for non-hazard
+        suppress_logit.squeeze(-1), (1 - y.float()))
 
     # FP penalty: penalize high emit probability on negative examples
     emit_prob = torch.sigmoid(emit_logit.squeeze(-1))
     fp_penalty = (emit_prob * (1 - y.float())).mean() * fp_penalty_weight
 
-    # Abstain regularization: encourage abstain to be low overall
-    abstain_prob = torch.sigmoid(abstain_logit.squeeze(-1))
-    abstain_reg = abstain_prob.mean() * abstain_penalty
+    # Selective abstention: abstain on hard false-positive-prone windows
+    with torch.no_grad():
+        hard_neg = ((y == 0) & (emit_prob > 0.25)).float()
+    loss_abstain = nn.functional.binary_cross_entropy_with_logits(
+        abstain_logit.squeeze(-1), hard_neg)
 
-    loss = bce_emit + 0.5 * bce_suppress + fp_penalty + abstain_reg
+    loss = bce_emit + 0.5 * bce_suppress + fp_penalty + abstain_weight * loss_abstain
 
     with torch.no_grad():
         info = {
             "bce_emit": float(bce_emit),
             "bce_suppress": float(bce_suppress),
             "fp_penalty": float(fp_penalty),
-            "abstain_reg": float(abstain_reg),
+            "loss_abstain": float(loss_abstain),
             "loss": float(loss),
         }
     return loss, info
@@ -284,6 +287,9 @@ def main():
                   flush=True)
 
     # ── Save ──
+    # Load best state before final evaluation (not last-epoch model)
+    if best_state is not None:
+        model.load_state_dict(best_state)
     val_final = compute_metrics(model, xt_val, xc_val, y_val, suite_val,
                                 tau_emit=args.tau_emit, tau_suppress=args.tau_suppress,
                                 tau_abstain=args.tau_abstain, device=device)

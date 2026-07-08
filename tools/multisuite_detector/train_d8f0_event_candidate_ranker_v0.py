@@ -353,7 +353,7 @@ def main():
         "gate": "D8F0_EVENT_CANDIDATE_RANKER_V0",
         "status": "PASS_D8F0_TRAINED",
         "best_val_mrr": best_val_mrr,
-        "best_val_recall_at_1": float(history[-1]["recall_at_1"]) if history else 0.0,
+        "best_val_recall_at_1": float(max(h["recall_at_1"] for h in history)) if history else 0.0,
         "created_at_unix": time.time(),
         "runtime_seconds": time.time() - t0,
         "git_commit": args.git_commit,
