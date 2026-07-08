@@ -284,7 +284,7 @@ def main():
 
         for bi in range(0, len(indices), args.batch_groups):
             batch_indices = indices[bi:bi + args.batch_groups]
-            batch_loss = torch.tensor(0.0, device=device)
+            losses = []
             n_valid = 0
 
             for idx in batch_indices:
@@ -299,11 +299,11 @@ def main():
                 pos_scores = model(pos_w, pos_c)
                 neg_scores = model(neg_w, neg_c) if neg_w.shape[0] > 0 else torch.tensor([], device=device)
                 loss = margin_ranking_loss(pos_scores, neg_scores, args.margin)
-                batch_loss = batch_loss + loss
+                losses.append(loss)
                 n_valid += 1
 
             if n_valid > 0:
-                batch_loss = batch_loss / n_valid
+                batch_loss = torch.stack(losses).sum() / n_valid
                 optimizer.zero_grad()
                 batch_loss.backward()
                 optimizer.step()
