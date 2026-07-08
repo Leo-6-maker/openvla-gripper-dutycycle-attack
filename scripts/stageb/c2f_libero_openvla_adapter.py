@@ -100,7 +100,7 @@ class C2fLiberoOpenVLAAdapter(RuntimeAdapter):
         task_suite = bm[suite]()
         task = task_suite.get_task(task_idx)
         task_language = task.language
-        task_bddl = get_libero_path("bddl_files") / task.problem_folder / task.bddl_file
+        task_bddl = str(Path(get_libero_path("bddl_files")) / task.problem_folder / task.bddl_file)
 
         env_args = {
             "task_name": task.name, "task_bddl_file": str(task_bddl),
