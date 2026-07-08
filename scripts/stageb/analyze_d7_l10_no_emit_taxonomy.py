@@ -63,17 +63,25 @@ def classify_episode(
     if error:
         return "RUNTIME_ERROR"
 
-    # ── Oracle sensitivity (parent-paired) ──
+    # ── Oracle sensitivity (parent-paired, requires attack_frames gate) ──
     if condition == "COMMAND_OPEN_ORACLE":
-        if clean_success is True and not task_success:
-            return "ORACLE_SENSITIVE"
-        elif clean_success is False and not task_success:
-            return "ORACLE_UNINFORMATIVE_CLEAN_FAIL"
-        else:
-            return "ORACLE_NOT_SENSITIVE"
+        if attack_frames >= 10:
+            if clean_success is True and not task_success:
+                return "ORACLE_SENSITIVE"
+            elif clean_success is False and not task_success:
+                return "ORACLE_UNINFORMATIVE_CLEAN_FAIL"
+            else:
+                return "ORACLE_NOT_SENSITIVE"
+        else:  # attack_frames == 0 → no trigger
+            if clean_success is True and not task_success:
+                return "ORACLE_NO_TRIGGER_UNINFORMATIVE"
+            else:
+                return "ORACLE_NO_TRIGGER"
 
     # ── Emission happened ──
     if emitted:
+        if emit_step > 250:
+            return "EMIT_LATE_AFTER_STEP_250"
         if attack_frames >= 10:
             return "EMIT_AND_ATTACKED"
         else:
@@ -84,19 +92,24 @@ def classify_episode(
         return "NO_EMIT_SHORT_EPISODE"
 
     # Read telemetry for fine-grained diagnosis
+    # Only look at step >= 15 (before W=16 window is filled, values are defaults)
     max_emit_p = 0.0
-    min_suppress_p = 1.0
+    suppress_at_max_emit = 0.0
     n_valid_steps = 0
     if telemetry_path is not None and telemetry_path.exists():
         try:
             trows = list(csv.DictReader(open(telemetry_path)))
             for r in trows:
+                step = int(r.get("step", 0) or 0)
+                if step < 15:
+                    continue
                 ep = safe_float(r.get("gr_emit_p", 0), -1.0)
                 sp = safe_float(r.get("gr_suppress_p", 0), -1.0)
                 if ep >= 0 and sp >= 0:
                     n_valid_steps += 1
-                    max_emit_p = max(max_emit_p, ep)
-                    min_suppress_p = min(min_suppress_p, sp)
+                    if ep > max_emit_p:
+                        max_emit_p = ep
+                        suppress_at_max_emit = sp
         except Exception:
             pass
 
@@ -105,10 +118,9 @@ def classify_episode(
 
     if max_emit_p < tau_emit:
         return "NO_EMIT_LOW_EMIT_P"
-    if max_emit_p >= tau_emit and min_suppress_p > tau_suppress:
+    # Use suppress at max-emit frame (not min_suppress_p which is pulled down by early defaults)
+    if max_emit_p >= tau_emit and suppress_at_max_emit > tau_suppress:
         return "NO_EMIT_HIGH_SUPPRESS_P"
-    if emit_step > 250:
-        return "EMIT_LATE_AFTER_STEP_250"
 
     return "NO_EMIT_OTHER"
 
