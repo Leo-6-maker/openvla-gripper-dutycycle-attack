@@ -21,7 +21,7 @@ from typing import Any, Dict, Iterable, List, Tuple
 import numpy as np
 
 REPO = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO)); sys.path.insert(0, str(REPO / "src"))
+sys.path.insert(0, str(REPO)); sys.path.insert(0, str(REPO / "src")); sys.path.insert(0, str(REPO / "scripts"))
 
 try:
     from scripts.stageb.collect_c2f_observation_clean_rollouts import StepRecord, RuntimeAdapter
