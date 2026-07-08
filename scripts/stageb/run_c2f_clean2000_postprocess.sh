@@ -5,17 +5,43 @@
 # CLIP and training must NOT run if hygiene/audit fail.
 set -euo pipefail
 
-COMMIT="3a22cf6"
-SHARDED="/mnt/sdc/dty_user/openvla_attack_evidence/c2f/clean2000_obs_clean_36712cc"
-MERGED="/mnt/sdc/dty_user/openvla_attack_evidence/c2f/clean2000_merged_${COMMIT:0:7}"
-STATS="/mnt/sdc/dty_user/openvla_attack_evidence/c2f/clean2000_emb_stats_${COMMIT:0:7}"
-CLIP="/mnt/sdc/dty_user/openvla_attack_evidence/c2f/clean2000_emb_clip_${COMMIT:0:7}"
-ABL="/mnt/sdc/dty_user/openvla_attack_evidence/c2f/clean2000_ablation_${COMMIT:0:7}"
-RUNS="/mnt/sdc/dty_user/openvla_attack_evidence/c2f/c2f_ablation_runs_${COMMIT:0:7}"
+# Override from the shell when needed:
+#   COMMIT=b11241c83ee46cca59719b9a61a0cc43403fa3b5 \
+#   SHARDED=/path/to/sharded/root \
+#   bash scripts/stageb/run_c2f_clean2000_postprocess.sh
+COMMIT="${COMMIT:-$(git rev-parse --short HEAD 2>/dev/null || echo unknown)}"
+SHARDED="${SHARDED:-/mnt/sdc/dty_user/openvla_attack_evidence/c2f/clean2000_obs_clean_36712cc}"
+MERGED="${MERGED:-/mnt/sdc/dty_user/openvla_attack_evidence/c2f/clean2000_merged_${COMMIT:0:7}}"
+STATS="${STATS:-/mnt/sdc/dty_user/openvla_attack_evidence/c2f/clean2000_emb_stats_${COMMIT:0:7}}"
+CLIP="${CLIP:-/mnt/sdc/dty_user/openvla_attack_evidence/c2f/clean2000_emb_clip_${COMMIT:0:7}}"
+ABL="${ABL:-/mnt/sdc/dty_user/openvla_attack_evidence/c2f/clean2000_ablation_${COMMIT:0:7}}"
+RUNS="${RUNS:-/mnt/sdc/dty_user/openvla_attack_evidence/c2f/c2f_ablation_runs_${COMMIT:0:7}}"
+EXPECTED_EPISODES="${EXPECTED_EPISODES:-2000}"
+
+fail() {
+  echo "FATAL: $*" >&2
+  exit 1
+}
 
 echo "=== C2f Clean2000 Post-Process Pipeline ==="
-echo "Commit: $COMMIT"
+echo "Commit:  $COMMIT"
+echo "Sharded: $SHARDED"
+echo "Merged:  $MERGED"
+echo "Stats:   $STATS"
+echo "Expected episodes: $EXPECTED_EPISODES"
 echo ""
+
+# ── Step 0: Preflight ──
+echo "--- Step 0: preflight ---"
+[ -d "$SHARDED" ] || fail "SHARDED root does not exist: $SHARDED"
+META_COUNT=$(find "$SHARDED" -path '*/episodes/*/*/episode_metadata.json' -type f | wc -l | tr -d ' ')
+echo "Found shard episode_metadata.json files: $META_COUNT"
+if [ "$META_COUNT" -ne "$EXPECTED_EPISODES" ]; then
+  fail "Expected $EXPECTED_EPISODES completed shard episodes, found $META_COUNT. Do not postprocess until collection is complete."
+fi
+if grep -R "Traceback" "$SHARDED"/logs >/dev/null 2>&1; then
+  fail "Traceback found in shard logs. Inspect $SHARDED/logs before merge."
+fi
 
 # ── Step 1: Merge shards ──
 echo "--- Step 1: merge ---"
@@ -28,30 +54,23 @@ echo "Merge done: $MERGED"
 
 # ── Step 2: Hygiene check ──
 echo "--- Step 2: hygiene ---"
-python scripts/stageb/check_c2f_collection_hygiene.py \
+if ! python scripts/stageb/check_c2f_collection_hygiene.py \
   --c2f-root "$MERGED" \
-  --expected-episodes 2000
-HYGIENE_RC=$?
-if [ $HYGIENE_RC -ne 0 ]; then
-    echo "FATAL: Hygiene FAIL. Aborting pipeline."
-    exit 1
+  --expected-episodes "$EXPECTED_EPISODES"; then
+    fail "Hygiene FAIL. Aborting pipeline. Do not run audit/stats/CLIP."
 fi
 
 # ── Step 3: Observation audit ──
 echo "--- Step 3: audit ---"
-python scripts/stageb/audit_c2f_observation_collection.py \
+if ! python scripts/stageb/audit_c2f_observation_collection.py \
   --c2f-root "$MERGED" \
-  --expected-episodes 2000 \
+  --expected-episodes "$EXPECTED_EPISODES" \
   --mode pilot200 \
-  --strict-primary-nondegenerate
-AUDIT_RC=$?
-if [ $AUDIT_RC -ne 0 ]; then
-    echo "FATAL: Audit FAIL. Check primary label distribution before proceeding."
-    echo "Pipeline stops here. Manual review required for CLIP materialization decision."
-    exit 1
+  --strict-primary-nondegenerate; then
+    fail "Audit FAIL. Check label distribution before proceeding. CLIP/training remain unauthorized."
 fi
 
-# ── Step 4: Stats materialization (always safe) ──
+# ── Step 4: Stats materialization ──
 echo "--- Step 4: stats materialization ---"
 python tools/multisuite_detector/materialize_c2f_frozen_embeddings.py \
   --c2f-root "$MERGED" \
@@ -63,7 +82,7 @@ python tools/multisuite_detector/materialize_c2f_frozen_embeddings.py \
 echo "Stats done: $STATS"
 
 # ── Step 5: CLIP materialization (GPU required) ──
-# UNCOMMENT only after Steps 1-4 ALL PASS:
+# UNCOMMENT only after Steps 1-4 ALL PASS and label distribution is accepted:
 # echo "--- Step 5: CLIP materialization ---"
 # CUDA_VISIBLE_DEVICES=4 python tools/multisuite_detector/materialize_c2f_frozen_embeddings.py \
 #   --c2f-root "$MERGED" \
