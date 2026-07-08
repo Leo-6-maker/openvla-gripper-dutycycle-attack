@@ -1,213 +1,379 @@
 #!/usr/bin/env python3
-"""D7 Table1 cross-suite bridge wrapper.
+"""D7 Table1 cross-suite bridge — real episode runner.
 
-Parameterizes run_v2_vis_sc5_mlp_bridge.py for all four LIBERO suites.
-Key changes from Object-only bridge:
-  --suite: libero_10, libero_goal, libero_object, libero_spatial
-  --model_path, --unnorm_key: parameterized per suite
-  --task_idx, --state_id, --seed_id: from D7 manifest
-  Object site telemetry: best-effort optional (no crash on missing).
+Parameterizes run_v2_vis_sc5_mlp_bridge.py execution for four LIBERO suites.
+Loads OpenVLA per suite, runs LIBERO env, applies C2e3 GRU detector trigger,
+executes VIS/RAND/ORACLE attack, writes telemetry.
 
-Attack logic: VIS/RAND from existing bridge, detector trigger from C2e3.
-
-DO NOT run this directly — use the D7 manifest queue to drive batch execution.
+Non-dry-run actually executes OpenVLA/LIBERO/attack.
 """
 from __future__ import annotations
 
-import argparse, json, os, sys, time
+import argparse, copy, csv, hashlib, json, os, subprocess, sys, time
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
-# Add repo root
-REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT / "src"))
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(REPO / "src"))
+sys.path.insert(0, str(REPO / "scripts"))
+os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "eager")
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "0")
 
-# ============ Suite Configuration ============
-SUITE_CONFIG: Dict[str, Dict[str, Any]] = {
-    "libero_10": {
-        "unnorm_key": "libero_10",
-        "action_dim": 7,
-        "benchmark_init": "libero_10",
-        "task_range": range(0, 10),
-        "model_path_default": "",  # Must be provided via --model-path
-    },
-    "libero_goal": {
-        "unnorm_key": "libero_goal",
-        "action_dim": 7,
-        "benchmark_init": "libero_goal",
-        "task_range": range(0, 10),
-        "model_path_default": "",
-    },
-    "libero_object": {
-        "unnorm_key": "libero_object",
-        "action_dim": 7,
-        "benchmark_init": "libero_object",
-        "task_range": range(0, 10),
-        "model_path_default": "",
-    },
-    "libero_spatial": {
-        "unnorm_key": "libero_spatial",
-        "action_dim": 7,
-        "benchmark_init": "libero_spatial",
-        "task_range": range(0, 10),
-        "model_path_default": "",
-    },
+# ============ Suite Model Registry ============
+SUITE_MODEL_PATHS = {
+    "libero_10": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-10",
+    "libero_goal": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-goal",
+    "libero_object": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+    "libero_spatial": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-spatial",
 }
 
-# ============ Condition Protocol ============
-CONDITION_PROTOCOLS = {
-    "CLEAN": {
-        "attack": False,
-        "intervention": "none",
-        "objective": "clean_baseline",
-        "timing": "n/a",
-        "eval": "ITT",
-    },
-    "TRUE_T10": {
-        "attack": True,
-        "intervention": "force_gripper_open_token_ce",
-        "objective": "targeted_gripper_duty_cycle",
-        "timing": "detector_trigger",
-        "eval": "ITT",
-        "epsilon": 0.25,
-        "step_size": 0.050,
-        "attack_steps": 60,
-        "force_open_raw_gripper": 1.0,
-    },
-    "RAND_T10": {
-        "attack": True,
-        "intervention": "random_direction_payload",
-        "objective": "direction_specificity_control",
-        "timing": "detector_trigger_same",
-        "eval": "ITT",
-        "attack_steps": 60,
-    },
-    "COMMAND_OPEN_ORACLE": {
-        "attack": True,
-        "intervention": "command_open_oracle",
-        "objective": "mechanistic_upper_bound",
-        "timing": "detector_trigger_same",
-        "eval": "emission_matched",
-        "attack_steps": 60,
-    },
+SUITE_UNNORM_KEYS = {
+    "libero_10": "libero_10",
+    "libero_goal": "libero_goal",
+    "libero_object": "libero_object",
+    "libero_spatial": "libero_spatial",
 }
 
-# ============ Episode Summary Template ============
-def build_episode_summary(
-    suite: str,
-    task_idx: int,
-    state_id: int,
-    seed: int,
-    condition: str,
-    parent_key: str,
-    success: bool,
-    n_steps: int,
-    detector_emitted: bool,
-    emit_step: int,
-    attack_frames: int,
-    token_open_duty: float,
-    env_open_duty: float,
-    arm_duty: float,
-    qpos_open_response: float,
-    failure_taxonomy: str,
-    source_commit: str,
-    detector_sha256: str,
-    threshold_sha256: str,
-    **extra,
-) -> Dict[str, Any]:
-    return {
-        "suite": suite,
-        "task_idx": task_idx,
-        "state_id": state_id,
-        "seed": seed,
-        "condition": condition,
-        "clean_parent_key": parent_key,
-        "task_success": success,
-        "n_steps": n_steps,
-        "detector_emitted": detector_emitted,
-        "emit_step": emit_step,
-        "attack_frames": attack_frames,
-        "token_open_duty": token_open_duty,
-        "env_open_duty": env_open_duty,
-        "arm_duty": arm_duty,
-        "qpos_open_response": qpos_open_response,
-        "failure_taxonomy": failure_taxonomy,
-        "source_commit": source_commit,
-        "detector_checkpoint_sha256": detector_sha256,
-        "threshold_sha256": threshold_sha256,
+SUITE_BENCHMARK_KEYS = {
+    "libero_10": "libero_10",
+    "libero_goal": "libero_goal",
+    "libero_object": "libero_object",
+    "libero_spatial": "libero_spatial",
+}
+
+# Attack constants (from existing bridge)
+K = 10; EPSILON = 0.023529411764705882; TARGET_TOKEN = 31744; ARM_GATE = 5; PGD_STEPS = 20
+
+
+def sha256_str(s: str) -> str:
+    return hashlib.sha256(s.encode()).hexdigest()
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""): h.update(chunk)
+    return h.hexdigest()
+
+
+def write_json(path: Path, obj: Any) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(obj, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+
+
+def load_c2e3_detector(checkpoint_path: str, threshold_json: str):
+    """Load C2e3 frozen GRU detector."""
+    import numpy as np
+    import torch
+    from torch import nn
+
+    class GRU(nn.Module):
+        def __init__(self, nf=25, nc=108, hidden=128):
+            super().__init__()
+            self.gru = nn.GRU(nf, hidden, 1, batch_first=True)
+            self.head = nn.Linear(hidden + nc, 2)
+        def forward(self, xt, xc):
+            _, h = self.gru(xt); return self.head(torch.cat([h[-1], xc], dim=1))
+
+    ckpt = torch.load(checkpoint_path, map_location="cpu")
+    threshold = json.loads(Path(threshold_json).read_text()).get("selected_threshold", {})
+    cfg = ckpt["config"]
+    model = GRU(25, 108, cfg.get("channels", cfg.get("hidden", 128)))
+    model.load_state_dict(ckpt["model_state_dict"])
+    model.cpu().eval()
+    return model, float(threshold.get("tau_emit", 0.33)), float(threshold.get("tau_suppress", 0.67)), ckpt
+
+
+def run_episode(args: argparse.Namespace) -> Dict[str, Any]:
+    """Execute one episode: OpenVLA + LIBERO + C2e3 + attack."""
+    import numpy as np
+    import torch
+
+    model_path = args.model_path or SUITE_MODEL_PATHS.get(args.suite, "")
+    unnorm_key = args.unnorm_key or SUITE_UNNORM_KEYS.get(args.suite, args.suite)
+    bm_key = SUITE_BENCHMARK_KEYS.get(args.suite, args.suite)
+
+    out_dir = Path(args.output_dir) / args.suite / args.condition / args.parent_key
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    is_attack = args.condition != "CLEAN"
+    is_rand = args.condition == "RAND_T10"
+    is_oracle = args.condition == "COMMAND_OPEN_ORACLE"
+    attack_frames = K if (is_attack or is_oracle) else 0
+
+    start_time = time.time()
+    result = {
+        "suite": args.suite, "condition": args.condition,
+        "parent_key": args.parent_key, "task_idx": args.task_idx,
+        "state_id": args.state_id, "seed": args.seed,
+        "task_success": False, "n_steps": 0, "detector_emitted": False,
+        "emit_step": -1, "attack_frames": attack_frames,
+        "token_open_duty": 0.0, "env_open_duty": 0.0, "arm_duty": 0.0,
+        "qpos_open_response": 0.0, "failure_taxonomy": "unknown",
+        "error": "", "runtime_seconds": 0.0,
+        "source_commit": args.source_commit,
+        "detector_checkpoint_sha256": sha256_file(Path(args.detector_checkpoint)) if Path(args.detector_checkpoint).exists() else "",
+        "threshold_sha256": sha256_file(Path(args.threshold_json)) if Path(args.threshold_json).exists() else "",
     }
+
+    try:
+        # ── Load C2e3 detector ──
+        detector_model, tau_emit, tau_suppress, detector_ckpt = load_c2e3_detector(
+            args.detector_checkpoint, args.threshold_json)
+
+        # ── Load OpenVLA model ──
+        from transformers import AutoProcessor
+        try:
+            from transformers import AutoModelForImageTextToText as AutoModelCls
+        except Exception:
+            from transformers import AutoModelForVision2Seq as AutoModelCls
+
+        processor = AutoProcessor.from_pretrained(model_path, trust_remote_code=True, local_files_only=True)
+        _dtype_name = os.environ.get("OPENVLA_DTYPE", "bfloat16")
+        _attn_name = os.environ.get("OPENVLA_ATTN_IMPLEMENTATION", "eager")
+        _dtype_map = {"bfloat16": torch.bfloat16, "float32": torch.float32}
+        _torch_dtype = _dtype_map.get(_dtype_name, torch.bfloat16)
+        model = AutoModelCls.from_pretrained(
+            model_path, trust_remote_code=True, local_files_only=True, torch_dtype=_torch_dtype,
+            low_cpu_mem_usage=True, device_map="cuda:0", attn_implementation=_attn_name)
+        device = "cuda:0"
+        action_dim = int(model.get_action_dim(unnorm_key))
+        print(f"OpenVLA loaded: {model_path} action_dim={action_dim} suite={args.suite}")
+
+        # ── Persistent attacker ──
+        attacker = None
+        if is_attack and not is_rand and not is_oracle:
+            from gripper_attack.attack_adapter import OpenVLAVisualAttacker
+            opt = {"method": "token_prefix_pgd", "objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+                   "epsilon": EPSILON, "num_steps": PGD_STEPS, "step_size": EPSILON * 0.075,
+                   "random_start": True, "prefix_refresh_interval": 1,
+                   "surrogate_score_path": "cached_autoregressive_generate_v1",
+                   "strict_route": True, "allow_fallback": False, "temporal_init": "prev_delta",
+                   "target_token_id": TARGET_TOKEN, "target_execution_class": "CLIP_MEDIATED_OPEN",
+                   "gripper_margin": 5.0, "arm_preserve_weight": 0.5, "arm_gate_min_match_count": ARM_GATE}
+            attacker = OpenVLAVisualAttacker(model=model, processor=processor, config={"attack_optimizer": opt},
+                seed=args.seed, preprocess_kwargs={"libero_preprocess_backend": "upstream_tf_jpeg", "center_crop": True, "resize_size": 224}, device=device)
+
+        # ── LIBERO env ──
+        from v4_run_eval_openvla import decode_with_scores, prompt, postprocess_openvla_action_for_libero
+        from gripper_attack.libero_v4_env_factory import apply_dummy_wait, build_v4_exact_env
+        from libero.libero import benchmark, get_libero_path
+
+        bm = benchmark.get_benchmark_dict()
+        suite_obj = bm[bm_key]()
+        task_obj = suite_obj.get_task(args.task_idx)
+        init_states = suite_obj.get_task_init_states(args.task_idx)
+        bddl = os.path.join(get_libero_path("bddl_files"), task_obj.problem_folder, task_obj.bddl_file)
+
+        env, obs = build_v4_exact_env(bddl, args.render_gpu, 400, 10)
+        obs = env.set_init_state(init_states[args.state_id])
+        env, obs = apply_dummy_wait(env, obs, 10)
+
+        # ── Streaming 25D features ──
+        from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
+        from v4_run_eval_openv2 import physical_gripper_state
+        _streamer = SC5StreamingFeatureAdapterV2()
+        _mlp_emit = -1
+        _eef_init = env.sim.data.site_xpos[env.sim.model.site_name2id("gripper0_grip_site")]
+        _prev_eef = (float(_eef_init[0]), float(_eef_init[1]), float(_eef_init[2]))
+
+        # Object site (best-effort)
+        obj_z0 = None
+        try:
+            _task_name = task_obj.name
+            _obj_key = _task_name.replace("pick_up_the_","").replace("_and_place_it_in_the_basket","")
+            obj_sid = env.sim.model.site_name2id(f"{_obj_key}_1_default_site")
+            obj_z0 = float(env.sim.data.site_xpos[obj_sid][2])
+        except Exception:
+            pass  # best-effort, not required
+
+        # ── Main loop ──
+        import numpy as np
+        SC5_F = ["gripper_command","gripper_qpos","gripper_opening_proxy","eef_x","eef_y","eef_z",
+                  "eef_vx","eef_vy","eef_vz","action_dx","action_dy","action_dz","action_gripper",
+                  "recent_close_streak","recent_open_streak","recent_gripper_flip_count",
+                  "close_onset","time_since_close","eef_speed","eef_z_delta_since_close",
+                  "qpos_delta_1","qpos_delta_3","opening_proxy_delta_3","opening_proxy_variance_5","eef_speed_variance_5"]
+
+        telemetry = []; attack_count = 0; emitted = False; emit_step = -1
+        W = 16
+        # Pre-buffer: collect W-1 rows before starting
+        _feature_buffer = []
+        _context_buffer = []  # zeros for context (108 dim)
+        _raw_action_buffer = []
+        _detector_trigger_step = args.trigger_step_override
+
+        for step in range(400):
+            if "agentview_image" not in obs:
+                break
+
+            raw_img = np.asarray(obs["agentview_image"]).copy()
+            gs = physical_gripper_state(env, obs)
+            q7 = float(gs["qpos"][0]) if gs and len(gs.get("qpos", [])) > 0 else float("nan")
+
+            # Decode action
+            decoded, clean_action_7d, raw_gripper_val = decode_with_scores(
+                model, processor, prompt, raw_img.copy(), device, model_dtype=model.dtype,
+                unnorm_key=unnorm_key, postprocess=True, return_clean_action=True, return_raw_gripper=True)
+            action = postprocess_openvla_action_for_libero(decoded)
+
+            # Online 25D features
+            stream_row = _streamer.update_from_env(
+                step, action, clean_action_7d, gs, _prev_eef, args.task_idx, args.condition,
+                float(obs.get("gripper_qpos", 0)), float(obs.get("gripper_width", 0)))
+            _prev_eef = stream_row.get("eef_pos", _prev_eef)
+
+            # Extract 25D feature vector
+            feat_vec = []
+            for f in SC5_F:
+                v = stream_row.get(f, stream_row.get(f"f_{f}", 0.0))
+                try:
+                    feat_vec.append(float(v))
+                except (ValueError, TypeError):
+                    feat_vec.append(0.0)
+
+            _feature_buffer.append(feat_vec)
+            _context_buffer.append([0.0] * 108)  # no context at runtime
+            _raw_action_buffer.append((clean_action_7d, raw_gripper_val))
+
+            # C2e3 GRU trigger check (once buffer has W rows)
+            if not emitted and _detector_trigger_step < 0 and len(_feature_buffer) >= W:
+                window = np.array(_feature_buffer[-W:], dtype=np.float32).reshape(1, W, 25)
+                ctx = np.zeros((1, 108), dtype=np.float32)
+                with torch.no_grad():
+                    logits = detector_model(torch.from_numpy(window), torch.from_numpy(ctx)).numpy()[0]
+                ep_val = 1.0 / (1.0 + np.exp(-np.clip(logits[0], -50, 50)))
+                sp_val = 1.0 / (1.0 + np.exp(-np.clip(logits[1], -50, 50)))
+                if ep_val >= tau_emit and sp_val <= tau_suppress:
+                    emitted = True
+                    emit_step = step
+
+            # Determine trigger
+            trigger_step = _detector_trigger_step if _detector_trigger_step >= 0 else emit_step
+            should_attack = is_attack and trigger_step >= 0 and step >= trigger_step and step < trigger_step + attack_frames
+
+            # Execute action
+            if should_attack and attacker is not None:
+                # VIS targeted attack
+                _attacked = attacker.attack(raw_img.copy(), clean_action=clean_action_7d,
+                    unnorm_key=unnorm_key, arm_lock=False)
+                env.step(_attacked)
+                attack_count += 1
+            elif should_attack and is_oracle:
+                # Command-open oracle: force env gripper = -1.0 (open)
+                oracle_action = list(action)
+                oracle_action[-1] = -1.0
+                env.step(np.array(oracle_action))
+                attack_count += 1
+            elif should_attack and is_rand:
+                # Random direction: same timing, random gripper direction
+                rand_action = list(action)
+                rand_action[-1] = 1.0 if np.random.random() > 0.5 else -1.0
+                env.step(np.array(rand_action))
+                attack_count += 1
+            else:
+                env.step(action)
+
+            # Telemetry
+            telemetry.append({
+                "step": step, "emitted": emitted, "emit_step": emit_step,
+                "attack_this": should_attack, "attack_count": attack_count,
+                "raw_gripper": raw_gripper_val if raw_gripper_val is not None else float("nan"),
+                "env_gripper": float(obs.get("gripper_qpos", np.nan)),
+            })
+
+            obs, reward, done, info = env.step(action) if step == 0 else (obs, 0, False, {})  # dummy for loop
+            # Actually re-read from env after step
+            try:
+                obs = env.get_observation()
+            except Exception:
+                pass
+            if done:
+                break
+
+        # ── Post-episode ──
+        success = bool(env.env.reward_current_step() > 0 if hasattr(env, 'env') else False)
+        try:
+            success = float(env.env.get_last_reward()) > 0
+        except Exception:
+            pass
+
+        result["task_success"] = success
+        result["n_steps"] = len(telemetry)
+        result["detector_emitted"] = emitted
+        result["emit_step"] = emit_step
+        result["failure_taxonomy"] = "success" if success else ("no_trigger" if not emitted else "attack_ineffective")
+        result["runtime_seconds"] = time.time() - start_time
+        result["attack_frames"] = attack_count
+        if len(telemetry) > 0:
+            result["token_open_duty"] = sum(1 for t in telemetry if t.get("raw_gripper", 0) > 0.5) / len(telemetry)
+            result["env_open_duty"] = sum(1 for t in telemetry if t.get("env_gripper", 0) < -0.5) / len(telemetry)
+
+        # Write telemetry CSV
+        tel_path = out_dir / "step_telemetry.csv"
+        if telemetry:
+            with open(tel_path, "w", newline="") as f:
+                w = csv.DictWriter(f, fieldnames=list(telemetry[0].keys()))
+                w.writeheader(); w.writerows(telemetry)
+
+        env.close()
+
+    except Exception as e:
+        result["error"] = str(e)[:500]
+        result["failure_taxonomy"] = "runtime_error"
+
+    # ── Write outputs ──
+    write_json(out_dir / "episode_summary.json", result)
+    write_json(out_dir / "episode_manifest.json", {
+        "suite": args.suite, "condition": args.condition, "parent_key": args.parent_key,
+        "task_idx": args.task_idx, "state_id": args.state_id, "seed": args.seed,
+        "model_path": model_path, "detector_checkpoint": args.detector_checkpoint,
+        "source_commit": args.source_commit, "timestamp_unix": time.time(),
+    })
+    # SHA256 of outputs
+    artifact_sha = {}
+    for fn in sorted(out_dir.glob("*")):
+        if fn.is_file() and fn.name != "artifact_sha256.json":
+            artifact_sha[fn.name] = sha256_file(fn)
+    write_json(out_dir / "artifact_sha256.json", artifact_sha)
+
+    return result
 
 
 def main():
-    """CLI entry point — single-episode bridge invocation."""
     ap = argparse.ArgumentParser(description="D7 Table1 cross-suite bridge (single episode)")
-    ap.add_argument("--suite", required=True, choices=list(SUITE_CONFIG.keys()))
-    ap.add_argument("--model-path", required=True)
-    ap.add_argument("--unnorm-key", default=None)
+    ap.add_argument("--suite", required=True, choices=["libero_10","libero_goal","libero_object","libero_spatial"])
+    ap.add_argument("--model-path", default=None, help="OpenVLA model path (auto-detected from suite if not set)")
+    ap.add_argument("--unnorm-key", default=None, help="Action unnormalization key")
     ap.add_argument("--task-idx", type=int, required=True)
     ap.add_argument("--state-id", type=int, default=0)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--condition", required=True, choices=list(CONDITION_PROTOCOLS.keys()))
+    ap.add_argument("--condition", required=True, choices=["CLEAN","TRUE_T10","RAND_T10","COMMAND_OPEN_ORACLE"])
     ap.add_argument("--parent-key", required=True)
     ap.add_argument("--output-dir", required=True)
     ap.add_argument("--detector-checkpoint", required=True)
     ap.add_argument("--threshold-json", required=True)
-    ap.add_argument("--trigger-step-override", type=int, default=None)
+    ap.add_argument("--trigger-step-override", type=int, default=-1)
     ap.add_argument("--source-commit", required=True)
+    ap.add_argument("--render-gpu", type=int, default=0)
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
-    suite_cfg = SUITE_CONFIG[args.suite]
-    unnorm_key = args.unnorm_key or suite_cfg["unnorm_key"]
-    protocol = CONDITION_PROTOCOLS[args.condition]
-
-    out_dir = Path(args.output_dir)
-    out_dir.mkdir(parents=True, exist_ok=True)
-
     if args.dry_run:
-        print(json.dumps({
-            "suite": args.suite,
-            "condition": args.condition,
-            "parent_key": args.parent_key,
-            "task_idx": args.task_idx,
-            "state_id": args.state_id,
-            "seed": args.seed,
-            "unnorm_key": unnorm_key,
-            "model_path": args.model_path,
-            "protocol": protocol,
-            "detector_checkpoint": args.detector_checkpoint,
-            "trigger_step_override": args.trigger_step_override,
-            "dry_run": True,
-        }, indent=2))
+        print(json.dumps({"status": "DRY_RUN", "suite": args.suite, "condition": args.condition,
+            "parent_key": args.parent_key, "model_path": args.model_path or SUITE_MODEL_PATHS.get(args.suite, "")}, indent=2))
         return 0
 
-    # === Actual bridge execution ===
-    # This would call into the existing VIS/attack pipeline.
-    # For now, output the parameterized invocation record.
-    invocation = {
-        "bridge": "run_d7_table1_bridge.py",
-        "suite": args.suite,
-        "condition": args.condition,
-        "parent_key": args.parent_key,
-        "task_idx": args.task_idx,
-        "state_id": args.state_id,
-        "seed": args.seed,
-        "unnorm_key": unnorm_key,
-        "model_path": args.model_path,
-        "detector_checkpoint": args.detector_checkpoint,
-        "threshold_json": args.threshold_json,
-        "trigger_step_override": args.trigger_step_override,
-        "protocol": protocol,
-        "source_commit": args.source_commit,
-        "timestamp_unix": time.time(),
-    }
-    invocation_path = out_dir / "bridge_invocation.json"
-    invocation_path.write_text(json.dumps(invocation, indent=2, sort_keys=True) + "\n")
-
-    print(json.dumps({"status": "INVOCATION_RECORDED", "suite": args.suite,
-                      "condition": args.condition, "parent_key": args.parent_key,
-                      "output": str(invocation_path)}, indent=2))
-    return 0
+    print(f"D7 Bridge: {args.suite}/{args.condition} parent={args.parent_key} task={args.task_idx} state={args.state_id}")
+    result = run_episode(args)
+    status = "SUCCESS" if not result.get("error") else "ERROR"
+    print(f"  {status}: success={result['task_success']} emitted={result['detector_emitted']} "
+          f"steps={result['n_steps']} attack_frames={result['attack_frames']} "
+          f"runtime={result['runtime_seconds']:.0f}s")
+    if result.get("error"):
+        print(f"  ERROR: {result['error'][:200]}")
+    return 0 if not result.get("error") else 1
 
 
 if __name__ == "__main__":

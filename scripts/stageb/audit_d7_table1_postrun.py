@@ -52,6 +52,13 @@ def read_json(path: Path) -> Dict[str, Any]:
 def load_parent_key(row: Dict[str, str]) -> str:
     return row.get("parent_key", row.get("group_key", ""))
 
+def safe_int(val: Any, default: int = 0) -> int:
+    try: return int(val)
+    except (ValueError, TypeError): return default
+
+def pair_key(row: Dict[str, Any]) -> Tuple[str, str]:
+    return (str(row.get("suite", "")), str(row.get("parent_key", "")))
+
 
 def main():
     ap = argparse.ArgumentParser(description="D7 Table1 post-run audit")
@@ -110,10 +117,10 @@ def main():
 
         audit_rows.append(audit_row)
 
-    # ========== Check 2: Paired parent keys ==========
-    parent_groups: Dict[str, Dict[str, bool]] = defaultdict(dict)
+    # ========== Check 2: Paired parent keys (suite, parent_key) ==========
+    parent_groups: Dict[Tuple[str, str], Dict[str, bool]] = defaultdict(dict)
     for ar in audit_rows:
-        pk = ar["parent_key"]
+        pk = pair_key(ar)
         parent_groups[pk][ar["condition"]] = ar.get("completed", False)
 
     unpaired = 0
@@ -127,18 +134,39 @@ def main():
         if not ar.get("completed"):
             continue
         cond = ar["condition"]
-        if cond in ("TRUE_T10", "RAND_T10") and ar.get("attack_frames", 0) != 10:
+        af = safe_int(ar.get("attack_frames", 0))
+        if cond in ("TRUE_T10", "RAND_T10") and af != 10:
             condition_violations.append({
                 "parent_key": ar["parent_key"],
                 "condition": cond,
-                "issue": f"attack_frames={ar['attack_frames']} != 10",
+                "issue": f"attack_frames={af} != 10",
             })
-        if cond == "CLEAN" and ar.get("attack_frames", 0) != 0:
+        if cond == "CLEAN" and af != 0:
             condition_violations.append({
                 "parent_key": ar["parent_key"],
                 "condition": cond,
                 "issue": f"clean has attack_frames={ar['attack_frames']}",
             })
+
+    # ========== Check 4: Detector SHA consistency ==========
+    sha_violations = []
+    # Collect expected SHAs from the first completed episode
+    ref_detector_sha = ""
+    ref_threshold_sha = ""
+    for ar in audit_rows:
+        if ar.get("completed"):
+            ep_dir = episode_dir / ar["suite"] / ar["condition"] / ar["parent_key"]
+            summary = read_json(ep_dir / "episode_summary.json")
+            if summary:
+                ref_detector_sha = ref_detector_sha or str(summary.get("detector_checkpoint_sha256", ""))
+                ref_threshold_sha = ref_threshold_sha or str(summary.get("threshold_sha256", ""))
+                det_sha = str(summary.get("detector_checkpoint_sha256", ""))
+                thr_sha = str(summary.get("threshold_sha256", ""))
+                if det_sha and ref_detector_sha and det_sha != ref_detector_sha:
+                    sha_violations.append({"parent_key": ar["parent_key"], "issue": f"detector_sha mismatch: {det_sha} != {ref_detector_sha}"})
+                if thr_sha and ref_threshold_sha and thr_sha != ref_threshold_sha:
+                    sha_violations.append({"parent_key": ar["parent_key"], "issue": f"threshold_sha mismatch: {thr_sha} != {ref_threshold_sha}"})
+                break  # Just need one reference
 
     # ========== Summary ==========
     violations = []
@@ -148,6 +176,8 @@ def main():
         violations.append(f"UNPAIRED_PARENTS:{unpaired}")
     if condition_violations:
         violations.append(f"CONDITION_VIOLATIONS:{len(condition_violations)}")
+    if sha_violations:
+        violations.append(f"SHA_VIOLATIONS:{len(sha_violations)}")
 
     all_ok = len(violations) == 0
     status = "PASS_D7_POSTRUN_AUDIT" if all_ok else "HOLD_D7_POSTRUN_AUDIT"

@@ -74,7 +74,7 @@ def select_parents(
 
     # Filter eligible rows
     eligible = [r for r in context_rows if r.get("suite", "") in SUITES
-                and is_attack_eligible(r) and is_attack_eligible(r)]
+                and is_attack_eligible(r)]
 
     # Group by suite
     suite_groups: Dict[str, List[Dict[str, str]]] = defaultdict(list)
@@ -143,7 +143,6 @@ def build_manifest(
                     "label_status": parent.get("teacher_label_status", ""),
                     "split": parent.get("split", ""),
                     "is_attack_eligible": is_attack_eligible(parent),
-                    "is_attack_eligible": is_attack_eligible(parent),
                     # C2e3 detector trigger info (placeholder — filled at bridge time)
                     "detector_trigger_step": "",
                     "detector_emit_p": "",
@@ -195,7 +194,7 @@ def main():
     # Write outputs
     queue_fields = ["suite", "condition", "parent_key", "group_key", "task_index",
                     "state_id", "record_id", "temporal_path", "label_status",
-                    "split", "is_attack_eligible", "is_attack_eligible",
+                    "split", "is_attack_eligible",
                     "detector_trigger_step", "detector_emit_p", "detector_suppress_p"]
     write_csv(out / "d7_table1_queue_manifest.csv", queue_rows, queue_fields)
 
