@@ -218,8 +218,11 @@ def context_108d(suite: str, task_index: int) -> np.ndarray:
     return vec
 
 
-def collect_episodes(root: Path) -> List[Path]:
-    return sorted((root / "episodes").rglob("episode_metadata.json"))
+def collect_episodes(root: Path, seed: int = 42) -> List[Path]:
+    paths = sorted((root / "episodes").rglob("episode_metadata.json"))
+    rng = random.Random(seed)
+    rng.shuffle(paths)
+    return paths
 
 
 def make_split_keys(episode_ids: List[str], seed: int) -> Dict[str, str]:
@@ -257,7 +260,7 @@ def main() -> int:
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
 
-    ep_meta_paths = collect_episodes(root)
+    ep_meta_paths = collect_episodes(root, seed=args.seed)
     if args.episode_offset > 0:
         ep_meta_paths = ep_meta_paths[args.episode_offset:]
     if args.max_episodes > 0:
