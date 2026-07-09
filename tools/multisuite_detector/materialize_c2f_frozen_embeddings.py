@@ -89,13 +89,15 @@ def image_stats_embedding(path: Path, dim: int = 128) -> np.ndarray:
 
 
 class Embedder:
-    def __init__(self, backend: str, device: str, model_name: str, emb_dim: int):
+    def __init__(self, backend: str, device: str, model_name: str, emb_dim: int,
+                 openvla_model_path: str = ""):
         self.backend = backend
         self.device = device
         self.model_name = model_name
         self.emb_dim = emb_dim
         self.model = None
         self.processor = None
+        self._openvla_text_emb = None  # cached Llama embedding layer
         if backend == "clip":
             try:
                 import torch
@@ -105,6 +107,28 @@ class Embedder:
             self.torch = torch
             self.model = CLIPModel.from_pretrained(model_name).to(device).eval()
             self.processor = CLIPProcessor.from_pretrained(model_name)
+        elif backend == "openvla_siglip":
+            import torch
+            self.torch = torch
+            if not openvla_model_path:
+                raise ValueError("--openvla-model-path required for backend=openvla_siglip")
+            try:
+                from transformers import AutoModelForVision2Seq as _AutoModelCls
+            except ImportError:
+                from transformers import AutoModelForImageTextToText as _AutoModelCls
+            from transformers import AutoProcessor as _AutoProcessor
+            self.model = _AutoModelCls.from_pretrained(
+                openvla_model_path, trust_remote_code=True, local_files_only=True,
+                torch_dtype=torch.bfloat16, device_map=device,
+            ).eval()
+            self.processor = _AutoProcessor.from_pretrained(
+                openvla_model_path, trust_remote_code=True, local_files_only=True,
+            )
+            # Infer native vision embedding dimension from SigLIP config
+            if hasattr(self.model, "vision_backbone") and hasattr(self.model.vision_backbone, "config"):
+                self.emb_dim = self.model.vision_backbone.config.hidden_size
+            else:
+                self.emb_dim = 1152  # SigLIP ViT-SO400M default
         elif backend == "stats":
             pass
         else:
@@ -115,6 +139,8 @@ class Embedder:
             return image_stats_embedding(path, self.emb_dim)
         from PIL import Image
         img = Image.open(path).convert("RGB")
+        if self.backend == "openvla_siglip":
+            return self._encode_image_siglip(img)
         inputs = self.processor(images=img, return_tensors="pt")
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         with self.torch.no_grad():
@@ -122,13 +148,51 @@ class Embedder:
             emb = emb / emb.norm(dim=-1, keepdim=True).clamp_min(1e-8)
         return emb.cpu().numpy()[0].astype(np.float32)
 
+    def _encode_image_siglip(self, img) -> np.ndarray:
+        """OpenVLA SigLIP vision backbone: preprocess → vision_backbone → pooled."""
+        # Use the processor's image_processor (PrismaticImageProcessor)
+        img_proc = self.processor.image_processor
+        pixel_values = img_proc(images=img, return_tensors="pt")["pixel_values"]
+        pixel_values = pixel_values.to(device=self.device, dtype=self.torch.bfloat16)
+        with self.torch.no_grad():
+            outputs = self.model.vision_backbone(pixel_values)
+            # SigLIP returns BaseModelOutputWithPooling; prefer pooler, fall back to mean
+            if hasattr(outputs, "pooler_output") and outputs.pooler_output is not None:
+                emb = outputs.pooler_output
+            else:
+                emb = outputs.last_hidden_state.mean(dim=1)
+            emb = emb / emb.norm(dim=-1, keepdim=True).clamp_min(1e-8)
+        return emb.float().cpu().numpy()[0].astype(np.float32)
+
     def encode_text(self, text: str) -> np.ndarray:
         if self.backend == "stats":
             return stable_hash_vec(text, self.emb_dim)
+        if self.backend == "openvla_siglip":
+            return self._encode_text_openvla(text)
         inputs = self.processor(text=[text], return_tensors="pt", padding=True, truncation=True)
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
         with self.torch.no_grad():
             emb = self.model.get_text_features(**inputs)
+            emb = emb / emb.norm(dim=-1, keepdim=True).clamp_min(1e-8)
+        return emb.cpu().numpy()[0].astype(np.float32)
+
+    def _encode_text_openvla(self, text: str) -> np.ndarray:
+        """OpenVLA Llama embedding layer: tokenize → embed → mean pool.
+
+        This does NOT run the full language model; it only uses the frozen
+        token embedding table.  It is a lightweight deterministic text encoder
+        that lives in the same token space as the OpenVLA policy, without
+        requiring a forward pass through the 7B-param LLM.
+        """
+        if self._openvla_text_emb is None:
+            self._openvla_text_emb = self.model.language_model.get_input_embeddings()
+        tokenizer = self.processor.tokenizer
+        tokens = tokenizer(text, return_tensors="pt", padding=False, truncation=True,
+                           max_length=64)
+        input_ids = tokens["input_ids"].to(self.device)
+        with self.torch.no_grad():
+            tok_emb = self._openvla_text_emb(input_ids)  # [1, L, D]
+            emb = tok_emb.float().mean(dim=1)  # mean pool over tokens
             emb = emb / emb.norm(dim=-1, keepdim=True).clamp_min(1e-8)
         return emb.cpu().numpy()[0].astype(np.float32)
 
@@ -170,8 +234,10 @@ def main() -> int:
     ap.add_argument("--c2f-root", required=True)
     ap.add_argument("--output-dir", required=True)
     ap.add_argument("--window", type=int, default=16)
-    ap.add_argument("--backend", choices=["clip", "stats"], default="stats")
+    ap.add_argument("--backend", choices=["clip", "stats", "openvla_siglip"], default="stats")
     ap.add_argument("--model-name", default="openai/clip-vit-base-patch32")
+    ap.add_argument("--openvla-model-path", default="",
+                    help="Path to OpenVLA model dir for openvla_siglip backend")
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--embedding-dim", type=int, default=128, help="Used by stats backend; CLIP dim inferred")
     ap.add_argument("--max-episodes", type=int, default=0)
@@ -190,7 +256,8 @@ def main() -> int:
     if not ep_meta_paths:
         raise RuntimeError(f"No C2f episodes found under {root / 'episodes'}")
 
-    embedder = Embedder(args.backend, args.device, args.model_name, args.embedding_dim)
+    embedder = Embedder(args.backend, args.device, args.model_name, args.embedding_dim,
+                        openvla_model_path=args.openvla_model_path)
 
     episode_ids = []
     episode_records = []
@@ -273,13 +340,15 @@ def main() -> int:
         "window": args.window,
         "backend": args.backend,
         "model_name": args.model_name,
+        "openvla_model_path": args.openvla_model_path if args.backend == "openvla_siglip" else "",
         "visual_dim": int(np.asarray(X_visual).shape[1]),
         "language_dim": int(np.asarray(X_language).shape[1]),
         "context_dim": 108,
         "created_at_unix": time.time(),
         "runtime_seconds": time.time() - t0,
         "git_commit": args.git_commit,
-        "boundaries": {"attack": "NOT_PERFORMED", "d7b2_outcome_read": False},
+        "boundaries": {"attack": "NOT_PERFORMED", "d7b2_outcome_read": False,
+                        "privileged_state": False, "post_attack_hidden_state": False},
     }
     write_json(out / "c2f_materialization_report.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
