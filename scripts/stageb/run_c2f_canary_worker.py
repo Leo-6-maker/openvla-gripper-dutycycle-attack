@@ -207,9 +207,7 @@ def main():
             step_records[-1]["success"] = success
             break
 
-    env.close()
-
-    # ── Write outputs ──
+    # Write metadata BEFORE env.close() to survive EGL teardown crashes
     import hashlib as _hashlib
     ckpt_sha = _hashlib.sha256(open(args.checkpoint, "rb").read()).hexdigest()
     meta = {
@@ -233,6 +231,11 @@ def main():
     with open(out_dir / "step_records.jsonl", "w") as f:
         for rec in step_records:
             f.write(json.dumps(rec) + "\n")
+
+    try:
+        env.close()
+    except Exception:
+        pass
 
     print(f"{args.parent_key}/{args.condition}: steps={len(step_records)} "
           f"emit={attack_window_start >= 0} "
