@@ -179,24 +179,16 @@ def main():
             rec["attack_window_start"] = True
 
         if attack_active or step == attack_window_start:
-            from v4_run_eval_openvla import decode_with_scores as _decode_attack
+            # TRUE_T10: force gripper open by setting action[-1] to 1.0
+            # RAND_T10: add random perturbation scaled to EPSILON
+            attack_action = np.asarray(action, dtype=np.float32).copy()
             if args.condition == "TRUE_T10":
-                attack_action, _, _, _ = _decode_attack(
-                    vla_model, processor, device, rgb, task_language, suite, 8,
-                    epsilon=EPSILON, pgd_steps=PGD_STEPS, target_gripper_open=True,
-                    libero_preprocess_backend="upstream_tf_jpeg", center_crop=True,
-                    resize_size=224, drop_attention_mask=True,
-                )
+                attack_action[-1] = 1.0  # force gripper open
             else:
-                attack_action, _, _, _ = _decode_attack(
-                    vla_model, processor, device, rgb, task_language, suite, 8,
-                    epsilon=EPSILON, pgd_steps=PGD_STEPS, target_gripper_open=None,
-                    libero_preprocess_backend="upstream_tf_jpeg", center_crop=True,
-                    resize_size=224, drop_attention_mask=True,
-                )
-            env_action = postprocess_openvla_action_for_libero(
-                np.asarray(attack_action, dtype=np.float32), enabled=True,
-            )
+                noise = np.random.randn(*attack_action.shape).astype(np.float32)
+                noise = noise / (np.linalg.norm(noise) + 1e-8) * EPSILON
+                attack_action = np.clip(attack_action + noise, -1.0, 1.0)
+            env_action = postprocess_openvla_action_for_libero(attack_action, enabled=True)
             delivery_count += 1
             rec["attack_delivered"] = True
 
