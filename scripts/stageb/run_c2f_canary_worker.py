@@ -128,14 +128,19 @@ def main():
         eef_vz = eef_z - prev_eef[2] if prev_eef is not None else 0.0
         prev_eef = (eef_x, eef_y, eef_z)
 
+        raw_grip = float(action[-1])
+        gq = float(gq_raw[0] + gq_raw[1]) if len(gq_raw) >= 2 else raw_grip
+        gw = float(abs(gq_raw[0]) + abs(gq_raw[1])) if len(gq_raw) >= 2 else 0.0
         _streamer.update(
-            gripper_command=float(action[-1]),
-            gripper_qpos=float(gq_raw[0] + gq_raw[1]) if len(gq_raw) >= 2 else float(action[-1]),
-            gripper_opening_proxy=float(abs(gq_raw[0]) + abs(gq_raw[1])) if len(gq_raw) >= 2 else 0.0,
+            step_id=step,
+            raw_gripper=raw_grip,
+            env_gripper=-1.0 if raw_grip > 0.5 else 1.0,
+            gripper_qpos=gq,
+            gripper_opening_proxy=gw,
             eef_x=eef_x, eef_y=eef_y, eef_z=eef_z,
             eef_vx=eef_vx, eef_vy=eef_vy, eef_vz=eef_vz,
             action_dx=float(env_action[0]), action_dy=float(env_action[1]),
-            action_dz=float(env_action[2]), action_gripper=float(env_action[-1]),
+            action_dz=float(env_action[2]), action_gripper=raw_grip,
         )
         feat_25d = _streamer.get_canonical_25d()
         buffer_25d.append(np.asarray(feat_25d, dtype=np.float32))
