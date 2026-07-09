@@ -319,11 +319,14 @@ def main() -> int:
         raise RuntimeError("No windows materialized")
 
     dataset_path = out / f"c2f_w{args.window:02d}_{args.backend}_dataset.npz"
+    # Use float16 for large visual/language embeddings to keep NPZ manageable
+    vis_dtype = np.float16 if args.backend == "openvla_siglip" else np.float32
+    lang_dtype = np.float16 if args.backend == "openvla_siglip" else np.float32
     np.savez_compressed(
         dataset_path,
         X_temporal=np.asarray(X_temporal, dtype=np.float32),
-        X_visual=np.asarray(X_visual, dtype=np.float32),
-        X_language=np.asarray(X_language, dtype=np.float32),
+        X_visual=np.asarray(X_visual, dtype=vis_dtype),
+        X_language=np.asarray(X_language, dtype=lang_dtype),
         X_context=np.asarray(X_context, dtype=np.float32),
         y_hazard=np.asarray(y_hazard, dtype=np.int64),
         y_primary=np.asarray(y_primary, dtype=np.int64),
