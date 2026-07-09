@@ -43,7 +43,7 @@ fi
 # ── Generate per-GPU job queues ──
 CONDITIONS=(TRUE_T10 RAND_T10)
 GPUS=(0 1 2 3)
-rm -f $CANARY_ROOT/jobs_gpu*.jsonl
+rm -f $CANARY_ROOT/jobs_gpu*.txt
 idx=0
 while IFS= read -r line; do
   parent_key=$(echo "$line" | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['parent_key'])")

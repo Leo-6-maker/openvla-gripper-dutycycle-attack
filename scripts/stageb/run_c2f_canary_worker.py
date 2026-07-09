@@ -36,8 +36,9 @@ def main():
     ap.add_argument("--git-commit", default="unknown")
     args = ap.parse_args()
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
-    device = "cuda:0"
+    # GPU binding is handled by launcher via CUDA_VISIBLE_DEVICES.
+    # Worker does not override it — always uses cuda:0.
+    device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
     # ── Parse parent key ──
     suite, task_str, state_str, _, _ = args.parent_key.split("/")
@@ -189,6 +190,8 @@ def main():
     env.close()
 
     # ── Write outputs ──
+    import hashlib as _hashlib
+    ckpt_sha = _hashlib.sha256(open(args.checkpoint, "rb").read()).hexdigest()
     meta = {
         "parent_key": args.parent_key, "condition": args.condition,
         "suite": suite, "task_index": task_idx, "state_id": state_id,
@@ -198,9 +201,11 @@ def main():
         "attack_window_end": attack_window_end,
         "delivery_count": delivery_count,
         "detector_checkpoint": args.checkpoint,
+        "checkpoint_sha256": ckpt_sha,
         "tau_emit": args.tau_emit, "tau_suppress": args.tau_suppress,
         "tau_abstain": 0.5, "tau_primary": 0.5,
         "attack_horizon": ATTACK_HORIZON,
+        "epsilon": EPSILON, "pgd_steps": PGD_STEPS,
         "git_commit": args.git_commit,
     }
     with open(out_dir / "episode_metadata.json", "w") as f:
@@ -210,8 +215,9 @@ def main():
             f.write(json.dumps(rec) + "\n")
 
     print(f"{args.parent_key}/{args.condition}: steps={len(step_records)} "
-          f"emit={attack_delivered} attack_step={attack_step} "
-          f"success={success}")
+          f"emit={attack_window_start >= 0} "
+          f"attack_window=[{attack_window_start},{attack_window_end}) "
+          f"delivery_count={delivery_count} success={success}")
 
 
 if __name__ == "__main__":
