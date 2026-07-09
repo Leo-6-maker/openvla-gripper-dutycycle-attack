@@ -109,13 +109,20 @@ def main():
     prev_eef = None
 
     for step in range(args.max_steps):
-        # RGB — reuse D7 adapter rgb extraction pattern for feature parity
+        # RGB — mirror _rgb_from_obs() in C2f adapter for feature parity
         rgb = np.asarray(obs["agentview_image"])
         if rgb.ndim == 2:
             rgb = np.stack([rgb] * 3, axis=-1)
         if rgb.ndim == 3 and rgb.shape[0] in (3, 4) and rgb.shape[-1] not in (3, 4):
             rgb = np.moveaxis(rgb, 0, -1)
-        rgb = rgb[..., :3].copy().astype(np.uint8)
+        rgb = rgb[..., :3].copy()
+        if rgb.dtype != np.uint8:
+            if np.nanmax(rgb) <= 1.0:
+                rgb = np.clip(rgb * 255.0, 0, 255).astype(np.uint8)
+            else:
+                rgb = np.clip(rgb, 0, 255).astype(np.uint8)
+        if rgb.size == 0 or np.max(rgb[..., :3]) < 5:
+            raise RuntimeError(f"C2f RGB capture failed at step {step}: blank image")
 
         # 25D features with proper EEF velocity (mirrors C2f adapter)
         gs = physical_gripper_state(env, obs)
