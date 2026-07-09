@@ -351,6 +351,10 @@ class _TeacherLabeler:
         self._prev_grasp = False
         self._phase = "approach"
         self._grasped_object_name = ""
+        # v1.1: relative-lift stable_carry tracking
+        self._close_start_eef_z = 0.0
+        self._closed_streak = 0
+        self._max_eef_z_since_close = 0.0
 
     def label(self, step: int) -> Dict[str, Any]:
         env = self._env
@@ -367,14 +371,30 @@ class _TeacherLabeler:
 
         is_grasping = gripper_closed
 
-        # Phase detection
+        # ── v1.1: relative-lift stable_carry ──
+        RELATIVE_DELTA_Z = 0.03  # minimum EEF lift for carry
+        ABSOLUTE_FALLBACK_Z = 0.85  # keep as fallback for high-table suites
+
         if is_grasping and not self._prev_grasp:
+            # Just closed: record the EEF-Z at close time
+            self._close_start_eef_z = eef_z
+            self._closed_streak = 1
+            self._max_eef_z_since_close = eef_z
             self._phase = "grasp_close"
         elif is_grasping and self._prev_grasp:
-            self._phase = "stable_carry" if eef_z > 0.85 else "stable_grasp"
+            self._closed_streak += 1
+            self._max_eef_z_since_close = max(self._max_eef_z_since_close, eef_z)
+            rel_lift = self._max_eef_z_since_close - self._close_start_eef_z
+            # stable_carry if: relative lift OR absolute fallback
+            if rel_lift >= RELATIVE_DELTA_Z or eef_z > ABSOLUTE_FALLBACK_Z:
+                self._phase = "stable_carry"
+            else:
+                self._phase = "stable_grasp"
         elif not is_grasping and self._prev_grasp:
+            self._closed_streak = 0
             self._phase = "release_safe"
         else:
+            self._closed_streak = 0
             self._phase = "approach"
 
         self._prev_grasp = is_grasping
