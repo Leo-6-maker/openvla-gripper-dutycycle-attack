@@ -1,6 +1,6 @@
 # Experiment Status Report — 2026-07-09 10:30 CST
 
-**Commit**: `fd3e2db` | **Branch**: `plan/codex-gated-experiment-v1-c2e0`
+**Report commit**: `03a26f8` | **TeacherLabeler fix**: `fd3e2db` | **Branch**: `plan/codex-gated-experiment-v1-c2e0`
 
 ## 1. D7 Table1 — Main Experiment (FROZEN)
 
@@ -50,13 +50,15 @@ Commit: `fd3e2db`. Track `close_start_eef_z`, `closed_streak`, `max_eef_z_since_
 
 | Variant | Recall | FP | F1 | Macro Rec |
 |---|---|---|---|---|
-| A (25D only) | 97.7% | 6.6% | 0.942 | 73.2% |
-| B (25D+lang) | 97.7% | 6.6% | 0.942 | 73.2% |
-| C (25D+RGB) | 97.7% | 6.6% | 0.942 | 73.2% |
+| A (25D+context) | 97.7% | 6.6% | 0.942 | 73.2% |
+| B (25D+lang+context) | 97.7% | 6.6% | 0.942 | 73.2% |
+| C (25D+RGB+context) | 97.7% | 6.6% | 0.942 | 73.2% |
 | D (full) | 97.7% | 6.6% | 0.942 | 73.2% |
 
 A/B/C/D identical — visual/language features are zero vectors (stats backend).
-**Key finding**: 25D + Clean2000 teacher labels → L10 recall 96.7% (C2e3: 45.6%).
+**Key finding**: 25D+context + Clean2000 v0 labels → L10 recall 96.7%
+(historical reference: C2e3 L10 recall 45.6%, different protocol/labels/data).
+Note: A includes 108D context — label as A_25D_CONTEXT, not pure "25D only".
 
 ### Per-Suite (A variant):
 
@@ -73,10 +75,17 @@ A/B/C/D identical — visual/language features are zero vectors (stats backend).
 - ~62 episodes/worker, 500 total
 - ETA: ~2 hours
 
-## 6. CLIP — Blocked
+## 6. Threshold Sweep
+
+Spatial FP=32.9% exceeds 30% gate. Threshold sweep needed for best_c2f_gate.
+Not yet performed — pending Object500 v1.1 completion.
+
+## 7. CLIP — Blocked; OpenVLA-SigLIP Alternative
 
 Server has no internet. No cached CLIP model.
 OpenVLA's `vision_backbone` (SigLIP) available as alternative.
+If used: materializer backend must be named `openvla_siglip`, not `clip`.
+Victim-aligned: SigLIP is the actual vision encoder OpenVLA uses.
 
 ## 7. Next Steps
 
