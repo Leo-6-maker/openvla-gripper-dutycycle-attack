@@ -26,6 +26,7 @@ task_indices = data["task_index"]
 splits = data["split"]
 y_primary = data["y_primary"]
 y_hazard = data["y_hazard"]
+y_release = data["y_release"]
 
 suite_set = sorted(set(str(s) for s in suites))
 print(f"\n=== Per-suite window rates ===")
