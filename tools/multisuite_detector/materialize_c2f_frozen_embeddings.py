@@ -156,11 +156,17 @@ class Embedder:
         pixel_values = pixel_values.to(device=self.device, dtype=self.torch.bfloat16)
         with self.torch.no_grad():
             outputs = self.model.vision_backbone(pixel_values)
-            # SigLIP returns BaseModelOutputWithPooling; prefer pooler, fall back to mean
-            if hasattr(outputs, "pooler_output") and outputs.pooler_output is not None:
+            # OpenVLA's vision_backbone may return a plain Tensor or a model output
+            if self.torch.is_tensor(outputs):
+                emb = outputs  # already pooled [B, D]
+            elif hasattr(outputs, "pooler_output") and outputs.pooler_output is not None:
                 emb = outputs.pooler_output
-            else:
+            elif hasattr(outputs, "last_hidden_state"):
                 emb = outputs.last_hidden_state.mean(dim=1)
+            else:
+                emb = outputs[0]  # fallback: first element
+            if emb.dim() > 2:
+                emb = emb.mean(dim=1)  # mean pool if still 3D
             emb = emb / emb.norm(dim=-1, keepdim=True).clamp_min(1e-8)
         return emb.float().cpu().numpy()[0].astype(np.float32)
 
