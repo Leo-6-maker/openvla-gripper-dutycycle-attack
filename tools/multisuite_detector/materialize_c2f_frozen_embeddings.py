@@ -213,7 +213,7 @@ def context_108d(suite: str, task_index: int) -> np.ndarray:
 
 
 def collect_episodes(root: Path) -> List[Path]:
-    return sorted((root / "episodes").glob("*/*/episode_metadata.json"))
+    return sorted((root / "episodes").rglob("episode_metadata.json"))
 
 
 def make_split_keys(episode_ids: List[str], seed: int) -> Dict[str, str]:
