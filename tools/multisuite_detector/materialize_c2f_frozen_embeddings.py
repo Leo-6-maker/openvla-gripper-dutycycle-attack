@@ -247,6 +247,7 @@ def main() -> int:
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--embedding-dim", type=int, default=128, help="Used by stats backend; CLIP dim inferred")
     ap.add_argument("--max-episodes", type=int, default=0)
+    ap.add_argument("--episode-offset", type=int, default=0, help="Skip first N episodes (for parallel sharding)")
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--git-commit", required=True)
     args = ap.parse_args()
@@ -257,6 +258,8 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
 
     ep_meta_paths = collect_episodes(root)
+    if args.episode_offset > 0:
+        ep_meta_paths = ep_meta_paths[args.episode_offset:]
     if args.max_episodes > 0:
         ep_meta_paths = ep_meta_paths[: args.max_episodes]
     if not ep_meta_paths:
