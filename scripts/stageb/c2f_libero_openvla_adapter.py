@@ -239,7 +239,8 @@ class C2fLiberoOpenVLAAdapter(RuntimeAdapter):
         obs = env.set_init_state(init_states[state_id])
         env, obs = apply_dummy_wait(env, obs, 10)
 
-        teacher = _TeacherLabeler(env, task_language)
+        target_object_name = str(episode_cfg.get("target_object_name", "") or "")
+        teacher = _TeacherLabeler(env, task_language, target_object_name)
         _streamer = SC5StreamingFeatureAdapterV2()
         eef_sid = env.sim.model.site_name2id("gripper0_grip_site")
         _eef_init = env.sim.data.site_xpos[eef_sid]
@@ -345,9 +346,10 @@ class _TeacherLabeler:
     Privileged state NEVER exposed in student features.
     """
 
-    def __init__(self, env, task_language: str):
+    def __init__(self, env, task_language: str, target_object_name: str = ""):
         self._env = env
         self._task_language = task_language
+        self._target_object_name = target_object_name
         self._prev_grasp = False
         self._phase = "approach"
         self._grasped_object_name = ""
@@ -439,51 +441,89 @@ class _TeacherLabeler:
 
         return result
 
+    @staticmethod
+    def _canonical_body_key(body_name: str) -> str:
+        """Strip MuJoCo mesh/LOD suffixes to recover the canonical object name.
+
+        ``cream_cheese_1_link0_visual`` → ``cream_cheese_1``
+        ``alphabet_soup_1`` → ``alphabet_soup_1``
+        """
+        import re as _re
+        return _re.sub(r'(_link\d*|_visual\d*|_collision\d*|_geom\d*)+$', '', body_name)
+
     def _identify_grasped_object(self) -> str:
         """Try to identify which object is grasped using simulator contact/distance.
 
-        Returns object name if identifiable, empty string otherwise.
+        Returns canonical object body name if identifiable, empty string otherwise.
         Conservative: returns "" when uncertain.
+
+        v1.2: relaxed filter — composite objects (e.g. cream_cheese_box) may only
+        expose ``_link*`` / ``_visual*`` sub-bodies.  We now include those but
+        prefer clean-named root bodies and map sub-body names back to canonical
+        object names.
         """
         env = self._env
         try:
             eef_sid = env.sim.model.site_name2id("gripper0_grip_site")
             eef_pos = env.sim.data.site_xpos[eef_sid]
 
-            # Check distance from gripper to each object body
-            closest_obj = ""
-            closest_dist = float("inf")
+            excluded_prefixes = ("robot", "floor", "world", "gripper")
+            mesh_suffix_kw = ("link", "collision", "visual", "geom")
+            candidates = []  # (canonical_name, dist, is_mesh_body)
+
             for body_name in env.sim.model.body_names:
-                # Filter for manipulable objects (exclude robot, floor, etc.)
-                if any(skip in body_name for skip in ["robot", "floor", "world", "gripper", "link", "collision", "visual"]):
+                if body_name.startswith(excluded_prefixes):
                     continue
                 try:
                     bid = env.sim.model.body_name2id(body_name)
                     body_pos = env.sim.data.body_xpos[bid]
                     dist = float(np.linalg.norm(eef_pos - body_pos))
-                    if dist < 0.15 and dist < closest_dist:
-                        closest_dist = dist
-                        closest_obj = body_name
+                    if dist < 0.15:
+                        is_mesh = any(kw in body_name for kw in mesh_suffix_kw)
+                        canonical = self._canonical_body_key(body_name) if is_mesh else body_name
+                        candidates.append((canonical, dist, is_mesh))
                 except Exception:
                     continue
-            return closest_obj
+
+            if not candidates:
+                return ""
+
+            # Prefer clean (root) bodies; within same class pick closest
+            candidates.sort(key=lambda x: (x[2], x[1]))
+            return candidates[0][0]
         except Exception:
             return ""
 
     def _object_matches_task_target(self, grasped_obj: str) -> bool:
         """Check if grasped object name appears in task language instruction.
 
-        Simple substring matching against LIBERO task language.
-        Example: "pick up the black bowl" → "black_bowl" matches "bowl"
+        v1.2: strip numeric suffixes and try both directions (object→language
+        and language→object) to handle edge cases where the MuJoCo body name
+        uses a different surface form than the natural-language instruction.
         """
         if not grasped_obj:
             return False
+        import re as _re
         lang_lower = self._task_language.lower()
-        # Extract object name parts from simulator body name
-        obj_parts = grasped_obj.lower().replace("_", " ").split()
-        # Check if any meaningful object part appears in task language
-        for part in obj_parts:
-            if len(part) > 2 and part in lang_lower:
+        # Normalise: strip numeric suffix, replace _ with space
+        obj_base = _re.sub(r'_\d+$', '', grasped_obj.lower())
+        obj_parts = [p for p in obj_base.replace("_", " ").split() if len(p) > 2]
+        # Direction 1: object name parts appear in task language
+        if any(part in lang_lower for part in obj_parts):
+            return True
+        # Direction 2: task language content words appear in object base name
+        lang_words = [w for w in lang_lower.replace("-", " ").split() if len(w) > 2 and w not in
+                      ("the", "and", "put", "pick", "place", "both", "from", "with", "into", "onto", "next", "that")]
+        obj_joined = " ".join(obj_parts)
+        if any(w in obj_joined for w in lang_words):
+            return True
+        # Direction 3: canonical target_object_name from config (e.g. cream_cheese_1)
+        if self._target_object_name:
+            target_base = _re.sub(r'_\d+$', '', self._target_object_name.lower())
+            target_parts = [p for p in target_base.replace("_", " ").split() if len(p) > 2]
+            if target_parts and any(p in obj_base for p in target_parts):
+                return True
+            if target_parts and any(p in obj_base.replace("_", "") for p in target_parts):
                 return True
         return False
 
