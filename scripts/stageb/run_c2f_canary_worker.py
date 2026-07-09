@@ -90,6 +90,7 @@ def main():
 
     from v4_run_eval_openvla import decode_with_scores, postprocess_openvla_action_for_libero, physical_gripper_state
     from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
+    from gripper_attack.c2f_siglip_detector_runtime import CANONICAL_25D_FEATURES
     _streamer = SC5StreamingFeatureAdapterV2()
     eef_sid = env.sim.model.site_name2id("gripper0_grip_site")
 
@@ -131,7 +132,7 @@ def main():
         raw_grip = float(action[-1])
         gq = float(gq_raw[0] + gq_raw[1]) if len(gq_raw) >= 2 else raw_grip
         gw = float(abs(gq_raw[0]) + abs(gq_raw[1])) if len(gq_raw) >= 2 else 0.0
-        _streamer.update(
+        _res = _streamer.update(
             step_id=step,
             raw_gripper=raw_grip,
             env_gripper=-1.0 if raw_grip > 0.5 else 1.0,
@@ -142,7 +143,9 @@ def main():
             action_dx=float(env_action[0]), action_dy=float(env_action[1]),
             action_dz=float(env_action[2]), action_gripper=raw_grip,
         )
-        feat_25d = _streamer.get_canonical_25d()
+        # Extract 25D features from streamer response (mirrors C2f adapter)
+        fv = {f: float(_res["features"].get(f, 0.0) or 0.0) for f in CANONICAL_25D_FEATURES}
+        feat_25d = [fv[f] for f in CANONICAL_25D_FEATURES]
         buffer_25d.append(np.asarray(feat_25d, dtype=np.float32))
 
         # C2f detector prediction — full 4-condition gate
