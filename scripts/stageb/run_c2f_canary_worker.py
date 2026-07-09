@@ -40,6 +40,11 @@ def main():
     # Worker does not override it — always uses cuda:0.
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
+    # ── Attack protocol constants (mirrors D7 T10) ──
+    ATTACK_HORIZON = 10
+    EPSILON = 6.0 / 255.0
+    PGD_STEPS = 10
+
     # ── Parse parent key ──
     suite, task_str, state_str, _, _ = args.parent_key.split("/")
     task_idx = int(task_str.replace("task_", ""))
