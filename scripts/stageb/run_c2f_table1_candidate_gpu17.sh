@@ -125,6 +125,34 @@ run_queue() {
     fi
     nvidia-smi -i "$gpu" >> "$RUN_ROOT/nvidia_smi_gpu${gpu}.log" 2>&1 || true
   done < "$jobfile"
+  # ── Retry failed jobs at tail end ──
+  echo "[GPU${gpu}] retry phase $(date)" | tee -a "$RUN_ROOT/launch.log"
+  local retry_file="$RUN_ROOT/retry_gpu${gpu}.txt"
+  grep "|${gpu}|FAIL" "$RUN_ROOT/failed_jobs.txt" 2>/dev/null | cut -d'|' -f1,2 | while IFS='|' read -r parent_key cond; do
+    [ -z "$parent_key" ] && continue
+    echo "${parent_key}|${cond}|${gpu}" >> "$retry_file"
+  done
+  if [ -s "$retry_file" ]; then
+    while IFS='|' read -r parent_key cond assigned_gpu; do
+      [ -z "$parent_key" ] && continue
+      local meta="$OUT/${parent_key}/${cond}/episode_metadata.json"
+      local steps="$OUT/${parent_key}/${cond}/step_records.jsonl"
+      if [ -s "$meta" ] && [ -s "$steps" ]; then continue; fi
+      echo "[GPU${gpu}] RETRY ${parent_key} ${cond} $(date +%H:%M:%S)" | tee -a "$RUN_ROOT/launch.log"
+      CUDA_VISIBLE_DEVICES=$gpu PYTHONPATH=$REPO:$REPO/src:$REPO/scripts \
+        "$VENV" scripts/stageb/run_c2f_canary_worker.py \
+        --parent-key "$parent_key" --condition "$cond" \
+        --checkpoint "$CHECKPOINT" --gpu 0 --output-dir "$OUT" \
+        --git-commit "$SHORT" > "$RUN_ROOT/log_retry_${parent_key//\//_}_${cond}.log" 2>&1
+      rc=$?
+      if [ "$rc" -eq 0 ] && [ -s "$meta" ] && [ -s "$steps" ]; then
+        echo "[GPU${gpu}] RETRY OK ${parent_key} ${cond}" | tee -a "$RUN_ROOT/launch.log"
+        sed -i "\|${parent_key}|${cond}|${gpu}|FAIL|d" "$RUN_ROOT/failed_jobs.txt" 2>/dev/null || true
+      else
+        echo "[GPU${gpu}] RETRY STILL FAIL ${parent_key} ${cond}" | tee -a "$RUN_ROOT/launch.log"
+      fi
+    done < "$retry_file"
+  fi
   echo "[GPU${gpu}] queue done $(date)" | tee -a "$RUN_ROOT/launch.log"
 }
 
