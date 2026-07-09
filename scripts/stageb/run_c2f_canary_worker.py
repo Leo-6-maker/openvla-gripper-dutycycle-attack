@@ -95,17 +95,22 @@ def main():
     # ── Episode loop ──
     step_records = []
     buffer_25d = []
-    attack_delivered = False
-    attack_step = -1
+    attack_window_start = -1
+    attack_window_end = -1
+    delivery_count = 0
     success = False
+    prev_eef = None
 
     for step in range(args.max_steps):
+        # RGB — reuse D7 adapter rgb extraction pattern for feature parity
         rgb = np.asarray(obs["agentview_image"])
         if rgb.ndim == 2:
             rgb = np.stack([rgb] * 3, axis=-1)
-        rgb = rgb[..., :3].copy()
+        if rgb.ndim == 3 and rgb.shape[0] in (3, 4) and rgb.shape[-1] not in (3, 4):
+            rgb = np.moveaxis(rgb, 0, -1)
+        rgb = rgb[..., :3].copy().astype(np.uint8)
 
-        # 25D features
+        # 25D features with proper EEF velocity (mirrors C2f adapter)
         gs = physical_gripper_state(env, obs)
         gq_raw = gs.get("qpos", np.zeros(2)) if isinstance(gs, dict) else np.zeros(2)
         action, _, _, _ = decode_with_scores(
@@ -116,38 +121,53 @@ def main():
         env_action = postprocess_openvla_action_for_libero(np.asarray(action, dtype=np.float32), enabled=True)
 
         eef_pos = env.sim.data.site_xpos[eef_sid]
+        eef_x, eef_y, eef_z = float(eef_pos[0]), float(eef_pos[1]), float(eef_pos[2])
+        eef_vx = eef_x - prev_eef[0] if prev_eef is not None else 0.0
+        eef_vy = eef_y - prev_eef[1] if prev_eef is not None else 0.0
+        eef_vz = eef_z - prev_eef[2] if prev_eef is not None else 0.0
+        prev_eef = (eef_x, eef_y, eef_z)
+
         _streamer.update(
             gripper_command=float(action[-1]),
             gripper_qpos=float(gq_raw[0] + gq_raw[1]) if len(gq_raw) >= 2 else float(action[-1]),
             gripper_opening_proxy=float(abs(gq_raw[0]) + abs(gq_raw[1])) if len(gq_raw) >= 2 else 0.0,
-            eef_x=float(eef_pos[0]), eef_y=float(eef_pos[1]), eef_z=float(eef_pos[2]),
-            eef_vx=0.0, eef_vy=0.0, eef_vz=0.0,
+            eef_x=eef_x, eef_y=eef_y, eef_z=eef_z,
+            eef_vx=eef_vx, eef_vy=eef_vy, eef_vz=eef_vz,
             action_dx=float(env_action[0]), action_dy=float(env_action[1]),
             action_dz=float(env_action[2]), action_gripper=float(env_action[-1]),
         )
         feat_25d = _streamer.get_canonical_25d()
         buffer_25d.append(np.asarray(feat_25d, dtype=np.float32))
 
-        # C2f detector prediction
-        emit_p, supp_p, emitted = detector.predict(buffer_25d, rgb, task_language, suite, task_idx)
+        # C2f detector prediction — full 4-condition gate
+        det_out = detector.predict(buffer_25d, rgb, task_language, suite, task_idx)
 
-        rec = {"step": step, "emit_p": emit_p, "suppress_p": supp_p, "emitted": emitted,
+        rec = {"step": step,
+               "emit_p": det_out["emit_p"], "suppress_p": det_out["suppress_p"],
+               "abstain_p": det_out["abstain_p"], "primary_p": det_out["primary_p"],
+               "emitted": det_out["emitted"], "ready": det_out["ready"],
                "attack_delivered": False, "success": False}
 
-        # Attack injection (mirrors D7 TRUE_T10 / RAND_T10 protocol)
-        if emitted and not attack_delivered and args.condition in ("TRUE_T10", "RAND_T10"):
-            from v4_run_eval_openvla import decode_with_scores as decode_attack
+        # ── T10 attack delivery (D7 protocol: K=10 consecutive steps) ──
+        attack_active = (attack_window_start >= 0 and step < attack_window_end)
+        if det_out["emitted"] and attack_window_start < 0 and args.condition in ("TRUE_T10", "RAND_T10"):
+            attack_window_start = step
+            attack_window_end = step + ATTACK_HORIZON
+
+        if attack_window_start >= 0 and step == attack_window_start:
+            rec["attack_window_start"] = True
+
+        if attack_active or step == attack_window_start:
+            from v4_run_eval_openvla import decode_with_scores as _decode_attack
             if args.condition == "TRUE_T10":
-                # targeted: force gripper-open token
-                attack_action, _, _, _ = decode_attack(
+                attack_action, _, _, _ = _decode_attack(
                     vla_model, processor, device, rgb, task_language, suite, 8,
                     epsilon=EPSILON, pgd_steps=PGD_STEPS, target_gripper_open=True,
                     libero_preprocess_backend="upstream_tf_jpeg", center_crop=True,
                     resize_size=224, drop_attention_mask=True,
                 )
             else:
-                # RAND_T10: random direction perturbation
-                attack_action, _, _, _ = decode_attack(
+                attack_action, _, _, _ = _decode_attack(
                     vla_model, processor, device, rgb, task_language, suite, 8,
                     epsilon=EPSILON, pgd_steps=PGD_STEPS, target_gripper_open=None,
                     libero_preprocess_backend="upstream_tf_jpeg", center_crop=True,
@@ -156,10 +176,8 @@ def main():
             env_action = postprocess_openvla_action_for_libero(
                 np.asarray(attack_action, dtype=np.float32), enabled=True,
             )
-            attack_delivered = True
-            attack_step = step
+            delivery_count += 1
             rec["attack_delivered"] = True
-            rec["attack_step"] = step
 
         step_records.append(rec)
         obs, reward, done, info = env.step(env_action)
@@ -176,9 +194,13 @@ def main():
         "suite": suite, "task_index": task_idx, "state_id": state_id,
         "task_language": task_language,
         "total_steps": len(step_records), "success": success,
-        "attack_delivered": attack_delivered, "attack_step": attack_step,
+        "attack_window_start": attack_window_start,
+        "attack_window_end": attack_window_end,
+        "delivery_count": delivery_count,
         "detector_checkpoint": args.checkpoint,
         "tau_emit": args.tau_emit, "tau_suppress": args.tau_suppress,
+        "tau_abstain": 0.5, "tau_primary": 0.5,
+        "attack_horizon": ATTACK_HORIZON,
         "git_commit": args.git_commit,
     }
     with open(out_dir / "episode_metadata.json", "w") as f:

@@ -59,22 +59,29 @@ class C2fSigLIPDetectorRuntime:
         self.window = window
         self.tau_emit = tau_emit
         self.tau_suppress = tau_suppress
+        self.tau_abstain = 0.5
+        self.tau_primary = 0.5
         self._vla = openvla_model
         self._processor = openvla_processor
         self._text_emb = None  # cached Llama embedding layer
 
-        # Load detector
-        ckpt = torch.load(checkpoint_path, map_location="cpu")
-        # Infer dimensions from first Linear weight
-        nf = ckpt["temporal.weight_ih_l0"].shape[1] // 3  # GRU input dim
-        # Find visual proj dim from checkpoint keys
-        nv = ckpt["visual.0.weight"].shape[1]
-        nl = ckpt["lang.0.weight"].shape[1]
-        nc = ckpt["context.0.weight"].shape[1]
+        # Load detector — checkpoint is a wrapper dict with model_state_dict + dims + config
+        raw = torch.load(checkpoint_path, map_location="cpu")
+        state = raw.get("model_state_dict", raw)
+        dims = raw.get("dims", None)
+        config = raw.get("config", {})
+        if dims is None:
+            raise KeyError("Checkpoint missing 'dims' key — cannot infer feature dimensions")
+        nf = dims["temporal"]
+        nv = dims["visual"]
+        nl = dims["language"]
+        nc = dims["context"]
+        hidden = config.get("hidden", 128)
+        proj = config.get("proj", 128)
 
         from tools.multisuite_detector.train_c2f_rgb_lang_temporal_detector_v0 import C2fDetector
-        self._model = C2fDetector(nf=nf, nv=nv, nl=nl, nc=nc).to(device)
-        self._model.load_state_dict(ckpt)
+        self._model = C2fDetector(nf=nf, nv=nv, nl=nl, nc=nc, hidden=hidden, proj=proj, dropout=0.0).to(device)
+        self._model.load_state_dict(state)
         self._model.eval()
 
         # Buffers
@@ -138,29 +145,15 @@ class C2fSigLIPDetectorRuntime:
 
     def predict(self, features_25d: List[np.ndarray], rgb: np.ndarray,
                 task_language: str, suite: str, task_index: int,
-                ) -> Tuple[float, float, bool]:
-        """Predict emit/suppress for the current step.
+                ) -> Dict[str, Any]:
+        """Predict detector outputs for the current step.
 
-        Parameters
-        ----------
-        features_25d : list of np.ndarray, len=window
-            Window of 25D feature vectors.
-        rgb : np.ndarray [H, W, 3]
-            Current RGB frame (for visual embedding).
-        task_language : str
-            Natural language instruction.
-        suite : str
-            One of libero_10/goal/object/spatial.
-        task_index : int
-
-        Returns
-        -------
-        emit_p : float
-        suppress_p : float
-        emitted : bool (emit_p > tau_emit AND suppress_p < tau_suppress)
+        Returns dict with emit_p, suppress_p, abstain_p, primary_p, role_logits,
+        and emitted (bool per the full 4-condition gate matching offline evaluator).
         """
         if len(features_25d) < self.window:
-            return 0.0, 1.0, False  # warmup: no emit
+            return {"emit_p": 0.0, "suppress_p": 1.0, "abstain_p": 0.0,
+                    "primary_p": 0.0, "emitted": False, "ready": False}
 
         win = np.asarray(features_25d[-self.window:], dtype=np.float32)
         vis = self._encode_image(rgb).astype(np.float32)
@@ -177,8 +170,19 @@ class C2fSigLIPDetectorRuntime:
 
         emit_p = float(torch.sigmoid(out["emit"]).cpu().numpy()[0])
         supp_p = float(torch.sigmoid(out["suppress"]).cpu().numpy()[0])
-        emitted = emit_p > self.tau_emit and supp_p < self.tau_suppress
-        return emit_p, supp_p, emitted
+        abstain_p = float(torch.sigmoid(out["abstain"]).cpu().numpy()[0])
+        primary_p = float(torch.sigmoid(out["primary"]).cpu().numpy()[0])
+
+        # Full gate matching offline evaluator:
+        # emit >= tau_emit AND suppress <= tau_suppress AND abstain < tau_abstain AND primary >= tau_primary
+        emitted = (
+            emit_p >= self.tau_emit
+            and supp_p <= self.tau_suppress
+            and abstain_p < self.tau_abstain
+            and primary_p >= self.tau_primary
+        )
+        return {"emit_p": emit_p, "suppress_p": supp_p, "abstain_p": abstain_p,
+                "primary_p": primary_p, "emitted": emitted, "ready": True}
 
     def reset(self):
         """Clear per-episode buffers."""
