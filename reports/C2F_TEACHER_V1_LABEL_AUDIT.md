@@ -14,6 +14,18 @@ The CPU-only audit read the existing Clean2000 merged root and replaced its stal
 
 The scan covered 2,000 episodes and 393,513 clean step rows with zero read errors. It did not load OpenVLA, create a LIBERO environment, replay a counterfactual, or train a detector.
 
+The regenerated audit ran at commit `60dbd8224987e16b6e77947aec51df696ede81b5` with strict expected-count gates. It hashed all 4,000 selected metadata/step artifacts (298,883,052 bytes) into the deterministic input digest:
+
+```text
+2fe9313411c4d818783ebf39a4fba95685d4d03b53ea09eb6a36af9fab131831
+```
+
+Exact command:
+
+```bash
+/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python3.10 tools/multisuite_detector/audit_c2f_teacher_v1_labels.py --input-root /mnt/sdc/dty_user/openvla_attack_evidence/c2f/clean2000_merged_199af7b --suite-override libero_object=/mnt/sdc/dty_user/openvla_attack_evidence/c2f/object500_v1.1_fd3e2db --teacher-source /mnt/sdc/dty_user/openvla_attack_codex_c2f_remed_20260710/scripts/stageb/c2f_libero_openvla_adapter.py --expected-episodes 2000 --expected-rows 393513 --git-commit 60dbd8224987e16b6e77947aec51df696ede81b5 --output-dir /mnt/sdc/dty_user/openvla_attack_evidence/condition_matrix/c2g_teacher_v1_audit_tmp_60dbd82_20260710
+```
+
 ## Suite findings
 
 | Suite | Episodes | Step rows | Stable carry | Primary rows | Primary density | Grounding proxy coverage | Episodes with primary |
@@ -24,6 +36,12 @@ The scan covered 2,000 episodes and 393,513 clean step rows with zero read error
 | Spatial | 500 | 75,144 | 74,644 | 50,618 | 67.36% | 69.15% | 498 |
 
 Grounding is a Teacher-v1 proxy: `primary_attackable` and `distractor_or_setup` imply that the labeler selected an object; `unsupported_or_abstain` implies no confident object. Teacher-v1 did not store the contacted object or the target-match decision itself.
+
+## Primary-field and clean-success consistency
+
+The explicit `teacher_primary_attackable` field and `teacher_event_role == primary_attackable` agree on every regenerated row: field positives, role positives, and union positives are respectively 43,983 for LIBERO-10, 36,178 for Goal, 12,673 for Object, and 50,618 for Spatial; disagreements are zero. These are still heuristic Teacher-v1 positives, not causal vulnerability labels.
+
+Clean-success parsing is tri-state. The selected artifacts contain 0 `true`, 2,000 `false`, and 0 missing/unknown values. Missing or unparsable values would be counted as `unknown`, never collapsed into failure. This audit reports the frozen metadata value and does not independently validate rollout success.
 
 ## Pathologies confirmed
 
@@ -43,6 +61,14 @@ Artifacts:
 - `reports/c2f_teacher_v1_audit/teacher_v1_audit_report.json`
 - `reports/c2f_teacher_v1_audit/teacher_v1_by_suite_task.csv`
 - `reports/c2f_teacher_v1_audit/teacher_v1_reason_codes.csv`
+
+Artifact SHA256:
+
+```text
+f96743257f44d7b801bca023c236adf99a4d2392b45b3904a0bf25e925abfffe  teacher_v1_audit_report.json
+b1a2713a421e789e98a561de36501aa86ef77785ea41671a74d6174a49531350  teacher_v1_by_suite_task.csv
+4daaee05236b0abc304d5941cd9061e3751191bfb9a3aea8b21d7c94abb41c49  teacher_v1_reason_codes.csv
+```
 
 Gate:
 
