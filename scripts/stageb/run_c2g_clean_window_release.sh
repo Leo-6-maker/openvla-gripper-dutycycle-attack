@@ -6,6 +6,7 @@ set -euo pipefail
 # This is the preferred server entry point. It uses:
 # - deterministic disjoint parent manifests;
 # - exact per-suite OpenVLA model map;
+# - audited Goal checkpoint provenance;
 # - canonical 25D clean collection;
 # - trainability and clean-only susceptibility gates;
 # - detector-only timing with no attack;
@@ -81,19 +82,22 @@ require_file() {
   [[ -f "$1" ]] || { echo "required file missing: $1" >&2; exit 2; }
 }
 
+require_goal_manifest() {
+  [[ -n "$GOAL_MODEL_MANIFEST" ]] || {
+    echo "GOAL_MODEL_MANIFEST is required for the strict four-suite release path" >&2
+    exit 2
+  }
+  require_file "$GOAL_MODEL_MANIFEST"
+}
+
 phase_models() {
+  require_goal_manifest
   mkdir -p "$CONFIG_ROOT"
-  local goal_args=()
-  if [[ -n "$GOAL_MODEL_MANIFEST" ]]; then
-    require_file "$GOAL_MODEL_MANIFEST"
-    goal_args+=(--goal-model-manifest "$GOAL_MODEL_MANIFEST")
-  else
-    goal_args+=(--no-require-goal-manifest)
-  fi
   python scripts/stageb/build_c2g_suite_model_map.py \
     --output-map "$SUITE_MODEL_MAP" \
     --output-report "$SUITE_MODEL_REPORT" \
-    "${goal_args[@]}"
+    --goal-model-manifest "$GOAL_MODEL_MANIFEST" \
+    --require-goal-manifest
 }
 
 phase_manifests() {
@@ -200,13 +204,15 @@ phase_folds() {
 }
 
 phase_clean_timing() {
+  require_goal_manifest
   require_file "$EVAL_PARENT_MANIFEST"
   require_file "$SUITE_MODEL_MAP"
   require_file "$CHECKPOINT_PATH"
   require_file "$SUSCEPTIBILITY_REPORT"
-  python scripts/stageb/run_c2g_clean_timing_jobs_map.py \
+  python scripts/stageb/run_c2g_clean_timing_jobs_strict.py \
     --parents "$EVAL_PARENT_MANIFEST" \
     --suite-model-map "$SUITE_MODEL_MAP" \
+    --goal-model-manifest "$GOAL_MODEL_MANIFEST" \
     --checkpoint "$CHECKPOINT_PATH" \
     --output-root "$ONLINE_ROOT" \
     --expected-git-commit "$HEAD_SHA" \
@@ -245,22 +251,19 @@ phase_build_jobs() {
 }
 
 phase_run_jobs() {
+  require_goal_manifest
   require_file "$JOB_MANIFEST"
   require_file "$SUITE_MODEL_MAP"
-  local goal_args=()
-  if [[ -n "$GOAL_MODEL_MANIFEST" ]]; then
-    goal_args+=(--policy-model-manifest "$GOAL_MODEL_MANIFEST")
-  fi
-  python scripts/stageb/run_c2g_matched_load_jobs_map.py \
+  python scripts/stageb/run_c2g_matched_load_jobs_map_release.py \
     --jobs "$JOB_MANIFEST" \
     --suite-model-map "$SUITE_MODEL_MAP" \
+    --goal-model-manifest "$GOAL_MODEL_MANIFEST" \
     --output-root "$ONLINE_ROOT" \
     --checkpoint "$CHECKPOINT_PATH" \
     --expected-git-commit "$HEAD_SHA" \
     --device "$DEVICE" \
     --max-jobs "$MAX_EVAL_JOBS" \
-    --resume \
-    "${goal_args[@]}"
+    --resume
 }
 
 phase_audit_jobs() {
