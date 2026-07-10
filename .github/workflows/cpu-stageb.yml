@@ -84,12 +84,19 @@ jobs:
         run: |
           git rev-parse HEAD
           sha256sum tools/multisuite_detector/build_clean2000_label_v2.py
-      - name: Block generated outputs in git
+      - name: Block generated output mutations
         shell: python
         run: |
-          from pathlib import Path
-          bad = []
-          for root in ["generated", "audit_outputs", "paper/generated", "artifacts"]:
-              bad += [p for p in Path(root).rglob("*") if p.is_file()]
-          if bad:
-              raise SystemExit("Generated outputs must stay out of git:\n" + "\n".join(map(str, bad[:50])))
+          import subprocess
+
+          protected = ["generated", "audit_outputs", "paper/generated", "artifacts"]
+          status = subprocess.run(
+              ["git", "status", "--porcelain", "--untracked-files=all", "--", *protected],
+              check=True,
+              capture_output=True,
+              text=True,
+          ).stdout.strip()
+          if status:
+              raise SystemExit(
+                  "Tests must not create or modify protected output paths:\n" + status
+              )
