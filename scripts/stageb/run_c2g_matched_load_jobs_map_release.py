@@ -10,10 +10,12 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO))
+
 from scripts.stageb.build_c2g_suite_model_map import validate_goal_manifest
 from src.gripper_attack.c2g_matched_load_manifest import validate_core_2x2_manifest
 
-REPO = Path(__file__).resolve().parents[2]
 RELEASE = REPO / "scripts" / "stageb" / "run_c2g_matched_load_jobs_release.py"
 SUITES = ("libero_object", "libero_spatial", "libero_goal", "libero_10")
 
