@@ -1,4 +1,4 @@
-name: cpu-c2g-static
+name: cpu-c2g-e2e
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  c2g-static:
+  c2g-e2e-contract:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,74 +16,57 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-      - name: Install CPU test dependencies
+      - name: Install CPU dependencies
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e .
           python -m pip install numpy pytest pillow
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-      - name: Compile complete C2g pipeline and Track A modules
+      - name: Compile complete C2g collection train runtime and analysis path
         run: |
           python -m py_compile \
-            scripts/stageb/audit_c2f_track_a_run.py \
+            scripts/stageb/analyze_c2g_matched_load_results.py \
             scripts/stageb/audit_c2g_matched_load_run.py \
+            scripts/stageb/build_c2g_clean_manifests.py \
             scripts/stageb/build_c2g_matched_load_jobs.py \
             scripts/stageb/collect_c2g_clean_window_rollouts.py \
             scripts/stageb/extract_c2g_detector_timing.py \
             scripts/stageb/prepare_c2g_eval_parents.py \
-            scripts/stageb/run_c2f_canary_worker.py \
             scripts/stageb/run_c2g_clean_timing_jobs.py \
             scripts/stageb/run_c2g_clean_window_vis_pgd.py \
             scripts/stageb/run_c2g_matched_load_jobs.py \
             src/gripper_attack/c2g_bddl_metadata.py \
-            src/gripper_attack/c2g_causal_vulnerability_detector.py \
-            src/gripper_attack/c2g_clean_mechanism.py \
             src/gripper_attack/c2g_clean_policy_signals.py \
             src/gripper_attack/c2g_clean_window_runtime.py \
             src/gripper_attack/c2g_clean_window_schema.py \
-            src/gripper_attack/c2g_counterfactual_manifest.py \
             src/gripper_attack/c2g_gripper_critical_window_detector.py \
             src/gripper_attack/c2g_matched_load_manifest.py \
-            src/gripper_attack/c2g_teacher_v2_contact_identity.py \
-            src/gripper_attack/c2g_teacher_v2_schema.py \
-            src/gripper_attack/c2g_teacher_v2_target_resolution.py \
-            tools/multisuite_detector/audit_c2f_teacher_v1_labels.py \
-            tools/multisuite_detector/audit_c2g_clean_window_v2.py \
-            tools/multisuite_detector/audit_c2g_static_assets.py \
-            tools/multisuite_detector/c2g_clean_dataset_adapter.py \
-            tools/multisuite_detector/c2g_clean_window_label_builder.py \
-            tools/multisuite_detector/c2g_dataset_scaffold.py \
+            tools/multisuite_detector/calibrate_c2g_clean_susceptibility.py \
             tools/multisuite_detector/materialize_c2g_clean_window_dataset.py \
             tools/multisuite_detector/materialize_c2g_multisuite_dataset.py \
             tools/multisuite_detector/run_c2g_clean_window_folds.py \
             tools/multisuite_detector/train_c2g_clean_window_detector.py \
+            tools/multisuite_detector/validate_c2g_clean_window_dataset.py \
+            tests/test_c2g_clean_manifest_builder.py \
+            tests/test_c2g_clean_susceptibility.py \
             tests/test_c2g_clean_window_e2e.py \
             tests/test_c2g_clean_window_pipeline_tools.py \
-            tests/test_c2g_clean_window_server_audit.py \
-            tests/test_c2g_clean_window_v2.py \
+            tests/test_c2g_dataset_trainability.py \
             tests/test_c2g_matched_load_strict.py
-      - name: Check launcher syntax
+      - name: Check full orchestration Bash syntax
         run: |
-          bash -n scripts/stageb/run_c2f_track_a_smoke5.sh
-          bash -n scripts/stageb/run_c2f_table1_candidate_gpu17.sh
           bash -n scripts/stageb/run_c2g_clean_window_end_to_end.sh
-      - name: Run complete C2g static suite
+          bash -n scripts/stageb/run_c2g_clean_window_full.sh
+      - name: Run end-to-end contract tests
         run: |
           python -m unittest -v \
-            tests.test_c2f_track_a_static \
-            tests.test_c2g_static \
-            tests.test_c2g_p0_patch \
-            tests.test_c2g_teacher_v2_target_resolution \
-            tests.test_c2g_teacher_v2_contact_identity \
-            tests.test_c2g_teacher_v2_schema \
-            tests.test_c2g_counterfactual_manifest \
-            tests.test_c2g_static_asset_inventory \
-            tests.test_c2g_clean_window_v2 \
-            tests.test_c2g_clean_window_server_audit \
+            tests.test_c2g_clean_manifest_builder \
+            tests.test_c2g_clean_susceptibility \
             tests.test_c2g_clean_window_e2e \
             tests.test_c2g_clean_window_pipeline_tools \
+            tests.test_c2g_dataset_trainability \
             tests.test_c2g_matched_load_strict
-      - name: Verify tracked code and protected outputs unchanged
+      - name: Verify tests did not mutate tracked or protected outputs
         shell: python
         run: |
           import subprocess
@@ -98,5 +81,5 @@ jobs:
           ).stdout.strip()
           if status:
               raise SystemExit(
-                  "Static tests must not create or modify protected output paths:\n" + status
+                  "E2E contract tests created or modified protected output paths:\n" + status
               )
