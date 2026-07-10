@@ -19,7 +19,6 @@ from typing import Any, Sequence
 from src.gripper_attack.c2g_matched_load_manifest import validate_core_2x2_manifest
 
 REPO = Path(__file__).resolve().parents[2]
-BASE = REPO / "scripts" / "stageb" / "build_c2g_matched_load_jobs.py"
 
 
 def sha256_file(path: Path) -> str:
@@ -55,7 +54,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     command = [
         sys.executable,
-        str(BASE),
+        "-m", "scripts.stageb.build_c2g_matched_load_jobs",
         "--parents", str(args.parents.resolve()),
         "--detector-timing", str(args.detector_timing.resolve()),
         "--checkpoint", str(args.checkpoint.resolve()),
