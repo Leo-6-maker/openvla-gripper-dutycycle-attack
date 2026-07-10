@@ -2,8 +2,9 @@
 """Build the frozen five-condition C2g matched-load job manifest.
 
 Inputs are a preregistered parent manifest and detector timing extracted from a
-clean detector-only pass. The random-time start is deterministic, burst-feasible,
-and different from detector timing. No attacked outcome is read.
+clean detector-only pass. Parents with no clean detector emit or with a start too
+late for the frozen burst remain in the denominator report and are not silently
+converted into attacked jobs.
 """
 from __future__ import annotations
 
@@ -108,6 +109,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         choices=("SHUFFLED_GRIPPER_GRADIENT", "RANDOM_DIRECTION_PGD_LOOP", "NONGRIPPER_VIS_PGD"),
         default="SHUFFLED_GRIPPER_GRADIENT",
     )
+    parser.add_argument(
+        "--require-all-parents-attackable",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="fail rather than report clean no-emit or burst-infeasible parents",
+    )
     args = parser.parse_args(argv)
 
     parents = [normalize_parent(row) for row in read_rows(args.parents)]
@@ -117,6 +124,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     timing = {str(row["parent_key"]): int(row["detector_start_step"]) for row in timing_rows}
     if len(timing) != len(timing_rows):
         raise ValueError("detector timing manifest contains duplicate parent_key")
+    missing_timing = sorted({row["parent_key"] for row in parents} - set(timing))
+    unexpected_timing = sorted(set(timing) - {row["parent_key"] for row in parents})
+    if missing_timing or unexpected_timing:
+        raise ValueError(
+            f"detector timing parent closure failed missing={missing_timing} unexpected={unexpected_timing}"
+        )
+
     checkpoint_sha = sha256_file(args.checkpoint.resolve())
     config_sha = sha256_file(args.detector_config.resolve())
     num_loss_forwards = (
@@ -148,14 +162,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     load.validate()
 
     jobs: list[dict[str, Any]] = []
+    excluded: list[dict[str, Any]] = []
     for parent in parents:
         key = parent["parent_key"]
-        if key not in timing:
-            raise KeyError(f"detector timing missing parent {key}")
         detector_start = timing[key]
         latest = parent["max_steps"] - args.burst_length
-        if detector_start < 0 or detector_start > latest:
-            raise ValueError(f"detector start for {key} is not burst-feasible")
+        if detector_start < 0:
+            excluded.append({**parent, "reason": "DETECTOR_NO_EMIT"})
+            continue
+        if detector_start > latest:
+            excluded.append(
+                {
+                    **parent,
+                    "reason": "DETECTOR_START_NOT_BURST_FEASIBLE",
+                    "detector_start_step": detector_start,
+                    "latest_feasible_start": latest,
+                }
+            )
+            continue
         random_start = deterministic_random_start(
             key,
             minimum=0,
@@ -170,8 +194,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             objective = "NONE" if clean else (
                 "GRIPPER_TARGETED_VIS_PGD" if gripper else args.control_objective
             )
-            # Random initialization and any objective-specific stochasticity are
-            # paired across detector and random-time rows of the same objective.
             seed_family = "CLEAN" if clean else objective
             job = {
                 **{key_name: parent[key_name] for key_name in (
@@ -198,16 +220,39 @@ def main(argv: Sequence[str] | None = None) -> int:
             }
             jobs.append(job)
 
-    summary = validate_core_2x2_manifest(jobs)
+    if args.require_all_parents_attackable and excluded:
+        raise RuntimeError(f"{len(excluded)} parents are not attackable: {excluded[:5]}")
+    if not jobs:
+        raise RuntimeError("no detector-emitted burst-feasible parent remained for the matched matrix")
+    summary = validate_core_2x2_manifest(
+        jobs,
+        strict_objective_seed_pairing=True,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         "".join(json.dumps(row, sort_keys=True) + "\n" for row in jobs),
         encoding="utf-8",
     )
+    excluded_path = args.output.with_suffix(args.output.suffix + ".excluded.jsonl")
+    excluded_path.write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in excluded),
+        encoding="utf-8",
+    )
+    included_parent_count = len({row["parent_key"] for row in jobs})
     report = {
         "status": "PASS_C2G_MATCHED_LOAD_JOBS_BUILT",
         "jobs_path": str(args.output.resolve()),
         "jobs_sha256": sha256_file(args.output.resolve()),
+        "excluded_path": str(excluded_path.resolve()),
+        "excluded_sha256": sha256_file(excluded_path.resolve()),
+        "input_parent_count": len(parents),
+        "included_parent_count": included_parent_count,
+        "excluded_parent_count": len(excluded),
+        "detector_emit_burst_feasible_coverage": included_parent_count / max(1, len(parents)),
+        "excluded_reason_counts": {
+            reason: sum(row["reason"] == reason for row in excluded)
+            for reason in sorted({row["reason"] for row in excluded})
+        },
         "checkpoint_sha256": checkpoint_sha,
         "detector_config_sha256": config_sha,
         "master_seed": args.master_seed,
