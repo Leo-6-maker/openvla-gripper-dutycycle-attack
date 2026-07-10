@@ -9,7 +9,6 @@ from collections import defaultdict
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, Mapping, Sequence
 
-
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 CORE_CONDITIONS = (
     "CLEAN",
@@ -60,10 +59,14 @@ class AttackLoadSpec:
         ):
             if not str(getattr(self, name)).strip():
                 raise ValueError(f"{name} is required")
-        if self.num_loss_forwards_per_frame != self.pgd_steps:
-            raise ValueError("num_loss_forwards_per_frame must equal pgd_steps")
-        if self.num_backwards_per_frame != self.pgd_steps:
-            raise ValueError("num_backwards_per_frame must equal pgd_steps")
+        # The mature target-token VIS-PGD path performs K optimization forwards plus
+        # a final audited forward, so num_loss_forwards may be K+1.  Other frozen
+        # objectives may report K.  The manifest binds the exact measured count;
+        # it must never claim less work than the K optimization iterations.
+        if type(self.num_loss_forwards_per_frame) is not int or self.num_loss_forwards_per_frame < self.pgd_steps:
+            raise ValueError("num_loss_forwards_per_frame must be an integer >= pgd_steps")
+        if type(self.num_backwards_per_frame) is not int or self.num_backwards_per_frame < self.pgd_steps:
+            raise ValueError("num_backwards_per_frame must be an integer >= pgd_steps")
         if self.num_adv_decodes_per_frame != 1:
             raise ValueError("num_adv_decodes_per_frame must be exactly one")
 
@@ -106,6 +109,9 @@ def _load_spec(value: Any) -> AttackLoadSpec:
         return value
     if not isinstance(value, Mapping):
         raise ValueError("load_spec must be an AttackLoadSpec or mapping")
+    missing = [field for field in AttackLoadSpec.__dataclass_fields__ if field not in value]
+    if missing:
+        raise ValueError("load_spec missing fields: " + ", ".join(missing))
     spec = AttackLoadSpec(**{field: value[field] for field in AttackLoadSpec.__dataclass_fields__})
     spec.validate()
     return spec
