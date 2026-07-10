@@ -90,7 +90,9 @@ def archive_invalid_attempt(
 ) -> bool:
     ep_dir = output_root / parent_key / condition
     meta = ep_dir / "episode_metadata.json"
-    if not meta.exists() or episode_completion(
+    if not ep_dir.exists():
+        return False
+    if meta.exists() and episode_completion(
         meta,
         expected_commit=expected_commit,
         expected_condition=condition,

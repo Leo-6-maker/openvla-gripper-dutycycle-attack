@@ -133,6 +133,9 @@ class C2gStaticTests(unittest.TestCase):
         wrong = diagnostic_episode_permutation(rows, seed=7, diagnostic="wrong-language-cross-task")
         task_by_episode = {row["episode_key"]: (row["suite"], row["task_index"]) for row in rows}
         self.assertTrue(all(task_by_episode[src] != task_by_episode[dst] for src, dst in wrong.items()))
+        inconsistent = rows + [{"episode_key": "a", "suite": "s1", "task_index": 9, "split": "train"}]
+        with self.assertRaisesRegex(ValueError, "episode task changed"):
+            diagnostic_episode_permutation(inconsistent, seed=7, diagnostic="wrong-language-cross-task")
 
     def test_c2g_model_is_causal_and_has_no_task_index_input(self):
         model = C2gCausalVulnerabilityDetector(visual_dim=8, language_dim=6, hidden=12, dropout=0.0).eval()
@@ -145,8 +148,22 @@ class C2gStaticTests(unittest.TestCase):
         with torch.no_grad():
             y1 = model(x1, visual, language, return_sequence=True)
             y2 = model(x2, visual, language, return_sequence=True)
-        self.assertEqual(set(y1), {"vulnerability", "release_safe", "contact", "grounding"})
+        self.assertEqual(set(y1), {"vulnerability", "release_safe", "contact_stable", "grounding_confidence"})
         torch.testing.assert_close(y1["vulnerability"][:, :4], y2["vulnerability"][:, :4])
+
+    def test_patch_token_path_shapes_and_causal_prefix(self):
+        model = C2gCausalVulnerabilityDetector(
+            visual_dim=8, language_dim=6, hidden=12, dropout=0.0, patch_dim=10,
+        ).eval()
+        temporal = torch.zeros(2, 5, 25)
+        global_visual = torch.zeros(2, 8)
+        language = torch.zeros(2, 6)
+        patches = torch.zeros(2, 4, 10)
+        with torch.no_grad():
+            outputs = model(temporal, global_visual, language, return_sequence=True, patch_tokens=patches)
+        self.assertEqual(outputs["vulnerability"].shape, (2, 5))
+        with self.assertRaisesRegex(ValueError, "patch_tokens"):
+            model(temporal, global_visual, language, patch_tokens=torch.zeros(2, 5, 4, 9))
 
     def test_weighted_bce_normalizes_by_active_weight_mass(self):
         logits = torch.tensor([0.0, 0.0])
@@ -211,6 +228,21 @@ class C2gStaticTests(unittest.TestCase):
             tau_ground=0.5,
         )
         self.assertEqual(trigger.tolist(), [[False, False, True, True]])
+
+    def test_release_safe_interval_penalizes_persistent_vulnerability(self):
+        logits = torch.tensor([[8.0, 8.0, -8.0]])
+        labels = torch.zeros_like(logits)
+        known = torch.ones_like(logits, dtype=torch.bool)
+        safe = torch.tensor([[1, 1, 0]], dtype=torch.bool)
+        losses = first_trigger_episode_losses(
+            logits,
+            labels,
+            known,
+            torch.tensor([1], dtype=torch.bool),
+            safe,
+            known,
+        )
+        self.assertGreater(float(losses["release_safe_emit"]), 0.99)
 
 
 if __name__ == "__main__":

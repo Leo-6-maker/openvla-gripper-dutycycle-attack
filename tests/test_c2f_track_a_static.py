@@ -97,6 +97,15 @@ class C2fTrackAStaticTests(unittest.TestCase):
             self.assertFalse(ep.exists())
             self.assertTrue((root / "invalid_attempts/libero_goal/task_00/state_000/clean/attempt_01/CLEAN/attempt_001/episode_metadata.json").exists())
 
+            missing_meta = root / "out/libero_goal/task_00/state_001/clean/attempt_01/CLEAN"
+            missing_meta.mkdir(parents=True)
+            (missing_meta / "step_records.jsonl").write_text("{}\n")
+            moved = run_audit.archive_invalid_attempt(
+                root / "out", "libero_goal/task_00/state_001/clean/attempt_01", "CLEAN", root / "invalid_attempts"
+            )
+            self.assertTrue(moved)
+            self.assertFalse(missing_meta.exists())
+
     def test_completion_requires_joint_metadata_steps_and_frozen_binding(self):
         with tempfile.TemporaryDirectory() as td:
             ep = self._write_complete_episode(Path(td))

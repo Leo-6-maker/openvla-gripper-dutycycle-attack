@@ -80,7 +80,7 @@ while IFS='|' read -r parent_key cond; do
     echo "SKIP $parent_key $cond" | tee -a "$RUN_ROOT/launch.log"
     continue
   fi
-  [ -s "$meta" ] && "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
+  [ -d "$OUT/${parent_key}/${cond}" ] && "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
     --archive-invalid-output-root "$OUT" --parent-key "$parent_key" --condition "$cond" \
     --invalid-archive-root "$RUN_ROOT/invalid_attempts" --expected-git-commit "$COMMIT" \
     --expected-protocol-name "$PROTOCOL_NAME" --expected-protocol-version "$PROTOCOL_VERSION"

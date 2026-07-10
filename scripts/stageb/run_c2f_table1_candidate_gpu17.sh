@@ -146,7 +146,7 @@ run_queue() {
       echo "${parent_key}|${cond}|${gpu}|SKIP" >> "$RUN_ROOT/completed_jobs.txt"
       continue
     fi
-    if [ -s "$meta" ]; then
+    if [ -d "$OUT/${parent_key}/${cond}" ]; then
       archive_invalid "$parent_key" "$cond" >> "$RUN_ROOT/launch.log"
     fi
     echo "[GPU${gpu}] START ${parent_key} ${cond} $(date +%H:%M:%S)" | tee -a "$RUN_ROOT/launch.log"
@@ -179,7 +179,7 @@ run_queue() {
       local meta="$OUT/${parent_key}/${cond}/episode_metadata.json"
       local steps="$OUT/${parent_key}/${cond}/step_records.jsonl"
       if [ -s "$meta" ] && metadata_complete "$meta" "$parent_key" "$cond" >/dev/null 2>&1 && [ -s "$steps" ]; then continue; fi
-      if [ -s "$meta" ]; then
+      if [ -d "$OUT/${parent_key}/${cond}" ]; then
         archive_invalid "$parent_key" "$cond" >> "$RUN_ROOT/launch.log"
       fi
       echo "[GPU${gpu}] RETRY ${parent_key} ${cond} $(date +%H:%M:%S)" | tee -a "$RUN_ROOT/launch.log"
