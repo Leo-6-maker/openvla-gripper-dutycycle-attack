@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Execute the frozen C2g matched-load job manifest sequentially.
 
-The launcher is intentionally simple and provenance-heavy.  Each job is delegated
-to run_c2g_clean_window_vis_pgd.py; resume accepts an existing job only when its
-metadata is runtime-valid and identity/protocol fields match the frozen row.
+Each job is delegated to run_c2g_clean_window_vis_pgd.py. Resume accepts an
+existing job only when runtime, identity, protocol, objective, commit, checkpoint,
+and exact delivery fields match the frozen row.
 """
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from src.gripper_attack.c2g_matched_load_manifest import (
+    CONTROL_OBJECTIVE_CONDITIONS,
     CORE_CONDITIONS,
     DETECTOR_TIMING_CONDITIONS,
     validate_core_2x2_manifest,
@@ -24,6 +25,7 @@ REPO = Path(__file__).resolve().parents[2]
 WORKER = REPO / "scripts" / "stageb" / "run_c2g_clean_window_vis_pgd.py"
 PROTOCOL_NAME = "C2G_CLEAN_WINDOW_VIS_PGD"
 PROTOCOL_VERSION = "2026-07-10.v1"
+SUPPORTED_CONTROL_OBJECTIVE = "SHUFFLED_GRIPPER_GRADIENT"
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -36,13 +38,14 @@ def complete(metadata_path: Path, job: dict[str, Any], expected_commit: str) -> 
         return False
     try:
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
-        for line in step_path.read_text(encoding="utf-8").splitlines():
-            if line.strip():
-                json.loads(line)
+        rows = [json.loads(line) for line in step_path.read_text(encoding="utf-8").splitlines() if line.strip()]
     except Exception:
         return False
+    expected_frames = int(job["expected_attacked_frames"])
+    delivered = sum(bool(row.get("attack_delivered")) for row in rows)
     return bool(
-        metadata.get("runtime_valid") is True
+        rows
+        and metadata.get("runtime_valid") is True
         and metadata.get("parent_key") == job["parent_key"]
         and metadata.get("condition") == job["condition"]
         and metadata.get("suite") == job["suite"]
@@ -51,11 +54,29 @@ def complete(metadata_path: Path, job: dict[str, Any], expected_commit: str) -> 
         and metadata.get("protocol_name") == PROTOCOL_NAME
         and metadata.get("protocol_version") == PROTOCOL_VERSION
         and metadata.get("git_commit") == expected_commit
+        and metadata.get("objective_family") == job["objective_family"]
+        and metadata.get("detector_checkpoint_sha256") == job["detector_checkpoint_sha256"]
+        and int(metadata.get("attack_delivery_count", -1)) == expected_frames
+        and delivered == expected_frames
     )
+
+
+def random_start_flag(policy: str) -> str:
+    normalized = str(policy).strip().lower()
+    if normalized in {"uniform_linf_seeded", "uniform_linf", "random", "enabled"}:
+        return "--random-start"
+    if normalized in {"zero", "none", "disabled"}:
+        return "--no-random-start"
+    raise ValueError(f"unsupported random_start_policy: {policy}")
 
 
 def command_for_job(job: dict[str, Any], args: argparse.Namespace) -> list[str]:
     load = job["load_spec"]
+    if job["condition"] in CONTROL_OBJECTIVE_CONDITIONS and job["objective_family"] != SUPPORTED_CONTROL_OBJECTIVE:
+        raise ValueError(
+            f"runtime currently supports only {SUPPORTED_CONTROL_OBJECTIVE}; "
+            f"manifest requested {job['objective_family']}"
+        )
     command = [
         sys.executable,
         str(WORKER),
@@ -73,15 +94,12 @@ def command_for_job(job: dict[str, Any], args: argparse.Namespace) -> list[str]:
         "--pgd-steps", str(load["pgd_steps"]),
         "--temporal-init", str(load["temporal_init_policy"]),
         "--resize-size", str(load["image_height"]),
+        random_start_flag(load["random_start_policy"]),
     ]
     if args.model_path:
         command.extend(["--model-path", args.model_path.format(suite=job["suite"])])
     if args.policy_model_manifest:
         command.extend(["--policy-model-manifest", args.policy_model_manifest])
-    if bool(load.get("random_start_policy")):
-        command.append("--random-start")
-    else:
-        command.append("--no-random-start")
     if job["condition"] not in DETECTOR_TIMING_CONDITIONS and job["condition"] != "CLEAN":
         command.extend(["--planned-start-step", str(job["planned_start_step"])])
     return command
