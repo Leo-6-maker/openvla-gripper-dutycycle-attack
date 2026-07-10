@@ -9,11 +9,13 @@ import sys
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO))
+
 from scripts.stageb.build_c2g_suite_model_map import (
     validate_goal_manifest as validate_goal_manifest_bytes,
 )
 
-REPO = Path(__file__).resolve().parents[2]
 WORKER = REPO / "scripts" / "stageb" / "run_c2g_clean_window_vis_pgd.py"
 PROTOCOL_NAME = "C2G_CLEAN_WINDOW_VIS_PGD"
 PROTOCOL_VERSION = "2026-07-10.v1"
