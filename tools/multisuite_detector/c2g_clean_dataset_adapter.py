@@ -6,6 +6,7 @@ fully-known-negative episode flags without converting unknown rows to negatives.
 """
 from __future__ import annotations
 
+import math
 from collections import defaultdict
 from typing import Any, Dict, Iterable, Mapping, Sequence
 
@@ -25,14 +26,19 @@ MODEL_TARGET_MAP = {
     "close_intent": "y_clean_close_intent",
     "transport_constraint": "y_lift_transport_or_constraint",
     "release_safe": "y_release_safe",
-    "grounding_confidence": "y_target_relevant",
     "window_start": "y_attack_start_b",
     "window_active": "y_gripper_critical_window",
 }
 
 
 def teacher_row_to_model_targets(row: Mapping[str, Any]) -> Dict[str, Dict[str, float | bool]]:
-    """Convert a validated teacher row into clean model targets and masks."""
+    """Convert a validated teacher row into clean model targets and masks.
+
+    The grounding head uses the resolver's continuous confidence directly rather
+    than conflating grounding quality with current target contact. It therefore has
+    its own always-explicit target/mask, while all other heads follow the clean
+    known-mask contract.
+    """
 
     validate_clean_teacher_row(row)
     known = bool(row["label_known_mask"])
@@ -42,6 +48,12 @@ def teacher_row_to_model_targets(row: Mapping[str, Any]) -> Dict[str, Dict[str, 
         value = row[teacher_name]
         targets[model_name] = float(bool(value)) if known else 0.0
         masks[model_name] = known
+
+    grounding_confidence = float(row["grounding_confidence"])
+    if not math.isfinite(grounding_confidence) or not 0.0 <= grounding_confidence <= 1.0:
+        raise ValueError("grounding_confidence must be finite and in [0,1]")
+    targets["grounding_confidence"] = grounding_confidence
+    masks["grounding_confidence"] = True
     return {"targets": targets, "masks": masks}
 
 
