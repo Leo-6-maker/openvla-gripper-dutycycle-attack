@@ -170,6 +170,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             objective = "NONE" if clean else (
                 "GRIPPER_TARGETED_VIS_PGD" if gripper else args.control_objective
             )
+            # Random initialization and any objective-specific stochasticity are
+            # paired across detector and random-time rows of the same objective.
+            seed_family = "CLEAN" if clean else objective
             job = {
                 **{key_name: parent[key_name] for key_name in (
                     "parent_key", "suite", "task_index", "state_id", "eval_seed",
@@ -182,7 +185,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "DETECTOR" if detector_timing else "RANDOM_TIME_MATCHED"
                 ),
                 "objective_family": objective,
-                "objective_seed": deterministic_objective_seed(key, condition, args.master_seed),
+                "objective_seed": deterministic_objective_seed(key, seed_family, args.master_seed),
                 "attack_enabled": not clean,
                 "expected_attacked_frames": 0 if clean else args.burst_length,
                 "planned_start_step": None if clean else (
