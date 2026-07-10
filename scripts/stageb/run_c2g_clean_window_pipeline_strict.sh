@@ -16,6 +16,7 @@ fi
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
+export PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}"
 if [[ -n "$(git status --porcelain)" ]]; then
   echo "refusing strict C2g pipeline from dirty worktree" >&2
   git status --short >&2
