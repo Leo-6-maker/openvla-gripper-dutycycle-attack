@@ -17,14 +17,13 @@ import numpy as np
 import torch
 
 PROTOCOL_NAME = "C2F_TRACK_A_CMDOPEN_ACTION_SPACE"
-PROTOCOL_VERSION = "2026-07-10.v1"
+PROTOCOL_VERSION = "2026-07-10.v2"
 ATTACK_SPACE = "action_space_command_intervention"
 COND_CLEAN = "CLEAN"
 COND_TRUE = "TRUE_CMDOPEN_T10_C2F"
 COND_RAND = "RAND_ACTION_NOISE_T10_C2F"
 ATTACK_HORIZON = 10
 EPSILON = 6.0 / 255.0
-PGD_STEPS = 10  # recorded for D7 comparison only; Track A does not run image PGD.
 HASHED_MODEL_FILES = {
     "config.json", "generation_config.json", "model.safetensors.index.json",
     "preprocessor_config.json", "processor_config.json", "tokenizer.json",
@@ -34,8 +33,10 @@ HASHED_MODEL_FILES = {
 }
 
 
-def _git_provenance(repo: Path, enforce_clean: bool = True) -> Dict[str, Any]:
+def _git_provenance(repo: Path, enforce_clean: bool = True, expected_commit: str = "") -> Dict[str, Any]:
     commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
+    if expected_commit and commit != expected_commit:
+        raise RuntimeError(f"Expected git commit {expected_commit}, got {commit}")
     status = subprocess.check_output(["git", "status", "--porcelain"], cwd=repo, text=True)
     clean = status.strip() == ""
     if enforce_clean and not clean:
@@ -80,11 +81,33 @@ def _rand_seed(parent_key: str, condition: str, attack_start: int) -> int:
     return int.from_bytes(hashlib.sha256(material).digest()[:8], "big") % (2**32)
 
 
+def _rand_seed_material(parent_key: str, condition: str, attack_start: int) -> str:
+    return f"{PROTOCOL_VERSION}|{parent_key}|{condition}|{attack_start}"
+
+
+def _validate_goal_manifest(manifest_path: str, model_path: Path, unnorm_key: str) -> Dict[str, Any]:
+    if not manifest_path:
+        return {"policy_model_manifest_path": None, "policy_model_manifest_sha256": None}
+    path = Path(manifest_path).resolve()
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    if manifest.get("status") != "PASS_C2F_GOAL_MODEL_INTEGRITY_AUDITED":
+        raise RuntimeError(f"Goal manifest is not PASS: {manifest.get('status')}")
+    if Path(manifest.get("model_path", "")).resolve() != model_path:
+        raise RuntimeError(f"Goal manifest model_path mismatch: {manifest.get('model_path')} != {model_path}")
+    if manifest.get("unnorm_key") != unnorm_key:
+        raise RuntimeError(f"Goal manifest unnorm_key mismatch: {manifest.get('unnorm_key')} != {unnorm_key}")
+    if manifest.get("missing_referenced_shards"):
+        raise RuntimeError(f"Goal manifest has missing shards: {manifest.get('missing_referenced_shards')}")
+    return {"policy_model_manifest_path": str(path), "policy_model_manifest_sha256": _sha256_file(path)}
+
+
 def _protocol_meta(args: argparse.Namespace) -> Dict[str, Any]:
     return {
         "protocol_name": PROTOCOL_NAME,
         "protocol_version": PROTOCOL_VERSION,
         "attack_space": ATTACK_SPACE,
+        "direct_command_override": args.condition == COND_TRUE,
+        "action_noise_semantics": "deterministic sha256-seeded normalized gaussian action-space noise" if args.condition == COND_RAND else None,
         "condition_semantics": {
             COND_CLEAN: "clean rollout, no intervention",
             COND_TRUE: "detector-triggered T10 action-space force-open gripper command",
@@ -96,8 +119,23 @@ def _protocol_meta(args: argparse.Namespace) -> Dict[str, Any]:
         "tau_primary": 0.5,
         "attack_horizon": ATTACK_HORIZON,
         "epsilon": EPSILON,
-        "pgd_steps": PGD_STEPS,
-        "git_commit": args.git_commit,
+    }
+
+
+def _action_evidence(clean_raw_action: np.ndarray, intervened_raw_action: np.ndarray,
+                     clean_env_action: np.ndarray, executed_env_action: np.ndarray,
+                     rand_noise: np.ndarray, condition: str) -> Dict[str, Any]:
+    return {
+        "clean_raw_action": clean_raw_action.astype(float).tolist(),
+        "intervened_raw_action": intervened_raw_action.astype(float).tolist(),
+        "executed_env_action": np.asarray(executed_env_action, dtype=np.float32).astype(float).tolist(),
+        "action_delta": (intervened_raw_action - clean_raw_action).astype(float).tolist(),
+        "rand_noise_vector": rand_noise.astype(float).tolist() if condition == COND_RAND else [],
+        "rand_noise_norm": float(np.linalg.norm(rand_noise)) if condition == COND_RAND else 0.0,
+        "clean_gripper_raw": float(clean_raw_action[-1]),
+        "intervened_gripper_raw": float(intervened_raw_action[-1]),
+        "clean_gripper_env": float(clean_env_action[-1]),
+        "executed_gripper_env": float(np.asarray(executed_env_action)[-1]),
     }
 
 
@@ -135,7 +173,8 @@ def main() -> int:
     ap.add_argument("--tau-emit", type=float, default=0.33)
     ap.add_argument("--tau-suppress", type=float, default=0.67)
     ap.add_argument("--max-steps", type=int, default=300)
-    ap.add_argument("--git-commit", default="unknown")
+    ap.add_argument("--expected-git-commit", required=True)
+    ap.add_argument("--policy-model-manifest", default="")
     args = ap.parse_args()
 
     suite, task_str, state_str, _, _ = args.parent_key.split("/")
@@ -151,7 +190,8 @@ def main() -> int:
     rc = 0
 
     try:
-        extra_meta["git_provenance"] = _git_provenance(REPO, enforce_clean=True)
+        extra_meta["git_provenance"] = _git_provenance(REPO, enforce_clean=True, expected_commit=args.expected_git_commit)
+        extra_meta["git_commit"] = extra_meta["git_provenance"]["repo_commit"]
         from scripts.stageb.c2f_libero_openvla_adapter import SUITE_MODELS, _visible_gpu_id
         model_path = Path(SUITE_MODELS[suite]).resolve()
         from transformers import AutoProcessor
@@ -167,6 +207,12 @@ def main() -> int:
         ).eval()
         norm_keys = _norm_stats_keys(vla_model)
         unnorm_key = _resolve_unnorm_key(suite, norm_keys)
+        if suite == "libero_goal":
+            if not args.policy_model_manifest:
+                raise RuntimeError("Goal episodes require --policy-model-manifest")
+            extra_meta.update(_validate_goal_manifest(args.policy_model_manifest, model_path, unnorm_key))
+        else:
+            extra_meta.update({"policy_model_manifest_path": None, "policy_model_manifest_sha256": None})
 
         from gripper_attack.c2f_siglip_detector_runtime import C2fSigLIPDetectorRuntime, CANONICAL_25D_FEATURES
         detector = C2fSigLIPDetectorRuntime(
@@ -223,9 +269,9 @@ def main() -> int:
             "worker_sha256": _sha256_file(worker_path),
             "runtime_path": str(runtime_path),
             "runtime_sha256": _sha256_file(runtime_path),
-            "random_seed": None,
-            "random_seed_material": None,
-        })
+                "random_seed": None,
+                "random_seed_material": None,
+            })
 
         for step in range(args.max_steps):
             rgb = np.asarray(obs["agentview_image"])
@@ -246,7 +292,9 @@ def main() -> int:
                 libero_preprocess_backend="upstream_tf_jpeg", center_crop=True,
                 resize_size=224, drop_attention_mask=True,
             )
-            env_action = postprocess_openvla_action_for_libero(np.asarray(action, dtype=np.float32), enabled=True)
+            clean_raw_action = np.asarray(action, dtype=np.float32)
+            clean_env_action = postprocess_openvla_action_for_libero(clean_raw_action, enabled=True)
+            env_action = clean_env_action.copy()
 
             eef_pos = env.sim.data.site_xpos[eef_sid]
             eef_x, eef_y, eef_z = float(eef_pos[0]), float(eef_pos[1]), float(eef_pos[2])
@@ -284,13 +332,14 @@ def main() -> int:
                     seed = _rand_seed(args.parent_key, args.condition, attack_window_start)
                     rand_rng = np.random.default_rng(seed)
                     extra_meta["random_seed"] = seed
-                    extra_meta["random_seed_material"] = f"{PROTOCOL_VERSION}|{args.parent_key}|{args.condition}|{attack_window_start}"
+                    extra_meta["random_seed_material"] = _rand_seed_material(args.parent_key, args.condition, attack_window_start)
 
             if attack_window_start >= 0 and step == attack_window_start:
                 rec["attack_window_start"] = True
 
             if attack_window_start >= 0 and step < attack_window_end:
-                attack_action = np.asarray(action, dtype=np.float32).copy()
+                attack_action = clean_raw_action.copy()
+                noise = np.zeros_like(attack_action, dtype=np.float32)
                 if args.condition == COND_TRUE:
                     attack_action[-1] = 1.0
                 elif args.condition == COND_RAND:
@@ -301,6 +350,7 @@ def main() -> int:
                 env_action = postprocess_openvla_action_for_libero(attack_action, enabled=True)
                 delivery_steps.append(step)
                 rec["attack_delivered"] = True
+                rec.update(_action_evidence(clean_raw_action, attack_action, clean_env_action, env_action, noise, args.condition))
 
             step_records.append(rec)
             obs, reward, done, info = env.step(env_action)
