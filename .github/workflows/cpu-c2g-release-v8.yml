@@ -1,0 +1,50 @@
+name: cpu-c2g-release-v8
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  release-v8-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install numpy pillow
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Compile release-v8 collection binding
+        run: |
+          python -m py_compile \
+            scripts/stageb/bind_c2g_collection_model_provenance.py \
+            tests/test_c2g_collection_model_binding.py
+      - name: Check release-v8 Bash syntax
+        run: |
+          bash -n scripts/stageb/run_c2g_clean_window_release_v8.sh
+      - name: Run release-v8 contract tests
+        run: |
+          python -m unittest -v \
+            tests.test_c2g_collection_model_binding \
+            tests.test_c2g_release_runtime_audit \
+            tests.test_c2g_model_provenance \
+            tests.test_c2g_release_job_builder \
+            tests.test_c2g_release_manifest_builder \
+            tests.test_c2g_release_v2 \
+            tests.test_c2g_clean_collector_strict \
+            tests.test_c2g_clean_susceptibility \
+            tests.test_c2g_dataset_trainability \
+            tests.test_c2g_matched_load_strict \
+            tests.test_c2g_result_analysis
+      - name: Verify worktree remains clean
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=all -- generated audit_outputs paper/generated artifacts)"
