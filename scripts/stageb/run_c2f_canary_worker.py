@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -31,6 +32,15 @@ HASHED_MODEL_FILES = {
     "added_tokens.json", "processing_prismatic.py", "configuration_prismatic.py",
     "modeling_prismatic.py",
 }
+
+
+def _git_provenance(repo: Path, enforce_clean: bool = True) -> Dict[str, Any]:
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
+    status = subprocess.check_output(["git", "status", "--porcelain"], cwd=repo, text=True)
+    clean = status.strip() == ""
+    if enforce_clean and not clean:
+        raise RuntimeError(f"Refusing C2f Track A run from dirty worktree: {status.splitlines()[:20]}")
+    return {"repo_path": str(repo), "repo_commit": commit, "repo_clean": clean, "repo_status_porcelain": status.splitlines()}
 
 
 def _sha256_file(path: Path) -> str:
@@ -141,6 +151,7 @@ def main() -> int:
     rc = 0
 
     try:
+        extra_meta["git_provenance"] = _git_provenance(REPO, enforce_clean=True)
         from scripts.stageb.c2f_libero_openvla_adapter import SUITE_MODELS, _visible_gpu_id
         model_path = Path(SUITE_MODELS[suite]).resolve()
         from transformers import AutoProcessor
