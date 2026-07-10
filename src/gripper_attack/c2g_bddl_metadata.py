@@ -4,7 +4,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Iterable
 
-from tools.multisuite_detector.audit_c2g_static_assets import normalize_operator, parse_sexpr
+from src.gripper_attack.c2g_semantic_aliases import normalize_goal_operator
+from tools.multisuite_detector.audit_c2g_static_assets import parse_sexpr
+
+
+# Backward-compatible local name used throughout the parser. The implementation is
+# now shared with the strict live-asset audit so collection and audit cannot disagree
+# about reviewed BDDL syntax aliases such as ``turnon`` -> ``turn_on``.
+normalize_operator = normalize_goal_operator
 
 
 def _walk(node: Any) -> Iterable[list[Any]]:
