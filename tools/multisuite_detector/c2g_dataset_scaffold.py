@@ -1,4 +1,4 @@
-"""Pure-CPU split, context, weighting, and diagnostic helpers for C2g."""
+"""Pure-CPU split, context, weighting, triggerability, and diagnostic helpers for C2g."""
 from __future__ import annotations
 
 import hashlib
@@ -79,12 +79,52 @@ def assert_no_episode_leakage(rows: Iterable[Dict[str, Any]]) -> None:
         seen[episode] = split
 
 
+def _positive_intervals(sequence: Sequence[tuple[int, bool, bool]]) -> list[list[int]]:
+    intervals: list[list[int]] = []
+    current: list[int] = []
+    for step, known, positive in sorted(sequence):
+        if known and positive:
+            if current and step == current[-1] + 1:
+                current.append(step)
+            else:
+                if current:
+                    intervals.append(current)
+                current = [step]
+        elif current:
+            intervals.append(current)
+            current = []
+    if current:
+        intervals.append(current)
+    return intervals
+
+
+def _persistent_positive_windows(
+    sequence: Sequence[tuple[int, bool, bool]], *, window: int = 3, required: int = 2,
+) -> int:
+    if required < 1 or window < required:
+        raise ValueError("persistence requires 1 <= required <= window")
+    ordered = sorted(sequence)
+    count = 0
+    for start in range(len(ordered)):
+        start_step = ordered[start][0]
+        eligible = 0
+        for step, known, positive in ordered[start:]:
+            if step - start_step >= window:
+                break
+            eligible += int(known and positive)
+        count += int(eligible >= required)
+    return count
+
+
 def split_label_coverage(
     rows: Sequence[Dict[str, Any]],
     *,
     split_key: str = "split",
     known_key: str = "label_known_mask",
     label_key: str = "y_cmdopen_vulnerable",
+    step_key: str = "step",
+    persistence_window: int = 3,
+    persistence_required: int = 2,
 ) -> Dict[str, Dict[str, int]]:
     """Summarize fold viability without converting unknown labels to negatives."""
     coverage: Dict[str, Dict[str, Any]] = defaultdict(lambda: {
@@ -97,7 +137,7 @@ def split_label_coverage(
         "known_negative": 0,
         "unknown": 0,
     })
-    for row in rows:
+    for index, row in enumerate(rows):
         split = str(row[split_key])
         bucket = coverage[split]
         bucket["rows"] += 1
@@ -106,31 +146,56 @@ def split_label_coverage(
         bucket["tasks"].add(f"{row['suite']}:{row['task_index']}")
         bucket["suites"].add(str(row["suite"]))
         known = bool(row.get(known_key, False))
-        episode_state = bucket["episode_labels"].setdefault(episode, {"all_known": True, "positive": False})
-        episode_state["all_known"] = bool(episode_state["all_known"] and known)
+        positive = bool(row.get(label_key, False)) if known else False
+        state = bucket["episode_labels"].setdefault(episode, {
+            "all_known": True,
+            "positive": False,
+            "sequence": [],
+        })
+        state["all_known"] = bool(state["all_known"] and known)
+        state["positive"] = bool(state["positive"] or positive)
+        state["sequence"].append((int(row.get(step_key, index)), known, positive))
         if not known:
             bucket["unknown"] += 1
-        elif bool(row.get(label_key, False)):
+        elif positive:
             bucket["known_positive"] += 1
-            episode_state["positive"] = True
         else:
             bucket["known_negative"] += 1
-    return {
-        split: {
+
+    result: Dict[str, Dict[str, int]] = {}
+    for split, values in sorted(coverage.items()):
+        episode_states = values["episode_labels"]
+        interval_lengths: list[int] = []
+        triggerable = 0
+        persistent_window_count = 0
+        for state in episode_states.values():
+            intervals = _positive_intervals(state["sequence"])
+            interval_lengths.extend(len(interval) for interval in intervals)
+            windows = _persistent_positive_windows(
+                state["sequence"], window=persistence_window, required=persistence_required,
+            )
+            persistent_window_count += windows
+            triggerable += int(state["positive"] and windows > 0)
+        attackable = sum(1 for state in episode_states.values() if state["positive"])
+        result[split] = {
             "rows": int(values["rows"]),
             "episodes": len(values["episodes"]),
             "tasks": len(values["tasks"]),
             "suites": len(values["suites"]),
-            "attackable_episodes": sum(1 for state in values["episode_labels"].values() if state["positive"]),
+            "attackable_episodes": attackable,
+            "triggerable_attackable_episodes": triggerable,
+            "untriggerable_positive_episodes": attackable - triggerable,
             "fully_known_negative_episodes": sum(
-                1 for state in values["episode_labels"].values() if state["all_known"] and not state["positive"]
+                1 for state in episode_states.values() if state["all_known"] and not state["positive"]
             ),
+            "positive_interval_count": len(interval_lengths),
+            "max_positive_interval_length": max(interval_lengths, default=0),
+            "persistent_positive_window_count": persistent_window_count,
             "known_positive": int(values["known_positive"]),
             "known_negative": int(values["known_negative"]),
             "unknown": int(values["unknown"]),
         }
-        for split, values in sorted(coverage.items())
-    }
+    return result
 
 
 def assert_split_viability(
@@ -144,6 +209,7 @@ def assert_split_viability(
     min_suites: int = 1,
     min_attackable_episodes: int = 1,
     min_fully_known_negative_episodes: int = 1,
+    min_triggerable_attackable_episodes: int = 0,
 ) -> None:
     """Hard-gate folds that cannot support training, calibration, or evaluation."""
     problems: List[str] = []
@@ -152,20 +218,19 @@ def assert_split_viability(
         if values is None:
             problems.append(f"{split}:missing")
             continue
-        if int(values.get("episodes", 0)) < min_episodes:
-            problems.append(f"{split}:episodes<{min_episodes}")
-        if int(values.get("known_positive", 0)) < min_known_positive:
-            problems.append(f"{split}:known_positive<{min_known_positive}")
-        if int(values.get("known_negative", 0)) < min_known_negative:
-            problems.append(f"{split}:known_negative<{min_known_negative}")
-        if int(values.get("tasks", 0)) < min_tasks:
-            problems.append(f"{split}:tasks<{min_tasks}")
-        if int(values.get("suites", 0)) < min_suites:
-            problems.append(f"{split}:suites<{min_suites}")
-        if int(values.get("attackable_episodes", 0)) < min_attackable_episodes:
-            problems.append(f"{split}:attackable_episodes<{min_attackable_episodes}")
-        if int(values.get("fully_known_negative_episodes", 0)) < min_fully_known_negative_episodes:
-            problems.append(f"{split}:fully_known_negative_episodes<{min_fully_known_negative_episodes}")
+        checks = {
+            "episodes": min_episodes,
+            "known_positive": min_known_positive,
+            "known_negative": min_known_negative,
+            "tasks": min_tasks,
+            "suites": min_suites,
+            "attackable_episodes": min_attackable_episodes,
+            "fully_known_negative_episodes": min_fully_known_negative_episodes,
+            "triggerable_attackable_episodes": min_triggerable_attackable_episodes,
+        }
+        for key, minimum in checks.items():
+            if int(values.get(key, 0)) < minimum:
+                problems.append(f"{split}:{key}<{minimum}")
     if problems:
         raise ValueError("non-viable C2g split: " + ", ".join(problems))
 

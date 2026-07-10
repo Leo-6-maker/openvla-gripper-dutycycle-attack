@@ -1,4 +1,4 @@
-"""Pure MuJoCo name canonicalization and contact identity helpers."""
+"""Pure MuJoCo name canonicalization and role-aware contact identity helpers."""
 from __future__ import annotations
 
 import re
@@ -17,6 +17,8 @@ _STATIC_DEFAULTS = {"world", "table", "floor", "wall", "ground", "workspace"}
 @dataclass(frozen=True)
 class ContactIdentity:
     contacted_objects: tuple[str, ...]
+    contacted_manipulable_entities: tuple[str, ...]
+    entity_roles: tuple[tuple[str, str], ...]
     contacted_object_confidence: float
     left_finger_contact: bool
     right_finger_contact: bool
@@ -30,7 +32,6 @@ class ContactIdentity:
 
 
 def canonicalize_mujoco_name(name: str) -> str:
-    """Normalize render/collision/link suffixes while retaining instance IDs."""
     value = str(name).strip().lower().replace("/", "_").replace("::", "_")
     value = re.sub(r"[^a-z0-9_]+", "_", value)
     value = re.sub(r"_+", "_", value).strip("_")
@@ -42,13 +43,26 @@ def canonicalize_mujoco_name(name: str) -> str:
     return value
 
 
-def finger_side(name: str) -> str:
+def finger_side(name: str, aliases: Mapping[str, str] | None = None) -> str:
     canonical = canonicalize_mujoco_name(name)
-    if "finger" not in canonical and "gripper" not in canonical:
+    if aliases:
+        normalized_aliases = {canonicalize_mujoco_name(key): str(value).lower() for key, value in aliases.items()}
+        side = normalized_aliases.get(canonical, "")
+        if side in {"left", "right"}:
+            return side
+    if not any(token in canonical for token in ("finger", "gripper", "jaw")):
         return ""
-    if re.search(r"(?:^|_)left(?:_|$)", canonical):
+    left_patterns = (
+        r"(?:^|_)left(?:_|$)", r"(?:^|_)l_finger(?:_|$)", r"(?:^|_)finger_l(?:_|$)",
+        r"leftfinger", r"finger1(?:_|$)", r"jaw1(?:_|$)",
+    )
+    right_patterns = (
+        r"(?:^|_)right(?:_|$)", r"(?:^|_)r_finger(?:_|$)", r"(?:^|_)finger_r(?:_|$)",
+        r"rightfinger", r"finger2(?:_|$)", r"jaw2(?:_|$)",
+    )
+    if any(re.search(pattern, canonical) for pattern in left_patterns):
         return "left"
-    if re.search(r"(?:^|_)right(?:_|$)", canonical):
+    if any(re.search(pattern, canonical) for pattern in right_patterns):
         return "right"
     return ""
 
@@ -61,14 +75,6 @@ def _declared_name(value: Any) -> str:
     return ""
 
 
-def _map_component(name: str, declared: Sequence[str]) -> tuple[str, ...]:
-    candidates = [item for item in declared if name == item or name.startswith(item + "_")]
-    if not candidates:
-        return ()
-    longest = max(len(item) for item in candidates)
-    return tuple(sorted(item for item in candidates if len(item) == longest))
-
-
 def _pair(value: Any) -> tuple[str, str]:
     if isinstance(value, Mapping):
         return str(value.get("geom1", value.get("a", ""))), str(value.get("geom2", value.get("b", "")))
@@ -77,20 +83,52 @@ def _pair(value: Any) -> tuple[str, str]:
     raise ValueError("contact pair must contain exactly two geom names")
 
 
+def _entity_declarations(
+    *,
+    object_names: Sequence[Any],
+    receptacle_names: Sequence[Any],
+    manipulable_receptacle_names: Sequence[Any],
+    fixture_names: Sequence[Any],
+) -> list[tuple[str, str]]:
+    manipulable_receptacles = {_declared_name(value) for value in manipulable_receptacle_names}
+    entries: list[tuple[str, str]] = []
+    entries.extend((_declared_name(value), "object") for value in object_names)
+    for value in receptacle_names:
+        name = _declared_name(value)
+        entries.append((name, "manipulable_receptacle" if name in manipulable_receptacles else "static_receptacle"))
+    entries.extend((_declared_name(value), "manipulable_fixture") for value in fixture_names)
+    return [(name, role) for name, role in entries if name]
+
+
+def _map_component(name: str, declarations: Sequence[tuple[str, str]]) -> tuple[tuple[str, str], ...]:
+    candidates = [(item, role) for item, role in declarations if name == item or name.startswith(item + "_")]
+    if not candidates:
+        return ()
+    longest = max(len(item) for item, _ in candidates)
+    return tuple(sorted((item, role) for item, role in candidates if len(item) == longest))
+
+
 def analyze_contact_pairs(
     contact_pairs: Iterable[Any],
     *,
     object_names: Sequence[Any],
     receptacle_names: Sequence[Any] = (),
+    manipulable_receptacle_names: Sequence[Any] = (),
+    fixture_names: Sequence[Any] = (),
     static_names: Sequence[str] = (),
+    finger_aliases: Mapping[str, str] | None = None,
 ) -> ContactIdentity:
-    """Map finger contacts to canonical object instances with ambiguity reporting."""
-    objects = tuple(filter(None, (_declared_name(value) for value in object_names)))
-    receptacles = set(filter(None, (_declared_name(value) for value in receptacle_names)))
+    declarations = _entity_declarations(
+        object_names=object_names,
+        receptacle_names=receptacle_names,
+        manipulable_receptacle_names=manipulable_receptacle_names,
+        fixture_names=fixture_names,
+    )
     static = {canonicalize_mujoco_name(value) for value in static_names} | _STATIC_DEFAULTS
+    static_receptacles = {name for name, role in declarations if role == "static_receptacle"}
     raw_pairs: list[tuple[str, str]] = []
     canonical_pairs: list[tuple[str, str]] = []
-    side_objects: dict[str, set[str]] = {"left": set(), "right": set()}
+    side_entities: dict[str, set[tuple[str, str]]] = {"left": set(), "right": set()}
     mapping_ambiguity = False
 
     for value in contact_pairs:
@@ -98,36 +136,48 @@ def analyze_contact_pairs(
         a, b = canonicalize_mujoco_name(raw_a), canonicalize_mujoco_name(raw_b)
         raw_pairs.append((raw_a, raw_b))
         canonical_pairs.append((a, b))
-        side_a, side_b = finger_side(raw_a), finger_side(raw_b)
+        side_a, side_b = finger_side(raw_a, finger_aliases), finger_side(raw_b, finger_aliases)
         if side_a and side_b:
             continue
         side, other = (side_a, b) if side_a else (side_b, a) if side_b else ("", "")
-        if not side or not other or other in static or other in receptacles or other.startswith("robot0_"):
+        if not side or not other or other in static or other in static_receptacles or other.startswith("robot0_"):
             continue
-        mapped = _map_component(other, objects)
+        mapped = _map_component(other, declarations)
         if len(mapped) > 1:
             mapping_ambiguity = True
-        side_objects[side].update(mapped)
+        for entity in mapped:
+            if entity[1] != "static_receptacle":
+                side_entities[side].add(entity)
 
-    contacted = tuple(sorted(side_objects["left"] | side_objects["right"]))
-    bilateral_objects = side_objects["left"] & side_objects["right"]
-    bilateral = len(bilateral_objects) == 1 and len(contacted) == 1
+    all_entities = side_entities["left"] | side_entities["right"]
+    contacted_objects = tuple(sorted(name for name, role in all_entities if role == "object"))
+    contacted_manipulable = tuple(sorted(name for name, role in all_entities if role != "object"))
+    entity_roles = tuple(sorted(all_entities))
+    bilateral_entities = side_entities["left"] & side_entities["right"]
+    bilateral = len(bilateral_entities) == 1 and len(all_entities) == 1
+
     if mapping_ambiguity:
         ambiguity = "AMBIGUOUS_CANONICAL_OBJECT_MAPPING"
-    elif len(contacted) > 1:
-        ambiguity = "MULTIPLE_SIMULTANEOUS_CONTACTED_OBJECTS"
-    elif not contacted:
+    elif len(all_entities) > 1:
+        ambiguity = (
+            "MULTIPLE_SIMULTANEOUS_CONTACTED_OBJECTS"
+            if all(role == "object" for _, role in all_entities)
+            else "MULTIPLE_SIMULTANEOUS_CONTACTED_ENTITIES"
+        )
+    elif not all_entities:
         ambiguity = "NO_OBJECT_CONTACT"
     elif not bilateral:
         ambiguity = "UNILATERAL_OBJECT_CONTACT"
     else:
         ambiguity = ""
-    confidence = 1.0 if bilateral else 0.6 if len(contacted) == 1 else 0.25 if contacted else 0.0
+    confidence = 1.0 if bilateral else 0.6 if len(all_entities) == 1 else 0.25 if all_entities else 0.0
     return ContactIdentity(
-        contacted,
+        contacted_objects,
+        contacted_manipulable,
+        entity_roles,
         confidence,
-        bool(side_objects["left"]),
-        bool(side_objects["right"]),
+        bool(side_entities["left"]),
+        bool(side_entities["right"]),
         bilateral,
         tuple(raw_pairs),
         tuple(canonical_pairs),
