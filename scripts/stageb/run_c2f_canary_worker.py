@@ -128,8 +128,10 @@ def main():
         # 25D features with proper EEF velocity (mirrors C2f adapter)
         gs = physical_gripper_state(env, obs)
         gq_raw = gs.get("qpos", np.zeros(2)) if isinstance(gs, dict) else np.zeros(2)
+        # Use correct unnorm_key for model (libero_goal model lost, using libero_10)
+        unnorm_key = suite if suite != "libero_goal" else "libero_10"
         action, _, _, _ = decode_with_scores(
-            vla_model, processor, device, rgb, task_language, suite, 8,
+            vla_model, processor, device, rgb, task_language, unnorm_key, 8,
             libero_preprocess_backend="upstream_tf_jpeg", center_crop=True,
             resize_size=224, drop_attention_mask=True,
         )
