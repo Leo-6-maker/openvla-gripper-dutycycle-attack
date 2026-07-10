@@ -1,4 +1,6 @@
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,6 +14,17 @@ from scripts.stageb.build_c2g_suite_model_map import (
 
 
 class GoalManifestV2ContractTests(unittest.TestCase):
+    def test_finalizer_cli_runs_outside_repo(self):
+        repo = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as td:
+            result = subprocess.run(
+                [sys.executable, str(repo / "scripts/stageb/finalize_c2g_goal_model_manifest_v2.py"), "--help"],
+                cwd=td,
+                capture_output=True,
+                text=True,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def build_model(self, root: Path) -> Path:
         model = root / "libero-goal"
         model.mkdir()

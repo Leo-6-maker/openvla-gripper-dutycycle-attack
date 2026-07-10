@@ -10,12 +10,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-import torch
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO))
 
-from src.gripper_attack.c2g_clean_window_runtime import derive_gripper_token_semantics
 from tools.multisuite_detector.audit_c2g_goal_model_integrity_v2 import (
     PASS_STATUS as STATIC_PASS_STATUS,
     sha256_file,
@@ -51,6 +52,9 @@ def finalize(
     device: str,
     rebase_approval: str,
 ) -> dict[str, Any]:
+    import torch
+    from src.gripper_attack.c2g_clean_window_runtime import derive_gripper_token_semantics
+
     static_report_path = static_report_path.resolve()
     model_path = model_path.resolve()
     static = _load_json(static_report_path)
