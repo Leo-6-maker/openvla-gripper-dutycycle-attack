@@ -50,7 +50,20 @@ jobs:
             tests.test_c2g_teacher_v2_schema \
             tests.test_c2g_counterfactual_manifest \
             tests.test_c2g_static_asset_inventory
-      - name: Verify worktree unchanged
+      - name: Verify tracked code and protected outputs unchanged
+        shell: python
         run: |
-          git diff --exit-code
-          test -z "$(git status --porcelain --untracked-files=all)"
+          import subprocess
+
+          subprocess.run(["git", "diff", "--exit-code"], check=True)
+          protected = ["generated", "audit_outputs", "paper/generated", "artifacts"]
+          status = subprocess.run(
+              ["git", "status", "--porcelain", "--untracked-files=all", "--", *protected],
+              check=True,
+              capture_output=True,
+              text=True,
+          ).stdout.strip()
+          if status:
+              raise SystemExit(
+                  "Static tests must not create or modify protected output paths:\n" + status
+              )
