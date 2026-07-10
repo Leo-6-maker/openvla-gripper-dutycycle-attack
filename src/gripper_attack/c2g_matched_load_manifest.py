@@ -5,7 +5,7 @@ import hashlib
 import json
 import math
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass
 from typing import Any, Dict, Mapping, Sequence
 
@@ -59,10 +59,9 @@ class AttackLoadSpec:
         ):
             if not str(getattr(self, name)).strip():
                 raise ValueError(f"{name} is required")
-        # The mature target-token VIS-PGD path performs K optimization forwards plus
-        # a final audited forward, so num_loss_forwards may be K+1.  Other frozen
-        # objectives may report K.  The manifest binds the exact measured count;
-        # it must never claim less work than the K optimization iterations.
+        # The mature target-token route reports K optimization forwards plus a
+        # final audited forward. Other frozen routes may report K. The exact
+        # route-reported count is frozen here and compared at runtime.
         if type(self.num_loss_forwards_per_frame) is not int or self.num_loss_forwards_per_frame < self.pgd_steps:
             raise ValueError("num_loss_forwards_per_frame must be an integer >= pgd_steps")
         if type(self.num_backwards_per_frame) is not int or self.num_backwards_per_frame < self.pgd_steps:
@@ -230,6 +229,25 @@ def validate_core_2x2_manifest(
         if len(control_families) != 1:
             raise ValueError(f"parent {parent} must use one frozen control objective family")
 
+        objective_counts = Counter(str(row["objective_family"]) for row in attack_rows)
+        objective_seeds: dict[str, set[int]] = defaultdict(set)
+        for row in attack_rows:
+            objective_seeds[str(row["objective_family"])].add(int(row["objective_seed"]))
+        if any(count != 2 for count in objective_counts.values()) or len(objective_counts) != 2:
+            raise ValueError(
+                f"parent {parent} must contain exactly two timing rows per objective family: "
+                f"{dict(objective_counts)}"
+            )
+        unpaired = {
+            objective: sorted(seeds)
+            for objective, seeds in objective_seeds.items()
+            if len(seeds) != 1
+        }
+        if unpaired:
+            raise ValueError(
+                f"parent {parent} objective seeds are not paired across timing conditions: {unpaired}"
+            )
+
         detector_starts = {
             row.get("planned_start_step")
             for row in attack_rows
@@ -255,6 +273,10 @@ def validate_core_2x2_manifest(
                 "detector_start_step": next(iter(detector_starts)),
                 "random_time_start_step": next(iter(random_starts)),
                 "control_objective_family": next(iter(control_families)),
+                "objective_seeds": {
+                    objective: next(iter(seeds))
+                    for objective, seeds in sorted(objective_seeds.items())
+                },
             }
         )
 
@@ -273,7 +295,7 @@ def validate_core_2x2_manifest(
 
 
 def deterministic_objective_seed(parent_key: str, condition: str, master_seed: int) -> int:
-    """Stable per-parent/condition seed without Python's randomized hash."""
+    """Stable per-parent/objective seed without Python's randomized hash."""
 
     if master_seed < 0:
         raise ValueError("master_seed must be non-negative")
