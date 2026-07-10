@@ -28,6 +28,7 @@ jobs:
             scripts/stageb/audit_c2f_track_a_run.py \
             scripts/stageb/run_c2f_canary_worker.py \
             src/gripper_attack/c2g_causal_vulnerability_detector.py \
+            src/gripper_attack/c2g_clean_mechanism.py \
             src/gripper_attack/c2g_clean_policy_signals.py \
             src/gripper_attack/c2g_clean_window_schema.py \
             src/gripper_attack/c2g_counterfactual_manifest.py \
@@ -37,10 +38,12 @@ jobs:
             src/gripper_attack/c2g_teacher_v2_schema.py \
             src/gripper_attack/c2g_teacher_v2_target_resolution.py \
             tools/multisuite_detector/audit_c2f_teacher_v1_labels.py \
+            tools/multisuite_detector/audit_c2g_clean_window_v2.py \
             tools/multisuite_detector/audit_c2g_static_assets.py \
             tools/multisuite_detector/c2g_clean_dataset_adapter.py \
             tools/multisuite_detector/c2g_clean_window_label_builder.py \
             tools/multisuite_detector/c2g_dataset_scaffold.py \
+            tests/test_c2g_clean_window_server_audit.py \
             tests/test_c2g_clean_window_v2.py
       - name: Check Track A launcher syntax
         run: |
@@ -57,7 +60,8 @@ jobs:
             tests.test_c2g_teacher_v2_schema \
             tests.test_c2g_counterfactual_manifest \
             tests.test_c2g_static_asset_inventory \
-            tests.test_c2g_clean_window_v2
+            tests.test_c2g_clean_window_v2 \
+            tests.test_c2g_clean_window_server_audit
       - name: Verify tracked code and protected outputs unchanged
         shell: python
         run: |
