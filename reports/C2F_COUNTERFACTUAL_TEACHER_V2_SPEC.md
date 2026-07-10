@@ -29,6 +29,8 @@ APPROACH_OR_SETUP
 
 Every row records `teacher_confidence` in `[0,1]`, `teacher_reason_code`, grounding source, contacted object, resolved target object/receptacle, relative-lift evidence, and release-distance evidence. Missing evidence produces abstention.
 
+Candidate replay strata are not limited to stable carry: `CLOSE_ONSET`, `STABLE_GRASP`, `PERSISTENT_CONTACT`, `RELATIVE_OBJECT_MOTION`, `STABLE_CARRY`, `PRE_RELEASE`, plus a deterministic `RANDOM_NONCANDIDATE_AUDIT` sample for candidate-recall estimation.
+
 ## Counterfactual state protocol
 
 For candidate clean steps `t`, freeze a simulator snapshot containing all state needed for deterministic restoration: qpos, qvel, actuator state, mocap/userdata, simulation time, environment task state, and relevant RNG state. Record a state hash and restoration check.
@@ -73,6 +75,7 @@ Before any large replay, a separately authorized smoke must verify deterministic
 
 ```text
 COUNTERFACTUAL_TEACHER_SPEC = PASS
+COUNTERFACTUAL_MANIFEST_SCHEMA = PASS_STATIC
 COUNTERFACTUAL_REPLAY_SMOKE = NOT_STARTED
 GPU_REPLAY_JOBS = 0
 ```

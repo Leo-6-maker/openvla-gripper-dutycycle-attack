@@ -30,7 +30,7 @@ leave-one-suite-out
 - `leave-one-task-out` uses a namespaced `suite:task` fold as test; all other episodes are train/val.
 - `leave-one-suite-out` uses one full suite as test; all other episodes are train/val.
 
-Every window inherits its episode split. Duplicate episode assignments across splits are a hard error. Future materializers must also freeze each split manifest and SHA256, report task/label coverage per fold, and fit normalization/calibration on train/validation only.
+Every window inherits its episode split. Duplicate episode assignments across splits are a hard error. Future materializers must also freeze each split manifest and SHA256, report rows, episodes, known positives, known negatives, unknowns, attackable episodes, fully-known negative episodes, task count, and suite count per fold, and fit normalization/calibration on train/validation only. A fold lacking required positive, negative, episode, task, or suite support is a hard HOLD.
 
 ## Weighting
 
@@ -45,10 +45,11 @@ Weights are normalized to mean one. Therefore each task has equal total mass, ea
 ## Shortcut diagnostics
 
 - `shuffled-language`: deterministic donor-episode language permutation within split.
+- `wrong-language-cross-task`: deterministic same-split donor from a different task; identity inconsistency or absence of a valid donor is a hard error.
 - `permuted-task-context`: deterministic donor-episode legacy context permutation within split.
 - Neither permutation crosses train/val/test or becomes a primary model input.
 
-CPU tests cover all context/split modes, episode leakage rejection, task/episode mass balance, and deterministic split-local diagnostic permutations.
+CPU tests cover all context/split modes, episode leakage rejection, fold viability, task/episode mass balance, and deterministic split-local diagnostic permutations.
 
 ```text
 NO_CONTEXT_AND_GENERALIZATION_SPLITS = PASS_STATIC

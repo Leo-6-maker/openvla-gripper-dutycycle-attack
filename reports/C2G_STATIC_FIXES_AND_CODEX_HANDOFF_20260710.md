@@ -693,3 +693,27 @@ NEXT_GPU_EXPERIMENTS = NONE_PENDING_REVIEW
 - Do not treat missing labels or missing clean outcomes as negatives/failures.
 - Do not claim C2g performance from architecture or static tests.
 - Do not collapse matched-action and closed-loop counterfactual effects into one label without preserving both components.
+
+## Codex static completion update
+
+The successor branch `codex/c2g-teacher-v2-static-20260710` completed the authorized CPU/static scope without launching experiments.
+
+- Track A completion checks now bind full commit, parent, condition, and explicit protocol name/version on skip, archive, success, retry, retry-success, and final audit paths. Incomplete attempt directories are archived even when metadata is missing.
+- Unknown-safe episode loss rejects contradictory fully-known-negative flags. Weighted BCE uses active weight mass and rejects invalid weights/shapes.
+- Training and online gates use strict 2-of-3 persistence; one isolated spike cannot satisfy a positive interval. Known release-safe intervals have an episode-level emit penalty and the online gate applies a release-safe veto.
+- Split summaries and gates include task/suite support, attackable episodes, and fully-known negative episodes. Wrong-language donors are deterministic, cross-task, and same-split.
+- Teacher-v1 regeneration matched 2,000 episodes and 393,513 rows with zero read errors. The deterministic 4,000-artifact input digest is `2fe9313411c4d818783ebf39a4fba95685d4d03b53ea09eb6a36af9fab131831`. Teacher-v1 remains HOLD for training.
+- Pure Teacher-v2 target resolution, contact identity, row/candidate validation, and Tier A/B counterfactual manifest validation are implemented with synthetic tests.
+- The four-model C2g ladder, patch-token path, causal persistence losses, deployment metrics, matched-payload control, and confidence/falsification review are frozen in dedicated reports.
+
+Boundaries remain unchanged:
+
+```text
+GPU_EPISODES_LAUNCHED = 0
+LIBERO_ROLLOUTS_LAUNCHED = 0
+OPENVLA_INFERENCE_RUNS = 0
+COUNTERFACTUAL_REPLAYS_LAUNCHED = 0
+DATASETS_MATERIALIZED = 0
+DETECTORS_TRAINED = 0
+NEXT_GPU_EXPERIMENTS = NONE_PENDING_REVIEW
+```
