@@ -3,29 +3,15 @@ set -euo pipefail
 
 # End-to-end C2g clean-window pipeline orchestrator.
 #
-# This script contains the complete executable sequence but does not itself grant
-# authorization for expensive stages. Run each phase only after the preceding
-# report has been independently reviewed.
-#
 # Required environment:
 #   TRAIN_EPISODE_MANIFEST   clean training rollout manifest
 #   EVAL_PARENT_MANIFEST     preregistered online evaluation parents
 #   WORK_ROOT                external output root (must be outside repository)
 #
-# Optional environment:
-#   DEVICE=cuda:0
-#   EMBEDDING_BACKEND=openvla_siglip
-#   OPENVLA_MODEL_PATH=/path/to/model   (single-suite materialization)
-#   MODEL_PATH_TEMPLATE=/path/{suite}/model
-#   WINDOW=16 BURST_LENGTH=10 EPOCHS=40 BATCH_SIZE=128
-#   MAX_TRAIN_EPISODES=0 MAX_EVAL_JOBS=0
-#
-# Usage:
-#   bash scripts/stageb/run_c2g_clean_window_end_to_end.sh <phase>
-#
-# Phases:
-#   collect audit materialize train folds clean_timing bind_parents
-#   build_jobs run_jobs audit_jobs all
+# Four-suite OpenVLA materialization:
+#   SUITE_MODEL_MAP=/absolute/suite_model_map.json
+# The JSON object must map all four LIBERO suite names to their exact policy model
+# directories. OPENVLA_MODEL_PATH is retained only for a single-model diagnostic.
 
 PHASE="${1:-}"
 if [[ -z "$PHASE" ]]; then
@@ -58,6 +44,7 @@ BATCH_SIZE="${BATCH_SIZE:-128}"
 HIDDEN="${HIDDEN:-128}"
 EMBEDDING_BACKEND="${EMBEDDING_BACKEND:-openvla_siglip}"
 OPENVLA_MODEL_PATH="${OPENVLA_MODEL_PATH:-}"
+SUITE_MODEL_MAP="${SUITE_MODEL_MAP:-}"
 MODEL_PATH_TEMPLATE="${MODEL_PATH_TEMPLATE:-}"
 MAX_TRAIN_EPISODES="${MAX_TRAIN_EPISODES:-0}"
 MAX_EVAL_JOBS="${MAX_EVAL_JOBS:-0}"
@@ -103,6 +90,21 @@ phase_audit() {
 }
 
 phase_materialize() {
+  if [[ -n "$SUITE_MODEL_MAP" ]]; then
+    require_file "$SUITE_MODEL_MAP"
+    python tools/multisuite_detector/materialize_c2g_multisuite_dataset.py \
+      --input-root "$COLLECTION_ROOT" \
+      --output-dir "$DATASET_ROOT" \
+      --suite-model-map "$SUITE_MODEL_MAP" \
+      --window "$WINDOW" \
+      --burst-length "$BURST_LENGTH" \
+      --backend "$EMBEDDING_BACKEND" \
+      --device "$DEVICE" \
+      --max-episodes-per-suite "$MAX_TRAIN_EPISODES" \
+      --split-mode within_task \
+      --git-commit "$HEAD_SHA"
+    return
+  fi
   local extra=()
   if [[ -n "$OPENVLA_MODEL_PATH" ]]; then
     extra+=(--openvla-model-path "$OPENVLA_MODEL_PATH")
