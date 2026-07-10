@@ -52,13 +52,28 @@ def finger_side(name: str, aliases: Mapping[str, str] | None = None) -> str:
             return side
     if not any(token in canonical for token in ("finger", "gripper", "jaw")):
         return ""
+
+    # In the official Panda assets the two jaws are also exposed as numbered
+    # ``finger_joint1``/``finger_joint2`` components, often with a ``_tip`` suffix.
+    # The side names here are deterministic jaw identities; downstream bilateral
+    # grasp logic is symmetric and does not depend on a geometric handedness claim.
     left_patterns = (
-        r"(?:^|_)left(?:_|$)", r"(?:^|_)l_finger(?:_|$)", r"(?:^|_)finger_l(?:_|$)",
-        r"leftfinger", r"finger1(?:_|$)", r"jaw1(?:_|$)",
+        r"(?:^|_)left(?:_|$)",
+        r"(?:^|_)l_finger(?:_|$)",
+        r"(?:^|_)finger_l(?:_|$)",
+        r"leftfinger",
+        r"finger1(?:_|$)",
+        r"jaw1(?:_|$)",
+        r"(?:^|_)finger_joint_?1(?:_|$)",
     )
     right_patterns = (
-        r"(?:^|_)right(?:_|$)", r"(?:^|_)r_finger(?:_|$)", r"(?:^|_)finger_r(?:_|$)",
-        r"rightfinger", r"finger2(?:_|$)", r"jaw2(?:_|$)",
+        r"(?:^|_)right(?:_|$)",
+        r"(?:^|_)r_finger(?:_|$)",
+        r"(?:^|_)finger_r(?:_|$)",
+        r"rightfinger",
+        r"finger2(?:_|$)",
+        r"jaw2(?:_|$)",
+        r"(?:^|_)finger_joint_?2(?:_|$)",
     )
     if any(re.search(pattern, canonical) for pattern in left_patterns):
         return "left"
