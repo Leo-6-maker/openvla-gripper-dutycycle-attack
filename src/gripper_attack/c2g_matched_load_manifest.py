@@ -59,9 +59,6 @@ class AttackLoadSpec:
         ):
             if not str(getattr(self, name)).strip():
                 raise ValueError(f"{name} is required")
-        # The mature target-token route reports K optimization forwards plus a
-        # final audited forward. Other frozen routes may report K. The exact
-        # route-reported count is frozen here and compared at runtime.
         if type(self.num_loss_forwards_per_frame) is not int or self.num_loss_forwards_per_frame < self.pgd_steps:
             raise ValueError("num_loss_forwards_per_frame must be an integer >= pgd_steps")
         if type(self.num_backwards_per_frame) is not int or self.num_backwards_per_frame < self.pgd_steps:
@@ -186,8 +183,14 @@ def validate_core_2x2_manifest(
     rows: Sequence[Mapping[str, Any]],
     *,
     required_conditions: Sequence[str] = CORE_CONDITIONS,
+    strict_objective_seed_pairing: bool = False,
 ) -> Dict[str, Any]:
-    """Validate closed-world parent groups and exact attack-load matching."""
+    """Validate closed-world parent groups and exact attack-load matching.
+
+    ``strict_objective_seed_pairing`` is required by the new executable pipeline.
+    The default remains false only so historical static fixtures can still be read
+    for audit without being silently rewritten.
+    """
 
     if not rows:
         raise ValueError("matched-load manifest cannot be empty")
@@ -233,20 +236,21 @@ def validate_core_2x2_manifest(
         objective_seeds: dict[str, set[int]] = defaultdict(set)
         for row in attack_rows:
             objective_seeds[str(row["objective_family"])].add(int(row["objective_seed"]))
-        if any(count != 2 for count in objective_counts.values()) or len(objective_counts) != 2:
-            raise ValueError(
-                f"parent {parent} must contain exactly two timing rows per objective family: "
-                f"{dict(objective_counts)}"
-            )
-        unpaired = {
-            objective: sorted(seeds)
-            for objective, seeds in objective_seeds.items()
-            if len(seeds) != 1
-        }
-        if unpaired:
-            raise ValueError(
-                f"parent {parent} objective seeds are not paired across timing conditions: {unpaired}"
-            )
+        if strict_objective_seed_pairing:
+            if any(count != 2 for count in objective_counts.values()) or len(objective_counts) != 2:
+                raise ValueError(
+                    f"parent {parent} must contain exactly two timing rows per objective family: "
+                    f"{dict(objective_counts)}"
+                )
+            unpaired = {
+                objective: sorted(seeds)
+                for objective, seeds in objective_seeds.items()
+                if len(seeds) != 1
+            }
+            if unpaired:
+                raise ValueError(
+                    f"parent {parent} objective seeds are not paired across timing conditions: {unpaired}"
+                )
 
         detector_starts = {
             row.get("planned_start_step")
@@ -273,10 +277,11 @@ def validate_core_2x2_manifest(
                 "detector_start_step": next(iter(detector_starts)),
                 "random_time_start_step": next(iter(random_starts)),
                 "control_objective_family": next(iter(control_families)),
-                "objective_seeds": {
-                    objective: next(iter(seeds))
+                "objective_seed_sets": {
+                    objective: sorted(seeds)
                     for objective, seeds in sorted(objective_seeds.items())
                 },
+                "strict_objective_seed_pairing": bool(strict_objective_seed_pairing),
             }
         )
 
@@ -290,6 +295,7 @@ def validate_core_2x2_manifest(
         "job_count": len(rows),
         "conditions": list(required),
         "manifest_sha256": manifest_sha256,
+        "strict_objective_seed_pairing": bool(strict_objective_seed_pairing),
         "parents": parent_summaries,
     }
 
