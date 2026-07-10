@@ -1,0 +1,56 @@
+name: cpu-c2g-static
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  c2g-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install CPU test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install numpy pytest
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Compile C2g and Track A static modules
+        run: |
+          python -m py_compile \
+            scripts/stageb/audit_c2f_track_a_run.py \
+            scripts/stageb/run_c2f_canary_worker.py \
+            src/gripper_attack/c2g_causal_vulnerability_detector.py \
+            src/gripper_attack/c2g_counterfactual_manifest.py \
+            src/gripper_attack/c2g_teacher_v2_contact_identity.py \
+            src/gripper_attack/c2g_teacher_v2_schema.py \
+            src/gripper_attack/c2g_teacher_v2_target_resolution.py \
+            tools/multisuite_detector/audit_c2f_teacher_v1_labels.py \
+            tools/multisuite_detector/audit_c2g_static_assets.py \
+            tools/multisuite_detector/c2g_dataset_scaffold.py
+      - name: Check Track A launcher syntax
+        run: |
+          bash -n scripts/stageb/run_c2f_track_a_smoke5.sh
+          bash -n scripts/stageb/run_c2f_table1_candidate_gpu17.sh
+      - name: Run complete C2g static suite
+        run: |
+          python -m unittest -v \
+            tests.test_c2f_track_a_static \
+            tests.test_c2g_static \
+            tests.test_c2g_p0_patch \
+            tests.test_c2g_teacher_v2_target_resolution \
+            tests.test_c2g_teacher_v2_contact_identity \
+            tests.test_c2g_teacher_v2_schema \
+            tests.test_c2g_counterfactual_manifest \
+            tests.test_c2g_static_asset_inventory
+      - name: Verify worktree unchanged
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=all)"
