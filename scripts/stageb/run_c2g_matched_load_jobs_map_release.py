@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from scripts.stageb.build_c2g_suite_model_map import validate_goal_manifest
 from src.gripper_attack.c2g_matched_load_manifest import validate_core_2x2_manifest
 
 REPO = Path(__file__).resolve().parents[2]
@@ -56,6 +57,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     jobs = read_jsonl(args.jobs.resolve())
     validate_core_2x2_manifest(jobs, strict_objective_seed_pairing=True)
     model_map = read_model_map(args.suite_model_map.resolve())
+    goal_validation = validate_goal_manifest(
+        args.goal_model_manifest.resolve(),
+        Path(model_map["libero_goal"]).resolve(),
+    )
     results: list[dict[str, Any]] = []
     launched = 0
     with tempfile.TemporaryDirectory(prefix="c2g_release_map_") as td:
@@ -119,6 +124,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "status": status,
         "suite_model_map": str(args.suite_model_map.resolve()),
         "goal_model_manifest": str(args.goal_model_manifest.resolve()),
+        "goal_model_validation": goal_validation,
         "results": results,
     }
     args.output_root.mkdir(parents=True, exist_ok=True)
