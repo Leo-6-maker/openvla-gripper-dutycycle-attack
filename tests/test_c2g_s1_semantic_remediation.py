@@ -1,4 +1,6 @@
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -13,6 +15,17 @@ from tools.multisuite_detector.audit_c2g_static_assets import audit_static_asset
 
 
 class S1SemanticRemediationTests(unittest.TestCase):
+    def test_strict_inventory_cli_runs_outside_repo(self):
+        repo = Path(__file__).resolve().parents[1]
+        with tempfile.TemporaryDirectory() as td:
+            result = subprocess.run(
+                [sys.executable, str(repo / "tools/multisuite_detector/audit_c2g_static_assets_strict.py"), "--help"],
+                cwd=td,
+                capture_output=True,
+                text=True,
+            )
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_compact_turnon_is_canonicalized_before_target_resolution(self):
         with tempfile.TemporaryDirectory() as td:
             path = Path(td) / "turn_on_stove.bddl"

@@ -15,6 +15,9 @@ import sys
 from pathlib import Path
 from typing import Sequence
 
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO))
+
 from src.gripper_attack.c2g_semantic_aliases import GOAL_OPERATOR_ALIASES
 from src.gripper_attack.c2g_teacher_v2_contact_identity import finger_side
 from src.gripper_attack.c2g_teacher_v2_target_resolution import _OPERATOR_ROLES
