@@ -8,6 +8,8 @@ import numpy as np
 from scripts.stageb.extract_c2g_detector_timing import main as extract_timing_main
 from scripts.stageb.prepare_c2g_eval_parents import array_sha256, combined_file_sha256
 from src.gripper_attack.c2g_bddl_metadata import parse_bddl_task_metadata
+from tools.multisuite_detector.materialize_c2g_clean_window_dataset import DATASET_SCHEMA_VERSION
+from tools.multisuite_detector.materialize_c2g_multisuite_dataset import merge_datasets
 from tools.multisuite_detector.run_c2g_clean_window_folds import fold_split
 
 
@@ -67,6 +69,47 @@ class FoldSplitTests(unittest.TestCase):
             mode="loso", held_out="libero_goal", seed=9, val_fraction=0.0,
         )
         self.assertEqual(split.tolist(), ["train", "test", "test"])
+
+
+class MultisuiteMergeTests(unittest.TestCase):
+    @staticmethod
+    def write_dataset(path: Path, suite: str, count: int, visual_dim: int = 4):
+        payload = {
+            "schema_version": np.asarray(DATASET_SCHEMA_VERSION),
+            "feature_names_policy": np.asarray(["a", "b"]),
+            "X_proprio": np.zeros((count, 3, 25), dtype=np.float32),
+            "X_policy": np.zeros((count, 3, 2), dtype=np.float32),
+            "X_visual": np.zeros((count, visual_dim), dtype=np.float32),
+            "X_language": np.zeros((count, 5), dtype=np.float32),
+            "suite": np.asarray([suite] * count),
+            "task_index": np.zeros(count, dtype=np.int64),
+            "episode_key": np.asarray([f"{suite}_{i}" for i in range(count)]),
+            "step": np.arange(count, dtype=np.int64),
+            "split": np.asarray(["train"] * count),
+        }
+        np.savez_compressed(path, **payload)
+
+    def test_merge_concatenates_sample_fields_and_preserves_constants(self):
+        with tempfile.TemporaryDirectory() as td:
+            first = Path(td) / "first.npz"
+            second = Path(td) / "second.npz"
+            output = Path(td) / "combined.npz"
+            self.write_dataset(first, "libero_object", 2)
+            self.write_dataset(second, "libero_goal", 3)
+            report = merge_datasets([first, second], output)
+            self.assertEqual(report["combined_samples"], 5)
+            merged = np.load(output, allow_pickle=False)
+            self.assertEqual(merged["X_proprio"].shape, (5, 3, 25))
+            self.assertEqual(set(merged["suite"].astype(str)), {"libero_object", "libero_goal"})
+
+    def test_merge_rejects_embedding_dimension_mismatch(self):
+        with tempfile.TemporaryDirectory() as td:
+            first = Path(td) / "first.npz"
+            second = Path(td) / "second.npz"
+            self.write_dataset(first, "libero_object", 1, visual_dim=4)
+            self.write_dataset(second, "libero_goal", 1, visual_dim=6)
+            with self.assertRaisesRegex(ValueError, "shape differs"):
+                merge_datasets([first, second], Path(td) / "combined.npz")
 
 
 class ParentBindingTests(unittest.TestCase):
