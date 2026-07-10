@@ -25,7 +25,6 @@ export MUJOCO_GL=egl
 export PYOPENGL_PLATFORM=egl
 
 COMMIT=$(git rev-parse HEAD)
-SHORT=$(git rev-parse --short HEAD)
 
 echo "=== C2f Table1 Candidate GPU1+GPU7 ===" | tee "$RUN_ROOT/launch.log"
 echo "RUN_ROOT=$RUN_ROOT" | tee -a "$RUN_ROOT/launch.log"
