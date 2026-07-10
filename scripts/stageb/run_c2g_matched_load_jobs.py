@@ -1,18 +1,21 @@
 #!/usr/bin/env python3
 """Execute the frozen C2g matched-load job manifest sequentially.
 
-Each job is delegated to run_c2g_clean_window_vis_pgd.py. Resume accepts an
-existing job only when runtime, identity, protocol, objective, commit, checkpoint,
-and exact delivery fields match the frozen row.
+Each job is delegated to run_c2g_clean_window_vis_pgd.py. Before any attack, this
+launcher independently rebinds the frozen manifest to the CLEAN parent artifacts,
+official LIBERO init state, detector checkpoint, and detector config.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Sequence
+
+import numpy as np
 
 from src.gripper_attack.c2g_matched_load_manifest import (
     CONTROL_OBJECTIVE_CONDITIONS,
@@ -30,6 +33,106 @@ SUPPORTED_CONTROL_OBJECTIVE = "SHUFFLED_GRIPPER_GRADIENT"
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def combined_file_sha256(paths: Sequence[Path]) -> str:
+    digest = hashlib.sha256()
+    for path in paths:
+        content_sha = sha256_file(path)
+        digest.update(f"{path.name}|{path.stat().st_size}|{content_sha}\n".encode("utf-8"))
+    return digest.hexdigest()
+
+
+def array_sha256(value: Any) -> str:
+    array = np.ascontiguousarray(np.asarray(value))
+    digest = hashlib.sha256()
+    digest.update(str(array.dtype).encode("utf-8"))
+    digest.update(b"|")
+    digest.update(json.dumps(list(array.shape), separators=(",", ":")).encode("utf-8"))
+    digest.update(b"|")
+    digest.update(array.tobytes(order="C"))
+    return digest.hexdigest()
+
+
+def validate_parent_bindings(
+    jobs: Sequence[dict[str, Any]],
+    *,
+    output_root: Path,
+    fallback_checkpoint: str,
+) -> dict[str, Any]:
+    """Recompute every immutable parent/checkpoint binding before execution."""
+
+    from libero.libero import benchmark
+
+    by_parent: dict[str, list[dict[str, Any]]] = {}
+    for job in jobs:
+        by_parent.setdefault(str(job["parent_key"]), []).append(job)
+    suite_cache: dict[str, Any] = {}
+    summaries: list[dict[str, Any]] = []
+    for parent_key, group in sorted(by_parent.items()):
+        exemplar = group[0]
+        clean_metadata = output_root / parent_key / "CLEAN" / "episode_metadata.json"
+        clean_steps = clean_metadata.with_name("step_records.jsonl")
+        if not clean_metadata.is_file() or not clean_steps.is_file() or clean_steps.stat().st_size == 0:
+            raise FileNotFoundError(f"frozen CLEAN parent artifacts missing for {parent_key}")
+        clean_sha = combined_file_sha256((clean_metadata, clean_steps))
+        if clean_sha != exemplar["clean_parent_sha256"]:
+            raise RuntimeError(
+                f"clean_parent_sha256 mismatch for {parent_key}: "
+                f"{clean_sha} != {exemplar['clean_parent_sha256']}"
+            )
+
+        checkpoint = Path(exemplar.get("checkpoint_path") or fallback_checkpoint).resolve()
+        if not checkpoint.is_file():
+            raise FileNotFoundError(f"detector checkpoint missing: {checkpoint}")
+        checkpoint_sha = sha256_file(checkpoint)
+        if checkpoint_sha != exemplar["detector_checkpoint_sha256"]:
+            raise RuntimeError(
+                f"detector checkpoint hash mismatch for {parent_key}: "
+                f"{checkpoint_sha} != {exemplar['detector_checkpoint_sha256']}"
+            )
+        config_path = Path(exemplar["detector_config_path"]).resolve()
+        if not config_path.is_file():
+            raise FileNotFoundError(f"detector config missing: {config_path}")
+        config_sha = sha256_file(config_path)
+        if config_sha != exemplar["detector_config_sha256"]:
+            raise RuntimeError(
+                f"detector config hash mismatch for {parent_key}: "
+                f"{config_sha} != {exemplar['detector_config_sha256']}"
+            )
+
+        suite = str(exemplar["suite"])
+        task_index = int(exemplar["task_index"])
+        state_id = int(exemplar["state_id"])
+        if suite not in suite_cache:
+            suite_cache[suite] = benchmark.get_benchmark_dict()[suite]()
+        states = suite_cache[suite].get_task_init_states(task_index)
+        if state_id < 0 or state_id >= len(states):
+            raise IndexError(f"state_id outside official init-state range for {parent_key}")
+        init_sha = array_sha256(states[state_id])
+        if init_sha != exemplar["initial_state_sha256"]:
+            raise RuntimeError(
+                f"initial_state_sha256 mismatch for {parent_key}: "
+                f"{init_sha} != {exemplar['initial_state_sha256']}"
+            )
+        summaries.append(
+            {
+                "parent_key": parent_key,
+                "clean_parent_sha256": clean_sha,
+                "initial_state_sha256": init_sha,
+                "detector_checkpoint_sha256": checkpoint_sha,
+                "detector_config_sha256": config_sha,
+            }
+        )
+    return {"status": "PASS_C2G_PARENT_BINDINGS", "parent_count": len(summaries), "parents": summaries}
 
 
 def complete(metadata_path: Path, job: dict[str, Any], expected_commit: str) -> bool:
@@ -55,6 +158,7 @@ def complete(metadata_path: Path, job: dict[str, Any], expected_commit: str) -> 
         and metadata.get("protocol_version") == PROTOCOL_VERSION
         and metadata.get("git_commit") == expected_commit
         and metadata.get("objective_family") == job["objective_family"]
+        and int(metadata.get("objective_seed", -1)) == int(job["objective_seed"])
         and metadata.get("detector_checkpoint_sha256") == job["detector_checkpoint_sha256"]
         and int(metadata.get("attack_delivery_count", -1)) == expected_frames
         and delivered == expected_frames
@@ -122,12 +226,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     jobs = read_jsonl(args.jobs.resolve())
-    validate_core_2x2_manifest(jobs)
+    manifest_validation = validate_core_2x2_manifest(
+        jobs,
+        strict_objective_seed_pairing=True,
+    )
+    args.output_root.mkdir(parents=True, exist_ok=True)
+    parent_binding = validate_parent_bindings(
+        jobs,
+        output_root=args.output_root.resolve(),
+        fallback_checkpoint=args.checkpoint,
+    )
     if args.condition:
         jobs = [job for job in jobs if job["condition"] == args.condition]
     if args.max_jobs > 0:
         jobs = jobs[: args.max_jobs]
-    args.output_root.mkdir(parents=True, exist_ok=True)
     results: list[dict[str, Any]] = []
     for index, job in enumerate(jobs, 1):
         metadata_path = args.output_root / job["parent_key"] / job["condition"] / "episode_metadata.json"
@@ -145,7 +257,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         if status != "PASS":
             print(json.dumps({"status": "HOLD_C2G_JOB_LAUNCH", "results": results}, indent=2), file=sys.stderr)
             return 2
-    report = {"status": "PASS_C2G_JOB_LAUNCH", "job_count": len(jobs), "results": results}
+    report = {
+        "status": "PASS_C2G_JOB_LAUNCH",
+        "job_count": len(jobs),
+        "manifest_validation": manifest_validation,
+        "parent_binding": parent_binding,
+        "results": results,
+    }
     report_path = args.output_root / "c2g_job_launcher_report.json"
     report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps(report, indent=2, sort_keys=True))
