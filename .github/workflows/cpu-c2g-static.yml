@@ -44,12 +44,14 @@ jobs:
             src/gripper_attack/c2g_counterfactual_manifest.py \
             src/gripper_attack/c2g_gripper_critical_window_detector.py \
             src/gripper_attack/c2g_matched_load_manifest.py \
+            src/gripper_attack/c2g_semantic_aliases.py \
             src/gripper_attack/c2g_teacher_v2_contact_identity.py \
             src/gripper_attack/c2g_teacher_v2_schema.py \
             src/gripper_attack/c2g_teacher_v2_target_resolution.py \
             tools/multisuite_detector/audit_c2f_teacher_v1_labels.py \
             tools/multisuite_detector/audit_c2g_clean_window_v2.py \
             tools/multisuite_detector/audit_c2g_static_assets.py \
+            tools/multisuite_detector/audit_c2g_static_assets_strict.py \
             tools/multisuite_detector/c2g_clean_dataset_adapter.py \
             tools/multisuite_detector/c2g_clean_window_label_builder.py \
             tools/multisuite_detector/c2g_dataset_scaffold.py \
@@ -61,7 +63,8 @@ jobs:
             tests/test_c2g_clean_window_pipeline_tools.py \
             tests/test_c2g_clean_window_server_audit.py \
             tests/test_c2g_clean_window_v2.py \
-            tests/test_c2g_matched_load_strict.py
+            tests/test_c2g_matched_load_strict.py \
+            tests/test_c2g_s1_semantic_remediation.py
       - name: Check launcher syntax
         run: |
           bash -n scripts/stageb/run_c2f_track_a_smoke5.sh
@@ -82,7 +85,8 @@ jobs:
             tests.test_c2g_clean_window_server_audit \
             tests.test_c2g_clean_window_e2e \
             tests.test_c2g_clean_window_pipeline_tools \
-            tests.test_c2g_matched_load_strict
+            tests.test_c2g_matched_load_strict \
+            tests.test_c2g_s1_semantic_remediation
       - name: Verify tracked code and protected outputs unchanged
         shell: python
         run: |
