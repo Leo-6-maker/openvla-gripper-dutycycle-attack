@@ -2,8 +2,8 @@
 """Build the frozen five-condition C2g matched-load job manifest.
 
 Inputs are a preregistered parent manifest and detector timing extracted from a
-clean detector-only pass.  The random-time start is deterministic, burst-feasible,
-and different from detector timing.  No attacked outcome is read.
+clean detector-only pass. The random-time start is deterministic, burst-feasible,
+and different from detector timing. No attacked outcome is read.
 """
 from __future__ import annotations
 
@@ -89,6 +89,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--epsilon", type=float, default=6.0 / 255.0)
     parser.add_argument("--step-size", type=float, default=(6.0 / 255.0) * 0.075)
     parser.add_argument("--pgd-steps", type=int, default=20)
+    parser.add_argument(
+        "--num-loss-forwards-per-frame",
+        type=int,
+        default=0,
+        help="0 selects K+1 for the audited target-token VIS-PGD path",
+    )
+    parser.add_argument("--num-backwards-per-frame", type=int, default=0, help="0 selects K")
     parser.add_argument("--projection", default="processor_space_linf_fp32_then_model_cast")
     parser.add_argument("--cast-policy", default="budget_safe_bf16_or_fp16")
     parser.add_argument("--preprocessing", default="official_pil_lanczos_center_crop_224")
@@ -96,7 +103,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--image-width", type=int, default=224)
     parser.add_argument("--random-start-policy", default="uniform_linf_seeded")
     parser.add_argument("--temporal-init-policy", default="prev_delta")
-    parser.add_argument("--control-objective", choices=("SHUFFLED_GRIPPER_GRADIENT", "RANDOM_DIRECTION_PGD_LOOP", "NONGRIPPER_VIS_PGD"), default="SHUFFLED_GRIPPER_GRADIENT")
+    parser.add_argument(
+        "--control-objective",
+        choices=("SHUFFLED_GRIPPER_GRADIENT", "RANDOM_DIRECTION_PGD_LOOP", "NONGRIPPER_VIS_PGD"),
+        default="SHUFFLED_GRIPPER_GRADIENT",
+    )
     args = parser.parse_args(argv)
 
     parents = [normalize_parent(row) for row in read_rows(args.parents)]
@@ -108,6 +119,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise ValueError("detector timing manifest contains duplicate parent_key")
     checkpoint_sha = sha256_file(args.checkpoint.resolve())
     config_sha = sha256_file(args.detector_config.resolve())
+    num_loss_forwards = (
+        args.num_loss_forwards_per_frame
+        if args.num_loss_forwards_per_frame > 0
+        else args.pgd_steps + 1
+    )
+    num_backwards = (
+        args.num_backwards_per_frame
+        if args.num_backwards_per_frame > 0
+        else args.pgd_steps
+    )
     load = AttackLoadSpec(
         burst_length=args.burst_length,
         epsilon=args.epsilon,
@@ -120,8 +141,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         image_width=args.image_width,
         random_start_policy=args.random_start_policy,
         temporal_init_policy=args.temporal_init_policy,
-        num_loss_forwards_per_frame=args.pgd_steps,
-        num_backwards_per_frame=args.pgd_steps,
+        num_loss_forwards_per_frame=num_loss_forwards,
+        num_backwards_per_frame=num_backwards,
         num_adv_decodes_per_frame=1,
     )
     load.validate()
