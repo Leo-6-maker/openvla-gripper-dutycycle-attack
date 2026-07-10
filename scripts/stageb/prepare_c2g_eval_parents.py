@@ -115,6 +115,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             if len(detector_starts) > 1:
                 raise ValueError(f"CLEAN detector produced multiple trigger starts: {detector_starts}")
             requested_max_steps = int(source.get("max_steps", clean_total_steps) or clean_total_steps)
+            effective_max_steps = min(requested_max_steps, clean_total_steps)
             bound.append(
                 {
                     "parent_key": parent_key,
@@ -122,7 +123,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "task_index": task_index,
                     "state_id": state_id,
                     "eval_seed": int(source.get("eval_seed", source.get("seed", 42))),
-                    "max_steps": requested_max_steps,
+                    "requested_max_steps": requested_max_steps,
+                    "max_steps": effective_max_steps,
                     "clean_total_steps": clean_total_steps,
                     "clean_last_step": max(clean_steps),
                     "clean_parent_sha256": clean_parent_sha,
@@ -151,6 +153,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         "expected_git_commit": args.expected_git_commit,
         "detector_emit_count": sum(row["detector_start_step"] is not None for row in bound),
         "detector_no_emit_count": sum(row["detector_start_step"] is None for row in bound),
+        "max_steps_capped_by_clean_horizon_count": sum(
+            row["max_steps"] < row["requested_max_steps"] for row in bound
+        ),
     }
     args.output.with_suffix(args.output.suffix + ".report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
