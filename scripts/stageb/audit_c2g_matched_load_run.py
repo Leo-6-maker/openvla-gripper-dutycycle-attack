@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Audit a completed C2g five-condition matched-load execution matrix.
 
-The audit is closed-world against the frozen job manifest.  It verifies exact
+The audit is closed-world against the frozen job manifest. It verifies exact
 condition closure, parent/provenance identity, fixed burst delivery, detector and
 random timing pairs, compute-load counts, processor-space budgets, and pre-trigger
-clean-trajectory parity.  It does not reinterpret task outcomes.
+clean-trajectory parity. It does not reinterpret task outcomes.
 """
 from __future__ import annotations
 
@@ -15,11 +15,8 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from src.gripper_attack.c2g_matched_load_manifest import (
-    ATTACK_CONDITIONS,
-    CONTROL_OBJECTIVE_CONDITIONS,
     CORE_CONDITIONS,
     DETECTOR_TIMING_CONDITIONS,
-    GRIPPER_OBJECTIVE_CONDITIONS,
     RANDOM_TIMING_CONDITIONS,
     validate_core_2x2_manifest,
 )
@@ -51,7 +48,7 @@ def sha256_file(path: Path) -> str:
 
 def canonical_action_prefix(rows: Sequence[Mapping[str, Any]], stop_step: int) -> str:
     payload = []
-    for row in rows:
+    for row in sorted(rows, key=lambda value: int(value.get("step", -1))):
         step = int(row.get("step", -1))
         if step < 0 or step >= stop_step:
             continue
@@ -87,8 +84,8 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
     discovered: set[tuple[str, str]] = set()
     for path in output_root.rglob("episode_metadata.json"):
         try:
-            meta = json.loads(path.read_text(encoding="utf-8"))
-            discovered.add((str(meta.get("parent_key", "")), str(meta.get("condition", ""))))
+            metadata = json.loads(path.read_text(encoding="utf-8"))
+            discovered.add((str(metadata.get("parent_key", "")), str(metadata.get("condition", ""))))
         except Exception:
             discovered.add((f"MALFORMED:{path}", ""))
     missing = sorted(set(expected) - discovered)
@@ -96,7 +93,7 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
     violations: list[dict[str, Any]] = []
     job_summaries: list[dict[str, Any]] = []
     rows_by_job: dict[tuple[str, str], list[dict[str, Any]]] = {}
-    meta_by_job: dict[tuple[str, str], dict[str, Any]] = {}
+    metadata_by_job: dict[tuple[str, str], dict[str, Any]] = {}
 
     for key, job in sorted(expected.items()):
         parent, condition = key
@@ -105,38 +102,44 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         if not meta_path.is_file() or not row_path.is_file():
             continue
         try:
-            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            metadata = json.loads(meta_path.read_text(encoding="utf-8"))
             rows = read_jsonl(row_path)
         except Exception as exc:
-            violations.append({"parent_key": parent, "condition": condition, "reason": "READ_ERROR", "error": str(exc)})
+            violations.append({
+                "parent_key": parent,
+                "condition": condition,
+                "reason": "READ_ERROR",
+                "error": str(exc),
+            })
             continue
-        meta_by_job[key] = meta
+        metadata_by_job[key] = metadata
         rows_by_job[key] = rows
-        if meta.get("protocol_name") != PROTOCOL_NAME or meta.get("protocol_version") != PROTOCOL_VERSION:
+        if metadata.get("protocol_name") != PROTOCOL_NAME or metadata.get("protocol_version") != PROTOCOL_VERSION:
             violations.append({"parent_key": parent, "condition": condition, "reason": "PROTOCOL_MISMATCH"})
         for field in ("parent_key", "condition", "suite", "task_index", "state_id"):
             expected_value = job[field]
-            if meta.get(field) != expected_value:
+            if metadata.get(field) != expected_value:
                 violations.append({
                     "parent_key": parent,
                     "condition": condition,
                     "reason": "IDENTITY_MISMATCH",
                     "field": field,
                     "expected": expected_value,
-                    "actual": meta.get(field),
+                    "actual": metadata.get(field),
                 })
-        if not bool(meta.get("runtime_valid")):
+        if not bool(metadata.get("runtime_valid")):
             violations.append({"parent_key": parent, "condition": condition, "reason": "RUNTIME_INVALID"})
+
         delivered = [row for row in rows if bool(row.get("attack_delivered"))]
         expected_frames = int(job["expected_attacked_frames"])
-        if len(delivered) != expected_frames or int(meta.get("attack_delivery_count", -1)) != expected_frames:
+        if len(delivered) != expected_frames or int(metadata.get("attack_delivery_count", -1)) != expected_frames:
             violations.append({
                 "parent_key": parent,
                 "condition": condition,
                 "reason": "DELIVERY_COUNT_MISMATCH",
                 "expected": expected_frames,
                 "rows": len(delivered),
-                "metadata": meta.get("attack_delivery_count"),
+                "metadata": metadata.get("attack_delivery_count"),
             })
         if delivered:
             delivered_steps = [int(row["step"]) for row in delivered]
@@ -151,34 +154,53 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
                     "expected": planned,
                     "actual": delivered_steps[0],
                 })
+
         load = job["load_spec"]
         epsilon = float(load["epsilon"])
-        pgd_steps = int(load["pgd_steps"])
+        expected_loss_forwards = int(load["num_loss_forwards_per_frame"])
+        expected_backwards = int(load["num_backwards_per_frame"])
+        expected_adv_decodes = int(load["num_adv_decodes_per_frame"])
         for row in delivered:
-            if int(row.get("num_loss_forwards", -1)) != pgd_steps:
-                violations.append({"parent_key": parent, "condition": condition, "step": row.get("step"), "reason": "LOSS_FORWARD_COUNT_MISMATCH"})
-            if int(row.get("num_backwards", -1)) != pgd_steps:
-                violations.append({"parent_key": parent, "condition": condition, "step": row.get("step"), "reason": "BACKWARD_COUNT_MISMATCH"})
-            if int(row.get("num_adv_decodes", -1)) != 1:
-                violations.append({"parent_key": parent, "condition": condition, "step": row.get("step"), "reason": "ADV_DECODE_COUNT_MISMATCH"})
+            step = row.get("step")
+            if int(row.get("num_loss_forwards", -1)) != expected_loss_forwards:
+                violations.append({
+                    "parent_key": parent, "condition": condition, "step": step,
+                    "reason": "LOSS_FORWARD_COUNT_MISMATCH",
+                    "expected": expected_loss_forwards,
+                    "actual": row.get("num_loss_forwards"),
+                })
+            if int(row.get("num_backwards", -1)) != expected_backwards:
+                violations.append({
+                    "parent_key": parent, "condition": condition, "step": step,
+                    "reason": "BACKWARD_COUNT_MISMATCH",
+                    "expected": expected_backwards,
+                    "actual": row.get("num_backwards"),
+                })
+            if int(row.get("num_adv_decodes", -1)) != expected_adv_decodes:
+                violations.append({
+                    "parent_key": parent, "condition": condition, "step": step,
+                    "reason": "ADV_DECODE_COUNT_MISMATCH",
+                    "expected": expected_adv_decodes,
+                    "actual": row.get("num_adv_decodes"),
+                })
             linf = float(row.get("observation_perturb_linf", float("inf")))
             if linf > epsilon + args.epsilon_tolerance:
                 violations.append({
                     "parent_key": parent,
                     "condition": condition,
-                    "step": row.get("step"),
+                    "step": step,
                     "reason": "LINF_BUDGET_VIOLATION",
                     "epsilon": epsilon,
                     "linf": linf,
                 })
-        if condition == "CLEAN" and any(bool(row.get("attack_delivered")) for row in rows):
+        if condition == "CLEAN" and delivered:
             violations.append({"parent_key": parent, "condition": condition, "reason": "CLEAN_ATTACK_DELIVERED"})
         job_summaries.append(
             {
                 "parent_key": parent,
                 "condition": condition,
-                "runtime_valid": bool(meta.get("runtime_valid")),
-                "success": meta.get("success"),
+                "runtime_valid": bool(metadata.get("runtime_valid")),
+                "success": metadata.get("success"),
                 "total_steps": len(rows),
                 "attack_delivery_count": len(delivered),
                 "first_attack_step": delivered[0]["step"] if delivered else None,
@@ -193,17 +215,25 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         if any(key not in rows_by_job for key in keys):
             continue
         detector_starts = {
-            meta_by_job[key].get("first_attack_step")
+            metadata_by_job[key].get("first_attack_step")
             for key in keys if key[1] in DETECTOR_TIMING_CONDITIONS
         }
         random_starts = {
-            meta_by_job[key].get("first_attack_step")
+            metadata_by_job[key].get("first_attack_step")
             for key in keys if key[1] in RANDOM_TIMING_CONDITIONS
         }
         if len(detector_starts) != 1 or None in detector_starts:
-            violations.append({"parent_key": parent, "reason": "DETECTOR_PAIR_START_MISMATCH", "values": sorted(detector_starts, key=str)})
+            violations.append({
+                "parent_key": parent,
+                "reason": "DETECTOR_PAIR_START_MISMATCH",
+                "values": sorted(detector_starts, key=str),
+            })
         if len(random_starts) != 1 or None in random_starts:
-            violations.append({"parent_key": parent, "reason": "RANDOM_PAIR_START_MISMATCH", "values": sorted(random_starts, key=str)})
+            violations.append({
+                "parent_key": parent,
+                "reason": "RANDOM_PAIR_START_MISMATCH",
+                "values": sorted(random_starts, key=str),
+            })
         starts = [value for value in detector_starts | random_starts if value is not None]
         parity_stop = min(starts) if starts else 0
         prefix_hashes = {
@@ -211,8 +241,15 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
             for condition in CORE_CONDITIONS
         }
         if len(set(prefix_hashes.values())) != 1:
-            violations.append({"parent_key": parent, "reason": "PRETRIGGER_PARITY_MISMATCH", "hashes": prefix_hashes})
-        success = {condition: meta_by_job[(parent, condition)].get("success") for condition in CORE_CONDITIONS}
+            violations.append({
+                "parent_key": parent,
+                "reason": "PRETRIGGER_PARITY_MISMATCH",
+                "hashes": prefix_hashes,
+            })
+        success = {
+            condition: metadata_by_job[(parent, condition)].get("success")
+            for condition in CORE_CONDITIONS
+        }
         parent_summaries.append(
             {
                 "parent_key": parent,
@@ -224,7 +261,11 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
             }
         )
 
-    status = "PASS_C2G_MATCHED_LOAD_RUN_AUDIT" if not missing and not unexpected and not violations else "HOLD_C2G_MATCHED_LOAD_RUN_AUDIT"
+    status = (
+        "PASS_C2G_MATCHED_LOAD_RUN_AUDIT"
+        if not missing and not unexpected and not violations
+        else "HOLD_C2G_MATCHED_LOAD_RUN_AUDIT"
+    )
     return {
         "gate": "C2G_MATCHED_LOAD_RUN_AUDIT",
         "status": status,
@@ -252,7 +293,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     report = audit(args)
     args.report.parent.mkdir(parents=True, exist_ok=True)
-    args.report.write_text(json.dumps(report, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+    args.report.write_text(
+        json.dumps(report, indent=2, sort_keys=True, default=str) + "\n",
+        encoding="utf-8",
+    )
     print(json.dumps(report, indent=2, sort_keys=True, default=str))
     return 0 if report["status"].startswith("PASS_") else 2
 
