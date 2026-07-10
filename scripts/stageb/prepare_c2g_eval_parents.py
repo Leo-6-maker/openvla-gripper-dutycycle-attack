@@ -77,6 +77,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             if not metadata_path.is_file() or not steps_path.is_file() or steps_path.stat().st_size == 0:
                 raise FileNotFoundError("CLEAN detector output is incomplete")
             metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+            clean_rows = [
+                json.loads(line)
+                for line in steps_path.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            if not clean_rows or not all(isinstance(row, dict) for row in clean_rows):
+                raise ValueError("CLEAN step records are empty or malformed")
+            clean_steps = [int(row["step"]) for row in clean_rows]
+            if len(set(clean_steps)) != len(clean_steps):
+                raise ValueError("CLEAN step records contain duplicate steps")
+            if clean_steps != sorted(clean_steps):
+                raise ValueError("CLEAN step records are not step-sorted")
+            clean_total_steps = len(clean_rows)
+            if int(metadata.get("total_steps", -1)) != clean_total_steps:
+                raise ValueError("CLEAN metadata total_steps differs from step-record count")
             if not bool(metadata.get("runtime_valid")):
                 raise ValueError("CLEAN detector output runtime_valid=false")
             if metadata.get("protocol_name") != PROTOCOL_NAME or metadata.get("protocol_version") != PROTOCOL_VERSION:
@@ -96,6 +111,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 raise IndexError("state_id outside official init-state range")
             initial_state_sha = array_sha256(init_states[state_id])
             clean_parent_sha = combined_file_sha256((metadata_path, steps_path))
+            detector_starts = [int(row["step"]) for row in clean_rows if bool(row.get("trigger_started"))]
+            if len(detector_starts) > 1:
+                raise ValueError(f"CLEAN detector produced multiple trigger starts: {detector_starts}")
+            requested_max_steps = int(source.get("max_steps", clean_total_steps) or clean_total_steps)
             bound.append(
                 {
                     "parent_key": parent_key,
@@ -103,22 +122,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "task_index": task_index,
                     "state_id": state_id,
                     "eval_seed": int(source.get("eval_seed", source.get("seed", 42))),
-                    "max_steps": int(source.get("max_steps", metadata.get("total_steps", 300) or 300)),
+                    "max_steps": requested_max_steps,
+                    "clean_total_steps": clean_total_steps,
+                    "clean_last_step": max(clean_steps),
                     "clean_parent_sha256": clean_parent_sha,
                     "initial_state_sha256": initial_state_sha,
                     "clean_metadata_sha256": sha256_file(metadata_path),
                     "clean_steps_sha256": sha256_file(steps_path),
                     "clean_success": metadata.get("success"),
-                    "detector_start_step": next(
-                        (
-                            int(row["step"])
-                            for row in (
-                                json.loads(line) for line in steps_path.read_text(encoding="utf-8").splitlines() if line.strip()
-                            )
-                            if bool(row.get("trigger_started"))
-                        ),
-                        None,
-                    ),
+                    "detector_start_step": detector_starts[0] if detector_starts else None,
                 }
             )
         except Exception as exc:
@@ -137,6 +149,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         "output": str(args.output.resolve()),
         "output_sha256": sha256_file(args.output.resolve()),
         "expected_git_commit": args.expected_git_commit,
+        "detector_emit_count": sum(row["detector_start_step"] is not None for row in bound),
+        "detector_no_emit_count": sum(row["detector_start_step"] is None for row in bound),
     }
     args.output.with_suffix(args.output.suffix + ".report.json").write_text(
         json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
