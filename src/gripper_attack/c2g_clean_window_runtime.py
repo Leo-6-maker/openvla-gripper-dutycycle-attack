@@ -2,7 +2,7 @@
 
 The runtime is called after the clean OpenVLA decode and before any visual attack.
 It consumes only clean causal history, clean gripper logits, the current clean RGB
-frame, and task language.  A stateful fixed-burst scheduler selects the attack
+frame, and task language. A stateful fixed-burst scheduler selects the attack
 start; the attack payload remains TokenPrefixPGDAttacker in the execution runner.
 """
 from __future__ import annotations
@@ -32,6 +32,7 @@ from .openvla_libero_exec_spec import (
 )
 
 CHECKPOINT_SCHEMA_VERSION = "c2g.clean_window_checkpoint.2026-07-10.v1"
+SUSCEPTIBILITY_SCHEMA_VERSION = "c2g.clean_susceptibility_calibration.2026-07-10.v1"
 
 
 def sha256_file(path: Path) -> str:
@@ -79,6 +80,51 @@ def derive_gripper_token_semantics(model: Any, unnorm_key: str) -> dict[str, Any
     }
 
 
+def _resolve_susceptibility(
+    checkpoint: Mapping[str, Any],
+    *,
+    fallback_require_clean_close: bool,
+    fallback_minimum_margin: float,
+    fallback_minimum_entropy: float,
+) -> dict[str, Any]:
+    """Resolve clean-only susceptibility gates, preferring checkpoint calibration."""
+
+    calibrated = checkpoint.get("susceptibility")
+    if calibrated is not None:
+        if not isinstance(calibrated, Mapping):
+            raise ValueError("checkpoint susceptibility calibration must be a mapping")
+        if calibrated.get("schema_version") != SUSCEPTIBILITY_SCHEMA_VERSION:
+            raise ValueError("unsupported clean susceptibility calibration schema")
+        if calibrated.get("uses_attack_outcomes") is not False:
+            raise ValueError("clean susceptibility calibration must exclude attacked outcomes")
+        resolved = {
+            "schema_version": SUSCEPTIBILITY_SCHEMA_VERSION,
+            "source": "checkpoint_clean_validation",
+            "require_clean_close": bool(calibrated.get("require_clean_close", True)),
+            "minimum_open_minus_close_log_mass": float(
+                calibrated["minimum_open_minus_close_log_mass"]
+            ),
+            "minimum_entropy": float(calibrated["minimum_entropy"]),
+            "uses_attack_outcomes": False,
+        }
+    else:
+        resolved = {
+            "schema_version": SUSCEPTIBILITY_SCHEMA_VERSION,
+            "source": "runtime_fallback",
+            "require_clean_close": bool(fallback_require_clean_close),
+            "minimum_open_minus_close_log_mass": float(fallback_minimum_margin),
+            "minimum_entropy": float(fallback_minimum_entropy),
+            "uses_attack_outcomes": False,
+        }
+    margin = float(resolved["minimum_open_minus_close_log_mass"])
+    entropy = float(resolved["minimum_entropy"])
+    if not math.isfinite(margin):
+        raise ValueError("minimum open-minus-close log-mass must be finite")
+    if not math.isfinite(entropy) or not 0.0 <= entropy <= 1.0:
+        raise ValueError("minimum entropy must be finite and in [0,1]")
+    return resolved
+
+
 class C2gCleanWindowRuntime:
     """Checkpoint-bound online feature extraction, inference, and scheduling."""
 
@@ -124,13 +170,17 @@ class C2gCleanWindowRuntime:
         self._processor = openvla_processor
         self._unnorm_key = str(unnorm_key)
         self._token_semantics = derive_gripper_token_semantics(openvla_model, self._unnorm_key)
-        self.require_clean_close = bool(require_clean_close)
-        self.minimum_open_minus_close_log_mass = float(minimum_open_minus_close_log_mass)
-        self.minimum_entropy = float(minimum_entropy)
-        if not math.isfinite(self.minimum_open_minus_close_log_mass):
-            raise ValueError("minimum_open_minus_close_log_mass must be finite")
-        if not 0.0 <= self.minimum_entropy <= 1.0:
-            raise ValueError("minimum_entropy must be in [0,1]")
+        self.susceptibility = _resolve_susceptibility(
+            raw,
+            fallback_require_clean_close=require_clean_close,
+            fallback_minimum_margin=minimum_open_minus_close_log_mass,
+            fallback_minimum_entropy=minimum_entropy,
+        )
+        self.require_clean_close = bool(self.susceptibility["require_clean_close"])
+        self.minimum_open_minus_close_log_mass = float(
+            self.susceptibility["minimum_open_minus_close_log_mass"]
+        )
+        self.minimum_entropy = float(self.susceptibility["minimum_entropy"])
         self._text_embedding = None
         self._language_cache: dict[str, np.ndarray] = {}
         self.reset()
@@ -251,6 +301,7 @@ class C2gCleanWindowRuntime:
                 "ready": False,
                 "outputs": {},
                 "policy": policy_summary,
+                "susceptibility": dict(self.susceptibility),
                 "susceptibility_gate": False,
                 "decision": decision,
             }
@@ -289,6 +340,7 @@ class C2gCleanWindowRuntime:
             "ready": True,
             "outputs": probabilities,
             "policy": policy_summary,
+            "susceptibility": dict(self.susceptibility),
             "susceptibility_gate": susceptibility_gate,
             "decision": decision,
         }
