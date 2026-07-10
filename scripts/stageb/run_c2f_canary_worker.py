@@ -108,7 +108,8 @@ def main():
     success = False
     prev_eef = None
 
-    for step in range(args.max_steps):
+    try:
+     for step in range(args.max_steps):
         # RGB — mirror _rgb_from_obs() in C2f adapter for feature parity
         rgb = np.asarray(obs["agentview_image"])
         if rgb.ndim == 2:
@@ -198,6 +199,9 @@ def main():
             success = bool(info.get("success", False) or reward > 0.5)
             step_records[-1]["success"] = success
             break
+
+    except Exception as _e:
+        step_records.append({"step": -1, "error": str(_e), "emitted": False, "attack_delivered": False, "success": False})
 
     # Write metadata BEFORE env.close() to survive EGL teardown crashes
     import hashlib as _hashlib
