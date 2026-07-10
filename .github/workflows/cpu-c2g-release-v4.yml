@@ -1,0 +1,55 @@
+name: cpu-c2g-release-v4
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  release-v4-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install numpy pillow
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Compile final release path
+        run: |
+          python -m py_compile \
+            scripts/stageb/build_c2g_clean_manifests_release.py \
+            scripts/stageb/build_c2g_suite_model_map_strict.py \
+            scripts/stageb/collect_c2g_clean_window_rollouts_strict.py \
+            scripts/stageb/run_c2g_clean_timing_jobs_strict.py \
+            scripts/stageb/run_c2g_matched_load_jobs_release.py \
+            scripts/stageb/run_c2g_matched_load_jobs_map_release.py \
+            tests/test_c2g_clean_collector_strict.py \
+            tests/test_c2g_release_manifest_builder.py \
+            tests/test_c2g_release_v2.py
+      - name: Check final release Bash syntax
+        run: |
+          bash -n scripts/stageb/run_c2g_clean_window_release_v2.sh
+          bash -n scripts/stageb/run_c2g_clean_window_release_v3.sh
+          bash -n scripts/stageb/run_c2g_clean_window_release_v4.sh
+      - name: Run release contract tests
+        run: |
+          python -m unittest -v \
+            tests.test_c2g_clean_collector_strict \
+            tests.test_c2g_release_manifest_builder \
+            tests.test_c2g_release_v2 \
+            tests.test_c2g_clean_susceptibility \
+            tests.test_c2g_dataset_trainability \
+            tests.test_c2g_matched_load_strict \
+            tests.test_c2g_result_analysis
+      - name: Verify worktree remains clean
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=all -- generated audit_outputs paper/generated artifacts)"
