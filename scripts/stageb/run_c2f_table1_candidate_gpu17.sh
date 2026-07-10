@@ -25,6 +25,10 @@ export MUJOCO_GL=egl
 export PYOPENGL_PLATFORM=egl
 
 COMMIT=$(git rev-parse HEAD)
+if [ -n "$(git status --porcelain)" ]; then
+  echo "Refusing full C2f matrix from dirty worktree" >&2
+  exit 2
+fi
 
 echo "=== C2f Table1 Candidate GPU1+GPU7 ===" | tee "$RUN_ROOT/launch.log"
 echo "RUN_ROOT=$RUN_ROOT" | tee -a "$RUN_ROOT/launch.log"
@@ -98,6 +102,28 @@ wc -l "$RUN_ROOT"/jobs_gpu*.txt | tee -a "$RUN_ROOT/launch.log"
 touch "$RUN_ROOT/failed_jobs.txt" "$RUN_ROOT/completed_jobs.txt"
 mkdir -p "$RUN_ROOT/invalid_attempts"
 
+metadata_complete() {
+  local meta=$1
+  local parent_key=$2
+  local cond=$3
+  "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
+    --metadata-complete "$meta" \
+    --expected-git-commit "$COMMIT" \
+    --expected-parent-key "$parent_key" \
+    --expected-condition "$cond"
+}
+
+archive_invalid() {
+  local parent_key=$1
+  local cond=$2
+  "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
+    --archive-invalid-output-root "$OUT" \
+    --parent-key "$parent_key" \
+    --condition "$cond" \
+    --invalid-archive-root "$RUN_ROOT/invalid_attempts" \
+    --expected-git-commit "$COMMIT"
+}
+
 run_queue() {
   local gpu=$1
   local jobfile="$RUN_ROOT/jobs_gpu${gpu}.txt"
@@ -108,15 +134,13 @@ run_queue() {
     local steps="$OUT/${parent_key}/${cond}/step_records.jsonl"
     local logname="${parent_key//\//_}_${cond}.log"
     local logfile="$RUN_ROOT/log_${logname}"
-    if [ -s "$meta" ] && "$VENV" scripts/stageb/audit_c2f_track_a_run.py --metadata-complete "$meta" >/dev/null 2>&1; then
+    if [ -s "$meta" ] && metadata_complete "$meta" "$parent_key" "$cond" >/dev/null 2>&1; then
       echo "[GPU${gpu}] SKIP ${parent_key} ${cond}" | tee -a "$RUN_ROOT/launch.log"
       echo "${parent_key}|${cond}|${gpu}|SKIP" >> "$RUN_ROOT/completed_jobs.txt"
       continue
     fi
     if [ -s "$meta" ]; then
-      "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
-        --archive-invalid-output-root "$OUT" --parent-key "$parent_key" --condition "$cond" \
-        --invalid-archive-root "$RUN_ROOT/invalid_attempts" >> "$RUN_ROOT/launch.log"
+      archive_invalid "$parent_key" "$cond" >> "$RUN_ROOT/launch.log"
     fi
     echo "[GPU${gpu}] START ${parent_key} ${cond} $(date +%H:%M:%S)" | tee -a "$RUN_ROOT/launch.log"
     CUDA_VISIBLE_DEVICES=$gpu PYTHONPATH=$CODE_REPO:$CODE_REPO/src:$CODE_REPO/scripts \
@@ -125,7 +149,7 @@ run_queue() {
       --checkpoint "$CHECKPOINT" --gpu 0 --output-dir "$OUT" \
       --expected-git-commit "$COMMIT" --policy-model-manifest "$GOAL_MODEL_MANIFEST" > "$logfile" 2>&1
     rc=$?
-    if [ "$rc" -eq 0 ] && [ -s "$meta" ] && "$VENV" scripts/stageb/audit_c2f_track_a_run.py --metadata-complete "$meta" >/dev/null 2>&1 && [ -s "$steps" ]; then
+    if [ "$rc" -eq 0 ] && [ -s "$meta" ] && metadata_complete "$meta" "$parent_key" "$cond" >/dev/null 2>&1 && [ -s "$steps" ]; then
       echo "[GPU${gpu}] OK ${parent_key} ${cond} $(date +%H:%M:%S)" | tee -a "$RUN_ROOT/launch.log"
       echo "${parent_key}|${cond}|${gpu}|OK" >> "$RUN_ROOT/completed_jobs.txt"
     else
@@ -134,9 +158,10 @@ run_queue() {
     fi
     nvidia-smi -i "$gpu" >> "$RUN_ROOT/nvidia_smi_gpu${gpu}.log" 2>&1 || true
   done < "$jobfile"
-  # ── Retry failed jobs at tail end ──
+
   echo "[GPU${gpu}] retry phase $(date)" | tee -a "$RUN_ROOT/launch.log"
   local retry_file="$RUN_ROOT/retry_gpu${gpu}.txt"
+  rm -f "$retry_file"
   grep "|${gpu}|FAIL" "$RUN_ROOT/failed_jobs.txt" 2>/dev/null | cut -d'|' -f1,2 | while IFS='|' read -r parent_key cond; do
     [ -z "$parent_key" ] && continue
     echo "${parent_key}|${cond}|${gpu}" >> "$retry_file"
@@ -146,11 +171,9 @@ run_queue() {
       [ -z "$parent_key" ] && continue
       local meta="$OUT/${parent_key}/${cond}/episode_metadata.json"
       local steps="$OUT/${parent_key}/${cond}/step_records.jsonl"
-      if [ -s "$meta" ] && "$VENV" scripts/stageb/audit_c2f_track_a_run.py --metadata-complete "$meta" >/dev/null 2>&1 && [ -s "$steps" ]; then continue; fi
+      if [ -s "$meta" ] && metadata_complete "$meta" "$parent_key" "$cond" >/dev/null 2>&1 && [ -s "$steps" ]; then continue; fi
       if [ -s "$meta" ]; then
-        "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
-          --archive-invalid-output-root "$OUT" --parent-key "$parent_key" --condition "$cond" \
-          --invalid-archive-root "$RUN_ROOT/invalid_attempts" >> "$RUN_ROOT/launch.log"
+        archive_invalid "$parent_key" "$cond" >> "$RUN_ROOT/launch.log"
       fi
       echo "[GPU${gpu}] RETRY ${parent_key} ${cond} $(date +%H:%M:%S)" | tee -a "$RUN_ROOT/launch.log"
       CUDA_VISIBLE_DEVICES=$gpu PYTHONPATH=$CODE_REPO:$CODE_REPO/src:$CODE_REPO/scripts \
@@ -159,7 +182,7 @@ run_queue() {
         --checkpoint "$CHECKPOINT" --gpu 0 --output-dir "$OUT" \
         --expected-git-commit "$COMMIT" --policy-model-manifest "$GOAL_MODEL_MANIFEST" > "$RUN_ROOT/log_retry_${parent_key//\//_}_${cond}.log" 2>&1
       rc=$?
-      if [ "$rc" -eq 0 ] && [ -s "$meta" ] && "$VENV" scripts/stageb/audit_c2f_track_a_run.py --metadata-complete "$meta" >/dev/null 2>&1 && [ -s "$steps" ]; then
+      if [ "$rc" -eq 0 ] && [ -s "$meta" ] && metadata_complete "$meta" "$parent_key" "$cond" >/dev/null 2>&1 && [ -s "$steps" ]; then
         echo "[GPU${gpu}] RETRY OK ${parent_key} ${cond}" | tee -a "$RUN_ROOT/launch.log"
         sed -i "\|${parent_key}|${cond}|${gpu}|FAIL|d" "$RUN_ROOT/failed_jobs.txt" 2>/dev/null || true
       else
@@ -179,8 +202,9 @@ wait $PID1; wait $PID7
 
 echo "[4/5] Post-run audit" | tee -a "$RUN_ROOT/launch.log"
 if ! "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
-  --run-root "$RUN_ROOT" --output-root "$OUT" --parent-manifest "$RUN_ROOT/parent_manifest.jsonl"; then
-  echo "[4/5] Post-run audit HOLD: missing or runtime-invalid episodes remain" | tee -a "$RUN_ROOT/launch.log"
+  --run-root "$RUN_ROOT" --output-root "$OUT" --parent-manifest "$RUN_ROOT/parent_manifest.jsonl" \
+  --expected-git-commit "$COMMIT"; then
+  echo "[4/5] Post-run audit HOLD: missing, mismatched, or runtime-invalid episodes remain" | tee -a "$RUN_ROOT/launch.log"
   exit 2
 fi
 echo "[5/5] DONE $(date)" | tee -a "$RUN_ROOT/launch.log"
