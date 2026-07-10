@@ -90,6 +90,9 @@ def split_label_coverage(
     coverage: Dict[str, Dict[str, Any]] = defaultdict(lambda: {
         "rows": 0,
         "episodes": set(),
+        "tasks": set(),
+        "suites": set(),
+        "episode_labels": {},
         "known_positive": 0,
         "known_negative": 0,
         "unknown": 0,
@@ -98,18 +101,30 @@ def split_label_coverage(
         split = str(row[split_key])
         bucket = coverage[split]
         bucket["rows"] += 1
-        bucket["episodes"].add(str(row["episode_key"]))
+        episode = str(row["episode_key"])
+        bucket["episodes"].add(episode)
+        bucket["tasks"].add(f"{row['suite']}:{row['task_index']}")
+        bucket["suites"].add(str(row["suite"]))
         known = bool(row.get(known_key, False))
+        episode_state = bucket["episode_labels"].setdefault(episode, {"all_known": True, "positive": False})
+        episode_state["all_known"] = bool(episode_state["all_known"] and known)
         if not known:
             bucket["unknown"] += 1
         elif bool(row.get(label_key, False)):
             bucket["known_positive"] += 1
+            episode_state["positive"] = True
         else:
             bucket["known_negative"] += 1
     return {
         split: {
             "rows": int(values["rows"]),
             "episodes": len(values["episodes"]),
+            "tasks": len(values["tasks"]),
+            "suites": len(values["suites"]),
+            "attackable_episodes": sum(1 for state in values["episode_labels"].values() if state["positive"]),
+            "fully_known_negative_episodes": sum(
+                1 for state in values["episode_labels"].values() if state["all_known"] and not state["positive"]
+            ),
             "known_positive": int(values["known_positive"]),
             "known_negative": int(values["known_negative"]),
             "unknown": int(values["unknown"]),
@@ -125,6 +140,10 @@ def assert_split_viability(
     min_episodes: int = 1,
     min_known_positive: int = 1,
     min_known_negative: int = 1,
+    min_tasks: int = 1,
+    min_suites: int = 1,
+    min_attackable_episodes: int = 1,
+    min_fully_known_negative_episodes: int = 1,
 ) -> None:
     """Hard-gate folds that cannot support training, calibration, or evaluation."""
     problems: List[str] = []
@@ -139,6 +158,14 @@ def assert_split_viability(
             problems.append(f"{split}:known_positive<{min_known_positive}")
         if int(values.get("known_negative", 0)) < min_known_negative:
             problems.append(f"{split}:known_negative<{min_known_negative}")
+        if int(values.get("tasks", 0)) < min_tasks:
+            problems.append(f"{split}:tasks<{min_tasks}")
+        if int(values.get("suites", 0)) < min_suites:
+            problems.append(f"{split}:suites<{min_suites}")
+        if int(values.get("attackable_episodes", 0)) < min_attackable_episodes:
+            problems.append(f"{split}:attackable_episodes<{min_attackable_episodes}")
+        if int(values.get("fully_known_negative_episodes", 0)) < min_fully_known_negative_episodes:
+            problems.append(f"{split}:fully_known_negative_episodes<{min_fully_known_negative_episodes}")
     if problems:
         raise ValueError("non-viable C2g split: " + ", ".join(problems))
 

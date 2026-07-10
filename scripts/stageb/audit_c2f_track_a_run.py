@@ -85,6 +85,8 @@ def archive_invalid_attempt(
     archive_root: Path,
     *,
     expected_commit: str = "",
+    expected_protocol_name: str = PROTOCOL_NAME,
+    expected_protocol_version: str = PROTOCOL_VERSION,
 ) -> bool:
     ep_dir = output_root / parent_key / condition
     meta = ep_dir / "episode_metadata.json"
@@ -93,6 +95,8 @@ def archive_invalid_attempt(
         expected_commit=expected_commit,
         expected_condition=condition,
         expected_parent_key=parent_key,
+        expected_protocol_name=expected_protocol_name,
+        expected_protocol_version=expected_protocol_version,
     )["complete"]:
         return False
     dest = archive_root / parent_key / condition
@@ -111,6 +115,8 @@ def audit_run(
     jobs_file: Path | None = None,
     *,
     expected_commit: str = "",
+    expected_protocol_name: str = PROTOCOL_NAME,
+    expected_protocol_version: str = PROTOCOL_VERSION,
 ) -> Dict[str, Any]:
     if jobs_file:
         expected_jobs = [
@@ -154,6 +160,8 @@ def audit_run(
             expected_commit=expected_commit,
             expected_condition=job["condition"],
             expected_parent_key=job["parent_key"],
+            expected_protocol_name=expected_protocol_name,
+            expected_protocol_version=expected_protocol_version,
         )
         step_record_row_count += int(status["step_record_count"])
         if status["complete"]:
@@ -176,7 +184,12 @@ def audit_run(
         path = Path(meta["_path"])
         if str(path) in expected_paths:
             continue
-        status = episode_completion(path, expected_commit=expected_commit)
+        status = episode_completion(
+            path,
+            expected_commit=expected_commit,
+            expected_protocol_name=expected_protocol_name,
+            expected_protocol_version=expected_protocol_version,
+        )
         if not status["complete"]:
             invalid.append({"path": str(path), "parent_key": str(meta.get("parent_key", "")), "condition": str(meta.get("condition", "")), "reasons": status["reasons"]})
 
@@ -214,8 +227,8 @@ def audit_run(
         "commit_mismatches": commit_mismatches,
         "protocol_mismatches": protocol_mismatches,
         "expected_commit": expected_commit,
-        "expected_protocol_name": PROTOCOL_NAME,
-        "expected_protocol_version": PROTOCOL_VERSION,
+        "expected_protocol_name": expected_protocol_name,
+        "expected_protocol_version": expected_protocol_version,
         "complete": len(missing) == 0 and len(invalid) == 0,
         "no_emit": no_emit,
         "delivery_count_min": min(delivery) if delivery else None,
@@ -247,6 +260,8 @@ def main() -> int:
     ap.add_argument("--expected-git-commit", default="")
     ap.add_argument("--expected-condition", default="")
     ap.add_argument("--expected-parent-key", default="")
+    ap.add_argument("--expected-protocol-name", default=PROTOCOL_NAME)
+    ap.add_argument("--expected-protocol-version", default=PROTOCOL_VERSION)
     args = ap.parse_args()
 
     if args.metadata_complete:
@@ -255,6 +270,8 @@ def main() -> int:
             expected_commit=args.expected_git_commit,
             expected_condition=args.expected_condition,
             expected_parent_key=args.expected_parent_key,
+            expected_protocol_name=args.expected_protocol_name,
+            expected_protocol_version=args.expected_protocol_version,
         )
         return 0 if status["complete"] else 1
     if args.archive_invalid_output_root:
@@ -264,6 +281,8 @@ def main() -> int:
             args.condition or "",
             Path(args.invalid_archive_root or "invalid_attempts"),
             expected_commit=args.expected_git_commit,
+            expected_protocol_name=args.expected_protocol_name,
+            expected_protocol_version=args.expected_protocol_version,
         )
         print(json.dumps({"archived": moved}, sort_keys=True))
         return 0
@@ -273,6 +292,8 @@ def main() -> int:
         Path(args.parent_manifest),
         Path(args.jobs_file) if args.jobs_file else None,
         expected_commit=args.expected_git_commit,
+        expected_protocol_name=args.expected_protocol_name,
+        expected_protocol_version=args.expected_protocol_version,
     )
     print(json.dumps(audit, indent=2, sort_keys=True))
     return 0 if audit["complete"] else 2

@@ -7,6 +7,8 @@ VENV="${A800_PY:-/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin
 PARENT_CSV="${PARENT_CSV:-/mnt/sdc/dty_user/openvla_attack_evidence/condition_matrix/d7_table1_manifest/d7_table1_preregistered_parent_keys.csv}"
 CHECKPOINT="${CHECKPOINT:-/mnt/sdc/dty_user/openvla_attack_evidence/c2f/siglip_full_final/train_D/c2f_rgb_lang_temporal_detector_v0.pt}"
 GOAL_MODEL_MANIFEST="${GOAL_MODEL_MANIFEST:-$CODE_REPO/artifacts/goal_model_manifest.json}"
+PROTOCOL_NAME="C2F_TRACK_A_CMDOPEN_ACTION_SPACE"
+PROTOCOL_VERSION="2026-07-10.v2"
 
 cd "$CODE_REPO" || exit 1
 COMMIT=$(git rev-parse HEAD)
@@ -52,8 +54,8 @@ PY
 
 cat > "$RUN_ROOT/launch_env.json" <<JSON
 {
-  "protocol_name": "C2F_TRACK_A_CMDOPEN_ACTION_SPACE",
-  "protocol_version": "2026-07-10.v2",
+  "protocol_name": "$PROTOCOL_NAME",
+  "protocol_version": "$PROTOCOL_VERSION",
   "attack_space": "action_space_command_intervention",
   "code_repo": "$CODE_REPO",
   "python": "$VENV",
@@ -73,13 +75,15 @@ while IFS='|' read -r parent_key cond; do
   meta="$OUT/${parent_key}/${cond}/episode_metadata.json"
   if [ -s "$meta" ] && "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
     --metadata-complete "$meta" --expected-git-commit "$COMMIT" \
-    --expected-parent-key "$parent_key" --expected-condition "$cond" >/dev/null 2>&1; then
+    --expected-parent-key "$parent_key" --expected-condition "$cond" \
+    --expected-protocol-name "$PROTOCOL_NAME" --expected-protocol-version "$PROTOCOL_VERSION" >/dev/null 2>&1; then
     echo "SKIP $parent_key $cond" | tee -a "$RUN_ROOT/launch.log"
     continue
   fi
   [ -s "$meta" ] && "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
     --archive-invalid-output-root "$OUT" --parent-key "$parent_key" --condition "$cond" \
-    --invalid-archive-root "$RUN_ROOT/invalid_attempts" --expected-git-commit "$COMMIT"
+    --invalid-archive-root "$RUN_ROOT/invalid_attempts" --expected-git-commit "$COMMIT" \
+    --expected-protocol-name "$PROTOCOL_NAME" --expected-protocol-version "$PROTOCOL_VERSION"
   CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}" PYTHONPATH="$CODE_REPO:$CODE_REPO/src:$CODE_REPO/scripts" \
     "$VENV" scripts/stageb/run_c2f_canary_worker.py \
     --parent-key "$parent_key" --condition "$cond" --checkpoint "$CHECKPOINT" \
@@ -91,5 +95,6 @@ done < "$RUN_ROOT/smoke_jobs.txt"
 
 "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
   --run-root "$RUN_ROOT" --output-root "$OUT" --parent-manifest "$RUN_ROOT/parent_manifest.jsonl" \
-  --jobs-file "$RUN_ROOT/smoke_jobs.txt" --expected-git-commit "$COMMIT"
+  --jobs-file "$RUN_ROOT/smoke_jobs.txt" --expected-git-commit "$COMMIT" \
+  --expected-protocol-name "$PROTOCOL_NAME" --expected-protocol-version "$PROTOCOL_VERSION"
 echo "RUN_ROOT=$RUN_ROOT"

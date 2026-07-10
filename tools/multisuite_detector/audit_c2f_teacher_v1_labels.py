@@ -7,6 +7,9 @@ import csv
 import hashlib
 import json
 import math
+import shlex
+import subprocess
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 from statistics import mean
@@ -74,6 +77,11 @@ def audit_teacher_v1(
     input_root: Path,
     teacher_source: Path | None = None,
     suite_overrides: Mapping[str, Path] | None = None,
+    *,
+    expected_episodes: int = 0,
+    expected_rows: int = 0,
+    git_commit: str = "",
+    command: str = "",
 ) -> Tuple[Dict[str, Any], List[Dict[str, Any]], List[Dict[str, Any]]]:
     aggregates: Dict[Tuple[str, int], Dict[str, Any]] = defaultdict(lambda: {
         "episodes": 0,
@@ -98,6 +106,9 @@ def audit_teacher_v1(
         "miss_reasons": Counter(),
     })
     read_errors: List[Dict[str, str]] = []
+    input_manifest = hashlib.sha256()
+    input_manifest_file_count = 0
+    input_manifest_total_bytes = 0
     suite_overrides = dict(suite_overrides or {})
     paths = []
     for path in sorted(input_root.rglob("step_records.jsonl")):
@@ -111,10 +122,17 @@ def audit_teacher_v1(
                 paths.append(path)
     for path in paths:
         try:
-            meta = json.loads(path.with_name("episode_metadata.json").read_text(encoding="utf-8"))
+            metadata_path = path.with_name("episode_metadata.json")
+            meta = json.loads(metadata_path.read_text(encoding="utf-8"))
             suite = str(meta.get("suite", ""))
             task = int(meta.get("task_index", meta.get("task_id", -1)))
             rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+            for artifact in (metadata_path, path):
+                digest = sha256_file(artifact)
+                size = artifact.stat().st_size
+                input_manifest.update(f"{artifact}|{size}|{digest}\n".encode("utf-8"))
+                input_manifest_file_count += 1
+                input_manifest_total_bytes += size
         except Exception as exc:
             read_errors.append({"path": str(path), "error": str(exc)})
             continue
@@ -184,6 +202,7 @@ def audit_teacher_v1(
             "stable_carry_count": stable,
             "release_safe_count": agg["phases"]["release_safe"],
             "primary_attackable_count": agg["primary_union_positive"],
+            "primary_union_count": agg["primary_union_positive"],
             "primary_field_positive_count": agg["primary_field_positive"],
             "primary_role_positive_count": agg["primary_role_positive"],
             "primary_disagreement_count": agg["primary_disagreement"],
@@ -199,6 +218,10 @@ def audit_teacher_v1(
             "first_primary_p90": percentile(agg["first_primary"], 0.9),
             "first_primary_max": max(agg["first_primary"]) if agg["first_primary"] else None,
             "primary_duration_mean": mean(agg["primary_durations"]) if agg["primary_durations"] else None,
+            "primary_duration_min": min(agg["primary_durations"]) if agg["primary_durations"] else None,
+            "primary_duration_p50": percentile(agg["primary_durations"], 0.5),
+            "primary_duration_p90": percentile(agg["primary_durations"], 0.9),
+            "primary_duration_max": max(agg["primary_durations"]) if agg["primary_durations"] else None,
             "spatial_absolute_z_fallback_candidate_count": agg["spatial_absolute_z_fallback_candidates"],
             "explicit_grounding_coverage": agg["explicit_grounding_rows"] / windows if windows else 0.0,
             "explicit_target_match_coverage": agg["explicit_target_match_rows"] / windows if windows else 0.0,
@@ -226,12 +249,31 @@ def audit_teacher_v1(
             "language_target_match_present": "_object_matches_task_target" in text,
             "release_transition_only_present": 'self._phase = "release_safe"' in text,
         }
+    episode_count = sum(int(row["episode_count"]) for row in by_task)
+    step_row_count = sum(int(row["window_count"]) for row in by_task)
+    expected_episode_match = not expected_episodes or episode_count == expected_episodes
+    expected_row_match = not expected_rows or step_row_count == expected_rows
+    complete = bool(paths) and not read_errors and all(suite_counts[s] > 0 for s in SUITES)
+    complete = complete and expected_episode_match and expected_row_match
     report = {
         "gate": "C2F_TEACHER_V1_LABEL_AUDIT",
-        "status": "PASS_C2F_TEACHER_V1_LABEL_AUDIT_WITH_PROVENANCE_LIMITS" if paths and not read_errors and all(suite_counts[s] > 0 for s in SUITES) else "HOLD_C2F_TEACHER_V1_LABEL_AUDIT_INCOMPLETE",
+        "status": "PASS_C2F_TEACHER_V1_LABEL_AUDIT_WITH_PROVENANCE_LIMITS" if complete else "HOLD_C2F_TEACHER_V1_LABEL_AUDIT_INCOMPLETE",
+        "teacher_v1_for_training": "HOLD",
+        "audit_git_commit": git_commit,
+        "exact_command": command,
         "input_root": str(input_root),
         "suite_overrides": {suite: str(path) for suite, path in suite_overrides.items()},
         "step_record_file_count": len(paths),
+        "episode_count": episode_count,
+        "step_row_count": step_row_count,
+        "expected_episode_count": expected_episodes or None,
+        "expected_step_row_count": expected_rows or None,
+        "expected_episode_count_match": expected_episode_match,
+        "expected_step_row_count_match": expected_row_match,
+        "input_manifest_algorithm": "sha256(path|size|sha256 per metadata/step artifact, sorted by audit traversal)",
+        "input_manifest_sha256": input_manifest.hexdigest(),
+        "input_manifest_file_count": input_manifest_file_count,
+        "input_manifest_total_bytes": input_manifest_total_bytes,
         "read_error_count": len(read_errors),
         "read_errors": read_errors[:100],
         "suite_episode_counts": dict(suite_counts),
@@ -263,6 +305,9 @@ def main() -> int:
     ap.add_argument("--teacher-source", default="")
     ap.add_argument("--suite-override", action="append", default=[], metavar="SUITE=PATH")
     ap.add_argument("--output-dir", required=True)
+    ap.add_argument("--expected-episodes", type=int, default=0)
+    ap.add_argument("--expected-rows", type=int, default=0)
+    ap.add_argument("--git-commit", default="")
     args = ap.parse_args()
     out = Path(args.output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -272,8 +317,20 @@ def main() -> int:
         if not sep or suite not in SUITES:
             raise SystemExit(f"invalid --suite-override {item!r}; expected SUITE=PATH")
         overrides[suite] = Path(path)
+    git_commit = args.git_commit
+    if not git_commit:
+        try:
+            git_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip()
+        except Exception:
+            git_commit = ""
     report, by_task, reasons = audit_teacher_v1(
-        Path(args.input_root), Path(args.teacher_source) if args.teacher_source else None, overrides
+        Path(args.input_root),
+        Path(args.teacher_source) if args.teacher_source else None,
+        overrides,
+        expected_episodes=args.expected_episodes,
+        expected_rows=args.expected_rows,
+        git_commit=git_commit,
+        command=shlex.join([sys.executable, *sys.argv]),
     )
     (out / "teacher_v1_audit_report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     task_fields = list(by_task[0]) if by_task else ["suite", "task_index"]

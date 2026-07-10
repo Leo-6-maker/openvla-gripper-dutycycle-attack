@@ -10,6 +10,7 @@ from src.gripper_attack.c2g_causal_vulnerability_detector import (
     C2gCausalVulnerabilityDetector,
     first_trigger_episode_losses,
     masked_bce,
+    persistent_trigger_mask,
 )
 from tools.multisuite_detector.audit_c2f_teacher_v1_labels import audit_teacher_v1
 from tools.multisuite_detector.c2g_dataset_scaffold import (
@@ -51,9 +52,18 @@ class C2gStaticTests(unittest.TestCase):
             self.assertEqual(sum(row["window_count"] for row in reasons if row["reason_code"] == "V1_NO_GROUNDED_OBJECT"), 4)
             self.assertEqual(report["clean_success_unknown_episode_count"], 1)
             self.assertEqual(report["primary_field_role_disagreement_count"], 1)
+            self.assertEqual(report["episode_count"], 4)
+            self.assertEqual(report["step_row_count"], 8)
+            self.assertEqual(report["input_manifest_file_count"], 8)
+            self.assertEqual(len(report["input_manifest_sha256"]), 64)
+            self.assertEqual(report["teacher_v1_for_training"], "HOLD")
             spatial = next(row for row in by_task if row["suite"] == "libero_spatial")
             self.assertEqual(spatial["clean_success_unknown_episode_count"], 1)
             self.assertNotIn("clean_not_success_episode_count", spatial)
+
+            mismatch, _, _ = audit_teacher_v1(root, expected_episodes=4, expected_rows=9)
+            self.assertTrue(mismatch["status"].startswith("HOLD_"))
+            self.assertFalse(mismatch["expected_step_row_count_match"])
 
     def test_context_modes_keep_legacy_shortcut_diagnostic_only(self):
         columns = ["ctx_suite_libero_10", "ctx_task_hash_01", "feature_0"]
@@ -85,16 +95,20 @@ class C2gStaticTests(unittest.TestCase):
 
     def test_split_viability_preserves_unknown_and_hard_gates_empty_labels(self):
         rows = [
-            {"episode_key": "tr-p", "split": "train", "label_known_mask": 1, "y_cmdopen_vulnerable": 1},
-            {"episode_key": "tr-n", "split": "train", "label_known_mask": 1, "y_cmdopen_vulnerable": 0},
-            {"episode_key": "va-p", "split": "val", "label_known_mask": 1, "y_cmdopen_vulnerable": 1},
-            {"episode_key": "va-n", "split": "val", "label_known_mask": 1, "y_cmdopen_vulnerable": 0},
-            {"episode_key": "te-p", "split": "test", "label_known_mask": 1, "y_cmdopen_vulnerable": 1},
-            {"episode_key": "te-n", "split": "test", "label_known_mask": 1, "y_cmdopen_vulnerable": 0},
-            {"episode_key": "te-u", "split": "test", "label_known_mask": 0, "y_cmdopen_vulnerable": 0},
+            {"episode_key": "tr-p", "split": "train", "suite": "s", "task_index": 0, "label_known_mask": 1, "y_cmdopen_vulnerable": 1},
+            {"episode_key": "tr-n", "split": "train", "suite": "s", "task_index": 0, "label_known_mask": 1, "y_cmdopen_vulnerable": 0},
+            {"episode_key": "va-p", "split": "val", "suite": "s", "task_index": 0, "label_known_mask": 1, "y_cmdopen_vulnerable": 1},
+            {"episode_key": "va-n", "split": "val", "suite": "s", "task_index": 0, "label_known_mask": 1, "y_cmdopen_vulnerable": 0},
+            {"episode_key": "te-p", "split": "test", "suite": "s", "task_index": 0, "label_known_mask": 1, "y_cmdopen_vulnerable": 1},
+            {"episode_key": "te-n", "split": "test", "suite": "s", "task_index": 0, "label_known_mask": 1, "y_cmdopen_vulnerable": 0},
+            {"episode_key": "te-u", "split": "test", "suite": "s", "task_index": 0, "label_known_mask": 0, "y_cmdopen_vulnerable": 0},
         ]
         coverage = split_label_coverage(rows)
         self.assertEqual(coverage["test"]["unknown"], 1)
+        self.assertEqual(coverage["test"]["tasks"], 1)
+        self.assertEqual(coverage["test"]["suites"], 1)
+        self.assertEqual(coverage["test"]["attackable_episodes"], 1)
+        self.assertEqual(coverage["test"]["fully_known_negative_episodes"], 1)
         assert_split_viability(coverage)
         broken = {split: dict(values) for split, values in coverage.items()}
         broken["val"]["known_positive"] = 0
@@ -142,6 +156,11 @@ class C2gStaticTests(unittest.TestCase):
         loss = masked_bce(logits, target, mask, weight)
         self.assertAlmostEqual(float(loss), float(torch.nn.functional.binary_cross_entropy_with_logits(logits, target)), places=6)
         self.assertEqual(float(masked_bce(logits, target, torch.zeros_like(mask), weight)), 0.0)
+        self.assertEqual(float(masked_bce(logits, target, mask, torch.zeros_like(weight))), 0.0)
+        with self.assertRaises(ValueError):
+            masked_bce(logits, target, mask, torch.tensor([1.0, -1.0]))
+        with self.assertRaises(ValueError):
+            masked_bce(logits, target[:1], mask)
 
     def test_first_trigger_losses_mask_unknown_windows_and_require_known_negative(self):
         logits = torch.tensor([
@@ -161,9 +180,37 @@ class C2gStaticTests(unittest.TestCase):
         ], dtype=torch.bool)
         fully_negative = torch.tensor([0, 0, 1], dtype=torch.bool)
         losses = first_trigger_episode_losses(logits, labels, known, fully_negative)
-        self.assertEqual(set(losses), {"early_emit", "episode_miss", "negative_episode_any_emit"})
+        self.assertEqual(set(losses), {"early_emit", "episode_miss", "negative_episode_any_emit", "release_safe_emit"})
         self.assertTrue(all(torch.isfinite(value) for value in losses.values()))
         self.assertAlmostEqual(float(losses["negative_episode_any_emit"]), float(torch.sigmoid(torch.tensor(-2.0))), places=6)
+
+    def test_isolated_spike_cannot_satisfy_two_of_three_persistence(self):
+        logits = torch.tensor([[20.0, -20.0, -20.0]])
+        labels = torch.tensor([[1, 0, 0]])
+        known = torch.ones_like(labels, dtype=torch.bool)
+        losses = first_trigger_episode_losses(logits, labels, known)
+        self.assertEqual(float(losses["episode_miss"]), 0.0)
+
+    def test_explicit_fully_known_negative_rejects_partial_known_episode(self):
+        logits = torch.zeros(1, 3)
+        labels = torch.zeros(1, 3)
+        known = torch.tensor([[1, 1, 0]], dtype=torch.bool)
+        with self.assertRaisesRegex(ValueError, "contradicts"):
+            first_trigger_episode_losses(logits, labels, known, torch.tensor([1], dtype=torch.bool))
+
+    def test_release_safe_veto_and_two_of_three_online_gate(self):
+        vulnerable = torch.tensor([[0.9, 0.9, 0.9, 0.9]])
+        release = torch.tensor([[0.1, 0.9, 0.1, 0.1]])
+        grounding = torch.ones_like(vulnerable)
+        trigger = persistent_trigger_mask(
+            vulnerable,
+            release,
+            grounding,
+            tau_vulnerability=0.5,
+            tau_release=0.5,
+            tau_ground=0.5,
+        )
+        self.assertEqual(trigger.tolist(), [[False, False, True, True]])
 
 
 if __name__ == "__main__":

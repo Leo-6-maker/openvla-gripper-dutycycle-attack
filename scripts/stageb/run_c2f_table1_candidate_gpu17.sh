@@ -8,6 +8,8 @@ VENV="${A800_PY:-/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin
 PARENT_CSV=/mnt/sdc/dty_user/openvla_attack_evidence/condition_matrix/d7_table1_manifest/d7_table1_preregistered_parent_keys.csv
 CHECKPOINT=/mnt/sdc/dty_user/openvla_attack_evidence/c2f/siglip_full_final/train_D/c2f_rgb_lang_temporal_detector_v0.pt
 GOAL_MODEL_MANIFEST="$CODE_REPO/artifacts/goal_model_manifest.json"
+PROTOCOL_NAME="C2F_TRACK_A_CMDOPEN_ACTION_SPACE"
+PROTOCOL_VERSION="2026-07-10.v2"
 
 STAMP=$(date +%Y%m%d_%H%M%S)
 RUN_ROOT=/mnt/sdc/dty_user/openvla_attack_evidence/c2f/table1_candidate_gpu17_${STAMP}
@@ -45,6 +47,7 @@ nvidia-smi -i 1,7 > "$RUN_ROOT/nvidia_smi_start.txt"
 cat > "$RUN_ROOT/launch_env.json" <<JSON
 {
   "code_repo": "$CODE_REPO", "python": "$VENV", "commit": "$COMMIT",
+  "protocol_name": "$PROTOCOL_NAME", "protocol_version": "$PROTOCOL_VERSION",
   "checkpoint": "$CHECKPOINT", "parent_csv": "$PARENT_CSV",
   "gpus": [1, 7], "conditions": ["CLEAN", "TRUE_CMDOPEN_T10_C2F", "RAND_ACTION_NOISE_T10_C2F"],
   "n_per_suite": 12, "seed": 42,
@@ -110,7 +113,9 @@ metadata_complete() {
     --metadata-complete "$meta" \
     --expected-git-commit "$COMMIT" \
     --expected-parent-key "$parent_key" \
-    --expected-condition "$cond"
+    --expected-condition "$cond" \
+    --expected-protocol-name "$PROTOCOL_NAME" \
+    --expected-protocol-version "$PROTOCOL_VERSION"
 }
 
 archive_invalid() {
@@ -121,7 +126,9 @@ archive_invalid() {
     --parent-key "$parent_key" \
     --condition "$cond" \
     --invalid-archive-root "$RUN_ROOT/invalid_attempts" \
-    --expected-git-commit "$COMMIT"
+    --expected-git-commit "$COMMIT" \
+    --expected-protocol-name "$PROTOCOL_NAME" \
+    --expected-protocol-version "$PROTOCOL_VERSION"
 }
 
 run_queue() {
@@ -203,7 +210,8 @@ wait $PID1; wait $PID7
 echo "[4/5] Post-run audit" | tee -a "$RUN_ROOT/launch.log"
 if ! "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
   --run-root "$RUN_ROOT" --output-root "$OUT" --parent-manifest "$RUN_ROOT/parent_manifest.jsonl" \
-  --expected-git-commit "$COMMIT"; then
+  --expected-git-commit "$COMMIT" \
+  --expected-protocol-name "$PROTOCOL_NAME" --expected-protocol-version "$PROTOCOL_VERSION"; then
   echo "[4/5] Post-run audit HOLD: missing, mismatched, or runtime-invalid episodes remain" | tee -a "$RUN_ROOT/launch.log"
   exit 2
 fi

@@ -122,6 +122,19 @@ class C2fTrackAStaticTests(unittest.TestCase):
         self.assertIn("set -euo pipefail", text)
         self.assertIn('--expected-git-commit "$COMMIT"', text)
         self.assertIn('--expected-condition "$cond"', text)
+        self.assertIn('--expected-protocol-name "$PROTOCOL_NAME"', text)
+        self.assertIn('--expected-protocol-version "$PROTOCOL_VERSION"', text)
+
+    def test_full_matrix_propagates_all_frozen_bindings(self):
+        text = Path("scripts/stageb/run_c2f_table1_candidate_gpu17.sh").read_text(encoding="utf-8-sig")
+        for token in [
+            '--expected-git-commit "$COMMIT"',
+            '--expected-parent-key "$parent_key"',
+            '--expected-condition "$cond"',
+            '--expected-protocol-name "$PROTOCOL_NAME"',
+            '--expected-protocol-version "$PROTOCOL_VERSION"',
+        ]:
+            self.assertIn(token, text)
 
     def test_postrun_counts_joint_completion_and_rejects_empty_steps(self):
         with tempfile.TemporaryDirectory() as td:
