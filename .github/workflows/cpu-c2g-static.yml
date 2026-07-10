@@ -64,6 +64,7 @@ jobs:
         run: |
           bash -n scripts/stageb/run_c2f_track_a_smoke5.sh
           bash -n scripts/stageb/run_c2f_table1_candidate_gpu17.sh
+          bash -n scripts/stageb/run_c2g_clean_window_end_to_end.sh
       - name: Run complete C2g static suite
         run: |
           python -m unittest -v \
