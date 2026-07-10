@@ -9,6 +9,10 @@ import sys
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from scripts.stageb.build_c2g_suite_model_map import (
+    validate_goal_manifest as validate_goal_manifest_bytes,
+)
+
 REPO = Path(__file__).resolve().parents[2]
 WORKER = REPO / "scripts" / "stageb" / "run_c2g_clean_window_vis_pgd.py"
 PROTOCOL_NAME = "C2G_CLEAN_WINDOW_VIS_PGD"
@@ -41,14 +45,10 @@ def read_model_map(path: Path) -> dict[str, str]:
     return output
 
 
-def validate_goal_manifest(path: Path, goal_model_path: Path) -> None:
-    value = json.loads(path.read_text(encoding="utf-8"))
-    if value.get("status") != "PASS_C2F_GOAL_MODEL_INTEGRITY_AUDITED":
-        raise ValueError("Goal model manifest status is not PASS")
-    if Path(str(value.get("model_path", ""))).resolve() != goal_model_path.resolve():
-        raise ValueError("Goal model manifest path does not match suite model map")
-    if value.get("missing_referenced_shards"):
-        raise ValueError("Goal model manifest reports missing shards")
+def validate_goal_manifest(path: Path, goal_model_path: Path) -> dict[str, Any]:
+    """Validate legacy frozen or v2 re-audited Goal bytes through one source of truth."""
+
+    return validate_goal_manifest_bytes(path.resolve(), goal_model_path.resolve())
 
 
 def normalized_parent(row: Mapping[str, Any]) -> dict[str, Any]:
@@ -128,7 +128,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.max_jobs > 0:
         parents = parents[: args.max_jobs]
     model_map = read_model_map(args.suite_model_map.resolve())
-    validate_goal_manifest(
+    goal_validation = validate_goal_manifest(
         args.goal_model_manifest.resolve(),
         Path(model_map["libero_goal"]),
     )
@@ -190,6 +190,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "parent_count": len(parents),
         "suite_model_map": str(args.suite_model_map.resolve()),
         "goal_model_manifest": str(args.goal_model_manifest.resolve()),
+        "goal_model_validation": goal_validation,
         "detector_checkpoint_sha256": checkpoint_sha,
         "results": results,
     }
