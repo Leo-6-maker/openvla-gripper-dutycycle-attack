@@ -16,9 +16,11 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+REPO = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO))
+
 from scripts.stageb.verify_c2g_suite_model_map_strict import verify
 
-REPO = Path(__file__).resolve().parents[2]
 STRICT_COLLECTOR = REPO / "scripts" / "stageb" / "collect_c2g_clean_window_rollouts_strict.py"
 SUITES = ("libero_object", "libero_spatial", "libero_goal", "libero_10")
 FORBIDDEN_CLEAN_KEY_TOKENS = ("attack_outcome", "post_intervention", "counterfactual")
