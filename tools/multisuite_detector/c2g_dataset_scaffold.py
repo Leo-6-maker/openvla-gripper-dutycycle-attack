@@ -4,10 +4,11 @@ from __future__ import annotations
 import hashlib
 import random
 from collections import Counter, defaultdict
-from typing import Any, Dict, Iterable, List, Sequence
+from typing import Any, Dict, Iterable, List, Mapping, Sequence
 
 CONTEXT_MODES = ("no_context", "suite_only", "full_context_legacy")
 SPLIT_MODES = ("within-task", "leave-one-task-out", "leave-one-suite-out")
+DIAGNOSTICS = ("shuffled-language", "permuted-task-context", "wrong-language-cross-task")
 
 
 def context_feature_names(mode: str, available: Sequence[str]) -> List[str]:
@@ -78,6 +79,70 @@ def assert_no_episode_leakage(rows: Iterable[Dict[str, Any]]) -> None:
         seen[episode] = split
 
 
+def split_label_coverage(
+    rows: Sequence[Dict[str, Any]],
+    *,
+    split_key: str = "split",
+    known_key: str = "label_known_mask",
+    label_key: str = "y_cmdopen_vulnerable",
+) -> Dict[str, Dict[str, int]]:
+    """Summarize fold viability without converting unknown labels to negatives."""
+    coverage: Dict[str, Dict[str, Any]] = defaultdict(lambda: {
+        "rows": 0,
+        "episodes": set(),
+        "known_positive": 0,
+        "known_negative": 0,
+        "unknown": 0,
+    })
+    for row in rows:
+        split = str(row[split_key])
+        bucket = coverage[split]
+        bucket["rows"] += 1
+        bucket["episodes"].add(str(row["episode_key"]))
+        known = bool(row.get(known_key, False))
+        if not known:
+            bucket["unknown"] += 1
+        elif bool(row.get(label_key, False)):
+            bucket["known_positive"] += 1
+        else:
+            bucket["known_negative"] += 1
+    return {
+        split: {
+            "rows": int(values["rows"]),
+            "episodes": len(values["episodes"]),
+            "known_positive": int(values["known_positive"]),
+            "known_negative": int(values["known_negative"]),
+            "unknown": int(values["unknown"]),
+        }
+        for split, values in sorted(coverage.items())
+    }
+
+
+def assert_split_viability(
+    coverage: Mapping[str, Mapping[str, int]],
+    *,
+    required_splits: Sequence[str] = ("train", "val", "test"),
+    min_episodes: int = 1,
+    min_known_positive: int = 1,
+    min_known_negative: int = 1,
+) -> None:
+    """Hard-gate folds that cannot support training, calibration, or evaluation."""
+    problems: List[str] = []
+    for split in required_splits:
+        values = coverage.get(split)
+        if values is None:
+            problems.append(f"{split}:missing")
+            continue
+        if int(values.get("episodes", 0)) < min_episodes:
+            problems.append(f"{split}:episodes<{min_episodes}")
+        if int(values.get("known_positive", 0)) < min_known_positive:
+            problems.append(f"{split}:known_positive<{min_known_positive}")
+        if int(values.get("known_negative", 0)) < min_known_negative:
+            problems.append(f"{split}:known_negative<{min_known_negative}")
+    if problems:
+        raise ValueError("non-viable C2g split: " + ", ".join(problems))
+
+
 def task_episode_balanced_weights(rows: Sequence[Dict[str, Any]]) -> List[float]:
     episode_rows = Counter(str(row["episode_key"]) for row in rows)
     episode_task: Dict[str, str] = {}
@@ -99,17 +164,30 @@ def task_episode_balanced_weights(rows: Sequence[Dict[str, Any]]) -> List[float]
 
 
 def diagnostic_episode_permutation(rows: Sequence[Dict[str, Any]], *, seed: int, diagnostic: str) -> Dict[str, str]:
-    if diagnostic not in {"shuffled-language", "permuted-task-context"}:
+    if diagnostic not in DIAGNOSTICS:
         raise ValueError(f"unknown diagnostic: {diagnostic}")
     by_split: Dict[str, List[str]] = defaultdict(list)
+    identity: Dict[str, str] = {}
     for row in rows:
         episode = str(row["episode_key"])
         split = str(row["split"])
+        task = f"{row['suite']}:{row['task_index']}"
+        if episode in identity and identity[episode] != task:
+            raise ValueError(f"episode task changed: {episode}")
+        identity[episode] = task
         if episode not in by_split[split]:
             by_split[split].append(episode)
     out: Dict[str, str] = {}
     for split, episodes in sorted(by_split.items()):
         order = sorted(episodes)
+        if diagnostic == "wrong-language-cross-task":
+            for source in order:
+                candidates = [candidate for candidate in order if identity[candidate] != identity[source]]
+                if not candidates:
+                    raise ValueError(f"split {split} has no cross-task language donor for {source}")
+                donor = min(candidates, key=lambda candidate: _bucket(f"{seed}|{diagnostic}|{split}|{source}|{candidate}", 2**64))
+                out[source] = donor
+            continue
         random.Random(f"{seed}|{diagnostic}|{split}").shuffle(order)
         donors = order[1:] + order[:1] if len(order) > 1 else order
         out.update(dict(zip(order, donors)))

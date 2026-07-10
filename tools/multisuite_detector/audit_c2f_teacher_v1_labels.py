@@ -33,8 +33,22 @@ def percentile(values: List[int], q: float) -> float | None:
     return float(values[lo] if lo == hi else values[lo] + (values[hi] - values[lo]) * (pos - lo))
 
 
+def optional_bool(value: Any) -> bool | None:
+    """Parse an optional boolean without collapsing missing/unknown to false."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    text = str(value).strip().lower()
+    if text in {"1", "true", "yes"}:
+        return True
+    if text in {"0", "false", "no"}:
+        return False
+    return None
+
+
 def truthy(value: Any) -> bool:
-    return value is True or str(value).strip().lower() in {"1", "true", "yes"}
+    return optional_bool(value) is True
 
 
 def missed_stable_carry_reason(row: Dict[str, Any]) -> str:
@@ -68,6 +82,10 @@ def audit_teacher_v1(
         "roles": Counter(),
         "first_primary": [],
         "primary_durations": [],
+        "primary_field_positive": 0,
+        "primary_role_positive": 0,
+        "primary_union_positive": 0,
+        "primary_disagreement": 0,
         "stable_carry": 0,
         "grounded_stable_carry": 0,
         "target_match": 0,
@@ -103,17 +121,25 @@ def audit_teacher_v1(
         agg = aggregates[(suite, task)]
         agg["episodes"] += 1
         agg["windows"] += len(rows)
-        clean_success = meta.get("clean_success_observed", meta.get("clean_success"))
-        agg["clean_success"]["success" if truthy(clean_success) else "not_success"] += 1
+        clean_success = optional_bool(meta.get("clean_success_observed", meta.get("clean_success")))
+        agg["clean_success"]["true" if clean_success is True else "false" if clean_success is False else "unknown"] += 1
         primary_steps: List[int] = []
         for row in rows:
             phase = str(row.get("teacher_phase", "unknown") or "unknown")
             role = str(row.get("teacher_event_role", "unknown") or "unknown")
             agg["phases"][phase] += 1
             agg["roles"][role] += 1
-            primary = truthy(row.get("teacher_primary_attackable")) or role == "primary_attackable"
+
+            primary_field = truthy(row.get("teacher_primary_attackable"))
+            primary_role = role == "primary_attackable"
+            primary = primary_field or primary_role
+            agg["primary_field_positive"] += int(primary_field)
+            agg["primary_role_positive"] += int(primary_role)
+            agg["primary_union_positive"] += int(primary)
+            agg["primary_disagreement"] += int(primary_field != primary_role)
             if primary:
                 primary_steps.append(int(row.get("step", len(primary_steps))))
+
             if phase == "stable_carry":
                 agg["stable_carry"] += 1
                 if role in GROUNDED_ROLES:
@@ -157,10 +183,14 @@ def audit_teacher_v1(
             "stable_grasp_count": agg["phases"]["stable_grasp"],
             "stable_carry_count": stable,
             "release_safe_count": agg["phases"]["release_safe"],
-            "primary_attackable_count": agg["roles"]["primary_attackable"],
+            "primary_attackable_count": agg["primary_union_positive"],
+            "primary_field_positive_count": agg["primary_field_positive"],
+            "primary_role_positive_count": agg["primary_role_positive"],
+            "primary_disagreement_count": agg["primary_disagreement"],
+            "primary_consistency_rate": 1.0 - agg["primary_disagreement"] / windows if windows else None,
             "unsupported_count": agg["roles"]["unsupported_or_abstain"],
             "stable_carry_rate": stable / windows if windows else 0.0,
-            "primary_density": agg["roles"]["primary_attackable"] / windows if windows else 0.0,
+            "primary_density": agg["primary_union_positive"] / windows if windows else 0.0,
             "object_grounding_coverage": grounded / stable if stable else None,
             "target_match_coverage": agg["target_match"] / grounded if grounded else None,
             "episodes_with_primary": len(agg["first_primary"]),
@@ -174,8 +204,9 @@ def audit_teacher_v1(
             "explicit_target_match_coverage": agg["explicit_target_match_rows"] / windows if windows else 0.0,
             "explicit_reason_code_coverage": agg["explicit_reason_rows"] / windows if windows else 0.0,
             "explicit_fallback_provenance_coverage": agg["explicit_fallback_rows"] / windows if windows else 0.0,
-            "clean_success_episode_count": agg["clean_success"]["success"],
-            "clean_not_success_episode_count": agg["clean_success"]["not_success"],
+            "clean_success_true_episode_count": agg["clean_success"]["true"],
+            "clean_success_false_episode_count": agg["clean_success"]["false"],
+            "clean_success_unknown_episode_count": agg["clean_success"]["unknown"],
         }
         by_task.append(row)
         for reason, count in sorted(agg["miss_reasons"].items()):
@@ -205,12 +236,15 @@ def audit_teacher_v1(
         "read_errors": read_errors[:100],
         "suite_episode_counts": dict(suite_counts),
         "all_required_suites_present": all(suite_counts[s] > 0 for s in SUITES),
+        "primary_field_role_disagreement_count": sum(int(row["primary_disagreement_count"]) for row in by_task),
+        "clean_success_unknown_episode_count": sum(int(row["clean_success_unknown_episode_count"]) for row in by_task),
         "source_findings": source_findings,
         "provenance_limits": [
             "Teacher-v1 rows do not record contacted object identity.",
             "Teacher-v1 rows do not record target-match decision provenance or reason code.",
             "Absolute-z fallback usage is a 25D-derived candidate count, not exact branch provenance.",
             "Release-safe is generated by a gripper closed-to-open transition, not target-relative placement evidence.",
+            "Missing clean-success metadata is reported as unknown, never as failure.",
         ],
         "boundaries": {
             "CPU_only": True,
