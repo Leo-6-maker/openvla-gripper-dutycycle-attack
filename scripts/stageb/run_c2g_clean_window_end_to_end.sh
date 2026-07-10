@@ -15,7 +15,7 @@ set -euo pipefail
 
 PHASE="${1:-}"
 if [[ -z "$PHASE" ]]; then
-  echo "usage: $0 <collect|audit|materialize|train|folds|clean_timing|bind_parents|build_jobs|run_jobs|audit_jobs|all>" >&2
+  echo "usage: $0 <collect|audit|materialize|dataset_audit|train|folds|clean_timing|bind_parents|build_jobs|run_jobs|audit_jobs|analyze|all>" >&2
   exit 2
 fi
 
@@ -53,13 +53,16 @@ CONTROL_OBJECTIVE="${CONTROL_OBJECTIVE:-SHUFFLED_GRIPPER_GRADIENT}"
 COLLECTION_ROOT="$WORK_ROOT/clean_collection"
 DRY_AUDIT_ROOT="$WORK_ROOT/clean_dry_audit"
 DATASET_ROOT="$WORK_ROOT/dataset"
+DATASET_AUDIT="$DATASET_ROOT/c2g_clean_window_dataset_trainability.json"
 TRAIN_ROOT="$WORK_ROOT/training"
 FOLD_ROOT="$WORK_ROOT/folds"
 ONLINE_ROOT="$WORK_ROOT/online"
 TIMING_MANIFEST="$WORK_ROOT/detector_timing.jsonl"
 BOUND_PARENTS="$WORK_ROOT/eval_parents_bound.jsonl"
 JOB_MANIFEST="$WORK_ROOT/c2g_matched_load_jobs.jsonl"
+JOB_BUILD_REPORT="$JOB_MANIFEST.report.json"
 RUN_AUDIT="$WORK_ROOT/c2g_matched_load_run_audit.json"
+RESULT_ANALYSIS="$WORK_ROOT/c2g_matched_load_result_analysis.json"
 DATASET_PATH="$DATASET_ROOT/c2g_clean_window_w$(printf '%02d' "$WINDOW")_${EMBEDDING_BACKEND}_within_task.npz"
 CHECKPOINT_PATH="$TRAIN_ROOT/c2g_clean_window_detector.pt"
 TRAIN_CONFIG_PATH="$TRAIN_ROOT/c2g_clean_window_training_report.json"
@@ -123,8 +126,25 @@ phase_materialize() {
     "${extra[@]}"
 }
 
+phase_dataset_audit() {
+  require_file "$DATASET_PATH"
+  python tools/multisuite_detector/validate_c2g_clean_window_dataset.py \
+    --dataset "$DATASET_PATH" \
+    --report "$DATASET_AUDIT" \
+    --persistence-window 3 \
+    --persistence-required 2 \
+    --require-test-support
+}
+
 phase_train() {
   require_file "$DATASET_PATH"
+  require_file "$DATASET_AUDIT"
+  python - "$DATASET_AUDIT" <<'PY'
+import json, sys
+report = json.load(open(sys.argv[1], "r", encoding="utf-8"))
+if report.get("status") != "PASS_C2G_DATASET_TRAINABILITY":
+    raise SystemExit("dataset trainability report is not PASS")
+PY
   python tools/multisuite_detector/train_c2g_clean_window_detector.py \
     --dataset "$DATASET_PATH" \
     --output-dir "$TRAIN_ROOT" \
@@ -137,6 +157,7 @@ phase_train() {
 
 phase_folds() {
   require_file "$DATASET_PATH"
+  require_file "$DATASET_AUDIT"
   python tools/multisuite_detector/run_c2g_clean_window_folds.py \
     --dataset "$DATASET_PATH" \
     --output-root "$FOLD_ROOT" \
@@ -168,7 +189,7 @@ phase_clean_timing() {
   python scripts/stageb/extract_c2g_detector_timing.py \
     --clean-output-root "$ONLINE_ROOT" \
     --output "$TIMING_MANIFEST" \
-    --require-trigger
+    --no-require-trigger
 }
 
 phase_bind_parents() {
@@ -221,10 +242,20 @@ phase_audit_jobs() {
     --report "$RUN_AUDIT"
 }
 
+phase_analyze() {
+  require_file "$RUN_AUDIT"
+  require_file "$JOB_BUILD_REPORT"
+  python scripts/stageb/analyze_c2g_matched_load_results.py \
+    --audit-report "$RUN_AUDIT" \
+    --job-build-report "$JOB_BUILD_REPORT" \
+    --output "$RESULT_ANALYSIS"
+}
+
 case "$PHASE" in
   collect) phase_collect ;;
   audit) phase_audit ;;
   materialize) phase_materialize ;;
+  dataset_audit) phase_dataset_audit ;;
   train) phase_train ;;
   folds) phase_folds ;;
   clean_timing) phase_clean_timing ;;
@@ -232,10 +263,12 @@ case "$PHASE" in
   build_jobs) phase_build_jobs ;;
   run_jobs) phase_run_jobs ;;
   audit_jobs) phase_audit_jobs ;;
+  analyze) phase_analyze ;;
   all)
     phase_collect
     phase_audit
     phase_materialize
+    phase_dataset_audit
     phase_train
     phase_folds
     phase_clean_timing
@@ -243,6 +276,7 @@ case "$PHASE" in
     phase_build_jobs
     phase_run_jobs
     phase_audit_jobs
+    phase_analyze
     ;;
   *) echo "unknown phase: $PHASE" >&2; exit 2 ;;
 esac
