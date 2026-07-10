@@ -67,7 +67,10 @@ class ServerResumeHardeningTests(unittest.TestCase):
     def test_strict_pipeline_exports_repo_pythonpath(self):
         repo = Path(__file__).resolve().parents[1]
         wrapper = (repo / "scripts/stageb/run_c2g_clean_window_pipeline_strict.sh").read_text()
-        self.assertIn('export PYTHONPATH="$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}"', wrapper)
+        self.assertIn(
+            'export PYTHONPATH="$REPO_ROOT/src:$REPO_ROOT${PYTHONPATH:+:$PYTHONPATH}"',
+            wrapper,
+        )
 
     def test_partition_manifest_rows_isolates_suites(self):
         rows = [
