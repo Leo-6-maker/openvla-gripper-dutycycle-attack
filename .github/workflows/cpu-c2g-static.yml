@@ -54,12 +54,14 @@ jobs:
             tools/multisuite_detector/c2g_clean_window_label_builder.py \
             tools/multisuite_detector/c2g_dataset_scaffold.py \
             tools/multisuite_detector/materialize_c2g_clean_window_dataset.py \
+            tools/multisuite_detector/materialize_c2g_multisuite_dataset.py \
             tools/multisuite_detector/run_c2g_clean_window_folds.py \
             tools/multisuite_detector/train_c2g_clean_window_detector.py \
             tests/test_c2g_clean_window_e2e.py \
             tests/test_c2g_clean_window_pipeline_tools.py \
             tests/test_c2g_clean_window_server_audit.py \
-            tests/test_c2g_clean_window_v2.py
+            tests/test_c2g_clean_window_v2.py \
+            tests/test_c2g_matched_load_strict.py
       - name: Check launcher syntax
         run: |
           bash -n scripts/stageb/run_c2f_track_a_smoke5.sh
@@ -79,7 +81,8 @@ jobs:
             tests.test_c2g_clean_window_v2 \
             tests.test_c2g_clean_window_server_audit \
             tests.test_c2g_clean_window_e2e \
-            tests.test_c2g_clean_window_pipeline_tools
+            tests.test_c2g_clean_window_pipeline_tools \
+            tests.test_c2g_matched_load_strict
       - name: Verify tracked code and protected outputs unchanged
         shell: python
         run: |
