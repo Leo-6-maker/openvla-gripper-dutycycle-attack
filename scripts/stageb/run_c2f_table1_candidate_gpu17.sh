@@ -42,7 +42,7 @@ cat > "$RUN_ROOT/launch_env.json" <<JSON
 {
   "repo": "$REPO", "commit": "$COMMIT",
   "checkpoint": "$CHECKPOINT", "parent_csv": "$PARENT_CSV",
-  "gpus": [1, 7], "conditions": ["CLEAN", "TRUE_T10", "RAND_T10"],
+  "gpus": [1, 7], "conditions": ["CLEAN", "TRUE_CMDOPEN_T10_C2F", "RAND_ACTION_NOISE_T10_C2F"],
   "n_per_suite": 12, "seed": 42,
   "tau_emit": 0.33, "tau_suppress": 0.67, "tau_abstain": 0.5, "tau_primary": 0.5,
   "attack_horizon": 10, "pgd_steps": 10, "epsilon": "6/255"
@@ -77,7 +77,7 @@ PY
 
 echo "[2/5] Generate job queues" | tee -a "$RUN_ROOT/launch.log"
 rm -f "$RUN_ROOT"/jobs_gpu*.txt "$RUN_ROOT/jobs_all.txt"
-CONDITIONS=("CLEAN" "TRUE_T10" "RAND_T10")
+CONDITIONS=("CLEAN" "TRUE_CMDOPEN_T10_C2F" "RAND_ACTION_NOISE_T10_C2F")
 GPUS=(1 7)
 idx=0
 while IFS= read -r line; do
@@ -180,7 +180,7 @@ for rp in reports:
     except Exception as e:
         print("BAD_META", rp, e)
 expected_parents = [json.loads(l)["parent_key"] for l in (run_root / "parent_manifest.jsonl").read_text().splitlines()]
-expected_conditions = ["CLEAN", "TRUE_T10", "RAND_T10"]
+expected_conditions = ["CLEAN", "TRUE_CMDOPEN_T10_C2F", "RAND_ACTION_NOISE_T10_C2F"]
 by_cond = Counter(m.get("condition") for m in metas)
 by_suite = Counter(m.get("suite") for m in metas)
 parents_done = defaultdict(set)
@@ -191,11 +191,11 @@ for p in expected_parents:
     for c in expected_conditions:
         if c not in parents_done[p]:
             missing.append((p, c))
-pairs = [p for p in expected_parents if "TRUE_T10" in parents_done[p] and "RAND_T10" in parents_done[p]]
+pairs = [p for p in expected_parents if "TRUE_CMDOPEN_T10_C2F" in parents_done[p] and "RAND_ACTION_NOISE_T10_C2F" in parents_done[p]]
 delivery = []
 no_emit = []
 for m in metas:
-    if m.get("condition") in ["TRUE_T10", "RAND_T10"]:
+    if m.get("condition") in ["TRUE_CMDOPEN_T10_C2F", "RAND_ACTION_NOISE_T10_C2F"]:
         dc = int(m.get("delivery_count", 0))
         delivery.append(dc)
         if int(m.get("attack_window_start", -1)) < 0:

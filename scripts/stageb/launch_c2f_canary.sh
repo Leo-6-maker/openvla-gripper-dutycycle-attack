@@ -1,5 +1,5 @@
 #!/bin/bash
-# C2f online canary: Object 12 + L10 12 parents, TRUE_T10 vs RAND_T10 paired
+# C2f online canary: Object 12 + L10 12 parents, TRUE_CMDOPEN_T10_C2F vs RAND_ACTION_NOISE_T10_C2F paired
 # Queue-based: 1 worker per GPU, sequential per-GPU queue (no 48 concurrent jobs)
 set -e
 CANARY_ROOT=/mnt/sdc/dty_user/openvla_attack_evidence/c2f/canary_v1
@@ -41,7 +41,7 @@ print(f'Frozen {len(selected)} parents to $MANIFEST')
 fi
 
 # ── Generate per-GPU job queues ──
-CONDITIONS=(TRUE_T10 RAND_T10)
+CONDITIONS=(TRUE_CMDOPEN_T10_C2F RAND_ACTION_NOISE_T10_C2F)
 GPUS=(0 1 2 3)
 rm -f $CANARY_ROOT/jobs_gpu*.txt
 idx=0
