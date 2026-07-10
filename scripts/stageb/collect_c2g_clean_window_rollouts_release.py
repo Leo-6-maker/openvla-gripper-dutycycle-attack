@@ -21,6 +21,7 @@ from scripts.stageb.verify_c2g_suite_model_map_strict import verify
 REPO = Path(__file__).resolve().parents[2]
 STRICT_COLLECTOR = REPO / "scripts" / "stageb" / "collect_c2g_clean_window_rollouts_strict.py"
 SUITES = ("libero_object", "libero_spatial", "libero_goal", "libero_10")
+FORBIDDEN_CLEAN_KEY_TOKENS = ("attack_outcome", "post_intervention", "counterfactual")
 
 
 def sha256_file(path: Path) -> str:
@@ -118,6 +119,23 @@ def suite_command(forwarded: Sequence[str], manifest: Path, suite: str) -> list[
     ]
 
 
+def forbidden_clean_keys(value: Any, prefix: str = "") -> list[str]:
+    """Return forbidden mapping-key paths without inspecting documentation values."""
+
+    problems: list[str] = []
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            key_text = str(key)
+            path = f"{prefix}.{key_text}" if prefix else key_text
+            if any(token in key_text.lower() for token in FORBIDDEN_CLEAN_KEY_TOKENS):
+                problems.append(path)
+            problems.extend(forbidden_clean_keys(child, path))
+    elif isinstance(value, (list, tuple)):
+        for index, child in enumerate(value):
+            problems.extend(forbidden_clean_keys(child, f"{prefix}[{index}]"))
+    return sorted(set(problems))
+
+
 def verify_internal_suite_paths(model_map_path: Path) -> None:
     from scripts.stageb.c2f_libero_openvla_adapter import SUITE_MODELS
 
@@ -158,8 +176,11 @@ def rebuild_combined_collection_report(
             raise ValueError(f"episode commit mismatch: {metadata_path}")
         if str(metadata.get("condition", "")) != "CLEAN":
             raise ValueError(f"non-CLEAN episode in clean collection: {metadata_path}")
-        if any(token in json.dumps(metadata).lower() for token in ("attack_outcome", "post_intervention")):
-            raise ValueError(f"forbidden outcome field in clean metadata: {metadata_path}")
+        bad_keys = forbidden_clean_keys(metadata)
+        if bad_keys:
+            raise ValueError(
+                f"forbidden outcome keys in clean metadata {metadata_path}: {bad_keys}"
+            )
         results.append({
             "parent_key": metadata.get("parent_key"),
             "suite": metadata.get("suite"),
