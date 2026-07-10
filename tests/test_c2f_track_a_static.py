@@ -24,6 +24,21 @@ class DummyModel:
 
 
 class C2fTrackAStaticTests(unittest.TestCase):
+    def _write_complete_episode(self, root: Path, *, success=True, commit="a" * 40):
+        ep = root / "libero_object/task_00/state_005/clean/attempt_01/CLEAN"
+        ep.mkdir(parents=True)
+        (ep / "episode_metadata.json").write_text(json.dumps({
+            "parent_key": "libero_object/task_00/state_005/clean/attempt_01",
+            "condition": "CLEAN",
+            "runtime_valid": True,
+            "success": success,
+            "git_commit": commit,
+            "protocol_name": run_audit.PROTOCOL_NAME,
+            "protocol_version": run_audit.PROTOCOL_VERSION,
+        }))
+        (ep / "step_records.jsonl").write_text(json.dumps({"step": 0}) + "\n")
+        return ep
+
     def test_deterministic_rand_seed_and_noise(self):
         parent = "libero_object/task_00/state_005/clean/attempt_01"
         seed1 = worker._rand_seed(parent, worker.COND_RAND, 78)
@@ -81,6 +96,52 @@ class C2fTrackAStaticTests(unittest.TestCase):
             self.assertTrue(moved)
             self.assertFalse(ep.exists())
             self.assertTrue((root / "invalid_attempts/libero_goal/task_00/state_000/clean/attempt_01/CLEAN/attempt_001/episode_metadata.json").exists())
+
+    def test_completion_requires_joint_metadata_steps_and_frozen_binding(self):
+        with tempfile.TemporaryDirectory() as td:
+            ep = self._write_complete_episode(Path(td))
+            kwargs = {
+                "expected_commit": "a" * 40,
+                "expected_parent_key": "libero_object/task_00/state_005/clean/attempt_01",
+                "expected_condition": "CLEAN",
+            }
+            self.assertTrue(run_audit.episode_completion(ep / "episode_metadata.json", **kwargs)["complete"])
+            (ep / "step_records.jsonl").write_text("")
+            self.assertIn("STEP_RECORDS_EMPTY", run_audit.episode_completion(ep / "episode_metadata.json", **kwargs)["reasons"])
+            (ep / "step_records.jsonl").write_text(json.dumps({"step": 0}) + "\n")
+            meta = json.loads((ep / "episode_metadata.json").read_text())
+            meta["success"] = None
+            meta["git_commit"] = "b" * 40
+            meta["protocol_version"] = "wrong"
+            (ep / "episode_metadata.json").write_text(json.dumps(meta))
+            reasons = run_audit.episode_completion(ep / "episode_metadata.json", **kwargs)["reasons"]
+            self.assertTrue({"SUCCESS_NOT_BOOLEAN", "COMMIT_MISMATCH", "PROTOCOL_VERSION_MISMATCH"}.issubset(reasons))
+
+    def test_smoke_propagates_final_audit_failure(self):
+        text = Path("scripts/stageb/run_c2f_track_a_smoke5.sh").read_text(encoding="utf-8-sig")
+        self.assertIn("set -euo pipefail", text)
+        self.assertIn('--expected-git-commit "$COMMIT"', text)
+        self.assertIn('--expected-condition "$cond"', text)
+
+    def test_postrun_counts_joint_completion_and_rejects_empty_steps(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            run_root = root / "run"
+            run_root.mkdir()
+            out = root / "out"
+            ep = self._write_complete_episode(out)
+            jobs = run_root / "jobs.txt"
+            jobs.write_text("libero_object/task_00/state_005/clean/attempt_01|CLEAN\n")
+            parent_manifest = run_root / "parents.jsonl"
+            parent_manifest.write_text("")
+            audit = run_audit.audit_run(run_root, out, parent_manifest, jobs, expected_commit="a" * 40)
+            self.assertTrue(audit["complete"])
+            self.assertEqual(audit["valid_complete_job_count"], 1)
+            self.assertEqual(audit["step_record_row_count"], 1)
+            (ep / "step_records.jsonl").write_text("")
+            audit = run_audit.audit_run(run_root, out, parent_manifest, jobs, expected_commit="a" * 40)
+            self.assertFalse(audit["complete"])
+            self.assertEqual(len(audit["empty_step_records"]), 1)
 
     def test_strict_frozen_condition_names(self):
         self.assertEqual({worker.COND_CLEAN, worker.COND_TRUE, worker.COND_RAND}, {

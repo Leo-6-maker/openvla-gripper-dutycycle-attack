@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Five-episode C2F Track A smoke. Do not use for full Goal/Object matrices.
-set -uo pipefail
+set -euo pipefail
 
 CODE_REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 VENV="${A800_PY:-/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python}"
@@ -71,11 +71,15 @@ JSON
 while IFS='|' read -r parent_key cond; do
   [ -z "$parent_key" ] && continue
   meta="$OUT/${parent_key}/${cond}/episode_metadata.json"
-  if [ -s "$meta" ] && "$VENV" scripts/stageb/audit_c2f_track_a_run.py --metadata-complete "$meta" >/dev/null 2>&1; then
+  if [ -s "$meta" ] && "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
+    --metadata-complete "$meta" --expected-git-commit "$COMMIT" \
+    --expected-parent-key "$parent_key" --expected-condition "$cond" >/dev/null 2>&1; then
     echo "SKIP $parent_key $cond" | tee -a "$RUN_ROOT/launch.log"
     continue
   fi
-  [ -s "$meta" ] && "$VENV" scripts/stageb/audit_c2f_track_a_run.py --archive-invalid-output-root "$OUT" --parent-key "$parent_key" --condition "$cond" --invalid-archive-root "$RUN_ROOT/invalid_attempts"
+  [ -s "$meta" ] && "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
+    --archive-invalid-output-root "$OUT" --parent-key "$parent_key" --condition "$cond" \
+    --invalid-archive-root "$RUN_ROOT/invalid_attempts" --expected-git-commit "$COMMIT"
   CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}" PYTHONPATH="$CODE_REPO:$CODE_REPO/src:$CODE_REPO/scripts" \
     "$VENV" scripts/stageb/run_c2f_canary_worker.py \
     --parent-key "$parent_key" --condition "$cond" --checkpoint "$CHECKPOINT" \
@@ -87,5 +91,5 @@ done < "$RUN_ROOT/smoke_jobs.txt"
 
 "$VENV" scripts/stageb/audit_c2f_track_a_run.py \
   --run-root "$RUN_ROOT" --output-root "$OUT" --parent-manifest "$RUN_ROOT/parent_manifest.jsonl" \
-  --jobs-file "$RUN_ROOT/smoke_jobs.txt"
+  --jobs-file "$RUN_ROOT/smoke_jobs.txt" --expected-git-commit "$COMMIT"
 echo "RUN_ROOT=$RUN_ROOT"
