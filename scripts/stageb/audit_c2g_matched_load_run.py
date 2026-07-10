@@ -2,9 +2,9 @@
 """Audit a completed C2g five-condition matched-load execution matrix.
 
 The audit is closed-world against the frozen job manifest. It verifies exact
-condition closure, parent/provenance identity, fixed burst delivery, detector and
-random timing pairs, compute-load counts, processor-space budgets, and pre-trigger
-clean-trajectory parity. It does not reinterpret task outcomes.
+condition closure, parent/provenance identity, fixed burst delivery, paired
+objective seeds, detector/random timing, route-reported compute counts,
+processor-space budgets, and pre-trigger clean-trajectory parity.
 """
 from __future__ import annotations
 
@@ -35,6 +35,8 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
             if not isinstance(value, dict):
                 raise ValueError(f"{path}:{line_no} must contain an object")
             rows.append(value)
+    if not rows:
+        raise ValueError(f"{path} contains no rows")
     return rows
 
 
@@ -75,7 +77,10 @@ def steps_path(output_root: Path, parent_key: str, condition: str) -> Path:
 
 def audit(args: argparse.Namespace) -> dict[str, Any]:
     jobs = read_jsonl(args.jobs.resolve())
-    manifest_summary = validate_core_2x2_manifest(jobs)
+    manifest_summary = validate_core_2x2_manifest(
+        jobs,
+        strict_objective_seed_pairing=True,
+    )
     output_root = args.output_root.resolve()
     expected = {(str(row["parent_key"]), str(row["condition"])): row for row in jobs}
     if len(expected) != len(jobs):
@@ -127,6 +132,21 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
                     "expected": expected_value,
                     "actual": metadata.get(field),
                 })
+        for field, expected_value in (
+            ("objective_family", job["objective_family"]),
+            ("objective_seed", int(job["objective_seed"])),
+            ("detector_checkpoint_sha256", job["detector_checkpoint_sha256"]),
+        ):
+            actual = metadata.get(field)
+            if actual != expected_value:
+                violations.append({
+                    "parent_key": parent,
+                    "condition": condition,
+                    "reason": "FROZEN_JOB_FIELD_MISMATCH",
+                    "field": field,
+                    "expected": expected_value,
+                    "actual": actual,
+                })
         if not bool(metadata.get("runtime_valid")):
             violations.append({"parent_key": parent, "condition": condition, "reason": "RUNTIME_INVALID"})
 
@@ -154,12 +174,38 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
                     "expected": planned,
                     "actual": delivered_steps[0],
                 })
+            if metadata.get("first_attack_step") != delivered_steps[0]:
+                violations.append({
+                    "parent_key": parent,
+                    "condition": condition,
+                    "reason": "METADATA_FIRST_ATTACK_MISMATCH",
+                    "expected": delivered_steps[0],
+                    "actual": metadata.get("first_attack_step"),
+                })
 
         load = job["load_spec"]
         epsilon = float(load["epsilon"])
         expected_loss_forwards = int(load["num_loss_forwards_per_frame"])
         expected_backwards = int(load["num_backwards_per_frame"])
         expected_adv_decodes = int(load["num_adv_decodes_per_frame"])
+        metadata_load = metadata.get("attack_load", {})
+        for field, expected_value in (
+            ("burst_length", int(load["burst_length"])),
+            ("epsilon", float(load["epsilon"])),
+            ("step_size", float(load["step_size"])),
+            ("pgd_steps", int(load["pgd_steps"])),
+            ("temporal_init", str(load["temporal_init_policy"])),
+            ("resize_size", int(load["image_height"])),
+        ):
+            if metadata_load.get(field) != expected_value:
+                violations.append({
+                    "parent_key": parent,
+                    "condition": condition,
+                    "reason": "ATTACK_LOAD_METADATA_MISMATCH",
+                    "field": field,
+                    "expected": expected_value,
+                    "actual": metadata_load.get(field),
+                })
         for row in delivered:
             step = row.get("step")
             if int(row.get("num_loss_forwards", -1)) != expected_loss_forwards:
