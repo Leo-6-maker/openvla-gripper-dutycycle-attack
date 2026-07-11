@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Build provenance-bound, leakage-safe R8 clean-collection waves.
 
-R7 freezes the complete 2,000-parent scientific registry.  R8 does not redraw any
-state identity.  It subtracts the exact R7 reusable source inventory, emits a
+R7 freezes the complete 2,000-parent scientific registry. R8 does not redraw any
+state identity. It subtracts the exact R7 reusable source inventory, emits a
 small cross-suite detector canary, emits the complete remaining detector corpus,
 and keeps preregistered attack-evaluation parents in a separate never-train wave.
 
-This program is planning-only.  It does not load OpenVLA, create LIBERO
+This program is planning-only. It does not load OpenVLA, create LIBERO
 environments, launch rollouts, materialize embeddings, train, calibrate, or read
 attack outcomes.
 """
@@ -187,21 +187,9 @@ def load_bound_inputs(
         if not path.is_file():
             raise FileNotFoundError(path)
 
-    _assert_hash(
-        plan_report_path,
-        expected_plan_report_sha256,
-        name="R7 corpus plan report",
-    )
-    _assert_hash(
-        source_audit_report_path,
-        expected_source_audit_report_sha256,
-        name="R7 source audit report",
-    )
-    _assert_hash(
-        reusable_manifest_path,
-        expected_reusable_manifest_sha256,
-        name="R7 reusable manifest",
-    )
+    _assert_hash(plan_report_path, expected_plan_report_sha256, name="R7 corpus plan report")
+    _assert_hash(source_audit_report_path, expected_source_audit_report_sha256, name="R7 source audit report")
+    _assert_hash(reusable_manifest_path, expected_reusable_manifest_sha256, name="R7 reusable manifest")
 
     plan = read_json(plan_report_path)
     if plan.get("schema") != PLAN_SCHEMA or plan.get("status") != PLAN_PASS_STATUS:
@@ -241,7 +229,10 @@ def load_bound_inputs(
             raise ValueError(f"duplicate reusable identity: {key}")
         reusable_identities.add(key)
         frozen = registry_lookup[key]
-        for field in ("parent_key", "cohort", "split"):
+        recorded_parent_key = str(row.get("registry_parent_key") or row.get("parent_key") or "")
+        if recorded_parent_key != str(frozen.get("parent_key", "")):
+            raise ValueError(f"reusable row {index} changes frozen parent_key")
+        for field in ("cohort", "split"):
             if str(row.get(field, "")) != str(frozen.get(field, "")):
                 raise ValueError(f"reusable row {index} changes frozen {field}")
     if int(source.get("registered_reusable_episode_count", -1)) != len(reusable):
@@ -310,20 +301,12 @@ def _write_wave(
     manifest_path = output_dir / f"c2g_r8_{wave}.jsonl"
     write_jsonl(manifest_path, wave_rows)
     shard_records: list[dict[str, Any]] = []
-    by_suite: dict[str, list[dict[str, Any]]] = {
-        suite: [row for row in wave_rows if row["suite"] == suite] for suite in SUITES
-    }
+    by_suite = {suite: [row for row in wave_rows if row["suite"] == suite] for suite in SUITES}
     for suite in SUITES:
         local = by_suite[suite]
         for shard_index, start in enumerate(range(0, len(local), shard_size)):
             shard_rows = local[start : start + shard_size]
-            shard_path = (
-                output_dir
-                / "shards"
-                / wave
-                / suite
-                / f"shard_{shard_index:03d}.jsonl"
-            )
+            shard_path = output_dir / "shards" / wave / suite / f"shard_{shard_index:03d}.jsonl"
             write_jsonl(shard_path, shard_rows)
             shard_records.append(
                 {
@@ -389,10 +372,7 @@ def build_collection_waves(
     missing = [row for row in registry if identity(row) not in reusable_identities]
     detector_missing = [row for row in missing if row["cohort"] != ATTACK_EVAL]
     attack_missing = [row for row in missing if row["cohort"] == ATTACK_EVAL]
-    canary, canary_selection = _select_canary(
-        detector_missing,
-        tasks_per_suite=canary_tasks_per_suite,
-    )
+    canary, canary_selection = _select_canary(detector_missing, tasks_per_suite=canary_tasks_per_suite)
     if any(row["cohort"] == ATTACK_EVAL for row in canary + detector_missing):
         raise AssertionError("detector waves must exclude attack-evaluation parents")
     if {identity(row) for row in detector_missing} & reusable_identities:
@@ -402,24 +382,9 @@ def build_collection_waves(
 
     output_dir.mkdir(parents=True)
     waves = {
-        DETECTOR_CANARY: _write_wave(
-            output_dir,
-            DETECTOR_CANARY,
-            canary,
-            shard_size=canary_shard_size,
-        ),
-        DETECTOR_FULL: _write_wave(
-            output_dir,
-            DETECTOR_FULL,
-            detector_missing,
-            shard_size=detector_full_shard_size,
-        ),
-        ATTACK_EVAL_WAVE: _write_wave(
-            output_dir,
-            ATTACK_EVAL_WAVE,
-            attack_missing,
-            shard_size=attack_eval_shard_size,
-        ),
+        DETECTOR_CANARY: _write_wave(output_dir, DETECTOR_CANARY, canary, shard_size=canary_shard_size),
+        DETECTOR_FULL: _write_wave(output_dir, DETECTOR_FULL, detector_missing, shard_size=detector_full_shard_size),
+        ATTACK_EVAL_WAVE: _write_wave(output_dir, ATTACK_EVAL_WAVE, attack_missing, shard_size=attack_eval_shard_size),
     }
     report_path = output_dir / "c2g_r8_collection_wave_plan.json"
     report = {
@@ -461,11 +426,7 @@ def build_collection_waves(
         },
     }
     write_json(report_path, report)
-    return {
-        **report,
-        "report": str(report_path.resolve()),
-        "report_sha256": sha256_file(report_path),
-    }
+    return {**report, "report": str(report_path.resolve()), "report_sha256": sha256_file(report_path)}
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
