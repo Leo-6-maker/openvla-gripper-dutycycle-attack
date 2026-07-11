@@ -3,7 +3,7 @@
 
 R7 freezes the complete 2,000-parent scientific registry. R8 does not redraw any
 state identity. It subtracts the exact R7 reusable source inventory, emits a
-small cross-suite detector canary, emits the complete remaining detector corpus,
+small cross-suite detector canary, emits the post-canary detector remainder,
 and keeps preregistered attack-evaluation parents in a separate never-train wave.
 
 This program is planning-only. It does not load OpenVLA, create LIBERO
@@ -373,9 +373,17 @@ def build_collection_waves(
     detector_missing = [row for row in missing if row["cohort"] != ATTACK_EVAL]
     attack_missing = [row for row in missing if row["cohort"] == ATTACK_EVAL]
     canary, canary_selection = _select_canary(detector_missing, tasks_per_suite=canary_tasks_per_suite)
-    if any(row["cohort"] == ATTACK_EVAL for row in canary + detector_missing):
+    canary_ids = {identity(row) for row in canary}
+    detector_post_canary = [row for row in detector_missing if identity(row) not in canary_ids]
+    detector_missing_ids = {identity(row) for row in detector_missing}
+    detector_post_ids = {identity(row) for row in detector_post_canary}
+    if canary_ids & detector_post_ids:
+        raise AssertionError("detector canary and post-canary waves overlap")
+    if canary_ids | detector_post_ids != detector_missing_ids:
+        raise AssertionError("detector canary plus post-canary waves do not close detector deficits")
+    if any(row["cohort"] == ATTACK_EVAL for row in canary + detector_post_canary):
         raise AssertionError("detector waves must exclude attack-evaluation parents")
-    if {identity(row) for row in detector_missing} & reusable_identities:
+    if detector_missing_ids & reusable_identities:
         raise AssertionError("detector missing wave contains reusable identity")
     if {identity(row) for row in attack_missing} & reusable_identities:
         raise AssertionError("attack-eval missing wave contains reusable identity")
@@ -383,7 +391,7 @@ def build_collection_waves(
     output_dir.mkdir(parents=True)
     waves = {
         DETECTOR_CANARY: _write_wave(output_dir, DETECTOR_CANARY, canary, shard_size=canary_shard_size),
-        DETECTOR_FULL: _write_wave(output_dir, DETECTOR_FULL, detector_missing, shard_size=detector_full_shard_size),
+        DETECTOR_FULL: _write_wave(output_dir, DETECTOR_FULL, detector_post_canary, shard_size=detector_full_shard_size),
         ATTACK_EVAL_WAVE: _write_wave(output_dir, ATTACK_EVAL_WAVE, attack_missing, shard_size=attack_eval_shard_size),
     }
     report_path = output_dir / "c2g_r8_collection_wave_plan.json"
@@ -404,6 +412,8 @@ def build_collection_waves(
         "reusable_parent_count": len(reusable),
         "missing_parent_count": len(missing),
         "detector_missing_parent_count": len(detector_missing),
+        "detector_canary_parent_count": len(canary),
+        "detector_post_canary_parent_count": len(detector_post_canary),
         "attack_eval_missing_parent_count": len(attack_missing),
         "canary_tasks_per_suite": canary_tasks_per_suite,
         "canary_selection": canary_selection,
@@ -416,6 +426,7 @@ def build_collection_waves(
         "boundaries": {
             "registry_redrawn": False,
             "reusable_assets_modified": False,
+            "detector_canary_post_canary_overlap": 0,
             "attack_outcomes_read": False,
             "openvla_models_loaded": 0,
             "libero_environments_created": 0,
