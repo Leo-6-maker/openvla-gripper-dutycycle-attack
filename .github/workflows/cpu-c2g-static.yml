@@ -57,6 +57,7 @@ jobs:
             src/gripper_attack/c2g_teacher_v2_schema.py \
             src/gripper_attack/c2g_teacher_v2_target_resolution.py \
             tools/multisuite_detector/audit_c2f_teacher_v1_labels.py \
+            tools/multisuite_detector/audit_c2g_clean_source_inventory.py \
             tools/multisuite_detector/audit_c2g_clean_window_v2.py \
             tools/multisuite_detector/audit_c2g_goal_event_tracking.py \
             tools/multisuite_detector/audit_c2g_goal_model_integrity_v2.py \
@@ -68,6 +69,7 @@ jobs:
             tools/multisuite_detector/c2g_dataset_scaffold.py \
             tools/multisuite_detector/materialize_c2g_clean_window_dataset.py \
             tools/multisuite_detector/materialize_c2g_multisuite_dataset.py \
+            tools/multisuite_detector/plan_c2g_scientific_corpus.py \
             tools/multisuite_detector/run_c2g_clean_window_folds.py \
             tools/multisuite_detector/train_c2g_clean_window_detector.py \
             tests/test_c2g_clean_window_e2e.py \
@@ -80,6 +82,7 @@ jobs:
             tests/test_c2g_goal_model_integrity_v2.py \
             tests/test_c2g_matched_load_strict.py \
             tests/test_c2g_r6_bound_dataset_audit.py \
+            tests/test_c2g_r7_scientific_corpus.py \
             tests/test_c2g_s1_semantic_remediation.py \
             tests/test_c2g_server_resume_hardening.py
       - name: Check launcher syntax
@@ -90,6 +93,7 @@ jobs:
           bash -n scripts/stageb/run_c2g_clean_window_pipeline.sh
           bash -n scripts/stageb/run_c2g_clean_window_pipeline_strict.sh
           bash -n scripts/stageb/run_c2g_r6_dataset_audit.sh
+          bash -n scripts/stageb/run_c2g_r7_corpus_planning.sh
       - name: Run complete C2g static suite
         run: |
           python -m unittest -v \
@@ -112,6 +116,7 @@ jobs:
             tests.test_c2g_goal_model_integrity_v2 \
             tests.test_c2g_matched_load_strict \
             tests.test_c2g_r6_bound_dataset_audit \
+            tests.test_c2g_r7_scientific_corpus \
             tests.test_c2g_s1_semantic_remediation \
             tests.test_c2g_server_resume_hardening
       - name: Verify tracked code and protected outputs unchanged
