@@ -20,16 +20,10 @@ for candidate in (REPO, REPO / "src"):
 import numpy as np
 from src.gripper_attack.libero_v4_env_factory import build_v4_exact_env, apply_dummy_wait
 
-try:
-    import libero
-    _BENCHMARK = libero.libero.benchmark.get_benchmark_dict()
-except Exception:
-    _BENCHMARK = {}
-
-
 def _get_init_state(suite: str, task_index: int, state_id: int):
     """Get official LIBERO init state for suite/task/state."""
-    suite_obj = _BENCHMARK[suite]()
+    from libero.libero import benchmark as _bench
+    suite_obj = _bench.get_benchmark_dict()[suite]()
     states = suite_obj.get_task_init_states(task_index)
     if state_id < 0 or state_id >= len(states):
         raise IndexError(f"state_id {state_id} outside [0, {len(states)}) for {suite}/task_{task_index}")
