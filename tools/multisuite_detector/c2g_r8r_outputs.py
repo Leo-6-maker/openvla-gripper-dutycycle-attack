@@ -38,6 +38,22 @@ EP_FIELDS = (
     "triggerable_positive_episode", "clean_success_observed",
     "legacy_semantic_salvage_candidate",
 )
+FIELD_FIELDS = (
+    "suite", "task_index", "state_id", "parent_key", "cohort", "split",
+    "classification", "classification_reason", "clean_boundary_valid",
+    "runtime_valid", "error_record_present", "rgb_complete",
+    "task_language_present", "features_25d_shape_complete",
+    "features_25d_names_exact", "feature_25d_order_bound_by_manifest",
+    "canonical_25d_complete", "policy_intent_9d_complete",
+    "raw_policy_logits_complete", "model_provenance_bound",
+    "processor_provenance_bound", "derived_feature_reconstruction_possible",
+    "teacher_v1_label_present", "legacy_label_fields_present",
+    "teacher_v2_schema_marker_present", "teacher_v2_target_raw_present",
+    "teacher_v2_contact_raw_present", "teacher_v2_progress_raw_present",
+    "teacher_v2_release_raw_present", "teacher_v2_command_semantics_present",
+    "teacher_v2_raw_evidence_complete", "teacher_v2_rebuild_attempted",
+    "teacher_v2_rebuild_success", "legacy_semantic_salvage_candidate",
+)
 VIEW_FIELDS = (
     "source_view_name", "source_root", "source_class", "priority",
     "canonical_for_suite", "suite", "task_index", "state_id", "registered",
@@ -142,7 +158,7 @@ def write_primary_artifacts(output: Path, source_rows, reconciliation, episodes,
     write_csv(output / "clean2000_r7_source_view_ledger.csv", source_rows, VIEW_FIELDS)
     write_csv(output / "clean2000_r7_identity_reconciliation.csv", reconciliation, ID_FIELDS)
     write_csv(output / "clean2000_r7_episode_ledger.csv", episodes, EP_FIELDS)
-    write_csv(output / "clean2000_r7_field_coverage.csv", episodes, EP_FIELDS)
+    write_csv(output / "clean2000_r7_field_coverage.csv", episodes, FIELD_FIELDS)
     write_csv(output / "clean2000_r7_teacher_v2_support.csv", episodes, TEACHER_FIELDS)
     for classification, name in (
         (A_DIRECT, "direct_reuse"), (B_AUGMENT, "offline_augmentation"),
