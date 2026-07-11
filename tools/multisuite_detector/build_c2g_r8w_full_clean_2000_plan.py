@@ -577,7 +577,9 @@ def build_shadow_canary_plan(
     if reference_scheduler_report_path is not None:
         if not expected_reference_scheduler_report_sha256:
             raise ValueError("expected_reference_scheduler_report_sha256 required with reference report")
-        _verify_sha256(reference_scheduler_report_path, expected_reference_scheduler_report_sha256, "reference scheduler report")
+        actual_ref_sched_sha = sha256_file(reference_scheduler_report_path)
+        if actual_ref_sched_sha != expected_reference_scheduler_report_sha256:
+            raise ValueError(f"reference scheduler report SHA mismatch: {actual_ref_sched_sha[:16]}... != {expected_reference_scheduler_report_sha256[:16]}...")
         ref_sched = json.loads(reference_scheduler_report_path.read_text(encoding="utf-8"))
         if ref_sched.get("status") != "PASS_C2G_R8T_DYNAMIC_GPU_CANARY":
             raise ValueError("reference scheduler report is not PASS")
