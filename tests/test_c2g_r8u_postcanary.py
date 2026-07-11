@@ -121,10 +121,9 @@ class MockStreamer:
         return self
 
     def __getitem__(self, key):
-        return self.features[key]
-
-    def get(self, key, default=None):
-        return self.features.get(key, default)
+        if key == "features":
+            return self.features
+        raise KeyError(key)
 
 
 try:
