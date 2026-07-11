@@ -72,8 +72,9 @@ done
 [[ "$(sha256sum "$R7_SOURCE_AUDIT" | awk '{print $1}')" == "$EXPECTED_SOURCE_AUDIT_SHA" ]] || { echo "R7 source audit hash mismatch" >&2; exit 1; }
 [[ "$(sha256sum "$R7_REUSABLE" | awk '{print $1}')" == "$EXPECTED_REUSABLE_SHA" ]] || { echo "R7 reusable manifest hash mismatch" >&2; exit 1; }
 
-SPEC="$(mktemp /tmp/c2g_r8r_source_spec.XXXXXX.json)"
-trap 'rm -f "$SPEC"' EXIT
+SPEC_TMPDIR="$(mktemp -d /tmp/c2g_r8r_source_spec.XXXXXX)"
+SPEC="$SPEC_TMPDIR/source_spec.json"
+trap 'rm -rf "$SPEC_TMPDIR"' EXIT
 
 PREDECESSOR_ARGS=()
 while IFS= read -r root; do
