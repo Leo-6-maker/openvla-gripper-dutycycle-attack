@@ -87,6 +87,7 @@ jobs:
             tests/test_c2g_r6_bound_dataset_audit.py \
             tests/test_c2g_r7_scientific_corpus.py \
             tests/test_c2g_r8_collection_control.py \
+            tests/test_c2g_r8_real_schema_compat.py \
             tests/test_c2g_s1_semantic_remediation.py \
             tests/test_c2g_server_resume_hardening.py
       - name: Check launcher syntax
@@ -122,6 +123,7 @@ jobs:
             tests.test_c2g_r6_bound_dataset_audit \
             tests.test_c2g_r7_scientific_corpus \
             tests.test_c2g_r8_collection_control \
+            tests.test_c2g_r8_real_schema_compat \
             tests.test_c2g_s1_semantic_remediation \
             tests.test_c2g_server_resume_hardening
       - name: Verify tracked code and protected outputs unchanged
