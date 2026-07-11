@@ -29,6 +29,9 @@ HASHED_FILES = (
     "configuration_prismatic.py",
     "modeling_prismatic.py",
 )
+LEGACY_GOAL_STATUS = "PASS_C2F_GOAL_MODEL_INTEGRITY_AUDITED"
+V2_GOAL_STATUS = "PASS_C2G_GOAL_MODEL_INTEGRITY_AUDITED_V2"
+V2_GOAL_SCHEMA = "c2g.goal_model_integrity.2026-07-10.v2"
 
 
 def sha256_file(path: Path) -> str:
@@ -71,22 +74,118 @@ def selected_model_manifest(model_path: Path) -> dict[str, Any]:
     }
 
 
+def _verify_goal_manifest_files(
+    value: Mapping[str, Any], model_path: Path
+) -> tuple[int, str]:
+    rows = value.get("files")
+    if rows is None:
+        # Backward-compatible synthetic/legacy fixtures may not include a file ledger.
+        # Real audited manifests do, and are verified below whenever present.
+        return 0, ""
+    if not isinstance(rows, list) or not rows:
+        raise ValueError("Goal model manifest files ledger must be a nonempty list")
+    model_path = model_path.resolve()
+    aggregate = hashlib.sha256()
+    seen: set[str] = set()
+    for row in rows:
+        if not isinstance(row, Mapping):
+            raise ValueError("Goal model manifest file row must be an object")
+        relative = str(
+            row.get("relative_path") or Path(str(row.get("path", ""))).name
+        ).strip()
+        if not relative or relative in seen:
+            raise ValueError(f"invalid or duplicate Goal manifest relative path: {relative!r}")
+        seen.add(relative)
+        path = (model_path / relative).resolve()
+        try:
+            path.relative_to(model_path)
+        except ValueError as exc:
+            raise ValueError(f"Goal manifest path escapes model directory: {relative}") from exc
+        if not path.is_file():
+            raise FileNotFoundError(f"Goal manifest file missing: {path}")
+        expected_size = int(row.get("size_bytes", -1))
+        expected_sha = str(row.get("sha256", ""))
+        actual_size = path.stat().st_size
+        actual_sha = sha256_file(path)
+        if actual_size != expected_size or actual_sha != expected_sha:
+            raise ValueError(
+                "GOAL_MANIFEST_FILE_HASH_MISMATCH: "
+                f"{relative}: expected size/hash {expected_size}/{expected_sha}, "
+                f"got {actual_size}/{actual_sha}"
+            )
+        aggregate.update(
+            f"{relative}|{actual_size}|{actual_sha}\n".encode("utf-8")
+        )
+    referenced = value.get("referenced_shards", [])
+    if referenced:
+        if not isinstance(referenced, list):
+            raise ValueError("Goal referenced_shards must be a list")
+        missing_ledger = sorted(set(str(item) for item in referenced) - seen)
+        if missing_ledger:
+            raise ValueError(
+                "Goal manifest file ledger omits referenced shards: "
+                + ", ".join(missing_ledger)
+            )
+    expected_aggregate = str(value.get("files_aggregate_sha256", ""))
+    actual_aggregate = aggregate.hexdigest()
+    if expected_aggregate and expected_aggregate != actual_aggregate:
+        raise ValueError(
+            "Goal manifest aggregate SHA256 mismatch: "
+            f"{expected_aggregate} != {actual_aggregate}"
+        )
+    return len(seen), actual_aggregate
+
+
 def validate_goal_manifest(path: Path, model_path: Path) -> dict[str, Any]:
     value = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(value, Mapping):
         raise ValueError("Goal model manifest must be a JSON object")
-    if value.get("status") != "PASS_C2F_GOAL_MODEL_INTEGRITY_AUDITED":
-        raise ValueError("Goal model manifest status is not PASS")
+    status = str(value.get("status", ""))
+    if status not in {LEGACY_GOAL_STATUS, V2_GOAL_STATUS}:
+        raise ValueError("Goal model manifest status is not an accepted PASS status")
     recorded = Path(str(value.get("model_path", ""))).resolve()
+    model_path = model_path.resolve()
     if recorded != model_path:
         raise ValueError(f"Goal model path mismatch: {recorded} != {model_path}")
     if value.get("missing_referenced_shards"):
         raise ValueError("Goal model manifest reports missing shards")
+    verified_file_count, files_aggregate = _verify_goal_manifest_files(value, model_path)
+
+    provenance_mode = str(value.get("provenance_mode", ""))
+    if status == V2_GOAL_STATUS:
+        if value.get("schema_version") != V2_GOAL_SCHEMA:
+            raise ValueError("Goal v2 manifest schema mismatch")
+        if provenance_mode not in {
+            "RESTORED_FROZEN_BYTES",
+            "EXPLICIT_REBASE_CURRENT_BYTES",
+        }:
+            raise ValueError("Goal v2 manifest provenance_mode is invalid")
+        load_audit = value.get("load_only_validation")
+        if not isinstance(load_audit, Mapping) or load_audit.get("status") != "PASS_C2G_GOAL_MODEL_LOAD_ONLY":
+            raise ValueError("Goal v2 manifest lacks a PASS load-only validation")
+        if int(load_audit.get("parameter_count", 0)) <= 0:
+            raise ValueError("Goal v2 load-only validation has no parameters")
+        if not str(load_audit.get("token_semantics_sha256", "")):
+            raise ValueError("Goal v2 load-only validation lacks token semantics hash")
+        boundaries = value.get("boundaries")
+        if not isinstance(boundaries, Mapping):
+            raise ValueError("Goal v2 manifest lacks execution boundaries")
+        if int(boundaries.get("libero_rollouts_launched", -1)) != 0:
+            raise ValueError("Goal v2 manifest reports a LIBERO rollout during load audit")
+        if int(boundaries.get("attacks_launched", -1)) != 0:
+            raise ValueError("Goal v2 manifest reports an attack during load audit")
+        if bool(boundaries.get("attack_outcomes_read", True)):
+            raise ValueError("Goal v2 manifest reports attack-outcome access")
+
     return {
         "path": str(path),
         "sha256": sha256_file(path),
-        "status": value.get("status"),
+        "status": status,
+        "schema_version": value.get("schema_version", "legacy"),
         "unnorm_key": value.get("unnorm_key"),
+        "provenance_mode": provenance_mode or "LEGACY_FROZEN_BYTES",
+        "verified_file_count": verified_file_count,
+        "files_aggregate_sha256": files_aggregate,
     }
 
 

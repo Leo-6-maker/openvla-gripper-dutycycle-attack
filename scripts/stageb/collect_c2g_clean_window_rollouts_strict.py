@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Strict entry point for clean C2g collection with canonical 25D ordering.
+"""Strict entry point for event-aware clean C2g collection.
 
-The underlying collector intentionally reuses the mature SC5 streaming adapter.
-This wrapper fails closed unless all frozen canonical feature names are present and
-reorders the adapter output before the collector serializes ``features_25d``.
+The underlying release collector reuses the mature SC5 streaming adapter, preserves
+canonical 25D ordering, and tracks the current structured goal target instead of a
+single episode-level ``primary_target`` shortcut.
 """
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ def install_canonical_order_patch() -> None:
 
 def main() -> int:
     install_canonical_order_patch()
-    from scripts.stageb.collect_c2g_clean_window_rollouts import main as collector_main
+    from scripts.stageb.collect_c2g_clean_window_rollouts_event_v2 import main as collector_main
 
     return int(collector_main())
 

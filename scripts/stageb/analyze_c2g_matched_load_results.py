@@ -127,7 +127,7 @@ def analyze(report: Mapping[str, Any], denominator_report: Mapping[str, Any] | N
     }
     by_suite: dict[str, list[Mapping[str, Any]]] = defaultdict(list)
     job_suite = {
-        str(job["parent_key"]): str(job.get("suite", ""))
+        str(job["parent_key"]): str(job.get("suite") or str(job["parent_key"]).split("/", 1)[0])
         for job in report.get("jobs", [])
         if job.get("parent_key")
     }

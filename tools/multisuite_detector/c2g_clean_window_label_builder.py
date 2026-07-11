@@ -323,12 +323,21 @@ def _mark_contact_persistence(rows: list[dict[str, Any]], minimum: int) -> None:
 
 
 def _mark_burst_targets(rows: list[dict[str, Any]], burst_length: int) -> None:
+    """Mark local burst feasibility and one episode-global first attack start.
+
+    The deployed scheduler is one-shot: after the first fixed burst it transitions
+    to DONE. A multi-target episode may contain several disjoint critical intervals,
+    so every locally feasible row remains ``y_burst_feasible`` supervision, but only
+    the earliest feasible interval may supervise ``y_attack_start_b``.
+    """
+
     for row in rows:
         if not row["label_known_mask"]:
             continue
         row["y_burst_feasible"] = False
         row["y_attack_start_b"] = False
 
+    candidate_starts: list[int] = []
     index = 0
     while index < len(rows):
         if not rows[index]["label_known_mask"] or not rows[index]["y_gripper_critical_window"]:
@@ -346,10 +355,13 @@ def _mark_burst_targets(rows: list[dict[str, Any]], burst_length: int) -> None:
             feasible = interval[: len(interval) - burst_length + 1]
             for item in feasible:
                 rows[item]["y_burst_feasible"] = True
-            start = feasible[0]
-            rows[start]["y_attack_start_b"] = True
-            rows[start]["teacher_reason_code"] = "TARGET_CRITICAL_WINDOW_START"
+            candidate_starts.append(feasible[0])
         index = interval[-1] + 1
+
+    if candidate_starts:
+        start = min(candidate_starts, key=lambda item: (int(rows[item]["step"]), item))
+        rows[start]["y_attack_start_b"] = True
+        rows[start]["teacher_reason_code"] = "TARGET_CRITICAL_WINDOW_START"
 
 
 def build_clean_teacher_episode(

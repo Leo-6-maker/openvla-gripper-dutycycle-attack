@@ -29,8 +29,14 @@ class BddlMetadataTests(unittest.TestCase):
             path = Path(td) / "demo.bddl"
             path.write_text(text, encoding="utf-8")
             metadata = parse_bddl_task_metadata(path)
-        self.assertEqual(metadata["object_declarations"], ["ketchup", "milk"])
-        self.assertEqual(metadata["receptacle_declarations"], ["basket"])
+        # Preserve every :objects declaration as an object identity. Destination and
+        # fixture capability are additional roles, not mutually exclusive classes.
+        self.assertEqual(
+            metadata["object_declarations"],
+            ["basket", "drawer", "ketchup", "milk"],
+        )
+        self.assertEqual(metadata["receptacle_declarations"], [])
+        self.assertEqual(metadata["destination_object_declarations"], ["basket"])
         self.assertEqual(metadata["fixture_declarations"], ["drawer"])
         self.assertIn(["in", "milk", "basket"], metadata["goal_predicates"])
         self.assertIn(["open", "drawer"], metadata["goal_predicates"])

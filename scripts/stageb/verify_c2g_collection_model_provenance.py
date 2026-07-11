@@ -8,7 +8,10 @@ import json
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
-from scripts.stageb.bind_c2g_collection_model_provenance import BINDING_SCHEMA
+from scripts.stageb.bind_c2g_collection_model_provenance import (
+    BINDING_SCHEMA,
+    verify_collection_artifact_manifest,
+)
 from scripts.stageb.build_c2g_suite_model_map import SUITES, sha256_file
 from scripts.stageb.verify_c2g_suite_model_map_strict import verify as verify_models
 
@@ -120,6 +123,9 @@ def verify_collection(
         raise ValueError("collection metadata aggregate differs from binding report")
     if int(binding_report.get("episode_count", -1)) != len(verified_rows):
         raise ValueError("collection episode count differs from binding report")
+    artifact_manifest = verify_collection_artifact_manifest(collection_root)
+    if binding_report.get("artifact_manifest") != artifact_manifest:
+        raise ValueError("collection artifact manifest differs from binding report")
     return {
         "gate": "C2G_CLEAN_COLLECTION_MODEL_BINDING_VERIFICATION",
         "status": "PASS_C2G_CLEAN_COLLECTION_MODEL_BINDING_VERIFICATION",
@@ -128,6 +134,7 @@ def verify_collection(
         "binding_report_sha256": sha256_file(binding_report_path),
         "episode_count": len(verified_rows),
         "episode_metadata_manifest_sha256": aggregate,
+        "artifact_manifest": artifact_manifest,
         "model_verification": model_verification,
     }
 
