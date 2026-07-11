@@ -42,6 +42,7 @@ jobs:
             scripts/stageb/run_c2g_clean_window_vis_pgd.py \
             scripts/stageb/run_c2g_matched_load_jobs.py \
             scripts/stageb/run_c2g_matched_load_jobs_map_release.py \
+            scripts/stageb/run_c2g_r8_collection_shard.py \
             src/gripper_attack/c2g_bddl_metadata.py \
             src/gripper_attack/c2g_causal_vulnerability_detector.py \
             src/gripper_attack/c2g_clean_event_tracking.py \
@@ -62,8 +63,10 @@ jobs:
             tools/multisuite_detector/audit_c2g_goal_event_tracking.py \
             tools/multisuite_detector/audit_c2g_goal_model_integrity_v2.py \
             tools/multisuite_detector/audit_c2g_r5_bound_dataset.py \
+            tools/multisuite_detector/audit_c2g_r8_collection_wave.py \
             tools/multisuite_detector/audit_c2g_static_assets.py \
             tools/multisuite_detector/audit_c2g_static_assets_strict.py \
+            tools/multisuite_detector/build_c2g_r8_collection_waves.py \
             tools/multisuite_detector/c2g_clean_dataset_adapter.py \
             tools/multisuite_detector/c2g_clean_window_label_builder.py \
             tools/multisuite_detector/c2g_dataset_scaffold.py \
@@ -83,6 +86,7 @@ jobs:
             tests/test_c2g_matched_load_strict.py \
             tests/test_c2g_r6_bound_dataset_audit.py \
             tests/test_c2g_r7_scientific_corpus.py \
+            tests/test_c2g_r8_collection_control.py \
             tests/test_c2g_s1_semantic_remediation.py \
             tests/test_c2g_server_resume_hardening.py
       - name: Check launcher syntax
@@ -117,6 +121,7 @@ jobs:
             tests.test_c2g_matched_load_strict \
             tests.test_c2g_r6_bound_dataset_audit \
             tests.test_c2g_r7_scientific_corpus \
+            tests.test_c2g_r8_collection_control \
             tests.test_c2g_s1_semantic_remediation \
             tests.test_c2g_server_resume_hardening
       - name: Verify tracked code and protected outputs unchanged
