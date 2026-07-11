@@ -112,6 +112,7 @@ jobs:
           bash -n scripts/stageb/run_c2g_r6_dataset_audit.sh
           bash -n scripts/stageb/run_c2g_r7_corpus_planning.sh
           bash -n scripts/stageb/run_c2g_r8r_clean2000_reuse_audit.sh
+          bash -n scripts/stageb/run_c2g_r8r_input_for_r8s.sh
           bash -n scripts/stageb/run_c2g_r8s_teacher_v1_semantic_replay_audit.sh
       - name: Run complete C2g static suite
         run: |
