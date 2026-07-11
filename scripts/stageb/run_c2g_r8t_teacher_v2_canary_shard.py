@@ -60,27 +60,29 @@ def load_plan(path: Path, expected_sha: str) -> dict[str, Any]:
     return report
 
 
-def _validate_plan_invariants(report: dict) -> None:
-    """Validate typed plan invariants -- zero counts must not be falsy."""
-    from typing import Mapping as _Mapping
+def _require_exact_int(mapping, key: str, expected: int) -> None:
+    """Reject strings, floats, bools -- only exact int matches."""
+    value = mapping.get(key)
+    if type(value) is not int:
+        raise ValueError(
+            f"R8T invariant {key} must be an exact int, "
+            f"got {type(value).__name__}: {value!r}"
+        )
+    if value != expected:
+        raise ValueError(f"R8T invariant {key} must equal {expected}, got {value}")
 
+
+def _validate_plan_invariants(report: dict) -> None:
+    """Validate typed plan invariants with strict type checks."""
     invariants = report.get("invariants")
-    if not isinstance(invariants, _Mapping):
+    if not isinstance(invariants, dict):
         raise ValueError("R8T plan invariants must be a mapping")
-    required_true = ("train_only", "episode_cardinality_closed")
-    for key in required_true:
+    for key in ("train_only", "episode_cardinality_closed"):
         if invariants.get(key) is not True:
-            raise ValueError(f"R8T boolean invariant failed: {key}={invariants.get(key)}")
-    required_zero = ("validation_parent_count", "clean_test_parent_count", "attack_eval_parent_count")
-    for key in required_zero:
-        value = invariants.get(key)
-        if type(value) is bool:
-            raise ValueError(f"R8T count invariant is boolean: {key}")
-        if int(value) != 0:
-            raise ValueError(f"R8T leakage invariant failed: {key}={value}")
-    suite_count = invariants.get("suite_count")
-    if type(suite_count) is bool or int(suite_count) != 4:
-        raise ValueError(f"R8T suite count invariant failed: {suite_count}")
+            raise ValueError(f"R8T boolean invariant failed: {key}={invariants.get(key)!r}")
+    for key in ("validation_parent_count", "clean_test_parent_count", "attack_eval_parent_count"):
+        _require_exact_int(invariants, key, 0)
+    _require_exact_int(invariants, "suite_count", 4)
 
 
 def select_shard(plan: Mapping[str, Any], shard_id: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:
