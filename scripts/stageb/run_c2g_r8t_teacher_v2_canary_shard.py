@@ -56,9 +56,33 @@ def load_plan(path: Path, expected_sha: str) -> dict[str, Any]:
         raise ValueError("R8T plan report is not accepted")
     if report.get("collection_authorization") != "AUTHORIZED_BY_USER_FOR_R8T_24EP_TRAIN_ONLY_CANARY":
         raise ValueError("R8T plan lacks explicit user authorization")
-    if not all(report.get("invariants", {}).values()):
-        raise ValueError("R8T plan invariant failure")
+    _validate_plan_invariants(report)
     return report
+
+
+def _require_exact_int(mapping, key: str, expected: int) -> None:
+    """Reject strings, floats, bools -- only exact int matches."""
+    value = mapping.get(key)
+    if type(value) is not int:
+        raise ValueError(
+            f"R8T invariant {key} must be an exact int, "
+            f"got {type(value).__name__}: {value!r}"
+        )
+    if value != expected:
+        raise ValueError(f"R8T invariant {key} must equal {expected}, got {value}")
+
+
+def _validate_plan_invariants(report: dict) -> None:
+    """Validate typed plan invariants with strict type checks."""
+    invariants = report.get("invariants")
+    if not isinstance(invariants, dict):
+        raise ValueError("R8T plan invariants must be a mapping")
+    for key in ("train_only", "episode_cardinality_closed"):
+        if invariants.get(key) is not True:
+            raise ValueError(f"R8T boolean invariant failed: {key}={invariants.get(key)!r}")
+    for key in ("validation_parent_count", "clean_test_parent_count", "attack_eval_parent_count"):
+        _require_exact_int(invariants, key, 0)
+    _require_exact_int(invariants, "suite_count", 4)
 
 
 def select_shard(plan: Mapping[str, Any], shard_id: str) -> tuple[dict[str, Any], list[dict[str, Any]]]:

@@ -45,7 +45,9 @@ jobs:
             scripts/stageb/run_c2g_matched_load_jobs_map_release.py \
             scripts/stageb/run_c2g_r8_collection_shard.py \
             scripts/stageb/run_c2g_r8t_dynamic_gpu_canary.py \
+            scripts/stageb/replay_c2g_r8t_canary_success.py \
             scripts/stageb/run_c2g_r8t_teacher_v2_canary_shard.py \
+            scripts/stageb/run_c2g_r8u_adaptive_gpu_preview.py \
             src/gripper_attack/c2g_bddl_metadata.py \
             src/gripper_attack/c2g_causal_vulnerability_detector.py \
             src/gripper_attack/c2g_clean_event_tracking.py \
@@ -70,6 +72,7 @@ jobs:
             tools/multisuite_detector/audit_c2g_r8r_clean2000_reuse.py \
             tools/multisuite_detector/audit_c2g_r8s_teacher_v1_semantic_replay.py \
             tools/multisuite_detector/audit_c2g_r8t_teacher_v2_canary.py \
+            tools/multisuite_detector/audit_c2g_r8u_postcanary.py \
             tools/multisuite_detector/audit_c2g_static_assets.py \
             tools/multisuite_detector/audit_c2g_static_assets_strict.py \
             tools/multisuite_detector/build_c2g_r8_collection_waves.py \
@@ -150,6 +153,8 @@ jobs:
             tests.test_c2g_r8s_teacher_v1_semantic_replay \
             tests.test_c2g_r8s_launcher_contract \
             tests.test_c2g_r8t_teacher_v2_canary \
+            tests.test_c2g_r8u_postcanary \
+            tests.test_c2g_r8u_adaptive_gpu_preview \
             tests.test_c2g_s1_semantic_remediation \
             tests.test_c2g_server_resume_hardening
       - name: Verify tracked code and protected outputs unchanged

@@ -171,5 +171,70 @@ class R8TTeacherV2CanaryTests(unittest.TestCase):
         self.assertFalse(audit.triggerable([True, False, False]))
 
 
+from scripts.stageb.run_c2g_r8t_teacher_v2_canary_shard import _validate_plan_invariants
+
+
+class TypedInvariantTests(unittest.TestCase):
+    def _invariants(self, **overrides):
+        base = {
+            "train_only": True,
+            "episode_cardinality_closed": True,
+            "validation_parent_count": 0,
+            "clean_test_parent_count": 0,
+            "attack_eval_parent_count": 0,
+            "suite_count": 4,
+        }
+        base.update(overrides)
+        return base
+
+    def test_valid_counts_pass(self):
+        _validate_plan_invariants({"invariants": self._invariants()})
+
+    def test_string_zero_fails(self):
+        for key in ("validation_parent_count", "clean_test_parent_count", "attack_eval_parent_count", "suite_count"):
+            inv = self._invariants(**{key: "0"})
+            with self.assertRaisesRegex(ValueError, "must be an exact int"):
+                _validate_plan_invariants({"invariants": inv})
+
+    def test_float_zero_fails(self):
+        for key in ("validation_parent_count", "clean_test_parent_count", "attack_eval_parent_count", "suite_count"):
+            inv = self._invariants(**{key: 0.0})
+            with self.assertRaisesRegex(ValueError, "must be an exact int"):
+                _validate_plan_invariants({"invariants": inv})
+
+    def test_bool_false_fails(self):
+        for key in ("validation_parent_count", "clean_test_parent_count", "attack_eval_parent_count", "suite_count"):
+            inv = self._invariants(**{key: False})
+            with self.assertRaises(ValueError):
+                _validate_plan_invariants({"invariants": inv})
+
+    def test_wrong_count_fails(self):
+        for key in ("validation_parent_count", "clean_test_parent_count", "attack_eval_parent_count"):
+            inv = self._invariants(**{key: 1})
+            with self.assertRaisesRegex(ValueError, "must equal 0"):
+                _validate_plan_invariants({"invariants": inv})
+
+    def test_wrong_suite_count_fails(self):
+        inv = self._invariants(suite_count=3)
+        with self.assertRaisesRegex(ValueError, "must equal 4"):
+            _validate_plan_invariants({"invariants": inv})
+
+    def test_train_only_false_fails(self):
+        inv = self._invariants(train_only=False)
+        with self.assertRaises(ValueError):
+            _validate_plan_invariants({"invariants": inv})
+
+    def test_missing_key_fails(self):
+        inv = self._invariants()
+        del inv["suite_count"]
+        with self.assertRaisesRegex(ValueError, "must be an exact int"):
+            _validate_plan_invariants({"invariants": inv})
+
+    def test_null_fails(self):
+        inv = self._invariants(validation_parent_count=None)
+        with self.assertRaisesRegex(ValueError, "must be an exact int"):
+            _validate_plan_invariants({"invariants": inv})
+
+
 if __name__ == "__main__":
     unittest.main()
