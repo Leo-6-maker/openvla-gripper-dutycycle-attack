@@ -65,6 +65,7 @@ jobs:
             tools/multisuite_detector/audit_c2g_r5_bound_dataset.py \
             tools/multisuite_detector/audit_c2g_r8_collection_wave.py \
             tools/multisuite_detector/audit_c2g_r8r_clean2000_reuse.py \
+            tools/multisuite_detector/audit_c2g_r8s_teacher_v1_semantic_replay.py \
             tools/multisuite_detector/audit_c2g_static_assets.py \
             tools/multisuite_detector/audit_c2g_static_assets_strict.py \
             tools/multisuite_detector/build_c2g_r8_collection_waves.py \
@@ -75,6 +76,8 @@ jobs:
             tools/multisuite_detector/c2g_r8r_common.py \
             tools/multisuite_detector/c2g_r8r_episode.py \
             tools/multisuite_detector/c2g_r8r_outputs.py \
+            tools/multisuite_detector/c2g_r8s_common.py \
+            tools/multisuite_detector/c2g_r8s_episode.py \
             tools/multisuite_detector/materialize_c2g_clean_window_dataset.py \
             tools/multisuite_detector/materialize_c2g_multisuite_dataset.py \
             tools/multisuite_detector/plan_c2g_scientific_corpus.py \
@@ -95,6 +98,8 @@ jobs:
             tests/test_c2g_r8_real_schema_compat.py \
             tests/test_c2g_r8r_clean2000_reuse_audit.py \
             tests/test_c2g_r8r_launcher_contract.py \
+            tests/test_c2g_r8s_teacher_v1_semantic_replay.py \
+            tests/test_c2g_r8s_launcher_contract.py \
             tests/test_c2g_s1_semantic_remediation.py \
             tests/test_c2g_server_resume_hardening.py
       - name: Check launcher syntax
@@ -107,6 +112,7 @@ jobs:
           bash -n scripts/stageb/run_c2g_r6_dataset_audit.sh
           bash -n scripts/stageb/run_c2g_r7_corpus_planning.sh
           bash -n scripts/stageb/run_c2g_r8r_clean2000_reuse_audit.sh
+          bash -n scripts/stageb/run_c2g_r8s_teacher_v1_semantic_replay_audit.sh
       - name: Run complete C2g static suite
         run: |
           python -m unittest -v \
@@ -134,6 +140,8 @@ jobs:
             tests.test_c2g_r8_real_schema_compat \
             tests.test_c2g_r8r_clean2000_reuse_audit \
             tests.test_c2g_r8r_launcher_contract \
+            tests.test_c2g_r8s_teacher_v1_semantic_replay \
+            tests.test_c2g_r8s_launcher_contract \
             tests.test_c2g_s1_semantic_remediation \
             tests.test_c2g_server_resume_hardening
       - name: Verify tracked code and protected outputs unchanged
