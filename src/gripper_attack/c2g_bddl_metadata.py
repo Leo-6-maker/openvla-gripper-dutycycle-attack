@@ -30,12 +30,9 @@ _DESTINATION_TYPE_TOKENS = (
     "receptacle",
     "container",
     "basket",
-    "bowl",
-    "plate",
     "tray",
     "rack",
     "caddy",
-    "microwave",
 )
 _FIXTURE_TYPE_TOKENS = (
     "fixture",
@@ -142,8 +139,8 @@ def parse_bddl_task_metadata(path: str | Path) -> dict[str, Any]:
     fixture_typed = _typed_symbols(_section(parsed, "fixtures"))
 
     # Official LIBERO puts movable destinations such as baskets and plates in
-    # ``:objects``. Preserve them as objects; expose destination capability in a
-    # separate field rather than deleting them from object_declarations.
+    # ``:objects``. Preserve them as objects. Destination capability is an
+    # additional role, not a disjoint contact-identity class.
     object_names = sorted({name for name, _ in object_typed})
     destination_objects = sorted(
         {
@@ -202,9 +199,9 @@ def parse_bddl_task_metadata(path: str | Path) -> dict[str, Any]:
     return {
         "bddl_path": str(path),
         "object_declarations": object_names,
-        # Backward-compatible destination summary. These names remain present in
-        # object_declarations and must not be treated as a disjoint object class.
-        "receptacle_declarations": destination_objects,
+        # Keep the legacy field disjoint from movable objects so contact identity
+        # never sees the same canonical name as both object and static receptacle.
+        "receptacle_declarations": [],
         "destination_object_declarations": destination_objects,
         "site_declarations": sorted(region_owner_by_site),
         "fixture_declarations": sorted(fixture_names),
