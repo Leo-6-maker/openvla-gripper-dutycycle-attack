@@ -33,6 +33,7 @@ jobs:
             scripts/stageb/collect_c2g_clean_window_rollouts_event_v2.py \
             scripts/stageb/collect_c2g_clean_window_rollouts_release.py \
             scripts/stageb/collect_c2g_clean_window_rollouts_strict.py \
+            scripts/stageb/collect_c2g_r8t_teacher_v2_canary.py \
             scripts/stageb/extract_c2g_detector_timing.py \
             scripts/stageb/finalize_c2g_goal_model_manifest_v2.py \
             scripts/stageb/prepare_c2g_eval_parents.py \
@@ -43,6 +44,8 @@ jobs:
             scripts/stageb/run_c2g_matched_load_jobs.py \
             scripts/stageb/run_c2g_matched_load_jobs_map_release.py \
             scripts/stageb/run_c2g_r8_collection_shard.py \
+            scripts/stageb/run_c2g_r8t_dynamic_gpu_canary.py \
+            scripts/stageb/run_c2g_r8t_teacher_v2_canary_shard.py \
             src/gripper_attack/c2g_bddl_metadata.py \
             src/gripper_attack/c2g_causal_vulnerability_detector.py \
             src/gripper_attack/c2g_clean_event_tracking.py \
@@ -66,10 +69,12 @@ jobs:
             tools/multisuite_detector/audit_c2g_r8_collection_wave.py \
             tools/multisuite_detector/audit_c2g_r8r_clean2000_reuse.py \
             tools/multisuite_detector/audit_c2g_r8s_teacher_v1_semantic_replay.py \
+            tools/multisuite_detector/audit_c2g_r8t_teacher_v2_canary.py \
             tools/multisuite_detector/audit_c2g_static_assets.py \
             tools/multisuite_detector/audit_c2g_static_assets_strict.py \
             tools/multisuite_detector/build_c2g_r8_collection_waves.py \
             tools/multisuite_detector/build_c2g_r8r_clean2000_source_spec.py \
+            tools/multisuite_detector/build_c2g_r8t_teacher_v2_canary.py \
             tools/multisuite_detector/c2g_clean_dataset_adapter.py \
             tools/multisuite_detector/c2g_clean_window_label_builder.py \
             tools/multisuite_detector/c2g_dataset_scaffold.py \
@@ -100,6 +105,7 @@ jobs:
             tests/test_c2g_r8r_launcher_contract.py \
             tests/test_c2g_r8s_teacher_v1_semantic_replay.py \
             tests/test_c2g_r8s_launcher_contract.py \
+            tests/test_c2g_r8t_teacher_v2_canary.py \
             tests/test_c2g_s1_semantic_remediation.py \
             tests/test_c2g_server_resume_hardening.py
       - name: Check launcher syntax
@@ -143,6 +149,7 @@ jobs:
             tests.test_c2g_r8r_launcher_contract \
             tests.test_c2g_r8s_teacher_v1_semantic_replay \
             tests.test_c2g_r8s_launcher_contract \
+            tests.test_c2g_r8t_teacher_v2_canary \
             tests.test_c2g_s1_semantic_remediation \
             tests.test_c2g_server_resume_hardening
       - name: Verify tracked code and protected outputs unchanged
