@@ -204,7 +204,8 @@ class ReplayEpisodeTests(unittest.TestCase):
         from scripts.stageb.replay_c2g_r8t_canary_success import REPLAY_DIVERGED
         r = _replay_with_common_mocks(ep, MockEnv(done_at=20))
         self.assertEqual(r["classification"], REPLAY_DIVERGED)
-        self.assertLess(r["step_count"], 50)
+        self.assertIsNotNone(r["done_observed_at"])
+        self.assertEqual(r["done_observed_at"], 20)
 
     def test_canonical_success_from_env_check(self):
         ep = self.root / "ep"; bddl = make_bddl(ep)
