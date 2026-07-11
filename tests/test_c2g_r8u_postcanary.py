@@ -22,17 +22,32 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def make_meta(ep_dir: Path, *, bddl_sha="f" * 64, init_sha="e" * 64,
+def _compute_init_sha():
+    """Compute the SHA256 of the mock init state matching array_sha256."""
+    import hashlib as _hl
+    arr = np.zeros(110, dtype=np.float64)
+    d = _hl.sha256()
+    d.update(str(arr.dtype).encode("utf-8"))
+    d.update(json.dumps(list(arr.shape)).encode("utf-8"))
+    d.update(arr.tobytes())
+    return d.hexdigest(), list(arr.shape), str(arr.dtype)
+
+_MOCK_INIT_SHA, _MOCK_INIT_SHAPE, _MOCK_INIT_DTYPE = _compute_init_sha()
+
+
+def make_meta(ep_dir: Path, *, bddl_sha="f" * 64, init_sha=None,
               max_steps=50, dummy_wait=10, n_steps=50, suite="libero_object",
               task_index=0, state_id=1, replay_seed=42):
+    if init_sha is None:
+        init_sha = _MOCK_INIT_SHA
     meta = {
         "suite": suite, "task_index": task_index, "state_id": state_id,
         "parent_key": f"{suite}/task_{task_index}/state_{state_id}/detector_train/episode_000",
         "bddl_file": str(ep_dir / "fake.bddl"),
         "bddl_sha256": bddl_sha,
         "official_init_state_sha256": init_sha,
-        "official_init_state_shape": [110],
-        "official_init_state_dtype": "float64",
+        "official_init_state_shape": _MOCK_INIT_SHAPE,
+        "official_init_state_dtype": _MOCK_INIT_DTYPE,
         "max_steps": max_steps, "dummy_wait": dummy_wait,
         "replay_seed": replay_seed, "n_steps": n_steps,
         "cohort": "DETECTOR_TRAIN", "split": "train",
