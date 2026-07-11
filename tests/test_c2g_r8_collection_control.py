@@ -220,6 +220,8 @@ class R8WavePlannerTests(unittest.TestCase):
             self.assertEqual(result["registered_parent_count"], 40)
             self.assertEqual(result["reusable_parent_count"], 4)
             self.assertEqual(result["detector_missing_parent_count"], 30)
+            self.assertEqual(result["detector_canary_parent_count"], 12)
+            self.assertEqual(result["detector_post_canary_parent_count"], 18)
             self.assertEqual(result["attack_eval_missing_parent_count"], 6)
             canary = read_jsonl(Path(result["waves"][DETECTOR_CANARY]["manifest"]))
             self.assertEqual(len(canary), 12)
@@ -228,12 +230,14 @@ class R8WavePlannerTests(unittest.TestCase):
             self.assertTrue(all(row["cohort"] != ATTACK_EVAL for row in canary))
             full = read_jsonl(Path(result["waves"][DETECTOR_FULL]["manifest"]))
             attack = read_jsonl(Path(result["waves"][ATTACK_EVAL_WAVE]["manifest"]))
-            self.assertEqual(len(full), 30)
+            self.assertEqual(len(full), 18)
             self.assertEqual(len(attack), 6)
-            self.assertFalse(
-                {(row["suite"], row["task_index"], row["state_id"]) for row in full}
-                & {(row["suite"], row["task_index"], row["state_id"]) for row in selected}
-            )
+            reusable_ids = {(row["suite"], row["task_index"], row["state_id"]) for row in selected}
+            canary_ids = {(row["suite"], row["task_index"], row["state_id"]) for row in canary}
+            full_ids = {(row["suite"], row["task_index"], row["state_id"]) for row in full}
+            self.assertFalse(full_ids & reusable_ids)
+            self.assertFalse(canary_ids & full_ids)
+            self.assertEqual(len(canary_ids | full_ids), 30)
 
     def test_tampered_reusable_manifest_hash_fails_closed(self):
         with tempfile.TemporaryDirectory() as temporary:
