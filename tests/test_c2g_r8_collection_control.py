@@ -52,6 +52,7 @@ def write_source_audit(
     plan: dict,
     reusable_rows: list[dict],
 ):
+    root.mkdir(parents=True, exist_ok=True)
     reusable = root / "r7_reusable.jsonl"
     reusable.write_text(
         "".join(json.dumps(row, sort_keys=True) + "\n" for row in reusable_rows),
@@ -182,16 +183,7 @@ class R8WavePlannerTests(unittest.TestCase):
     def test_exact_missing_counts_and_canary_separation(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-
-            def reusable(row):
-                return (
-                    row["suite"] in ("libero_goal", "libero_spatial")
-                    and row["cohort"] == DETECTOR_TRAIN
-                    and row["task_index"] == 0
-                    and row["registry_index"] if False else False
-                )
-
-            plan, registry_rows, source_report, reusable_path = make_bound_plan(root)
+            plan, registry_rows, _, _ = make_bound_plan(root)
             selected = []
             for suite, cohort in (
                 ("libero_goal", DETECTOR_TRAIN),
