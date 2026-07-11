@@ -88,7 +88,7 @@ def replay_episode(
     task_index = meta["task_index"]
     state_id = meta["state_id"]
     parent_key = meta["parent_key"]
-    bddl_path = meta.get("task_bddl_path", meta.get("task_bddl", ""))
+    bddl_path = meta.get("bddl_path", meta.get("bddl_file", ""))
 
     if not bddl_path or not os.path.exists(bddl_path):
         raise FileNotFoundError(f"BDDL not found: {bddl_path}")
