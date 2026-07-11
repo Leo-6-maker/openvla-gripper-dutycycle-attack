@@ -172,13 +172,18 @@ def validate_canary_layout(plan: Mapping[str, Any]) -> list[dict[str, Any]]:
     shards = [dict(row) for row in plan.get("shards", [])]
     if len(shards) != 4:
         raise ValueError("R8W shadow canary requires exactly four workers")
-    expected = list(zip(GPUS, SUITES))
+    # Validate each shard against plan's own physical_gpu assignment
     output = []
-    for gpu, suite in expected:
-        matches = [row for row in shards if row.get("physical_gpu") == gpu and row.get("suite") == suite]
-        if len(matches) != 1 or matches[0].get("episode_count") != 2:
+    for shard in shards:
+        gpu = shard.get("physical_gpu")
+        suite = shard.get("suite")
+        if gpu is None or suite is None:
+            raise ValueError(f"R8W shadow canary shard missing gpu/suite: {shard}")
+        if shard.get("episode_count") != 2:
             raise ValueError(f"R8W shadow canary mapping mismatch: GPU {gpu}/{suite}")
-        output.append(matches[0])
+        output.append(shard)
+    if len(output) != 4:
+        raise ValueError("R8W shadow canary requires exactly four valid shards")
     return output
 
 
