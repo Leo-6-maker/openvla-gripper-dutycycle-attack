@@ -3,10 +3,9 @@ set -euo pipefail
 
 # Strict canonical C2g pipeline wrapper.
 #
-# Delegates direct phases to run_c2g_clean_window_pipeline.sh, but inserts an
-# immutable clean-collection/model-binding verification immediately before dataset
-# materialization. This prevents a stale binding report or modified episode metadata
-# from entering training data.
+# Delegates direct phases to run_c2g_clean_window_pipeline.sh, but inserts immutable
+# collection/model verification before materialization and an event-tracking scientific
+# audit after the canonical clean-label audit.
 
 PHASE="${1:-}"
 if [[ -z "$PHASE" ]]; then
@@ -31,12 +30,15 @@ export WORK_ROOT GOAL_MODEL_MANIFEST
 
 CONFIG_ROOT="$WORK_ROOT/config"
 COLLECTION_ROOT="$WORK_ROOT/clean_collection"
+DRY_AUDIT_ROOT="$WORK_ROOT/clean_dry_audit"
 SUITE_MODEL_MAP="$CONFIG_ROOT/c2g_suite_model_map.json"
 SUITE_MODEL_REPORT="$CONFIG_ROOT/c2g_suite_model_map_report.json"
 MODEL_VERIFICATION_REPORT="$CONFIG_ROOT/c2g_suite_model_verification_report.json"
 COLLECTION_BINDING_REPORT="$CONFIG_ROOT/c2g_clean_collection_model_binding_report.json"
 COLLECTION_BINDING_VERIFICATION_REPORT="$CONFIG_ROOT/c2g_clean_collection_model_binding_verification.json"
+EVENT_TRACKING_AUDIT="$DRY_AUDIT_ROOT/c2g_goal_event_tracking_audit.json"
 BASE="$REPO_ROOT/scripts/stageb/run_c2g_clean_window_pipeline.sh"
+BURST_LENGTH="${BURST_LENGTH:-10}"
 
 verify_collection_binding() {
   for path in \
@@ -60,11 +62,28 @@ verify_collection_binding() {
 
 run_phase() {
   case "$1" in
+    audit)
+      bash "$BASE" audit
+      python tools/multisuite_detector/audit_c2g_goal_event_tracking.py \
+        --input-root "$COLLECTION_ROOT" \
+        --output-report "$EVENT_TRACKING_AUDIT" \
+        --burst-length "$BURST_LENGTH"
+      ;;
     materialize)
       verify_collection_binding
+      [[ -f "$EVENT_TRACKING_AUDIT" ]] || {
+        echo "event-tracking audit missing: $EVENT_TRACKING_AUDIT" >&2
+        exit 2
+      }
+      python - "$EVENT_TRACKING_AUDIT" <<'PY'
+import json, sys
+report = json.load(open(sys.argv[1], "r", encoding="utf-8"))
+if report.get("status") != "PASS_C2G_GOAL_EVENT_TRACKING_AUDIT":
+    raise SystemExit("event-tracking scientific audit is not PASS")
+PY
       bash "$BASE" materialize
       ;;
-    models|manifests|collect|audit|dataset_audit|train|calibrate|folds|clean_timing|bind_parents|build_jobs|run_jobs|audit_jobs|analyze)
+    models|manifests|collect|dataset_audit|train|calibrate|folds|clean_timing|bind_parents|build_jobs|run_jobs|audit_jobs|analyze)
       bash "$BASE" "$1"
       ;;
     *) echo "unknown phase: $1" >&2; exit 2 ;;
