@@ -1,4 +1,16 @@
-"""Structured BDDL/PDDL metadata extraction for clean Teacher-v2 collection."""
+"""Structured BDDL/PDDL metadata extraction for clean Teacher-v2 collection.
+
+The parser preserves the distinctions used by official LIBERO task files:
+
+* ``:objects`` are movable/object declarations even when their type name is
+  destination-like (for example ``basket`` or ``plate``);
+* ``:fixtures`` are parsed independently;
+* ``:regions`` are converted to the fully-qualified MuJoCo/BDDL site names used
+  in goals, together with an explicit site -> owner mapping;
+* goal predicates retain their source order for later per-step event binding.
+
+This module remains simulator-free and performs no language-only target guessing.
+"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,9 +21,34 @@ from tools.multisuite_detector.audit_c2g_static_assets import parse_sexpr
 
 
 # Backward-compatible local name used throughout the parser. The implementation is
-# now shared with the strict live-asset audit so collection and audit cannot disagree
+# shared with the strict live-asset audit so collection and audit cannot disagree
 # about reviewed BDDL syntax aliases such as ``turnon`` -> ``turn_on``.
 normalize_operator = normalize_goal_operator
+
+
+_DESTINATION_TYPE_TOKENS = (
+    "receptacle",
+    "container",
+    "basket",
+    "bowl",
+    "plate",
+    "tray",
+    "rack",
+    "caddy",
+    "microwave",
+)
+_FIXTURE_TYPE_TOKENS = (
+    "fixture",
+    "drawer",
+    "cabinet",
+    "stove",
+    "button",
+    "handle",
+    "door",
+    "microwave",
+    "table",
+    "floor",
+)
 
 
 def _walk(node: Any) -> Iterable[list[Any]]:
@@ -69,26 +106,75 @@ def _goal_predicates(node: Any) -> list[list[str]]:
     return []
 
 
+def _region_target(region_node: Any) -> tuple[str, str] | None:
+    """Return ``(local_region_name, owner_entity)`` for one :regions entry."""
+
+    if not isinstance(region_node, list) or not region_node or not isinstance(region_node[0], str):
+        return None
+    local_name = str(region_node[0]).strip()
+    owner = ""
+    for child in region_node[1:]:
+        if (
+            isinstance(child, list)
+            and len(child) >= 2
+            and isinstance(child[0], str)
+            and normalize_operator(child[0]) == "target"
+        ):
+            owner = str(child[1]).strip()
+            break
+    if not local_name or not owner:
+        return None
+    return local_name, owner
+
+
+def _qualified_region_name(owner: str, local_name: str) -> str:
+    owner = str(owner).strip()
+    local_name = str(local_name).strip()
+    prefix = owner + "_"
+    return local_name if local_name.startswith(prefix) else prefix + local_name
+
+
 def parse_bddl_task_metadata(path: str | Path) -> dict[str, Any]:
     path = Path(path).resolve()
     parsed = parse_sexpr(path.read_text(encoding="utf-8"))
-    typed = _typed_symbols(_section(parsed, "objects"))
-    object_names: list[str] = []
-    receptacles: list[str] = []
-    sites: list[str] = []
-    fixtures: list[str] = []
-    typed_rows: list[dict[str, str]] = []
-    for name, type_name in typed:
-        normalized_type = normalize_operator(type_name)
-        typed_rows.append({"name": name, "type": type_name})
-        if any(token in normalized_type for token in ("site", "region", "zone", "marker")):
-            sites.append(name)
-        elif any(token in normalized_type for token in ("receptacle", "container", "bowl", "plate", "tray", "basket")):
-            receptacles.append(name)
-        elif any(token in normalized_type for token in ("fixture", "drawer", "cabinet", "stove", "button", "handle", "door")):
-            fixtures.append(name)
-        else:
-            object_names.append(name)
+
+    object_typed = _typed_symbols(_section(parsed, "objects"))
+    fixture_typed = _typed_symbols(_section(parsed, "fixtures"))
+
+    # Official LIBERO puts movable destinations such as baskets and plates in
+    # ``:objects``. Preserve them as objects; expose destination capability in a
+    # separate field rather than deleting them from object_declarations.
+    object_names = sorted({name for name, _ in object_typed})
+    destination_objects = sorted(
+        {
+            name
+            for name, type_name in object_typed
+            if any(token in normalize_operator(type_name) for token in _DESTINATION_TYPE_TOKENS)
+        }
+    )
+
+    fixture_names = {
+        name for name, _ in fixture_typed
+    } | {
+        name
+        for name, type_name in object_typed
+        if any(token in normalize_operator(type_name) for token in _FIXTURE_TYPE_TOKENS)
+    }
+
+    region_rows: list[dict[str, str]] = []
+    region_owner_by_site: dict[str, str] = {}
+    region_local_name_by_site: dict[str, str] = {}
+    for node in _section(parsed, "regions"):
+        parsed_region = _region_target(node)
+        if parsed_region is None:
+            continue
+        local_name, owner = parsed_region
+        full_name = _qualified_region_name(owner, local_name)
+        if full_name in region_owner_by_site and region_owner_by_site[full_name] != owner:
+            raise ValueError(f"conflicting region owner for {full_name}")
+        region_owner_by_site[full_name] = owner
+        region_local_name_by_site[full_name] = local_name
+        region_rows.append({"name": full_name, "local_name": local_name, "owner": owner})
 
     goal_nodes = _section(parsed, "goal")
     predicates: list[list[str]] = []
@@ -96,12 +182,36 @@ def parse_bddl_task_metadata(path: str | Path) -> dict[str, Any]:
         predicates.extend(_goal_predicates(node))
     if not predicates:
         raise ValueError(f"no goal predicates parsed from {path}")
+
+    object_interest = sorted(
+        {
+            str(value).strip()
+            for value in _section(parsed, "obj_of_interest")
+            if isinstance(value, str) and str(value).strip()
+        }
+    )
+
+    typed_rows = [
+        {"name": name, "type": type_name, "section": "objects"}
+        for name, type_name in object_typed
+    ] + [
+        {"name": name, "type": type_name, "section": "fixtures"}
+        for name, type_name in fixture_typed
+    ]
+
     return {
         "bddl_path": str(path),
-        "object_declarations": sorted(set(object_names)),
-        "receptacle_declarations": sorted(set(receptacles)),
-        "site_declarations": sorted(set(sites)),
-        "fixture_declarations": sorted(set(fixtures)),
+        "object_declarations": object_names,
+        # Backward-compatible destination summary. These names remain present in
+        # object_declarations and must not be treated as a disjoint object class.
+        "receptacle_declarations": destination_objects,
+        "destination_object_declarations": destination_objects,
+        "site_declarations": sorted(region_owner_by_site),
+        "fixture_declarations": sorted(fixture_names),
+        "region_declarations": sorted(region_rows, key=lambda row: row["name"]),
+        "region_owner_by_site": dict(sorted(region_owner_by_site.items())),
+        "region_local_name_by_site": dict(sorted(region_local_name_by_site.items())),
+        "object_of_interest": object_interest,
         "typed_declarations": typed_rows,
         "goal_predicates": predicates,
         "ordered_subgoals": predicates,
