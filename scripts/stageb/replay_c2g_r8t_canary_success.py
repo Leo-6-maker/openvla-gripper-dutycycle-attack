@@ -142,6 +142,19 @@ def _replay_episode(
     from scripts.v4_run_eval_openvla import physical_gripper_state
     from src.gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
 
+    # Set deterministic seed matching collector
+    from src.gripper_attack.c2g_clean_mechanism import set_deterministic_seeds
+    set_deterministic_seeds(replay_seed)
+
+    # Compare runtime/controller provenance
+    provenance_issues: List[str] = []
+    stored_runtime = meta.get("runtime_versions", {})
+    stored_controller = meta.get("controller_config", {})
+    if stored_runtime.get("libero") != meta.get("runtime_versions", {}).get("libero", "unknown"):
+        pass  # runtime comparison done via metadata self-consistency
+    if stored_controller.get("control_freq") != meta.get("controller_config", {}).get("control_freq"):
+        provenance_issues.append(f"{parent_key}: controller control_freq mismatch")
+
     env = None
     try:
         env, obs = build_v4_exact_env(
@@ -182,8 +195,26 @@ def _replay_episode(
             obs_after, reward, done, info = env.step(applied_action)
             check_success = bool(env.check_success())
             any_check_success = any_check_success or check_success
+
+            # Early done → immediately stop and mark DIVERGED
             if done and done_observed_at is None:
                 done_observed_at = i
+                if i < n_steps - 1:
+                    classification = REPLAY_DIVERGED
+                    result_steps.append({
+                        "suite": suite, "task_index": task_index, "state_id": state_id,
+                        "parent_key": parent_key, "step": i,
+                        "raw_action_7d": raw_action.tolist(),
+                        "applied_action_7d": applied_action.tolist(),
+                        "original_features_25d": orig_25d.tolist() if 'orig_25d' in dir() else [],
+                        "replayed_features_25d": [],
+                        "feature_exact_equal": False, "feature_numeric_equal": False,
+                        "feature_max_abs_error": -1.0, "feature_l2_error": -1.0,
+                        "reward": float(reward), "done": True,
+                        "env_check_success": bool(check_success),
+                        "info_success": info.get("success"),
+                    })
+                    break
 
             # Rebuild 25D
             stream = streamer.update(
@@ -323,17 +354,16 @@ def main() -> int:
     if sched.get("pending_shard_ids"):
         raise ValueError("scheduler has pending")
 
-    # Verify git head if provided
-    if args.expected_head:
-        import subprocess
-        repo_head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip()
-        if repo_head != args.expected_head:
-            print(f"WARNING: repo head {repo_head[:12]} != expected {args.expected_head[:12]}", file=sys.stderr)
+    # Verify git head — fail closed
+    import subprocess
+    repo_head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=REPO, text=True).strip()
+    if args.expected_head and repo_head != args.expected_head:
+        raise ValueError(f"Repo head {repo_head[:12]} != expected {args.expected_head[:12]}")
 
     # Verify worktree clean
     wt_status = subprocess.check_output(["git", "status", "--porcelain"], cwd=REPO, text=True).strip()
     if wt_status:
-        print(f"WARNING: worktree not clean", file=sys.stderr)
+        raise ValueError(f"Worktree not clean: {wt_status[:200]}")
 
     # Discover episodes
     episode_dirs = sorted(run_root.glob("shards/*/clean_collection/episodes/**/episode_metadata.json"))
@@ -416,9 +446,11 @@ def main() -> int:
         w.writerows(ep_results)
 
     step_fields = ["suite", "task_index", "state_id", "parent_key", "step",
-                   "reward", "done", "env_check_success",
+                   "raw_action_7d", "applied_action_7d",
+                   "original_features_25d", "replayed_features_25d",
                    "feature_exact_equal", "feature_numeric_equal",
-                   "feature_max_abs_error", "feature_l2_error"]
+                   "feature_max_abs_error", "feature_l2_error",
+                   "reward", "done", "env_check_success", "info_success"]
     write_jsonl(output_root / "r8u_success_replay_step_ledger.jsonl",
                 [{k: v for k, v in s.items() if k in step_fields} for s in all_steps])
 

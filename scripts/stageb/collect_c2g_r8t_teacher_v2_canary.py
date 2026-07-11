@@ -310,6 +310,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         rows_written = 0
         started = time.time()
         last_info: dict[str, Any] = {}
+        any_check_success = False
+        first_success_step: int | None = None
+        final_check_success = False
         try:
             task = suite_obj.get_task(task_index)
             states = suite_obj.get_task_init_states(task_index)
@@ -514,14 +517,31 @@ def main(argv: Sequence[str] | None = None) -> int:
                         "active_target_bilateral_contact": bilateral_contact,
                     }
                     save_rgb(rgb_dir / f"frame_{step:06d}.png", rgb)
+                    obs, reward, done, info = env.step(applied_action)
+                    check_success = bool(env.check_success())
+                    if check_success and not any_check_success:
+                        any_check_success = True
+                        first_success_step = step
+                    last_info = dict(info or {})
+                    # Record per-step outcomes on this step's row
+                    row["reward_after_step"] = float(reward)
+                    row["done_after_step"] = bool(done)
+                    row["env_check_success_after_step"] = bool(check_success)
+                    row["info_success_after_step"] = info.get("success")
+                    row["info_task_success_after_step"] = info.get("task_success")
+                    row["info_is_success_after_step"] = info.get("is_success")
                     handle.write(json.dumps(row, sort_keys=True, default=str) + "\n")
                     rows_written += 1
-                    obs, _, done, info = env.step(applied_action)
-                    last_info = dict(info or {})
                     if release_safe:
                         last_active_index = None
                     if done:
                         break
+
+            # Final success check after policy loop
+            try:
+                final_check_success = bool(env.check_success())
+            except Exception:
+                final_check_success = False
 
             metadata = {
                 "schema": COLLECTION_SCHEMA,
@@ -571,11 +591,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 },
                 "runtime_valid": True,
                 "n_steps": rows_written,
-                "clean_success_observed": bool(
-                    last_info.get("success", False)
-                    or last_info.get("task_success", False)
-                    or last_info.get("is_success", False)
-                ),
+                "clean_success_metric": "LIBERO_ENV_CHECK_SUCCESS",
+                "clean_success_observed": any_check_success,
+                "clean_success_first_step": first_success_step,
+                "final_env_check_success": final_check_success,
                 "runtime_seconds": time.time() - started,
                 "condition": "CLEAN",
                 "student_allowed_modalities": [

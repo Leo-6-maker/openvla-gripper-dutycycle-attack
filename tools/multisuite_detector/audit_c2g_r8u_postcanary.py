@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 """R8U post-canary L10 Teacher-v2 unknown reason audit — read-only, CPU only.
 
-Reads the 24 existing R8T canary step_records.jsonl and produces per-step
-unknown-reason decomposition without modifying Teacher-v2 label semantics.
+Reads the 24 existing R8T canary step_records.jsonl and analyzes raw
+Teacher-v2 privileged evidence fields (active_target_known, active_target_reason,
+mujoco_contact_pairs, contacted_goal_targets, etc.) to produce per-step
+unknown-reason decomposition.
+
+Does NOT read final teacher labels (teacher_reason_code, teacher_phase) —
+those are not stored in R8T raw evidence records. Works with the raw fields.
 """
 from __future__ import annotations
 
@@ -77,14 +82,42 @@ def main() -> int:
         first_resolved_step: int | None = None
 
         for i, row in enumerate(steps):
-            known = row.get("label_known_mask", row.get("teacher_known", True))
-            reason = row.get("teacher_reason_code", "UNKNOWN")
-            phase = row.get("teacher_phase", "UNKNOWN")
-            active_reason = row.get("active_target_reason", "")
+            # Use raw Teacher-v2 evidence fields (present in R8T step records)
             active_known = row.get("active_target_known", True)
+            active_reason = row.get("active_target_reason", "")
             subgoal_idx = row.get("active_subgoal_index", -1)
-            contacted = row.get("contacted_goal_targets", 0)
-            bilateral = row.get("bilateral_goal_targets", 0)
+            contacted = row.get("contacted_goal_targets", [])
+            bilateral = row.get("bilateral_goal_targets", [])
+            contact_pairs = row.get("mujoco_contact_pairs", [])
+            near_target = row.get("near_target", False)
+            release_safe = row.get("release_safe", False)
+            lift = row.get("object_relative_lift")
+            progress_active = row.get("manipulation_progress_active", False)
+            constrained = row.get("constrained_manipulation_active", False)
+            supported = row.get("supported_at_target", False)
+
+            # Unknown = active_target_known is False or falsy
+            known = bool(active_known)
+            contacted_count = len(contacted) if isinstance(contacted, list) else 0
+            bilateral_count = len(bilateral) if isinstance(bilateral, list) else 0
+
+            # Determine reason code from raw evidence context
+            if known:
+                reason = active_reason or "KNOWN"
+            elif not contact_pairs or (isinstance(contact_pairs, list) and len(contact_pairs) == 0):
+                reason = "NO_GOAL_TARGET_CONTACT"
+            elif contacted_count == 0:
+                reason = "CONTACT_UNRESOLVED"
+            elif contacted_count > 1:
+                reason = "MULTIPLE_CONTACTED_GOAL_TARGETS"
+            elif progress_active and lift is None:
+                reason = "PROGRESS_SEMANTICS_UNRESOLVED"
+            elif release_safe and not supported:
+                reason = "RELEASE_SEMANTICS_UNRESOLVED"
+            elif not active_reason:
+                reason = "TARGET_UNRESOLVED"
+            else:
+                reason = active_reason
 
             if not known:
                 unknown_steps += 1
@@ -122,15 +155,16 @@ def main() -> int:
             ledger.append({
                 "suite": suite, "task_index": task_index, "state_id": state_id,
                 "parent_key": parent_key, "step": i,
-                "teacher_reason_code": reason,
-                "teacher_phase": phase,
-                "label_known_mask": known,
-                "active_target_reason": active_reason,
-                "active_target_known": active_known,
+                "active_target_known": bool(active_known),
+                "active_target_reason": reason,
                 "active_subgoal_index": subgoal_idx,
                 "goal_binding_count": binding_count,
-                "contacted_goal_targets": contacted,
-                "bilateral_goal_targets": bilateral,
+                "contacted_goal_targets_count": contacted_count,
+                "bilateral_goal_targets_count": bilateral_count,
+                "contact_pairs_count": len(contact_pairs) if isinstance(contact_pairs, list) else 0,
+                "near_target": bool(near_target),
+                "release_safe": bool(release_safe),
+                "object_relative_lift": lift,
             })
 
         suite_key = f"{suite}/task_{task_index}/state_{state_id}"
@@ -140,9 +174,11 @@ def main() -> int:
 
     # Write outputs
     ledger_fields = ["suite", "task_index", "state_id", "parent_key", "step",
-                     "teacher_reason_code", "teacher_phase", "label_known_mask",
-                     "active_target_reason", "active_target_known", "active_subgoal_index",
-                     "goal_binding_count", "contacted_goal_targets", "bilateral_goal_targets"]
+                     "active_target_known", "active_target_reason",
+                     "active_subgoal_index", "goal_binding_count",
+                     "contacted_goal_targets_count", "bilateral_goal_targets_count",
+                     "contact_pairs_count", "near_target", "release_safe",
+                     "object_relative_lift"]
     write_csv(output_dir / "r8u_teacher_unknown_reason_ledger.csv", ledger, ledger_fields)
 
     with open(output_dir / "r8u_teacher_unknown_reason_counts.json", "w") as f:
@@ -156,7 +192,7 @@ def main() -> int:
     print(json.dumps({
         "status": "PASS_C2G_R8U_TEACHER_V2_UNKNOWN_AUDIT",
         "total_steps": len(ledger),
-        "unknown_steps": sum(1 for r in ledger if not r["label_known_mask"]),
+        "unknown_steps": sum(1 for r in ledger if not r["active_target_known"]),
         "l10_decomposition": dict(sorted(l10_decomp.items())),
     }, indent=2))
     return 0
