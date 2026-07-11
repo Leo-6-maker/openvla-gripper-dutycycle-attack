@@ -2,7 +2,13 @@ import copy
 import unittest
 from dataclasses import asdict
 
-import torch
+try:
+    import torch as _torch
+
+    TORCH_AVAILABLE = True
+except ModuleNotFoundError:
+    _torch = None
+    TORCH_AVAILABLE = False
 
 from src.gripper_attack.c2g_clean_policy_signals import (
     CLEAN_POLICY_FEATURE_NAMES,
@@ -170,9 +176,10 @@ class CleanWindowSchemaTests(unittest.TestCase):
                 assert_clean_student_feature_names(bad)
 
 
+@unittest.skipUnless(TORCH_AVAILABLE, "torch not available")
 class CleanPolicySignalTests(unittest.TestCase):
     def test_feature_order_and_open_close_mass(self):
-        logits = torch.tensor([[0.0, 2.0, -1.0, 1.0]])
+        logits = _torch.tensor([[0.0, 2.0, -1.0, 1.0]])
         summary = summarize_clean_gripper_logits(
             logits,
             open_token_ids=[1],
@@ -193,15 +200,15 @@ class CleanPolicySignalTests(unittest.TestCase):
         self.assertEqual(stacked.shape, (1, len(CLEAN_POLICY_FEATURE_NAMES)))
 
     def test_sequence_shape(self):
-        logits = torch.zeros(2, 3, 8)
+        logits = _torch.zeros(2, 3, 8)
         features = clean_policy_feature_tensor(
             logits, open_token_ids=[6, 7], close_token_ids=[0, 1]
         )
         self.assertEqual(features.shape, (2, 3, len(CLEAN_POLICY_FEATURE_NAMES)))
-        self.assertTrue(torch.isfinite(features).all())
+        self.assertTrue(_torch.isfinite(features).all())
 
     def test_token_semantics_fail_closed(self):
-        logits = torch.zeros(1, 4)
+        logits = _torch.zeros(1, 4)
         with self.assertRaisesRegex(ValueError, "disjoint"):
             summarize_clean_gripper_logits(logits, open_token_ids=[1], close_token_ids=[1])
         with self.assertRaisesRegex(ValueError, "empty"):
@@ -210,6 +217,7 @@ class CleanPolicySignalTests(unittest.TestCase):
             summarize_clean_gripper_logits(logits, open_token_ids=[4], close_token_ids=[1])
 
 
+@unittest.skipUnless(TORCH_AVAILABLE, "torch not available")
 class CriticalWindowDetectorTests(unittest.TestCase):
     def test_full_model_is_causal_and_has_clean_heads(self):
         config = C2gDetectorConfig(
@@ -220,13 +228,13 @@ class CriticalWindowDetectorTests(unittest.TestCase):
             dropout=0.0,
         )
         model = C2gGripperCriticalWindowDetector(config).eval()
-        x1 = torch.zeros(2, 5, 25)
+        x1 = _torch.zeros(2, 5, 25)
         x2 = x1.clone()
         x2[:, -1] = 10.0
-        policy = torch.zeros(2, 5, 9)
-        visual = torch.zeros(2, 5, 8)
-        language = torch.zeros(2, 6)
-        with torch.no_grad():
+        policy = _torch.zeros(2, 5, 9)
+        visual = _torch.zeros(2, 5, 8)
+        language = _torch.zeros(2, 6)
+        with _torch.no_grad():
             y1 = model(
                 x1,
                 language,
@@ -243,7 +251,7 @@ class CriticalWindowDetectorTests(unittest.TestCase):
             )
         self.assertEqual(set(y1), set(HEAD_NAMES))
         self.assertEqual(y1["critical_window"].shape, (2, 5))
-        torch.testing.assert_close(
+        _torch.testing.assert_close(
             y1["critical_window"][:, :-1], y2["critical_window"][:, :-1]
         )
 
@@ -259,13 +267,13 @@ class CriticalWindowDetectorTests(unittest.TestCase):
                 use_language_conditioning=False,
             )
         )
-        output = temporal_only(torch.zeros(1, 4, 25), torch.zeros(1, 6))
+        output = temporal_only(_torch.zeros(1, 4, 25), _torch.zeros(1, 6))
         self.assertEqual(output["critical_window"].shape, (1,))
         with self.assertRaisesRegex(ValueError, "use_visual=false"):
             temporal_only(
-                torch.zeros(1, 4, 25),
-                torch.zeros(1, 6),
-                siglip_visual=torch.zeros(1, 8),
+                _torch.zeros(1, 4, 25),
+                _torch.zeros(1, 6),
+                siglip_visual=_torch.zeros(1, 8),
             )
 
         patch_model = C2gGripperCriticalWindowDetector(
@@ -279,27 +287,27 @@ class CriticalWindowDetectorTests(unittest.TestCase):
             )
         )
         output = patch_model(
-            torch.zeros(1, 4, 25),
-            torch.zeros(1, 6),
-            policy_intent=torch.zeros(1, 4, 9),
-            patch_tokens=torch.zeros(1, 4, 3, 7),
-            patch_token_mask=torch.ones(1, 4, 3, dtype=torch.bool),
+            _torch.zeros(1, 4, 25),
+            _torch.zeros(1, 6),
+            policy_intent=_torch.zeros(1, 4, 9),
+            patch_tokens=_torch.zeros(1, 4, 3, 7),
+            patch_token_mask=_torch.ones(1, 4, 3, dtype=_torch.bool),
             return_sequence=True,
         )
         self.assertEqual(output["grounding_confidence"].shape, (1, 4))
 
     def test_clean_window_loss_rejects_outcome_targets_and_is_finite(self):
-        outputs = {name: torch.zeros(2, 4) for name in HEAD_NAMES}
-        targets = {name: torch.zeros(2, 4) for name in HEAD_NAMES}
-        masks = {name: torch.ones(2, 4, dtype=torch.bool) for name in HEAD_NAMES}
+        outputs = {name: _torch.zeros(2, 4) for name in HEAD_NAMES}
+        targets = {name: _torch.zeros(2, 4) for name in HEAD_NAMES}
+        masks = {name: _torch.ones(2, 4, dtype=_torch.bool) for name in HEAD_NAMES}
         targets["critical_window"][0, 2:] = 1
         targets["window_active"][0, 2:] = 1
         targets["window_start"][0, 2] = 1
-        masks["episode_fully_known_negative"] = torch.tensor([False, True])
+        masks["episode_fully_known_negative"] = _torch.tensor([False, True])
         loss = clean_window_loss(outputs, targets, masks)
-        self.assertTrue(torch.isfinite(loss["total"]))
+        self.assertTrue(_torch.isfinite(loss["total"]))
         leaked = dict(targets)
-        leaked["y_cmdopen_vulnerable"] = torch.zeros(2, 4)
+        leaked["y_cmdopen_vulnerable"] = _torch.zeros(2, 4)
         with self.assertRaisesRegex(ValueError, "forbidden"):
             clean_window_loss(outputs, leaked, masks)
 

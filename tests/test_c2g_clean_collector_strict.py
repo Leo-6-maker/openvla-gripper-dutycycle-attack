@@ -1,7 +1,7 @@
 import unittest
 from collections import OrderedDict
 
-from gripper_attack.c2f_siglip_detector_runtime import CANONICAL_25D_FEATURES
+from src.gripper_attack.c2f_siglip_detector_runtime import CANONICAL_25D_FEATURES
 from scripts.stageb.collect_c2g_clean_window_rollouts_strict import canonicalize_stream_result
 
 
