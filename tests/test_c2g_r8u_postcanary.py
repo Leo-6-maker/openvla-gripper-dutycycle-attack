@@ -135,7 +135,6 @@ class MockStreamer:
 def _mock_benchmark_dict(suite="libero_object", task_index=0, state_id=1):
     """Create a mock benchmark that returns predictable init states."""
     init = np.zeros(110, dtype=np.float64)
-    init[0] = state_id * 0.01
 
     mock_task = mock.MagicMock()
     mock_suite = mock.MagicMock()
