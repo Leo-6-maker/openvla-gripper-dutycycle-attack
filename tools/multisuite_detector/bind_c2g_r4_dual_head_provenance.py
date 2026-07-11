@@ -3,10 +3,10 @@
 
 The clean collection can legitimately have been produced by an older, frozen
 collection head while Teacher-v2 labels are re-audited by a newer audit head.
-This tool binds those two heads without mutating the clean collection.  It also
-verifies the two R4 scientific audits, the collection artifact manifest, the
-label-builder bytes, and (when supplied) the narrowly pre-registered one-shot
-start drift from the previous HOLD reports.
+This tool binds those two heads without mutating the clean collection. It
+requires the three preserved pre-correction HOLD artifacts and proves that the
+only accepted label drift is the preregistered episode-global one-shot start
+change.
 
 No OpenVLA model, LIBERO environment, GPU, dataset materialization, training,
 attack, or attacked outcome is used.
@@ -35,6 +35,11 @@ SCHEMA = "c2g.r4.dual_head_provenance.2026-07-11.v1"
 PASS_STATUS = "PASS_C2G_R4_DUAL_HEAD_PROVENANCE_BINDING"
 CANONICAL_PASS = "PASS_C2G_CLEAN_WINDOW_V2_DRY_AUDIT"
 GOAL_EVENT_PASS = "PASS_C2G_GOAL_EVENT_TRACKING_AUDIT"
+EXPECTED_ONLY_CHANGE = {
+    "libero_10_attack_start_rows": "2_to_1",
+    "multiple_attack_start_violations": "1_to_0",
+    "target_critical_window_start_reason_count": "minus_1",
+}
 
 CANONICAL_INVARIANT_FIELDS = (
     "label_row_count",
@@ -161,6 +166,19 @@ def _goal_totals(report: Mapping[str, Any]) -> Mapping[str, Any]:
     return totals
 
 
+def _assert_previous_hold_binding(
+    report: Mapping[str, Any],
+    *,
+    collection_root: Path,
+) -> None:
+    status = str(report.get("status", "")).strip()
+    if status != "HOLD" and not status.startswith("HOLD_"):
+        raise ValueError("previous binding is not a HOLD")
+    recorded_root = str(report.get("collection_root", "")).strip()
+    if recorded_root and Path(recorded_root).resolve() != collection_root:
+        raise ValueError("previous HOLD binding points to another collection")
+
+
 def _compare_one_shot_hold_drift(
     previous_canonical: Mapping[str, Any],
     previous_goal_event: Mapping[str, Any],
@@ -178,7 +196,9 @@ def _compare_one_shot_hold_drift(
     old_start = int(previous_canonical.get("attack_start_row_count", -1))
     new_start = int(canonical.get("attack_start_row_count", -1))
     if old_start != new_start + 1:
-        raise ValueError("canonical attack-start count is not the expected one-shot 2_to_1 drift")
+        raise ValueError(
+            "canonical attack-start count is not the expected one-shot 2_to_1 drift"
+        )
     old_reasons = previous_canonical.get("reason_code_counts", {})
     new_reasons = canonical.get("reason_code_counts", {})
     if not isinstance(old_reasons, Mapping) or not isinstance(new_reasons, Mapping):
@@ -186,7 +206,9 @@ def _compare_one_shot_hold_drift(
     if int(old_reasons.get("TARGET_CRITICAL_WINDOW_START", 0)) != int(
         new_reasons.get("TARGET_CRITICAL_WINDOW_START", 0)
     ) + 1:
-        raise ValueError("TARGET_CRITICAL_WINDOW_START count did not decrease by exactly one")
+        raise ValueError(
+            "TARGET_CRITICAL_WINDOW_START count did not decrease by exactly one"
+        )
 
     old_totals = _goal_totals(previous_goal_event)
     new_totals = _goal_totals(goal_event)
@@ -204,16 +226,15 @@ def _compare_one_shot_hold_drift(
     multiple = [
         row
         for row in old_violations
-        if isinstance(row, Mapping) and row.get("reason") == "MULTIPLE_ATTACK_START_ROWS"
+        if isinstance(row, Mapping)
+        and row.get("reason") == "MULTIPLE_ATTACK_START_ROWS"
     ]
     if len(multiple) != 1 or int(multiple[0].get("count", -1)) != 2:
-        raise ValueError("previous HOLD does not contain the single expected multiple-start violation")
+        raise ValueError(
+            "previous HOLD does not contain the single expected multiple-start violation"
+        )
 
-    return {
-        "libero_10_attack_start_rows": "2_to_1",
-        "multiple_attack_start_violations": "1_to_0",
-        "target_critical_window_start_reason_count": "minus_1",
-    }
+    return dict(EXPECTED_ONLY_CHANGE)
 
 
 def build_binding(
@@ -226,17 +247,33 @@ def build_binding(
     label_builder_path: Path,
     collection_head: str,
     audit_head: str,
-    previous_canonical_hold_path: Path | None = None,
-    previous_goal_event_hold_path: Path | None = None,
-    previous_hold_binding_path: Path | None = None,
+    previous_canonical_hold_path: Path,
+    previous_goal_event_hold_path: Path,
+    previous_hold_binding_path: Path,
 ) -> dict[str, Any]:
     collection_root = collection_root.resolve()
+    required_holds = {
+        "previous_canonical_hold_path": previous_canonical_hold_path,
+        "previous_goal_event_hold_path": previous_goal_event_hold_path,
+        "previous_hold_binding_path": previous_hold_binding_path,
+    }
+    missing_holds = [
+        name for name, path in required_holds.items() if path is None
+    ]
+    if missing_holds:
+        raise ValueError(
+            "all three previous HOLD artifacts are required: "
+            + ", ".join(missing_holds)
+        )
     paths = [
         collection_report_path,
         collection_binding_report_path,
         canonical_audit_path,
         goal_event_audit_path,
         label_builder_path,
+        previous_canonical_hold_path,
+        previous_goal_event_hold_path,
+        previous_hold_binding_path,
     ]
     for path in paths:
         if not path.resolve().is_file():
@@ -259,47 +296,28 @@ def build_binding(
     if binding_report.get("status") != "PASS_C2G_CLEAN_COLLECTION_MODEL_BINDING":
         raise ValueError("collection model-binding report is not PASS")
     if binding_report.get("artifact_manifest") != artifact_manifest:
-        raise ValueError("collection model-binding report does not match current artifact manifest")
+        raise ValueError(
+            "collection model-binding report does not match current artifact manifest"
+        )
 
     canonical, goal_event = _assert_clean_audits(
         collection_root,
         canonical_audit_path.resolve(),
         goal_event_audit_path.resolve(),
     )
-
-    previous: dict[str, Any] = {}
-    expected_only_change: dict[str, Any] = {}
-    supplied_holds = (
-        previous_canonical_hold_path,
-        previous_goal_event_hold_path,
-        previous_hold_binding_path,
+    previous_canonical = _read_json(previous_canonical_hold_path)
+    previous_goal_event = _read_json(previous_goal_event_hold_path)
+    previous_hold_binding = _read_json(previous_hold_binding_path)
+    _assert_previous_hold_binding(
+        previous_hold_binding,
+        collection_root=collection_root,
     )
-    if any(path is not None for path in supplied_holds):
-        if not all(path is not None for path in supplied_holds):
-            raise ValueError("all three previous HOLD artifacts must be supplied together")
-        assert previous_canonical_hold_path is not None
-        assert previous_goal_event_hold_path is not None
-        assert previous_hold_binding_path is not None
-        for path in supplied_holds:
-            assert path is not None
-            if not path.resolve().is_file():
-                raise FileNotFoundError(path)
-        previous_canonical = _read_json(previous_canonical_hold_path)
-        previous_goal_event = _read_json(previous_goal_event_hold_path)
-        expected_only_change = _compare_one_shot_hold_drift(
-            previous_canonical,
-            previous_goal_event,
-            canonical,
-            goal_event,
-        )
-        previous = {
-            "previous_canonical_hold_path": str(previous_canonical_hold_path.resolve()),
-            "previous_canonical_hold_sha256": sha256_file(previous_canonical_hold_path.resolve()),
-            "previous_goal_event_hold_path": str(previous_goal_event_hold_path.resolve()),
-            "previous_goal_event_hold_sha256": sha256_file(previous_goal_event_hold_path.resolve()),
-            "previous_hold_binding_path": str(previous_hold_binding_path.resolve()),
-            "previous_hold_binding_sha256": sha256_file(previous_hold_binding_path.resolve()),
-        }
+    expected_only_change = _compare_one_shot_hold_drift(
+        previous_canonical,
+        previous_goal_event,
+        canonical,
+        goal_event,
+    )
 
     after_rows = collection_artifact_rows(collection_root)
     after_sha = _source_manifest_digest(after_rows)
@@ -316,7 +334,9 @@ def build_binding(
         "collection_report_sha256": sha256_file(collection_report_path.resolve()),
         "collection_input_manifest_path": artifact_manifest["path"],
         "collection_input_manifest_sha256": artifact_manifest["sha256"],
-        "collection_model_binding_report_path": str(collection_binding_report_path.resolve()),
+        "collection_model_binding_report_path": str(
+            collection_binding_report_path.resolve()
+        ),
         "collection_model_binding_report_sha256": sha256_file(
             collection_binding_report_path.resolve()
         ),
@@ -326,6 +346,18 @@ def build_binding(
         "canonical_audit_sha256": sha256_file(canonical_audit_path.resolve()),
         "goal_event_audit_path": str(goal_event_audit_path.resolve()),
         "goal_event_audit_sha256": sha256_file(goal_event_audit_path.resolve()),
+        "previous_canonical_hold_path": str(previous_canonical_hold_path.resolve()),
+        "previous_canonical_hold_sha256": sha256_file(
+            previous_canonical_hold_path.resolve()
+        ),
+        "previous_goal_event_hold_path": str(previous_goal_event_hold_path.resolve()),
+        "previous_goal_event_hold_sha256": sha256_file(
+            previous_goal_event_hold_path.resolve()
+        ),
+        "previous_hold_binding_path": str(previous_hold_binding_path.resolve()),
+        "previous_hold_binding_sha256": sha256_file(
+            previous_hold_binding_path.resolve()
+        ),
         "canonical_status": canonical["status"],
         "goal_event_status": goal_event["status"],
         "source_collection_file_count": len(before_rows),
@@ -342,8 +374,18 @@ def build_binding(
         "datasets_materialized": 0,
         "expected_only_change": expected_only_change,
         "unexpected_label_drift": False,
-        **previous,
     }
+
+
+def _verify_file_binding(
+    report: Mapping[str, Any],
+    path_key: str,
+    hash_key: str,
+) -> Path:
+    path = Path(str(report.get(path_key, ""))).resolve()
+    if not path.is_file() or sha256_file(path) != report.get(hash_key):
+        raise ValueError(f"R4 provenance file binding changed: {path_key}")
+    return path
 
 
 def verify_binding(
@@ -377,16 +419,24 @@ def verify_binding(
 
     file_bindings = (
         ("collection_report_path", "collection_report_sha256"),
-        ("collection_model_binding_report_path", "collection_model_binding_report_sha256"),
+        (
+            "collection_model_binding_report_path",
+            "collection_model_binding_report_sha256",
+        ),
         ("label_builder_path", "label_builder_sha256"),
         ("canonical_audit_path", "canonical_audit_sha256"),
         ("goal_event_audit_path", "goal_event_audit_sha256"),
+        ("previous_canonical_hold_path", "previous_canonical_hold_sha256"),
+        ("previous_goal_event_hold_path", "previous_goal_event_hold_sha256"),
+        ("previous_hold_binding_path", "previous_hold_binding_sha256"),
     )
-    for path_key, hash_key in file_bindings:
-        path = Path(str(report.get(path_key, ""))).resolve()
-        if not path.is_file() or sha256_file(path) != report.get(hash_key):
-            raise ValueError(f"R4 provenance file binding changed: {path_key}")
-    manifest_path = Path(str(report.get("collection_input_manifest_path", ""))).resolve()
+    bound_paths = {
+        path_key: _verify_file_binding(report, path_key, hash_key)
+        for path_key, hash_key in file_bindings
+    }
+    manifest_path = Path(
+        str(report.get("collection_input_manifest_path", ""))
+    ).resolve()
     if not manifest_path.is_file() or sha256_file(manifest_path) != report.get(
         "collection_input_manifest_sha256"
     ):
@@ -394,9 +444,24 @@ def verify_binding(
 
     canonical, goal_event = _assert_clean_audits(
         collection_root,
-        Path(str(report["canonical_audit_path"])),
-        Path(str(report["goal_event_audit_path"])),
+        bound_paths["canonical_audit_path"],
+        bound_paths["goal_event_audit_path"],
     )
+    previous_canonical = _read_json(bound_paths["previous_canonical_hold_path"])
+    previous_goal_event = _read_json(bound_paths["previous_goal_event_hold_path"])
+    previous_hold_binding = _read_json(bound_paths["previous_hold_binding_path"])
+    _assert_previous_hold_binding(
+        previous_hold_binding,
+        collection_root=collection_root,
+    )
+    expected_only_change = _compare_one_shot_hold_drift(
+        previous_canonical,
+        previous_goal_event,
+        canonical,
+        goal_event,
+    )
+    if report.get("expected_only_change") != expected_only_change:
+        raise ValueError("R4 provenance expected one-shot drift binding changed")
     if report.get("canonical_status") != canonical.get("status"):
         raise ValueError("R4 provenance canonical status changed")
     if report.get("goal_event_status") != goal_event.get("status"):
@@ -422,7 +487,10 @@ def verify_binding(
 
 def _write_json(path: Path, value: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(dict(value), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    path.write_text(
+        json.dumps(dict(value), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -438,9 +506,9 @@ def _build_parser() -> argparse.ArgumentParser:
     build.add_argument("--label-builder", type=Path, required=True)
     build.add_argument("--collection-head", required=True)
     build.add_argument("--audit-head", required=True)
-    build.add_argument("--previous-canonical-hold", type=Path)
-    build.add_argument("--previous-goal-event-hold", type=Path)
-    build.add_argument("--previous-hold-binding", type=Path)
+    build.add_argument("--previous-canonical-hold", type=Path, required=True)
+    build.add_argument("--previous-goal-event-hold", type=Path, required=True)
+    build.add_argument("--previous-hold-binding", type=Path, required=True)
     build.add_argument("--output-report", type=Path, required=True)
 
     verify = subparsers.add_parser("verify")
