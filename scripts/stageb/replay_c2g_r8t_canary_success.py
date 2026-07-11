@@ -18,7 +18,22 @@ for candidate in (REPO, REPO / "src"):
         sys.path.insert(0, str(candidate))
 
 import numpy as np
-from src.gripper_attack.libero_v4_env_factory import build_v4_exact_env
+from src.gripper_attack.libero_v4_env_factory import build_v4_exact_env, apply_dummy_wait
+
+try:
+    import libero
+    _BENCHMARK = libero.libero.benchmark.get_benchmark_dict()
+except Exception:
+    _BENCHMARK = {}
+
+
+def _get_init_state(suite: str, task_index: int, state_id: int):
+    """Get official LIBERO init state for suite/task/state."""
+    suite_obj = _BENCHMARK[suite]()
+    states = suite_obj.get_task_init_states(task_index)
+    if state_id < 0 or state_id >= len(states):
+        raise IndexError(f"state_id {state_id} outside [0, {len(states)}) for {suite}/task_{task_index}")
+    return states[state_id]
 
 
 def sha256_file(path: Path) -> str:
@@ -78,24 +93,22 @@ def replay_episode(
     if not bddl_path or not os.path.exists(bddl_path):
         raise FileNotFoundError(f"BDDL not found: {bddl_path}")
 
+    # Get official init state via LIBERO suite
+    init_state = _get_init_state(suite, task_index, state_id)
+
     # Build environment via V4 factory
-    env, _ = build_v4_exact_env(
+    env, obs = build_v4_exact_env(
         bddl_file=bddl_path,
         render_gpu_device_id=0,
         max_steps=max_steps,
-        num_steps_wait=int(dummy_wait),
+        num_steps_wait=0,  # dummy wait applied separately below
     )
 
     # Set to official init state
-    init_state_path = episode_dir / "init_state.npz"
-    if init_state_path.exists():
-        import numpy as np
-        state_dict = np.load(init_state_path)
-        if "states" in state_dict:
-            env.sim.set_state_from_flattened(state_dict["states"])
-        env.sim.forward()
-    else:
-        env.reset()
+    env.set_init_state(init_state)
+
+    # Apply dummy wait
+    env, obs = apply_dummy_wait(env, obs, int(dummy_wait))
 
     # Replay each step
     result_steps = []
