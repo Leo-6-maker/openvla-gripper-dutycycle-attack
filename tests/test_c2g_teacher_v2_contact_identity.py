@@ -48,12 +48,14 @@ class ContactIdentityTests(unittest.TestCase):
         self.assertEqual(result.contacted_objects, ("alphabet_soup_1",))
         self.assertEqual(result.ambiguity_reason, "UNILATERAL_OBJECT_CONTACT")
 
-    def test_ambiguous_canonical_mapping_is_reported(self):
+    def test_duplicate_declarations_are_deduplicated_not_ambiguous(self):
         result = analyze_contact_pairs([
-            ("robot0_left_finger_collision", "milk_1_visual"),
-        ], object_names=["milk_1", "milk_1"])
-        self.assertEqual(result.ambiguity_reason, "AMBIGUOUS_CANONICAL_OBJECT_MAPPING")
-        self.assertEqual(result.raw_contact_pairs[0][1], "milk_1_visual")
+            ("robot0_left_finger_collision", "basket_1_visual"),
+            ("robot0_right_finger_collision", "basket_1_collision"),
+        ], object_names=["basket_1", "basket_1"], receptacle_names=["basket_1"])
+        self.assertEqual(result.contacted_objects, ("basket_1",))
+        self.assertTrue(result.bilateral_grasp_candidate)
+        self.assertEqual(result.ambiguity_reason, "")
 
 
 if __name__ == "__main__":
