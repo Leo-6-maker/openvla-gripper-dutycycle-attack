@@ -35,7 +35,8 @@ class BddlMetadataTests(unittest.TestCase):
             metadata["object_declarations"],
             ["basket", "drawer", "ketchup", "milk"],
         )
-        self.assertEqual(metadata["receptacle_declarations"], ["basket"])
+        self.assertEqual(metadata["receptacle_declarations"], [])
+        self.assertEqual(metadata["destination_object_declarations"], ["basket"])
         self.assertEqual(metadata["fixture_declarations"], ["drawer"])
         self.assertIn(["in", "milk", "basket"], metadata["goal_predicates"])
         self.assertIn(["open", "drawer"], metadata["goal_predicates"])
