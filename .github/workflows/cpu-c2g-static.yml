@@ -58,6 +58,7 @@ jobs:
             src/gripper_attack/c2g_teacher_v2_target_resolution.py \
             tools/multisuite_detector/audit_c2f_teacher_v1_labels.py \
             tools/multisuite_detector/audit_c2g_clean_window_v2.py \
+            tools/multisuite_detector/audit_c2g_goal_event_tracking.py \
             tools/multisuite_detector/audit_c2g_goal_model_integrity_v2.py \
             tools/multisuite_detector/audit_c2g_static_assets.py \
             tools/multisuite_detector/audit_c2g_static_assets_strict.py \
