@@ -120,6 +120,12 @@ class MockStreamer:
         self._i += 1
         return self
 
+    def __getitem__(self, key):
+        return self.features[key]
+
+    def get(self, key, default=None):
+        return self.features.get(key, default)
+
 
 try:
     import libero  # noqa: F401
