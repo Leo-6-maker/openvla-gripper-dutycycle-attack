@@ -9,7 +9,17 @@ from __future__ import annotations
 
 import argparse, json, math, sys, time
 from dataclasses import dataclass, field
+from pathlib import Path as _Path
 from typing import Dict, List, Optional, Tuple
+
+
+def read_jsonl(path: _Path) -> List[dict]:
+    rows = []
+    with open(path) as f:
+        for line in f:
+            if line.strip():
+                rows.append(json.loads(line))
+    return rows
 
 AUTHORIZATION_DENIED = "R8U_ADAPTIVE_COLLECTION_NOT_AUTHORIZED"
 
@@ -21,7 +31,20 @@ DEFAULT_MAX_WORKERS_PER_GPU = 2
 DEFAULT_GLOBAL_LOADING_SLOTS = 1
 DEFAULT_POLL_SECONDS = 20
 DEFAULT_STABILIZATION_POLLS = 3
+DEFAULT_MAX_UTILIZATION_PERCENT = 40
 DEFAULT_STABILIZATION_SECONDS = 60
+
+@dataclass
+class OomBackoff:
+    gpu_index: int
+    current_worker_cap: int
+    original_worker_cap: int
+    backoff_count: int = 0
+
+    def reduce(self) -> int:
+        self.backoff_count += 1
+        self.current_worker_cap = max(0, self.original_worker_cap - self.backoff_count)
+        return self.current_worker_cap
 
 
 @dataclass
@@ -40,7 +63,7 @@ class GpuSnapshot:
 
     @property
     def can_accept_worker(self) -> bool:
-        return self.available_slots > 0
+        return self.available_slots > 0 and self.utilization_percent <= DEFAULT_MAX_UTILIZATION_PERCENT
 
 
 @dataclass
@@ -191,6 +214,9 @@ def main() -> int:
     ap.add_argument("--output-root", default="/tmp/r8u_adaptive_preview")
     ap.add_argument("--shard-count", type=int, default=4, help="number of microshards")
     ap.add_argument("--episodes-per-shard", type=int, default=6)
+    ap.add_argument("--synthetic-test-mode", action="store_true", help="use synthetic GPU snapshots for CI/testing")
+    ap.add_argument("--plan-manifest", default="", help="hash-bound plan manifest for real microshards")
+    ap.add_argument("--max-utilization-percent", type=int, default=DEFAULT_MAX_UTILIZATION_PERCENT)
     args = ap.parse_args()
 
     if args.mode == "run":
@@ -199,20 +225,28 @@ def main() -> int:
     gpu_indices = [int(g.strip()) for g in args.gpus.split(",")]
     snapshots = get_snapshot(gpu_indices)
 
-    # Fallback: synthetic snapshots when nvidia-smi unavailable (e.g. CI)
     if not snapshots:
-        for idx in gpu_indices:
-            snapshots[idx] = GpuSnapshot(
-                index=idx,
-                memory_total_mib=81920,
-                memory_free_mib=70000 - (idx * 5000),
-                utilization_percent=5.0,
-            )
+        if args.synthetic_test_mode:
+            for idx in gpu_indices:
+                snapshots[idx] = GpuSnapshot(idx, 81920, 70000 - (idx * 5000), 5.0)
+        else:
+            print("ERROR: nvidia-smi unavailable. Use --synthetic-test-mode for CI only.", file=sys.stderr)
+            return 1
 
-    shards = [
-        Microshard(f"r8u_shard_{i:03d}", f"suite_{i}", args.episodes_per_shard)
-        for i in range(args.shard_count)
-    ]
+    # Load real microshards from plan manifest if provided
+    shards = []
+    if args.plan_manifest and _Path(args.plan_manifest).is_file():
+        for row in read_jsonl(_Path(args.plan_manifest)):
+            shards.append(Microshard(
+                f"r8u_{row['suite']}_{row.get('task_index', 0):02d}",
+                row["suite"],
+                1,  # per-parent microshard
+            ))
+    else:
+        shards = [
+            Microshard(f"r8u_shard_{i:03d}", f"suite_{i}", args.episodes_per_shard)
+            for i in range(args.shard_count)
+        ]
 
     result = build_preview(gpu_indices, snapshots, shards, args.output_root)
     print(json.dumps({

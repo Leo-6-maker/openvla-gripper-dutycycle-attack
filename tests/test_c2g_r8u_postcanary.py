@@ -8,8 +8,8 @@ from scripts.stageb.replay_c2g_r8t_canary_success import (
     REPLAY_DIVERGED,
     REPLAY_FAILED,
     REPLAY_NUMERICALLY_EQUIVALENT,
-    _validate_step_records,
-    _validate_action,
+    _validate_steps,
+    _validate_action_7d,
     assert_hash,
     sha256_file,
 )
@@ -32,38 +32,38 @@ class ReplayInputValidationTests(unittest.TestCase):
 
     def test_valid_steps_pass(self):
         steps = [{"step": i} for i in range(50)]
-        _validate_step_records(steps, 50, "test")
+        _validate_steps(steps, 50, "test")
 
     def test_discontinuous_steps_fail(self):
         steps = [{"step": i} for i in range(49)] + [{"step": 10}]
         with self.assertRaises(ValueError):
-            _validate_step_records(steps, 50, "test")
+            _validate_steps(steps, 50, "test")
 
     def test_count_mismatch_fail(self):
         steps = [{"step": i} for i in range(30)]
         with self.assertRaises(ValueError):
-            _validate_step_records(steps, 50, "test")
+            _validate_steps(steps, 50, "test")
 
     def test_too_few_steps_fail(self):
         steps = [{"step": i} for i in range(10)]
         with self.assertRaises(ValueError):
-            _validate_step_records(steps, 10, "test")
+            _validate_steps(steps, 10, "test")
 
     def test_valid_action_passes(self):
-        a = _validate_action({"clean_action_raw_7d": [0.0] * 7}, "clean_action_raw_7d", "test")
+        a = _validate_action_7d({"clean_action_raw_7d": [0.0] * 7}, "clean_action_raw_7d", "test")
         self.assertEqual(a.shape, (7,))
 
     def test_6d_action_fails(self):
         with self.assertRaises(ValueError):
-            _validate_action({"applied_action_7d": [0.0] * 6}, "applied_action_7d", "test")
+            _validate_action_7d({"applied_action_7d": [0.0] * 6}, "applied_action_7d", "test")
 
     def test_8d_action_fails(self):
         with self.assertRaises(ValueError):
-            _validate_action({"applied_action_7d": [0.0] * 8}, "applied_action_7d", "test")
+            _validate_action_7d({"applied_action_7d": [0.0] * 8}, "applied_action_7d", "test")
 
     def test_nonfinite_action_fails(self):
         with self.assertRaises(ValueError):
-            _validate_action({"applied_action_7d": [0.0, float("nan"), 0, 0, 0, 0, 0]}, "applied_action_7d", "test")
+            _validate_action_7d({"applied_action_7d": [0.0, float("nan"), 0, 0, 0, 0, 0]}, "applied_action_7d", "test")
 
     def test_hash_mismatch_fails(self):
         with tempfile.TemporaryDirectory() as td:
@@ -131,12 +131,12 @@ class ReplaySyntheticTests(unittest.TestCase):
         ep = self.root / "ep"
         self._write_episode(ep, 50)
         steps = [{"step": i} for i in range(50)]
-        _validate_step_records(steps, 50, "test")
+        _validate_steps(steps, 50, "test")
 
     def test_step_validation_discontinuous(self):
         steps = [{"step": i} for i in range(30)] + [{"step": 10}]
         with self.assertRaises(ValueError):
-            _validate_step_records(steps, 31, "test")
+            _validate_steps(steps, 31, "test")
 
 
 if __name__ == "__main__":
