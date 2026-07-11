@@ -504,6 +504,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 },
                 "unnorm_key": unnorm_key,
                 "token_semantics_sha256": semantics["token_semantics_sha256"],
+                "runtime_valid": True,
                 "n_steps": rows_written,
                 "clean_success_observed": bool(
                     last_info.get("success", False)

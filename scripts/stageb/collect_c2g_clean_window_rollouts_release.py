@@ -23,6 +23,7 @@ from scripts.stageb.verify_c2g_suite_model_map_strict import verify
 
 STRICT_COLLECTOR = REPO / "scripts" / "stageb" / "collect_c2g_clean_window_rollouts_strict.py"
 SUITES = ("libero_object", "libero_spatial", "libero_goal", "libero_10")
+REQUIRED_EVENT_TRACKING_SCHEMA = "c2g.clean_goal_event_tracking.2026-07-11.v1"
 FORBIDDEN_CLEAN_KEY_TOKENS = ("attack_outcome", "post_intervention", "counterfactual")
 
 
@@ -178,6 +179,14 @@ def rebuild_combined_collection_report(
             raise ValueError(f"episode commit mismatch: {metadata_path}")
         if str(metadata.get("condition", "")) != "CLEAN":
             raise ValueError(f"non-CLEAN episode in clean collection: {metadata_path}")
+        if metadata.get("runtime_valid") is not True:
+            raise ValueError(f"runtime-invalid episode in clean collection: {metadata_path}")
+        event_tracking_schema = str(metadata.get("event_tracking_schema", ""))
+        if event_tracking_schema != REQUIRED_EVENT_TRACKING_SCHEMA:
+            raise ValueError(
+                "event-tracking schema mismatch in clean collection: "
+                f"{metadata_path}: {event_tracking_schema!r}"
+            )
         bad_keys = forbidden_clean_keys(metadata)
         if bad_keys:
             raise ValueError(
@@ -189,6 +198,8 @@ def rebuild_combined_collection_report(
             "task_index": metadata.get("task_index"),
             "state_id": metadata.get("state_id"),
             "n_steps": metadata.get("n_steps"),
+            "runtime_valid": True,
+            "event_tracking_schema": event_tracking_schema,
             "status": "PASS",
         })
         for artifact in (metadata_path, steps_path):
@@ -209,13 +220,16 @@ def rebuild_combined_collection_report(
         "gate": "C2G_CLEAN_WINDOW_COLLECTION",
         "status": "PASS_CLEAN_COLLECTION",
         "execution_mode": "SUITE_ISOLATED_SUBPROCESSES",
+        "event_tracking_schema": REQUIRED_EVENT_TRACKING_SCHEMA,
         "episode_count": len(results),
+        "runtime_valid_episode_count": len(results),
         "results": results,
         "suite_runs": list(suite_runs),
         "artifact_manifest": str(manifest_path),
         "artifact_manifest_sha256": sha256_file(manifest_path),
         "openvla_clean_inference_runs": len(results),
         "libero_clean_rollouts": len(results),
+        "attacked_frames": 0,
         "attacks_launched": 0,
         "attack_outcomes_read": False,
         "git_commit": expected_git_commit,

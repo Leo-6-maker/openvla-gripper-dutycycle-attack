@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from scripts.stageb.collect_c2g_clean_window_rollouts_release import (
+    REQUIRED_EVENT_TRACKING_SCHEMA,
     forbidden_clean_keys,
     partition_manifest_rows,
     rebuild_combined_collection_report,
@@ -123,6 +124,8 @@ class ServerResumeHardeningTests(unittest.TestCase):
                 "suite": "libero_object",
                 "task_index": 0,
                 "state_id": 0,
+                "runtime_valid": True,
+                "event_tracking_schema": REQUIRED_EVENT_TRACKING_SCHEMA,
                 "n_steps": 1,
                 "student_forbidden_modalities": ["attack_outcome", "post_intervention"],
             }
@@ -135,6 +138,38 @@ class ServerResumeHardeningTests(unittest.TestCase):
             )
             self.assertEqual(report["status"], "PASS_CLEAN_COLLECTION")
             self.assertEqual(report["episode_count"], 1)
+            self.assertEqual(report["runtime_valid_episode_count"], 1)
+            self.assertEqual(report["attacked_frames"], 0)
+            self.assertEqual(report["event_tracking_schema"], REQUIRED_EVENT_TRACKING_SCHEMA)
+
+    def test_combined_report_rejects_invalid_runtime_or_event_schema(self):
+        cases = (
+            ({"runtime_valid": False, "event_tracking_schema": REQUIRED_EVENT_TRACKING_SCHEMA}, "runtime-invalid"),
+            ({"runtime_valid": True, "event_tracking_schema": "legacy"}, "schema mismatch"),
+        )
+        for overrides, message in cases:
+            with self.subTest(overrides=overrides), tempfile.TemporaryDirectory() as td:
+                root = Path(td)
+                episode = root / "episodes" / "libero_object" / "parent"
+                episode.mkdir(parents=True)
+                metadata = {
+                    "git_commit": "abc",
+                    "condition": "CLEAN",
+                    "parent_key": "libero_object/task_0/state_0/seed_1/rep_0",
+                    "suite": "libero_object",
+                    "task_index": 0,
+                    "state_id": 0,
+                    "n_steps": 1,
+                    **overrides,
+                }
+                (episode / "episode_metadata.json").write_text(json.dumps(metadata), encoding="utf-8")
+                (episode / "step_records.jsonl").write_text('{"step": 0}\n', encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, message):
+                    rebuild_combined_collection_report(
+                        root,
+                        expected_git_commit="abc",
+                        suite_runs=[{"suite": "libero_object", "status": "PASS"}],
+                    )
 
     def test_clean_timing_accepts_byte_verified_goal_v2_manifest(self):
         with tempfile.TemporaryDirectory() as td:
