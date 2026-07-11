@@ -61,6 +61,37 @@ class CollectionModelVerificationTests(unittest.TestCase):
                 json.dumps({"suite": suite, "runtime_valid": True}),
                 encoding="utf-8",
             )
+            (episode / "step_records.jsonl").write_text('{"step": 0}\n', encoding="utf-8")
+        artifact_paths = sorted(
+            path
+            for name in ("episode_metadata.json", "step_records.jsonl")
+            for path in collection.rglob(name)
+        )
+        artifact_manifest = collection / "c2g_clean_collection_input_manifest.jsonl"
+        artifact_manifest.write_text(
+            "".join(
+                json.dumps(
+                    {
+                        "path": path.relative_to(collection).as_posix(),
+                        "bytes": path.stat().st_size,
+                        "sha256": sha256_file(path),
+                    },
+                    sort_keys=True,
+                )
+                + "\n"
+                for path in artifact_paths
+            ),
+            encoding="utf-8",
+        )
+        (collection / "c2g_clean_collection_report.json").write_text(
+            json.dumps(
+                {
+                    "artifact_manifest": str(artifact_manifest.resolve()),
+                    "artifact_manifest_sha256": sha256_file(artifact_manifest),
+                }
+            ),
+            encoding="utf-8",
+        )
         model_verification = root / "verification.json"
         binding_report = root / "binding.json"
         binding = bind(

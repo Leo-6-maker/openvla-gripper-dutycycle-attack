@@ -41,6 +41,92 @@ def atomic_json_write(path: Path, value: Mapping[str, Any]) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def atomic_text_write(path: Path, value: str) -> None:
+    with tempfile.NamedTemporaryFile(
+        prefix=path.name + ".",
+        suffix=".tmp",
+        dir=path.parent,
+        delete=False,
+        mode="w",
+        encoding="utf-8",
+    ) as handle:
+        temporary = Path(handle.name)
+        handle.write(value)
+    try:
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def collection_artifact_rows(collection_root: Path) -> list[dict[str, Any]]:
+    paths = sorted(
+        path
+        for name in ("episode_metadata.json", "step_records.jsonl")
+        for path in collection_root.rglob(name)
+    )
+    if not paths:
+        raise FileNotFoundError(f"no metadata/step artifacts found under {collection_root}")
+    return [
+        {
+            "path": path.relative_to(collection_root).as_posix(),
+            "bytes": path.stat().st_size,
+            "sha256": sha256_file(path),
+        }
+        for path in paths
+    ]
+
+
+def refresh_collection_artifact_manifest(collection_root: Path) -> dict[str, Any]:
+    manifest_path = collection_root / "c2g_clean_collection_input_manifest.jsonl"
+    report_path = collection_root / "c2g_clean_collection_report.json"
+    if not manifest_path.is_file() or not report_path.is_file():
+        raise FileNotFoundError("clean collection manifest/report missing before provenance binding")
+    rows = collection_artifact_rows(collection_root)
+    atomic_text_write(
+        manifest_path,
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows),
+    )
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    if Path(str(report.get("artifact_manifest", ""))).resolve() != manifest_path.resolve():
+        raise ValueError("clean collection report points to another artifact manifest")
+    report["artifact_manifest_sha256"] = sha256_file(manifest_path)
+    report["artifact_manifest_entry_count"] = len(rows)
+    atomic_json_write(report_path, report)
+    return {
+        "path": str(manifest_path.resolve()),
+        "sha256": sha256_file(manifest_path),
+        "entry_count": len(rows),
+        "collection_report_sha256": sha256_file(report_path),
+    }
+
+
+def verify_collection_artifact_manifest(collection_root: Path) -> dict[str, Any]:
+    manifest_path = collection_root / "c2g_clean_collection_input_manifest.jsonl"
+    report_path = collection_root / "c2g_clean_collection_report.json"
+    rows = [
+        json.loads(line)
+        for line in manifest_path.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    expected = collection_artifact_rows(collection_root)
+    if rows != expected:
+        raise ValueError("clean collection artifact manifest is stale or incomplete")
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    if Path(str(report.get("artifact_manifest", ""))).resolve() != manifest_path.resolve():
+        raise ValueError("clean collection report points to another artifact manifest")
+    manifest_sha = sha256_file(manifest_path)
+    if report.get("artifact_manifest_sha256") != manifest_sha:
+        raise ValueError("clean collection report records a stale artifact manifest hash")
+    if int(report.get("artifact_manifest_entry_count", -1)) != len(rows):
+        raise ValueError("clean collection report records a stale artifact count")
+    return {
+        "path": str(manifest_path.resolve()),
+        "sha256": manifest_sha,
+        "entry_count": len(rows),
+        "collection_report_sha256": sha256_file(report_path),
+    }
+
+
 def bind(
     collection_root: Path,
     model_map: Path,
@@ -116,6 +202,7 @@ def bind(
             for row in updated
         ).encode("utf-8")
     ).hexdigest()
+    artifact_manifest = refresh_collection_artifact_manifest(collection_root)
     return {
         "gate": "C2G_CLEAN_COLLECTION_MODEL_BINDING",
         "status": "PASS_C2G_CLEAN_COLLECTION_MODEL_BINDING",
@@ -123,6 +210,7 @@ def bind(
         "episode_count": len(updated),
         "binding": binding_common,
         "episode_metadata_manifest_sha256": aggregate,
+        "artifact_manifest": artifact_manifest,
         "episodes": updated,
     }
 
