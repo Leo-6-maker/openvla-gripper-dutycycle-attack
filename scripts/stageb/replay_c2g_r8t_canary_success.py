@@ -143,8 +143,13 @@ def _replay_episode(
     from src.gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
 
     # Set deterministic seed matching collector
-    from src.gripper_attack.c2g_clean_mechanism import set_deterministic_seeds
-    set_deterministic_seeds(replay_seed)
+    import random as _random
+    import torch as _torch
+    _random.seed(replay_seed)
+    np.random.seed(replay_seed)
+    if _torch.cuda.is_available():
+        _torch.manual_seed(replay_seed)
+        _torch.cuda.manual_seed_all(replay_seed)
 
     # Compare runtime/controller provenance
     provenance_issues: List[str] = []
