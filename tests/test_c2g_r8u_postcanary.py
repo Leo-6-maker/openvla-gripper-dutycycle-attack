@@ -168,6 +168,7 @@ def _restore_modules(saved: dict):
         _sys.modules[mod] = val
 
 
+@unittest.skipUnless(_LIBERO_AVAILABLE, "requires LIBERO")
 class ReplayEpisodeTests(unittest.TestCase):
     """Tests that call _replay_episode with mock components (requires LIBERO)."""
 
@@ -233,7 +234,6 @@ class ReplayEpisodeTests(unittest.TestCase):
 
     # ── DIVERGED path ──
 
-    @unittest.skipUnless(_LIBERO_AVAILABLE, "requires LIBERO")
     def test_done_before_last_step_diverged(self):
         ep = self.root / "ep_early_done"
         bddl = make_bddl(ep)
