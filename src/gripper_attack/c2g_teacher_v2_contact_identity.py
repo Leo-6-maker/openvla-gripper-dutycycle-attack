@@ -12,6 +12,12 @@ _SUFFIX_PATTERNS = (
     r"_(?:mesh|shape)(?:_?\d+)?$",
 )
 _STATIC_DEFAULTS = {"world", "table", "floor", "wall", "ground", "workspace"}
+_ROLE_PRIORITY = {
+    "static_receptacle": 0,
+    "object": 1,
+    "manipulable_receptacle": 2,
+    "manipulable_fixture": 3,
+}
 
 
 @dataclass(frozen=True)
@@ -105,14 +111,32 @@ def _entity_declarations(
     manipulable_receptacle_names: Sequence[Any],
     fixture_names: Sequence[Any],
 ) -> list[tuple[str, str]]:
+    """Return one deterministic role per canonical entity identity.
+
+    Official LIBERO movable destinations such as baskets are declared in ``:objects``.
+    Some legacy adapters also repeat them in a receptacle list. Duplicating one name
+    with two roles makes every contact look ambiguous, so roles are merged by an
+    explicit priority: manipulable fixture/receptacle > object > static receptacle.
+    """
+
     manipulable_receptacles = {_declared_name(value) for value in manipulable_receptacle_names}
-    entries: list[tuple[str, str]] = []
-    entries.extend((_declared_name(value), "object") for value in object_names)
+    candidates: list[tuple[str, str]] = []
+    candidates.extend((_declared_name(value), "object") for value in object_names)
     for value in receptacle_names:
         name = _declared_name(value)
-        entries.append((name, "manipulable_receptacle" if name in manipulable_receptacles else "static_receptacle"))
-    entries.extend((_declared_name(value), "manipulable_fixture") for value in fixture_names)
-    return [(name, role) for name, role in entries if name]
+        candidates.append(
+            (name, "manipulable_receptacle" if name in manipulable_receptacles else "static_receptacle")
+        )
+    candidates.extend((_declared_name(value), "manipulable_fixture") for value in fixture_names)
+
+    by_name: dict[str, str] = {}
+    for name, role in candidates:
+        if not name:
+            continue
+        existing = by_name.get(name)
+        if existing is None or _ROLE_PRIORITY[role] > _ROLE_PRIORITY[existing]:
+            by_name[name] = role
+    return sorted(by_name.items())
 
 
 def _map_component(name: str, declarations: Sequence[tuple[str, str]]) -> tuple[tuple[str, str], ...]:
