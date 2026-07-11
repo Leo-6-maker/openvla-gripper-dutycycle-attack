@@ -86,13 +86,20 @@ def fixture(root: Path):
     return registry, plan, reusable, r8s
 
 
+def isolated_repo(root: Path) -> Path:
+    repo = root / "repo"
+    repo.mkdir()
+    return repo
+
+
 class R8TTeacherV2CanaryTests(unittest.TestCase):
     def test_plan_is_exactly_24_and_train_only(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
-            registry, plan, reusable, r8s = fixture(root)
+            repo = isolated_repo(root)
+            registry, plan, reusable, r8s = fixture(root / "evidence")
             result = planner.build_plan(
-                repo=root,
+                repo=repo,
                 expected_git_commit="a" * 40,
                 registry_path=registry,
                 plan_report_path=plan,
@@ -117,13 +124,14 @@ class R8TTeacherV2CanaryTests(unittest.TestCase):
     def test_wrong_r8s_decision_fails_closed(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
-            registry, plan, reusable, r8s = fixture(root)
+            repo = isolated_repo(root)
+            registry, plan, reusable, r8s = fixture(root / "evidence")
             value = json.loads(r8s.read_text())
             value["final_decision"] = "GO_DETERMINISTIC_REPLAY_CANARY"
             write_json(r8s, value)
             with self.assertRaisesRegex(ValueError, "auxiliary-only"):
                 planner.build_plan(
-                    repo=root,
+                    repo=repo,
                     expected_git_commit="a" * 40,
                     registry_path=registry,
                     plan_report_path=plan,
