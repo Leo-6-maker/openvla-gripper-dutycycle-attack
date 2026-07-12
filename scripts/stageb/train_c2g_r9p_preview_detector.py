@@ -68,7 +68,7 @@ def _hash_language_embedding(text: str, dim: int = LANGUAGE_DIM) -> np.ndarray:
     return embedding.astype(np.float32)
 
 
-def r9p_preview_loss(
+def _legacy_r9p_preview_loss(
     outputs: Dict[str, Tensor],
     targets: Dict[str, Tensor],
     masks: Dict[str, Tensor],
@@ -340,6 +340,7 @@ def r9p_preview_loss(
     weight_release_safe_emit: float = 0.50,
     persistence_window: int = 3,
     persistence_required: int = 2,
+    head_pos_weight: Dict[str, float] | None = None,
 ) -> Dict[str, Tensor]:
     """R9P six-head loss with runtime-gate-aligned episode penalties."""
     required = set(R9P_HEAD_NAMES)
@@ -357,12 +358,11 @@ def r9p_preview_loss(
             raise ValueError(f"shape mismatch for head {h}")
 
     losses = {
-        "window_start": masked_bce(outputs["window_start"], targets["window_start"], masks["window_start"], sample_weight),
-        "burst_feasible": masked_bce(outputs["burst_feasible"], targets["burst_feasible"], masks["burst_feasible"], sample_weight),
-        "critical_window": masked_bce(outputs["critical_window"], targets["critical_window"], masks["critical_window"], sample_weight),
-        "release_safe": masked_bce(outputs["release_safe"], targets["release_safe"], masks["release_safe"], sample_weight),
-        "contact_grasp": masked_bce(outputs["contact_grasp"], targets["contact_grasp"], masks["contact_grasp"], sample_weight),
-        "grounding_confidence": masked_bce(outputs["grounding_confidence"], targets["grounding_confidence"], masks["grounding_confidence"], sample_weight),
+        h: masked_bce(
+            outputs[h], targets[h], masks[h], sample_weight,
+            None if head_pos_weight is None else head_pos_weight.get(h),
+        )
+        for h in R9P_HEAD_NAMES
     }
     episode = _r9p_runtime_gate_episode_losses(
         outputs, targets, masks,
