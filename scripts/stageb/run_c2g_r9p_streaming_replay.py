@@ -16,6 +16,7 @@ import torch
 from scripts.stageb.train_c2g_r9p_preview_detector import (
     R9PEpisodeDataset,
     _hash_language_embedding,
+    load_normalization,
 )
 from src.gripper_attack.c2g_gripper_critical_window_detector import (
     C2gDetectorConfig,
@@ -36,14 +37,14 @@ SCHEMA = "c2g.r9p.streaming_replay.2026-07-12.v1"
 GATE_PASS = "PASS_C2G_R9P_STREAMING_REPLAY"
 
 
-def _load_model(checkpoint_path: Path, device: torch.device) -> C2gGripperCriticalWindowDetector:
+def _load_model(checkpoint_path: Path, device: torch.device) -> tuple[C2gGripperCriticalWindowDetector, dict]:
     raw = torch.load(checkpoint_path, map_location="cpu")
     cfg = raw["model_config"]
     config = C2gDetectorConfig(**cfg)
     model = C2gGripperCriticalWindowDetector(config).to(device)
     model.load_state_dict(raw["model_state_dict"], strict=True)
     model.eval()
-    return model
+    return model, raw
 
 
 def streaming_replay_episode(
@@ -52,13 +53,30 @@ def streaming_replay_episode(
     device: torch.device,
     use_policy_intent: bool,
     thresholds: dict,
+    norm: dict | None = None,
     atol: float = 1e-5,
 ) -> dict[str, Any]:
-    proprio = episode_data["features_25d"].unsqueeze(0).to(device)
-    policy = episode_data["features_9d"].unsqueeze(0).to(device) if use_policy_intent else None
+    proprio_raw = episode_data["features_25d"].unsqueeze(0).to(device)
+    policy_raw = episode_data["features_9d"].unsqueeze(0).to(device) if use_policy_intent else None
     lang_text = episode_data.get("task_language", "")
     lang_emb = _hash_language_embedding(lang_text)
     language = torch.from_numpy(lang_emb).unsqueeze(0).to(device)
+
+    # Apply normalization
+    if norm is not None:
+        p_mean = torch.from_numpy(norm["proprio_mean"]).to(device)
+        p_std = torch.from_numpy(norm["proprio_std"]).to(device).clamp_min(1e-8)
+        proprio = (proprio_raw - p_mean) / p_std
+        if policy_raw is not None:
+            pi_mean = torch.from_numpy(norm["policy_intent_mean"]).to(device)
+            pi_std = torch.from_numpy(norm["policy_intent_std"]).to(device).clamp_min(1e-8)
+            policy = (policy_raw - pi_mean) / pi_std
+        else:
+            policy = None
+    else:
+        proprio = proprio_raw
+        policy = policy_raw
+
     T = proprio.shape[1]
 
     # Batch offline: run whole sequence at once
@@ -147,17 +165,22 @@ def run_streaming_replay(
     device_str: str = "cuda",
 ) -> dict[str, Any]:
     device = torch.device(device_str if torch.cuda.is_available() else "cpu")
-    model = _load_model(checkpoint_path, device)
+    model, raw = _load_model(checkpoint_path, device)
     use_policy_intent = model.config.use_policy_intent
 
+    # Load frozen thresholds from checkpoint
+    ckpt_thresholds = raw.get("thresholds", {})
     thresholds = {
-        "burst_length": 10,
-        "tau_critical": 0.5,
-        "tau_release": 0.5,
-        "tau_ground": 0.5,
-        "persistence_window": 3,
-        "persistence_required": 2,
+        "burst_length": int(ckpt_thresholds.get("burst_length", 10)),
+        "tau_critical": float(ckpt_thresholds.get("tau_critical", 0.5)),
+        "tau_release": float(ckpt_thresholds.get("tau_release", 0.5)),
+        "tau_ground": float(ckpt_thresholds.get("tau_ground", 0.5)),
+        "persistence_window": int(ckpt_thresholds.get("persistence_window", 3)),
+        "persistence_required": int(ckpt_thresholds.get("persistence_required", 2)),
     }
+
+    # Load normalization
+    norm = load_normalization(materialization_root)
 
     index_rows = read_jsonl(materialization_root / "dataset_index.jsonl")
     ds = R9PEpisodeDataset(index_rows, materialization_root)
@@ -169,7 +192,7 @@ def run_streaming_replay(
 
     for i in range(n_episodes):
         ep = ds[i]
-        r = streaming_replay_episode(model, ep, device, use_policy_intent, thresholds)
+        r = streaming_replay_episode(model, ep, device, use_policy_intent, thresholds, norm)
         results.append(r)
         if not r["equivalence_ok"]:
             all_equiv = False

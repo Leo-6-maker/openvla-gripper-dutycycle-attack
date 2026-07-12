@@ -128,30 +128,44 @@ def evaluate_episode_t10(
     negative_any_trigger = False
     release_safe_at_trigger = False
 
-    if triggered and teacher_start_step >= 0:
-        start_delay = trigger_step - teacher_start_step
-        # Feasible hit: trigger at or after teacher start, within 3 steps
-        feasible_hit = 0 <= start_delay <= 3
-        # Early: trigger before teacher start
-        early_trigger = start_delay < 0
-        # Late: trigger after teacher start + 3
-        late_trigger = start_delay > 3
+    if triggered:
+        # Feasible hit: y_burst_feasible at trigger_step is True and known
+        burst_tgt = episode_data["targets"]["burst_feasible"]
+        burst_mask = episode_data["masks"]["burst_feasible"]
+        if trigger_step < T and burst_mask[trigger_step]:
+            feasible_hit = bool(burst_tgt[trigger_step] > 0.5)
 
-        # Full T10 containment: after trigger, there are >=10 critical_window steps
+        # Full T10 containment: contiguous critical[t : t+10] all known and True
         critical_tgt = episode_data["targets"]["critical_window"]
         critical_mask = episode_data["masks"]["critical_window"]
-        remaining_critical = critical_tgt[trigger_step:]
-        remaining_mask = critical_mask[trigger_step:]
-        known_critical = remaining_critical[remaining_mask]
-        full_T10_containment = bool(known_critical.sum() >= 10)
+        end = min(trigger_step + 10, T)
+        window_critical = critical_tgt[trigger_step:end]
+        window_mask = critical_mask[trigger_step:end]
+        full_T10_containment = bool(
+            len(window_critical) == 10
+            and window_mask.all()
+            and (window_critical > 0.5).all()
+        )
 
-        # Release-safe at trigger
+        # Start delay from teacher window_start
+        start_tgt = episode_data["targets"]["window_start"]
+        start_mask = episode_data["masks"]["window_start"]
+        valid_starts = (start_tgt > 0.5) & start_mask
+        if valid_starts.any():
+            teacher_start_step = int(torch.nonzero(valid_starts, as_tuple=False)[0, 0])
+            start_delay = trigger_step - teacher_start_step
+            early_trigger = start_delay < 0
+            late_trigger = start_delay > 3 and not feasible_hit
+        else:
+            negative_any_trigger = True
+
+        # Release-safe at trigger (check for all episodes including negatives)
         release_tgt = episode_data["targets"]["release_safe"]
         release_mask = episode_data["masks"]["release_safe"]
         if trigger_step < T and release_mask[trigger_step]:
             release_safe_at_trigger = bool(release_tgt[trigger_step] > 0.5)
-    elif triggered and not has_start:
-        negative_any_trigger = True
+    elif not triggered and not has_start:
+        pass  # correctly no trigger on negative episode
 
     return {
         "triggered": triggered,

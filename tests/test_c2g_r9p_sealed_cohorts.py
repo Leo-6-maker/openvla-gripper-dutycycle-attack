@@ -10,12 +10,13 @@ from tools.multisuite_detector.build_c2g_r9p_preview_plan import (
 
 
 def _make_suite_with_cohorts(root: Path, suite: str) -> Path:
-    for cohort, count in [("DETECTOR_TRAIN", 300), ("DETECTOR_VAL", 50),
-                           ("DETECTOR_TEST_WITHIN_TASK", 50), ("ATTACK_EVAL_PREREGISTERED", 100)]:
+    for cohort, count, ep_per_task in [("DETECTOR_TRAIN", 300, 30), ("DETECTOR_VAL", 50, 50),
+                                        ("DETECTOR_TEST_WITHIN_TASK", 50, 50),
+                                        ("ATTACK_EVAL_PREREGISTERED", 100, 50)]:
         slug = cohort.lower()
         for i in range(count):
-            task_idx = i // 50
-            state_id = i % 50
+            task_idx = i // ep_per_task
+            state_id = i % ep_per_task
             local_idx = i % 10
             parent_key = f"{suite}/task_{task_idx}/state_{state_id}/{slug}/episode_{local_idx:03d}"
             ep_dir = root / "episodes" / suite / parent_key

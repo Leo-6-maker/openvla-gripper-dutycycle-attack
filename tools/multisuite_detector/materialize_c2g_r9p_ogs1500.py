@@ -268,10 +268,21 @@ def run_materialization(
     else:
         selected = manifest_rows
 
-    output_root.mkdir(parents=True, exist_ok=True)
+    if output_root.exists():
+        raise FileExistsError(f"output root already exists: {output_root}")
+    output_root.mkdir(parents=True)
     episodes_dir = output_root / "episodes"
     errors = []
     index_rows = []
+
+    # Write smoke selection manifest for audit closure
+    if smoke:
+        smoke_manifest = [
+            {"parent_key": r["parent_key"], "suite": r["suite"],
+             "task_index": r["task_index"], "preview_split": r["preview_split"]}
+            for r in selected
+        ]
+        write_jsonl(output_root / "smoke_selection_manifest.jsonl", smoke_manifest)
 
     for row in selected:
         parent_key = row["parent_key"]

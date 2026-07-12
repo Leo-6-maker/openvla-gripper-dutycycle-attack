@@ -223,6 +223,7 @@ def build_plan(
     expected_object_report_sha: str = "",
     expected_goal_report_sha: str = "",
     expected_r8z1_audit_sha: str = "",
+    r8z1_audit_report_path: str = "",
 ) -> dict[str, Any]:
     suite_roots = {
         "libero_spatial": spatial_root,
@@ -259,11 +260,20 @@ def build_plan(
                 provenance_issues.append(f"{suite} report not found: {report_path}")
 
     if expected_r8z1_audit_sha:
-        # R8Z1 audit SHA is verified against the audit report at a known path
-        provenance_issues.append(
-            "R8Z1 audit SHA binding requires external verification — "
-            "ensure the audit report at the canonical R8Z1 output root matches"
-        )
+        if r8z1_audit_report_path:
+            report_path = Path(r8z1_audit_report_path)
+            if report_path.exists():
+                actual = sha256_file(report_path)
+                if actual != expected_r8z1_audit_sha:
+                    provenance_issues.append(
+                        f"R8Z1 audit report SHA mismatch: expected {expected_r8z1_audit_sha}, actual {actual}"
+                    )
+            else:
+                provenance_issues.append(f"R8Z1 audit report not found: {report_path}")
+        else:
+            provenance_issues.append(
+                "R8Z1 audit SHA provided without --r8z1-audit-report-path"
+            )
 
     if provenance_issues:
         return {
@@ -418,7 +428,8 @@ def build_plan(
     }
     write_json(output_root / "r9p_execution_boundary.json", execution_boundary)
 
-    artifacts = [
+    # Phase 1: write data artifacts only
+    data_artifacts = [
         "r9p_preview_episode_manifest.jsonl",
         "r9p_preview_split_manifest.jsonl",
         "r9p_feature_schema.json",
@@ -426,14 +437,6 @@ def build_plan(
         "r9p_model_spec.json",
         "r9p_execution_boundary.json",
     ]
-    sums_lines = []
-    for name in artifacts:
-        path = output_root / name
-        sums_lines.append(f"{sha256_file(path)}  {name}\n")
-    sums_path = output_root / "SHA256SUMS"
-    sums_path.write_text("".join(sums_lines), encoding="utf-8")
-    sums_sha = sha256_file(sums_path)
-    (output_root / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n", encoding="utf-8")
 
     plan = {
         "schema": SCHEMA,
@@ -472,6 +475,14 @@ def build_plan(
     (output_root / "r9p_preview_plan.json.sha256").write_text(
         f"{plan_sha}  r9p_preview_plan.json\n", encoding="utf-8"
     )
+
+    # Write SHA256SUMS after plan so plan is included
+    all_artifacts = data_artifacts + ["r9p_preview_plan.json"]
+    sums_lines = [f"{sha256_file(output_root / name)}  {name}\n" for name in all_artifacts]
+    sums_path = output_root / "SHA256SUMS"
+    sums_path.write_text("".join(sums_lines), encoding="utf-8")
+    sums_sha = sha256_file(sums_path)
+    (output_root / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n", encoding="utf-8")
     return plan
 
 
@@ -486,6 +497,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--expected-object-report-sha", default="")
     parser.add_argument("--expected-goal-report-sha", default="")
     parser.add_argument("--expected-r8z1-audit-sha", default="")
+    parser.add_argument("--r8z1-audit-report-path", default="")
     parser.add_argument("--mode", default="preview", choices=["preview", "run"],
                         help="preview: dry-run validation only; run: materialize plan")
     return parser.parse_args(argv)
@@ -518,6 +530,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         expected_object_report_sha=args.expected_object_report_sha,
         expected_goal_report_sha=args.expected_goal_report_sha,
         expected_r8z1_audit_sha=args.expected_r8z1_audit_sha,
+        r8z1_audit_report_path=args.r8z1_audit_report_path,
     )
     status = plan.get("status", "UNKNOWN")
     print(f"Plan: {status}")

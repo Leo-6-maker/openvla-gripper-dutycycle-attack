@@ -20,9 +20,10 @@ from tools.multisuite_detector.build_c2g_r9p_preview_plan import (
 
 def _make_suite_root(root: Path, suite: str, train_count: int = 300) -> Path:
     suite_dir = root / "episodes" / suite
+    episodes_per_task = 30
     for i in range(train_count):
-        task_idx = i // 50
-        state_id = i % 50
+        task_idx = i // episodes_per_task
+        state_id = i % episodes_per_task
         local_idx = i % 10
         parent_key = f"{suite}/task_{task_idx}/state_{state_id}/detector_train/episode_{local_idx:03d}"
         ep_dir = suite_dir / parent_key

@@ -13,10 +13,19 @@ from typing import Any, Sequence
 import numpy as np
 
 from tools.multisuite_detector.build_c2g_r9p_preview_plan import (
-    FORBIDDEN_STUDENT_FIELDS,
     R9P_HEAD_NAMES,
     TARGET_SUITES,
 )
+
+FORBIDDEN_STUDENT_KEYS = frozenset({
+    "object_pose", "target_pose", "object_target_distance",
+    "contact_pairs", "teacher_phase", "teacher_reason_code",
+    "resolved_target_objects", "resolved_target_manipulable_entities",
+    "attack_outcome", "post_intervention_state",
+    "clean_final_success", "late_success_in_extended_source",
+    "uses_privileged_sim_state", "uses_attack_outcome",
+    "uses_future_student_input",
+})
 from tools.multisuite_detector.c2g_r8r_common import (
     read_json,
     read_jsonl,
@@ -43,7 +52,7 @@ def audit_episode_npz(npz_path: Path) -> dict[str, Any]:
 
     keys = set(data.keys())
     # Check forbidden keys
-    forbidden = sorted(FORBIDDEN_STUDENT_FIELDS & keys)
+    forbidden = sorted(FORBIDDEN_STUDENT_KEYS & keys)
     if forbidden:
         result["valid"] = False
         result["issues"].append(f"forbidden_keys: {forbidden}")
@@ -115,45 +124,57 @@ def audit_materialization(
     plan_root: Path,
     materialization_root: Path,
     output_root: Path,
+    *,
+    smoke: bool = False,
 ) -> dict[str, Any]:
     index_path = materialization_root / "dataset_index.jsonl"
     plan_manifest_path = plan_root / "r9p_preview_episode_manifest.jsonl"
+    smoke_manifest_path = materialization_root / "smoke_selection_manifest.jsonl"
 
     if not index_path.exists():
         return {"schema": SCHEMA, "status": "HOLD_no_index", "error": "dataset_index.jsonl not found"}
-    if not plan_manifest_path.exists():
-        return {"schema": SCHEMA, "status": "HOLD_no_plan", "error": "plan manifest not found"}
 
     index_rows = read_jsonl(index_path)
-    plan_rows = read_jsonl(plan_manifest_path)
 
-    # Closure: plan identities == index identities == actual NPZ set
-    plan_keys = {r["parent_key"] for r in plan_rows}
+    if smoke:
+        if not smoke_manifest_path.exists():
+            return {"schema": SCHEMA, "status": "HOLD_no_smoke_manifest",
+                    "error": "smoke_selection_manifest.jsonl not found"}
+        reference_rows = read_jsonl(smoke_manifest_path)
+        expected_count = len(reference_rows)
+    else:
+        if not plan_manifest_path.exists():
+            return {"schema": SCHEMA, "status": "HOLD_no_plan", "error": "plan manifest not found"}
+        reference_rows = read_jsonl(plan_manifest_path)
+        expected_count = len(reference_rows)
+
+    # Closure: reference identities == index identities == actual NPZ set
+    ref_keys = {r["parent_key"] for r in reference_rows}
     index_keys = {r["parent_key"] for r in index_rows}
 
-    missing_from_index = sorted(plan_keys - index_keys)
-    extra_in_index = sorted(index_keys - plan_keys)
+    missing_from_index = sorted(ref_keys - index_keys)
+    extra_in_index = sorted(index_keys - ref_keys)
     closure_issues = []
     if missing_from_index:
-        closure_issues.append(f"in plan but not index: {len(missing_from_index)} episodes")
+        closure_issues.append(f"in reference but not index: {len(missing_from_index)} episodes")
     if extra_in_index:
-        closure_issues.append(f"in index but not plan: {len(extra_in_index)} episodes")
-    if len(index_rows) != len(plan_rows):
+        closure_issues.append(f"in index but not reference: {len(extra_in_index)} episodes")
+    if len(index_rows) != expected_count:
         closure_issues.append(
-            f"count mismatch: plan={len(plan_rows)}, index={len(index_rows)}"
+            f"count mismatch: expected={expected_count}, index={len(index_rows)}"
         )
 
     # Verify split distribution
-    plan_splits = {}
-    for r in plan_rows:
-        plan_splits[r["parent_key"]] = r["preview_split"]
+    ref_splits = {}
+    for r in reference_rows:
+        ref_splits[r["parent_key"]] = r.get("preview_split", "")
     index_splits = {}
     for r in index_rows:
-        index_splits[r["parent_key"]] = r["preview_split"]
+        index_splits[r["parent_key"]] = r.get("preview_split", "")
 
     split_mismatches = []
-    for key in plan_keys & index_keys:
-        if plan_splits.get(key) != index_splits.get(key):
+    for key in ref_keys & index_keys:
+        if ref_splits.get(key) != index_splits.get(key):
             split_mismatches.append(key)
 
     issues = []
@@ -200,7 +221,8 @@ def audit_materialization(
     report = {
         "schema": SCHEMA,
         "status": status,
-        "plan_episodes": len(plan_rows),
+        "smoke": smoke,
+        "reference_episodes": len(reference_rows),
         "index_episodes": len(index_rows),
         "valid_npz": valid_count,
         "total_npz": len(index_rows),
@@ -221,16 +243,22 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--plan-root", required=True, type=Path)
     parser.add_argument("--materialization-root", required=True, type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
+    parser.add_argument("--smoke", action="store_true", help="Audit smoke (24-ep) materialization")
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    report = audit_materialization(args.plan_root, args.materialization_root, args.output_root)
+    report = audit_materialization(
+        args.plan_root, args.materialization_root, args.output_root, smoke=args.smoke)
     print(f"Materialization audit: {report['status']}")
-    print(f"  Valid: {report['valid']}/{report['total']}")
-    if report["issues"]:
-        print(f"  Issues: {report['issues']}")
+    print(f"  Valid NPZ: {report.get('valid_npz', 0)}/{report.get('total_npz', 0)}")
+    closure = report.get("closure_issues", [])
+    if closure:
+        print(f"  Closure issues: {closure}")
+    npz_issues = report.get("npz_issues", 0)
+    if npz_issues:
+        print(f"  NPZ issues: {npz_issues}")
     return 0 if report["status"] == GATE_PASS else 1
 
 

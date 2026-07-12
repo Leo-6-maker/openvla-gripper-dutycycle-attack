@@ -313,17 +313,25 @@ def _evaluate_model(
     dataloader: DataLoader,
     device: torch.device,
     use_policy_intent: bool,
+    norm: dict | None = None,
 ) -> dict[str, float]:
     model.eval()
     all_probs: dict[str, list] = defaultdict(list)
     all_targets: dict[str, list] = defaultdict(list)
     all_masks: dict[str, list] = defaultdict(list)
 
+    p_mean = torch.from_numpy(norm["proprio_mean"]).to(device) if norm else None
+    p_std = torch.from_numpy(norm["proprio_std"]).to(device).clamp_min(1e-8) if norm else None
+    pi_mean = torch.from_numpy(norm["policy_intent_mean"]).to(device) if norm else None
+    pi_std = torch.from_numpy(norm["policy_intent_std"]).to(device).clamp_min(1e-8) if norm else None
+
     with torch.no_grad():
         for batch in dataloader:
-            proprio = batch["proprio_25d"].to(device)
-            policy = batch["policy_intent"].to(device) if use_policy_intent else None
+            proprio_raw = batch["proprio_25d"].to(device)
+            policy_raw = batch["policy_intent"].to(device) if use_policy_intent else None
             language = batch["language"].to(device)
+            proprio = (proprio_raw - p_mean) / p_std if p_mean is not None else proprio_raw
+            policy = (policy_raw - pi_mean) / pi_std if pi_mean is not None and policy_raw is not None else policy_raw
             outputs = model(
                 proprio, language,
                 policy_intent=policy,
@@ -485,7 +493,7 @@ def train_model(
                     epoch_losses[k] += v.item()
             n_batches += 1
 
-        cal_metrics = _evaluate_model(model, cal_loader, device, use_policy_intent)
+        cal_metrics = _evaluate_model(model, cal_loader, device, use_policy_intent, norm)
         score = (
             cal_metrics.get("window_start_recall", 0)
             + cal_metrics.get("critical_window_recall", 0)
