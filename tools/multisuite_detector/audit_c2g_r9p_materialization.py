@@ -203,6 +203,10 @@ def _source_identity_check(plan: dict, row: dict) -> list[str]:
         }
         if row.get("source_binding_path"):
             checks["source_binding_sha256"] = ep_dir / row["source_binding_path"]
+        if row.get("rgb_reference_path"):
+            checks["rgb_reference_sha256"] = ep_dir / row["rgb_reference_path"]
+        elif row.get("rgb_reference_sha256"):
+            issues.append("rgb_reference_hash_without_path")
         for key, path in checks.items():
             if not path.is_file() or row.get(key) != sha256_file(path):
                 issues.append(f"source_hash_mismatch:{key}")
@@ -213,6 +217,8 @@ def _source_identity_check(plan: dict, row: dict) -> list[str]:
                 if key == "split" and meta.get(key) == "train":
                     continue
                 issues.append(f"metadata_identity_mismatch:{key}")
+        if not str(meta.get("task_language", "")).strip():
+            issues.append("empty_task_language")
     except Exception as exc:
         issues.append(f"source_check_error:{exc}")
     return issues

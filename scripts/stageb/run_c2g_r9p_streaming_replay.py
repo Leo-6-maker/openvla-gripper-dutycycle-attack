@@ -240,7 +240,9 @@ def run_streaming_replay(
     }
 
     index_rows = read_jsonl(materialization_root / "dataset_index.jsonl")
-    ds = R9PEpisodeDataset(index_rows, materialization_root)
+    # Streaming verification is a FIT-only offline check.  CAL/CHECK rows are
+    # sealed for model selection and must not be consumed by this diagnostic.
+    ds = R9PEpisodeDataset(index_rows, materialization_root, split_filter="FIT")
     n_episodes = len(ds) if max_episodes <= 0 else min(max_episodes, len(ds))
 
     results = []
