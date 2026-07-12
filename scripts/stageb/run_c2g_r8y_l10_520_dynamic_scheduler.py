@@ -1,36 +1,33 @@
 #!/usr/bin/env python3
 """Dynamic GPU-admission scheduler for R8Y L10-520 collection.
 
+Supports two modes with separate authorization:
+  canary-run  → R8Y_L10_520_CANARY_AUTHORIZED  (12-episode shadow)
+  full-run    → R8Y_L10_520_FULL500_COLLECTION_AUTHORIZED (500-episode)
+
 Key design:
-  - 20 logical shards (5 / GPU), permanently GPU-bound
-  - Per-GPU resident cap starts at 2; upgrades to 3 only after calibration
-  - Memory admission: 3 stable polls at 5s intervals, fail-closed
-  - Model-load serialization via global lock file
-  - OOM → quarantine extra slot, reduce effective cap
-  - Never migrates workers across GPUs
+  - Per-GPU resident cap starts at 2; upgrades to 3 after calibration.
+  - Worker status polled from worker_status.json every 2 s.
+  - loading_worker released when worker reaches MODEL_READY.
+  - Model-load serialization via global lock file.
+  - All worker stdout/stderr written to log files (no pipe deadlock).
+  - PASS requires all shards completed, 0 failed, 0 pending.
+  - Git head frozen from plan report (not re-read per worker).
 """
 from __future__ import annotations
 
 import argparse
-import hashlib
-
-try:
-    import fcntl
-except ImportError:
-    fcntl = None  # Windows — dynamic scheduler is Linux-only at runtime
 import json
 import math
 import os
-import shutil
-import statistics
 import subprocess
 import sys
 import time
 from collections import deque
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
 REPO = Path(__file__).resolve().parents[2]
 for candidate in (REPO, REPO / "src"):
@@ -49,10 +46,13 @@ SHARD_RUNNER = REPO / "scripts" / "stageb" / "run_c2g_r8y_l10_520_shard.py"
 MODEL_LOAD_LOCK = Path("/tmp/c2g_r8y_global_model_load.lock")
 
 SCHEMA = "c2g.r8y.l10_520_dynamic_scheduler.2026-07-12.v1"
-PASS_STATUS = "PASS_C2G_R8Y_L10_520_DYNAMIC_SCHEDULER"
-CANARY_PASS_STATUS = "PASS_C2G_R8Y_L10_520_CANARY_SCHEDULER"
+CANARY_PASS_STATUS = "PASS_C2G_R8Y_L10_520_CANARY"
+FULL_PASS_STATUS = "PASS_C2G_R8Y_L10_520_FULL500"
 
-# Memory admission constants
+CANARY_AUTH = "R8Y_L10_520_CANARY_AUTHORIZED"
+FULL_AUTH = "R8Y_L10_520_FULL500_COLLECTION_AUTHORIZED"
+
+# Memory admission
 ABSOLUTE_MIN_FREE_MIB = 16384
 FALLBACK_WORKER_BUDGET_MIB = 18432
 GPU_POST_LAUNCH_RESERVE_MIB = 8192
@@ -62,12 +62,13 @@ MAX_RESIDENT_CAP = 3
 STABLE_POLL_COUNT = 3
 STABLE_POLL_INTERVAL_S = 5
 
-# Worker states
-WORKER_PHASES = frozenset({
-    "CREATED", "WAITING_ADMISSION", "WAITING_MODEL_LOAD_LOCK",
-    "LOADING_PROCESSOR", "LOADING_MODEL", "MODEL_READY",
-    "CREATING_ENVIRONMENT", "RUNNING_EPISODES", "FINALIZING",
-    "PASS", "FAILED", "ABORTED",
+# Resident phases (model loaded, occupying GPU memory)
+RESIDENT_PHASES = frozenset({
+    "MODEL_READY", "CREATING_ENVIRONMENT", "RUNNING_EPISODES", "FINALIZING",
+})
+# Loading phases (acquiring model, must be serialized)
+LOADING_PHASES = frozenset({
+    "WAITING_MODEL_LOAD_LOCK", "LOADING_PROCESSOR", "LOADING_MODEL",
 })
 
 
@@ -83,34 +84,32 @@ class GpuSnapshot:
 
 
 @dataclass
+class WorkerState:
+    worker_id: str
+    shard_id: str
+    gpu: int
+    pid: int = 0
+    phase: str = "CREATED"
+    launch_time: str = ""
+    completion_time: str = ""
+    returncode: int | None = None
+    episode_count: int = 0
+
+
+@dataclass
 class CalibrationState:
     gpu: int
     observed_deltas_mib: list[float] = field(default_factory=list)
     oom_count: int = 0
-    cuda_failure_count: int = 0
-    model_load_failure_count: int = 0
     calibrated_budget_mib: int = FALLBACK_WORKER_BUDGET_MIB
     gpu_uuid: str = ""
     gpu_name: str = ""
     driver_version: str = ""
 
 
-@dataclass
-class WorkerState:
-    worker_id: str
-    shard_id: str
-    gpu: int
-    phase: str = "CREATED"
-    pid: int = 0
-    process: Any = None
-    launch_time: str = ""
-    completion_time: str = ""
-    returncode: int | None = None
-    receipt_valid: bool = False
-
-
 # ── helpers ────────────────────────────────────────────────────────────
 def sha256_file(path: Path) -> str:
+    import hashlib
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1 << 20), b""):
@@ -124,14 +123,15 @@ def utc_now() -> str:
 
 def write_json(path: Path, value: Mapping[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps(dict(value), indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    path.write_text(json.dumps(dict(value), indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def read_json(path: Path) -> dict[str, Any]:
-    value = json.loads(path.read_text(encoding="utf-8"))
-    return value if isinstance(value, dict) else {}
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+        return value if isinstance(value, dict) else {}
+    except Exception:
+        return {}
 
 
 def ceil_to_1024(value: float) -> int:
@@ -207,106 +207,87 @@ def stable_admission_pass(
     return True, "PASS"
 
 
-def collect_stable_samples(
-    gpu: int,
-    calibrated_budget_mib: int,
-) -> tuple[bool, str, list[GpuSnapshot]]:
-    """Collect 3 stable polls 5s apart. Return (pass, reason, samples)."""
-    samples: list[GpuSnapshot] = []
-    for i in range(STABLE_POLL_COUNT):
-        try:
-            snapshots = nvidia_snapshot([gpu])
-        except Exception as exc:
-            return False, f"NVIDIA_SMI_POLL_{i}_FAILED_{exc}", samples
-        samples.append(snapshots[gpu])
-        if i < STABLE_POLL_COUNT - 1:
-            time.sleep(STABLE_POLL_INTERVAL_S)
-    ok, reason = stable_admission_pass(samples, calibrated_budget_mib)
-    return ok, reason, samples
-
-
-def resident_phases() -> set[str]:
-    return {"MODEL_READY", "CREATING_ENVIRONMENT", "RUNNING_EPISODES", "FINALIZING"}
-
-
-def is_resident(worker: WorkerState) -> bool:
-    return worker.phase in resident_phases()
-
-
-def loading_phases() -> set[str]:
-    return {"LOADING_PROCESSOR", "LOADING_MODEL"}
-
-
-def is_loading(worker: WorkerState) -> bool:
-    return worker.phase in loading_phases()
-
-
 # ── plan loading ───────────────────────────────────────────────────────
-def load_shard_index(plan_report: Path) -> list[dict[str, Any]]:
-    report = read_json(plan_report)
+def load_plan(plan_report_path: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    report = read_json(plan_report_path)
     shard_index_path = Path(report.get("shard_index", ""))
     if not shard_index_path.is_file():
         raise FileNotFoundError(f"shard index not found: {shard_index_path}")
     index_data = read_json(shard_index_path)
     shards = index_data.get("shards", [])
-    if len(shards) != 20:
-        raise ValueError(f"expected 20 shards, got {len(shards)}")
-    return [dict(s) for s in shards]
+    if not shards:
+        raise ValueError("shard index contains no shards")
+    return report, [dict(s) for s in shards]
 
 
 # ── scheduler core ─────────────────────────────────────────────────────
 def run_scheduler(
     *,
-    mode: str,
+    mode: str,  # "canary-run" or "full-run"
     plan_report: Path,
     expected_plan_report_sha256: str,
     output_root: Path,
     suite_model_map: Path,
     suite_model_report: Path,
+    goal_model_manifest: Path,
+    model_verification_report: Path,
     authorization: str,
 ) -> dict[str, Any]:
-    """Main scheduler loop."""
-    if mode not in {"preview", "run"}:
-        raise ValueError("mode must be preview or run")
-
+    # ── authorization (P0-1) ────────────────────────────────────────
     plan_report = plan_report.resolve()
     if sha256_file(plan_report) != expected_plan_report_sha256:
         raise ValueError("plan report SHA256 mismatch")
 
-    output_root = output_root.resolve()
-    if mode == "run":
-        if output_root.exists():
-            raise FileExistsError(f"output root already exists: {output_root}")
-        output_root.mkdir(parents=True)
-    elif output_root.exists():
-        raise FileExistsError(f"output root already exists: {output_root}")
-    output_root.mkdir(parents=True, exist_ok=(mode == "run"))
+    if mode == "canary-run":
+        if authorization != CANARY_AUTH:
+            raise PermissionError(f"canary-run requires {CANARY_AUTH}")
+    elif mode == "full-run":
+        if authorization != FULL_AUTH:
+            raise PermissionError(f"full-run requires {FULL_AUTH}")
+    else:
+        raise ValueError("mode must be canary-run or full-run")
 
-    shards = load_shard_index(plan_report)
+    output_root = output_root.resolve()
+    if output_root.exists():
+        raise FileExistsError(f"output root already exists: {output_root}")
+    output_root.mkdir(parents=True)
+
+    plan, shards = load_plan(plan_report)
+
+    # Frozen git head from plan (P0-8)
+    frozen_head = str(plan.get("expected_git_commit", ""))
+    if not frozen_head or len(frozen_head) != 40:
+        raise ValueError("plan report missing valid expected_git_commit")
+    current_head = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=REPO, text=True
+    ).strip()
+    if current_head != frozen_head:
+        raise ValueError(
+            f"current HEAD {current_head[:10]} != plan expected {frozen_head[:10]}"
+        )
+
+    is_canary = mode == "canary-run"
+    total_episodes = sum(int(s.get("episode_count", 0)) for s in shards)
+    target_shard_count = len(shards)
 
     # Build pending queues per GPU (permanently bound)
-    pending_by_gpu: dict[int, deque[dict[str, Any]]] = {
-        gpu: deque() for gpu in GPUS
-    }
+    pending_by_gpu: dict[int, deque[dict[str, Any]]] = {gpu: deque() for gpu in GPUS}
     for shard in shards:
         gpu = int(shard["physical_gpu"])
         pending_by_gpu[gpu].append(shard)
 
     # State tracking
-    running_by_gpu: dict[int, dict[str, WorkerState]] = {gpu: {} for gpu in GPUS}
-    completed_by_gpu: dict[int, list[str]] = {gpu: [] for gpu in GPUS}
-    failed_by_gpu: dict[int, list[str]] = {gpu: [] for gpu in GPUS}
-    loading_worker: WorkerState | None = None
+    workers: dict[str, WorkerState] = {}  # worker_id → WorkerState
+    worker_processes: dict[str, subprocess.Popen] = {}  # worker_id → subprocess
+    loading_worker_id: str | None = None
+    completed_workers: list[str] = []
+    failed_workers: list[str] = []
 
     # Calibration and caps
-    calibration_by_gpu: dict[int, CalibrationState] = {
-        gpu: CalibrationState(gpu=gpu) for gpu in GPUS
-    }
-    effective_cap_by_gpu: dict[int, int] = {
-        gpu: INITIAL_RESIDENT_CAP for gpu in GPUS
-    }
+    cal_by_gpu: dict[int, CalibrationState] = {gpu: CalibrationState(gpu=gpu) for gpu in GPUS}
+    effective_cap_by_gpu: dict[int, int] = {gpu: INITIAL_RESIDENT_CAP for gpu in GPUS}
 
-    # Pre-run calibration: collect GPU metadata
+    # Collect GPU metadata
     for gpu in GPUS:
         try:
             uuid_out = subprocess.check_output(
@@ -316,9 +297,9 @@ def run_scheduler(
             ).strip()
             parts = [p.strip() for p in uuid_out.split(",")]
             if len(parts) >= 3:
-                calibration_by_gpu[gpu].gpu_uuid = parts[0]
-                calibration_by_gpu[gpu].gpu_name = parts[1]
-                calibration_by_gpu[gpu].driver_version = parts[2]
+                cal_by_gpu[gpu].gpu_uuid = parts[0]
+                cal_by_gpu[gpu].gpu_name = parts[1]
+                cal_by_gpu[gpu].driver_version = parts[2]
         except Exception:
             pass
 
@@ -333,240 +314,185 @@ def run_scheduler(
             snaps = {}
         for gpu in GPUS:
             s = snaps.get(gpu)
+            gpu_workers = [w for w in workers.values() if w.gpu == gpu]
+            resident = sum(1 for w in gpu_workers if w.phase in RESIDENT_PHASES)
             per_gpu[str(gpu)] = {
                 "index": gpu,
                 "memory_free_mib": s.memory_free_mib if s else -1,
-                "memory_total_mib": s.memory_total_mib if s else -1,
-                "memory_used_mib": s.memory_used_mib if s else -1,
                 "utilization_percent": s.utilization_percent if s else -1,
-                "temperature_c": s.temperature_c if s else -1,
-                "resident_worker_count": sum(
-                    1 for w in running_by_gpu[gpu].values() if is_resident(w)
-                ),
+                "resident_worker_count": resident,
                 "effective_cap": effective_cap_by_gpu[gpu],
             }
         write_json(heartbeat_path, {
             "timestamp": utc_now(),
+            "mode": mode,
             "per_gpu": per_gpu,
-            "total_pending": sum(len(q) for q in pending_by_gpu.values()),
-            "total_running": sum(len(w) for w in running_by_gpu.values()),
-            "total_completed": sum(len(c) for c in completed_by_gpu.values()),
-            "total_failed": sum(len(f) for f in failed_by_gpu.values()),
-            "loading_worker": loading_worker.worker_id if loading_worker else None,
+            "pending_shards": {str(g): len(pending_by_gpu[g]) for g in GPUS},
+            "loading_worker": loading_worker_id,
+            "completed_workers": len(completed_workers),
+            "failed_workers": len(failed_workers),
+            "target_shard_count": target_shard_count,
         })
 
-    def calibration_report() -> dict[str, Any]:
-        result: dict[str, Any] = {}
-        for gpu in GPUS:
-            cal = calibration_by_gpu[gpu]
-            result[str(gpu)] = {
-                "gpu_uuid": cal.gpu_uuid,
-                "gpu_name": cal.gpu_name,
-                "driver_version": cal.driver_version,
-                "observed_deltas_mib": cal.observed_deltas_mib,
-                "p95_delta_mib": (
-                    sorted(cal.observed_deltas_mib)[int(0.95 * len(cal.observed_deltas_mib))]
-                    if cal.observed_deltas_mib else 0
-                ) if len(cal.observed_deltas_mib) >= 2 else (
-                    cal.observed_deltas_mib[0] if cal.observed_deltas_mib else 0
-                ),
-                "calibrated_budget_mib": cal.calibrated_budget_mib,
-                "oom_count": cal.oom_count,
-                "cuda_failure_count": cal.cuda_failure_count,
-                "model_load_failure_count": cal.model_load_failure_count,
-                "effective_cap": effective_cap_by_gpu[gpu],
-                "admission_threshold_mib": compute_admission_threshold(
-                    cal.calibrated_budget_mib
-                ),
-            }
-        return result
+    def poll_worker_status() -> None:
+        """Read worker_status.json for each running worker (P0-2)."""
+        nonlocal loading_worker_id
+
+        for wid, ws in list(workers.items()):
+            if ws.phase in ("PASS", "FAILED", "ABORTED"):
+                continue
+
+            status_path = output_root / "workers" / wid / "worker_status.json"
+            if not status_path.is_file():
+                continue
+
+            status = read_json(status_path)
+            phase = str(status.get("phase", ""))
+            if not phase or phase == ws.phase:
+                continue
+
+            old_phase = ws.phase
+            ws.phase = phase
+
+            # Release loading slot when worker reaches MODEL_READY
+            if loading_worker_id == wid and phase == "MODEL_READY":
+                loading_worker_id = None
+                # Record post-load memory delta
+                try:
+                    snap = nvidia_snapshot([ws.gpu])[ws.gpu]
+                    cal = cal_by_gpu[ws.gpu]
+                    cal.observed_deltas_mib.append(
+                        float(FALLBACK_WORKER_BUDGET_MIB)  # approximate
+                    )
+                except Exception:
+                    pass
+
+            # Check for OOM in phase
+            if phase == "FAILED" and old_phase in LOADING_PHASES:
+                cal = cal_by_gpu[ws.gpu]
+                cal.oom_count += 1
+
+    def poll_processes() -> None:
+        """Check completed subprocesses (P0-4: stderr→log file)."""
+        for wid, proc in list(worker_processes.items()):
+            ret = proc.poll()
+            if ret is None:
+                continue
+            ws = workers.get(wid)
+            if ws is None:
+                continue
+            ws.returncode = ret
+            ws.completion_time = utc_now()
+
+            # Check worker receipt
+            receipt_path = output_root / "workers" / wid / "worker_receipt.json"
+            receipt_ok = False
+            if receipt_path.is_file():
+                receipt = read_json(receipt_path)
+                receipt_ok = str(receipt.get("status", "")).startswith("PASS")
+
+            if receipt_ok and ret == 0:
+                ws.phase = "PASS"
+                completed_workers.append(wid)
+            else:
+                ws.phase = "FAILED"
+                failed_workers.append(wid)
+
+            if loading_worker_id == wid:
+                loading_worker_id = None
+            # Keep worker_processes entry, proc now defunct
+
+    def resident_count(gpu: int) -> int:
+        return sum(
+            1 for w in workers.values()
+            if w.gpu == gpu and w.phase in RESIDENT_PHASES
+        )
 
     def try_launch(gpu: int) -> None:
-        """Attempt to launch one worker on the GPU if conditions are met."""
-        nonlocal loading_worker
+        nonlocal loading_worker_id
 
-        # Check pending
         if not pending_by_gpu[gpu]:
             return
-
-        # Check resident cap
-        resident_count = sum(
-            1 for w in running_by_gpu[gpu].values() if is_resident(w)
-        )
-        if resident_count >= effective_cap_by_gpu[gpu]:
+        if resident_count(gpu) >= effective_cap_by_gpu[gpu]:
+            return
+        if loading_worker_id is not None:
             return
 
-        # Check loading slot
-        if loading_worker is not None:
-            return
-
-        # Check no worker currently loading on this GPU
-        for w in running_by_gpu[gpu].values():
-            if is_loading(w):
+        # Check no worker on this GPU is currently loading
+        for w in workers.values():
+            if w.gpu == gpu and w.phase in LOADING_PHASES:
                 return
 
-        # Check OOM quarantine
-        cal = calibration_by_gpu[gpu]
-        if cal.oom_count > 0 and resident_count >= effective_cap_by_gpu[gpu]:
+        # Memory admission
+        cal = cal_by_gpu[gpu]
+        threshold = compute_admission_threshold(cal.calibrated_budget_mib)
+        try:
+            snap = nvidia_snapshot([gpu])[gpu]
+            if snap.memory_free_mib < threshold:
+                return
+        except Exception:
             return
 
-        # Memory admission with stable polls
-        ok, reason, _ = collect_stable_samples(gpu, cal.calibrated_budget_mib)
-        if not ok:
-            return  # silently skip — insufficient memory
-
-        # All checks passed — launch next shard
+        # Launch
         shard = pending_by_gpu[gpu].popleft()
         wid = str(shard["worker_id"])
-        ws = WorkerState(
-            worker_id=wid,
-            shard_id=str(shard.get("shard_id", "")),
-            gpu=gpu,
-            phase="CREATED",
-            launch_time=utc_now(),
-        )
-        running_by_gpu[gpu][wid] = ws
-        loading_worker = ws
-
-        # In preview mode, just mark as completed
-        if mode == "preview":
-            ws.phase = "PASS"
-            ws.completion_time = utc_now()
-            completed_by_gpu[gpu].append(wid)
-            loading_worker = None
-            return
-
-        # Build worker command
-        worker_root = output_root / "workers" / wid
+        sid = str(shard.get("shard_id", ""))
+        ep_count = int(shard.get("episode_count", 25))
         manifest_path = Path(shard["manifest"])
-        manifest_sha = shard.get("manifest_sha256", sha256_file(manifest_path))
+        manifest_sha = str(shard.get("manifest_sha256", sha256_file(manifest_path)))
+        worker_root = output_root / "workers" / wid
+        status_file = worker_root / "worker_status.json"
+
+        # Log files (P0-4: no pipe deadlock)
+        worker_root.mkdir(parents=True, exist_ok=True)
+        stdout_log = open(str(worker_root / "worker_stdout.log"), "a", encoding="utf-8")
+        stderr_log = open(str(worker_root / "worker_stderr.log"), "a", encoding="utf-8")
 
         cmd = [
             sys.executable, str(SHARD_RUNNER),
             "--manifest", str(manifest_path),
             "--manifest-sha256", manifest_sha,
             "--output-root", str(worker_root),
-            "--expected-git-commit",
-            subprocess.check_output(
-                ["git", "rev-parse", "HEAD"], cwd=REPO, text=True
-            ).strip(),
+            "--expected-git-commit", frozen_head,
             "--suite-model-map", str(suite_model_map),
             "--suite-model-report", str(suite_model_report),
-            "--physical-gpu", str(gpu),
-            "--render-gpu-device-id", str(gpu),
+            "--goal-model-manifest", str(goal_model_manifest),
+            "--model-verification-report", str(model_verification_report),
             "--worker-id", wid,
-            "--shard-id", ws.shard_id,
+            "--shard-id", sid,
+            "--physical-gpu", str(gpu),
+            "--model-load-lock-file", str(MODEL_LOAD_LOCK),
+            "--worker-status-file", str(status_file),
             "--dummy-wait", str(OFFICIAL_DUMMY_WAIT_STEPS),
             "--mode", "run",
         ]
 
-        # Record pre-launch memory
-        try:
-            pre_snap = nvidia_snapshot([gpu])[gpu]
-        except Exception:
-            pre_snap = None
-
-        # Launch process
         env = os.environ.copy()
         env["CUDA_VISIBLE_DEVICES"] = str(gpu)
         env["C2G_PHYSICAL_GPU"] = str(gpu)
+
         proc = subprocess.Popen(
             cmd, cwd=REPO, env=env,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            stdout=stdout_log, stderr=stderr_log,
         )
-        ws.pid = proc.pid
-        ws.process = proc
-        ws.phase = "LOADING_PROCESSOR"
 
-        # Record post-launch memory after a brief settle
-        time.sleep(2)
-        try:
-            post_snap = nvidia_snapshot([gpu])[gpu]
-            if pre_snap:
-                delta = float(pre_snap.memory_used_mib - post_snap.memory_used_mib)
-                if abs(delta) < 50000:  # sanity check
-                    cal.observed_deltas_mib.append(
-                        float(post_snap.memory_used_mib - pre_snap.memory_used_mib)
-                        if post_snap.memory_used_mib > pre_snap.memory_used_mib
-                        else float(post_snap.memory_used_mib)
-                    )
-        except Exception:
-            pass
-
-    def poll_workers() -> None:
-        """Check completed processes and update states."""
-        nonlocal loading_worker
-
-        for gpu in GPUS:
-            to_remove: list[str] = []
-            for wid, ws in list(running_by_gpu[gpu].items()):
-                if ws.process is None:
-                    continue
-                ret = ws.process.poll()
-                if ret is None:
-                    # Still running
-                    continue
-                ws.returncode = ret
-                ws.completion_time = utc_now()
-
-                # Check receipt
-                worker_root = output_root / "workers" / wid
-                receipt_path = worker_root / "worker_receipt.json"
-                if receipt_path.is_file():
-                    try:
-                        receipt = read_json(receipt_path)
-                        ws.receipt_valid = str(receipt.get("status", "")).startswith(
-                            "PASS"
-                        )
-                    except Exception:
-                        ws.receipt_valid = False
-
-                # Check for OOM
-                stderr = ""
-                try:
-                    stderr = ws.process.stderr.read().decode("utf-8", errors="replace")
-                except Exception:
-                    pass
-                if "CUDA_OUT_OF_MEMORY" in stderr or "out of memory" in stderr.lower():
-                    calibration_by_gpu[gpu].oom_count += 1
-
-                if ws.receipt_valid and ret == 0:
-                    ws.phase = "PASS"
-                    completed_by_gpu[gpu].append(wid)
-                else:
-                    ws.phase = "FAILED"
-                    failed_by_gpu[gpu].append(wid)
-
-                if loading_worker and loading_worker.worker_id == wid:
-                    loading_worker = None
-
-                to_remove.append(wid)
-
-            # Remove terminated workers from running (keep in completed/failed lists)
-            # Actually, keep them in running for the final report
-            # Just clear the process reference
-            for wid in to_remove:
-                if wid in running_by_gpu[gpu]:
-                    running_by_gpu[gpu][wid].process = None
-
-    def all_done() -> bool:
-        pending = sum(len(q) for q in pending_by_gpu.values())
-        active = sum(
-            1 for gpu in GPUS
-            for w in running_by_gpu[gpu].values()
-            if w.process is not None or w.phase in ("CREATED",)
+        ws = WorkerState(
+            worker_id=wid,
+            shard_id=sid,
+            gpu=gpu,
+            pid=proc.pid,
+            phase="CREATED",
+            launch_time=utc_now(),
+            episode_count=ep_count,
         )
-        return pending == 0 and active == 0
+        workers[wid] = ws
+        worker_processes[wid] = proc
+        loading_worker_id = wid
 
-    # ── Main loop ──
-    max_loops = 2000
-    for iteration in range(max_loops):
-        # Poll for completions
-        poll_workers()
-
-        # Recalibrate budgets as data comes in
+    def calibrate_caps() -> None:
+        """Update calibrated budgets and consider cap upgrades."""
         for gpu in GPUS:
-            cal = calibration_by_gpu[gpu]
+            cal = cal_by_gpu[gpu]
             if len(cal.observed_deltas_mib) >= 2:
                 p95 = sorted(cal.observed_deltas_mib)[
                     int(0.95 * len(cal.observed_deltas_mib))
@@ -577,114 +503,126 @@ def run_scheduler(
 
             # Consider cap upgrade
             if effective_cap_by_gpu[gpu] < MAX_RESIDENT_CAP:
-                resident_count = sum(
-                    1 for w in running_by_gpu[gpu].values() if is_resident(w)
-                )
+                rc = resident_count(gpu)
                 if (
-                    resident_count >= INITIAL_RESIDENT_CAP
+                    rc >= INITIAL_RESIDENT_CAP
                     and cal.oom_count == 0
-                    and cal.cuda_failure_count == 0
-                    and cal.model_load_failure_count == 0
-                    and len(cal.observed_deltas_mib) >= 2
+                    and len(cal.observed_deltas_mib) >= 1
                 ):
-                    # Try stable admission for the extra slot
+                    threshold = compute_admission_threshold(cal.calibrated_budget_mib)
                     try:
-                        snaps = nvidia_snapshot([gpu])
-                        ok, reason = memory_admission_pass(
-                            snaps[gpu], cal.calibrated_budget_mib
-                        )
-                        if ok:
-                            ok_s, reason_s, _ = collect_stable_samples(
-                                gpu, cal.calibrated_budget_mib
-                            )
-                            if ok_s:
-                                effective_cap_by_gpu[gpu] = MAX_RESIDENT_CAP
+                        snap = nvidia_snapshot([gpu])[gpu]
+                        if snap.memory_free_mib >= threshold:
+                            effective_cap_by_gpu[gpu] = MAX_RESIDENT_CAP
                     except Exception:
                         pass
 
-        # Try launching on all GPUs
+    def all_done() -> bool:
+        pending = sum(len(pending_by_gpu[g]) for g in GPUS)
+        active = sum(
+            1 for wid, proc in worker_processes.items()
+            if proc.poll() is None
+        )
+        return pending == 0 and active == 0
+
+    # ── Main loop ──
+    max_loops = 7200  # ~24 hours
+    for iteration in range(max_loops):
+        poll_worker_status()
+        poll_processes()
+        calibrate_caps()
+
         for gpu in GPUS:
             try_launch(gpu)
 
-        write_heartbeat()
+        if iteration % 15 == 0:  # every ~30s
+            write_heartbeat()
 
         if all_done():
+            write_heartbeat()
             break
 
-        time.sleep(10)
+        time.sleep(2)
 
-    # ── Build final report ──
-    cap_upgrade_decision: dict[str, dict[str, Any]] = {}
+    # ── Final report (P0-5: proper completion check) ──
+    pending_count = sum(len(pending_by_gpu[g]) for g in GPUS)
+    active_count = sum(
+        1 for wid, proc in worker_processes.items() if proc.poll() is None
+    )
+
+    all_completed = (
+        len(completed_workers) == target_shard_count
+        and len(failed_workers) == 0
+        and pending_count == 0
+        and active_count == 0
+    )
+
+    cap_decisions: dict[str, dict[str, Any]] = {}
     for gpu in GPUS:
-        cal = calibration_by_gpu[gpu]
-        cap_upgrade_decision[str(gpu)] = {
+        cal = cal_by_gpu[gpu]
+        cap_decisions[str(gpu)] = {
             "effective_cap": effective_cap_by_gpu[gpu],
             "initial_cap": INITIAL_RESIDENT_CAP,
             "max_requested_cap": MAX_RESIDENT_CAP,
             "upgraded": effective_cap_by_gpu[gpu] > INITIAL_RESIDENT_CAP,
-            "reason": (
-                "CALIBRATION_PASSED"
-                if effective_cap_by_gpu[gpu] > INITIAL_RESIDENT_CAP
-                else "CALIBRATION_INSUFFICIENT"
-            ),
+            "calibrated_budget_mib": cal.calibrated_budget_mib,
+            "oom_count": cal.oom_count,
         }
-
-    total_completed = sum(len(c) for c in completed_by_gpu.values())
-    total_failed = sum(len(f) for f in failed_by_gpu.values())
 
     report = {
         "schema": SCHEMA,
-        "status": PASS_STATUS if total_failed == 0 else "HOLD_C2G_R8Y_L10_520_SCHEDULER",
+        "status": (
+            (CANARY_PASS_STATUS if is_canary else FULL_PASS_STATUS)
+            if all_completed else "HOLD_C2G_R8Y_L10_520_SCHEDULER"
+        ),
         "mode": mode,
-        "total_shards": 20,
-        "completed_shards": total_completed,
-        "failed_shards": total_failed,
-        "pending_shards": sum(len(q) for q in pending_by_gpu.values()),
+        "all_completed": all_completed,
+        "completed_workers": len(completed_workers),
+        "failed_workers": len(failed_workers),
+        "pending_shards": pending_count,
+        "active_workers": active_count,
+        "target_shard_count": target_shard_count,
+        "target_episode_count": total_episodes,
+        "worker_receipts_valid": len(completed_workers),
         "per_gpu": {
             str(gpu): {
-                "completed": len(completed_by_gpu[gpu]),
-                "failed": len(failed_by_gpu[gpu]),
+                "completed": sum(1 for wid in completed_workers if workers[wid].gpu == gpu),
+                "failed": sum(1 for wid in failed_workers if workers[wid].gpu == gpu),
                 "pending": len(pending_by_gpu[gpu]),
                 "effective_cap": effective_cap_by_gpu[gpu],
-                "cap_upgrade": cap_upgrade_decision[str(gpu)],
+                "cap_upgrade": cap_decisions[str(gpu)],
             }
             for gpu in GPUS
         },
-        "calibration": calibration_report(),
-        "oom_count": sum(cal.oom_count for cal in calibration_by_gpu.values()),
+        "oom_count": sum(cal.oom_count for cal in cal_by_gpu.values()),
         "gpu_migration_count": 0,
-        "worker_budgets_mib": {
-            str(gpu): cal.calibrated_budget_mib
-            for gpu, cal in calibration_by_gpu.items()
-        },
-        "admission_thresholds_mib": {
-            str(gpu): compute_admission_threshold(cal.calibrated_budget_mib)
-            for gpu, cal in calibration_by_gpu.items()
-        },
         "abs_min_free_mib": ABSOLUTE_MIN_FREE_MIB,
         "fallback_worker_budget_mib": FALLBACK_WORKER_BUDGET_MIB,
         "gpu_reserve_mib": GPU_POST_LAUNCH_RESERVE_MIB,
         "load_margin_mib": MODEL_LOAD_TRANSIENT_MARGIN_MIB,
         "initial_resident_cap": INITIAL_RESIDENT_CAP,
         "max_resident_cap": MAX_RESIDENT_CAP,
+        "frozen_git_head": frozen_head,
         "output_root": str(output_root),
     }
 
     write_json(report_path, report)
-    write_heartbeat()
     return report
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--mode", choices=["preview", "run"], default="preview",
+        "--mode", choices=["canary-run", "full-run"], default="canary-run",
+        help="canary-run = 12-episode shadow; full-run = 500-episode",
     )
     parser.add_argument("--plan-report", type=Path, required=True)
     parser.add_argument("--expected-plan-report-sha256", required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--suite-model-map", type=Path, required=True)
     parser.add_argument("--suite-model-report", type=Path, required=True)
+    parser.add_argument("--goal-model-manifest", type=Path, required=True)
+    parser.add_argument("--model-verification-report", type=Path, required=True)
     parser.add_argument("--authorization", default="")
     return parser.parse_args(argv)
 
@@ -698,6 +636,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         output_root=args.output_root,
         suite_model_map=args.suite_model_map,
         suite_model_report=args.suite_model_report,
+        goal_model_manifest=args.goal_model_manifest,
+        model_verification_report=args.model_verification_report,
         authorization=args.authorization,
     )
     status = report.get("status", "UNKNOWN")

@@ -552,17 +552,21 @@ def build_r8y_plan(
         },
     }
 
-    # Write outputs (preview mode writes to output_root)
+    # Phase 1: write all data artifacts (manifest, shards, shard index).
+    # Must happen before report so SHA256SUMS captures final hashes.
     output_root.mkdir(parents=True, exist_ok=False)
     write_jsonl(manifest_path, assigned)
     write_json(shard_index_path, {"schema": SCHEMA, "shards": shard_entries})
-    write_json(report_path, report)
     shards_dir.mkdir(parents=True, exist_ok=True)
     for entry in shard_entries:
         members = [r for r in assigned if r["assigned_worker_id"] == entry["worker_id"]]
         write_jsonl(Path(entry["manifest"]), members)
 
-    # SHA256SUMS
+    # Phase 2: write the plan report once, with all fields final.
+    report["SHA256SUMS"] = str(output_root / "SHA256SUMS")
+    write_json(report_path, report)
+
+    # Phase 3: compute SHA256SUMS and sidecar after report is final.
     sums_lines = []
     for path in sorted(output_root.rglob("*")):
         if path.is_file() and path.name not in ("SHA256SUMS", "SHA256SUMS.sha256"):
@@ -572,13 +576,13 @@ def build_r8y_plan(
     sums_sha256 = sha256_file(sums_path)
     (output_root / "SHA256SUMS.sha256").write_text(f"{sums_sha256}  SHA256SUMS\n", encoding="utf-8")
 
-    report["SHA256SUMS"] = str(sums_path)
-    report["SHA256SUMS_sha256"] = sums_sha256
-    report["report"] = str(report_path)
-    report["report_sha256"] = sha256_file(report_path)
-    write_json(report_path, report)
+    # Phase 4: write report hash sidecar (not embedded in report).
+    report_sha256 = sha256_file(report_path)
+    (output_root / "c2g_r8y_l10_520_plan_report.json.sha256").write_text(
+        f"{report_sha256}  c2g_r8y_l10_520_plan_report.json\n", encoding="utf-8"
+    )
 
-    return report
+    return {**report, "report_sha256": report_sha256, "SHA256SUMS_sha256": sums_sha256}
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
