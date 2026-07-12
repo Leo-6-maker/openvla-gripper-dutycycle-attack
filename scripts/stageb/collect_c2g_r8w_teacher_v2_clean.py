@@ -510,7 +510,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             raise ValueError("R8W shard ID mismatch")
         if row.get("assigned_physical_gpu") != args.physical_gpu:
             raise ValueError("R8W shard physical GPU mismatch")
-        if row.get("collection_purpose") not in {"FULL_CLEAN_2000", "FRESH_SHADOW_CANARY"} or row.get("materializable") is not False:
+        if row.get("collection_purpose") not in {"FULL_CLEAN_2000", "FRESH_SHADOW_CANARY", "L10_HORIZON_REPAIR_520"} or row.get("materializable") is not False:
             raise ValueError("R8W collection-purpose boundary mismatch")
     purposes = {str(row["collection_purpose"]) for row in episodes}
     if len(purposes) != 1:
