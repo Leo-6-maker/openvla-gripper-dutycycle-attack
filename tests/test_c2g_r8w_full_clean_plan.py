@@ -143,6 +143,17 @@ class FullCleanPlanTests(unittest.TestCase):
                 f"{plan.sha256_file(path)}  {path.name}\n"
                 for path in (report, ledger, step_ledger)
             ), encoding="utf-8")
+            # Create fake R8T scheduler report with correct mapping
+            ref_sched = root / "r8t_scheduler_report.json"
+            ref_sched.write_text(json.dumps({
+                "status": "PASS_C2G_R8T_DYNAMIC_GPU_CANARY",
+                "shards": [
+                    {"suite": "libero_object", "physical_gpu": 4},
+                    {"suite": "libero_spatial", "physical_gpu": 6},
+                    {"suite": "libero_goal", "physical_gpu": 5},
+                    {"suite": "libero_10", "physical_gpu": 7},
+                ],
+            }), encoding="utf-8")
             result = plan.build_shadow_canary_plan(
                 mode="canary-preview",
                 repo=repo,
@@ -161,6 +172,8 @@ class FullCleanPlanTests(unittest.TestCase):
                 expected_r8u_sha256s_sha256=plan.sha256_file(sums),
                 output_root=root / "out",
                 authorization="",
+                reference_scheduler_report_path=ref_sched,
+                expected_reference_scheduler_report_sha256=plan.sha256_file(ref_sched),
             )
             self.assertEqual(result["episode_count"], 8)
             self.assertEqual(result["worker_count"], 4)
