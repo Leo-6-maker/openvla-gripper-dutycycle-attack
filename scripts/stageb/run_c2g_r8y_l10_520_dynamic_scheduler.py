@@ -474,8 +474,10 @@ def run_scheduler(
             ws.returncode = ret
             ws.completion_time = utc_now()
 
-            # Check worker receipt
-            receipt_path = output_root / "workers" / wid / "worker_receipt.json"
+            # Check worker receipt (R8W collector writes collection_report.json)
+            receipt_path = output_root / "workers" / wid / "c2g_r8w_collection_report.json"
+            if not receipt_path.is_file():
+                receipt_path = output_root / "workers" / wid / "worker_receipt.json"
             receipt_ok = False
             if receipt_path.is_file():
                 receipt = read_json(receipt_path)
