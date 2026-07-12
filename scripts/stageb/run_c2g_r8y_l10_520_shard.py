@@ -54,7 +54,7 @@ def read_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
-def validate_manifest(episodes: Sequence[Mapping[str, Any]]) -> int:
+def validate_manifest(episodes: Sequence[Mapping[str, Any]], expected_count: int | None = None) -> int:
     steps = {row.get("max_steps") for row in episodes}
     if steps != {CANONICAL_MAX_STEPS}:
         raise ValueError(
@@ -63,8 +63,12 @@ def validate_manifest(episodes: Sequence[Mapping[str, Any]]) -> int:
     suites = {str(row.get("suite", "")) for row in episodes}
     if suites != {TARGET_SUITE}:
         raise ValueError(f"R8Y manifest must be L10 only, got {suites}")
-    if len(episodes) != 25:
-        raise ValueError(f"R8Y shard must have 25 episodes, got {len(episodes)}")
+    if len(episodes) < 1:
+        raise ValueError("R8Y shard must have at least 1 episode")
+    if expected_count is not None and len(episodes) != expected_count:
+        raise ValueError(
+            f"R8Y shard expected {expected_count} episodes, got {len(episodes)}"
+        )
     return CANONICAL_MAX_STEPS
 
 

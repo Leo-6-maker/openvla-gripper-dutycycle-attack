@@ -232,6 +232,10 @@ def run_scheduler(
     goal_model_manifest: Path,
     model_verification_report: Path,
     authorization: str,
+    canary_report: Path | None = None,
+    expected_canary_report_sha256: str | None = None,
+    canary_ledger: Path | None = None,
+    expected_canary_ledger_sha256: str | None = None,
 ) -> dict[str, Any]:
     # ── authorization (P0-1) ────────────────────────────────────────
     plan_report = plan_report.resolve()
@@ -269,6 +273,72 @@ def run_scheduler(
     is_canary = mode == "canary-run"
     total_episodes = sum(int(s.get("episode_count", 0)) for s in shards)
     target_shard_count = len(shards)
+    eps_per_shard = {int(s.get("episode_count", 0)) for s in shards}
+    shards_per_gpu = {gpu: sum(1 for s in shards if int(s.get("physical_gpu", -1)) == gpu) for gpu in GPUS}
+    plan_kind = str(plan.get("plan_kind", ""))
+
+    # ── mode-specific shape validation (Gate 2) ──────────────────────
+    if is_canary:
+        if total_episodes != 12 or target_shard_count != 12:
+            raise ValueError(
+                f"canary-run requires exactly 12 episodes in 12 shards, "
+                f"got {total_episodes} episodes in {target_shard_count} shards"
+            )
+        if eps_per_shard != {1}:
+            raise ValueError(
+                f"canary-run requires 1 episode per shard, got {eps_per_shard}"
+            )
+        if any(v != 3 for v in shards_per_gpu.values()):
+            raise ValueError(
+                f"canary-run requires 3 shards per GPU, got {shards_per_gpu}"
+            )
+    else:  # full-run
+        if total_episodes != 500 or target_shard_count != 20:
+            raise ValueError(
+                f"full-run requires exactly 500 episodes in 20 shards, "
+                f"got {total_episodes} episodes in {target_shard_count} shards"
+            )
+        if eps_per_shard != {25}:
+            raise ValueError(
+                f"full-run requires 25 episodes per shard, got {eps_per_shard}"
+            )
+        if any(v != 5 for v in shards_per_gpu.values()):
+            raise ValueError(
+                f"full-run requires 5 shards per GPU, got {shards_per_gpu}"
+            )
+        # ── canary proof for full-run (Gate 1) ───────────────────────
+        if canary_report is None or expected_canary_report_sha256 is None:
+            raise ValueError(
+                "full-run requires --canary-report and "
+                "--expected-canary-report-sha256"
+            )
+        canary_report = canary_report.resolve()
+        if sha256_file(canary_report) != expected_canary_report_sha256:
+            raise ValueError("canary report SHA256 mismatch")
+        cr = read_json(canary_report)
+        if str(cr.get("status", "")) != "PASS_C2G_R8Y_L10_520_CANARY":
+            raise ValueError(
+                f"canary report not PASS: {cr.get('status', '?')}"
+            )
+        if int(cr.get("runtime_valid", 0)) != 12:
+            raise ValueError("canary runtime not 12/12")
+        for field in ("raw_action_prefix_exact", "applied_action_prefix_exact",
+                       "features_25d_exact_or_equivalent", "success_agreement"):
+            if int(cr.get(field, 0)) < 8:
+                raise ValueError(f"canary {field} < 8/8")
+        if int(cr.get("oom_count", 1)) != 0:
+            raise ValueError("canary had OOM events")
+        if int(cr.get("gpu_migration_count", 1)) != 0:
+            raise ValueError("canary had GPU migrations")
+        canary_git = str(cr.get("frozen_git_head", ""))
+        if canary_git and canary_git != frozen_head:
+            raise ValueError(
+                f"canary git head {canary_git[:10]} != full plan {frozen_head[:10]}"
+            )
+        if canary_ledger is not None and expected_canary_ledger_sha256 is not None:
+            canary_ledger = canary_ledger.resolve()
+            if sha256_file(canary_ledger) != expected_canary_ledger_sha256:
+                raise ValueError("canary ledger SHA256 mismatch")
 
     # Build pending queues per GPU (permanently bound)
     pending_by_gpu: dict[int, deque[dict[str, Any]]] = {gpu: deque() for gpu in GPUS}
@@ -279,6 +349,7 @@ def run_scheduler(
     # State tracking
     workers: dict[str, WorkerState] = {}  # worker_id → WorkerState
     worker_processes: dict[str, subprocess.Popen] = {}  # worker_id → subprocess
+    _pre_launch_free: dict[str, float] = {}  # worker_id → free_mib before launch
     loading_worker_id: str | None = None
     completed_workers: list[str] = []
     failed_workers: list[str] = []
@@ -354,16 +425,18 @@ def run_scheduler(
             old_phase = ws.phase
             ws.phase = phase
 
-            # Release loading slot when worker reaches MODEL_READY
+            # Release loading slot when worker reaches MODEL_READY (Gate 3)
             if loading_worker_id == wid and phase == "MODEL_READY":
                 loading_worker_id = None
-                # Record post-load memory delta
+                # Record real post-load memory delta
+                pre_load_free = _pre_launch_free.get(wid)
                 try:
                     snap = nvidia_snapshot([ws.gpu])[ws.gpu]
-                    cal = cal_by_gpu[ws.gpu]
-                    cal.observed_deltas_mib.append(
-                        float(FALLBACK_WORKER_BUDGET_MIB)  # approximate
-                    )
+                    if pre_load_free is not None:
+                        delta = pre_load_free - snap.memory_free_mib
+                        if 5000 < delta < 100000:  # sanity bounds
+                            cal = cal_by_gpu[ws.gpu]
+                            cal.observed_deltas_mib.append(float(delta))
                 except Exception:
                     pass
 
@@ -488,6 +561,7 @@ def run_scheduler(
         workers[wid] = ws
         worker_processes[wid] = proc
         loading_worker_id = wid
+        _pre_launch_free[wid] = float(snap.memory_free_mib)  # for Gate 3 calibration
 
     def calibrate_caps() -> None:
         """Update calibrated budgets and consider cap upgrades."""
@@ -624,6 +698,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--goal-model-manifest", type=Path, required=True)
     parser.add_argument("--model-verification-report", type=Path, required=True)
     parser.add_argument("--authorization", default="")
+    parser.add_argument("--canary-report", type=Path, default=None)
+    parser.add_argument("--expected-canary-report-sha256", default=None)
+    parser.add_argument("--canary-ledger", type=Path, default=None)
+    parser.add_argument("--expected-canary-ledger-sha256", default=None)
     return parser.parse_args(argv)
 
 
@@ -639,6 +717,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         goal_model_manifest=args.goal_model_manifest,
         model_verification_report=args.model_verification_report,
         authorization=args.authorization,
+        canary_report=args.canary_report,
+        expected_canary_report_sha256=args.expected_canary_report_sha256,
+        canary_ledger=args.canary_ledger,
+        expected_canary_ledger_sha256=args.expected_canary_ledger_sha256,
     )
     status = report.get("status", "UNKNOWN")
     print(json.dumps(report, indent=2, sort_keys=True))
