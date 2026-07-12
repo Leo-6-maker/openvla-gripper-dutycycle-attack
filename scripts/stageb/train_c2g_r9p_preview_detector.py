@@ -241,6 +241,7 @@ def _r9p_runtime_gate_episode_losses(
     *,
     persistence_window: int,
     persistence_required: int,
+    valid_mask: Tensor | None = None,
 ) -> Dict[str, Tensor]:
     """Differentiable surrogate for the frozen tri-head runtime gate."""
     critical = torch.sigmoid(outputs["critical_window"])
@@ -269,14 +270,20 @@ def _r9p_runtime_gate_episode_losses(
     explicit_negative = masks.get("episode_fully_known_negative")
 
     for i in range(gate.shape[0]):
+        valid = (
+            valid_mask[i].bool()
+            if valid_mask is not None
+            else torch.ones(gate.shape[1], dtype=torch.bool, device=gate.device)
+        )
         known = (
             masks["critical_window"][i].bool()
             & masks["release_safe"][i].bool()
             & masks["grounding_confidence"][i].bool()
+            & valid
         )
-        burst_known = masks["burst_feasible"][i].bool()
+        burst_known = masks["burst_feasible"][i].bool() & valid
         burst_positive = (targets["burst_feasible"][i] > 0.5) & burst_known
-        start_positive = (targets["window_start"][i] > 0.5) & masks["window_start"][i].bool()
+        start_positive = (targets["window_start"][i] > 0.5) & masks["window_start"][i].bool() & valid
         positive = burst_positive
         if positive.any():
             positive_episode_count += 1
@@ -298,7 +305,7 @@ def _r9p_runtime_gate_episode_losses(
                     gate[i], interval, window=persistence_window, required=persistence_required,
                 ).clamp(min=1e-6)))
         else:
-            fully_known = bool(known.all()) and bool(burst_known.all())
+            fully_known = bool(valid.any()) and bool(known[valid].all()) and bool(burst_known[valid].all())
             explicit = bool(explicit_negative[i].item()) if explicit_negative is not None else False
             if explicit and (not fully_known or start_positive.any()):
                 raise ValueError("episode_fully_known_negative contradicts known/positive labels")
@@ -368,6 +375,7 @@ def r9p_preview_loss(
         outputs, targets, masks,
         persistence_window=persistence_window,
         persistence_required=persistence_required,
+        valid_mask=sample_weight if sample_weight is not None and sample_weight.ndim == 2 else None,
     ) if outputs["critical_window"].ndim == 2 else {
         "early_emit": outputs["critical_window"].sum() * 0.0,
         "episode_miss": outputs["critical_window"].sum() * 0.0,
