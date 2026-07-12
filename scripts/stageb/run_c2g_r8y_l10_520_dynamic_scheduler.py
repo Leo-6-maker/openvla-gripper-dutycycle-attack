@@ -532,9 +532,12 @@ def run_scheduler(
         status_file = worker_root / "worker_status.json"
 
         # Log files (P0-4: no pipe deadlock)
-        worker_root.mkdir(parents=True, exist_ok=True)
-        stdout_log = open(str(worker_root / "worker_stdout.log"), "a", encoding="utf-8")
-        stderr_log = open(str(worker_root / "worker_stderr.log"), "a", encoding="utf-8")
+        # Write to scheduler logs dir, NOT worker output root (collector
+        # requires output_root to not yet exist).
+        logs_dir = output_root / "worker_logs"
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        stdout_log = open(str(logs_dir / f"{wid}_stdout.log"), "a", encoding="utf-8")
+        stderr_log = open(str(logs_dir / f"{wid}_stderr.log"), "a", encoding="utf-8")
 
         cmd = [
             sys.executable, str(SHARD_RUNNER),

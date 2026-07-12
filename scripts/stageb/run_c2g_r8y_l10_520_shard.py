@@ -101,10 +101,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     episodes = read_jsonl(manifest)
     validate_manifest(episodes)
 
-    if args.mode == "run":
-        output_root = args.output_root.resolve()
-        if output_root.exists():
-            raise FileExistsError(f"output root already exists: {output_root}")
+    # The scheduler owns output root lifecycle; don't reject existing dirs.
 
     collector_args = [
         sys.executable, str(COLLECTOR),
