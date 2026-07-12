@@ -35,9 +35,12 @@ jobs:
             scripts/stageb/collect_c2g_clean_window_rollouts_strict.py \
             scripts/stageb/collect_c2g_r8t_teacher_v2_canary.py \
             scripts/stageb/collect_c2g_r8w_teacher_v2_clean.py \
+            scripts/stageb/calibrate_c2g_r9p_preview_thresholds.py \
             scripts/stageb/extract_c2g_detector_timing.py \
             scripts/stageb/finalize_c2g_goal_model_manifest_v2.py \
             scripts/stageb/prepare_c2g_eval_parents.py \
+            scripts/stageb/run_c2g_r9p_shadow_runtime.py \
+            scripts/stageb/run_c2g_r9p_streaming_replay.py \
             scripts/stageb/run_c2f_canary_worker.py \
             scripts/stageb/run_c2g_clean_timing_jobs.py \
             scripts/stageb/run_c2g_clean_timing_jobs_strict.py \
@@ -55,6 +58,7 @@ jobs:
             scripts/stageb/run_c2g_r8z1_semantic_prefix_audit.py \
             scripts/stageb/run_c2g_r8y_l10_520_shard.py \
             scripts/stageb/run_c2g_r8y_l10_520_dynamic_scheduler.py \
+            scripts/stageb/train_c2g_r9p_preview_detector.py \
             src/gripper_attack/c2g_bddl_metadata.py \
             src/gripper_attack/c2g_causal_vulnerability_detector.py \
             src/gripper_attack/c2g_clean_event_tracking.py \
@@ -83,6 +87,7 @@ jobs:
             tools/multisuite_detector/audit_c2g_r8w_full_clean_2000.py \
             tools/multisuite_detector/audit_c2g_r8z_ogs_canary.py \
             tools/multisuite_detector/audit_c2g_r8z_ogs_full1500.py \
+            tools/multisuite_detector/audit_c2g_r9p_materialization.py \
             tools/multisuite_detector/audit_c2g_r8z1_semantic_prefix_closure.py \
             tools/multisuite_detector/audit_c2g_static_assets.py \
             tools/multisuite_detector/audit_c2g_static_assets_strict.py \
@@ -91,6 +96,7 @@ jobs:
             tools/multisuite_detector/build_c2g_r8t_teacher_v2_canary.py \
             tools/multisuite_detector/build_c2g_r8w_full_clean_2000_plan.py \
             tools/multisuite_detector/build_c2g_r8z_ogs_official_views.py \
+            tools/multisuite_detector/build_c2g_r9p_preview_plan.py \
             tools/multisuite_detector/build_c2g_r8y_l10_520_plan.py \
             tools/multisuite_detector/c2g_official_suite_horizons.py \
             tools/multisuite_detector/audit_c2g_r8y_l10_520_canary.py \
@@ -106,6 +112,7 @@ jobs:
             tools/multisuite_detector/rebuild_c2g_r8z_teacher_v2_labels.py \
             tools/multisuite_detector/materialize_c2g_clean_window_dataset.py \
             tools/multisuite_detector/materialize_c2g_multisuite_dataset.py \
+            tools/multisuite_detector/materialize_c2g_r9p_ogs1500.py \
             tools/multisuite_detector/plan_c2g_scientific_corpus.py \
             tools/multisuite_detector/run_c2g_clean_window_folds.py \
             tools/multisuite_detector/train_c2g_clean_window_detector.py \
@@ -139,6 +146,13 @@ jobs:
             tests/test_c2g_r8z1_teacher_semantics.py \
             tests/test_c2g_r8z1_checksum_completeness.py \
             tests/test_c2g_r8z1_train_only_density.py \
+            tests/test_c2g_r9p_episode_training.py \
+            tests/test_c2g_r9p_fsm.py \
+            tests/test_c2g_r9p_materialization.py \
+            tests/test_c2g_r9p_nested_split.py \
+            tests/test_c2g_r9p_no_teacher_leakage.py \
+            tests/test_c2g_r9p_sealed_cohorts.py \
+            tests/test_c2g_r9p_streaming_equivalence.py \
             tests/test_c2g_r8x_hardware_bound_repro.py \
             tests/test_c2g_official_suite_horizons.py \
             tests/test_c2g_r8y_l10_520_plan.py \
@@ -203,6 +217,13 @@ jobs:
             tests.test_c2g_r8z1_teacher_semantics \
             tests.test_c2g_r8z1_checksum_completeness \
             tests.test_c2g_r8z1_train_only_density \
+            tests.test_c2g_r9p_episode_training \
+            tests.test_c2g_r9p_fsm \
+            tests.test_c2g_r9p_materialization \
+            tests.test_c2g_r9p_nested_split \
+            tests.test_c2g_r9p_no_teacher_leakage \
+            tests.test_c2g_r9p_sealed_cohorts \
+            tests.test_c2g_r9p_streaming_equivalence \
             tests.test_c2g_r8x_hardware_bound_repro \
             tests.test_c2g_official_suite_horizons \
             tests.test_c2g_r8y_l10_520_plan \
