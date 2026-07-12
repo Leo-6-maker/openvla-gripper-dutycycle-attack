@@ -21,6 +21,7 @@ from tools.multisuite_detector.build_c2g_r9q_training_manifests import (
 
 POS_WEIGHT_CAP = 20.0
 MODEL_SCHEMA = "c2g.r9q.final_detector_checkpoint.2026-07-13.v1"
+BALANCED_HEADS = ("window_start", "burst_feasible", "critical_window", "release_safe", "contact_grasp")
 
 
 def _git_state(expected_head: str) -> None:
@@ -79,11 +80,19 @@ def compute_fit_class_balance(fit_rows: list[dict[str, Any]], root: Path) -> dic
             target = data[f"y_{head}"]
             positive = mask & (target > 0.5)
             negative = mask & ~positive
+            if head == "grounding_confidence":
+                counts[head]["active_rows"] = counts[head].get("active_rows", 0) + int(mask.sum())
+                counts[head]["target_mean_sum"] = counts[head].get("target_mean_sum", 0.0) + float(target[mask].sum())
+                continue
             counts[head]["positive_rows"] += int(positive.sum())
             counts[head]["negative_rows"] += int(negative.sum())
             counts[head]["positive_episodes"] += int(positive.any())
             counts[head]["negative_episodes"] += int((not positive.any()) and mask.all())
-    for head, item in counts.items():
+    grounding = counts["grounding_confidence"]
+    grounding["target_mean"] = grounding.pop("target_mean_sum", 0.0) / max(grounding.pop("active_rows", 0), 1)
+    grounding["pos_weight"] = 1.0
+    for head in BALANCED_HEADS:
+        item = counts[head]
         if item["positive_rows"] == 0 or item["negative_rows"] == 0:
             raise ValueError(f"no positive/negative FIT support for {head}: {item}")
         item["raw_pos_weight"] = item["negative_rows"] / item["positive_rows"]
