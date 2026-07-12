@@ -439,8 +439,9 @@ def run_scheduler(
             old_phase = ws.phase
             ws.phase = phase
 
-            # Release loading slot when worker reaches MODEL_READY (Gate 3)
-            if loading_worker_id == wid and phase == "MODEL_READY":
+            # Release loading slot when worker reaches MODEL_READY or beyond (Gate 3)
+            post_load_phases = {"MODEL_READY", "CREATING_ENVIRONMENT", "RUNNING_EPISODES", "FINALIZING"}
+            if loading_worker_id == wid and phase in post_load_phases and old_phase in LOADING_PHASES:
                 loading_worker_id = None
                 # Record real post-load memory delta
                 pre_load_free = _pre_launch_free.get(wid)
