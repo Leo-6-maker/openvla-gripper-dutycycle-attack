@@ -490,7 +490,7 @@ def run_scheduler(
 
             if loading_worker_id == wid:
                 loading_worker_id = None
-            # Keep worker_processes entry, proc now defunct
+            del worker_processes[wid]  # prevent re-counting on next poll
 
     def resident_count(gpu: int) -> int:
         return sum(
