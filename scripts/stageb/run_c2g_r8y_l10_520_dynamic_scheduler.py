@@ -232,6 +232,7 @@ def run_scheduler(
     goal_model_manifest: Path,
     model_verification_report: Path,
     authorization: str,
+    cap_override: str = "",
     canary_report: Path | None = None,
     expected_canary_report_sha256: str | None = None,
     canary_ledger: Path | None = None,
@@ -357,6 +358,19 @@ def run_scheduler(
     # Calibration and caps
     cal_by_gpu: dict[int, CalibrationState] = {gpu: CalibrationState(gpu=gpu) for gpu in GPUS}
     effective_cap_by_gpu: dict[int, int] = {gpu: INITIAL_RESIDENT_CAP for gpu in GPUS}
+
+    # Apply cap override if provided (e.g. "4=2,5=2,6=2,7=1")
+    if cap_override:
+        for pair in cap_override.split(","):
+            pair = pair.strip()
+            if not pair:
+                continue
+            gpu_str, cap_str = pair.split("=")
+            gpu = int(gpu_str)
+            cap = int(cap_str)
+            if gpu not in GPUS or cap < 1 or cap > MAX_RESIDENT_CAP:
+                raise ValueError(f"invalid cap override: {pair}")
+            effective_cap_by_gpu[gpu] = cap
 
     # Collect GPU metadata
     for gpu in GPUS:
@@ -702,6 +716,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--expected-canary-report-sha256", default=None)
     parser.add_argument("--canary-ledger", type=Path, default=None)
     parser.add_argument("--expected-canary-ledger-sha256", default=None)
+    parser.add_argument("--cap-override", default="",
+                        help="Per-GPU cap override, e.g. '4=2,5=2,6=2,7=1'")
     return parser.parse_args(argv)
 
 
@@ -717,6 +733,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         goal_model_manifest=args.goal_model_manifest,
         model_verification_report=args.model_verification_report,
         authorization=args.authorization,
+        cap_override=args.cap_override,
         canary_report=args.canary_report,
         expected_canary_report_sha256=args.expected_canary_report_sha256,
         canary_ledger=args.canary_ledger,
