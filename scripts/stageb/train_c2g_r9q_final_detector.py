@@ -119,6 +119,99 @@ def _save_checkpoint(
     }, path)
 
 
+def overfit_smoke(
+    *, combined_root: Path, view_root: Path, output_root: Path,
+    expected_head: str, expected_manifest_sha: str, steps: int, device_str: str,
+) -> dict[str, Any]:
+    """Run the fixed eight-episode B2 gradient/reload gate before full training."""
+    if output_root.exists():
+        raise FileExistsError(f"overfit output exists: {output_root}")
+    _git_state(expected_head)
+    manifest = _verify_view(view_root, expected_manifest_sha)
+    if manifest["mode"] != "B2" or manifest["fit_count"] != 960:
+        raise ValueError("overfit smoke requires the B2 view")
+    _verify_source_closure(combined_root, view_root)
+    fit_rows = read_jsonl(view_root / "fit_manifest.jsonl")[:8]
+    if len(fit_rows) != 8:
+        raise ValueError("B2 overfit smoke requires eight FIT rows")
+    norm = base.load_normalization(combined_root)
+    if norm is None:
+        raise FileNotFoundError("normalization.json missing")
+    device = torch.device(device_str if device_str == "cpu" or torch.cuda.is_available() else "cpu")
+    dataset = base.R9PEpisodeDataset(fit_rows, combined_root)
+    batch = base.collate_episodes([dataset[i] for i in range(8)])
+    model_config = base.C2gDetectorConfig(
+        visual_dim=base.VISUAL_DIM, language_dim=base.LANGUAGE_DIM, policy_intent_dim=9,
+        hidden=128, dropout=0.1, use_policy_intent=True,
+        use_visual=False, use_language_conditioning=False, head_names=base.R9P_HEAD_NAMES,
+    )
+    model = base.C2gGripperCriticalWindowDetector(model_config).to(device)
+    optimizer = AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5)
+    p_mean = torch.from_numpy(norm["proprio_mean"]).to(device)
+    p_std = torch.from_numpy(norm["proprio_std"]).to(device).clamp_min(1e-8)
+    pi_mean = torch.from_numpy(norm["policy_intent_mean"]).to(device)
+    pi_std = torch.from_numpy(norm["policy_intent_std"]).to(device).clamp_min(1e-8)
+    class_balance = compute_fit_class_balance(read_jsonl(view_root / "fit_manifest.jsonl"), combined_root)
+    pos_weights = {h: item["pos_weight"] for h, item in class_balance["heads"].items()}
+    proprio_raw = batch["proprio_25d"].to(device)
+    policy_raw = batch["policy_intent"].to(device)
+    padding = batch["padding_mask"].to(device)
+    targets = {k: v.to(device) for k, v in batch["targets"].items()}
+    masks = {k: v.to(device) for k, v in batch["masks"].items()}
+    language = torch.zeros((8, base.LANGUAGE_DIM), device=device)
+    losses: list[float] = []
+    for _ in range(steps):
+        outputs = model((proprio_raw - p_mean) / p_std, language,
+                        policy_intent=(policy_raw - pi_mean) / pi_std, return_sequence=True)
+        for head in base.R9P_HEAD_NAMES:
+            outputs[head] = outputs[head] * padding.float()
+        loss_dict = base.r9p_preview_loss(
+            outputs, targets, masks, sample_weight=padding.float(), head_pos_weight=pos_weights,
+            weight_start=base.LOSS_WEIGHTS["start"], weight_burst=base.LOSS_WEIGHTS["burst"],
+            weight_critical=base.LOSS_WEIGHTS["critical"], weight_release=base.LOSS_WEIGHTS["release"],
+            weight_contact=base.LOSS_WEIGHTS["contact"], weight_grounding=base.LOSS_WEIGHTS["grounding"],
+            weight_early_emit=base.LOSS_WEIGHTS["early_emit"], weight_episode_miss=base.LOSS_WEIGHTS["episode_miss"],
+            weight_negative_any_emit=base.LOSS_WEIGHTS["negative_any_emit"],
+            weight_release_safe_emit=base.LOSS_WEIGHTS["release_safe_emit"],
+        )
+        loss = loss_dict["total"]
+        if not torch.isfinite(loss):
+            raise FloatingPointError("non-finite overfit loss")
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        for head in base.R9P_HEAD_NAMES:
+            if not any(p.grad is not None and torch.isfinite(p.grad).all() for p in model.heads[head].parameters()):
+                raise FloatingPointError(f"missing/non-finite gradient for {head}")
+        optimizer.step()
+        losses.append(float(loss.detach().cpu()))
+    output_root.mkdir(parents=True)
+    checkpoint = output_root / "overfit_smoke_checkpoint.pt"
+    torch.save({"model_state_dict": model.state_dict(), "model_config": {
+        "visual_dim": base.VISUAL_DIM, "language_dim": base.LANGUAGE_DIM,
+        "policy_intent_dim": 9, "hidden": 128, "dropout": 0.1,
+        "use_policy_intent": True, "use_visual": False,
+        "use_language_conditioning": False, "head_names": list(base.R9P_HEAD_NAMES),
+    }}, checkpoint)
+    reloaded = base.C2gGripperCriticalWindowDetector(model_config).to(device)
+    reloaded.load_state_dict(torch.load(checkpoint, map_location=device, weights_only=False)["model_state_dict"])
+    with torch.no_grad():
+        first = model((proprio_raw - p_mean) / p_std, language,
+                      policy_intent=(policy_raw - pi_mean) / pi_std, return_sequence=True)
+        second = reloaded((proprio_raw - p_mean) / p_std, language,
+                          policy_intent=(policy_raw - pi_mean) / pi_std, return_sequence=True)
+    max_logit_error = max(float((first[h] - second[h]).abs().max().cpu()) for h in base.R9P_HEAD_NAMES)
+    report = {
+        "schema": "c2g.r9q.b2_overfit_smoke.2026-07-13.v1",
+        "status": "PASS_C2G_R9Q_B2_OVERFIT_SMOKE" if losses[-1] < losses[0] and max_logit_error <= 1e-6 else "HOLD_C2G_R9Q_B2_OVERFIT_SMOKE",
+        "episodes": 8, "steps": steps, "loss_first": losses[0], "loss_last": losses[-1],
+        "max_reload_logit_error": max_logit_error, "checkpoint_sha256": sha256_file(checkpoint),
+        "expected_head": expected_head, "training_manifest_sha256": expected_manifest_sha,
+        "partial_l10_in_fit": any(row["suite"] == "libero_10" for row in fit_rows),
+    }
+    (output_root / "overfit_smoke_report.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return report
+
+
 def train_b2(
     *,
     combined_root: Path,
@@ -308,9 +401,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--expected-head", required=True)
     parser.add_argument("--expected-manifest-sha", required=True)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--overfit-smoke", action="store_true")
+    parser.add_argument("--overfit-steps", type=int, default=50)
     args = parser.parse_args(argv)
     try:
         view = json.loads((args.view_root / "training_manifest.json").read_text(encoding="utf-8"))
+        if args.overfit_smoke:
+            report = overfit_smoke(
+                combined_root=args.combined_root, view_root=args.view_root,
+                output_root=args.output_root, expected_head=args.expected_head,
+                expected_manifest_sha=args.expected_manifest_sha,
+                steps=args.overfit_steps, device_str=args.device,
+            )
+            print(json.dumps(report, indent=2, sort_keys=True))
+            return 0 if report["status"].startswith("PASS_") else 1
         report = train_b2(
             combined_root=args.combined_root, view_root=args.view_root,
             output_root=args.output_root, model_label=args.model, seed=args.seed,
