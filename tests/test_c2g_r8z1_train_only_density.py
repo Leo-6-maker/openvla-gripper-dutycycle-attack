@@ -36,14 +36,14 @@ class TrainDensityTests(unittest.TestCase):
     def _make_episode(self, task_idx: int, ep_idx: int, known: bool = True,
                       start_pos: bool = False, n_steps: int = 50):
         rows = _make_label_rows(n_steps, known=known, start_pos=start_pos)
-        label_path = self.root / "labels" / f"task_{task_idx}_ep_{ep_idx}.jsonl"
-        label_path.parent.mkdir(parents=True, exist_ok=True)
+        # R8Z layout: episodes/{suite}/{suite}/task_X/state_Y/cohort/ep_Z/
+        ep_dir = self.root / "episodes" / "libero_spatial" / "libero_spatial" / f"task_{task_idx}" / "state_0" / "detector_train" / f"episode_{ep_idx:03d}"
+        ep_dir.mkdir(parents=True, exist_ok=True)
+        label_path = ep_dir / "teacher_v2_labels.jsonl"
         label_path.write_text(
             "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
         )
-        # Metadata
-        meta_path = self.root / "episodes" / f"task_{task_idx}_ep_{ep_idx}" / "episode_metadata.json"
-        meta_path.parent.mkdir(parents=True, exist_ok=True)
+        meta_path = ep_dir / "derived_episode_metadata.json"
         meta = {"cohort": "DETECTOR_TRAIN", "task_index": task_idx}
         meta_path.write_text(json.dumps(meta), encoding="utf-8")
 
@@ -78,11 +78,10 @@ class TrainDensityTests(unittest.TestCase):
     def test_skips_nontrain(self):
         self._make_episode(0, 0)
         # Add a non-train episode
-        meta_path = self.root / "episodes" / "val_ep" / "episode_metadata.json"
-        meta_path.parent.mkdir(parents=True, exist_ok=True)
-        meta_path.write_text(json.dumps({"cohort": "DETECTOR_VAL", "task_index": 0}))
-        label_path = self.root / "labels" / "val_ep.jsonl"
-        label_path.write_text(json.dumps({"step": 0, "label_known_mask": True}) + "\n")
+        ep_dir = self.root / "episodes" / "libero_spatial" / "libero_spatial" / "task_0" / "state_0" / "detector_val" / "episode_000"
+        ep_dir.mkdir(parents=True, exist_ok=True)
+        (ep_dir / "derived_episode_metadata.json").write_text(json.dumps({"cohort": "DETECTOR_VAL", "task_index": 0}))
+        (ep_dir / "teacher_v2_labels.jsonl").write_text(json.dumps({"step": 0, "label_known_mask": True}) + "\n")
 
         result = compute_train_density(self.root, "libero_spatial")
         self.assertEqual(result["episode_count"], 1)  # only train
@@ -98,12 +97,10 @@ class TrainDensityTests(unittest.TestCase):
                 "y_attack_start_b": False, "y_burst_feasible": False,
                 "y_release_safe": False,
             })
-        label_path = self.root / "labels" / "hn.jsonl"
-        label_path.parent.mkdir(parents=True, exist_ok=True)
-        label_path.write_text("".join(json.dumps(r) + "\n" for r in rows))
-        meta_path = self.root / "episodes" / "hn" / "episode_metadata.json"
-        meta_path.parent.mkdir(parents=True, exist_ok=True)
-        meta_path.write_text(json.dumps({"cohort": "DETECTOR_TRAIN", "task_index": 0}))
+        ep_dir = self.root / "episodes" / "libero_spatial" / "libero_spatial" / "task_0" / "state_0" / "detector_train" / "episode_000"
+        ep_dir.mkdir(parents=True, exist_ok=True)
+        (ep_dir / "teacher_v2_labels.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+        (ep_dir / "derived_episode_metadata.json").write_text(json.dumps({"cohort": "DETECTOR_TRAIN", "task_index": 0}))
         result = compute_train_density(self.root, "libero_spatial")
         self.assertEqual(result["hard_negative_count"], 1)
 
