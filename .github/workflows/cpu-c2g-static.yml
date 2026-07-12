@@ -52,6 +52,7 @@ jobs:
             scripts/stageb/run_c2g_r8w_full_clean_shard.py \
             scripts/stageb/run_c2g_r8w_gpu4567_16worker.py \
             scripts/stageb/run_c2g_r8z_ogs_label_generation.py \
+            scripts/stageb/run_c2g_r8z1_semantic_prefix_audit.py \
             scripts/stageb/run_c2g_r8y_l10_520_shard.py \
             scripts/stageb/run_c2g_r8y_l10_520_dynamic_scheduler.py \
             src/gripper_attack/c2g_bddl_metadata.py \
@@ -82,6 +83,7 @@ jobs:
             tools/multisuite_detector/audit_c2g_r8w_full_clean_2000.py \
             tools/multisuite_detector/audit_c2g_r8z_ogs_canary.py \
             tools/multisuite_detector/audit_c2g_r8z_ogs_full1500.py \
+            tools/multisuite_detector/audit_c2g_r8z1_semantic_prefix_closure.py \
             tools/multisuite_detector/audit_c2g_static_assets.py \
             tools/multisuite_detector/audit_c2g_static_assets_strict.py \
             tools/multisuite_detector/build_c2g_r8_collection_waves.py \
@@ -133,6 +135,10 @@ jobs:
             tests/test_c2g_r8z_teacher_v2_rebuild.py \
             tests/test_c2g_r8z_sealed_cohorts.py \
             tests/test_c2g_r8z_ogs_audit.py \
+            tests/test_c2g_r8z1_exact_prefix.py \
+            tests/test_c2g_r8z1_teacher_semantics.py \
+            tests/test_c2g_r8z1_checksum_completeness.py \
+            tests/test_c2g_r8z1_train_only_density.py \
             tests/test_c2g_r8x_hardware_bound_repro.py \
             tests/test_c2g_official_suite_horizons.py \
             tests/test_c2g_r8y_l10_520_plan.py \
@@ -193,6 +199,10 @@ jobs:
             tests.test_c2g_r8z_teacher_v2_rebuild \
             tests.test_c2g_r8z_sealed_cohorts \
             tests.test_c2g_r8z_ogs_audit \
+            tests.test_c2g_r8z1_exact_prefix \
+            tests.test_c2g_r8z1_teacher_semantics \
+            tests.test_c2g_r8z1_checksum_completeness \
+            tests.test_c2g_r8z1_train_only_density \
             tests.test_c2g_r8x_hardware_bound_repro \
             tests.test_c2g_official_suite_horizons \
             tests.test_c2g_r8y_l10_520_plan \
