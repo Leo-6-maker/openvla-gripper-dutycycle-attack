@@ -444,7 +444,10 @@ def run_materialization(
                 episode_dir, ("source_binding.json", "source_provenance.json"), required=True
             )
             rgb_name, rgb_sha = _artifact_sha(
-                episode_dir, ("rgb_reference.json", "rgb_manifest.json", "rgb_frame_manifest.json", "rgb_manifest.jsonl"), required=False
+                episode_dir, (
+                    "rgb_reference.json", "rgb_reference_manifest.jsonl", "rgb_manifest.json",
+                    "rgb_frame_manifest.json", "rgb_manifest.jsonl",
+                ), required=False
             )
             data = materialize_episode(episode_dir, meta)
 
