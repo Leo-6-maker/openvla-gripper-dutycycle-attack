@@ -439,9 +439,10 @@ def run_scheduler(
             old_phase = ws.phase
             ws.phase = phase
 
-            # Release loading slot when worker reaches MODEL_READY or beyond (Gate 3)
-            post_load_phases = {"MODEL_READY", "CREATING_ENVIRONMENT", "RUNNING_EPISODES", "FINALIZING"}
-            if loading_worker_id == wid and phase in post_load_phases and old_phase in LOADING_PHASES:
+            # Release loading slot as soon as worker passes model loading.
+            # Polls may skip fast phases (MODEL_READY), so trigger on any
+            # post-load phase regardless of where we last observed it.
+            if loading_worker_id == wid and phase in RESIDENT_PHASES:
                 loading_worker_id = None
                 # Record real post-load memory delta
                 pre_load_free = _pre_launch_free.get(wid)
