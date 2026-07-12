@@ -203,12 +203,12 @@ def audit_exact_prefix(
                     if pk:
                         source_map[pk] = steps_path
 
-    # Walk derived episodes
-    for ep_dir in sorted(derived_eps.iterdir()):
-        if not ep_dir.is_dir():
-            continue
-        derived_steps_path = ep_dir / "step_records_prefix.jsonl"
-        derived_meta_path = ep_dir / "episode_metadata.json"
+    # Walk derived episodes (R8Z layout: episodes/{suite}/{suite}/task_X/state_Y/cohort/ep_Z/)
+    for derived_steps_path in sorted(derived_eps.rglob("step_records_prefix.jsonl")):
+        ep_dir = derived_steps_path.parent
+        derived_meta_path = ep_dir / "derived_episode_metadata.json"
+        if not derived_meta_path.is_file():
+            derived_meta_path = ep_dir / "episode_metadata.json"
         if not derived_steps_path.is_file() or not derived_meta_path.is_file():
             continue
 
@@ -440,14 +440,15 @@ def compute_train_density(
         }),
     }
 
-    label_dir = derived_root / "labels"
-    if not label_dir.is_dir():
+    episodes_dir = derived_root / "episodes"
+    if not episodes_dir.is_dir():
         return result
 
-    for label_path in sorted(label_dir.glob("*.jsonl")):
-        meta_path = derived_root / "episodes" / (label_path.stem + "_metadata.json")
+    for label_path in sorted(episodes_dir.rglob("teacher_v2_labels.jsonl")):
+        ep_dir = label_path.parent
+        meta_path = ep_dir / "derived_episode_metadata.json"
         if not meta_path.is_file():
-            meta_path = derived_root / "episodes" / label_path.stem / "episode_metadata.json"
+            meta_path = ep_dir / "episode_metadata.json"
         if not meta_path.is_file():
             continue
 
@@ -566,7 +567,7 @@ def run_audit(
             continue
         ep_dir = root / "episodes"
         if ep_dir.is_dir():
-            for meta_path in ep_dir.rglob("episode_metadata.json"):
+            for meta_path in ep_dir.rglob("derived_episode_metadata.json"):
                 meta = read_json(meta_path)
                 cohort = meta.get("cohort", "")
                 if cohort == DETECTOR_VAL:
