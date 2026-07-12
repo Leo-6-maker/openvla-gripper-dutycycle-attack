@@ -188,7 +188,11 @@ def run_calibration(
     output_root: Path,
     *,
     device_str: str = "cuda",
+    mode: str = "calibrate-only",
+    grid: dict[str, list[Any]] | None = None,
 ) -> dict[str, Any]:
+    if mode != "calibrate-only":
+        raise ValueError("run_calibration only supports mode=calibrate-only; use run_check_only for CHECK")
     device = torch.device(device_str if torch.cuda.is_available() else "cpu")
     model, raw = load_model(checkpoint_path, device)
     use_policy_intent = model.config.use_policy_intent
@@ -202,12 +206,15 @@ def run_calibration(
     check_ds = R9PEpisodeDataset(index_rows, materialization_root, split_filter="CHECK")
 
     # Grid: tau_critical, tau_release, tau_ground + burst_feasible as secondary
-    tau_values = [0.3, 0.4, 0.5, 0.6, 0.7]
-    persistence_configs = [
+    grid = grid or {}
+    tau_values = grid.get("tau_critical", [0.3, 0.4, 0.5, 0.6, 0.7])
+    tau_release_values = grid.get("tau_release", [0.3, 0.4, 0.5, 0.6])
+    tau_ground_values = grid.get("tau_ground", [0.3, 0.5, 0.7])
+    persistence_configs = grid.get("persistence", [
         {"persistence_window": 3, "persistence_required": 2},
         {"persistence_window": 5, "persistence_required": 3},
         {"persistence_window": 1, "persistence_required": 1},
-    ]
+    ])
 
     # Phase 1: filter by safety constraints
     MAX_FALSE_RATE = 0.10
@@ -215,8 +222,8 @@ def run_calibration(
     feasible_configs = []
 
     for tau_critical in tau_values:
-        for tau_release in [0.3, 0.4, 0.5, 0.6]:
-            for tau_ground in [0.3, 0.5, 0.7]:
+        for tau_release in tau_release_values:
+            for tau_ground in tau_ground_values:
                 for p_cfg in persistence_configs:
                     sk = {
                         "burst_length": 10,
@@ -294,6 +301,30 @@ def run_calibration(
     if output_root.exists():
         raise FileExistsError(f"calibration output root already exists: {output_root}")
     output_root.mkdir(parents=True)
+
+    # CALIBRATE_ONLY is deliberately sealed from CHECK.  The selected config is
+    # consumed by the separate one-shot CHECK_ONLY command below.
+    config_out = {
+        "schema": SCHEMA,
+        "mode": "CALIBRATE_ONLY",
+        "checkpoint_path": str(checkpoint_path.resolve()),
+        "checkpoint_sha256": sha256_file(checkpoint_path),
+        "normalization_sha256": norm["sha256"],
+        "thresholds": best_config,
+        "calibration_metrics": best_metrics,
+        "check_consumption_count": 0,
+    }
+    write_json(output_root / "preview_detector_config.json", config_out)
+    report = {
+        "schema": SCHEMA,
+        "status": "PASS_C2G_R9P_CALIBRATION",
+        "mode": "CALIBRATE_ONLY",
+        "calibration": best_metrics,
+        "config": best_config,
+        "preview_check": None,
+    }
+    write_json(output_root / "preview_threshold_report.json", report)
+    return report
 
     # PREVIEW_CHECK evaluation with best config
     sk = {
@@ -393,30 +424,129 @@ def run_calibration(
     return report
 
 
+def run_check_only(
+    materialization_root: Path,
+    checkpoint_path: Path,
+    detector_config_path: Path,
+    output_root: Path,
+    *,
+    device_str: str = "cuda",
+) -> dict[str, Any]:
+    """Consume PREVIEW_CHECK exactly once using a frozen CAL config."""
+    if output_root.exists():
+        raise FileExistsError(f"CHECK output root already exists: {output_root}")
+    config = read_json(detector_config_path)
+    if config.get("mode") != "CALIBRATE_ONLY":
+        raise ValueError("detector config must be produced by CALIBRATE_ONLY")
+    expected_ckpt = config.get("checkpoint_sha256", "")
+    actual_ckpt = sha256_file(checkpoint_path)
+    if not expected_ckpt or expected_ckpt != actual_ckpt:
+        raise ValueError("checkpoint SHA mismatch for CHECK_ONLY")
+    norm = load_normalization(materialization_root)
+    if norm is None or config.get("normalization_sha256") != norm["sha256"]:
+        raise ValueError("normalization SHA mismatch for CHECK_ONLY")
+    thresholds = config.get("thresholds")
+    if not isinstance(thresholds, dict):
+        raise ValueError("CAL config has no frozen thresholds")
+    required = {"burst_length", "tau_critical", "tau_release", "tau_ground", "persistence_window", "persistence_required"}
+    if set(thresholds) < required:
+        raise ValueError(f"CAL config missing thresholds: {sorted(required - set(thresholds))}")
+    model, _ = load_model(checkpoint_path, torch.device(device_str if torch.cuda.is_available() else "cpu"))
+    device = next(model.parameters()).device
+    index_rows = read_jsonl(materialization_root / "dataset_index.jsonl")
+    check_ds = R9PEpisodeDataset(index_rows, materialization_root, split_filter="CHECK")
+    results = [evaluate_episode_t10(model, check_ds[i], device, model.config.use_policy_intent, thresholds, norm)
+               for i in range(len(check_ds))]
+    n_pos = sum(1 for r in results if r["has_start"])
+    n_feasible = sum(1 for r in results if r["feasible_hit"])
+    n_full = sum(1 for r in results if r["full_T10_containment"])
+    n_negative = sum(1 for r in results if not r["has_start"])
+    n_false = sum(1 for r in results if r["negative_any_trigger"])
+    n_release = sum(1 for r in results if r["release_safe_at_trigger"])
+    delays = [r["start_delay"] for r in results if r["feasible_hit"]]
+    per_suite: dict[str, dict[str, Any]] = {}
+    for suite in TARGET_SUITES:
+        suite_results = [r for i, r in enumerate(results) if check_ds[i]["suite"] == suite]
+        suite_pos = sum(1 for r in suite_results if r["has_start"])
+        suite_feasible = sum(1 for r in suite_results if r["feasible_hit"])
+        per_suite[suite] = {
+            "n": len(suite_results), "positive": suite_pos,
+            "feasible_hit": suite_feasible,
+            "feasible_hit_rate": suite_feasible / max(suite_pos, 1),
+        }
+    check_report = {
+        "schema": SCHEMA,
+        "mode": "CHECK_ONLY",
+        "check_consumption_count": 1,
+        "total": len(results),
+        "positive_episodes": n_pos,
+        "negative_episodes": n_negative,
+        "feasible_hit": n_feasible,
+        "feasible_hit_rate": n_feasible / max(n_pos, 1),
+        "full_T10_containment": n_full,
+        "full_T10_containment_rate": n_full / max(n_pos, 1),
+        "negative_any_trigger": n_false,
+        "negative_any_trigger_rate": n_false / max(n_negative, 1),
+        "release_safe_emit": n_release,
+        "release_safe_emit_rate": n_release / max(len(results), 1),
+        "median_start_delay": float(np.median(delays)) if delays else -1.0,
+        "per_suite": per_suite,
+        "checkpoint_sha256": actual_ckpt,
+        "normalization_sha256": norm["sha256"],
+    }
+    fr = check_report["feasible_hit_rate"]
+    fp = check_report["negative_any_trigger_rate"]
+    rs = check_report["release_safe_emit_rate"]
+    suite_rates = [per_suite[s]["feasible_hit_rate"] for s in TARGET_SUITES]
+    status = "PASS_C2G_R9P_PREVIEW_CHECK"
+    if fr < 0.55:
+        status = "HOLD_C2G_R9P_LOW_FEASIBLE_HIT"
+    elif fp > 0.15:
+        status = "HOLD_C2G_R9P_HIGH_FALSE_TRIGGER"
+    elif rs > 0.03:
+        status = "HOLD_C2G_R9P_HIGH_RELEASE_SAFE_EMIT"
+    elif sum(rate >= 0.50 for rate in suite_rates) < 2:
+        status = "HOLD_C2G_R9P_INSUFFICIENT_SUITE_COVERAGE"
+    report = {"schema": SCHEMA, "status": status, "check": check_report}
+    output_root.mkdir(parents=True)
+    write_json(output_root / "preview_check_report.json", report)
+    return report
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Calibrate R9P preview detector thresholds")
     parser.add_argument("--materialization-root", required=True, type=Path)
     parser.add_argument("--checkpoint", required=True, type=Path, help="Path to checkpoint.pt")
     parser.add_argument("--output-root", required=True, type=Path)
+    parser.add_argument("--mode", choices=["calibrate-only", "check-only"], default="calibrate-only")
+    parser.add_argument("--detector-config", type=Path, help="Frozen CAL config for check-only")
     parser.add_argument("--device", default="cuda")
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    report = run_calibration(
-        materialization_root=args.materialization_root,
-        checkpoint_path=args.checkpoint,
-        output_root=args.output_root,
-        device_str=args.device,
-    )
+    if args.mode == "check-only":
+        if args.detector_config is None:
+            raise SystemExit("--detector-config is required for --mode check-only")
+        report = run_check_only(args.materialization_root, args.checkpoint, args.detector_config,
+                                args.output_root, device_str=args.device)
+    else:
+        report = run_calibration(
+            materialization_root=args.materialization_root,
+            checkpoint_path=args.checkpoint,
+            output_root=args.output_root,
+            device_str=args.device,
+            mode="calibrate-only",
+        )
     print(f"Calibration: {report['status']}")
-    check = report["preview_check"]
-    print(f"  Feasible hit: {check['feasible_hit_rate']:.3f}  "
-          f"T10 containment: {check['full_T10_containment_rate']:.3f}")
-    print(f"  False trigger: {check['negative_any_trigger_rate']:.3f}  "
-          f"Release-safe emit: {check['release_safe_emit_rate']:.3f}")
-    return 0 if "PASS" in report["status"] else 1
+    check = report.get("check") or report.get("preview_check")
+    if check:
+        print(f"  Feasible hit: {check['feasible_hit_rate']:.3f}  "
+              f"T10 containment: {check['full_T10_containment_rate']:.3f}")
+        print(f"  False trigger: {check['negative_any_trigger_rate']:.3f}  "
+              f"Release-safe emit: {check['release_safe_emit_rate']:.3f}")
+    return 0 if report["status"] in {"PASS_C2G_R9P_CALIBRATION", "PASS_C2G_R9P_PREVIEW_CHECK"} else 1
 
 
 if __name__ == "__main__":

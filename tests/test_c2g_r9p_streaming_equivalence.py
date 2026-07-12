@@ -88,15 +88,21 @@ class StreamingEquivalenceTests(unittest.TestCase):
         # At t=3, the model should NOT be affected by step 5's values
         lang_emb = torch.zeros(1, 128)
         step_proprio = proprio[:4].unsqueeze(0)
+        step_policy = ep["features_9d"][:4].unsqueeze(0)
         with torch.no_grad():
-            out_early = self.model(step_proprio, lang_emb, return_sequence=True)
+            out_early = self.model(
+                step_proprio, lang_emb, policy_intent=step_policy, return_sequence=True,
+            )
         # At t=9, the model SHOULD see step 5
         full_proprio = proprio.unsqueeze(0)
+        full_policy = ep["features_9d"].unsqueeze(0)
         with torch.no_grad():
-            out_full = self.model(full_proprio, lang_emb, return_sequence=True)
-        # Early output at position 3 should differ from full (different context)
-        # This is a basic causality check
+            out_full = self.model(
+                full_proprio, lang_emb, policy_intent=full_policy, return_sequence=True,
+            )
         self.assertEqual(out_early["critical_window"].shape, (1, 4))
+        for head in R9P_HEAD_NAMES:
+            torch.testing.assert_close(out_early[head], out_full[head][:, :4], atol=1e-6, rtol=1e-6)
 
     def test_gru_state_reset_between_episodes(self):
         """GRU hidden state should not leak between episodes."""

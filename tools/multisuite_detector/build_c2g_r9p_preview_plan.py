@@ -201,11 +201,9 @@ def _verify_git_state(expected_commit: str) -> dict[str, Any]:
         status = subprocess.run(
             ["git", "status", "--porcelain"], capture_output=True, text=True, check=True,
         ).stdout.strip()
-        # Allow untracked files but no modifications to tracked files
-        modified = [line for line in status.splitlines() if not line.startswith("??")]
-        if modified:
+        if status:
             result["clean"] = False
-            result["issues"].append(f"dirty worktree: {len(modified)} modified tracked files")
+            result["issues"].append(f"dirty worktree: {len(status.splitlines())} status entries")
     except Exception as exc:
         result["clean"] = False
         result["issues"].append(f"git status failed: {exc}")
@@ -224,6 +222,14 @@ def build_plan(
     expected_goal_report_sha: str,
     expected_r8z1_audit_sha: str,
     r8z1_audit_report_path: str,
+    r8z1_amendment_sha: str,
+    r8z1_amendment_path: str,
+    r8z_composite_report_sha: str,
+    r8z_composite_report_path: str,
+    r8z_composite_ledger_sha: str,
+    r8z_composite_ledger_path: str,
+    r8z_composite_sums_sha: str,
+    r8z_composite_sums_path: str,
 ) -> dict[str, Any]:
     # Fail-closed: no empty provenance strings
     for name, value in [
@@ -232,6 +238,14 @@ def build_plan(
         ("expected_goal_report_sha", expected_goal_report_sha),
         ("expected_r8z1_audit_sha", expected_r8z1_audit_sha),
         ("r8z1_audit_report_path", r8z1_audit_report_path),
+        ("r8z1_amendment_sha", r8z1_amendment_sha),
+        ("r8z1_amendment_path", r8z1_amendment_path),
+        ("r8z_composite_report_sha", r8z_composite_report_sha),
+        ("r8z_composite_report_path", r8z_composite_report_path),
+        ("r8z_composite_ledger_sha", r8z_composite_ledger_sha),
+        ("r8z_composite_ledger_path", r8z_composite_ledger_path),
+        ("r8z_composite_sums_sha", r8z_composite_sums_sha),
+        ("r8z_composite_sums_path", r8z_composite_sums_path),
     ]:
         if not value or not value.strip():
             return {
@@ -285,19 +299,26 @@ def build_plan(
             provenance_record[f"{key}_sha256_actual"] = "FILE_NOT_FOUND"
             provenance_issues.append(f"{suite} report not found: {report_path}")
 
-    r8z1_path = Path(r8z1_audit_report_path)
-    provenance_record["r8z1_audit_report_path"] = str(r8z1_path)
-    provenance_record["r8z1_audit_sha256_expected"] = expected_r8z1_audit_sha
-    if r8z1_path.exists():
-        actual = sha256_file(r8z1_path)
-        provenance_record["r8z1_audit_sha256_actual"] = actual
-        if actual != expected_r8z1_audit_sha:
+    bound_files = [
+        ("r8z1_audit_report", Path(r8z1_audit_report_path), expected_r8z1_audit_sha),
+        ("r8z1_semantic_amendment", Path(r8z1_amendment_path), r8z1_amendment_sha),
+        ("r8z_composite_report", Path(r8z_composite_report_path), r8z_composite_report_sha),
+        ("r8z_composite_ledger", Path(r8z_composite_ledger_path), r8z_composite_ledger_sha),
+        ("r8z_composite_sums", Path(r8z_composite_sums_path), r8z_composite_sums_sha),
+    ]
+    for label, path, expected in bound_files:
+        provenance_record[f"{label}_path"] = str(path.resolve())
+        provenance_record[f"{label}_sha256_expected"] = expected
+        if not path.is_file():
+            provenance_record[f"{label}_sha256_actual"] = "FILE_NOT_FOUND"
+            provenance_issues.append(f"{label} not found: {path}")
+            continue
+        actual = sha256_file(path)
+        provenance_record[f"{label}_sha256_actual"] = actual
+        if actual != expected:
             provenance_issues.append(
-                f"R8Z1 audit report SHA mismatch: expected {expected_r8z1_audit_sha}, actual {actual}"
+                f"{label} SHA mismatch: expected {expected}, actual {actual}"
             )
-    else:
-        provenance_record["r8z1_audit_sha256_actual"] = "FILE_NOT_FOUND"
-        provenance_issues.append(f"R8Z1 audit report not found: {r8z1_path}")
 
     provenance_record["verification_status"] = "PASS" if not provenance_issues else "HOLD"
 
@@ -315,8 +336,6 @@ def build_plan(
             "status": GATE_HOLD_PROVENANCE,
             "error": f"output root already exists: {output_root}",
         }
-    output_root.mkdir(parents=True)
-
     all_rows: list[dict] = []
     errors: list[dict] = []
     for suite, root in suite_roots.items():
@@ -354,6 +373,8 @@ def build_plan(
             "error": f"duplicate parent_keys: {len(all_rows)} rows, {len(unique_parents)} unique",
         }
 
+    output_root.mkdir(parents=True)
+
     tasks_by_suite: dict[str, set] = defaultdict(set)
     for r in all_rows:
         tasks_by_suite[r["suite"]].add(r["task_index"])
@@ -369,6 +390,7 @@ def build_plan(
             "cohort": r["cohort"],
             "task_language": r["task_language"],
             "preview_split": r["preview_split"],
+            "metadata_path": r["metadata_path"],
         }
         for r in sorted(all_rows, key=lambda x: (x["suite"], x["parent_key"]))
     ]
@@ -424,6 +446,7 @@ def build_plan(
         "dropout": 0.1,
         "burst_length": 10,
         "runtime_gate": {
+            "runtime_gate_heads": ["critical_window", "release_safe", "grounding_confidence"],
             "positive_heads": ["critical_window", "grounding_confidence"],
             "veto_heads": ["release_safe"],
             "training_only_auxiliary_heads": ["window_start", "burst_feasible", "contact_grasp"],
@@ -431,6 +454,17 @@ def build_plan(
             "persistence": {"window": 3, "required": 2},
             "primary_runtime_metric": "teacher_feasible_hit_at_trigger",
             "runtime_does_not_gate_on_start_or_burst": True,
+        },
+        "language_embedding_contract": {
+            "kind": "deterministic_hash_identity_proxy",
+            "dim": 128,
+            "semantic_language_model": False,
+            "empty_language_forbidden": True,
+        },
+        "split_assignment_contract": {
+            "mode": "WITHIN_TASK_EPISODE_SPLIT",
+            "per_task": {"FIT": 24, "CAL": 3, "CHECK": 3},
+            "rank": "full_sha256_integer",
         },
         "loss_weights": dict(LOSS_WEIGHTS),
         "model_a": {
@@ -534,6 +568,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--expected-goal-report-sha", required=True)
     parser.add_argument("--expected-r8z1-audit-sha", required=True)
     parser.add_argument("--r8z1-audit-report-path", required=True)
+    parser.add_argument("--expected-r8z1-amendment-sha", required=True)
+    parser.add_argument("--r8z1-amendment-path", required=True)
+    parser.add_argument("--expected-r8z-composite-report-sha", required=True)
+    parser.add_argument("--r8z-composite-report-path", required=True)
+    parser.add_argument("--expected-r8z-composite-ledger-sha", required=True)
+    parser.add_argument("--r8z-composite-ledger-path", required=True)
+    parser.add_argument("--expected-r8z-composite-sums-sha", required=True)
+    parser.add_argument("--r8z-composite-sums-path", required=True)
     parser.add_argument("--mode", default="preview", choices=["preview", "run"],
                         help="preview: dry-run validation only; run: materialize plan")
     return parser.parse_args(argv)
@@ -542,13 +584,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     if args.mode == "preview":
+        preview_rows = []
         for suite, root in [("libero_spatial", args.spatial_root),
                             ("libero_object", args.object_root),
                             ("libero_goal", args.goal_root)]:
             rows = discover_episodes(root, suite)
             _validate_episode_counts(rows, suite)
-            for row in rows:
-                row["preview_split"] = assign_preview_split(row["parent_key"])
+            preview_rows.extend(rows)
+        assign_splits_deterministic(preview_rows)
+        for suite in TARGET_SUITES:
+            rows = [r for r in preview_rows if r["suite"] == suite]
             print(f"{suite}: {len(rows)} episodes, "
                   f"FIT={sum(1 for r in rows if r['preview_split']=='FIT')} "
                   f"CAL={sum(1 for r in rows if r['preview_split']=='CAL')} "
@@ -567,6 +612,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         expected_goal_report_sha=args.expected_goal_report_sha,
         expected_r8z1_audit_sha=args.expected_r8z1_audit_sha,
         r8z1_audit_report_path=args.r8z1_audit_report_path,
+        r8z1_amendment_sha=args.expected_r8z1_amendment_sha,
+        r8z1_amendment_path=args.r8z1_amendment_path,
+        r8z_composite_report_sha=args.expected_r8z_composite_report_sha,
+        r8z_composite_report_path=args.r8z_composite_report_path,
+        r8z_composite_ledger_sha=args.expected_r8z_composite_ledger_sha,
+        r8z_composite_ledger_path=args.r8z_composite_ledger_path,
+        r8z_composite_sums_sha=args.expected_r8z_composite_sums_sha,
+        r8z_composite_sums_path=args.r8z_composite_sums_path,
     )
     status = plan.get("status", "UNKNOWN")
     print(f"Plan: {status}")

@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -23,6 +24,7 @@ from torch.optim import AdamW
 from torch.utils.data import DataLoader, Dataset
 
 from src.gripper_attack.c2g_causal_vulnerability_detector import (
+    _persistent_support_count,
     _persistent_score,
     masked_bce,
     positive_interval_triggerability,
@@ -232,6 +234,165 @@ def r9p_preview_loss(
     }
 
 
+def _r9p_runtime_gate_episode_losses(
+    outputs: Dict[str, Tensor],
+    targets: Dict[str, Tensor],
+    masks: Dict[str, Tensor],
+    *,
+    persistence_window: int,
+    persistence_required: int,
+) -> Dict[str, Tensor]:
+    """Differentiable surrogate for the frozen tri-head runtime gate."""
+    critical = torch.sigmoid(outputs["critical_window"])
+    release = torch.sigmoid(outputs["release_safe"])
+    grounding = torch.sigmoid(outputs["grounding_confidence"])
+    gate = critical * (1.0 - release) * grounding
+    zero = gate.sum() * 0.0
+    if gate.ndim != 2:
+        return {
+            "early_emit": zero, "episode_miss": zero,
+            "negative_episode_any_emit": zero, "release_safe_emit": zero,
+            "positive_episode_count": zero,
+            "triggerable_positive_episode_count": zero,
+            "untriggerable_positive_episode_count": zero,
+            "persistent_positive_window_count": zero,
+        }
+
+    early: list[Tensor] = []
+    miss: list[Tensor] = []
+    negative: list[Tensor] = []
+    safe_emit: list[Tensor] = []
+    positive_intervals: list[Tensor] = []
+    positive_episode_count = 0
+    triggerable_count = 0
+    persistent_count = 0
+    explicit_negative = masks.get("episode_fully_known_negative")
+
+    for i in range(gate.shape[0]):
+        known = (
+            masks["critical_window"][i].bool()
+            & masks["release_safe"][i].bool()
+            & masks["grounding_confidence"][i].bool()
+        )
+        burst_known = masks["burst_feasible"][i].bool()
+        burst_positive = (targets["burst_feasible"][i] > 0.5) & burst_known
+        start_positive = (targets["window_start"][i] > 0.5) & masks["window_start"][i].bool()
+        positive = burst_positive
+        if positive.any():
+            positive_episode_count += 1
+            positive_intervals.append(positive)
+            support = int(_persistent_support_count(positive, window=persistence_window, required=persistence_required))
+            persistent_count += support
+            triggerable_count += int(support > 0)
+            first = int(torch.nonzero(positive, as_tuple=False)[0, 0])
+            before = known.clone()
+            before[first:] = False
+            if before.any():
+                early.append(_persistent_score(gate[i], before, window=persistence_window, required=persistence_required))
+            interval = positive.clone()
+            if int(interval.sum()) < persistence_required:
+                interval = ((targets["critical_window"][i] > 0.5)
+                            & masks["critical_window"][i].bool() & known)
+            if interval.any():
+                miss.append(-torch.log(_persistent_score(
+                    gate[i], interval, window=persistence_window, required=persistence_required,
+                ).clamp(min=1e-6)))
+        else:
+            fully_known = bool(known.all()) and bool(burst_known.all())
+            explicit = bool(explicit_negative[i].item()) if explicit_negative is not None else False
+            if explicit and (not fully_known or start_positive.any()):
+                raise ValueError("episode_fully_known_negative contradicts known/positive labels")
+            if fully_known and (explicit or not start_positive.any()):
+                negative.append(_persistent_score(gate[i], known, window=persistence_window, required=persistence_required))
+
+        safe = (targets["release_safe"][i] > 0.5) & masks["release_safe"][i].bool() & known
+        if safe.any():
+            safe_emit.append(_persistent_score(gate[i], safe, window=persistence_window, required=persistence_required))
+
+    device = gate.device
+    return {
+        "early_emit": torch.stack(early).mean() if early else zero,
+        "episode_miss": torch.stack(miss).mean() if miss else zero,
+        "negative_episode_any_emit": torch.stack(negative).mean() if negative else zero,
+        "release_safe_emit": torch.stack(safe_emit).mean() if safe_emit else zero,
+        "positive_episode_count": torch.tensor(float(positive_episode_count), device=device),
+        "triggerable_positive_episode_count": torch.tensor(float(triggerable_count), device=device),
+        "untriggerable_positive_episode_count": torch.tensor(float(positive_episode_count - triggerable_count), device=device),
+        "persistent_positive_window_count": torch.tensor(float(persistent_count), device=device),
+    }
+
+
+def r9p_preview_loss(
+    outputs: Dict[str, Tensor],
+    targets: Dict[str, Tensor],
+    masks: Dict[str, Tensor],
+    *,
+    sample_weight: Tensor | None = None,
+    weight_start: float = 1.0,
+    weight_burst: float = 0.5,
+    weight_critical: float = 0.5,
+    weight_release: float = 0.2,
+    weight_contact: float = 0.2,
+    weight_grounding: float = 0.2,
+    weight_early_emit: float = 0.25,
+    weight_episode_miss: float = 0.50,
+    weight_negative_any_emit: float = 0.50,
+    weight_release_safe_emit: float = 0.50,
+    persistence_window: int = 3,
+    persistence_required: int = 2,
+) -> Dict[str, Tensor]:
+    """R9P six-head loss with runtime-gate-aligned episode penalties."""
+    required = set(R9P_HEAD_NAMES)
+    for label, values in (("outputs", outputs), ("targets", targets)):
+        missing = sorted(required - set(values))
+        extra = sorted(set(values) - required)
+        if missing or extra:
+            raise ValueError(f"{label} must contain exactly R9P heads; missing={missing}, extra={extra}")
+    mask_extra = set(masks) - required - {"episode_fully_known_negative"}
+    missing_masks = sorted(required - set(masks))
+    if missing_masks or mask_extra:
+        raise ValueError(f"masks invalid; missing={missing_masks}, extra={sorted(mask_extra)}")
+    for h in R9P_HEAD_NAMES:
+        if outputs[h].shape != targets[h].shape or outputs[h].shape != masks[h].shape:
+            raise ValueError(f"shape mismatch for head {h}")
+
+    losses = {
+        "window_start": masked_bce(outputs["window_start"], targets["window_start"], masks["window_start"], sample_weight),
+        "burst_feasible": masked_bce(outputs["burst_feasible"], targets["burst_feasible"], masks["burst_feasible"], sample_weight),
+        "critical_window": masked_bce(outputs["critical_window"], targets["critical_window"], masks["critical_window"], sample_weight),
+        "release_safe": masked_bce(outputs["release_safe"], targets["release_safe"], masks["release_safe"], sample_weight),
+        "contact_grasp": masked_bce(outputs["contact_grasp"], targets["contact_grasp"], masks["contact_grasp"], sample_weight),
+        "grounding_confidence": masked_bce(outputs["grounding_confidence"], targets["grounding_confidence"], masks["grounding_confidence"], sample_weight),
+    }
+    episode = _r9p_runtime_gate_episode_losses(
+        outputs, targets, masks,
+        persistence_window=persistence_window,
+        persistence_required=persistence_required,
+    ) if outputs["critical_window"].ndim == 2 else {
+        "early_emit": outputs["critical_window"].sum() * 0.0,
+        "episode_miss": outputs["critical_window"].sum() * 0.0,
+        "negative_episode_any_emit": outputs["critical_window"].sum() * 0.0,
+        "release_safe_emit": outputs["critical_window"].sum() * 0.0,
+        "positive_episode_count": outputs["critical_window"].sum() * 0.0,
+        "triggerable_positive_episode_count": outputs["critical_window"].sum() * 0.0,
+        "untriggerable_positive_episode_count": outputs["critical_window"].sum() * 0.0,
+        "persistent_positive_window_count": outputs["critical_window"].sum() * 0.0,
+    }
+    total = (
+        weight_start * losses["window_start"]
+        + weight_burst * losses["burst_feasible"]
+        + weight_critical * losses["critical_window"]
+        + weight_release * losses["release_safe"]
+        + weight_contact * losses["contact_grasp"]
+        + weight_grounding * losses["grounding_confidence"]
+        + weight_early_emit * episode["early_emit"]
+        + weight_episode_miss * episode["episode_miss"]
+        + weight_negative_any_emit * episode["negative_episode_any_emit"]
+        + weight_release_safe_emit * episode["release_safe_emit"]
+    )
+    return {"total": total, **losses, **episode}
+
+
 class R9PEpisodeDataset(Dataset):
     def __init__(self, index_rows: list[dict], materialization_root: Path,
                  split_filter: str | None = None):
@@ -371,6 +532,11 @@ def load_normalization(materialization_root: Path) -> dict | None:
     if not norm_path.exists():
         return None
     norm = read_json(norm_path)
+    for key, dim in (("proprio_mean", 25), ("proprio_std", 25), ("policy_intent_mean", 9), ("policy_intent_std", 9)):
+        if len(norm.get(key, [])) != dim:
+            raise ValueError(f"normalization field {key} must have length {dim}")
+        if not np.isfinite(np.asarray(norm[key], dtype=np.float32)).all():
+            raise ValueError(f"normalization field {key} contains non-finite values")
     return {
         "proprio_mean": np.array(norm["proprio_mean"], dtype=np.float32),
         "proprio_std": np.array(norm["proprio_std"], dtype=np.float32),
@@ -485,10 +651,18 @@ def train_model(
             )
 
             loss = loss_dict["total"]
+            if not torch.isfinite(loss):
+                raise FloatingPointError(f"non-finite training loss at epoch={epoch}, batch={n_batches}")
             optimizer.zero_grad()
             loss.backward()
+            for name, parameter in model.named_parameters():
+                if parameter.grad is not None and not torch.isfinite(parameter.grad).all():
+                    raise FloatingPointError(f"non-finite gradient in {name} at epoch={epoch}, batch={n_batches}")
             torch.nn.utils.clip_grad_norm_(model.parameters(), grad_clip)
             optimizer.step()
+            for name, parameter in model.named_parameters():
+                if not torch.isfinite(parameter).all():
+                    raise FloatingPointError(f"non-finite parameter in {name} at epoch={epoch}, batch={n_batches}")
 
             for k, v in loss_dict.items():
                 if isinstance(v, Tensor) and v.ndim == 0:
@@ -521,7 +695,18 @@ def train_model(
         model.load_state_dict(best_state)
 
     output_dir = output_root / f"model_{model_label}_seed{seed}"
+    if output_dir.exists():
+        raise FileExistsError(f"training output root already exists: {output_dir}")
     output_dir.mkdir(parents=True, exist_ok=True)
+    materialization_report_path = materialization_root / "materialization_report.json"
+    index_path = materialization_root / "dataset_index.jsonl"
+    sums_path = materialization_root / "SHA256SUMS"
+    if not materialization_report_path.is_file() or not index_path.is_file() or not sums_path.is_file():
+        raise FileNotFoundError("materialization report, dataset index, and SHA256SUMS are required for checkpoint provenance")
+    materialization_report_sha = sha256_file(materialization_report_path)
+    dataset_index_sha = sha256_file(index_path)
+    materialization_sums_sha = sha256_file(sums_path)
+    materialization_report = read_json(materialization_report_path)
     checkpoint = {
         "schema_version": CHECKPOINT_SCHEMA_VERSION,
         "model_state_dict": best_state if best_state is not None else model.state_dict(),
@@ -541,6 +726,28 @@ def train_model(
         "seed": seed,
         "model_label": model_label,
         "normalization_sha256": norm_sha,
+        "provenance": {
+            "git_commit": subprocess.run(
+                ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True,
+            ).stdout.strip(),
+            "plan_root": materialization_report.get("plan_root"),
+            "plan_sha256": materialization_report.get("plan_sha256"),
+            "plan_sha256s_sha256": materialization_report.get("plan_sha256s_sha256"),
+            "materialization_report_sha256": materialization_report_sha,
+            "materialization_sha256s_sha256": materialization_sums_sha,
+            "dataset_index_sha256": dataset_index_sha,
+            "normalization_sha256": norm_sha,
+            "feature_schema_sha256": materialization_report.get("feature_schema_sha256"),
+            "label_schema_sha256": materialization_report.get("label_schema_sha256"),
+            "runtime_gate_contract": {
+                "runtime_gate_heads": ["critical_window", "release_safe", "grounding_confidence"],
+                "training_only_auxiliary_heads": ["window_start", "burst_feasible", "contact_grasp"],
+                "burst_length": 10,
+                "persistence_window": 3,
+                "persistence_required": 2,
+            },
+            "language_embedding_contract": "deterministic_hash_identity_proxy_v1",
+        },
     }
     torch.save(checkpoint, output_dir / "checkpoint.pt")
 

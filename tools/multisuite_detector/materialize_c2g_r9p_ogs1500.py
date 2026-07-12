@@ -33,6 +33,11 @@ from tools.multisuite_detector.c2g_r8r_common import (
 SCHEMA = "c2g.r9p.materialization.2026-07-12.v1"
 SMOKE_SALT = "C2G_R9P_SMOKE"
 SMOKE_PER_SUITE = 8
+ROOT_KEY_BY_SUITE = {
+    "libero_spatial": "spatial_root",
+    "libero_object": "object_root",
+    "libero_goal": "goal_root",
+}
 
 GATE_PASS_SMOKE = "PASS_C2G_R9P_MATERIALIZATION_SMOKE"
 GATE_PASS_FULL = "PASS_C2G_R9P_TRAINONLY_MATERIALIZATION"
@@ -55,18 +60,78 @@ STUDENT_ALLOWLIST = frozenset({
 
 
 def _bucket_rank(key: str, salt: str) -> int:
-    return int.from_bytes(
-        hashlib.sha256(f"{salt}|{key}".encode()).digest()[:4], "big"
-    )
+    return int.from_bytes(hashlib.sha256(f"{salt}|{key}".encode()).digest(), "big")
 
 
-def select_smoke_episodes(manifest_rows: list[dict], seed: int = 42) -> list[dict]:
+def select_smoke_episodes(manifest_rows: list[dict]) -> list[dict]:
     selected = []
     for suite in TARGET_SUITES:
         suite_rows = [r for r in manifest_rows if r["suite"] == suite]
         ranked = sorted(suite_rows, key=lambda r: _bucket_rank(r["parent_key"], SMOKE_SALT))
-        selected.extend(ranked[:SMOKE_PER_SUITE])
+        for row in ranked[:SMOKE_PER_SUITE]:
+            selected.append({
+                **row,
+                "selection_salt": SMOKE_SALT,
+                "selection_rank": _bucket_rank(row["parent_key"], SMOKE_SALT),
+            })
     return selected
+
+
+def _safe_relative_path(value: str) -> str:
+    path = Path(value)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"unsafe relative path: {value}")
+    normalized = path.as_posix()
+    if not normalized or normalized.startswith("/"):
+        raise ValueError(f"unsafe relative path: {value}")
+    return normalized
+
+
+def _verify_checksum_closure(root: Path) -> dict[str, Any]:
+    sums_path = root / "SHA256SUMS"
+    sidecar_path = root / "SHA256SUMS.sha256"
+    if not sums_path.is_file() or not sidecar_path.is_file():
+        raise FileNotFoundError(f"checksum closure missing in {root}")
+    sidecar_tokens = sidecar_path.read_text(encoding="utf-8").strip().split()
+    if len(sidecar_tokens) < 1 or sidecar_tokens[0] != sha256_file(sums_path):
+        raise ValueError(f"SHA256SUMS sidecar mismatch: {root}")
+    listed: list[str] = []
+    for line in sums_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("  ", 1)
+        if len(parts) != 2 or len(parts[0]) != 64:
+            raise ValueError(f"malformed checksum line in {sums_path}: {line!r}")
+        rel = _safe_relative_path(parts[1])
+        if rel in listed:
+            raise ValueError(f"duplicate checksum entry: {rel}")
+        listed.append(rel)
+        target = root / rel
+        if not target.is_file() or sha256_file(target) != parts[0]:
+            raise ValueError(f"checksum mismatch or missing file: {rel}")
+    actual_files = sorted(
+        p.relative_to(root).as_posix()
+        for p in root.rglob("*")
+        if p.is_file()
+    )
+    expected_files = sorted(set(listed) | {"SHA256SUMS", "SHA256SUMS.sha256"})
+    if actual_files != expected_files:
+        raise ValueError(
+            f"checksum fileset mismatch in {root}: "
+            f"extra={sorted(set(actual_files) - set(expected_files))}, "
+            f"missing={sorted(set(expected_files) - set(actual_files))}"
+        )
+    return {"listed_files": listed, "fileset_sha256": sha256_file(sums_path)}
+
+
+def _artifact_sha(episode_dir: Path, candidates: tuple[str, ...], *, required: bool) -> tuple[str | None, str | None]:
+    for name in candidates:
+        path = episode_dir / name
+        if path.is_file():
+            return name, sha256_file(path)
+    if required:
+        raise FileNotFoundError(f"missing required source artifact in {episode_dir}: {candidates}")
+    return None, None
 
 
 def _read_teacher_labels(label_path: Path) -> list[dict]:
@@ -132,6 +197,8 @@ def materialize_episode(
     for i, (step, label) in enumerate(zip(steps, labels)):
         if int(step.get("step", -1)) != i:
             raise ValueError(f"step discontinuity at index {i}: got step={step.get('step')}")
+        if int(label.get("step", -1)) != i:
+            raise ValueError(f"label step discontinuity at index {i}: got step={label.get('step')}")
 
         # Project only allowlist fields from the (potentially Teacher-rich) source step
         projected = {k: step[k] for k in STUDENT_ALLOWLIST if k in step}
@@ -184,7 +251,9 @@ def materialize_episode(
     valid_mask = np.ones(T_steps, dtype=bool)
 
     episode_fully_known_negative = bool(
-        known_mask.all() and not label_data["targets"]["critical_window"].any()
+        known_mask.all()
+        and not label_data["targets"]["window_start"].any()
+        and not label_data["targets"]["burst_feasible"].any()
     )
 
     return {
@@ -252,25 +321,7 @@ def compute_normalization(index_rows: list[dict], episodes_dir: Path) -> dict:
 
 def _verify_plan_closure(plan_root: Path, suite_roots: dict[str, Path]) -> dict[str, Any]:
     """Verify plan checksums, status, and provenance before materialization."""
-    # Verify SHA256SUMS closure
-    sums_path = plan_root / "SHA256SUMS"
-    if not sums_path.exists():
-        raise FileNotFoundError(f"plan SHA256SUMS not found: {sums_path}")
-    sidecar_path = plan_root / "SHA256SUMS.sha256"
-    if not sidecar_path.exists():
-        raise FileNotFoundError(f"plan SHA256SUMS.sha256 not found: {sidecar_path}")
-    sidecar_expected = sidecar_path.read_text().strip().split()[0]
-    sums_actual = sha256_file(sums_path)
-    if sidecar_expected != sums_actual:
-        raise ValueError(f"plan SHA256SUMS.sha256 mismatch: expected {sidecar_expected}, actual {sums_actual}")
-    # Verify each entry in SHA256SUMS
-    for line in sums_path.read_text().splitlines():
-        if not line.strip():
-            continue
-        expected_sha, relpath = line.strip().split("  ", 1)
-        actual = sha256_file(plan_root / relpath)
-        if expected_sha != actual:
-            raise ValueError(f"plan artifact hash mismatch: {relpath}")
+    _verify_checksum_closure(plan_root)
 
     # Load plan and verify status
     plan_path = plan_root / "r9p_preview_plan.json"
@@ -286,32 +337,26 @@ def _verify_plan_closure(plan_root: Path, suite_roots: dict[str, Path]) -> dict[
         raise ValueError(f"plan provenance verification not PASS: {provenance.get('verification_status')}")
 
     for suite, cli_root in suite_roots.items():
-        plan_key = f"{suite}_root" if f"{suite}_root" in provenance else None
-        if plan_key is None:
-            # Try alternative key pattern
-            for pk in provenance:
-                if suite in pk and pk.endswith("_root"):
-                    plan_key = pk
-                    break
-        if plan_key:
-            plan_root_str = provenance[plan_key]
-            cli_root_str = str(cli_root.resolve())
-            if plan_root_str != cli_root_str:
-                raise ValueError(
-                    f"{suite} root mismatch: plan={plan_root_str}, CLI={cli_root_str}"
-                )
+        plan_key = ROOT_KEY_BY_SUITE[suite]
+        plan_root_str = provenance.get(plan_key)
+        if not plan_root_str:
+            raise ValueError(f"plan provenance missing required root key: {plan_key}")
+        cli_root_str = str(cli_root.resolve())
+        if plan_root_str != cli_root_str:
+            raise ValueError(f"{suite} root mismatch: plan={plan_root_str}, CLI={cli_root_str}")
 
     # Re-verify suite report SHAs
     for suite, cli_root in suite_roots.items():
         report_key = f"{suite}_report"
         expected_sha = provenance.get(f"{report_key}_sha256_expected", "")
         report_path = cli_root / "suite_report.json"
-        if report_path.exists() and expected_sha:
-            actual = sha256_file(report_path)
-            if actual != expected_sha:
-                raise ValueError(
-                    f"{suite} report SHA changed since plan: expected {expected_sha}, actual {actual}"
-                )
+        if not expected_sha or not report_path.is_file():
+            raise ValueError(f"{suite} report provenance missing at materialization")
+        actual = sha256_file(report_path)
+        if actual != expected_sha:
+            raise ValueError(
+                f"{suite} report SHA changed since plan: expected {expected_sha}, actual {actual}"
+            )
 
     return plan
 
@@ -336,7 +381,7 @@ def run_materialization(
     manifest_rows = read_jsonl(manifest_path)
 
     if smoke:
-        selected = select_smoke_episodes(manifest_rows, seed=smoke_seed)
+        selected = select_smoke_episodes(manifest_rows)
     else:
         selected = manifest_rows
 
@@ -351,7 +396,12 @@ def run_materialization(
     if smoke:
         smoke_manifest = [
             {"parent_key": r["parent_key"], "suite": r["suite"],
-             "task_index": r["task_index"], "preview_split": r["preview_split"]}
+             "task_index": r["task_index"], "state_id": r["state_id"],
+             "cohort": r["cohort"], "task_language": r.get("task_language", ""),
+             "metadata_path": r.get("metadata_path", ""),
+             "preview_split": r["preview_split"],
+             "selection_salt": r["selection_salt"],
+             "selection_rank": r["selection_rank"]}
             for r in selected
         ]
         write_jsonl(output_root / "smoke_selection_manifest.jsonl", smoke_manifest)
@@ -365,17 +415,37 @@ def run_materialization(
             suite_root = suite_roots.get(suite)
             if suite_root is None:
                 raise ValueError(f"no suite root for {suite}")
-            episode_dir = suite_root / "episodes" / suite / parent_key
-            if not episode_dir.is_dir():
-                # Try with derived_episode_metadata path
-                meta_path_rel = row.get("metadata_path", "")
-                if meta_path_rel:
-                    meta_file = suite_root / meta_path_rel
-                    episode_dir = meta_file.parent
+            meta_path_rel = row.get("metadata_path", "")
+            if not meta_path_rel:
+                raise ValueError(f"plan row missing metadata_path for {parent_key}")
+            meta_file = (suite_root / _safe_relative_path(meta_path_rel)).resolve()
+            if suite_root.resolve() not in meta_file.parents:
+                raise ValueError(f"metadata path outside suite root: {meta_path_rel}")
+            episode_dir = meta_file.parent
             if not episode_dir.is_dir():
                 raise FileNotFoundError(f"episode dir not found for {parent_key}")
 
             meta = read_json(episode_dir / "derived_episode_metadata.json")
+            expected_identity = {
+                "suite": suite,
+                "task_index": int(row["task_index"]),
+                "state_id": int(row["state_id"]),
+                "parent_key": parent_key,
+                "cohort": "DETECTOR_TRAIN",
+                "split": "train",
+                "task_language": row.get("task_language", ""),
+            }
+            for key, expected in expected_identity.items():
+                if meta.get(key) != expected:
+                    raise ValueError(f"metadata identity mismatch {key}: expected={expected!r}, actual={meta.get(key)!r}")
+            if not expected_identity["task_language"]:
+                raise ValueError(f"empty task_language for {parent_key}")
+            source_binding_name, source_binding_sha = _artifact_sha(
+                episode_dir, ("source_binding.json", "source_provenance.json"), required=True
+            )
+            rgb_name, rgb_sha = _artifact_sha(
+                episode_dir, ("rgb_reference.json", "rgb_manifest.json", "rgb_frame_manifest.json", "rgb_manifest.jsonl"), required=False
+            )
             data = materialize_episode(episode_dir, meta)
 
             npz_rel = f"episodes/{parent_key}.npz"
@@ -389,6 +459,16 @@ def run_materialization(
                 "parent_key": parent_key,
                 "cohort": row["cohort"],
                 "preview_split": row["preview_split"],
+                "task_language": row.get("task_language", ""),
+                "metadata_path": meta_path_rel,
+                "metadata_sha256": sha256_file(meta_file),
+                "step_records_sha256": sha256_file(episode_dir / "step_records_prefix.jsonl"),
+                "teacher_labels_sha256": sha256_file(episode_dir / "teacher_v2_labels.jsonl"),
+                "source_binding_path": source_binding_name,
+                "source_binding_sha256": source_binding_sha,
+                "rgb_reference_path": rgb_name,
+                "rgb_reference_sha256": rgb_sha,
+                "plan_manifest_sha256": sha256_file(manifest_path),
                 "npz_path": npz_rel,
                 "npz_sha256": npz_sha,
                 "n_steps": data["n_steps"],
@@ -416,6 +496,13 @@ def run_materialization(
         "materialized": len(index_rows),
         "errors": len(errors),
         "error_details": errors[:20] if errors else [],
+        "plan_manifest_sha256": sha256_file(manifest_path),
+        "source_provenance": plan.get("source_provenance", {}),
+        "plan_root": str(plan_root.resolve()),
+        "plan_sha256": sha256_file(plan_root / "r9p_preview_plan.json"),
+        "plan_sha256s_sha256": sha256_file(plan_root / "SHA256SUMS"),
+        "feature_schema_sha256": plan.get("data_artifact_shas", {}).get("r9p_feature_schema.json"),
+        "label_schema_sha256": plan.get("data_artifact_shas", {}).get("r9p_label_schema.json"),
     }
 
     if not smoke and not errors:
@@ -452,6 +539,7 @@ def _write_materialization_sums(output_root: Path, smoke: bool) -> None:
         for row in index_rows:
             manifest_names.append(row["npz_path"])
 
+    manifest_names = sorted(set(manifest_names))
     lines = []
     for name in sorted(manifest_names):
         p = output_root / name
@@ -471,7 +559,6 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--goal-root", type=Path, help="R8Z goal suite root")
     parser.add_argument("--output-root", required=True, type=Path, help="Materialization output root")
     parser.add_argument("--smoke", action="store_true", help="Run 24-episode smoke only")
-    parser.add_argument("--smoke-seed", type=int, default=42, help="Smoke selection seed")
     return parser.parse_args(argv)
 
 
@@ -489,7 +576,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         plan_root=args.plan_root,
         output_root=args.output_root,
         smoke=args.smoke,
-        smoke_seed=args.smoke_seed,
         suite_roots=suite_roots if suite_roots else None,
     )
     status = report["status"]
@@ -497,7 +583,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"  Episodes: {report['materialized']}/{report['total_episodes']}")
     if report["errors"]:
         print(f"  Errors: {report['errors']}")
-    return 0 if "PASS" in status else 1
+    return 0 if status in {GATE_PASS_SMOKE, GATE_PASS_FULL} else 1
 
 
 if __name__ == "__main__":
