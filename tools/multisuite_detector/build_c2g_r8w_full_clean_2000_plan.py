@@ -510,13 +510,16 @@ def build_shadow_canary_plan(
     output_root: Path,
     authorization: str,
     selection_seed: int = 20260712,
-    reference_scheduler_report_path: Path | None = None,
-    expected_reference_scheduler_report_sha256: str = "",
+    reference_scheduler_report_path: Path,
+    expected_reference_scheduler_report_sha256: str,
 ) -> dict[str, Any]:
     if mode not in {"canary-preview", "canary-run"}:
         raise ValueError("canary mode must be canary-preview or canary-run")
     run = mode == "canary-run"
     expected_git_commit = _validate_full_sha(expected_git_commit, "expected_git_commit")
+    # P0: reference scheduler report is REQUIRED for canary — no fallback
+    if reference_scheduler_report_path is None or not expected_reference_scheduler_report_sha256:
+        raise ValueError("canary mode requires --reference-scheduler-report and --expected-reference-scheduler-report-sha256")
     repo = repo.resolve()
     if _git_head(repo) != expected_git_commit:
         raise ValueError("repository HEAD differs from expected_git_commit")
@@ -573,32 +576,29 @@ def build_shadow_canary_plan(
     if len(ledger) != 24 or any(row.get("classification") != "REPLAY_EXACT" for row in ledger):
         raise ValueError("R8U replay episode ledger is not exact 24/24")
     selected: list[dict[str, Any]] = []
-    # ── Resolve reference GPU mapping from R8T scheduler report ──
-    if reference_scheduler_report_path is not None:
-        if not expected_reference_scheduler_report_sha256:
-            raise ValueError("expected_reference_scheduler_report_sha256 required with reference report")
-        actual_ref_sched_sha = sha256_file(reference_scheduler_report_path)
-        if actual_ref_sched_sha != expected_reference_scheduler_report_sha256:
-            raise ValueError(f"reference scheduler report SHA mismatch: {actual_ref_sched_sha[:16]}... != {expected_reference_scheduler_report_sha256[:16]}...")
-        ref_sched = json.loads(reference_scheduler_report_path.read_text(encoding="utf-8"))
-        if ref_sched.get("status") != "PASS_C2G_R8T_DYNAMIC_GPU_CANARY":
-            raise ValueError("reference scheduler report is not PASS")
-        # Extract per-shard suite→physical_gpu from R8T shards
-        r8t_shards = ref_sched.get("shards", [])
-        if len(r8t_shards) != 4:
-            raise ValueError("reference scheduler has != 4 shards")
-        gpu_by_suite = {}
-        for sh in r8t_shards:
-            s = sh.get("suite", "")
-            g = sh.get("physical_gpu", -1)
-            if s and g >= 0:
-                gpu_by_suite[s] = int(g)
-        if set(gpu_by_suite.keys()) != set(SUITES):
-            raise ValueError(f"reference scheduler missing suites: {set(SUITES) - set(gpu_by_suite.keys())}")
-        hardware_binding_source = "R8T_DYNAMIC_GPU_SCHEDULER"
-    else:
-        gpu_by_suite = dict(zip(SUITES, GPUS))
-        hardware_binding_source = "IMPLICIT_ZIP_ORDER"
+    # ── Resolve reference GPU mapping from R8T scheduler report (REQUIRED for canary) ──
+    actual_ref_sched_sha = sha256_file(reference_scheduler_report_path)
+    if actual_ref_sched_sha != expected_reference_scheduler_report_sha256:
+        raise ValueError(f"reference scheduler report SHA mismatch: {actual_ref_sched_sha[:16]}... != {expected_reference_scheduler_report_sha256[:16]}...")
+    ref_sched = json.loads(reference_scheduler_report_path.read_text(encoding="utf-8"))
+    if ref_sched.get("status") != "PASS_C2G_R8T_DYNAMIC_GPU_CANARY":
+        raise ValueError("reference scheduler report is not PASS")
+    r8t_shards = ref_sched.get("shards", [])
+    if len(r8t_shards) != 4:
+        raise ValueError("reference scheduler has != 4 shards")
+    gpu_by_suite = {}
+    for sh in r8t_shards:
+        s = sh.get("suite", "")
+        g = sh.get("physical_gpu", -1)
+        if s and g >= 0:
+            gpu_by_suite[s] = int(g)
+    if set(gpu_by_suite.keys()) != set(SUITES):
+        raise ValueError(f"reference scheduler missing suites: {set(SUITES) - set(gpu_by_suite.keys())}")
+    # Verify exactly one GPU per suite
+    gpu_set = set(gpu_by_suite.values())
+    if len(gpu_set) != 4 or gpu_set != set(GPUS):
+        raise ValueError(f"reference GPU mapping not exactly {set(GPUS)}: got {gpu_set}")
+    hardware_binding_source = "R8T_DYNAMIC_GPU_SCHEDULER"
     for suite in SUITES:
         local = [row for row in ledger if row.get("suite") == suite]
         successes = [row for row in local if row.get("canonical_success") == "True"]
@@ -681,6 +681,10 @@ def build_shadow_canary_plan(
         "shard_index_sha256": hashlib.sha256(jsonl_bytes(shards)).hexdigest(),
         "shards": shards,
         "shadow_outputs_count_toward_full_2000": False,
+        "reference_scheduler_report": str(reference_scheduler_report_path.resolve()),
+        "reference_scheduler_report_sha256": expected_reference_scheduler_report_sha256,
+        "reference_suite_gpu_mapping": {k: v for k, v in sorted(gpu_by_suite.items())},
+        "hardware_binding_source": hardware_binding_source,
         "training_authorization": "HOLD",
         "materialization_authorization": "HOLD",
         "attack_authorization": "HOLD",
