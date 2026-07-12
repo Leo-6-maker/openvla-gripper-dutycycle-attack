@@ -165,7 +165,7 @@ def train_b2(
     model_config = base.C2gDetectorConfig(
         visual_dim=base.VISUAL_DIM, language_dim=base.LANGUAGE_DIM, policy_intent_dim=9,
         hidden=128, dropout=0.1, use_policy_intent=use_policy,
-        use_visual=False, use_language_conditioning=True, head_names=base.R9P_HEAD_NAMES,
+        use_visual=False, use_language_conditioning=False, head_names=base.R9P_HEAD_NAMES,
     )
     model = base.C2gGripperCriticalWindowDetector(model_config).to(device)
     optimizer = AdamW(model.parameters(), lr=lr, weight_decay=1e-5)
@@ -201,7 +201,7 @@ def train_b2(
             "persistence_window": 3,
             "persistence_required": 2,
         },
-        "language_embedding_contract": "deterministic_hash_identity_proxy_v1",
+        "language_embedding_contract": "NOT_USED_B2_25D_PLUS_9D",
     }
     history: list[dict[str, Any]] = []
     for epoch in range(1, epochs + 1):
@@ -210,7 +210,9 @@ def train_b2(
         for batch in train_loader:
             proprio_raw = batch["proprio_25d"].to(device)
             policy_raw = batch["policy_intent"].to(device)
-            language = batch["language"].to(device)
+            # B2 is explicitly 25D+9D.  Keep the detector interface shape but
+            # disable language conditioning so missing language cannot leak in.
+            language = torch.zeros(batch["language"].shape, device=device)
             outputs = model(
                 (proprio_raw - p_mean) / p_std,
                 language,
@@ -263,7 +265,7 @@ def train_b2(
                 "visual_dim": base.VISUAL_DIM, "language_dim": base.LANGUAGE_DIM,
                 "policy_intent_dim": 9, "hidden": 128, "dropout": 0.1,
                 "use_policy_intent": use_policy, "use_visual": False,
-                "use_language_conditioning": True, "head_names": list(base.R9P_HEAD_NAMES),
+                "use_language_conditioning": False, "head_names": list(base.R9P_HEAD_NAMES),
             }, provenance=provenance, history=history,
         )
     _save_checkpoint(
@@ -272,7 +274,7 @@ def train_b2(
             "visual_dim": base.VISUAL_DIM, "language_dim": base.LANGUAGE_DIM,
             "policy_intent_dim": 9, "hidden": 128, "dropout": 0.1,
             "use_policy_intent": use_policy, "use_visual": False,
-            "use_language_conditioning": True, "head_names": list(base.R9P_HEAD_NAMES),
+            "use_language_conditioning": False, "head_names": list(base.R9P_HEAD_NAMES),
         }, provenance=provenance, history=history,
     )
     report = {

@@ -62,8 +62,8 @@ def _validate_source(rows: list[dict[str, Any]], combined_root: Path) -> dict[st
             raise ValueError(f"non-train cohort in combined source: {parent_key}")
         if row.get("preview_split") not in {"FIT", "CAL", "CHECK"}:
             raise ValueError(f"invalid preview_split for {parent_key}")
-        if not str(row.get("task_language", "")).strip():
-            raise ValueError(f"empty task_language for {parent_key}")
+        # R9Q B2 is deliberately 25D+9D only.  Preserve missing language as
+        # provenance instead of silently turning it into a model feature.
         npz_path = Path(str(row.get("npz_path", "")))
         if not npz_path.is_absolute() or not npz_path.is_file():
             raise FileNotFoundError(f"missing absolute NPZ for {parent_key}: {npz_path}")
@@ -123,6 +123,7 @@ def build_views(
         "fit_count": len(fit_rows),
         "cal_count": len(cal_rows),
         "check_rows_excluded": sum(1 for row in rows if row["preview_split"] == "CHECK"),
+        "empty_task_language_count": sum(1 for row in fit_rows + cal_rows if not str(row.get("task_language", "")).strip()),
         "suite_counts_fit": dict(sorted(Counter(row["suite"] for row in fit_rows).items())),
         "suite_counts_cal": dict(sorted(Counter(row["suite"] for row in cal_rows).items())),
         "fit_manifest_sha256": sha256_file(output_root / "fit_manifest.jsonl"),
