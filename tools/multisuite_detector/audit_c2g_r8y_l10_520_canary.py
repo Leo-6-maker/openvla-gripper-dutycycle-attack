@@ -76,7 +76,9 @@ def audit_canary(
     for worker_dir in sorted(workers_dir.iterdir()):
         if not worker_dir.is_dir():
             continue
-        receipt_path = worker_dir / "worker_receipt.json"
+        receipt_path = worker_dir / "c2g_r8w_collection_report.json"
+        if not receipt_path.is_file():
+            receipt_path = worker_dir / "worker_receipt.json"
         if not receipt_path.is_file():
             runtime_failed += 1
             continue
