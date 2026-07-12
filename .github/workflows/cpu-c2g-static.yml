@@ -118,6 +118,7 @@ jobs:
             tests/test_c2g_r8w_full_clean_collector.py \
             tests/test_c2g_r8w_16worker_scheduler.py \
             tests/test_c2g_r8w_full_clean_audit.py \
+            tests/test_c2g_r8x_hardware_bound_repro.py \
             tests/test_c2g_s1_semantic_remediation.py \
             tests/test_c2g_server_resume_hardening.py
       - name: Check launcher syntax
@@ -168,6 +169,7 @@ jobs:
             tests.test_c2g_r8w_full_clean_collector \
             tests.test_c2g_r8w_16worker_scheduler \
             tests.test_c2g_r8w_full_clean_audit \
+            tests.test_c2g_r8x_hardware_bound_repro \
             tests.test_c2g_s1_semantic_remediation \
             tests.test_c2g_server_resume_hardening
       - name: Verify tracked code and protected outputs unchanged
