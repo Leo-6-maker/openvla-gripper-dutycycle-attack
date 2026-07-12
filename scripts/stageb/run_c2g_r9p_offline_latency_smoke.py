@@ -1,12 +1,14 @@
-"""R9P shadow runtime verification — detector inference without VIS-PGD attack.
+"""Offline latency smoke for R9P preview detector — no runtime integration.
 
-SHADOW_ONLY mode: runs detector inference but does not modify actions. Verifies
-that clean actions, arm positions, and gripper states are unchanged.
+Measures forward-pass latency on full episode sequences using PREVIEW_CHECK NPZ files.
+This is a pure model benchmarking step; it does NOT connect to OpenVLA, does NOT
+run step-by-step FSM, does NOT modify actions, and does NOT verify runtime behavior.
 """
 from __future__ import annotations
 
 import argparse
 import sys
+import time
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -16,22 +18,19 @@ import torch
 from scripts.stageb.train_c2g_r9p_preview_detector import (
     R9PEpisodeDataset,
     _hash_language_embedding,
+    load_normalization,
 )
 from src.gripper_attack.c2g_gripper_critical_window_detector import (
     C2gDetectorConfig,
     C2gGripperCriticalWindowDetector,
-    FixedBurstTriggerScheduler,
-)
-from tools.multisuite_detector.build_c2g_r9p_preview_plan import (
-    R9P_HEAD_NAMES,
 )
 from tools.multisuite_detector.c2g_r8r_common import (
     read_jsonl,
     write_json,
 )
 
-SCHEMA = "c2g.r9p.shadow_runtime.2026-07-12.v1"
-GATE_PASS = "PASS_C2G_R9P_RUNTIME_SHADOW"
+SCHEMA = "c2g.r9p.offline_latency_smoke.2026-07-12.v1"
+GATE_PASS = "PASS_C2G_R9P_OFFLINE_LATENCY_SMOKE"
 
 
 def _load_model(checkpoint_path: Path, device: torch.device) -> C2gGripperCriticalWindowDetector:
@@ -52,21 +51,28 @@ def measure_latency(
     n_warmup: int = 5,
     n_measure: int = 50,
 ) -> dict[str, float]:
-    # Warmup
+    use_cuda = proprio.device.type == "cuda"
+
     for _ in range(n_warmup):
         with torch.no_grad():
             _ = model(proprio, language, policy_intent=policy_intent, return_sequence=False)
 
     times = []
     for _ in range(n_measure):
-        start = torch.cuda.Event(enable_timing=True)
-        end = torch.cuda.Event(enable_timing=True)
-        start.record()
-        with torch.no_grad():
-            _ = model(proprio, language, policy_intent=policy_intent, return_sequence=False)
-        end.record()
-        torch.cuda.synchronize()
-        times.append(start.elapsed_time(end))
+        if use_cuda:
+            start = torch.cuda.Event(enable_timing=True)
+            end = torch.cuda.Event(enable_timing=True)
+            start.record()
+            with torch.no_grad():
+                _ = model(proprio, language, policy_intent=policy_intent, return_sequence=False)
+            end.record()
+            torch.cuda.synchronize()
+            times.append(start.elapsed_time(end))
+        else:
+            t0 = time.perf_counter()
+            with torch.no_grad():
+                _ = model(proprio, language, policy_intent=policy_intent, return_sequence=False)
+            times.append((time.perf_counter() - t0) * 1000.0)
 
     times = np.array(times)
     return {
@@ -78,7 +84,7 @@ def measure_latency(
     }
 
 
-def run_shadow_verification(
+def run_latency_smoke(
     materialization_root: Path,
     checkpoint_path: Path,
     output_root: Path,
@@ -89,18 +95,32 @@ def run_shadow_verification(
     model = _load_model(checkpoint_path, device)
     use_policy_intent = model.config.use_policy_intent
 
+    norm = load_normalization(materialization_root)
+
     index_rows = read_jsonl(materialization_root / "dataset_index.jsonl")
     ds = R9PEpisodeDataset(index_rows, materialization_root, split_filter="CHECK")
 
-    # Test latency on a few episodes
     latencies = []
-    memory_mb_before = torch.cuda.memory_allocated(device) / (1024 * 1024) if device.type == "cuda" else 0
-
     n_test = min(len(ds), 10)
     for i in range(n_test):
         ep = ds[i]
-        proprio = ep["features_25d"].unsqueeze(0).to(device)
-        policy = ep["features_9d"].unsqueeze(0).to(device) if use_policy_intent else None
+        proprio_raw = ep["features_25d"].unsqueeze(0).to(device)
+        policy_raw = ep["features_9d"].unsqueeze(0).to(device) if use_policy_intent else None
+
+        if norm is not None:
+            p_mean = torch.from_numpy(norm["proprio_mean"]).to(device)
+            p_std = torch.from_numpy(norm["proprio_std"]).to(device).clamp_min(1e-8)
+            proprio = (proprio_raw - p_mean) / p_std
+            if policy_raw is not None:
+                pi_mean = torch.from_numpy(norm["policy_intent_mean"]).to(device)
+                pi_std = torch.from_numpy(norm["policy_intent_std"]).to(device).clamp_min(1e-8)
+                policy = (policy_raw - pi_mean) / pi_std
+            else:
+                policy = None
+        else:
+            proprio = proprio_raw
+            policy = policy_raw
+
         lang_text = ep.get("task_language", "")
         lang_emb = _hash_language_embedding(lang_text)
         language = torch.from_numpy(lang_emb).unsqueeze(0).to(device)
@@ -108,40 +128,36 @@ def run_shadow_verification(
         latency = measure_latency(model, proprio, language, policy)
         latencies.append(latency)
 
-    memory_mb_after = torch.cuda.memory_allocated(device) / (1024 * 1024) if device.type == "cuda" else 0
-
-    output_root.mkdir(parents=True, exist_ok=True)
-
     avg_latency = float(np.mean([l["mean_ms"] for l in latencies]))
     max_latency = float(np.max([l["p99_ms"] for l in latencies]))
+
+    output_root.mkdir(parents=True, exist_ok=True)
 
     report = {
         "schema": SCHEMA,
         "status": GATE_PASS,
-        "mode": "SHADOW_ONLY",
-        "shadow_episodes_tested": n_test,
-        "vis_attacks": 0,
-        "libero_attack_episodes": 0,
-        "openvla_action_modifications": 0,
+        "mode": "OFFLINE_LATENCY_SMOKE",
+        "episodes_tested": n_test,
+        "device": str(device),
         "latency": {
             "average_ms": avg_latency,
             "max_p99_ms": max_latency,
             "per_episode": latencies,
         },
-        "memory": {
-            "before_mb": memory_mb_before,
-            "after_mb": memory_mb_after,
-            "delta_mb": memory_mb_after - memory_mb_before,
+        "boundaries": {
+            "openvla_loaded": False,
+            "runtime_connected": False,
+            "fsm_verified": False,
+            "actions_modified": False,
+            "attack_delivered": False,
         },
-        "scheduler_reset_verified": True,
-        "fsm_one_shot_verified": True,
     }
-    write_json(output_root / "shadow_runtime_report.json", report)
+    write_json(output_root / "offline_latency_smoke_report.json", report)
     return report
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="R9P shadow runtime verification")
+    parser = argparse.ArgumentParser(description="R9P offline latency smoke")
     parser.add_argument("--materialization-root", required=True, type=Path)
     parser.add_argument("--checkpoint", required=True, type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
@@ -151,16 +167,15 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    report = run_shadow_verification(
+    report = run_latency_smoke(
         materialization_root=args.materialization_root,
         checkpoint_path=args.checkpoint,
         output_root=args.output_root,
         device_str=args.device,
     )
-    print(f"Shadow runtime: {report['status']}")
-    print(f"  Latency: {report['latency']['average_ms']:.2f}ms avg, "
-          f"{report['latency']['max_p99_ms']:.2f}ms p99")
-    print(f"  Action modifications: {report['openvla_action_modifications']}")
+    print(f"Latency smoke: {report['status']}")
+    print(f"  Avg: {report['latency']['average_ms']:.2f}ms  "
+          f"P99: {report['latency']['max_p99_ms']:.2f}ms")
     return 0
 
 

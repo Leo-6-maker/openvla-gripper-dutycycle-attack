@@ -1,8 +1,9 @@
 """Train R9P preview detector (Model A: 25D only, Model B: 25D+9D) on full episodes.
 
 Loads per-episode NPZ files via the dataset index, batches variable-length episodes
-with padding, and trains a causal GRU detector using the existing detector architecture
-and clean_window_loss. Uses deterministic hash-based language embeddings (no OpenVLA).
+with padding, and trains a causal GRU detector. Uses a standalone 6-head R9P loss
+function with per-head weights and episode-level penalties aligned to the preview
+model contract.
 """
 from __future__ import annotations
 
@@ -17,15 +18,21 @@ from typing import Any, Dict, Sequence
 import numpy as np
 import torch
 from torch import Tensor
+from torch.nn import functional as F
 from torch.optim import AdamW
 from torch.utils.data import DataLoader, Dataset
 
+from src.gripper_attack.c2g_causal_vulnerability_detector import (
+    _persistent_score,
+    masked_bce,
+    positive_interval_triggerability,
+)
 from src.gripper_attack.c2g_gripper_critical_window_detector import (
     C2gDetectorConfig,
     C2gGripperCriticalWindowDetector,
-    clean_window_loss,
 )
 from tools.multisuite_detector.build_c2g_r9p_preview_plan import (
+    LOSS_WEIGHTS,
     R9P_HEAD_NAMES,
     TARGET_SUITES,
 )
@@ -38,16 +45,16 @@ from tools.multisuite_detector.c2g_r8r_common import (
 
 CHECKPOINT_SCHEMA_VERSION = "c2g.r9p.preview_checkpoint.2026-07-12.v1"
 LANGUAGE_DIM = 128
-VISUAL_DIM = 1152  # SigLIP embedding dim (not used in preview)
+VISUAL_DIM = 1152
+R9P_PRIMARY_HEADS = ("window_start", "burst_feasible", "critical_window")
+R9P_SAFETY_HEADS = ("release_safe", "contact_grasp")
+R9P_AUX_HEADS = ("grounding_confidence",)
 
 
 def _hash_language_embedding(text: str, dim: int = LANGUAGE_DIM) -> np.ndarray:
-    """Deterministic hash-based language embedding (no OpenVLA dependency)."""
     h = hashlib.sha256(text.encode()).digest()
-    # Use hash bytes to seed a deterministic random projection
     rng = np.random.RandomState(int.from_bytes(h[:4], "big"))
     projection = rng.randn(32, dim).astype(np.float32)
-    # Convert hash to 32 floats
     values = np.frombuffer(h, dtype=np.uint8).astype(np.float32) / 255.0
     if len(values) < 32:
         values = np.pad(values, (0, 32 - len(values)))
@@ -57,6 +64,172 @@ def _hash_language_embedding(text: str, dim: int = LANGUAGE_DIM) -> np.ndarray:
     if norm > 1e-8:
         embedding = embedding / norm
     return embedding.astype(np.float32)
+
+
+def r9p_preview_loss(
+    outputs: Dict[str, Tensor],
+    targets: Dict[str, Tensor],
+    masks: Dict[str, Tensor],
+    *,
+    sample_weight: Tensor | None = None,
+    weight_start: float = 1.0,
+    weight_burst: float = 0.5,
+    weight_critical: float = 0.5,
+    weight_release: float = 0.2,
+    weight_contact: float = 0.2,
+    weight_grounding: float = 0.2,
+    weight_early_emit: float = 0.25,
+    weight_episode_miss: float = 0.50,
+    weight_negative_any_emit: float = 0.50,
+    weight_release_safe_emit: float = 0.50,
+    persistence_window: int = 3,
+    persistence_required: int = 2,
+) -> Dict[str, Tensor]:
+    """Standalone 6-head R9P preview loss.
+
+    Primary heads: window_start, burst_feasible, critical_window
+    Safety heads: release_safe, contact_grasp
+    Auxiliary: grounding_confidence (continuous, MSE)
+
+    Episode-level losses use window_start as the trigger signal, matching
+    the deployment FixedBurstTriggerScheduler semantics.
+    """
+    required = set(R9P_HEAD_NAMES)
+    missing_outputs = sorted(required - set(outputs))
+    missing_targets = sorted(required - set(targets))
+    missing_masks = sorted(required - set(masks))
+    if missing_outputs or missing_targets or missing_masks:
+        raise ValueError(
+            f"R9P loss requires exactly 6 heads. "
+            f"missing outputs={missing_outputs} "
+            f"targets={missing_targets} masks={missing_masks}"
+        )
+    extra_outputs = sorted(set(outputs) - required)
+    if extra_outputs:
+        raise ValueError(f"R9P loss accepts only 6 heads, got extra: {extra_outputs}")
+
+    # Per-head BCE
+    start_loss = masked_bce(
+        outputs["window_start"], targets["window_start"], masks["window_start"], sample_weight,
+    )
+    burst_loss = masked_bce(
+        outputs["burst_feasible"], targets["burst_feasible"], masks["burst_feasible"], sample_weight,
+    )
+    critical_loss = masked_bce(
+        outputs["critical_window"], targets["critical_window"], masks["critical_window"], sample_weight,
+    )
+    release_loss = masked_bce(
+        outputs["release_safe"], targets["release_safe"], masks["release_safe"], sample_weight,
+    )
+    contact_loss = masked_bce(
+        outputs["contact_grasp"], targets["contact_grasp"], masks["contact_grasp"], sample_weight,
+    )
+    # Grounding uses MSE on continuous [0,1] target
+    gc_out = outputs["grounding_confidence"]
+    gc_tgt = targets["grounding_confidence"]
+    gc_active = masks["grounding_confidence"].bool()
+    if gc_active.any():
+        grounding_loss = F.mse_loss(gc_out[gc_active], gc_tgt[gc_active])
+    else:
+        grounding_loss = gc_out.sum() * 0.0
+
+    # Episode-level losses: use window_start as primary signal
+    start_logits = outputs["window_start"]
+    if start_logits.ndim != 2:
+        zero = start_logits.sum() * 0.0
+        episode = {
+            "early_emit": zero, "episode_miss": zero,
+            "negative_episode_any_emit": zero, "release_safe_emit": zero,
+            "positive_episode_count": zero,
+            "triggerable_positive_episode_count": zero,
+            "untriggerable_positive_episode_count": zero,
+            "persistent_positive_window_count": zero,
+        }
+    else:
+        start_probs = torch.sigmoid(start_logits)
+        zero = start_logits.sum() * 0.0
+        early: list[Tensor] = []
+        miss: list[Tensor] = []
+        negative: list[Tensor] = []
+        release_emit: list[Tensor] = []
+
+        ep_fkn = masks.get("episode_fully_known_negative")
+        for idx, (p, y_start, m_start) in enumerate(zip(
+            start_probs, targets["window_start"].bool(), masks["window_start"].bool(),
+        )):
+            known = masks["critical_window"][idx].bool()
+            positive_start = y_start & m_start
+            explicit_negative = bool(ep_fkn[idx].item()) if ep_fkn is not None else False
+
+            # Release-safe emit penalty: trigger during release_safe
+            release_safe_tgt = targets["release_safe"][idx].bool()
+            release_safe_known = masks["release_safe"][idx].bool()
+            safe = release_safe_tgt & release_safe_known
+            if safe.any():
+                release_emit.append(_persistent_score(
+                    p, safe, window=persistence_window, required=persistence_required,
+                ))
+
+            if positive_start.any():
+                first_idx = int(torch.nonzero(positive_start, as_tuple=False)[0, 0])
+                # Early emit: trigger before window_start
+                early_mask = known.clone()
+                early_mask[first_idx:] = False
+                if early_mask.any():
+                    early.append(_persistent_score(
+                        p, early_mask, window=persistence_window, required=persistence_required,
+                    ))
+                # Miss: no trigger at or after window_start
+                late_mask = known.clone()
+                late_mask[:first_idx] = False
+                if late_mask.any():
+                    pos_score = _persistent_score(
+                        p, late_mask, window=persistence_window, required=persistence_required,
+                    )
+                    miss.append(-torch.log(pos_score.clamp(min=1e-6)))
+                continue
+
+            fully_known_negative = bool(known.all()) if ep_fkn is None else explicit_negative
+            if fully_known_negative and known.any():
+                negative.append(_persistent_score(
+                    p, known, window=persistence_window, required=persistence_required,
+                ))
+
+        diagnostics = positive_interval_triggerability(
+            targets["window_start"], masks["window_start"],
+            persistence_window=persistence_window,
+            persistence_required=persistence_required,
+        )
+        episode = {
+            "early_emit": torch.stack(early).mean() if early else zero,
+            "episode_miss": torch.stack(miss).mean() if miss else zero,
+            "negative_episode_any_emit": torch.stack(negative).mean() if negative else zero,
+            "release_safe_emit": torch.stack(release_emit).mean() if release_emit else zero,
+            **diagnostics,
+        }
+
+    total = (
+        weight_start * start_loss
+        + weight_burst * burst_loss
+        + weight_critical * critical_loss
+        + weight_release * release_loss
+        + weight_contact * contact_loss
+        + weight_grounding * grounding_loss
+        + weight_early_emit * episode["early_emit"]
+        + weight_episode_miss * episode["episode_miss"]
+        + weight_negative_any_emit * episode["negative_episode_any_emit"]
+        + weight_release_safe_emit * episode["release_safe_emit"]
+    )
+    return {
+        "total": total,
+        "window_start": start_loss,
+        "burst_feasible": burst_loss,
+        "critical_window": critical_loss,
+        "release_safe": release_loss,
+        "contact_grasp": contact_loss,
+        "grounding_confidence": grounding_loss,
+        **episode,
+    }
 
 
 class R9PEpisodeDataset(Dataset):
@@ -113,7 +286,6 @@ def collate_episodes(batch: list[dict]) -> dict[str, Any]:
             masks[h][i, :T] = item["masks"][h]
         known_mask[i, :T] = item["known_mask"]
 
-        # Episode fully known negative
         all_known = item["known_mask"].all()
         any_positive = item["targets"]["critical_window"].any() if all_known else False
         ep_fkn[i] = bool(all_known and not any_positive)
@@ -173,7 +345,6 @@ def _evaluate_model(
             tp = (pred * tgt[msk]).sum().item()
             fp = (pred * (1 - tgt[msk])).sum().item()
             fn = ((1 - pred) * tgt[msk]).sum().item()
-            tn = ((1 - pred) * (1 - tgt[msk])).sum().item()
             precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
             recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
             metrics[f"{h}_precision"] = precision
@@ -183,6 +354,20 @@ def _evaluate_model(
             metrics[f"{h}_recall"] = 0.0
 
     return metrics
+
+
+def load_normalization(materialization_root: Path) -> dict | None:
+    norm_path = materialization_root / "normalization.json"
+    if not norm_path.exists():
+        return None
+    norm = read_json(norm_path)
+    return {
+        "proprio_mean": np.array(norm["proprio_mean"], dtype=np.float32),
+        "proprio_std": np.array(norm["proprio_std"], dtype=np.float32),
+        "policy_intent_mean": np.array(norm["policy_intent_mean"], dtype=np.float32),
+        "policy_intent_std": np.array(norm["policy_intent_std"], dtype=np.float32),
+        "sha256": sha256_file(norm_path),
+    }
 
 
 def train_model(
@@ -205,6 +390,14 @@ def train_model(
 
     index_path = materialization_root / "dataset_index.jsonl"
     index_rows = read_jsonl(index_path)
+
+    norm = load_normalization(materialization_root)
+    if norm is None:
+        raise FileNotFoundError(
+            "normalization.json not found in materialization root — "
+            "run full materialization before training"
+        )
+    norm_sha = norm["sha256"]
 
     use_policy_intent = model_label == "b"
 
@@ -234,17 +427,27 @@ def train_model(
     patience_counter = 0
     history = []
 
+    # Pre-convert normalization to tensors
+    p_mean = torch.from_numpy(norm["proprio_mean"]).to(device)
+    p_std = torch.from_numpy(norm["proprio_std"]).to(device)
+    pi_mean = torch.from_numpy(norm["policy_intent_mean"]).to(device)
+    pi_std = torch.from_numpy(norm["policy_intent_std"]).to(device)
+
     for epoch in range(epochs):
         model.train()
         epoch_losses = defaultdict(float)
         n_batches = 0
 
         for batch in train_loader:
-            proprio = batch["proprio_25d"].to(device)
-            policy = batch["policy_intent"].to(device) if use_policy_intent else None
+            proprio_raw = batch["proprio_25d"].to(device)
+            policy_raw = batch["policy_intent"].to(device)
             language = batch["language"].to(device)
             targets = {k: v.to(device) for k, v in batch["targets"].items()}
             masks = {k: v.to(device) for k, v in batch["masks"].items()}
+
+            # Apply normalization
+            proprio = (proprio_raw - p_mean) / p_std.clamp_min(1e-8)
+            policy = (policy_raw - pi_mean) / pi_std.clamp_min(1e-8) if use_policy_intent else None
 
             outputs = model(
                 proprio, language,
@@ -252,22 +455,23 @@ def train_model(
                 return_sequence=True,
             )
 
-            # Apply padding mask: zero out outputs beyond valid steps
             pad_mask = batch["padding_mask"].to(device)
             for h in R9P_HEAD_NAMES:
                 outputs[h] = outputs[h] * pad_mask.float()
 
-            loss_dict = clean_window_loss(
+            loss_dict = r9p_preview_loss(
                 outputs, targets, masks,
                 sample_weight=pad_mask.float(),
-                auxiliary_weight=0.2,
-                start_weight=1.0,
-                active_weight=0.5,
-                early_weight=0.25,
-                miss_weight=0.50,
-                negative_episode_weight=0.50,
-                release_safe_episode_weight=0.50,
-                include_episode_losses=True,
+                weight_start=LOSS_WEIGHTS["start"],
+                weight_burst=LOSS_WEIGHTS["burst"],
+                weight_critical=LOSS_WEIGHTS["critical"],
+                weight_release=LOSS_WEIGHTS["release"],
+                weight_contact=LOSS_WEIGHTS["contact"],
+                weight_grounding=LOSS_WEIGHTS["grounding"],
+                weight_early_emit=LOSS_WEIGHTS["early_emit"],
+                weight_episode_miss=LOSS_WEIGHTS["episode_miss"],
+                weight_negative_any_emit=LOSS_WEIGHTS["negative_any_emit"],
+                weight_release_safe_emit=LOSS_WEIGHTS["release_safe_emit"],
             )
 
             loss = loss_dict["total"]
@@ -281,7 +485,6 @@ def train_model(
                     epoch_losses[k] += v.item()
             n_batches += 1
 
-        # Validation
         cal_metrics = _evaluate_model(model, cal_loader, device, use_policy_intent)
         score = (
             cal_metrics.get("window_start_recall", 0)
@@ -307,7 +510,6 @@ def train_model(
     if best_state is not None:
         model.load_state_dict(best_state)
 
-    # Save checkpoint
     output_dir = output_root / f"model_{model_label}_seed{seed}"
     output_dir.mkdir(parents=True, exist_ok=True)
     checkpoint = {
@@ -328,6 +530,7 @@ def train_model(
         "best_score": best_score,
         "seed": seed,
         "model_label": model_label,
+        "normalization_sha256": norm_sha,
     }
     torch.save(checkpoint, output_dir / "checkpoint.pt")
 
@@ -339,6 +542,7 @@ def train_model(
         "best_score": best_score,
         "final_cal_metrics": history[-1]["cal_metrics"] if history else {},
         "checkpoint_sha256": sha256_file(output_dir / "checkpoint.pt"),
+        "normalization_sha256": norm_sha,
     }
     write_json(output_dir / "training_report.json", report)
     return report
@@ -360,7 +564,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    model_label = args.model  # "a" or "b"
+    model_label = args.model
     print(f"Training Model {model_label.upper()} seed={args.seed}")
     report = train_model(
         materialization_root=args.materialization_root,

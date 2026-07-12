@@ -67,47 +67,70 @@ class NoTeacherLeakageTests(unittest.TestCase):
         violations = _validate_npz_keys(set(loaded.keys()))
         self.assertEqual(violations, [])
 
-    def test_teacher_phase_raises_in_step(self):
+    def test_teacher_phase_not_in_npz(self):
+        """Source may have teacher_phase, but allowlist projection excludes it from NPZ."""
         ep_dir = _make_episode_with_extra_keys(self.root, {"teacher_phase": "APPROACH"})
         meta = json.loads((ep_dir / "derived_episode_metadata.json").read_text())
-        with self.assertRaises(ValueError):
-            materialize_episode(ep_dir, meta)
+        # Materialization succeeds — teacher_phase is not in allowlist, so it's silently not projected
+        data = materialize_episode(ep_dir, meta)
+        npz_path = self.root / "test.npz"
+        write_episode_npz(data, npz_path)
+        loaded = np.load(npz_path, allow_pickle=False)
+        self.assertNotIn("teacher_phase", loaded.keys())
 
-    def test_teacher_reason_code_raises_in_step(self):
+    def test_teacher_reason_code_not_in_npz(self):
         ep_dir = _make_episode_with_extra_keys(self.root, {"teacher_reason_code": "TARGET_CRITICAL_WINDOW"})
         meta = json.loads((ep_dir / "derived_episode_metadata.json").read_text())
-        with self.assertRaises(ValueError):
-            materialize_episode(ep_dir, meta)
+        data = materialize_episode(ep_dir, meta)
+        npz_path = self.root / "test.npz"
+        write_episode_npz(data, npz_path)
+        loaded = np.load(npz_path, allow_pickle=False)
+        self.assertNotIn("teacher_reason_code", loaded.keys())
 
-    def test_resolved_target_objects_raises_in_step(self):
+    def test_resolved_target_objects_not_in_npz(self):
         ep_dir = _make_episode_with_extra_keys(self.root, {"resolved_target_objects": ["obj1"]})
         meta = json.loads((ep_dir / "derived_episode_metadata.json").read_text())
-        with self.assertRaises(ValueError):
-            materialize_episode(ep_dir, meta)
+        data = materialize_episode(ep_dir, meta)
+        npz_path = self.root / "test.npz"
+        write_episode_npz(data, npz_path)
+        loaded = np.load(npz_path, allow_pickle=False)
+        self.assertNotIn("resolved_target_objects", loaded.keys())
 
-    def test_attack_outcome_raises_in_step(self):
+    def test_attack_outcome_not_in_npz(self):
         ep_dir = _make_episode_with_extra_keys(self.root, {"attack_outcome": "success"})
         meta = json.loads((ep_dir / "derived_episode_metadata.json").read_text())
-        with self.assertRaises(ValueError):
-            materialize_episode(ep_dir, meta)
+        data = materialize_episode(ep_dir, meta)
+        npz_path = self.root / "test.npz"
+        write_episode_npz(data, npz_path)
+        loaded = np.load(npz_path, allow_pickle=False)
+        self.assertNotIn("attack_outcome", loaded.keys())
 
-    def test_post_intervention_state_raises_in_step(self):
+    def test_post_intervention_state_not_in_npz(self):
         ep_dir = _make_episode_with_extra_keys(self.root, {"post_intervention_state": {}})
         meta = json.loads((ep_dir / "derived_episode_metadata.json").read_text())
-        with self.assertRaises(ValueError):
-            materialize_episode(ep_dir, meta)
+        data = materialize_episode(ep_dir, meta)
+        npz_path = self.root / "test.npz"
+        write_episode_npz(data, npz_path)
+        loaded = np.load(npz_path, allow_pickle=False)
+        self.assertNotIn("post_intervention_state", loaded.keys())
 
-    def test_contact_pairs_raises_in_step(self):
+    def test_contact_pairs_not_in_npz(self):
         ep_dir = _make_episode_with_extra_keys(self.root, {"contact_pairs": []})
         meta = json.loads((ep_dir / "derived_episode_metadata.json").read_text())
-        with self.assertRaises(ValueError):
-            materialize_episode(ep_dir, meta)
+        data = materialize_episode(ep_dir, meta)
+        npz_path = self.root / "test.npz"
+        write_episode_npz(data, npz_path)
+        loaded = np.load(npz_path, allow_pickle=False)
+        self.assertNotIn("contact_pairs", loaded.keys())
 
-    def test_object_pose_raises_in_step(self):
+    def test_object_pose_not_in_npz(self):
         ep_dir = _make_episode_with_extra_keys(self.root, {"object_pose": [0, 0, 0]})
         meta = json.loads((ep_dir / "derived_episode_metadata.json").read_text())
-        with self.assertRaises(ValueError):
-            materialize_episode(ep_dir, meta)
+        data = materialize_episode(ep_dir, meta)
+        npz_path = self.root / "test.npz"
+        write_episode_npz(data, npz_path)
+        loaded = np.load(npz_path, allow_pickle=False)
+        self.assertNotIn("object_pose", loaded.keys())
 
     def test_forbidden_field_in_npz_keys_detected(self):
         # Manually construct a case where NPZ would have forbidden key

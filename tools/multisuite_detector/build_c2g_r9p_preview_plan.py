@@ -95,19 +95,37 @@ def assign_preview_split(parent_key: str) -> str:
 
 
 def assign_splits_deterministic(rows: list[dict]) -> None:
-    """Assign exact FIT/CAL/CHECK splits per suite via deterministic hash ranking.
+    """Assign exact FIT/CAL/CHECK splits stratified per suite*task.
 
-    Within each suite, episodes are sorted by their SHA256 hash rank and the
-    first 240 get FIT, next 30 get CAL, last 30 get CHECK. This guarantees
-    exact 720/90/90 total counts.
+    Within each (suite, task_index) group, episodes are sorted by their
+    full SHA256 integer rank. Per task: 24 FIT, 3 CAL, 3 CHECK (30 episodes).
+    This guarantees exact 720/90/90 across all 30 suite×task groups.
+    Uses the full 32-byte SHA256 digest as integer (not just first byte) to
+    avoid collisions.
     """
-    for suite in TARGET_SUITES:
-        suite_rows = [r for r in rows if r["suite"] == suite]
-        ranked = sorted(suite_rows, key=lambda r: _bucket(r["parent_key"], PREVIEW_SPLIT_SALT, 10000))
+    from collections import defaultdict
+    groups: dict[tuple, list] = defaultdict(list)
+    for r in rows:
+        groups[(r["suite"], r["task_index"])].append(r)
+
+    for (suite, task_idx), group_rows in groups.items():
+        if len(group_rows) != 30:
+            raise ValueError(
+                f"Expected 30 train episodes per task, got {len(group_rows)} "
+                f"for suite={suite} task={task_idx}"
+            )
+        # Full SHA256 integer rank (32 bytes) — no first-byte collision
+        ranked = sorted(
+            group_rows,
+            key=lambda r: int.from_bytes(
+                hashlib.sha256(f"{PREVIEW_SPLIT_SALT}|{r['parent_key']}".encode()).digest(),
+                "big",
+            ),
+        )
         for i, r in enumerate(ranked):
-            if i < 240:
+            if i < 24:
                 r["preview_split"] = "FIT"
-            elif i < 270:
+            elif i < 27:
                 r["preview_split"] = "CAL"
             else:
                 r["preview_split"] = "CHECK"
@@ -165,6 +183,35 @@ def _per_suite_split_counts(rows: list[dict]) -> dict[str, dict[str, int]]:
     return result
 
 
+def _verify_git_state(expected_commit: str) -> dict[str, Any]:
+    import subprocess
+    result = {"clean": True, "issues": []}
+    try:
+        actual = subprocess.run(
+            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        if actual != expected_commit:
+            result["clean"] = False
+            result["issues"].append(f"HEAD mismatch: expected {expected_commit}, actual {actual}")
+    except Exception as exc:
+        result["clean"] = False
+        result["issues"].append(f"git rev-parse failed: {exc}")
+
+    try:
+        status = subprocess.run(
+            ["git", "status", "--porcelain"], capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        # Allow untracked files but no modifications to tracked files
+        modified = [line for line in status.splitlines() if not line.startswith("??")]
+        if modified:
+            result["clean"] = False
+            result["issues"].append(f"dirty worktree: {len(modified)} modified tracked files")
+    except Exception as exc:
+        result["clean"] = False
+        result["issues"].append(f"git status failed: {exc}")
+    return result
+
+
 def build_plan(
     *,
     spatial_root: Path,
@@ -172,6 +219,10 @@ def build_plan(
     goal_root: Path,
     output_root: Path,
     git_commit: str,
+    expected_spatial_report_sha: str = "",
+    expected_object_report_sha: str = "",
+    expected_goal_report_sha: str = "",
+    expected_r8z1_audit_sha: str = "",
 ) -> dict[str, Any]:
     suite_roots = {
         "libero_spatial": spatial_root,
@@ -179,8 +230,56 @@ def build_plan(
         "libero_goal": goal_root,
     }
 
-    all_rows: list[dict] = []
-    errors: list[dict] = []
+    # --- Provenance verification ---
+    git_state = _verify_git_state(git_commit)
+    if not git_state["clean"]:
+        return {
+            "schema": SCHEMA,
+            "status": GATE_HOLD_PROVENANCE,
+            "git_issues": git_state["issues"],
+        }
+
+    # Verify R8Z suite report SHAs if provided
+    provenance_issues = []
+    suite_report_shas = {
+        "libero_spatial": expected_spatial_report_sha,
+        "libero_object": expected_object_report_sha,
+        "libero_goal": expected_goal_report_sha,
+    }
+    for suite, expected_sha in suite_report_shas.items():
+        if expected_sha:
+            report_path = suite_roots[suite] / "suite_report.json"
+            if report_path.exists():
+                actual = sha256_file(report_path)
+                if actual != expected_sha:
+                    provenance_issues.append(
+                        f"{suite} report SHA mismatch: expected {expected_sha}, actual {actual}"
+                    )
+            else:
+                provenance_issues.append(f"{suite} report not found: {report_path}")
+
+    if expected_r8z1_audit_sha:
+        # R8Z1 audit SHA is verified against the audit report at a known path
+        provenance_issues.append(
+            "R8Z1 audit SHA binding requires external verification — "
+            "ensure the audit report at the canonical R8Z1 output root matches"
+        )
+
+    if provenance_issues:
+        return {
+            "schema": SCHEMA,
+            "status": GATE_HOLD_PROVENANCE,
+            "provenance_issues": provenance_issues,
+        }
+
+    # Output root must not already exist
+    if output_root.exists():
+        return {
+            "schema": SCHEMA,
+            "status": GATE_HOLD_PROVENANCE,
+            "error": f"output root already exists: {output_root}",
+        }
+    output_root.mkdir(parents=True)
     for suite, root in suite_roots.items():
         try:
             rows = discover_episodes(root, suite)
@@ -220,8 +319,6 @@ def build_plan(
     for r in all_rows:
         tasks_by_suite[r["suite"]].add(r["task_index"])
     per_suite_tasks = {s: len(t) for s, t in tasks_by_suite.items()}
-
-    output_root.mkdir(parents=True, exist_ok=True)
 
     manifest_path = output_root / "r9p_preview_episode_manifest.jsonl"
     manifest_rows = [
@@ -385,6 +482,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--goal-root", required=True, type=Path, help="R8Z goal suite root")
     parser.add_argument("--output-root", required=True, type=Path, help="R9P plan output root")
     parser.add_argument("--git-commit", required=True, help="Current git commit SHA")
+    parser.add_argument("--expected-spatial-report-sha", default="")
+    parser.add_argument("--expected-object-report-sha", default="")
+    parser.add_argument("--expected-goal-report-sha", default="")
+    parser.add_argument("--expected-r8z1-audit-sha", default="")
     parser.add_argument("--mode", default="preview", choices=["preview", "run"],
                         help="preview: dry-run validation only; run: materialize plan")
     return parser.parse_args(argv)
@@ -413,6 +514,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         goal_root=args.goal_root,
         output_root=args.output_root,
         git_commit=args.git_commit,
+        expected_spatial_report_sha=args.expected_spatial_report_sha,
+        expected_object_report_sha=args.expected_object_report_sha,
+        expected_goal_report_sha=args.expected_goal_report_sha,
+        expected_r8z1_audit_sha=args.expected_r8z1_audit_sha,
     )
     status = plan.get("status", "UNKNOWN")
     print(f"Plan: {status}")

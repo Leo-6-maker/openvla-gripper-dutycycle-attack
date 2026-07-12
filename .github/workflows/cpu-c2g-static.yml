@@ -39,7 +39,7 @@ jobs:
             scripts/stageb/extract_c2g_detector_timing.py \
             scripts/stageb/finalize_c2g_goal_model_manifest_v2.py \
             scripts/stageb/prepare_c2g_eval_parents.py \
-            scripts/stageb/run_c2g_r9p_shadow_runtime.py \
+            scripts/stageb/run_c2g_r9p_offline_latency_smoke.py \
             scripts/stageb/run_c2g_r9p_streaming_replay.py \
             scripts/stageb/run_c2f_canary_worker.py \
             scripts/stageb/run_c2g_clean_timing_jobs.py \

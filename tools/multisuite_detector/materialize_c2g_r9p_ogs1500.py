@@ -47,6 +47,12 @@ FORBIDDEN_NPZ_KEYS = frozenset({
     "uses_future_student_input",
 })
 
+# Allowlist: only these step fields are projected into student NPZ
+STUDENT_ALLOWLIST = frozenset({
+    "step", "features_25d", "clean_policy_intent_9d",
+    "clean_policy_features", "policy_intent",
+})
+
 
 def _bucket_rank(key: str, salt: str) -> int:
     return int.from_bytes(
@@ -126,31 +132,54 @@ def materialize_episode(
     for i, (step, label) in enumerate(zip(steps, labels)):
         if int(step.get("step", -1)) != i:
             raise ValueError(f"step discontinuity at index {i}: got step={step.get('step')}")
-        f25 = np.asarray(step.get("features_25d", []), dtype=np.float32)
+
+        # Project only allowlist fields from the (potentially Teacher-rich) source step
+        projected = {k: step[k] for k in STUDENT_ALLOWLIST if k in step}
+
+        f25 = np.asarray(projected.get("features_25d", []), dtype=np.float32)
         if f25.shape != (25,):
             raise ValueError(f"features_25d shape {f25.shape} at step {i}")
         if not np.isfinite(f25).all():
             raise ValueError(f"non-finite features_25d at step {i}")
         features_25d[i] = f25
 
-        f9 = np.asarray(step.get("clean_policy_intent_9d", []), dtype=np.float32)
-        if f9.shape == (0,):
-            f9 = np.zeros(9, dtype=np.float32)
-        elif f9.shape != (9,):
-            raise ValueError(f"clean_policy_intent_9d shape {f9.shape} at step {i}")
+        # 9D policy features: fail-closed if missing
+        f9_raw = projected.get("clean_policy_intent_9d")
+        if f9_raw is None:
+            f9_raw = projected.get("clean_policy_features")
+        if f9_raw is None:
+            f9_raw = projected.get("policy_intent")
+        if f9_raw is None:
+            raise ValueError(
+                f"clean_policy_intent_9d missing at step {i} — "
+                f"Model B requires 9D features. Check that source step_records_prefix "
+                f"contains clean_policy_intent_9d."
+            )
+        f9 = np.asarray(f9_raw, dtype=np.float32)
+        if f9.shape != (9,):
+            raise ValueError(f"clean_policy_intent_9d shape {f9.shape} at step {i}, expected (9,)")
         if not np.isfinite(f9).all():
             raise ValueError(f"non-finite clean_policy_intent_9d at step {i}")
         features_9d[i] = f9
 
         known_mask[i] = bool(label.get("label_known_mask", False))
 
+        # Validate grounding_confidence is present and valid
+        gc = label.get("grounding_confidence")
+        if gc is None:
+            raise ValueError(f"grounding_confidence missing in teacher label at step {i}")
+        gc = float(gc)
+        if not np.isfinite(gc) or not 0.0 <= gc <= 1.0:
+            raise ValueError(f"grounding_confidence={gc} out of [0,1] at step {i}")
+
     label_data = _labels_to_targets(labels)
 
-    # Check no forbidden keys in step records
+    # Verify projected NPZ has no forbidden keys
     for i, step in enumerate(steps):
-        bad = sorted(FORBIDDEN_NPZ_KEYS & set(step.keys()))
+        projected_keys = set(STUDENT_ALLOWLIST & set(step.keys()))
+        bad = sorted(FORBIDDEN_NPZ_KEYS & projected_keys)
         if bad:
-            raise ValueError(f"forbidden keys in step {i}: {bad}")
+            raise ValueError(f"forbidden keys in allowlist projection at step {i}: {bad}")
 
     valid_mask = np.ones(T_steps, dtype=bool)
 

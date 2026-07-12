@@ -12,11 +12,11 @@ from scripts.stageb.train_c2g_r9p_preview_detector import (
     R9PEpisodeDataset,
     _hash_language_embedding,
     collate_episodes,
+    r9p_preview_loss,
 )
 from src.gripper_attack.c2g_gripper_critical_window_detector import (
     C2gDetectorConfig,
     C2gGripperCriticalWindowDetector,
-    clean_window_loss,
 )
 from tools.multisuite_detector.build_c2g_r9p_preview_plan import (
     R9P_HEAD_NAMES,
@@ -185,16 +185,43 @@ class ModelForwardTests(unittest.TestCase):
         outputs = model(proprio, language, policy_intent=policy, return_sequence=True)
         targets = {h: torch.zeros(2, 30) for h in R9P_HEAD_NAMES}
         masks = {h: torch.ones(2, 30, dtype=torch.bool) for h in R9P_HEAD_NAMES}
-        loss_dict = clean_window_loss(
-            outputs, targets, masks,
-            include_episode_losses=True,
-        )
+        loss_dict = r9p_preview_loss(outputs, targets, masks)
         loss = loss_dict["total"]
         loss.backward()
         for name, param in model.named_parameters():
             if param.grad is not None:
                 self.assertTrue(torch.isfinite(param.grad).all(),
                                 f"Non-finite grad in {name}")
+
+    def test_loss_rejects_extra_heads(self):
+        config = C2gDetectorConfig(
+            visual_dim=1152, language_dim=128, hidden=32,
+            use_policy_intent=False, use_visual=False, use_language_conditioning=True,
+            head_names=R9P_HEAD_NAMES + ("close_intent",),
+        )
+        model = C2gGripperCriticalWindowDetector(config)
+        proprio = torch.randn(2, 20, 25)
+        language = torch.randn(2, 128)
+        outputs = model(proprio, language, return_sequence=True)
+        targets = {h: torch.zeros(2, 20) for h in outputs.keys()}
+        masks = {h: torch.ones(2, 20, dtype=torch.bool) for h in outputs.keys()}
+        with self.assertRaises(ValueError):
+            r9p_preview_loss(outputs, targets, masks)
+
+    def test_loss_rejects_missing_heads(self):
+        config = C2gDetectorConfig(
+            visual_dim=1152, language_dim=128, hidden=32,
+            use_policy_intent=False, use_visual=False, use_language_conditioning=True,
+            head_names=R9P_HEAD_NAMES[:4],
+        )
+        model = C2gGripperCriticalWindowDetector(config)
+        proprio = torch.randn(2, 20, 25)
+        language = torch.randn(2, 128)
+        outputs = model(proprio, language, return_sequence=True)
+        targets = {h: torch.zeros(2, 20) for h in outputs.keys()}
+        masks = {h: torch.ones(2, 20, dtype=torch.bool) for h in outputs.keys()}
+        with self.assertRaises(ValueError):
+            r9p_preview_loss(outputs, targets, masks)
 
     def test_head_names_configurable(self):
         custom_heads = ("window_start", "critical_window", "release_safe")

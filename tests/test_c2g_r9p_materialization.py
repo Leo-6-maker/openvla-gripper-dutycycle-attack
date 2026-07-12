@@ -14,6 +14,7 @@ from tools.multisuite_detector.build_c2g_r9p_preview_plan import (
     R9P_MODEL_TARGET_MAP,
 )
 from tools.multisuite_detector.materialize_c2g_r9p_ogs1500 import (
+    STUDENT_ALLOWLIST,
     _labels_to_targets,
     materialize_episode,
     write_episode_npz,
@@ -156,6 +157,41 @@ class MaterializeEpisodeTests(unittest.TestCase):
         write_episode_npz(data, npz_path)
         result = audit_episode_npz(npz_path)
         self.assertTrue(result["valid"], msg=f"Issues: {result['issues']}")
+
+    def test_missing_9d_raises(self):
+        """Missing clean_policy_intent_9d must fail-closed."""
+        ep_dir = _make_episode_dir(self.root, "libero_spatial",
+                                   "libero_spatial/task_0/state_0/detector_train/episode_000",
+                                   n_steps=10)
+        # Remove 9D from step records
+        steps_path = ep_dir / "step_records_prefix.jsonl"
+        steps = [json.loads(line) for line in steps_path.read_text().splitlines() if line.strip()]
+        for s in steps:
+            del s["clean_policy_intent_9d"]
+        steps_path.write_text("".join(json.dumps(s) + "\n" for s in steps))
+        meta = json.loads((ep_dir / "derived_episode_metadata.json").read_text())
+        with self.assertRaises(ValueError):
+            materialize_episode(ep_dir, meta)
+
+    def test_missing_grounding_confidence_raises(self):
+        ep_dir = _make_episode_dir(self.root, "libero_spatial",
+                                   "libero_spatial/task_0/state_0/detector_train/episode_000",
+                                   n_steps=10)
+        labels_path = ep_dir / "teacher_v2_labels.jsonl"
+        labels = [json.loads(line) for line in labels_path.read_text().splitlines() if line.strip()]
+        for l in labels:
+            del l["grounding_confidence"]
+        labels_path.write_text("".join(json.dumps(l) + "\n" for l in labels))
+        meta = json.loads((ep_dir / "derived_episode_metadata.json").read_text())
+        with self.assertRaises(ValueError):
+            materialize_episode(ep_dir, meta)
+
+    def test_allowlist_projection(self):
+        """Only STUDENT_ALLOWLIST fields are projected into NPZ."""
+        self.assertIn("features_25d", STUDENT_ALLOWLIST)
+        self.assertIn("clean_policy_intent_9d", STUDENT_ALLOWLIST)
+        self.assertNotIn("teacher_phase", STUDENT_ALLOWLIST)
+        self.assertNotIn("resolved_target_objects", STUDENT_ALLOWLIST)
 
     def test_step_discontinuity_raises(self):
         ep_dir = _make_episode_dir(self.root, "libero_spatial",

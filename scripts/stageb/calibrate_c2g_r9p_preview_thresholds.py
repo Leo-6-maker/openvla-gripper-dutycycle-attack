@@ -1,7 +1,12 @@
 """Calibrate R9P preview detector thresholds on PREVIEW_CAL and evaluate on PREVIEW_CHECK.
 
-Grid search over tau_start, tau_critical, tau_release, tau_ground with persistence
-options (1-of-1, 2-of-3, 3-of-5). Lexicographic selection per the R9P spec.
+Uses the full 6-head model with per-head thresholds. Computes real T10 window metrics:
+feasible_hit, full_T10_containment, start_delay, early_trigger, late_trigger,
+negative_episode_any_trigger, release_safe_emit.
+
+The scheduler uses: critical_window, release_safe, grounding_confidence for gating.
+Evaluation measures whether the resulting trigger aligns with the teacher's window_start
+and whether the full 10-step burst window has critical support.
 """
 from __future__ import annotations
 
@@ -14,54 +19,70 @@ from typing import Any, Dict, Sequence
 import numpy as np
 import torch
 from torch import Tensor
-from torch.utils.data import DataLoader
 
 from scripts.stageb.train_c2g_r9p_preview_detector import (
     R9PEpisodeDataset,
     _hash_language_embedding,
-    collate_episodes,
+    load_normalization,
 )
 from src.gripper_attack.c2g_gripper_critical_window_detector import (
     C2gDetectorConfig,
     C2gGripperCriticalWindowDetector,
     FixedBurstTriggerScheduler,
-    SchedulerState,
 )
 from tools.multisuite_detector.build_c2g_r9p_preview_plan import (
     R9P_HEAD_NAMES,
     TARGET_SUITES,
 )
 from tools.multisuite_detector.c2g_r8r_common import (
+    read_json,
     read_jsonl,
+    sha256_file,
     write_json,
 )
 
 SCHEMA = "c2g.r9p.preview_calibration.2026-07-12.v1"
 
 
-def load_model(checkpoint_path: Path, device: torch.device) -> C2gGripperCriticalWindowDetector:
+def load_model(checkpoint_path: Path, device: torch.device) -> tuple[C2gGripperCriticalWindowDetector, dict]:
     raw = torch.load(checkpoint_path, map_location="cpu")
     cfg = raw["model_config"]
     config = C2gDetectorConfig(**cfg)
     model = C2gGripperCriticalWindowDetector(config).to(device)
     model.load_state_dict(raw["model_state_dict"], strict=True)
     model.eval()
-    return model
+    return model, raw
 
 
-def evaluate_episode_with_thresholds(
+def evaluate_episode_t10(
     model: C2gGripperCriticalWindowDetector,
     episode_data: dict,
     device: torch.device,
     use_policy_intent: bool,
     scheduler_kwargs: dict,
+    norm: dict | None = None,
 ) -> dict[str, Any]:
-    """Run FixedBurstTriggerScheduler over one episode, return trigger metrics."""
-    proprio = episode_data["features_25d"].unsqueeze(0).to(device)
-    policy = episode_data["features_9d"].unsqueeze(0).to(device) if use_policy_intent else None
+    """Run FixedBurstTriggerScheduler and compute T10-aligned metrics."""
+    proprio_raw = episode_data["features_25d"].unsqueeze(0).to(device)
+    policy_raw = episode_data["features_9d"].unsqueeze(0).to(device) if use_policy_intent else None
     lang_text = episode_data.get("task_language", "")
     lang_emb = _hash_language_embedding(lang_text)
     language = torch.from_numpy(lang_emb).unsqueeze(0).to(device)
+
+    # Apply normalization if available
+    if norm is not None:
+        p_mean = torch.from_numpy(norm["proprio_mean"]).to(device)
+        p_std = torch.from_numpy(norm["proprio_std"]).to(device).clamp_min(1e-8)
+        proprio = (proprio_raw - p_mean) / p_std
+        if policy_raw is not None:
+            pi_mean = torch.from_numpy(norm["policy_intent_mean"]).to(device)
+            pi_std = torch.from_numpy(norm["policy_intent_std"]).to(device).clamp_min(1e-8)
+            policy = (policy_raw - pi_mean) / pi_std
+        else:
+            policy = None
+    else:
+        proprio = proprio_raw
+        policy = policy_raw
 
     T = proprio.shape[1]
     scheduler = FixedBurstTriggerScheduler(**scheduler_kwargs)
@@ -88,19 +109,61 @@ def evaluate_episode_with_thresholds(
             trigger_step = t
             break
 
-    # Check if episode is positive (has window_start label)
+    # Teacher labels
     has_start = bool(episode_data["targets"]["window_start"].any().item())
-    # Check if release was safe at trigger
+    teacher_start_step = -1
+    if has_start:
+        start_tgt = episode_data["targets"]["window_start"]
+        start_mask = episode_data["masks"]["window_start"]
+        valid_starts = (start_tgt > 0.5) & start_mask
+        if valid_starts.any():
+            teacher_start_step = int(torch.nonzero(valid_starts, as_tuple=False)[0, 0])
+
+    # T10 metrics
+    feasible_hit = False
+    full_T10_containment = False
+    start_delay = -1
+    early_trigger = False
+    late_trigger = False
+    negative_any_trigger = False
     release_safe_at_trigger = False
-    if triggered and trigger_step < T:
-        release_safe_at_trigger = bool(
-            episode_data["targets"]["release_safe"][trigger_step].item() > 0.5
-        )
+
+    if triggered and teacher_start_step >= 0:
+        start_delay = trigger_step - teacher_start_step
+        # Feasible hit: trigger at or after teacher start, within 3 steps
+        feasible_hit = 0 <= start_delay <= 3
+        # Early: trigger before teacher start
+        early_trigger = start_delay < 0
+        # Late: trigger after teacher start + 3
+        late_trigger = start_delay > 3
+
+        # Full T10 containment: after trigger, there are >=10 critical_window steps
+        critical_tgt = episode_data["targets"]["critical_window"]
+        critical_mask = episode_data["masks"]["critical_window"]
+        remaining_critical = critical_tgt[trigger_step:]
+        remaining_mask = critical_mask[trigger_step:]
+        known_critical = remaining_critical[remaining_mask]
+        full_T10_containment = bool(known_critical.sum() >= 10)
+
+        # Release-safe at trigger
+        release_tgt = episode_data["targets"]["release_safe"]
+        release_mask = episode_data["masks"]["release_safe"]
+        if trigger_step < T and release_mask[trigger_step]:
+            release_safe_at_trigger = bool(release_tgt[trigger_step] > 0.5)
+    elif triggered and not has_start:
+        negative_any_trigger = True
 
     return {
         "triggered": triggered,
         "trigger_step": trigger_step,
         "has_start": has_start,
+        "teacher_start_step": teacher_start_step,
+        "feasible_hit": feasible_hit,
+        "full_T10_containment": full_T10_containment,
+        "start_delay": start_delay,
+        "early_trigger": early_trigger,
+        "late_trigger": late_trigger,
+        "negative_any_trigger": negative_any_trigger,
         "release_safe_at_trigger": release_safe_at_trigger,
     }
 
@@ -113,31 +176,33 @@ def run_calibration(
     device_str: str = "cuda",
 ) -> dict[str, Any]:
     device = torch.device(device_str if torch.cuda.is_available() else "cpu")
-    model = load_model(checkpoint_path, device)
+    model, raw = load_model(checkpoint_path, device)
     use_policy_intent = model.config.use_policy_intent
+
+    norm = load_normalization(materialization_root)
 
     index_rows = read_jsonl(materialization_root / "dataset_index.jsonl")
     cal_ds = R9PEpisodeDataset(index_rows, materialization_root, split_filter="CAL")
     check_ds = R9PEpisodeDataset(index_rows, materialization_root, split_filter="CHECK")
 
-    # Grid
+    # Grid: tau_critical, tau_release, tau_ground + burst_feasible as secondary
     tau_values = [0.3, 0.4, 0.5, 0.6, 0.7]
     persistence_configs = [
-        {"persistence_window": 1, "persistence_required": 1},
         {"persistence_window": 3, "persistence_required": 2},
         {"persistence_window": 5, "persistence_required": 3},
+        {"persistence_window": 1, "persistence_required": 1},
     ]
 
     best_config = None
     best_metrics = None
-    # Lexicographic: recall, then -false_trigger, then -release_safe_trigger
-    best_key = (-999, 999, 999)
+    # Lexicographic: feasible_hit, then -negative_trigger rate, then -release_safe rate
+    best_key = (-999.0, 999.0, 999.0)
 
     for tau_critical in tau_values:
         for tau_release in [0.3, 0.4, 0.5, 0.6]:
             for tau_ground in [0.3, 0.5, 0.7]:
                 for p_cfg in persistence_configs:
-                    scheduler_kwargs = {
+                    sk = {
                         "burst_length": 10,
                         "tau_critical": tau_critical,
                         "tau_release": tau_release,
@@ -147,46 +212,46 @@ def run_calibration(
                     results = []
                     for i in range(len(cal_ds)):
                         ep = cal_ds[i]
-                        r = evaluate_episode_with_thresholds(
-                            model, ep, device, use_policy_intent, scheduler_kwargs)
+                        r = evaluate_episode_t10(model, ep, device, use_policy_intent, sk, norm)
                         results.append(r)
 
                     n_pos = sum(1 for r in results if r["has_start"])
-                    n_triggered_pos = sum(1 for r in results if r["has_start"] and r["triggered"])
-                    n_false_trigger = sum(1 for r in results if not r["has_start"] and r["triggered"])
-                    n_release_trigger = sum(1 for r in results if r["release_safe_at_trigger"])
-                    recall = n_triggered_pos / max(n_pos, 1)
+                    n_feasible = sum(1 for r in results if r["feasible_hit"])
+                    n_negative = sum(1 for r in results if not r["has_start"])
+                    n_false = sum(1 for r in results if r["negative_any_trigger"])
+                    n_release = sum(1 for r in results if r["release_safe_at_trigger"])
+                    n_full_T10 = sum(1 for r in results if r["full_T10_containment"])
 
-                    key = (round(recall, 3), -n_false_trigger, -n_release_trigger)
+                    feasible_rate = n_feasible / max(n_pos, 1)
+                    false_rate = n_false / max(n_negative, 1)
+                    release_rate = n_release / max(len(results), 1)
+
+                    key = (round(feasible_rate, 3), -round(false_rate, 3), -round(release_rate, 3))
                     if key > best_key:
                         best_key = key
                         best_config = {
-                            "tau_start": tau_critical,  # same threshold grid
                             "tau_critical": tau_critical,
                             "tau_release": tau_release,
                             "tau_ground": tau_ground,
                             **p_cfg,
                         }
                         best_metrics = {
-                            "positive_recall": recall,
-                            "false_triggers": n_false_trigger,
-                            "release_safe_triggers": n_release_trigger,
+                            "feasible_hit_rate": feasible_rate,
+                            "feasible_hit_count": n_feasible,
+                            "full_T10_containment_count": n_full_T10,
+                            "negative_episode_any_trigger_rate": false_rate,
+                            "false_trigger_count": n_false,
+                            "release_safe_emit_rate": release_rate,
+                            "release_safe_emit_count": n_release,
                             "n_cal_episodes": len(results),
                             "n_positive": n_pos,
+                            "n_negative": n_negative,
                         }
 
     output_root.mkdir(parents=True, exist_ok=True)
-    config_out = {
-        "schema": SCHEMA,
-        "checkpoint_path": str(checkpoint_path),
-        "thresholds": best_config,
-        "calibration_metrics": best_metrics,
-    }
-    write_json(output_root / "preview_detector_config.json", config_out)
 
-    # PREVIEW_CHECK evaluation
-    check_results = []
-    scheduler_kwargs = {
+    # PREVIEW_CHECK evaluation with best config
+    sk = {
         "burst_length": 10,
         "tau_critical": best_config["tau_critical"],
         "tau_release": best_config["tau_release"],
@@ -194,35 +259,83 @@ def run_calibration(
         "persistence_window": best_config["persistence_window"],
         "persistence_required": best_config["persistence_required"],
     }
+    check_results = []
     for i in range(len(check_ds)):
         ep = check_ds[i]
-        r = evaluate_episode_with_thresholds(
-            model, ep, device, use_policy_intent, scheduler_kwargs)
+        r = evaluate_episode_t10(model, ep, device, use_policy_intent, sk, norm)
         check_results.append(r)
 
-    n_pos_check = sum(1 for r in check_results if r["has_start"])
-    n_trig_pos_check = sum(1 for r in check_results if r["has_start"] and r["triggered"])
-    n_false_check = sum(1 for r in check_results if not r["has_start"] and r["triggered"])
-    n_release_check = sum(1 for r in check_results if r["release_safe_at_trigger"])
+    n_pos = sum(1 for r in check_results if r["has_start"])
+    n_feasible = sum(1 for r in check_results if r["feasible_hit"])
+    n_full_T10 = sum(1 for r in check_results if r["full_T10_containment"])
+    n_negative = sum(1 for r in check_results if not r["has_start"])
+    n_false = sum(1 for r in check_results if r["negative_any_trigger"])
+    n_release = sum(1 for r in check_results if r["release_safe_at_trigger"])
+    n_early = sum(1 for r in check_results if r["early_trigger"])
+    n_late = sum(1 for r in check_results if r["late_trigger"])
+
+    delays = [r["start_delay"] for r in check_results if r["feasible_hit"]]
+    median_delay = float(np.median(delays)) if delays else -1.0
+
+    per_suite = {}
+    for suite in TARGET_SUITES:
+        suite_results = [r for i, r in enumerate(check_results)
+                         if check_ds[i]["suite"] == suite]
+        suite_pos = sum(1 for r in suite_results if r["has_start"])
+        suite_feas = sum(1 for r in suite_results if r["feasible_hit"])
+        per_suite[suite] = {
+            "n": len(suite_results),
+            "positive": suite_pos,
+            "feasible_hit": suite_feas,
+            "feasible_hit_rate": suite_feas / max(suite_pos, 1),
+        }
 
     check_report = {
         "schema": SCHEMA,
         "total": len(check_results),
-        "positive_episodes": n_pos_check,
-        "triggered_positive": n_trig_pos_check,
-        "positive_recall": n_trig_pos_check / max(n_pos_check, 1),
-        "false_triggers": n_false_check,
-        "false_trigger_rate": n_false_check / max(len(check_results) - n_pos_check, 1),
-        "release_safe_triggers": n_release_check,
-        "release_safe_trigger_rate": n_release_check / max(len(check_results), 1),
+        "positive_episodes": n_pos,
+        "negative_episodes": n_negative,
+        "feasible_hit": n_feasible,
+        "feasible_hit_rate": n_feasible / max(n_pos, 1),
+        "full_T10_containment": n_full_T10,
+        "full_T10_containment_rate": n_full_T10 / max(n_pos, 1),
+        "negative_any_trigger": n_false,
+        "negative_any_trigger_rate": n_false / max(n_negative, 1),
+        "release_safe_emit": n_release,
+        "release_safe_emit_rate": n_release / max(len(check_results), 1),
+        "early_trigger_count": n_early,
+        "late_trigger_count": n_late,
+        "median_start_delay": median_delay,
+        "per_suite": per_suite,
     }
     write_json(output_root / "preview_check_report.json", check_report)
 
+    # Gate logic
+    fr = check_report["feasible_hit_rate"]
+    fp = check_report["negative_any_trigger_rate"]
+    rs = check_report["release_safe_emit_rate"]
+    suite_rates = [per_suite[s]["feasible_hit_rate"] for s in TARGET_SUITES]
+
     status = "PASS_C2G_R9P_PREVIEW_CHECK"
-    if check_report["positive_recall"] < 0.55:
-        status = "HOLD_C2G_R9P_LOW_RECALL"
-    elif check_report["false_trigger_rate"] > 0.15:
+    if fr < 0.55:
+        status = "HOLD_C2G_R9P_LOW_FEASIBLE_HIT"
+    elif fp > 0.15:
         status = "HOLD_C2G_R9P_HIGH_FALSE_TRIGGER"
+    elif rs > 0.03:
+        status = "HOLD_C2G_R9P_HIGH_RELEASE_SAFE_EMIT"
+    elif sum(1 for s in suite_rates if s >= 0.50) < 2:
+        status = "HOLD_C2G_R9P_INSUFFICIENT_SUITE_COVERAGE"
+
+    config_out = {
+        "schema": SCHEMA,
+        "checkpoint_path": str(checkpoint_path),
+        "checkpoint_sha256": sha256_file(checkpoint_path),
+        "normalization_sha256": norm["sha256"] if norm else None,
+        "thresholds": best_config,
+        "calibration_metrics": best_metrics,
+        "preview_check": check_report,
+    }
+    write_json(output_root / "preview_detector_config.json", config_out)
 
     report = {
         "schema": SCHEMA,
@@ -253,8 +366,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         device_str=args.device,
     )
     print(f"Calibration: {report['status']}")
-    print(f"  CHECK recall: {report['preview_check']['positive_recall']:.3f}")
-    print(f"  CHECK false trigger rate: {report['preview_check']['false_trigger_rate']:.3f}")
+    check = report["preview_check"]
+    print(f"  Feasible hit: {check['feasible_hit_rate']:.3f}  "
+          f"T10 containment: {check['full_T10_containment_rate']:.3f}")
+    print(f"  False trigger: {check['negative_any_trigger_rate']:.3f}  "
+          f"Release-safe emit: {check['release_safe_emit_rate']:.3f}")
     return 0 if "PASS" in report["status"] else 1
 
 

@@ -114,17 +114,55 @@ def audit_episode_npz(npz_path: Path) -> dict[str, Any]:
 def audit_materialization(
     plan_root: Path,
     materialization_root: Path,
+    output_root: Path,
 ) -> dict[str, Any]:
     index_path = materialization_root / "dataset_index.jsonl"
+    plan_manifest_path = plan_root / "r9p_preview_episode_manifest.jsonl"
+
     if not index_path.exists():
         return {"schema": SCHEMA, "status": "HOLD_no_index", "error": "dataset_index.jsonl not found"}
+    if not plan_manifest_path.exists():
+        return {"schema": SCHEMA, "status": "HOLD_no_plan", "error": "plan manifest not found"}
 
     index_rows = read_jsonl(index_path)
+    plan_rows = read_jsonl(plan_manifest_path)
+
+    # Closure: plan identities == index identities == actual NPZ set
+    plan_keys = {r["parent_key"] for r in plan_rows}
+    index_keys = {r["parent_key"] for r in index_rows}
+
+    missing_from_index = sorted(plan_keys - index_keys)
+    extra_in_index = sorted(index_keys - plan_keys)
+    closure_issues = []
+    if missing_from_index:
+        closure_issues.append(f"in plan but not index: {len(missing_from_index)} episodes")
+    if extra_in_index:
+        closure_issues.append(f"in index but not plan: {len(extra_in_index)} episodes")
+    if len(index_rows) != len(plan_rows):
+        closure_issues.append(
+            f"count mismatch: plan={len(plan_rows)}, index={len(index_rows)}"
+        )
+
+    # Verify split distribution
+    plan_splits = {}
+    for r in plan_rows:
+        plan_splits[r["parent_key"]] = r["preview_split"]
+    index_splits = {}
+    for r in index_rows:
+        index_splits[r["parent_key"]] = r["preview_split"]
+
+    split_mismatches = []
+    for key in plan_keys & index_keys:
+        if plan_splits.get(key) != index_splits.get(key):
+            split_mismatches.append(key)
+
     issues = []
     valid_count = 0
+    npz_keys = set()
 
     for row in index_rows:
         npz_path = materialization_root / row["npz_path"]
+        npz_keys.add(str(npz_path))
         if not npz_path.exists():
             issues.append({"parent_key": row["parent_key"], "error": "npz_missing"})
             continue
@@ -141,16 +179,39 @@ def audit_materialization(
         else:
             issues.append({"parent_key": row["parent_key"], "issues": audit["issues"]})
 
-    status = GATE_PASS if not issues else f"HOLD_{GATE_PASS}"
+    # Check for extra NPZ files not in index
+    episodes_dir = materialization_root / "episodes"
+    actual_npz_files = set()
+    if episodes_dir.is_dir():
+        actual_npz_files = {str(p) for p in episodes_dir.rglob("*.npz")}
+    extra_npz = sorted(actual_npz_files - npz_keys)
+    missing_npz = sorted(npz_keys - actual_npz_files)
+
+    all_ok = (
+        not closure_issues
+        and not split_mismatches
+        and not issues
+        and not extra_npz
+        and not missing_npz
+    )
+    status = GATE_PASS if all_ok else f"HOLD_{GATE_PASS}"
+
+    output_root.mkdir(parents=True, exist_ok=True)
     report = {
         "schema": SCHEMA,
         "status": status,
-        "total": len(index_rows),
-        "valid": valid_count,
-        "issues": len(issues),
+        "plan_episodes": len(plan_rows),
+        "index_episodes": len(index_rows),
+        "valid_npz": valid_count,
+        "total_npz": len(index_rows),
+        "closure_issues": closure_issues,
+        "split_mismatches": len(split_mismatches),
+        "npz_issues": len(issues),
+        "extra_npz_files": len(extra_npz),
+        "missing_npz_files": len(missing_npz),
         "issue_details": issues[:50],
     }
-    report_path = materialization_root / "materialization_audit.json"
+    report_path = output_root / "materialization_audit.json"
     write_json(report_path, report)
     return report
 
@@ -159,12 +220,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Audit R9P materialization")
     parser.add_argument("--plan-root", required=True, type=Path)
     parser.add_argument("--materialization-root", required=True, type=Path)
+    parser.add_argument("--output-root", required=True, type=Path)
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    report = audit_materialization(args.plan_root, args.materialization_root)
+    report = audit_materialization(args.plan_root, args.materialization_root, args.output_root)
     print(f"Materialization audit: {report['status']}")
     print(f"  Valid: {report['valid']}/{report['total']}")
     if report["issues"]:
