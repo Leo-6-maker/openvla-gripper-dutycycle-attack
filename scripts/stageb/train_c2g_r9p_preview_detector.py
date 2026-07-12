@@ -447,10 +447,12 @@ def collate_episodes(batch: list[dict]) -> dict[str, Any]:
             masks[h][i, :T] = item["masks"][h]
         known_mask[i, :T] = item["known_mask"]
 
-        all_known = item["known_mask"].all()
-        # Trigger-negative: fully known AND no burst_feasible AND no window_start
-        any_start = item["targets"]["window_start"].any() if all_known else False
-        any_burst = item["targets"]["burst_feasible"].any() if all_known else False
+        # Trigger-negative: every supervised head is fully known AND no masked
+        # burst_feasible AND no masked window_start.  known_mask alone is not
+        # sufficient because head-specific masks can still contain unknowns.
+        all_known = all(bool(item["masks"][h].all()) for h in R9P_HEAD_NAMES)
+        any_start = bool(((item["targets"]["window_start"] > 0.5) & item["masks"]["window_start"]).any()) if all_known else False
+        any_burst = bool(((item["targets"]["burst_feasible"] > 0.5) & item["masks"]["burst_feasible"]).any()) if all_known else False
         ep_fkn[i] = bool(all_known and not any_start and not any_burst)
 
         lang = _hash_language_embedding(item.get("task_language", ""))
