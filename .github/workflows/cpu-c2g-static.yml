@@ -51,6 +51,7 @@ jobs:
             scripts/stageb/run_c2g_r8u_adaptive_gpu_preview.py \
             scripts/stageb/run_c2g_r8w_full_clean_shard.py \
             scripts/stageb/run_c2g_r8w_gpu4567_16worker.py \
+            scripts/stageb/run_c2g_r8z_ogs_label_generation.py \
             scripts/stageb/run_c2g_r8y_l10_520_shard.py \
             scripts/stageb/run_c2g_r8y_l10_520_dynamic_scheduler.py \
             src/gripper_attack/c2g_bddl_metadata.py \
@@ -79,12 +80,15 @@ jobs:
             tools/multisuite_detector/audit_c2g_r8t_teacher_v2_canary.py \
             tools/multisuite_detector/audit_c2g_r8u_postcanary.py \
             tools/multisuite_detector/audit_c2g_r8w_full_clean_2000.py \
+            tools/multisuite_detector/audit_c2g_r8z_ogs_canary.py \
+            tools/multisuite_detector/audit_c2g_r8z_ogs_full1500.py \
             tools/multisuite_detector/audit_c2g_static_assets.py \
             tools/multisuite_detector/audit_c2g_static_assets_strict.py \
             tools/multisuite_detector/build_c2g_r8_collection_waves.py \
             tools/multisuite_detector/build_c2g_r8r_clean2000_source_spec.py \
             tools/multisuite_detector/build_c2g_r8t_teacher_v2_canary.py \
             tools/multisuite_detector/build_c2g_r8w_full_clean_2000_plan.py \
+            tools/multisuite_detector/build_c2g_r8z_ogs_official_views.py \
             tools/multisuite_detector/build_c2g_r8y_l10_520_plan.py \
             tools/multisuite_detector/c2g_official_suite_horizons.py \
             tools/multisuite_detector/audit_c2g_r8y_l10_520_canary.py \
@@ -97,6 +101,7 @@ jobs:
             tools/multisuite_detector/c2g_r8r_outputs.py \
             tools/multisuite_detector/c2g_r8s_common.py \
             tools/multisuite_detector/c2g_r8s_episode.py \
+            tools/multisuite_detector/rebuild_c2g_r8z_teacher_v2_labels.py \
             tools/multisuite_detector/materialize_c2g_clean_window_dataset.py \
             tools/multisuite_detector/materialize_c2g_multisuite_dataset.py \
             tools/multisuite_detector/plan_c2g_scientific_corpus.py \
@@ -124,6 +129,10 @@ jobs:
             tests/test_c2g_r8w_full_clean_collector.py \
             tests/test_c2g_r8w_16worker_scheduler.py \
             tests/test_c2g_r8w_full_clean_audit.py \
+            tests/test_c2g_r8z_official_views.py \
+            tests/test_c2g_r8z_teacher_v2_rebuild.py \
+            tests/test_c2g_r8z_sealed_cohorts.py \
+            tests/test_c2g_r8z_ogs_audit.py \
             tests/test_c2g_r8x_hardware_bound_repro.py \
             tests/test_c2g_official_suite_horizons.py \
             tests/test_c2g_r8y_l10_520_plan.py \
@@ -180,6 +189,10 @@ jobs:
             tests.test_c2g_r8w_full_clean_collector \
             tests.test_c2g_r8w_16worker_scheduler \
             tests.test_c2g_r8w_full_clean_audit \
+            tests.test_c2g_r8z_official_views \
+            tests.test_c2g_r8z_teacher_v2_rebuild \
+            tests.test_c2g_r8z_sealed_cohorts \
+            tests.test_c2g_r8z_ogs_audit \
             tests.test_c2g_r8x_hardware_bound_repro \
             tests.test_c2g_official_suite_horizons \
             tests.test_c2g_r8y_l10_520_plan \
