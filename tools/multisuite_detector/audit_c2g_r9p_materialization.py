@@ -16,9 +16,27 @@ from tools.multisuite_detector.build_c2g_r9p_preview_plan import (
     R9P_HEAD_NAMES,
     TARGET_SUITES,
 )
-from tools.multisuite_detector.materialize_c2g_r9p_ogs1500 import (
-    select_smoke_episodes,
-)
+
+SMOKE_SALT = "C2G_R9P_SMOKE"
+SMOKE_PER_SUITE = 8
+
+
+def _smoke_rank(parent_key: str) -> int:
+    """Independent smoke selection: full SHA256 integer rank (same algorithm, independent impl)."""
+    import hashlib
+    return int.from_bytes(
+        hashlib.sha256(f"{SMOKE_SALT}|{parent_key}".encode()).digest(), "big"
+    )
+
+
+def _select_smoke_independent(plan_rows: list[dict]) -> list[dict]:
+    """Independently select 8 episodes per suite via SHA256 integer ranking."""
+    selected = []
+    for suite in TARGET_SUITES:
+        suite_rows = [r for r in plan_rows if r["suite"] == suite]
+        ranked = sorted(suite_rows, key=lambda r: _smoke_rank(r["parent_key"]))
+        selected.extend(ranked[:SMOKE_PER_SUITE])
+    return selected
 
 FORBIDDEN_STUDENT_KEYS = frozenset({
     "object_pose", "target_pose", "object_target_distance",
@@ -144,8 +162,8 @@ def audit_materialization(
             return {"schema": SCHEMA, "status": "HOLD_no_plan",
                     "error": "plan manifest not found — needed to recompute smoke selection"}
         plan_rows = read_jsonl(plan_manifest_path)
-        # Independently recompute smoke selection from plan manifest
-        recomputed = select_smoke_episodes(plan_rows)
+        # Independently recompute smoke selection (own implementation, not imported)
+        recomputed = _select_smoke_independent(plan_rows)
         recomputed_keys = {r["parent_key"] for r in recomputed}
         # Verify 8/8/8 per-suite count
         suite_counts = {}
@@ -269,6 +287,16 @@ def audit_materialization(
     }
     report_path = output_root / "materialization_audit.json"
     write_json(report_path, report)
+    report_sha = sha256_file(report_path)
+    (output_root / "materialization_audit.json.sha256").write_text(
+        f"{report_sha}  materialization_audit.json\n", encoding="utf-8"
+    )
+    # Write SHA256SUMS
+    sums_lines = [f"{report_sha}  materialization_audit.json\n"]
+    sums_path = output_root / "SHA256SUMS"
+    sums_path.write_text("".join(sums_lines), encoding="utf-8")
+    sums_sha = sha256_file(sums_path)
+    (output_root / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n", encoding="utf-8")
     return report
 
 

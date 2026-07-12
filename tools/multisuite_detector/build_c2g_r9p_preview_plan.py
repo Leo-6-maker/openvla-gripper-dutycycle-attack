@@ -423,6 +423,15 @@ def build_plan(
         "hidden": 128,
         "dropout": 0.1,
         "burst_length": 10,
+        "runtime_gate": {
+            "positive_heads": ["critical_window", "grounding_confidence"],
+            "veto_heads": ["release_safe"],
+            "training_only_auxiliary_heads": ["window_start", "burst_feasible", "contact_grasp"],
+            "burst_length": 10,
+            "persistence": {"window": 3, "required": 2},
+            "primary_runtime_metric": "teacher_feasible_hit_at_trigger",
+            "runtime_does_not_gate_on_start_or_burst": True,
+        },
         "loss_weights": dict(LOSS_WEIGHTS),
         "model_a": {
             "use_policy_intent": False,

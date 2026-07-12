@@ -186,12 +186,14 @@ def run_streaming_replay(
             f"config={config_ckpt_sha}, actual={actual_ckpt_sha}"
         )
 
-    # Verify normalization SHA binding
+    # Verify normalization SHA binding (required, not optional)
     norm = load_normalization(materialization_root)
     if norm is None:
         raise FileNotFoundError("normalization.json not found in materialization root")
     config_norm_sha = config.get("normalization_sha256", "")
-    if config_norm_sha and config_norm_sha != norm["sha256"]:
+    if not config_norm_sha:
+        raise ValueError("detector config missing normalization_sha256 field")
+    if config_norm_sha != norm["sha256"]:
         raise ValueError(
             f"detector config normalization_sha256 mismatch: "
             f"config={config_norm_sha}, actual={norm['sha256']}"
@@ -208,13 +210,27 @@ def run_streaming_replay(
         val = float(t[f])
         if not np.isfinite(val):
             raise ValueError(f"threshold '{f}' is non-finite: {val}")
+    # Validate ranges
+    if int(t["burst_length"]) != 10:
+        raise ValueError(f"burst_length must be 10, got {t['burst_length']}")
+    for tau_name in ["tau_critical", "tau_release", "tau_ground"]:
+        v = float(t[tau_name])
+        if not 0.0 <= v <= 1.0:
+            raise ValueError(f"{tau_name}={v} out of [0,1]")
+    pw = int(t["persistence_window"])
+    pr = int(t["persistence_required"])
+    if pw <= 0 or pr <= 0:
+        raise ValueError(f"persistence_window and persistence_required must be positive")
+    if pr > pw:
+        raise ValueError(f"persistence_required ({pr}) > persistence_window ({pw})")
+
     thresholds = {
-        "burst_length": int(t["burst_length"]),
+        "burst_length": 10,
         "tau_critical": float(t["tau_critical"]),
         "tau_release": float(t["tau_release"]),
         "tau_ground": float(t["tau_ground"]),
-        "persistence_window": int(t["persistence_window"]),
-        "persistence_required": int(t["persistence_required"]),
+        "persistence_window": pw,
+        "persistence_required": pr,
     }
 
     index_rows = read_jsonl(materialization_root / "dataset_index.jsonl")
@@ -234,7 +250,9 @@ def run_streaming_replay(
         if not r["fsm_ok"]:
             all_fsm = False
 
-    output_root.mkdir(parents=True, exist_ok=True)
+    if output_root.exists():
+        raise FileExistsError(f"streaming output root already exists: {output_root}")
+    output_root.mkdir(parents=True)
     status = GATE_PASS if (all_equiv and all_fsm) else f"HOLD_{GATE_PASS}"
 
     report = {

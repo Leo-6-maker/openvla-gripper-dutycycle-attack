@@ -57,13 +57,13 @@ class FSMTests(unittest.TestCase):
         self.assertEqual(self.scheduler.state, SchedulerState.IDLE)
 
     def test_one_shot_no_second_trigger(self):
-        # Trigger first attack
+        # Trigger first attack (consumes frame 0)
         for _ in range(3):
             self.scheduler.update(critical_probability=0.9, release_safe_probability=0.1,
                                   grounding_confidence_probability=0.9, valid=True)
         self.assertEqual(self.scheduler.state, SchedulerState.BURST)
-        # Complete burst
-        for _ in range(10):
+        # Complete burst: 9 remaining frames (indices 1-9)
+        for _ in range(9):
             d = self.scheduler.update(critical_probability=0.9, release_safe_probability=0.1,
                                       grounding_confidence_probability=0.9, valid=True)
         self.assertEqual(self.scheduler.state, SchedulerState.DONE)
@@ -74,17 +74,27 @@ class FSMTests(unittest.TestCase):
         self.assertFalse(d.trigger_started)
 
     def test_burst_length_exact(self):
+        # 3rd update triggers and consumes frame 0 immediately
+        d_trigger = None
         for _ in range(3):
-            self.scheduler.update(critical_probability=0.9, release_safe_probability=0.1,
-                                  grounding_confidence_probability=0.9, valid=True)
-        emitted = 0
-        for _ in range(10):
+            d_trigger = self.scheduler.update(critical_probability=0.9, release_safe_probability=0.1,
+                                              grounding_confidence_probability=0.9, valid=True)
+        self.assertTrue(d_trigger.trigger_started)
+        self.assertTrue(d_trigger.attack_active)
+        self.assertEqual(d_trigger.attack_index, 0)
+        # Remaining B-1 frames
+        emitted = 1  # frame 0 consumed by trigger
+        for _ in range(9):
             d = self.scheduler.update(critical_probability=0.9, release_safe_probability=0.1,
                                       grounding_confidence_probability=0.9, valid=True)
             if d.attack_active:
                 emitted += 1
         self.assertEqual(emitted, 10)
+        # Next update should be DONE
+        d = self.scheduler.update(critical_probability=0.9, release_safe_probability=0.1,
+                                  grounding_confidence_probability=0.9, valid=True)
         self.assertEqual(self.scheduler.state, SchedulerState.DONE)
+        self.assertFalse(d.attack_active)
 
     def test_reset(self):
         for _ in range(3):
@@ -123,15 +133,19 @@ class FSMTests(unittest.TestCase):
         self.assertEqual(s.state, SchedulerState.BURST)
 
     def test_attack_index_increments(self):
+        d_trigger = None
         for _ in range(3):
-            self.scheduler.update(critical_probability=0.9, release_safe_probability=0.1,
-                                  grounding_confidence_probability=0.9, valid=True)
+            d_trigger = self.scheduler.update(critical_probability=0.9, release_safe_probability=0.1,
+                                              grounding_confidence_probability=0.9, valid=True)
+        # Trigger frame consumes index 0
+        self.assertEqual(d_trigger.attack_index, 0)
+        # Subsequent frames get 1, 2, 3
         idx = []
         for _ in range(3):
             d = self.scheduler.update(critical_probability=0.9, release_safe_probability=0.1,
                                       grounding_confidence_probability=0.9, valid=True)
             idx.append(d.attack_index)
-        self.assertEqual(idx, [0, 1, 2])
+        self.assertEqual(idx, [1, 2, 3])
 
 
 if __name__ == "__main__":

@@ -250,6 +250,72 @@ def compute_normalization(index_rows: list[dict], episodes_dir: Path) -> dict:
     }
 
 
+def _verify_plan_closure(plan_root: Path, suite_roots: dict[str, Path]) -> dict[str, Any]:
+    """Verify plan checksums, status, and provenance before materialization."""
+    # Verify SHA256SUMS closure
+    sums_path = plan_root / "SHA256SUMS"
+    if not sums_path.exists():
+        raise FileNotFoundError(f"plan SHA256SUMS not found: {sums_path}")
+    sidecar_path = plan_root / "SHA256SUMS.sha256"
+    if not sidecar_path.exists():
+        raise FileNotFoundError(f"plan SHA256SUMS.sha256 not found: {sidecar_path}")
+    sidecar_expected = sidecar_path.read_text().strip().split()[0]
+    sums_actual = sha256_file(sums_path)
+    if sidecar_expected != sums_actual:
+        raise ValueError(f"plan SHA256SUMS.sha256 mismatch: expected {sidecar_expected}, actual {sums_actual}")
+    # Verify each entry in SHA256SUMS
+    for line in sums_path.read_text().splitlines():
+        if not line.strip():
+            continue
+        expected_sha, relpath = line.strip().split("  ", 1)
+        actual = sha256_file(plan_root / relpath)
+        if expected_sha != actual:
+            raise ValueError(f"plan artifact hash mismatch: {relpath}")
+
+    # Load plan and verify status
+    plan_path = plan_root / "r9p_preview_plan.json"
+    if not plan_path.exists():
+        raise FileNotFoundError(f"plan not found: {plan_path}")
+    plan = read_json(plan_path)
+    if plan.get("status") != "PASS_C2G_R9P_PLAN":
+        raise ValueError(f"plan status is not PASS: {plan.get('status')}")
+
+    # Verify source provenance matches CLI roots
+    provenance = plan.get("source_provenance", {})
+    if provenance.get("verification_status") != "PASS":
+        raise ValueError(f"plan provenance verification not PASS: {provenance.get('verification_status')}")
+
+    for suite, cli_root in suite_roots.items():
+        plan_key = f"{suite}_root" if f"{suite}_root" in provenance else None
+        if plan_key is None:
+            # Try alternative key pattern
+            for pk in provenance:
+                if suite in pk and pk.endswith("_root"):
+                    plan_key = pk
+                    break
+        if plan_key:
+            plan_root_str = provenance[plan_key]
+            cli_root_str = str(cli_root.resolve())
+            if plan_root_str != cli_root_str:
+                raise ValueError(
+                    f"{suite} root mismatch: plan={plan_root_str}, CLI={cli_root_str}"
+                )
+
+    # Re-verify suite report SHAs
+    for suite, cli_root in suite_roots.items():
+        report_key = f"{suite}_report"
+        expected_sha = provenance.get(f"{report_key}_sha256_expected", "")
+        report_path = cli_root / "suite_report.json"
+        if report_path.exists() and expected_sha:
+            actual = sha256_file(report_path)
+            if actual != expected_sha:
+                raise ValueError(
+                    f"{suite} report SHA changed since plan: expected {expected_sha}, actual {actual}"
+                )
+
+    return plan
+
+
 def run_materialization(
     plan_root: Path,
     output_root: Path,
@@ -258,6 +324,12 @@ def run_materialization(
     smoke_seed: int = 42,
     suite_roots: dict[str, Path] | None = None,
 ) -> dict[str, Any]:
+    if suite_roots is None:
+        raise ValueError("suite_roots required for materialization")
+
+    # Verify plan integrity and provenance before any materialization
+    plan = _verify_plan_closure(plan_root, suite_roots)
+
     manifest_path = plan_root / "r9p_preview_episode_manifest.jsonl"
     if not manifest_path.exists():
         raise FileNotFoundError(f"plan manifest not found: {manifest_path}")
@@ -356,7 +428,39 @@ def run_materialization(
 
     report_path = output_root / ("smoke_report.json" if smoke else "materialization_report.json")
     write_json(report_path, report)
+
+    # Write SHA256SUMS covering all artifacts
+    _write_materialization_sums(output_root, smoke)
     return report
+
+
+def _write_materialization_sums(output_root: Path, smoke: bool) -> None:
+    report_name = "smoke_report.json" if smoke else "materialization_report.json"
+    index_name = "dataset_index.jsonl"
+    manifest_names = [report_name, index_name]
+    if smoke:
+        manifest_names.append("smoke_selection_manifest.jsonl")
+    if not smoke:
+        norm_path = output_root / "normalization.json"
+        if norm_path.exists():
+            manifest_names.append("normalization.json")
+
+    # Also hash NPZ files listed in index
+    index_path = output_root / index_name
+    if index_path.exists():
+        index_rows = read_jsonl(index_path)
+        for row in index_rows:
+            manifest_names.append(row["npz_path"])
+
+    lines = []
+    for name in sorted(manifest_names):
+        p = output_root / name
+        if p.exists():
+            lines.append(f"{sha256_file(p)}  {name}\n")
+    sums_path = output_root / "SHA256SUMS"
+    sums_path.write_text("".join(lines), encoding="utf-8")
+    sums_sha = sha256_file(sums_path)
+    (output_root / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n", encoding="utf-8")
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
