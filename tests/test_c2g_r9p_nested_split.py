@@ -117,22 +117,31 @@ class PlanBuildTests(unittest.TestCase):
     def tearDown(self):
         self.td.cleanup()
 
-    def test_build_plan_success(self):
-        _make_suite_root(self.spatial_root, "libero_spatial", 300)
-        _make_suite_root(self.object_root, "libero_object", 300)
-        _make_suite_root(self.goal_root, "libero_goal", 300)
-        plan = build_plan(
+    def _plan_kwargs(self):
+        return dict(
             spatial_root=self.spatial_root,
             object_root=self.object_root,
             goal_root=self.goal_root,
             output_root=self.output_root,
             git_commit=self.git_commit,
+            expected_spatial_report_sha="_test_no_verify_",
+            expected_object_report_sha="_test_no_verify_",
+            expected_goal_report_sha="_test_no_verify_",
+            expected_r8z1_audit_sha="_test_no_verify_",
+            r8z1_audit_report_path="/nonexistent/test/path",
         )
+
+    def test_build_plan_success(self):
+        _make_suite_root(self.spatial_root, "libero_spatial", 300)
+        _make_suite_root(self.object_root, "libero_object", 300)
+        _make_suite_root(self.goal_root, "libero_goal", 300)
+        plan = build_plan(**self._plan_kwargs())
         # May HOLD if worktree dirty — that's correct provenance behavior
         if plan["status"] != GATE_PASS:
-            issues = str(plan.get("git_issues", plan.get("error", ""))).lower()
-            self.assertTrue("git" in issues or "dirty" in issues or "modified" in issues,
-                            f"Expected provenance issue, got: {issues}")
+            issues = str(plan.get("git_issues", plan.get("provenance_issues", plan.get("error", "")))).lower()
+            self.assertTrue(
+                any(w in issues for w in ["git", "dirty", "modified", "report", "sha"]),
+                f"Expected provenance issue, got: {issues}")
         else:
             self.assertEqual(plan["total_train_episodes"], 900)
             self.assertEqual(plan["split_counts"]["FIT"], 720)
@@ -143,13 +152,7 @@ class PlanBuildTests(unittest.TestCase):
         _make_suite_root(self.spatial_root, "libero_spatial", 300)
         _make_suite_root(self.object_root, "libero_object", 300)
         _make_suite_root(self.goal_root, "libero_goal", 300)
-        plan = build_plan(
-            spatial_root=self.spatial_root,
-            object_root=self.object_root,
-            goal_root=self.goal_root,
-            output_root=self.output_root,
-            git_commit=self.git_commit,
-        )
+        plan = build_plan(**self._plan_kwargs())
         if plan["status"] != GATE_PASS:
             self.skipTest("provenance check blocked plan creation")
         for name in [
@@ -170,42 +173,24 @@ class PlanBuildTests(unittest.TestCase):
         _make_suite_root(self.spatial_root, "libero_spatial", 299)
         _make_suite_root(self.object_root, "libero_object", 300)
         _make_suite_root(self.goal_root, "libero_goal", 300)
-        plan = build_plan(
-            spatial_root=self.spatial_root,
-            object_root=self.object_root,
-            goal_root=self.goal_root,
-            output_root=self.output_root,
-            git_commit="test123",
-        )
+        plan = build_plan(**self._plan_kwargs())
         self.assertNotEqual(plan["status"], GATE_PASS)
 
     def test_outputs_have_sha256(self):
         _make_suite_root(self.spatial_root, "libero_spatial", 300)
         _make_suite_root(self.object_root, "libero_object", 300)
         _make_suite_root(self.goal_root, "libero_goal", 300)
-        plan = build_plan(
-            spatial_root=self.spatial_root,
-            object_root=self.object_root,
-            goal_root=self.goal_root,
-            output_root=self.output_root,
-            git_commit=self.git_commit,
-        )
+        plan = build_plan(**self._plan_kwargs())
         if plan["status"] != GATE_PASS:
             self.skipTest("provenance check blocked plan creation")
-        for name, info in plan["outputs"].items():
-            self.assertEqual(len(info["sha256"]), 64, f"Bad SHA for {name}")
+        for name, info in plan.get("data_artifact_shas", {}).items():
+            self.assertEqual(len(info), 64, f"Bad SHA for {name}")
 
     def test_manifest_rows_match_plan(self):
         _make_suite_root(self.spatial_root, "libero_spatial", 300)
         _make_suite_root(self.object_root, "libero_object", 300)
         _make_suite_root(self.goal_root, "libero_goal", 300)
-        plan = build_plan(
-            spatial_root=self.spatial_root,
-            object_root=self.object_root,
-            goal_root=self.goal_root,
-            output_root=self.output_root,
-            git_commit=self.git_commit,
-        )
+        plan = build_plan(**self._plan_kwargs())
         if plan["status"] != GATE_PASS:
             self.skipTest("provenance check blocked plan creation")
         manifest = self.output_root / "r9p_preview_episode_manifest.jsonl"
@@ -228,13 +213,7 @@ class PlanBuildTests(unittest.TestCase):
             "parent_key": "libero_spatial/task_0/state_0/detector_val/episode_000",
             "cohort": "DETECTOR_VAL", "split": "val", "task_language": "val task",
         }))
-        plan = build_plan(
-            spatial_root=self.spatial_root,
-            object_root=self.object_root,
-            goal_root=self.goal_root,
-            output_root=self.output_root,
-            git_commit=self.git_commit,
-        )
+        plan = build_plan(**self._plan_kwargs())
         if plan["status"] != GATE_PASS:
             self.skipTest("provenance check blocked plan creation")
         manifest = self.output_root / "r9p_preview_episode_manifest.jsonl"

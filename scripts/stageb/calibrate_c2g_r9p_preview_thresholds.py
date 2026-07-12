@@ -207,10 +207,10 @@ def run_calibration(
         {"persistence_window": 1, "persistence_required": 1},
     ]
 
-    best_config = None
-    best_metrics = None
-    # Lexicographic: feasible_hit, then -negative_trigger rate, then -release_safe rate
-    best_key = (-999.0, 999.0, 999.0)
+    # Phase 1: filter by safety constraints
+    MAX_FALSE_RATE = 0.10
+    MAX_RELEASE_RATE = 0.02
+    feasible_configs = []
 
     for tau_critical in tau_values:
         for tau_release in [0.3, 0.4, 0.5, 0.6]:
@@ -236,33 +236,62 @@ def run_calibration(
                     n_release = sum(1 for r in results if r["release_safe_at_trigger"])
                     n_full_T10 = sum(1 for r in results if r["full_T10_containment"])
 
-                    feasible_rate = n_feasible / max(n_pos, 1)
                     false_rate = n_false / max(n_negative, 1)
                     release_rate = n_release / max(len(results), 1)
 
-                    key = (round(feasible_rate, 3), -round(false_rate, 3), -round(release_rate, 3))
-                    if key > best_key:
-                        best_key = key
-                        best_config = {
-                            "tau_critical": tau_critical,
-                            "tau_release": tau_release,
-                            "tau_ground": tau_ground,
-                            **p_cfg,
-                        }
-                        best_metrics = {
-                            "feasible_hit_rate": feasible_rate,
-                            "feasible_hit_count": n_feasible,
-                            "full_T10_containment_count": n_full_T10,
-                            "negative_episode_any_trigger_rate": false_rate,
-                            "false_trigger_count": n_false,
-                            "release_safe_emit_rate": release_rate,
-                            "release_safe_emit_count": n_release,
-                            "n_cal_episodes": len(results),
-                            "n_positive": n_pos,
-                            "n_negative": n_negative,
-                        }
+                    # Safety-constraint filter first
+                    if false_rate > MAX_FALSE_RATE or release_rate > MAX_RELEASE_RATE:
+                        continue
 
-    output_root.mkdir(parents=True, exist_ok=True)
+                    feasible_configs.append({
+                        "config": sk,
+                        "feasible_rate": n_feasible / max(n_pos, 1),
+                        "full_T10_count": n_full_T10,
+                        "false_rate": false_rate,
+                        "release_rate": release_rate,
+                        "n_pos": n_pos,
+                        "n_feasible": n_feasible,
+                        "n_false": n_false,
+                        "n_release": n_release,
+                        "n_full_T10": n_full_T10,
+                        "n_episodes": len(results),
+                        "n_negative": n_negative,
+                    })
+
+    if not feasible_configs:
+        return {
+            "schema": SCHEMA,
+            "status": "HOLD_C2G_R9P_NO_FEASIBLE_THRESHOLD",
+            "error": f"No config satisfies false<={MAX_FALSE_RATE} and release<={MAX_RELEASE_RATE}",
+        }
+
+    # Phase 2: within feasible, maximize feasible_hit, then T10 containment, then minimize false
+    best = max(feasible_configs, key=lambda c: (
+        c["feasible_rate"],
+        c["full_T10_count"],
+        -c["false_rate"],
+        -c["release_rate"],
+        c["config"]["tau_critical"],  # prefer higher thresholds
+    ))
+
+    best_config = best["config"]
+    best_metrics = {
+        "feasible_hit_rate": best["feasible_rate"],
+        "feasible_hit_count": best["n_feasible"],
+        "full_T10_containment_count": best["n_full_T10"],
+        "negative_episode_any_trigger_rate": best["false_rate"],
+        "false_trigger_count": best["n_false"],
+        "release_safe_emit_rate": best["release_rate"],
+        "release_safe_emit_count": best["n_release"],
+        "n_cal_episodes": best["n_episodes"],
+        "n_positive": best["n_pos"],
+        "n_negative": best["n_negative"],
+        "feasible_configs_tested": len(feasible_configs),
+    }
+
+    if output_root.exists():
+        raise FileExistsError(f"calibration output root already exists: {output_root}")
+    output_root.mkdir(parents=True)
 
     # PREVIEW_CHECK evaluation with best config
     sk = {

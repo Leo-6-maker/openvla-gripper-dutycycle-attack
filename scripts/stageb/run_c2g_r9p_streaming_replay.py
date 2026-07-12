@@ -28,6 +28,7 @@ from tools.multisuite_detector.build_c2g_r9p_preview_plan import (
     R9P_HEAD_NAMES,
 )
 from tools.multisuite_detector.c2g_r8r_common import (
+    read_json,
     read_jsonl,
     sha256_file,
     write_json,
@@ -161,6 +162,7 @@ def run_streaming_replay(
     checkpoint_path: Path,
     output_root: Path,
     *,
+    detector_config_path: Path | None = None,
     max_episodes: int = 0,
     device_str: str = "cuda",
 ) -> dict[str, Any]:
@@ -168,16 +170,38 @@ def run_streaming_replay(
     model, raw = _load_model(checkpoint_path, device)
     use_policy_intent = model.config.use_policy_intent
 
-    # Load frozen thresholds from checkpoint
-    ckpt_thresholds = raw.get("thresholds", {})
-    thresholds = {
-        "burst_length": int(ckpt_thresholds.get("burst_length", 10)),
-        "tau_critical": float(ckpt_thresholds.get("tau_critical", 0.5)),
-        "tau_release": float(ckpt_thresholds.get("tau_release", 0.5)),
-        "tau_ground": float(ckpt_thresholds.get("tau_ground", 0.5)),
-        "persistence_window": int(ckpt_thresholds.get("persistence_window", 3)),
-        "persistence_required": int(ckpt_thresholds.get("persistence_required", 2)),
-    }
+    # Load frozen thresholds
+    if detector_config_path is not None and detector_config_path.exists():
+        config = read_json(detector_config_path)
+        # Verify checkpoint SHA binding
+        config_ckpt_sha = config.get("checkpoint_sha256", "")
+        actual_ckpt_sha = sha256_file(checkpoint_path)
+        if config_ckpt_sha and config_ckpt_sha != actual_ckpt_sha:
+            raise ValueError(
+                f"detector config checkpoint_sha256 mismatch: "
+                f"config={config_ckpt_sha}, actual={actual_ckpt_sha}"
+            )
+        t = config.get("thresholds", {})
+        if not t:
+            raise ValueError("detector config has no thresholds")
+        thresholds = {
+            "burst_length": int(t["burst_length"]),
+            "tau_critical": float(t["tau_critical"]),
+            "tau_release": float(t["tau_release"]),
+            "tau_ground": float(t["tau_ground"]),
+            "persistence_window": int(t["persistence_window"]),
+            "persistence_required": int(t["persistence_required"]),
+        }
+    else:
+        ckpt_thresholds = raw.get("thresholds", {})
+        thresholds = {
+            "burst_length": int(ckpt_thresholds.get("burst_length", 10)),
+            "tau_critical": float(ckpt_thresholds.get("tau_critical", 0.5)),
+            "tau_release": float(ckpt_thresholds.get("tau_release", 0.5)),
+            "tau_ground": float(ckpt_thresholds.get("tau_ground", 0.5)),
+            "persistence_window": int(ckpt_thresholds.get("persistence_window", 3)),
+            "persistence_required": int(ckpt_thresholds.get("persistence_required", 2)),
+        }
 
     # Load normalization
     norm = load_normalization(materialization_root)
@@ -229,6 +253,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--checkpoint", required=True, type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
     parser.add_argument("--max-episodes", type=int, default=0)
+    parser.add_argument("--detector-config", type=Path, default=None,
+                        help="Path to preview_detector_config.json with frozen thresholds")
     parser.add_argument("--device", default="cuda")
     return parser.parse_args(argv)
 
@@ -239,6 +265,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         materialization_root=args.materialization_root,
         checkpoint_path=args.checkpoint,
         output_root=args.output_root,
+        detector_config_path=args.detector_config,
         max_episodes=args.max_episodes,
         device_str=args.device,
     )

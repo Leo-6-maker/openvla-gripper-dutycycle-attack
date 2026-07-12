@@ -287,8 +287,10 @@ def collate_episodes(batch: list[dict]) -> dict[str, Any]:
         known_mask[i, :T] = item["known_mask"]
 
         all_known = item["known_mask"].all()
-        any_positive = item["targets"]["critical_window"].any() if all_known else False
-        ep_fkn[i] = bool(all_known and not any_positive)
+        # Trigger-negative: fully known AND no burst_feasible AND no window_start
+        any_start = item["targets"]["window_start"].any() if all_known else False
+        any_burst = item["targets"]["burst_feasible"].any() if all_known else False
+        ep_fkn[i] = bool(all_known and not any_start and not any_burst)
 
         lang = _hash_language_embedding(item.get("task_language", ""))
         language_embeddings.append(torch.from_numpy(lang))

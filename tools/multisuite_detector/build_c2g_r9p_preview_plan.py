@@ -290,6 +290,9 @@ def build_plan(
             "error": f"output root already exists: {output_root}",
         }
     output_root.mkdir(parents=True)
+
+    all_rows: list[dict] = []
+    errors: list[dict] = []
     for suite, root in suite_roots.items():
         try:
             rows = discover_episodes(root, suite)
@@ -438,6 +441,11 @@ def build_plan(
         "r9p_execution_boundary.json",
     ]
 
+    # Compute data artifact SHAs for plan binding
+    data_artifact_shas = {
+        name: sha256_file(output_root / name) for name in data_artifacts
+    }
+
     plan = {
         "schema": SCHEMA,
         "status": GATE_PASS,
@@ -452,14 +460,7 @@ def build_plan(
         "per_suite_tasks": per_suite_tasks,
         "preview_split_salt": PREVIEW_SPLIT_SALT,
         "official_horizons": {s: OFFICIAL_MAX_POLICY_STEPS[s] for s in TARGET_SUITES},
-        "outputs": {
-            name: {
-                "path": name,
-                "sha256": sha256_file(output_root / name),
-            }
-            for name in artifacts
-        },
-        "sha256sums_sha256": sums_sha,
+        "data_artifact_shas": data_artifact_shas,
         "boundaries": {
             "canonical_val_reads": 0,
             "canonical_test_reads": 0,
@@ -476,8 +477,8 @@ def build_plan(
         f"{plan_sha}  r9p_preview_plan.json\n", encoding="utf-8"
     )
 
-    # Write SHA256SUMS after plan so plan is included
-    all_artifacts = data_artifacts + ["r9p_preview_plan.json"]
+    # Write SHA256SUMS covering data artifacts + plan + plan.sha256
+    all_artifacts = data_artifacts + ["r9p_preview_plan.json", "r9p_preview_plan.json.sha256"]
     sums_lines = [f"{sha256_file(output_root / name)}  {name}\n" for name in all_artifacts]
     sums_path = output_root / "SHA256SUMS"
     sums_path.write_text("".join(sums_lines), encoding="utf-8")
@@ -493,11 +494,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--goal-root", required=True, type=Path, help="R8Z goal suite root")
     parser.add_argument("--output-root", required=True, type=Path, help="R9P plan output root")
     parser.add_argument("--git-commit", required=True, help="Current git commit SHA")
-    parser.add_argument("--expected-spatial-report-sha", default="")
-    parser.add_argument("--expected-object-report-sha", default="")
-    parser.add_argument("--expected-goal-report-sha", default="")
-    parser.add_argument("--expected-r8z1-audit-sha", default="")
-    parser.add_argument("--r8z1-audit-report-path", default="")
+    parser.add_argument("--expected-spatial-report-sha", required=True)
+    parser.add_argument("--expected-object-report-sha", required=True)
+    parser.add_argument("--expected-goal-report-sha", required=True)
+    parser.add_argument("--expected-r8z1-audit-sha", required=True)
+    parser.add_argument("--r8z1-audit-report-path", required=True)
     parser.add_argument("--mode", default="preview", choices=["preview", "run"],
                         help="preview: dry-run validation only; run: materialize plan")
     return parser.parse_args(argv)
