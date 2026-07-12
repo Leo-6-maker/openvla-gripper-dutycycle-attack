@@ -461,6 +461,7 @@ def run_scheduler(
 
     def poll_processes() -> None:
         """Check completed subprocesses (P0-4: stderr→log file)."""
+        nonlocal loading_worker_id
         for wid, proc in list(worker_processes.items()):
             ret = proc.poll()
             if ret is None:
