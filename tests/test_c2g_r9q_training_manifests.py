@@ -46,6 +46,10 @@ class R9QManifestTests(unittest.TestCase):
             b2_rows = [json.loads(line) for line in (Path(tmp) / "b2" / "fit_manifest.jsonl").read_text().splitlines()]
             self.assertNotIn("libero_10", {row["suite"] for row in a2_rows})
             self.assertIn("libero_10", {row["suite"] for row in b2_rows})
+            for view in (Path(tmp) / "a2", Path(tmp) / "b2"):
+                for line in (view / "SHA256SUMS").read_text().splitlines():
+                    digest, name = line.split()
+                    self.assertEqual(digest, hashlib.sha256((view / name).read_bytes()).hexdigest())
 
 
 if __name__ == "__main__":

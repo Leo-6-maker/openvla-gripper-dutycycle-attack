@@ -135,12 +135,8 @@ def build_views(
     _write_json(manifest_path, manifest)
     files = [p for p in output_root.iterdir() if p.is_file()]
     sums = output_root / "SHA256SUMS"
-    sums.write_text("".join(f"{sha256_file(p)}  {p.name}\n" for p in sorted(files, key=lambda p: p.name)), encoding="utf-8")
-    sums_sha = sha256_file(sums)
-    (output_root / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n", encoding="utf-8")
-    manifest["sha256sums_sha256"] = sums_sha
-    _write_json(manifest_path, manifest)
-    # Rebuild the closure after the manifest update, then freeze the final list.
+    # Keep the manifest independent of the checksum file; writing the checksum
+    # back into the manifest would make the closure self-referential.
     files = [p for p in output_root.iterdir() if p.is_file() and p.name not in {"SHA256SUMS", "SHA256SUMS.sha256"}]
     sums.write_text("".join(f"{sha256_file(p)}  {p.name}\n" for p in sorted(files, key=lambda p: p.name)), encoding="utf-8")
     sums_sha = sha256_file(sums)
