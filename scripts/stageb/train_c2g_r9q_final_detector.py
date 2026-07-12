@@ -203,6 +203,8 @@ def overfit_smoke(
     }}, checkpoint)
     reloaded = base.C2gGripperCriticalWindowDetector(model_config).to(device)
     reloaded.load_state_dict(torch.load(checkpoint, map_location=device, weights_only=False)["model_state_dict"])
+    model.eval()
+    reloaded.eval()
     with torch.no_grad():
         first = model((proprio_raw - p_mean) / p_std, language,
                       policy_intent=(policy_raw - pi_mean) / pi_std, return_sequence=True)
