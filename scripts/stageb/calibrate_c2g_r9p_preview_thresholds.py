@@ -194,6 +194,8 @@ def run_calibration(
     use_policy_intent = model.config.use_policy_intent
 
     norm = load_normalization(materialization_root)
+    if norm is None:
+        raise FileNotFoundError("normalization.json not found in materialization root")
 
     index_rows = read_jsonl(materialization_root / "dataset_index.jsonl")
     cal_ds = R9PEpisodeDataset(index_rows, materialization_root, split_filter="CAL")

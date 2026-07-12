@@ -16,6 +16,9 @@ from tools.multisuite_detector.build_c2g_r9p_preview_plan import (
     R9P_HEAD_NAMES,
     TARGET_SUITES,
 )
+from tools.multisuite_detector.materialize_c2g_r9p_ogs1500 import (
+    select_smoke_episodes,
+)
 
 FORBIDDEN_STUDENT_KEYS = frozenset({
     "object_pose", "target_pose", "object_target_distance",
@@ -137,11 +140,40 @@ def audit_materialization(
     index_rows = read_jsonl(index_path)
 
     if smoke:
+        if not plan_manifest_path.exists():
+            return {"schema": SCHEMA, "status": "HOLD_no_plan",
+                    "error": "plan manifest not found — needed to recompute smoke selection"}
+        plan_rows = read_jsonl(plan_manifest_path)
+        # Independently recompute smoke selection from plan manifest
+        recomputed = select_smoke_episodes(plan_rows)
+        recomputed_keys = {r["parent_key"] for r in recomputed}
+        # Verify 8/8/8 per-suite count
+        suite_counts = {}
+        for r in recomputed:
+            suite_counts[r["suite"]] = suite_counts.get(r["suite"], 0) + 1
+        for s in TARGET_SUITES:
+            if suite_counts.get(s, 0) != 8:
+                return {"schema": SCHEMA, "status": "HOLD_smoke_count",
+                        "error": f"recomputed smoke selection: {s}={suite_counts.get(s, 0)}, expected 8"}
+        if len(recomputed) != 24:
+            return {"schema": SCHEMA, "status": "HOLD_smoke_count",
+                    "error": f"recomputed smoke selection: {len(recomputed)} total, expected 24"}
+
         if not smoke_manifest_path.exists():
             return {"schema": SCHEMA, "status": "HOLD_no_smoke_manifest",
                     "error": "smoke_selection_manifest.jsonl not found"}
-        reference_rows = read_jsonl(smoke_manifest_path)
-        expected_count = len(reference_rows)
+        materializer_selection = read_jsonl(smoke_manifest_path)
+        materializer_keys = {r["parent_key"] for r in materializer_selection}
+
+        # Verify recomputed == materializer manifest
+        if recomputed_keys != materializer_keys:
+            extra = sorted(materializer_keys - recomputed_keys)
+            missing = sorted(recomputed_keys - materializer_keys)
+            return {"schema": SCHEMA, "status": "HOLD_smoke_mismatch",
+                    "error": f"smoke selection mismatch: extra_in_manifest={len(extra)}, missing={len(missing)}"}
+
+        reference_rows = recomputed
+        expected_count = 24
     else:
         if not plan_manifest_path.exists():
             return {"schema": SCHEMA, "status": "HOLD_no_plan", "error": "plan manifest not found"}
@@ -217,7 +249,9 @@ def audit_materialization(
     )
     status = GATE_PASS if all_ok else f"HOLD_{GATE_PASS}"
 
-    output_root.mkdir(parents=True, exist_ok=True)
+    if output_root.exists():
+        raise FileExistsError(f"audit output root already exists: {output_root}")
+    output_root.mkdir(parents=True)
     report = {
         "schema": SCHEMA,
         "status": status,

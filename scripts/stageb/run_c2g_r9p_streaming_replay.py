@@ -170,41 +170,52 @@ def run_streaming_replay(
     model, raw = _load_model(checkpoint_path, device)
     use_policy_intent = model.config.use_policy_intent
 
-    # Load frozen thresholds
-    if detector_config_path is not None and detector_config_path.exists():
-        config = read_json(detector_config_path)
-        # Verify checkpoint SHA binding
-        config_ckpt_sha = config.get("checkpoint_sha256", "")
-        actual_ckpt_sha = sha256_file(checkpoint_path)
-        if config_ckpt_sha and config_ckpt_sha != actual_ckpt_sha:
-            raise ValueError(
-                f"detector config checkpoint_sha256 mismatch: "
-                f"config={config_ckpt_sha}, actual={actual_ckpt_sha}"
-            )
-        t = config.get("thresholds", {})
-        if not t:
-            raise ValueError("detector config has no thresholds")
-        thresholds = {
-            "burst_length": int(t["burst_length"]),
-            "tau_critical": float(t["tau_critical"]),
-            "tau_release": float(t["tau_release"]),
-            "tau_ground": float(t["tau_ground"]),
-            "persistence_window": int(t["persistence_window"]),
-            "persistence_required": int(t["persistence_required"]),
-        }
-    else:
-        ckpt_thresholds = raw.get("thresholds", {})
-        thresholds = {
-            "burst_length": int(ckpt_thresholds.get("burst_length", 10)),
-            "tau_critical": float(ckpt_thresholds.get("tau_critical", 0.5)),
-            "tau_release": float(ckpt_thresholds.get("tau_release", 0.5)),
-            "tau_ground": float(ckpt_thresholds.get("tau_ground", 0.5)),
-            "persistence_window": int(ckpt_thresholds.get("persistence_window", 3)),
-            "persistence_required": int(ckpt_thresholds.get("persistence_required", 2)),
-        }
+    # Load frozen thresholds — fail-closed if config missing or invalid
+    if not detector_config_path.exists():
+        raise FileNotFoundError(f"detector config not found: {detector_config_path}")
+    config = read_json(detector_config_path)
 
-    # Load normalization
+    # Verify checkpoint SHA binding
+    config_ckpt_sha = config.get("checkpoint_sha256", "")
+    actual_ckpt_sha = sha256_file(checkpoint_path)
+    if not config_ckpt_sha:
+        raise ValueError("detector config missing checkpoint_sha256 field")
+    if config_ckpt_sha != actual_ckpt_sha:
+        raise ValueError(
+            f"detector config checkpoint_sha256 mismatch: "
+            f"config={config_ckpt_sha}, actual={actual_ckpt_sha}"
+        )
+
+    # Verify normalization SHA binding
     norm = load_normalization(materialization_root)
+    if norm is None:
+        raise FileNotFoundError("normalization.json not found in materialization root")
+    config_norm_sha = config.get("normalization_sha256", "")
+    if config_norm_sha and config_norm_sha != norm["sha256"]:
+        raise ValueError(
+            f"detector config normalization_sha256 mismatch: "
+            f"config={config_norm_sha}, actual={norm['sha256']}"
+        )
+
+    t = config.get("thresholds", {})
+    if not t:
+        raise ValueError("detector config has no thresholds")
+    required_fields = ["burst_length", "tau_critical", "tau_release", "tau_ground",
+                       "persistence_window", "persistence_required"]
+    for f in required_fields:
+        if f not in t:
+            raise ValueError(f"detector config thresholds missing '{f}'")
+        val = float(t[f])
+        if not np.isfinite(val):
+            raise ValueError(f"threshold '{f}' is non-finite: {val}")
+    thresholds = {
+        "burst_length": int(t["burst_length"]),
+        "tau_critical": float(t["tau_critical"]),
+        "tau_release": float(t["tau_release"]),
+        "tau_ground": float(t["tau_ground"]),
+        "persistence_window": int(t["persistence_window"]),
+        "persistence_required": int(t["persistence_required"]),
+    }
 
     index_rows = read_jsonl(materialization_root / "dataset_index.jsonl")
     ds = R9PEpisodeDataset(index_rows, materialization_root)
@@ -253,7 +264,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--checkpoint", required=True, type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
     parser.add_argument("--max-episodes", type=int, default=0)
-    parser.add_argument("--detector-config", type=Path, default=None,
+    parser.add_argument("--detector-config", type=Path, required=True,
                         help="Path to preview_detector_config.json with frozen thresholds")
     parser.add_argument("--device", default="cuda")
     return parser.parse_args(argv)

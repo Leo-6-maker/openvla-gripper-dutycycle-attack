@@ -219,12 +219,27 @@ def build_plan(
     goal_root: Path,
     output_root: Path,
     git_commit: str,
-    expected_spatial_report_sha: str = "",
-    expected_object_report_sha: str = "",
-    expected_goal_report_sha: str = "",
-    expected_r8z1_audit_sha: str = "",
-    r8z1_audit_report_path: str = "",
+    expected_spatial_report_sha: str,
+    expected_object_report_sha: str,
+    expected_goal_report_sha: str,
+    expected_r8z1_audit_sha: str,
+    r8z1_audit_report_path: str,
 ) -> dict[str, Any]:
+    # Fail-closed: no empty provenance strings
+    for name, value in [
+        ("expected_spatial_report_sha", expected_spatial_report_sha),
+        ("expected_object_report_sha", expected_object_report_sha),
+        ("expected_goal_report_sha", expected_goal_report_sha),
+        ("expected_r8z1_audit_sha", expected_r8z1_audit_sha),
+        ("r8z1_audit_report_path", r8z1_audit_report_path),
+    ]:
+        if not value or not value.strip():
+            return {
+                "schema": SCHEMA,
+                "status": GATE_HOLD_PROVENANCE,
+                "error": f"provenance parameter '{name}' is required and must be non-empty",
+            }
+
     suite_roots = {
         "libero_spatial": spatial_root,
         "libero_object": object_root,
@@ -232,7 +247,14 @@ def build_plan(
     }
 
     # --- Provenance verification ---
+    provenance_record = {
+        "spatial_root": str(spatial_root.resolve()),
+        "object_root": str(object_root.resolve()),
+        "goal_root": str(goal_root.resolve()),
+    }
     git_state = _verify_git_state(git_commit)
+    provenance_record["git_commit"] = git_commit
+    provenance_record["git_clean"] = git_state["clean"]
     if not git_state["clean"]:
         return {
             "schema": SCHEMA,
@@ -240,7 +262,7 @@ def build_plan(
             "git_issues": git_state["issues"],
         }
 
-    # Verify R8Z suite report SHAs if provided
+    # Verify R8Z suite report SHAs
     provenance_issues = []
     suite_report_shas = {
         "libero_spatial": expected_spatial_report_sha,
@@ -248,32 +270,36 @@ def build_plan(
         "libero_goal": expected_goal_report_sha,
     }
     for suite, expected_sha in suite_report_shas.items():
-        if expected_sha:
-            report_path = suite_roots[suite] / "suite_report.json"
-            if report_path.exists():
-                actual = sha256_file(report_path)
-                if actual != expected_sha:
-                    provenance_issues.append(
-                        f"{suite} report SHA mismatch: expected {expected_sha}, actual {actual}"
-                    )
-            else:
-                provenance_issues.append(f"{suite} report not found: {report_path}")
-
-    if expected_r8z1_audit_sha:
-        if r8z1_audit_report_path:
-            report_path = Path(r8z1_audit_report_path)
-            if report_path.exists():
-                actual = sha256_file(report_path)
-                if actual != expected_r8z1_audit_sha:
-                    provenance_issues.append(
-                        f"R8Z1 audit report SHA mismatch: expected {expected_r8z1_audit_sha}, actual {actual}"
-                    )
-            else:
-                provenance_issues.append(f"R8Z1 audit report not found: {report_path}")
+        report_path = suite_roots[suite] / "suite_report.json"
+        key = f"{suite}_report"
+        provenance_record[f"{key}_path"] = str(report_path)
+        provenance_record[f"{key}_sha256_expected"] = expected_sha
+        if report_path.exists():
+            actual = sha256_file(report_path)
+            provenance_record[f"{key}_sha256_actual"] = actual
+            if actual != expected_sha:
+                provenance_issues.append(
+                    f"{suite} report SHA mismatch: expected {expected_sha}, actual {actual}"
+                )
         else:
+            provenance_record[f"{key}_sha256_actual"] = "FILE_NOT_FOUND"
+            provenance_issues.append(f"{suite} report not found: {report_path}")
+
+    r8z1_path = Path(r8z1_audit_report_path)
+    provenance_record["r8z1_audit_report_path"] = str(r8z1_path)
+    provenance_record["r8z1_audit_sha256_expected"] = expected_r8z1_audit_sha
+    if r8z1_path.exists():
+        actual = sha256_file(r8z1_path)
+        provenance_record["r8z1_audit_sha256_actual"] = actual
+        if actual != expected_r8z1_audit_sha:
             provenance_issues.append(
-                "R8Z1 audit SHA provided without --r8z1-audit-report-path"
+                f"R8Z1 audit report SHA mismatch: expected {expected_r8z1_audit_sha}, actual {actual}"
             )
+    else:
+        provenance_record["r8z1_audit_sha256_actual"] = "FILE_NOT_FOUND"
+        provenance_issues.append(f"R8Z1 audit report not found: {r8z1_path}")
+
+    provenance_record["verification_status"] = "PASS" if not provenance_issues else "HOLD"
 
     if provenance_issues:
         return {
@@ -452,7 +478,7 @@ def build_plan(
         "mode": "run",
         "plan_kind": "R9P_OGS1500_PREVIEW_PIPELINE",
         "target_suites": list(TARGET_SUITES),
-        "git_commit": git_commit,
+        "source_provenance": provenance_record,
         "total_train_episodes": len(all_rows),
         "split_counts": split_counts,
         "per_suite_split_counts": per_suite,
