@@ -55,6 +55,7 @@ class C2gDetectorConfig:
     use_policy_intent: bool = True
     use_visual: bool = True
     use_language_conditioning: bool = True
+    head_names: tuple[str, ...] = HEAD_NAMES
 
     def validate(self) -> None:
         for name in ("visual_dim", "language_dim", "policy_intent_dim", "hidden"):
@@ -105,7 +106,7 @@ class C2gGripperCriticalWindowDetector(nn.Module):
             self.language_film = None
             self.language_gate = None
         self.dropout = nn.Dropout(config.dropout)
-        self.heads = nn.ModuleDict({name: nn.Linear(hidden, 1) for name in HEAD_NAMES})
+        self.heads = nn.ModuleDict({name: nn.Linear(hidden, 1) for name in config.head_names})
 
     @staticmethod
     def _validate_history(name: str, value: Tensor, batch: int, time: int, dim: int) -> None:
