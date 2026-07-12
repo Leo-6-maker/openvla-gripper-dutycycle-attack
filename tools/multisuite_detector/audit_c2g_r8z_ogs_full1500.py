@@ -119,6 +119,25 @@ def _compare_labels(actual: Sequence[Mapping[str, Any]], rebuilt: Sequence[Mappi
                 raise ValueError(f"Teacher-v2 rebuild mismatch at row {index}: {field}")
 
 
+def validate_r8z_teacher_row(row: Mapping[str, Any]) -> None:
+    """Validate the frozen row plus the R8Z presentation aliases.
+
+    The frozen schema already owns ``y_attack_start_b``.  R8Z additionally emits
+    the task-requested ``y_attack_start_B`` spelling, which must mirror the frozen
+    field but must not be presented to the older leakage-token validator.
+    """
+
+    if row.get("y_attack_start_B") != row.get("y_attack_start_b"):
+        raise ValueError("R8Z attack-start alias differs from frozen Teacher field")
+    if row.get("y_manipulation_progress_active") != row.get(
+        "y_lift_transport_or_constraint"
+    ):
+        raise ValueError("R8Z progress alias differs from frozen Teacher field")
+    canonical = dict(row)
+    canonical.pop("y_attack_start_B", None)
+    validate_clean_teacher_row(canonical)
+
+
 def validate_derived_episode(
     context: SourceContext,
     expected: Mapping[str, Any],
@@ -163,7 +182,7 @@ def validate_derived_episode(
     rebuilt = rebuild_teacher_labels(steps, metadata)
     _compare_labels(labels, rebuilt)
     for label in labels:
-        validate_clean_teacher_row(label)
+        validate_r8z_teacher_row(label)
         if label.get("uses_future_student_input") is not False:
             raise ValueError("Teacher-v2 label claims future student input")
         if label.get("y_burst_feasible") is True and int(label["step"]) > horizon - BURST_LENGTH:
