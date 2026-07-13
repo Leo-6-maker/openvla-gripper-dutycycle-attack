@@ -1,144 +1,227 @@
-"""Audit R9P materialization for correctness, leakage, and schema compliance.
+"""Independent R9P materialization audit.
 
-Validates NPZ files against the plan manifest — checks identity closure, feature/label
-alignment, finite values, forbidden field absence, and cohort sealing.
+The audit intentionally does not import the materializer's selector or source
+projection.  It verifies the plan and materialization checksum closures first,
+then compares the complete ordered selection/index/fileset and validates every
+NPZ against the student-only schema.
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import sys
 from pathlib import Path
 from typing import Any, Sequence
 
 import numpy as np
 
-from tools.multisuite_detector.build_c2g_r9p_preview_plan import (
-    R9P_HEAD_NAMES,
-    TARGET_SUITES,
-)
+from tools.multisuite_detector.build_c2g_r9p_preview_plan import R9P_HEAD_NAMES, TARGET_SUITES
+from tools.multisuite_detector.c2g_r8r_common import read_json, read_jsonl, sha256_file, write_json
 
 SMOKE_SALT = "C2G_R9P_SMOKE"
 SMOKE_PER_SUITE = 8
+SCHEMA = "c2g.r9p.materialization_audit.2026-07-12.v2"
+GATE_PASS = "PASS_C2G_R9P_MATERIALIZATION_AUDIT"
+
+FORBIDDEN_STUDENT_KEYS = frozenset({
+    "object_pose", "target_pose", "object_target_distance", "contact_pairs",
+    "teacher_phase", "teacher_reason_code", "resolved_target_objects",
+    "resolved_target_manipulable_entities", "attack_outcome",
+    "post_intervention_state", "clean_final_success", "late_success_in_extended_source",
+    "uses_privileged_sim_state", "uses_attack_outcome", "uses_future_student_input",
+})
+
+
+def _safe_relative_path(value: str) -> str:
+    path = Path(value)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"unsafe relative path: {value}")
+    result = path.as_posix()
+    if not result or result.startswith("/"):
+        raise ValueError(f"unsafe relative path: {value}")
+    return result
+
+
+def _verify_checksum_closure(root: Path) -> dict[str, Any]:
+    sums_path = root / "SHA256SUMS"
+    sidecar_path = root / "SHA256SUMS.sha256"
+    if not sums_path.is_file() or not sidecar_path.is_file():
+        raise FileNotFoundError(f"checksum closure missing in {root}")
+    tokens = sidecar_path.read_text(encoding="utf-8").strip().split()
+    if not tokens or tokens[0] != sha256_file(sums_path):
+        raise ValueError(f"SHA256SUMS sidecar mismatch in {root}")
+    listed: list[str] = []
+    for line in sums_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("  ", 1)
+        if len(parts) != 2 or len(parts[0]) != 64:
+            raise ValueError(f"malformed checksum line: {line!r}")
+        rel = _safe_relative_path(parts[1])
+        if rel in listed:
+            raise ValueError(f"duplicate checksum path: {rel}")
+        listed.append(rel)
+        path = root / rel
+        if not path.is_file() or sha256_file(path) != parts[0]:
+            raise ValueError(f"checksum mismatch or missing file: {rel}")
+    actual = sorted(p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file())
+    expected = sorted(set(listed) | {"SHA256SUMS", "SHA256SUMS.sha256"})
+    if actual != expected:
+        raise ValueError(
+            f"fileset mismatch in {root}: extra={sorted(set(actual)-set(expected))}, "
+            f"missing={sorted(set(expected)-set(actual))}"
+        )
+    return {"fileset": actual, "sha256sums_sha256": sha256_file(sums_path)}
 
 
 def _smoke_rank(parent_key: str) -> int:
-    """Independent smoke selection: full SHA256 integer rank (same algorithm, independent impl)."""
-    import hashlib
     return int.from_bytes(
-        hashlib.sha256(f"{SMOKE_SALT}|{parent_key}".encode()).digest(), "big"
+        hashlib.sha256(f"{SMOKE_SALT}|{parent_key}".encode("utf-8")).digest(), "big"
     )
 
 
 def _select_smoke_independent(plan_rows: list[dict]) -> list[dict]:
-    """Independently select 8 episodes per suite via SHA256 integer ranking."""
-    selected = []
+    selected: list[dict] = []
     for suite in TARGET_SUITES:
-        suite_rows = [r for r in plan_rows if r["suite"] == suite]
-        ranked = sorted(suite_rows, key=lambda r: _smoke_rank(r["parent_key"]))
-        selected.extend(ranked[:SMOKE_PER_SUITE])
+        rows = [r for r in plan_rows if r.get("suite") == suite]
+        ranked = sorted(rows, key=lambda r: (_smoke_rank(r["parent_key"]), r["parent_key"]))
+        for row in ranked[:SMOKE_PER_SUITE]:
+            selected.append({
+                **row,
+                "selection_salt": SMOKE_SALT,
+                "selection_rank": _smoke_rank(row["parent_key"]),
+            })
     return selected
 
-FORBIDDEN_STUDENT_KEYS = frozenset({
-    "object_pose", "target_pose", "object_target_distance",
-    "contact_pairs", "teacher_phase", "teacher_reason_code",
-    "resolved_target_objects", "resolved_target_manipulable_entities",
-    "attack_outcome", "post_intervention_state",
-    "clean_final_success", "late_success_in_extended_source",
-    "uses_privileged_sim_state", "uses_attack_outcome",
-    "uses_future_student_input",
-})
-from tools.multisuite_detector.c2g_r8r_common import (
-    read_json,
-    read_jsonl,
-    sha256_file,
-    write_json,
-)
 
-SCHEMA = "c2g.r9p.materialization_audit.2026-07-12.v1"
-GATE_PASS = "PASS_C2G_R9P_MATERIALIZATION_AUDIT"
+def _selection_record(row: dict, *, smoke: bool) -> tuple:
+    fields = (
+        "parent_key", "suite", "task_index", "state_id", "cohort",
+        "preview_split", "task_language", "metadata_path",
+    )
+    values = tuple(row.get(k) for k in fields)
+    if smoke:
+        values += (row.get("selection_salt"), int(row.get("selection_rank", -1)))
+    return values
 
 
 def audit_episode_npz(npz_path: Path) -> dict[str, Any]:
-    result = {
-        "npz_path": str(npz_path),
-        "valid": True,
-        "issues": [],
-    }
+    result: dict[str, Any] = {"npz_path": str(npz_path), "valid": True, "issues": []}
     try:
         data = np.load(npz_path, allow_pickle=False)
     except Exception as exc:
-        result["valid"] = False
-        result["issues"].append(f"load_error: {exc}")
-        return result
+        return {**result, "valid": False, "issues": [f"load_error: {exc}"]}
 
     keys = set(data.keys())
-    # Check forbidden keys
     forbidden = sorted(FORBIDDEN_STUDENT_KEYS & keys)
     if forbidden:
         result["valid"] = False
         result["issues"].append(f"forbidden_keys: {forbidden}")
-
-    # Check required keys exist
-    required = ["features_25d", "features_9d", "valid_mask", "known_mask", "step"]
-    for h in R9P_HEAD_NAMES:
-        required.append(f"y_{h}")
-        required.append(f"m_{h}")
-    missing = sorted(set(required) - keys)
+    required = {"features_25d", "features_9d", "valid_mask", "known_mask", "step"}
+    required |= {f"y_{h}" for h in R9P_HEAD_NAMES}
+    required |= {f"m_{h}" for h in R9P_HEAD_NAMES}
+    missing = sorted(required - keys)
     if missing:
         result["valid"] = False
         result["issues"].append(f"missing_keys: {missing}")
+        return result
 
-    if result["valid"]:
-        T = data["features_25d"].shape[0]
-        # Identity closure
-        if data["features_9d"].shape[0] != T:
-            result["valid"] = False
-            result["issues"].append("features_25d/9d row count mismatch")
-        if data["valid_mask"].shape[0] != T:
-            result["valid"] = False
-            result["issues"].append("valid_mask length mismatch")
-        if data["known_mask"].shape[0] != T:
-            result["valid"] = False
-            result["issues"].append("known_mask length mismatch")
+    f25 = data["features_25d"]
+    f9 = data["features_9d"]
+    if f25.ndim != 2 or f25.shape[1:] != (25,) or f25.dtype != np.float32:
+        result["valid"] = False
+        result["issues"].append(f"features_25d_schema: shape={f25.shape}, dtype={f25.dtype}")
+    if f9.ndim != 2 or f9.shape[1:] != (9,) or f9.dtype != np.float32:
+        result["valid"] = False
+        result["issues"].append(f"features_9d_schema: shape={f9.shape}, dtype={f9.dtype}")
+    T = f25.shape[0] if f25.ndim else -1
+    if f9.ndim != 2 or f9.shape[0] != T:
+        result["valid"] = False
+        result["issues"].append("feature_row_count_mismatch")
+    if not np.isfinite(f25).all() or not np.isfinite(f9).all():
+        result["valid"] = False
+        result["issues"].append("feature_nonfinite")
 
-        for h in R9P_HEAD_NAMES:
-            yk = f"y_{h}"
-            mk = f"m_{h}"
-            if data[yk].shape[0] != T:
+    for name in ("valid_mask", "known_mask"):
+        arr = data[name]
+        if arr.shape != (T,) or arr.dtype != np.bool_:
+            result["valid"] = False
+            result["issues"].append(f"{name}_schema: shape={arr.shape}, dtype={arr.dtype}")
+    step = data["step"]
+    if step.shape != (T,) or not np.issubdtype(step.dtype, np.integer) or not np.array_equal(step, np.arange(T)):
+        result["valid"] = False
+        result["issues"].append("step_not_integer_arange")
+
+    unknown = ~data["known_mask"]
+    for h in R9P_HEAD_NAMES:
+        y = data[f"y_{h}"]
+        m = data[f"m_{h}"]
+        if y.shape != (T,) or y.dtype != np.float32:
+            result["valid"] = False
+            result["issues"].append(f"y_{h}_schema")
+        if m.shape != (T,) or m.dtype != np.bool_:
+            result["valid"] = False
+            result["issues"].append(f"m_{h}_schema")
+        if not np.isfinite(y).all():
+            result["valid"] = False
+            result["issues"].append(f"y_{h}_nonfinite")
+        if h == "grounding_confidence":
+            if np.any((y < 0.0) | (y > 1.0)):
                 result["valid"] = False
-                result["issues"].append(f"{yk} length mismatch: {data[yk].shape[0]} vs {T}")
-            if data[mk].shape[0] != T:
+                result["issues"].append("grounding_confidence_out_of_range")
+        else:
+            if np.any((y != 0.0) & (y != 1.0)):
                 result["valid"] = False
-                result["issues"].append(f"{mk} length mismatch: {data[mk].shape[0]} vs {T}")
-
-        # Finite checks
-        if not np.isfinite(data["features_25d"]).all():
-            result["valid"] = False
-            result["issues"].append("features_25d non-finite")
-        if not np.isfinite(data["features_9d"]).all():
-            result["valid"] = False
-            result["issues"].append("features_9d non-finite")
-
-        # Unknown masking: where known_mask=False, all y_heads should be 0, m_heads False
-        unknown_mask = ~data["known_mask"]
-        for h in R9P_HEAD_NAMES:
-            if h == "grounding_confidence":
-                continue
-            yk = f"y_{h}"
-            mk = f"m_{h}"
-            if data[yk][unknown_mask].any():
+                result["issues"].append(f"y_{h}_not_binary")
+            if np.any(y[unknown] != 0.0) or np.any(m[unknown]):
                 result["valid"] = False
-                result["issues"].append(f"{yk} has non-zero values on unknown steps")
-            if data[mk][unknown_mask].any():
-                result["valid"] = False
-                result["issues"].append(f"{mk} has True on unknown steps")
-
-        # Grounding should always have mask=True
-        if not data["m_grounding_confidence"].all():
-            result["valid"] = False
-            result["issues"].append("grounding_confidence mask not all-true")
-
+                result["issues"].append(f"{h}_unknown_not_masked")
+    if not np.all(data["m_grounding_confidence"]):
+        result["valid"] = False
+        result["issues"].append("grounding_confidence_mask_not_frozen_all_true")
+    result["n_steps"] = int(T)
     return result
+
+
+def _source_identity_check(plan: dict, row: dict) -> list[str]:
+    issues: list[str] = []
+    provenance = plan.get("source_provenance", {})
+    root_key = {"libero_spatial": "spatial_root", "libero_object": "object_root", "libero_goal": "goal_root"}.get(row.get("suite"))
+    if not root_key or not row.get("metadata_path"):
+        return ["missing_source_binding_fields"]
+    root = Path(provenance.get(root_key, ""))
+    try:
+        rel = _safe_relative_path(row["metadata_path"])
+        meta_path = (root / rel).resolve()
+        if root.resolve() not in meta_path.parents or not meta_path.is_file():
+            return ["metadata_path_missing_or_outside"]
+        ep_dir = meta_path.parent
+        checks = {
+            "metadata_sha256": meta_path,
+            "step_records_sha256": ep_dir / "step_records_prefix.jsonl",
+            "teacher_labels_sha256": ep_dir / "teacher_v2_labels.jsonl",
+        }
+        if row.get("source_binding_path"):
+            checks["source_binding_sha256"] = ep_dir / row["source_binding_path"]
+        if row.get("rgb_reference_path"):
+            checks["rgb_reference_sha256"] = ep_dir / row["rgb_reference_path"]
+        elif row.get("rgb_reference_sha256"):
+            issues.append("rgb_reference_hash_without_path")
+        for key, path in checks.items():
+            if not path.is_file() or row.get(key) != sha256_file(path):
+                issues.append(f"source_hash_mismatch:{key}")
+        meta = read_json(meta_path)
+        for key in ("suite", "task_index", "state_id", "parent_key", "cohort", "split", "task_language"):
+            if meta.get(key) != row.get(key if key != "split" else "split", meta.get(key)):
+                # The plan has preview_split, while source metadata has split=train.
+                if key == "split" and meta.get(key) == "train":
+                    continue
+                issues.append(f"metadata_identity_mismatch:{key}")
+        if not str(meta.get("task_language", "")).strip():
+            issues.append("empty_task_language")
+    except Exception as exc:
+        issues.append(f"source_check_error:{exc}")
+    return issues
 
 
 def audit_materialization(
@@ -148,153 +231,102 @@ def audit_materialization(
     *,
     smoke: bool = False,
 ) -> dict[str, Any]:
-    index_path = materialization_root / "dataset_index.jsonl"
-    plan_manifest_path = plan_root / "r9p_preview_episode_manifest.jsonl"
-    smoke_manifest_path = materialization_root / "smoke_selection_manifest.jsonl"
-
-    if not index_path.exists():
-        return {"schema": SCHEMA, "status": "HOLD_no_index", "error": "dataset_index.jsonl not found"}
-
-    index_rows = read_jsonl(index_path)
+    if output_root.exists():
+        return {"schema": SCHEMA, "status": "HOLD_output_root_exists", "error": str(output_root)}
+    try:
+        plan_closure = _verify_checksum_closure(plan_root)
+        materialization_closure = _verify_checksum_closure(materialization_root)
+        plan = read_json(plan_root / "r9p_preview_plan.json")
+        if plan.get("status") != "PASS_C2G_R9P_PLAN":
+            raise ValueError(f"plan status is {plan.get('status')}")
+        plan_rows = read_jsonl(plan_root / "r9p_preview_episode_manifest.jsonl")
+        index_rows = read_jsonl(materialization_root / "dataset_index.jsonl")
+    except Exception as exc:
+        return {"schema": SCHEMA, "status": "HOLD_provenance_or_checksum", "error": str(exc)}
 
     if smoke:
-        if not plan_manifest_path.exists():
-            return {"schema": SCHEMA, "status": "HOLD_no_plan",
-                    "error": "plan manifest not found — needed to recompute smoke selection"}
-        plan_rows = read_jsonl(plan_manifest_path)
-        # Independently recompute smoke selection (own implementation, not imported)
-        recomputed = _select_smoke_independent(plan_rows)
-        recomputed_keys = {r["parent_key"] for r in recomputed}
-        # Verify 8/8/8 per-suite count
-        suite_counts = {}
-        for r in recomputed:
-            suite_counts[r["suite"]] = suite_counts.get(r["suite"], 0) + 1
-        for s in TARGET_SUITES:
-            if suite_counts.get(s, 0) != 8:
-                return {"schema": SCHEMA, "status": "HOLD_smoke_count",
-                        "error": f"recomputed smoke selection: {s}={suite_counts.get(s, 0)}, expected 8"}
-        if len(recomputed) != 24:
-            return {"schema": SCHEMA, "status": "HOLD_smoke_count",
-                    "error": f"recomputed smoke selection: {len(recomputed)} total, expected 24"}
-
-        if not smoke_manifest_path.exists():
-            return {"schema": SCHEMA, "status": "HOLD_no_smoke_manifest",
-                    "error": "smoke_selection_manifest.jsonl not found"}
-        materializer_selection = read_jsonl(smoke_manifest_path)
-        materializer_keys = {r["parent_key"] for r in materializer_selection}
-
-        # Verify recomputed == materializer manifest
-        if recomputed_keys != materializer_keys:
-            extra = sorted(materializer_keys - recomputed_keys)
-            missing = sorted(recomputed_keys - materializer_keys)
-            return {"schema": SCHEMA, "status": "HOLD_smoke_mismatch",
-                    "error": f"smoke selection mismatch: extra_in_manifest={len(extra)}, missing={len(missing)}"}
-
-        reference_rows = recomputed
+        reference_rows = _select_smoke_independent(plan_rows)
+        smoke_path = materialization_root / "smoke_selection_manifest.jsonl"
+        if not smoke_path.is_file():
+            return {"schema": SCHEMA, "status": "HOLD_no_smoke_manifest", "error": str(smoke_path)}
+        materializer_rows = read_jsonl(smoke_path)
+        if [_selection_record(r, smoke=True) for r in materializer_rows] != [_selection_record(r, smoke=True) for r in reference_rows]:
+            return {"schema": SCHEMA, "status": "HOLD_smoke_selection_mismatch", "error": "ordered selection records differ"}
         expected_count = 24
     else:
-        if not plan_manifest_path.exists():
-            return {"schema": SCHEMA, "status": "HOLD_no_plan", "error": "plan manifest not found"}
-        reference_rows = read_jsonl(plan_manifest_path)
-        expected_count = len(reference_rows)
+        reference_rows = plan_rows
+        expected_count = 900
 
-    # Closure: reference identities == index identities == actual NPZ set
-    ref_keys = {r["parent_key"] for r in reference_rows}
-    index_keys = {r["parent_key"] for r in index_rows}
-
-    missing_from_index = sorted(ref_keys - index_keys)
-    extra_in_index = sorted(index_keys - ref_keys)
-    closure_issues = []
-    if missing_from_index:
-        closure_issues.append(f"in reference but not index: {len(missing_from_index)} episodes")
-    if extra_in_index:
-        closure_issues.append(f"in index but not reference: {len(extra_in_index)} episodes")
+    closure_issues: list[str] = []
+    if len(reference_rows) != expected_count:
+        closure_issues.append(f"reference_count={len(reference_rows)} expected={expected_count}")
     if len(index_rows) != expected_count:
-        closure_issues.append(
-            f"count mismatch: expected={expected_count}, index={len(index_rows)}"
-        )
+        closure_issues.append(f"index_count={len(index_rows)} expected={expected_count}")
+    if [_selection_record(r, smoke=False) for r in index_rows] != [_selection_record(r, smoke=False) for r in reference_rows]:
+        closure_issues.append("ordered index identity/source records differ from plan")
 
-    # Verify split distribution
-    ref_splits = {}
-    for r in reference_rows:
-        ref_splits[r["parent_key"]] = r.get("preview_split", "")
-    index_splits = {}
-    for r in index_rows:
-        index_splits[r["parent_key"]] = r.get("preview_split", "")
-
-    split_mismatches = []
-    for key in ref_keys & index_keys:
-        if ref_splits.get(key) != index_splits.get(key):
-            split_mismatches.append(key)
-
-    issues = []
-    valid_count = 0
-    npz_keys = set()
-
+    expected_npz = set()
+    npz_results: list[dict[str, Any]] = []
     for row in index_rows:
-        npz_path = materialization_root / row["npz_path"]
-        npz_keys.add(str(npz_path))
-        if not npz_path.exists():
-            issues.append({"parent_key": row["parent_key"], "error": "npz_missing"})
-            continue
-        sha = sha256_file(npz_path)
-        if sha != row["npz_sha256"]:
-            issues.append({
-                "parent_key": row["parent_key"],
-                "error": f"sha256 mismatch: expected {row['npz_sha256']}, got {sha}",
-            })
-            continue
-        audit = audit_episode_npz(npz_path)
-        if audit["valid"]:
-            valid_count += 1
-        else:
-            issues.append({"parent_key": row["parent_key"], "issues": audit["issues"]})
+        try:
+            rel = _safe_relative_path(row.get("npz_path", ""))
+            path = (materialization_root / rel).resolve()
+            if materialization_root.resolve() not in path.parents or path.suffix != ".npz":
+                raise ValueError("npz path outside materialization root or wrong suffix")
+            expected_npz.add(rel)
+            npz_results.append(audit_episode_npz(path))
+            if row.get("npz_sha256") != sha256_file(path):
+                closure_issues.append(f"npz_hash_mismatch:{row.get('parent_key')}")
+            closure_issues.extend(_source_identity_check(plan, row))
+        except Exception as exc:
+            closure_issues.append(f"npz_path_error:{row.get('parent_key')}:{exc}")
 
-    # Check for extra NPZ files not in index
-    episodes_dir = materialization_root / "episodes"
-    actual_npz_files = set()
-    if episodes_dir.is_dir():
-        actual_npz_files = {str(p) for p in episodes_dir.rglob("*.npz")}
-    extra_npz = sorted(actual_npz_files - npz_keys)
-    missing_npz = sorted(npz_keys - actual_npz_files)
+    actual_npz = sorted(
+        p.relative_to(materialization_root).as_posix()
+        for p in (materialization_root / "episodes").rglob("*.npz")
+        if p.is_file()
+    ) if (materialization_root / "episodes").is_dir() else []
+    if set(actual_npz) != expected_npz:
+        closure_issues.append("actual NPZ files differ from dataset index")
 
-    all_ok = (
-        not closure_issues
-        and not split_mismatches
-        and not issues
-        and not extra_npz
-        and not missing_npz
-    )
-    status = GATE_PASS if all_ok else f"HOLD_{GATE_PASS}"
+    if smoke:
+        suite_counts = {s: sum(1 for r in index_rows if r.get("suite") == s) for s in TARGET_SUITES}
+        if suite_counts != {s: 8 for s in TARGET_SUITES}:
+            closure_issues.append(f"smoke_suite_counts={suite_counts}")
+    else:
+        split_counts = {s: sum(1 for r in index_rows if r.get("preview_split") == s) for s in ("FIT", "CAL", "CHECK")}
+        if split_counts != {"FIT": 720, "CAL": 90, "CHECK": 90}:
+            closure_issues.append(f"split_counts={split_counts}")
 
-    if output_root.exists():
-        raise FileExistsError(f"audit output root already exists: {output_root}")
-    output_root.mkdir(parents=True)
-    report = {
+    invalid = [r for r in npz_results if not r.get("valid")]
+    report: dict[str, Any] = {
         "schema": SCHEMA,
-        "status": status,
+        "status": GATE_PASS if not closure_issues and not invalid else "HOLD_C2G_R9P_MATERIALIZATION_AUDIT",
         "smoke": smoke,
-        "reference_episodes": len(reference_rows),
-        "index_episodes": len(index_rows),
-        "valid_npz": valid_count,
-        "total_npz": len(index_rows),
+        "expected_episodes": expected_count,
+        "total_npz": len(npz_results),
+        "valid_npz": len(npz_results) - len(invalid),
+        "invalid_npz": len(invalid),
         "closure_issues": closure_issues,
-        "split_mismatches": len(split_mismatches),
-        "npz_issues": len(issues),
-        "extra_npz_files": len(extra_npz),
-        "missing_npz_files": len(missing_npz),
-        "issue_details": issues[:50],
+        "npz_issues": sum(len(r.get("issues", [])) for r in npz_results),
+        "npz_issue_details": invalid[:50],
+        "plan_sha256s_sha256": plan_closure["sha256sums_sha256"],
+        "materialization_sha256s_sha256": materialization_closure["sha256sums_sha256"],
+        "nontrain_cohorts_read": 0,
     }
+    output_root.mkdir(parents=True)
     report_path = output_root / "materialization_audit.json"
     write_json(report_path, report)
     report_sha = sha256_file(report_path)
     (output_root / "materialization_audit.json.sha256").write_text(
         f"{report_sha}  materialization_audit.json\n", encoding="utf-8"
     )
-    # Write SHA256SUMS
-    sums_lines = [f"{report_sha}  materialization_audit.json\n"]
     sums_path = output_root / "SHA256SUMS"
-    sums_path.write_text("".join(sums_lines), encoding="utf-8")
+    sums_path.write_text(
+        f"{report_sha}  materialization_audit.json\n"
+        f"{sha256_file(output_root / 'materialization_audit.json.sha256')}  materialization_audit.json.sha256\n",
+        encoding="utf-8",
+    )
     sums_sha = sha256_file(sums_path)
     (output_root / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n", encoding="utf-8")
     return report
@@ -305,22 +337,17 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--plan-root", required=True, type=Path)
     parser.add_argument("--materialization-root", required=True, type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
-    parser.add_argument("--smoke", action="store_true", help="Audit smoke (24-ep) materialization")
+    parser.add_argument("--smoke", action="store_true")
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    report = audit_materialization(
-        args.plan_root, args.materialization_root, args.output_root, smoke=args.smoke)
+    report = audit_materialization(args.plan_root, args.materialization_root, args.output_root, smoke=args.smoke)
     print(f"Materialization audit: {report['status']}")
     print(f"  Valid NPZ: {report.get('valid_npz', 0)}/{report.get('total_npz', 0)}")
-    closure = report.get("closure_issues", [])
-    if closure:
-        print(f"  Closure issues: {closure}")
-    npz_issues = report.get("npz_issues", 0)
-    if npz_issues:
-        print(f"  NPZ issues: {npz_issues}")
+    if report.get("closure_issues"):
+        print(f"  Closure issues: {report['closure_issues']}")
     return 0 if report["status"] == GATE_PASS else 1
 
 

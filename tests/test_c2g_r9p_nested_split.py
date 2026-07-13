@@ -118,17 +118,41 @@ class PlanBuildTests(unittest.TestCase):
         self.td.cleanup()
 
     def _plan_kwargs(self):
+        bound = {}
+        for suite_root in (self.spatial_root, self.object_root, self.goal_root):
+            report_path = suite_root / "suite_report.json"
+            report_path.write_text(json.dumps({"suite": suite_root.name, "status": "PASS"}))
+            bound[suite_root.name] = (report_path, hashlib.sha256(report_path.read_bytes()).hexdigest())
+        r8z1 = self.root / "r8z1_audit.json"
+        r8z1.write_text(json.dumps({"status": "PASS"}))
+        amendment = self.root / "r8z1_amendment.json"
+        amendment.write_text(json.dumps({"status": "PASS"}))
+        composite_report = self.root / "r8z_composite_report.json"
+        composite_report.write_text(json.dumps({"status": "PASS"}))
+        composite_ledger = self.root / "r8z_composite_ledger.jsonl"
+        composite_ledger.write_text("{}\n")
+        composite_sums = self.root / "r8z_composite_SHA256SUMS"
+        composite_sums.write_text("synthetic\n")
+        digest = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
         return dict(
             spatial_root=self.spatial_root,
             object_root=self.object_root,
             goal_root=self.goal_root,
             output_root=self.output_root,
             git_commit=self.git_commit,
-            expected_spatial_report_sha="_test_no_verify_",
-            expected_object_report_sha="_test_no_verify_",
-            expected_goal_report_sha="_test_no_verify_",
-            expected_r8z1_audit_sha="_test_no_verify_",
-            r8z1_audit_report_path="/nonexistent/test/path",
+            expected_spatial_report_sha=digest(bound["spatial"][0]),
+            expected_object_report_sha=digest(bound["object"][0]),
+            expected_goal_report_sha=digest(bound["goal"][0]),
+            expected_r8z1_audit_sha=digest(r8z1),
+            r8z1_audit_report_path=str(r8z1),
+            r8z1_amendment_sha=digest(amendment),
+            r8z1_amendment_path=str(amendment),
+            r8z_composite_report_sha=digest(composite_report),
+            r8z_composite_report_path=str(composite_report),
+            r8z_composite_ledger_sha=digest(composite_ledger),
+            r8z_composite_ledger_path=str(composite_ledger),
+            r8z_composite_sums_sha=digest(composite_sums),
+            r8z_composite_sums_path=str(composite_sums),
         )
 
     def test_build_plan_success(self):

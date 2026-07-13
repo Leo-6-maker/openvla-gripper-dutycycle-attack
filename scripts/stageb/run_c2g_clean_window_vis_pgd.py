@@ -32,6 +32,7 @@ sys.path.insert(0, str(REPO / "scripts"))
 from gripper_attack.attack_adapter import TokenPrefixPGDAttacker, get_adv_inputs_from_attack_result
 from gripper_attack.c2g_clean_window_runtime import C2gCleanWindowRuntime, sha256_file
 from gripper_attack.c2g_matched_load_manifest import CORE_CONDITIONS
+from gripper_attack.execution_target import TARGET_31744
 
 PROTOCOL_NAME = "C2G_CLEAN_WINDOW_VIS_PGD"
 PROTOCOL_VERSION = "2026-07-10.v1"
@@ -98,8 +99,9 @@ def build_attacker(
     seed: int,
 ) -> TokenPrefixPGDAttacker:
     token_map = runtime.token_semantics["token_action_map"]
-    open_ids = runtime.token_semantics["open_token_ids"]
-    target_token = max(open_ids, key=lambda token: (float(token_map[int(token)]), -int(token)))
+    # The VIS-PGD contract targets the fixed CLIP-mediated-open token. The
+    # highest native-open action-bin token is a different execution class.
+    target_token = int(TARGET_31744)
     optimizer = {
         "method": "token_prefix_pgd",
         "objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
