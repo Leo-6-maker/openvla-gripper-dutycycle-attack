@@ -147,9 +147,15 @@ def main() -> int:
         worker_id = f"g{gpu}_{worker_suffix}"
         per_suite_parents[suite] += 1
 
-        max_steps = int(parent.get("max_steps", parent.get("horizon", 300)))
-        task_index = int(parent.get("task_index", parent.get("task_idx", 0)))
-        state_id = int(parent.get("state_id", parent.get("init_state_id", 0)))
+        def _int_val(*keys: str, default: int = 0) -> int:
+            for k in keys:
+                v = parent.get(k)
+                if v not in (None, ""):
+                    return int(v)
+            return default
+        max_steps = _int_val("max_steps", "horizon", default=300)
+        task_index = _int_val("task_index", "task_idx", default=0)
+        state_id = _int_val("state_id", "init_state_id", default=0)
 
         for condition in CONDITIONS:
             planned = random_start(pk, max_steps, 10) if condition == "RAND_T10" else -1
