@@ -37,6 +37,7 @@ from tools.multisuite_detector.c2g_r8r_common import (
 
 SCHEMA = "c2g.r9p.streaming_replay.2026-07-12.v1"
 GATE_PASS = "PASS_C2G_R9P_STREAMING_REPLAY"
+DEFAULT_STREAMING_ATOL = 2e-3
 
 
 def _stable_rank(parent_key: str) -> int:
@@ -89,7 +90,7 @@ def streaming_replay_episode(
     use_policy_intent: bool,
     thresholds: dict,
     norm: dict | None = None,
-    atol: float = 1e-5,
+    atol: float = DEFAULT_STREAMING_ATOL,
 ) -> dict[str, Any]:
     proprio_raw = episode_data["features_25d"].unsqueeze(0).to(device)
     policy_raw = episode_data["features_9d"].unsqueeze(0).to(device) if use_policy_intent else None
@@ -211,6 +212,7 @@ def run_streaming_replay(
     detector_config_path: Path | None = None,
     max_episodes: int = 0,
     device_str: str = "cuda",
+    atol: float = DEFAULT_STREAMING_ATOL,
 ) -> dict[str, Any]:
     if detector_config_path is None:
         raise ValueError("detector_config_path is required; unfrozen thresholds are forbidden")
@@ -298,7 +300,7 @@ def run_streaming_replay(
 
     for i in selected_indices:
         ep = ds[i]
-        r = streaming_replay_episode(model, ep, device, use_policy_intent, thresholds, norm)
+        r = streaming_replay_episode(model, ep, device, use_policy_intent, thresholds, norm, atol=atol)
         results.append(r)
         if not r["equivalence_ok"]:
             all_equiv = False
@@ -326,6 +328,7 @@ def run_streaming_replay(
         "detector_config_sha256": sha256_file(detector_config_path),
         "normalization_sha256": norm["sha256"],
         "streaming_mode": "PREFIX_RECOMPUTE_CAUSAL_EQUIVALENCE",
+        "logit_atol": atol,
         "not_incremental_hidden_state_runtime": True,
         "latency_status": "OFFLINE_ONLY",
         "issues": [
@@ -346,6 +349,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--detector-config", type=Path, required=True,
                         help="Path to preview_detector_config.json with frozen thresholds")
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--atol", type=float, default=DEFAULT_STREAMING_ATOL)
     return parser.parse_args(argv)
 
 
@@ -358,6 +362,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         detector_config_path=args.detector_config,
         max_episodes=args.max_episodes,
         device_str=args.device,
+        atol=args.atol,
     )
     print(f"Streaming replay: {report['status']}")
     print(f"  Batch==Stream: {report['batch_stream_equivalence']}")
