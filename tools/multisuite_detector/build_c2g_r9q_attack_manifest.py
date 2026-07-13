@@ -118,7 +118,8 @@ def main() -> int:
         for index, row in enumerate(suite_rows):
             gpu = 6 if index % 2 == 0 else 7
             shard_index = index // 2
-            worker_id = f"g{gpu}_{suite.replace('libero_', '')}"
+            worker_suffix = "l10" if suite == "libero_10" else suite.replace("libero_", "")
+            worker_id = f"g{gpu}_{worker_suffix}"
             parent_key = str(row["parent_key"])
             parent_assignments[parent_key] = (gpu, worker_id, shard_index)
 
