@@ -1,6 +1,7 @@
 # C2G R9Q Experiment Progress
 
-Snapshot: `2026-07-13T09:38:57+08:00`
+Initial snapshot: `2026-07-13T09:38:57+08:00`
+Latest live update: `2026-07-13T09:52:58+08:00`
 
 This is a provenance report, not a new experiment result. It records the
 current detector gates, immutable artifacts, live attack campaign state, exact
@@ -25,7 +26,7 @@ launch entry points, and explicit non-results.
 | Streaming replay | PASS | 24 episodes; prefix recompute causal equivalence |
 | FSM validation | PASS | 24 episodes; burst length `10`; multi-trigger count `0` |
 | Detector bundle | PASS | `PASS_C2G_R9Q_DETECTOR_VALIDATION` |
-| Attack canary | RUNNING | `31/32` valid cells at the snapshot; `0` failed; one L10 cell active |
+| Attack canary | HOLD | `32/32` runtime-valid cells; audit failed closed with 4 audit failures |
 | Attack panel | NOT_RUN | queued by the supervisor after canary audit |
 | Full Table1 | NOT_RUN | queued by the supervisor after panel audit |
 
@@ -121,23 +122,52 @@ It uses two resident workers per GPU in waves and a global serialized model
 load lock. The requested GPU2/3/4 expansion was not launched and is not part
 of this provenance chain.
 
-## Live canary snapshot
+## Live canary result
 
 Campaign root:
 `/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_r9q_attack_campaign_8ddbd035_20260713_v1`
 
-At the snapshot:
+At the latest live update:
 
-- valid episode cells: `31/32`
+- valid episode cells: `32/32`
 - invalid cells: `0`
-- failed cells: `0`
-- worker states: 7 PASS, `g7_l10` running its fourth cell
-- current cell: `libero_10/task_02/state_016/clean/attempt_01/COMMAND_OPEN_ORACLE`
-- observed success values among completed cells: `20 true`, `11 false`
+- worker states: `8/8 PASS`
+- observed success values: `20 true`, `12 false`
 - no attack cell was selected from outcomes; all cells remain manifest-bound
 
-The canary output root is unchanged and has not been audited as PASS yet. The
-panel and full run roots do not exist as completed run roots at this snapshot.
+Canary audit:
+
+- status: `HOLD_C2G_R9Q_ATTACK_RUN_AUDIT`
+- audit report SHA256: `23509655808797283c368af8b140377cc4c077bba38a59f895413ce4d0adba72`
+- audit `SHA256SUMS` SHA256: `122dd29f45b01d91bfad492b052afeb2877983d7719b3ad9ab51d17895474075`
+- audit failures: `4`
+- `R9Q_ALWAYS_OR_NEVER_TRIGGER`: `1`
+- `RAND_BURST_NOT_EXACT_T10`: `3`
+- R9Q detector condition: `0/8` triggered
+- R9Q detector full-T10 deliveries: `0/8`
+
+The supervisor stopped after the canary audit at `2026-07-13T09:39:55+08:00`.
+Panel and full run roots were not launched.
+
+## Detector signal interpretation
+
+There is a clear **offline** detector signal:
+
+- CAL: `90/95` feasible positive episodes and `90/95` full-T10 containment
+- CHECK: `64/69` feasible hit and `64/69` full-T10 containment
+- Streaming replay: `18` triggers across `24` offline traces
+
+There is currently **no positive online deployment signal** in the canary:
+
+- `R9Q_DETECTOR_T10`: `0/8` triggered
+- `CLEAN`: `0/8` triggered, as expected
+- `RAND_T10`: random branch triggered on several cells, but this does not
+  demonstrate detector timing and three RAND cells failed exact-T10 delivery
+- `COMMAND_OPEN_ORACLE`: no detector trigger is expected from this condition
+
+Therefore the detector is scientifically promising at the offline/CAL level,
+but the detector-to-runtime path is not yet validated. The current canary is a
+deployment integration HOLD, not a main-table result.
 
 ## Previous failures and fixes
 
@@ -196,7 +226,7 @@ and refuses to continue on a nonzero scheduler or audit result.
 ## Current decision
 
 - Detector offline validation: `PASS`
-- Attack canary: `RUNNING`, not yet `PASS`
+- Attack canary: `HOLD_C2G_R9Q_ATTACK_RUN_AUDIT`
 - Panel: `NOT_RUN`
 - Full Table1: `NOT_RUN`
 - GPU2/3/4 extra workers: `NOT_STARTED`
