@@ -91,8 +91,7 @@ def main():
                 r9q_arms.append(r9q['arm_l2_mean'])
         arm_med = np.median(r9q_arms) if r9q_arms else 0.0
         all_arm_l2.extend(r9q_arms)
-        delta = clean_succ - r9q_succ
-        dsr = ('-' + str(delta) + 'pp') if delta > 0 else '+0pp'
+        dsr = f"{(r9q_succ - clean_succ)/n*100:+.0f}pp"
         arm_str = f"{arm_med:.3f}" if r9q_arms else "-"
         print(f"{suite:<18} {n:>3} {str(clean_succ)+'/'+str(n):>7} {str(r9q_succ)+'/'+str(n):>7} {str(rand_succ)+'/'+str(n):>7} {str(orcl_succ)+'/'+str(n):>7} {dsr:>8} {str(induced)+'/'+str(max(clean_succ,1)):>8} {str(triggered)+'/'+str(n):>7} {arm_str:>13} {str(exact_t10)+'/'+str(max(triggered,1)):>9}")
         for p in pks.values():
@@ -107,7 +106,7 @@ def main():
         macro_trig += triggered; macro_t10 += exact_t10
 
     print('-' * 130)
-    macro_dsr = ('-' + str(macro_clean - macro_r9q) + 'pp')
+    macro_dsr = f"{(macro_r9q - macro_clean)/macro_n*100:+.0f}pp"
     macro_arm = f"{np.median(all_arm_l2):.3f}" if all_arm_l2 else "-"
     print(f"{'MACRO':<18} {macro_n:>3} {str(macro_clean)+'/'+str(macro_n):>7} {str(macro_r9q)+'/'+str(macro_n):>7} {str(macro_rand)+'/'+str(macro_n):>7} {str(macro_orcl)+'/'+str(macro_n):>7} {macro_dsr:>8} {str(macro_ind)+'/'+str(max(macro_clean,1)):>8} {str(macro_trig)+'/'+str(macro_n):>7} {macro_arm:>13} {str(macro_t10)+'/'+str(max(macro_trig,1)):>9}")
 
