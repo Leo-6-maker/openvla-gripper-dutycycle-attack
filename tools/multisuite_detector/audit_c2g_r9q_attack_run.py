@@ -51,7 +51,11 @@ def main() -> int:
     if len(rows) != args.expected_cells:
         raise SystemExit(f"manifest cell count {len(rows)} != expected {args.expected_cells}")
 
-    # P0-2: verify detector bundle SHA closure
+    failures: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    ledgers: list[dict[str, Any]] = []
+
+    # P0-2: verify detector bundle SHA closure (must be after failures init)
     bundle_verification: dict[str, Any] = {}
     if args.detector_bundle:
         bundle = Path(args.detector_bundle)
@@ -62,6 +66,36 @@ def main() -> int:
         actual_config = sha256_file(bundle / "detector_config.json")
         actual_normalization = sha256_file(bundle / "normalization.json")
         actual_sums = sha256_file(bundle / "SHA256SUMS") if (bundle / "SHA256SUMS").is_file() else ""
+        actual_sums_dot_sha256 = sha256_file(bundle / "SHA256SUMS.sha256") if (bundle / "SHA256SUMS.sha256").is_file() else ""
+        actual_normalization_sha = sha256_file(bundle / "normalization.json") if (bundle / "normalization.json").is_file() else ""
+
+        # Verify SHA256SUMS internal entries
+        bundle_sums_entries_valid = True
+        bundle_fileset_match = True
+        if (bundle / "SHA256SUMS").is_file():
+            try:
+                expected_entries = {}
+                for line in (bundle / "SHA256SUMS").read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    sha, _, relpath = line.partition("  ")
+                    expected_entries[relpath] = sha
+                for relpath, expected_sha in expected_entries.items():
+                    fpath = bundle / relpath
+                    if not fpath.is_file():
+                        bundle_fileset_match = False
+                        break
+                    if sha256_file(fpath) != expected_sha:
+                        bundle_sums_entries_valid = False
+                        break
+                actual_files = {str(p.relative_to(bundle).as_posix()) for p in bundle.rglob("*") if p.is_file() and p.name not in ("SHA256SUMS", "SHA256SUMS.sha256")}
+                if actual_files != set(expected_entries.keys()):
+                    bundle_fileset_match = False
+            except Exception:
+                bundle_sums_entries_valid = False
+                bundle_fileset_match = False
+
         bundle_verification = {
             "checkpoint_sha256_match": actual_checkpoint == expected_checkpoint,
             "config_sha256_match": actual_config == expected_config,
@@ -71,18 +105,23 @@ def main() -> int:
             "actual_config": actual_config,
             "expected_config": expected_config,
             "actual_normalization": actual_normalization,
+            "expected_normalization": actual_normalization_sha,
             "actual_bundle_sums": actual_sums,
             "expected_bundle_sums": expected_bundle,
+            "actual_sums_dot_sha256": actual_sums_dot_sha256,
+            "sums_internal_entries_valid": bundle_sums_entries_valid,
+            "sums_fileset_match": bundle_fileset_match,
         }
         if not all([
             actual_checkpoint == expected_checkpoint,
             actual_config == expected_config,
             actual_sums == expected_bundle,
+            bundle_sums_entries_valid,
+            bundle_fileset_match,
         ]):
             failures.append({"code": "BUNDLE_SHA_MISMATCH", "verification": bundle_verification})
+
     seen: set[tuple[str, str]] = set()
-    ledgers: list[dict[str, Any]] = []
-    failures: list[dict[str, Any]] = []
     triggers: list[dict[str, Any]] = []
     per_suite_condition: defaultdict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
