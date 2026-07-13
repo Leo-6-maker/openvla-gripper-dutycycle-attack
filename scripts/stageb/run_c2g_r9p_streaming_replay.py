@@ -166,14 +166,20 @@ def run_streaming_replay(
     max_episodes: int = 0,
     device_str: str = "cuda",
 ) -> dict[str, Any]:
+    if detector_config_path is None:
+        raise ValueError("detector_config_path is required; unfrozen thresholds are forbidden")
+    if output_root.exists():
+        raise FileExistsError(f"streaming output root already exists: {output_root}")
     device = torch.device(device_str if torch.cuda.is_available() else "cpu")
     model, raw = _load_model(checkpoint_path, device)
     use_policy_intent = model.config.use_policy_intent
 
     # Load frozen thresholds — fail-closed if config missing or invalid
-    if not detector_config_path.exists():
+    if not detector_config_path.is_file():
         raise FileNotFoundError(f"detector config not found: {detector_config_path}")
     config = read_json(detector_config_path)
+    if config.get("mode") != "CALIBRATE_ONLY":
+        raise ValueError("streaming requires a frozen CALIBRATE_ONLY detector config")
 
     # Verify checkpoint SHA binding
     config_ckpt_sha = config.get("checkpoint_sha256", "")
@@ -234,7 +240,9 @@ def run_streaming_replay(
     }
 
     index_rows = read_jsonl(materialization_root / "dataset_index.jsonl")
-    ds = R9PEpisodeDataset(index_rows, materialization_root)
+    # Streaming verification is a FIT-only offline check.  CAL/CHECK rows are
+    # sealed for model selection and must not be consumed by this diagnostic.
+    ds = R9PEpisodeDataset(index_rows, materialization_root, split_filter="FIT")
     n_episodes = len(ds) if max_episodes <= 0 else min(max_episodes, len(ds))
 
     results = []
@@ -250,8 +258,6 @@ def run_streaming_replay(
         if not r["fsm_ok"]:
             all_fsm = False
 
-    if output_root.exists():
-        raise FileExistsError(f"streaming output root already exists: {output_root}")
     output_root.mkdir(parents=True)
     status = GATE_PASS if (all_equiv and all_fsm) else f"HOLD_{GATE_PASS}"
 
@@ -267,6 +273,12 @@ def run_streaming_replay(
         },
         "total_triggers": sum(r["triggers"] for r in results),
         "multi_trigger_count": sum(1 for r in results if r["triggers"] > 1),
+        "checkpoint_sha256": actual_ckpt_sha,
+        "detector_config_sha256": sha256_file(detector_config_path),
+        "normalization_sha256": norm["sha256"],
+        "streaming_mode": "PREFIX_RECOMPUTE_CAUSAL_EQUIVALENCE",
+        "not_incremental_hidden_state_runtime": True,
+        "latency_status": "OFFLINE_ONLY",
         "issues": [
             {"episode": i, "fsm_issues": r["fsm_issues"]}
             for i, r in enumerate(results) if r["fsm_issues"]

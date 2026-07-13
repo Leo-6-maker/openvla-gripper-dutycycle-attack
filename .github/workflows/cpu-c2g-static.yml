@@ -224,6 +224,7 @@ jobs:
             tests.test_c2g_r9p_no_teacher_leakage \
             tests.test_c2g_r9p_sealed_cohorts \
             tests.test_c2g_r9p_streaming_equivalence \
+            tests.test_c2g_r9p_synthetic_e2e \
             tests.test_c2g_r8x_hardware_bound_repro \
             tests.test_c2g_official_suite_horizons \
             tests.test_c2g_r8y_l10_520_plan \

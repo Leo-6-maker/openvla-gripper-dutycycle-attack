@@ -98,7 +98,9 @@ def run_latency_smoke(
     norm = load_normalization(materialization_root)
 
     index_rows = read_jsonl(materialization_root / "dataset_index.jsonl")
-    ds = R9PEpisodeDataset(index_rows, materialization_root, split_filter="CHECK")
+    # Latency is measured on the fixed FIT probe, never on sealed CAL/CHECK
+    # rows.  This keeps the diagnostic independent of calibration/test data.
+    ds = R9PEpisodeDataset(index_rows, materialization_root, split_filter="FIT")
 
     latencies = []
     n_test = min(len(ds), 10)
