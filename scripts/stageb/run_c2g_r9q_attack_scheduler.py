@@ -100,8 +100,11 @@ def build_report(args: argparse.Namespace, *, status: str, before: dict[str, Any
         "memory_before": before,
         "memory_after": after,
         "workers_report": workers,
-        "concurrency_degraded": False,
-        "concurrency_degradation_reason": "",
+        "concurrency_degraded": args.max_resident_workers_per_gpu < 4,
+        "concurrency_degradation_reason": (
+            "operator_requested_three_resident_workers_per_gpu"
+            if args.max_resident_workers_per_gpu < 4 else ""
+        ),
     }
 
 
@@ -112,8 +115,8 @@ def main() -> int:
     output_root = Path(args.output_root).resolve()
     if output_root.exists():
         raise SystemExit(f"refusing to overwrite output root: {output_root}")
-    if args.max_resident_workers_per_gpu != 4:
-        raise SystemExit("R9Q scheduler requires exactly four logical workers per GPU")
+    if not 1 <= args.max_resident_workers_per_gpu <= 4:
+        raise SystemExit("max resident workers per GPU must be in [1,4]")
     worker_manifests = load_worker_rows(plan_root)
     if not bundle.is_dir() or not (bundle / "checkpoint.pt").is_file():
         raise SystemExit("detector bundle is incomplete")
@@ -122,7 +125,7 @@ def main() -> int:
         snap = before[str(gpu)]
         if "memory_free_mib" not in snap:
             raise SystemExit(f"cannot verify GPU {gpu}: {snap}")
-        required = 4 * args.worker_budget_mib + args.gpu_reserve_mib
+        required = args.max_resident_workers_per_gpu * args.worker_budget_mib + args.gpu_reserve_mib
         if int(snap["memory_free_mib"]) < required:
             raise SystemExit(f"GPU {gpu} has insufficient free memory: {snap} required={required} MiB")
 
@@ -137,8 +140,12 @@ def main() -> int:
         "gpu_mapping": {worker: int(worker[1]) for worker in EXPECTED_WORKERS},
         "memory_before": before,
         "requested_resident_workers_per_gpu": 4,
-        "achieved_resident_workers_per_gpu": 4,
-        "concurrency_degraded": False,
+        "achieved_resident_workers_per_gpu": args.max_resident_workers_per_gpu,
+        "concurrency_degraded": args.max_resident_workers_per_gpu < 4,
+        "concurrency_degradation_reason": (
+            "operator_requested_three_resident_workers_per_gpu"
+            if args.max_resident_workers_per_gpu < 4 else ""
+        ),
         "global_model_load_lock": args.model_load_lock_file,
     }
     if args.mode == "preview":
@@ -160,60 +167,82 @@ def main() -> int:
                 raise SystemExit(f"GPU owner lock is busy: {lock_path}")
             owner_handles.append(handle)
 
+        # Recheck after taking the project owner locks. The locks do not claim
+        # a GPU from unrelated users, so the final admission check must be
+        # immediately before launching any worker.
+        locked_before = {str(gpu): nvidia_snapshot(gpu) for gpu in GPUS}
+        required = args.max_resident_workers_per_gpu * args.worker_budget_mib + args.gpu_reserve_mib
+        for gpu in GPUS:
+            snap = locked_before[str(gpu)]
+            if "memory_free_mib" not in snap or int(snap["memory_free_mib"]) < required:
+                raise SystemExit(f"GPU {gpu} failed locked admission: {snap} required={required} MiB")
+
         statuses = output_root / "statuses"
         logs = output_root / "logs"
         statuses.mkdir()
         logs.mkdir()
-        processes: dict[str, subprocess.Popen[str]] = {}
-        for worker_id in EXPECTED_WORKERS:
-            gpu = int(worker_id[1])
-            status_file = statuses / f"{worker_id}.json"
-            stdout_file = logs / f"{worker_id}.stdout.log"
-            stderr_file = logs / f"{worker_id}.stderr.log"
-            env = os.environ.copy()
-            env.update({
-                "CUDA_VISIBLE_DEVICES": str(gpu),
-                "C2G_PHYSICAL_GPU": str(gpu),
-                "C2G_WORKER_ID": worker_id,
-                "OMP_NUM_THREADS": "1",
-                "MKL_NUM_THREADS": "1",
-                "OPENBLAS_NUM_THREADS": "1",
-                "NUMEXPR_NUM_THREADS": "1",
-                "TOKENIZERS_PARALLELISM": "false",
-                "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
-                "PYTHONPATH": f"{Path(__file__).resolve().parents[2] / 'src'}:{Path(__file__).resolve().parents[2]}" + (f":{env['PYTHONPATH']}" if env.get("PYTHONPATH") else ""),
-            })
-            command = [
-                args.python, str(Path(__file__).resolve().with_name("run_c2g_r9q_attack_worker.py")),
-                "--manifest", str(worker_manifests[worker_id]),
-                "--detector-bundle", str(bundle),
-                "--output-root", str(output_root),
-                "--worker-id", worker_id,
-                "--physical-gpu", str(gpu),
-                "--expected-git-commit", args.expected_git_commit,
-                "--model-load-lock-file", args.model_load_lock_file,
-                "--status-file", str(status_file),
-            ]
-            out_handle = stdout_file.open("w", encoding="utf-8")
-            err_handle = stderr_file.open("w", encoding="utf-8")
-            processes[worker_id] = subprocess.Popen(command, env=env, stdout=out_handle, stderr=err_handle, text=True)
+        exit_codes: dict[str, int | None] = {}
+        for wave_start in range(0, len(SUITES), args.max_resident_workers_per_gpu):
+            wave_workers = []
+            for gpu in GPUS:
+                gpu_workers = [worker for worker in EXPECTED_WORKERS if int(worker[1]) == gpu]
+                wave_workers.extend(gpu_workers[wave_start:wave_start + args.max_resident_workers_per_gpu])
+            processes: dict[str, subprocess.Popen[str]] = {}
+            log_handles = []
+            for worker_id in wave_workers:
+                gpu = int(worker_id[1])
+                status_file = statuses / f"{worker_id}.json"
+                stdout_file = logs / f"{worker_id}.stdout.log"
+                stderr_file = logs / f"{worker_id}.stderr.log"
+                env = os.environ.copy()
+                env.update({
+                    "CUDA_VISIBLE_DEVICES": str(gpu),
+                    "C2G_PHYSICAL_GPU": str(gpu),
+                    "C2G_WORKER_ID": worker_id,
+                    "OMP_NUM_THREADS": "1",
+                    "MKL_NUM_THREADS": "1",
+                    "OPENBLAS_NUM_THREADS": "1",
+                    "NUMEXPR_NUM_THREADS": "1",
+                    "TOKENIZERS_PARALLELISM": "false",
+                    "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True",
+                    "PYTHONPATH": f"{Path(__file__).resolve().parents[2] / 'src'}:{Path(__file__).resolve().parents[2]}" + (f":{env['PYTHONPATH']}" if env.get("PYTHONPATH") else ""),
+                })
+                command = [
+                    args.python, str(Path(__file__).resolve().with_name("run_c2g_r9q_attack_worker.py")),
+                    "--manifest", str(worker_manifests[worker_id]),
+                    "--detector-bundle", str(bundle),
+                    "--output-root", str(output_root),
+                    "--worker-id", worker_id,
+                    "--physical-gpu", str(gpu),
+                    "--expected-git-commit", args.expected_git_commit,
+                    "--model-load-lock-file", args.model_load_lock_file,
+                    "--status-file", str(status_file),
+                ]
+                out_handle = stdout_file.open("w", encoding="utf-8")
+                err_handle = stderr_file.open("w", encoding="utf-8")
+                log_handles.extend((out_handle, err_handle))
+                processes[worker_id] = subprocess.Popen(command, env=env, stdout=out_handle, stderr=err_handle, text=True)
 
-        heartbeat = output_root / "scheduler_heartbeat.jsonl"
-        while processes:
-            snapshot = {worker: {
-                "pid": process.pid,
-                "returncode": process.poll(),
-                "status": json.loads((statuses / f"{worker}.json").read_text(encoding="utf-8"))
-                if (statuses / f"{worker}.json").is_file() else {},
-            } for worker, process in processes.items()}
-            with heartbeat.open("a", encoding="utf-8") as handle:
-                handle.write(json.dumps({"timestamp": time.time(), "workers": snapshot}, sort_keys=True) + "\n")
-            done = [worker for worker, process in processes.items() if process.poll() is not None]
-            if done:
-                for worker in done:
-                    processes.pop(worker)
-            if processes:
-                time.sleep(max(1, args.poll_seconds))
+            heartbeat = output_root / "scheduler_heartbeat.jsonl"
+            while processes:
+                snapshot = {worker: {
+                    "pid": process.pid,
+                    "returncode": process.poll(),
+                    "status": json.loads((statuses / f"{worker}.json").read_text(encoding="utf-8"))
+                    if (statuses / f"{worker}.json").is_file() else {},
+                } for worker, process in processes.items()}
+                with heartbeat.open("a", encoding="utf-8") as handle:
+                    handle.write(json.dumps({"timestamp": time.time(), "wave_start": wave_start, "workers": snapshot}, sort_keys=True) + "\n")
+                done = [worker for worker, process in processes.items() if process.poll() is not None]
+                if done:
+                    for worker in done:
+                        exit_codes[worker] = processes.pop(worker).returncode
+                if processes:
+                    time.sleep(max(1, args.poll_seconds))
+            for handle in log_handles:
+                handle.close()
+            if any(code not in (0, None) for code in exit_codes.values()):
+                break
         after = {str(gpu): nvidia_snapshot(gpu) for gpu in GPUS}
         workers_report = {}
         failed = False
