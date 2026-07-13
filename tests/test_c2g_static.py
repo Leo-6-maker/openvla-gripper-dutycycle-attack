@@ -12,6 +12,7 @@ from src.gripper_attack.c2g_causal_vulnerability_detector import (
     masked_bce,
     persistent_trigger_mask,
 )
+from src.gripper_attack.c2g_clean_window_runtime import resolve_effective_valid
 from tools.multisuite_detector.audit_c2f_teacher_v1_labels import audit_teacher_v1
 from tools.multisuite_detector.c2g_dataset_scaffold import (
     assign_episode_splits,
@@ -25,6 +26,23 @@ from tools.multisuite_detector.c2g_dataset_scaffold import (
 
 
 class C2gStaticTests(unittest.TestCase):
+    def test_r9q_runtime_gate_contract_does_not_use_legacy_susceptibility_gate(self):
+        self.assertFalse(resolve_effective_valid(
+            detector_ready=False,
+            susceptibility_gate=False,
+            susceptibility_gate_enabled=False,
+        ))
+        self.assertTrue(resolve_effective_valid(
+            detector_ready=True,
+            susceptibility_gate=False,
+            susceptibility_gate_enabled=False,
+        ))
+        self.assertFalse(resolve_effective_valid(
+            detector_ready=True,
+            susceptibility_gate=False,
+            susceptibility_gate_enabled=True,
+        ))
+
     def test_teacher_v1_audit_reports_grounding_reasons_and_spatial_fallback(self):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)

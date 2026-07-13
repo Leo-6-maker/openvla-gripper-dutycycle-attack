@@ -127,6 +127,19 @@ def _resolve_susceptibility(
     return resolved
 
 
+def resolve_effective_valid(
+    *,
+    detector_ready: bool,
+    susceptibility_gate: bool,
+    susceptibility_gate_enabled: bool,
+) -> bool:
+    """Apply the explicit runtime-contract gate after detector warmup."""
+
+    if not detector_ready:
+        return False
+    return bool(susceptibility_gate) if susceptibility_gate_enabled else True
+
+
 class C2gCleanWindowRuntime:
     """Checkpoint-bound online feature extraction, inference, and scheduling."""
 
@@ -143,6 +156,7 @@ class C2gCleanWindowRuntime:
         require_clean_close: bool = True,
         minimum_open_minus_close_log_mass: float = -8.0,
         minimum_entropy: float = 0.0,
+        susceptibility_gate_enabled: bool = True,
     ) -> None:
         checkpoint_path = Path(checkpoint_path).resolve()
         raw = torch.load(checkpoint_path, map_location="cpu")
@@ -210,6 +224,7 @@ class C2gCleanWindowRuntime:
             self.susceptibility["minimum_open_minus_close_log_mass"]
         )
         self.minimum_entropy = float(self.susceptibility["minimum_entropy"])
+        self.susceptibility_gate_enabled = bool(susceptibility_gate_enabled)
         self._text_embedding = None
         self._language_cache: dict[str, np.ndarray] = {}
         self.reset()
@@ -341,6 +356,8 @@ class C2gCleanWindowRuntime:
                 "policy": policy_summary,
                 "susceptibility": dict(self.susceptibility),
                 "susceptibility_gate": False,
+                "susceptibility_gate_enabled": self.susceptibility_gate_enabled,
+                "effective_valid": False,
                 "decision": decision,
             }
 
@@ -372,11 +389,16 @@ class C2gCleanWindowRuntime:
             policy_summary["clean_action_token_entropy_normalized"] >= self.minimum_entropy
         )
         susceptibility_gate = bool((clean_close or not self.require_clean_close) and margin_ok and entropy_ok)
+        effective_valid = resolve_effective_valid(
+            detector_ready=True,
+            susceptibility_gate=susceptibility_gate,
+            susceptibility_gate_enabled=self.susceptibility_gate_enabled,
+        )
         decision = self.scheduler.update(
             critical_probability=probabilities["critical_window"],
             release_safe_probability=probabilities["release_safe"],
             grounding_confidence_probability=probabilities["grounding_confidence"],
-            valid=susceptibility_gate,
+            valid=effective_valid,
         )
         return {
             "ready": True,
@@ -384,5 +406,7 @@ class C2gCleanWindowRuntime:
             "policy": policy_summary,
             "susceptibility": dict(self.susceptibility),
             "susceptibility_gate": susceptibility_gate,
+            "susceptibility_gate_enabled": self.susceptibility_gate_enabled,
+            "effective_valid": effective_valid,
             "decision": decision,
         }

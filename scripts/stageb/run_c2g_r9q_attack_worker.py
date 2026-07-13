@@ -304,6 +304,10 @@ def run_cell(
                 "attack_index": attack_count - 1 if attack_this else None,
                 "detector_ready": bool(detector["ready"]),
                 "detector_outputs": detector["outputs"],
+                "detector_susceptibility_gate": bool(detector["susceptibility_gate"]),
+                "detector_susceptibility_gate_enabled": bool(detector["susceptibility_gate_enabled"]),
+                "detector_effective_valid": bool(detector["effective_valid"]),
+                "detector_policy_summary": detector["policy"],
                 "detector_trigger_started": bool(decision.trigger_started),
                 "detector_attack_active": bool(decision.attack_active),
                 "scheduler_state": str(decision.state),
@@ -380,6 +384,8 @@ def run_cell(
         "detector_config_sha256": row["detector_config_sha256"],
         "detector_checkpoint_schema": getattr(runtime, "checkpoint_schema_version", ""),
         "normalization_sha256": getattr(runtime, "normalization_sha256", None),
+        "susceptibility_gate_enabled": bool(getattr(runtime, "susceptibility_gate_enabled", True)),
+        "runtime_gate_heads": ["critical_window", "release_safe", "grounding_confidence"],
         "manifest_sha256": row.get("source_parent_manifest_sha256"),
         "worker_id": os.environ.get("C2G_WORKER_ID", ""),
         "physical_gpu": int(os.environ.get("C2G_PHYSICAL_GPU", "-1")),
@@ -452,6 +458,7 @@ def main(argv: list[str] | None = None) -> int:
             checkpoint, openvla_model=model, openvla_processor=processor,
             unnorm_key=unnorm_key, device="cuda:0", burst_length=10,
             normalization_path=bundle / "normalization.json",
+            susceptibility_gate_enabled=False,
         )
         runtime.scheduler = FixedBurstTriggerScheduler(
             burst_length=10,
