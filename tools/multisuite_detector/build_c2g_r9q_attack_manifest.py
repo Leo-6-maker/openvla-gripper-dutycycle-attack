@@ -105,6 +105,12 @@ def main() -> int:
     if len({str(row["parent_key"]) for row in selected}) != len(selected):
         raise SystemExit("duplicate parent identities in selected source manifest")
 
+    GPU_SUITE_MAP = {
+        "libero_object": 6,
+        "libero_spatial": 6,
+        "libero_goal": 7,
+        "libero_10": 7,
+    }
     bundle_sha = sha256_file(bundle / "SHA256SUMS") if (bundle / "SHA256SUMS").is_file() else ""
     checkpoint_sha = sha256_file(bundle / "checkpoint.pt")
     config_sha = sha256_file(bundle / "detector_config.json")
@@ -115,11 +121,11 @@ def main() -> int:
     for suite in SUITES:
         suite_rows = [row for row in selected if str(row["suite"]) == suite]
         suite_rows = sorted(suite_rows, key=lambda row: stable_rank(f"{args.selection_salt}|GPU", str(row["parent_key"])))
+        gpu = GPU_SUITE_MAP[suite]
+        worker_suffix = "l10" if suite == "libero_10" else suite.replace("libero_", "")
+        worker_id = f"g{gpu}_{worker_suffix}"
         for index, row in enumerate(suite_rows):
-            gpu = 6 if index % 2 == 0 else 7
-            shard_index = index // 2
-            worker_suffix = "l10" if suite == "libero_10" else suite.replace("libero_", "")
-            worker_id = f"g{gpu}_{worker_suffix}"
+            shard_index = index
             parent_key = str(row["parent_key"])
             parent_assignments[parent_key] = (gpu, worker_id, shard_index)
 

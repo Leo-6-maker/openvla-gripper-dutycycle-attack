@@ -19,9 +19,8 @@ from pathlib import Path
 from typing import Any
 
 
-SUITES = ("object", "spatial", "goal", "l10")
+EXPECTED_WORKERS = ("g6_object", "g6_spatial", "g7_goal", "g7_l10")
 GPUS = (6, 7)
-EXPECTED_WORKERS = tuple(f"g{gpu}_{suite}" for gpu in GPUS for suite in SUITES)
 
 
 def write_json(path: Path, value: Any) -> None:
@@ -59,7 +58,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--python", default=sys.executable)
     parser.add_argument("--worker-budget-mib", type=int, default=18000)
     parser.add_argument("--gpu-reserve-mib", type=int, default=8000)
-    parser.add_argument("--max-resident-workers-per-gpu", type=int, default=4)
+    parser.add_argument("--max-resident-workers-per-gpu", type=int, default=2)
     parser.add_argument("--poll-seconds", type=int, default=30)
     parser.add_argument("--model-load-lock-file", default="/tmp/c2g_r9q_global_model_load.lock")
     return parser.parse_args()
@@ -129,6 +128,7 @@ def main() -> int:
         if int(snap["memory_free_mib"]) < required:
             raise SystemExit(f"GPU {gpu} has insufficient free memory: {snap} required={required} MiB")
 
+    max_wpg = max(sum(1 for w in EXPECTED_WORKERS if int(w[1]) == gpu) for gpu in GPUS)
     preview = {
         "status": "PASS_C2G_R9Q_ATTACK_SCHEDULER_PREVIEW",
         "expected_git_commit": args.expected_git_commit,
@@ -139,12 +139,12 @@ def main() -> int:
         },
         "gpu_mapping": {worker: int(worker[1]) for worker in EXPECTED_WORKERS},
         "memory_before": before,
-        "requested_resident_workers_per_gpu": 4,
+        "requested_resident_workers_per_gpu": max_wpg,
         "achieved_resident_workers_per_gpu": args.max_resident_workers_per_gpu,
-        "concurrency_degraded": args.max_resident_workers_per_gpu < 4,
+        "concurrency_degraded": args.max_resident_workers_per_gpu < max_wpg,
         "concurrency_degradation_reason": (
-            "operator_requested_three_resident_workers_per_gpu"
-            if args.max_resident_workers_per_gpu < 4 else ""
+            f"operator_requested_{args.max_resident_workers_per_gpu}_resident_workers_per_gpu"
+            if args.max_resident_workers_per_gpu < max_wpg else ""
         ),
         "global_model_load_lock": args.model_load_lock_file,
     }
@@ -182,7 +182,10 @@ def main() -> int:
         statuses.mkdir()
         logs.mkdir()
         exit_codes: dict[str, int | None] = {}
-        for wave_start in range(0, len(SUITES), args.max_resident_workers_per_gpu):
+        max_workers_per_gpu = max(
+            sum(1 for w in EXPECTED_WORKERS if int(w[1]) == gpu) for gpu in GPUS
+        )
+        for wave_start in range(0, max_workers_per_gpu, args.max_resident_workers_per_gpu):
             wave_workers = []
             for gpu in GPUS:
                 gpu_workers = [worker for worker in EXPECTED_WORKERS if int(worker[1]) == gpu]
