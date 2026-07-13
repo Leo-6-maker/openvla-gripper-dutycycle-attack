@@ -8,6 +8,7 @@ instructions, not evidence that an attack has run.
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
 from collections import Counter, defaultdict
@@ -71,14 +72,24 @@ def main() -> int:
         raise SystemExit(f"refusing to overwrite existing output root: {output}")
     if not source.is_file() or not bundle.is_dir():
         raise SystemExit("source manifest and detector bundle must exist")
-    rows = [json.loads(line) for line in source.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if source.suffix.lower() == ".csv":
+        rows = list(csv.DictReader(source.open(newline="", encoding="utf-8")))
+    else:
+        rows = [json.loads(line) for line in source.read_text(encoding="utf-8").splitlines() if line.strip()]
     by_suite: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    unique_source_rows: dict[str, dict[str, Any]] = {}
     for row in rows:
         suite = str(row.get("suite", ""))
         parent_key = str(row.get("parent_key", ""))
         if suite not in SUITES or not parent_key:
             raise SystemExit(f"invalid source parent row: {row}")
-        by_suite[suite].append(row)
+        previous = unique_source_rows.get(parent_key)
+        if previous is None:
+            unique_source_rows[parent_key] = row
+        elif str(previous.get("suite")) != suite:
+            raise SystemExit(f"parent identity maps to multiple suites: {parent_key}")
+    for row in unique_source_rows.values():
+        by_suite[str(row["suite"])].append(row)
 
     selected: list[dict[str, Any]] = []
     for suite in SUITES:
@@ -112,8 +123,11 @@ def main() -> int:
             parent_assignments[parent_key] = (gpu, worker_id, shard_index)
 
             max_steps = _int(row, "max_steps", "horizon", default=300)
-            task_index = _int(row, "task_index", "task_idx")
-            state_id = _int(row, "state_id", "init_state_id")
+            parsed_parts = parent_key.split("/")
+            parsed_task = int(parsed_parts[1].replace("task_", "")) if len(parsed_parts) > 1 else 0
+            parsed_state = int(parsed_parts[2].replace("state_", "")) if len(parsed_parts) > 2 else 0
+            task_index = _int(row, "task_index", "task_idx", default=parsed_task)
+            state_id = _int(row, "state_id", "init_state_id", default=parsed_state)
             cohort = str(row.get("cohort", row.get("split", "UNKNOWN")))
             split = str(row.get("split", cohort))
             for condition in CONDITIONS:
@@ -184,6 +198,8 @@ def main() -> int:
         "detector_checkpoint_sha256": checkpoint_sha,
         "detector_config_sha256": config_sha,
         "selection_salt": args.selection_salt,
+        "source_row_count": len(rows),
+        "source_unique_parent_count": len(unique_source_rows),
         "total_parents": len(selected),
         "total_cells": len(manifests),
         "per_suite_parents": dict(Counter(str(row["suite"]) for row in selected)),
