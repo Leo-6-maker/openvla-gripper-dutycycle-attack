@@ -1,7 +1,7 @@
 # R9Q Online Detector — 技术路线与实验进展
 
 **PR:** [#73](https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/pull/73)
-**HEAD:** `24af426`
+**HEAD:** `8501c94`
 
 ---
 
@@ -30,7 +30,7 @@ Attack: VIS-PGD, target token 31744 (CLIP_MEDIATED_OPEN), ε=6/255, 20 steps
 | 决策 | 选择 | 理由 |
 |------|------|------|
 | 模型版本 | Codex B2_seed456_epoch_011 | 94.7% CAL feasible-hit, τ参数更保守(2-of-3 vs 3-of-5) |
-| 输入特征 | 25D+9D, 无visual | 94.7% feasible-hit证明proprio+policy_intent已足够 |
+| 输入特征 | 25D+9D, 无visual | 可部署有效基线; visual贡献待同协议消融 |
 | 参数量 | 147K | 在线推理零延迟，不与OpenVLA竞争显存 |
 | 旧gate处理 | susceptibility_gate_enabled=false | PR #72修复，消除旧clean-policy gate阻断 |
 | 4-worker架构 | GPU6:object+spatial, GPU7:goal+l10 | suite模型隔离, model-load lock串行化 |
@@ -94,7 +94,28 @@ DETECTOR_TRAIN (300):   完整覆盖 ✅
 | R9Q_VIS_GRIPPER_ONLY_T10 | Frozen R9Q trigger | Targeted, arm clamped | Arm副作用贡献 |
 | COMMAND_OPEN_ORACLE | Detector | Direct open | 纯夹爪上界 |
 
-## 6. 未回答问题
+## 6. 未回答问题与后续计划
+
+### 6.1 当前限制
+
+1. **Visual embedding贡献**: 旧C2f消融显示25D+visual提升3.6pp recall并降低FP。当前未使用独立visual encoder，但9D policy intent来自RGB→OpenVLA→gripper token logits，间接携带视觉语义。同协议visual消融需要在相同Teacher/FIT/CAL/CHECK/gate上重训。
+
+2. **CHECK false-trigger**: 3/22=13.6%，略高于CAL安全阈值10%。Visual最可能贡献的是区分"动作动力学相似但任务事件不同"的负窗口。
+
+3. **`grounding_confidence`命名**: 当前不输入RGB或语言，实际是proprio+policy history间接预测的teacher-grounding proxy。论文建议改名 `task-relevance confidence proxy`。
+
+4. **L10不足**: 不仅是数据缺口（训练300条已齐），更可能是520步时程中多事件混淆、正样本稀疏、clean成功率低导致有效攻击分母不足。
+
+### 6.2 建议后续顺序
+
+1. 完成Clean-Success 20 → 冻结B2 baseline
+2. Feature-group ablation (25D按语义分组置零, CHECK评估)
+3. Head trajectory可视化 (正确/过早/漏触发 × 4 suites)
+4. L10 event-level error taxonomy
+5. 同协议visual pilot (25D vs 25D+9D vs 25D+9D+visual)
+6. 决策: 保持B2扩表 vs visual作为secondary vs visual替换B2
+
+## 7. 未回答问题（更新前）
 
 1. **Visual embedding贡献**: detector设计支持visual_dim=1152但未启用, 消融实验可回答visual是否降低false-trigger或改善L10
 2. **L10为何弱**: 仅Clean=1/5, Trigger=3/5, 可能因520步长时程使proprio-only detector信号衰减
