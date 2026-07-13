@@ -169,6 +169,37 @@ Therefore the detector is scientifically promising at the offline/CAL level,
 but the detector-to-runtime path is not yet validated. The current canary is a
 deployment integration HOLD, not a main-table result.
 
+## Root-cause analysis of zero online triggers
+
+The canary records distinguish model inference from scheduler admission:
+
+- all eight R9Q cells produced non-empty detector outputs after the W16 warmup;
+- 1,395 post-warmup rows were scored;
+- the observed maximum `critical_window` probability was approximately `0.9999`;
+- the observed maximum `grounding_confidence` probability was approximately
+  `0.9996`;
+- the scheduler state remained `IDLE` on every recorded R9Q row.
+
+This is not consistent with a missing model load or an all-zero detector head.
+The selected `epoch_011.pt` checkpoint was inspected and contains no
+`susceptibility` field. In `src/gripper_attack/c2g_clean_window_runtime.py`,
+the runtime therefore falls back to `require_clean_close=true`,
+`minimum_open_minus_close_log_mass=-8`, and `minimum_entropy=0`. The runtime
+passes the resulting `susceptibility_gate` as `valid` into the 2-of-3 FSM.
+High detector probabilities cannot trigger if that gate is false.
+
+The offline R9Q loss and CAL/CHECK selection use the detector-head gate
+`critical * (1 - release_safe) * grounding`; they do not reproduce the full
+online clean-policy susceptibility gate. This is an evaluation-contract gap,
+not evidence that the learned critical-window head has no signal.
+
+The worker currently records `detector_ready` and `detector_outputs`, but not
+`susceptibility_gate`, `clean_top1_is_close`, open/close log-mass margin,
+entropy, or the gate history. Therefore the exact blocked subcondition cannot
+be identified from the canary artifacts alone. The next minimal diagnostic is
+telemetry and CPU/synthetic gate replay. Threshold changes, gate removal, and
+detector retraining are not justified before that diagnostic.
+
 ## Previous failures and fixes
 
 1. `bd105d13` campaign: stopped before useful cells because the runtime did not
