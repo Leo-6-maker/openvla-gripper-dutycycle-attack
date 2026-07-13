@@ -36,6 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--expected-git-commit", required=True)
     parser.add_argument("--mode", choices=("canary", "panel", "full"), default="canary")
     parser.add_argument("--expected-cells", type=int, required=True)
+    parser.add_argument("--detector-bundle", default="")
     return parser.parse_args()
 
 
@@ -49,9 +50,78 @@ def main() -> int:
     rows = [json.loads(line) for line in manifest.read_text(encoding="utf-8").splitlines() if line.strip()]
     if len(rows) != args.expected_cells:
         raise SystemExit(f"manifest cell count {len(rows)} != expected {args.expected_cells}")
+
+    failures: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
     ledgers: list[dict[str, Any]] = []
-    failures: list[dict[str, Any]] = []
+
+    # P0-2: verify detector bundle SHA closure (must be after failures init)
+    bundle_verification: dict[str, Any] = {}
+    if args.detector_bundle:
+        bundle = Path(args.detector_bundle)
+        expected_checkpoint = rows[0].get("detector_checkpoint_sha256", "")
+        expected_config = rows[0].get("detector_config_sha256", "")
+        expected_bundle = rows[0].get("detector_bundle_sha256", "")
+        actual_checkpoint = sha256_file(bundle / "checkpoint.pt")
+        actual_config = sha256_file(bundle / "detector_config.json")
+        actual_normalization = sha256_file(bundle / "normalization.json")
+        actual_sums = sha256_file(bundle / "SHA256SUMS") if (bundle / "SHA256SUMS").is_file() else ""
+        actual_sums_dot_sha256 = sha256_file(bundle / "SHA256SUMS.sha256") if (bundle / "SHA256SUMS.sha256").is_file() else ""
+        actual_normalization_sha = sha256_file(bundle / "normalization.json") if (bundle / "normalization.json").is_file() else ""
+
+        # Verify SHA256SUMS internal entries
+        bundle_sums_entries_valid = True
+        bundle_fileset_match = True
+        if (bundle / "SHA256SUMS").is_file():
+            try:
+                expected_entries = {}
+                for line in (bundle / "SHA256SUMS").read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if not line:
+                        continue
+                    sha, _, relpath = line.partition("  ")
+                    expected_entries[relpath] = sha
+                for relpath, expected_sha in expected_entries.items():
+                    fpath = bundle / relpath
+                    if not fpath.is_file():
+                        bundle_fileset_match = False
+                        break
+                    if sha256_file(fpath) != expected_sha:
+                        bundle_sums_entries_valid = False
+                        break
+                actual_files = {str(p.relative_to(bundle).as_posix()) for p in bundle.rglob("*") if p.is_file() and p.name not in ("SHA256SUMS", "SHA256SUMS.sha256")}
+                if actual_files != set(expected_entries.keys()):
+                    bundle_fileset_match = False
+            except Exception:
+                bundle_sums_entries_valid = False
+                bundle_fileset_match = False
+
+        bundle_verification = {
+            "checkpoint_sha256_match": actual_checkpoint == expected_checkpoint,
+            "config_sha256_match": actual_config == expected_config,
+            "bundle_sums_sha256_match": actual_sums == expected_bundle,
+            "actual_checkpoint": actual_checkpoint,
+            "expected_checkpoint": expected_checkpoint,
+            "actual_config": actual_config,
+            "expected_config": expected_config,
+            "actual_normalization": actual_normalization,
+            "expected_normalization": actual_normalization_sha,
+            "actual_bundle_sums": actual_sums,
+            "expected_bundle_sums": expected_bundle,
+            "actual_sums_dot_sha256": actual_sums_dot_sha256,
+            "sums_internal_entries_valid": bundle_sums_entries_valid,
+            "sums_fileset_match": bundle_fileset_match,
+        }
+        if not all([
+            actual_checkpoint == expected_checkpoint,
+            actual_config == expected_config,
+            actual_sums == expected_bundle,
+            bundle_sums_entries_valid,
+            bundle_fileset_match,
+        ]):
+            failures.append({"code": "BUNDLE_SHA_MISMATCH", "verification": bundle_verification})
+
+    seen: set[tuple[str, str]] = set()
     triggers: list[dict[str, Any]] = []
     per_suite_condition: defaultdict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
@@ -91,6 +161,23 @@ def main() -> int:
             failures.append({"code": "RAND_BURST_NOT_EXACT_T10", "cell": str(cell), "attack_count": attack_count})
         if condition in {"R9Q_DETECTOR_T10", "COMMAND_OPEN_ORACLE"} and metadata.get("first_attack_step") is not None and attack_count not in (0, 10):
             failures.append({"code": "DETECTOR_BURST_NOT_EXACT_T10", "cell": str(cell), "attack_count": attack_count})
+
+        # R9Q step-level telemetry checks
+        if records and condition == "R9Q_DETECTOR_T10":
+            sg_enabled_count = sum(1 for r in records if r.get("detector_susceptibility_gate_enabled") is True)
+            trigger_started_count = sum(1 for r in records if r.get("detector_trigger_started") is True)
+            effective_valid_count = sum(1 for r in records if r.get("detector_effective_valid") is True)
+            attack_steps = [r for r in records if r.get("attack_delivered")]
+            attack_indices = [r.get("attack_index") for r in attack_steps if r.get("attack_index") is not None]
+
+            if sg_enabled_count > 0:
+                failures.append({"code": "SUSCEPTIBILITY_GATE_ENABLED_TRUE", "cell": str(cell), "count": sg_enabled_count})
+            if trigger_started_count > 1:
+                failures.append({"code": "MULTI_TRIGGER", "cell": str(cell), "trigger_started_count": trigger_started_count})
+            if attack_indices and attack_indices != list(range(len(attack_indices))):
+                failures.append({"code": "ATTACK_INDEX_NOT_SEQUENTIAL", "cell": str(cell), "attack_indices": attack_indices})
+            if attack_count > 0 and effective_valid_count == 0:
+                failures.append({"code": "TRIGGER_WITHOUT_EFFECTIVE_VALID", "cell": str(cell)})
         trigger_step = metadata.get("first_attack_step")
         if condition == "R9Q_DETECTOR_T10":
             triggers.append({"parent_key": row["parent_key"], "suite": row["suite"], "triggered": trigger_step is not None, "trigger_step": trigger_step})
@@ -146,6 +233,7 @@ def main() -> int:
         "observed_cells": len(ledgers),
         "failure_count": len(failures),
         "failures_by_code": dict(Counter(str(row["code"]) for row in failures)),
+        "bundle_verification": bundle_verification,
         "r9q_triggered": sum(bool(value) for value in r9q_triggers),
         "r9q_trigger_count": len(r9q_triggers),
         "r9q_trigger_rate": (sum(bool(value) for value in r9q_triggers) / len(r9q_triggers)) if r9q_triggers else None,
@@ -167,6 +255,12 @@ def main() -> int:
             handle.write(json.dumps(entry, sort_keys=True) + "\n")
     with (output / "failure_ledger.jsonl").open("w", encoding="utf-8") as handle:
         for entry in failures:
+            handle.write(json.dumps(entry, sort_keys=True) + "\n")
+    with (output / "paired_parent_ledger.jsonl").open("w", encoding="utf-8") as handle:
+        for parent, conditions in sorted(parent_conditions.items()):
+            handle.write(json.dumps({"parent_key": parent, "conditions": sorted(conditions), "complete": set(conditions) == set(CONDITIONS)}, sort_keys=True) + "\n")
+    with (output / "cell_audit_ledger.jsonl").open("w", encoding="utf-8") as handle:
+        for entry in ledgers:
             handle.write(json.dumps(entry, sort_keys=True) + "\n")
     with (output / "table_r9q_attack_preview.csv").open("w", newline="", encoding="utf-8") as handle:
         fieldnames = list(summary_rows[0]) if summary_rows else ["suite", "condition"]
