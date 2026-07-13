@@ -6,6 +6,7 @@ Also verifies FSM state machine correctness.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import sys
 from pathlib import Path
 from typing import Any, Sequence
@@ -36,6 +37,39 @@ from tools.multisuite_detector.c2g_r8r_common import (
 
 SCHEMA = "c2g.r9p.streaming_replay.2026-07-12.v1"
 GATE_PASS = "PASS_C2G_R9P_STREAMING_REPLAY"
+
+
+def _stable_rank(parent_key: str) -> int:
+    return int.from_bytes(
+        hashlib.sha256(f"R9Q_STREAMING_FIT_V1|{parent_key}".encode("utf-8")).digest()[:8],
+        "big",
+    )
+
+
+def _select_fit_indices(ds: R9PEpisodeDataset, max_episodes: int) -> tuple[list[int], str]:
+    if max_episodes <= 0:
+        return list(range(len(ds))), "all_fit_rows"
+    if max_episodes != 24:
+        return list(range(min(max_episodes, len(ds)))), "ordered_prefix_diagnostic"
+    suites = sorted({row["suite"] for row in ds.rows})
+    if not suites:
+        raise ValueError("FIT dataset has no suites")
+    per_suite = max_episodes // len(suites)
+    if per_suite * len(suites) != max_episodes:
+        raise ValueError("24-episode streaming replay must divide evenly by suite")
+    selected: list[int] = []
+    for suite in suites:
+        candidates = [
+            (idx, row) for idx, row in enumerate(ds.rows) if row["suite"] == suite
+        ]
+        chosen = sorted(
+            candidates,
+            key=lambda item: (_stable_rank(item[1]["parent_key"]), item[1]["parent_key"]),
+        )[:per_suite]
+        if len(chosen) != per_suite:
+            raise ValueError(f"suite {suite} has fewer than {per_suite} FIT rows")
+        selected.extend(idx for idx, _ in chosen)
+    return selected, "sha256(R9Q_STREAMING_FIT_V1|parent_key),6_per_suite"
 
 
 def _load_model(checkpoint_path: Path, device: torch.device) -> tuple[C2gGripperCriticalWindowDetector, dict]:
@@ -79,6 +113,18 @@ def streaming_replay_episode(
         policy = policy_raw
 
     T = proprio.shape[1]
+    valid_mask = episode_data.get("valid_mask")
+    valid_mask = (
+        torch.ones(T, dtype=torch.bool)
+        if valid_mask is None
+        else valid_mask.bool().cpu()
+    )
+    if valid_mask.numel() != T:
+        raise ValueError("valid_mask length does not match episode length")
+    episode_masks = episode_data.get("masks", {})
+    critical_mask = episode_masks.get("critical_window", torch.ones(T, dtype=torch.bool)).bool().cpu()
+    release_mask = episode_masks.get("release_safe", torch.ones(T, dtype=torch.bool)).bool().cpu()
+    grounding_mask = episode_masks.get("grounding_confidence", torch.ones(T, dtype=torch.bool)).bool().cpu()
 
     # Batch offline: run whole sequence at once
     with torch.no_grad():
@@ -124,7 +170,7 @@ def streaming_replay_episode(
             critical_probability=float(torch.sigmoid(step_outputs["critical_window"][0, -1]).item()),
             release_safe_probability=float(torch.sigmoid(step_outputs["release_safe"][0, -1]).item()),
             grounding_confidence_probability=float(torch.sigmoid(step_outputs["grounding_confidence"][0, -1]).item()),
-            valid=True,
+            valid=bool(valid_mask[t] and critical_mask[t] and release_mask[t] and grounding_mask[t]),
         )
         fsm_states.append(decision.state.value)
         if decision.trigger_started:
@@ -243,13 +289,14 @@ def run_streaming_replay(
     # Streaming verification is a FIT-only offline check.  CAL/CHECK rows are
     # sealed for model selection and must not be consumed by this diagnostic.
     ds = R9PEpisodeDataset(index_rows, materialization_root, split_filter="FIT")
-    n_episodes = len(ds) if max_episodes <= 0 else min(max_episodes, len(ds))
+    selected_indices, selection_method = _select_fit_indices(ds, max_episodes)
+    n_episodes = len(selected_indices)
 
     results = []
     all_equiv = True
     all_fsm = True
 
-    for i in range(n_episodes):
+    for i in selected_indices:
         ep = ds[i]
         r = streaming_replay_episode(model, ep, device, use_policy_intent, thresholds, norm)
         results.append(r)
@@ -265,6 +312,8 @@ def run_streaming_replay(
         "schema": SCHEMA,
         "status": status,
         "episodes_tested": n_episodes,
+        "selected_fit_indices": selected_indices,
+        "selection_method": selection_method,
         "batch_stream_equivalence": all_equiv,
         "fsm_verification": all_fsm,
         "max_error_summary": {
