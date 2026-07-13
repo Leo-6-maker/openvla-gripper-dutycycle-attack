@@ -378,6 +378,8 @@ def run_cell(
         "unnorm_key": unnorm_key,
         "detector_checkpoint_sha256": row["detector_checkpoint_sha256"],
         "detector_config_sha256": row["detector_config_sha256"],
+        "detector_checkpoint_schema": getattr(runtime, "checkpoint_schema_version", ""),
+        "normalization_sha256": getattr(runtime, "normalization_sha256", None),
         "manifest_sha256": row.get("source_parent_manifest_sha256"),
         "worker_id": os.environ.get("C2G_WORKER_ID", ""),
         "physical_gpu": int(os.environ.get("C2G_PHYSICAL_GPU", "-1")),
@@ -449,6 +451,7 @@ def main(argv: list[str] | None = None) -> int:
         runtime = C2gCleanWindowRuntime(
             checkpoint, openvla_model=model, openvla_processor=processor,
             unnorm_key=unnorm_key, device="cuda:0", burst_length=10,
+            normalization_path=bundle / "normalization.json",
         )
         runtime.scheduler = FixedBurstTriggerScheduler(
             burst_length=10,

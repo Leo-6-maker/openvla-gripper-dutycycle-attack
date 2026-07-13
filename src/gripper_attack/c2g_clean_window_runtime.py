@@ -8,6 +8,7 @@ start; the attack payload remains TokenPrefixPGDAttacker in the execution runner
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 from pathlib import Path
 from typing import Any, Dict, Mapping, Sequence
@@ -32,6 +33,7 @@ from .openvla_libero_exec_spec import (
 )
 
 CHECKPOINT_SCHEMA_VERSION = "c2g.clean_window_checkpoint.2026-07-10.v1"
+R9Q_CHECKPOINT_SCHEMA_VERSION = "c2g.r9q.final_detector_checkpoint.2026-07-13.v1"
 SUSCEPTIBILITY_SCHEMA_VERSION = "c2g.clean_susceptibility_calibration.2026-07-10.v1"
 
 
@@ -136,6 +138,7 @@ class C2gCleanWindowRuntime:
         openvla_processor: Any,
         unnorm_key: str,
         device: str = "cuda",
+        normalization_path: str | Path | None = None,
         burst_length: int = 10,
         require_clean_close: bool = True,
         minimum_open_minus_close_log_mass: float = -8.0,
@@ -143,7 +146,8 @@ class C2gCleanWindowRuntime:
     ) -> None:
         checkpoint_path = Path(checkpoint_path).resolve()
         raw = torch.load(checkpoint_path, map_location="cpu")
-        if str(raw.get("schema_version", "")) != CHECKPOINT_SCHEMA_VERSION:
+        schema_version = str(raw.get("schema_version", ""))
+        if schema_version not in {CHECKPOINT_SCHEMA_VERSION, R9Q_CHECKPOINT_SCHEMA_VERSION}:
             raise ValueError("unsupported C2g clean-window checkpoint schema")
         config_dict = dict(raw["model_config"])
         self.config = C2gDetectorConfig(**config_dict)
@@ -151,7 +155,7 @@ class C2gCleanWindowRuntime:
         self.model = C2gGripperCriticalWindowDetector(self.config).to(self.device)
         self.model.load_state_dict(raw["model_state_dict"], strict=True)
         self.model.eval()
-        self.window = int(raw["window"])
+        self.window = int(raw.get("window", 16))
         if self.window <= 0:
             raise ValueError("checkpoint window must be positive")
         thresholds = dict(raw.get("thresholds", {}))
@@ -166,6 +170,31 @@ class C2gCleanWindowRuntime:
         )
         self.checkpoint_path = checkpoint_path
         self.checkpoint_sha256 = sha256_file(checkpoint_path)
+        self.checkpoint_schema_version = schema_version
+        self._normalization: dict[str, np.ndarray] | None = None
+        if schema_version == R9Q_CHECKPOINT_SCHEMA_VERSION:
+            if normalization_path is None:
+                raise ValueError("R9Q deployment requires an explicit normalization.json")
+            normalization_file = Path(normalization_path).resolve()
+            raw_norm = json.loads(normalization_file.read_text(encoding="utf-8"))
+            fields = ("proprio_mean", "proprio_std", "policy_intent_mean", "policy_intent_std")
+            if any(field not in raw_norm for field in fields):
+                raise ValueError("R9Q normalization.json is missing canonical feature statistics")
+            self._normalization = {
+                field: np.asarray(raw_norm[field], dtype=np.float32).reshape(-1)
+                for field in fields
+            }
+            if self._normalization["proprio_mean"].shape != (25,) or self._normalization["proprio_std"].shape != (25,):
+                raise ValueError("R9Q proprio normalization must be length 25")
+            if self._normalization["policy_intent_mean"].shape != (9,) or self._normalization["policy_intent_std"].shape != (9,):
+                raise ValueError("R9Q policy-intent normalization must be length 9")
+            if not all(np.isfinite(value).all() for value in self._normalization.values()):
+                raise ValueError("R9Q normalization contains non-finite values")
+            self.normalization_path = normalization_file
+            self.normalization_sha256 = sha256_file(normalization_file)
+        else:
+            self.normalization_path = None
+            self.normalization_sha256 = None
         self._vla = openvla_model
         self._processor = openvla_processor
         self._unnorm_key = str(unnorm_key)
@@ -272,7 +301,12 @@ class C2gCleanWindowRuntime:
         )
         if not np.isfinite(values).all():
             raise ValueError("clean policy-intent features are non-finite")
-        return values, {name: float(values[index]) for index, name in enumerate(CLEAN_POLICY_FEATURE_NAMES)}
+        summary_values = values.copy()
+        if self._normalization is not None:
+            values = (values - self._normalization["policy_intent_mean"]) / np.maximum(
+                self._normalization["policy_intent_std"], 1e-8
+            )
+        return values, {name: float(summary_values[index]) for index, name in enumerate(CLEAN_POLICY_FEATURE_NAMES)}
 
     def predict(
         self,
@@ -285,6 +319,10 @@ class C2gCleanWindowRuntime:
         proprio = np.asarray(features_25d, dtype=np.float32).reshape(-1)
         if proprio.shape != (25,) or not np.isfinite(proprio).all():
             raise ValueError("features_25d must be a finite vector of length 25")
+        if self._normalization is not None:
+            proprio = (proprio - self._normalization["proprio_mean"]) / np.maximum(
+                self._normalization["proprio_std"], 1e-8
+            )
         policy, policy_summary = self._policy_features(clean_gripper_logits)
         self._proprio_history.append(proprio)
         self._policy_history.append(policy)
@@ -306,7 +344,11 @@ class C2gCleanWindowRuntime:
                 "decision": decision,
             }
 
-        language = self._encode_text(task_language)
+        language = (
+            self._encode_text(task_language)
+            if self.config.use_language_conditioning
+            else np.zeros((self.config.language_dim,), dtype=np.float32)
+        )
         visual = self._encode_image(rgb) if self.config.use_visual else None
         proprio_tensor = torch.from_numpy(np.asarray(self._proprio_history)[None]).to(self.device)
         policy_tensor = torch.from_numpy(np.asarray(self._policy_history)[None]).to(self.device)
