@@ -10,6 +10,28 @@ This patch addresses the code-level findings in the GPT review. It updates the
 GitHub review branch only. The active server-side V2 workers and their evidence
 root were not stopped or modified by this patch.
 
+## Follow-up audit disposition — 2026-07-15
+
+The follow-up review correctly found that the first remediation still had four
+gaps. They are addressed by the follow-up code change on this branch:
+
+- Runtime-invalid metadata now contains explicit `runtime_valid=false`,
+  `success=false`, identity, schema, and protocol fields, so restart recovery
+  reaches `RUNTIME_HOLD` without granting another formal attempt.
+- The parity harness now compares an observational wrapper that preserves the
+  original `model.predict_action()` generation kwargs against the
+  score-capturing single-generation path. It also resets LIBERO before state
+  injection and checks raw plus postprocessed action equality.
+- A checksum-valid artifact that is incompatible with the current schema is
+  now `PROTOCOL_HOLD` and cannot be overwritten in place.
+- The worker now verifies the declared OpenVLA and LIBERO checkout paths and
+  their actual Git HEADs, in addition to checkpoint and collector hashes.
+
+The remaining audit boundary is intentional: the schema script is a
+per-episode audit, not the global 2,000-cell census/ledger closure. The global
+census remains a separate formal gate and the new evidence line remains HOLD
+until the CPU checks and GPU canary are run in the pinned environment.
+
 ## Fixed findings
 
 | Finding | Remediation | Gate |

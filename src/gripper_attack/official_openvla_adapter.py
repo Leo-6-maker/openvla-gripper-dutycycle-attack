@@ -48,7 +48,7 @@ class OfficialOpenVLAActionAdapter:
         self.token_action_map = dict(semantics["token_action_map"])
 
     def predict_action(self, image_np: np.ndarray, task_label: str, *, capture: bool = False) -> tuple[np.ndarray, dict[str, Any]]:
-        """Official execution path. ``capture`` is parity instrumentation only."""
+        """Official execution path; optional capture observes without changing kwargs."""
         if not capture:
             return official_predict_action(
                 self.model,
@@ -61,8 +61,46 @@ class OfficialOpenVLAActionAdapter:
                 base_vla_name=self.base_vla_name,
             )
 
-        action, generation, meta = self.predict_action_with_scores(image_np, task_label)
-        return action, meta
+        return self.predict_action_observed(image_np, task_label)
+
+    def predict_action_observed(
+        self, image_np: np.ndarray, task_label: str
+    ) -> tuple[np.ndarray, dict[str, Any]]:
+        """Observe the uninstrumented official call without changing kwargs."""
+        inputs, prompt, processed_image = prepare_official_inputs(
+            self.processor,
+            image_np,
+            task_label,
+            self.device,
+            center_crop=self.center_crop,
+            base_vla_name=self.base_vla_name,
+        )
+        captured: dict[str, Any] = {}
+        original_generate = self.model.generate
+
+        def observe_generate(*args: Any, **kwargs: Any) -> Any:
+            result = original_generate(*args, **kwargs)
+            captured["generation"] = result
+            return result
+
+        self.model.generate = observe_generate
+        try:
+            action = self.model.predict_action(**inputs, unnorm_key=self.unnorm_key, do_sample=False)
+        finally:
+            self.model.generate = original_generate
+
+        generation = captured.get("generation")
+        if generation is None:
+            raise RuntimeError("OFFICIAL_UNINSTRUMENTED_CAPTURE_MISSING")
+        tokens = generated_action_tokens(self.model, generation, self.unnorm_key)
+        return np.asarray(action, dtype=np.float32), {
+            "inputs": inputs,
+            "prompt": prompt,
+            "processed_image": processed_image,
+            "generation": generation,
+            "tokens": tokens,
+            "observed_official_kwargs": True,
+        }
 
     def predict_action_with_scores(
         self, image_np: np.ndarray, task_label: str

@@ -11,6 +11,7 @@ import json
 import os
 import pickle
 import shutil
+import subprocess
 import sys
 import tempfile
 import time
@@ -172,9 +173,6 @@ def artifact_checksum_valid(path: Path) -> bool:
     try:
         payload = json.loads(manifest.read_text(encoding="utf-8"))
         rows = payload["files"]
-        paths = {str(row["path"]) for row in rows}
-        if not set(REQUIRED_ARTIFACT_FILES) <= paths:
-            return False
         if payload["recursive_sha256"] != json_sha(rows):
             return False
         return all((path / row["path"]).is_file() and sha256_file(path / row["path"]) == row["sha256"] for row in rows)
@@ -189,10 +187,10 @@ def sealed_artifact_result(path: Path) -> dict[str, object] | None:
     try:
         meta = json.loads((path / "episode_metadata.json").read_text(encoding="utf-8"))
         runtime = json.loads((path / "runtime_audit.json").read_text(encoding="utf-8"))
-        if meta.get("runtime_valid") is False and runtime.get("runtime_valid") is False:
-            return {"status": "RUNTIME_INVALID", "metadata": meta, "artifact_root": str(path)}
         if any(not (path / name).is_file() for name in REQUIRED_ARTIFACT_FILES):
             return None
+        if meta.get("runtime_valid") is False and runtime.get("runtime_valid") is False:
+            return {"status": "RUNTIME_INVALID", "metadata": meta, "artifact_root": str(path)}
         summary = json.loads((path / "episode_summary.json").read_text(encoding="utf-8"))
         if (
             meta.get("schema") != "OPENVLA_OFFICIAL_CLEAN_EPISODE_V2"
@@ -246,11 +244,62 @@ def load_rows() -> list[dict[str, str]]:
     return rows
 
 
+def git_head(path: Path) -> str:
+    try:
+        return subprocess.run(
+            ["git", "-C", str(path), "rev-parse", "HEAD"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return ""
+
+
+def git_clean(path: Path) -> bool:
+    try:
+        return not subprocess.run(
+            ["git", "-C", str(path), "status", "--porcelain"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    except (OSError, subprocess.CalledProcessError):
+        return False
+
+
 def load_artifact_provenance() -> dict[str, object]:
     path = args.output_root / "provenance" / "UPSTREAM_PROVENANCE.json"
     if not path.is_file():
         raise SystemExit(f"PROVENANCE_MISSING {path}")
     payload = json.loads(path.read_text(encoding="utf-8"))
+    upstream_mismatches: list[str] = []
+    openvla_upstream = payload["openvla_upstream"]
+    expected_openvla_root = Path(openvla_upstream["checkout"]).resolve()
+    actual_openvla_root = args.upstream_root.resolve()
+    actual_openvla_commit = git_head(actual_openvla_root)
+    if actual_openvla_root != expected_openvla_root:
+        upstream_mismatches.append(f"openvla_root:expected={expected_openvla_root}:actual={actual_openvla_root}")
+    if actual_openvla_commit != openvla_upstream["commit"]:
+        upstream_mismatches.append(
+            f"openvla_commit:expected={openvla_upstream['commit']}:actual={actual_openvla_commit}"
+        )
+    if not git_clean(actual_openvla_root):
+        upstream_mismatches.append("openvla_worktree_dirty")
+    libero_upstream = payload["libero_upstream"]
+    actual_libero_root = Path(libero_upstream["checkout"]).resolve()
+    actual_libero_commit = git_head(actual_libero_root)
+    if actual_libero_commit != libero_upstream["commit"]:
+        upstream_mismatches.append(
+            f"libero_commit:expected={libero_upstream['commit']}:actual={actual_libero_commit}"
+        )
+    if not git_clean(actual_libero_root):
+        upstream_mismatches.append("libero_worktree_dirty")
+    module_path = Path(libero_upstream["module"]).resolve()
+    if not module_path.is_file():
+        upstream_mismatches.append(f"libero_module_missing:{module_path}")
+    if upstream_mismatches:
+        raise SystemExit("UPSTREAM_PROVENANCE_FAIL " + ";".join(upstream_mismatches))
     checkpoint = payload["checkpoints"][args.suite]
     declared_path = Path(checkpoint["path"]).resolve()
     actual_path = args.model_path.resolve()
@@ -310,6 +359,13 @@ def load_artifact_provenance() -> dict[str, object]:
         "checkpoint_path_declared": str(declared_path),
         "checkpoint_path_verified": str(actual_path),
         "checkpoint_binding_pass": True,
+        "upstream_root_resolved": str(actual_openvla_root),
+        "openvla_upstream_git_commit_actual": actual_openvla_commit,
+        "openvla_upstream_worktree_clean": True,
+        "libero_upstream_checkout_resolved": str(actual_libero_root),
+        "libero_upstream_git_commit_actual": actual_libero_commit,
+        "libero_upstream_worktree_clean": True,
+        "libero_module_path_verified": str(module_path),
         "checkpoint_tree_sha256": checkpoint["tree_sha256"],
         "checkpoint_tree_sha256_actual": tree_sha,
         "checkpoint_file_count": file_count,
@@ -625,6 +681,9 @@ def main() -> int:
             }[result["status"]]
             update_global_ledger(cell_id, result_ledger_status, result_status=result["status"])
         else:
+            if (out / "artifact_sha256.json").is_file() and artifact_checksum_valid(out):
+                update_global_ledger(cell_id, "PROTOCOL_HOLD", result_status="INCOMPATIBLE_SEALED_ARTIFACT")
+                raise SystemExit(f"INCOMPATIBLE_SEALED_ARTIFACT {row['canonical_parent_key']}")
             task = suite_instance.get_task(int(row["task_idx"]))
             states = suite_instance.get_task_init_states(int(row["task_idx"]))
             if state_sha(states[int(row["state_id"])]) != row["initial_state_sha256"]:
@@ -654,7 +713,22 @@ def main() -> int:
                         if torch.cuda.is_available():
                             torch.cuda.empty_cache()
                         continue
-                    result = {"status": "RUNTIME_INVALID", **row, "error": error, "runtime_retry_count": retry_count}
+                    result = {
+                        **row,
+                        "schema": "OPENVLA_OFFICIAL_CLEAN_EPISODE_V2",
+                        "protocol_id": "OPENVLA_LIBERO_OFFICIAL_V1",
+                        "condition": "CLEAN",
+                        "suite": row["suite"],
+                        "task_idx": int(row["task_idx"]),
+                        "state_id": int(row["state_id"]),
+                        "canonical_parent_key": row["canonical_parent_key"],
+                        "runtime_valid": False,
+                        "env_success": False,
+                        "success": False,
+                        "status": "RUNTIME_INVALID",
+                        "error": error,
+                        "runtime_retry_count": retry_count,
+                    }
                     write_json(out / "episode_metadata.json", result)
                     write_json(out / "episode_summary.json", {
                         "status": "RUNTIME_INVALID", "success": False, "clean": True, "steps": 0,

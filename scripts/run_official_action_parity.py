@@ -38,7 +38,6 @@ from gripper_attack.official_libero_protocol import (
     OFFICIAL_HORIZONS,
     NUM_STEPS_WAIT,
     NUM_TRIALS_PER_TASK,
-    generated_action_tokens,
     tensor_sha256,
 )
 from gripper_attack.official_openvla_adapter import OfficialOpenVLAActionAdapter
@@ -75,6 +74,7 @@ def make_env(task, state, *, render_gpu: int):
     bddl = os.path.join(get_libero_path("bddl_files"), task.problem_folder, task.bddl_file)
     env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=256, camera_widths=256)
     env.seed(0)
+    env.reset()
     # LIBERO's reset path may retain or mutate the supplied state object;
     # isolate each replay so the two P3 traces receive byte-identical state.
     obs = env.set_init_state(copy.deepcopy(state))
@@ -91,41 +91,49 @@ def image_from_obs(obs):
 
 def compare_case(adapter, image, instruction, *, case_type, task_idx, state_id, step_idx, cases):
     official_action, official_meta = adapter.predict_action(image, instruction, capture=True)
-    score_action, score_generation, score_meta = adapter.score_action(image, instruction)
+    instrumented_action, _generation, instrumented_meta = adapter.predict_action_with_scores(image, instruction)
     official_tokens = list(official_meta.get("tokens", []))
-    score_tokens = generated_action_tokens(adapter.model, score_generation, adapter.unnorm_key)
-    input_ids_equal = tensor_sha256(official_meta["inputs"]["input_ids"]) == tensor_sha256(score_meta["inputs"]["input_ids"])
-    pixel_equal = tensor_sha256(official_meta["inputs"]["pixel_values"]) == tensor_sha256(score_meta["inputs"]["pixel_values"])
-    action_error = float(np.max(np.abs(np.asarray(official_action) - np.asarray(score_action))))
+    instrumented_tokens = list(instrumented_meta.get("captured_action_token_ids", []))
+    input_ids_equal = tensor_sha256(official_meta["inputs"]["input_ids"]) == tensor_sha256(instrumented_meta["inputs"]["input_ids"])
+    pixel_equal = tensor_sha256(official_meta["inputs"]["pixel_values"]) == tensor_sha256(instrumented_meta["inputs"]["pixel_values"])
+    action_error = float(np.max(np.abs(np.asarray(official_action) - np.asarray(instrumented_action))))
+    postprocess_error = float(np.max(np.abs(adapter.postprocess(official_action) - adapter.postprocess(instrumented_action))))
     row = {
         "case_type": case_type,
         "suite": args.suite,
         "task_idx": task_idx,
         "state_id": state_id,
         "step_idx": step_idx,
-        "prompt_equal": official_meta["prompt"] == score_meta["prompt"],
+        "prompt_equal": official_meta["prompt"] == instrumented_meta["prompt"],
         "input_ids_equal": input_ids_equal,
         "pixel_tensor_equal": pixel_equal,
-        "token_equal": official_tokens == score_tokens,
+        "token_equal": official_tokens == instrumented_tokens,
         "official_tokens": json.dumps(official_tokens),
-        "score_tokens": json.dumps(score_tokens),
+        "instrumented_tokens": json.dumps(instrumented_tokens),
         "action_max_abs_error": action_error,
+        "postprocessed_action_max_abs_error": postprocess_error,
+        "instrumented_generation_passes": instrumented_meta.get("generation_passes_per_step"),
+        "instrumented_score_count": instrumented_meta.get("captured_score_count"),
         "continuous_action_pass": action_error <= 1e-6,
-        "status": "PASS" if official_tokens == score_tokens and input_ids_equal and pixel_equal and action_error <= 1e-6 else "FAIL",
+        "status": "PASS" if (
+            official_tokens == instrumented_tokens
+            and input_ids_equal
+            and pixel_equal
+            and action_error <= 1e-6
+            and postprocess_error <= 1e-6
+            and instrumented_meta.get("generation_passes_per_step") == 1
+            and instrumented_meta.get("captured_score_count") == 7
+        ) else "FAIL",
     }
     cases.append(row)
-    return np.asarray(official_action, dtype=np.float32), np.asarray(score_action, dtype=np.float32), row
+    return np.asarray(official_action, dtype=np.float32), np.asarray(instrumented_action, dtype=np.float32), row
 
 
 def run_short_trace_parity(adapter, task, state) -> dict[str, object]:
-    """Compare both decoders on the exact observations of one official trace.
+    """Compare uninstrumented and instrumented calls on one official trace.
 
-    LIBERO's OffScreenRenderEnv is not pixel-deterministic across two fresh
-    constructors even with the same serialized init state.  Running two
-    independent branches would therefore test simulator reset noise rather
-    than the action adapter.  The score adapter is re-decoded on each exact
-    observation from the official execution trace; the official action is
-    executed and both pre/post-gripper actions are compared at every step.
+    The official action is executed and both pre/post-gripper actions are
+    compared at every step on the same observation.
     """
     from experiments.robot.libero.libero_utils import get_libero_dummy_action
 
@@ -137,11 +145,11 @@ def run_short_trace_parity(adapter, task, state) -> dict[str, object]:
         for _ in range(20):
             image = image_from_obs(obs)
             official_action, _official_meta = adapter.predict_action(image, str(task.language), capture=True)
-            score_action, _generation, _score_meta = adapter.score_action(image, str(task.language))
+            instrumented_action, _generation, _instrumented_meta = adapter.predict_action_with_scores(image, str(task.language))
             official_env_action = adapter.postprocess(official_action)
-            score_env_action = adapter.postprocess(score_action)
-            action_errors.append(float(np.max(np.abs(np.asarray(official_action) - np.asarray(score_action)))))
-            env_action_errors.append(float(np.max(np.abs(official_env_action - score_env_action))))
+            instrumented_env_action = adapter.postprocess(instrumented_action)
+            action_errors.append(float(np.max(np.abs(np.asarray(official_action) - np.asarray(instrumented_action)))))
+            env_action_errors.append(float(np.max(np.abs(official_env_action - instrumented_env_action))))
             # The official action is the executed action for this trace.
             obs, _reward, done, _info = env.step(official_env_action.tolist())
             if done:
@@ -150,9 +158,9 @@ def run_short_trace_parity(adapter, task, state) -> dict[str, object]:
         env.close()
     return {
         "official_steps": len(action_errors),
-        "score_steps": len(action_errors),
+        "instrumented_steps": len(action_errors),
         "official_done": bool(done),
-        "score_done": bool(done),
+        "instrumented_done": bool(done),
         "action_prefix_max_abs_error": max(action_errors, default=float("inf")),
         "postprocessed_action_prefix_max_abs_error": max(env_action_errors, default=float("inf")),
         "observation_source": "official_execution_trace",
@@ -217,7 +225,7 @@ def main() -> int:
             "task_idx": task_idx,
             "state_id": 0,
             **trace,
-            "status": "PASS" if trace["official_steps"] == trace["score_steps"] and trace["action_prefix_max_abs_error"] <= 1e-6 and trace["postprocessed_action_prefix_max_abs_error"] <= 1e-6 else "FAIL",
+            "status": "PASS" if trace["official_steps"] == trace["instrumented_steps"] and trace["action_prefix_max_abs_error"] <= 1e-6 and trace["postprocessed_action_prefix_max_abs_error"] <= 1e-6 else "FAIL",
         })
 
     # P4: one deterministic image perturbation, then official re-decode parity.
