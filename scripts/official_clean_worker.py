@@ -186,6 +186,8 @@ def load_artifact_provenance() -> dict[str, str]:
     source_hash = json_sha({
         "official_libero_protocol.py": sha256_file(source_root / "official_libero_protocol.py"),
         "official_openvla_adapter.py": sha256_file(source_root / "official_openvla_adapter.py"),
+        "official_detector_features.py": sha256_file(source_root / "official_detector_features.py"),
+        "official_clean_worker.py": sha256_file(Path(__file__).resolve()),
     })
     return {
         "checkpoint_tree_sha256": checkpoint["tree_sha256"],
