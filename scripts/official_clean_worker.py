@@ -70,6 +70,23 @@ def json_sha(value: object) -> str:
     return sha256_bytes(json.dumps(value, sort_keys=True, separators=(",", ":"), default=str).encode())
 
 
+def checkpoint_tree_fingerprint(path: Path) -> tuple[str, int, int]:
+    """Hash the complete checkpoint tree using the pinned provenance format."""
+    rows = []
+    total_bytes = 0
+    for item in sorted(path.rglob("*"), key=lambda value: value.relative_to(path).as_posix()):
+        if not item.is_file():
+            continue
+        size = item.stat().st_size
+        total_bytes += size
+        rows.append({
+            "path": item.relative_to(path).as_posix(),
+            "size": size,
+            "sha256": sha256_file(item),
+        })
+    return json_sha(rows), len(rows), total_bytes
+
+
 def state_sha(state: object) -> str:
     return sha256_bytes(pickle.dumps(state, protocol=4))
 
@@ -136,18 +153,71 @@ def seal(path: Path) -> str:
     return payload["recursive_sha256"]
 
 
-def artifact_valid(path: Path) -> bool:
+REQUIRED_ARTIFACT_FILES = (
+    "episode_metadata.json",
+    "episode_summary.json",
+    "runtime_audit.json",
+    "condition_config.json",
+    "attack_config.json",
+    "step_records.jsonl",
+    "policy_intent_records.jsonl",
+    "privileged_teacher_sidecar.jsonl",
+)
+
+
+def artifact_checksum_valid(path: Path) -> bool:
     manifest = path / "artifact_sha256.json"
     if not manifest.is_file():
         return False
     try:
         payload = json.loads(manifest.read_text(encoding="utf-8"))
         rows = payload["files"]
+        paths = {str(row["path"]) for row in rows}
+        if not set(REQUIRED_ARTIFACT_FILES) <= paths:
+            return False
         if payload["recursive_sha256"] != json_sha(rows):
             return False
         return all((path / row["path"]).is_file() and sha256_file(path / row["path"]) == row["sha256"] for row in rows)
     except Exception:
         return False
+
+
+def sealed_artifact_result(path: Path) -> dict[str, object] | None:
+    """Recover only a checksum-closed, semantically valid prior result."""
+    if not artifact_checksum_valid(path):
+        return None
+    try:
+        meta = json.loads((path / "episode_metadata.json").read_text(encoding="utf-8"))
+        runtime = json.loads((path / "runtime_audit.json").read_text(encoding="utf-8"))
+        if meta.get("runtime_valid") is False and runtime.get("runtime_valid") is False:
+            return {"status": "RUNTIME_INVALID", "metadata": meta, "artifact_root": str(path)}
+        if any(not (path / name).is_file() for name in REQUIRED_ARTIFACT_FILES):
+            return None
+        summary = json.loads((path / "episode_summary.json").read_text(encoding="utf-8"))
+        if (
+            meta.get("schema") != "OPENVLA_OFFICIAL_CLEAN_EPISODE_V2"
+            or meta.get("condition") != "CLEAN"
+            or meta.get("runtime_valid") is not True
+            or runtime.get("runtime_valid") is not True
+            or not isinstance(meta.get("success"), bool)
+            or meta.get("env_success") != meta.get("success")
+            or summary.get("success") != meta.get("success")
+            or summary.get("clean") is not True
+            or meta.get("env_reset_called") is not True
+            or meta.get("checkpoint_binding_pass") is not True
+            or meta.get("single_generation_parity_pass") is not True
+            or meta.get("generation_passes_per_step") != 1
+        ):
+            return None
+        if meta.get("official_horizon") != OFFICIAL_HORIZONS.get(meta.get("suite")):
+            return None
+        return {
+            "status": "PASS" if meta["success"] else "TASK_FAILURE",
+            "metadata": meta,
+            "artifact_root": str(path),
+        }
+    except Exception:
+        return None
 
 
 def retryable_runtime_error(exc: Exception) -> bool:
@@ -176,26 +246,84 @@ def load_rows() -> list[dict[str, str]]:
     return rows
 
 
-def load_artifact_provenance() -> dict[str, str]:
+def load_artifact_provenance() -> dict[str, object]:
     path = args.output_root / "provenance" / "UPSTREAM_PROVENANCE.json"
     if not path.is_file():
         raise SystemExit(f"PROVENANCE_MISSING {path}")
     payload = json.loads(path.read_text(encoding="utf-8"))
     checkpoint = payload["checkpoints"][args.suite]
+    declared_path = Path(checkpoint["path"]).resolve()
+    actual_path = args.model_path.resolve()
+    if actual_path != declared_path:
+        raise SystemExit(f"CHECKPOINT_PATH_MISMATCH declared={declared_path} actual={actual_path}")
+    if not actual_path.is_dir():
+        raise SystemExit(f"CHECKPOINT_PATH_MISSING {actual_path}")
+
+    tree_sha, file_count, total_bytes = checkpoint_tree_fingerprint(actual_path)
+    file_checks = {
+        "config_sha256": (actual_path / "config.json", checkpoint["config_sha256"]),
+        "dataset_statistics_sha256": (actual_path / "dataset_statistics.json", checkpoint["dataset_statistics_sha256"]),
+        "processor_preprocessor_sha256": (
+            actual_path / "preprocessor_config.json", payload["processor_files"]["preprocessor_config_sha256"]
+        ),
+        "processor_tokenizer_sha256": (
+            actual_path / "tokenizer_config.json", payload["processor_files"]["tokenizer_config_sha256"]
+        ),
+    }
+    mismatches: list[str] = []
+    actual_file_hashes: dict[str, str] = {}
+    for label, (file_path, expected) in file_checks.items():
+        if not file_path.is_file():
+            mismatches.append(f"{label}:missing:{file_path.name}")
+            continue
+        actual = sha256_file(file_path)
+        actual_file_hashes[label] = actual
+        if actual != expected:
+            mismatches.append(f"{label}:expected={expected}:actual={actual}")
+    if tree_sha != checkpoint["tree_sha256"]:
+        mismatches.append(f"tree_sha256:expected={checkpoint['tree_sha256']}:actual={tree_sha}")
+    if file_count != int(checkpoint["file_count"]):
+        mismatches.append(f"file_count:expected={checkpoint['file_count']}:actual={file_count}")
+    if total_bytes != int(checkpoint["bytes"]):
+        mismatches.append(f"bytes:expected={checkpoint['bytes']}:actual={total_bytes}")
+    if mismatches:
+        raise SystemExit("CHECKPOINT_PROVENANCE_FAIL " + ";".join(mismatches))
+
     source_root = Path(__file__).resolve().parents[1] / "src" / "gripper_attack"
-    source_hash = json_sha({
+    source_files = {
         "official_libero_protocol.py": sha256_file(source_root / "official_libero_protocol.py"),
         "official_openvla_adapter.py": sha256_file(source_root / "official_openvla_adapter.py"),
         "official_detector_features.py": sha256_file(source_root / "official_detector_features.py"),
         "official_clean_worker.py": sha256_file(Path(__file__).resolve()),
-    })
+    }
+    declared_source_files = payload.get("collector_source_sha256")
+    if not isinstance(declared_source_files, dict):
+        raise SystemExit("COLLECTOR_SOURCE_PROVENANCE_MISSING")
+    source_mismatches = [
+        f"{name}:expected={declared_source_files.get(name)}:actual={digest}"
+        for name, digest in source_files.items()
+        if declared_source_files.get(name) != digest
+    ]
+    if source_mismatches:
+        raise SystemExit("COLLECTOR_SOURCE_PROVENANCE_FAIL " + ";".join(source_mismatches))
     return {
+        "checkpoint_path_declared": str(declared_path),
+        "checkpoint_path_verified": str(actual_path),
+        "checkpoint_binding_pass": True,
         "checkpoint_tree_sha256": checkpoint["tree_sha256"],
+        "checkpoint_tree_sha256_actual": tree_sha,
+        "checkpoint_file_count": file_count,
+        "checkpoint_bytes": total_bytes,
         "checkpoint_config_sha256": checkpoint["config_sha256"],
+        "checkpoint_config_sha256_actual": actual_file_hashes["config_sha256"],
         "dataset_statistics_sha256": checkpoint["dataset_statistics_sha256"],
+        "dataset_statistics_sha256_actual": actual_file_hashes["dataset_statistics_sha256"],
         "processor_preprocessor_sha256": payload["processor_files"]["preprocessor_config_sha256"],
+        "processor_preprocessor_sha256_actual": actual_file_hashes["processor_preprocessor_sha256"],
         "processor_tokenizer_sha256": payload["processor_files"]["tokenizer_config_sha256"],
-        "official_adapter_sha256": source_hash,
+        "processor_tokenizer_sha256_actual": actual_file_hashes["processor_tokenizer_sha256"],
+        "collector_source_sha256": source_files,
+        "official_adapter_sha256": json_sha(source_files),
         "official_protocol_id": payload["protocol_id"],
     }
 
@@ -251,7 +379,7 @@ def mujoco_contact_pairs(env) -> list[list[str]]:
     return pairs
 
 
-def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, model_path: Path, artifact_provenance: dict[str, str]) -> dict[str, object]:
+def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, model_path: Path, artifact_provenance: dict[str, object]) -> dict[str, object]:
     from experiments.robot.libero.libero_utils import get_libero_image
     from libero.libero import get_libero_path
     from libero.libero.envs import OffScreenRenderEnv
@@ -263,6 +391,7 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
     bddl = os.path.join(get_libero_path("bddl_files"), task.problem_folder, task.bddl_file)
     env = OffScreenRenderEnv(bddl_file_name=bddl, camera_heights=256, camera_widths=256)
     env.seed(0)
+    env.reset()
     obs = env.set_init_state(copy.deepcopy(initial_state))
     dummy = [0, 0, 0, 0, 0, 0, -1]
     for _ in range(NUM_STEPS_WAIT):
@@ -305,11 +434,17 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
                 "object_state": np.asarray(obs.get("object-state", [])).tolist(),
                 "mujoco_contact_pairs": mujoco_contact_pairs(env),
             })
-            clean_action, _official_meta = adapter.predict_action(image, str(task.language))
-            score_action, generation, score_meta = adapter.score_action(image, str(task.language))
-            action_error = float(np.max(np.abs(clean_action - score_action)))
+            clean_action, generation, score_meta = adapter.predict_action_with_scores(image, str(task.language))
+            score_action = np.asarray(score_meta["score_action"], dtype=np.float32)
+            action_error = float(score_meta["score_adapter_action_max_abs_error"])
+            if action_error > 1e-6 or score_meta.get("single_generation_parity_pass") is not True:
+                raise RuntimeError(f"SINGLE_GENERATION_ACTION_PARITY_FAIL:{action_error:.9g}")
             env_action = adapter.postprocess(clean_action)
-            tokens = generation.sequences[0, -7:].detach().cpu().tolist()
+            tokens = list(score_meta["captured_action_token_ids"])
+            if len(tokens) != 7 or int(score_meta["captured_score_count"]) != 7:
+                raise RuntimeError(
+                    f"OFFICIAL_ACTION_TOKEN_SHAPE_FAIL:tokens={len(tokens)} scores={score_meta['captured_score_count']}"
+                )
             score_summary = []
             for scores in getattr(generation, "scores", [])[:7]:
                 probs = torch.softmax(scores[0].float(), dim=-1)
@@ -358,6 +493,8 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
                 "clean_action_token_top_logits": policy_top_logits,
                 "score_adapter_action_max_abs_error": action_error,
                 "score_adapter_parity_pass": bool(action_error <= 1e-6),
+                "single_generation_parity_pass": True,
+                "generation_passes_per_step": 1,
                 "score_head_summary": score_summary,
                 "prompt": score_meta["prompt"],
             })
@@ -370,6 +507,8 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
                 "clean_action_token_top_logits": policy_top_logits,
                 "score_head_summary": score_summary,
                 "score_adapter_parity_pass": bool(action_error <= 1e-6),
+                "single_generation_parity_pass": True,
+                "generation_passes_per_step": 1,
             })
             obs, _reward, done, _info = env.step(env_action.tolist())
             if done:
@@ -396,12 +535,15 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
         "max_steps": horizon,
         "num_steps_wait": NUM_STEPS_WAIT,
         "runtime_valid": True,
+        "env_reset_called": True,
         "env_success": success,
         "success": success,
         "model_path": str(model_path),
         "unnorm_key": adapter.unnorm_key,
         "official_execution_adapter": "OfficialOpenVLAActionAdapter.predict_action",
-        "score_adapter": "OfficialOpenVLAScoreAdapter.generate_same_inputs",
+        "score_adapter": "OfficialOpenVLAActionAdapter.predict_action_with_scores",
+        "single_generation_parity_pass": True,
+        "generation_passes_per_step": 1,
         "policy_intent_records": "policy_intent_records.jsonl",
         "privileged_teacher_sidecar": "privileged_teacher_sidecar.jsonl",
         "feature_names_25d": list(CANONICAL_25D_FEATURES),
@@ -417,7 +559,14 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
     }
     write_json(out / "episode_metadata.json", meta)
     write_json(out / "episode_summary.json", {"success": success, "steps": len(step_rows), "clean": True})
-    write_json(out / "runtime_audit.json", {"runtime_valid": True, "exception": "", "official_horizon": horizon})
+    write_json(out / "runtime_audit.json", {
+        "runtime_valid": True,
+        "exception": "",
+        "official_horizon": horizon,
+        "env_reset_called": True,
+        "generation_passes_per_step": 1,
+        "single_generation_parity_pass": True,
+    })
     write_json(out / "condition_config.json", {"condition": "CLEAN", "protocol_id": "OPENVLA_LIBERO_OFFICIAL_V1"})
     write_json(out / "attack_config.json", {"attack_enabled": False, "condition": "CLEAN"})
     (out / "step_records.jsonl").write_text("".join(json.dumps(x, sort_keys=True) + "\n" for x in step_rows), encoding="utf-8")
@@ -429,12 +578,12 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
 
 def main() -> int:
     rows = load_rows()
+    artifact_provenance = load_artifact_provenance()
     model, processor, device, unnorm_key = load_policy()
     adapter = OfficialOpenVLAActionAdapter(
         model, processor, device, unnorm_key, center_crop=True,
         base_vla_name=str(args.model_path),
     )
-    artifact_provenance = load_artifact_provenance()
     from libero.libero import benchmark
 
     suites = benchmark.get_benchmark_dict()
@@ -461,9 +610,20 @@ def main() -> int:
             break
         out = args.output_root / "clean" / args.suite / f"task_{int(row['task_idx']):02d}" / f"state_{int(row['state_id']):02d}"
         cell_id = f"CLEAN|{row['canonical_parent_key']}"
-        if artifact_valid(out):
-            result = {"status": "SKIP_CHECKSUM_PASS", **row, "artifact_root": str(out)}
-            update_global_ledger(cell_id, "PASS", result_status=result["status"])
+        cached = sealed_artifact_result(out)
+        if cached is not None:
+            result = {
+                **row,
+                **dict(cached.get("metadata") or {}),
+                "status": str(cached["status"]),
+                "artifact_root": str(out),
+            }
+            result_ledger_status = {
+                "PASS": "PASS",
+                "TASK_FAILURE": "TASK_FAILURE",
+                "RUNTIME_INVALID": "RUNTIME_HOLD",
+            }[result["status"]]
+            update_global_ledger(cell_id, result_ledger_status, result_status=result["status"])
         else:
             task = suite_instance.get_task(int(row["task_idx"]))
             states = suite_instance.get_task_init_states(int(row["task_idx"]))
@@ -496,7 +656,14 @@ def main() -> int:
                         continue
                     result = {"status": "RUNTIME_INVALID", **row, "error": error, "runtime_retry_count": retry_count}
                     write_json(out / "episode_metadata.json", result)
+                    write_json(out / "episode_summary.json", {
+                        "status": "RUNTIME_INVALID", "success": False, "clean": True, "steps": 0,
+                    })
                     write_json(out / "runtime_audit.json", {"runtime_valid": False, "exception": error, "runtime_retry_count": retry_count})
+                    write_json(out / "condition_config.json", {"condition": "CLEAN", "protocol_id": "OPENVLA_LIBERO_OFFICIAL_V1"})
+                    write_json(out / "attack_config.json", {"attack_enabled": False, "condition": "CLEAN"})
+                    for name in ("step_records.jsonl", "policy_intent_records.jsonl", "privileged_teacher_sidecar.jsonl"):
+                        (out / name).write_text("", encoding="utf-8")
                     seal(out)
                     break
             result_ledger_status = {

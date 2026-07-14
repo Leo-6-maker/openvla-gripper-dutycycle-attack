@@ -8,6 +8,7 @@ import numpy as np
 import torch
 
 from .official_libero_protocol import (
+    decode_official_generated_action,
     generated_action_tokens,
     official_predict_action,
     postprocess_official_action,
@@ -60,6 +61,18 @@ class OfficialOpenVLAActionAdapter:
                 base_vla_name=self.base_vla_name,
             )
 
+        action, generation, meta = self.predict_action_with_scores(image_np, task_label)
+        return action, meta
+
+    def predict_action_with_scores(
+        self, image_np: np.ndarray, task_label: str
+    ) -> tuple[np.ndarray, Any, dict[str, Any]]:
+        """Run official ``predict_action`` once while capturing its generation.
+
+        The wrapper returns ``generation.sequences`` to the upstream method, so
+        execution still follows the official action path.  Scores and tokens
+        are taken from that same generation; a second decode is not performed.
+        """
         inputs, prompt, processed_image = prepare_official_inputs(
             self.processor,
             image_np,
@@ -72,9 +85,11 @@ class OfficialOpenVLAActionAdapter:
         original_generate = self.model.generate
 
         def capture_generate(*args: Any, **kwargs: Any) -> Any:
+            kwargs["return_dict_in_generate"] = True
+            kwargs["output_scores"] = True
             result = original_generate(*args, **kwargs)
             captured["generation"] = result
-            return result
+            return result.sequences
 
         self.model.generate = capture_generate
         try:
@@ -83,12 +98,28 @@ class OfficialOpenVLAActionAdapter:
             self.model.generate = original_generate
 
         generation = captured.get("generation")
-        return np.asarray(action, dtype=np.float32), {
+        if generation is None or not hasattr(generation, "sequences"):
+            raise RuntimeError("OFFICIAL_SINGLE_GENERATION_CAPTURE_MISSING")
+        score_action = decode_official_generated_action(self.model, generation.sequences, self.unnorm_key)
+        action = np.asarray(action, dtype=np.float32)
+        action_error = float(np.max(np.abs(action - score_action)))
+        if action_error > 1e-6:
+            raise RuntimeError(f"SINGLE_GENERATION_ACTION_PARITY_FAIL:{action_error:.9g}")
+        tokens = generated_action_tokens(self.model, generation, self.unnorm_key)
+        scores = getattr(generation, "scores", None) or []
+        return action, generation, {
             "inputs": inputs,
             "prompt": prompt,
             "processed_image": processed_image,
             "generation": generation,
-            "tokens": generated_action_tokens(self.model, generation, self.unnorm_key) if generation is not None else [],
+            "score_action": np.asarray(score_action, dtype=np.float32),
+            "captured_action_token_ids": tokens,
+            "tokens": tokens,
+            "captured_score_count": len(scores),
+            "generation_passes_per_step": 1,
+            "single_generation_parity_pass": True,
+            "score_adapter_action_max_abs_error": action_error,
+            "single_generation": True,
         }
 
     def score_action(self, image_np: np.ndarray, task_label: str) -> tuple[np.ndarray, Any, dict[str, Any]]:

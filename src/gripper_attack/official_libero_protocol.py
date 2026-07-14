@@ -188,8 +188,6 @@ def postprocess_official_action(action: np.ndarray) -> np.ndarray:
     out = np.asarray(action, dtype=np.float32).copy()
     out[-1] = 2.0 * out[-1] - 1.0
     out[-1] = np.sign(out[-1])
-    if out[-1] == 0:
-        out[-1] = 1.0
     out[-1] = -out[-1]
     return out
 
