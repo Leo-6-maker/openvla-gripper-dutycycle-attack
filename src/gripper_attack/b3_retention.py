@@ -54,25 +54,49 @@ def _scalar(record: dict[str, Any], *names: str) -> float | None:
     return None
 
 
-def _last_action_value(record: dict[str, Any]) -> float | None:
-    for name in ("action_raw_7d", "action_raw", "applied_action_7d", "action_env"):
+def _last_value(record: dict[str, Any], names: tuple[str, ...]) -> float | None:
+    for name in names:
         value = record.get(name)
         if isinstance(value, (list, tuple)) and value:
             number = _number(value[-1])
             if number is not None:
                 return number
-    return _scalar(record, "action_gripper", "gripper_command", "raw_gripper")
+    return None
+
+
+def _raw_value(record: dict[str, Any]) -> float | None:
+    value = _last_value(record, ("action_raw_7d", "action_raw"))
+    if value is not None:
+        return value
+    return _scalar(record, "action_raw", "action_gripper", "gripper_command", "raw_gripper")
+
+
+def _env_value(record: dict[str, Any]) -> float | None:
+    value = _last_value(record, ("applied_action_7d", "action_env"))
+    return value if value is not None else _scalar(record, "action_env", "env_gripper")
+
+
+def _raw_and_env_close(record: dict[str, Any]) -> tuple[bool, bool | None]:
+    explicit = record.get("raw_close")
+    raw_value = _raw_value(record)
+    env_value = _env_value(record)
+    raw_close = None if raw_value is None else raw_value <= 0.5
+    env_close = None if env_value is None else env_value > 0.0
+    if isinstance(explicit, bool):
+        if raw_close is not None and explicit != raw_close:
+            raise ValueError("raw_close contradicts raw action")
+        raw_close = explicit
+    if raw_close is None and env_close is None:
+        raise ValueError("missing raw and env gripper action")
+    if raw_close is not None and env_close is not None and raw_close != env_close:
+        raise ValueError("raw/env gripper semantics mismatch")
+    return (raw_close if raw_close is not None else bool(env_close), env_close)
 
 
 def _raw_close(record: dict[str, Any]) -> bool:
-    explicit = record.get("raw_close")
-    if isinstance(explicit, bool):
-        return explicit
-    value = _last_action_value(record)
-    if value is None:
-        raise ValueError("missing raw gripper/action value")
-    # Frozen official OpenVLA raw-gripper convention.
-    return value <= 0.5
+    # Raw OpenVLA: <= 0.5 is CLOSE. Env action: > 0 is CLOSE. They are not
+    # interchangeable; if both exist, disagreement is a hard protocol error.
+    return _raw_and_env_close(record)[0]
 
 
 def _eef(record: dict[str, Any]) -> tuple[float, float, float] | None:
@@ -87,17 +111,39 @@ def _eef(record: dict[str, Any]) -> tuple[float, float, float] | None:
     return None
 
 
-def _qpos(record: dict[str, Any]) -> float | None:
+def _sidecar_qpos(record: dict[str, Any]) -> tuple[float, float] | None:
     value = record.get("robot0_gripper_qpos")
-    if isinstance(value, (list, tuple)) and value:
+    if isinstance(value, (list, tuple)) and len(value) >= 2:
         numbers = [_number(x) for x in value]
         if all(x is not None for x in numbers):
-            return float(sum(abs(float(x)) for x in numbers))
-    return _scalar(record, "gripper_qpos")
+            return float(numbers[0]), float(numbers[1])
+    return None
+
+
+def canonical_qpos_sum(record: dict[str, Any], tolerance: float = 1e-6) -> float | None:
+    sidecar = _sidecar_qpos(record)
+    sidecar_value = None if sidecar is None else sidecar[0] + sidecar[1]
+    scalar_value = _scalar(record, "gripper_qpos")
+    if sidecar_value is not None and scalar_value is not None and abs(sidecar_value - scalar_value) > tolerance:
+        raise ValueError("qpos parity mismatch between sidecar and step record")
+    return scalar_value if scalar_value is not None else sidecar_value
+
+
+def canonical_opening_abs_sum(record: dict[str, Any], tolerance: float = 1e-6) -> float | None:
+    sidecar = _sidecar_qpos(record)
+    sidecar_value = None if sidecar is None else abs(sidecar[0]) + abs(sidecar[1])
+    scalar_value = _scalar(record, "gripper_opening_proxy", "opening_proxy", "gripper_width")
+    if sidecar_value is not None and scalar_value is not None and abs(sidecar_value - scalar_value) > tolerance:
+        raise ValueError("opening parity mismatch between sidecar and step record")
+    return scalar_value if scalar_value is not None else sidecar_value
+
+
+def _qpos(record: dict[str, Any]) -> float | None:
+    return canonical_qpos_sum(record)
 
 
 def _opening(record: dict[str, Any]) -> float | None:
-    return _scalar(record, "gripper_opening_proxy", "gripper_width", "opening_proxy")
+    return canonical_opening_abs_sum(record)
 
 
 def _step(record: dict[str, Any], fallback: int) -> int:
@@ -120,7 +166,6 @@ class RetentionEventTracker:
         self.current: RetentionEvent | None = None
         self._close_streak = 0
         self._open_streak = 0
-        self._seen_release = False
         self._last_step = -1
 
     def update(self, record: dict[str, Any]) -> dict[str, Any]:
@@ -148,19 +193,25 @@ class RetentionEventTracker:
             self.current = RetentionEvent(len(self.events), start_step=start)
             close_onset = True
 
+        released_event_id = -1
         if self.current is not None and not close and self._open_streak == self.config.n_open:
-            self.current.end_step = step
+            released_event_id = self.current.event_id
+            self.current.end_step = step - 1
             self.current.release_step = step
             self.current.closed_by = "HYSTERESIS_RELEASE"
             self.events.append(self.current)
             self.current = None
-            self._seen_release = True
             release_onset = True
 
-        event_id = self.current.event_id if self.current is not None else (
-            self.events[-1].event_id if self.events else -1
+        event_id = self.current.event_id if self.current is not None else -1
+        return self._row(
+            step,
+            valid=True,
+            close_onset=close_onset,
+            release_onset=release_onset,
+            event_id=event_id,
+            released_event_id=released_event_id,
         )
-        return self._row(step, valid=True, close_onset=close_onset, release_onset=release_onset, event_id=event_id)
 
     def finish(self) -> list[RetentionEvent]:
         if self.current is not None:
@@ -170,12 +221,23 @@ class RetentionEventTracker:
             self.current = None
         return [RetentionEvent(**event.__dict__) for event in self.events]
 
-    def _row(self, step: int, *, valid: bool, close_onset: bool, release_onset: bool, event_id: int = -1) -> dict[str, Any]:
+    def _row(
+        self,
+        step: int,
+        *,
+        valid: bool,
+        close_onset: bool,
+        release_onset: bool,
+        event_id: int = -1,
+        released_event_id: int = -1,
+    ) -> dict[str, Any]:
         return {
             "step": step,
             "valid": valid,
             "event_id": event_id,
             "event_ordinal": event_id,
+            "event_active": event_id >= 0,
+            "released_event_id": released_event_id,
             "event_close_onset": close_onset,
             "event_release_onset": release_onset,
             "close_streak_local": self._close_streak,
@@ -280,6 +342,29 @@ def rebuild_retention_features(records: Iterable[dict[str, Any]], config: Retent
         row["retention_continuation_t10"] = bool(same_event and all(item["event_support"] for item in future))
         row["retention_unknown_mask"] = False
 
+    for row in rows:
+        current_known = bool(row.get("event_evidence_valid", False))
+        row["grasp_support"] = bool(row.get("event_active") and row.get("event_qpos_stable") and row.get("event_opening_stable"))
+        row["grasp_support_mask"] = current_known
+        row["retention_active"] = bool(row.get("event_support"))
+        row["retention_active_mask"] = current_known
+        if row["retention_unknown_mask"]:
+            row["release_imminent"] = None
+            row["release_imminent_mask"] = False
+        else:
+            index = row["step"]
+            lookahead = rows[index + 1:index + 4]
+            if len(lookahead) < 3 or any(
+                not item["valid"] or not item.get("event_evidence_valid", False)
+                for item in lookahead
+            ):
+                row["release_imminent"] = None
+                row["release_imminent_mask"] = False
+            else:
+                row["release_imminent"] = any(item["event_release_onset"] for item in lookahead)
+                row["release_imminent_mask"] = True
+        row["teacher_label_version"] = "RETENTION_WEAK_TEACHER_V1"
+
     for event in events:
         event_rows = [row for row in rows if row["event_id"] == event.event_id]
         if event_rows:
@@ -299,11 +384,22 @@ def rebuild_retention_features(records: Iterable[dict[str, Any]], config: Retent
 class OneShotAttackScheduler:
     """Runtime-only gate; it does not segment events or train the detector."""
 
-    def __init__(self, tau_retention: float = 0.7, tau_t10: float = 0.7, tau_release: float = 0.3, persistence: int = 2, t10: int = T10):
+    def __init__(
+        self,
+        tau_retention: float = 0.7,
+        tau_t10: float = 0.7,
+        tau_release: float = 0.3,
+        persistence: int = 2,
+        persistence_window: int = 3,
+        t10: int = T10,
+    ):
+        if persistence != 2 or persistence_window != 3:
+            raise ValueError("B3 retention scheduler is fixed to 2-of-3")
         self.tau_retention = tau_retention
         self.tau_t10 = tau_t10
         self.tau_release = tau_release
         self.persistence = persistence
+        self.persistence_window = persistence_window
         self.t10 = t10
         self.reset()
 
@@ -312,38 +408,74 @@ class OneShotAttackScheduler:
         self.emit_step = -1
         self.emit_event_id = -1
         self._candidate_event_id = -1
-        self._candidate_streak = 0
+        self._gate_history: list[bool] = []
+        self._last_step: int | None = None
+        self._attacked_frames_emitted = 0
 
-    def update(self, *, step: int, event_id: int, p_retention: float, p_t10: float, p_release: float) -> dict[str, Any]:
+    def update(
+        self,
+        *,
+        step: int,
+        event_id: int,
+        p_retention: float,
+        p_t10: float,
+        p_release: float,
+        event_active: bool = True,
+        valid: bool = True,
+        release_onset: bool = False,
+    ) -> dict[str, Any]:
+        if self._last_step is not None and step != self._last_step + 1:
+            raise ValueError(f"non-contiguous scheduler step: expected {self._last_step + 1}, got {step}")
+        self._last_step = step
+        for name, probability in (("p_retention", p_retention), ("p_t10", p_t10), ("p_release", p_release)):
+            if not isfinite(float(probability)) or not 0.0 <= float(probability) <= 1.0:
+                raise ValueError(f"{name} must be finite and in [0, 1]")
+
         if self.state == "DONE":
-            return self._decision(step, emitted=False)
+            return self._decision(step, trigger_started=False, attack_active=False, attack_index=-1)
+
         if self.state == "ATTACKING_T10":
-            if step >= self.emit_step + self.t10 - 1:
-                self.state = "DONE"
-            return self._decision(step, emitted=False)
-        gate = event_id >= 0 and p_retention >= self.tau_retention and p_t10 >= self.tau_t10 and p_release < self.tau_release
-        if gate and event_id == self._candidate_event_id:
-            self._candidate_streak += 1
-        elif gate:
-            self._candidate_event_id = event_id
-            self._candidate_streak = 1
-        else:
+            attack_index = step - self.emit_step
+            if attack_index < self.t10:
+                self._attacked_frames_emitted = attack_index + 1
+                return self._decision(step, trigger_started=False, attack_active=True, attack_index=attack_index)
+            self._attacked_frames_emitted = self.t10
+            self.state = "DONE"
+            return self._decision(step, trigger_started=False, attack_active=False, attack_index=-1)
+
+        if not valid or not event_active or event_id < 0 or release_onset:
             self._candidate_event_id = -1
-            self._candidate_streak = 0
-        if self._candidate_streak >= self.persistence:
+            self._gate_history.clear()
+            return self._decision(step, trigger_started=False, attack_active=False, attack_index=-1)
+
+        gate = p_retention >= self.tau_retention and p_t10 >= self.tau_t10 and p_release < self.tau_release
+        if event_id != self._candidate_event_id:
+            self._candidate_event_id = event_id
+            self._gate_history.clear()
+        self._gate_history.append(bool(gate))
+        self._gate_history = self._gate_history[-self.persistence_window:]
+        if sum(self._gate_history) >= self.persistence:
             self.state = "ATTACKING_T10"
             self.emit_step = step
             self.emit_event_id = event_id
-        return self._decision(step, emitted=self.state == "ATTACKING_T10")
+            self._attacked_frames_emitted = 1
+            return self._decision(step, trigger_started=True, attack_active=True, attack_index=0)
+        if not gate and not any(self._gate_history):
+            self._candidate_event_id = -1
+        return self._decision(step, trigger_started=False, attack_active=False, attack_index=-1)
 
-    def _decision(self, step: int, *, emitted: bool) -> dict[str, Any]:
+    def _decision(self, step: int, *, trigger_started: bool, attack_active: bool, attack_index: int) -> dict[str, Any]:
         return {
             "state": self.state,
             "step": step,
             "emit_step": self.emit_step,
             "emit_event_id": self.emit_event_id,
-            "emitted": emitted,
-            "candidate_streak": self._candidate_streak,
+            "trigger_started": trigger_started,
+            "attack_active": attack_active,
+            "attack_index": attack_index,
+            "attacked_frames_emitted": self._attacked_frames_emitted,
+            "emitted": attack_active,
+            "gate_history": list(self._gate_history),
         }
 
 
