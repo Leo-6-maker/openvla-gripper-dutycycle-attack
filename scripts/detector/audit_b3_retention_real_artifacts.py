@@ -72,6 +72,14 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _is_relative_to(path: Path, root: Path) -> bool:
+    try:
+        path.relative_to(root)
+    except ValueError:
+        return False
+    return True
+
+
 def _git_provenance(repo: Path, expected_head: str) -> tuple[str, bool, bool]:
     actual = subprocess.run(
         ["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True
@@ -85,7 +93,7 @@ def _git_provenance(repo: Path, expected_head: str) -> tuple[str, bool, bool]:
 def _fit_preflight(selected: list[Path], source_root: Path) -> None:
     keys: list[str] = []
     for artifact in selected:
-        if not artifact.is_relative_to(source_root):
+        if not _is_relative_to(artifact, source_root):
             raise ValueError(f"selection artifact is outside source root: {artifact}")
         meta = _metadata(artifact)
         suite = meta.get("suite")
@@ -133,7 +141,7 @@ def run(
     selected = sorted(selected, key=_canonical)
     if not selected:
         raise ValueError("no source artifacts selected")
-    outside_root = sorted(str(artifact) for artifact in selected if not artifact.is_relative_to(source_root))
+    outside_root = sorted(str(artifact) for artifact in selected if not _is_relative_to(artifact, source_root))
     if outside_root:
         raise ValueError(f"selection artifacts outside source root: {outside_root[:3]}")
     if mode == "fit-label-materialization":
@@ -166,7 +174,7 @@ def run(
             "split": meta.get("split"),
             "source_artifact": str(artifact),
             "source_artifact_relative": str(artifact.relative_to(source_root))
-            if artifact.is_relative_to(source_root)
+            if _is_relative_to(artifact, source_root)
             else None,
             "source_artifact_manifest_sha256": None,
             "status": "FAIL",
