@@ -10,8 +10,8 @@ from detector.materialize_b3_retention_episode import json_sha, materialize, sha
 IDENTITY = {
     "suite": "libero_10",
     "task_idx": 2,
-    "state_id": 30,
-    "canonical_parent_key": "libero_10/task_02/state_030",
+    "state_id": 19,
+    "canonical_parent_key": "libero_10/task_02/state_019",
 }
 
 
@@ -27,6 +27,14 @@ def _write_jsonl(path: Path, rows: list[dict]) -> None:
     path.write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in rows), encoding="utf-8")
 
 
+def _reseal(root: Path) -> None:
+    rows = []
+    for path in sorted(root.iterdir()):
+        if path.name != "artifact_sha256.json":
+            rows.append({"path": path.name, "size": path.stat().st_size, "sha256": sha256_file(path)})
+    _write_json(root / "artifact_sha256.json", {"files": rows, "recursive_sha256": json_sha(rows)})
+
+
 def _build_source_artifact(root: Path, *, steps: int = 18) -> None:
     root.mkdir()
     _write_json(root / "episode_metadata.json", {
@@ -40,7 +48,7 @@ def _build_source_artifact(root: Path, *, steps: int = 18) -> None:
         "num_steps_wait": 10,
         "official_horizon": 520,
         "task_language": "synthetic task",
-        "split": "FINAL_EVAL_CANDIDATE",
+        "split": "FIT",
         "initial_state_sha256": "a" * 64,
         "official_execution_adapter": "OfficialOpenVLAActionAdapter.predict_action",
         "score_adapter": "OfficialOpenVLAActionAdapter.predict_action_with_scores",
@@ -119,7 +127,7 @@ def test_materializer_writes_separate_student_teacher_streams_and_audits(tmp_pat
     _build_source_artifact(source)
 
     config = Path(__file__).parents[1] / "configs" / "B3_RETENTION_PROTOCOL_V1.json"
-    manifest = materialize(source, output, config)
+    manifest = materialize(source, output, config, mode="fit-label-materialization")
     result = audit(output)
 
     assert manifest["formal_training_ready"] is False
@@ -132,7 +140,38 @@ def test_materializer_writes_separate_student_teacher_streams_and_audits(tmp_pat
     assert "retention_continuation_t10" in teacher[0]
     assert teacher[0]["retention_unknown_mask"] is False
     with pytest.raises(ValueError, match="output is non-empty"):
-        materialize(source, output, config)
+        materialize(source, output, config, mode="fit-label-materialization")
+
+
+def test_compatibility_mode_does_not_materialize_teacher(tmp_path: Path):
+    source = tmp_path / "episode"
+    output = tmp_path / "compatibility"
+    _build_source_artifact(source)
+
+    config = Path(__file__).parents[1] / "configs" / "B3_RETENTION_PROTOCOL_V1.json"
+    manifest = materialize(source, output, config)
+    result = audit(output)
+
+    assert manifest["mode"] == "compatibility-only"
+    assert manifest["teacher_materialization"] == "NOT_RUN"
+    assert manifest["label_statistics"] is None
+    assert result["status"] == "PASS"
+    assert not (output / "teacher_retention_records.jsonl").exists()
+    assert not (output / "retention_events.json").exists()
+
+
+def test_fit_materialization_rejects_state_outside_fit_window(tmp_path: Path):
+    source = tmp_path / "episode"
+    _build_source_artifact(source)
+    metadata_path = source / "episode_metadata.json"
+    metadata = json.loads(metadata_path.read_text())
+    metadata["state_id"] = 20
+    _write_json(metadata_path, metadata)
+    _reseal(source)
+
+    config = Path(__file__).parents[1] / "configs" / "B3_RETENTION_PROTOCOL_V1.json"
+    with pytest.raises(ValueError, match="state_id<=19"):
+        materialize(source, tmp_path / "materialized", config, mode="fit-label-materialization")
 
 
 def test_materializer_rejects_strict_join_identity_mismatch(tmp_path: Path):
@@ -154,7 +193,7 @@ def test_materializer_rejects_strict_join_identity_mismatch(tmp_path: Path):
 
     config = Path(__file__).parents[1] / "configs" / "B3_RETENTION_PROTOCOL_V1.json"
     with pytest.raises(ValueError, match="identity mismatch"):
-        materialize(source, tmp_path / "materialized", config)
+        materialize(source, tmp_path / "materialized", config, mode="fit-label-materialization")
 
 
 def test_materializer_rejects_duplicate_field_conflict(tmp_path: Path):
@@ -174,4 +213,4 @@ def test_materializer_rejects_duplicate_field_conflict(tmp_path: Path):
 
     config = Path(__file__).parents[1] / "configs" / "B3_RETENTION_PROTOCOL_V1.json"
     with pytest.raises(ValueError, match="JOIN_CONFLICT_HOLD"):
-        materialize(source, tmp_path / "materialized", config)
+        materialize(source, tmp_path / "materialized", config, mode="fit-label-materialization")

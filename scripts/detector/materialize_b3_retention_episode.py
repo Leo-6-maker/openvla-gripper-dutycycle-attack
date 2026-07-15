@@ -35,6 +35,7 @@ HEADS = (
     "retention_continuation_t10",
     "release_imminent",
 )
+MODES = ("compatibility-only", "fit-label-materialization")
 IDENTITY_FIELDS = ("suite", "task_idx", "state_id", "canonical_parent_key")
 PROTOCOL_SCHEMA = "c2g.b3_retention.protocol.v1"
 PROTOCOL_STATUS = "PREPARATION_ONLY"
@@ -421,7 +422,14 @@ def _write_output_checksums(root: Path, manifest_name: str = "materialization_ma
     _write_sha_sidecar(sums)
 
 
-def materialize(artifact_root: Path, output_root: Path, config_path: Path) -> dict[str, Any]:
+def materialize(
+    artifact_root: Path,
+    output_root: Path,
+    config_path: Path,
+    mode: str = "compatibility-only",
+) -> dict[str, Any]:
+    if mode not in MODES:
+        raise ValueError(f"unsupported materialization mode: {mode}")
     if not config_path.is_file():
         raise ValueError(f"missing B3 protocol config: {config_path}")
     protocol, retention_config = load_protocol_config(config_path)
@@ -442,6 +450,10 @@ def materialize(artifact_root: Path, output_root: Path, config_path: Path) -> di
         source_json["attack_config.json"],
         protocol,
     )
+    if mode == "fit-label-materialization" and (
+        meta.get("split") != "FIT" or not isinstance(meta.get("state_id"), int) or meta["state_id"] > 19
+    ):
+        raise ValueError("FIT_LABEL_MATERIALIZATION requires split=FIT and state_id<=19")
     source_sha = verify_source_artifact(artifact_root)
     streams = {
         "step_records": load_jsonl(artifact_root / "step_records.jsonl"),
@@ -450,7 +462,7 @@ def materialize(artifact_root: Path, output_root: Path, config_path: Path) -> di
     }
     verify_step_contract(streams["step_records"], streams["policy_intent"], streams["privileged_sidecar"])
     merged, float_merges = strict_join(artifact_root, meta, streams)
-    rebuilt = rebuild_retention_features(merged, retention_config)
+    rebuilt = rebuild_retention_features(merged, retention_config) if mode == "fit-label-materialization" else None
     if output_root.exists() and any(output_root.iterdir()):
         raise ValueError(f"materialization output is non-empty: {output_root}")
     output_root.mkdir(parents=True, exist_ok=True)
@@ -460,30 +472,39 @@ def materialize(artifact_root: Path, output_root: Path, config_path: Path) -> di
         {**identity, "step": row["step"], "features_25d": row["features_25d"], "clean_policy_intent_9d": row["clean_policy_intent_9d"]}
         for row in merged
     ]
-    teacher_rows = [
-        {**identity, **{key: value for key, value in row.items() if key not in {"object_state", "mujoco_contact_pairs"}}}
-        for row in rebuilt["rows"]
-    ]
     _write_jsonl(output_root / "student_input_records.jsonl", student_rows)
-    _write_jsonl(output_root / "teacher_retention_records.jsonl", teacher_rows)
-    (output_root / "retention_events.json").write_text(json.dumps(rebuilt["events"], indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    teacher_rows: list[dict[str, Any]] = []
+    if rebuilt is not None:
+        teacher_rows = [
+            {**identity, **{key: value for key, value in row.items() if key not in {"object_state", "mujoco_contact_pairs"}}}
+            for row in rebuilt["rows"]
+        ]
+        _write_jsonl(output_root / "teacher_retention_records.jsonl", teacher_rows)
+        (output_root / "retention_events.json").write_text(json.dumps(rebuilt["events"], indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
-    output_files = ["student_input_records.jsonl", "teacher_retention_records.jsonl", "retention_events.json"]
+    output_files = ["student_input_records.jsonl"]
+    if rebuilt is not None:
+        output_files += ["teacher_retention_records.jsonl", "retention_events.json"]
     file_rows = [{"path": name, "size": (output_root / name).stat().st_size, "sha256": sha256_file(output_root / name)} for name in output_files]
     manifest = {
-        "schema": "B3_RETENTION_MATERIALIZED_EPISODE_V1",
+        "schema": (
+            "B3_RETENTION_COMPATIBILITY_MATERIALIZED_EPISODE_V1"
+            if mode == "compatibility-only"
+            else "B3_RETENTION_MATERIALIZED_EPISODE_V1"
+        ),
+        "mode": mode,
         "source_schema": "OFFICIAL_25D_V1",
-        "derived_schema": rebuilt["schema"],
+        "derived_schema": rebuilt["schema"] if rebuilt is not None else None,
         "source_contract_verified": True,
         "official_protocol_id": meta["protocol_id"],
         "source_artifact_sha256": source_sha,
         "source_identity": identity,
         "config_sha256": sha256_file(config_path),
-        "effective_retention_config": asdict(retention_config),
+        "effective_retention_config": asdict(retention_config) if rebuilt is not None else None,
         "rebuilder_sha256": sha256_file(REPO_ROOT / "src" / "gripper_attack" / "b3_retention.py"),
         "materializer_sha256": sha256_file(Path(__file__).resolve()),
-        "step_count": len(teacher_rows),
-        "label_statistics": _stats(rebuilt["rows"]),
+        "step_count": len(merged),
+        "label_statistics": _stats(rebuilt["rows"]) if rebuilt is not None else None,
         "head_roles": {
             "grasp_support": "TRAINING_AUXILIARY",
             "retention_active": "RUNTIME_PRIMARY",
@@ -496,10 +517,15 @@ def materialize(artifact_root: Path, output_root: Path, config_path: Path) -> di
         },
         "unknown_is_negative": False,
         "join_float_tolerance_merges": float_merges,
-        "label_semantics": "ROBOT_CENTRIC_PROXY_LABELS_NOT_GRASP_GROUND_TRUTH",
+        "label_semantics": (
+            "ROBOT_CENTRIC_PROXY_LABELS_NOT_GRASP_GROUND_TRUTH"
+            if rebuilt is not None
+            else "NOT_MATERIALIZED_IN_COMPATIBILITY_ONLY"
+        ),
         "files": file_rows,
         "output_recursive_sha256": json_sha(file_rows),
         "student_forbidden_fields_absent": True,
+        "teacher_materialization": "COMPLETED" if rebuilt is not None else "NOT_RUN",
         "formal_training_ready": False,
         "formal_attack_ready": False,
     }
@@ -513,8 +539,9 @@ def main() -> int:
     parser.add_argument("--artifact-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--mode", choices=MODES, default="compatibility-only")
     args = parser.parse_args()
-    manifest = materialize(args.artifact_root, args.output_root, args.config)
+    manifest = materialize(args.artifact_root, args.output_root, args.config, args.mode)
     print(json.dumps({"status": "PASS", "schema": manifest["schema"], "step_count": manifest["step_count"]}, sort_keys=True))
     return 0
 
