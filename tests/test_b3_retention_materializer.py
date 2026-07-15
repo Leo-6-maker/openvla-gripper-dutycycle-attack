@@ -36,13 +36,14 @@ def _build_source_artifact(root: Path, *, steps: int = 18) -> None:
         "runtime_valid": True,
         "env_reset_called": True,
         "checkpoint_binding_pass": True,
-        "single_generation_parity_pass": True,
         "generation_passes_per_step": 1,
         "num_steps_wait": 10,
         "official_horizon": 520,
         "task_language": "synthetic task",
         "split": "FINAL_EVAL_CANDIDATE",
         "initial_state_sha256": "a" * 64,
+        "official_execution_adapter": "OfficialOpenVLAActionAdapter.predict_action",
+        "score_adapter": "OfficialOpenVLAActionAdapter.predict_action_with_scores",
         "env_success": False,
         "success": False,
         "feature_names_25d": _protocol()["feature_names_25d"],
@@ -54,8 +55,6 @@ def _build_source_artifact(root: Path, *, steps: int = 18) -> None:
         "runtime_valid": True,
         "env_reset_called": True,
         "checkpoint_binding_pass": True,
-        "single_generation_parity_pass": True,
-        "generation_passes_per_step": 1,
         "official_horizon": 520,
     })
     _write_json(root / "condition_config.json", {"condition": "CLEAN", "protocol_id": "OPENVLA_LIBERO_OFFICIAL_V1"})
@@ -87,16 +86,13 @@ def _build_source_artifact(root: Path, *, steps: int = 18) -> None:
             "action_token_ids": tokens,
             "score_head_summary": score_summary,
             "score_adapter_parity_pass": True,
-            "single_generation_parity_pass": True,
-            "generation_passes_per_step": 1,
             "score_adapter_action_max_abs_error": 0.0,
         })
         policy_rows.append({
             "step": step,
             "clean_policy_intent_9d": [0.0] * 9,
             "action_token_ids": tokens,
-            "single_generation_parity_pass": True,
-            "generation_passes_per_step": 1,
+            "score_adapter_parity_pass": True,
         })
         sidecar_rows.append({
             "suite": IDENTITY["suite"], "task_idx": IDENTITY["task_idx"], "state_id": IDENTITY["state_id"],

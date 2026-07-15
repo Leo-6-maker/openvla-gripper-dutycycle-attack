@@ -323,10 +323,14 @@ def verify_source_contract(
         raise ValueError("metadata success semantics are inconsistent")
     if summary.get("clean") is not True or summary.get("success") != meta.get("success"):
         raise ValueError("summary success semantics are inconsistent")
-    for key in ("env_reset_called", "checkpoint_binding_pass", "single_generation_parity_pass"):
+    for key in ("env_reset_called", "checkpoint_binding_pass"):
         if meta.get(key) is not True or runtime.get(key) is not True:
             raise ValueError(f"source contract field {key} is not verified")
-    if meta.get("generation_passes_per_step") != 1 or runtime.get("generation_passes_per_step") != 1:
+    if meta.get("official_execution_adapter") != "OfficialOpenVLAActionAdapter.predict_action":
+        raise ValueError("official execution adapter is not predict_action")
+    if meta.get("score_adapter") != "OfficialOpenVLAActionAdapter.predict_action_with_scores":
+        raise ValueError("official score adapter is not the instrumented predict_action path")
+    if meta.get("generation_passes_per_step") != 1:
         raise ValueError("generation passes per step is not exactly one")
 
     suite = meta.get("suite")
@@ -378,10 +382,8 @@ def verify_step_contract(
             raise ValueError(f"step {index}: action-token count is not seven")
         if not isinstance(step.get("score_head_summary"), list) or len(step["score_head_summary"]) != 7:
             raise ValueError(f"step {index}: score count is not seven")
-        if step.get("score_adapter_parity_pass") is not True or step.get("single_generation_parity_pass") is not True:
+        if step.get("score_adapter_parity_pass") is not True:
             raise ValueError(f"step {index}: score/action parity is not verified")
-        if step.get("generation_passes_per_step") != 1:
-            raise ValueError(f"step {index}: generation count is not one")
         if (
             not isinstance(step.get("score_adapter_action_max_abs_error"), (int, float))
             or not math.isfinite(float(step["score_adapter_action_max_abs_error"]))
@@ -392,8 +394,8 @@ def verify_step_contract(
             raise ValueError(f"intent {index}: invalid policy vector")
         if intent.get("action_token_ids") != step.get("action_token_ids"):
             raise ValueError(f"intent {index}: action-token mismatch")
-        if intent.get("single_generation_parity_pass") is not True or intent.get("generation_passes_per_step") != 1:
-            raise ValueError(f"intent {index}: generation contract is not verified")
+        if intent.get("score_adapter_parity_pass") is not True:
+            raise ValueError(f"intent {index}: score/action parity is not verified")
         if not isinstance(privileged.get("robot0_eef_pos"), list) or len(privileged["robot0_eef_pos"]) != 3:
             raise ValueError(f"sidecar {index}: missing EEF position")
         if not isinstance(privileged.get("robot0_gripper_qpos"), list) or len(privileged["robot0_gripper_qpos"]) < 2:
