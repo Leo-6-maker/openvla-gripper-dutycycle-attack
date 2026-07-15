@@ -19,6 +19,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .
           python -m pip install pytest numpy pillow
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
       - name: Compile Stage-B tooling
         run: |
           python -m py_compile \
@@ -33,13 +34,18 @@ jobs:
             scripts/detector/materialize_b3_retention_episode.py \
             scripts/detector/audit_b3_retention_materialization.py \
             scripts/detector/audit_b3_retention_real_artifacts.py \
-            scripts/detector/freeze_b3_s0_summary.py
+            scripts/detector/freeze_b3_s0_summary.py \
+            scripts/detector/run_b3_stateful_gpu_smoke.py \
+            scripts/detector/run_b3_real_student_forward_smoke.py \
+            src/gripper_attack/b3_stateful.py
       - name: Run targeted CPU tests
         run: |
           pytest \
             tests/test_b3_retention_multievent.py \
             tests/test_b3_retention_materializer.py \
             tests/test_b3_retention_real_artifact_audit.py \
+            tests/test_b3_stateful_smoke_contract.py \
+            tests/test_b3_stateful_model.py \
             tests/stageb/test_cross_suite_postrun_audit_tools.py \
             tests/stageb/test_cross_suite_clean_queue.py \
             tests/stageb/test_cross_suite_clean_collector.py \
