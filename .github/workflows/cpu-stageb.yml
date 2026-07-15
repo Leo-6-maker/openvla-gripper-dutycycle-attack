@@ -32,7 +32,8 @@ jobs:
             src/gripper_attack/b3_retention.py \
             scripts/detector/materialize_b3_retention_episode.py \
             scripts/detector/audit_b3_retention_materialization.py \
-            scripts/detector/audit_b3_retention_real_artifacts.py
+            scripts/detector/audit_b3_retention_real_artifacts.py \
+            scripts/detector/freeze_b3_s0_summary.py
       - name: Run targeted CPU tests
         run: |
           pytest \
