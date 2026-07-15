@@ -114,6 +114,32 @@ def test_scheduler_has_exactly_ten_active_frames():
     assert active[-1][2] == 10
 
 
+def test_scheduler_clears_candidate_on_event_change_invalid_and_release():
+    high = {"p_retention": 0.9, "p_t10": 0.9, "p_release": 0.1}
+    low = {"p_retention": 0.1, "p_t10": 0.1, "p_release": 0.9}
+    scheduler = OneShotAttackScheduler()
+    scheduler.update(step=0, event_id=0, **high)
+    scheduler.update(step=1, event_id=0, **low)
+    assert scheduler.update(step=2, event_id=1, **high)["gate_history"] == [True]
+    assert scheduler.update(step=3, event_id=1, valid=False, **high)["gate_history"] == []
+    assert scheduler.update(step=4, event_id=1, event_active=False, **high)["gate_history"] == []
+    assert scheduler.update(step=5, event_id=1, release_onset=True, **high)["gate_history"] == []
+
+
+def test_scheduler_completes_on_the_call_after_ten_active_frames():
+    scheduler = OneShotAttackScheduler()
+    high = {"p_retention": 0.9, "p_t10": 0.9, "p_release": 0.1}
+    scheduler.update(step=0, event_id=0, **high)
+    trigger = scheduler.update(step=1, event_id=0, **high)
+    assert trigger["attack_active"] is True
+    for step in range(2, 11):
+        assert scheduler.update(step=step, event_id=0, **high)["attack_active"] is True
+    done = scheduler.update(step=11, event_id=0, **high)
+    assert done["state"] == "DONE"
+    assert done["attack_active"] is False
+    assert done["attacked_frames_emitted"] == 10
+
+
 def test_raw_and_env_gripper_semantics_are_not_interchangeable():
     tracker = RetentionEventTracker()
     close = {"step": 0, "action_raw_7d": [0.2], "applied_action_7d": [1.0]}
