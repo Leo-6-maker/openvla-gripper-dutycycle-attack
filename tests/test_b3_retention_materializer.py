@@ -78,11 +78,17 @@ def _build_source_artifact(root: Path, *, steps: int = 18) -> None:
         env_action = [0.0] * 6 + [1.0 if close else -1.0]
         tokens = list(range(7))
         score_summary = [{"top_token": token, "top_probability": 0.5} for token in tokens]
+        features = [0.0] * 25
+        features[0] = raw_action[-1]
+        features[1] = sum(qpos)
+        features[2] = sum(abs(value) for value in qpos)
+        features[3:6] = [step * 0.01, 0.0, 0.3]
+        features[12] = raw_action[-1]
         step_rows.append({
             "suite": IDENTITY["suite"], "task_idx": IDENTITY["task_idx"], "state_id": IDENTITY["state_id"],
             "step": step,
             "official_execution": True,
-            "features_25d": [float(step), *([0.0] * 24)],
+            "features_25d": features,
             "raw_close": close,
             "gripper_qpos": sum(qpos),
             "gripper_opening_proxy": sum(abs(value) for value in qpos),
@@ -158,6 +164,21 @@ def test_compatibility_mode_does_not_materialize_teacher(tmp_path: Path):
     assert result["status"] == "PASS"
     assert not (output / "teacher_retention_records.jsonl").exists()
     assert not (output / "retention_events.json").exists()
+
+
+@pytest.mark.parametrize("mode", ["compatibility-only", "fit-label-materialization"])
+def test_robot_evidence_parity_is_required_in_all_modes(tmp_path: Path, mode: str):
+    source = tmp_path / "episode"
+    _build_source_artifact(source)
+    step_path = source / "step_records.jsonl"
+    rows = [json.loads(line) for line in step_path.read_text().splitlines()]
+    rows[3]["features_25d"][1] += 0.01
+    _write_jsonl(step_path, rows)
+    _reseal(source)
+
+    config = Path(__file__).parents[1] / "configs" / "B3_RETENTION_PROTOCOL_V1.json"
+    with pytest.raises(ValueError, match="25D gripper_qpos mismatch"):
+        materialize(source, tmp_path / mode, config, mode=mode)
 
 
 def test_fit_materialization_rejects_state_outside_fit_window(tmp_path: Path):

@@ -8,6 +8,7 @@ import csv
 import hashlib
 import json
 import shutil
+import subprocess
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
@@ -71,6 +72,38 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def _git_provenance(repo: Path, expected_head: str) -> tuple[str, bool, bool]:
+    actual = subprocess.run(
+        ["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    dirty = subprocess.run(
+        ["git", "-C", str(repo), "status", "--porcelain"], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    return actual, not dirty, actual == expected_head and not dirty
+
+
+def _fit_preflight(selected: list[Path], source_root: Path) -> None:
+    keys: list[str] = []
+    for artifact in selected:
+        if not artifact.is_relative_to(source_root):
+            raise ValueError(f"selection artifact is outside source root: {artifact}")
+        meta = _metadata(artifact)
+        suite = meta.get("suite")
+        task = meta.get("task_idx")
+        state = meta.get("state_id")
+        if suite not in SUITES or not isinstance(task, int) or not 0 <= task < 10:
+            raise ValueError(f"invalid FIT identity: {artifact}")
+        if not isinstance(state, int) or not 0 <= state <= 19 or meta.get("split") != "FIT":
+            raise ValueError(f"FIT preflight rejects non-FIT artifact: {artifact}")
+        key = meta.get("canonical_parent_key")
+        if not isinstance(key, str) or not key:
+            raise ValueError(f"missing FIT canonical identity: {artifact}")
+        keys.append(key)
+        verify_source_artifact(artifact)
+    if len(keys) != len(set(keys)):
+        raise ValueError("FIT preflight rejects duplicate canonical identity")
+
+
 def run(
     source_root: Path,
     output_root: Path,
@@ -78,7 +111,7 @@ def run(
     selection: Path | None,
     mode: str,
     runner_git_head: str,
-    runner_worktree_clean: bool,
+    runner_repo: Path,
     require_all_suite_tasks: bool,
 ) -> dict[str, object]:
     source_root = source_root.resolve()
@@ -91,6 +124,7 @@ def run(
         raise ValueError(f"missing protocol config: {config}")
     if selection and not selection.is_file():
         raise ValueError(f"missing selection manifest: {selection}")
+    actual_git_head, actual_worktree_clean, runner_provenance_pass = _git_provenance(runner_repo, runner_git_head)
     if output_root.exists() and any(output_root.iterdir()):
         raise ValueError(f"S0 output root is non-empty: {output_root}")
 
@@ -99,6 +133,11 @@ def run(
     selected = sorted(selected, key=_canonical)
     if not selected:
         raise ValueError("no source artifacts selected")
+    outside_root = sorted(str(artifact) for artifact in selected if not artifact.is_relative_to(source_root))
+    if outside_root:
+        raise ValueError(f"selection artifacts outside source root: {outside_root[:3]}")
+    if mode == "fit-label-materialization":
+        _fit_preflight(selected, source_root)
     keys = [_canonical(artifact) for artifact in selected]
     key_counts = Counter(keys)
     duplicate_keys = sorted(key for key, count in key_counts.items() if count > 1)
@@ -168,7 +207,8 @@ def run(
         records.append(record)
 
     coverage_pass = not missing_suite_tasks and all(value == 1 for value in suite_task_selected.values())
-    status = "PASS" if pass_count == len(selected) and not duplicate_keys and (coverage_pass or not require_all_suite_tasks) else "HOLD"
+    artifact_status = "PASS" if pass_count == len(selected) and not duplicate_keys else "HOLD"
+    status = "PASS" if artifact_status == "PASS" and runner_provenance_pass and (coverage_pass or not require_all_suite_tasks) else "HOLD"
     report = {
         "schema": "B3_RETENTION_REAL_ARTIFACT_COMPATIBILITY_AUDIT_V2",
         "mode": mode,
@@ -189,10 +229,21 @@ def run(
         "fail_count": len(selected) - pass_count,
         "suite_pass_counts": dict(sorted(suite_pass.items())),
         "status": status,
+        "artifact_compatibility_status": artifact_status,
+        "classification": (
+            "S0_SCHEMA_JOIN_ROBOT_EVIDENCE_PARITY_PASS"
+            if artifact_status == "PASS" and mode == "compatibility-only"
+            else "FIT_LABEL_MATERIALIZATION_PASS"
+            if artifact_status == "PASS" and mode == "fit-label-materialization"
+            else "HOLD"
+        ),
         "read_only_source": True,
         "source_unchanged_all": all(row.get("source_unchanged") is True for row in records),
-        "runner_git_head": runner_git_head,
-        "runner_worktree_clean": runner_worktree_clean,
+        "expected_runner_git_head": runner_git_head,
+        "actual_runner_git_head": actual_git_head,
+        "runner_git_head": actual_git_head,
+        "runner_worktree_clean": actual_worktree_clean,
+        "runner_provenance_pass": runner_provenance_pass,
         "protocol_config_sha256": _sha256(config),
         "real_audit_script_sha256": _sha256(Path(__file__).resolve()),
         "started_at": started_at,
@@ -217,7 +268,7 @@ def main() -> int:
     parser.add_argument("--selection-manifest", type=Path)
     parser.add_argument("--mode", choices=("compatibility-only", "fit-label-materialization"), default="compatibility-only")
     parser.add_argument("--runner-git-head", required=True)
-    parser.add_argument("--runner-worktree-clean", choices=("true", "false"), required=True)
+    parser.add_argument("--runner-repo", type=Path, required=True)
     parser.add_argument("--require-all-suite-tasks", action="store_true")
     args = parser.parse_args()
     report = run(
@@ -227,7 +278,7 @@ def main() -> int:
         args.selection_manifest,
         args.mode,
         args.runner_git_head,
-        args.runner_worktree_clean == "true",
+        args.runner_repo,
         args.require_all_suite_tasks,
     )
     print(json.dumps({key: report[key] for key in ("status", "mode", "selected_count", "pass_count", "fail_count", "coverage_status")}, sort_keys=True))

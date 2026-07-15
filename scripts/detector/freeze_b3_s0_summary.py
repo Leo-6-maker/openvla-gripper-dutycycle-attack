@@ -77,8 +77,10 @@ def main() -> int:
         "selected_state_counts": {f"{suite}/state_{state:02d}": count for (suite, state), count in sorted(state_counts.items())},
         "suite_task_selected_counts": {f"{suite}/task_{task:02d}": count for (suite, task), count in sorted(suite_task_counts.items())},
         "fit_state_0_19_only": all(int(row["state_id"]) <= 19 for row in records),
-        "teacher_statistics_consumed": False,
-        "legacy_output_contains_teacher_files": teacher_files_present,
+        "freeze_read_teacher_content": False,
+        "teacher_files_present": teacher_files_present,
+        "human_teacher_content_exposure": "UNKNOWN",
+        "eligible_for_teacher_analysis": False,
         "source_unchanged_during_original_run": "NOT_RECORDED",
         "formal_training_ready": False,
         "formal_attack_ready": False,
@@ -89,7 +91,7 @@ def main() -> int:
     args.output.with_name(args.output.name + ".sha256").write_text(
         f"{sha256_file(args.output)}  {args.output.name}\n", encoding="utf-8"
     )
-    print(json.dumps({key: summary[key] for key in ("status", "selected_count", "fit_state_0_19_only", "teacher_statistics_consumed")}, sort_keys=True))
+    print(json.dumps({key: summary[key] for key in ("status", "selected_count", "fit_state_0_19_only", "freeze_read_teacher_content")}, sort_keys=True))
     return 0
 
 

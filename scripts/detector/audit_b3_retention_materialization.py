@@ -48,7 +48,11 @@ def audit(root: Path) -> dict[str, object]:
         raise ValueError("invalid materialization recursive checksum")
     if manifest.get("formal_training_ready") is not False or manifest.get("formal_attack_ready") is not False:
         raise ValueError("materialization cannot advertise formal training or attack readiness")
-    if manifest.get("source_contract_verified") is not True or manifest.get("unknown_is_negative") is not False:
+    if (
+        manifest.get("source_contract_verified") is not True
+        or manifest.get("unknown_is_negative") is not False
+        or manifest.get("robot_evidence_contract_verified") is not True
+    ):
         raise ValueError("source contract or unknown-mask boundary is not closed")
     if mode == "compatibility-only":
         if manifest.get("teacher_materialization") != "NOT_RUN":

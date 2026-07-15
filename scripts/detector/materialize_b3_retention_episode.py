@@ -52,6 +52,8 @@ OFFICIAL_SPLITS = {
     "FINAL_EVAL_CANDIDATE": range(30, 50),
 }
 MERGE_TOLERANCE = 1e-6
+ROBOT_EVIDENCE_TOLERANCE = 1e-6
+EEF_OBS_SITE_TOLERANCE = 1e-3
 
 
 def json_sha(value: Any) -> str:
@@ -403,6 +405,40 @@ def verify_step_contract(
             raise ValueError(f"sidecar {index}: missing gripper qpos")
 
 
+def verify_robot_evidence_contract(rows: list[dict[str, Any]]) -> None:
+    """Verify causal robot evidence without generating Teacher labels."""
+    for index, row in enumerate(rows):
+        features = row["features_25d"]
+        raw_action = row["clean_action_raw_7d"][-1]
+        env_action = row["applied_action_7d"][-1]
+        if (raw_action <= 0.5) != (env_action > 0.0):
+            raise ValueError(f"step {index}: raw/env gripper polarity mismatch")
+        if abs(float(features[0]) - float(raw_action)) > ROBOT_EVIDENCE_TOLERANCE:
+            raise ValueError(f"step {index}: 25D gripper_command mismatch")
+        if abs(float(features[12]) - float(raw_action)) > ROBOT_EVIDENCE_TOLERANCE:
+            raise ValueError(f"step {index}: 25D action_gripper mismatch")
+
+        qpos = row["robot0_gripper_qpos"]
+        eef = row["robot0_eef_pos"]
+        if not isinstance(qpos, list) or len(qpos) < 2 or not all(
+            isinstance(value, (int, float)) and math.isfinite(float(value)) for value in qpos
+        ):
+            raise ValueError(f"step {index}: invalid robot gripper qpos")
+        if not isinstance(eef, list) or len(eef) != 3 or not all(
+            isinstance(value, (int, float)) and math.isfinite(float(value)) for value in eef
+        ):
+            raise ValueError(f"step {index}: invalid robot EEF position")
+        qpos_sum = float(qpos[0]) + float(qpos[1])
+        opening = abs(float(qpos[0])) + abs(float(qpos[1]))
+        if abs(float(features[1]) - qpos_sum) > ROBOT_EVIDENCE_TOLERANCE:
+            raise ValueError(f"step {index}: 25D gripper_qpos mismatch")
+        if abs(float(features[2]) - opening) > ROBOT_EVIDENCE_TOLERANCE:
+            raise ValueError(f"step {index}: 25D gripper_opening_proxy mismatch")
+        eef_delta = max(abs(float(features[3 + axis]) - float(eef[axis])) for axis in range(3))
+        if eef_delta > EEF_OBS_SITE_TOLERANCE:
+            raise ValueError(f"step {index}: 25D EEF mismatch: {eef_delta}")
+
+
 def _write_sha_sidecar(path: Path) -> None:
     path.with_name(path.name + ".sha256").write_text(
         f"{sha256_file(path)}  {path.name}\n", encoding="utf-8"
@@ -462,6 +498,7 @@ def materialize(
     }
     verify_step_contract(streams["step_records"], streams["policy_intent"], streams["privileged_sidecar"])
     merged, float_merges = strict_join(artifact_root, meta, streams)
+    verify_robot_evidence_contract(merged)
     rebuilt = rebuild_retention_features(merged, retention_config) if mode == "fit-label-materialization" else None
     if output_root.exists() and any(output_root.iterdir()):
         raise ValueError(f"materialization output is non-empty: {output_root}")
@@ -517,6 +554,8 @@ def materialize(
         },
         "unknown_is_negative": False,
         "join_float_tolerance_merges": float_merges,
+        "robot_evidence_contract_verified": True,
+        "robot_evidence_eef_tolerance": EEF_OBS_SITE_TOLERANCE,
         "label_semantics": (
             "ROBOT_CENTRIC_PROXY_LABELS_NOT_GRASP_GROUND_TRUTH"
             if rebuilt is not None
