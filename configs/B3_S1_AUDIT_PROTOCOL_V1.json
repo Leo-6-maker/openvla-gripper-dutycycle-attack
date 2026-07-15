@@ -1,0 +1,52 @@
+{
+  "schema": "B3_S1_AUDIT_PROTOCOL_V1",
+  "status": "PREPARATION_ONLY",
+  "source_schema": "B3_RETENTION_MATERIALIZED_EPISODE_V1",
+  "fit_states": [0, 19],
+  "fit_train_states": [0, 19],
+  "fit_dev_states": [20, 23],
+  "suites": ["libero_object", "libero_spatial", "libero_goal", "libero_10"],
+  "tasks_per_suite": 10,
+  "expected_fit_identities": 800,
+  "allowed_census_statuses": [
+    "RUNTIME_VALID_MATERIALIZABLE",
+    "RUNTIME_INVALID",
+    "MISSING",
+    "PROTOCOL_HOLD"
+  ],
+  "teacher_heads": [
+    "grasp_support",
+    "retention_active",
+    "retention_continuation_t10",
+    "release_imminent"
+  ],
+  "teacher_masks": {
+    "grasp_support": "grasp_support_mask",
+    "retention_active": "retention_active_mask",
+    "retention_continuation_t10": "retention_unknown_mask_inverted",
+    "release_imminent": "release_imminent_mask"
+  },
+  "unknown_is_negative": false,
+  "student_forbidden_fields": [
+    "event_id",
+    "event_ordinal",
+    "retention_continuation_t10",
+    "retention_unknown_mask",
+    "release_imminent",
+    "mujoco_contact_pairs",
+    "object_state",
+    "attack_outcome"
+  ],
+  "hold_conditions": {
+    "suite_without_t10_positive": true,
+    "l10_later_event_without_known_positive": true,
+    "task_all_unknown": true,
+    "label_invariant_violation": true,
+    "unexplained_unknown_reason": true,
+    "supported_events_without_anchor_fraction_gt": 0.8,
+    "positive_negative_ratio_gt": 100.0
+  },
+  "agreement_reference": "OLD_PRIVILEGED_LABELS_REFERENCE_NOT_GOLD",
+  "formal_training_ready": false,
+  "formal_attack_ready": false
+}
