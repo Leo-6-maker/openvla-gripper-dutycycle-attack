@@ -29,10 +29,18 @@ any attack queue.
 ## Formal offline materialization
 
 `materialize_b3_retention_episode.py` performs a strict, sealed-episode join
-of step records, policy-intent records, and privileged sidecar records. It
-checks official identity, contiguous unique steps, finite 25D/9D student
-inputs, source `artifact_sha256.json`, and source/config/rebuilder/materializer
-hashes. It emits separate:
+of step records, policy-intent records, and privileged sidecar records. The
+metadata is the identity authority: stream identity columns are optional by
+source schema, but any present value must agree; canonical identity is injected
+from metadata after the join and is never guessed from a path. Duplicate fields
+are compared instead of overwritten: exact/tolerance-equal values are accepted
+and logged, conflicts fail closed as `JOIN_CONFLICT_HOLD`.
+
+The materializer also parses and validates the frozen protocol JSON, constructs
+the effective `RetentionConfig`, verifies official runtime/action contracts,
+feature order, split, horizon, wait, single-generation parity, token/score
+counts, qpos/action evidence, source `artifact_sha256.json`, and
+source/config/rebuilder/materializer hashes. It emits separate:
 
 - `student_input_records.jsonl`: only `features_25d` and
   `clean_policy_intent_9d` plus immutable identity;
@@ -41,9 +49,10 @@ hashes. It emits separate:
 - `retention_events.json` and `materialization_manifest.json`.
 
 `audit_b3_retention_materialization.py` verifies output checksum closure,
-identity/step alignment, field isolation, head presence, mask types, and the
-explicit `formal_training_ready = false` / `formal_attack_ready = false`
-holds.
+identity/step alignment, field isolation, head presence, mask types, immutable
+output sidecars (`SHA256SUMS`, `SHA256SUMS.sha256`, and
+`materialization_manifest.json.sha256`), and the explicit
+`formal_training_ready = false` / `formal_attack_ready = false` holds.
 
 ## Test and CI coverage
 
@@ -57,6 +66,8 @@ The CPU suite covers:
 - official qpos/opening parity;
 - four-head and mask materialization;
 - strict materializer join, student/teacher separation, and checksum audit.
+- official-shaped streams with metadata-only canonical identity;
+- duplicate-field conflict rejection and non-empty-output overwrite rejection.
 
 The existing Stage-B CPU workflow now compiles the B3 runtime/materializer and
 runs the B3 tests together with the existing Stage-B tests.
@@ -67,6 +78,8 @@ These fixes make the preparation line auditable; they do not establish
 detector effectiveness. The following remain fail-closed:
 
 - old-label agreement and trajectory audit;
+- real Official artifact compatibility smoke (`S0`);
+- FIT-TRAIN label-distribution smoke (`S1`);
 - label-distribution smoke, including per-suite and later-event L10 coverage;
 - offline/online stateful parity;
 - CHECK acceptance;

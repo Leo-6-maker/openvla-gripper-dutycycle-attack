@@ -24,6 +24,7 @@ class RetentionConfig:
     opening_range_max: float = 0.05
     min_transport_steps: int = 3
     min_transport_displacement: float = 0.002
+    release_lookahead: int = 3
     t10: int = T10
 
 
@@ -353,8 +354,8 @@ def rebuild_retention_features(records: Iterable[dict[str, Any]], config: Retent
             row["release_imminent_mask"] = False
         else:
             index = row["step"]
-            lookahead = rows[index + 1:index + 4]
-            if len(lookahead) < 3 or any(
+            lookahead = rows[index + 1:index + 1 + config.release_lookahead]
+            if len(lookahead) < config.release_lookahead or any(
                 not item["valid"] or not item.get("event_evidence_valid", False)
                 for item in lookahead
             ):

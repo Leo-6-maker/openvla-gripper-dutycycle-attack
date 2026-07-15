@@ -26,6 +26,13 @@ def audit(root: Path) -> dict[str, object]:
         raise ValueError("invalid materialization recursive checksum")
     if manifest.get("formal_training_ready") is not False or manifest.get("formal_attack_ready") is not False:
         raise ValueError("materialization cannot advertise formal training or attack readiness")
+    if manifest.get("source_contract_verified") is not True or manifest.get("unknown_is_negative") is not False:
+        raise ValueError("source contract or unknown-mask boundary is not closed")
+    if manifest.get("label_semantics") != "ROBOT_CENTRIC_PROXY_LABELS_NOT_GRASP_GROUND_TRUTH":
+        raise ValueError("proxy-label semantics are not explicit")
+    effective = manifest.get("effective_retention_config")
+    if not isinstance(effective, dict) or effective.get("t10") != 10 or effective.get("release_lookahead") != 3:
+        raise ValueError("effective retention config is incomplete")
     source_identity = manifest.get("source_identity")
     if not isinstance(source_identity, dict) or any(
         source_identity.get(name) in (None, "")
@@ -39,6 +46,30 @@ def audit(root: Path) -> dict[str, object]:
         path = root / str(row["path"])
         if not path.is_file() or sha256_file(path) != row["sha256"]:
             raise ValueError(f"output checksum mismatch: {row.get('path')}")
+    manifest_sidecar = root / "materialization_manifest.json.sha256"
+    sums = root / "SHA256SUMS"
+    sums_sidecar = root / "SHA256SUMS.sha256"
+    if not manifest_sidecar.is_file() or not sums.is_file() or not sums_sidecar.is_file():
+        raise ValueError("materialization checksum sidecars are incomplete")
+    if manifest_sidecar.read_text(encoding="utf-8").strip() != f"{sha256_file(root / 'materialization_manifest.json')}  materialization_manifest.json":
+        raise ValueError("manifest SHA sidecar mismatch")
+    if sums_sidecar.read_text(encoding="utf-8").strip() != f"{sha256_file(sums)}  SHA256SUMS":
+        raise ValueError("SHA256SUMS sidecar mismatch")
+    sum_rows = {}
+    for line in sums.read_text(encoding="utf-8").splitlines():
+        digest, separator, name = line.partition("  ")
+        if not separator or not digest or not name:
+            raise ValueError("invalid SHA256SUMS row")
+        sum_rows[name] = digest
+    expected_sum_names = {str(row["path"]) for row in files} | {
+        "materialization_manifest.json",
+        "materialization_manifest.json.sha256",
+    }
+    if set(sum_rows) != expected_sum_names:
+        raise ValueError("SHA256SUMS file set mismatch")
+    for name, digest in sum_rows.items():
+        if sha256_file(root / name) != digest:
+            raise ValueError(f"SHA256SUMS digest mismatch: {name}")
 
     student = load_jsonl(root / "student_input_records.jsonl")
     teacher = load_jsonl(root / "teacher_retention_records.jsonl")

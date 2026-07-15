@@ -2,8 +2,37 @@
   "schema": "c2g.b3_retention.protocol.v1",
   "status": "PREPARATION_ONLY",
   "upstream_action_path": "OPENVLA_LIBERO_OFFICIAL_V1",
+  "official_protocol_id": "OPENVLA_LIBERO_OFFICIAL_V1",
+  "num_steps_wait": 10,
+  "official_horizons": {
+    "libero_spatial": 220,
+    "libero_object": 280,
+    "libero_goal": 300,
+    "libero_10": 520
+  },
   "source_feature_schema": "OFFICIAL_25D_V1",
   "derived_feature_schema": "B3_RETENTION_DERIVED_FEATURES_V1",
+  "feature_names_25d": [
+    "gripper_command", "gripper_qpos", "gripper_opening_proxy",
+    "eef_x", "eef_y", "eef_z", "eef_vx", "eef_vy", "eef_vz",
+    "action_dx", "action_dy", "action_dz", "action_gripper",
+    "recent_close_streak", "recent_open_streak", "recent_gripper_flip_count",
+    "close_onset", "time_since_close", "eef_speed",
+    "eef_z_delta_since_close", "qpos_delta_1", "qpos_delta_3",
+    "opening_proxy_delta_3", "opening_proxy_variance_5", "eef_speed_variance_5"
+  ],
+  "policy_intent_feature_names_9d": [
+    "clean_open_probability_mass",
+    "clean_close_probability_mass",
+    "clean_open_minus_close_log_mass",
+    "clean_action_token_entropy_normalized",
+    "clean_top1_probability",
+    "clean_top1_is_open",
+    "clean_top1_is_close",
+    "clean_best_open_rank_normalized",
+    "clean_best_close_rank_normalized"
+  ],
+  "label_semantics": "ROBOT_CENTRIC_PROXY_LABELS_NOT_GRASP_GROUND_TRUTH",
   "student_inputs": [
     "features_25d",
     "clean_policy_intent_9d"
@@ -53,6 +82,17 @@
     "unknown_is_negative": false,
     "anonymous_object_state": "OPTIONAL_ABLATION_ONLY",
     "contact_empty_is_negative": false
+  },
+  "retention_teacher_parameters": {
+    "n_close": 3,
+    "n_open": 3,
+    "stability_window": 3,
+    "qpos_range_max": 0.05,
+    "opening_range_max": 0.05,
+    "min_transport_steps": 3,
+    "min_transport_displacement": 0.002,
+    "release_lookahead": 3,
+    "t10": 10
   },
   "heads": {
     "grasp_support": "TRAINING_AUXILIARY",
