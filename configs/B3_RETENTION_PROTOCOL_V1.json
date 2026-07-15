@@ -1,0 +1,90 @@
+{
+  "schema": "c2g.b3_retention.protocol.v1",
+  "status": "PREPARATION_ONLY",
+  "upstream_action_path": "OPENVLA_LIBERO_OFFICIAL_V1",
+  "source_feature_schema": "OFFICIAL_25D_V1",
+  "derived_feature_schema": "B3_RETENTION_DERIVED_FEATURES_V1",
+  "student_inputs": [
+    "features_25d",
+    "clean_policy_intent_9d"
+  ],
+  "teacher_only_fields": [
+    "event_id",
+    "event_ordinal",
+    "event_start_step",
+    "event_end_step",
+    "retention_continuation_t10",
+    "retention_unknown_mask",
+    "mujoco_contact_pairs",
+    "object_state"
+  ],
+  "event_tracker": {
+    "name": "RETENTION_EVENT_FSM_V1",
+    "n_close_default": 3,
+    "n_open_default": 3,
+    "threshold_selection": "FIT_TRAIN_AND_FIT_DEV_ONLY",
+    "episode_reset": true,
+    "event_reset_on_release": true,
+    "event_id_is_student_input": false,
+    "empty_contact_semantics": "UNKNOWN"
+  },
+  "teacher": {
+    "name": "RETENTION_WEAK_TEACHER_V1",
+    "primary_label": "retention_continuation_t10",
+    "attack_vulnerability_claim": false,
+    "future_steps": 10,
+    "incomplete_future_window": "UNKNOWN_MASK",
+    "anonymous_object_state": "OPTIONAL_ABLATION_ONLY",
+    "contact_empty_is_negative": false
+  },
+  "heads": {
+    "grasp_support": "TRAINING_AUXILIARY",
+    "retention_active": "RUNTIME_PRIMARY",
+    "retention_continuation_t10": "RUNTIME_PRIMARY",
+    "release_imminent": "RUNTIME_PRIMARY",
+    "window_start": "DERIVED_BY_SCHEDULER"
+  },
+  "attack_scheduler": {
+    "name": "ONE_SHOT_RETENTION_SCHEDULER_V1",
+    "states": [
+      "ARMED",
+      "ATTACKING_T10",
+      "DONE"
+    ],
+    "persistence": "2-of-3",
+    "one_shot_per_episode": true,
+    "exact_attack_frames": 10,
+    "susceptibility_gate_enabled": false
+  },
+  "sequence_contract": {
+    "model": "STATEFUL_CAUSAL_GRU",
+    "hidden_reset": "EPISODE_ONLY",
+    "hidden_reset_on_event": false,
+    "offline_online_parity_required": true,
+    "rolling_window_semantics": false
+  },
+  "identity_split": {
+    "fit_train_states": [0, 19],
+    "fit_dev_states": [20, 23],
+    "cal_states": [24, 26],
+    "check_states": [27, 29],
+    "final_states": [30, 49]
+  },
+  "gates": {
+    "old_label_agreement": "REQUIRED_NOT_SUFFICIENT",
+    "human_trajectory_audit": "REQUIRED",
+    "stateful_parity": "REQUIRED",
+    "detector_check": "REQUIRED",
+    "downstream_canary_48": "REQUIRED",
+    "formal_training": "HOLD",
+    "formal_attack": "HOLD"
+  },
+  "forbidden": [
+    "modify_active_clean_collector_feature_semantics",
+    "mix_old_and_derived_25d_under_one_schema",
+    "use_attack_outcome_to_tune_teacher",
+    "treat_retention_continuation_as_attack_vulnerability",
+    "use_unknown_as_negative",
+    "use_task_stage_or_object_identity_as_student_input"
+  ]
+}
