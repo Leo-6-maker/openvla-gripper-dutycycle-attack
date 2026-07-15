@@ -15,7 +15,13 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from gripper_attack.b3_retention import RetentionConfig, rebuild_retention_features  # noqa: E402
+from gripper_attack.b3_retention import (  # noqa: E402
+    RetentionConfig,
+    _raw_close,
+    canonical_opening_abs_sum,
+    canonical_qpos_sum,
+    rebuild_retention_features,
+)
 
 
 REQUIRED = (
@@ -54,6 +60,9 @@ OFFICIAL_SPLITS = {
 MERGE_TOLERANCE = 1e-6
 ROBOT_EVIDENCE_TOLERANCE = 1e-6
 EEF_OBS_SITE_TOLERANCE = 1e-3
+RAW_ACTION_ALIASES = ("action_raw_7d", "action_raw", "action_gripper", "gripper_command", "raw_gripper")
+ENV_ACTION_ALIASES = ("applied_action_7d", "action_env", "env_gripper")
+OPENING_ALIASES = ("gripper_opening_proxy", "opening_proxy", "gripper_width")
 
 
 def json_sha(value: Any) -> str:
@@ -405,17 +414,61 @@ def verify_step_contract(
             raise ValueError(f"sidecar {index}: missing gripper qpos")
 
 
-def verify_robot_evidence_contract(rows: list[dict[str, Any]]) -> None:
-    """Verify causal robot evidence without generating Teacher labels."""
+def _alias_scalar(value: Any, name: str) -> float:
+    if isinstance(value, (list, tuple)):
+        if not value:
+            raise ValueError(f"{name} alias is empty")
+        value = value[-1]
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+        raise ValueError(f"{name} alias is not a finite numeric scalar/vector")
+    return float(value)
+
+
+def verify_robot_evidence_contract(rows: list[dict[str, Any]]) -> dict[str, float]:
+    """Verify all robot evidence aliases without generating Teacher labels."""
+    errors = {
+        "max_action_abs_error": 0.0,
+        "max_qpos_abs_error": 0.0,
+        "max_opening_abs_error": 0.0,
+        "max_eef_abs_error": 0.0,
+    }
     for index, row in enumerate(rows):
         features = row["features_25d"]
         raw_action = row["clean_action_raw_7d"][-1]
         env_action = row["applied_action_7d"][-1]
         if (raw_action <= 0.5) != (env_action > 0.0):
             raise ValueError(f"step {index}: raw/env gripper polarity mismatch")
-        if abs(float(features[0]) - float(raw_action)) > ROBOT_EVIDENCE_TOLERANCE:
+        raw_close = raw_action <= 0.5
+        try:
+            canonical_close = _raw_close(row)
+        except ValueError as exc:
+            raise ValueError(f"step {index}: canonical raw gripper alias mismatch: {exc}") from exc
+        if canonical_close != raw_close:
+            raise ValueError(f"step {index}: canonical raw gripper polarity mismatch")
+        if "raw_close" in row and (not isinstance(row["raw_close"], bool) or row["raw_close"] != raw_close):
+            raise ValueError(f"step {index}: raw_close alias mismatch")
+
+        for name in RAW_ACTION_ALIASES:
+            if name in row:
+                alias = _alias_scalar(row[name], name)
+                delta = abs(alias - float(raw_action))
+                errors["max_action_abs_error"] = max(errors["max_action_abs_error"], delta)
+                if delta > ROBOT_EVIDENCE_TOLERANCE:
+                    raise ValueError(f"step {index}: {name} alias mismatch")
+        for name in ENV_ACTION_ALIASES:
+            if name in row:
+                alias = _alias_scalar(row[name], name)
+                delta = abs(alias - float(env_action))
+                errors["max_action_abs_error"] = max(errors["max_action_abs_error"], delta)
+                if delta > ROBOT_EVIDENCE_TOLERANCE:
+                    raise ValueError(f"step {index}: {name} alias mismatch")
+
+        raw_feature_error = abs(float(features[0]) - float(raw_action))
+        action_feature_error = abs(float(features[12]) - float(raw_action))
+        errors["max_action_abs_error"] = max(errors["max_action_abs_error"], raw_feature_error, action_feature_error)
+        if raw_feature_error > ROBOT_EVIDENCE_TOLERANCE:
             raise ValueError(f"step {index}: 25D gripper_command mismatch")
-        if abs(float(features[12]) - float(raw_action)) > ROBOT_EVIDENCE_TOLERANCE:
+        if action_feature_error > ROBOT_EVIDENCE_TOLERANCE:
             raise ValueError(f"step {index}: 25D action_gripper mismatch")
 
         qpos = row["robot0_gripper_qpos"]
@@ -430,13 +483,37 @@ def verify_robot_evidence_contract(rows: list[dict[str, Any]]) -> None:
             raise ValueError(f"step {index}: invalid robot EEF position")
         qpos_sum = float(qpos[0]) + float(qpos[1])
         opening = abs(float(qpos[0])) + abs(float(qpos[1]))
-        if abs(float(features[1]) - qpos_sum) > ROBOT_EVIDENCE_TOLERANCE:
+        canonical_qpos = canonical_qpos_sum(row)
+        canonical_opening = canonical_opening_abs_sum(row)
+        if canonical_qpos is None or abs(canonical_qpos - qpos_sum) > ROBOT_EVIDENCE_TOLERANCE:
+            raise ValueError(f"step {index}: canonical qpos evidence is missing or inconsistent")
+        if canonical_opening is None or abs(canonical_opening - opening) > ROBOT_EVIDENCE_TOLERANCE:
+            raise ValueError(f"step {index}: canonical opening evidence is missing or inconsistent")
+        if "gripper_qpos" in row:
+            delta = abs(_alias_scalar(row["gripper_qpos"], "gripper_qpos") - qpos_sum)
+            errors["max_qpos_abs_error"] = max(errors["max_qpos_abs_error"], delta)
+            if delta > ROBOT_EVIDENCE_TOLERANCE:
+                raise ValueError(f"step {index}: gripper_qpos alias mismatch")
+        for name in OPENING_ALIASES:
+            if name in row:
+                delta = abs(_alias_scalar(row[name], name) - opening)
+                errors["max_opening_abs_error"] = max(errors["max_opening_abs_error"], delta)
+                if delta > ROBOT_EVIDENCE_TOLERANCE:
+                    raise ValueError(f"step {index}: {name} alias mismatch")
+
+        qpos_feature_error = abs(float(features[1]) - qpos_sum)
+        opening_feature_error = abs(float(features[2]) - opening)
+        errors["max_qpos_abs_error"] = max(errors["max_qpos_abs_error"], qpos_feature_error)
+        errors["max_opening_abs_error"] = max(errors["max_opening_abs_error"], opening_feature_error)
+        if qpos_feature_error > ROBOT_EVIDENCE_TOLERANCE:
             raise ValueError(f"step {index}: 25D gripper_qpos mismatch")
-        if abs(float(features[2]) - opening) > ROBOT_EVIDENCE_TOLERANCE:
+        if opening_feature_error > ROBOT_EVIDENCE_TOLERANCE:
             raise ValueError(f"step {index}: 25D gripper_opening_proxy mismatch")
         eef_delta = max(abs(float(features[3 + axis]) - float(eef[axis])) for axis in range(3))
+        errors["max_eef_abs_error"] = max(errors["max_eef_abs_error"], eef_delta)
         if eef_delta > EEF_OBS_SITE_TOLERANCE:
             raise ValueError(f"step {index}: 25D EEF mismatch: {eef_delta}")
+    return errors
 
 
 def _write_sha_sidecar(path: Path) -> None:
@@ -458,9 +535,8 @@ def _write_output_checksums(root: Path, manifest_name: str = "materialization_ma
     _write_sha_sidecar(sums)
 
 
-def materialize(
+def _prepare_materialization(
     artifact_root: Path,
-    output_root: Path,
     config_path: Path,
     mode: str = "compatibility-only",
 ) -> dict[str, Any]:
@@ -498,8 +574,47 @@ def materialize(
     }
     verify_step_contract(streams["step_records"], streams["policy_intent"], streams["privileged_sidecar"])
     merged, float_merges = strict_join(artifact_root, meta, streams)
-    verify_robot_evidence_contract(merged)
+    robot_evidence_errors = verify_robot_evidence_contract(merged)
     rebuilt = rebuild_retention_features(merged, retention_config) if mode == "fit-label-materialization" else None
+    return {
+        "meta": meta,
+        "retention_config": retention_config,
+        "source_sha": source_sha,
+        "merged": merged,
+        "float_merges": float_merges,
+        "robot_evidence_errors": robot_evidence_errors,
+        "rebuilt": rebuilt,
+    }
+
+
+def validate_materialization_inputs(
+    artifact_root: Path,
+    config_path: Path,
+    mode: str = "compatibility-only",
+) -> dict[str, Any]:
+    """Run every materialization check without creating any output files."""
+    prepared = _prepare_materialization(artifact_root, config_path, mode)
+    return {
+        "source_artifact_sha256": prepared["source_sha"],
+        "step_count": len(prepared["merged"]),
+        "robot_evidence_error_summary": prepared["robot_evidence_errors"],
+    }
+
+
+def materialize(
+    artifact_root: Path,
+    output_root: Path,
+    config_path: Path,
+    mode: str = "compatibility-only",
+) -> dict[str, Any]:
+    prepared = _prepare_materialization(artifact_root, config_path, mode)
+    meta = prepared["meta"]
+    retention_config = prepared["retention_config"]
+    source_sha = prepared["source_sha"]
+    merged = prepared["merged"]
+    float_merges = prepared["float_merges"]
+    robot_evidence_errors = prepared["robot_evidence_errors"]
+    rebuilt = prepared["rebuilt"]
     if output_root.exists() and any(output_root.iterdir()):
         raise ValueError(f"materialization output is non-empty: {output_root}")
     output_root.mkdir(parents=True, exist_ok=True)
@@ -556,6 +671,7 @@ def materialize(
         "join_float_tolerance_merges": float_merges,
         "robot_evidence_contract_verified": True,
         "robot_evidence_eef_tolerance": EEF_OBS_SITE_TOLERANCE,
+        "robot_evidence_error_summary": robot_evidence_errors,
         "label_semantics": (
             "ROBOT_CENTRIC_PROXY_LABELS_NOT_GRASP_GROUND_TRUTH"
             if rebuilt is not None

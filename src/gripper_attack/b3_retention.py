@@ -66,7 +66,7 @@ def _last_value(record: dict[str, Any], names: tuple[str, ...]) -> float | None:
 
 
 def _raw_value(record: dict[str, Any]) -> float | None:
-    value = _last_value(record, ("action_raw_7d", "action_raw"))
+    value = _last_value(record, ("clean_action_raw_7d", "action_raw_7d", "action_raw"))
     if value is not None:
         return value
     return _scalar(record, "action_raw", "action_gripper", "gripper_command", "raw_gripper")

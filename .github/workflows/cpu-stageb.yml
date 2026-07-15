@@ -39,6 +39,7 @@ jobs:
           pytest \
             tests/test_b3_retention_multievent.py \
             tests/test_b3_retention_materializer.py \
+            tests/test_b3_retention_real_artifact_audit.py \
             tests/stageb/test_cross_suite_postrun_audit_tools.py \
             tests/stageb/test_cross_suite_clean_queue.py \
             tests/stageb/test_cross_suite_clean_collector.py \

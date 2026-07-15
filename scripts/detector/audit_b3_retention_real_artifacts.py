@@ -17,7 +17,11 @@ import sys
 SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 from audit_b3_retention_materialization import audit  # noqa: E402
-from materialize_b3_retention_episode import materialize, verify_source_artifact  # noqa: E402
+from materialize_b3_retention_episode import (  # noqa: E402
+    materialize,
+    validate_materialization_inputs,
+    verify_source_artifact,
+)
 
 
 SUITES = ("libero_object", "libero_spatial", "libero_goal", "libero_10")
@@ -80,17 +84,28 @@ def _is_relative_to(path: Path, root: Path) -> bool:
     return True
 
 
-def _git_provenance(repo: Path, expected_head: str) -> tuple[str, bool, bool]:
+def _git_provenance(repo: Path, expected_head: str) -> tuple[str, bool, bool, str]:
     actual = subprocess.run(
         ["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True
     ).stdout.strip()
     dirty = subprocess.run(
         ["git", "-C", str(repo), "status", "--porcelain"], check=True, capture_output=True, text=True
     ).stdout.strip()
-    return actual, not dirty, actual == expected_head and not dirty
+    script_path = Path(__file__).resolve()
+    try:
+        script_relative = script_path.relative_to(repo.resolve())
+    except ValueError as exc:
+        raise ValueError(f"runner script is outside runner repo: {script_path}") from exc
+    subprocess.run(
+        ["git", "-C", str(repo), "cat-file", "-e", f"HEAD:{script_relative.as_posix()}"],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return actual, not dirty, actual == expected_head and not dirty, script_relative.as_posix()
 
 
-def _fit_preflight(selected: list[Path], source_root: Path) -> None:
+def _fit_preflight(selected: list[Path], source_root: Path, config: Path) -> None:
     keys: list[str] = []
     for artifact in selected:
         if not _is_relative_to(artifact, source_root):
@@ -107,7 +122,7 @@ def _fit_preflight(selected: list[Path], source_root: Path) -> None:
         if not isinstance(key, str) or not key:
             raise ValueError(f"missing FIT canonical identity: {artifact}")
         keys.append(key)
-        verify_source_artifact(artifact)
+        validate_materialization_inputs(artifact, config, mode="fit-label-materialization")
     if len(keys) != len(set(keys)):
         raise ValueError("FIT preflight rejects duplicate canonical identity")
 
@@ -132,9 +147,15 @@ def run(
         raise ValueError(f"missing protocol config: {config}")
     if selection and not selection.is_file():
         raise ValueError(f"missing selection manifest: {selection}")
-    actual_git_head, actual_worktree_clean, runner_provenance_pass = _git_provenance(runner_repo, runner_git_head)
+    runner_repo = runner_repo.resolve()
+    actual_git_head, actual_worktree_clean, runner_provenance_pass, runner_script_relative = _git_provenance(
+        runner_repo, runner_git_head
+    )
     if output_root.exists() and any(output_root.iterdir()):
         raise ValueError(f"S0 output root is non-empty: {output_root}")
+    staging_root = output_root.with_name(output_root.name + ".staging")
+    if mode == "fit-label-materialization" and (output_root.exists() or staging_root.exists()):
+        raise ValueError(f"FIT output or staging root already exists: {output_root}")
 
     started_at = _now()
     selected = _selection_paths(selection, source_root) if selection else _metadata_paths(source_root)
@@ -144,8 +165,10 @@ def run(
     outside_root = sorted(str(artifact) for artifact in selected if not _is_relative_to(artifact, source_root))
     if outside_root:
         raise ValueError(f"selection artifacts outside source root: {outside_root[:3]}")
+    fit_transactional_preflight = mode != "fit-label-materialization"
     if mode == "fit-label-materialization":
-        _fit_preflight(selected, source_root)
+        _fit_preflight(selected, source_root, config)
+        fit_transactional_preflight = True
     keys = [_canonical(artifact) for artifact in selected]
     key_counts = Counter(keys)
     duplicate_keys = sorted(key for key, count in key_counts.items() if count > 1)
@@ -157,7 +180,8 @@ def run(
         state_counts[(str(meta.get("suite")), int(meta.get("state_id", -1)))] += 1
     missing_suite_tasks = sorted(EXPECTED_TASKS - set(suite_task_selected))
 
-    output_root.mkdir(parents=True, exist_ok=True)
+    work_root = staging_root if mode == "fit-label-materialization" else output_root
+    work_root.mkdir(parents=True, exist_ok=True)
     records: list[dict[str, object]] = []
     suite_pass = Counter()
     suite_task_pass = Counter()
@@ -165,7 +189,7 @@ def run(
     for index, artifact in enumerate(selected):
         key = _canonical(artifact)
         meta = _metadata(artifact)
-        output = output_root / "episodes" / f"{index:04d}_{key.replace('/', '__')}"
+        output = work_root / "episodes" / f"{index:04d}_{key.replace('/', '__')}"
         record: dict[str, object] = {
             "canonical_parent_key": key,
             "suite": meta.get("suite"),
@@ -199,6 +223,7 @@ def run(
                     "materialization_manifest_sha256": _sha256(child_manifest),
                     "step_count": manifest["step_count"],
                     "audit_schema": audit_result["schema"],
+                    "robot_evidence_error_summary": manifest["robot_evidence_error_summary"],
                 }
             )
             if mode == "fit-label-materialization":
@@ -217,6 +242,27 @@ def run(
     coverage_pass = not missing_suite_tasks and all(value == 1 for value in suite_task_selected.values())
     artifact_status = "PASS" if pass_count == len(selected) and not duplicate_keys else "HOLD"
     status = "PASS" if artifact_status == "PASS" and runner_provenance_pass and (coverage_pass or not require_all_suite_tasks) else "HOLD"
+    error_keys = (
+        "max_action_abs_error",
+        "max_qpos_abs_error",
+        "max_opening_abs_error",
+        "max_eef_abs_error",
+    )
+    robot_evidence_max_errors = {
+        key: max(
+            (float(row["robot_evidence_error_summary"][key]) for row in records if "robot_evidence_error_summary" in row),
+            default=0.0,
+        )
+        for key in error_keys
+    }
+    fit_output_promoted = False
+    if mode == "fit-label-materialization":
+        if status == "PASS":
+            staging_root.replace(output_root)
+            fit_output_promoted = True
+        else:
+            shutil.rmtree(staging_root, ignore_errors=True)
+            output_root.mkdir(parents=True, exist_ok=True)
     report = {
         "schema": "B3_RETENTION_REAL_ARTIFACT_COMPATIBILITY_AUDIT_V2",
         "mode": mode,
@@ -252,8 +298,12 @@ def run(
         "runner_git_head": actual_git_head,
         "runner_worktree_clean": actual_worktree_clean,
         "runner_provenance_pass": runner_provenance_pass,
+        "runner_script_relative_path": runner_script_relative,
         "protocol_config_sha256": _sha256(config),
         "real_audit_script_sha256": _sha256(Path(__file__).resolve()),
+        "robot_evidence_max_errors": robot_evidence_max_errors,
+        "fit_transactional_preflight": fit_transactional_preflight,
+        "fit_output_promoted": fit_output_promoted,
         "started_at": started_at,
         "finished_at": _now(),
         "formal_training_ready": False,

@@ -54,6 +54,24 @@ def audit(root: Path) -> dict[str, object]:
         or manifest.get("robot_evidence_contract_verified") is not True
     ):
         raise ValueError("source contract or unknown-mask boundary is not closed")
+    error_summary = manifest.get("robot_evidence_error_summary")
+    error_keys = {
+        "max_action_abs_error",
+        "max_qpos_abs_error",
+        "max_opening_abs_error",
+        "max_eef_abs_error",
+    }
+    if (
+        not isinstance(error_summary, dict)
+        or set(error_summary) != error_keys
+        or any(
+            not isinstance(error_summary[key], (int, float))
+            or not math.isfinite(float(error_summary[key]))
+            or float(error_summary[key]) < 0.0
+            for key in error_keys
+        )
+    ):
+        raise ValueError("robot-evidence error summary is missing or invalid")
     if mode == "compatibility-only":
         if manifest.get("teacher_materialization") != "NOT_RUN":
             raise ValueError("compatibility-only output ran Teacher materialization")

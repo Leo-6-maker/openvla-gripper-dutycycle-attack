@@ -161,6 +161,12 @@ def test_compatibility_mode_does_not_materialize_teacher(tmp_path: Path):
     assert manifest["mode"] == "compatibility-only"
     assert manifest["teacher_materialization"] == "NOT_RUN"
     assert manifest["label_statistics"] is None
+    assert set(manifest["robot_evidence_error_summary"]) == {
+        "max_action_abs_error",
+        "max_qpos_abs_error",
+        "max_opening_abs_error",
+        "max_eef_abs_error",
+    }
     assert result["status"] == "PASS"
     assert not (output / "teacher_retention_records.jsonl").exists()
     assert not (output / "retention_events.json").exists()
@@ -179,6 +185,20 @@ def test_robot_evidence_parity_is_required_in_all_modes(tmp_path: Path, mode: st
     config = Path(__file__).parents[1] / "configs" / "B3_RETENTION_PROTOCOL_V1.json"
     with pytest.raises(ValueError, match="25D gripper_qpos mismatch"):
         materialize(source, tmp_path / mode, config, mode=mode)
+
+
+def test_robot_evidence_alias_parity_is_required(tmp_path: Path):
+    source = tmp_path / "episode"
+    _build_source_artifact(source)
+    step_path = source / "step_records.jsonl"
+    rows = [json.loads(line) for line in step_path.read_text().splitlines()]
+    rows[3]["action_raw"][-1] = 0.2
+    _write_jsonl(step_path, rows)
+    _reseal(source)
+
+    config = Path(__file__).parents[1] / "configs" / "B3_RETENTION_PROTOCOL_V1.json"
+    with pytest.raises(ValueError, match="action_raw alias mismatch"):
+        materialize(source, tmp_path / "materialized", config)
 
 
 def test_fit_materialization_rejects_state_outside_fit_window(tmp_path: Path):
