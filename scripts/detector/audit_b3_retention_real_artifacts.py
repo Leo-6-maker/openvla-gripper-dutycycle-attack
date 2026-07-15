@@ -49,7 +49,8 @@ def _selection_paths(selection: Path, source_root: Path) -> list[Path]:
     return paths
 
 
-def _canonical(meta_path: Path) -> str:
+def _canonical(artifact: Path) -> str:
+    meta_path = artifact / "episode_metadata.json" if artifact.is_dir() else artifact
     payload = json.loads(meta_path.read_text(encoding="utf-8"))
     key = payload.get("canonical_parent_key")
     if not isinstance(key, str) or not key:
