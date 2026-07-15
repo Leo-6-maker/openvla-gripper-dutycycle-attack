@@ -28,10 +28,15 @@ jobs:
             scripts/stageb/audit_existing_nonobject_clean_outputs.py \
             scripts/stageb/build_paper_table_schemas.py \
             scripts/stageb/build_teacher_label_eval_table.py \
-            scripts/stageb/audit_github_branch_pr_hygiene.py
+            scripts/stageb/audit_github_branch_pr_hygiene.py \
+            src/gripper_attack/b3_retention.py \
+            scripts/detector/materialize_b3_retention_episode.py \
+            scripts/detector/audit_b3_retention_materialization.py
       - name: Run targeted CPU tests
         run: |
           pytest \
+            tests/test_b3_retention_multievent.py \
+            tests/test_b3_retention_materializer.py \
             tests/stageb/test_cross_suite_postrun_audit_tools.py \
             tests/stageb/test_cross_suite_clean_queue.py \
             tests/stageb/test_cross_suite_clean_collector.py \
