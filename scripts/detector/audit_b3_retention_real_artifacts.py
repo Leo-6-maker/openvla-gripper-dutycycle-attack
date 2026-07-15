@@ -27,7 +27,7 @@ def _sha256(path: Path) -> str:
 
 
 def _metadata_paths(source_root: Path) -> list[Path]:
-    return sorted(source_root.rglob("episode_metadata.json"))
+    return sorted(path.parent for path in source_root.rglob("episode_metadata.json"))
 
 
 def _selection_paths(selection: Path, source_root: Path) -> list[Path]:
