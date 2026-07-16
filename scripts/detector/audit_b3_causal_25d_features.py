@@ -349,7 +349,7 @@ def audit_artifact(artifact: Path, source_root: Path, expected: dict) -> dict:
                 and feature_order_bound
                 and parity["robot_alias_parity_pass"]
                 and feature_valid_pass
-                and result["student_projection_pass"]
+                and student_pass
                 and source_scope_unchanged
                 and not invariants["violations"]
             ) else "HOLD",
