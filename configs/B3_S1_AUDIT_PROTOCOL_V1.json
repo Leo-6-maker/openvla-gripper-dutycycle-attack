@@ -9,7 +9,9 @@
   "tasks_per_suite": 10,
   "expected_fit_identities": 800,
   "allowed_census_statuses": [
-    "RUNTIME_VALID_MATERIALIZABLE",
+    "RUNTIME_VALID_SOURCE_PRESENT",
+    "RUNTIME_VALID_MATERIALIZATION_DRYRUN_PASS",
+    "MATERIALIZATION_DRYRUN_HOLD",
     "RUNTIME_INVALID",
     "MISSING",
     "PROTOCOL_HOLD"
@@ -44,7 +46,7 @@
     "label_invariant_violation": true,
     "unexplained_unknown_reason": true,
     "supported_events_without_anchor_fraction_gt": 0.8,
-    "positive_negative_ratio_gt": 100.0
+    "negative_positive_ratio_gt": 100.0
   },
   "agreement_reference": "OLD_PRIVILEGED_LABELS_REFERENCE_NOT_GOLD",
   "formal_training_ready": false,

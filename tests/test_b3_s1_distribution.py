@@ -1,3 +1,4 @@
+from detector.audit_b3_s1_label_distribution import _t10_ratios
 from detector.audit_b3_teacher_invariants import audit_episode
 
 
@@ -36,3 +37,9 @@ def test_missing_teacher_head_mask_is_a_hard_invariant_failure():
     report = audit_episode(rows)
     assert report["status"] == "HOLD"
     assert "STEP_0_retention_active_mask_NOT_BOOLEAN" in report["violations"]
+
+
+def test_t10_imbalance_gate_uses_negative_to_positive_direction():
+    ratios = _t10_ratios(positive=1, negative=101)
+    assert ratios["negative_to_positive"] == 101
+    assert ratios["positive_to_negative"] < 1

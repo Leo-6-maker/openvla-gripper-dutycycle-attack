@@ -7,22 +7,30 @@ import argparse
 import csv
 import hashlib
 import json
+import sys
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+SCRIPT_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(SCRIPT_DIR))
+from materialize_b3_retention_episode import validate_materialization_inputs  # noqa: E402
+
 SUITES = ("libero_object", "libero_spatial", "libero_goal", "libero_10")
 REQUIRED_FILES = {
     "episode_metadata.json",
     "episode_summary.json",
     "runtime_audit.json",
     "condition_config.json",
+    "attack_config.json",
     "step_records.jsonl",
     "policy_intent_records.jsonl",
+    "privileged_teacher_sidecar.jsonl",
     "artifact_sha256.json",
 }
+DEFAULT_MATERIALIZER_CONFIG = REPO_ROOT / "configs" / "B3_RETENTION_PROTOCOL_V1.json"
 
 
 def sha256_file(path: Path) -> str:
@@ -118,14 +126,28 @@ def _identity_matches(metadata: dict[str, Any], identity: dict[str, Any]) -> boo
         return False
 
 
-def build_census(manifest_path: Path | None, source_root: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def build_census(
+    manifest_path: Path | None,
+    source_root: Path,
+    materializer_config_path: Path = DEFAULT_MATERIALIZER_CONFIG,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     identities = load_manifest(manifest_path)
     artifacts = _metadata_paths(source_root)
+    materializer_config_path = materializer_config_path.resolve()
+    materializer_config_sha = sha256_file(materializer_config_path)
     rows: list[dict[str, Any]] = []
     for identity in identities:
         key = identity["canonical_parent_key"]
         candidates = artifacts.get(key, [])
-        row = {**identity, "status": "MISSING", "artifact_root": "", "reason": "NO_CANONICAL_ARTIFACT"}
+        row = {
+            **identity,
+            "status": "MISSING",
+            "artifact_root": "",
+            "reason": "NO_CANONICAL_ARTIFACT",
+            "source_artifact_sha256": "",
+            "materializer_config_sha256": materializer_config_sha,
+            "dryrun_step_count": "",
+        }
         if len(candidates) > 1:
             row.update(status="PROTOCOL_HOLD", reason="DUPLICATE_CANONICAL_ARTIFACT")
         elif candidates:
@@ -144,27 +166,52 @@ def build_census(manifest_path: Path | None, source_root: Path) -> tuple[list[di
                 else:
                     missing = sorted(name for name in REQUIRED_FILES if not (artifact / name).is_file())
                     if missing:
-                        row.update(status="PROTOCOL_HOLD", reason="MISSING_STUDENT_ARTIFACT:" + ",".join(missing))
+                        row.update(status="RUNTIME_VALID_SOURCE_PRESENT", reason="MISSING_SOURCE_FILE:" + ",".join(missing))
                     else:
-                        row.update(status="RUNTIME_VALID_MATERIALIZABLE", reason="STUDENT_SOURCE_CONTRACT_PRESENT")
+                        try:
+                            dryrun = validate_materialization_inputs(
+                                artifact,
+                                materializer_config_path,
+                                mode="fit-label-materialization",
+                            )
+                            row.update(
+                                status="RUNTIME_VALID_MATERIALIZATION_DRYRUN_PASS",
+                                reason="MATERIALIZATION_DRYRUN_PASS",
+                                source_artifact_sha256=dryrun["source_artifact_sha256"],
+                                dryrun_step_count=dryrun["step_count"],
+                            )
+                        except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
+                            row.update(
+                                status="MATERIALIZATION_DRYRUN_HOLD",
+                                reason=f"MATERIALIZATION_DRYRUN_HOLD:{type(exc).__name__}:{exc}",
+                            )
             except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
                 row.update(status="PROTOCOL_HOLD", reason=f"METADATA_OR_RUNTIME_PARSE_ERROR:{type(exc).__name__}")
         rows.append(row)
 
     counts = Counter(row["status"] for row in rows)
+    materializable = counts.get("RUNTIME_VALID_MATERIALIZATION_DRYRUN_PASS", 0)
+    source_present = counts.get("RUNTIME_VALID_SOURCE_PRESENT", 0)
+    dryrun_holds = counts.get("MATERIALIZATION_DRYRUN_HOLD", 0)
     summary = {
         "schema": "B3_FIT_CENSUS_V1",
-        "status": "CENSUS_COMPLETE" if len(rows) == 800 and len({row["canonical_parent_key"] for row in rows}) == 800 else "HOLD",
+        "status": "IDENTITY_ACCOUNTING_COMPLETE" if len(rows) == 800 and len({row["canonical_parent_key"] for row in rows}) == 800 else "HOLD",
+        "identity_accounting_status": "COMPLETE" if len(rows) == 800 and len({row["canonical_parent_key"] for row in rows}) == 800 else "HOLD",
+        "training_input_status": "PASS" if materializable > 0 and source_present == 0 and dryrun_holds == 0 else "HOLD",
         "source_root": str(source_root.resolve()),
         "manifest": str(manifest_path.resolve()) if manifest_path else None,
+        "materializer_config": str(materializer_config_path),
+        "materializer_config_sha256": materializer_config_sha,
         "identity_count": len(rows),
         "unique_identity_count": len({row["canonical_parent_key"] for row in rows}),
+        "materializable_count": materializable,
         "status_counts": dict(sorted(counts.items())),
         "by_suite": {
             suite: dict(sorted(Counter(row["status"] for row in rows if row["suite"] == suite).items()))
             for suite in SUITES
         },
         "teacher_labels_read": False,
+        "teacher_source_sidecar_read": materializable > 0,
         "teacher_files_opened": False,
         "formal_training_ready": False,
         "formal_attack_ready": False,
@@ -176,7 +223,10 @@ def write_census(rows: list[dict[str, Any]], summary: dict[str, Any], output_roo
     if output_root.exists():
         raise ValueError(f"output root already exists; use a new census root: {output_root}")
     output_root.mkdir(parents=True, exist_ok=False)
-    fields = ["suite", "task_idx", "state_id", "canonical_parent_key", "split", "status", "reason", "artifact_root"]
+    fields = [
+        "suite", "task_idx", "state_id", "canonical_parent_key", "split", "status", "reason",
+        "artifact_root", "source_artifact_sha256", "materializer_config_sha256", "dryrun_step_count",
+    ]
     with (output_root / "B3_FIT_CENSUS_V1.csv").open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=fields)
         writer.writeheader()
@@ -195,12 +245,13 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--manifest", type=Path)
+    parser.add_argument("--materializer-config", type=Path, default=DEFAULT_MATERIALIZER_CONFIG)
     parser.add_argument("--output-root", type=Path, required=True)
     args = parser.parse_args()
-    rows, summary = build_census(args.manifest, args.source_root.resolve())
+    rows, summary = build_census(args.manifest, args.source_root.resolve(), args.materializer_config)
     write_census(rows, summary, args.output_root.resolve())
-    print(json.dumps({key: summary[key] for key in ("status", "identity_count", "status_counts")}, sort_keys=True))
-    return 0 if summary["status"] == "CENSUS_COMPLETE" else 2
+    print(json.dumps({key: summary[key] for key in ("status", "training_input_status", "identity_count", "status_counts")}, sort_keys=True))
+    return 0 if summary["identity_accounting_status"] == "COMPLETE" else 2
 
 
 if __name__ == "__main__":
