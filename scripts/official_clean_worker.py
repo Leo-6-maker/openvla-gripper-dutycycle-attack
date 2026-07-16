@@ -33,10 +33,18 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--manifest", required=True, type=Path)
     ap.add_argument("--output-root", required=True, type=Path)
     ap.add_argument("--upstream-root", required=True, type=Path)
+    ap.add_argument("--remediation-only", action="store_true")
     return ap.parse_args()
 
 
 args = parse_args()
+REMEDIATION_IDENTITIES = frozenset({
+    "libero_object/task_00/state_00",
+    "libero_spatial/task_00/state_00",
+    "libero_spatial/task_01/state_00",
+    "libero_goal/task_00/state_00",
+    "libero_10/task_00/state_00",
+})
 os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
 os.environ.setdefault("MUJOCO_GL", "egl")
 os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "flash_attention_2")
@@ -53,6 +61,7 @@ from gripper_attack.official_detector_features import (
     SC5StreamingFeatureAdapterV2,
 )
 from gripper_attack.official_openvla_adapter import OfficialOpenVLAActionAdapter
+from gripper_attack.official_generation_contract import validate_generation_contract
 
 
 def sha256_bytes(value: bytes) -> str:
@@ -144,6 +153,11 @@ def update_global_ledger(cell_id: str, status: str, *, result_status: str = "", 
 
 
 def seal(path: Path) -> str:
+    metadata_path = path / "episode_metadata.json"
+    if metadata_path.is_file():
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        if metadata.get("runtime_valid") is True:
+            validate_generation_contract(path)
     rows = []
     for item in sorted(path.rglob("*")):
         if not item.is_file() or item.name == "artifact_sha256.json":
@@ -238,7 +252,16 @@ def retryable_runtime_error(exc: Exception) -> bool:
 
 def load_rows() -> list[dict[str, str]]:
     with args.manifest.open(newline="", encoding="utf-8") as f:
-        rows = [dict(row) for row in csv.DictReader(f) if row["suite"] == args.suite]
+        all_rows = [dict(row) for row in csv.DictReader(f)]
+    if args.remediation_only:
+        actual = {row.get("canonical_parent_key", "") for row in all_rows}
+        if len(all_rows) != len(REMEDIATION_IDENTITIES) or actual != REMEDIATION_IDENTITIES:
+            raise SystemExit("REMEDIATION_MANIFEST_IDENTITY_FAIL")
+        rows = [row for row in all_rows if row.get("suite") == args.suite]
+        if not rows:
+            raise SystemExit(f"REMEDIATION_SUITE_MISSING {args.suite}")
+        return rows
+    rows = [row for row in all_rows if row["suite"] == args.suite]
     if len(rows) != 500:
         raise SystemExit(f"OFFICIAL_MANIFEST_SUITE_FAIL {args.suite}: {len(rows)}")
     return rows
@@ -344,6 +367,7 @@ def load_artifact_provenance() -> dict[str, object]:
         "official_openvla_adapter.py": sha256_file(source_root / "official_openvla_adapter.py"),
         "official_detector_features.py": sha256_file(source_root / "official_detector_features.py"),
         "official_clean_worker.py": sha256_file(Path(__file__).resolve()),
+        "official_generation_contract.py": sha256_file(source_root / "official_generation_contract.py"),
     }
     declared_source_files = payload.get("collector_source_sha256")
     if not isinstance(declared_source_files, dict):
@@ -456,6 +480,7 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
     step_rows: list[dict[str, object]] = []
     policy_intent_rows: list[dict[str, object]] = []
     privileged_rows: list[dict[str, object]] = []
+    generation_pass_counts: list[int] = []
     feature_stream = SC5StreamingFeatureAdapterV2()
     try:
         eef_site = env.sim.model.site_name2id("gripper0_grip_site")
@@ -493,6 +518,10 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
             clean_action, generation, score_meta = adapter.predict_action_with_scores(image, str(task.language))
             score_action = np.asarray(score_meta["score_action"], dtype=np.float32)
             action_error = float(score_meta["score_adapter_action_max_abs_error"])
+            generation_passes = score_meta.get("generation_passes_per_step")
+            if isinstance(generation_passes, bool) or not isinstance(generation_passes, int) or generation_passes != 1:
+                raise RuntimeError(f"OFFICIAL_GENERATION_PASS_COUNT_FAIL:{generation_passes}")
+            generation_pass_counts.append(generation_passes)
             if action_error > 1e-6 or score_meta.get("single_generation_parity_pass") is not True:
                 raise RuntimeError(f"SINGLE_GENERATION_ACTION_PARITY_FAIL:{action_error:.9g}")
             env_action = adapter.postprocess(clean_action)
@@ -550,7 +579,7 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
                 "score_adapter_action_max_abs_error": action_error,
                 "score_adapter_parity_pass": bool(action_error <= 1e-6),
                 "single_generation_parity_pass": True,
-                "generation_passes_per_step": 1,
+                "generation_passes_per_step": generation_passes,
                 "score_head_summary": score_summary,
                 "prompt": score_meta["prompt"],
             })
@@ -564,7 +593,7 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
                 "score_head_summary": score_summary,
                 "score_adapter_parity_pass": bool(action_error <= 1e-6),
                 "single_generation_parity_pass": True,
-                "generation_passes_per_step": 1,
+                "generation_passes_per_step": generation_passes,
             })
             obs, _reward, done, _info = env.step(env_action.tolist())
             if done:
@@ -574,6 +603,10 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
             success = bool(env.check_success())
     finally:
         env.close()
+
+    if not generation_pass_counts or any(count != 1 for count in generation_pass_counts):
+        raise RuntimeError("OFFICIAL_GENERATION_PASS_CONTRACT_FAIL")
+    generation_passes_per_step = generation_pass_counts[0]
 
     meta = {
         "schema": "OPENVLA_OFFICIAL_CLEAN_EPISODE_V2",
@@ -599,7 +632,7 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
         "official_execution_adapter": "OfficialOpenVLAActionAdapter.predict_action",
         "score_adapter": "OfficialOpenVLAActionAdapter.predict_action_with_scores",
         "single_generation_parity_pass": True,
-        "generation_passes_per_step": 1,
+        "generation_passes_per_step": generation_passes_per_step,
         "policy_intent_records": "policy_intent_records.jsonl",
         "privileged_teacher_sidecar": "privileged_teacher_sidecar.jsonl",
         "feature_names_25d": list(CANONICAL_25D_FEATURES),
@@ -620,7 +653,7 @@ def run_episode(adapter, task, initial_state, row: dict[str, str], out: Path, mo
         "exception": "",
         "official_horizon": horizon,
         "env_reset_called": True,
-        "generation_passes_per_step": 1,
+        "generation_passes_per_step": generation_passes_per_step,
         "single_generation_parity_pass": True,
     })
     write_json(out / "condition_config.json", {"condition": "CLEAN", "protocol_id": "OPENVLA_LIBERO_OFFICIAL_V1"})
