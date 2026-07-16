@@ -1,0 +1,14 @@
+{
+  "schema": "B3_CAUSAL_25D_S1_MATERIALIZATION_V1",
+  "status": "PREPARATION_ONLY",
+  "source_protocol": "B3_RETENTION_PROTOCOL_V1.json",
+  "feature_contract": "B3_CAUSAL_25D_MULTIEVENT_V1.json",
+  "fit_state_range": [0, 19],
+  "student_policy_intent_read": false,
+  "student_stream": "25D_CAUSAL_ONLY",
+  "teacher_stream": "SEPARATE_PRIVILEGED_RECONSTRUCTION",
+  "teacher_event_stream": "SEPARATE_FILE",
+  "unknown_is_negative": false,
+  "formal_training_authorized": false,
+  "attack_authorized": false
+}
