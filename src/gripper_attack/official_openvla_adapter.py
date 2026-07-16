@@ -76,9 +76,12 @@ class OfficialOpenVLAActionAdapter:
             base_vla_name=self.base_vla_name,
         )
         captured: dict[str, Any] = {}
+        generation_passes = 0
         original_generate = self.model.generate
 
         def observe_generate(*args: Any, **kwargs: Any) -> Any:
+            nonlocal generation_passes
+            generation_passes += 1
             result = original_generate(*args, **kwargs)
             captured["generation"] = result
             return result
@@ -89,6 +92,8 @@ class OfficialOpenVLAActionAdapter:
         finally:
             self.model.generate = original_generate
 
+        if generation_passes != 1:
+            raise RuntimeError(f"OFFICIAL_GENERATION_PASS_COUNT_FAIL:{generation_passes}")
         generation = captured.get("generation")
         if generation is None:
             raise RuntimeError("OFFICIAL_UNINSTRUMENTED_CAPTURE_MISSING")
@@ -100,6 +105,7 @@ class OfficialOpenVLAActionAdapter:
             "generation": generation,
             "tokens": tokens,
             "observed_official_kwargs": True,
+            "generation_passes_per_step": generation_passes,
         }
 
     def predict_action_with_scores(
@@ -120,9 +126,12 @@ class OfficialOpenVLAActionAdapter:
             base_vla_name=self.base_vla_name,
         )
         captured: dict[str, Any] = {}
+        generation_passes = 0
         original_generate = self.model.generate
 
         def capture_generate(*args: Any, **kwargs: Any) -> Any:
+            nonlocal generation_passes
+            generation_passes += 1
             kwargs["return_dict_in_generate"] = True
             kwargs["output_scores"] = True
             result = original_generate(*args, **kwargs)
@@ -135,6 +144,8 @@ class OfficialOpenVLAActionAdapter:
         finally:
             self.model.generate = original_generate
 
+        if generation_passes != 1:
+            raise RuntimeError(f"OFFICIAL_GENERATION_PASS_COUNT_FAIL:{generation_passes}")
         generation = captured.get("generation")
         if generation is None or not hasattr(generation, "sequences"):
             raise RuntimeError("OFFICIAL_SINGLE_GENERATION_CAPTURE_MISSING")
@@ -154,7 +165,7 @@ class OfficialOpenVLAActionAdapter:
             "captured_action_token_ids": tokens,
             "tokens": tokens,
             "captured_score_count": len(scores),
-            "generation_passes_per_step": 1,
+            "generation_passes_per_step": generation_passes,
             "single_generation_parity_pass": True,
             "score_adapter_action_max_abs_error": action_error,
             "single_generation": True,
