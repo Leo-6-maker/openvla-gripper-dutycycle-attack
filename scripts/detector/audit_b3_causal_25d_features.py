@@ -446,6 +446,20 @@ def run(
             ),
         }
 
+    by_split = {}
+    for split_name, (lo, hi) in {
+        "FIT_TRAIN": (0, 19), "FIT_DEV": (20, 23), "CAL": (24, 26), "CHECK": (27, 29)
+    }.items():
+        group = [row for row in records if lo <= int(row.get("state_id", -1)) <= hi]
+        passed = sum(row.get("status") == "PASS" for row in group)
+        by_split[split_name] = {
+            "state_range": [lo, hi],
+            "identities": len(group),
+            "pass": passed,
+            "hold": len(group) - passed,
+            "status": "PASS" if group and passed == len(group) else ("NOT_INCLUDED" if not group else "HOLD"),
+        }
+
     summary = {
         "schema": "B3_CAUSAL_25D_FEATURE_AUDIT_V2",
         "source_root": str(source_root),
@@ -463,6 +477,7 @@ def run(
         "forbidden_student_field_count": sum(name in STUDENT_FORBIDDEN_FEATURE_NAMES for name in FEATURE_NAMES),
         "by_suite": by_suite,
         "by_task": by_task,
+        "by_split": by_split,
         "l10_command_event_breakdown": l10_by_task,
         "canonical_manifest_sha256": manifest_sha,
         "canonical_global_audit_sha256": global_audit_sha,
