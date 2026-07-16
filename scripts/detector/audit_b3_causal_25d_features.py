@@ -323,28 +323,34 @@ def audit_artifact(artifact: Path, source_root: Path, expected: dict) -> dict:
         invariants = semantic_invariants(rebuilt)
         parity = robot_parity_summary(records)
         after_scope = source_read_scope_sha(artifact)
+        feature_order_bound = bool(
+            result["metadata_identity_contract_pass"]
+            and all(row.get("feature_order_bound") for row in valid_rows)
+        )
+        feature_valid_pass = len(valid_rows) == len(rebuilt["rows"])
+        source_scope_unchanged = before_scope == after_scope
         result.update({
-            "feature_order_bound": bool(result["metadata_identity_contract_pass"] and all(row.get("feature_order_bound") for row in valid_rows)),
+            "feature_order_bound": feature_order_bound,
             **parity,
-            "feature_valid_pass": len(valid_rows) == len(rebuilt["rows"]),
+            "feature_valid_pass": feature_valid_pass,
             "student_projection_pass": student_pass,
             "step_count": len(rebuilt["rows"]),
             "valid_feature_rows": len(valid_rows),
             "invalid_feature_rows": len(rebuilt["rows"]) - len(valid_rows),
             "source_read_scope_before": before_scope,
             "source_read_scope_after": after_scope,
-            "source_read_scope_unchanged": before_scope == after_scope,
+            "source_read_scope_unchanged": source_scope_unchanged,
             "feature_order_sha256": LEGACY_SOURCE_FEATURE_ORDER_SHA256,
             **{key: value for key, value in invariants.items() if key != "violations"},
             "semantic_invariant_violations": invariants["violations"],
             "status": "PASS" if (
                 result["metadata_identity_contract_pass"]
                 and result["checksum_closed"]
-                and result["feature_order_bound"]
-                and result["robot_alias_parity_pass"]
-                and result["feature_valid_pass"]
+                and feature_order_bound
+                and parity["robot_alias_parity_pass"]
+                and feature_valid_pass
                 and result["student_projection_pass"]
-                and result["source_read_scope_unchanged"]
+                and source_scope_unchanged
                 and not invariants["violations"]
             ) else "HOLD",
         })
