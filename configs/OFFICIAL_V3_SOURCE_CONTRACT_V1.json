@@ -1,0 +1,118 @@
+{
+  "schema": "OFFICIAL_V3_SOURCE_CONTRACT_V1",
+  "status": "PREPARATION_ONLY",
+  "official_protocol_id": "OPENVLA_LIBERO_OFFICIAL_V1",
+  "source_artifact_schemas": [
+    "OPENVLA_OFFICIAL_CLEAN_EPISODE_V2",
+    "OPENVLA_OFFICIAL_CLEAN_EPISODE_V3"
+  ],
+  "num_tasks_per_suite": 10,
+  "num_trials_per_task": 50,
+  "num_steps_wait": 10,
+  "action_dimension": 7,
+  "generation_passes_per_valid_step": 1,
+  "official_horizons": {
+    "libero_spatial": 220,
+    "libero_object": 280,
+    "libero_goal": 300,
+    "libero_10": 520
+  },
+  "execution_chain": [
+    "model.predict_action",
+    "normalize_gripper_action",
+    "invert_gripper_action",
+    "env.step"
+  ],
+  "feature_names_25d": [
+    "gripper_command", "gripper_qpos", "gripper_opening_proxy",
+    "eef_x", "eef_y", "eef_z", "eef_vx", "eef_vy", "eef_vz",
+    "action_dx", "action_dy", "action_dz", "action_gripper",
+    "recent_close_streak", "recent_open_streak", "recent_gripper_flip_count",
+    "close_onset", "time_since_close", "eef_speed",
+    "eef_z_delta_since_close", "qpos_delta_1", "qpos_delta_3",
+    "opening_proxy_delta_3", "opening_proxy_variance_5", "eef_speed_variance_5"
+  ],
+  "feature_order_sha256": "3d1101d26567a41bf688587a70c5100a3629ad62f12f9568947ee178a8a63366",
+  "policy_intent_feature_names_9d": [
+    "clean_open_probability_mass",
+    "clean_close_probability_mass",
+    "clean_open_minus_close_log_mass",
+    "clean_action_token_entropy_normalized",
+    "clean_top1_probability",
+    "clean_top1_is_open",
+    "clean_top1_is_close",
+    "clean_best_open_rank_normalized",
+    "clean_best_close_rank_normalized"
+  ],
+  "policy_intent_order_sha256": "9e2bcc3278f6e8514a73d0ba56a55470f18a094eba7602cbe3dacebacd5504f4",
+  "stream_files": [
+    "step_records.jsonl",
+    "policy_intent_records.jsonl",
+    "privileged_teacher_sidecar.jsonl"
+  ],
+  "required_files": [
+    "episode_metadata.json",
+    "episode_summary.json",
+    "runtime_audit.json",
+    "condition_config.json",
+    "attack_config.json",
+    "step_records.jsonl",
+    "policy_intent_records.jsonl",
+    "privileged_teacher_sidecar.jsonl",
+    "artifact_sha256.json",
+    "worker_start_manifest.json",
+    "worker_start_manifest.json.sha256"
+  ],
+  "required_provenance_fields": [
+    "slot_id",
+    "gpu_id",
+    "pid",
+    "started_at",
+    "collector_head",
+    "worktree_clean",
+    "worker_script_sha256",
+    "adapter_sha256",
+    "protocol_sha256",
+    "config_sha256",
+    "queue_epoch_sha256",
+    "model_tree_sha256",
+    "processor_tree_sha256",
+    "python_version",
+    "torch_version",
+    "transformers_version",
+    "supervisor_archive_commit",
+    "provenance_class"
+  ],
+  "parity_tolerances": {
+    "action": 1e-6,
+    "qpos": 1e-6,
+    "eef_m": 1e-3
+  },
+  "identity_split": {
+    "FIT_TRAIN": [0, 19],
+    "FIT_DEV": [20, 23],
+    "CAL": [24, 26],
+    "CHECK": [27, 29],
+    "FINAL_EVAL_CANDIDATE": [30, 49]
+  },
+  "expected_identity_count": 2000,
+  "expected_fit_train_count": 800,
+  "worker_slots": [
+    {"slot_id": "official_v3_object_gpu0", "gpu_id": 0},
+    {"slot_id": "official_v3_spatial_gpu1", "gpu_id": 1},
+    {"slot_id": "official_v3_goal_gpu2", "gpu_id": 2},
+    {"slot_id": "official_v3_l10_gpu3", "gpu_id": 3},
+    {"slot_id": "official_v3_helper_e_gpu4", "gpu_id": 4},
+    {"slot_id": "official_v3_helper_f_gpu5", "gpu_id": 5},
+    {"slot_id": "official_v3_helper_a_gpu6", "gpu_id": 6},
+    {"slot_id": "official_v3_helper_b_gpu6", "gpu_id": 6},
+    {"slot_id": "official_v3_helper_c_gpu6", "gpu_id": 6},
+    {"slot_id": "official_v3_helper_d_gpu6", "gpu_id": 6},
+    {"slot_id": "official_v3_helper_a_gpu7", "gpu_id": 7},
+    {"slot_id": "official_v3_helper_b_gpu7", "gpu_id": 7},
+    {"slot_id": "official_v3_helper_c_gpu7", "gpu_id": 7},
+    {"slot_id": "official_v3_helper_d_gpu7", "gpu_id": 7}
+  ],
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}

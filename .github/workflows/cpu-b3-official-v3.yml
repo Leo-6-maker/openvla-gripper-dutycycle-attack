@@ -1,0 +1,33 @@
+name: cpu-b3-official-v3
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  source-registry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install package and test deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest numpy pillow
+      - name: Compile Official V3 source tools
+        run: |
+          python -m py_compile \
+            src/gripper_attack/official_v3_contract.py \
+            scripts/official_v3/audit_official_v3_artifact.py \
+            scripts/official_v3/build_official_v3_formal_registry.py \
+            scripts/official_v3/audit_official_v3_incremental_snapshot.py \
+            scripts/official_v3/audit_official_v3_worker_strata.py
+      - name: Run synthetic Official V3 source tests
+        run: pytest -q tests/test_official_v3_source_registry.py
+      - name: Check patch whitespace
+        run: git diff --check
