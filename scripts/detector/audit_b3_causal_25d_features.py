@@ -19,7 +19,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(SCRIPT_PATH.parent))
 
 from audit_b3_legacy_generation_evidence import _checksum_ok  # noqa: E402
-from b3_causal_25d import (  # noqa: E402
+from gripper_attack.b3_causal_25d import (  # noqa: E402
     ACTION_PARITY_TOLERANCE,
     B3Causal25DMultieventV1,
     FEATURE_NAMES,
