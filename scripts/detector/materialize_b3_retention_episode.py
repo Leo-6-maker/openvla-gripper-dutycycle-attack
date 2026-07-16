@@ -295,6 +295,14 @@ def load_protocol_config(config_path: Path) -> tuple[dict[str, Any], RetentionCo
         raise ValueError("frozen 25D feature order is missing")
     if not isinstance(policy_names, list) or len(policy_names) != 9:
         raise ValueError("frozen 9D policy feature order is missing")
+    score_adapters = payload.get("official_score_adapter_identifiers")
+    if (
+        not isinstance(score_adapters, list)
+        or not score_adapters
+        or any(not isinstance(name, str) or not name for name in score_adapters)
+        or len(set(score_adapters)) != len(score_adapters)
+    ):
+        raise ValueError("official score adapter identifiers are not fully frozen")
     return payload, config
 
 
@@ -340,8 +348,9 @@ def verify_source_contract(
             raise ValueError(f"source contract field {key} is not verified")
     if meta.get("official_execution_adapter") != "OfficialOpenVLAActionAdapter.predict_action":
         raise ValueError("official execution adapter is not predict_action")
-    if meta.get("score_adapter") != "OfficialOpenVLAActionAdapter.predict_action_with_scores":
-        raise ValueError("official score adapter is not the instrumented predict_action path")
+    allowed_score_adapters = protocol.get("official_score_adapter_identifiers", [])
+    if meta.get("score_adapter") not in allowed_score_adapters:
+        raise ValueError("official score adapter is not an allowed instrumented predict_action path")
     if meta.get("generation_passes_per_step") != 1:
         raise ValueError("generation passes per step is not exactly one")
 

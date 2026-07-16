@@ -35,7 +35,12 @@ def _reseal(root: Path) -> None:
     _write_json(root / "artifact_sha256.json", {"files": rows, "recursive_sha256": json_sha(rows)})
 
 
-def _build_source_artifact(root: Path, *, steps: int = 18) -> None:
+def _build_source_artifact(
+    root: Path,
+    *,
+    steps: int = 18,
+    score_adapter: str = "OfficialOpenVLAActionAdapter.predict_action_with_scores",
+) -> None:
     root.mkdir()
     _write_json(root / "episode_metadata.json", {
         "schema": "OPENVLA_OFFICIAL_CLEAN_EPISODE_V2",
@@ -51,7 +56,7 @@ def _build_source_artifact(root: Path, *, steps: int = 18) -> None:
         "split": "FIT",
         "initial_state_sha256": "a" * 64,
         "official_execution_adapter": "OfficialOpenVLAActionAdapter.predict_action",
-        "score_adapter": "OfficialOpenVLAActionAdapter.predict_action_with_scores",
+        "score_adapter": score_adapter,
         "env_success": False,
         "success": False,
         "feature_names_25d": _protocol()["feature_names_25d"],
@@ -170,6 +175,34 @@ def test_compatibility_mode_does_not_materialize_teacher(tmp_path: Path):
     assert result["status"] == "PASS"
     assert not (output / "teacher_retention_records.jsonl").exists()
     assert not (output / "retention_events.json").exists()
+
+
+@pytest.mark.parametrize(
+    "score_adapter",
+    [
+        "OfficialOpenVLAScoreAdapter.generate_same_inputs",
+        "OfficialOpenVLAActionAdapter.predict_action_with_scores",
+    ],
+)
+def test_materializer_accepts_only_frozen_official_score_adapter_identifiers(
+    tmp_path: Path, score_adapter: str
+):
+    source = tmp_path / "episode"
+    _build_source_artifact(source, score_adapter=score_adapter)
+
+    config = Path(__file__).parents[1] / "configs" / "B3_RETENTION_PROTOCOL_V1.json"
+    manifest = materialize(source, tmp_path / "materialized", config)
+
+    assert manifest["mode"] == "compatibility-only"
+
+
+def test_materializer_rejects_unregistered_score_adapter_identifier(tmp_path: Path):
+    source = tmp_path / "episode"
+    _build_source_artifact(source, score_adapter="unregistered.score.adapter")
+
+    config = Path(__file__).parents[1] / "configs" / "B3_RETENTION_PROTOCOL_V1.json"
+    with pytest.raises(ValueError, match="allowed instrumented predict_action path"):
+        materialize(source, tmp_path / "materialized", config)
 
 
 @pytest.mark.parametrize("mode", ["compatibility-only", "fit-label-materialization"])
