@@ -45,8 +45,8 @@ LEGACY_SOURCE_FEATURE_ORDER_SHA256 = hashlib.sha256(
 ACTION_PARITY_TOLERANCE = 1e-6
 ROBOT_QPOS_PARITY_TOLERANCE = 1e-6
 # EEF sidecar values and the stored 25D observation can come from separate
-# float32 observation paths.  Keep this explicit and tighter than the
-# existing materializer's 1e-3 EEF observation/site contract.
+# float32 observation paths.  Keep the existing materializer's explicit 1e-3
+# EEF observation/site contract; action and qpos parity remain at 1e-6.
 ROBOT_EEF_PARITY_TOLERANCE = 1e-3
 STUDENT_ALLOWED_KEYS = frozenset({"schema", "source_schema", "valid", "features_25d"})
 STUDENT_FORBIDDEN_FEATURE_NAMES = frozenset({
