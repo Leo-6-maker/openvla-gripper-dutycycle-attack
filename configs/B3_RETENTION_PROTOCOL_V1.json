@@ -3,6 +3,10 @@
   "status": "PREPARATION_ONLY",
   "upstream_action_path": "OPENVLA_LIBERO_OFFICIAL_V1",
   "official_protocol_id": "OPENVLA_LIBERO_OFFICIAL_V1",
+  "official_score_adapter_identifiers": [
+    "OfficialOpenVLAScoreAdapter.generate_same_inputs",
+    "OfficialOpenVLAActionAdapter.predict_action_with_scores"
+  ],
   "num_steps_wait": 10,
   "official_horizons": {
     "libero_spatial": 220,
