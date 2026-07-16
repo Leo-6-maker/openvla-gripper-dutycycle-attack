@@ -12,6 +12,8 @@ from gripper_attack.b3_causal_25d import (  # noqa: E402
     B3Causal25DMultieventV1,
     Causal25DConfig,
     FEATURE_NAMES,
+    LEGACY_SOURCE_FEATURE_NAMES_25D,
+    serialize_student_25d,
 )
 
 
@@ -24,6 +26,8 @@ def _record(step: int, close: bool, *, valid: bool = True) -> dict:
         "raw_close": close,
         "raw_gripper": raw,
         "env_gripper": env,
+        "action_raw": [0.01, 0.0, 0.001, 0.0, 0.0, 0.0, raw],
+        "action_env": [0.01, 0.0, 0.001, 0.0, 0.0, 0.0, env],
         "gripper_command": raw,
         "gripper_qpos": 0.10 if close else 0.40,
         "gripper_opening_proxy": 0.10 if close else 0.40,
@@ -102,6 +106,71 @@ def test_student_vector_excludes_event_identity_and_teacher_fields():
     assert "event_id" not in FEATURE_NAMES
     assert "event_ordinal" not in FEATURE_NAMES
     assert "teacher_label" not in FEATURE_NAMES
+
+
+def test_three_events_have_contiguous_ids():
+    records = []
+    step = 0
+    for _ in range(3):
+        for close, count in ((False, 3), (True, 3), (False, 3)):
+            for _ in range(count):
+                records.append(_record(step, close))
+                step += 1
+    result = B3Causal25DMultieventV1().rebuild(records)
+    assert [event["event_id"] for event in result["events"]] == [0, 1, 2]
+
+
+def test_raw_close_cannot_synthesize_actions():
+    row = B3Causal25DMultieventV1().update({"step": 0, "raw_close": True})
+    assert row["valid"] is False
+    assert row["features_25d"] is None
+
+
+def test_feature_vector_order_length_and_named_parity_are_bound():
+    record = _record(0, False)
+    vector = [0.0] * 25
+    for index, name in enumerate(LEGACY_SOURCE_FEATURE_NAMES_25D[:13]):
+        vector[index] = record[name]
+    record["features_25d"] = vector
+    record["feature_names_25d"] = list(LEGACY_SOURCE_FEATURE_NAMES_25D)
+    record["feature_order_sha256"] = "3d1101d26567a41bf688587a70c5100a3629ad62f12f9568947ee178a8a63366"
+    assert B3Causal25DMultieventV1().update(record)["valid"] is True
+
+    bad_length = dict(record, features_25d=vector[:-1])
+    assert B3Causal25DMultieventV1().update(bad_length)["valid"] is False
+    bad_order = dict(record, feature_names_25d=list(reversed(LEGACY_SOURCE_FEATURE_NAMES_25D)))
+    assert B3Causal25DMultieventV1().update(bad_order)["valid"] is False
+    bad_hash = dict(record, feature_order_sha256="0" * 64)
+    assert B3Causal25DMultieventV1().update(bad_hash)["valid"] is False
+    bad_named = dict(record, features_25d=[1.0] + vector[1:])
+    assert B3Causal25DMultieventV1().update(bad_named)["valid"] is False
+
+
+def test_robot_sidecar_parity_is_fail_closed():
+    record = _record(0, False)
+    record["robot0_gripper_qpos"] = [0.9, 0.9]
+    row = B3Causal25DMultieventV1().update(record)
+    assert row["valid"] is False
+
+
+def test_raw_and_env_arm_vectors_must_match():
+    record = _record(0, False)
+    record["action_env"] = [0.02, 0.0, 0.001, 0.0, 0.0, 0.0, -1.0]
+    row = B3Causal25DMultieventV1().update(record)
+    assert row["valid"] is False
+
+
+def test_student_serializer_rejects_side_channels():
+    adapter = B3Causal25DMultieventV1()
+    row = adapter.update(_record(0, False))
+    student = {key: row[key] for key in ("schema", "source_schema", "valid", "features_25d")}
+    assert len(serialize_student_25d(student)) == 25
+    try:
+        serialize_student_25d(row)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("student serializer accepted event side channels")
 
 
 if __name__ == "__main__":

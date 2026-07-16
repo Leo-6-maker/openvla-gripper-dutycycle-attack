@@ -1,14 +1,16 @@
 """Offline reconstruction of event-local causal 25D features.
 
-This is deliberately separate from ``SC5StreamingFeatureAdapterV2``.  The
-legacy adapter remains unchanged for provenance; this version resets event
-local state after hysteresis release and uses a rolling flip window.
+This module is deliberately separate from ``SC5StreamingFeatureAdapterV2``.
+The legacy adapter remains unchanged for provenance; this version resets
+event-local state after hysteresis release and uses a rolling flip window.
 """
 
 from __future__ import annotations
 
 from collections import deque
 from dataclasses import dataclass
+import hashlib
+import json
 from math import isfinite, sqrt
 from statistics import pvariance
 from typing import Any, Iterable
@@ -25,6 +27,34 @@ FEATURE_NAMES = (
     "eef_z_delta_since_close", "qpos_delta_1", "qpos_delta_3",
     "opening_proxy_delta_3", "opening_proxy_variance_5", "eef_speed_variance_5",
 )
+
+# This is the frozen order stored by the Official CLEAN artifacts.  It is an
+# input binding only; the old event-local values are never copied into B3.
+LEGACY_SOURCE_FEATURE_NAMES_25D = (
+    "gripper_command", "gripper_qpos", "gripper_opening_proxy",
+    "eef_x", "eef_y", "eef_z", "eef_vx", "eef_vy", "eef_vz",
+    "action_dx", "action_dy", "action_dz", "action_gripper",
+    "recent_close_streak", "recent_open_streak", "recent_gripper_flip_count",
+    "close_onset", "time_since_close", "eef_speed",
+    "eef_z_delta_since_close", "qpos_delta_1", "qpos_delta_3",
+    "opening_proxy_delta_3", "opening_proxy_variance_5", "eef_speed_variance_5",
+)
+LEGACY_SOURCE_FEATURE_ORDER_SHA256 = hashlib.sha256(
+    json.dumps(list(LEGACY_SOURCE_FEATURE_NAMES_25D), separators=(",", ":")).encode()
+).hexdigest()
+ACTION_PARITY_TOLERANCE = 1e-6
+ROBOT_QPOS_PARITY_TOLERANCE = 1e-6
+# EEF sidecar values and the stored 25D observation can come from separate
+# float32 observation paths.  Keep this explicit and tighter than the
+# existing materializer's 1e-3 EEF observation/site contract.
+ROBOT_EEF_PARITY_TOLERANCE = 1e-3
+STUDENT_ALLOWED_KEYS = frozenset({"schema", "source_schema", "valid", "features_25d"})
+STUDENT_FORBIDDEN_FEATURE_NAMES = frozenset({
+    "event_id", "event_ordinal", "teacher_label", "task_id", "state_id",
+    "normalized_step", "suite", "task_language", "success", "env_success",
+    "object_state", "mujoco_contact_pairs", "attack_outcome", "event_active",
+    "release_onset", "released_event_id", "event_local_state_reset",
+})
 
 
 @dataclass(frozen=True)
@@ -47,31 +77,110 @@ def _number(value: Any) -> float | None:
     return value if isfinite(value) else None
 
 
-def _last_vector(record: dict[str, Any], names: tuple[str, ...]) -> float | None:
+def _vector(record: dict[str, Any], name: str, minimum_length: int) -> list[float] | None:
+    if name not in record:
+        return None
+    value = record[name]
+    if not isinstance(value, (list, tuple)) or len(value) < minimum_length:
+        raise ValueError(f"{name} must be a vector of length >= {minimum_length}")
+    values = [_number(item) for item in value]
+    if any(item is None for item in values):
+        raise ValueError(f"{name} contains a non-finite value")
+    return [float(item) for item in values]
+
+
+def _measured_action(record: dict[str, Any], names: tuple[str, ...], label: str) -> list[float]:
+    candidates = []
     for name in names:
-        value = record.get(name)
-        if isinstance(value, (list, tuple)) and value:
-            number = _number(value[-1])
-            if number is not None:
-                return number
-    return None
+        values = _vector(record, name, 7)
+        if values is not None:
+            if len(values) != 7:
+                raise ValueError(f"{name} must contain exactly 7 action values")
+            candidates.append((name, values))
+    if not candidates:
+        raise ValueError(f"missing measured {label} action vector")
+    reference = candidates[0][1]
+    for name, values in candidates[1:]:
+        if max(abs(a - b) for a, b in zip(reference, values)) > ACTION_PARITY_TOLERANCE:
+            raise ValueError(f"{label} action aliases disagree: {candidates[0][0]} vs {name}")
+    return reference
 
 
 def _scalar(record: dict[str, Any], names: tuple[str, ...]) -> float | None:
     for name in names:
-        number = _number(record.get(name))
-        if number is not None:
+        if name in record:
+            number = _number(record[name])
+            if number is None:
+                raise ValueError(f"{name} is not finite")
             return number
     return None
 
 
-def _feature_value(record: dict[str, Any], index: int, names: tuple[str, ...]) -> float | None:
-    vector = record.get("features_25d")
-    if isinstance(vector, (list, tuple)) and len(vector) >= 13:
-        number = _number(vector[index])
-        if number is not None:
-            return number
-    return _scalar(record, names)
+def _feature_vector(record: dict[str, Any]) -> tuple[float, ...] | None:
+    if "features_25d" not in record:
+        return None
+    vector = record["features_25d"]
+    if not isinstance(vector, (list, tuple)) or len(vector) != 25:
+        raise ValueError("features_25d must have exactly 25 values")
+    names = record.get("feature_names_25d")
+    if list(names or ()) != list(LEGACY_SOURCE_FEATURE_NAMES_25D):
+        raise ValueError("features_25d feature order is not bound to the frozen legacy order")
+    order_sha = record.get("feature_order_sha256")
+    if order_sha != LEGACY_SOURCE_FEATURE_ORDER_SHA256:
+        raise ValueError("features_25d feature order SHA256 mismatch")
+    values = tuple(_number(item) for item in vector)
+    if any(item is None for item in values):
+        raise ValueError("features_25d contains a non-finite value")
+    return tuple(float(item) for item in values)
+
+
+def _named_value(record: dict[str, Any], names: tuple[str, ...]) -> float | None:
+    values = []
+    for name in names:
+        if name in record:
+            number = _number(record[name])
+            if number is None:
+                raise ValueError(f"{name} is not finite")
+            values.append((name, number))
+    if not values:
+        return None
+    reference = values[0][1]
+    for name, value in values[1:]:
+        if abs(reference - value) > ACTION_PARITY_TOLERANCE:
+            raise ValueError(f"named feature aliases disagree: {values[0][0]} vs {name}")
+    return reference
+
+
+def _direct_value(
+    record: dict[str, Any],
+    vector: tuple[float, ...] | None,
+    index: int,
+    names: tuple[str, ...],
+) -> float | None:
+    vector_value = None if vector is None else vector[index]
+    named_value = _named_value(record, names)
+    if vector_value is not None and named_value is not None and abs(vector_value - named_value) > ACTION_PARITY_TOLERANCE:
+        raise ValueError(f"features_25d vs named field mismatch for {names[0]}")
+    return vector_value if vector_value is not None else named_value
+
+
+def _sidecar_vector(record: dict[str, Any], name: str, length: int) -> list[float] | None:
+    if name not in record:
+        return None
+    values = _vector(record, name, length)
+    assert values is not None
+    return values[:length]
+
+
+def _parity_or_fallback(
+    direct: float | None,
+    sidecar: float | None,
+    name: str,
+    tolerance: float = ACTION_PARITY_TOLERANCE,
+) -> float | None:
+    if direct is not None and sidecar is not None and abs(direct - sidecar) > tolerance:
+        raise ValueError(f"{name} step/sidecar parity mismatch")
+    return direct if direct is not None else sidecar
 
 
 def _normalise_record(record: dict[str, Any], fallback_step: int) -> dict[str, Any]:
@@ -81,27 +190,29 @@ def _normalise_record(record: dict[str, Any], fallback_step: int) -> dict[str, A
     except (TypeError, ValueError) as exc:
         raise ValueError(f"invalid step: {step_value!r}") from exc
 
-    raw = _last_vector(record, ("clean_action_raw_7d", "action_raw_7d", "action_raw"))
-    env = _last_vector(record, ("applied_action_7d", "action_env"))
-    explicit_close = record.get("raw_close")
-    if raw is None:
-        raw = _scalar(record, ("raw_gripper", "gripper_command"))
-    if env is None:
-        env = _scalar(record, ("env_gripper",))
-    if raw is None and isinstance(explicit_close, bool):
-        raw = 0.0 if explicit_close else 1.0
-    if env is None and isinstance(explicit_close, bool):
-        env = 1.0 if explicit_close else -1.0
-    if raw is None or env is None:
-        raise ValueError("missing raw/env gripper action")
-
+    # These must be measured action vectors.  raw_close is a consistency check
+    # only and is never a source for raw/env action values.
+    raw_action = _measured_action(record, ("clean_action_raw_7d", "action_raw_7d", "action_raw"), "raw")
+    env_action = _measured_action(record, ("applied_action_7d", "action_env"), "env")
+    if max(abs(raw_action[index] - env_action[index]) for index in range(6)) > ACTION_PARITY_TOLERANCE:
+        raise ValueError("raw/env arm action mismatch")
+    raw = raw_action[-1]
+    env = env_action[-1]
     raw_close = raw <= 0.5
     env_close = env > 0.0
     if raw_close != env_close:
         raise ValueError("raw/env gripper semantics mismatch")
-    if isinstance(explicit_close, bool) and explicit_close != raw_close:
-        raise ValueError("raw_close contradicts raw action")
+    explicit_close = record.get("raw_close")
+    if explicit_close is not None and (not isinstance(explicit_close, bool) or explicit_close != raw_close):
+        raise ValueError("raw_close contradicts measured raw action")
+    recorded_raw = _scalar(record, ("raw_gripper",))
+    if recorded_raw is not None and abs(recorded_raw - raw) > ACTION_PARITY_TOLERANCE:
+        raise ValueError("raw_gripper vs measured raw action mismatch")
+    recorded_env = _scalar(record, ("env_gripper",))
+    if recorded_env is not None and abs(recorded_env - env) > ACTION_PARITY_TOLERANCE:
+        raise ValueError("env_gripper vs measured env action mismatch")
 
+    vector = _feature_vector(record)
     direct_specs = (
         (0, ("gripper_command",)),
         (1, ("gripper_qpos",)),
@@ -111,35 +222,37 @@ def _normalise_record(record: dict[str, Any], fallback_step: int) -> dict[str, A
         (9, ("action_dx",)), (10, ("action_dy",)), (11, ("action_dz",)),
         (12, ("action_gripper",)),
     )
-    direct = [_feature_value(record, index, names) for index, names in direct_specs]
+    direct = [_direct_value(record, vector, index, names) for index, names in direct_specs]
 
-    # Sidecar aliases are used only when the sealed 25D direct fields are not
-    # present.  They are still current-step values, never future observations.
-    eef = record.get("robot0_eef_pos")
-    if isinstance(eef, (list, tuple)) and len(eef) >= 3:
-        for index, value in zip((3, 4, 5), eef[:3]):
-            if direct[index] is None:
-                direct[index] = _number(value)
-    qpos = record.get("robot0_gripper_qpos")
-    if isinstance(qpos, (list, tuple)) and len(qpos) >= 2 and direct[1] is None:
-        values = [_number(value) for value in qpos[:2]]
-        if all(value is not None for value in values):
-            direct[1] = float(values[0] + values[1])
-    if isinstance(qpos, (list, tuple)) and len(qpos) >= 2 and direct[2] is None:
-        values = [_number(value) for value in qpos[:2]]
-        if all(value is not None for value in values):
-            direct[2] = abs(float(values[0])) + abs(float(values[1]))
+    eef_sidecar = _sidecar_vector(record, "robot0_eef_pos", 3)
+    if eef_sidecar is not None:
+        for index, value in zip((3, 4, 5), eef_sidecar):
+            direct[index] = _parity_or_fallback(
+                direct[index], value, FEATURE_NAMES[index], ROBOT_EEF_PARITY_TOLERANCE
+            )
+
+    qpos_sidecar = _sidecar_vector(record, "robot0_gripper_qpos", 2)
+    if qpos_sidecar is not None:
+        direct[1] = _parity_or_fallback(
+            direct[1], sum(qpos_sidecar), "gripper_qpos", ROBOT_QPOS_PARITY_TOLERANCE
+        )
+        direct[2] = _parity_or_fallback(
+            direct[2], sum(abs(value) for value in qpos_sidecar),
+            "gripper_opening_proxy", ROBOT_QPOS_PARITY_TOLERANCE,
+        )
 
     if direct[0] is None:
         direct[0] = raw
+    elif abs(direct[0] - raw) > ACTION_PARITY_TOLERANCE:
+        raise ValueError("gripper_command vs measured raw action mismatch")
     if direct[12] is None:
         direct[12] = raw
-    if direct[9] is None or direct[10] is None or direct[11] is None:
-        action = record.get("clean_action_raw_7d", record.get("action_raw"))
-        if isinstance(action, (list, tuple)) and len(action) >= 7:
-            for index, action_index in ((9, 0), (10, 1), (11, 2)):
-                if direct[index] is None:
-                    direct[index] = _number(action[action_index])
+    elif abs(direct[12] - raw) > ACTION_PARITY_TOLERANCE:
+        raise ValueError("action_gripper vs measured raw action mismatch")
+
+    for index, action_index in ((9, 0), (10, 1), (11, 2)):
+        if abs(direct[index] - raw_action[action_index]) > ACTION_PARITY_TOLERANCE:
+            raise ValueError(f"{FEATURE_NAMES[index]} vs measured raw action mismatch")
 
     if any(value is None for value in direct):
         missing = [FEATURE_NAMES[index] for index, value in enumerate(direct) if value is None]
@@ -147,9 +260,29 @@ def _normalise_record(record: dict[str, Any], fallback_step: int) -> dict[str, A
     return {
         "step": step,
         "raw_close": raw_close,
+        "feature_order_bound": vector is not None or all(_named_value(record, names) is not None for _, names in direct_specs),
         "direct": tuple(float(value) for value in direct),
         "eef_z": float(direct[5]),
     }
+
+
+def serialize_student_25d(row: dict[str, Any]) -> tuple[float, ...]:
+    """Project exactly one validated student row; reject all side channels."""
+    extra = set(row) - STUDENT_ALLOWED_KEYS
+    missing = STUDENT_ALLOWED_KEYS - set(row)
+    if extra or missing:
+        raise ValueError(f"student row key contract violation; extra={sorted(extra)}, missing={sorted(missing)}")
+    if row["schema"] != SCHEMA or row["source_schema"] != SOURCE_SCHEMA or row["valid"] is not True:
+        raise ValueError("student row schema/valid contract violation")
+    vector = row["features_25d"]
+    if not isinstance(vector, (list, tuple)) or len(vector) != 25:
+        raise ValueError("student features_25d must have exactly 25 values")
+    values = tuple(_number(item) for item in vector)
+    if any(item is None for item in values):
+        raise ValueError("student features_25d contains a non-finite value")
+    if any(name in STUDENT_FORBIDDEN_FEATURE_NAMES for name in FEATURE_NAMES):
+        raise ValueError("forbidden student feature name")
+    return tuple(float(item) for item in values)
 
 
 class B3Causal25DMultieventV1:
@@ -184,7 +317,6 @@ class B3Causal25DMultieventV1:
         self._next_step += 1
 
         if record.get("valid", True) is False:
-            # Invalid rows do not alter event boundaries or history state.
             self._history.append(None)
             return self._invalid_row(step, "source_step_invalid")
 
@@ -259,7 +391,7 @@ class B3Causal25DMultieventV1:
 
         normal["direct"] = direct
         self._history.append(normal)
-        row = {
+        return {
             "schema": SCHEMA,
             "source_schema": SOURCE_SCHEMA,
             "step": step,
@@ -272,8 +404,8 @@ class B3Causal25DMultieventV1:
             "release_onset": release_onset,
             "released_event_id": released_event_id,
             "event_local_state_reset": release_onset,
+            "feature_order_bound": normal["feature_order_bound"],
         }
-        return row
 
     def rebuild(self, records: Iterable[dict[str, Any]]) -> dict[str, Any]:
         rows = [self.update(record) for record in records]
@@ -303,6 +435,7 @@ class B3Causal25DMultieventV1:
             "release_onset": False,
             "released_event_id": -1,
             "event_local_state_reset": False,
+            "feature_order_bound": False,
             "error": reason,
         }
 
@@ -329,4 +462,16 @@ class B3Causal25DMultieventV1:
         return current_value - previous["direct"][direct_index]
 
 
-__all__ = ["B3Causal25DMultieventV1", "Causal25DConfig", "FEATURE_NAMES", "SCHEMA"]
+__all__ = [
+    "B3Causal25DMultieventV1",
+    "ACTION_PARITY_TOLERANCE",
+    "Causal25DConfig",
+    "FEATURE_NAMES",
+    "LEGACY_SOURCE_FEATURE_NAMES_25D",
+    "LEGACY_SOURCE_FEATURE_ORDER_SHA256",
+    "ROBOT_EEF_PARITY_TOLERANCE",
+    "ROBOT_QPOS_PARITY_TOLERANCE",
+    "SCHEMA",
+    "SOURCE_SCHEMA",
+    "serialize_student_25d",
+]

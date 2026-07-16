@@ -37,7 +37,10 @@ jobs:
             scripts/detector/build_b3_fit_census.py \
             scripts/detector/audit_b3_teacher_invariants.py \
             scripts/detector/audit_b3_s1_label_distribution.py \
-            src/gripper_attack/b3_teacher_training_adapter.py
+            src/gripper_attack/b3_teacher_training_adapter.py \
+            src/gripper_attack/b3_causal_25d.py \
+            scripts/detector/audit_b3_causal_25d_features.py \
+            scripts/detector/audit_b3_legacy_generation_evidence.py
       - name: Run targeted CPU tests
         run: |
           pytest \
@@ -47,6 +50,8 @@ jobs:
             tests/test_b3_fit_census.py \
             tests/test_b3_s1_distribution.py \
             tests/test_b3_teacher_training_adapter.py \
+            tests/test_b3_causal_25d_multievent.py \
+            tests/test_b3_legacy_generation_evidence.py \
             tests/stageb/test_cross_suite_postrun_audit_tools.py \
             tests/stageb/test_cross_suite_clean_queue.py \
             tests/stageb/test_cross_suite_clean_collector.py \
