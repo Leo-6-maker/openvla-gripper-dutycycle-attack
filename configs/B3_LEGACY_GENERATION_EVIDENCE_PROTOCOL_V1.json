@@ -1,0 +1,57 @@
+{
+  "schema": "B3_LEGACY_GENERATION_EVIDENCE_PROTOCOL_V1",
+  "status": "AUDIT_ONLY",
+  "formal_training_authorized": false,
+  "attack_authorized": false,
+  "required_generation_field": "generation_passes_per_step",
+  "required_generation_streams": [
+    "episode_metadata.json",
+    "runtime_audit.json",
+    "step_records.jsonl",
+    "policy_intent_records.jsonl"
+  ],
+  "expected_generation_passes_per_valid_step": 1,
+  "missing_or_unmeasured_generation": "HOLD",
+  "legacy_classes": {
+    "LEGACY_CAPTURED_EXECUTION_SCORE_ALIGNED": {
+      "score_adapter": "OfficialOpenVLAActionAdapter.predict_action_with_scores",
+      "requires": [
+        "runtime_valid",
+        "artifact_checksum_pass",
+        "step_policy_summary_lengths_match",
+        "action_token_ids_match",
+        "score_action_parity_pass"
+      ],
+      "formal_9d_status": "PROVISIONAL_REVIEW_ONLY"
+    },
+    "LEGACY_DETERMINISTIC_SEPARATE_SCORE_ALIGNED_REQUIRES_INPUT_PROOF": {
+      "score_adapter": "OfficialOpenVLAScoreAdapter.generate_same_inputs",
+      "requires": [
+        "runtime_valid",
+        "artifact_checksum_pass",
+        "step_policy_summary_lengths_match",
+        "action_token_ids_match",
+        "score_action_parity_pass",
+        "measured_same_input_proof"
+      ],
+      "missing_proof_status": "HOLD",
+      "formal_9d_status": "HOLD"
+    }
+  },
+  "b3_25d_audit_rule": {
+    "requires": [
+      "runtime_valid",
+      "student_features_25d_finite",
+      "step_contract_pass",
+      "artifact_checksum_pass",
+      "privileged_teacher_sidecar_present"
+    ],
+    "does_not_authorize_formal_training": true
+  },
+  "prohibited_inference": [
+    "metadata_generation_passes_per_step=1 is not proof of a measured call count",
+    "score_action_parity is not proof of same-input execution",
+    "legacy audit PASS is not Official B3 training readiness",
+    "retrospective classification does not repair old artifacts"
+  ]
+}

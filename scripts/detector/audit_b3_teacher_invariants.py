@@ -130,7 +130,15 @@ def audit_episode(rows: list[dict[str, Any]], events: list[dict[str, Any]] | Non
 
 def load_episode(episode_root: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     manifest = json.loads((episode_root / "materialization_manifest.json").read_text(encoding="utf-8"))
-    if manifest.get("mode") != "fit-label-materialization" or manifest.get("teacher_materialization") != "COMPLETED":
+    allowed = (
+        manifest.get("mode") == "fit-label-materialization"
+        and manifest.get("teacher_materialization") == "COMPLETED"
+    ) or (
+        manifest.get("schema") == "B3_CAUSAL_25D_S1_MATERIALIZED_EPISODE_V1"
+        and manifest.get("mode") == "fit-label-materialization-25d-causal"
+        and manifest.get("teacher_materialization") == "COMPLETED"
+    )
+    if not allowed:
         raise ValueError(f"not a completed FIT materialization: {episode_root}")
     rows = [json.loads(line) for line in (episode_root / "teacher_retention_records.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
     events = json.loads((episode_root / "retention_events.json").read_text(encoding="utf-8"))
