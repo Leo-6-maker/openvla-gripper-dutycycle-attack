@@ -33,10 +33,18 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--manifest", required=True, type=Path)
     ap.add_argument("--output-root", required=True, type=Path)
     ap.add_argument("--upstream-root", required=True, type=Path)
+    ap.add_argument("--remediation-only", action="store_true")
     return ap.parse_args()
 
 
 args = parse_args()
+REMEDIATION_IDENTITIES = frozenset({
+    "libero_object/task_00/state_00",
+    "libero_spatial/task_00/state_00",
+    "libero_spatial/task_01/state_00",
+    "libero_goal/task_00/state_00",
+    "libero_10/task_00/state_00",
+})
 os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
 os.environ.setdefault("MUJOCO_GL", "egl")
 os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "flash_attention_2")
@@ -244,7 +252,16 @@ def retryable_runtime_error(exc: Exception) -> bool:
 
 def load_rows() -> list[dict[str, str]]:
     with args.manifest.open(newline="", encoding="utf-8") as f:
-        rows = [dict(row) for row in csv.DictReader(f) if row["suite"] == args.suite]
+        all_rows = [dict(row) for row in csv.DictReader(f)]
+    if args.remediation_only:
+        actual = {row.get("canonical_parent_key", "") for row in all_rows}
+        if len(all_rows) != len(REMEDIATION_IDENTITIES) or actual != REMEDIATION_IDENTITIES:
+            raise SystemExit("REMEDIATION_MANIFEST_IDENTITY_FAIL")
+        rows = [row for row in all_rows if row.get("suite") == args.suite]
+        if not rows:
+            raise SystemExit(f"REMEDIATION_SUITE_MISSING {args.suite}")
+        return rows
+    rows = [row for row in all_rows if row["suite"] == args.suite]
     if len(rows) != 500:
         raise SystemExit(f"OFFICIAL_MANIFEST_SUITE_FAIL {args.suite}: {len(rows)}")
     return rows
@@ -350,6 +367,7 @@ def load_artifact_provenance() -> dict[str, object]:
         "official_openvla_adapter.py": sha256_file(source_root / "official_openvla_adapter.py"),
         "official_detector_features.py": sha256_file(source_root / "official_detector_features.py"),
         "official_clean_worker.py": sha256_file(Path(__file__).resolve()),
+        "official_generation_contract.py": sha256_file(source_root / "official_generation_contract.py"),
     }
     declared_source_files = payload.get("collector_source_sha256")
     if not isinstance(declared_source_files, dict):
