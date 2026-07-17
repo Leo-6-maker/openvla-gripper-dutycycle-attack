@@ -399,8 +399,11 @@ def verify_artifact(
         raise ContractViolation("PROVENANCE", "campaign-bounded audit requires a sealed campaign contract")
     root = artifact_root.resolve()
     required_files = set(contract["required_files"])
-    if mode == "25d":
+    if mode in {"25d", "campaign_25d"}:
         required_files.discard("policy_intent_records.jsonl")
+    if mode == "campaign_25d":
+        required_files.discard("worker_start_manifest.json")
+        required_files.discard("worker_start_manifest.json.sha256")
     missing = sorted(name for name in required_files if not (root / name).is_file())
     if missing:
         raise ContractViolation("PROTOCOL", f"required artifact files missing: {missing}")
