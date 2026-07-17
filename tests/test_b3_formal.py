@@ -3,6 +3,7 @@ import pytest
 torch = pytest.importorskip("torch")
 
 from gripper_attack.b3_formal import (  # noqa: E402
+    AUTHORIZATION_INPUT_NAMES,
     B3_HEADS,
     B3ModelConfig,
     B3Normalization,
@@ -67,18 +68,6 @@ def test_checkpoint_has_separate_official_schema_but_defaults_to_smoke(tmp_path)
 def test_formal_authorization_requires_machine_built_sealed_inputs(tmp_path):
     with pytest.raises(ValueError, match="authorization"):
         validate_training_authorization({"formal_training_authorized": True})
-    runner = {
-        "status": "PASS", "runner_head": "d" * 40, "runner_worktree_clean": True,
-    }
-    runner["runner_binding_sha256"] = json_sha({key: value for key, value in runner.items()})
-    snapshots = {name: f"{index + 1:064x}" for index, name in enumerate((
-        "formal_fit_registry_sha256", "formal_registry_summary_sha256", "formal_registry_root_sha256",
-        "s1_corpus_sha256", "s1_root_audit_sha256", "teacher_aggregate_sha256",
-        "training_protocol_sha256", "source_contract_sha256", "protocol_sha256", "feature_rebuilder_sha256",
-        "normalization_bundle_sha256", "normalization_sha256", "fold_manifest_sha256",
-    ))}
-    auth = build_training_authorization(
-        tmp_path / "authorization", variant="B3_25D", fold_id=0, seed=20260717,
-        input_snapshots=snapshots, runner_binding=runner, generator_script_sha256="f" * 64,
-    )
-    validate_training_authorization(auth)
+    with pytest.raises(ValueError, match="raw authorization"):
+        build_training_authorization(tmp_path / "authorization")
+    assert len(AUTHORIZATION_INPUT_NAMES) == 13

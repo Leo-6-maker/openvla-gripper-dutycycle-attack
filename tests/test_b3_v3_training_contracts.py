@@ -29,7 +29,10 @@ def _rows():
 
 
 def _runner():
-    value = {"status": "PASS", "runner_head": "d" * 40, "runner_worktree_clean": True}
+    value = {
+        "status": "PASS", "runner_head": "d" * 40, "runner_worktree_clean": True,
+        "runner_script_git_blob_sha1": "e" * 40, "config_git_blob_sha1": "f" * 40,
+    }
     value["runner_binding_sha256"] = json_sha(value)
     return value
 
@@ -57,10 +60,30 @@ def test_four_fold_manifest_is_exact_and_sealed(tmp_path):
 
 def test_machine_auth_and_checkpoint_bundle_do_not_select_model_early(tmp_path):
     auth_root = tmp_path / "auth"
-    auth = build_training_authorization(
-        auth_root, variant="B3_25D", fold_id=0, seed=20260717,
-        input_snapshots=_snapshots(), runner_binding=_runner(), generator_script_sha256="f" * 64,
-    )
+    auth = {
+        "schema": "B3_OFFICIAL_V3_TRAINING_AUTHORIZATION_V1",
+        "authorization_status": "PASS", "formal_fit_ready": True,
+        "s1_materialization_status": "PASS", "teacher_aggregate_status": "PASS",
+        "formal_training_authorized": True, "formal_attack_authorized": False,
+        "variant": "B3_25D", "fit_scope": "FIT_FOLD", "fold_id": 0, "seed": 20260717,
+        "runner_head": _runner()["runner_head"], "runner_binding": _runner(),
+        "input_snapshots": _snapshots(),
+        "authorization_generation": {
+            "schema": "B3_OFFICIAL_V3_TRAINING_AUTHORIZATION_GENERATOR_V1",
+            "generator_script_sha256": "a" * 64, "generator_script_git_blob_sha1": "b" * 40,
+            "generator_head": "c" * 40, "generator_worktree_clean": True,
+            "generator_script_tracked": True, "generator_entrypoint": "build_b3_v3_training_authorization.py",
+            "semantic_inputs_verified": True,
+        },
+        "verification": {"status": "PASS", "semantic_inputs_verified": True, "normalization_recomputed": True, "runner_binding_measured": True},
+    }
+    auth.update(_snapshots())
+    auth["authorization_payload_sha256"] = json_sha(auth)
+    from gripper_attack.b3_training_protocol import _write_json, seal_directory
+    auth_root.mkdir()
+    _write_json(auth_root / "authorization.json", auth)
+    _write_json(auth_root / "input_snapshots.json", {"schema": "B3_OFFICIAL_V3_AUTHORIZATION_INPUT_SNAPSHOTS_V1", **_snapshots()})
+    seal_directory(auth_root)
     assert load_training_authorization_bundle(auth_root)["formal_training_authorized"] is True
     forged = dict(auth)
     forged.pop("authorization_generation")
@@ -88,7 +111,15 @@ def test_normalization_bundle_binds_fold_and_runtime_is_teacher_free(tmp_path):
 
 
 def test_attack_manifest_is_only_preparation_and_has_exact_condition_pairs():
-    manifest = build_attack_manifest([{"canonical_parent_key": "libero_goal/task_00/state_30"}], protocol_sha256="a" * 64, check_status="CHECK_PASS")
+    rows = [
+        {"canonical_parent_key": f"{suite}/task_{task:02d}/state_{30 + offset:02d}", "suite": suite, "task_idx": task, "state_id": 30 + offset, "task_success": True}
+        for suite in ("libero_object", "libero_spatial", "libero_goal", "libero_10")
+        for task in range(10) for offset in range(5)
+    ]
+    manifest = build_attack_manifest(
+        rows, protocol_sha256="a" * 64, check_status="CHECK_PASS", cs200_manifest_sha256="b" * 64,
+        check_report_sha256="c" * 64, checkpoint_sha256="d" * 64, calibration_sha256="e" * 64,
+    )
     report = audit_attack_manifest(manifest)
     assert report["status"] == "PASS_PREPARATION_ONLY"
     assert manifest["attack_execution_authorized"] is False

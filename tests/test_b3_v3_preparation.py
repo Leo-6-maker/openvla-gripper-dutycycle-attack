@@ -28,9 +28,14 @@ def test_viability_matrix_is_24_runs(tmp_path):
 
 def test_fit_dev_and_cal_check_contracts_are_separate():
     selector = _load("select_b3_v3_fit_dev_model.py")
+    common = {
+        "split": "FIT_DEV", "fit_dev_identity_count": 160,
+        "checkpoint_sha256": "a" * 64, "viability_report_sha256": "b" * 64,
+        "fit_dev_identity_sha256": "c" * 64, "variant": "B3_25D", "seed": 20260717,
+    }
     chosen = selector.select_candidate([
-        {"candidate_id": "b", "split": "FIT_DEV", "full_t10_event_hit_rate": .5, "negative_episode_any_emit_rate": .1},
-        {"candidate_id": "a", "split": "FIT_DEV", "full_t10_event_hit_rate": .6, "negative_episode_any_emit_rate": .2},
+        {**common, "candidate_id": "b", "full_t10_event_hit_rate": .5, "negative_episode_any_emit_rate": .1},
+        {**common, "candidate_id": "a", "full_t10_event_hit_rate": .6, "negative_episode_any_emit_rate": .2},
     ])
     assert chosen["status"] == "FIT_DEV_SELECTED" and chosen["candidate_id"] == "a"
     cal = _load("calibrate_b3_v3_thresholds.py")

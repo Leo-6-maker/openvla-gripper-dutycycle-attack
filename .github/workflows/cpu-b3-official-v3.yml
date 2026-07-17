@@ -52,8 +52,14 @@ jobs:
             scripts/detector/build_b3_v3_normalization_bundle.py \
             scripts/detector/build_b3_v3_training_authorization.py \
             scripts/detector/audit_b3_v3_training_authorization.py \
+            scripts/detector/audit_b3_v3_training_authorization.py \
             scripts/detector/build_b3_v3_fit_viability_matrix.py \
             scripts/detector/run_b3_v3_fit_viability_matrix.py \
+            scripts/detector/build_b3_v3_prediction_bundle.py \
+            scripts/detector/run_b3_v3_fold_validation.py \
+            scripts/detector/aggregate_b3_v3_fit_viability.py \
+            scripts/detector/audit_b3_v3_fit_viability_matrix.py \
+            scripts/detector/refit_b3_v3_full_fit.py \
             scripts/detector/select_b3_v3_fit_dev_model.py \
             scripts/detector/calibrate_b3_v3_thresholds.py \
             scripts/detector/check_b3_v3_detector_once.py \
@@ -69,6 +75,7 @@ jobs:
             tests/test_b3_v3_dataset.py \
             tests/test_b3_v3_trainer_and_viability.py \
             tests/test_b3_v3_training_contracts.py \
-            tests/test_b3_v3_preparation.py
+            tests/test_b3_v3_preparation.py \
+            tests/test_b3_v3_prediction_pipeline.py
       - name: Check patch whitespace
         run: git diff --check

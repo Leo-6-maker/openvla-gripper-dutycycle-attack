@@ -17,8 +17,8 @@ from gripper_attack.b3_formal import (
     save_b3_checkpoint_bundle, validate_training_authorization,
 )
 from gripper_attack.b3_training_protocol import load_fit_fold_bundle, load_normalization_bundle, load_training_authorization_bundle, sha256_file
-from gripper_attack.b3_v3_dataset import B3Episode, B3EpisodeSampler, load_episode, load_formal_registry_csv, pad_episode_batch, select_fit_fold_episodes
-from gripper_attack.b3_official_v3_s1 import audit_materialized_root, load_formal_fit_registry, verify_checksum_manifest
+from gripper_attack.b3_v3_dataset import B3Episode, B3EpisodeSampler, compute_fit_normalization, load_episode, load_formal_registry_csv, pad_episode_batch, select_fit_fold_episodes
+from gripper_attack.b3_official_v3_s1 import audit_materialized_root, build_s1_runner_binding, load_formal_fit_registry, verify_checksum_manifest
 
 
 def load_authorization(path: Path) -> dict[str, Any]:
@@ -85,13 +85,13 @@ def verify_authorized_inputs(
 
 
 def _normalize_batch(batch, normalization: B3Normalization):
-    mean25 = torch.tensor(normalization.mean_25d, dtype=batch.x25.dtype)
-    std25 = torch.tensor(normalization.std_25d, dtype=batch.x25.dtype)
+    mean25 = torch.tensor(normalization.mean_25d, dtype=batch.x25.dtype, device=batch.x25.device)
+    std25 = torch.tensor(normalization.std_25d, dtype=batch.x25.dtype, device=batch.x25.device)
     x25 = (batch.x25 - mean25) / std25
     x9 = None
     if batch.x9 is not None:
-        mean9 = torch.tensor(normalization.mean_9d, dtype=batch.x9.dtype)
-        std9 = torch.tensor(normalization.std_9d, dtype=batch.x9.dtype)
+        mean9 = torch.tensor(normalization.mean_9d, dtype=batch.x9.dtype, device=batch.x9.device)
+        std9 = torch.tensor(normalization.std_9d, dtype=batch.x9.dtype, device=batch.x9.device)
         x9 = (batch.x9 - mean9) / std9
     return x25, x9
 
@@ -104,6 +104,7 @@ def train_model(
     epochs: int = 30,
     batch_size: int = 8,
     seed: int = 20260717,
+    device: str = "cpu",
 ) -> tuple[torch.nn.Module, list[float]]:
     """Train one fixed candidate; model selection is deliberately external."""
 
@@ -111,7 +112,10 @@ def train_model(
         raise ValueError("trainer accepts FIT_TRAIN episodes only")
     random.seed(seed)
     torch.manual_seed(seed)
-    model = build_b3_model(B3ModelConfig(variant=variant))
+    target_device = torch.device(device)
+    if target_device.type == "cuda" and not torch.cuda.is_available():
+        raise ValueError("CUDA device requested but CUDA is unavailable")
+    model = build_b3_model(B3ModelConfig(variant=variant)).to(target_device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5)
     losses: list[float] = []
     sampler = B3EpisodeSampler(episodes, seed=seed)
@@ -120,6 +124,13 @@ def train_model(
         epoch_terms: list[float] = []
         for start in range(0, len(indices), batch_size):
             batch = pad_episode_batch([episodes[index] for index in indices[start:start + batch_size]])
+            batch = batch.__class__(
+                batch.x25.to(target_device),
+                None if batch.x9 is None else batch.x9.to(target_device),
+                {name: value.to(target_device) for name, value in batch.targets.items()},
+                {name: value.to(target_device) for name, value in batch.known_masks.items()},
+                batch.episode_valid_mask.to(target_device), batch.padding_mask.to(target_device), batch.episodes,
+            )
             x25, x9 = _normalize_batch(batch, normalization)
             optimizer.zero_grad(set_to_none=True)
             logits, _ = model(x25, x9, mask=batch.padding_mask)
@@ -190,10 +201,22 @@ def main() -> int:
     parser.add_argument("--output-checkpoint-bundle", type=Path)
     parser.add_argument("--policy-intent-root", type=Path)
     parser.add_argument("--runner-repo", type=Path)
+    parser.add_argument("--runner-config", type=Path)
+    parser.add_argument("--runner-script", type=Path)
     parser.add_argument("--variant", choices=("B3_25D", "B3_25D9D"), required=True)
     parser.add_argument("--execute-formal", action="store_true", help="explicitly opt into a separately authorized real run")
+    parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
+    parser.add_argument("--dtype", choices=("float32",), default="float32")
     args = parser.parse_args()
     authorization = load_authorization(args.authorization)
+    if authorization.get("fit_scope") != "FIT_FOLD":
+        raise SystemExit("fold trainer requires fit_scope=FIT_FOLD authorization")
+    if authorization.get("variant") != args.variant:
+        raise SystemExit("authorization variant does not match trainer variant")
+    if args.fold_id is not None and authorization.get("fold_id") != args.fold_id:
+        raise SystemExit("authorization fold_id does not match trainer fold_id")
+    if args.seed is not None and authorization.get("seed") != args.seed:
+        raise SystemExit("authorization seed does not match trainer seed")
     if not args.execute_formal:
         raise SystemExit("FORMAL_TRAINING_HOLD: pass --execute-formal only after S1, audit, and authorization gates")
     for value, name in ((args.registry_csv, "--registry-csv"), (args.s1_root, "--s1-root"), (args.normalization, "--normalization")):
@@ -201,6 +224,8 @@ def main() -> int:
             raise SystemExit(f"{name} is required for an explicitly authorized run")
     if args.runner_repo is None:
         raise SystemExit("--runner-repo is required for an explicitly authorized run")
+    if args.runner_config is None or args.runner_script is None:
+        raise SystemExit("--runner-config and --runner-script are required for an explicitly authorized run")
     required_paths = ((args.registry_summary, "--registry-summary"), (args.s1_root_audit, "--s1-root-audit"), (args.source_contract, "--source-contract"), (args.s1_protocol, "--s1-protocol"), (args.training_protocol, "--training-protocol"), (args.feature_rebuilder, "--feature-rebuilder"), (args.fold_root, "--fold-root"), (args.fold_id, "--fold-id"), (args.seed, "--seed"), (args.output_checkpoint_bundle, "--output-checkpoint-bundle"))
     for value, name in required_paths:
         if value is None:
@@ -210,12 +235,12 @@ def main() -> int:
     if args.output_checkpoint_bundle.exists():
         raise SystemExit(f"refusing to overwrite checkpoint bundle: {args.output_checkpoint_bundle}")
     before = verify_authorized_inputs(authorization, args.registry_csv, args.registry_summary, args.s1_root, args.s1_root_audit, args.source_contract, args.s1_protocol, args.training_protocol, args.feature_rebuilder)
-    actual_head = subprocess.check_output(["git", "-C", str(args.runner_repo), "rev-parse", "HEAD"], text=True).strip()
-    if actual_head != authorization["runner_head"]:
-        raise SystemExit("runner Git HEAD does not match training authorization")
-    dirty = subprocess.check_output(["git", "-C", str(args.runner_repo), "status", "--porcelain", "--untracked-files=all"], text=True)
-    if dirty.strip():
-        raise SystemExit("runner worktree is dirty; refusing formal training")
+    measured_binding = build_s1_runner_binding(
+        runner_repo=args.runner_repo, expected_runner_head=authorization["runner_head"],
+        config_path=args.runner_config, runner_script_path=args.runner_script,
+    )
+    if measured_binding != authorization["runner_binding"]:
+        raise SystemExit("measured runner binding does not match training authorization")
     episodes = load_fit_fold_episodes(args.registry_csv, args.s1_root, args.fold_root, fold_id=args.fold_id, partition="train", include_9d_root=args.policy_intent_root)
     if args.variant == "B3_25D9D" and any(item.features_9d is None for item in episodes):
         raise SystemExit("B3_25D9D requires a complete independent 9D ablation root")
@@ -228,11 +253,14 @@ def main() -> int:
         raise SystemExit("fold manifest SHA does not match authorization")
     if norm_source.get("train_identity_sha256") != load_fit_fold_bundle(args.fold_root)["folds"][args.fold_id]["train_identity_sha256"]:
         raise SystemExit("normalization bundle is not bound to this fold's train identities")
-    model, losses = train_model(episodes, variant=args.variant, normalization=normalization, seed=args.seed)
+    recomputed_normalization = compute_fit_normalization(episodes, include_9d=args.variant == "B3_25D9D")
+    if recomputed_normalization.sha256 != normalization.sha256:
+        raise SystemExit("normalization bundle does not match the measured 600-episode training fold")
+    model, losses = train_model(episodes, variant=args.variant, normalization=normalization, seed=args.seed, device=args.device)
     save_b3_checkpoint_bundle(
         args.output_checkpoint_bundle, model, normalization, authorization=authorization,
         checkpoint_status="FIT_FOLD_TRAINED_CANDIDATE",
-        extra={"variant": args.variant, "fold_id": args.fold_id, "seed": args.seed, "epochs": len(losses), "final_loss": losses[-1], "fit_episode_count": len(episodes)},
+        extra={"variant": args.variant, "fit_scope": "FIT_FOLD", "fold_id": args.fold_id, "seed": args.seed, "device": args.device, "dtype": args.dtype, "epochs": len(losses), "loss_history": losses, "final_loss": losses[-1], "fit_episode_count": len(episodes)},
     )
     after = verify_authorized_inputs(authorization, args.registry_csv, args.registry_summary, args.s1_root, args.s1_root_audit, args.source_contract, args.s1_protocol, args.training_protocol, args.feature_rebuilder)
     if before != after:
