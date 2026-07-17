@@ -6,6 +6,7 @@ and it never authorizes training or attack.
 
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import math
@@ -29,6 +30,13 @@ SPLITS = {
     "FINAL_EVAL_CANDIDATE": range(30, 50),
 }
 PROVENANCE_CLASSES = {"A_CURRENT_HEAD_CLEAN_START_VERIFIED", "B_PREVIOUS_HEAD_EQUIVALENT", "C_START_RECORD_MISSING", "D_DIRTY_START_QUARANTINE"}
+CAMPAIGN_PROVENANCE = "CAMPAIGN_BOUND_INSTANCE_UNRESOLVED"
+FORMAL_PROVENANCE_CLASSES = {
+    "A_CURRENT_HEAD_CLEAN_START_VERIFIED",
+    "B_PREVIOUS_HEAD_EQUIVALENT",
+    CAMPAIGN_PROVENANCE,
+}
+_CAMPAIGN_CACHE: dict[str, dict[str, Any]] = {}
 PASS_STATUSES = {"PASS_FORMAL_CANDIDATE", "PASS_DATA_CONTRACT_PROVENANCE_HOLD"}
 
 
@@ -219,6 +227,67 @@ def _verify_worker_manifest(root: Path, meta: dict[str, Any], contract: dict[str
     return worker
 
 
+def _load_campaign_contract(path: Path) -> dict[str, Any]:
+    key = str(path.resolve())
+    if key in _CAMPAIGN_CACHE:
+        return _CAMPAIGN_CACHE[key]
+    payload = load_json(path)
+    if payload.get("schema") != "OFFICIAL_V3_CAMPAIGN_BOUNDED_SOURCE_CONTRACT_V1":
+        raise ContractViolation("PROVENANCE", "unexpected campaign-bounded source contract")
+    if payload.get("decision") != "ACCEPT_CAMPAIGN_BOUNDED_PROVENANCE":
+        raise ContractViolation("PROVENANCE", "campaign provenance decision is not accepted")
+    if payload.get("strict_instance_provenance_required") is not False or payload.get("campaign_membership_required") is not True:
+        raise ContractViolation("PROVENANCE", "campaign provenance policy is not explicit")
+    if payload.get("formal_training_authorized") is not False or payload.get("formal_attack_authorized") is not False:
+        raise ContractViolation("PROVENANCE", "campaign decision cannot authorize training or attack")
+    files = payload.get("files")
+    file_sha256 = payload.get("file_sha256")
+    if not isinstance(files, dict) or not isinstance(file_sha256, dict):
+        raise ContractViolation("PROVENANCE", "campaign evidence file map is missing")
+    base = path.parent
+    for name in ("fit800_identity_manifest.csv", "accepted_manifest_inventory.csv", "accepted_equivalence_classes.csv"):
+        relative = files.get(name, name)
+        candidate = (base / relative).resolve()
+        if not candidate.is_file() or file_sha256.get(name) != sha256_file(candidate):
+            raise ContractViolation("PROVENANCE", f"campaign evidence binding failed: {name}")
+    rows: dict[str, dict[str, str]] = {}
+    with (base / files.get("fit800_identity_manifest.csv", "fit800_identity_manifest.csv")).open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            key_value = row.get("canonical_parent_key", "")
+            if not key_value or key_value in rows:
+                raise ContractViolation("PROVENANCE", "campaign FIT identity manifest is duplicate or incomplete")
+            if row.get("data_status") != "DATA_PASS" or row.get("source_before_sha256") != row.get("source_after_sha256"):
+                raise ContractViolation("PROVENANCE", f"campaign FIT data audit is not closed: {key_value}")
+            rows[key_value] = row
+    if len(rows) != 800:
+        raise ContractViolation("PROVENANCE", f"campaign FIT identity manifest must contain 800 rows, got {len(rows)}")
+    payload["_fit_rows"] = rows
+    payload["_path"] = key
+    _CAMPAIGN_CACHE[key] = payload
+    return payload
+
+
+def _verify_campaign_membership(
+    root: Path, meta: dict[str, Any], recursive_sha: str, campaign_contract: Path,
+) -> dict[str, Any]:
+    payload = _load_campaign_contract(campaign_contract)
+    key = str(meta.get("canonical_parent_key", ""))
+    row = payload["_fit_rows"].get(key)
+    if row is None or row.get("artifact_recursive_sha256") != recursive_sha:
+        raise ContractViolation("PROVENANCE", f"artifact is not the frozen campaign FIT artifact: {key}")
+    accepted = payload.get("accepted_artifact_field_values", {})
+    for name in ("collector_head", "model_tree_sha256", "processor_tokenizer_sha256"):
+        value = meta.get(name)
+        values = accepted.get(name)
+        if value and isinstance(values, list) and values and value not in values:
+            raise ContractViolation("PROVENANCE", f"artifact field is outside accepted campaign envelope: {name}")
+    return {
+        "provenance_class": CAMPAIGN_PROVENANCE,
+        "campaign_contract_sha256": sha256_file(campaign_contract),
+        "campaign_membership_status": "PASS",
+    }
+
+
 def _verify_streams(root: Path, meta: dict[str, Any], contract: dict[str, Any], summary: dict[str, Any]) -> int:
     streams = {name: load_jsonl(root / name) for name in contract["stream_files"]}
     lengths = {name: len(rows) for name, rows in streams.items()}
@@ -322,9 +391,12 @@ def verify_artifact(
     *,
     equivalence_status: str = "HOLD",
     mode: str = "full",
+    campaign_contract: Path | None = None,
 ) -> dict[str, Any]:
-    if mode not in {"full", "25d"}:
+    if mode not in {"full", "25d", "campaign_25d"}:
         raise ContractViolation("PROTOCOL", f"unknown artifact audit mode: {mode}")
+    if mode == "campaign_25d" and campaign_contract is None:
+        raise ContractViolation("PROVENANCE", "campaign-bounded audit requires a sealed campaign contract")
     root = artifact_root.resolve()
     required_files = set(contract["required_files"])
     if mode == "25d":
@@ -368,8 +440,9 @@ def verify_artifact(
         raise ContractViolation("PROTOCOL", "Teacher/event output is present in source artifact")
     recursive_sha = _verify_checksum(root, required_files)
     step_count = _verify_streams(root, meta, contract, summary) if mode == "full" else _verify_25d_streams(root, meta, contract, summary)
-    worker = _verify_worker_manifest(root, meta, contract, equivalence_status)
-    formal = worker["provenance_class"] == "A_CURRENT_HEAD_CLEAN_START_VERIFIED" or (
+    worker = None if mode == "campaign_25d" else _verify_worker_manifest(root, meta, contract, equivalence_status)
+    campaign = _verify_campaign_membership(root, meta, recursive_sha, campaign_contract) if mode == "campaign_25d" else None
+    formal = bool(campaign) or worker["provenance_class"] == "A_CURRENT_HEAD_CLEAN_START_VERIFIED" or (
         worker["provenance_class"] == "B_PREVIOUS_HEAD_EQUIVALENT" and equivalence_status == "PASS"
     )
     return {
@@ -384,20 +457,21 @@ def verify_artifact(
         "artifact_root": str(root),
         "artifact_recursive_sha256": recursive_sha,
         "step_count": step_count,
-        "provenance_class": worker["provenance_class"],
-        "worker_id": worker["slot_id"],
-        "gpu_id": worker["gpu_id"],
-        "worker_start_manifest_sha256": sha256_file(root / "worker_start_manifest.json"),
-        "collector_head": worker["collector_head"],
-        "worker_script_sha256": worker["worker_script_sha256"],
-        "adapter_sha256": worker["adapter_sha256"],
-        "protocol_sha256": worker["protocol_sha256"],
-        "model_tree_sha256": worker["model_tree_sha256"],
-        "processor_tree_sha256": worker["processor_tree_sha256"],
+        "provenance_class": campaign["provenance_class"] if campaign else worker["provenance_class"],
+        "worker_id": meta.get("worker_id", worker["slot_id"] if worker else ""),
+        "gpu_id": meta.get("gpu_id", worker["gpu_id"] if worker else ""),
+        "worker_start_manifest_sha256": sha256_file(root / "worker_start_manifest.json") if worker else "",
+        "collector_head": meta.get("collector_head", worker["collector_head"] if worker else ""),
+        "worker_script_sha256": meta.get("worker_script_sha256", worker["worker_script_sha256"] if worker else ""),
+        "adapter_sha256": meta.get("adapter_sha256", worker["adapter_sha256"] if worker else ""),
+        "protocol_sha256": meta.get("protocol_sha256", worker["protocol_sha256"] if worker else ""),
+        "model_tree_sha256": meta.get("model_tree_sha256", worker["model_tree_sha256"] if worker else ""),
+        "processor_tree_sha256": meta.get("processor_tokenizer_sha256", worker["processor_tree_sha256"] if worker else ""),
         "formal_eligible": formal,
         "formal_training_authorized": False,
         "formal_attack_authorized": False,
         "audit_mode": mode,
+        **(campaign or {}),
     }
 
 
@@ -407,9 +481,10 @@ def audit_artifact(
     *,
     equivalence_status: str = "HOLD",
     mode: str = "full",
+    campaign_contract: Path | None = None,
 ) -> dict[str, Any]:
     try:
-        return verify_artifact(artifact_root, contract, equivalence_status=equivalence_status, mode=mode)
+        return verify_artifact(artifact_root, contract, equivalence_status=equivalence_status, mode=mode, campaign_contract=campaign_contract)
     except ContractViolation as exc:
         status = {
             "CHECKSUM": "HOLD_CHECKSUM",
@@ -432,6 +507,6 @@ def audit_artifact(
 
 
 __all__ = [
-    "ContractViolation", "SUITES", "HORIZONS", "SPLITS", "PROVENANCE_CLASSES", "PASS_STATUSES",
+    "ContractViolation", "SUITES", "HORIZONS", "SPLITS", "PROVENANCE_CLASSES", "FORMAL_PROVENANCE_CLASSES", "CAMPAIGN_PROVENANCE", "PASS_STATUSES",
     "audit_artifact", "canonical_key", "expected_split", "json_sha", "load_contract", "sha256_file",
 ]

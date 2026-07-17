@@ -24,7 +24,7 @@ REGISTRY_FIELDS = [
     "provenance_class", "worker_start_manifest_sha256", "collector_head", "worker_id", "gpu_id",
     "worker_script_sha256", "adapter_sha256", "protocol_sha256", "model_tree_sha256", "processor_tree_sha256",
     "formal_eligible", "formal_selected", "superseded_artifact_sha256", "remediation_required",
-    "remediation_reason", "selection_reason",
+    "remediation_reason", "selection_reason", "campaign_decision_sha256",
 ]
 
 

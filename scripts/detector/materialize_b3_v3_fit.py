@@ -20,6 +20,7 @@ def main() -> int:
     parser.add_argument("--runner-repo", type=Path, required=True)
     parser.add_argument("--expected-runner-head", required=True)
     parser.add_argument("--runner-config", type=Path, required=True)
+    parser.add_argument("--campaign-contract", type=Path)
     args = parser.parse_args()
     binding = build_s1_runner_binding(
         runner_repo=args.runner_repo,
@@ -27,7 +28,10 @@ def main() -> int:
         config_path=args.runner_config,
         runner_script_path=Path(__file__).resolve(),
     )
-    manifest = materialize_fit(args.registry_csv, args.registry_summary, args.contract, args.protocol, args.output_root, binding)
+    manifest = materialize_fit(
+        args.registry_csv, args.registry_summary, args.contract, args.protocol, args.output_root, binding,
+        campaign_contract_path=args.campaign_contract,
+    )
     print(json.dumps({"status": manifest["status"], "identity_count": manifest["identity_count"]}, sort_keys=True))
     return 0
 

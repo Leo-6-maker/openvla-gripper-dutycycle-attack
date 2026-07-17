@@ -22,7 +22,10 @@ from pathlib import Path
 from typing import Any
 
 from .b3_retention import RetentionConfig, rebuild_retention_features
-from .official_v3_contract import SUITES, audit_artifact, canonical_key, expected_split, load_contract
+from .official_v3_contract import (
+    CAMPAIGN_PROVENANCE, FORMAL_PROVENANCE_CLASSES, SUITES, audit_artifact,
+    canonical_key, expected_split, load_contract,
+)
 from .official_v3_sprint0 import _runner_binding
 
 
@@ -293,6 +296,13 @@ def load_formal_fit_registry(registry_csv: Path, summary_json: Path) -> list[dic
         raise V3S1ContractViolation("formal FIT registry is not bound to the complete 2000-identity universe")
     if summary.get("formal_training_authorized") is not False or summary.get("formal_attack_authorized") is not False:
         raise V3S1ContractViolation("formal registry contains an authorization flag")
+    campaign_rows_present = any(row.get("provenance_class") == CAMPAIGN_PROVENANCE for row in all_rows)
+    campaign_decision_path: Path | None = None
+    campaign_decision_sha256 = summary.get("campaign_decision_sha256", "")
+    if campaign_rows_present:
+        campaign_decision_path = Path(summary.get("campaign_decision_path", ""))
+        if not campaign_decision_path.is_file() or len(campaign_decision_sha256) != 64 or sha256_file(campaign_decision_path).lower() != campaign_decision_sha256.lower():
+            raise V3S1ContractViolation("campaign decision binding is not closed")
     if len(all_rows) != 2000:
         raise V3S1ContractViolation(f"formal V3 registry must contain 2000 rows, got {len(all_rows)}")
     all_keys = {row.get("canonical_parent_key", "") for row in all_rows}
@@ -340,12 +350,14 @@ def load_formal_fit_registry(registry_csv: Path, summary_json: Path) -> list[dic
             raise V3S1ContractViolation(f"registry artifact audit schema mismatch: {key}")
         if audit.get("status") != "PASS_FORMAL_CANDIDATE" or audit.get("formal_eligible") is not True:
             raise V3S1ContractViolation(f"registry artifact audit is not formally eligible: {key}")
-        if audit.get("audit_mode") not in {"25d", "full"}:
+        if audit.get("audit_mode") not in {"25d", "campaign_25d", "full"}:
             raise V3S1ContractViolation(f"registry artifact audit mode is missing: {key}")
         if audit.get("canonical_parent_key") != key or audit.get("artifact_recursive_sha256") != row["selected_artifact_recursive_sha256"]:
             raise V3S1ContractViolation(f"registry artifact audit identity/SHA mismatch: {key}")
         if audit.get("provenance_class") != row["provenance_class"]:
             raise V3S1ContractViolation(f"registry artifact audit provenance mismatch: {key}")
+        if row["provenance_class"] == CAMPAIGN_PROVENANCE and audit.get("campaign_contract_sha256") != campaign_decision_sha256:
+            raise V3S1ContractViolation(f"registry campaign decision binding mismatch: {key}")
         if audit.get("artifact_root") and Path(audit["artifact_root"]).resolve() != Path(row["selected_artifact_root"]).resolve():
             raise V3S1ContractViolation(f"registry artifact audit root mismatch: {key}")
         for name in ("suite", "task_idx", "state_id"):
@@ -359,7 +371,7 @@ def load_formal_fit_registry(registry_csv: Path, summary_json: Path) -> list[dic
                 raise V3S1ContractViolation(f"registry artifact audit {name} mismatch: {key}")
         if audit.get("formal_training_authorized") is not False or audit.get("formal_attack_authorized") is not False:
             raise V3S1ContractViolation(f"registry artifact audit authorization boundary is invalid: {key}")
-        if row["provenance_class"] not in {"A_CURRENT_HEAD_CLEAN_START_VERIFIED", "B_PREVIOUS_HEAD_EQUIVALENT"}:
+        if row["provenance_class"] not in FORMAL_PROVENANCE_CLASSES:
             raise V3S1ContractViolation(f"registry provenance is not eligible: {key}")
         seen.add(key)
         suite_counts[suite] += 1
@@ -459,9 +471,15 @@ def _unknown_reason(index: int, rows: list[dict[str, Any]]) -> str:
     return "UNKNOWN_UNEXPLAINED"
 
 
-def _audit_source(row: dict[str, str], contract: dict[str, Any]) -> dict[str, Any]:
+def _audit_source(
+    row: dict[str, str], contract: dict[str, Any], campaign_contract_path: Path | None = None,
+) -> dict[str, Any]:
     root = Path(row["selected_artifact_root"]).resolve()
-    if row.get("provenance_class") == "B_PREVIOUS_HEAD_EQUIVALENT":
+    if row.get("provenance_class") == CAMPAIGN_PROVENANCE:
+        if campaign_contract_path is None:
+            raise V3S1ContractViolation("campaign-bound FIT row requires campaign contract")
+        report = audit_artifact(root, contract, mode="campaign_25d", campaign_contract=campaign_contract_path)
+    elif row.get("provenance_class") == "B_PREVIOUS_HEAD_EQUIVALENT":
         report = audit_artifact(root, contract, equivalence_status="PASS", mode="25d")
     else:
         report = audit_artifact(root, contract, mode="25d")
@@ -474,15 +492,17 @@ def _audit_source(row: dict[str, str], contract: dict[str, Any]) -> dict[str, An
     return report
 
 
-def dry_run_episode(row: dict[str, str], contract_path: Path, protocol_path: Path) -> dict[str, Any]:
+def dry_run_episode(
+    row: dict[str, str], contract_path: Path, protocol_path: Path, campaign_contract_path: Path | None = None,
+) -> dict[str, Any]:
     contract = load_contract(contract_path)
     protocol, retention_config = load_s1_protocol(protocol_path)
-    before = _audit_source(row, contract)
+    before = _audit_source(row, contract, campaign_contract_path)
     source_root = Path(row["selected_artifact_root"]).resolve()
     meta = _load_json(source_root / "episode_metadata.json")
     merged = _strict_join(source_root, meta)
     rebuilt = rebuild_retention_features(merged, retention_config)
-    after = _audit_source(row, contract)
+    after = _audit_source(row, contract, campaign_contract_path)
     if before["artifact_recursive_sha256"] != after["artifact_recursive_sha256"]:
         raise V3S1ContractViolation(f"source changed during dry-run: {row['canonical_parent_key']}")
     return {
@@ -1054,9 +1074,9 @@ def _write_episode(prepared: dict[str, Any], output_root: Path) -> dict[str, Any
 
 def materialize_episode(
     row: dict[str, str], contract_path: Path, protocol_path: Path, output_root: Path,
-    runner_binding: dict[str, Any] | None = None,
+    runner_binding: dict[str, Any] | None = None, campaign_contract_path: Path | None = None,
 ) -> dict[str, Any]:
-    prepared = dry_run_episode(row, contract_path, protocol_path)
+    prepared = dry_run_episode(row, contract_path, protocol_path, campaign_contract_path)
     prepared["runner_binding"] = runner_binding or {"status": "SYNTHETIC_TEST_ONLY"}
     if output_root.exists():
         raise V3S1ContractViolation(f"refusing to overwrite episode output: {output_root}")
@@ -1087,7 +1107,7 @@ def materialize_episode(
 
 def materialize_fit(
     registry_csv: Path, registry_summary: Path, contract_path: Path, protocol_path: Path, output_root: Path,
-    runner_binding: dict[str, Any] | None = None,
+    runner_binding: dict[str, Any] | None = None, campaign_contract_path: Path | None = None,
 ) -> dict[str, Any]:
     registry_rows = load_formal_fit_registry(registry_csv, registry_summary)
     if output_root.exists():
@@ -1096,7 +1116,7 @@ def materialize_fit(
     # The second pass intentionally re-reads each source so a source mutation
     # between validation and materialization is caught by the before/after SHA.
     for row in registry_rows:
-        dry_run_episode(row, contract_path, protocol_path)
+        dry_run_episode(row, contract_path, protocol_path, campaign_contract_path)
     staging = output_root.with_name(f".{output_root.name}.{uuid.uuid4().hex}.staging")
     if staging.exists():
         raise V3S1ContractViolation(f"staging root already exists: {staging}")
@@ -1104,7 +1124,7 @@ def materialize_fit(
         staging.mkdir(parents=True)
         reports: list[dict[str, Any]] = []
         for row in registry_rows:
-            item = dry_run_episode(row, contract_path, protocol_path)
+            item = dry_run_episode(row, contract_path, protocol_path, campaign_contract_path)
             item["runner_binding"] = runner_binding or {"status": "SYNTHETIC_TEST_ONLY"}
             row = item["registry_row"]
             episode_root = staging / row["suite"] / f"task_{int(row['task_idx']):02d}" / f"state_{int(row['state_id']):02d}"

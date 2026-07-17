@@ -27,11 +27,11 @@ from .b3_formal import (
 )
 from .b3_official_v3_s1 import STUDENT_FIELDS, TEACHER_FIELDS
 from .b3_teacher_training_adapter import adapt_teacher_batch
-from .official_v3_contract import SUITES, canonical_key, expected_split
+from .official_v3_contract import FORMAL_PROVENANCE_CLASSES, SUITES, canonical_key, expected_split
 
 
 FIT_SPLIT = "FIT_TRAIN"
-FORMAL_PROVENANCE = "A_CURRENT_HEAD_CLEAN_START_VERIFIED"
+FORMAL_PROVENANCE = FORMAL_PROVENANCE_CLASSES
 STUDENT_SCHEMA = "B3_OFFICIAL_V3_STUDENT_INPUT_V1"
 TEACHER_SCHEMA = "B3_OFFICIAL_V3_TEACHER_RECORD_V1"
 
@@ -136,7 +136,7 @@ def _validate_registry_rows(rows: Sequence[dict[str, Any]], *, require_a_only: b
         if row["split"] == FIT_SPLIT:
             if row["formal_selected"] not in (True, "True", "true", 1, "1") or row["formal_eligible"] not in (True, "True", "true", 1, "1"):
                 raise ValueError(f"FIT row is not formally selected: {key}")
-            if require_a_only and row["provenance_class"] != FORMAL_PROVENANCE:
+            if require_a_only and row["provenance_class"] not in FORMAL_PROVENANCE:
                 raise ValueError(f"FIT row is not current-head provenance: {key}")
             fit.append(dict(row, task_idx=task, state_id=state))
     if len(fit) != 800:
