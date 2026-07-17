@@ -11,11 +11,17 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import io
 import json
+import os
+import re
+import uuid
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
+
+from .official_v3_contract import SUITES, expected_split
 
 
 class Sprint0ContractViolation(ValueError):
@@ -25,6 +31,12 @@ class Sprint0ContractViolation(ValueError):
 BRIDGE_SCHEMA = "OFFICIAL_V3_LEGACY_START_BRIDGE_AUDIT_V1"
 REMEDIATION_SCHEMA = "OFFICIAL_V3_FIT_REMEDIATION_QUEUE_V1"
 STALE_LEASE_SCHEMA = "OFFICIAL_V3_STALE_LEASE_RECOVERY_AUDIT_V1"
+REMEDIATION_FIELDS = [
+    "schema", "queue_epoch_id", "canonical_parent_key", "suite", "task_idx", "state_id", "split",
+    "source_bridge_status", "official_v3_disposition", "source_provenance_class",
+    "superseded_artifact_sha256", "remediation_required", "replacement_identity_policy", "lease_status",
+    "fencing_token", "selection_reason", "attack_outcome_considered", "teacher_outcome_considered",
+]
 
 BRIDGE_PASS = "BRIDGE_PASS"
 BRIDGE_HOLD = "HOLD"
@@ -85,15 +97,65 @@ def _sha_text(value: Any) -> str:
     ).hexdigest()
 
 
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
 def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
 def _require_key(row: Mapping[str, Any]) -> str:
     key = str(row.get("canonical_parent_key", "")).strip()
-    if not key or "/task_" not in key or "/state_" not in key:
-        raise Sprint0ContractViolation(f"invalid canonical_parent_key: {key!r}")
+    parse_canonical_parent_key(key)
     return key
+
+
+def parse_canonical_parent_key(key: str) -> tuple[str, int, int]:
+    """Parse and validate the only canonical identity form accepted by V3."""
+
+    match = re.fullmatch(r"([^/]+)/task_(\d{2})/state_(\d{2})", str(key).strip())
+    if not match:
+        raise Sprint0ContractViolation(f"invalid canonical_parent_key: {key!r}")
+    suite, task_text, state_text = match.groups()
+    task_idx, state_id = int(task_text), int(state_text)
+    if suite not in SUITES or not 0 <= task_idx < 10 or not 0 <= state_id < 50:
+        raise Sprint0ContractViolation(f"canonical identity is outside Official V3 universe: {key!r}")
+    return suite, task_idx, state_id
+
+
+def _input_binding(path: Path, *, schema: str, row_count: int | None = None, identity_count: int | None = None) -> dict[str, Any]:
+    return {
+        "path": str(path.resolve()),
+        "sha256": sha256_file(path),
+        "schema": schema,
+        "row_count": row_count,
+        "identity_count": identity_count,
+    }
+
+
+def _runner_binding(*, runner_head: str, worktree_clean: bool, config_path: Path) -> dict[str, Any]:
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", runner_head):
+        raise Sprint0ContractViolation("runner_head must be a full 40-character Git SHA")
+    if not worktree_clean:
+        raise Sprint0ContractViolation("formal Sprint 0 audit requires a clean runner worktree")
+    return {
+        "runner_head": runner_head,
+        "runner_worktree_clean": bool(worktree_clean),
+        "config_path": str(config_path.resolve()),
+        "config_sha256": sha256_file(config_path),
+    }
+
+
+def _attach_run_binding(report: dict[str, Any], *, inputs: dict[str, Any], runner: dict[str, Any]) -> dict[str, Any]:
+    report["input_snapshots"] = inputs
+    report["runner_binding"] = runner
+    report["official_v3_decision_allowed"] = False
+    return report
 
 
 def _validate_provenance_columns(rows: Iterable[Mapping[str, Any]]) -> None:
@@ -144,6 +206,7 @@ def audit_legacy_bridge(
     baseline: dict[str, Any],
     *,
     expected_keys: Iterable[str] | None = None,
+    allow_partial: bool = False,
 ) -> dict[str, Any]:
     """Classify legacy execution evidence using provenance fields only.
 
@@ -155,6 +218,8 @@ def audit_legacy_bridge(
 
     _validate_baseline(baseline)
     _validate_provenance_columns(inventory_rows)
+    if expected_keys is None and not allow_partial:
+        raise Sprint0ContractViolation("formal bridge audit requires a frozen expected identity set")
     expected = set(expected_keys or ())
     seen: set[str] = set()
     rows: list[dict[str, Any]] = []
@@ -196,14 +261,23 @@ def audit_legacy_bridge(
         formal_v3 = status == BRIDGE_PASS and evidence == "MEASURED_SINGLE_GENERATION" and _truthy(
             source.get("worker_start_manifest_present")
         )
+        if formal_v3:
+            disposition = "PASS_FORMAL_CANDIDATE"
+        elif status == BRIDGE_PASS and evidence == "LEGACY_METADATA_ONLY":
+            disposition = EXACT_REMEDIATION_REQUIRED
+            reasons.append("OFFICIAL_V3_REQUIRES_EXACT_REMEDIATION")
+        else:
+            disposition = status
         rows.append(
             {
                 "canonical_parent_key": key,
                 "bridge_status": status,
+                "legacy_pilot_bridge_status": status,
+                "official_v3_disposition": disposition,
                 "generation_evidence": evidence,
                 "legacy_25d_pilot_eligible": status == BRIDGE_PASS,
                 "official_v3_formal_eligible": formal_v3,
-                "remediation_required": status == EXACT_REMEDIATION_REQUIRED,
+                "remediation_required": disposition == EXACT_REMEDIATION_REQUIRED,
                 "reason": ";".join(dict.fromkeys(reasons)) or "PROVENANCE_FIELDS_MATCH_FROZEN_BASELINE",
                 "source_artifact_recursive_sha256": source.get("artifact_recursive_sha256", ""),
                 "provenance_class": source.get("provenance_class", ""),
@@ -215,6 +289,8 @@ def audit_legacy_bridge(
             {
                 "canonical_parent_key": key,
                 "bridge_status": EXACT_REMEDIATION_REQUIRED,
+                "legacy_pilot_bridge_status": EXACT_REMEDIATION_REQUIRED,
+                "official_v3_disposition": EXACT_REMEDIATION_REQUIRED,
                 "generation_evidence": "MISSING",
                 "legacy_25d_pilot_eligible": False,
                 "official_v3_formal_eligible": False,
@@ -225,26 +301,40 @@ def audit_legacy_bridge(
             }
         )
     counts = Counter(row["bridge_status"] for row in rows)
+    disposition_counts = Counter(row["official_v3_disposition"] for row in rows)
     overall = BRIDGE_PASS
     if counts[EXACT_REMEDIATION_REQUIRED]:
         overall = EXACT_REMEDIATION_REQUIRED
     elif counts[BRIDGE_HOLD]:
         overall = BRIDGE_HOLD
+    if disposition_counts[EXACT_REMEDIATION_REQUIRED]:
+        official_overall = EXACT_REMEDIATION_REQUIRED
+    elif disposition_counts[BRIDGE_HOLD]:
+        official_overall = BRIDGE_HOLD
+    elif disposition_counts["PASS_FORMAL_CANDIDATE"] != len(rows) or allow_partial:
+        official_overall = BRIDGE_HOLD
+    else:
+        official_overall = "PASS"
     return {
         "schema": BRIDGE_SCHEMA,
         "created_at": _now(),
         "policy": "PROVENANCE_ONLY_NO_TEACHER_NO_DETECTOR_NO_ATTACK",
         "overall_status": overall,
+        "legacy_pilot_bridge_overall_status": overall,
+        "official_v3_overall_status": official_overall,
         "identity_count": len(rows),
         "bridge_pass_count": counts[BRIDGE_PASS],
         "hold_count": counts[BRIDGE_HOLD],
         "exact_remediation_required_count": counts[EXACT_REMEDIATION_REQUIRED],
+        "official_v3_disposition_counts": dict(disposition_counts),
         "legacy_25d_pilot_eligible_count": sum(row["legacy_25d_pilot_eligible"] for row in rows),
         "official_v3_formal_eligible_count": sum(row["official_v3_formal_eligible"] for row in rows),
         "records": rows,
         "teacher_labels_read": False,
         "detector_outputs_read": False,
         "attack_results_read": False,
+        "partial_inventory_allowed": allow_partial,
+        "official_v3_decision_allowed": False,
         "formal_training_authorized": False,
         "formal_attack_authorized": False,
     }
@@ -265,6 +355,14 @@ def build_fit_remediation_queue(
     queue_epoch_id: str,
     formal_registry_rows: list[dict[str, Any]] | None = None,
     include_statuses: set[str] | None = None,
+    expected_identity_count: int = 2000,
+    expected_fit_count: int = 800,
+    expected_per_suite: int = 200,
+    expected_per_task: int = 20,
+    expected_suite_count: int = 4,
+    expected_task_count: int = 40,
+    input_snapshots: dict[str, Any] | None = None,
+    runner_binding: dict[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Build an exact-identity FIT remediation queue without result selection."""
 
@@ -273,9 +371,31 @@ def build_fit_remediation_queue(
     manifest_by_key: dict[str, dict[str, str]] = {}
     for row in manifest_rows:
         key = _require_key(row)
+        suite, task_idx, state_id = parse_canonical_parent_key(key)
+        try:
+            row_identity = (str(row.get("suite")), int(row.get("task_idx")), int(row.get("state_id")))
+        except (TypeError, ValueError) as exc:
+            raise Sprint0ContractViolation(f"manifest execution columns are invalid: {key}") from exc
+        if row_identity != (suite, task_idx, state_id):
+            raise Sprint0ContractViolation(f"manifest columns do not match canonical identity: {key}")
+        if row.get("split") != expected_split(state_id):
+            raise Sprint0ContractViolation(f"manifest split does not match canonical state: {key}")
         if key in manifest_by_key:
             raise Sprint0ContractViolation(f"duplicate canonical manifest identity: {key}")
         manifest_by_key[key] = row
+    if len(manifest_by_key) != expected_identity_count:
+        raise Sprint0ContractViolation(
+            f"canonical manifest must contain {expected_identity_count} identities, got {len(manifest_by_key)}"
+        )
+    fit_manifest = [row for row in manifest_by_key.values() if row.get("split") == "FIT_TRAIN"]
+    if len(fit_manifest) != expected_fit_count:
+        raise Sprint0ContractViolation(f"FIT manifest count mismatch: expected {expected_fit_count}, got {len(fit_manifest)}")
+    suite_counts = Counter(str(row.get("suite")) for row in fit_manifest)
+    if any(count != expected_per_suite for count in suite_counts.values()) or len(suite_counts) != expected_suite_count:
+        raise Sprint0ContractViolation(f"FIT suite quota mismatch: {dict(suite_counts)}")
+    task_counts = Counter((str(row.get("suite")), int(row.get("task_idx"))) for row in fit_manifest)
+    if any(count != expected_per_task for count in task_counts.values()) or len(task_counts) != expected_task_count:
+        raise Sprint0ContractViolation("FIT task quota mismatch")
     bridge_by_key: dict[str, dict[str, Any]] = {}
     for row in bridge_report.get("records", []):
         key = _require_key(row)
@@ -300,7 +420,8 @@ def build_fit_remediation_queue(
             raise Sprint0ContractViolation(f"remediation identity absent from canonical manifest: {key}")
         if manifest.get("split", "") != "FIT_TRAIN":
             continue
-        if bridge.get("bridge_status") not in statuses:
+        disposition = bridge.get("official_v3_disposition", bridge.get("bridge_status"))
+        if disposition not in statuses:
             continue
         if key in active:
             raise Sprint0ContractViolation(f"active identity cannot enter remediation queue: {key}")
@@ -325,6 +446,7 @@ def build_fit_remediation_queue(
                 "state_id": manifest.get("state_id", ""),
                 "split": manifest.get("split", ""),
                 "source_bridge_status": bridge.get("bridge_status", ""),
+                "official_v3_disposition": disposition,
                 "source_provenance_class": bridge.get("provenance_class", ""),
                 "superseded_artifact_sha256": bridge.get("source_artifact_recursive_sha256", ""),
                 "remediation_required": True,
@@ -350,6 +472,8 @@ def build_fit_remediation_queue(
         "attack_outcomes_read": False,
         "formal_training_authorized": False,
         "formal_attack_authorized": False,
+        "input_snapshots": input_snapshots or {},
+        "runner_binding": runner_binding or {},
     }
     return rows, summary
 
@@ -373,6 +497,9 @@ def audit_stale_lease_recovery(
     now_epoch: float,
     stale_after_seconds: float = 600.0,
     expected_stale_keys: Iterable[str] | None = None,
+    late_quarantine_rows: list[dict[str, Any]] | None = None,
+    input_snapshots: dict[str, Any] | None = None,
+    runner_binding: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Audit stale-lease fencing without mutating the ledger.
 
@@ -383,6 +510,8 @@ def audit_stale_lease_recovery(
 
     live_pids = {str(row.get("pid")) for row in process_rows if _truthy(row.get("alive"))}
     active_rows = [row for row in ledger_rows if row.get("status") in {"LEASED", "RUNNING"}]
+    active_key_counts = Counter(_require_key(row) for row in active_rows)
+    duplicate_active_keys = sorted(key for key, count in active_key_counts.items() if count > 1)
     stale_rows: list[dict[str, str]] = []
     for row in active_rows:
         pid = str(row.get("pid", ""))
@@ -396,12 +525,19 @@ def audit_stale_lease_recovery(
     expected = set(expected_stale_keys or ())
     unexpected = sorted(set(stale_keys) - expected) if expected else []
     missing_expected = sorted(expected - set(stale_keys)) if expected else []
-    formal_by_key: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    results_by_key: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in formal_result_rows:
-        if _truthy(row.get("formal_selected")) or row.get("formal_result_sha256"):
-            formal_by_key[_require_key(row)].append(row)
-    duplicate_formal_results = sorted(key for key, rows in formal_by_key.items() if len(rows) != 1)
-    missing_formal_results = sorted(key for key in stale_keys if key not in formal_by_key)
+        results_by_key[_require_key(row)].append(row)
+    selected_by_key: dict[str, list[dict[str, Any]]] = {
+        key: [row for row in rows if _truthy(row.get("formal_selected"))]
+        for key, rows in results_by_key.items()
+    }
+    duplicate_formal_results = sorted(key for key in stale_keys if len(selected_by_key.get(key, [])) > 1)
+    missing_formal_results = sorted(key for key in stale_keys if len(selected_by_key.get(key, [])) == 0)
+    quarantine_by_key_sha: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+    for row in late_quarantine_rows or []:
+        quarantine_by_key_sha[(_require_key(row), str(row.get("artifact_sha256", "")))].append(row)
+    late_result_violations: list[str] = []
     recovery_by_key: dict[str, dict[str, Any]] = {}
     fence_violations: list[str] = []
     for row in recovery_rows:
@@ -412,21 +548,58 @@ def audit_stale_lease_recovery(
         recovery_by_key[key] = row
         old = next((lease for lease in stale_rows if _require_key(lease) == key), None)
         try:
-            old_epoch = int(row.get("old_lease_epoch_id"))
+            ledger_old_epoch = int(old.get("lease_epoch_id")) if old is not None else -1
+            record_old_epoch = int(row.get("old_lease_epoch_id"))
             new_epoch = int(row.get("new_lease_epoch_id"))
         except (TypeError, ValueError):
             fence_violations.append(f"INVALID_EPOCH:{key}")
             continue
         if old is None or str(row.get("old_lease_uuid")) != str(old.get("lease_uuid")):
             fence_violations.append(f"OLD_LEASE_MISMATCH:{key}")
+        if old is None or record_old_epoch != ledger_old_epoch:
+            fence_violations.append(f"OLD_LEASE_EPOCH_MISMATCH:{key}")
         if not row.get("new_lease_uuid") or row.get("new_lease_uuid") == row.get("old_lease_uuid"):
             fence_violations.append(f"LEASE_UUID_NOT_ROTATED:{key}")
-        if new_epoch <= old_epoch:
+        if new_epoch <= ledger_old_epoch:
             fence_violations.append(f"LEASE_EPOCH_NOT_ADVANCED:{key}")
         if not row.get("fencing_token"):
             fence_violations.append(f"MISSING_FENCING_TOKEN:{key}")
         if str(row.get("late_result_policy", "")).upper() != "QUARANTINE":
             fence_violations.append(f"LATE_RESULT_NOT_QUARANTINED:{key}")
+        selected = selected_by_key.get(key, [])
+        if len(selected) == 1:
+            result = selected[0]
+            if not result.get("formal_result_sha256"):
+                late_result_violations.append(f"SELECTED_RESULT_SHA_MISSING:{key}")
+            if str(result.get("lease_uuid")) != str(row.get("new_lease_uuid")):
+                late_result_violations.append(f"SELECTED_RESULT_LEASE_UUID_MISMATCH:{key}")
+            try:
+                result_epoch = int(result.get("lease_epoch_id"))
+                expected_epoch = int(row.get("new_lease_epoch_id"))
+            except (TypeError, ValueError):
+                late_result_violations.append(f"SELECTED_RESULT_EPOCH_INVALID:{key}")
+            else:
+                if result_epoch != expected_epoch:
+                    late_result_violations.append(f"SELECTED_RESULT_EPOCH_MISMATCH:{key}")
+            if str(result.get("fencing_token")) != str(row.get("fencing_token")):
+                late_result_violations.append(f"SELECTED_RESULT_FENCING_TOKEN_MISMATCH:{key}")
+        for result in results_by_key.get(key, []):
+            if _truthy(result.get("formal_selected")) or not result.get("formal_result_sha256"):
+                continue
+            artifact_sha = str(result.get("formal_result_sha256"))
+            quarantine = quarantine_by_key_sha.get((key, artifact_sha), [])
+            if len(quarantine) != 1:
+                late_result_violations.append(f"LATE_RESULT_NOT_QUARANTINED:{key}:{artifact_sha}")
+                continue
+            record = quarantine[0]
+            if _truthy(record.get("formal_selected")):
+                late_result_violations.append(f"QUARANTINE_MARKED_FORMAL:{key}:{artifact_sha}")
+            if str(record.get("old_lease_uuid")) != str(row.get("old_lease_uuid")):
+                late_result_violations.append(f"QUARANTINE_OLD_UUID_MISMATCH:{key}:{artifact_sha}")
+            if str(record.get("old_lease_epoch_id")) != str(row.get("old_lease_epoch_id")):
+                late_result_violations.append(f"QUARANTINE_OLD_EPOCH_MISMATCH:{key}:{artifact_sha}")
+            if not str(record.get("quarantine_reason", "")).strip():
+                late_result_violations.append(f"QUARANTINE_REASON_MISSING:{key}:{artifact_sha}")
     missing_recovery = sorted(set(stale_keys) - set(recovery_by_key))
     unexpected_recovery = sorted(set(recovery_by_key) - set(stale_keys))
     hold = bool(
@@ -434,11 +607,18 @@ def audit_stale_lease_recovery(
         or missing_expected
         or duplicate_formal_results
         or missing_formal_results
+        or duplicate_active_keys
         or fence_violations
+        or late_result_violations
         or missing_recovery
         or unexpected_recovery
     )
-    status = "RECOVERY_NOT_REQUIRED" if not stale_keys else ("HOLD" if hold else "RECOVERY_SAFE")
+    if hold:
+        status = "HOLD"
+    elif not stale_keys:
+        status = "RECOVERY_NOT_REQUIRED"
+    else:
+        status = "RECOVERY_SAFE"
     return {
         "schema": STALE_LEASE_SCHEMA,
         "created_at": _now(),
@@ -451,11 +631,15 @@ def audit_stale_lease_recovery(
         "unexpected_recovery_records": unexpected_recovery,
         "duplicate_formal_result_keys": duplicate_formal_results,
         "missing_formal_result_keys": missing_formal_results,
+        "duplicate_active_canonical_keys": duplicate_active_keys,
         "fence_violations": fence_violations,
+        "late_result_violations": late_result_violations,
         "late_result_policy": "QUARANTINE",
         "ledger_mutated": False,
         "formal_training_authorized": False,
         "formal_attack_authorized": False,
+        "input_snapshots": input_snapshots or {},
+        "runner_binding": runner_binding or {},
     }
 
 
@@ -471,44 +655,72 @@ def read_json(path: Path) -> dict[str, Any]:
     return value
 
 
+def _atomic_write_pair(path: Path, body: bytes) -> None:
+    """Write a file and checksum without overwriting or leaving our temp files."""
+
+    sidecar = path.with_name(path.name + ".sha256")
+    if path.exists() or sidecar.exists():
+        raise Sprint0ContractViolation(f"refusing to overwrite sealed output: {path}")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    token = uuid.uuid4().hex
+    temp_body = path.with_name(f".{path.name}.{token}.tmp")
+    temp_sidecar = sidecar.with_name(f".{sidecar.name}.{token}.tmp")
+    digest = hashlib.sha256(body).hexdigest()
+    moved_body = False
+    try:
+        with temp_body.open("wb") as handle:
+            handle.write(body)
+            handle.flush()
+            os.fsync(handle.fileno())
+        sidecar_body = f"{digest}  {path.name}\n".encode("utf-8")
+        with temp_sidecar.open("wb") as handle:
+            handle.write(sidecar_body)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temp_body, path)
+        moved_body = True
+        os.replace(temp_sidecar, sidecar)
+    except OSError as exc:
+        for temp in (temp_body, temp_sidecar):
+            try:
+                temp.unlink()
+            except FileNotFoundError:
+                pass
+        if moved_body:
+            try:
+                path.unlink()
+            except FileNotFoundError:
+                pass
+        raise Sprint0ContractViolation(f"atomic sealed output failed: {path}") from exc
+
+
 def write_sealed_json(path: Path, payload: dict[str, Any]) -> None:
-    if path.exists():
-        raise Sprint0ContractViolation(f"refusing to overwrite sealed output: {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    sidecar = path.with_name(path.name + ".sha256")
-    if sidecar.exists():
-        raise Sprint0ContractViolation(f"refusing to overwrite checksum sidecar: {sidecar}")
-    sidecar.write_text(f"{digest}  {path.name}\n", encoding="utf-8")
+    body = (json.dumps(payload, indent=2, sort_keys=True) + "\n").encode("utf-8")
+    _atomic_write_pair(path, body)
 
 
-def write_sealed_csv(path: Path, rows: list[dict[str, Any]]) -> None:
-    if path.exists():
-        raise Sprint0ContractViolation(f"refusing to overwrite sealed output: {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    fields = list(rows[0]) if rows else []
-    with path.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fields)
-        writer.writeheader()
-        writer.writerows(rows)
-    digest = hashlib.sha256(path.read_bytes()).hexdigest()
-    sidecar = path.with_name(path.name + ".sha256")
-    if sidecar.exists():
-        raise Sprint0ContractViolation(f"refusing to overwrite checksum sidecar: {sidecar}")
-    sidecar.write_text(f"{digest}  {path.name}\n", encoding="utf-8")
+def write_sealed_csv(path: Path, rows: list[dict[str, Any]], *, fieldnames: list[str] | None = None) -> None:
+    fields = fieldnames or (list(rows[0]) if rows else [])
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(buffer, fieldnames=fields)
+    writer.writeheader()
+    writer.writerows({field: row.get(field, "") for field in fields} for row in rows)
+    _atomic_write_pair(path, buffer.getvalue().encode("utf-8"))
 
 
 __all__ = [
     "BRIDGE_HOLD",
     "BRIDGE_PASS",
     "EXACT_REMEDIATION_REQUIRED",
+    "REMEDIATION_FIELDS",
     "Sprint0ContractViolation",
     "audit_legacy_bridge",
     "audit_stale_lease_recovery",
     "build_fit_remediation_queue",
     "read_csv_rows",
     "read_json",
+    "parse_canonical_parent_key",
+    "sha256_file",
     "write_sealed_csv",
     "write_sealed_json",
 ]
