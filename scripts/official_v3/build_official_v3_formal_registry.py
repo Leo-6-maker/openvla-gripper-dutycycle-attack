@@ -6,17 +6,21 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
+import re
+import shutil
+import uuid
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from gripper_attack.official_v3_contract import PASS_STATUSES, SUITES, load_contract, sha256_file
+from gripper_attack.official_v3_contract import PASS_STATUSES, SUITES, canonical_key, load_contract, sha256_file
 
 
 REGISTRY_FIELDS = [
     "canonical_parent_key", "suite", "task_idx", "state_id", "split", "ledger_status", "task_success",
-    "selected_artifact_root", "selected_artifact_recursive_sha256", "artifact_audit_sha256",
+    "selected_artifact_root", "selected_artifact_recursive_sha256", "artifact_audit_path", "artifact_audit_sha256",
     "provenance_class", "worker_start_manifest_sha256", "collector_head", "worker_id", "gpu_id",
     "worker_script_sha256", "adapter_sha256", "protocol_sha256", "model_tree_sha256", "processor_tree_sha256",
     "formal_eligible", "formal_selected", "superseded_artifact_sha256", "remediation_required",
@@ -54,6 +58,8 @@ def build_registry(
     equivalence_status: str = "HOLD",
     remediation_rows: list[dict[str, str]] | None = None,
     expected_identity_count: int = 2000,
+    stale_recovery_unresolved_count: int | None = None,
+    stale_recovery_summary_sha256: str = "",
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     audits = _audit_map(audit_reports)
     remediation = {row.get("canonical_parent_key", ""): row for row in (remediation_rows or [])}
@@ -66,9 +72,16 @@ def build_registry(
             ledger[key] = row
     keys = [row.get("canonical_parent_key", "") for row in manifest_rows]
     duplicate_manifest_keys = sorted(key for key, count in Counter(keys).items() if not key or count > 1)
+    identity_column_mismatches: list[str] = []
     rows: list[dict[str, Any]] = []
     for manifest in manifest_rows:
         key = manifest.get("canonical_parent_key", "")
+        try:
+            expected_key = canonical_key(manifest.get("suite", ""), int(manifest.get("task_idx", "-1")), int(manifest.get("state_id", "-1")))
+        except (TypeError, ValueError):
+            expected_key = ""
+        if key != expected_key:
+            identity_column_mismatches.append(key or expected_key or "<empty>")
         ledger_row = ledger.get(key, {})
         candidates = list(audits.get(key, []))
         selected_hint = remediation.get(key, {}).get("selected_artifact_root", "")
@@ -89,13 +102,19 @@ def build_registry(
             "formal_eligible": False,
             "formal_selected": False,
         })
-        if key in duplicate_manifest_keys:
+        if key in identity_column_mismatches:
+            base["selection_reason"] = "CANONICAL_IDENTITY_COLUMN_MISMATCH"
+        elif key in duplicate_manifest_keys:
             base["selection_reason"] = "DUPLICATE_MANIFEST_CANONICAL_KEY"
         elif len(candidates) != 1:
             base["selection_reason"] = "NO_AUDIT_CANDIDATE" if not candidates else "DUPLICATE_AUDIT_CANDIDATE"
         else:
             audit = candidates[0]
             base.update({field: audit.get(field, "") for field in REGISTRY_FIELDS if field in audit})
+            base["selected_artifact_root"] = audit.get("selected_artifact_root", audit.get("artifact_root", ""))
+            base["selected_artifact_recursive_sha256"] = audit.get(
+                "selected_artifact_recursive_sha256", audit.get("artifact_recursive_sha256", "")
+            )
             base["canonical_parent_key"] = key
             base["task_success"] = base["task_success"] if base["task_success"] is not None else audit.get("task_success", "")
             eligible = audit.get("status") in PASS_STATUSES and bool(audit.get("formal_eligible"))
@@ -110,17 +129,38 @@ def build_registry(
             base["formal_selected"] = eligible and key not in duplicate_manifest_keys
         rows.append(base)
 
-    split_selected = Counter(row["split"] for row in rows if row["formal_selected"])
-    suite_selected = Counter(row["suite"] for row in rows if row["formal_selected"])
-    task_selected = Counter((row["suite"], str(row["task_idx"])) for row in rows if row["formal_selected"])
+    fit_rows = [row for row in rows if row["split"] == "FIT_TRAIN"]
+    fit_split_selected = Counter(row["split"] for row in fit_rows if row["formal_selected"])
+    fit_suite_selected = Counter(row["suite"] for row in fit_rows if row["formal_selected"])
+    fit_task_selected = Counter((row["suite"], str(int(row["task_idx"]))) for row in fit_rows if row["formal_selected"])
+    global_split_selected = Counter(row["split"] for row in rows if row["formal_selected"])
+    global_suite_selected = Counter(row["suite"] for row in rows if row["formal_selected"])
+    global_task_selected = Counter((row["suite"], str(int(row["task_idx"]))) for row in rows if row["formal_selected"])
+    full_artifact_audit_pass_count = sum(bool(row["formal_selected"]) for row in fit_rows)
+    unresolved_provenance_count = sum(
+        row.get("provenance_class") in {"C_START_RECORD_MISSING", "D_DIRTY_START_QUARANTINE"}
+        or row.get("selection_reason") == "OLD_HEAD_EQUIVALENCE_HOLD"
+        for row in fit_rows
+    )
+    unfinished_remediation_count = sum(
+        bool(row["remediation_required"]) and not bool(row["formal_selected"])
+        for row in fit_rows
+    )
+    duplicate_selection_count = len(duplicate_manifest_keys)
     fit_ready = (
         len(rows) == expected_identity_count
         and len(set(keys)) == expected_identity_count
-        and split_selected["FIT_TRAIN"] == 800
-        and all(suite_selected[suite] == 200 for suite in SUITES)
-        and all(task_selected[(suite, str(task))] == 20 for suite in SUITES for task in range(10))
+        and fit_split_selected["FIT_TRAIN"] == 800
+        and all(fit_suite_selected[suite] == 200 for suite in SUITES)
+        and all(fit_task_selected[(suite, str(task))] == 20 for suite in SUITES for task in range(10))
         and not duplicate_manifest_keys
+        and not identity_column_mismatches
         and all(row["formal_selected"] or row["split"] != "FIT_TRAIN" for row in rows)
+        and full_artifact_audit_pass_count == 800
+        and unresolved_provenance_count == 0
+        and unfinished_remediation_count == 0
+        and duplicate_selection_count == 0
+        and stale_recovery_unresolved_count == 0
     )
     summary = {
         "schema": "OFFICIAL_V3_FORMAL_REGISTRY_SUMMARY_V1",
@@ -128,13 +168,26 @@ def build_registry(
         "identity_count": len(rows),
         "unique_identity_count": len(set(keys)),
         "duplicate_manifest_keys": duplicate_manifest_keys,
+        "identity_column_mismatches": sorted(set(identity_column_mismatches)),
         "raw_sealed_count": sum(bool(audits.get(key)) for key in set(keys)),
         "formal_selected_count": sum(bool(row["formal_selected"]) for row in rows),
+        "global_formal_selected_count": sum(bool(row["formal_selected"]) for row in rows),
+        "fit_formal_selected_count": sum(bool(row["formal_selected"]) for row in fit_rows),
         "task_success_count": sum(row["task_success"] is True for row in rows),
         "task_failure_count": sum(row["task_success"] is False for row in rows),
-        "by_split_formal_selected": dict(split_selected),
-        "by_suite_formal_selected": dict(suite_selected),
-        "fit_train_missing": max(0, 800 - split_selected["FIT_TRAIN"]),
+        "by_split_formal_selected": dict(global_split_selected),
+        "by_suite_formal_selected": dict(global_suite_selected),
+        "by_task_formal_selected": {f"{suite}/task_{task}": count for (suite, task), count in sorted(global_task_selected.items())},
+        "fit_by_suite_formal_selected": dict(fit_suite_selected),
+        "fit_by_task_formal_selected": {f"{suite}/task_{task}": count for (suite, task), count in sorted(fit_task_selected.items())},
+        "fit_train_missing": max(0, 800 - fit_split_selected["FIT_TRAIN"]),
+        "full_artifact_audit_pass_count": full_artifact_audit_pass_count,
+        "unresolved_provenance_count": unresolved_provenance_count,
+        "unfinished_remediation_count": unfinished_remediation_count,
+        "stale_recovery_unresolved_count": stale_recovery_unresolved_count,
+        "stale_recovery_summary_sha256": stale_recovery_summary_sha256,
+        "stale_recovery_audit_sha256": stale_recovery_summary_sha256,
+        "duplicate_selection_count": duplicate_selection_count,
         "provenance_counts": dict(Counter(str(row.get("provenance_class", "")) for row in rows)),
         "remediation_required_count": sum(bool(row["remediation_required"]) for row in rows),
         "formal_fit_ready": fit_ready,
@@ -147,21 +200,31 @@ def build_registry(
 def write_registry(rows: list[dict[str, Any]], summary: dict[str, Any], output_root: Path) -> None:
     if output_root.exists():
         raise ValueError(f"refusing to overwrite registry root: {output_root}")
-    output_root.mkdir(parents=True)
-    registry = output_root / "OFFICIAL_V3_FORMAL_REGISTRY_V1.csv"
-    with registry.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=REGISTRY_FIELDS)
-        writer.writeheader()
-        writer.writerows({field: row.get(field, "") for field in REGISTRY_FIELDS} for row in rows)
-    summary_path = output_root / "OFFICIAL_V3_FORMAL_REGISTRY_SUMMARY_V1.json"
-    summary["registry_sha256"] = sha256_file(registry)
-    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    sums = output_root / "SHA256SUMS"
-    sums.write_text(
-        f"{sha256_file(registry)}  {registry.name}\n{sha256_file(summary_path)}  {summary_path.name}\n",
-        encoding="utf-8",
-    )
-    (output_root / "SHA256SUMS.sha256").write_text(f"{sha256_file(sums)}  SHA256SUMS\n", encoding="utf-8")
+    staging = output_root.with_name(f".{output_root.name}.{uuid.uuid4().hex}.staging")
+    if staging.exists():
+        raise ValueError(f"registry staging root already exists: {staging}")
+    try:
+        staging.mkdir(parents=True)
+        registry = staging / "OFFICIAL_V3_FORMAL_REGISTRY_V1.csv"
+        with registry.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=REGISTRY_FIELDS)
+            writer.writeheader()
+            writer.writerows({field: row.get(field, "") for field in REGISTRY_FIELDS} for row in rows)
+        sealed_summary = dict(summary)
+        summary_path = staging / "OFFICIAL_V3_FORMAL_REGISTRY_SUMMARY_V1.json"
+        sealed_summary["registry_sha256"] = sha256_file(registry)
+        summary_path.write_text(json.dumps(sealed_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        sums = staging / "SHA256SUMS"
+        sums.write_text(
+            f"{sha256_file(registry)}  {registry.name}\n{sha256_file(summary_path)}  {summary_path.name}\n",
+            encoding="utf-8",
+        )
+        (staging / "SHA256SUMS.sha256").write_text(f"{sha256_file(sums)}  SHA256SUMS\n", encoding="utf-8")
+        os.replace(staging, output_root)
+    except (OSError, TypeError, ValueError):
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
+        raise
 
 
 def _load_audit_reports(root: Path) -> dict[str, list[dict[str, Any]]]:
@@ -170,8 +233,47 @@ def _load_audit_reports(root: Path) -> dict[str, list[dict[str, Any]]]:
         report = json.loads(path.read_text(encoding="utf-8"))
         key = report.get("canonical_parent_key")
         if key:
+            report["artifact_audit_path"] = str(path.resolve())
+            report["artifact_audit_sha256"] = sha256_file(path)
             result[str(key)].append(report)
     return result
+
+
+def _read_stale_recovery_audit(path: Path) -> tuple[int, str]:
+    """Validate the actual Sprint-0 stale audit schema, not a guessed count."""
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("schema") != "OFFICIAL_V3_STALE_LEASE_RECOVERY_AUDIT_V1":
+        raise ValueError("unexpected stale recovery audit schema")
+    sidecar = path.with_name(path.name + ".sha256")
+    expected = f"{sha256_file(path)}  {path.name}"
+    if not sidecar.is_file() or sidecar.read_text(encoding="utf-8").strip() != expected:
+        raise ValueError("stale recovery audit SHA sidecar is missing or invalid")
+    if payload.get("status") not in {"RECOVERY_NOT_REQUIRED", "RECOVERY_SAFE"}:
+        raise ValueError(f"stale recovery audit is not closed: {payload.get('status')!r}")
+    if not isinstance(payload.get("stale_keys"), list):
+        raise ValueError("stale recovery audit stale_keys must be a list")
+    list_fields = (
+        "unexpected_stale_keys", "missing_expected_stale_keys",
+        "missing_recovery_records", "unexpected_recovery_records", "duplicate_formal_result_keys",
+        "missing_formal_result_keys", "duplicate_active_canonical_keys", "fence_violations",
+        "late_result_violations",
+    )
+    if any(payload.get(field) not in ([], {}) for field in list_fields):
+        raise ValueError("stale recovery audit contains unresolved findings")
+    runner = payload.get("runner_binding")
+    if payload.get("ledger_mutated") is not False or payload.get("formal_training_authorized") is not False or payload.get("formal_attack_authorized") is not False:
+        raise ValueError("stale recovery audit authorization boundary is invalid")
+    if "official_v3_decision_allowed" in payload and payload["official_v3_decision_allowed"] is not False:
+        raise ValueError("stale recovery audit decision boundary is invalid")
+    if (
+        not isinstance(runner, dict)
+        or runner.get("runner_worktree_clean") is not True
+        or not re.fullmatch(r"[0-9a-fA-F]{40}", str(runner.get("runner_head", "")))
+        or not re.fullmatch(r"[0-9a-fA-F]{64}", str(runner.get("runner_script_sha256", "")))
+        or not re.fullmatch(r"[0-9a-fA-F]{64}", str(runner.get("config_sha256", "")))
+    ):
+        raise ValueError("stale recovery audit runner provenance is incomplete")
+    return 0, sha256_file(path)
 
 
 def main() -> int:
@@ -183,13 +285,20 @@ def main() -> int:
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--equivalence-status", choices=("PASS", "HOLD"), default="HOLD")
     parser.add_argument("--remediation", type=Path)
+    parser.add_argument("--stale-recovery-audit", "--stale-recovery-summary", dest="stale_recovery_audit", type=Path)
     args = parser.parse_args()
     contract = load_contract(args.contract)
     remediation = read_csv(args.remediation) if args.remediation else []
+    stale_count = None
+    stale_summary_sha = ""
+    if args.stale_recovery_audit:
+        stale_count, stale_summary_sha = _read_stale_recovery_audit(args.stale_recovery_audit)
     rows, summary = build_registry(
         read_csv(args.manifest), read_csv(args.ledger), _load_audit_reports(args.audit_root),
         equivalence_status=args.equivalence_status, remediation_rows=remediation,
         expected_identity_count=int(contract["expected_identity_count"]),
+        stale_recovery_unresolved_count=stale_count,
+        stale_recovery_summary_sha256=stale_summary_sha,
     )
     write_registry(rows, summary, args.output_root)
     print(json.dumps({key: summary[key] for key in ("identity_count", "formal_selected_count", "formal_fit_ready")}, sort_keys=True))
