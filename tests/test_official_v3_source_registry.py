@@ -235,6 +235,25 @@ def test_registry_keeps_task_failure_and_rejects_duplicate_identity(tmp_path: Pa
     assert summary["formal_training_authorized"] is False
 
 
+def test_recovery_census_is_required_for_formal_selection_when_supplied(tmp_path: Path):
+    contract = load_contract(CONTRACT_PATH)
+    artifact = _build_artifact(tmp_path / "artifact")
+    report = audit_artifact(artifact, contract)
+    key = "libero_object/task_00/state_00"
+    manifest = [{"canonical_parent_key": key, "suite": "libero_object", "task_idx": "0", "state_id": "0", "split": "FIT_TRAIN"}]
+    ledger = [{"canonical_parent_key": key, "status": "PASS"}]
+    missing_recovery = [{"canonical_parent_key": key, "recovery_status": "MISSING"}]
+    rows, summary = build_registry(manifest, ledger, {key: report}, expected_identity_count=1, recovery_rows=missing_recovery, recovery_census_sha256="r" * 64)
+    assert rows[0]["formal_selected"] is False
+    assert rows[0]["selection_reason"] == "PROVENANCE_RECOVERY_HOLD"
+    assert summary["recovery_unresolved_count"] == 1
+    exact_recovery = [{"canonical_parent_key": key, "recovery_status": "EXACT_DIRECT_START_UUID", "recovery_method": "EXACT_DIRECT_START_UUID", "start_uuid": "s1", "worker_start_manifest_sha256": "m" * 64}]
+    rows, summary = build_registry(manifest, ledger, {key: report}, expected_identity_count=1, recovery_rows=exact_recovery, recovery_census_sha256="r" * 64)
+    assert rows[0]["formal_selected"] is True
+    assert rows[0]["recovery_start_uuid"] == "s1"
+    assert summary["recovery_unresolved_count"] == 0
+
+
 def test_incremental_diff_and_worker_strata_detect_duplicate_lease(tmp_path: Path):
     contract = load_contract(CONTRACT_PATH)
     artifact = _build_artifact(tmp_path / "artifact")
