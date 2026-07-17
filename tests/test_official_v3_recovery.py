@@ -43,6 +43,17 @@ def test_exact_lease_chain_is_formal():
     assert rows[0]["formal_eligible"] is True
 
 
+def test_direct_manifest_sha_mismatch_is_contradictory():
+    rows, _ = build_recovery_rows(
+        [artifact()],
+        [worker()],
+        [],
+        [completion(start_uuid="s1", worker_start_manifest_sha256="x" * 64)],
+    )
+    assert rows[0]["recovery_status"] == CONTRADICTORY
+    assert rows[0]["recovery_reason"] == "DIRECT_START_MANIFEST_SHA_MISMATCH"
+
+
 def test_weak_pid_match_never_promotes():
     rows, _ = build_recovery_rows([artifact()], [worker()], [], [])
     assert rows[0]["recovery_status"] == WEAK

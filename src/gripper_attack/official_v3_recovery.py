@@ -177,12 +177,21 @@ def build_recovery_rows(
                     if worker is None:
                         result.update(recovery_status=MISSING, recovery_reason="DIRECT_START_UUID_NOT_IN_MANIFEST_INVENTORY")
                     else:
+                        recorded_manifest_sha = _text(completion.get("worker_start_manifest_sha256"))
+                        actual_manifest_sha = _text(worker.get("manifest_sha256"))
+                        if recorded_manifest_sha and actual_manifest_sha and recorded_manifest_sha != actual_manifest_sha:
+                            result.update(
+                                recovery_status=CONTRADICTORY,
+                                recovery_reason="DIRECT_START_MANIFEST_SHA_MISMATCH",
+                            )
+                            output.append(result)
+                            continue
                         result.update(
                             recovery_status=EXACT_DIRECT,
                             recovery_method=EXACT_DIRECT,
                             formal_eligible=True,
                             start_uuid=direct_start,
-                            worker_start_manifest_sha256=_text(worker.get("manifest_sha256")),
+                            worker_start_manifest_sha256=actual_manifest_sha,
                             worker_start_manifest_sidecar_sha256=_text(worker.get("manifest_sidecar_sha256")),
                             worker_start_gate_record_sha256=_text(worker.get("worker_start_gate_ack_sha256") or worker.get("worker_start_gate_ready_sha256")),
                             direct_binding_fields=["canonical_parent_key", "start_uuid", "artifact_recursive_sha256"],
