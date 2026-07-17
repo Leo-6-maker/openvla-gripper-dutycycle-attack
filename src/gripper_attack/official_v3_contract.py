@@ -276,8 +276,13 @@ def _verify_campaign_membership(
     if row is None or row.get("artifact_recursive_sha256") != recursive_sha:
         raise ContractViolation("PROVENANCE", f"artifact is not the frozen campaign FIT artifact: {key}")
     accepted = payload.get("accepted_artifact_field_values", {})
-    for name in ("collector_head", "model_tree_sha256", "processor_tokenizer_sha256"):
-        value = meta.get(name)
+    aliases = {
+        "collector_head": ("collector_head", "collector_git_head"),
+        "model_tree_sha256": ("model_tree_sha256",),
+        "processor_tokenizer_sha256": ("processor_tokenizer_sha256",),
+    }
+    for name, candidates in aliases.items():
+        value = next((meta.get(candidate) for candidate in candidates if meta.get(candidate)), None)
         values = accepted.get(name)
         if value and isinstance(values, list) and values and value not in values:
             raise ContractViolation("PROVENANCE", f"artifact field is outside accepted campaign envelope: {name}")
@@ -440,7 +445,12 @@ def verify_artifact(
         mode == "full" and meta.get("policy_intent_feature_names_9d") != contract["policy_intent_feature_names_9d"]
     ):
         raise ContractViolation("PROTOCOL", "metadata feature order mismatch")
-    for name in ("initial_state_sha256", "model_tree_sha256", "processor_tokenizer_sha256", "protocol_sha256"):
+    required_sha_names = (
+        ("initial_state_sha256", "processor_tokenizer_sha256")
+        if mode == "campaign_25d"
+        else ("initial_state_sha256", "model_tree_sha256", "processor_tokenizer_sha256", "protocol_sha256")
+    )
+    for name in required_sha_names:
         if not isinstance(meta.get(name), str) or len(meta[name]) != 64:
             raise ContractViolation("PROVENANCE", f"metadata SHA missing: {name}")
     if (root / "teacher_retention_records.jsonl").exists() or (root / "retention_events.json").exists():
@@ -468,8 +478,8 @@ def verify_artifact(
         "worker_id": meta.get("worker_id", worker["slot_id"] if worker else ""),
         "gpu_id": meta.get("gpu_id", worker["gpu_id"] if worker else ""),
         "worker_start_manifest_sha256": sha256_file(root / "worker_start_manifest.json") if worker else "",
-        "collector_head": meta.get("collector_head", worker["collector_head"] if worker else ""),
-        "worker_script_sha256": meta.get("worker_script_sha256", worker["worker_script_sha256"] if worker else ""),
+        "collector_head": meta.get("collector_head", meta.get("collector_git_head", worker["collector_head"] if worker else "")),
+        "worker_script_sha256": meta.get("worker_script_sha256", meta.get("collector_script_sha256", worker["worker_script_sha256"] if worker else "")),
         "adapter_sha256": meta.get("adapter_sha256", worker["adapter_sha256"] if worker else ""),
         "protocol_sha256": meta.get("protocol_sha256", worker["protocol_sha256"] if worker else ""),
         "model_tree_sha256": meta.get("model_tree_sha256", worker["model_tree_sha256"] if worker else ""),
