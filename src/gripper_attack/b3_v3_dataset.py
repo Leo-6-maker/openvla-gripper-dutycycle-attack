@@ -308,7 +308,30 @@ def compute_fit_normalization(episodes: Iterable[B3Episode], *, include_9d: bool
     return B3Normalization(tuple(mean25.tolist()), tuple(std25.tolist()), tuple(mean9.tolist()), tuple(std9.tolist()))
 
 
+def select_fit_fold_episodes(
+    episodes: Sequence[B3Episode], fold_manifest: dict[str, Any], *, fold_id: int, partition: str,
+) -> list[B3Episode]:
+    """Select the pre-frozen 600/200 episode partition without reordering identities."""
+
+    if partition not in {"train", "validation"}:
+        raise ValueError("partition must be train or validation")
+    folds = {int(item["fold_id"]): item for item in fold_manifest.get("folds", [])}
+    if fold_id not in folds:
+        raise ValueError(f"fold is not present in manifest: {fold_id}")
+    field = "train_identities" if partition == "train" else "validation_identities"
+    selected = set(folds[fold_id][field])
+    by_key = {episode.canonical_parent_key: episode for episode in episodes}
+    if set(by_key) != set().union(*(set(item["train_identities"]) | set(item["validation_identities"]) for item in folds.values())):
+        raise ValueError("episodes do not match the sealed fold identity universe")
+    result = [by_key[key] for key in sorted(selected)]
+    expected_count = 600 if partition == "train" else 200
+    if len(result) != expected_count:
+        raise ValueError(f"fold {fold_id} {partition} count mismatch: {len(result)}")
+    return result
+
+
 __all__ = [
     "FIT_SPLIT", "FORMAL_PROVENANCE", "B3Episode", "B3Batch", "B3EpisodeSampler",
     "load_formal_registry_csv", "load_episode", "pad_episode_batch", "compute_fit_normalization",
+    "select_fit_fold_episodes",
 ]

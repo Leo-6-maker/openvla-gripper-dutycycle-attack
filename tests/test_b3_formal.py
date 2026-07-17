@@ -13,6 +13,7 @@ from gripper_attack.b3_formal import (  # noqa: E402
     save_b3_checkpoint,
     validate_training_authorization,
 )
+from gripper_attack.b3_training_protocol import build_training_authorization
 
 
 def _hidden_equal(left, right):
@@ -63,20 +64,21 @@ def test_checkpoint_has_separate_official_schema_but_defaults_to_smoke(tmp_path)
     assert normalization.sha256 == payload["normalization_sha256"]
 
 
-def test_formal_authorization_requires_sealed_inputs():
+def test_formal_authorization_requires_machine_built_sealed_inputs(tmp_path):
     with pytest.raises(ValueError, match="authorization"):
         validate_training_authorization({"formal_training_authorized": True})
-    auth = {
-        "schema": "B3_OFFICIAL_V3_TRAINING_AUTHORIZATION_V1",
-        "authorization_status": "PASS",
-        "formal_fit_ready": True,
-        "s1_materialization_status": "PASS",
-        "teacher_aggregate_status": "PASS",
-        "formal_training_authorized": True,
-        "formal_attack_authorized": False,
-        "formal_fit_registry_sha256": "a" * 64,
-        "s1_corpus_sha256": "b" * 64,
-        "teacher_aggregate_sha256": "c" * 64,
-        "runner_head": "d" * 40,
+    runner = {
+        "status": "PASS", "runner_head": "d" * 40, "runner_worktree_clean": True,
     }
+    runner["runner_binding_sha256"] = json_sha({key: value for key, value in runner.items()})
+    snapshots = {name: f"{index + 1:064x}" for index, name in enumerate((
+        "formal_fit_registry_sha256", "formal_registry_summary_sha256", "formal_registry_root_sha256",
+        "s1_corpus_sha256", "s1_root_audit_sha256", "teacher_aggregate_sha256",
+        "training_protocol_sha256", "source_contract_sha256", "protocol_sha256", "feature_rebuilder_sha256",
+        "normalization_bundle_sha256", "normalization_sha256", "fold_manifest_sha256",
+    ))}
+    auth = build_training_authorization(
+        tmp_path / "authorization", variant="B3_25D", fold_id=0, seed=20260717,
+        input_snapshots=snapshots, runner_binding=runner, generator_script_sha256="f" * 64,
+    )
     validate_training_authorization(auth)

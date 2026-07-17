@@ -34,6 +34,8 @@ def test_viability_is_fit_only_and_event_level():
     metrics = evaluator.event_level_metrics(rows)
     assert metrics["full_t10_event_hit_count"] == 1
     assert metrics["effectiveness_metrics_are_not_attack_results"] is True
+    with_non_event = [dict(rows[0], event_id=-1, target_t10=True, pred_emit=True)] + rows
+    assert evaluator.event_level_metrics(with_non_event)["event_count"] == 1
     with pytest.raises(ValueError, match="FIT_TRAIN"):
         evaluator.validate_fit_only([dict(rows[0], state_id=24, split="CAL")])
 
