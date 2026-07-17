@@ -592,7 +592,11 @@ def _teacher_rows(prepared: dict[str, Any]) -> list[dict[str, Any]]:
         output = {
             "schema": "B3_OFFICIAL_V3_TEACHER_RECORD_V1",
             **identity,
-            **{key: row.get(key) for key in row_keys if key in row},
+            # Emit the frozen Teacher schema deterministically.  Optional
+            # event evidence is represented by null, never by a missing key;
+            # downstream dataset loading and independent root auditing both
+            # require an exact field set.
+            **{key: row.get(key) for key in row_keys},
         }
         output["step"] = index
         if output.get("retention_unknown_mask") is True:
@@ -618,7 +622,7 @@ def audit_teacher_episode(
     strict_provenance = registry_row is not None or source_artifact_sha256 is not None or feature_rebuilder_sha256 is not None
     for index, row in enumerate(rows):
         if strict_provenance:
-            if set(row) - TEACHER_FIELDS:
+            if set(row) != TEACHER_FIELDS:
                 violations.append(f"STEP_{index}_TEACHER_FIELD_WHITELIST")
             if row.get("schema") != "B3_OFFICIAL_V3_TEACHER_RECORD_V1":
                 violations.append(f"STEP_{index}_TEACHER_SCHEMA")
