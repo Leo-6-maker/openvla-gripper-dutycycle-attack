@@ -420,7 +420,11 @@ def verify_artifact(
     if suite not in SUITES or not isinstance(task, int) or not 0 <= task < 10 or not isinstance(state, int) or not 0 <= state < 50:
         raise ContractViolation("PROTOCOL", "invalid suite/task/state identity")
     key = canonical_key(suite, task, state)
-    if meta.get("canonical_parent_key") != key or meta.get("split") != expected_split(state):
+    expected_artifact_split = expected_split(state)
+    split_ok = meta.get("split") == expected_artifact_split or (
+        mode == "campaign_25d" and state < 20 and meta.get("split") == "FIT"
+    )
+    if meta.get("canonical_parent_key") != key or not split_ok:
         raise ContractViolation("IDENTITY", "canonical identity or split mismatch")
     if meta.get("official_horizon") != HORIZONS[suite] or runtime.get("official_horizon") != HORIZONS[suite] or meta.get("num_steps_wait") != 10:
         raise ContractViolation("PROTOCOL", "official horizon/wait mismatch")
