@@ -68,7 +68,6 @@ def main() -> int:
         raise SystemExit("B3_25D must not receive --policy-intent-root")
     if args.variant == "B3_25D9D" and args.policy_intent_root is None:
         raise SystemExit("B3_25D9D requires --policy-intent-root")
-    episodes = load_full_fit_episodes(args.registry_csv, args.s1_root, policy_intent_root=args.policy_intent_root)
     trainer_path = Path(__file__).with_name("train_b3_v3_detector.py")
     spec = importlib.util.spec_from_file_location("b3_v3_formal_trainer", trainer_path)
     if spec is None or spec.loader is None:
@@ -88,6 +87,7 @@ def main() -> int:
     )
     if measured_binding != authorization["runner_binding"]:
         raise SystemExit("FULL_FIT_REFIT_HOLD: runner binding does not match authorization")
+    episodes = load_full_fit_episodes(args.registry_csv, args.s1_root, policy_intent_root=args.policy_intent_root)
     policy_root_sha256 = None if args.policy_intent_root is None else sha256_file(args.policy_intent_root / "SHA256SUMS")
     normalization, normalization_source = load_normalization_bundle(
         args.normalization_root, fold_id="FULL_FIT", variant=args.variant,

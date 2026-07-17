@@ -96,6 +96,7 @@ def build_viability_decision(aggregate_root: Path, config_path: Path, output_roo
     decision = {
         "schema": DECISION_SCHEMA,
         "status": "PASS" if overall_pass else "HOLD",
+        "run_count": len(runs),
         "aggregate_sha256": aggregate_sha,
         "aggregate_root_sha256": sha256_file(aggregate_root / "SHA256SUMS"),
         "decision_config_sha256": config_sha,
