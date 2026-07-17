@@ -116,7 +116,7 @@ def test_old_head_requires_equivalence_then_becomes_eligible(tmp_path: Path):
 def test_25d_audit_does_not_require_policy_intent_stream(tmp_path: Path):
     contract = load_contract(CONTRACT_PATH)
     artifact = _build_artifact(tmp_path / "25d_only")
-    (artifact / "policy_intent_records.jsonl").unlink()
+    (artifact / "policy_intent_records.jsonl").write_text("not-jsonl\n", encoding="utf-8")
     _reseal(artifact)
     report = audit_artifact(artifact, contract, mode="25d")
     assert report["status"] == "PASS_FORMAL_CANDIDATE"
@@ -181,7 +181,11 @@ def test_stale_audit_uses_real_schema_and_allows_closed_recovery(tmp_path: Path)
         "duplicate_formal_result_keys": [], "missing_formal_result_keys": [],
         "duplicate_active_canonical_keys": [], "fence_violations": [],
         "late_result_violations": [], "ledger_mutated": False,
-        "official_v3_decision_allowed": False,
+        "formal_training_authorized": False, "formal_attack_authorized": False,
+        "runner_binding": {
+            "runner_head": "a" * 40, "runner_worktree_clean": True,
+            "runner_script_sha256": "b" * 64, "config_sha256": "c" * 64,
+        },
     }
     _write(path, payload)
     _write(path.with_name(path.name + ".sha256"), f"{sha256_file(path)}  {path.name}\n")

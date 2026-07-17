@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import re
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -246,8 +247,19 @@ def _read_stale_recovery_audit(path: Path) -> tuple[int, str]:
     )
     if any(payload.get(field) not in ([], {}) for field in list_fields):
         raise ValueError("stale recovery audit contains unresolved findings")
-    if payload.get("ledger_mutated") is not False or payload.get("official_v3_decision_allowed") is not False:
+    runner = payload.get("runner_binding")
+    if payload.get("ledger_mutated") is not False or payload.get("formal_training_authorized") is not False or payload.get("formal_attack_authorized") is not False:
         raise ValueError("stale recovery audit authorization boundary is invalid")
+    if "official_v3_decision_allowed" in payload and payload["official_v3_decision_allowed"] is not False:
+        raise ValueError("stale recovery audit decision boundary is invalid")
+    if (
+        not isinstance(runner, dict)
+        or runner.get("runner_worktree_clean") is not True
+        or not re.fullmatch(r"[0-9a-fA-F]{40}", str(runner.get("runner_head", "")))
+        or not re.fullmatch(r"[0-9a-fA-F]{64}", str(runner.get("runner_script_sha256", "")))
+        or not re.fullmatch(r"[0-9a-fA-F]{64}", str(runner.get("config_sha256", "")))
+    ):
+        raise ValueError("stale recovery audit runner provenance is incomplete")
     return 0, sha256_file(path)
 
 

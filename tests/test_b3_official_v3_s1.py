@@ -76,7 +76,9 @@ def _write_registry(tmp_path: Path, rows=None, **summary_overrides):
             _write(audit_path, {"schema": "OFFICIAL_V3_ARTIFACT_AUDIT_V1", "canonical_parent_key": row["canonical_parent_key"]})
             row["artifact_audit_path"] = str(audit_path)
             row["artifact_audit_sha256"] = s1.sha256_file(audit_path)
-    registry = tmp_path / "OFFICIAL_V3_FORMAL_REGISTRY_V1.csv"
+    registry_root = tmp_path / "registry_input"
+    registry = registry_root / "OFFICIAL_V3_FORMAL_REGISTRY_V1.csv"
+    registry_root.mkdir(parents=True)
     fields = list(rows[0]) if rows else [
         "canonical_parent_key", "suite", "task_idx", "state_id", "split",
         "selected_artifact_root", "selected_artifact_recursive_sha256",
@@ -106,8 +108,11 @@ def _write_registry(tmp_path: Path, rows=None, **summary_overrides):
         "stale_recovery_summary_sha256": "c" * 64,
     }
     summary.update(summary_overrides)
-    summary_path = tmp_path / "OFFICIAL_V3_FORMAL_REGISTRY_SUMMARY_V1.json"
+    summary_path = registry_root / "OFFICIAL_V3_FORMAL_REGISTRY_SUMMARY_V1.json"
     _write(summary_path, summary)
+    sums = registry_root / "SHA256SUMS"
+    _write(sums, f"{s1.sha256_file(registry)}  {registry.name}\n{s1.sha256_file(summary_path)}  {summary_path.name}\n")
+    _write(sums.with_name("SHA256SUMS.sha256"), f"{s1.sha256_file(sums)}  SHA256SUMS\n")
     return registry, summary_path
 
 
@@ -314,8 +319,23 @@ def test_teacher_aggregate_requires_exact_identity_set():
     assert aggregate["status"] == "PASS"
     assert aggregate["actual_identity_count"] == 800
     assert aggregate["suite_episode_counts"] == {suite: 200 for suite in sorted(SUITES)}
+    assert len(aggregate["task_episode_counts"]) == 40
+    assert all(count == 20 for count in aggregate["task_episode_counts"].values())
     reports.pop()
     assert s1.aggregate_teacher_audit(reports, registry)["status"] == "HOLD"
+
+
+def test_release_step_is_checked_in_full_episode_stream():
+    rows = _teacher_rows(20)
+    rows[11]["released_event_id"] = 0
+    rows[11]["event_release_onset"] = True
+    events = [{"event_id": 0, "start_step": 0, "end_step": 10, "release_step": 11}]
+    assert s1.audit_teacher_episode(rows, events, "libero_10/task_00/state_00")["status"] == "PASS"
+
+    events[0]["release_step"] = 12
+    report = s1.audit_teacher_episode(rows, events, "libero_10/task_00/state_00")
+    assert report["status"] == "HOLD"
+    assert "EVENT_0_RELEASE_ONSET_MISMATCH" in report["violations"]
 
 
 def test_materialized_student_is_separate_from_teacher_and_policy(tmp_path: Path, monkeypatch):
@@ -348,6 +368,18 @@ def test_materialized_student_is_separate_from_teacher_and_policy(tmp_path: Path
     } for item in student)
     assert (output / "teacher_retention_records.jsonl").exists()
     assert not (output / "policy_intent_9d_records.jsonl").exists()
+    independent = s1.audit_materialized_episode(
+        output, row, feature_order_sha256=json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))["feature_order_sha256"]
+    )
+    assert independent["status"] == "PASS"
+
+
+def test_registry_checksum_manifest_has_exact_file_closure(tmp_path: Path):
+    registry, summary = _write_registry(tmp_path)
+    assert len(s1.load_formal_fit_registry(registry, summary)) == 800
+    (registry.parent / "unlisted.txt").write_text("tamper\n", encoding="utf-8")
+    with pytest.raises(s1.V3S1ContractViolation):
+        s1.load_formal_fit_registry(registry, summary)
 
 
 def test_primary_25d_materializer_does_not_require_or_open_9d_stream(tmp_path: Path, monkeypatch):

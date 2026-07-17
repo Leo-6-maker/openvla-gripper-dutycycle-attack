@@ -31,6 +31,10 @@ class V3S1ContractViolation(ValueError):
 
 
 HEADS = ("grasp_support", "retention_active", "retention_continuation_t10", "release_imminent")
+STUDENT_FIELDS = frozenset({
+    "schema", "source_schema", "feature_order_sha256", "suite", "task_idx", "state_id",
+    "canonical_parent_key", "step", "features_25d", "valid",
+})
 MASKS = {
     "grasp_support": "grasp_support_mask",
     "retention_active": "retention_active_mask",
@@ -51,6 +55,37 @@ def sha256_file(path: Path) -> str:
         for block in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def verify_checksum_manifest(root: Path, *, required_names: set[str] | None = None) -> None:
+    """Verify SHA256SUMS plus exact directory closure at a trust boundary."""
+    root = root.resolve()
+    sums = root / "SHA256SUMS"
+    sidecar = root / "SHA256SUMS.sha256"
+    if not sums.is_file() or not sidecar.is_file():
+        raise V3S1ContractViolation(f"checksum manifest is incomplete: {root}")
+    if sidecar.read_text(encoding="utf-8").strip() != f"{sha256_file(sums)}  SHA256SUMS":
+        raise V3S1ContractViolation(f"checksum manifest sidecar mismatch: {root}")
+    listed: dict[str, str] = {}
+    for line in sums.read_text(encoding="utf-8").splitlines():
+        digest, separator, name = line.partition("  ")
+        if not separator or len(digest) != 64 or any(char not in "0123456789abcdefABCDEF" for char in digest) or not name:
+            raise V3S1ContractViolation(f"invalid SHA256SUMS row: {root}")
+        relative = Path(name)
+        if relative.is_absolute() or ".." in relative.parts or relative.as_posix() in listed:
+            raise V3S1ContractViolation(f"unsafe or duplicate SHA256SUMS path: {name}")
+        path = root / relative
+        if not path.is_file() or sha256_file(path).lower() != digest.lower():
+            raise V3S1ContractViolation(f"SHA256SUMS digest mismatch: {name}")
+        listed[relative.as_posix()] = digest.lower()
+    if required_names and not required_names.issubset(listed):
+        raise V3S1ContractViolation(f"required files absent from SHA256SUMS: {sorted(required_names - set(listed))}")
+    actual = {path.relative_to(root).as_posix() for path in root.rglob("*") if path.is_file()}
+    expected = set(listed) | {"SHA256SUMS", "SHA256SUMS.sha256"}
+    if actual != expected:
+        raise V3S1ContractViolation(
+            f"SHA256SUMS file-set closure mismatch: extra={sorted(actual - expected)} missing={sorted(expected - actual)}"
+        )
 
 
 def json_sha(value: Any) -> str:
@@ -195,6 +230,9 @@ def load_s1_protocol(path: Path) -> tuple[dict[str, Any], RetentionConfig]:
 
 
 def load_formal_fit_registry(registry_csv: Path, summary_json: Path) -> list[dict[str, str]]:
+    if registry_csv.resolve().parent != summary_json.resolve().parent:
+        raise V3S1ContractViolation("formal registry CSV and summary must share one sealed root")
+    verify_checksum_manifest(registry_csv.parent, required_names={registry_csv.name, summary_json.name})
     all_rows = _read_csv(registry_csv)
     summary = _load_json(summary_json)
     required_summary = {
@@ -504,8 +542,15 @@ def audit_teacher_episode(rows: list[dict[str, Any]], events: list[dict[str, Any
         event_rows = [row for row in rows if row.get("event_id") == expected_id]
         if isinstance(start, int) and isinstance(end, int) and [row.get("step") for row in event_rows] != list(range(start, end + 1)):
             violations.append(f"EVENT_{expected_id}_ROW_INTERVAL_MISMATCH")
-        release_step = event.get("release_onset")
-        if release_step is not None and not any(row.get("event_release_onset") == release_step for row in event_rows):
+        release_step = event.get("release_step")
+        release_rows = [
+            row for row in rows
+            if row.get("released_event_id") == expected_id and row.get("event_release_onset") is True
+        ]
+        if release_step is None:
+            if release_rows:
+                violations.append(f"EVENT_{expected_id}_UNEXPECTED_RELEASE_ONSET")
+        elif len(release_rows) != 1 or release_rows[0].get("step") != release_step:
             violations.append(f"EVENT_{expected_id}_RELEASE_ONSET_MISMATCH")
         previous_end = end if isinstance(end, int) else previous_end
     for index, row in enumerate(rows):
@@ -621,10 +666,13 @@ def aggregate_teacher_audit(reports: list[dict[str, Any]], registry_rows: list[d
         "later_event_known_t10_steps": 0,
         "later_event_positive_t10_steps": 0,
     }
+    task_episode_counts: Counter[str] = Counter()
     for report in reports:
         identity = str(report.get("canonical_parent_key", ""))
-        suite, _, task = identity.partition("/")
-        task_key = f"{suite}/{task}" if suite and task else identity
+        parts = identity.split("/")
+        suite = parts[0] if parts else ""
+        task_key = "/".join(parts[:2]) if len(parts) == 3 else identity
+        task_episode_counts[task_key] += 1
         task_head_counts.setdefault(task_key, {head: empty_counts() for head in HEADS})
         for head in HEADS:
             counts = report.get("teacher_counts", {}).get(head, {})
@@ -650,6 +698,8 @@ def aggregate_teacher_audit(reports: list[dict[str, Any]], registry_rows: list[d
     structural_pass = (
         set(actual) == expected and len(actual) == 800 and not duplicates and not violations
         and all(suite_counts[suite] == 200 for suite in SUITES)
+        and set(task_episode_counts) == {f"{suite}/task_{task:02d}" for suite in SUITES for task in range(10)}
+        and all(count == 20 for count in task_episode_counts.values())
         and all(row.get("status") == "PASS" for row in reports)
     )
     nondegeneracy_gates = {
@@ -672,6 +722,7 @@ def aggregate_teacher_audit(reports: list[dict[str, Any]], registry_rows: list[d
         "global_teacher_counts": global_head_counts,
         "suite_teacher_counts": suite_head_counts,
         "task_teacher_counts": task_head_counts,
+        "task_episode_counts": dict(sorted(task_episode_counts.items())),
         "event_ordinal_counts": ordinal_counts,
         "suite_known_t10_positive": suite_known_t10_positive,
         "task_all_unknown": task_all_unknown,
@@ -685,10 +736,12 @@ def aggregate_teacher_audit(reports: list[dict[str, Any]], registry_rows: list[d
 
 def audit_materialized_episode(
     episode_root: Path, registry_row: dict[str, str], *, require_runner_binding: bool = False,
+    feature_order_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Audit a promoted episode independently of the writer's in-memory state."""
     manifest_path = episode_root / "materialization_manifest.json"
     manifest = _load_json(manifest_path)
+    verify_checksum_manifest(episode_root)
     identity = registry_row["canonical_parent_key"]
     if manifest.get("schema") != "B3_OFFICIAL_V3_S1_EPISODE_V1":
         raise V3S1ContractViolation(f"unexpected materialized episode schema: {identity}")
@@ -726,8 +779,12 @@ def audit_materialized_episode(
     if len(student_rows) != len(teacher_rows):
         raise V3S1ContractViolation(f"student/teacher length mismatch: {identity}")
     for index, row in enumerate(student_rows):
+        if set(row) != STUDENT_FIELDS:
+            raise V3S1ContractViolation(f"student field whitelist mismatch: {identity}:{index}")
         if row.get("schema") != "B3_OFFICIAL_V3_STUDENT_INPUT_V1" or row.get("source_schema") != "OFFICIAL_25D_V1":
             raise V3S1ContractViolation(f"student schema mismatch: {identity}:{index}")
+        if feature_order_sha256 is None or row.get("feature_order_sha256") != feature_order_sha256:
+            raise V3S1ContractViolation(f"student feature order binding mismatch: {identity}:{index}")
         if row.get("canonical_parent_key") != identity or row.get("step") != index or not _finite_vector(row.get("features_25d"), 25) or not isinstance(row.get("valid"), bool):
             raise V3S1ContractViolation(f"student row mismatch: {identity}:{index}")
     report = audit_teacher_episode(teacher_rows, events, identity)
@@ -738,8 +795,10 @@ def audit_materialized_episode(
 
 def audit_materialized_root(
     root: Path, registry_rows: list[dict[str, str]], *, require_runner_binding: bool = False,
+    feature_order_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Re-read a sealed corpus and require exact registry identity closure."""
+    verify_checksum_manifest(root)
     expected = {row["canonical_parent_key"]: row for row in registry_rows}
     top_path = root / "B3_OFFICIAL_V3_S1_MATERIALIZATION_MANIFEST_V1.json"
     top_sidecar = top_path.with_name(top_path.name + ".sha256")
@@ -759,7 +818,10 @@ def audit_materialized_root(
         if identity not in expected or identity in seen:
             raise V3S1ContractViolation(f"materialized root contains extra/duplicate identity: {identity}")
         seen.add(identity)
-        reports.append(audit_materialized_episode(manifest_path.parent, expected[identity], require_runner_binding=require_runner_binding))
+        reports.append(audit_materialized_episode(
+            manifest_path.parent, expected[identity], require_runner_binding=require_runner_binding,
+            feature_order_sha256=feature_order_sha256,
+        ))
     if seen != set(expected) or len(reports) != len(expected):
         raise V3S1ContractViolation(f"materialized root identity closure failed: expected={len(expected)} actual={len(seen)}")
     aggregate = aggregate_teacher_audit(reports, registry_rows)
@@ -998,7 +1060,7 @@ def write_census_bundle(output_root: Path, rows: list[dict[str, str]], summary: 
 __all__ = [
     "V3S1ContractViolation", "aggregate_teacher_audit", "audit_teacher_episode", "audit_materialized_episode",
     "audit_materialized_root", "build_fit_census", "export_policy_intent_9d", "write_census_bundle",
-    "build_s1_runner_binding",
+    "build_s1_runner_binding", "verify_checksum_manifest",
     "dry_run_episode", "load_formal_fit_registry", "load_s1_protocol", "materialize_episode",
     "materialize_fit", "sha256_file", "write_sealed_csv", "write_sealed_json",
 ]
