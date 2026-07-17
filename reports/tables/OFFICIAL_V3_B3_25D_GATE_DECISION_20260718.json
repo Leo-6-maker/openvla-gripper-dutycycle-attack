@@ -1,0 +1,27 @@
+{
+  "schema": "OFFICIAL_V3_B3_25D_VIABILITY_HANDOFF_V1",
+  "execution_head": "5e27d7c4b1a188bc6a78555f94d2571222587805",
+  "github_pr_82_head_at_handoff": "87a4561af8883baacf161961c2fb9a114ff459c6",
+  "viability_report_sha256": "0bccf84eeb23d32aba58f4461b35a8dba6e8359b7c7ffd63f1b4843b386eb78d",
+  "variant": "B3_25D",
+  "run_count": 12,
+  "gates": {
+    "mean_full_t10_event_hit_rate": {"value": 0.9571636255488839, "threshold": 0.8, "operator": ">=", "status": "PASS"},
+    "mean_later_event_hit_rate": {"value": 0.882065082065082, "threshold": 0.5, "operator": ">=", "status": "PASS"},
+    "max_release_overlap_count": {"value": 0, "threshold": 0, "operator": "=", "status": "PASS"},
+    "mean_negative_episode_any_emit_rate": {"value": 0.13449754901960784, "threshold": 0.1, "operator": "<=", "status": "FAIL"},
+    "max_negative_episode_any_emit_rate": {"value": 0.1875, "threshold": 0.1, "operator": "<=", "status": "FAIL"},
+    "close_baseline_not_worse": {"status": "FAIL", "definition": "B3 full-T10 must not be below the same-validation close-only baseline"}
+  },
+  "decision": "HOLD",
+  "status": "B3_25D_ONLY_PROVISIONAL",
+  "formal_training_authorized": false,
+  "model_selection_authorized": false,
+  "formal_attack_authorized": false,
+  "cal_read": false,
+  "check_read": false,
+  "attack_executed": false,
+  "post_hoc_threshold_retuning": false,
+  "full_fit_refit_started": false,
+  "reason": "Negative-episode any-emit exceeds the pre-registered limit and B3 does not meet the baseline non-inferiority requirement."
+}
