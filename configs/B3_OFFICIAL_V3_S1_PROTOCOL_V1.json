@@ -1,0 +1,49 @@
+{
+  "schema": "B3_OFFICIAL_V3_S1_PROTOCOL_V1",
+  "status": "PREPARATION_ONLY",
+  "source_contract_schema": "OFFICIAL_V3_SOURCE_CONTRACT_V1",
+  "fit_split": "FIT_TRAIN",
+  "expected_fit_identities": 800,
+  "expected_suite_identities": 200,
+  "expected_task_identities": 20,
+  "suites": ["libero_object", "libero_spatial", "libero_goal", "libero_10"],
+  "student_records": {
+    "primary": "features_25d",
+    "policy_intent_ablation_file": "policy_intent_9d_records.jsonl",
+    "forbidden_fields": [
+      "event_id", "event_ordinal", "retention_continuation_t10",
+      "retention_unknown_mask", "release_imminent", "object_state",
+      "mujoco_contact_pairs", "attack_outcome"
+    ]
+  },
+  "teacher_heads": [
+    "grasp_support", "retention_active",
+    "retention_continuation_t10", "release_imminent"
+  ],
+  "teacher_masks": {
+    "grasp_support": "grasp_support_mask",
+    "retention_active": "retention_active_mask",
+    "retention_continuation_t10": "retention_unknown_mask",
+    "release_imminent": "release_imminent_mask"
+  },
+  "retention_teacher_parameters": {
+    "n_close": 3,
+    "n_open": 3,
+    "stability_window": 3,
+    "qpos_range_max": 0.05,
+    "opening_range_max": 0.05,
+    "min_transport_steps": 3,
+    "min_transport_displacement": 0.002,
+    "release_lookahead": 3,
+    "t10": 10
+  },
+  "invariants": {
+    "unknown_is_negative": false,
+    "event_intervals_must_not_overlap": true,
+    "t10_positive_must_be_same_event": true,
+    "tail_without_full_t10_is_unknown": true,
+    "release_overlap_is_forbidden": true
+  },
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}
