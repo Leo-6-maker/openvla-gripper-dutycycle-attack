@@ -1,0 +1,28 @@
+{
+  "schema": "OFFICIAL_V3_PROVENANCE_RECOVERY_CENSUS_V1",
+  "status": "DISCOVERY_ONLY",
+  "formal_decision_allowed": false,
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false,
+  "recovery_methods": [
+    "EXACT_DIRECT_START_UUID",
+    "EXACT_LEASE_CHAIN",
+    "UNIQUE_WEAK_DERIVATION",
+    "AMBIGUOUS",
+    "MISSING",
+    "CONTRADICTORY"
+  ],
+  "formal_methods": [
+    "EXACT_DIRECT_START_UUID",
+    "EXACT_LEASE_CHAIN"
+  ],
+  "source_tables": [
+    "artifact_rows",
+    "worker_start_rows",
+    "lease_rows",
+    "completion_rows"
+  ],
+  "weak_derivations_are_formal": false,
+  "empty_or_explanatory_rows": "ignored_only_in_lease_and_completion_inputs",
+  "output_policy": "non_overwrite_staging_atomic_rename"
+}
