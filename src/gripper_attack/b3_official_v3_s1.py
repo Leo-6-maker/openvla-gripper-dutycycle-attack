@@ -286,17 +286,23 @@ def load_formal_fit_registry(registry_csv: Path, summary_json: Path) -> list[dic
     expected_fit_tasks = {f"{suite}/task_{task}": 20 for suite in SUITES for task in range(10)}
     if summary.get("fit_by_task_formal_selected") != expected_fit_tasks:
         raise V3S1ContractViolation("formal FIT registry task counts are not closed")
-    for name in ("registry_sha256", "stale_recovery_summary_sha256"):
+    campaign_rows_present = any(row.get("provenance_class") == CAMPAIGN_PROVENANCE for row in all_rows)
+    for name in ("registry_sha256",):
         value = summary.get(name)
         if not isinstance(value, str) or len(value) != 64 or any(char not in "0123456789abcdefABCDEF" for char in value):
             raise V3S1ContractViolation(f"formal FIT registry input closure missing: {name}")
+    stale_summary_sha = summary.get("stale_recovery_summary_sha256")
+    if stale_summary_sha is not None:
+        if not isinstance(stale_summary_sha, str) or len(stale_summary_sha) != 64 or any(char not in "0123456789abcdefABCDEF" for char in stale_summary_sha):
+            raise V3S1ContractViolation("formal FIT registry stale recovery SHA is invalid")
+    elif not campaign_rows_present:
+        raise V3S1ContractViolation("formal FIT registry input closure missing: stale_recovery_summary_sha256")
     if summary["registry_sha256"].lower() != sha256_file(registry_csv):
         raise V3S1ContractViolation("formal FIT registry CSV SHA does not match its summary")
     if summary.get("identity_count") != 2000 or summary.get("unique_identity_count") != 2000:
         raise V3S1ContractViolation("formal FIT registry is not bound to the complete 2000-identity universe")
     if summary.get("formal_training_authorized") is not False or summary.get("formal_attack_authorized") is not False:
         raise V3S1ContractViolation("formal registry contains an authorization flag")
-    campaign_rows_present = any(row.get("provenance_class") == CAMPAIGN_PROVENANCE for row in all_rows)
     campaign_decision_path: Path | None = None
     campaign_decision_sha256 = summary.get("campaign_decision_sha256", "")
     if campaign_rows_present:

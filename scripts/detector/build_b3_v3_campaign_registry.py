@@ -79,7 +79,8 @@ def main() -> int:
             report_path = audit_dir / (key.replace("/", "__") + ".json")
             report_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
             write_sidecar(report_path)
-            audit_rows[key] = {**report, "artifact_audit_path": str(report_path.resolve()), "artifact_audit_sha256": sha256_file(report_path)}
+            final_report_path = args.audit_output_root / "artifact_audits" / report_path.name
+            audit_rows[key] = {**report, "artifact_audit_path": str(final_report_path.resolve()), "artifact_audit_sha256": sha256_file(report_path)}
         seal_root(audit_staging)
 
         registry_rows: list[dict[str, str]] = []
