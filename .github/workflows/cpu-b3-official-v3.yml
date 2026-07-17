@@ -19,6 +19,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .
           python -m pip install pytest numpy pillow
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
       - name: Compile Official V3 source tools
         run: |
           python -m py_compile \
@@ -36,12 +37,47 @@ jobs:
             scripts/detector/materialize_b3_v3_episode.py \
             scripts/detector/materialize_b3_v3_fit.py \
             scripts/detector/audit_b3_v3_teacher.py \
-            scripts/detector/export_b3_v3_policy_intent_9d.py
+            scripts/detector/export_b3_v3_policy_intent_9d.py \
+            src/gripper_attack/b3_formal.py \
+            src/gripper_attack/b3_training_protocol.py \
+            src/gripper_attack/b3_v3_dataset.py \
+            src/gripper_attack/b3_v3_runtime.py \
+            src/gripper_attack/b3_v3_attack_protocol.py \
+            src/gripper_attack/b3_v3_viability_decision.py \
+            scripts/detector/build_b3_v3_training_manifests.py \
+            scripts/detector/compute_b3_v3_normalization.py \
+            scripts/detector/run_b3_v3_overfit_smoke.py \
+            scripts/detector/train_b3_v3_detector.py \
+            scripts/detector/evaluate_b3_v3_viability.py \
+            scripts/detector/build_b3_v3_fit_folds.py \
+            scripts/detector/build_b3_v3_normalization_bundle.py \
+            scripts/detector/build_b3_v3_training_authorization.py \
+            scripts/detector/audit_b3_v3_training_authorization.py \
+            scripts/detector/decide_b3_v3_fit_viability.py \
+            scripts/detector/build_b3_v3_fit_viability_matrix.py \
+            scripts/detector/run_b3_v3_fit_viability_matrix.py \
+            scripts/detector/build_b3_v3_prediction_bundle.py \
+            scripts/detector/run_b3_v3_fold_validation.py \
+            scripts/detector/aggregate_b3_v3_fit_viability.py \
+            scripts/detector/audit_b3_v3_fit_viability_matrix.py \
+            scripts/detector/refit_b3_v3_full_fit.py \
+            scripts/detector/select_b3_v3_fit_dev_model.py \
+            scripts/detector/calibrate_b3_v3_thresholds.py \
+            scripts/detector/check_b3_v3_detector_once.py \
+            scripts/attack/build_b3_v3_attack_manifest.py \
+            scripts/attack/audit_b3_v3_attack_manifest.py
       - name: Run synthetic Official V3 source tests
         run: |
           pytest -q \
             tests/test_official_v3_source_registry.py \
             tests/test_official_v3_sprint0.py \
-            tests/test_b3_official_v3_s1.py
+            tests/test_b3_official_v3_s1.py \
+            tests/test_b3_formal.py \
+            tests/test_b3_v3_dataset.py \
+            tests/test_b3_v3_trainer_and_viability.py \
+            tests/test_b3_v3_training_contracts.py \
+            tests/test_b3_v3_preparation.py \
+            tests/test_b3_v3_prediction_pipeline.py \
+            tests/test_b3_v3_viability_decision.py
       - name: Check patch whitespace
         run: git diff --check
