@@ -5,7 +5,7 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
-from gripper_attack.b3_formal import B3Normalization, B3ModelConfig, build_b3_model
+from gripper_attack.b3_formal import B3Normalization, B3ModelConfig, build_b3_model, json_sha
 from gripper_attack.b3_v3_dataset import B3Episode
 
 
@@ -39,7 +39,8 @@ def test_fold_prediction_bundle_is_sealed_and_student_only(tmp_path):
         fold_id=0, seed=20260717, variant="B3_25D",
     )
     root = tmp_path / "prediction"
-    manifest = module.write_prediction_bundle(root, records, fold_id=0, seed=20260717, variant="B3_25D", checkpoint_sha256="a" * 64, validation_identity_sha256="b" * 64)
+    validation_sha = json_sha(sorted({row["canonical_parent_key"] for row in records}))
+    manifest = module.write_prediction_bundle(root, records, fold_id=0, seed=20260717, variant="B3_25D", checkpoint_sha256="a" * 64, validation_identity_sha256=validation_sha)
     loaded, rows = module.load_prediction_bundle(root)
     assert manifest["validation_identity_count"] == loaded["validation_identity_count"] == 200
     assert len(rows) == 400
@@ -62,7 +63,8 @@ def test_viability_aggregate_requires_exact_24_coordinates(tmp_path):
         for variant in ("B3_25D", "B3_25D9D"):
             for seed in (20260717, 20260718, 20260719):
                 root = tmp_path / f"fold{fold}_{variant}_{seed}"
-                module.write_prediction_bundle(root, [dict(row, fold_id=fold, variant=variant, seed=seed, checkpoint_sha256="a" * 64) for row in rows], fold_id=fold, seed=seed, variant=variant, checkpoint_sha256="a" * 64, validation_identity_sha256="b" * 64)
+                validation_sha = json_sha(sorted({row["canonical_parent_key"] for row in rows}))
+                module.write_prediction_bundle(root, [dict(row, fold_id=fold, variant=variant, seed=seed, checkpoint_sha256="a" * 64) for row in rows], fold_id=fold, seed=seed, variant=variant, checkpoint_sha256="a" * 64, validation_identity_sha256=validation_sha)
                 roots.append(root)
     output = tmp_path / "aggregate"
     report = aggregate.aggregate_viability(roots, output)

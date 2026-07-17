@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from gripper_attack.b3_training_protocol import _measure_generator_provenance, _snapshot_sha, load_training_authorization_bundle

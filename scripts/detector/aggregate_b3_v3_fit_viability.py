@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from gripper_attack.b3_training_protocol import seal_directory, sha256_file, verify_sealed_directory
+from gripper_attack.b3_training_protocol import load_fit_fold_bundle
 
 
 def _prediction_module():
@@ -47,18 +48,33 @@ def _baseline(records: list[dict[str, Any]], mode: str) -> list[dict[str, Any]]:
     return rows
 
 
-def aggregate_viability(run_roots: list[Path], output_root: Path) -> dict[str, Any]:
+def aggregate_viability(run_roots: list[Path], output_root: Path, *, fold_root: Path | None = None) -> dict[str, Any]:
     if len(run_roots) != 24:
         raise ValueError(f"viability matrix requires exactly 24 run roots, got {len(run_roots)}")
     prediction = _prediction_module()
     evaluator = _evaluator()
+    folds = load_fit_fold_bundle(fold_root) if fold_root is not None else None
     seen: set[tuple[int, str, int]] = set()
     run_reports: list[dict[str, Any]] = []
+    shared_bindings: dict[str, Any] | None = None
     for root in run_roots:
         manifest, records = prediction.load_prediction_bundle(root)
         coordinate = (int(manifest["fold_id"]), str(manifest["variant"]), int(manifest["seed"]))
         if coordinate in seen or len({row["canonical_parent_key"] for row in records}) != 200:
             raise ValueError("duplicate or incomplete viability run")
+        if folds is not None:
+            expected_ids = folds["folds"][coordinate[0]]["validation_identities"]
+            if manifest.get("validation_identities") != expected_ids or manifest.get("validation_identity_sha256") != folds["folds"][coordinate[0]]["validation_identity_sha256"]:
+                raise ValueError(f"validation identity closure failed for {coordinate}")
+            bindings = manifest.get("source_bindings")
+            if not isinstance(bindings, dict) or bindings.get("fold_bundle_sha256") != sha256_file(fold_root / "SHA256SUMS"):
+                raise ValueError(f"prediction source binding closure failed for {coordinate}")
+            if shared_bindings is None:
+                shared_bindings = bindings
+            else:
+                for name in ("registry_root_sha256", "s1_root_sha256", "authorization_payload_sha256", "runner_binding_sha256"):
+                    if bindings.get(name) != shared_bindings.get(name):
+                        raise ValueError(f"prediction shared source binding drift: {name}")
         seen.add(coordinate)
         metrics = evaluator.event_level_metrics(records)
         baselines = {
@@ -76,6 +92,7 @@ def aggregate_viability(run_roots: list[Path], output_root: Path) -> dict[str, A
             "schema": "B3_OFFICIAL_V3_FIT_VIABILITY_RUN_REPORT_V1",
             **{key: manifest[key] for key in ("fold_id", "seed", "variant", "checkpoint_sha256", "validation_identity_count", "validation_identity_sha256")},
             "metrics": metrics,
+            "source_bindings": manifest.get("source_bindings", {}),
             "attack_enabled": False,
             "teacher_inputs_consumed": False,
         })
@@ -98,6 +115,7 @@ def aggregate_viability(run_roots: list[Path], output_root: Path) -> dict[str, A
         },
         "formal_training_authorized": False,
         "formal_attack_authorized": False,
+        "fold_bundle_sha256": sha256_file(fold_root / "SHA256SUMS") if fold_root is not None else None,
     }
     if output_root.exists():
         raise FileExistsError(output_root)
@@ -118,9 +136,10 @@ def aggregate_viability(run_roots: list[Path], output_root: Path) -> dict[str, A
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--run-root", type=Path, action="append", required=True)
+    parser.add_argument("--fold-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     args = parser.parse_args()
-    report = aggregate_viability(args.run_root, args.output_root)
+    report = aggregate_viability(args.run_root, args.output_root, fold_root=args.fold_root)
     print(json.dumps({"status": report["status"], "run_count": report["run_count"], "formal_training_authorized": False}, sort_keys=True))
     return 0
 

@@ -1,4 +1,6 @@
 import json
+import csv
+import hashlib
 
 import pytest
 
@@ -77,6 +79,9 @@ def test_machine_auth_and_checkpoint_bundle_do_not_select_model_early(tmp_path):
         },
         "verification": {"status": "PASS", "semantic_inputs_verified": True, "normalization_recomputed": True, "runner_binding_measured": True},
     }
+    auth["normalization_file_sha256"] = "f" * 64
+    auth["policy_intent_root_sha256"] = None
+    auth["verification"]["policy_intent_root_consumed"] = False
     auth.update(_snapshots())
     auth["authorization_payload_sha256"] = json_sha(auth)
     from gripper_attack.b3_training_protocol import _write_json, seal_directory
@@ -110,16 +115,26 @@ def test_normalization_bundle_binds_fold_and_runtime_is_teacher_free(tmp_path):
     assert result["attack_enabled"] is False
 
 
-def test_attack_manifest_is_only_preparation_and_has_exact_condition_pairs():
+def test_attack_manifest_is_only_preparation_and_has_exact_condition_pairs(tmp_path):
     rows = [
         {"canonical_parent_key": f"{suite}/task_{task:02d}/state_{30 + offset:02d}", "suite": suite, "task_idx": task, "state_id": 30 + offset, "task_success": True}
         for suite in ("libero_object", "libero_spatial", "libero_goal", "libero_10")
         for task in range(10) for offset in range(5)
     ]
+    source = tmp_path / "cs200.csv"
+    ordered = sorted(rows, key=lambda row: (row["suite"], int(row["task_idx"]), int(row["state_id"])))
+    order_sha = json_sha([row["canonical_parent_key"] for row in ordered])
+    source_rows = [dict(row, formal_selected=True, selection_rank=index % 5, selection_algorithm="FIRST_5_VERIFIED_CLEAN_SUCCESS_BY_CANONICAL_KEY_V1", selection_order_sha256=order_sha) for index, row in enumerate(ordered)]
+    with source.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(source_rows[0]))
+        writer.writeheader()
+        writer.writerows(source_rows)
+    source_sha = hashlib.sha256(source.read_bytes()).hexdigest()
     manifest = build_attack_manifest(
-        rows, protocol_sha256="a" * 64, check_status="CHECK_PASS", cs200_manifest_sha256="b" * 64,
+        rows, protocol_sha256="a" * 64, check_status="CHECK_PASS", cs200_manifest_sha256=source_sha,
         check_report_sha256="c" * 64, checkpoint_sha256="d" * 64, calibration_sha256="e" * 64,
+        cs200_manifest_path=source,
     )
-    report = audit_attack_manifest(manifest)
+    report = audit_attack_manifest(manifest, cs200_manifest_path=source)
     assert report["status"] == "PASS_PREPARATION_ONLY"
     assert manifest["attack_execution_authorized"] is False

@@ -22,24 +22,40 @@ from gripper_attack.b3_official_v3_s1 import audit_materialized_root, build_s1_r
 
 
 def load_authorization(path: Path) -> dict[str, Any]:
-    if path.is_dir():
-        return load_training_authorization_bundle(path)
-    value = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(value, dict):
-        raise ValueError("training authorization must be an object")
-    validate_training_authorization(value)
-    return value
+    if not path.is_dir():
+        raise ValueError("formal training requires a sealed authorization bundle directory")
+    return load_training_authorization_bundle(path)
 
 
 def verify_authorized_inputs(
     authorization: dict[str, Any], registry_csv: Path, registry_summary: Path, s1_root: Path,
     s1_root_audit: Path, source_contract: Path, s1_protocol: Path, training_protocol: Path, feature_rebuilder: Path,
+    *, normalization_root: Path | None = None, fold_root: Path | None = None,
+    fold_id: int | None = None, variant: str | None = None, policy_intent_root: Path | None = None,
 ) -> dict[str, str]:
     """Re-audit every sealed input before and after episode loading."""
 
     rows = load_formal_fit_registry(registry_csv, registry_summary)
     verify_checksum_manifest(registry_csv.parent)
     verify_checksum_manifest(s1_root)
+    if variant == "B3_25D" and policy_intent_root is not None:
+        raise ValueError("B3_25D must not consume a 9D root")
+    policy_root_sha256 = None
+    if variant == "B3_25D9D":
+        if policy_intent_root is None:
+            raise ValueError("B3_25D9D requires a sealed 9D root")
+        verify_checksum_manifest(policy_intent_root)
+        policy_root_sha256 = sha256_file(policy_intent_root / "SHA256SUMS")
+    if fold_root is not None:
+        verify_checksum_manifest(fold_root)
+    normalization = None
+    normalization_source = None
+    if normalization_root is not None:
+        from gripper_attack.b3_training_protocol import load_normalization_bundle
+        normalization, normalization_source = load_normalization_bundle(
+            normalization_root, fold_id=fold_id, variant=variant,
+            policy_intent_root_sha256=policy_root_sha256,
+        )
     aggregate = s1_root / "B3_OFFICIAL_V3_TEACHER_AGGREGATE_AUDIT_V1.json"
     if not aggregate.is_file() or sha256_file(aggregate) != authorization["teacher_aggregate_sha256"]:
         raise ValueError("Teacher aggregate does not match authorization")
@@ -55,15 +71,29 @@ def verify_authorized_inputs(
         "source_contract_sha256": sha256_file(source_contract),
         "protocol_sha256": sha256_file(s1_protocol),
         "feature_rebuilder_sha256": sha256_file(feature_rebuilder),
-        "normalization_bundle_sha256": expected_inputs["normalization_bundle_sha256"],
-        "normalization_sha256": expected_inputs["normalization_sha256"],
-        "fold_manifest_sha256": expected_inputs["fold_manifest_sha256"],
+        "normalization_bundle_sha256": sha256_file(normalization_root / "SHA256SUMS") if normalization_root is not None else expected_inputs["normalization_bundle_sha256"],
+        "normalization_sha256": normalization.sha256 if normalization is not None else expected_inputs["normalization_sha256"],
+        "fold_manifest_sha256": sha256_file(fold_root / "SHA256SUMS") if fold_root is not None else expected_inputs["fold_manifest_sha256"],
+        "normalization_file_sha256": sha256_file(normalization_root / "normalization.json") if normalization_root is not None else authorization["normalization_file_sha256"],
+        "policy_intent_root_sha256": policy_root_sha256,
     }
-    for name in ("formal_fit_registry_sha256", "formal_registry_summary_sha256", "formal_registry_root_sha256", "s1_corpus_sha256", "s1_root_audit_sha256", "teacher_aggregate_sha256", "source_contract_sha256", "protocol_sha256", "feature_rebuilder_sha256"):
-        if actual_inputs[name] != expected_inputs[name]:
+    for name in ("formal_fit_registry_sha256", "formal_registry_summary_sha256", "formal_registry_root_sha256", "s1_corpus_sha256", "s1_root_audit_sha256", "teacher_aggregate_sha256", "source_contract_sha256", "protocol_sha256", "feature_rebuilder_sha256", "normalization_file_sha256", "policy_intent_root_sha256"):
+        if name == "policy_intent_root_sha256" and variant == "B3_25D":
+            continue
+        expected_value = expected_inputs.get(name, authorization.get(name))
+        if actual_inputs[name] != expected_value:
             raise ValueError(f"authorized input SHA mismatch: {name}")
     if actual_inputs["training_protocol_sha256"] != expected_inputs["training_protocol_sha256"]:
         raise ValueError("training protocol SHA does not match authorization")
+    if fold_root is not None and actual_inputs["fold_manifest_sha256"] != expected_inputs["fold_manifest_sha256"]:
+        raise ValueError("fold manifest SHA does not match authorization")
+    if normalization is not None:
+        if actual_inputs["normalization_bundle_sha256"] != expected_inputs["normalization_bundle_sha256"] or actual_inputs["normalization_sha256"] != expected_inputs["normalization_sha256"]:
+            raise ValueError("normalization bundle/content SHA does not match authorization")
+        if normalization_source is None or normalization_source.get("normalization_file_sha256") != expected_inputs.get("normalization_file_sha256"):
+            raise ValueError("normalization file provenance does not match authorization")
+    if actual_inputs["policy_intent_root_sha256"] != authorization.get("policy_intent_root_sha256"):
+        raise ValueError("9D policy-intent root does not match authorization")
     root_report = audit_materialized_root(
         s1_root, rows, require_runner_binding=True, feature_order_sha256=B3ModelConfig().feature_order_sha256,
         expected_runner_binding=authorization["runner_binding"],
@@ -78,7 +108,13 @@ def verify_authorized_inputs(
     audit_payload = json.loads(s1_root_audit.read_text(encoding="utf-8"))
     if root_report.get("status") != "PASS" or audit_payload.get("status") != "PASS":
         raise ValueError("independent S1 root audit is not PASS")
-    before = {"registry": sha256_file(registry_csv), "registry_root": sha256_file(registry_csv.parent / "SHA256SUMS"), "s1": sha256_file(s1_root / "SHA256SUMS"), "aggregate": sha256_file(aggregate)}
+    before = {
+        "registry": sha256_file(registry_csv), "registry_root": sha256_file(registry_csv.parent / "SHA256SUMS"),
+        "s1": sha256_file(s1_root / "SHA256SUMS"), "aggregate": sha256_file(aggregate),
+        "normalization_bundle": actual_inputs["normalization_bundle_sha256"],
+        "normalization_file": actual_inputs["normalization_file_sha256"],
+        "fold": actual_inputs["fold_manifest_sha256"], "policy_intent": actual_inputs["policy_intent_root_sha256"] or "",
+    }
     # Caller loads episodes after this return and must call this function again
     # or compare this snapshot with a post-load snapshot.  The CLI does both.
     return before
@@ -209,6 +245,10 @@ def main() -> int:
     parser.add_argument("--dtype", choices=("float32",), default="float32")
     args = parser.parse_args()
     authorization = load_authorization(args.authorization)
+    if args.variant == "B3_25D" and args.policy_intent_root is not None:
+        raise SystemExit("B3_25D must not receive --policy-intent-root")
+    if args.variant == "B3_25D9D" and args.policy_intent_root is None:
+        raise SystemExit("B3_25D9D requires --policy-intent-root")
     if authorization.get("fit_scope") != "FIT_FOLD":
         raise SystemExit("fold trainer requires fit_scope=FIT_FOLD authorization")
     if authorization.get("variant") != args.variant:
@@ -234,7 +274,12 @@ def main() -> int:
         raise SystemExit("formal fold training does not write an unsealed checkpoint file")
     if args.output_checkpoint_bundle.exists():
         raise SystemExit(f"refusing to overwrite checkpoint bundle: {args.output_checkpoint_bundle}")
-    before = verify_authorized_inputs(authorization, args.registry_csv, args.registry_summary, args.s1_root, args.s1_root_audit, args.source_contract, args.s1_protocol, args.training_protocol, args.feature_rebuilder)
+    before = verify_authorized_inputs(
+        authorization, args.registry_csv, args.registry_summary, args.s1_root, args.s1_root_audit,
+        args.source_contract, args.s1_protocol, args.training_protocol, args.feature_rebuilder,
+        normalization_root=args.normalization, fold_root=args.fold_root, fold_id=args.fold_id,
+        variant=args.variant, policy_intent_root=args.policy_intent_root,
+    )
     measured_binding = build_s1_runner_binding(
         runner_repo=args.runner_repo, expected_runner_head=authorization["runner_head"],
         config_path=args.runner_config, runner_script_path=args.runner_script,
@@ -244,7 +289,11 @@ def main() -> int:
     episodes = load_fit_fold_episodes(args.registry_csv, args.s1_root, args.fold_root, fold_id=args.fold_id, partition="train", include_9d_root=args.policy_intent_root)
     if args.variant == "B3_25D9D" and any(item.features_9d is None for item in episodes):
         raise SystemExit("B3_25D9D requires a complete independent 9D ablation root")
-    normalization, norm_source = load_normalization_bundle(args.normalization, fold_id=args.fold_id, variant=args.variant)
+    policy_root_sha256 = None if args.policy_intent_root is None else sha256_file(args.policy_intent_root / "SHA256SUMS")
+    normalization, norm_source = load_normalization_bundle(
+        args.normalization, fold_id=args.fold_id, variant=args.variant,
+        policy_intent_root_sha256=policy_root_sha256,
+    )
     if sha256_file(args.normalization / "SHA256SUMS") != authorization["normalization_bundle_sha256"]:
         raise SystemExit("normalization bundle SHA does not match authorization")
     if normalization.sha256 != authorization["normalization_sha256"]:
@@ -262,7 +311,12 @@ def main() -> int:
         checkpoint_status="FIT_FOLD_TRAINED_CANDIDATE",
         extra={"variant": args.variant, "fit_scope": "FIT_FOLD", "fold_id": args.fold_id, "seed": args.seed, "device": args.device, "dtype": args.dtype, "epochs": len(losses), "loss_history": losses, "final_loss": losses[-1], "fit_episode_count": len(episodes)},
     )
-    after = verify_authorized_inputs(authorization, args.registry_csv, args.registry_summary, args.s1_root, args.s1_root_audit, args.source_contract, args.s1_protocol, args.training_protocol, args.feature_rebuilder)
+    after = verify_authorized_inputs(
+        authorization, args.registry_csv, args.registry_summary, args.s1_root, args.s1_root_audit,
+        args.source_contract, args.s1_protocol, args.training_protocol, args.feature_rebuilder,
+        normalization_root=args.normalization, fold_root=args.fold_root, fold_id=args.fold_id,
+        variant=args.variant, policy_intent_root=args.policy_intent_root,
+    )
     if before != after:
         raise SystemExit("TOCTOU detected: sealed training inputs changed during fold training")
     print(json.dumps({"status": "FIT_FOLD_TRAINED_CANDIDATE", "variant": args.variant, "fold_id": args.fold_id, "seed": args.seed, "fit_episode_count": len(episodes), "final_loss": losses[-1], "eligible_for_model_selection": False}, sort_keys=True))

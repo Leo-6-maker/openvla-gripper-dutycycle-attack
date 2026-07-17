@@ -220,11 +220,16 @@ def write_normalization_bundle(
     registry_sha256: str,
     s1_corpus_sha256: str,
     runner_binding: Mapping[str, Any],
+    policy_intent_root_sha256: str | None = None,
 ) -> None:
     if output_root.exists():
         raise FileExistsError(output_root)
     if (fold_id not in FOLD_VALIDATION_RANGES and fold_id != "FULL_FIT") or variant not in ("B3_25D", "B3_25D9D"):
         raise ValueError("invalid normalization fold or variant")
+    if variant == "B3_25D" and policy_intent_root_sha256 is not None:
+        raise ValueError("B3_25D normalization cannot consume a 9D root")
+    if variant == "B3_25D9D" and not _is_sha(policy_intent_root_sha256):
+        raise ValueError("B3_25D9D normalization requires a sealed 9D root SHA")
     for name, value in (("train_identity_sha256", train_identity_sha256), ("registry_sha256", registry_sha256), ("s1_corpus_sha256", s1_corpus_sha256)):
         if not _is_sha(value):
             raise ValueError(f"invalid normalization binding: {name}")
@@ -237,6 +242,7 @@ def write_normalization_bundle(
             "normalization": normalization.to_dict(),
             "normalization_sha256": normalization.sha256,
         })
+        normalization_file_sha256 = sha256_file(staging / "normalization.json")
         _write_json(staging / "source_manifest.json", {
             "schema": "B3_OFFICIAL_V3_NORMALIZATION_SOURCE_MANIFEST_V1",
             "fold_id": fold_id,
@@ -248,6 +254,9 @@ def write_normalization_bundle(
             "feature_order_sha256": json_sha(list(B3_FEATURES_25D)),
             "runner_binding": dict(runner_binding),
             "normalization_sha256": normalization.sha256,
+            "normalization_file_sha256": normalization_file_sha256,
+            "policy_intent_root_sha256": policy_intent_root_sha256,
+            "policy_intent_root_consumed": variant == "B3_25D9D",
             "formal_training_authorized": False,
             "formal_attack_authorized": False,
         })
@@ -258,7 +267,10 @@ def write_normalization_bundle(
         raise
 
 
-def load_normalization_bundle(root: Path, *, fold_id: int | str | None = None, variant: str | None = None) -> tuple[B3Normalization, dict[str, Any]]:
+def load_normalization_bundle(
+    root: Path, *, fold_id: int | str | None = None, variant: str | None = None,
+    policy_intent_root_sha256: str | None = None,
+) -> tuple[B3Normalization, dict[str, Any]]:
     verify_sealed_directory(root)
     value = json.loads((root / "normalization.json").read_text(encoding="utf-8"))
     source = json.loads((root / "source_manifest.json").read_text(encoding="utf-8"))
@@ -267,6 +279,8 @@ def load_normalization_bundle(root: Path, *, fold_id: int | str | None = None, v
         raise ValueError("normalization bundle hash/schema mismatch")
     if source.get("normalization_sha256") != normalization.sha256 or source.get("feature_order_sha256") != json_sha(list(B3_FEATURES_25D)):
         raise ValueError("normalization source binding mismatch")
+    if source.get("normalization_file_sha256") != sha256_file(root / "normalization.json"):
+        raise ValueError("normalization file digest binding mismatch")
     _validate_runner_binding_record(source.get("runner_binding", {}))
     if source.get("formal_training_authorized") is not False or source.get("formal_attack_authorized") is not False:
         raise ValueError("normalization bundle cannot authorize training or attack")
@@ -276,6 +290,13 @@ def load_normalization_bundle(root: Path, *, fold_id: int | str | None = None, v
         raise ValueError("normalization fit scope mismatch")
     if variant is not None and source.get("variant") != variant:
         raise ValueError("normalization variant mismatch")
+    resolved_variant = variant or source.get("variant")
+    if resolved_variant == "B3_25D" and (source.get("policy_intent_root_sha256") is not None or source.get("policy_intent_root_consumed") is not False):
+        raise ValueError("B3_25D normalization consumed a 9D root")
+    if resolved_variant == "B3_25D9D" and not _is_sha(source.get("policy_intent_root_sha256")):
+        raise ValueError("B3_25D9D normalization is missing its 9D root binding")
+    if policy_intent_root_sha256 != source.get("policy_intent_root_sha256"):
+        raise ValueError("normalization 9D root binding mismatch")
     return normalization, source
 
 
@@ -311,8 +332,19 @@ def _snapshot_sha(name: str, path: Path) -> str:
         if root is not None:
             verify_sealed_directory(root)
             return sha256_file(root / "SHA256SUMS")
-    if name == "normalization_sha256" and path.is_dir():
-        path = path / "normalization.json"
+    if name == "normalization_sha256":
+        if path.is_dir() or path.name == "SHA256SUMS":
+            root = _snapshot_root(path, name)
+            normalization_path = root / "normalization.json"
+        elif path.is_file() and path.name == "normalization.json":
+            normalization_path = path
+        else:
+            raise ValueError(f"{name} must point to a sealed normalization root or normalization.json")
+        value = json.loads(normalization_path.read_text(encoding="utf-8"))
+        normalization = B3Normalization.from_dict(value["normalization"])
+        if value.get("normalization_sha256") != normalization.sha256:
+            raise ValueError("normalization semantic SHA is invalid")
+        return normalization.sha256
     return sha256_file(_snapshot_file(path, name))
 
 
@@ -408,6 +440,8 @@ def _build_training_authorization_from_verified(
         "runner_binding": dict(runner_binding),
         "authorization_generation": dict(generator_provenance),
         "verification": dict(verification),
+        "normalization_file_sha256": verification.get("normalization_file_sha256"),
+        "policy_intent_root_sha256": verification.get("policy_intent_root_sha256"),
     }
     payload.update(input_snapshots)
     payload["authorization_payload_sha256"] = json_sha(payload)
@@ -508,7 +542,19 @@ def build_training_authorization_from_paths(
     fold_manifest = load_fit_fold_bundle(fold_root)
     if fold_manifest.get("registry_sha256") != snapshots["formal_fit_registry_sha256"]:
         raise ValueError("fold manifest is bound to a different formal FIT registry")
-    normalization, norm_source = load_normalization_bundle(normalization_root, fold_id=fold_id, variant=variant)
+    policy_root_sha256 = None
+    if variant == "B3_25D":
+        if policy_intent_root is not None:
+            raise ValueError("B3_25D authorization cannot consume a 9D root")
+    else:
+        if policy_intent_root is None:
+            raise ValueError("B3_25D9D authorization requires policy_intent_root")
+        verify_checksum_manifest(policy_intent_root)
+        policy_root_sha256 = sha256_file(policy_intent_root / "SHA256SUMS")
+    normalization, norm_source = load_normalization_bundle(
+        normalization_root, fold_id=fold_id, variant=variant,
+        policy_intent_root_sha256=policy_root_sha256,
+    )
     if norm_source.get("registry_sha256") != snapshots["formal_fit_registry_sha256"] or norm_source.get("s1_corpus_sha256") != snapshots["s1_corpus_sha256"]:
         raise ValueError("normalization source snapshot mismatch")
     if norm_source.get("runner_binding") != runner_binding:
@@ -544,7 +590,9 @@ def build_training_authorization_from_paths(
         "normalization_recomputed": True,
         "runner_binding_measured": True,
         "generator_provenance_measured": True,
-        "policy_intent_root_sha256": sha256_file(policy_intent_root / "SHA256SUMS") if policy_intent_root is not None and policy_intent_root.is_dir() and (policy_intent_root / "SHA256SUMS").is_file() else None,
+        "normalization_file_sha256": sha256_file(normalization_root / "normalization.json"),
+        "policy_intent_root_sha256": policy_root_sha256,
+        "policy_intent_root_consumed": variant == "B3_25D9D",
     }
     return _build_training_authorization_from_verified(
         output_root, variant=variant, fold_id=fold_id, seed=seed, fit_scope=fit_scope,

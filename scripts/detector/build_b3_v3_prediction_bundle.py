@@ -10,13 +10,31 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Iterable, Sequence
+from typing import Any, Iterable, Mapping, Sequence
 
 import torch
 
 from gripper_attack.b3_formal import B3Normalization, B3OfficialStatefulGRU, B3_HEADS
+from gripper_attack.b3_formal import json_sha
 from gripper_attack.b3_training_protocol import seal_directory, sha256_file, verify_sealed_directory
 from gripper_attack.b3_v3_dataset import B3Episode
+
+
+PREDICTION_SOURCE_BINDING_NAMES = (
+    "registry_root_sha256",
+    "s1_root_sha256",
+    "fold_bundle_sha256",
+    "checkpoint_bundle_sha256",
+    "normalization_bundle_sha256",
+    "normalization_sha256",
+    "normalization_file_sha256",
+    "authorization_payload_sha256",
+    "runner_binding_sha256",
+)
+
+
+def _is_sha(value: Any) -> bool:
+    return isinstance(value, str) and len(value) == 64 and all(char in "0123456789abcdefABCDEF" for char in value)
 
 
 def _normalise(value: torch.Tensor, mean: Sequence[float], std: Sequence[float]) -> torch.Tensor:
@@ -89,7 +107,17 @@ def build_prediction_records(
     return records
 
 
-def write_prediction_bundle(output_root: Path, records: list[dict[str, Any]], *, fold_id: int, seed: int, variant: str, checkpoint_sha256: str, validation_identity_sha256: str) -> dict[str, Any]:
+def write_prediction_bundle(
+    output_root: Path,
+    records: list[dict[str, Any]],
+    *,
+    fold_id: int,
+    seed: int,
+    variant: str,
+    checkpoint_sha256: str,
+    validation_identity_sha256: str,
+    source_bindings: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     if output_root.exists():
         raise FileExistsError(output_root)
     if not records:
@@ -97,6 +125,28 @@ def write_prediction_bundle(output_root: Path, records: list[dict[str, Any]], *,
     identities = sorted({str(row["canonical_parent_key"]) for row in records})
     if len(identities) != 200:
         raise ValueError(f"validation prediction bundle must contain 200 identities, got {len(identities)}")
+    actual_identity_sha256 = json_sha(identities)
+    if validation_identity_sha256 != actual_identity_sha256:
+        raise ValueError("validation identity SHA does not match the actual prediction identities")
+    for row in records:
+        if (
+            row.get("fold_id") != fold_id
+            or row.get("seed") != seed
+            or row.get("variant") != variant
+            or row.get("checkpoint_sha256") != checkpoint_sha256
+            or row.get("attack_enabled") is not False
+            or row.get("teacher_inputs_consumed") is not False
+        ):
+            raise ValueError("prediction record coordinate/source binding mismatch")
+    if source_bindings is not None:
+        missing = [name for name in PREDICTION_SOURCE_BINDING_NAMES if name not in source_bindings]
+        if missing or any(not _is_sha(source_bindings[name]) for name in PREDICTION_SOURCE_BINDING_NAMES):
+            raise ValueError(f"prediction source binding is incomplete: {missing}")
+        policy_root = source_bindings.get("policy_intent_root_sha256")
+        if variant == "B3_25D" and policy_root is not None:
+            raise ValueError("B3_25D prediction cannot consume a 9D root")
+        if variant == "B3_25D9D" and not _is_sha(policy_root):
+            raise ValueError("B3_25D9D prediction must bind a 9D root")
     staging = output_root.with_name(f".{output_root.name}.staging")
     if staging.exists():
         raise FileExistsError(staging)
@@ -111,7 +161,9 @@ def write_prediction_bundle(output_root: Path, records: list[dict[str, Any]], *,
             "variant": variant,
             "checkpoint_sha256": checkpoint_sha256,
             "validation_identity_count": len(identities),
-            "validation_identity_sha256": validation_identity_sha256,
+            "validation_identity_sha256": actual_identity_sha256,
+            "validation_identities": identities,
+            "source_bindings": dict(source_bindings or {}),
             "record_count": len(records),
             "provisional_threshold": 0.5,
             "attack_enabled": False,
@@ -137,9 +189,27 @@ def load_prediction_bundle(root: Path) -> tuple[dict[str, Any], list[dict[str, A
     records = [json.loads(line) for line in (root / "prediction_records.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
     if manifest.get("schema") != "B3_OFFICIAL_V3_FIT_PREDICTION_BUNDLE_V1" or manifest.get("attack_enabled") is not False or manifest.get("teacher_inputs_consumed") is not False:
         raise ValueError("prediction bundle boundary failed")
-    if len({row.get("canonical_parent_key") for row in records}) != 200:
+    identities = sorted({str(row.get("canonical_parent_key", "")) for row in records})
+    if len(identities) != 200 or manifest.get("validation_identity_count") != 200:
         raise ValueError("prediction bundle validation identity count mismatch")
+    if manifest.get("validation_identities") != identities or manifest.get("validation_identity_sha256") != json_sha(identities):
+        raise ValueError("prediction bundle validation identity set mismatch")
+    for row in records:
+        if row.get("fold_id") != manifest.get("fold_id") or row.get("seed") != manifest.get("seed") or row.get("variant") != manifest.get("variant") or row.get("checkpoint_sha256") != manifest.get("checkpoint_sha256"):
+            raise ValueError("prediction record coordinate/checkpoint mismatch")
+        if row.get("attack_enabled") is not False or row.get("teacher_inputs_consumed") is not False:
+            raise ValueError("prediction record boundary failed")
+    bindings = manifest.get("source_bindings")
+    if bindings:
+        missing = [name for name in PREDICTION_SOURCE_BINDING_NAMES if name not in bindings]
+        if missing or any(not _is_sha(bindings[name]) for name in PREDICTION_SOURCE_BINDING_NAMES):
+            raise ValueError(f"prediction source binding is incomplete: {missing}")
+        policy_root = bindings.get("policy_intent_root_sha256")
+        if manifest.get("variant") == "B3_25D" and policy_root is not None:
+            raise ValueError("B3_25D prediction contains a 9D source binding")
+        if manifest.get("variant") == "B3_25D9D" and not _is_sha(policy_root):
+            raise ValueError("B3_25D9D prediction is missing its 9D source binding")
     return manifest, records
 
 
-__all__ = ["build_prediction_records", "write_prediction_bundle", "load_prediction_bundle"]
+__all__ = ["PREDICTION_SOURCE_BINDING_NAMES", "build_prediction_records", "write_prediction_bundle", "load_prediction_bundle"]

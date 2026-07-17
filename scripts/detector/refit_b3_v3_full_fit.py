@@ -14,21 +14,9 @@ import importlib.util
 from pathlib import Path
 
 from gripper_attack.b3_formal import load_b3_checkpoint_bundle, save_b3_checkpoint_bundle
-from gripper_attack.b3_training_protocol import load_training_authorization_bundle, sha256_file, verify_sealed_directory
+from gripper_attack.b3_training_protocol import load_normalization_bundle, load_training_authorization_bundle, sha256_file, verify_sealed_directory
 from gripper_attack.b3_v3_dataset import compute_fit_normalization, load_episode, load_formal_registry_csv
-
-
-def _load_viability(path: Path) -> dict:
-    root = path
-    if root.is_dir():
-        verify_sealed_directory(root)
-        root = root / "viability_aggregate.json"
-    value = json.loads(root.read_text(encoding="utf-8"))
-    if value.get("schema") != "B3_OFFICIAL_V3_FIT_VIABILITY_AGGREGATE_V1" or value.get("status") != "PASS":
-        raise ValueError("full-FIT refit requires an independently sealed viability PASS")
-    if value.get("run_count") != 24 or value.get("formal_training_authorized") is not False:
-        raise ValueError("viability matrix closure is incomplete")
-    return value
+from gripper_attack.b3_v3_viability_decision import load_viability_decision
 
 
 def load_full_fit_episodes(registry_csv: Path, s1_root: Path, *, policy_intent_root: Path | None = None):
@@ -45,10 +33,21 @@ def load_full_fit_episodes(registry_csv: Path, s1_root: Path, *, policy_intent_r
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--viability-root", type=Path, required=True)
+    parser.add_argument("--viability-decision-root", type=Path, required=True)
     parser.add_argument("--authorization", type=Path, required=True)
     parser.add_argument("--registry-csv", type=Path, required=True)
+    parser.add_argument("--registry-summary", type=Path, required=True)
     parser.add_argument("--s1-root", type=Path, required=True)
+    parser.add_argument("--s1-root-audit", type=Path, required=True)
+    parser.add_argument("--source-contract", type=Path, required=True)
+    parser.add_argument("--s1-protocol", type=Path, required=True)
+    parser.add_argument("--training-protocol", type=Path, required=True)
+    parser.add_argument("--feature-rebuilder", type=Path, required=True)
+    parser.add_argument("--normalization-root", type=Path, required=True)
+    parser.add_argument("--fold-root", type=Path, required=True)
+    parser.add_argument("--runner-repo", type=Path, required=True)
+    parser.add_argument("--runner-config", type=Path, required=True)
+    parser.add_argument("--runner-script", type=Path, required=True)
     parser.add_argument("--output-checkpoint-bundle", type=Path, required=True)
     parser.add_argument("--variant", choices=("B3_25D", "B3_25D9D"), required=True)
     parser.add_argument("--seed", type=int, required=True)
@@ -56,13 +55,19 @@ def main() -> int:
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
     parser.add_argument("--execute-formal", action="store_true")
     args = parser.parse_args()
-    viability = _load_viability(args.viability_root)
+    viability = load_viability_decision(args.viability_decision_root)
+    if viability.get("status") != "PASS" or args.variant not in viability.get("selected_variants", []):
+        raise SystemExit("FULL_FIT_REFIT_HOLD: sealed viability decision did not select this variant")
     if not args.execute_formal:
         print(json.dumps({"status": "FULL_FIT_REFIT_HOLD", "reason": "explicit formal execution flag is required", "viability_runs": viability["run_count"], "formal_attack_authorized": False}, sort_keys=True))
         return 0
-    authorization = load_training_authorization_bundle(args.authorization) if args.authorization.is_dir() else json.loads(args.authorization.read_text(encoding="utf-8"))
+    authorization = load_training_authorization_bundle(args.authorization)
     if authorization.get("fit_scope") != "FULL_FIT" or authorization.get("variant") != args.variant or authorization.get("seed") != args.seed:
         raise SystemExit("FULL_FIT_REFIT_HOLD: authorization scope/variant/seed mismatch")
+    if args.variant == "B3_25D" and args.policy_intent_root is not None:
+        raise SystemExit("B3_25D must not receive --policy-intent-root")
+    if args.variant == "B3_25D9D" and args.policy_intent_root is None:
+        raise SystemExit("B3_25D9D requires --policy-intent-root")
     episodes = load_full_fit_episodes(args.registry_csv, args.s1_root, policy_intent_root=args.policy_intent_root)
     trainer_path = Path(__file__).with_name("train_b3_v3_detector.py")
     spec = importlib.util.spec_from_file_location("b3_v3_formal_trainer", trainer_path)
@@ -70,14 +75,40 @@ def main() -> int:
         raise SystemExit("cannot load formal trainer")
     trainer = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(trainer)
-    normalization = compute_fit_normalization(episodes, include_9d=args.variant == "B3_25D9D")
-    if authorization.get("normalization_sha256") != normalization.sha256:
+    before = trainer.verify_authorized_inputs(
+        authorization, args.registry_csv, args.registry_summary, args.s1_root, args.s1_root_audit,
+        args.source_contract, args.s1_protocol, args.training_protocol, args.feature_rebuilder,
+        normalization_root=args.normalization_root, fold_root=args.fold_root, fold_id="FULL_FIT",
+        variant=args.variant, policy_intent_root=args.policy_intent_root,
+    )
+    from gripper_attack.b3_official_v3_s1 import build_s1_runner_binding
+    measured_binding = build_s1_runner_binding(
+        runner_repo=args.runner_repo, expected_runner_head=authorization["runner_head"],
+        config_path=args.runner_config, runner_script_path=args.runner_script,
+    )
+    if measured_binding != authorization["runner_binding"]:
+        raise SystemExit("FULL_FIT_REFIT_HOLD: runner binding does not match authorization")
+    policy_root_sha256 = None if args.policy_intent_root is None else sha256_file(args.policy_intent_root / "SHA256SUMS")
+    normalization, normalization_source = load_normalization_bundle(
+        args.normalization_root, fold_id="FULL_FIT", variant=args.variant,
+        policy_intent_root_sha256=policy_root_sha256,
+    )
+    recomputed = compute_fit_normalization(episodes, include_9d=args.variant == "B3_25D9D")
+    if authorization.get("normalization_sha256") != recomputed.sha256 or normalization.sha256 != recomputed.sha256:
         raise SystemExit("FULL_FIT_REFIT_HOLD: normalization is not recomputed from all 800 FIT episodes")
-    model, losses = trainer.train_model(episodes, variant=args.variant, normalization=normalization, seed=args.seed, device=args.device)
+    model, losses = trainer.train_model(episodes, variant=args.variant, normalization=recomputed, seed=args.seed, device=args.device)
+    after = trainer.verify_authorized_inputs(
+        authorization, args.registry_csv, args.registry_summary, args.s1_root, args.s1_root_audit,
+        args.source_contract, args.s1_protocol, args.training_protocol, args.feature_rebuilder,
+        normalization_root=args.normalization_root, fold_root=args.fold_root, fold_id="FULL_FIT",
+        variant=args.variant, policy_intent_root=args.policy_intent_root,
+    )
+    if after != before:
+        raise SystemExit("FULL_FIT_REFIT_HOLD: authorized inputs changed during training")
     save_b3_checkpoint_bundle(
-        args.output_checkpoint_bundle, model, normalization, authorization=authorization,
+        args.output_checkpoint_bundle, model, recomputed, authorization=authorization,
         checkpoint_status="FULL_FIT_REFIT_CANDIDATE",
-        extra={"fit_scope": "FULL_FIT", "fit_episode_count": 800, "seed": args.seed, "loss_history": losses, "viability_report_sha256": sha256_file(args.viability_root / "SHA256SUMS") if args.viability_root.is_dir() else sha256_file(args.viability_root)},
+        extra={"fit_scope": "FULL_FIT", "fit_episode_count": 800, "seed": args.seed, "loss_history": losses, "viability_decision_sha256": sha256_file(args.viability_decision_root / "SHA256SUMS")},
     )
     print(json.dumps({"status": "FULL_FIT_REFIT_CANDIDATE", "fit_episode_count": 800, "formal_attack_authorized": False}, sort_keys=True))
     return 0

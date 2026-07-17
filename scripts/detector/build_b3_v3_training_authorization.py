@@ -9,6 +9,7 @@ its measured SHA-256 digest.
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from gripper_attack.b3_formal import AUTHORIZATION_INPUT_NAMES
@@ -32,6 +33,10 @@ def main() -> int:
     args = parser.parse_args()
     if not args.execute_preparation:
         raise SystemExit("FORMAL_TRAINING_HOLD: authorization generation is not authorized without --execute-preparation")
+    if args.variant == "B3_25D" and args.policy_intent_root is not None:
+        raise SystemExit("B3_25D must not receive --policy-intent-root")
+    if args.variant == "B3_25D9D" and args.policy_intent_root is None:
+        raise SystemExit("B3_25D9D requires --policy-intent-root")
     input_paths = {name: Path(path) for name, path in args.input}
     if len(input_paths) != len(args.input) or set(input_paths) != set(AUTHORIZATION_INPUT_NAMES):
         raise SystemExit(f"authorization input set mismatch: expected {list(AUTHORIZATION_INPUT_NAMES)} got {sorted(input_paths)}")

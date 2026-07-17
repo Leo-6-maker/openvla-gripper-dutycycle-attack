@@ -41,6 +41,10 @@ def main() -> int:
     args = parser.parse_args()
     if args.output.exists():
         raise SystemExit(f"refusing to overwrite: {args.output}")
+    if not args.include_9d and args.policy_intent_root is not None:
+        raise SystemExit("B3_25D normalization must not receive a 9D root")
+    if args.include_9d and args.policy_intent_root is None:
+        raise SystemExit("B3_25D9D normalization requires --policy-intent-root")
     norm = compute_normalization_from_s1(
         args.registry_csv, args.s1_root, include_9d=args.include_9d,
         policy_intent_root=args.policy_intent_root,

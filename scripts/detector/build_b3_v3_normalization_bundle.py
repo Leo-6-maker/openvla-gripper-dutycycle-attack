@@ -66,12 +66,18 @@ def main() -> int:
     if audit_payload.get("status") != "PASS":
         raise SystemExit("independent S1 root audit input is not PASS")
     episodes: list = []
+    if args.variant == "B3_25D" and args.policy_intent_root is not None:
+        raise SystemExit("B3_25D must not receive --policy-intent-root")
     if args.variant == "B3_25D9D" and args.policy_intent_root is None:
         raise SystemExit("B3_25D9D requires --policy-intent-root")
+    policy_root_sha256 = None
+    if args.policy_intent_root is not None:
+        verify_checksum_manifest(args.policy_intent_root)
+        policy_root_sha256 = sha256_file(args.policy_intent_root / "SHA256SUMS")
     for row in rows:
         root = args.s1_root / row["suite"] / f"task_{int(row['task_idx']):02d}" / f"state_{int(row['state_id']):02d}"
         nine_d = None
-        if args.policy_intent_root is not None:
+        if args.variant == "B3_25D9D":
             nine_d = args.policy_intent_root / row["suite"] / f"task_{int(row['task_idx']):02d}" / f"state_{int(row['state_id']):02d}"
         episodes.append(load_episode(root, row, include_9d_root=nine_d))
     fold_id = "FULL_FIT" if args.fit_scope == "FULL_FIT" else int(args.fold_id)
@@ -82,6 +88,7 @@ def main() -> int:
         train_identity_sha256=(json_sha(sorted(row["canonical_parent_key"] for row in rows)) if args.fit_scope == "FULL_FIT" else fold_manifest["folds"][fold_id]["train_identity_sha256"]),
         registry_sha256=sha256_file(args.registry_csv),
         s1_corpus_sha256=sha256_file(args.s1_root / "SHA256SUMS"), runner_binding=binding,
+        policy_intent_root_sha256=policy_root_sha256,
     )
     print(json.dumps({"status": "PASS_PREPARATION_ONLY", "fold_id": args.fold_id, "variant": args.variant, "train_count": len(train)}, sort_keys=True))
     return 0
