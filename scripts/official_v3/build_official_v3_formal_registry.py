@@ -6,7 +6,10 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import re
+import shutil
+import uuid
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
@@ -197,21 +200,31 @@ def build_registry(
 def write_registry(rows: list[dict[str, Any]], summary: dict[str, Any], output_root: Path) -> None:
     if output_root.exists():
         raise ValueError(f"refusing to overwrite registry root: {output_root}")
-    output_root.mkdir(parents=True)
-    registry = output_root / "OFFICIAL_V3_FORMAL_REGISTRY_V1.csv"
-    with registry.open("w", newline="", encoding="utf-8") as handle:
-        writer = csv.DictWriter(handle, fieldnames=REGISTRY_FIELDS)
-        writer.writeheader()
-        writer.writerows({field: row.get(field, "") for field in REGISTRY_FIELDS} for row in rows)
-    summary_path = output_root / "OFFICIAL_V3_FORMAL_REGISTRY_SUMMARY_V1.json"
-    summary["registry_sha256"] = sha256_file(registry)
-    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    sums = output_root / "SHA256SUMS"
-    sums.write_text(
-        f"{sha256_file(registry)}  {registry.name}\n{sha256_file(summary_path)}  {summary_path.name}\n",
-        encoding="utf-8",
-    )
-    (output_root / "SHA256SUMS.sha256").write_text(f"{sha256_file(sums)}  SHA256SUMS\n", encoding="utf-8")
+    staging = output_root.with_name(f".{output_root.name}.{uuid.uuid4().hex}.staging")
+    if staging.exists():
+        raise ValueError(f"registry staging root already exists: {staging}")
+    try:
+        staging.mkdir(parents=True)
+        registry = staging / "OFFICIAL_V3_FORMAL_REGISTRY_V1.csv"
+        with registry.open("w", newline="", encoding="utf-8") as handle:
+            writer = csv.DictWriter(handle, fieldnames=REGISTRY_FIELDS)
+            writer.writeheader()
+            writer.writerows({field: row.get(field, "") for field in REGISTRY_FIELDS} for row in rows)
+        sealed_summary = dict(summary)
+        summary_path = staging / "OFFICIAL_V3_FORMAL_REGISTRY_SUMMARY_V1.json"
+        sealed_summary["registry_sha256"] = sha256_file(registry)
+        summary_path.write_text(json.dumps(sealed_summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        sums = staging / "SHA256SUMS"
+        sums.write_text(
+            f"{sha256_file(registry)}  {registry.name}\n{sha256_file(summary_path)}  {summary_path.name}\n",
+            encoding="utf-8",
+        )
+        (staging / "SHA256SUMS.sha256").write_text(f"{sha256_file(sums)}  SHA256SUMS\n", encoding="utf-8")
+        os.replace(staging, output_root)
+    except (OSError, TypeError, ValueError):
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
+        raise
 
 
 def _load_audit_reports(root: Path) -> dict[str, list[dict[str, Any]]]:

@@ -73,7 +73,17 @@ def _write_registry(tmp_path: Path, rows=None, **summary_overrides):
     for row in rows:
         if row.get("split") == "FIT_TRAIN" and row.get("formal_selected") == "true":
             audit_path = audit_root / (row["canonical_parent_key"].replace("/", "_") + ".json")
-            _write(audit_path, {"schema": "OFFICIAL_V3_ARTIFACT_AUDIT_V1", "canonical_parent_key": row["canonical_parent_key"]})
+            _write(audit_path, {
+                "schema": "OFFICIAL_V3_ARTIFACT_AUDIT_V1",
+                "status": "PASS_FORMAL_CANDIDATE",
+                "canonical_parent_key": row["canonical_parent_key"],
+                "suite": row["suite"], "task_idx": int(row["task_idx"]), "state_id": int(row["state_id"]),
+                "artifact_root": row["selected_artifact_root"],
+                "artifact_recursive_sha256": row["selected_artifact_recursive_sha256"],
+                "provenance_class": row["provenance_class"],
+                "formal_eligible": True, "formal_training_authorized": False,
+                "formal_attack_authorized": False, "audit_mode": "25d",
+            })
             row["artifact_audit_path"] = str(audit_path)
             row["artifact_audit_sha256"] = s1.sha256_file(audit_path)
     registry_root = tmp_path / "registry_input"
@@ -248,13 +258,20 @@ def test_builder_full_2000_registry_then_fit_census_filters_exact_800(tmp_path: 
                 ledger_rows.append({"canonical_parent_key": key, "status": "PASS", "task_success": "true"})
                 if split == "FIT_TRAIN":
                     audit_path = audit_root / (key.replace("/", "_") + ".json")
-                    _write(audit_path, {"schema": "OFFICIAL_V3_ARTIFACT_AUDIT_V1", "canonical_parent_key": key})
+                    _write(audit_path, {
+                        "schema": "OFFICIAL_V3_ARTIFACT_AUDIT_V1", "status": "PASS_FORMAL_CANDIDATE",
+                        "canonical_parent_key": key, "suite": suite, "task_idx": task, "state_id": state,
+                        "artifact_root": f"/synthetic/{key}", "artifact_recursive_sha256": "a" * 64,
+                        "provenance_class": "A_CURRENT_HEAD_CLEAN_START_VERIFIED", "formal_eligible": True,
+                        "formal_training_authorized": False, "formal_attack_authorized": False, "audit_mode": "25d",
+                    })
                     audit_reports[key] = [{
                         "schema": "OFFICIAL_V3_ARTIFACT_AUDIT_V1", "status": "PASS_FORMAL_CANDIDATE",
                         "canonical_parent_key": key, "artifact_root": f"/synthetic/{key}",
                         "artifact_recursive_sha256": "a" * 64, "provenance_class": "A_CURRENT_HEAD_CLEAN_START_VERIFIED",
                         "formal_eligible": True, "artifact_audit_path": str(audit_path),
-                        "artifact_audit_sha256": s1.sha256_file(audit_path),
+                        "artifact_audit_sha256": s1.sha256_file(audit_path), "audit_mode": "25d",
+                        "formal_training_authorized": False, "formal_attack_authorized": False,
                     }]
     rows, summary = build_registry(
         manifest_rows, ledger_rows, audit_reports,
@@ -336,6 +353,29 @@ def test_release_step_is_checked_in_full_episode_stream():
     report = s1.audit_teacher_episode(rows, events, "libero_10/task_00/state_00")
     assert report["status"] == "HOLD"
     assert "EVENT_0_RELEASE_ONSET_MISMATCH" in report["violations"]
+
+
+def test_formal_runner_binding_cannot_be_forged_with_status_only():
+    with pytest.raises(s1.V3S1ContractViolation):
+        s1._validate_runner_binding({"status": "PASS"})
+
+
+def test_9d_exporter_propagates_previous_head_equivalence(tmp_path: Path, monkeypatch):
+    source = _source_fixture(tmp_path)
+    row = _fit_rows()[0] | {
+        "canonical_parent_key": "libero_10/task_00/state_00", "suite": "libero_10",
+        "task_idx": "0", "state_id": "0", "selected_artifact_root": str(source),
+        "provenance_class": "B_PREVIOUS_HEAD_EQUIVALENT",
+    }
+    seen = {}
+
+    def fake_audit(root, contract, **kwargs):
+        seen.update(kwargs)
+        return {"status": "PASS_FORMAL_CANDIDATE", "formal_eligible": True}
+
+    monkeypatch.setattr(s1, "audit_artifact", fake_audit)
+    s1.export_policy_intent_9d(row, CONTRACT_PATH, tmp_path / "policy_9d")
+    assert seen["equivalence_status"] == "PASS"
 
 
 def test_materialized_student_is_separate_from_teacher_and_policy(tmp_path: Path, monkeypatch):

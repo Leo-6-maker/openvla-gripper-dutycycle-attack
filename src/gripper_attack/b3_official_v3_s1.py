@@ -35,6 +35,22 @@ STUDENT_FIELDS = frozenset({
     "schema", "source_schema", "feature_order_sha256", "suite", "task_idx", "state_id",
     "canonical_parent_key", "step", "features_25d", "valid",
 })
+TEACHER_FIELDS = frozenset({
+    "schema", "suite", "task_idx", "state_id", "canonical_parent_key", "step",
+    "valid", "event_evidence_valid", "event_id", "event_ordinal", "event_start_step",
+    "event_end_step", "event_close_onset", "event_release_onset", "released_event_id",
+    "event_support", "event_qpos_stable", "event_opening_stable", "grasp_support",
+    "grasp_support_mask", "retention_active", "retention_active_mask",
+    "retention_continuation_t10", "retention_unknown_mask", "release_imminent",
+    "release_imminent_mask", "retention_unknown_reason", "source_artifact_sha256",
+    "feature_rebuilder_sha256",
+})
+RUNNER_BINDING_FIELDS = frozenset({
+    "status", "runner_repo", "runner_head", "expected_runner_head", "runner_worktree_clean",
+    "runner_script_path", "runner_script_git_path", "runner_script_sha256", "runner_script_git_blob_sha1",
+    "config_path", "config_git_path", "config_sha256", "config_git_blob_sha1", "python_version",
+    "torch_version", "transformers_version", "cuda_visible_devices", "runner_binding_sha256",
+})
 MASKS = {
     "grasp_support": "grasp_support_mask",
     "retention_active": "retention_active_mask",
@@ -109,7 +125,7 @@ def build_s1_runner_binding(
             return importlib.metadata.version(name)
         except importlib.metadata.PackageNotFoundError:
             return "NOT_INSTALLED"
-    return {
+    result = {
         "status": "PASS",
         **binding,
         "python_version": sys.version,
@@ -117,6 +133,20 @@ def build_s1_runner_binding(
         "transformers_version": version("transformers"),
         "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
     }
+    result["runner_binding_sha256"] = json_sha(result)
+    return result
+
+
+def _validate_runner_binding(actual: Any, expected: dict[str, Any] | None = None) -> None:
+    if not isinstance(actual, dict) or actual.get("status") != "PASS":
+        raise V3S1ContractViolation("formal runner binding is missing or not PASS")
+    missing = sorted(RUNNER_BINDING_FIELDS - set(actual))
+    if missing or actual.get("runner_worktree_clean") is not True:
+        raise V3S1ContractViolation(f"formal runner binding is incomplete: {missing}")
+    if actual.get("runner_binding_sha256") != json_sha({key: value for key, value in actual.items() if key != "runner_binding_sha256"}):
+        raise V3S1ContractViolation("runner binding SHA is invalid")
+    if expected is not None and json_sha(actual) != json_sha(expected):
+        raise V3S1ContractViolation("runner binding differs from independently measured binding")
 
 
 def _load_json(path: Path) -> dict[str, Any]:
@@ -305,6 +335,30 @@ def load_formal_fit_registry(registry_csv: Path, summary_json: Path) -> list[dic
             audit_path = summary_json.parent / audit_path
         if not audit_path.is_file() or sha256_file(audit_path).lower() != row["artifact_audit_sha256"].lower():
             raise V3S1ContractViolation(f"registry artifact audit binding is not closed: {key}")
+        audit = _load_json(audit_path)
+        if audit.get("schema") != "OFFICIAL_V3_ARTIFACT_AUDIT_V1":
+            raise V3S1ContractViolation(f"registry artifact audit schema mismatch: {key}")
+        if audit.get("status") != "PASS_FORMAL_CANDIDATE" or audit.get("formal_eligible") is not True:
+            raise V3S1ContractViolation(f"registry artifact audit is not formally eligible: {key}")
+        if audit.get("audit_mode") not in {"25d", "full"}:
+            raise V3S1ContractViolation(f"registry artifact audit mode is missing: {key}")
+        if audit.get("canonical_parent_key") != key or audit.get("artifact_recursive_sha256") != row["selected_artifact_recursive_sha256"]:
+            raise V3S1ContractViolation(f"registry artifact audit identity/SHA mismatch: {key}")
+        if audit.get("provenance_class") != row["provenance_class"]:
+            raise V3S1ContractViolation(f"registry artifact audit provenance mismatch: {key}")
+        if audit.get("artifact_root") and Path(audit["artifact_root"]).resolve() != Path(row["selected_artifact_root"]).resolve():
+            raise V3S1ContractViolation(f"registry artifact audit root mismatch: {key}")
+        for name in ("suite", "task_idx", "state_id"):
+            expected_value, actual_value = row.get(name), audit.get(name)
+            if name in {"task_idx", "state_id"}:
+                try:
+                    expected_value, actual_value = int(expected_value), int(actual_value)
+                except (TypeError, ValueError):
+                    pass
+            if actual_value != expected_value:
+                raise V3S1ContractViolation(f"registry artifact audit {name} mismatch: {key}")
+        if audit.get("formal_training_authorized") is not False or audit.get("formal_attack_authorized") is not False:
+            raise V3S1ContractViolation(f"registry artifact audit authorization boundary is invalid: {key}")
         if row["provenance_class"] not in {"A_CURRENT_HEAD_CLEAN_START_VERIFIED", "B_PREVIOUS_HEAD_EQUIVALENT"}:
             raise V3S1ContractViolation(f"registry provenance is not eligible: {key}")
         seen.add(key)
@@ -440,18 +494,22 @@ def dry_run_episode(row: dict[str, str], contract_path: Path, protocol_path: Pat
         "rebuilt": rebuilt,
         "source_contract": contract,
         "source_contract_sha256": sha256_file(contract_path),
+        "protocol_sha256": sha256_file(protocol_path),
         "step_count": len(merged),
         "feature_rebuilder_sha256": sha256_file(Path(rebuild_retention_features.__code__.co_filename).resolve()),
     }
 
 
-def export_policy_intent_9d(row: dict[str, str], contract_path: Path, output_root: Path) -> dict[str, Any]:
+def export_policy_intent_9d(
+    row: dict[str, str], contract_path: Path, output_root: Path, *, equivalence_status: str | None = None,
+) -> dict[str, Any]:
     """Export the optional 9D stream to an independent, non-primary root."""
     contract = load_contract(contract_path)
     source_root = Path(row["selected_artifact_root"]).resolve()
     meta = _load_json(source_root / "episode_metadata.json")
     # Full source audit is intentionally only used by this optional exporter.
-    report = audit_artifact(source_root, contract, mode="full")
+    effective_equivalence = equivalence_status or ("PASS" if row.get("provenance_class") == "B_PREVIOUS_HEAD_EQUIVALENT" else "HOLD")
+    report = audit_artifact(source_root, contract, equivalence_status=effective_equivalence, mode="full")
     if report.get("status") not in {"PASS_FORMAL_CANDIDATE", "PASS_DATA_CONTRACT_PROVENANCE_HOLD"}:
         raise V3S1ContractViolation(f"9D source audit failed: {row['canonical_parent_key']}")
     policy_rows = _load_policy_intent_stream(source_root, meta)
@@ -519,13 +577,39 @@ def _teacher_rows(prepared: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
-def audit_teacher_episode(rows: list[dict[str, Any]], events: list[dict[str, Any]], identity: str) -> dict[str, Any]:
+def audit_teacher_episode(
+    rows: list[dict[str, Any]], events: list[dict[str, Any]], identity: str,
+    *, registry_row: dict[str, str] | None = None,
+    source_artifact_sha256: str | None = None,
+    feature_rebuilder_sha256: str | None = None,
+) -> dict[str, Any]:
     violations: list[str] = []
     if not isinstance(events, list):
         violations.append("EVENT_FILE_NOT_LIST")
         events = []
     if not rows or [row.get("step") for row in rows] != list(range(len(rows))):
         violations.append("NON_CONTIGUOUS_OR_EMPTY_STUDENT_TEACHER_STEPS")
+    strict_provenance = registry_row is not None or source_artifact_sha256 is not None or feature_rebuilder_sha256 is not None
+    for index, row in enumerate(rows):
+        if strict_provenance:
+            if set(row) - TEACHER_FIELDS:
+                violations.append(f"STEP_{index}_TEACHER_FIELD_WHITELIST")
+            if row.get("schema") != "B3_OFFICIAL_V3_TEACHER_RECORD_V1":
+                violations.append(f"STEP_{index}_TEACHER_SCHEMA")
+            if registry_row is not None:
+                for name in ("suite", "task_idx", "state_id", "canonical_parent_key"):
+                    left, right = row.get(name), registry_row.get(name)
+                    if name in {"task_idx", "state_id"}:
+                        try:
+                            left, right = int(left), int(right)
+                        except (TypeError, ValueError):
+                            pass
+                    if left != right:
+                        violations.append(f"STEP_{index}_TEACHER_{name.upper()}_MISMATCH")
+            if source_artifact_sha256 is not None and row.get("source_artifact_sha256") != source_artifact_sha256:
+                violations.append(f"STEP_{index}_TEACHER_SOURCE_SHA_MISMATCH")
+            if feature_rebuilder_sha256 is not None and row.get("feature_rebuilder_sha256") != feature_rebuilder_sha256:
+                violations.append(f"STEP_{index}_TEACHER_REBUILDER_SHA_MISMATCH")
     event_ids = sorted({row.get("event_id") for row in rows if isinstance(row.get("event_id"), int) and row.get("event_id", -1) >= 0})
     if event_ids and event_ids != list(range(event_ids[-1] + 1)):
         violations.append("EVENT_ORDINAL_NOT_CONTIGUOUS")
@@ -737,6 +821,8 @@ def aggregate_teacher_audit(reports: list[dict[str, Any]], registry_rows: list[d
 def audit_materialized_episode(
     episode_root: Path, registry_row: dict[str, str], *, require_runner_binding: bool = False,
     feature_order_sha256: str | None = None,
+    expected_runner_binding: dict[str, Any] | None = None,
+    expected_input_sha256: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Audit a promoted episode independently of the writer's in-memory state."""
     manifest_path = episode_root / "materialization_manifest.json"
@@ -748,13 +834,29 @@ def audit_materialized_episode(
     source_identity = manifest.get("source_identity", {})
     if source_identity.get("canonical_parent_key") != identity:
         raise V3S1ContractViolation(f"materialized identity mismatch: {identity}")
+    for name in ("suite", "task_idx", "state_id"):
+        expected = registry_row.get(name)
+        actual = source_identity.get(name)
+        if name in {"task_idx", "state_id"}:
+            try:
+                expected, actual = int(expected), int(actual)
+            except (TypeError, ValueError):
+                pass
+        if actual != expected:
+            raise V3S1ContractViolation(f"materialized identity column mismatch: {identity}:{name}")
     if manifest.get("source_artifact_sha256") != registry_row["selected_artifact_recursive_sha256"]:
         raise V3S1ContractViolation(f"materialized source binding mismatch: {identity}")
     if manifest.get("source_unchanged") is not True or manifest.get("student_teacher_physical_separation") is not True:
         raise V3S1ContractViolation(f"materialized source/separation gate failed: {identity}")
     runner_binding = manifest.get("runner_binding")
-    if require_runner_binding and (not isinstance(runner_binding, dict) or runner_binding.get("status") != "PASS"):
-        raise V3S1ContractViolation(f"materialized runner provenance is not formally bound: {identity}")
+    if require_runner_binding:
+        _validate_runner_binding(runner_binding, expected_runner_binding)
+    elif expected_runner_binding is not None and json_sha(runner_binding) != json_sha(expected_runner_binding):
+        raise V3S1ContractViolation(f"materialized runner binding differs from root: {identity}")
+    if expected_input_sha256 is not None:
+        for name in ("source_contract_sha256", "protocol_sha256", "feature_rebuilder_sha256"):
+            if manifest.get(name) != expected_input_sha256.get(name):
+                raise V3S1ContractViolation(f"materialized input binding mismatch: {identity}:{name}")
     if manifest.get("policy_intent_9d_exported") is not False or (episode_root / "policy_intent_9d_records.jsonl").exists():
         raise V3S1ContractViolation(f"9D policy stream leaked into primary 25D output: {identity}")
     student_path = episode_root / "student_input_records.jsonl"
@@ -785,9 +887,25 @@ def audit_materialized_episode(
             raise V3S1ContractViolation(f"student schema mismatch: {identity}:{index}")
         if feature_order_sha256 is None or row.get("feature_order_sha256") != feature_order_sha256:
             raise V3S1ContractViolation(f"student feature order binding mismatch: {identity}:{index}")
+        for name in ("suite", "task_idx", "state_id"):
+            expected = registry_row.get(name)
+            actual = row.get(name)
+            if name in {"task_idx", "state_id"}:
+                try:
+                    expected, actual = int(expected), int(actual)
+                except (TypeError, ValueError):
+                    pass
+            if actual != expected:
+                raise V3S1ContractViolation(f"student identity column mismatch: {identity}:{index}:{name}")
         if row.get("canonical_parent_key") != identity or row.get("step") != index or not _finite_vector(row.get("features_25d"), 25) or not isinstance(row.get("valid"), bool):
             raise V3S1ContractViolation(f"student row mismatch: {identity}:{index}")
-    report = audit_teacher_episode(teacher_rows, events, identity)
+    report = audit_teacher_episode(
+        teacher_rows, events, identity, registry_row=registry_row,
+        source_artifact_sha256=manifest.get("source_artifact_sha256"),
+        feature_rebuilder_sha256=manifest.get("feature_rebuilder_sha256"),
+    )
+    if report["status"] != "PASS":
+        raise V3S1ContractViolation(f"Teacher provenance audit failed: {identity}:{report['violations']}")
     report["materialized_episode_root"] = str(episode_root.resolve())
     report["materialization_manifest_sha256"] = sha256_file(manifest_path)
     return report
@@ -796,6 +914,8 @@ def audit_materialized_episode(
 def audit_materialized_root(
     root: Path, registry_rows: list[dict[str, str]], *, require_runner_binding: bool = False,
     feature_order_sha256: str | None = None,
+    expected_runner_binding: dict[str, Any] | None = None,
+    expected_input_sha256: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Re-read a sealed corpus and require exact registry identity closure."""
     verify_checksum_manifest(root)
@@ -807,8 +927,15 @@ def audit_materialized_root(
     top = _load_json(top_path)
     if top.get("schema") != "B3_OFFICIAL_V3_S1_MATERIALIZATION_V1" or top.get("identity_count") != len(expected):
         raise V3S1ContractViolation("materialized root manifest schema/count mismatch")
-    if require_runner_binding and (not isinstance(top.get("runner_binding"), dict) or top["runner_binding"].get("status") != "PASS"):
-        raise V3S1ContractViolation("materialized root runner provenance is not formally bound")
+    top_binding = top.get("runner_binding")
+    if require_runner_binding:
+        _validate_runner_binding(top_binding, expected_runner_binding)
+    elif expected_runner_binding is not None and json_sha(top_binding) != json_sha(expected_runner_binding):
+        raise V3S1ContractViolation("materialized root runner binding differs from expected binding")
+    if expected_input_sha256 is not None:
+        for name in ("registry_csv_sha256", "registry_summary_sha256", "source_contract_sha256", "protocol_sha256", "feature_rebuilder_sha256"):
+            if top.get(name) != expected_input_sha256.get(name):
+                raise V3S1ContractViolation(f"materialized root input binding mismatch: {name}")
     manifests = sorted(root.rglob("materialization_manifest.json")) if root.exists() else []
     reports: list[dict[str, Any]] = []
     seen: set[str] = set()
@@ -820,7 +947,8 @@ def audit_materialized_root(
         seen.add(identity)
         reports.append(audit_materialized_episode(
             manifest_path.parent, expected[identity], require_runner_binding=require_runner_binding,
-            feature_order_sha256=feature_order_sha256,
+            feature_order_sha256=feature_order_sha256, expected_runner_binding=top_binding,
+            expected_input_sha256=expected_input_sha256,
         ))
     if seen != set(expected) or len(reports) != len(expected):
         raise V3S1ContractViolation(f"materialized root identity closure failed: expected={len(expected)} actual={len(seen)}")
@@ -836,7 +964,7 @@ def audit_materialized_root(
     sums_sidecar = sums.with_name(sums.name + ".sha256")
     if not sums.is_file() or not sums_sidecar.is_file() or sums_sidecar.read_text(encoding="utf-8").strip() != f"{sha256_file(sums)}  {sums.name}":
         raise V3S1ContractViolation("materialized root checksum closure is missing/invalid")
-    if stored.get("status") != aggregate.get("status") or stored.get("nondegeneracy_gates") != aggregate.get("nondegeneracy_gates"):
+    if json_sha(stored) != json_sha(aggregate):
         raise V3S1ContractViolation("stored aggregate Teacher audit does not match independent recomputation")
     return {
         "schema": "B3_OFFICIAL_V3_S1_ROOT_AUDIT_V1",
@@ -900,6 +1028,8 @@ def _write_episode(prepared: dict[str, Any], output_root: Path) -> dict[str, Any
         "source_before_sha256": prepared["source_before_sha256"],
         "source_after_sha256": prepared["source_after_sha256"],
         "source_contract_sha256": prepared["source_contract_sha256"],
+        "protocol_sha256": prepared["protocol_sha256"],
+        "feature_rebuilder_sha256": prepared["feature_rebuilder_sha256"],
         "source_unchanged": prepared["source_before_sha256"] == prepared["source_after_sha256"],
         "runner_binding": prepared.get("runner_binding", {"status": "SYNTHETIC_TEST_ONLY"}),
         "protocol_schema": prepared["protocol"]["schema"],
@@ -935,7 +1065,16 @@ def materialize_episode(
         raise V3S1ContractViolation(f"staging root already exists: {staging}")
     try:
         manifest = _write_episode(prepared, staging)
-        report = audit_teacher_episode(_load_jsonl(staging / "teacher_retention_records.jsonl"), _load_json_value(staging / "retention_events.json"), row["canonical_parent_key"])
+        report = audit_materialized_episode(
+            staging, row, require_runner_binding=runner_binding is not None,
+            feature_order_sha256=prepared["source_contract"]["feature_order_sha256"],
+            expected_runner_binding=runner_binding,
+            expected_input_sha256={
+                "source_contract_sha256": prepared["source_contract_sha256"],
+                "protocol_sha256": prepared["protocol_sha256"],
+                "feature_rebuilder_sha256": prepared["feature_rebuilder_sha256"],
+            },
+        )
         if report["status"] != "PASS":
             raise V3S1ContractViolation(f"episode Teacher audit failed: {report['violations']}")
         os.replace(staging, output_root)
@@ -1000,6 +1139,20 @@ def materialize_fit(
         sums = staging / "SHA256SUMS"
         sums.write_text("".join(f"{sha256_file(staging / name)}  {name}\n" for name in names), encoding="utf-8")
         _write_sidecar(sums)
+        root_report = audit_materialized_root(
+            staging, registry_rows, require_runner_binding=runner_binding is not None,
+            feature_order_sha256=load_contract(contract_path)["feature_order_sha256"],
+            expected_runner_binding=runner_binding,
+            expected_input_sha256={
+                "registry_csv_sha256": sha256_file(registry_csv),
+                "registry_summary_sha256": sha256_file(registry_summary),
+                "source_contract_sha256": sha256_file(contract_path),
+                "protocol_sha256": sha256_file(protocol_path),
+                "feature_rebuilder_sha256": sha256_file(Path(rebuild_retention_features.__code__.co_filename).resolve()),
+            },
+        )
+        if root_report["status"] != "PASS":
+            raise V3S1ContractViolation("independent root audit failed before promotion")
         os.replace(staging, output_root)
         return top
     except (OSError, V3S1ContractViolation):
