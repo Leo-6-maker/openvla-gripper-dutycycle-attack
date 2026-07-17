@@ -43,6 +43,7 @@ jobs:
             src/gripper_attack/b3_v3_dataset.py \
             src/gripper_attack/b3_v3_runtime.py \
             src/gripper_attack/b3_v3_attack_protocol.py \
+            src/gripper_attack/b3_v3_viability_decision.py \
             scripts/detector/build_b3_v3_training_manifests.py \
             scripts/detector/compute_b3_v3_normalization.py \
             scripts/detector/run_b3_v3_overfit_smoke.py \
@@ -52,7 +53,7 @@ jobs:
             scripts/detector/build_b3_v3_normalization_bundle.py \
             scripts/detector/build_b3_v3_training_authorization.py \
             scripts/detector/audit_b3_v3_training_authorization.py \
-            scripts/detector/audit_b3_v3_training_authorization.py \
+            scripts/detector/decide_b3_v3_fit_viability.py \
             scripts/detector/build_b3_v3_fit_viability_matrix.py \
             scripts/detector/run_b3_v3_fit_viability_matrix.py \
             scripts/detector/build_b3_v3_prediction_bundle.py \
@@ -76,6 +77,7 @@ jobs:
             tests/test_b3_v3_trainer_and_viability.py \
             tests/test_b3_v3_training_contracts.py \
             tests/test_b3_v3_preparation.py \
-            tests/test_b3_v3_prediction_pipeline.py
+            tests/test_b3_v3_prediction_pipeline.py \
+            tests/test_b3_v3_viability_decision.py
       - name: Check patch whitespace
         run: git diff --check
