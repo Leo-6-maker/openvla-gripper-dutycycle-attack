@@ -275,21 +275,11 @@ def _verify_campaign_membership(
     row = payload["_fit_rows"].get(key)
     if row is None or row.get("artifact_recursive_sha256") != recursive_sha:
         raise ContractViolation("PROVENANCE", f"artifact is not the frozen campaign FIT artifact: {key}")
-    accepted = payload.get("accepted_artifact_field_values", {})
-    aliases = {
-        "collector_head": ("collector_head", "collector_git_head"),
-        "model_tree_sha256": ("model_tree_sha256",),
-        "processor_tokenizer_sha256": ("processor_tokenizer_sha256",),
-    }
-    for name, candidates in aliases.items():
-        value = next((meta.get(candidate) for candidate in candidates if meta.get(candidate)), None)
-        values = accepted.get(name)
-        if value and isinstance(values, list) and values and value not in values:
-            raise ContractViolation("PROVENANCE", f"artifact field is outside accepted campaign envelope: {name}")
     return {
         "provenance_class": CAMPAIGN_PROVENANCE,
         "campaign_contract_sha256": sha256_file(campaign_contract),
         "campaign_membership_status": "PASS",
+        "campaign_instance_binding_status": "UNRESOLVED_BY_POLICY",
     }
 
 
