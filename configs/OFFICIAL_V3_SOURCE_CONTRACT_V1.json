@@ -95,6 +95,29 @@
     "CHECK": [27, 29],
     "FINAL_EVAL_CANDIDATE": [30, 49]
   },
+  "source_split_mapping": {
+    "FIT": [
+      {"state_range": [0, 19], "formal_split": "FIT_TRAIN", "rule": "RAW_FIT_STATE_0_19_TO_FIT_TRAIN"},
+      {"state_range": [20, 23], "formal_split": "FIT_DEV", "rule": "RAW_FIT_STATE_20_23_TO_FIT_DEV"}
+    ],
+    "CAL": [
+      {"state_range": [24, 26], "formal_split": "CAL", "rule": "RAW_CAL_STATE_24_26_EXACT"}
+    ],
+    "CHECK": [
+      {"state_range": [27, 29], "formal_split": "CHECK", "rule": "RAW_CHECK_STATE_27_29_EXACT"}
+    ],
+    "FINAL_EVAL_CANDIDATE": [
+      {"state_range": [30, 49], "formal_split": "FINAL_EVAL_CANDIDATE", "rule": "RAW_FINAL_STATE_30_49_EXACT"}
+    ]
+  },
+  "external_manifest_required_fields": [
+    "schema", "start_uuid", "slot_id", "gpu_id", "pid", "collector_head",
+    "collector_worktree_clean", "worker_script_sha256", "adapter_script_sha256",
+    "protocol_config_sha256", "queue_epoch_id", "queue_manifest_sha256",
+    "model_tree_sha256", "processor_tree_sha256", "python_version", "torch_version",
+    "transformers_version", "relay_archive_commit", "runtime_config_sha256", "status", "worker_id"
+  ],
+  "external_manifest_registry_schema": "OFFICIAL_V3_EXTERNAL_WORKER_MANIFEST_REGISTRY_V1",
   "expected_identity_count": 2000,
   "expected_fit_train_count": 800,
   "worker_slots": [

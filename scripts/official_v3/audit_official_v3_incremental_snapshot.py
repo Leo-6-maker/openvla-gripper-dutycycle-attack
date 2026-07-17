@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from gripper_attack.official_v3_contract import audit_artifact, load_contract, sha256_file
+from gripper_attack.official_v3_contract import audit_artifact, load_contract, load_external_manifest_registry, sha256_file
 
 
 def read_csv(path: Path) -> list[dict[str, str]]:
@@ -33,6 +33,8 @@ def audit_snapshot(
     contract: dict[str, Any],
     *,
     previous: dict[str, Any] | None = None,
+    external_registry: dict[str, dict[str, Any]] | None = None,
+    external_registry_sha256: str | None = None,
 ) -> dict[str, Any]:
     ledger = {_ledger_key(row): row for row in ledger_rows if _ledger_key(row)}
     records: list[dict[str, Any]] = []
@@ -55,7 +57,15 @@ def audit_snapshot(
             "artifact_recursive_sha256": "",
         }
         if sealed:
-            result = {**result, **audit_artifact(artifact, contract)}
+            result = {
+                **result,
+                **audit_artifact(
+                    artifact,
+                    contract,
+                    external_registry=external_registry,
+                    external_registry_sha256=external_registry_sha256,
+                ),
+            }
         records.append(result)
 
     previous_records = {row.get("canonical_parent_key"): row for row in (previous or {}).get("records", []) if row.get("canonical_parent_key")}
@@ -92,13 +102,24 @@ def main() -> int:
     parser.add_argument("--ledger", type=Path, required=True)
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--previous-snapshot", type=Path)
+    parser.add_argument("--provenance-registry", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
         raise SystemExit(f"refusing to overwrite snapshot: {args.output}")
     previous = json.loads(args.previous_snapshot.read_text(encoding="utf-8")) if args.previous_snapshot else None
+    external_registry = None
+    external_registry_sha256 = None
+    if args.provenance_registry:
+        external_registry, external_registry_sha256 = load_external_manifest_registry(args.provenance_registry)
     report = audit_snapshot(
-        read_csv(args.manifest), read_csv(args.ledger), args.source_root.resolve(), load_contract(args.contract), previous=previous
+        read_csv(args.manifest),
+        read_csv(args.ledger),
+        args.source_root.resolve(),
+        load_contract(args.contract),
+        previous=previous,
+        external_registry=external_registry,
+        external_registry_sha256=external_registry_sha256,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")

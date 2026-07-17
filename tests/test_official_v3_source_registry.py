@@ -2,7 +2,7 @@ import csv
 import json
 from pathlib import Path
 
-from gripper_attack.official_v3_contract import audit_artifact, json_sha, load_contract, sha256_file
+from gripper_attack.official_v3_contract import audit_artifact, json_sha, load_contract, load_external_manifest_registry, sha256_file
 from official_v3.audit_official_v3_incremental_snapshot import audit_snapshot
 from official_v3.audit_official_v3_worker_strata import audit_worker_strata
 from official_v3.build_official_v3_formal_registry import _read_stale_recovery_audit, build_registry, write_registry
@@ -20,7 +20,15 @@ def _write(path: Path, value: object) -> None:
         path.write_text(json.dumps(value, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def _build_artifact(root: Path, *, key="libero_object/task_00/state_00", success=True, provenance="A_CURRENT_HEAD_CLEAN_START_VERIFIED", generation=1):
+def _build_artifact(
+    root: Path,
+    *,
+    key="libero_object/task_00/state_00",
+    success=True,
+    provenance="A_CURRENT_HEAD_CLEAN_START_VERIFIED",
+    generation=1,
+    source_split=None,
+):
     contract = load_contract(CONTRACT_PATH)
     suite, task, state = key.split("/")[0], int(key.split("/")[1].split("_")[1]), int(key.split("/")[2].split("_")[1])
     model_sha = "1" * 64
@@ -38,7 +46,7 @@ def _build_artifact(root: Path, *, key="libero_object/task_00/state_00", success
     meta = {
         "schema": "OPENVLA_OFFICIAL_CLEAN_EPISODE_V3", "condition": "CLEAN", "runtime_valid": True,
         "suite": suite, "task_idx": task, "state_id": state, "canonical_parent_key": key,
-        "split": "FIT_TRAIN" if state < 20 else "FIT_DEV", "official_horizon": contract["official_horizons"][suite],
+        "split": source_split or ("FIT_TRAIN" if state < 20 else "FIT_DEV"), "official_horizon": contract["official_horizons"][suite],
         "num_steps_wait": 10, "success": success, "env_success": success,
         "official_execution_adapter": "OfficialOpenVLAActionAdapter.predict_action",
         "generation_passes_per_step": 1, "feature_names_25d": contract["feature_names_25d"],
@@ -76,6 +84,54 @@ def _build_artifact(root: Path, *, key="libero_object/task_00/state_00", success
     _write(root / "worker_start_manifest.json.sha256", f"{sha256_file(worker_path)}  worker_start_manifest.json\n")
     _reseal(root)
     return root
+
+
+def _build_external_registry(artifact: Path, tmp_path: Path) -> Path:
+    meta = json.loads((artifact / "episode_metadata.json").read_text(encoding="utf-8"))
+    meta.update({
+        "collector_worker_id": "slot_gpu0", "collector_gpu": 0, "collector_pid": 123,
+        "collector_git_head": "4" * 40, "collector_script_sha256": "5" * 64,
+        "checkpoint_tree_sha256": "1" * 64, "processor_tokenizer_sha256": "2" * 64,
+        "collector_worktree_clean": True,
+    })
+    (artifact / "episode_metadata.json").write_text(json.dumps(meta, sort_keys=True) + "\n", encoding="utf-8")
+    (artifact / "worker_start_manifest.json").unlink()
+    (artifact / "worker_start_manifest.json.sha256").unlink()
+    _reseal(artifact)
+
+    manifest = {
+        "schema": "OFFICIAL_V3_WORKER_START_CONTRACT_V1", "start_uuid": "external-start",
+        "slot_id": "slot_gpu0", "gpu_id": 0, "pid": 123, "collector_head": "4" * 40,
+        "collector_worktree_clean": True, "worker_script_sha256": "5" * 64,
+        "adapter_script_sha256": "6" * 64, "protocol_config_sha256": "3" * 64,
+        "queue_epoch_id": "epoch", "queue_manifest_sha256": "8" * 64,
+        "model_tree_sha256": "1" * 64, "processor_tree_sha256": "2" * 64,
+        "python_version": "3.10", "torch_version": "2", "transformers_version": "4",
+        "relay_archive_commit": "9" * 40, "runtime_config_sha256": "7" * 64,
+        "status": "READY_FOR_PRELEASE", "worker_id": "slot_gpu0",
+    }
+    manifest_path = tmp_path / "external-worker-start.json"
+    _write(manifest_path, manifest)
+    manifest_sidecar = manifest_path.with_name(manifest_path.name + ".sha256")
+    _write(manifest_sidecar, f"{sha256_file(manifest_path)}  {manifest_path.name}\n")
+    artifact_sha = json.loads((artifact / "artifact_sha256.json").read_text(encoding="utf-8"))["recursive_sha256"]
+    registry = {
+        "schema": "OFFICIAL_V3_EXTERNAL_WORKER_MANIFEST_REGISTRY_V1", "status": "SEALED",
+        "formal_training_authorized": False, "formal_attack_authorized": False,
+        "entries": [{
+            "canonical_parent_key": meta["canonical_parent_key"],
+            "artifact_recursive_sha256": artifact_sha,
+            "worker_start_manifest_path": str(manifest_path),
+            "worker_start_manifest_sha256": sha256_file(manifest_path),
+            "worker_start_manifest_sidecar_path": str(manifest_sidecar),
+            "worker_start_manifest_sidecar_sha256": sha256_file(manifest_sidecar),
+            "provenance_class": "A_CURRENT_HEAD_CLEAN_START_VERIFIED",
+        }],
+    }
+    registry_path = tmp_path / "external-registry.json"
+    _write(registry_path, registry)
+    _write(registry_path.with_name(registry_path.name + ".sha256"), f"{sha256_file(registry_path)}  {registry_path.name}\n")
+    return registry_path
 
 
 def _reseal(root: Path) -> None:
@@ -121,6 +177,49 @@ def test_25d_audit_does_not_require_policy_intent_stream(tmp_path: Path):
     report = audit_artifact(artifact, contract, mode="25d")
     assert report["status"] == "PASS_FORMAL_CANDIDATE"
     assert report["audit_mode"] == "25d"
+
+
+def test_raw_fit_split_maps_to_formal_fit_train(tmp_path: Path):
+    contract = load_contract(CONTRACT_PATH)
+    artifact = _build_artifact(tmp_path / "raw-fit", key="libero_object/task_00/state_13", source_split="FIT")
+    report = audit_artifact(artifact, contract)
+    assert report["status"] == "PASS_FORMAL_CANDIDATE"
+    assert report["source_split_raw"] == "FIT"
+    assert report["split"] == "FIT_TRAIN"
+    assert report["split_mapping_rule"] == "RAW_FIT_STATE_0_19_TO_FIT_TRAIN"
+
+
+def test_raw_split_state_mismatch_is_fail_closed(tmp_path: Path):
+    contract = load_contract(CONTRACT_PATH)
+    artifact = _build_artifact(tmp_path / "raw-fit-mismatch", key="libero_object/task_00/state_24", source_split="FIT")
+    report = audit_artifact(artifact, contract)
+    assert report["status"] == "HOLD_DUPLICATE_OR_IDENTITY"
+    assert report["error_code"] == "IDENTITY"
+
+
+def test_external_sealed_manifest_registry_binds_artifact_without_copying(tmp_path: Path):
+    contract = load_contract(CONTRACT_PATH)
+    artifact = _build_artifact(tmp_path / "external", key="libero_object/task_00/state_13")
+    registry_path = _build_external_registry(artifact, tmp_path)
+    registry, registry_sha = load_external_manifest_registry(registry_path)
+    report = audit_artifact(artifact, contract, external_registry=registry, external_registry_sha256=registry_sha)
+    assert report["status"] == "PASS_FORMAL_CANDIDATE"
+    assert report["provenance_binding_mode"] == "EXTERNAL_SEALED_MANIFEST_REGISTRY"
+    assert report["external_manifest_registry_sha256"] == registry_sha
+    assert report["worker_start_manifest_sidecar_sha256"]
+
+
+def test_external_registry_artifact_sha_mismatch_holds(tmp_path: Path):
+    contract = load_contract(CONTRACT_PATH)
+    artifact = _build_artifact(tmp_path / "external-mismatch", key="libero_object/task_00/state_13")
+    registry_path = _build_external_registry(artifact, tmp_path)
+    payload = json.loads(registry_path.read_text(encoding="utf-8"))
+    payload["entries"][0]["artifact_recursive_sha256"] = "f" * 64
+    _write(registry_path, payload)
+    _write(registry_path.with_name(registry_path.name + ".sha256"), f"{sha256_file(registry_path)}  {registry_path.name}\n")
+    registry, registry_sha = load_external_manifest_registry(registry_path)
+    report = audit_artifact(artifact, contract, external_registry=registry, external_registry_sha256=registry_sha)
+    assert report["status"] == "HOLD_PROVENANCE"
 
 
 def test_registry_keeps_task_failure_and_rejects_duplicate_identity(tmp_path: Path):

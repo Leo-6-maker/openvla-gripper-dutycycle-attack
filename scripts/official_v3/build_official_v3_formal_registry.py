@@ -21,7 +21,9 @@ from gripper_attack.official_v3_contract import PASS_STATUSES, SUITES, canonical
 REGISTRY_FIELDS = [
     "canonical_parent_key", "suite", "task_idx", "state_id", "split", "ledger_status", "task_success",
     "selected_artifact_root", "selected_artifact_recursive_sha256", "artifact_audit_path", "artifact_audit_sha256",
-    "provenance_class", "worker_start_manifest_sha256", "collector_head", "worker_id", "gpu_id",
+    "provenance_class", "provenance_binding_mode", "provenance_binding_sha256",
+    "external_manifest_registry_sha256", "worker_start_manifest_sha256", "worker_start_manifest_sidecar_sha256",
+    "source_split_raw", "split_mapping_rule", "collector_head", "worker_id", "gpu_id",
     "worker_script_sha256", "adapter_sha256", "protocol_sha256", "model_tree_sha256", "processor_tree_sha256",
     "formal_eligible", "formal_selected", "superseded_artifact_sha256", "remediation_required",
     "remediation_reason", "selection_reason",
