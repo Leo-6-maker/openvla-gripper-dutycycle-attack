@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -11,8 +12,10 @@ from gripper_attack.official_v3_sprint0 import (
     audit_legacy_bridge,
     audit_stale_lease_recovery,
     build_fit_remediation_queue,
+    _runner_binding,
     write_sealed_csv,
     write_sealed_json,
+    write_sealed_remediation_bundle,
 )
 
 
@@ -70,6 +73,8 @@ def test_legacy_metadata_bridge_is_provenance_only():
     assert record["official_v3_disposition"] == "EXACT_REMEDIATION_REQUIRED"
     assert record["remediation_required"] is True
     assert report["official_v3_overall_status"] == "EXACT_REMEDIATION_REQUIRED"
+    assert report["legacy_bridge_exact_remediation_count"] == 0
+    assert report["official_v3_exact_remediation_required_count"] == 1
     assert report["teacher_labels_read"] is False
     assert report["attack_results_read"] is False
 
@@ -148,6 +153,83 @@ def test_remediation_queue_is_exact_identity_and_ignores_active_rows():
             manifest, bridge,
             [{"canonical_parent_key": row["canonical_parent_key"], "status": "RUNNING"}],
             queue_epoch_id="V3_REMEDIATION_EPOCH_3",
+        )
+
+
+def test_remediation_queue_preserves_mixed_dispositions_per_row():
+    hold = _row("libero_10/task_00/state_00")
+    hold["official_action_adapter"] = ""
+    exact = _row("libero_10/task_00/state_01")
+    bridge = audit_legacy_bridge(
+        [hold, exact], _baseline(), expected_keys=[hold["canonical_parent_key"], exact["canonical_parent_key"]]
+    )
+    manifest = [
+        {"canonical_parent_key": row["canonical_parent_key"], "suite": "libero_10", "task_idx": "0", "state_id": str(i), "split": "FIT_TRAIN", "queue_rank": str(i)}
+        for i, row in enumerate((hold, exact))
+    ]
+    queue, _ = build_fit_remediation_queue(
+        manifest, bridge, [], queue_epoch_id="MIXED",
+        expected_identity_count=2, expected_fit_count=2, expected_per_suite=2,
+        expected_per_task=2, expected_suite_count=1, expected_task_count=1,
+    )
+    assert {row["canonical_parent_key"]: row["official_v3_disposition"] for row in queue} == {
+        hold["canonical_parent_key"]: "HOLD",
+        exact["canonical_parent_key"]: EXACT_REMEDIATION_REQUIRED,
+    }
+
+
+def test_runner_binding_reads_actual_git_state_and_rejects_wrong_head(tmp_path: Path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    script = repo / "audit.py"
+    config = repo / "config.json"
+    script.write_text("print('ok')\n", encoding="utf-8")
+    config.write_text("{}\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    subprocess.run(["git", "add", "audit.py", "config.json"], cwd=repo, check=True)
+    subprocess.run(
+        ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "init"],
+        cwd=repo, check=True,
+    )
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
+    binding = _runner_binding(
+        runner_repo=repo,
+        expected_runner_head=head,
+        config_path=config,
+        runner_script_path=script,
+    )
+    assert binding["runner_head"] == head
+    assert binding["runner_worktree_clean"] is True
+    with pytest.raises(Sprint0ContractViolation):
+        _runner_binding(
+            runner_repo=repo,
+            expected_runner_head="0" * 40,
+            config_path=config,
+            runner_script_path=script,
+        )
+
+
+def test_runner_binding_rejects_dirty_worktree(tmp_path: Path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    script = repo / "audit.py"
+    config = repo / "config.json"
+    script.write_text("print('ok')\n", encoding="utf-8")
+    config.write_text("{}\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    subprocess.run(["git", "add", "audit.py", "config.json"], cwd=repo, check=True)
+    subprocess.run(
+        ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-qm", "init"],
+        cwd=repo, check=True,
+    )
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
+    (repo / "dirty.txt").write_text("dirty\n", encoding="utf-8")
+    with pytest.raises(Sprint0ContractViolation):
+        _runner_binding(
+            runner_repo=repo,
+            expected_runner_head=head,
+            config_path=config,
+            runner_script_path=script,
         )
 
 
@@ -261,6 +343,38 @@ def test_late_result_requires_actual_quarantine_record():
     assert any("LATE_RESULT_NOT_QUARANTINED" in item for item in report["late_result_violations"])
 
 
+def test_late_result_must_bind_old_lease_uuid_and_epoch():
+    key = "libero_10/task_06/state_16"
+    artifact_sha = "old" * 16
+    ledger = [{
+        "canonical_parent_key": key, "status": "RUNNING", "pid": "123",
+        "lease_timestamp": "1000", "lease_uuid": "old-uuid", "lease_epoch_id": "7",
+    }]
+    recovery = [{
+        "canonical_parent_key": key, "old_lease_uuid": "old-uuid", "new_lease_uuid": "new-uuid",
+        "old_lease_epoch_id": "7", "new_lease_epoch_id": "8", "fencing_token": "fence-8",
+        "late_result_policy": "QUARANTINE",
+    }]
+    formal = [{
+        "canonical_parent_key": key, "formal_selected": True, "formal_result_sha256": "new" * 16,
+        "lease_uuid": "new-uuid", "lease_epoch_id": "8", "fencing_token": "fence-8",
+    }, {
+        "canonical_parent_key": key, "formal_selected": False, "formal_result_sha256": artifact_sha,
+        "lease_uuid": "new-uuid", "lease_epoch_id": "8",
+    }]
+    quarantine = [{
+        "canonical_parent_key": key, "artifact_sha256": artifact_sha, "formal_selected": False,
+        "old_lease_uuid": "old-uuid", "old_lease_epoch_id": "7", "quarantine_reason": "STALE",
+    }]
+    report = audit_stale_lease_recovery(
+        ledger, [{"pid": "123", "alive": False}], formal, recovery,
+        now_epoch=2000, expected_stale_keys=[key], late_quarantine_rows=quarantine,
+    )
+    assert report["status"] == "HOLD"
+    assert any("LATE_RESULT_OLD_LEASE_UUID_MISMATCH" in item for item in report["late_result_violations"])
+    assert any("LATE_RESULT_OLD_EPOCH_MISMATCH" in item for item in report["late_result_violations"])
+
+
 def test_empty_queue_header_and_sidecar_preflight(tmp_path: Path):
     csv_path = tmp_path / "queue.csv"
     write_sealed_csv(csv_path, [], fieldnames=REMEDIATION_FIELDS)
@@ -271,3 +385,19 @@ def test_empty_queue_header_and_sidecar_preflight(tmp_path: Path):
     with pytest.raises(Sprint0ContractViolation):
         write_sealed_json(json_path, {"schema": "TEST"})
     assert not json_path.exists()
+
+
+def test_remediation_bundle_refuses_preexisting_summary_without_partial_queue(tmp_path: Path):
+    output_root = tmp_path / "bundle"
+    output_root.mkdir()
+    (output_root / "summary.json").write_text("occupied\n", encoding="utf-8")
+    with pytest.raises(Sprint0ContractViolation):
+        write_sealed_remediation_bundle(output_root, [], {"schema": "TEST"})
+    assert not (output_root / "OFFICIAL_V3_FIT_REMEDIATION_QUEUE_V1.csv").exists()
+
+    fresh_root = tmp_path / "fresh-bundle"
+    write_sealed_remediation_bundle(fresh_root, [], {"schema": "TEST"})
+    assert (fresh_root / "OFFICIAL_V3_FIT_REMEDIATION_QUEUE_V1.csv").exists()
+    assert (fresh_root / "OFFICIAL_V3_FIT_REMEDIATION_QUEUE_SUMMARY_V1.json").exists()
+    assert (fresh_root / "SHA256SUMS").exists()
+    assert (fresh_root / "SHA256SUMS.sha256").exists()

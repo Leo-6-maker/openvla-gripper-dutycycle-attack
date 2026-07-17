@@ -29,8 +29,8 @@ def main() -> int:
     parser.add_argument("--expected-stale-keys", type=Path, required=True)
     parser.add_argument("--stale-after-seconds", type=float, default=600.0)
     parser.add_argument("--config", type=Path, required=True)
-    parser.add_argument("--runner-head", required=True)
-    parser.add_argument("--runner-worktree-clean", choices=("true", "false"), required=True)
+    parser.add_argument("--runner-repo", type=Path, required=True)
+    parser.add_argument("--expected-runner-head", required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
@@ -64,9 +64,10 @@ def main() -> int:
                 "config": _input_binding(args.config, schema="OFFICIAL_V3_SPRINT0_PROVENANCE_V1"),
             },
             runner_binding=_runner_binding(
-                runner_head=args.runner_head,
-                worktree_clean=args.runner_worktree_clean == "true",
+                runner_repo=args.runner_repo,
+                expected_runner_head=args.expected_runner_head,
                 config_path=args.config,
+                runner_script_path=Path(__file__),
             ),
         )
         write_sealed_json(args.output, report)

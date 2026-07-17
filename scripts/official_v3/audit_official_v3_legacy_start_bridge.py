@@ -26,8 +26,8 @@ def main() -> int:
     parser.add_argument("--expected-keys", type=Path)
     parser.add_argument("--exploratory-partial", action="store_true")
     parser.add_argument("--config", type=Path, required=True)
-    parser.add_argument("--runner-head", required=True)
-    parser.add_argument("--runner-worktree-clean", choices=("true", "false"), required=True)
+    parser.add_argument("--runner-repo", type=Path, required=True)
+    parser.add_argument("--expected-runner-head", required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if not args.expected_keys and not args.exploratory_partial:
@@ -53,15 +53,16 @@ def main() -> int:
             report,
             inputs=inputs,
             runner=_runner_binding(
-                runner_head=args.runner_head,
-                worktree_clean=args.runner_worktree_clean == "true",
+                runner_repo=args.runner_repo,
+                expected_runner_head=args.expected_runner_head,
                 config_path=args.config,
+                runner_script_path=Path(__file__),
             ),
         )
         write_sealed_json(args.output, report)
     except (OSError, json.JSONDecodeError, Sprint0ContractViolation) as exc:
         raise SystemExit(str(exc)) from exc
-    print(json.dumps({key: report[key] for key in ("overall_status", "identity_count", "exact_remediation_required_count")}, sort_keys=True))
+    print(json.dumps({key: report[key] for key in ("overall_status", "identity_count", "official_v3_exact_remediation_required_count")}, sort_keys=True))
     return 0 if report["official_v3_overall_status"] == "PASS" else 2
 
 

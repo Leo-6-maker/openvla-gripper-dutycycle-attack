@@ -15,6 +15,8 @@ import io
 import json
 import os
 import re
+import shutil
+import subprocess
 import uuid
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
@@ -138,16 +140,72 @@ def _input_binding(path: Path, *, schema: str, row_count: int | None = None, ide
     }
 
 
-def _runner_binding(*, runner_head: str, worktree_clean: bool, config_path: Path) -> dict[str, Any]:
-    if not re.fullmatch(r"[0-9a-fA-F]{40}", runner_head):
-        raise Sprint0ContractViolation("runner_head must be a full 40-character Git SHA")
-    if not worktree_clean:
-        raise Sprint0ContractViolation("formal Sprint 0 audit requires a clean runner worktree")
+def _git_output(repo: Path, *args: str) -> str:
+    try:
+        result = subprocess.run(
+            ["git", "-C", str(repo), *args],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise Sprint0ContractViolation(f"Git provenance command failed in {repo}: {' '.join(args)}") from exc
+    return result.stdout.strip()
+
+
+def _repo_relative(repo: Path, path: Path) -> str:
+    try:
+        return path.resolve().relative_to(repo.resolve()).as_posix()
+    except ValueError as exc:
+        raise Sprint0ContractViolation(f"path is outside runner repository: {path}") from exc
+
+
+def _runner_binding(
+    *,
+    runner_repo: Path,
+    expected_runner_head: str,
+    config_path: Path,
+    runner_script_path: Path,
+) -> dict[str, Any]:
+    """Read runner provenance from Git; caller-supplied status is not trusted."""
+
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", expected_runner_head):
+        raise Sprint0ContractViolation("expected_runner_head must be a full 40-character Git SHA")
+    repo = runner_repo.resolve()
+    actual_head = _git_output(repo, "rev-parse", "HEAD")
+    if actual_head.lower() != expected_runner_head.lower():
+        raise Sprint0ContractViolation(
+            f"runner HEAD mismatch: expected {expected_runner_head}, actual {actual_head}"
+        )
+    status = _git_output(repo, "status", "--porcelain", "--untracked-files=all")
+    if status:
+        raise Sprint0ContractViolation("formal Sprint 0 audit requires an actually clean runner worktree")
+    script = runner_script_path.resolve()
+    config = config_path.resolve()
+    script_rel = _repo_relative(repo, script)
+    config_rel = _repo_relative(repo, config)
+    if not script.is_file() or not config.is_file():
+        raise Sprint0ContractViolation("runner script and config must exist in the runner repository")
+    try:
+        tracked_script = _git_output(repo, "ls-files", "--error-unmatch", "--", script_rel)
+        tracked_config = _git_output(repo, "ls-files", "--error-unmatch", "--", config_rel)
+        script_blob = _git_output(repo, "rev-parse", f"HEAD:{script_rel}")
+        config_blob = _git_output(repo, "rev-parse", f"HEAD:{config_rel}")
+    except Sprint0ContractViolation as exc:
+        raise Sprint0ContractViolation("runner script/config must be tracked at expected HEAD") from exc
     return {
-        "runner_head": runner_head,
-        "runner_worktree_clean": bool(worktree_clean),
-        "config_path": str(config_path.resolve()),
-        "config_sha256": sha256_file(config_path),
+        "runner_repo": str(repo),
+        "runner_head": actual_head,
+        "expected_runner_head": expected_runner_head,
+        "runner_worktree_clean": True,
+        "runner_script_path": str(script),
+        "runner_script_git_path": tracked_script,
+        "runner_script_sha256": sha256_file(script),
+        "runner_script_git_blob_sha1": script_blob,
+        "config_path": str(config),
+        "config_git_path": tracked_config,
+        "config_sha256": sha256_file(config),
+        "config_git_blob_sha1": config_blob,
     }
 
 
@@ -325,7 +383,9 @@ def audit_legacy_bridge(
         "identity_count": len(rows),
         "bridge_pass_count": counts[BRIDGE_PASS],
         "hold_count": counts[BRIDGE_HOLD],
-        "exact_remediation_required_count": counts[EXACT_REMEDIATION_REQUIRED],
+        "legacy_bridge_exact_remediation_count": counts[EXACT_REMEDIATION_REQUIRED],
+        "official_v3_exact_remediation_required_count": disposition_counts[EXACT_REMEDIATION_REQUIRED],
+        "exact_remediation_required_count": disposition_counts[EXACT_REMEDIATION_REQUIRED],
         "official_v3_disposition_counts": dict(disposition_counts),
         "legacy_25d_pilot_eligible_count": sum(row["legacy_25d_pilot_eligible"] for row in rows),
         "official_v3_formal_eligible_count": sum(row["official_v3_formal_eligible"] for row in rows),
@@ -413,7 +473,7 @@ def build_fit_remediation_queue(
         if _truthy(row.get("formal_selected"))
     }
     statuses = include_statuses or {BRIDGE_HOLD, EXACT_REMEDIATION_REQUIRED}
-    selected: list[tuple[dict[str, str], dict[str, Any]]] = []
+    selected: list[tuple[dict[str, str], dict[str, Any], str]] = []
     for key, bridge in bridge_by_key.items():
         manifest = manifest_by_key.get(key)
         if not manifest:
@@ -427,11 +487,11 @@ def build_fit_remediation_queue(
             raise Sprint0ContractViolation(f"active identity cannot enter remediation queue: {key}")
         if key in formal:
             raise Sprint0ContractViolation(f"formal-selected identity cannot require remediation: {key}")
-        selected.append((manifest, bridge))
-    selected.sort(key=lambda pair: _manifest_rank(pair[0]))
+        selected.append((manifest, bridge, disposition))
+    selected.sort(key=lambda triple: _manifest_rank(triple[0]))
     rows: list[dict[str, Any]] = []
     seen: set[str] = set()
-    for manifest, bridge in selected:
+    for manifest, bridge, disposition in selected:
         key = _require_key(manifest)
         if key in seen:
             raise Sprint0ContractViolation(f"duplicate remediation identity: {key}")
@@ -587,6 +647,17 @@ def audit_stale_lease_recovery(
             if _truthy(result.get("formal_selected")) or not result.get("formal_result_sha256"):
                 continue
             artifact_sha = str(result.get("formal_result_sha256"))
+            old_lease = next((lease for lease in stale_rows if _require_key(lease) == key), None)
+            if old_lease is None or str(result.get("lease_uuid")) != str(old_lease.get("lease_uuid")):
+                late_result_violations.append(f"LATE_RESULT_OLD_LEASE_UUID_MISMATCH:{key}:{artifact_sha}")
+            try:
+                result_old_epoch = int(result.get("lease_epoch_id"))
+                expected_old_epoch = int(old_lease.get("lease_epoch_id")) if old_lease is not None else -1
+            except (TypeError, ValueError):
+                late_result_violations.append(f"LATE_RESULT_OLD_EPOCH_INVALID:{key}:{artifact_sha}")
+            else:
+                if result_old_epoch != expected_old_epoch:
+                    late_result_violations.append(f"LATE_RESULT_OLD_EPOCH_MISMATCH:{key}:{artifact_sha}")
             quarantine = quarantine_by_key_sha.get((key, artifact_sha), [])
             if len(quarantine) != 1:
                 late_result_violations.append(f"LATE_RESULT_NOT_QUARANTINED:{key}:{artifact_sha}")
@@ -708,6 +779,37 @@ def write_sealed_csv(path: Path, rows: list[dict[str, Any]], *, fieldnames: list
     _atomic_write_pair(path, buffer.getvalue().encode("utf-8"))
 
 
+def write_sealed_remediation_bundle(output_root: Path, rows: list[dict[str, Any]], summary: dict[str, Any]) -> None:
+    """Seal queue, summary, and aggregate checksums as one new directory."""
+
+    if output_root.exists():
+        raise Sprint0ContractViolation(f"refusing to overwrite sealed output root: {output_root}")
+    output_root.parent.mkdir(parents=True, exist_ok=True)
+    staging = output_root.with_name(f".{output_root.name}.{uuid.uuid4().hex}.staging")
+    if staging.exists():
+        raise Sprint0ContractViolation(f"staging output already exists: {staging}")
+    queue_name = "OFFICIAL_V3_FIT_REMEDIATION_QUEUE_V1.csv"
+    summary_name = "OFFICIAL_V3_FIT_REMEDIATION_QUEUE_SUMMARY_V1.json"
+    try:
+        staging.mkdir()
+        queue_path = staging / queue_name
+        write_sealed_csv(queue_path, rows, fieldnames=REMEDIATION_FIELDS)
+        sealed_summary = dict(summary)
+        sealed_summary["queue_csv_sha256"] = sha256_file(queue_path)
+        summary_path = staging / summary_name
+        write_sealed_json(summary_path, sealed_summary)
+        aggregate_names = [queue_name, f"{queue_name}.sha256", summary_name, f"{summary_name}.sha256"]
+        aggregate_body = "".join(
+            f"{sha256_file(staging / name)}  {name}\n" for name in aggregate_names
+        ).encode("utf-8")
+        _atomic_write_pair(staging / "SHA256SUMS", aggregate_body)
+        os.replace(staging, output_root)
+    except (OSError, Sprint0ContractViolation):
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
+        raise
+
+
 __all__ = [
     "BRIDGE_HOLD",
     "BRIDGE_PASS",
@@ -723,4 +825,5 @@ __all__ = [
     "sha256_file",
     "write_sealed_csv",
     "write_sealed_json",
+    "write_sealed_remediation_bundle",
 ]

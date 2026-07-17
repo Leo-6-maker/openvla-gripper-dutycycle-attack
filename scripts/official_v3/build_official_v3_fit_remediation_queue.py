@@ -8,15 +8,13 @@ import json
 from pathlib import Path
 
 from gripper_attack.official_v3_sprint0 import (
-    REMEDIATION_FIELDS,
     Sprint0ContractViolation,
     _input_binding,
     _runner_binding,
     build_fit_remediation_queue,
     read_csv_rows,
     read_json,
-    write_sealed_csv,
-    write_sealed_json,
+    write_sealed_remediation_bundle,
 )
 
 
@@ -26,12 +24,11 @@ def main() -> int:
     parser.add_argument("--bridge-report", type=Path, required=True)
     parser.add_argument("--ledger", type=Path, required=True)
     parser.add_argument("--queue-epoch-id", required=True)
-    parser.add_argument("--output-csv", type=Path, required=True)
-    parser.add_argument("--output-summary", type=Path, required=True)
+    parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--formal-registry", type=Path)
     parser.add_argument("--config", type=Path, required=True)
-    parser.add_argument("--runner-head", required=True)
-    parser.add_argument("--runner-worktree-clean", choices=("true", "false"), required=True)
+    parser.add_argument("--runner-repo", type=Path, required=True)
+    parser.add_argument("--expected-runner-head", required=True)
     args = parser.parse_args()
     try:
         manifest_rows = read_csv_rows(args.canonical_manifest)
@@ -51,20 +48,18 @@ def main() -> int:
                 "config": _input_binding(args.config, schema="OFFICIAL_V3_SPRINT0_PROVENANCE_V1"),
             },
             runner_binding=_runner_binding(
-                runner_head=args.runner_head,
-                worktree_clean=args.runner_worktree_clean == "true",
+                runner_repo=args.runner_repo,
+                expected_runner_head=args.expected_runner_head,
                 config_path=args.config,
+                runner_script_path=Path(__file__),
             ),
         )
         if args.formal_registry:
             summary["input_snapshots"]["formal_registry"] = _input_binding(args.formal_registry, schema="OFFICIAL_V3_FORMAL_REGISTRY_V1", row_count=len(formal), identity_count=len(formal))
-        write_sealed_csv(args.output_csv, rows, fieldnames=REMEDIATION_FIELDS)
-        from gripper_attack.official_v3_sprint0 import sha256_file
-        summary["queue_csv_sha256"] = sha256_file(args.output_csv)
-        write_sealed_json(args.output_summary, summary)
+        write_sealed_remediation_bundle(args.output_root, rows, summary)
     except (OSError, json.JSONDecodeError, Sprint0ContractViolation) as exc:
         raise SystemExit(str(exc)) from exc
-    print(json.dumps({"identity_count": summary["identity_count"], "queue_epoch_id": summary["queue_epoch_id"]}, sort_keys=True))
+    print(json.dumps({"identity_count": summary["identity_count"], "queue_epoch_id": summary["queue_epoch_id"], "output_root": str(args.output_root)}, sort_keys=True))
     return 0
 
 
