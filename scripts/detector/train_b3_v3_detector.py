@@ -90,7 +90,8 @@ def verify_authorized_inputs(
     if normalization is not None:
         if actual_inputs["normalization_bundle_sha256"] != expected_inputs["normalization_bundle_sha256"] or actual_inputs["normalization_sha256"] != expected_inputs["normalization_sha256"]:
             raise ValueError("normalization bundle/content SHA does not match authorization")
-        if normalization_source is None or normalization_source.get("normalization_file_sha256") != expected_inputs.get("normalization_file_sha256"):
+        expected_normalization_file_sha256 = authorization.get("normalization_file_sha256")
+        if normalization_source is None or normalization_source.get("normalization_file_sha256") != expected_normalization_file_sha256:
             raise ValueError("normalization file provenance does not match authorization")
     if actual_inputs["policy_intent_root_sha256"] != authorization.get("policy_intent_root_sha256"):
         raise ValueError("9D policy-intent root does not match authorization")
