@@ -23,11 +23,18 @@ jobs:
         run: |
           python -m py_compile \
             src/gripper_attack/official_v3_contract.py \
+            src/gripper_attack/official_v3_sprint0.py \
             scripts/official_v3/audit_official_v3_artifact.py \
             scripts/official_v3/build_official_v3_formal_registry.py \
             scripts/official_v3/audit_official_v3_incremental_snapshot.py \
-            scripts/official_v3/audit_official_v3_worker_strata.py
+            scripts/official_v3/audit_official_v3_worker_strata.py \
+            scripts/official_v3/audit_official_v3_legacy_start_bridge.py \
+            scripts/official_v3/build_official_v3_fit_remediation_queue.py \
+            scripts/official_v3/audit_official_v3_stale_lease_recovery.py
       - name: Run synthetic Official V3 source tests
-        run: pytest -q tests/test_official_v3_source_registry.py
+        run: |
+          pytest -q \
+            tests/test_official_v3_source_registry.py \
+            tests/test_official_v3_sprint0.py
       - name: Check patch whitespace
         run: git diff --check
