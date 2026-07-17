@@ -1,0 +1,19 @@
+{
+  "schema": "OFFICIAL_V3_EXECUTION_SOURCE_CLOSURE_V1",
+  "execution_head": "5e27d7c4b1a188bc6a78555f94d2571222587805",
+  "execution_commit_url": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/commit/5e27d7c4b1a188bc6a78555f94d2571222587805",
+  "archive_ref": "archive/official-v3-b3-25d-execution-5e27d7c",
+  "execution_checkout": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/trainer_checkout_f98715b",
+  "parent_sha": "0b053945ec77906c5114f59161936ba0e5ac1edf",
+  "tree_sha": "1a8634cdb92d4a6ab7ee95ca3ceed4c0328dd9d7",
+  "execution_worktree_clean": true,
+  "git_status_porcelain": "",
+  "untracked_file_count": 0,
+  "archive_bundle_sha256": "0dc3d6d1a05f28d25288c510b661a0605d76fa6881b64cb1d4c7979fa74f7a85",
+  "diff_against_github_pr82_head": {
+    "base_sha": "87a4561af8883baacf161961c2fb9a114ff459c6",
+    "patch_sha256": "63b4cd4a924c4b3b1c1186a2d4013085612523e7470f85ab34c4b332c4f3cc1f",
+    "interpretation": "Binary diff hash is an audit binding only; the archived execution commit is the source of truth."
+  },
+  "source_recovery": "The commit is now reachable through the archive ref. No checkpoint, raw prediction record, or server evidence root is committed to GitHub."
+}

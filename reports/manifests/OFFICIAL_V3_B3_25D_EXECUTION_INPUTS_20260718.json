@@ -1,0 +1,55 @@
+{
+  "schema": "OFFICIAL_V3_B3_25D_EXECUTION_INPUTS_V1",
+  "execution_head": "5e27d7c4b1a188bc6a78555f94d2571222587805",
+  "training_protocol": {
+    "path": "configs/B3_OFFICIAL_V3_TRAINING_PROTOCOL_V1.json",
+    "sha256": "52c8a1be592ea605cccc8b530a4c1b85334d66ccfe64dbf85e117570674358a8",
+    "dtype": "float32",
+    "fixed_seeds": [20260717, 20260718, 20260719],
+    "folds": [[0, 4], [5, 9], [10, 14], [15, 19]],
+    "train_episodes_per_fold": 600,
+    "validation_episodes_per_fold": 200
+  },
+  "protocols": {
+    "runtime": {"path": "configs/B3_OFFICIAL_V3_RUNTIME_PROTOCOL_V1.json", "sha256": "098a22088997b4d617dd6dfb96943eb774f2845c3adf3346aa64cb6e4bcb619e"},
+    "s1": {"path": "configs/B3_OFFICIAL_V3_S1_PROTOCOL_V1.json", "sha256": "9d9c385dee3ed9fafe6a61d875cfd5a8fe895098e7694f62c0c302cb76e803e5"}
+  },
+  "scripts": {
+    "evaluator": {"path": "scripts/detector/evaluate_b3_v3_viability.py", "sha256": "ab1ea5780ad7c0a9c916bbc946aaed6ea91bdf8f6064c1f211abfc3ed7139a66"},
+    "aggregator": {"path": "scripts/detector/aggregate_b3_v3_fit_viability.py", "sha256": "1f385cb305a9ede1c07f17137821d6fa6f4ea94b3a7d58c0cbe60137dc3fa296"},
+    "decision_builder": {"path": "scripts/detector/decide_b3_v3_fit_viability.py", "sha256": "a7617012dcbbb34d260e95cf561b3692a9a6783645476376059dee6dacfc2405"},
+    "prediction_builder": {"path": "scripts/detector/build_b3_v3_prediction_bundle.py", "sha256": "155e2217fbbd1498790de1c7800a2026e79d52b90fd133ba1cd7635a7ef9bb59"},
+    "matrix_runner": {"path": "scripts/detector/run_b3_v3_fit_viability_matrix.py", "sha256": "f845f99b3efc875e9f13f3e0274d1d7cfd4be9d434c67204768de9e7731dccee"}
+  },
+  "decision_config": {
+    "status": "NOT_RECOVERED",
+    "path": null,
+    "sha256": null,
+    "important_boundary": "The formal PASS/HOLD decision CLI was not run for the B3_25D-only provisional report. Do not describe the values below as an independently sealed decision-config file."
+  },
+  "provisional_evaluation_semantics": {
+    "threshold": 0.5,
+    "threshold_config_sha256": null,
+    "threshold_source_status": "CODE_OR_RUNNER_DEFAULT_NOT_SEPARATELY_SEALED",
+    "mean_full_t10_gate": {"operator": ">=", "threshold": 0.8},
+    "mean_later_event_gate": {"operator": ">=", "threshold": 0.5},
+    "negative_episode_any_emit_gate": {"operator": "<=", "threshold": 0.1},
+    "release_overlap_gate": {"operator": "=", "threshold": 0},
+    "close_baseline_non_inferiority": "diagnostic gate recorded in the provisional decision; exact independent config binding is unresolved",
+    "time_since_close": "diagnostic comparator, not an independently proven formal gate"
+  },
+  "aggregation_semantics": {
+    "reported_mean_rates": "unweighted arithmetic mean of the 12 fold-seed run rates",
+    "reported_max_rates": "maximum of the 12 fold-seed run rates",
+    "event_hit_denominator": "eligible T10 events within each validation run",
+    "later_event_denominator": "later-event eligible events within each validation run",
+    "negative_denominator": "negative episodes within each validation run",
+    "release_overlap": "count of emitted events overlapping release windows; zero is the frozen pass condition",
+    "micro_pooled_rates": "not used for the frozen provisional gate and not inferred from the macro report"
+  },
+  "source_dtype_boundary": {
+    "detector_training": "float32",
+    "detector_prediction": "float32 unless separately stated by a future protocol",
+    "OpenVLA/source_collection": "the collection environment was A800/CUDA/BF16-capable; this does not imply BF16 detector training"
+  }
+}

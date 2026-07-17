@@ -4,11 +4,21 @@
   "execution": {
     "checkout": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/trainer_checkout_f98715b",
     "head": "5e27d7c4b1a188bc6a78555f94d2571222587805",
+    "execution_commit_url": "https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/commit/5e27d7c4b1a188bc6a78555f94d2571222587805",
+    "archive_ref": "archive/official-v3-b3-25d-execution-5e27d7c",
+    "parent_sha": "0b053945ec77906c5114f59161936ba0e5ac1edf",
+    "tree_sha": "1a8634cdb92d4a6ab7ee95ca3ceed4c0328dd9d7",
+    "worktree_clean": true,
+    "git_status_porcelain": "",
     "python": "3.10.20",
     "pytorch": "2.2.0+cu121",
     "transformers": "4.40.1",
     "environment_prefix": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
-    "hardware": "A800/CUDA/BF16"
+    "source_collection_path": "A800/CUDA/BF16-capable",
+    "detector_training_dtype": "float32",
+    "detector_prediction_dtype": "float32",
+    "archive_bundle_sha256": "0dc3d6d1a05f28d25288c510b661a0605d76fa6881b64cb1d4c7979fa74f7a85",
+    "diff_against_pr82_sha256": "63b4cd4a924c4b3b1c1186a2d4013085612523e7470f85ab34c4b332c4f3cc1f"
   },
   "github_context": {
     "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
@@ -25,7 +35,30 @@
     "s1_root_sha256": "15c97212fde19682a9e3042d6d051c51606b0989881d471cb8eb80f22354b0cf",
     "s1_independent_audit_sha256": "ca3beb80c8bdff31bf438a8a87d5063075f2d0a82f35af51a006ce5d23ddf4b6",
     "teacher_aggregate_sha256": "35969682c487bc7b515089a3523b2506e7561ecccdcb859d160efcbd05347844",
-    "viability_report_sha256": "0bccf84eeb23d32aba58f4461b35a8dba6e8359b7c7ffd63f1b4843b386eb78d"
+    "viability_report_sha256": "0bccf84eeb23d32aba58f4461b35a8dba6e8359b7c7ffd63f1b4843b386eb78d",
+    "execution_source_closure": "reports/manifests/OFFICIAL_V3_EXECUTION_SOURCE_CLOSURE_20260718.json",
+    "execution_inputs": "reports/manifests/OFFICIAL_V3_B3_25D_EXECUTION_INPUTS_20260718.json",
+    "per_run_evidence_index": "reports/manifests/OFFICIAL_V3_B3_25D_RUN_EVIDENCE_INDEX_20260718.json"
+  },
+  "execution_input_sha256": {
+    "training_protocol": "52c8a1be592ea605cccc8b530a4c1b85334d66ccfe64dbf85e117570674358a8",
+    "runtime_protocol": "098a22088997b4d617dd6dfb96943eb774f2845c3adf3346aa64cb6e4bcb619e",
+    "s1_protocol": "9d9c385dee3ed9fafe6a61d875cfd5a8fe895098e7694f62c0c302cb76e803e5",
+    "evaluator": "ab1ea5780ad7c0a9c916bbc946aaed6ea91bdf8f6064c1f211abfc3ed7139a66",
+    "aggregator": "1f385cb305a9ede1c07f17137821d6fa6f4ea94b3a7d58c0cbe60137dc3fa296",
+    "decision_builder": "a7617012dcbbb34d260e95cf561b3692a9a6783645476376059dee6dacfc2405",
+    "prediction_builder": "155e2217fbbd1498790de1c7800a2026e79d52b90fd133ba1cd7635a7ef9bb59",
+    "matrix_runner": "f845f99b3efc875e9f13f3e0274d1d7cfd4be9d434c67204768de9e7731dccee"
+  },
+  "decision_config": {
+    "status": "NOT_RECOVERED",
+    "sha256": null,
+    "note": "The formal decision CLI was not run for the B3_25D-only provisional report. Thresholds and comparator semantics are recorded in the execution-inputs manifest without being relabeled as a separately sealed preregistration file."
+  },
+  "aggregation": {
+    "reported_rates": "unweighted arithmetic mean across 12 fold-seed runs",
+    "reported_maxima": "maximum across 12 fold-seed runs",
+    "micro_pooled_rates": "not used for the frozen provisional gate"
   },
   "run_contract": {
     "variant": "B3_25D",
@@ -42,6 +75,8 @@
     "root": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/OFFICIAL_V3_CS200_PARENT_PREPARATION_V1_5e27d7c",
     "selection_manifest_sha256": "da2da73c1fe3fadd5197fb10d6a6a3064720d0acb7cc90874badcc86f7eb90e3",
     "parent_rows_sha256": "2e70f74a94f1613dc2656b00cbe66d9a4944a32dc99ba635ec66c943ba4f8088",
+    "sha256sums_sha256": "1e12c4c2e791a9665455390838b7e3a5298d1f6219f00979a8e3d103ac6b89c8",
+    "source_snapshot_sha256": "a7806ae1bb9f7dc9183ff9d7ee96a6393b6e4b028593d6291729afd9f746e8ff",
     "parent_count": 200,
     "task_count": 40,
     "parents_per_task": 5,
