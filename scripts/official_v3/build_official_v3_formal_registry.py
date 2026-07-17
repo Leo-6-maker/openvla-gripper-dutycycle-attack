@@ -16,13 +16,17 @@ from pathlib import Path
 from typing import Any
 
 from gripper_attack.official_v3_contract import PASS_STATUSES, SUITES, canonical_key, load_contract, sha256_file
+from gripper_attack.official_v3_recovery import FORMAL_METHODS
 
 
 REGISTRY_FIELDS = [
     "canonical_parent_key", "suite", "task_idx", "state_id", "split", "ledger_status", "task_success",
     "selected_artifact_root", "selected_artifact_recursive_sha256", "artifact_audit_path", "artifact_audit_sha256",
-    "provenance_class", "worker_start_manifest_sha256", "collector_head", "worker_id", "gpu_id",
+    "provenance_class", "provenance_binding_mode", "provenance_binding_sha256",
+    "external_manifest_registry_sha256", "worker_start_manifest_sha256", "worker_start_manifest_sidecar_sha256",
+    "source_split_raw", "split_mapping_rule", "collector_head", "worker_id", "gpu_id",
     "worker_script_sha256", "adapter_sha256", "protocol_sha256", "model_tree_sha256", "processor_tree_sha256",
+    "recovery_status", "recovery_method", "recovery_start_uuid", "recovery_manifest_sha256", "recovery_census_sha256",
     "formal_eligible", "formal_selected", "superseded_artifact_sha256", "remediation_required",
     "remediation_reason", "selection_reason",
 ]
@@ -60,9 +64,18 @@ def build_registry(
     expected_identity_count: int = 2000,
     stale_recovery_unresolved_count: int | None = None,
     stale_recovery_summary_sha256: str = "",
+    recovery_rows: list[dict[str, str]] | None = None,
+    recovery_census_sha256: str = "",
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     audits = _audit_map(audit_reports)
     remediation = {row.get("canonical_parent_key", ""): row for row in (remediation_rows or [])}
+    recovery: dict[str, dict[str, str]] = {}
+    if recovery_rows is not None:
+        for recovery_row in recovery_rows:
+            recovery_key = recovery_row.get("canonical_parent_key", "")
+            if not recovery_key or recovery_key in recovery:
+                raise ValueError(f"duplicate or empty recovery identity: {recovery_key!r}")
+            recovery[recovery_key] = recovery_row
     ledger: dict[str, dict[str, str]] = {}
     for row in ledger_rows:
         key = row.get("canonical_parent_key", "")
@@ -83,6 +96,7 @@ def build_registry(
         if key != expected_key:
             identity_column_mismatches.append(key or expected_key or "<empty>")
         ledger_row = ledger.get(key, {})
+        recovery_row = recovery.get(key, {}) if recovery_rows is not None else {}
         candidates = list(audits.get(key, []))
         selected_hint = remediation.get(key, {}).get("selected_artifact_root", "")
         if selected_hint:
@@ -101,6 +115,11 @@ def build_registry(
             "superseded_artifact_sha256": remediation.get(key, {}).get("superseded_artifact_sha256", ""),
             "formal_eligible": False,
             "formal_selected": False,
+            "recovery_status": recovery_row.get("recovery_status", ""),
+            "recovery_method": recovery_row.get("recovery_method", ""),
+            "recovery_start_uuid": recovery_row.get("start_uuid", ""),
+            "recovery_manifest_sha256": recovery_row.get("worker_start_manifest_sha256", ""),
+            "recovery_census_sha256": recovery_census_sha256,
         })
         if key in identity_column_mismatches:
             base["selection_reason"] = "CANONICAL_IDENTITY_COLUMN_MISMATCH"
@@ -117,8 +136,13 @@ def build_registry(
             )
             base["canonical_parent_key"] = key
             base["task_success"] = base["task_success"] if base["task_success"] is not None else audit.get("task_success", "")
-            eligible = audit.get("status") in PASS_STATUSES and bool(audit.get("formal_eligible"))
-            if audit.get("provenance_class") == "B_PREVIOUS_HEAD_EQUIVALENT" and equivalence_status != "PASS":
+            recovery_ok = recovery_rows is None or (
+                key in recovery and recovery[key].get("recovery_status") in FORMAL_METHODS
+            )
+            eligible = audit.get("status") in PASS_STATUSES and bool(audit.get("formal_eligible")) and recovery_ok
+            if recovery_rows is not None and not recovery_ok:
+                base["selection_reason"] = "PROVENANCE_RECOVERY_HOLD"
+            elif audit.get("provenance_class") == "B_PREVIOUS_HEAD_EQUIVALENT" and equivalence_status != "PASS":
                 eligible = False
                 base["selection_reason"] = "OLD_HEAD_EQUIVALENCE_HOLD"
             elif eligible:
@@ -146,6 +170,14 @@ def build_registry(
         bool(row["remediation_required"]) and not bool(row["formal_selected"])
         for row in fit_rows
     )
+    recovery_unresolved_count = sum(
+        recovery_rows is not None and row.get("recovery_status") not in FORMAL_METHODS
+        for row in rows
+    )
+    fit_recovery_unresolved_count = sum(
+        recovery_rows is not None and row.get("split") == "FIT_TRAIN" and row.get("recovery_status") not in FORMAL_METHODS
+        for row in rows
+    )
     duplicate_selection_count = len(duplicate_manifest_keys)
     fit_ready = (
         len(rows) == expected_identity_count
@@ -158,6 +190,7 @@ def build_registry(
         and all(row["formal_selected"] or row["split"] != "FIT_TRAIN" for row in rows)
         and full_artifact_audit_pass_count == 800
         and unresolved_provenance_count == 0
+        and recovery_unresolved_count == 0
         and unfinished_remediation_count == 0
         and duplicate_selection_count == 0
         and stale_recovery_unresolved_count == 0
@@ -184,6 +217,9 @@ def build_registry(
         "full_artifact_audit_pass_count": full_artifact_audit_pass_count,
         "unresolved_provenance_count": unresolved_provenance_count,
         "unfinished_remediation_count": unfinished_remediation_count,
+        "recovery_unresolved_count": recovery_unresolved_count,
+        "fit_recovery_unresolved_count": fit_recovery_unresolved_count,
+        "recovery_census_sha256": recovery_census_sha256,
         "stale_recovery_unresolved_count": stale_recovery_unresolved_count,
         "stale_recovery_summary_sha256": stale_recovery_summary_sha256,
         "stale_recovery_audit_sha256": stale_recovery_summary_sha256,
@@ -285,10 +321,19 @@ def main() -> int:
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--equivalence-status", choices=("PASS", "HOLD"), default="HOLD")
     parser.add_argument("--remediation", type=Path)
+    parser.add_argument("--recovery-census", type=Path)
     parser.add_argument("--stale-recovery-audit", "--stale-recovery-summary", dest="stale_recovery_audit", type=Path)
     args = parser.parse_args()
     contract = load_contract(args.contract)
     remediation = read_csv(args.remediation) if args.remediation else []
+    recovery_rows = None
+    recovery_census_sha256 = ""
+    if args.recovery_census:
+        recovery_rows = read_csv(args.recovery_census / "recovery_rows.csv")
+        sums = args.recovery_census / "SHA256SUMS"
+        if not sums.is_file() or not (args.recovery_census / "SHA256SUMS.sha256").is_file():
+            raise ValueError("recovery census checksum bundle is incomplete")
+        recovery_census_sha256 = sha256_file(sums)
     stale_count = None
     stale_summary_sha = ""
     if args.stale_recovery_audit:
@@ -299,6 +344,8 @@ def main() -> int:
         expected_identity_count=int(contract["expected_identity_count"]),
         stale_recovery_unresolved_count=stale_count,
         stale_recovery_summary_sha256=stale_summary_sha,
+        recovery_rows=recovery_rows,
+        recovery_census_sha256=recovery_census_sha256,
     )
     write_registry(rows, summary, args.output_root)
     print(json.dumps({key: summary[key] for key in ("identity_count", "formal_selected_count", "formal_fit_ready")}, sort_keys=True))

@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from gripper_attack.b3_official_v3_s1 import build_s1_runner_binding, load_formal_fit_registry, materialize_episode
+from gripper_attack.official_v3_contract import load_external_manifest_registry
 
 
 def main() -> int:
@@ -21,6 +22,7 @@ def main() -> int:
     parser.add_argument("--runner-repo", type=Path, required=True)
     parser.add_argument("--expected-runner-head", required=True)
     parser.add_argument("--runner-config", type=Path, required=True)
+    parser.add_argument("--provenance-registry", type=Path)
     args = parser.parse_args()
     rows = load_formal_fit_registry(args.registry_csv, args.registry_summary)
     row = next((item for item in rows if item["canonical_parent_key"] == args.canonical_parent_key), None)
@@ -32,7 +34,19 @@ def main() -> int:
         config_path=args.runner_config,
         runner_script_path=Path(__file__).resolve(),
     )
-    manifest = materialize_episode(row, args.contract, args.protocol, args.output_root, binding)
+    external_registry = None
+    external_registry_sha256 = None
+    if args.provenance_registry:
+        external_registry, external_registry_sha256 = load_external_manifest_registry(args.provenance_registry)
+    manifest = materialize_episode(
+        row,
+        args.contract,
+        args.protocol,
+        args.output_root,
+        binding,
+        external_registry=external_registry,
+        external_registry_sha256=external_registry_sha256,
+    )
     print(json.dumps({"status": "PASS", "schema": manifest["schema"], "identity": args.canonical_parent_key}, sort_keys=True))
     return 0
 

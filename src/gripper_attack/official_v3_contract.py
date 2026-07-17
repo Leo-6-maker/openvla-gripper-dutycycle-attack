@@ -10,7 +10,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 
 class ContractViolation(ValueError):
@@ -30,6 +30,7 @@ SPLITS = {
 }
 PROVENANCE_CLASSES = {"A_CURRENT_HEAD_CLEAN_START_VERIFIED", "B_PREVIOUS_HEAD_EQUIVALENT", "C_START_RECORD_MISSING", "D_DIRTY_START_QUARANTINE"}
 PASS_STATUSES = {"PASS_FORMAL_CANDIDATE", "PASS_DATA_CONTRACT_PROVENANCE_HOLD"}
+EMBEDDED_WORKER_MANIFEST_FILES = {"worker_start_manifest.json", "worker_start_manifest.json.sha256"}
 
 
 def sha256_file(path: Path) -> str:
@@ -55,6 +56,35 @@ def expected_split(state_id: int) -> str:
         if int(state_id) in states:
             return split
     raise ContractViolation("PROTOCOL", f"state outside official range: {state_id}")
+
+
+def resolve_split(source_split: str, state_id: int, contract: dict[str, Any]) -> tuple[str, str]:
+    """Map the collector's raw split to the frozen experiment split.
+
+    V3 artifacts use the collector labels ``FIT``, ``CAL``, ``CHECK`` and
+    ``FINAL_EVAL_CANDIDATE``.  The formal registry uses the finer-grained
+    ``FIT_TRAIN``/``FIT_DEV`` labels.  Synthetic fixtures may already carry a
+    formal label, so an exact formal label is accepted only when it agrees with
+    the state-derived split.
+    """
+    raw = str(source_split)
+    state = int(state_id)
+    formal = expected_split(state)
+    mapping = contract.get("source_split_mapping", {})
+    if raw == formal:
+        return raw, "FORMAL_SPLIT_EXACT"
+    rules = mapping.get(raw)
+    if not isinstance(rules, list):
+        raise ContractViolation("IDENTITY", f"unknown source split: {raw!r}")
+    for rule in rules:
+        if not isinstance(rule, dict):
+            continue
+        state_range = rule.get("state_range")
+        if not isinstance(state_range, list) or len(state_range) != 2:
+            continue
+        if int(state_range[0]) <= state <= int(state_range[1]) and rule.get("formal_split") == formal:
+            return formal, str(rule.get("rule", "CONFIGURED_SOURCE_SPLIT_MAPPING"))
+    raise ContractViolation("IDENTITY", f"source split/state mismatch: split={raw!r}, state={state}")
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -108,7 +138,85 @@ def load_contract(path: Path) -> dict[str, Any]:
         raise ContractViolation("PROTOCOL", "feature order SHA mismatch")
     if contract.get("formal_training_authorized") is not False or contract.get("formal_attack_authorized") is not False:
         raise ContractViolation("PROTOCOL", "PR-A cannot authorize training or attack")
+    mapping = contract.get("source_split_mapping")
+    if not isinstance(mapping, dict):
+        raise ContractViolation("PROTOCOL", "source split mapping is not frozen")
+    for raw_split, rules in mapping.items():
+        if not isinstance(raw_split, str) or not isinstance(rules, list) or not rules:
+            raise ContractViolation("PROTOCOL", f"invalid source split mapping: {raw_split!r}")
+        for rule in rules:
+            if (
+                not isinstance(rule, dict)
+                or not isinstance(rule.get("formal_split"), str)
+                or rule.get("formal_split") not in SPLITS
+                or not isinstance(rule.get("state_range"), list)
+                or len(rule["state_range"]) != 2
+            ):
+                raise ContractViolation("PROTOCOL", f"invalid source split mapping rule: {raw_split!r}")
     return contract
+
+
+def load_external_manifest_registry(path: Path) -> tuple[dict[str, dict[str, Any]], str]:
+    """Load a separately sealed worker-start registry.
+
+    The registry is intentionally outside the artifact root.  It binds an
+    exact canonical identity and artifact recursive SHA to an immutable
+    worker-start manifest and its sidecar; it never edits or augments the
+    original artifact.
+    """
+    path = path.resolve()
+    if not path.is_file():
+        raise ContractViolation("PROVENANCE", f"external manifest registry is missing: {path}")
+    sidecar = path.with_name(path.name + ".sha256")
+    if not sidecar.is_file() or sidecar.read_text(encoding="utf-8").strip() != f"{sha256_file(path)}  {path.name}":
+        raise ContractViolation("PROVENANCE", "external manifest registry SHA sidecar is invalid")
+    payload = load_json(path)
+    if payload.get("schema") != "OFFICIAL_V3_EXTERNAL_WORKER_MANIFEST_REGISTRY_V1":
+        raise ContractViolation("PROVENANCE", "unexpected external manifest registry schema")
+    if payload.get("status") != "SEALED":
+        raise ContractViolation("PROVENANCE", "external manifest registry is not sealed")
+    if payload.get("formal_training_authorized") is not False or payload.get("formal_attack_authorized") is not False:
+        raise ContractViolation("PROVENANCE", "external registry contains an authorization flag")
+    entries = payload.get("entries")
+    if not isinstance(entries, list):
+        raise ContractViolation("PROVENANCE", "external manifest registry entries must be a list")
+    result: dict[str, dict[str, Any]] = {}
+    required = {
+        "canonical_parent_key", "artifact_recursive_sha256", "worker_start_manifest_path",
+        "worker_start_manifest_sha256", "worker_start_manifest_sidecar_sha256", "provenance_class",
+    }
+    for entry in entries:
+        if not isinstance(entry, dict) or not required.issubset(entry):
+            raise ContractViolation("PROVENANCE", "external registry entry is incomplete")
+        key = str(entry["canonical_parent_key"])
+        if key in result:
+            raise ContractViolation("PROVENANCE", f"duplicate external registry identity: {key}")
+        try:
+            parts = key.split("/")
+            if len(parts) != 3 or parts[0] not in SUITES or canonical_key(parts[0], int(parts[1].split("_")[1]), int(parts[2].split("_")[1])) != key:
+                raise ValueError
+            state = int(parts[2].split("_")[1])
+            if not 0 <= state < 50:
+                raise ValueError
+        except (IndexError, TypeError, ValueError):
+            raise ContractViolation("PROVENANCE", f"invalid external registry identity: {key}")
+        for name in ("artifact_recursive_sha256", "worker_start_manifest_sha256", "worker_start_manifest_sidecar_sha256"):
+            if not isinstance(entry[name], str) or len(entry[name]) != 64:
+                raise ContractViolation("PROVENANCE", f"invalid external registry SHA: {key}:{name}")
+        if entry["provenance_class"] not in PROVENANCE_CLASSES:
+            raise ContractViolation("PROVENANCE", f"invalid external provenance class: {key}")
+        manifest_path = Path(str(entry["worker_start_manifest_path"])).resolve()
+        sidecar_path = Path(str(entry.get("worker_start_manifest_sidecar_path", f"{manifest_path}.sha256"))).resolve()
+        if not manifest_path.is_file() or not sidecar_path.is_file():
+            raise ContractViolation("PROVENANCE", f"external worker manifest files are missing: {key}")
+        if sha256_file(manifest_path) != entry["worker_start_manifest_sha256"]:
+            raise ContractViolation("PROVENANCE", f"external worker manifest SHA mismatch: {key}")
+        if sha256_file(sidecar_path) != entry["worker_start_manifest_sidecar_sha256"]:
+            raise ContractViolation("PROVENANCE", f"external worker manifest sidecar SHA mismatch: {key}")
+        if sidecar_path.read_text(encoding="utf-8").strip() != f"{entry['worker_start_manifest_sha256']}  {manifest_path.name}":
+            raise ContractViolation("PROVENANCE", f"external worker manifest sidecar content mismatch: {key}")
+        result[key] = {**entry, "worker_start_manifest_path": str(manifest_path), "worker_start_manifest_sidecar_path": str(sidecar_path)}
+    return result, sha256_file(path)
 
 
 def _finite_vector(value: Any, length: int) -> bool:
@@ -183,40 +291,123 @@ def _verify_checksum(root: Path, required_files: set[str]) -> str:
     return str(payload["recursive_sha256"])
 
 
-def _verify_worker_manifest(root: Path, meta: dict[str, Any], contract: dict[str, Any], equivalence_status: str) -> dict[str, Any]:
-    manifest_path = root / "worker_start_manifest.json"
-    sidecar = root / "worker_start_manifest.json.sha256"
-    if not manifest_path.is_file() or not sidecar.is_file():
-        raise ContractViolation("PROVENANCE", "worker-start manifest or SHA sidecar is missing")
-    expected_sidecar = f"{sha256_file(manifest_path)}  worker_start_manifest.json"
-    if sidecar.read_text(encoding="utf-8").strip() != expected_sidecar:
-        raise ContractViolation("PROVENANCE", "worker-start manifest SHA mismatch")
-    worker = load_json(manifest_path)
-    required = set(contract.get("required_provenance_fields", []))
-    missing = sorted(name for name in required if worker.get(name) in (None, ""))
-    if missing:
-        raise ContractViolation("PROVENANCE", f"worker-start fields missing: {missing}")
-    if worker.get("worktree_clean") is not True:
-        raise ContractViolation("PROVENANCE", "worker-start worktree was not clean")
-    provenance_class = worker.get("provenance_class")
+def _check_provenance_class(provenance_class: Any, equivalence_status: str) -> None:
     if provenance_class not in PROVENANCE_CLASSES:
         raise ContractViolation("PROVENANCE", "unknown worker-start provenance class")
     if provenance_class == "B_PREVIOUS_HEAD_EQUIVALENT" and equivalence_status != "PASS":
         raise ContractViolation("PROVENANCE", "old-head equivalence decision is not PASS")
     if provenance_class in {"C_START_RECORD_MISSING", "D_DIRTY_START_QUARANTINE"}:
         raise ContractViolation("PROVENANCE", f"provenance class is quarantined: {provenance_class}")
+
+
+def _verify_worker_manifest(
+    root: Path,
+    meta: dict[str, Any],
+    contract: dict[str, Any],
+    equivalence_status: str,
+    *,
+    artifact_recursive_sha256: str,
+    external_registry: Mapping[str, dict[str, Any]] | None = None,
+    external_registry_sha256: str | None = None,
+) -> dict[str, Any]:
+    manifest_path = root / "worker_start_manifest.json"
+    sidecar = root / "worker_start_manifest.json.sha256"
+    local_manifest_present = manifest_path.is_file() or sidecar.is_file()
+    if local_manifest_present:
+        if not manifest_path.is_file() or not sidecar.is_file():
+            raise ContractViolation("PROVENANCE", "embedded worker-start manifest pair is incomplete")
+        expected_sidecar = f"{sha256_file(manifest_path)}  worker_start_manifest.json"
+        if sidecar.read_text(encoding="utf-8").strip() != expected_sidecar:
+            raise ContractViolation("PROVENANCE", "embedded worker-start manifest SHA mismatch")
+        worker = load_json(manifest_path)
+        required = set(contract.get("required_provenance_fields", []))
+        missing = sorted(name for name in required if worker.get(name) in (None, ""))
+        if missing:
+            raise ContractViolation("PROVENANCE", f"worker-start fields missing: {missing}")
+        if worker.get("worktree_clean") is not True:
+            raise ContractViolation("PROVENANCE", "worker-start worktree was not clean")
+        provenance_class = worker.get("provenance_class")
+        _check_provenance_class(provenance_class, equivalence_status)
+        comparisons = {
+            "collector_head": "worker_start_git_head",
+            "worker_script_sha256": "worker_start_script_sha256",
+            "adapter_sha256": "worker_start_adapter_sha256",
+            "protocol_sha256": "worker_start_protocol_sha256",
+            "model_tree_sha256": "worker_start_model_tree_sha256",
+            "processor_tree_sha256": "worker_start_processor_tokenizer_sha256",
+        }
+        for manifest_name, metadata_name in comparisons.items():
+            if metadata_name in meta and meta[metadata_name] != worker.get(manifest_name):
+                raise ContractViolation("PROVENANCE", f"artifact/worker-start mismatch: {manifest_name}")
+        return {
+            **worker,
+            "provenance_class": provenance_class,
+            "provenance_binding_mode": "LOCAL_EMBEDDED_MANIFEST",
+            "worker_start_manifest_sha256": sha256_file(manifest_path),
+            "worker_start_manifest_sidecar_sha256": sha256_file(sidecar),
+            "external_manifest_registry_sha256": None,
+        }
+
+    if external_registry is None:
+        raise ContractViolation("PROVENANCE", "worker-start manifest is absent and no external sealed registry was supplied")
+    key = str(meta.get("canonical_parent_key", ""))
+    entry = external_registry.get(key)
+    if entry is None:
+        raise ContractViolation("PROVENANCE", f"external worker-start registry has no exact identity: {key}")
+    if entry.get("artifact_recursive_sha256") != artifact_recursive_sha256:
+        raise ContractViolation("PROVENANCE", f"external worker-start registry artifact SHA mismatch: {key}")
+    external_path = Path(str(entry["worker_start_manifest_path"]))
+    external_sidecar = Path(str(entry["worker_start_manifest_sidecar_path"]))
+    try:
+        external_path.relative_to(root)
+    except ValueError:
+        pass
+    else:
+        raise ContractViolation("PROVENANCE", f"external manifest is inside artifact root: {key}")
+    if sha256_file(external_path) != entry["worker_start_manifest_sha256"] or sha256_file(external_sidecar) != entry["worker_start_manifest_sidecar_sha256"]:
+        raise ContractViolation("PROVENANCE", f"external worker-start registry file SHA mismatch: {key}")
+    worker = load_json(external_path)
+    if worker.get("schema") != "OFFICIAL_V3_WORKER_START_CONTRACT_V1":
+        raise ContractViolation("PROVENANCE", f"external worker-start schema mismatch: {key}")
+    required_external = set(contract.get("external_manifest_required_fields", []))
+    missing = sorted(name for name in required_external if worker.get(name) in (None, ""))
+    if missing:
+        raise ContractViolation("PROVENANCE", f"external worker-start fields missing: {missing}")
+    if worker.get("collector_worktree_clean") is not True:
+        raise ContractViolation("PROVENANCE", "external worker-start worktree was not clean")
+    provenance_class = entry.get("provenance_class")
+    _check_provenance_class(provenance_class, equivalence_status)
     comparisons = {
-        "collector_head": "worker_start_git_head",
-        "worker_script_sha256": "worker_start_script_sha256",
-        "adapter_sha256": "worker_start_adapter_sha256",
-        "protocol_sha256": "worker_start_protocol_sha256",
-        "model_tree_sha256": "worker_start_model_tree_sha256",
-        "processor_tree_sha256": "worker_start_processor_tokenizer_sha256",
+        "worker_id": "collector_worker_id",
+        "gpu_id": "collector_gpu",
+        "pid": "collector_pid",
+        "collector_head": "collector_git_head",
+        "worker_script_sha256": "collector_script_sha256",
+        "model_tree_sha256": "checkpoint_tree_sha256",
+        "processor_tree_sha256": "processor_tokenizer_sha256",
+        "collector_worktree_clean": "collector_worktree_clean",
     }
     for manifest_name, metadata_name in comparisons.items():
-        if metadata_name in meta and meta[metadata_name] != worker.get(manifest_name):
-            raise ContractViolation("PROVENANCE", f"artifact/worker-start mismatch: {manifest_name}")
-    return worker
+        if metadata_name not in meta:
+            raise ContractViolation("PROVENANCE", f"artifact provenance field missing: {metadata_name}")
+        left, right = meta[metadata_name], worker.get(manifest_name)
+        if manifest_name in {"gpu_id", "pid"}:
+            try:
+                left, right = int(left), int(right)
+            except (TypeError, ValueError):
+                pass
+        if left != right:
+            raise ContractViolation("PROVENANCE", f"artifact/external worker-start mismatch: {manifest_name}")
+    return {
+        **worker,
+        "adapter_sha256": worker["adapter_script_sha256"],
+        "protocol_sha256": worker["protocol_config_sha256"],
+        "provenance_class": provenance_class,
+        "provenance_binding_mode": "EXTERNAL_SEALED_MANIFEST_REGISTRY",
+        "worker_start_manifest_sha256": entry["worker_start_manifest_sha256"],
+        "worker_start_manifest_sidecar_sha256": entry["worker_start_manifest_sidecar_sha256"],
+        "external_manifest_registry_sha256": external_registry_sha256,
+    }
 
 
 def _verify_streams(root: Path, meta: dict[str, Any], contract: dict[str, Any], summary: dict[str, Any]) -> int:
@@ -322,11 +513,14 @@ def verify_artifact(
     *,
     equivalence_status: str = "HOLD",
     mode: str = "full",
+    external_registry: Mapping[str, dict[str, Any]] | None = None,
+    external_registry_sha256: str | None = None,
 ) -> dict[str, Any]:
     if mode not in {"full", "25d"}:
         raise ContractViolation("PROTOCOL", f"unknown artifact audit mode: {mode}")
     root = artifact_root.resolve()
     required_files = set(contract["required_files"])
+    required_files -= EMBEDDED_WORKER_MANIFEST_FILES
     if mode == "25d":
         required_files.discard("policy_intent_records.jsonl")
     missing = sorted(name for name in required_files if not (root / name).is_file())
@@ -345,7 +539,9 @@ def verify_artifact(
     if suite not in SUITES or not isinstance(task, int) or not 0 <= task < 10 or not isinstance(state, int) or not 0 <= state < 50:
         raise ContractViolation("PROTOCOL", "invalid suite/task/state identity")
     key = canonical_key(suite, task, state)
-    if meta.get("canonical_parent_key") != key or meta.get("split") != expected_split(state):
+    source_split_raw = meta.get("split")
+    formal_split, split_mapping_rule = resolve_split(source_split_raw, state, contract)
+    if meta.get("canonical_parent_key") != key:
         raise ContractViolation("IDENTITY", "canonical identity or split mismatch")
     if meta.get("official_horizon") != HORIZONS[suite] or runtime.get("official_horizon") != HORIZONS[suite] or meta.get("num_steps_wait") != 10:
         raise ContractViolation("PROTOCOL", "official horizon/wait mismatch")
@@ -368,10 +564,27 @@ def verify_artifact(
         raise ContractViolation("PROTOCOL", "Teacher/event output is present in source artifact")
     recursive_sha = _verify_checksum(root, required_files)
     step_count = _verify_streams(root, meta, contract, summary) if mode == "full" else _verify_25d_streams(root, meta, contract, summary)
-    worker = _verify_worker_manifest(root, meta, contract, equivalence_status)
+    worker = _verify_worker_manifest(
+        root,
+        meta,
+        contract,
+        equivalence_status,
+        artifact_recursive_sha256=recursive_sha,
+        external_registry=external_registry,
+        external_registry_sha256=external_registry_sha256,
+    )
     formal = worker["provenance_class"] == "A_CURRENT_HEAD_CLEAN_START_VERIFIED" or (
         worker["provenance_class"] == "B_PREVIOUS_HEAD_EQUIVALENT" and equivalence_status == "PASS"
     )
+    binding_sha = json_sha({
+        "canonical_parent_key": key,
+        "artifact_recursive_sha256": recursive_sha,
+        "provenance_class": worker["provenance_class"],
+        "provenance_binding_mode": worker["provenance_binding_mode"],
+        "worker_start_manifest_sha256": worker["worker_start_manifest_sha256"],
+        "worker_start_manifest_sidecar_sha256": worker["worker_start_manifest_sidecar_sha256"],
+        "external_manifest_registry_sha256": worker["external_manifest_registry_sha256"],
+    })
     return {
         "schema": "OFFICIAL_V3_ARTIFACT_AUDIT_V1",
         "status": "PASS_FORMAL_CANDIDATE" if formal else "PASS_DATA_CONTRACT_PROVENANCE_HOLD",
@@ -379,7 +592,9 @@ def verify_artifact(
         "suite": suite,
         "task_idx": task,
         "state_id": state,
-        "split": expected_split(state),
+        "split": formal_split,
+        "source_split_raw": source_split_raw,
+        "split_mapping_rule": split_mapping_rule,
         "task_success": bool(meta["success"]),
         "artifact_root": str(root),
         "artifact_recursive_sha256": recursive_sha,
@@ -387,7 +602,11 @@ def verify_artifact(
         "provenance_class": worker["provenance_class"],
         "worker_id": worker["slot_id"],
         "gpu_id": worker["gpu_id"],
-        "worker_start_manifest_sha256": sha256_file(root / "worker_start_manifest.json"),
+        "worker_start_manifest_sha256": worker["worker_start_manifest_sha256"],
+        "worker_start_manifest_sidecar_sha256": worker["worker_start_manifest_sidecar_sha256"],
+        "provenance_binding_mode": worker["provenance_binding_mode"],
+        "external_manifest_registry_sha256": worker["external_manifest_registry_sha256"],
+        "provenance_binding_sha256": binding_sha,
         "collector_head": worker["collector_head"],
         "worker_script_sha256": worker["worker_script_sha256"],
         "adapter_sha256": worker["adapter_sha256"],
@@ -407,9 +626,18 @@ def audit_artifact(
     *,
     equivalence_status: str = "HOLD",
     mode: str = "full",
+    external_registry: Mapping[str, dict[str, Any]] | None = None,
+    external_registry_sha256: str | None = None,
 ) -> dict[str, Any]:
     try:
-        return verify_artifact(artifact_root, contract, equivalence_status=equivalence_status, mode=mode)
+        return verify_artifact(
+            artifact_root,
+            contract,
+            equivalence_status=equivalence_status,
+            mode=mode,
+            external_registry=external_registry,
+            external_registry_sha256=external_registry_sha256,
+        )
     except ContractViolation as exc:
         status = {
             "CHECKSUM": "HOLD_CHECKSUM",
@@ -433,5 +661,6 @@ def audit_artifact(
 
 __all__ = [
     "ContractViolation", "SUITES", "HORIZONS", "SPLITS", "PROVENANCE_CLASSES", "PASS_STATUSES",
-    "audit_artifact", "canonical_key", "expected_split", "json_sha", "load_contract", "sha256_file",
+    "audit_artifact", "canonical_key", "expected_split", "resolve_split", "json_sha", "load_contract",
+    "load_external_manifest_registry", "sha256_file",
 ]

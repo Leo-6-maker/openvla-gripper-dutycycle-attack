@@ -22,7 +22,13 @@ from pathlib import Path
 from typing import Any
 
 from .b3_retention import RetentionConfig, rebuild_retention_features
-from .official_v3_contract import SUITES, audit_artifact, canonical_key, expected_split, load_contract
+from .official_v3_contract import (
+    SUITES,
+    audit_artifact,
+    canonical_key,
+    expected_split,
+    load_contract,
+)
 from .official_v3_sprint0 import _runner_binding
 
 
@@ -459,12 +465,24 @@ def _unknown_reason(index: int, rows: list[dict[str, Any]]) -> str:
     return "UNKNOWN_UNEXPLAINED"
 
 
-def _audit_source(row: dict[str, str], contract: dict[str, Any]) -> dict[str, Any]:
+def _audit_source(
+    row: dict[str, str],
+    contract: dict[str, Any],
+    *,
+    external_registry: dict[str, dict[str, Any]] | None = None,
+    external_registry_sha256: str | None = None,
+) -> dict[str, Any]:
     root = Path(row["selected_artifact_root"]).resolve()
+    audit_kwargs: dict[str, Any] = {"mode": "25d"}
+    if external_registry is not None:
+        audit_kwargs.update({
+            "external_registry": external_registry,
+            "external_registry_sha256": external_registry_sha256,
+        })
     if row.get("provenance_class") == "B_PREVIOUS_HEAD_EQUIVALENT":
-        report = audit_artifact(root, contract, equivalence_status="PASS", mode="25d")
+        report = audit_artifact(root, contract, equivalence_status="PASS", **audit_kwargs)
     else:
-        report = audit_artifact(root, contract, mode="25d")
+        report = audit_artifact(root, contract, **audit_kwargs)
     if report.get("status") != "PASS_FORMAL_CANDIDATE" or report.get("formal_eligible") is not True:
         raise V3S1ContractViolation(f"source audit is not formal PASS: {row['canonical_parent_key']}")
     if report.get("canonical_parent_key") != row["canonical_parent_key"]:
@@ -474,15 +492,32 @@ def _audit_source(row: dict[str, str], contract: dict[str, Any]) -> dict[str, An
     return report
 
 
-def dry_run_episode(row: dict[str, str], contract_path: Path, protocol_path: Path) -> dict[str, Any]:
+def dry_run_episode(
+    row: dict[str, str],
+    contract_path: Path,
+    protocol_path: Path,
+    *,
+    external_registry: dict[str, dict[str, Any]] | None = None,
+    external_registry_sha256: str | None = None,
+) -> dict[str, Any]:
     contract = load_contract(contract_path)
     protocol, retention_config = load_s1_protocol(protocol_path)
-    before = _audit_source(row, contract)
+    before = _audit_source(
+        row,
+        contract,
+        external_registry=external_registry,
+        external_registry_sha256=external_registry_sha256,
+    )
     source_root = Path(row["selected_artifact_root"]).resolve()
     meta = _load_json(source_root / "episode_metadata.json")
     merged = _strict_join(source_root, meta)
     rebuilt = rebuild_retention_features(merged, retention_config)
-    after = _audit_source(row, contract)
+    after = _audit_source(
+        row,
+        contract,
+        external_registry=external_registry,
+        external_registry_sha256=external_registry_sha256,
+    )
     if before["artifact_recursive_sha256"] != after["artifact_recursive_sha256"]:
         raise V3S1ContractViolation(f"source changed during dry-run: {row['canonical_parent_key']}")
     return {
@@ -497,11 +532,18 @@ def dry_run_episode(row: dict[str, str], contract_path: Path, protocol_path: Pat
         "protocol_sha256": sha256_file(protocol_path),
         "step_count": len(merged),
         "feature_rebuilder_sha256": sha256_file(Path(rebuild_retention_features.__code__.co_filename).resolve()),
+        "external_manifest_registry_sha256": external_registry_sha256,
     }
 
 
 def export_policy_intent_9d(
-    row: dict[str, str], contract_path: Path, output_root: Path, *, equivalence_status: str | None = None,
+    row: dict[str, str],
+    contract_path: Path,
+    output_root: Path,
+    *,
+    equivalence_status: str | None = None,
+    external_registry: dict[str, dict[str, Any]] | None = None,
+    external_registry_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Export the optional 9D stream to an independent, non-primary root."""
     contract = load_contract(contract_path)
@@ -509,7 +551,14 @@ def export_policy_intent_9d(
     meta = _load_json(source_root / "episode_metadata.json")
     # Full source audit is intentionally only used by this optional exporter.
     effective_equivalence = equivalence_status or ("PASS" if row.get("provenance_class") == "B_PREVIOUS_HEAD_EQUIVALENT" else "HOLD")
-    report = audit_artifact(source_root, contract, equivalence_status=effective_equivalence, mode="full")
+    report = audit_artifact(
+        source_root,
+        contract,
+        equivalence_status=effective_equivalence,
+        mode="full",
+        external_registry=external_registry,
+        external_registry_sha256=external_registry_sha256,
+    )
     if report.get("status") not in {"PASS_FORMAL_CANDIDATE", "PASS_DATA_CONTRACT_PROVENANCE_HOLD"}:
         raise V3S1ContractViolation(f"9D source audit failed: {row['canonical_parent_key']}")
     policy_rows = _load_policy_intent_stream(source_root, meta)
@@ -531,6 +580,7 @@ def export_policy_intent_9d(
             "schema": "B3_OFFICIAL_V3_POLICY_INTENT_9D_EXPORT_V1",
             "source_identity": identity,
             "source_artifact_sha256": row["selected_artifact_recursive_sha256"],
+            "external_manifest_registry_sha256": external_registry_sha256,
             "record_count": len(output),
             "formal_training_authorized": False,
             "formal_attack_authorized": False,
@@ -854,7 +904,7 @@ def audit_materialized_episode(
     elif expected_runner_binding is not None and json_sha(runner_binding) != json_sha(expected_runner_binding):
         raise V3S1ContractViolation(f"materialized runner binding differs from root: {identity}")
     if expected_input_sha256 is not None:
-        for name in ("source_contract_sha256", "protocol_sha256", "feature_rebuilder_sha256"):
+        for name in expected_input_sha256:
             if manifest.get(name) != expected_input_sha256.get(name):
                 raise V3S1ContractViolation(f"materialized input binding mismatch: {identity}:{name}")
     if manifest.get("policy_intent_9d_exported") is not False or (episode_root / "policy_intent_9d_records.jsonl").exists():
@@ -933,7 +983,7 @@ def audit_materialized_root(
     elif expected_runner_binding is not None and json_sha(top_binding) != json_sha(expected_runner_binding):
         raise V3S1ContractViolation("materialized root runner binding differs from expected binding")
     if expected_input_sha256 is not None:
-        for name in ("registry_csv_sha256", "registry_summary_sha256", "source_contract_sha256", "protocol_sha256", "feature_rebuilder_sha256"):
+        for name in expected_input_sha256:
             if top.get(name) != expected_input_sha256.get(name):
                 raise V3S1ContractViolation(f"materialized root input binding mismatch: {name}")
     manifests = sorted(root.rglob("materialization_manifest.json")) if root.exists() else []
@@ -1027,6 +1077,7 @@ def _write_episode(prepared: dict[str, Any], output_root: Path) -> dict[str, Any
         "source_artifact_sha256": prepared["source_before_sha256"],
         "source_before_sha256": prepared["source_before_sha256"],
         "source_after_sha256": prepared["source_after_sha256"],
+        "external_manifest_registry_sha256": prepared.get("external_manifest_registry_sha256"),
         "source_contract_sha256": prepared["source_contract_sha256"],
         "protocol_sha256": prepared["protocol_sha256"],
         "feature_rebuilder_sha256": prepared["feature_rebuilder_sha256"],
@@ -1055,8 +1106,17 @@ def _write_episode(prepared: dict[str, Any], output_root: Path) -> dict[str, Any
 def materialize_episode(
     row: dict[str, str], contract_path: Path, protocol_path: Path, output_root: Path,
     runner_binding: dict[str, Any] | None = None,
+    *,
+    external_registry: dict[str, dict[str, Any]] | None = None,
+    external_registry_sha256: str | None = None,
 ) -> dict[str, Any]:
-    prepared = dry_run_episode(row, contract_path, protocol_path)
+    prepared = dry_run_episode(
+        row,
+        contract_path,
+        protocol_path,
+        external_registry=external_registry,
+        external_registry_sha256=external_registry_sha256,
+    )
     prepared["runner_binding"] = runner_binding or {"status": "SYNTHETIC_TEST_ONLY"}
     if output_root.exists():
         raise V3S1ContractViolation(f"refusing to overwrite episode output: {output_root}")
@@ -1065,15 +1125,18 @@ def materialize_episode(
         raise V3S1ContractViolation(f"staging root already exists: {staging}")
     try:
         manifest = _write_episode(prepared, staging)
+        expected_inputs = {
+            "source_contract_sha256": prepared["source_contract_sha256"],
+            "protocol_sha256": prepared["protocol_sha256"],
+            "feature_rebuilder_sha256": prepared["feature_rebuilder_sha256"],
+        }
+        if prepared.get("external_manifest_registry_sha256") is not None:
+            expected_inputs["external_manifest_registry_sha256"] = prepared["external_manifest_registry_sha256"]
         report = audit_materialized_episode(
             staging, row, require_runner_binding=runner_binding is not None,
             feature_order_sha256=prepared["source_contract"]["feature_order_sha256"],
             expected_runner_binding=runner_binding,
-            expected_input_sha256={
-                "source_contract_sha256": prepared["source_contract_sha256"],
-                "protocol_sha256": prepared["protocol_sha256"],
-                "feature_rebuilder_sha256": prepared["feature_rebuilder_sha256"],
-            },
+            expected_input_sha256=expected_inputs,
         )
         if report["status"] != "PASS":
             raise V3S1ContractViolation(f"episode Teacher audit failed: {report['violations']}")
@@ -1088,6 +1151,9 @@ def materialize_episode(
 def materialize_fit(
     registry_csv: Path, registry_summary: Path, contract_path: Path, protocol_path: Path, output_root: Path,
     runner_binding: dict[str, Any] | None = None,
+    *,
+    external_registry: dict[str, dict[str, Any]] | None = None,
+    external_registry_sha256: str | None = None,
 ) -> dict[str, Any]:
     registry_rows = load_formal_fit_registry(registry_csv, registry_summary)
     if output_root.exists():
@@ -1096,7 +1162,13 @@ def materialize_fit(
     # The second pass intentionally re-reads each source so a source mutation
     # between validation and materialization is caught by the before/after SHA.
     for row in registry_rows:
-        dry_run_episode(row, contract_path, protocol_path)
+        dry_run_episode(
+            row,
+            contract_path,
+            protocol_path,
+            external_registry=external_registry,
+            external_registry_sha256=external_registry_sha256,
+        )
     staging = output_root.with_name(f".{output_root.name}.{uuid.uuid4().hex}.staging")
     if staging.exists():
         raise V3S1ContractViolation(f"staging root already exists: {staging}")
@@ -1104,7 +1176,13 @@ def materialize_fit(
         staging.mkdir(parents=True)
         reports: list[dict[str, Any]] = []
         for row in registry_rows:
-            item = dry_run_episode(row, contract_path, protocol_path)
+            item = dry_run_episode(
+                row,
+                contract_path,
+                protocol_path,
+                external_registry=external_registry,
+                external_registry_sha256=external_registry_sha256,
+            )
             item["runner_binding"] = runner_binding or {"status": "SYNTHETIC_TEST_ONLY"}
             row = item["registry_row"]
             episode_root = staging / row["suite"] / f"task_{int(row['task_idx']):02d}" / f"state_{int(row['state_id']):02d}"
@@ -1124,6 +1202,7 @@ def materialize_fit(
             "source_contract_sha256": sha256_file(contract_path),
             "protocol_sha256": sha256_file(protocol_path),
             "feature_rebuilder_sha256": sha256_file(Path(rebuild_retention_features.__code__.co_filename).resolve()),
+            "external_manifest_registry_sha256": external_registry_sha256,
             "runner_binding": runner_binding or {"status": "SYNTHETIC_TEST_ONLY"},
             "identity_count": len(registry_rows),
             "episode_audit_count": len(reports),
@@ -1139,17 +1218,20 @@ def materialize_fit(
         sums = staging / "SHA256SUMS"
         sums.write_text("".join(f"{sha256_file(staging / name)}  {name}\n" for name in names), encoding="utf-8")
         _write_sidecar(sums)
+        expected_inputs = {
+            "registry_csv_sha256": sha256_file(registry_csv),
+            "registry_summary_sha256": sha256_file(registry_summary),
+            "source_contract_sha256": sha256_file(contract_path),
+            "protocol_sha256": sha256_file(protocol_path),
+            "feature_rebuilder_sha256": sha256_file(Path(rebuild_retention_features.__code__.co_filename).resolve()),
+        }
+        if external_registry_sha256 is not None:
+            expected_inputs["external_manifest_registry_sha256"] = external_registry_sha256
         root_report = audit_materialized_root(
             staging, registry_rows, require_runner_binding=runner_binding is not None,
             feature_order_sha256=load_contract(contract_path)["feature_order_sha256"],
             expected_runner_binding=runner_binding,
-            expected_input_sha256={
-                "registry_csv_sha256": sha256_file(registry_csv),
-                "registry_summary_sha256": sha256_file(registry_summary),
-                "source_contract_sha256": sha256_file(contract_path),
-                "protocol_sha256": sha256_file(protocol_path),
-                "feature_rebuilder_sha256": sha256_file(Path(rebuild_retention_features.__code__.co_filename).resolve()),
-            },
+            expected_input_sha256=expected_inputs,
         )
         if root_report["status"] != "PASS":
             raise V3S1ContractViolation("independent root audit failed before promotion")
