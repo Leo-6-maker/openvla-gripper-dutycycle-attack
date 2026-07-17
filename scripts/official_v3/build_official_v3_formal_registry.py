@@ -11,12 +11,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from gripper_attack.official_v3_contract import PASS_STATUSES, SUITES, load_contract, sha256_file
+from gripper_attack.official_v3_contract import PASS_STATUSES, SUITES, canonical_key, load_contract, sha256_file
 
 
 REGISTRY_FIELDS = [
     "canonical_parent_key", "suite", "task_idx", "state_id", "split", "ledger_status", "task_success",
-    "selected_artifact_root", "selected_artifact_recursive_sha256", "artifact_audit_sha256",
+    "selected_artifact_root", "selected_artifact_recursive_sha256", "artifact_audit_path", "artifact_audit_sha256",
     "provenance_class", "worker_start_manifest_sha256", "collector_head", "worker_id", "gpu_id",
     "worker_script_sha256", "adapter_sha256", "protocol_sha256", "model_tree_sha256", "processor_tree_sha256",
     "formal_eligible", "formal_selected", "superseded_artifact_sha256", "remediation_required",
@@ -68,9 +68,16 @@ def build_registry(
             ledger[key] = row
     keys = [row.get("canonical_parent_key", "") for row in manifest_rows]
     duplicate_manifest_keys = sorted(key for key, count in Counter(keys).items() if not key or count > 1)
+    identity_column_mismatches: list[str] = []
     rows: list[dict[str, Any]] = []
     for manifest in manifest_rows:
         key = manifest.get("canonical_parent_key", "")
+        try:
+            expected_key = canonical_key(manifest.get("suite", ""), int(manifest.get("task_idx", "-1")), int(manifest.get("state_id", "-1")))
+        except (TypeError, ValueError):
+            expected_key = ""
+        if key != expected_key:
+            identity_column_mismatches.append(key or expected_key or "<empty>")
         ledger_row = ledger.get(key, {})
         candidates = list(audits.get(key, []))
         selected_hint = remediation.get(key, {}).get("selected_artifact_root", "")
@@ -91,13 +98,19 @@ def build_registry(
             "formal_eligible": False,
             "formal_selected": False,
         })
-        if key in duplicate_manifest_keys:
+        if key in identity_column_mismatches:
+            base["selection_reason"] = "CANONICAL_IDENTITY_COLUMN_MISMATCH"
+        elif key in duplicate_manifest_keys:
             base["selection_reason"] = "DUPLICATE_MANIFEST_CANONICAL_KEY"
         elif len(candidates) != 1:
             base["selection_reason"] = "NO_AUDIT_CANDIDATE" if not candidates else "DUPLICATE_AUDIT_CANDIDATE"
         else:
             audit = candidates[0]
             base.update({field: audit.get(field, "") for field in REGISTRY_FIELDS if field in audit})
+            base["selected_artifact_root"] = audit.get("selected_artifact_root", audit.get("artifact_root", ""))
+            base["selected_artifact_recursive_sha256"] = audit.get(
+                "selected_artifact_recursive_sha256", audit.get("artifact_recursive_sha256", "")
+            )
             base["canonical_parent_key"] = key
             base["task_success"] = base["task_success"] if base["task_success"] is not None else audit.get("task_success", "")
             eligible = audit.get("status") in PASS_STATUSES and bool(audit.get("formal_eligible"))
@@ -112,10 +125,13 @@ def build_registry(
             base["formal_selected"] = eligible and key not in duplicate_manifest_keys
         rows.append(base)
 
-    split_selected = Counter(row["split"] for row in rows if row["formal_selected"])
-    suite_selected = Counter(row["suite"] for row in rows if row["formal_selected"])
-    task_selected = Counter((row["suite"], str(row["task_idx"])) for row in rows if row["formal_selected"])
     fit_rows = [row for row in rows if row["split"] == "FIT_TRAIN"]
+    fit_split_selected = Counter(row["split"] for row in fit_rows if row["formal_selected"])
+    fit_suite_selected = Counter(row["suite"] for row in fit_rows if row["formal_selected"])
+    fit_task_selected = Counter((row["suite"], str(int(row["task_idx"]))) for row in fit_rows if row["formal_selected"])
+    global_split_selected = Counter(row["split"] for row in rows if row["formal_selected"])
+    global_suite_selected = Counter(row["suite"] for row in rows if row["formal_selected"])
+    global_task_selected = Counter((row["suite"], str(int(row["task_idx"]))) for row in rows if row["formal_selected"])
     full_artifact_audit_pass_count = sum(bool(row["formal_selected"]) for row in fit_rows)
     unresolved_provenance_count = sum(
         row.get("provenance_class") in {"C_START_RECORD_MISSING", "D_DIRTY_START_QUARANTINE"}
@@ -130,10 +146,11 @@ def build_registry(
     fit_ready = (
         len(rows) == expected_identity_count
         and len(set(keys)) == expected_identity_count
-        and split_selected["FIT_TRAIN"] == 800
-        and all(suite_selected[suite] == 200 for suite in SUITES)
-        and all(task_selected[(suite, str(task))] == 20 for suite in SUITES for task in range(10))
+        and fit_split_selected["FIT_TRAIN"] == 800
+        and all(fit_suite_selected[suite] == 200 for suite in SUITES)
+        and all(fit_task_selected[(suite, str(task))] == 20 for suite in SUITES for task in range(10))
         and not duplicate_manifest_keys
+        and not identity_column_mismatches
         and all(row["formal_selected"] or row["split"] != "FIT_TRAIN" for row in rows)
         and full_artifact_audit_pass_count == 800
         and unresolved_provenance_count == 0
@@ -147,18 +164,25 @@ def build_registry(
         "identity_count": len(rows),
         "unique_identity_count": len(set(keys)),
         "duplicate_manifest_keys": duplicate_manifest_keys,
+        "identity_column_mismatches": sorted(set(identity_column_mismatches)),
         "raw_sealed_count": sum(bool(audits.get(key)) for key in set(keys)),
         "formal_selected_count": sum(bool(row["formal_selected"]) for row in rows),
+        "global_formal_selected_count": sum(bool(row["formal_selected"]) for row in rows),
+        "fit_formal_selected_count": sum(bool(row["formal_selected"]) for row in fit_rows),
         "task_success_count": sum(row["task_success"] is True for row in rows),
         "task_failure_count": sum(row["task_success"] is False for row in rows),
-        "by_split_formal_selected": dict(split_selected),
-        "by_suite_formal_selected": dict(suite_selected),
-        "fit_train_missing": max(0, 800 - split_selected["FIT_TRAIN"]),
+        "by_split_formal_selected": dict(global_split_selected),
+        "by_suite_formal_selected": dict(global_suite_selected),
+        "by_task_formal_selected": {f"{suite}/task_{task}": count for (suite, task), count in sorted(global_task_selected.items())},
+        "fit_by_suite_formal_selected": dict(fit_suite_selected),
+        "fit_by_task_formal_selected": {f"{suite}/task_{task}": count for (suite, task), count in sorted(fit_task_selected.items())},
+        "fit_train_missing": max(0, 800 - fit_split_selected["FIT_TRAIN"]),
         "full_artifact_audit_pass_count": full_artifact_audit_pass_count,
         "unresolved_provenance_count": unresolved_provenance_count,
         "unfinished_remediation_count": unfinished_remediation_count,
         "stale_recovery_unresolved_count": stale_recovery_unresolved_count,
         "stale_recovery_summary_sha256": stale_recovery_summary_sha256,
+        "stale_recovery_audit_sha256": stale_recovery_summary_sha256,
         "duplicate_selection_count": duplicate_selection_count,
         "provenance_counts": dict(Counter(str(row.get("provenance_class", "")) for row in rows)),
         "remediation_required_count": sum(bool(row["remediation_required"]) for row in rows),
@@ -195,8 +219,36 @@ def _load_audit_reports(root: Path) -> dict[str, list[dict[str, Any]]]:
         report = json.loads(path.read_text(encoding="utf-8"))
         key = report.get("canonical_parent_key")
         if key:
+            report["artifact_audit_path"] = str(path.resolve())
+            report["artifact_audit_sha256"] = sha256_file(path)
             result[str(key)].append(report)
     return result
+
+
+def _read_stale_recovery_audit(path: Path) -> tuple[int, str]:
+    """Validate the actual Sprint-0 stale audit schema, not a guessed count."""
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("schema") != "OFFICIAL_V3_STALE_LEASE_RECOVERY_AUDIT_V1":
+        raise ValueError("unexpected stale recovery audit schema")
+    sidecar = path.with_name(path.name + ".sha256")
+    expected = f"{sha256_file(path)}  {path.name}"
+    if not sidecar.is_file() or sidecar.read_text(encoding="utf-8").strip() != expected:
+        raise ValueError("stale recovery audit SHA sidecar is missing or invalid")
+    if payload.get("status") not in {"RECOVERY_NOT_REQUIRED", "RECOVERY_SAFE"}:
+        raise ValueError(f"stale recovery audit is not closed: {payload.get('status')!r}")
+    if not isinstance(payload.get("stale_keys"), list):
+        raise ValueError("stale recovery audit stale_keys must be a list")
+    list_fields = (
+        "unexpected_stale_keys", "missing_expected_stale_keys",
+        "missing_recovery_records", "unexpected_recovery_records", "duplicate_formal_result_keys",
+        "missing_formal_result_keys", "duplicate_active_canonical_keys", "fence_violations",
+        "late_result_violations",
+    )
+    if any(payload.get(field) not in ([], {}) for field in list_fields):
+        raise ValueError("stale recovery audit contains unresolved findings")
+    if payload.get("ledger_mutated") is not False or payload.get("official_v3_decision_allowed") is not False:
+        raise ValueError("stale recovery audit authorization boundary is invalid")
+    return 0, sha256_file(path)
 
 
 def main() -> int:
@@ -208,16 +260,14 @@ def main() -> int:
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--equivalence-status", choices=("PASS", "HOLD"), default="HOLD")
     parser.add_argument("--remediation", type=Path)
-    parser.add_argument("--stale-recovery-summary", type=Path)
+    parser.add_argument("--stale-recovery-audit", "--stale-recovery-summary", dest="stale_recovery_audit", type=Path)
     args = parser.parse_args()
     contract = load_contract(args.contract)
     remediation = read_csv(args.remediation) if args.remediation else []
     stale_count = None
     stale_summary_sha = ""
-    if args.stale_recovery_summary:
-        stale_payload = json.loads(args.stale_recovery_summary.read_text(encoding="utf-8"))
-        stale_count = int(stale_payload["unresolved_count"])
-        stale_summary_sha = sha256_file(args.stale_recovery_summary)
+    if args.stale_recovery_audit:
+        stale_count, stale_summary_sha = _read_stale_recovery_audit(args.stale_recovery_audit)
     rows, summary = build_registry(
         read_csv(args.manifest), read_csv(args.ledger), _load_audit_reports(args.audit_root),
         equivalence_status=args.equivalence_status, remediation_rows=remediation,

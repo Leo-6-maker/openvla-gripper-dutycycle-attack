@@ -6,6 +6,7 @@ import pytest
 
 from gripper_attack import b3_official_v3_s1 as s1
 from gripper_attack.official_v3_contract import SUITES, canonical_key
+from official_v3.build_official_v3_formal_registry import build_registry, write_registry
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +35,7 @@ def _fit_rows() -> list[dict[str, str]]:
                     "split": "FIT_TRAIN",
                     "selected_artifact_root": f"/synthetic/{suite}/task_{task:02d}/state_{state:02d}",
                     "selected_artifact_recursive_sha256": "a" * 64,
+                    "artifact_audit_path": "",
                     "artifact_audit_sha256": "b" * 64,
                     "formal_eligible": "true",
                     "formal_selected": "true",
@@ -42,8 +44,38 @@ def _fit_rows() -> list[dict[str, str]]:
     return rows
 
 
+def _full_registry_rows(fit_rows=None) -> list[dict[str, str]]:
+    rows = list(_fit_rows() if fit_rows is None else fit_rows)
+    for suite in SUITES:
+        for task in range(10):
+            for state in range(20, 50):
+                split = "FIT_DEV" if state < 24 else ("CAL" if state < 27 else ("CHECK" if state < 30 else "FINAL_EVAL_CANDIDATE"))
+                rows.append({
+                    "canonical_parent_key": canonical_key(suite, task, state),
+                    "suite": suite,
+                    "task_idx": str(task),
+                    "state_id": str(state),
+                    "split": split,
+                    "selected_artifact_root": "",
+                    "selected_artifact_recursive_sha256": "",
+                    "artifact_audit_path": "",
+                    "artifact_audit_sha256": "",
+                    "formal_eligible": "false",
+                    "formal_selected": "false",
+                    "provenance_class": "",
+                })
+    return rows
+
+
 def _write_registry(tmp_path: Path, rows=None, **summary_overrides):
-    rows = _fit_rows() if rows is None else rows
+    rows = _full_registry_rows(rows)
+    audit_root = tmp_path / "audits"
+    for row in rows:
+        if row.get("split") == "FIT_TRAIN" and row.get("formal_selected") == "true":
+            audit_path = audit_root / (row["canonical_parent_key"].replace("/", "_") + ".json")
+            _write(audit_path, {"schema": "OFFICIAL_V3_ARTIFACT_AUDIT_V1", "canonical_parent_key": row["canonical_parent_key"]})
+            row["artifact_audit_path"] = str(audit_path)
+            row["artifact_audit_sha256"] = s1.sha256_file(audit_path)
     registry = tmp_path / "OFFICIAL_V3_FORMAL_REGISTRY_V1.csv"
     fields = list(rows[0]) if rows else [
         "canonical_parent_key", "suite", "task_idx", "state_id", "split",
@@ -59,6 +91,10 @@ def _write_registry(tmp_path: Path, rows=None, **summary_overrides):
         "unique_identity_count": 2000,
         "formal_fit_ready": True,
         "formal_selected_count": 800,
+        "global_formal_selected_count": 800,
+        "fit_formal_selected_count": 800,
+        "fit_by_suite_formal_selected": {suite: 200 for suite in SUITES},
+        "fit_by_task_formal_selected": {f"{suite}/task_{task}": 20 for suite in SUITES for task in range(10)},
         "full_artifact_audit_pass_count": 800,
         "unresolved_provenance_count": 0,
         "unfinished_remediation_count": 0,
@@ -181,6 +217,58 @@ def test_exact_fit_registry_and_census_gate(tmp_path: Path):
     assert {row["suite"] for row in rows} == set(SUITES)
 
 
+def test_census_bundle_is_directory_transaction(tmp_path: Path):
+    registry, summary = _write_registry(tmp_path)
+    rows, census_summary = s1.build_fit_census(registry, summary)
+    output = tmp_path / "census"
+    s1.write_census_bundle(output, rows, census_summary)
+    assert (output / "OFFICIAL_V3_FIT_CENSUS_V1.csv").exists()
+    assert (output / "OFFICIAL_V3_FIT_CENSUS_SUMMARY_V1.json.sha256").exists()
+    assert not list(tmp_path.glob(".census.*.staging"))
+    with pytest.raises(s1.V3S1ContractViolation):
+        s1.write_census_bundle(output, rows, census_summary)
+
+
+def test_builder_full_2000_registry_then_fit_census_filters_exact_800(tmp_path: Path):
+    manifest_rows = []
+    ledger_rows = []
+    audit_reports = {}
+    audit_root = tmp_path / "artifact_audits"
+    for suite in SUITES:
+        for task in range(10):
+            for state in range(50):
+                key = canonical_key(suite, task, state)
+                split = "FIT_TRAIN" if state < 20 else ("FIT_DEV" if state < 24 else ("CAL" if state < 27 else ("CHECK" if state < 30 else "FINAL_EVAL_CANDIDATE")))
+                manifest_rows.append({"canonical_parent_key": key, "suite": suite, "task_idx": str(task), "state_id": str(state), "split": split})
+                ledger_rows.append({"canonical_parent_key": key, "status": "PASS", "task_success": "true"})
+                if split == "FIT_TRAIN":
+                    audit_path = audit_root / (key.replace("/", "_") + ".json")
+                    _write(audit_path, {"schema": "OFFICIAL_V3_ARTIFACT_AUDIT_V1", "canonical_parent_key": key})
+                    audit_reports[key] = [{
+                        "schema": "OFFICIAL_V3_ARTIFACT_AUDIT_V1", "status": "PASS_FORMAL_CANDIDATE",
+                        "canonical_parent_key": key, "artifact_root": f"/synthetic/{key}",
+                        "artifact_recursive_sha256": "a" * 64, "provenance_class": "A_CURRENT_HEAD_CLEAN_START_VERIFIED",
+                        "formal_eligible": True, "artifact_audit_path": str(audit_path),
+                        "artifact_audit_sha256": s1.sha256_file(audit_path),
+                    }]
+    rows, summary = build_registry(
+        manifest_rows, ledger_rows, audit_reports,
+        expected_identity_count=2000,
+        stale_recovery_unresolved_count=0,
+        stale_recovery_summary_sha256="c" * 64,
+    )
+    assert summary["formal_fit_ready"] is True
+    assert summary["fit_formal_selected_count"] == 800
+    registry_root = tmp_path / "registry"
+    write_registry(rows, summary, registry_root)
+    fit_rows = s1.load_formal_fit_registry(
+        registry_root / "OFFICIAL_V3_FORMAL_REGISTRY_V1.csv",
+        registry_root / "OFFICIAL_V3_FORMAL_REGISTRY_SUMMARY_V1.json",
+    )
+    assert len(fit_rows) == 800
+    assert all(row["split"] == "FIT_TRAIN" for row in fit_rows)
+
+
 def test_fit_registry_799_is_hold(tmp_path: Path):
     registry, summary = _write_registry(tmp_path, _fit_rows()[:-1], formal_selected_count=799)
     with pytest.raises(s1.V3S1ContractViolation):
@@ -209,8 +297,18 @@ def test_teacher_unknown_cannot_be_encoded_as_negative():
 def test_teacher_aggregate_requires_exact_identity_set():
     registry = _fit_rows()
     reports = [
-        {"canonical_parent_key": row["canonical_parent_key"], "status": "PASS", "violations": []}
-        for row in registry
+        {
+            "canonical_parent_key": row["canonical_parent_key"], "status": "PASS", "violations": [],
+            "event_count": 2 if row["suite"] == "libero_10" else 1,
+            "episodes_with_multiple_teacher_events": int(row["suite"] == "libero_10"),
+            "later_event_known_t10_steps": int(row["suite"] == "libero_10"),
+            "later_event_positive_t10_steps": int(row["suite"] == "libero_10"),
+            "event_ordinal_stats": {"0": {"events": 1, "known_t10_steps": 1, "positive_t10_steps": 1}, **({"1": {"events": 1, "known_t10_steps": 1, "positive_t10_steps": 1}} if row["suite"] == "libero_10" else {})},
+            "teacher_counts": {
+                head: {"known": 1, "unknown": 0, "positive": int(head == "retention_continuation_t10"), "negative": int(head != "retention_continuation_t10"), "positive_episodes": int(head == "retention_continuation_t10"), "all_unknown_episodes": 0, "all_negative_episodes": int(head != "retention_continuation_t10")}
+                for head in s1.HEADS
+            },
+        } for row in registry
     ]
     aggregate = s1.aggregate_teacher_audit(reports, registry)
     assert aggregate["status"] == "PASS"
@@ -231,7 +329,7 @@ def test_materialized_student_is_separate_from_teacher_and_policy(tmp_path: Path
         "selected_artifact_root": str(source),
     }
 
-    def fake_audit(root, contract):
+    def fake_audit(root, contract, **kwargs):
         return {
             "status": "PASS_FORMAL_CANDIDATE",
             "formal_eligible": True,
@@ -249,7 +347,33 @@ def test_materialized_student_is_separate_from_teacher_and_policy(tmp_path: Path
         "state_id", "canonical_parent_key", "step", "features_25d", "valid",
     } for item in student)
     assert (output / "teacher_retention_records.jsonl").exists()
-    assert (output / "policy_intent_9d_records.jsonl").exists()
+    assert not (output / "policy_intent_9d_records.jsonl").exists()
+
+
+def test_primary_25d_materializer_does_not_require_or_open_9d_stream(tmp_path: Path, monkeypatch):
+    source = _source_fixture(tmp_path)
+    (source / "policy_intent_records.jsonl").unlink()
+    key = "libero_10/task_00/state_00"
+    row = _fit_rows()[-1] | {
+        "canonical_parent_key": key,
+        "suite": "libero_10",
+        "task_idx": "0",
+        "state_id": "0",
+        "selected_artifact_root": str(source),
+    }
+
+    def fake_audit(root, contract, **kwargs):
+        assert kwargs.get("mode") == "25d"
+        return {
+            "status": "PASS_FORMAL_CANDIDATE", "formal_eligible": True,
+            "canonical_parent_key": key, "artifact_recursive_sha256": "a" * 64,
+        }
+
+    monkeypatch.setattr(s1, "audit_artifact", fake_audit)
+    output = tmp_path / "materialized_25d_only"
+    manifest = s1.materialize_episode(row, CONTRACT_PATH, PROTOCOL_PATH, output)
+    assert manifest["policy_intent_9d_exported"] is False
+    assert (output / "student_input_records.jsonl").exists()
 
 
 def test_equivalent_previous_head_is_verified_with_passed_equivalence(tmp_path: Path, monkeypatch):
@@ -272,7 +396,7 @@ def test_equivalent_previous_head_is_verified_with_passed_equivalence(tmp_path: 
 
     monkeypatch.setattr(s1, "audit_artifact", fake_audit)
     assert s1._audit_source(row, {})["status"] == "PASS_FORMAL_CANDIDATE"
-    assert seen == {"equivalence_status": "PASS"}
+    assert seen == {"equivalence_status": "PASS", "mode": "25d"}
 
 
 def test_materialize_fit_cleans_staging_on_dry_run_failure(tmp_path: Path, monkeypatch):

@@ -5,7 +5,7 @@ from pathlib import Path
 from gripper_attack.official_v3_contract import audit_artifact, json_sha, load_contract, sha256_file
 from official_v3.audit_official_v3_incremental_snapshot import audit_snapshot
 from official_v3.audit_official_v3_worker_strata import audit_worker_strata
-from official_v3.build_official_v3_formal_registry import build_registry, write_registry
+from official_v3.build_official_v3_formal_registry import _read_stale_recovery_audit, build_registry, write_registry
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -113,6 +113,16 @@ def test_old_head_requires_equivalence_then_becomes_eligible(tmp_path: Path):
     assert audit_artifact(artifact, contract, equivalence_status="PASS")["status"] == "PASS_FORMAL_CANDIDATE"
 
 
+def test_25d_audit_does_not_require_policy_intent_stream(tmp_path: Path):
+    contract = load_contract(CONTRACT_PATH)
+    artifact = _build_artifact(tmp_path / "25d_only")
+    (artifact / "policy_intent_records.jsonl").unlink()
+    _reseal(artifact)
+    report = audit_artifact(artifact, contract, mode="25d")
+    assert report["status"] == "PASS_FORMAL_CANDIDATE"
+    assert report["audit_mode"] == "25d"
+
+
 def test_registry_keeps_task_failure_and_rejects_duplicate_identity(tmp_path: Path):
     contract = load_contract(CONTRACT_PATH)
     one = _build_artifact(tmp_path / "one", success=False)
@@ -158,3 +168,22 @@ def test_registry_output_is_non_overwriting(tmp_path: Path):
         pass
     else:
         raise AssertionError("registry writer overwrote a sealed root")
+
+
+def test_stale_audit_uses_real_schema_and_allows_closed_recovery(tmp_path: Path):
+    path = tmp_path / "stale.json"
+    payload = {
+        "schema": "OFFICIAL_V3_STALE_LEASE_RECOVERY_AUDIT_V1",
+        "status": "RECOVERY_SAFE",
+        "stale_keys": ["libero_object/task_00/state_00"],
+        "unexpected_stale_keys": [], "missing_expected_stale_keys": [],
+        "missing_recovery_records": [], "unexpected_recovery_records": [],
+        "duplicate_formal_result_keys": [], "missing_formal_result_keys": [],
+        "duplicate_active_canonical_keys": [], "fence_violations": [],
+        "late_result_violations": [], "ledger_mutated": False,
+        "official_v3_decision_allowed": False,
+    }
+    _write(path, payload)
+    _write(path.with_name(path.name + ".sha256"), f"{sha256_file(path)}  {path.name}\n")
+    count, digest = _read_stale_recovery_audit(path)
+    assert count == 0 and digest == sha256_file(path)

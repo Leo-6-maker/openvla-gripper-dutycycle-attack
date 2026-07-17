@@ -35,7 +35,8 @@ jobs:
             scripts/detector/build_b3_v3_fit_census.py \
             scripts/detector/materialize_b3_v3_episode.py \
             scripts/detector/materialize_b3_v3_fit.py \
-            scripts/detector/audit_b3_v3_teacher.py
+            scripts/detector/audit_b3_v3_teacher.py \
+            scripts/detector/export_b3_v3_policy_intent_9d.py
       - name: Run synthetic Official V3 source tests
         run: |
           pytest -q \

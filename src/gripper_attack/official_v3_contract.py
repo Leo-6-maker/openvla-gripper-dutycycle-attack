@@ -268,9 +268,67 @@ def _verify_streams(root: Path, meta: dict[str, Any], contract: dict[str, Any], 
     return count
 
 
-def verify_artifact(artifact_root: Path, contract: dict[str, Any], *, equivalence_status: str = "HOLD") -> dict[str, Any]:
+def _verify_25d_streams(root: Path, meta: dict[str, Any], contract: dict[str, Any], summary: dict[str, Any]) -> int:
+    """Verify the robot/action evidence needed by the 25D-only S1 path.
+
+    This deliberately does not open policy_intent_records.jsonl.  The 9D
+    stream is an optional, physically separate ablation export; it is not a
+    prerequisite for the robot-centric 25D Teacher.
+    """
+    step_rows = load_jsonl(root / "step_records.jsonl")
+    sidecar_rows = load_jsonl(root / "privileged_teacher_sidecar.jsonl")
+    if not step_rows or len(step_rows) != len(sidecar_rows):
+        raise ContractViolation("PROTOCOL", "25D source stream length mismatch")
+    count = len(step_rows)
+    summary_count = summary.get("step_count", summary.get("steps"))
+    if int(summary_count) != count:
+        raise ContractViolation("PROTOCOL", "summary step count mismatch")
+    names = contract["feature_names_25d"]
+    for index, (step, sidecar) in enumerate(zip(step_rows, sidecar_rows)):
+        for row in (step, sidecar):
+            if _step_number(row, index) != index or not _identity_matches(row, meta):
+                raise ContractViolation("PROTOCOL", f"25D step identity/index mismatch at {index}")
+        features = _vector(step, ("features_25d",), 25)
+        raw = _vector(step, ("clean_action_raw_7d", "action_raw_7d", "action_raw"), 7)
+        env = _vector(step, ("applied_action_7d", "action_env", "env_action_7d"), 7)
+        if features is None or raw is None or env is None:
+            raise ContractViolation("PROTOCOL", f"25D source vector/action invalid at {index}")
+        if step.get("feature_names_25d", names) != names:
+            raise ContractViolation("PROTOCOL", f"25D feature order mismatch at {index}")
+        if step.get("generation_passes_per_step") != 1 or step.get("single_generation_parity_pass") is not True:
+            raise ContractViolation("GENERATION", f"measured generation count is not one at {index}")
+        if step.get("score_adapter_parity_pass") is not True:
+            raise ContractViolation("GENERATION", f"25D execution telemetry parity missing at {index}")
+        tokens = step.get("action_token_ids")
+        scores = step.get("score_head_summary")
+        if not isinstance(tokens, list) or len(tokens) != contract["action_dimension"] or not isinstance(scores, list) or len(scores) != contract["action_dimension"]:
+            raise ContractViolation("GENERATION", f"25D token/score telemetry invalid at {index}")
+        eef = sidecar.get("robot0_eef_pos")
+        qpos = sidecar.get("robot0_gripper_qpos")
+        if not _finite_vector(eef, 3) or not _finite_vector(qpos, 2):
+            raise ContractViolation("PROTOCOL", f"robot sidecar invalid at {index}")
+        if "robot0_eef_pos" in step and _finite_vector(step["robot0_eef_pos"], 3):
+            if max(abs(float(a) - float(b)) for a, b in zip(step["robot0_eef_pos"], eef)) > float(contract["parity_tolerances"]["eef_m"]):
+                raise ContractViolation("PROTOCOL", f"EEF parity mismatch at {index}")
+        if "robot0_gripper_qpos" in step and _finite_vector(step["robot0_gripper_qpos"], 2):
+            if max(abs(float(a) - float(b)) for a, b in zip(step["robot0_gripper_qpos"], qpos)) > float(contract["parity_tolerances"]["qpos"]):
+                raise ContractViolation("PROTOCOL", f"qpos parity mismatch at {index}")
+    return count
+
+
+def verify_artifact(
+    artifact_root: Path,
+    contract: dict[str, Any],
+    *,
+    equivalence_status: str = "HOLD",
+    mode: str = "full",
+) -> dict[str, Any]:
+    if mode not in {"full", "25d"}:
+        raise ContractViolation("PROTOCOL", f"unknown artifact audit mode: {mode}")
     root = artifact_root.resolve()
     required_files = set(contract["required_files"])
+    if mode == "25d":
+        required_files.discard("policy_intent_records.jsonl")
     missing = sorted(name for name in required_files if not (root / name).is_file())
     if missing:
         raise ContractViolation("PROTOCOL", f"required artifact files missing: {missing}")
@@ -299,7 +357,9 @@ def verify_artifact(artifact_root: Path, contract: dict[str, Any], *, equivalenc
         raise ContractViolation("PROTOCOL", "official action adapter mismatch")
     if meta.get("generation_passes_per_step") != 1 or runtime.get("generation_passes_per_step") != 1:
         raise ContractViolation("GENERATION", "episode generation contract is not one")
-    if meta.get("feature_names_25d") != contract["feature_names_25d"] or meta.get("policy_intent_feature_names_9d") != contract["policy_intent_feature_names_9d"]:
+    if meta.get("feature_names_25d") != contract["feature_names_25d"] or (
+        mode == "full" and meta.get("policy_intent_feature_names_9d") != contract["policy_intent_feature_names_9d"]
+    ):
         raise ContractViolation("PROTOCOL", "metadata feature order mismatch")
     for name in ("initial_state_sha256", "model_tree_sha256", "processor_tokenizer_sha256", "protocol_sha256"):
         if not isinstance(meta.get(name), str) or len(meta[name]) != 64:
@@ -307,7 +367,7 @@ def verify_artifact(artifact_root: Path, contract: dict[str, Any], *, equivalenc
     if (root / "teacher_retention_records.jsonl").exists() or (root / "retention_events.json").exists():
         raise ContractViolation("PROTOCOL", "Teacher/event output is present in source artifact")
     recursive_sha = _verify_checksum(root, required_files)
-    step_count = _verify_streams(root, meta, contract, summary)
+    step_count = _verify_streams(root, meta, contract, summary) if mode == "full" else _verify_25d_streams(root, meta, contract, summary)
     worker = _verify_worker_manifest(root, meta, contract, equivalence_status)
     formal = worker["provenance_class"] == "A_CURRENT_HEAD_CLEAN_START_VERIFIED" or (
         worker["provenance_class"] == "B_PREVIOUS_HEAD_EQUIVALENT" and equivalence_status == "PASS"
@@ -337,12 +397,19 @@ def verify_artifact(artifact_root: Path, contract: dict[str, Any], *, equivalenc
         "formal_eligible": formal,
         "formal_training_authorized": False,
         "formal_attack_authorized": False,
+        "audit_mode": mode,
     }
 
 
-def audit_artifact(artifact_root: Path, contract: dict[str, Any], *, equivalence_status: str = "HOLD") -> dict[str, Any]:
+def audit_artifact(
+    artifact_root: Path,
+    contract: dict[str, Any],
+    *,
+    equivalence_status: str = "HOLD",
+    mode: str = "full",
+) -> dict[str, Any]:
     try:
-        return verify_artifact(artifact_root, contract, equivalence_status=equivalence_status)
+        return verify_artifact(artifact_root, contract, equivalence_status=equivalence_status, mode=mode)
     except ContractViolation as exc:
         status = {
             "CHECKSUM": "HOLD_CHECKSUM",
@@ -360,6 +427,7 @@ def audit_artifact(artifact_root: Path, contract: dict[str, Any], *, equivalence
             "error": str(exc),
             "formal_training_authorized": False,
             "formal_attack_authorized": False,
+            "audit_mode": mode,
         }
 
 
