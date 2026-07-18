@@ -149,11 +149,14 @@ def loss_bce_quality(quality_logits: Tensor, targets: Tensor, masks: Tensor,
 def loss_cross_window_ranking(quality_logits: Tensor, targets: Tensor,
                               masks: Tensor, episode_ids: list[str],
                               margin: float = 0.3, weight: float = 0.5,
+                              cand_close: Tensor = None,
                               **kwargs) -> Tensor:
-    """BCE + cross-episode window ranking loss.
+    """BCE + DIFFERENTIABLE cross-episode window ranking loss.
 
-    For each valid-retention window, sample a hard-negative window from a
-    DIFFERENT episode and enforce: score(valid) > score(hard_neg) + margin.
+    For each episode, compute mean quality score over VALID_RETENTION
+    steps (target=1) vs INVALID steps (target=0), then enforce
+    score(valid_window) > score(invalid_window) + margin across episodes.
+    All scores stay in the computation graph (no .item() calls).
     """
     base = loss_bce_quality(quality_logits, targets, masks)
 
@@ -161,52 +164,67 @@ def loss_cross_window_ranking(quality_logits: Tensor, targets: Tensor,
     if B < 2:
         return base
 
-    # Get mean quality score per episode over candidate_close known steps
-    ep_scores = {}
-    ep_has_valid = set()
-    ep_has_veto = set()
-    for b in range(B):
-        ep_mask = masks[b]
-        if ep_mask.sum() == 0:
-            continue
-        # Mean quality prob over supervised steps
-        scores = torch.sigmoid(quality_logits[b][ep_mask])
-        tgt = targets[b][ep_mask]
-        mean_score = scores.mean().item()
-        ep_scores[episode_ids[b]] = mean_score
-        if (tgt > 0.5).any():
-            ep_has_valid.add(episode_ids[b])
-        if (tgt < 0.5).any():
-            ep_has_veto.add(episode_ids[b])
+    q_probs = torch.sigmoid(quality_logits)  # [B, T]
 
-    if len(ep_has_valid) == 0 or len(ep_has_veto) == 0:
+    # Compute per-episode mean quality scores over supervised steps,
+    # split by positive (target=1) and negative (target=0)
+    pos_scores = []  # list of scalar tensors
+    neg_scores = []
+    for b in range(B):
+        m = masks[b]
+        if m.sum() == 0:
+            continue
+        t = targets[b][m]
+        s = q_probs[b][m]
+        pos_mask = t > 0.5
+        neg_mask = t < 0.5
+        if pos_mask.any():
+            pos_scores.append(s[pos_mask].mean())  # stays in graph
+        if neg_mask.any():
+            neg_scores.append(s[neg_mask].mean())
+
+    if len(pos_scores) == 0 or len(neg_scores) == 0:
         return base
 
-    # Cross-episode pairs: each valid episode paired with a random veto episode
-    valid_list = sorted(ep_has_valid)
-    veto_list = sorted(ep_has_veto)
-    ranking_loss = torch.tensor(0.0, device=quality_logits.device)
-    n_pairs = 0
-    for vid in valid_list:
-        for hid in veto_list:
-            if vid == hid:
-                continue
-            if vid in ep_scores and hid in ep_scores:
-                diff = ep_scores[vid] - ep_scores[hid]
-                ranking_loss = ranking_loss + F.relu(
-                    torch.tensor(margin - diff, device=quality_logits.device))
-                n_pairs += 1
-                break  # one hard-neg per valid episode
+    # Cross-episode: pair each positive episode with a different negative episode
+    pos_t = torch.stack(pos_scores)  # [N_pos]
+    neg_t = torch.stack(neg_scores)  # [N_neg]
 
-    if n_pairs > 0:
-        ranking_loss = ranking_loss / n_pairs
-        return base + weight * ranking_loss
-    return base
+    # All pairwise hinge losses
+    # pos_t[i] should be > neg_t[j] + margin for all i,j
+    # Expand to [N_pos, N_neg]
+    pos_exp = pos_t.unsqueeze(1).expand(-1, len(neg_t))   # [N_pos, N_neg]
+    neg_exp = neg_t.unsqueeze(0).expand(len(pos_t), -1)    # [N_pos, N_neg]
+    hinge = F.relu(margin - (pos_exp - neg_exp))            # [N_pos, N_neg]
+    rank_loss = hinge.mean()
+
+    return base + weight * rank_loss
+
+
+def loss_with_release(quality_logits: Tensor, targets: Tensor, masks: Tensor,
+                      release_logits: Tensor = None, release_targets: Tensor = None,
+                      release_weight: float = 0.3, **kwargs) -> Tensor:
+    """BCE quality + BCE release auxiliary loss."""
+    base = loss_bce_quality(quality_logits, targets, masks)
+    if release_logits is None or release_targets is None:
+        return base
+
+    # Release loss on all known steps (not just candidate_close)
+    release_mask = (release_targets >= 0)  # valid label exists
+    if release_mask.sum() == 0:
+        return base
+    # release_targets: 1=release_imminent, 0=not
+    rel_loss = F.binary_cross_entropy_with_logits(
+        release_logits, release_targets.clamp(0, 1), reduction="none")
+    n_rel = release_mask.sum().clamp_min(1)
+    rel_term = (rel_loss * release_mask.float()).sum() / n_rel
+    return base + release_weight * rel_term
 
 
 LOSS_FNS = {
     "BCE": loss_bce_quality,
     "RANK": loss_cross_window_ranking,
+    "BCE_RELEASE": loss_with_release,
 }
 
 
@@ -268,6 +286,8 @@ def train_q_model(
             padding = torch.zeros(B, max_T, dtype=torch.bool)
             q_target = torch.zeros(B, max_T)
             q_mask = torch.zeros(B, max_T, dtype=torch.bool)
+            r_target = torch.full((B, max_T), -1.0)  # -1 = no label
+            cand_close_batch = torch.zeros(B, max_T, dtype=torch.bool)
 
             for b, ep in enumerate(batch_eps):
                 T_ep = ep.n_steps
@@ -275,16 +295,22 @@ def train_q_model(
                 padding[b, :T_ep] = True
                 q_target[b, :T_ep] = ep.quality_target
                 q_mask[b, :T_ep] = ep.known_mask
+                r_target[b, :T_ep] = ep.release_target
+                cand_close_batch[b, :T_ep] = ep.candidate_close
 
             x = x.to(device_obj)
             padding = padding.to(device_obj)
             q_target = q_target.to(device_obj)
             q_mask = q_mask.to(device_obj)
+            r_target = r_target.to(device_obj)
+            cand_close_batch = cand_close_batch.to(device_obj)
 
             optimizer.zero_grad(set_to_none=True)
-            q_logits, _, _ = model(x, padding)
+            q_logits, r_logits, _ = model(x, padding)
             ep_ids = [ep.identity for ep in batch_eps]
-            loss = loss_fn(q_logits, q_target, q_mask, episode_ids=ep_ids)
+            loss = loss_fn(q_logits, q_target, q_mask,
+                          episode_ids=ep_ids, cand_close=cand_close_batch,
+                          release_logits=r_logits, release_targets=r_target)
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             optimizer.step()
@@ -305,7 +331,14 @@ def evaluate_model(
     norm_mean: Tensor, norm_std: Tensor,
     device: str = "cpu",
 ):
-    """Evaluate with threshold sweep. Returns per-episode metrics."""
+    """Phase-aware evaluation with threshold sweep.
+
+    Reports four metric layers:
+      1. Pure-negative episode any-emit
+      2. Invalid-phase any-emit (including from mixed episodes)
+      3. Valid-window hit rate
+      4. Release-overlap emit
+    """
     model.eval()
     device_obj = torch.device(device)
 
@@ -315,26 +348,44 @@ def evaluate_model(
             x = (ep.features - norm_mean) / norm_std
             x = x.unsqueeze(0).to(device_obj)
             padding = torch.ones(1, ep.n_steps, dtype=torch.bool).to(device_obj)
-            q_logits, _, _ = model(x, padding)
+            q_logits, r_logits, _ = model(x, padding)
             q_probs = torch.sigmoid(q_logits.squeeze(0)).cpu()
+            r_probs = torch.sigmoid(r_logits.squeeze(0)).cpu() if r_logits is not None else None
 
-            has_quality = (ep.quality_target[ep.known_mask] > 0.5).any().item()
-            has_veto = ((ep.quality_target[ep.known_mask] < 0.5) & ep.known_mask[ep.known_mask]).any().item()
+            has_quality = (ep.known_mask & (ep.quality_target > 0.5)).any().item()
+            has_veto = (ep.known_mask & (ep.quality_target < 0.5)).any().item()
+            is_pure_hard_negative = has_veto and not has_quality
+            is_mixed = has_quality and has_veto
 
-            # Threshold sweep
+            # Threshold sweep with phase-level metrics
             thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
             sweep = []
             for tau in thresholds:
                 pred_emit = (q_probs >= tau) & ep.candidate_close
-                any_emit = pred_emit.any().item()
-                hit = (pred_emit & (ep.quality_target > 0.5)).any().item() if has_quality else None
-                false_emit = any_emit and has_veto and not has_quality
+
+                # Valid-window hit: emit on at least one quality_valid step
+                valid_hit = (pred_emit & (ep.quality_target > 0.5)).any().item() if has_quality else None
+
+                # Invalid-phase false emit: emit on veto_invalid step
+                veto_mask = (ep.quality_target < 0.5) & ep.known_mask
+                invalid_emit = (pred_emit & veto_mask).any().item() if veto_mask.any() else False
+
+                # Pure-negative episode false emit
+                pure_false = pred_emit.any().item() and is_pure_hard_negative
+
+                # Release overlap: emit on release_imminent step
+                release_mask = ep.release_target > 0.5
+                release_emit = (pred_emit & release_mask).any().item()
+
                 sweep.append({
                     "threshold": tau,
-                    "any_emit": any_emit,
-                    "hit": hit,
-                    "false_emit": false_emit,
+                    "any_emit": pred_emit.any().item(),
+                    "valid_hit": valid_hit,
+                    "pure_negative_false_emit": pure_false,
+                    "invalid_phase_false_emit": invalid_emit,
+                    "release_overlap_emit": release_emit,
                     "n_emit_steps": int(pred_emit.sum()),
+                    "n_invalid_emit_steps": int((pred_emit & veto_mask).sum()) if veto_mask.any() else 0,
                 })
 
             all_results.append({
@@ -342,8 +393,11 @@ def evaluate_model(
                 "fold_id": ep.fold_id,
                 "has_quality": has_quality,
                 "has_veto": has_veto,
+                "is_pure_hard_negative": is_pure_hard_negative,
+                "is_mixed": is_mixed,
                 "max_quality_prob": float(q_probs.max()),
-                "mean_quality_prob_close": float(q_probs[ep.candidate_close].mean()) if ep.candidate_close.any() else 0,
+                "mean_quality_prob_valid": float(q_probs[(ep.quality_target > 0.5) & ep.known_mask].mean()) if has_quality else 0,
+                "mean_quality_prob_invalid": float(q_probs[(ep.quality_target < 0.5) & ep.known_mask].mean()) if has_veto else 0,
                 "threshold_sweep": sweep,
             })
 
@@ -356,7 +410,7 @@ def main():
     ap.add_argument("--s1-root", type=Path, required=True)
     ap.add_argument("--v21-root", type=Path, required=True)
     ap.add_argument("--view", choices=["A", "B", "C"], default="B")
-    ap.add_argument("--loss", choices=["BCE", "RANK"], default="BCE")
+    ap.add_argument("--loss", choices=["BCE", "RANK", "BCE_RELEASE"], default="BCE")
     ap.add_argument("--aux-release", action="store_true")
     ap.add_argument("--seed", type=int, default=20260717)
     ap.add_argument("--epochs", type=int, default=30)
@@ -421,28 +475,38 @@ def main():
         print(f"Evaluation episodes: {len(eval_eps)}")
         results = evaluate_model(model, eval_eps, norm_mean, norm_std, args.device)
 
-        # Compute aggregate metrics
+        # Phase-aware aggregate metrics
         n_q = sum(1 for r in results if r["has_quality"])
-        n_v = sum(1 for r in results if r["has_veto"] and not r["has_quality"])
+        n_pure_neg = sum(1 for r in results if r["is_pure_hard_negative"])
+        n_mixed = sum(1 for r in results if r["is_mixed"])
+        n_total_invalid_phases = sum(1 for r in results if r["has_veto"])
 
-        print(f"\n=== Fold {args.eval_fold} Results ===")
+        print(f"\n=== Fold {args.eval_fold} Results (Phase-Aware) ===")
         print(f"  quality episodes: {n_q}")
-        print(f"  hard-negative episodes: {n_v}")
+        print(f"  pure-negative episodes: {n_pure_neg}")
+        print(f"  mixed episodes (quality+invalid): {n_mixed}")
+        print(f"  total episodes with invalid phases: {n_total_invalid_phases}")
 
-        # Find best threshold: max quality hit rate while minimizing hard-neg false emit
         for tau in [0.3, 0.4, 0.5, 0.6, 0.7]:
-            q_hits = 0; v_false = 0
+            q_hits = 0; pure_false = 0; invalid_false = 0; release_emit = 0
             for r in results:
                 sweep_entry = next((s for s in r["threshold_sweep"] if abs(s["threshold"] - tau) < 0.01), None)
                 if sweep_entry:
-                    if sweep_entry["hit"]:
+                    if sweep_entry["valid_hit"]:
                         q_hits += 1
-                    if sweep_entry["false_emit"]:
-                        v_false += 1
+                    if sweep_entry["pure_negative_false_emit"]:
+                        pure_false += 1
+                    if sweep_entry["invalid_phase_false_emit"]:
+                        invalid_false += 1
+                    if sweep_entry["release_overlap_emit"]:
+                        release_emit += 1
             q_rate = q_hits / n_q if n_q else 0
-            v_rate = v_false / n_v if n_v else 0
-            print(f"  tau={tau:.1f}: quality_hit={q_rate:.4f} ({q_hits}/{n_q})  "
-                  f"hard-neg-false={v_rate:.4f} ({v_false}/{n_v})")
+            pn_rate = pure_false / n_pure_neg if n_pure_neg else 0
+            inv_rate = invalid_false / n_total_invalid_phases if n_total_invalid_phases else 0
+            print(f"  tau={tau:.1f}: valid_hit={q_rate:.4f} ({q_hits}/{n_q})  "
+                  f"pure-neg-false={pn_rate:.4f} ({pure_false}/{n_pure_neg})  "
+                  f"invalid-phase-false={inv_rate:.4f} ({invalid_false}/{n_total_invalid_phases})  "
+                  f"release-overlap={release_emit}")
 
         # Save detailed results
         with open(args.output / "eval_results.json", "w") as fh:
@@ -451,7 +515,9 @@ def main():
                 "view": args.view, "loss": args.loss,
                 "model": model_name,
                 "n_quality_episodes": n_q,
-                "n_hard_negative_episodes": n_v,
+                "n_pure_negative_episodes": n_pure_neg,
+                "n_mixed_episodes": n_mixed,
+                "n_total_invalid_phase_episodes": n_total_invalid_phases,
                 "results": results,
             }, fh, indent=2)
 

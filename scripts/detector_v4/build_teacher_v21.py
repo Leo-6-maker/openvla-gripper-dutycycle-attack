@@ -398,19 +398,7 @@ def main():
     print(f"  candidate_close steps: {n_close}")
     print(f"  quality+veto overlap:  {total_conflicts} (must be 0)")
 
-    # ── Build SHA256SUMS ──
-    files = sorted(out.rglob("*"))
-    file_list = [f for f in files if f.is_file()]
-    with open(out / "SHA256SUMS", "w", encoding="utf-8") as fh:
-        for fp in file_list:
-            rel = fp.relative_to(out)
-            h = hashlib.sha256(fp.read_bytes()).hexdigest()
-            fh.write(f"{h}  {rel}\n")
-    sha = sha256_file(out / "SHA256SUMS")
-    with open(out / "SHA256SUMS.sha256", "w", encoding="utf-8") as fh:
-        fh.write(f"{sha}  SHA256SUMS\n")
-
-    # Manifest (written AFTER SHA256SUMS, so it references the SHA)
+    # ── Build manifest first (all payload files already written) ──
     manifest = {
         "schema": f"{SCHEMA}_MANIFEST",
         "s1_root_sha256": "15c97212fde19682a9e3042d6d051c51606b0989881d471cb8eb80f22354b0cf",
@@ -422,17 +410,37 @@ def main():
         "per_fold_counts": {str(k): dict(v) for k, v in per_fold.items()},
         "quality_valid_steps": n_quality,
         "veto_invalid_steps": n_veto,
-        "sha256sums_sha256": sha,
     }
     with open(out / "teacher_v21_manifest.json", "w", encoding="utf-8") as fh:
         json.dump(manifest, fh, indent=2, ensure_ascii=False)
 
-    # Rebuild SHA256SUMS to include the manifest
-    files2 = sorted(out.rglob("*"))
-    file_list2 = [f for f in files2 if f.is_file()]
+    # ── Build SHA256SUMS (single pass, excludes seal files) ──
+    SEAL_FILES = {"SHA256SUMS", "SHA256SUMS.sha256"}
+    file_list = sorted(
+        [f for f in out.rglob("*") if f.is_file() and f.name not in SEAL_FILES],
+        key=lambda f: str(f.relative_to(out))
+    )
+    with open(out / "SHA256SUMS", "w", encoding="utf-8") as fh:
+        for fp in file_list:
+            rel = str(fp.relative_to(out))
+            h = hashlib.sha256(fp.read_bytes()).hexdigest()
+            fh.write(f"{h}  {rel}\n")
+    sha = sha256_file(out / "SHA256SUMS")
+    with open(out / "SHA256SUMS.sha256", "w", encoding="utf-8") as fh:
+        fh.write(f"{sha}  SHA256SUMS\n")
+
+    # Update manifest with final SHA
+    manifest["sha256sums_sha256"] = sha
+    with open(out / "teacher_v21_manifest.json", "w", encoding="utf-8") as fh:
+        json.dump(manifest, fh, indent=2, ensure_ascii=False)
+    # Recompute SHA256SUMS to include updated manifest
+    file_list2 = sorted(
+        [f for f in out.rglob("*") if f.is_file() and f.name not in SEAL_FILES],
+        key=lambda f: str(f.relative_to(out))
+    )
     with open(out / "SHA256SUMS", "w", encoding="utf-8") as fh:
         for fp in file_list2:
-            rel = fp.relative_to(out)
+            rel = str(fp.relative_to(out))
             h = hashlib.sha256(fp.read_bytes()).hexdigest()
             fh.write(f"{h}  {rel}\n")
     sha2 = sha256_file(out / "SHA256SUMS")
