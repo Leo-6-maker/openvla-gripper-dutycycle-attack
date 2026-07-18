@@ -151,6 +151,13 @@ The following actions are intentionally not performed:
 All historical negative results and all candidate bundles are retained. No
 CLEAN/S1 artifact, old manifest, old checksum, or attack result was modified.
 
+One unused authorization directory with a double-underscore name was created
+by an early shell naming attempt:
+`OFFICIAL_V3_DETECTOR_V4_AUTH_F0__S20260717_7dca398_20260718`. It is not
+referenced by any checkpoint or prediction bundle, was not used for training,
+and is retained as non-selected engineering evidence. The correctly named C1
+authorization root is the one recorded in the run matrix.
+
 ## Review request
 
 Please review PR #86 as a Draft against the immutable Official V3 archive.
