@@ -141,9 +141,16 @@ def _diagnostic(
             intent = ((episode.policy_intent_9d.to(mean.device) - intent_mean) / intent_std).unsqueeze(0)
         output = model.forward_sequence(x, intent=intent, valid_mask=episode.valid_mask.to(mean.device).unsqueeze(0))
         scores, windows = causal_window_anchor_scores(output["utility_logit"][0], episode)
-        if not len(windows):
+        eligible_indices = [
+            index
+            for index, row in enumerate(windows)
+            if bool(row.get("minimum_dwell_met")) and row.get("causal_utility_tier") is not None
+        ]
+        if not eligible_indices:
             continue
-        values = [int(row["causal_utility_tier"] if row.get("causal_utility_tier") is not None else row["utility_tier"]) if row["utility_tier"] is not None else -1 for row in windows]
+        scores = scores[eligible_indices]
+        windows = [windows[index] for index in eligible_indices]
+        values = [int(row["causal_utility_tier"]) for row in windows]
         best_index = int(torch.argmax(scores).item())
         has_positive = any(value >= 2 for value in values)
         has_negative = any(value <= 1 for value in values)
