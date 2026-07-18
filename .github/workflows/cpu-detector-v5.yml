@@ -40,9 +40,10 @@ jobs:
             scripts/detector_v5/review_v5_ab_working_point.py \
             scripts/detector_v5/audit_v5_checkpoint.py \
             scripts/detector_v5/audit_v5_prediction_bundle.py \
+            scripts/detector_v5/audit_v5_physics_task_decoder.py \
             scripts/detector_v5/audit_clean2000_raw_assets.py \
             scripts/detector_v5/audit_official_v3_fit_sources.py
       - name: Run V5 CPU contract tests
-        run: pytest -q tests/test_v5_contracts.py tests/test_v5_dataset.py tests/test_v5_window_geometry.py tests/test_v5_loss_v2.py tests/test_v5_online_evaluator.py tests/test_v5_baselines.py tests/test_clean2000_raw_asset_audit.py tests/test_official_v3_fit_sources.py
+        run: pytest -q tests/test_v5_contracts.py tests/test_v5_dataset.py tests/test_v5_window_geometry.py tests/test_v5_loss_v2.py tests/test_v5_online_evaluator.py tests/test_v5_baselines.py tests/test_v5_physics_decoder.py tests/test_clean2000_raw_asset_audit.py tests/test_official_v3_fit_sources.py
       - name: Check patch whitespace
         run: git diff --check
