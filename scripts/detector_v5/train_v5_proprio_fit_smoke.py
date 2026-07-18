@@ -30,7 +30,14 @@ from gripper_attack.v5_dataset import (
     load_policy_intent_root,
     load_v5_episodes,
 )
-from gripper_attack.v5_protocol import V5ModelContract, V5_FEATURES_9D, json_sha, variant_uses_intent
+from gripper_attack.v5_protocol import (
+    V5ModelContract,
+    V5_FEATURES_9D,
+    V5_PHYSICS_CANDIDATE_ALIASES,
+    canonical_variant,
+    json_sha,
+    variant_uses_intent,
+)
 from gripper_attack.v5_ranker import CausalMultimodalVulnerabilityRanker, V5LossConfigV2, compute_v5_loss_v2
 from gripper_attack.b3_training_protocol import load_fit_fold_bundle, seal_directory, sha256_file, verify_sealed_directory
 
@@ -47,6 +54,32 @@ def _read_json(path: Path) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"object expected: {path}")
     return value
+
+
+def _teacher_kind(root: Path) -> str:
+    physics = list(root.glob("labels/*/task_*/state_*/physics_teacher_v2.jsonl"))
+    legacy = list(root.glob("labels/*/task_*/state_*/v5_teacher_utility.jsonl"))
+    if physics and legacy:
+        raise ValueError("Teacher root mixes Physics and legacy V5 files")
+    if physics:
+        return "physics_v2"
+    if legacy:
+        return "utility_v3"
+    raise ValueError("Teacher root contains no supported V5 label stream")
+
+
+def _validate_teacher_audit(teacher_audit: dict[str, Any], teacher_root: Path, kind: str) -> dict[str, Any]:
+    if teacher_audit.get("status") != "PASS":
+        raise ValueError("V5 Teacher audit is not PASS")
+    if teacher_audit.get("formal_training_authorized") is not False or teacher_audit.get("formal_attack_authorized") is not False:
+        raise ValueError("V5 Teacher audit is not a clean-only audit")
+    binding = {"teacher_kind": kind, "teacher_root_sha256s_sha256": sha256_file(teacher_root / "SHA256SUMS")}
+    if kind == "physics_v2":
+        if teacher_audit.get("schema") != "DETECTOR_V5_PHYSICS_TEACHER_V2_INDEPENDENT_AUDIT_V1":
+            raise ValueError("Physics Teacher audit schema is not independent")
+        if teacher_audit.get("teacher_root_sha256sums_sha256") != binding["teacher_root_sha256s_sha256"]:
+            raise ValueError("Physics Teacher audit is not bound to the supplied root")
+    return binding
 
 
 def _episode_loss(
@@ -123,22 +156,29 @@ def _diagnostic(
 def run(args: argparse.Namespace) -> dict[str, Any]:
     if not args.execute_v5_fit_development:
         raise ValueError("pass --execute-v5-fit-development to run the non-formal smoke")
-    if args.candidate not in ("V5_A_PROPRIO", "V5_B_PROPRIO_POLICY_INTENT"):
-        raise ValueError("V5 development smoke supports V5-A and V5-B only")
-    if args.candidate == "V5_B_PROPRIO_POLICY_INTENT" and args.policy_intent_root is None:
+    supported = {"V5_A_PROPRIO", "V5_B_PROPRIO_POLICY_INTENT", *V5_PHYSICS_CANDIDATE_ALIASES}
+    if args.candidate not in supported:
+        raise ValueError("V5 development smoke supports V5-A/V5-B and their Physics Teacher aliases")
+    variant = canonical_variant(args.candidate)
+    physics_candidate = args.candidate in V5_PHYSICS_CANDIDATE_ALIASES
+    if variant == "V5_B_PROPRIO_POLICY_INTENT" and args.policy_intent_root is None:
         raise ValueError("V5-B requires --policy-intent-root")
-    if args.candidate == "V5_B_PROPRIO_POLICY_INTENT" and args.development_protocol is None:
+    if variant == "V5_B_PROPRIO_POLICY_INTENT" and args.development_protocol is None:
         raise ValueError("V5-B requires --development-protocol")
-    if args.candidate == "V5_B_PROPRIO_POLICY_INTENT" and (args.loss_protocol is None or args.decision_config is None):
+    if variant == "V5_B_PROPRIO_POLICY_INTENT" and (args.loss_protocol is None or args.decision_config is None):
         raise ValueError("V5-B requires --loss-protocol and --decision-config")
-    if args.candidate == "V5_A_PROPRIO" and args.policy_intent_root is not None:
+    if variant == "V5_A_PROPRIO" and args.policy_intent_root is not None:
         raise ValueError("V5-A must not consume a policy-intent root")
     output = args.output_root.resolve()
     if output.exists():
         raise FileExistsError(f"refusing to overwrite output root: {output}")
+    teacher_kind = _teacher_kind(args.teacher_root.resolve())
+    if physics_candidate and teacher_kind != "physics_v2":
+        raise ValueError("Physics candidate requires a Physics Teacher V2 root")
+    if not physics_candidate and teacher_kind == "physics_v2":
+        raise ValueError("Physics Teacher V2 root requires an explicit Physics candidate alias")
     teacher_audit = _read_json(args.teacher_audit.resolve())
-    if teacher_audit.get("status") != "PASS" or teacher_audit.get("formal_training_authorized") is not False or teacher_audit.get("formal_attack_authorized") is not False:
-        raise ValueError("V5 Teacher audit is not a safe clean-only PASS")
+    teacher_binding = _validate_teacher_audit(teacher_audit, args.teacher_root.resolve(), teacher_kind)
     verify_sealed_directory(args.s1_root.resolve())
     verify_sealed_directory(args.teacher_root.resolve())
     registry_rows = load_fit_registry(args.registry_csv.resolve())
@@ -175,14 +215,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise RuntimeError("requested CUDA but no CUDA device is available")
     mean, std = compute_v5_normalization(train)
     mean, std = mean.to(device), std.to(device)
-    if variant_uses_intent(args.candidate):
+    if variant_uses_intent(variant):
         assert policy_index is not None
         intent_mean, intent_std = compute_v5_intent_normalization(train)
         intent_mean, intent_std = intent_mean.to(device), intent_std.to(device)
     else:
         intent_mean = torch.zeros(9, device=device)
         intent_std = torch.ones(9, device=device)
-    contract = V5ModelContract(args.candidate)
+    contract = V5ModelContract(variant)
     model = CausalMultimodalVulnerabilityRanker(contract).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5)
     history: list[dict[str, float]] = []
@@ -208,6 +248,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "schema": "DETECTOR_V5_DEVELOPMENT_CHECKPOINT_V1",
             "status": "V5_FIT_DEVELOPMENT_SMOKE",
             "candidate": args.candidate,
+            "model_variant": variant,
             "fold_id": args.fold_id,
             "seed": args.seed,
             "model_contract": contract.to_dict(),
@@ -230,13 +271,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "validation_identity_count": len(valid),
             "checkpoint_sha256": sha256_file(staging / "checkpoint.pt"),
             "teacher_audit_sha256": sha256_file(args.teacher_audit.resolve()),
+            "teacher_kind": teacher_binding["teacher_kind"],
+            "teacher_root_sha256s_sha256": teacher_binding["teacher_root_sha256s_sha256"],
+            "teacher_manifest_sha256": sha256_file(args.teacher_root.resolve() / "physics_teacher_v2_manifest.json") if teacher_kind == "physics_v2" else None,
             "registry_csv_sha256": sha256_file(args.registry_csv.resolve()),
             "s1_root_sha256s_sha256": sha256_file(args.s1_root.resolve() / "SHA256SUMS"),
             "teacher_root_sha256s_sha256": sha256_file(args.teacher_root.resolve() / "SHA256SUMS"),
             "fold_root_sha256s_sha256": sha256_file(args.fold_root.resolve() / "SHA256SUMS"),
             "train_identity_sha256": json_sha(train_keys),
             "validation_identity_sha256": json_sha(valid_keys),
-            "policy_intent_consumed": variant_uses_intent(args.candidate),
+            "policy_intent_consumed": variant_uses_intent(variant),
             "policy_intent_root_sha256s_sha256": None if policy_meta is None else policy_meta["policy_root_sha256s_sha256"],
             "policy_intent_manifest_sha256": None if policy_meta is None else policy_meta["policy_manifest_sha256"],
             "policy_intent_feature_order_sha256": None if policy_meta is None else policy_meta["policy_feature_order_sha256"],
@@ -258,6 +302,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         (staging / "loss_history.json").write_text(json.dumps(history, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         (staging / "diagnostic_metrics.json").write_text(json.dumps(diagnostic, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         seal_directory(staging)
+        verify_sealed_directory(staging)
         os.replace(staging, output)
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)

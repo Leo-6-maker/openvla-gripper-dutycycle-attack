@@ -21,6 +21,7 @@ from .v5_protocol import (
     validate_student_features,
     validate_teacher_row,
 )
+from .v5_physics import PHYSICS_TEACHER_FIELDS
 
 
 _POLICY_INTENT_REQUIRED_FIELDS = frozenset(
@@ -130,6 +131,53 @@ def _episode_root(root: Path, row: dict[str, Any]) -> Path:
     return root / str(row["suite"]) / f"task_{int(row['task_idx']):02d}" / f"state_{int(row['state_id']):02d}"
 
 
+def _load_physics_protocol(root: Path) -> dict[str, Any]:
+    value = json.loads((root / "protocol.json").read_text(encoding="utf-8"))
+    if not isinstance(value, dict) or value.get("schema") != "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V1":
+        raise ValueError("unexpected Physics Teacher protocol")
+    constants = value.get("fixed_constants")
+    if not isinstance(constants, dict):
+        raise ValueError("Physics Teacher protocol lacks fixed constants")
+    for name in ("tier2_max_release_risk", "tier2_max_regrasp_risk"):
+        if name not in constants:
+            raise ValueError(f"Physics Teacher protocol lacks {name}")
+    return value
+
+
+def _physics_row_as_v5_teacher(row: dict[str, Any], protocol: dict[str, Any]) -> dict[str, Any]:
+    if set(row) != PHYSICS_TEACHER_FIELDS:
+        missing = sorted(PHYSICS_TEACHER_FIELDS - set(row))
+        extra = sorted(set(row) - PHYSICS_TEACHER_FIELDS)
+        raise ValueError(f"invalid Physics Teacher row: missing={missing}, extra={extra}")
+    known = bool(row["known_mask"])
+    tier = None if row["utility_tier"] is None else int(row["utility_tier"])
+    if known != (tier is not None):
+        raise ValueError("Physics Teacher known/tier mismatch")
+    constants = protocol["fixed_constants"]
+    release = known and float(row["release_risk"]) >= float(constants["tier2_max_release_risk"])
+    regrasp = known and float(row["regrasp_or_instability_risk"]) >= float(constants["tier2_max_regrasp_risk"])
+    quality = known and tier >= 2
+    veto = known and tier <= 1
+    return {
+        "canonical_parent_key": row["canonical_parent_key"],
+        "step": int(row["step"]),
+        "event_id": -1,
+        "phase_id": -1,
+        "window_id": str(row["window_id"]),
+        "phase_name": str(row["phase_name"]),
+        "window_start": int(row["window_start"]),
+        "window_end": int(row["window_end"]),
+        "candidate_close": bool(row["candidate_close"]),
+        "quality_valid": quality,
+        "veto_invalid": veto,
+        "release_imminent": release,
+        "regrasp_or_unstable": regrasp,
+        "known_mask": known,
+        "utility_tier": tier,
+        "ranking_group": str(row["window_id"]),
+    }
+
+
 def load_policy_intent_root(root: Path) -> tuple[dict[str, list[dict[str, Any]]], dict[str, Any]]:
     """Load the independently sealed FIT-only policy-intent derivative.
 
@@ -209,7 +257,11 @@ def load_v5_episode(
     s1 = _episode_root(s1_root, row)
     teacher = _episode_root(teacher_root, row)
     students = _jsonl(s1 / "student_input_records.jsonl")
-    teachers = _jsonl(teacher / "v5_teacher_utility.jsonl")
+    physics_path = teacher / "physics_teacher_v2.jsonl"
+    legacy_path = teacher / "v5_teacher_utility.jsonl"
+    physics_protocol = _load_physics_protocol(teacher_root) if physics_path.is_file() else None
+    teacher_path = physics_path if physics_path.is_file() else legacy_path
+    teachers = _jsonl(teacher_path)
     if not students or len(students) != len(teachers):
         raise ValueError(f"V5-A stream mismatch: {identity}")
     policy_rows = None if policy_index is None else policy_index.get(identity)
@@ -226,6 +278,8 @@ def load_v5_episode(
     policy_valid: list[bool] = []
     window_rows: list[dict[str, Any]] = []
     for index, (student, teacher_row) in enumerate(zip(students, teachers)):
+        if physics_protocol is not None:
+            teacher_row = _physics_row_as_v5_teacher(teacher_row, physics_protocol)
         validate_student_features(student)
         validate_teacher_row(teacher_row)
         if student.get("canonical_parent_key") != identity or int(student.get("step", -1)) != index:

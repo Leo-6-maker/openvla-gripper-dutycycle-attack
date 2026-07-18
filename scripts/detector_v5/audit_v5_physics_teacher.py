@@ -15,19 +15,11 @@ from pathlib import Path
 from typing import Any
 
 from gripper_attack.b3_training_protocol import sha256_file
+from gripper_attack.v5_physics import PHYSICS_TEACHER_FIELDS
 from build_v5_physics_teacher import verify_sealed_root
 
 
-EXPECTED_FIELDS = {
-    "step", "candidate_close", "student_valid", "gripper_contact_score", "object_contact", "support_contact",
-    "relative_pose_stability", "object_eef_comotion_score", "lift_score", "target_progress", "target_progress_known",
-    "task_grasp_necessity", "stable_grasp_score", "stable_grasp_dwell", "release_risk",
-    "regrasp_or_instability_risk", "support_removed", "utility_score", "known_mask", "utility_tier", "phase_name",
-    "teacher_confidence", "window_id", "window_start", "window_end", "suite", "task_idx", "manipulated_objects",
-    "target_names", "support_names", "task_role_status", "task_role_reason", "physics_teacher_proxy",
-    "counterfactual_attack_label", "canonical_parent_key", "state_id", "source_artifact_recursive_sha256",
-    "physics_protocol_schema",
-}
+EXPECTED_FIELDS = PHYSICS_TEACHER_FIELDS
 _FLOAT_FIELDS = {
     "gripper_contact_score", "relative_pose_stability", "object_eef_comotion_score", "lift_score", "target_progress",
     "task_grasp_necessity", "stable_grasp_score", "release_risk", "regrasp_or_instability_risk", "support_removed",

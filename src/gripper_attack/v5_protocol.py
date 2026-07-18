@@ -23,6 +23,10 @@ V5_VARIANTS = (
     "V5_C_PROPRIO_CAUSAL_VISUAL",
     "V5_D_PROPRIO_POLICY_INTENT_CAUSAL_VISUAL",
 )
+V5_PHYSICS_CANDIDATE_ALIASES = {
+    "V5_A_PHYSICS": "V5_A_PROPRIO",
+    "V5_B_PHYSICS": "V5_B_PROPRIO_POLICY_INTENT",
+}
 V5_PHASES = (
     "PRE_SUPPORT",
     "VALID_RETENTION",
@@ -82,11 +86,19 @@ def is_variant(value: str) -> bool:
     return value in V5_VARIANTS
 
 
+def canonical_variant(value: str) -> str:
+    """Map development candidate aliases to their model contract variant."""
+
+    return V5_PHYSICS_CANDIDATE_ALIASES.get(value, value)
+
+
 def variant_uses_intent(variant: str) -> bool:
+    variant = canonical_variant(variant)
     return variant in {"V5_B_PROPRIO_POLICY_INTENT", "V5_D_PROPRIO_POLICY_INTENT_CAUSAL_VISUAL"}
 
 
 def variant_uses_visual(variant: str) -> bool:
+    variant = canonical_variant(variant)
     return variant in {"V5_C_PROPRIO_CAUSAL_VISUAL", "V5_D_PROPRIO_POLICY_INTENT_CAUSAL_VISUAL"}
 
 
@@ -228,6 +240,7 @@ __all__ = [
     "V5_FEATURES_25D",
     "V5_FEATURES_9D",
     "V5_VARIANTS",
+    "V5_PHYSICS_CANDIDATE_ALIASES",
     "V5_PHASES",
     "V5_TEACHER_FIELDS",
     "V5_STUDENT_FORBIDDEN_FIELDS",
@@ -235,6 +248,7 @@ __all__ = [
     "V5ModelContract",
     "feature_order_sha",
     "is_variant",
+    "canonical_variant",
     "variant_uses_intent",
     "variant_uses_visual",
     "validate_student_features",
