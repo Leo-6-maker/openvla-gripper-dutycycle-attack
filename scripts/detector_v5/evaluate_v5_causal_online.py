@@ -61,6 +61,9 @@ def _scheduler_replay(
     positive_tiers = [int(window.utility_tier) for window in episode.windows if window.rankable and window.utility_tier is not None and int(window.utility_tier) >= 2]
     selected_tier = None if selected_window is None else int(selected_window.utility_tier)
     return {
+        "canonical_parent_key": episode.canonical_parent_key,
+        "suite": episode.suite,
+        "task_idx": episode.task_idx,
         "category": category,
         "emit": emitted_step is not None,
         "emit_step": emitted_step,
@@ -75,15 +78,27 @@ def _scheduler_replay(
     }
 
 
+def _threshold_results(
+    episodes: list[Any],
+    replay_inputs: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]],
+    threshold: float,
+) -> list[dict[str, Any]]:
+    return [
+        _scheduler_replay(episode, utility, release, regrasp, threshold)
+        for episode, (utility, release, regrasp) in zip(episodes, replay_inputs)
+    ]
+
+
 def _threshold_sweep(episodes: list[Any], replay_inputs: list[tuple[torch.Tensor, torch.Tensor, torch.Tensor]]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for index in range(5, 96, 5):
         threshold = index / 100.0
-        results = [_scheduler_replay(episode, utility, release, regrasp, threshold) for episode, (utility, release, regrasp) in zip(episodes, replay_inputs)]
+        results = _threshold_results(episodes, replay_inputs, threshold)
         positive = [row for row in results if row["category"] in ("TRUE_MIXED", "POSITIVE_ONLY")]
         mixed = [row for row in results if row["category"] == "TRUE_MIXED"]
         pure_negative = [row for row in results if row["category"] == "PURE_NEGATIVE"]
         no_candidate = [row for row in results if row["category"] == "NO_CANDIDATE"]
+        selected = [row for row in results if row["emit"] and row["selected_window_id"] is not None]
         rows.append({
             "threshold": threshold,
             "positive_episode_count": len(positive),
@@ -94,12 +109,45 @@ def _threshold_sweep(episodes: list[Any], replay_inputs: list[tuple[torch.Tensor
             "pure_negative_abstention": (sum(not row["emit"] for row in pure_negative) / len(pure_negative)) if pure_negative else None,
             "no_candidate_episode_count": len(no_candidate),
             "no_candidate_abstention": (sum(not row["emit"] for row in no_candidate) / len(no_candidate)) if no_candidate else None,
+            "scheduler_selected_highest_tier_count": sum(row["selected_highest_tier"] for row in results),
+            "scheduler_selected_tier_ge2_count": sum(row["selected_tier_ge2"] for row in results),
+            "scheduler_selected_tier_ge2_precision": (sum(row["selected_tier_ge2"] for row in selected) / len(selected)) if selected else None,
             "total_emits": sum(row["emit"] for row in results),
             "release_trigger_count": sum(row["release_trigger"] for row in results),
             "regrasp_trigger_count": sum(row["regrasp_trigger"] for row in results),
             "outside_rankable_emit_count": sum(row["outside_rankable_emit"] for row in results),
+            "one_shot_compliance": all(row["one_shot_compliant"] for row in results),
         })
     return rows
+
+
+def _select_working_point(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    eligible = [
+        row for row in rows
+        if row.get("critical_window_recall") is not None
+        and float(row["critical_window_recall"]) >= 0.95
+    ]
+    if not eligible:
+        return {
+            "status": "HOLD",
+            "selected_threshold": None,
+            "reason": "NO_THRESHOLD_MEETS_CRITICAL_WINDOW_RECALL_0.95",
+        }
+    selected = max(eligible, key=lambda row: float(row["threshold"]))
+    return {
+        "status": "PASS",
+        "selected_threshold": float(selected["threshold"]),
+        "reason": "MAXIMUM_THRESHOLD_WITH_CRITICAL_WINDOW_RECALL_GTE_0.95",
+        "selected_row": selected,
+    }
+
+
+def _macro_rate(rows: list[dict[str, Any]], metric: str, group_key: str) -> float | None:
+    grouped: dict[Any, list[dict[str, Any]]] = {}
+    for row in rows:
+        grouped.setdefault(row[group_key], []).append(row)
+    values = [sum(bool(row[metric]) for row in group) / len(group) for group in grouped.values() if group]
+    return sum(values) / len(values) if values else None
 
 
 @torch.no_grad()
@@ -110,7 +158,7 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("checkpoint does not contain a V5 model contract")
     contract = V5ModelContract(str(contract_value["variant"]), visual_dim=int(contract_value.get("visual_dim", 0)))
     model = CausalMultimodalVulnerabilityRanker(contract)
-    model.load_state_dict(checkpoint["model_state"], strict=False)
+    model.load_state_dict(checkpoint["model_state"], strict=True)
     device = torch.device(args.device)
     model.to(device).eval()
     verify_sealed_directory(args.s1_root.resolve())
@@ -174,6 +222,12 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
                 "regrasp_probability": float(regrasp[step]),
                 "candidate_close": bool(episode.candidate_close[step]),
                 "student_valid": bool(episode.valid_mask[step]),
+                "raw_quality_emit": bool(float(utility[step]) >= 0.5),
+                "candidate_gated_emit": bool(
+                    episode.valid_mask[step]
+                    and episode.candidate_close[step]
+                    and float(utility[step]) >= 0.5
+                ),
                 "scheduler_emit": bool(result["emit"]),
             })
             if result["emit"]:
@@ -208,8 +262,25 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
     true_mixed = [row for row in episode_metrics if row["category"] == "TRUE_MIXED"]
     pure_negative = [row for row in episode_metrics if row["category"] == "PURE_NEGATIVE"]
     threshold_sweep = _threshold_sweep(episodes, replay_inputs)
+    working_point = _select_working_point(threshold_sweep)
+    selected_threshold = working_point["selected_threshold"]
+    selected_results = [] if selected_threshold is None else _threshold_results(episodes, replay_inputs, float(selected_threshold))
+    selected_positive = [row for row in selected_results if row["category"] in ("TRUE_MIXED", "POSITIVE_ONLY")]
+    selected_mixed = [row for row in selected_results if row["category"] == "TRUE_MIXED"]
+    selected_pure_negative = [row for row in selected_results if row["category"] == "PURE_NEGATIVE"]
+    selected_no_candidate = [row for row in selected_results if row["category"] == "NO_CANDIDATE"]
+    selected_emits = [row for row in selected_results if row["emit"]]
+    selected_rankable_emits = [row for row in selected_emits if row["selected_window_id"] is not None]
+    exact_ids = {
+        "scheduler_selected_highest_tier": sorted(row["canonical_parent_key"] for row in selected_results if row["selected_highest_tier"]),
+        "scheduler_selected_tier_ge2": sorted(row["canonical_parent_key"] for row in selected_results if row["selected_tier_ge2"]),
+        "pure_negative": sorted(row["canonical_parent_key"] for row in selected_pure_negative),
+        "outside_rankable": sorted(row["canonical_parent_key"] for row in selected_results if row["outside_rankable_emit"]),
+        "release_trigger": sorted(row["canonical_parent_key"] for row in selected_results if row["release_trigger"]),
+        "regrasp_trigger": sorted(row["canonical_parent_key"] for row in selected_results if row["regrasp_trigger"]),
+    }
     summary = {
-        "schema": "DETECTOR_V5_CAUSAL_ONLINE_EVALUATION_V2",
+        "schema": "DETECTOR_V5_CAUSAL_ONLINE_EVALUATION_V3",
         "fold_id": args.fold_id,
         "validation_identity_count": len(episodes),
         "validation_identity_sha256": json_sha(identities),
@@ -232,6 +303,41 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
         "scheduler_regrasp_trigger_count": sum(row["regrasp_trigger"] for row in episode_metrics),
         "scheduler_outside_rankable_emit_count": sum(row["emit_count"] > 0 and row["selected_window_id"] is None for row in episode_metrics),
         "threshold_working_point_rule": "maximum_threshold_with_critical_window_recall_gte_0.95",
+        "working_point_status": working_point["status"],
+        "selected_threshold": selected_threshold,
+        "critical_window_recall": (
+            sum(row["selected_tier_ge2"] for row in selected_positive) / len(selected_positive)
+            if selected_positive else None
+        ),
+        "mixed_scheduler_correct_selection": (
+            sum(row["selected_highest_tier"] for row in selected_mixed) / len(selected_mixed)
+            if selected_mixed else None
+        ),
+        "selected_tier_ge2_precision": (
+            sum(row["selected_tier_ge2"] for row in selected_rankable_emits) / len(selected_rankable_emits)
+            if selected_rankable_emits else None
+        ),
+        "pure_negative_abstention": (
+            sum(not row["emit"] for row in selected_pure_negative) / len(selected_pure_negative)
+            if selected_pure_negative else None
+        ),
+        "no_candidate_abstention": (
+            sum(not row["emit"] for row in selected_no_candidate) / len(selected_no_candidate)
+            if selected_no_candidate else None
+        ),
+        "selected_total_emits": len(selected_emits),
+        "selected_outside_rankable_emits": sum(row["outside_rankable_emit"] for row in selected_results),
+        "selected_release_trigger_count": sum(row["release_trigger"] for row in selected_results),
+        "selected_regrasp_trigger_count": sum(row["regrasp_trigger"] for row in selected_results),
+        "selected_one_shot_compliance": all(row["one_shot_compliant"] for row in selected_results),
+        "suite_macro_critical_window_recall": _macro_rate(selected_positive, "selected_tier_ge2", "suite"),
+        "task_macro_critical_window_recall": _macro_rate(selected_positive, "selected_tier_ge2", "task_idx"),
+        "exact_identities": exact_ids,
+        "causal_anchor_top1": {
+            "count": sum(row["causal_top1_hit"] for row in true_mixed),
+            "denominator": len(true_mixed),
+            "rate": (sum(row["causal_top1_hit"] for row in true_mixed) / len(true_mixed)) if true_mixed else None,
+        },
     }
     output = args.output_root.resolve()
     if output.exists():
@@ -243,7 +349,7 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
             (staging / name).write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in records), encoding="utf-8")
         (staging / "evaluation_summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         (staging / "threshold_sweep.json").write_text(json.dumps(threshold_sweep, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        (staging / "manifest.json").write_text(json.dumps({"schema": "DETECTOR_V5_CAUSAL_ONLINE_BUNDLE_V2", "summary_sha256": sha256_file(staging / "evaluation_summary.json"), "threshold_sweep_sha256": sha256_file(staging / "threshold_sweep.json"), "candidate": contract.variant, "policy_intent_root_sha256s_sha256": None if policy_meta is None else policy_meta["policy_root_sha256s_sha256"], "protected_splits_read": []}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        (staging / "manifest.json").write_text(json.dumps({"schema": "DETECTOR_V5_CAUSAL_ONLINE_BUNDLE_V3", "summary_sha256": sha256_file(staging / "evaluation_summary.json"), "threshold_sweep_sha256": sha256_file(staging / "threshold_sweep.json"), "candidate": contract.variant, "policy_intent_root_sha256s_sha256": None if policy_meta is None else policy_meta["policy_root_sha256s_sha256"], "protected_splits_read": []}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         seal_directory(staging)
         os.replace(staging, output)
     except Exception:

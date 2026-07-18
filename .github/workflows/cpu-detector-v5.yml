@@ -37,6 +37,7 @@ jobs:
             scripts/detector_v5/build_v5_stratified_smoke_subset.py \
             scripts/detector_v5/run_v5_window_baselines.py \
             scripts/detector_v5/evaluate_v5_causal_online.py \
+            scripts/detector_v5/review_v5_ab_working_point.py \
             scripts/detector_v5/audit_v5_checkpoint.py \
             scripts/detector_v5/audit_v5_prediction_bundle.py \
             scripts/detector_v5/audit_clean2000_raw_assets.py \
