@@ -102,7 +102,7 @@ def test_v5_teacher_utility_is_proxy_and_unknown_is_masked():
 
 def test_v5_windows_do_not_collapse_phase_segments():
     windows = [
-        V5Window("ep", "7:0", 2, 5, "PRE_SUPPORT", None, False, True),
+        V5Window("ep", "7:0", 2, 5, "PRE_SUPPORT", 1, True, True),
         V5Window("ep", "7:1", 6, 10, "VALID_RETENTION", 3, True, True),
     ]
     validate_phase_windows(windows)
@@ -125,7 +125,7 @@ def test_v5_ranker_has_gradient_through_window_ranking():
 
 def test_v5_scheduler_is_candidate_gated_and_one_shot():
     scheduler = V5OneShotScheduler()
-    for step in range(3):
+    for step in range(10):
         result = scheduler.update(
             step=step,
             candidate_close=True,
@@ -136,7 +136,7 @@ def test_v5_scheduler_is_candidate_gated_and_one_shot():
             uncertainty_probability=0.0,
         )
     assert result["emit"] is True
-    assert result["emit_step"] == 2
+    assert result["emit_step"] == 9
     after = scheduler.update(
         step=3,
         candidate_close=True,

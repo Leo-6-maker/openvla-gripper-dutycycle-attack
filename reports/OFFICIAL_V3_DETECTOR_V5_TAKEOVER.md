@@ -34,7 +34,7 @@ counterfactual attack label and cannot authorize an attack.
 - FIT-DEV, CAL, CHECK, final-parent data and attack results are not read.
 - Formal training and attack authorization are hard-coded false in the V5
   development contracts.
-- Current branch HEAD: `42dcc906f7db5f65347e4472f569b0d4990b6605`.
+- Current branch HEAD: recorded in the latest R2 handoff commit.
 
 ## V5 contracts now implemented
 
@@ -128,18 +128,31 @@ means the current sealed corpus supports V5-A (proprio-only) development, but
 V5-B/C/D are conditional and must not be trained by fabricating or silently
 reusing a missing stream.
 
+## R2 remediation result
+
+R2 corrected the window geometry boundary, causal anchor scoring, active-head
+contract, window-balanced loss, stratified subset construction, shortcut
+baselines, and true per-step online replay.  The sealed R2 geometry contains
+507 true mixed episodes.  The fixed 80-episode smoke reached 112/126 true
+mixed top-1 (`0.8889`), while the longest-window baseline reached `0.9290`.
+The causal scheduler replay obeyed the one-shot latch, but pure-negative
+abstention was `0/3`; the non-causal diagnostic abstention was `1/3`.
+Therefore the R2 stratified smoke is HOLD and the full 600-episode Fold-0
+run was not started.  The detailed evidence and root names are in
+`reports/OFFICIAL_V3_DETECTOR_V5_R2_TAKEOVER_AUDIT.md`.
+
 ## Required next gate
 
-The FIT-only input availability audit, sealed V5 proxy-root audit, and bounded
-V5-A development smoke are complete.  The next gate is a fresh, non-overwrite
-full-FIT V5-A development run plus the sealed phase/window evaluator.  The
-current smoke is not a scientific pass: top-1 selection is useful as an
-engineering signal, but pure-negative abstention is only 8/18 at threshold
-0.5.  Policy-intent and visual variants remain blocked until their source
-roots exist and pass the same audit.
+The FIT-only input availability audit, sealed V5 proxy-root audit, corrected
+window geometry, causal evaluator, baseline audit, and stratified R2 smoke are
+complete.  The smoke is HOLD: causal true-mixed top-1 is `0.8889`, below the
+longest-window baseline `0.9290`, and causal pure-negative abstention is
+`0/3`.  The full 600-episode Fold-0 run is therefore not authorized.
+Policy-intent and visual variants remain blocked until their source roots
+exist and pass the same audit.
 
-The scientific gate is not a larger GRU.  A V5 candidate must improve
-matched-recall window selection, mixed-episode top-1 selection, and
+The scientific gate is not a larger GRU.  A future V5 candidate must improve
+matched-recall window selection, strict mixed-episode top-1 selection, and
 pure-negative abstention under the frozen one-shot budget, with all exact
 numerators and denominators sealed.
 
@@ -149,7 +162,11 @@ V4_EVIDENCE                 = PRESERVED
 V5_CODE_CONTRACT            = DEVELOPMENT_READY
 V5_INPUT_AVAILABILITY       = PASS_DATA_ONLY; V5-A READY, V5-B/C/D HOLD
 V5_TEACHER                  = PASS CLEAN_ONLY_PROXY; NOT ATTACK LABELS
-V5_GPU_TRAINING             = DEVELOPMENT SMOKE PASS; FORMAL NOT STARTED
+V5_R2_INFRASTRUCTURE        = PASS; CAUSAL REPLAY AND SEALS COMPLETE
+V5_R2_STRATIFIED_SMOKE      = HOLD; BELOW LONGEST-WINDOW BASELINE
+V5_A_FULL_FOLD0             = NOT RUN
+V5_GPU_TRAINING             = DEVELOPMENT SMOKE ONLY; FORMAL NOT STARTED
+V5_B/C/D                    = HOLD; SOURCE ROOTS ABSENT
 FIT_DEV / CAL / CHECK       = NOT READ
 ATTACK                      = NOT STARTED
 ```

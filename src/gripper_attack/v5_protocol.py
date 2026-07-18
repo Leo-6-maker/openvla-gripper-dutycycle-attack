@@ -134,6 +134,8 @@ class V5Window:
     utility_tier: int | None
     known: bool
     candidate_close: bool
+    step_indices: tuple[int, ...] = ()
+    decision_anchor_step: int | None = None
 
     def __post_init__(self) -> None:
         if not self.episode_id or not self.window_id or self.start < 0 or self.end < self.start:
@@ -144,6 +146,24 @@ class V5Window:
             raise ValueError("known V5 windows require utility tier 0..3")
         if not self.known and self.utility_tier is not None:
             raise ValueError("unknown V5 windows cannot carry a utility tier")
+        indices = tuple(self.step_indices) if self.step_indices else tuple(range(self.start, self.end + 1))
+        if indices != tuple(range(self.start, self.end + 1)):
+            raise ValueError("V5 window steps must be one contiguous exact segment")
+        anchor = self.decision_anchor_step
+        if anchor is None:
+            anchor = self.start + 9 if len(indices) >= 10 else self.end
+        if anchor < self.start or anchor > self.end:
+            raise ValueError("V5 decision anchor must lie inside the window")
+        object.__setattr__(self, "step_indices", indices)
+        object.__setattr__(self, "decision_anchor_step", anchor)
+
+    @property
+    def minimum_dwell_met(self) -> bool:
+        return len(self.step_indices) >= 10
+
+    @property
+    def rankable(self) -> bool:
+        return self.known and self.candidate_close and self.phase_name != "UNKNOWN" and not self.window_id.startswith("none:")
 
 
 @dataclass(frozen=True)
@@ -199,6 +219,8 @@ def validate_phase_windows(windows: Sequence[V5Window]) -> None:
         if key in seen:
             raise ValueError(f"duplicate V5 window: {key}")
         seen.add(key)
+        if not window.rankable:
+            raise ValueError("V5 rankable window collection contains a non-rankable window")
 
 
 __all__ = [

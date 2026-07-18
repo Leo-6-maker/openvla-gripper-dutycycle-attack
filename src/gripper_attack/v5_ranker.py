@@ -23,6 +23,10 @@ class V5RankerConfig:
     pairwise_margin: float = 0.2
     hard_negative_weight: float = 1.0
     abstention_weight: float = 1.0
+    ordinal_weight: float = 1.0
+    listwise_weight: float = 0.5
+    release_weight: float = 0.3
+    regrasp_weight: float = 0.3
 
     def __post_init__(self) -> None:
         if self.pairwise_margin <= 0 or self.hard_negative_weight < 0 or self.abstention_weight < 0:
@@ -51,7 +55,10 @@ class CausalMultimodalVulnerabilityRanker(nn.Module):
         self.release_head = nn.Linear(config.hidden_dim, 1)
         self.regrasp_head = nn.Linear(config.hidden_dim, 1)
         self.support_head = nn.Linear(config.hidden_dim, 1)
-        self.uncertainty_head = nn.Linear(config.hidden_dim, 1)
+        # V5-R2 has no support or uncertainty supervision.  Keeping random
+        # heads active would make the scheduler consume meaningless signals.
+        self.support_head = None
+        self.uncertainty_head = None
 
     def initial_hidden(self, batch_size: int, *, device: torch.device, dtype: torch.dtype) -> tuple[Tensor, Tensor | None, Tensor | None]:
         h_p = torch.zeros(batch_size, self.config.hidden_dim, device=device, dtype=dtype)
@@ -121,8 +128,6 @@ class CausalMultimodalVulnerabilityRanker(nn.Module):
             "utility_logit": self.utility_head(fused).squeeze(-1),
             "release_logit": self.release_head(fused).squeeze(-1),
             "regrasp_logit": self.regrasp_head(fused).squeeze(-1),
-            "support_logit": self.support_head(fused).squeeze(-1),
-            "uncertainty_logit": self.uncertainty_head(fused).squeeze(-1),
         }, (kept_p, next_i, next_v)
 
     def forward_sequence(
@@ -191,10 +196,107 @@ def v5_window_ranking_loss(
             losses.append(F.relu(torch.as_tensor(margin, device=utility_logits.device, dtype=utility_logits.dtype) - pos + neg))
         elif not positive and known:
             # A pure-negative episode must have no high utility window.
-            losses.append(abstention_weight * F.softplus(utility_logits[known]).mean())
+            losses.append(abstention_weight * F.softplus(utility_logits[known].max()))
     if not losses:
         return utility_logits.sum() * 0.0
     return torch.stack(losses).mean()
 
 
-__all__ = ["V5RankerConfig", "CausalMultimodalVulnerabilityRanker", "v5_window_ranking_loss"]
+@dataclass(frozen=True)
+class V5LossConfigV2:
+    pairwise_margin: float = 0.2
+    ordinal_weight: float = 1.0
+    pairwise_weight: float = 0.5
+    listwise_weight: float = 0.5
+    abstention_weight: float = 1.0
+    release_weight: float = 0.3
+    regrasp_weight: float = 0.3
+
+
+def compute_v5_loss_v2(
+    utility_logits: Tensor,
+    release_logits: Tensor,
+    regrasp_logits: Tensor,
+    episode: object,
+    *,
+    config: V5LossConfigV2 = V5LossConfigV2(),
+) -> dict[str, Tensor]:
+    """Window-balanced ordinal/ranking loss plus supervised veto heads."""
+
+    from .v5_dataset import causal_window_anchor_scores
+
+    scores, rows = causal_window_anchor_scores(utility_logits, episode)  # type: ignore[arg-type]
+    zero = utility_logits.sum() * 0.0
+    known_rows = [i for i, row in enumerate(rows) if row["known"] and row["utility_tier"] is not None]
+    if known_rows:
+        targets = torch.tensor(
+            [float(rows[i]["utility_tier"]) / 3.0 for i in known_rows],
+            device=scores.device,
+            dtype=scores.dtype,
+        )
+        ordinal = F.smooth_l1_loss(torch.sigmoid(scores[known_rows]), targets)
+    else:
+        ordinal = zero
+    pair_terms: list[Tensor] = []
+    for hi in known_rows:
+        for lo in known_rows:
+            if int(rows[hi]["utility_tier"]) > int(rows[lo]["utility_tier"]):
+                pair_terms.append(F.relu(
+                    torch.as_tensor(config.pairwise_margin, device=scores.device, dtype=scores.dtype)
+                    - scores[hi] + scores[lo]
+                ))
+    pairwise = torch.stack(pair_terms).mean() if pair_terms else zero
+    max_tier = max((int(rows[i]["utility_tier"]) for i in known_rows), default=-1)
+    mixed = max_tier >= 2 and any(int(rows[i]["utility_tier"]) <= 1 for i in known_rows)
+    if mixed:
+        winner_positions = [pos for pos, i in enumerate(known_rows) if int(rows[i]["utility_tier"]) == max_tier]
+        listwise = -F.log_softmax(scores[known_rows], dim=0)[winner_positions].mean()
+    else:
+        listwise = zero
+    abstention = F.softplus(scores[known_rows].max()) if known_rows and max_tier < 2 else zero
+    release_mask = (
+        episode.release_known_mask.to(release_logits.device)  # type: ignore[attr-defined]
+        & episode.valid_mask.to(release_logits.device)  # type: ignore[attr-defined]
+        & episode.candidate_close.to(release_logits.device)  # type: ignore[attr-defined]
+    )
+    regrasp_mask = (
+        episode.regrasp_known_mask.to(regrasp_logits.device)  # type: ignore[attr-defined]
+        & episode.valid_mask.to(regrasp_logits.device)  # type: ignore[attr-defined]
+        & episode.candidate_close.to(regrasp_logits.device)  # type: ignore[attr-defined]
+    )
+    release_target = episode.release_imminent.to(release_logits.device)  # type: ignore[attr-defined]
+    regrasp_target = episode.regrasp_or_unstable.to(regrasp_logits.device)  # type: ignore[attr-defined]
+    release = (
+        F.binary_cross_entropy_with_logits(release_logits[release_mask], release_target[release_mask].float())
+        if bool(release_mask.any()) else zero
+    )
+    regrasp = (
+        F.binary_cross_entropy_with_logits(regrasp_logits[regrasp_mask], regrasp_target[regrasp_mask].float())
+        if bool(regrasp_mask.any()) else zero
+    )
+    total = (
+        config.ordinal_weight * ordinal
+        + config.pairwise_weight * pairwise
+        + config.listwise_weight * listwise
+        + config.abstention_weight * abstention
+        + config.release_weight * release
+        + config.regrasp_weight * regrasp
+    )
+    return {
+        "total": total,
+        "window_ordinal": ordinal,
+        "tier_pairwise": pairwise,
+        "listwise_top1": listwise,
+        "pure_negative_abstention": abstention,
+        "release_bce": release,
+        "regrasp_bce": regrasp,
+    }
+
+
+__all__ = [
+    "V5RankerConfig",
+    "V5LossConfigV2",
+    "CausalMultimodalVulnerabilityRanker",
+    "v5_window_ranking_loss",
+    "compute_v5_loss_v2",
+]

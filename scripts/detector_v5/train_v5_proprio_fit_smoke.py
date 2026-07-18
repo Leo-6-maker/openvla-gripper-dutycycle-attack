@@ -20,17 +20,16 @@ from pathlib import Path
 from typing import Any
 
 import torch
-from torch.nn import functional as F
-
 from gripper_attack.v5_dataset import (
     V5Episode,
-    aggregate_window_scores,
+    causal_window_anchor_scores,
+    classify_v5_episode_windows,
     compute_v5_normalization,
     load_fit_registry,
     load_v5_episodes,
 )
 from gripper_attack.v5_protocol import V5ModelContract
-from gripper_attack.v5_ranker import CausalMultimodalVulnerabilityRanker, V5RankerConfig, v5_window_ranking_loss
+from gripper_attack.v5_ranker import CausalMultimodalVulnerabilityRanker, V5LossConfigV2, compute_v5_loss_v2
 from gripper_attack.b3_training_protocol import load_fit_fold_bundle, seal_directory, sha256_file
 
 
@@ -52,45 +51,43 @@ def _episode_loss(model: CausalMultimodalVulnerabilityRanker, episode: V5Episode
     x = ((episode.features_25d.to(mean.device) - mean) / std).unsqueeze(0)
     valid = episode.valid_mask.to(mean.device).unsqueeze(0)
     output = model.forward_sequence(x, valid_mask=valid)
-    utility = output["utility_logit"][0]
-    scores, windows = aggregate_window_scores(utility, episode)
-    ranking = v5_window_ranking_loss(scores, windows, margin=0.2)
-    known = episode.known_mask.to(mean.device)
-    tiers = episode.utility_tier.to(mean.device)
-    if bool(known.any()):
-        ordinal = F.smooth_l1_loss(torch.sigmoid(utility[known]), tiers[known].float() / 3.0)
-    else:
-        ordinal = utility.sum() * 0.0
-    return ordinal + ranking
+    return compute_v5_loss_v2(
+        output["utility_logit"][0],
+        output["release_logit"][0],
+        output["regrasp_logit"][0],
+        episode,
+        config=V5LossConfigV2(),
+    )["total"]
 
 
 @torch.no_grad()
 def _diagnostic(model: CausalMultimodalVulnerabilityRanker, episodes: list[V5Episode], mean: torch.Tensor, std: torch.Tensor) -> dict[str, Any]:
-    top1_total = 0
+    true_mixed_total = 0
     top1_hit = 0
     pure_negative_total = 0
     pure_negative_abstain = 0
     for episode in episodes:
         x = ((episode.features_25d.to(mean.device) - mean) / std).unsqueeze(0)
         output = model.forward_sequence(x, valid_mask=episode.valid_mask.to(mean.device).unsqueeze(0))
-        scores, windows = aggregate_window_scores(output["utility_logit"][0], episode)
+        scores, windows = causal_window_anchor_scores(output["utility_logit"][0], episode)
         if not len(windows):
             continue
         values = [int(row["utility_tier"]) if row["utility_tier"] is not None else -1 for row in windows]
         best_index = int(torch.argmax(scores).item())
+        category = classify_v5_episode_windows(episode.windows)
         positive = [value for value in values if value >= 2]
-        if positive:
-            top1_total += 1
-            if values[best_index] >= max(positive):
+        if category == "TRUE_MIXED":
+            true_mixed_total += 1
+            if values[best_index] == max(positive):
                 top1_hit += 1
-        else:
+        elif category == "PURE_NEGATIVE":
             pure_negative_total += 1
             if float(torch.sigmoid(scores).max()) < 0.5:
                 pure_negative_abstain += 1
     return {
-        "mixed_or_positive_episode_count": top1_total,
+        "true_mixed_episode_count": true_mixed_total,
         "top1_highest_utility_hit_count": top1_hit,
-        "top1_highest_utility_hit_rate": (top1_hit / top1_total) if top1_total else None,
+        "top1_highest_utility_hit_rate": (top1_hit / true_mixed_total) if true_mixed_total else None,
         "pure_negative_episode_count": pure_negative_total,
         "pure_negative_abstain_count_at_0.5": pure_negative_abstain,
         "pure_negative_abstain_rate_at_0.5": (pure_negative_abstain / pure_negative_total) if pure_negative_total else None,
@@ -114,6 +111,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     by_key = {row["canonical_parent_key"]: row for row in registry_rows}
     train_keys = list(fold_row["train_identities"])
     valid_keys = list(fold_row["validation_identities"])
+    if args.train_identity_file is not None:
+        selected = json.loads(args.train_identity_file.resolve().read_text(encoding="utf-8"))
+        if not isinstance(selected, list) or not all(isinstance(value, str) for value in selected):
+            raise ValueError("train identity file must contain a JSON string list")
+        if not set(selected).issubset(set(train_keys)):
+            raise ValueError("stratified train identities are not a subset of fold train identities")
+        train_keys = list(selected)
     if args.max_train_episodes is not None:
         train_keys = train_keys[: args.max_train_episodes]
     train = load_v5_episodes(args.s1_root.resolve(), args.teacher_root.resolve(), [by_key[key] for key in train_keys])
@@ -201,6 +205,7 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=20260717)
     parser.add_argument("--epochs", type=int, default=3)
     parser.add_argument("--max-train-episodes", type=int)
+    parser.add_argument("--train-identity-file", type=Path)
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--output-root", type=Path, required=True)
     args = parser.parse_args()

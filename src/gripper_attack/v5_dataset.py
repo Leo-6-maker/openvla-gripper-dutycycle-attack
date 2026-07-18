@@ -6,7 +6,7 @@ import csv
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Iterable, Sequence
 
 import torch
 from torch import Tensor
@@ -54,6 +54,8 @@ class V5Episode:
     known_mask: Tensor
     release_imminent: Tensor
     regrasp_or_unstable: Tensor
+    release_known_mask: Tensor
+    regrasp_known_mask: Tensor
     windows: tuple[V5Window, ...]
 
     def __post_init__(self) -> None:
@@ -67,6 +69,8 @@ class V5Episode:
             ("known_mask", self.known_mask),
             ("release_imminent", self.release_imminent),
             ("regrasp_or_unstable", self.regrasp_or_unstable),
+            ("release_known_mask", self.release_known_mask),
+            ("regrasp_known_mask", self.regrasp_known_mask),
         ):
             if value.shape != (steps,):
                 raise ValueError(f"{name} shape mismatch")
@@ -96,7 +100,7 @@ def load_v5_episode(s1_root: Path, teacher_root: Path, row: dict[str, Any]) -> V
     known: list[bool] = []
     release: list[bool] = []
     regrasp: list[bool] = []
-    windows: dict[str, V5Window] = {}
+    window_rows: list[dict[str, Any]] = []
     for index, (student, teacher_row) in enumerate(zip(students, teachers)):
         validate_student_features(student)
         validate_teacher_row(teacher_row)
@@ -111,39 +115,57 @@ def load_v5_episode(s1_root: Path, teacher_root: Path, row: dict[str, Any]) -> V
         tiers.append(-1 if teacher_row["utility_tier"] is None else int(teacher_row["utility_tier"]))
         release.append(bool(teacher_row["release_imminent"]))
         regrasp.append(bool(teacher_row["regrasp_or_unstable"]))
-        window_id = str(teacher_row["window_id"])
-        raw_start = int(teacher_row["window_start"])
-        raw_end = int(teacher_row["window_end"])
-        if window_id.startswith("none:"):
-            start = index if raw_start < 0 else raw_start
-            end = index if raw_end < start else raw_end
-        else:
-            start, end = raw_start, raw_end
-        if start < 0 or end < start:
-            raise ValueError(f"invalid V5 event window bounds: {identity}:{index}:{window_id}")
-        if window_id not in windows:
-            windows[window_id] = V5Window(
+        window_rows.append({
+            "index": index,
+            "rankable": bool(student["valid"])
+            and bool(teacher_row["candidate_close"])
+            and bool(teacher_row["known_mask"])
+            and str(teacher_row["phase_name"]) != "UNKNOWN"
+            and not str(teacher_row["window_id"]).startswith("none:"),
+            "window_id": str(teacher_row["window_id"]),
+            "phase_name": str(teacher_row["phase_name"]),
+            "utility_tier": None if teacher_row["utility_tier"] is None else int(teacher_row["utility_tier"]),
+        })
+    windows: list[V5Window] = []
+    active: dict[str, Any] | None = None
+    segment_counts: dict[str, int] = {}
+    for item in window_rows + [{"rankable": False}]:
+        contiguous = bool(
+            active
+            and item.get("rankable")
+            and int(item["index"]) == int(active["indices"][-1]) + 1
+            and item["window_id"] == active["window_id"]
+            and item["phase_name"] == active["phase_name"]
+            and item["utility_tier"] == active["utility_tier"]
+        )
+        if contiguous:
+            active["indices"].append(int(item["index"]))
+            continue
+        if active:
+            base_id = str(active["window_id"])
+            ordinal = segment_counts.get(base_id, 0)
+            segment_counts[base_id] = ordinal + 1
+            window_id = base_id if ordinal == 0 else f"{base_id}#segment{ordinal}"
+            indices = tuple(active["indices"])
+            windows.append(V5Window(
                 episode_id=identity,
                 window_id=window_id,
-                start=start,
-                end=end,
-                phase_name=str(teacher_row["phase_name"]),
-                utility_tier=None if teacher_row["utility_tier"] is None else int(teacher_row["utility_tier"]),
-                known=bool(teacher_row["known_mask"]),
-                candidate_close=bool(teacher_row["candidate_close"]),
-            )
-        else:
-            old = windows[window_id]
-            windows[window_id] = V5Window(
-                episode_id=old.episode_id,
-                window_id=old.window_id,
-                start=min(old.start, start),
-                end=max(old.end, end),
-                phase_name=old.phase_name,
-                utility_tier=old.utility_tier,
-                known=old.known,
-                candidate_close=old.candidate_close,
-            )
+                start=indices[0],
+                end=indices[-1],
+                phase_name=str(active["phase_name"]),
+                utility_tier=active["utility_tier"],
+                known=True,
+                candidate_close=True,
+                step_indices=indices,
+            ))
+            active = None
+        if item.get("rankable"):
+            active = {
+                "window_id": item["window_id"],
+                "phase_name": item["phase_name"],
+                "utility_tier": item["utility_tier"],
+                "indices": [int(item["index"])],
+            }
     return V5Episode(
         canonical_parent_key=identity,
         suite=str(row["suite"]),
@@ -156,12 +178,29 @@ def load_v5_episode(s1_root: Path, teacher_root: Path, row: dict[str, Any]) -> V
         known_mask=torch.tensor(known, dtype=torch.bool),
         release_imminent=torch.tensor(release, dtype=torch.bool),
         regrasp_or_unstable=torch.tensor(regrasp, dtype=torch.bool),
-        windows=tuple(windows.values()),
+        release_known_mask=torch.tensor([bool(v and c and k) for v, c, k in zip(valid, candidate, known)], dtype=torch.bool),
+        regrasp_known_mask=torch.tensor([bool(v and c and k) for v, c, k in zip(valid, candidate, known)], dtype=torch.bool),
+        windows=tuple(windows),
     )
 
 
 def load_v5_episodes(s1_root: Path, teacher_root: Path, rows: Iterable[dict[str, Any]]) -> list[V5Episode]:
     return [load_v5_episode(s1_root, teacher_root, row) for row in rows]
+
+
+def classify_v5_episode_windows(windows: Sequence[V5Window]) -> str:
+    """Return the strict category used by all V5 diagnostics."""
+
+    tiers = [int(window.utility_tier) for window in windows if window.rankable and window.utility_tier is not None]
+    has_positive = any(tier >= 2 for tier in tiers)
+    has_negative = any(tier <= 1 for tier in tiers)
+    if not tiers:
+        return "NO_CANDIDATE"
+    if has_positive and has_negative:
+        return "TRUE_MIXED"
+    if has_positive:
+        return "POSITIVE_ONLY"
+    return "PURE_NEGATIVE"
 
 
 def compute_v5_normalization(episodes: Iterable[V5Episode]) -> tuple[Tensor, Tensor]:
@@ -173,21 +212,43 @@ def compute_v5_normalization(episodes: Iterable[V5Episode]) -> tuple[Tensor, Ten
     return mean, std
 
 
-def aggregate_window_scores(utility_logits: Tensor, episode: V5Episode) -> tuple[Tensor, list[dict[str, object]]]:
+def _aggregate_window_scores(utility_logits: Tensor, episode: V5Episode, *, causal: bool) -> tuple[Tensor, list[dict[str, object]]]:
     if utility_logits.ndim != 1 or utility_logits.shape[0] != len(episode.features_25d):
         raise ValueError("utility logits do not match episode length")
     scores: list[Tensor] = []
     rows: list[dict[str, object]] = []
     for window in episode.windows:
-        start = max(0, window.start)
-        end = min(len(utility_logits) - 1, window.end)
-        if end < start:
+        indices = list(window.step_indices)
+        if causal:
+            indices = [step for step in indices if step <= int(window.decision_anchor_step)]
+        indices = [step for step in indices if 0 <= step < len(utility_logits)]
+        if not indices:
             continue
-        scores.append(utility_logits[start : end + 1].mean())
-        rows.append({"episode_id": episode.canonical_parent_key, "known": window.known, "utility_tier": window.utility_tier})
+        scores.append(utility_logits[indices].mean())
+        rows.append({
+            "episode_id": episode.canonical_parent_key,
+            "window_id": window.window_id,
+            "phase_name": window.phase_name,
+            "known": window.known,
+            "utility_tier": window.utility_tier,
+            "decision_anchor_step": window.decision_anchor_step,
+            "step_indices": tuple(indices),
+            "minimum_dwell_met": window.minimum_dwell_met,
+        })
     if not scores:
         return utility_logits[:0], rows
     return torch.stack(scores), rows
+
+
+def aggregate_retrospective_window_scores(utility_logits: Tensor, episode: V5Episode) -> tuple[Tensor, list[dict[str, object]]]:
+    return _aggregate_window_scores(utility_logits, episode, causal=False)
+
+
+def causal_window_anchor_scores(utility_logits: Tensor, episode: V5Episode) -> tuple[Tensor, list[dict[str, object]]]:
+    return _aggregate_window_scores(utility_logits, episode, causal=True)
+
+
+aggregate_window_scores = aggregate_retrospective_window_scores
 
 
 __all__ = [
@@ -195,6 +256,9 @@ __all__ = [
     "load_fit_registry",
     "load_v5_episode",
     "load_v5_episodes",
+    "classify_v5_episode_windows",
     "compute_v5_normalization",
     "aggregate_window_scores",
+    "aggregate_retrospective_window_scores",
+    "causal_window_anchor_scores",
 ]
