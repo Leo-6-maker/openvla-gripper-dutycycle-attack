@@ -34,6 +34,7 @@ counterfactual attack label and cannot authorize an attack.
 - FIT-DEV, CAL, CHECK, final-parent data and attack results are not read.
 - Formal training and attack authorization are hard-coded false in the V5
   development contracts.
+- Current branch HEAD: `35db39d`.
 
 ## V5 contracts now implemented
 
@@ -71,11 +72,32 @@ and independent audit are:
 Tier3 is explicitly a clean-only T10-or-longer `VALID_RETENTION` proxy.  It
 must not be described as measured attack vulnerability.
 
+## V5-A development smoke
+
+The first smoke used only V5-A, fold 0, seed `20260717`, 32 train episodes,
+2 epochs, FP32 on physical GPU4 in `openvla-official-a800`.  It is not a full
+fold run.
+
+- output root:
+  `OFFICIAL_V3_DETECTOR_V5_A_SMOKE_F0_S20260717_35db39d_20260718`;
+- root `SHA256SUMS` SHA256:
+  `732d10a6f6fbcebb2267861c69147a42a7e1249650b07883cdf8b778ac14058b`;
+- checkpoint SHA256:
+  `2dc8191d6a8ef70134f5ef01bdda14fea5db44da7dead1a158324bd12a9bb0d2`;
+- diagnostic top-1 highest-utility hit: 155/182 = 0.8516;
+- pure-negative abstention at 0.5: 8/18 = 0.4444.
+
+The smoke bundle is explicitly `eligible_for_model_selection=false`,
+`formal_training_authorized=false`, and `formal_attack_authorized=false`.
+These metrics are engineering diagnostics only and do not form a V5
+viability decision.
+
 ## Not yet executed
 
 - No V5 Teacher utility materialization beyond the sealed clean-only proxy
   root above.
-- No V5 GPU training or checkpoint.
+- No formal V5 training or model-selection checkpoint.  The bounded V5-A
+  development smoke above is the only GPU execution.
 - No V5 validation or model selection.
 - No FIT-DEV, CAL, CHECK, Direct-open, canary, or attack.
 - No CLEAN/S1 mutation.  PR #87 is a Draft; it has not been marked Ready or
@@ -124,7 +146,7 @@ V4_EVIDENCE                 = PRESERVED
 V5_CODE_CONTRACT            = DEVELOPMENT_READY
 V5_INPUT_AVAILABILITY       = PASS_DATA_ONLY; V5-A READY, V5-B/C/D HOLD
 V5_TEACHER                  = PASS CLEAN_ONLY_PROXY; NOT ATTACK LABELS
-V5_GPU_TRAINING             = NOT STARTED
+V5_GPU_TRAINING             = DEVELOPMENT SMOKE PASS; FORMAL NOT STARTED
 FIT_DEV / CAL / CHECK       = NOT READ
 ATTACK                      = NOT STARTED
 ```
