@@ -61,8 +61,7 @@ def derive_utility_tier(row: dict[str, Any], phase_name: str) -> int | None:
         # proxy; this is explicitly not a counterfactual attack label.
         return 3
     if phase_name == "VALID_RETENTION" and candidate and quality and not veto:
-        continuation = row.get("retention_continuation_t10", row.get("later_event_known", False))
-        return 3 if bool(continuation) and not bool(row.get("release_imminent", False)) else 2
+        return 2
     if phase_name in {"RELEASE_IMMINENT_TAIL", "POST_RELEASE", "UNSTABLE_TRANSITION"}:
         return 0 if not candidate else 1
     if phase_name == "PRE_SUPPORT":
@@ -88,8 +87,8 @@ def convert_teacher_row(row: dict[str, Any], identity: str, index: int) -> dict[
         "phase_id": int(row.get("phase_id", -1)),
         "window_id": window_id,
         "phase_name": phase_name,
-        "window_start": int(row.get("window_start", index)),
-        "window_end": int(row.get("window_end", index)),
+        "window_start": max(0, int(row.get("window_start", index))) if event_id >= 0 else index,
+        "window_end": max(0, int(row.get("window_end", index))) if event_id >= 0 else index,
         "candidate_close": bool(row.get("candidate_close", False)),
         "quality_valid": bool(row.get("quality_valid", False)),
         "veto_invalid": bool(row.get("veto_invalid", False)),
