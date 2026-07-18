@@ -57,9 +57,16 @@ def _scheduler_replay(
             emitted_step = step
     selected_window_id = _window_for_step(episode, emitted_step) if emitted_step is not None else None
     selected_window = next((window for window in episode.windows if window.window_id == selected_window_id), None)
-    category = classify_v5_episode_windows(episode.windows)
-    positive_tiers = [int(window.utility_tier) for window in episode.windows if window.rankable and window.utility_tier is not None and int(window.utility_tier) >= 2]
-    selected_tier = None if selected_window is None else int(selected_window.utility_tier)
+    category = classify_v5_episode_windows(episode.windows, causal=True)
+    positive_tiers = [
+        int(window.causal_utility_tier)
+        for window in episode.windows
+        if window.rankable
+        and window.minimum_dwell_met
+        and window.causal_utility_tier is not None
+        and int(window.causal_utility_tier) >= 2
+    ]
+    selected_tier = None if selected_window is None or selected_window.causal_utility_tier is None else int(selected_window.causal_utility_tier)
     return {
         "canonical_parent_key": episode.canonical_parent_key,
         "suite": episode.suite,
@@ -234,13 +241,13 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
                 emitted.append({"step": step, "window_id": _window_for_step(episode, step), "result": result})
         retro_scores, retro_rows = aggregate_retrospective_window_scores(output["utility_logit"][0].cpu(), episode)
         causal_scores, causal_rows = causal_window_anchor_scores(output["utility_logit"][0].cpu(), episode)
-        tiers = [int(row["utility_tier"]) for row in causal_rows if row["utility_tier"] is not None]
-        category = classify_v5_episode_windows(episode.windows)
+        tiers = [int(row["causal_utility_tier"]) for row in causal_rows if row["causal_utility_tier"] is not None]
+        category = classify_v5_episode_windows(episode.windows, causal=True)
         best_tier = None
         selected_tier = None
         if causal_rows:
             best_index = int(torch.argmax(causal_scores).item())
-            selected_tier = causal_rows[best_index]["utility_tier"]
+            selected_tier = causal_rows[best_index]["causal_utility_tier"]
             best_tier = max(tiers) if tiers else None
         episode_metrics.append({
             "canonical_parent_key": episode.canonical_parent_key,
@@ -254,7 +261,7 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
             "emit_count": len(emitted),
             "emit_step": emitted[0]["step"] if emitted else None,
                 "selected_window_id": emitted[0]["window_id"] if emitted else None,
-                "selected_window_tier": next((int(window.utility_tier) for window in episode.windows if emitted and window.window_id == emitted[0]["window_id"]), None),
+                "selected_window_tier": next((int(window.causal_utility_tier) for window in episode.windows if emitted and window.window_id == emitted[0]["window_id"] and window.causal_utility_tier is not None), None),
                 "release_trigger": bool(emitted and episode.release_imminent[emitted[0]["step"]]),
                 "regrasp_trigger": bool(emitted and episode.regrasp_or_unstable[emitted[0]["step"]]),
                 "one_shot_compliant": len(emitted) <= 1,
