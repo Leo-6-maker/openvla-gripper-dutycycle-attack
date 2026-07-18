@@ -1,0 +1,70 @@
+{
+  "schema": "DETECTOR_V5_OFFICIAL_SOURCE_BINDING_PROTOCOL_V1",
+  "scope": "FIT_TRAIN states 0-19 only",
+  "fit_identity_count": 800,
+  "student_policy_features": [
+    "clean_open_probability_mass",
+    "clean_close_probability_mass",
+    "clean_open_minus_close_log_mass",
+    "clean_action_token_entropy_normalized",
+    "clean_top1_probability",
+    "clean_top1_is_open",
+    "clean_top1_is_close",
+    "clean_best_open_rank_normalized",
+    "clean_best_close_rank_normalized"
+  ],
+  "policy_required_fields": [
+    "step",
+    "clean_policy_intent_9d",
+    "clean_open_probability_mass",
+    "clean_close_probability_mass",
+    "clean_open_minus_close_log_mass",
+    "clean_action_token_entropy_normalized",
+    "clean_top1_probability",
+    "clean_top1_is_open",
+    "clean_top1_is_close",
+    "clean_best_open_rank_normalized",
+    "clean_best_close_rank_normalized",
+    "action_token_ids",
+    "clean_action_token_top_ids",
+    "clean_action_token_top_logits",
+    "score_head_summary",
+    "generation_passes_per_step",
+    "single_generation_parity_pass",
+    "score_adapter_parity_pass"
+  ],
+  "privileged_required_fields": [
+    "step",
+    "suite",
+    "task_idx",
+    "state_id",
+    "object_state",
+    "mujoco_contact_pairs",
+    "contact_count",
+    "contact_capture_valid",
+    "robot0_eef_pos",
+    "robot0_eef_quat",
+    "robot0_gripper_qpos",
+    "eef_feature_pos",
+    "eef_alias_valid"
+  ],
+  "privileged_schema_scope": "task_conditional_object_state_flattening",
+  "object_state_dimensions_must_be_constant_within_task": true,
+  "action_token_alignment": "policy.action_token_ids == step_records.action_token_ids",
+  "generation_contract": {
+    "generation_passes_per_step": 1,
+    "single_generation_parity_pass": true,
+    "score_adapter_parity_pass": true
+  },
+  "student_forbidden_fields": [
+    "object_state",
+    "mujoco_contact_pairs",
+    "contact_count",
+    "worker_id",
+    "collector_git_head",
+    "model_path",
+    "attack_outcome"
+  ],
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}
