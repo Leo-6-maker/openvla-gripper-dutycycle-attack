@@ -29,6 +29,7 @@ counterfactual attack label and cannot authorize an attack.
 - Branch: `codex/official-v3-detector-v5-20260718`
 - Base: Official archive commit
   `5e27d7c4b1a188bc6a78555f94d2571222587805`
+- Draft PR: [#87](https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/pull/87)
 - Development scope: FIT_TRAIN only, states 0--19.
 - FIT-DEV, CAL, CHECK, final-parent data and attack results are not read.
 - Formal training and attack authorization are hard-coded false in the V5
@@ -57,7 +58,33 @@ counterfactual attack label and cannot authorize an attack.
 - No V5 GPU training or checkpoint.
 - No V5 validation or model selection.
 - No FIT-DEV, CAL, CHECK, Direct-open, canary, or attack.
-- No CLEAN/S1 mutation and no GitHub PR mutation at this snapshot.
+- No CLEAN/S1 mutation.  PR #87 is a Draft; it has not been marked Ready or
+  merged.
+
+## FIT input availability audit
+
+The read-only audit root is:
+
+`OFFICIAL_V3_DETECTOR_V5_INPUT_AUDIT_17509e7_20260718`
+
+The complete 2000-row registry was filtered mechanically to states 0--19;
+the audit did not inspect any other split.  Results:
+
+- registry-derived FIT identities: 800;
+- S1 episode manifests: 800/800;
+- Student 25D/data-contract rows: 800/800 PASS, 0 HOLD;
+- S1 tree digest: `8f679082651c54a4ac8843e406c61c7a2867eaad21e934759c2755d6c4f1a29f`;
+- registry CSV SHA256:
+  `09f71b3a9b8250c80735382ba5deab6dbcadfa21b645e4a981eefb114b236af5`;
+- policy-intent root: NOT SUPPLIED/NOT FOUND in the current evidence tree;
+- causal-visual root: NOT SUPPLIED/NOT FOUND in the current evidence tree.
+
+The prior policy-intent export log ends with a fail-closed source-audit
+failure at `libero_10/task_00/state_00`; it did not create a 9D root.  A
+recursive evidence-root search found no PNG/JPG/JPEG/NPZ visual source.  This
+means the current sealed corpus supports V5-A (proprio-only) development, but
+V5-B/C/D are conditional and must not be trained by fabricating or silently
+reusing a missing stream.
 
 ## Required next gate
 
@@ -75,7 +102,7 @@ numerators and denominators sealed.
 V4_CONTINUATION             = STOPPED
 V4_EVIDENCE                 = PRESERVED
 V5_CODE_CONTRACT            = DEVELOPMENT_READY
-V5_INPUT_AVAILABILITY       = NOT YET RUN
+V5_INPUT_AVAILABILITY       = PASS_DATA_ONLY; V5-A READY, V5-B/C/D HOLD
 V5_TEACHER                  = NOT STARTED
 V5_GPU_TRAINING             = NOT STARTED
 FIT_DEV / CAL / CHECK       = NOT READ
