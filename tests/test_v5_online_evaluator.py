@@ -1,6 +1,12 @@
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 from gripper_attack.v5_scheduler import V5OneShotScheduler
+
+sys.path.insert(0, str(Path(__file__).parents[1]))
+
 from scripts.detector_v5.evaluate_v5_causal_online import _select_working_point
 
 
