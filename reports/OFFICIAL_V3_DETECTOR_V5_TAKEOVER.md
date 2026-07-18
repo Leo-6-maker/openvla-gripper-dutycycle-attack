@@ -34,7 +34,7 @@ counterfactual attack label and cannot authorize an attack.
 - FIT-DEV, CAL, CHECK, final-parent data and attack results are not read.
 - Formal training and attack authorization are hard-coded false in the V5
   development contracts.
-- Current branch HEAD: `35db39d`.
+- Current branch HEAD: `42dcc906f7db5f65347e4472f569b0d4990b6605`.
 
 ## V5 contracts now implemented
 
@@ -130,10 +130,13 @@ reusing a missing stream.
 
 ## Required next gate
 
-The FIT-only input availability audit is complete.  The next gate is a
-synthetic/data-loader census of the sealed V5 proxy root, followed by a small
-FIT-only development smoke.  Policy-intent and visual variants remain
-blocked until their source roots exist and pass the same audit.
+The FIT-only input availability audit, sealed V5 proxy-root audit, and bounded
+V5-A development smoke are complete.  The next gate is a fresh, non-overwrite
+full-FIT V5-A development run plus the sealed phase/window evaluator.  The
+current smoke is not a scientific pass: top-1 selection is useful as an
+engineering signal, but pure-negative abstention is only 8/18 at threshold
+0.5.  Policy-intent and visual variants remain blocked until their source
+roots exist and pass the same audit.
 
 The scientific gate is not a larger GRU.  A V5 candidate must improve
 matched-recall window selection, mixed-episode top-1 selection, and
