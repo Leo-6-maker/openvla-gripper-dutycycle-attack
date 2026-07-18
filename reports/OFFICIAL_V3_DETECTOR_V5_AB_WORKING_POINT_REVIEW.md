@@ -2,7 +2,7 @@
 
 Date: 2026-07-19 CST
 Code HEAD used for replay: `6424a96e502855dda34c8415a833982188f30554`
-Current branch HEAD after CI-import fix: `4a217211f058103d05a8ba6699b3f3ffc781a8a4`
+Current branch HEAD after CI-import and Physics decoder fixes: `3c53bcd4244de865191a76b000f20e945d6c0090`
 Scope: FIT Fold-0 validation only; no training, protected-split read, or attack.
 
 ## Execution and sealing
@@ -88,7 +88,7 @@ This review therefore does not claim runtime policy-intent causality.
 
 `V5_R1_ATTACK = NOT_STARTED`
 
-Next work remains CPU/I/O only until the Physics task decoder and the C2F
-trajectory binding are independently closed. No GPU process was started in
-this replay.
-
+The Physics task decoder is now independently closed for all 40 FIT tasks at
+`3c53bcd`; its continuous Teacher scoring/tiering contract is not yet frozen.
+C2F trajectory binding remains open. No GPU process was started in this
+replay.
