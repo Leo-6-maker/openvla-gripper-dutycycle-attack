@@ -10,7 +10,10 @@ FIT-DEV, CAL, CHECK, or attack execution.
 ## Source and environment
 
 - Corrected branch: `codex/official-v3-detector-v4-corrected-fold0-20260718`
-- Current code HEAD: `7dca398bf71d0d42c83835e1d2cc6f9b0cb01a75`
+- Server execution checkout HEAD used for all runs:
+  `7dca398bf71d0d42c83835e1d2cc6f9b0cb01a75`
+- Current GitHub handoff branch HEAD (report-only follow-up):
+  `ee28bd94ed2145d2848de39100ec2dc37fb22a91`
 - Draft PR: [#86](https://github.com/Leo-6-maker/openvla-gripper-dutycycle-attack/pull/86)
 - PR base: `archive/official-v3-b3-25d-execution-5e27d7c`
 - Official execution archive: `5e27d7c4b1a188bc6a78555f94d2571222587805`
