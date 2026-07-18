@@ -1,0 +1,199 @@
+{
+  "schema": "DETECTOR_V4_DEVELOPMENT_PROTOCOL_V1",
+  "version": "1.0",
+  "status": "DEVELOPMENT_ONLY",
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false,
+  "model_selection_authorized": false,
+
+  "immutable_sources": {
+    "clean_v3_2000": "IMMUTABLE_READ_ONLY",
+    "fit_registry": "OFFICIAL_V3_CAMPAIGN_REGISTRY_V1_d31187f",
+    "s1_root": "OFFICIAL_V3_S1_FIT_V1_5e27d7c",
+    "teacher_root": "OFFICIAL_V3_S1_FIT_V1_5e27d7c",
+    "b3_checkpoints": "IMMUTABLE_12_BUNDLES",
+    "b3_predictions": "IMMUTABLE_12_BUNDLES",
+    "b3_viability": "IMMUTABLE_HOLD_RESULT",
+    "cs200_preparation": "IMMUTABLE_NOT_RUN",
+    "clean_manifest_ledger_sha256sums": "IMMUTABLE"
+  },
+
+  "data_bounds": {
+    "development_states": [0, 19],
+    "fit_dev_states": [20, 23],
+    "cal_states": [24, 26],
+    "check_states": [27, 29],
+    "final_states": [30, 49],
+    "fit_dev_read_authorized": false,
+    "cal_read_authorized": false,
+    "check_read_authorized": false,
+    "cs200_read_authorized": false
+  },
+
+  "development_split": {
+    "total_identities": 800,
+    "suites": 4,
+    "tasks_per_suite": 10,
+    "states_per_task": 20,
+    "positive_episodes": 731,
+    "negative_episodes": 69,
+    "folds": [
+      {"id": 0, "validation_states": [0, 4], "train_states": [5, 19], "validation_episodes": 200, "train_episodes": 600},
+      {"id": 1, "validation_states": [5, 9], "train_states": [0, 4, 10, 19], "validation_episodes": 200, "train_episodes": 600},
+      {"id": 2, "validation_states": [10, 14], "train_states": [0, 9, 15, 19], "validation_episodes": 200, "train_episodes": 600},
+      {"id": 3, "validation_states": [15, 19], "train_states": [0, 14], "validation_episodes": 200, "train_episodes": 600}
+    ],
+    "episode_grouping": "NO_CROSS_EPISODE_LEAKAGE",
+    "candidate_window_grouping": "SAME_EPISODE_WINDOWS_KEPT_TOGETHER",
+    "shuffle": "SUITE_TASK_EPISODE_BALANCED"
+  },
+
+  "seeds": [20260717, 20260718, 20260719],
+
+  "training": {
+    "dtype": "float32",
+    "bptt": "FULL_EPISODE",
+    "hidden_reset": "EPISODE_ONLY",
+    "padding_policy": "MASKED_NO_UPDATE",
+    "unknown_label_policy": "MASK_NOT_NEGATIVE",
+    "batch_size_episodes": 8,
+    "max_epochs": 30,
+    "early_stopping": null,
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "weight_decay": 0.00001,
+    "gradient_clip_norm": 5.0,
+    "normalization_source": "FIT_TRAIN_STATES_ONLY_PER_FOLD",
+    "normalization_per_fold": true
+  },
+
+  "model_candidates": {
+    "A": {
+      "name": "ResidualVetoGRU",
+      "description": "Original 25D + GRU128 + criticality + veto + release heads. Tests whether Teacher V2 + hard-negative loss alone suffices.",
+      "feature_view": "A_25D",
+      "hidden_dim": 128,
+      "dropout": 0.0,
+      "heads": ["criticality", "veto", "release_imminent"],
+      "param_budget": "~130K"
+    },
+    "B": {
+      "name": "DynamicResidualGRU",
+      "description": "View B or C causal dynamic features + GRU128 + criticality + veto + release heads.",
+      "feature_view": "B_25D_PLUS_GRIPPER_DYNAMICS",
+      "hidden_dim": 128,
+      "dropout": 0.0,
+      "heads": ["criticality", "veto", "release_imminent"],
+      "param_budget": "~130K-150K"
+    },
+    "C": {
+      "name": "HazardRankingGRU",
+      "description": "Best dynamic view + GRU128 + critical-onset hazard + continuation + veto + release heads, with ranking loss.",
+      "feature_view": "C_25D_PLUS_EEF_DYNAMICS",
+      "hidden_dim": 128,
+      "dropout": 0.0,
+      "heads": ["critical_onset_hazard", "valid_retention", "veto", "release_hazard"],
+      "param_budget": "~150K"
+    }
+  },
+
+  "loss_ablations": {
+    "L0": {"name": "MaskedBCE", "description": "Control: original masked BCE on retention_continuation_t10 only."},
+    "L2": {"name": "MaskedBCE_HardNegativeVeto", "description": "L0 + veto head BCE with hard-negative candidate-window class weighting."},
+    "L3": {"name": "L2_EpisodePenalty", "description": "L2 + episode-level any-emit surrogate penalty."},
+    "L4": {"name": "L2_PairwiseRanking", "description": "L2 + candidate-window pairwise ranking: valid critical window score > hard-negative window score."},
+    "L5": {"name": "L4_ReleaseOverlap", "description": "L4 + release overlap penalty."}
+  },
+
+  "compute_stages": {
+    "stage_1": {"name": "CPU_Contract", "description": "Schema tests, leakage tests, Teacher V2 audit, candidate-window census, masked loss tests."},
+    "stage_2": {"name": "Synthetic_TinyOverfit", "description": "Synthetic convergence + tiny real subset overfit."},
+    "stage_3": {"name": "1Fold_1Seed_Smoke", "description": "Fold 0, seed 20260717. Eliminate clear failures."},
+    "stage_4": {"name": "4Fold_1Seed_Screen", "description": "4 folds x seed 20260717. Top 2-3 combinations continue."},
+    "stage_5": {"name": "4Fold_3Seed_Final", "description": "4 folds x 3 seeds for 1-2 final candidates."}
+  },
+
+  "gpu_budget": {
+    "max_concurrent_jobs": 1,
+    "preferred_gpu": "ANY_IDLE",
+    "pre_check_nvidia_smi": true,
+    "record_gpu_id": true,
+    "record_gpu_temperature": true,
+    "xid_stop": true,
+    "oom_stop": true,
+    "nan_stop": true
+  },
+
+  "evaluation": {
+    "primary_method": "MATCHED_OPERATING_POINT",
+    "matched_recall_targets": [0.90, 0.93, 0.95],
+    "matched_fpr_targets": [0.05, 0.10, 0.15],
+    "pareto_dominance_required": true,
+    "metrics": [
+      "full_t10_event_hit_rate",
+      "later_event_hit_rate",
+      "negative_episode_any_emit_rate",
+      "hard_negative_window_false_emit_rate",
+      "release_overlap_count",
+      "onset_latency_mean_steps",
+      "auroc_step_level",
+      "auprc_hard_negative",
+      "partial_auc_fpr_range",
+      "candidate_window_precision",
+      "candidate_window_recall",
+      "first_emit_latency",
+      "suite_macro",
+      "task_macro",
+      "seed_mean",
+      "seed_std"
+    ],
+    "aggregation": "UNWEIGHTED_ARITHMETIC_MEAN_ACROSS_FOLD_SEED_RUNS",
+    "micro_pooled": "NOT_USED_FOR_GATE"
+  },
+
+  "viability_conditions": {
+    "hard_gates": {
+      "source_mutation": {"value": 0, "operator": "="},
+      "leakage_violation": {"value": 0, "operator": "="},
+      "release_overlap": {"value": 0, "operator": "="},
+      "unknown_as_negative": {"value": 0, "operator": "="},
+      "all_seals_pass": {"value": true, "operator": "="},
+      "fold_count": {"value": 4, "operator": "="},
+      "seed_count": {"value": 3, "operator": ">="}
+    },
+    "performance_gates": {
+      "full_t10_matched_recall": "MATCHED_RECALL_AT_LEAST_90PCT",
+      "later_event_no_crash": "LATER_EVENT_WITHIN_ACCEPTABLE_RANGE",
+      "negative_emit_below_b3": "MATCHED_RECALL_NEGATIVE_EMIT_BELOW_B3_MACRO",
+      "negative_emit_below_close_baseline": "MATCHED_RECALL_NEGATIVE_EMIT_BELOW_CLOSE_BASELINE",
+      "pareto_improvement_folds": "AT_LEAST_3_OF_4_FOLDS_SHOW_PARETO_IMPROVEMENT",
+      "not_simple_close_detector": "SCORE_CORRELATION_WITH_CLOSE_STREAK_BELOW_THRESHOLD"
+    }
+  },
+
+  "output_roots": {
+    "base": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops",
+    "naming": "OFFICIAL_V3_DETECTOR_V4_<PHASE>_<HEAD>_<TIMESTAMP>",
+    "non_overwritable": true
+  },
+
+  "prohibited": [
+    "MODIFY_CLEAN_ARTIFACT",
+    "OVERWRITE_OLD_CHECKSUM",
+    "COPY_MANIFEST_TO_OLD_ARTIFACT_DIR",
+    "DELETE_OR_RELABEL_IDENTITY",
+    "CHANGE_FIT_SPLIT_BASED_ON_B3",
+    "MODIFY_B3_RESULT",
+    "USE_ATTACK_OUTCOME_AS_TEACHER",
+    "USE_FUTURE_FRAME_AS_STUDENT_INPUT",
+    "USE_OBJECT_STATE_AS_STUDENT_INPUT",
+    "USE_CONTACT_INFO_AS_STUDENT_INPUT",
+    "READ_FIT_DEV",
+    "READ_CAL",
+    "READ_CHECK",
+    "POST_HOC_THRESHOLD_TUNING_ON_HELDOUT",
+    "SEED_SELECTION_FROM_RESULTS",
+    "MERGE_TO_MAIN",
+    "MARK_PR_READY"
+  ]
+}

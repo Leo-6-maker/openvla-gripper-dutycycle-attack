@@ -1,0 +1,148 @@
+{
+  "schema": "DETECTOR_V4_FEATURE_PROTOCOL_V1",
+  "version": "1.0",
+  "causality_contract": "STRICT_CAUSAL_NO_FUTURE",
+  "privileged_ban": [
+    "object_state",
+    "object_pose",
+    "object_velocity",
+    "contact_pair",
+    "contact_force",
+    "simulator_contact",
+    "teacher_label",
+    "future_step",
+    "future_retention",
+    "future_release",
+    "task_success",
+    "attack_outcome"
+  ],
+
+  "feature_views": {
+    "A_25D": {
+      "name": "Original 25D Baseline",
+      "description": "Exact B3_25D feature set. Used as control to isolate Teacher/loss effects.",
+      "feature_count": 25,
+      "source": "B3_FEATURES_25D from SC5_FEATURES",
+      "features": "SC5_FEATURES tuple (same as B3 execution commit 5e27d7c)",
+      "dtype": "float32",
+      "normalization": "PER_FOLD_TRAIN_ONLY"
+    },
+    "B_25D_PLUS_GRIPPER_DYNAMICS": {
+      "name": "25D + Causal Gripper Dynamics",
+      "description": "Original 25D plus gripper-specific causal dynamic features computed from step-level history.",
+      "feature_count": null,
+      "base_features": "A_25D",
+      "added_features": {
+        "delta_gripper_qpos": {
+          "description": "First difference of gripper qpos: qpos[t] - qpos[t-1]",
+          "lookback": 1,
+          "dtype": "float32"
+        },
+        "delta2_gripper_qpos": {
+          "description": "Second difference of gripper qpos: delta[t] - delta[t-1]",
+          "lookback": 2,
+          "dtype": "float32"
+        },
+        "gripper_command_qpos_deviation": {
+          "description": "Absolute difference between raw close command and observed qpos",
+          "lookback": 0,
+          "dtype": "float32"
+        },
+        "close_dwell_duration": {
+          "description": "Number of consecutive steps with gripper closed (time_since_close >= 0). Resets to 0 when gripper opens.",
+          "lookback": "accumulated",
+          "dtype": "float32"
+        },
+        "time_since_close_onset": {
+          "description": "Steps since most recent close onset. -1 if never closed in episode.",
+          "lookback": "accumulated",
+          "dtype": "float32"
+        },
+        "recent_close_count": {
+          "description": "Number of close_onset events observed in the episode so far.",
+          "lookback": "accumulated",
+          "dtype": "float32"
+        },
+        "opening_trend": {
+          "description": "Exponential moving average of delta_qpos with decay 0.9, capturing opening/closing trend.",
+          "lookback": "ema",
+          "dtype": "float32"
+        },
+        "recent_command_variance": {
+          "description": "Variance of gripper command over last 10 steps.",
+          "lookback": 10,
+          "dtype": "float32"
+        }
+      },
+      "total_feature_count_estimate": "33-35",
+      "dtype": "float32",
+      "normalization": "PER_FOLD_TRAIN_ONLY"
+    },
+    "C_25D_PLUS_EEF_DYNAMICS": {
+      "name": "25D + Gripper + EEF Dynamics",
+      "description": "View B features plus end-effector causal dynamic features.",
+      "base_features": "B_25D_PLUS_GRIPPER_DYNAMICS",
+      "added_features": {
+        "eef_velocity": {
+          "description": "Euclidean norm of EEF position delta over last step.",
+          "lookback": 1,
+          "dtype": "float32"
+        },
+        "eef_acceleration": {
+          "description": "Change in eef_velocity over last step.",
+          "lookback": 2,
+          "dtype": "float32"
+        },
+        "eef_vertical_velocity": {
+          "description": "Z-component of EEF position delta (world frame).",
+          "lookback": 1,
+          "dtype": "float32"
+        },
+        "eef_stability": {
+          "description": "Exponential moving variance of EEF position over last 20 steps. Low value = stable hold.",
+          "lookback": 20,
+          "dtype": "float32"
+        },
+        "eef_displacement_since_close_onset": {
+          "description": "Euclidean distance from EEF position at most recent close onset to current position.",
+          "lookback": "accumulated_from_close_onset",
+          "dtype": "float32"
+        },
+        "action_consistency": {
+          "description": "Fraction of last 10 gripper actions that are identical.",
+          "lookback": 10,
+          "dtype": "float32"
+        }
+      },
+      "total_feature_count_estimate": "39-41",
+      "dtype": "float32",
+      "normalization": "PER_FOLD_TRAIN_ONLY"
+    }
+  },
+
+  "feature_construction_rules": {
+    "only_current_and_past_steps": true,
+    "no_future_interpolation": true,
+    "no_teacher_features_as_input": true,
+    "no_object_or_contact_features": true,
+    "boundary_handling": {
+      "first_step_delta": "ZERO",
+      "first_step_delta2": "ZERO",
+      "insufficient_history_variance": "ZERO_UNTIL_MIN_WINDOW",
+      "pre_close_onset_values": "DEFAULT_SENTINEL"
+    },
+    "schema_per_view": "INDEPENDENT_FEATURE_ORDER_SHA256",
+    "feature_order": "DETERMINISTIC_ALPHABETICAL_WITHIN_GROUP"
+  },
+
+  "audit_requirements": {
+    "check_no_future_leakage_per_step": true,
+    "check_no_privileged_field_leakage": true,
+    "check_deterministic_rebuild": true,
+    "check_feature_order_sha_consistent": true,
+    "check_normalization_fold_isolation": true,
+    "check_all_800_identities_rebuildable": true,
+    "check_finite_values": true,
+    "check_no_nan_inf": true
+  }
+}
