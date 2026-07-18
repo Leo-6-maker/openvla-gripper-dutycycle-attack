@@ -2,23 +2,26 @@
 
 Date: 2026-07-18 23:32 CST
 Branch: `codex/official-v3-detector-v5-20260718`
-Required code HEAD: `9c13a1fcb2b16a0651f1c474afbd424865df9e11`
+Required starting HEAD: `9c13a1fcb2b16a0651f1c474afbd424865df9e11`
+Current development HEAD: `4a217211f058103d05a8ba6699b3f3ffc781a8a4`
 
 ## R0 decision
 
 `R0_READ_ONLY_TAKEOVER = PASS_WITH_GPU_HOLD`
 
-The repository and sealed evidence are identifiable, but the server shared checkout is a dirty historical checkout and no A800 is currently available for a new process. No GPU task was started.
+The repository and sealed evidence are identifiable. The server shared checkout is a dirty historical checkout and no A800 is currently safe for a new process because every device has an existing process or substantial allocation. No GPU task was started.
 
 ## GitHub source state
 
 - Repository: `Leo-6-maker/openvla-gripper-dutycycle-attack`
 - PR: `#87`, open, Draft, mergeable
-- HEAD: `9c13a1fcb2b16a0651f1c474afbd424865df9e11`
+- HEAD at initial takeover: `9c13a1fcb2b16a0651f1c474afbd424865df9e11`
+- Current branch HEAD after R1/CI fix: `4a217211f058103d05a8ba6699b3f3ffc781a8a4`
 - Base: `archive/official-v3-b3-25d-execution-5e27d7c`
 - Required archive commit: `5e27d7c4b1a188bc6a78555f94d2571222587805`
-- Latest checks at the required HEAD: `detector-v5-cpu = SUCCESS`, `source-registry = SUCCESS`, `stageb-cpu = SUCCESS`
-- The PR body has been updated to the required HEAD and records the A/B matched-smoke boundary.
+- Checks at the initial takeover HEAD: `detector-v5-cpu = SUCCESS`, `source-registry = SUCCESS`, `stageb-cpu = SUCCESS`
+- The first R1 push added the strict evaluator and working-point review. Its detector-v5 check exposed a test import-path defect; a minimal fix is now in `4a21721` and is awaiting the replacement CI run.
+- The PR body still needs a current-HEAD handoff update after the replacement CI completes.
 - No merge, Ready-for-review transition, main-branch change, force-push, review, or comment was performed.
 
 ## SSH and server state
@@ -54,7 +57,7 @@ All eight A800s have other-user processes or substantial allocations:
 | 6 | 41883 / 81920 MiB | 100% | mmunlearner | hold |
 | 7 | 33168 / 81920 MiB | 59% | pi0 process | hold |
 
-`GPU_TASKS_STARTED = 0`. No process was stopped or altered.
+`GPU_TASKS_STARTED = 0`. No process was stopped or altered. The user authorized all GPUs in principle, but current census still fails the safe-idle condition; authorization does not permit killing or sharing another process's GPU allocation.
 
 ## Sealed inputs and existing evidence
 
@@ -84,6 +87,23 @@ Existing A/B development evidence remains present and was not modified:
 
 The C2F search found candidate clean observation trees under `/mnt/sdc/dty_user/openvla_attack_evidence/c2f/`, including `clean2000_obs_clean_36712cc` and prior RGB/embedding experiment roots. The candidate observation root currently exposes shard/log directories but no top-level `SHA256SUMS` in the shallow inventory. It is therefore not accepted as an Official RGB sidecar until R4 proves exact trajectory binding and verifies a complete seal.
 
+## R1 read-only re-evaluation result
+
+The existing A/B matched-smoke checkpoints were replayed on CPU from the clean isolated worktree at `6424a96` using new, non-overwrite output roots. The old roots were not modified.
+
+- A output root: `.../OFFICIAL_V3_DETECTOR_V5_A_PROPRIO_R1_WORKING_POINT_6424a96_20260718`
+- B output root: `.../OFFICIAL_V3_DETECTOR_V5_B_POLICY_INTENT_R1_WORKING_POINT_6424a96_20260718`
+- A prediction audit: `PASS`; `formal_training_authorized=false`; `formal_attack_authorized=false`
+- B prediction audit: `PASS`; `formal_training_authorized=false`; `formal_attack_authorized=false`
+- Both runs: 200 validation identities, 126 true-mixed episodes, causal-anchor top-1 `112/126 = 0.8888888889`
+- A: 172 raw online emits, 5 outside-rankable scheduler events, 1 release trigger, 9 regrasp triggers, pure-negative abstention `0/3`
+- B: 175 raw online emits, 5 outside-rankable scheduler events, 1 release trigger, 7 regrasp triggers, pure-negative abstention `1/3`
+- Working-point status: `HOLD` for both; no threshold in the fixed grid met critical-window recall `>= 0.95`
+- A/B review root: `.../OFFICIAL_V3_DETECTOR_V5_AB_WORKING_POINT_REVIEW_6424a96_20260718`
+- A/B disagreement counts: causal `12`, emit `21`, scheduler `33`, release `2`, regrasp `4`
+
+These figures are sealed development diagnostics. `112/126` is causal-anchor argmax, not scheduler selection accuracy; no formal model-selection or attack authorization follows.
+
 ## Confirmed gaps carried into R1--R4
 
 1. `evaluate_v5_causal_online.py` currently loads the checkpoint with `strict=False`; future evaluation must use `strict=True`.
@@ -93,7 +113,7 @@ The C2F search found candidate clean observation trees under `/mnt/sdc/dty_user/
 5. Runtime intent causality must be read from the actual runner; it must not be inferred from a report.
 6. Physics task/object-state slices have not yet been formally decoded for all 40 tasks; no physics Teacher may be generated by guessing.
 7. C2F observation/RGB artifacts are not yet proven `EXACT_TRAJECTORY_BOUND`.
-8. No new GPU run is authorized until the R1/R2/R3/R4 CPU/I/O gates are complete and a GPU is demonstrably idle.
+8. No new GPU run is authorized until the R1/R2/R3/R4 CPU/I/O gates are complete and a GPU is demonstrably idle; the current all-device census has not met that condition.
 
 ## Planned allocation and stop gates
 
@@ -113,7 +133,8 @@ Protected splits (FIT-DEV, CAL, CHECK, and states 30--49 semantics) were not rea
 ## Mutation declaration
 
 - GitHub mutations in this takeover: `0`
-- Server code/evidence mutations in this takeover: `0`
+- Server code/evidence artifact mutations in this takeover: `0`
+- Server Git metadata: one clean detached worktree was created at `/tmp/codex_v5_physics_6424a96`; the dirty shared checkout was not changed.
 - CLEAN/S1/old Teacher/old A/B roots modified: `0`
 - Protected split semantic reads: `0`
 - Attack data or rollout started: `0`
