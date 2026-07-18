@@ -34,7 +34,9 @@ def _json(path: Path) -> Any:
 
 
 def _raw_segments(teacher_root: Path, row: dict[str, Any]) -> list[dict[str, Any]]:
-    path = teacher_root / "labels" / row["suite"] / f"task_{int(row['task_idx']):02d}" / f"state_{int(row['state_id']):02d}" / "physics_teacher_v2.jsonl"
+    label_dir = teacher_root / "labels" / row["suite"] / f"task_{int(row['task_idx']):02d}" / f"state_{int(row['state_id']):02d}"
+    v21 = label_dir / "physics_teacher_v21.jsonl"
+    path = v21 if v21.is_file() else label_dir / "physics_teacher_v2.jsonl"
     rows = _jsonl(path)
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for item in rows:
