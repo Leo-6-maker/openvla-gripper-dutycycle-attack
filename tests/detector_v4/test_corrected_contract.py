@@ -10,6 +10,9 @@ import torch
 from gripper_attack.v4_contract import FEATURE_INDEX, FEATURE_ORDER_SHA256, SC5_FEATURES, verify_checksum_manifest
 from gripper_attack.v4_dataset import V4Episode, derive_dynamic_features, load_v4_episode, select_fold_episodes
 from gripper_attack.v4_formal import V4StatefulQualityGRU, compute_v4_loss
+from scripts.detector_v4.evaluate_v4_corrected import _metrics, select_working_point
+from scripts.detector_v4.build_v4_training_authorization import _verify_teacher_derivative
+from scripts.detector_v4.audit_v4_window_semantics import audit_window_semantics
 
 
 def _write_seal(root: Path) -> None:
@@ -120,3 +123,83 @@ def test_model_resets_only_at_episode_boundary_and_accepts_valid_mask() -> None:
     boundary = torch.tensor([[True, False, False]])
     result = model(x, valid, boundary)
     assert result["quality"].shape == (1, 3)
+
+
+def test_evaluator_applies_candidate_close_and_student_valid_gate() -> None:
+    ep = V4Episode(
+        canonical_parent_key="libero_10/task_00/state_00", suite="libero_10", task_idx=0, state_id=0,
+        split="FIT_TRAIN", features=torch.zeros(2, 25),
+        student_valid_mask=torch.tensor([True, True]), candidate_close=torch.tensor([False, True]),
+        quality_target=torch.tensor([1.0, 0.0]), quality_supervision_mask=torch.tensor([True, True]),
+        release_target=torch.tensor([1.0, -1.0]), release_supervision_mask=torch.tensor([True, False]),
+        event_id=torch.tensor([0, 0]), phase_id=torch.tensor([0, 1]), window_id=torch.tensor([0, 0]),
+        source_artifact_sha256="a" * 64,
+    )
+    report = _metrics([ep], {ep.canonical_parent_key: torch.tensor([0.99, 0.99])}, 0.5)
+    assert report["valid_event_hit_n"] == 0
+    assert report["release_overlap_n"] == 0
+
+
+def test_working_point_selector_uses_maximum_threshold_rule() -> None:
+    config = {
+        "working_point_rule": "maximum_threshold_with_valid_event_hit_gte_0.95",
+        "valid_event_hit_minimum": 0.95,
+    }
+    metrics = [
+        {"threshold": 0.05, "valid_event_hit": 1.0},
+        {"threshold": 0.50, "valid_event_hit": 0.96},
+        {"threshold": 0.65, "valid_event_hit": 0.95},
+        {"threshold": 0.70, "valid_event_hit": 0.94},
+    ]
+    selected = select_working_point(metrics, config)
+    assert selected["status"] == "PASS"
+    assert selected["threshold"] == pytest.approx(0.65)
+    held = select_working_point([{ "threshold": 0.5, "valid_event_hit": 0.94}], config)
+    assert held["status"] == "HOLD"
+    assert held["threshold"] is None
+
+
+def test_teacher_derivative_audit_is_bound_to_the_supplied_root(tmp_path: Path) -> None:
+    root = tmp_path / "teacher"
+    root.mkdir()
+    manifest = {
+        "schema": "DETECTOR_V4_TEACHER_V212_V1_MANIFEST",
+        "source_root_sha256s_sha256": "b" * 64,
+        "identity_count": 800,
+        "xor_failures": 0,
+        "formal_training_authorized": False,
+        "formal_attack_authorized": False,
+    }
+    (root / "teacher_v212_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    _write_seal(root)
+    root_sha = hashlib.sha256((root / "SHA256SUMS").read_bytes()).hexdigest()
+    audit = tmp_path / "teacher_audit.json"
+    audit.write_text(json.dumps({
+        "schema": "DETECTOR_V4_WINDOW_SEMANTICS_AUDIT_V1",
+        "status": "PASS",
+        "teacher_root_sha256s_sha256": root_sha,
+        "identity_count": 800,
+        "xor_failures": 0,
+    }), encoding="utf-8")
+    result = _verify_teacher_derivative(root, audit)
+    assert result["root_sha256s_sha256"] == root_sha
+    audit.write_text(json.dumps({"status": "PASS", "teacher_root_sha256s_sha256": "c" * 64, "identity_count": 800, "xor_failures": 0}), encoding="utf-8")
+    with pytest.raises(ValueError, match="not bound"):
+        _verify_teacher_derivative(root, audit)
+
+
+def test_window_semantics_census_detects_event_split_across_phases(tmp_path: Path) -> None:
+    root = tmp_path / "teacher"
+    episode = root / "libero_10" / "task_00" / "state_00"
+    episode.mkdir(parents=True)
+    labels = [
+        {"step": 0, "event_id": 0, "phase_name": "PRE_SUPPORT", "window_start": 0, "window_end": 1, "quality_valid": False, "veto_invalid": False},
+        {"step": 1, "event_id": 0, "phase_name": "VALID_RETENTION", "window_start": 0, "window_end": 1, "quality_valid": True, "veto_invalid": False},
+    ]
+    (episode / "teacher_v212_labels.jsonl").write_text("".join(json.dumps(row) + "\n" for row in labels), encoding="utf-8")
+    (episode / "close_phases.json").write_text(json.dumps({"phases": [{"event_id": 0, "start_step": 0, "end_step": 1}]}), encoding="utf-8")
+    _write_seal(root)
+    summary = audit_window_semantics(root, tmp_path / "audit")
+    assert summary["status"] == "HOLD"
+    assert summary["multi_phase_event_identity_count"] == 1
+    assert summary["new_teacher_derivative_required"] is True

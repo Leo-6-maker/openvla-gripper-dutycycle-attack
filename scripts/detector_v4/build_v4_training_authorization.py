@@ -137,12 +137,43 @@ def _verify_normalization(root: Path, fold_id: int, candidate: str, registry_sha
     return payload
 
 
+def _verify_teacher_derivative(root: Path, audit_path: Path) -> dict[str, Any]:
+    """Verify the exact V2.1.2 derivative root that the trainer will consume."""
+    root_sha = _root_sha(root)
+    manifest_path = root / "teacher_v212_manifest.json"
+    if not manifest_path.is_file():
+        raise ValueError("Teacher V2.1.2 manifest is missing")
+    _assert_in_root(manifest_path, root, "Teacher V2.1.2 manifest")
+    manifest = _json(manifest_path)
+    if manifest.get("schema") != "DETECTOR_V4_TEACHER_V212_V1_MANIFEST":
+        raise ValueError("wrong Teacher V2.1.2 manifest schema")
+    if int(manifest.get("identity_count", 0)) != 800 or int(manifest.get("xor_failures", 1)) != 0:
+        raise ValueError("Teacher V2.1.2 manifest is not an 800-identity XOR-clean root")
+    if manifest.get("formal_training_authorized") is not False or manifest.get("formal_attack_authorized") is not False:
+        raise ValueError("Teacher derivative root cannot authorize training or attack")
+    audit = _json(audit_path)
+    if audit.get("teacher_root_sha256s_sha256") != root_sha:
+        raise ValueError("Teacher root audit is not bound to the supplied Teacher root")
+    if audit.get("status") not in {"PASS", "PASS_STRUCTURAL_TEACHER_AUDIT"}:
+        raise ValueError("independent Teacher root audit is not PASS")
+    if int(audit.get("identity_count", audit.get("actual_identity_count", 0))) != 800:
+        raise ValueError("independent Teacher root audit is not for 800 identities")
+    if int(audit.get("xor_failures", audit.get("quality_veto_overlap", 0))) != 0:
+        raise ValueError("independent Teacher root audit reports XOR failures")
+    return {
+        "root_sha256s_sha256": root_sha,
+        "manifest_sha256": _file_sha(manifest_path),
+        "audit_sha256": _file_sha(audit_path),
+        "manifest": manifest,
+    }
+
+
 def build(args: argparse.Namespace) -> dict[str, Any]:
     if not args.execute_formal:
         raise ValueError("authorization generation requires --execute-formal")
     if args.candidate not in VALID_CANDIDATES:
         raise ValueError("unknown V4 candidate")
-    for root in (args.registry_root, args.s1_root, args.fold_root, args.normalization_root):
+    for root in (args.registry_root, args.s1_root, args.fold_root, args.normalization_root, args.teacher_root):
         _root_sha(root)
     registry_sha = _root_sha(args.registry_root)
     s1_sha = _root_sha(args.s1_root)
@@ -161,6 +192,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     normalization = _verify_normalization(
         args.normalization_root, args.fold_id, args.candidate, _file_sha(args.registry_csv), s1_sha, train_sha
     )
+    teacher_derivative = _verify_teacher_derivative(args.teacher_root, args.teacher_root_audit)
 
     s1_audit = _json(args.s1_audit)
     teacher_aggregate = _json(args.teacher_aggregate)
@@ -181,6 +213,10 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         "s1_root_sha256": s1_sha,
         "s1_root_audit_sha256": _file_sha(args.s1_audit),
         "teacher_aggregate_sha256": _file_sha(args.teacher_aggregate),
+        "teacher_root_sha256s_sha256": teacher_derivative["root_sha256s_sha256"],
+        "teacher_manifest_sha256": teacher_derivative["manifest_sha256"],
+        "teacher_root_audit_sha256": teacher_derivative["audit_sha256"],
+        "teacher_source_v211_root_sha256s_sha256": teacher_derivative["manifest"].get("source_root_sha256s_sha256", ""),
         "training_protocol_sha256": _file_sha(args.training_protocol),
         "source_contract_sha256": _file_sha(args.source_contract),
         "protocol_sha256": _file_sha(args.protocol),
@@ -214,6 +250,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             "fold_quota": "600_train+200_validation",
             "s1_root_audit": "PASS",
             "teacher_aggregate": "PASS",
+            "teacher_v212_root": "PASS",
             "normalization_recomputed_from_train_only": True,
             "protected_splits_read": False,
         },
@@ -255,6 +292,8 @@ def main() -> None:
     p.add_argument("--s1-root", type=Path, required=True)
     p.add_argument("--s1-audit", type=Path, required=True)
     p.add_argument("--teacher-aggregate", type=Path, required=True)
+    p.add_argument("--teacher-root", type=Path, required=True)
+    p.add_argument("--teacher-root-audit", type=Path, required=True)
     p.add_argument("--fold-root", type=Path, required=True)
     p.add_argument("--normalization-root", type=Path, required=True)
     p.add_argument("--training-protocol", type=Path, required=True)

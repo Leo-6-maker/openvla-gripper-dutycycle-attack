@@ -30,6 +30,7 @@ jobs:
             scripts/detector_v4/build_v4_normalization_bundle.py \
             scripts/detector_v4/build_v4_training_authorization.py \
             scripts/detector_v4/evaluate_v4_corrected.py \
+            scripts/detector_v4/audit_v4_window_semantics.py \
             scripts/detector/train_v4_quality_detector.py
       - name: Run corrected V4 CPU contract tests
         run: pytest tests/detector_v4 -q

@@ -43,9 +43,42 @@ def _load_fold_validation(fold_root: Path, fold_id: int) -> list[str]:
     return identities
 
 
-def _episode_records(ep, probs: torch.Tensor, fold_id: int, seed: int, view: str) -> list[dict[str, Any]]:
+def select_working_point(threshold_metrics: list[dict[str, Any]], decision_config: dict[str, Any]) -> dict[str, Any]:
+    """Select the pre-recorded working point without inspecting future splits."""
+    rule = decision_config.get("working_point_rule")
+    if rule != "maximum_threshold_with_valid_event_hit_gte_0.95":
+        raise ValueError(f"unsupported working-point rule: {rule}")
+    minimum = float(decision_config.get("valid_event_hit_minimum", 0.95))
+    eligible = [row for row in threshold_metrics if float(row["valid_event_hit"]) >= minimum]
+    if not eligible:
+        return {
+            "status": "HOLD",
+            "reason": "NO_VALID_THRESHOLD",
+            "minimum_valid_event_hit": minimum,
+            "threshold": None,
+            "rule": rule,
+        }
+    selected = max(eligible, key=lambda row: float(row["threshold"]))
+    return {
+        "status": "PASS",
+        "reason": "VALID_THRESHOLD_SELECTED",
+        "minimum_valid_event_hit": minimum,
+        "threshold": float(selected["threshold"]),
+        "rule": rule,
+        "selected_metrics": selected,
+    }
+
+
+def _episode_records(
+    ep, probs: torch.Tensor, fold_id: int, seed: int, view: str,
+    working_point_threshold: float | None,
+) -> list[dict[str, Any]]:
     rows = []
     for step in range(ep.n_steps):
+        raw_emit = None if working_point_threshold is None else bool(probs[step] >= working_point_threshold)
+        candidate_gated_emit = None if raw_emit is None else bool(
+            ep.student_valid_mask[step] and ep.candidate_close[step] and raw_emit
+        )
         rows.append({
             "schema": "DETECTOR_V4_PREDICTION_STEP_V2",
             "canonical_parent_key": ep.canonical_parent_key,
@@ -54,6 +87,9 @@ def _episode_records(ep, probs: torch.Tensor, fold_id: int, seed: int, view: str
             "quality_probability": float(probs[step]),
             "student_valid": bool(ep.student_valid_mask[step]),
             "candidate_close": bool(ep.candidate_close[step]),
+            "raw_quality_emit": raw_emit,
+            "candidate_gated_emit": candidate_gated_emit,
+            "working_point_threshold": working_point_threshold,
             "event_id": int(ep.event_id[step]),
             "phase_id": int(ep.phase_id[step]),
             "window_id": int(ep.window_id[step]),
@@ -77,7 +113,7 @@ def _metrics(episodes, probabilities: dict[str, torch.Tensor], threshold: float)
     task_counts: dict[str, list[int]] = defaultdict(lambda: [0, 0])
     for ep in episodes:
         prob = probabilities[ep.canonical_parent_key]
-        emit = prob >= threshold
+        emit = ep.student_valid_mask & ep.candidate_close & (prob >= threshold)
         qmask = ep.quality_supervision_mask
         positive = qmask & (ep.quality_target > 0.5) & (ep.event_id >= 0)
         negative = qmask & (ep.quality_target < 0.5) & (ep.event_id >= 0)
@@ -131,6 +167,12 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
     checkpoint_seal = verify_checksum_manifest(args.checkpoint_root)
     s1_seal = verify_checksum_manifest(args.s1_root)
     teacher_seal = verify_checksum_manifest(args.teacher_root)
+    decision_config_path = Path(args.decision_config)
+    decision_config = json.loads(decision_config_path.read_text(encoding="utf-8"))
+    if decision_config.get("schema") != "DETECTOR_V4_DECISION_CONFIG_V2":
+        raise ValueError("wrong V4 decision config schema")
+    if decision_config.get("formal_training_authorized") is not False or decision_config.get("formal_attack_authorized") is not False:
+        raise ValueError("decision config cannot authorize training or attack")
     validation_ids = _load_fold_validation(args.fold_root, args.fold_id)
     ckpt_path = args.checkpoint_root / "checkpoint.pt"
     manifest = json.loads((args.checkpoint_root / "checkpoint_manifest.json").read_text(encoding="utf-8"))
@@ -154,7 +196,6 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
     if len(episodes) != 200 or any(ep.state_id not in FIT_STATES for ep in episodes):
         raise ValueError("validation set is not the exact FIT fold")
     probabilities = {}
-    records = []
     with torch.no_grad():
         for ep in episodes:
             x = normalization.normalize(ep.features.unsqueeze(0))
@@ -163,19 +204,31 @@ def evaluate(args: argparse.Namespace) -> dict[str, Any]:
             boundary[:, 0] = True
             probs = torch.sigmoid(model(x, valid, boundary)["quality"][0])
             probabilities[ep.canonical_parent_key] = probs
-            records.extend(_episode_records(ep, probs, args.fold_id, args.seed, view))
-    thresholds = [round(i / 100, 2) for i in range(5, 100, 5)]
+    thresholds = [float(value) for value in decision_config.get("threshold_grid", [])]
+    if thresholds != sorted(set(thresholds)) or any(value < 0.0 or value > 1.0 for value in thresholds):
+        raise ValueError("decision config threshold_grid must be sorted, unique, and in [0, 1]")
+    if not thresholds:
+        raise ValueError("decision config threshold_grid is empty")
     metrics = [_metrics(episodes, probabilities, threshold) for threshold in thresholds]
+    working_point = select_working_point(metrics, decision_config)
+    selected_threshold = working_point["threshold"]
+    records = []
+    for ep in episodes:
+        prob = probabilities[ep.canonical_parent_key]
+        records.extend(_episode_records(ep, prob, args.fold_id, args.seed, view, selected_threshold))
     payload = {
         "schema": "DETECTOR_V4_FIT_VALIDATION_BUNDLE_V2",
-        "status": "PASS",
+        "status": "PASS" if working_point["status"] == "PASS" else "HOLD",
         "fold_id": args.fold_id, "seed": args.seed, "view": view,
         "validation_identity_count": len(validation_ids),
         "validation_identity_sha256": identity_sha(validation_ids),
         "checkpoint_root_sha256s_sha256": checkpoint_seal["sha256sums_sha256"],
         "s1_root_sha256s_sha256": s1_seal["sha256sums_sha256"],
         "teacher_root_sha256s_sha256": teacher_seal["sha256sums_sha256"],
+        "decision_config_sha256": sha256_file(decision_config_path),
         "threshold_metrics": metrics,
+        "working_point": working_point,
+        "emission_rule": "student_valid AND candidate_close AND quality_probability >= threshold",
         "formal_training_authorized": False,
         "formal_attack_authorized": False,
     }
@@ -200,6 +253,7 @@ def main() -> None:
     p.add_argument("--fold-root", type=Path, required=True)
     p.add_argument("--fold-id", type=int, choices=range(4), required=True)
     p.add_argument("--seed", type=int, required=True)
+    p.add_argument("--decision-config", type=Path, required=True)
     p.add_argument("--output-root", type=Path, required=True)
     print(json.dumps(evaluate(p.parse_args()), indent=2, sort_keys=True))
 

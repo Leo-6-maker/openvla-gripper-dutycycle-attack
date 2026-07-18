@@ -102,8 +102,14 @@ def train(args: argparse.Namespace) -> dict:
     teacher_before = verify_checksum_manifest(args.teacher_root)
     fold_before = verify_checksum_manifest(args.fold_root)
     input_shas = auth["input_snapshots"]
-    if input_shas["s1_root_sha256"] != s1_before["sha256sums_sha256"] or input_shas["fold_manifest_sha256"] != fold_before["sha256sums_sha256"]:
+    if (
+        input_shas["s1_root_sha256"] != s1_before["sha256sums_sha256"]
+        or input_shas["teacher_root_sha256s_sha256"] != teacher_before["sha256sums_sha256"]
+        or input_shas["fold_manifest_sha256"] != fold_before["sha256sums_sha256"]
+    ):
         raise ValueError("authorization input root SHA mismatch")
+    if sha256_file(args.teacher_root_audit) != input_shas["teacher_root_audit_sha256"]:
+        raise ValueError("authorization Teacher root-audit SHA mismatch")
     runner = measured_git_binding(
         args.runner_repo,
         [args.runner_script, args.runner_config, "scripts/detector_v4/build_v4_training_authorization.py"],
@@ -164,6 +170,8 @@ def train(args: argparse.Namespace) -> dict:
     s1_after = verify_checksum_manifest(args.s1_root)
     teacher_after = verify_checksum_manifest(args.teacher_root)
     fold_after = verify_checksum_manifest(args.fold_root)
+    if sha256_file(args.teacher_root_audit) != input_shas["teacher_root_audit_sha256"]:
+        raise ValueError("TOCTOU: Teacher root-audit changed during training")
     if (s1_before["sha256sums_sha256"], teacher_before["sha256sums_sha256"], fold_before["sha256sums_sha256"]) != (s1_after["sha256sums_sha256"], teacher_after["sha256sums_sha256"], fold_after["sha256sums_sha256"]):
         raise ValueError("TOCTOU: an input sealed root changed during training")
 
@@ -171,7 +179,7 @@ def train(args: argparse.Namespace) -> dict:
         model, args.output_root, view=view, aux_release=aux_release, seed=args.seed, fold_id=args.fold_id,
         normalization=normalization, losses=losses,
         protocol_sha256=input_shas["protocol_sha256"], feature_protocol_sha256=input_shas["feature_protocol_sha256"],
-        teacher_protocol_sha256=input_shas["teacher_aggregate_sha256"], s1_root_sha256=input_shas["s1_root_sha256"],
+        teacher_protocol_sha256=input_shas["teacher_protocol_sha256"], s1_root_sha256=input_shas["s1_root_sha256"],
         teacher_root_sha256=teacher_before["sha256sums_sha256"], fold_bundle_sha256=input_shas["fold_manifest_sha256"],
         normalization_bundle_sha256=input_shas["normalization_bundle_sha256"],
         authorization_sha256=auth["authorization_payload_sha256"], runner_binding_sha256=runner["runner_binding_sha256"],
@@ -196,6 +204,7 @@ def main() -> None:
     p.add_argument("--seed", type=int, required=True)
     p.add_argument("--s1-root", type=Path, required=True)
     p.add_argument("--teacher-root", type=Path, required=True)
+    p.add_argument("--teacher-root-audit", type=Path, required=True)
     p.add_argument("--fold-root", type=Path, required=True)
     p.add_argument("--normalization-root", type=Path, required=True)
     p.add_argument("--runner-repo", type=Path, required=True)
