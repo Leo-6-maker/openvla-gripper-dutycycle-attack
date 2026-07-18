@@ -13,6 +13,8 @@ class V5SchedulerConfig:
     release_veto_threshold: float = 0.5
     regrasp_veto_threshold: float = 0.5
     uncertainty_veto_threshold: float = 0.5
+    release_veto_enabled: bool = True
+    regrasp_veto_enabled: bool = True
     uncertainty_veto_enabled: bool = False
     minimum_candidate_dwell: int = 10
     persistence_window: int = 5
@@ -63,8 +65,8 @@ class V5OneShotScheduler:
             return self._result(step, False)
         self.candidate_dwell += 1
         veto = (
-            release_probability >= self.config.release_veto_threshold
-            or regrasp_probability >= self.config.regrasp_veto_threshold
+            (self.config.release_veto_enabled and release_probability >= self.config.release_veto_threshold)
+            or (self.config.regrasp_veto_enabled and regrasp_probability >= self.config.regrasp_veto_threshold)
             or (self.config.uncertainty_veto_enabled and uncertainty_probability >= self.config.uncertainty_veto_threshold)
         )
         eligible = (not veto) and utility_probability >= self.config.utility_threshold
@@ -93,6 +95,8 @@ class V5OneShotScheduler:
             "emit_step": self.emit_step,
             "candidate_dwell": self.candidate_dwell,
             "uncertainty_veto_enabled": self.config.uncertainty_veto_enabled,
+            "release_veto_enabled": self.config.release_veto_enabled,
+            "regrasp_veto_enabled": self.config.regrasp_veto_enabled,
             "history": [{"eligible": flag, "utility_probability": score} for flag, score in self.history],
             "teacher_inputs_consumed": False,
             "attack_enabled": False,

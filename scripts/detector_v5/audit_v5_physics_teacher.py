@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from gripper_attack.b3_training_protocol import sha256_file
-from gripper_attack.v5_physics import PHYSICS_TEACHER_FIELDS
+from gripper_attack.v5_physics import PHYSICS_TEACHER_FIELDS, PHYSICS_TEACHER_V21_FIELDS
 from build_v5_physics_teacher import verify_sealed_root
 
 
@@ -49,8 +49,16 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
     teacher_root = args.teacher_root.resolve()
     teacher_seal = verify_sealed_root(teacher_root)
     manifest = _load_json(teacher_root / "physics_teacher_v2_manifest.json")
-    if manifest.get("schema") != "DETECTOR_V5_PHYSICS_TEACHER_V2_MANIFEST":
+    if manifest.get("schema") not in {
+        "DETECTOR_V5_PHYSICS_TEACHER_V2_MANIFEST",
+        "DETECTOR_V5_PHYSICS_TEACHER_V21_MANIFEST",
+    }:
         raise ValueError("unexpected Physics Teacher manifest schema")
+    v21 = manifest["schema"] == "DETECTOR_V5_PHYSICS_TEACHER_V21_MANIFEST"
+    protocol = _load_json(args.protocol.resolve())
+    expected_protocol = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21" if v21 else "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V1"
+    if protocol.get("schema") != expected_protocol:
+        raise ValueError("Physics Teacher protocol/manifest version mismatch")
     if manifest.get("formal_training_authorized") is not False or manifest.get("formal_attack_authorized") is not False:
         raise ValueError("Physics Teacher root contains an authorization claim")
     if manifest.get("counterfactual_attack_label") is not False or manifest.get("student_future_leakage") is not False:
@@ -71,7 +79,8 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
     with args.registry_csv.resolve().open(newline="", encoding="utf-8") as handle:
         registry_rows = [row for row in csv.DictReader(handle) if row.get("split") == "FIT_TRAIN"]
     registry_keys = {row["canonical_parent_key"] for row in registry_rows}
-    label_files = sorted(teacher_root.glob("labels/*/task_*/state_*/physics_teacher_v2.jsonl"))
+    label_name = "physics_teacher_v21.jsonl" if v21 else "physics_teacher_v2.jsonl"
+    label_files = sorted(teacher_root.glob(f"labels/*/task_*/state_*/{label_name}"))
     if len(registry_rows) != 800 or len(label_files) != 800 or registry_keys != {
         "/".join(path.relative_to(teacher_root / "labels").parts[:3]) for path in label_files
     }:
@@ -93,11 +102,12 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
             raise ValueError(f"non-contiguous Teacher steps: {identity}")
         seen_windows: set[str] = set()
         for row in rows:
-            if set(row) != EXPECTED_FIELDS:
+            expected_fields = PHYSICS_TEACHER_V21_FIELDS if v21 else EXPECTED_FIELDS
+            if set(row) != expected_fields:
                 raise ValueError(f"Teacher field whitelist mismatch: {identity}")
             if row["canonical_parent_key"] != identity or int(row["state_id"]) not in range(20):
                 raise ValueError(f"Teacher identity mismatch: {identity}")
-            if row["physics_protocol_schema"] != "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V1":
+            if row["physics_protocol_schema"] != expected_protocol:
                 raise ValueError(f"Teacher protocol mismatch: {identity}")
             if row["phase_name"] not in {"PRE_SUPPORT", "VALID_RETENTION", "RELEASE_IMMINENT_TAIL", "POST_RELEASE", "UNSTABLE_TRANSITION", "UNKNOWN"}:
                 raise ValueError(f"Teacher phase mismatch: {identity}")
@@ -129,7 +139,7 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
     if dict(sorted(phase_counts.items())) != manifest.get("phase_step_counts"):
         raise ValueError("manifest phase counts do not match Teacher rows")
     report = {
-        "schema": "DETECTOR_V5_PHYSICS_TEACHER_V2_INDEPENDENT_AUDIT_V1",
+        "schema": "DETECTOR_V5_PHYSICS_TEACHER_V21_INDEPENDENT_AUDIT_V1" if v21 else "DETECTOR_V5_PHYSICS_TEACHER_V2_INDEPENDENT_AUDIT_V1",
         "status": "PASS",
         "teacher_root_sha256sums_sha256": teacher_seal["sha256sums_sha256"],
         "identity_count": len(label_files),

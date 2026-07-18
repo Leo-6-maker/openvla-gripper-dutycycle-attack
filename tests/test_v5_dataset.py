@@ -107,4 +107,17 @@ def test_v5_loader_adapts_sealed_physics_teacher_rows(tmp_path: Path):
     assert episode.windows[0].utility_tier == 2
     assert episode.windows[1].utility_tier == 1
     assert bool(episode.release_imminent[-1])
+    for item in physics_rows:
+        item["causal_trigger_eligible"] = True
+        item["component_valid_mask"] = {"target_progress": True}
+        item["tier_onset_step"] = 0
+    (teacher / "physics_teacher_v21.jsonl").write_text("".join(json.dumps(item) + "\n" for item in physics_rows), encoding="utf-8")
+    (tmp_path / "teacher" / "protocol.json").write_text(json.dumps({
+        "schema": "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21",
+        "fixed_constants": {"tier2_max_release_risk": 0.6, "tier2_max_regrasp_risk": 0.6},
+        "window_policy": {"loader_preserve_candidate_segment": True},
+    }), encoding="utf-8")
+    v21_episode = load_v5_episode(tmp_path / "s1", tmp_path / "teacher", row)
+    assert len(v21_episode.windows) == 1
+    assert v21_episode.windows[0].utility_tier == 2
     assert canonical_variant("V5_A_PHYSICS") == "V5_A_PROPRIO"

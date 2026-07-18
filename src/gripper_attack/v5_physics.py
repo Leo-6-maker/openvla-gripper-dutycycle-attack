@@ -33,6 +33,9 @@ PHYSICS_TEACHER_FIELDS = frozenset(
         "physics_protocol_schema",
     }
 )
+PHYSICS_TEACHER_V21_FIELDS = PHYSICS_TEACHER_FIELDS | frozenset(
+    {"causal_trigger_eligible", "component_valid_mask", "tier_onset_step"}
+)
 _ROLE_PREDICATES = {"In", "On", "Inside", "Contains", "Stack"}
 _SUPPORT_SUFFIXES = (
     "_contain_region",
@@ -129,6 +132,14 @@ def _mean(values: Sequence[float], default: float = 0.0) -> float:
     return sum(values) / len(values) if values else default
 
 
+def _median(values: Sequence[float], default: float = 0.0) -> float:
+    if not values:
+        return default
+    ordered = sorted(values)
+    middle = len(ordered) // 2
+    return ordered[middle] if len(ordered) % 2 else (ordered[middle - 1] + ordered[middle]) / 2.0
+
+
 def _object_slice(object_slices: Mapping[str, Mapping[str, Any]], name: str) -> Mapping[str, Any] | None:
     return object_slices.get(name)
 
@@ -186,7 +197,7 @@ def _contact_flags(
     return object_contact, gripper_contact, support_contact
 
 
-def _relative_stability(history: Sequence[Mapping[str, Any]], role: PhysicsTaskRole, slices: Mapping[str, Mapping[str, Any]], scale_pos: float, scale_quat: float) -> float:
+def _relative_stability(history: Sequence[Mapping[str, Any]], role: PhysicsTaskRole, slices: Mapping[str, Mapping[str, Any]], scale_pos: float, scale_quat: float, *, reducer: str = "mean") -> float:
     values: list[float] = []
     for name in role.manipulated_objects:
         spec = _object_slice(slices, name)
@@ -197,16 +208,17 @@ def _relative_stability(history: Sequence[Mapping[str, Any]], role: PhysicsTaskR
         positions = [item for item in positions if item is not None]
         quats = [item for item in quats if item is not None]
         if len(positions) >= 2 and len(quats) >= 2:
-            pos_delta = _mean([_dist(a, b) for a, b in zip(positions[1:], positions[:-1])])
-            quat_delta = _mean([_dist(a, b) for a, b in zip(quats[1:], quats[:-1])])
+            reduce_values = _median if reducer == "median" else _mean
+            pos_delta = reduce_values([_dist(a, b) for a, b in zip(positions[1:], positions[:-1])])
+            quat_delta = reduce_values([_dist(a, b) for a, b in zip(quats[1:], quats[:-1])])
             values.append(_clip(math.exp(-(pos_delta / scale_pos) - (quat_delta / scale_quat))))
     return _mean(values, 0.0)
 
 
-def _comotion(history: Sequence[Mapping[str, Any]], role: PhysicsTaskRole, slices: Mapping[str, Mapping[str, Any]]) -> float:
+def _comotion(history: Sequence[Mapping[str, Any]], role: PhysicsTaskRole, slices: Mapping[str, Mapping[str, Any]], *, inactive_value: float | None = None) -> float:
     eef = [_finite_vector(item.get("robot0_eef_pos"), 3) for item in history]
     if len(eef) < 2 or any(item is None for item in eef):
-        return 0.0
+        return 0.0 if inactive_value is not None else 0.5
     values: list[float] = []
     for name in role.manipulated_objects:
         spec = _object_slice(slices, name)
@@ -219,9 +231,14 @@ def _comotion(history: Sequence[Mapping[str, Any]], role: PhysicsTaskRole, slice
         for object_left, object_right, eef_left, eef_right in zip(positions[1:], positions[:-1], eef[1:], eef[:-1]):
             object_delta = [a - b for a, b in zip(object_left, object_right)]
             eef_delta = [a - b for a, b in zip(eef_left, eef_right)]
+            if inactive_value is not None and (
+                math.isclose(math.sqrt(sum(value * value for value in object_delta)), 0.0)
+                or math.isclose(math.sqrt(sum(value * value for value in eef_delta)), 0.0)
+            ):
+                continue
             similarities.append((_cosine(object_delta, eef_delta) + 1.0) / 2.0)
-        values.append(_mean(similarities, 0.0))
-    return _mean(values, 0.0)
+        values.append(_mean(similarities, inactive_value if inactive_value is not None else 0.5))
+    return _mean(values, inactive_value if inactive_value is not None else 0.5)
 
 
 def _lift(history: Sequence[Mapping[str, Any]], current: Mapping[str, Any], role: PhysicsTaskRole, slices: Mapping[str, Mapping[str, Any]], scale: float) -> float:
@@ -240,6 +257,7 @@ def _lift(history: Sequence[Mapping[str, Any]], current: Mapping[str, Any], role
 def _target_progress(
     first: Mapping[str, Any], current: Mapping[str, Any], role: PhysicsTaskRole,
     slices: Mapping[str, Mapping[str, Any]], scale: float,
+    *, unknown_default: float = 0.5,
 ) -> tuple[float, bool]:
     values: list[float] = []
     known = False
@@ -257,7 +275,7 @@ def _target_progress(
             initial_distance = _dist(first_object, first_target)
             current_distance = _dist(current_object, current_target)
             values.append(_clip((initial_distance - current_distance) / scale))
-    return _mean(values, 0.5), known
+    return _mean(values, unknown_default), known
 
 
 def _candidate_close(step: Mapping[str, Any], threshold: float) -> bool:
@@ -302,6 +320,7 @@ def derive_episode_rows(
     if len(step_rows) != len(sidecar_rows) or not step_rows:
         raise ValueError("step and physics sidecar lengths must match and be nonzero")
     constants = protocol["fixed_constants"]
+    v21 = protocol.get("schema") == "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21"
     history_size = int(protocol["history"]["score_window_steps"])
     threshold = float(protocol["candidate_close"]["close_threshold"])
     base: list[dict[str, Any]] = []
@@ -310,10 +329,10 @@ def derive_episode_rows(
         history = sidecar_rows[max(0, index - history_size + 1) : index + 1]
         contact = _contact_flags(sidecar.get("mujoco_contact_pairs", []), role)
         previous_contact.append(contact)
-        stable = _relative_stability(history, role, object_slices, float(constants["relative_position_scale_m"]), float(constants["relative_quaternion_scale"]))
-        comotion = _comotion(history, role, object_slices)
+        stable = _relative_stability(history, role, object_slices, float(constants["relative_position_scale_m"]), float(constants["relative_quaternion_scale"]), reducer="median" if v21 else "mean")
+        comotion = _comotion(history, role, object_slices, inactive_value=0.0 if v21 else None)
         lift = _lift(sidecar_rows[: index + 1], sidecar, role, object_slices, float(constants["lift_scale_m"]))
-        target_progress, target_known = _target_progress(sidecar_rows[0], sidecar, role, object_slices, float(constants["target_progress_scale_m"]))
+        target_progress, target_known = _target_progress(sidecar_rows[0], sidecar, role, object_slices, float(constants["target_progress_scale_m"]), unknown_default=0.0 if v21 else 0.5)
         base.append({
             "step": index,
             "candidate_close": _candidate_close(step, threshold),
@@ -334,6 +353,7 @@ def derive_episode_rows(
                 + 0.20 * lift
             ),
         })
+    _assign_segments(base)
     for index, row in enumerate(base):
         future = base[index : min(len(base), index + history_size)]
         future_open = any(not item["candidate_close"] for item in future[1:])
@@ -341,7 +361,13 @@ def derive_episode_rows(
         contact_history = [item["gripper_contact_score"] for item in base[max(0, index - history_size + 1) : index + 1]]
         toggles = sum(left != right for left, right in zip(contact_history[1:], contact_history[:-1]))
         toggle_rate = toggles / max(1, len(contact_history) - 1)
-        row["support_removed"] = 1.0 if row["support_contact"] is False and any(item["support_contact"] for item in base[: index + 1]) else 0.0
+        if v21 and row["candidate_close"]:
+            start = int(row["window_start"])
+            prior_support = any(item["support_contact"] for item in base[:start])
+            current_window_support_free = not any(item["support_contact"] for item in base[start:index + 1])
+            row["support_removed"] = 1.0 if prior_support and current_window_support_free else 0.0
+        else:
+            row["support_removed"] = 1.0 if row["support_contact"] is False and any(item["support_contact"] for item in base[: index + 1]) else 0.0
         row["release_risk"] = 0.5 * float(future_open) + 0.5 * float(future_contact_loss)
         row["regrasp_or_instability_risk"] = _clip(0.5 * (1.0 - row["relative_pose_stability"]) + 0.5 * toggle_rate)
         row["stable_grasp_score"] = _clip(
@@ -354,15 +380,17 @@ def derive_episode_rows(
             item["stable_grasp_score"] >= float(constants["tier2_min_stable_grasp"])
             for item in base[max(0, index - int(protocol["history"]["minimum_stable_grasp_dwell"]) + 1) : index + 1]
         )
-        row["utility_score"] = _clip(
+        positive = (
             0.30 * row["stable_grasp_score"]
             + 0.20 * row["lift_score"]
             + 0.20 * row["object_eef_comotion_score"]
             + 0.15 * row["support_removed"]
-            + 0.15 * row["target_progress"]
-            - 0.20 * row["release_risk"]
-            - 0.20 * row["regrasp_or_instability_risk"]
         )
+        if row["target_progress_known"]:
+            positive += 0.15 * row["target_progress"]
+        elif v21:
+            positive /= 0.85
+        row["utility_score"] = _clip(positive - 0.20 * row["release_risk"] - 0.20 * row["regrasp_or_instability_risk"])
         if not role.applicable or not row["student_valid"]:
             row["known_mask"] = False
             row["utility_tier"] = None
@@ -388,7 +416,39 @@ def derive_episode_rows(
             else:
                 row["utility_tier"] = 0
         row["teacher_confidence"] = 1.0 if role.applicable and row["target_progress_known"] else (0.8 if role.applicable else 0.0)
-    _assign_segments(base)
+    if v21:
+        for segment_id in {row["window_id"] for row in base if row["candidate_close"]}:
+            members = [row for row in base if row["window_id"] == segment_id]
+            onset = next((int(row["step"]) for row in members if row["utility_tier"] is not None and int(row["utility_tier"]) >= 2), None)
+            for row in members:
+                row["tier_onset_step"] = onset
+                row["causal_trigger_eligible"] = bool(
+                    row["candidate_close"] and row["student_valid"] and row["known_mask"]
+                    and row["stable_grasp_dwell"] >= int(protocol["history"]["minimum_stable_grasp_dwell"])
+                    and row["release_risk"] < float(constants["tier2_max_release_risk"])
+                    and row["regrasp_or_instability_risk"] < float(constants["tier2_max_regrasp_risk"])
+                )
+                row["component_valid_mask"] = {
+                    "relative_pose_stability": bool(role.applicable),
+                    "object_eef_comotion_score": bool(role.applicable),
+                    "lift_score": bool(role.applicable),
+                    "target_progress": bool(row["target_progress_known"]),
+                    "support_removed": bool(role.applicable),
+                    "release_risk": bool(role.applicable),
+                    "regrasp_or_instability_risk": bool(role.applicable),
+                }
+        for row in base:
+            row.setdefault("tier_onset_step", None)
+            row.setdefault("causal_trigger_eligible", False)
+            row.setdefault("component_valid_mask", {
+                "relative_pose_stability": False,
+                "object_eef_comotion_score": False,
+                "lift_score": False,
+                "target_progress": False,
+                "support_removed": False,
+                "release_risk": False,
+                "regrasp_or_instability_risk": False,
+            })
     output: list[dict[str, Any]] = []
     for row in base:
         output.append({
@@ -426,4 +486,4 @@ def derive_episode_rows(
     return output, windows
 
 
-__all__ = ["PHYSICS_PHASES", "PHYSICS_TEACHER_FIELDS", "PhysicsTaskRole", "parse_bddl_task_role", "derive_episode_rows"]
+__all__ = ["PHYSICS_PHASES", "PHYSICS_TEACHER_FIELDS", "PHYSICS_TEACHER_V21_FIELDS", "PhysicsTaskRole", "parse_bddl_task_role", "derive_episode_rows"]

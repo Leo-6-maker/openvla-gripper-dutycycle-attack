@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
 from gripper_attack.v5_physics import derive_episode_rows, parse_bddl_task_role
 
 
@@ -83,3 +85,25 @@ def test_unknown_or_non_applicable_role_never_produces_rankable_window():
     )
     assert all(row["known_mask"] is False for row in rows)
     assert windows[0]["rankable"] is False
+
+
+def test_physics_v21_does_not_treat_zero_motion_or_unknown_target_as_positive_evidence():
+    protocol = deepcopy(PROTOCOL)
+    protocol["schema"] = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21"
+    protocol["window_policy"] = {"loader_preserve_candidate_segment": True}
+    role = parse_bddl_task_role(_bddl("(And (In obj_1 unknown_target))"), suite="libero_object", task_idx=0, object_names=["obj_1", "unknown_target"])
+    steps, sidecars = _episode(12)
+    for sidecar in sidecars:
+        sidecar["object_state"][:3] = [0.0, 0.0, 0.0]
+        sidecar["robot0_eef_pos"] = [0.0, 0.0, 0.0]
+    rows, _ = derive_episode_rows(
+        steps,
+        sidecars,
+        role,
+        {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}},
+        protocol,
+    )
+    assert all(row["object_eef_comotion_score"] < 1.0 for row in rows)
+    assert all(row["target_progress_known"] is False for row in rows)
+    assert all(row["target_progress"] == 0.0 for row in rows)
+    assert all("target_progress" in row["component_valid_mask"] for row in rows)

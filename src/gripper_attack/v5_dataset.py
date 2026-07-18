@@ -21,7 +21,7 @@ from .v5_protocol import (
     validate_student_features,
     validate_teacher_row,
 )
-from .v5_physics import PHYSICS_TEACHER_FIELDS
+from .v5_physics import PHYSICS_TEACHER_FIELDS, PHYSICS_TEACHER_V21_FIELDS
 
 
 _POLICY_INTENT_REQUIRED_FIELDS = frozenset(
@@ -133,7 +133,10 @@ def _episode_root(root: Path, row: dict[str, Any]) -> Path:
 
 def _load_physics_protocol(root: Path) -> dict[str, Any]:
     value = json.loads((root / "protocol.json").read_text(encoding="utf-8"))
-    if not isinstance(value, dict) or value.get("schema") != "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V1":
+    if not isinstance(value, dict) or value.get("schema") not in {
+        "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V1",
+        "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21",
+    }:
         raise ValueError("unexpected Physics Teacher protocol")
     constants = value.get("fixed_constants")
     if not isinstance(constants, dict):
@@ -145,9 +148,12 @@ def _load_physics_protocol(root: Path) -> dict[str, Any]:
 
 
 def _physics_row_as_v5_teacher(row: dict[str, Any], protocol: dict[str, Any]) -> dict[str, Any]:
-    if set(row) != PHYSICS_TEACHER_FIELDS:
-        missing = sorted(PHYSICS_TEACHER_FIELDS - set(row))
-        extra = sorted(set(row) - PHYSICS_TEACHER_FIELDS)
+    expected_fields = PHYSICS_TEACHER_FIELDS
+    if protocol["schema"] == "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21":
+        expected_fields = PHYSICS_TEACHER_V21_FIELDS
+    if set(row) != expected_fields:
+        missing = sorted(expected_fields - set(row))
+        extra = sorted(set(row) - expected_fields)
         raise ValueError(f"invalid Physics Teacher row: missing={missing}, extra={extra}")
     known = bool(row["known_mask"])
     tier = None if row["utility_tier"] is None else int(row["utility_tier"])
@@ -259,9 +265,10 @@ def load_v5_episode(
     students = _jsonl(s1 / "student_input_records.jsonl")
     physics_teacher = teacher_root / "labels" / str(row["suite"]) / f"task_{int(row['task_idx']):02d}" / f"state_{int(row['state_id']):02d}"
     physics_path = physics_teacher / "physics_teacher_v2.jsonl"
+    physics_v21_path = physics_teacher / "physics_teacher_v21.jsonl"
     legacy_path = teacher / "v5_teacher_utility.jsonl"
-    physics_protocol = _load_physics_protocol(teacher_root) if physics_path.is_file() else None
-    teacher_path = physics_path if physics_path.is_file() else legacy_path
+    physics_protocol = _load_physics_protocol(teacher_root) if (physics_path.is_file() or physics_v21_path.is_file()) else None
+    teacher_path = physics_v21_path if physics_v21_path.is_file() else physics_path if physics_path.is_file() else legacy_path
     teachers = _jsonl(teacher_path)
     if not students or len(students) != len(teachers):
         raise ValueError(f"V5-A stream mismatch: {identity}")
@@ -313,6 +320,9 @@ def load_v5_episode(
             "utility_tier": None if teacher_row["utility_tier"] is None else int(teacher_row["utility_tier"]),
         })
     windows: list[V5Window] = []
+    preserve_candidate_segment = bool(
+        physics_protocol and physics_protocol.get("window_policy", {}).get("loader_preserve_candidate_segment")
+    )
     active: dict[str, Any] | None = None
     segment_counts: dict[str, int] = {}
     for item in window_rows + [{"rankable": False}]:
@@ -321,11 +331,14 @@ def load_v5_episode(
             and item.get("rankable")
             and int(item["index"]) == int(active["indices"][-1]) + 1
             and item["window_id"] == active["window_id"]
-            and item["phase_name"] == active["phase_name"]
-            and item["utility_tier"] == active["utility_tier"]
+            and (preserve_candidate_segment or (
+                item["phase_name"] == active["phase_name"]
+                and item["utility_tier"] == active["utility_tier"]
+            ))
         )
         if contiguous:
             active["indices"].append(int(item["index"]))
+            active["rows"].append(item)
             continue
         if active:
             base_id = str(active["window_id"])
@@ -333,13 +346,16 @@ def load_v5_episode(
             segment_counts[base_id] = ordinal + 1
             window_id = base_id if ordinal == 0 else f"{base_id}#segment{ordinal}"
             indices = tuple(active["indices"])
+            active_rows = active["rows"]
+            max_tier = max(int(row["utility_tier"]) for row in active_rows)
+            representative = next(row for row in active_rows if int(row["utility_tier"]) == max_tier)
             windows.append(V5Window(
                 episode_id=identity,
                 window_id=window_id,
                 start=indices[0],
                 end=indices[-1],
-                phase_name=str(active["phase_name"]),
-                utility_tier=active["utility_tier"],
+                phase_name=str(representative["phase_name"]),
+                utility_tier=max_tier,
                 known=True,
                 candidate_close=True,
                 step_indices=indices,
@@ -351,6 +367,7 @@ def load_v5_episode(
                 "phase_name": item["phase_name"],
                 "utility_tier": item["utility_tier"],
                 "indices": [int(item["index"])],
+                "rows": [item],
             }
     return V5Episode(
         canonical_parent_key=identity,
