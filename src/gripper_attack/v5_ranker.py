@@ -211,6 +211,7 @@ class V5LossConfigV2:
     abstention_weight: float = 1.0
     release_weight: float = 0.3
     regrasp_weight: float = 0.3
+    use_causal_targets: bool = False
 
 
 def compute_v5_loss_v2(
@@ -227,10 +228,14 @@ def compute_v5_loss_v2(
 
     scores, rows = causal_window_anchor_scores(utility_logits, episode)  # type: ignore[arg-type]
     zero = utility_logits.sum() * 0.0
-    known_rows = [i for i, row in enumerate(rows) if row["known"] and row["utility_tier"] is not None]
+    tier_key = "causal_utility_tier" if config.use_causal_targets else "utility_tier"
+    known_rows = [
+        i for i, row in enumerate(rows)
+        if row["known"] and row.get(tier_key) is not None and (not config.use_causal_targets or bool(row["minimum_dwell_met"]))
+    ]
     if known_rows:
         targets = torch.tensor(
-            [float(rows[i]["utility_tier"]) / 3.0 for i in known_rows],
+            [float(rows[i][tier_key]) / 3.0 for i in known_rows],
             device=scores.device,
             dtype=scores.dtype,
         )
@@ -240,16 +245,16 @@ def compute_v5_loss_v2(
     pair_terms: list[Tensor] = []
     for hi in known_rows:
         for lo in known_rows:
-            if int(rows[hi]["utility_tier"]) > int(rows[lo]["utility_tier"]):
+            if int(rows[hi][tier_key]) > int(rows[lo][tier_key]):
                 pair_terms.append(F.relu(
                     torch.as_tensor(config.pairwise_margin, device=scores.device, dtype=scores.dtype)
                     - scores[hi] + scores[lo]
                 ))
     pairwise = torch.stack(pair_terms).mean() if pair_terms else zero
-    max_tier = max((int(rows[i]["utility_tier"]) for i in known_rows), default=-1)
-    mixed = max_tier >= 2 and any(int(rows[i]["utility_tier"]) <= 1 for i in known_rows)
+    max_tier = max((int(rows[i][tier_key]) for i in known_rows), default=-1)
+    mixed = max_tier >= 2 and any(int(rows[i][tier_key]) <= 1 for i in known_rows)
     if mixed:
-        winner_positions = [pos for pos, i in enumerate(known_rows) if int(rows[i]["utility_tier"]) == max_tier]
+        winner_positions = [pos for pos, i in enumerate(known_rows) if int(rows[i][tier_key]) == max_tier]
         listwise = -F.log_softmax(scores[known_rows], dim=0)[winner_positions].mean()
     else:
         listwise = zero

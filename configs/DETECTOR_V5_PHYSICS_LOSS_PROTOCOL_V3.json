@@ -1,0 +1,33 @@
+{
+  "schema": "DETECTOR_V5_PHYSICS_LOSS_PROTOCOL_V3",
+  "scope": "R6.3 FIT-only development smoke; no formal training authorization",
+  "target": "causal_utility_tier_at_decision_anchor",
+  "category_balancing": {
+    "positive_or_mixed_episode_loss_weight": 0.5,
+    "pure_negative_episode_loss_weight": 0.5,
+    "no_candidate_episode_loss_weight": 0.0
+  },
+  "components": {
+    "ordinal_weight": 1.0,
+    "pairwise_weight": 0.5,
+    "listwise_weight": 0.5,
+    "pure_negative_max_weight": 1.0,
+    "release_weight": 0.3,
+    "regrasp_weight": 0.3,
+    "pairwise_margin": 0.2
+  },
+  "training": {
+    "epochs": 10,
+    "seed": 20260717,
+    "dtype": "float32",
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "weight_decay": 0.00001,
+    "gradient_clip": 5.0,
+    "shuffle": "deterministic per epoch",
+    "early_stopping": false,
+    "model_selection_epoch": "final"
+  },
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}

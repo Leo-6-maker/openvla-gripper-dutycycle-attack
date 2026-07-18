@@ -148,6 +148,7 @@ class V5Window:
     candidate_close: bool
     step_indices: tuple[int, ...] = ()
     decision_anchor_step: int | None = None
+    causal_utility_tier: int | None = None
 
     def __post_init__(self) -> None:
         if not self.episode_id or not self.window_id or self.start < 0 or self.end < self.start:
@@ -158,6 +159,8 @@ class V5Window:
             raise ValueError("known V5 windows require utility tier 0..3")
         if not self.known and self.utility_tier is not None:
             raise ValueError("unknown V5 windows cannot carry a utility tier")
+        if self.causal_utility_tier is not None and self.causal_utility_tier not in range(4):
+            raise ValueError("causal utility tier must be in [0, 3]")
         indices = tuple(self.step_indices) if self.step_indices else tuple(range(self.start, self.end + 1))
         if indices != tuple(range(self.start, self.end + 1)):
             raise ValueError("V5 window steps must be one contiguous exact segment")

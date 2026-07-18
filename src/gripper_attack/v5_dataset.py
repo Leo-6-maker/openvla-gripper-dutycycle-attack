@@ -323,6 +323,15 @@ def load_v5_episode(
     preserve_candidate_segment = bool(
         physics_protocol and physics_protocol.get("window_policy", {}).get("loader_preserve_candidate_segment")
     )
+    causal_tier_by_window: dict[str, int | None] = {}
+    if preserve_candidate_segment:
+        grouped_rows: dict[str, list[dict[str, Any]]] = {}
+        for item in window_rows:
+            grouped_rows.setdefault(str(item["window_id"]), []).append(item)
+        for window_id, members in grouped_rows.items():
+            anchor = min(int(item["index"]) for item in members) + 9
+            tiers = [int(item["utility_tier"]) for item in members if int(item["index"]) <= anchor and item["utility_tier"] is not None]
+            causal_tier_by_window[window_id] = max(tiers) if tiers else None
     active: dict[str, Any] | None = None
     segment_counts: dict[str, int] = {}
     for item in window_rows + [{"rankable": False}]:
@@ -359,6 +368,7 @@ def load_v5_episode(
                 known=True,
                 candidate_close=True,
                 step_indices=indices,
+                causal_utility_tier=causal_tier_by_window.get(base_id, max_tier),
             ))
             active = None
         if item.get("rankable"):
@@ -399,10 +409,14 @@ def load_v5_episodes(
     return [load_v5_episode(s1_root, teacher_root, row, policy_index=policy_index) for row in rows]
 
 
-def classify_v5_episode_windows(windows: Sequence[V5Window]) -> str:
+def classify_v5_episode_windows(windows: Sequence[V5Window], *, causal: bool = False) -> str:
     """Return the strict category used by all V5 diagnostics."""
 
-    tiers = [int(window.utility_tier) for window in windows if window.rankable and window.utility_tier is not None]
+    tiers = []
+    for window in windows:
+        tier = window.causal_utility_tier if causal and window.causal_utility_tier is not None else window.utility_tier
+        if window.rankable and (not causal or window.minimum_dwell_met) and tier is not None:
+            tiers.append(int(tier))
     has_positive = any(tier >= 2 for tier in tiers)
     has_negative = any(tier <= 1 for tier in tiers)
     if not tiers:
@@ -451,6 +465,7 @@ def _aggregate_window_scores(utility_logits: Tensor, episode: V5Episode, *, caus
             "phase_name": window.phase_name,
             "known": window.known,
             "utility_tier": window.utility_tier,
+            "causal_utility_tier": window.causal_utility_tier,
             "decision_anchor_step": window.decision_anchor_step,
             "step_indices": tuple(indices),
             "minimum_dwell_met": window.minimum_dwell_met,

@@ -16,6 +16,7 @@ import random
 import shutil
 import sys
 import uuid
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -57,10 +58,15 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def _teacher_kind(root: Path) -> str:
+    physics_v21 = list(root.glob("labels/*/task_*/state_*/physics_teacher_v21.jsonl"))
     physics = list(root.glob("labels/*/task_*/state_*/physics_teacher_v2.jsonl"))
     legacy = list(root.glob("labels/*/task_*/state_*/v5_teacher_utility.jsonl"))
+    if physics_v21 and (physics or legacy):
+        raise ValueError("Teacher root mixes Physics V2.1 with another label stream")
     if physics and legacy:
         raise ValueError("Teacher root mixes Physics and legacy V5 files")
+    if physics_v21:
+        return "physics_v21"
     if physics:
         return "physics_v2"
     if legacy:
@@ -74,8 +80,12 @@ def _validate_teacher_audit(teacher_audit: dict[str, Any], teacher_root: Path, k
     if teacher_audit.get("formal_training_authorized") is not False or teacher_audit.get("formal_attack_authorized") is not False:
         raise ValueError("V5 Teacher audit is not a clean-only audit")
     binding = {"teacher_kind": kind, "teacher_root_sha256s_sha256": sha256_file(teacher_root / "SHA256SUMS")}
-    if kind == "physics_v2":
-        if teacher_audit.get("schema") != "DETECTOR_V5_PHYSICS_TEACHER_V2_INDEPENDENT_AUDIT_V1":
+    if kind in {"physics_v2", "physics_v21"}:
+        expected = {
+            "DETECTOR_V5_PHYSICS_TEACHER_V2_INDEPENDENT_AUDIT_V1",
+            "DETECTOR_V5_PHYSICS_TEACHER_V21_INDEPENDENT_AUDIT_V1",
+        }
+        if teacher_audit.get("schema") not in expected:
             raise ValueError("Physics Teacher audit schema is not independent")
         if teacher_audit.get("teacher_root_sha256sums_sha256") != binding["teacher_root_sha256s_sha256"]:
             raise ValueError("Physics Teacher audit is not bound to the supplied root")
@@ -89,7 +99,9 @@ def _episode_loss(
     std: torch.Tensor,
     intent_mean: torch.Tensor | None = None,
     intent_std: torch.Tensor | None = None,
-) -> torch.Tensor:
+    use_causal_targets: bool = False,
+    loss_config: V5LossConfigV2 | None = None,
+) -> dict[str, torch.Tensor]:
     x = ((episode.features_25d.to(mean.device) - mean) / std).unsqueeze(0)
     valid = episode.valid_mask.to(mean.device).unsqueeze(0)
     intent = None
@@ -103,8 +115,8 @@ def _episode_loss(
         output["release_logit"][0],
         output["regrasp_logit"][0],
         episode,
-        config=V5LossConfigV2(),
-    )["total"]
+        config=loss_config or V5LossConfigV2(use_causal_targets=use_causal_targets),
+    )
 
 
 @torch.no_grad()
@@ -131,9 +143,11 @@ def _diagnostic(
         scores, windows = causal_window_anchor_scores(output["utility_logit"][0], episode)
         if not len(windows):
             continue
-        values = [int(row["utility_tier"]) if row["utility_tier"] is not None else -1 for row in windows]
+        values = [int(row["causal_utility_tier"] if row.get("causal_utility_tier") is not None else row["utility_tier"]) if row["utility_tier"] is not None else -1 for row in windows]
         best_index = int(torch.argmax(scores).item())
-        category = classify_v5_episode_windows(episode.windows)
+        has_positive = any(value >= 2 for value in values)
+        has_negative = any(value <= 1 for value in values)
+        category = "TRUE_MIXED" if has_positive and has_negative else "POSITIVE_ONLY" if has_positive else "PURE_NEGATIVE" if has_negative else "NO_CANDIDATE"
         positive = [value for value in values if value >= 2]
         if category == "TRUE_MIXED":
             true_mixed_total += 1
@@ -169,13 +183,15 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("V5-B requires --loss-protocol and --decision-config")
     if variant == "V5_A_PROPRIO" and args.policy_intent_root is not None:
         raise ValueError("V5-A must not consume a policy-intent root")
+    if physics_candidate and (args.development_protocol is None or args.loss_protocol is None or args.decision_config is None):
+        raise ValueError("Physics development requires development, loss, and decision protocols")
     output = args.output_root.resolve()
     if output.exists():
         raise FileExistsError(f"refusing to overwrite output root: {output}")
     teacher_kind = _teacher_kind(args.teacher_root.resolve())
-    if physics_candidate and teacher_kind != "physics_v2":
-        raise ValueError("Physics candidate requires a Physics Teacher V2 root")
-    if not physics_candidate and teacher_kind == "physics_v2":
+    if physics_candidate and teacher_kind not in {"physics_v2", "physics_v21"}:
+        raise ValueError("Physics candidate requires a Physics Teacher root")
+    if not physics_candidate and teacher_kind in {"physics_v2", "physics_v21"}:
         raise ValueError("Physics Teacher V2 root requires an explicit Physics candidate alias")
     teacher_audit = _read_json(args.teacher_audit.resolve())
     teacher_binding = _validate_teacher_audit(teacher_audit, args.teacher_root.resolve(), teacher_kind)
@@ -189,6 +205,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     valid_keys = list(fold_row["validation_identities"])
     if args.train_identity_file is not None:
         selected = json.loads(args.train_identity_file.resolve().read_text(encoding="utf-8"))
+        if isinstance(selected, dict):
+            selected = selected.get("identities")
         if not isinstance(selected, list) or not all(isinstance(value, str) for value in selected):
             raise ValueError("train identity file must contain a JSON string list")
         if not set(selected).issubset(set(train_keys)):
@@ -205,6 +223,18 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         protocol_sha256 = sha256_file(args.development_protocol.resolve())
     loss_protocol_sha256 = None if args.loss_protocol is None else sha256_file(args.loss_protocol.resolve())
     decision_config_sha256 = None if args.decision_config is None else sha256_file(args.decision_config.resolve())
+    loss_protocol = _read_json(args.loss_protocol.resolve()) if args.loss_protocol is not None else {}
+    components = loss_protocol.get("components", {})
+    loss_config = V5LossConfigV2(
+        pairwise_margin=float(components.get("pairwise_margin", 0.2)),
+        ordinal_weight=float(components.get("ordinal_weight", 1.0)),
+        pairwise_weight=float(components.get("pairwise_weight", 0.5)),
+        listwise_weight=float(components.get("listwise_weight", 0.5)),
+        abstention_weight=float(components.get("pure_negative_max_weight", 1.0)),
+        release_weight=float(components.get("release_weight", 0.3)),
+        regrasp_weight=float(components.get("regrasp_weight", 0.3)),
+        use_causal_targets=physics_candidate,
+    )
     train = load_v5_episodes(args.s1_root.resolve(), args.teacher_root.resolve(), [by_key[key] for key in train_keys], policy_index=policy_index)
     valid = load_v5_episodes(args.s1_root.resolve(), args.teacher_root.resolve(), [by_key[key] for key in valid_keys], policy_index=policy_index)
     if not train or len(valid) != 200:
@@ -225,20 +255,37 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     contract = V5ModelContract(variant)
     model = CausalMultimodalVulnerabilityRanker(contract).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5)
-    history: list[dict[str, float]] = []
+    train_categories = {episode.canonical_parent_key: classify_v5_episode_windows(episode.windows, causal=physics_candidate) for episode in train}
+    category_counts = dict(Counter(train_categories.values()))
+    positive_count = sum(value for key, value in category_counts.items() if key in {"TRUE_MIXED", "POSITIVE_ONLY"})
+    pure_count = category_counts.get("PURE_NEGATIVE", 0)
+    category_weights = {
+        key: (0.5 / positive_count if value in {"TRUE_MIXED", "POSITIVE_ONLY"} and positive_count else 0.0 if value == "NO_CANDIDATE" else 0.5 / pure_count if pure_count else 0.0)
+        for key, value in train_categories.items()
+    }
+    history: list[dict[str, Any]] = []
     model.train()
     for epoch in range(args.epochs):
         losses: list[float] = []
+        component_values: dict[str, list[float]] = {}
         for episode in train:
             optimizer.zero_grad(set_to_none=True)
-            loss = _episode_loss(model, episode, mean, std, intent_mean, intent_std)
+            parts = _episode_loss(model, episode, mean, std, intent_mean, intent_std, physics_candidate, loss_config)
+            loss = parts["total"] * category_weights[episode.canonical_parent_key]
             if not bool(torch.isfinite(loss)):
                 raise FloatingPointError("V5 smoke produced NaN/Inf loss")
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             optimizer.step()
             losses.append(float(loss.detach().cpu()))
-        history.append({"epoch": epoch + 1, "train_loss_mean": sum(losses) / len(losses)})
+            for name, value in parts.items():
+                component_values.setdefault(name, []).append(float(value.detach().cpu()))
+        history.append({
+            "epoch": epoch + 1,
+            "train_loss_weighted_mean": sum(losses) / len(losses),
+            "component_means": {name: sum(values) / len(values) for name, values in component_values.items()},
+            "category_counts": category_counts,
+        })
     model.eval()
     diagnostic = _diagnostic(model, valid, mean, std, intent_mean, intent_std)
     staging = output.with_name(f".{output.name}.{uuid.uuid4().hex}.staging")
@@ -281,6 +328,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "train_identity_sha256": json_sha(train_keys),
             "validation_identity_sha256": json_sha(valid_keys),
             "policy_intent_consumed": variant_uses_intent(variant),
+            "loss_target": "causal_utility_tier_at_decision_anchor" if physics_candidate else "final_utility_tier",
+            "train_category_counts": category_counts,
             "policy_intent_root_sha256s_sha256": None if policy_meta is None else policy_meta["policy_root_sha256s_sha256"],
             "policy_intent_manifest_sha256": None if policy_meta is None else policy_meta["policy_manifest_sha256"],
             "policy_intent_feature_order_sha256": None if policy_meta is None else policy_meta["policy_feature_order_sha256"],

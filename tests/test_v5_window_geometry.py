@@ -49,3 +49,11 @@ def test_strict_episode_categories_do_not_call_positive_only_mixed():
     assert classify_v5_episode_windows((positive, negative)) == "TRUE_MIXED"
     assert classify_v5_episode_windows((positive,)) == "POSITIVE_ONLY"
     assert classify_v5_episode_windows((negative,)) == "PURE_NEGATIVE"
+
+
+def test_causal_category_uses_anchor_tier_and_excludes_short_windows():
+    promoted = V5Window("ep", "promoted", 0, 9, "VALID_RETENTION", 3, True, True, causal_utility_tier=1)
+    short = V5Window("ep", "short", 10, 12, "VALID_RETENTION", 3, True, True, causal_utility_tier=3)
+    assert classify_v5_episode_windows((promoted,)) == "POSITIVE_ONLY"
+    assert classify_v5_episode_windows((promoted,), causal=True) == "PURE_NEGATIVE"
+    assert classify_v5_episode_windows((short,), causal=True) == "NO_CANDIDATE"
