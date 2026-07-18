@@ -103,7 +103,10 @@ def train(args: argparse.Namespace) -> dict:
     input_shas = auth["input_snapshots"]
     if input_shas["s1_root_sha256"] != s1_before["sha256sums_sha256"] or input_shas["fold_manifest_sha256"] != fold_before["sha256sums_sha256"]:
         raise ValueError("authorization input root SHA mismatch")
-    runner = measured_git_binding(args.runner_repo, [args.runner_script, args.runner_config])
+    runner = measured_git_binding(
+        args.runner_repo,
+        [args.runner_script, args.runner_config, "scripts/detector_v4/build_v4_training_authorization.py"],
+    )
     if runner != auth["runner_binding"]:
         raise ValueError("measured runner binding differs from authorization")
 
