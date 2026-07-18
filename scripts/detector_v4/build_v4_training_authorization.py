@@ -158,7 +158,9 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     if set(train_ids) | set(valid_ids) != registry_ids:
         raise ValueError("fold universe differs from formal FIT registry")
     train_sha = identity_sha(train_ids)
-    normalization = _verify_normalization(args.normalization_root, args.fold_id, args.candidate, registry_sha, s1_sha, train_sha)
+    normalization = _verify_normalization(
+        args.normalization_root, args.fold_id, args.candidate, _file_sha(args.registry_csv), s1_sha, train_sha
+    )
 
     s1_audit = _json(args.s1_audit)
     teacher_aggregate = _json(args.teacher_aggregate)
