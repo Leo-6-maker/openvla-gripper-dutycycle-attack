@@ -36,5 +36,7 @@ jobs:
             scripts/detector/train_v4_quality_detector.py
       - name: Run corrected V4 CPU contract tests
         run: pytest tests/detector_v4 -q
+        env:
+          PYTHONPATH: .
       - name: Check corrected source diff
         run: git diff --check
