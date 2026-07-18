@@ -257,7 +257,8 @@ def load_v5_episode(
     s1 = _episode_root(s1_root, row)
     teacher = _episode_root(teacher_root, row)
     students = _jsonl(s1 / "student_input_records.jsonl")
-    physics_path = teacher / "physics_teacher_v2.jsonl"
+    physics_teacher = teacher_root / "labels" / str(row["suite"]) / f"task_{int(row['task_idx']):02d}" / f"state_{int(row['state_id']):02d}"
+    physics_path = physics_teacher / "physics_teacher_v2.jsonl"
     legacy_path = teacher / "v5_teacher_utility.jsonl"
     physics_protocol = _load_physics_protocol(teacher_root) if physics_path.is_file() else None
     teacher_path = physics_path if physics_path.is_file() else legacy_path
