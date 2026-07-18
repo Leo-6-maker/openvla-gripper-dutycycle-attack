@@ -113,10 +113,12 @@ def validate_teacher_row(row: Mapping[str, Any]) -> None:
     if row["phase_name"] not in V5_PHASES:
         raise ValueError(f"unknown V5 phase: {row['phase_name']}")
     tier = row["utility_tier"]
-    if not isinstance(tier, int) or tier not in range(4):
-        raise ValueError("utility_tier must be an integer in [0, 3]")
     if not isinstance(row["known_mask"], bool):
         raise ValueError("known_mask must be bool")
+    if row["known_mask"] and (not isinstance(tier, int) or tier not in range(4)):
+        raise ValueError("known utility_tier must be an integer in [0, 3]")
+    if not row["known_mask"] and tier is not None:
+        raise ValueError("unknown V5 rows must not carry a utility tier")
     if row["known_mask"]:
         if bool(row["quality_valid"]) == bool(row["veto_invalid"]):
             raise ValueError("known V5 supervision must satisfy XOR")

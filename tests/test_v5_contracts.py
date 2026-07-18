@@ -13,6 +13,7 @@ from gripper_attack.v5_protocol import (
 )
 from gripper_attack.v5_ranker import CausalMultimodalVulnerabilityRanker, v5_window_ranking_loss
 from gripper_attack.v5_scheduler import V5OneShotScheduler
+from gripper_attack.v5_teacher import convert_teacher_row
 
 
 def test_v5_feature_order_is_name_bound_and_student_rejects_teacher_fields():
@@ -44,6 +45,42 @@ def test_v5_teacher_known_supervision_requires_xor():
     }
     with pytest.raises(ValueError, match="XOR"):
         validate_teacher_row(row)
+
+
+def test_v5_teacher_utility_is_proxy_and_unknown_is_masked():
+    row = convert_teacher_row(
+        {
+            "step": 0,
+            "event_id": 3,
+            "phase_segment_index": 1,
+            "phase_name": "stable_carry",
+            "window_start": 0,
+            "window_end": 4,
+            "candidate_close": True,
+            "quality_valid": True,
+            "veto_invalid": False,
+            "known_mask": True,
+            "retention_continuation_t10": True,
+        },
+        "libero_spatial/task_00/state_00",
+        0,
+    )
+    assert row["utility_tier"] == 3
+    unknown = convert_teacher_row(
+        {
+            "step": 1,
+            "event_id": -1,
+            "phase_name": "abstain_unsupported",
+            "candidate_close": False,
+            "quality_valid": False,
+            "veto_invalid": False,
+            "known_mask": False,
+        },
+        "libero_spatial/task_00/state_00",
+        1,
+    )
+    assert unknown["known_mask"] is False
+    assert unknown["utility_tier"] is None
 
 
 def test_v5_windows_do_not_collapse_phase_segments():
