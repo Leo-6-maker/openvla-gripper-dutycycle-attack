@@ -1,0 +1,21 @@
+{
+  "schema": "DETECTOR_V4_LOSS_PROTOCOL_V2",
+  "version": "2.0",
+  "quality_loss": "masked_bce",
+  "ranking": {
+    "enabled_for_C2_C3": true,
+    "scope": "window_level",
+    "positive": "mean_valid_retention_logit",
+    "negative": "max_invalid_window_logit",
+    "margin": 0.3,
+    "weight": 0.5,
+    "hard_negative_anchor_weight": 0.1,
+    "requires_gradient": true,
+    "pure_negative_windows_in_pool": true
+  },
+  "release_auxiliary": {"enabled_for_C3": true, "weight": 0.3, "mask": "explicit_release_supervision_mask"},
+  "optimizer": {"name": "AdamW", "lr": 0.001, "weight_decay": 0.00001, "gradient_clip": 5.0},
+  "training": {"epochs": 30, "batch_size_episodes": 8, "dtype": "float32", "bptt": "FULL_EPISODE"},
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}

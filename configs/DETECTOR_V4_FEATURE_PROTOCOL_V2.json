@@ -1,0 +1,43 @@
+{
+  "schema": "DETECTOR_V4_FEATURE_PROTOCOL_V2",
+  "version": "2.0",
+  "causality_contract": "STRICT_CAUSAL_NO_FUTURE",
+  "official_base_feature_order": [
+    "gripper_command", "gripper_qpos", "gripper_opening_proxy",
+    "eef_x", "eef_y", "eef_z", "eef_vx", "eef_vy", "eef_vz",
+    "action_dx", "action_dy", "action_dz", "action_gripper",
+    "recent_close_streak", "recent_open_streak", "recent_gripper_flip_count",
+    "close_onset", "time_since_close", "eef_speed",
+    "eef_z_delta_since_close", "qpos_delta_1", "qpos_delta_3",
+    "opening_proxy_delta_3", "opening_proxy_variance_5", "eef_speed_variance_5"
+  ],
+  "official_base_feature_count": 25,
+  "official_base_feature_order_sha256": "3d1101d26567a41bf688587a70c5100a3629ad62f12f9568947ee178a8a63366",
+  "views": {
+    "A": {"feature_count": 25, "feature_names_source": "official_base_feature_order"},
+    "B": {
+      "feature_count": 33,
+      "added_features": [
+        "delta_gripper_qpos", "delta2_gripper_qpos", "gripper_command_qpos_deviation",
+        "close_dwell_duration", "time_since_close_onset", "recent_close_count",
+        "opening_trend", "recent_command_variance"
+      ]
+    },
+    "C": {
+      "feature_count": 39,
+      "added_features": [
+        "eef_velocity", "eef_acceleration", "eef_vertical_velocity", "eef_stability",
+        "eef_displacement_since_close_onset", "action_consistency"
+      ]
+    }
+  },
+  "invalid_history_policy": "INVALID_STEPS_DO_NOT_UPDATE_DYNAMIC_STATE",
+  "student_input_forbidden": [
+    "teacher_label", "future_step", "future_retention", "future_release",
+    "object_state", "object_pose", "object_velocity", "contact_pair",
+    "task_success", "attack_outcome"
+  ],
+  "normalization": "PER_FOLD_TRAIN_ONLY",
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}

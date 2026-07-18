@@ -1,0 +1,25 @@
+{
+  "schema": "DETECTOR_V4_DEVELOPMENT_PROTOCOL_V2",
+  "version": "2.0",
+  "status": "CORRECTED_DEVELOPMENT_ONLY",
+  "source_execution_commit": "5e27d7c4b1a188bc6a78555f94d2571222587805",
+  "fit_states": [0, 19],
+  "protected_states": {"fit_dev": [20, 23], "cal": [24, 26], "check": [27, 29], "final": [30, 49]},
+  "protected_split_read_authorized": false,
+  "folds": {
+    "0": {"validation_states": [0, 4], "train_count": 600, "validation_count": 200},
+    "1": {"validation_states": [5, 9], "train_count": 600, "validation_count": 200},
+    "2": {"validation_states": [10, 14], "train_count": 600, "validation_count": 200},
+    "3": {"validation_states": [15, 19], "train_count": 600, "validation_count": 200}
+  },
+  "fold0_matrix": {
+    "seed": 20260717,
+    "epochs": 30,
+    "batch_size": 8,
+    "dtype": "float32",
+    "candidates": ["C0", "C1", "C2", "C3"]
+  },
+  "all_seeds": [20260717, 20260718, 20260719],
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}
