@@ -18,9 +18,12 @@ _PHASE_MAP = {
     "stable_grasp": "PRE_SUPPORT",
     "pre_support": "PRE_SUPPORT",
     "pre_support_unsupported": "PRE_SUPPORT",
+    "no_close": "UNKNOWN",
+    "close_invalid": "PRE_SUPPORT",
     "first_lift": "VALID_RETENTION",
     "stable_carry": "VALID_RETENTION",
     "valid_retention": "VALID_RETENTION",
+    "pre_place_unsupported": "RELEASE_IMMINENT_TAIL",
     "release_safe": "RELEASE_IMMINENT_TAIL",
     "release_imminent_tail": "RELEASE_IMMINENT_TAIL",
     "post_release": "POST_RELEASE",
@@ -47,6 +50,12 @@ def derive_utility_tier(row: dict[str, Any], phase_name: str) -> int | None:
     veto = bool(row.get("veto_invalid", False))
     if not known or quality == veto:
         return None
+    raw_phase = str(row.get("phase_name", row.get("phase", ""))).strip().lower()
+    if raw_phase == "stable_carry" and candidate and quality and not veto:
+        # V2.1.3 does not carry a separate remaining-retention duration.  The
+        # sealed stable-carry phase is therefore the highest available clean
+        # proxy; this is explicitly not a counterfactual attack label.
+        return 3
     if phase_name == "VALID_RETENTION" and candidate and quality and not veto:
         continuation = row.get("retention_continuation_t10", row.get("later_event_known", False))
         return 3 if bool(continuation) and not bool(row.get("release_imminent", False)) else 2
