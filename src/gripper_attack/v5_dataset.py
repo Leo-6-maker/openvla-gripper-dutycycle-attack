@@ -330,8 +330,8 @@ def load_v5_episode(
             grouped_rows.setdefault(str(item["window_id"]), []).append(item)
         for window_id, members in grouped_rows.items():
             anchor = min(int(item["index"]) for item in members) + 9
-            tiers = [int(item["utility_tier"]) for item in members if int(item["index"]) <= anchor and item["utility_tier"] is not None]
-            causal_tier_by_window[window_id] = max(tiers) if tiers else None
+            causal_tiers = [int(item["utility_tier"]) for item in members if int(item["index"]) <= anchor and item["utility_tier"] is not None]
+            causal_tier_by_window[window_id] = max(causal_tiers) if causal_tiers else None
     active: dict[str, Any] | None = None
     segment_counts: dict[str, int] = {}
     for item in window_rows + [{"rankable": False}]:
