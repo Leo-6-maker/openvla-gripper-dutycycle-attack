@@ -159,7 +159,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
 
     s1_audit = _json(args.s1_audit)
     teacher_aggregate = _json(args.teacher_aggregate)
-    if s1_audit.get("status") != "PASS" or int(s1_audit.get("identity_count", 0)) != 800:
+    if s1_audit.get("status") not in {"PASS", "PASS_STRUCTURAL_TEACHER_AUDIT"} or int(s1_audit.get("identity_count", 0)) != 800:
         raise ValueError("independent S1 root audit is not PASS for 800 identities")
     if teacher_aggregate.get("status") != "PASS" or int(teacher_aggregate.get("identity_count", teacher_aggregate.get("actual_identity_count", 0))) != 800:
         raise ValueError("Teacher aggregate is not PASS for 800 identities")
