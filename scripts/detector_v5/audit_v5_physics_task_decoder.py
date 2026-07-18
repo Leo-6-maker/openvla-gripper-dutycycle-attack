@@ -46,10 +46,11 @@ def parse_bddl_objects(text: str) -> list[dict[str, str]]:
         line = line.strip()
         if not line:
             continue
-        item = re.fullmatch(r"([A-Za-z0-9_]+)\s+-\s+([A-Za-z0-9_]+)", line)
+        item = re.fullmatch(r"([A-Za-z0-9_ ]+)\s+-\s+([A-Za-z0-9_]+)", line)
         if not item:
             raise ValueError(f"malformed BDDL object row: {line}")
-        objects.append({"name": item.group(1), "category": item.group(2)})
+        names = item.group(1).split()
+        objects.extend({"name": name, "category": item.group(2)} for name in names)
     if not objects:
         raise ValueError("BDDL objects section is empty")
     return objects
