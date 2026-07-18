@@ -4,14 +4,48 @@ from __future__ import annotations
 
 import csv
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Sequence
 
 import torch
 from torch import Tensor
 
-from .v5_protocol import V5Window, validate_phase_windows, validate_student_features, validate_teacher_row
+from .b3_training_protocol import sha256_file, verify_sealed_directory
+from .v5_protocol import (
+    V5_FEATURES_9D,
+    V5_STUDENT_FORBIDDEN_FIELDS,
+    V5Window,
+    feature_order_sha,
+    validate_phase_windows,
+    validate_student_features,
+    validate_teacher_row,
+)
+
+
+_POLICY_INTENT_REQUIRED_FIELDS = frozenset(
+    {
+        "step",
+        "clean_policy_intent_9d",
+        "clean_open_probability_mass",
+        "clean_close_probability_mass",
+        "clean_open_minus_close_log_mass",
+        "clean_action_token_entropy_normalized",
+        "clean_top1_probability",
+        "clean_top1_is_open",
+        "clean_top1_is_close",
+        "clean_best_open_rank_normalized",
+        "clean_best_close_rank_normalized",
+        "action_token_ids",
+        "clean_action_token_top_ids",
+        "clean_action_token_top_logits",
+        "score_head_summary",
+        "generation_passes_per_step",
+        "single_generation_parity_pass",
+        "score_adapter_parity_pass",
+        "valid_intent",
+    }
+)
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
@@ -57,11 +91,18 @@ class V5Episode:
     release_known_mask: Tensor
     regrasp_known_mask: Tensor
     windows: tuple[V5Window, ...]
+    policy_intent_9d: Tensor = field(default_factory=lambda: torch.empty((0, 9), dtype=torch.float32))
+    intent_valid_mask: Tensor = field(default_factory=lambda: torch.empty((0,), dtype=torch.bool))
 
     def __post_init__(self) -> None:
         steps = self.features_25d.shape[0]
         if self.features_25d.shape != (steps, 25):
             raise ValueError("V5-A features must have shape [T,25]")
+        if self.policy_intent_9d.numel() == 0 and self.intent_valid_mask.numel() == 0:
+            object.__setattr__(self, "policy_intent_9d", torch.zeros((steps, 9), dtype=torch.float32))
+            object.__setattr__(self, "intent_valid_mask", torch.zeros((steps,), dtype=torch.bool))
+        if self.policy_intent_9d.shape != (steps, 9) or self.intent_valid_mask.shape != (steps,):
+            raise ValueError("V5 policy-intent stream must have shape [T,9] and [T]")
         for name, value in (
             ("valid_mask", self.valid_mask),
             ("candidate_close", self.candidate_close),
@@ -78,6 +119,10 @@ class V5Episode:
             raise TypeError("V5-A masks must be bool")
         if not bool(torch.isfinite(self.features_25d).all()):
             raise ValueError("V5-A features contain NaN/Inf")
+        if self.intent_valid_mask.dtype != torch.bool:
+            raise TypeError("intent_valid_mask must be bool")
+        if not bool(torch.isfinite(self.policy_intent_9d).all()):
+            raise ValueError("V5 policy-intent features contain NaN/Inf")
         validate_phase_windows(self.windows)
 
 
@@ -85,7 +130,81 @@ def _episode_root(root: Path, row: dict[str, Any]) -> Path:
     return root / str(row["suite"]) / f"task_{int(row['task_idx']):02d}" / f"state_{int(row['state_id']):02d}"
 
 
-def load_v5_episode(s1_root: Path, teacher_root: Path, row: dict[str, Any]) -> V5Episode:
+def load_policy_intent_root(root: Path) -> tuple[dict[str, list[dict[str, Any]]], dict[str, Any]]:
+    """Load the independently sealed FIT-only policy-intent derivative.
+
+    The binder already performed source-artifact parity checks.  This loader
+    still rechecks the root seal, row schema, identity/step closure, finite 9D
+    values, and the explicit Student-only boundary before a V5-B run consumes
+    any bytes.
+    """
+
+    root = root.resolve()
+    verify_sealed_directory(root)
+    manifest_path = root / "OFFICIAL_V3_V5_POLICY_INTENT_BINDING_V1.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if not isinstance(manifest, dict) or manifest.get("schema") != "OFFICIAL_V3_V5_POLICY_INTENT_BINDING_V1":
+        raise ValueError("unexpected policy-intent manifest schema")
+    if manifest.get("status") != "PASS" or manifest.get("formal_training_authorized") is not False or manifest.get("formal_attack_authorized") is not False:
+        raise ValueError("policy-intent root is not a clean-only PASS")
+    if manifest.get("policy_feature_order") != list(V5_FEATURES_9D):
+        raise ValueError("policy-intent feature order mismatch")
+    if manifest.get("policy_step_count") != manifest.get("valid_intent_step_count"):
+        raise ValueError("policy-intent valid-step count mismatch")
+    for name in ("source_artifact_index_sha256",):
+        value = manifest.get(name)
+        if not isinstance(value, str) or len(value) != 64:
+            raise ValueError(f"invalid policy-intent binding: {name}")
+
+    records_path = root / "policy_intent_records.jsonl"
+    records = _jsonl(records_path)
+    if len(records) != int(manifest.get("policy_step_count", -1)):
+        raise ValueError("policy-intent record count does not match manifest")
+    index: dict[str, list[dict[str, Any]]] = {}
+    for record in records:
+        key = str(record.get("canonical_parent_key", ""))
+        if len(key.split("/")) != 3:
+            raise ValueError(f"invalid policy-intent identity: {key}")
+        if set(record) != ({"canonical_parent_key", "task_language"} | _POLICY_INTENT_REQUIRED_FIELDS):
+            raise ValueError(f"policy-intent row schema mismatch: {key}")
+        if record.get("valid_intent") is not True:
+            raise ValueError(f"invalid policy-intent row: {key}")
+        if any(field in record for field in V5_STUDENT_FORBIDDEN_FIELDS):
+            raise ValueError(f"policy-intent row contains forbidden field: {key}")
+        values = record.get("clean_policy_intent_9d")
+        if not isinstance(values, list) or len(values) != 9:
+            raise ValueError(f"policy-intent width mismatch: {key}")
+        try:
+            tensor = torch.tensor(values, dtype=torch.float32)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"policy-intent values are not numeric: {key}") from exc
+        if not bool(torch.isfinite(tensor).all()):
+            raise ValueError(f"policy-intent values are non-finite: {key}")
+        index.setdefault(key, []).append(record)
+    if len(index) != int(manifest.get("fit_identity_count", -1)) or len(index) != 800:
+        raise ValueError("policy-intent root does not cover exactly 800 FIT identities")
+    for key, rows in index.items():
+        steps = [int(item.get("step", -1)) for item in rows]
+        if steps != list(range(len(rows))):
+            raise ValueError(f"policy-intent step closure failed: {key}")
+    meta = {
+        "policy_root_sha256s_sha256": sha256_file(root / "SHA256SUMS"),
+        "policy_manifest_sha256": sha256_file(manifest_path),
+        "policy_feature_order_sha256": feature_order_sha(V5_FEATURES_9D),
+        "policy_source_artifact_index_sha256": manifest["source_artifact_index_sha256"],
+        "policy_identity_count": len(index),
+        "policy_step_count": len(records),
+    }
+    return index, meta
+
+
+def load_v5_episode(
+    s1_root: Path,
+    teacher_root: Path,
+    row: dict[str, Any],
+    *,
+    policy_index: dict[str, list[dict[str, Any]]] | None = None,
+) -> V5Episode:
     identity = str(row["canonical_parent_key"])
     s1 = _episode_root(s1_root, row)
     teacher = _episode_root(teacher_root, row)
@@ -93,6 +212,9 @@ def load_v5_episode(s1_root: Path, teacher_root: Path, row: dict[str, Any]) -> V
     teachers = _jsonl(teacher / "v5_teacher_utility.jsonl")
     if not students or len(students) != len(teachers):
         raise ValueError(f"V5-A stream mismatch: {identity}")
+    policy_rows = None if policy_index is None else policy_index.get(identity)
+    if policy_index is not None and (policy_rows is None or len(policy_rows) != len(students)):
+        raise ValueError(f"V5-B policy-intent stream mismatch: {identity}")
     features: list[list[float]] = []
     valid: list[bool] = []
     candidate: list[bool] = []
@@ -100,6 +222,8 @@ def load_v5_episode(s1_root: Path, teacher_root: Path, row: dict[str, Any]) -> V
     known: list[bool] = []
     release: list[bool] = []
     regrasp: list[bool] = []
+    policy_features: list[list[float]] = []
+    policy_valid: list[bool] = []
     window_rows: list[dict[str, Any]] = []
     for index, (student, teacher_row) in enumerate(zip(students, teachers)):
         validate_student_features(student)
@@ -108,6 +232,13 @@ def load_v5_episode(s1_root: Path, teacher_root: Path, row: dict[str, Any]) -> V
             raise ValueError(f"V5-A Student identity/step mismatch: {identity}:{index}")
         if teacher_row.get("canonical_parent_key") != identity or int(teacher_row.get("step", -1)) != index:
             raise ValueError(f"V5-A Teacher identity/step mismatch: {identity}:{index}")
+        if policy_rows is not None:
+            policy_row = policy_rows[index]
+            if policy_row.get("canonical_parent_key") != identity or int(policy_row.get("step", -1)) != index:
+                raise ValueError(f"V5-B policy identity/step mismatch: {identity}:{index}")
+            values = policy_row["clean_policy_intent_9d"]
+            policy_features.append([float(value) for value in values])
+            policy_valid.append(bool(policy_row["valid_intent"]))
         features.append([float(value) for value in student["features_25d"]])
         valid.append(bool(student["valid"]))
         candidate.append(bool(teacher_row["candidate_close"]))
@@ -181,11 +312,19 @@ def load_v5_episode(s1_root: Path, teacher_root: Path, row: dict[str, Any]) -> V
         release_known_mask=torch.tensor([bool(v and c and k) for v, c, k in zip(valid, candidate, known)], dtype=torch.bool),
         regrasp_known_mask=torch.tensor([bool(v and c and k) for v, c, k in zip(valid, candidate, known)], dtype=torch.bool),
         windows=tuple(windows),
+        policy_intent_9d=torch.tensor(policy_features, dtype=torch.float32) if policy_rows is not None else torch.empty((0, 9), dtype=torch.float32),
+        intent_valid_mask=torch.tensor(policy_valid, dtype=torch.bool) if policy_rows is not None else torch.empty((0,), dtype=torch.bool),
     )
 
 
-def load_v5_episodes(s1_root: Path, teacher_root: Path, rows: Iterable[dict[str, Any]]) -> list[V5Episode]:
-    return [load_v5_episode(s1_root, teacher_root, row) for row in rows]
+def load_v5_episodes(
+    s1_root: Path,
+    teacher_root: Path,
+    rows: Iterable[dict[str, Any]],
+    *,
+    policy_index: dict[str, list[dict[str, Any]]] | None = None,
+) -> list[V5Episode]:
+    return [load_v5_episode(s1_root, teacher_root, row, policy_index=policy_index) for row in rows]
 
 
 def classify_v5_episode_windows(windows: Sequence[V5Window]) -> str:
@@ -207,6 +346,15 @@ def compute_v5_normalization(episodes: Iterable[V5Episode]) -> tuple[Tensor, Ten
     values = torch.cat([episode.features_25d[episode.valid_mask] for episode in episodes], dim=0)
     if values.numel() == 0:
         raise ValueError("cannot normalize an empty V5-A training set")
+    mean = values.mean(dim=0)
+    std = values.std(dim=0, unbiased=False).clamp_min(1e-6)
+    return mean, std
+
+
+def compute_v5_intent_normalization(episodes: Iterable[V5Episode]) -> tuple[Tensor, Tensor]:
+    values = torch.cat([episode.policy_intent_9d[episode.intent_valid_mask] for episode in episodes], dim=0)
+    if values.numel() == 0:
+        raise ValueError("cannot normalize an empty V5-B policy-intent training set")
     mean = values.mean(dim=0)
     std = values.std(dim=0, unbiased=False).clamp_min(1e-6)
     return mean, std
@@ -254,10 +402,12 @@ aggregate_window_scores = aggregate_retrospective_window_scores
 __all__ = [
     "V5Episode",
     "load_fit_registry",
+    "load_policy_intent_root",
     "load_v5_episode",
     "load_v5_episodes",
     "classify_v5_episode_windows",
     "compute_v5_normalization",
+    "compute_v5_intent_normalization",
     "aggregate_window_scores",
     "aggregate_retrospective_window_scores",
     "causal_window_anchor_scores",

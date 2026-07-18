@@ -148,6 +148,54 @@ def finite_list(value: Any, length: int | None = None) -> bool:
     return isinstance(value, list) and (length is None or len(value) == length) and all(finite(x) for x in value)
 
 
+def validate_policy_record(step_row: dict[str, Any], intent: dict[str, Any], key: str, index: int) -> None:
+    if intent.get("action_token_ids") != step_row.get("action_token_ids"):
+        raise ValueError(f"policy/action token mismatch: {key}:{index}")
+    score = intent.get("score_head_summary")
+    token_ids = intent.get("action_token_ids")
+    if not isinstance(token_ids, list) or not isinstance(score, list) or len(score) != len(token_ids) or any(item.get("top_token") != token for item, token in zip(score, token_ids)):
+        raise ValueError(f"score adapter token mismatch: {key}:{index}")
+    if not finite_list(intent.get("clean_policy_intent_9d"), 9):
+        raise ValueError(f"9D policy feature invalid: {key}:{index}")
+    for field in ("clean_open_probability_mass", "clean_close_probability_mass", "clean_top1_probability", "clean_top1_is_open", "clean_top1_is_close"):
+        if not finite(intent.get(field)) or not -1e-6 <= float(intent[field]) <= 1 + 1e-6:
+            raise ValueError(f"policy range invalid: {key}:{index}:{field}")
+    for field in ("clean_open_minus_close_log_mass", "clean_action_token_entropy_normalized", "clean_best_open_rank_normalized", "clean_best_close_rank_normalized"):
+        if not finite(intent.get(field)):
+            raise ValueError(f"policy numeric invalid: {key}:{index}:{field}")
+    if intent.get("generation_passes_per_step") != 1 or intent.get("single_generation_parity_pass") is not True or intent.get("score_adapter_parity_pass") is not True:
+        raise ValueError(f"policy generation/parity invalid: {key}:{index}")
+
+
+def validate_privileged_record(value: dict[str, Any], key: str, index: int) -> None:
+    if not _same_identity(value, key):
+        raise ValueError(f"privileged identity field mismatch: {key}:{index}")
+    if not finite_list(value.get("object_state")) or not finite_list(value.get("robot0_eef_pos"), 3) or not finite_list(value.get("robot0_eef_quat"), 4) or not finite_list(value.get("robot0_gripper_qpos"), 2) or not finite_list(value.get("eef_feature_pos"), 3):
+        raise ValueError(f"privileged physics vector invalid: {key}:{index}")
+    contact_count = value.get("contact_count")
+    pairs = value.get("mujoco_contact_pairs")
+    if isinstance(contact_count, bool) or not isinstance(contact_count, int) or contact_count < 0:
+        raise ValueError(f"privileged contact count invalid: {key}:{index}")
+    if not isinstance(pairs, list) or any(not isinstance(pair, list) or len(pair) != 2 or not all(isinstance(name, str) and name for name in pair) for pair in pairs):
+        raise ValueError(f"privileged contact pair schema invalid: {key}:{index}")
+    if contact_count != len(pairs):
+        raise ValueError(f"privileged contact count/pair mismatch: {key}:{index}")
+    if value.get("contact_capture_valid") is not True or value.get("eef_alias_valid") is not True:
+        raise ValueError(f"privileged validity invalid: {key}:{index}")
+
+
+def privileged_schema_dimensions(rows: Iterable[dict[str, Any]]) -> tuple[dict[str, list[int]], bool]:
+    """Return task-conditional object-state dimensions and its strict gate."""
+
+    dimensions_by_task: dict[str, set[int]] = {}
+    for row in rows:
+        task = "/".join(row["canonical_parent_key"].split("/")[:2])
+        dimensions_by_task.setdefault(task, set()).update(row["object_state_dimensions"])
+    normalized = {task: sorted(dimensions) for task, dimensions in sorted(dimensions_by_task.items())}
+    passed = len(normalized) == 40 and all(len(dimensions) == 1 for dimensions in normalized.values())
+    return normalized, passed
+
+
 def episode_root(source_root: Path, row: dict[str, Any]) -> Path:
     return source_root / row["suite"] / f"task_{int(row['task_idx']):02d}" / f"state_{int(row['state_id']):02d}"
 
@@ -189,32 +237,14 @@ def audit_episode(source_root: Path, registry_row: dict[str, Any], policy_out: l
     for index, (step, intent, priv) in enumerate(zip(steps, policy, privileged)):
         if any(int(x.get("step", -1)) != index for x in (step, intent, priv)):
             raise ValueError(f"step index mismatch: {key}:{index}")
-        if not _same_identity(step, key) or not _same_identity(priv, key):
+        if not _same_identity(step, key):
             raise ValueError(f"identity field mismatch: {key}:{index}")
-        if intent.get("action_token_ids") != step.get("action_token_ids"):
-            raise ValueError(f"policy/action token mismatch: {key}:{index}")
-        score = intent.get("score_head_summary")
-        token_ids = intent.get("action_token_ids")
-        if not isinstance(score, list) or len(score) != len(token_ids) or any(item.get("top_token") != token for item, token in zip(score, token_ids)):
-            raise ValueError(f"score adapter token mismatch: {key}:{index}")
+        validate_policy_record(step, intent, key, index)
+        validate_privileged_record(priv, key, index)
         for field in POLICY_FIELDS:
             policy_fields[field] += 1
         for field in PRIVILEGED_FIELDS:
             privileged_fields[field] += field in priv
-        if not finite_list(intent.get("clean_policy_intent_9d"), 9):
-            raise ValueError(f"9D policy feature invalid: {key}:{index}")
-        for field in ("clean_open_probability_mass", "clean_close_probability_mass", "clean_top1_probability", "clean_top1_is_open", "clean_top1_is_close"):
-            if not finite(intent.get(field)) or not -1e-6 <= float(intent[field]) <= 1 + 1e-6:
-                raise ValueError(f"policy range invalid: {key}:{index}:{field}")
-        for field in ("clean_open_minus_close_log_mass", "clean_action_token_entropy_normalized", "clean_best_open_rank_normalized", "clean_best_close_rank_normalized"):
-            if not finite(intent.get(field)):
-                raise ValueError(f"policy numeric invalid: {key}:{index}:{field}")
-        if intent.get("generation_passes_per_step") != 1 or intent.get("single_generation_parity_pass") is not True or intent.get("score_adapter_parity_pass") is not True:
-            raise ValueError(f"policy generation/parity invalid: {key}:{index}")
-        if not finite_list(priv.get("object_state")) or not finite_list(priv.get("robot0_eef_pos"), 3) or not finite_list(priv.get("robot0_gripper_qpos"), 2) or not finite_list(priv.get("eef_feature_pos"), 3):
-            raise ValueError(f"privileged physics vector invalid: {key}:{index}")
-        if priv.get("contact_capture_valid") is not True or priv.get("eef_alias_valid") is not True:
-            raise ValueError(f"privileged validity invalid: {key}:{index}")
         clean = {"canonical_parent_key": key, "task_language": metadata.get("task_language", "")}
         clean.update({field: intent[field] for field in POLICY_FIELDS})
         clean["valid_intent"] = True
@@ -287,6 +317,13 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         p_row, t_row = audit_episode(args.source_root.resolve(), row, policy_out, privileged_rows, policy_fields, privileged_fields)
         policy_rows.append(p_row)
         privileged_rows.append(t_row)
+    total_steps = sum(row["step_count"] for row in policy_rows)
+    if any(policy_fields[field] != total_steps for field in POLICY_FIELDS):
+        raise ValueError("policy required-field coverage is incomplete")
+    if any(privileged_fields[field] != total_steps for field in PRIVILEGED_FIELDS):
+        raise ValueError("privileged required-field coverage is incomplete")
+    if any(row.get("required_fields_present") is not True for row in privileged_rows):
+        raise ValueError("privileged identity row has incomplete required-field coverage")
     source_index_sha = json_sha([{"canonical_parent_key": row["canonical_parent_key"], "source_artifact_recursive_sha256": row["source_artifact_recursive_sha256"]} for row in policy_rows])
     common = {
         "registry_csv_sha256": sha256_file(args.registry_csv.resolve()),
@@ -308,18 +345,15 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         "student_forbidden_modalities": ["object_state", "mujoco_contact_pairs", "contact_count", "worker_id", "collector_git_head", "model_path", "attack_outcome"],
         "policy_field_coverage": dict(sorted(policy_fields.items())),
     }
-    dimensions_by_task: dict[str, list[int]] = {}
-    for row in privileged_rows:
-        task = "/".join(row["canonical_parent_key"].split("/")[:2])
-        dimensions_by_task.setdefault(task, [])
-        dimensions_by_task[task] = sorted(set(dimensions_by_task[task]) | set(row["object_state_dimensions"]))
-    schema_within_task = all(len(values) == 1 for values in dimensions_by_task.values()) and len(dimensions_by_task) == 40
+    dimensions_by_task, schema_within_task = privileged_schema_dimensions(privileged_rows)
     privileged_manifest = {
         "schema": "OFFICIAL_V3_PRIVILEGED_PHYSICS_TEACHER_AUDIT_V1",
         "status": "PASS_TASK_CONDITIONAL_SCHEMA" if schema_within_task else "HOLD_SCHEMA_VARIATION",
         **common, "teacher_only": True, "student_consumption_allowed": False,
         "privileged_step_count": sum(row["step_count"] for row in privileged_rows),
         "required_field_coverage": dict(sorted(privileged_fields.items())),
+        "required_field_coverage_pass": True,
+        "required_fields_present_all_identity_rows": True,
         "object_state_dimensions": sorted({dim for row in privileged_rows for dim in row["object_state_dimensions"]}),
         "object_state_dimensions_by_task": dimensions_by_task,
         "schema_scope": "task_conditional_object_state_flattening",
