@@ -53,7 +53,8 @@ def test_dynamic_features_are_name_bound_and_use_last_valid_history() -> None:
     out = derive_dynamic_features(base, "B", torch.tensor([True, False, True]))
     assert out.shape == (3, 33)
     assert float(out[2, 25]) == pytest.approx(0.3)  # 0.4 - last valid 0.1, not invalid 9.0
-    assert "IDX_" not in Path("src/gripper_attack/v4_dataset.py").read_text()
+    repo_root = Path(__file__).resolve().parents[2]
+    assert "IDX_" not in (repo_root / "src/gripper_attack/v4_dataset.py").read_text()
 
 
 def test_quality_supervision_requires_xor_and_masks_unknown(tmp_path: Path) -> None:
