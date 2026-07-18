@@ -63,9 +63,12 @@ def _assert_in_root(path: Path, root: Path, label: str) -> None:
 
 
 def _registry_rows(registry_csv: Path) -> list[dict[str, str]]:
-    rows = list(csv.DictReader(registry_csv.open(encoding="utf-8", newline="")))
+    all_rows = list(csv.DictReader(registry_csv.open(encoding="utf-8", newline="")))
+    if len(all_rows) != 2000:
+        raise ValueError(f"formal registry must contain the frozen 2000-row universe, got {len(all_rows)}")
+    rows = [row for row in all_rows if int(row.get("state_id", -1)) in FIT_STATES]
     if len(rows) != 800:
-        raise ValueError(f"formal FIT registry must have 800 rows, got {len(rows)}")
+        raise ValueError(f"formal registry FIT subset must have 800 rows, got {len(rows)}")
     identities = []
     for row in rows:
         identity = str(row.get("canonical_parent_key", ""))
