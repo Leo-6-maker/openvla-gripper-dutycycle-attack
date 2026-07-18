@@ -18,7 +18,7 @@ import torch
 from torch import nn
 
 from gripper_attack.b3_training_protocol import seal_directory, sha256_file, verify_sealed_directory
-from gripper_attack.v5_dataset import load_fit_registry, load_policy_intent_root, load_v5_episodes
+from gripper_attack.v5_dataset import classify_v5_episode_windows, load_fit_registry, load_policy_intent_root, load_v5_episodes
 
 
 ANCHOR_DWELL = 10
@@ -192,13 +192,15 @@ def _ranking_metrics(rows: list[dict[str, Any]], scores: torch.Tensor) -> dict[s
     }
 
 
-def _baseline_metrics(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _baseline_metrics(rows: list[dict[str, Any]], policy_by_key: dict[str, list[dict[str, Any]]] | None = None) -> dict[str, Any]:
     by_key: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
         by_key[row["canonical_parent_key"]].append(row)
     methods = {
         "earliest_causal_segment": lambda values: min(values, key=lambda item: item["segment_start"]),
+        "first_t10_segment": lambda values: min(values, key=lambda item: item["segment_start"]),
         "latest_causal_segment": lambda values: max(values, key=lambda item: item["segment_start"]),
+        "causal_dwell_so_far": lambda values: max(values, key=lambda item: (item["segment_length"], -item["segment_start"])),
         "longest_causal_segment": lambda values: max(values, key=lambda item: (item["segment_length"], -item["segment_start"])),
     }
     output: dict[str, Any] = {}
@@ -210,6 +212,21 @@ def _baseline_metrics(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "true_mixed_top1": sum(bool(pick(values)["anchor_local_positive"]) for values in mixed) / len(mixed) if mixed else None,
             "pure_negative_abstention": 0.0,
             "selected_positive_rate": sum(bool(item["anchor_local_positive"]) for item in selected) / len(selected) if selected else None,
+            "mixed_denominator": len(mixed),
+            "pure_negative_denominator": len(pure),
+        }
+    if policy_by_key is not None:
+        mixed = [values for values in by_key.values() if any(item["anchor_local_positive"] for item in values) and any(item["anchor_local_negative"] for item in values)]
+        pure = [values for values in by_key.values() if values and all(item["anchor_local_negative"] for item in values)]
+        def policy_score(item: dict[str, Any]) -> float:
+            key = item["canonical_parent_key"]
+            anchor = int(item["decision_anchor"])
+            policy = policy_by_key[key][anchor]
+            return -float(policy["clean_open_minus_close_log_mass"])
+        output["policy_close_margin_peak"] = {
+            "true_mixed_top1": sum(bool(max(values, key=policy_score)["anchor_local_positive"]) for values in mixed) / len(mixed) if mixed else None,
+            "pure_negative_abstention": 0.0,
+            "selected_positive_rate": sum(bool(max(values, key=policy_score)["anchor_local_positive"]) for values in by_key.values() if values) / len(by_key) if by_key else None,
             "mixed_denominator": len(mixed),
             "pure_negative_denominator": len(pure),
         }
@@ -349,7 +366,7 @@ def main() -> int:
             "identity_count": len(keys),
             "category_counts": dict(Counter(_category(segments) for segments in selected)),
             "final_tier_segment_counts": dict(Counter(int(segment["final_segment_max_tier"]) for segments in selected for segment in segments if segment["final_segment_max_tier"] is not None)),
-            "anchor_tier_segment_counts": dict(Counter(int(segment["max_tier_up_to_anchor"]) for segments in selected for segment in segments if segment["max_tier_up_to_anchor"] is not None)),
+            "anchor_tier_segment_counts": dict(Counter(int(segment["max_tier_up_to_anchor"]) for segments in selected for segment in segments if segment["decision_anchor"] is not None and segment["max_tier_up_to_anchor"] is not None)),
             "tier3_containing_episode_count": sum(any(int(segment["final_segment_max_tier"] or -1) >= 3 for segment in segments) for segments in selected),
             "segment_count": sum(len(segments) for segments in selected),
             "anchor_segment_count": sum(sum(segment["decision_anchor"] is not None for segment in segments) for segments in selected),
@@ -366,7 +383,7 @@ def main() -> int:
         "tier2_or_3_onset_after_anchor_count": sum(segment["decision_anchor"] is not None and segment["tier2_onset_step"] is not None and segment["tier2_onset_step"] > segment["decision_anchor"] for segment in all_segment_rows),
         "tier2_or_3_onset_after_anchor_rate": sum(segment["decision_anchor"] is not None and segment["tier2_onset_step"] is not None and segment["tier2_onset_step"] > segment["decision_anchor"] for segment in all_segment_rows) / max(1, sum(segment["decision_anchor"] is not None for segment in all_segment_rows)),
         "anchor_local_category_counts": dict(Counter(_category(segments_by_key[key]) for key in rows_by_key)),
-        "final_loader_category_counts": dict(Counter("POSITIVE" if any(window.utility_tier is not None and int(window.utility_tier) >= 2 for window in episodes_by_key[key].windows) and not all(window.utility_tier is not None and int(window.utility_tier) >= 2 for window in episodes_by_key[key].windows) else "OTHER" for key in rows_by_key)),
+        "final_loader_category_counts": dict(Counter(classify_v5_episode_windows(episodes_by_key[key].windows) for key in rows_by_key)),
         "formal_training_authorized": False,
         "formal_attack_authorized": False,
     }
@@ -376,7 +393,7 @@ def main() -> int:
         "causal_target_rows.jsonl": "".join(json.dumps(row, sort_keys=True) + "\n" for row in all_segment_rows),
         "episode_geometry.json": json.dumps(episode_geometry, indent=2, sort_keys=True) + "\n",
         "shallow_bounds.json": json.dumps(bounds, indent=2, sort_keys=True) + "\n",
-        "baseline_results.json": json.dumps(_baseline_metrics(validation_segments), indent=2, sort_keys=True) + "\n",
+        "baseline_results.json": json.dumps(_baseline_metrics(validation_segments, policy_index), indent=2, sort_keys=True) + "\n",
         "balanced_subset_summary.json": json.dumps({
             "identity_count": len(balanced),
             "identity_sha256": sha256_file(args.subset_root.resolve() / "identities.json"),
