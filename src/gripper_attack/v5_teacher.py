@@ -33,6 +33,8 @@ _PHASE_MAP = {
     "unknown": "UNKNOWN",
 }
 
+HIGH_VALUE_RETENTION_WINDOW_MIN_STEPS = 10
+
 
 def map_phase(value: Any) -> str:
     normalized = str(value).strip()
@@ -50,10 +52,12 @@ def derive_utility_tier(row: dict[str, Any], phase_name: str) -> int | None:
     veto = bool(row.get("veto_invalid", False))
     if not known or quality == veto:
         return None
-    raw_phase = str(row.get("phase_name", row.get("phase", ""))).strip().lower()
-    if raw_phase == "stable_carry" and candidate and quality and not veto:
-        # V2.1.3 does not carry a separate remaining-retention duration.  The
-        # sealed stable-carry phase is therefore the highest available clean
+    window_start = int(row.get("window_start", 0))
+    window_end = int(row.get("window_end", window_start))
+    window_steps = max(0, window_end - window_start + 1)
+    if phase_name == "VALID_RETENTION" and candidate and quality and not veto and window_steps >= HIGH_VALUE_RETENTION_WINDOW_MIN_STEPS:
+        # V2.1.3 does not carry a separate remaining-retention duration.  A
+        # sealed T10-or-longer valid phase is the highest available clean
         # proxy; this is explicitly not a counterfactual attack label.
         return 3
     if phase_name == "VALID_RETENTION" and candidate and quality and not veto:

@@ -49,6 +49,8 @@
     "attack_outcome"
   ],
   "unknown_is_not_negative": true,
+  "high_value_retention_window_min_steps": 10,
+  "high_value_proxy_rule": "VALID_RETENTION window length >= 10 and no release/veto",
   "formal_training_authorized": false,
   "formal_attack_authorized": false
 }

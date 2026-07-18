@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from gripper_attack.b3_training_protocol import sha256_file
-from gripper_attack.v5_teacher import convert_teacher_row
+from gripper_attack.v5_teacher import HIGH_VALUE_RETENTION_WINDOW_MIN_STEPS, convert_teacher_row
 
 
 def _jsonl(path: Path) -> list[dict[str, Any]]:
@@ -93,6 +93,7 @@ def build(source_root: Path, output_root: Path) -> dict[str, Any]:
             "known_step_count": known_steps,
             "phase_counts": dict(sorted(phase_counts.items())),
             "utility_tier_counts": dict(sorted(tier_counts.items())),
+            "high_value_proxy_rule": f"VALID_RETENTION window length >= {HIGH_VALUE_RETENTION_WINDOW_MIN_STEPS} and no release/veto",
             "teacher_is_clean_only_proxy": True,
             "student_future_leakage": False,
             "formal_training_authorized": False,

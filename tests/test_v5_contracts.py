@@ -65,7 +65,24 @@ def test_v5_teacher_utility_is_proxy_and_unknown_is_masked():
         "libero_spatial/task_00/state_00",
         0,
     )
-    assert row["utility_tier"] == 3
+    assert row["utility_tier"] == 2
+    high_value = convert_teacher_row(
+        {
+            "step": 0,
+            "event_id": 3,
+            "phase_segment_index": 1,
+            "phase_name": "VALID_RETENTION",
+            "window_start": 0,
+            "window_end": 10,
+            "candidate_close": True,
+            "quality_valid": True,
+            "veto_invalid": False,
+            "known_mask": True,
+        },
+        "libero_spatial/task_00/state_00",
+        0,
+    )
+    assert high_value["utility_tier"] == 3
     unknown = convert_teacher_row(
         {
             "step": 1,
