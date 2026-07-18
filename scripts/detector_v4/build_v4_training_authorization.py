@@ -145,8 +145,11 @@ def _verify_teacher_derivative(root: Path, audit_path: Path) -> dict[str, Any]:
         raise ValueError("Teacher V2.1.2 manifest is missing")
     _assert_in_root(manifest_path, root, "Teacher V2.1.2 manifest")
     manifest = _json(manifest_path)
-    if manifest.get("schema") != "DETECTOR_V4_TEACHER_V212_V1_MANIFEST":
-        raise ValueError("wrong Teacher V2.1.2 manifest schema")
+    if manifest.get("schema") not in {
+        "DETECTOR_V4_TEACHER_V212_V1_MANIFEST",
+        "DETECTOR_V4_TEACHER_V213_V1_MANIFEST",
+    }:
+        raise ValueError("wrong Teacher V2.1.x manifest schema")
     if int(manifest.get("identity_count", 0)) != 800 or int(manifest.get("xor_failures", 1)) != 0:
         raise ValueError("Teacher V2.1.2 manifest is not an 800-identity XOR-clean root")
     if manifest.get("formal_training_authorized") is not False or manifest.get("formal_attack_authorized") is not False:

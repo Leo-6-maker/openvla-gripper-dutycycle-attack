@@ -13,6 +13,7 @@ from gripper_attack.v4_formal import V4StatefulQualityGRU, compute_v4_loss
 from scripts.detector_v4.evaluate_v4_corrected import _metrics, select_working_point
 from scripts.detector_v4.build_v4_training_authorization import _verify_teacher_derivative
 from scripts.detector_v4.audit_v4_window_semantics import audit_window_semantics
+from scripts.detector_v4.build_teacher_v213 import _transform_identity
 
 
 def _write_seal(root: Path) -> None:
@@ -203,3 +204,21 @@ def test_window_semantics_census_detects_event_split_across_phases(tmp_path: Pat
     assert summary["status"] == "HOLD"
     assert summary["multi_phase_event_identity_count"] == 1
     assert summary["new_teacher_derivative_required"] is True
+
+
+def test_teacher_v213_assigns_distinct_window_ids_to_phase_segments(tmp_path: Path) -> None:
+    source = tmp_path / "source" / "libero_10" / "task_00" / "state_00"
+    target = tmp_path / "target" / "libero_10" / "task_00" / "state_00"
+    source.mkdir(parents=True)
+    labels = [
+        {"step": 0, "event_id": 0, "phase": "PRE_SUPPORT", "candidate_close": True, "quality_valid": False, "veto_invalid": False, "known_mask": True},
+        {"step": 1, "event_id": 0, "phase": "VALID_RETENTION", "candidate_close": True, "quality_valid": True, "veto_invalid": False, "known_mask": True},
+        {"step": 2, "event_id": -1, "phase": "NO_CLOSE", "candidate_close": False, "quality_valid": False, "veto_invalid": False, "known_mask": False},
+    ]
+    (source / "teacher_v212_labels.jsonl").write_text("".join(json.dumps(row) + "\n" for row in labels), encoding="utf-8")
+    (source / "close_phases.json").write_text(json.dumps({"phases": [{"event_id": 0, "start_step": 0, "end_step": 1}]}), encoding="utf-8")
+    _transform_identity(source, target, "libero_10/task_00/state_00")
+    rows = [json.loads(line) for line in (target / "teacher_v213_labels.jsonl").read_text().splitlines()]
+    assert [row["window_id"] for row in rows] == [0, 1, -1]
+    assert [row["phase_segment_index"] for row in rows] == [0, 1, -1]
+    assert [row["window_start"] for row in rows] == [0, 1, -1]

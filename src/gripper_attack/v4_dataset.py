@@ -278,9 +278,11 @@ def load_v4_episode(
     ident = f"{suite}/task_{task:02d}/state_{state:02d}"
     ident_dir = s1_root / suite / f"task_{task:02d}" / f"state_{state:02d}"
     s1_path = ident_dir / "student_input_records.jsonl"
-    teacher_path = teacher_root / suite / f"task_{task:02d}" / f"state_{state:02d}" / "teacher_v212_labels.jsonl"
-    if not teacher_path.exists():
-        teacher_path = teacher_root / suite / f"task_{task:02d}" / f"state_{state:02d}" / "teacher_v21_labels.jsonl"
+    teacher_dir = teacher_root / suite / f"task_{task:02d}" / f"state_{state:02d}"
+    teacher_path = next(
+        (teacher_dir / name for name in ("teacher_v213_labels.jsonl", "teacher_v212_labels.jsonl", "teacher_v21_labels.jsonl") if (teacher_dir / name).is_file()),
+        teacher_dir / "teacher_v213_labels.jsonl",
+    )
     phases_path = teacher_path.parent / "close_phases.json"
     if not s1_path.is_file() or not teacher_path.is_file():
         return None
@@ -312,10 +314,10 @@ def load_v4_episode(
 
     event_id = torch.tensor([int(row.get("event_id", -1)) for row in labels], dtype=torch.long)
     phase_id = torch.tensor(
-        [PHASE_INDEX.get(str(row.get("phase", "UNKNOWN")), PHASE_INDEX["UNKNOWN"]) for row in labels],
+        [int(row.get("phase_id", PHASE_INDEX.get(str(row.get("phase_name", row.get("phase", "UNKNOWN"))), PHASE_INDEX["UNKNOWN"]))) for row in labels],
         dtype=torch.long,
     )
-    window_id = event_id.clone()
+    window_id = torch.tensor([int(row.get("window_id", int(row.get("event_id", -1)))) for row in labels], dtype=torch.long)
     release_known = torch.tensor(
         [bool(row.get("release_known", row.get("known_mask", False))) for row in labels], dtype=torch.bool
     )

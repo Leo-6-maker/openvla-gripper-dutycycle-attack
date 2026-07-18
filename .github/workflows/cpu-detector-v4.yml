@@ -27,6 +27,8 @@ jobs:
             src/gripper_attack/v4_dataset.py \
             src/gripper_attack/v4_formal.py \
             scripts/detector_v4/build_teacher_v212.py \
+            scripts/detector_v4/build_teacher_v213.py \
+            scripts/detector_v4/audit_teacher_v213.py \
             scripts/detector_v4/build_v4_normalization_bundle.py \
             scripts/detector_v4/build_v4_training_authorization.py \
             scripts/detector_v4/evaluate_v4_corrected.py \
