@@ -113,7 +113,11 @@ def _sha_identity(key: str) -> str:
     return hashlib.sha256(key.encode("utf-8")).hexdigest()
 
 
-def _subset(train_keys: list[str], segments_by_key: dict[str, list[dict[str, Any]]], rows_by_key: dict[str, dict[str, Any]]) -> list[str]:
+def _subset(
+    train_keys: list[str],
+    loader_categories: dict[str, str],
+    rows_by_key: dict[str, dict[str, Any]],
+) -> list[str]:
     by_task: dict[tuple[str, int], list[str]] = defaultdict(list)
     for key in train_keys:
         row = rows_by_key[key]
@@ -121,8 +125,8 @@ def _subset(train_keys: list[str], segments_by_key: dict[str, list[dict[str, Any
     selected: list[str] = []
     for task, keys in sorted(by_task.items()):
         ranked = sorted(keys, key=_sha_identity)
-        positive = [key for key in ranked if _category(segments_by_key[key]) in {"TRUE_MIXED", "POSITIVE_ONLY"}]
-        negative = [key for key in ranked if _category(segments_by_key[key]) == "PURE_NEGATIVE"]
+        positive = [key for key in ranked if loader_categories[key] in {"TRUE_MIXED", "POSITIVE_ONLY"}]
+        negative = [key for key in ranked if loader_categories[key] == "PURE_NEGATIVE"]
         picks: list[str] = []
         for pool in (positive, negative, ranked):
             for key in pool:
@@ -320,6 +324,10 @@ def main() -> int:
         policy_index, policy_meta = load_policy_intent_root(args.policy_root.resolve())
     episodes = load_v5_episodes(args.s1_root.resolve(), args.teacher_root.resolve(), rows, policy_index=policy_index)
     episodes_by_key = {episode.canonical_parent_key: episode for episode in episodes}
+    loader_categories = {
+        key: classify_v5_episode_windows(episode.windows, causal=True)
+        for key, episode in episodes_by_key.items()
+    }
     segments_by_key = {key: _segments(args.teacher_root.resolve(), row) for key, row in rows_by_key.items()}
     fold_manifest = _json(args.fold_root.resolve() / "B3_OFFICIAL_V3_FIT_FOLD_MANIFEST_V1.json")
     fold = next(item for item in fold_manifest["folds"] if int(item["fold_id"]) == 0)
@@ -327,10 +335,10 @@ def main() -> int:
     validation_keys = list(fold["validation_identities"])
     old_subset_value = _json(args.old_subset_identities.resolve())
     old_subset = old_subset_value.get("identities", old_subset_value) if isinstance(old_subset_value, dict) else old_subset_value
-    balanced = _subset(train_keys, segments_by_key, rows_by_key)
+    balanced = _subset(train_keys, loader_categories, rows_by_key)
     balanced_payload = {
-        "schema": "OFFICIAL_V3_DETECTOR_V5_PHYSICS_V21_CATEGORY_BALANCED_SUBSET_V1",
-        "selection": "per-task deterministic hash order; positive-containing and pure-negative preferred when available",
+        "schema": "OFFICIAL_V3_DETECTOR_V5_PHYSICS_V21_CATEGORY_BALANCED_SUBSET_V2",
+        "selection": "per-task deterministic hash order using causal loader categories; positive-containing and pure-negative preferred when available",
         "seed": 20260717,
         "fold_id": 0,
         "identity_count": len(balanced),
@@ -365,6 +373,7 @@ def main() -> int:
         episode_geometry[name] = {
             "identity_count": len(keys),
             "category_counts": dict(Counter(_category(segments) for segments in selected)),
+            "loader_causal_category_counts": dict(Counter(loader_categories[key] for key in keys)),
             "final_tier_segment_counts": dict(Counter(int(segment["final_segment_max_tier"]) for segments in selected for segment in segments if segment["final_segment_max_tier"] is not None)),
             "anchor_tier_segment_counts": dict(Counter(int(segment["max_tier_up_to_anchor"]) for segments in selected for segment in segments if segment["decision_anchor"] is not None and segment["max_tier_up_to_anchor"] is not None)),
             "tier3_containing_episode_count": sum(any(int(segment["final_segment_max_tier"] or -1) >= 3 for segment in segments) for segments in selected),
@@ -383,6 +392,7 @@ def main() -> int:
         "tier2_or_3_onset_after_anchor_count": sum(segment["decision_anchor"] is not None and segment["tier2_onset_step"] is not None and segment["tier2_onset_step"] > segment["decision_anchor"] for segment in all_segment_rows),
         "tier2_or_3_onset_after_anchor_rate": sum(segment["decision_anchor"] is not None and segment["tier2_onset_step"] is not None and segment["tier2_onset_step"] > segment["decision_anchor"] for segment in all_segment_rows) / max(1, sum(segment["decision_anchor"] is not None for segment in all_segment_rows)),
         "anchor_local_category_counts": dict(Counter(_category(segments_by_key[key]) for key in rows_by_key)),
+        "loader_causal_category_counts": dict(Counter(loader_categories.values())),
         "final_loader_category_counts": dict(Counter(classify_v5_episode_windows(episodes_by_key[key].windows) for key in rows_by_key)),
         "formal_training_authorized": False,
         "formal_attack_authorized": False,
@@ -397,7 +407,8 @@ def main() -> int:
         "balanced_subset_summary.json": json.dumps({
             "identity_count": len(balanced),
             "identity_sha256": sha256_file(args.subset_root.resolve() / "identities.json"),
-            "category_counts": dict(Counter(_category(segments_by_key[key]) for key in balanced)),
+            "raw_segment_category_counts": dict(Counter(_category(segments_by_key[key]) for key in balanced)),
+            "loader_causal_category_counts": dict(Counter(loader_categories[key] for key in balanced)),
             "per_task_counts": dict(Counter(f"{rows_by_key[key]['suite']}/task_{int(rows_by_key[key]['task_idx']):02d}" for key in balanced)),
         }, indent=2, sort_keys=True) + "\n",
         "input_binding.json": json.dumps({
