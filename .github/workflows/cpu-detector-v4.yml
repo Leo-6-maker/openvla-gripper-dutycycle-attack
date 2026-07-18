@@ -19,6 +19,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install -e .
           python -m pip install pytest numpy pillow
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
       - name: Compile corrected V4 sources
         run: |
           python -m py_compile \
