@@ -110,14 +110,24 @@ Preparation for folds 1–3 is sealed:
 - Fold-1 C2 checkpoint root seal:
   `6ef4a58f7f4377d32fa586b277e09086170bb8192f9ba4db48670e32f4af303a`;
 - Fold-1 C2 final loss: `0.2573144905765851`;
-- Fold-1 C2 prediction is currently running or awaiting final seal in the
-  non-overwrite root `OFFICIAL_V3_DETECTOR_V4_PRED_F1_C2_S20260717_7dca398_20260718`.
+- Fold-1 C2 prediction root seal:
+  `a99fa44ea5a6ed4780eb9a06dd4b0418fa7f307d417a52b2be78ce163f0f67e5`.
+- Fold-1 C2 matched-recall working point (threshold 0.65): valid event
+  `227/237=0.9578`, later-event `58/65=0.8923`, invalid-window
+  `94/248=0.3790`, mixed-invalid `63/127=0.4961`, pure-negative `2/2=1.0000`,
+  and release overlap `36/606=0.0594`.
+
+The Fold-1 C2 result is an infrastructure PASS but does not independently
+pass the pure-negative scientific sub-gate at its matched-recall point. It is
+retained as a required fold result; no threshold was retuned after seeing this
+result.
 
 Current screening status is therefore:
 
-`FOLD0 = COMPLETE; FOLD1/C2 = CHECKPOINT SEALED, PREDICTION PENDING; FOLDS2-3 = NOT STARTED.`
+`FOLD0 = COMPLETE; FOLD1/C2 = COMPLETE; FOLDS2-3 = NOT STARTED.`
 
-No 4-fold aggregate decision exists yet. It must require at least 3/4 folds
+No 4-fold aggregate decision exists yet. F2/F3 are paused for external review.
+If resumed, the aggregate must require at least 3/4 folds
 with the pre-registered matched-recall Pareto direction, no catastrophic
 release fold, later-event macro at least 0.80, and no severe suite/task
 collapse.
@@ -153,9 +163,9 @@ V4_CORRECTED_FEATURE_BINDING       = PASS
 V4_TEACHER_XOR_AND_PHASE_CONTRACT  = PASS
 V4_FORMAL_AUTHORIZATION            = PASS FOR COMPLETED RUNS
 V4_CHECKPOINT_SEAL                 = PASS C0-C3 FOLD0; PASS F1 C2
-V4_PREDICTION_SEAL                 = PASS C0-C3 FOLD0; F1 C2 PENDING
+V4_PREDICTION_SEAL                 = PASS C0-C3 FOLD0; PASS F1 C2
 CORRECTED_FOLD0                    = PASS SCREENING GATE
-4FOLD_X1SEED_SCREENING             = IN PROGRESS (C2/C3 ONLY)
+4FOLD_X1SEED_SCREENING             = PAUSED AFTER F1 C2 FOR REVIEW
 4FOLD_AGGREGATE                    = NOT YET AVAILABLE
 3SEED_MATRIX                       = HOLD
 FIT_DEV                            = NOT READ
