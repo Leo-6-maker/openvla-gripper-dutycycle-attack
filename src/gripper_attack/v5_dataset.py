@@ -112,12 +112,21 @@ def load_v5_episode(s1_root: Path, teacher_root: Path, row: dict[str, Any]) -> V
         release.append(bool(teacher_row["release_imminent"]))
         regrasp.append(bool(teacher_row["regrasp_or_unstable"]))
         window_id = str(teacher_row["window_id"])
+        raw_start = int(teacher_row["window_start"])
+        raw_end = int(teacher_row["window_end"])
+        if window_id.startswith("none:"):
+            start = index if raw_start < 0 else raw_start
+            end = index if raw_end < start else raw_end
+        else:
+            start, end = raw_start, raw_end
+        if start < 0 or end < start:
+            raise ValueError(f"invalid V5 event window bounds: {identity}:{index}:{window_id}")
         if window_id not in windows:
             windows[window_id] = V5Window(
                 episode_id=identity,
                 window_id=window_id,
-                start=int(teacher_row["window_start"]),
-                end=int(teacher_row["window_end"]),
+                start=start,
+                end=end,
                 phase_name=str(teacher_row["phase_name"]),
                 utility_tier=None if teacher_row["utility_tier"] is None else int(teacher_row["utility_tier"]),
                 known=bool(teacher_row["known_mask"]),
@@ -128,8 +137,8 @@ def load_v5_episode(s1_root: Path, teacher_root: Path, row: dict[str, Any]) -> V
             windows[window_id] = V5Window(
                 episode_id=old.episode_id,
                 window_id=old.window_id,
-                start=min(old.start, int(teacher_row["window_start"])),
-                end=max(old.end, int(teacher_row["window_end"])),
+                start=min(old.start, start),
+                end=max(old.end, end),
                 phase_name=old.phase_name,
                 utility_tier=old.utility_tier,
                 known=old.known,
