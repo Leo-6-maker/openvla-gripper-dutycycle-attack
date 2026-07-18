@@ -1,7 +1,7 @@
 # Official V3 V5 raw-asset recovery handoff
 
-Date: 2026-07-18  
-Local code baseline before this audit: `69c83244700f8849a2e2953873c6bb86ec2f98a0`  
+Date: 2026-07-18
+Local code baseline before this audit: `69c83244700f8849a2e2953873c6bb86ec2f98a0`
 Audit schema: `CLEAN2000_ARTIFACT_RECOVERY_AUDIT_V1`
 
 ## Scope
