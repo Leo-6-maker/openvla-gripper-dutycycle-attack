@@ -306,7 +306,7 @@ def main() -> int:
     segments_by_key = {key: _segments(args.teacher_root.resolve(), row) for key, row in rows_by_key.items()}
     fold_manifest = _json(args.fold_root.resolve() / "B3_OFFICIAL_V3_FIT_FOLD_MANIFEST_V1.json")
     fold = next(item for item in fold_manifest["folds"] if int(item["fold_id"]) == 0)
-    train_keys = list(fold["training_identities"])
+    train_keys = list(fold["train_identities"])
     validation_keys = list(fold["validation_identities"])
     old_subset_value = _json(args.old_subset_identities.resolve())
     old_subset = old_subset_value.get("identities", old_subset_value) if isinstance(old_subset_value, dict) else old_subset_value
