@@ -1,0 +1,15 @@
+{
+  "schema": "DETECTOR_V4_EVALUATION_PROTOCOL_V2",
+  "version": "2.0",
+  "thresholds": {"start": 0.05, "stop": 0.95, "step": 0.05},
+  "event_filter": "event_id >= 0",
+  "metrics": [
+    "valid_window_any_hit", "valid_window_step_recall", "full_t10_event_hit",
+    "later_event_hit", "first_emit_latency", "pure_negative_any_emit",
+    "mixed_invalid_phase_any_emit", "release_tail_overlap", "post_release_overlap",
+    "suite_macro", "task_macro", "fold_macro"
+  ],
+  "baselines": ["close_only", "time_since_close", "frozen_b3_25d"],
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}

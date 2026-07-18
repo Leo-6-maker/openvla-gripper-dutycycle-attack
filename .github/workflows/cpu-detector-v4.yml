@@ -1,0 +1,36 @@
+name: cpu-detector-v4
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  detector-v4-cpu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install package and test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest numpy pillow
+      - name: Compile corrected V4 sources
+        run: |
+          python -m py_compile \
+            src/gripper_attack/v4_contract.py \
+            src/gripper_attack/v4_dataset.py \
+            src/gripper_attack/v4_formal.py \
+            scripts/detector_v4/build_teacher_v212.py \
+            scripts/detector_v4/build_v4_normalization_bundle.py \
+            scripts/detector_v4/build_v4_training_authorization.py \
+            scripts/detector_v4/evaluate_v4_corrected.py \
+            scripts/detector/train_v4_quality_detector.py
+      - name: Run corrected V4 CPU contract tests
+        run: pytest tests/detector_v4 -q
+      - name: Check corrected source diff
+        run: git diff --check

@@ -1,0 +1,27 @@
+{
+  "schema": "DETECTOR_V4_TEACHER_PROTOCOL_V212",
+  "version": "2.1.2",
+  "source": "clean_only_privileged_future_evidence",
+  "student_future_leakage": false,
+  "teacher_fields": [
+    "candidate_close", "quality_valid", "veto_invalid", "release_imminent",
+    "known_mask", "event_id", "phase_id", "phase_name", "window_id",
+    "window_start", "window_end", "release_known", "exclusive_label",
+    "quality_supervision_mask"
+  ],
+  "quality_supervision": "student_valid AND candidate_close AND known_mask AND (quality_valid XOR veto_invalid)",
+  "pre_support_policy": "MASK",
+  "unknown_policy": "MASK",
+  "release_supervision": "student_valid AND release_known AND event_id >= 0",
+  "allowed_phases": [
+    "NO_CLOSE", "PRE_SUPPORT", "VALID_RETENTION", "RELEASE_IMMINENT_TAIL",
+    "POST_RELEASE", "UNSTABLE_TRANSITION", "UNKNOWN"
+  ],
+  "invariants": {
+    "quality_veto_overlap": 0,
+    "unknown_as_negative": 0,
+    "event_overlap": 0
+  },
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}
