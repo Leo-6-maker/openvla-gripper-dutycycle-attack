@@ -20,7 +20,7 @@
     "manipulated_object_source": "goal_predicate_first_argument_in_bddl_objects",
     "target_source": "goal_predicate_second_argument_or_region",
     "support_source": "init_relation_and_observed_non_gripper_contacts",
-    "no_manipulated_object": "ABSTAIN_DECODER_HOLD",
+    "no_manipulated_object": "NO_MANIPULATION_TARGET",
     "ambiguous_role": "ABSTAIN_DECODER_HOLD",
     "multiple_manipulated_objects": "aggregate_all_decoded_objects",
     "allowed_goal_predicates": ["In", "On", "Inside", "Contains", "Stack"]

@@ -77,7 +77,7 @@ def parse_bddl_task_role(
     if not manipulated:
         return PhysicsTaskRole(
             suite, task_idx, (), tuple(targets), (), tuple(predicates),
-            "ABSTAIN_DECODER_HOLD", "goal has no manipulable BDDL object",
+            "NO_MANIPULATION_TARGET", "goal is explicitly a non-grasp action with no BDDL object target",
         )
     supports: list[str] = []
     if init_match:

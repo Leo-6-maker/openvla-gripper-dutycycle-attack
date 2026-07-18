@@ -50,7 +50,7 @@ def test_task_role_uses_goal_object_and_explicitly_holds_non_grasp_goal():
     assert role.target_names == ("target_1_contain_region",)
 
     non_grasp = parse_bddl_task_role(_bddl("(And (Open cabinet_1_middle_region))"), suite="libero_goal", task_idx=0, object_names=["obj_1", "target_1"])
-    assert non_grasp.status == "ABSTAIN_DECODER_HOLD"
+    assert non_grasp.status == "NO_MANIPULATION_TARGET"
 
 
 def test_physics_teacher_uses_contiguous_candidate_segments_and_tier3_dwell():
