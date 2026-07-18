@@ -92,3 +92,13 @@ The Physics task decoder and Physics Teacher V2 are now independently audited
 for all 800 FIT identities at `ce74eb4`; two non-grasp task roles are explicit
 and non-rankable. C2F trajectory binding remains open. No GPU process was
 started in this replay.
+
+## Current-HEAD addendum
+
+The prior A/B review above is retained as the historical utility-Teacher
+comparison. A new Physics Teacher V2 matched smoke was run at HEAD
+`7fe496330d50df87ad9da7442352a643bd176d41`; it is a separate development
+series and does not overwrite the prior roots. Its causal replay also found
+no eligible fixed working point. The exact Physics Teacher bindings and
+negative Gate are recorded in
+`OFFICIAL_V3_DETECTOR_V5_PHYSICS_SMOKE_HANDOFF.md`.

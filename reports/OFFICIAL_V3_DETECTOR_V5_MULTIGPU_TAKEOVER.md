@@ -167,3 +167,17 @@ Protected splits (FIT-DEV, CAL, CHECK, and states 30--49 semantics) were not rea
 - GPU tasks started: `0`
 
 This report records the R0 takeover only. It does not authorize formal training, model selection, FIT-DEV/CAL/CHECK access, or attack execution.
+
+## R6 execution addendum
+
+The historical R0 census above predates the later idle-GPU window. At current
+HEAD `7fe496330d50df87ad9da7442352a643bd176d41`, GPU2 and GPU6 were verified
+idle at launch and received one FIT-only Physics Teacher smoke each. GPU6
+later acquired an unrelated VLLM process; it was not stopped or modified.
+
+Both 80/200, three-epoch smoke checkpoint bundles and both stepwise causal
+prediction bundles passed independent seal audits. Neither candidate reached
+the fixed working-point/scientific gate, so full Fold-0 and subsequent folds
+were not started. See
+`OFFICIAL_V3_DETECTOR_V5_PHYSICS_SMOKE_HANDOFF.md` for exact roots, hashes,
+metrics, and stop decision.
