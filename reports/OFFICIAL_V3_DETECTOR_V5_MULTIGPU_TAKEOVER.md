@@ -3,7 +3,7 @@
 Date: 2026-07-18 23:32 CST
 Branch: `codex/official-v3-detector-v5-20260718`
 Required starting HEAD: `9c13a1fcb2b16a0651f1c474afbd424865df9e11`
-Current development HEAD: `3c53bcd4244de865191a76b000f20e945d6c0090`
+Current development HEAD: `ce74eb4cf6d55430e14297c45903ba6277e61f92`
 
 ## R0 decision
 
@@ -16,12 +16,13 @@ The repository and sealed evidence are identifiable. The server shared checkout 
 - Repository: `Leo-6-maker/openvla-gripper-dutycycle-attack`
 - PR: `#87`, open, Draft, mergeable
 - HEAD at initial takeover: `9c13a1fcb2b16a0651f1c474afbd424865df9e11`
-- Current branch HEAD after R1, CI fix, and Physics decoder parser fix: `3c53bcd4244de865191a76b000f20e945d6c0090`
+- Current branch HEAD after R1, Physics decoder, and Physics Teacher V2 audit: `ce74eb4cf6d55430e14297c45903ba6277e61f92`
 - Base: `archive/official-v3-b3-25d-execution-5e27d7c`
 - Required archive commit: `5e27d7c4b1a188bc6a78555f94d2571222587805`
 - Checks at the initial takeover HEAD: `detector-v5-cpu = SUCCESS`, `source-registry = SUCCESS`, `stageb-cpu = SUCCESS`
 - The first R1 push added the strict evaluator and working-point review. Its detector-v5 check exposed a test import-path defect; the minimal fix is in `4a21721`.
 - The Physics task decoder is now implemented and its server-side FIT-only audit passed for all 40 tasks at `3c53bcd`.
+- The Physics Teacher V2 FIT-only root and independent audit now pass at `ce74eb4` with two explicit non-grasp task roles.
 - The PR body still needs a current-HEAD handoff update after the latest CI run is confirmed.
 - No merge, Ready-for-review transition, main-branch change, force-push, review, or comment was performed.
 
@@ -123,6 +124,10 @@ This closes the task/object-state layout decoder only. It does not yet freeze
 Physics Teacher continuous score formulas or tier thresholds, so it does not
 authorize GPU training.
 
+The subsequent Physics Teacher V2 derivation froze those formulas in a new
+protocol and independently audited a new 800-identity root. It remains a
+clean-only criticality proxy, not a counterfactual attack label.
+
 These figures are sealed development diagnostics. `112/126` is causal-anchor argmax, not scheduler selection accuracy; no formal model-selection or attack authorization follows.
 
 ## Confirmed gaps carried into R1--R4
@@ -132,7 +137,7 @@ These figures are sealed development diagnostics. `112/126` is causal-anchor arg
 3. A/B working-point selection and exact disagreement identity lists are not yet sealed under the required maximum-threshold rule.
 4. Policy redundancy and fusion diagnostics are not yet sealed.
 5. Runtime intent causality must be read from the actual runner; it must not be inferred from a report.
-6. Physics task/object-state slices are now decoded and independently audited for all 40 tasks; the continuous Physics Teacher scoring/tiering contract is still not frozen.
+6. Physics task/object-state slices and the Physics Teacher V2 score/tier contract are now sealed; the Teacher is still a development proxy and not a formal training authorization.
 7. C2F observation/RGB artifacts are not yet proven `EXACT_TRAJECTORY_BOUND`.
 8. No new GPU run is authorized until the R1/R2/R3/R4 CPU/I/O gates are complete and a GPU is demonstrably idle; the current all-device census has not met that condition.
 
@@ -142,7 +147,7 @@ When an unoccupied GPU is verified, use one process per physical GPU via `CUDA_V
 
 1. R1: re-evaluate sealed A/B roots; no training.
 2. R2: strengthen checkpoint/prediction auditors; no training.
-3. R3: decoder audit is PASS; next freeze and independently seal Physics Teacher V2.
+3. R3: decoder and Physics Teacher V2 independent audits are PASS with explicit non-grasp roles.
 4. R4: bind C2F observations to Official FIT trajectories; visual work remains HOLD unless all required identities are exact.
 5. R5: extract causal visual features only after R4 exact binding.
 6. R6: run matched 80/200 Physics smoke on available GPUs, within the fixed protocol.
