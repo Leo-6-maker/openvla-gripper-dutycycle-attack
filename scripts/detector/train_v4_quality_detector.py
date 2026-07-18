@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 from pathlib import Path
 
@@ -178,7 +179,10 @@ def train(args: argparse.Namespace) -> dict:
         trainer_sha256=sha256_file(Path(__file__).resolve()), evaluator_sha256=sha256_file(args.evaluator_script),
         extra={"candidate": args.candidate, "ranking_weight": ranking_weight, "release_weight": release_weight,
                "learning_rate": args.lr, "weight_decay": args.weight_decay, "gradient_clip": args.gradient_clip,
-               "protected_splits_read": False},
+               "protected_splits_read": False,
+               "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
+               "hostname": os.uname().nodename if hasattr(os, "uname") else "unknown",
+               "torch_version": torch.__version__},
     )
     return {"status": "PASS", "candidate": args.candidate, "fold_id": args.fold_id, "seed": args.seed, "checkpoint_sha256": checkpoint_sha, "final_loss": losses[-1]}
 
