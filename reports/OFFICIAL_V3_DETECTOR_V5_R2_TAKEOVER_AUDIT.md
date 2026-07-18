@@ -10,7 +10,7 @@ final-parent data, attack results, and all attack execution remain unread.
 
 - PR: #87, Draft, base `archive/official-v3-b3-25d-execution-5e27d7c`.
 - Branch: `codex/official-v3-detector-v5-20260718`.
-- Current source HEAD is recorded in the final commit that updates this report.
+- Current source HEAD: `5707dbac11c84f6d679be055363d493763b48000`.
 - The official A800 environment was used for the read-only server census and
   FIT loader audit.  No GPU was started for R0--R2.
 - The previous V5-A 32-episode smoke remains preserved and is not reused as a

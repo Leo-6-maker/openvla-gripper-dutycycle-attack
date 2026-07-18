@@ -34,7 +34,7 @@ counterfactual attack label and cannot authorize an attack.
 - FIT-DEV, CAL, CHECK, final-parent data and attack results are not read.
 - Formal training and attack authorization are hard-coded false in the V5
   development contracts.
-- Current branch HEAD: recorded in the latest R2 handoff commit.
+- Current branch HEAD: `5707dbac11c84f6d679be055363d493763b48000`.
 
 ## V5 contracts now implemented
 
