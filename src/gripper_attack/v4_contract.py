@@ -116,11 +116,17 @@ def verify_checksum_manifest(root: Path) -> dict[str, Any]:
     if mismatches:
         raise ValueError(f"checksum mismatch in {root}: {mismatches[:5]}")
 
-    actual = {
-        str(path.relative_to(root)).replace("\\", "/")
-        for path in root.rglob("*")
-        if path.is_file() and path.name not in {"SHA256SUMS", "SHA256SUMS.sha256"}
-    }
+    actual = set()
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = str(path.relative_to(root)).replace("\\", "/")
+        # Only the current root's two seal files are outside the payload set.
+        # Nested episode SHA256SUMS files are payloads when the parent root lists
+        # them, as in the official S1 corpus.
+        if relative in {"SHA256SUMS", "SHA256SUMS.sha256"}:
+            continue
+        actual.add(relative)
     if actual != set(listed):
         raise ValueError(
             f"checksum file-set mismatch in {root}: listed-only={sorted(set(listed)-actual)[:5]} "
