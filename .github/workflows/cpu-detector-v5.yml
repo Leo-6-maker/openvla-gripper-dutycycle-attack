@@ -32,6 +32,7 @@ jobs:
             scripts/detector_v5/audit_v5_input_availability.py \
             scripts/detector_v5/build_v5_teacher_utility.py \
             scripts/detector_v5/build_v5_physics_teacher.py \
+            scripts/detector_v5/audit_v5_physics_teacher.py \
             scripts/detector_v5/audit_v5_teacher_utility.py \
             scripts/detector_v5/train_v5_proprio_fit_smoke.py \
             scripts/detector_v5/train_v5_proprio_development.py \

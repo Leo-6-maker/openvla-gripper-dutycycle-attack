@@ -262,8 +262,12 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         manifest = {
             "schema": "DETECTOR_V5_PHYSICS_TEACHER_V2_MANIFEST",
             "protocol_schema": protocol["schema"],
+            "protocol_sha256": sha256_file(args.protocol.resolve()),
+            "registry_csv_sha256": sha256_file(args.registry_csv.resolve()),
             "registry_root_sha256s_sha256": registry_seal["sha256sums_sha256"],
+            "decoder_summary_sha256": sha256_file(args.decoder_root / "summary.json"),
             "decoder_root_sha256sums_sha256": decoder_seal["sha256sums_sha256"],
+            "physics_audit_summary_sha256": sha256_file(args.physics_audit_root / "OFFICIAL_V3_PRIVILEGED_PHYSICS_TEACHER_AUDIT_V1.json"),
             "physics_audit_root_sha256sums_sha256": physics_audit_seal["sha256sums_sha256"],
             "identity_count": identity_count,
             "step_count": step_count,
