@@ -123,6 +123,18 @@ def load_v5_episode(s1_root: Path, teacher_root: Path, row: dict[str, Any]) -> V
                 known=bool(teacher_row["known_mask"]),
                 candidate_close=bool(teacher_row["candidate_close"]),
             )
+        else:
+            old = windows[window_id]
+            windows[window_id] = V5Window(
+                episode_id=old.episode_id,
+                window_id=old.window_id,
+                start=min(old.start, int(teacher_row["window_start"])),
+                end=max(old.end, int(teacher_row["window_end"])),
+                phase_name=old.phase_name,
+                utility_tier=old.utility_tier,
+                known=old.known,
+                candidate_close=old.candidate_close,
+            )
     return V5Episode(
         canonical_parent_key=identity,
         suite=str(row["suite"]),
