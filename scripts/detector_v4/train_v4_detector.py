@@ -546,10 +546,12 @@ def load_v4_episode(s1_root: Path, windows_root: Path,
         if i >= T:
             break
         ev = label.get("event_valid_mask", True)
-        targets["criticality"][i] = float(label.get("critical_retention_window", False))
-        targets["valid_retention"][i] = float(label.get("valid_retention", False))
-        targets["veto"][i] = float(label.get("false_trigger_veto", False))
-        targets["release_imminent"][i] = float(label.get("release_imminent", False))
+        if ev is None:
+            ev = True
+        targets["criticality"][i] = float(label.get("critical_retention_window", False) or False)
+        targets["valid_retention"][i] = float(label.get("valid_retention", False) or False)
+        targets["veto"][i] = float(label.get("false_trigger_veto", False) or False)
+        targets["release_imminent"][i] = float(label.get("release_imminent", False) or False)
 
         known_masks["criticality"][i] = ev
         known_masks["valid_retention"][i] = ev
@@ -691,7 +693,9 @@ if __name__ == "__main__":
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--output", type=Path, default=None)
     ap.add_argument("--fold", type=int, default=None,
-                   help="Only load validation states for this fold (0-3)")
+                   help="Fold 0-3: train on non-validation states, validate on fold states")
+    ap.add_argument("--train-fold", type=int, default=None,
+                   help="Use states 5-19 as training (fold 0). For fold k: states NOT in [k*5, k*5+4]")
     ap.add_argument("--suite", default=None)
     ap.add_argument("--task", type=int, default=None)
     ap.add_argument("--state", type=int, default=None)
@@ -703,6 +707,12 @@ if __name__ == "__main__":
     # Load episodes
     if args.suite and args.task is not None and args.state is not None:
         scope = [(args.suite, args.task, args.state)]
+    elif args.train_fold is not None:
+        # Training fold: all states EXCEPT the validation block
+        fold = args.train_fold
+        val_states = set(range(fold * 5, (fold + 1) * 5))
+        train_states = [s for s in FIT_STATES if s not in val_states]
+        scope = [(s, t, st) for s in SUITES for t in range(10) for st in train_states]
     elif args.fold is not None:
         states = list(range(args.fold * 5, (args.fold + 1) * 5))
         scope = [(s, t, st) for s in SUITES for t in range(10) for st in states]
