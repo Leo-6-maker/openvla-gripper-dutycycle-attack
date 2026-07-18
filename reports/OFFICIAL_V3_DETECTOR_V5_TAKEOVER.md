@@ -52,9 +52,29 @@ counterfactual attack label and cannot authorize an attack.
    distinguishes V5-A readiness from policy-intent and causal-visual source
    availability and refuses non-FIT identity rows.
 
+The first V5 utility root had no tier-3 windows and is retained as a
+diagnostic.  After freezing the T10 proxy rule, the current V5 Teacher root
+and independent audit are:
+
+- Teacher root: `OFFICIAL_V3_DETECTOR_V5_TEACHER_UTILITY_V3_c823653_20260718`;
+- Teacher root seal SHA256:
+  `60a7def4ae35d760f10515af1cc134cc7aa423442538e5a7bb9d156da8fb56aa`;
+- manifest SHA256:
+  `ddac8c925a00b5566cc1895247f90bb703d4504ca3a57d210bc773a043824004`;
+- independent audit:
+  `OFFICIAL_V3_DETECTOR_V5_TEACHER_UTILITY_AUDIT_c1f955b_20260718`;
+- audit PASS: 800 identities, 176,336 steps, 68,892 known steps;
+- utility tiers: tier1=14,500, tier2=794, tier3=53,598;
+- source V2.1.3 seal binding:
+  `8dd727978e2cfeebf41a3964f27b259390ff841e1b0fcd435ee4ec7b8c87c9a7`.
+
+Tier3 is explicitly a clean-only T10-or-longer `VALID_RETENTION` proxy.  It
+must not be described as measured attack vulnerability.
+
 ## Not yet executed
 
-- No V5 Teacher utility materialization.
+- No V5 Teacher utility materialization beyond the sealed clean-only proxy
+  root above.
 - No V5 GPU training or checkpoint.
 - No V5 validation or model selection.
 - No FIT-DEV, CAL, CHECK, Direct-open, canary, or attack.
@@ -88,10 +108,10 @@ reusing a missing stream.
 
 ## Required next gate
 
-Run the FIT-only input availability audit first.  It must establish which of
-the four variants have complete causal source streams, timestamp alignment,
-and sealed non-privileged inputs.  Only after that audit passes should a
-synthetic V5 Teacher utility census and a small CPU/GPU smoke be considered.
+The FIT-only input availability audit is complete.  The next gate is a
+synthetic/data-loader census of the sealed V5 proxy root, followed by a small
+FIT-only development smoke.  Policy-intent and visual variants remain
+blocked until their source roots exist and pass the same audit.
 
 The scientific gate is not a larger GRU.  A V5 candidate must improve
 matched-recall window selection, mixed-episode top-1 selection, and
@@ -103,7 +123,7 @@ V4_CONTINUATION             = STOPPED
 V4_EVIDENCE                 = PRESERVED
 V5_CODE_CONTRACT            = DEVELOPMENT_READY
 V5_INPUT_AVAILABILITY       = PASS_DATA_ONLY; V5-A READY, V5-B/C/D HOLD
-V5_TEACHER                  = NOT STARTED
+V5_TEACHER                  = PASS CLEAN_ONLY_PROXY; NOT ATTACK LABELS
 V5_GPU_TRAINING             = NOT STARTED
 FIT_DEV / CAL / CHECK       = NOT READ
 ATTACK                      = NOT STARTED
