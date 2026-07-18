@@ -41,21 +41,26 @@ def _tree_digest(root: Path) -> str:
 def _read_registry(path: Path) -> list[dict[str, Any]]:
     with path.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
-    if len(rows) != 800:
-        raise ValueError(f"V5 FIT audit requires exactly 800 rows, got {len(rows)}")
+    if len(rows) not in (800, 2000):
+        raise ValueError(f"V5 FIT audit requires a complete 800-row FIT or 2000-row global registry, got {len(rows)}")
     seen: set[str] = set()
+    fit_rows: list[dict[str, Any]] = []
     for row in rows:
         key = str(row.get("canonical_parent_key", ""))
         parts = key.split("/")
         state = int(row.get("state_id", -1))
-        if len(parts) != 3 or state < 0 or state >= 20:
-            raise ValueError(f"non-FIT or malformed identity in V5 audit: {key}")
+        if len(parts) != 3 or state < 0 or state >= 50:
+            raise ValueError(f"malformed identity in V5 audit: {key}")
         if key in seen:
-            raise ValueError(f"duplicate FIT identity: {key}")
+            raise ValueError(f"duplicate global identity: {key}")
         seen.add(key)
         row["state_id"] = state
         row["task_idx"] = int(row.get("task_idx", -1))
-    return rows
+        if state < 20:
+            fit_rows.append(row)
+    if len(fit_rows) != 800:
+        raise ValueError(f"global registry does not yield exactly 800 FIT rows, got {len(fit_rows)}")
+    return fit_rows
 
 
 def _episode_dirs(root: Path) -> dict[str, Path]:
