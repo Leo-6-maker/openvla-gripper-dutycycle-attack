@@ -1,0 +1,11 @@
+{
+  "schema": "DETECTOR_V5_EVALUATION_PROTOCOL_V2",
+  "primary": ["causal_online_selection", "true_mixed_episode_top1", "pure_negative_abstention", "one_shot_compliance"],
+  "secondary": ["retrospective_top1"],
+  "threshold_grid": [0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95],
+  "working_point_rule": "maximum_threshold_with_valid_recall_gte_0.95",
+  "matched_budget": "one_emit_or_abstain_per_episode",
+  "forbidden_inputs": ["Teacher", "future_steps", "window_end_for_early_trigger", "attack_outcome"],
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}

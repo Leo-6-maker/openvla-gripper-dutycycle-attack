@@ -1,0 +1,42 @@
+{
+  "schema": "DETECTOR_V5_PHYSICS_R62_CPU_PROTOCOL_V1",
+  "scope": "FIT states 0-19 only",
+  "decision_anchor": {
+    "minimum_candidate_dwell_steps": 10,
+    "anchor_definition": "segment_start + minimum_candidate_dwell_steps - 1",
+    "short_segments": "excluded from causal positive training and online trigger metrics"
+  },
+  "causal_target": {
+    "training_label": "max_tier_up_to_anchor",
+    "retrospective_label": "final_segment_max_tier",
+    "future_promotion_is_reported": true,
+    "teacher_future_evidence_allowed": true,
+    "student_future_leakage": false
+  },
+  "category_balanced_subset": {
+    "identity_count": 160,
+    "per_suite": 40,
+    "per_task": 4,
+    "source": "Fold-0 train identities only",
+    "selection": "deterministic SHA256 identity order; positive-containing and pure-negative preferred when available",
+    "validation": "natural complete Fold-0 validation set of 200 identities"
+  },
+  "shallow_bounds": {
+    "models": ["25D", "25D+policy-intent", "privileged-physics"],
+    "optimizer": "CPU Adam linear logistic model",
+    "normalization": "train identities only",
+    "seed": 20260717,
+    "privileged_future_evidence_is_upper_bound_only": true
+  },
+  "development_gate": {
+    "causal_anchor_top1_minimum": 0.75,
+    "baseline_margin_minimum": 0.05,
+    "utility_only_critical_recall_minimum": 0.80,
+    "pure_negative_abstention_minimum": 0.80,
+    "formal_training_authorized": false,
+    "formal_attack_authorized": false
+  },
+  "protected_splits_read": [],
+  "formal_training_authorized": false,
+  "formal_attack_authorized": false
+}
