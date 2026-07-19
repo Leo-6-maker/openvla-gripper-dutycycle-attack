@@ -557,7 +557,7 @@ def main():
 
             oof_report = {"folds": [{"fold": fi, "val_count": len(folds[fi][1])} for fi in range(5)],
                           "n_feasible": n_feas, "n_no_feasible": n_nofeas, "n_total": len(train_eps),
-                          "best_threshold": selected_tau}
+                          "best_threshold": selected_tau, "all_results": all_oor}
             print(f"  OOF selected threshold: {selected_tau}" if selected_tau else "  OOF: HOLD_OOF")
 
         if selected_tau is None:
