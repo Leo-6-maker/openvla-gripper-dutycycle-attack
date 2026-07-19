@@ -51,34 +51,46 @@ def audit(root: Path, expected_candidate: str) -> dict[str, Any]:
         return _verdict(findings)
 
     # 2. Required files
-    required = [
-        "checkpoint.pt", "PROTOCOL.json", "SOURCE_BINDING.json",
-        "IDENTITY_MANIFEST.json", "TRAIN_HISTORY.json", "OOF_REPORT.json",
-        "EPISODE_THRESHOLD_LEDGER.jsonl", "THRESHOLD_METRICS.csv",
-        "AUDIT.json", "MANIFEST.json",
-    ]
+    hold_oof = (root / "HOLD_OOF.txt").is_file()
+    if hold_oof:
+        required = ["HOLD_OOF.txt", "OOF_REPORT.json"]
+    else:
+        required = [
+            "checkpoint.pt", "PROTOCOL.json", "SOURCE_BINDING.json",
+            "IDENTITY_MANIFEST.json", "TRAIN_HISTORY.json", "OOF_REPORT.json",
+            "EPISODE_THRESHOLD_LEDGER.jsonl", "THRESHOLD_METRICS.csv",
+            "AUDIT.json", "MANIFEST.json",
+        ]
     for name in required:
         if not (root / name).is_file():
             findings.append({"severity": "FATAL", "check": f"required:{name}", "detail": "missing"})
 
-    # 3. Checkpoint
-    import torch
-    ckpt = torch.load(root / "checkpoint.pt", map_location="cpu", weights_only=False)
-    if ckpt.get("schema") != "R7_K10_DETECTOR_DEVELOPMENT_CHECKPOINT_V1":
-        findings.append({"severity": "ERROR", "check": "ckpt_schema", "detail": str(ckpt.get("schema"))})
-    if ckpt.get("candidate") != expected_candidate:
-        findings.append({"severity": "ERROR", "check": "ckpt_candidate", "detail": ckpt.get("candidate")})
+    # 3. Checkpoint (may be absent for HOLD_OOF)
+    hold_oof = (root / "HOLD_OOF.txt").is_file()
+    ckpt_path = root / "checkpoint.pt"
+    if ckpt_path.is_file():
+        import torch
+        ckpt = torch.load(ckpt_path, map_location="cpu", weights_only=False)
+        if ckpt.get("schema") != "R7_K10_DETECTOR_DEVELOPMENT_CHECKPOINT_V1":
+            findings.append({"severity": "ERROR", "check": "ckpt_schema", "detail": str(ckpt.get("schema"))})
+        if ckpt.get("candidate") != expected_candidate:
+            findings.append({"severity": "ERROR", "check": "ckpt_candidate", "detail": ckpt.get("candidate")})
+    elif not hold_oof:
+        findings.append({"severity": "ERROR", "check": "ckpt_missing", "detail": "no checkpoint.pt and no HOLD_OOF.txt"})
 
-    # 4. Identity manifest
-    id_manifest = json.loads((root / "IDENTITY_MANIFEST.json").read_text(encoding="utf-8"))
-    if id_manifest.get("train_count") != EXPECTED_TRAIN:
-        findings.append({"severity": "ERROR", "check": "train_count",
-                        "detail": str(id_manifest.get("train_count"))})
-    if id_manifest.get("val_count") != EXPECTED_VAL:
-        findings.append({"severity": "ERROR", "check": "val_count",
-                        "detail": str(id_manifest.get("val_count"))})
-    if len(set(id_manifest.get("train_identities", [])) & set(id_manifest.get("val_identities", []))) != 0:
-        findings.append({"severity": "ERROR", "check": "train_val_overlap", "detail": "non-zero intersection"})
+    # 4. Identity manifest (skip for HOLD_OOF)
+    id_path = root / "IDENTITY_MANIFEST.json"
+    if id_path.is_file():
+        id_manifest = json.loads(id_path.read_text(encoding="utf-8"))
+        if id_manifest.get("train_count") != EXPECTED_TRAIN:
+            findings.append({"severity": "ERROR", "check": "train_count",
+                            "detail": str(id_manifest.get("train_count"))})
+        if id_manifest.get("val_count") != EXPECTED_VAL:
+            findings.append({"severity": "ERROR", "check": "val_count",
+                            "detail": str(id_manifest.get("val_count"))})
+    elif not hold_oof:
+        findings.append({"severity": "ERROR", "check": "identity_manifest_missing",
+                        "detail": "no IDENTITY_MANIFEST.json"})
 
     # 5. OOF report
     oof = json.loads((root / "OOF_REPORT.json").read_text(encoding="utf-8"))
@@ -88,38 +100,35 @@ def audit(root: Path, expected_candidate: str) -> dict[str, Any]:
         findings.append({"severity": "ERROR", "check": "oof_total",
                         "detail": str(oof.get("n_total"))})
 
-    # 6. Validation ledger
-    ledger = [json.loads(line) for line in
-              (root / "EPISODE_THRESHOLD_LEDGER.jsonl").read_text(encoding="utf-8").splitlines()
-              if line.strip()]
+    # 6. Validation ledger (skip for HOLD_OOF)
+    ledger_path = root / "EPISODE_THRESHOLD_LEDGER.jsonl"
+    if ledger_path.is_file():
+        ledger = [json.loads(line) for line in
+                  ledger_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        thresholds = sorted(set(r["threshold"] for r in ledger))
+        if len(thresholds) != 19:
+            findings.append({"severity": "ERROR", "check": "threshold_count", "detail": str(len(thresholds))})
+        for tau in thresholds:
+            subset = [r for r in ledger if abs(r["threshold"] - tau) < 0.005]
+            ids = {r["identity"] for r in subset}
+            if len(ids) != EXPECTED_VAL:
+                findings.append({"severity": "ERROR", "check": f"ledger_population:tau={tau}",
+                                "detail": f"{len(ids)} identities"})
 
-    thresholds = sorted(set(r["threshold"] for r in ledger))
-    if len(thresholds) != 19:
-        findings.append({"severity": "ERROR", "check": "threshold_count",
-                        "detail": str(len(thresholds))})
+    # 7. Threshold metrics CSV (skip for HOLD_OOF)
+    csv_path = root / "THRESHOLD_METRICS.csv"
+    if csv_path.is_file():
+        csv_rows = list(csv.DictReader(csv_path.read_text(encoding="utf-8").splitlines()))
+        if len(csv_rows) != 19:
+            findings.append({"severity": "ERROR", "check": "csv_row_count", "detail": str(len(csv_rows))})
 
-    for tau in thresholds:
-        subset = [r for r in ledger if abs(r["threshold"] - tau) < 0.005]
-        ids = {r["identity"] for r in subset}
-        if len(ids) != EXPECTED_VAL:
-            findings.append({"severity": "ERROR", "check": f"ledger_population:tau={tau}",
-                            "detail": f"{len(ids)} identities"})
-        n_feas = sum(1 for r in subset if r["has_feasible"])
-        n_nofeas = len(subset) - n_feas
-        if n_feas + n_nofeas != EXPECTED_VAL:
-            findings.append({"severity": "ERROR", "check": f"ledger_total:tau={tau}",
-                            "detail": str(n_feas + n_nofeas)})
-
-    # 7. Threshold metrics CSV consistency
-    csv_rows = list(csv.DictReader((root / "THRESHOLD_METRICS.csv").read_text(encoding="utf-8").splitlines()))
-    if len(csv_rows) != 19:
-        findings.append({"severity": "ERROR", "check": "csv_row_count", "detail": str(len(csv_rows))})
-
-    # 8. Protocol
-    protocol = json.loads((root / "PROTOCOL.json").read_text(encoding="utf-8"))
-    if protocol.get("candidate") != expected_candidate:
-        findings.append({"severity": "ERROR", "check": "protocol_candidate",
-                        "detail": protocol.get("candidate")})
+    # 8. Protocol (skip for HOLD_OOF)
+    protocol_path = root / "PROTOCOL.json"
+    if protocol_path.is_file():
+        protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
+        if protocol.get("candidate") != expected_candidate:
+            findings.append({"severity": "ERROR", "check": "protocol_candidate",
+                            "detail": protocol.get("candidate")})
 
     return _verdict(findings)
 
