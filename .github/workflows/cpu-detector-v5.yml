@@ -20,7 +20,7 @@ jobs:
           python -m pip install -e .
           python -m pip install pytest numpy pillow
           python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-      - name: Compile V5 development contracts
+      - name: Compile V5, R7, and R8 development contracts
         run: |
           python -m py_compile \
             src/gripper_attack/v5_protocol.py \
@@ -51,8 +51,9 @@ jobs:
             scripts/detector_v4/replay_k10_v5_v22_closure.py \
             scripts/detector_v4/audit_k10_v5_v22_artifact.py \
             scripts/detector_v4/train_k10_detector_v3.py \
-            scripts/detector_v4/audit_k10_detector_v3.py
-      - name: Run V5 and R7 CPU contract tests
+            scripts/detector_v4/audit_k10_detector_v3.py \
+            scripts/detector_v4/census_r8_official_v3_artifacts.py
+      - name: Run V5, R7, and R8 CPU contract tests
         run: |
           pytest -q \
             tests/test_v5_contracts.py \
@@ -68,6 +69,7 @@ jobs:
             tests/test_r7_k10_v121.py \
             tests/test_r7_k10_v121_auditor.py \
             tests/test_r7_k10_v22_closure.py \
-            tests/test_r7_k10_v3_training.py
+            tests/test_r7_k10_v3_training.py \
+            tests/test_r8_visual_recoverability_census.py
       - name: Check patch whitespace
         run: git diff --check
