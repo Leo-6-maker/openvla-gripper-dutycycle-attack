@@ -191,8 +191,15 @@ def load_checkpoint(ckpt_path: Path, device: str) -> dict[str, Any]:
     }
 
 
-# ── scheduler replay ───────────────────────────────────────────────────────
-def replay_scheduler(
+# ── model forward (once per episode) ────────────────────────────────────────
+@dataclass
+class ModelScores:
+    utility: torch.Tensor     # [T]
+    release: torch.Tensor     # [T]
+    regrasp: torch.Tensor     # [T]
+
+
+def run_model_forward(
     model: CausalMultimodalVulnerabilityRanker,
     episode: ReplayEpisode,
     norm_mean_25d: torch.Tensor,
@@ -200,10 +207,9 @@ def replay_scheduler(
     norm_mean_9d: torch.Tensor,
     norm_std_9d: torch.Tensor,
     has_intent: bool,
-    threshold: float,
     device: str,
-) -> dict[str, Any]:
-    """Run V5OneShotScheduler on one episode at one threshold."""
+) -> ModelScores:
+    """Model forward once per episode — threshold-independent."""
     x = ((episode.features_25d.to(device) - norm_mean_25d) / norm_std_25d).unsqueeze(0)
     svm = episode.valid_mask.to(device).unsqueeze(0)
 
@@ -214,15 +220,24 @@ def replay_scheduler(
     with torch.no_grad():
         output = model.forward_sequence(x, intent=intent, valid_mask=svm)
 
-    utility = torch.sigmoid(output["utility_logit"].squeeze(0)).cpu()
-    release = torch.sigmoid(output["release_logit"].squeeze(0)).cpu()
-    regrasp = torch.sigmoid(output["regrasp_logit"].squeeze(0)).cpu()
+    return ModelScores(
+        utility=torch.sigmoid(output["utility_logit"].squeeze(0)).cpu(),
+        release=torch.sigmoid(output["release_logit"].squeeze(0)).cpu(),
+        regrasp=torch.sigmoid(output["regrasp_logit"].squeeze(0)).cpu(),
+    )
 
+
+# ── scheduler replay (threshold sweep, no GPU) ─────────────────────────────
+def replay_scheduler_at_threshold(
+    episode: ReplayEpisode,
+    scores: ModelScores,
+    threshold: float,
+) -> dict[str, Any]:
+    """Run V5OneShotScheduler on pre-computed model scores at one threshold."""
     config = V5SchedulerConfig(utility_threshold=threshold)
     scheduler = V5OneShotScheduler(config)
 
     T = episode.n_steps
-    scheduler_states: list[dict[str, Any]] = []
     emitted = False
     emit_step = -1
 
@@ -231,29 +246,28 @@ def replay_scheduler(
             step=t,
             candidate_close=bool(episode.candidate_close[t]),
             valid=bool(episode.valid_mask[t]),
-            utility_probability=float(utility[t]),
-            release_probability=float(release[t]),
-            regrasp_probability=float(regrasp[t]),
+            utility_probability=float(scores.utility[t]),
+            release_probability=float(scores.release[t]),
+            regrasp_probability=float(scores.regrasp[t]),
             uncertainty_probability=0.0,
         )
-        scheduler_states.append(result)
         if result["emit"]:
             emitted = True
             emit_step = t
 
-    # Classification
     within_k10 = emitted and emit_step in episode.feasible_starts
     false_emit = emitted and not within_k10
 
-    # Score diagnostics
+    # Score diagnostics (from pre-computed scores, threshold-independent)
+    utility = scores.utility
+    T_val = episode.n_steps
     inside_corridor = torch.tensor(
-        [i in episode.feasible_starts for i in range(T)], dtype=torch.bool)
+        [i in episode.feasible_starts for i in range(T_val)], dtype=torch.bool)
     outside_corridor = ~inside_corridor & episode.valid_mask & episode.candidate_close
 
     max_score_inside = float(utility[inside_corridor].max()) if inside_corridor.any() else -1.0
     max_score_outside = float(utility[outside_corridor].max()) if outside_corridor.any() else -1.0
 
-    # Check if model's peak score step is inside K10 corridor
     rankable = episode.valid_mask & episode.candidate_close
     if rankable.any():
         best_step = int(torch.argmax(utility * rankable.float()).item())
@@ -262,7 +276,6 @@ def replay_scheduler(
         best_step = -1
         best_in_corridor = False
 
-    # Delay from first feasible
     hit_delay = -1
     if within_k10 and episode.first_feasible >= 0:
         hit_delay = emit_step - episode.first_feasible
@@ -516,18 +529,26 @@ def main():
             model = ckpt["model"]
             has_intent = ckpt["has_intent"]
 
+            # Pre-compute model scores once per episode (threshold-independent)
+            print("  Computing model forward passes...")
+            episode_scores: dict[str, ModelScores] = {}
+            for ep in episodes:
+                episode_scores[ep.identity] = run_model_forward(
+                    model, ep,
+                    ckpt["norm_mean_25d"], ckpt["norm_std_25d"],
+                    ckpt["norm_mean_9d"], ckpt["norm_std_9d"],
+                    has_intent, args.device,
+                )
+
+            # Sweep thresholds (no GPU, scheduler-only)
             for tau in THRESHOLDS:
                 for ep in episodes:
-                    result = replay_scheduler(
-                        model, ep,
-                        ckpt["norm_mean_25d"], ckpt["norm_std_25d"],
-                        ckpt["norm_mean_9d"], ckpt["norm_std_9d"],
-                        has_intent, tau, args.device,
+                    result = replay_scheduler_at_threshold(
+                        ep, episode_scores[ep.identity], tau,
                     )
                     result["candidate"] = ckpt_label
                     all_ledger.append(result)
 
-                # Per-threshold summary
                 tau_metrics = compute_threshold_metrics(
                     [r for r in all_ledger if r["candidate"] == ckpt_label],
                     tau, n_feasible, n_no_feasible,
