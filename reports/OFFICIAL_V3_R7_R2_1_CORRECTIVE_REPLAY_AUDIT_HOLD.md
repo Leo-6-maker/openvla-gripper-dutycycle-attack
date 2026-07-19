@@ -2,11 +2,11 @@
 
 Date: 2026-07-19  
 PR: #87, Draft  
-Reviewed commit: `bc841ad40b95b189abb39dc2d1e82da5a36777a8`
+Reviewed evaluator commit: `bc841ad40b95b189abb39dc2d1e82da5a36777a8`
 
 ## Disposition
 
-R7.2.1 closes the original R7.2 P0 failures in the model forward path and metric denominator:
+R7.2.1 closes the original R7.2 failures in the model forward path and threshold denominator:
 
 - repository `CausalMultimodalVulnerabilityRanker` is used;
 - checkpoint loading is strict;
@@ -15,7 +15,7 @@ R7.2.1 closes the original R7.2 P0 failures in the model forward path and metric
 - Fold-0 validation contains 200 unique identities, including 26 K10-feasible episodes;
 - threshold denominators are no longer expanded by the nine-point sweep.
 
-The reported scheduler results are therefore useful development evidence:
+The reported scheduler results are useful development evidence:
 
 ```text
 V5-A best scheduler hit = 3/26 = 0.1153846 at tau=0.1
@@ -46,7 +46,7 @@ The server root named with `bc841ad` is therefore not correctly bound to its exe
 
 The corrective script imports but does not use `load_v5_episode`/`load_v5_episodes`. It manually reads `student_input_records.jsonl` and K10 labels, uses `valid` with a permissive default, and uses K10 `candidate_close` as the scheduler gate.
 
-The final replay must load the model inputs and candidate/valid streams through the same official V5 loader used by training and the existing evaluator. K10 labels must be joined only as the target. It must assert exact identity, step-count, candidate-close, and window/segment parity rather than silently assuming them.
+The final replay must load model inputs and candidate/valid streams through the same official V5 loader used by training and the existing evaluator. K10 labels must be joined only as the target. It must assert exact identity, step-count, candidate-close, and window/segment parity.
 
 ### P0 — V5-B intent consumption is not fail-closed
 
@@ -58,18 +58,13 @@ The `first_valid_dwell10` baseline detects that dwell reaches 10 at current step
 
 ### P1 — score separation is not paired
 
-The current score diagnostic compares:
-
-- inside maxima from the 26 feasible episodes; and
-- outside maxima from up to all 200 episodes.
-
-This is not a paired separation test. The final representation diagnostic must operate only on the same 26 feasible episodes and report, per episode:
+The current score diagnostic compares inside maxima from 26 feasible episodes with outside maxima from up to all 200 episodes. The final representation diagnostic must operate on the same 26 feasible episodes and report:
 
 ```text
 delta_i = max_score_inside_i - max_score_outside_i
 ```
 
-Required aggregates are mean delta, median delta, count/rate `delta_i > 0`, raw best-step-in-corridor count over 26, and feasible-start rank/percentile among causal candidate steps. This separates representation transfer from scheduler transfer.
+Required aggregates are mean delta, median delta, count/rate `delta_i > 0`, raw best-step-in-corridor count over 26, and feasible-start rank/percentile among causal candidate steps.
 
 ### P1 — required safety metrics are incomplete
 
@@ -86,21 +81,11 @@ first-feasible-start delay
 no-corridor abstention
 ```
 
-Equivalent quantities must still be written under these names and independently recomputed from the ledger.
-
 ### P1 — no tests or independent replay-root auditor
 
-The submitted commit adds one evaluator script only. Acceptance requires CPU tests for:
+Acceptance requires CPU tests for threshold denominators, strict loading, missing intent, loader/K10 parity, causal dwell timing, paired score separation, and one-shot/outside-rankable gates.
 
-- one denominator per threshold;
-- strict checkpoint loading;
-- missing V5-B intent fails;
-- official-loader/K10 parity mismatch fails;
-- dwell-10 emits at current time, not `t-9`;
-- paired score separation uses only feasible episodes;
-- one-shot and outside-rankable gates.
-
-A read-only independent auditor must verify root seals, source binding, 200-identity closure, 3,600 candidate-threshold ledger rows, aggregate recomputation, and the absence of protected or attack reads.
+A read-only independent auditor must verify root seals, source binding, 200-identity closure, 3,600 candidate-threshold ledger rows, aggregate recomputation, and absence of protected or attack reads.
 
 ## R7.2.2 authorized scope
 
@@ -115,7 +100,7 @@ R7.3 may be authorized only after R7.2.2 establishes both:
 1. **scheduler transfer:** official one-shot scheduler K10 hit/precision/abstention curves; and
 2. **representation transfer:** paired raw-score localization on the 26 feasible episodes.
 
-If both remain weak, K10-specific detector training is warranted. If raw representation is informative but the scheduler is weak, R7.3 must first reconsider the clean-only scheduler rather than assuming the encoder/ranker lacks signal.
+If both remain weak, K10-specific detector training is warranted. If raw representation is informative but the scheduler is weak, R7.3 must first reconsider the clean-only scheduler.
 
 ## Status
 
