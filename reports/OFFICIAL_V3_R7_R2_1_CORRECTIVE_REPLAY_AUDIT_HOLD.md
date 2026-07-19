@@ -6,16 +6,7 @@ Reviewed evaluator commit: `bc841ad40b95b189abb39dc2d1e82da5a36777a8`
 
 ## Disposition
 
-R7.2.1 closes the original R7.2 failures in the model forward path and threshold denominator:
-
-- repository `CausalMultimodalVulnerabilityRanker` is used;
-- checkpoint loading is strict;
-- V5-B consumes the sealed policy-intent root;
-- the repository `V5OneShotScheduler` is used;
-- Fold-0 validation contains 200 unique identities, including 26 K10-feasible episodes;
-- threshold denominators are no longer expanded by the nine-point sweep.
-
-The reported scheduler results are useful development evidence:
+R7.2.1 closes the original R7.2 failures in the model forward path and threshold denominator. The reported scheduler results are useful development evidence:
 
 ```text
 V5-A best scheduler hit = 3/26 = 0.1153846 at tau=0.1
@@ -26,81 +17,31 @@ They support the provisional statement that the frozen Physics checkpoints are p
 
 ## Remaining blockers
 
-### P0 — source binding is factually wrong
+1. `SOURCE_BINDING.json` records parent commit `fb9010e...`, although the evaluator first exists at `bc841ad...`.
+2. The script manually reconstructs S1/K10 streams instead of using the official V5 loader and asserting K10 target parity.
+3. Missing V5-B policy identity silently falls back to zero intent instead of failing.
+4. `first_valid_dwell10` records `t-9`, which is retroactive and not deployable.
+5. Score separation compares 26 inside samples with outside samples from up to 200 episodes instead of paired deltas on the same 26 feasible episodes.
+6. Explicit outside-rankable, release/post-release, one-shot, containment and independent-ledger audit closure are missing.
+7. No CPU tests or independent replay-root auditor accompany the evaluator.
 
-`SOURCE_BINDING.json` hard-codes:
-
-```text
-git_commit = fb9010e49ac05c28aa3e0e259ac7f1df9fbad412
-```
-
-but the corrective evaluator first exists at:
-
-```text
-bc841ad40b95b189abb39dc2d1e82da5a36777a8
-```
-
-The server root named with `bc841ad` is therefore not correctly bound to its executing commit. The old root must remain immutable and be marked provisional. A new root must derive the runtime commit dynamically and fail if the worktree is dirty.
-
-### P0 — official data-loader parity is not closed
-
-The corrective script imports but does not use `load_v5_episode`/`load_v5_episodes`. It manually reads `student_input_records.jsonl` and K10 labels, uses `valid` with a permissive default, and uses K10 `candidate_close` as the scheduler gate.
-
-The final replay must load model inputs and candidate/valid streams through the same official V5 loader used by training and the existing evaluator. K10 labels must be joined only as the target. It must assert exact identity, step-count, candidate-close, and window/segment parity.
-
-### P0 — V5-B intent consumption is not fail-closed
-
-When an identity is absent from the policy index, the current helper falls back to an all-zero intent stream. The final replay must raise immediately for any missing identity, missing step, invalid intent row, or normalization mismatch.
-
-### P1 — causal baseline timestamp is retroactive
-
-The `first_valid_dwell10` baseline detects that dwell reaches 10 at current step `t` but records the emission at `t-9`. An online detector cannot emit into the past. The deployable baseline must emit at current step `t`. A retrospective start-of-window value may be reported only as future-informed diagnostics.
-
-### P1 — score separation is not paired
-
-The current score diagnostic compares inside maxima from 26 feasible episodes with outside maxima from up to all 200 episodes. The final representation diagnostic must operate on the same 26 feasible episodes and report:
+The final paired representation diagnostic must report for each feasible episode:
 
 ```text
 delta_i = max_score_inside_i - max_score_outside_i
 ```
 
-Required aggregates are mean delta, median delta, count/rate `delta_i > 0`, raw best-step-in-corridor count over 26, and feasible-start rank/percentile among causal candidate steps.
-
-### P1 — required safety metrics are incomplete
-
-The final ledger must explicitly report:
-
-```text
-outside-rankable emits
-release/post-release emits
-one-shot compliance
-K10 containment
-false-early emits
-late/outside-corridor emits
-first-feasible-start delay
-no-corridor abstention
-```
-
-### P1 — no tests or independent replay-root auditor
-
-Acceptance requires CPU tests for threshold denominators, strict loading, missing intent, loader/K10 parity, causal dwell timing, paired score separation, and one-shot/outside-rankable gates.
-
-A read-only independent auditor must verify root seals, source binding, 200-identity closure, 3,600 candidate-threshold ledger rows, aggregate recomputation, and absence of protected or attack reads.
+and aggregate mean, median, count/rate `delta_i > 0`, raw best-step-in-corridor over 26, and feasible-start rank/percentile.
 
 ## R7.2.2 authorized scope
 
-A narrow read-only closure replay is authorized. It may reuse the frozen A/B checkpoints and the same 200 Fold-0 validation identities. It may not train, tune, select a threshold, read protected splits, run a simulator, or execute attacks.
+A narrow read-only closure replay is authorized. It may reuse the frozen A/B checkpoints and the same Fold-0 validation identities. It may not train, tune, select a threshold, read protected splits, run a simulator, or execute attacks.
 
 The old R7.2 and R7.2.1 roots must be preserved unchanged. R7.2.2 must write a new root and a separate independent audit bundle.
 
 ## Promotion boundary
 
-R7.3 may be authorized only after R7.2.2 establishes both:
-
-1. **scheduler transfer:** official one-shot scheduler K10 hit/precision/abstention curves; and
-2. **representation transfer:** paired raw-score localization on the 26 feasible episodes.
-
-If both remain weak, K10-specific detector training is warranted. If raw representation is informative but the scheduler is weak, R7.3 must first reconsider the clean-only scheduler.
+R7.3 may be authorized only after R7.2.2 establishes both scheduler transfer and paired raw-score representation transfer. If both remain weak, K10-specific training is warranted. If raw representation is informative but the scheduler is weak, the clean-only scheduler must be reconsidered first.
 
 ## Status
 
