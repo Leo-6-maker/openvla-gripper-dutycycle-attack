@@ -327,37 +327,34 @@ def check_oof_gates(m: dict[str, Any]) -> bool:
 
 # ── OOF folds (exact 480/120) ──────────────────────────────────────────────
 def build_oof_folds(episodes: list[K10TrainingEpisode], seed: int) -> list[tuple[list[int], list[int]]]:
-    """5-fold partition: exactly 480 train / 120 val per fold, stratified by suite+feasibility."""
+    """5-fold partition: exactly 480 train / 120 val per fold, stratified by suite+feasibility.
+
+    Shuffles within each stratum, concatenates, then round-robin modulo 5 across
+    the concatenated list to guarantee exactly 600/5 = 120 per validation fold.
+    """
     rng = random.Random(seed + 9999)
-    # Group indices by (suite, has_feasible) stratum
     groups: dict[tuple[str, bool], list[int]] = defaultdict(list)
     for i, ep in enumerate(episodes):
         groups[(ep.suite, ep.has_feasible)].append(i)
+    # Shuffle within each stratum
     for v in groups.values(): rng.shuffle(v)
 
-    # Target: 120 val per fold. Within each stratum, allocate proportionally.
-    # For each stratum of size S, allocate S*120/600 = S/5 to each validation fold.
+    # Concatenate all strata (keeps per-stratum order, which is shuffled)
+    all_shuffled: list[int] = []
+    for key in sorted(groups.keys()):  # deterministic order across runs
+        all_shuffled.extend(groups[key])
+
+    if len(all_shuffled) != 600:
+        raise ValueError(f"Expected 600 train identities, got {len(all_shuffled)}")
+
+    # Round-robin modulo 5: guarantees exactly 120 per fold
     folds: list[list[int]] = [[] for _ in range(5)]
-    fold_val_counts = [0] * 5
+    for j, idx in enumerate(all_shuffled):
+        folds[j % 5].append(idx)
 
-    for (suite, has_feas), indices in groups.items():
-        stratum_size = len(indices)
-        val_per_fold = stratum_size // 5  # floor
-        remainder = stratum_size % 5
-        offset = 0
-        for fi in range(5):
-            take = val_per_fold + (1 if fi < remainder else 0)
-            fold_val = indices[offset:offset + take]
-            folds[fi].extend(fold_val)
-            fold_val_counts[fi] += len(fold_val)
-            offset += take
-
-    # Verify exact 120 per fold
     for fi in range(5):
         if len(folds[fi]) != 120:
             raise ValueError(f"Fold {fi}: expected 120 val, got {len(folds[fi])}")
-        if fold_val_counts[fi] != 120:
-            raise ValueError(f"Fold {fi}: count mismatch {fold_val_counts[fi]}")
 
     # Train = complement of val
     all_indices = set(range(len(episodes)))
@@ -582,7 +579,7 @@ def main():
                     "--gpu", str(gpu),
                     "--candidate", args.candidate,
                 ]
-                p = subprocess.Popen(cmd)
+                p = subprocess.Popen(cmd, cwd=str(REPO_ROOT))
                 procs.append((fi, p))
                 print(f"  Fold {fi+1}: GPU {gpu}, PID {p.pid}")
 
