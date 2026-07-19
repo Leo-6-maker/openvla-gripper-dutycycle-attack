@@ -156,8 +156,10 @@ def verify_step_parity(
     max_errors: list[dict[str, Any]] = []
     all_ok = True
     for t in range(T_c2f):
-        c2f_feats = [float(v) for v in json.loads(c2f_records[t]["features_25d"])]
-        s1_feats = [float(v) for v in s1_records[t]["features_25d"]]
+        c2f_feats_raw = c2f_records[t]["features_25d"]
+        s1_feats_raw = s1_records[t]["features_25d"]
+        c2f_feats = [float(v) for v in c2f_feats_raw] if not isinstance(c2f_feats_raw, list) else [float(v) for v in c2f_feats_raw]
+        s1_feats = [float(v) for v in s1_feats_raw] if not isinstance(s1_feats_raw, list) else [float(v) for v in s1_feats_raw]
 
         if len(c2f_feats) != 25 or len(s1_feats) != 25:
             return {"status": "FAIL", "reason": f"step {t}: feature width mismatch"}
