@@ -29,20 +29,35 @@ FIT_STATES = list(range(0, 20))
 
 # ── V5 Model (reconstructed from checkpoint model_contract) ────────────
 class V5PhysicsGRU(nn.Module):
-    """V5 physics model: 25D proprio → GRU128 → utility + release + regrasp heads."""
+    """V5 physics model with optional intent branch (V5-B has intent_cell)."""
 
-    def __init__(self, proprio_dim: int = 25, hidden_dim: int = 128):
+    def __init__(self, proprio_dim: int = 25, hidden_dim: int = 128,
+                 intent_dim: int = 9, intent_hidden: int = 64,
+                 has_intent: bool = False):
         super().__init__()
+        self.has_intent = has_intent
         self.proprio_cell = nn.GRUCell(proprio_dim, hidden_dim)
+        if has_intent:
+            self.intent_cell = nn.GRUCell(intent_dim, intent_hidden)
+            # Parallel branches: proprio→128 and intent→128
+            self.branch_proprio = nn.Linear(hidden_dim, hidden_dim)
+            self.branch_intent = nn.Linear(intent_hidden, hidden_dim)
+            self.gate = nn.Linear(hidden_dim + intent_hidden, 2)
+        else:
+            self.branch_projection = nn.Sequential(nn.Linear(hidden_dim, hidden_dim))
+            self.gate = nn.Linear(hidden_dim, 1)
+        self.fusion = nn.Sequential(nn.Linear(hidden_dim, hidden_dim))
         self.utility_head = nn.Linear(hidden_dim, 1)
         self.release_head = nn.Linear(hidden_dim, 1)
         self.regrasp_head = nn.Linear(hidden_dim, 1)
 
     def forward(self, x: Tensor, valid_mask: Tensor,
-                boundaries: Tensor) -> dict[str, Tensor]:
+                boundaries: Tensor,
+                intent_x: Optional[Tensor] = None) -> dict[str, Tensor]:
         B, T_val, F = x.shape
         device = x.device
         h = torch.zeros(B, self.proprio_cell.hidden_size, device=device)
+        ih = torch.zeros(B, 64, device=device) if self.has_intent else None
         utility = torch.zeros(B, T_val, device=device)
         release = torch.zeros(B, T_val, device=device)
         regrasp = torch.zeros(B, T_val, device=device)
@@ -51,9 +66,25 @@ class V5PhysicsGRU(nn.Module):
             h = torch.where(boundaries[:, t].unsqueeze(1), torch.zeros_like(h), h)
             h_new = self.proprio_cell(x[:, t, :], h)
             h = torch.where(valid_mask[:, t].unsqueeze(1), h_new, h)
-            utility[:, t] = self.utility_head(h).squeeze(-1)
-            release[:, t] = self.release_head(h).squeeze(-1)
-            regrasp[:, t] = self.regrasp_head(h).squeeze(-1)
+
+            if self.has_intent and intent_x is not None:
+                ih = torch.where(boundaries[:, t].unsqueeze(1), torch.zeros_like(ih), ih)
+                ih_new = self.intent_cell(intent_x[:, t, :], ih)
+                ih = torch.where(valid_mask[:, t].unsqueeze(1), ih_new, ih)
+                proprio_h = self.branch_proprio(h)
+                intent_h = self.branch_intent(ih)
+                combined = torch.cat([h, ih], dim=-1)
+                g = torch.softmax(self.gate(combined), dim=-1)
+                fused = g[:, 0:1] * proprio_h + g[:, 1:2] * intent_h
+            else:
+                intent_h = self.branch_projection(h)
+                g = torch.sigmoid(self.gate(h))
+                fused = g * h + (1 - g) * intent_h
+
+            out = self.fusion(fused)
+            utility[:, t] = self.utility_head(out).squeeze(-1)
+            release[:, t] = self.release_head(out).squeeze(-1)
+            regrasp[:, t] = self.regrasp_head(out).squeeze(-1)
 
         return {"utility": utility, "release": release, "regrasp": regrasp}
 
@@ -107,8 +138,21 @@ def replay_checkpoint(ckpt_path: Path, s1_root: Path, k10_root: Path,
     ns = ckpt["normalization_std_25d"]
     candidate_name = mc.get("variant", "UNKNOWN")
 
-    model = V5PhysicsGRU()
-    model.load_state_dict(ckpt["model_state"])
+    has_intent = "intent_cell" in str(list(ckpt["model_state"].keys()))
+    model = V5PhysicsGRU(has_intent=has_intent)
+    # Remap V5-B checkpoint keys to our model
+    state_dict = dict(ckpt["model_state"])
+    if has_intent:
+        remap = {
+            "branch_projection.0.weight": "branch_proprio.weight",
+            "branch_projection.0.bias": "branch_proprio.bias",
+            "branch_projection.1.weight": "branch_intent.weight",
+            "branch_projection.1.bias": "branch_intent.bias",
+        }
+        for old, new in remap.items():
+            if old in state_dict:
+                state_dict[new] = state_dict.pop(old)
+    model.load_state_dict(state_dict, strict=False)
     model = model.to(device)
     model.eval()
 
@@ -140,7 +184,11 @@ def replay_checkpoint(ckpt_path: Path, s1_root: Path, k10_root: Path,
                 bnd_b[0, 0] = True
 
                 with torch.no_grad():
-                    outputs = model(x_b, svm_b, bnd_b)
+                    if has_intent:
+                        intent_dummy = torch.zeros(1, T, 9, device=device)
+                        outputs = model(x_b, svm_b, bnd_b, intent_x=intent_dummy)
+                    else:
+                        outputs = model(x_b, svm_b, bnd_b)
                 utility = torch.sigmoid(outputs["utility"].squeeze(0)).cpu()
                 release = torch.sigmoid(outputs["release"].squeeze(0)).cpu()
                 regrasp = torch.sigmoid(outputs["regrasp"].squeeze(0)).cpu()
