@@ -280,42 +280,96 @@ def evaluate_at_threshold(
                 uncertainty_probability=0.0,
             )
             if result["emit"]: emitted = True; emit_step = t
+
         within_k10 = emitted and emit_step in set(ep.feasible_starts)
+        false_emit = emitted and not within_k10
+
+        # outside_rankable: emit not in any K10 feasible start
+        outside_rankable = false_emit
+
+        # release/regrasp emit: emit step where release or regrasp score >= 0.5
+        release_emit = emitted and float(pred["release"][emit_step]) >= 0.5
+        regrasp_emit = emitted and float(pred["regrasp"][emit_step]) >= 0.5
+
         results.append({"identity": ep.identity, "has_feasible": ep.has_feasible,
                         "emitted": emitted, "emit_step": emit_step,
-                        "within_k10": within_k10, "false_emit": emitted and not within_k10,
-                        "false_early": emitted and not within_k10 and ep.has_feasible and emit_step < min(ep.feasible_starts)})
+                        "within_k10": within_k10, "false_emit": false_emit,
+                        "outside_rankable_emit": outside_rankable,
+                        "release_emit": release_emit, "regrasp_emit": regrasp_emit,
+                        "false_early": false_emit and ep.has_feasible and emit_step < min(ep.feasible_starts)})
     return results
 
 
 def compute_metrics(results: list[dict[str, Any]], n_feas: int, n_nofeas: int) -> dict[str, Any]:
     n_hit = sum(1 for r in results if r["within_k10"])
     n_emit = sum(1 for r in results if r["emitted"])
+    n_outside = sum(1 for r in results if r.get("outside_rankable_emit", False))
+    n_rel_emit = sum(1 for r in results if r.get("release_emit", False))
+    n_reg_emit = sum(1 for r in results if r.get("regrasp_emit", False))
     return {"feasible_hit_recall": n_hit / n_feas if n_feas else 0,
             "emit_precision": n_hit / n_emit if n_emit else 0,
             "no_corridor_abstention": sum(1 for r in results if not r["has_feasible"] and not r["emitted"]) / n_nofeas if n_nofeas else 0,
             "n_hit": n_hit, "n_emit": n_emit, "n_false": sum(1 for r in results if r["false_emit"]),
             "n_false_early": sum(1 for r in results if r["false_early"]),
             "n_feasible": n_feas, "n_no_feasible": n_nofeas,
-            "one_shot_compliance": 1.0, "outside_rankable_emit": 0, "release_regrasp_emit": 0}
+            "outside_rankable_emit": n_outside,
+            "release_regrasp_emit": n_rel_emit + n_reg_emit,
+            "one_shot_compliance": 1.0}
 
 
 def check_oof_gates(m: dict[str, Any]) -> bool:
     return (m["feasible_hit_recall"] >= 0.80 and m["emit_precision"] >= 0.80
-            and m["no_corridor_abstention"] >= 0.90 and m["one_shot_compliance"] == 1.0)
+            and m["no_corridor_abstention"] >= 0.90
+            and m.get("outside_rankable_emit", 999) == 0
+            and m.get("release_regrasp_emit", 999) == 0
+            and m.get("one_shot_compliance", 0.0) == 1.0)
 
 
-# ── OOF folds ────────────────────────────────────────────────────────────────
+# ── OOF folds (exact 480/120) ──────────────────────────────────────────────
 def build_oof_folds(episodes: list[K10TrainingEpisode], seed: int) -> list[tuple[list[int], list[int]]]:
+    """5-fold partition: exactly 480 train / 120 val per fold, stratified by suite+feasibility."""
     rng = random.Random(seed + 9999)
+    # Group indices by (suite, has_feasible) stratum
     groups: dict[tuple[str, bool], list[int]] = defaultdict(list)
     for i, ep in enumerate(episodes):
         groups[(ep.suite, ep.has_feasible)].append(i)
     for v in groups.values(): rng.shuffle(v)
+
+    # Target: 120 val per fold. Within each stratum, allocate proportionally.
+    # For each stratum of size S, allocate S*120/600 = S/5 to each validation fold.
     folds: list[list[int]] = [[] for _ in range(5)]
-    for g in groups.values():
-        for j, idx in enumerate(g): folds[j % 5].append(idx)
-    return [(sorted(set(range(len(episodes))) - set(folds[fi])), sorted(folds[fi])) for fi in range(5)]
+    fold_val_counts = [0] * 5
+
+    for (suite, has_feas), indices in groups.items():
+        stratum_size = len(indices)
+        val_per_fold = stratum_size // 5  # floor
+        remainder = stratum_size % 5
+        offset = 0
+        for fi in range(5):
+            take = val_per_fold + (1 if fi < remainder else 0)
+            fold_val = indices[offset:offset + take]
+            folds[fi].extend(fold_val)
+            fold_val_counts[fi] += len(fold_val)
+            offset += take
+
+    # Verify exact 120 per fold
+    for fi in range(5):
+        if len(folds[fi]) != 120:
+            raise ValueError(f"Fold {fi}: expected 120 val, got {len(folds[fi])}")
+        if fold_val_counts[fi] != 120:
+            raise ValueError(f"Fold {fi}: count mismatch {fold_val_counts[fi]}")
+
+    # Train = complement of val
+    all_indices = set(range(len(episodes)))
+    splits = []
+    for fi in range(5):
+        val_set = set(folds[fi])
+        train_set = sorted(all_indices - val_set)
+        val_sorted = sorted(folds[fi])
+        if len(train_set) != 480:
+            raise ValueError(f"Fold {fi}: expected 480 train, got {len(train_set)}")
+        splits.append((train_set, val_sorted))
+    return splits
 
 
 def run_oof_fold(
@@ -549,11 +603,22 @@ def main():
                     all_oor.extend(results)
 
             selected_tau = None
+            print("  OOF per-threshold sweep:")
             for tau in OOF_THRESHOLD_GRID:
                 tau_results = [r for r in all_oor if abs(r["threshold"] - tau) < 0.005]
                 if len(tau_results) != len(train_eps): continue
                 m = compute_metrics(tau_results, n_feas, n_nofeas)
-                if check_oof_gates(m): selected_tau = tau
+                gate_pass = check_oof_gates(m)
+                failed = []
+                if m["feasible_hit_recall"] < 0.80: failed.append("REC")
+                if m["emit_precision"] < 0.80: failed.append("PREC")
+                if m["no_corridor_abstention"] < 0.90: failed.append("ABST")
+                if m["outside_rankable_emit"] != 0: failed.append("OUTSIDE")
+                if m["release_regrasp_emit"] != 0: failed.append("RELREG")
+                print(f"    tau={tau:.2f}: rec={m['feasible_hit_recall']:.3f} prec={m['emit_precision']:.3f} "
+                      f"abst={m['no_corridor_abstention']:.3f} outside={m['outside_rankable_emit']} "
+                      f"relreg={m['release_regrasp_emit']} -> {'PASS' if gate_pass else '/'.join(failed)}")
+                if gate_pass and selected_tau is None: selected_tau = tau
 
             oof_report = {"folds": [{"fold": fi, "val_count": len(folds[fi][1])} for fi in range(5)],
                           "n_feasible": n_feas, "n_no_feasible": n_nofeas, "n_total": len(train_eps),
@@ -669,7 +734,7 @@ def run_single_oof_fold():
 
     t0 = time.time()
     model = model_class()
-    model, nm, ns, _ = train_one_model(model, train_subset, seed=20260717, epochs=10, device=device)
+    model, nm, ns, history = train_one_model(model, train_subset, seed=20260717, epochs=10, device=device)
     preds = predict_episodes(model, val_subset, nm, ns, device)
     elapsed = time.time() - t0
     print(f"Fold {args.oof_fold_only+1}: done in {elapsed:.0f}s")
@@ -677,8 +742,14 @@ def run_single_oof_fold():
     fold_dir = args.oof_staging / f"fold_{args.oof_fold_only}"
     fold_dir.mkdir(parents=True, exist_ok=True)
     torch.save({"fold": args.oof_fold_only, "val_identities": [ep.identity for ep in val_subset],
-                "predictions": preds, "train_count": len(train_idx), "val_count": len(val_idx)},
+                "train_identities": [train_subset[i].identity for i in range(len(train_subset))],
+                "predictions": preds, "train_count": len(train_idx), "val_count": len(val_idx),
+                "normalization_mean_25d": nm.cpu(), "normalization_std_25d": ns.cpu(),
+                "train_history": history},
                fold_dir / "fold_predictions.pt")
+    torch.save({"model_state": model.state_dict(), "fold": args.oof_fold_only,
+                "normalization_mean_25d": nm.cpu(), "normalization_std_25d": ns.cpu()},
+               fold_dir / "checkpoint.pt")
 
 
 if __name__ == "__main__":
