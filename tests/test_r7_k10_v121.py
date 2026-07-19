@@ -28,7 +28,7 @@ def _r(**kw):
     }
     defaults.update(kw)
     if "step" not in kw:
-        defaults["step"] = 0  # will be overwritten by caller
+        defaults["step"] = 0
     return defaults
 
 
@@ -88,14 +88,12 @@ class TestCritical:
         assert reasons[0] == "not_manipulation_active"
 
     def test_release_unknown_blocks(self):
-        """release_risk validity not True → non-positive"""
         recs = make_records(5, component_valid_mask={**_r()["component_valid_mask"],
                                                      "release_risk": False})
         critical, reasons, bm = compute_critical(recs)
         assert reasons[0] == "release_risk_unknown"
 
     def test_regrasp_unknown_blocks(self):
-        """regrasp validity not True → non-positive"""
         recs = make_records(5, component_valid_mask={**_r()["component_valid_mask"],
                                                      "regrasp_or_instability_risk": False})
         critical, reasons, bm = compute_critical(recs)
@@ -119,7 +117,7 @@ class TestCritical:
                                                  "target_progress": True})
         critical, reasons, bm = compute_critical(recs)
         assert critical[0]
-        assert bm[0] == 7  # 1|2|4 = all three
+        assert bm[0] == 7
 
     def test_lift_only_bitmask(self):
         recs = make_records(5, lift_score=0.5, support_removed=0.0, target_progress=0.0,
@@ -128,7 +126,7 @@ class TestCritical:
                                                  "target_progress": False})
         critical, reasons, bm = compute_critical(recs)
         assert critical[0]
-        assert bm[0] == 1  # lift only
+        assert bm[0] == 1
 
 
 class TestBurst:
@@ -137,25 +135,24 @@ class TestBurst:
         critical, reasons, bm = compute_critical(recs)
         burst, is_start = compute_burst(critical, 30, recs)
         starts = [i for i, s in enumerate(is_start) if s]
-        assert len(starts) == 21  # 30-K+1 = 21
+        assert len(starts) == 21
 
     def test_window_id_segment_crossing_blocked(self):
-        """Steps with different window_ids cannot form a K10 burst."""
+        """Only starts 6–14 cross the boundary between steps 14 and 15."""
         recs = make_records(30)
-        # Split window_id at step 15
         for i in range(15, 30):
             recs[i]["window_id"] = "candidate:1"
         critical, reasons, bm = compute_critical(recs)
         burst, is_start = compute_burst(critical, 30, recs)
-        # Starts that cover step 14-15 boundary should be blocked
-        for t in range(6, 16):  # windows covering step 15
+        for t in range(6, 15):
             assert not burst[t], f"Window at {t} crosses segment boundary"
+        assert burst[5]
+        assert burst[15]
 
     def test_unknown_gap_blocks_critical_not_burst(self):
-        """Unknown step is not critical, so burst covering it fails."""
         recs = make_records(30)
         recs[15]["known_mask"] = False
         critical, reasons, bm = compute_critical(recs)
         burst, is_start = compute_burst(critical, 30, recs)
-        for t in range(6, 16):  # windows covering step 15
+        for t in range(6, 16):
             assert not burst[t]
