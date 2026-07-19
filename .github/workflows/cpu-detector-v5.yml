@@ -47,7 +47,9 @@ jobs:
             scripts/detector_v5/audit_clean2000_raw_assets.py \
             scripts/detector_v5/audit_official_v3_fit_sources.py \
             scripts/detector_v4/label_k10_v121.py \
-            scripts/detector_v4/audit_k10_v121_artifact.py
+            scripts/detector_v4/audit_k10_v121_artifact.py \
+            scripts/detector_v4/replay_k10_v5_v22_closure.py \
+            scripts/detector_v4/audit_k10_v5_v22_artifact.py
       - name: Run V5 and R7 CPU contract tests
         run: |
           pytest -q \
@@ -62,6 +64,7 @@ jobs:
             tests/test_clean2000_raw_asset_audit.py \
             tests/test_official_v3_fit_sources.py \
             tests/test_r7_k10_v121.py \
-            tests/test_r7_k10_v121_auditor.py
+            tests/test_r7_k10_v121_auditor.py \
+            tests/test_r7_k10_v22_closure.py
       - name: Check patch whitespace
         run: git diff --check
