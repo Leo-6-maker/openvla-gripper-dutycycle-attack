@@ -205,20 +205,23 @@ def compute_k10_loss(
     device: torch.device,
 ) -> dict[str, Tensor]:
     """Episode-balanced BCE + release/regrasp auxiliary. Normalized per-episode."""
-    rankable = episode.valid_mask & episode.candidate_close
-    known = episode.k10_known & rankable
+    dev = outputs["utility_logit"].device
+    rankable = episode.valid_mask.to(dev) & episode.candidate_close.to(dev)
+    known = episode.k10_known.to(dev) & rankable
     if not known.any():
         return {"total": outputs["utility_logit"].sum() * 0.0}
 
-    u_logits = outputs["utility_logit"]
-    T = u_logits.shape[0]
+    u_logits = outputs["utility_logit"].squeeze(0)  # [T] from [1, T]
+    rel_logits = outputs["release_logit"].squeeze(0)
+    reg_logits = outputs["regrasp_logit"].squeeze(0)
 
     # Utility BCE on known rankable steps
+    k10_tgt = episode.k10_target.to(dev)
     bce = nn.functional.binary_cross_entropy_with_logits(
-        u_logits[known], episode.k10_target[known], reduction="none")
+        u_logits[known], k10_tgt[known], reduction="none")
 
-    pos_mask = known & (episode.k10_target > 0.5)
-    neg_mask = known & (episode.k10_target < 0.5)
+    pos_mask = known & (k10_tgt > 0.5)
+    neg_mask = known & (k10_tgt < 0.5)
 
     n_pos = pos_mask.sum().clamp_min(1)
     n_neg = neg_mask.sum().clamp_min(1)
@@ -233,20 +236,20 @@ def compute_k10_loss(
         utility_loss = neg_loss
 
     # Release auxiliary loss
-    rel_known = episode.release_known & rankable
+    rel_known = episode.release_known.to(dev) & rankable
     if rel_known.any():
         release_loss = nn.functional.binary_cross_entropy_with_logits(
-            outputs["release_logit"][rel_known], episode.release_target[rel_known])
+            rel_logits[rel_known], episode.release_target.to(dev)[rel_known])
     else:
-        release_loss = torch.tensor(0.0, device=device)
+        release_loss = torch.tensor(0.0, device=dev)
 
     # Regrasp auxiliary loss
-    reg_known = episode.regrasp_known & rankable
+    reg_known = episode.regrasp_known.to(dev) & rankable
     if reg_known.any():
         regrasp_loss = nn.functional.binary_cross_entropy_with_logits(
-            outputs["regrasp_logit"][reg_known], episode.regrasp_target[reg_known])
+            reg_logits[reg_known], episode.regrasp_target.to(dev)[reg_known])
     else:
-        regrasp_loss = torch.tensor(0.0, device=device)
+        regrasp_loss = torch.tensor(0.0, device=dev)
 
     total = utility_loss + 0.3 * release_loss + 0.3 * regrasp_loss
     return {"total": total, "utility": utility_loss,
