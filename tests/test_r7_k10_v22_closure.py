@@ -106,16 +106,20 @@ class TestScheduler:
         result = run_scheduler_at_threshold(ctx, scores, threshold=0.5)
         assert not result["emitted"]
 
-    def test_invalid_step_resets_dwell(self):
+    def test_invalid_step_resets_dwell_and_persistence(self):
         valid = [True] * 50
-        valid[15] = False
+        valid[11] = False
         ctx = make_ctx(T=50, feasible_starts={25}, valid=valid)
         vals = [0.05] * 50
-        for i in range(10, 18):
-            vals[i] = 0.8
+        vals[9] = 0.8
+        vals[10] = 0.8
+        vals[12] = 0.8
+        vals[13] = 0.8
+        vals[14] = 0.8
         scores = make_scores(T=50, utility_vals=vals)
         result = run_scheduler_at_threshold(ctx, scores, threshold=0.5)
         assert not result["emitted"]
+        assert result["emit_step"] == -1
 
 
 class TestScoreDiagnostics:
