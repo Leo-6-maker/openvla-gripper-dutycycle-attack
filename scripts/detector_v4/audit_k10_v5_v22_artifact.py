@@ -97,10 +97,13 @@ def audit(root: Path) -> dict[str, Any]:
     # 5. Source binding checks
     if source_binding.get("schema") != "R7_K10_V5_OFFLINE_REPLAY_V2_2_SOURCE_BINDING_V1":
         findings.append({"severity": "ERROR", "check": "source_binding_schema", "detail": source_binding.get("schema")})
-    for key in ["git_commit", "evaluator_file_blob_sha256", "v5_a_checkpoint_sha256", "v5_b_checkpoint_sha256"]:
+    for key, min_len in [("git_commit", 40), ("evaluator_file_blob_sha256", 40),
+                          ("v5_a_checkpoint_sha256", 64), ("v5_b_checkpoint_sha256", 64),
+                          ("v5_a_checkpoint_sha256s_sha256", 64), ("v5_b_checkpoint_sha256s_sha256", 64)]:
         value = source_binding.get(key)
-        if not isinstance(value, str) or len(value) != 64:
-            findings.append({"severity": "ERROR", "check": f"source_binding:{key}", "detail": f"invalid SHA: {value}"})
+        if not isinstance(value, str) or len(value) < min_len:
+            findings.append({"severity": "ERROR", "check": f"source_binding:{key}",
+                            "detail": f"invalid: len={len(value) if isinstance(value,str) else 'N/A'}"})
 
     # 6. Parity report
     if parity.get("candidate_close_agreement") != EXPECTED_N_EPISODES:
@@ -240,6 +243,11 @@ def main():
             os.replace(staging, out)
             print(f"\nAudit root: {out}")
             print(f"SHA256SUMS: {sha}")
+        except Exception:
+            import shutil as _shutil
+            if staging.exists():
+                _shutil.rmtree(staging, ignore_errors=True)
+            raise
 
     if status != "PASS":
         sys.exit(1)

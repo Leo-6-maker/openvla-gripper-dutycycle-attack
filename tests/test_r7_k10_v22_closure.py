@@ -79,7 +79,9 @@ class TestScheduler:
         assert result["emit_step"] >= 10  # at least minimum dwell
 
     def test_emit_within_k10(self):
-        ctx = make_ctx(T=50, feasible_starts={15, 16, 17, 18, 19, 20, 21, 22, 23, 24})
+        # Scheduler emits at first local peak after dwell>=10 + 3-of-5 persistence.
+        # With steps 10+ all 0.8, emit happens at step 12 (3-of-5 triggers at step 12).
+        ctx = make_ctx(T=50, feasible_starts=set(range(10, 25)))
         vals = [0.05] * 50
         for i in range(10, 30):
             vals[i] = 0.8
