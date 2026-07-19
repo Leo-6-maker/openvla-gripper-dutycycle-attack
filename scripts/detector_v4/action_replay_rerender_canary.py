@@ -59,13 +59,7 @@ def _seal_root(root: Path) -> str:
 def load_benchmark(suite: str):
     """Load LIBERO benchmark for a suite."""
     from libero.libero import benchmark
-    task_names = {
-        "libero_10": "LIBERO_10",
-        "libero_goal": "LIBERO_GOAL",
-        "libero_object": "LIBERO_OBJECT",
-        "libero_spatial": "LIBERO_SPATIAL",
-    }
-    bench = benchmark.get_benchmark_dict()[task_names[suite]]()
+    bench = benchmark.get_benchmark_dict()[suite]()
     return bench
 
 
