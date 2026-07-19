@@ -1,7 +1,7 @@
 # Official V3 Detector V5 Physics R6.2/R6.3 Handoff
 
 Date: 2026-07-19  
-Code HEAD for this handoff: `c9709bfa5ef7788b39b089db33cf29da68728f74`  
+Code HEAD for this handoff: `c9709bfa5ef7788b39b089db33cf29da68728f74`
 Branch: `codex/official-v3-detector-v5-20260718`  
 PR: #87, Draft
 
