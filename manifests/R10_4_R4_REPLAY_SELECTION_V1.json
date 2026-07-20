@@ -1,0 +1,19 @@
+{
+  "schema": "R10_4_REPLAY_SELECTION_V1",
+  "selection_status": "FROZEN_BEFORE_PARITY_OUTCOME",
+  "eligible_split": "FIT states 0-19",
+  "eligible_suite": "libero_10",
+  "eligible_identity_count": 200,
+  "eligible_identity_sha256": "8ff9dd379254440e25ce9f8055be21f7f51b2a1e5f4e04878c04dad12f2d70d5",
+  "selection_rule": "sort canonical identity directories lexicographically; select zero-based indices 0,99,199",
+  "selected_indices": [0, 99, 199],
+  "selected_identities": [
+    "libero_10/task_00/state_00",
+    "libero_10/task_04/state_19",
+    "libero_10/task_09/state_19"
+  ],
+  "outcome_dependent_selection": false,
+  "openvla_model_loaded": false,
+  "detector_executed": false,
+  "action_mutated": false
+}

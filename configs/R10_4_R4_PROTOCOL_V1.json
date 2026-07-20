@@ -1,0 +1,19 @@
+{
+  "schema": "R10_4_R4_PROTOCOL_V1",
+  "scope": "RUNTIME_INTEGRATION_CLOSURE_AND_LIBERO_REPLAY_ONLY",
+  "openvla_model_load": false,
+  "openvla_inference": false,
+  "detector_execution": false,
+  "action_mutation": false,
+  "protected_split_reads": 0,
+  "feature_order_sha256": "3d1101d26567a41bf688587a70c5100a3629ad62f12f9568947ee178a8a63366",
+  "feature_abs_tolerance": 1e-06,
+  "action_dim": 7,
+  "action_abs_tolerance": 0.0,
+  "initial_state_hash": "sha256(pickle.dumps(state, protocol=4))",
+  "num_steps_wait": 10,
+  "replay_selection_indices": [0, 99, 199],
+  "replay_selection_rule": "sorted eligible multi-object FIT identity directories before parity outcomes",
+  "replay_action_rule": "pass sealed action_env directly to env.step",
+  "source_incomplete_status": "HOLD_SOURCE_INCOMPLETE"
+}
