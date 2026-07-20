@@ -1,12 +1,16 @@
-"""Factorized causal physics Teacher (Gate F1).
+"""Factorized causal physics Teacher (Gate F1.1).
 
 Three independent state heads with prefix invariance:
-  grasp_established      — object stably held
+  grasp_established      — object stably held (known negatives exist)
   manipulation_active    — grasped object being transported/placed
   release_or_instability — object being released, dropped, or regrasped
 
-Mechanism routing from BDDL task role only — no task ID, state ID, or
-attack outcome leakage.
+Event state machine per episode:
+  IDLE → GRASPED → MANIPULATING → RELEASED → IDLE
+
+Known mask is independent of positive/negative — base_known can be True
+while a head value is False (known negative).  Unknown only arises from
+unsupported mechanisms, action_unknown, student_invalid, or missing fields.
 
 Design constraint (frozen): no threshold, formula, or route rule may be
 changed based on FIT-DEV, CAL, CHECK, CS200, or any attack result.
@@ -14,8 +18,7 @@ changed based on FIT-DEV, CAL, CHECK, CS200, or any attack result.
 
 from __future__ import annotations
 
-import math
-from dataclasses import dataclass, field
+import math, re
 from enum import Enum
 from typing import Any, Mapping, Sequence
 
@@ -25,11 +28,9 @@ from .v5_physics import (
     _clip,
     _comotion,
     _contact_flags,
-    _cosine,
     _dist,
     _finite_vector,
     _lift,
-    _mean,
     _median,
     _object_slice,
     _relative_stability,
@@ -56,14 +57,22 @@ class EventRole(Enum):
     NONE = "NONE"
 
 
+class EventPhase(Enum):
+    IDLE = "IDLE"
+    GRASPED = "GRASPED"
+    MANIPULATING = "MANIPULATING"
+    RELEASED = "RELEASED"
+
+
 FACTORIZED_TEACHER_FIELDS = frozenset({
     "step", "canonical_parent_key", "state_id",
-    "mechanism_type", "event_id", "event_role", "target_relevant",
+    "mechanism_type", "event_id", "event_phase", "event_role", "target_relevant",
+    "active_object_name",
     "close_event_onset",
     "grasp_established", "grasp_established_known_mask", "grasp_established_confidence",
     "manipulation_active", "manipulation_active_known_mask", "manipulation_active_confidence",
     "release_or_instability", "release_or_instability_known_mask", "release_or_instability_confidence",
-    "strict_k10_feasible", "strict_k10_known_mask",
+    "strict_k10_feasible", "strict_k10_known_mask", "strict_k10_binding_schema",
     "gripper_contact_score", "relative_pose_stability", "object_eef_comotion_score",
     "lift_score", "support_removed", "target_progress", "target_progress_known",
     "student_valid", "action_intent", "action_known", "candidate_close",
@@ -75,54 +84,52 @@ FACTORIZED_LABEL_FILENAME = "factorized_teacher_v1.jsonl"
 FACTORIZED_MANIFEST_SCHEMA = "DETECTOR_V5_FACTORIZED_TEACHER_V1_MANIFEST"
 
 
-def _determine_mechanism(role: PhysicsTaskRole, object_names: Sequence[str]) -> MechanismRoute:
-    """Route from BDDL task role only."""
+def _determine_mechanism(role: PhysicsTaskRole) -> MechanismRoute:
+    """Route from BDDL task role only — no task ID, state ID, or attack outcome."""
     if not role.applicable:
         return MechanismRoute.UNKNOWN_OR_AMBIGUOUS
 
-    n_manipulated = len(role.manipulated_objects)
-    n_targets = len(role.target_names)
-
-    # Check for articulated/planar predicates
     for pred, _, _ in role.goal_predicates:
         if pred in ("Open", "Close"):
             return MechanismRoute.ARTICULATED_OR_PLANAR
 
+    n_manipulated = len(role.manipulated_objects)
+    n_targets = len(role.target_names)
+
     if n_manipulated == 0:
         return MechanismRoute.UNKNOWN_OR_AMBIGUOUS
-
     if n_manipulated >= 2 and n_targets >= 2:
         return MechanismRoute.MULTI_OBJECT_TRANSFER
-
     if n_manipulated == 1:
         return MechanismRoute.SINGLE_OBJECT_PICK_PLACE
 
     return MechanismRoute.UNKNOWN_OR_AMBIGUOUS
 
 
+# ── Evidence helpers ────────────────────────────────────────────────────────
+
 def _opening_trend(
-    action_history: Sequence[Mapping[str, Any]],
+    action_states: Sequence[CanonicalActionState],
+    index: int,
     window: int = 3,
 ) -> float:
-    """Recent OPEN action trend: 1.0 = consistently opening, 0.0 = not."""
-    if len(action_history) < 2:
-        return 0.0
-    recent = action_history[-window:]
-    opens = sum(
-        1 for r in recent
-        if r.get("action_known") is True and r.get("action_intent") == "OPEN"
-    )
+    """Recent OPEN action trend: 1.0 = consistently opening, 0.0 = not.
+
+    This is the FROZEN definition per protocol: 3-step OPEN proportion.
+    """
+    start = max(0, index - window + 1)
+    recent = action_states[start:index + 1]
+    opens = sum(1 for s in recent if s.action_known and s.action_intent == "OPEN")
     return _clip(opens / max(1, len(recent)))
 
 
 def _contact_loss_evidence(
     contact_history: Sequence[bool],
-    window: int = 5,
 ) -> float:
     """Evidence of recent contact loss: 1.0 = lost, 0.0 = maintained."""
     if len(contact_history) < 2:
         return 0.0
-    recent = contact_history[-window:]
+    recent = contact_history[-5:] if len(contact_history) >= 5 else contact_history
     had_contact = any(recent[:-1])
     lost = had_contact and not recent[-1]
     return 1.0 if lost else 0.0
@@ -141,7 +148,8 @@ def _object_eef_separation(
         spec = _object_slice(object_slices, name)
         if spec is None:
             continue
-        positions = [_slice_vector(item.get("object_state", []), spec, "to_eef_pos") for item in history[-2:]]
+        positions = [_slice_vector(item.get("object_state", []), spec, "to_eef_pos")
+                     for item in history[-2:]]
         positions = [p for p in positions if p is not None]
         if len(positions) >= 2:
             dist_now = _dist(positions[-1], [0.0, 0.0, 0.0])
@@ -151,16 +159,12 @@ def _object_eef_separation(
     return max(values) if values else 0.0
 
 
-def _gripper_qpos_closure(
-    sidecar: Mapping[str, Any],
-) -> float:
+def _gripper_qpos_closure(sidecar: Mapping[str, Any]) -> float:
     """Gripper qpos indicates closure: 1.0 = closed, 0.0 = wide open."""
     qpos = _finite_vector(sidecar.get("robot0_gripper_qpos"), 2)
     if qpos is None:
         return 0.0
-    # Both fingers near zero = closed
-    closure = 1.0 - _clip((abs(qpos[0]) + abs(qpos[1])) / 0.08)
-    return closure
+    return 1.0 - _clip((abs(qpos[0]) + abs(qpos[1])) / 0.08)
 
 
 def _horizontal_transport(
@@ -184,43 +188,89 @@ def _horizontal_transport(
     return max(values) if values else 0.0
 
 
+# ── Strict K10 binding ─────────────────────────────────────────────────────
+
+def _resolve_k10_feasible(
+    index: int,
+    action_states: Sequence[CanonicalActionState],
+    k10_labels: Sequence[Mapping[str, Any]] | None,
+    k10_label_schema: str | None,
+) -> tuple[bool, bool, str | None]:
+    """Resolve strict_k10_feasible from an external sealed K10 label stream.
+
+    If k10_labels is provided, use the external binding.
+    Otherwise, compute a simplified internal proxy (evaluation-only).
+    """
+    if k10_labels is not None and k10_label_schema is not None:
+        if len(k10_labels) != len(action_states):
+            raise ValueError("K10 label stream length mismatch")
+        k10_row = k10_labels[index]
+        k10_known = bool(k10_row.get("k10_known_mask", False))
+        k10_feasible = bool(k10_row.get("k10_feasible", False)) if k10_known else False
+        return k10_feasible, k10_known, k10_label_schema
+
+    # Internal fallback — NOT authoritative; external binding preferred
+    as_ = action_states[index]
+    k10_known = bool(as_.action_known and as_.candidate_close)
+    future = action_states[index:min(len(action_states), index + 10)]
+    future_close = any(
+        s.action_known and s.action_intent == "CLOSE" for s in future[1:]
+    )
+    return bool(k10_known and future_close), k10_known, "INTERNAL_SIMPLIFIED_V1"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Main Teacher derivation
+# ═══════════════════════════════════════════════════════════════════════════════
+
 def derive_factorized_rows(
     step_rows: Sequence[Mapping[str, Any]],
     sidecar_rows: Sequence[Mapping[str, Any]],
     role: PhysicsTaskRole,
     object_slices: Mapping[str, Mapping[str, Any]],
-    object_names: Sequence[str],
     protocol: Mapping[str, Any],
+    *,
+    k10_labels: Sequence[Mapping[str, Any]] | None = None,
+    k10_label_schema: str | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Derive factorized three-head Teacher labels for one episode."""
+    """Derive factorized three-head Teacher labels for one episode.
 
-    if len(step_rows) != len(sidecar_rows) or not step_rows:
+    Does NOT mutate step_rows or sidecar_rows.
+    """
+
+    T = len(step_rows)
+    if T != len(sidecar_rows) or T == 0:
         raise ValueError("step and sidecar lengths must match and be nonzero")
 
     constants = protocol["fixed_constants"]
     history_size = int(protocol["history"]["score_window_steps"])
-    mechanism = _determine_mechanism(role, object_names)
+    thresholds = protocol["head_thresholds"]
+    mechanism = _determine_mechanism(role)
 
-    # ── Compute action states ──────────────────────────────────────────
+    # ── Extract action states (no mutation of input) ────────────────────
     action_states: list[CanonicalActionState] = []
     for step in step_rows:
-        state = CanonicalActionState.from_step(step, field="clean_action_raw_7d")
-        step["_action_state"] = state
-        action_states.append(state)
+        action_states.append(CanonicalActionState.from_step(step, field="clean_action_raw_7d"))
 
-    # ── Compute contact and physics evidence ────────────────────────────
+    # ── Pre-compute contact and physics evidence ────────────────────────
     contact_flags: list[tuple[bool, bool, bool]] = []
     gripper_contacts: list[bool] = []
     qpos_closures: list[float] = []
-    for sidecar in sidecar_rows:
-        cf = _contact_flags(sidecar.get("mujoco_contact_pairs", []), role)
+    for sc in sidecar_rows:
+        cf = _contact_flags(sc.get("mujoco_contact_pairs", []), role)
         contact_flags.append(cf)
         gripper_contacts.append(cf[1])
-        qpos_closures.append(_gripper_qpos_closure(sidecar))
+        qpos_closures.append(_gripper_qpos_closure(sc))
 
-    # ── Per-step physics ────────────────────────────────────────────────
+    # ── Per-step computation ────────────────────────────────────────────
     rows: list[dict[str, Any]] = []
-    for index in range(len(step_rows)):
+
+    # Event state machine
+    event_counter = -1
+    event_phase = EventPhase.IDLE
+    active_object: str | None = None
+
+    for index in range(T):
         history = sidecar_rows[max(0, index - history_size + 1):index + 1]
         contact = contact_flags[index]
         has_grip = contact[1]
@@ -243,25 +293,20 @@ def derive_factorized_rows(
         )
 
         as_ = action_states[index]
-        action_known = as_.action_known
-        candidate_close = as_.candidate_close
+        sv = bool(step_rows[index].get("valid", True))
 
         # ── Evidence components ──────────────────────────────────────
-        opening_now = 1.0 if (action_known and as_.action_intent == "OPEN") else 0.0
+        opening_trend = _opening_trend(action_states, index, window=3)
         qpos_closed = qpos_closures[index]
-        contact_loss = _contact_loss_evidence(gripper_contacts[:index + 1], window=5)
+        contact_loss = _contact_loss_evidence(gripper_contacts[:index + 1])
         separation = _object_eef_separation(
             sidecar_rows[max(0, index - 3):index + 1], role, object_slices,
         )
 
-        # Contact toggle rate
         contact_hist = gripper_contacts[max(0, index - history_size + 1):index + 1]
-        toggles = sum(
-            left != right for left, right in zip(contact_hist[1:], contact_hist[:-1])
-        )
+        toggles = sum(l != r for l, r in zip(contact_hist[1:], contact_hist[:-1]))
         toggle_rate = toggles / max(1, len(contact_hist) - 1)
 
-        # Contact dwell (consecutive steps with gripper contact)
         contact_dwell = 0
         for j in range(index, -1, -1):
             if gripper_contacts[j]:
@@ -269,36 +314,46 @@ def derive_factorized_rows(
             else:
                 break
 
-        # Support removal (cumulative: had support before, none now)
         has_support_now = contact[2]
         had_support_before = any(contact_flags[j][2] for j in range(max(0, index - 10), index + 1))
         support_removed = 1.0 if had_support_before and not has_support_now else 0.0
 
-        # Horizontal transport
-        h_transport = _horizontal_transport(
-            sidecar_rows[:index + 1], role, object_slices,
+        h_transport = _horizontal_transport(sidecar_rows[:index + 1], role, object_slices)
+
+        # ── base_known: label semantics are decidable ─────────────────
+        # Separate from positive/negative: base_known=True allows known negatives.
+        physics_inputs_valid = (
+            math.isfinite(stable)
+            and math.isfinite(comotion)
+            and math.isfinite(lift)
+            and _finite_vector(sidecar_rows[index].get("object_state"), 14) is not None
+        )
+        route_ok = mechanism.supported and role.applicable
+        base_known = bool(
+            route_ok
+            and sv
+            and as_.action_known
+            and physics_inputs_valid
         )
 
         # ── grasp_established ─────────────────────────────────────────
-        role_ok = role.applicable
-        physics_valid = (
-            stable > 0.3
-            and has_grip
-            and contact_dwell >= 3
-            and contact_loss < 0.5
-        )
-        grasp_known = bool(role_ok and action_known and physics_valid)
+        grasp_known = base_known
         grasp_value = False
         grasp_conf = 0.0
         if grasp_known:
+            has_contact_condition = (
+                has_grip
+                and contact_dwell >= int(thresholds.get("grasp_min_contact_dwell", 3))
+                and contact_loss < float(thresholds.get("grasp_max_contact_loss", 0.5))
+            )
             grasp_score = _clip(
                 0.30 * stable
-                + 0.25 * float(has_grip)
+                + 0.25 * float(has_contact_condition)
                 + 0.20 * qpos_closed
                 + 0.15 * (1.0 - toggle_rate)
                 + 0.10 * (1.0 - contact_loss)
             )
-            grasp_value = grasp_score >= 0.5
+            grasp_value = grasp_score >= float(thresholds["grasp_min_score"])
             grasp_conf = grasp_score
 
         # ── manipulation_active ───────────────────────────────────────
@@ -313,59 +368,74 @@ def derive_factorized_rows(
                 + 0.15 * support_removed
                 + 0.15 * float(tp_known and tp > 0.1)
             )
-            manip_value = manip_score >= 0.4
+            manip_value = manip_score >= float(thresholds["manipulation_min_score"])
             manip_conf = manip_score
 
         # ── release_or_instability ────────────────────────────────────
-        release_known = bool(role_ok and action_known)
+        release_known = base_known
         release_value = False
         release_conf = 0.0
         if release_known:
             release_score = _clip(
                 0.35 * contact_loss
                 + 0.20 * separation
-                + 0.15 * opening_now
+                + 0.15 * opening_trend
                 + 0.15 * toggle_rate
                 + 0.15 * (1.0 - stable)
             )
-            release_value = release_score >= 0.35
+            release_value = release_score >= float(thresholds["release_min_score"])
             release_conf = release_score
 
-        # ── strict_k10_feasible (evaluation only, future-allowed) ────
-        future = action_states[index:min(len(action_states), index + 10)]
-        future_close = any(
-            s.action_known and s.action_intent == "CLOSE"
-            for s in future[1:]
+        # ── strict_k10_feasible ───────────────────────────────────────
+        k10_feasible, k10_known, k10_schema = _resolve_k10_feasible(
+            index, action_states, k10_labels, k10_label_schema,
         )
-        k10_known = bool(role_ok and candidate_close)
-        k10_feasible = bool(k10_known and future_close)
 
         # ── close_event_onset ─────────────────────────────────────────
-        close_onset = False
-        if index > 0:
-            prev_grasp = rows[index - 1].get("grasp_established", False) if rows else False
-            close_onset = candidate_close and grasp_value and not prev_grasp
+        prev_grasp = rows[-1]["grasp_established"] if rows else False
+        close_onset = bool(as_.candidate_close and grasp_value and not prev_grasp)
 
-        # ── Event ID assignment (simplified: per contiguous grasp segment) ──
-        event_id = -1
-        event_role = EventRole.NONE.value
-        target_relevant = False
-        if grasp_value:
-            if index == 0 or not (rows[index - 1].get("grasp_established", False) if rows else False):
-                event_id = index  # new event starts
-            else:
-                event_id = rows[index - 1].get("event_id", index)
+        # ── Event state machine ──────────────────────────────────────
+        # IDLE → GRASPED on fresh grasp
+        # GRASPED → MANIPULATING on manipulation
+        # MANIPULATING/GRASPED → RELEASED on release
+        # RELEASED → IDLE after release clears
+
+        if event_phase in (EventPhase.IDLE, EventPhase.RELEASED):
+            if grasp_value:
+                event_counter += 1
+                event_phase = EventPhase.GRASPED
+                active_object = role.manipulated_objects[0] if role.manipulated_objects else None
+        elif event_phase == EventPhase.GRASPED:
+            if release_value:
+                event_phase = EventPhase.RELEASED
+            elif manip_value:
+                event_phase = EventPhase.MANIPULATING
+        elif event_phase == EventPhase.MANIPULATING:
+            if release_value:
+                event_phase = EventPhase.RELEASED
+
+        # Determine event_role: current active object vs other manipulated objects
+        if event_phase in (EventPhase.GRASPED, EventPhase.MANIPULATING):
             event_role = EventRole.TARGET.value
             target_relevant = True
-        elif index > 0 and rows[index - 1].get("grasp_established", False):
-            event_id = rows[index - 1].get("event_id", -1)
+        elif event_phase == EventPhase.RELEASED:
+            event_role = EventRole.NONE.value
+            target_relevant = False
+        else:
+            event_role = EventRole.NONE.value
+            target_relevant = False
+
+        current_event_id = event_counter if event_phase != EventPhase.IDLE else -1
 
         rows.append({
             "step": index,
             "mechanism_type": mechanism.value,
-            "event_id": event_id,
+            "event_id": current_event_id,
+            "event_phase": event_phase.value,
             "event_role": event_role,
             "target_relevant": target_relevant,
+            "active_object_name": active_object,
             "close_event_onset": close_onset,
             "grasp_established": grasp_value,
             "grasp_established_known_mask": grasp_known,
@@ -378,6 +448,7 @@ def derive_factorized_rows(
             "release_or_instability_confidence": round(release_conf, 4),
             "strict_k10_feasible": k10_feasible,
             "strict_k10_known_mask": k10_known,
+            "strict_k10_binding_schema": k10_schema,
             "gripper_contact_score": 1.0 if has_grip else 0.0,
             "relative_pose_stability": stable,
             "object_eef_comotion_score": comotion,
@@ -385,23 +456,13 @@ def derive_factorized_rows(
             "support_removed": support_removed,
             "target_progress": tp,
             "target_progress_known": tp_known,
-            "student_valid": bool(step_rows[index].get("valid", True)),
+            "student_valid": sv,
             "action_intent": as_.action_intent,
             "action_known": as_.action_known,
-            "candidate_close": candidate_close,
+            "candidate_close": as_.candidate_close,
         })
 
-    # ── Post-pass: fill event_id for non-grasp steps ──────────────────
-    current_event = -1
-    for row in rows:
-        if row["event_id"] >= 0:
-            current_event = row["event_id"]
-        else:
-            row["event_id"] = current_event
-        if row["event_role"] == EventRole.NONE.value and current_event >= 0:
-            row["event_role"] = EventRole.TARGET.value
-
-    # ── Event summary ─────────────────────────────────────────────────
+    # ── Event summary ─────────────────────────────────────────────────────
     events: list[dict[str, Any]] = []
     seen_events: set[int] = set()
     for row in rows:
@@ -413,7 +474,7 @@ def derive_factorized_rows(
         events.append({
             "event_id": eid,
             "mechanism_type": mechanism.value,
-            "event_role": EventRole.TARGET.value,
+            "event_role": max((r["event_role"] for r in members), key=lambda v: 0 if v == "NONE" else 1),
             "start_step": members[0]["step"],
             "end_step": members[-1]["step"],
             "step_count": len(members),
@@ -423,38 +484,40 @@ def derive_factorized_rows(
             "grasp_steps": sum(1 for r in members if r["grasp_established"]),
             "manipulation_steps": sum(1 for r in members if r["manipulation_active"]),
             "release_steps": sum(1 for r in members if r["release_or_instability"]),
+            "active_object_name": members[0].get("active_object_name"),
         })
 
     return rows, events
 
 
-# ── Prefix invariance validator ────────────────────────────────────────────
+# ── Prefix invariance validator ─────────────────────────────────────────────
 
 def verify_prefix_invariance(
     step_rows: Sequence[Mapping[str, Any]],
     sidecar_rows: Sequence[Mapping[str, Any]],
     role: PhysicsTaskRole,
     object_slices: Mapping[str, Mapping[str, Any]],
-    object_names: Sequence[str],
     protocol: Mapping[str, Any],
+    *,
+    k10_labels: Sequence[Mapping[str, Any]] | None = None,
+    k10_label_schema: str | None = None,
 ) -> dict[str, Any]:
-    """Verify primary heads are prefix-invariant: computing at step t
-    should give same result whether we see only prefix 0:t or full trajectory."""
+    """Verify primary heads are prefix-invariant."""
 
     T = len(step_rows)
     violations = 0
     head_names = ("grasp_established", "manipulation_active", "release_or_instability")
 
-    # Full trajectory
     full_rows, _ = derive_factorized_rows(
-        step_rows, sidecar_rows, role, object_slices, object_names, protocol,
+        step_rows, sidecar_rows, role, object_slices, protocol,
+        k10_labels=k10_labels, k10_label_schema=k10_label_schema,
     )
 
     for t in range(1, T):
-        prefix_steps = step_rows[:t + 1]
-        prefix_sidecars = sidecar_rows[:t + 1]
         prefix_rows, _ = derive_factorized_rows(
-            prefix_steps, prefix_sidecars, role, object_slices, object_names, protocol,
+            step_rows[:t + 1], sidecar_rows[:t + 1], role, object_slices, protocol,
+            k10_labels=k10_labels[:t + 1] if k10_labels is not None else None,
+            k10_label_schema=k10_label_schema,
         )
         for head in head_names:
             if prefix_rows[t][head] != full_rows[t][head]:
@@ -468,6 +531,23 @@ def verify_prefix_invariance(
     }
 
 
+def verify_deterministic_derive(
+    step_rows: Sequence[Mapping[str, Any]],
+    sidecar_rows: Sequence[Mapping[str, Any]],
+    role: PhysicsTaskRole,
+    object_slices: Mapping[str, Mapping[str, Any]],
+    protocol: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Verify two independent runs produce identical output."""
+    rows1, ev1 = derive_factorized_rows(step_rows, sidecar_rows, role, object_slices, protocol)
+    rows2, ev2 = derive_factorized_rows(step_rows, sidecar_rows, role, object_slices, protocol)
+
+    import json
+    identical = (json.dumps(rows1, sort_keys=True) == json.dumps(rows2, sort_keys=True)
+                 and json.dumps(ev1, sort_keys=True) == json.dumps(ev2, sort_keys=True))
+    return {"deterministic": identical, "step_count": len(step_rows)}
+
+
 __all__ = [
     "FACTORIZED_TEACHER_FIELDS",
     "FACTORIZED_TEACHER_SCHEMA",
@@ -475,7 +555,9 @@ __all__ = [
     "FACTORIZED_MANIFEST_SCHEMA",
     "MechanismRoute",
     "EventRole",
+    "EventPhase",
     "_determine_mechanism",
     "derive_factorized_rows",
     "verify_prefix_invariance",
+    "verify_deterministic_derive",
 ]

@@ -86,14 +86,56 @@
     }
   },
 
-  "inherited_from_v21c": {
+  "history": {
     "score_window_steps": 5,
-    "minimum_stable_grasp_dwell": 10,
+    "minimum_stable_grasp_dwell": 10
+  },
+
+  "fixed_constants": {
     "relative_position_scale_m": 0.03,
     "relative_quaternion_scale": 0.20,
     "lift_scale_m": 0.03,
     "target_progress_scale_m": 0.20,
     "action_contract": "CANONICAL_ACTION_CONTRACT_V1"
+  },
+
+  "head_thresholds": {
+    "grasp_min_score": 0.5,
+    "grasp_min_contact_dwell": 3,
+    "grasp_max_contact_loss": 0.5,
+    "manipulation_min_score": 0.4,
+    "release_min_score": 0.35,
+    "release_opening_trend_window": 3,
+    "release_contact_loss_window": 5,
+    "release_separation_window": 3
+  },
+
+  "known_mask_policy": {
+    "base_known_requires": ["mechanism.supported", "role.applicable", "student_valid", "action_known", "physics_inputs_valid"],
+    "grasp_known": "base_known",
+    "manipulation_known": "base_known AND grasp_established",
+    "release_known": "base_known",
+    "strict_k10_known": "role.applicable AND candidate_close",
+    "known_allows_negative": true,
+    "unknown_only_from": ["unsupported_mechanism", "non_applicable_role", "student_invalid", "action_unknown", "missing_physics_fields"]
+  },
+
+  "event_policy": {
+    "state_machine": ["IDLE", "GRASPED", "MANIPULATING", "RELEASED"],
+    "transition_idle_to_grasped": "fresh grasp_established after IDLE or RELEASED",
+    "transition_grasped_to_manipulating": "manipulation_active",
+    "transition_to_released": "release_or_instability from GRASPED or MANIPULATING",
+    "transition_released_to_idle": "release clears",
+    "event_id": "monotonic counter starting at 0",
+    "event_role_logic": "active object = first manipulated_object in grasp segment",
+    "multi_object_reset": "new grasp of different object starts new event"
+  },
+
+  "strict_k10_binding": {
+    "source": "external sealed K10 label stream",
+    "not_reinvented": true,
+    "fallback_for_testing": "INTERNAL_SIMPLIFIED_V1",
+    "internal_fallback_not_authoritative": true
   },
 
   "deleted_from_v21c": [
