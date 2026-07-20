@@ -36,7 +36,8 @@ def _episode(length: int = 12):
     sidecars = []
     for index in range(length):
         z = 0.03 * index / max(1, length - 1)
-        steps.append({"clean_action_raw_7d": [0, 0, 0, 0, 0, 0, 1.0], "valid": True})
+        # FIXED (Gate D2.0): raw=0.0 = CLOSE in OpenVLA space (was 1.0=OPEN, wrong)
+        steps.append({"clean_action_raw_7d": [0, 0, 0, 0, 0, 0, 0.0], "valid": True})
         state = [0.1 * index / max(1, length - 1), 0.0, z, 1.0, 0.0, 0.0, 0.0, 0.1, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
         pairs = [["obj_1_g1", "gripper0_finger1_pad_collision"]]
         if index == 0:

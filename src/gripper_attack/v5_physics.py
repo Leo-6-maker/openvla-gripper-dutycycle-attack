@@ -279,10 +279,22 @@ def _target_progress(
 
 
 def _candidate_close(step: Mapping[str, Any], threshold: float) -> bool:
+    """FIXED (Gate D2.0): Use canonical action contract.
+
+    OpenVLA raw action space: 0=CLOSE, 1=OPEN.
+    raw < 0.5 → CLOSE intent.
+    raw == 0.5 → BOUNDARY (abstain).
+
+    Previous bug: used raw[6] >= threshold, which selected the OPEN region.
+    """
+    from .action_contract import raw_gripper_is_close
     raw = step.get("clean_action_raw_7d", step.get("action_raw"))
     if not isinstance(raw, list) or len(raw) < 7:
         return False
-    return float(raw[6]) >= threshold
+    # boundary check: raw == 0.5 (±eps) → abstain (not close)
+    if abs(float(raw[6]) - 0.5) <= 1e-6:
+        return False
+    return float(raw[6]) < threshold
 
 
 def _assign_segments(rows: list[dict[str, Any]]) -> None:
