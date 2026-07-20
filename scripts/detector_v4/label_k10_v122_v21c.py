@@ -257,7 +257,7 @@ def compute_burst(critical: list[bool], n: int,
 # ── process one episode ────────────────────────────────────────────────
 def process(teacher_root: Path, suite: str, task: int, state: int
             ) -> Optional[dict[str, Any]]:
-    path = teacher_root / "labels" / suite / f"task_{task:02d}" / f"state_{state:02d}" / "physics_teacher_v21.jsonl"
+    path = teacher_root / "labels" / suite / f"task_{task:02d}" / f"state_{state:02d}" / "physics_teacher_v21c.jsonl"
     if not path.exists():
         return None
     records = jsonl(path)
@@ -501,7 +501,7 @@ def main():
 
     aud = audit_results(all_eps)
 
-    print(f"=== V1.2.1 AUDIT ===")
+    print(f"=== V1.2.2 V21C AUDIT ===")
     print(f"Episodes: {aud['n_episodes']}")
     print(f"Feasible K10: {aud['n_feasible']}")
     print(f"Total starts: {aud['total_starts']}")
