@@ -17,14 +17,24 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
-from gripper_attack.action_contract import (
-    raw_gripper_is_close,
-    postprocess_gripper_openvla_to_libero,
-    env_gripper_is_close,
-    classify_openvla_raw_gripper,
-    GripperIntent,
-)
+# Canonical action contract (inline for server portability)
+import enum
+class GripperIntent(enum.Enum):
+    CLOSE = "CLOSE"; OPEN = "OPEN"; BOUNDARY = "BOUNDARY"
+
+def classify_openvla_raw_gripper(raw, eps=1e-6):
+    if abs(float(raw) - 0.5) <= eps:
+        return GripperIntent.BOUNDARY
+    return GripperIntent.CLOSE if float(raw) < 0.5 else GripperIntent.OPEN
+
+def raw_gripper_is_close(raw):
+    return classify_openvla_raw_gripper(raw) == GripperIntent.CLOSE
+
+def postprocess_gripper_openvla_to_libero(raw):
+    return float(-np.sign(2.0 * float(raw) - 1.0))
+
+def env_gripper_is_close(env):
+    return float(env) > 0.0
 
 CLEAN = Path("/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/clean")
 OPS = Path("/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops")

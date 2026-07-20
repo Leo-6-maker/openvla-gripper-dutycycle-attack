@@ -287,7 +287,12 @@ def _candidate_close(step: Mapping[str, Any], threshold: float) -> bool:
 
     Previous bug: used raw[6] >= threshold, which selected the OPEN region.
     """
-    from .action_contract import raw_gripper_is_close
+    try:
+        from .action_contract import raw_gripper_is_close
+    except ImportError:
+        # Fallback for server execution outside package
+        def raw_gripper_is_close(r):
+            return abs(float(r) - 0.5) > 1e-6 and float(r) < 0.5
     raw = step.get("clean_action_raw_7d", step.get("action_raw"))
     if not isinstance(raw, list) or len(raw) < 7:
         return False
