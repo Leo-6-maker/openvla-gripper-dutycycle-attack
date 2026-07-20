@@ -14,8 +14,11 @@ import csv
 import hashlib
 import json
 import os
+import getpass
 import pickle
+import platform
 import shutil
+import sys
 import tempfile
 import uuid
 from pathlib import Path
@@ -286,6 +289,7 @@ def main() -> int:
     parser.add_argument("--s1-root", required=True, type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
     parser.add_argument("--render-gpu-device-id", required=True, type=int)
+    parser.add_argument("--execution-source-commit", required=True)
     args = parser.parse_args()
     if args.output_root.exists():
         raise SystemExit("OUTPUT_ROOT_ALREADY_EXISTS")
@@ -307,6 +311,18 @@ def main() -> int:
         "detector_executed": False,
     }
     _write_json(staging / "protocol.json", protocol)
+    _write_json(staging / "runtime_environment.json", {
+        "hostname": platform.node(),
+        "user": getpass.getuser(),
+        "python": sys.executable,
+        "python_version": sys.version,
+        "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
+        "mujoco_gl": os.environ.get("MUJOCO_GL", ""),
+        "render_gpu_device_id": args.render_gpu_device_id,
+        "execution_source_commit": args.execution_source_commit,
+        "openvla_model_loaded": False,
+        "detector_executed": False,
+    })
     summaries: list[dict[str, Any]] = []
     per_step_rows: list[dict[str, Any]] = []
     bindings: list[dict[str, Any]] = []
