@@ -286,7 +286,10 @@ def _candidate_close(step: Mapping[str, Any], threshold: float) -> bool:
 
     Previous bug: used raw[6] >= threshold, which selected the OPEN region.
     """
-    from .action_contract import CanonicalActionState
+    try:
+        from .action_contract import CanonicalActionState
+    except ImportError:
+        from action_contract import CanonicalActionState
     state = CanonicalActionState.from_step(step, field="clean_action_raw_7d")
     # Store structured state in step for downstream use
     step["_action_state"] = state
