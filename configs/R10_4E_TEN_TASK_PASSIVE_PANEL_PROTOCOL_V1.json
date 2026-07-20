@@ -1,0 +1,83 @@
+{
+  "schema": "R10_4E_TEN_TASK_PASSIVE_PANEL_PROTOCOL_V1",
+  "scope": "TEN_TASK_PASSIVE_PANEL_AND_POSTHOC_TEACHER_MATCHED_AUDIT",
+  "base_head": "3d7418472cc46ba66396706ff0be430807030c26",
+  "manifest": "manifests/R10_4E_TEN_TASK_PASSIVE_PANEL_V1.json",
+  "reuse_r10_4d_task00": true,
+  "new_episode_count": 9,
+  "model_load_policy": "load the pinned OpenVLA model once on physical GPU0 after a machine authorization receipt; no other GPU",
+  "episode_policy": "task_01/state_20 through task_09/state_20 exactly once in canonical order",
+  "official_horizon": 520,
+  "num_steps_wait": 10,
+  "generation_passes_per_step": 1,
+  "feature_order_sha256": "3d1101d26567a41bf688587a70c5100a3629ad62f12f9568947ee178a8a63366",
+  "action_abs_tolerance": 0.0,
+  "detector": {
+    "input_dim": 25,
+    "hidden_dim": 64,
+    "num_layers": 2,
+    "parameter_count": 46658,
+    "strict_load": true,
+    "grasp_threshold": 0.5,
+    "grasp_persistence": 3
+  },
+  "fsm": {
+    "guard_type": "vertical_lift",
+    "guard_param": 0.02,
+    "max_episode_emits": 1,
+    "reset_between_episodes": true
+  },
+  "runtime_hard_stop": [
+    "source, receipt, model, detector, parent, BDDL or init-state binding mismatch",
+    "generation pass missing, boolean, zero or not equal to one",
+    "invalid or non-finite 25D feature",
+    "any nonzero action mutation in any of seven dimensions",
+    "unsupported route, pre-anchor emit, release-overlap emit or duplicate emit",
+    "privileged sidecar used as detector input",
+    "existing or overwritten output root",
+    "runtime exception, model OOM, EGL failure, filesystem failure or seal failure"
+  ],
+  "runtime_gate": {
+    "required_runtime_valid_episodes": 10,
+    "required_action_mutation_count": 0,
+    "required_generation_contract_failures": 0,
+    "required_feature_invalid_steps": 0,
+    "required_fsm_structural_violations": 0,
+    "task_success_required": false,
+    "student_emit_required": false
+  },
+  "posthoc_teacher": {
+    "runtime_input": false,
+    "label_materialization": "offline only from privileged sidecars using the frozen R10 Teacher grasp_established contract",
+    "student_emit_match_rule": "emit must lie inside a Teacher grasp_established active interval and before release",
+    "required_outputs": [
+      "per-task Teacher event intervals",
+      "per-task Student probabilities, threshold streaks, emit step and FSM state",
+      "event precision, event recall and onset latency",
+      "no-emit reason taxonomy",
+      "task success and clean-success matched-emit candidate set"
+    ]
+  },
+  "command_open_prep_gate": {
+    "runtime_valid_episodes": 10,
+    "teacher_event_tasks_min": 3,
+    "student_emit_tasks_min": 2,
+    "student_emit_teacher_match_precision": 1.0,
+    "clean_success_matched_emit_tasks_min": 1,
+    "fsm_structural_violations": 0,
+    "authorization_after_pass": "STATIC_PREPARATION_ONLY",
+    "command_open_execution_authorized": false
+  },
+  "hold_labels": {
+    "runtime": "HOLD_RUNTIME_CONTRACT",
+    "teacher_sparse": "HOLD_PANEL_OPPORTUNITY_SPARSE",
+    "student_recall": "HOLD_STUDENT_DEPLOYMENT_RECALL",
+    "timing_safety": "HOLD_TIMING_SAFETY",
+    "no_clean_success_candidate": "HOLD_NO_CLEAN_SUCCESS_ATTACK_PARENT"
+  },
+  "formal_training_authorized": false,
+  "threshold_or_fsm_change_authorized": false,
+  "command_open_execution_authorized": false,
+  "visual_attack_authorized": false,
+  "random_attack_authorized": false
+}
