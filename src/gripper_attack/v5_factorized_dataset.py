@@ -1,8 +1,17 @@
-"""Factorized Student dataset adapter (Gate S2).
+"""Factorized Student dataset adapter (Gate S2.1).
 
 Narrow adapter on mature V5 dataset infrastructure.
 Loads Factorized Teacher V1 labels, produces three-head training targets
-with per-head known masks, mechanism route, and event metadata.
+with per-head known masks, mechanism route, event metadata, and policy-intent
+valid masks for 25D9D fusion.
+
+Contracts enforced per episode:
+  - manipulation → grasp (logical)
+  - unknown → not positive
+  - unsupported route → all heads unknown
+  - features_25d finite, shape [T,25]
+  - policy_intent_9d finite when present
+  - targets bool dtype, event_id int64
 """
 
 from __future__ import annotations
@@ -25,6 +34,23 @@ def _jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
 
 
+def verify_factorized_source_roots(
+    s1_root: Path, teacher_root: Path,
+    policy_intent_root: Path | None = None,
+) -> dict[str, str]:
+    """Batch-level seal verification — run once before loading any episode."""
+    seals = {
+        "s1_root_seal": sha256_file(s1_root / "SHA256SUMS"),
+        "teacher_root_seal": sha256_file(teacher_root / "SHA256SUMS"),
+    }
+    verify_sealed_directory(s1_root)
+    verify_sealed_directory(teacher_root)
+    if policy_intent_root is not None:
+        seals["policy_intent_root_seal"] = sha256_file(policy_intent_root / "SHA256SUMS")
+        verify_sealed_directory(policy_intent_root)
+    return seals
+
+
 @dataclass(frozen=True)
 class FactorizedEpisode:
     canonical_parent_key: str
@@ -34,43 +60,76 @@ class FactorizedEpisode:
     mechanism_route: str
     route_supported: bool
 
-    features_25d: Tensor       # [T, 25]
-    valid_mask: Tensor          # [T]
+    features_25d: Tensor            # [T, 25]
+    valid_mask: Tensor               # [T]
 
-    grasp_target: Tensor        # [T] bool
-    grasp_known_mask: Tensor    # [T] bool
-    manipulation_target: Tensor
-    manipulation_known_mask: Tensor
-    release_target: Tensor
-    release_known_mask: Tensor
+    grasp_target: Tensor             # [T] bool
+    grasp_known_mask: Tensor         # [T] bool
+    manipulation_target: Tensor      # [T] bool
+    manipulation_known_mask: Tensor  # [T] bool
+    release_target: Tensor           # [T] bool
+    release_known_mask: Tensor       # [T] bool
 
-    event_id: Tensor            # [T] int
-    event_role: list[str]       # [T]
+    event_id: Tensor                 # [T] int64
+    event_role: list[str]            # [T]
     active_object_name: list[str | None]  # [T]
 
-    k10_feasible: Tensor        # [T] bool, eval only
-    k10_known_mask: Tensor
+    k10_feasible: Tensor             # [T] bool (eval only)
+    k10_known_mask: Tensor           # [T] bool
 
-    policy_intent_9d: Tensor    # [T, 9] or empty
+    policy_intent_9d: Tensor         # [T, 9] or empty
+    policy_intent_valid_mask: Tensor # [T] bool (or all-False if no 9D)
 
     def __post_init__(self):
         T = self.features_25d.shape[0]
+        for name, t, expected_shape in [
+            ("features_25d", self.features_25d, (T, 25)),
+            ("valid_mask", self.valid_mask, (T,)),
+            ("grasp_target", self.grasp_target, (T,)),
+            ("grasp_known_mask", self.grasp_known_mask, (T,)),
+            ("manipulation_target", self.manipulation_target, (T,)),
+            ("manipulation_known_mask", self.manipulation_known_mask, (T,)),
+            ("release_target", self.release_target, (T,)),
+            ("release_known_mask", self.release_known_mask, (T,)),
+            ("event_id", self.event_id, (T,)),
+            ("k10_feasible", self.k10_feasible, (T,)),
+            ("k10_known_mask", self.k10_known_mask, (T,)),
+            ("policy_intent_valid_mask", self.policy_intent_valid_mask, (T,)),
+        ]:
+            if t.shape != expected_shape:
+                raise ValueError(f"{name} shape mismatch: {t.shape} != {expected_shape}")
         for name, t in [
-            ("valid_mask", self.valid_mask),
             ("grasp_target", self.grasp_target), ("grasp_known_mask", self.grasp_known_mask),
             ("manipulation_target", self.manipulation_target), ("manipulation_known_mask", self.manipulation_known_mask),
             ("release_target", self.release_target), ("release_known_mask", self.release_known_mask),
-            ("k10_feasible", self.k10_feasible), ("k10_known_mask", self.k10_known_mask),
+            ("valid_mask", self.valid_mask), ("k10_feasible", self.k10_feasible),
+            ("k10_known_mask", self.k10_known_mask), ("policy_intent_valid_mask", self.policy_intent_valid_mask),
         ]:
-            if t.shape != (T,):
-                raise ValueError(f"{name} shape mismatch: expected [{T}], got {t.shape}")
-            if t.dtype not in (torch.bool, torch.int64) and name.endswith("_mask"):
-                if t.dtype != torch.bool:
-                    raise TypeError(f"{name} must be bool")
+            if t.dtype != torch.bool:
+                raise TypeError(f"{name} must be bool, got {t.dtype}")
+        if self.event_id.dtype != torch.int64:
+            raise TypeError(f"event_id must be int64, got {self.event_id.dtype}")
         if not torch.isfinite(self.features_25d).all():
-            raise ValueError("features contain NaN/Inf")
-        if self.policy_intent_9d.numel() > 0 and self.policy_intent_9d.shape != (T, 9):
-            raise ValueError(f"policy_intent_9d shape mismatch: {self.policy_intent_9d.shape}")
+            raise ValueError("features_25d contain NaN/Inf")
+        if self.policy_intent_9d.numel() > 0:
+            if self.policy_intent_9d.shape != (T, 9):
+                raise ValueError(f"policy_intent_9d shape: {self.policy_intent_9d.shape}")
+            if not torch.isfinite(self.policy_intent_9d).all():
+                raise ValueError("policy_intent_9d contain NaN/Inf")
+        if len(self.event_role) != T or len(self.active_object_name) != T:
+            raise ValueError(f"event_role/active_object_name length != {T}")
+        # Logical contracts
+        if (self.manipulation_target & ~self.grasp_target).any():
+            raise ValueError(f"manipulation without grasp: {self.canonical_parent_key}")
+        if (~self.grasp_known_mask & self.grasp_target).any():
+            raise ValueError(f"unknown grasp positive: {self.canonical_parent_key}")
+        if (~self.manipulation_known_mask & self.manipulation_target).any():
+            raise ValueError(f"unknown manipulation positive: {self.canonical_parent_key}")
+        if (~self.release_known_mask & self.release_target).any():
+            raise ValueError(f"unknown release positive: {self.canonical_parent_key}")
+        if not self.route_supported:
+            if self.grasp_known_mask.any() or self.manipulation_known_mask.any() or self.release_known_mask.any():
+                raise ValueError(f"unsupported route has known heads: {self.canonical_parent_key}")
 
 
 def load_factorized_episode(
@@ -137,17 +196,6 @@ def load_factorized_episode(
 
     route = str(teachers[0].get("mechanism_type", "unknown_or_ambiguous"))
 
-    # Validate contracts
-    for i in range(len(feats)):
-        if g_km[i] is False:
-            if g_tgt[i]:
-                raise ValueError(f"unknown grasp cannot be positive: {identity}:{i}")
-        if m_km[i] is False:
-            if m_tgt[i]:
-                raise ValueError(f"unknown manipulation cannot be positive: {identity}:{i}")
-        if m_tgt[i] and not g_tgt[i]:
-            raise ValueError(f"manipulation implies grasp: {identity}:{i}")
-
     return FactorizedEpisode(
         canonical_parent_key=identity, suite=suite, task_idx=int(task_name.split("_")[1]),
         state_id=int(state_name.split("_")[1]),
@@ -165,6 +213,7 @@ def load_factorized_episode(
         k10_feasible=torch.tensor(k10_f, dtype=torch.bool),
         k10_known_mask=torch.tensor(k10_km, dtype=torch.bool),
         policy_intent_9d=torch.tensor(pol_9d, dtype=torch.float32) if pol_9d else torch.empty((0, 9)),
+        policy_intent_valid_mask=torch.tensor(pol_v if pol_v else valid, dtype=torch.bool),
     )
 
 
@@ -183,35 +232,8 @@ def compute_factorized_normalization(episodes: list[FactorizedEpisode]) -> tuple
     return values.mean(dim=0), values.std(dim=0, unbiased=False).clamp_min(1e-6)
 
 
-class FactorizedLoss:
-    """Masked BCE per head + consistency, event/route-balanced."""
-
-    def __init__(self, consistency_weight: float = 0.1):
-        self.bce = torch.nn.BCEWithLogitsLoss(reduction="none")
-        self.consistency_weight = consistency_weight
-
-    def __call__(self, logits: dict[str, Tensor], episode: FactorizedEpisode) -> tuple[Tensor, dict[str, float]]:
-        g_logits = logits["grasp"]
-        m_logits = logits["manipulation"]
-        r_logits = logits["release"]
-
-        g_loss = (self.bce(g_logits, episode.grasp_target.float()) * episode.grasp_known_mask.float()).sum() / max(1, episode.grasp_known_mask.sum())
-        m_loss = (self.bce(m_logits, episode.manipulation_target.float()) * episode.manipulation_known_mask.float()).sum() / max(1, episode.manipulation_known_mask.sum())
-        r_loss = (self.bce(r_logits, episode.release_target.float()) * episode.release_known_mask.float()).sum() / max(1, episode.release_known_mask.sum())
-
-        p_g = torch.sigmoid(g_logits)
-        p_m = torch.sigmoid(m_logits)
-        consistency = torch.relu(p_m - p_g).mean()
-
-        total = g_loss + m_loss + r_loss + self.consistency_weight * consistency
-        return total, {"grasp": g_loss.item(), "manipulation": m_loss.item(),
-                        "release": r_loss.item(), "consistency": consistency.item()}
-
-    def to(self, device):
-        return self  # stateless
-
-
-__all__ = ["FactorizedEpisode", "FactorizedLoss",
+__all__ = ["FactorizedEpisode",
            "load_factorized_episode", "load_factorized_episodes",
            "compute_factorized_normalization",
+           "verify_factorized_source_roots",
            "FACTORIZED_LABEL_FILENAME", "SUPPORTED_ROUTES"]

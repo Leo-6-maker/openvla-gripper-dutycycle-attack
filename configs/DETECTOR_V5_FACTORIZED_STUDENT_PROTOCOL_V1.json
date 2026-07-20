@@ -10,12 +10,12 @@
   "encoder": {
     "type": "causal_GRU",
     "hidden_dim": 128,
-    "num_layers": 2,
+    "num_layers": 1,
     "dropout": 0.0,
     "input_features_25d": true,
     "input_features_9d": true,
     "9d_source": "V5_POLICY_INTENT_BINDING_V1",
-    "9d_fusion": "concat_before_heads",
+    "9d_fusion": "concat_256_to_128_linear",
     "25d_feature_order_sha": "frozen_at_build_time",
     "9d_feature_order_sha": "frozen_at_build_time"
   },
