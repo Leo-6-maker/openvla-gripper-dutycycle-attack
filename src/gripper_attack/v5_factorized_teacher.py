@@ -68,6 +68,7 @@ FACTORIZED_TEACHER_FIELDS = frozenset({
     "step", "canonical_parent_key", "state_id",
     "mechanism_type", "event_id", "event_phase", "event_role", "target_relevant",
     "active_object_name", "event_attribution_status", "event_attribution_conflict",
+    "secondary_contact_observed",
     "close_event_onset",
     "grasp_established", "grasp_established_known_mask", "grasp_established_confidence",
     "manipulation_active", "manipulation_active_known_mask", "manipulation_active_confidence",
@@ -471,6 +472,7 @@ def derive_factorized_rows(
 
         # Track whether active_object changed within the current event
         attribution_conflict = False
+        secondary_contact = False
 
         if event_phase == EventPhase.IDLE:
             if grasp_value:
@@ -478,35 +480,52 @@ def derive_factorized_rows(
                 event_phase = EventPhase.GRASPED
                 active_object = raw_active_obj
         elif event_phase == EventPhase.RELEASED:
-            # RELEASED can only go to IDLE, never directly to GRASPED.
-            # This prevents a brief release pulse from creating a spurious new event.
             if not release_value:
                 event_phase = EventPhase.IDLE
-        elif event_phase == EventPhase.GRASPED:
+        elif event_phase in (EventPhase.GRASPED, EventPhase.MANIPULATING):
             if release_value:
                 event_phase = EventPhase.RELEASED
-            elif manip_value:
+            elif event_phase == EventPhase.GRASPED and manip_value:
                 event_phase = EventPhase.MANIPULATING
-            # Object attribution: immutable once set. Change → conflict.
-            if raw_active_obj is not None:
+
+            # Object attribution within event
+            if raw_active_obj is not None and attr_status == "SINGLE":
                 if active_object is None:
                     active_object = raw_active_obj
-                elif raw_active_obj != active_object:
-                    attribution_conflict = True
-        elif event_phase == EventPhase.MANIPULATING:
-            if release_value:
-                event_phase = EventPhase.RELEASED
-            if raw_active_obj is not None:
-                if active_object is None:
-                    active_object = raw_active_obj
-                elif raw_active_obj != active_object:
-                    attribution_conflict = True
+                elif raw_active_obj == active_object:
+                    pass  # same object — no change
+                elif raw_active_obj in manipulated_set:
+                    # Different manipulated object — check if real handoff
+                    # Real handoff: original contact lost, new object has dwell ≥ 3
+                    orig_still_contacting = any(
+                        str(ep) == active_object or str(ep).startswith(active_object + "_")
+                        for pair in contact_pairs for ep in pair
+                    ) if active_object else False
+                    new_dwell = sum(
+                        1 for j in range(index, min(T, index + 10))
+                        if any(
+                            str(ep) == raw_active_obj or str(ep).startswith(raw_active_obj + "_")
+                            for pair in sidecar_rows[j].get("mujoco_contact_pairs", [])
+                            for ep in pair
+                        )
+                    )
+                    if not orig_still_contacting and new_dwell >= 3 and grasp_value:
+                        # Real handoff: close old event, start new one
+                        event_counter += 1
+                        active_object = raw_active_obj
+                        event_phase = EventPhase.GRASPED
+                    else:
+                        # Brief secondary contact — diagnostic only
+                        secondary_contact = True
+                else:
+                    # Non-manipulated object transiently contacted — diagnostic only
+                    secondary_contact = True
 
         # Determine event_role and event_id
         manipulated_set = set(role.manipulated_objects)
         if event_phase in (EventPhase.GRASPED, EventPhase.MANIPULATING):
             current_event_id = event_counter
-            if attr_status == "AMBIGUOUS" or attribution_conflict:
+            if attr_status == "AMBIGUOUS":
                 event_role = EventRole.NONE.value
                 target_relevant = False
             elif active_object is not None and active_object in manipulated_set:
@@ -516,7 +535,7 @@ def derive_factorized_rows(
                 event_role = EventRole.DISTRACTOR.value
                 target_relevant = False
             else:
-                event_role = EventRole.TARGET.value  # default: assume target
+                event_role = EventRole.TARGET.value
                 target_relevant = True
         elif event_phase == EventPhase.RELEASED:
             current_event_id = event_counter
@@ -537,6 +556,7 @@ def derive_factorized_rows(
             "active_object_name": active_object,
             "event_attribution_status": attr_status,
             "event_attribution_conflict": attribution_conflict,
+            "secondary_contact_observed": secondary_contact,
             "close_event_onset": close_onset,
             "grasp_established": grasp_value,
             "grasp_established_known_mask": grasp_known,
