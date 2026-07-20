@@ -15,7 +15,11 @@ from pathlib import Path
 SUITES = ["libero_object", "libero_spatial", "libero_goal", "libero_10"]
 SUPPORTED_ROUTES = {"single_object_pick_place", "multi_object_transfer"}
 
-def sha256_file(p): d=hashlib.sha256(); [d.update(b) for b in iter(lambda: p.open("rb").read(1048576), b"")]; return d.hexdigest()
+def sha256_file(p):
+    d=hashlib.sha256()
+    with p.open("rb") as f:
+        for b in iter(lambda: f.read(1048576), b""): d.update(b)
+    return d.hexdigest()
 def verify_seal(root):
     s=root/"SHA256SUMS"; c=root/"SHA256SUMS.sha256"
     if not s.is_file() or not c.is_file(): raise SystemExit(f"SEAL MISSING: {root}")
@@ -86,11 +90,17 @@ def main():
                     obj=r.get("active_object_name"); erole=r.get("event_role","?")
 
                     # Head counts
-                    if gk: (grasp_pos if gv else grasp_neg)+=1; ep_grasp+=gv
+                    if gk:
+                        if gv: grasp_pos+=1; ep_grasp+=1
+                        else: grasp_neg+=1
                     else: grasp_unk+=1
-                    if mk: (manip_pos if mv else manip_neg)+=1; ep_manip+=mv
+                    if mk:
+                        if mv: manip_pos+=1; ep_manip+=1
+                        else: manip_neg+=1
                     else: manip_unk+=1
-                    if rk: (release_pos if rv else release_neg)+=1; ep_release+=rv
+                    if rk:
+                        if rv: release_pos+=1; ep_release+=1
+                        else: release_neg+=1
                     else: release_unk+=1
 
                     # Logical: unsupported route with any known mask
