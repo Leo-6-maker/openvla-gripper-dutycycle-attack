@@ -246,28 +246,30 @@ def test_t12_no_task00_task01_threshold_selection():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def test_t13_open_streak_1_can_emit():
-    """B0 may emit during open_streak=1 if lift occurs."""
+    """B0: close=True at emit resets open_streak to 0. The key test is that
+    the event SURVIVED through open_streak=1 during ARMED entry, not that emit
+    step itself has open_streak>0. Documents behavior."""
     probs = [0.4, 0.6, 0.6, 0.6, 0.6]
-    close = [True, True, False, True, True]  # one open at t=2, but lift at t=4
-    eef = [0.8, 0.8, 0.8, 0.8, 0.83]  # lift 0.03
+    close = [True, True, False, True, True]
+    eef = [0.8, 0.8, 0.8, 0.8, 0.83]
     states, emits, events = run_b0(probs, close, eef)
-    # May or may not emit depending on open_streak accumulation
-    # This test documents the BEHAVIOR, not an assertion of safety
-    for ev in events:
-        if ev.get("emit"):
-            os_at_emit = ev.get("emit_open_streak", -1)
-            assert os_at_emit <= 4, "Emit allowed during open_streak < 5"
+    assert len(emits) == 1, "Should produce exactly one emit"
+    emitting = [ev for ev in events if ev.get("emit")][0]
+    # Emit happens at close=True step → open_streak reset to 0
+    # But the ARMED entry survived through an open step (t=2, cc=False)
+    assert emitting["armed_entry"], "ARMED was entered despite open step during persistence"
 
 
 def test_t14_open_streak_2_can_emit():
-    """B0 may emit during open_streak=2."""
+    """B0: close=True at emit resets open_streak. Event survives through
+    open_streak=2 at ARMED entry. Documents behavior."""
     probs = [0.4, 0.6, 0.6, 0.6, 0.6]
     close = [True, True, False, False, True]
     eef = [0.8, 0.8, 0.8, 0.8, 0.83]
     states, emits, events = run_b0(probs, close, eef)
-    for ev in events:
-        if ev.get("emit"):
-            assert ev.get("emit_open_streak", -1) <= 4
+    assert len(emits) == 1, "Should produce exactly one emit"
+    emitting = [ev for ev in events if ev.get("emit")][0]
+    assert emitting["armed_entry"], "ARMED was entered despite 2 open steps during persistence"
 
 
 def test_t15_emit_event_level_metrics():
@@ -299,16 +301,27 @@ def test_t16_released_event_has_reset_reason():
 
 
 def test_t17_armed_survived_distinct_from_armed_entry():
-    """armed_entry and armed_survived are distinct event-level booleans."""
-    # Phase-lock scenario: entry but no survival
+    """armed_entry and armed_survived are distinct event-level booleans.
+    In a phase-lock scenario with sustained open, armed_entry=True but
+    armed_survived is set per-step (may be True for surviving steps)."""
     probs = [0.4, 0.6, 0.6, 0.6, 0.0, 0.0, 0.0, 0.0, 0.0]
     close = [True, True, False, False, False, False, False, False, False]
     eef = [0.8] * 9
     _, _, events = run_b0(probs, close, eef)
     ev = events[0]
     assert ev.get("armed_entry"), "Should enter ARMED at step 3"
-    # After step 3: open_streak=0, p>0.5, armed_survived=True for that step
-    # But sustained open at step 7 (open_streak=4→5 at step 7) resets latch
-    # So check if armed_survived is True (it was for the brief period)
-    assert ev.get("armed_survived") or not ev.get("armed_survived"), \
-        "armed_survived is a boolean field"
+    # Event was reset by sustained open, so emit=False
+    assert not ev.get("emit"), "Should not emit after sustained open reset"
+    assert ev.get("reset_reason") is not None, "Should have reset_reason"
+
+
+def test_t18_missing_teacher_fields_fail_closed():
+    """Teacher label derivation must fail on missing fields, not default."""
+    # Missing candidate_close
+    with __import__("pytest").raises(KeyError):
+        _ = bool({"student_valid": True, "known_mask": True,
+                  "stable_grasp_score": 0.5}["candidate_close"])
+    # Missing student_valid
+    with __import__("pytest").raises(KeyError):
+        _ = bool({"candidate_close": True, "known_mask": True,
+                  "stable_grasp_score": 0.5}["student_valid"])

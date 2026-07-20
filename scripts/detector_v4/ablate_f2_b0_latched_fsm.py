@@ -212,6 +212,7 @@ def main():
     eps_emit = 0
     emit_details = []
     ep_causes = defaultdict(int)
+    episode_stats = []
 
     for identity in val_ids:
         parts = identity.split("/")
@@ -295,17 +296,21 @@ def main():
         n_released = sum(1 for ev in events if ev.get("reset_reason"))
 
         if n_emit_events > 0:
-            ep_causes["EMIT"] += 1
+            cause = "EMIT"
         elif n_latched == 0:
-            ep_causes["NO_CLOSE_LATCH"] += 1
-        elif n_armed_survived == 0 and n_armed > 0:
-            ep_causes["NO_STUDENT_PERSISTENCE_WHILE_LATCHED"] += 1
+            cause = "NO_CLOSE_LATCH"
+        elif n_armed == 0:
+            cause = "LATCHED_NO_STUDENT_CONFIRMATION"
+        elif n_released > 0 and n_armed_survived == 0:
+            cause = "LATCH_RELEASED_BEFORE_CONFIRMATION"
         elif n_armed_survived > 0 and n_vertical == 0:
-            ep_causes["ARMED_NO_VERTICAL_PASS"] += 1
-        elif n_released > 0 and n_armed == 0:
-            ep_causes["LATCH_RELEASED_BEFORE_CONFIRMATION"] += 1
+            cause = "ARMED_NO_VERTICAL_PASS"
         else:
-            ep_causes["UNCLASSIFIED"] += 1
+            cause = "UNCLASSIFIED"
+        ep_causes[cause] += 1
+        episode_stats.append({"identity": identity, "primary_cause": cause,
+                              "n_latched": n_latched, "n_armed": n_armed,
+                              "n_vertical": n_vertical, "n_emit": n_emit_events})
 
     # ── Report ──────────────────────────────────────────────────────────────
     print("=" * 70)
@@ -340,14 +345,99 @@ def main():
                 "Y" if d["in_positive_segment"] else "N",
                 "Y" if d["close_mask_at_emit"] else "N"))
 
-    # Safety summary
-    emits_with_open = sum(1 for d in emit_details if d["emit_open_streak"] is not None and d["emit_open_streak"] > 0)
-    emits_in_positive = sum(1 for d in emit_details if d["in_positive_segment"])
-    emits_with_close = sum(1 for d in emit_details if d["close_mask_at_emit"])
-    print("\nSafety summary:")
-    print("  Emits with open_streak > 0 at emit: {}".format(emits_with_open))
-    print("  Emits inside Teacher positive segment: {}".format(emits_in_positive))
-    print("  Emits at close_mask=True step: {}".format(emits_with_close))
+    # ── 4-part ledger + trace windows ──────────────────────────────────────
+    trace_windows = []
+    ledger = {"A_command_open_emits": [], "B_close_but_mask_negative": [],
+              "C_qualified_positive": [], "D_armed_no_vertical": []}
+
+    for d in emit_details:
+        e_step = d["emit_step"]
+        identity = d["identity"]
+        # Find episode data
+        parts = identity.split("/")
+        ep_teacher = jsonl(TEACHER_ROOT / parts[0] / parts[1] / parts[2] / "physics_teacher_v21.jsonl")
+        ep_s1 = jsonl(S1_ROOT / parts[0] / parts[1] / parts[2] / "student_input_records.jsonl")
+        T_ep = len(ep_s1)
+
+        # Trace window: e_step-5 to e_step+5
+        window = []
+        for t in range(max(0, e_step - 5), min(T_ep, e_step + 6)):
+            tr = ep_teacher[t]
+            sr = ep_s1[t]
+            f = sr["features_25d"]
+            window.append({
+                "step": t, "is_emit": t == e_step,
+                "raw_gripper": float(f[0]),
+                "raw_close": float(f[0]) <= 0.5,
+                "gripper_qpos": float(f[1]),
+                "opening_proxy": float(f[2]),
+                "eef_z": float(f[5]),
+                "close_streak": float(f[13]),
+                "open_streak": float(f[14]),
+                "close_onset": bool(float(f[16])),
+                "qpos_delta_1": float(f[20]),
+                "qpos_delta_3": float(f[21]),
+                "opening_delta_3": float(f[22]),
+                "opening_var_5": float(f[23]),
+                "student_prob": float(probs[t]) if t < len(probs) else 0,
+                "stable_grasp_score": float(tr.get("stable_grasp_score", -1)),
+                "stable_grasp_dwell": int(tr.get("stable_grasp_dwell", -1)),
+                "release_risk": float(tr.get("release_risk", -1)),
+                "regrasp_risk": float(tr.get("regrasp_or_instability_risk", -1)),
+                "candidate_close": bool(tr.get("candidate_close", False)),
+            })
+        trace_windows.append({"identity": identity, "emit_step": e_step, "window": window})
+
+        # Classify into ledger
+        entry = dict(d)
+        entry["trace_window"] = window
+        if d["emit_open_streak"] is not None and d["emit_open_streak"] > 0:
+            ledger["A_command_open_emits"].append(entry)
+        elif not d["in_positive_segment"] and d["close_mask_at_emit"]:
+            ledger["B_close_but_mask_negative"].append(entry)
+        elif d["in_positive_segment"]:
+            ledger["C_qualified_positive"].append(entry)
+        else:
+            ledger["B_close_but_mask_negative"].append(entry)
+
+    # ARMED-no-vertical episodes: collect first ARMED event per episode
+    for ep_stat in episode_stats:
+        if ep_stat.get("primary_cause") == "ARMED_NO_VERTICAL_PASS":
+            ledger["D_armed_no_vertical"].append({"identity": ep_stat["identity"]})
+
+    # Print ledger summary
+    print("\n4-Part Emit Ledger:")
+    for ledger_name in ["A_command_open_emits", "B_close_but_mask_negative",
+                        "C_qualified_positive", "D_armed_no_vertical"]:
+        entries = ledger[ledger_name]
+        print("  {}: {} entries".format(ledger_name, len(entries)))
+        if ledger_name != "D_armed_no_vertical":
+            for e in entries[:2]:
+                print("    {} step={} open_streak={} qpos={:.4f} opening={:.4f} pos={}".format(
+                    e["identity"][-30:], e["emit_step"], e.get("emit_open_streak"),
+                    e["gripper_qpos"], e["opening_proxy"], e["in_positive_segment"]))
+
+    # Print detailed trace for first emit in each ledger
+    for ledger_name in ["A_command_open_emits", "B_close_but_mask_negative",
+                        "C_qualified_positive"]:
+        entries = ledger[ledger_name]
+        if entries:
+            e = entries[0]
+            print("\n  Trace: {} emit_step={} (ledger {})".format(e["identity"][-30:], e["emit_step"], ledger_name[0]))
+            print("  {:>4s} {:>8s} {:>6s} {:>8s} {:>8s} {:>6s} {:>6s} {:>8s} {:>7s} {:>6s}".format(
+                "step", "raw_cmd", "close", "qpos", "opening", "c_str", "o_str", "d_qpos3", "sg_score", "emit?"))
+            for w in e["trace_window"]:
+                marker = " <<<" if w["is_emit"] else ""
+                print("  {:>4d} {:>8.4f} {:>6s} {:>8.4f} {:>8.4f} {:>6.1f} {:>6.1f} {:>8.4f} {:>7.3f}{:>6s}".format(
+                    w["step"], w["raw_gripper"], "Y" if w["raw_close"] else "N",
+                    w["gripper_qpos"], w["opening_proxy"],
+                    w["close_streak"], w["open_streak"],
+                    w["qpos_delta_3"], w["stable_grasp_score"], marker))
+
+    # Write machine-readable traces
+    traces_path = Path("/tmp/r10_f2_b0_emit_traces.jsonl")
+    traces_path.write_text("\n".join(json.dumps(tw, sort_keys=True, default=str) for tw in trace_windows))
+    print("\nTrace windows: {} ({} emits)".format(traces_path, len(trace_windows)))
 
 
 if __name__ == "__main__":
