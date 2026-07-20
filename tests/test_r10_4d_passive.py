@@ -17,7 +17,11 @@ from gripper_attack.r10_4d_passive import (
     R10_4DContractError,
     RoutedGraspDetector,
     SUPPORTED_PARENT,
+    close_semantics_parity,
+    env_gripper_is_close,
     parse_route,
+    postprocess_gripper,
+    raw_gripper_is_close,
     run_passive_episode,
     safe_json_value,
     validate_authorization_receipt,
@@ -500,3 +504,64 @@ def test_task00_requires_explicit_authorization():
             image_getter=image_getter,
             max_steps=3,
         )
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Gate F1.1c: Canonical action semantics tests
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_raw_gripper_is_close_basic():
+    """OpenVLA space: raw=0→close, raw=1→open, raw<0.5→close."""
+    assert raw_gripper_is_close(0.0) is True
+    assert raw_gripper_is_close(0.49) is True
+    assert raw_gripper_is_close(0.51) is False
+    assert raw_gripper_is_close(1.0) is False
+
+
+def test_env_gripper_is_close_basic():
+    """LIBERO space: env>0→close, env<=0→open."""
+    assert env_gripper_is_close(1.0) is True
+    assert env_gripper_is_close(0.01) is True
+    assert env_gripper_is_close(0.0) is False
+    assert env_gripper_is_close(-1.0) is False
+
+
+def test_postprocess_gripper_transform():
+    """Official transform: env = -sign(2*raw - 1)."""
+    assert postprocess_gripper(0.0) == 1.0   # max close
+    assert postprocess_gripper(0.49) == 1.0  # close → +1
+    assert postprocess_gripper(0.5) == 0.0   # boundary
+    assert postprocess_gripper(0.51) == -1.0  # open → -1
+    assert postprocess_gripper(1.0) == -1.0  # max open
+
+
+def test_raw_env_close_parity_non_boundary():
+    """raw<0.5 == env>0 for all non-boundary values."""
+    for raw in [0.0, 0.1, 0.3, 0.49, 0.51, 0.7, 0.9, 1.0]:
+        env = postprocess_gripper(raw)
+        assert raw_gripper_is_close(raw) == env_gripper_is_close(env)
+
+
+def test_boundary_raw_is_not_close_parity():
+    """raw=0.5 → env=0, neither close nor open, parity must be False."""
+    assert close_semantics_parity(0.5, postprocess_gripper(0.5)) is False
+
+
+def test_boundary_raw_detected():
+    """raw=0.5 must be detectable."""
+    assert abs(0.5 - 0.5) <= 1e-6
+
+
+def test_close_fields_in_detector_records():
+    """F1.1c: detector records must include raw_gripper, env_gripper,
+    raw_close, env_close, close_semantics_parity, close_source."""
+    result = _run(max_steps=2)
+    for row in result["detector_records"]:
+        assert "raw_gripper" in row
+        assert "env_gripper" in row
+        assert "raw_close" in row
+        assert "env_close" in row
+        assert "close_semantics_parity" in row
+        assert row["close_source"] == "OPENVLA_RAW_ACTION"
+        # Parity must be True for FakeAdapter (raw=1.0 → env=-1.0, both open)
+        assert row["close_semantics_parity"] is True

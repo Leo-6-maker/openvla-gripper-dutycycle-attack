@@ -491,6 +491,42 @@ def load_detector_bundle(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# Canonical action semantics (Gate F1.1c — do not change behavior)
+# ═══════════════════════════════════════════════════════════════════════════════
+# Feature contract: feature[0] = raw_gripper_command (OpenVLA space [0,1]).
+# Feature[12] = duplicated raw value, NOT env action. This is frozen per the
+# R10.3 training checkpoint input distribution. Do not reinterpret feature[12]
+# as env-space gripper without retraining.
+
+def raw_gripper_is_close(raw: float) -> bool:
+    """OpenVLA raw action space: raw in [0,1], close = raw < 0.5."""
+    return float(raw) < 0.5
+
+
+def postprocess_gripper(raw: float) -> float:
+    """Official OpenVLA→LIBERO gripper postprocess.
+
+    env = -sign(2 * raw - 1)
+    raw=0.0 → env=+1.0 (CLOSE)
+    raw=0.5 → env= 0.0 (BOUNDARY — neither close nor open)
+    raw=1.0 → env=-1.0 (OPEN)
+    """
+    return float(-np.sign(2.0 * float(raw) - 1.0))
+
+
+def env_gripper_is_close(env: float) -> bool:
+    """LIBERO action space: env in [-1,1], close = env > 0."""
+    return float(env) > 0.0
+
+
+def close_semantics_parity(raw: float, env: float) -> bool:
+    """Both action spaces agree on close/open (excluding boundary raw=0.5)."""
+    if abs(float(raw) - 0.5) <= 1e-6:
+        return False  # boundary — neither close nor open in env space
+    return raw_gripper_is_close(raw) == env_gripper_is_close(env)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Core passive episode runner
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -605,12 +641,20 @@ def run_passive_episode(
                 "info": _safe_info(info),
             }
         )
+        env_gripper = float(postprocess_gripper(raw_action[-1])) if raw_action.size > 0 else 0.0
         detector_records.append(
             {
                 "step": step,
                 "route": route,
                 "grasp_logit": grasp_logit,
                 "grasp_probability": grasp_probability,
+                "raw_gripper": float(raw_action[-1]) if raw_action.size > 0 else 0.0,
+                "env_gripper": env_gripper,
+                "raw_close": raw_gripper_is_close(float(raw_action[-1])) if raw_action.size > 0 else False,
+                "env_close": env_gripper_is_close(env_gripper),
+                "close_semantics_parity": close_semantics_parity(
+                    float(raw_action[-1]) if raw_action.size > 0 else 0.5, env_gripper),
+                "close_source": "OPENVLA_RAW_ACTION",
                 "close_mask": close_mask,
                 **fsm_result,
             }
@@ -674,8 +718,12 @@ __all__ = [
     "R10_4DContractError",
     "RoutedGraspDetector",
     "SUPPORTED_PARENT",
+    "close_semantics_parity",
+    "env_gripper_is_close",
     "load_detector_bundle",
     "parse_route",
+    "postprocess_gripper",
+    "raw_gripper_is_close",
     "run_passive_episode",
     "safe_json_value",
     "validate_authorization_receipt",
