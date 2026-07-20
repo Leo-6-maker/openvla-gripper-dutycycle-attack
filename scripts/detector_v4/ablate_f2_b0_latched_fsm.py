@@ -14,7 +14,13 @@ Everything else FROZEN:
   - Max 1 emit per episode
   - Route support
 
-CPU only. Does NOT modify production EventFSM in r10_4d_passive.py.
+F2-B0.1 additions:
+  - Event-level metrics (entries vs occupancy)
+  - Per-emit safety audit (open_streak, qpos, Teacher membership)
+  - 50-episode primary reason classification
+  - Production EventFSM NOT modified.
+
+CPU only.
 """
 
 import json, math, sys
@@ -29,7 +35,7 @@ import torch.nn as nn
 GRASP_THRESHOLD = 0.5
 GRASP_PERSISTENCE = 3
 TRANSPORT_VERT = 0.02
-OPEN_RESET_K = 5  # sustained open streak to release latch
+OPEN_RESET_K = 5  # F2-B0 proposed release parameter (not yet frozen in SC5)
 MAX_EMITS = 1
 
 # ── Paths ────────────────────────────────────────────────────────────────────
@@ -69,79 +75,17 @@ def jsonl(path):
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Production FSM (exact copy)
+# F2-B0: Close-event latch FSM (shared, importable)
 # ═══════════════════════════════════════════════════════════════════════════════
-
-def run_production_fsm(probs, close_masks, eef_z, T):
-    state = "IDLE"
-    grasp_persist = 0
-    emitted_this_event = False
-    total_emits = 0
-    anchor_step = -1
-    anchor_eef_z = 0.0
-    states, emits, arm_steps, survived = [], [], [], []
-
-    for t in range(T):
-        detected = probs[t] > GRASP_THRESHOLD
-        cc = close_masks[t]
-        eef = eef_z[t]
-
-        if state == "IDLE" and cc:
-            state = "CLOSE_CANDIDATE"
-            grasp_persist = 0
-            emitted_this_event = False
-
-        if state == "CLOSE_CANDIDATE":
-            if detected:
-                grasp_persist += 1
-                if grasp_persist == 1:
-                    anchor_step = t
-                    anchor_eef_z = eef
-            else:
-                grasp_persist = 0
-            if grasp_persist >= GRASP_PERSISTENCE:
-                state = "ARMED"
-                arm_steps.append(t)
-
-        reset_this_step = False
-        if state in ("ARMED", "EVENT_CANDIDATE", "EMITTED") and not cc:
-            state = "RESET"
-            reset_this_step = True
-
-        if not reset_this_step and state == "ARMED":
-            survived.append(t)
-
-        if state == "ARMED" and not emitted_this_event:
-            if eef - anchor_eef_z >= TRANSPORT_VERT:
-                state = "EVENT_CANDIDATE"
-
-        emit = False
-        if state == "EVENT_CANDIDATE" and not emitted_this_event:
-            if total_emits < MAX_EMITS:
-                emitted_this_event = True
-                total_emits += 1
-                state = "EMITTED"
-                emit = True
-
-        if state == "RESET" and cc:
-            state = "CLOSE_CANDIDATE"
-            grasp_persist = 0
-            emitted_this_event = False
-
-        states.append(state)
-        if emit:
-            emits.append(t)
-
-    return states, emits, arm_steps, survived
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# F2-B0: Close-event latch FSM
-# ═══════════════════════════════════════════════════════════════════════════════
-# Only change: close pulse latches event. Single open = noise. Sustained open
-# streak resets. Everything else identical to production.
 
 def run_b0_latched_fsm(probs, close_masks, eef_z, T, open_reset_k=OPEN_RESET_K):
+    """Close-event latch FSM — minimal phase-lock repair.
+
+    Returns:
+      states: list[str] per-step state
+      emits: list[int] emit step indices
+      events: list[dict] per-event summary
+    """
     state = "IDLE"
     grasp_persist = 0
     open_streak = 0
@@ -150,36 +94,51 @@ def run_b0_latched_fsm(probs, close_masks, eef_z, T, open_reset_k=OPEN_RESET_K):
     anchor_step = -1
     anchor_eef_z = 0.0
     event_latched = False
-    states, emits, arm_steps, survived = [], [], [], []
+    states, emits_out = [], []
+    current_event = None
+    events = []
+
+    def _close_event():
+        d = {
+            "state": "RESET",
+            "emit": False,
+            "armed_entry": False,
+            "armed_survived": False,
+            "vertical_pass": False,
+            "reset_reason": None,
+        }
+        return d
 
     for t in range(T):
         detected = probs[t] > GRASP_THRESHOLD
         cc = close_masks[t]
         eef = eef_z[t]
 
-        # Track open streak for sustained-release detection
         if not cc:
             open_streak += 1
         else:
             open_streak = 0
 
-        # Sustained open → release latch
         if open_streak >= open_reset_k:
-            if state not in ("IDLE",):
-                state = "RESET"
+            if state not in ("IDLE",) and current_event is not None:
+                current_event["reset_reason"] = "SUSTAINED_OPEN_K{}_at_t{}".format(open_streak, t)
+                current_event["state"] = "RESET"
+            state = "RESET"
             event_latched = False
             grasp_persist = 0
             emitted_this_event = False
+            current_event = None
 
-        # Close pulse establishes event latch
         if cc and not event_latched:
             state = "CLOSE_EVENT_LATCHED"
             event_latched = True
             grasp_persist = 0
             emitted_this_event = False
             open_streak = 0
+            current_event = _close_event()
+            current_event["latch_step"] = t
+            events.append(current_event)
 
-        # Student persistence accumulation (in LATCHED or CLOSE_CANDIDATE)
         if state in ("CLOSE_EVENT_LATCHED", "CLOSE_CANDIDATE"):
             if detected:
                 grasp_persist += 1
@@ -190,17 +149,22 @@ def run_b0_latched_fsm(probs, close_masks, eef_z, T, open_reset_k=OPEN_RESET_K):
                 grasp_persist = 0
             if grasp_persist >= GRASP_PERSISTENCE:
                 state = "ARMED"
-                arm_steps.append(t)
-
-        # B0: NO same-step reset on single open
-        # ARMED survives unless sustained open streak triggers release
+                if current_event is not None:
+                    current_event["armed_entry"] = True
+                    current_event["armed_step"] = t
+                    current_event["armed_open_streak"] = open_streak
 
         if state == "ARMED":
-            survived.append(t)
+            if current_event is not None:
+                current_event["armed_survived"] = True
 
         if state == "ARMED" and not emitted_this_event:
             if eef - anchor_eef_z >= TRANSPORT_VERT:
                 state = "EVENT_CANDIDATE"
+                if current_event is not None:
+                    current_event["vertical_pass"] = True
+                    current_event["vertical_step"] = t
+                    current_event["vertical_open_streak"] = open_streak
 
         emit = False
         if state == "EVENT_CANDIDATE" and not emitted_this_event:
@@ -209,16 +173,21 @@ def run_b0_latched_fsm(probs, close_masks, eef_z, T, open_reset_k=OPEN_RESET_K):
                 total_emits += 1
                 state = "EMITTED"
                 emit = True
+                if current_event is not None:
+                    current_event["emit"] = True
+                    current_event["emit_step"] = t
+                    current_event["emit_open_streak"] = open_streak
+                    current_event["state"] = "EMITTED"
 
         states.append(state)
         if emit:
-            emits.append(t)
+            emits_out.append(t)
 
-    return states, emits, arm_steps, survived
+    return states, emits_out, events
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Comparison on fold-0 data
+# Comparison + safety audit on fold-0 data
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main():
@@ -229,7 +198,7 @@ def main():
     f0 = [f for f in manifest["folds"] if f["fold_id"] == 0][0]
     val_ids = [i for i in f0["validation_identities"] if i.startswith("libero_10")]
 
-    # Fail-closed: verify all files exist
+    # Fail-closed verify
     for identity in val_ids:
         parts = identity.split("/")
         tp = TEACHER_ROOT / parts[0] / parts[1] / parts[2] / "physics_teacher_v21.jsonl"
@@ -239,14 +208,10 @@ def main():
         if not sp.is_file():
             raise SystemExit("S1_MISSING:{}".format(identity))
 
-    prod_total_emits = 0
-    b0_total_emits = 0
-    prod_eps_emit = 0
-    b0_eps_emit = 0
-    prod_survived_armed = 0
-    b0_survived_armed = 0
-    prod_armed = 0
-    b0_armed = 0
+    total_emits = 0
+    eps_emit = 0
+    emit_details = []
+    ep_causes = defaultdict(int)
 
     for identity in val_ids:
         parts = identity.split("/")
@@ -272,46 +237,117 @@ def main():
         close_masks = [float(s1_recs[t]["features_25d"][0]) <= 0.5 for t in range(T)]
         eef_z = np.array([float(s1_recs[t]["features_25d"][5]) for t in range(T)], dtype=np.float64)
 
-        # Production
-        p_states, p_emits, p_arm, p_surv = run_production_fsm(probs, close_masks, eef_z, T)
-        prod_total_emits += len(p_emits)
-        prod_armed += len(p_arm)
-        prod_survived_armed += len(p_surv)
-        if p_emits:
-            prod_eps_emit += 1
+        # B0 FSM
+        states, emits, events = run_b0_latched_fsm(probs, close_masks, eef_z, T)
 
-        # B0
-        b_states, b_emits, b_arm, b_surv = run_b0_latched_fsm(probs, close_masks, eef_z, T)
-        b0_total_emits += len(b_emits)
-        b0_armed += len(b_arm)
-        b0_survived_armed += len(b_surv)
-        if b_emits:
-            b0_eps_emit += 1
+        if emits:
+            eps_emit += 1
+            total_emits += len(emits)
 
+        # Per-emit safety audit
+        for e_idx, e_step in enumerate(emits):
+            gripper_qpos = float(s1_recs[e_step]["features_25d"][1]) if e_step < T else 0
+            opening_proxy = float(s1_recs[e_step]["features_25d"][2]) if e_step < T else 0
+            open_streak_at_emit = float(s1_recs[e_step]["features_25d"][14]) if e_step < T else 0
+            close_streak_at_emit = float(s1_recs[e_step]["features_25d"][13]) if e_step < T else 0
+
+            # Find the emitting event
+            emitting_event = None
+            for ev in events:
+                if ev.get("emit") and ev.get("emit_step") == e_step:
+                    emitting_event = ev
+                    break
+
+            # Physics Teacher positive segment check
+            teacher_labels = []
+            for t in range(T):
+                tr = teacher_recs[t]
+                cc = bool(tr.get("candidate_close", False))
+                valid = bool(tr.get("student_valid", True))
+                known = bool(tr.get("known_mask", True))
+                sg = float(tr.get("stable_grasp_score", 0))
+                teacher_labels.append(cc and valid and known and sg >= 0.3)
+
+            in_positive = teacher_labels[e_step] if e_step < T else False
+
+            detail = {
+                "identity": identity,
+                "emit_step": e_step,
+                "armed_open_streak": emitting_event.get("armed_open_streak") if emitting_event else None,
+                "vertical_open_streak": emitting_event.get("vertical_open_streak") if emitting_event else None,
+                "emit_open_streak": emitting_event.get("emit_open_streak") if emitting_event else None,
+                "gripper_qpos": round(gripper_qpos, 6),
+                "opening_proxy": round(opening_proxy, 6),
+                "student_prob": round(float(probs[e_step]), 6) if e_step < T else 0,
+                "in_positive_segment": in_positive,
+                "close_mask_at_emit": close_masks[e_step] if e_step < T else False,
+                "s1_close_streak": float(close_streak_at_emit),
+                "s1_open_streak": float(open_streak_at_emit),
+            }
+            emit_details.append(detail)
+
+        # Episode primary reason classification
+        n_latched = len(events)
+        n_armed = sum(1 for ev in events if ev.get("armed_entry"))
+        n_armed_survived = sum(1 for ev in events if ev.get("armed_survived"))
+        n_vertical = sum(1 for ev in events if ev.get("vertical_pass"))
+        n_emit_events = sum(1 for ev in events if ev.get("emit"))
+        n_released = sum(1 for ev in events if ev.get("reset_reason"))
+
+        if n_emit_events > 0:
+            ep_causes["EMIT"] += 1
+        elif n_latched == 0:
+            ep_causes["NO_CLOSE_LATCH"] += 1
+        elif n_armed_survived == 0 and n_armed > 0:
+            ep_causes["NO_STUDENT_PERSISTENCE_WHILE_LATCHED"] += 1
+        elif n_armed_survived > 0 and n_vertical == 0:
+            ep_causes["ARMED_NO_VERTICAL_PASS"] += 1
+        elif n_released > 0 and n_armed == 0:
+            ep_causes["LATCH_RELEASED_BEFORE_CONFIRMATION"] += 1
+        else:
+            ep_causes["UNCLASSIFIED"] += 1
+
+    # ── Report ──────────────────────────────────────────────────────────────
     print("=" * 70)
-    print("F2-B0: Close-Event Latch FSM vs Production FSM")
-    print("  {} episodes, full-FIT checkpoint (qualified)".format(len(val_ids)))
+    print("F2-B0.1: Emit Safety Audit + Episode Classification")
+    print("  {} episodes, full-FIT checkpoint".format(len(val_ids)))
     print("=" * 70)
-    print("{:<20s} {:>12s} {:>12s}".format("", "Production", "B0-Latch"))
-    print("-" * 46)
-    print("{:<20s} {:>12d} {:>12d}".format("Total ARMED steps", prod_armed, b0_armed))
-    print("{:<20s} {:>12d} {:>12d}".format("Survived ARMED", prod_survived_armed, b0_survived_armed))
-    print("{:<20s} {:>12d} {:>12d}".format("Total emits", prod_total_emits, b0_total_emits))
-    print("{:<20s} {:>12d} {:>12d}".format("Episodes with emit", prod_eps_emit, b0_eps_emit))
-    print("-" * 46)
 
-    phase_lock_relieved = b0_survived_armed - prod_survived_armed
-    emit_gain = b0_total_emits - prod_total_emits
-    print("Phase-lock relief: {} ARMED → survived".format(phase_lock_relieved))
-    print("Emit gain: {}".format(emit_gain))
-    print()
+    print("\nEvent-level metrics (B0):")
+    print("  Total emits: {}".format(total_emits))
+    print("  Episodes with emit: {}".format(eps_emit))
 
-    # Waterfall comparison
-    print("Production waterfall: P3={} → P4={} → P7={}".format(prod_armed, prod_survived_armed, prod_total_emits))
-    print("B0 waterfall:         P3={} → P4={} → P7={}".format(b0_armed, b0_survived_armed, b0_total_emits))
-    gap_armed = b0_armed - b0_survived_armed
-    if gap_armed > 0:
-        print("  B0 still loses {} ARMED→EMIT (vertical guard)".format(gap_armed))
+    print("\nPer-episode primary reason:")
+    for cause in ["EMIT", "ARMED_NO_VERTICAL_PASS", "NO_STUDENT_PERSISTENCE_WHILE_LATCHED",
+                  "NO_CLOSE_LATCH", "LATCH_RELEASED_BEFORE_CONFIRMATION", "UNCLASSIFIED"]:
+        if cause in ep_causes:
+            print("  {}: {}".format(cause, ep_causes[cause]))
+
+    total_classified = sum(ep_causes.values())
+    print("  TOTAL: {} (must equal {})".format(total_classified, len(val_ids)))
+
+    print("\nPer-emit safety audit ({} emits):".format(len(emit_details)))
+    if emit_details:
+        print("  {:>40s} {:>6s} {:>8s} {:>8s} {:>8s} {:>10s} {:>8s} {:>6s} {:>10s}".format(
+            "identity", "step", "arm_os", "vert_os", "emit_os", "qpos", "opening", "pos?", "close?"))
+        print("  " + "-" * 114)
+        for d in emit_details[:20]:  # First 20
+            print("  {:>40s} {:>6d} {:>8s} {:>8s} {:>8s} {:>10.4f} {:>8.4f} {:>6s} {:>10s}".format(
+                d["identity"][-40:], d["emit_step"],
+                str(d["armed_open_streak"]), str(d["vertical_open_streak"]),
+                str(d["emit_open_streak"]),
+                d["gripper_qpos"], d["opening_proxy"],
+                "Y" if d["in_positive_segment"] else "N",
+                "Y" if d["close_mask_at_emit"] else "N"))
+
+    # Safety summary
+    emits_with_open = sum(1 for d in emit_details if d["emit_open_streak"] is not None and d["emit_open_streak"] > 0)
+    emits_in_positive = sum(1 for d in emit_details if d["in_positive_segment"])
+    emits_with_close = sum(1 for d in emit_details if d["close_mask_at_emit"])
+    print("\nSafety summary:")
+    print("  Emits with open_streak > 0 at emit: {}".format(emits_with_open))
+    print("  Emits inside Teacher positive segment: {}".format(emits_in_positive))
+    print("  Emits at close_mask=True step: {}".format(emits_with_close))
 
 
 if __name__ == "__main__":
