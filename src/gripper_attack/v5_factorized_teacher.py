@@ -67,7 +67,7 @@ class EventPhase(Enum):
 FACTORIZED_TEACHER_FIELDS = frozenset({
     "step", "canonical_parent_key", "state_id",
     "mechanism_type", "event_id", "event_phase", "event_role", "target_relevant",
-    "active_object_name",
+    "active_object_name", "event_attribution_status", "event_attribution_conflict",
     "close_event_onset",
     "grasp_established", "grasp_established_known_mask", "grasp_established_confidence",
     "manipulation_active", "manipulation_active_known_mask", "manipulation_active_confidence",
@@ -116,8 +116,12 @@ def _determine_mechanism(role: PhysicsTaskRole, bddl_text: str | None = None) ->
 def _resolve_active_object(
     contact_pairs: Sequence[Sequence[Any]],
     manipulated_objects: Sequence[str],
+    all_object_names: Sequence[str],
 ) -> tuple[str | None, str]:
-    """Determine which manipulated object the gripper is contacting.
+    """Determine which object the gripper is contacting.
+
+    Scans ALL recognizable objects (not just manipulated set) so real
+    distractors (non-task objects) can be detected.
 
     Returns (active_object_name, attribution_status).
     attribution_status: "SINGLE" | "AMBIGUOUS" | "NONE"
@@ -131,7 +135,7 @@ def _resolve_active_object(
         )
         if not has_gripper:
             continue
-        for name in manipulated_objects:
+        for name in all_object_names:
             for ep in endpoints:
                 if ep == name or ep.startswith(name + "_"):
                     if name not in matching:
@@ -458,9 +462,15 @@ def derive_factorized_rows(
         # MANIPULATING/GRASPED → RELEASED on release
         # RELEASED → IDLE after release clears
 
-        # Determine active object from gripper contacts
+        # Determine active object from gripper contacts (scan all known objects)
         contact_pairs = sidecar_rows[index].get("mujoco_contact_pairs", [])
-        raw_active_obj, attr_status = _resolve_active_object(contact_pairs, role.manipulated_objects)
+        all_obj_names = list(object_slices.keys())
+        raw_active_obj, attr_status = _resolve_active_object(
+            contact_pairs, role.manipulated_objects, all_obj_names,
+        )
+
+        # Track whether active_object changed within the current event
+        attribution_conflict = False
 
         if event_phase == EventPhase.IDLE:
             if grasp_value:
@@ -468,43 +478,48 @@ def derive_factorized_rows(
                 event_phase = EventPhase.GRASPED
                 active_object = raw_active_obj
         elif event_phase == EventPhase.RELEASED:
-            if grasp_value and raw_active_obj is not None:
-                # New grasp of an object after release → new event
-                event_counter += 1
-                event_phase = EventPhase.GRASPED
-                active_object = raw_active_obj
-            elif not release_value:
+            # RELEASED can only go to IDLE, never directly to GRASPED.
+            # This prevents a brief release pulse from creating a spurious new event.
+            if not release_value:
                 event_phase = EventPhase.IDLE
         elif event_phase == EventPhase.GRASPED:
             if release_value:
                 event_phase = EventPhase.RELEASED
             elif manip_value:
                 event_phase = EventPhase.MANIPULATING
-            # Update active_object if attribution becomes clearer
+            # Object attribution: immutable once set. Change → conflict.
             if raw_active_obj is not None:
-                active_object = raw_active_obj
+                if active_object is None:
+                    active_object = raw_active_obj
+                elif raw_active_obj != active_object:
+                    attribution_conflict = True
         elif event_phase == EventPhase.MANIPULATING:
             if release_value:
                 event_phase = EventPhase.RELEASED
             if raw_active_obj is not None:
-                active_object = raw_active_obj
+                if active_object is None:
+                    active_object = raw_active_obj
+                elif raw_active_obj != active_object:
+                    attribution_conflict = True
 
         # Determine event_role and event_id
-        # RELEASED retains event_id — release step belongs to the ending event.
-        # Only IDLE gets event_id=-1.
+        manipulated_set = set(role.manipulated_objects)
         if event_phase in (EventPhase.GRASPED, EventPhase.MANIPULATING):
             current_event_id = event_counter
-            if attr_status == "AMBIGUOUS":
+            if attr_status == "AMBIGUOUS" or attribution_conflict:
                 event_role = EventRole.NONE.value
                 target_relevant = False
-            elif active_object is not None and active_object != role.manipulated_objects[0] if role.manipulated_objects else False:
+            elif active_object is not None and active_object in manipulated_set:
+                event_role = EventRole.TARGET.value
+                target_relevant = True
+            elif active_object is not None and active_object not in manipulated_set:
                 event_role = EventRole.DISTRACTOR.value
                 target_relevant = False
             else:
-                event_role = EventRole.TARGET.value
+                event_role = EventRole.TARGET.value  # default: assume target
                 target_relevant = True
         elif event_phase == EventPhase.RELEASED:
-            current_event_id = event_counter  # release belongs to this event
+            current_event_id = event_counter
             event_role = EventRole.NONE.value
             target_relevant = False
         else:  # IDLE
@@ -520,6 +535,8 @@ def derive_factorized_rows(
             "event_role": event_role,
             "target_relevant": target_relevant,
             "active_object_name": active_object,
+            "event_attribution_status": attr_status,
+            "event_attribution_conflict": attribution_conflict,
             "close_event_onset": close_onset,
             "grasp_established": grasp_value,
             "grasp_established_known_mask": grasp_known,

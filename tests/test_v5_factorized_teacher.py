@@ -373,11 +373,12 @@ def test_event_summary_includes_release_steps():
 
 
 def test_object_attribution_from_contacts():
-    """_resolve_active_object must correctly identify contacted object."""
+    """_resolve_active_object must correctly identify contacted object across all known objects."""
     from gripper_attack.v5_factorized_teacher import _resolve_active_object
+    all_names = ["obj_1", "obj_2", "target_1", "distractor_obj"]
     name, status = _resolve_active_object(
         [["obj_1_g1", "gripper0_finger1_pad_collision"]],
-        ["obj_1", "obj_2"],
+        ["obj_1", "obj_2"], all_names,
     )
     assert name == "obj_1"
     assert status == "SINGLE"
@@ -385,33 +386,92 @@ def test_object_attribution_from_contacts():
     name, status = _resolve_active_object(
         [["obj_1_g1", "gripper0_finger1_pad_collision"],
          ["obj_2_g1", "gripper0_finger1_pad_collision"]],
-        ["obj_1", "obj_2"],
+        ["obj_1", "obj_2"], all_names,
     )
     assert name is None
     assert status == "AMBIGUOUS"
 
-    name, status = _resolve_active_object([], ["obj_1"])
+    name, status = _resolve_active_object([], ["obj_1"], all_names)
     assert name is None
     assert status == "NONE"
 
+    # Non-manipulated object is still detected
+    name, status = _resolve_active_object(
+        [["distractor_obj_g1", "gripper0_finger1_pad_collision"]],
+        ["obj_1", "obj_2"], all_names,
+    )
+    assert name == "distractor_obj"
+    assert status == "SINGLE"
 
-def test_distractor_when_non_target_object_contacted():
-    """Contact with non-first manipulated object → DISTRACTOR."""
-    # Use multi-object BDDL
+
+def test_second_manipulated_object_is_target_not_distractor():
+    """All manipulated objects are TARGET — not just the first one."""
     bddl = _bddl_multi()
     role = parse_bddl_task_role(bddl, suite="libero_10", task_idx=0,
                                  object_names=["obj_1", "obj_2", "target_1", "target_2"])
     slices = {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]},
               "obj_2": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}}
     steps, sidecars = _episode(20, gripper_contact_from=5)
-    # Contact with obj_2 (not first manipulated obj_1)
     for sc in sidecars:
         sc["mujoco_contact_pairs"] = [["obj_2_g1", "gripper0_finger1_pad_collision"]]
     rows, _ = derive_factorized_rows(steps, sidecars, role, slices, PROTOCOL)
-    roles_seen = set(r["event_role"] for r in rows if r["event_id"] >= 0)
-    # Should have DISTRACTOR since obj_2 != obj_1 (first manipulated)
+    # obj_2 IS in manipulated_objects → should be TARGET, not DISTRACTOR
+    has_target = any(r["event_role"] == "TARGET" and r["event_id"] >= 0 for r in rows)
     has_distractor = any(r["event_role"] == "DISTRACTOR" for r in rows)
-    assert has_distractor, f"should have DISTRACTOR events, roles seen: {roles_seen}"
+    assert has_target, "second manipulated object should be TARGET"
+    assert not has_distractor, f"obj_2 is manipulated, should not be DISTRACTOR"
+
+
+def test_distractor_only_for_non_manipulated_object():
+    """Only objects NOT in manipulated_objects should get DISTRACTOR."""
+    bddl = _bddl_multi()
+    role = parse_bddl_task_role(bddl, suite="libero_10", task_idx=0,
+                                 object_names=["obj_1", "obj_2", "target_1", "target_2"])
+    slices = {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]},
+              "obj_2": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]},
+              "extra_obj": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}}
+    steps, sidecars = _episode(20, gripper_contact_from=5)
+    for sc in sidecars:
+        sc["mujoco_contact_pairs"] = [["extra_obj_g1", "gripper0_finger1_pad_collision"]]
+    rows, _ = derive_factorized_rows(steps, sidecars, role, slices, PROTOCOL)
+    has_distractor = any(r["event_role"] == "DISTRACTOR" for r in rows)
+    assert has_distractor, "non-manipulated object should be DISTRACTOR"
+
+
+def test_no_direct_released_to_grasped_transition():
+    """RELEASED cannot directly transition to GRASPED — must go through IDLE."""
+    role = _role()
+    steps, sidecars = _episode(30, gripper_contact_from=5)
+    # Brief release pulse at step 14, contact resumes at 15
+    for i in range(14, 15):
+        sidecars[i]["mujoco_contact_pairs"] = []
+        steps[i]["clean_action_raw_7d"][6] = 1.0
+    rows, _ = derive_factorized_rows(steps, sidecars, role, _slices(), PROTOCOL)
+    phases = [r["event_phase"] for r in rows]
+    # After RELEASED, should see IDLE before GRASPED
+    released_idx = None
+    for i, p in enumerate(phases):
+        if p == "RELEASED":
+            released_idx = i
+            break
+    if released_idx is not None:
+        post_release = phases[released_idx:]
+        # Should transition through IDLE
+        assert "IDLE" in post_release, "RELEASED must go to IDLE before new event"
+
+
+def test_event_id_increments_through_idle():
+    """Event counter only increments via IDLE→GRASPED, not RELEASED→GRASPED."""
+    role = _role()
+    steps, sidecars = _episode(30, gripper_contact_from=5)
+    for i in range(14, 18):
+        sidecars[i]["mujoco_contact_pairs"] = []
+        steps[i]["clean_action_raw_7d"][6] = 1.0
+    rows, _ = derive_factorized_rows(steps, sidecars, role, _slices(), PROTOCOL)
+    eids = [r["event_id"] for r in rows]
+    # Should see two distinct event IDs (not merger of two segments)
+    unique_eids = set(e for e in eids if e >= 0)
+    assert len(unique_eids) == 2, f"expected exactly 2 event IDs, got {sorted(unique_eids)}"
 
 def test_event_state_machine_phases():
     """Verify event_phase transitions IDLE→GRASPED→MANIPULATING→RELEASED→IDLE."""
