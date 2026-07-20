@@ -210,14 +210,38 @@ def extract_v21c_control_targets(
         if expected_close != (float(raw) < 0.5):
             raise ValueError("raw/action semantic mismatch")
 
-    primary_known = bool(known)
-    primary_target = None if not primary_known else int(int(tier) >= 2)
     student_valid = bool(row.get("student_valid", True))
-    veto_known = primary_known and student_valid and candidate_close
+    phase_name = str(row.get("phase_name", "UNKNOWN"))
+    window_id = str(row.get("window_id", "none:"))
+
+    # Replicate mature V5 loader rankable gate exactly:
+    #   student_valid AND candidate_close AND known_mask
+    #   AND phase_name != "UNKNOWN" AND NOT window_id.startswith("none:")
+    control_rankable = (
+        student_valid
+        and candidate_close
+        and known
+        and phase_name != "UNKNOWN"
+        and not window_id.startswith("none:")
+    )
+
+    primary_known = control_rankable
+    primary_target = int(tier >= 2) if control_rankable else None
+
+    # Release / regrasp targets use the same veto gate as mature V5
+    veto_known = control_rankable
     release_risk = float(row.get("release_risk", 0.0))
     regrasp_risk = float(row.get("regrasp_or_instability_risk", 0.0))
     if not math.isfinite(release_risk) or not math.isfinite(regrasp_risk):
         raise ValueError("non-finite V2.1C risk target")
+
+    # Diagnostic: steps that have tier>=2 but are excluded by the rankable gate.
+    # These 4,276 OPEN+UNKNOWN+Tier2/3 steps are NOT training positives but are
+    # preserved for forensic monitoring.
+    diagnostic_tier23_outside_control = (
+        bool(known) and tier is not None and int(tier) >= 2 and not control_rankable
+    )
+
     return {
         "target_mode": "V21C_CONTROL",
         "primary_known": primary_known,
@@ -227,6 +251,7 @@ def extract_v21c_control_targets(
         "regrasp_known": veto_known,
         "regrasp_target": int(regrasp_risk >= regrasp_threshold) if veto_known else None,
         "candidate_close_context": candidate_close,
+        "diagnostic_tier23_outside_control": diagnostic_tier23_outside_control,
     }
 
 

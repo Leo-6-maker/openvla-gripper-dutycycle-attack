@@ -30,6 +30,8 @@ def _base_row() -> dict:
         "utility_tier": 2,
         "teacher_confidence": 1.0,
         "student_valid": True,
+        "phase_name": "VALID_RETENTION",
+        "window_id": "candidate:0",
         "release_risk": 0.1,
         "regrasp_or_instability_risk": 0.2,
     }
@@ -106,7 +108,8 @@ def test_v21c_control_unknown_fully_abstains():
     assert targets["release_target"] is None
 
 
-def test_v21c_control_known_open_tier2_is_explicit_control_positive():
+def test_v21c_control_open_tier2_excluded_by_rankable_gate():
+    """OPEN + tier>=2 fails rankable (no candidate_close) — NOT a training positive."""
     row = _base_row()
     row.update(
         {
@@ -114,14 +117,20 @@ def test_v21c_control_known_open_tier2_is_explicit_control_positive():
             "action_intent": "OPEN",
             "candidate_close": False,
             "utility_tier": 2,
+            "phase_name": "UNKNOWN",
+            "window_id": "none:5",
         }
     )
     targets = extract_v21c_control_targets(
         row, release_threshold=0.6, regrasp_threshold=0.6
     )
-    assert targets["primary_target"] == 1
+    # Rankable gate: candidate_close=False → fails
+    assert targets["primary_known"] is False
+    assert targets["primary_target"] is None
     assert targets["candidate_close_context"] is False
     assert targets["release_known"] is False
+    # Diagnostic: preserved for forensic monitoring
+    assert targets["diagnostic_tier23_outside_control"] is True
 
 
 def test_v21c_control_rejects_raw_intent_mismatch():
