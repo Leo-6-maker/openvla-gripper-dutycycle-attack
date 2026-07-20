@@ -249,7 +249,7 @@ def derive_factorized_rows(
         # ── Evidence components ──────────────────────────────────────
         opening_now = 1.0 if (action_known and as_.action_intent == "OPEN") else 0.0
         qpos_closed = qpos_closures[index]
-        contact_loss = _contact_loss_evidence(gripper_contacts, window=5)
+        contact_loss = _contact_loss_evidence(gripper_contacts[:index + 1], window=5)
         separation = _object_eef_separation(
             sidecar_rows[max(0, index - 3):index + 1], role, object_slices,
         )
