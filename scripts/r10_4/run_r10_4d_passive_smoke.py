@@ -3,7 +3,7 @@
 
 The script has no command-OPEN, VIS, RAND, attack, or action-override path.
 A machine-built authorization receipt bound to the final Git HEAD, model tree,
-detector checkpoint, bundle seal, and one frozen parent is mandatory.
+detector checkpoint, bundle seal, protocol, and one frozen parent is mandatory.
 """
 
 from __future__ import annotations
@@ -14,10 +14,8 @@ import hashlib
 import json
 import os
 import pickle
-import shutil
 import subprocess
 import sys
-import tempfile
 import uuid
 from pathlib import Path
 from types import SimpleNamespace
@@ -29,6 +27,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model-path", required=True, type=Path)
     parser.add_argument("--detector-bundle", required=True, type=Path)
     parser.add_argument("--parent-manifest", required=True, type=Path)
+    parser.add_argument("--protocol", required=True, type=Path)
     parser.add_argument("--authorization-receipt", required=True, type=Path)
     parser.add_argument("--output-root", required=True, type=Path)
     parser.add_argument("--upstream-root", required=True, type=Path)
@@ -64,7 +63,23 @@ def checkpoint_tree_fingerprint(path: Path) -> tuple[str, int, int]:
             "size": size,
             "sha256": sha256_file(item),
         })
+    if not rows:
+        raise SystemExit("MODEL_TREE_EMPTY")
     return canonical_json_sha(rows), len(rows), total_bytes
+
+
+def verify_receipt_sidecar(path: Path) -> str:
+    sidecar = path.with_suffix(path.suffix + ".sha256")
+    if not path.is_file() or not sidecar.is_file():
+        raise SystemExit("AUTH_RECEIPT_OR_SIDECAR_MISSING")
+    rows = sidecar.read_text(encoding="utf-8").splitlines()
+    tokens = rows[0].split() if rows else []
+    if len(tokens) != 2 or tokens[1] != path.name:
+        raise SystemExit("AUTH_RECEIPT_SIDECAR_FORMAT_FAIL")
+    actual = sha256_file(path)
+    if tokens[0] != actual:
+        raise SystemExit("AUTH_RECEIPT_SIDECAR_DIGEST_FAIL")
+    return actual
 
 
 def git_head(root: Path) -> str:
@@ -210,9 +225,11 @@ def privileged_observer(env: Any, observation: Any, step: int) -> dict[str, Any]
 
 def main() -> int:
     args = parse_args()
-    if args.gpu < 0:
-        raise SystemExit("GPU_ID_INVALID")
+    if args.gpu != 0:
+        raise SystemExit("R10_4D_GPU_MUST_BE_0")
     render_gpu = args.gpu if args.render_gpu is None else args.render_gpu
+    if render_gpu != 0:
+        raise SystemExit("R10_4D_RENDER_GPU_MUST_BE_0")
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
     os.environ.setdefault("MUJOCO_GL", "egl")
     os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "flash_attention_2")
@@ -240,12 +257,37 @@ def main() -> int:
         raise SystemExit(f"R10_4D_OUTPUT_EXISTS:{args.output_root}")
     if not args.model_path.is_dir():
         raise SystemExit(f"MODEL_PATH_MISSING:{args.model_path}")
+    if not args.protocol.is_file() or not args.parent_manifest.is_file():
+        raise SystemExit("R10_4D_PROTOCOL_OR_PARENT_MISSING")
 
+    receipt_sha = verify_receipt_sidecar(args.authorization_receipt)
     receipt = json.loads(args.authorization_receipt.read_text(encoding="utf-8"))
+    protocol = json.loads(args.protocol.read_text(encoding="utf-8"))
     parent_manifest = json.loads(args.parent_manifest.read_text(encoding="utf-8"))
     identity, manifest_initial_sha = selected_parent(parent_manifest)
     if identity != SUPPORTED_PARENT:
         raise SystemExit(f"R10_4D_PARENT_FAIL:{identity}")
+    if protocol.get("schema") != "R10_4D_SINGLE_EPISODE_PASSIVE_SMOKE_PROTOCOL_V1":
+        raise SystemExit("R10_4D_PROTOCOL_SCHEMA_FAIL")
+    if protocol.get("selected_parent") != identity or int(protocol.get("episodes_authorized", 0)) != 1:
+        raise SystemExit("R10_4D_PROTOCOL_PARENT_OR_COUNT_FAIL")
+    if int(protocol.get("gpu", -1)) != 0 or int(protocol.get("render_gpu", -1)) != 0:
+        raise SystemExit("R10_4D_PROTOCOL_GPU_FAIL")
+    if receipt.get("parent_manifest_sha256") != sha256_file(args.parent_manifest):
+        raise SystemExit("R10_4D_RECEIPT_PARENT_MANIFEST_SHA_FAIL")
+    if receipt.get("protocol_sha256") != sha256_file(args.protocol):
+        raise SystemExit("R10_4D_RECEIPT_PROTOCOL_SHA_FAIL")
+    if not isinstance(receipt.get("authorization_comment_id"), int) or int(receipt["authorization_comment_id"]) <= 0:
+        raise SystemExit("R10_4D_AUTH_COMMENT_ID_FAIL")
+    for key in (
+        "second_episode_authorized",
+        "parent_substitution_authorized",
+        "threshold_or_fsm_change_authorized",
+        "output_overwrite_authorized",
+    ):
+        if receipt.get(key) is not False:
+            raise SystemExit(f"R10_4D_RECEIPT_SCOPE_FAIL:{key}")
+
     parent = resolve_parent(identity)
     if manifest_initial_sha is not None and manifest_initial_sha != parent["initial_state_sha256"]:
         raise SystemExit("R10_4D_PARENT_INITIAL_STATE_SHA_FAIL")
@@ -313,7 +355,9 @@ def main() -> int:
             "source_commit": head,
             "parent": {key: value for key, value in parent.items() if key != "initial_state"},
             "parent_manifest_sha256": sha256_file(args.parent_manifest),
-            "authorization_receipt_sha256": sha256_file(args.authorization_receipt),
+            "protocol_sha256": sha256_file(args.protocol),
+            "authorization_receipt_sha256": receipt_sha,
+            "authorization_comment_id": receipt["authorization_comment_id"],
             "detector": detector_meta,
             "model_path": str(args.model_path.resolve()),
             "model_tree_sha256": model_tree_sha,
@@ -342,7 +386,6 @@ def main() -> int:
         })
         seal = seal_root(staging)
         write_json(staging / "ROOT_SEAL_RECEIPT.json", seal)
-        # Re-seal with the receipt included.
         seal = seal_root(staging)
         os.replace(staging, args.output_root)
         print(json.dumps({
