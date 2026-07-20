@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Build the one-use R10.4E passive panel authorization receipt.
+"""Build the one-use R10.4E passive authorization receipt.
 
-P0-4: Phase-gated — supports E-R3a (task01 canary), E-R3b (task02-03),
-E-R3c (task04-09), and full-panel modes.
+This revision intentionally authorizes only E-R3a:
+- task_00/state_20 is external sealed reuse;
+- task_01/state_20 is one first sealed execution;
+- task_02-state_09 are not represented in the receipt and therefore cannot run.
 
-Read-only hashing and contract validation. Never imports OpenVLA, torch,
-LIBERO, or a detector checkpoint.
+The builder performs read-only hashing and never imports torch, OpenVLA, or
+LIBERO runtime code.
 """
 
 from __future__ import annotations
@@ -17,45 +19,17 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from gripper_attack.r10_4_runtime import FEATURE_ORDER_SHA256, sha256_file, verify_checksum_manifest
+from gripper_attack.r10_4_runtime import (
+    FEATURE_ORDER_SHA256,
+    sha256_file,
+    verify_checksum_manifest,
+)
 
-
-# ── Phase definitions ─────────────────────────────────────────────────────────
-
-PHASES = {
-    "E_R3A_TASK01_CANARY": {
-        "description": "E-R3a: task00 reuse + task01 single fresh canary",
-        "reuse_identities": ["libero_10/task_00/state_20"],
-        "fresh_identities": ["libero_10/task_01/state_20"],
-    },
-    "E_R3B_TASK02_03": {
-        "description": "E-R3b: task00 reuse + task01 reuse + task02-03 fresh",
-        "reuse_identities": [
-            "libero_10/task_00/state_20",
-            "libero_10/task_01/state_20",
-        ],
-        "fresh_identities": [
-            "libero_10/task_02/state_20",
-            "libero_10/task_03/state_20",
-        ],
-    },
-    "E_R3C_TASK04_09": {
-        "description": "E-R3c: task00-03 reuse + task04-09 fresh",
-        "reuse_identities": [
-            f"libero_10/task_{i:02d}/state_20" for i in range(4)
-        ],
-        "fresh_identities": [
-            f"libero_10/task_{i:02d}/state_20" for i in range(4, 10)
-        ],
-    },
-    "E_R3_FULL_PANEL": {
-        "description": "E-R3 full: task00 reuse + task01-09 fresh (10 tasks)",
-        "reuse_identities": ["libero_10/task_00/state_20"],
-        "fresh_identities": [
-            f"libero_10/task_{i:02d}/state_20" for i in range(1, 10)
-        ],
-    },
-}
+E_R3A_PHASE = "E_R3A_TASK01_CANARY"
+E_R3A_MANIFEST = [
+    {"identity": "libero_10/task_00/state_20", "reuse": True},
+    {"identity": "libero_10/task_01/state_20", "reuse": False},
+]
 
 
 def parse_args() -> argparse.Namespace:
@@ -64,7 +38,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--detector-bundle", required=True, type=Path)
     parser.add_argument("--task00-root", required=True, type=Path)
     parser.add_argument("--panel-protocol", required=True, type=Path)
-    parser.add_argument("--phase", required=True, choices=sorted(PHASES))
+    parser.add_argument("--phase", required=True, choices=[E_R3A_PHASE])
     parser.add_argument("--authorization-comment-id", required=True, type=int)
     parser.add_argument("--output", required=True, type=Path)
     return parser.parse_args()
@@ -76,15 +50,28 @@ def canonical_json_sha(value: Any) -> str:
     ).hexdigest()
 
 
+def build_task_manifest(phase: str) -> list[dict[str, Any]]:
+    """Return the exact ordered manifest accepted by the current runner gate."""
+    if phase != E_R3A_PHASE:
+        raise ValueError(f"UNSUPPORTED_PHASE:{phase}")
+    return [dict(entry) for entry in E_R3A_MANIFEST]
+
+
 def checkpoint_tree_fingerprint(path: Path) -> tuple[str, int, int]:
-    rows = []
+    rows: list[dict[str, Any]] = []
     total_bytes = 0
-    for item in sorted(path.rglob("*"), key=lambda v: v.relative_to(path).as_posix()):
+    for item in sorted(path.rglob("*"), key=lambda value: value.relative_to(path).as_posix()):
         if not item.is_file():
             continue
         size = item.stat().st_size
         total_bytes += size
-        rows.append({"path": item.relative_to(path).as_posix(), "size": size, "sha256": sha256_file(item)})
+        rows.append(
+            {
+                "path": item.relative_to(path).as_posix(),
+                "size": size,
+                "sha256": sha256_file(item),
+            }
+        )
     if not rows:
         raise SystemExit("MODEL_TREE_EMPTY")
     return canonical_json_sha(rows), len(rows), total_bytes
@@ -93,23 +80,31 @@ def checkpoint_tree_fingerprint(path: Path) -> tuple[str, int, int]:
 def git_head(root: Path) -> str:
     return subprocess.run(
         ["git", "-C", str(root), "rev-parse", "HEAD"],
-        check=True, capture_output=True, text=True,
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
 
 
 def git_clean(root: Path) -> bool:
     return not subprocess.run(
         ["git", "-C", str(root), "status", "--porcelain"],
-        check=True, capture_output=True, text=True,
+        check=True,
+        capture_output=True,
+        text=True,
     ).stdout.strip()
 
 
 def main() -> int:
     args = parse_args()
-    if args.output.exists():
+    if args.output.exists() or args.output.with_suffix(args.output.suffix + ".sha256").exists():
         raise SystemExit(f"RECEIPT_OUTPUT_EXISTS:{args.output}")
+    if args.authorization_comment_id <= 0:
+        raise SystemExit("AUTHORIZATION_COMMENT_ID_INVALID")
     if not args.model_path.is_dir():
         raise SystemExit(f"MODEL_PATH_MISSING:{args.model_path}")
+    if not args.detector_bundle.is_dir():
+        raise SystemExit(f"DETECTOR_BUNDLE_MISSING:{args.detector_bundle}")
     if not args.task00_root.is_dir():
         raise SystemExit(f"TASK00_ROOT_MISSING:{args.task00_root}")
     if not args.panel_protocol.is_file():
@@ -123,31 +118,36 @@ def main() -> int:
     protocol = json.loads(args.panel_protocol.read_text(encoding="utf-8"))
     if protocol.get("schema") != "R10_4E_TEN_TASK_PASSIVE_PANEL_PROTOCOL_V1":
         raise SystemExit("PROTOCOL_SCHEMA_FAIL")
-    for key in ("command_open_authorized", "visual_attack_authorized", "random_attack_authorized",
-                "formal_training_authorized", "formal_attack_authorized"):
+    for key in (
+        "command_open_authorized",
+        "visual_attack_authorized",
+        "random_attack_authorized",
+        "formal_training_authorized",
+        "formal_attack_authorized",
+    ):
         if protocol.get(key) is not False:
             raise SystemExit(f"PROTOCOL_FORBIDDEN_FAIL:{key}")
 
-    # Phase definition
-    phase_def = PHASES[args.phase]
-    reuse_ids = phase_def["reuse_identities"]
-    fresh_ids = phase_def["fresh_identities"]
+    task_manifest = build_task_manifest(args.phase)
+    reuse_ids = [entry["identity"] for entry in task_manifest if entry["reuse"]]
+    fresh_ids = [entry["identity"] for entry in task_manifest if not entry["reuse"]]
+    if reuse_ids != ["libero_10/task_00/state_20"]:
+        raise SystemExit("E_R3A_REUSE_MANIFEST_FAIL")
+    if fresh_ids != ["libero_10/task_01/state_20"]:
+        raise SystemExit("E_R3A_FRESH_MANIFEST_FAIL")
 
-    # Verify task00 is in reuse set
-    if "libero_10/task_00/state_20" not in reuse_ids:
-        raise SystemExit("TASK00_NOT_IN_REUSE_SET")
-
-    # Verify task00 seal
     task00_seal = verify_checksum_manifest(args.task00_root)
-
-    # Build ordered task manifest (all 10, with reuse flags)
-    task_manifest = []
-    for i in range(10):
-        identity = f"libero_10/task_{i:02d}/state_20"
-        task_manifest.append({
-            "identity": identity,
-            "reuse": identity in reuse_ids,
-        })
+    task00_summary_path = args.task00_root / "episode_summary.json"
+    if not task00_summary_path.is_file():
+        raise SystemExit("TASK00_SUMMARY_MISSING")
+    task00_summary = json.loads(task00_summary_path.read_text(encoding="utf-8"))
+    if task00_summary.get("identity") != "libero_10/task_00/state_20":
+        raise SystemExit("TASK00_IDENTITY_FAIL")
+    if task00_summary.get("status") not in {
+        "PASS_RUNTIME_NO_EMIT",
+        "PASS_RUNTIME_EMIT_OBSERVED",
+    }:
+        raise SystemExit("TASK00_STATUS_FAIL")
 
     bundle_seal = verify_checksum_manifest(args.detector_bundle)
     checkpoint_path = args.detector_bundle / "full_fit_deploy.pt"
@@ -158,18 +158,19 @@ def main() -> int:
 
     receipt = {
         "schema": "R10_4E_TEN_TASK_PASSIVE_PANEL_RECEIPT_V1",
-        "scope": "R10_4E_TEN_TASK_PASSIVE_PANEL",
-        "phase": args.phase,
-        "phase_description": phase_def["description"],
+        "scope": "R10_4E_E_R3A_TASK01_CANARY",
+        "phase": E_R3A_PHASE,
+        "phase_description": "task00 external reuse plus exactly one fresh task01 episode",
         "authorization_comment_id": args.authorization_comment_id,
         "source_commit": head,
-        "episodes_authorized": len(task_manifest),
-        "fresh_executions_authorized": len(fresh_ids),
-        "reuse_authorized": len(reuse_ids),
+        "episodes_authorized": 2,
+        "fresh_executions_authorized": 1,
+        "reuse_authorized": 1,
         "task_manifest": task_manifest,
         "task_manifest_sha256": canonical_json_sha(task_manifest),
         "task00_root": str(args.task00_root.resolve()),
         "task00_root_sha256s": task00_seal["sha256sums_sha256"],
+        "task00_summary_sha256": sha256_file(task00_summary_path),
         "passive_only": True,
         "model_load_authorized": True,
         "detector_execution_authorized": True,
@@ -193,23 +194,30 @@ def main() -> int:
         "gpu": 0,
         "render_gpu": 0,
     }
+
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     receipt_digest = sha256_file(args.output)
-    args.output.with_suffix(args.output.suffix + ".sha256").write_text(
-        f"{receipt_digest}  {args.output.name}\n", encoding="utf-8"
+    sidecar = args.output.with_suffix(args.output.suffix + ".sha256")
+    sidecar.write_text(f"{receipt_digest}  {args.output.name}\n", encoding="utf-8")
+
+    print(
+        json.dumps(
+            {
+                "receipt": str(args.output),
+                "receipt_sha256": receipt_digest,
+                "phase": E_R3A_PHASE,
+                "source_commit": head,
+                "reuse_identities": reuse_ids,
+                "fresh_identities": fresh_ids,
+                "detector_checkpoint_sha256": checkpoint_sha,
+                "bundle_sha256s_sha256": bundle_seal["sha256sums_sha256"],
+                "model_tree_sha256": model_tree_sha,
+            },
+            indent=2,
+            sort_keys=True,
+        )
     )
-    print(json.dumps({
-        "receipt": str(args.output),
-        "receipt_sha256": receipt_digest,
-        "phase": args.phase,
-        "source_commit": head,
-        "reuse_identities": reuse_ids,
-        "fresh_identities": fresh_ids,
-        "detector_checkpoint_sha256": checkpoint_sha,
-        "bundle_sha256s_sha256": bundle_seal["sha256sums_sha256"],
-        "model_tree_sha256": model_tree_sha,
-    }, indent=2, sort_keys=True))
     return 0
 
 
