@@ -178,6 +178,9 @@ def test_candidate_close_boundary_returns_false():
     )
     # Boundary raw → candidate_close must be False, not True
     assert all(not row["candidate_close"] for row in rows), "raw=0.5 must not be candidate close"
+    # D2.1.2: BOUNDARY must set known_mask=False
+    assert all(not row["known_mask"] for row in rows), "BOUNDARY must set known_mask=False"
+    assert all(row["phase_name"] == "UNKNOWN" for row in rows), "BOUNDARY must set phase=UNKNOWN"
 
 
 def test_candidate_close_open_returns_false():

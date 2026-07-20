@@ -11,6 +11,7 @@ No module may implement its own close/open threshold independently.
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
@@ -103,7 +104,38 @@ def validate_raw_action(record: dict[str, Any], field: str = "clean_action_raw_7
     return raw, classify_openvla_raw_gripper(raw)
 
 
+@dataclass(frozen=True)
+class CanonicalActionState:
+    """Structured action state for a single step. Never defaults to CLOSE/OPEN."""
+    raw_gripper: float | None       # None if field missing or non-finite
+    action_intent: str               # CLOSE / OPEN / BOUNDARY / UNKNOWN
+    action_known: bool               # False for BOUNDARY, missing, or NaN
+    candidate_close: bool            # True ONLY for known CLOSE
+
+    @staticmethod
+    def from_step(step: dict[str, Any], field: str = "clean_action_raw_7d"):
+        try:
+            raw, intent = validate_raw_action(step, field=field)
+        except (KeyError, ValueError):
+            return CanonicalActionState(
+                raw_gripper=None,
+                action_intent="UNKNOWN",
+                action_known=False,
+                candidate_close=False,
+            )
+        return CanonicalActionState(
+            raw_gripper=raw,
+            action_intent=intent.value,
+            action_known=intent is not GripperIntent.BOUNDARY,
+            candidate_close=intent is GripperIntent.CLOSE,
+        )
+
+
 ACTION_CONTRACT_SCHEMA = "CANONICAL_ACTION_CONTRACT_V1"
+V21C_PROTOCOL_SCHEMA = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL"
+V21C_LABEL_FILENAME = "physics_teacher_v21c.jsonl"
+V21C_MANIFEST_SCHEMA = "DETECTOR_V5_PHYSICS_TEACHER_V21C_MANIFEST"
+
 ACTION_CONTRACT = {
     "schema": ACTION_CONTRACT_SCHEMA,
     "raw_action_space": "OPENVLA_RAW",
@@ -126,7 +158,11 @@ ACTION_CONTRACT = {
 __all__ = [
     "ACTION_CONTRACT",
     "ACTION_CONTRACT_SCHEMA",
+    "CanonicalActionState",
     "GripperIntent",
+    "V21C_LABEL_FILENAME",
+    "V21C_MANIFEST_SCHEMA",
+    "V21C_PROTOCOL_SCHEMA",
     "action_semantics_parity",
     "classify_libero_env_gripper",
     "classify_openvla_raw_gripper",

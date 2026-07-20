@@ -279,24 +279,18 @@ def _target_progress(
 
 
 def _candidate_close(step: Mapping[str, Any], threshold: float) -> bool:
-    """FIXED (Gate D2.1.1): Use canonical action contract via validate_raw_action.
+    """FIXED (Gate D2.1.2): Returns structured CanonicalActionState via shared helper.
 
-    OpenVLA raw action space: 0=CLOSE, 1=OPEN.  raw < 0.5 → CLOSE intent.
-    BOUNDARY (raw==0.5), missing, and non-finite values all return False
-    with action_known=False downstream.
+    BOUNDARY, missing, and non-finite → action_known=False, candidate_close=False.
+    Only known CLOSE steps return candidate_close=True.
 
     Previous bug: used raw[6] >= threshold, which selected the OPEN region.
     """
-    from .action_contract import validate_raw_action, GripperIntent
-
-    try:
-        raw, intent = validate_raw_action(step, field="clean_action_raw_7d")
-    except (KeyError, ValueError):
-        # Missing or non-finite → unknown, not close
-        return False
-    if intent is GripperIntent.BOUNDARY:
-        return False
-    return intent is GripperIntent.CLOSE
+    from .action_contract import CanonicalActionState
+    state = CanonicalActionState.from_step(step, field="clean_action_raw_7d")
+    # Store structured state in step for downstream use
+    step["_action_state"] = state
+    return state.candidate_close
 
 
 def _assign_segments(rows: list[dict[str, Any]]) -> None:
@@ -334,7 +328,9 @@ def derive_episode_rows(
     if len(step_rows) != len(sidecar_rows) or not step_rows:
         raise ValueError("step and physics sidecar lengths must match and be nonzero")
     constants = protocol["fixed_constants"]
-    v21 = protocol.get("schema") == "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21"
+    schema = protocol.get("schema", "")
+    v21 = schema in ("DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21",
+                     "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL")
     history_size = int(protocol["history"]["score_window_steps"])
     threshold = float(protocol["candidate_close"]["close_threshold"])
     base: list[dict[str, Any]] = []
@@ -370,7 +366,13 @@ def derive_episode_rows(
     _assign_segments(base)
     for index, row in enumerate(base):
         future = base[index : min(len(base), index + history_size)]
-        future_open = any(not item["candidate_close"] for item in future[1:])
+        # D2.1.2: future_open only counts known OPEN intent (excludes BOUNDARY/UNKNOWN)
+        future_open = any(
+            item.get("_action_state") is not None
+            and item["_action_state"].action_known
+            and item["_action_state"].action_intent == "OPEN"
+            for item in future[1:]
+        )
         future_contact_loss = any(item["gripper_contact_score"] < row["gripper_contact_score"] for item in future[1:])
         contact_history = [item["gripper_contact_score"] for item in base[max(0, index - history_size + 1) : index + 1]]
         toggles = sum(left != right for left, right in zip(contact_history[1:], contact_history[:-1]))
@@ -405,7 +407,9 @@ def derive_episode_rows(
         elif v21:
             positive /= 0.85
         row["utility_score"] = _clip(positive - 0.20 * row["release_risk"] - 0.20 * row["regrasp_or_instability_risk"])
-        if not role.applicable or not row["student_valid"]:
+        action_state = step_rows[index].get("_action_state")
+        action_known = action_state is not None and action_state.action_known
+        if not role.applicable or not row["student_valid"] or not action_known:
             row["known_mask"] = False
             row["utility_tier"] = None
             row["phase_name"] = "UNKNOWN"
