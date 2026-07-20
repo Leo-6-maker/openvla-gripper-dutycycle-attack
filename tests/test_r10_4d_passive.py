@@ -591,8 +591,11 @@ def test_postprocess_parity_detects_mismatch():
 
 
 def test_boundary_semantics_status():
-    """raw=0.5 must return BOUNDARY regardless of env values."""
+    """F2-A0: raw=0.5 with correct env (both 0) → BOUNDARY.
+    raw=0.5 with wrong env (+1 or -1) → MISMATCH."""
     assert close_semantics_status(0.5, 0.0, 0.0) == "BOUNDARY"
+    assert close_semantics_status(0.5, 1.0, 0.0) == "MISMATCH"
+    assert close_semantics_status(0.5, -1.0, 0.0) == "MISMATCH"
     assert close_semantics_status(0.51, -1.0, -1.0) == "PARITY"  # well above boundary
 
 

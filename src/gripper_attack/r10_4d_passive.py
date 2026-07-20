@@ -531,16 +531,22 @@ def close_semantics_status(raw: float, actual_env: float, expected_env: float) -
 
     Returns one of:
       PARITY   — raw_close==env_close and postprocess matches
-      BOUNDARY — raw==0.5 (±1e-6), env=0, neither close nor open
-      MISMATCH — raw_close != env_close or postprocess mismatch
+      BOUNDARY — raw==0.5 (±1e-6), actual_env==0, expected_env==0 (all at boundary)
+      MISMATCH — raw_close!=env_close, postprocess mismatch, or boundary with wrong env
     """
-    if abs(float(raw) - 0.5) <= 1e-6:
-        return "BOUNDARY"
-    raw_c = raw_gripper_is_close(raw)
-    env_c = env_gripper_is_close(actual_env)
+    raw_f = float(raw)
+    env_f = float(actual_env)
+    exp_f = float(expected_env)
+    at_boundary = abs(raw_f - 0.5) <= 1e-6
+    if at_boundary:
+        if abs(env_f) <= 1e-6 and abs(exp_f) <= 1e-6:
+            return "BOUNDARY"
+        return "MISMATCH"  # raw at boundary but env is not zero
+    raw_c = raw_gripper_is_close(raw_f)
+    env_c = env_gripper_is_close(env_f)
     if raw_c != env_c:
         return "MISMATCH"
-    if abs(float(actual_env) - float(expected_env)) > 1e-6:
+    if abs(env_f - exp_f) > 1e-6:
         return "MISMATCH"
     return "PARITY"
 
