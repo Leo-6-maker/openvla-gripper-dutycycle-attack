@@ -151,8 +151,6 @@ def test_runner_rejects_task02_manifest_expansion(tmp_path: Path) -> None:
         tmp_path,
         task_manifest=expanded,
         task_manifest_sha256=canonical_json_sha(expanded),
-        episodes_authorized=3,
-        fresh_executions_authorized=2,
     )
     with pytest.raises(SystemExit, match="task_manifest"):
         _validate(receipt, tmp_path)
