@@ -3,6 +3,9 @@
 This module contains no attack path.  The detector and FSM may observe the
 clean OpenVLA action stream, but ``executed_action`` is always an exact copy of
 the official postprocessed clean action.
+
+R10.4E Gate E-R2.5B: Added 4-type termination classification, recursive
+safe_json_value, authorized_parents parameter, schema V1 upgrade.
 """
 
 from __future__ import annotations
@@ -57,6 +60,10 @@ REQUIRED_BUNDLE_FILES = {
 class R10_4DContractError(R10_4ContractError):
     """Fail-closed R10.4D contract violation."""
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Models (frozen — do not retrain)
+# ═══════════════════════════════════════════════════════════════════════════════
 
 class RoutedGraspDetector(nn.Module):
     """Frozen R10.3 dual-head GRU architecture (46,658 parameters)."""
@@ -231,6 +238,152 @@ def _contains_exact_feature_order(value: Any) -> bool:
     return False
 
 
+def safe_json_value(obj: Any) -> Any:
+    """Recursively normalize any value to a JSON-serializable form.
+
+    Handles: None, bool, int, float, str, NumPy scalar, NumPy array,
+    tuple, set, frozenset, Path, bytes, dict, list, and unknown objects.
+    The result is guaranteed to pass json.dumps().
+    """
+    if obj is None:
+        return None
+    if isinstance(obj, bool):
+        return bool(obj)
+    if isinstance(obj, int):
+        return int(obj)
+    if isinstance(obj, float):
+        if np.isfinite(obj):
+            return float(obj)
+        return str(obj)
+    if isinstance(obj, str):
+        return obj
+    if isinstance(obj, (np.integer,)):
+        return int(obj)
+    if isinstance(obj, (np.floating,)):
+        val = float(obj)
+        if np.isfinite(val):
+            return val
+        return str(val)
+    if isinstance(obj, np.ndarray):
+        return [safe_json_value(v) for v in obj.tolist()]
+    if isinstance(obj, (tuple, set, frozenset)):
+        return [safe_json_value(v) for v in obj]
+    if isinstance(obj, Path):
+        return str(obj)
+    if isinstance(obj, bytes):
+        return obj.decode("utf-8", errors="replace")
+    if isinstance(obj, dict):
+        return {str(k): safe_json_value(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [safe_json_value(v) for v in obj]
+    # Unknown — best-effort string repr
+    try:
+        return str(type(obj).__name__) + ":" + repr(obj)[:200]
+    except Exception:
+        return f"<unserializable:{type(obj).__name__}>"
+
+
+def _safe_info(info: Any) -> dict[str, Any]:
+    """Serialize env.step info dict safely, guaranteeing json.dumps success."""
+    result = safe_json_value(info)
+    if not isinstance(result, dict):
+        return {"_raw": result}
+    # Verify JSON round-trip
+    try:
+        json.dumps(result, sort_keys=True, default=str)
+    except Exception:
+        return {"_serialize_error": str(type(info).__name__)}
+    return result
+
+
+def _classify_termination(
+    step_records: list[dict[str, Any]],
+    configured_horizon: int,
+    env: Any,
+    violations: list[str],
+) -> dict[str, Any]:
+    """Classify episode termination into exactly one of four types.
+
+    SUCCESS_TERMINATION        — done=True AND check_success()=True
+    HORIZON_TERMINATION        — done=True at configured horizon, not success
+    FULL_LOOP_TASK_FAILURE     — ran full horizon without done, not success
+    EARLY_DONE_WITHOUT_SUCCESS — done=True before horizon, not success (HARD FAILURE)
+    NO_STEPS                   — empty step_records (HARD FAILURE)
+    UNCLASSIFIED               — none of the above match (HARD FAILURE)
+    """
+    observed_horizon = len(step_records)
+    last_done = bool(step_records[-1]["done"]) if step_records else False
+
+    # Simulator timestep (best-effort, MuJoCo via Robosuite)
+    simulator_timestep = -1.0
+    try:
+        sim = getattr(env, "sim", None)
+        if sim is not None and hasattr(sim, "data"):
+            simulator_timestep = float(sim.data.time)
+    except Exception:
+        pass
+
+    # env.check_success() — may raise
+    env_success = None
+    check_success_error = None
+    if not violations and hasattr(env, "check_success"):
+        try:
+            env_success = bool(env.check_success())
+        except Exception as exc:
+            env_success = None
+            check_success_error = f"{type(exc).__name__}:{str(exc)[:200]}"
+
+    # Classification
+    # P0-9: check_success() exception → fail-closed (cannot determine success)
+    if check_success_error is not None:
+        termination_reason = "CHECK_SUCCESS_FAILURE"
+        task_success = False
+        is_hard_failure = True
+    elif not step_records:
+        termination_reason = "NO_STEPS"
+        task_success = False
+        is_hard_failure = True
+    elif last_done and env_success is True:
+        termination_reason = "SUCCESS_TERMINATION"
+        task_success = True
+        is_hard_failure = False
+    elif last_done and observed_horizon >= configured_horizon and env_success is not True:
+        termination_reason = "HORIZON_TERMINATION"
+        task_success = False
+        is_hard_failure = False
+    elif not last_done and observed_horizon >= configured_horizon:
+        termination_reason = "FULL_LOOP_TASK_FAILURE"
+        task_success = False
+        is_hard_failure = False
+    elif last_done and observed_horizon < configured_horizon and env_success is not True:
+        termination_reason = "EARLY_DONE_WITHOUT_SUCCESS"
+        task_success = False
+        is_hard_failure = True
+    else:
+        termination_reason = "UNCLASSIFIED"
+        task_success = False
+        is_hard_failure = True
+
+    if is_hard_failure and termination_reason != "NO_STEPS":
+        violations.append(f"HARD_FAILURE:{termination_reason}")
+
+    return {
+        "termination_reason": termination_reason,
+        "task_success": task_success,
+        "is_hard_failure": is_hard_failure,
+        "configured_horizon": configured_horizon,
+        "observed_horizon": observed_horizon,
+        "done": last_done,
+        "env_check_success": env_success,
+        "check_success_error": check_success_error,
+        "simulator_timestep": simulator_timestep,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Authorization receipt validation
+# ═══════════════════════════════════════════════════════════════════════════════
+
 def validate_authorization_receipt(
     receipt: Mapping[str, Any],
     *,
@@ -265,6 +418,10 @@ def validate_authorization_receipt(
         if receipt.get(key) != expected:
             raise R10_4DContractError(f"AUTH_RECEIPT_FIELD_FAIL:{key}")
 
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Detector bundle loading
+# ═══════════════════════════════════════════════════════════════════════════════
 
 def load_detector_bundle(
     bundle_root: Path,
@@ -333,6 +490,69 @@ def load_detector_bundle(
     return DetectorRuntime(model, device), metadata
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# Canonical action semantics (Gate F1.1c — do not change behavior)
+# ═══════════════════════════════════════════════════════════════════════════════
+# Feature contract: feature[0] = raw_gripper_command (OpenVLA space [0,1]).
+# Feature[12] = duplicated raw value, NOT env action. This is frozen per the
+# R10.3 training checkpoint input distribution. Do not reinterpret feature[12]
+# as env-space gripper without retraining.
+
+def raw_gripper_is_close(raw: float) -> bool:
+    """OpenVLA raw action space: raw in [0,1], close = raw < 0.5."""
+    return float(raw) < 0.5
+
+
+def postprocess_gripper(raw: float) -> float:
+    """Official OpenVLA→LIBERO gripper postprocess.
+
+    env = -sign(2 * raw - 1)
+    raw=0.0 → env=+1.0 (CLOSE)
+    raw=0.5 → env= 0.0 (BOUNDARY — neither close nor open)
+    raw=1.0 → env=-1.0 (OPEN)
+    """
+    return float(-np.sign(2.0 * float(raw) - 1.0))
+
+
+def env_gripper_is_close(env: float) -> bool:
+    """LIBERO action space: env in [-1,1], close = env > 0."""
+    return float(env) > 0.0
+
+
+def close_semantics_parity(raw: float, env: float) -> bool:
+    """Both action spaces agree on close/open (excluding boundary raw=0.5)."""
+    if abs(float(raw) - 0.5) <= 1e-6:
+        return False  # boundary — neither close nor open in env space
+    return raw_gripper_is_close(raw) == env_gripper_is_close(env)
+
+
+def close_semantics_status(raw: float, actual_env: float, expected_env: float) -> str:
+    """Classify the close-semantics relationship for a single step.
+
+    Returns one of:
+      PARITY   — raw_close==env_close and postprocess matches
+      BOUNDARY — raw==0.5 (±1e-6), env=0, neither close nor open
+      MISMATCH — raw_close != env_close or postprocess mismatch
+    """
+    if abs(float(raw) - 0.5) <= 1e-6:
+        return "BOUNDARY"
+    raw_c = raw_gripper_is_close(raw)
+    env_c = env_gripper_is_close(actual_env)
+    if raw_c != env_c:
+        return "MISMATCH"
+    if abs(float(actual_env) - float(expected_env)) > 1e-6:
+        return "MISMATCH"
+    return "PARITY"
+
+def raw_is_boundary(raw: float) -> bool:
+    """True when raw gripper is at the exact threshold boundary."""
+    return abs(float(raw) - 0.5) <= 1e-6
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Core passive episode runner
+# ═══════════════════════════════════════════════════════════════════════════════
+
 def run_passive_episode(
     *,
     env: Any,
@@ -343,15 +563,24 @@ def run_passive_episode(
     detector: DetectorRuntime,
     image_getter: Callable[[Any], np.ndarray],
     max_steps: int,
+    authorized_parents: frozenset[str] | None = None,
     privileged_observer: Callable[[Any, Any, int], Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Run exactly one passive episode without changing any clean action."""
+    """Run exactly one passive episode without changing any clean action.
 
+    Gate E-R2.5B: Accepts explicit ``authorized_parents`` (frozenset).
+    If None, falls back to ``SUPPORTED_PARENT`` for backward compatibility.
+    Produces ``R10_4E_SINGLE_EPISODE_PASSIVE_RESULT_V1`` with termination
+    classification, safe info, and extended metadata.
+    """
     route = parse_route(identity)
     if route != "multi_object_transfer":
         raise R10_4DContractError(f"PASSIVE_PARENT_ROUTE_FAIL:{identity}:{route}")
-    if identity != SUPPORTED_PARENT:
+
+    allowed = authorized_parents if authorized_parents is not None else frozenset({SUPPORTED_PARENT})
+    if identity not in allowed:
         raise R10_4DContractError(f"PASSIVE_PARENT_NOT_AUTHORIZED:{identity}")
+
     if not isinstance(max_steps, int) or max_steps < 1:
         raise R10_4DContractError("PASSIVE_MAX_STEPS_INVALID")
 
@@ -432,14 +661,27 @@ def run_passive_episode(
                 "features_25d": features.tolist(),
                 "done": bool(done),
                 "reward": float(reward),
+                "info": _safe_info(info),
             }
         )
+        raw_gripper = float(raw_action[-1]) if raw_action.size > 0 else 0.5
+        actual_env_gripper = float(clean_env_action[-1]) if clean_env_action.size > 0 else 0.0
+        expected_env_gripper = postprocess_gripper(raw_gripper) if abs(raw_gripper - 0.5) > 1e-6 else 0.0
         detector_records.append(
             {
                 "step": step,
                 "route": route,
                 "grasp_logit": grasp_logit,
                 "grasp_probability": grasp_probability,
+                "raw_gripper": raw_gripper,
+                "actual_env_gripper": actual_env_gripper,
+                "expected_env_gripper": expected_env_gripper,
+                "postprocess_parity": abs(actual_env_gripper - expected_env_gripper) <= 1e-6,
+                "raw_close": raw_gripper_is_close(raw_gripper),
+                "env_close": env_gripper_is_close(actual_env_gripper),
+                "close_semantics_status": close_semantics_status(
+                    raw_gripper, actual_env_gripper, expected_env_gripper),
+                "close_source": "OPENVLA_RAW_ACTION",
                 "close_mask": close_mask,
                 **fsm_result,
             }
@@ -455,20 +697,38 @@ def run_passive_episode(
         violations.append("ACTION_PARITY")
     if any(int(row["generation_passes_per_step"]) != 1 for row in step_records):
         violations.append("GENERATION_COUNT")
-    task_success = bool(step_records and step_records[-1]["done"])
-    if not task_success and hasattr(env, "check_success"):
-        task_success = bool(env.check_success())
 
-    status = "FAIL_RUNTIME" if violations else (
-        "PASS_RUNTIME_EMIT_OBSERVED" if emit_count else "PASS_RUNTIME_NO_EMIT"
+    # ── Gate E-R2.5B: proper termination classification ──
+    termination = _classify_termination(
+        step_records=step_records,
+        configured_horizon=max_steps,
+        env=env,
+        violations=violations,
     )
+
+    if termination["is_hard_failure"]:
+        status = "FAIL_TERMINATION"
+    elif violations:
+        status = "FAIL_RUNTIME"
+    elif emit_count > 0:
+        status = "PASS_RUNTIME_EMIT_OBSERVED"
+    else:
+        status = "PASS_RUNTIME_NO_EMIT"
+
     return {
-        "schema": "R10_4D_SINGLE_EPISODE_PASSIVE_RESULT_V1",
+        "schema": "R10_4E_SINGLE_EPISODE_PASSIVE_RESULT_V1",
         "identity": identity,
         "status": status,
         "n_steps": len(step_records),
         "emit_count": emit_count,
-        "task_success": task_success,
+        "task_success": termination["task_success"],
+        "termination_reason": termination["termination_reason"],
+        "configured_horizon": termination["configured_horizon"],
+        "observed_horizon": termination["observed_horizon"],
+        "done": termination["done"],
+        "env_check_success": termination["env_check_success"],
+        "check_success_error": termination["check_success_error"],
+        "simulator_timestep": termination["simulator_timestep"],
         "violations": violations,
         "step_records": step_records,
         "detector_records": detector_records,
@@ -485,8 +745,15 @@ __all__ = [
     "R10_4DContractError",
     "RoutedGraspDetector",
     "SUPPORTED_PARENT",
+    "close_semantics_parity",
+    "close_semantics_status",
+    "env_gripper_is_close",
     "load_detector_bundle",
     "parse_route",
+    "postprocess_gripper",
+    "raw_gripper_is_close",
+    "raw_is_boundary",
     "run_passive_episode",
+    "safe_json_value",
     "validate_authorization_receipt",
 ]

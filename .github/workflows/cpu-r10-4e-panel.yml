@@ -1,0 +1,74 @@
+name: CPU R10.4E Panel
+
+on:
+  push:
+    branches:
+      - codex/r10-4e-termination-remediation-v2-20260720
+      - codex/r10-4e-passive-panel-20260720
+    paths:
+      - src/gripper_attack/r10_4d_passive.py
+      - src/gripper_attack/r10_4_runtime.py
+      - scripts/r10_4/run_r10_4e_passive_panel.py
+      - scripts/r10_4/build_r10_4e_panel_receipt.py
+      - scripts/r10_4/audit_r10_4e_sealed_roots.py
+      - tests/test_r10_4d_passive.py
+      - tests/test_r10_4e_panel.py
+      - tests/test_r10_4e_receipt_builder.py
+      - tests/test_r10_4e_auditor.py
+      - .github/workflows/cpu-r10-4e-panel.yml
+  pull_request:
+    paths:
+      - src/gripper_attack/r10_4d_passive.py
+      - src/gripper_attack/r10_4_runtime.py
+      - scripts/r10_4/run_r10_4e_passive_panel.py
+      - scripts/r10_4/build_r10_4e_panel_receipt.py
+      - scripts/r10_4/audit_r10_4e_sealed_roots.py
+      - tests/test_r10_4d_passive.py
+      - tests/test_r10_4e_panel.py
+      - tests/test_r10_4e_receipt_builder.py
+      - tests/test_r10_4e_auditor.py
+      - .github/workflows/cpu-r10-4e-panel.yml
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest numpy pillow
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Syntax-check panel scripts
+        run: |
+          python -m py_compile \
+            scripts/r10_4/run_r10_4e_passive_panel.py \
+            scripts/r10_4/build_r10_4e_panel_receipt.py \
+            scripts/r10_4/audit_r10_4e_sealed_roots.py
+
+      - name: Run R10.4D passive tests
+        run: python -m pytest tests/test_r10_4d_passive.py -v --tb=short
+
+      - name: Run R10.4E production episode tests
+        run: PYTHONPATH=tests:scripts/r10_4 python -m pytest tests/test_r10_4e_panel.py -v --tb=short
+
+      - name: Run E-R3a receipt scope tests
+        run: PYTHONPATH=tests:scripts/r10_4 python -m pytest tests/test_r10_4e_receipt_builder.py -v --tb=short
+
+      - name: Run E-R3a sealed evidence auditor tests
+        run: PYTHONPATH=tests:scripts/r10_4 python -m pytest tests/test_r10_4e_auditor.py -v --tb=short
+
+      - name: Run runtime contract tests
+        run: python -m pytest tests/test_r10_4_runtime.py -v --tb=short
+
+      - name: Check patch whitespace
+        run: git diff --check
