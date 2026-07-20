@@ -342,14 +342,15 @@ def test_termination_no_steps():
 
 
 def test_check_success_raises():
-    """check_success() raises → not success, check_success_error recorded"""
+    """check_success() raises → CHECK_SUCCESS_FAILURE (fail-closed, P0-9)"""
     env = FakeEnv(policy_steps_before_done=5)
     env.set_check_success(raises=RuntimeError("sim exploded"))
     result = _run(env=env, max_steps=50)
     assert result["env_check_success"] is None
     assert result["check_success_error"] is not None
     assert "RuntimeError" in result["check_success_error"]
-    assert result["termination_reason"] == "EARLY_DONE_WITHOUT_SUCCESS"
+    assert result["termination_reason"] == "CHECK_SUCCESS_FAILURE"
+    assert result["status"] == "FAIL_TERMINATION"
 
 
 def test_done_never_equals_success():

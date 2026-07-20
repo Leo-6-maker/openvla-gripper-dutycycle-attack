@@ -334,7 +334,12 @@ def _classify_termination(
             check_success_error = f"{type(exc).__name__}:{str(exc)[:200]}"
 
     # Classification
-    if not step_records:
+    # P0-9: check_success() exception → fail-closed (cannot determine success)
+    if check_success_error is not None:
+        termination_reason = "CHECK_SUCCESS_FAILURE"
+        task_success = False
+        is_hard_failure = True
+    elif not step_records:
         termination_reason = "NO_STEPS"
         task_success = False
         is_hard_failure = True

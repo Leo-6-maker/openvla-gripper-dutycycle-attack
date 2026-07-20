@@ -1,0 +1,59 @@
+name: CPU R10.4E Panel
+
+on:
+  push:
+    branches:
+      - codex/r10-4e-termination-remediation-v2-20260720
+      - codex/r10-4e-passive-panel-20260720
+    paths:
+      - src/gripper_attack/r10_4d_passive.py
+      - src/gripper_attack/r10_4_runtime.py
+      - scripts/r10_4/run_r10_4e_passive_panel.py
+      - scripts/r10_4/build_r10_4e_panel_receipt.py
+      - scripts/r10_4/audit_r10_4e_sealed_roots.py
+      - tests/test_r10_4d_passive.py
+      - tests/test_r10_4e_panel.py
+      - .github/workflows/cpu-r10-4e-panel.yml
+  pull_request:
+    paths:
+      - src/gripper_attack/r10_4d_passive.py
+      - src/gripper_attack/r10_4_runtime.py
+      - scripts/r10_4/run_r10_4e_passive_panel.py
+      - scripts/r10_4/build_r10_4e_panel_receipt.py
+      - scripts/r10_4/audit_r10_4e_sealed_roots.py
+      - tests/test_r10_4d_passive.py
+      - tests/test_r10_4e_panel.py
+      - .github/workflows/cpu-r10-4e-panel.yml
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest numpy torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Syntax-check panel scripts
+        run: |
+          python -c "import py_compile; py_compile.compile('scripts/r10_4/run_r10_4e_passive_panel.py', doraise=True)"
+          python -c "import py_compile; py_compile.compile('scripts/r10_4/build_r10_4e_panel_receipt.py', doraise=True)"
+          python -c "import py_compile; py_compile.compile('scripts/r10_4/audit_r10_4e_sealed_roots.py', doraise=True)"
+
+      - name: Run r10_4d_passive tests
+        run: python -m pytest tests/test_r10_4d_passive.py -v --tb=short
+
+      - name: Run r10_4e_panel tests
+        run: |
+          PYTHONPATH=src:tests python -m pytest tests/test_r10_4e_panel.py -v --tb=short
+
+      - name: Run runtime contract tests
+        run: python -m pytest tests/test_r10_4_runtime.py -v --tb=short
