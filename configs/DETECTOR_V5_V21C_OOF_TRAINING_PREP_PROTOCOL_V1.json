@@ -1,0 +1,53 @@
+{
+  "schema": "DETECTOR_V5_V21C_OOF_TRAINING_PREP_PROTOCOL_V1",
+  "scope": "FIT-only four-fold OOF training preparation; no checkpoint execution",
+  "target_mode": "V21C_CONTROL",
+  "teacher_protocol_schema": "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL",
+  "teacher_manifest_schema": "DETECTOR_V5_PHYSICS_TEACHER_V21C_MANIFEST",
+  "teacher_audit_schema": "DETECTOR_V5_PHYSICS_TEACHER_V21C_AUDIT_V1",
+  "geometry_gate": {
+    "required_before_any_training": true,
+    "schema": "DETECTOR_V5_V21C_GEOMETRY_AUDIT_V1",
+    "allowed_statuses": [
+      "PASS_CONTROL_TRAINING_ONLY"
+    ]
+  },
+  "fold_contract": {
+    "schema": "B3_OFFICIAL_V3_FIT_FOLD_MANIFEST_V1",
+    "fold_count": 4,
+    "train_identities_per_fold": 600,
+    "validation_identities_per_fold": 200,
+    "fit_identity_count": 800
+  },
+  "model_reuse": {
+    "implementation": "gripper_attack.v5_ranker.CausalMultimodalVulnerabilityRanker",
+    "variant": "V5_A_PROPRIO",
+    "input_stream": "official causal features_25d",
+    "architecture_change_authorized": false,
+    "reason": "isolate corrected-label effects before changing architecture"
+  },
+  "control_targets": {
+    "primary": "known_mask AND utility_tier >= 2",
+    "release": "release_imminent with existing causal Student mask",
+    "regrasp": "regrasp_or_unstable with existing causal Student mask",
+    "candidate_close_is_input_context_not_primary_target": true
+  },
+  "future_factorized_mode": {
+    "name": "FACTORIZED_THREE_HEAD",
+    "heads": [
+      "grasp_established",
+      "manipulation_active",
+      "release_or_instability"
+    ],
+    "requires_separate_teacher_schema": true,
+    "not_authorized_by_this_protocol": true
+  },
+  "execution": {
+    "training_executed": false,
+    "checkpoint_write_authorized": false,
+    "full_fit_authorized": false,
+    "formal_training_authorized": false,
+    "formal_attack_authorized": false,
+    "fsm_change_authorized": false
+  }
+}
