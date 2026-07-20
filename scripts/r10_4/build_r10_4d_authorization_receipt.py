@@ -15,7 +15,9 @@ from pathlib import Path
 from typing import Any
 
 from gripper_attack.r10_4_runtime import FEATURE_ORDER_SHA256, sha256_file, verify_checksum_manifest
-from gripper_attack.r10_4d_passive import SUPPORTED_PARENT
+
+
+SUPPORTED_PARENT = "libero_10/task_00/state_20"
 
 
 def parse_args() -> argparse.Namespace:
