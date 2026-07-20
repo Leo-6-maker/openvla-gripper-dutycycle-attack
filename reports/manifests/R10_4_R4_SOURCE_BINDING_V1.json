@@ -1,0 +1,40 @@
+{
+  "schema": "R10_4_R4_SOURCE_BINDING_V1",
+  "repository": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+  "branch": "codex/r10-4-r4-runtime-parity-20260720",
+  "base": "archive/official-v3-b3-25d-execution-5e27d7c",
+  "head": "28532699b948390963759756b6dcbbc48fba1b43",
+  "official_feature_order_sha256": "3d1101d26567a41bf688587a70c5100a3629ad62f12f9568947ee178a8a63366",
+  "execution_scope": {
+    "openvla_model_loaded": false,
+    "detector_executed": false,
+    "action_mutation": false,
+    "protected_split_reads": 0,
+    "attack_data_read": 0
+  },
+  "source_files": {
+    "src/gripper_attack/r10_4_runtime.py": "8927bb19766b6bf2a866e623df9da50ae7916be7fba91a609c5f32e71a09e09f",
+    "src/gripper_attack/sc5_streaming_features_v2.py": "5adbdce9a4df227d469f1dbfe1ae9e9ff2ef06bf5d70011f2306a20fb404bebf",
+    "src/gripper_attack/libero_v4_env_factory.py": "9c61d32fd2d49437468b9ccb45ad92204a1811dcd4602d0beb7d16cfe5bfaf66"
+  },
+  "source_files_normalized": {
+    "src/gripper_attack/libero_v4_env_factory.py": "9c61d32fd2d49437468b9ccb45ad92204a1811dcd4602d0beb7d16cfe5bfaf66",
+    "src/gripper_attack/official_openvla_adapter.py": "0e8c1c2476b50609627cee2000467966fb1cbf68b01050147471867f13710aae",
+    "src/gripper_attack/official_detector_features.py": "6bb24b689c0e8ac7547e911f1b05f2a18fad1e4a31b0a8e5b9b4f225a7f9e78f",
+    "src/gripper_attack/official_generation_contract.py": "84acf46889033bfb907c340012417929e20e2c051ebbe9f7eee1d7c9b1586950",
+    "src/gripper_attack/official_libero_protocol.py": "72f58fd8e5b06ce2c0d4c0bf93fd33ea30bc52b6384cc1b721f608d573dff5fa",
+    "src/gripper_attack/official_v3_contract.py": "af8e599a987e13fe6aabda0ac31670407c144b60a14319409a763a0356090a07",
+    "scripts/r10_4/replay_libero_feature_parity.py": "785b23b74afe47641223433d7fe1d3d239d35c0cd158a298162aa6212d8d0902",
+    "scripts/r10_4/audit_runtime_integration.py": "adda5a26ce043704c15168b43ae0073e031ed15998f0a50fbd347acee55787ab",
+    "tests/test_r10_4_runtime.py": "5fae8e4cb8429bd9f9b380aa4abf4595ebef1de4324cb49d14d4df5945fa59a5",
+    ".github/workflows/cpu-r10-4-r4.yml": "ca5cdd447d77c0e755e6b354461d4b80f39cdda424ab02b5d18512cd6ed2f4d9",
+    "configs/R10_4_R4_PROTOCOL_V1.json": "d43a7835e8a278cc55b9bb7bd25194db60a4356656ab5718edf9b1d204686198",
+    "manifests/R10_4_R4_REPLAY_SELECTION_V1.json": "4dc4045a9dc26e47c640702ac75aa7c4eaad92ccd0b57dc75ff8cb8162d9b6cd"
+  },
+  "replay_root": {
+    "path": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/OFFICIAL_V3_R10_4_R4_LIBERO_REPLAY_PARITY_20260720_2853269",
+    "status": "FAIL",
+    "sha256sums_sha256": "0c963e532d0a035ebddeb5a7f9f864ce9ae7aa642b293b404f023e17d3e798b0",
+    "sha256sums_sidecar_sha256": "c661e67dcf657c5d20a56be210a968bf182c954b958ac005bd6fa2ebeac8d503"
+  }
+}

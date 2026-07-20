@@ -1,0 +1,4 @@
+identity,step_count,feature_pass_count,valid_match_count,max_abs_feature_error,mean_abs_feature_error,action_sequence_sha256,status,action_mutated,event_reset_state
+libero_10/task_00/state_00,299,299,299,0.0,0.0,467eea9fcc6a75768d74ec9e0df9da43573c408f4d22f14361b7848aa3354951,PASS,false,NOT_PRESENT_IN_S1_SOURCE
+libero_10/task_04/state_19,520,520,520,0.0,0.0,6fc9de1f166502115edd17a56f9502f33a3abff64052ed205ff47a2a2682fd46,PASS,false,NOT_PRESENT_IN_S1_SOURCE
+libero_10/task_09/state_19,520,140,520,0.04195427894592285,0.01670831041321015,c3d1a67f8de4f94807a3b7eaea739effb52e80cf40039924f6e7afe2b9c3d7bc,FAIL,false,NOT_PRESENT_IN_S1_SOURCE
