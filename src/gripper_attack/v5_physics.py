@@ -279,19 +279,15 @@ def _target_progress(
 
 
 def _candidate_close(step: Mapping[str, Any], threshold: float) -> bool:
-    """FIXED (Gate D2.1.2): Returns structured CanonicalActionState via shared helper.
+    """FIXED (Gate D2.1.3): Returns structured CanonicalActionState via shared helper.
 
     BOUNDARY, missing, and non-finite → action_known=False, candidate_close=False.
     Only known CLOSE steps return candidate_close=True.
 
     Previous bug: used raw[6] >= threshold, which selected the OPEN region.
     """
-    try:
-        from .action_contract import CanonicalActionState
-    except ImportError:
-        from action_contract import CanonicalActionState
+    from .action_contract import CanonicalActionState
     state = CanonicalActionState.from_step(step, field="clean_action_raw_7d")
-    # Store structured state in step for downstream use
     step["_action_state"] = state
     return state.candidate_close
 
@@ -346,9 +342,11 @@ def derive_episode_rows(
         comotion = _comotion(history, role, object_slices, inactive_value=0.0 if v21 else None)
         lift = _lift(sidecar_rows[: index + 1], sidecar, role, object_slices, float(constants["lift_scale_m"]))
         target_progress, target_known = _target_progress(sidecar_rows[0], sidecar, role, object_slices, float(constants["target_progress_scale_m"]), unknown_default=0.0 if v21 else 0.5)
+        cc = _candidate_close(step, threshold)
+        action_state = step.get("_action_state")
         base.append({
             "step": index,
-            "candidate_close": _candidate_close(step, threshold),
+            "candidate_close": cc,
             "student_valid": bool(step.get("valid", True)),
             "gripper_contact_score": 1.0 if contact[1] else 0.0,
             "object_contact": contact[0],
@@ -365,15 +363,17 @@ def derive_episode_rows(
                 + 0.20 * (1.0 if contact[1] else 0.0)
                 + 0.20 * lift
             ),
+            "raw_gripper": action_state.raw_gripper if action_state is not None else None,
+            "action_intent": action_state.action_intent if action_state is not None else "UNKNOWN",
+            "action_known": action_state.action_known if action_state is not None else False,
         })
     _assign_segments(base)
     for index, row in enumerate(base):
         future = base[index : min(len(base), index + history_size)]
-        # D2.1.2: future_open only counts known OPEN intent (excludes BOUNDARY/UNKNOWN)
+        # D2.1.3: future_open uses base row fields (not _action_state from step_rows)
         future_open = any(
-            item.get("_action_state") is not None
-            and item["_action_state"].action_known
-            and item["_action_state"].action_intent == "OPEN"
+            item.get("action_known") is True
+            and item.get("action_intent") == "OPEN"
             for item in future[1:]
         )
         future_contact_loss = any(item["gripper_contact_score"] < row["gripper_contact_score"] for item in future[1:])
@@ -410,9 +410,7 @@ def derive_episode_rows(
         elif v21:
             positive /= 0.85
         row["utility_score"] = _clip(positive - 0.20 * row["release_risk"] - 0.20 * row["regrasp_or_instability_risk"])
-        action_state = step_rows[index].get("_action_state")
-        action_known = action_state is not None and action_state.action_known
-        if not role.applicable or not row["student_valid"] or not action_known:
+        if not role.applicable or not row["student_valid"] or not row["action_known"]:
             row["known_mask"] = False
             row["utility_tier"] = None
             row["phase_name"] = "UNKNOWN"
@@ -436,7 +434,11 @@ def derive_episode_rows(
                 row["utility_tier"] = 1
             else:
                 row["utility_tier"] = 0
-        row["teacher_confidence"] = 1.0 if role.applicable and row["target_progress_known"] else (0.8 if role.applicable else 0.0)
+        row["teacher_confidence"] = (
+            0.0 if not row["known_mask"] else
+            1.0 if role.applicable and row["target_progress_known"] else
+            0.8 if role.applicable else 0.0
+        )
     if v21:
         for segment_id in {row["window_id"] for row in base if row["candidate_close"]}:
             members = [row for row in base if row["window_id"] == segment_id]

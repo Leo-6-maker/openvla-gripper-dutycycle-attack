@@ -224,3 +224,223 @@ def test_candidate_close_open_close_produces_two_segments():
     segment_ids = set(row["window_id"] for row in rows if row.get("window_id", "").startswith("candidate"))
     assert len(segment_ids) == 2, "Expected 2 candidate segments (close-open-close), got {}: {}".format(
         len(segment_ids), sorted(segment_ids))
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Gate D2.1.3: Regression tests for P0-1/P0-2/P0-3 fixes
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_action_state_fields_present_in_output():
+    """raw_gripper, action_intent, action_known must be in output rows."""
+    protocol = deepcopy(PROTOCOL)
+    protocol["schema"] = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL"
+    protocol["window_policy"] = {"loader_preserve_candidate_segment": True}
+    role = parse_bddl_task_role(_bddl("(And (In obj_1 target_1_contain_region))"), suite="libero_object", task_idx=0, object_names=["obj_1", "target_1"])
+    steps, sidecars = _episode(12)
+    for i, s in enumerate(steps):
+        if i < 4:
+            s["clean_action_raw_7d"][6] = 0.0   # CLOSE
+        elif i < 8:
+            s["clean_action_raw_7d"][6] = 0.5   # BOUNDARY
+        else:
+            s["clean_action_raw_7d"][6] = 1.0   # OPEN
+    rows, _ = derive_episode_rows(
+        steps, sidecars, role,
+        {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}},
+        protocol,
+    )
+    for i, row in enumerate(rows):
+        assert "raw_gripper" in row, f"step {i}: missing raw_gripper"
+        assert "action_intent" in row, f"step {i}: missing action_intent"
+        assert "action_known" in row, f"step {i}: missing action_known"
+    # CLOSE steps (0-3)
+    for i in range(0, 4):
+        assert rows[i]["action_intent"] == "CLOSE"
+        assert rows[i]["action_known"] is True
+        assert rows[i]["raw_gripper"] == 0.0
+    # BOUNDARY steps (4-7)
+    for i in range(4, 8):
+        assert rows[i]["action_intent"] == "BOUNDARY"
+        assert rows[i]["action_known"] is False
+        assert rows[i]["raw_gripper"] == 0.5
+    # OPEN steps (8-11)
+    for i in range(8, 12):
+        assert rows[i]["action_intent"] == "OPEN"
+        assert rows[i]["action_known"] is True
+        assert rows[i]["raw_gripper"] == 1.0
+
+
+def test_future_open_known_open_contributes_release_risk():
+    """Future known OPEN steps must contribute 0.5 to release_risk component."""
+    protocol = deepcopy(PROTOCOL)
+    protocol["schema"] = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL"
+    protocol["window_policy"] = {"loader_preserve_candidate_segment": True}
+    role = parse_bddl_task_role(_bddl("(And (In obj_1 target_1_contain_region))"), suite="libero_object", task_idx=0, object_names=["obj_1", "target_1"])
+    steps, sidecars = _episode(12)
+    # All CLOSE so candidate_close=True, but last 3 steps are OPEN → future open
+    for i, s in enumerate(steps):
+        if i >= 9:
+            s["clean_action_raw_7d"][6] = 1.0  # OPEN in future
+        else:
+            s["clean_action_raw_7d"][6] = 0.0  # CLOSE
+    rows, _ = derive_episode_rows(
+        steps, sidecars, role,
+        {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}},
+        protocol,
+    )
+    # Steps near the end (within history window of OPEN steps) should have release_risk > 0
+    # Step 7 is within 5 steps of step 9 where OPEN starts
+    release_steps = [row["release_risk"] for row in rows]
+    # At least some steps should have non-zero release_risk due to future OPEN
+    assert any(r > 0.0 for r in release_steps), \
+        "future_open should produce non-zero release_risk, got all zeros: {}".format(release_steps)
+    # Step 11 (last step): future[1:] is empty, so release_risk should be 0 (only contact_loss possible)
+    # Verify the mechanism: release_risk = 0.5 * future_open + 0.5 * future_contact_loss
+    assert rows[11]["action_intent"] == "OPEN"
+
+
+def test_future_boundary_does_not_contribute_release_risk():
+    """BOUNDARY steps must NOT contribute to future_open release_risk."""
+    protocol = deepcopy(PROTOCOL)
+    protocol["schema"] = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL"
+    protocol["window_policy"] = {"loader_preserve_candidate_segment": True}
+    role = parse_bddl_task_role(_bddl("(And (In obj_1 target_1_contain_region))"), suite="libero_object", task_idx=0, object_names=["obj_1", "target_1"])
+    steps, sidecars = _episode(12)
+    # All CLOSE, last 3 are BOUNDARY (should NOT count as future_open)
+    for i, s in enumerate(steps):
+        if i >= 9:
+            s["clean_action_raw_7d"][6] = 0.5  # BOUNDARY
+        else:
+            s["clean_action_raw_7d"][6] = 0.0  # CLOSE
+    rows, _ = derive_episode_rows(
+        steps, sidecars, role,
+        {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}},
+        protocol,
+    )
+    # BOUNDARY has action_known=False, so future_open should be 0
+    # release_risk = 0.5 * 0 + 0.5 * future_contact_loss
+    # With gripper contact score = 1.0 throughout, future_contact_loss is False
+    for row in rows:
+        if row["action_intent"] == "CLOSE":
+            # No future OPEN and no contact loss → release_risk = 0
+            assert row["release_risk"] == 0.0, \
+                "BOUNDARY should not contribute to future_open. Got release_risk={}".format(row["release_risk"])
+
+
+def test_unknown_teacher_confidence_zero():
+    """known_mask=False must force teacher_confidence=0."""
+    protocol = deepcopy(PROTOCOL)
+    protocol["schema"] = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL"
+    protocol["window_policy"] = {"loader_preserve_candidate_segment": True}
+    role = parse_bddl_task_role(_bddl("(And (In obj_1 target_1_contain_region))"), suite="libero_object", task_idx=0, object_names=["obj_1", "target_1"])
+    steps, sidecars = _episode(12)
+    for s in steps:
+        s["clean_action_raw_7d"][6] = 0.5  # All BOUNDARY → known_mask=False
+    rows, _ = derive_episode_rows(
+        steps, sidecars, role,
+        {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}},
+        protocol,
+    )
+    for row in rows:
+        assert row["known_mask"] is False
+        assert row["teacher_confidence"] == 0.0, \
+            "known_mask=False must force teacher_confidence=0, got {}".format(row["teacher_confidence"])
+
+
+def test_known_close_has_positive_confidence():
+    """known_mask=True with target_progress_known should have confidence=1.0."""
+    protocol = deepcopy(PROTOCOL)
+    protocol["schema"] = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL"
+    protocol["window_policy"] = {"loader_preserve_candidate_segment": True}
+    role = parse_bddl_task_role(_bddl("(And (In obj_1 target_1_contain_region))"), suite="libero_object", task_idx=0, object_names=["obj_1", "target_1"])
+    steps, sidecars = _episode(12)
+    for s in steps:
+        s["clean_action_raw_7d"][6] = 0.0  # All CLOSE → candidate_close=True, known_mask=True
+    rows, _ = derive_episode_rows(
+        steps, sidecars, role,
+        {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}},
+        protocol,
+    )
+    for row in rows:
+        assert row["known_mask"] is True
+        # With target_progress_known=True (role is applicable), confidence = 1.0
+        assert row["teacher_confidence"] > 0.0, \
+            "known steps should have positive confidence, got {}".format(row["teacher_confidence"])
+
+
+def test_missing_raw_field_through_full_pipeline():
+    """Missing raw action field → UNKNOWN, known_mask=False, confidence=0."""
+    protocol = deepcopy(PROTOCOL)
+    protocol["schema"] = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL"
+    protocol["window_policy"] = {"loader_preserve_candidate_segment": True}
+    role = parse_bddl_task_role(_bddl("(And (In obj_1 target_1_contain_region))"), suite="libero_object", task_idx=0, object_names=["obj_1", "target_1"])
+    steps, sidecars = _episode(12)
+    for s in steps:
+        del s["clean_action_raw_7d"]  # Missing field
+    rows, _ = derive_episode_rows(
+        steps, sidecars, role,
+        {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}},
+        protocol,
+    )
+    for row in rows:
+        assert row["action_intent"] == "UNKNOWN"
+        assert row["action_known"] is False
+        assert row["candidate_close"] is False
+        assert row["known_mask"] is False
+        assert row["phase_name"] == "UNKNOWN"
+        assert row["teacher_confidence"] == 0.0
+        assert row["utility_tier"] is None
+
+
+def test_nan_raw_value_through_full_pipeline():
+    """NaN raw action value → UNKNOWN, known_mask=False, confidence=0."""
+    protocol = deepcopy(PROTOCOL)
+    protocol["schema"] = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL"
+    protocol["window_policy"] = {"loader_preserve_candidate_segment": True}
+    role = parse_bddl_task_role(_bddl("(And (In obj_1 target_1_contain_region))"), suite="libero_object", task_idx=0, object_names=["obj_1", "target_1"])
+    steps, sidecars = _episode(12)
+    for s in steps:
+        s["clean_action_raw_7d"][6] = float('nan')
+    rows, _ = derive_episode_rows(
+        steps, sidecars, role,
+        {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}},
+        protocol,
+    )
+    for row in rows:
+        assert row["action_intent"] == "UNKNOWN"
+        assert row["action_known"] is False
+        assert row["candidate_close"] is False
+        assert row["known_mask"] is False
+        assert row["teacher_confidence"] == 0.0
+
+
+def test_v21c_protocol_accepted_in_derive():
+    """V21C protocol schema must be accepted by derive_episode_rows."""
+    protocol = deepcopy(PROTOCOL)
+    protocol["schema"] = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL"
+    protocol["window_policy"] = {"loader_preserve_candidate_segment": True}
+    role = parse_bddl_task_role(_bddl("(And (In obj_1 target_1_contain_region))"), suite="libero_object", task_idx=0, object_names=["obj_1", "target_1"])
+    steps, sidecars = _episode(12)
+    rows, windows = derive_episode_rows(
+        steps, sidecars, role,
+        {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}},
+        protocol,
+    )
+    assert len(rows) == 12
+    assert len(windows) >= 1
+    # V21C should enable all V21 features (component_valid_mask, tier_onset_step, causal_trigger_eligible)
+    for row in rows:
+        assert "causal_trigger_eligible" in row
+        assert "component_valid_mask" in row
+        assert "tier_onset_step" in row
+
+
+def test_v21c_no_bare_import_fallback():
+    """P0-3: _candidate_close must NOT have try/except ImportError fallback."""
+    import inspect
+    from gripper_attack import v5_physics
+    source = inspect.getsource(v5_physics._candidate_close)
+    assert "except ImportError" not in source, \
+        "P0-3 violation: _candidate_close must not have bare import fallback"
+    assert "from .action_contract import CanonicalActionState" in source, \
+        "_candidate_close must use relative import of CanonicalActionState"

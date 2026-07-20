@@ -136,6 +136,7 @@ def _load_physics_protocol(root: Path) -> dict[str, Any]:
     if not isinstance(value, dict) or value.get("schema") not in {
         "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V1",
         "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21",
+        "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL",
     }:
         raise ValueError("unexpected Physics Teacher protocol")
     constants = value.get("fixed_constants")
@@ -149,7 +150,10 @@ def _load_physics_protocol(root: Path) -> dict[str, Any]:
 
 def _physics_row_as_v5_teacher(row: dict[str, Any], protocol: dict[str, Any]) -> dict[str, Any]:
     expected_fields = PHYSICS_TEACHER_FIELDS
-    if protocol["schema"] == "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21":
+    if protocol["schema"] in (
+        "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21",
+        "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL",
+    ):
         expected_fields = PHYSICS_TEACHER_V21_FIELDS
     if set(row) != expected_fields:
         missing = sorted(expected_fields - set(row))
@@ -264,11 +268,15 @@ def load_v5_episode(
     teacher = _episode_root(teacher_root, row)
     students = _jsonl(s1 / "student_input_records.jsonl")
     physics_teacher = teacher_root / "labels" / str(row["suite"]) / f"task_{int(row['task_idx']):02d}" / f"state_{int(row['state_id']):02d}"
+    physics_v21c_path = physics_teacher / "physics_teacher_v21c.jsonl"
     physics_path = physics_teacher / "physics_teacher_v2.jsonl"
     physics_v21_path = physics_teacher / "physics_teacher_v21.jsonl"
     legacy_path = teacher / "v5_teacher_utility.jsonl"
-    physics_protocol = _load_physics_protocol(teacher_root) if (physics_path.is_file() or physics_v21_path.is_file()) else None
-    teacher_path = physics_v21_path if physics_v21_path.is_file() else physics_path if physics_path.is_file() else legacy_path
+    any_physics = physics_v21c_path.is_file() or physics_v21_path.is_file() or physics_path.is_file()
+    physics_protocol = _load_physics_protocol(teacher_root) if any_physics else None
+    teacher_path = (physics_v21c_path if physics_v21c_path.is_file() else
+                    physics_v21_path if physics_v21_path.is_file() else
+                    physics_path if physics_path.is_file() else legacy_path)
     teachers = _jsonl(teacher_path)
     if not students or len(students) != len(teachers):
         raise ValueError(f"V5-A stream mismatch: {identity}")

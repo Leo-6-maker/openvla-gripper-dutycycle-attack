@@ -10,11 +10,13 @@ import json
 import os
 import re
 import shutil
+import subprocess
 import uuid
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from gripper_attack import action_contract as _action_contract
 from gripper_attack.v5_physics import derive_episode_rows, parse_bddl_task_role
 
 
@@ -189,9 +191,14 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     if protocol.get("schema") not in {
         "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V1",
         "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21",
+        "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL",
     }:
         raise ValueError("unexpected Physics Teacher protocol schema")
-    v21 = protocol["schema"] == "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21"
+    v21 = protocol["schema"] in (
+        "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21",
+        "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL",
+    )
+    v21c = protocol["schema"] == "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL"
     registry_seal = verify_sealed_root(args.registry_root.resolve())
     decoder_seal = verify_sealed_root(args.decoder_root.resolve())
     physics_audit_seal = verify_sealed_root(args.physics_audit_root.resolve())
@@ -236,7 +243,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
                 item["physics_protocol_schema"] = protocol["schema"]
             target = labels_root / suite / f"task_{task_idx:02d}" / f"state_{int(row['state_id']):02d}"
             target.mkdir(parents=True)
-            label_name = "physics_teacher_v21.jsonl" if v21 else "physics_teacher_v2.jsonl"
+            label_name = "physics_teacher_v21c.jsonl" if v21c else ("physics_teacher_v21.jsonl" if v21 else "physics_teacher_v2.jsonl")
             _atomic_text(target / label_name, "".join(json.dumps(item, sort_keys=True) + "\n" for item in derived))
             for window in windows:
                 window_rows.append({"canonical_parent_key": identity, **window})
@@ -264,9 +271,21 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             writer = csv.DictWriter(handle, fieldnames=fields)
             writer.writeheader()
             writer.writerows(window_rows)
+        if v21c:
+            manifest_schema = "DETECTOR_V5_PHYSICS_TEACHER_V21C_MANIFEST"
+            teacher_version = "V2.1C"
+            manifest_filename = "physics_teacher_v21c_manifest.json"
+        elif v21:
+            manifest_schema = "DETECTOR_V5_PHYSICS_TEACHER_V21_MANIFEST"
+            teacher_version = "V2.1"
+            manifest_filename = "physics_teacher_v2_manifest.json"
+        else:
+            manifest_schema = "DETECTOR_V5_PHYSICS_TEACHER_V2_MANIFEST"
+            teacher_version = "V2"
+            manifest_filename = "physics_teacher_v2_manifest.json"
         manifest = {
-            "schema": "DETECTOR_V5_PHYSICS_TEACHER_V21_MANIFEST" if v21 else "DETECTOR_V5_PHYSICS_TEACHER_V2_MANIFEST",
-            "teacher_version": "V2.1" if v21 else "V2",
+            "schema": manifest_schema,
+            "teacher_version": teacher_version,
             "protocol_schema": protocol["schema"],
             "protocol_sha256": sha256_file(args.protocol.resolve()),
             "registry_csv_sha256": sha256_file(args.registry_csv.resolve()),
@@ -289,10 +308,40 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             "formal_training_authorized": False,
             "formal_attack_authorized": False,
         }
-        _atomic_text(staging / "physics_teacher_v2_manifest.json", json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+        if v21c:
+            action_contract_path = Path(_action_contract.__file__).resolve()
+            action_contract_sha256 = sha256_file(action_contract_path)
+            v5_physics_path = Path(__import__("gripper_attack.v5_physics").__file__).resolve()
+            v5_physics_sha256 = sha256_file(v5_physics_path)
+            repo_root = action_contract_path.parent.parent
+            try:
+                git_commit = subprocess.check_output(
+                    ["git", "rev-parse", "HEAD"], cwd=str(repo_root), text=True
+                ).strip()
+            except Exception:
+                git_commit = "UNKNOWN"
+            manifest["action_contract_schema"] = _action_contract.ACTION_CONTRACT_SCHEMA
+            manifest["action_contract_sha256"] = action_contract_sha256
+            manifest["action_contract_source"] = str(action_contract_path)
+            manifest["v5_physics_source"] = str(v5_physics_path)
+            manifest["v5_physics_sha256"] = v5_physics_sha256
+            manifest["source_git_commit"] = git_commit
+            action_contract_doc = {
+                "schema": _action_contract.ACTION_CONTRACT_SCHEMA,
+                "file_sha256": action_contract_sha256,
+                "source_path": str(action_contract_path),
+                "raw_close_region": _action_contract.ACTION_CONTRACT["raw_close_region"],
+                "raw_close_operator": _action_contract.ACTION_CONTRACT["raw_close_operator"],
+                "boundary_policy": _action_contract.ACTION_CONTRACT["boundary_policy"],
+                "postprocess": _action_contract.ACTION_CONTRACT["postprocess"],
+            }
+            _atomic_text(staging / "action_contract.json", json.dumps(action_contract_doc, indent=2, sort_keys=True) + "\n")
+        _atomic_text(staging / manifest_filename, json.dumps(manifest, indent=2, sort_keys=True) + "\n")
         _atomic_text(staging / "protocol.json", json.dumps(protocol, indent=2, sort_keys=True) + "\n")
         report = {
-            "schema": "DETECTOR_V5_PHYSICS_TEACHER_V21_AUDIT_V1" if v21 else "DETECTOR_V5_PHYSICS_TEACHER_V2_AUDIT_V1",
+            "schema": ("DETECTOR_V5_PHYSICS_TEACHER_V21C_AUDIT_V1" if v21c else
+                        "DETECTOR_V5_PHYSICS_TEACHER_V21_AUDIT_V1" if v21 else
+                        "DETECTOR_V5_PHYSICS_TEACHER_V2_AUDIT_V1"),
             "status": "PASS_WITH_EXPLICIT_NON_GRASP_TASKS" if role_counts.get("ABSTAIN_DECODER_HOLD", 0) == 0 else "ABSTAIN_DECODER_HOLD",
             "manifest": manifest,
             "role_holds": [key for key, role in sorted(roles.items()) if role.status == "ABSTAIN_DECODER_HOLD"],
