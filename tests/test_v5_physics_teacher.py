@@ -444,3 +444,145 @@ def test_v21c_no_bare_import_fallback():
         "P0-3 violation: _candidate_close must not have bare import fallback"
     assert "from .action_contract import CanonicalActionState" in source, \
         "_candidate_close must use relative import of CanonicalActionState"
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Gate D2.1.4: V21C field-set compatibility and loader routing tests
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_v21c_fields_constant_includes_action_fields():
+    """PHYSICS_TEACHER_V21C_FIELDS must include raw_gripper, action_intent, action_known."""
+    from gripper_attack.v5_physics import (
+        PHYSICS_TEACHER_FIELDS,
+        PHYSICS_TEACHER_V21_FIELDS,
+        PHYSICS_TEACHER_V21C_FIELDS,
+    )
+    # V21C must be a superset of V21
+    assert PHYSICS_TEACHER_V21_FIELDS < PHYSICS_TEACHER_V21C_FIELDS
+    # Must contain the 3 new action fields
+    assert "raw_gripper" in PHYSICS_TEACHER_V21C_FIELDS
+    assert "action_intent" in PHYSICS_TEACHER_V21C_FIELDS
+    assert "action_known" in PHYSICS_TEACHER_V21C_FIELDS
+    # V21 must NOT contain them (strict separation)
+    assert "raw_gripper" not in PHYSICS_TEACHER_V21_FIELDS
+    assert "action_intent" not in PHYSICS_TEACHER_V21_FIELDS
+    assert "action_known" not in PHYSICS_TEACHER_V21_FIELDS
+    assert "raw_gripper" not in PHYSICS_TEACHER_FIELDS
+    # V21C must add exactly 3 fields beyond V21
+    delta = PHYSICS_TEACHER_V21C_FIELDS - PHYSICS_TEACHER_V21_FIELDS
+    assert delta == {"raw_gripper", "action_intent", "action_known"}, \
+        "V21C delta vs V21 is wrong: {}".format(delta)
+
+
+def test_v21c_output_rows_match_expected_field_set():
+    """V21C derive_episode_rows output must exactly match PHYSICS_TEACHER_V21C_FIELDS."""
+    from gripper_attack.v5_physics import PHYSICS_TEACHER_V21C_FIELDS
+    protocol = deepcopy(PROTOCOL)
+    protocol["schema"] = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL"
+    protocol["window_policy"] = {"loader_preserve_candidate_segment": True}
+    role = parse_bddl_task_role(_bddl("(And (In obj_1 target_1_contain_region))"), suite="libero_object", task_idx=0, object_names=["obj_1", "target_1"])
+    steps, sidecars = _episode(12)
+    rows, _ = derive_episode_rows(
+        steps, sidecars, role,
+        {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}},
+        protocol,
+    )
+    # Strip suite/task_idx/state_id etc. that builder adds later —
+    # verify only the derive_episode_rows output fields minus the metadata
+    builder_metadata = {
+        "canonical_parent_key", "state_id", "source_artifact_recursive_sha256",
+        "physics_protocol_schema",
+    }
+    for row in rows:
+        core_fields = set(row) - builder_metadata
+        # V21C fields minus metadata builder appends
+        expected_core = PHYSICS_TEACHER_V21C_FIELDS - builder_metadata
+        assert core_fields == expected_core, \
+            "V21C row field mismatch. Extra: {}, Missing: {}".format(
+                core_fields - expected_core, expected_core - core_fields)
+
+
+def test_v21c_loader_accepts_v21c_rows():
+    """_physics_row_as_v5_teacher must accept V21C rows with the 3 new fields."""
+    from gripper_attack.v5_dataset import _physics_row_as_v5_teacher
+    from gripper_attack.v5_physics import PHYSICS_TEACHER_V21C_FIELDS
+    protocol = {
+        "schema": "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL",
+        "fixed_constants": {
+            "tier2_max_release_risk": 0.60,
+            "tier2_max_regrasp_risk": 0.60,
+        },
+    }
+    row = {field: None for field in PHYSICS_TEACHER_V21C_FIELDS}
+    row.update({
+        "step": 0, "candidate_close": True, "student_valid": True,
+        "gripper_contact_score": 1.0, "object_contact": True,
+        "support_contact": False, "relative_pose_stability": 0.9,
+        "object_eef_comotion_score": 0.8, "lift_score": 0.5,
+        "target_progress": 0.3, "target_progress_known": True,
+        "task_grasp_necessity": 1.0, "stable_grasp_score": 0.85,
+        "stable_grasp_dwell": 10, "release_risk": 0.1,
+        "regrasp_or_instability_risk": 0.2, "support_removed": 0.0,
+        "utility_score": 0.6, "known_mask": True,
+        "utility_tier": 2, "phase_name": "VALID_RETENTION",
+        "teacher_confidence": 1.0, "window_id": "candidate:0",
+        "window_start": 0, "window_end": 11, "suite": "libero_object",
+        "task_idx": 0, "manipulated_objects": [], "target_names": [],
+        "support_names": [], "task_role_status": "PASS",
+        "task_role_reason": "", "physics_teacher_proxy": True,
+        "counterfactual_attack_label": False,
+        "canonical_parent_key": "libero_object/task_00/state_00",
+        "state_id": 0, "source_artifact_recursive_sha256": "0" * 64,
+        "physics_protocol_schema": "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL",
+        "causal_trigger_eligible": True, "component_valid_mask": {},
+        "tier_onset_step": 0,
+        "raw_gripper": 0.0, "action_intent": "CLOSE", "action_known": True,
+    })
+    result = _physics_row_as_v5_teacher(row, protocol)
+    assert result["canonical_parent_key"] == "libero_object/task_00/state_00"
+    assert result["known_mask"] is True
+    assert result["candidate_close"] is True
+    assert result["utility_tier"] == 2
+
+
+def test_v21c_loader_rejects_missing_action_fields():
+    """V21C loader must reject rows missing raw_gripper, action_intent, or action_known."""
+    import pytest
+    from gripper_attack.v5_dataset import _physics_row_as_v5_teacher
+    from gripper_attack.v5_physics import PHYSICS_TEACHER_V21C_FIELDS
+    protocol = {
+        "schema": "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL",
+        "fixed_constants": {
+            "tier2_max_release_risk": 0.60,
+            "tier2_max_regrasp_risk": 0.60,
+        },
+    }
+    # Build a V21 row (no action fields)
+    row = {field: None for field in PHYSICS_TEACHER_V21C_FIELDS
+           if field not in {"raw_gripper", "action_intent", "action_known"}}
+    row.update({
+        "step": 0, "candidate_close": True, "student_valid": True,
+        "gripper_contact_score": 1.0, "object_contact": True,
+        "support_contact": False, "relative_pose_stability": 0.9,
+        "object_eef_comotion_score": 0.8, "lift_score": 0.5,
+        "target_progress": 0.3, "target_progress_known": True,
+        "task_grasp_necessity": 1.0, "stable_grasp_score": 0.85,
+        "stable_grasp_dwell": 10, "release_risk": 0.1,
+        "regrasp_or_instability_risk": 0.2, "support_removed": 0.0,
+        "utility_score": 0.6, "known_mask": True,
+        "utility_tier": 2, "phase_name": "VALID_RETENTION",
+        "teacher_confidence": 1.0, "window_id": "candidate:0",
+        "window_start": 0, "window_end": 11, "suite": "libero_object",
+        "task_idx": 0, "manipulated_objects": [], "target_names": [],
+        "support_names": [], "task_role_status": "PASS",
+        "task_role_reason": "", "physics_teacher_proxy": True,
+        "counterfactual_attack_label": False,
+        "canonical_parent_key": "libero_object/task_00/state_00",
+        "state_id": 0, "source_artifact_recursive_sha256": "0" * 64,
+        "physics_protocol_schema": "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL",
+        "causal_trigger_eligible": True, "component_valid_mask": {},
+        "tier_onset_step": 0,
+    })
+    with pytest.raises(ValueError):
+        _physics_row_as_v5_teacher(row, protocol)
+

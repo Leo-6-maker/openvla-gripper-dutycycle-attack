@@ -36,6 +36,9 @@ PHYSICS_TEACHER_FIELDS = frozenset(
 PHYSICS_TEACHER_V21_FIELDS = PHYSICS_TEACHER_FIELDS | frozenset(
     {"causal_trigger_eligible", "component_valid_mask", "tier_onset_step"}
 )
+PHYSICS_TEACHER_V21C_FIELDS = PHYSICS_TEACHER_V21_FIELDS | frozenset(
+    {"raw_gripper", "action_intent", "action_known"}
+)
 _ROLE_PREDICATES = {"In", "On", "Inside", "Contains", "Stack"}
 _SUPPORT_SUFFIXES = (
     "_contain_region",
@@ -509,4 +512,4 @@ def derive_episode_rows(
     return output, windows
 
 
-__all__ = ["PHYSICS_PHASES", "PHYSICS_TEACHER_FIELDS", "PHYSICS_TEACHER_V21_FIELDS", "PhysicsTaskRole", "parse_bddl_task_role", "derive_episode_rows"]
+__all__ = ["PHYSICS_PHASES", "PHYSICS_TEACHER_FIELDS", "PHYSICS_TEACHER_V21_FIELDS", "PHYSICS_TEACHER_V21C_FIELDS", "PhysicsTaskRole", "parse_bddl_task_role", "derive_episode_rows"]

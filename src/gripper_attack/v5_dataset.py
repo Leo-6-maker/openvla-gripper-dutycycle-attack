@@ -21,7 +21,7 @@ from .v5_protocol import (
     validate_student_features,
     validate_teacher_row,
 )
-from .v5_physics import PHYSICS_TEACHER_FIELDS, PHYSICS_TEACHER_V21_FIELDS
+from .v5_physics import PHYSICS_TEACHER_FIELDS, PHYSICS_TEACHER_V21_FIELDS, PHYSICS_TEACHER_V21C_FIELDS
 
 
 _POLICY_INTENT_REQUIRED_FIELDS = frozenset(
@@ -149,12 +149,13 @@ def _load_physics_protocol(root: Path) -> dict[str, Any]:
 
 
 def _physics_row_as_v5_teacher(row: dict[str, Any], protocol: dict[str, Any]) -> dict[str, Any]:
-    expected_fields = PHYSICS_TEACHER_FIELDS
-    if protocol["schema"] in (
-        "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21",
-        "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL",
-    ):
+    schema = protocol["schema"]
+    if schema == "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21C_ACTION_CANONICAL":
+        expected_fields = PHYSICS_TEACHER_V21C_FIELDS
+    elif schema == "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21":
         expected_fields = PHYSICS_TEACHER_V21_FIELDS
+    else:
+        expected_fields = PHYSICS_TEACHER_FIELDS
     if set(row) != expected_fields:
         missing = sorted(expected_fields - set(row))
         extra = sorted(set(row) - expected_fields)

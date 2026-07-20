@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import importlib
 import json
 import os
 import re
@@ -311,7 +312,12 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         if v21c:
             action_contract_path = Path(_action_contract.__file__).resolve()
             action_contract_sha256 = sha256_file(action_contract_path)
-            v5_physics_path = Path(__import__("gripper_attack.v5_physics").__file__).resolve()
+            v5_physics_module = importlib.import_module("gripper_attack.v5_physics")
+            v5_physics_path = Path(v5_physics_module.__file__).resolve()
+            if v5_physics_path.name != "v5_physics.py":
+                raise RuntimeError(
+                    "v5_physics module resolved to unexpected file: {}".format(v5_physics_path)
+                )
             v5_physics_sha256 = sha256_file(v5_physics_path)
             repo_root = action_contract_path.parent.parent
             try:
@@ -319,7 +325,20 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
                     ["git", "rev-parse", "HEAD"], cwd=str(repo_root), text=True
                 ).strip()
             except Exception:
-                git_commit = "UNKNOWN"
+                raise RuntimeError(
+                    "git rev-parse HEAD failed in repo root: {}".format(repo_root)
+                ) from None
+            if not re.fullmatch(r"[0-9a-f]{40}", git_commit):
+                raise RuntimeError(
+                    "git commit is not a valid 40-char hex SHA: {!r}".format(git_commit)
+                )
+            if args.expected_source_commit:
+                if git_commit != args.expected_source_commit:
+                    raise RuntimeError(
+                        "source commit mismatch: expected {} but HEAD is {}".format(
+                            args.expected_source_commit, git_commit
+                        )
+                    )
             manifest["action_contract_schema"] = _action_contract.ACTION_CONTRACT_SCHEMA
             manifest["action_contract_sha256"] = action_contract_sha256
             manifest["action_contract_source"] = str(action_contract_path)
@@ -365,6 +384,8 @@ def main() -> int:
     parser.add_argument("--physics-audit-root", type=Path, required=True)
     parser.add_argument("--protocol", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--expected-source-commit", type=str, default=None,
+                        help="Optional: cross-check that git HEAD matches this commit SHA")
     args = parser.parse_args()
     print(json.dumps(build(args), indent=2, sort_keys=True))
     return 0
