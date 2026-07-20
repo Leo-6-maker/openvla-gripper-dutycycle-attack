@@ -124,9 +124,17 @@ def main():
             feat0 = float(feats[0])
             feat12 = float(feats[12])
 
-            if not all(np.isfinite(v) for v in [raw_g, env_g, clean_g, app_g, feat0, feat12]):
-                errors += 1
-                continue
+            # Full vector finite checks
+            if not all(np.isfinite(float(v)) for v in raw_action):
+                errors += 1; continue
+            if not all(np.isfinite(float(v)) for v in env_action):
+                errors += 1; continue
+            if not all(np.isfinite(float(v)) for v in clean_raw):
+                errors += 1; continue
+            if not all(np.isfinite(float(v)) for v in applied):
+                errors += 1; continue
+            if not all(np.isfinite(float(v)) for v in feats):
+                errors += 1; continue
 
             raw_vals.append(raw_g)
             env_vals.append(env_g)
@@ -192,11 +200,16 @@ def main():
         print("Env values:  min={:.1f} max={:.1f} mean={:.4f} unique={}".format(
             ea.min(), ea.max(), ea.mean(), len(set(ea.round(6)))))
 
-    if errors == 0 and parity_fail == 0 and feat0_mismatch == 0:
+    # Verify identity count is exactly 800
+    if len(all_ids) != 800:
+        print("D1.1: FAIL — expected 800 identities, got {}".format(len(all_ids)))
+        sys.exit(1)
+
+    if errors == 0 and parity_fail == 0 and feat0_mismatch == 0 and feat12_mismatch == 0:
         print("\nD1.1: PASS — {} identities, {} steps, 0 errors".format(len(all_ids), total_steps))
     else:
-        print("\nD1.1: FAIL — errors={} parity_fail={} feat0_mismatch={}".format(
-            errors, parity_fail, feat0_mismatch))
+        print("\nD1.1: FAIL — errors={} parity={} feat0_mm={} feat12_mm={}".format(
+            errors, parity_fail, feat0_mismatch, feat12_mismatch))
         sys.exit(1)
 
 

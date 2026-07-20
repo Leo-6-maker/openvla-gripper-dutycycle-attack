@@ -279,27 +279,24 @@ def _target_progress(
 
 
 def _candidate_close(step: Mapping[str, Any], threshold: float) -> bool:
-    """FIXED (Gate D2.0): Use canonical action contract.
+    """FIXED (Gate D2.1.1): Use canonical action contract via validate_raw_action.
 
-    OpenVLA raw action space: 0=CLOSE, 1=OPEN.
-    raw < 0.5 → CLOSE intent.
-    raw == 0.5 → BOUNDARY (abstain).
+    OpenVLA raw action space: 0=CLOSE, 1=OPEN.  raw < 0.5 → CLOSE intent.
+    BOUNDARY (raw==0.5), missing, and non-finite values all return False
+    with action_known=False downstream.
 
     Previous bug: used raw[6] >= threshold, which selected the OPEN region.
     """
+    from .action_contract import validate_raw_action, GripperIntent
+
     try:
-        from .action_contract import raw_gripper_is_close
-    except ImportError:
-        # Fallback for server execution outside package
-        def raw_gripper_is_close(r):
-            return abs(float(r) - 0.5) > 1e-6 and float(r) < 0.5
-    raw = step.get("clean_action_raw_7d", step.get("action_raw"))
-    if not isinstance(raw, list) or len(raw) < 7:
+        raw, intent = validate_raw_action(step, field="clean_action_raw_7d")
+    except (KeyError, ValueError):
+        # Missing or non-finite → unknown, not close
         return False
-    # boundary check: raw == 0.5 (±eps) → abstain (not close)
-    if abs(float(raw[6]) - 0.5) <= 1e-6:
+    if intent is GripperIntent.BOUNDARY:
         return False
-    return float(raw[6]) < threshold
+    return intent is GripperIntent.CLOSE
 
 
 def _assign_segments(rows: list[dict[str, Any]]) -> None:

@@ -108,3 +108,116 @@ def test_physics_v21_does_not_treat_zero_motion_or_unknown_target_as_positive_ev
     assert all(row["target_progress_known"] is False for row in rows)
     assert all(row["target_progress"] == 0.0 for row in rows)
     assert all("target_progress" in row["component_valid_mask"] for row in rows)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Gate D2.1.1: Action contract tests
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_action_contract_raw_close():
+    from gripper_attack.action_contract import classify_openvla_raw_gripper, GripperIntent
+    assert classify_openvla_raw_gripper(0.0) == GripperIntent.CLOSE
+    assert classify_openvla_raw_gripper(0.49) == GripperIntent.CLOSE
+    assert classify_openvla_raw_gripper(0.9961) == GripperIntent.OPEN
+    assert classify_openvla_raw_gripper(1.0) == GripperIntent.OPEN
+    assert classify_openvla_raw_gripper(0.5) == GripperIntent.BOUNDARY
+
+
+def test_action_contract_env_close():
+    from gripper_attack.action_contract import classify_libero_env_gripper, GripperIntent
+    assert classify_libero_env_gripper(1.0) == GripperIntent.CLOSE
+    assert classify_libero_env_gripper(-1.0) == GripperIntent.OPEN
+    assert classify_libero_env_gripper(0.0) == GripperIntent.BOUNDARY
+
+
+def test_action_contract_postprocess_parity():
+    from gripper_attack.action_contract import (
+        postprocess_gripper_openvla_to_libero, raw_gripper_is_close, env_gripper_is_close)
+    for raw in [0.0, 0.3, 0.49, 0.51, 0.7, 1.0]:
+        env = postprocess_gripper_openvla_to_libero(raw)
+        assert raw_gripper_is_close(raw) == env_gripper_is_close(env)
+
+
+def test_action_contract_validate_missing_field():
+    import pytest
+    from gripper_attack.action_contract import validate_raw_action
+    with pytest.raises(KeyError):
+        validate_raw_action({"clean_action_raw_7d": [0, 0, 0, 0, 0, 0, 0.0]}, field="nonexistent")
+    with pytest.raises(KeyError):
+        validate_raw_action({}, field="clean_action_raw_7d")
+
+
+def test_action_contract_validate_non_finite():
+    import pytest
+    from gripper_attack.action_contract import validate_raw_action
+    with pytest.raises(ValueError):
+        validate_raw_action({"clean_action_raw_7d": [0, 0, 0, 0, 0, 0, float('nan')]})
+
+
+def test_action_contract_validate_too_short():
+    import pytest
+    from gripper_attack.action_contract import validate_raw_action
+    with pytest.raises(KeyError):
+        validate_raw_action({"clean_action_raw_7d": [0, 0, 0, 0, 0]})
+
+
+def test_candidate_close_boundary_returns_false():
+    """raw=0.5 must return False (not close), not default to True."""
+    protocol = deepcopy(PROTOCOL)
+    protocol["schema"] = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21"
+    protocol["window_policy"] = {"loader_preserve_candidate_segment": True}
+    role = parse_bddl_task_role(_bddl("(And (In obj_1 target_1_contain_region))"), suite="libero_object", task_idx=0, object_names=["obj_1", "target_1"])
+    steps, sidecars = _episode(12)
+    # Set raw to boundary value
+    for s in steps:
+        s["clean_action_raw_7d"][6] = 0.5
+    rows, _ = derive_episode_rows(
+        steps, sidecars, role,
+        {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}},
+        protocol,
+    )
+    # Boundary raw → candidate_close must be False, not True
+    assert all(not row["candidate_close"] for row in rows), "raw=0.5 must not be candidate close"
+
+
+def test_candidate_close_open_returns_false():
+    """raw=1.0 (OPEN) must return False."""
+    protocol = deepcopy(PROTOCOL)
+    protocol["schema"] = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21"
+    protocol["window_policy"] = {"loader_preserve_candidate_segment": True}
+    role = parse_bddl_task_role(_bddl("(And (In obj_1 target_1_contain_region))"), suite="libero_object", task_idx=0, object_names=["obj_1", "target_1"])
+    steps, sidecars = _episode(12)
+    for s in steps:
+        s["clean_action_raw_7d"][6] = 1.0  # OPEN
+    rows, _ = derive_episode_rows(
+        steps, sidecars, role,
+        {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}},
+        protocol,
+    )
+    assert all(not row["candidate_close"] for row in rows), "raw=1.0 (OPEN) must not be candidate close"
+
+
+def test_candidate_close_open_close_produces_two_segments():
+    """close-open-close must produce two candidate segments."""
+    protocol = deepcopy(PROTOCOL)
+    protocol["schema"] = "DETECTOR_V5_PHYSICS_TEACHER_PROTOCOL_V21"
+    protocol["window_policy"] = {"loader_preserve_candidate_segment": True}
+    role = parse_bddl_task_role(_bddl("(And (In obj_1 target_1_contain_region))"), suite="libero_object", task_idx=0, object_names=["obj_1", "target_1"])
+    steps, sidecars = _episode(12)
+    # close (0-3), open (4-7), close (8-11)
+    for i, s in enumerate(steps):
+        if i < 4:
+            s["clean_action_raw_7d"][6] = 0.0  # CLOSE
+        elif i < 8:
+            s["clean_action_raw_7d"][6] = 1.0  # OPEN
+        else:
+            s["clean_action_raw_7d"][6] = 0.0  # CLOSE
+    rows, _ = derive_episode_rows(
+        steps, sidecars, role,
+        {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}},
+        protocol,
+    )
+    # window_id is a string like "candidate:0"
+    segment_ids = set(row["window_id"] for row in rows if row.get("window_id", "").startswith("candidate"))
+    assert len(segment_ids) == 2, "Expected 2 candidate segments (close-open-close), got {}: {}".format(
+        len(segment_ids), sorted(segment_ids))
