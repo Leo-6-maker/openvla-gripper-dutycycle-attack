@@ -207,6 +207,11 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     registry_seal = verify_sealed_root(args.registry_root.resolve())
     decoder_seal = verify_sealed_root(args.decoder_root.resolve())
     physics_audit_seal = verify_sealed_root(args.physics_audit_root.resolve())
+    k10_seal = None
+    if args.k10_root:
+        k10_seal = verify_sealed_root(args.k10_root.resolve())
+        if not args.expected_k10_schema:
+            raise ValueError("--expected-k10-schema is required when --k10-root is provided")
     decoder_summary = _load_json(args.decoder_root / "summary.json")
     if decoder_summary.get("status") != "PASS_TASK_CONDITIONAL_DECODER":
         raise ValueError("Physics Teacher requires a passing task decoder")
@@ -243,7 +248,21 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
                 raise ValueError(f"source identity/length mismatch: {identity}")
             role = roles[(suite, task_idx)]
             bddl_text = specs[(suite, task_idx)]["text"]
-            derived, events = derive_factorized_rows(step_rows, sidecar_rows, role, slices[(suite, task_idx)], protocol, bddl_text=bddl_text)
+            k10_labels = None
+            k10_schema = None
+            if args.k10_root:
+                k10_path = args.k10_root.resolve() / "labels" / suite / f"task_{task_idx:02d}" / f"state_{int(row['state_id']):02d}" / "k10_labels.jsonl"
+                if not k10_path.is_file():
+                    raise FileNotFoundError(f"K10 label missing: {k10_path}")
+                k10_labels = _load_jsonl(k10_path)
+                k10_schema = args.expected_k10_schema
+            derived, events = derive_factorized_rows(
+                step_rows, sidecar_rows, role, slices[(suite, task_idx)], protocol,
+                bddl_text=bddl_text,
+                k10_labels=k10_labels,
+                k10_label_schema=k10_schema,
+                require_external_k10=bool(args.k10_root),
+            )
             for item in derived:
                 item["canonical_parent_key"] = identity
                 item["state_id"] = int(row["state_id"])
@@ -342,6 +361,12 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             "v5_factorized_teacher_source": str(factorized_path),
             "v5_factorized_teacher_sha256": factorized_sha256,
             "source_git_commit": git_commit,
+            "k10_binding": {
+                "root": str(args.k10_root.resolve()) if args.k10_root else None,
+                "root_sha256s_sha256": k10_seal["sha256sums_sha256"] if k10_seal else None,
+                "expected_schema": args.expected_k10_schema,
+                "external_bound": bool(args.k10_root),
+            },
         }
 
         action_contract_doc = {
@@ -383,6 +408,10 @@ def main() -> int:
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--expected-source-commit", type=str, default=None,
                         help="Optional: cross-check that git HEAD matches this commit SHA")
+    parser.add_argument("--k10-root", type=Path, default=None,
+                        help="Required for production: sealed Official K10 label root for strict_k10_feasible binding")
+    parser.add_argument("--expected-k10-schema", type=str, default=None,
+                        help="Expected K10 label schema for binding verification")
     args = parser.parse_args()
     print(json.dumps(build(args), indent=2, sort_keys=True))
     return 0

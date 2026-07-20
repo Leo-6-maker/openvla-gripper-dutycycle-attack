@@ -111,6 +111,38 @@ def _determine_mechanism(role: PhysicsTaskRole, bddl_text: str | None = None) ->
     return MechanismRoute.UNKNOWN_OR_AMBIGUOUS
 
 
+# ── Object attribution ─────────────────────────────────────────────────────
+
+def _resolve_active_object(
+    contact_pairs: Sequence[Sequence[Any]],
+    manipulated_objects: Sequence[str],
+) -> tuple[str | None, str]:
+    """Determine which manipulated object the gripper is contacting.
+
+    Returns (active_object_name, attribution_status).
+    attribution_status: "SINGLE" | "AMBIGUOUS" | "NONE"
+    """
+    matching: list[str] = []
+    for pair in contact_pairs:
+        endpoints = [str(item) for item in pair]
+        has_gripper = any(
+            "gripper0" in ep or "finger1" in ep or "finger2" in ep
+            for ep in endpoints
+        )
+        if not has_gripper:
+            continue
+        for name in manipulated_objects:
+            for ep in endpoints:
+                if ep == name or ep.startswith(name + "_"):
+                    if name not in matching:
+                        matching.append(name)
+    if len(matching) == 1:
+        return matching[0], "SINGLE"
+    if len(matching) >= 2:
+        return None, "AMBIGUOUS"
+    return None, "NONE"
+
+
 # ── Evidence helpers ────────────────────────────────────────────────────────
 
 def _opening_trend(
@@ -238,10 +270,14 @@ def derive_factorized_rows(
     bddl_text: str | None = None,
     k10_labels: Sequence[Mapping[str, Any]] | None = None,
     k10_label_schema: str | None = None,
+    require_external_k10: bool = False,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Derive factorized three-head Teacher labels for one episode.
 
     Does NOT mutate step_rows or sidecar_rows.
+
+    When require_external_k10=True, k10_labels must be provided — the
+    internal simplified fallback is forbidden for production builds.
     """
 
     T = len(step_rows)
@@ -403,6 +439,11 @@ def derive_factorized_rows(
             release_conf = release_score
 
         # ── strict_k10_feasible ───────────────────────────────────────
+        if require_external_k10 and k10_labels is None:
+            raise ValueError(
+                "require_external_k10=True but no k10_labels provided — "
+                "internal fallback forbidden for production builds"
+            )
         k10_feasible, k10_known, k10_schema = _resolve_k10_feasible(
             index, action_states, k10_labels, k10_label_schema,
         )
@@ -417,16 +458,21 @@ def derive_factorized_rows(
         # MANIPULATING/GRASPED → RELEASED on release
         # RELEASED → IDLE after release clears
 
+        # Determine active object from gripper contacts
+        contact_pairs = sidecar_rows[index].get("mujoco_contact_pairs", [])
+        raw_active_obj, attr_status = _resolve_active_object(contact_pairs, role.manipulated_objects)
+
         if event_phase == EventPhase.IDLE:
             if grasp_value:
                 event_counter += 1
                 event_phase = EventPhase.GRASPED
-                active_object = role.manipulated_objects[0] if role.manipulated_objects else None
+                active_object = raw_active_obj
         elif event_phase == EventPhase.RELEASED:
-            if grasp_value:
+            if grasp_value and raw_active_obj is not None:
+                # New grasp of an object after release → new event
                 event_counter += 1
                 event_phase = EventPhase.GRASPED
-                active_object = role.manipulated_objects[0] if role.manipulated_objects else None
+                active_object = raw_active_obj
             elif not release_value:
                 event_phase = EventPhase.IDLE
         elif event_phase == EventPhase.GRASPED:
@@ -434,23 +480,37 @@ def derive_factorized_rows(
                 event_phase = EventPhase.RELEASED
             elif manip_value:
                 event_phase = EventPhase.MANIPULATING
+            # Update active_object if attribution becomes clearer
+            if raw_active_obj is not None:
+                active_object = raw_active_obj
         elif event_phase == EventPhase.MANIPULATING:
             if release_value:
                 event_phase = EventPhase.RELEASED
+            if raw_active_obj is not None:
+                active_object = raw_active_obj
 
         # Determine event_role and event_id
+        # RELEASED retains event_id — release step belongs to the ending event.
+        # Only IDLE gets event_id=-1.
         if event_phase in (EventPhase.GRASPED, EventPhase.MANIPULATING):
-            event_role = EventRole.TARGET.value
-            target_relevant = True
             current_event_id = event_counter
+            if attr_status == "AMBIGUOUS":
+                event_role = EventRole.NONE.value
+                target_relevant = False
+            elif active_object is not None and active_object != role.manipulated_objects[0] if role.manipulated_objects else False:
+                event_role = EventRole.DISTRACTOR.value
+                target_relevant = False
+            else:
+                event_role = EventRole.TARGET.value
+                target_relevant = True
         elif event_phase == EventPhase.RELEASED:
+            current_event_id = event_counter  # release belongs to this event
             event_role = EventRole.NONE.value
             target_relevant = False
-            current_event_id = -1
         else:  # IDLE
+            current_event_id = -1
             event_role = EventRole.NONE.value
             target_relevant = False
-            current_event_id = -1
 
         rows.append({
             "step": index,

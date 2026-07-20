@@ -327,7 +327,7 @@ def test_unknown_action_all_heads_unknown():
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def test_two_grasp_segments_two_event_ids():
-    """grasp→release→grasp → event_id increases, release gap has event_id=-1."""
+    """grasp→release→grasp → event counter increases, IDLE gap has event_id=-1."""
     role = _role()
     steps, sidecars = _episode(30, gripper_contact_from=5)
     # Create release gap at steps 14-17
@@ -337,9 +337,81 @@ def test_two_grasp_segments_two_event_ids():
     rows, events = derive_factorized_rows(steps, sidecars, role, _slices(), PROTOCOL)
     eids = set(r["event_id"] for r in rows if r["event_id"] >= 0)
     assert len(eids) >= 2, f"expected >= 2 event IDs, got {sorted(eids)}"
-    # Should have event_id=-1 in the release gap
-    gap_eids = [r["event_id"] for r in rows[16:19]]
-    assert any(e == -1 for e in gap_eids), f"release gap should have event_id=-1: {gap_eids}"
+    # After release clears → IDLE phase should have event_id=-1
+    idle_eids = [r["event_id"] for r in rows if r["event_phase"] == "IDLE"]
+    assert all(e == -1 for e in idle_eids), f"IDLE phase must have event_id=-1"
+
+
+def test_release_step_retains_event_id():
+    """Release trigger step must retain the event_id of the ending event."""
+    role = _role()
+    steps, sidecars = _episode(30, gripper_contact_from=5)
+    for i in range(16, 20):
+        sidecars[i]["mujoco_contact_pairs"] = []
+        steps[i]["clean_action_raw_7d"][6] = 1.0
+    rows, events = derive_factorized_rows(steps, sidecars, role, _slices(), PROTOCOL)
+    release_rows = [r for r in rows if r["release_or_instability"]]
+    assert len(release_rows) > 0, "should have release steps"
+    for r in release_rows:
+        assert r["event_id"] >= 0, f"release step {r['step']} must have event_id >= 0, got {r['event_id']}"
+        assert r["event_phase"] == "RELEASED", f"release step must be RELEASED phase, got {r['event_phase']}"
+
+
+def test_event_summary_includes_release_steps():
+    """Event summary must record release_steps > 0 for events with release."""
+    role = _role()
+    steps, sidecars = _episode(30, gripper_contact_from=5)
+    for i in range(16, 20):
+        sidecars[i]["mujoco_contact_pairs"] = []
+        steps[i]["clean_action_raw_7d"][6] = 1.0
+    _, events = derive_factorized_rows(steps, sidecars, role, _slices(), PROTOCOL)
+    assert len(events) > 0
+    any_has_release = any(e["has_release"] for e in events)
+    any_release_steps = any(e["release_steps"] > 0 for e in events)
+    assert any_has_release or any_release_steps, \
+        f"event summary should capture release: has_release={[e['has_release'] for e in events]}"
+
+
+def test_object_attribution_from_contacts():
+    """_resolve_active_object must correctly identify contacted object."""
+    from gripper_attack.v5_factorized_teacher import _resolve_active_object
+    name, status = _resolve_active_object(
+        [["obj_1_g1", "gripper0_finger1_pad_collision"]],
+        ["obj_1", "obj_2"],
+    )
+    assert name == "obj_1"
+    assert status == "SINGLE"
+
+    name, status = _resolve_active_object(
+        [["obj_1_g1", "gripper0_finger1_pad_collision"],
+         ["obj_2_g1", "gripper0_finger1_pad_collision"]],
+        ["obj_1", "obj_2"],
+    )
+    assert name is None
+    assert status == "AMBIGUOUS"
+
+    name, status = _resolve_active_object([], ["obj_1"])
+    assert name is None
+    assert status == "NONE"
+
+
+def test_distractor_when_non_target_object_contacted():
+    """Contact with non-first manipulated object → DISTRACTOR."""
+    # Use multi-object BDDL
+    bddl = _bddl_multi()
+    role = parse_bddl_task_role(bddl, suite="libero_10", task_idx=0,
+                                 object_names=["obj_1", "obj_2", "target_1", "target_2"])
+    slices = {"obj_1": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]},
+              "obj_2": {"pos": [0, 3], "quat": [3, 7], "to_eef_pos": [7, 10], "to_eef_quat": [10, 14]}}
+    steps, sidecars = _episode(20, gripper_contact_from=5)
+    # Contact with obj_2 (not first manipulated obj_1)
+    for sc in sidecars:
+        sc["mujoco_contact_pairs"] = [["obj_2_g1", "gripper0_finger1_pad_collision"]]
+    rows, _ = derive_factorized_rows(steps, sidecars, role, slices, PROTOCOL)
+    roles_seen = set(r["event_role"] for r in rows if r["event_id"] >= 0)
+    # Should have DISTRACTOR since obj_2 != obj_1 (first manipulated)
+    has_distractor = any(r["event_role"] == "DISTRACTOR" for r in rows)
+    assert has_distractor, f"should have DISTRACTOR events, roles seen: {roles_seen}"
 
 def test_event_state_machine_phases():
     """Verify event_phase transitions IDLE→GRASPED→MANIPULATING→RELEASED→IDLE."""
@@ -363,6 +435,38 @@ def test_distractor_vs_target_semantics():
         assert r["event_role"] in ("TARGET", "DISTRACTOR", "NONE")
         assert isinstance(r["target_relevant"], bool)
         assert "active_object_name" in r
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# K10 external binding
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def test_require_external_k10_raises_without_labels():
+    """require_external_k10=True + no k10_labels → ValueError."""
+    import pytest
+    role = _role()
+    steps, sidecars = _episode(10, gripper_contact_from=5)
+    with pytest.raises(ValueError, match="require_external_k10"):
+        derive_factorized_rows(steps, sidecars, role, _slices(), PROTOCOL,
+                               require_external_k10=True)
+
+def test_k10_labels_passed_produce_correct_schema():
+    """External K10 labels must produce correct strict_k10_binding_schema."""
+    role = _role()
+    steps, sidecars = _episode(10, gripper_contact_from=5)
+    k10 = [{"k10_known_mask": True, "k10_feasible": True} for _ in range(10)]
+    rows, _ = derive_factorized_rows(steps, sidecars, role, _slices(), PROTOCOL,
+                                      k10_labels=k10, k10_label_schema="OFFICIAL_K10_V1")
+    for r in rows:
+        assert r["strict_k10_binding_schema"] == "OFFICIAL_K10_V1"
+
+def test_internal_k10_fallback_marked_non_authoritative():
+    """Without external K10, schema must be INTERNAL_SIMPLIFIED_V1."""
+    role = _role()
+    steps, sidecars = _episode(10, gripper_contact_from=5)
+    rows, _ = derive_factorized_rows(steps, sidecars, role, _slices(), PROTOCOL)
+    for r in rows:
+        assert r["strict_k10_binding_schema"] == "INTERNAL_SIMPLIFIED_V1"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
