@@ -169,11 +169,12 @@ def test_multi_object_routed_correctly():
     assert route.supported
 
 def test_articulated_routed_unsupported():
+    bddl_text = _bddl("(And (Open cabinet_1_middle_region))")
     role = parse_bddl_task_role(
-        _bddl("(And (Open cabinet_1_middle_region))"),
+        bddl_text,
         suite="libero_goal", task_idx=0, object_names=["cabinet_1"],
     )
-    route = _determine_mechanism(role)
+    route = _determine_mechanism(role, bddl_text=bddl_text)
     assert route == MechanismRoute.ARTICULATED_OR_PLANAR
     assert not route.supported
 

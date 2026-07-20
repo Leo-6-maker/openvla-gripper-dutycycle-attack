@@ -84,14 +84,19 @@ FACTORIZED_LABEL_FILENAME = "factorized_teacher_v1.jsonl"
 FACTORIZED_MANIFEST_SCHEMA = "DETECTOR_V5_FACTORIZED_TEACHER_V1_MANIFEST"
 
 
-def _determine_mechanism(role: PhysicsTaskRole) -> MechanismRoute:
+def _determine_mechanism(role: PhysicsTaskRole, bddl_text: str | None = None) -> MechanismRoute:
     """Route from BDDL task role only — no task ID, state ID, or attack outcome."""
+    # Check BDDL goal text for articulated predicates (Open/Close not in _ROLE_PREDICATES)
+    if bddl_text:
+        import re as _re
+        goal_match = _re.search(r"\(:goal\s*(.*?)\n\s*\)\s*\n", bddl_text, flags=_re.DOTALL)
+        if goal_match:
+            for match in _re.finditer(r"\(([A-Za-z_]+)\s+", goal_match.group(1)):
+                if match.group(1) in ("Open", "Close"):
+                    return MechanismRoute.ARTICULATED_OR_PLANAR
+
     if not role.applicable:
         return MechanismRoute.UNKNOWN_OR_AMBIGUOUS
-
-    for pred, _, _ in role.goal_predicates:
-        if pred in ("Open", "Close"):
-            return MechanismRoute.ARTICULATED_OR_PLANAR
 
     n_manipulated = len(role.manipulated_objects)
     n_targets = len(role.target_names)
@@ -341,20 +346,20 @@ def derive_factorized_rows(
         grasp_value = False
         grasp_conf = 0.0
         if grasp_known:
-            has_contact_condition = (
+            has_contact = (
                 has_grip
                 and contact_dwell >= int(thresholds.get("grasp_min_contact_dwell", 3))
-                and contact_loss < float(thresholds.get("grasp_max_contact_loss", 0.5))
             )
-            grasp_score = _clip(
-                0.30 * stable
-                + 0.25 * float(has_contact_condition)
-                + 0.20 * qpos_closed
-                + 0.15 * (1.0 - toggle_rate)
-                + 0.10 * (1.0 - contact_loss)
-            )
-            grasp_value = grasp_score >= float(thresholds["grasp_min_score"])
-            grasp_conf = grasp_score
+            if has_contact:
+                grasp_score = _clip(
+                    0.30 * stable
+                    + 0.20 * qpos_closed
+                    + 0.20 * (1.0 - toggle_rate)
+                    + 0.15 * (1.0 - contact_loss)
+                    + 0.15 * float(has_grip)
+                )
+                grasp_value = grasp_score >= float(thresholds["grasp_min_score"])
+                grasp_conf = grasp_score
 
         # ── manipulation_active ───────────────────────────────────────
         manip_known = bool(grasp_known and grasp_value)
@@ -401,11 +406,18 @@ def derive_factorized_rows(
         # MANIPULATING/GRASPED → RELEASED on release
         # RELEASED → IDLE after release clears
 
-        if event_phase in (EventPhase.IDLE, EventPhase.RELEASED):
+        if event_phase == EventPhase.IDLE:
             if grasp_value:
                 event_counter += 1
                 event_phase = EventPhase.GRASPED
                 active_object = role.manipulated_objects[0] if role.manipulated_objects else None
+        elif event_phase == EventPhase.RELEASED:
+            if grasp_value:
+                event_counter += 1
+                event_phase = EventPhase.GRASPED
+                active_object = role.manipulated_objects[0] if role.manipulated_objects else None
+            elif not release_value:
+                event_phase = EventPhase.IDLE
         elif event_phase == EventPhase.GRASPED:
             if release_value:
                 event_phase = EventPhase.RELEASED
@@ -415,18 +427,19 @@ def derive_factorized_rows(
             if release_value:
                 event_phase = EventPhase.RELEASED
 
-        # Determine event_role: current active object vs other manipulated objects
+        # Determine event_role and event_id
         if event_phase in (EventPhase.GRASPED, EventPhase.MANIPULATING):
             event_role = EventRole.TARGET.value
             target_relevant = True
+            current_event_id = event_counter
         elif event_phase == EventPhase.RELEASED:
             event_role = EventRole.NONE.value
             target_relevant = False
-        else:
+            current_event_id = -1
+        else:  # IDLE
             event_role = EventRole.NONE.value
             target_relevant = False
-
-        current_event_id = event_counter if event_phase != EventPhase.IDLE else -1
+            current_event_id = -1
 
         rows.append({
             "step": index,
