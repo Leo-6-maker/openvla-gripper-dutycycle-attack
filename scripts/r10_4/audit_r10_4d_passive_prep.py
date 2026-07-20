@@ -23,6 +23,16 @@ def result(name: str, passed: bool, detail: str) -> tuple[str, bool, str]:
     return name, bool(passed), detail
 
 
+def imported_roots(tree: ast.AST) -> set[str]:
+    roots: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            roots.update(alias.name.split(".")[0] for alias in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            roots.add(node.module.split(".")[0])
+    return roots
+
+
 def main() -> int:
     checks: list[tuple[str, bool, str]] = []
     for path in (RUNTIME, RUNNER, RECEIPT_BUILDER, PROTOCOL, TESTS):
@@ -31,10 +41,18 @@ def main() -> int:
     runtime_source = RUNTIME.read_text(encoding="utf-8")
     runner_source = RUNNER.read_text(encoding="utf-8")
     builder_source = RECEIPT_BUILDER.read_text(encoding="utf-8")
-    ast.parse(runtime_source)
-    ast.parse(runner_source)
-    ast.parse(builder_source)
+    runtime_tree = ast.parse(runtime_source)
+    runner_tree = ast.parse(runner_source)
+    builder_tree = ast.parse(builder_source)
     checks.append(result("PYTHON_AST_PARSE", True, "runtime/runner/receipt builder"))
+
+    builder_imports = imported_roots(builder_tree)
+    forbidden_builder_imports = sorted(builder_imports & {"torch", "libero", "experiments"})
+    checks.append(result(
+        "RECEIPT_BUILDER_NO_MODEL_RUNTIME_IMPORTS",
+        not forbidden_builder_imports and "gripper_attack.r10_4d_passive" not in builder_source,
+        f"forbidden={forbidden_builder_imports}",
+    ))
 
     model = RoutedGraspDetector()
     parameter_count = sum(parameter.numel() for parameter in model.parameters())
@@ -94,6 +112,7 @@ def main() -> int:
         "--model-path",
         "--detector-bundle",
         "--parent-manifest",
+        "--protocol",
         "--authorization-receipt",
         "--output-root",
         "--upstream-root",
@@ -102,9 +121,25 @@ def main() -> int:
     for flag in required_flags:
         checks.append(result(f"CLI_{flag[2:].replace('-', '_')}", flag in runner_source, flag))
     checks.append(result(
+        "RECEIPT_SIDECAR_REQUIRED",
+        "verify_receipt_sidecar(args.authorization_receipt)" in runner_source,
+        "receipt digest sidecar verified",
+    ))
+    checks.append(result(
+        "RECEIPT_PARENT_PROTOCOL_BOUND",
+        'receipt.get("parent_manifest_sha256")' in runner_source
+        and 'receipt.get("protocol_sha256")' in runner_source,
+        "parent manifest and protocol hashes",
+    ))
+    checks.append(result(
         "RECEIPT_BEFORE_MODEL_LOAD",
         runner_source.find("validate_authorization_receipt(") < runner_source.find("load_openvla(args.model_path"),
         "receipt validation precedes 7B load",
+    ))
+    checks.append(result(
+        "GPU0_ONLY",
+        'if args.gpu != 0:' in runner_source and 'if render_gpu != 0:' in runner_source,
+        "physical GPU0 only",
     ))
     checks.append(result(
         "OFFICIAL_OPENVLA_ADAPTER",
@@ -123,7 +158,7 @@ def main() -> int:
     ))
     checks.append(result(
         "ONE_PARENT_CONSTANT",
-        SUPPORTED_PARENT in runtime_source and "episodes_authorized\": 1" in PROTOCOL.read_text(encoding="utf-8"),
+        SUPPORTED_PARENT in runtime_source and '"episodes_authorized": 1' in PROTOCOL.read_text(encoding="utf-8"),
         SUPPORTED_PARENT,
     ))
 
@@ -131,6 +166,7 @@ def main() -> int:
     checks.append(result("PROTOCOL_SCHEMA", protocol.get("schema") == "R10_4D_SINGLE_EPISODE_PASSIVE_SMOKE_PROTOCOL_V1", str(protocol.get("schema"))))
     checks.append(result("PROTOCOL_FEATURE_SHA", protocol.get("feature_order_sha256") == FEATURE_ORDER_SHA256, str(protocol.get("feature_order_sha256"))))
     checks.append(result("PROTOCOL_PASSIVE_ONLY", protocol.get("passive_only") is True, str(protocol.get("passive_only"))))
+    checks.append(result("PROTOCOL_GPU0", protocol.get("gpu") == 0 and protocol.get("render_gpu") == 0, f"gpu={protocol.get('gpu')} render={protocol.get('render_gpu')}"))
     for key in (
         "formal_training_authorized",
         "formal_attack_authorized",
