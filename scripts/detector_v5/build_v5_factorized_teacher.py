@@ -242,7 +242,8 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             if metadata.get("canonical_parent_key") != identity or len(step_rows) != len(sidecar_rows):
                 raise ValueError(f"source identity/length mismatch: {identity}")
             role = roles[(suite, task_idx)]
-            derived, events = derive_factorized_rows(step_rows, sidecar_rows, role, slices[(suite, task_idx)], protocol)
+            bddl_text = specs[(suite, task_idx)]["text"]
+            derived, events = derive_factorized_rows(step_rows, sidecar_rows, role, slices[(suite, task_idx)], protocol, bddl_text=bddl_text)
             for item in derived:
                 item["canonical_parent_key"] = identity
                 item["state_id"] = int(row["state_id"])

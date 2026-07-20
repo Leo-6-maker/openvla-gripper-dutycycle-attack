@@ -235,6 +235,7 @@ def derive_factorized_rows(
     object_slices: Mapping[str, Mapping[str, Any]],
     protocol: Mapping[str, Any],
     *,
+    bddl_text: str | None = None,
     k10_labels: Sequence[Mapping[str, Any]] | None = None,
     k10_label_schema: str | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -250,7 +251,7 @@ def derive_factorized_rows(
     constants = protocol["fixed_constants"]
     history_size = int(protocol["history"]["score_window_steps"])
     thresholds = protocol["head_thresholds"]
-    mechanism = _determine_mechanism(role)
+    mechanism = _determine_mechanism(role, bddl_text=bddl_text)
 
     # ── Extract action states (no mutation of input) ────────────────────
     action_states: list[CanonicalActionState] = []
@@ -327,11 +328,21 @@ def derive_factorized_rows(
 
         # ── base_known: label semantics are decidable ─────────────────
         # Separate from positive/negative: base_known=True allows known negatives.
+        # Object state is n_objects × 14 features — width varies per task.
+        # Validate that all manipulated-object slices resolve correctly.
+        obj_state = sidecar_rows[index].get("object_state")
         physics_inputs_valid = (
             math.isfinite(stable)
             and math.isfinite(comotion)
             and math.isfinite(lift)
-            and _finite_vector(sidecar_rows[index].get("object_state"), 14) is not None
+            and isinstance(obj_state, (list, tuple))
+            and len(obj_state) > 0
+            and all(math.isfinite(float(v)) for v in obj_state)
+            and all(
+                _object_slice(object_slices, name) is not None
+                and _slice_vector(obj_state, _object_slice(object_slices, name), "pos") is not None
+                for name in role.manipulated_objects
+            )
         )
         route_ok = mechanism.supported and role.applicable
         base_known = bool(
