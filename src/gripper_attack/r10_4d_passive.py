@@ -526,6 +526,29 @@ def close_semantics_parity(raw: float, env: float) -> bool:
     return raw_gripper_is_close(raw) == env_gripper_is_close(env)
 
 
+def close_semantics_status(raw: float, actual_env: float, expected_env: float) -> str:
+    """Classify the close-semantics relationship for a single step.
+
+    Returns one of:
+      PARITY   — raw_close==env_close and postprocess matches
+      BOUNDARY — raw==0.5 (±1e-6), env=0, neither close nor open
+      MISMATCH — raw_close != env_close or postprocess mismatch
+    """
+    if abs(float(raw) - 0.5) <= 1e-6:
+        return "BOUNDARY"
+    raw_c = raw_gripper_is_close(raw)
+    env_c = env_gripper_is_close(actual_env)
+    if raw_c != env_c:
+        return "MISMATCH"
+    if abs(float(actual_env) - float(expected_env)) > 1e-6:
+        return "MISMATCH"
+    return "PARITY"
+
+def raw_is_boundary(raw: float) -> bool:
+    """True when raw gripper is at the exact threshold boundary."""
+    return abs(float(raw) - 0.5) <= 1e-6
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # Core passive episode runner
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -641,19 +664,23 @@ def run_passive_episode(
                 "info": _safe_info(info),
             }
         )
-        env_gripper = float(postprocess_gripper(raw_action[-1])) if raw_action.size > 0 else 0.0
+        raw_gripper = float(raw_action[-1]) if raw_action.size > 0 else 0.5
+        actual_env_gripper = float(clean_env_action[-1]) if clean_env_action.size > 0 else 0.0
+        expected_env_gripper = postprocess_gripper(raw_gripper) if abs(raw_gripper - 0.5) > 1e-6 else 0.0
         detector_records.append(
             {
                 "step": step,
                 "route": route,
                 "grasp_logit": grasp_logit,
                 "grasp_probability": grasp_probability,
-                "raw_gripper": float(raw_action[-1]) if raw_action.size > 0 else 0.0,
-                "env_gripper": env_gripper,
-                "raw_close": raw_gripper_is_close(float(raw_action[-1])) if raw_action.size > 0 else False,
-                "env_close": env_gripper_is_close(env_gripper),
-                "close_semantics_parity": close_semantics_parity(
-                    float(raw_action[-1]) if raw_action.size > 0 else 0.5, env_gripper),
+                "raw_gripper": raw_gripper,
+                "actual_env_gripper": actual_env_gripper,
+                "expected_env_gripper": expected_env_gripper,
+                "postprocess_parity": abs(actual_env_gripper - expected_env_gripper) <= 1e-6,
+                "raw_close": raw_gripper_is_close(raw_gripper),
+                "env_close": env_gripper_is_close(actual_env_gripper),
+                "close_semantics_status": close_semantics_status(
+                    raw_gripper, actual_env_gripper, expected_env_gripper),
                 "close_source": "OPENVLA_RAW_ACTION",
                 "close_mask": close_mask,
                 **fsm_result,
@@ -719,11 +746,13 @@ __all__ = [
     "RoutedGraspDetector",
     "SUPPORTED_PARENT",
     "close_semantics_parity",
+    "close_semantics_status",
     "env_gripper_is_close",
     "load_detector_bundle",
     "parse_route",
     "postprocess_gripper",
     "raw_gripper_is_close",
+    "raw_is_boundary",
     "run_passive_episode",
     "safe_json_value",
     "validate_authorization_receipt",

@@ -18,10 +18,12 @@ from gripper_attack.r10_4d_passive import (
     RoutedGraspDetector,
     SUPPORTED_PARENT,
     close_semantics_parity,
+    close_semantics_status,
     env_gripper_is_close,
     parse_route,
     postprocess_gripper,
     raw_gripper_is_close,
+    raw_is_boundary,
     run_passive_episode,
     safe_json_value,
     validate_authorization_receipt,
@@ -553,15 +555,50 @@ def test_boundary_raw_detected():
 
 
 def test_close_fields_in_detector_records():
-    """F1.1c: detector records must include raw_gripper, env_gripper,
-    raw_close, env_close, close_semantics_parity, close_source."""
+    """F1.1c.1: detector records must include raw_gripper, actual_env_gripper,
+    expected_env_gripper, postprocess_parity, raw_close, env_close,
+    close_semantics_status, close_source."""
     result = _run(max_steps=2)
     for row in result["detector_records"]:
         assert "raw_gripper" in row
-        assert "env_gripper" in row
+        assert "actual_env_gripper" in row
+        assert "expected_env_gripper" in row
+        assert "postprocess_parity" in row
         assert "raw_close" in row
         assert "env_close" in row
-        assert "close_semantics_parity" in row
+        assert "close_semantics_status" in row
         assert row["close_source"] == "OPENVLA_RAW_ACTION"
-        # Parity must be True for FakeAdapter (raw=1.0 → env=-1.0, both open)
-        assert row["close_semantics_parity"] is True
+        # FakeAdapter: raw=1.0 → postprocess → env=-1.0, both open
+        assert row["close_semantics_status"] == "PARITY"
+        assert row["postprocess_parity"] is True
+
+
+def test_env_gripper_from_actual_postprocess():
+    """F1.1c.1: actual_env_gripper == clean_env_action[-1] from adapter."""
+    result = _run(max_steps=2)
+    for row in result["detector_records"]:
+        # FakeAdapter: raw=1.0, postprocess returns env=-1.0
+        assert row["actual_env_gripper"] == -1.0
+        assert row["env_close"] is False  # env=-1.0 is open in LIBERO space
+
+
+def test_postprocess_parity_detects_mismatch():
+    """postprocess_parity must be False when actual != expected."""
+    # raw=0.0 → expected_env=+1.0, but actual_env=-1.0 → MISMATCH
+    # This can't happen with FakeAdapter, so test the function directly
+    assert close_semantics_status(0.0, -1.0, 1.0) == "MISMATCH"
+    assert close_semantics_status(0.0, 1.0, 1.0) == "PARITY"
+
+
+def test_boundary_semantics_status():
+    """raw=0.5 must return BOUNDARY regardless of env values."""
+    assert close_semantics_status(0.5, 0.0, 0.0) == "BOUNDARY"
+    assert close_semantics_status(0.51, -1.0, -1.0) == "PARITY"  # well above boundary
+
+
+def test_raw_is_boundary_detection():
+    """Detect raw exactly at 0.5 threshold."""
+    assert raw_is_boundary(0.5) is True
+    assert raw_is_boundary(0.5 + 1e-7) is True
+    assert raw_is_boundary(0.49) is False
+    assert raw_is_boundary(0.0) is False
