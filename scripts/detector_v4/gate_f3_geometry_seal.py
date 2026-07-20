@@ -120,7 +120,7 @@ def main():
     cur_seg = 0
     release_eps: set[str] = set()
 
-    per_route = defaultdict(lambda: Counter())
+    per_route: dict[str, dict] = defaultdict(lambda: {"eps": 0, "events": 0, "grasp_pos": 0, "manip_pos": 0, "has_pos": 0, "tasks": set()})
     per_task = defaultdict(lambda: Counter())
     per_suite = defaultdict(lambda: Counter())
 
@@ -287,7 +287,8 @@ def main():
         "grasp_segment_count": len(grasp_segments),
         "grasp_segment_median": sorted(grasp_segments)[len(grasp_segments)//2] if grasp_segments else 0,
         "release_positive_episodes": len(release_eps),
-        "per_route": {r: {"tasks": len(d["tasks"]), "events": d["events"], "positive_eps": d["has_pos"]}
+        "per_route": {r: {"tasks": len(d["tasks"]), "events": d["events"], "positive_eps": d["has_pos"],
+                           "grasp_pos": d["grasp_pos"], "manip_pos": d["manip_pos"]}
                       for r, d in per_route.items()},
         "errors": errors,
         "formal_training_authorized": not hold,
