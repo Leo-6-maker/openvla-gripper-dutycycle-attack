@@ -322,13 +322,13 @@ def derive_factorized_rows(
         release_conf = 0.0
         if release_known:
             release_score = _clip(
-                0.25 * contact_loss
+                0.35 * contact_loss
                 + 0.20 * separation
-                + 0.20 * opening_now
-                + 0.20 * toggle_rate
+                + 0.15 * opening_now
+                + 0.15 * toggle_rate
                 + 0.15 * (1.0 - stable)
             )
-            release_value = release_score >= 0.5
+            release_value = release_score >= 0.35
             release_conf = release_score
 
         # ── strict_k10_feasible (evaluation only, future-allowed) ────
