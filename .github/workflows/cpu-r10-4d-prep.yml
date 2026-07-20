@@ -1,0 +1,38 @@
+name: cpu-r10-4d-prep
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  r10-4d-passive-prep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest numpy pillow
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Compile R10.4D preparation
+        run: |
+          python -m py_compile \
+            src/gripper_attack/r10_4d_passive.py \
+            scripts/r10_4/run_r10_4d_passive_smoke.py \
+            scripts/r10_4/build_r10_4d_authorization_receipt.py \
+            scripts/r10_4/audit_r10_4d_passive_prep.py
+      - name: Run R10.4D CPU contract tests
+        run: pytest -q tests/test_r10_4d_passive.py
+      - name: Run independent prep auditor
+        run: python scripts/r10_4/audit_r10_4d_passive_prep.py
+      - name: Ensure no live authorization receipt is committed
+        run: |
+          test ! -e manifests/R10_4D_SINGLE_EPISODE_PASSIVE_SMOKE_AUTH.json
+      - name: Check patch whitespace
+        run: git diff --check
