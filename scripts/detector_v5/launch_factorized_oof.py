@@ -21,7 +21,7 @@ OUT_BASE = OPS / "OFFICIAL_V3_FACTORIZED_STUDENT_OOF"
 SEEDS = [42, 123, 456]
 FOLD_IDS = [0, 1, 2, 3]
 GPUS = [1, 3]
-WORKERS_PER_GPU = 3
+WORKERS_PER_GPU = 6
 MODEL_TYPES = ["25D9D", "25D"]
 LOG_DIR = Path("/mnt/sdc/dty_user/openvla_attack/logs/oof")
 
