@@ -60,23 +60,36 @@ def main():
     auth_root = args.authorization_root.resolve()
     verify_sealed_directory(auth_root)
     auth = json.loads((auth_root / "authorization.json").read_text())
-    assert auth.get("formal_oof_training_authorized") is True, "OOF not authorized"
-    assert auth.get("full_fit_authorized") is False
-    assert auth.get("attack_authorized") is False
-    assert auth.get("source_commit") == args.expected_source_commit, "commit mismatch"
+    if auth.get("formal_oof_training_authorized") is not True:
+        raise RuntimeError("formal OOF training is not authorized")
+    if auth.get("full_fit_authorized") is not False:
+        raise RuntimeError("full-FIT must not be authorized")
+    if auth.get("attack_authorized") is not False:
+        raise RuntimeError("attack must not be authorized")
+    if auth.get("source_commit") != args.expected_source_commit:
+        raise RuntimeError(f"auth commit {auth.get('source_commit','?')[:8]} != expected {args.expected_source_commit[:8]}")
     for key in ["teacher_root_seal", "s1_root_seal", "f3_root_seal"]:
-        assert key in auth, f"auth missing {key}"
+        if key not in auth:
+            raise RuntimeError(f"authorization missing {key}")
 
-    # Verify F3 seal
+    # Full F3 verification
     f3_root = args.f3_root.resolve()
+    verify_sealed_directory(f3_root)
+    f3_audit = json.loads((f3_root / "geometry_audit.json").read_text())
+    if f3_audit.get("status") != "PASS_FINAL_STUDENT_TRAINING":
+        raise RuntimeError(f"F3 status is {f3_audit.get('status')}, not PASS_FINAL_STUDENT_TRAINING")
+    if f3_audit.get("formal_training_authorized") is not True:
+        raise RuntimeError("F3 does not authorize training")
     f3_seal = sha256_file(f3_root / "SHA256SUMS")
-    assert f3_seal == auth.get("f3_root_seal", ""), "F3 seal mismatch"
+    if f3_seal != auth.get("f3_root_seal", ""):
+        raise RuntimeError("F3 seal mismatch")
 
-    # Verify source root seals
     s1_seal = sha256_file(args.s1_root / "SHA256SUMS")
     teacher_seal = sha256_file(args.teacher_root / "SHA256SUMS")
-    assert s1_seal == auth.get("s1_root_seal", ""), "S1 seal mismatch"
-    assert teacher_seal == auth.get("teacher_root_seal", ""), "Teacher seal mismatch"
+    if s1_seal != auth.get("s1_root_seal", ""):
+        raise RuntimeError("S1 seal mismatch")
+    if teacher_seal != auth.get("teacher_root_seal", ""):
+        raise RuntimeError("Teacher seal mismatch")
 
     # Git commit check
     import subprocess
@@ -201,7 +214,11 @@ def main():
         return balanced
 
     train_batches = build_batches(train_eps)
-    val_batches = build_batches(val_eps)
+    # Validation: no upsampling, report per-route macro
+    val_batches_single = [("single_object_pick_place", val_eps_single[i:i+8])
+                          for i in range(0, len(val_eps_single), 8)] if (val_eps_single := [e for e in val_eps if e.mechanism_route == "single_object_pick_place"]) else []
+    val_batches_multi = [("multi_object_transfer", val_eps_multi[i:i+8])
+                         for i in range(0, len(val_eps_multi), 8)] if (val_eps_multi := [e for e in val_eps if e.mechanism_route == "multi_object_transfer"]) else []
 
     # ── Helper: batch to device ───────────────────────────────────────
     def batch_to_device(batch_eps, route):
@@ -239,7 +256,8 @@ def main():
             x25, x9, mask25, mask9 = batch_to_device(batch_eps, route)
             opt.zero_grad()
             logits = model.forward_logits(x25, x9, mask25, mask9, route)
-            loss, _ = loss_fn(logits, batch_eps, mask25)
+            cw = class_weights.get(route, {})
+            loss, _ = loss_fn(logits, batch_eps, mask25, class_weights=cw)
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             opt.step()
@@ -248,10 +266,11 @@ def main():
         model.eval()
         val_losses = []; head_metrics = defaultdict(list)
         with torch.no_grad():
-            for route, batch_eps in val_batches:
+            for route, batch_eps in (val_batches_single + val_batches_multi):
                 x25, x9, mask25, mask9 = batch_to_device(batch_eps, route)
                 logits = model.forward_logits(x25, x9, mask25, mask9, route)
-                loss, m = loss_fn(logits, batch_eps, mask25)
+                cw = class_weights.get(route, {})
+                loss, m = loss_fn(logits, batch_eps, mask25, class_weights=cw)
                 val_losses.append(loss.item())
                 for k in ["grasp", "manipulation", "release"]: head_metrics[k].append(m[k])
 

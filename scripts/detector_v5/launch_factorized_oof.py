@@ -18,6 +18,7 @@ FOLD_ROOT = OPS / "OFFICIAL_V3_FIT_FOLDS_V1_d31187f"
 POLICY_INTENT = OPS / "OFFICIAL_V3_V5_POLICY_INTENT_BINDING_V1_20260718_01"
 AUTH_ROOT = OPS / "OFFICIAL_V3_FACTORIZED_STUDENT_OOF_AUTH"
 F3_ROOT = OPS / "OFFICIAL_V3_F3_GEOMETRY_GATE_de07e1a_20260721"
+DEFAULT_OUT_BASE = OPS / "OFFICIAL_V3_FACTORIZED_STUDENT_OOF"
 
 def sha256_file(p):
     d = hashlib.sha256()
@@ -45,10 +46,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--source-commit", type=str, required=True)
-    ap.add_argument("--output-base", type=Path, default=OUT_BASE)
+    ap.add_argument("--output-base", type=Path, default=DEFAULT_OUT_BASE)
     args = ap.parse_args()
 
-    JOBS_PER_GPU = args.workers
+    WORKERS_PER_GPU = args.workers
     OUT_BASE = args.output_base
 
     jobs = []
@@ -58,7 +59,7 @@ def main():
                 out = OUT_BASE / mt / f"fold{fold}_seed{seed}"
                 jobs.append((mt, fold, seed, out))
 
-    print(f"Total jobs: {len(jobs)} | GPUs: {GPUS} | workers/GPU: {JOBS_PER_GPU}")
+    print(f"Total jobs: {len(jobs)} | GPUs: {GPUS} | workers/GPU: {WORKERS_PER_GPU}")
 
     def launch_worker(gpu, worker_id, job_list):
         env = {}
@@ -105,7 +106,7 @@ def main():
     worker_assignments = defaultdict(list)
     for i, job in enumerate(jobs):
         gpu = GPUS[i % len(GPUS)]
-        wid = (i // len(GPUS)) % JOBS_PER_GPU
+        wid = (i // len(GPUS)) % WORKERS_PER_GPU
         worker_assignments[(gpu, wid)].append(job)
 
     print("Worker assignments:")
