@@ -116,10 +116,8 @@ def main():
         ("model_sha", "src/gripper_attack/v5_factorized_student.py"),
         ("loss_sha", "src/gripper_attack/v5_factorized_loss.py"),
         ("trainer_sha", "scripts/detector_v5/train_factorized_oof.py"),
-        ("launcher_sha", "scripts/detector_v5/launch_factorized_oof.py"),
     ]:
         if key not in auth:
-            if key.startswith("launcher"): continue  # launcher not critical at runtime
             raise RuntimeError(f"Authorization missing {key}")
         actual = sha256_file(ROOT / rel_path)
         if actual != auth[key]:

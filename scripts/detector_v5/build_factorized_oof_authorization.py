@@ -93,7 +93,6 @@ def main():
         "model_sha": sha256_file(src_dir / "v5_factorized_student.py"),
         "loss_sha": sha256_file(src_dir / "v5_factorized_loss.py"),
         "trainer_sha": sha256_file(script_dir / "train_factorized_oof.py"),
-        "launcher_sha": sha256_file(script_dir / "launch_factorized_oof.py"),
     }
 
     auth = {
