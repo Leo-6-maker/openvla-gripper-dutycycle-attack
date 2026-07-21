@@ -63,12 +63,17 @@ def verify_existing_output(out_dir, job, auth_seal):
 def run_cmd(cmd, env, log_file, timeout=3600):
     """Run a command, log output, return (ok, elapsed). env=None means inherit."""
     start = time.time()
-    kwargs = {'stdout': open(log_file, 'w'), 'stderr': subprocess.STDOUT, 'timeout': timeout}
-    if env is not None:
-        kwargs['env'] = env
-    r = subprocess.run(cmd, **kwargs)
-    kwargs['stdout'].close()
-    return r.returncode == 0, time.time() - start
+    try:
+        kwargs = {'stdout': open(log_file, 'w'), 'stderr': subprocess.STDOUT, 'timeout': timeout}
+        if env is not None:
+            kwargs['env'] = env
+        r = subprocess.run(cmd, **kwargs)
+        kwargs['stdout'].close()
+        return r.returncode == 0, time.time() - start
+    except subprocess.TimeoutExpired:
+        return False, time.time() - start
+    except Exception as e:
+        return False, time.time() - start
 
 
 def main():
