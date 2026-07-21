@@ -143,7 +143,7 @@ def main():
             return label, False, f'HOLD_EXISTING: {e}'
 
         # Shell wrapper: explicitly set CUDA_VISIBLE_DEVICES, clear any inherited value
-        gpu_env_prefix = f'unset CUDA_VISIBLE_DEVICES; export CUDA_VISIBLE_DEVICES={gpu_id}; export PYTHONPATH=/mnt/sdc/dty_user/openvla_attack/src; export OMP_NUM_THREADS=1; export MKL_NUM_THREADS=1; export OPENBLAS_NUM_THREADS=1; export NUMEXPR_NUM_THREADS=1'
+        gpu_env_prefix = f'unset CUDA_VISIBLE_DEVICES; export CUDA_VISIBLE_DEVICES={gpu_id}; export PYTHONPATH=/mnt/sdc/dty_user/openvla_attack/src; export OMP_NUM_THREADS=1; export MKL_NUM_THREADS=1; export OPENBLAS_NUM_THREADS=1; export NUMEXPR_NUM_THREADS=1;'
 
         # ── Train ──
         train_args = f'--candidate {job["candidate"]} --outer-fold {job["outer_fold"]} --inner-fold {job["inner_fold"]} --seed {job["seed"]} --gpu 0 --receptive-field {job["W"]} --hidden-dim {job["hidden_dim"]} --dropout {job["dropout"]} --weight-decay {job["weight_decay"]} --epochs 30 --inner-cv-splits-root {SPLITS} --output-root {out_dir}'
