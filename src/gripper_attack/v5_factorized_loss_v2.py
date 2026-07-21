@@ -52,9 +52,9 @@ class FactorizedLossV2A(nn.Module):
             r_pw = cw.get("release", {}).get("pos_weight")
             r_nw = cw.get("release", {}).get("neg_weight")
 
-            g_loss = self._head_loss(g_logits, g_target, g_mask, eids, g_pw, g_nw)
-            m_loss = self._head_loss(m_logits, m_target, m_mask, eids, m_pw, m_nw)
-            r_loss = self._head_loss(r_logits, r_target, r_mask, eids, r_pw, r_nw)
+            g_loss = _head_loss_fn(self.bce, g_logits, g_target, g_mask, eids, g_pw, g_nw)
+            m_loss = _head_loss_fn(self.bce, m_logits, m_target, m_mask, eids, m_pw, m_nw)
+            r_loss = _head_loss_fn(self.bce, r_logits, r_target, r_mask, eids, r_pw, r_nw)
 
             p_g = torch.sigmoid(g_logits); p_m = torch.sigmoid(m_logits)
             consistency = torch.relu(p_m - p_g)[g_mask].mean() if g_mask.any() else torch.tensor(0.0, device=device)
@@ -70,21 +70,23 @@ class FactorizedLossV2A(nn.Module):
         for k in metrics: metrics[k] /= B
         return total_loss, metrics
 
-    def _head_loss(self, logits, targets, known_mask, event_ids,
-                   pos_weight=None, neg_weight=None):
-        bce = self.bce(logits, targets.float())
-        unique_events = event_ids[known_mask].unique()
-        if len(unique_events) == 0:
-            return torch.tensor(0.0, device=logits.device)
-        event_losses = []
-        for eid in unique_events.tolist():
-            em = known_mask & (event_ids == eid)
-            if not em.any():
-                continue
-            has_pos = (targets[em] > 0.5).any()
-            w = pos_weight if (has_pos and pos_weight is not None) else (neg_weight if neg_weight is not None else 1.0)
-            event_losses.append((bce[em] * w).mean())
-        return torch.stack(event_losses).mean() if event_losses else torch.tensor(0.0, device=logits.device)
+
+def _head_loss_fn(bce_fn, logits, targets, known_mask, event_ids,
+                  pos_weight=None, neg_weight=None):
+    """Standalone per-head event-mean BCE loss."""
+    bce = bce_fn(logits, targets.float())
+    unique_events = event_ids[known_mask].unique()
+    if len(unique_events) == 0:
+        return torch.tensor(0.0, device=logits.device)
+    event_losses = []
+    for eid in unique_events.tolist():
+        em = known_mask & (event_ids == eid)
+        if not em.any():
+            continue
+        has_pos = (targets[em] > 0.5).any()
+        w = pos_weight if (has_pos and pos_weight is not None) else (neg_weight if neg_weight is not None else 1.0)
+        event_losses.append((bce[em] * w).mean())
+    return torch.stack(event_losses).mean() if event_losses else torch.tensor(0.0, device=logits.device)
 
 
 class FactorizedLossV2B(nn.Module):
@@ -137,8 +139,8 @@ class FactorizedLossV2B(nn.Module):
             r_nw = cw.get("release", {}).get("neg_weight")
 
             # Grasp and manipulation: unchanged V1 per-event BCE
-            g_loss = FactorizedLossV2A._head_loss(None, g_logits, g_target, g_mask, eids, g_pw, g_nw)
-            m_loss = FactorizedLossV2A._head_loss(None, m_logits, m_target, m_mask, eids, m_pw, m_nw)
+            g_loss = _head_loss_fn(self.bce, g_logits, g_target, g_mask, eids, g_pw, g_nw)
+            m_loss = _head_loss_fn(self.bce, m_logits, m_target, m_mask, eids, m_pw, m_nw)
 
             # Release: event-balanced + top-k auxiliary
             r_loss, r_aux, bucket_audit = self._release_loss(
