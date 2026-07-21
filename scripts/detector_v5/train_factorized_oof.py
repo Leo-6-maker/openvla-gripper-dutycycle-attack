@@ -135,9 +135,9 @@ def main():
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     if head != args.expected_source_commit:
         raise RuntimeError(f"git HEAD {head[:8]} != expected {args.expected_source_commit[:8]}")
-    dirty = subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip()
+    dirty = subprocess.check_output(["git", "diff", "--stat", "HEAD"], cwd=ROOT, text=True).strip()
     if dirty:
-        raise RuntimeError(f"working tree must be clean for formal OOF:\n{dirty[:500]}")
+        raise RuntimeError(f"tracked files must be unmodified for formal OOF:\n{dirty[:500]}")
 
     # Environment fingerprint
     env_info = {

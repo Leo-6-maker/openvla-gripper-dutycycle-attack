@@ -78,9 +78,12 @@ def main():
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=str(ROOT), text=True).strip()
     if len(head) != 40:
         raise SystemExit(f"invalid git HEAD: {head}")
-    dirty = subprocess.check_output(["git", "status", "--porcelain"], cwd=str(ROOT), text=True).strip()
+    # Only check tracked files — untracked dirs like envs/ are fine
+    dirty = subprocess.check_output(
+        ["git", "diff", "--stat", "HEAD"], cwd=str(ROOT), text=True
+    ).strip()
     if dirty:
-        raise SystemExit(f"working tree must be clean for formal authorization:\n{dirty[:500]}")
+        raise SystemExit(f"tracked files must be unmodified for formal authorization:\n{dirty[:500]}")
 
     # Source SHAs
     src_dir = ROOT / "src/gripper_attack"
