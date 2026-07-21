@@ -22,12 +22,12 @@ class FactorizedLoss(nn.Module):
 
     def forward(
         self,
-        logits: dict[str, Tensor],  # grasp/manipulation/release each [T]
+        logits: dict[str, Tensor],  # grasp/manipulation/release each [T] or [B,T]
         episode: FactorizedEpisode,
     ) -> tuple[Tensor, dict[str, float]]:
-        g_logits = logits["grasp"]
-        m_logits = logits["manipulation"]
-        r_logits = logits["release"]
+        g_logits = logits["grasp"].squeeze(0) if logits["grasp"].ndim == 2 else logits["grasp"]
+        m_logits = logits["manipulation"].squeeze(0) if logits["manipulation"].ndim == 2 else logits["manipulation"]
+        r_logits = logits["release"].squeeze(0) if logits["release"].ndim == 2 else logits["release"]
 
         g_loss = self._head_loss(g_logits, episode.grasp_target, episode.grasp_known_mask,
                                   episode.event_id)
