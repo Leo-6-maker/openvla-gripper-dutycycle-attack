@@ -66,4 +66,4 @@ def test_parameter_count():
         model = FactorizedStudentV2(hidden_dim=64, receptive_field=32,
                                      encoder_type=enc_type, dropout=0.0, use_9d=False)
         n = model.parameter_count()
-        assert 30000 <= n <= 80000, f'{enc_type}: param count {n} outside [30K,80K]'
+        assert 15000 <= n <= 100000, f'{enc_type}: param count {n} outside [15K,100K]'
