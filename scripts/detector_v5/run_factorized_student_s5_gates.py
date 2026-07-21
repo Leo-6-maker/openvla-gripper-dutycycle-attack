@@ -115,7 +115,7 @@ def main():
     # Overfit: loss must decrease
     opt = torch.optim.AdamW(model_train.parameters(), lr=1e-3)
     initial_loss = loss_batch.item()
-    for step in range(100):
+    for step in range(400):
         opt.zero_grad()
         logits_b = model_train.forward_logits(x25_b, None, mask_b, None, "single_object_pick_place")
         loss_b, _ = loss_fn(logits_b, single_eps, mask_b)
