@@ -187,6 +187,7 @@ def main():
     staging.mkdir(parents=True)
 
     device = torch.device(f'cuda:{args.gpu}')
+    torch.cuda.set_device(device)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
 
