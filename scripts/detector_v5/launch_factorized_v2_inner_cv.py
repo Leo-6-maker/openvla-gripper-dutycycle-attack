@@ -60,7 +60,7 @@ def verify_existing_output(out_dir, job, auth_seal):
     return True
 
 
-def run_cmd(cmd, env, log_file, timeout=900):
+def run_cmd(cmd, env, log_file, timeout=3600):
     """Run a command, log output, return (ok, elapsed). env=None means inherit."""
     start = time.time()
     kwargs = {'stdout': open(log_file, 'w'), 'stderr': subprocess.STDOUT, 'timeout': timeout}
@@ -146,7 +146,7 @@ def main():
             return label, False, f'HOLD_EXISTING: {e}'
 
         # Shell wrapper: explicitly set CUDA_VISIBLE_DEVICES, clear any inherited value
-        gpu_env_prefix = f'export PYTHONPATH=/mnt/sdc/dty_user/openvla_attack/src; export OMP_NUM_THREADS=1; export MKL_NUM_THREADS=1; export OPENBLAS_NUM_THREADS=1; export NUMEXPR_NUM_THREADS=1;'
+        gpu_env_prefix = f'export PYTHONUNBUFFERED=1; export PYTHONPATH=/mnt/sdc/dty_user/openvla_attack/src; export OMP_NUM_THREADS=1; export MKL_NUM_THREADS=1; export OPENBLAS_NUM_THREADS=1; export NUMEXPR_NUM_THREADS=1;'
 
         # ── Train ──
         train_args = f'--candidate {job["candidate"]} --outer-fold {job["outer_fold"]} --inner-fold {job["inner_fold"]} --seed {job["seed"]} --gpu {gpu_id} --receptive-field {job["W"]} --hidden-dim {job["hidden_dim"]} --dropout {job["dropout"]} --weight-decay {job["weight_decay"]} --epochs 30 --inner-cv-splits-root {SPLITS} --output-root {out_dir} --authorization-root {auth_root}'

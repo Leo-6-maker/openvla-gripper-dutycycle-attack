@@ -187,6 +187,8 @@ def main():
     staging = out.with_name(f'.{out.name}.{uuid.uuid4().hex}.staging')
     staging.mkdir(parents=True)
 
+    torch.set_num_threads(1)
+    torch.set_num_interop_threads(1)
     device = torch.device(f'cuda:{args.gpu}')
     torch.cuda.set_device(device)
     torch.manual_seed(args.seed)
