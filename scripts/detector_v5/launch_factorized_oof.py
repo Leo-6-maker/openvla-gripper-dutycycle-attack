@@ -16,7 +16,6 @@ S1 = OPS / "OFFICIAL_V3_S1_FIT_V1_d31187f"
 TEACHER = OPS / "OFFICIAL_V3_DETECTOR_V5_FACTORIZED_TEACHER_V1_de07e1a_20260721"
 FOLD_ROOT = OPS / "OFFICIAL_V3_FIT_FOLDS_V1_d31187f"
 POLICY_INTENT = OPS / "OFFICIAL_V3_V5_POLICY_INTENT_BINDING_V1_20260718_01"
-AUTH_ROOT = OPS / "OFFICIAL_V3_FACTORIZED_STUDENT_OOF_AUTH"
 F3_ROOT = OPS / "OFFICIAL_V3_F3_GEOMETRY_GATE_de07e1a_20260721"
 DEFAULT_OUT_BASE = OPS / "OFFICIAL_V3_FACTORIZED_STUDENT_OOF"
 
@@ -64,12 +63,14 @@ def main():
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--gpus", type=int, nargs="+", default=[1, 3])
     ap.add_argument("--source-commit", type=str, required=True)
+    ap.add_argument("--authorization-root", type=Path, required=True)
     ap.add_argument("--output-base", type=Path, default=DEFAULT_OUT_BASE)
     args = ap.parse_args()
 
     GPUS = args.gpus
     WORKERS_PER_GPU = args.workers
     OUT_BASE = args.output_base
+    AUTH_ROOT = args.authorization_root
 
     jobs = []
     for mt in ["25D9D", "25D"]:
