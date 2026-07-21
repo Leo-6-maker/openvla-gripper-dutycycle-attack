@@ -234,6 +234,8 @@ def main():
                     help='Directory with prediction shard subdirectories')
     ap.add_argument('--output', type=Path, required=True)
     ap.add_argument('--mode', choices=['single', 'aggregate'], default='aggregate')
+    ap.add_argument('--prediction-dir', type=Path, default=None,
+                    help='Exact prediction shard directory (single mode, no name guessing)')
     ap.add_argument('--candidate', type=str, default=None)
     ap.add_argument('--outer-fold', type=int, default=None)
     ap.add_argument('--inner-fold', type=int, default=None)
@@ -246,13 +248,17 @@ def main():
     all_run_keys = []
 
     if args.mode == 'single':
-        shard_dir = pred_base / f'{args.candidate}_outer{args.outer_fold}_inner{args.inner_fold}_seed{args.seed}'
+        if args.prediction_dir is not None:
+            shard_dir = args.prediction_dir.resolve()
+        else:
+            shard_dir = pred_base / f'{args.candidate}_outer{args.outer_fold}_inner{args.inner_fold}_seed{args.seed}'
         if not shard_dir.is_dir():
             raise SystemExit(f'Shard not found: {shard_dir}')
         events = load_events(shard_dir)
         steps = load_steps(shard_dir)
+        run_key = args.prediction_dir.name if args.prediction_dir else f'{args.candidate}_o{args.outer_fold}_i{args.inner_fold}_s{args.seed}'
         metrics = compute_metrics(events, steps)
-        all_run_metrics[f'{args.candidate}_o{args.outer_fold}_i{args.inner_fold}_s{args.seed}'] = metrics
+        all_run_metrics[run_key] = metrics
         all_run_keys = list(all_run_metrics.keys())
     elif args.mode == 'aggregate':
         expected_runs = args.expected_runs if hasattr(args, 'expected_runs') else None

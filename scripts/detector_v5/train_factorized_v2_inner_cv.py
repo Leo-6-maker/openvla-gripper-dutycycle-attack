@@ -174,6 +174,7 @@ def main():
     ap.add_argument('--batch-size', type=int, default=8)
     ap.add_argument('--output-root', type=Path, required=True)
     ap.add_argument('--inner-cv-splits-root', type=Path, required=True)
+    ap.add_argument('--authorization-root', type=Path, default=None)
     args = ap.parse_args()
 
     # Validate candidate
@@ -372,6 +373,7 @@ def main():
     _atomic_text(staging / 'class_weights.json', json.dumps(class_weights, indent=2))
     _atomic_text(staging / 'sampling_audit.json', json.dumps(sampling_audit, indent=2))
     _atomic_text(staging / 'environment.json', json.dumps(env_info, indent=2))
+    source_commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
     _atomic_text(staging / 'source_binding.json', json.dumps({
         'candidate': args.candidate, 'outer_fold': args.outer_fold,
         'inner_fold': args.inner_fold, 'seed': args.seed,
@@ -380,8 +382,21 @@ def main():
         'model_v2_sha': sha256_file(ROOT / 'src/gripper_attack/v5_factorized_student_v2.py'),
         'loss_v2_sha': sha256_file(ROOT / 'src/gripper_attack/v5_factorized_loss_v2.py'),
         'trainer_sha': sha256_file(Path(__file__)),
-        'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
+        'source_commit': source_commit,
     }, indent=2))
+
+    if args.authorization_root:
+        auth_root = args.authorization_root.resolve()
+        auth_seal = sha256_file(auth_root / 'SHA256SUMS')
+        auth = json.loads((auth_root / 'authorization.json').read_text())
+        _atomic_text(staging / 'authorization_receipt.json', json.dumps({
+            'authorization_root': str(auth_root),
+            'authorization_seal': auth_seal,
+            'authorized_job_label': f'{args.candidate}_W{args.receptive_field}_H{args.hidden_dim}_D{args.dropout}_WD{args.weight_decay}_o{args.outer_fold}_i{args.inner_fold}_s{args.seed}',
+            'inventory_seal': auth.get('job_inventory_seal', ''),
+            'source_commit': source_commit,
+            'status': 'AUTHORIZED_TRAINING_COMPLETE',
+        }, indent=2))
 
     write_seal(staging)
     os.replace(staging, out)
