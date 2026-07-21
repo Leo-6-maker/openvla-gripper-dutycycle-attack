@@ -143,10 +143,10 @@ def main():
             return label, False, f'HOLD_EXISTING: {e}'
 
         # Shell wrapper: explicitly set CUDA_VISIBLE_DEVICES, clear any inherited value
-        gpu_env_prefix = f'unset CUDA_VISIBLE_DEVICES; export CUDA_VISIBLE_DEVICES={gpu_id}; export PYTHONPATH=/mnt/sdc/dty_user/openvla_attack/src; export OMP_NUM_THREADS=1; export MKL_NUM_THREADS=1; export OPENBLAS_NUM_THREADS=1; export NUMEXPR_NUM_THREADS=1;'
+        gpu_env_prefix = f'export PYTHONPATH=/mnt/sdc/dty_user/openvla_attack/src; export OMP_NUM_THREADS=1; export MKL_NUM_THREADS=1; export OPENBLAS_NUM_THREADS=1; export NUMEXPR_NUM_THREADS=1;'
 
         # ── Train ──
-        train_args = f'--candidate {job["candidate"]} --outer-fold {job["outer_fold"]} --inner-fold {job["inner_fold"]} --seed {job["seed"]} --gpu 0 --receptive-field {job["W"]} --hidden-dim {job["hidden_dim"]} --dropout {job["dropout"]} --weight-decay {job["weight_decay"]} --epochs 30 --inner-cv-splits-root {SPLITS} --output-root {out_dir}'
+        train_args = f'--candidate {job["candidate"]} --outer-fold {job["outer_fold"]} --inner-fold {job["inner_fold"]} --seed {job["seed"]} --gpu {gpu_id} --receptive-field {job["W"]} --hidden-dim {job["hidden_dim"]} --dropout {job["dropout"]} --weight-decay {job["weight_decay"]} --epochs 30 --inner-cv-splits-root {SPLITS} --output-root {out_dir}'
         train_cmd = ['bash', '-c', f'{gpu_env_prefix} exec {PY} {SCRIPTS / "train_factorized_v2_inner_cv.py"} {train_args}']
         ok, elapsed = run_cmd(train_cmd, None, log_file)
         if not ok:
@@ -154,7 +154,7 @@ def main():
 
         # ── Predict ──
         pred_dir = out_dir.parent / f'predict_{label}'
-        predict_cmd = ['bash', '-c', f'{gpu_env_prefix} exec {PY} {SCRIPTS / "predict_factorized_v2_inner_cv.py"} --checkpoint-dir {out_dir} --inner-cv-splits-root {SPLITS} --output-root {pred_dir} --gpu 0']
+        predict_cmd = ['bash', '-c', f'{gpu_env_prefix} exec {PY} {SCRIPTS / "predict_factorized_v2_inner_cv.py"} --checkpoint-dir {out_dir} --inner-cv-splits-root {SPLITS} --output-root {pred_dir} --gpu {gpu_id}']
         ok2, _ = run_cmd(predict_cmd, None, log_file)
         if not ok2:
             return label, False, 'PREDICT_FAIL'
