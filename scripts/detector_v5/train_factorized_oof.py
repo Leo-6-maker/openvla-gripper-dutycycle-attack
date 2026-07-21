@@ -94,7 +94,7 @@ def main():
     opt = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5)
 
     # Training loop
-    history = {"epoch": [], "train_loss": [], "val_loss": [], "val_grasp": [], "val_manip": [], "val_release": []}
+    history = {"epoch": [], "train_loss": [], "val_loss": [], "val_grasp": [], "val_manipulation": [], "val_release": []}
     best_val = float("inf")
 
     for epoch in range(30):
@@ -144,7 +144,7 @@ def main():
 
         if epoch % 5 == 0:
             print(f"  epoch {epoch:2d}: train={avg_train:.4f} val={avg_val:.4f} "
-                  f"g={history['val_grasp'][-1]:.4f} m={history['val_manip'][-1]:.4f} r={history['val_release'][-1]:.4f}")
+                  f"g={history['val_grasp'][-1]:.4f} m={history['val_manipulation'][-1]:.4f} r={history['val_release'][-1]:.4f}")
 
         if avg_val < best_val:
             best_val = avg_val
