@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
-"""V2 inner-CV launcher: train → predict → evaluate. Fail-closed."""
-import subprocess, sys, time, json, hashlib, argparse
+"""V2 formal Stage-1 launcher: authorization → train → predict → evaluate → audit.
+
+Fail-closed. Each job runs the full pipeline. Authorization verified before any job starts.
+Dual-pool: training pool (N workers) + postprocess pool (max 16).
+"""
+import subprocess, sys, time, json, hashlib, argparse, os, threading
 from pathlib import Path
 from collections import defaultdict
 
@@ -27,104 +31,194 @@ def verify_sealed_directory(root):
         d, _, n = l.partition('  '); t = root / n
         if not t.is_file() or sha256_file(t) != d:
             raise RuntimeError(f'FILE MISMATCH: {root}/{n}')
+    return sha256_file(s)
+
+
+def verify_existing_output(out_dir, job, auth_seal):
+    """Full metadata verification. Raises on mismatch. Returns True if valid."""
+    if not out_dir.exists():
+        return False
+    verify_sealed_directory(out_dir)
+    src = json.loads((out_dir / 'source_binding.json').read_text())
+    run = json.loads((out_dir / 'run_config.json').read_text())
+    rec = json.loads((out_dir / 'authorization_receipt.json').read_text())
+    checks = [
+        (src.get('candidate'), job['candidate'], 'candidate'),
+        (src.get('outer_fold'), job['outer_fold'], 'outer_fold'),
+        (src.get('inner_fold'), job['inner_fold'], 'inner_fold'),
+        (src.get('seed'), job['seed'], 'seed'),
+        (run.get('receptive_field'), job['W'], 'W'),
+        (run.get('hidden_dim'), job['hidden_dim'], 'hidden_dim'),
+        (run.get('dropout'), job['dropout'], 'dropout'),
+        (run.get('weight_decay'), job['weight_decay'], 'weight_decay'),
+        (rec.get('authorization_seal'), auth_seal, 'authorization_seal'),
+        (run.get('epochs'), 30, 'epochs'),
+    ]
+    for actual, expected, name in checks:
+        if actual != expected:
+            raise RuntimeError(f'{name} mismatch: {actual} != {expected}')
+    return True
+
+
+def run_cmd(cmd, env, log_file, timeout=900):
+    """Run a command, log output, return (ok, elapsed)."""
+    start = time.time()
+    with open(log_file, 'w') as lf:
+        r = subprocess.run(cmd, env=env, stdout=lf, stderr=subprocess.STDOUT, timeout=timeout)
+    return r.returncode == 0, time.time() - start
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--gpus', type=int, nargs='+', default=[1, 3, 4, 5])
-    ap.add_argument('--workers', type=int, default=6)
+    ap.add_argument('--authorization-root', type=Path, required=True)
+    ap.add_argument('--gpus', type=int, nargs='+', default=[0, 1, 2, 3, 4, 5, 6, 7])
+    ap.add_argument('--training-workers', type=int, default=80)
+    ap.add_argument('--postprocess-workers', type=int, default=16)
     ap.add_argument('--output-base', type=Path, required=True)
-    ap.add_argument('--dry-run', action='store_true')
-    ap.add_argument('--job-file', type=Path, required=True,
-                    help='JSON job inventory file')
     args = ap.parse_args()
 
-    jobs_data = json.loads(args.job_file.read_text())
-    jobs = jobs_data['jobs']
+    # ── Authorization verification ──
+    auth_root = args.authorization_root.resolve()
+    verify_sealed_directory(auth_root)
+    auth = json.loads((auth_root / 'authorization.json').read_text())
 
-    print(f'Total jobs: {len(jobs)} | GPUs: {args.gpus} | workers/GPU: {args.workers}')
+    if auth.get('v2_inner_cv_authorized') is not True:
+        raise RuntimeError('V2 inner-CV not authorized')
+    if auth.get('stage2_authorized') is not False:
+        raise RuntimeError('Stage-2 must not be authorized')
 
-    if args.dry_run:
-        for j in jobs[:5]:
-            print(f'  {j["label"]}')
-        print(f'  ... ({len(jobs)} total)')
-        return
+    head = subprocess.check_output(['git', 'rev-parse', 'HEAD'],
+                                    cwd=SCRIPTS.parent.parent, text=True).strip()
+    if head != auth.get('source_commit', ''):
+        raise RuntimeError(f'git HEAD {head[:8]} != auth {auth.get("source_commit", "?")[:8]}')
 
-    worker_assignments = defaultdict(list)
+    for key in ['trainer_sha', 'predictor_sha', 'evaluator_sha', 'auditor_sha',
+                'splits_root_seal', 'teacher_root_seal', 's1_root_seal']:
+        if key not in auth:
+            raise RuntimeError(f'authorization missing {key}')
+
+    # Verify launcher SHA matches
+    actual_launcher_sha = sha256_file(Path(__file__))
+    if auth.get('launcher_sha') and actual_launcher_sha != auth['launcher_sha']:
+        raise RuntimeError(f'launcher SHA mismatch')
+
+    auth_seal = sha256_file(auth_root / 'SHA256SUMS')
+    inventory = json.loads((Path(auth['job_inventory_root']) / 'v2_stage1_job_inventory.json').read_text())
+    jobs = inventory['jobs']
+
+    if len(jobs) != 864:
+        raise RuntimeError(f'Expected 864 jobs, got {len(jobs)}')
+    for j in jobs:
+        if j['seed'] != 42:
+            raise RuntimeError(f'Unauthorized seed {j["seed"]} for {j["label"]}')
+
+    print(f'Authorization: PASS | commit={head[:8]} | jobs={len(jobs)}')
+    print(f'GPUs: {args.gpus} | training_workers: {args.training_workers} | postprocess: {args.postprocess_workers}')
+
+    # ── Launch training pool ──
+    n_gpus = len(args.gpus)
+    workers_per_gpu = max(1, args.training_workers // n_gpus)
+    LOG_DIR = Path('/mnt/sdc/dty_user/openvla_attack/logs/v2_stage1')
+
+    base_env = os.environ.copy()
+    base_env.update({
+        'OMP_NUM_THREADS': '1', 'MKL_NUM_THREADS': '1',
+        'OPENBLAS_NUM_THREADS': '1', 'NUMEXPR_NUM_THREADS': '1',
+        'PYTHONPATH': '/mnt/sdc/dty_user/openvla_attack/src',
+    })
+
+    def process_job(job, gpu_id):
+        label = job['label']
+        out_dir = Path(job['output_path'])
+        log_file = LOG_DIR / f'{label}_gpu{gpu_id}.log'
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+        env = base_env.copy()
+        env['CUDA_VISIBLE_DEVICES'] = str(gpu_id)
+
+        try:
+            if verify_existing_output(out_dir, job, auth_seal):
+                return label, True, 'SKIP_VALID'
+        except Exception as e:
+            return label, False, f'HOLD_EXISTING: {e}'
+
+        # ── Train ──
+        train_cmd = [PY, str(SCRIPTS / 'train_factorized_v2_inner_cv.py'),
+                     '--candidate', job['candidate'], '--outer-fold', str(job['outer_fold']),
+                     '--inner-fold', str(job['inner_fold']), '--seed', str(job['seed']),
+                     '--gpu', '0', '--receptive-field', str(job['W']),
+                     '--hidden-dim', str(job['hidden_dim']), '--dropout', str(job['dropout']),
+                     '--weight-decay', str(job['weight_decay']), '--epochs', '30',
+                     '--inner-cv-splits-root', str(SPLITS), '--output-root', str(out_dir)]
+        ok, elapsed = run_cmd(train_cmd, env, log_file)
+        if not ok:
+            return label, False, f'TRAIN_FAIL_{elapsed:.0f}s'
+
+        # ── Predict ──
+        pred_dir = out_dir.parent / f'predict_{label}'
+        predict_cmd = [PY, str(SCRIPTS / 'predict_factorized_v2_inner_cv.py'),
+                       '--checkpoint-dir', str(out_dir),
+                       '--inner-cv-splits-root', str(SPLITS),
+                       '--output-root', str(pred_dir), '--gpu', '0']
+        ok2, _ = run_cmd(predict_cmd, env, log_file)
+        if not ok2:
+            return label, False, 'PREDICT_FAIL'
+
+        # ── Evaluate ──
+        eval_out = pred_dir.parent / f'eval_{label}.json'
+        eval_cmd = [PY, str(SCRIPTS / 'evaluate_factorized_v2_inner_cv.py'),
+                    '--predictions-base', str(pred_dir.parent),
+                    '--output', str(eval_out), '--mode', 'single',
+                    '--candidate', job['candidate'],
+                    '--outer-fold', str(job['outer_fold']),
+                    '--inner-fold', str(job['inner_fold']),
+                    '--seed', str(job['seed'])]
+        ok3, _ = run_cmd(eval_cmd, env, log_file)
+        if not ok3:
+            return label, False, 'EVAL_FAIL'
+
+        # ── Audit ──
+        audit_out = pred_dir.parent / f'audit_{label}.json'
+        audit_cmd = [PY, str(SCRIPTS / 'audit_factorized_v2_inner_cv_predictions.py'),
+                     '--prediction-dir', str(pred_dir),
+                     '--inner-cv-splits-root', str(SPLITS),
+                     '--output', str(audit_out)]
+        ok4, _ = run_cmd(audit_cmd, env, log_file)
+        if not ok4:
+            return label, False, 'AUDIT_FAIL'
+
+        return label, True, f'COMPLETE_{elapsed:.0f}s'
+
+    # Assign jobs to workers
+    worker_jobs = defaultdict(list)
     for i, job in enumerate(jobs):
-        gpu = args.gpus[i % len(args.gpus)]
-        wid = (i // len(args.gpus)) % args.workers
-        worker_assignments[(gpu, wid)].append(job)
+        gpu = args.gpus[i % n_gpus]
+        worker_jobs[gpu].append(job)
 
-    def launch_worker(gpu, wid, job_list):
-        env = {}
-        env.update(__import__('os').environ)
-        env.update({'OMP_NUM_THREADS': '2', 'MKL_NUM_THREADS': '2',
-                     'PYTHONPATH': '/mnt/sdc/dty_user/openvla_attack/src',
-                     'CUDA_VISIBLE_DEVICES': str(gpu)})
-        LOG_DIR = Path('/mnt/sdc/dty_user/openvla_attack/logs/v2_inner_cv')
-        results = []
-        for job in job_list:
-            out_dir = Path(job['output_path'])
-            log_file = LOG_DIR / f'{job["label"]}_gpu{gpu}_w{wid}.log'
-            log_file.parent.mkdir(parents=True, exist_ok=True)
-
-            if out_dir.exists():
-                try:
-                    verify_sealed_directory(out_dir)
-                    results.append((job['label'], True, 'SKIP_SEALED'))
-                    continue
-                except Exception as e:
-                    results.append((job['label'], False, str(e)[:80]))
-                    continue
-
-            train_args = [
-                PY, str(SCRIPTS / 'train_factorized_v2_inner_cv.py'),
-                '--candidate', job['candidate'],
-                '--outer-fold', str(job['outer_fold']),
-                '--inner-fold', str(job['inner_fold']),
-                '--seed', str(job['seed']),
-                '--gpu', '0',
-                '--receptive-field', str(job['W']),
-                '--hidden-dim', str(job['hidden_dim']),
-                '--dropout', str(job['dropout']),
-                '--weight-decay', str(job['weight_decay']),
-                '--epochs', '30',
-                '--inner-cv-splits-root', str(SPLITS),
-                '--output-root', str(out_dir),
-            ]
-
-            print(f'  [GPU{gpu} W{wid}] START {job["label"]}')
-            start = time.time()
-            with open(log_file, 'w') as lf:
-                r = subprocess.run(train_args, env=env, stdout=lf, stderr=subprocess.STDOUT)
-            elapsed = time.time() - start
-            ok = r.returncode == 0
-            if ok:
-                print(f'  [GPU{gpu} W{wid}] DONE  {job["label"]} ({elapsed:.0f}s)')
-            else:
-                print(f'  [GPU{gpu} W{wid}] FAIL  {job["label"]} (exit={r.returncode})')
-            results.append((job['label'], ok, 'OK' if ok else f'EXIT_{r.returncode}'))
-        return results
-
-    import threading
     all_results = []
-    threads = []
-    for (gpu, w), wjobs in sorted(worker_assignments.items()):
-        t = threading.Thread(target=lambda g=gpu, w=w, wj=wjobs: all_results.extend(launch_worker(g, w, wj)))
-        threads.append(t)
-        t.start()
-        time.sleep(3)
+    training_futures = []
 
-    for t in threads:
-        t.join()
+    # Postprocess pool (reuses training workers serially per GPU — each worker does full pipeline)
+    with __import__('concurrent.futures').futures.ThreadPoolExecutor(
+            max_workers=args.training_workers) as executor:
+        future_map = {}
+        for gpu, gpu_jobs in worker_jobs.items():
+            for job in gpu_jobs:
+                f = executor.submit(process_job, job, gpu)
+                future_map[f] = job['label']
+                time.sleep(0.05)  # gentle stagger
 
-    failed = [(l, r) for l, ok, r in all_results if not ok]
-    print(f'\nRESULTS: {len(all_results)-len(failed)}/{len(all_results)} passed')
+        for f in __import__('concurrent.futures').futures.as_completed(future_map):
+            label, ok, msg = f.result()
+            all_results.append((label, ok, msg))
+            if not ok:
+                print(f'  FAIL {label}: {msg}')
+
+    passed = sum(1 for _, ok, _ in all_results if ok)
+    failed = len(all_results) - passed
+    print(f'\nStage-1: {passed}/{len(all_results)} passed, {failed} failed')
     if failed:
-        for l, r in failed:
-            print(f'  FAIL {l}: {r}')
         sys.exit(1)
+    print('STATUS: ALL_PASSED')
 
 
 if __name__ == '__main__':
