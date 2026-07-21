@@ -97,21 +97,37 @@ def main():
     history = {"epoch": [], "train_loss": [], "val_loss": [], "val_grasp": [], "val_manipulation": [], "val_release": []}
     best_val = float("inf")
 
+    # Group supported episodes by route
+    def group_by_route(eps, batch_size=8):
+        groups = defaultdict(list)
+        for ep in eps:
+            if ep.route_supported:
+                groups[ep.mechanism_route].append(ep)
+        batches = []
+        for route, route_eps in groups.items():
+            for i in range(0, len(route_eps), batch_size):
+                batches.append((route, route_eps[i:i+batch_size]))
+        return batches
+
+    train_batches = group_by_route(train_eps)
+    val_batches = group_by_route(val_eps)
+
     for epoch in range(30):
         model.train()
         train_losses = []
-        for ep in train_eps:
-            if not ep.route_supported:
-                continue
-            T = len(ep.features_25d)
-            x25 = ((ep.features_25d - mean_25d) / std_25d).unsqueeze(0).to(device)
-            mask = ep.valid_mask.unsqueeze(0).to(device)
-            x9 = None
-            m9 = None
+        for route, batch_eps in train_batches:
+            B = len(batch_eps)
+            max_T = max(len(ep.features_25d) for ep in batch_eps)
+            x25 = torch.zeros(B, max_T, 25, device=device)
+            mask = torch.zeros(B, max_T, dtype=torch.bool, device=device)
+            for b, ep in enumerate(batch_eps):
+                T = len(ep.features_25d)
+                x25[b, :T] = ((ep.features_25d - mean_25d) / std_25d).to(device)
+                mask[b, :T] = ep.valid_mask.to(device)
 
             opt.zero_grad()
-            logits = model.forward_logits(x25, x9, mask, m9, ep.mechanism_route)
-            loss, _ = loss_fn(logits, [ep])
+            logits = model.forward_logits(x25, None, mask, None, route)
+            loss, _ = loss_fn(logits, batch_eps, mask)
             loss.backward()
             nn.utils.clip_grad_norm_(model.parameters(), 5.0)
             opt.step()
@@ -122,14 +138,18 @@ def main():
         val_losses = []
         head_metrics = defaultdict(list)
         with torch.no_grad():
-            for ep in val_eps:
-                if not ep.route_supported:
-                    continue
-                T = len(ep.features_25d)
-                x25 = ((ep.features_25d - mean_25d) / std_25d).unsqueeze(0).to(device)
-                mask = ep.valid_mask.unsqueeze(0).to(device)
-                logits = model.forward_logits(x25, None, mask, None, ep.mechanism_route)
-                loss, m = loss_fn(logits, [ep])
+            for route, batch_eps in val_batches:
+                B = len(batch_eps)
+                max_T = max(len(ep.features_25d) for ep in batch_eps)
+                x25 = torch.zeros(B, max_T, 25, device=device)
+                mask = torch.zeros(B, max_T, dtype=torch.bool, device=device)
+                for b, ep in enumerate(batch_eps):
+                    T = len(ep.features_25d)
+                    x25[b, :T] = ((ep.features_25d - mean_25d) / std_25d).to(device)
+                    mask[b, :T] = ep.valid_mask.to(device)
+
+                logits = model.forward_logits(x25, None, mask, None, route)
+                loss, m = loss_fn(logits, batch_eps, mask)
                 val_losses.append(loss.item())
                 for k in ["grasp", "manipulation", "release"]:
                     head_metrics[k].append(m[k])
