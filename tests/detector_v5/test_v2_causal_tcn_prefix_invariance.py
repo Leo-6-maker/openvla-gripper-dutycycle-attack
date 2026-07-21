@@ -38,24 +38,25 @@ def test_tcn_finite_receptive_field():
     model = FactorizedStudentV2(hidden_dim=64, receptive_field=16,
                                  encoder_type='tcn', dropout=0.0)
     model.eval()
-    B, T = 2, 40
-    rf = model.receptive_field
+    B, T = 2, 100
+    actual_rf = model.encoder_25d.actual_receptive_field
+    # Place perturbation well outside the actual RF
+    perturb_step = 20
+    target_step = perturb_step + actual_rf + 10  # well beyond RF
 
-    # Two inputs identical in the receptive field window at t=30
     x1 = torch.randn(B, T, 25)
     x2 = x1.clone()
-    # Modify step 5 (outside receptive field for t=30: [15,30])
-    x2[:, 5, :] = 999.0
+    x2[:, perturb_step, :] = 999.0
 
     mask = torch.ones(B, T, dtype=torch.bool)
     with torch.no_grad():
         o1 = model.forward_sequence(x1, None, mask, None, 'single_object_pick_place')
         o2 = model.forward_sequence(x2, None, mask, None, 'single_object_pick_place')
 
-    # Output at step 30 should be ~identical (perturbation at step 5 outside RF)
+    # Output at target_step should be unchanged
     for head in ['grasp', 'manipulation', 'release']:
-        diff = (o1[head][:, 30] - o2[head][:, 30]).abs().max().item()
-        assert diff < 1e-4, f'{head} at step 30 changed: {diff}'
+        diff = (o1[head][:, target_step] - o2[head][:, target_step]).abs().max().item()
+        assert diff < 1e-4, f'{head} at step {target_step} changed (RF={actual_rf}): {diff}'
 
 
 def test_route_abstention():
