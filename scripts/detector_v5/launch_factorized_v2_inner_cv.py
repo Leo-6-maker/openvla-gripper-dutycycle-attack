@@ -175,24 +175,22 @@ def main():
 
         return label, True, f'COMPLETE_{elapsed:.0f}s'
 
-    # Assign jobs to workers
-    worker_jobs = defaultdict(list)
+    # Assign jobs to GPUs with round-robin
+    job_assignments = []
     for i, job in enumerate(jobs):
         gpu = args.gpus[i % n_gpus]
-        worker_jobs[gpu].append(job)
+        job_assignments.append((job, gpu))
 
     all_results = []
     training_futures = []
 
-    # Postprocess pool (reuses training workers serially per GPU — each worker does full pipeline)
     with __import__('concurrent.futures').futures.ThreadPoolExecutor(
             max_workers=args.training_workers) as executor:
         future_map = {}
-        for gpu, gpu_jobs in worker_jobs.items():
-            for job in gpu_jobs:
-                f = executor.submit(process_job, job, gpu)
-                future_map[f] = job['label']
-                time.sleep(0.05)  # gentle stagger
+        for job, gpu in job_assignments:
+            f = executor.submit(process_job, job, gpu)
+            future_map[f] = job['label']
+            time.sleep(0.05)  # gentle stagger
 
         for f in __import__('concurrent.futures').futures.as_completed(future_map):
             label, ok, msg = f.result()
