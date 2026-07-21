@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """V2 LR baseline: logistic regression on same inner-CV splits.
 
-Uses sklearn LogisticRegression with identity-level CV.
-Reports AUROC, AUPRC, per-route, per-duration, first/later metrics.
+Key contracts:
+- Train: allowed negative downsampling + class_weight='balanced'
+- Val: NO downsampling, NO shuffle, full metadata preserved
+- Event aggregation via (canonical_parent_key, event_id) — never array-order guess
+- All event fields correct: mechanism_route, event_ordinal, is_later_event, event_duration
 """
 import argparse, csv, hashlib, json, os, sys, uuid
 from pathlib import Path
@@ -26,10 +29,10 @@ OPS = Path('/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_
 S1 = OPS / 'OFFICIAL_V3_S1_FIT_V1_d31187f'
 TEACHER = OPS / 'OFFICIAL_V3_DETECTOR_V5_FACTORIZED_TEACHER_V1_de07e1a_20260721'
 REGISTRY = OPS / 'OFFICIAL_V3_CAMPAIGN_REGISTRY_V1_d31187f/OFFICIAL_V3_FORMAL_REGISTRY_V1.csv'
-DEFAULT_OUT = OPS / 'OFFICIAL_V3_FACTORIZED_STUDENT_V2_LR_BASELINE_V1_20260721'
 SPLITS_ROOT = OPS / 'OFFICIAL_V3_FACTORIZED_STUDENT_V2_INNER_CV_SPLITS_V1_20260721'
+DEFAULT_OUT = OPS / 'OFFICIAL_V3_FACTORIZED_STUDENT_V2_LR_BASELINE_V1_20260721'
 
-CAUSAL_WINDOW = 20  # same as R1e
+CAUSAL_WINDOW = 20
 DURATION_BUCKETS = [(0, 15), (15, 30), (30, 50), (50, 100), (100, 99999)]
 
 
@@ -48,89 +51,147 @@ def write_seal(root):
     _atomic_text(root / 'SHA256SUMS.sha256', f'{sha256_file(root / "SHA256SUMS")}  SHA256SUMS\n')
 
 
-def extract_causal_windows(episodes, causal_window=20):
-    """Extract (X, y, identities) for release prediction from causal 25D windows."""
-    X_pos, X_neg = [], []
-    id_pos, id_neg = [], []
+def extract_features_with_metadata(episodes, causal_window=20):
+    """Extract (X, metadata) for ALL release_known_mask steps. No downsampling."""
+    X_list = []
+    meta_list = []
 
     for ep in episodes:
         T = len(ep.features_25d)
+        eids = ep.event_id
+        unique_events = sorted([int(eids[t].item()) for t in range(T) if eids[t].item() >= 0])
+        eid_to_ordinal = {e: i for i, e in enumerate(unique_events)}
+        event_dur = defaultdict(int)
+        for t in range(T):
+            eid = int(eids[t].item())
+            if eid >= 0:
+                event_dur[eid] += 1
+
         for t in range(T):
             if not ep.release_known_mask[t].item():
                 continue
+            eid = int(eids[t].item())
+
             start = max(0, t - causal_window + 1)
-            window = ep.features_25d[start:t+1].numpy()
+            window = ep.features_25d[start:t+1].numpy().astype(np.float32)
             if window.shape[0] < causal_window:
                 pad = np.zeros((causal_window - window.shape[0], 25), dtype=np.float32)
                 window = np.concatenate([pad, window], axis=0)
 
-            if ep.release_target[t].item():
-                X_pos.append(window)
-                id_pos.append(ep.canonical_parent_key)
-            else:
-                X_neg.append(window)
-                id_neg.append(ep.canonical_parent_key)
+            X_list.append(window)
+            meta_list.append({
+                'canonical_parent_key': ep.canonical_parent_key,
+                'step_index': t,
+                'event_id': eid,
+                'mechanism_route': ep.mechanism_route,
+                'event_ordinal': eid_to_ordinal.get(eid, -1),
+                'is_later_event': eid_to_ordinal.get(eid, -1) >= 1,
+                'event_duration': event_dur.get(eid, 0),
+                'release_target': bool(ep.release_target[t].item()),
+                'release_known_mask': True,
+                'grasp_target': bool(ep.grasp_target[t].item()),
+                'grasp_known_mask': bool(ep.grasp_known_mask[t].item()),
+                'manipulation_target': bool(ep.manipulation_target[t].item()),
+                'manipulation_known_mask': bool(ep.manipulation_known_mask[t].item()),
+            })
 
-    # Balance: downsample negatives to 2:1
-    if len(X_neg) > 2 * len(X_pos):
-        rng = np.random.RandomState(42)
-        idx = rng.choice(len(X_neg), 2 * len(X_pos), replace=False)
-        X_neg = [X_neg[i] for i in idx]
-        id_neg = [id_neg[i] for i in idx]
-
-    X = np.array(X_pos + X_neg, dtype=np.float32)
-    y = np.array([1]*len(X_pos) + [0]*len(X_neg), dtype=np.float32)
-    ids = id_pos + id_neg
-    return X, y, ids
+    return np.array(X_list, dtype=np.float32), meta_list
 
 
-def compute_event_metrics(event_predictions):
-    """Compute event-level metrics from per-event predictions."""
+def prepare_training_data(X_train_full, meta_train, seed=42):
+    """Downsample negatives to 2:1 ratio for training. Keep metadata aligned."""
+    pos_idx = [i for i, m in enumerate(meta_train) if m['release_target']]
+    neg_idx = [i for i, m in enumerate(meta_train) if not m['release_target']]
+
+    if len(neg_idx) > 2 * len(pos_idx):
+        rng = np.random.RandomState(seed)
+        neg_idx = rng.choice(neg_idx, 2 * len(pos_idx), replace=False).tolist()
+
+    sel_idx = sorted(pos_idx + neg_idx)
+    X_bal = X_train_full[sel_idx]
+    y_bal = np.array([1.0 if meta_train[i]['release_target'] else 0.0 for i in sel_idx], dtype=np.float32)
+    return X_bal, y_bal
+
+
+def aggregate_to_events(step_scores, step_metadata):
+    """Group step scores by (identity, event_id) and compute max."""
+    groups = defaultdict(list)
+    for score, meta in zip(step_scores, step_metadata):
+        if meta['event_id'] < 0:
+            continue
+        groups[(meta['canonical_parent_key'], meta['event_id'])].append((score, meta))
+
+    events = []
+    for (ident, eid), items in groups.items():
+        scores = [s for s, _ in items]
+        meta0 = items[0][1]
+        events.append({
+            'canonical_parent_key': ident,
+            'event_id': eid,
+            'release_event_score': float(max(scores)),
+            'release_target': any(m['release_target'] for _, m in items),
+            'mechanism_route': meta0['mechanism_route'],
+            'event_ordinal': meta0['event_ordinal'],
+            'is_later_event': meta0['is_later_event'],
+            'event_duration': meta0['event_duration'],
+        })
+
+    return events
+
+
+def compute_event_metrics(events):
+    """Compute all metrics from event predictions."""
     m = {}
     for head in ['release']:
-        labels = [e[f'{head}_target'] for e in event_predictions]
-        scores = [e[f'{head}_event_score'] for e in event_predictions]
+        labels = np.array([e[f'{head}_target'] for e in events])
+        scores = np.array([e[f'{head}_event_score'] for e in events])
+        pos = labels == 1
+
         if len(np.unique(labels)) >= 2:
             m[f'{head}_auroc'] = float(roc_auc_score(labels, scores))
-        if sum(labels) > 0:
+        if pos.sum() > 0:
             m[f'{head}_auprc'] = float(average_precision_score(labels, scores))
-        m[f'{head}_n_pos'] = int(sum(labels))
+        m[f'{head}_n_pos'] = int(pos.sum())
         m[f'{head}_n_total'] = len(labels)
-        m[f'{head}_prevalence'] = sum(labels) / max(1, len(labels))
+        m[f'{head}_prevalence'] = pos.sum() / max(1, len(labels))
 
         # Per-route
         for route in SUPPORTED_ROUTES:
-            r_ev = [e for e in event_predictions if e.get('mechanism_route') == route]
-            r_labels = [e[f'{head}_target'] for e in r_ev]
-            r_scores = [e[f'{head}_event_score'] for e in r_ev]
+            r_idx = [i for i, e in enumerate(events) if e['mechanism_route'] == route]
+            if not r_idx:
+                continue
+            r_labels = labels[r_idx]; r_scores = scores[r_idx]
             if len(np.unique(r_labels)) >= 2:
                 m[f'{route}_{head}_auroc'] = float(roc_auc_score(r_labels, r_scores))
-            if sum(r_labels) > 0:
+            if r_labels.sum() > 0:
                 m[f'{route}_{head}_auprc'] = float(average_precision_score(r_labels, r_scores))
 
         # Duration buckets
         for lo, hi in DURATION_BUCKETS:
-            b_ev = [e for e in event_predictions if lo <= e.get('event_duration', 0) < hi]
-            b_labels = [e[f'{head}_target'] for e in b_ev]
-            b_scores = [e[f'{head}_event_score'] for e in b_ev]
-            if sum(b_labels) > 0:
+            b_idx = [i for i, e in enumerate(events) if lo <= e.get('event_duration', 0) < hi]
+            if not b_idx:
+                continue
+            b_labels = labels[b_idx]; b_scores = scores[b_idx]
+            if b_labels.sum() > 0:
                 m[f'{head}_dur_{lo}_{hi}_auprc'] = float(average_precision_score(b_labels, b_scores))
+                m[f'{head}_dur_{lo}_{hi}_n'] = len(b_idx)
 
         # Short event
-        short_ev = [e for e in event_predictions if e.get('event_duration', 999) < 30]
-        s_labels = [e[f'{head}_target'] for e in short_ev]
-        s_scores = [e[f'{head}_event_score'] for e in short_ev]
-        if sum(s_labels) > 0:
-            m[f'{head}_short_auprc'] = float(average_precision_score(s_labels, s_scores))
+        s_idx = [i for i, e in enumerate(events) if e.get('event_duration', 999) < 30]
+        if s_idx:
+            s_labels = labels[s_idx]; s_scores = scores[s_idx]
+            if s_labels.sum() > 0:
+                m[f'{head}_short_auprc'] = float(average_precision_score(s_labels, s_scores))
 
         # First/later
         for ek in ['first', 'later']:
-            ek_ev = [e for e in event_predictions
-                     if (ek == 'later') == e.get('is_later_event', False)]
-            ek_labels = [e[f'{head}_target'] for e in ek_ev]
-            ek_scores = [e[f'{head}_event_score'] for e in ek_ev]
-            if sum(ek_labels) > 0:
+            ek_idx = [i for i, e in enumerate(events) if (ek == 'later') == e.get('is_later_event', False)]
+            if not ek_idx:
+                continue
+            ek_labels = labels[ek_idx]; ek_scores = scores[ek_idx]
+            if ek_labels.sum() > 0:
                 m[f'{head}_{ek}_auprc'] = float(average_precision_score(ek_labels, ek_scores))
+                m[f'{head}_{ek}_n'] = len(ek_idx)
 
     return m
 
@@ -139,7 +200,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--output-root', type=Path, default=DEFAULT_OUT)
     ap.add_argument('--splits-root', type=Path, default=SPLITS_ROOT)
-    ap.add_argument('--C', type=float, default=1.0, help='LogisticRegression C')
+    ap.add_argument('--C', type=float, default=1.0)
     ap.add_argument('--max-iter', type=int, default=2000)
     args = ap.parse_args()
 
@@ -157,30 +218,27 @@ def main():
     fit_rows = [r for r in rows if r.get('split') == 'FIT_TRAIN']
     id_to_row = {r['canonical_parent_key']: r for r in fit_rows}
 
-    all_event_preds = []
+    all_events = []
     all_split_metrics = {}
-    per_fold_events = []
+    all_event_lines = []
 
     for outer_fold in [0, 1, 2, 3]:
         for inner_fold in [0, 1, 2]:
             inner_train_ids, inner_val_ids = resolve_inner_train_val_ids(
                 split_bundle, outer_fold, inner_fold)
-
             train_rows = [id_to_row[i] for i in inner_train_ids if i in id_to_row]
             val_rows = [id_to_row[i] for i in inner_val_ids if i in id_to_row]
-
             if len(train_rows) < 10 or len(val_rows) < 10:
                 continue
 
             train_eps = load_factorized_episodes(S1, TEACHER, train_rows)
             val_eps = load_factorized_episodes(S1, TEACHER, val_rows)
 
-            # Extract features from training identities only
-            X_train, y_train, id_train = extract_causal_windows(train_eps, CAUSAL_WINDOW)
-            X_val, y_val, id_val = extract_causal_windows(val_eps, CAUSAL_WINDOW)
+            # Extract: train (may downsample), val (NEVER downsample)
+            X_train_full, meta_train = extract_features_with_metadata(train_eps, CAUSAL_WINDOW)
+            X_val, meta_val = extract_features_with_metadata(val_eps, CAUSAL_WINDOW)
 
-            if len(np.unique(y_train)) < 2:
-                continue
+            X_train, y_train = prepare_training_data(X_train_full, meta_train)
 
             # Fit LR
             X_train_flat = X_train.reshape(X_train.shape[0], -1)
@@ -195,100 +253,47 @@ def main():
             clf.fit(X_train_norm, y_train)
             step_scores = clf.predict_proba(X_val_norm)[:, 1]
 
-            # Map step scores back to event-level
-            # Group validation steps by (identity, event_id)
-            event_groups = defaultdict(list)
-            for ep in val_eps:
-                eids = ep.event_id
-                for t in range(len(ep.features_25d)):
-                    eid = int(eids[t].item())
-                    if eid < 0 or not ep.release_known_mask[t].item():
-                        continue
-                    event_groups[(ep.canonical_parent_key, eid)].append({
-                        'release_target': bool(ep.release_target[t].item()),
-                        'release_known_mask': bool(ep.release_known_mask[t].item()),
-                    })
+            # Aggregate to events via metadata keys
+            assert len(step_scores) == len(meta_val), \
+                f'Score/metadata length mismatch: {len(step_scores)} vs {len(meta_val)}'
+            events = aggregate_to_events(step_scores, meta_val)
+            all_events.extend(events)
 
-            # Match step scores to event groups
-            score_idx = 0
-            for (ident, eid), step_data in event_groups.items():
-                known_scores = []
-                for sd in step_data:
-                    if sd['release_known_mask'] and score_idx < len(step_scores):
-                        known_scores.append(step_scores[score_idx])
-                        score_idx += 1
-                if known_scores:
-                    event_pred = {
-                        'canonical_parent_key': ident,
-                        'event_id': eid,
-                        'release_event_score': float(max(known_scores)),
-                        'release_target': any(sd['release_target'] for sd in step_data),
-                        'mechanism_route': 'unknown',
-                        'is_later_event': False,
-                        'event_duration': len(step_data),
-                    }
-                    all_event_preds.append(event_pred)
-                    per_fold_events.append(event_pred)
+            for e in events:
+                all_event_lines.append(json.dumps(e) + '\n')
 
-            # Per-split metrics
-            split_events = []
-            score_idx = 0
-            for ep in val_eps:
-                eids = ep.event_id
-                unique_events = sorted(set(int(eids[t].item()) for t in range(len(ep.features_25d)) if eids[t].item() >= 0))
-                eid_to_ordinal = {e: i for i, e in enumerate(unique_events)}
-                event_dur = defaultdict(int)
-                for t in range(len(ep.features_25d)):
-                    eid = int(eids[t].item())
-                    if eid >= 0:
-                        event_dur[eid] += 1
-                for eid in unique_events:
-                    em_steps = [t for t in range(len(ep.features_25d))
-                               if int(eids[t].item()) == eid and ep.release_known_mask[t].item()]
-                    known_scores = []
-                    for _ in em_steps:
-                        if score_idx < len(step_scores):
-                            known_scores.append(step_scores[score_idx])
-                            score_idx += 1
-                    if known_scores:
-                        split_events.append({
-                            'canonical_parent_key': ep.canonical_parent_key,
-                            'event_id': eid,
-                            'release_event_score': float(max(known_scores)),
-                            'release_target': any(ep.release_target[t].item() and ep.release_known_mask[t].item() for t in em_steps),
-                            'mechanism_route': ep.mechanism_route,
-                            'is_later_event': eid_to_ordinal.get(eid, -1) >= 1,
-                            'event_duration': event_dur.get(eid, 0),
-                        })
-
-            split_m = compute_event_metrics(split_events)
+            split_m = compute_event_metrics(events)
             key = f'o{outer_fold}_i{inner_fold}'
             all_split_metrics[key] = split_m
-            print(f'  {key}: release AUROC={split_m.get("release_auroc", "N/A"):.4f}' if split_m.get('release_auroc') else f'  {key}: no release AUROC')
+            auroc = split_m.get('release_auroc')
+            print(f'  {key}: AUROC={auroc:.4f} events={len(events)}' if auroc else f'  {key}: no AUROC, events={len(events)}')
 
     # Pooled metrics
-    pooled = compute_event_metrics(all_event_preds)
-    print(f'\nPooled LR: AUROC={pooled.get("release_auroc", "N/A"):.4f} AUPRC={pooled.get("release_auprc", "N/A"):.4f}')
+    pooled = compute_event_metrics(all_events)
+    print(f'\nPooled: AUROC={pooled.get("release_auroc", "N/A"):.4f} '
+          f'AUPRC={pooled.get("release_auprc", "N/A"):.4f} '
+          f'n={pooled.get("release_n_total", 0)} '
+          f'prevalence={pooled.get("release_prevalence", 0):.4f}')
 
-    results = {
-        'config': {'C': args.C, 'max_iter': args.max_iter, 'causal_window': CAUSAL_WINDOW,
-                   'class_weight': 'balanced'},
-        'pooled_metrics': pooled,
-        'per_split_metrics': all_split_metrics,
-        'n_splits': len(all_split_metrics),
-        'n_total_events': len(all_event_preds),
-    }
-
-    _atomic_text(staging / 'baseline_config.json', json.dumps(results['config'], indent=2))
-    _atomic_text(staging / 'per_split_metrics.json', json.dumps(all_split_metrics, indent=2))
+    config = {'C': args.C, 'max_iter': args.max_iter, 'causal_window': CAUSAL_WINDOW,
+              'class_weight': 'balanced', 'train_neg_downsample': '2:1'}
+    _atomic_text(staging / 'baseline_config.json', json.dumps(config, indent=2))
     _atomic_text(staging / 'pooled_metrics.json', json.dumps(pooled, indent=2))
+    _atomic_text(staging / 'per_split_metrics.json', json.dumps(all_split_metrics, indent=2))
+    _atomic_text(staging / 'event_predictions.jsonl', ''.join(all_event_lines))
     _atomic_text(staging / 'source_binding.json', json.dumps({
         'splits_root': str(args.splits_root),
         'splits_seal': sha256_file(args.splits_root / 'SHA256SUMS'),
+        'n_splits': len(all_split_metrics),
+        'n_total_events': len(all_events),
+    }, indent=2))
+    _atomic_text(staging / 'environment.json', json.dumps({
+        'sklearn_version': __import__('sklearn').__version__,
     }, indent=2))
     write_seal(staging)
     os.replace(staging, out)
     print(f'\nLR baseline sealed: {out}')
+    print(f'Seal: {sha256_file(out / "SHA256SUMS")}')
 
 
 if __name__ == '__main__':

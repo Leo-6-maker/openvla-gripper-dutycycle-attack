@@ -70,10 +70,26 @@ def main():
     verify_seal(args.s1_root)
     verify_seal(args.fold_root)
 
-    inv_seal = None
-    if args.job_inventory_root.exists():
-        verify_seal(args.job_inventory_root)
-        inv_seal = sha256_file(args.job_inventory_root / 'SHA256SUMS')
+    if not args.job_inventory_root.exists():
+        raise SystemExit(f'Job inventory not found: {args.job_inventory_root}')
+    verify_seal(args.job_inventory_root)
+    inv_seal = sha256_file(args.job_inventory_root / 'SHA256SUMS')
+    inv_data = json.loads((args.job_inventory_root / 'v2_stage1_job_inventory.json').read_text())
+
+    # Verify inventory: exactly 864 jobs, all unique, all seeds=42
+    jobs = inv_data['jobs']
+    if len(jobs) != 864:
+        raise SystemExit(f'Expected 864 jobs, got {len(jobs)}')
+    labels = [j['label'] for j in jobs]
+    paths = [j['output_path'] for j in jobs]
+    if len(labels) != len(set(labels)):
+        raise SystemExit(f'Duplicate labels in inventory')
+    if len(paths) != len(set(paths)):
+        raise SystemExit(f'Duplicate output paths in inventory')
+    non_42 = [j for j in jobs if j['seed'] != 42]
+    if non_42:
+        raise SystemExit(f'{len(non_42)} jobs with seed != 42')
+    print(f'Inventory verified: {len(jobs)} jobs, all unique, all seed=42')
 
     # Source SHAs
     src_dir = ROOT / 'src/gripper_attack'
@@ -100,10 +116,12 @@ def main():
     if len(head) != 40:
         raise SystemExit(f'Invalid git HEAD: {head}')
 
+    import platform as _platform, torch as _torch, sklearn as _sklearn
     auth = {
-        'schema': 'DETECTOR_V5_FACTORIZED_STUDENT_V2_INNER_CV_AUTHORIZATION_V1',
-        'status': 'V2_INNER_CV_AUTHORIZED',
+        'schema': 'DETECTOR_V5_FACTORIZED_STUDENT_V2_STAGE1_AUTHORIZATION_V1',
+        'status': 'V2_STAGE1_INNER_CV_AUTHORIZED',
         'v2_inner_cv_authorized': True,
+        'stage2_authorized': False,
         'engineering_oof_authorized': False,
         'full_fit_authorized': False,
         'cal_authorized': False,
@@ -111,6 +129,13 @@ def main():
         'vis_authorized': False,
         'attack_authorized': False,
         'source_commit': head,
+        'environment': {
+            'python_version': _platform.python_version(),
+            'torch_version': _torch.__version__,
+            'cuda_version': _torch.version.cuda if _torch.cuda.is_available() else None,
+            'sklearn_version': _sklearn.__version__,
+            'host': _platform.node(),
+        },
         'splits_root': str(args.splits_root),
         'splits_root_seal': splits_seal,
         'teacher_root': str(args.teacher_root),
