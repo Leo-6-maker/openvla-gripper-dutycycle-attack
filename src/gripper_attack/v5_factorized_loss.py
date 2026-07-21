@@ -34,6 +34,7 @@ class FactorizedLoss(nn.Module):
         total_loss = torch.tensor(0.0, device=logits["grasp"].device)
         metrics = {"grasp": 0.0, "manipulation": 0.0, "release": 0.0, "consistency": 0.0}
 
+        device = logits["grasp"].device
         for b in range(B):
             ep = episodes[b]
             T_ep = len(ep.features_25d)
@@ -42,14 +43,21 @@ class FactorizedLoss(nn.Module):
             m_logits = logits["manipulation"][b, :T_ep]
             r_logits = logits["release"][b, :T_ep]
 
-            g_loss = self._head_loss(g_logits, ep.grasp_target, ep.grasp_known_mask, ep.event_id)
-            m_loss = self._head_loss(m_logits, ep.manipulation_target, ep.manipulation_known_mask, ep.event_id)
-            r_loss = self._head_loss(r_logits, ep.release_target, ep.release_known_mask, ep.event_id)
+            g_target = ep.grasp_target.to(device)
+            g_mask = ep.grasp_known_mask.to(device)
+            m_target = ep.manipulation_target.to(device)
+            m_mask = ep.manipulation_known_mask.to(device)
+            r_target = ep.release_target.to(device)
+            r_mask = ep.release_known_mask.to(device)
+            eids = ep.event_id.to(device)
+
+            g_loss = self._head_loss(g_logits, g_target, g_mask, eids)
+            m_loss = self._head_loss(m_logits, m_target, m_mask, eids)
+            r_loss = self._head_loss(r_logits, r_target, r_mask, eids)
 
             p_g = torch.sigmoid(g_logits)
             p_m = torch.sigmoid(m_logits)
-            cons_mask = ep.grasp_known_mask
-            consistency = torch.relu(p_m - p_g)[cons_mask].mean() if cons_mask.any() else torch.tensor(0.0, device=g_logits.device)
+            consistency = torch.relu(p_m - p_g)[g_mask].mean() if g_mask.any() else torch.tensor(0.0, device=device)
 
             ep_loss = g_loss + m_loss + r_loss + self.consistency_weight * consistency
             total_loss = total_loss + ep_loss
