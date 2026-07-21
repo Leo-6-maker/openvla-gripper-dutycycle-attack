@@ -9,7 +9,7 @@ import subprocess, sys, time, json
 from pathlib import Path
 from collections import defaultdict
 
-PY = "/home/sz/miniconda3/envs/hallo/bin/python"
+PY = "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python"
 TRAIN_SCRIPT = Path(__file__).resolve().parent / "train_factorized_oof.py"
 OPS = Path("/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops")
 S1 = OPS / "OFFICIAL_V3_S1_FIT_V1_d31187f"
