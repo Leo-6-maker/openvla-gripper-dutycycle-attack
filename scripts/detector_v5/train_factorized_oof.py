@@ -56,6 +56,9 @@ def main():
     ap.add_argument("--expected-source-commit", type=str, required=True)
     ap.add_argument("--policy-intent-root", type=Path, default=None)
     args = ap.parse_args()
+    use_9d = args.model_type == "25D9D"
+    if use_9d and args.policy_intent_root is None:
+        raise SystemExit("25D9D requires --policy-intent-root")
 
     # ── Authorization verification ────────────────────────────────────
     auth_root = args.authorization_root.resolve()
@@ -155,10 +158,6 @@ def main():
         raise SystemExit(f"output exists: {out}")
     staging = out.with_name(f".{out.name}.{uuid.uuid4().hex}.staging")
     staging.mkdir(parents=True)
-
-    use_9d = args.model_type == "25D9D"
-    if use_9d and args.policy_intent_root is None:
-        raise SystemExit("25D9D requires --policy-intent-root")
 
     # Load fold
     folds = load_fit_fold_bundle(args.fold_root.resolve())
