@@ -16,7 +16,8 @@ from collections import defaultdict
 import torch
 import torch.nn as nn
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
+ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(ROOT / "src"))
 from gripper_attack.v5_factorized_dataset import (
     FactorizedEpisode, load_factorized_episodes, compute_factorized_normalization,
     verify_factorized_source_roots, SUPPORTED_ROUTES,
@@ -91,10 +92,49 @@ def main():
     if teacher_seal != auth.get("teacher_root_seal", ""):
         raise RuntimeError("Teacher seal mismatch")
 
-    # Git commit check
+    # Fold root binding
+    fold_root_resolved = args.fold_root.resolve()
+    verify_sealed_directory(fold_root_resolved)
+    fold_seal = sha256_file(fold_root_resolved / "SHA256SUMS")
+    if fold_seal != auth.get("fold_root_seal", ""):
+        raise RuntimeError("Fold seal mismatch")
+
+    # Policy-intent binding (required for 25D9D, optional for 25D)
+    if use_9d:
+        pi_root = args.policy_intent_root.resolve()
+        verify_sealed_directory(pi_root)
+        pi_seal = sha256_file(pi_root / "SHA256SUMS")
+        if pi_seal != auth.get("policy_intent_root_seal", ""):
+            raise RuntimeError("Policy-intent seal mismatch")
+
+    # Source code SHAs
+    for key, rel_path in [
+        ("dataset_sha", "src/gripper_attack/v5_factorized_dataset.py"),
+        ("model_sha", "src/gripper_attack/v5_factorized_student.py"),
+        ("loss_sha", "src/gripper_attack/v5_factorized_loss.py"),
+        ("trainer_sha", "scripts/detector_v5/train_factorized_oof.py"),
+        ("launcher_sha", "scripts/detector_v5/launch_factorized_oof.py"),
+    ]:
+        if key not in auth:
+            if key.startswith("launcher"): continue  # launcher not critical at runtime
+            raise RuntimeError(f"Authorization missing {key}")
+        actual = sha256_file(ROOT / rel_path)
+        if actual != auth[key]:
+            raise RuntimeError(f"{key} mismatch: {actual[:16]} != {auth[key][:16]}")
+
+    # Student protocol SHA
+    proto_path = ROOT / "configs/DETECTOR_V5_FACTORIZED_STUDENT_PROTOCOL_V1.json"
+    if sha256_file(proto_path) != auth.get("student_protocol_sha", ""):
+        raise RuntimeError("Student protocol SHA mismatch")
+
+    # Git commit + clean tree check
     import subprocess
-    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=Path(__file__).parent.parent.parent, text=True).strip()
-    assert head == args.expected_source_commit, f"git HEAD {head[:8]} != expected {args.expected_source_commit[:8]}"
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    if head != args.expected_source_commit:
+        raise RuntimeError(f"git HEAD {head[:8]} != expected {args.expected_source_commit[:8]}")
+    dirty = subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True).strip()
+    if dirty:
+        raise RuntimeError(f"working tree must be clean for formal OOF:\n{dirty[:500]}")
 
     # Environment fingerprint
     env_info = {
@@ -265,6 +305,7 @@ def main():
 
         model.eval()
         val_losses = []; head_metrics = defaultdict(list)
+        route_losses = defaultdict(list)
         with torch.no_grad():
             for route, batch_eps in (val_batches_single + val_batches_multi):
                 x25, x9, mask25, mask9 = batch_to_device(batch_eps, route)
@@ -272,13 +313,19 @@ def main():
                 cw = class_weights.get(route, {})
                 loss, m = loss_fn(logits, batch_eps, mask25, class_weights=cw)
                 val_losses.append(loss.item())
+                route_losses[route].append(loss.item())
                 for k in ["grasp", "manipulation", "release"]: head_metrics[k].append(m[k])
 
         avg_train = sum(train_losses)/max(1,len(train_losses))
-        avg_val = sum(val_losses)/max(1,len(val_losses))
+        # Route macro: (single_mean + multi_mean) / 2
+        single_m = sum(route_losses["single_object_pick_place"])/max(1,len(route_losses["single_object_pick_place"]))
+        multi_m = sum(route_losses["multi_object_transfer"])/max(1,len(route_losses["multi_object_transfer"]))
+        avg_val = (single_m + multi_m) / 2
         history["epoch"].append(epoch); history["train_loss"].append(avg_train); history["val_loss"].append(avg_val)
         for k in ["grasp", "manipulation", "release"]:
             history[f"val_{k}"].append(sum(head_metrics[k])/max(1,len(head_metrics[k])))
+        history.setdefault("val_single", []).append(single_m)
+        history.setdefault("val_multi", []).append(multi_m)
         if epoch % 5 == 0:
             print(f"  epoch {epoch:2d}: train={avg_train:.4f} val={avg_val:.4f} g={history['val_grasp'][-1]:.4f} m={history['val_manipulation'][-1]:.4f} r={history['val_release'][-1]:.4f}")
 

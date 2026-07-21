@@ -49,7 +49,7 @@ def main():
     ap.add_argument("--s1-root", type=Path, required=True)
     ap.add_argument("--f3-root", type=Path, required=True)
     ap.add_argument("--fold-root", type=Path, required=True)
-    ap.add_argument("--policy-intent-root", type=Path, default=None)
+    ap.add_argument("--policy-intent-root", type=Path, required=True)
     args = ap.parse_args()
 
     out = args.output_root.resolve()
@@ -74,10 +74,13 @@ def main():
         raise SystemExit("Student protocol already authorizes training")
     proto_sha = sha256_file(ROOT / "configs/DETECTOR_V5_FACTORIZED_STUDENT_PROTOCOL_V1.json")
 
-    # Git HEAD
+    # Git HEAD + clean tree
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=str(ROOT), text=True).strip()
     if len(head) != 40:
         raise SystemExit(f"invalid git HEAD: {head}")
+    dirty = subprocess.check_output(["git", "status", "--porcelain"], cwd=str(ROOT), text=True).strip()
+    if dirty:
+        raise SystemExit(f"working tree must be clean for formal authorization:\n{dirty[:500]}")
 
     # Source SHAs
     src_dir = ROOT / "src/gripper_attack"

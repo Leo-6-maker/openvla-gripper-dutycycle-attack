@@ -26,17 +26,35 @@ def sha256_file(p):
         for b in iter(lambda: f.read(1048576), b""): d.update(b)
     return d.hexdigest()
 
-def verify_existing_output(out: Path) -> bool:
-    """Verify sealed output is valid before skipping."""
+def verify_sealed_directory(root):
+    s = root / "SHA256SUMS"; c = root / "SHA256SUMS.sha256"
+    if not s.is_file() or not c.is_file():
+        raise RuntimeError(f"SEAL MISSING: {root}")
+    if c.read_text().strip() != f"{sha256_file(s)}  SHA256SUMS":
+        raise RuntimeError(f"SEAL MISMATCH: {root}")
+    for l in s.read_text().splitlines():
+        d, _, n = l.partition("  "); t = root / n
+        if not t.is_file() or sha256_file(t) != d:
+            raise RuntimeError(f"FILE MISMATCH: {root}/{n}")
+    return sha256_file(s)
+
+def verify_existing_output(out, model_type, fold_id, seed, source_commit, auth_seal):
+    """Full seal + metadata verification. Raises on mismatch."""
     if not out.exists():
         return False
-    sums = out / "SHA256SUMS"
-    sidecar = out / "SHA256SUMS.sha256"
-    if not sums.is_file() or not sidecar.is_file():
-        return False
-    expected = sidecar.read_text().strip()
-    actual = f"{sha256_file(sums)}  SHA256SUMS"
-    return expected == actual
+    verify_sealed_directory(out)
+    run = json.loads((out / "run_config.json").read_text())
+    src = json.loads((out / "source_binding.json").read_text())
+    rec = json.loads((out / "authorization_receipt.json").read_text())
+    if run.get("model_type") != model_type:
+        raise RuntimeError(f"existing {out.name}: model_type mismatch")
+    if run.get("fold_id") != fold_id or run.get("seed") != seed:
+        raise RuntimeError(f"existing {out.name}: fold/seed mismatch")
+    if src.get("source_commit") != source_commit:
+        raise RuntimeError(f"existing {out.name}: source_commit mismatch")
+    if rec.get("authorization_seal") != auth_seal:
+        raise RuntimeError(f"existing {out.name}: authorization mismatch")
+    return True
 
 SEEDS = [42, 123, 456]
 FOLD_IDS = [0, 1, 2, 3]
@@ -59,6 +77,7 @@ def main():
                 out = OUT_BASE / mt / f"fold{fold}_seed{seed}"
                 jobs.append((mt, fold, seed, out))
 
+    auth_seal = sha256_file(AUTH_ROOT / "SHA256SUMS")
     print(f"Total jobs: {len(jobs)} | GPUs: {GPUS} | workers/GPU: {WORKERS_PER_GPU}")
 
     def launch_worker(gpu, worker_id, job_list):
@@ -73,9 +92,14 @@ def main():
             log_file = LOG_DIR / f"{mt}_fold{fold}_seed{seed}_gpu{gpu}_w{worker_id}.log"
             log_file.parent.mkdir(parents=True, exist_ok=True)
 
-            if verify_existing_output(out):
-                print(f"  [GPU{gpu} W{worker_id}] SKIP {mt} fold{fold} seed{seed} (sealed)")
-                results.append((mt, fold, seed, True, "SKIP_SEALED"))
+            try:
+                if verify_existing_output(out, mt, fold, seed, args.source_commit, auth_seal):
+                    print(f"  [GPU{gpu} W{worker_id}] SKIP {mt} fold{fold} seed{seed} (sealed)")
+                    results.append((mt, fold, seed, True, "SKIP_SEALED"))
+                    continue
+            except Exception as e:
+                print(f"  [GPU{gpu} W{worker_id}] HOLD {mt} fold{fold} seed{seed}: existing output invalid: {e}")
+                results.append((mt, fold, seed, False, f"INVALID_EXISTING: {e}"))
                 continue
 
             extra_args = []
