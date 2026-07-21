@@ -208,9 +208,9 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     decoder_seal = verify_sealed_root(args.decoder_root.resolve())
     physics_audit_seal = verify_sealed_root(args.physics_audit_root.resolve())
     k10_seal = verify_sealed_root(args.k10_root.resolve())
-    k10_audit = _load_json(args.k10_root.resolve() / "AUDIT.json")
-    if k10_audit.get("schema") != args.expected_k10_schema:
-        raise ValueError(f"K10 schema mismatch: expected {args.expected_k10_schema}, got {k10_audit.get('schema')}")
+    k10_manifest = _load_json(args.k10_root.resolve() / "MANIFEST.json")
+    if k10_manifest.get("schema") != args.expected_k10_schema:
+        raise ValueError(f"K10 schema mismatch: expected {args.expected_k10_schema}, got {k10_manifest.get('schema')}")
     decoder_summary = _load_json(args.decoder_root / "summary.json")
     if decoder_summary.get("status") != "PASS_TASK_CONDITIONAL_DECODER":
         raise ValueError("Physics Teacher requires a passing task decoder")
@@ -369,7 +369,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
             "k10_binding": {
                 "root": str(args.k10_root.resolve()),
                 "root_sha256s_sha256": k10_seal["sha256sums_sha256"],
-                "k10_schema": k10_audit["schema"],
+                "k10_schema": k10_manifest["schema"],
                 "expected_schema": args.expected_k10_schema,
                 "external_bound": True,
                 "label_filename": "k10_labels_v122_v21c.jsonl",
