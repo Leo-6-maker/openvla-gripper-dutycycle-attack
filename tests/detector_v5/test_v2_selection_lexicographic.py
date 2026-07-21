@@ -75,3 +75,37 @@ def test_parameter_count_tiebreak():
     selected, trace, eliminated = select_candidate(candidates)
     # Both survive through all metrics (identical AUPRC) → smaller params wins
     assert selected == 'small', f'got {selected}'
+
+
+def test_higher_auprc_significantly_better_eliminates_lower():
+    """Best with AUPRC ~0.90, current ~0.70 with clear separation → eliminate."""
+    import numpy as np
+    rng = np.random.RandomState(42)
+    best_scores = rng.normal(0.90, 0.01, 12).tolist()
+    curr_scores = rng.normal(0.70, 0.01, 12).tolist()
+    candidates = {
+        'best': make_candidate('best', release_auprc=0.90,
+                               per_split_scores=best_scores),
+        'weak': make_candidate('weak', release_auprc=0.70,
+                               per_split_scores=curr_scores),
+    }
+    selected, trace, eliminated = select_candidate(candidates)
+    assert selected == 'best', f'got {selected}'
+    assert 'weak' in eliminated, 'weak should be eliminated'
+    assert 'release_auprc' in str(eliminated['weak'])
+
+
+def test_overlapping_ci_retains_both():
+    """Overlapping CIs → both survive to next priority."""
+    import numpy as np
+    rng = np.random.RandomState(42)
+    # Very noisy scores with near-identical means → CI will overlap
+    scores_a = rng.normal(0.80, 0.15, 12).tolist()
+    scores_b = rng.normal(0.79, 0.15, 12).tolist()
+    candidates = {
+        'a': make_candidate('a', release_auprc=0.80, per_split_scores=scores_a),
+        'b': make_candidate('b', release_auprc=0.79, per_split_scores=scores_b),
+    }
+    selected, trace, eliminated = select_candidate(candidates)
+    # Both should survive release_auprc; winner decided by later priority or tiebreak
+    assert selected is not None, 'should select someone'

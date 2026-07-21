@@ -112,14 +112,17 @@ def compare_and_filter(candidates, metric_key, direction='higher'):
         curr_scores = metrics.get(f'{metric_key}_per_split')
 
         if best_scores is not None and curr_scores is not None and len(best_scores) == len(curr_scores):
-            mean_diff, ci_lo, ci_hi = paired_bootstrap_diff(
-                best_scores if direction == 'higher' else curr_scores,
-                curr_scores if direction == 'higher' else best_scores)
-
+            # diff = a - b where a is what we want to be larger
             if direction == 'higher':
-                significantly_worse = ci_hi < 0  # best - curr CI entirely negative → curr worse
-            else:
-                significantly_worse = ci_lo > 0  # best - curr CI entirely positive → best bigger gap
+                a_scores, b_scores = best_scores, curr_scores  # diff = best - curr
+                mean_diff, ci_lo, ci_hi = paired_bootstrap_diff(a_scores, b_scores)
+                # current is significantly worse if best - curr CI entirely > 0
+                significantly_worse = ci_lo > 0
+            else:  # lower is better
+                a_scores, b_scores = curr_scores, best_scores  # diff = curr - best
+                mean_diff, ci_lo, ci_hi = paired_bootstrap_diff(a_scores, b_scores)
+                # current is significantly worse if curr - best CI entirely > 0
+                significantly_worse = ci_lo > 0
 
             if significantly_worse:
                 eliminated[name] = {

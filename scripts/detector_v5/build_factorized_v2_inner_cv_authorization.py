@@ -153,12 +153,15 @@ def main():
             'hidden_dim': [64, 128],
             'dropout': [0.0, 0.1],
             'weight_decay': [1e-5, 1e-4],
-            'seeds': [42, 123, 456],
+            'allowed_seeds': [42],
+            'stage2_seeds_not_yet_authorized': [123, 456],
             'epochs': 30,
             'batch_size': 8,
             'lr': 0.001,
         },
         'stage1_job_count': 864,
+        'registry_sha': sha256_file(Path('/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops/OFFICIAL_V3_CAMPAIGN_REGISTRY_V1_d31187f/OFFICIAL_V3_FORMAL_REGISTRY_V1.csv')),
+        'job_inventory_builder_sha': shas.get('job_inventory_builder_sha', sha256_file(script_dir / 'build_factorized_v2_job_inventory.py')),
     }
 
     staging = out.with_name(f'.{out.name}.{uuid.uuid4().hex}.staging')
