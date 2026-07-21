@@ -14,6 +14,7 @@ from gripper_attack.v5_factorized_dataset import (
 )
 from gripper_attack.v5_factorized_student_v2 import FactorizedStudentV2
 from gripper_attack.b3_training_protocol import load_fit_fold_bundle, sha256_file, verify_sealed_directory
+from gripper_attack.v5_factorized_v2_splits import resolve_inner_train_val_ids
 
 OPS = Path('/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops')
 S1 = OPS / 'OFFICIAL_V3_S1_FIT_V1_d31187f'
@@ -70,11 +71,8 @@ def main():
     splits = json.loads((args.inner_cv_splits_root / 'inner_cv_splits.json').read_text())
     fold_data = splits['splits'][f'fold_{outer_fold}']
 
-    # Inner validation = other inner folds combined
-    inner_val_ids = set()
-    for i, inner in enumerate(fold_data['inner_folds']):
-        if i != inner_fold:
-            inner_val_ids.update(inner['identities'])
+    # Inner validation = specified inner fold (shared resolver)
+    _, inner_val_ids = resolve_inner_train_val_ids(splits, outer_fold, inner_fold)
 
     # Load episodes
     verify_factorized_source_roots(S1, TEACHER)
@@ -136,6 +134,7 @@ def main():
                         'event_duration': event_dur.get(int(eids[t].item()), 0),
                         'release_positive_duration': release_pos_dur.get(int(eids[t].item()), 0),
                         'window_id': -1, 'position_in_window': -1,
+                    'encoder_type': 'none', 'window_size': 0,
                         'grasp_prob': 0.0, 'manipulation_prob': 0.0, 'release_prob': 0.0,
                         'grasp_logit': -1e4, 'manipulation_logit': -1e4, 'release_logit': -1e4,
                         'grasp_target': bool(ep.grasp_target[t].item()),
@@ -182,6 +181,8 @@ def main():
                     'release_positive_duration': release_pos_dur.get(ev, 0),
                     'window_id': window_id if encoder_type == 'windowed_gru' else t // W,
                     'position_in_window': t % W if W > 0 else t,
+                    'encoder_type': encoder_type,
+                    'window_size': receptive_field if encoder_type == 'windowed_gru' else model.encoder_25d.actual_receptive_field,
                     'grasp_prob': round(float(g_prob[t].item()), 8),
                     'manipulation_prob': round(float(m_prob[t].item()), 8),
                     'release_prob': round(float(r_prob[t].item()), 8),
