@@ -81,11 +81,11 @@ def check_run_integrity(runs_root, label, auth_seal, source_commit):
         issues.append('TRAIN_NOT_SEALED')
     else:
         try:
-            rc = json.loads((train_dir / 'run_config.json').read_text())
+            sb = json.loads((train_dir / 'source_binding.json').read_text())
             ar = json.loads((train_dir / 'authorization_receipt.json').read_text())
             if ar.get('authorization_seal') != auth_seal:
                 issues.append('AUTH_SEAL_MISMATCH')
-            if rc.get('source_commit', '') != source_commit:
+            if sb.get('source_commit', '') != source_commit:
                 issues.append('COMMIT_MISMATCH')
         except Exception as e:
             issues.append(f'TRAIN_METADATA: {e}')

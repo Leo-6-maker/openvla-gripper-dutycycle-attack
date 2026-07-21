@@ -27,21 +27,31 @@ def check_job_status(label, output_base):
     if not train_dir.exists():
         return 'QUEUED', details
 
+    # Check staging FIRST (active training before sealed output exists)
+    staging = list(train_dir.parent.glob(f'.{train_dir.name}.*.staging'))
+    if staging:
+        return 'TRAINING', details
+
+    # Check for failed training (staging removed but no sealed output)
+    train_log = LOG_DIR / f'{label}.train.log'
+    if train_log.is_file():
+        log_tail = train_log.read_text()[-500:] if train_log.stat().st_size < 10000 else ''
+        if 'Traceback' in log_tail or 'Error' in log_tail:
+            details['train_error'] = log_tail[-200:]
+            return 'TRAIN_FAILED', details
+
     sha_file = train_dir / 'SHA256SUMS'
     if sha_file.is_file():
         try:
-            rc = json.loads((train_dir / 'run_config.json').read_text())
+            sb = json.loads((train_dir / 'source_binding.json').read_text())
             ar = json.loads((train_dir / 'authorization_receipt.json').read_text())
             details['train_seal'] = 'OK'
-            details['source_commit'] = rc.get('source_commit', '?')[:8]
+            details['source_commit'] = sb.get('source_commit', '?')[:8]
             details['auth_seal'] = ar.get('authorization_seal', '?')[:16]
         except Exception:
-            return 'TRAINING', details
+            details['train_error'] = 'METADATA_READ_ERROR'
+            return 'TRAIN_FAILED', details
     else:
-        # Check if staging exists (actively training)
-        staging = list(train_dir.parent.glob(f'.{train_dir.name}.*.staging'))
-        if staging:
-            return 'TRAINING', details
         return 'QUEUED', details
 
     # Check prediction
