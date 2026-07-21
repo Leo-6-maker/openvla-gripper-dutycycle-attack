@@ -9,14 +9,14 @@ from select_factorized_v2_candidate import select_candidate, check_lr_gate, chec
 
 def make_candidate(name, release_auprc=0.8, short_auprc=0.7, gap=0.1, params=50000,
                    bg_emit=0.05, unsup=0.0, overlap=0.01,
-                   per_split_scores=None):
+                   release_auroc=None, per_split_scores=None):
     m = {
         'release_auprc': release_auprc, 'release_short_auprc': short_auprc,
         'first_later_recall_gap': gap, 'parameter_count': params,
         'background_false_emit_rate': bg_emit,
         'unsupported_route_emit_rate': unsup,
         'release_overlap_emit_rate': overlap,
-        'release_auroc': release_auprc - 0.05,
+        'release_auroc': release_auroc if release_auroc is not None else release_auprc - 0.05,
     }
     if per_split_scores:
         m['release_auprc_per_split'] = per_split_scores
