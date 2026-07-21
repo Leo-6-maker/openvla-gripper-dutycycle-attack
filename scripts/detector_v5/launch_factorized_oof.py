@@ -58,15 +58,16 @@ def verify_existing_output(out, model_type, fold_id, seed, source_commit, auth_s
 
 SEEDS = [42, 123, 456]
 FOLD_IDS = [0, 1, 2, 3]
-GPUS = [1, 3]
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--workers", type=int, default=6)
+    ap.add_argument("--gpus", type=int, nargs="+", default=[1, 3])
     ap.add_argument("--source-commit", type=str, required=True)
     ap.add_argument("--output-base", type=Path, default=DEFAULT_OUT_BASE)
     args = ap.parse_args()
 
+    GPUS = args.gpus
     WORKERS_PER_GPU = args.workers
     OUT_BASE = args.output_base
 
