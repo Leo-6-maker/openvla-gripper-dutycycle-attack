@@ -38,32 +38,22 @@ SUPPORTED_ROUTES = ['single_object_pick_place', 'multi_object_transfer']
 DURATION_BUCKETS = [(0, 15), (15, 30), (30, 50), (50, 100), (100, 99999)]
 
 
+from sklearn.metrics import roc_auc_score, average_precision_score
+
 def compute_auroc(labels, scores):
     labels = np.array(labels, dtype=np.float64)
     scores = np.array(scores, dtype=np.float64)
-    pos = scores[labels == 1]
-    neg = scores[labels == 0]
-    if len(pos) == 0 or len(neg) == 0:
+    if len(np.unique(labels)) < 2:
         return None
-    n_pos, n_neg = len(pos), len(neg)
-    neg_sorted = np.sort(neg)
-    rank_sum = sum(np.searchsorted(neg_sorted, p, side='left') + 0.5 * np.sum(neg_sorted == p) for p in pos)
-    return float(rank_sum / (n_pos * n_neg))
+    return float(roc_auc_score(labels, scores))
 
 
 def compute_auprc(labels, scores):
     labels = np.array(labels)
     scores = np.array(scores)
-    pos = labels == 1
-    if not pos.any():
+    if labels.sum() == 0:
         return None
-    order = np.argsort(-scores)
-    labels_sorted = labels[order]
-    n_pos = labels_sorted.sum()
-    precisions = np.cumsum(labels_sorted) / np.arange(1, len(labels_sorted) + 1)
-    recalls = np.cumsum(labels_sorted) / n_pos
-    # AUC via trapezoidal rule
-    return float(np.trapz(precisions, recalls))
+    return float(average_precision_score(labels, scores))
 
 
 def load_events(pred_dir):
@@ -148,34 +138,64 @@ def compute_metrics(events, steps, threshold=THRESHOLD):
         scores = [e[f'{head}_event_score'] for e in short_ev]
         m[f'{head}_short_auprc'] = compute_auprc(labels, scores)
 
-    # Safety
-    total_known = 0
-    release_overlap = 0
-    bg_emit = 0
+    # Safety metrics
+    bg_known = 0; bg_emit = 0; bg_emit_grasp = 0; bg_emit_manip = 0; bg_emit_release = 0
+    total_known = 0; release_overlap = 0
+    unsupported_emit = 0; unsupported_total = 0
+
     for s in steps:
         if not s['route_supported']:
+            unsupported_total += 1
+            if s.get('grasp_prob', 0) > 1e-8 or s.get('manipulation_prob', 0) > 1e-8 or s.get('release_prob', 0) > 1e-8:
+                unsupported_emit += 1
             continue
-        g_km = s['grasp_known_mask']
-        m_km = s['manipulation_known_mask']
-        r_km = s['release_known_mask']
-        if g_km and r_km and s['grasp_prob'] >= threshold and s['release_prob'] >= threshold:
+
+        g_km = s.get('grasp_known_mask', False)
+        m_km = s.get('manipulation_known_mask', False)
+        r_km = s.get('release_known_mask', False)
+        g_p = s.get('grasp_prob', 0); m_p = s.get('manipulation_prob', 0); r_p = s.get('release_prob', 0)
+
+        # Release overlap: both grasp and release emit on same step where both known
+        if g_km and r_km and g_p >= threshold and r_p >= threshold:
             release_overlap += 1
-        if s['event_id'] < 0:
-            if (g_km and s['grasp_prob'] >= threshold) or (m_km and s['manipulation_prob'] >= threshold) or (r_km and s['release_prob'] >= threshold):
-                bg_emit += 1
+
+        # Background false emit: event_id < 0 (IDLE/RELEASED background)
+        if s.get('event_id', -1) < 0:
+            any_known = g_km or m_km or r_km
+            if any_known:
+                bg_known += 1
+                if (g_km and g_p >= threshold) or (m_km and m_p >= threshold) or (r_km and r_p >= threshold):
+                    bg_emit += 1
+                    if g_km and g_p >= threshold: bg_emit_grasp += 1
+                    if m_km and m_p >= threshold: bg_emit_manip += 1
+                    if r_km and r_p >= threshold: bg_emit_release += 1
+
         if g_km or m_km or r_km:
             total_known += 1
-    m['release_overlap_emit_rate'] = release_overlap / max(1, total_known)
-    m['background_false_emit_rate'] = bg_emit / max(1, total_known)
-    m['unsupported_route_emit_rate'] = 0.0  # verified by audit
 
-    # Window boundary diagnostics for windowed GRU
-    if any(s.get('window_id', -1) >= 0 for s in steps):
-        for pos in [0, 1, 2, -3, -2, -1]:
-            pos_steps = [s for s in steps if s.get('position_in_window', -1) == (pos if pos >= 0 else s.get('window_size', 32) + pos)]
+    m['release_overlap_emit_rate'] = release_overlap / max(1, total_known)
+    m['background_false_emit_rate'] = bg_emit / max(1, bg_known) if bg_known > 0 else 0.0
+    m['background_emit_grasp'] = bg_emit_grasp / max(1, bg_known) if bg_known > 0 else 0.0
+    m['background_emit_manipulation'] = bg_emit_manip / max(1, bg_known) if bg_known > 0 else 0.0
+    m['background_emit_release'] = bg_emit_release / max(1, bg_known) if bg_known > 0 else 0.0
+    m['background_known_steps'] = bg_known
+    m['unsupported_route_emit_rate'] = unsupported_emit / max(1, unsupported_total)
+    m['unsupported_route_emit_count'] = unsupported_emit
+    m['unsupported_route_total'] = unsupported_total
+
+    # Window boundary diagnostics ONLY for windowed GRU
+    encoder_type = steps[0].get('encoder_type', '') if steps else ''
+    window_size = steps[0].get('window_size', 0) if steps else 0
+    if encoder_type == 'windowed_gru' and window_size > 0:
+        for pos in [0, 1, 2, window_size - 3, window_size - 2, window_size - 1]:
+            pos_steps = [s for s in steps
+                        if s.get('position_in_window', -1) == pos and s.get('route_supported')]
             if pos_steps:
                 pos_known = sum(1 for s in pos_steps if s.get('release_known_mask'))
-                m[f'window_pos_{pos}_known_steps'] = pos_known
+                pos_emit = sum(1 for s in pos_steps
+                              if s.get('release_known_mask') and s.get('release_prob', 0) >= threshold)
+                m[f'window_pos_{pos}_known'] = pos_known
+                m[f'window_pos_{pos}_emit_rate'] = pos_emit / max(1, pos_known)
 
     # First/later gap
     if m.get('release_first_recall_05') is not None and m.get('release_later_recall_05') is not None:
@@ -227,13 +247,22 @@ def main():
 
     if args.mode == 'single':
         shard_dir = pred_base / f'{args.candidate}_outer{args.outer_fold}_inner{args.inner_fold}_seed{args.seed}'
+        if not shard_dir.is_dir():
+            raise SystemExit(f'Shard not found: {shard_dir}')
         events = load_events(shard_dir)
         steps = load_steps(shard_dir)
         metrics = compute_metrics(events, steps)
         all_run_metrics[f'{args.candidate}_o{args.outer_fold}_i{args.inner_fold}_s{args.seed}'] = metrics
         all_run_keys = list(all_run_metrics.keys())
-    else:
-        # Scan prediction base for all shard directories
+    elif args.mode == 'aggregate':
+        expected_runs = args.expected_runs if hasattr(args, 'expected_runs') else None
+        if expected_runs and expected_runs.is_file():
+            expected = json.loads(expected_runs.read_text())
+            expected_keys = set(e['label'] for e in expected.get('jobs', []))
+        else:
+            expected_keys = None
+
+        loaded = 0; missing = 0; invalid = 0; issues = []
         for d in sorted(pred_base.iterdir()):
             if not d.is_dir() or d.name.startswith('.'):
                 continue
@@ -243,11 +272,28 @@ def main():
                 metrics = compute_metrics(events, steps)
                 all_run_metrics[d.name] = metrics
                 all_run_keys.append(d.name)
+                loaded += 1
             except Exception as e:
-                print(f'WARNING: {d.name}: {e}')
+                invalid += 1
+                issues.append(f'{d.name}: {e}')
 
-    if not all_run_metrics:
-        raise SystemExit('No prediction shards found')
+        if expected_keys is not None:
+            loaded_keys = set(all_run_metrics.keys())
+            missing_keys = expected_keys - loaded_keys
+            if missing_keys:
+                missing = len(missing_keys)
+                issues.append(f'Missing {missing} expected runs: {sorted(list(missing_keys))[:10]}...')
+
+        if issues:
+            print(f'EVALUATOR HOLD: {len(issues)} issues')
+            for issue in issues[:20]:
+                print(f'  {issue}')
+            if missing > 0 or invalid > 0:
+                raise SystemExit(f'HOLD: {missing} missing, {invalid} invalid')
+
+        print(f'Loaded: {loaded}, Missing: {missing}, Invalid: {invalid}')
+    else:
+        raise SystemExit(f'Unknown mode: {args.mode}')
 
     print(f'Evaluated {len(all_run_metrics)} runs')
 
