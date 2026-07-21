@@ -61,10 +61,13 @@ def verify_existing_output(out_dir, job, auth_seal):
 
 
 def run_cmd(cmd, env, log_file, timeout=900):
-    """Run a command, log output, return (ok, elapsed)."""
+    """Run a command, log output, return (ok, elapsed). env=None means inherit."""
     start = time.time()
-    with open(log_file, 'w') as lf:
-        r = subprocess.run(cmd, env=env, stdout=lf, stderr=subprocess.STDOUT, timeout=timeout)
+    kwargs = {'stdout': open(log_file, 'w'), 'stderr': subprocess.STDOUT, 'timeout': timeout}
+    if env is not None:
+        kwargs['env'] = env
+    r = subprocess.run(cmd, **kwargs)
+    kwargs['stdout'].close()
     return r.returncode == 0, time.time() - start
 
 
@@ -145,28 +148,28 @@ def main():
         # ── Train ──
         train_args = f'--candidate {job["candidate"]} --outer-fold {job["outer_fold"]} --inner-fold {job["inner_fold"]} --seed {job["seed"]} --gpu 0 --receptive-field {job["W"]} --hidden-dim {job["hidden_dim"]} --dropout {job["dropout"]} --weight-decay {job["weight_decay"]} --epochs 30 --inner-cv-splits-root {SPLITS} --output-root {out_dir}'
         train_cmd = ['bash', '-c', f'{gpu_env_prefix} exec {PY} {SCRIPTS / "train_factorized_v2_inner_cv.py"} {train_args}']
-        ok, elapsed = run_cmd(train_cmd, {}, log_file)
+        ok, elapsed = run_cmd(train_cmd, None, log_file)
         if not ok:
             return label, False, f'TRAIN_FAIL_{elapsed:.0f}s'
 
         # ── Predict ──
         pred_dir = out_dir.parent / f'predict_{label}'
         predict_cmd = ['bash', '-c', f'{gpu_env_prefix} exec {PY} {SCRIPTS / "predict_factorized_v2_inner_cv.py"} --checkpoint-dir {out_dir} --inner-cv-splits-root {SPLITS} --output-root {pred_dir} --gpu 0']
-        ok2, _ = run_cmd(predict_cmd, {}, log_file)
+        ok2, _ = run_cmd(predict_cmd, None, log_file)
         if not ok2:
             return label, False, 'PREDICT_FAIL'
 
         # ── Evaluate ──
         eval_out = pred_dir.parent / f'eval_{label}.json'
         eval_cmd = ['bash', '-c', f'{gpu_env_prefix} exec {PY} {SCRIPTS / "evaluate_factorized_v2_inner_cv.py"} --predictions-base {pred_dir.parent} --output {eval_out} --mode single --candidate {job["candidate"]} --outer-fold {job["outer_fold"]} --inner-fold {job["inner_fold"]} --seed {job["seed"]}']
-        ok3, _ = run_cmd(eval_cmd, {}, log_file)
+        ok3, _ = run_cmd(eval_cmd, None, log_file)
         if not ok3:
             return label, False, 'EVAL_FAIL'
 
         # ── Audit ──
         audit_out = pred_dir.parent / f'audit_{label}.json'
         audit_cmd = ['bash', '-c', f'{gpu_env_prefix} exec {PY} {SCRIPTS / "audit_factorized_v2_inner_cv_predictions.py"} --prediction-dir {pred_dir} --inner-cv-splits-root {SPLITS} --output {audit_out}']
-        ok4, _ = run_cmd(audit_cmd, {}, log_file)
+        ok4, _ = run_cmd(audit_cmd, None, log_file)
         if not ok4:
             return label, False, 'AUDIT_FAIL'
 
