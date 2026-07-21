@@ -156,7 +156,7 @@ def postprocess_job(train_output_dir):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument('--level', type=int, required=True, choices=[8, 32, 64, 80])
+    ap.add_argument('--level', type=int, required=True)
     ap.add_argument('--gpus', type=int, nargs='+', default=[0, 1, 2, 3, 4, 5, 6, 7])
     ap.add_argument('--epochs', type=int, default=2)
     ap.add_argument('--output-base', type=Path, required=True)
