@@ -278,6 +278,29 @@ def test_combined_producer_consumer_12_split_cpu_e2e(tmp_path: Path) -> None:
 
     jobs = json.loads((tmp_path / "production_plan.json").read_text())["splits"]
     fitter = ROOT / "analysis/student_trigger_calibration/fit_factorized_calibrators.py"
+    first = jobs[0]
+    blocked = subprocess.run(
+        [
+            sys.executable,
+            str(fitter),
+            "--calibration-bundle-root", str(bundle / "calibration"),
+            "--calibration-fit-manifest", first["calibrator_fit_manifest_path"],
+            "--heldout-manifest", first["heldout_identity_manifest_path"],
+            "--checkpoint-manifest", str(roots["checkpoint"] / first["split"] / "manifest.json"),
+            "--output-root", str(tmp_path / "blocked-calibration"),
+            "--split", first["split"],
+            "--method", "RAW",
+            "--checkpoint-sha256", first["checkpoint_sha256"],
+            "--student-source-commit", "d" * 40,
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert blocked.returncode != 0
+    assert "CALIBRATION_BUNDLE_SOURCE_MISMATCH" in blocked.stdout + blocked.stderr
+    assert not (tmp_path / "blocked-calibration").exists()
+
     for job in jobs:
         split = job["split"]
         _run(
