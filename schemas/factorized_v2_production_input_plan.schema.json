@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openvla.example/schemas/factorized_v2_production_input_plan.schema.json",
+  "title": "Factorized V2 explicit production input plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "splits", "formal_selection_eligible", "training_authorized", "attack_authorized"],
+  "properties": {
+    "schema": {"const": "FACTORIZED_V2_PRODUCTION_INPUT_PLAN_V1"},
+    "splits": {"type": "array", "minItems": 12, "maxItems": 12},
+    "formal_selection_eligible": {"const": false},
+    "training_authorized": {"const": false},
+    "attack_authorized": {"const": false}
+  }
+}
