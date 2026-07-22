@@ -1,0 +1,158 @@
+{
+  "contract_version": "1.0.0",
+  "frozen_date": "2026-07-22",
+  "status": "CORRECTED_HEAD_LEVEL_REPLAY",
+  "erratum": "docs/reports/EXACT_W32_FSM_REPLAY_ERRATUM_20260722.md",
+
+  "definitions": {
+    "background_step": "event_id < 0 AND route_supported == true",
+    "known_step": "at least one head has known_mask == true",
+    "unsupported_step": "route_supported == false",
+    "event_boundary": "episode identifier (canonical_parent_key) changes",
+    "valid_mask_gap": "consecutive step indices differ by > 1 or valid_mask == false",
+
+    "head_emit": {
+      "description": "A head emits on a step when all conditions are met",
+      "conditions": [
+        "route_supported == true",
+        "known_mask[head] == true",
+        "prob[head] >= threshold[head]"
+      ]
+    },
+
+    "any_head_emit": {
+      "description": "Union of all heads that are known on this step",
+      "formula": "OR over heads: (known_mask[h] AND prob[h] >= threshold[h])",
+      "unknown_handling": "Head with known_mask=false is excluded from union (not counted as false)"
+    },
+
+    "persistent_emit": {
+      "description": "any_head_emit persists for >= k consecutive steps within an episode",
+      "streak_rules": {
+        "start": "streak counter = 0 at episode start",
+        "increment": "streak += 1 when any_head_emit == true",
+        "reset": "streak = 0 when any_head_emit == false OR valid_mask_gap OR episode_boundary",
+        "trigger": "streak >= persistence_k"
+      }
+    }
+  },
+
+  "metrics": {
+    "background_emit_grasp": {
+      "score_field": "grasp_prob",
+      "known_mask_field": "grasp_known_mask",
+      "threshold": 0.5,
+      "population": "background_step",
+      "numerator": "count(background_step AND head_emit[grasp])",
+      "denominator": "count(background_step)",
+      "unit": "step_rate",
+      "aggregation": "mean over steps"
+    },
+
+    "background_emit_manipulation": {
+      "score_field": "manipulation_prob",
+      "known_mask_field": "manipulation_known_mask",
+      "threshold": 0.5,
+      "population": "background_step",
+      "numerator": "count(background_step AND head_emit[manipulation])",
+      "denominator": "count(background_step)",
+      "unit": "step_rate",
+      "note": "Typically ~0 because manipulation_known_mask is False on background"
+    },
+
+    "background_emit_release": {
+      "score_field": "release_prob",
+      "known_mask_field": "release_known_mask",
+      "threshold": 0.5,
+      "population": "background_step",
+      "numerator": "count(background_step AND head_emit[release])",
+      "denominator": "count(background_step)",
+      "unit": "step_rate"
+    },
+
+    "background_emit_any_known_head": {
+      "score_fields": ["grasp_prob", "manipulation_prob", "release_prob"],
+      "known_mask_fields": ["grasp_known_mask", "manipulation_known_mask", "release_known_mask"],
+      "threshold": 0.5,
+      "population": "background_step",
+      "numerator": "count(background_step AND any_head_emit)",
+      "denominator": "count(background_step)",
+      "unit": "step_rate",
+      "note": "Effectively grasp OR release since manipulation_known is ~always False on BG"
+    },
+
+    "episode_false_start": {
+      "population": "episodes with at least one background_step",
+      "numerator": "count(episodes where persistent_emit triggers at least once)",
+      "denominator": "count(all episodes with background steps)",
+      "unit": "episode_rate",
+      "threshold": "per-head (independently configurable)",
+      "persistence_k": "configurable, default 1"
+    },
+
+    "longest_background_streak": {
+      "population": "background_step within episode",
+      "formula": "max over episodes of max consecutive known-head any_head_emit",
+      "unit": "steps",
+      "reset_conditions": ["episode_boundary", "valid_mask_gap", "any_head_emit == false"]
+    },
+
+    "release_event_recall": {
+      "score_field": "release_prob",
+      "threshold": "configurable per head",
+      "persistence": "configurable",
+      "population": "release events (event_id >= 0, release_known_mask AND release_target both true within event)",
+      "numerator": "count(release events where persistent release_emit triggers)",
+      "denominator": "count(all release events)",
+      "unit": "event_rate",
+      "note": "Event-level: an event is detected if ANY persistent window within it triggers"
+    },
+
+    "release_step_recall": {
+      "score_field": "release_prob",
+      "threshold": "configurable per head",
+      "population": "steps within release events where release_known_mask AND release_target both true",
+      "numerator": "count(steps where release_prob >= threshold AND known AND target)",
+      "denominator": "count(all release-positive known steps)",
+      "unit": "step_rate",
+      "note": "Step-level: individual step classification, no persistence"
+    },
+
+    "release_overlap_emit_rate": {
+      "population": "steps where both grasp_known_mask AND release_known_mask are true",
+      "numerator": "count(steps where grasp_prob >= threshold AND release_prob >= threshold)",
+      "denominator": "count(population)",
+      "unit": "step_rate"
+    },
+
+    "unsupported_route_emit_rate": {
+      "population": "steps where route_supported == false",
+      "numerator": "count(steps where any(grasp_prob, manipulation_prob, release_prob) > 1e-8)",
+      "denominator": "count(population)",
+      "unit": "step_rate"
+    },
+
+    "vulnerable_window_coverage": {
+      "note": "DEFERRED — requires Codex V5 scheduler contract for candidate_close definition",
+      "status": "NOT_YET_DEFINED"
+    }
+  },
+
+  "mandatory_constraints": {
+    "unknown_is_not_negative": "Steps where known_mask[h] == false are excluded from denominator for head h",
+    "unknown_never_emits": "known_mask[h] == false → head h does not contribute to any_head_emit",
+    "unknown_breaks_streak": "Step where ALL heads have known_mask == false resets streak to 0",
+    "episode_boundary_breaks_streak": "Streak counter resets to 0 at episode start",
+    "valid_mask_gap_breaks_streak": "Non-consecutive step indices or valid_mask gap resets streak",
+    "unsupported_route_never_emits": "route_supported == false → all heads excluded, counted separately",
+    "causal_only": "No future-aware smoothing, no bidirectional context",
+    "no_identity_specific_threshold": "Thresholds must not depend on identity",
+    "no_leakage": "Calibration parameters must not be fit on evaluation data"
+  },
+
+  "replay_contract": {
+    "status": "HEAD_LEVEL_POLICY_REPLAY",
+    "note": "This is a head-level threshold/persistence scan, NOT the actual V5 scheduler FSM",
+    "pending": "Codex V5 scheduler contract (v5_scheduler.py) with dwell, 3-of-5, release veto, candidate_close"
+  }
+}
