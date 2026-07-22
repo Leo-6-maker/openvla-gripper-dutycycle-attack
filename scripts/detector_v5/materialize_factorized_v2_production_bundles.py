@@ -155,7 +155,10 @@ def _assert_step_closure(rows: list[Mapping[str, Any]], identities: set[str], la
         if identity not in by_identity:
             raise ProductionBundleError(f"{label}_IDENTITY_SET_MISMATCH:{identity}")
         by_identity[identity].append(step)
-    if set(by_identity) != identities or any(sorted(steps) != list(range(len(steps))) for steps in by_identity.values()):
+    if set(by_identity) != identities or any(
+        not steps or sorted(steps) != list(range(len(steps)))
+        for steps in by_identity.values()
+    ):
         raise ProductionBundleError(f"{label}_STEP_CLOSURE")
 
 
@@ -189,20 +192,45 @@ def _runtime_row(prediction: Mapping[str, Any], student: Mapping[str, Any], runt
     ) | {"split": job["split"]}
 
 
-def _head_values(row: Mapping[str, Any], name: str) -> tuple[Any, Any, Any]:
+def _prediction_head_values(row: Mapping[str, Any], name: str) -> tuple[Any, Any]:
     probability = row.get(f"{name}_probability", row.get(f"{name}_prob"))
     logit = row.get(f"{name}_logit")
-    target = row.get(f"{name}_target")
-    known = row.get(f"{name}_known_mask")
-    if logit is None or probability is None or target is None or not isinstance(known, bool):
+    if logit is None or probability is None:
         raise ProductionBundleError(f"CALIBRATION_HEAD_INCOMPLETE:{name}")
-    return logit, probability, target, known
+    return logit, probability
 
 
-def _calibration_row(row: Mapping[str, Any], job: Mapping[str, Any], *, prediction_seal: str, teacher_seal: str, provenance: str) -> dict[str, Any]:
-    output: dict[str, Any] = {"episode": _row_identity(row), "step": _row_step(row)}
+def _calibration_row(
+    prediction: Mapping[str, Any],
+    teacher: Mapping[str, Any],
+    job: Mapping[str, Any],
+    *,
+    prediction_seal: str,
+    teacher_seal: str,
+    provenance: str,
+) -> dict[str, Any]:
+    """Join Student scores to independently sealed Teacher supervision.
+
+    Prediction artifacts are intentionally not trusted as a label source.  A
+    prediction row may carry diagnostic labels for older consumers, but the
+    calibration stream must be built from the exact identity/step-matched
+    Teacher row and fail closed when any head is incomplete.
+    """
+    output: dict[str, Any] = {"episode": _row_identity(prediction), "step": _row_step(prediction)}
+    teacher_fields = {
+        "grasp": ("grasp_established", "grasp_established_known_mask"),
+        "manipulation": ("manipulation_active", "manipulation_active_known_mask"),
+        "release": ("release_or_instability", "release_or_instability_known_mask"),
+    }
     for name in ("grasp", "manipulation", "release"):
-        logit, probability, target, known = _head_values(row, name)
+        logit, probability = _prediction_head_values(prediction, name)
+        target_field, known_field = teacher_fields[name]
+        if target_field not in teacher or known_field not in teacher:
+            raise ProductionBundleError(f"TEACHER_HEAD_INCOMPLETE:{name}")
+        target = teacher[target_field]
+        known = teacher[known_field]
+        if not isinstance(target, bool) or not isinstance(known, bool):
+            raise ProductionBundleError(f"TEACHER_HEAD_TYPE_INVALID:{name}")
         output.update({f"{name}_logit": logit, f"{name}_probability": probability, f"{name}_target": target, f"{name}_known_mask": known})
     output.update({
         "checkpoint_sha256": job["checkpoint_sha256"],
@@ -222,24 +250,16 @@ def _policy_row(row: Mapping[str, Any], runtime: Mapping[str, Any], job: Mapping
     must not be copied into this stream because DeepSeek consumes this record
     set as scheduler input.
     """
-    output = {
-        "episode": _row_identity(row),
-        "step": _row_step(row),
-        "grasp_logit": row.get("grasp_logit"),
-        "manipulation_logit": row.get("manipulation_logit"),
-        "release_logit": row.get("release_logit"),
-        "candidate_close": runtime["candidate_close"],
-        "action_known": runtime["action_known"],
-        "action_intent": runtime["action_intent"],
-        "student_valid": runtime["student_valid"],
-        "checkpoint_sha256": job["checkpoint_sha256"],
-        "source_commit": job["source_commit"],
-        "feature_order_sha256": job["feature_order_sha256"],
-        "prediction_artifact_seal": prediction_seal,
-        "identity_provenance": "INDEPENDENT_POLICY_SELECTION",
+    output = dict(runtime)
+    output["prediction_artifact_seal"] = prediction_seal
+    output["identity_provenance"] = "INDEPENDENT_POLICY_SELECTION"
+    required_runtime = {
+        "episode", "step", "route", "route_supported", "student_valid", "candidate_close",
+        "action_known", "grasp_logit", "manipulation_logit", "release_logit", "split",
+        "scheduler_source_sha256", "structural_config_sha256",
     }
-    if any(output[key] is None for key in ("grasp_logit", "manipulation_logit", "release_logit")):
-        raise ProductionBundleError("POLICY_SELECTION_FIELD_MISSING")
+    if not required_runtime.issubset(output) or any(output.get(key) in (None, "") for key in required_runtime):
+        raise ProductionBundleError("POLICY_SELECTION_RUNTIME_FIELD_MISSING")
     return output
 
 
@@ -277,6 +297,11 @@ def _recursive_seal(root: Path) -> str:
 
 
 def _require_exact_plan(plan: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    if plan.get("schema") != "FACTORIZED_V2_PRODUCTION_INPUT_PLAN_V1":
+        raise ProductionBundleError("PRODUCTION_PLAN_SCHEMA")
+    for field in ("formal_selection_eligible", "training_authorized", "attack_authorized"):
+        if plan.get(field) is not False:
+            raise ProductionBundleError(f"PRODUCTION_PLAN_{field.upper()}_MUST_BE_FALSE")
     jobs = plan.get("splits")
     if not isinstance(jobs, list) or len(jobs) != 12 or {str(job.get("split")) for job in jobs if isinstance(job, Mapping)} != set(EXPECTED_SPLITS):
         raise ProductionBundleError("EXACT_12_SPLIT_CLOSURE_REQUIRED")
@@ -286,10 +311,16 @@ def _require_exact_plan(plan: Mapping[str, Any]) -> list[Mapping[str, Any]]:
         "training_identity_manifest_path", "heldout_identity_manifest_path", "calibrator_fit_manifest_path",
         "policy_selection_manifest_path", "calibration_prediction_root", "policy_prediction_root",
         "checkpoint_sha256", "source_commit", "feature_order_sha256", "predictor_source_sha256",
+        "scheduler_source_sha256", "structural_config_sha256",
     }
     result: list[Mapping[str, Any]] = []
+    allowed = required | {"runtime_manifest_path"}
     for job in jobs:
-        if not isinstance(job, Mapping) or set(job) != required and not required.issubset(set(job)):
+        if (
+            not isinstance(job, Mapping)
+            or not required.issubset(set(job))
+            or bool(set(job) - allowed)
+        ):
             raise ProductionBundleError("PRODUCTION_PLAN_SCHEMA")
         result.append(job)
     return sorted(result, key=lambda item: EXPECTED_SPLITS.index(str(item["split"])))
@@ -330,6 +361,8 @@ def _validate_job(job: Mapping[str, Any]) -> tuple[set[str], set[str], set[str],
             raise ProductionBundleError("SOURCE_COMMIT_MISMATCH")
     _sha_field(job["feature_order_sha256"], "FEATURE_ORDER_SHA_INVALID")
     _sha_field(job["predictor_source_sha256"], "PREDICTOR_SOURCE_SHA_INVALID")
+    _sha_field(job["scheduler_source_sha256"], "SCHEDULER_SOURCE_SHA_INVALID")
+    _sha_field(job["structural_config_sha256"], "STRUCTURAL_CONFIG_SHA_INVALID")
     return train, heldout, calibrator, policy, seals
 
 
@@ -411,7 +444,7 @@ def materialize(plan_path: Path, output_root: Path) -> dict[str, Any]:
             for row in calibration_predictions:
                 if (_row_identity(row), _row_step(row)) not in teacher_rows:
                     raise ProductionBundleError(f"TEACHER_STEP_MISSING:{_row_identity(row), _row_step(row)}")
-                calibration_rows.append(_calibration_row(row, job, prediction_seal=calibration_prediction_seal, teacher_seal=teacher_seal, provenance="INDEPENDENT_CALIBRATION"))
+                calibration_rows.append(_calibration_row(row, teacher_rows[(_row_identity(row), _row_step(row))], job, prediction_seal=calibration_prediction_seal, teacher_seal=teacher_seal, provenance="INDEPENDENT_CALIBRATION"))
             policy_prediction_index = {( _row_identity(row), _row_step(row)): row for row in policy_predictions}
             if len(policy_prediction_index) != len(policy_predictions):
                 raise ProductionBundleError("DUPLICATE_POLICY_PREDICTION_STEP")
@@ -449,9 +482,15 @@ def materialize(plan_path: Path, output_root: Path) -> dict[str, Any]:
                 "schema": "FACTORIZED_V2_OFFLINE_CALIBRATION_BUNDLE_V1",
                 "split": split,
                 "data_filename": "calibration_records.jsonl",
+                "record_stream": "calibration_records.jsonl",
                 "record_count": len(calibration_rows),
                 "checkpoint_sha256": job["checkpoint_sha256"],
-                "training_identity_manifest_sha256": sha256_file(Path(str(job["calibrator_fit_manifest_path"]))),
+                "fit_identity_manifest_sha256": sha256_file(Path(str(job["calibrator_fit_manifest_path"]))),
+                "checkpoint_training_identity_manifest_sha256": sha256_file(Path(str(job["training_identity_manifest_path"]))),
+                "heldout_identity_manifest_sha256": sha256_file(Path(str(job["heldout_identity_manifest_path"]))),
+                "feature_input_seal_sha256": sha256_file(Path(str(job["feature_root"])) / "SHA256SUMS"),
+                "predictor_source_sha256": job["predictor_source_sha256"],
+                "fields": ["raw_logits", "head_targets", "head_known_masks", "identity", "step", "checkpoint_binding", "training_identity_provenance"],
                 "teacher_label_seal": teacher_seal,
                 "formal_selection_eligible": False,
                 "training_authorized": False,
@@ -464,6 +503,12 @@ def materialize(plan_path: Path, output_root: Path) -> dict[str, Any]:
                 "split": split,
                 "runtime_record_stream": "policy_selection_runtime_records.jsonl",
                 "evaluation_label_stream": "policy_selection_evaluation_labels.jsonl",
+                "checkpoint_sha256": job["checkpoint_sha256"],
+                "source_commit": job["source_commit"],
+                "feature_order_sha256": job["feature_order_sha256"],
+                "scheduler_source_sha256": job.get("scheduler_source_sha256"),
+                "structural_config_sha256": job.get("structural_config_sha256"),
+                "policy_selection_identities": sorted(policy_selection),
                 "policy_selection_identity_manifest_sha256": sha256_file(Path(str(job["policy_selection_manifest_path"]))),
                 "calibrator_identity_manifest_sha256": sha256_file(Path(str(job["calibrator_fit_manifest_path"]))),
                 "formal_selection_eligible": False,
@@ -478,6 +523,17 @@ def materialize(plan_path: Path, output_root: Path) -> dict[str, Any]:
                 "record_count": len(evaluation_rows),
                 "checkpoint_sha256": job["checkpoint_sha256"],
                 "teacher_label_seal": teacher_seal,
+                "teacher_label_seal_sha256": teacher_seal,
+                "feature_input_seal_sha256": sha256_file(Path(str(job["feature_root"])) / "SHA256SUMS"),
+                "record_stream": "evaluation_records.jsonl",
+                "fields": [
+                    "strict_k10_feasible",
+                    "strict_k10_known_mask",
+                    "identity",
+                    "step",
+                    "teacher_label_seal",
+                    "eligible_start_contract",
+                ],
                 "formal_selection_eligible": False,
                 "training_authorized": False,
                 "attack_authorized": False,

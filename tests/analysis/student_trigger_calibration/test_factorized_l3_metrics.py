@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import copy
 import sys
 import tempfile
 from pathlib import Path
@@ -42,9 +43,11 @@ from select_factorized_scheduler_thresholds import (  # noqa: E402
     select_thresholds,
 )
 from validate_factorized_codex_handoff import (  # noqa: E402
+    canonical_reference_sha,
     validate_handoff_execution,
     validate_handoff_static,
 )
+from load_factorized_handoff import load_handoff_file  # noqa: E402
 
 STEP = "step"
 SHA = "a" * 64
@@ -522,6 +525,45 @@ def test_v31_incomplete_fails_closed():
     )
     assert not ok
     assert errors
+
+
+def test_v32_is_strict_superset_and_loader_compatible(tmp_path: Path):
+    base = json.loads((ROOT / "reports/DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1.json").read_text())
+    value = copy.deepcopy(base)
+    value["schema"] = "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_2"
+    value["interface_revision"] = "V3.2"
+    value["production_input_audit"] = {
+        "summary": {
+            "path": "reports/FACTORIZED_V2_PRODUCTION_INPUT_CHAIN_BLOCKER.json",
+            "sha256": canonical_reference_sha(ROOT / "reports/FACTORIZED_V2_PRODUCTION_INPUT_CHAIN_BLOCKER.json"),
+        },
+        "verdict": False,
+    }
+    value["identity_audit"] = {
+        "summary": {
+            "path": "reports/FACTORIZED_CALIBRATION_IDENTITY_FEASIBILITY_AUDIT_V2.json",
+            "sha256": canonical_reference_sha(ROOT / "reports/FACTORIZED_CALIBRATION_IDENTITY_FEASIBILITY_AUDIT_V2.json"),
+        },
+        "verdict": "BLOCKED_ROOTS_NOT_MOUNTED",
+    }
+    value["production_bundle"] = {
+        "root_path": "reports",
+        "manifest": {
+            "path": "reports/FACTORIZED_V2_PRODUCTION_INPUT_CHAIN_BLOCKER.json",
+            "sha256": canonical_reference_sha(ROOT / "reports/FACTORIZED_V2_PRODUCTION_INPUT_CHAIN_BLOCKER.json"),
+        },
+        "seal": {
+            "path": "reports/FACTORIZED_V2_PRODUCTION_INPUT_CHAIN_BLOCKER.json",
+            "sha256": canonical_reference_sha(ROOT / "reports/FACTORIZED_V2_PRODUCTION_INPUT_CHAIN_BLOCKER.json"),
+        },
+        "split_keys": sorted(EXPECTED_SPLITS),
+    }
+    ok, errors = validate_handoff_static(value)
+    assert ok, errors
+    path = tmp_path / "v3_2.json"
+    path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    loaded = load_handoff_file(path, ROOT)
+    assert loaded["schema"] == "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_2"
     ok, errors = validate_handoff_execution(
         {
             "schema": "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1",

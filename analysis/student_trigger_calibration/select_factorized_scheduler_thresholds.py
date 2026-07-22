@@ -239,23 +239,34 @@ def provisional_v3_contract(
 def load_split_payload(
     *,
     split: str,
-    runtime_root: Path,
-    evaluation_root: Path,
+    runtime_root: Path | None,
+    evaluation_root: Path | None,
     calibration_contract_root: Path,
-    policy_manifest_root: Path,
+    policy_manifest_root: Path | None,
     fit_manifest_root: Path,
     checkpoint_manifest_root: Path,
     structure: Mapping[str, Any],
+    policy_selection_bundle_root: Path | None = None,
 ) -> dict[str, Any]:
-    runtime_split = runtime_root / split
-    evaluation_split = evaluation_root / split
     calibration_split = calibration_contract_root / split
-    verify_sealed_directory(runtime_split)
-    verify_sealed_directory(evaluation_split)
     verify_sealed_directory(calibration_split)
 
-    runtime_file = runtime_split / "runtime_scheduler_inputs.jsonl"
-    evaluation_file = evaluation_split / "evaluation_records.jsonl"
+    if policy_selection_bundle_root is not None:
+        policy_split = policy_selection_bundle_root / split
+        verify_sealed_directory(policy_split)
+        runtime_file = policy_split / "policy_selection_runtime_records.jsonl"
+        evaluation_file = policy_split / "policy_selection_evaluation_labels.jsonl"
+        policy_manifest_path = policy_split / "manifest.json"
+    else:
+        if runtime_root is None or evaluation_root is None or policy_manifest_root is None:
+            raise ThresholdSelectionError(f"POLICY_SELECTION_BUNDLE_REQUIRED:{split}")
+        runtime_split = runtime_root / split
+        evaluation_split = evaluation_root / split
+        verify_sealed_directory(runtime_split)
+        verify_sealed_directory(evaluation_split)
+        runtime_file = runtime_split / "runtime_scheduler_inputs.jsonl"
+        evaluation_file = evaluation_split / "evaluation_records.jsonl"
+        policy_manifest_path = policy_manifest_root / split / "manifest.json"
     if not runtime_file.is_file() or not evaluation_file.is_file():
         raise ThresholdSelectionError(f"POLICY_STREAM_MISSING:{split}")
 
@@ -270,7 +281,6 @@ def load_split_payload(
     if set(runtime_episodes) != set(evaluation_episodes):
         raise ThresholdSelectionError(f"POLICY_EPISODE_CLOSURE_FAIL:{split}")
 
-    policy_manifest_path = policy_manifest_root / split / "manifest.json"
     fit_manifest_path = fit_manifest_root / split / "manifest.json"
     checkpoint_manifest_path = checkpoint_manifest_root / split / "manifest.json"
     policy_manifest = load_json(policy_manifest_path)
@@ -305,9 +315,19 @@ def load_split_payload(
             f"extra={sorted(set(runtime_episodes) - policy_ids)}"
         )
 
+    binding = _binding(runtime_rows, split)
+    for field in (
+        "checkpoint_sha256",
+        "source_commit",
+        "feature_order_sha256",
+        "scheduler_source_sha256",
+        "structural_config_sha256",
+    ):
+        if str(policy_manifest.get(field, "")).lower() != binding[field]:
+            raise ThresholdSelectionError(f"POLICY_MANIFEST_RUNTIME_MISMATCH:{split}:{field}")
+
     calibration_path = calibration_split / "calibration_contract.json"
     calibration_contract = load_json(calibration_path)
-    binding = _binding(runtime_rows, split)
     if str(calibration_contract.get("checkpoint_sha256", "")).lower() != binding["checkpoint_sha256"]:
         raise ThresholdSelectionError(f"CALIBRATION_RUNTIME_CHECKPOINT_MISMATCH:{split}")
     if str(calibration_contract.get("student_source_commit", "")).lower() != binding["source_commit"]:
@@ -523,10 +543,11 @@ def blocker(output_root: Path, reason: str, details: Mapping[str, Any]) -> int:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--runtime-bundle-root", type=Path, required=True)
-    parser.add_argument("--offline-eval-bundle-root", type=Path, required=True)
+    parser.add_argument("--runtime-bundle-root", type=Path)
+    parser.add_argument("--offline-eval-bundle-root", type=Path)
     parser.add_argument("--calibration-contract-root", type=Path, required=True)
-    parser.add_argument("--policy-selection-manifest-root", type=Path, required=True)
+    parser.add_argument("--policy-selection-manifest-root", type=Path)
+    parser.add_argument("--policy-selection-bundle-root", type=Path)
     parser.add_argument("--calibration-fit-manifest-root", type=Path, required=True)
     parser.add_argument("--checkpoint-manifest-root", type=Path, required=True)
     parser.add_argument(
@@ -540,6 +561,16 @@ def main() -> int:
     parser.add_argument("--release-grid", default="0.2,0.3,0.4,0.5,0.6,0.7,0.8")
     parser.add_argument("--max-false-start", type=float, default=0.10)
     args = parser.parse_args()
+
+    if args.policy_selection_bundle_root is None and (
+        args.runtime_bundle_root is None
+        or args.offline_eval_bundle_root is None
+        or args.policy_selection_manifest_root is None
+    ):
+        raise SystemExit(
+            "POLICY_SELECTION_INPUT_REQUIRED: provide --policy-selection-bundle-root "
+            "or the legacy runtime/evaluation/manifest roots"
+        )
 
     output_root = args.output_root.resolve()
     if output_root.exists():
@@ -561,26 +592,33 @@ def main() -> int:
         scheduler_path = ROOT / "src/gripper_attack/factorized_scheduler.py"
         scheduler_sha = sha256_file(scheduler_path)
 
-        for root, label in (
-            (args.runtime_bundle_root.resolve(), "RUNTIME"),
-            (args.offline_eval_bundle_root.resolve(), "EVALUATION"),
+        roots = [
             (args.calibration_contract_root.resolve(), "CALIBRATION"),
-            (args.policy_selection_manifest_root.resolve(), "POLICY_MANIFEST"),
             (args.calibration_fit_manifest_root.resolve(), "FIT_MANIFEST"),
             (args.checkpoint_manifest_root.resolve(), "CHECKPOINT_MANIFEST"),
-        ):
+        ]
+        if args.policy_selection_bundle_root is not None:
+            roots.append((args.policy_selection_bundle_root.resolve(), "POLICY_SELECTION_BUNDLE"))
+        else:
+            roots.extend([
+                (args.runtime_bundle_root.resolve(), "RUNTIME"),
+                (args.offline_eval_bundle_root.resolve(), "EVALUATION"),
+                (args.policy_selection_manifest_root.resolve(), "POLICY_MANIFEST"),
+            ])
+        for root, label in roots:
             _require_split_directories(root, label)
 
         payloads = [
             load_split_payload(
                 split=split,
-                runtime_root=args.runtime_bundle_root.resolve(),
-                evaluation_root=args.offline_eval_bundle_root.resolve(),
+                runtime_root=args.runtime_bundle_root.resolve() if args.runtime_bundle_root is not None else None,
+                evaluation_root=args.offline_eval_bundle_root.resolve() if args.offline_eval_bundle_root is not None else None,
                 calibration_contract_root=args.calibration_contract_root.resolve(),
-                policy_manifest_root=args.policy_selection_manifest_root.resolve(),
+                policy_manifest_root=args.policy_selection_manifest_root.resolve() if args.policy_selection_manifest_root is not None else None,
                 fit_manifest_root=args.calibration_fit_manifest_root.resolve(),
                 checkpoint_manifest_root=args.checkpoint_manifest_root.resolve(),
                 structure=structure,
+                policy_selection_bundle_root=args.policy_selection_bundle_root.resolve() if args.policy_selection_bundle_root is not None else None,
             )
             for split in EXPECTED_SPLITS
         ]

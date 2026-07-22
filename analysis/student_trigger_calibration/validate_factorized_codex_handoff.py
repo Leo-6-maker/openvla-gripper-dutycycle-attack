@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 V3_1_SCHEMA = "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1"
+V3_2_SCHEMA = "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_2"
 EXPECTED_SPLITS = frozenset(f"o{o}_i{i}" for o in range(4) for i in range(3))
 
 
@@ -15,6 +16,13 @@ def sha256_file(p):
     with open(p, "rb") as f:
         for chunk in iter(lambda: f.read(1048576), b""): d.update(chunk)
     return d.hexdigest()
+
+
+def canonical_reference_sha(p):
+    data = p.read_bytes()
+    if p.suffix.lower() in {".json", ".csv", ".py", ".yml", ".yaml", ".md", ".schema", ".sha256"} or p.name in {"SHA256SUMS", "SHA256SUMS.sha256"}:
+        data = data.replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()
 
 
 def check_ref(obj, label, errors, required=True):
@@ -27,7 +35,14 @@ def check_ref(obj, label, errors, required=True):
     fpath = ROOT / rel
     if not fpath.is_file(): errors.append(f"FAIL: {label} not found: {fpath}"); return False
     if ".." in rel or rel.startswith("/"): errors.append(f"FAIL: {label} unsafe: {rel}"); return False
-    actual = sha256_file(fpath)
+    if fpath.name.endswith("HANDOFF_RECEIPT.json"):
+        receipt = json.loads(fpath.read_text(encoding="utf-8"))
+        receipt.pop("handoff_blob_sha256", None)
+        actual = hashlib.sha256(
+            json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+    else:
+        actual = canonical_reference_sha(fpath)
     if actual != expected:
         errors.append(f"FAIL: {label} SHA mismatch exp={expected[:16]} act={actual[:16]}"); return False
     return True
@@ -48,14 +63,15 @@ def detect_duplicate_keys(filepath):
 
 def static_validation(handoff, errors):
     schema = handoff.get("schema", "")
-    if schema != V3_1_SCHEMA:
+    if schema not in {V3_1_SCHEMA, V3_2_SCHEMA}:
         if "HANDOFF_V2" in schema: errors.append("FAIL: V2 STATIC_REJECTED")
         else: errors.append(f"FAIL: schema must be {V3_1_SCHEMA}")
         return False
     if handoff.get("status") != "READY_FOR_DEEPSEEK_STATIC_INTEGRATION":
         errors.append("FAIL: status")
-    if handoff.get("interface_revision") != "V3.1":
-        errors.append("FAIL: interface_revision != V3.1")
+    expected_revision = "V3.2" if schema == V3_2_SCHEMA else "V3.1"
+    if handoff.get("interface_revision") != expected_revision:
+        errors.append(f"FAIL: interface_revision != {expected_revision}")
     sha = handoff.get("code_snapshot_commit", "")
     if not (len(sha) == 40 and all(c in "0123456789abcdef" for c in sha)):
         errors.append("FAIL: code_snapshot_commit")
@@ -103,6 +119,17 @@ def static_validation(handoff, errors):
     check_ref(pr.get("handoff_receipt"), "production_receipt.handoff", errors)
     check_ref(pr.get("read_only_receipt_root"), "production_receipt.read_only_root", errors)
     check_ref(pr.get("receipt_seal"), "production_receipt.seal", errors)
+
+    if schema == V3_2_SCHEMA:
+        production = handoff.get("production_input_audit", {})
+        check_ref(production.get("summary"), "production_input_audit.summary", errors)
+        identity = handoff.get("identity_audit", {})
+        check_ref(identity.get("summary"), "identity_audit.summary", errors)
+        bundle = handoff.get("production_bundle", {})
+        check_ref(bundle.get("manifest"), "production_bundle.manifest", errors)
+        check_ref(bundle.get("seal"), "production_bundle.seal", errors)
+        if bundle.get("split_keys") != sorted(EXPECTED_SPLITS):
+            errors.append("FAIL: V3.2 production_bundle split_keys")
 
     # Execution boundary — static must verify forbidden flags are false
     eb = handoff.get("execution_boundary", {})
@@ -173,7 +200,7 @@ def main():
     if not ok:
         for e in errors: print(f"  {e}")
         print(f"CODEX_V3_1_{args.mode.upper()} = REJECTED"); sys.exit(1)
-    print(f"CODEX_V3_1_{args.mode.upper()} = PASS")
+    print(f"CODEX_{'V3_2' if handoff.get('schema') == V3_2_SCHEMA else 'V3_1'}_{args.mode.upper()} = PASS")
 
 
 if __name__ == "__main__":

@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
-"""Strict duplicate-key-aware V3.1 handoff loader. Single entry point."""
+"""Strict duplicate-key-aware Factorized handoff loader.
+
+V3.2 is a strict superset of the V3.1 nested interface and only adds
+production-input references.
+"""
 from __future__ import annotations
 
 import hashlib, json, os, sys
 from pathlib import Path
+
+HANDOFF_SCHEMAS = {
+    "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1": "V3.1",
+    "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_2": "V3.2",
+}
+TEXT_SUFFIXES = {".json", ".csv", ".py", ".yml", ".yaml", ".md", ".schema", ".sha256"}
 
 
 def load_handoff_file(path: Path, repo_root: Path) -> dict:
@@ -39,7 +49,7 @@ def load_handoff_file(path: Path, repo_root: Path) -> dict:
         )
 
     schema = handoff.get("schema", "")
-    if schema != "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1":
+    if schema not in HANDOFF_SCHEMAS:
         if "HANDOFF_V2" in schema:
             raise SystemExit("CODEX_V2_HANDOFF = STATIC_REJECTED")
         raise SystemExit(f"UNKNOWN_HANDOFF_SCHEMA: {schema}")
@@ -79,10 +89,10 @@ def verify_ref_sha(resolved, expected_sha, label):
     """Verify SHA256 of resolved file matches expected."""
     if not isinstance(expected_sha, str) or len(expected_sha) != 64:
         raise SystemExit(f"REF_SHA_INVALID: {label} not 64-char hex")
-    d = hashlib.sha256()
-    with open(resolved, "rb") as f:
-        for chunk in iter(lambda: f.read(1048576), b""): d.update(chunk)
-    actual = d.hexdigest()
+    data = resolved.read_bytes()
+    if resolved.suffix.lower() in TEXT_SUFFIXES or resolved.name in {"SHA256SUMS", "SHA256SUMS.sha256"}:
+        data = data.replace(b"\r\n", b"\n")
+    actual = hashlib.sha256(data).hexdigest()
     if actual != expected_sha:
         raise SystemExit(f"REF_SHA_MISMATCH: {label} exp={expected_sha[:16]} act={actual[:16]}")
 
@@ -92,7 +102,16 @@ def _validate_all_refs(obj, repo_root, prefix=""):
     if isinstance(obj, dict):
         if "path" in obj and "sha256" in obj and prefix:
             resolved = validate_ref_path(obj["path"], repo_root)
-            verify_ref_sha(resolved, obj["sha256"], prefix)
+            if resolved.name.endswith("HANDOFF_RECEIPT.json"):
+                receipt = json.loads(resolved.read_text(encoding="utf-8"))
+                receipt.pop("handoff_blob_sha256", None)
+                actual = hashlib.sha256(
+                    json.dumps(receipt, sort_keys=True, separators=(",", ":")).encode("utf-8")
+                ).hexdigest()
+                if actual != obj["sha256"]:
+                    raise SystemExit(f"REF_RECEIPT_BINDING_MISMATCH: {prefix}")
+            else:
+                verify_ref_sha(resolved, obj["sha256"], prefix)
         for k, v in obj.items():
             _validate_all_refs(v, repo_root, f"{prefix}.{k}" if prefix else k)
     elif isinstance(obj, list):

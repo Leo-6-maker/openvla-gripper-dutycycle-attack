@@ -97,7 +97,13 @@ def test_identity_audit_missing_plan_is_not_oof(tmp_path: Path):
 
 def test_materializer_requires_exact_plan_and_never_creates_partial_output(tmp_path: Path):
     plan = tmp_path / "plan.json"
-    _write(plan, {"schema": "FACTORIZED_V2_PRODUCTION_INPUT_PLAN_V1", "splits": []})
+    _write(plan, {
+        "schema": "FACTORIZED_V2_PRODUCTION_INPUT_PLAN_V1",
+        "splits": [],
+        "formal_selection_eligible": False,
+        "training_authorized": False,
+        "attack_authorized": False,
+    })
     output = tmp_path / "output"
     with pytest.raises(ProductionBundleError, match="EXACT_12_SPLIT_CLOSURE_REQUIRED"):
         materialize(plan, output)
@@ -116,6 +122,8 @@ def test_synthetic_production_chain_materializes_all_four_bundle_streams(tmp_pat
     sha = "a" * 64
     commit = "b" * 40
     feature = "c" * 64
+    scheduler_sha = "d" * 64
+    structural_sha = "e" * 64
     jobs = []
 
     def seal_root(root: Path, recursive: bool = False):
@@ -153,12 +161,12 @@ def test_synthetic_production_chain_materializes_all_four_bundle_streams(tmp_pat
                     "grasp_logit": 1.4,
                     "manipulation_logit": 1.4,
                     "release_logit": -1.4,
-                    "grasp_target": True,
-                    "manipulation_target": True,
-                    "release_target": False,
-                    "grasp_known_mask": True,
-                    "manipulation_known_mask": True,
-                    "release_known_mask": True,
+                    "grasp_target": False,
+                    "manipulation_target": False,
+                    "release_target": True,
+                    "grasp_known_mask": False,
+                    "manipulation_known_mask": False,
+                    "release_known_mask": False,
                 }
 
             calibration_prediction = base / "calibration_prediction"
@@ -181,7 +189,14 @@ def test_synthetic_production_chain_materializes_all_four_bundle_streams(tmp_pat
                     _write(episode / "episode_metadata.json", {"condition": "CLEAN", "attack_enabled": False})
                     _write(episode / "step_records.jsonl", json.dumps({"canonical_parent_key": key, "step": 0, "clean_action_raw_7d": [0, 0, 0, 0, 0, 0, 0.0]}) + "\n")
                 else:
-                    _write(episode / "factorized_teacher_v1.jsonl", json.dumps({"canonical_parent_key": key, "step": 0, "strict_k10_feasible": True, "strict_k10_known_mask": True, "event_id": 1, "event_role": "VALID"}) + "\n")
+                    _write(episode / "factorized_teacher_v1.jsonl", json.dumps({
+                        "canonical_parent_key": key, "step": 0,
+                        "strict_k10_feasible": True, "strict_k10_known_mask": True,
+                        "grasp_established": True, "grasp_established_known_mask": True,
+                        "manipulation_active": True, "manipulation_active_known_mask": True,
+                        "release_or_instability": False, "release_or_instability_known_mask": True,
+                        "event_id": 1, "event_role": "VALID",
+                    }) + "\n")
             for key in (identity, calibration_identity, policy_identity):
                 _write_artifact_manifest(clean.joinpath(*key.split("/")))
             seal_root(prediction)
@@ -210,19 +225,33 @@ def test_synthetic_production_chain_materializes_all_four_bundle_streams(tmp_pat
                 "source_commit": commit,
                 "feature_order_sha256": feature,
                 "predictor_source_sha256": sha,
+                "scheduler_source_sha256": scheduler_sha,
+                "structural_config_sha256": structural_sha,
             })
 
     plan = tmp_path / "plan.json"
     for job in jobs:
         job["checkpoint_root"] = job["run_root"]
         job["feature_root"] = job["s1_root"]
-    _write(plan, {"schema": "FACTORIZED_V2_PRODUCTION_INPUT_PLAN_V1", "splits": jobs})
+    _write(plan, {
+        "schema": "FACTORIZED_V2_PRODUCTION_INPUT_PLAN_V1",
+        "splits": jobs,
+        "formal_selection_eligible": False,
+        "training_authorized": False,
+        "attack_authorized": False,
+    })
     identity_result = audit_v2(plan)
     assert identity_result["verdict"] == "GROUP_CROSS_FITTED_OOF_FEASIBLE"
     bad_plan = tmp_path / "bad-checkpoint-plan.json"
     bad_jobs = json.loads(json.dumps(jobs))
     bad_jobs[0]["checkpoint_sha256"] = "d" * 64
-    _write(bad_plan, {"schema": "FACTORIZED_V2_PRODUCTION_INPUT_PLAN_V1", "splits": bad_jobs})
+    _write(bad_plan, {
+        "schema": "FACTORIZED_V2_PRODUCTION_INPUT_PLAN_V1",
+        "splits": bad_jobs,
+        "formal_selection_eligible": False,
+        "training_authorized": False,
+        "attack_authorized": False,
+    })
     with pytest.raises(ProductionBundleError, match="CHECKPOINT_SHA_MISMATCH"):
         materialize(bad_plan, tmp_path / "bad-bundle")
     assert not (tmp_path / "bad-bundle").exists()
@@ -236,5 +265,18 @@ def test_synthetic_production_chain_materializes_all_four_bundle_streams(tmp_pat
     policy_row = json.loads((output / "policy_selection" / "o0_i0" / "policy_selection_runtime_records.jsonl").read_text())
     assert "strict_k10_feasible" not in policy_row
     assert "teacher_label_seal" not in policy_row
+    assert policy_row["split"] == "o0_i0"
+    assert policy_row["scheduler_source_sha256"] == scheduler_sha
+    assert policy_row["structural_config_sha256"] == structural_sha
     label_row = json.loads((output / "policy_selection" / "o0_i0" / "policy_selection_evaluation_labels.jsonl").read_text())
     assert label_row["strict_k10_feasible"] is True
+    calibration_manifest = json.loads((output / "calibration" / "o0_i0" / "manifest.json").read_text())
+    assert calibration_manifest["record_stream"] == "calibration_records.jsonl"
+    assert calibration_manifest["fit_identity_manifest_sha256"]
+    assert calibration_manifest["checkpoint_training_identity_manifest_sha256"]
+    assert calibration_manifest["heldout_identity_manifest_sha256"]
+    assert calibration_manifest["feature_input_seal_sha256"]
+    calibration_row = json.loads((output / "calibration" / "o0_i0" / "calibration_records.jsonl").read_text())
+    assert calibration_row["grasp_target"] is True
+    assert calibration_row["manipulation_target"] is True
+    assert calibration_row["release_target"] is False

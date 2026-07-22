@@ -61,13 +61,28 @@ def _rows(root: Path) -> Path:
     raise EvaluationBundleError("TEACHER_LABEL_STREAM_MISSING")
 
 
-def materialize(teacher_root: Path, identity_manifest: Path, output_root: Path, *, split: str) -> dict[str, Any]:
+def materialize(
+    teacher_root: Path,
+    identity_manifest: Path,
+    feature_root: Path,
+    output_root: Path,
+    *,
+    split: str,
+    checkpoint_sha256: str,
+) -> dict[str, Any]:
     if output_root.exists():
         raise FileExistsError(f"OUTPUT_EXISTS:{output_root}")
-    lowered = "/".join(str(path).replace("\\", "/").lower() for path in (teacher_root, identity_manifest, output_root))
+    lowered = "/".join(str(path).replace("\\", "/").lower() for path in (teacher_root, identity_manifest, feature_root, output_root))
     if any(marker in lowered.split("/") for marker in ("fit-dev", "fit_dev", "cal", "check", "cs200", "attack")):
         raise EvaluationBundleError("PROTECTED_SPLIT_PATH")
     verify_sealed_directory(teacher_root)
+    verify_sealed_directory(feature_root)
+    if not isinstance(checkpoint_sha256, str) or len(checkpoint_sha256) != 64:
+        raise EvaluationBundleError("CHECKPOINT_SHA_INVALID")
+    try:
+        int(checkpoint_sha256, 16)
+    except ValueError as exc:
+        raise EvaluationBundleError("CHECKPOINT_SHA_INVALID") from exc
     identities = _identities(identity_manifest)
     stream = _rows(teacher_root)
     teacher_seal = sha256_file(teacher_root / "SHA256SUMS")
@@ -105,8 +120,20 @@ def materialize(teacher_root: Path, identity_manifest: Path, output_root: Path, 
             "schema": "FACTORIZED_V2_OFFLINE_EVALUATION_BUNDLE_V1",
             "split": split,
             "data_filename": "evaluation_records.jsonl",
+            "record_stream": "evaluation_records.jsonl",
             "record_count": len(output_rows),
             "identity_count": len({row["episode"] for row in output_rows}),
+            "checkpoint_sha256": checkpoint_sha256.lower(),
+            "teacher_label_seal_sha256": teacher_seal,
+            "feature_input_seal_sha256": sha256_file(feature_root / "SHA256SUMS"),
+            "fields": [
+                "strict_k10_feasible",
+                "strict_k10_known_mask",
+                "identity",
+                "step",
+                "teacher_label_seal",
+                "eligible_start_contract",
+            ],
             "teacher_root_sha256s_sha256": teacher_seal,
             "identity_manifest_sha256": sha256_file(identity_manifest),
             "runtime_fields_consumed": False,
@@ -128,11 +155,20 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--teacher-root", type=Path, required=True)
     parser.add_argument("--identity-manifest", type=Path, required=True)
+    parser.add_argument("--feature-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--split", required=True)
+    parser.add_argument("--checkpoint-sha256", required=True)
     args = parser.parse_args()
     try:
-        print(json.dumps(materialize(args.teacher_root.resolve(), args.identity_manifest.resolve(), args.output_root.resolve(), split=args.split), sort_keys=True))
+        print(json.dumps(materialize(
+            args.teacher_root.resolve(),
+            args.identity_manifest.resolve(),
+            args.feature_root.resolve(),
+            args.output_root.resolve(),
+            split=args.split,
+            checkpoint_sha256=args.checkpoint_sha256,
+        ), sort_keys=True))
     except Exception as exc:
         print(f"HOLD:{type(exc).__name__}:{exc}", file=sys.stderr)
         return 2

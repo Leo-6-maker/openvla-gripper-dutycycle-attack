@@ -8,6 +8,11 @@ on:
       - "src/gripper_attack/factorized_scheduler.py"
       - "src/gripper_attack/factorized_scheduler_adapter.py"
       - "schemas/factorized_v2_calibration_and_threshold_contract_v3.schema.json"
+      - "schemas/factorized_v2_offline_calibration_bundle.schema.json"
+      - "schemas/factorized_v2_offline_policy_selection_bundle.schema.json"
+      - "schemas/factorized_v2_production_input_plan.schema.json"
+      - "scripts/detector_v5/materialize_factorized_v2_production_bundles.py"
+      - "scripts/detector_v5/build_factorized_v3_2_handoff.py"
       - "tests/fixtures/factorized_scheduler_api_v3_1_trace.json"
       - ".github/workflows/cpu-factorized-l3.yml"
   push:
@@ -19,6 +24,11 @@ on:
       - "src/gripper_attack/factorized_scheduler.py"
       - "src/gripper_attack/factorized_scheduler_adapter.py"
       - "schemas/factorized_v2_calibration_and_threshold_contract_v3.schema.json"
+      - "schemas/factorized_v2_offline_calibration_bundle.schema.json"
+      - "schemas/factorized_v2_offline_policy_selection_bundle.schema.json"
+      - "schemas/factorized_v2_production_input_plan.schema.json"
+      - "scripts/detector_v5/materialize_factorized_v2_production_bundles.py"
+      - "scripts/detector_v5/build_factorized_v3_2_handoff.py"
       - "tests/fixtures/factorized_scheduler_api_v3_1_trace.json"
       - ".github/workflows/cpu-factorized-l3.yml"
 
@@ -43,7 +53,9 @@ jobs:
             analysis/student_trigger_calibration/fit_factorized_calibrators.py \
             analysis/student_trigger_calibration/select_factorized_scheduler_thresholds.py \
             analysis/student_trigger_calibration/produce_factorized_calibration_threshold_contract.py \
-            analysis/student_trigger_calibration/run_factorized_l3_analysis.py
+            analysis/student_trigger_calibration/run_factorized_l3_analysis.py \
+            scripts/detector_v5/materialize_factorized_v2_production_bundles.py \
+            scripts/detector_v5/build_factorized_v3_2_handoff.py
       - name: Run Factorized L3 tests
         run: pytest -q tests/analysis/student_trigger_calibration
       - name: Check patch whitespace

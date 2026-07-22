@@ -7,7 +7,20 @@
   "required": ["schema", "splits", "formal_selection_eligible", "training_authorized", "attack_authorized"],
   "properties": {
     "schema": {"const": "FACTORIZED_V2_PRODUCTION_INPUT_PLAN_V1"},
-    "splits": {"type": "array", "minItems": 12, "maxItems": 12},
+    "splits": {
+      "type": "array", "minItems": 12, "maxItems": 12,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["split", "prediction_root", "run_root", "s1_root", "clean_root", "teacher_root", "checkpoint_root", "feature_root", "training_identity_manifest_path", "heldout_identity_manifest_path", "calibrator_fit_manifest_path", "policy_selection_manifest_path", "calibration_prediction_root", "policy_prediction_root", "checkpoint_sha256", "source_commit", "feature_order_sha256", "predictor_source_sha256", "scheduler_source_sha256", "structural_config_sha256"],
+        "properties": {
+          "split": {"type": "string", "pattern": "^o[0-3]_i[0-2]$"},
+          "prediction_root": {"type": "string"}, "run_root": {"type": "string"}, "s1_root": {"type": "string"}, "clean_root": {"type": "string"}, "teacher_root": {"type": "string"}, "checkpoint_root": {"type": "string"}, "feature_root": {"type": "string"},
+          "training_identity_manifest_path": {"type": "string"}, "heldout_identity_manifest_path": {"type": "string"}, "calibrator_fit_manifest_path": {"type": "string"}, "policy_selection_manifest_path": {"type": "string"}, "calibration_prediction_root": {"type": "string"}, "policy_prediction_root": {"type": "string"},
+          "checkpoint_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"}, "source_commit": {"type": "string", "pattern": "^[0-9a-fA-F]{40}$"}, "feature_order_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"}, "predictor_source_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"}, "scheduler_source_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"}, "structural_config_sha256": {"type": "string", "pattern": "^[0-9a-fA-F]{64}$"},
+          "runtime_manifest_path": {"type": "string"}
+        }
+      }
+    },
     "formal_selection_eligible": {"const": false},
     "training_authorized": {"const": false},
     "attack_authorized": {"const": false}
