@@ -143,40 +143,52 @@ Top-5 longest streaks (268, 260, 184, 183, 175 steps) from `libero_10/task_01-02
 
 | Claim | Reason |
 |-------|--------|
-| V5 scheduler cannot resolve | L3/L4 UNTESTED |
-| Platt calibration fails | Only basic grid search tested, not cross-validated |
+| V5 scheduler cannot resolve | **PARTIALLY TESTED** — L3 APPROXIMATE (candidate_close missing) |
+| Platt calibration fails | Only basic grid search tested, NOT inner-train calibrated |
 | Identity composition is root cause | Confounded with checkpoint/fold |
-| Model architecture must change | Representation viable, decision layer unresolved |
 
 ### Corrected Case:
 
 ```
-CASE_4_CANDIDATE → HOLD_PENDING_ACTUAL_SCHEDULER_AND_PROPER_CALIBRATION
+CASE_4_CANDIDATE → L3_APPROXIMATE_NEAR_FEASIBLE
 ```
 
-**DO NOT interpret as:**
-- "Model objective/feature failure confirmed"
-- "Exact-W32 structure must be replaced"
-- "No calibration method can work"
+After V5 scheduler replay (APPROXIMATE candidate_close):
 
-**Correct interpretation:**
-- Raw head-level threshold/persistence strategies fail at L2
-- Platt calibration improves L1 for some splits
-- Whether the actual V5 scheduler (dwell, 3-of-5, veto) reduces L2→L3/L4 sufficiently is UNTESTED
+| Metric | Raw | Platt |
+|--------|-----|-------|
+| L3 emit rate (min) | 0.260 | **0.060** |
+| L3 emit rate (max) | 0.345 | 0.145 |
+| L3 splits ≤ 0.10 | 0/12 | **6/12** |
+| L3 splits ≤ 0.12 | 0/12 | **10/12** |
+
+The V5 scheduler (dwell=10, 3-of-5 persistence, release/regrasp veto, one-shot) dramatically reduces false starts compared to L2. With Platt calibration, multiple splits approach or cross the 0.10 boundary even with approximate candidate_close.
+
+**Long streak semantic audit** (90 streaks from 6 splits):
+- TRUE_BACKGROUND_FALSE_POSITIVE: 37.8%
+- POST_EVENT_TAIL: 25.6%
+- PRE_EVENT_ANTICIPATION: 8.9%
+- CANNOT_DETERMINE: 21.1%
+- LABEL_BOUNDARY_AMBIGUITY: 6.7%
+
+### Blockers for authoritative L3:
+1. `candidate_close` not in prediction fields — currently approximated as `route_supported AND event_id >= 0`
+2. Platt calibration fitted on half-held-out data, not inner-train — can worsen L1 on unseen half
 
 ## 9. GO / HOLD Summary
 
 | Item | Status |
 |------|--------|
 | 12-split confirmation | **DONE** (12/12 PASS) |
-| Per-step (L1) analysis | **DONE** |
-| Episode-level (L2) analysis | **DONE** |
-| Platt calibration (basic) | **DONE** |
-| L3/L4 (V5 scheduler) | **AWAITING CODEX** |
-| Engineering Full-FIT | **HOLD** |
+| L1/L2 analysis | **DONE** |
+| L3 V5 scheduler (APPROXIMATE) | **DONE** |
+| L4 attack actuation | **NOT STARTED** |
+| Authoritative L3 (real candidate_close) | **BLOCKED** — missing field in predictions |
+| Proper inner-train Platt calibration | **BLOCKED** — needs inner-train inference |
+| Engineering Full-FIT | **HOLD** (pending authoritative L3) |
 | Modify loss | **HOLD** |
-| V3 loss experiments (design only) | **GO** |
-| V3 loss experiments (training) | **HOLD** |
+| V3 protocol (design only) | **GO** |
+| V3 training | **HOLD** |
 | Passive shadow | **HOLD** |
 | Active smoke | **HOLD** |
 
@@ -207,7 +219,11 @@ CASE_4_CANDIDATE → HOLD_PENDING_ACTUAL_SCHEDULER_AND_PROPER_CALIBRATION
 - `pareto_summary.json`
 - `replay_contract.json`
 - `platt_calibration_results.json`
+- `v5_scheduler_l3_replay.json`
+- `v5_scheduler_contract.json`
+- `l1_l2_platt_comparison.json`
+- `long_streak_semantic_audit.csv`
 
 ## 12. Key Conclusion
 
-> **Exact-W32的表征仍然有效（release AUPRC 0.83-0.88稳定）；失败的是当前raw head-level决策规则（L2: 0/12 feasible）。Platt校准可以改善L1 step-level安全（3/12 pass，3 near-miss）且保持release recall优秀（0.94-0.99）。是否需要修改训练目标，必须等真实V5 scheduler replay（L3/L4）和无泄漏交叉验证Platt校准完成后再决定。当前不应启动大规模V3重训。**
+> **Exact-W32 V2B: L1 raw fails worst-split gate (0.174), L2 simple policy infeasible (0/12), but V5 scheduler replay (APPROXIMATE candidate_close) with Platt calibration shows multiple splits ≤0.10 L3 emit rate. The representation (release AUPRC 0.83-0.88) is viable; the V5 scheduler's dwell+persistence+veto+one-shot architecture substantially filters head-level false signals. Authoritative L3 blocked on `candidate_close` field not present in predictions. Inner-train Platt calibration not yet feasible (requires inner-train inference). Do NOT launch Full-FIT or attack until authoritative L3 confirmed.**
