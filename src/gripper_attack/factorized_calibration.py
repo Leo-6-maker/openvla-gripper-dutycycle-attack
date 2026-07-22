@@ -77,7 +77,7 @@ def validate_inner_train_plan(
     }
 
 
-def validate_authorization_template(value: Mapping[str, Any]) -> None:
+def validate_authorization_template(value: Mapping[str, Any], *, allow_execution: bool = False) -> None:
     required = {
         "schema", "status", "execution_authorized", "formal_selection_eligible",
         "training_authorized", "full_fit_authorized", "attack_authorized",
@@ -88,7 +88,7 @@ def validate_authorization_template(value: Mapping[str, Any]) -> None:
     }
     if set(value) != required or value.get("schema") != AUTHORIZATION_SCHEMA:
         raise CalibrationPlanError("AUTHORIZATION_TEMPLATE_SCHEMA")
-    if value.get("execution_authorized") is not False or value.get("formal_selection_eligible") is not False:
+    if value.get("execution_authorized") is not (True if allow_execution else False) or value.get("formal_selection_eligible") is not False:
         raise CalibrationPlanError("AUTHORIZATION_TEMPLATE_MUST_BE_DISABLED")
     if any(value.get(name) is not False for name in ("training_authorized", "full_fit_authorized", "attack_authorized", "cal_check_authorized")):
         raise CalibrationPlanError("AUTHORIZATION_TEMPLATE_ATTACK_OR_TRAINING")
