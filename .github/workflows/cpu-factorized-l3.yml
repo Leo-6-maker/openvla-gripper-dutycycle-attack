@@ -45,6 +45,6 @@ jobs:
             analysis/student_trigger_calibration/produce_factorized_calibration_threshold_contract.py \
             analysis/student_trigger_calibration/run_factorized_l3_analysis.py
       - name: Run Factorized L3 tests
-        run: pytest -q tests/analysis/student_trigger_calibration/test_factorized_l3_metrics.py
+        run: pytest -q tests/analysis/student_trigger_calibration
       - name: Check patch whitespace
         run: git diff --check
