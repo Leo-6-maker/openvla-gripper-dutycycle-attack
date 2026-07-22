@@ -54,6 +54,23 @@ def load_handoff_file(path: Path, repo_root: Path) -> dict:
             raise SystemExit("CODEX_V2_HANDOFF = STATIC_REJECTED")
         raise SystemExit(f"UNKNOWN_HANDOFF_SCHEMA: {schema}")
 
+    expected_binding = handoff.get("handoff_blob_sha256")
+    payload = dict(handoff)
+    payload.pop("handoff_blob_sha256", None)
+    actual_binding = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+    if (
+        not isinstance(expected_binding, str)
+        or len(expected_binding) != 64
+        or any(character not in "0123456789abcdef" for character in expected_binding)
+        or actual_binding != expected_binding
+    ):
+        raise SystemExit(
+            f"HANDOFF_BLOB_SHA_MISMATCH:exp={str(expected_binding)[:16]} "
+            f"act={actual_binding[:16]}"
+        )
+
     _validate_all_refs(handoff, repo_root)
     return handoff
 
