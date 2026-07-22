@@ -5,23 +5,37 @@
 
   "blockers": {
     "RUNTIME_CANDIDATE_CLOSE": "BLOCKED — policy raw_gripper not in prediction bundle",
-    "UTILITY_REGRASP_SEMANTICS": "BLOCKED — utility=grasp, regrasp=manipulation unvalidated",
+    "STUDENT_VALID": "BLOCKED_MISSING_RUNTIME_FIELD — route_supported is proxy",
+    "UTILITY_SEMANTICS": "BLOCKED — grasp_prob used as proxy for utility",
+    "REGRASP_SEMANTICS": "BLOCKED — manipulation_prob used as proxy for regrasp",
     "PROPER_INNER_TRAIN_PLATT": "BLOCKED — inner-train inference not generated",
     "K10_CONTAINMENT": "NOT_MEASURED — no frozen K10 label in prediction"
   },
+  "replay_status": "TEACHER_CORRIDOR_AND_HEAD_PROXY_DIAGNOSTIC_ONLY",
+  "authoritative_l3": false,
+  "background_candidate_exposure": "STRUCTURALLY_CENSORED",
+  "runtime_background_exposure_measured": false,
 
   "L1": {
     "per_step_background_emit": {
-      "definition": "Fraction of background steps (event_id < 0 AND route_supported) where any known head exceeds threshold",
+      "producer": {
+        "file": "scripts/detector_v5/evaluate_factorized_v2_inner_cv.py",
+        "function": "evaluate_single",
+        "lines": "162-166",
+        "numerator": "bg steps where any known head AND prob >= threshold",
+        "denominator": "bg steps where any(grasp_known, manipulation_known, release_known) is True",
+        "note": "Steps where ALL heads are unknown are excluded from denominator"
+      },
       "three_variants": {
-        "A_legacy": "Denominator: all supported bg steps. Matches original Stage-1 evaluator.",
-        "B_head_conditional": "Denominator: bg steps where specific head is known. Per-head analysis.",
-        "C_any_known": "Denominator: bg steps where at least one head is known. Known-head union."
+        "A_legacy_stage1": "Denominator = bg steps where any head known. Matches Stage-1 evaluator lines 162-166 exactly.",
+        "B_head_conditional": "Denominator = bg steps where SPECIFIC head is known. Per-head analysis.",
+        "C_all_supported_bg_steps": "Denominator = ALL bg steps with route_supported (even if zero heads known). NOT the Stage-1 denominator."
       },
       "constraints": [
-        "manipulation_known_mask is ~always False on bg — effectively excluded",
-        "unknown is not negative",
-        "unknown not in denominator"
+        "manipulation_known_mask is ~always False on bg (o2_i0: 1/24467 steps) — effectively excluded",
+        "unknown is not negative — excluded from denominator in A and B",
+        "unknown not in denominator for A and B (not C)",
+        "each metric's unknown-handling must be documented separately"
       ]
     }
   },
