@@ -54,6 +54,16 @@ def _prediction_path(root: Path) -> Path:
     raise SchedulerBridgeError("PREDICTION_STREAM_MISSING")
 
 
+def _source_manifest(root: Path) -> dict:
+    for name in ("input_manifest.json", "source_binding.json", "manifest.json"):
+        path = root / name
+        if path.is_file():
+            value = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(value, dict):
+                return value
+    return {}
+
+
 def _group(rows: list[dict]) -> dict[str, list[dict]]:
     grouped: dict[str, list[dict]] = {}
     for row in rows:
@@ -90,6 +100,7 @@ def rematerialize(args: argparse.Namespace) -> dict:
         raise SchedulerBridgeError("SOURCE_COMMIT_MISMATCH")
 
     predictions = _group(_jsonl(_prediction_path(prediction_root)))
+    source_manifest = _source_manifest(source_root)
     output_rows: list[dict] = []
     for identity, prediction_rows in sorted(predictions.items()):
         episode = _episode_root(source_root, identity)
@@ -105,6 +116,7 @@ def rematerialize(args: argparse.Namespace) -> dict:
                 source_commit=args.source_commit,
                 input_artifact_seal=sha256_file(source_root / "SHA256SUMS"),
                 feature_order_sha256=args.feature_order_sha256,
+                runtime_manifest=source_manifest,
             ))
 
     staging = output.with_name(f".{output.name}.{uuid.uuid4().hex}.staging")

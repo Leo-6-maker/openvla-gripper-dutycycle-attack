@@ -77,6 +77,51 @@ def test_boundary_is_not_close():
     assert row["action_intent"] == "BOUNDARY"
 
 
+def test_certified_fallback_is_allowed_and_uncertified_fallback_is_rejected():
+    prediction, student, runtime = _rows()
+    runtime["action_raw"] = runtime.pop("clean_action_raw_7d")
+    with pytest.raises(SchedulerBridgeError, match="FALLBACK_RAW_ACTION_UNCERTIFIED"):
+        build_scheduler_ready_record(
+            prediction, student, runtime,
+            checkpoint_sha256=SHA, source_commit=COMMIT,
+            input_artifact_seal=SHA, feature_order_sha256=SHA,
+        )
+    cert = {
+        "field_semantics": "OPENVLA_RAW_ACTION",
+        "field_stage": "CLEAN_PRE_ATTACK_DECODE",
+        "field_dimension": 7,
+        "gripper_index": 6,
+        "postprocessed": False,
+        "attacked": False,
+    }
+    row = build_scheduler_ready_record(
+        prediction, student, runtime,
+        checkpoint_sha256=SHA, source_commit=COMMIT,
+        input_artifact_seal=SHA, feature_order_sha256=SHA,
+        runtime_manifest=cert,
+    )
+    assert row["raw_gripper_source_field"] == "action_raw[6]"
+
+
+def test_two_raw_fields_must_match_and_attacked_field_is_rejected():
+    prediction, student, runtime = _rows()
+    runtime["action_raw"] = [0.0] * 6 + [1.0]
+    with pytest.raises(SchedulerBridgeError, match="RAW_ACTION_FIELDS_MISMATCH"):
+        build_scheduler_ready_record(
+            prediction, student, runtime,
+            checkpoint_sha256=SHA, source_commit=COMMIT,
+            input_artifact_seal=SHA, feature_order_sha256=SHA,
+        )
+    prediction, student, runtime = _rows()
+    runtime["attacked_action"] = [0.0] * 7
+    with pytest.raises(SchedulerBridgeError, match="ATTACKED_ACTION_FORBIDDEN"):
+        build_scheduler_ready_record(
+            prediction, student, runtime,
+            checkpoint_sha256=SHA, source_commit=COMMIT,
+            input_artifact_seal=SHA, feature_order_sha256=SHA,
+        )
+
+
 def test_teacher_event_cannot_supply_runtime_candidate_gate():
     prediction, student, runtime = _rows()
     runtime.pop("clean_action_raw_7d")
@@ -173,7 +218,7 @@ def test_cal_check_paths_are_rejected():
 
 
 def test_authorization_template_is_disabled():
-    template = json.loads(Path("configs/OFFLINE_INNER_TRAIN_CALIBRATION_AUTHORIZATION_V1.json").read_text())
+    template = json.loads(Path("configs/OFFLINE_FACTORIZED_V2_INNER_TRAIN_INFERENCE_AUTH_V1.json").read_text())
     validate_authorization_template(template)
     assert template["execution_authorized"] is False
     assert template["formal_selection_eligible"] is False
@@ -183,7 +228,7 @@ def test_prepare_only_runner_seals_and_is_nonoverwrite(tmp_path: Path):
     from scripts.detector_v5.run_factorized_v2_inner_train_calibration import prepare
 
     plan = {"checkpoints": [_plan_item(i) for i in range(12)], "forbidden_roots": []}
-    auth = json.loads(Path("configs/OFFLINE_INNER_TRAIN_CALIBRATION_AUTHORIZATION_V1.json").read_text())
+    auth = json.loads(Path("configs/OFFLINE_FACTORIZED_V2_INNER_TRAIN_INFERENCE_AUTH_V1.json").read_text())
     plan_path = tmp_path / "plan.json"
     auth_path = tmp_path / "authorization.json"
     plan_path.write_text(json.dumps(plan), encoding="utf-8")

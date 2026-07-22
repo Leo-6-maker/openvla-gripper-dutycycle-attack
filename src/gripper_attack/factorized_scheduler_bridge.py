@@ -17,8 +17,8 @@ from .action_contract import CanonicalActionState
 
 SCHEDULER_READY_SCHEMA = "FACTORIZED_V2_SCHEDULER_READY_PREDICTION_V1"
 FIELD_STATUSES = frozenset({"DIRECT", "DERIVED", "MISSING", "FORBIDDEN"})
-RUNTIME_ACTION_FIELDS = ("clean_action_raw_7d", "action_raw_7d", "action_raw")
-SCALAR_RAW_FIELDS = ("raw_gripper", "gripper_command")
+RUNTIME_ACTION_FIELDS = ("clean_action_raw_7d",)
+RUNTIME_FALLBACK_FIELDS = ("action_raw",)
 REQUIRED_READY_FIELDS = frozenset(
     {
         "schema", "episode", "step", "route", "route_supported", "student_valid",
@@ -102,42 +102,74 @@ def _identity(row: Mapping[str, Any]) -> str:
     return value
 
 
-def _runtime_action_state(row: Mapping[str, Any]) -> dict[str, Any]:
-    """Derive the runtime gate from the canonical raw action field only."""
+def _fallback_certified(manifest: Mapping[str, Any] | None) -> bool:
+    if not isinstance(manifest, Mapping):
+        return False
+    expected = {
+        "field_semantics": "OPENVLA_RAW_ACTION",
+        "field_stage": "CLEAN_PRE_ATTACK_DECODE",
+        "field_dimension": 7,
+        "gripper_index": 6,
+        "postprocessed": False,
+        "attacked": False,
+    }
+    pending = [manifest]
+    while pending:
+        item = pending.pop()
+        if isinstance(item, Mapping):
+            if all(item.get(key) == value for key, value in expected.items()):
+                return True
+            pending.extend(item.values())
+        elif isinstance(item, list):
+            pending.extend(item)
+    return False
 
-    for field in RUNTIME_ACTION_FIELDS:
-        value = row.get(field)
-        if isinstance(value, (list, tuple)) and len(value) >= 7:
-            state = CanonicalActionState.from_step(dict(row), field=field)
-            if state.raw_gripper is None:
-                raise SchedulerBridgeError("RUNTIME_RAW_GRIPPER_INVALID")
-            return {
-                "raw_gripper": state.raw_gripper,
-                "action_intent": state.action_intent,
-                "candidate_close": state.candidate_close,
-                "raw_gripper_source": "DIRECT" if field == "clean_action_raw_7d" else "DERIVED",
-                "raw_gripper_source_field": f"{field}[6]",
-                "action_intent_source": "DERIVED",
-                "candidate_close_source": "DERIVED",
-                "candidate_close_source_field": f"{field}[6]",
-            }
-    for field in SCALAR_RAW_FIELDS:
-        value = row.get(field)
-        if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(float(value)):
-            state = CanonicalActionState.from_step({"clean_action_raw_7d": [0.0] * 6 + [float(value)]})
-            if state.raw_gripper is None:
-                raise SchedulerBridgeError("RUNTIME_RAW_GRIPPER_INVALID")
-            return {
-                "raw_gripper": state.raw_gripper,
-                "action_intent": state.action_intent,
-                "candidate_close": state.candidate_close,
-                "raw_gripper_source": "DIRECT",
-                "raw_gripper_source_field": field,
-                "action_intent_source": "DERIVED",
-                "candidate_close_source": "DERIVED",
-                "candidate_close_source_field": field,
-            }
-    raise SchedulerBridgeError("RUNTIME_RAW_GRIPPER_MISSING")
+
+def _raw_from(value: Any) -> float | None:
+    if not isinstance(value, (list, tuple)) or len(value) < 7:
+        return None
+    try:
+        raw = float(value[6])
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(raw) or not -0.1 <= raw <= 1.1:
+        return None
+    return raw
+
+
+def _runtime_action_state(row: Mapping[str, Any], runtime_manifest: Mapping[str, Any] | None = None) -> dict[str, Any]:
+    """Derive the runtime gate from the canonical raw action field only."""
+    if any(name in row for name in ("attacked_action", "attack_action", "mutated_action")):
+        raise SchedulerBridgeError("ATTACKED_ACTION_FORBIDDEN")
+    clean = _raw_from(row.get("clean_action_raw_7d"))
+    fallback = _raw_from(row.get("action_raw"))
+    if row.get("clean_action_raw_7d") is not None and clean is None:
+        raise SchedulerBridgeError("RUNTIME_RAW_GRIPPER_INVALID")
+    if row.get("action_raw") is not None and fallback is None:
+        raise SchedulerBridgeError("RUNTIME_RAW_GRIPPER_INVALID")
+    if clean is not None and fallback is not None and abs(clean - fallback) > 1e-6:
+        raise SchedulerBridgeError("RAW_ACTION_FIELDS_MISMATCH")
+    if clean is not None:
+        raw, field = clean, "clean_action_raw_7d[6]"
+    elif fallback is not None:
+        if not _fallback_certified(runtime_manifest):
+            raise SchedulerBridgeError("FALLBACK_RAW_ACTION_UNCERTIFIED")
+        raw, field = fallback, "action_raw[6]"
+    else:
+        raise SchedulerBridgeError("RUNTIME_RAW_GRIPPER_MISSING")
+    state = CanonicalActionState.from_step({"clean_action_raw_7d": [0.0] * 6 + [raw]})
+    if state.raw_gripper is None:
+        raise SchedulerBridgeError("RUNTIME_RAW_GRIPPER_INVALID")
+    return {
+        "raw_gripper": state.raw_gripper,
+        "action_intent": state.action_intent,
+        "candidate_close": state.candidate_close,
+        "raw_gripper_source": "DIRECT",
+        "raw_gripper_source_field": field,
+        "action_intent_source": "DERIVED",
+        "candidate_close_source": "DERIVED",
+        "candidate_close_source_field": field,
+    }
 
 
 def _index(rows: Iterable[Mapping[str, Any]], label: str) -> dict[int, Mapping[str, Any]]:
@@ -186,6 +218,7 @@ def build_scheduler_ready_record(
     source_commit: str,
     input_artifact_seal: str,
     feature_order_sha256: str,
+    runtime_manifest: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build one authoritative-ready row; missing semantic heads are fatal."""
 
@@ -200,7 +233,7 @@ def build_scheduler_ready_record(
     feature_order_sha256 = _sha(feature_order_sha256, "FEATURE_ORDER_SHA_INVALID")
     source_commit = _commit(source_commit)
 
-    action = _runtime_action_state(runtime)
+    action = _runtime_action_state(runtime, runtime_manifest)
     utility = prediction.get("utility_probability")
     if utility is None:
         raise SchedulerBridgeError("UTILITY_MISSING_NO_DEFAULT_OR_PROXY")
@@ -235,6 +268,7 @@ def build_scheduler_ready_record(
     route_supported = prediction.get("route_supported")
     if not isinstance(route_supported, bool):
         raise SchedulerBridgeError("ROUTE_SUPPORTED_MISSING")
+    student_valid = bool(student_valid and route_supported and action["action_intent"] in {"CLOSE", "OPEN"})
 
     record = {
         "schema": SCHEDULER_READY_SCHEMA,

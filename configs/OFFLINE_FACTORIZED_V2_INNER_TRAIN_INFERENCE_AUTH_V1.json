@@ -1,0 +1,29 @@
+{
+  "schema": "OFFLINE_FACTORIZED_V2_INNER_TRAIN_INFERENCE_AUTH_V1",
+  "status": "TEMPLATE_ONLY",
+  "execution_authorized": false,
+  "formal_selection_eligible": false,
+  "training_authorized": false,
+  "full_fit_authorized": false,
+  "attack_authorized": false,
+  "cal_check_authorized": false,
+  "checkpoint_bindings": [
+    {"outer_fold": null, "inner_fold": null, "seed": null, "checkpoint_root": null, "checkpoint_sha256": null, "inner_train_manifest_root": null, "inner_train_manifest_sha256": null, "heldout_manifest_root": null, "heldout_manifest_sha256": null, "feature_input_root": null, "feature_input_sha256": null},
+    {"outer_fold": null, "inner_fold": null, "seed": null, "checkpoint_root": null, "checkpoint_sha256": null, "inner_train_manifest_root": null, "inner_train_manifest_sha256": null, "heldout_manifest_root": null, "heldout_manifest_sha256": null, "feature_input_root": null, "feature_input_sha256": null},
+    {"outer_fold": null, "inner_fold": null, "seed": null, "checkpoint_root": null, "checkpoint_sha256": null, "inner_train_manifest_root": null, "inner_train_manifest_sha256": null, "heldout_manifest_root": null, "heldout_manifest_sha256": null, "feature_input_root": null, "feature_input_sha256": null},
+    {"outer_fold": null, "inner_fold": null, "seed": null, "checkpoint_root": null, "checkpoint_sha256": null, "inner_train_manifest_root": null, "inner_train_manifest_sha256": null, "heldout_manifest_root": null, "heldout_manifest_sha256": null, "feature_input_root": null, "feature_input_sha256": null},
+    {"outer_fold": null, "inner_fold": null, "seed": null, "checkpoint_root": null, "checkpoint_sha256": null, "inner_train_manifest_root": null, "inner_train_manifest_sha256": null, "heldout_manifest_root": null, "heldout_manifest_sha256": null, "feature_input_root": null, "feature_input_sha256": null},
+    {"outer_fold": null, "inner_fold": null, "seed": null, "checkpoint_root": null, "checkpoint_sha256": null, "inner_train_manifest_root": null, "inner_train_manifest_sha256": null, "heldout_manifest_root": null, "heldout_manifest_sha256": null, "feature_input_root": null, "feature_input_sha256": null},
+    {"outer_fold": null, "inner_fold": null, "seed": null, "checkpoint_root": null, "checkpoint_sha256": null, "inner_train_manifest_root": null, "inner_train_manifest_sha256": null, "heldout_manifest_root": null, "heldout_manifest_sha256": null, "feature_input_root": null, "feature_input_sha256": null},
+    {"outer_fold": null, "inner_fold": null, "seed": null, "checkpoint_root": null, "checkpoint_sha256": null, "inner_train_manifest_root": null, "inner_train_manifest_sha256": null, "heldout_manifest_root": null, "heldout_manifest_sha256": null, "feature_input_root": null, "feature_input_sha256": null},
+    {"outer_fold": null, "inner_fold": null, "seed": null, "checkpoint_root": null, "checkpoint_sha256": null, "inner_train_manifest_root": null, "inner_train_manifest_sha256": null, "heldout_manifest_root": null, "heldout_manifest_sha256": null, "feature_input_root": null, "feature_input_sha256": null},
+    {"outer_fold": null, "inner_fold": null, "seed": null, "checkpoint_root": null, "checkpoint_sha256": null, "inner_train_manifest_root": null, "inner_train_manifest_sha256": null, "heldout_manifest_root": null, "heldout_manifest_sha256": null, "feature_input_root": null, "feature_input_sha256": null},
+    {"outer_fold": null, "inner_fold": null, "seed": null, "checkpoint_root": null, "checkpoint_sha256": null, "inner_train_manifest_root": null, "inner_train_manifest_sha256": null, "heldout_manifest_root": null, "heldout_manifest_sha256": null, "feature_input_root": null, "feature_input_sha256": null},
+    {"outer_fold": null, "inner_fold": null, "seed": null, "checkpoint_root": null, "checkpoint_sha256": null, "inner_train_manifest_root": null, "inner_train_manifest_sha256": null, "heldout_manifest_root": null, "heldout_manifest_sha256": null, "feature_input_root": null, "feature_input_sha256": null}
+  ],
+  "checkpoint_binding_count_required": 12,
+  "feature_input_seals": [],
+  "predictor_source": {"commit": null, "script_sha256": null},
+  "allowed_output_roots": [],
+  "forbidden_roots": ["FIT-DEV", "CAL", "CHECK", "CS200", "attack"]
+}

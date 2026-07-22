@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 INNER_TRAIN_CALIBRATION_SCHEMA = "FACTORIZED_V2_INNER_TRAIN_CALIBRATION_PREDICTION_V1"
-AUTHORIZATION_SCHEMA = "OFFLINE_INNER_TRAIN_CALIBRATION_AUTHORIZATION_V1"
+AUTHORIZATION_SCHEMA = "OFFLINE_FACTORIZED_V2_INNER_TRAIN_INFERENCE_AUTH_V1"
 PROTECTED_MARKERS = ("fit-dev", "fit_dev", "cal", "check", "cs200", "attack")
 
 
@@ -80,7 +80,9 @@ def validate_inner_train_plan(
 def validate_authorization_template(value: Mapping[str, Any]) -> None:
     required = {
         "schema", "status", "execution_authorized", "formal_selection_eligible",
-        "training_authorized", "attack_authorized", "checkpoint_bindings",
+        "training_authorized", "full_fit_authorized", "attack_authorized",
+        "cal_check_authorized", "checkpoint_bindings",
+        "checkpoint_binding_count_required",
         "feature_input_seals", "predictor_source", "allowed_output_roots",
         "forbidden_roots",
     }
@@ -88,9 +90,9 @@ def validate_authorization_template(value: Mapping[str, Any]) -> None:
         raise CalibrationPlanError("AUTHORIZATION_TEMPLATE_SCHEMA")
     if value.get("execution_authorized") is not False or value.get("formal_selection_eligible") is not False:
         raise CalibrationPlanError("AUTHORIZATION_TEMPLATE_MUST_BE_DISABLED")
-    if value.get("training_authorized") is not False or value.get("attack_authorized") is not False:
+    if any(value.get(name) is not False for name in ("training_authorized", "full_fit_authorized", "attack_authorized", "cal_check_authorized")):
         raise CalibrationPlanError("AUTHORIZATION_TEMPLATE_ATTACK_OR_TRAINING")
-    if not isinstance(value.get("checkpoint_bindings"), list) or len(value["checkpoint_bindings"]) != 12:
+    if value.get("checkpoint_binding_count_required") != 12 or not isinstance(value.get("checkpoint_bindings"), list) or len(value["checkpoint_bindings"]) != 12:
         raise CalibrationPlanError("AUTHORIZATION_TEMPLATE_CHECKPOINT_COUNT")
     if not isinstance(value.get("forbidden_roots"), list):
         raise CalibrationPlanError("AUTHORIZATION_TEMPLATE_FORBIDDEN_ROOTS")

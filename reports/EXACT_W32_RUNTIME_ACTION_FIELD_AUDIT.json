@@ -1,0 +1,9 @@
+{
+  "schema": "EXACT_W32_RUNTIME_ACTION_FIELD_AUDIT_V1",
+  "status": "NOT_EXECUTED_INPUT_ROOTS_NOT_MOUNTED",
+  "production_artifacts_read": false,
+  "expected_split_count": 12,
+  "auditor": "scripts/detector_v5/audit_exact_w32_runtime_action_fields.py",
+  "required_next_step": "Run against all 12 sealed Exact-W32 split roots; fail closed on missing or uncertified runtime action fields.",
+  "candidate_close_status": "HOLD_INCOMPLETE_RUNTIME_FIELD_COVERAGE"
+}
