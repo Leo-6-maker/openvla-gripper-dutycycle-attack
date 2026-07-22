@@ -28,14 +28,14 @@ def sigmoid(z):
 
 def validate_record(r, head, idx):
     """Fail-closed field validation. Returns (logit, prob, is_known, is_target)."""
-    for fld in ["episode", "step_index",
-                f"{head}_logit", f"{head}_prob",
+    for fld in ["episode", "step",
+                f"{head}_logit", f"{head}_probability",
                 f"{head}_known_mask", f"{head}_target"]:
         if fld not in r:
             raise SystemExit(f"FIELD_MISSING: record {idx} missing {fld}")
 
     logit = r[f"{head}_logit"]
-    prob = r[f"{head}_prob"]
+    prob = r[f"{head}_probability"]
     km = r[f"{head}_known_mask"]
     tk = r[f"{head}_target"]
 
@@ -49,14 +49,14 @@ def validate_record(r, head, idx):
         raise SystemExit(f"KNOWN_MASK_NOT_BOOL: record {idx} {head}_known_mask={km}")
     if not isinstance(tk, bool):
         raise SystemExit(f"TARGET_NOT_BOOL: record {idx} {head}_target={tk}")
-    if not isinstance(r["step_index"], int) or r["step_index"] < 0:
+    if not isinstance(r["step"], int) or r["step"] < 0:
         raise SystemExit(f"STEP_INVALID: record {idx} step_index={r['step_index']}")
 
     return float(logit), float(prob), km, tk
 
 
 def load_and_validate(bundle_dir, split_key):
-    p = Path(bundle_dir) / split_key / "inner_train_logits.jsonl"
+    p = Path(bundle_dir) / split_key / "calibration_records.jsonl"
     if not p.is_file():
         raise SystemExit(f"LOGITS_MISSING: {p}")
     seen = set()
@@ -64,7 +64,7 @@ def load_and_validate(bundle_dir, split_key):
     with open(p) as f:
         for idx, line in enumerate(f):
             r = json.loads(line)
-            key = (r.get("episode"), r.get("step_index"))
+            key = (r.get("episode"), r.get("step"))
             if key in seen:
                 raise SystemExit(f"DUPLICATE_KEY: record {idx} key={key}")
             seen.add(key)
@@ -78,7 +78,7 @@ def check_logit_prob_consistency(records, head):
     for i, r in enumerate(records):
         if r.get(f"{head}_known_mask"):
             logit = float(r[f"{head}_logit"])
-            prob = float(r[f"{head}_prob"])
+            prob = float(r[f"{head}_probability"])
             expected = sigmoid(logit)
             err = abs(expected - prob)
             if err > max_err:

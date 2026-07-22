@@ -23,9 +23,9 @@ STEP = "step"
 def _mk(s=0, ep="t", k10_f=False, k10_km=True):
     return {"step_index": s, "canonical_parent_key": ep, STEP: s,
             "strict_k10_feasible": k10_f, "strict_k10_known_mask": k10_km,
-            "grasp_logit": 0.0, "grasp_prob": 0.5, "grasp_known_mask": True, "grasp_target": False,
-            "manipulation_logit": 0.0, "manipulation_prob": 0.5, "manipulation_known_mask": False, "manipulation_target": False,
-            "release_logit": 0.0, "release_prob": 0.5, "release_known_mask": True, "release_target": False}
+            "grasp_logit": 0.0, "grasp_probability": 0.5, "grasp_known_mask": True, "grasp_target": False,
+            "manipulation_logit": 0.0, "manipulation_probability": 0.5, "manipulation_known_mask": False, "manipulation_target": False,
+            "release_logit": 0.0, "release_probability": 0.5, "release_known_mask": True, "release_target": False}
 
 
 def _mk_ol(s=0, ep="t", k10_f=False, k10_km=True):
@@ -147,12 +147,12 @@ def test_resubstitution():
 
 
 def test_nan_rejected():
-    try: validate_record({"episode":"x","step_index":0,"grasp_logit":float("nan"),"grasp_prob":0.5,"grasp_known_mask":True,"grasp_target":False},"grasp",0); assert False
+    try: validate_record({"episode":"x","step_index":0,"grasp_logit":float("nan"),"grasp_probability":0.5,"grasp_known_mask":True,"grasp_target":False},"grasp",0); assert False
     except SystemExit: pass
 
 
 def test_logit_prob_mismatch():
-    recs = [{"grasp_logit":5.0,"grasp_prob":0.5,"grasp_known_mask":True,"grasp_target":True,"episode":"x","step_index":0,STEP:0}]
+    recs = [{"grasp_logit":5.0,"grasp_probability":0.5,"grasp_known_mask":True,"grasp_target":True,"episode":"x","step_index":0,STEP:0}]
     ok, err = check_logit_prob_consistency(recs, "grasp")
     assert not ok
 

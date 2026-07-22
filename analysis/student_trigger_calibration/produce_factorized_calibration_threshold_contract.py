@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Produce FACTORIZED_V2_CALIBRATION_AND_THRESHOLD_CONTRACT_V2 — canonical schema.
+"""Produce FACTORIZED_V2_CALIBRATION_AND_THRESHOLD_CONTRACT_V3.
 
-Top-level: grasp/manipulation/release (not heads dict).
-Eligibility: calibration_fit_authoritative, threshold_selection_authoritative,
-             l3_evaluation_eligible.
+Exact Codex schema compliance. No extra fields, no None, no defaults.
+BLOCKER_RECEIPT when data insufficient.
 """
 from __future__ import annotations
 
-import argparse, hashlib, json, os, sys, time, uuid
+import argparse, hashlib, json, math, os, sys, time, uuid
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent.parent
+SCHEMA_PATH = ROOT / "schemas/factorized_v2_calibration_and_threshold_contract_v3.schema.json"
 
 
 def sha256_file(p):
@@ -20,10 +20,65 @@ def sha256_file(p):
     return d.hexdigest()
 
 
+def validate_against_schema(contract):
+    schema = json.loads(SCHEMA_PATH.read_text())
+    try:
+        import jsonschema
+        jsonschema.validate(contract, schema)
+    except ImportError:
+        _manual_validate(contract, schema)
+    except Exception as e:
+        raise SystemExit(f"SCHEMA_VALIDATION_FAILED: {e}")
+
+
+def _manual_validate(contract, schema):
+    required = schema.get("required", [])
+    for k in required:
+        if k not in contract: raise SystemExit(f"MISSING_REQUIRED: {k}")
+    props = schema.get("properties", {})
+    for k in contract:
+        if k not in props: raise SystemExit(f"EXTRA_FIELD: {k}")
+    if contract["schema"] != "FACTORIZED_V2_CALIBRATION_AND_THRESHOLD_CONTRACT_V3":
+        raise SystemExit("BAD_SCHEMA")
+    if contract["status"] not in ("DIAGNOSTIC", "AUTHORITATIVE"):
+        raise SystemExit(f"BAD_STATUS: {contract['status']}")
+    for fld in ["checkpoint_sha256","scheduler_source_sha256","structural_config_sha256","feature_order_sha256"]:
+        if len(contract[fld]) != 64: raise SystemExit(f"BAD_SHA_LEN: {fld}")
+    if len(contract["student_source_commit"]) != 40: raise SystemExit("BAD_COMMIT_LEN")
+    for a in ["training_authorized","full_fit_authorized","attack_authorized"]:
+        if contract[a] is not False: raise SystemExit(f"{a} must be false")
+    hdef = schema.get("$defs",{}).get("head",{})
+    for head in ["grasp","manipulation","release"]:
+        h = contract[head]
+        for k in hdef.get("required",[]):
+            if k not in h: raise SystemExit(f"HEAD_MISSING: {head}.{k}")
+        for k in h:
+            if k not in hdef.get("properties",{}): raise SystemExit(f"HEAD_EXTRA: {head}.{k}")
+        if h["threshold"] is None or not (0 <= h["threshold"] <= 1):
+            raise SystemExit(f"BAD_THRESHOLD: {head}")
+        for fld in ["fit_manifest_sha256","policy_selection_manifest_sha256"]:
+            if len(h[fld]) != 64: raise SystemExit(f"BAD_HEAD_SHA: {head}.{fld}")
+        for fld in ["method_valid","transform_valid","fit_data_valid"]:
+            if h[fld] is not True: raise SystemExit(f"HEAD_{fld}_NOT_TRUE: {head}")
+
+
+def blocker(out_root, reason):
+    s = out_root.with_name(f".{out_root.name}.{uuid.uuid4().hex}.staging"); s.mkdir(parents=True)
+    (s/"BLOCKER_RECEIPT.json").write_text(json.dumps({"status":reason,"authoritative_l3":False},indent=2)+"\n")
+    f=s/"BLOCKER_RECEIPT.json"; (s/"SHA256SUMS").write_text(f"{sha256_file(f)}  BLOCKER_RECEIPT.json\n")
+    (s/"SHA256SUMS.sha256").write_text(f"{sha256_file(s/'SHA256SUMS')}  SHA256SUMS\n")
+    os.replace(s, out_root)
+    print(f"BLOCKER: {out_root} ({reason})")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--calibration-fit-contract", type=Path, required=True)
     ap.add_argument("--threshold-selection-contract", type=Path, default=None)
+    ap.add_argument("--scheduler-source-sha256", type=str, required=True)
+    ap.add_argument("--structural-config-sha256", type=str, required=True)
+    ap.add_argument("--feature-order-sha256", type=str, required=True)
+    ap.add_argument("--student-source-commit", type=str, required=True)
     ap.add_argument("--output-root", type=Path, required=True)
     ap.add_argument("--split", type=str, required=True)
     args = ap.parse_args()
@@ -34,81 +89,62 @@ def main():
     cal = json.loads(args.calibration_fit_contract.read_text())
     cal_heads = {c["head"]: c for c in cal.get("calibrators", [])}
 
-    # Eligibility from calibration fit
-    fit_auth = (cal.get("provenance") == "INDEPENDENT_CALIBRATION"
-                and all(cal_heads.get(h, {}).get("method_valid", False) for h in ["grasp","manipulation","release"]))
+    if cal.get("provenance") != "INDEPENDENT_CALIBRATION":
+        return blocker(out_root, "BLOCKED_NOT_INDEPENDENT_CALIBRATION")
+    if not all(cal_heads.get(h,{}).get("method_valid",False) for h in ["grasp","manipulation","release"]):
+        return blocker(out_root, "BLOCKED_CALIBRATOR_NOT_VALID")
+    if not args.threshold_selection_contract:
+        return blocker(out_root, "BLOCKED_NO_THRESHOLD_SELECTION")
 
-    thr_data = {}
-    thr_auth = False
-    if args.threshold_selection_contract:
-        thr = json.loads(Path(args.threshold_selection_contract).read_text())
-        thr_data = thr.get("selected_thresholds", {})
-        thr_auth = (thr.get("status") == "COMPLETE"
-                    and thr.get("provenance") == "INDEPENDENT_POLICY_SELECTION")
+    thr = json.loads(Path(args.threshold_selection_contract).read_text())
+    if thr.get("status") != "COMPLETE":
+        return blocker(out_root, "BLOCKED_THRESHOLD_NOT_COMPLETE")
+    td = thr.get("selected_thresholds", {})
+    for h in ["grasp","manipulation","release"]:
+        if td.get(h) is None or not (0<=td[h]<=1):
+            return blocker(out_root, f"BLOCKED_INVALID_THRESHOLD_{h}")
 
-    l3_eligible = fit_auth and thr_auth
-    status = "AUTHORITATIVE" if l3_eligible else "DIAGNOSTIC"
+    thr_auth = thr.get("provenance") == "INDEPENDENT_POLICY_SELECTION"
+    fit_sha = sha256_file(args.calibration_fit_contract)
+    pol_sha = sha256_file(Path(args.threshold_selection_contract))
 
-    # Build canonical V3 contract
     heads = {}
-    for head in ["grasp", "manipulation", "release"]:
-        hc = cal_heads.get(head, {})
-        if not hc:
-            # Missing head → BLOCKER only
-            staging = out_root.with_name(f".{out_root.name}.{uuid.uuid4().hex}.staging")
-            staging.mkdir(parents=True)
-            (staging / "BLOCKER_RECEIPT.json").write_text(json.dumps({
-                "status": "BLOCKED_MISSING_HEAD", "head": head, "split": args.split,
-            }, indent=2) + "\n")
-            f = staging / "BLOCKER_RECEIPT.json"
-            (staging / "SHA256SUMS").write_text(f"{sha256_file(f)}  BLOCKER_RECEIPT.json\n")
-            (staging / "SHA256SUMS.sha256").write_text(f"{sha256_file(staging / 'SHA256SUMS')}  SHA256SUMS\n")
-            os.replace(staging, out_root)
-            raise SystemExit(f"BLOCKED_MISSING_HEAD: {head}")
-
+    for head in ["grasp","manipulation","release"]:
+        hc = cal_heads[head]
         heads[head] = {
-            "method": hc["method"],
-            "a": hc["a"], "b": hc["b"],
-            "threshold": thr_data.get(head),
+            "method": hc["method"], "a": hc["a"], "b": hc["b"],
+            "threshold": td[head],
             "transform": "probability=sigmoid(a*raw_logit+b)",
-            "method_valid": hc.get("method_valid", False),
-            "transform_valid": hc.get("method_valid", False),
-            "fit_data_valid": hc.get("method_valid", False),
-            "provenance_class": cal.get("provenance", "UNKNOWN"),
-            "fit_manifest_sha256": sha256_file(args.calibration_fit_contract),
-            "policy_selection_manifest_sha256": (
-                sha256_file(Path(args.threshold_selection_contract)) if args.threshold_selection_contract else None),
+            "method_valid": True, "transform_valid": True, "fit_data_valid": True,
+            "provenance_class": "INDEPENDENT_CALIBRATION",
+            "fit_manifest_sha256": fit_sha,
+            "policy_selection_manifest_sha256": pol_sha,
         }
-
-    staging = out_root.with_name(f".{out_root.name}.{uuid.uuid4().hex}.staging")
-    staging.mkdir(parents=True)
 
     contract = {
         "schema": "FACTORIZED_V2_CALIBRATION_AND_THRESHOLD_CONTRACT_V3",
+        "status": "AUTHORITATIVE" if thr_auth else "DIAGNOSTIC",
         "split": args.split,
-        "status": status,
-        "calibration_fit_authoritative": fit_auth,
+        "checkpoint_sha256": cal["checkpoint_sha256"],
+        "scheduler_source_sha256": args.scheduler_source_sha256,
+        "structural_config_sha256": args.structural_config_sha256,
+        "student_source_commit": args.student_source_commit,
+        "feature_order_sha256": args.feature_order_sha256,
+        "calibration_fit_authoritative": True,
         "threshold_selection_authoritative": thr_auth,
-        "l3_evaluation_eligible": l3_eligible,
-        "training_authorized": False,
-        "full_fit_authorized": False,
-        "attack_authorized": False,
+        "l3_evaluation_eligible": thr_auth,
+        "training_authorized": False, "full_fit_authorized": False, "attack_authorized": False,
         "grasp": heads["grasp"], "manipulation": heads["manipulation"], "release": heads["release"],
-        "checkpoint_sha256": cal.get("checkpoint_sha256", ""),
-        "student_source_commit": cal.get("student_source_commit", "401f79a05753d970ecc803bb96abc64ce132df42"),
-        "calibration_fit_manifest_sha256": sha256_file(args.calibration_fit_contract),
-        "threshold_selection_manifest_sha256": (
-            sha256_file(Path(args.threshold_selection_contract)) if args.threshold_selection_contract else None),
-        "formal_selection_eligible": False,
-        "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
+    validate_against_schema(contract)
 
-    (staging / "calibration_and_threshold_contract.json").write_text(json.dumps(contract, indent=2) + "\n")
-    f = staging / "calibration_and_threshold_contract.json"
-    (staging / "SHA256SUMS").write_text(f"{sha256_file(f)}  calibration_and_threshold_contract.json\n")
-    (staging / "SHA256SUMS.sha256").write_text(f"{sha256_file(staging / 'SHA256SUMS')}  SHA256SUMS\n")
-    os.replace(staging, out_root)
-    print(f"Contract V3: {out_root}  status={status}")
+    s = out_root.with_name(f".{out_root.name}.{uuid.uuid4().hex}.staging"); s.mkdir(parents=True)
+    (s/"calibration_and_threshold_contract.json").write_text(json.dumps(contract,indent=2)+"\n")
+    f=s/"calibration_and_threshold_contract.json"
+    (s/"SHA256SUMS").write_text(f"{sha256_file(f)}  calibration_and_threshold_contract.json\n")
+    (s/"SHA256SUMS.sha256").write_text(f"{sha256_file(s/'SHA256SUMS')}  SHA256SUMS\n")
+    os.replace(s, out_root)
+    print(f"Contract V3: {out_root}  status={contract['status']}")
 
 
 if __name__ == "__main__":

@@ -75,8 +75,11 @@
         "denominator": "positive_episodes",
         "undefined_when": "positive_episodes == 0"
       },
-      "emit_precision": {"numerator": "pos_on", "denominator": "total_emitted", "undefined_when": "total_emitted == 0"},
-      "invalid_emit_fraction": {"numerator": "neg_emits + pos_off", "denominator": "total_emitted"},
+      "all_emit_precision": {"numerator": "pos_on", "denominator": "total_emitted_all", "note": "total_emitted_all = neg + pos_on + pos_off + unknown_emits"},
+      "verified_emit_precision": {"numerator": "pos_on", "denominator": "total_emitted_verified", "note": "total_emitted_verified = neg + pos_on + pos_off"},
+      "total_emitted_all": {"definition": "neg + pos_on + pos_off + unknown_emits"},
+      "total_emitted_verified": {"definition": "neg + pos_on + pos_off"},
+      "invalid_emit_fraction": {"numerator": "neg_emits + pos_off", "denominator": "total_emitted_verified"},
       "abstention_rate": {"numerator": "pos_abstain", "denominator": "positive_episodes"},
       "median_timing_offset": {"definition": "median of (emit_step - containing_VALID_START_region.start). Regions are contiguous blocks of valid starts."},
       "region_length": {"definition": "length of containing region"},
