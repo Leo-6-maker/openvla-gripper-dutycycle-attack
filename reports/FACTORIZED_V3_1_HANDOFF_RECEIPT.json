@@ -4,7 +4,7 @@
   "pr": 99,
   "branch": "codex/factorized-v2-scheduler-inputs-20260722",
   "base_commit": "401f79a05753d970ecc803bb96abc64ce132df42",
-  "code_snapshot_commit": "fae868f2aba48b1c8593ea72d5a97e1aebfe7047",
+  "code_snapshot_commit": "07f15690628e0706d1f82a66cad14a7f341045af",
   "handoff_path": "reports/DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1.json",
   "metadata_commit_consumption_rule": "DeepSeek checks out code_snapshot_commit for implementation and reads the V3.1 handoff plus this receipt from the later metadata commit containing those files; the actual PR head is an external observation, not a self-reference.",
   "production_execution": false,
