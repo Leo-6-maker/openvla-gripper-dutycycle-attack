@@ -267,7 +267,7 @@ def main():
         v2_auprc_vals = agg.get('release_auprc_per_split', [])
         lr_missing = False
         for oi, (o, i) in enumerate(sorted(runs.keys())):
-            split_key = f'o{o}i{i}'
+            split_key = f'o{o}_i{i}'
             lr_entry = lr_splits.get(split_key, {})
             lr_au = lr_entry.get('release_auroc')
             lr_ap = lr_entry.get('release_auprc')
