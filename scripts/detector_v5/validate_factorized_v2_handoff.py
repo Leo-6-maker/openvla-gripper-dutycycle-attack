@@ -118,12 +118,89 @@ def validate_v3(path: Path) -> dict[str, Any]:
     }
 
 
+def validate_v3_1(path: Path) -> dict[str, Any]:
+    """Validate the nested V3.1 static handoff without production execution."""
+    path = path.resolve()
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict) or value.get("schema") != "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1":
+        raise ValueError("HANDOFF_V3_1_SCHEMA")
+    if value.get("interface_revision") != "V3.1":
+        raise ValueError("HANDOFF_V3_1_REVISION")
+    if value.get("status") != "READY_FOR_DEEPSEEK_STATIC_INTEGRATION":
+        raise ValueError("HANDOFF_NOT_STATIC_READY")
+    if "execution_ready" in value or value.get("production_execution") is True:
+        raise ValueError("EXECUTION_READY_FORBIDDEN")
+    if "full_head" in value or "branch_head_verified_externally" in value:
+        raise ValueError("AMBIGUOUS_HEAD_BINDING")
+    for key in ("code_snapshot_commit", "handoff_metadata_parent_commit"):
+        if not SHA40.fullmatch(str(value.get(key, ""))):
+            raise ValueError(f"{key.upper()}_MUST_BE_FULL_SHA")
+    if value.get("expected_split_keys") != list(EXPECTED_SPLITS):
+        raise ValueError("EXACT_SPLIT_KEYS_REQUIRED")
+    if not isinstance(value.get("metadata_commit_consumption_rule"), str) or "code_snapshot_commit" not in value["metadata_commit_consumption_rule"]:
+        raise ValueError("METADATA_CONSUMPTION_RULE_MISSING")
+    required_sections = (
+        "scheduler_api", "runtime_adapter", "runtime_bundle", "offline_bundles",
+        "calibration_contract", "structural_config", "handoff_validator",
+        "production_receipt_requirements", "remaining_blockers",
+    )
+    if any(section not in value for section in required_sections):
+        raise ValueError("HANDOFF_V3_1_SECTION_MISSING")
+    forbidden = value.get("forbidden_runtime_fields")
+    if not isinstance(forbidden, list) or not {"event_id", "known_mask", "teacher_phase", "utility_probability", "regrasp_probability"}.issubset(forbidden):
+        raise ValueError("FORBIDDEN_RUNTIME_FIELDS_INCOMPLETE")
+    refs = list(_references(value))
+    if len(refs) < 10:
+        raise ValueError("HANDOFF_REFERENCES_INCOMPLETE")
+    root = path.parents[1]
+    for ref in refs:
+        digest = str(ref.get("sha256", ""))
+        if not SHA64.fullmatch(digest):
+            raise ValueError("REFERENCE_SHA_INVALID")
+        target = _repo_relative(root, ref["path"])
+        actual = hashlib.sha256(target.read_bytes()).hexdigest()
+        if actual != digest.lower():
+            raise ValueError(f"REFERENCE_SHA_MISMATCH:{ref['path']}")
+    if value["runtime_bundle"].get("split_directory_name") != "{split}":
+        raise ValueError("RUNTIME_SPLIT_DIRECTORY_CONTRACT")
+    if value["runtime_bundle"].get("data_filename") != "runtime_scheduler_inputs.jsonl" or value["runtime_bundle"].get("manifest_filename") != "manifest.json":
+        raise ValueError("RUNTIME_FILENAME_CONTRACT")
+    if value["offline_bundles"].get("calibration", {}).get("data_filename") != "calibration_records.jsonl":
+        raise ValueError("OFFLINE_CALIBRATION_FILENAME_CONTRACT")
+    if value["offline_bundles"].get("evaluation", {}).get("data_filename") != "evaluation_records.jsonl":
+        raise ValueError("OFFLINE_EVALUATION_FILENAME_CONTRACT")
+    calibration_schema = value["calibration_contract"].get("schema", {})
+    if calibration_schema.get("path", "") != "schemas/factorized_v2_calibration_and_threshold_contract_v3.schema.json":
+        raise ValueError("CALIBRATION_V3_SCHEMA_REFERENCE")
+    handoff_sha = str(value.get("handoff_blob_sha256", ""))
+    if not SHA64.fullmatch(handoff_sha) or handoff_sha != canonical_handoff_sha(value):
+        raise ValueError("HANDOFF_BLOB_SHA_MISMATCH")
+    return {
+        "status": "STATIC_INTEGRATION_PASS",
+        "schema": value["schema"],
+        "interface_revision": value["interface_revision"],
+        "code_snapshot_commit": value["code_snapshot_commit"],
+        "handoff_metadata_parent_commit": value["handoff_metadata_parent_commit"],
+        "expected_split_keys": list(EXPECTED_SPLITS),
+        "reference_count": len(refs),
+        "handoff_blob_sha256": handoff_sha,
+        "production_execution": False,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("handoff", type=Path)
     try:
         handoff = parser.parse_args().handoff
-        print(json.dumps(validate_v3(handoff) if json.loads(handoff.read_text(encoding="utf-8")).get("schema") == "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3" else validate(handoff), sort_keys=True))
+        schema = json.loads(handoff.read_text(encoding="utf-8")).get("schema")
+        if schema == "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1":
+            result = validate_v3_1(handoff)
+        elif schema == "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3":
+            result = validate_v3(handoff)
+        else:
+            result = validate(handoff)
+        print(json.dumps(result, sort_keys=True))
     except Exception as exc:
         print(f"HOLD:{type(exc).__name__}:{exc}")
         return 2

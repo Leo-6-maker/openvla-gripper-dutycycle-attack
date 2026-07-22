@@ -34,7 +34,7 @@ RUNTIME_FIELDS = frozenset({
     "source_commit", "prediction_artifact_seal", "runtime_artifact_seal",
     "causal_field_declaration",
 })
-OPTIONAL_RUNTIME_FIELDS = frozenset({"split"})
+OPTIONAL_RUNTIME_FIELDS = frozenset({"split", "scheduler_source_sha256", "structural_config_sha256"})
 
 
 class FactorizedRuntimeError(ValueError):
@@ -179,6 +179,8 @@ def build_runtime_record(
     runtime_artifact_seal: str,
     feature_order_sha256: str,
     runtime_manifest: Mapping[str, Any] | None = None,
+    scheduler_source_sha256: str | None = None,
+    structural_config_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Build one strict runtime row without consuming offline labels."""
     if {"utility_probability", "regrasp_probability"} & set(prediction):
@@ -192,6 +194,11 @@ def build_runtime_record(
     runtime_artifact_seal = _sha(runtime_artifact_seal, "RUNTIME_SEAL_INVALID")
     feature_order_sha256 = _sha(feature_order_sha256, "FEATURE_ORDER_SHA_INVALID")
     source_commit = _commit(source_commit)
+    if (scheduler_source_sha256 is None) != (structural_config_sha256 is None):
+        raise FactorizedRuntimeError("RUNTIME_CONTRACT_CONTEXT_INCOMPLETE")
+    if scheduler_source_sha256 is not None:
+        scheduler_source_sha256 = _sha(scheduler_source_sha256, "SCHEDULER_SOURCE_SHA_INVALID")
+        structural_config_sha256 = _sha(structural_config_sha256, "STRUCTURAL_CONFIG_SHA_INVALID")
     action = _raw_action_state(runtime, runtime_manifest)
     route = prediction.get("route", prediction.get("mechanism_route"))
     if not isinstance(route, str) or not route:
@@ -243,6 +250,9 @@ def build_runtime_record(
             "attack_fields_consumed": False,
         },
     }
+    if scheduler_source_sha256 is not None and structural_config_sha256 is not None:
+        record["scheduler_source_sha256"] = scheduler_source_sha256
+        record["structural_config_sha256"] = structural_config_sha256
     validate_runtime_record(record)
     return record
 
@@ -284,6 +294,11 @@ def validate_runtime_record(record: Mapping[str, Any]) -> None:
     _commit(record["source_commit"])
     if "split" in record and (not isinstance(record["split"], str) or len(record["split"]) != 5 or record["split"][0] != "o" or record["split"][2:4] != "_i"):
         raise FactorizedRuntimeError("RUNTIME_SPLIT_INVALID")
+    if ("scheduler_source_sha256" in record) != ("structural_config_sha256" in record):
+        raise FactorizedRuntimeError("RUNTIME_CONTRACT_CONTEXT_INCOMPLETE")
+    if "scheduler_source_sha256" in record:
+        _sha(record["scheduler_source_sha256"], "SCHEDULER_SOURCE_SHA_INVALID")
+        _sha(record["structural_config_sha256"], "STRUCTURAL_CONFIG_SHA_INVALID")
     declaration = record["causal_field_declaration"]
     if not isinstance(declaration, Mapping) or any(declaration.get(key) is not False for key in ("future_steps_consumed", "teacher_fields_consumed", "attack_fields_consumed")):
         raise FactorizedRuntimeError("CAUSAL_DECLARATION_INVALID")

@@ -89,7 +89,10 @@ def _spec(value: str) -> dict[str, Any]:
         raise FactorizedRuntimeError("SPLIT_SPEC_OBJECT_REQUIRED")
     item = dict(item)
     item["name"] = name
-    required = {"name", "prediction_root", "student_root", "runtime_root", "checkpoint", "source_commit", "feature_order_sha256"}
+    required = {
+        "name", "prediction_root", "student_root", "runtime_root", "checkpoint", "source_commit",
+        "feature_order_sha256", "scheduler_source_sha256", "structural_config_sha256",
+    }
     if set(item) != required:
         raise FactorizedRuntimeError("SPLIT_SPEC_FIELD_SET")
     return item
@@ -150,6 +153,8 @@ def _prepare_split(item: dict[str, Any]) -> tuple[str, list[dict[str, Any]], dic
                 runtime_artifact_seal=runtime_seal,
                 feature_order_sha256=item["feature_order_sha256"],
                 runtime_manifest=runtime_manifest,
+                scheduler_source_sha256=item["scheduler_source_sha256"],
+                structural_config_sha256=item["structural_config_sha256"],
             )
             row["split"] = item["name"]
             validate_runtime_record(row)
@@ -159,6 +164,8 @@ def _prepare_split(item: dict[str, Any]) -> tuple[str, list[dict[str, Any]], dic
         "checkpoint_sha256": checkpoint_sha,
         "source_commit": item["source_commit"],
         "feature_order_sha256": item["feature_order_sha256"],
+        "scheduler_source_sha256": item["scheduler_source_sha256"],
+        "structural_config_sha256": item["structural_config_sha256"],
         "prediction_seal": prediction_seal,
         "student_input_seal": student_seal,
         "runtime_action_seal": runtime_seal,

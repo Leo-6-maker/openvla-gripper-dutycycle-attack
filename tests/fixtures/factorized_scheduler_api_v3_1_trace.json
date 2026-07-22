@@ -1,0 +1,46 @@
+{
+  "schema": "FACTORIZED_V2_SCHEDULER_API_V3_1_FIXTURE_V1",
+  "bindings": {
+    "adapter_source_sha256": "ab4f7b47c3b17c1bde52d2cfbbf8cc710bd89828e07bd9ed3bd1c584f5b8e4ca",
+    "scheduler_source_sha256": "e20e2c9e94d4d9d4926ceb997a2fb925e2cfe1afb04a5967dd4bd1e1b2d34c49",
+    "structural_config_sha256": "98c5fd257ad5b34f04286818698d6d678012bd84ac9a360419c3927412c80390",
+    "calibration_contract_sha256": "af907575478450abf68988ba4f06f8a6e8783a22521a12cd36944ddc256a3c91"
+  },
+  "structure": {
+    "schema": "FACTORIZED_V2_SCHEDULER_STRUCTURE_V1",
+    "candidate_dwell": 1,
+    "candidate_dwell_counts_before_grasp": false,
+    "persistence_window": 1,
+    "persistence_required": 1,
+    "warmup_steps": 0,
+    "invalid_step_policy": "reset",
+    "attack_enabled": false,
+    "formal_selection_eligible": false,
+    "training_authorized": false,
+    "attack_authorized": false
+  },
+  "calibration": {
+    "schema": "FACTORIZED_V2_CALIBRATION_AND_THRESHOLD_CONTRACT_V3",
+    "status": "DIAGNOSTIC",
+    "split": "o0_i0",
+    "checkpoint_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "scheduler_source_sha256": "e20e2c9e94d4d9d4926ceb997a2fb925e2cfe1afb04a5967dd4bd1e1b2d34c49",
+    "structural_config_sha256": "98c5fd257ad5b34f04286818698d6d678012bd84ac9a360419c3927412c80390",
+    "student_source_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "feature_order_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "calibration_fit_authoritative": false,
+    "threshold_selection_authoritative": false,
+    "l3_evaluation_eligible": false,
+    "training_authorized": false,
+    "full_fit_authorized": false,
+    "attack_authorized": false,
+    "grasp": {"method": "RAW", "a": 1.0, "b": 0.0, "threshold": 0.5, "transform": "probability=sigmoid(a*raw_logit+b)", "method_valid": true, "transform_valid": true, "fit_data_valid": true, "provenance_class": "TRAIN_RESUBSTITUTION_CALIBRATION", "fit_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "policy_selection_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    "manipulation": {"method": "INTERCEPT_ONLY", "a": 1.0, "b": 0.0, "threshold": 0.5, "transform": "probability=sigmoid(a*raw_logit+b)", "method_valid": true, "transform_valid": true, "fit_data_valid": true, "provenance_class": "TRAIN_RESUBSTITUTION_CALIBRATION", "fit_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "policy_selection_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    "release": {"method": "PLATT", "a": 1.0, "b": 0.0, "threshold": 0.9, "transform": "probability=sigmoid(a*raw_logit+b)", "method_valid": true, "transform_valid": true, "fit_data_valid": true, "provenance_class": "TRAIN_RESUBSTITUTION_CALIBRATION", "fit_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "policy_selection_manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+  },
+  "runtime_rows": [
+    {"step": 0, "candidate_close": true, "action_known": true, "student_valid": true, "route_supported": true, "checkpoint_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "source_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "feature_order_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "split": "o0_i0", "scheduler_source_sha256": "e20e2c9e94d4d9d4926ceb997a2fb925e2cfe1afb04a5967dd4bd1e1b2d34c49", "structural_config_sha256": "98c5fd257ad5b34f04286818698d6d678012bd84ac9a360419c3927412c80390", "grasp_logit": 4.0, "manipulation_logit": 4.0, "release_logit": -4.0},
+    {"step": 1, "candidate_close": true, "action_known": true, "student_valid": true, "route_supported": true, "checkpoint_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "source_commit": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "feature_order_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "split": "o0_i0", "scheduler_source_sha256": "e20e2c9e94d4d9d4926ceb997a2fb925e2cfe1afb04a5967dd4bd1e1b2d34c49", "structural_config_sha256": "98c5fd257ad5b34f04286818698d6d678012bd84ac9a360419c3927412c80390", "grasp_logit": 4.0, "manipulation_logit": 4.0, "release_logit": -4.0}
+  ],
+  "expected": {"emit_steps": [0], "first_emit_step": 0, "diagnostic_only": true, "one_shot": true}
+}

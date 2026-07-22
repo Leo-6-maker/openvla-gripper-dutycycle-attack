@@ -20,6 +20,8 @@
     "episode": {"type": "string", "pattern": "^[^/]+/task_[0-9]{2}/state_[0-9]{2}$"},
     "step": {"type": "integer", "minimum": 0},
     "split": {"type": "string", "pattern": "^o[0-3]_i[0-2]$"},
+    "scheduler_source_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "structural_config_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
     "route": {"type": "string", "minLength": 1},
     "route_supported": {"type": "boolean"},
     "student_valid": {"type": "boolean"},

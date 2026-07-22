@@ -1,0 +1,24 @@
+{
+  "attack": false,
+  "cal_check_read": false,
+  "model_loaded": false,
+  "production_inference": false,
+  "protected_split_read": false,
+  "reason": "12 sealed prediction/student/runtime roots are not mounted in this worktree",
+  "schema": "FACTORIZED_V3_1_RUNTIME_PRODUCTION_AUDIT_RECEIPT_V1",
+  "split_names": [
+    "o0_i0",
+    "o0_i1",
+    "o0_i2",
+    "o1_i0",
+    "o1_i1",
+    "o1_i2",
+    "o2_i0",
+    "o2_i1",
+    "o2_i2",
+    "o3_i0",
+    "o3_i1",
+    "o3_i2"
+  ],
+  "status": "BLOCKED_ROOTS_NOT_MOUNTED"
+}
