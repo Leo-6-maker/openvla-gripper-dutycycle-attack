@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Factorized V2 offline calibration labels",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "episode", "step", "grasp_target", "grasp_known_mask", "manipulation_target", "manipulation_known_mask", "release_target", "release_known_mask", "strict_k10_feasible", "strict_k10_known_mask", "event_id", "event_role"],
+  "properties": {
+    "schema": {"const": "FACTORIZED_V2_OFFLINE_CALIBRATION_LABELS_V1"},
+    "episode": {"type": "string"}, "step": {"type": "integer", "minimum": 0},
+    "grasp_target": {"type": "boolean"}, "grasp_known_mask": {"type": "boolean"},
+    "manipulation_target": {"type": "boolean"}, "manipulation_known_mask": {"type": "boolean"},
+    "release_target": {"type": "boolean"}, "release_known_mask": {"type": "boolean"},
+    "strict_k10_feasible": {"type": "boolean"}, "strict_k10_known_mask": {"type": "boolean"},
+    "event_id": {"type": "integer"}, "event_role": {"type": "string"}
+  }
+}

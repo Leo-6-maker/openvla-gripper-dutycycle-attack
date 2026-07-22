@@ -1,0 +1,9 @@
+{
+  "attack_authorized": false,
+  "formal_selection_eligible": false,
+  "model_loaded": false,
+  "production_inference": false,
+  "schema": "FACTORIZED_V3_1_RUNTIME_PRODUCTION_AUDIT_RECEIPT_V1",
+  "status": "BLOCKED_ROOTS_NOT_MOUNTED",
+  "training_authorized": false
+}

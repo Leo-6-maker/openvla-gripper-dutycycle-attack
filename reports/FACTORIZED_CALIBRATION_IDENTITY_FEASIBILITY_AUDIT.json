@@ -1,0 +1,10 @@
+{
+  "cal_check_read": false,
+  "production_inference": false,
+  "reason": "12 checkpoint and identity manifest roots are not mounted",
+  "rows": [],
+  "schema": "FACTORIZED_CALIBRATION_IDENTITY_FEASIBILITY_AUDIT_V1",
+  "status": "BLOCKED_ROOTS_NOT_MOUNTED",
+  "training": false,
+  "verdict": "BLOCKED_ROOTS_NOT_MOUNTED"
+}

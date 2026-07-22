@@ -45,8 +45,16 @@ jobs:
             scripts/detector_v5/audit_v5_prediction_bundle.py \
             scripts/detector_v5/audit_v5_physics_task_decoder.py \
             scripts/detector_v5/audit_clean2000_raw_assets.py \
-            scripts/detector_v5/audit_official_v3_fit_sources.py
+            scripts/detector_v5/audit_official_v3_fit_sources.py \
+            src/gripper_attack/factorized_scheduler_adapter.py \
+            src/gripper_attack/factorized_calibration.py \
+            scripts/detector_v5/rematerialize_factorized_v2_runtime_inputs.py \
+            scripts/detector_v5/run_factorized_v2_inner_train_calibration.py \
+            scripts/detector_v5/validate_factorized_v2_handoff.py \
+            scripts/detector_v5/audit_factorized_calibration_design_feasibility.py \
+            scripts/detector_v5/audit_factorized_v3_1_production_readiness.py \
+            scripts/detector_v5/materialize_factorized_v2_offline_evaluation_bundle.py
       - name: Run V5 CPU contract tests
-        run: pytest -q tests/test_v5_contracts.py tests/test_v5_dataset.py tests/test_v5_window_geometry.py tests/test_v5_loss_v2.py tests/test_v5_online_evaluator.py tests/test_v5_baselines.py tests/test_v5_physics_decoder.py tests/test_v5_physics_teacher.py tests/test_clean2000_raw_asset_audit.py tests/test_official_v3_fit_sources.py
+        run: pytest -q tests/test_v5_contracts.py tests/test_v5_dataset.py tests/test_v5_window_geometry.py tests/test_v5_loss_v2.py tests/test_v5_online_evaluator.py tests/test_v5_baselines.py tests/test_v5_physics_decoder.py tests/test_v5_physics_teacher.py tests/test_clean2000_raw_asset_audit.py tests/test_official_v3_fit_sources.py tests/test_factorized_v3_contract.py tests/test_factorized_scheduler.py tests/test_factorized_runtime.py tests/test_factorized_scheduler_bridge.py tests/test_factorized_handoff.py tests/test_factorized_v3_1_contract.py
       - name: Check patch whitespace
         run: git diff --check
