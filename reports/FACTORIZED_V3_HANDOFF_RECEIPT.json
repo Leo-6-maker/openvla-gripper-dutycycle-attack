@@ -5,9 +5,9 @@
   "branch": "codex/factorized-v2-scheduler-inputs-20260722",
   "base_commit": "401f79a05753d970ecc803bb96abc64ce132df42",
   "code_snapshot_commit": "242b4c8aa598defa32fa1d0717851403735c1d42",
-  "handoff_metadata_commit": "57c8be47c3bc830aea6920552ef53b3948d0ae86",
+  "handoff_metadata_commit": "af58a4e5bfe7e75212b2e2b9a3c26e8f6999eda1",
   "handoff_path": "reports/DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3.json",
-  "handoff_blob_sha256": "38afa0768ae73b718884abc1016d1c2a2c017cbc2b439ba7572db6f9895e61e2",
+  "handoff_blob_sha256": "a49685ca840f47d6429826938961d5635150a769a74f86746fa39afd50a5c0a7",
   "external_pr_head_observation_before_v3": "93b51997779480b95a7d45fc0e7f945ca32f3fde",
   "consumption_rule": {
     "code": "checkout code_snapshot_commit",
