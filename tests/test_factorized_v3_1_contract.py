@@ -12,6 +12,7 @@ from gripper_attack.factorized_scheduler_adapter import (
     validate_calibration_v3,
 )
 from scripts.detector_v5.audit_factorized_calibration_design_feasibility import audit
+from scripts.detector_v5.validate_factorized_v2_handoff import validate_v3_1
 
 
 FIXTURE = Path("tests/fixtures/factorized_scheduler_api_v3_1_trace.json")
@@ -74,3 +75,9 @@ def test_identity_audit_is_fail_closed_without_roots():
     result = audit(None)
     assert result["verdict"] == "BLOCKED_ROOTS_NOT_MOUNTED"
     assert result["production_inference"] is False
+
+
+def test_v3_1_canonical_handoff_is_static_pass():
+    result = validate_v3_1(Path("reports/DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1.json"))
+    assert result["status"] == "STATIC_INTEGRATION_PASS"
+    assert result["expected_split_keys"] == [f"o{outer}_i{inner}" for outer in range(4) for inner in range(3)]
