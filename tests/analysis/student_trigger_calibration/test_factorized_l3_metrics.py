@@ -43,6 +43,7 @@ from select_factorized_scheduler_thresholds import (  # noqa: E402
     select_thresholds,
 )
 from validate_factorized_codex_handoff import (  # noqa: E402
+    canonical_handoff_sha,
     canonical_reference_sha,
     validate_handoff_execution,
     validate_handoff_static,
@@ -537,14 +538,14 @@ def test_v32_is_strict_superset_and_loader_compatible(tmp_path: Path):
             "path": "reports/FACTORIZED_V2_PRODUCTION_INPUT_CHAIN_BLOCKER.json",
             "sha256": canonical_reference_sha(ROOT / "reports/FACTORIZED_V2_PRODUCTION_INPUT_CHAIN_BLOCKER.json"),
         },
-        "verdict": False,
+        "verdict": True,
     }
     value["identity_audit"] = {
         "summary": {
             "path": "reports/FACTORIZED_CALIBRATION_IDENTITY_FEASIBILITY_AUDIT_V2.json",
             "sha256": canonical_reference_sha(ROOT / "reports/FACTORIZED_CALIBRATION_IDENTITY_FEASIBILITY_AUDIT_V2.json"),
         },
-        "verdict": "BLOCKED_ROOTS_NOT_MOUNTED",
+        "verdict": "GROUP_CROSS_FITTED_OOF_FEASIBLE",
     }
     value["production_bundle"] = {
         "root_path": "reports",
@@ -558,8 +559,20 @@ def test_v32_is_strict_superset_and_loader_compatible(tmp_path: Path):
         },
         "split_keys": sorted(EXPECTED_SPLITS),
     }
+    value["handoff_blob_sha256"] = canonical_handoff_sha(value)
     ok, errors = validate_handoff_static(value)
     assert ok, errors
+    blocked = copy.deepcopy(value)
+    blocked["identity_audit"]["verdict"] = "BLOCKED_ROOTS_NOT_MOUNTED"
+    blocked["handoff_blob_sha256"] = canonical_handoff_sha(blocked)
+    ok, errors = validate_handoff_static(blocked)
+    assert not ok
+    assert "FAIL: V3.2 identity_audit verdict" in errors
+    tampered = copy.deepcopy(value)
+    tampered["branch"] = "tampered"
+    ok, errors = validate_handoff_static(tampered)
+    assert not ok
+    assert "FAIL: handoff_blob_sha256" in errors
     path = tmp_path / "v3_2.json"
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     loaded = load_handoff_file(path, ROOT)
