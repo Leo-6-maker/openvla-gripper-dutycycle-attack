@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Read-only Factorized V2 -> scheduler-ready rematerialization.
+"""Legacy V5 utility/regrasp rematerialization.
 
-The current Factorized V2 stream intentionally fails because it has no
-authoritative utility/regrasp heads.  This entrypoint exists to make that
-boundary explicit; it never substitutes another Factorized head.
+Retained only for historical artifacts.  It is incompatible with the
+Factorized V2 runtime schema; use
+``rematerialize_factorized_v2_runtime_inputs.py`` for the new path.
 """
 
 from __future__ import annotations
+
+LEGACY_V5_SCHEDULER_READY = True
+LEGACY_V5_INCOMPATIBLE_WITH_FACTORIZED_V2 = True
 
 import argparse
 import json

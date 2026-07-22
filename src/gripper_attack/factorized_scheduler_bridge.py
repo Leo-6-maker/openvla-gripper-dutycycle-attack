@@ -1,8 +1,8 @@
-"""Fail-closed bridge for Factorized V2 scheduler-ready records.
+"""Legacy V5 bridge for utility/regrasp scheduler-ready records.
 
-This module only joins sealed runtime fields with sealed predictions.  It does
-not invent utility or regrasp scores and has no model, simulator, or attack
-dependency.
+This module is retained for historical V5 artifacts only.  It is explicitly
+incompatible with the Factorized V2 runtime contract.  New Factorized code
+lives in :mod:`gripper_attack.factorized_runtime`.
 """
 
 from __future__ import annotations
@@ -16,6 +16,8 @@ from typing import Any, Iterable, Mapping
 from .action_contract import CanonicalActionState
 
 SCHEDULER_READY_SCHEMA = "FACTORIZED_V2_SCHEDULER_READY_PREDICTION_V1"
+LEGACY_V5_SCHEDULER_READY = SCHEDULER_READY_SCHEMA
+LEGACY_V5_INCOMPATIBLE_WITH_FACTORIZED_V2 = True
 FIELD_STATUSES = frozenset({"DIRECT", "DERIVED", "MISSING", "FORBIDDEN"})
 RUNTIME_ACTION_FIELDS = ("clean_action_raw_7d",)
 RUNTIME_FALLBACK_FIELDS = ("action_raw",)
@@ -362,6 +364,7 @@ def validate_scheduler_ready_record(record: Mapping[str, Any]) -> None:
 
 __all__ = [
     "FIELD_STATUSES", "FORBIDDEN_READY_FIELDS", "REQUIRED_READY_FIELDS",
+    "LEGACY_V5_INCOMPATIBLE_WITH_FACTORIZED_V2", "LEGACY_V5_SCHEDULER_READY",
     "SCHEDULER_READY_SCHEMA", "SchedulerBridgeError", "build_scheduler_ready_record",
     "exact_step_join", "sha256_file", "validate_scheduler_ready_record",
 ]

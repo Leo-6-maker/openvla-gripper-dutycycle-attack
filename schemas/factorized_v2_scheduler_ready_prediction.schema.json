@@ -1,7 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://openvla.example/schemas/factorized_v2_scheduler_ready_prediction.schema.json",
-  "title": "Factorized V2 scheduler-ready Student prediction",
+  "title": "LEGACY V5 scheduler-ready Student prediction (incompatible with Factorized V2)",
+  "description": "Historical utility/regrasp bridge schema. Do not use for Factorized V2 runtime scheduler inputs.",
   "type": "object",
   "additionalProperties": false,
   "required": [
