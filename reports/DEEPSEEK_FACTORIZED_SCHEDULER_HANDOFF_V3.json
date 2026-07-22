@@ -4,8 +4,8 @@
   "branch": "codex/factorized-v2-scheduler-inputs-20260722",
   "base_branch": "codex/v2b-exact-w32-recommended-canary-20260721",
   "base_commit": "401f79a05753d970ecc803bb96abc64ce132df42",
-  "code_snapshot_commit": "815d25f59827a05ede4ea888aca09f6d04d9479c",
-  "handoff_metadata_parent_commit": "815d25f59827a05ede4ea888aca09f6d04d9479c",
+  "code_snapshot_commit": "765eee9a2168f847e41f5d465b645837e3227ab3",
+  "handoff_metadata_parent_commit": "765eee9a2168f847e41f5d465b645837e3227ab3",
   "external_pr_head_observation": {
     "pr": 99,
     "observed_head": "93b51997779480b95a7d45fc0e7f945ca32f3fde",
@@ -46,8 +46,8 @@
     "required_split_binding_fields": ["split", "checkpoint_sha256", "source_commit", "feature_order_sha256", "prediction_seal", "student_input_seal", "runtime_action_seal", "identity_count", "record_count"]
   },
   "offline_bundles": {
-    "calibration": {"schema": {"path": "schemas/factorized_v2_offline_calibration_labels.schema.json", "sha256": "ed3842867fe783dc3a14588eb35de31da9e4b30665d85fda26314520e9c34c16"}, "separate_from_runtime": true, "contains": ["raw logits", "head targets", "head known masks", "identity", "step", "training identity provenance"]},
-    "evaluation": {"schema": {"path": "schemas/factorized_v2_offline_evaluation_labels.schema.json", "sha256": "8f712abc195c24ba37887ea6b68b6eaeb40e2534862b4cdd503dfae79f5825e8"}, "separate_from_runtime": true, "contains": ["strict_k10_feasible", "strict_k10_known_mask", "identity", "step", "Teacher label seal", "eligible-start contract"]}
+    "calibration": {"schema": {"path": "schemas/factorized_v2_offline_calibration_bundle.schema.json", "sha256": "a67cf67d60efa3c12c6c658646c288c990eed10153ec59caa270d8c9342c1189"}, "label_schema": {"path": "schemas/factorized_v2_offline_calibration_labels.schema.json", "sha256": "ed3842867fe783dc3a14588eb35de31da9e4b30665d85fda26314520e9c34c16"}, "separate_from_runtime": true, "contains": ["raw logits", "head targets", "head known masks", "identity", "step", "training identity provenance"]},
+    "evaluation": {"schema": {"path": "schemas/factorized_v2_offline_evaluation_bundle.schema.json", "sha256": "03986e5812bb8336818874265593f39117fa5767c332886be8abbbc028e62232"}, "label_schema": {"path": "schemas/factorized_v2_offline_evaluation_labels.schema.json", "sha256": "8f712abc195c24ba37887ea6b68b6eaeb40e2534862b4cdd503dfae79f5825e8"}, "separate_from_runtime": true, "contains": ["strict_k10_feasible", "strict_k10_known_mask", "identity", "step", "Teacher label seal", "eligible-start contract"]}
   },
   "structural_config": {"path": "configs/FACTORIZED_V2_SCHEDULER_PROTOCOL_V1.json", "sha256": "98c5fd257ad5b34f04286818698d6d678012bd84ac9a360419c3927412c80390"},
   "handoff_validator": {"path": "scripts/detector_v5/validate_factorized_v2_handoff.py", "sha256": "511dfd52c9b28aa437401af8593e56f9deb1fcaeda690d7c5848628536691749", "pass_status": "STATIC_INTEGRATION_PASS", "rules": ["repo-relative regular files only", "reject absolute/.. paths", "reject symlinks", "verify every referenced SHA", "verify canonical handoff hash"]},
@@ -64,6 +64,6 @@
   "forbidden_substitutions": ["grasp_probability -> utility_probability", "manipulation_probability -> regrasp_probability", "Teacher/event_id -> candidate_close", "zero/default fill for missing heads", "temperature-only formal calibration", "arbitrary subprocess command list", "CAL/CHECK reads", "attack or action mutation"],
   "remaining_blockers": ["12 production split roots/checkpoints/features are not mounted in this Windows worktree", "DeepSeek must provide external calibration values and threshold decisions", "production inner-train inference requires a separate execution authorization", "authoritative L3 remains HOLD"],
   "execution_boundary": {"production_audit": false, "independent_calibration": false, "training": false, "full_fit": false, "production_inference": false, "openvla_rollout": false, "passive_shadow": false, "cal_check": false, "attack": false},
-  "handoff_blob_sha256": "637d43b865cb1e2d51bc98021764598e34698aae49a6dd8fff927221bbb67e2a",
+  "handoff_blob_sha256": "cd2dd053c74fc47ae9aeeba0ce93eb1c423cc965880d02d27ca49eb4ab8e650a",
   "handoff_blob_hash_definition": "SHA256(canonical JSON with handoff_blob_sha256 omitted)"
 }
