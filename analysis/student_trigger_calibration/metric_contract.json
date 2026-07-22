@@ -1,0 +1,101 @@
+{
+  "contract_version": "1.0.0",
+  "frozen_date": "2026-07-22",
+  "replay_status": "TEACHER_CORRIDOR_AND_HEAD_PROXY_DIAGNOSTIC_ONLY",
+
+  "blockers": {
+    "RUNTIME_CANDIDATE_CLOSE": "BLOCKED — policy raw_gripper not in prediction bundle",
+    "UTILITY_REGRASP_SEMANTICS": "BLOCKED — utility=grasp, regrasp=manipulation unvalidated",
+    "PROPER_INNER_TRAIN_PLATT": "BLOCKED — inner-train inference not generated",
+    "K10_CONTAINMENT": "NOT_MEASURED — no frozen K10 label in prediction"
+  },
+
+  "L1": {
+    "per_step_background_emit": {
+      "definition": "Fraction of background steps (event_id < 0 AND route_supported) where any known head exceeds threshold",
+      "three_variants": {
+        "A_legacy": "Denominator: all supported bg steps. Matches original Stage-1 evaluator.",
+        "B_head_conditional": "Denominator: bg steps where specific head is known. Per-head analysis.",
+        "C_any_known": "Denominator: bg steps where at least one head is known. Known-head union."
+      },
+      "constraints": [
+        "manipulation_known_mask is ~always False on bg — effectively excluded",
+        "unknown is not negative",
+        "unknown not in denominator"
+      ]
+    }
+  },
+
+  "L2": {
+    "episode_any_head_emit": {
+      "definition": "Fraction of episodes where at least one bg step has any known head emit",
+      "status": "DIAGNOSTIC_ONLY — not a deployment safety metric"
+    }
+  },
+
+  "L3": {
+    "actual_scheduler_false_start": {
+      "status": "NOT_MEASURED",
+      "decomposed_metrics": {
+        "negative_episodes": "Episodes with no valid opportunity corridor",
+        "positive_episodes": "Episodes with >=1 valid opportunity corridor",
+        "negative_episode_emits": "Scheduler emitted on negative episode",
+        "positive_on_corridor_emits": "Scheduler emitted within valid corridor",
+        "positive_off_corridor_emits": "Scheduler emitted outside valid corridor",
+        "positive_abstentions": "Scheduler never emitted on positive episode",
+        "total_emitted_episodes": "neg_emits + pos_on + pos_off",
+        "negative_episode_false_start_rate": "neg_emits / negative_episodes",
+        "positive_episode_off_corridor_rate": "pos_off / positive_episodes",
+        "valid_opportunity_recall": "pos_on / positive_episodes",
+        "emit_precision": "pos_on / total_emitted",
+        "abstention_rate": "pos_abstain / positive_episodes",
+        "invalid_emit_fraction": "(neg_emits + pos_off) / total_emitted"
+      },
+      "denominator_rules": [
+        "negative_episode_false_start_rate denominator = negative_episodes ONLY",
+        "positive_off_corridor emits NOT included in negative false-start numerator",
+        "total_emitted includes ALL emits (neg + pos_on + pos_off)"
+      ]
+    }
+  },
+
+  "L4": {
+    "attack_actuation": {
+      "status": "NOT_STARTED — requires active attack experiment"
+    }
+  },
+
+  "mandatory_constraints": {
+    "unknown_is_not_negative": true,
+    "unknown_never_emits": true,
+    "unknown_breaks_streak": true,
+    "episode_boundary_breaks_streak": true,
+    "valid_mask_gap_breaks_streak": true,
+    "unsupported_route_never_emits": true,
+    "causal_only": true,
+    "no_identity_specific_threshold": true,
+    "no_leakage": "Calibration fit identities ∩ heldout identities = ∅",
+    "no_CAL_CHECK": "Must not access CAL or CHECK artifacts",
+    "no_attack_outcome": "Must not use attack results for calibration or threshold selection"
+  },
+
+  "scheduler_contract": {
+    "source": "src/gripper_attack/v5_scheduler.py",
+    "config": {
+      "utility_threshold": 0.5,
+      "release_veto_threshold": 0.5,
+      "regrasp_veto_threshold": 0.5,
+      "release_veto_enabled": true,
+      "regrasp_veto_enabled": true,
+      "minimum_candidate_dwell": 10,
+      "persistence_rule": "3-of-5 local-peak one-shot"
+    },
+    "input_mapping": {
+      "utility_probability": {"field": "grasp_prob", "status": "UNVALIDATED_SEMANTIC_PROXY"},
+      "release_probability": {"field": "release_prob", "status": "DIRECT"},
+      "regrasp_probability": {"field": "manipulation_prob", "status": "UNVALIDATED_SEMANTIC_PROXY"},
+      "candidate_close": {"status": "BLOCKED_MISSING_RUNTIME_FIELDS"},
+      "valid": {"field": "route_supported"}
+    }
+  }
+}
