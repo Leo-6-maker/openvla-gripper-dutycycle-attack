@@ -15,6 +15,10 @@ from scripts.detector_v5.audit_factorized_v2_production_inputs import (
 from scripts.detector_v5.audit_factorized_calibration_design_feasibility_v2 import audit_v2
 from scripts.detector_v5.materialize_factorized_v2_production_bundles import ProductionBundleError, materialize
 from scripts.detector_v5.materialize_factorized_v2_production_bundles import _recursive_seal, sha256_file
+from scripts.detector_v5.materialize_factorized_v2_offline_evaluation_bundle import (
+    EvaluationBundleError,
+    materialize as materialize_evaluation,
+)
 from gripper_attack.b3_training_protocol import seal_directory
 
 
@@ -276,7 +280,74 @@ def test_synthetic_production_chain_materializes_all_four_bundle_streams(tmp_pat
     assert calibration_manifest["checkpoint_training_identity_manifest_sha256"]
     assert calibration_manifest["heldout_identity_manifest_sha256"]
     assert calibration_manifest["feature_input_seal_sha256"]
+    assert calibration_manifest["source_commit"] == commit
+    assert calibration_manifest["feature_order_sha256"] == feature
+    assert calibration_manifest["prediction_artifact_seal_sha256"]
     calibration_row = json.loads((output / "calibration" / "o0_i0" / "calibration_records.jsonl").read_text())
     assert calibration_row["grasp_target"] is True
     assert calibration_row["manipulation_target"] is True
     assert calibration_row["release_target"] is False
+
+
+
+def test_standalone_evaluation_reads_recursive_teacher_and_requires_exact_identities(tmp_path: Path):
+    teacher = tmp_path / "teacher"
+    feature = tmp_path / "feature"
+    identity = "libero_object/task_00/state_00"
+    teacher_episode = teacher.joinpath(*identity.split("/"))
+    teacher_episode.mkdir(parents=True)
+    _write(
+        teacher_episode / "factorized_teacher_v1.jsonl",
+        "".join(
+            json.dumps({
+                "canonical_parent_key": identity,
+                "step": step,
+                "strict_k10_feasible": step == 0,
+                "strict_k10_known_mask": True,
+            }) + "\n"
+            for step in range(2)
+        ),
+    )
+    feature.mkdir()
+    _write(feature / "feature.json", {"feature_order_sha256": "c" * 64})
+    seal_directory(teacher)
+    seal_directory(feature)
+
+    manifest = tmp_path / "heldout.json"
+    _write(manifest, {"heldout_identities": [identity], "identities": [identity]})
+    output = tmp_path / "evaluation-output"
+    result = materialize_evaluation(
+        teacher,
+        manifest,
+        feature,
+        output,
+        split="o0_i0",
+        checkpoint_sha256="a" * 64,
+    )
+    assert result["record_count"] == 2
+    assert json.loads((output / "manifest.json").read_text())["identity_count"] == 1
+
+    missing_manifest = tmp_path / "missing-heldout.json"
+    _write(
+        missing_manifest,
+        {"identities": [identity, "libero_object/task_00/state_01"]},
+    )
+    with pytest.raises(EvaluationBundleError, match="EVALUATION_IDENTITY_CLOSURE_FAIL"):
+        materialize_evaluation(
+            teacher,
+            missing_manifest,
+            feature,
+            tmp_path / "missing-evaluation-output",
+            split="o0_i0",
+            checkpoint_sha256="a" * 64,
+        )
+
+
+def test_standalone_evaluation_rejects_duplicate_identity_manifest(tmp_path: Path):
+    manifest = tmp_path / "duplicates.json"
+    identity = "libero_object/task_00/state_00"
+    _write(manifest, {"identities": [identity, identity]})
+    with pytest.raises(EvaluationBundleError, match="IDENTITY_MANIFEST_EMPTY_INVALID_OR_DUPLICATE"):
+        from scripts.detector_v5.materialize_factorized_v2_offline_evaluation_bundle import _identities
+
+        _identities(manifest)
