@@ -212,6 +212,8 @@ def main():
                    'release_overlap_emit_rate', 'unsupported_route_emit_rate',
                    'release_first_recall_05', 'release_later_recall_05']
 
+    global_metric_integrity_issues = []
+
     for ck in sorted(config_runs):
         runs = config_runs[ck]
         mlist = [r['metrics'] for r in runs.values() if r['metrics'] is not None]
@@ -220,12 +222,14 @@ def main():
             continue
 
         agg = {}
-        metric_integrity_hold = False
+        local_metric_fail = False
         for mk in metric_keys:
             vals = [m[mk] for m in mlist if m.get(mk) is not None and math.isfinite(m[mk])]
             if len(vals) != 12:
-                metric_integrity_hold = True
+                msg = f'{ck}: {mk} has {len(vals)}/12 finite values'
+                global_metric_integrity_issues.append(msg)
                 safety_elim[ck] = {'reason': f'METRIC_INTEGRITY: {mk} has {len(vals)}/12 finite values'}
+                local_metric_fail = True
                 break
             agg[f'{mk}_mean'] = mean(vals)
             agg[f'{mk}_stdev'] = stdev(vals) if len(vals) > 1 else 0
@@ -233,7 +237,7 @@ def main():
             if mk in SAFETY:
                 agg[f'{mk}_worst'] = max(vals)
 
-        if metric_integrity_hold:
+        if local_metric_fail:
             continue
 
         if ck in safety_elim:
@@ -290,11 +294,28 @@ def main():
                        'per_split_deltas': per_split_deltas,
                        'beats_lr': v2_mean_auroc > lr_mean_auroc and v2_mean_auprc > lr_mean_auprc}
 
-    n_safe = len(config_metrics) - len(safety_elim)
+    # Verify LR baseline seal
+    lr_seal_ok = False
+    try:
+        verify_sealed_directory(args.lr_root)
+        lr_seal_ok = True
+    except Exception as e:
+        global_metric_integrity_issues.append(f'LR_SEAL: {e}')
+
+    lr_incomplete = not lr_seal_ok or len(lr_splits) < 12
+
+    n_safe = sum(1 for agg in config_metrics.values() if agg.get('safety_pass') is True)
     n_lr = sum(1 for v in lr_comp.values() if v.get('beats_lr'))
     print(f'\nSafety pass: {n_safe}/{len(config_runs)}')
     print(f'Beats LR: {n_lr}/{n_safe}')
     print(f'Eliminated: {len(safety_elim)}')
+    print(f'Metric integrity issues: {len(global_metric_integrity_issues)}')
+
+    # Global HOLD on metric integrity
+    if global_metric_integrity_issues:
+        print(f'GLOBAL HOLD: {len(global_metric_integrity_issues)} metric integrity issues')
+        for issue in global_metric_integrity_issues[:10]:
+            print(f'  {issue}')
 
     # ── Lexicographic selection ──
     # Build candidate metrics input for selection tool
@@ -368,9 +389,22 @@ def main():
     staging = out.with_name(f'.{out.name}.{uuid.uuid4().hex}.staging')
     staging.mkdir(parents=True)
 
+    integrity_status = 'PASS'
+    if not is_full:
+        integrity_status = 'HOLD_INCOMPLETE'
+    if global_metric_integrity_issues:
+        integrity_status = 'HOLD_METRIC_INTEGRITY'
+    if lr_incomplete:
+        integrity_status = 'HOLD_LR_BASELINE_INTEGRITY'
+
     _atomic_text(staging / 'stage1_integrity_report.json', json.dumps({
-        'status': 'PASS' if is_full else 'HOLD', 'complete': n_complete,
-        'total': n_total, 'missing': n_missing, 'invalid': n_invalid,
+        'status': integrity_status,
+        'is_full': is_full, 'complete': n_complete, 'total': n_total,
+        'missing': n_missing, 'invalid': n_invalid,
+        'metric_integrity_issues': len(global_metric_integrity_issues),
+        'metric_integrity_issues_list': global_metric_integrity_issues[:50],
+        'lr_baseline_seal_ok': lr_seal_ok,
+        'lr_baseline_incomplete': lr_incomplete,
         'source_commit': args.source_commit, 'commits_found': list(all_commits),
     }, indent=2))
 
@@ -385,8 +419,19 @@ def main():
         cs = [ck for ck in cc if ck not in safety_elim]
         cl = [ck for ck in cs if lr_comp.get(ck, {}).get('beats_lr')]
         summary['by_candidate'][c] = {'total': len(cc), 'safety_pass': len(cs), 'beats_lr': len(cl)}
+    # Global HOLD overrides selection
+    if global_metric_integrity_issues or lr_incomplete:
+        effective_status = 'HOLD_GLOBAL_INTEGRITY' if global_metric_integrity_issues else 'HOLD_LR_BASELINE_INTEGRITY'
+        has_selection = False
+    elif not has_selection:
+        effective_status = 'HOLD_NO_ELIGIBLE_CONFIG'
+    else:
+        effective_status = 'SELECTED'
+
     shortlist = {
-        'status': 'HOLD_NO_ELIGIBLE_CONFIG' if not has_selection else 'SELECTED',
+        'status': effective_status,
+        'global_metric_integrity_hold': len(global_metric_integrity_issues) > 0,
+        'lr_baseline_incomplete': lr_incomplete,
         'selected': selected_configs,
         'n_selected': len(selected_configs),
         'selection_trace': selection_trace,
