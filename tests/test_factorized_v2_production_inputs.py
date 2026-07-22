@@ -310,8 +310,8 @@ def test_standalone_evaluation_reads_recursive_teacher_and_requires_exact_identi
     )
     feature.mkdir()
     _write(feature / "feature.json", {"feature_order_sha256": "c" * 64})
-    seal_directory(teacher)
-    seal_directory(feature)
+    _recursive_seal(teacher)
+    _recursive_seal(feature)
 
     manifest = tmp_path / "heldout.json"
     _write(manifest, {"heldout_identities": [identity], "identities": [identity]})
