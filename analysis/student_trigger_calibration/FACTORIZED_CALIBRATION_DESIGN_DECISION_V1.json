@@ -1,47 +1,62 @@
 {
   "document": "FACTORIZED_CALIBRATION_DESIGN_DECISION_V1",
   "frozen_date": "2026-07-22",
-  "status": "AWAITING_CODEX_IDENTITY_AUDIT",
-
+  "status": "CODE_PATH_READY_AWAITING_SEALED_IDENTITY_ARTIFACTS",
   "current_state": {
-    "available_data": "none",
-    "identity_audit": "not received",
+    "available_static_interface": "Codex V3.1 runtime, calibration, evaluation and adapter contracts",
+    "available_production_data": "none in the current worktree; production roots are not mounted",
+    "identity_audit": "static audit exists but production feasibility remains BLOCKED_ROOTS_NOT_MOUNTED",
     "chosen_scheme": null,
-    "reason": "Must consume FACTORIZED_CALIBRATION_IDENTITY_FEASIBILITY_AUDIT.json before design decision"
+    "reason": "An authoritative scheme can be selected only from sealed production identity and checkpoint-training manifests"
   },
-
+  "implemented_code_path": {
+    "calibration_fit": "sealed canonical calibration_records.jsonl with exact fit-identity closure",
+    "policy_selection": "real FactorizedV2SchedulerAdapter joint threshold replay over exact 12 splits",
+    "heldout_evaluation": "real adapter replay against separate offline strict-K10 evaluation bundles",
+    "contract_binding": "checkpoint, source commit, feature order, scheduler source, structural config, fit manifest and policy manifest",
+    "failure_mode": "sealed nonzero blocker receipt; no default thresholds or empty calibration contracts"
+  },
   "scheme_decision_tree": {
     "GROUP_CROSS_FITTED_OOF": {
       "conditions": [
-        "For every evaluation split: calibrator-fit data exists",
-        "Independent policy-selection data exists",
-        "fit ∩ policy ∩ evaluation = ∅ pairwise",
-        "Checkpoint producing fit/policy predictions did NOT train on those identities",
-        "Score distribution transfer rules pre-registered",
-        "All 12 splits covered"
+        "calibrator-fit predictions are genuinely out-of-fold for the generating checkpoint",
+        "independent policy-selection predictions exist",
+        "fit, policy and heldout evaluation identities are pairwise disjoint",
+        "the checkpoint producing fit and policy predictions did not train on those identities",
+        "all 12 splits are covered and sealed"
       ],
-      "status": "PENDING_AUDIT"
+      "status": "PENDING_PRODUCTION_AUDIT"
     },
-    "NESTED_GROUP_HOLDOUT": {
+    "NESTED_GROUP_HOLDOUT_WITH_RETRAINING": {
       "conditions": [
-        "Inner-train identities further split into calibrator-fit and policy-selection groups",
-        "Original inner-val remains heldout evaluation"
+        "checkpoint training excludes both calibrator-fit and policy-selection identities",
+        "heldout evaluation remains independently sealed",
+        "all three identity roles are frozen before fitting"
       ],
-      "status": "REQUIRES_REMATERIALIZATION"
+      "status": "REQUIRES_RETRAINING_OR_GENUINE_OOF_PREDICTIONS"
     },
-    "INDEPENDENT_IDENTITIES_REQUIRED": {
-      "conditions": "Pre-registered identities never used in ANY checkpoint training",
+    "INDEPENDENT_IDENTITIES": {
+      "conditions": [
+        "pre-registered fit and policy identities were never used in checkpoint training",
+        "heldout evaluation identities are separate",
+        "all provenance manifests are sealed"
+      ],
       "status": "REQUIRES_PRE_REGISTRATION"
     },
+    "PROJECT_FROZEN_EQUIVALENT": {
+      "conditions": "A project-approved design proving the same independence and checkpoint-exclusion properties",
+      "status": "PENDING_PROJECT_DECISION"
+    },
     "BLOCKED_MANIFEST_INCOMPLETE": {
-      "description": "Identity audit shows insufficient coverage for any scheme",
-      "status": "POSSIBLE_OUTCOME"
+      "description": "Identity or checkpoint-training manifests do not prove the required separation",
+      "status": "FAIL_CLOSED_OUTCOME"
     }
   },
-
   "holding_rules": {
-    "no_heldout_OOF_reuse": "Heldout OOF predictions cannot serve as BOTH calibration data AND evaluation data",
-    "three_set_disjointness": "calibrator-fit ≠ policy-selection ≠ heldout-evaluation, pairwise",
-    "production_data_frozen": "No scheme can proceed without sealed, authorized calibration/policy artifacts"
+    "no_heldout_reuse": "Heldout evaluation predictions cannot be used for calibration or threshold selection",
+    "three_set_disjointness": "calibrator-fit, policy-selection and heldout-evaluation identities are pairwise disjoint",
+    "checkpoint_exclusion": "calibrator-fit and policy-selection identities must be absent from checkpoint training unless genuine cross-fitted OOF provenance is proven",
+    "production_data_frozen": "No authoritative contract can be emitted without sealed artifacts",
+    "attack_authorization": false
   }
 }
