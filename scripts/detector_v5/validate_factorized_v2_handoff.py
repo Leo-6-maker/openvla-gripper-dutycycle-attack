@@ -75,6 +75,14 @@ def _references(value: Any):
             yield from _references(child)
 
 
+def _canonical_reference_sha(path: Path) -> str:
+    """Hash text references with stable LF bytes across Windows and CI."""
+    data = path.read_bytes()
+    if path.suffix.lower() in {".json", ".csv", ".py", ".yml", ".yaml", ".md", ".schema"}:
+        data = data.replace(b"\r\n", b"\n")
+    return hashlib.sha256(data).hexdigest()
+
+
 def validate_v3(path: Path) -> dict[str, Any]:
     path = path.resolve()
     value = json.loads(path.read_text(encoding="utf-8"))
@@ -158,7 +166,7 @@ def validate_v3_1(path: Path) -> dict[str, Any]:
         if not SHA64.fullmatch(digest):
             raise ValueError("REFERENCE_SHA_INVALID")
         target = _repo_relative(root, ref["path"])
-        actual = hashlib.sha256(target.read_bytes()).hexdigest()
+        actual = _canonical_reference_sha(target)
         if actual != digest.lower():
             raise ValueError(f"REFERENCE_SHA_MISMATCH:{ref['path']}")
     if value["runtime_bundle"].get("split_directory_name") != "{split}":
