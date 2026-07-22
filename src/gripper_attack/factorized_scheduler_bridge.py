@@ -23,7 +23,9 @@ REQUIRED_READY_FIELDS = frozenset(
     {
         "schema", "episode", "step", "route", "route_supported", "student_valid",
         "candidate_close", "candidate_close_source", "raw_gripper", "raw_gripper_source",
-        "action_intent", "action_intent_source", "utility_probability", "utility_source",
+        "candidate_close_source_field", "action_intent", "action_intent_source",
+        "action_intent_source_field", "raw_gripper_source_field",
+        "utility_probability", "utility_source",
         "release_probability", "release_source", "regrasp_probability", "regrasp_source",
         "uncertainty_probability", "uncertainty_source", "features_25d", "feature_dtype",
         "feature_order_sha256", "checkpoint_sha256", "source_commit", "input_artifact_seal",
@@ -243,10 +245,13 @@ def build_scheduler_ready_record(
         "student_valid": student_valid,
         "candidate_close": bool(action["candidate_close"]),
         "candidate_close_source": action["candidate_close_source"],
+        "candidate_close_source_field": action["candidate_close_source_field"],
         "raw_gripper": action["raw_gripper"],
         "raw_gripper_source": action["raw_gripper_source"],
+        "raw_gripper_source_field": action["raw_gripper_source_field"],
         "action_intent": action["action_intent"],
         "action_intent_source": action["action_intent_source"],
+        "action_intent_source_field": action["raw_gripper_source_field"],
         "utility_probability": _probability(utility, "UTILITY_INVALID"),
         "utility_source": utility_source,
         "release_probability": _probability(release, "RELEASE_INVALID"),
@@ -295,6 +300,9 @@ def validate_scheduler_ready_record(record: Mapping[str, Any]) -> None:
             raise SchedulerBridgeError(f"{name.upper()}_INVALID")
     for name in ("candidate_close_source", "raw_gripper_source", "action_intent_source", "utility_source", "release_source", "regrasp_source", "uncertainty_source"):
         _status(record[name], f"{name.upper()}_STATUS_INVALID")
+    for name in ("candidate_close_source_field", "raw_gripper_source_field", "action_intent_source_field"):
+        if not isinstance(record[name], str) or not record[name]:
+            raise SchedulerBridgeError(f"{name.upper()}_INVALID")
     if record["utility_source"] in {"MISSING", "FORBIDDEN"} or record["regrasp_source"] in {"MISSING", "FORBIDDEN"}:
         raise SchedulerBridgeError("SEMANTIC_HEAD_MISSING")
     _probability(record["utility_probability"], "UTILITY_INVALID")
