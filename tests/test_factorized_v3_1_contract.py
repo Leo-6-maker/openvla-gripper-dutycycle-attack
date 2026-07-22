@@ -12,10 +12,15 @@ from gripper_attack.factorized_scheduler_adapter import (
     validate_calibration_v3,
 )
 from scripts.detector_v5.audit_factorized_calibration_design_feasibility import audit
-from scripts.detector_v5.validate_factorized_v2_handoff import validate_v3_1
+from scripts.detector_v5.validate_factorized_v2_handoff import (
+    _strict_json,
+    receipt_binding_sha,
+    validate_v3_1,
+)
 
 
 FIXTURE = Path("tests/fixtures/factorized_scheduler_api_v3_1_trace.json")
+DUPLICATED_HANDOFF_FIXTURE = Path("tests/fixtures/factorized_v3_1_duplicate_key.json")
 
 
 def _fixture() -> dict:
@@ -81,3 +86,23 @@ def test_v3_1_canonical_handoff_is_static_pass():
     result = validate_v3_1(Path("reports/DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1.json"))
     assert result["status"] == "STATIC_INTEGRATION_PASS"
     assert result["expected_split_keys"] == [f"o{outer}_i{inner}" for outer in range(4) for inner in range(3)]
+
+
+def test_v3_1_duplicate_key_fixture_is_rejected():
+    with pytest.raises(ValueError, match="DUPLICATE_JSON_KEY:schema"):
+        _strict_json(DUPLICATED_HANDOFF_FIXTURE.read_text(encoding="utf-8"))
+
+
+def test_v3_1_runtime_schema_name_and_file_are_canonical():
+    value = _strict_json(Path("reports/DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1.json").read_text(encoding="utf-8"))
+    runtime_bundle = value["runtime_bundle"]
+    assert runtime_bundle["schema_name"] == "FACTORIZED_V2_RUNTIME_SCHEDULER_INPUT_BUNDLE_V2"
+    assert runtime_bundle["schema_file"]["path"] == "schemas/factorized_v2_runtime_scheduler_input.schema.json"
+    assert len(runtime_bundle["schema_file"]["sha256"]) == 64
+
+
+def test_v3_1_receipt_binds_corrected_handoff():
+    handoff = _strict_json(Path("reports/DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1.json").read_text(encoding="utf-8"))
+    receipt = _strict_json(Path("reports/FACTORIZED_V3_1_HANDOFF_RECEIPT.json").read_text(encoding="utf-8"))
+    assert receipt["handoff_blob_sha256"] == handoff["handoff_blob_sha256"]
+    assert handoff["production_receipt_requirements"]["handoff_receipt"]["sha256"] == receipt_binding_sha(Path("reports/FACTORIZED_V3_1_HANDOFF_RECEIPT.json"))

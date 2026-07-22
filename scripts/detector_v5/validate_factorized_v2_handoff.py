@@ -14,6 +14,25 @@ from typing import Any, Mapping
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 SHA64 = re.compile(r"^[0-9a-f]{64}$")
 EXPECTED_SPLITS = tuple(f"o{outer}_i{inner}" for outer in range(4) for inner in range(3))
+RECEIPT_BINDING_DEFINITION = "SHA256(canonical receipt JSON with handoff_blob_sha256 omitted)"
+
+
+def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    value: dict[str, Any] = {}
+    for key, item in pairs:
+        if key in value:
+            raise ValueError(f"DUPLICATE_JSON_KEY:{key}")
+        value[key] = item
+    return value
+
+
+def _strict_json(text: str) -> Any:
+    """Parse JSON without allowing silent last-key-wins overwrites."""
+    return json.loads(text, object_pairs_hook=_reject_duplicate_keys)
+
+
+def _strict_read_json(path: Path) -> Any:
+    return _strict_json(path.read_text(encoding="utf-8"))
 
 
 def canonical_handoff_sha(value: dict[str, Any]) -> str:
@@ -83,6 +102,20 @@ def _canonical_reference_sha(path: Path) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def receipt_binding_sha(path: Path) -> str:
+    """Hash receipt metadata without the one-way handoff payload binding."""
+    receipt = _strict_read_json(path)
+    if not isinstance(receipt, dict) or receipt.get("schema") != "FACTORIZED_V3_1_HANDOFF_RECEIPT_V1":
+        raise ValueError("HANDOFF_RECEIPT_SCHEMA")
+    handoff_sha = str(receipt.get("handoff_blob_sha256", ""))
+    if not SHA64.fullmatch(handoff_sha):
+        raise ValueError("HANDOFF_RECEIPT_BINDING_MISSING")
+    payload = dict(receipt)
+    payload.pop("handoff_blob_sha256", None)
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def validate_v3(path: Path) -> dict[str, Any]:
     path = path.resolve()
     value = json.loads(path.read_text(encoding="utf-8"))
@@ -129,7 +162,7 @@ def validate_v3(path: Path) -> dict[str, Any]:
 def validate_v3_1(path: Path) -> dict[str, Any]:
     """Validate the nested V3.1 static handoff without production execution."""
     path = path.resolve()
-    value = json.loads(path.read_text(encoding="utf-8"))
+    value = _strict_read_json(path)
     if not isinstance(value, dict) or value.get("schema") != "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1":
         raise ValueError("HANDOFF_V3_1_SCHEMA")
     if value.get("interface_revision") != "V3.1":
@@ -161,16 +194,32 @@ def validate_v3_1(path: Path) -> dict[str, Any]:
     if len(refs) < 10:
         raise ValueError("HANDOFF_REFERENCES_INCOMPLETE")
     root = path.parents[1]
+    receipt_requirement = value["production_receipt_requirements"].get("handoff_receipt")
+    receipt_ref_path = receipt_requirement.get("path") if isinstance(receipt_requirement, Mapping) else None
     for ref in refs:
         digest = str(ref.get("sha256", ""))
         if not SHA64.fullmatch(digest):
             raise ValueError("REFERENCE_SHA_INVALID")
         target = _repo_relative(root, ref["path"])
-        actual = _canonical_reference_sha(target)
+        actual = receipt_binding_sha(target) if ref.get("path") == receipt_ref_path else _canonical_reference_sha(target)
         if actual != digest.lower():
             raise ValueError(f"REFERENCE_SHA_MISMATCH:{ref['path']}")
     if value["runtime_bundle"].get("split_directory_name") != "{split}":
         raise ValueError("RUNTIME_SPLIT_DIRECTORY_CONTRACT")
+    runtime_bundle = value["runtime_bundle"]
+    if runtime_bundle.get("schema_name") != "FACTORIZED_V2_RUNTIME_SCHEDULER_INPUT_BUNDLE_V2":
+        raise ValueError("RUNTIME_SCHEMA_NAME_CONTRACT")
+    runtime_schema_file = runtime_bundle.get("schema_file", {})
+    if runtime_schema_file.get("path") != "schemas/factorized_v2_runtime_scheduler_input.schema.json":
+        raise ValueError("RUNTIME_SCHEMA_FILE_CONTRACT")
+    receipt_requirement = value["production_receipt_requirements"].get("handoff_receipt")
+    if not isinstance(receipt_requirement, dict) or receipt_requirement.get("path") != "reports/FACTORIZED_V3_1_HANDOFF_RECEIPT.json":
+        raise ValueError("HANDOFF_RECEIPT_REFERENCE_CONTRACT")
+    if value["production_receipt_requirements"].get("handoff_receipt_reference_sha_definition") != RECEIPT_BINDING_DEFINITION:
+        raise ValueError("HANDOFF_RECEIPT_REFERENCE_DEFINITION")
+    receipt_target = _repo_relative(root, receipt_requirement["path"])
+    if receipt_binding_sha(receipt_target) != str(receipt_requirement.get("sha256", "")):
+        raise ValueError("HANDOFF_RECEIPT_REFERENCE_SHA_MISMATCH")
     if value["runtime_bundle"].get("data_filename") != "runtime_scheduler_inputs.jsonl" or value["runtime_bundle"].get("manifest_filename") != "manifest.json":
         raise ValueError("RUNTIME_FILENAME_CONTRACT")
     if value["offline_bundles"].get("calibration", {}).get("data_filename") != "calibration_records.jsonl":
@@ -201,7 +250,7 @@ def main() -> int:
     parser.add_argument("handoff", type=Path)
     try:
         handoff = parser.parse_args().handoff
-        schema = json.loads(handoff.read_text(encoding="utf-8")).get("schema")
+        schema = _strict_read_json(handoff).get("schema")
         if schema == "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1":
             result = validate_v3_1(handoff)
         elif schema == "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3":
