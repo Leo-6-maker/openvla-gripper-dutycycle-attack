@@ -1,0 +1,24 @@
+{
+  "schema": "FACTORIZED_V3_HANDOFF_RECEIPT_V1",
+  "status": "STATIC_INTEGRATION_PASS",
+  "pr": 99,
+  "branch": "codex/factorized-v2-scheduler-inputs-20260722",
+  "base_commit": "401f79a05753d970ecc803bb96abc64ce132df42",
+  "code_snapshot_commit": "765eee9a2168f847e41f5d465b645837e3227ab3",
+  "handoff_metadata_commit": "cbec7e81f4909b37e10251411acce8509a348fc2",
+  "handoff_path": "reports/DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3.json",
+  "handoff_blob_sha256": "cd2dd053c74fc47ae9aeeba0ce93eb1c423cc965880d02d27ca49eb4ab8e650a",
+  "external_pr_head_observation_before_v3": "93b51997779480b95a7d45fc0e7f945ca32f3fde",
+  "consumption_rule": {
+    "code": "checkout code_snapshot_commit",
+    "metadata": "read handoff_path from handoff_metadata_commit or any later PR head containing it",
+    "receipt": "this receipt binds the exact metadata commit without self-referencing its own commit"
+  },
+  "production_execution": false,
+  "training": false,
+  "full_fit": false,
+  "production_inference": false,
+  "openvla_rollout": false,
+  "cal_check": false,
+  "attack": false
+}
