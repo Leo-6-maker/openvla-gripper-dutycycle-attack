@@ -189,6 +189,9 @@ def load_and_validate(
     *,
     fit_identities: set[str],
     checkpoint_sha256: str,
+    student_source_commit: str,
+    fit_manifest_sha256: str,
+    heldout_manifest_sha256: str,
 ) -> tuple[list[dict[str, Any]], dict[str, Any], str]:
     split_root = Path(bundle_root).resolve() / split
     verify_sealed_directory(split_root)
@@ -201,6 +204,22 @@ def load_and_validate(
         raise SystemExit(f"CALIBRATION_BUNDLE_SPLIT_MISMATCH:{split}")
     if str(manifest.get("checkpoint_sha256", "")).lower() != checkpoint_sha256:
         raise SystemExit(f"CALIBRATION_BUNDLE_CHECKPOINT_MISMATCH:{split}")
+    if _require_commit(manifest.get("source_commit"), "CALIBRATION_BUNDLE_SOURCE") != student_source_commit:
+        raise SystemExit(f"CALIBRATION_BUNDLE_SOURCE_MISMATCH:{split}")
+    if _require_sha(manifest.get("fit_identity_manifest_sha256"), "CALIBRATION_BUNDLE_FIT_MANIFEST") != fit_manifest_sha256:
+        raise SystemExit(f"CALIBRATION_BUNDLE_FIT_MANIFEST_MISMATCH:{split}")
+    if _require_sha(manifest.get("heldout_identity_manifest_sha256"), "CALIBRATION_BUNDLE_HELDOUT_MANIFEST") != heldout_manifest_sha256:
+        raise SystemExit(f"CALIBRATION_BUNDLE_HELDOUT_MANIFEST_MISMATCH:{split}")
+    feature_order_sha256 = _require_sha(
+        manifest.get("feature_order_sha256"), "CALIBRATION_BUNDLE_FEATURE_ORDER"
+    )
+    prediction_artifact_seal = _require_sha(
+        manifest.get("prediction_artifact_seal_sha256"),
+        "CALIBRATION_BUNDLE_PREDICTION_SEAL",
+    )
+    teacher_label_seal = _require_sha(
+        manifest.get("teacher_label_seal"), "CALIBRATION_BUNDLE_TEACHER_SEAL"
+    )
     stream_name = manifest.get("record_stream", "calibration_records.jsonl")
     if stream_name != "calibration_records.jsonl":
         raise SystemExit(f"CALIBRATION_RECORD_STREAM_INVALID:{stream_name}")
@@ -237,9 +256,21 @@ def load_and_validate(
             f"missing={sorted(missing)}:extra={sorted(extra)}"
         )
 
-    for head in HEADS:
-        for index, record in enumerate(records):
+    for index, record in enumerate(records):
+        for head in HEADS:
             validate_record(record, head, index)
+        if _require_sha(record.get("checkpoint_sha256"), f"RECORD_{index}_CHECKPOINT") != checkpoint_sha256:
+            raise SystemExit(f"CALIBRATION_RECORD_CHECKPOINT_MISMATCH:{index}")
+        if _require_commit(record.get("source_commit"), f"RECORD_{index}_SOURCE") != student_source_commit:
+            raise SystemExit(f"CALIBRATION_RECORD_SOURCE_MISMATCH:{index}")
+        if _require_sha(record.get("feature_order_sha256"), f"RECORD_{index}_FEATURE_ORDER") != feature_order_sha256:
+            raise SystemExit(f"CALIBRATION_RECORD_FEATURE_ORDER_MISMATCH:{index}")
+        if _require_sha(record.get("prediction_artifact_seal"), f"RECORD_{index}_PREDICTION_SEAL") != prediction_artifact_seal:
+            raise SystemExit(f"CALIBRATION_RECORD_PREDICTION_SEAL_MISMATCH:{index}")
+        if _require_sha(record.get("teacher_label_seal"), f"RECORD_{index}_TEACHER_SEAL") != teacher_label_seal:
+            raise SystemExit(f"CALIBRATION_RECORD_TEACHER_SEAL_MISMATCH:{index}")
+        if record.get("identity_provenance") != "INDEPENDENT_CALIBRATION":
+            raise SystemExit(f"CALIBRATION_RECORD_PROVENANCE_INVALID:{index}")
 
     return records, manifest, sha256_file(split_root / "SHA256SUMS")
 
@@ -460,11 +491,16 @@ def main() -> int:
         raise SystemExit("CHECKPOINT_MANIFEST_BINDING_MISMATCH")
 
     provenance = classify_provenance(fit_manifest, checkpoint_manifest)
+    fit_manifest_sha = sha256_file(args.fit_manifest)
+    heldout_manifest_sha = sha256_file(args.heldout_manifest)
     records, bundle_manifest, bundle_seal = load_and_validate(
         args.bundle_root,
         args.split,
         fit_identities=fit_ids,
         checkpoint_sha256=checkpoint_sha,
+        student_source_commit=student_commit,
+        fit_manifest_sha256=fit_manifest_sha,
+        heldout_manifest_sha256=heldout_manifest_sha,
     )
 
     calibrators: list[dict[str, Any]] = []
@@ -491,8 +527,8 @@ def main() -> int:
         "method": args.method,
         "checkpoint_sha256": checkpoint_sha,
         "student_source_commit": student_commit,
-        "fit_manifest_sha256": sha256_file(args.fit_manifest),
-        "heldout_manifest_sha256": sha256_file(args.heldout_manifest),
+        "fit_manifest_sha256": fit_manifest_sha,
+        "heldout_manifest_sha256": heldout_manifest_sha,
         "checkpoint_manifest_sha256": sha256_file(args.checkpoint_manifest),
         "calibration_bundle_manifest_sha256": sha256_file(
             Path(args.bundle_root).resolve() / args.split / "manifest.json"
