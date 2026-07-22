@@ -46,7 +46,14 @@ def _identities(path: Path) -> set[str]:
     try:
         value = json.loads(text)
         if isinstance(value, dict):
-            for key in ("identities", "identity_list", "episodes"):
+            for key in (
+                "identities",
+                "identity_list",
+                "episodes",
+                "heldout_identities",
+                "evaluation_identities",
+                "canonical_parent_keys",
+            ):
                 if key in value:
                     return _identity_values(value[key])
         if isinstance(value, list):
