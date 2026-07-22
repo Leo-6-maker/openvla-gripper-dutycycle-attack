@@ -1,0 +1,11 @@
+{
+  "attack": false,
+  "cal_check_read": false,
+  "production_inference": false,
+  "reason": "PLAN_NOT_MOUNTED",
+  "rows": [],
+  "schema": "FACTORIZED_CALIBRATION_IDENTITY_FEASIBILITY_AUDIT_V2",
+  "status": "BLOCKED_ROOTS_NOT_MOUNTED",
+  "training": false,
+  "verdict": "BLOCKED_ROOTS_NOT_MOUNTED"
+}

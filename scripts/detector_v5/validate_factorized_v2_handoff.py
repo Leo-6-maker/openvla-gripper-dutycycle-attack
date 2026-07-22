@@ -97,7 +97,7 @@ def _references(value: Any):
 def _canonical_reference_sha(path: Path) -> str:
     """Hash text references with stable LF bytes across Windows and CI."""
     data = path.read_bytes()
-    if path.suffix.lower() in {".json", ".csv", ".py", ".yml", ".yaml", ".md", ".schema"}:
+    if path.suffix.lower() in {".json", ".csv", ".py", ".yml", ".yaml", ".md", ".schema", ".sha256"} or path.name in {"SHA256SUMS", "SHA256SUMS.sha256"}:
         data = data.replace(b"\r\n", b"\n")
     return hashlib.sha256(data).hexdigest()
 

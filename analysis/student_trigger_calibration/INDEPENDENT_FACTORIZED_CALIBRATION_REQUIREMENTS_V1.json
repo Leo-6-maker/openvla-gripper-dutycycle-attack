@@ -1,0 +1,88 @@
+{
+  "document": "INDEPENDENT_FACTORIZED_CALIBRATION_REQUIREMENTS_V1",
+  "frozen_date": "2026-07-22",
+  "status": "CODE_IMPLEMENTED_PRODUCTION_ARTIFACTS_PENDING",
+  "problem": "Predictions generated on checkpoint-training identities are train-resubstitution calibration and cannot support authoritative calibration or scheduler-threshold selection.",
+  "identity_sets": {
+    "calibrator_fit_identities": "identities used only to fit RAW, INTERCEPT_ONLY or PLATT parameters",
+    "policy_selection_identities": "identities used only to select the three scheduler thresholds",
+    "heldout_evaluation_identities": "identities used only for final L3 metrics",
+    "checkpoint_training_identities": "identities used to train the checkpoint that generated the predictions"
+  },
+  "required_separation": [
+    "calibrator_fit ∩ policy_selection = empty",
+    "calibrator_fit ∩ heldout_evaluation = empty",
+    "policy_selection ∩ heldout_evaluation = empty",
+    "calibrator_fit ∩ checkpoint_training = empty unless genuine OOF provenance is proven",
+    "policy_selection ∩ checkpoint_training = empty unless genuine OOF provenance is proven"
+  ],
+  "acceptable_schemes": {
+    "A_nested_group_holdout_with_retraining": {
+      "description": "Freeze fit, policy and heldout identity roles first, then train checkpoints excluding fit and policy identities.",
+      "status": "REQUIRES_RETRAINING"
+    },
+    "B_group_cross_fitted_OOF": {
+      "description": "Generate fit and policy predictions only from checkpoints that did not train on the predicted identities.",
+      "status": "REQUIRES_CROSS_PREDICTION_INFRA"
+    },
+    "C_independent_calibration_identities": {
+      "description": "Pre-register identities never used in checkpoint training and divide them into fit and policy roles.",
+      "status": "REQUIRES_PRE_REGISTRATION"
+    },
+    "D_project_frozen_equivalent": {
+      "description": "Alternative design with equivalent identity separation and checkpoint-exclusion guarantees.",
+      "status": "PENDING_PROJECT_DECISION"
+    }
+  },
+  "implemented_validation": {
+    "calibration_fit": [
+      "sealed split bundle required",
+      "exact fit identity closure",
+      "fit and heldout disjointness",
+      "fit and checkpoint-training overlap classification",
+      "checkpoint and source binding",
+      "canonical episode, step and probability fields"
+    ],
+    "policy_selection": [
+      "sealed runtime, evaluation and calibration roots",
+      "exact 12-split closure",
+      "exact runtime/offline episode-step join",
+      "policy identities exactly match runtime episodes",
+      "policy disjoint from fit and checkpoint training",
+      "real FactorizedV2SchedulerAdapter replay",
+      "no heldout evaluation reads"
+    ],
+    "v3_contract": [
+      "fit contract SHA binding",
+      "policy manifest SHA binding",
+      "checkpoint/source/feature/scheduler/config binding",
+      "canonical JSON Schema validation",
+      "no extra fields, null thresholds or default values"
+    ]
+  },
+  "current_state": {
+    "production_identity_data": "not mounted",
+    "classification": "BLOCKED_ROOTS_NOT_MOUNTED",
+    "authoritative_eligible": false,
+    "next_required_artifact": "Codex V3.2 sealed fit, policy, evaluation and checkpoint-training manifests for all 12 splits"
+  },
+  "threshold_selection": {
+    "implementation_status": "IMPLEMENTED_AND_CPU_TESTED",
+    "requires": "independent policy-selection identities and sealed real-adapter runtime/evaluation bundles",
+    "current_execution_status": "HOLD_NO_PRODUCTION_POLICY_SELECTION_DATA",
+    "selection_gate": "all 12 split false-start rates defined and worst split <= 0.10",
+    "forbidden": [
+      "heldout threshold search",
+      "CAL/CHECK",
+      "attack outcome",
+      "default 0.5",
+      "synthetic scheduler replacement for formal selection"
+    ]
+  },
+  "authorization": {
+    "training": false,
+    "full_fit": false,
+    "authoritative_l3": false,
+    "attack": false
+  }
+}

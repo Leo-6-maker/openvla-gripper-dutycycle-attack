@@ -1,0 +1,63 @@
+name: cpu-factorized-l3
+
+on:
+  pull_request:
+    paths:
+      - "analysis/student_trigger_calibration/**"
+      - "tests/analysis/student_trigger_calibration/**"
+      - "src/gripper_attack/factorized_scheduler.py"
+      - "src/gripper_attack/factorized_scheduler_adapter.py"
+      - "schemas/factorized_v2_calibration_and_threshold_contract_v3.schema.json"
+      - "schemas/factorized_v2_offline_calibration_bundle.schema.json"
+      - "schemas/factorized_v2_offline_policy_selection_bundle.schema.json"
+      - "schemas/factorized_v2_production_input_plan.schema.json"
+      - "scripts/detector_v5/materialize_factorized_v2_production_bundles.py"
+      - "scripts/detector_v5/build_factorized_v3_2_handoff.py"
+      - "tests/fixtures/factorized_scheduler_api_v3_1_trace.json"
+      - ".github/workflows/cpu-factorized-l3.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "analysis/student_trigger_calibration/**"
+      - "tests/analysis/student_trigger_calibration/**"
+      - "src/gripper_attack/factorized_scheduler.py"
+      - "src/gripper_attack/factorized_scheduler_adapter.py"
+      - "schemas/factorized_v2_calibration_and_threshold_contract_v3.schema.json"
+      - "schemas/factorized_v2_offline_calibration_bundle.schema.json"
+      - "schemas/factorized_v2_offline_policy_selection_bundle.schema.json"
+      - "schemas/factorized_v2_production_input_plan.schema.json"
+      - "scripts/detector_v5/materialize_factorized_v2_production_bundles.py"
+      - "scripts/detector_v5/build_factorized_v3_2_handoff.py"
+      - "tests/fixtures/factorized_scheduler_api_v3_1_trace.json"
+      - ".github/workflows/cpu-factorized-l3.yml"
+
+jobs:
+  factorized-l3-cpu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install package and analysis dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest jsonschema numpy pillow
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Compile Factorized L3 analysis path
+        run: |
+          python -m py_compile \
+            analysis/student_trigger_calibration/load_factorized_handoff.py \
+            analysis/student_trigger_calibration/validate_factorized_codex_handoff.py \
+            analysis/student_trigger_calibration/fit_factorized_calibrators.py \
+            analysis/student_trigger_calibration/select_factorized_scheduler_thresholds.py \
+            analysis/student_trigger_calibration/produce_factorized_calibration_threshold_contract.py \
+            analysis/student_trigger_calibration/run_factorized_l3_analysis.py \
+            scripts/detector_v5/materialize_factorized_v2_production_bundles.py \
+            scripts/detector_v5/build_factorized_v3_2_handoff.py
+      - name: Run Factorized L3 tests
+        run: pytest -q tests/analysis/student_trigger_calibration
+      - name: Check patch whitespace
+        run: git diff --check

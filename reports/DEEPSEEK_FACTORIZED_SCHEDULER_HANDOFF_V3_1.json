@@ -59,7 +59,7 @@
   },
   "offline_bundles": {
     "calibration": {
-      "schema": {"path": "schemas/factorized_v2_offline_calibration_bundle.schema.json", "sha256": "a67cf67d60efa3c12c6c658646c288c990eed10153ec59caa270d8c9342c1189"},
+      "schema": {"path": "schemas/factorized_v2_offline_calibration_bundle.schema.json", "sha256": "0059026c398126dae9cb71cabc88d35eab52837bfb2011d74398c44887705677"},
       "label_schema": {"path": "schemas/factorized_v2_offline_calibration_labels.schema.json", "sha256": "ed3842867fe783dc3a14588eb35de31da9e4b30665d85fda26314520e9c34c16"},
       "data_filename": "calibration_records.jsonl",
       "manifest_filename": "manifest.json",
@@ -70,7 +70,7 @@
       "physical_separation": "never written into runtime bundle"
     },
     "evaluation": {
-      "schema": {"path": "schemas/factorized_v2_offline_evaluation_bundle.schema.json", "sha256": "03986e5812bb8336818874265593f39117fa5767c332886be8abbbc028e62232"},
+      "schema": {"path": "schemas/factorized_v2_offline_evaluation_bundle.schema.json", "sha256": "8e178462d8c99e8ca0523566dbc46d0c6be679a0ffbd6025b970df03fb7efb4b"},
       "label_schema": {"path": "schemas/factorized_v2_offline_evaluation_labels.schema.json", "sha256": "8f712abc195c24ba37887ea6b68b6eaeb40e2534862b4cdd503dfae79f5825e8"},
       "data_filename": "evaluation_records.jsonl",
       "manifest_filename": "manifest.json",
@@ -79,7 +79,7 @@
       "strict_k10_feasible_field": "strict_k10_feasible",
       "strict_k10_known_field": "strict_k10_known_mask",
       "eligible_start_semantics": "offline Teacher/evaluation label only; never a runtime gate",
-      "materializer": {"path": "scripts/detector_v5/materialize_factorized_v2_offline_evaluation_bundle.py", "sha256": "8347586f4edc37f2183e3ada4d9df4dc4df1e950067683b59b0a845d660fb116"},
+      "materializer": {"path": "scripts/detector_v5/materialize_factorized_v2_offline_evaluation_bundle.py", "sha256": "a76ca6c2de1299bfdea860ce7effa04512a06ded85c8511d1d5f853424e2d9db"},
       "physical_separation": "never written into runtime bundle"
     }
   },
@@ -98,7 +98,7 @@
   },
   "structural_config": {"path": "configs/FACTORIZED_V2_SCHEDULER_PROTOCOL_V1.json", "sha256": "98c5fd257ad5b34f04286818698d6d678012bd84ac9a360419c3927412c80390"},
   "handoff_validator": {
-    "source": {"path": "scripts/detector_v5/validate_factorized_v2_handoff.py", "sha256": "71e3400af09f8e7fac334a2f840a4780dbb041da1b9a364c7bcff9b36fe09433"},
+    "source": {"path": "scripts/detector_v5/validate_factorized_v2_handoff.py", "sha256": "744ff0f80bcfea300f0100190fcba7c037fec830ac92b45e0eeb4192ae99b1fd"},
     "pass_status": "STATIC_INTEGRATION_PASS",
     "execution_ready_status_forbidden": true,
     "rules": ["canonical hash", "nested reference SHA", "repo-relative regular files", "absolute/.. paths rejected", "symlinks rejected", "exact 12 split keys", "Teacher/offline fields excluded from runtime contract"]
@@ -129,5 +129,5 @@
   "forbidden_runtime_fields": ["event_id", "known_mask", "teacher_phase", "teacher_label", "strict_k10_feasible", "strict_k10_known_mask", "utility_probability", "regrasp_probability", "future_fields", "attack_outcome", "object_state", "contact", "action", "clean_action", "executed_action", "mutated_action"],
   "forbidden_substitutions": ["grasp_probability -> utility_probability", "manipulation_probability -> regrasp_probability", "Teacher/event_id -> candidate_close", "zero/default fill for missing heads", "temperature-only formal calibration", "arbitrary subprocess commands", "CAL/CHECK reads", "model inference without separate authorization", "action mutation", "attack"],
   "execution_boundary": {"static_interface": true, "identity_audit": true, "sealed_artifact_audit": true, "runtime_rematerialization": false, "offline_evaluation_bundle": false, "model_inference": false, "training": false, "full_fit": false, "cal_check": false, "rollout": false, "shadow": false, "attack": false},
-  "handoff_blob_sha256": "057f277b0e957794a51ea0d7d6255d1677dfd8eeee0cf6eac5c2b2524f2cc543"
+  "handoff_blob_sha256": "659bffd27762023c4a66d9e101cfa24458644100aea466778e0f039c2823912c"
 }

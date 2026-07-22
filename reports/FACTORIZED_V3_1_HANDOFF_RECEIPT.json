@@ -6,7 +6,7 @@
   "base_commit": "401f79a05753d970ecc803bb96abc64ce132df42",
   "code_snapshot_commit": "ad1f8940b888d06cbfae2f650e52bcbaad1cb7ce",
   "handoff_path": "reports/DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1.json",
-  "handoff_blob_sha256": "057f277b0e957794a51ea0d7d6255d1677dfd8eeee0cf6eac5c2b2524f2cc543",
+  "handoff_blob_sha256": "659bffd27762023c4a66d9e101cfa24458644100aea466778e0f039c2823912c",
   "handoff_binding_definition": "SHA256(canonical handoff JSON with handoff_blob_sha256 omitted)",
   "metadata_commit_consumption_rule": "DeepSeek checks out code_snapshot_commit for implementation and reads the V3.1 handoff plus this receipt from the later metadata commit containing those files; the actual PR head is an external observation, not a self-reference.",
   "production_execution": false,

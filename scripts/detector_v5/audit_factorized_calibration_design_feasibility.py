@@ -208,11 +208,39 @@ def _write_atomic(path: Path, data: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
+    parser.add_argument("--v2-plan", type=Path, help="Run the strict V2 identity/OOF audit.")
     parser.add_argument("--plan", type=Path)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--json-output", type=Path)
     parser.add_argument("--csv-output", type=Path)
     args = parser.parse_args()
+    if args.v2_plan is not None:
+        from audit_factorized_calibration_design_feasibility_v2 import audit_v2
+
+        result = audit_v2(args.v2_plan.resolve())
+        json_output = args.json_output or args.output
+        if json_output is None:
+            raise SystemExit("JSON_OUTPUT_REQUIRED")
+        _write_atomic(json_output, json.dumps(result, indent=2, sort_keys=True) + "\n")
+        if args.csv_output is not None:
+            columns = [
+                "split", "counts", "pairwise_disjoint", "checkpoint_root_seal",
+                "prediction_root_seal", "calibration_prediction_root_seal",
+                "policy_prediction_root_seal", "calibrator_prediction_exact",
+                "policy_prediction_exact",
+            ]
+            if args.csv_output.exists():
+                raise FileExistsError(f"OUTPUT_EXISTS:{args.csv_output}")
+            args.csv_output.parent.mkdir(parents=True, exist_ok=True)
+            temporary = args.csv_output.with_name(f".{args.csv_output.name}.{uuid.uuid4().hex}.staging")
+            with temporary.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=columns)
+                writer.writeheader()
+                for row in result.get("rows", []):
+                    writer.writerow({key: json.dumps(row.get(key), sort_keys=True) if isinstance(row.get(key), (dict, list)) else row.get(key, "") for key in columns})
+            os.replace(temporary, args.csv_output)
+        print(json.dumps({"status": result["status"], "json_output": str(json_output), "csv_output": str(args.csv_output) if args.csv_output else None}, sort_keys=True))
+        return 0 if result["status"] == "GROUP_CROSS_FITTED_OOF_FEASIBLE" else 2
     json_output = args.json_output or args.output
     if json_output is None:
         raise SystemExit("JSON_OUTPUT_REQUIRED")
