@@ -4,8 +4,8 @@
   "branch": "codex/factorized-v2-scheduler-inputs-20260722",
   "base_branch": "codex/v2b-exact-w32-recommended-canary-20260721",
   "base_commit": "401f79a05753d970ecc803bb96abc64ce132df42",
-  "code_snapshot_commit": "765eee9a2168f847e41f5d465b645837e3227ab3",
-  "handoff_metadata_parent_commit": "765eee9a2168f847e41f5d465b645837e3227ab3",
+  "code_snapshot_commit": "eeb875228b6a8e3628e6258499fdacd60440426a",
+  "handoff_metadata_parent_commit": "eeb875228b6a8e3628e6258499fdacd60440426a",
   "external_pr_head_observation": {
     "pr": 99,
     "observed_head": "93b51997779480b95a7d45fc0e7f945ca32f3fde",
@@ -32,7 +32,7 @@
     "threshold_owner": "DeepSeek calibration/analysis; Codex does not fit or select"
   },
   "runtime_adapter": {
-    "path": {"path": "src/gripper_attack/factorized_scheduler_adapter.py", "sha256": "9c1ee8505cb38df501f05331117db857d08d8f522be362d0af8da518309c70fc"},
+    "path": {"path": "src/gripper_attack/factorized_scheduler_adapter.py", "sha256": "0951740e8c8b35fa5127df572869d3ed91568cdd254c97e07f6c906a70e5d985"},
     "entrypoint": "FactorizedV2SchedulerAdapter.step",
     "responsibilities": ["validate raw logits", "apply external a,b", "call real scheduler", "return canonical trace"],
     "forbidden": ["fit calibration", "select threshold", "read Teacher", "modify action", "attack"]
@@ -52,18 +52,18 @@
   "structural_config": {"path": "configs/FACTORIZED_V2_SCHEDULER_PROTOCOL_V1.json", "sha256": "98c5fd257ad5b34f04286818698d6d678012bd84ac9a360419c3927412c80390"},
   "handoff_validator": {"path": "scripts/detector_v5/validate_factorized_v2_handoff.py", "sha256": "511dfd52c9b28aa437401af8593e56f9deb1fcaeda690d7c5848628536691749", "pass_status": "STATIC_INTEGRATION_PASS", "rules": ["repo-relative regular files only", "reject absolute/.. paths", "reject symlinks", "verify every referenced SHA", "verify canonical handoff hash"]},
   "inner_train_execution": {
-    "runner": {"path": "scripts/detector_v5/run_factorized_v2_inner_train_calibration.py", "sha256": "7bb31cabfb7e4a715931a871ca8409fca4ccd4529a6347c6d07b6adbb4a2cded"},
+    "runner": {"path": "scripts/detector_v5/run_factorized_v2_inner_train_calibration.py", "sha256": "676a3b8bae107078f1857fdd64f8baa7203f0e0c915276c83fbc71da41ae607a"},
     "status": "PREPARATION_ONLY",
     "plan_contract": "structured jobs only; no caller-provided subprocess commands",
     "authorization_template": {"path": "configs/OFFLINE_FACTORIZED_V2_INNER_TRAIN_INFERENCE_AUTH_V2.json", "sha256": "b8783f80f1220c4c07717943ea531090518d73a400d744b01e0c6b068b4915c0"},
     "production_execution": false,
     "execution_receipt_schema": "FACTORIZED_V2_INFERENCE_EXECUTION_RECEIPT_V1"
   },
-  "calibration_design_feasibility": {"path": "scripts/detector_v5/audit_factorized_calibration_design_feasibility.py", "sha256": "7a863721ff2356191e05e744ebd538a16db04b07189ec40e7caa67343fd37608", "status": "STATIC_TOOL_ONLY", "production_inference": false},
+  "calibration_design_feasibility": {"path": "scripts/detector_v5/audit_factorized_calibration_design_feasibility.py", "sha256": "01920d6a48703a3546803ebd9c15d02ed6a2d76516de66df9b31ba8e6b41a4e6", "status": "STATIC_TOOL_ONLY", "production_inference": false},
   "forbidden_runtime_fields": ["event_id", "known_mask", "teacher_phase", "strict_k10_feasible", "utility_probability", "regrasp_probability", "future_fields", "attack_outcome", "executed_action", "mutated_action"],
   "forbidden_substitutions": ["grasp_probability -> utility_probability", "manipulation_probability -> regrasp_probability", "Teacher/event_id -> candidate_close", "zero/default fill for missing heads", "temperature-only formal calibration", "arbitrary subprocess command list", "CAL/CHECK reads", "attack or action mutation"],
   "remaining_blockers": ["12 production split roots/checkpoints/features are not mounted in this Windows worktree", "DeepSeek must provide external calibration values and threshold decisions", "production inner-train inference requires a separate execution authorization", "authoritative L3 remains HOLD"],
   "execution_boundary": {"production_audit": false, "independent_calibration": false, "training": false, "full_fit": false, "production_inference": false, "openvla_rollout": false, "passive_shadow": false, "cal_check": false, "attack": false},
-  "handoff_blob_sha256": "cd2dd053c74fc47ae9aeeba0ce93eb1c423cc965880d02d27ca49eb4ab8e650a",
+  "handoff_blob_sha256": "d112571672fc4fea64a88c52c7f516b6061463b55a43cbadbefbfd43633de74b",
   "handoff_blob_hash_definition": "SHA256(canonical JSON with handoff_blob_sha256 omitted)"
 }
