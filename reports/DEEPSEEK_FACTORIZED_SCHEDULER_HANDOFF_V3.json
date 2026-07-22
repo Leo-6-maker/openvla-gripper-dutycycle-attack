@@ -31,6 +31,14 @@
     "head_names": ["grasp", "manipulation", "release"],
     "threshold_owner": "DeepSeek calibration/analysis; Codex does not fit or select"
   },
+  "head_semantics": {
+    "grasp": "DIRECT Factorized grasp head; not utility",
+    "manipulation": "DIRECT Factorized manipulation head; not regrasp",
+    "release": "DIRECT Factorized release head; conditional scheduler veto only",
+    "utility_probability": "MISSING; requires an exact trained decision head or external calibrated field",
+    "regrasp_probability": "MISSING; requires an exact trained decision head or external calibrated field",
+    "forbidden_substitution": true
+  },
   "runtime_adapter": {
     "path": {"path": "src/gripper_attack/factorized_scheduler_adapter.py", "sha256": "0951740e8c8b35fa5127df572869d3ed91568cdd254c97e07f6c906a70e5d985"},
     "entrypoint": "FactorizedV2SchedulerAdapter.step",
@@ -64,6 +72,6 @@
   "forbidden_substitutions": ["grasp_probability -> utility_probability", "manipulation_probability -> regrasp_probability", "Teacher/event_id -> candidate_close", "zero/default fill for missing heads", "temperature-only formal calibration", "arbitrary subprocess command list", "CAL/CHECK reads", "attack or action mutation"],
   "remaining_blockers": ["12 production split roots/checkpoints/features are not mounted in this Windows worktree", "DeepSeek must provide external calibration values and threshold decisions", "production inner-train inference requires a separate execution authorization", "authoritative L3 remains HOLD"],
   "execution_boundary": {"production_audit": false, "independent_calibration": false, "training": false, "full_fit": false, "production_inference": false, "openvla_rollout": false, "passive_shadow": false, "cal_check": false, "attack": false},
-  "handoff_blob_sha256": "38afa0768ae73b718884abc1016d1c2a2c017cbc2b439ba7572db6f9895e61e2",
+  "handoff_blob_sha256": "a49685ca840f47d6429826938961d5635150a769a74f86746fa39afd50a5c0a7",
   "handoff_blob_hash_definition": "SHA256(canonical JSON with handoff_blob_sha256 omitted)"
 }
