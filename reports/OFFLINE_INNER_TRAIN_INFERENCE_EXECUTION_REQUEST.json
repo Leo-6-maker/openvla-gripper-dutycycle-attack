@@ -1,0 +1,47 @@
+{
+  "schema": "OFFLINE_FACTORIZED_INNER_TRAIN_INFERENCE_EXECUTION_REQUEST_V1",
+  "status": "REQUEST_ONLY_NOT_AUTHORIZED",
+  "execution_authorized": false,
+  "training": false,
+  "full_fit": false,
+  "attack": false,
+  "cal_check": false,
+  "production_roots_mounted": false,
+  "checkpoint_count": 12,
+  "coordinates": [
+    {"outer_fold": 0, "inner_fold": 0, "seed": 20260717},
+    {"outer_fold": 0, "inner_fold": 1, "seed": 20260717},
+    {"outer_fold": 0, "inner_fold": 2, "seed": 20260717},
+    {"outer_fold": 1, "inner_fold": 0, "seed": 20260717},
+    {"outer_fold": 1, "inner_fold": 1, "seed": 20260717},
+    {"outer_fold": 1, "inner_fold": 2, "seed": 20260717},
+    {"outer_fold": 2, "inner_fold": 0, "seed": 20260717},
+    {"outer_fold": 2, "inner_fold": 1, "seed": 20260717},
+    {"outer_fold": 2, "inner_fold": 2, "seed": 20260717},
+    {"outer_fold": 3, "inner_fold": 0, "seed": 20260717},
+    {"outer_fold": 3, "inner_fold": 1, "seed": 20260717},
+    {"outer_fold": 3, "inner_fold": 2, "seed": 20260717}
+  ],
+  "input_roots": [
+    "<SEALED_CHECKPOINT_ROOTS_12>",
+    "<SEALED_INNER_TRAIN_IDENTITY_MANIFESTS_12>",
+    "<SEALED_FEATURE_INPUT_ROOTS_12>"
+  ],
+  "allowed_output_roots": ["<NEW_NONOVERWRITE_OUTPUT_ROOT_PER_COORDINATE>"],
+  "estimated_gpu_jobs": 12,
+  "estimated_storage": "MEASURE_AFTER_ROOT_MOUNT; NO PRODUCTION ESTIMATE CLAIMED",
+  "exact_command_template": [
+    "python",
+    "scripts/detector_v5/run_factorized_v2_inner_train_calibration.py",
+    "--plan",
+    "<SEALED_PLAN_JSON>",
+    "--authorization",
+    "<SEALED_AUTHORIZATION_JSON>",
+    "--output-root",
+    "<NEW_NONOVERWRITE_OUTPUT_ROOT>",
+    "--execute"
+  ],
+  "required_authorization": "OFFLINE_FACTORIZED_INNER_TRAIN_INFERENCE=GO plus execution_authorized=true sealed authorization",
+  "forbidden_roots": ["FIT-DEV", "CAL", "CHECK", "CS200", "attack"],
+  "note": "This request is a contract/template only. It has not loaded checkpoints, features, or data and must not be treated as an execution receipt."
+}
