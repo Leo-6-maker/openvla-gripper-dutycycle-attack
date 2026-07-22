@@ -1,0 +1,104 @@
+{
+  "contract": "FACTORIZED_V2_L3_METRIC_CONTRACT_V1",
+  "frozen_date": "2026-07-22",
+  "protocol": "FACTORIZED_V2_L3_EVALUATION_PROTOCOL_V1",
+
+  "factorized_runtime_inputs": {
+    "fields": [
+      "candidate_close", "action_known", "student_valid", "route_supported",
+      "grasp_logit", "grasp_probability",
+      "manipulation_logit", "manipulation_probability",
+      "release_logit", "release_probability"
+    ],
+    "removed_v5_concepts": ["utility_probability", "regrasp_probability", "uncertainty_probability"],
+    "release_semantics": "release_or_instability evidence, conservative veto candidate, not pure-release equivalent"
+  },
+
+  "runtime_offline_separation": {
+    "runtime_scheduler_inputs": "ONLY the factorized_runtime_inputs listed above",
+    "offline_calibration_inputs": "head_targets, head_known_masks — for calibrator fitting and head discrimination only",
+    "offline_evaluation_inputs": "strict_k10_feasible, strict_k10_known_mask, Teacher event metadata — audit-only",
+    "forbidden_crossover": "offline labels must not affect scheduler state transitions"
+  },
+
+  "episode_classification": {
+    "eligible_domain": "steps 0 to T-10 (positions that can host a complete T10 window)",
+    "positive": "at least one VALID_START in the eligible domain",
+    "negative": "ALL positions in eligible domain are known AND strict_k10_feasible=false for ALL",
+    "unknown": "eligible domain has any unknown position AND no known positive exists",
+    "blocked": "Teacher bundle lacks complete eligible-domain known info → BLOCKED_INSUFFICIENT_K10_KNOWN_COVERAGE",
+    "valid_start": "strict_k10_known_mask[t]=true AND strict_k10_feasible[t]=true",
+    "no_50pct_threshold": "The arbitrary 50% known coverage threshold is REMOVED. Classification uses eligible domain completeness."
+  },
+
+  "k10_corridor": {
+    "definition": "A step t where strict_k10_feasible[t] AND strict_k10_known_mask[t] both true IS a valid emission start.",
+    "no_double_horizon": "Do NOT require consecutive feasible-start blocks of length >= 8. That doubles the effective T10 to T17-T19.",
+    "containment": "T10 containment is inherent in strict_k10_feasible definition. No further emit_step+9 check needed.",
+    "optional_contiguous_region": "For visualization/timing offset only. Min length = 1.",
+    "source": "strict_k10_feasible from Teacher label bundle — evaluation only, NOT runtime"
+  },
+
+  "L1": {
+    "L1A_non_close_intent_diagnostic": {
+      "population": "steps with student_valid=true AND candidate_close=false",
+      "note": "NOT physical background. Includes normal release, OPEN actions, non-grasp phases.",
+      "runtime_only": true
+    },
+    "L1B_teacher_background_diagnostic": {
+      "population": "steps with event_id < 0 (Teacher background label)",
+      "note": "Offline diagnostic only. Cannot enter runtime scheduler.",
+      "runtime_only": false,
+      "requires_offline_labels": true
+    }
+  },
+
+  "L3": {
+    "name": "factorized_scheduler_decision",
+    "population": "all episodes with valid scheduler coverage",
+    "metrics": {
+      "negative_episodes": {"definition": "count of negative episodes", "denominator_note": "excludes unknown episodes"},
+      "positive_episodes": {"definition": "count of positive episodes"},
+      "unknown_episodes": {"definition": "count of unknown episodes (reported separately)"},
+      "negative_episode_emits": {"definition": "scheduler emitted on negative episode"},
+      "positive_on_corridor_emits": {"definition": "emit_step is a VALID_START on a positive episode"},
+      "positive_off_corridor_emits": {"definition": "scheduler emitted but emit_step is NOT a VALID_START on positive episode"},
+      "positive_abstentions": {"definition": "scheduler did not emit on positive episode"},
+      "total_emitted_episodes": {"definition": "neg_emits + pos_on + pos_off"},
+      "negative_episode_false_start_rate": {
+        "numerator": "negative_episode_emits",
+        "denominator": "negative_episodes",
+        "undefined_when": "negative_episodes == 0"
+      },
+      "valid_opportunity_recall": {
+        "numerator": "positive_on_corridor_emits",
+        "denominator": "positive_episodes",
+        "undefined_when": "positive_episodes == 0"
+      },
+      "emit_precision": {"numerator": "pos_on", "denominator": "total_emitted", "undefined_when": "total_emitted == 0"},
+      "invalid_emit_fraction": {"numerator": "neg_emits + pos_off", "denominator": "total_emitted"},
+      "abstention_rate": {"numerator": "pos_abstain", "denominator": "positive_episodes"},
+      "median_timing_offset": {"definition": "median of (emit_step - containing_VALID_START_region.start). Regions are contiguous blocks of valid starts."},
+      "region_length": {"definition": "length of containing region"},
+      "relative_region_position": {"definition": "offset / max(1, region_length - 1)"},
+      "unknown_episode_emits": {"definition": "scheduler emitted on unknown episode — NOT in negative denominator"},
+      "unknown_emit_rate": {"numerator": "unknown_episode_emits", "denominator": "unknown_episodes"},
+      "unverifiable_emit_fraction": {"numerator": "unknown_episode_emits", "denominator": "total_emitted"},
+      "all_emit_precision": {"numerator": "positive_on_corridor_emits", "denominator": "neg+pos_on+pos_off+unknown_emits"},
+      "verified_emit_precision": {"numerator": "positive_on_corridor_emits", "denominator": "neg+pos_on+pos_off"}
+    }
+  },
+
+  "L4": {"name": "attack_actuation", "status": "FORBIDDEN_THIS_ROUND"},
+
+  "calibration": {
+    "methods": ["RAW", "INTERCEPT_ONLY", "PLATT"],
+    "fit_data": "grasp_logit, manipulation_logit, release_logit (raw logits preferred)",
+    "prob_audit": "sigmoid(logit) should match recorded probability",
+    "insufficient_samples": "method_status=HOLD_INSUFFICIENT_SAMPLES, method_valid=false — no silent fallback",
+    "provenance": {
+      "INDEPENDENT": "calibration identities NOT in checkpoint training → authoritative",
+      "TRAIN_RESUBSTITUTION": "calibration identities WERE in checkpoint training → NON_AUTHORITATIVE diagnostic only"
+    }
+  }
+}

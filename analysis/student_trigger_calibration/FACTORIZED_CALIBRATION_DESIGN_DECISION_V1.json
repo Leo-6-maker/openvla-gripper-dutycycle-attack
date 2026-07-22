@@ -1,0 +1,47 @@
+{
+  "document": "FACTORIZED_CALIBRATION_DESIGN_DECISION_V1",
+  "frozen_date": "2026-07-22",
+  "status": "AWAITING_CODEX_IDENTITY_AUDIT",
+
+  "current_state": {
+    "available_data": "none",
+    "identity_audit": "not received",
+    "chosen_scheme": null,
+    "reason": "Must consume FACTORIZED_CALIBRATION_IDENTITY_FEASIBILITY_AUDIT.json before design decision"
+  },
+
+  "scheme_decision_tree": {
+    "GROUP_CROSS_FITTED_OOF": {
+      "conditions": [
+        "For every evaluation split: calibrator-fit data exists",
+        "Independent policy-selection data exists",
+        "fit ∩ policy ∩ evaluation = ∅ pairwise",
+        "Checkpoint producing fit/policy predictions did NOT train on those identities",
+        "Score distribution transfer rules pre-registered",
+        "All 12 splits covered"
+      ],
+      "status": "PENDING_AUDIT"
+    },
+    "NESTED_GROUP_HOLDOUT": {
+      "conditions": [
+        "Inner-train identities further split into calibrator-fit and policy-selection groups",
+        "Original inner-val remains heldout evaluation"
+      ],
+      "status": "REQUIRES_REMATERIALIZATION"
+    },
+    "INDEPENDENT_IDENTITIES_REQUIRED": {
+      "conditions": "Pre-registered identities never used in ANY checkpoint training",
+      "status": "REQUIRES_PRE_REGISTRATION"
+    },
+    "BLOCKED_MANIFEST_INCOMPLETE": {
+      "description": "Identity audit shows insufficient coverage for any scheme",
+      "status": "POSSIBLE_OUTCOME"
+    }
+  },
+
+  "holding_rules": {
+    "no_heldout_OOF_reuse": "Heldout OOF predictions cannot serve as BOTH calibration data AND evaluation data",
+    "three_set_disjointness": "calibrator-fit ≠ policy-selection ≠ heldout-evaluation, pairwise",
+    "production_data_frozen": "No scheme can proceed without sealed, authorized calibration/policy artifacts"
+  }
+}

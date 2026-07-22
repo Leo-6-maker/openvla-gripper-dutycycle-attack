@@ -1,0 +1,51 @@
+{
+  "document": "INDEPENDENT_FACTORIZED_CALIBRATION_REQUIREMENTS_V1",
+  "frozen_date": "2026-07-22",
+  "status": "AWAITING_PROJECT_DESIGN_DECISION",
+
+  "problem": "Inner-train inference on checkpoint training identities is TRAIN_RESUBSTITUTION_CALIBRATION — NOT independent. Cannot produce authoritative calibrators or threshold selection.",
+
+  "three_identity_sets": {
+    "calibrator_fit_identities": "Identities used to fit RAW/INTERCEPT/PLATT parameters per head",
+    "policy_selection_identities": "Identities used to select grasp/manipulation/release-veto thresholds",
+    "heldout_evaluation_identities": "Identities used for final L3 evaluation metrics"
+  },
+
+  "pairwise_disjoint_required": [
+    "calibrator_fit ∩ policy_selection = ∅",
+    "calibrator_fit ∩ heldout_evaluation = ∅",
+    "policy_selection ∩ heldout_evaluation = ∅"
+  ],
+
+  "acceptable_schemes": {
+    "A_nested_group_holdout": {
+      "description": "Within each inner-train fold, further split identities into calibrator-fit and policy-selection groups. Heldout = original inner-val.",
+      "status": "REQUIRES_REMATERIALIZATION"
+    },
+    "B_group_cross_fit_OOF": {
+      "description": "Use checkpoint A to predict checkpoint B's inner-train identities (cross-fold OOF logits). Fit calibrator on A's OOF predictions of B's identities.",
+      "status": "REQUIRES_CROSS_PREDICTION_INFRA"
+    },
+    "C_independent_calibration_identities": {
+      "description": "Pre-register identities never used in any checkpoint training. Generate their logits as independent calibration data.",
+      "status": "REQUIRES_PRE_REGISTRATION"
+    },
+    "D_project_frozen_equivalent": {
+      "description": "Alternative no-leakage design frozen by project protocol.",
+      "status": "PENDING"
+    }
+  },
+
+  "current_state": {
+    "available_data": "inner-train inference on checkpoint training identities",
+    "classification": "TRAIN_RESUBSTITUTION_CALIBRATION",
+    "authoritative_eligible": false,
+    "recommended_action": "Select one of schemes A/B/C/D, freeze in protocol, generate corresponding artifacts"
+  },
+
+  "threshold_selection": {
+    "requires": "independent policy-selection identities (disjoint from both calibrator-fit and heldout)",
+    "current_status": "HOLD_NO_INDEPENDENT_POLICY_SELECTION_DATA",
+    "forbidden": ["heldout threshold search", "CAL/CHECK", "attack outcome", "default 0.5"]
+  }
+}
