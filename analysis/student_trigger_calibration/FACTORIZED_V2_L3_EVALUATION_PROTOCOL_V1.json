@@ -1,154 +1,222 @@
 {
   "protocol": "FACTORIZED_V2_L3_EVALUATION_PROTOCOL_V1",
   "frozen_date": "2026-07-22",
-  "status": "CODEX_V3_1_STATIC_HANDOFF_PENDING_OR_PASS",
-
+  "status": "CODE_STATIC_CLOSURE_PASS_PRODUCTION_ARTIFACTS_PENDING",
   "student": {
     "candidate": "V2B_RECOMMENDED_EXACT",
-    "source_commit": "401f79a05753d970ecc803bb96abc64ce132df42",
-    "description": "Exact-W32 causal TCN, H=64, dropout=0.1, wd=1e-4, 25D-only",
+    "source_commit_binding": "per-split checkpoint/runtime manifest; no hardcoded source commit",
+    "description": "Exact-W32 causal Factorized Student with grasp, manipulation and release_or_instability heads",
     "formal_selection_eligible": false
   },
-
   "expected_splits": [
-    "o0_i0", "o0_i1", "o0_i2",
-    "o1_i0", "o1_i1", "o1_i2",
-    "o2_i0", "o2_i1", "o2_i2",
-    "o3_i0", "o3_i1", "o3_i2"
+    "o0_i0",
+    "o0_i1",
+    "o0_i2",
+    "o1_i0",
+    "o1_i1",
+    "o1_i2",
+    "o2_i0",
+    "o2_i1",
+    "o2_i2",
+    "o3_i0",
+    "o3_i1",
+    "o3_i2"
   ],
-  "partial_results_policy": "HOLD — all 12 splits required for authoritative conclusion",
-
+  "partial_results_policy": "All 12 splits are required for threshold selection and authoritative L3",
   "factorized_runtime_inputs": {
-    "description": "Formal Factorized scheduler inputs. NO V5 utility/regrasp/uncertainty.",
+    "description": "Causal Factorized scheduler inputs only; V5 utility/regrasp/uncertainty proxies are forbidden",
     "fields": {
-      "candidate_close": "Runtime-causal. Source: Codex action contract. NOT teacher event_id.",
-      "action_known": "Runtime-causal. Whether action intent is reliably classified.",
-      "student_valid": "Runtime-causal. Source: Codex. NOT route_supported proxy.",
-      "route_supported": "Whether mechanism route is in supported set.",
-      "grasp_logit": "Raw logit from grasp head.",
-      "grasp_probability": "sigmoid(grasp_logit).",
-      "manipulation_logit": "Raw logit from manipulation head.",
-      "manipulation_probability": "sigmoid(manipulation_logit).",
-      "release_logit": "Raw logit from release_or_instability head.",
-      "release_probability": "sigmoid(release_logit). Conservative veto candidate. Not pure-release equivalent."
+      "candidate_close": "Runtime-causal action-intent field; never Teacher event_id",
+      "action_known": "Runtime-causal action semantic validity",
+      "student_valid": "Runtime-causal Student validity",
+      "route_supported": "Runtime-causal mechanism-route support",
+      "grasp_logit": "Raw grasp-head logit",
+      "manipulation_logit": "Raw manipulation-head logit",
+      "release_logit": "Raw release_or_instability-head logit"
+    },
+    "adapter_outputs": {
+      "grasp_probability": "sigmoid(a_grasp * grasp_logit + b_grasp)",
+      "manipulation_probability": "sigmoid(a_manipulation * manipulation_logit + b_manipulation)",
+      "release_probability": "sigmoid(a_release * release_logit + b_release)"
     },
     "forbidden_runtime_fields": [
-      "grasp_known_mask", "manipulation_known_mask", "release_known_mask",
-      "event_id", "event_role", "event_duration",
-      "strict_k10_feasible", "strict_k10_known_mask",
-      "grasp_target", "manipulation_target", "release_target",
-      "Teacher phase labels", "attack outcome", "future fields",
-      "utility_probability", "regrasp_probability", "uncertainty_probability"
+      "grasp_known_mask",
+      "manipulation_known_mask",
+      "release_known_mask",
+      "event_id",
+      "event_role",
+      "strict_k10_feasible",
+      "strict_k10_known_mask",
+      "grasp_target",
+      "manipulation_target",
+      "release_target",
+      "Teacher phase labels",
+      "attack outcome",
+      "future fields",
+      "utility_probability",
+      "regrasp_probability",
+      "uncertainty_probability"
     ]
   },
-
-  "offline_label_policy": {
-    "calibration": {
-      "allowed": ["head_targets", "head_known_masks"],
-      "purpose": "fit calibrators, compute head discrimination/calibration metrics",
-      "forbidden": "must not affect scheduler state transitions"
+  "offline_artifact_roles": {
+    "calibration_fit": {
+      "allowed": [
+        "raw head logits",
+        "head targets",
+        "head known masks",
+        "identity and step",
+        "checkpoint/source/feature provenance"
+      ],
+      "purpose": "fit RAW, INTERCEPT_ONLY or PLATT parameters",
+      "forbidden": "must not select scheduler thresholds or affect runtime state transitions"
     },
-    "evaluation": {
-      "allowed": ["strict_k10_feasible", "strict_k10_known_mask", "Teacher event metadata"],
-      "purpose": "audit-only — judge whether scheduler emit is correct",
-      "forbidden": "must not affect scheduler state transitions"
+    "policy_selection": {
+      "allowed": [
+        "sealed runtime rows",
+        "strict-K10 labels joined after real-adapter replay",
+        "independent policy-selection identities"
+      ],
+      "purpose": "jointly select grasp, manipulation and release-veto thresholds",
+      "forbidden": "must not read heldout evaluation or attack outcomes"
+    },
+    "heldout_evaluation": {
+      "allowed": [
+        "strict_k10_feasible",
+        "strict_k10_known_mask",
+        "Teacher event metadata for audit"
+      ],
+      "purpose": "final L3 timing evaluation only",
+      "forbidden": "must not fit calibration or select thresholds"
     }
   },
-
-  "k10_opportunity": {
-    "description": "strict_k10_feasible[t] already means a complete T10 window exists starting at t.",
-    "valid_start": "strict_k10_known_mask[t]=true AND strict_k10_feasible[t]=true",
-    "positive_episode": "at least one VALID_START in the eligible domain",
-    "negative_episode": "ALL positions in the eligible domain are known AND strict_k10_feasible=false for ALL",
-    "unknown_episode": "eligible domain has any unknown position, AND no known positive exists",
-    "eligible_domain": "steps 0 to T-10 (positions that can host a complete T10 window), per Teacher contract",
-    "no_double_horizon": "Do NOT require consecutive feasible-start blocks of min_length=8. Do NOT require emit_step+9 within a feasible-start block.",
-    "containment": "emit_step is a VALID_START — containment is inherent in the strict_k10_feasible definition",
-    "insufficient_coverage": "If Teacher bundle lacks complete eligible-domain known info, classify as BLOCKED_INSUFFICIENT_K10_KNOWN_COVERAGE"
+  "identity_policy": {
+    "required_sets": [
+      "calibrator_fit_identities",
+      "policy_selection_identities",
+      "heldout_evaluation_identities",
+      "checkpoint_training_identities"
+    ],
+    "pairwise_disjointness": [
+      "calibrator_fit ∩ policy_selection = empty",
+      "calibrator_fit ∩ heldout_evaluation = empty",
+      "policy_selection ∩ heldout_evaluation = empty"
+    ],
+    "checkpoint_exclusion": [
+      "calibrator_fit ∩ checkpoint_training = empty",
+      "policy_selection ∩ checkpoint_training = empty"
+    ],
+    "no_claim_from_inner_train_resubstitution": true
   },
-
+  "k10_opportunity": {
+    "valid_start": "strict_k10_known_mask[t]=true AND strict_k10_feasible[t]=true",
+    "positive_episode": "at least one valid start in steps 0 through T-10 inclusive",
+    "negative_episode": "all eligible steps are known and no valid start exists",
+    "unknown_episode": "eligible domain contains unknown labels and no known positive",
+    "containment": "strict_k10_feasible already encodes a full T10 interval",
+    "no_double_horizon": true
+  },
   "primary_metrics": {
     "negative_episode_false_start_rate": {
-      "numerator": "negative episode emits",
-      "denominator": "negative episodes (unknown excluded)",
-      "gate": "≤ 0.10 (PROPOSED_ENGINEERING_GATE — not frozen)"
+      "numerator": "negative_episode_emits",
+      "denominator": "negative_episodes",
+      "selection_gate": "worst split <= 0.10 and defined on all 12 splits"
     },
     "valid_opportunity_recall": {
-      "numerator": "positive on-corridor emits (emit_step ∈ VALID_START)",
-      "denominator": "positive episodes",
-      "gate": "PERFORMANCE_GATE = NEEDS_PROJECT_FREEZE"
+      "numerator": "positive_on_corridor_emits",
+      "denominator": "positive_episodes",
+      "selection_objective": "primary maximization objective after the false-start constraint"
     },
-    "emit_precision": {
-      "numerator": "positive on-corridor emits",
-      "denominator": "total emitted episodes"
+    "all_emit_precision": {
+      "numerator": "positive_on_corridor_emits",
+      "denominator": "total_emitted_all"
+    },
+    "verified_emit_precision": {
+      "numerator": "positive_on_corridor_emits",
+      "denominator": "total_emitted_verified"
     }
   },
-
   "secondary_metrics": [
-    "abstention_rate", "invalid_emit_fraction",
-    "early_emit_rate", "late_emit_rate", "median_timing_offset",
-    "unsupported_emit_rate", "student_valid_coverage", "candidate_exposure_rate",
-    "state_reason_breakdown", "per_identity_bootstrap_ci"
+    "abstention_rate",
+    "invalid_emit_fraction",
+    "unknown_emit_rate",
+    "unverifiable_emit_fraction",
+    "median_timing_offset",
+    "relative_region_position",
+    "state_reason_breakdown"
   ],
-
-  "L1": {
-    "L1A": {
-      "name": "non_close_intent_head_activation_diagnostic",
-      "population": "steps with student_valid=true AND candidate_close=false",
-      "note": "candidate_close=false ≠ physical background. Includes normal release, OPEN actions, non-grasp phases."
-    },
-    "L1B": {
-      "name": "teacher_background_head_activation_diagnostic",
-      "population": "steps with event_id < 0 (Teacher background label)",
-      "note": "Offline diagnostic only. Uses Teacher label. Cannot enter runtime scheduler."
-    }
-  },
-
   "calibration": {
-    "methods": ["RAW", "INTERCEPT_ONLY", "PLATT"],
-    "fit_priority": "grasp_logit, manipulation_logit, release_logit (raw logits). Probability only for consistency audit.",
-    "provenance_classes": {
-      "INDEPENDENT_CALIBRATION": "calibration identities NOT used in checkpoint training",
-      "TRAIN_RESUBSTITUTION_CALIBRATION": "calibration identities WERE used in checkpoint training — NON_AUTHORITATIVE"
-    },
-    "fit_pipeline": [
-      "inner-train raw logits from checkpoint",
-      "verify bundle seal, checkpoint SHA, source commit, feature-order SHA",
-      "classify provenance as INDEPENDENT or TRAIN_RESUBSTITUTION",
-      "fit per-head calibrator using Teacher known mask (sample selection only)",
-      "select threshold on independent calibration/policy-selection data (identity-disjoint from fit and heldout)",
-      "freeze calibration contract JSON",
-      "apply once to heldout split"
+    "methods": [
+      "RAW",
+      "INTERCEPT_ONLY",
+      "PLATT"
     ],
-    "insufficient_samples_policy": "method_status = HOLD_INSUFFICIENT_SAMPLES, method_valid = false. Do NOT silently fall back to RAW.",
+    "canonical_stream": "calibration_records.jsonl",
+    "canonical_fields": [
+      "episode",
+      "step",
+      "grasp_logit",
+      "grasp_probability",
+      "grasp_target",
+      "grasp_known_mask",
+      "manipulation_logit",
+      "manipulation_probability",
+      "manipulation_target",
+      "manipulation_known_mask",
+      "release_logit",
+      "release_probability",
+      "release_target",
+      "release_known_mask"
+    ],
+    "provenance_classes": {
+      "INDEPENDENT_CALIBRATION": "fit identities are absent from checkpoint training",
+      "TRAIN_RESUBSTITUTION_CALIBRATION": "fit identities were used in checkpoint training and are non-authoritative"
+    },
+    "insufficient_samples_policy": "method_valid=false and nonzero HOLD; no silent fallback"
+  },
+  "threshold_selection": {
+    "implementation": "real FactorizedV2SchedulerAdapter replay with one global joint threshold grid",
+    "thresholds": [
+      "grasp",
+      "manipulation",
+      "release"
+    ],
+    "constraint": "all split false-start rates defined and worst split <= 0.10",
+    "objective_order": [
+      "maximize aggregate valid_opportunity_recall",
+      "maximize aggregate all_emit_precision",
+      "minimize median timing offset",
+      "deterministic conservative tie-break"
+    ],
     "forbidden": [
-      "heldout split-half fitting",
       "heldout threshold search",
-      "identity-specific calibration",
-      "per-split best-method selection based on heldout",
-      "attack outcome usage",
-      "CAL/CHECK access",
-      "silent RAW fallback when method fails"
+      "CAL/CHECK",
+      "attack outcome",
+      "default 0.5",
+      "per-split thresholds selected on heldout"
     ]
   },
-
+  "real_adapter_requirement": {
+    "module": "gripper_attack.factorized_scheduler_adapter",
+    "class": "FactorizedV2SchedulerAdapter",
+    "fixture": "tests/fixtures/factorized_scheduler_api_v3_1_trace.json",
+    "synthetic_reimplementation_for_formal_selection": "forbidden"
+  },
   "formal_gate": {
-    "authoritative_l3": "HOLD — requires Codex V2 handoff + independent calibration artifacts + 12-split runtime bundle",
+    "code_static_closure": "PASS at PR #98 head after dedicated CPU CI",
+    "authoritative_l3": "HOLD pending Codex V3.2 sealed production artifacts and execution receipt",
     "full_fit": "HOLD",
     "passive_shadow": "HOLD",
     "active_canary": "HOLD",
     "attack": "HOLD"
   },
-
   "forbidden_substitutions": [
     "event_id for candidate_close",
-    "event_id for K10",
     "route_supported for student_valid",
-    "grasp_prob for utility (V5 concept removed)",
-    "manipulation_prob for regrasp (V5 concept removed)",
-    "heldout data for calibration fitting",
-    "overall_emit_rate for safety metric",
-    "min_length=8 corridor for K10 (double-horizon expansion)",
-    "known_coverage_50pct for negative episode classification"
+    "grasp probability for utility",
+    "manipulation probability for regrasp",
+    "heldout evaluation for calibration or threshold selection",
+    "overall emit rate for negative-episode safety",
+    "partial known-coverage heuristic for negative classification",
+    "empty or default calibration contract in diagnostic replay"
   ]
 }
