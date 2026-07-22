@@ -1,0 +1,12 @@
+{
+  "schema": "FACTORIZED_V2_SCHEDULER_PROTOCOL_V1",
+  "grasp_threshold": 0.5,
+  "manipulation_threshold": 0.5,
+  "release_veto_threshold": 0.5,
+  "candidate_dwell": 10,
+  "persistence_window": 5,
+  "persistence_required": 3,
+  "warmup_steps": 0,
+  "unknown_policy": "pause",
+  "attack_enabled": false
+}

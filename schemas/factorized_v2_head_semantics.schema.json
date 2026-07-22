@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openvla.example/schemas/factorized_v2_head_semantics.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "heads", "legacy_v5_compatibility"],
+  "properties": {
+    "schema": {"const": "FACTORIZED_V2_HEAD_SEMANTICS_V1"},
+    "heads": {
+      "type": "array",
+      "minItems": 3,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["field", "teacher_label_name", "physical_meaning", "runtime_meaning", "status", "requires_calibration"],
+        "properties": {
+          "field": {"type": "string"},
+          "teacher_label_name": {"type": "string"},
+          "physical_meaning": {"type": "string"},
+          "runtime_meaning": {"type": "string"},
+          "status": {"enum": ["DIRECT", "CONDITIONALLY_COMPATIBLE", "DIAGNOSTIC_ONLY", "INCOMPATIBLE", "UNRESOLVED"]},
+          "requires_calibration": {"type": "boolean"}
+        }
+      }
+    },
+    "legacy_v5_compatibility": {"const": "LEGACY_V5_SCHEDULER_NOT_COMPATIBLE_WITH_FACTORIZED_V2"}
+  }
+}
