@@ -25,6 +25,14 @@ def canonical_reference_sha(p):
     return hashlib.sha256(data).hexdigest()
 
 
+def canonical_handoff_sha(value):
+    payload = dict(value)
+    payload.pop("handoff_blob_sha256", None)
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
+
+
 def check_ref(obj, label, errors, required=True):
     if not isinstance(obj, dict):
         if required: errors.append(f"FAIL: {label} not object"); return False
@@ -75,6 +83,13 @@ def static_validation(handoff, errors):
     sha = handoff.get("code_snapshot_commit", "")
     if not (len(sha) == 40 and all(c in "0123456789abcdef" for c in sha)):
         errors.append("FAIL: code_snapshot_commit")
+    handoff_sha = handoff.get("handoff_blob_sha256", "")
+    if (
+        not isinstance(handoff_sha, str)
+        or not re.fullmatch(r"[0-9a-f]{64}", handoff_sha)
+        or canonical_handoff_sha(handoff) != handoff_sha
+    ):
+        errors.append("FAIL: handoff_blob_sha256")
 
     # Real V3.1 nested refs
     sa = handoff.get("scheduler_api", {})
@@ -128,6 +143,10 @@ def static_validation(handoff, errors):
         bundle = handoff.get("production_bundle", {})
         check_ref(bundle.get("manifest"), "production_bundle.manifest", errors)
         check_ref(bundle.get("seal"), "production_bundle.seal", errors)
+        if production.get("verdict") is not True:
+            errors.append("FAIL: V3.2 production_input_audit verdict")
+        if identity.get("verdict") != "GROUP_CROSS_FITTED_OOF_FEASIBLE":
+            errors.append("FAIL: V3.2 identity_audit verdict")
         if bundle.get("split_keys") != sorted(EXPECTED_SPLITS):
             errors.append("FAIL: V3.2 production_bundle split_keys")
 
