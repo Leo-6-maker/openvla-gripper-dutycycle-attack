@@ -153,27 +153,29 @@ Top-5 longest streaks (268, 260, 184, 183, 175 steps) from `libero_10/task_01-02
 CASE_4_CANDIDATE → L3_APPROXIMATE_NEAR_FEASIBLE
 ```
 
-After V5 scheduler replay (APPROXIMATE candidate_close):
+After V5 scheduler replay (**TEACHER_EVENT_GATED_DIAGNOSTIC_ONLY**):
 
-| Metric | Raw | Platt |
-|--------|-----|-------|
-| L3 emit rate (min) | 0.260 | **0.060** |
-| L3 emit rate (max) | 0.345 | 0.145 |
-| L3 splits ≤ 0.10 | 0/12 | **6/12** |
-| L3 splits ≤ 0.12 | 0/12 | **10/12** |
+| Metric | Raw | Platt (non-authoritative) |
+|--------|-----|---------------------------|
+| Overall emit rate (min) | 0.260 | 0.060 |
+| Overall emit rate (max) | 0.345 | 0.145 |
+| Splits ≤ 0.10 overall emit | 0/12 | 6/12 |
 
-The V5 scheduler (dwell=10, 3-of-5 persistence, release/regrasp veto, one-shot) dramatically reduces false starts compared to L2. With Platt calibration, multiple splits approach or cross the 0.10 boundary even with approximate candidate_close.
+**WARNING: Overall emit rate is NOT a safety metric.** It conflates false starts, valid hits, and abstention. The 6% low-emit splits may simply have very low recall. Authoritative L3 requires decomposed metrics (negative_episode_false_start_rate, valid_opportunity_recall, emit_precision, abstention_rate, K10_containment) which are computed by `replay_v5_scheduler_l3.py` but require proper `candidate_close` to be meaningful.
 
-**Long streak semantic audit** (90 streaks from 6 splits):
-- TRUE_BACKGROUND_FALSE_POSITIVE: 37.8%
-- POST_EVENT_TAIL: 25.6%
-- PRE_EVENT_ANTICIPATION: 8.9%
-- CANNOT_DETERMINE: 21.1%
-- LABEL_BOUNDARY_AMBIGUITY: 6.7%
+**Long streak audit** (90 streaks, 6 splits) — **EVENT-DISTANCE HEURISTIC ONLY, not confirmed FP:**
+- REMOTE_FROM_LABELED_EVENT (>100 steps): 37.8%
+- POST_EVENT_PROXIMITY (≤10 steps, after event): 25.6%
+- PRE_EVENT_PROXIMITY (≤10 steps, before event): 8.9%
+- UNRESOLVED (10-100 steps): 21.1%
+- BOUNDARY_PROXIMITY (10-30 steps): 6.7%
+
+These are automatic distance-based heuristics, NOT manual trace audit. No video, gripper qpos, or EEF trajectory verification performed.
 
 ### Blockers for authoritative L3:
-1. `candidate_close` not in prediction fields — currently approximated as `route_supported AND event_id >= 0`
-2. Platt calibration fitted on half-held-out data, not inner-train — can worsen L1 on unseen half
+1. **`candidate_close` requires policy action stream** (raw gripper values via `action_contract.classify_openvla_raw_gripper`). Not in current prediction bundle. Current approximation `route_supported AND event_id >= 0` is TEACHER_EVENT_GATED — uses Teacher label, not runtime-causal.
+2. **Platt calibration fitted on half-held-out** — proper inner-train calibration requires inner-train inference artifacts (BLOCKED).
+3. **Overall emit rate conflates safety and recall** — needs decomposed metrics.
 
 ## 9. GO / HOLD Summary
 
