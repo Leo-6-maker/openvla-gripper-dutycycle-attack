@@ -163,6 +163,13 @@ def validate_structured_inner_plan(value: Mapping[str, Any], *, execute: bool = 
                 raise CalibrationPlanError("IDENTITY_MANIFEST_BINDING_INVALID")
             if not feature_root.is_dir():
                 raise CalibrationPlanError("FEATURE_ROOT_MISSING")
+            from .b3_training_protocol import verify_sealed_directory
+            try:
+                verify_sealed_directory(feature_root)
+            except Exception as exc:
+                raise CalibrationPlanError("FEATURE_ROOT_SEAL_INVALID") from exc
+            if sha256_file(feature_root / "SHA256SUMS") != str(job["feature_seal_sha256"]).lower():
+                raise CalibrationPlanError("FEATURE_SEAL_MISMATCH")
             if output_root.exists() or not str(output_root):
                 raise CalibrationPlanError("OUTPUT_ROOT_INVALID")
             if str(job["predictor_script"]) and not Path(str(job["predictor_script"])).is_file():
@@ -202,7 +209,7 @@ def validate_execution_authorization_v2(value: Mapping[str, Any], plan: Mapping[
                 raise CalibrationPlanError("EXECUTION_BINDING_NULL")
         for field in ("checkpoint_sha256", "identity_manifest_sha256", "feature_seal_sha256", "predictor_source_sha256"):
             _required_sha(binding[field], f"{field.upper()}_INVALID")
-        if binding["output_root"] != job["output_root"] or binding["checkpoint_path"] != job["checkpoint_path"] or binding["predictor_module"] != job["predictor_module"]:
+        if any(binding[field] != job[field] for field in ("outer_fold", "inner_fold", "seed", "checkpoint_path", "checkpoint_sha256", "identity_manifest_path", "identity_manifest_sha256", "feature_root", "feature_seal_sha256", "predictor_module", "output_root")):
             raise CalibrationPlanError("EXECUTION_BINDING_PLAN_MISMATCH")
     if seen != set(EXPECTED_SPLITS):
         raise CalibrationPlanError("EXECUTION_BINDING_EXACT_SPLITS")

@@ -105,6 +105,9 @@ def execute(args: argparse.Namespace) -> dict:
                 "--split", job["split"],
                 "--output-root", str(job_output),
             ]
+            binding = next(item for item in authorization["bindings"] if item["split"] == job["split"])
+            if sha256_file(Path(job["predictor_script"])) != binding["predictor_source_sha256"]:
+                raise CalibrationPlanError("PREDICTOR_SOURCE_SHA_MISMATCH")
             completed = subprocess.run(command, check=True, capture_output=True, text=True)
             _audit_inference_output(job_output, job)
             results.append({"split": job["split"], "command": command, "returncode": completed.returncode, "stdout_sha256": _bytes_sha(completed.stdout.encode()), "stderr_sha256": _bytes_sha(completed.stderr.encode())})

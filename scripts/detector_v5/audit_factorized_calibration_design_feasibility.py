@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -62,8 +64,13 @@ def main() -> int:
     parser.add_argument("--plan", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    if args.output.exists():
+        raise SystemExit("OUTPUT_EXISTS")
     result = audit(args.plan)
-    args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = args.output.with_name(f".{args.output.name}.{uuid.uuid4().hex}.staging")
+    temporary.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(temporary, args.output)
     print(json.dumps(result, sort_keys=True))
     return 0 if result["status"] == "STATIC_FEASIBILITY_PASS" else 2
 

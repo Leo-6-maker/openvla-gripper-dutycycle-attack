@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from typing import Any, Mapping
 
 from .factorized_scheduler import FactorizedSchedulerConfig, FactorizedV2OneShotScheduler
@@ -44,7 +45,7 @@ def validate_calibration_v2(value: Mapping[str, Any]) -> dict[str, Any]:
     }
     if set(value) != required or value.get("schema") != CALIBRATION_V2:
         raise FactorizedSchedulerAdapterError("CALIBRATION_V2_SCHEMA")
-    if not isinstance(value.get("split"), str) or len(value["split"]) != 5 or value["split"][0] != "o" or value["split"][2:4] != "_i":
+    if not isinstance(value.get("split"), str) or not re.fullmatch(r"o[0-3]_i[0-2]", value["split"]):
         raise FactorizedSchedulerAdapterError("CALIBRATION_V2_SPLIT")
     _sha(value.get("checkpoint_sha256"), "CHECKPOINT_SHA_INVALID")
     _sha(value.get("scheduler_source_sha256"), "SCHEDULER_SOURCE_SHA_INVALID")
@@ -84,7 +85,7 @@ def validate_calibration_v2(value: Mapping[str, Any]) -> dict[str, Any]:
 def apply_calibration(head: Mapping[str, Any], raw_logit: Any) -> float:
     """Apply exactly sigmoid(a * raw_logit + b); never fit or choose values."""
     validate_head = {**head}
-    if validate_head.get("method") not in {"RAW", "INTERCEPT_ONLY", "PLATT"}:
+    if validate_head.get("method") not in {"RAW", "INTERCEPT_ONLY", "PLATT"} or validate_head.get("transform") != "probability=sigmoid(a*raw_logit+b)" or validate_head.get("method_valid") is not True or validate_head.get("transform_valid") is not True:
         raise FactorizedSchedulerAdapterError("CALIBRATION_METHOD_INVALID")
     z = _finite(raw_logit, "RAW_LOGIT_INVALID")
     a = _finite(validate_head.get("a"), "CALIBRATION_A_INVALID")
