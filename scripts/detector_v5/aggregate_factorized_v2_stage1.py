@@ -8,6 +8,7 @@ import argparse, hashlib, json, os, sys, uuid
 from pathlib import Path
 from collections import defaultdict
 from statistics import mean, stdev
+import math
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 OPS = Path('/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/ops')
@@ -219,24 +220,20 @@ def main():
             continue
 
         agg = {}
-        metric_fail = False
+        metric_integrity_hold = False
         for mk in metric_keys:
-            vals = [m[mk] for m in mlist if m.get(mk) is not None]
+            vals = [m[mk] for m in mlist if m.get(mk) is not None and math.isfinite(m[mk])]
             if len(vals) != 12:
-                if mk in SAFETY:
-                    safety_elim[ck] = {'reason': f'MISSING_SAFETY: {mk} has {len(vals)}/12 values'}
-                    metric_fail = True
-                    break
-                else:
-                    safety_elim[ck] = {'reason': f'MISSING_METRIC: {mk} has {len(vals)}/12 values'}
-                    metric_fail = True
-                    break
+                metric_integrity_hold = True
+                safety_elim[ck] = {'reason': f'METRIC_INTEGRITY: {mk} has {len(vals)}/12 finite values'}
+                break
             agg[f'{mk}_mean'] = mean(vals)
             agg[f'{mk}_stdev'] = stdev(vals) if len(vals) > 1 else 0
             agg[f'{mk}_per_split'] = vals
             if mk in SAFETY:
                 agg[f'{mk}_worst'] = max(vals)
-        if metric_fail:
+
+        if metric_integrity_hold:
             continue
 
         if ck in safety_elim:
@@ -259,22 +256,42 @@ def main():
         agg['safety_pass'] = True
         config_metrics[ck] = agg
 
-        # Same-split LR comparison
-        v2_aurocs = agg.get('release_auroc_per_split', [])
-        v2_auprcs = agg.get('release_auprc_per_split', [])
-        lr_aurocs = [lr_splits.get(f'o{o}i{i}', {}).get('release_auroc') for (o, i) in runs if lr_splits.get(f'o{o}i{i}', {}).get('release_auroc') is not None]
-        lr_auprcs = [lr_splits.get(f'o{o}i{i}', {}).get('release_auprc') for (o, i) in runs if lr_splits.get(f'o{o}i{i}', {}).get('release_auprc') is not None]
+        # Same-split LR comparison — require exactly 12 LR split keys
+        per_split_deltas = []
+        lr_auroc_vals, lr_auprc_vals = [], []
+        v2_auroc_vals = agg.get('release_auroc_per_split', [])
+        v2_auprc_vals = agg.get('release_auprc_per_split', [])
+        lr_missing = False
+        for oi, (o, i) in enumerate(sorted(runs.keys())):
+            split_key = f'o{o}i{i}'
+            lr_entry = lr_splits.get(split_key, {})
+            lr_au = lr_entry.get('release_auroc')
+            lr_ap = lr_entry.get('release_auprc')
+            if lr_au is None or lr_ap is None or not math.isfinite(lr_au) or not math.isfinite(lr_ap):
+                lr_missing = True; break
+            lr_auroc_vals.append(lr_au); lr_auprc_vals.append(lr_ap)
+            if oi < len(v2_auroc_vals) and oi < len(v2_auprc_vals):
+                per_split_deltas.append({
+                    'split': split_key, 'v2_auroc': v2_auroc_vals[oi],
+                    'lr_auroc': lr_au, 'delta_auroc': v2_auroc_vals[oi] - lr_au,
+                    'v2_auprc': v2_auprc_vals[oi], 'lr_auprc': lr_ap,
+                    'delta_auprc': v2_auprc_vals[oi] - lr_ap})
+
+        if lr_missing or len(lr_auroc_vals) != 12:
+            safety_elim[ck] = {'reason': f'LR_BASELINE_INCOMPLETE: {len(lr_auroc_vals)}/12 splits'}
+            continue
+
         v2_mean_auroc = agg.get('release_auroc_mean', 0)
         v2_mean_auprc = agg.get('release_auprc_mean', 0)
-        lr_mean_auroc = mean(lr_aurocs) if lr_aurocs else 0
-        lr_mean_auprc = mean(lr_auprcs) if lr_auprcs else 0
-        lr_comp[ck] = {'v2_auroc': v2_mean_auroc, 'lr_auroc': lr_mean_auroc,
-                       'v2_auprc': v2_mean_auprc, 'lr_auprc': lr_mean_auprc,
-                       'v2_auroc_splits': v2_aurocs, 'lr_auroc_splits': lr_aurocs,
+        lr_mean_auroc = mean(lr_auroc_vals)
+        lr_mean_auprc = mean(lr_auprc_vals)
+        lr_comp[ck] = {'v2_auroc_mean': v2_mean_auroc, 'lr_auroc_mean': lr_mean_auroc,
+                       'v2_auprc_mean': v2_mean_auprc, 'lr_auprc_mean': lr_mean_auprc,
+                       'per_split_deltas': per_split_deltas,
                        'beats_lr': v2_mean_auroc > lr_mean_auroc and v2_mean_auprc > lr_mean_auprc}
 
     n_safe = len(config_metrics) - len(safety_elim)
-    n_lr = sum(1 for v in lr_comp.values() if v['beats_lr'])
+    n_lr = sum(1 for v in lr_comp.values() if v.get('beats_lr'))
     print(f'\nSafety pass: {n_safe}/{len(config_runs)}')
     print(f'Beats LR: {n_lr}/{n_safe}')
     print(f'Eliminated: {len(safety_elim)}')
@@ -287,13 +304,20 @@ def main():
             continue
         if not lr_comp.get(ck, {}).get('beats_lr'):
             continue
+        # Use per-split gap from evaluator (not cross-split mean cancellation)
+        first_vals = agg.get('release_first_recall_05_per_split', [])
+        later_vals = agg.get('release_later_recall_05_per_split', [])
+        per_split_gaps = [abs(f - l) for f, l in zip(first_vals, later_vals)] if len(first_vals) == len(later_vals) == 12 else []
+        gap_mean = mean(per_split_gaps) if per_split_gaps else None
+        gap_worst = max(per_split_gaps) if per_split_gaps else None
+
         selection_input[ck] = {
             'release_auprc': agg.get('release_auprc_mean'),
             'release_auprc_per_split': agg.get('release_auprc_per_split'),
             'release_short_auprc': agg.get('release_short_auprc_mean'),
             'release_short_auprc_per_split': agg.get('release_short_auprc_per_split'),
-            'first_later_recall_gap': abs((agg.get('release_first_recall_05_mean', 0) or 0) -
-                                          (agg.get('release_later_recall_05_mean', 0) or 0)),
+            'first_later_recall_gap_mean': gap_mean,
+            'first_later_recall_gap_worst': gap_worst,
             'parameter_count': agg.get('param_count', 0),
             'background_false_emit_rate': agg.get('background_false_emit_rate_worst'),
             'release_overlap_emit_rate': agg.get('release_overlap_emit_rate_worst'),
@@ -301,38 +325,42 @@ def main():
             'release_auroc': agg.get('release_auroc_mean'),
         }
 
-    # Run simple lexicographic: safety→auprc→short→gap→params
+    # Lexicographic: safety→auprc→short→gap→params. Keep all ties, no dict-order dependence.
     def lexicographic_select(candidates):
-        remaining = dict(candidates)
-        trace = []
-        # Priority 1: Safety (already filtered)
-        trace.append({'priority': 'safety', 'n': len(remaining)})
-        # Priority 2: Release AUPRC
-        best_auprc = max(v['release_auprc'] for v in remaining.values())
-        remaining = {k: v for k, v in remaining.items() if v['release_auprc'] >= best_auprc - 0.005}
-        trace.append({'priority': 'release_auprc', 'best': best_auprc, 'n': len(remaining)})
-        if len(remaining) > 1:
-            # Priority 3: Short-event AUPRC
-            best_short = max(v['release_short_auprc'] for v in remaining.values())
-            remaining = {k: v for k, v in remaining.items() if v['release_short_auprc'] >= best_short - 0.005}
-            trace.append({'priority': 'short_auprc', 'best': best_short, 'n': len(remaining)})
-        if len(remaining) > 1:
-            # Priority 4: First/later gap
-            best_gap = min(v['first_later_recall_gap'] for v in remaining.values())
-            remaining = {k: v for k, v in remaining.items() if v['first_later_recall_gap'] <= best_gap + 0.02}
-            trace.append({'priority': 'gap', 'best': best_gap, 'n': len(remaining)})
-        if len(remaining) > 1:
-            # Priority 5: Parameter count
-            best_params = min(v['parameter_count'] for v in remaining.values())
-            remaining = {k: v for k, v in remaining.items() if v['parameter_count'] == best_params}
-            trace.append({'priority': 'params', 'best': best_params, 'n': len(remaining)})
-        selected = list(remaining.keys())[0] if remaining else None
-        return selected, trace
+        if not candidates:
+            return [], [{'result': 'HOLD_NO_ELIGIBLE_CONFIG'}]
+        remaining = list(candidates.keys())
+        trace = [{'priority': 'safety', 'n': len(remaining)}]
+
+        for pri, key, direction, eps in [
+            ('release_auprc', 'release_auprc', 'higher', 0.005),
+            ('short_auprc', 'release_short_auprc', 'higher', 0.005),
+            ('first_later_gap', 'first_later_recall_gap_mean', 'lower', 0.02),
+            ('parameter_count', 'parameter_count', 'lower', 0),
+        ]:
+            if len(remaining) <= 1:
+                break
+            vals = [candidates[k].get(key) for k in remaining]
+            vals = [v for v in vals if v is not None]
+            if not vals:
+                trace.append({'priority': pri, 'error': 'ALL_NONE'})
+                break
+            if direction == 'higher':
+                best = max(vals)
+                remaining = [k for k in remaining if candidates[k].get(key, -1e9) >= best - eps]
+            else:
+                best = min(vals)
+                remaining = [k for k in remaining if candidates[k].get(key, 1e9) <= best + eps]
+            trace.append({'priority': pri, 'best': best, 'n': len(remaining)})
+
+        # All remaining are ties — keep all
+        return remaining, trace
 
     shortlist_candidates = {k: v for k, v in selection_input.items()}
-    selected_config, selection_trace = lexicographic_select(shortlist_candidates)
+    selected_configs, selection_trace = lexicographic_select(shortlist_candidates)
 
-    print(f'\nSelected: {selected_config}')
+    has_selection = len(selected_configs) > 0
+    print(f'\nSelected: {selected_configs}')
     for t in selection_trace:
         print(f'  {t}')
 
@@ -358,12 +386,15 @@ def main():
         cl = [ck for ck in cs if lr_comp.get(ck, {}).get('beats_lr')]
         summary['by_candidate'][c] = {'total': len(cc), 'safety_pass': len(cs), 'beats_lr': len(cl)}
     shortlist = {
-        'selected': selected_config,
+        'status': 'HOLD_NO_ELIGIBLE_CONFIG' if not has_selection else 'SELECTED',
+        'selected': selected_configs,
+        'n_selected': len(selected_configs),
         'selection_trace': selection_trace,
         'candidates_considered': len(shortlist_candidates),
-        'shortlist': [selected_config] if selected_config else [],
-        'shortlist_valid': selected_config is not None,
-        'eligible_for_stage2': selected_config is not None,
+        'shortlist': selected_configs,
+        'shortlist_valid': has_selection,
+        'eligible_for_stage2': has_selection,
+        'all_ties_kept': True,
     }
     _atomic_text(staging / 'stage1_shortlist.json', json.dumps(shortlist, indent=2))
     _atomic_text(staging / 'stage1_selection_trace.json', json.dumps(selection_trace, indent=2))
