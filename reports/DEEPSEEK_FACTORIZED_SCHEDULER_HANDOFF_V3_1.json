@@ -59,7 +59,7 @@
   },
   "offline_bundles": {
     "calibration": {
-      "schema": {"path": "schemas/factorized_v2_offline_calibration_bundle.schema.json", "sha256": "3ac2a8529c49705078eda8ca6cc3c613aee2bdbce7adfedd31c192e9088a91ee"},
+      "schema": {"path": "schemas/factorized_v2_offline_calibration_bundle.schema.json", "sha256": "0059026c398126dae9cb71cabc88d35eab52837bfb2011d74398c44887705677"},
       "label_schema": {"path": "schemas/factorized_v2_offline_calibration_labels.schema.json", "sha256": "ed3842867fe783dc3a14588eb35de31da9e4b30665d85fda26314520e9c34c16"},
       "data_filename": "calibration_records.jsonl",
       "manifest_filename": "manifest.json",
@@ -79,7 +79,7 @@
       "strict_k10_feasible_field": "strict_k10_feasible",
       "strict_k10_known_field": "strict_k10_known_mask",
       "eligible_start_semantics": "offline Teacher/evaluation label only; never a runtime gate",
-      "materializer": {"path": "scripts/detector_v5/materialize_factorized_v2_offline_evaluation_bundle.py", "sha256": "e117f6182397ddfef5aa27f036029099f86dfe2760cdfab6375f7893f214c864"},
+      "materializer": {"path": "scripts/detector_v5/materialize_factorized_v2_offline_evaluation_bundle.py", "sha256": "a76ca6c2de1299bfdea860ce7effa04512a06ded85c8511d1d5f853424e2d9db"},
       "physical_separation": "never written into runtime bundle"
     }
   },
@@ -129,5 +129,5 @@
   "forbidden_runtime_fields": ["event_id", "known_mask", "teacher_phase", "teacher_label", "strict_k10_feasible", "strict_k10_known_mask", "utility_probability", "regrasp_probability", "future_fields", "attack_outcome", "object_state", "contact", "action", "clean_action", "executed_action", "mutated_action"],
   "forbidden_substitutions": ["grasp_probability -> utility_probability", "manipulation_probability -> regrasp_probability", "Teacher/event_id -> candidate_close", "zero/default fill for missing heads", "temperature-only formal calibration", "arbitrary subprocess commands", "CAL/CHECK reads", "model inference without separate authorization", "action mutation", "attack"],
   "execution_boundary": {"static_interface": true, "identity_audit": true, "sealed_artifact_audit": true, "runtime_rematerialization": false, "offline_evaluation_bundle": false, "model_inference": false, "training": false, "full_fit": false, "cal_check": false, "rollout": false, "shadow": false, "attack": false},
-  "handoff_blob_sha256": "807675b7b7919ab1d95bf52697dc9647cc08667e3a61063e051f39a8767a539a"
+  "handoff_blob_sha256": "659bffd27762023c4a66d9e101cfa24458644100aea466778e0f039c2823912c"
 }
