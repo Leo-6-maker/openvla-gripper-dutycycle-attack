@@ -98,7 +98,7 @@
   },
   "structural_config": {"path": "configs/FACTORIZED_V2_SCHEDULER_PROTOCOL_V1.json", "sha256": "98c5fd257ad5b34f04286818698d6d678012bd84ac9a360419c3927412c80390"},
   "handoff_validator": {
-    "source": {"path": "scripts/detector_v5/validate_factorized_v2_handoff.py", "sha256": "71e3400af09f8e7fac334a2f840a4780dbb041da1b9a364c7bcff9b36fe09433"},
+    "source": {"path": "scripts/detector_v5/validate_factorized_v2_handoff.py", "sha256": "744ff0f80bcfea300f0100190fcba7c037fec830ac92b45e0eeb4192ae99b1fd"},
     "pass_status": "STATIC_INTEGRATION_PASS",
     "execution_ready_status_forbidden": true,
     "rules": ["canonical hash", "nested reference SHA", "repo-relative regular files", "absolute/.. paths rejected", "symlinks rejected", "exact 12 split keys", "Teacher/offline fields excluded from runtime contract"]
@@ -114,7 +114,7 @@
     "handoff_receipt": {"path": "reports/FACTORIZED_V3_1_HANDOFF_RECEIPT.json", "sha256": "1ebab6dfc6d26ad9c75cbbc34d208007051e3ae0095c9c73685a894c5884792b"},
     "handoff_receipt_reference_sha_definition": "SHA256(canonical receipt JSON with handoff_blob_sha256 omitted)",
     "read_only_receipt_root": {"path": "reports/FACTORIZED_V3_1_RUNTIME_PRODUCTION_AUDIT_RECEIPT/audit_summary.json", "sha256": "22795a6b78367b0cc601bdefa140f1cb3812de8e70c1a8967ae32927a278ff47"},
-    "receipt_seal": {"path": "reports/FACTORIZED_V3_1_RUNTIME_PRODUCTION_AUDIT_RECEIPT/SHA256SUMS", "sha256": "900ddd5e4fd05dcfe856de3566c22764ae039ebbbeede461dfdcb3846a33f055"},
+    "receipt_seal": {"path": "reports/FACTORIZED_V3_1_RUNTIME_PRODUCTION_AUDIT_RECEIPT/SHA256SUMS", "sha256": "e83a2b40802ea43b61bbdbb72980a0631f2210bf04232de9ac9717af9d4cc23c"},
     "receipt_status": "BLOCKED_ROOTS_NOT_MOUNTED",
     "required_before_rematerialization": ["exact 12 split closure", "all source roots sealed", "checkpoint/source/feature binding", "runtime action certification", "exact episode/step join"],
     "model_inference": false
@@ -129,5 +129,5 @@
   "forbidden_runtime_fields": ["event_id", "known_mask", "teacher_phase", "teacher_label", "strict_k10_feasible", "strict_k10_known_mask", "utility_probability", "regrasp_probability", "future_fields", "attack_outcome", "object_state", "contact", "action", "clean_action", "executed_action", "mutated_action"],
   "forbidden_substitutions": ["grasp_probability -> utility_probability", "manipulation_probability -> regrasp_probability", "Teacher/event_id -> candidate_close", "zero/default fill for missing heads", "temperature-only formal calibration", "arbitrary subprocess commands", "CAL/CHECK reads", "model inference without separate authorization", "action mutation", "attack"],
   "execution_boundary": {"static_interface": true, "identity_audit": true, "sealed_artifact_audit": true, "runtime_rematerialization": false, "offline_evaluation_bundle": false, "model_inference": false, "training": false, "full_fit": false, "cal_check": false, "rollout": false, "shadow": false, "attack": false},
-  "handoff_blob_sha256": "213e744a5fee16f0538a949e2297fcf54d725f5808ce0b6b0a450ec65dbb184a"
+  "handoff_blob_sha256": "d3d2f6813004ac433a374cdcdaf437818d3b179fa1432e3e73983c6ebc4e0b46"
 }
