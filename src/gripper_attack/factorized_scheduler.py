@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from math import isfinite
@@ -11,7 +12,9 @@ from typing import Any, Mapping
 
 
 STRUCTURE_SCHEMA = "FACTORIZED_V2_SCHEDULER_STRUCTURE_V1"
-CALIBRATION_SCHEMA = "FACTORIZED_V2_CALIBRATION_CONTRACT_V1"
+CALIBRATION_SCHEMA_V1 = "FACTORIZED_V2_CALIBRATION_CONTRACT_V1"
+CALIBRATION_SCHEMA_V2 = "FACTORIZED_V2_CALIBRATION_AND_THRESHOLD_CONTRACT_V2"
+CALIBRATION_SCHEMA = CALIBRATION_SCHEMA_V2
 
 
 class FactorizedSchedulerError(ValueError):
@@ -85,34 +88,81 @@ class FactorizedSchedulerConfig:
         if not isinstance(structure["candidate_dwell_counts_before_grasp"], bool):
             raise FactorizedSchedulerError("DWELL_SEMANTICS_INVALID")
 
-        calibration_keys = {
-            "schema", "status", "checkpoint_sha256", "fit_manifest_sha256", "grasp",
-            "manipulation", "release", "formal_selection_eligible",
-            "training_authorized", "attack_authorized",
-        }
-        if set(calibration) != calibration_keys or calibration.get("schema") != CALIBRATION_SCHEMA:
-            raise FactorizedSchedulerError("CALIBRATION_CONTRACT_SCHEMA")
-        if calibration.get("status") not in {"TEST_ONLY_NOT_SELECTION_ELIGIBLE", "SEALED_EXTERNAL_CALIBRATION"}:
-            raise FactorizedSchedulerError("CALIBRATION_STATUS_INVALID")
-        if any(calibration.get(key) is not False for key in ("formal_selection_eligible", "training_authorized", "attack_authorized")):
-            raise FactorizedSchedulerError("CALIBRATION_AUTHORIZATION_NOT_DISABLED")
-        checkpoint_sha = _sha(calibration.get("checkpoint_sha256"), "CALIBRATION_CHECKPOINT")
-        fit_manifest_sha = _sha(calibration.get("fit_manifest_sha256"), "CALIBRATION_FIT_MANIFEST")
-        heads: dict[str, Mapping[str, Any]] = {}
-        for head in ("grasp", "manipulation", "release"):
-            value = calibration.get(head)
-            if not isinstance(value, Mapping):
-                raise FactorizedSchedulerError("CALIBRATION_HEAD_INVALID")
-            heads[head] = value
-        thresholds = {
-            "grasp_threshold": _threshold(heads["grasp"].get("threshold"), "GRASP_THRESHOLD"),
-            "manipulation_threshold": _threshold(heads["manipulation"].get("threshold"), "MANIPULATION_THRESHOLD"),
-            "release_veto_threshold": _threshold(heads["release"].get("threshold"), "RELEASE_THRESHOLD"),
-        }
-        for head in ("grasp", "manipulation", "release"):
-            temperature = heads[head].get("temperature")
-            if isinstance(temperature, bool) or not isinstance(temperature, (int, float)) or not isfinite(float(temperature)) or float(temperature) <= 0:
-                raise FactorizedSchedulerError("CALIBRATION_TEMPERATURE_INVALID")
+        calibration_schema = calibration.get("schema")
+        if calibration_schema == CALIBRATION_SCHEMA_V2:
+            calibration_keys = {
+                "schema", "checkpoint_sha256", "split", "scheduler_source_sha256",
+                "structural_config_sha256", "student_source_commit", "feature_order_sha256",
+                "grasp", "manipulation", "release", "formal_selection_eligible",
+                "training_authorized", "attack_authorized",
+            }
+            if set(calibration) != calibration_keys:
+                raise FactorizedSchedulerError("CALIBRATION_CONTRACT_SCHEMA")
+            if not re.fullmatch(r"o[0-3]_i[0-2]", str(calibration.get("split", ""))):
+                raise FactorizedSchedulerError("CALIBRATION_SPLIT_INVALID")
+            checkpoint_sha = _sha(calibration.get("checkpoint_sha256"), "CALIBRATION_CHECKPOINT")
+            fit_manifest_sha = _sha(calibration.get("feature_order_sha256"), "CALIBRATION_FEATURE_ORDER")
+            _sha(calibration.get("scheduler_source_sha256"), "CALIBRATION_SCHEDULER_SOURCE")
+            _sha(calibration.get("structural_config_sha256"), "CALIBRATION_STRUCTURAL_CONFIG")
+            if not re.fullmatch(r"[0-9a-fA-F]{40}", str(calibration.get("student_source_commit", ""))):
+                raise FactorizedSchedulerError("CALIBRATION_STUDENT_COMMIT_INVALID")
+            if any(calibration.get(key) is not False for key in ("formal_selection_eligible", "training_authorized", "attack_authorized")):
+                raise FactorizedSchedulerError("CALIBRATION_AUTHORIZATION_NOT_DISABLED")
+            heads: dict[str, Mapping[str, Any]] = {}
+            for head in ("grasp", "manipulation", "release"):
+                value = calibration.get(head)
+                if not isinstance(value, Mapping):
+                    raise FactorizedSchedulerError("CALIBRATION_HEAD_INVALID")
+                if value.get("method") not in {"RAW", "INTERCEPT_ONLY", "PLATT"}:
+                    raise FactorizedSchedulerError("CALIBRATION_METHOD_INVALID")
+                if value.get("transform") != "probability=sigmoid(a*raw_logit+b)":
+                    raise FactorizedSchedulerError("CALIBRATION_TRANSFORM_INVALID")
+                if value.get("method_valid") is not True or value.get("transform_valid") is not True:
+                    raise FactorizedSchedulerError("CALIBRATION_METHOD_NOT_VALID")
+                for name in ("a", "b"):
+                    if isinstance(value.get(name), bool) or not isinstance(value.get(name), (int, float)) or not isfinite(float(value[name])):
+                        raise FactorizedSchedulerError("CALIBRATION_PARAMETER_INVALID")
+                _sha(value.get("fit_manifest_sha256"), "CALIBRATION_FIT_MANIFEST")
+                _sha(value.get("policy_selection_manifest_sha256"), "CALIBRATION_POLICY_SELECTION")
+                heads[head] = value
+            thresholds = {
+                "grasp_threshold": _threshold(heads["grasp"].get("threshold"), "GRASP_THRESHOLD"),
+                "manipulation_threshold": _threshold(heads["manipulation"].get("threshold"), "MANIPULATION_THRESHOLD"),
+                "release_veto_threshold": _threshold(heads["release"].get("threshold"), "RELEASE_THRESHOLD"),
+            }
+            calibration_status = "SEALED_EXTERNAL_CALIBRATION"
+        else:
+            # Historical V1 is retained only so old synthetic fixtures remain
+            # replayable; V3 production paths use the V2 contract above.
+            calibration_keys = {
+                "schema", "status", "checkpoint_sha256", "fit_manifest_sha256", "grasp",
+                "manipulation", "release", "formal_selection_eligible",
+                "training_authorized", "attack_authorized",
+            }
+            if set(calibration) != calibration_keys or calibration_schema != CALIBRATION_SCHEMA_V1:
+                raise FactorizedSchedulerError("CALIBRATION_CONTRACT_SCHEMA")
+            if calibration.get("status") not in {"TEST_ONLY_NOT_SELECTION_ELIGIBLE", "SEALED_EXTERNAL_CALIBRATION"}:
+                raise FactorizedSchedulerError("CALIBRATION_STATUS_INVALID")
+            if any(calibration.get(key) is not False for key in ("formal_selection_eligible", "training_authorized", "attack_authorized")):
+                raise FactorizedSchedulerError("CALIBRATION_AUTHORIZATION_NOT_DISABLED")
+            checkpoint_sha = _sha(calibration.get("checkpoint_sha256"), "CALIBRATION_CHECKPOINT")
+            fit_manifest_sha = _sha(calibration.get("fit_manifest_sha256"), "CALIBRATION_FIT_MANIFEST")
+            heads = {}
+            for head in ("grasp", "manipulation", "release"):
+                value = calibration.get(head)
+                if not isinstance(value, Mapping):
+                    raise FactorizedSchedulerError("CALIBRATION_HEAD_INVALID")
+                heads[head] = value
+            thresholds = {
+                "grasp_threshold": _threshold(heads["grasp"].get("threshold"), "GRASP_THRESHOLD"),
+                "manipulation_threshold": _threshold(heads["manipulation"].get("threshold"), "MANIPULATION_THRESHOLD"),
+                "release_veto_threshold": _threshold(heads["release"].get("threshold"), "RELEASE_THRESHOLD"),
+            }
+            for head in ("grasp", "manipulation", "release"):
+                temperature = heads[head].get("temperature")
+                if isinstance(temperature, bool) or not isinstance(temperature, (int, float)) or not isfinite(float(temperature)) or float(temperature) <= 0:
+                    raise FactorizedSchedulerError("CALIBRATION_TEMPERATURE_INVALID")
+            calibration_status = calibration["status"]
         return cls(
             **thresholds,
             candidate_dwell=structure["candidate_dwell"],
@@ -122,7 +172,7 @@ class FactorizedSchedulerConfig:
             warmup_steps=structure["warmup_steps"],
             invalid_step_policy="reset",
             attack_enabled=False,
-            calibration_status=calibration["status"],
+            calibration_status=calibration_status,
             calibration_checkpoint_sha256=checkpoint_sha,
             calibration_fit_manifest_sha256=fit_manifest_sha,
         )
@@ -258,6 +308,7 @@ class FactorizedV2OneShotScheduler:
 
 
 __all__ = [
-    "CALIBRATION_SCHEMA", "FactorizedSchedulerConfig", "FactorizedSchedulerError",
+    "CALIBRATION_SCHEMA", "CALIBRATION_SCHEMA_V1", "CALIBRATION_SCHEMA_V2",
+    "FactorizedSchedulerConfig", "FactorizedSchedulerError",
     "FactorizedState", "FactorizedStep", "FactorizedV2OneShotScheduler", "STRUCTURE_SCHEMA",
 ]

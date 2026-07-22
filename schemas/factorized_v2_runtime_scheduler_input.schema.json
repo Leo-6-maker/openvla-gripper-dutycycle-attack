@@ -19,6 +19,7 @@
     "schema": {"const": "FACTORIZED_V2_RUNTIME_SCHEDULER_INPUT_V1"},
     "episode": {"type": "string", "pattern": "^[^/]+/task_[0-9]{2}/state_[0-9]{2}$"},
     "step": {"type": "integer", "minimum": 0},
+    "split": {"type": "string", "pattern": "^o[0-3]_i[0-2]$"},
     "route": {"type": "string", "minLength": 1},
     "route_supported": {"type": "boolean"},
     "student_valid": {"type": "boolean"},

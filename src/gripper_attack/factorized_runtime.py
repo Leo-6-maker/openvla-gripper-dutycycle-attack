@@ -34,6 +34,7 @@ RUNTIME_FIELDS = frozenset({
     "source_commit", "prediction_artifact_seal", "runtime_artifact_seal",
     "causal_field_declaration",
 })
+OPTIONAL_RUNTIME_FIELDS = frozenset({"split"})
 
 
 class FactorizedRuntimeError(ValueError):
@@ -250,7 +251,7 @@ def validate_runtime_record(record: Mapping[str, Any]) -> None:
     forbidden = set(record) & FORBIDDEN_RUNTIME_FIELDS
     if forbidden:
         raise FactorizedRuntimeError(f"FORBIDDEN_RUNTIME_FIELDS:{','.join(sorted(forbidden))}")
-    if set(record) != RUNTIME_FIELDS:
+    if not RUNTIME_FIELDS.issubset(record) or set(record) - RUNTIME_FIELDS - OPTIONAL_RUNTIME_FIELDS:
         raise FactorizedRuntimeError("RUNTIME_FIELD_SET_MISMATCH")
     if record.get("schema") != RUNTIME_SCHEMA:
         raise FactorizedRuntimeError("RUNTIME_SCHEMA")
@@ -281,6 +282,8 @@ def validate_runtime_record(record: Mapping[str, Any]) -> None:
     _sha(record["prediction_artifact_seal"], "PREDICTION_SEAL_INVALID")
     _sha(record["runtime_artifact_seal"], "RUNTIME_SEAL_INVALID")
     _commit(record["source_commit"])
+    if "split" in record and (not isinstance(record["split"], str) or len(record["split"]) != 5 or record["split"][0] != "o" or record["split"][2:4] != "_i"):
+        raise FactorizedRuntimeError("RUNTIME_SPLIT_INVALID")
     declaration = record["causal_field_declaration"]
     if not isinstance(declaration, Mapping) or any(declaration.get(key) is not False for key in ("future_steps_consumed", "teacher_fields_consumed", "attack_fields_consumed")):
         raise FactorizedRuntimeError("CAUSAL_DECLARATION_INVALID")
@@ -311,6 +314,6 @@ def exact_runtime_step_join(
 
 
 __all__ = [
-    "FORBIDDEN_RUNTIME_FIELDS", "RUNTIME_FIELDS", "RUNTIME_SCHEMA", "FactorizedRuntimeError",
+    "FORBIDDEN_RUNTIME_FIELDS", "OPTIONAL_RUNTIME_FIELDS", "RUNTIME_FIELDS", "RUNTIME_SCHEMA", "FactorizedRuntimeError",
     "build_runtime_record", "exact_runtime_step_join", "validate_runtime_record",
 ]

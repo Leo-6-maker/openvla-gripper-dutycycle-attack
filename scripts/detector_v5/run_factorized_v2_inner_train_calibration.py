@@ -15,17 +15,24 @@ import shutil
 import subprocess
 import sys
 import uuid
+import math
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 
-from gripper_attack.b3_training_protocol import seal_directory  # noqa: E402
+from gripper_attack.b3_training_protocol import seal_directory, sha256_file, verify_sealed_directory  # noqa: E402
 from gripper_attack.factorized_calibration import (  # noqa: E402
     CalibrationPlanError,
+    AUTHORIZATION_SCHEMA_V2,
+    EXECUTION_RECEIPT_SCHEMA,
+    PLAN_SCHEMA_V2,
     validate_authorization_template,
+    validate_execution_authorization_template_v2,
+    validate_execution_authorization_v2,
     validate_inner_train_plan,
+    validate_structured_inner_plan,
 )
 
 
@@ -37,14 +44,19 @@ def prepare(args: argparse.Namespace) -> dict:
         raise FileExistsError(f"OUTPUT_EXISTS:{output}")
     plan = json.loads(args.plan.read_text(encoding="utf-8"))
     authorization = json.loads(args.authorization.read_text(encoding="utf-8"))
-    validate_authorization_template(authorization)
-    checkpoints = plan.get("checkpoints")
-    if not isinstance(checkpoints, list):
-        raise CalibrationPlanError("PLAN_CHECKPOINTS_MISSING")
-    summary = validate_inner_train_plan(
-        checkpoints,
-        forbidden_roots=plan.get("forbidden_roots", authorization.get("forbidden_roots", [])),
-    )
+    if plan.get("schema") == PLAN_SCHEMA_V2:
+        validate_structured_inner_plan(plan)
+        validate_execution_authorization_template_v2(authorization)
+        summary = {"schema": PLAN_SCHEMA_V2, "split_count": len(plan["jobs"]), "split_names": [job["split"] for job in plan["jobs"]], "validation_or_cal_read": False, "formal_selection_eligible": False, "training_authorized": False, "attack_authorized": False}
+    else:
+        validate_authorization_template(authorization)
+        checkpoints = plan.get("checkpoints")
+        if not isinstance(checkpoints, list):
+            raise CalibrationPlanError("PLAN_CHECKPOINTS_MISSING")
+        summary = validate_inner_train_plan(
+            checkpoints,
+            forbidden_roots=plan.get("forbidden_roots", authorization.get("forbidden_roots", [])),
+        )
     staging = output.with_name(f".{output.name}.{uuid.uuid4().hex}.staging")
     try:
         staging.mkdir(parents=True)
@@ -70,28 +82,32 @@ def execute(args: argparse.Namespace) -> dict:
         raise CalibrationPlanError("OFFLINE_INFERENCE_GO_REQUIRED")
     plan = json.loads(args.plan.read_text(encoding="utf-8"))
     authorization = json.loads(args.authorization.read_text(encoding="utf-8"))
-    validate_authorization_template(authorization, allow_execution=True)
-    if authorization.get("execution_authorized") is not True:
-        raise CalibrationPlanError("EXECUTION_AUTHORIZATION_FALSE")
-    checkpoints = plan.get("checkpoints")
-    summary = validate_inner_train_plan(checkpoints, forbidden_roots=plan.get("forbidden_roots", authorization.get("forbidden_roots", [])))
-    commands = plan.get("commands")
-    if not isinstance(commands, list) or len(commands) != 12:
-        raise CalibrationPlanError("EXECUTION_COMMAND_COUNT_MUST_BE_12")
-    forbidden_tokens = ("attack", "cal", "check", "train", "full-fit", "rollout")
-    for command in commands:
-        if not isinstance(command, list) or not command or any(token in str(part).lower() for part in command for token in forbidden_tokens):
-            raise CalibrationPlanError("EXECUTION_COMMAND_FORBIDDEN_OR_INVALID")
+    if plan.get("schema") != PLAN_SCHEMA_V2 or authorization.get("schema") != AUTHORIZATION_SCHEMA_V2:
+        raise CalibrationPlanError("STRUCTURED_EXECUTION_REQUIRED")
+    summary = validate_structured_inner_plan(plan, execute=True)
     output = args.output_root.resolve()
     if output.exists():
         raise FileExistsError(f"OUTPUT_EXISTS:{output}")
+    validate_execution_authorization_v2(authorization, plan, output_root=output)
     staging = output.with_name(f".{output.name}.{uuid.uuid4().hex}.staging")
     try:
         staging.mkdir(parents=True)
-        results = []
-        for index, command in enumerate(commands):
+        results: list[dict[str, object]] = []
+        for job in sorted(plan["jobs"], key=lambda item: item["split"]):
+            job_output = Path(job["output_root"]).resolve()
+            if job_output.exists():
+                raise FileExistsError(f"OUTPUT_EXISTS:{job_output}")
+            command = [
+                sys.executable, "-m", job["predictor_module"],
+                "--checkpoint", job["checkpoint_path"],
+                "--feature-root", job["feature_root"],
+                "--identity-manifest", job["identity_manifest_path"],
+                "--split", job["split"],
+                "--output-root", str(job_output),
+            ]
             completed = subprocess.run(command, check=True, capture_output=True, text=True)
-            results.append({"index": index, "command": command, "returncode": completed.returncode})
+            _audit_inference_output(job_output, job)
+            results.append({"split": job["split"], "command": command, "returncode": completed.returncode, "stdout_sha256": _bytes_sha(completed.stdout.encode()), "stderr_sha256": _bytes_sha(completed.stderr.encode())})
         (staging / "execution_manifest.json").write_text(json.dumps({
             **summary,
             "status": "EXECUTED_INNER_TRAIN_INFERENCE",
@@ -101,12 +117,58 @@ def execute(args: argparse.Namespace) -> dict:
             "attack": False,
             "results": results,
         }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        (staging / "FACTORIZED_V2_INFERENCE_EXECUTION_RECEIPT_V1.json").write_text(json.dumps({
+            "schema": EXECUTION_RECEIPT_SCHEMA,
+            "status": "PASS_12_OF_12",
+            "split_names": [job["split"] for job in sorted(plan["jobs"], key=lambda item: item["split"])],
+            "output_roots": [str(Path(job["output_root"]).resolve()) for job in sorted(plan["jobs"], key=lambda item: item["split"])],
+            "execution_authorized": True,
+            "formal_selection_eligible": False,
+            "training": False,
+            "full_fit": False,
+            "cal_check": False,
+            "attack": False,
+            "artifact_audit": "PASS",
+        }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         seal_directory(staging)
         os.replace(staging, output)
     except Exception:
         shutil.rmtree(staging, ignore_errors=True)
         raise
     return {"status": "EXECUTED_INNER_TRAIN_INFERENCE", "output_root": str(output), **summary}
+
+
+def _bytes_sha(value: bytes) -> str:
+    import hashlib
+    return hashlib.sha256(value).hexdigest()
+
+
+def _audit_inference_output(root: Path, job: dict) -> None:
+    verify_sealed_directory(root)
+    manifest_path = root / "manifest.json"
+    stream_path = root / "prediction_records.jsonl"
+    if not manifest_path.is_file() or not stream_path.is_file():
+        raise CalibrationPlanError("INFERENCE_OUTPUT_SCHEMA_MISSING")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    required = {"schema", "split", "checkpoint_sha256", "record_count", "formal_selection_eligible", "training_authorized", "attack_enabled"}
+    if not required <= set(manifest) or manifest["split"] != job["split"] or manifest["checkpoint_sha256"] != job["checkpoint_sha256"]:
+        raise CalibrationPlanError("INFERENCE_OUTPUT_BINDING_MISMATCH")
+    if any(manifest.get(flag) is not False for flag in ("formal_selection_eligible", "training_authorized", "attack_enabled")):
+        raise CalibrationPlanError("INFERENCE_OUTPUT_AUTHORIZATION")
+    forbidden = {"event_id", "teacher_phase", "known_mask", "strict_k10_feasible", "utility_probability", "regrasp_probability", "attack_outcome"}
+    rows = [json.loads(line) for line in stream_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if len(rows) != manifest["record_count"] or not rows:
+        raise CalibrationPlanError("INFERENCE_OUTPUT_RECORD_COUNT")
+    for row in rows:
+        if forbidden & set(row):
+            raise CalibrationPlanError("INFERENCE_OUTPUT_TEACHER_FIELD")
+        for head in ("grasp", "manipulation", "release"):
+            if f"{head}_logit" not in row or f"{head}_probability" not in row:
+                raise CalibrationPlanError("INFERENCE_OUTPUT_HEAD_MISSING")
+            z = float(row[f"{head}_logit"])
+            expected = 1.0 / (1.0 + math.exp(-z))
+            if abs(expected - float(row[f"{head}_probability"])) > 1e-7:
+                raise CalibrationPlanError("INFERENCE_OUTPUT_PROBABILITY_MISMATCH")
 
 
 def main() -> int:
