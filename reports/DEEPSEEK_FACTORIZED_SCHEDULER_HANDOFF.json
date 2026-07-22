@@ -4,7 +4,7 @@
   "branch": "codex/factorized-v2-scheduler-inputs-20260722",
   "base_branch": "codex/v2b-exact-w32-recommended-canary-20260721",
   "base_commit": "401f79a05753d970ecc803bb96abc64ce132df42",
-  "full_head": "PENDING_FINAL_COMMIT",
+  "full_head": "976c9be",
   "candidate_close": {
     "status": "DERIVABLE_FROM_SEALED_RUNTIME_FIELD",
     "preferred_field": "clean_action_raw_7d[6]",
@@ -60,5 +60,6 @@
   "authoritative_replay": "HOLD",
   "blocked_fields": ["sealed 12-split runtime coverage", "student_valid in current legacy prediction", "inner-train production logits", "calibration authorization"],
   "forbidden_substitutions": ["event_id -> candidate_close", "Teacher phase -> runtime gate", "grasp_prob -> utility_probability", "manipulation_prob -> regrasp_probability", "zero/default fill", "env_action -> raw_gripper"],
-  "execution_boundary": {"training": false, "production_prediction": false, "full_fit": false, "openvla_rollout": false, "shadow": false, "attack": false, "cal_check_read": false}
+  "execution_boundary": {"training": false, "production_prediction": false, "full_fit": false, "openvla_rollout": false, "shadow": false, "attack": false, "cal_check_read": false},
+  "tests": {"targeted": "63 passed", "compileall": "PASS", "json_parse": "PASS", "production_audit": "NOT_RUN"}
 }

@@ -5,8 +5,8 @@
   "branch": "codex/factorized-v2-scheduler-inputs-20260722",
   "base_commit": "401f79a05753d970ecc803bb96abc64ce132df42",
   "base_branch": "codex/v2b-exact-w32-recommended-canary-20260721",
-  "full_head": "420143b",
-  "worktree_status": "DIRTY_EXPECTED_FINAL_HANDOFF_UPDATE",
+  "full_head": "976c9be",
+  "worktree_status": "DIRTY_EXPECTED_FINAL_METADATA_COMMIT",
   "scope": "FIELD_AVAILABILITY_SCHEMA_EXPORT_AND_INFERENCE_PREPARATION_ONLY",
   "candidate_close": {
     "status": "DERIVABLE_FROM_SEALED_RUNTIME_FIELD",
