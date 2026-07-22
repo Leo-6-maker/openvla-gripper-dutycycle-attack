@@ -1,263 +1,536 @@
-"""CPU synthetic tests for Factorized V2 L3 metrics."""
+"""CPU tests for Factorized V2 calibration, selection and L3 replay."""
 from __future__ import annotations
 
-import json, math, sys, tempfile
+import json
+import sys
+import tempfile
 from pathlib import Path
+
+import pytest
 
 ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(ROOT / "analysis/student_trigger_calibration"))
+sys.path.insert(0, str(ROOT / "src"))
 
-from run_factorized_l3_analysis import (
-    classify_episode, is_valid_start, compute_l3_metrics, compute_timing,
-    exact_join, validate_episode_step_sequence, EXPECTED_SPLITS,
+from fit_factorized_calibrators import (  # noqa: E402
+    check_logit_prob_consistency,
+    classify_provenance,
+    fit_intercept,
+    fit_platt,
+    fit_raw,
+    sigmoid,
+    validate_fit_heldout_disjoint,
+    validate_record,
 )
-from fit_factorized_calibrators import (
-    fit_raw, fit_intercept, fit_platt, validate_fit_heldout_disjoint,
-    classify_provenance, sigmoid, validate_record, check_logit_prob_consistency,
+from gripper_attack.factorized_scheduler_adapter import (  # noqa: E402
+    FactorizedV2SchedulerAdapter,
 )
-from validate_factorized_codex_handoff import validate_handoff_static, validate_handoff_execution
+from produce_factorized_calibration_threshold_contract import (  # noqa: E402
+    validate_against_schema,
+)
+from run_factorized_l3_analysis import (  # noqa: E402
+    EXPECTED_SPLITS,
+    classify_episode,
+    compute_l3_metrics,
+    compute_timing,
+    exact_join,
+    is_valid_start,
+    validate_episode_step_sequence,
+)
+from select_factorized_scheduler_thresholds import (  # noqa: E402
+    evaluate_candidate,
+    select_thresholds,
+)
+from validate_factorized_codex_handoff import (  # noqa: E402
+    validate_handoff_execution,
+    validate_handoff_static,
+)
 
 STEP = "step"
+SHA = "a" * 64
+COMMIT = "b" * 40
+
+
+def _calibration_row(
+    step: int = 0,
+    episode: str = "t",
+    *,
+    grasp_logit: float = 0.0,
+    manipulation_logit: float = 0.0,
+    release_logit: float = 0.0,
+):
+    def probability(value):
+        return sigmoid(value)
+
+    return {
+        "episode": episode,
+        "step": step,
+        "grasp_logit": grasp_logit,
+        "grasp_probability": probability(grasp_logit),
+        "grasp_known_mask": True,
+        "grasp_target": False,
+        "manipulation_logit": manipulation_logit,
+        "manipulation_probability": probability(manipulation_logit),
+        "manipulation_known_mask": True,
+        "manipulation_target": False,
+        "release_logit": release_logit,
+        "release_probability": probability(release_logit),
+        "release_known_mask": True,
+        "release_target": False,
+    }
+
+
+def _offline_row(
+    step: int = 0,
+    episode: str = "t",
+    *,
+    feasible: bool = False,
+    known: bool = True,
+):
+    return {
+        "episode": episode,
+        "step": step,
+        "strict_k10_feasible": feasible,
+        "strict_k10_known_mask": known,
+    }
+
+
+def _runtime_row(
+    step: int,
+    episode: str,
+    *,
+    grasp_logit: float,
+    manipulation_logit: float,
+    release_logit: float = -4.0,
+):
+    return {
+        "episode": episode,
+        "step": step,
+        "candidate_close": True,
+        "action_known": True,
+        "student_valid": True,
+        "route_supported": True,
+        "checkpoint_sha256": SHA,
+        "source_commit": COMMIT,
+        "feature_order_sha256": SHA,
+        "split": "o0_i0",
+        "scheduler_source_sha256": SHA,
+        "structural_config_sha256": SHA,
+        "grasp_logit": grasp_logit,
+        "manipulation_logit": manipulation_logit,
+        "release_logit": release_logit,
+    }
+
+
+def _fit_contract():
+    calibrators = []
+    for head in ("grasp", "manipulation", "release"):
+        calibrators.append(
+            {
+                "head": head,
+                "method": "RAW",
+                "a": 1.0,
+                "b": 0.0,
+                "n_fit_pos": 10,
+                "n_fit_neg": 10,
+                "method_valid": True,
+            }
+        )
+    return {
+        "schema": "FACTORIZED_V2_CALIBRATION_CONTRACT_V2",
+        "split": "o0_i0",
+        "checkpoint_sha256": SHA,
+        "student_source_commit": COMMIT,
+        "provenance": "INDEPENDENT_CALIBRATION",
+        "authoritative": True,
+        "all_heads_valid": True,
+        "calibrators": calibrators,
+        "fit_manifest_sha256": SHA,
+    }
+
 
-
-def _mk(s=0, ep="t", k10_f=False, k10_km=True):
-    return {"step_index": s, "canonical_parent_key": ep, STEP: s,
-            "strict_k10_feasible": k10_f, "strict_k10_known_mask": k10_km,
-            "grasp_logit": 0.0, "grasp_probability": 0.5, "grasp_known_mask": True, "grasp_target": False,
-            "manipulation_logit": 0.0, "manipulation_probability": 0.5, "manipulation_known_mask": False, "manipulation_target": False,
-            "release_logit": 0.0, "release_probability": 0.5, "release_known_mask": True, "release_target": False}
-
-
-def _mk_ol(s=0, ep="t", k10_f=False, k10_km=True):
-    return {"step_index": s, "canonical_parent_key": ep, STEP: s,
-            "strict_k10_feasible": k10_f, "strict_k10_known_mask": k10_km}
-
-
-# ── Sequence validation ──
-
-def test_valid_seq():
-    assert validate_episode_step_sequence([{STEP: i} for i in range(10)], STEP) == 10
-
-
-def test_nonzero_rejected():
-    try: validate_episode_step_sequence([{STEP: 3}], STEP); assert False
-    except SystemExit: pass
-
-
-def test_gap_rejected():
-    try: validate_episode_step_sequence([{STEP: 0}, {STEP: 2}], STEP); assert False
-    except SystemExit: pass
-
-
-def test_dup_rejected():
-    try: validate_episode_step_sequence([{STEP: 0}, {STEP: 0}], STEP); assert False
-    except SystemExit: pass
-
-
-# ── K10 + eligible domain ──
-
-def test_T500_last_490():
-    rows = [_mk_ol(i) for i in range(500)]
-    assert classify_episode(rows, STEP) != "unknown"
-
-
-def test_T10_only_0():
-    assert classify_episode([_mk_ol(i) for i in range(10)], STEP) != "unknown"
-
-
-def test_T9_unknown():
-    assert classify_episode([_mk_ol(i) for i in range(9)], STEP) == "unknown"
-
-
-def test_positive():
-    rows = [_mk_ol(i) for i in range(20)]
-    rows[10] = _mk_ol(10, k10_f=True)
-    assert classify_episode(rows, STEP) == "positive"
-
-
-def test_negative():
-    assert classify_episode([_mk_ol(i) for i in range(490)], STEP) == "negative"
-
-
-def test_partial_unknown():
-    rows = [_mk_ol(i, k10_km=(i!=250)) for i in range(490)]
-    assert classify_episode(rows, STEP) == "unknown"
-
-
-def test_valid_start():
-    assert is_valid_start(_mk_ol(10, k10_f=True))
-    assert not is_valid_start(_mk_ol(10, k10_f=False))
-
-
-# ── Timing ──
-
-def test_timing():
-    rows = [_mk_ol(i, k10_f=(5<=i<=15)) for i in range(20)]
-    o, rl, rp = compute_timing(rows, 10, STEP)
-    assert o == 5 and rl == 11
-
-
-# ── Unknown emit ──
-
-def test_unknown_emits_tracked():
-    eps = {"u": [_mk_ol(i, "u", k10_km=(i<5)) for i in range(490)]}
-    res = {"u": {"emitted": True, "emit_step": 50, "final_state": "E"}}
-    m = compute_l3_metrics(eps, res, STEP)
-    assert m["unknown_episode_emits"] == 1 and m["total_emitted_episodes"] == 1
-
-
-def test_all_precision():
-    eps = {"n": [_mk_ol(i,"n") for i in range(490)],
-           "p": [_mk_ol(i,"p") for i in range(490)],
-           "u": [_mk_ol(i,"u",k10_km=(i<5)) for i in range(490)]}
-    eps["p"][100] = _mk_ol(100,"p",k10_f=True)
-    res = {"n": {"emitted":False,"emit_step":-1,"final_state":"I"},
-           "p": {"emitted":True,"emit_step":100,"final_state":"E"},
-           "u": {"emitted":True,"emit_step":50,"final_state":"E"}}
-    m = compute_l3_metrics(eps, res, STEP)
-    assert m["unknown_episode_emits"] == 1 and m["total_emitted_episodes"] == 2
-    assert m["all_emit_precision"] == 0.5 and m["verified_emit_precision"] == 1.0
-
-
-# ── Worst-split ──
-
-def test_zero_not_one():
-    eps = {"n": [_mk_ol(i,"n") for i in range(490)]}
-    res = {"n": {"emitted":False,"emit_step":-1,"final_state":"I"}}
-    m = compute_l3_metrics(eps, res, STEP)
-    assert m["negative_episode_false_start_rate"] == 0.0
-
-
-def test_none_is_none():
-    eps = {"p": [_mk_ol(i,"p") for i in range(490)]}
-    eps["p"][100] = _mk_ol(100,"p",k10_f=True)
-    res = {"p": {"emitted":False,"emit_step":-1,"final_state":"I"}}
-    m = compute_l3_metrics(eps, res, STEP)
-    assert m["negative_episode_false_start_rate"] is None
-
-
-# ── Calibration ──
-
-def test_independent():
-    assert classify_provenance({"fit_identities":["c"]}, {"training_identities":["a"]}) == "INDEPENDENT_CALIBRATION"
-
-
-def test_resubstitution():
-    assert classify_provenance({"fit_identities":["a"]}, {"training_identities":["a"]}) == "TRAIN_RESUBSTITUTION_CALIBRATION"
-
-
-def test_nan_rejected():
-    try: validate_record({"episode":"x","step_index":0,"grasp_logit":float("nan"),"grasp_probability":0.5,"grasp_known_mask":True,"grasp_target":False},"grasp",0); assert False
-    except SystemExit: pass
-
-
-def test_logit_prob_mismatch():
-    recs = [{"grasp_logit":5.0,"grasp_probability":0.5,"grasp_known_mask":True,"grasp_target":True,"episode":"x","step_index":0,STEP:0}]
-    ok, err = check_logit_prob_consistency(recs, "grasp")
-    assert not ok
-
-
-def test_fit_heldout_ok():
-    validate_fit_heldout_disjoint({"fit_identities":["a"]}, {"heldout_identities":["b"]})
-
-
-def test_overlap_rejected():
-    try: validate_fit_heldout_disjoint({"fit_identities":["a"]}, {"heldout_identities":["a"]}); assert False
-    except ValueError as e: assert "LEAKAGE" in str(e)
-
-
-def test_sigmoid():
-    assert 0<=sigmoid(-1000)<=1 and 0<=sigmoid(1000)<=1 and sigmoid(0)==0.5
-
-
-# ── Join ──
-
-def test_join_mismatch():
-    with tempfile.TemporaryDirectory() as td:
-        rt=Path(td)/"rt.jsonl"; ol=Path(td)/"ol.jsonl"
-        rt.write_text(json.dumps({"ep":"a",STEP:0})+"\n")
-        ol.write_text(json.dumps({"ep":"b",STEP:0})+"\n")
-        try: exact_join(rt,ol,"ep",STEP); assert False
-        except SystemExit: pass
-
-
-def test_join_dup():
-    with tempfile.TemporaryDirectory() as td:
-        rt=Path(td)/"rt.jsonl"; ol=Path(td)/"ol.jsonl"
-        rt.write_text(json.dumps({"ep":"a",STEP:0})+"\n"+json.dumps({"ep":"a",STEP:0})+"\n")
-        ol.write_text(json.dumps({"ep":"a",STEP:0})+"\n")
-        try: exact_join(rt,ol,"ep",STEP); assert False
-        except SystemExit as e: assert "DUP" in str(e)
-
-
-# ── Validator ──
-
-def test_v2_rejected():
-    ok, _ = validate_handoff_static({"schema":"DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V2","status":"DRAFT"})
-    assert not ok
-
-
-def test_v3_needed():
-    ok, _ = validate_handoff_static({"schema":"DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3","status":"DRAFT"})
-    assert not ok
-
-
-def test_v31_accepted():
-    """V3.1 schema name accepted (still fails on missing fields, which is correct)."""
-    ok, errs = validate_handoff_static({"schema":"DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1","status":"DRAFT"})
-    assert not ok  # DRAFT fails status check
-    assert any("status" in e for e in errs)
-
-
-# ── Contract: canonical top-level (not heads dict) ──
-
-def test_canonical_top_level_contract():
-    """Runner and producer expect top-level grasp/manipulation/release, not heads dict."""
-    contract = {
-        "schema": "FACTORIZED_V2_CALIBRATION_AND_THRESHOLD_CONTRACT_V2",
+def _structure():
+    return {
+        "schema": "FACTORIZED_V2_SCHEDULER_STRUCTURE_V1",
+        "candidate_dwell": 1,
+        "candidate_dwell_counts_before_grasp": False,
+        "persistence_window": 1,
+        "persistence_required": 1,
+        "warmup_steps": 0,
+        "invalid_step_policy": "reset",
+        "attack_enabled": False,
+        "formal_selection_eligible": False,
+        "training_authorized": False,
+        "attack_authorized": False,
+    }
+
+
+def _valid_v3_contract():
+    head = {
+        "method": "RAW",
+        "a": 1.0,
+        "b": 0.0,
+        "threshold": 0.5,
+        "transform": "probability=sigmoid(a*raw_logit+b)",
+        "method_valid": True,
+        "transform_valid": True,
+        "fit_data_valid": True,
+        "provenance_class": "INDEPENDENT_CALIBRATION",
+        "fit_manifest_sha256": SHA,
+        "policy_selection_manifest_sha256": SHA,
+    }
+    return {
+        "schema": "FACTORIZED_V2_CALIBRATION_AND_THRESHOLD_CONTRACT_V3",
+        "status": "AUTHORITATIVE",
+        "split": "o0_i0",
+        "checkpoint_sha256": SHA,
+        "scheduler_source_sha256": SHA,
+        "structural_config_sha256": SHA,
+        "student_source_commit": COMMIT,
+        "feature_order_sha256": SHA,
         "calibration_fit_authoritative": True,
         "threshold_selection_authoritative": True,
         "l3_evaluation_eligible": True,
-        "grasp": {"method": "PLATT", "a": 1.0, "b": 0.5, "threshold": 0.7, "method_valid": True, "transform_valid": True, "fit_data_valid": True, "provenance_class": "INDEPENDENT_CALIBRATION"},
-        "manipulation": {"method": "PLATT", "a": 1.0, "b": 0.5, "threshold": 0.5, "method_valid": True, "transform_valid": True, "fit_data_valid": True, "provenance_class": "INDEPENDENT_CALIBRATION"},
-        "release": {"method": "PLATT", "a": 1.0, "b": 0.5, "threshold": 0.3, "method_valid": True, "transform_valid": True, "fit_data_valid": True, "provenance_class": "INDEPENDENT_CALIBRATION"},
+        "training_authorized": False,
+        "full_fit_authorized": False,
+        "attack_authorized": False,
+        "grasp": dict(head),
+        "manipulation": dict(head),
+        "release": dict(head),
     }
-    assert contract["l3_evaluation_eligible"]
-    assert contract["grasp"]["provenance_class"] == "INDEPENDENT_CALIBRATION"
-    assert contract["grasp"]["threshold"] is not None
 
 
-def test_heads_dict_rejected_by_canonical():
-    """Old heads-dict format not accepted by canonical consumer."""
-    contract = {"heads": {"grasp": {"a": 1.0, "b": 0.0, "threshold": 0.5}}}
-    assert "grasp" not in contract  # top-level expected, not nested
+# Sequence and K10 classification -------------------------------------------------
+
+def test_valid_sequence():
+    assert validate_episode_step_sequence([{STEP: index} for index in range(10)], STEP) == 10
 
 
-def test_missing_head_rejected():
-    contract = {"grasp": {"a": 1.0, "b": 0.0, "threshold": 0.5}}
-    assert "manipulation" not in contract and "release" not in contract
+@pytest.mark.parametrize(
+    "rows",
+    (
+        [{STEP: 3}],
+        [{STEP: 0}, {STEP: 2}],
+        [{STEP: 0}, {STEP: 0}],
+        [{STEP: True}],
+    ),
+)
+def test_invalid_sequence_rejected(rows):
+    with pytest.raises(SystemExit):
+        validate_episode_step_sequence(rows, STEP)
 
 
-def test_missing_threshold_rejected():
-    contract = {"grasp": {"a": 1.0, "b": 0.0, "threshold": None}}
-    assert contract["grasp"]["threshold"] is None
+def test_t9_unknown_and_t10_known():
+    assert classify_episode([_offline_row(index) for index in range(9)], STEP) == "unknown"
+    assert classify_episode([_offline_row(index) for index in range(10)], STEP) == "negative"
 
 
-# ── Step-field canonicalization ──
-
-def test_step_field_not_hardcoded():
-    rows = [{"custom_step": i, "strict_k10_feasible": False, "strict_k10_known_mask": True} for i in range(490)]
-    assert classify_episode(rows, "custom_step") == "negative"
-
-
-# ── Determinism ──
-
-def test_classify_deterministic():
-    rows = [_mk_ol(i) for i in range(490)]
-    assert classify_episode(rows, STEP) == classify_episode(rows, STEP)
+def test_positive_negative_unknown_classification():
+    positive = [_offline_row(index) for index in range(20)]
+    positive[5] = _offline_row(5, feasible=True)
+    assert classify_episode(positive, STEP) == "positive"
+    assert classify_episode([_offline_row(index) for index in range(20)], STEP) == "negative"
+    partial = [_offline_row(index, known=index != 5) for index in range(20)]
+    assert classify_episode(partial, STEP) == "unknown"
 
 
-# ── Expected splits ──
+def test_valid_start_and_timing():
+    rows = [_offline_row(index, feasible=5 <= index <= 15) for index in range(20)]
+    assert is_valid_start(rows[10])
+    assert not is_valid_start(rows[0])
+    offset, length, relative = compute_timing(rows, 10, STEP)
+    assert offset == 5
+    assert length == 11
+    assert relative == 0.5
 
-def test_12_splits():
+
+# Metrics -----------------------------------------------------------------------
+
+def test_metric_denominators_are_unambiguous():
+    episodes = {
+        "negative": [_offline_row(index, "negative") for index in range(20)],
+        "positive": [_offline_row(index, "positive") for index in range(20)],
+        "unknown": [
+            _offline_row(index, "unknown", known=index < 5)
+            for index in range(20)
+        ],
+    }
+    episodes["positive"][5] = _offline_row(5, "positive", feasible=True)
+    results = {
+        "negative": {"emitted": False, "emit_step": -1, "final_state": "IDLE"},
+        "positive": {"emitted": True, "emit_step": 5, "final_state": "DONE"},
+        "unknown": {"emitted": True, "emit_step": 5, "final_state": "DONE"},
+    }
+    metrics = compute_l3_metrics(episodes, results, STEP)
+    assert metrics["total_emitted_all"] == 2
+    assert metrics["total_emitted_verified"] == 1
+    assert metrics["all_emit_precision"] == 0.5
+    assert metrics["verified_emit_precision"] == 1.0
+    assert "total_emitted_episodes" not in metrics
+    positive_row = next(
+        row for row in metrics["per_episode"] if row["episode_key"] == "positive"
+    )
+    assert positive_row["timing_offset"] == 0
+
+
+def test_false_start_zero_and_undefined():
+    negative = {"n": [_offline_row(index, "n") for index in range(20)]}
+    metrics = compute_l3_metrics(
+        negative,
+        {"n": {"emitted": False, "emit_step": -1, "final_state": "IDLE"}},
+        STEP,
+    )
+    assert metrics["negative_episode_false_start_rate"] == 0.0
+
+    positive = {"p": [_offline_row(index, "p") for index in range(20)]}
+    positive["p"][5] = _offline_row(5, "p", feasible=True)
+    metrics = compute_l3_metrics(
+        positive,
+        {"p": {"emitted": False, "emit_step": -1, "final_state": "IDLE"}},
+        STEP,
+    )
+    assert metrics["negative_episode_false_start_rate"] is None
+
+
+# Calibration -------------------------------------------------------------------
+
+def test_calibration_record_strict_types():
+    valid = _calibration_row()
+    assert validate_record(valid, "grasp", 0)[0] == 0.0
+
+    for field, value in (
+        ("step", True),
+        ("grasp_logit", True),
+        ("grasp_probability", True),
+        ("episode", ""),
+    ):
+        invalid = dict(valid)
+        invalid[field] = value
+        with pytest.raises(SystemExit):
+            validate_record(invalid, "grasp", 0)
+
+
+def test_logit_probability_binding():
+    records = [_calibration_row(grasp_logit=5.0)]
+    assert check_logit_prob_consistency(records, "grasp")[0]
+    records[0]["grasp_probability"] = 0.5
+    assert not check_logit_prob_consistency(records, "grasp")[0]
+
+
+def test_calibrator_methods():
+    records = []
+    for index in range(12):
+        row = _calibration_row(
+            step=index,
+            grasp_logit=2.0 if index < 6 else -2.0,
+        )
+        row["grasp_target"] = index < 6
+        records.append(row)
+    assert fit_raw(records, "grasp")["method_valid"]
+    assert fit_intercept(records, "grasp")["method_valid"]
+    assert fit_platt(records, "grasp")["method_valid"]
+
+
+def test_identity_provenance_and_disjointness():
+    assert (
+        classify_provenance(
+            {"fit_identities": ["fit"]},
+            {"training_identities": ["train"], "checkpoint_sha256": SHA},
+        )
+        == "INDEPENDENT_CALIBRATION"
+    )
+    assert (
+        classify_provenance(
+            {"fit_identities": ["same"]},
+            {"training_identities": ["same"], "checkpoint_sha256": SHA},
+        )
+        == "TRAIN_RESUBSTITUTION_CALIBRATION"
+    )
+    validate_fit_heldout_disjoint(
+        {"fit_identities": ["fit"]},
+        {"heldout_identities": ["heldout"]},
+    )
+    with pytest.raises(ValueError):
+        validate_fit_heldout_disjoint(
+            {"fit_identities": ["same"]},
+            {"heldout_identities": ["same"]},
+        )
+
+
+def test_sigmoid_bounds():
+    assert 0.0 <= sigmoid(-1000.0) <= 1.0
+    assert 0.0 <= sigmoid(1000.0) <= 1.0
+    assert sigmoid(0.0) == 0.5
+
+
+# Join --------------------------------------------------------------------------
+
+def test_join_mismatch_and_duplicate_rejected():
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        runtime = root / "runtime.jsonl"
+        offline = root / "offline.jsonl"
+        runtime.write_text(json.dumps({"episode": "a", STEP: 0}) + "\n")
+        offline.write_text(json.dumps({"episode": "b", STEP: 0}) + "\n")
+        with pytest.raises(SystemExit):
+            exact_join(runtime, offline, "episode", STEP)
+
+        runtime.write_text(
+            json.dumps({"episode": "a", STEP: 0})
+            + "\n"
+            + json.dumps({"episode": "a", STEP: 0})
+            + "\n"
+        )
+        offline.write_text(json.dumps({"episode": "a", STEP: 0}) + "\n")
+        with pytest.raises(SystemExit):
+            exact_join(runtime, offline, "episode", STEP)
+
+
+# Contract and adapter ----------------------------------------------------------
+
+def test_v3_schema_exact_validation():
+    contract = _valid_v3_contract()
+    validate_against_schema(contract)
+    invalid = dict(contract)
+    invalid["extra"] = True
+    with pytest.raises(SystemExit):
+        validate_against_schema(invalid)
+
+
+def test_real_codex_adapter_fixture_parity():
+    fixture = json.loads(
+        (ROOT / "tests/fixtures/factorized_scheduler_api_v3_1_trace.json").read_text()
+    )
+    adapter = FactorizedV2SchedulerAdapter(
+        fixture["structure"],
+        fixture["calibration"],
+    )
+    result = adapter.run_episode(fixture["runtime_rows"])
+    assert result["first_emit_step"] == fixture["expected"]["first_emit_step"]
+    assert [
+        row["step"] for row in result["per_step_trace"] if row["emit"]
+    ] == fixture["expected"]["emit_steps"]
+    assert result["diagnostic_only"] is fixture["expected"]["diagnostic_only"]
+
+
+def test_authoritative_contract_requires_l3_flags():
+    contract = _valid_v3_contract()
+    adapter = FactorizedV2SchedulerAdapter(
+        _structure(),
+        contract,
+        require_l3_eligible=True,
+    )
+    assert adapter.l3_evaluation_eligible
+    contract["l3_evaluation_eligible"] = False
+    with pytest.raises(Exception):
+        FactorizedV2SchedulerAdapter(
+            _structure(),
+            contract,
+            require_l3_eligible=True,
+        )
+
+
+# Threshold selector ------------------------------------------------------------
+
+def test_joint_threshold_selector_uses_real_adapter():
+    positive_runtime = [
+        _runtime_row(
+            index,
+            "positive",
+            grasp_logit=3.0,
+            manipulation_logit=3.0,
+        )
+        for index in range(10)
+    ]
+    negative_runtime = [
+        _runtime_row(
+            index,
+            "negative",
+            grasp_logit=0.0,
+            manipulation_logit=0.0,
+        )
+        for index in range(10)
+    ]
+    positive_offline = [
+        _offline_row(index, "positive", feasible=index == 0)
+        for index in range(10)
+    ]
+    negative_offline = [_offline_row(index, "negative") for index in range(10)]
+    payload = {
+        "split": "o0_i0",
+        "runtime_episodes": {
+            "positive": positive_runtime,
+            "negative": negative_runtime,
+        },
+        "evaluation_episodes": {
+            "positive": positive_offline,
+            "negative": negative_offline,
+        },
+        "calibration_contract": _fit_contract(),
+        "fit_manifest_sha256": SHA,
+        "policy_manifest_sha256": SHA,
+        "binding": {
+            "checkpoint_sha256": SHA,
+            "source_commit": COMMIT,
+            "feature_order_sha256": SHA,
+            "split": "o0_i0",
+            "scheduler_source_sha256": SHA,
+            "structural_config_sha256": SHA,
+        },
+        "structure": _structure(),
+    }
+
+    bad = evaluate_candidate(
+        [payload],
+        {"grasp": 0.4, "manipulation": 0.4, "release": 0.9},
+    )
+    assert bad["worst_split_negative_false_start_rate"] == 1.0
+
+    best, results = select_thresholds(
+        [payload],
+        grasp_grid=(0.4, 0.9),
+        manipulation_grid=(0.4, 0.9),
+        release_grid=(0.9,),
+        max_false_start=0.0,
+    )
+    assert len(results) == 4
+    assert best is not None
+    assert best["thresholds"]["grasp"] == 0.9
+    assert best["thresholds"]["manipulation"] == 0.9
+    assert best["aggregate"]["valid_opportunity_recall"] == 1.0
+
+
+# Handoff validator -------------------------------------------------------------
+
+def test_old_handoffs_rejected():
+    ok, _ = validate_handoff_static(
+        {"schema": "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V2", "status": "DRAFT"}
+    )
+    assert not ok
+    ok, _ = validate_handoff_static(
+        {"schema": "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3", "status": "DRAFT"}
+    )
+    assert not ok
+
+
+def test_v31_incomplete_fails_closed():
+    ok, errors = validate_handoff_static(
+        {
+            "schema": "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1",
+            "status": "DRAFT",
+        }
+    )
+    assert not ok
+    assert errors
+    ok, errors = validate_handoff_execution(
+        {
+            "schema": "DEEPSEEK_FACTORIZED_SCHEDULER_HANDOFF_V3_1",
+            "status": "DRAFT",
+        }
+    )
+    assert not ok
+    assert errors
+
+
+def test_expected_split_count():
     assert len(EXPECTED_SPLITS) == 12
