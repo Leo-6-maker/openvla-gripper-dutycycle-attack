@@ -294,15 +294,25 @@ def main():
                        'per_split_deltas': per_split_deltas,
                        'beats_lr': v2_mean_auroc > lr_mean_auroc and v2_mean_auprc > lr_mean_auprc}
 
-    # Verify LR baseline seal
+    # Verify LR baseline seal and exact split keys
     lr_seal_ok = False
+    lr_integrity_issues = []
     try:
         verify_sealed_directory(args.lr_root)
         lr_seal_ok = True
     except Exception as e:
-        global_metric_integrity_issues.append(f'LR_SEAL: {e}')
+        lr_integrity_issues.append(f'LR_SEAL: {e}')
 
-    lr_incomplete = not lr_seal_ok or len(lr_splits) < 12
+    expected_lr_keys = {f'o{o}i{i}' for o in range(4) for i in range(3)}
+    actual_lr_keys = set(lr_splits.keys())
+    lr_missing_keys = expected_lr_keys - actual_lr_keys
+    lr_extra_keys = actual_lr_keys - expected_lr_keys
+    if lr_missing_keys:
+        lr_integrity_issues.append(f'LR_MISSING_KEYS: {sorted(lr_missing_keys)}')
+    if lr_extra_keys:
+        lr_integrity_issues.append(f'LR_EXTRA_KEYS: {sorted(lr_extra_keys)}')
+
+    lr_incomplete = not lr_seal_ok or len(lr_integrity_issues) > 0
 
     n_safe = sum(1 for agg in config_metrics.values() if agg.get('safety_pass') is True)
     n_lr = sum(1 for v in lr_comp.values() if v.get('beats_lr'))
@@ -419,24 +429,32 @@ def main():
         cs = [ck for ck in cc if ck not in safety_elim]
         cl = [ck for ck in cs if lr_comp.get(ck, {}).get('beats_lr')]
         summary['by_candidate'][c] = {'total': len(cc), 'safety_pass': len(cs), 'beats_lr': len(cl)}
-    # Global HOLD overrides selection
-    if global_metric_integrity_issues or lr_incomplete:
-        effective_status = 'HOLD_GLOBAL_INTEGRITY' if global_metric_integrity_issues else 'HOLD_LR_BASELINE_INTEGRITY'
+    # Global HOLD overrides selection — clear candidate list
+    if global_metric_integrity_issues:
+        effective_status = 'HOLD_GLOBAL_INTEGRITY'
         has_selection = False
+        published_selected = []
+    elif lr_incomplete:
+        effective_status = 'HOLD_LR_BASELINE_INTEGRITY'
+        has_selection = False
+        published_selected = []
     elif not has_selection:
         effective_status = 'HOLD_NO_ELIGIBLE_CONFIG'
+        published_selected = []
     else:
         effective_status = 'SELECTED'
+        published_selected = selected_configs
 
     shortlist = {
         'status': effective_status,
         'global_metric_integrity_hold': len(global_metric_integrity_issues) > 0,
+        'lr_integrity_issues': lr_integrity_issues,
         'lr_baseline_incomplete': lr_incomplete,
-        'selected': selected_configs,
-        'n_selected': len(selected_configs),
+        'selected': published_selected,
+        'n_selected': len(published_selected),
         'selection_trace': selection_trace,
         'candidates_considered': len(shortlist_candidates),
-        'shortlist': selected_configs,
+        'shortlist': published_selected,
         'shortlist_valid': has_selection,
         'eligible_for_stage2': has_selection,
         'all_ties_kept': True,
@@ -455,6 +473,10 @@ def main():
     for c in CANDIDATES:
         s = summary['by_candidate'][c]
         print(f'  {c}: {s["total"]} total, {s["safety_pass"]} safe, {s["beats_lr"]} beat LR')
+
+    if not has_selection:
+        print(f'\nExiting with HOLD status: {effective_status}')
+        sys.exit(1)
 
 
 if __name__ == '__main__':
