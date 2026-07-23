@@ -48,28 +48,28 @@ def test_metric_contract_uses_exact_denominators():
     assert metrics["unverifiable_emit_fraction"]["denominator"] == "total_emitted_all"
 
 
-def test_protocol_requires_real_adapter_and_three_way_identity_split():
+def test_protocol_has_phase_b_gate_and_identity_closure():
     value = strict_load(CONTRACTS[1])
     assert value["status"] == "PHASE_A_COMPLETE_PHASE_B_AWAITING_CODEX_IDENTITY_MANIFESTS"
-    assert value["real_adapter_requirement"]["class"] == "FactorizedV2SchedulerAdapter"
-    policy = value["identity_policy"]
-    assert "calibrator_fit_identities" in policy["required_sets"]
-    assert "policy_selection_identities" in policy["required_sets"]
-    assert "heldout_evaluation_identities" in policy["required_sets"]
-    assert "checkpoint_training_identities" in policy["required_sets"]
+    assert "phase_summary" in value
+    assert value["phase_summary"]["A_codex_static_handoff_and_seal"]["status"] == "COMPLETE"
+    closure = value["identity_closure"]
+    assert "five_roles" in closure
+    for role in ["T", "C", "P", "H", "A"]:
+        assert role in closure["five_roles"]
     assert value["formal_gate"]["attack"] == "HOLD"
+    assert value["formal_gate"]["phase_b_identity_closure"] == "HOLD"
 
 
 def test_design_and_requirements_match_current_execution_boundary():
     design = strict_load(CONTRACTS[2])
     requirements = strict_load(CONTRACTS[3])
     assert design["status"] == "BLOCKED_AWAITING_PHASE_B_IDENTITY_CLOSURE"
-    assert design["holding_rules"]["attack_authorization"] is False
-    assert requirements["status"] == "CODE_IMPLEMENTED_PRODUCTION_ARTIFACTS_PENDING"
-    assert requirements["threshold_selection"]["implementation_status"] == "IMPLEMENTED_AND_CPU_TESTED"
-    assert requirements["authorization"] == {
-        "training": False,
-        "full_fit": False,
-        "authoritative_l3": False,
-        "attack": False,
-    }
+    assert "five_way_disjointness" in design["holding_rules"]
+    assert requirements["status"] == "AWAITING_PHASE_B_IDENTITY_CLOSURE"
+    assert "two_independent_gates" in requirements
+    assert "verdict_rules" in requirements
+    auth = requirements["phase_c_authorization"]
+    assert "AUTHORIZED" in auth
+    assert "HOLD_STATISTICAL_COVERAGE" in auth
+    assert "HOLD" in auth
