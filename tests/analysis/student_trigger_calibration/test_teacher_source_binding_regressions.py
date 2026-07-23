@@ -63,23 +63,38 @@ def test_authoritative_source_binding_rejects_multiple_source_hashes():
     assert any("SOURCE_SHA_MULTIPLE" in error for error in errors)
 
 
-def test_authoritative_source_binding_rejects_bad_step_count():
-    for declared in (3, True, None, "2"):
-        rows = [
-            {
-                "canonical_parent_key": "ep",
-                "step": step,
-                "source_artifact_recursive_sha256": "a" * 64,
-                "source_episode_step_count": declared,
-            }
-            for step in range(2)
-        ]
+def _source_rows(declared):
+    return [
+        {
+            "canonical_parent_key": "ep",
+            "step": step,
+            "source_artifact_recursive_sha256": "a" * 64,
+            "source_episode_step_count": declared,
+        }
+        for step in range(2)
+    ]
+
+
+def test_authoritative_source_binding_rejects_mismatched_step_count():
+    errors = []
+    check_source_sha_validity(
+        _source_rows(3),
+        "HELDOUT",
+        "o0_i0",
+        errors,
+        require_source_step_count=True,
+    )
+    assert any("SOURCE_STEP_COUNT_MISMATCH" in error for error in errors)
+
+
+def test_authoritative_source_binding_rejects_invalid_step_count_type():
+    for declared in (True, None, "2"):
         errors = []
         check_source_sha_validity(
-            rows,
+            _source_rows(declared),
             "HELDOUT",
             "o0_i0",
             errors,
             require_source_step_count=True,
         )
-        assert any("SOURCE_STEP_COUNT_MISMATCH" in error for error in errors), declared
+        assert any("SOURCE_STEP_COUNT_INVALID" in error for error in errors), declared
