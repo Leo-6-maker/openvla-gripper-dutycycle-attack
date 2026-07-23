@@ -960,3 +960,48 @@ def test_allocation_parent_manifest_sha_is_recomputed():
         expected_parent_manifest_sha="d" * 64,
     )
     assert any("ALLOC_PARENT_SHA_MISMATCH" in error for error in errors)
+
+
+def test_source_binding_requires_exact_step_count():
+    rows = [
+        {"canonical_parent_key": "ep", "step": 0,
+         "source_artifact_recursive_sha256": "a" * 64,
+         "source_episode_step_count": 3},
+        {"canonical_parent_key": "ep", "step": 1,
+         "source_artifact_recursive_sha256": "a" * 64,
+         "source_episode_step_count": 3},
+    ]
+    errors = []
+    check_source_sha_validity(
+        rows, "CALIBRATION", "o0_i0", errors, require_source_step_count=True
+    )
+    assert any("SOURCE_STEP_COUNT_MISMATCH" in e for e in errors)
+
+
+def test_source_binding_rejects_multiple_source_hashes_per_identity():
+    rows = [
+        {"canonical_parent_key": "ep", "step": 0,
+         "source_artifact_recursive_sha256": "a" * 64,
+         "source_episode_step_count": 2},
+        {"canonical_parent_key": "ep", "step": 1,
+         "source_artifact_recursive_sha256": "b" * 64,
+         "source_episode_step_count": 2},
+    ]
+    errors = []
+    check_source_sha_validity(
+        rows, "POLICY", "o0_i0", errors, require_source_step_count=True
+    )
+    assert any("SOURCE_SHA_MULTIPLE" in e for e in errors)
+
+
+def test_source_binding_rejects_bool_step_count():
+    rows = [
+        {"canonical_parent_key": "ep", "step": 0,
+         "source_artifact_recursive_sha256": "a" * 64,
+         "source_episode_step_count": True},
+    ]
+    errors = []
+    check_source_sha_validity(
+        rows, "HELDOUT", "o0_i0", errors, require_source_step_count=True
+    )
+    assert any("SOURCE_STEP_COUNT_INVALID" in e for e in errors)
