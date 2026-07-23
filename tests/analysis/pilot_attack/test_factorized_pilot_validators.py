@@ -1030,7 +1030,7 @@ def test_go_stop_when_attack_ineffective():
             assert rc != 0
             with open(dp / "o/PILOT_AUTOMATED_GO_NO_GO_V0.json") as f:
                 gr = json.load(f)
-            assert gr["recommendation"] == "STOP"
+            assert gr["automated_recommendation"] == "STOP"
             assert gr["scientific_go_no_go_authorized"] is False
         finally: sys.argv = old
 
@@ -1097,7 +1097,7 @@ def test_go_continue_when_attack_effective():
             assert rc == 0
             with open(dp / "o/PILOT_AUTOMATED_GO_NO_GO_V0.json") as f:
                 gr = json.load(f)
-            assert gr["recommendation"] == "CONTINUE"
+            assert gr["automated_recommendation"] == "CONTINUE"
         finally: sys.argv = old
 
 
@@ -1164,7 +1164,7 @@ def test_go_stop_timing_when_true_beats_rt_but_not_rand():
             assert rc != 0
             with open(dp / "o/PILOT_AUTOMATED_GO_NO_GO_V0.json") as f:
                 gr = json.load(f)
-            assert gr["recommendation"] == "STOP_TIMING"
+            assert gr["automated_recommendation"] == "STOP_TIMING"
         finally: sys.argv = old
 
 
@@ -1231,7 +1231,7 @@ def test_go_stop_window_when_oracle_fails():
             assert rc != 0
             with open(dp / "o/PILOT_AUTOMATED_GO_NO_GO_V0.json") as f:
                 gr = json.load(f)
-            assert gr["recommendation"] == "STOP_WINDOW"
+            assert gr["automated_recommendation"] == "STOP_WINDOW"
         finally: sys.argv = old
 
 
@@ -1266,6 +1266,171 @@ def test_go_rules_missing_field_rejected():
                         "--output-root", str(dp / "o")]
             an(); assert False
         except SystemExit: pass
+        finally: sys.argv = old
+
+
+def test_go_stop_when_incomplete_groups():
+    """Incomplete groups → hard STOP."""
+    from analyze_factorized_attack_pilot import main as an
+    with tempfile.TemporaryDirectory() as d:
+        dp = Path(d)
+        mgid = "g_f0_0"
+        # Only 2 of 5 conditions → incomplete group
+        jobs = [_make_job("f0", "TRUE_T10", jid="j_t", mgid=mgid),
+                _make_job("f0", "CLEAN", jid="j_c", mgid=mgid)]
+        t_run = _make_run("f0", "TRUE_T10", jid="j_t", mgid=mgid)
+        t_run["official_success"] = False
+        c_run = _make_run("f0", "CLEAN", jid="j_c", mgid=mgid, k_req=0, k_exec=0)
+        c_run["attack_requested"] = False; c_run.pop("attack_step_ledger", None)
+        c_run["official_success"] = True
+
+        runs = [t_run, c_run]
+        (dp / "ev").mkdir()
+        for run in runs:
+            (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
+        sha_map = {}
+        for run in runs:
+            sha_map[run["job_id"]] = {
+                "vsha": sha256_file(dp / "ev" / run["video_path"]),
+                "tsha": sha256_file(dp / "ev" / run["telemetry_path"])}
+
+        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": jobs})
+        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": runs})
+        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
+            {"job_id": r["job_id"], "matched_group_id": mgid, "path": r["telemetry_path"], "sha256": sha_map[r["job_id"]]["tsha"]} for r in runs]})
+        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
+            {"job_id": r["job_id"], "matched_group_id": mgid, "path": r["video_path"], "sha256": sha_map[r["job_id"]]["vsha"]} for r in runs]})
+        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0")]})
+        _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
+        _make_go_rules(dp / "gr")
+
+        old = sys.argv
+        try:
+            from validate_factorized_attack_pilot_execution import main as ev
+            sys.argv = ["ev", "--pilot-job-matrix-root", str(dp / "j"), "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"), "--pilot-video-index-root", str(dp / "v"),
+                        "--pilot-parent-manifest-root", str(dp / "pm"),
+                        "--pilot-arm-parity-protocol-root", str(dp / "arm"),
+                        "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "ev_out")]
+            ev()
+
+            sys.argv = ["an", "--pilot-execution-validation-root", str(dp / "ev_out"),
+                        "--pilot-job-matrix-root", str(dp / "j"),
+                        "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"),
+                        "--pilot-go-no-go-rules-root", str(dp / "gr"),
+                        "--output-root", str(dp / "o")]
+            rc = an()
+            assert rc != 0
+            with open(dp / "o/PILOT_AUTOMATED_GO_NO_GO_V0.json") as f:
+                gr = json.load(f)
+            assert gr["automated_recommendation"] == "STOP"
+            assert any("INCOMPLETE_GROUPS" in b for b in gr["blocker_reasons"])
+        finally: sys.argv = old
+
+
+def test_go_modify_detector_when_insufficient_groups():
+    """Insufficient groups → MODIFY_DETECTOR."""
+    from analyze_factorized_attack_pilot import main as an
+    with tempfile.TemporaryDirectory() as d:
+        dp = Path(d)
+        (dp / "ev").mkdir()
+        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": []})
+        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": []})
+        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": []})
+        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": []})
+        _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
+        _seal_single(dp / "ev_val", "m.json", {"schema": "PILOT_EXECUTION_VALIDATION_V0",
+            "status": "PASS", "input_seals": {}, "disposition_counts": {}, "n_expected_jobs": 0})
+        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": []})
+        _make_go_rules(dp / "gr", min_valid_pairs=4)  # need 4, have 0
+
+        old = sys.argv
+        try:
+            from validate_factorized_attack_pilot_execution import main as ev
+            # Create minimal PASS receipt
+            _seal_single(dp / "ev_val2", "m.json", {"schema": "PILOT_EXECUTION_VALIDATION_V0",
+                "status": "PASS", "input_seals": {}, "disposition_counts": {}, "n_expected_jobs": 0,
+                "n_errors": 0, "allowed_conditions": []})
+
+            sys.argv = ["an", "--pilot-execution-validation-root", str(dp / "ev_val"),
+                        "--pilot-job-matrix-root", str(dp / "j"),
+                        "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"),
+                        "--pilot-go-no-go-rules-root", str(dp / "gr"),
+                        "--output-root", str(dp / "o")]
+            rc = an()
+            assert rc != 0
+            with open(dp / "o/PILOT_AUTOMATED_GO_NO_GO_V0.json") as f:
+                gr = json.load(f)
+            assert gr["automated_recommendation"] == "MODIFY_DETECTOR"
+        finally: sys.argv = old
+
+
+def test_go_modify_detector_true_beats_rand_but_not_rt():
+    """TRUE beats RAND but not RANDOM_TIME → gradient matters, timing matters more → MODIFY_DETECTOR."""
+    from analyze_factorized_attack_pilot import main as an
+    with tempfile.TemporaryDirectory() as d:
+        dp = Path(d)
+        mgid = "g_f0_0"
+        jobs = [_make_job("f0", "TRUE_T10", jid="j_t", mgid=mgid),
+                _make_job("f0", "RAND_T10", jid="j_r", mgid=mgid),
+                _make_job("f0", "RANDOM_TIME_T10", jid="j_rt", mgid=mgid),
+                _make_job("f0", "COMMAND_OPEN_ORACLE", jid="j_or", mgid=mgid),
+                _make_job("f0", "CLEAN", jid="j_c", mgid=mgid)]
+        t_run = _make_run("f0", "TRUE_T10", jid="j_t", mgid=mgid)
+        t_run["official_success"] = False  # TRUE fails
+        r_run = _make_run("f0", "RAND_T10", jid="j_r", mgid=mgid); r_run["gradient_aligned"] = False
+        r_run["official_success"] = True  # RAND succeeds (gradient matters → TRUE beats RAND)
+        rt_run = _make_run("f0", "RANDOM_TIME_T10", jid="j_rt", mgid=mgid)
+        rt_run["official_success"] = False  # RANDOM_TIME also fails (timing matters equally)
+        or_run = _make_run("f0", "COMMAND_OPEN_ORACLE", jid="j_or", mgid=mgid)
+        or_run["official_success"] = False; or_run["gripper_opened"] = True
+        c_run = _make_run("f0", "CLEAN", jid="j_c", mgid=mgid, k_req=0, k_exec=0)
+        c_run["attack_requested"] = False; c_run.pop("attack_step_ledger", None)
+        c_run["official_success"] = True
+
+        runs = [t_run, r_run, rt_run, or_run, c_run]
+        (dp / "ev").mkdir()
+        for run in runs:
+            (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
+        sha_map = {}
+        for run in runs:
+            sha_map[run["job_id"]] = {
+                "vsha": sha256_file(dp / "ev" / run["video_path"]),
+                "tsha": sha256_file(dp / "ev" / run["telemetry_path"])}
+
+        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": jobs})
+        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": runs})
+        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
+            {"job_id": r["job_id"], "matched_group_id": mgid, "path": r["telemetry_path"], "sha256": sha_map[r["job_id"]]["tsha"]} for r in runs]})
+        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
+            {"job_id": r["job_id"], "matched_group_id": mgid, "path": r["video_path"], "sha256": sha_map[r["job_id"]]["vsha"]} for r in runs]})
+        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0")]})
+        _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
+        _make_go_rules(dp / "gr")
+
+        old = sys.argv
+        try:
+            from validate_factorized_attack_pilot_execution import main as ev
+            sys.argv = ["ev", "--pilot-job-matrix-root", str(dp / "j"), "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"), "--pilot-video-index-root", str(dp / "v"),
+                        "--pilot-parent-manifest-root", str(dp / "pm"),
+                        "--pilot-arm-parity-protocol-root", str(dp / "arm"),
+                        "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "ev_out")]
+            ev()
+
+            sys.argv = ["an", "--pilot-execution-validation-root", str(dp / "ev_out"),
+                        "--pilot-job-matrix-root", str(dp / "j"),
+                        "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"),
+                        "--pilot-go-no-go-rules-root", str(dp / "gr"),
+                        "--output-root", str(dp / "o")]
+            rc = an()
+            assert rc != 0
+            with open(dp / "o/PILOT_AUTOMATED_GO_NO_GO_V0.json") as f:
+                gr = json.load(f)
+            assert gr["automated_recommendation"] == "MODIFY_DETECTOR"
         finally: sys.argv = old
 
 

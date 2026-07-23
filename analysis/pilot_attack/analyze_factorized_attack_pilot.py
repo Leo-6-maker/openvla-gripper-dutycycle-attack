@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""B3 v2.3.1: Pilot paired analysis — fixed Oracle direction, reachable decision tree, strict rules, seal binding."""
+"""B3 v2.3.2: Pilot paired analysis — fixed decision tree, re-validation, separated automated/scientific claims."""
 from __future__ import annotations
 
 import argparse, csv, json, os, sys, uuid
@@ -23,7 +23,6 @@ REQUIRED_RULE_FIELDS = (
 
 
 def _validate_rules(rules: dict[str, Any]) -> list[str]:
-    """Strict validation: every required field must exist, be finite number, and in valid range."""
     errs: list[str] = []
     for fld in REQUIRED_RULE_FIELDS:
         if fld not in rules:
@@ -91,7 +90,7 @@ def main() -> int:
     if binding_errors:
         raise SystemExit("CROSS_RECEIPT_SUBSTITUTION: " + "; ".join(binding_errors))
 
-    # ── Load runs, index by job_id ────────────────────────────────────────
+    # ── Load runs and jobs ────────────────────────────────────────────────
     runs = run_ledger.get("runs", [])
     jobs = job_matrix.get("jobs", [])
 
@@ -107,6 +106,19 @@ def main() -> int:
         if jid:
             jobs_by_id[jid] = job
 
+    # ── Re-validation: job_id set closure ─────────────────────────────────
+    matrix_ids = set(jobs_by_id)
+    ledger_ids = set(runs_by_id)
+    extra_in_ledger = ledger_ids - matrix_ids
+    missing_from_ledger = matrix_ids - ledger_ids
+    reval_errors: list[str] = []
+    for jid in sorted(missing_from_ledger):
+        reval_errors.append(f"ANALYSIS_MISSING_RUN: {jid}")
+    for jid in sorted(extra_in_ledger):
+        reval_errors.append(f"ANALYSIS_EXTRA_RUN: {jid}")
+    if reval_errors:
+        raise SystemExit("ANALYSIS_CLOSURE_FAIL: " + "; ".join(reval_errors))
+
     # ── Build matched groups from job matrix ──────────────────────────────
     groups: dict[str, list[str]] = {}
     for jid, job in jobs_by_id.items():
@@ -114,12 +126,23 @@ def main() -> int:
         if mgid:
             groups.setdefault(mgid, []).append(jid)
 
+    # ── Re-validation: no duplicate condition per group, n_groups > 0 ─────
+    if len(groups) == 0:
+        raise SystemExit("ANALYSIS_ZERO_GROUPS")
+    for mgid, jids in groups.items():
+        seen_conds: set[str] = set()
+        for jid in jids:
+            cond = jobs_by_id[jid].get("condition", "")
+            if cond in seen_conds:
+                raise SystemExit(f"ANALYSIS_DUP_CONDITION: mgid={mgid} cond={cond}")
+            seen_conds.add(cond)
+
     # ── Compute GO/NO-GO metrics ──────────────────────────────────────────
     n_groups = len(groups)
     n_oracle_physical = 0
+    n_oracle_degradation = 0
     n_true_over_rand = 0
     n_true_over_random_time = 0
-    n_oracle_degradation = 0
     n_complete_groups = 0
 
     for mgid in sorted(groups):
@@ -143,7 +166,6 @@ def main() -> int:
         if oracle_run and clean_run:
             c_success = clean_run.get("official_success", False)
             o_success = oracle_run.get("official_success", False)
-            # Oracle degradation: clean succeeds but oracle fails (correct direction)
             if c_success and not o_success:
                 n_oracle_degradation += 1
 
@@ -174,6 +196,20 @@ def main() -> int:
     n_missing_video = disp_counts.get("MISSING_VIDEO", 0)
     n_missing_telem = disp_counts.get("MISSING_TELEMETRY", 0)
 
+    # ── Automated infrastructure checks ───────────────────────────────────
+    infrastructure_ready = (
+        exec_val.get("status") == "PASS"
+        and len(reval_errors) == 0
+        and n_missing_video <= max_missing_evidence
+        and n_missing_telem <= max_missing_evidence
+    )
+
+    # ── Automated mechanism signals ───────────────────────────────────────
+    oracle_actuation_supported = n_oracle_physical >= min_oracle_physical
+    oracle_physical_effect_supported = n_oracle_degradation >= min_oracle_physical
+    payload_specificity_signal = n_true_over_rand >= min_true_vs_rand
+    timing_specificity_signal = n_true_over_random_time >= min_true_vs_rt
+
     checks: dict[str, Any] = {
         "n_groups": n_groups,
         "n_complete_groups": n_complete_groups,
@@ -185,15 +221,15 @@ def main() -> int:
         "n_missing_telem": n_missing_telem,
     }
 
-    # ── Decision tree: classify root cause → recommendation ──────────────
+    # ── Decision tree: mutually exclusive, every branch reachable ─────────
     blocker_reasons: list[str] = []
+    evidence_fail = (n_missing_video > max_missing_evidence or
+                     n_missing_telem > max_missing_evidence)
+    incomplete = require_all_conditions and n_complete_groups < n_groups
+    insufficient_groups = n_groups < min_valid_pairs
     oracle_fail = n_oracle_physical < min_oracle_physical
     true_rand_fail = n_true_over_rand < min_true_vs_rand
     true_rt_fail = n_true_over_random_time < min_true_vs_rt
-    incomplete = require_all_conditions and n_complete_groups < n_groups
-    evidence_fail = (n_missing_video > max_missing_evidence or
-                     n_missing_telem > max_missing_evidence)
-    insufficient_groups = n_groups < min_valid_pairs
 
     if evidence_fail:
         blocker_reasons.append(
@@ -203,30 +239,32 @@ def main() -> int:
     if insufficient_groups:
         blocker_reasons.append(f"INSUFFICIENT_GROUPS: {n_groups} < {min_valid_pairs}")
 
-    # Classify by root cause (mutually exclusive first-match)
+    # Mutually exclusive first-match decision tree
     if evidence_fail:
-        recommendation = "STOP"  # can't make any determination without evidence
+        automated_recommendation = "STOP"
+    elif incomplete:
+        automated_recommendation = "STOP"
     elif insufficient_groups:
-        recommendation = "MODIFY_DETECTOR"  # need more parents that emit
+        automated_recommendation = "MODIFY_DETECTOR"
     elif oracle_fail:
         blocker_reasons.append(
             f"ORACLE_BRIDGE_FAIL: n_oracle_physical={n_oracle_physical} < {min_oracle_physical}")
-        recommendation = "STOP_WINDOW"  # command intervention doesn't work → window not viable
+        automated_recommendation = "STOP_WINDOW"
     elif true_rand_fail:
         blocker_reasons.append(
             f"TRUE_NOT_BEATING_RAND: n_true_over_rand={n_true_over_rand} < {min_true_vs_rand}")
         if true_rt_fail:
             blocker_reasons.append(
-                f"TRUE_NOT_BEATING_RANDOM_TIME: n_true_over_random_time={n_true_over_rt} < {min_true_vs_rt}")
-            recommendation = "STOP"  # attack has no effect at all
+                f"TRUE_NOT_BEATING_RANDOM_TIME: n_true_over_random_time={n_true_over_random_time} < {min_true_vs_rt}")
+            automated_recommendation = "STOP"
         else:
-            recommendation = "STOP_TIMING"  # TRUE beats RT but not RAND → timing wins, gradient doesn't
+            automated_recommendation = "STOP_TIMING"
     elif true_rt_fail:
         blocker_reasons.append(
-            f"TRUE_NOT_BEATING_RANDOM_TIME: n_true_over_random_time={n_true_over_rt} < {min_true_vs_rt}")
-        recommendation = "MODIFY_DETECTOR"  # TRUE beats RAND but not RT → gradient matters, timing matters more
+            f"TRUE_NOT_BEATING_RANDOM_TIME: n_true_over_random_time={n_true_over_random_time} < {min_true_vs_rt}")
+        automated_recommendation = "MODIFY_DETECTOR"
     else:
-        recommendation = "CONTINUE"
+        automated_recommendation = "CONTINUE"
 
     # ── Per-group paired results ──────────────────────────────────────────
     paired_results: dict[str, Any] = {}
@@ -266,9 +304,14 @@ def main() -> int:
 
     go_result = {
         "schema": "PILOT_AUTOMATED_GO_NO_GO_V0",
-        "recommendation": recommendation,
+        "automated_recommendation": automated_recommendation,
         "blocker_reasons": blocker_reasons,
         "checks": checks,
+        "infrastructure_ready": infrastructure_ready,
+        "oracle_actuation_supported": oracle_actuation_supported,
+        "oracle_physical_effect_supported": oracle_physical_effect_supported,
+        "payload_specificity_signal": payload_specificity_signal,
+        "timing_specificity_signal": timing_specificity_signal,
         "sealed_rules_sha256": go_rules_seal,
         "direction_only": True,
         "paper_table1_eligible": False,
@@ -283,7 +326,18 @@ def main() -> int:
         "",
         f"Execution receipt seal: {exec_val_seal}",
         f"GO/NO-GO rules seal: {go_rules_seal}",
-        f"Recommendation: **{recommendation}**",
+        f"Automated recommendation: **{automated_recommendation}**",
+        "",
+        "## Infrastructure",
+        f"- ready: {infrastructure_ready}",
+        f"- evidence_gaps: {evidence_fail}",
+        f"- incomplete_groups: {incomplete}",
+        "",
+        "## Mechanism Signals",
+        f"- oracle_actuation: {oracle_actuation_supported}",
+        f"- oracle_physical_effect: {oracle_physical_effect_supported}",
+        f"- payload_specificity: {payload_specificity_signal}",
+        f"- timing_specificity: {timing_specificity_signal}",
         "",
         "## Blockers",
     ]
@@ -292,10 +346,6 @@ def main() -> int:
             diagnosis_lines.append(f"- {b}")
     else:
         diagnosis_lines.append("- (none)")
-    diagnosis_lines.append("")
-    diagnosis_lines.append("## Checks")
-    for k, v in checks.items():
-        diagnosis_lines.append(f"- {k}: {v}")
     diagnosis_lines.append("")
     diagnosis_lines.append("## Per-Group Summary")
     diagnosis_lines.append("")
@@ -326,9 +376,10 @@ def main() -> int:
     if out_root.exists(): shutil.rmtree(out_root)
     os.replace(staging, out_root)
 
-    print(f"Pilot Automated GO/NO-GO: recommendation={recommendation}")
+    print(f"Pilot Automated GO/NO-GO: automated_recommendation={automated_recommendation}")
+    print(f"  Infrastructure ready: {infrastructure_ready}")
     print(f"  Checks: {json.dumps(checks)}")
-    return 0 if recommendation == "CONTINUE" else 1
+    return 0 if automated_recommendation == "CONTINUE" else 1
 
 
 if __name__ == "__main__":
