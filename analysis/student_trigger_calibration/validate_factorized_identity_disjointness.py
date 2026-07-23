@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
-"""Phase B identity-disjointness validator — V3.
+"""Phase B identity-disjointness validator — V3.1.
 
 Authoritative mode reads raw C/P/H Teacher bundles and recomputes coverage
-from label rows.  Manifest summaries are cross-checked but never trusted
-as the sole source.
+from label rows.  Manifest summaries are cross-checked but never trusted.
 
 Three gates:
-  Gate 1 — Identity Disjointness (hard): contamination → NESTED_RETRAIN_REQUIRED
+  Gate 1 — Identity Disjointness (hard): contamination -> NESTED_RETRAIN_REQUIRED
   Gate 2 — Statistical Coverage (soft): computed from raw Teacher labels
   Gate 3 — Heldout Teacher Closure (hard): K10, step closure, contract parity
 
-K10 contract parity: authoritative mode REJECTS INTERNAL_SIMPLIFIED_V1.
+V3.1 fixes (from review):
+  - teacher_contract_sha vs source_artifact_recursive_sha256 separated
+  - C/P identity closure enforced (not just H)
+  - K10 whitelist (--expected-k10-schema), not blacklist
+  - Full SHA256SUMS file-level verification
+  - Mandatory deterministic allocation closure in authoritative mode
+  - Policy rows sorted by step; JSONL duplicate-key detection; strict step type
+  - 12-split duplicate rejection
 """
 from __future__ import annotations
 
@@ -41,9 +47,9 @@ CALIBRATION_HEADS = ["grasp", "manipulation", "release"]
 HEAD_TARGET_MAP = {"grasp": "grasp_established", "manipulation": "manipulation_active", "release": "release_or_instability"}
 HEAD_KNOWN_MAP = {"grasp": "grasp_established_known_mask", "manipulation": "manipulation_active_known_mask", "release": "release_or_instability_known_mask"}
 FROZEN_SPLITS = frozenset(f"o{o}_i{i}" for o in range(4) for i in range(3))
-REJECTED_K10_SCHEMAS = {"INTERNAL_SIMPLIFIED_V1"}
 REQUIRED_K10_FIELDS = ("strict_k10_feasible", "strict_k10_known_mask")
-REQUIRED_IDENTITY_FIELDS = ("canonical_parent_key", "step", "source_artifact_recursive_sha256")
+REQUIRED_LABEL_FIELDS = ("canonical_parent_key", "step")
+EXPECTED_K10_SCHEMA = "R7_K10_OPPORTUNITY_LABELER_V1_2_2_V21C_CANONICAL"
 SELF_SHA = None
 
 
@@ -56,6 +62,9 @@ def sha256_file(p):
 def sha256_str(s):
     return hashlib.sha256(s.encode()).hexdigest()
 
+def is_64char_hex(s):
+    return isinstance(s, str) and len(s) == 64 and all(c in "0123456789abcdef" for c in s)
+
 def load_manifest(path, label):
     if not path.is_file():
         raise SystemExit(f"{label}_MANIFEST_NOT_FOUND: {path}")
@@ -65,7 +74,6 @@ def load_manifest(path, label):
         raise SystemExit(f"{label}_MANIFEST_PARSE_ERROR: {e}")
 
 def load_strict_json(path, label):
-    """Duplicate-key-aware JSON loader."""
     dups = []
     def hook(pairs):
         seen = set(); result = {}
@@ -83,6 +91,44 @@ def load_strict_json(path, label):
         raise SystemExit(f"{label}_DUPLICATE_KEYS: {path} keys={dups[:5]}")
     return value
 
+def load_strict_jsonl(path, label):
+    """Duplicate-key-aware JSONL loader with strict step type check."""
+    if not path.is_file():
+        return None
+    rows = []
+    seen = set()
+    with open(path) as f:
+        for line_nr, line in enumerate(f, 1):
+            if not line.strip(): continue
+            dups = []
+            def hook(pairs):
+                s = set(); r = {}
+                for k, v in pairs:
+                    if k in s: dups.append(k)
+                    s.add(k)
+                    r[k] = v
+                return r
+            try:
+                r = json.loads(line, object_pairs_hook=hook)
+            except json.JSONDecodeError as e:
+                raise SystemExit(f"{label}_JSONL_PARSE: {path}:{line_nr} {e}")
+            if dups:
+                raise SystemExit(f"{label}_JSONL_DUP_KEY: {path}:{line_nr} keys={dups}")
+            for fld in REQUIRED_LABEL_FIELDS:
+                if fld not in r:
+                    raise SystemExit(f"{label}_JSONL_MISSING: {path}:{line_nr} {fld}")
+            step = r["step"]
+            if isinstance(step, bool) or not isinstance(step, (int, float)):
+                raise SystemExit(f"{label}_JSONL_STEP_TYPE: {path}:{line_nr} step={step!r} type={type(step).__name__}")
+            step = int(step)
+            key = (r["canonical_parent_key"], step)
+            if key in seen:
+                raise SystemExit(f"{label}_JSONL_DUP_KEY: {path}:{line_nr} key={key}")
+            seen.add(key)
+            r["step"] = step  # normalize
+            rows.append(r)
+    return rows
+
 def extract_identities(manifest, role, split_key):
     if "identities" in manifest:
         return set(manifest["identities"])
@@ -96,43 +142,56 @@ def extract_identities(manifest, role, split_key):
         if isinstance(rd, list): return set(rd)
     return set()
 
-def load_teacher_labels(bundle_root, split_key):
-    """Load and validate per-split Teacher label rows. Returns list[dict]."""
+def load_teacher_labels(bundle_root, split_key, label="TEACHER"):
+    """Load per-split Teacher labels with strict duplicate-key JSONL."""
     if not bundle_root:
         return None
     bp = Path(bundle_root) / split_key / "factorized_teacher_v1.jsonl"
-    if not bp.is_file():
-        return None
-    rows = []
-    seen = set()
-    for line_nr, line in enumerate(open(bp), 1):
-        if not line.strip(): continue
-        try:
-            r = json.loads(line)
-        except json.JSONDecodeError as e:
-            raise SystemExit(f"TEACHER_LABEL_PARSE: {bp}:{line_nr} {e}")
-        for fld in REQUIRED_IDENTITY_FIELDS:
-            if fld not in r:
-                raise SystemExit(f"TEACHER_LABEL_MISSING_FIELD: {bp}:{line_nr} {fld}")
-        key = (r["canonical_parent_key"], int(r["step"]))
-        if key in seen:
-            raise SystemExit(f"TEACHER_LABEL_DUPLICATE: {bp}:{line_nr} key={key}")
-        seen.add(key)
-        rows.append(r)
-    return rows
+    return load_strict_jsonl(bp, label)
 
 def verify_bundle_seal(bundle_root, label):
-    """Verify SHA256SUMS + SHA256SUMS.sha256 seal of a bundle directory."""
+    """Full seal verification: SHA256SUMS.sha256 + per-file SHA check."""
     bp = Path(bundle_root)
-    if not bp.is_dir(): return
+    if not bp.is_dir():
+        raise SystemExit(f"{label}_NOT_DIR: {bp}")
     sums = bp / "SHA256SUMS"
     sidecar = bp / "SHA256SUMS.sha256"
     if not sums.is_file() or not sidecar.is_file():
-        raise SystemExit(f"{label}_UNSEALED: missing SHA256SUMS or .sha256 in {bp}")
-    expected = sha256_file(sums)
-    actual = sidecar.read_text().strip().split()[0]
-    if actual != expected:
-        raise SystemExit(f"{label}_SEAL_BROKEN: expected {expected[:16]} got {actual[:16]}")
+        raise SystemExit(f"{label}_UNSEALED: missing SHA256SUMS or .sha256")
+    # Verify sidecar
+    expected_seal = sha256_file(sums)
+    actual_seal_line = sidecar.read_text().strip().split()
+    if not actual_seal_line or actual_seal_line[0] != expected_seal:
+        raise SystemExit(f"{label}_SIDECAR_BROKEN: expected {expected_seal[:16]} got {actual_seal_line[0][:16] if actual_seal_line else '?'}")
+    # Parse and verify each file in SHA256SUMS
+    seen = set()
+    all_listed = set()
+    with open(sums) as f:
+        for line in f:
+            line = line.strip()
+            if not line: continue
+            parts = line.split()
+            if len(parts) < 2:
+                raise SystemExit(f"{label}_SEAL_PARSE: bad line '{line}'")
+            file_sha, rel = parts[0], " ".join(parts[1:])
+            if not is_64char_hex(file_sha):
+                raise SystemExit(f"{label}_SEAL_SHA_LEN: {rel}")
+            rel_path = Path(rel)
+            if rel_path.is_absolute() or ".." in rel_path.parts:
+                raise SystemExit(f"{label}_SEAL_PATH_ESCAPE: {rel}")
+            if rel in seen:
+                raise SystemExit(f"{label}_SEAL_DUP: {rel}")
+            seen.add(rel)
+            all_listed.add(rel)
+            actual = sha256_file(bp / rel_path)
+            if actual != file_sha:
+                raise SystemExit(f"{label}_SEAL_FILE_MISMATCH: {rel} expected {file_sha[:16]} got {actual[:16]}")
+    # Check no extra files
+    for p in bp.rglob("*"):
+        if p.is_file() and p.name not in ("SHA256SUMS", "SHA256SUMS.sha256"):
+            rel = p.relative_to(bp).as_posix()
+            if rel not in all_listed:
+                raise SystemExit(f"{label}_SEAL_EXTRA_FILE: {rel} not in SHA256SUMS")
 
 
 # ══════════════════════════════════════════════════════
@@ -167,33 +226,166 @@ def check_cohort_membership(sets_by_role, cohort_membership, split_key, errors):
         for eid in ids:
             actual = cohort_membership.get(eid)
             if actual is None:
-                errors.append(f"COHORT_UNKNOWN: {split_key} {ROLE_LABELS[role_name]} identity '{eid}' not in membership ledger")
+                errors.append(f"COHORT_UNKNOWN: {split_key} {ROLE_LABELS[role_name]} '{eid}' not in membership")
             elif actual != expected_cohort:
                 if expected_cohort == "DETECTOR_VAL" and actual == "DETECTOR_VAL": continue
                 errors.append(f"COHORT_VIOLATION: {split_key} {ROLE_LABELS[role_name]} '{eid}' in '{actual}' expected '{expected_cohort}'")
 
-def check_deterministic_allocation(allocation, sets_by_role, split_key, errors):
-    da = allocation.get("deterministic_allocation", {})
-    if not da:
-        # If source_status is DETERMINISTIC_ALLOCATION, allocation receipt is required
-        if allocation.get("allocation_method") == "DETERMINISTIC_SPLIT":
-            errors.append(f"ALLOC_MISSING: {split_key} deterministic_allocation block required for DETERMINISTIC_SPLIT")
-        return
 
+# ══════════════════════════════════════════════════════
+# Gate 2 — Statistical Coverage (from raw Teacher labels)
+# ══════════════════════════════════════════════════════
+
+def verify_identity_closure(manifest_ids, teacher_rows, role_label, split_key, errors):
+    """Verify Teacher bundle identities match manifest exactly."""
+    if teacher_rows is None:
+        errors.append(f"{role_label}_BUNDLE_MISSING: {split_key}")
+        return
+    teacher_ids = set(r["canonical_parent_key"] for r in teacher_rows)
+    missing = manifest_ids - teacher_ids
+    extra = teacher_ids - manifest_ids
+    if missing:
+        errors.append(f"{role_label}_ID_MISSING: {split_key} {len(missing)}: {sorted(missing)[:5]}")
+    if extra:
+        errors.append(f"{role_label}_ID_EXTRA: {split_key} {len(extra)}: {sorted(extra)[:5]}")
+    if len(teacher_ids) != len(manifest_ids):
+        errors.append(f"{role_label}_ID_COUNT: {split_key} manifest={len(manifest_ids)} teacher={len(teacher_ids)}")
+
+def verify_step_closure(teacher_rows, role_label, split_key, errors):
+    """Per-identity step closure: start-at-0, contiguous, no gaps."""
+    if teacher_rows is None:
+        return
+    by_ep = defaultdict(list)
+    for r in teacher_rows:
+        by_ep[r["canonical_parent_key"]].append(r)
+    for ep_id, ep_rows in by_ep.items():
+        ep_rows.sort(key=lambda r: r["step"])
+        steps = [r["step"] for r in ep_rows]
+        if steps[0] != 0:
+            errors.append(f"{role_label}_STEP_START: {split_key}/{ep_id} first={steps[0]} expected 0")
+        for i, s in enumerate(steps):
+            if s != i:
+                errors.append(f"{role_label}_STEP_GAP: {split_key}/{ep_id} expected {i} got {s}")
+                break
+
+def check_k10_parity(teacher_rows, expected_k10_schema, role_label, split_key, errors):
+    """Whitelist K10 schema check.  authoritative mode requires exact match."""
+    if teacher_rows is None or expected_k10_schema is None:
+        return
+    schemas_seen = set()
+    for r in teacher_rows:
+        k10_schema = r.get("strict_k10_binding_schema", None)
+        if k10_schema is None or not isinstance(k10_schema, str) or k10_schema.strip() == "":
+            errors.append(f"{role_label}_K10_MISSING: {split_key} step={r.get('step')} k10_schema={k10_schema!r}")
+            return
+        schemas_seen.add(k10_schema)
+        if k10_schema != expected_k10_schema:
+            errors.append(f"{role_label}_K10_MISMATCH: {split_key} step={r.get('step')} got='{k10_schema}' expected='{expected_k10_schema}'")
+            return
+    if len(schemas_seen) > 1:
+        errors.append(f"{role_label}_K10_MULTIPLE: {split_key} schemas={sorted(schemas_seen)}")
+
+def check_contract_sha_consistency(teacher_rows, teacher_contract_sha, role_label, split_key, errors):
+    """Verify teacher_contract_sha256 field matches canonical contract file SHA."""
+    if teacher_rows is None or teacher_contract_sha is None:
+        return
+    for r in teacher_rows:
+        row_contract_sha = r.get("teacher_contract_sha256", None)
+        if row_contract_sha is None or not is_64char_hex(str(row_contract_sha)):
+            errors.append(f"{role_label}_CONTRACT_SHA_MISSING: {split_key} step={r.get('step')}")
+            return
+        if row_contract_sha != teacher_contract_sha:
+            errors.append(f"{role_label}_CONTRACT_SHA_MISMATCH: {split_key} step={r.get('step')} got={str(row_contract_sha)[:16]} expected={teacher_contract_sha[:16]}")
+            return
+
+def check_source_sha_validity(teacher_rows, role_label, split_key, errors):
+    """Verify source_artifact_recursive_sha256 is valid 64-char hex (not compared to contract)."""
+    if teacher_rows is None:
+        return
+    for r in teacher_rows:
+        src = r.get("source_artifact_recursive_sha256", "")
+        if not is_64char_hex(str(src)):
+            errors.append(f"{role_label}_SOURCE_SHA_INVALID: {split_key} step={r.get('step')} sha={str(src)[:40]}")
+            return
+
+
+def compute_calibration_coverage_from_labels(teacher_rows, split_key, cov_issues):
+    if teacher_rows is None or not teacher_rows:
+        cov_issues.append(f"CALIBRATION_BUNDLE_MISSING: {split_key}")
+        return
+    for head in CALIBRATION_HEADS:
+        target_key = HEAD_TARGET_MAP[head]
+        known_key = HEAD_KNOWN_MAP[head]
+        n_pos = sum(1 for r in teacher_rows if r.get(known_key) and r.get(target_key))
+        n_neg = sum(1 for r in teacher_rows if r.get(known_key) and not r.get(target_key))
+        if n_pos == 0:
+            cov_issues.append(f"CALIBRATION_NO_POSITIVE: {split_key}/{head} 0 known positive")
+        if n_neg == 0:
+            cov_issues.append(f"CALIBRATION_NO_NEGATIVE: {split_key}/{head} 0 known negative")
+
+def compute_policy_coverage_from_labels(teacher_rows, split_key, cov_issues):
+    if teacher_rows is None or not teacher_rows:
+        cov_issues.append(f"POLICY_BUNDLE_MISSING: {split_key}")
+        return
+    # Validate K10 field types
+    for fld in REQUIRED_K10_FIELDS:
+        for r in teacher_rows:
+            if not isinstance(r.get(fld), bool):
+                cov_issues.append(f"POLICY_K10_TYPE: {split_key} step={r.get('step')} {fld} is {type(r.get(fld)).__name__}")
+                return
+    # Sort by step
+    by_ep = defaultdict(list)
+    for r in teacher_rows:
+        by_ep[r["canonical_parent_key"]].append(r)
+    n_neg = n_pos_k10 = n_unknown = n_eligible = n_known_denom = 0
+    for ep_id, ep_rows in by_ep.items():
+        ep_rows.sort(key=lambda r: r["step"])
+        T = len(ep_rows)
+        if T < 10: n_unknown += 1; continue
+        n_eligible += 1
+        last_eligible = T - 10
+        eligible = ep_rows[:last_eligible + 1]
+        known_all = all(r.get("strict_k10_known_mask", False) for r in eligible)
+        has_pos = any(r.get("strict_k10_feasible", False) and r.get("strict_k10_known_mask", False) for r in eligible)
+        if has_pos: n_pos_k10 += 1; n_known_denom += 1
+        elif known_all: n_neg += 1; n_known_denom += 1
+        else: n_unknown += 1
+    if n_neg == 0:
+        cov_issues.append(f"POLICY_NO_NEGATIVE: {split_key} 0 negative episodes")
+    if n_pos_k10 == 0:
+        cov_issues.append(f"POLICY_NO_OPPORTUNITY: {split_key} 0 K10 opportunities")
+    if n_eligible == 0:
+        cov_issues.append(f"POLICY_NO_ELIGIBLE: {split_key} 0 eligible episodes")
+    if n_known_denom == 0:
+        cov_issues.append(f"POLICY_NO_KNOWN_DENOM: {split_key} 0 episodes with known denominator")
+
+
+# ══════════════════════════════════════════════════════
+# Deterministic allocation (V3.1: mandatory in authoritative mode)
+# ══════════════════════════════════════════════════════
+
+def check_deterministic_allocation(allocation, sets_by_role, split_key, authoritative, errors):
+    da = allocation.get("deterministic_allocation", {})
+    has_da = bool(da)
+    alloc_method = allocation.get("allocation_method", "")
+    if authoritative and alloc_method == "DETERMINISTIC_SPLIT" and not has_da:
+        errors.append(f"ALLOC_BLOCK_MISSING: {split_key} authoritative DETERMINISTIC_SPLIT requires deterministic_allocation block")
+        return
+    if not has_da:
+        if authoritative and (alloc_method == "DETERMINISTIC_SPLIT" or not alloc_method):
+            errors.append(f"ALLOC_BLOCK_MISSING: {split_key}")
+        return
     parent = da.get("parent_cohort", "")
     if parent and parent != "DETECTOR_VAL":
         errors.append(f"ALLOC_PARENT: {split_key} expected DETECTOR_VAL, got '{parent}'")
-
-    # Required fields
     for field in ["parent_cohort_manifest_sha256", "fixed_salt", "canonical_sort_key",
                    "allocation_algorithm_sha256", "allocation_code_sha256"]:
         val = da.get(field, "")
         if not val or not isinstance(val, str) or len(val) < 8:
             errors.append(f"ALLOC_MISSING: {split_key} deterministic_allocation.{field}")
-        elif field.endswith("_sha256") and len(val) != 64:
-            errors.append(f"ALLOC_SHA_LEN: {split_key} {field} len={len(val)} expected 64")
+        elif field.endswith("_sha256") and not is_64char_hex(val):
+            errors.append(f"ALLOC_SHA_INVALID: {split_key} {field}")
 
-    # C∪P closure
     c_ids, p_ids = sets_by_role.get("calibrator_fit", set()), sets_by_role.get("policy_selection", set())
     cp_union = c_ids | p_ids
     if c_ids & p_ids:
@@ -207,11 +399,14 @@ def check_deterministic_allocation(allocation, sets_by_role, split_key, errors):
     else:
         val_split = set()
 
-    if val_split:
-        missing = val_split - cp_union
-        extra = cp_union - val_split
-        if missing: errors.append(f"ALLOC_CLOSURE: {split_key} {len(missing)} VAL ids not in C∪P")
-        if extra: errors.append(f"ALLOC_EXTRA: {split_key} {len(extra)} ids in C∪P not in VAL")
+    if authoritative:
+        if not val_split:
+            errors.append(f"ALLOC_CLOSURE_MISSING: {split_key} parent_cohort_identities required in authoritative mode")
+        else:
+            missing = val_split - cp_union
+            extra = cp_union - val_split
+            if missing: errors.append(f"ALLOC_CLOSURE: {split_key} {len(missing)} VAL ids not in C∪P")
+            if extra: errors.append(f"ALLOC_EXTRA: {split_key} {len(extra)} ids in C∪P not in VAL")
 
     unassigned = da.get("unassigned_identities", {})
     if isinstance(unassigned, dict):
@@ -220,186 +415,8 @@ def check_deterministic_allocation(allocation, sets_by_role, split_key, errors):
         un_count = len(unassigned)
     else:
         un_count = 0
-
-
-# ══════════════════════════════════════════════════════
-# Gate 2 — Statistical Coverage (from raw Teacher labels)
-# ══════════════════════════════════════════════════════
-
-def compute_calibration_coverage_from_labels(teacher_rows, split_key, teacher_contract_sha, authoritative, cov_issues):
-    """Recompute per-head known positive/negative from raw Teacher labels.
-
-    In authoritative mode, every row's source_artifact_recursive_sha256 must
-    match the Teacher contract SHA.
-    """
-    if teacher_rows is None:
-        cov_issues.append(f"CALIBRATION_BUNDLE_MISSING: {split_key}")
-        return
-    if not teacher_rows:
-        cov_issues.append(f"CALIBRATION_EMPTY: {split_key}")
-        return
-
-    by_ep = defaultdict(list)
-    for r in teacher_rows:
-        by_ep[r["canonical_parent_key"]].append(r)
-
-    for head in CALIBRATION_HEADS:
-        target_key = HEAD_TARGET_MAP[head]
-        known_key = HEAD_KNOWN_MAP[head]
-        n_pos = sum(1 for r in teacher_rows if r.get(known_key) and r.get(target_key))
-        n_neg = sum(1 for r in teacher_rows if r.get(known_key) and not r.get(target_key))
-        n_unknown = sum(1 for r in teacher_rows if not r.get(known_key))
-
-        if n_pos == 0:
-            cov_issues.append(f"CALIBRATION_NO_POSITIVE: {split_key}/{head} 0 known positive")
-        if n_neg == 0:
-            cov_issues.append(f"CALIBRATION_NO_NEGATIVE: {split_key}/{head} 0 known negative")
-
-        # K10 contract check: every row's k10 schema
-        if authoritative and teacher_contract_sha:
-            for r in teacher_rows:
-                k10_schema = r.get("strict_k10_binding_schema", "")
-                if k10_schema in REJECTED_K10_SCHEMAS:
-                    cov_issues.append(f"CALIBRATION_K10_REJECTED: {split_key}/{head} step={r.get('step')} schema='{k10_schema}' — authoritative mode requires external K10")
-                    break
-            # Also check source SHA consistency across all rows
-            for r in teacher_rows:
-                src = r.get("source_artifact_recursive_sha256", "")
-                if src and teacher_contract_sha and src != teacher_contract_sha:
-                    cov_issues.append(f"CALIBRATION_SOURCE_SHA_MISMATCH: {split_key} step={r.get('step')} expected={teacher_contract_sha[:16]} got={src[:16]}")
-                    break
-
-
-def compute_policy_coverage_from_labels(teacher_rows, split_key, authoritative, cov_issues):
-    """Recompute policy coverage (negative episodes, K10 opportunities) from raw labels."""
-    if teacher_rows is None:
-        cov_issues.append(f"POLICY_BUNDLE_MISSING: {split_key}")
-        return
-    if not teacher_rows:
-        cov_issues.append(f"POLICY_EMPTY: {split_key}")
-        return
-
-    # K10 contract check
-    if authoritative:
-        for r in teacher_rows:
-            k10_schema = r.get("strict_k10_binding_schema", "")
-            if k10_schema in REJECTED_K10_SCHEMAS:
-                cov_issues.append(f"POLICY_K10_REJECTED: {split_key} step={r.get('step')} schema='{k10_schema}' — authoritative mode requires external K10")
-                break
-
-    for fld in REQUIRED_K10_FIELDS:
-        for r in teacher_rows:
-            if not isinstance(r.get(fld), bool):
-                cov_issues.append(f"POLICY_K10_FIELD_TYPE: {split_key} step={r.get('step')} {fld} is {type(r.get(fld)).__name__}, expected bool")
-                break
-
-    by_ep = defaultdict(list)
-    for r in teacher_rows:
-        by_ep[r["canonical_parent_key"]].append(r)
-
-    n_neg = n_pos_k10 = n_unknown = n_eligible = n_known_denom = 0
-    for ep_id, ep_rows in by_ep.items():
-        T = len(ep_rows)
-        if T < 10:
-            n_unknown += 1; continue
-        n_eligible += 1
-        last_eligible = T - 10
-        eligible = ep_rows[:last_eligible + 1]
-        known_all = all(r.get("strict_k10_known_mask", False) for r in eligible)
-        has_pos = any(r.get("strict_k10_feasible", False) and r.get("strict_k10_known_mask", False) for r in eligible)
-        if has_pos: n_pos_k10 += 1; n_known_denom += 1
-        elif known_all: n_neg += 1; n_known_denom += 1
-        else: n_unknown += 1
-
-    if n_neg == 0:
-        cov_issues.append(f"POLICY_NO_NEGATIVE: {split_key} 0 negative episodes — false-start rate undefined")
-    if n_pos_k10 == 0:
-        cov_issues.append(f"POLICY_NO_OPPORTUNITY: {split_key} 0 strict-K10 positive opportunities — recall undefined")
-    if n_eligible == 0:
-        cov_issues.append(f"POLICY_NO_ELIGIBLE: {split_key} 0 eligible episodes")
-    if n_known_denom == 0:
-        cov_issues.append(f"POLICY_NO_KNOWN_DENOM: {split_key} 0 episodes with complete known denominator")
-
-
-# ══════════════════════════════════════════════════════
-# Gate 3 — Heldout Teacher Closure
-# ══════════════════════════════════════════════════════
-
-def check_heldout_teacher_closure_v3(h_ids, teacher_rows, split_key, teacher_contract_sha, authoritative, htc_errors):
-    """H Teacher closure with K10 enforcement, step closure, and contract parity."""
-    if teacher_rows is None:
-        htc_errors.append(f"H_BUNDLE_MISSING: {split_key}")
-        return
-    if not teacher_rows:
-        htc_errors.append(f"H_EMPTY: {split_key}")
-        return
-
-    # Identity closure
-    teacher_ids = set()
-    for r in teacher_rows:
-        teacher_ids.add(r["canonical_parent_key"])
-    missing = h_ids - teacher_ids
-    extra = teacher_ids - h_ids
-    if missing:
-        htc_errors.append(f"H_ID_MISSING: {split_key} {len(missing)}: {sorted(missing)[:5]}")
-    if extra:
-        htc_errors.append(f"H_ID_EXTRA: {split_key} {len(extra)}: {sorted(extra)[:5]}")
-    if len(teacher_ids) != len(h_ids):
-        htc_errors.append(f"H_ID_COUNT: {split_key} manifest={len(h_ids)} teacher={len(teacher_ids)}")
-
-    # K10 contract parity
-    if authoritative:
-        for r in teacher_rows:
-            k10_schema = r.get("strict_k10_binding_schema", "")
-            if k10_schema in REJECTED_K10_SCHEMAS:
-                htc_errors.append(f"H_K10_REJECTED: {split_key} step={r.get('step')} schema='{k10_schema}' — authoritative mode requires external K10")
-                break
-
-    # K10 fields must be bool
-    for fld in REQUIRED_K10_FIELDS:
-        for r in teacher_rows:
-            if not isinstance(r.get(fld), bool):
-                htc_errors.append(f"H_K10_TYPE: {split_key} step={r.get('step')} {fld} is {type(r.get(fld)).__name__}")
-                break
-
-    # Source SHA consistency (all rows, not just first)
-    if teacher_contract_sha:
-        for r in teacher_rows:
-            src = r.get("source_artifact_recursive_sha256", "")
-            if src and len(src) == 64 and src != teacher_contract_sha:
-                htc_errors.append(f"H_SOURCE_SHA: {split_key} step={r.get('step')} expected={teacher_contract_sha[:16]} got={src[:16]}")
-                break
-
-    # Step closure per identity
-    by_ep = defaultdict(list)
-    for r in teacher_rows:
-        by_ep[r["canonical_parent_key"]].append(r)
-
-    for ep_id in sorted(h_ids & teacher_ids):
-        ep_rows = sorted(by_ep.get(ep_id, []), key=lambda r: r["step"])
-        if not ep_rows:
-            htc_errors.append(f"H_NO_ROWS: {split_key}/{ep_id}")
-            continue
-        steps = [r["step"] for r in ep_rows]
-        if steps[0] != 0:
-            htc_errors.append(f"H_STEP_START: {split_key}/{ep_id} first_step={steps[0]} expected 0")
-        for i, s in enumerate(steps):
-            if not isinstance(s, int) or isinstance(s, bool):
-                htc_errors.append(f"H_STEP_TYPE: {split_key}/{ep_id} step[{i}]={s} type={type(s).__name__}")
-                break
-            if s != i:
-                htc_errors.append(f"H_STEP_GAP: {split_key}/{ep_id} expected {i} got {s}")
-                break
-
-        # K10 denominator: each identity must have at least one evaluable position
-        T = len(ep_rows)
-        if T >= 10:
-            eligible = ep_rows[:T - 9]
-            has_known_k10 = any(r.get("strict_k10_known_mask", False) for r in eligible)
-            if not has_known_k10:
-                htc_errors.append(f"H_K10_DENOM_EMPTY: {split_key}/{ep_id} 0 K10-known positions in eligible domain")
-        else:
-            htc_errors.append(f"H_TOO_SHORT: {split_key}/{ep_id} T={T} < 10")
+    if authoritative and un_count > 0:
+        errors.append(f"ALLOC_UNASSIGNED: {split_key} {un_count} unassigned VAL identities")
 
 
 # ══════════════════════════════════════════════════════
@@ -445,27 +462,24 @@ def classify_coverage(coverage_issues, inputs_complete):
     if not coverage_issues: return "PASS"
     return "HOLD_INSUFFICIENT_STATISTICAL_COVERAGE"
 
-def classify_k10_parity(cal_issues, pol_issues, htc_issues, authoritative):
-    """If authoritative mode and K10 is rejected anywhere, flag mismatch."""
+def classify_k10_parity(issues_by_role, authoritative, expected_k10_schema):
     if not authoritative: return "DIAGNOSTIC_ONLY"
-    all_issues = cal_issues + pol_issues + htc_issues
+    all_issues = []
+    for role_issues in issues_by_role.values():
+        all_issues.extend(role_issues)
     for iss in all_issues:
-        if "K10_REJECTED" in iss: return "NOT_AUDITABLE_K10_CONTRACT_MISMATCH"
+        if "K10_MISSING" in iss or "K10_MISMATCH" in iss or "K10_MULTIPLE" in iss:
+            return "NOT_AUDITABLE_K10_CONTRACT_MISMATCH"
     return "PASS"
 
-def phase_c_authorization(verdict, cal_coverage_pass, pol_coverage_pass, htc_pass, k10_pass, authoritative):
+def phase_c_authorization(verdict, cal_pass, pol_pass, htc_pass, k10_pass, authoritative):
     identity_clean = verdict in ("PASS_EXISTING_ROOTS", "PASS_DETERMINISTIC_ALLOCATION")
-    cp_inference = "AUTHORIZED" if (identity_clean and cal_coverage_pass and pol_coverage_pass and (not authoritative or k10_pass == "PASS")) else "HOLD"
-    l3_data_ready = identity_clean and htc_pass and (not authoritative or k10_pass == "PASS")
-    l3_inference = False
-    return {
-        "cp_inference_authorized": cp_inference == "AUTHORIZED",
-        "cp_inference_status": cp_inference,
-        "heldout_l3_data_ready": l3_data_ready,
-        "heldout_l3_inference_authorized": l3_inference,
-        "heldout_l3_blocker": "PENDING_EXTERNAL_FREEZE" if l3_data_ready else "HOLD_DATA_NOT_READY",
-        "k10_contract_parity": k10_pass,
-    }
+    cp_inf = "AUTHORIZED" if (identity_clean and cal_pass and pol_pass and (not authoritative or k10_pass == "PASS")) else "HOLD"
+    l3_ready = identity_clean and htc_pass and (not authoritative or k10_pass == "PASS")
+    return {"cp_inference_authorized": cp_inf == "AUTHORIZED", "cp_inference_status": cp_inf,
+            "heldout_l3_data_ready": l3_ready, "heldout_l3_inference_authorized": False,
+            "heldout_l3_blocker": "PENDING_EXTERNAL_FREEZE" if l3_ready else "HOLD_DATA_NOT_READY",
+            "k10_contract_parity": k10_pass}
 
 
 # ══════════════════════════════════════════════════════
@@ -476,7 +490,6 @@ def write_csv(staging, filename, headers, rows):
     with open(staging / filename, "w", newline="") as f:
         w = csv.writer(f); w.writerow(headers)
         for row in rows: w.writerow(row)
-    return sha256_str(open(staging / filename).read())
 
 def seal_dir(root):
     names = sorted(p.relative_to(root).as_posix() for p in root.rglob("*")
@@ -503,9 +516,10 @@ def main():
     ap.add_argument("--policy-teacher-bundle-root", type=Path, default=None)
     ap.add_argument("--heldout-teacher-bundle-root", type=Path, default=None)
     ap.add_argument("--teacher-contract-file", type=Path, default=None)
+    ap.add_argument("--expected-k10-schema", type=str, default=None,
+                    help=f"Required K10 schema for authoritative mode (default: {EXPECTED_K10_SCHEMA})")
     ap.add_argument("--mode", choices=["authoritative", "diagnostic"], default="diagnostic")
-    ap.add_argument("--require-cp-authorization", action="store_true",
-                    help="Exit non-zero if CP inference not authorized")
+    ap.add_argument("--require-cp-authorization", action="store_true")
     ap.add_argument("--output-root", type=Path, required=True)
     ap.add_argument("--expected-splits", type=str,
                     default="o0_i0,o0_i1,o0_i2,o1_i0,o1_i1,o1_i2,o2_i0,o2_i1,o2_i2,o3_i0,o3_i1,o3_i2")
@@ -519,12 +533,23 @@ def main():
     expected = [s.strip() for s in args.expected_splits.split(",")]
     expected_set = set(expected)
 
-    # ── 12-split enforcement in authoritative mode ──
+    # 12-split enforcement: reject duplicates and wrong set
     if authoritative:
-        if expected_set != FROZEN_SPLITS:
-            raise SystemExit(f"AUTHORITATIVE_SPLIT_ENFORCEMENT: expected exactly {sorted(FROZEN_SPLITS)}, got {sorted(expected_set)}")
+        if len(expected) != 12 or len(expected_set) != 12 or expected_set != FROZEN_SPLITS:
+            raise SystemExit(f"AUTHORITATIVE_SPLIT_ENFORCEMENT: requires exactly 12 unique frozen splits, got {len(expected)} items, {len(expected_set)} unique")
+    if authoritative and not args.teacher_contract_file:
+        raise SystemExit("AUTHORITATIVE_MODE requires --teacher-contract-file")
 
-    # ── Input audit ──
+    # Teacher contract SHA — computed from file
+    teacher_contract_sha = sha256_file(args.teacher_contract_file) if args.teacher_contract_file else None
+    expected_k10 = args.expected_k10_schema or (EXPECTED_K10_SCHEMA if authoritative else None)
+
+    # Input audit
+    input_paths = {k: getattr(args, k.replace("-", "_") + ("_manifest" if k.endswith("_manifest") else ""), None)
+                   for k in ["identity_source_discovery", "checkpoint_training_ledger",
+                             "calibrator_fit_manifest", "policy_selection_manifest",
+                             "heldout_l3_manifest", "attack_eval_manifest"]}
+    # Fix mapping
     input_paths = {
         "identity_source_discovery": args.identity_source_discovery,
         "checkpoint_training_ledger": args.checkpoint_training_ledger,
@@ -539,12 +564,7 @@ def main():
     staging = out_root.with_name(f".{out_root.name}.{uuid.uuid4().hex}.staging")
     staging.mkdir(parents=True)
 
-    # ── Teacher contract SHA — computed from file, never trusted string ──
-    teacher_contract_sha = None
-    if args.teacher_contract_file:
-        teacher_contract_sha = sha256_file(args.teacher_contract_file)
-
-    # ── HOLD if inputs incomplete ──
+    # HOLD on missing inputs
     if not inputs_complete:
         receipt = {"schema": "DEEPSEEK_PHASE_B_VALIDATION_RECEIPT_V2", "validator_code_sha256": SELF_SHA,
                    "status": "HOLD_INPUTS_MISSING", "verdict": "HOLD_INPUTS_MISSING",
@@ -553,24 +573,23 @@ def main():
                    "heldout_l3_inference_authorized": False}
         (staging / "DEEPSEEK_PHASE_B_VALIDATION_RECEIPT_V2.json").write_text(json.dumps(receipt, indent=2) + "\n")
         seal_dir(staging); os.replace(staging, out_root)
-        print(f"HOLD_INPUTS_MISSING: {len(missing_inputs)} missing")
         for m in missing_inputs: print(f"  MISSING: {m['input_key']} ({m['expected']})")
         return 0
 
-    # ── Load manifests ──
-    discovery = load_strict_json(args.identity_source_discovery, "IDENTITY_SOURCE_DISCOVERY")
-    training_ledger = load_strict_json(args.checkpoint_training_ledger, "CHECKPOINT_TRAINING_LEDGER")
-    cal_manifest = load_strict_json(args.calibrator_fit_manifest, "CALIBRATOR_FIT")
-    pol_manifest = load_strict_json(args.policy_selection_manifest, "POLICY_SELECTION")
-    held_manifest = load_strict_json(args.heldout_l3_manifest, "HELDOUT_L3")
-    atk_manifest = load_strict_json(args.attack_eval_manifest, "ATTACK_EVAL")
+    # Load manifests with strict JSON
+    discovery = load_strict_json(args.identity_source_discovery, "SOURCE_DISCOVERY")
+    training_ledger = load_strict_json(args.checkpoint_training_ledger, "TRAINING_LEDGER")
+    cal_manifest = load_strict_json(args.calibrator_fit_manifest, "CAL_MANIFEST")
+    pol_manifest = load_strict_json(args.policy_selection_manifest, "POL_MANIFEST")
+    held_manifest = load_strict_json(args.heldout_l3_manifest, "HELD_MANIFEST")
+    atk_manifest = load_strict_json(args.attack_eval_manifest, "ATK_MANIFEST")
 
-    # ── Verify Teacher bundle seals ──
+    # Verify Teacher bundle seals (full file-level)
     if authoritative:
         for bundle_root, label in [
-            (args.calibration_teacher_bundle_root, "CALIBRATION_TEACHER"),
-            (args.policy_teacher_bundle_root, "POLICY_TEACHER"),
-            (args.heldout_teacher_bundle_root, "HELDOUT_TEACHER"),
+            (args.calibration_teacher_bundle_root, "CAL_TEACHER"),
+            (args.policy_teacher_bundle_root, "POL_TEACHER"),
+            (args.heldout_teacher_bundle_root, "HELD_TEACHER"),
         ]:
             if bundle_root:
                 verify_bundle_seal(bundle_root, label)
@@ -578,100 +597,122 @@ def main():
     source_status = discovery.get("identity_source_status", "UNKNOWN")
     cohort_membership = discovery.get("cohort_membership", {})
 
-    # ── Per-split audit ──
+    # Per-split audit
     all_disjoint_errors = []; all_cov_issues = []; all_htc_errors = []
+    all_cc_errors = defaultdict(list)  # per-role contract errors
     per_split = {}; pairwise_rows = []; cohort_rows = []
 
     for sk in expected:
         disjoint_errors = []; cov_issues = []; htc_local = []
+        cc_local = defaultdict(list)  # contract errors per role
 
-        # Gather identity sets
         sets_by_role = {}
         sets_by_role["checkpoint_training"] = extract_identities(training_ledger, "checkpoint_training", sk)
         sets_by_role["calibrator_fit"] = extract_identities(cal_manifest, "calibrator_fit", sk)
         sets_by_role["policy_selection"] = extract_identities(pol_manifest, "policy_selection", sk)
         sets_by_role["heldout_l3"] = extract_identities(held_manifest, "heldout_l3", sk)
         sets_by_role["attack_eval"] = extract_identities(atk_manifest, "attack_eval", sk)
-
         counts = {role: len(ids) for role, ids in sets_by_role.items()}
 
-        # ── Empty-set guards ──
+        # Empty-set guards
         for role, ids in sets_by_role.items():
             if len(ids) == 0:
                 disjoint_errors.append(f"EMPTY_ROLE: {sk} {role} has 0 identities")
 
-        # ── Gate 1: Identity Disjointness ──
+        # Gate 1
         check_pairwise_disjoint(sets_by_role, sk, disjoint_errors)
         check_training_provenance(training_ledger, sk, disjoint_errors)
         check_cohort_membership(sets_by_role, cohort_membership, sk, disjoint_errors)
+        check_deterministic_allocation(cal_manifest, sets_by_role, sk, authoritative, disjoint_errors)
 
-        alloc_manifest = cal_manifest if cal_manifest.get("deterministic_allocation") else pol_manifest
-        if pol_manifest.get("deterministic_allocation"): alloc_manifest = pol_manifest
-        check_deterministic_allocation(alloc_manifest, sets_by_role, sk, disjoint_errors)
-
-        # Total union check
         all_ids = set()
         for ids in sets_by_role.values(): all_ids |= ids
         total_unique = len(all_ids)
         if total_unique != sum(counts.values()):
             disjoint_errors.append(f"IDENTITY_DUPLICATION: {sk} {sum(counts.values()) - total_unique} duplicates")
 
-        # ── Gate 2: Statistical Coverage (from raw Teacher labels) ──
-        cal_teacher_rows = load_teacher_labels(args.calibration_teacher_bundle_root, sk) if args.calibration_teacher_bundle_root else None
-        pol_teacher_rows = load_teacher_labels(args.policy_teacher_bundle_root, sk) if args.policy_teacher_bundle_root else None
+        # Gate 2: Load Teacher labels and verify identity closure for C, P, H
+        cal_rows = load_teacher_labels(args.calibration_teacher_bundle_root, sk, "CAL_LABELS") if args.calibration_teacher_bundle_root else None
+        pol_rows = load_teacher_labels(args.policy_teacher_bundle_root, sk, "POL_LABELS") if args.policy_teacher_bundle_root else None
+        h_rows = load_teacher_labels(args.heldout_teacher_bundle_root, sk, "HELD_LABELS") if args.heldout_teacher_bundle_root else None
 
-        compute_calibration_coverage_from_labels(cal_teacher_rows, sk, teacher_contract_sha, authoritative, cov_issues)
-        compute_policy_coverage_from_labels(pol_teacher_rows, sk, authoritative, cov_issues)
+        # C identity closure + contract checks
+        verify_identity_closure(sets_by_role["calibrator_fit"], cal_rows, "CALIBRATION", sk, cov_issues)
+        verify_step_closure(cal_rows, "CALIBRATION", sk, cov_issues)
+        check_k10_parity(cal_rows, expected_k10, "CALIBRATION", sk, cc_local["calibration"])
+        check_contract_sha_consistency(cal_rows, teacher_contract_sha, "CALIBRATION", sk, cc_local["calibration"])
+        check_source_sha_validity(cal_rows, "CALIBRATION", sk, cc_local["calibration"])
+        compute_calibration_coverage_from_labels(cal_rows, sk, cov_issues)
 
-        # Cross-check: manifest summaries must match recomputed values when both exist
-        if authoritative and cal_teacher_rows:
-            manifest_summaries = cal_manifest.get("calibration_head_summaries", {}).get(sk, {})
-            if manifest_summaries:
+        # P identity closure + contract checks
+        verify_identity_closure(sets_by_role["policy_selection"], pol_rows, "POLICY", sk, cov_issues)
+        verify_step_closure(pol_rows, "POLICY", sk, cov_issues)
+        check_k10_parity(pol_rows, expected_k10, "POLICY", sk, cc_local["policy"])
+        check_contract_sha_consistency(pol_rows, teacher_contract_sha, "POLICY", sk, cc_local["policy"])
+        check_source_sha_validity(pol_rows, "POLICY", sk, cc_local["policy"])
+        compute_policy_coverage_from_labels(pol_rows, sk, cov_issues)
+
+        # H identity closure + contract checks + step closure
+        verify_identity_closure(sets_by_role["heldout_l3"], h_rows, "HELDOUT", sk, htc_local)
+        verify_step_closure(h_rows, "HELDOUT", sk, htc_local)
+        check_k10_parity(h_rows, expected_k10, "HELDOUT", sk, cc_local["heldout"])
+        check_contract_sha_consistency(h_rows, teacher_contract_sha, "HELDOUT", sk, cc_local["heldout"])
+        check_source_sha_validity(h_rows, "HELDOUT", sk, cc_local["heldout"])
+
+        # H K10 denominator
+        if h_rows:
+            by_ep = defaultdict(list)
+            for r in h_rows: by_ep[r["canonical_parent_key"]].append(r)
+            for ep_id in sorted(sets_by_role["heldout_l3"] & set(r["canonical_parent_key"] for r in h_rows)):
+                ep_rows = sorted(by_ep[ep_id], key=lambda r: r["step"])
+                T = len(ep_rows)
+                if T >= 10:
+                    eligible = ep_rows[:T - 9]
+                    if not any(r.get("strict_k10_known_mask", False) for r in eligible):
+                        htc_local.append(f"HELDOUT_K10_DENOM_EMPTY: {sk}/{ep_id}")
+                else:
+                    htc_local.append(f"HELDOUT_TOO_SHORT: {sk}/{ep_id} T={T}<10")
+
+        # Cross-check manifest summaries against recomputed values
+        if authoritative and cal_rows:
+            manifest_sums = cal_manifest.get("calibration_head_summaries", {}).get(sk, {})
+            if manifest_sums:
                 for head in CALIBRATION_HEADS:
                     target_key = HEAD_TARGET_MAP[head]
                     known_key = HEAD_KNOWN_MAP[head]
-                    actual_pos = sum(1 for r in cal_teacher_rows if r.get(known_key) and r.get(target_key))
-                    summary_pos = manifest_summaries.get(head, {}).get("known_positive", -1)
+                    actual_pos = sum(1 for r in cal_rows if r.get(known_key) and r.get(target_key))
+                    summary_pos = manifest_sums.get(head, {}).get("known_positive", -1)
                     if summary_pos != -1 and actual_pos != summary_pos:
                         cov_issues.append(f"CALIBRATION_SUMMARY_MISMATCH: {sk}/{head} manifest={summary_pos} computed={actual_pos}")
 
-        # ── Gate 3: Heldout Teacher Closure ──
-        h_teacher_rows = load_teacher_labels(args.heldout_teacher_bundle_root, sk) if args.heldout_teacher_bundle_root else None
-        check_heldout_teacher_closure_v3(sets_by_role["heldout_l3"], h_teacher_rows, sk, teacher_contract_sha, authoritative, htc_local)
-
-        disjoint_ok = len(disjoint_errors) == 0
-        cov_ok = len(cov_issues) == 0
-        htc_ok = len(htc_local) == 0
-
+        disjoint_ok = len(disjoint_errors) == 0; cov_ok = len(cov_issues) == 0; htc_ok = len(htc_local) == 0
         per_split[sk] = {"identity_disjointness_pass": disjoint_ok, "statistical_coverage_pass": cov_ok,
                          "heldout_teacher_closure_pass": htc_ok,
                          "disjointness_errors": disjoint_errors, "coverage_issues": cov_issues,
-                         "htc_errors": htc_local, "identity_counts": counts, "total_unique": total_unique}
-        all_disjoint_errors.extend(disjoint_errors)
-        all_cov_issues.extend(cov_issues)
-        all_htc_errors.extend(htc_local)
+                         "htc_errors": htc_local, "contract_errors": dict(cc_local),
+                         "identity_counts": counts, "total_unique": total_unique}
+        all_disjoint_errors.extend(disjoint_errors); all_cov_issues.extend(cov_issues); all_htc_errors.extend(htc_local)
+        for role_key in cc_local:
+            all_cc_errors[role_key].extend(cc_local[role_key])
 
         for r1, r2 in PAIRWISE_CONSTRAINTS:
             s1, s2 = sets_by_role.get(r1, set()), sets_by_role.get(r2, set())
             pairwise_rows.append([sk, ROLE_LABELS[r1], ROLE_LABELS[r2], len(s1 & s2)])
-
         for role_name, ids in sets_by_role.items():
-            expected_cohort = ROLE_TO_COHORT.get(role_name, "UNKNOWN")
+            ec = ROLE_TO_COHORT.get(role_name, "UNKNOWN")
             for eid in sorted(ids):
                 actual = cohort_membership.get(eid, "UNKNOWN") if cohort_membership else "NO_LEDGER"
-                violation = "" if actual == expected_cohort else "VIOLATION"
-                cohort_rows.append([sk, ROLE_LABELS.get(role_name, role_name), eid, actual, expected_cohort, violation])
+                cohort_rows.append([sk, ROLE_LABELS.get(role_name, role_name), eid, actual, ec, "" if actual == ec else "VIOLATION"])
 
-    # ── Final classification ──
+    # Final classification
     disjointness_pass = len(all_disjoint_errors) == 0
-    cal_cov_issues = [c for c in all_cov_issues if "CALIBRATION" in c]
-    pol_cov_issues = [c for c in all_cov_issues if "POLICY" in c]
+    cal_cov_issues = [c for c in all_cov_issues if c.startswith("CALIBRATION")]
+    pol_cov_issues = [c for c in all_cov_issues if c.startswith("POLICY")]
     cal_coverage_pass = len(cal_cov_issues) == 0
     pol_coverage_pass = len(pol_cov_issues) == 0
-    htc_pass = len(all_htc_errors) == 0
-
+    htc_pass = len(all_htc_errors) == 0 and not any(all_cc_errors.get("heldout", []))
+    k10_pass = classify_k10_parity(dict(all_cc_errors), authoritative, expected_k10)
     coverage_status = classify_coverage(all_cov_issues, inputs_complete)
-    k10_pass = classify_k10_parity(all_cov_issues, all_cov_issues, all_htc_errors, authoritative)
     verdict = classify_verdict(disjointness_pass, source_status, inputs_complete)
     phase_c = phase_c_authorization(verdict, cal_coverage_pass, pol_coverage_pass, htc_pass, k10_pass, authoritative)
 
@@ -679,93 +720,79 @@ def main():
     overall_scientific = cal_coverage_pass and pol_coverage_pass and (k10_pass == "PASS" or not authoritative)
     phase_b_overall = "PASS" if (overall_data_integrity and overall_scientific) else "HOLD"
 
-    # ── Receipt V2 ──
-    receipt = {
-        "schema": "DEEPSEEK_PHASE_B_VALIDATION_RECEIPT_V2",
-        "validator_code_sha256": SELF_SHA, "status": "COMPLETE", "verdict": verdict,
-        "identity_disjointness": "PASS" if disjointness_pass else "FAIL",
-        "statistical_coverage": coverage_status,
-        "heldout_teacher_closure": "PASS" if htc_pass else "HOLD",
-        "k10_contract_parity": k10_pass,
-        "phase_b_data_integrity": "PASS" if overall_data_integrity else "HOLD",
-        "phase_b_scientific_coverage": "PASS" if overall_scientific else "HOLD",
-        "phase_b_overall": phase_b_overall,
-        "cp_inference_authorized": phase_c["cp_inference_authorized"],
-        "cp_inference_status": phase_c["cp_inference_status"],
-        "heldout_l3_data_ready": phase_c["heldout_l3_data_ready"],
-        "heldout_l3_inference_authorized": phase_c["heldout_l3_inference_authorized"],
-        "heldout_l3_blocker": phase_c["heldout_l3_blocker"],
-        "calibration_coverage_pass": cal_coverage_pass, "policy_coverage_pass": pol_coverage_pass,
-        "heldout_teacher_closure_pass": htc_pass,
-        "identity_source_status": source_status, "mode": args.mode,
-        "n_disjointness_errors": len(all_disjoint_errors), "n_coverage_issues": len(all_cov_issues),
-        "n_htc_errors": len(all_htc_errors), "n_splits": len(expected),
-        "input_manifests": {"identity_source_discovery_sha256": sha256_file(args.identity_source_discovery),
-            "checkpoint_training_ledger_sha256": sha256_file(args.checkpoint_training_ledger),
-            "calibrator_fit_manifest_sha256": sha256_file(args.calibrator_fit_manifest),
-            "policy_selection_manifest_sha256": sha256_file(args.policy_selection_manifest),
-            "heldout_l3_manifest_sha256": sha256_file(args.heldout_l3_manifest),
-            "attack_eval_manifest_sha256": sha256_file(args.attack_eval_manifest)},
-        "per_split": per_split,
-    }
-    if teacher_contract_sha:
-        receipt["teacher_contract_sha256"] = teacher_contract_sha
+    # Receipt
+    receipt = {"schema": "DEEPSEEK_PHASE_B_VALIDATION_RECEIPT_V2", "validator_code_sha256": SELF_SHA,
+               "status": "COMPLETE", "verdict": verdict,
+               "identity_disjointness": "PASS" if disjointness_pass else "FAIL",
+               "statistical_coverage": coverage_status,
+               "heldout_teacher_closure": "PASS" if htc_pass else "HOLD",
+               "k10_contract_parity": k10_pass,
+               "phase_b_data_integrity": "PASS" if overall_data_integrity else "HOLD",
+               "phase_b_scientific_coverage": "PASS" if overall_scientific else "HOLD",
+               "phase_b_overall": phase_b_overall,
+               "cp_inference_authorized": phase_c["cp_inference_authorized"],
+               "cp_inference_status": phase_c["cp_inference_status"],
+               "heldout_l3_data_ready": phase_c["heldout_l3_data_ready"],
+               "heldout_l3_inference_authorized": phase_c["heldout_l3_inference_authorized"],
+               "heldout_l3_blocker": phase_c["heldout_l3_blocker"],
+               "calibration_coverage_pass": cal_coverage_pass, "policy_coverage_pass": pol_coverage_pass,
+               "heldout_teacher_closure_pass": htc_pass,
+               "identity_source_status": source_status, "mode": args.mode,
+               "n_disjointness_errors": len(all_disjoint_errors), "n_coverage_issues": len(all_cov_issues),
+               "n_htc_errors": len(all_htc_errors), "n_splits": len(expected),
+               "input_manifests": {"identity_source_discovery_sha256": sha256_file(args.identity_source_discovery),
+                   "checkpoint_training_ledger_sha256": sha256_file(args.checkpoint_training_ledger),
+                   "calibrator_fit_manifest_sha256": sha256_file(args.calibrator_fit_manifest),
+                   "policy_selection_manifest_sha256": sha256_file(args.policy_selection_manifest),
+                   "heldout_l3_manifest_sha256": sha256_file(args.heldout_l3_manifest),
+                   "attack_eval_manifest_sha256": sha256_file(args.attack_eval_manifest)},
+               "per_split": per_split}
+    if teacher_contract_sha: receipt["teacher_contract_sha256"] = teacher_contract_sha
+    if expected_k10: receipt["expected_k10_schema"] = expected_k10
     if args.calibration_teacher_bundle_root:
         receipt["calibration_teacher_bundle_sha256"] = sha256_file(Path(args.calibration_teacher_bundle_root) / "SHA256SUMS")
     if args.policy_teacher_bundle_root:
         receipt["policy_teacher_bundle_sha256"] = sha256_file(Path(args.policy_teacher_bundle_root) / "SHA256SUMS")
     if args.heldout_teacher_bundle_root:
-        htb_path = Path(args.heldout_teacher_bundle_root)
-        htb_seal = htb_path / "SHA256SUMS"
-        receipt["heldout_teacher_bundle_sha256"] = sha256_file(htb_seal) if htb_seal.is_file() else None
+        htb = Path(args.heldout_teacher_bundle_root)
+        receipt["heldout_teacher_bundle_sha256"] = sha256_file(htb / "SHA256SUMS") if (htb / "SHA256SUMS").is_file() else None
     if all_disjoint_errors: receipt["disjointness_errors"] = all_disjoint_errors
     if all_cov_issues: receipt["coverage_issues"] = all_cov_issues
     if all_htc_errors: receipt["heldout_teacher_closure_errors"] = all_htc_errors
 
     (staging / "DEEPSEEK_PHASE_B_VALIDATION_RECEIPT_V2.json").write_text(json.dumps(receipt, indent=2) + "\n")
 
-    # ── CSVs ──
-    write_csv(staging, "DEEPSEEK_PHASE_B_PAIRWISE_INTERSECTIONS_V1.csv",
-              ["split", "role_a", "role_b", "intersection_count"], pairwise_rows)
-    write_csv(staging, "DEEPSEEK_PHASE_B_COHORT_MEMBERSHIP_V1.csv",
-              ["split", "role", "identity", "actual_cohort", "expected_cohorts", "status"], cohort_rows)
+    write_csv(staging, "DEEPSEEK_PHASE_B_PAIRWISE_INTERSECTIONS_V1.csv", ["split","role_a","role_b","intersection_count"], pairwise_rows)
+    write_csv(staging, "DEEPSEEK_PHASE_B_COHORT_MEMBERSHIP_V1.csv", ["split","role","identity","actual_cohort","expected_cohorts","status"], cohort_rows)
     cov_rows = []
     for sk in expected:
         ps = per_split[sk]
-        for role in ["calibrator_fit", "policy_selection", "heldout_l3"]:
-            cov_rows.append([sk, role, ps["identity_counts"].get(role, 0),
-                             "PASS" if (role == "calibrator_fit" and not any("CALIBRATION" in c for c in ps["coverage_issues"]))
-                                    or (role == "policy_selection" and not any("POLICY" in c for c in ps["coverage_issues"]))
-                                    or (role == "heldout_l3" and not any("H_" in c for c in ps["htc_errors"])) else "ISSUES"])
-    write_csv(staging, "DEEPSEEK_PHASE_B_STATISTICAL_COVERAGE_V1.csv",
-              ["split", "role", "identity_count", "coverage_status"], cov_rows)
-    write_csv(staging, "DEEPSEEK_PHASE_B_HELDOUT_TEACHER_CLOSURE_V1.csv",
-              ["split", "heldout_identity_count", "teacher_closure_status"],
-              [[sk, per_split[sk]["identity_counts"].get("heldout_l3", 0),
-                "PASS" if len(per_split[sk].get("htc_errors", [])) == 0 else "FAIL"] for sk in expected])
+        for role in ["calibrator_fit","policy_selection","heldout_l3"]:
+            role_issues = ps.get("coverage_issues", []) if role != "heldout_l3" else ps.get("htc_errors", [])
+            prefix = "CALIBRATION" if role == "calibrator_fit" else ("POLICY" if role == "policy_selection" else "HELDOUT")
+            status = "PASS" if not any(i.startswith(prefix) for i in role_issues) else "ISSUES"
+            cov_rows.append([sk, role, ps["identity_counts"].get(role, 0), status])
+    write_csv(staging, "DEEPSEEK_PHASE_B_STATISTICAL_COVERAGE_V1.csv", ["split","role","identity_count","coverage_status"], cov_rows)
+    write_csv(staging, "DEEPSEEK_PHASE_B_HELDOUT_TEACHER_CLOSURE_V1.csv", ["split","heldout_identity_count","teacher_closure_status"],
+              [[sk, per_split[sk]["identity_counts"].get("heldout_l3",0), "PASS" if len(per_split[sk].get("htc_errors",[]))==0 else "FAIL"] for sk in expected])
 
-    seal_dir(staging)
-    os.replace(staging, out_root)
+    seal_dir(staging); os.replace(staging, out_root)
 
-    # ── Report ──
-    print(f"Phase B V3 Validation Complete")
-    print(f"  Mode:                           {args.mode}")
-    print(f"  Verdict:                        {verdict}")
-    print(f"  Identity Disjointness:          {'PASS' if disjointness_pass else 'FAIL'} ({len(all_disjoint_errors)} errors)")
-    print(f"  Statistical Coverage:           {coverage_status} ({len(all_cov_issues)} issues)")
-    print(f"  Calibration Coverage:           {'PASS' if cal_coverage_pass else 'HOLD'}")
-    print(f"  Policy Coverage:                {'PASS' if pol_coverage_pass else 'HOLD'}")
-    print(f"  Heldout Teacher Closure:        {'PASS' if htc_pass else 'HOLD'} ({len(all_htc_errors)} errors)")
-    print(f"  K10 Contract Parity:            {k10_pass}")
-    print(f"  Phase B Data Integrity:         {'PASS' if overall_data_integrity else 'HOLD'}")
-    print(f"  Phase B Scientific Coverage:    {'PASS' if overall_scientific else 'HOLD'}")
-    print(f"  Phase B Overall:                {phase_b_overall}")
-    print(f"  CP Inference Authorized:        {phase_c['cp_inference_authorized']}")
-    print(f"  Heldout L3 Data Ready:          {phase_c['heldout_l3_data_ready']}")
-    print(f"  Heldout L3 Inference:           {phase_c['heldout_l3_inference_authorized']}")
-    print(f"  Heldout L3 Blocker:             {phase_c['heldout_l3_blocker']}")
-    print(f"  Output:                         {out_root}")
-
+    print(f"Phase B V3.1 Validation Complete")
+    print(f"  Mode: {args.mode}  Verdict: {verdict}")
+    print(f"  Identity Disjointness: {'PASS' if disjointness_pass else 'FAIL'} ({len(all_disjoint_errors)} errors)")
+    print(f"  Statistical Coverage:  {coverage_status} ({len(all_cov_issues)} issues)")
+    print(f"  Calibration Coverage:  {'PASS' if cal_coverage_pass else 'HOLD'}")
+    print(f"  Policy Coverage:       {'PASS' if pol_coverage_pass else 'HOLD'}")
+    print(f"  H Teacher Closure:     {'PASS' if htc_pass else 'HOLD'} ({len(all_htc_errors)} errors)")
+    print(f"  K10 Contract Parity:   {k10_pass}")
+    print(f"  Phase B Data Integrity:    {'PASS' if overall_data_integrity else 'HOLD'}")
+    print(f"  Phase B Scientific:        {'PASS' if overall_scientific else 'HOLD'}")
+    print(f"  Phase B Overall:           {phase_b_overall}")
+    print(f"  CP Inference:          {phase_c['cp_inference_authorized']}")
+    print(f"  L3 Data Ready:         {phase_c['heldout_l3_data_ready']}")
+    print(f"  L3 Inference:          {phase_c['heldout_l3_inference_authorized']}")
+    print(f"  Output: {out_root}")
     if all_disjoint_errors:
         print(f"\nDisjointness errors:"); [print(f"  {e}") for e in all_disjoint_errors[:10]]
     if all_cov_issues:
@@ -773,11 +800,9 @@ def main():
     if all_htc_errors:
         print(f"\nHTC errors:"); [print(f"  {e}") for e in all_htc_errors[:10]]
 
-    # ── Exit code ──
     if args.require_cp_authorization and not phase_c["cp_inference_authorized"]:
         return 2
-    if not disjointness_pass:
-        return 1
+    if not disjointness_pass: return 1
     return 0
 
 

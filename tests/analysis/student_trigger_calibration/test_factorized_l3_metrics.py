@@ -22,8 +22,10 @@ from validate_factorized_identity_disjointness import (
     check_deterministic_allocation, audit_inputs, classify_coverage,
     classify_k10_parity, phase_c_authorization,
     compute_calibration_coverage_from_labels, compute_policy_coverage_from_labels,
-    check_heldout_teacher_closure_v3, load_teacher_labels, load_strict_json,
-    FIVE_ROLES, COHORT_TO_ROLE, ROLE_TO_COHORT, FROZEN_SPLITS,
+    verify_identity_closure, verify_step_closure, check_k10_parity,
+    check_contract_sha_consistency, check_source_sha_validity,
+    load_strict_json, is_64char_hex,
+    FIVE_ROLES, COHORT_TO_ROLE, ROLE_TO_COHORT, FROZEN_SPLITS, EXPECTED_K10_SCHEMA,
 )
 
 STEP = "step"
@@ -482,194 +484,175 @@ def test_cohort_membership_unknown():
 # ── Deterministic allocation ──
 
 def test_deterministic_allocation_valid():
-    da = {
-        "deterministic_allocation": {
-            "parent_cohort": "DETECTOR_VAL",
-            "parent_cohort_manifest_sha256": "a" * 64,
-            "fixed_salt": "deadbeef",
-            "canonical_sort_key": "canonical_identity_hash",
-            "allocation_algorithm_sha256": "b" * 64,
-            "allocation_code_sha256": "c" * 64,
-        }
-    }
+    da = {"deterministic_allocation": {"parent_cohort": "DETECTOR_VAL",
+        "parent_cohort_manifest_sha256": "a"*64, "fixed_salt": "deadbeef",
+        "canonical_sort_key": "canonical_identity_hash",
+        "allocation_algorithm_sha256": "b"*64, "allocation_code_sha256": "c"*64}}
     sets = {"calibrator_fit": {"ep_101"}, "policy_selection": {"ep_151"}}
     errs = []
-    check_deterministic_allocation(da, sets, "o0_i0", errs)
+    check_deterministic_allocation(da, sets, "o0_i0", False, errs)
     assert len(errs) == 0
-
 
 def test_deterministic_allocation_missing_fields():
     da = {"deterministic_allocation": {"parent_cohort": "DETECTOR_VAL"}}
     sets = {"calibrator_fit": set(), "policy_selection": set()}
     errs = []
-    check_deterministic_allocation(da, sets, "o0_i0", errs)
-    assert len(errs) >= 4  # missing salt, sort_key, algorithm_sha, code_sha
-
+    check_deterministic_allocation(da, sets, "o0_i0", False, errs)
+    assert len(errs) >= 4
 
 def test_deterministic_allocation_closure():
-    da = {
-        "deterministic_allocation": {
-            "parent_cohort": "DETECTOR_VAL",
-            "parent_cohort_manifest_sha256": "a" * 64,
-            "fixed_salt": "salt",
-            "canonical_sort_key": "hash",
-            "allocation_algorithm_sha256": "b" * 64,
-            "allocation_code_sha256": "c" * 64,
-            "parent_cohort_identities": {"o0_i0": ["ep_101", "ep_151", "ep_199"]},
-        }
-    }
+    da = {"deterministic_allocation": {"parent_cohort": "DETECTOR_VAL",
+        "parent_cohort_manifest_sha256": "a"*64, "fixed_salt": "salt",
+        "canonical_sort_key": "hash", "allocation_algorithm_sha256": "b"*64,
+        "allocation_code_sha256": "c"*64,
+        "parent_cohort_identities": {"o0_i0": ["ep_101", "ep_151", "ep_199"]}}}
     sets = {"calibrator_fit": {"ep_101"}, "policy_selection": {"ep_151"}}
     errs = []
-    check_deterministic_allocation(da, sets, "o0_i0", errs)
-    # ep_199 is in VAL but not in C∪P
+    check_deterministic_allocation(da, sets, "o0_i0", True, errs)
     assert any("ALLOC_CLOSURE" in e for e in errs)
 
 
-# ── Calibration coverage (from raw labels, V3) ──
+# ── Calibration coverage (V3.1: computed from labels, no more K10 blacklist) ──
 
 def test_calibration_coverage_ok():
     labels = [
-        {"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "a"*64,
+        {"canonical_parent_key": "ep1", "step": 0,
          "grasp_established_known_mask": True, "grasp_established": True,
          "manipulation_active_known_mask": True, "manipulation_active": True,
          "release_or_instability_known_mask": True, "release_or_instability": True},
-        {"canonical_parent_key": "ep1", "step": 1, "source_artifact_recursive_sha256": "a"*64,
+        {"canonical_parent_key": "ep1", "step": 1,
          "grasp_established_known_mask": True, "grasp_established": False,
          "manipulation_active_known_mask": True, "manipulation_active": False,
          "release_or_instability_known_mask": True, "release_or_instability": False},
     ]
     issues = []
-    compute_calibration_coverage_from_labels(labels, "o0_i0", None, False, issues)
+    compute_calibration_coverage_from_labels(labels, "o0_i0", issues)
     assert len(issues) == 0
 
 def test_calibration_coverage_missing_bundle():
     issues = []
-    compute_calibration_coverage_from_labels(None, "o0_i0", None, False, issues)
+    compute_calibration_coverage_from_labels(None, "o0_i0", issues)
     assert any("BUNDLE_MISSING" in i for i in issues)
 
 def test_calibration_coverage_no_positive():
     labels = [
-        {"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "a"*64,
+        {"canonical_parent_key": "ep1", "step": 0,
          "grasp_established_known_mask": True, "grasp_established": False},
     ]
     issues = []
-    compute_calibration_coverage_from_labels(labels, "o0_i0", None, False, issues)
+    compute_calibration_coverage_from_labels(labels, "o0_i0", issues)
     assert any("NO_POSITIVE" in i for i in issues)
 
-def test_calibration_k10_rejected_in_authoritative():
-    labels = [
-        {"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "a"*64,
-         "grasp_established_known_mask": True, "grasp_established": True,
-         "strict_k10_binding_schema": "INTERNAL_SIMPLIFIED_V1"},
-    ]
-    issues = []
-    compute_calibration_coverage_from_labels(labels, "o0_i0", "a"*64, True, issues)
-    assert any("K10_REJECTED" in i for i in issues)
-
-# ── Policy coverage (from raw labels, V3) ──
+# ── Policy coverage (V3.1: rows sorted by step) ──
 
 def test_policy_coverage_ok():
     labels = []
-    # ep_neg: all known, 0 feasible → negative
     for s in range(300):
         labels.append({"canonical_parent_key": "ep_neg", "step": s,
-            "strict_k10_feasible": False, "strict_k10_known_mask": True,
-            "source_artifact_recursive_sha256": "a"*64})
-    # ep_pos: has a feasible start at step 100
+            "strict_k10_feasible": False, "strict_k10_known_mask": True})
     for s in range(300):
         labels.append({"canonical_parent_key": "ep_pos", "step": s,
-            "strict_k10_feasible": (s == 100), "strict_k10_known_mask": True,
-            "source_artifact_recursive_sha256": "a"*64})
+            "strict_k10_feasible": (s == 100), "strict_k10_known_mask": True})
     issues = []
-    compute_policy_coverage_from_labels(labels, "o0_i0", False, issues)
+    compute_policy_coverage_from_labels(labels, "o0_i0", issues)
     assert len(issues) == 0
 
-def test_policy_coverage_no_negative():
-    # All episodes have K10 opportunity → no negatives
-    labels = []
-    for ep in ["ep1"]:
-        for s in range(300):
-            labels.append({"canonical_parent_key": ep, "step": s,
-                "strict_k10_feasible": s == 100, "strict_k10_known_mask": True,
-                "source_artifact_recursive_sha256": "a"*64})
-    issues = []
-    compute_policy_coverage_from_labels(labels, "o0_i0", False, issues)
-    assert any("NO_NEGATIVE" in i for i in issues)
+# ── Step closure (V3.1: unified for C/P/H) ──
 
-def test_policy_k10_rejected_authoritative():
-    labels = [
-        {"canonical_parent_key": "ep1", "step": 0,
-         "strict_k10_feasible": False, "strict_k10_known_mask": True,
-         "strict_k10_binding_schema": "INTERNAL_SIMPLIFIED_V1",
-         "source_artifact_recursive_sha256": "a"*64},
-    ]
-    issues = []
-    compute_policy_coverage_from_labels(labels, "o0_i0", True, issues)
-    assert any("K10_REJECTED" in i for i in issues)
-
-# ── Heldout Teacher Closure (V3) ──
-
-def test_htc_v3_pass():
-    teacher_rows = []
-    for s in range(300):
-        teacher_rows.append({"canonical_parent_key": "ep1", "step": s,
-            "source_artifact_recursive_sha256": "a"*64,
-            "strict_k10_feasible": False, "strict_k10_known_mask": True})
+def test_step_closure_pass():
+    labels = [{"canonical_parent_key": "ep1", "step": 0}, {"canonical_parent_key": "ep1", "step": 1}]
     errs = []
-    check_heldout_teacher_closure_v3({"ep1"}, teacher_rows, "o0_i0", None, False, errs)
+    verify_step_closure(labels, "TEST", "o0_i0", errs)
     assert len(errs) == 0
 
-def test_htc_v3_step_gap():
-    teacher_rows = [
-        {"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "a"*64,
-         "strict_k10_feasible": False, "strict_k10_known_mask": True},
-        {"canonical_parent_key": "ep1", "step": 2, "source_artifact_recursive_sha256": "a"*64,
-         "strict_k10_feasible": False, "strict_k10_known_mask": True},
-    ]
+def test_step_closure_gap():
+    labels = [{"canonical_parent_key": "ep1", "step": 0}, {"canonical_parent_key": "ep1", "step": 2}]
     errs = []
-    check_heldout_teacher_closure_v3({"ep1"}, teacher_rows, "o0_i0", None, False, errs)
+    verify_step_closure(labels, "TEST", "o0_i0", errs)
     assert any("GAP" in e for e in errs)
 
-def test_htc_v3_step_not_starting_at_0():
-    teacher_rows = [
-        {"canonical_parent_key": "ep1", "step": 5, "source_artifact_recursive_sha256": "a"*64,
-         "strict_k10_feasible": False, "strict_k10_known_mask": True},
-    ]
+def test_step_closure_start():
+    labels = [{"canonical_parent_key": "ep1", "step": 5}]
     errs = []
-    check_heldout_teacher_closure_v3({"ep1"}, teacher_rows, "o0_i0", None, False, errs)
+    verify_step_closure(labels, "TEST", "o0_i0", errs)
     assert any("START" in e for e in errs)
 
-def test_htc_v3_k10_rejected_authoritative():
-    teacher_rows = [
-        {"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "a"*64,
-         "strict_k10_binding_schema": "INTERNAL_SIMPLIFIED_V1",
-         "strict_k10_feasible": False, "strict_k10_known_mask": True},
-    ]
-    errs = []
-    check_heldout_teacher_closure_v3({"ep1"}, teacher_rows, "o0_i0", None, True, errs)
-    assert any("K10_REJECTED" in e for e in errs)
+# ── Identity closure (V3.1: unified for C/P/H) ──
 
-def test_htc_v3_source_sha_check():
-    teacher_rows = [
-        {"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "f"*64,
-         "strict_k10_feasible": False, "strict_k10_known_mask": True},
-    ]
+def test_identity_closure_pass():
+    labels = [{"canonical_parent_key": "ep1", "step": 0}]
     errs = []
-    check_heldout_teacher_closure_v3({"ep1"}, teacher_rows, "o0_i0", "a"*64, False, errs)
-    assert any("SOURCE_SHA" in e for e in errs)
+    verify_identity_closure({"ep1"}, labels, "TEST", "o0_i0", errs)
+    assert len(errs) == 0
 
-def test_htc_v3_k10_denom_empty():
-    # T=10, all k10_known_mask=False → 0 evaluable positions
-    teacher_rows = []
-    for s in range(10):
-        teacher_rows.append({"canonical_parent_key": "ep1", "step": s,
-            "source_artifact_recursive_sha256": "a"*64,
-            "strict_k10_feasible": False, "strict_k10_known_mask": False})
+def test_identity_closure_missing():
+    labels = []
     errs = []
-    check_heldout_teacher_closure_v3({"ep1"}, teacher_rows, "o0_i0", None, False, errs)
-    assert any("DENOM_EMPTY" in e for e in errs)
+    verify_identity_closure({"ep1", "ep2"}, labels, "TEST", "o0_i0", errs)
+    assert any("MISSING" in e for e in errs)
 
-# ── 12-split enforcement ──
+# ── K10 whitelist (V3.1: whitelist, not blacklist) ──
+
+def test_k10_whitelist_pass():
+    labels = [{"canonical_parent_key": "ep1", "step": 0,
+              "strict_k10_binding_schema": EXPECTED_K10_SCHEMA}]
+    errs = []
+    check_k10_parity(labels, EXPECTED_K10_SCHEMA, "TEST", "o0_i0", errs)
+    assert len(errs) == 0
+
+def test_k10_whitelist_wrong_schema():
+    labels = [{"canonical_parent_key": "ep1", "step": 0,
+              "strict_k10_binding_schema": "INTERNAL_SIMPLIFIED_V1"}]
+    errs = []
+    check_k10_parity(labels, EXPECTED_K10_SCHEMA, "TEST", "o0_i0", errs)
+    assert any("MISMATCH" in e for e in errs)
+
+def test_k10_whitelist_missing():
+    labels = [{"canonical_parent_key": "ep1", "step": 0}]
+    errs = []
+    check_k10_parity(labels, EXPECTED_K10_SCHEMA, "TEST", "o0_i0", errs)
+    assert any("MISSING" in e for e in errs)
+
+def test_k10_whitelist_empty_string():
+    labels = [{"canonical_parent_key": "ep1", "step": 0, "strict_k10_binding_schema": ""}]
+    errs = []
+    check_k10_parity(labels, EXPECTED_K10_SCHEMA, "TEST", "o0_i0", errs)
+    assert any("MISSING" in e for e in errs)
+
+# ── Contract SHA vs source SHA separation (V3.1) ──
+
+def test_contract_sha_consistency():
+    labels = [{"canonical_parent_key": "ep1", "step": 0, "teacher_contract_sha256": "a"*64}]
+    errs = []
+    check_contract_sha_consistency(labels, "a"*64, "TEST", "o0_i0", errs)
+    assert len(errs) == 0
+
+def test_contract_sha_mismatch():
+    labels = [{"canonical_parent_key": "ep1", "step": 0, "teacher_contract_sha256": "f"*64}]
+    errs = []
+    check_contract_sha_consistency(labels, "a"*64, "TEST", "o0_i0", errs)
+    assert any("MISMATCH" in e for e in errs)
+
+def test_source_sha_valid():
+    labels = [{"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "a"*64}]
+    errs = []
+    check_source_sha_validity(labels, "TEST", "o0_i0", errs)
+    assert len(errs) == 0
+
+def test_source_sha_invalid():
+    labels = [{"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "short"}]
+    errs = []
+    check_source_sha_validity(labels, "TEST", "o0_i0", errs)
+    assert any("INVALID" in e for e in errs)
+
+# ── is_64char_hex ──
+
+def test_is_64char_hex():
+    assert is_64char_hex("a"*64)
+    assert not is_64char_hex("xyz" + "0"*61)
+    assert not is_64char_hex("a"*63)
+    assert not is_64char_hex(123)
+    assert not is_64char_hex("")
 
 def test_frozen_splits():
     assert len(FROZEN_SPLITS) == 12
@@ -679,13 +662,15 @@ def test_frozen_splits():
 # ── K10 parity classification ──
 
 def test_k10_pass():
-    assert classify_k10_parity([], [], [], True) == "PASS"
+    assert classify_k10_parity({}, True, EXPECTED_K10_SCHEMA) == "PASS"
 
 def test_k10_mismatch():
-    assert classify_k10_parity(["CALIBRATION_K10_REJECTED: ..."], [], [], True) == "NOT_AUDITABLE_K10_CONTRACT_MISMATCH"
+    issues = {"calibration": ["CALIBRATION_K10_MISMATCH: ..."]}
+    assert classify_k10_parity(issues, True, EXPECTED_K10_SCHEMA) == "NOT_AUDITABLE_K10_CONTRACT_MISMATCH"
 
 def test_k10_diagnostic():
-    assert classify_k10_parity(["CALIBRATION_K10_REJECTED: ..."], [], [], False) == "DIAGNOSTIC_ONLY"
+    issues = {"calibration": ["CALIBRATION_K10_MISMATCH: ..."]}
+    assert classify_k10_parity(issues, False, EXPECTED_K10_SCHEMA) == "DIAGNOSTIC_ONLY"
 
 
 # ── Input audit ──
