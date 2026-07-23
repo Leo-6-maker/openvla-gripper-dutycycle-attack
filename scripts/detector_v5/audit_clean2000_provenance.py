@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage 0: CLEAN2000 provenance audit — episode closure, identity split, no A/FEC leakage."""
+"""Stage 0: CLEAN2000 provenance audit — real episode traversal, protocol verification, identity closure."""
 from __future__ import annotations
 
 import argparse, hashlib, json, os, sys, uuid
@@ -12,7 +12,7 @@ TASKS_PER_SUITE = 10
 STATES_PER_TASK = 50
 EXPECTED_TOTAL = 2000
 
-IDENTITY_SPLITS = {
+IDENTITY_SPLITS: dict[str, tuple[int, int]] = {
     "FIT-TRAIN": (0, 19),
     "FIT-DEV":   (20, 23),
     "CAL":       (24, 26),
@@ -22,26 +22,12 @@ IDENTITY_SPLITS = {
     "FEC":       (45, 49),
 }
 
-FROZEN_SHAS = {
-    "collector_head": "943b02749dce4414ec6791b15ceec87dbd3be1ba",
-    "openvla_upstream": "c8f03f48af692657d3060c19588038c7220e9af9",
-    "libero": "8f1084e3132a39270c3a13ebe37270a43ece2a01",
-    "libero_checkpoint_tree": "4a83f512232909d34ec2f835acf492713b4c174f0b016ac00cbb330ed5ff8dbd",
-    "collector_script": "a8e230f1ef10f51ee61c847c49969b444ab57697ac7312100b06e64d03491311",
-    "runtime_wrapper": "de1d141bd4f6b75b00753adf225b400388868221d9032821874d004f0e0f05b8",
-    "flash_attn_wheel": "3fc5d8813904d32cfc77aa4b88d40169dbc12053edb6ee0f1d94159527d05ab0",
-}
-
 
 def sha256_file(p: Path) -> str:
     d = hashlib.sha256()
     with open(p, "rb") as f:
         for chunk in iter(lambda: f.read(1048576), b""): d.update(chunk)
     return d.hexdigest()
-
-
-def is_64char_hex(s: Any) -> bool:
-    return isinstance(s, str) and len(s) == 64 and all(c in "0123456789abcdef" for c in s)
 
 
 def main() -> int:
@@ -54,13 +40,25 @@ def main() -> int:
     out_root = args.output_root.resolve()
     if out_root.exists(): raise SystemExit(f"OUTPUT_EXISTS: {out_root}")
     root = args.clean2000_root.resolve()
+    if not root.is_dir(): raise SystemExit(f"CLEAN2000_ROOT_NOT_DIR: {root}")
 
     errors: list[str] = []
-    episode_ids: set[str] = set()
+    episodes: list[dict[str, Any]] = []
+    identity_episodes: dict[str, list[str]] = {k: [] for k in IDENTITY_SPLITS}
     suite_task_counts: dict[str, dict[str, int]] = {}
-    identity_episodes: dict[str, set[str]] = {k: set() for k in IDENTITY_SPLITS}
+    file_missing: list[str] = []
 
-    # ── Walk CLEAN2000 root ───────────────────────────────────────────
+    # ── Verify protocol file ──────────────────────────────────────────
+    protocol_path = root / "provenance" / "OFFICIAL_PROTOCOL_CONFIG_V1.json"
+    if not protocol_path.is_file():
+        errors.append(f"PROTOCOL_MISSING: {protocol_path}")
+    else:
+        protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
+        if protocol.get("episodes") != EXPECTED_TOTAL:
+            errors.append(f"PROTOCOL_EPISODE_COUNT: expected={EXPECTED_TOTAL} got={protocol.get('episodes')}")
+        protocol_sha = sha256_file(protocol_path)
+
+    # ── Walk episode directories ─────────────────────────────────────
     for suite in EXPECTED_SUITES:
         suite_dir = root / suite
         if not suite_dir.is_dir():
@@ -75,80 +73,100 @@ def main() -> int:
                 continue
             suite_task_counts[suite][task_name] = 0
             for state in range(STATES_PER_TASK):
+                state_dir = task_dir / f"state_{state}"
                 eid = f"{suite}/{task_name}/state_{state}"
-                episode_ids.add(eid)
+
+                if not state_dir.is_dir():
+                    errors.append(f"STATE_MISSING: {eid}")
+                    continue
+
                 suite_task_counts[suite][task_name] += 1
+
+                # Check required files exist
+                required_files = ["metadata.json", "step_records.jsonl"]
+                missing_files = [f for f in required_files if not (state_dir / f).is_file()]
+                if missing_files:
+                    file_missing.append(f"{eid}: {missing_files}")
+                    continue
+
+                ep = {
+                    "episode_id": eid,
+                    "suite": suite,
+                    "task": task_name,
+                    "state": state,
+                    "metadata_sha256": sha256_file(state_dir / "metadata.json"),
+                    "steps_sha256": sha256_file(state_dir / "step_records.jsonl"),
+                }
+                episodes.append(ep)
+
                 for split_name, (lo, hi) in IDENTITY_SPLITS.items():
                     if lo <= state <= hi:
-                        identity_episodes[split_name].add(eid)
+                        identity_episodes[split_name].append(eid)
 
-    # ── Count checks ─────────────────────────────────────────────────
-    if len(episode_ids) != EXPECTED_TOTAL:
-        errors.append(f"EPISODE_COUNT: expected={EXPECTED_TOTAL} actual={len(episode_ids)}")
+    # ── Validate counts ──────────────────────────────────────────────
+    n_found = len(episodes)
+    if n_found != EXPECTED_TOTAL:
+        errors.append(f"EPISODE_COUNT: expected={EXPECTED_TOTAL} actual={n_found}")
+
     for suite in EXPECTED_SUITES:
         for tn in [f"task_{i:02d}" for i in range(TASKS_PER_SUITE)]:
             n = suite_task_counts.get(suite, {}).get(tn, 0)
-            if n != 50:
-                errors.append(f"STATE_COUNT: {suite}/{tn} expected=50 actual={n}")
+            if n != STATES_PER_TASK:
+                errors.append(f"STATE_COUNT: {suite}/{tn} expected={STATES_PER_TASK} actual={n}")
 
-    # ── Identity split overlap check ─────────────────────────────────
-    all_assigned: set[str] = set()
-    for split_name, eps in identity_episodes.items():
-        overlap = all_assigned & eps
+    # ── Identity split validation ────────────────────────────────────
+    all_eids: set[str] = set()
+    for split_name, eids in identity_episodes.items():
+        lo, hi = IDENTITY_SPLITS[split_name]
+        expected_n = (hi - lo + 1) * TASKS_PER_SUITE * len(EXPECTED_SUITES)
+        if len(eids) != expected_n:
+            errors.append(f"SPLIT_COUNT: {split_name} expected={expected_n} actual={len(eids)}")
+        overlap = all_eids & set(eids)
         if overlap:
             errors.append(f"SPLIT_OVERLAP: {split_name} overlaps on {sorted(overlap)[:5]}")
-        all_assigned |= eps
+        all_eids.update(eids)
 
-    # ── A/FEC leakage gate ───────────────────────────────────────────
-    a_or_fec = identity_episodes["A"] | identity_episodes["FEC"]
-    other_splits = all_assigned - a_or_fec
-    if a_or_fec & other_splits:
-        errors.append(f"A_FEC_LEAKAGE: {sorted(a_or_fec & other_splits)[:5]}")
-    if len(a_or_fec) != 1000:
-        errors.append(f"A_FEC_COUNT: expected=1000 actual={len(a_or_fec)}")
+    # ── A+FEC = 600 (10+5)*40 ────────────────────────────────────────
+    a_fec_eids = set(identity_episodes["A"]) | set(identity_episodes["FEC"])
+    expected_afec = (10 + 5) * 40  # (44-35+1 + 49-45+1) * 4*10 = 15*40 = 600
+    if len(a_fec_eids) != expected_afec:
+        errors.append(f"A_FEC_COUNT: expected={expected_afec} actual={len(a_fec_eids)}")
 
-    # ── Identity coverage ────────────────────────────────────────────
-    for split_name, (lo, hi) in IDENTITY_SPLITS.items():
-        expected = (hi - lo + 1) * TASKS_PER_SUITE * len(EXPECTED_SUITES)
-        actual = len(identity_episodes[split_name])
-        if actual != expected:
-            errors.append(f"SPLIT_COUNT: {split_name} expected={expected} actual={actual}")
-
+    # ── Build receipt ────────────────────────────────────────────────
     receipt = {
         "schema": "CLEAN2000_PROVENANCE_RECEIPT_V1",
         "auditor_code_sha256": SELF_SHA,
         "status": "PASS" if not errors else "HOLD",
-        "n_episodes": len(episode_ids),
+        "n_episodes": n_found,
         "n_expected": EXPECTED_TOTAL,
         "n_suites": len(suite_task_counts),
         "identity_split_counts": {k: len(v) for k, v in identity_episodes.items()},
-        "frozen_source_shas": FROZEN_SHAS,
-        "a_fec_leakage": False if not errors else any("A_FEC" in e for e in errors),
+        "a_fec_count": len(a_fec_eids),
+        "protocol_sha256": protocol_sha if 'protocol_sha' in dir() else None,
+        "n_file_missing": len(file_missing),
         "n_errors": len(errors),
-        "errors": errors[:100],
+        "errors": errors[:200],
+        "file_missing_sample": file_missing[:20],
     }
 
+    # ── Atomic sealed output ─────────────────────────────────────────
     staging = out_root.with_name(f".{out_root.name}.{uuid.uuid4().hex}.staging")
     staging.mkdir(parents=True)
-    (staging / "CLEAN2000_PROVENANCE_RECEIPT_V1.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
-    (staging / "CLEAN2000_INPUT_MANIFEST_V1.json").write_text(json.dumps({
-        "schema": "CLEAN2000_INPUT_MANIFEST_V1",
-        "n_episodes": len(episode_ids),
-        "suites": sorted(suite_task_counts.keys()),
-        "per_task_counts": {s: dict(t) for s, t in suite_task_counts.items()},
-    }, indent=2, sort_keys=True) + "\n")
-    (staging / "CLEAN2000_IDENTITY_SPLIT_V1.json").write_text(json.dumps({
-        "schema": "CLEAN2000_IDENTITY_SPLIT_V1",
-        "splits": {k: {"range": list(v), "count": len(identity_episodes[k])} for k, v in IDENTITY_SPLITS.items()},
-    }, indent=2, sort_keys=True) + "\n")
+    (staging / "CLEAN2000_PROVENANCE_RECEIPT_V1.json").write_text(
+        json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+    (staging / "CLEAN2000_EPISODE_MANIFEST_V1.json").write_text(
+        json.dumps({"schema": "CLEAN2000_EPISODE_MANIFEST_V1", "n_episodes": n_found,
+                    "episodes": episodes, "identity_splits": IDENTITY_SPLITS},
+                   indent=2, sort_keys=True) + "\n")
     files = sorted(p for p in staging.iterdir() if p.is_file() and p.name not in ("SHA256SUMS", "SHA256SUMS.sha256"))
     (staging / "SHA256SUMS").write_text("".join(f"{sha256_file(p)}  {p.name}\n" for p in files))
-    (staging / "SHA256SUMS.sha256").write_text(f"{sha256_file(staging / 'SHA256SUMS')}  SHA256SUMS\n")
+    seal = sha256_file(staging / "SHA256SUMS")
+    (staging / "SHA256SUMS.sha256").write_text(f"{seal}  SHA256SUMS\n")
     import shutil
     if out_root.exists(): shutil.rmtree(out_root)
     os.replace(staging, out_root)
 
-    print(f"CLEAN2000 Provenance Audit: {receipt['status']} errors={len(errors)}")
+    print(f"CLEAN2000 Audit: {receipt['status']} episodes={n_found} errors={len(errors)}")
     for e in errors[:10]: print(f"  {e}")
     return 0 if not errors else 1
 

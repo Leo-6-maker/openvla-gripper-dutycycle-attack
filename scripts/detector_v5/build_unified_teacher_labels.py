@@ -1,30 +1,26 @@
 #!/usr/bin/env python3
 """Stage 1: Build unified Factorized Teacher labels for FIT-TRAIN/DEV/CAL/CHECK/H.
 
-Uses the exact same Teacher builder version for states 0-34.
-A/FEC states 35-49 are NOT labeled. Output is sealed per split.
+Uses the exact same Teacher builder for states 0-34. Writes each split as a
+sealed subdirectory under output-root, then seals the output root in place.
+No data is deleted after generation.
 """
 from __future__ import annotations
 
-import argparse, hashlib, json, os, sys, uuid
+import argparse, hashlib, json, os, subprocess, sys, uuid
 from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent.parent
-sys.path.insert(0, str(ROOT / "src"))
-
 SELF_SHA = None
 LABEL_SPLITS = ("FIT-TRAIN", "FIT-DEV", "CAL", "CHECK", "H")
-
-# State ranges by split (inclusive)
-STATE_RANGES = {
+STATE_RANGES: dict[str, tuple[int, int]] = {
     "FIT-TRAIN": (0, 19),
     "FIT-DEV":   (20, 23),
     "CAL":       (24, 26),
     "CHECK":     (27, 29),
     "H":         (30, 34),
 }
-
 EXPECTED_SUITES = ("Spatial", "Object", "Goal", "LIBERO-10")
 
 
@@ -38,65 +34,85 @@ def sha256_file(p: Path) -> str:
 def main() -> int:
     global SELF_SHA; SELF_SHA = sha256_file(Path(__file__))
     ap = argparse.ArgumentParser()
+    ap.add_argument("--clean2000-root", type=Path, required=True)
     ap.add_argument("--clean2000-audit-root", type=Path, required=True)
     ap.add_argument("--output-root", type=Path, required=True)
     args = ap.parse_args()
 
     out_root = args.output_root.resolve()
     if out_root.exists(): raise SystemExit(f"OUTPUT_EXISTS: {out_root}")
+    clean2000 = args.clean2000_root.resolve()
 
     # Verify audit passed
-    audit_receipt = json.loads((args.clean2000_audit_root / "CLEAN2000_PROVENANCE_RECEIPT_V1.json").read_text())
-    if audit_receipt.get("status") != "PASS":
-        raise SystemExit("AUDIT_NOT_PASS: cannot build teacher labels on failed audit")
+    audit_json = args.clean2000_audit_root / "CLEAN2000_PROVENANCE_RECEIPT_V1.json"
+    if not audit_json.is_file():
+        raise SystemExit(f"AUDIT_RECEIPT_MISSING: {audit_json}")
+    audit = json.loads(audit_json.read_text(encoding="utf-8"))
+    if audit.get("status") != "PASS":
+        raise SystemExit(f"AUDIT_NOT_PASS: status={audit.get('status')}")
 
-    # For each split, invoke the factorized teacher builder
-    # This delegates to the existing build_v5_factorized_teacher.py infrastructure
-    import subprocess
+    # Verify clean2000 root is a real directory with suites
+    if not clean2000.is_dir():
+        raise SystemExit(f"CLEAN2000_NOT_DIR: {clean2000}")
+    for suite in EXPECTED_SUITES:
+        if not (clean2000 / suite).is_dir():
+            raise SystemExit(f"CLEAN2000_SUITE_MISSING: {suite}")
+
+    # ── Build teacher labels for each split ──────────────────────────
     scripts = ROOT / "scripts/detector_v5"
     errors: list[str] = []
-    split_roots: dict[str, Path] = {}
+    split_seals: dict[str, str] = {}
+
+    out_root.mkdir(parents=True)
 
     for split in LABEL_SPLITS:
-        split_root = out_root / split.lower()
-        print(f"\nBuilding Teacher labels for {split} (states {STATE_RANGES[split]})...")
+        split_dir = out_root / split.lower().replace("-", "_")
+        lo, hi = STATE_RANGES[split]
+        print(f"\nBuilding Teacher labels for {split} (states {lo}-{hi})...")
         result = subprocess.run(
             [sys.executable, str(scripts / "build_v5_factorized_teacher.py"),
-             "--clean2000-root", str(args.clean2000_audit_root.parent.parent),
+             "--clean2000-root", str(clean2000),
              "--split", split,
-             "--state-range", f"{STATE_RANGES[split][0]}-{STATE_RANGES[split][1]}",
-             "--output-root", str(split_root)],
+             "--state-range", f"{lo}-{hi}",
+             "--output-root", str(split_dir)],
             capture_output=False)
         if result.returncode != 0:
             errors.append(f"TEACHER_BUILD_FAILED: {split}")
             continue
-        split_roots[split] = split_root
+        # Read the seal of the split's output
+        sums_file = split_dir / "SHA256SUMS"
+        if sums_file.is_file():
+            split_seals[split] = sha256_file(sums_file)
+        else:
+            errors.append(f"SPLIT_NOT_SEALED: {split}")
 
     if errors:
         raise SystemExit("STAGE_1_FAILED: " + "; ".join(errors))
 
-    # ── Build Stage 1 receipt ────────────────────────────────────────
+    # ── Build receipt ────────────────────────────────────────────────
     receipt = {
         "schema": "UNIFIED_TEACHER_LABELS_RECEIPT_V1",
         "builder_code_sha256": SELF_SHA,
         "status": "PASS",
-        "labeled_splits": LABEL_SPLITS,
-        "split_roots": {s: str(split_roots[s]) for s in LABEL_SPLITS if s in split_roots},
+        "labeled_splits": list(LABEL_SPLITS),
+        "state_ranges": STATE_RANGES,
+        "split_seals": split_seals,
         "a_fec_labeled": False,
-        "teacher_builder_version": "build_v5_factorized_teacher.py",
         "uses_attack_outcome": False,
-        "uses_A_pool": False,
+        "clean2000_root": str(clean2000),
     }
+    (out_root / "UNIFIED_TEACHER_LABELS_RECEIPT_V1.json").write_text(
+        json.dumps(receipt, indent=2, sort_keys=True) + "\n")
 
-    staging = out_root.with_name(f".{out_root.name}.{uuid.uuid4().hex}.staging")
-    staging.mkdir(parents=True)
-    (staging / "UNIFIED_TEACHER_LABELS_RECEIPT_V1.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
-    files = sorted(p for p in staging.iterdir() if p.is_file() and p.name not in ("SHA256SUMS", "SHA256SUMS.sha256"))
-    (staging / "SHA256SUMS").write_text("".join(f"{sha256_file(p)}  {p.name}\n" for p in files))
-    (staging / "SHA256SUMS.sha256").write_text(f"{sha256_file(staging / 'SHA256SUMS')}  SHA256SUMS\n")
-    import shutil
-    if out_root.exists(): shutil.rmtree(out_root)
-    os.replace(staging, out_root)
+    # ── Seal in place (does NOT delete split subdirectories) ─────────
+    names = sorted(p.relative_to(out_root).as_posix() for p in out_root.rglob("*")
+                   if p.is_file() and p.name not in ("SHA256SUMS", "SHA256SUMS.sha256"))
+    (out_root / "SHA256SUMS").write_text(
+        "".join(f"{sha256_file(out_root / name)}  {name}\n" for name in names))
+    seal = sha256_file(out_root / "SHA256SUMS")
+    (out_root / "SHA256SUMS.sha256").write_text(f"{seal}  SHA256SUMS\n")
+
+    print(f"Stage 1 complete: {len(LABEL_SPLITS)} splits, seal={seal[:16]}")
     return 0
 
 

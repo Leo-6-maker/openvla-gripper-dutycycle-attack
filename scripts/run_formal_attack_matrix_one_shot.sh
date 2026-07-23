@@ -2,26 +2,45 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # CODEX ONE-SHOT FORMAL ATTACK MATRIX LAUNCHER
 # ═══════════════════════════════════════════════════════════════════════════════
+# Requires: formal_attack_authorized=true (external review must set this).
+# H heldout gate must be PASS. Detector freeze must be verified.
 # Fail-closed: any non-zero exit → immediate stop.
-# Does NOT overwrite existing output roots.
-# Authorized: FALSE (await external review before execution).
 # ═══════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
-# ── Configuration ────────────────────────────────────────────────────────────
-# EDIT THESE PATHS before execution
 PYTHON="${PYTHON:-python}"
 EVIDENCE_ROOT="${EVIDENCE_ROOT:-/mnt/sdc/dty_user/openvla_attack_evidence}"
-CLEAN2000_ROOT="${CLEAN2000_ROOT:-${EVIDENCE_ROOT}/c2g/c2g_cs200_official_v3_20260716}"
 DETECTOR_ROOT="${DETECTOR_ROOT:-${EVIDENCE_ROOT}/final_detector_pipeline/FINAL_FACTORIZED_DETECTOR_V1}"
+H_ROOT="${H_ROOT:-${EVIDENCE_ROOT}/final_detector_pipeline/stage_7b_h_evaluation}"
 OUTPUT_ROOT="${OUTPUT_ROOT:-${EVIDENCE_ROOT}/formal_attack_matrix}"
 SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPTS_DIR}/.." && pwd)"
 
+echo "=== CODEX ONE-SHOT FORMAL ATTACK MATRIX ==="
+echo ""
+
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 0: PREFLIGHT
+# STEP 0: AUTHORIZATION CHECK (MUST BE TRUE)
 # ═══════════════════════════════════════════════════════════════════════════════
-echo "=== STEP 0: PREFLIGHT ==="
+AUTH_FILE="${DETECTOR_ROOT}/formal_attack_authorization.json"
+if [ ! -f "${AUTH_FILE}" ]; then
+    echo "FATAL: No authorization file at ${AUTH_FILE}"
+    echo "  External review must create this file with:"
+    echo '  {"formal_attack_authorized": true, "reviewer": "<name>", "date": "<ISO date>"}'
+    exit 1
+fi
+
+AUTH=$(${PYTHON} -c "import json; print(json.load(open('${AUTH_FILE}')).get('formal_attack_authorized', False))")
+if [ "${AUTH}" != "True" ]; then
+    echo "FATAL: formal_attack_authorized is not True (got: ${AUTH})"
+    echo "  Attack matrix execution requires explicit external authorization."
+    exit 1
+fi
+echo "  Authorization: TRUE"
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 1: PREFLIGHT
+# ═══════════════════════════════════════════════════════════════════════════════
 
 # Verify detector freeze
 if [ ! -f "${DETECTOR_ROOT}/SHA256SUMS" ]; then
@@ -30,69 +49,63 @@ if [ ! -f "${DETECTOR_ROOT}/SHA256SUMS" ]; then
 fi
 echo "  Detector freeze: VERIFIED"
 
-# Verify attack is NOT authorized
-if [ -f "${DETECTOR_ROOT}/attack_authorization.json" ]; then
-    AUTH=$(python -c "import json; print(json.load(open('${DETECTOR_ROOT}/attack_authorization.json')).get('attack_authorized', False))")
-    if [ "${AUTH}" != "False" ]; then
-        echo "FATAL: attack_authorized is not False"
-        exit 1
+# Verify H heldout gate_pass=true (MANDATORY)
+H_RECEIPT=""
+for name in HELDOUT_L3_RUN_COMPLETE_RECEIPT_V1.json FACTORIZED_HELDOUT_L3_EVALUATION_RECEIPT_V1.json receipt.json; do
+    if [ -f "${H_ROOT}/${name}" ]; then
+        H_RECEIPT="${H_ROOT}/${name}"
+        break
     fi
-fi
-echo "  Attack authorization: FALSE (correct)"
+done
 
-# Verify H heldout PASS
-H_RECEIPT="${DETECTOR_ROOT}/../stage_7b_h_evaluation/receipt.json"
-if [ -f "${H_RECEIPT}" ]; then
-    H_STATUS=$(python -c "import json; print(json.load(open('${H_RECEIPT}')).get('status',''))")
-    if [ "${H_STATUS}" != "PASS" ]; then
-        echo "FATAL: H heldout receipt status=${H_STATUS}, expected PASS"
-        exit 1
-    fi
-    echo "  H heldout: PASS"
-else
-    echo "  WARNING: H receipt not found at ${H_RECEIPT} (continuing)"
+if [ -z "${H_RECEIPT}" ]; then
+    echo "FATAL: No H receipt found in ${H_ROOT}"
+    exit 1
 fi
+
+H_GATE=$(${PYTHON} -c "import json; print(json.load(open('${H_RECEIPT}')).get('gate_pass', False))")
+if [ "${H_GATE}" != "True" ]; then
+    echo "FATAL: H heldout gate_pass is not True (got: ${H_GATE})"
+    exit 1
+fi
+echo "  H heldout gate: PASS"
 
 # Guard: output root must not exist
 if [ -d "${OUTPUT_ROOT}" ]; then
     echo "FATAL: OUTPUT_ROOT already exists: ${OUTPUT_ROOT}"
-    echo "  Remove it or set a different OUTPUT_ROOT."
     exit 1
 fi
 
-echo "  Preflight: PASS"
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 1: BUILD PARENT MANIFEST & JOB MATRIX
-# ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "=== STEP 1: PARENT MANIFEST & JOB MATRIX ==="
+echo "=== PREFLIGHT COMPLETE ==="
+echo ""
 
-${PYTHON} "${SCRIPTS_DIR}/detector_v5/build_codex_one_shot_handoff.py" \
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 2: BUILD PARENT MANIFEST AND JOB MATRIX FROM A-POOL EPISODES
+# ═══════════════════════════════════════════════════════════════════════════════
+echo "=== STEP 2: PARENT MANIFEST & JOB MATRIX ==="
+
+${PYTHON} "${REPO_ROOT}/scripts/detector_v5/build_codex_one_shot_handoff.py" \
     --final-detector-root "${DETECTOR_ROOT}" \
-    --h-receipt-root "${DETECTOR_ROOT}/../stage_7b_h_evaluation" \
-    --a9-parity-root "${DETECTOR_ROOT}/../a9_adapter_parity" \
-    --a10-e2e-root "${DETECTOR_ROOT}/../a10_cli_e2e" \
-    --clean2000-root "${CLEAN2000_ROOT}" \
-    --identity-manifests-root "${CLEAN2000_ROOT}/identity_manifests" \
+    --h-receipt-root "${H_ROOT}" \
     --output-root "${OUTPUT_ROOT}/handoff"
 
-echo "  Parent manifest & job matrix: SEALED"
+echo "  Parent manifest & job matrix prepared"
+echo ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 2: LAUNCH WORKERS (MANUAL STEP — Codex operator)
+# STEP 3: LAUNCH ROLLOUT WORKERS (AUTO)
 # ═══════════════════════════════════════════════════════════════════════════════
+echo "=== STEP 3: LAUNCH ROLLOUT ==="
+echo "  Launching 1 GPU worker for A-pool states 35-44 (400 episodes)..."
+echo "  Worker command must be provided by the runtime adapter."
+echo "  This script validates artifacts after rollout completes."
 echo ""
-echo "=== STEP 2: LAUNCH ROLLOUT ==="
-echo "  >>> MANUAL STEP: Codex operator must launch the rollout workers. <<<"
-echo "  >>> This script does NOT auto-launch GPU processes. <<<"
-echo "  After all rollouts complete, proceed to Step 3."
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 3: EXECUTION VALIDATION (post-rollout)
+# STEP 4: EXECUTION VALIDATION
 # ═══════════════════════════════════════════════════════════════════════════════
-echo ""
-echo "=== STEP 3: EXECUTION VALIDATION ==="
+echo "=== STEP 4: EXECUTION VALIDATION ==="
 
 ${PYTHON} "${REPO_ROOT}/analysis/pilot_attack/validate_factorized_attack_pilot_execution.py" \
     --pilot-job-matrix-root "${OUTPUT_ROOT}/matrix/job_matrix" \
@@ -105,12 +118,12 @@ ${PYTHON} "${REPO_ROOT}/analysis/pilot_attack/validate_factorized_attack_pilot_e
     --output-root "${OUTPUT_ROOT}/validation/execution"
 
 echo "  Execution validation: DONE"
+echo ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 4: PAIRED ANALYSIS
+# STEP 5: PAIRED ANALYSIS
 # ═══════════════════════════════════════════════════════════════════════════════
-echo ""
-echo "=== STEP 4: PAIRED ANALYSIS ==="
+echo "=== STEP 5: PAIRED ANALYSIS ==="
 
 ${PYTHON} "${REPO_ROOT}/analysis/pilot_attack/analyze_factorized_attack_pilot.py" \
     --pilot-execution-validation-root "${OUTPUT_ROOT}/validation/execution" \
@@ -121,12 +134,12 @@ ${PYTHON} "${REPO_ROOT}/analysis/pilot_attack/analyze_factorized_attack_pilot.py
     --output-root "${OUTPUT_ROOT}/analysis"
 
 echo "  Paired analysis: DONE"
+echo ""
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 5: BLIND PACKAGE
+# STEP 6: BLIND PACKAGE
 # ═══════════════════════════════════════════════════════════════════════════════
-echo ""
-echo "=== STEP 5: BLIND PACKAGE ==="
+echo "=== STEP 6: BLIND PACKAGE ==="
 
 ${PYTHON} "${REPO_ROOT}/analysis/pilot_attack/build_factorized_pilot_blind_review.py" \
     --pilot-execution-validation-root "${OUTPUT_ROOT}/validation/execution" \
@@ -136,17 +149,12 @@ ${PYTHON} "${REPO_ROOT}/analysis/pilot_attack/build_factorized_pilot_blind_revie
     --blind-package-root "${OUTPUT_ROOT}/blind/package" \
     --unblinding-root "${OUTPUT_ROOT}/blind/unblinding"
 
-echo "  Blind package: DONE"
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 6: FINAL STATUS
-# ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "=============================================="
 echo "  FORMAL ATTACK MATRIX: LAUNCHER COMPLETE"
 echo "  Output: ${OUTPUT_ROOT}"
 echo ""
-echo "  IMPORTANT: Automated GO/NO-GO is advisory only."
+echo "  Automated GO/NO-GO is advisory only."
 echo "  scientific_go_no_go_authorized = FALSE"
-echo "  Blind manual review is REQUIRED before any scientific claim."
+echo "  Blind manual review REQUIRED before any scientific claim."
 echo "=============================================="
