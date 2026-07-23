@@ -964,6 +964,62 @@ def test_cross_receipt_substitution_rejected():
         finally: sys.argv = old
 
 
+def test_partial_seal_declaration_rejected():
+    """Only 1 of 3 seals declared → SystemExit (no partial declarations)."""
+    from analyze_factorized_attack_pilot import main as an
+    with tempfile.TemporaryDirectory() as d:
+        dp = Path(d)
+        mgid = "g_f0_0"
+        (dp / "ev").mkdir()
+        jobs = [_make_job("f0", "CLEAN", jid="j_c", mgid=mgid)]
+        run = _make_run("f0", "CLEAN", jid="j_c", mgid=mgid, k_req=0, k_exec=0)
+        run["attack_requested"] = False; run.pop("attack_step_ledger", None)
+        (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
+        vsha = sha256_file(dp / "ev" / run["video_path"]); tsha = sha256_file(dp / "ev" / run["telemetry_path"])
+
+        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": jobs})
+        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [run]})
+        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
+            {"job_id": "j_c", "matched_group_id": mgid, "path": run["telemetry_path"], "sha256": tsha}]})
+        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
+            {"job_id": "j_c", "matched_group_id": mgid, "path": run["video_path"], "sha256": vsha}]})
+        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0")]})
+        _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
+        _make_go_rules(dp / "gr")
+
+        from validate_factorized_attack_pilot_execution import main as ev
+        old = sys.argv
+        try:
+            sys.argv = ["ev", "--pilot-job-matrix-root", str(dp / "j"), "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"), "--pilot-video-index-root", str(dp / "v"),
+                        "--pilot-parent-manifest-root", str(dp / "pm"),
+                        "--pilot-arm-parity-protocol-root", str(dp / "arm"),
+                        "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "ev_out")]
+            ev()
+
+            # Read the receipt, rewrite with only 1 seal declared
+            with open(dp / "ev_out/PILOT_EXECUTION_VALIDATION_V0.json") as f:
+                receipt = json.load(f)
+            full_seals = receipt["input_seals"]
+            receipt["input_seals"] = {"job_matrix": full_seals["job_matrix"]}  # only 1 of 3
+            (dp / "ev_out_partial").mkdir()
+            (dp / "ev_out_partial" / "PILOT_EXECUTION_VALIDATION_V0.json").write_text(
+                json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+            fs = sorted(p for p in (dp / "ev_out_partial").iterdir() if p.is_file() and p.name not in ("SHA256SUMS", "SHA256SUMS.sha256"))
+            (dp / "ev_out_partial" / "SHA256SUMS").write_text("".join(f"{sha256_file(p)}  {p.name}\n" for p in fs))
+            (dp / "ev_out_partial" / "SHA256SUMS.sha256").write_text(f"{sha256_file(dp / 'ev_out_partial' / 'SHA256SUMS')}  SHA256SUMS\n")
+
+            sys.argv = ["an", "--pilot-execution-validation-root", str(dp / "ev_out_partial"),
+                        "--pilot-job-matrix-root", str(dp / "j"),
+                        "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"),
+                        "--pilot-go-no-go-rules-root", str(dp / "gr"),
+                        "--output-root", str(dp / "o")]
+            an(); assert False  # should reject partial seals
+        except SystemExit: pass
+        finally: sys.argv = old
+
+
 # ═══════════════════════════════════════════════════════════════════
 # GO/NO-GO: attack ineffective → STOP; effective → CONTINUE
 # ═══════════════════════════════════════════════════════════════════

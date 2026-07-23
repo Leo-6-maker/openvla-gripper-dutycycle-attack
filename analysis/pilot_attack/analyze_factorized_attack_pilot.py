@@ -9,7 +9,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "analysis/pilot_attack"))
 
-from pilot_integrity import sha256_file, is_finite_number, is_strict_int, consume_sealed_root
+from pilot_integrity import sha256_file, is_64char_hex, is_finite_number, is_strict_int, consume_sealed_root
 
 SELF_SHA = None
 OUTCOME_FIELDS = ("official_success", "gripper_opened", "object_dropped", "transport_complete",
@@ -74,20 +74,27 @@ def main() -> int:
         raise SystemExit("GO_RULES_INVALID: " + "; ".join(rule_errors))
 
     # ── Verify input seal binding against execution receipt ───────────────
+    REQUIRED_SEAL_KEYS = {"job_matrix", "run_ledger", "telemetry_index"}
     declared_seals = exec_val.get("input_seals", {})
     binding_errors: list[str] = []
-    actual_seals = {
+    actual_seals: dict[str, str] = {
         "job_matrix": job_matrix_seal,
         "run_ledger": run_ledger_seal,
         "telemetry_index": telem_index_seal,
     }
-    has_declared_seals = any(isinstance(v, str) and len(v) == 64 for v in declared_seals.values())
-    if has_declared_seals:
-        for key, actual in actual_seals.items():
-            declared = declared_seals.get(key, "")
-            if declared and declared != actual:
+    declared_valid_keys = {k for k, v in declared_seals.items() if is_64char_hex(v)}
+    if declared_valid_keys:
+        if declared_valid_keys != REQUIRED_SEAL_KEYS:
+            missing = REQUIRED_SEAL_KEYS - declared_valid_keys
+            extra = declared_valid_keys - REQUIRED_SEAL_KEYS
+            parts: list[str] = []
+            if missing: parts.append(f"missing={sorted(missing)}")
+            if extra: parts.append(f"extra={sorted(extra)}")
+            raise SystemExit("SEAL_DECLARATION_INCOMPLETE: " + "; ".join(parts))
+        for key in REQUIRED_SEAL_KEYS:
+            if declared_seals[key] != actual_seals[key]:
                 binding_errors.append(
-                    f"SEAL_BINDING_MISMATCH: {key} declared={declared[:16]!r} actual={actual[:16]!r}")
+                    f"SEAL_BINDING_MISMATCH: {key} declared={declared_seals[key][:16]} actual={actual_seals[key][:16]}")
     if binding_errors:
         raise SystemExit("CROSS_RECEIPT_SUBSTITUTION: " + "; ".join(binding_errors))
 
