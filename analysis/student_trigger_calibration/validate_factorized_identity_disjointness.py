@@ -343,11 +343,13 @@ def check_source_sha_validity(teacher_rows, role_label, split_key, errors,
             actual_count = len(ep_rows)
             for r in ep_rows:
                 declared_count = r.get("source_episode_step_count")
-                if (
-                    isinstance(declared_count, bool)
-                    or not isinstance(declared_count, int)
-                    or declared_count != actual_count
-                ):
+                if isinstance(declared_count, bool) or not isinstance(declared_count, int):
+                    errors.append(
+                        f"{role_label}_SOURCE_STEP_COUNT_INVALID: {split_key}/{ep_id} "
+                        f"declared={declared_count!r} expected_strict_int"
+                    )
+                    break
+                if declared_count != actual_count:
                     errors.append(
                         f"{role_label}_SOURCE_STEP_COUNT_MISMATCH: {split_key}/{ep_id} "
                         f"declared={declared_count!r} actual={actual_count}"
@@ -567,7 +569,7 @@ def classify_verdict(disjointness_result, source_status, inputs_complete):
         return "PASS_EXISTING_ROOTS"
     if source_status == "DETERMINISTIC_ALLOCATION":
         return "PASS_DETERMINISTIC_ALLOCATION"
-    return "HOLD_MANIFEST_INCOMPLETE"
+    return "HOLD_INPUTS_MISSING"
 
 def classify_coverage(coverage_issues, inputs_complete):
     if not inputs_complete: return "NOT_AUDITABLE"
