@@ -21,8 +21,7 @@ EXPECTED_COUNTS = {
     "FINAL_EVAL_CANDIDATE": 800,
 }
 
-SOURCE_SCRIPTS = ROOT / "scripts/detector_v5"
-TEACHER_BUILDER = SOURCE_SCRIPTS / "build_v5_factorized_teacher.py"
+TEACHER_BUILDER = Path(__file__).resolve().parent / "build_v5_factorized_teacher.py"
 
 
 def sha256_file(p: Path) -> str:
