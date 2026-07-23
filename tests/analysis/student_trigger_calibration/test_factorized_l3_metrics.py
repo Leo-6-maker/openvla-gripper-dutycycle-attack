@@ -24,6 +24,7 @@ from validate_factorized_identity_disjointness import (
     compute_calibration_coverage_from_labels, compute_policy_coverage_from_labels,
     verify_identity_closure, verify_step_closure, check_k10_parity,
     check_contract_sha_consistency, check_source_sha_validity,
+    validate_head_label_types, validate_k10_field_types, load_strict_jsonl,
     load_strict_json, is_64char_hex,
     FIVE_ROLES, COHORT_TO_ROLE, ROLE_TO_COHORT, FROZEN_SPLITS, EXPECTED_K10_SCHEMA,
 )
@@ -870,3 +871,57 @@ def test_phase_c_l3_never_authorized():
 
 
 # ── Old HTC tests removed — replaced by V3 tests above (test_htc_v3_*) ──
+
+
+# ── Final production hardening regression tests ──
+
+def test_phase_c_contract_integrity_blocks_cp():
+    r = phase_c_authorization(
+        "PASS_DETERMINISTIC_ALLOCATION", True, True, True, "PASS", True,
+        cp_contract_integrity_pass=False,
+    )
+    assert r["cp_inference_authorized"] is False
+
+
+def test_strict_jsonl_rejects_non_integer_steps_and_empty_identity():
+    bad_rows = [
+        {"canonical_parent_key": "ep", "step": True},
+        {"canonical_parent_key": "ep", "step": 1.5},
+        {"canonical_parent_key": "ep", "step": "1"},
+        {"canonical_parent_key": "", "step": 0},
+    ]
+    for row in bad_rows:
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "labels.jsonl"
+            p.write_text(json.dumps(row) + "\n")
+            try:
+                load_strict_jsonl(p, "TEST")
+                assert False, f"accepted invalid row: {row}"
+            except SystemExit:
+                pass
+
+
+def test_head_label_types_are_strict_booleans():
+    row = {
+        "canonical_parent_key": "ep", "step": 0,
+        "grasp_established": "false",
+        "grasp_established_known_mask": True,
+        "manipulation_active": False,
+        "manipulation_active_known_mask": True,
+        "release_or_instability": False,
+        "release_or_instability_known_mask": True,
+    }
+    issues = []
+    validate_head_label_types([row], "CALIBRATION", "o0_i0", issues)
+    assert any("HEAD_FIELD_TYPE" in issue for issue in issues)
+
+
+def test_heldout_k10_types_are_strict_booleans():
+    row = {
+        "canonical_parent_key": "ep", "step": 0,
+        "strict_k10_feasible": "false",
+        "strict_k10_known_mask": True,
+    }
+    issues = []
+    validate_k10_field_types([row], "HELDOUT", "o0_i0", issues)
+    assert any("K10_TYPE" in issue for issue in issues)
