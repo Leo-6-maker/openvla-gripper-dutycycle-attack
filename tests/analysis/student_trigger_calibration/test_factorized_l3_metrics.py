@@ -925,3 +925,38 @@ def test_heldout_k10_types_are_strict_booleans():
     issues = []
     validate_k10_field_types([row], "HELDOUT", "o0_i0", issues)
     assert any("K10_TYPE" in issue for issue in issues)
+
+
+def test_missing_provenance_is_hold_not_nested_retrain():
+    assert classify_verdict(
+        ["ALLOC_RECEIPT_MISSING: o0_i0"],
+        "DETERMINISTIC_ALLOCATION",
+        True,
+    ) == "HOLD_MANIFEST_INCOMPLETE"
+    assert classify_verdict(
+        ["IDENTITY_LEAKAGE: o0_i0 T∩C=1"],
+        "DETERMINISTIC_ALLOCATION",
+        True,
+    ) == "NESTED_RETRAIN_REQUIRED"
+
+
+def test_allocation_parent_manifest_sha_is_recomputed():
+    allocation = {
+        "deterministic_allocation": {
+            "parent_cohort": "DETECTOR_VAL",
+            "parent_cohort_manifest_sha256": "a" * 64,
+            "fixed_salt": "fixed-salt",
+            "canonical_sort_key": "canonical_parent_key",
+            "allocation_algorithm_sha256": "b" * 64,
+            "allocation_code_sha256": "c" * 64,
+            "parent_cohort_identities": {"o0_i0": ["c", "p"]},
+            "unassigned_identities": {"o0_i0": []},
+        }
+    }
+    sets = {"calibrator_fit": {"c"}, "policy_selection": {"p"}}
+    errors = []
+    check_deterministic_allocation(
+        allocation, sets, "o0_i0", True, errors,
+        expected_parent_manifest_sha="d" * 64,
+    )
+    assert any("ALLOC_PARENT_SHA_MISMATCH" in error for error in errors)
