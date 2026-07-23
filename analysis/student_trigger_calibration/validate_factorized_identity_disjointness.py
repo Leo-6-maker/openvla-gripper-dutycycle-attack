@@ -316,15 +316,43 @@ def check_contract_sha_consistency(teacher_rows, teacher_contract_sha, role_labe
             errors.append(f"{role_label}_CONTRACT_SHA_MISMATCH: {split_key} step={r.get('step')} got={str(row_contract_sha)[:16]} expected={teacher_contract_sha[:16]}")
             return
 
-def check_source_sha_validity(teacher_rows, role_label, split_key, errors):
-    """Verify source_artifact_recursive_sha256 is valid 64-char hex (not compared to contract)."""
+def check_source_sha_validity(teacher_rows, role_label, split_key, errors,
+                              require_source_step_count=False):
+    """Validate per-identity source binding and declared source step closure."""
     if teacher_rows is None:
         return
+    by_ep = defaultdict(list)
     for r in teacher_rows:
+        by_ep[r["canonical_parent_key"]].append(r)
         src = r.get("source_artifact_recursive_sha256", "")
         if not is_64char_hex(str(src)):
-            errors.append(f"{role_label}_SOURCE_SHA_INVALID: {split_key} step={r.get('step')} sha={str(src)[:40]}")
+            errors.append(
+                f"{role_label}_SOURCE_SHA_INVALID: {split_key} step={r.get('step')} "
+                f"sha={str(src)[:40]}"
+            )
             return
+    for ep_id, ep_rows in by_ep.items():
+        source_shas = {r.get("source_artifact_recursive_sha256") for r in ep_rows}
+        if len(source_shas) != 1:
+            errors.append(
+                f"{role_label}_SOURCE_SHA_MULTIPLE: {split_key}/{ep_id} "
+                f"count={len(source_shas)}"
+            )
+            continue
+        if require_source_step_count:
+            actual_count = len(ep_rows)
+            for r in ep_rows:
+                declared_count = r.get("source_episode_step_count")
+                if (
+                    isinstance(declared_count, bool)
+                    or not isinstance(declared_count, int)
+                    or declared_count != actual_count
+                ):
+                    errors.append(
+                        f"{role_label}_SOURCE_STEP_COUNT_MISMATCH: {split_key}/{ep_id} "
+                        f"declared={declared_count!r} actual={actual_count}"
+                    )
+                    break
 
 
 def validate_head_label_types(teacher_rows, role_label, split_key, errors):
@@ -757,7 +785,10 @@ def main():
         verify_step_closure(cal_rows, "CALIBRATION", sk, cov_issues)
         check_k10_parity(cal_rows, expected_k10, "CALIBRATION", sk, cc_local["calibration"])
         check_contract_sha_consistency(cal_rows, teacher_contract_sha, "CALIBRATION", sk, cc_local["calibration"])
-        check_source_sha_validity(cal_rows, "CALIBRATION", sk, cc_local["calibration"])
+        check_source_sha_validity(
+            cal_rows, "CALIBRATION", sk, cc_local["calibration"],
+            require_source_step_count=authoritative,
+        )
         validate_head_label_types(cal_rows, "CALIBRATION", sk, cov_issues)
         compute_calibration_coverage_from_labels(cal_rows, sk, cov_issues)
 
@@ -766,7 +797,10 @@ def main():
         verify_step_closure(pol_rows, "POLICY", sk, cov_issues)
         check_k10_parity(pol_rows, expected_k10, "POLICY", sk, cc_local["policy"])
         check_contract_sha_consistency(pol_rows, teacher_contract_sha, "POLICY", sk, cc_local["policy"])
-        check_source_sha_validity(pol_rows, "POLICY", sk, cc_local["policy"])
+        check_source_sha_validity(
+            pol_rows, "POLICY", sk, cc_local["policy"],
+            require_source_step_count=authoritative,
+        )
         validate_k10_field_types(pol_rows, "POLICY", sk, cov_issues)
         compute_policy_coverage_from_labels(pol_rows, sk, cov_issues)
 
@@ -775,7 +809,10 @@ def main():
         verify_step_closure(h_rows, "HELDOUT", sk, htc_local)
         check_k10_parity(h_rows, expected_k10, "HELDOUT", sk, cc_local["heldout"])
         check_contract_sha_consistency(h_rows, teacher_contract_sha, "HELDOUT", sk, cc_local["heldout"])
-        check_source_sha_validity(h_rows, "HELDOUT", sk, cc_local["heldout"])
+        check_source_sha_validity(
+            h_rows, "HELDOUT", sk, cc_local["heldout"],
+            require_source_step_count=authoritative,
+        )
         validate_k10_field_types(h_rows, "HELDOUT", sk, htc_local)
 
         # H K10 denominator
