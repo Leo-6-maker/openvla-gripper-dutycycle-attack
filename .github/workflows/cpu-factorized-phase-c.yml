@@ -1,0 +1,54 @@
+name: cpu-factorized-phase-c
+
+on:
+  pull_request:
+    paths:
+      - "analysis/student_trigger_calibration/**"
+      - "tests/analysis/student_trigger_calibration/**"
+      - "src/gripper_attack/factorized_scheduler.py"
+      - "src/gripper_attack/factorized_scheduler_adapter.py"
+      - "schemas/factorized_*.schema.json"
+      - ".github/workflows/cpu-factorized-phase-c.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "analysis/student_trigger_calibration/**"
+      - "tests/analysis/student_trigger_calibration/**"
+      - "src/gripper_attack/factorized_scheduler.py"
+      - "src/gripper_attack/factorized_scheduler_adapter.py"
+      - "schemas/factorized_*.schema.json"
+      - ".github/workflows/cpu-factorized-phase-c.yml"
+
+jobs:
+  factorized-phase-c-cpu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install package and analysis dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install pytest jsonschema
+      - name: Compile all Phase C analysis scripts
+        run: |
+          python -m py_compile \
+            analysis/student_trigger_calibration/factorized_phase_c_integrity.py \
+            analysis/student_trigger_calibration/validate_factorized_cp_prediction_bundles.py \
+            analysis/student_trigger_calibration/freeze_factorized_calibrators.py \
+            analysis/student_trigger_calibration/validate_factorized_calibrator_freeze.py \
+            analysis/student_trigger_calibration/freeze_factorized_scheduler_policy.py \
+            analysis/student_trigger_calibration/validate_factorized_scheduler_freeze.py \
+            analysis/student_trigger_calibration/authorize_factorized_heldout_prediction.py \
+            analysis/student_trigger_calibration/validate_factorized_heldout_prediction_bundle.py \
+            analysis/student_trigger_calibration/authorize_factorized_heldout_l3.py \
+            analysis/student_trigger_calibration/run_authorized_factorized_heldout_l3.py \
+            analysis/student_trigger_calibration/build_factorized_detector_freeze.py \
+            analysis/student_trigger_calibration/validate_factorized_detector_freeze.py
+      - name: Run all Factorized tests (including Phase C)
+        run: pytest -q tests/analysis/student_trigger_calibration
+      - name: Check patch whitespace
+        run: git diff --check
