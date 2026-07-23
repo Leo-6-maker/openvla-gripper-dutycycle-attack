@@ -111,7 +111,7 @@ def test_unknown_emits_tracked():
     eps = {"u": [_mk_ol(i, "u", k10_km=(i<5)) for i in range(490)]}
     res = {"u": {"emitted": True, "emit_step": 50, "final_state": "E"}}
     m = compute_l3_metrics(eps, res, STEP)
-    assert m["unknown_episode_emits"] == 1 and m["total_emitted_episodes"] == 1
+    assert m["unknown_episode_emits"] == 1 and m["total_emitted_all"] == 1
 
 
 def test_all_precision():
@@ -123,7 +123,7 @@ def test_all_precision():
            "p": {"emitted":True,"emit_step":100,"final_state":"E"},
            "u": {"emitted":True,"emit_step":50,"final_state":"E"}}
     m = compute_l3_metrics(eps, res, STEP)
-    assert m["unknown_episode_emits"] == 1 and m["total_emitted_episodes"] == 2
+    assert m["unknown_episode_emits"] == 1 and m["total_emitted_all"] == 2
     assert m["all_emit_precision"] == 0.5 and m["verified_emit_precision"] == 1.0
 
 

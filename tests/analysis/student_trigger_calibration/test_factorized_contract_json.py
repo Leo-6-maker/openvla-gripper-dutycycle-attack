@@ -50,7 +50,7 @@ def test_metric_contract_uses_exact_denominators():
 
 def test_protocol_requires_real_adapter_and_three_way_identity_split():
     value = strict_load(CONTRACTS[1])
-    assert value["status"] == "CODE_STATIC_CLOSURE_PASS_PRODUCTION_ARTIFACTS_PENDING"
+    assert value["status"] == "PHASE_A_COMPLETE_PHASE_B_AWAITING_CODEX_IDENTITY_MANIFESTS"
     assert value["real_adapter_requirement"]["class"] == "FactorizedV2SchedulerAdapter"
     policy = value["identity_policy"]
     assert "calibrator_fit_identities" in policy["required_sets"]
@@ -63,7 +63,7 @@ def test_protocol_requires_real_adapter_and_three_way_identity_split():
 def test_design_and_requirements_match_current_execution_boundary():
     design = strict_load(CONTRACTS[2])
     requirements = strict_load(CONTRACTS[3])
-    assert design["status"] == "CODE_PATH_READY_AWAITING_SEALED_IDENTITY_ARTIFACTS"
+    assert design["status"] == "BLOCKED_AWAITING_PHASE_B_IDENTITY_CLOSURE"
     assert design["holding_rules"]["attack_authorization"] is False
     assert requirements["status"] == "CODE_IMPLEMENTED_PRODUCTION_ARTIFACTS_PENDING"
     assert requirements["threshold_selection"]["implementation_status"] == "IMPLEMENTED_AND_CPU_TESTED"
