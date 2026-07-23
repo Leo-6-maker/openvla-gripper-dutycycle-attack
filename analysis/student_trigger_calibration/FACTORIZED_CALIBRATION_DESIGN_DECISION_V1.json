@@ -1,62 +1,74 @@
 {
   "document": "FACTORIZED_CALIBRATION_DESIGN_DECISION_V1",
   "frozen_date": "2026-07-22",
-  "status": "CODE_PATH_READY_AWAITING_SEALED_IDENTITY_ARTIFACTS",
+  "revised_date": "2026-07-23",
+  "status": "BLOCKED_AWAITING_PHASE_B_IDENTITY_CLOSURE",
+
+  "revision_note": "2026-07-23: Restructured around Phase B identity closure. Design scheme cannot be selected until identity roots are recovered and five-way disjointness is proven or disproven.",
+
   "current_state": {
-    "available_static_interface": "Codex V3.1 runtime, calibration, evaluation and adapter contracts",
-    "available_production_data": "none in the current worktree; production roots are not mounted",
-    "identity_audit": "static audit exists but production feasibility remains BLOCKED_ROOTS_NOT_MOUNTED",
+    "phase_a_complete": true,
+    "w32_seal_pass": true,
+    "identity_audit": "not received from Codex",
     "chosen_scheme": null,
-    "reason": "An authoritative scheme can be selected only from sealed production identity and checkpoint-training manifests"
+    "reason": "Five-way identity independence must be proven before any calibration scheme can be authorized. CALIBRATOR_FIT, POLICY_SELECTION, HELDOUT_L3, and ATTACK_EVAL roles must all be shown disjoint from CHECKPOINT_TRAINING."
   },
-  "implemented_code_path": {
-    "calibration_fit": "sealed canonical calibration_records.jsonl with exact fit-identity closure",
-    "policy_selection": "real FactorizedV2SchedulerAdapter joint threshold replay over exact 12 splits",
-    "heldout_evaluation": "real adapter replay against separate offline strict-K10 evaluation bundles",
-    "contract_binding": "checkpoint, source commit, feature order, scheduler source, structural config, fit manifest and policy manifest",
-    "failure_mode": "sealed nonzero blocker receipt; no default thresholds or empty calibration contracts"
+
+  "phase_b_prerequisite": {
+    "description": "Before any calibration design decision, Codex must deliver identity manifests proving or disproving five-way independence.",
+    "codex_deliverables": [
+      "FACTORIZED_IDENTITY_SOURCE_DISCOVERY_V1.json",
+      "FACTORIZED_CHECKPOINT_TRAINING_IDENTITY_LEDGER_V1.json",
+      "FACTORIZED_IDENTITY_ALLOCATION_PLAN_V1.json",
+      "FACTORIZED_PREINFERENCE_IDENTITY_FEASIBILITY_AUDIT_V1.json",
+      "FACTORIZED_IDENTITY_COUNTS_BY_SPLIT.csv"
+    ],
+    "deepseek_validator": "validate_factorized_identity_disjointness.py"
   },
+
   "scheme_decision_tree": {
-    "GROUP_CROSS_FITTED_OOF": {
+    "PASS_EXISTING_ROOTS": {
       "conditions": [
-        "calibrator-fit predictions are genuinely out-of-fold for the generating checkpoint",
-        "independent policy-selection predictions exist",
-        "fit, policy and heldout evaluation identities are pairwise disjoint",
-        "the checkpoint producing fit and policy predictions did not train on those identities",
-        "all 12 splits are covered and sealed"
+        "Original CLEAN2000 cohort manifests (1200/200/200/400) recovered and SHA-verified",
+        "DETECTOR_VAL never entered checkpoint training",
+        "DETECTOR_TEST never used for model or threshold selection",
+        "ATTACK_EVAL never participated in detector development",
+        "All 12 splits have sufficient per-role identity coverage",
+        "Five-way pairwise disjointness proven by validator"
       ],
-      "status": "PENDING_PRODUCTION_AUDIT"
+      "action": "Allocate DETECTOR_VAL→C+P (deterministic split), DETECTOR_TEST→H, ATTACK_EVAL→A. Proceed to Phase C.",
+      "status": "PENDING_IDENTITY_MANIFESTS"
     },
-    "NESTED_GROUP_HOLDOUT_WITH_RETRAINING": {
+    "PASS_DETERMINISTIC_ALLOCATION": {
       "conditions": [
-        "checkpoint training excludes both calibrator-fit and policy-selection identities",
-        "heldout evaluation remains independently sealed",
-        "all three identity roles are frozen before fitting"
+        "CLEAN2000 cohorts exist but C/P not pre-split",
+        "DETECTOR_VAL identities proven independent of checkpoint training",
+        "Deterministic split algorithm pre-registered before any inference",
+        "Split uses only allowed stratification variables (suite, route, task_family, Teacher_label_class, canonical_identity_hash)",
+        "Split salt, sort key, algorithm SHA frozen",
+        "Pre-inference timestamp proves allocation precedes any prediction generation"
       ],
-      "status": "REQUIRES_RETRAINING_OR_GENUINE_OOF_PREDICTIONS"
+      "action": "Execute deterministic C/P split, seal allocation manifest, then proceed to Phase C.",
+      "status": "PENDING_IDENTITY_MANIFESTS"
     },
-    "INDEPENDENT_IDENTITIES": {
+    "NESTED_RETRAIN_REQUIRED": {
       "conditions": [
-        "pre-registered fit and policy identities were never used in checkpoint training",
-        "heldout evaluation identities are separate",
-        "all provenance manifests are sealed"
+        "Cannot recover checkpoint training identities from actual training logs",
+        "Existing VAL/TEST identities may have been used in training or model selection",
+        "ATTACK_EVAL identities participated in detector development",
+        "Per-split identity coverage insufficient for independent C/P/H roles",
+        "Cannot prove any identity is OOF with respect to checkpoint training"
       ],
-      "status": "REQUIRES_PRE_REGISTRATION"
-    },
-    "PROJECT_FROZEN_EQUIVALENT": {
-      "conditions": "A project-approved design proving the same independence and checkpoint-exclusion properties",
-      "status": "PENDING_PROJECT_DECISION"
-    },
-    "BLOCKED_MANIFEST_INCOMPLETE": {
-      "description": "Identity or checkpoint-training manifests do not prove the required separation",
-      "status": "FAIL_CLOSED_OUTCOME"
+      "action": "Re-establish frozen training identities → inner-CV model selection → independent C/P/H/A allocation → new inference. PR #98/#99/#100 interfaces unchanged.",
+      "status": "POSSIBLE_OUTCOME"
     }
   },
+
   "holding_rules": {
-    "no_heldout_reuse": "Heldout evaluation predictions cannot be used for calibration or threshold selection",
-    "three_set_disjointness": "calibrator-fit, policy-selection and heldout-evaluation identities are pairwise disjoint",
-    "checkpoint_exclusion": "calibrator-fit and policy-selection identities must be absent from checkpoint training unless genuine cross-fitted OOF provenance is proven",
-    "production_data_frozen": "No authoritative contract can be emitted without sealed artifacts",
-    "attack_authorization": false
+    "no_heldout_OOF_reuse": "Heldout OOF predictions cannot serve as BOTH calibration data AND evaluation data",
+    "five_way_disjointness": "T ∩ C = T ∩ P = T ∩ H = T ∩ A = ∅, C ∩ P = C ∩ H = P ∩ H = ∅, A isolated from all",
+    "production_data_frozen": "No scheme can proceed without sealed, authorized calibration/policy artifacts",
+    "training_provenance": "Training identities must come from actual training records, never set subtraction",
+    "no_post_hoc_allocation": "Identity allocation must be frozen BEFORE any prediction is generated for those identities"
   }
 }
