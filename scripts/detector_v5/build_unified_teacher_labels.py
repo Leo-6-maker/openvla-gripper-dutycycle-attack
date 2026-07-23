@@ -15,11 +15,10 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 SELF_SHA = None
 
 EXPECTED_COUNTS = {
-    "FIT_TRAIN": 800,
-    "FIT_DEV": 160,
+    "FIT": 960,
     "CAL": 120,
     "CHECK": 120,
-    "H": 200,
+    "FINAL_EVAL_CANDIDATE": 800,
 }
 
 SOURCE_SCRIPTS = ROOT / "scripts/detector_v5"

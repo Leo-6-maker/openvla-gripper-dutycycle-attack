@@ -98,8 +98,9 @@ def _fit_rows(registry_csv: Path, target_split: str = "FIT_TRAIN") -> list[dict[
     fit = [row for row in rows if row.get("split") == target_split]
     # State ranges by split
     _SPLIT_RANGES = {
-        "FIT_TRAIN": (0, 19, 800), "FIT_DEV": (20, 23, 160),
-        "CAL": (24, 26, 120), "CHECK": (27, 29, 120), "H": (30, 34, 200),
+        "FIT": (0, 23, 960), "CAL": (24, 26, 120), "CHECK": (27, 29, 120),
+        "FINAL_EVAL_CANDIDATE": (30, 49, 800),
+        "FIT_TRAIN": (0, 19, 800), "FIT_DEV": (20, 23, 160), "H": (30, 34, 200),
     }
     lo, hi, expected_n = _SPLIT_RANGES.get(target_split, (0, 19, 800))
     if len(fit) != expected_n or len({row.get("canonical_parent_key") for row in fit}) != expected_n:
@@ -425,7 +426,8 @@ def main() -> int:
     parser.add_argument("--k10-root", type=Path, required=True,
                         help="Required: sealed Official K10 V1.2.2+ label root for strict_k10_feasible binding")
     parser.add_argument("--target-split", type=str, default="FIT_TRAIN",
-                        choices=["FIT_TRAIN", "FIT_DEV", "CAL", "CHECK", "H"],
+                        choices=["FIT", "CAL", "CHECK", "FINAL_EVAL_CANDIDATE",
+                                 "FIT_TRAIN", "FIT_DEV", "H"],
                         help="Which identity split to label (default: FIT_TRAIN)")
     parser.add_argument("--expected-k10-schema", type=str, required=True,
                         help="Expected K10 label schema for binding verification")

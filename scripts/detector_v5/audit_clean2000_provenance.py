@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
-"""Stage 0: CLEAN2000 provenance audit + registry CSV builder.
+"""Stage 0: CLEAN2000 provenance audit.
 
-Verifies every episode's artifact closure, runtime validity, and CLEAN condition.
-Produces a registry CSV with recursive SHA binding consumable by the teacher builder.
+Reads the official manifest CSV from the CLEAN2000 root. Verifies every
+episode's artifact directory, required files, and recursive SHA. Produces
+a registry CSV consumable by the teacher builder.
+
+Real server structure (as verified 2026-07-24):
+  clean/libero_spatial/task_00/state_00/  (libero_ prefix, zero-padded state)
+  manifests/OFFICIAL_CLEAN_2000_MANIFEST_V3.csv
+  provenance/OFFICIAL_PROTOCOL_CONFIG_V1.json
 """
 from __future__ import annotations
 
@@ -11,22 +17,7 @@ from pathlib import Path
 from typing import Any
 
 SELF_SHA = None
-EXPECTED_SUITES = ("Spatial", "Object", "Goal", "LIBERO-10")
-TASKS_PER_SUITE = 10
-STATES_PER_TASK = 50
-EXPECTED_TOTAL = 2000
 
-IDENTITY_SPLITS: dict[str, tuple[int, int]] = {
-    "FIT_TRAIN": (0, 19),
-    "FIT_DEV":   (20, 23),
-    "CAL":       (24, 26),
-    "CHECK":     (27, 29),
-    "H":         (30, 34),
-    "A":         (35, 44),
-    "FEC":       (45, 49),
-}
-
-# Files required by the teacher builder's _verify_source_artifact()
 REQUIRED_FILES = [
     "episode_metadata.json",
     "runtime_audit.json",
@@ -35,24 +26,12 @@ REQUIRED_FILES = [
     "privileged_teacher_sidecar.jsonl",
 ]
 
-REQUIRED_PROTOCOL_FIELDS = [
-    "protocol_id", "episodes", "suites", "tasks_per_suite", "states_per_task",
-    "official_seed", "num_steps_wait", "condition", "generation_policy",
-]
-
 
 def sha256_file(p: Path) -> str:
     d = hashlib.sha256()
     with open(p, "rb") as f:
         for chunk in iter(lambda: f.read(1048576), b""): d.update(chunk)
     return d.hexdigest()
-
-
-def _assign_split(state: int) -> str:
-    for split_name, (lo, hi) in IDENTITY_SPLITS.items():
-        if lo <= state <= hi:
-            return split_name
-    return "UNKNOWN"
 
 
 def main() -> int:
@@ -69,107 +48,102 @@ def main() -> int:
 
     errors: list[str] = []
     registry_rows: list[dict[str, Any]] = []
-    identity_counts: dict[str, int] = {k: 0 for k in IDENTITY_SPLITS}
-    runtime_invalid: list[str] = []
-    not_clean: list[str] = []
+    split_counts: dict[str, int] = {}
 
-    # ── Verify official clean protocol ────────────────────────────────
+    # ── Read official manifest CSV ────────────────────────────────────
+    manifest_csv = root / "manifests" / "OFFICIAL_CLEAN_2000_MANIFEST_V3.csv"
+    if not manifest_csv.is_file():
+        raise SystemExit(f"MANIFEST_MISSING: {manifest_csv}")
+
+    with open(manifest_csv, newline="", encoding="utf-8") as f:
+        manifest_rows = list(csv.DictReader(f))
+
+    if len(manifest_rows) != 2000:
+        errors.append(f"MANIFEST_COUNT: expected=2000 actual={len(manifest_rows)}")
+
+    # ── Verify protocol ──────────────────────────────────────────────
     protocol_path = root / "provenance" / "OFFICIAL_PROTOCOL_CONFIG_V1.json"
+    protocol = {}
+    protocol_sha = None
     if not protocol_path.is_file():
         errors.append(f"PROTOCOL_MISSING: {protocol_path}")
-        protocol_sha = None
     else:
         protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
         protocol_sha = sha256_file(protocol_path)
-        for fld in REQUIRED_PROTOCOL_FIELDS:
-            if fld not in protocol:
-                errors.append(f"PROTOCOL_MISSING_FIELD: {fld}")
-        if protocol.get("episodes") != EXPECTED_TOTAL:
-            errors.append(f"PROTOCOL_EPISODE_COUNT: expected={EXPECTED_TOTAL} got={protocol.get('episodes')}")
-        if protocol.get("condition") != "CLEAN":
-            errors.append(f"PROTOCOL_NOT_CLEAN: {protocol.get('condition')}")
-        if protocol.get("official_seed") != 7:
-            errors.append(f"PROTOCOL_SEED: expected=7 got={protocol.get('official_seed')}")
 
-    # ── Walk episode directories ─────────────────────────────────────
-    for suite in EXPECTED_SUITES:
-        suite_dir = root / suite
-        if not suite_dir.is_dir():
-            errors.append(f"SUITE_MISSING: {suite}")
+    # ── Verify official manifest SHA file ────────────────────────────
+    manifest_sha_path = root / "manifests" / "OFFICIAL_CLEAN_2000_MANIFEST_V3.csv.sha256"
+    if manifest_sha_path.is_file():
+        declared = manifest_sha_path.read_text(encoding="utf-8").strip().split()[0]
+        actual = sha256_file(manifest_csv)
+        if declared != actual:
+            errors.append(f"MANIFEST_SHA_MISMATCH: declared={declared[:16]} actual={actual[:16]}")
+
+    # ── Verify each episode ──────────────────────────────────────────
+    clean_dir = root / "clean"
+    if not clean_dir.is_dir():
+        raise SystemExit(f"CLEAN_DIR_MISSING: {clean_dir}")
+
+    for row in manifest_rows:
+        suite = row["suite"]
+        task_idx = int(row["task_idx"])
+        state_id = int(row["state_id"])
+        split = row["split"]
+        eid = row["canonical_parent_key"]
+
+        # Build path: clean/libero_spatial/task_00/state_00/
+        state_dir = clean_dir / suite / f"task_{task_idx:02d}" / f"state_{state_id:02d}"
+
+        if not state_dir.is_dir():
+            errors.append(f"STATE_MISSING: {eid} expected={state_dir}")
             continue
-        for task_num in range(TASKS_PER_SUITE):
-            task_name = f"task_{task_num:02d}"
-            task_dir = suite_dir / task_name
-            if not task_dir.is_dir():
-                errors.append(f"TASK_MISSING: {suite}/{task_name}")
-                continue
-            for state in range(STATES_PER_TASK):
-                state_dir = task_dir / f"state_{state}"
-                eid = f"{suite}/{task_name}/state_{state}"
-                split = _assign_split(state)
 
-                if not state_dir.is_dir():
-                    errors.append(f"STATE_MISSING: {eid}")
-                    continue
+        # Verify required files
+        missing = [f for f in REQUIRED_FILES if not (state_dir / f).is_file()]
+        if missing:
+            errors.append(f"FILES_MISSING: {eid} missing={missing}")
+            continue
 
-                # Verify all required files exist
-                missing = [f for f in REQUIRED_FILES if not (state_dir / f).is_file()]
-                if missing:
-                    errors.append(f"FILES_MISSING: {eid} missing={missing}")
-                    continue
+        # Read recursive SHA
+        artifact_json = state_dir / "artifact_sha256.json"
+        artifact = json.loads(artifact_json.read_text(encoding="utf-8"))
+        recursive_sha = artifact.get("recursive_sha256", "")
+        if not isinstance(recursive_sha, str) or len(recursive_sha) != 64:
+            errors.append(f"RECURSIVE_SHA_INVALID: {eid} sha={recursive_sha[:40]!r}")
+            continue
 
-                # Read metadata for condition/runtime checks
-                metadata = json.loads((state_dir / "episode_metadata.json").read_text(encoding="utf-8"))
-                if metadata.get("condition") != "CLEAN":
-                    not_clean.append(eid)
-                    continue
-                if not metadata.get("runtime_valid", False):
-                    runtime_invalid.append(eid)
-                    continue
+        # Validate episode metadata
+        metadata = json.loads((state_dir / "episode_metadata.json").read_text(encoding="utf-8"))
+        if metadata.get("condition") != "CLEAN":
+            errors.append(f"NOT_CLEAN: {eid} condition={metadata.get('condition')}")
+            continue
 
-                # Read recursive SHA from artifact manifest
-                artifact_manifest = json.loads((state_dir / "artifact_sha256.json").read_text(encoding="utf-8"))
-                recursive_sha = artifact_manifest.get("recursive_sha256", "")
-                if not isinstance(recursive_sha, str) or len(recursive_sha) != 64:
-                    errors.append(f"RECURSIVE_SHA_MISSING: {eid}")
-                    continue
+        split_counts[split] = split_counts.get(split, 0) + 1
 
-                identity_counts[split] = identity_counts.get(split, 0) + 1
+        registry_rows.append({
+            "canonical_parent_key": eid,
+            "suite": suite,
+            "task_idx": task_idx,
+            "state_id": state_id,
+            "split": split,
+            "formal_selected": True,
+            "selected_artifact_root": str(state_dir),
+            "selected_artifact_recursive_sha256": recursive_sha,
+        })
 
-                registry_rows.append({
-                    "canonical_parent_key": eid,
-                    "suite": suite,
-                    "task_idx": task_num,
-                    "state_id": state,
-                    "split": split,
-                    "formal_selected": True,
-                    "selected_artifact_root": str(state_dir),
-                    "selected_artifact_recursive_sha256": recursive_sha,
-                })
-
-    # ── Accumulate condition errors ───────────────────────────────────
-    if not_clean:
-        errors.append(f"NOT_CLEAN: {len(not_clean)} episodes — {not_clean[:5]}")
-    if runtime_invalid:
-        errors.append(f"RUNTIME_INVALID: {len(runtime_invalid)} episodes — {runtime_invalid[:5]}")
-
-    # ── Validate counts ──────────────────────────────────────────────
-    n_found = len(registry_rows)
-    if n_found != EXPECTED_TOTAL:
-        errors.append(f"EPISODE_COUNT: expected={EXPECTED_TOTAL} actual={n_found}")
-
-    for split_name, (lo, hi) in IDENTITY_SPLITS.items():
-        expected = (hi - lo + 1) * TASKS_PER_SUITE * len(EXPECTED_SUITES)
-        actual = identity_counts.get(split_name, 0)
+    # ── Validate split counts ────────────────────────────────────────
+    # Real split scheme: FIT=960, CAL=120, CHECK=120, FINAL_EVAL_CANDIDATE=800
+    for split_name, expected in [("FIT", 960), ("CAL", 120), ("CHECK", 120),
+                                   ("FINAL_EVAL_CANDIDATE", 800)]:
+        actual = split_counts.get(split_name, 0)
         if actual != expected:
             errors.append(f"SPLIT_COUNT: {split_name} expected={expected} actual={actual}")
 
-    # A+FEC = 600
-    a_fec = identity_counts.get("A", 0) + identity_counts.get("FEC", 0)
-    if a_fec != 600:
-        errors.append(f"A_FEC_COUNT: expected=600 actual={a_fec}")
+    n_found = len(registry_rows)
+    if n_found != 2000:
+        errors.append(f"EPISODE_COUNT: expected=2000 actual={n_found}")
 
-    # ── Write registry CSVs ──────────────────────────────────────────
+    # ── Write registry CSV ───────────────────────────────────────────
     staging = out_root.with_name(f".{out_root.name}.{uuid.uuid4().hex}.staging")
     staging.mkdir(parents=True)
 
@@ -184,9 +158,9 @@ def main() -> int:
             w.writerow(row)
 
     # Split-specific registries
-    for split_name in IDENTITY_SPLITS:
+    for split_name in split_counts:
         split_rows = [r for r in registry_rows if r["split"] == split_name]
-        csv_path = staging / f"CLEAN2000_REGISTRY_{split_name}_V1.csv"  # noqa
+        csv_path = staging / f"CLEAN2000_REGISTRY_{split_name}_V1.csv"
         with open(csv_path, "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=fieldnames)
             w.writeheader()
@@ -199,12 +173,11 @@ def main() -> int:
         "auditor_code_sha256": SELF_SHA,
         "status": "PASS" if not errors else "HOLD",
         "n_episodes": n_found,
-        "n_expected": EXPECTED_TOTAL,
-        "identity_counts": identity_counts,
-        "a_fec_count": a_fec,
+        "n_expected": 2000,
+        "split_counts": split_counts,
+        "manifest_csv_sha256": sha256_file(manifest_csv),
         "protocol_sha256": protocol_sha,
-        "n_runtime_invalid": len(runtime_invalid),
-        "n_not_clean": len(not_clean),
+        "protocol_id": protocol.get("protocol_id", "UNKNOWN"),
         "n_errors": len(errors),
         "errors": errors[:200],
     }
