@@ -50,7 +50,7 @@ def test_metric_contract_uses_exact_denominators():
 
 def test_protocol_has_phase_b_gate_and_identity_closure():
     value = strict_load(CONTRACTS[1])
-    assert value["status"] == "PHASE_A_COMPLETE_PHASE_B_AWAITING_CODEX_IDENTITY_MANIFESTS"
+    assert value["status"] == "PHASE_B_IDENTITY_PASS_AWAITING_AUTHORITATIVE_K10_TEACHER_BUNDLES"
     assert "phase_summary" in value
     assert value["phase_summary"]["A_codex_static_handoff_and_seal"]["status"] == "COMPLETE"
     closure = value["identity_closure"]
@@ -58,18 +58,28 @@ def test_protocol_has_phase_b_gate_and_identity_closure():
     for role in ["T", "C", "P", "H", "A"]:
         assert role in closure["five_roles"]
     assert value["formal_gate"]["attack"] == "HOLD"
-    assert value["formal_gate"]["phase_b_identity_closure"].startswith("HOLD")
+    assert value["formal_gate"]["phase_b_identity_closure"] == "PASS_DETERMINISTIC_ALLOCATION"
+    steps = value["phase_summary"]["C_production_inference_calibration_and_l3"]["steps"]
+    c_index = next(i for i, step in enumerate(steps) if "C identities" in step)
+    p_index = next(i for i, step in enumerate(steps) if "P identities" in step)
+    freeze_index = next(i for i, step in enumerate(steps) if "external heldout-L3 authorization receipt" in step)
+    h_index = next(i for i, step in enumerate(steps) if "heldout-L3 Student inference exactly once" in step)
+    assert c_index < freeze_index and p_index < freeze_index < h_index
 
 
 def test_design_and_requirements_match_current_execution_boundary():
     design = strict_load(CONTRACTS[2])
     requirements = strict_load(CONTRACTS[3])
-    assert design["status"] == "BLOCKED_AWAITING_PHASE_B_IDENTITY_CLOSURE"
+    expected = "IDENTITY_CLOSURE_PASS_AWAITING_AUTHORITATIVE_TEACHER_COVERAGE"
+    assert design["status"] == expected
+    assert design["current_state"]["identity_audit"] == "PASS_DETERMINISTIC_ALLOCATION"
+    assert design["scheme_decision_tree"]["NESTED_RETRAIN_REQUIRED"]["status"] == "NOT_CURRENTLY_REQUIRED"
     assert "five_way_disjointness" in design["holding_rules"]
-    assert requirements["status"] == "AWAITING_PHASE_B_IDENTITY_CLOSURE"
+    assert requirements["status"] == expected
     assert "two_independent_gates" in requirements
     assert "verdict_rules" in requirements
     auth = requirements["phase_c_authorization"]
-    assert "AUTHORIZED" in auth
-    assert "HOLD_STATISTICAL_COVERAGE" in auth
-    assert "HOLD" in auth
+    assert "CP_INFERENCE_AUTHORIZED" in auth
+    assert "CP_INFERENCE_HOLD" in auth
+    assert "HELDOUT_L3_DATA_READY" in auth
+    assert "HELDOUT_L3_INFERENCE_AUTHORIZED" in auth
