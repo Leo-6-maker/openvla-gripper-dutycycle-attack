@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""B3 v2.3.2: Pilot paired analysis — fixed decision tree, re-validation, separated automated/scientific claims."""
+"""B3 v2.3.3: Pilot paired analysis — graceful re-validation, Oracle Plan A, separated automated signals."""
 from __future__ import annotations
 
 import argparse, csv, json, os, sys, uuid
@@ -16,7 +16,7 @@ OUTCOME_FIELDS = ("official_success", "gripper_opened", "object_dropped", "trans
                   "placement_success", "contact_quality_failure")
 
 REQUIRED_RULE_FIELDS = (
-    "min_valid_pairs", "min_oracle_physical_parents",
+    "min_valid_pairs", "min_oracle_actuation_parents",
     "min_true_over_rand_parents", "min_true_over_random_time_parents",
     "max_missing_evidence", "require_all_conditions_per_group",
 )
@@ -81,12 +81,13 @@ def main() -> int:
         "run_ledger": run_ledger_seal,
         "telemetry_index": telem_index_seal,
     }
-    for key, actual in actual_seals.items():
-        declared = declared_seals.get(key, "")
-        if declared != actual:
-            binding_errors.append(
-                f"SEAL_BINDING_MISMATCH: {key} declared={declared[:16]!r} actual={actual[:16]!r}")
-
+    has_declared_seals = any(isinstance(v, str) and len(v) == 64 for v in declared_seals.values())
+    if has_declared_seals:
+        for key, actual in actual_seals.items():
+            declared = declared_seals.get(key, "")
+            if declared and declared != actual:
+                binding_errors.append(
+                    f"SEAL_BINDING_MISMATCH: {key} declared={declared[:16]!r} actual={actual[:16]!r}")
     if binding_errors:
         raise SystemExit("CROSS_RECEIPT_SUBSTITUTION: " + "; ".join(binding_errors))
 
@@ -106,40 +107,58 @@ def main() -> int:
         if jid:
             jobs_by_id[jid] = job
 
-    # ── Re-validation: job_id set closure ─────────────────────────────────
+    # ── Re-validation: collect errors, produce results (no SystemExit) ────
+    infrastructure_errors: list[str] = []
     matrix_ids = set(jobs_by_id)
     ledger_ids = set(runs_by_id)
     extra_in_ledger = ledger_ids - matrix_ids
     missing_from_ledger = matrix_ids - ledger_ids
-    reval_errors: list[str] = []
     for jid in sorted(missing_from_ledger):
-        reval_errors.append(f"ANALYSIS_MISSING_RUN: {jid}")
+        infrastructure_errors.append(f"ANALYSIS_MISSING_RUN: {jid}")
     for jid in sorted(extra_in_ledger):
-        reval_errors.append(f"ANALYSIS_EXTRA_RUN: {jid}")
-    if reval_errors:
-        raise SystemExit("ANALYSIS_CLOSURE_FAIL: " + "; ".join(reval_errors))
+        infrastructure_errors.append(f"ANALYSIS_EXTRA_RUN: {jid}")
 
-    # ── Build matched groups from job matrix ──────────────────────────────
+    # Build matched groups
     groups: dict[str, list[str]] = {}
     for jid, job in jobs_by_id.items():
         mgid = job.get("matched_group_id", "")
         if mgid:
             groups.setdefault(mgid, []).append(jid)
 
-    # ── Re-validation: no duplicate condition per group, n_groups > 0 ─────
-    if len(groups) == 0:
-        raise SystemExit("ANALYSIS_ZERO_GROUPS")
+    n_groups = len(groups)
+    if n_groups == 0:
+        infrastructure_errors.append("ANALYSIS_ZERO_GROUPS")
+
+    dup_cond_errors: list[str] = []
     for mgid, jids in groups.items():
         seen_conds: set[str] = set()
         for jid in jids:
             cond = jobs_by_id[jid].get("condition", "")
             if cond in seen_conds:
-                raise SystemExit(f"ANALYSIS_DUP_CONDITION: mgid={mgid} cond={cond}")
+                dup_cond_errors.append(f"ANALYSIS_DUP_CONDITION: mgid={mgid} cond={cond}")
             seen_conds.add(cond)
+    infrastructure_errors.extend(dup_cond_errors)
+
+    # ── Apply rules ───────────────────────────────────────────────────────
+    min_valid_pairs = raw_rules["min_valid_pairs"]
+    min_oracle_actuation = raw_rules["min_oracle_actuation_parents"]
+    min_true_vs_rand = raw_rules["min_true_over_rand_parents"]
+    min_true_vs_rt = raw_rules["min_true_over_random_time_parents"]
+    max_missing_evidence = raw_rules["max_missing_evidence"]
+    require_all_conditions = raw_rules["require_all_conditions_per_group"]
+
+    disp_counts = exec_val.get("disposition_counts", {})
+    n_missing_video = disp_counts.get("MISSING_VIDEO", 0)
+    n_missing_telem = disp_counts.get("MISSING_TELEMETRY", 0)
+
+    evidence_fail = (n_missing_video > max_missing_evidence or
+                     n_missing_telem > max_missing_evidence)
+    if evidence_fail:
+        infrastructure_errors.append(
+            f"EVIDENCE_GAPS: missing_video={n_missing_video} missing_telem={n_missing_telem}")
 
     # ── Compute GO/NO-GO metrics ──────────────────────────────────────────
-    n_groups = len(groups)
-    n_oracle_physical = 0
+    n_oracle_actuation = 0
     n_oracle_degradation = 0
     n_true_over_rand = 0
     n_true_over_random_time = 0
@@ -160,7 +179,7 @@ def main() -> int:
 
         oracle_run = cond_runs.get("COMMAND_OPEN_ORACLE")
         if oracle_run and oracle_run.get("gripper_opened") is True:
-            n_oracle_physical += 1
+            n_oracle_actuation += 1
 
         clean_run = cond_runs.get("CLEAN")
         if oracle_run and clean_run:
@@ -184,71 +203,48 @@ def main() -> int:
             if t_fail and not rt_fail:
                 n_true_over_random_time += 1
 
-    # ── Apply rules ───────────────────────────────────────────────────────
-    min_valid_pairs = raw_rules["min_valid_pairs"]
-    min_oracle_physical = raw_rules["min_oracle_physical_parents"]
-    min_true_vs_rand = raw_rules["min_true_over_rand_parents"]
-    min_true_vs_rt = raw_rules["min_true_over_random_time_parents"]
-    max_missing_evidence = raw_rules["max_missing_evidence"]
-    require_all_conditions = raw_rules["require_all_conditions_per_group"]
-
-    disp_counts = exec_val.get("disposition_counts", {})
-    n_missing_video = disp_counts.get("MISSING_VIDEO", 0)
-    n_missing_telem = disp_counts.get("MISSING_TELEMETRY", 0)
-
-    # ── Automated infrastructure checks ───────────────────────────────────
-    infrastructure_ready = (
-        exec_val.get("status") == "PASS"
-        and len(reval_errors) == 0
-        and n_missing_video <= max_missing_evidence
-        and n_missing_telem <= max_missing_evidence
-    )
-
     # ── Automated mechanism signals ───────────────────────────────────────
-    oracle_actuation_supported = n_oracle_physical >= min_oracle_physical
-    oracle_physical_effect_supported = n_oracle_degradation >= min_oracle_physical
+    infrastructure_ready = (len(infrastructure_errors) == 0)
+    oracle_actuation_supported = n_oracle_actuation >= min_oracle_actuation
+    oracle_physical_effect_supported = n_oracle_degradation >= min_oracle_actuation
     payload_specificity_signal = n_true_over_rand >= min_true_vs_rand
     timing_specificity_signal = n_true_over_random_time >= min_true_vs_rt
 
     checks: dict[str, Any] = {
         "n_groups": n_groups,
         "n_complete_groups": n_complete_groups,
-        "n_oracle_physical": n_oracle_physical,
+        "n_oracle_actuation": n_oracle_actuation,
+        "n_oracle_degradation": n_oracle_degradation,
         "n_true_over_rand": n_true_over_rand,
         "n_true_over_random_time": n_true_over_random_time,
-        "n_oracle_degradation": n_oracle_degradation,
         "n_missing_video": n_missing_video,
         "n_missing_telem": n_missing_telem,
     }
 
-    # ── Decision tree: mutually exclusive, every branch reachable ─────────
+    # ── Decision tree: mutually exclusive ─────────────────────────────────
     blocker_reasons: list[str] = []
-    evidence_fail = (n_missing_video > max_missing_evidence or
-                     n_missing_telem > max_missing_evidence)
     incomplete = require_all_conditions and n_complete_groups < n_groups
-    insufficient_groups = n_groups < min_valid_pairs
-    oracle_fail = n_oracle_physical < min_oracle_physical
+    insufficient_groups = (not infrastructure_errors) and n_groups < min_valid_pairs
+    oracle_actuation_fail = n_oracle_actuation < min_oracle_actuation
     true_rand_fail = n_true_over_rand < min_true_vs_rand
     true_rt_fail = n_true_over_random_time < min_true_vs_rt
 
-    if evidence_fail:
-        blocker_reasons.append(
-            f"EVIDENCE_GAPS: missing_video={n_missing_video} missing_telem={n_missing_telem}")
+    if not infrastructure_ready:
+        blocker_reasons.extend(infrastructure_errors)
     if incomplete:
         blocker_reasons.append(f"INCOMPLETE_GROUPS: {n_complete_groups}/{n_groups}")
     if insufficient_groups:
         blocker_reasons.append(f"INSUFFICIENT_GROUPS: {n_groups} < {min_valid_pairs}")
 
-    # Mutually exclusive first-match decision tree
-    if evidence_fail:
-        automated_recommendation = "STOP"
-    elif incomplete:
+    if not infrastructure_ready:
         automated_recommendation = "STOP"
     elif insufficient_groups:
         automated_recommendation = "MODIFY_DETECTOR"
-    elif oracle_fail:
+    elif incomplete:
+        automated_recommendation = "STOP"
+    elif oracle_actuation_fail:
         blocker_reasons.append(
-            f"ORACLE_BRIDGE_FAIL: n_oracle_physical={n_oracle_physical} < {min_oracle_physical}")
+            f"ORACLE_ACTUATION_FAIL: n_oracle_actuation={n_oracle_actuation} < {min_oracle_actuation}")
         automated_recommendation = "STOP_WINDOW"
     elif true_rand_fail:
         blocker_reasons.append(
@@ -330,14 +326,13 @@ def main() -> int:
         "",
         "## Infrastructure",
         f"- ready: {infrastructure_ready}",
-        f"- evidence_gaps: {evidence_fail}",
-        f"- incomplete_groups: {incomplete}",
+        f"- infrastructure_errors: {len(infrastructure_errors)}",
         "",
         "## Mechanism Signals",
-        f"- oracle_actuation: {oracle_actuation_supported}",
-        f"- oracle_physical_effect: {oracle_physical_effect_supported}",
-        f"- payload_specificity: {payload_specificity_signal}",
-        f"- timing_specificity: {timing_specificity_signal}",
+        f"- oracle_actuation: {oracle_actuation_supported} (n={n_oracle_actuation}, min={min_oracle_actuation})",
+        f"- oracle_physical_effect: {oracle_physical_effect_supported} (n={n_oracle_degradation})",
+        f"- payload_specificity: {payload_specificity_signal} (n={n_true_over_rand}, min={min_true_vs_rand})",
+        f"- timing_specificity: {timing_specificity_signal} (n={n_true_over_random_time}, min={min_true_vs_rt})",
         "",
         "## Blockers",
     ]

@@ -69,7 +69,7 @@ def _make_rule_file(path: Path):
 def _make_go_rules(root: Path, **overrides):
     """Write a sealed GO/NO-GO rules root with all required fields."""
     root.mkdir(parents=True, exist_ok=True)
-    rules_data = {"min_valid_pairs": 1, "min_oracle_physical_parents": 1,
+    rules_data = {"min_valid_pairs": 1, "min_oracle_actuation_parents": 1,
                   "min_true_over_rand_parents": 1, "min_true_over_random_time_parents": 1,
                   "max_missing_evidence": 0, "require_all_conditions_per_group": True}
     rules_data.update(overrides)
@@ -1330,30 +1330,60 @@ def test_go_stop_when_incomplete_groups():
 
 
 def test_go_modify_detector_when_insufficient_groups():
-    """Insufficient groups → MODIFY_DETECTOR."""
+    """Fewer groups than min_valid_pairs → MODIFY_DETECTOR."""
     from analyze_factorized_attack_pilot import main as an
     with tempfile.TemporaryDirectory() as d:
         dp = Path(d)
+        mgid = "g_f0_0"
+        # 1 group with all 5 conditions, but min_valid_pairs=4
+        jobs = [_make_job("f0", "TRUE_T10", jid="j_t", mgid=mgid),
+                _make_job("f0", "RAND_T10", jid="j_r", mgid=mgid),
+                _make_job("f0", "RANDOM_TIME_T10", jid="j_rt", mgid=mgid),
+                _make_job("f0", "COMMAND_OPEN_ORACLE", jid="j_or", mgid=mgid),
+                _make_job("f0", "CLEAN", jid="j_c", mgid=mgid)]
+        t_run = _make_run("f0", "TRUE_T10", jid="j_t", mgid=mgid)
+        t_run["official_success"] = False
+        r_run = _make_run("f0", "RAND_T10", jid="j_r", mgid=mgid); r_run["gradient_aligned"] = False
+        r_run["official_success"] = True
+        rt_run = _make_run("f0", "RANDOM_TIME_T10", jid="j_rt", mgid=mgid)
+        rt_run["official_success"] = True
+        or_run = _make_run("f0", "COMMAND_OPEN_ORACLE", jid="j_or", mgid=mgid)
+        or_run["official_success"] = False; or_run["gripper_opened"] = True
+        c_run = _make_run("f0", "CLEAN", jid="j_c", mgid=mgid, k_req=0, k_exec=0)
+        c_run["attack_requested"] = False; c_run.pop("attack_step_ledger", None)
+        c_run["official_success"] = True
+
+        runs = [t_run, r_run, rt_run, or_run, c_run]
         (dp / "ev").mkdir()
-        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": []})
-        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": []})
-        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": []})
-        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": []})
+        for run in runs:
+            (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
+        sha_map = {}
+        for run in runs:
+            sha_map[run["job_id"]] = {
+                "vsha": sha256_file(dp / "ev" / run["video_path"]),
+                "tsha": sha256_file(dp / "ev" / run["telemetry_path"])}
+
+        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": jobs})
+        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": runs})
+        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
+            {"job_id": r["job_id"], "matched_group_id": mgid, "path": r["telemetry_path"], "sha256": sha_map[r["job_id"]]["tsha"]} for r in runs]})
+        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
+            {"job_id": r["job_id"], "matched_group_id": mgid, "path": r["video_path"], "sha256": sha_map[r["job_id"]]["vsha"]} for r in runs]})
+        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0")]})
         _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
-        _seal_single(dp / "ev_val", "m.json", {"schema": "PILOT_EXECUTION_VALIDATION_V0",
-            "status": "PASS", "input_seals": {}, "disposition_counts": {}, "n_expected_jobs": 0})
-        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": []})
-        _make_go_rules(dp / "gr", min_valid_pairs=4)  # need 4, have 0
+        _make_go_rules(dp / "gr", min_valid_pairs=4)  # need 4, have 1
 
         old = sys.argv
         try:
             from validate_factorized_attack_pilot_execution import main as ev
-            # Create minimal PASS receipt
-            _seal_single(dp / "ev_val2", "m.json", {"schema": "PILOT_EXECUTION_VALIDATION_V0",
-                "status": "PASS", "input_seals": {}, "disposition_counts": {}, "n_expected_jobs": 0,
-                "n_errors": 0, "allowed_conditions": []})
+            sys.argv = ["ev", "--pilot-job-matrix-root", str(dp / "j"), "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"), "--pilot-video-index-root", str(dp / "v"),
+                        "--pilot-parent-manifest-root", str(dp / "pm"),
+                        "--pilot-arm-parity-protocol-root", str(dp / "arm"),
+                        "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "ev_out")]
+            ev()
 
-            sys.argv = ["an", "--pilot-execution-validation-root", str(dp / "ev_val"),
+            sys.argv = ["an", "--pilot-execution-validation-root", str(dp / "ev_out"),
                         "--pilot-job-matrix-root", str(dp / "j"),
                         "--pilot-run-ledger-root", str(dp / "l"),
                         "--pilot-telemetry-index-root", str(dp / "t"),
