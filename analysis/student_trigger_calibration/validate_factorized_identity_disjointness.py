@@ -440,7 +440,9 @@ def compute_policy_coverage_from_labels(teacher_rows, split_key, cov_issues):
 # ══════════════════════════════════════════════════════
 
 def check_deterministic_allocation(allocation, sets_by_role, split_key, authoritative, errors,
-                                   expected_parent_manifest_sha=None):
+                                   expected_parent_manifest_sha=None,
+                                   expected_algorithm_sha=None,
+                                   expected_code_sha=None):
     da = allocation.get("deterministic_allocation", {})
     has_da = bool(da)
     alloc_method = allocation.get("allocation_method", "")
@@ -467,6 +469,18 @@ def check_deterministic_allocation(allocation, sets_by_role, split_key, authorit
         errors.append(
             f"ALLOC_PARENT_SHA_MISMATCH: {split_key} "
             f"declared={str(declared_parent_sha)[:16]} actual={expected_parent_manifest_sha[:16]}"
+        )
+    declared_algorithm_sha = da.get("allocation_algorithm_sha256", "")
+    if authoritative and expected_algorithm_sha and declared_algorithm_sha != expected_algorithm_sha:
+        errors.append(
+            f"ALLOC_ALGORITHM_SHA_MISMATCH: {split_key} "
+            f"declared={str(declared_algorithm_sha)[:16]} actual={expected_algorithm_sha[:16]}"
+        )
+    declared_code_sha = da.get("allocation_code_sha256", "")
+    if authoritative and expected_code_sha and declared_code_sha != expected_code_sha:
+        errors.append(
+            f"ALLOC_CODE_SHA_MISMATCH: {split_key} "
+            f"declared={str(declared_code_sha)[:16]} actual={expected_code_sha[:16]}"
         )
 
     c_ids, p_ids = sets_by_role.get("calibrator_fit", set()), sets_by_role.get("policy_selection", set())
@@ -620,6 +634,8 @@ def main():
     ap.add_argument("--teacher-contract-file", type=Path, default=None)
     ap.add_argument("--deterministic-allocation-receipt", type=Path, default=None)
     ap.add_argument("--parent-cohort-manifest", type=Path, default=None)
+    ap.add_argument("--allocation-algorithm-file", type=Path, default=None)
+    ap.add_argument("--allocation-code-file", type=Path, default=None)
     ap.add_argument("--expected-k10-schema", type=str, default=None,
                     help=f"Required K10 schema for authoritative mode (default: {EXPECTED_K10_SCHEMA})")
     ap.add_argument("--mode", choices=["authoritative", "diagnostic"], default="diagnostic")
@@ -718,6 +734,8 @@ def main():
 
     allocation_receipt = None
     parent_cohort_manifest_sha = None
+    allocation_algorithm_sha = None
+    allocation_code_sha = None
     if source_status == "DETERMINISTIC_ALLOCATION":
         if args.deterministic_allocation_receipt and args.deterministic_allocation_receipt.is_file():
             allocation_receipt = load_strict_json(
@@ -725,12 +743,20 @@ def main():
             )
         if args.parent_cohort_manifest and args.parent_cohort_manifest.is_file():
             parent_cohort_manifest_sha = sha256_file(args.parent_cohort_manifest)
+        if args.allocation_algorithm_file and args.allocation_algorithm_file.is_file():
+            allocation_algorithm_sha = sha256_file(args.allocation_algorithm_file)
+        if args.allocation_code_file and args.allocation_code_file.is_file():
+            allocation_code_sha = sha256_file(args.allocation_code_file)
     elif args.deterministic_allocation_receipt and args.deterministic_allocation_receipt.is_file():
         allocation_receipt = load_strict_json(
             args.deterministic_allocation_receipt, "DETERMINISTIC_ALLOCATION_RECEIPT"
         )
         if args.parent_cohort_manifest and args.parent_cohort_manifest.is_file():
             parent_cohort_manifest_sha = sha256_file(args.parent_cohort_manifest)
+        if args.allocation_algorithm_file and args.allocation_algorithm_file.is_file():
+            allocation_algorithm_sha = sha256_file(args.allocation_algorithm_file)
+        if args.allocation_code_file and args.allocation_code_file.is_file():
+            allocation_code_sha = sha256_file(args.allocation_code_file)
 
     # Per-split audit
     all_disjoint_errors = []; all_cov_issues = []; all_htc_errors = []
@@ -764,9 +790,15 @@ def main():
                 disjoint_errors.append(f"ALLOC_RECEIPT_MISSING: {sk}")
             if parent_cohort_manifest_sha is None:
                 disjoint_errors.append(f"ALLOC_PARENT_MANIFEST_MISSING: {sk}")
+            if allocation_algorithm_sha is None:
+                disjoint_errors.append(f"ALLOC_ALGORITHM_FILE_MISSING: {sk}")
+            if allocation_code_sha is None:
+                disjoint_errors.append(f"ALLOC_CODE_FILE_MISSING: {sk}")
         check_deterministic_allocation(
             allocation_input, sets_by_role, sk, authoritative, disjoint_errors,
             expected_parent_manifest_sha=parent_cohort_manifest_sha,
+            expected_algorithm_sha=allocation_algorithm_sha,
+            expected_code_sha=allocation_code_sha,
         )
 
         all_ids = set()
@@ -919,6 +951,10 @@ def main():
         )
     if args.parent_cohort_manifest and args.parent_cohort_manifest.is_file():
         receipt["parent_cohort_manifest_sha256"] = sha256_file(args.parent_cohort_manifest)
+    if args.allocation_algorithm_file and args.allocation_algorithm_file.is_file():
+        receipt["allocation_algorithm_file_sha256"] = sha256_file(args.allocation_algorithm_file)
+    if args.allocation_code_file and args.allocation_code_file.is_file():
+        receipt["allocation_code_file_sha256"] = sha256_file(args.allocation_code_file)
     if teacher_contract_sha: receipt["teacher_contract_sha256"] = teacher_contract_sha
     if expected_k10: receipt["expected_k10_schema"] = expected_k10
     if args.calibration_teacher_bundle_root:
