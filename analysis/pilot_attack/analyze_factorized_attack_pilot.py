@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""B3 v2.3: Pilot paired analysis — seal binding, matched_group pairing, real GO/NO-GO rule application."""
+"""B3 v2.3.1: Pilot paired analysis — fixed Oracle direction, reachable decision tree, strict rules, seal binding."""
 from __future__ import annotations
 
 import argparse, csv, json, os, sys, uuid
@@ -9,11 +9,34 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "analysis/pilot_attack"))
 
-from pilot_integrity import sha256_file, is_finite_number, consume_sealed_root
+from pilot_integrity import sha256_file, is_finite_number, is_strict_int, consume_sealed_root
 
 SELF_SHA = None
 OUTCOME_FIELDS = ("official_success", "gripper_opened", "object_dropped", "transport_complete",
                   "placement_success", "contact_quality_failure")
+
+REQUIRED_RULE_FIELDS = (
+    "min_valid_pairs", "min_oracle_physical_parents",
+    "min_true_over_rand_parents", "min_true_over_random_time_parents",
+    "max_missing_evidence", "require_all_conditions_per_group",
+)
+
+
+def _validate_rules(rules: dict[str, Any]) -> list[str]:
+    """Strict validation: every required field must exist, be finite number, and in valid range."""
+    errs: list[str] = []
+    for fld in REQUIRED_RULE_FIELDS:
+        if fld not in rules:
+            errs.append(f"GO_RULES_MISSING_FIELD: {fld}")
+            continue
+        v = rules[fld]
+        if fld == "require_all_conditions_per_group":
+            if not isinstance(v, bool):
+                errs.append(f"GO_RULES_NOT_BOOL: {fld}={v!r}")
+        else:
+            if not is_strict_int(v) or v < 0:
+                errs.append(f"GO_RULES_NOT_NONNEG_INT: {fld}={v!r}")
+    return errs
 
 
 def main() -> int:
@@ -44,6 +67,12 @@ def main() -> int:
         args.pilot_telemetry_index_root, "PILOT_TELEMETRY_INDEX_V0", "TELEMETRY")
     go_rules, go_rules_seal = consume_sealed_root(
         args.pilot_go_no_go_rules_root, "PILOT_GO_NO_GO_RULES_V0", "GO_RULES")
+
+    # ── Strict GO rules validation ────────────────────────────────────────
+    raw_rules = go_rules.get("rules", {})
+    rule_errors = _validate_rules(raw_rules)
+    if rule_errors:
+        raise SystemExit("GO_RULES_INVALID: " + "; ".join(rule_errors))
 
     # ── Verify input seal binding against execution receipt ───────────────
     declared_seals = exec_val.get("input_seals", {})
@@ -85,49 +114,12 @@ def main() -> int:
         if mgid:
             groups.setdefault(mgid, []).append(jid)
 
-    # ── Per-group paired analysis ─────────────────────────────────────────
-    paired_results: dict[str, Any] = {}
-    summary_rows: list[dict[str, Any]] = []
-
-    for mgid in sorted(groups):
-        jids = groups[mgid]
-        cond_runs: dict[str, dict[str, Any]] = {}
-        for jid in jids:
-            run = runs_by_id.get(jid)
-            if run:
-                cond_runs[run.get("condition", "UNKNOWN")] = run
-
-        COMPARISONS = [
-            ("TRUE_T10", "CLEAN"),
-            ("TRUE_T10", "RAND_T10"),
-            ("TRUE_T10", "RANDOM_TIME_T10"),
-            ("COMMAND_OPEN_ORACLE", "CLEAN"),
-        ]
-
-        for cond_a, cond_b in COMPARISONS:
-            a_run = cond_runs.get(cond_a)
-            b_run = cond_runs.get(cond_b)
-            pair_key = f"{mgid}/{cond_a}_vs_{cond_b}"
-            result: dict[str, Any] = {"matched_group_id": mgid, "condition_a": cond_a, "condition_b": cond_b}
-            if a_run is not None and b_run is not None:
-                for field in OUTCOME_FIELDS:
-                    av = a_run.get(field); bv = b_run.get(field)
-                    if av is not None and bv is not None:
-                        result[f"{field}_a"] = av
-                        result[f"{field}_b"] = bv
-                result["both_present"] = True
-            else:
-                result["both_present"] = False
-            paired_results[pair_key] = result
-            summary_rows.append({"matched_group_id": mgid, "pair": pair_key,
-                                 "a_present": a_run is not None, "b_present": b_run is not None})
-
     # ── Compute GO/NO-GO metrics ──────────────────────────────────────────
     n_groups = len(groups)
     n_oracle_physical = 0
     n_true_over_rand = 0
     n_true_over_random_time = 0
-    n_oracle_over_clean = 0
+    n_oracle_degradation = 0
     n_complete_groups = 0
 
     for mgid in sorted(groups):
@@ -149,10 +141,11 @@ def main() -> int:
 
         clean_run = cond_runs.get("CLEAN")
         if oracle_run and clean_run:
-            o_success = oracle_run.get("official_success", False)
             c_success = clean_run.get("official_success", False)
-            if o_success and not c_success:
-                n_oracle_over_clean += 1
+            o_success = oracle_run.get("official_success", False)
+            # Oracle degradation: clean succeeds but oracle fails (correct direction)
+            if c_success and not o_success:
+                n_oracle_degradation += 1
 
         true_run = cond_runs.get("TRUE_T10")
         rand_run = cond_runs.get("RAND_T10")
@@ -169,18 +162,17 @@ def main() -> int:
             if t_fail and not rt_fail:
                 n_true_over_random_time += 1
 
-    # ── Apply rules from sealed GO/NO-GO rules ────────────────────────────
-    rules = go_rules.get("rules", {})
-    min_valid_pairs = rules.get("min_valid_pairs", 4)
-    min_oracle_physical = rules.get("min_oracle_physical_parents", 1)
-    min_true_vs_rand = rules.get("min_true_over_rand_parents", 1)
-    min_true_vs_rt = rules.get("min_true_over_random_time_parents", 1)
-    require_all_conditions = rules.get("require_all_conditions_per_group", True)
+    # ── Apply rules ───────────────────────────────────────────────────────
+    min_valid_pairs = raw_rules["min_valid_pairs"]
+    min_oracle_physical = raw_rules["min_oracle_physical_parents"]
+    min_true_vs_rand = raw_rules["min_true_over_rand_parents"]
+    min_true_vs_rt = raw_rules["min_true_over_random_time_parents"]
+    max_missing_evidence = raw_rules["max_missing_evidence"]
+    require_all_conditions = raw_rules["require_all_conditions_per_group"]
 
     disp_counts = exec_val.get("disposition_counts", {})
     n_missing_video = disp_counts.get("MISSING_VIDEO", 0)
     n_missing_telem = disp_counts.get("MISSING_TELEMETRY", 0)
-    max_missing_evidence = rules.get("max_missing_evidence", 0)
 
     checks: dict[str, Any] = {
         "n_groups": n_groups,
@@ -188,42 +180,92 @@ def main() -> int:
         "n_oracle_physical": n_oracle_physical,
         "n_true_over_rand": n_true_over_rand,
         "n_true_over_random_time": n_true_over_random_time,
-        "n_oracle_over_clean": n_oracle_over_clean,
+        "n_oracle_degradation": n_oracle_degradation,
         "n_missing_video": n_missing_video,
         "n_missing_telem": n_missing_telem,
     }
 
+    # ── Decision tree: classify root cause → recommendation ──────────────
     blocker_reasons: list[str] = []
+    oracle_fail = n_oracle_physical < min_oracle_physical
+    true_rand_fail = n_true_over_rand < min_true_vs_rand
+    true_rt_fail = n_true_over_random_time < min_true_vs_rt
+    incomplete = require_all_conditions and n_complete_groups < n_groups
+    evidence_fail = (n_missing_video > max_missing_evidence or
+                     n_missing_telem > max_missing_evidence)
+    insufficient_groups = n_groups < min_valid_pairs
 
-    if n_groups < min_valid_pairs:
-        blocker_reasons.append(f"INSUFFICIENT_GROUPS: {n_groups} < {min_valid_pairs}")
-    if n_oracle_physical < min_oracle_physical:
-        blocker_reasons.append(f"INSUFFICIENT_ORACLE_PHYSICAL: {n_oracle_physical} < {min_oracle_physical}")
-    if n_true_over_rand < min_true_vs_rand:
-        blocker_reasons.append(f"TRUE_NOT_BEATING_RAND: {n_true_over_rand} < {min_true_vs_rand}")
-    if n_true_over_random_time < min_true_vs_rt:
-        blocker_reasons.append(f"TRUE_NOT_BEATING_RANDOM_TIME: {n_true_over_random_time} < {min_true_vs_rt}")
-    if require_all_conditions and n_complete_groups < n_groups:
+    if evidence_fail:
+        blocker_reasons.append(
+            f"EVIDENCE_GAPS: missing_video={n_missing_video} missing_telem={n_missing_telem}")
+    if incomplete:
         blocker_reasons.append(f"INCOMPLETE_GROUPS: {n_complete_groups}/{n_groups}")
-    if n_missing_video > max_missing_evidence:
-        blocker_reasons.append(f"MISSING_VIDEO: {n_missing_video} > {max_missing_evidence}")
-    if n_missing_telem > max_missing_evidence:
-        blocker_reasons.append(f"MISSING_TELEMETRY: {n_missing_telem} > {max_missing_evidence}")
+    if insufficient_groups:
+        blocker_reasons.append(f"INSUFFICIENT_GROUPS: {n_groups} < {min_valid_pairs}")
 
-    # ── Determine recommendation ──────────────────────────────────────────
-    if blocker_reasons:
-        recommendation = "STOP"
-    elif n_true_over_rand < min_true_vs_rand and n_true_over_random_time >= min_true_vs_rt:
-        recommendation = "STOP_TIMING"
-    elif n_oracle_physical < min_oracle_physical:
-        recommendation = "STOP_WINDOW"
-    elif n_groups < min_valid_pairs:
-        recommendation = "MODIFY_DETECTOR"
+    # Classify by root cause (mutually exclusive first-match)
+    if evidence_fail:
+        recommendation = "STOP"  # can't make any determination without evidence
+    elif insufficient_groups:
+        recommendation = "MODIFY_DETECTOR"  # need more parents that emit
+    elif oracle_fail:
+        blocker_reasons.append(
+            f"ORACLE_BRIDGE_FAIL: n_oracle_physical={n_oracle_physical} < {min_oracle_physical}")
+        recommendation = "STOP_WINDOW"  # command intervention doesn't work → window not viable
+    elif true_rand_fail:
+        blocker_reasons.append(
+            f"TRUE_NOT_BEATING_RAND: n_true_over_rand={n_true_over_rand} < {min_true_vs_rand}")
+        if true_rt_fail:
+            blocker_reasons.append(
+                f"TRUE_NOT_BEATING_RANDOM_TIME: n_true_over_random_time={n_true_over_rt} < {min_true_vs_rt}")
+            recommendation = "STOP"  # attack has no effect at all
+        else:
+            recommendation = "STOP_TIMING"  # TRUE beats RT but not RAND → timing wins, gradient doesn't
+    elif true_rt_fail:
+        blocker_reasons.append(
+            f"TRUE_NOT_BEATING_RANDOM_TIME: n_true_over_random_time={n_true_over_rt} < {min_true_vs_rt}")
+        recommendation = "MODIFY_DETECTOR"  # TRUE beats RAND but not RT → gradient matters, timing matters more
     else:
         recommendation = "CONTINUE"
 
+    # ── Per-group paired results ──────────────────────────────────────────
+    paired_results: dict[str, Any] = {}
+    summary_rows: list[dict[str, Any]] = []
+    COMPARISONS = [
+        ("TRUE_T10", "CLEAN"),
+        ("TRUE_T10", "RAND_T10"),
+        ("TRUE_T10", "RANDOM_TIME_T10"),
+        ("COMMAND_OPEN_ORACLE", "CLEAN"),
+    ]
+
+    for mgid in sorted(groups):
+        jids = groups[mgid]
+        cond_runs: dict[str, dict[str, Any]] = {}
+        for jid in jids:
+            run = runs_by_id.get(jid)
+            if run:
+                cond_runs[run.get("condition", "UNKNOWN")] = run
+
+        for cond_a, cond_b in COMPARISONS:
+            a_run = cond_runs.get(cond_a)
+            b_run = cond_runs.get(cond_b)
+            pair_key = f"{mgid}/{cond_a}_vs_{cond_b}"
+            result: dict[str, Any] = {"matched_group_id": mgid, "condition_a": cond_a, "condition_b": cond_b}
+            if a_run is not None and b_run is not None:
+                for field in OUTCOME_FIELDS:
+                    av = a_run.get(field); bv = b_run.get(field)
+                    if av is not None and bv is not None:
+                        result[f"{field}_a"] = av
+                        result[f"{field}_b"] = bv
+                result["both_present"] = True
+            else:
+                result["both_present"] = False
+            paired_results[pair_key] = result
+            summary_rows.append({"matched_group_id": mgid, "pair": pair_key,
+                                 "a_present": a_run is not None, "b_present": b_run is not None})
+
     go_result = {
-        "schema": "PILOT_GO_NO_GO_V0",
+        "schema": "PILOT_AUTOMATED_GO_NO_GO_V0",
         "recommendation": recommendation,
         "blocker_reasons": blocker_reasons,
         "checks": checks,
@@ -231,24 +273,29 @@ def main() -> int:
         "direction_only": True,
         "paper_table1_eligible": False,
         "attack_authorized": False,
+        "scientific_go_no_go_authorized": False,
         "execution_validation_seal_sha256": exec_val_seal,
     }
 
     # ── Mechanism diagnosis ───────────────────────────────────────────────
     diagnosis_lines = [
-        f"# Pilot Mechanism Diagnosis",
-        f"",
+        "# Pilot Automated GO/NO-GO Diagnosis",
+        "",
         f"Execution receipt seal: {exec_val_seal}",
         f"GO/NO-GO rules seal: {go_rules_seal}",
         f"Recommendation: **{recommendation}**",
-        f"",
-        f"## Blockers",
+        "",
+        "## Blockers",
     ]
     if blocker_reasons:
         for b in blocker_reasons:
             diagnosis_lines.append(f"- {b}")
     else:
         diagnosis_lines.append("- (none)")
+    diagnosis_lines.append("")
+    diagnosis_lines.append("## Checks")
+    for k, v in checks.items():
+        diagnosis_lines.append(f"- {k}: {v}")
     diagnosis_lines.append("")
     diagnosis_lines.append("## Per-Group Summary")
     diagnosis_lines.append("")
@@ -268,7 +315,7 @@ def main() -> int:
 
     (staging / "PILOT_PAIRED_RESULTS_V0.json").write_text(
         json.dumps(paired_results, indent=2, sort_keys=True) + "\n")
-    (staging / "PILOT_GO_NO_GO_V0.json").write_text(
+    (staging / "PILOT_AUTOMATED_GO_NO_GO_V0.json").write_text(
         json.dumps(go_result, indent=2, sort_keys=True) + "\n")
     (staging / "PILOT_MECHANISM_DIAGNOSIS_V0.md").write_text("\n".join(diagnosis_lines) + "\n")
 
@@ -279,7 +326,7 @@ def main() -> int:
     if out_root.exists(): shutil.rmtree(out_root)
     os.replace(staging, out_root)
 
-    print(f"Pilot Analysis: recommendation={recommendation}")
+    print(f"Pilot Automated GO/NO-GO: recommendation={recommendation}")
     print(f"  Checks: {json.dumps(checks)}")
     return 0 if recommendation == "CONTINUE" else 1
 

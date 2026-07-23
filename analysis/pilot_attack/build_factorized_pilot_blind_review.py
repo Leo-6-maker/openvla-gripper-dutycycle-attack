@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""B4 v2.3: Blind video review — sealed roots, execution PASS, video materialization, no condition leaks."""
+"""B4 v2.3.1: Blind video review — cross-receipt seal binding, mandatory video SHA, symlink-safe, no leaks."""
 from __future__ import annotations
 
 import argparse, csv, json, os, random, shutil, sys, uuid
@@ -9,7 +9,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "analysis/pilot_attack"))
 
-from pilot_integrity import sha256_file, is_64char_hex, consume_sealed_root, seal_dir_in_place
+from pilot_integrity import sha256_file, is_64char_hex, consume_sealed_root, guard_path_safe, seal_dir_in_place
 
 SELF_SHA = None
 REVIEW_LABELS = ("premature_opening", "slip", "drop", "transport_failure",
@@ -41,6 +41,15 @@ def main() -> int:
     if unblind_root.exists(): raise SystemExit(f"UNBLIND_ROOT_EXISTS: {unblind_root}")
     if blind_root == unblind_root:
         raise SystemExit("BLIND_AND_UNBLIND_SAME_ROOT")
+    # ── Reject nested roots ───────────────────────────────────────────────
+    try:
+        blind_root.relative_to(unblind_root)
+        raise SystemExit(f"BLIND_NESTED_INSIDE_UNBLIND: blind={blind_root} unblind={unblind_root}")
+    except ValueError: pass
+    try:
+        unblind_root.relative_to(blind_root)
+        raise SystemExit(f"UNBLIND_NESTED_INSIDE_BLIND: blind={blind_root} unblind={unblind_root}")
+    except ValueError: pass
 
     evidence_root = args.evidence_root.resolve()
 
@@ -54,6 +63,15 @@ def main() -> int:
         args.pilot_run_ledger_root, "PILOT_RUN_LEDGER_V0", "RUN_LEDGER")
     video_index, video_index_seal = consume_sealed_root(
         args.pilot_video_index_root, "PILOT_VIDEO_INDEX_V0", "VIDEO_INDEX")
+
+    # ── Cross-receipt seal binding ────────────────────────────────────────
+    declared_seals = exec_val.get("input_seals", {})
+    declared_run_seal = declared_seals.get("run_ledger", "")
+    declared_video_seal = declared_seals.get("video_index", "")
+    if declared_run_seal and declared_run_seal != run_ledger_seal:
+        raise SystemExit(f"BLIND_RUN_SEAL_BINDING: declared={declared_run_seal[:16]} actual={run_ledger_seal[:16]}")
+    if declared_video_seal and declared_video_seal != video_index_seal:
+        raise SystemExit(f"BLIND_VIDEO_SEAL_BINDING: declared={declared_video_seal[:16]} actual={video_index_seal[:16]}")
 
     runs = run_ledger.get("runs", [])
     video_entries = video_index.get("entries", [])
@@ -71,7 +89,6 @@ def main() -> int:
     unblind_entries: list[dict[str, Any]] = []
     blind_ids: set[str] = set()
 
-    # Pre-create blind videos directory
     blind_videos_dir = blind_root / "videos"
     blind_videos_dir.mkdir(parents=True)
 
@@ -82,24 +99,28 @@ def main() -> int:
         vp = run.get("video_path", "")
 
         ve = video_by_id.get(jid, {})
-        index_path = ve.get("path", vp)
+        index_path = ve.get("path", "")
         declared_sha = ve.get("sha256", "")
 
-        # Verify source video exists and SHA matches
+        # ── Video SHA mandatory ───────────────────────────────────────
+        if not is_64char_hex(declared_sha):
+            raise SystemExit(f"VIDEO_SHA_MISSING_OR_INVALID: jid={jid} sha={declared_sha[:40]!r}")
+
+        # ── Index path must match run path exactly ─────────────────────
         if not vp:
             raise SystemExit(f"MISSING_VIDEO_PATH: jid={jid}")
-        source_video = evidence_root / vp
-        try:
-            source_video.resolve().relative_to(evidence_root.resolve())
-        except ValueError:
-            raise SystemExit(f"VIDEO_OUTSIDE_EVIDENCE: {vp}")
+        if index_path and index_path != vp:
+            raise SystemExit(f"VIDEO_PATH_INDEX_RUN_MISMATCH: jid={jid} run={vp} index={index_path}")
+
+        # ── Symlink-safe evidence verification ─────────────────────────
+        source_video = guard_path_safe(vp, evidence_root, f"VIDEO_{jid}")
         if not source_video.is_file():
             raise SystemExit(f"VIDEO_NOT_FOUND: {source_video}")
         actual_sha = sha256_file(source_video)
-        if is_64char_hex(declared_sha) and actual_sha != declared_sha:
+        if actual_sha != declared_sha:
             raise SystemExit(f"VIDEO_SHA_MISMATCH: {vp} declared={declared_sha[:16]} actual={actual_sha[:16]}")
 
-        # Generate blind-safe name
+        # ── Generate blind-safe name ───────────────────────────────────
         ext = Path(vp).suffix
         if ext.lower() not in MANDATORY_EXTENSIONS:
             ext = ".mp4"
@@ -112,15 +133,14 @@ def main() -> int:
         blind_name = f"{blind_id}{ext}"
         blind_target = blind_videos_dir / blind_name
 
-        # Hard-link the video; fall back to copy
         try:
             os.link(source_video, blind_target)
         except OSError:
             shutil.copy2(source_video, blind_target)
 
         blind_video_sha = sha256_file(blind_target)
-        if actual_sha and blind_video_sha != actual_sha:
-            raise SystemExit(f"BLIND_COPY_SHA_MISMATCH: {blind_name} expected={actual_sha[:16]} got={blind_video_sha[:16]}")
+        if blind_video_sha != declared_sha:
+            raise SystemExit(f"BLIND_COPY_SHA_MISMATCH: {blind_name} expected={declared_sha[:16]} got={blind_video_sha[:16]}")
 
         blind_entries.append({
             "blind_id": blind_id,
@@ -135,15 +155,11 @@ def main() -> int:
             "parent_id": pid, "condition": cond,
         })
 
-    # ── Verify blind package does NOT leak condition ──────────────────────
+    # ── Verify blind package does NOT leak condition info ─────────────────
     blind_json_str = json.dumps(blind_entries, sort_keys=True).lower()
     for fb in FORBIDDEN_IN_BLIND:
         if fb.lower() in blind_json_str:
             raise SystemExit(f"BLIND_LEAK_DETECTED: '{fb}' found in blind package content")
-
-    csv_blind_lines = [f"blind_id,video_file"]
-    for e in blind_entries:
-        csv_blind_lines.append(f"{e['blind_id']},{e['video_file']}")
 
     # ── Write blind package (reviewer-facing, NO condition info) ──────────
     with open(blind_root / "PILOT_BLIND_REVIEW_V0.csv", "w", newline="") as f:
@@ -155,7 +171,7 @@ def main() -> int:
     (blind_root / "PILOT_BLIND_REVIEW_V0.json").write_text(
         json.dumps({"entries": blind_entries, "n_videos": len(blind_entries),
                      "n_reviewers": 2, "labels": list(REVIEW_LABELS),
-                     "instructions": "Review each video for the listed labels. Do NOT attempt to identify conditions."},
+                     "instructions": "Review each video for the listed labels. Do not attempt to identify groups."},
                    indent=2, sort_keys=True) + "\n")
     seal_dir_in_place(blind_root)
 

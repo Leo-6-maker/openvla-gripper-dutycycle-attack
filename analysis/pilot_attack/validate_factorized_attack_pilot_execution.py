@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""B2 v2.3: Pilot execution validator — job_id/matched_group_id, exact closure, seal binding, full condition checks."""
+"""B2 v2.3.1: Pilot execution validator — cross-artifact binding, duplicate rejection, unified dispositions."""
 from __future__ import annotations
 
 import argparse, csv, json, math, os, sys, uuid
@@ -54,9 +54,10 @@ NUMERIC_FIELDS_REQUIRE_FINITE = frozenset({
     "perturbation_seed", "repeat_index",
 })
 
+IMMUTABLE_FIELDS = ("matched_group_id", "parent_id", "condition", "perturbation_seed", "repeat_index")
+
 
 def _validate_entry_id(entry: dict[str, Any], label: str) -> tuple[str, str]:
-    """Extract mandatory job_id + matched_group_id. Hard-fail on missing/invalid."""
     jid = entry.get("job_id", "")
     mgid = entry.get("matched_group_id", "")
     if not isinstance(jid, str) or not jid:
@@ -92,7 +93,7 @@ def main() -> int:
     if out_root.exists(): raise SystemExit(f"OUTPUT_EXISTS: {out_root}")
     evidence_root = args.evidence_root.resolve()
 
-    # ── Load all sealed roots, capture every seal SHA ─────────────────────
+    # ── Load all sealed roots ─────────────────────────────────────────────
     job_matrix,  job_matrix_seal  = consume_sealed_root(args.pilot_job_matrix_root, EXPECTED_JOB_SCHEMA, "JOB_MATRIX")
     run_ledger,  run_ledger_seal  = consume_sealed_root(args.pilot_run_ledger_root, EXPECTED_LEDGER_SCHEMA, "RUN_LEDGER")
     telem_index, telem_index_seal = consume_sealed_root(args.pilot_telemetry_index_root, EXPECTED_TELEMETRY_SCHEMA, "TELEMETRY")
@@ -186,9 +187,39 @@ def main() -> int:
     for jid in sorted(extra_telem):
         all_errors.append(f"TELEMETRY_INDEX_EXTRA_JOB: {jid}")
 
+    # ── Cross-artifact immutable field binding ────────────────────────────
+    for jid in sorted(matrix_ids & ledger_ids):
+        job = jobs_by_id[jid]
+        run = runs_by_id[jid]
+        for fld in IMMUTABLE_FIELDS:
+            jv = job.get(fld); rv = run.get(fld)
+            if jv != rv:
+                all_errors.append(f"RUN_FIELD_BINDING: jid={jid} field={fld} matrix={jv!r} run={rv!r}")
+
+    for jid in sorted(matrix_ids & video_ids):
+        job = jobs_by_id[jid]
+        ve = video_by_id[jid]
+        if job.get("matched_group_id") != ve.get("matched_group_id"):
+            all_errors.append(f"VIDEO_FIELD_BINDING: jid={jid} field=matched_group_id")
+
+    for jid in sorted(matrix_ids & telem_ids):
+        job = jobs_by_id[jid]
+        te = telem_by_id[jid]
+        if job.get("matched_group_id") != te.get("matched_group_id"):
+            all_errors.append(f"TELEM_FIELD_BINDING: jid={jid} field=matched_group_id")
+
+    # ── Reject duplicate condition per matched_group ─────────────────────
+    mgid_cond_counts: dict[tuple[str, str], int] = {}
+    for jid in sorted(matrix_ids):
+        job = jobs_by_id[jid]
+        key = (job["matched_group_id"], job["condition"])
+        mgid_cond_counts[key] = mgid_cond_counts.get(key, 0) + 1
+    for (mgid, cond), count in mgid_cond_counts.items():
+        if count > 1:
+            all_errors.append(f"DUPLICATE_CONDITION_IN_GROUP: mgid={mgid} cond={cond} count={count}")
+
     # ── Per-job validation ───────────────────────────────────────────────
     job_errors: dict[str, list[str]] = {jid: [] for jid in matrix_ids}
-    disposition: dict[str, str] = {}
 
     for jid in sorted(matrix_ids):
         job = jobs_by_id[jid]
@@ -199,7 +230,6 @@ def main() -> int:
         cond = job["condition"]
 
         if run is None:
-            disposition[jid] = "MISSING"
             continue
 
         # ── NaN/Inf rejection on all numeric fields ──────────────────
@@ -215,13 +245,18 @@ def main() -> int:
         if not is_strict_int(actual_k_exec) or actual_k_exec != k_exec_expected:
             je.append(f"K_EXECUTED: expected={k_exec_expected} actual={actual_k_exec!r}")
 
+        # ── attack_requested MUST be strict bool, match contract ────
+        attack_req_expected = contract.get("attack_requested")
+        actual_attack_req = run.get("attack_requested")
+        if not isinstance(actual_attack_req, bool):
+            je.append(f"ATTACK_REQUESTED_NOT_BOOL: {actual_attack_req!r}")
+        elif actual_attack_req != attack_req_expected:
+            je.append(f"ATTACK_REQUESTED: expected={attack_req_expected} actual={actual_attack_req!r}")
+
         # ── Condition-specific contract checks ──────────────────────
         if cond == "CLEAN":
             if actual_k_exec != 0:
                 je.append("CLEAN_K_NOT_ZERO")
-            attack_req = run.get("attack_requested")
-            if attack_req is not False and attack_req is not None:
-                je.append(f"CLEAN_ATTACK_REQUESTED_NOT_FALSE: {attack_req!r}")
 
         if cond == "TRUE_T10":
             ga = run.get("gradient_aligned")
@@ -242,11 +277,6 @@ def main() -> int:
             ot = run.get("oracle_type", "")
             if ot != "command_intervention":
                 je.append(f"ORACLE_TYPE_NOT_COMMAND: {ot!r}")
-
-        attack_requested_expected = contract.get("attack_requested", False)
-        actual_attack_req = run.get("attack_requested")
-        if actual_attack_req is not None and actual_attack_req != attack_requested_expected:
-            je.append(f"ATTACK_REQUESTED: expected={attack_requested_expected} actual={actual_attack_req!r}")
 
         # ── Attack step ledger per-row validation ───────────────────
         if k_exec_expected > 0:
@@ -349,20 +379,6 @@ def main() -> int:
                 except SystemExit as e:
                     je.append(f"TELEMETRY: {e}")
 
-        # ── Disposition ─────────────────────────────────────────────
-        if not je:
-            disposition[jid] = "COMPLETE_VALID"
-        elif any("K_" in e or "ATTACK_" in e for e in je):
-            disposition[jid] = "PARTIAL_ATTACK"
-        elif any("VIDEO" in e for e in je):
-            disposition[jid] = "MISSING_VIDEO"
-        elif any("TELEMETRY" in e for e in je):
-            disposition[jid] = "MISSING_TELEMETRY"
-        elif any("ARM_" in e for e in je):
-            disposition[jid] = "ARM_PARITY_FAIL"
-        else:
-            disposition[jid] = "PROTOCOL_MISMATCH"
-
         all_errors.extend(je)
 
     # ── Cross-condition parity by matched_group_id ───────────────────────
@@ -377,7 +393,13 @@ def main() -> int:
         for jid in jids:
             run = runs_by_id.get(jid)
             if run is not None:
-                cond_entries[jobs_by_id[jid]["condition"]] = (jid, run)
+                cond = jobs_by_id[jid]["condition"]
+                if cond in cond_entries:
+                    # Duplicate condition in same matched_group — already flagged above,
+                    # but also refuse to silently overwrite during parity comparison
+                    all_errors.append(f"PARITY_DUP_CONDITION: mgid={mgid} cond={cond}")
+                    continue
+                cond_entries[cond] = (jid, run)
 
         if len(cond_entries) < 2:
             continue
@@ -403,7 +425,6 @@ def main() -> int:
                 elif tv != rv:
                     all_errors.append(f"TRUE_RAND_PARITY: mgid={mgid} field={fld} TRUE={tv!r} RAND={rv!r}")
                     affected_jids.update([true_jid, rand_jid])
-            # TRUE and RAND must share same attack_start_step
             ts = true_run.get("attack_start_step"); rs = rand_run.get("attack_start_step")
             if ts is not None and rs is not None and ts != rs:
                 all_errors.append(f"TRUE_RAND_START_STEP_MISMATCH: mgid={mgid} TRUE={ts} RAND={rs}")
@@ -428,33 +449,58 @@ def main() -> int:
             all_errors.append(f"CHECKPOINT_DIVERGENT: mgid={mgid} shas={checkpoints}")
             affected_jids.update(jid for _, (jid, _) in cond_entries.items())
 
-        # ── Write parity errors back to dispositions ────────────────
+        # ── Write parity errors back to job_errors ──────────────────
         for ajid in affected_jids:
-            if ajid in job_errors and disposition.get(ajid) == "COMPLETE_VALID":
-                disposition[ajid] = "PARITY_MISMATCH"
+            if ajid in job_errors:
+                je_list = job_errors[ajid]
+                if "PARITY_MISMATCH" not in str(je_list):
+                    je_list.append("PARITY_MISMATCH")
+
+    # ── Compute final dispositions (UNIFIED source of truth) ─────────────
+    disposition: dict[str, str] = {}
+    for jid in sorted(matrix_ids):
+        je = job_errors[jid]
+        run = runs_by_id.get(jid)
+        if run is None:
+            disposition[jid] = "MISSING"
+        elif not je:
+            disposition[jid] = "COMPLETE_VALID"
+        elif any("PARITY_MISMATCH" in e for e in je):
+            disposition[jid] = "PARITY_MISMATCH"
+        elif any("K_" in e or "ATTACK_" in e for e in je):
+            disposition[jid] = "PARTIAL_ATTACK"
+        elif any("VIDEO" in e for e in je):
+            disposition[jid] = "MISSING_VIDEO"
+        elif any("TELEMETRY" in e for e in je):
+            disposition[jid] = "MISSING_TELEMETRY"
+        elif any("ARM_" in e for e in je):
+            disposition[jid] = "ARM_PARITY_FAIL"
+        else:
+            disposition[jid] = "PROTOCOL_MISMATCH"
 
     # ── Compute disposition counts ───────────────────────────────────────
     disp_counts: dict[str, int] = {}
     for d in disposition.values():
         disp_counts[d] = disp_counts.get(d, 0) + 1
 
-    # ── Budget parity rows (post-parity) ─────────────────────────────────
+    # ── Budget parity rows (derived from final disposition) ──────────────
     budget_parity: list[dict[str, Any]] = []
     for jid in sorted(matrix_ids):
         job = jobs_by_id[jid]
         run = runs_by_id.get(jid)
+        final_disp = disposition.get(jid, "UNKNOWN")
         budget_parity.append({
             "job_id": jid, "matched_group_id": job["matched_group_id"],
             "parent_id": job["parent_id"], "condition": job["condition"],
             "seed": job["perturbation_seed"], "repeat": job["repeat_index"],
             "k_requested": run.get("k_requested") if run else None,
             "k_executed": run.get("k_executed") if run else None,
-            "disposition": disposition.get(jid, "UNKNOWN"),
-            "valid": not job_errors.get(jid, ["MISSING"]),
+            "disposition": final_disp,
+            "valid": final_disp == "COMPLETE_VALID",
         })
 
     # ══════════════════════════════════════════════════════════════════════
-    # Build receipt WITH input seal binding
+    # Receipt
     # ══════════════════════════════════════════════════════════════════════
     receipt = {
         "schema": "PILOT_EXECUTION_VALIDATION_V0",

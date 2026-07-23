@@ -1,4 +1,4 @@
-"""v2.3 tests — job_id/matched_group_id mandatory, exact closure, NaN/Inf, seal binding, GO rules, blind materialization."""
+"""v2.3.1 tests — cross-artifact binding, duplicate rejection, strict rules, reachable decision tree, blind seal binding."""
 from __future__ import annotations
 
 import csv, json, sys, tempfile, uuid
@@ -66,17 +66,18 @@ def _make_rule_file(path: Path):
     path.write_text('{"rule":"frozen deterministic selection","version":"V0"}')
 
 
-def _make_go_rules(path: Path):
-    """Write a sealed GO/NO-GO rules root."""
-    path.mkdir(parents=True, exist_ok=True)
-    rules = {"schema": "PILOT_GO_NO_GO_RULES_V0",
-             "rules": {"min_valid_pairs": 1, "min_oracle_physical_parents": 1,
-                       "min_true_over_rand_parents": 1, "min_true_over_random_time_parents": 1,
-                       "max_missing_evidence": 0, "require_all_conditions_per_group": True}}
-    (path / "go_rules.json").write_text(json.dumps(rules, indent=2, sort_keys=True) + "\n")
-    files = sorted(p for p in path.iterdir() if p.is_file() and p.name not in ("SHA256SUMS", "SHA256SUMS.sha256"))
-    (path / "SHA256SUMS").write_text("".join(f"{sha256_file(p)}  {p.name}\n" for p in files))
-    (path / "SHA256SUMS.sha256").write_text(f"{sha256_file(path / 'SHA256SUMS')}  SHA256SUMS\n")
+def _make_go_rules(root: Path, **overrides):
+    """Write a sealed GO/NO-GO rules root with all required fields."""
+    root.mkdir(parents=True, exist_ok=True)
+    rules_data = {"min_valid_pairs": 1, "min_oracle_physical_parents": 1,
+                  "min_true_over_rand_parents": 1, "min_true_over_random_time_parents": 1,
+                  "max_missing_evidence": 0, "require_all_conditions_per_group": True}
+    rules_data.update(overrides)
+    rules = {"schema": "PILOT_GO_NO_GO_RULES_V0", "rules": rules_data}
+    (root / "go_rules.json").write_text(json.dumps(rules, indent=2, sort_keys=True) + "\n")
+    files = sorted(p for p in root.iterdir() if p.is_file() and p.name not in ("SHA256SUMS", "SHA256SUMS.sha256"))
+    (root / "SHA256SUMS").write_text("".join(f"{sha256_file(p)}  {p.name}\n" for p in files))
+    (root / "SHA256SUMS.sha256").write_text(f"{sha256_file(root / 'SHA256SUMS')}  SHA256SUMS\n")
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -166,7 +167,6 @@ def test_extra_video_index_rejected():
         _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [run]})
         _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
             {"job_id": jid, "matched_group_id": mgid, "path": run["telemetry_path"], "sha256": tsha}]})
-        # Video index has EXTRA entry not in matrix
         _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
             {"job_id": jid, "matched_group_id": mgid, "path": run["video_path"], "sha256": vsha},
             {"job_id": "EXTRA_JOB", "matched_group_id": "g_extra", "path": "x.mp4", "sha256": _sha("x")}]})
@@ -197,11 +197,143 @@ def test_extra_telemetry_index_rejected():
         _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [run]})
         _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
             {"job_id": jid, "matched_group_id": mgid, "path": run["video_path"], "sha256": vsha}]})
-        # Telemetry index has EXTRA entry
         _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
             {"job_id": jid, "matched_group_id": mgid, "path": run["telemetry_path"], "sha256": tsha},
             {"job_id": "EXTRA_T", "matched_group_id": "g_extra", "path": "x.json", "sha256": _sha("x")}]})
         _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0", "s0", 0)]})
+        _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
+        old = sys.argv
+        try:
+            sys.argv = ["ev", "--pilot-job-matrix-root", str(dp / "j"), "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"), "--pilot-video-index-root", str(dp / "v"),
+                        "--pilot-parent-manifest-root", str(dp / "pm"),
+                        "--pilot-arm-parity-protocol-root", str(dp / "arm"),
+                        "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "o")]
+            rc = ev(); assert rc != 0
+        finally: sys.argv = old
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Cross-artifact immutable field binding
+# ═══════════════════════════════════════════════════════════════════
+
+def test_run_matched_group_divergence_rejected():
+    from validate_factorized_attack_pilot_execution import main as ev
+    with tempfile.TemporaryDirectory() as d:
+        dp = Path(d)
+        jid = "j0"; mgid_matrix = "g_matrix"; mgid_run = "g_different"
+        job = _make_job("f0", "CLEAN", jid=jid, mgid=mgid_matrix)
+        run = _make_run("f0", "CLEAN", jid=jid, mgid=mgid_run, k_req=0, k_exec=0)
+        run["attack_requested"] = False; run.pop("attack_step_ledger", None)
+        (dp / "ev").mkdir(); (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
+        vsha = sha256_file(dp / "ev" / run["video_path"]); tsha = sha256_file(dp / "ev" / run["telemetry_path"])
+        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": [job]})
+        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [run]})
+        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
+            {"job_id": jid, "matched_group_id": mgid_matrix, "path": run["telemetry_path"], "sha256": tsha}]})
+        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
+            {"job_id": jid, "matched_group_id": mgid_matrix, "path": run["video_path"], "sha256": vsha}]})
+        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0")]})
+        _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
+        old = sys.argv
+        try:
+            sys.argv = ["ev", "--pilot-job-matrix-root", str(dp / "j"), "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"), "--pilot-video-index-root", str(dp / "v"),
+                        "--pilot-parent-manifest-root", str(dp / "pm"),
+                        "--pilot-arm-parity-protocol-root", str(dp / "arm"),
+                        "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "o")]
+            rc = ev(); assert rc != 0
+        finally: sys.argv = old
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Duplicate condition in same matched_group
+# ═══════════════════════════════════════════════════════════════════
+
+def test_duplicate_condition_in_group_rejected():
+    from validate_factorized_attack_pilot_execution import main as ev
+    with tempfile.TemporaryDirectory() as d:
+        dp = Path(d)
+        mgid = "g_f0_0"
+        jobs = [_make_job("f0", "TRUE_T10", seed=0, jid="j_t0", mgid=mgid),
+                _make_job("f0", "TRUE_T10", seed=1, jid="j_t1", mgid=mgid)]  # DUP condition in same group
+        t0 = _make_run("f0", "TRUE_T10", jid="j_t0", mgid=mgid, seed=0)
+        t1 = _make_run("f0", "TRUE_T10", jid="j_t1", mgid=mgid, seed=1)
+        (dp / "ev").mkdir()
+        for run in [t0, t1]:
+            (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
+        vsha0 = sha256_file(dp / "ev" / t0["video_path"]); tsha0 = sha256_file(dp / "ev" / t0["telemetry_path"])
+        vsha1 = sha256_file(dp / "ev" / t1["video_path"]); tsha1 = sha256_file(dp / "ev" / t1["telemetry_path"])
+        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": jobs})
+        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [t0, t1]})
+        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
+            {"job_id": "j_t0", "matched_group_id": mgid, "path": t0["telemetry_path"], "sha256": tsha0},
+            {"job_id": "j_t1", "matched_group_id": mgid, "path": t1["telemetry_path"], "sha256": tsha1}]})
+        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
+            {"job_id": "j_t0", "matched_group_id": mgid, "path": t0["video_path"], "sha256": vsha0},
+            {"job_id": "j_t1", "matched_group_id": mgid, "path": t1["video_path"], "sha256": vsha1}]})
+        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0")]})
+        _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
+        old = sys.argv
+        try:
+            sys.argv = ["ev", "--pilot-job-matrix-root", str(dp / "j"), "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"), "--pilot-video-index-root", str(dp / "v"),
+                        "--pilot-parent-manifest-root", str(dp / "pm"),
+                        "--pilot-arm-parity-protocol-root", str(dp / "arm"),
+                        "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "o")]
+            rc = ev(); assert rc != 0  # must reject duplicate condition in same group
+        finally: sys.argv = old
+
+
+# ═══════════════════════════════════════════════════════════════════
+# attack_requested strict bool
+# ═══════════════════════════════════════════════════════════════════
+
+def test_attack_requested_missing_rejected():
+    from validate_factorized_attack_pilot_execution import main as ev
+    with tempfile.TemporaryDirectory() as d:
+        dp = Path(d)
+        jid = "j0"; mgid = "g0"
+        run = _make_run("f0", "TRUE_T10", jid=jid, mgid=mgid)
+        run.pop("attack_requested", None)  # missing entirely
+        (dp / "ev").mkdir(); (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
+        vsha = sha256_file(dp / "ev" / run["video_path"]); tsha = sha256_file(dp / "ev" / run["telemetry_path"])
+        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": [_make_job("f0", "TRUE_T10", jid=jid, mgid=mgid)]})
+        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [run]})
+        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
+            {"job_id": jid, "matched_group_id": mgid, "path": run["telemetry_path"], "sha256": tsha}]})
+        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
+            {"job_id": jid, "matched_group_id": mgid, "path": run["video_path"], "sha256": vsha}]})
+        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0")]})
+        _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
+        old = sys.argv
+        try:
+            sys.argv = ["ev", "--pilot-job-matrix-root", str(dp / "j"), "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"), "--pilot-video-index-root", str(dp / "v"),
+                        "--pilot-parent-manifest-root", str(dp / "pm"),
+                        "--pilot-arm-parity-protocol-root", str(dp / "arm"),
+                        "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "o")]
+            rc = ev(); assert rc != 0
+        finally: sys.argv = old
+
+
+def test_clean_attack_requested_wrong():
+    from validate_factorized_attack_pilot_execution import main as ev
+    with tempfile.TemporaryDirectory() as d:
+        dp = Path(d)
+        jid = "j0"; mgid = "g0"
+        run = _make_run("f0", "CLEAN", jid=jid, mgid=mgid, k_req=0, k_exec=0)
+        run["attack_requested"] = True  # WRONG for CLEAN
+        run.pop("attack_step_ledger", None)
+        (dp / "ev").mkdir(); (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
+        vsha = sha256_file(dp / "ev" / run["video_path"]); tsha = sha256_file(dp / "ev" / run["telemetry_path"])
+        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": [_make_job("f0", "CLEAN", jid=jid, mgid=mgid)]})
+        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [run]})
+        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
+            {"job_id": jid, "matched_group_id": mgid, "path": run["telemetry_path"], "sha256": tsha}]})
+        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
+            {"job_id": jid, "matched_group_id": mgid, "path": run["video_path"], "sha256": vsha}]})
+        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0")]})
         _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
         old = sys.argv
         try:
@@ -299,7 +431,7 @@ def test_rand_gradient_aligned_true_rejected():
     with tempfile.TemporaryDirectory() as d:
         dp = Path(d)
         jid = "j0"; mgid = "g0"
-        run = _make_run("f0", "RAND_T10", jid=jid, mgid=mgid); run["gradient_aligned"] = True  # WRONG
+        run = _make_run("f0", "RAND_T10", jid=jid, mgid=mgid); run["gradient_aligned"] = True
         (dp / "ev").mkdir(); (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
         vsha = sha256_file(dp / "ev" / run["video_path"]); tsha = sha256_file(dp / "ev" / run["telemetry_path"])
         _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": [_make_job("f0", "RAND_T10", jid=jid, mgid=mgid)]})
@@ -327,7 +459,7 @@ def test_random_time_payload_not_matching_rejected():
         dp = Path(d)
         jid = "j0"; mgid = "g0"
         run = _make_run("f0", "RANDOM_TIME_T10", jid=jid, mgid=mgid)
-        run["payload_matches_TRUE"] = False  # WRONG
+        run["payload_matches_TRUE"] = False
         (dp / "ev").mkdir(); (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
         vsha = sha256_file(dp / "ev" / run["video_path"]); tsha = sha256_file(dp / "ev" / run["telemetry_path"])
         _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": [_make_job("f0", "RANDOM_TIME_T10", jid=jid, mgid=mgid)]})
@@ -355,39 +487,10 @@ def test_oracle_not_command_intervention_rejected():
         dp = Path(d)
         jid = "j0"; mgid = "g0"
         run = _make_run("f0", "COMMAND_OPEN_ORACLE", jid=jid, mgid=mgid)
-        run["oracle_type"] = "visual_attack"  # not command_intervention
+        run["oracle_type"] = "visual_attack"
         (dp / "ev").mkdir(); (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
         vsha = sha256_file(dp / "ev" / run["video_path"]); tsha = sha256_file(dp / "ev" / run["telemetry_path"])
         _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": [_make_job("f0", "COMMAND_OPEN_ORACLE", jid=jid, mgid=mgid)]})
-        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [run]})
-        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
-            {"job_id": jid, "matched_group_id": mgid, "path": run["telemetry_path"], "sha256": tsha}]})
-        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
-            {"job_id": jid, "matched_group_id": mgid, "path": run["video_path"], "sha256": vsha}]})
-        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0")]})
-        _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
-        old = sys.argv
-        try:
-            sys.argv = ["ev", "--pilot-job-matrix-root", str(dp / "j"), "--pilot-run-ledger-root", str(dp / "l"),
-                        "--pilot-telemetry-index-root", str(dp / "t"), "--pilot-video-index-root", str(dp / "v"),
-                        "--pilot-parent-manifest-root", str(dp / "pm"),
-                        "--pilot-arm-parity-protocol-root", str(dp / "arm"),
-                        "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "o")]
-            rc = ev(); assert rc != 0
-        finally: sys.argv = old
-
-
-def test_clean_attack_requested_not_false():
-    from validate_factorized_attack_pilot_execution import main as ev
-    with tempfile.TemporaryDirectory() as d:
-        dp = Path(d)
-        jid = "j0"; mgid = "g0"
-        run = _make_run("f0", "CLEAN", jid=jid, mgid=mgid, k_req=0, k_exec=0)
-        run["attack_requested"] = True  # WRONG for CLEAN
-        run.pop("attack_step_ledger", None)
-        (dp / "ev").mkdir(); (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
-        vsha = sha256_file(dp / "ev" / run["video_path"]); tsha = sha256_file(dp / "ev" / run["telemetry_path"])
-        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": [_make_job("f0", "CLEAN", jid=jid, mgid=mgid)]})
         _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [run]})
         _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
             {"job_id": jid, "matched_group_id": mgid, "path": run["telemetry_path"], "sha256": tsha}]})
@@ -444,7 +547,7 @@ def test_attack_end_exceeds_horizon_rejected():
         dp = Path(d)
         jid = "j0"; mgid = "g0"
         run = _make_run("f0", "TRUE_T10", jid=jid, mgid=mgid)
-        run["evaluation_horizon"] = 10; run["attack_end_step"] = 10  # end (10) >= horizon (10)
+        run["evaluation_horizon"] = 10; run["attack_end_step"] = 10
         (dp / "ev").mkdir(); (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
         vsha = sha256_file(dp / "ev" / run["video_path"]); tsha = sha256_file(dp / "ev" / run["telemetry_path"])
         _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": [_make_job("f0", "TRUE_T10", jid=jid, mgid=mgid)]})
@@ -501,48 +604,7 @@ def test_multi_seed_same_matched_group():
                         "--pilot-parent-manifest-root", str(dp / "pm"),
                         "--pilot-arm-parity-protocol-root", str(dp / "arm"),
                         "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "o")]
-            rc = ev(); assert rc == 0  # paired by matched_group_id, should pass
-        finally: sys.argv = old
-
-
-def test_multi_seed_wrong_matched_group_rejected():
-    """Different seeds sharing matched_group_id but not the same — should be caught if fields diverge."""
-    from validate_factorized_attack_pilot_execution import main as ev
-    with tempfile.TemporaryDirectory() as d:
-        dp = Path(d)
-        # Same matched_group_id but different perturbation_seed — parity fields must match
-        mgid = "g_f0_0"
-        jobs = [_make_job("f0", "TRUE_T10", seed=0, jid="j_t0", mgid=mgid),
-                _make_job("f0", "TRUE_T10", seed=1, jid="j_t1", mgid=mgid)]  # different seeds, same group
-        t0 = _make_run("f0", "TRUE_T10", jid="j_t0", mgid=mgid, seed=0)
-        t1 = _make_run("f0", "TRUE_T10", jid="j_t1", mgid=mgid, seed=1)
-        t1["perturbation_seed"] = 1  # different seed
-        (dp / "ev").mkdir()
-        for run in [t0, t1]:
-            (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
-        vsha0 = sha256_file(dp / "ev" / t0["video_path"]); tsha0 = sha256_file(dp / "ev" / t0["telemetry_path"])
-        vsha1 = sha256_file(dp / "ev" / t1["video_path"]); tsha1 = sha256_file(dp / "ev" / t1["telemetry_path"])
-        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": jobs})
-        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [t0, t1]})
-        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
-            {"job_id": "j_t0", "matched_group_id": mgid, "path": t0["telemetry_path"], "sha256": tsha0},
-            {"job_id": "j_t1", "matched_group_id": mgid, "path": t1["telemetry_path"], "sha256": tsha1}]})
-        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
-            {"job_id": "j_t0", "matched_group_id": mgid, "path": t0["video_path"], "sha256": vsha0},
-            {"job_id": "j_t1", "matched_group_id": mgid, "path": t1["video_path"], "sha256": vsha1}]})
-        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0")]})
-        _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
-        old = sys.argv
-        try:
-            sys.argv = ["ev", "--pilot-job-matrix-root", str(dp / "j"), "--pilot-run-ledger-root", str(dp / "l"),
-                        "--pilot-telemetry-index-root", str(dp / "t"), "--pilot-video-index-root", str(dp / "v"),
-                        "--pilot-parent-manifest-root", str(dp / "pm"),
-                        "--pilot-arm-parity-protocol-root", str(dp / "arm"),
-                        "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "o")]
-            rc = ev()
-            # Same seed values but different perturbation_seed field in matched parity should diverge
-            # actually perturbation_seed is not in MATCHED_PARITY_FIELDS, so this should PASS
-            assert rc == 0
+            rc = ev(); assert rc == 0
         finally: sys.argv = old
 
 
@@ -555,14 +617,12 @@ def test_canonical_key_mismatch_rejected():
     with tempfile.TemporaryDirectory() as d:
         dp = Path(d)
         parents = [_make_parent(f"fec_{i}", "s0", i) for i in range(5)]
-        # Deliberately wrong canonical key
         parents[0]["canonical_selection_key"] = "WRONG_KEY_00000000"
         rule_file = dp / "rule.json"; _make_rule_file(rule_file)
         rule_sha = sha256_file(rule_file)
         _seal_single(dp / "par", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0",
             "parents": parents, "expected_parent_count": 5,
-            "expected_suite_counts": {"s0": 5},
-            "selection_rule_sha256": rule_sha})
+            "expected_suite_counts": {"s0": 5}, "selection_rule_sha256": rule_sha})
         _seal_single(dp / "d", "c.json", {"schema": "PILOT_DETECTOR_V0",
             "paper_authoritative": False, "attack_eval_consumed": False,
             "detector_checkpoint_sha256": _sha("a"), "detector_config_sha256": _sha("b"),
@@ -581,7 +641,7 @@ def test_canonical_key_mismatch_rejected():
                         "--pilot-detector-config-root", str(dp / "d"),
                         "--selection-rule-file", str(rule_file),
                         "--output-root", str(dp / "o")]
-            rc = pm(); assert rc != 0  # must hard-fail
+            rc = pm(); assert rc != 0
         finally: sys.argv = old
 
 
@@ -598,8 +658,7 @@ def test_parent_sealed_identity_manifests_pass():
         rule_sha = sha256_file(rule_file)
         _seal_single(dp / "par", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0",
             "parents": parents, "expected_parent_count": 5,
-            "expected_suite_counts": {"s0": 5},
-            "selection_rule_sha256": rule_sha})
+            "expected_suite_counts": {"s0": 5}, "selection_rule_sha256": rule_sha})
         _seal_single(dp / "d", "c.json", {"schema": "PILOT_DETECTOR_V0",
             "paper_authoritative": False, "attack_eval_consumed": False,
             "detector_checkpoint_sha256": _sha("a"), "detector_config_sha256": _sha("b"),
@@ -630,7 +689,7 @@ def test_parent_selection_rule_sha_mismatch():
         rule_file = dp / "rule.json"; _make_rule_file(rule_file)
         _seal_single(dp / "par", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0",
             "parents": parents, "expected_parent_count": 5, "expected_suite_counts": {"s0": 5},
-            "selection_rule_sha256": _sha("z")})  # wrong
+            "selection_rule_sha256": _sha("z")})
         _seal_single(dp / "d", "c.json", {"schema": "PILOT_DETECTOR_V0",
             "paper_authoritative": False, "attack_eval_consumed": False,
             "detector_checkpoint_sha256": _sha("a"), "detector_config_sha256": _sha("b"),
@@ -785,9 +844,9 @@ def test_evidence_sha_missing_rejected():
         _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": [_make_job("f0", "TRUE_T10", jid=jid, mgid=mgid)]})
         _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [run]})
         _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
-            {"job_id": jid, "matched_group_id": mgid, "path": run["telemetry_path"]}]})  # NO SHA
+            {"job_id": jid, "matched_group_id": mgid, "path": run["telemetry_path"]}]})
         _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
-            {"job_id": jid, "matched_group_id": mgid, "path": run["video_path"]}]})  # NO SHA
+            {"job_id": jid, "matched_group_id": mgid, "path": run["video_path"]}]})
         _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0", "s0", 0)]})
         _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
         old = sys.argv
@@ -802,7 +861,7 @@ def test_evidence_sha_missing_rejected():
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Parity mismatch → CSV consistency
+# Parity mismatch → CSV consistency (budget valid from disposition)
 # ═══════════════════════════════════════════════════════════════════
 
 def test_parity_mismatch_csv_consistent():
@@ -814,7 +873,6 @@ def test_parity_mismatch_csv_consistent():
                 _make_job("f0", "RAND_T10", jid="j_r", mgid=mgid)]
         t_run = _make_run("f0", "TRUE_T10", jid="j_t", mgid=mgid)
         r_run = _make_run("f0", "RAND_T10", jid="j_r", mgid=mgid); r_run["gradient_aligned"] = False
-        # Divergent checkpoint to trigger parity mismatch
         r_run["checkpoint_sha256"] = _sha("z")
         (dp / "ev").mkdir()
         for run in [t_run, r_run]:
@@ -839,22 +897,19 @@ def test_parity_mismatch_csv_consistent():
                         "--pilot-arm-parity-protocol-root", str(dp / "arm"),
                         "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "o")]
             rc = ev(); assert rc != 0
-            # Verify CSV and receipt agree on dispositions
             with open(dp / "o/PILOT_DISPOSITION_V0.csv") as f:
                 rows = list(csv.DictReader(f))
             with open(dp / "o/PILOT_BUDGET_PARITY_V0.csv") as f:
                 budget = list(csv.DictReader(f))
             with open(dp / "o/PILOT_EXECUTION_VALIDATION_V0.json") as f:
                 receipt = json.load(f)
-            # All three should reference PARITY_MISMATCH for RAND
-            r_disp = [r for r in rows if r["condition"] == "RAND_T10"]
-            assert len(r_disp) == 1
-            assert r_disp[0]["disposition"] == "PARITY_MISMATCH"
             r_budget = [b for b in budget if b["condition"] == "RAND_T10"]
+            assert len(r_budget) == 1
             assert r_budget[0]["disposition"] == "PARITY_MISMATCH"
-            assert r_budget[0]["valid"] == "False"
+            assert r_budget[0]["valid"] == "False"  # FIXED: valid derives from disposition
+            r_disp = [r for r in rows if r["condition"] == "RAND_T10"]
+            assert r_disp[0]["disposition"] == "PARITY_MISMATCH"
             assert receipt["status"] == "HOLD"
-            assert receipt["disposition_counts"].get("PARITY_MISMATCH", 0) >= 1
         finally: sys.argv = old
 
 
@@ -869,12 +924,11 @@ def test_cross_receipt_substitution_rejected():
         mgid = "g_f0_0"
         jobs = [_make_job("f0", "CLEAN", jid="j_c", mgid=mgid)]
         run = _make_run("f0", "CLEAN", jid="j_c", mgid=mgid, k_req=0, k_exec=0)
-        run.pop("attack_step_ledger", None)
+        run["attack_requested"] = False; run.pop("attack_step_ledger", None)
         run["official_success"] = True; run["gripper_opened"] = True
         (dp / "ev").mkdir(); (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
         vsha = sha256_file(dp / "ev" / run["video_path"]); tsha = sha256_file(dp / "ev" / run["telemetry_path"])
 
-        # Create a VALID execution receipt
         _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": jobs})
         _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [run]})
         _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
@@ -885,7 +939,6 @@ def test_cross_receipt_substitution_rejected():
         _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
         _make_go_rules(dp / "gr")
 
-        # First run: generate execution validation receipt
         from validate_factorized_attack_pilot_execution import main as ev
         old = sys.argv
         try:
@@ -896,25 +949,23 @@ def test_cross_receipt_substitution_rejected():
                         "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "ev_out")]
             ev()
 
-            # Now create a DIFFERENT run ledger (sealed) to substitute
             _seal_single(dp / "l2", "m.json", {"schema": "PILOT_RUN_LEDGER_V0",
                 "runs": [{"job_id": "j_c", "matched_group_id": mgid, "parent_id": "f0", "condition": "CLEAN",
                           "k_requested": 0, "k_executed": 0, "official_success": False}]})
 
-            # Analysis with ev_out receipt but l2 ledger → should reject (seal mismatch)
             sys.argv = ["an", "--pilot-execution-validation-root", str(dp / "ev_out"),
                         "--pilot-job-matrix-root", str(dp / "j"),
-                        "--pilot-run-ledger-root", str(dp / "l2"),  # DIFFERENT
+                        "--pilot-run-ledger-root", str(dp / "l2"),
                         "--pilot-telemetry-index-root", str(dp / "t"),
                         "--pilot-go-no-go-rules-root", str(dp / "gr"),
                         "--output-root", str(dp / "o")]
-            an(); assert False  # Should have rejected
+            an(); assert False
         except SystemExit: pass
         finally: sys.argv = old
 
 
 # ═══════════════════════════════════════════════════════════════════
-# GO/NO-GO: attack ineffective → STOP
+# GO/NO-GO: attack ineffective → STOP; effective → CONTINUE
 # ═══════════════════════════════════════════════════════════════════
 
 def test_go_stop_when_attack_ineffective():
@@ -927,7 +978,6 @@ def test_go_stop_when_attack_ineffective():
                 _make_job("f0", "RANDOM_TIME_T10", jid="j_rt", mgid=mgid),
                 _make_job("f0", "COMMAND_OPEN_ORACLE", jid="j_or", mgid=mgid),
                 _make_job("f0", "CLEAN", jid="j_c", mgid=mgid)]
-        # All attacks succeed equally — no advantage
         t_run = _make_run("f0", "TRUE_T10", jid="j_t", mgid=mgid)
         t_run["official_success"] = True; t_run["gripper_opened"] = True
         r_run = _make_run("f0", "RAND_T10", jid="j_r", mgid=mgid); r_run["gradient_aligned"] = False
@@ -936,7 +986,8 @@ def test_go_stop_when_attack_ineffective():
         rt_run["official_success"] = True; rt_run["gripper_opened"] = True
         or_run = _make_run("f0", "COMMAND_OPEN_ORACLE", jid="j_or", mgid=mgid)
         or_run["official_success"] = True; or_run["gripper_opened"] = True
-        c_run = _make_run("f0", "CLEAN", jid="j_c", mgid=mgid, k_req=0, k_exec=0); c_run.pop("attack_step_ledger", None)
+        c_run = _make_run("f0", "CLEAN", jid="j_c", mgid=mgid, k_req=0, k_exec=0)
+        c_run["attack_requested"] = False; c_run.pop("attack_step_ledger", None)
         c_run["official_success"] = True; c_run["gripper_opened"] = True
 
         runs = [t_run, r_run, rt_run, or_run, c_run]
@@ -961,7 +1012,6 @@ def test_go_stop_when_attack_ineffective():
 
         old = sys.argv
         try:
-            # First: execution validation
             from validate_factorized_attack_pilot_execution import main as ev
             sys.argv = ["ev", "--pilot-job-matrix-root", str(dp / "j"), "--pilot-run-ledger-root", str(dp / "l"),
                         "--pilot-telemetry-index-root", str(dp / "t"), "--pilot-video-index-root", str(dp / "v"),
@@ -970,7 +1020,6 @@ def test_go_stop_when_attack_ineffective():
                         "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "ev_out")]
             ev()
 
-            # Analysis: TRUE doesn't beat RAND → STOP
             sys.argv = ["an", "--pilot-execution-validation-root", str(dp / "ev_out"),
                         "--pilot-job-matrix-root", str(dp / "j"),
                         "--pilot-run-ledger-root", str(dp / "l"),
@@ -978,11 +1027,11 @@ def test_go_stop_when_attack_ineffective():
                         "--pilot-go-no-go-rules-root", str(dp / "gr"),
                         "--output-root", str(dp / "o")]
             rc = an()
-            assert rc != 0  # STOP
-            with open(dp / "o/PILOT_GO_NO_GO_V0.json") as f:
+            assert rc != 0
+            with open(dp / "o/PILOT_AUTOMATED_GO_NO_GO_V0.json") as f:
                 gr = json.load(f)
             assert gr["recommendation"] == "STOP"
-            assert any("TRUE_NOT_BEATING_RAND" in b for b in gr["blocker_reasons"])
+            assert gr["scientific_go_no_go_authorized"] is False
         finally: sys.argv = old
 
 
@@ -996,18 +1045,17 @@ def test_go_continue_when_attack_effective():
                 _make_job("f0", "RANDOM_TIME_T10", jid="j_rt", mgid=mgid),
                 _make_job("f0", "COMMAND_OPEN_ORACLE", jid="j_or", mgid=mgid),
                 _make_job("f0", "CLEAN", jid="j_c", mgid=mgid)]
-        # TRUE beats RAND and RANDOM_TIME, ORACLE beats CLEAN
         t_run = _make_run("f0", "TRUE_T10", jid="j_t", mgid=mgid)
-        t_run["official_success"] = False  # attack CAUSES failure!
+        t_run["official_success"] = False  # TRUE causes failure
         r_run = _make_run("f0", "RAND_T10", jid="j_r", mgid=mgid); r_run["gradient_aligned"] = False
-        r_run["official_success"] = True  # RAND still succeeds (no gradient → no effect)
+        r_run["official_success"] = True
         rt_run = _make_run("f0", "RANDOM_TIME_T10", jid="j_rt", mgid=mgid)
-        rt_run["official_success"] = True  # RANDOM_TIME still succeeds
+        rt_run["official_success"] = True  # TRUE beats RANDOM_TIME too
         or_run = _make_run("f0", "COMMAND_OPEN_ORACLE", jid="j_or", mgid=mgid)
-        or_run["official_success"] = False  # Oracle also fails (gripper opens → drop)
-        or_run["gripper_opened"] = True
-        c_run = _make_run("f0", "CLEAN", jid="j_c", mgid=mgid, k_req=0, k_exec=0); c_run.pop("attack_step_ledger", None)
-        c_run["official_success"] = True  # Clean succeeds
+        or_run["official_success"] = False; or_run["gripper_opened"] = True
+        c_run = _make_run("f0", "CLEAN", jid="j_c", mgid=mgid, k_req=0, k_exec=0)
+        c_run["attack_requested"] = False; c_run.pop("attack_step_ledger", None)
+        c_run["official_success"] = True
 
         runs = [t_run, r_run, rt_run, or_run, c_run]
         (dp / "ev").mkdir()
@@ -1046,15 +1094,183 @@ def test_go_continue_when_attack_effective():
                         "--pilot-go-no-go-rules-root", str(dp / "gr"),
                         "--output-root", str(dp / "o")]
             rc = an()
-            assert rc == 0  # CONTINUE
-            with open(dp / "o/PILOT_GO_NO_GO_V0.json") as f:
+            assert rc == 0
+            with open(dp / "o/PILOT_AUTOMATED_GO_NO_GO_V0.json") as f:
                 gr = json.load(f)
             assert gr["recommendation"] == "CONTINUE"
         finally: sys.argv = old
 
 
+def test_go_stop_timing_when_true_beats_rt_but_not_rand():
+    """TRUE beats RANDOM_TIME but not RAND → timing matters, gradient doesn't → STOP_TIMING."""
+    from analyze_factorized_attack_pilot import main as an
+    with tempfile.TemporaryDirectory() as d:
+        dp = Path(d)
+        mgid = "g_f0_0"
+        jobs = [_make_job("f0", "TRUE_T10", jid="j_t", mgid=mgid),
+                _make_job("f0", "RAND_T10", jid="j_r", mgid=mgid),
+                _make_job("f0", "RANDOM_TIME_T10", jid="j_rt", mgid=mgid),
+                _make_job("f0", "COMMAND_OPEN_ORACLE", jid="j_or", mgid=mgid),
+                _make_job("f0", "CLEAN", jid="j_c", mgid=mgid)]
+        t_run = _make_run("f0", "TRUE_T10", jid="j_t", mgid=mgid)
+        t_run["official_success"] = False  # TRUE fails
+        r_run = _make_run("f0", "RAND_T10", jid="j_r", mgid=mgid); r_run["gradient_aligned"] = False
+        r_run["official_success"] = False  # RAND also fails (random direction still works)
+        rt_run = _make_run("f0", "RANDOM_TIME_T10", jid="j_rt", mgid=mgid)
+        rt_run["official_success"] = True  # RANDOM_TIME succeeds (timing matters)
+        or_run = _make_run("f0", "COMMAND_OPEN_ORACLE", jid="j_or", mgid=mgid)
+        or_run["official_success"] = False; or_run["gripper_opened"] = True
+        c_run = _make_run("f0", "CLEAN", jid="j_c", mgid=mgid, k_req=0, k_exec=0)
+        c_run["attack_requested"] = False; c_run.pop("attack_step_ledger", None)
+        c_run["official_success"] = True
+
+        runs = [t_run, r_run, rt_run, or_run, c_run]
+        (dp / "ev").mkdir()
+        for run in runs:
+            (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
+        sha_map = {}
+        for run in runs:
+            sha_map[run["job_id"]] = {
+                "vsha": sha256_file(dp / "ev" / run["video_path"]),
+                "tsha": sha256_file(dp / "ev" / run["telemetry_path"])}
+
+        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": jobs})
+        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": runs})
+        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
+            {"job_id": r["job_id"], "matched_group_id": mgid, "path": r["telemetry_path"], "sha256": sha_map[r["job_id"]]["tsha"]} for r in runs]})
+        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
+            {"job_id": r["job_id"], "matched_group_id": mgid, "path": r["video_path"], "sha256": sha_map[r["job_id"]]["vsha"]} for r in runs]})
+        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0")]})
+        _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
+        _make_go_rules(dp / "gr")
+
+        old = sys.argv
+        try:
+            from validate_factorized_attack_pilot_execution import main as ev
+            sys.argv = ["ev", "--pilot-job-matrix-root", str(dp / "j"), "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"), "--pilot-video-index-root", str(dp / "v"),
+                        "--pilot-parent-manifest-root", str(dp / "pm"),
+                        "--pilot-arm-parity-protocol-root", str(dp / "arm"),
+                        "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "ev_out")]
+            ev()
+
+            sys.argv = ["an", "--pilot-execution-validation-root", str(dp / "ev_out"),
+                        "--pilot-job-matrix-root", str(dp / "j"),
+                        "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"),
+                        "--pilot-go-no-go-rules-root", str(dp / "gr"),
+                        "--output-root", str(dp / "o")]
+            rc = an()
+            assert rc != 0
+            with open(dp / "o/PILOT_AUTOMATED_GO_NO_GO_V0.json") as f:
+                gr = json.load(f)
+            assert gr["recommendation"] == "STOP_TIMING"
+        finally: sys.argv = old
+
+
+def test_go_stop_window_when_oracle_fails():
+    """ORACLE doesn't cause degradation → window not viable → STOP_WINDOW."""
+    from analyze_factorized_attack_pilot import main as an
+    with tempfile.TemporaryDirectory() as d:
+        dp = Path(d)
+        mgid = "g_f0_0"
+        jobs = [_make_job("f0", "TRUE_T10", jid="j_t", mgid=mgid),
+                _make_job("f0", "RAND_T10", jid="j_r", mgid=mgid),
+                _make_job("f0", "RANDOM_TIME_T10", jid="j_rt", mgid=mgid),
+                _make_job("f0", "COMMAND_OPEN_ORACLE", jid="j_or", mgid=mgid),
+                _make_job("f0", "CLEAN", jid="j_c", mgid=mgid)]
+        t_run = _make_run("f0", "TRUE_T10", jid="j_t", mgid=mgid)
+        t_run["official_success"] = False
+        r_run = _make_run("f0", "RAND_T10", jid="j_r", mgid=mgid); r_run["gradient_aligned"] = False
+        r_run["official_success"] = True
+        rt_run = _make_run("f0", "RANDOM_TIME_T10", jid="j_rt", mgid=mgid)
+        rt_run["official_success"] = True
+        or_run = _make_run("f0", "COMMAND_OPEN_ORACLE", jid="j_or", mgid=mgid)
+        or_run["official_success"] = True; or_run["gripper_opened"] = False  # Oracle doesn't cause damage
+        c_run = _make_run("f0", "CLEAN", jid="j_c", mgid=mgid, k_req=0, k_exec=0)
+        c_run["attack_requested"] = False; c_run.pop("attack_step_ledger", None)
+        c_run["official_success"] = True
+
+        runs = [t_run, r_run, rt_run, or_run, c_run]
+        (dp / "ev").mkdir()
+        for run in runs:
+            (dp / "ev" / run["video_path"]).write_text("v"); (dp / "ev" / run["telemetry_path"]).write_text("t")
+        sha_map = {}
+        for run in runs:
+            sha_map[run["job_id"]] = {
+                "vsha": sha256_file(dp / "ev" / run["video_path"]),
+                "tsha": sha256_file(dp / "ev" / run["telemetry_path"])}
+
+        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": jobs})
+        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": runs})
+        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": [
+            {"job_id": r["job_id"], "matched_group_id": mgid, "path": r["telemetry_path"], "sha256": sha_map[r["job_id"]]["tsha"]} for r in runs]})
+        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
+            {"job_id": r["job_id"], "matched_group_id": mgid, "path": r["video_path"], "sha256": sha_map[r["job_id"]]["vsha"]} for r in runs]})
+        _seal_single(dp / "pm", "m.json", {"schema": "PILOT_PARENT_MANIFEST_V0", "parents": [_make_parent("f0")]})
+        _seal_single(dp / "arm", "m.json", {"schema": "PILOT_ARM_PARITY_PROTOCOL_V0", "max_abs_tolerance": 0.01})
+        _make_go_rules(dp / "gr")
+
+        old = sys.argv
+        try:
+            from validate_factorized_attack_pilot_execution import main as ev
+            sys.argv = ["ev", "--pilot-job-matrix-root", str(dp / "j"), "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"), "--pilot-video-index-root", str(dp / "v"),
+                        "--pilot-parent-manifest-root", str(dp / "pm"),
+                        "--pilot-arm-parity-protocol-root", str(dp / "arm"),
+                        "--evidence-root", str(dp / "ev"), "--output-root", str(dp / "ev_out")]
+            ev()
+
+            sys.argv = ["an", "--pilot-execution-validation-root", str(dp / "ev_out"),
+                        "--pilot-job-matrix-root", str(dp / "j"),
+                        "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"),
+                        "--pilot-go-no-go-rules-root", str(dp / "gr"),
+                        "--output-root", str(dp / "o")]
+            rc = an()
+            assert rc != 0
+            with open(dp / "o/PILOT_AUTOMATED_GO_NO_GO_V0.json") as f:
+                gr = json.load(f)
+            assert gr["recommendation"] == "STOP_WINDOW"
+        finally: sys.argv = old
+
+
+def test_go_rules_missing_field_rejected():
+    """GO rules with missing required field → SystemExit."""
+    from analyze_factorized_attack_pilot import main as an
+    with tempfile.TemporaryDirectory() as d:
+        dp = Path(d)
+        (dp / "ev").mkdir()
+        # Rules missing required field
+        rules_root = dp / "gr"
+        rules_root.mkdir(parents=True)
+        rules = {"schema": "PILOT_GO_NO_GO_RULES_V0",
+                 "rules": {"min_valid_pairs": 1}}  # missing 5 required fields
+        (rules_root / "go_rules.json").write_text(json.dumps(rules))
+        files = sorted(p for p in rules_root.iterdir() if p.is_file() and p.name not in ("SHA256SUMS", "SHA256SUMS.sha256"))
+        (rules_root / "SHA256SUMS").write_text("".join(f"{sha256_file(p)}  {p.name}\n" for p in files))
+        (rules_root / "SHA256SUMS.sha256").write_text(f"{sha256_file(rules_root / 'SHA256SUMS')}  SHA256SUMS\n")
+
+        _seal_single(dp / "ev_val", "m.json", {"schema": "PILOT_EXECUTION_VALIDATION_V0", "status": "PASS",
+            "input_seals": {}})
+        _seal_single(dp / "j", "m.json", {"schema": "PILOT_JOB_MATRIX_V0", "jobs": []})
+        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": []})
+        _seal_single(dp / "t", "m.json", {"schema": "PILOT_TELEMETRY_INDEX_V0", "entries": []})
+        old = sys.argv
+        try:
+            sys.argv = ["an", "--pilot-execution-validation-root", str(dp / "ev_val"),
+                        "--pilot-job-matrix-root", str(dp / "j"),
+                        "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-telemetry-index-root", str(dp / "t"),
+                        "--pilot-go-no-go-rules-root", str(rules_root),
+                        "--output-root", str(dp / "o")]
+            an(); assert False
+        except SystemExit: pass
+        finally: sys.argv = old
+
+
 # ═══════════════════════════════════════════════════════════════════
-# Blind review tests
+# Blind review tests (fixed: structural leak check, no raw-text scan)
 # ═══════════════════════════════════════════════════════════════════
 
 def test_blind_separate_roots():
@@ -1067,7 +1283,7 @@ def test_blind_separate_roots():
             "input_seals": {}, "disposition_counts": {}, "n_expected_jobs": 1, "n_errors": 0})
         _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [
             {"job_id": jid, "matched_group_id": mgid, "parent_id": "f0", "condition": "CLEAN", "video_path": "v.mp4",
-             "k_requested": 0, "k_executed": 0}]})
+             "k_requested": 0, "k_executed": 0, "attack_requested": False}]})
         video_path = dp / "ev" / "v.mp4"; video_path.write_text("video_content")
         vsha = sha256_file(video_path)
         _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
@@ -1086,10 +1302,17 @@ def test_blind_separate_roots():
         assert (dp / "blind/videos").is_dir()
         assert (dp / "unblind/PILOT_UNBLINDING_V0.csv").exists()
         assert not (dp / "blind/PILOT_UNBLINDING_V0.csv").exists()
-        # Verify blind root has NO condition leaks
-        blind_json = (dp / "blind/PILOT_BLIND_REVIEW_V0.json").read_text().lower()
-        assert "CLEAN" not in blind_json
-        assert "condition" not in blind_json
+        # Structural check: blind JSON fields must not contain condition info
+        with open(dp / "blind/PILOT_BLIND_REVIEW_V0.json") as f:
+            blind_data = json.load(f)
+        for entry in blind_data["entries"]:
+            assert "condition" not in entry
+            assert "parent_id" not in entry
+            assert "video_path" not in entry
+            assert "original" not in str(entry)
+            # blind_id and video_file only
+            assert set(entry.keys()).issubset({"blind_id", "video_file", "video_sha256",
+                                               "reviewer_a_labels", "reviewer_b_labels"})
 
 
 def test_blind_same_root_rejected():
@@ -1141,7 +1364,8 @@ def test_blind_requires_execution_pass():
         finally: sys.argv = old
 
 
-def test_blind_no_raw_paths():
+def test_blind_no_raw_paths_structural():
+    """Verify blind root structurally — check JSON field names and values, not raw text scan."""
     from build_factorized_pilot_blind_review import main as br
     with tempfile.TemporaryDirectory() as d:
         dp = Path(d); (dp / "ev").mkdir()
@@ -1149,12 +1373,12 @@ def test_blind_no_raw_paths():
         _seal_single(dp / "ev_val", "m.json", {"schema": "PILOT_EXECUTION_VALIDATION_V0", "status": "PASS",
             "input_seals": {}, "disposition_counts": {}, "n_expected_jobs": 1})
         _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": [
-            {"job_id": jid, "matched_group_id": mgid, "parent_id": "f0", "condition": "CLEAN", "video_path": "v.mp4",
-             "k_requested": 0, "k_executed": 0}]})
-        (dp / "ev/v.mp4").write_text("video_content")
-        vsha = sha256_file(dp / "ev/v.mp4")
+            {"job_id": jid, "matched_group_id": mgid, "parent_id": "p1", "condition": "CLEAN", "video_path": "original_name.mp4",
+             "k_requested": 0, "k_executed": 0, "attack_requested": False}]})
+        (dp / "ev/original_name.mp4").write_text("video_content")
+        vsha = sha256_file(dp / "ev/original_name.mp4")
         _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": [
-            {"job_id": jid, "matched_group_id": mgid, "path": "v.mp4", "sha256": vsha}]})
+            {"job_id": jid, "matched_group_id": mgid, "path": "original_name.mp4", "sha256": vsha}]})
         old = sys.argv
         try:
             sys.argv = ["br", "--pilot-execution-validation-root", str(dp / "ev_val"),
@@ -1165,14 +1389,43 @@ def test_blind_no_raw_paths():
                         "--unblinding-root", str(dp / "unblind")]
             rc = br(); assert rc == 0
         finally: sys.argv = old
-        # Blind root must NOT contain original video path "v.mp4" or raw condition/parent
-        all_blind_content = ""
-        for p in (dp / "blind").rglob("*"):
-            if p.is_file():
-                all_blind_content += p.read_text(errors="replace")
-        assert "v.mp4" not in all_blind_content  # original path hidden
-        assert "f0" not in all_blind_content     # parent_id hidden
-        # Check JSON doesn't leak raw paths
-        blind_json = (dp / "blind/PILOT_BLIND_REVIEW_V0.json").read_text()
-        assert "video_path" not in blind_json
-        assert "original" not in blind_json.lower()
+        # Structural verification — parse JSON, check fields
+        with open(dp / "blind/PILOT_BLIND_REVIEW_V0.json") as f:
+            blind_data = json.load(f)
+        for entry in blind_data["entries"]:
+            # Must NOT contain raw path or parent info
+            assert "original_name" not in json.dumps(entry)
+            assert "p1" not in json.dumps(entry)
+            assert "video_path" not in entry
+            assert "video_reference" not in entry
+            assert "original" not in str(entry)
+            # video_file must be a random name (Bxxxxx.ext)
+            vf = entry["video_file"]
+            assert vf.startswith("B") and not vf.startswith("original")
+        # Blind root CSV must not have raw path
+        with open(dp / "blind/PILOT_BLIND_REVIEW_V0.csv") as f:
+            csv_text = f.read()
+        assert "original_name" not in csv_text
+        assert "p1" not in csv_text
+
+
+def test_blind_nested_roots_rejected():
+    """Blind root nested inside unblinding root or vice versa → SystemExit."""
+    from build_factorized_pilot_blind_review import main as br
+    with tempfile.TemporaryDirectory() as d:
+        dp = Path(d); (dp / "ev").mkdir()
+        _seal_single(dp / "ev_val", "m.json", {"schema": "PILOT_EXECUTION_VALIDATION_V0", "status": "PASS",
+            "input_seals": {}, "disposition_counts": {}})
+        _seal_single(dp / "l", "m.json", {"schema": "PILOT_RUN_LEDGER_V0", "runs": []})
+        _seal_single(dp / "v", "m.json", {"schema": "PILOT_VIDEO_INDEX_V0", "entries": []})
+        old = sys.argv
+        try:
+            sys.argv = ["br", "--pilot-execution-validation-root", str(dp / "ev_val"),
+                        "--pilot-run-ledger-root", str(dp / "l"),
+                        "--pilot-video-index-root", str(dp / "v"),
+                        "--evidence-root", str(dp / "ev"),
+                        "--blind-package-root", str(dp / "root"),
+                        "--unblinding-root", str(dp / "root/sub")]
+            br(); assert False
+        except SystemExit: pass
+        finally: sys.argv = old
