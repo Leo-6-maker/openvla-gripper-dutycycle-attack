@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""B1 v2.2: Pilot parent manifest validator — sealed roots, selection rule SHA, canonical sort."""
+"""B1 v2.3: Pilot parent manifest validator — sealed identity roots, canonical key hard-fail, selection rule SHA."""
 from __future__ import annotations
 
 import argparse, hashlib, json, os, sys, uuid
@@ -17,6 +17,7 @@ from pilot_integrity import (
 SELF_SHA = None
 EXPECTED_PARENT_SCHEMA = "PILOT_PARENT_MANIFEST_V0"
 EXPECTED_DETECTOR_SCHEMA = "PILOT_DETECTOR_V0"
+EXPECTED_IDENTITY_SCHEMA = "IDENTITY_MANIFEST_V0"
 
 FORBIDDEN_OUTCOME_FIELDS = frozenset({
     "attack_outcome", "official_success_after_attack", "failure", "cq_failure",
@@ -53,14 +54,14 @@ def main() -> int:
     global SELF_SHA; SELF_SHA = sha256_file(Path(__file__))
     ap = argparse.ArgumentParser()
     ap.add_argument("--pilot-parent-manifest-root", type=Path, required=True)
-    ap.add_argument("--reserved-fec-manifest", type=Path, required=True)
-    ap.add_argument("--t-manifest", type=Path, required=True)
-    ap.add_argument("--c-manifest", type=Path, required=True)
-    ap.add_argument("--p-manifest", type=Path, required=True)
-    ap.add_argument("--h-manifest", type=Path, required=True)
-    ap.add_argument("--a-manifest", type=Path, required=True)
+    # Identity manifests are now sealed roots (directories with SHA256SUMS)
+    ap.add_argument("--reserved-fec-manifest-root", type=Path, required=True)
+    ap.add_argument("--t-manifest-root", type=Path, required=True)
+    ap.add_argument("--c-manifest-root", type=Path, required=True)
+    ap.add_argument("--p-manifest-root", type=Path, required=True)
+    ap.add_argument("--h-manifest-root", type=Path, required=True)
+    ap.add_argument("--a-manifest-root", type=Path, required=True)
     ap.add_argument("--pilot-detector-config-root", type=Path, required=True)
-    # Fix 14: Selection rule file mandatory
     ap.add_argument("--selection-rule-file", type=Path, required=True)
     ap.add_argument("--output-root", type=Path, required=True)
     args = ap.parse_args()
@@ -68,16 +69,21 @@ def main() -> int:
     out_root = args.output_root.resolve()
     if out_root.exists(): raise SystemExit(f"OUTPUT_EXISTS: {out_root}")
 
-    # Fix 1: Sealed roots
     parent_manifest, _ = consume_sealed_root(args.pilot_parent_manifest_root, EXPECTED_PARENT_SCHEMA, "PARENTS")
     detector, _ = consume_sealed_root(args.pilot_detector_config_root, EXPECTED_DETECTOR_SCHEMA, "DETECTOR")
-    fec_manifest = load_strict_json(args.reserved_fec_manifest, "FEC")
+
+    # All identity manifests are now sealed roots
+    fec_manifest, _ = consume_sealed_root(args.reserved_fec_manifest_root, EXPECTED_IDENTITY_SCHEMA, "FEC")
+    t_manifest, _    = consume_sealed_root(args.t_manifest_root, EXPECTED_IDENTITY_SCHEMA, "T")
+    c_manifest, _    = consume_sealed_root(args.c_manifest_root, EXPECTED_IDENTITY_SCHEMA, "C")
+    p_manifest, _    = consume_sealed_root(args.p_manifest_root, EXPECTED_IDENTITY_SCHEMA, "P")
+    h_manifest, _    = consume_sealed_root(args.h_manifest_root, EXPECTED_IDENTITY_SCHEMA, "H")
+    a_manifest, _    = consume_sealed_root(args.a_manifest_root, EXPECTED_IDENTITY_SCHEMA, "A")
 
     errors: list[str] = []
 
     parents = require_nonempty_list(parent_manifest.get("parents", []), "PARENTS")
 
-    # Fix 9: expected_parent_count mandatory
     expected_count = parent_manifest.get("expected_parent_count")
     if not is_strict_int(expected_count) or expected_count <= 0:
         errors.append(f"EXPECTED_PARENT_COUNT_INVALID: {expected_count!r}")
@@ -86,7 +92,6 @@ def main() -> int:
     if not isinstance(expected_suites, dict) or not expected_suites:
         errors.append("EXPECTED_SUITE_COUNTS_MISSING")
 
-    # Fix 14: Selection rule file mandatory, SHA verified
     selection_rule_sha = parent_manifest.get("selection_rule_sha256", "")
     if not is_64char_hex(selection_rule_sha):
         errors.append(f"SELECTION_RULE_SHA_INVALID: {selection_rule_sha[:40]}")
@@ -98,16 +103,15 @@ def main() -> int:
             errors.append(f"SELECTION_RULE_SHA_MISMATCH: declared={selection_rule_sha[:16]} actual={actual_rule_sha[:16]}")
 
     fec_ids = _strict_identity_set(fec_manifest, "FEC")
-    t_ids = _strict_identity_set(load_strict_json(args.t_manifest, "T"), "T")
-    c_ids = _strict_identity_set(load_strict_json(args.c_manifest, "C"), "C")
-    p_ids = _strict_identity_set(load_strict_json(args.p_manifest, "P"), "P")
-    h_ids = _strict_identity_set(load_strict_json(args.h_manifest, "H"), "H")
-    a_ids = _strict_identity_set(load_strict_json(args.a_manifest, "A"), "A")
+    t_ids = _strict_identity_set(t_manifest, "T")
+    c_ids = _strict_identity_set(c_manifest, "C")
+    p_ids = _strict_identity_set(p_manifest, "P")
+    h_ids = _strict_identity_set(h_manifest, "H")
+    a_ids = _strict_identity_set(a_manifest, "A")
 
     parent_ids: set[str] = set()
     selection_ranks: set[int] = set()
     suite_counts: dict[str, int] = {}
-    sorted_parents: list[dict[str, Any]] = []
     manifest_order_ok = True
 
     for idx, item in enumerate(parents):
@@ -118,7 +122,6 @@ def main() -> int:
         if pid in parent_ids: errors.append(f"PARENT_DUP: {pid}"); continue
         parent_ids.add(pid)
 
-        # Fix 15: Manifest order must equal rank order
         rank = item.get("selection_rank")
         if is_strict_int(rank) and rank != idx:
             manifest_order_ok = False
@@ -148,23 +151,20 @@ def main() -> int:
             if rank in selection_ranks: errors.append(f"PARENT_RANK_DUP: {pid}")
             selection_ranks.add(rank)
 
-        # Fix 14: Recompute and compare canonical selection key
         csk = item.get("canonical_selection_key", "")
         if not isinstance(csk, str) or not csk:
             errors.append(f"PARENT_NO_SELECTION_KEY: {pid}")
         else:
             recomputed = _compute_canonical_key(item)
             if recomputed != csk:
-                pass  # Diagnostic: allow different key formulas; authoritative would reject
+                errors.append(f"CANONICAL_SELECTION_KEY_MISMATCH: {pid} declared={csk} computed={recomputed}")
 
         for fld in FORBIDDEN_OUTCOME_FIELDS:
             if fld in item: errors.append(f"PARENT_FORBIDDEN_OUTCOME: {pid} field={fld}")
 
         suite = item.get("suite", "UNKNOWN")
         suite_counts[suite] = suite_counts.get(suite, 0) + 1
-        sorted_parents.append(item)
 
-    # Fix 15: Verify manifest order
     if not manifest_order_ok:
         errors.append("MANIFEST_ORDER_NOT_RANK_ORDER")
 

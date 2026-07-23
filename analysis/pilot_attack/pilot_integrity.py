@@ -1,7 +1,7 @@
 """Fail-closed integrity primitives for pilot analysis v2.2 (standalone, no PR #98 deps)."""
 from __future__ import annotations
 
-import hashlib, json, os, uuid
+import hashlib, json, math, os, uuid
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +19,15 @@ def is_64char_hex(s: Any) -> bool:
 
 def is_strict_int(v: Any) -> bool:
     return not isinstance(v, bool) and isinstance(v, int)
+
+
+def is_finite_number(v: Any) -> bool:
+    """Reject bool, NaN, Inf; accept finite int or float."""
+    if isinstance(v, bool):
+        return False
+    if not isinstance(v, (int, float)):
+        return False
+    return math.isfinite(float(v))
 
 
 def load_strict_json(path: Path, label: str) -> dict[str, Any]:
