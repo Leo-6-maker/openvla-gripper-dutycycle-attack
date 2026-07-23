@@ -252,8 +252,10 @@
   },
   "formal_gate": {
     "phase_a_w32_seal": "PASS",
-    "phase_b_identity_closure": "HOLD — awaiting Codex identity manifests",
-    "phase_c_authoritative_l3": "HOLD — requires Phase B PASS",
+    "phase_b_identity_closure": "PASS_DETERMINISTIC_ALLOCATION",
+    "phase_b_teacher_coverage": "HOLD — authoritative external-R7 K10 C/P/H bundles not yet validated",
+    "phase_c_cp_inference": "HOLD — requires cp_inference_authorized=true",
+    "phase_c_heldout_l3": "HOLD — requires external calibrator and scheduler freeze receipts",
     "full_fit": "HOLD",
     "passive_shadow": "HOLD",
     "active_canary": "HOLD",
