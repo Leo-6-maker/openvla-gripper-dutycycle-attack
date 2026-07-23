@@ -50,6 +50,7 @@ FROZEN_SPLITS = frozenset(f"o{o}_i{i}" for o in range(4) for i in range(3))
 REQUIRED_K10_FIELDS = ("strict_k10_feasible", "strict_k10_known_mask")
 REQUIRED_LABEL_FIELDS = ("canonical_parent_key", "step")
 EXPECTED_K10_SCHEMA = "R7_K10_OPPORTUNITY_LABELER_V1_2_2_V21C_CANONICAL"
+CONTAMINATION_PREFIXES = ("IDENTITY_LEAKAGE:", "IDENTITY_DUPLICATION:")
 SELF_SHA = None
 
 
@@ -410,7 +411,8 @@ def compute_policy_coverage_from_labels(teacher_rows, split_key, cov_issues):
 # Deterministic allocation (V3.1: mandatory in authoritative mode)
 # ══════════════════════════════════════════════════════
 
-def check_deterministic_allocation(allocation, sets_by_role, split_key, authoritative, errors):
+def check_deterministic_allocation(allocation, sets_by_role, split_key, authoritative, errors,
+                                   expected_parent_manifest_sha=None):
     da = allocation.get("deterministic_allocation", {})
     has_da = bool(da)
     alloc_method = allocation.get("allocation_method", "")
@@ -431,6 +433,13 @@ def check_deterministic_allocation(allocation, sets_by_role, split_key, authorit
             errors.append(f"ALLOC_MISSING: {split_key} deterministic_allocation.{field}")
         elif field.endswith("_sha256") and not is_64char_hex(val):
             errors.append(f"ALLOC_SHA_INVALID: {split_key} {field}")
+
+    declared_parent_sha = da.get("parent_cohort_manifest_sha256", "")
+    if authoritative and expected_parent_manifest_sha and declared_parent_sha != expected_parent_manifest_sha:
+        errors.append(
+            f"ALLOC_PARENT_SHA_MISMATCH: {split_key} "
+            f"declared={str(declared_parent_sha)[:16]} actual={expected_parent_manifest_sha[:16]}"
+        )
 
     c_ids, p_ids = sets_by_role.get("calibrator_fit", set()), sets_by_role.get("policy_selection", set())
     cp_union = c_ids | p_ids
@@ -496,12 +505,27 @@ def audit_inputs(input_paths):
 # Verdict classification
 # ══════════════════════════════════════════════════════
 
-def classify_verdict(disjointness_pass, source_status, inputs_complete):
-    if not inputs_complete: return "HOLD_INPUTS_MISSING"
-    if not disjointness_pass: return "NESTED_RETRAIN_REQUIRED"
-    if source_status == "RECOVERED_EXISTING_ROOTS": return "PASS_EXISTING_ROOTS"
-    if source_status == "DETERMINISTIC_ALLOCATION": return "PASS_DETERMINISTIC_ALLOCATION"
-    return "HOLD_INPUTS_MISSING"
+def classify_verdict(disjointness_result, source_status, inputs_complete):
+    """Only proven cross-role contamination mandates retraining.
+
+    Missing/unverifiable provenance, allocation receipts, seals, or cohort metadata
+    remain HOLD_MANIFEST_INCOMPLETE; they are not evidence that retraining is needed.
+    """
+    if not inputs_complete:
+        return "HOLD_INPUTS_MISSING"
+    if isinstance(disjointness_result, bool):
+        errors = [] if disjointness_result else ["IDENTITY_LEAKAGE: legacy boolean failure"]
+    else:
+        errors = list(disjointness_result)
+    if any(error.startswith(CONTAMINATION_PREFIXES) for error in errors):
+        return "NESTED_RETRAIN_REQUIRED"
+    if errors:
+        return "HOLD_MANIFEST_INCOMPLETE"
+    if source_status == "RECOVERED_EXISTING_ROOTS":
+        return "PASS_EXISTING_ROOTS"
+    if source_status == "DETERMINISTIC_ALLOCATION":
+        return "PASS_DETERMINISTIC_ALLOCATION"
+    return "HOLD_MANIFEST_INCOMPLETE"
 
 def classify_coverage(coverage_issues, inputs_complete):
     if not inputs_complete: return "NOT_AUDITABLE"
@@ -566,6 +590,8 @@ def main():
     ap.add_argument("--policy-teacher-bundle-root", type=Path, default=None)
     ap.add_argument("--heldout-teacher-bundle-root", type=Path, default=None)
     ap.add_argument("--teacher-contract-file", type=Path, default=None)
+    ap.add_argument("--deterministic-allocation-receipt", type=Path, default=None)
+    ap.add_argument("--parent-cohort-manifest", type=Path, default=None)
     ap.add_argument("--expected-k10-schema", type=str, default=None,
                     help=f"Required K10 schema for authoritative mode (default: {EXPECTED_K10_SCHEMA})")
     ap.add_argument("--mode", choices=["authoritative", "diagnostic"], default="diagnostic")
@@ -662,6 +688,22 @@ def main():
     source_status = discovery.get("identity_source_status", "UNKNOWN")
     cohort_membership = discovery.get("cohort_membership", {})
 
+    allocation_receipt = None
+    parent_cohort_manifest_sha = None
+    if source_status == "DETERMINISTIC_ALLOCATION":
+        if args.deterministic_allocation_receipt and args.deterministic_allocation_receipt.is_file():
+            allocation_receipt = load_strict_json(
+                args.deterministic_allocation_receipt, "DETERMINISTIC_ALLOCATION_RECEIPT"
+            )
+        if args.parent_cohort_manifest and args.parent_cohort_manifest.is_file():
+            parent_cohort_manifest_sha = sha256_file(args.parent_cohort_manifest)
+    elif args.deterministic_allocation_receipt and args.deterministic_allocation_receipt.is_file():
+        allocation_receipt = load_strict_json(
+            args.deterministic_allocation_receipt, "DETERMINISTIC_ALLOCATION_RECEIPT"
+        )
+        if args.parent_cohort_manifest and args.parent_cohort_manifest.is_file():
+            parent_cohort_manifest_sha = sha256_file(args.parent_cohort_manifest)
+
     # Per-split audit
     all_disjoint_errors = []; all_cov_issues = []; all_htc_errors = []
     all_cc_errors = defaultdict(list)  # per-role contract errors
@@ -688,7 +730,16 @@ def main():
         check_pairwise_disjoint(sets_by_role, sk, disjoint_errors)
         check_training_provenance(training_ledger, sk, disjoint_errors)
         check_cohort_membership(sets_by_role, cohort_membership, sk, disjoint_errors)
-        check_deterministic_allocation(cal_manifest, sets_by_role, sk, authoritative, disjoint_errors)
+        allocation_input = allocation_receipt if allocation_receipt is not None else cal_manifest
+        if authoritative and source_status == "DETERMINISTIC_ALLOCATION":
+            if allocation_receipt is None:
+                disjoint_errors.append(f"ALLOC_RECEIPT_MISSING: {sk}")
+            if parent_cohort_manifest_sha is None:
+                disjoint_errors.append(f"ALLOC_PARENT_MANIFEST_MISSING: {sk}")
+        check_deterministic_allocation(
+            allocation_input, sets_by_role, sk, authoritative, disjoint_errors,
+            expected_parent_manifest_sha=parent_cohort_manifest_sha,
+        )
 
         all_ids = set()
         for ids in sets_by_role.values(): all_ids |= ids
@@ -785,7 +836,7 @@ def main():
     contract_integrity_pass = cp_contract_integrity_pass and not any(all_cc_errors.get("heldout", []))
     k10_pass = classify_k10_parity(dict(all_cc_errors), authoritative, expected_k10)
     coverage_status = classify_coverage(all_cov_issues, inputs_complete)
-    verdict = classify_verdict(disjointness_pass, source_status, inputs_complete)
+    verdict = classify_verdict(all_disjoint_errors, source_status, inputs_complete)
     phase_c = phase_c_authorization(
         verdict, cal_coverage_pass, pol_coverage_pass, htc_pass, k10_pass,
         authoritative, cp_contract_integrity_pass
@@ -825,6 +876,12 @@ def main():
                    "heldout_l3_manifest_sha256": sha256_file(args.heldout_l3_manifest),
                    "attack_eval_manifest_sha256": sha256_file(args.attack_eval_manifest)},
                "per_split": per_split}
+    if args.deterministic_allocation_receipt and args.deterministic_allocation_receipt.is_file():
+        receipt["deterministic_allocation_receipt_sha256"] = sha256_file(
+            args.deterministic_allocation_receipt
+        )
+    if args.parent_cohort_manifest and args.parent_cohort_manifest.is_file():
+        receipt["parent_cohort_manifest_sha256"] = sha256_file(args.parent_cohort_manifest)
     if teacher_contract_sha: receipt["teacher_contract_sha256"] = teacher_contract_sha
     if expected_k10: receipt["expected_k10_schema"] = expected_k10
     if args.calibration_teacher_bundle_root:
