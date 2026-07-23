@@ -117,11 +117,13 @@ def load_strict_jsonl(path, label):
             for fld in REQUIRED_LABEL_FIELDS:
                 if fld not in r:
                     raise SystemExit(f"{label}_JSONL_MISSING: {path}:{line_nr} {fld}")
+            ep = r["canonical_parent_key"]
+            if not isinstance(ep, str) or not ep:
+                raise SystemExit(f"{label}_JSONL_IDENTITY_TYPE: {path}:{line_nr} canonical_parent_key={ep!r}")
             step = r["step"]
-            if isinstance(step, bool) or not isinstance(step, (int, float)):
+            if isinstance(step, bool) or not isinstance(step, int):
                 raise SystemExit(f"{label}_JSONL_STEP_TYPE: {path}:{line_nr} step={step!r} type={type(step).__name__}")
-            step = int(step)
-            key = (r["canonical_parent_key"], step)
+            key = (ep, step)
             if key in seen:
                 raise SystemExit(f"{label}_JSONL_DUP_KEY: {path}:{line_nr} key={key}")
             seen.add(key)
@@ -152,10 +154,14 @@ def load_teacher_labels(bundle_root, split_key, label="TEACHER"):
 def verify_bundle_seal(bundle_root, label):
     """Full seal verification: SHA256SUMS.sha256 + per-file SHA check."""
     bp = Path(bundle_root)
+    if bp.is_symlink():
+        raise SystemExit(f"{label}_ROOT_SYMLINK: {bp}")
     if not bp.is_dir():
         raise SystemExit(f"{label}_NOT_DIR: {bp}")
     sums = bp / "SHA256SUMS"
     sidecar = bp / "SHA256SUMS.sha256"
+    if sums.is_symlink() or sidecar.is_symlink():
+        raise SystemExit(f"{label}_SEAL_SYMLINK: seal files must not be symlinks")
     if not sums.is_file() or not sidecar.is_file():
         raise SystemExit(f"{label}_UNSEALED: missing SHA256SUMS or .sha256")
     # Verify sidecar
@@ -179,15 +185,26 @@ def verify_bundle_seal(bundle_root, label):
             rel_path = Path(rel)
             if rel_path.is_absolute() or ".." in rel_path.parts:
                 raise SystemExit(f"{label}_SEAL_PATH_ESCAPE: {rel}")
+            target = bp / rel_path
+            if target.is_symlink():
+                raise SystemExit(f"{label}_SEAL_SYMLINK: {rel}")
+            try:
+                target.resolve().relative_to(bp.resolve())
+            except ValueError:
+                raise SystemExit(f"{label}_SEAL_PATH_ESCAPE: {rel}")
             if rel in seen:
                 raise SystemExit(f"{label}_SEAL_DUP: {rel}")
             seen.add(rel)
             all_listed.add(rel)
-            actual = sha256_file(bp / rel_path)
+            if not target.is_file():
+                raise SystemExit(f"{label}_SEAL_FILE_MISSING: {rel}")
+            actual = sha256_file(target)
             if actual != file_sha:
                 raise SystemExit(f"{label}_SEAL_FILE_MISMATCH: {rel} expected {file_sha[:16]} got {actual[:16]}")
     # Check no extra files
     for p in bp.rglob("*"):
+        if p.is_symlink():
+            raise SystemExit(f"{label}_SEAL_SYMLINK: {p.relative_to(bp).as_posix()}")
         if p.is_file() and p.name not in ("SHA256SUMS", "SHA256SUMS.sha256"):
             rel = p.relative_to(bp).as_posix()
             if rel not in all_listed:
@@ -307,6 +324,35 @@ def check_source_sha_validity(teacher_rows, role_label, split_key, errors):
         if not is_64char_hex(str(src)):
             errors.append(f"{role_label}_SOURCE_SHA_INVALID: {split_key} step={r.get('step')} sha={str(src)[:40]}")
             return
+
+
+def validate_head_label_types(teacher_rows, role_label, split_key, errors):
+    """Require calibration head targets and known masks to be strict booleans."""
+    if teacher_rows is None:
+        return
+    for r in teacher_rows:
+        for head in CALIBRATION_HEADS:
+            for field in (HEAD_TARGET_MAP[head], HEAD_KNOWN_MAP[head]):
+                if not isinstance(r.get(field), bool):
+                    errors.append(
+                        f"{role_label}_HEAD_FIELD_TYPE: {split_key} step={r.get('step')} "
+                        f"{field} is {type(r.get(field)).__name__}, expected bool"
+                    )
+                    return
+
+
+def validate_k10_field_types(teacher_rows, role_label, split_key, errors):
+    """Require strict-K10 fields to be present booleans."""
+    if teacher_rows is None:
+        return
+    for r in teacher_rows:
+        for field in REQUIRED_K10_FIELDS:
+            if not isinstance(r.get(field), bool):
+                errors.append(
+                    f"{role_label}_K10_TYPE: {split_key} step={r.get('step')} "
+                    f"{field} is {type(r.get(field)).__name__}, expected bool"
+                )
+                return
 
 
 def compute_calibration_coverage_from_labels(teacher_rows, split_key, cov_issues):
@@ -472,9 +518,13 @@ def classify_k10_parity(issues_by_role, authoritative, expected_k10_schema):
             return "NOT_AUDITABLE_K10_CONTRACT_MISMATCH"
     return "PASS"
 
-def phase_c_authorization(verdict, cal_pass, pol_pass, htc_pass, k10_pass, authoritative):
+def phase_c_authorization(verdict, cal_pass, pol_pass, htc_pass, k10_pass, authoritative,
+                          cp_contract_integrity_pass=True):
     identity_clean = verdict in ("PASS_EXISTING_ROOTS", "PASS_DETERMINISTIC_ALLOCATION")
-    cp_inf = "AUTHORIZED" if (identity_clean and cal_pass and pol_pass and (not authoritative or k10_pass == "PASS")) else "HOLD"
+    cp_inf = "AUTHORIZED" if (
+        identity_clean and cal_pass and pol_pass and cp_contract_integrity_pass
+        and (not authoritative or k10_pass == "PASS")
+    ) else "HOLD"
     l3_ready = identity_clean and htc_pass and (not authoritative or k10_pass == "PASS")
     return {"cp_inference_authorized": cp_inf == "AUTHORIZED", "cp_inference_status": cp_inf,
             "heldout_l3_data_ready": l3_ready, "heldout_l3_inference_authorized": False,
@@ -542,7 +592,22 @@ def main():
 
     # Teacher contract SHA — computed from file
     teacher_contract_sha = sha256_file(args.teacher_contract_file) if args.teacher_contract_file else None
-    expected_k10 = args.expected_k10_schema or (EXPECTED_K10_SCHEMA if authoritative else None)
+    if authoritative and args.expected_k10_schema not in (None, EXPECTED_K10_SCHEMA):
+        raise SystemExit(
+            f"AUTHORITATIVE_K10_SCHEMA_FROZEN: expected {EXPECTED_K10_SCHEMA}, "
+            f"got {args.expected_k10_schema}"
+        )
+    expected_k10 = EXPECTED_K10_SCHEMA if authoritative else args.expected_k10_schema
+
+    teacher_contract = load_strict_json(args.teacher_contract_file, "TEACHER_CONTRACT") if args.teacher_contract_file else None
+    if authoritative:
+        declared_k10 = teacher_contract.get(
+            "k10_schema", teacher_contract.get("strict_k10_binding_schema")
+        )
+        if declared_k10 != EXPECTED_K10_SCHEMA:
+            raise SystemExit(
+                f"TEACHER_CONTRACT_K10_MISMATCH: expected {EXPECTED_K10_SCHEMA}, got {declared_k10!r}"
+            )
 
     # Input audit
     input_paths = {k: getattr(args, k.replace("-", "_") + ("_manifest" if k.endswith("_manifest") else ""), None)
@@ -642,6 +707,7 @@ def main():
         check_k10_parity(cal_rows, expected_k10, "CALIBRATION", sk, cc_local["calibration"])
         check_contract_sha_consistency(cal_rows, teacher_contract_sha, "CALIBRATION", sk, cc_local["calibration"])
         check_source_sha_validity(cal_rows, "CALIBRATION", sk, cc_local["calibration"])
+        validate_head_label_types(cal_rows, "CALIBRATION", sk, cov_issues)
         compute_calibration_coverage_from_labels(cal_rows, sk, cov_issues)
 
         # P identity closure + contract checks
@@ -650,6 +716,7 @@ def main():
         check_k10_parity(pol_rows, expected_k10, "POLICY", sk, cc_local["policy"])
         check_contract_sha_consistency(pol_rows, teacher_contract_sha, "POLICY", sk, cc_local["policy"])
         check_source_sha_validity(pol_rows, "POLICY", sk, cc_local["policy"])
+        validate_k10_field_types(pol_rows, "POLICY", sk, cov_issues)
         compute_policy_coverage_from_labels(pol_rows, sk, cov_issues)
 
         # H identity closure + contract checks + step closure
@@ -658,6 +725,7 @@ def main():
         check_k10_parity(h_rows, expected_k10, "HELDOUT", sk, cc_local["heldout"])
         check_contract_sha_consistency(h_rows, teacher_contract_sha, "HELDOUT", sk, cc_local["heldout"])
         check_source_sha_validity(h_rows, "HELDOUT", sk, cc_local["heldout"])
+        validate_k10_field_types(h_rows, "HELDOUT", sk, htc_local)
 
         # H K10 denominator
         if h_rows:
@@ -711,12 +779,19 @@ def main():
     cal_coverage_pass = len(cal_cov_issues) == 0
     pol_coverage_pass = len(pol_cov_issues) == 0
     htc_pass = len(all_htc_errors) == 0 and not any(all_cc_errors.get("heldout", []))
+    cal_contract_integrity_pass = not any(all_cc_errors.get("calibration", []))
+    pol_contract_integrity_pass = not any(all_cc_errors.get("policy", []))
+    cp_contract_integrity_pass = cal_contract_integrity_pass and pol_contract_integrity_pass
+    contract_integrity_pass = cp_contract_integrity_pass and not any(all_cc_errors.get("heldout", []))
     k10_pass = classify_k10_parity(dict(all_cc_errors), authoritative, expected_k10)
     coverage_status = classify_coverage(all_cov_issues, inputs_complete)
     verdict = classify_verdict(disjointness_pass, source_status, inputs_complete)
-    phase_c = phase_c_authorization(verdict, cal_coverage_pass, pol_coverage_pass, htc_pass, k10_pass, authoritative)
+    phase_c = phase_c_authorization(
+        verdict, cal_coverage_pass, pol_coverage_pass, htc_pass, k10_pass,
+        authoritative, cp_contract_integrity_pass
+    )
 
-    overall_data_integrity = disjointness_pass and htc_pass
+    overall_data_integrity = disjointness_pass and htc_pass and contract_integrity_pass
     overall_scientific = cal_coverage_pass and pol_coverage_pass and (k10_pass == "PASS" or not authoritative)
     phase_b_overall = "PASS" if (overall_data_integrity and overall_scientific) else "HOLD"
 
@@ -737,6 +812,9 @@ def main():
                "heldout_l3_blocker": phase_c["heldout_l3_blocker"],
                "calibration_coverage_pass": cal_coverage_pass, "policy_coverage_pass": pol_coverage_pass,
                "heldout_teacher_closure_pass": htc_pass,
+               "calibration_contract_integrity_pass": cal_contract_integrity_pass,
+               "policy_contract_integrity_pass": pol_contract_integrity_pass,
+               "teacher_contract_integrity_pass": contract_integrity_pass,
                "identity_source_status": source_status, "mode": args.mode,
                "n_disjointness_errors": len(all_disjoint_errors), "n_coverage_issues": len(all_cov_issues),
                "n_htc_errors": len(all_htc_errors), "n_splits": len(expected),
@@ -759,6 +837,7 @@ def main():
     if all_disjoint_errors: receipt["disjointness_errors"] = all_disjoint_errors
     if all_cov_issues: receipt["coverage_issues"] = all_cov_issues
     if all_htc_errors: receipt["heldout_teacher_closure_errors"] = all_htc_errors
+    if any(all_cc_errors.values()): receipt["teacher_contract_errors"] = dict(all_cc_errors)
 
     (staging / "DEEPSEEK_PHASE_B_VALIDATION_RECEIPT_V2.json").write_text(json.dumps(receipt, indent=2) + "\n")
 
@@ -785,6 +864,7 @@ def main():
     print(f"  Calibration Coverage:  {'PASS' if cal_coverage_pass else 'HOLD'}")
     print(f"  Policy Coverage:       {'PASS' if pol_coverage_pass else 'HOLD'}")
     print(f"  H Teacher Closure:     {'PASS' if htc_pass else 'HOLD'} ({len(all_htc_errors)} errors)")
+    print(f"  Teacher Contract:      {'PASS' if contract_integrity_pass else 'HOLD'}")
     print(f"  K10 Contract Parity:   {k10_pass}")
     print(f"  Phase B Data Integrity:    {'PASS' if overall_data_integrity else 'HOLD'}")
     print(f"  Phase B Scientific:        {'PASS' if overall_scientific else 'HOLD'}")
