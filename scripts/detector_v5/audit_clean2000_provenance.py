@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Stage 0: CLEAN2000 provenance audit + registry CSV builder.
 
-Walks real CLEAN2000 artifact directories, verifies protocol, validates
-identity split correctness, and produces a registry CSV consumable by
-the factorized teacher builder (build_v5_factorized_teacher.py).
+Verifies every episode's artifact closure, runtime validity, and CLEAN condition.
+Produces a registry CSV with recursive SHA binding consumable by the teacher builder.
 """
 from __future__ import annotations
 
@@ -27,9 +26,13 @@ IDENTITY_SPLITS: dict[str, tuple[int, int]] = {
     "FEC":       (45, 49),
 }
 
-REQUIRED_ARTIFACT_FILES = [
+# Files required by the teacher builder's _verify_source_artifact()
+REQUIRED_FILES = [
     "episode_metadata.json",
+    "runtime_audit.json",
+    "artifact_sha256.json",
     "step_records.jsonl",
+    "privileged_teacher_sidecar.jsonl",
 ]
 
 REQUIRED_PROTOCOL_FIELDS = [
@@ -67,12 +70,13 @@ def main() -> int:
     errors: list[str] = []
     registry_rows: list[dict[str, Any]] = []
     identity_counts: dict[str, int] = {k: 0 for k in IDENTITY_SPLITS}
+    runtime_invalid: list[str] = []
+    not_clean: list[str] = []
 
-    # ── Verify protocol ──────────────────────────────────────────────
+    # ── Verify official clean protocol ────────────────────────────────
     protocol_path = root / "provenance" / "OFFICIAL_PROTOCOL_CONFIG_V1.json"
     if not protocol_path.is_file():
         errors.append(f"PROTOCOL_MISSING: {protocol_path}")
-        protocol = {}
         protocol_sha = None
     else:
         protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
@@ -108,15 +112,30 @@ def main() -> int:
                     errors.append(f"STATE_MISSING: {eid}")
                     continue
 
-                # Verify required files
-                missing = [f for f in REQUIRED_ARTIFACT_FILES if not (state_dir / f).is_file()]
+                # Verify all required files exist
+                missing = [f for f in REQUIRED_FILES if not (state_dir / f).is_file()]
                 if missing:
                     errors.append(f"FILES_MISSING: {eid} missing={missing}")
                     continue
 
+                # Read metadata for condition/runtime checks
+                metadata = json.loads((state_dir / "episode_metadata.json").read_text(encoding="utf-8"))
+                if metadata.get("condition") != "CLEAN":
+                    not_clean.append(eid)
+                    continue
+                if not metadata.get("runtime_valid", False):
+                    runtime_invalid.append(eid)
+                    continue
+
+                # Read recursive SHA from artifact manifest
+                artifact_manifest = json.loads((state_dir / "artifact_sha256.json").read_text(encoding="utf-8"))
+                recursive_sha = artifact_manifest.get("recursive_sha256", "")
+                if not isinstance(recursive_sha, str) or len(recursive_sha) != 64:
+                    errors.append(f"RECURSIVE_SHA_MISSING: {eid}")
+                    continue
+
                 identity_counts[split] = identity_counts.get(split, 0) + 1
 
-                # Build registry row (matching teacher builder expectations)
                 registry_rows.append({
                     "canonical_parent_key": eid,
                     "suite": suite,
@@ -125,7 +144,14 @@ def main() -> int:
                     "split": split,
                     "formal_selected": True,
                     "selected_artifact_root": str(state_dir),
+                    "selected_artifact_recursive_sha256": recursive_sha,
                 })
+
+    # ── Accumulate condition errors ───────────────────────────────────
+    if not_clean:
+        errors.append(f"NOT_CLEAN: {len(not_clean)} episodes — {not_clean[:5]}")
+    if runtime_invalid:
+        errors.append(f"RUNTIME_INVALID: {len(runtime_invalid)} episodes — {runtime_invalid[:5]}")
 
     # ── Validate counts ──────────────────────────────────────────────
     n_found = len(registry_rows)
@@ -143,29 +169,29 @@ def main() -> int:
     if a_fec != 600:
         errors.append(f"A_FEC_COUNT: expected=600 actual={a_fec}")
 
-    # ── Write registry CSV ───────────────────────────────────────────
+    # ── Write registry CSVs ──────────────────────────────────────────
     staging = out_root.with_name(f".{out_root.name}.{uuid.uuid4().hex}.staging")
     staging.mkdir(parents=True)
 
     fieldnames = ["canonical_parent_key", "suite", "task_idx", "state_id", "split",
-                  "formal_selected", "selected_artifact_root"]
+                  "formal_selected", "selected_artifact_root",
+                  "selected_artifact_recursive_sha256"]
+
     with open(staging / "CLEAN2000_REGISTRY_V1.csv", "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=fieldnames)
         w.writeheader()
         for row in sorted(registry_rows, key=lambda r: r["canonical_parent_key"]):
             w.writerow(row)
 
-    # ── Split-specific registry CSVs ─────────────────────────────────
-    split_registries: dict[str, Path] = {}
+    # Split-specific registries
     for split_name in IDENTITY_SPLITS:
         split_rows = [r for r in registry_rows if r["split"] == split_name]
-        csv_path = staging / f"CLEAN2000_REGISTRY_{split_name}_V1.csv"
+        csv_path = staging / f"CLEAN2000_REGISTRY_{split_name}_V1.csv"  # noqa
         with open(csv_path, "w", newline="") as f:
             w = csv.DictWriter(f, fieldnames=fieldnames)
             w.writeheader()
             for row in sorted(split_rows, key=lambda r: r["canonical_parent_key"]):
                 w.writerow(row)
-        split_registries[split_name] = csv_path
 
     # ── Receipt ──────────────────────────────────────────────────────
     receipt = {
@@ -177,7 +203,8 @@ def main() -> int:
         "identity_counts": identity_counts,
         "a_fec_count": a_fec,
         "protocol_sha256": protocol_sha,
-        "protocol_id": protocol.get("protocol_id", "UNKNOWN"),
+        "n_runtime_invalid": len(runtime_invalid),
+        "n_not_clean": len(not_clean),
         "n_errors": len(errors),
         "errors": errors[:200],
     }

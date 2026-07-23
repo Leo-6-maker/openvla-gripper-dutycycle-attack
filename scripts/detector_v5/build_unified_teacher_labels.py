@@ -63,8 +63,8 @@ def main() -> int:
                     help="Root for resolving registry-relative paths")
     ap.add_argument("--decoder-root", type=Path, required=True)
     ap.add_argument("--physics-audit-root", type=Path, required=True)
-    ap.add_argument("--protocol", type=Path, required=True,
-                    help="OFFICIAL_PROTOCOL_CONFIG_V1.json path")
+    ap.add_argument("--factorized-teacher-protocol", type=Path, required=True,
+                    help="Factorized Teacher protocol JSON (schema=FACTORIZED_TEACHER_SCHEMA)")
     ap.add_argument("--k10-root", type=Path, required=True)
     ap.add_argument("--expected-k10-schema", type=str, required=True)
     ap.add_argument("--expected-source-commit", type=str, default=None)
@@ -89,11 +89,11 @@ def main() -> int:
     for label, path in [("registry-root", args.registry_root),
                          ("decoder-root", args.decoder_root),
                          ("physics-audit-root", args.physics_audit_root),
-                         ("protocol", args.protocol),
+                         ("factorized-teacher-protocol", args.factorized_teacher_protocol),
                          ("k10-root", args.k10_root)]:
-        if not path.is_dir() if Path(path).suffix == "" else not Path(path).is_file():
-            if not Path(path).exists():
-                raise SystemExit(f"ARTIFACT_NOT_FOUND: {label}={path}")
+        p = Path(path)
+        if not p.exists():
+            raise SystemExit(f"ARTIFACT_NOT_FOUND: {label}={path}")
 
     # ── Determine splits to build ────────────────────────────────────
     splits_to_build = [args.target_split] if args.target_split else list(EXPECTED_COUNTS.keys())
@@ -120,7 +120,7 @@ def main() -> int:
                "--registry-root", str(args.registry_root),
                "--decoder-root", str(args.decoder_root),
                "--physics-audit-root", str(args.physics_audit_root),
-               "--protocol", str(args.protocol),
+               "--protocol", str(args.factorized_teacher_protocol),
                "--k10-root", str(args.k10_root),
                "--expected-k10-schema", args.expected_k10_schema,
                "--target-split", split_name,

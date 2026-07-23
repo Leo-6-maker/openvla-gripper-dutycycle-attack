@@ -73,7 +73,7 @@ def main():
     # ═══════════════════════════════════════════════════════════════════
     if args.stage in (None, 1):
         required = ["registry_root", "decoder_root", "physics_audit_root",
-                     "protocol", "k10_root", "expected_k10_schema"]
+                     "factorized_teacher_protocol", "k10_root", "expected_k10_schema"]
         missing = [k for k in required if k not in config]
         if missing:
             raise SystemExit(f"CONFIG_MISSING for Stage 1: {missing}\n"
@@ -83,7 +83,7 @@ def main():
               "--registry-root", config["registry_root"],
               "--decoder-root", config["decoder_root"],
               "--physics-audit-root", config["physics_audit_root"],
-              "--protocol", config["protocol"],
+              "--factorized-teacher-protocol", config["factorized_teacher_protocol"],
               "--k10-root", config["k10_root"],
               "--expected-k10-schema", config["expected_k10_schema"],
               "--output-root", str(S["s1"])],
@@ -113,7 +113,27 @@ def main():
         if "require_cp_authorization" in config and config["require_cp_authorization"]:
             cmd2.append("--require-cp-authorization")
         _run(cmd2, "Stage 2: Phase B Authoritative Coverage")
-        print("Stage 2 PASS: Phase B identity closure verified")
+        # Read receipt and enforce authoritative gates
+        s2_receipt = None
+        for name in ["PHASE_B_AUTHORITATIVE_RECEIPT_V1.json",
+                     "identity_disjointness_receipt.json",
+                     "receipt.json"]:
+            candidate = S["s2"] / name
+            if candidate.is_file():
+                s2_receipt = json.loads(candidate.read_text(encoding="utf-8"))
+                break
+        if s2_receipt is None:
+            raise SystemExit("STAGE_2_NO_RECEIPT: could not find receipt JSON")
+        s2_status = s2_receipt.get("status", "UNKNOWN")
+        cp_auth = s2_receipt.get("cp_inference_authorized", False)
+        h_ready = s2_receipt.get("heldout_l3_data_ready", False)
+        if s2_status != "PASS":
+            raise SystemExit(f"STAGE_2_STATUS_NOT_PASS: {s2_status}")
+        if not cp_auth:
+            raise SystemExit("STAGE_2_CP_INFERENCE_NOT_AUTHORIZED: cannot proceed to training")
+        if not h_ready:
+            raise SystemExit("STAGE_2_HELDOUT_L3_DATA_NOT_READY")
+        print("Stage 2 PASS: Phase B authoritative, CP authorized, H data ready")
 
     # ═══════════════════════════════════════════════════════════════════
     # Stages 3-9: Require frozen server artifacts beyond script scope

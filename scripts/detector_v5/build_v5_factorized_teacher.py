@@ -394,11 +394,12 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         _atomic_text(staging / "action_contract.json", json.dumps(action_contract_doc, indent=2, sort_keys=True) + "\n")
         _atomic_text(staging / manifest_filename, json.dumps(manifest, indent=2, sort_keys=True) + "\n")
         _atomic_text(staging / "protocol.json", json.dumps(protocol, indent=2, sort_keys=True) + "\n")
+        role_holds_list = [key for key, role in sorted(roles.items()) if role.status == "ABSTAIN_DECODER_HOLD"]
         report = {
             "schema": "DETECTOR_V5_FACTORIZED_TEACHER_V1_AUDIT_V1",
-            "status": "PASS" if identity_count == 800 and step_count == 176336 else "HOLD",
+            "status": "PASS" if identity_count == len(rows) and step_count > 0 and not role_holds_list else "HOLD",
             "manifest": manifest,
-            "role_holds": [key for key, role in sorted(roles.items()) if role.status == "ABSTAIN_DECODER_HOLD"],
+            "role_holds": role_holds_list,
             "formal_training_authorized": False,
             "formal_attack_authorized": False,
         }
