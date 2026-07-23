@@ -1005,3 +1005,27 @@ def test_source_binding_rejects_bool_step_count():
         rows, "HELDOUT", "o0_i0", errors, require_source_step_count=True
     )
     assert any("SOURCE_STEP_COUNT_INVALID" in e for e in errors)
+
+
+def test_allocation_actual_algorithm_and_code_sha_binding():
+    allocation = {
+        "deterministic_allocation": {
+            "parent_cohort": "DETECTOR_VAL",
+            "parent_cohort_manifest_sha256": "a" * 64,
+            "fixed_salt": "fixed-salt",
+            "canonical_sort_key": "canonical_identity_hash",
+            "allocation_algorithm_sha256": "b" * 64,
+            "allocation_code_sha256": "c" * 64,
+            "parent_cohort_identities": {"o0_i0": ["c1", "p1"]},
+        }
+    }
+    sets_by_role = {"calibrator_fit": {"c1"}, "policy_selection": {"p1"}}
+    errors = []
+    check_deterministic_allocation(
+        allocation, sets_by_role, "o0_i0", True, errors,
+        expected_parent_manifest_sha="a" * 64,
+        expected_algorithm_sha="d" * 64,
+        expected_code_sha="e" * 64,
+    )
+    assert any("ALLOC_ALGORITHM_SHA_MISMATCH" in e for e in errors)
+    assert any("ALLOC_CODE_SHA_MISMATCH" in e for e in errors)
