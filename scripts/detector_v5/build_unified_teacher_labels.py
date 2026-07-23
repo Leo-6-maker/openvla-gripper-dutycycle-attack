@@ -15,10 +15,9 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 SELF_SHA = None
 
 EXPECTED_COUNTS = {
-    "FIT": 960,
-    "CAL": 120,
-    "CHECK": 120,
-    "FINAL_EVAL_CANDIDATE": 800,
+    "FIT": 960, "FIT_TRAIN": 800, "FIT_DEV": 160,
+    "CAL": 120, "CHECK": 120,
+    "FINAL_EVAL_CANDIDATE": 800, "H": 200,
 }
 
 TEACHER_BUILDER = Path(__file__).resolve().parent / "build_v5_factorized_teacher.py"
@@ -53,7 +52,7 @@ def main() -> int:
     ap.add_argument("--clean2000-audit-root", type=Path, required=True,
                     help="Stage 0 output root (contains CLEAN2000_REGISTRY_V1.csv)")
     ap.add_argument("--target-split", type=str, default=None,
-                    choices=list(EXPECTED_COUNTS.keys()),
+                    choices=sorted(EXPECTED_COUNTS.keys()),
                     help="Build labels for a single split (omit to build all 5)")
     ap.add_argument("--output-root", type=Path, required=True)
     # Pre-existing frozen artifacts (required by teacher builder)
@@ -79,7 +78,9 @@ def main() -> int:
     if audit.get("status") != "PASS":
         raise SystemExit(f"AUDIT_NOT_PASS: status={audit.get('status')}")
 
-    registry_csv = args.clean2000_audit_root / "CLEAN2000_REGISTRY_V1.csv"
+    # Check for split-specific registry first, fall back to main
+    split_specific_csv = args.clean2000_audit_root / f"CLEAN2000_REGISTRY_{args.target_split}_V1.csv"
+    registry_csv = split_specific_csv if split_specific_csv.is_file() else (args.clean2000_audit_root / "CLEAN2000_REGISTRY_V1.csv")
     if not registry_csv.is_file():
         raise SystemExit(f"REGISTRY_CSV_MISSING: {registry_csv}")
 
