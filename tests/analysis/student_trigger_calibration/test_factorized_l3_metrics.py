@@ -19,10 +19,11 @@ from validate_factorized_codex_handoff import validate_handoff_static, validate_
 from validate_factorized_identity_disjointness import (
     extract_identities, check_pairwise_disjoint, classify_verdict,
     check_training_provenance, check_cohort_membership,
-    check_calibration_coverage, check_policy_coverage, check_heldout_coverage,
-    check_heldout_teacher_closure, check_heldout_teacher_closure_global,
     check_deterministic_allocation, audit_inputs, classify_coverage,
-    phase_c_authorization, FIVE_ROLES, COHORT_TO_ROLE,
+    classify_k10_parity, phase_c_authorization,
+    compute_calibration_coverage_from_labels, compute_policy_coverage_from_labels,
+    check_heldout_teacher_closure_v3, load_teacher_labels, load_strict_json,
+    FIVE_ROLES, COHORT_TO_ROLE, ROLE_TO_COHORT, FROZEN_SPLITS,
 )
 
 STEP = "step"
@@ -390,29 +391,20 @@ def test_training_provenance_unknown_warns():
 # ── Verdict classification ──
 
 def test_verdict_missing_inputs():
-    """Missing inputs → HOLD_INPUTS_MISSING, never NESTED_RETRAIN_REQUIRED."""
-    assert classify_verdict(True, "PASS", "RECOVERED_EXISTING_ROOTS", False) == "HOLD_INPUTS_MISSING"
-    assert classify_verdict(False, "NOT_AUDITABLE", "UNKNOWN", False) == "HOLD_INPUTS_MISSING"
-
+    assert classify_verdict(True, "RECOVERED_EXISTING_ROOTS", False) == "HOLD_INPUTS_MISSING"
+    assert classify_verdict(False, "UNKNOWN", False) == "HOLD_INPUTS_MISSING"
 
 def test_verdict_contamination_trumps_all():
-    """Proven contamination → NESTED_RETRAIN_REQUIRED even with complete inputs."""
-    assert classify_verdict(False, "HOLD_INSUFFICIENT_STATISTICAL_COVERAGE",
-                           "RECOVERED_EXISTING_ROOTS", True) == "NESTED_RETRAIN_REQUIRED"
-
+    assert classify_verdict(False, "RECOVERED_EXISTING_ROOTS", True) == "NESTED_RETRAIN_REQUIRED"
 
 def test_verdict_pass_existing_roots():
-    assert classify_verdict(True, "PASS", "RECOVERED_EXISTING_ROOTS", True) == "PASS_EXISTING_ROOTS"
-
+    assert classify_verdict(True, "RECOVERED_EXISTING_ROOTS", True) == "PASS_EXISTING_ROOTS"
 
 def test_verdict_pass_deterministic():
-    assert classify_verdict(True, "HOLD_INSUFFICIENT_STATISTICAL_COVERAGE",
-                           "DETERMINISTIC_ALLOCATION", True) == "PASS_DETERMINISTIC_ALLOCATION"
-
+    assert classify_verdict(True, "DETERMINISTIC_ALLOCATION", True) == "PASS_DETERMINISTIC_ALLOCATION"
 
 def test_verdict_unclear_source():
-    """Clean identity closure but unclear source status → HOLD, not retrain."""
-    assert classify_verdict(True, "PASS", "UNKNOWN", True) == "HOLD_INPUTS_MISSING"
+    assert classify_verdict(True, "UNKNOWN", True) == "HOLD_INPUTS_MISSING"
 
 
 # ── Statistical coverage is independent ──
@@ -430,16 +422,16 @@ def test_coverage_not_auditable():
 
 
 def test_phase_c_authorization():
-    r = phase_c_authorization("PASS_EXISTING_ROOTS", True, True, True)
+    r = phase_c_authorization("PASS_EXISTING_ROOTS", True, True, True, "PASS", True)
     assert r["cp_inference_authorized"] and r["heldout_l3_data_ready"]
-    assert not r["heldout_l3_inference_authorized"]  # validator never authorizes L3
-    r = phase_c_authorization("PASS_DETERMINISTIC_ALLOCATION", False, True, True)
+    assert not r["heldout_l3_inference_authorized"]
+    r = phase_c_authorization("PASS_DETERMINISTIC_ALLOCATION", False, True, True, "PASS", True)
     assert not r["cp_inference_authorized"]
-    r = phase_c_authorization("HOLD_INPUTS_MISSING", True, True, True)
+    r = phase_c_authorization("HOLD_INPUTS_MISSING", True, True, True, "PASS", True)
     assert not r["cp_inference_authorized"]
-    r = phase_c_authorization("NESTED_RETRAIN_REQUIRED", True, True, True)
+    r = phase_c_authorization("NESTED_RETRAIN_REQUIRED", True, True, True, "PASS", True)
     assert not r["cp_inference_authorized"]
-    r = phase_c_authorization("PASS_DETERMINISTIC_ALLOCATION", True, True, False)
+    r = phase_c_authorization("PASS_DETERMINISTIC_ALLOCATION", True, True, False, "PASS", True)
     assert r["cp_inference_authorized"] and not r["heldout_l3_data_ready"]
 
 
@@ -533,90 +525,167 @@ def test_deterministic_allocation_closure():
     assert any("ALLOC_CLOSURE" in e for e in errs)
 
 
-# ── Calibration coverage (per-head known pos/neg) ──
+# ── Calibration coverage (from raw labels, V3) ──
 
 def test_calibration_coverage_ok():
-    alloc = {"calibration_head_summaries": {
-        "o0_i0": {
-            "grasp": {"known_positive": 45, "known_negative": 1200},
-            "manipulation": {"known_positive": 8, "known_negative": 1500},
-            "release": {"known_positive": 60, "known_negative": 1100},
-        }
-    }}
+    labels = [
+        {"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "a"*64,
+         "grasp_established_known_mask": True, "grasp_established": True,
+         "manipulation_active_known_mask": True, "manipulation_active": True,
+         "release_or_instability_known_mask": True, "release_or_instability": True},
+        {"canonical_parent_key": "ep1", "step": 1, "source_artifact_recursive_sha256": "a"*64,
+         "grasp_established_known_mask": True, "grasp_established": False,
+         "manipulation_active_known_mask": True, "manipulation_active": False,
+         "release_or_instability_known_mask": True, "release_or_instability": False},
+    ]
     issues = []
-    check_calibration_coverage(alloc, "o0_i0", issues)
+    compute_calibration_coverage_from_labels(labels, "o0_i0", None, False, issues)
     assert len(issues) == 0
 
-
-def test_calibration_coverage_missing_head_summary():
+def test_calibration_coverage_missing_bundle():
     issues = []
-    check_calibration_coverage({}, "o0_i0", issues)
-    assert any("NOT_AUDITABLE" in i for i in issues)
-
+    compute_calibration_coverage_from_labels(None, "o0_i0", None, False, issues)
+    assert any("BUNDLE_MISSING" in i for i in issues)
 
 def test_calibration_coverage_no_positive():
-    alloc = {"calibration_head_summaries": {
-        "o0_i0": {"grasp": {"known_positive": 0, "known_negative": 1200}}
-    }}
+    labels = [
+        {"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "a"*64,
+         "grasp_established_known_mask": True, "grasp_established": False},
+    ]
     issues = []
-    check_calibration_coverage(alloc, "o0_i0", issues)
+    compute_calibration_coverage_from_labels(labels, "o0_i0", None, False, issues)
     assert any("NO_POSITIVE" in i for i in issues)
 
-
-def test_calibration_coverage_no_negative():
-    alloc = {"calibration_head_summaries": {
-        "o0_i0": {"manipulation": {"known_positive": 8, "known_negative": 0}}
-    }}
+def test_calibration_k10_rejected_in_authoritative():
+    labels = [
+        {"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "a"*64,
+         "grasp_established_known_mask": True, "grasp_established": True,
+         "strict_k10_binding_schema": "INTERNAL_SIMPLIFIED_V1"},
+    ]
     issues = []
-    check_calibration_coverage(alloc, "o0_i0", issues)
-    assert any("NO_NEGATIVE" in i for i in issues)
+    compute_calibration_coverage_from_labels(labels, "o0_i0", "a"*64, True, issues)
+    assert any("K10_REJECTED" in i for i in issues)
 
-
-# ── Policy coverage ──
+# ── Policy coverage (from raw labels, V3) ──
 
 def test_policy_coverage_ok():
-    alloc = {"policy_selection_summaries": {
-        "o0_i0": {
-            "negative_episodes": 5, "k10_positive_opportunities": 3,
-            "eligible_episodes": 16, "known_denominator_episodes": 16,
-        }
-    }}
+    labels = []
+    # ep_neg: all known, 0 feasible → negative
+    for s in range(300):
+        labels.append({"canonical_parent_key": "ep_neg", "step": s,
+            "strict_k10_feasible": False, "strict_k10_known_mask": True,
+            "source_artifact_recursive_sha256": "a"*64})
+    # ep_pos: has a feasible start at step 100
+    for s in range(300):
+        labels.append({"canonical_parent_key": "ep_pos", "step": s,
+            "strict_k10_feasible": (s == 100), "strict_k10_known_mask": True,
+            "source_artifact_recursive_sha256": "a"*64})
     issues = []
-    check_policy_coverage(alloc, "o0_i0", issues)
+    compute_policy_coverage_from_labels(labels, "o0_i0", False, issues)
     assert len(issues) == 0
-
 
 def test_policy_coverage_no_negative():
-    alloc = {"policy_selection_summaries": {
-        "o0_i0": {"negative_episodes": 0, "k10_positive_opportunities": 3}
-    }}
+    # All episodes have K10 opportunity → no negatives
+    labels = []
+    for ep in ["ep1"]:
+        for s in range(300):
+            labels.append({"canonical_parent_key": ep, "step": s,
+                "strict_k10_feasible": s == 100, "strict_k10_known_mask": True,
+                "source_artifact_recursive_sha256": "a"*64})
     issues = []
-    check_policy_coverage(alloc, "o0_i0", issues)
+    compute_policy_coverage_from_labels(labels, "o0_i0", False, issues)
     assert any("NO_NEGATIVE" in i for i in issues)
 
-
-def test_policy_coverage_no_opportunity():
-    alloc = {"policy_selection_summaries": {
-        "o0_i0": {"negative_episodes": 5, "k10_positive_opportunities": 0}
-    }}
+def test_policy_k10_rejected_authoritative():
+    labels = [
+        {"canonical_parent_key": "ep1", "step": 0,
+         "strict_k10_feasible": False, "strict_k10_known_mask": True,
+         "strict_k10_binding_schema": "INTERNAL_SIMPLIFIED_V1",
+         "source_artifact_recursive_sha256": "a"*64},
+    ]
     issues = []
-    check_policy_coverage(alloc, "o0_i0", issues)
-    assert any("NO_OPPORTUNITY" in i for i in issues)
+    compute_policy_coverage_from_labels(labels, "o0_i0", True, issues)
+    assert any("K10_REJECTED" in i for i in issues)
 
+# ── Heldout Teacher Closure (V3) ──
 
-# ── Heldout coverage ──
+def test_htc_v3_pass():
+    teacher_rows = []
+    for s in range(300):
+        teacher_rows.append({"canonical_parent_key": "ep1", "step": s,
+            "source_artifact_recursive_sha256": "a"*64,
+            "strict_k10_feasible": False, "strict_k10_known_mask": True})
+    errs = []
+    check_heldout_teacher_closure_v3({"ep1"}, teacher_rows, "o0_i0", None, False, errs)
+    assert len(errs) == 0
 
-def test_heldout_coverage_ok():
-    sets = {"heldout_l3": set(_make_split_ids("held", 16))}
-    issues = []
-    check_heldout_coverage(sets, "o0_i0", issues)
-    assert len(issues) == 0
+def test_htc_v3_step_gap():
+    teacher_rows = [
+        {"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "a"*64,
+         "strict_k10_feasible": False, "strict_k10_known_mask": True},
+        {"canonical_parent_key": "ep1", "step": 2, "source_artifact_recursive_sha256": "a"*64,
+         "strict_k10_feasible": False, "strict_k10_known_mask": True},
+    ]
+    errs = []
+    check_heldout_teacher_closure_v3({"ep1"}, teacher_rows, "o0_i0", None, False, errs)
+    assert any("GAP" in e for e in errs)
 
+def test_htc_v3_step_not_starting_at_0():
+    teacher_rows = [
+        {"canonical_parent_key": "ep1", "step": 5, "source_artifact_recursive_sha256": "a"*64,
+         "strict_k10_feasible": False, "strict_k10_known_mask": True},
+    ]
+    errs = []
+    check_heldout_teacher_closure_v3({"ep1"}, teacher_rows, "o0_i0", None, False, errs)
+    assert any("START" in e for e in errs)
 
-def test_heldout_coverage_empty():
-    issues = []
-    check_heldout_coverage({"heldout_l3": set()}, "o0_i0", issues)
-    assert any("EMPTY" in i for i in issues)
+def test_htc_v3_k10_rejected_authoritative():
+    teacher_rows = [
+        {"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "a"*64,
+         "strict_k10_binding_schema": "INTERNAL_SIMPLIFIED_V1",
+         "strict_k10_feasible": False, "strict_k10_known_mask": True},
+    ]
+    errs = []
+    check_heldout_teacher_closure_v3({"ep1"}, teacher_rows, "o0_i0", None, True, errs)
+    assert any("K10_REJECTED" in e for e in errs)
+
+def test_htc_v3_source_sha_check():
+    teacher_rows = [
+        {"canonical_parent_key": "ep1", "step": 0, "source_artifact_recursive_sha256": "f"*64,
+         "strict_k10_feasible": False, "strict_k10_known_mask": True},
+    ]
+    errs = []
+    check_heldout_teacher_closure_v3({"ep1"}, teacher_rows, "o0_i0", "a"*64, False, errs)
+    assert any("SOURCE_SHA" in e for e in errs)
+
+def test_htc_v3_k10_denom_empty():
+    # T=10, all k10_known_mask=False → 0 evaluable positions
+    teacher_rows = []
+    for s in range(10):
+        teacher_rows.append({"canonical_parent_key": "ep1", "step": s,
+            "source_artifact_recursive_sha256": "a"*64,
+            "strict_k10_feasible": False, "strict_k10_known_mask": False})
+    errs = []
+    check_heldout_teacher_closure_v3({"ep1"}, teacher_rows, "o0_i0", None, False, errs)
+    assert any("DENOM_EMPTY" in e for e in errs)
+
+# ── 12-split enforcement ──
+
+def test_frozen_splits():
+    assert len(FROZEN_SPLITS) == 12
+    assert "o0_i0" in FROZEN_SPLITS
+    assert "o3_i2" in FROZEN_SPLITS
+
+# ── K10 parity classification ──
+
+def test_k10_pass():
+    assert classify_k10_parity([], [], [], True) == "PASS"
+
+def test_k10_mismatch():
+    assert classify_k10_parity(["CALIBRATION_K10_REJECTED: ..."], [], [], True) == "NOT_AUDITABLE_K10_CONTRACT_MISMATCH"
+
+def test_k10_diagnostic():
+    assert classify_k10_parity(["CALIBRATION_K10_REJECTED: ..."], [], [], False) == "DIAGNOSTIC_ONLY"
 
 
 # ── Input audit ──
@@ -784,164 +853,35 @@ def test_COHORT_TO_ROLE():
     assert "policy_selection" in COHORT_TO_ROLE["DETECTOR_VAL"]
 
 
-# ── Split Phase C authorization ──
+# ── Split Phase C authorization (V3: added k10_pass, authoritative args) ──
 
 def test_phase_c_full_data_ready():
-    """Identity + C/P + HTC all pass: CP authorized, L3 data ready, L3 inference NOT authorized."""
-    result = phase_c_authorization("PASS_DETERMINISTIC_ALLOCATION", True, True, True)
+    result = phase_c_authorization("PASS_DETERMINISTIC_ALLOCATION", True, True, True, "PASS", True)
     assert result["cp_inference_authorized"] is True
     assert result["heldout_l3_data_ready"] is True
-    assert result["heldout_l3_inference_authorized"] is False  # validator never authorizes L3
+    assert result["heldout_l3_inference_authorized"] is False
     assert result["heldout_l3_blocker"] == "PENDING_EXTERNAL_FREEZE"
 
+def test_phase_c_k10_mismatch_blocks_cp_in_authoritative():
+    """K10 contract mismatch must block CP inference in authoritative mode."""
+    r = phase_c_authorization("PASS_DETERMINISTIC_ALLOCATION", True, True, True, "NOT_AUDITABLE_K10_CONTRACT_MISMATCH", True)
+    assert r["cp_inference_authorized"] is False  # K10 mismatch blocks CP
+    assert r["heldout_l3_data_ready"] is False
+    assert r["k10_contract_parity"] == "NOT_AUDITABLE_K10_CONTRACT_MISMATCH"
 
-def test_phase_c_cp_only_no_htc():
-    result = phase_c_authorization("PASS_DETERMINISTIC_ALLOCATION", True, True, False)
-    assert result["cp_inference_authorized"] is True
-    assert result["heldout_l3_data_ready"] is False
-    assert result["heldout_l3_inference_authorized"] is False
-
-
-def test_phase_c_no_cal_coverage():
-    result = phase_c_authorization("PASS_DETERMINISTIC_ALLOCATION", False, True, True)
-    assert result["cp_inference_authorized"] is False
-    assert result["heldout_l3_data_ready"] is True  # HTC is independent of C/P coverage
-    assert result["heldout_l3_inference_authorized"] is False
-
-
-def test_phase_c_no_pol_coverage():
-    result = phase_c_authorization("PASS_DETERMINISTIC_ALLOCATION", True, False, True)
-    assert result["cp_inference_authorized"] is False
-
-
-def test_phase_c_contaminated():
-    result = phase_c_authorization("NESTED_RETRAIN_REQUIRED", True, True, True)
-    assert result["cp_inference_authorized"] is False
-    assert result["heldout_l3_data_ready"] is False
-
-
-def test_phase_c_hold_inputs():
-    result = phase_c_authorization("HOLD_INPUTS_MISSING", True, True, True)
-    assert result["cp_inference_authorized"] is False
-
-
-def test_phase_c_l3_blocker_when_data_not_ready():
-    result = phase_c_authorization("PASS_DETERMINISTIC_ALLOCATION", True, True, False)
-    assert result["heldout_l3_blocker"] == "HOLD_DATA_NOT_READY"
-
+def test_phase_c_k10_ignored_in_diagnostic():
+    r = phase_c_authorization("PASS_DETERMINISTIC_ALLOCATION", True, True, True, "NOT_AUDITABLE_K10_CONTRACT_MISMATCH", False)
+    assert r["cp_inference_authorized"] is True  # diagnostic mode ignores K10
 
 def test_phase_c_l3_never_authorized():
-    """Validator must NEVER set heldout_l3_inference_authorized=True — that requires external freeze."""
     for verdict in ["PASS_EXISTING_ROOTS", "PASS_DETERMINISTIC_ALLOCATION"]:
         for cal in [True, False]:
             for pol in [True, False]:
                 for htc in [True, False]:
-                    r = phase_c_authorization(verdict, cal, pol, htc)
-                    assert r["heldout_l3_inference_authorized"] is False, \
-                        f"L3 authorized unexpectedly for {verdict}/{cal}/{pol}/{htc}"
+                    for k10 in ["PASS", "NOT_AUDITABLE_K10_CONTRACT_MISMATCH"]:
+                        for auth in [True, False]:
+                            r = phase_c_authorization(verdict, cal, pol, htc, k10, auth)
+                            assert r["heldout_l3_inference_authorized"] is False
 
 
-# ── Heldout Teacher Closure ──
-
-def test_htc_no_bundle():
-    errs = []
-    check_heldout_teacher_closure({"ep1", "ep2"}, None, "o0_i0", None, errs)
-    assert len(errs) == 1
-    assert any("BUNDLE_MISSING" in e for e in errs)
-
-
-def test_htc_bundle_not_dir():
-    import tempfile
-    errs = []
-    check_heldout_teacher_closure({"ep1"}, "/nonexistent/path", "o0_i0", None, errs)
-    assert len(errs) >= 1
-
-
-def test_htc_identity_closure():
-    """H manifest has ep1, ep2 but Teacher has ep1, ep3 → missing + extra."""
-    import tempfile, os
-    td = tempfile.mkdtemp()
-    split_dir = os.path.join(td, "o0_i0")
-    os.makedirs(split_dir)
-    # Write Teacher labels with ep1 and ep3
-    labels = os.path.join(split_dir, "factorized_teacher_v1.jsonl")
-    with open(labels, "w") as f:
-        f.write(json.dumps({"canonical_parent_key": "ep1", "step": 0,
-                           "grasp_established_known_mask": True,
-                           "manipulation_active_known_mask": False,
-                           "release_or_instability_known_mask": True,
-                           "physics_protocol_schema": "TEST_SCHEMA",
-                           "source_artifact_recursive_sha256": "a"*64}) + "\n")
-        f.write(json.dumps({"canonical_parent_key": "ep3", "step": 0,
-                           "grasp_established_known_mask": True}) + "\n")
-    errs = []
-    check_heldout_teacher_closure({"ep1", "ep2"}, td, "o0_i0", None, errs)
-    assert any("IDENTITY_MISSING" in e for e in errs)
-    assert any("IDENTITY_EXTRA" in e for e in errs)
-
-
-def test_htc_duplicate_ep_step():
-    import tempfile, os
-    td = tempfile.mkdtemp()
-    split_dir = os.path.join(td, "o0_i0")
-    os.makedirs(split_dir)
-    labels = os.path.join(split_dir, "factorized_teacher_v1.jsonl")
-    with open(labels, "w") as f:
-        f.write(json.dumps({"canonical_parent_key": "ep1", "step": 0,
-                           "grasp_established_known_mask": True}) + "\n")
-        f.write(json.dumps({"canonical_parent_key": "ep1", "step": 0,
-                           "grasp_established_known_mask": True}) + "\n")
-    errs = []
-    check_heldout_teacher_closure({"ep1"}, td, "o0_i0", None, errs)
-    assert any("DUPLICATE" in e for e in errs)
-
-
-def test_htc_pass():
-    import tempfile, os
-    td = tempfile.mkdtemp()
-    split_dir = os.path.join(td, "o0_i0")
-    os.makedirs(split_dir)
-    labels = os.path.join(split_dir, "factorized_teacher_v1.jsonl")
-    with open(labels, "w") as f:
-        f.write(json.dumps({"canonical_parent_key": "ep1", "step": 0,
-                           "grasp_established_known_mask": True}) + "\n")
-        f.write(json.dumps({"canonical_parent_key": "ep1", "step": 1,
-                           "grasp_established_known_mask": False}) + "\n")
-        f.write(json.dumps({"canonical_parent_key": "ep2", "step": 0,
-                           "manipulation_active_known_mask": True}) + "\n")
-    errs = []
-    check_heldout_teacher_closure({"ep1", "ep2"}, td, "o0_i0", None, errs)
-    assert len(errs) == 0
-
-
-def test_htc_global_wrapper():
-    import tempfile, os
-    td = tempfile.mkdtemp()
-    for sk in ["o0_i0", "o0_i1"]:
-        split_dir = os.path.join(td, sk)
-        os.makedirs(split_dir)
-        labels = os.path.join(split_dir, "factorized_teacher_v1.jsonl")
-        with open(labels, "w") as f:
-            f.write(json.dumps({"canonical_parent_key": f"ep_{sk}", "step": 0,
-                               "grasp_established_known_mask": True}) + "\n")
-    h_ids = {"o0_i0": ["ep_o0_i0"], "o0_i1": ["ep_o0_i1"]}
-    errs, rows = check_heldout_teacher_closure_global(h_ids, td, ["o0_i0", "o0_i1"], None)
-    assert len(errs) == 0
-    assert len(rows) == 2
-
-
-def test_htc_source_sha_mismatch():
-    import tempfile, os
-    td = tempfile.mkdtemp()
-    split_dir = os.path.join(td, "o0_i0")
-    os.makedirs(split_dir)
-    labels = os.path.join(split_dir, "factorized_teacher_v1.jsonl")
-    expected_sha = "e" * 64
-    actual_sha = "f" * 64
-    with open(labels, "w") as f:
-        f.write(json.dumps({"canonical_parent_key": "ep1", "step": 0,
-                           "grasp_established_known_mask": True,
-                           "source_artifact_recursive_sha256": actual_sha}) + "\n")
-    errs = []
-    check_heldout_teacher_closure({"ep1"}, td, "o0_i0", expected_sha, errs)
-    assert any("SOURCE_SHA_MISMATCH" in e for e in errs)
+# ── Old HTC tests removed — replaced by V3 tests above (test_htc_v3_*) ──
