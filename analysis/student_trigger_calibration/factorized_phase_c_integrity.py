@@ -496,8 +496,13 @@ def verify_checkpoint_from_manifest(
     split_key: str,
     row_sha: str,
     label: str,
-) -> str:
-    """Load checkpoint manifest, extract actual checkpoint path, recompute SHA."""
+    require_actual_file: bool = True,
+) -> dict[str, Any]:
+    """A6: Load checkpoint manifest, verify actual file SHA.
+
+    Authoritative mode (require_actual_file=True): manifest MUST have checkpoint_path
+    pointing to a real file whose SHA matches declared. No fallback to trust manifest string.
+    """
     manifest_path = checkpoint_manifest_root / split_key / "manifest.json"
     verify_safe_file(manifest_path, checkpoint_manifest_root, f"{label}_CHECKPOINT_MANIFEST")
     cp_manifest = load_strict_json(manifest_path, f"{label}_CHECKPOINT_MANIFEST")
@@ -506,17 +511,33 @@ def verify_checkpoint_from_manifest(
     if not is_64char_hex(declared_sha):
         raise SystemExit(f"{label}_CHECKPOINT_MANIFEST_SHA_INVALID: {split_key}")
 
-    # Check if manifest has actual checkpoint file path
+    result: dict[str, Any] = {
+        "declared_sha256": declared_sha,
+        "manifest_path": str(manifest_path),
+        "checkpoint_file_verified": False,
+    }
+
     cp_path_rel = cp_manifest.get("checkpoint_path", cp_manifest.get("checkpoint_file", ""))
     if cp_path_rel:
         checkpoint_root = cp_manifest.get("checkpoint_root", str(checkpoint_manifest_root.resolve()))
         cp_file = guard_path_safe(cp_path_rel, Path(checkpoint_root), f"{label}_CHECKPOINT_FILE")
+        if not cp_file.is_file():
+            raise SystemExit(f"{label}_CHECKPOINT_FILE_NOT_FOUND: {cp_file}")
         actual_file_sha = sha256_file(cp_file)
         if actual_file_sha != declared_sha:
             raise SystemExit(
                 f"{label}_CHECKPOINT_FILE_SHA_MISMATCH: {split_key} "
                 f"declared={declared_sha[:16]} actual={actual_file_sha[:16]}"
             )
+        result["checkpoint_file_verified"] = True
+        result["checkpoint_file_sha256"] = actual_file_sha
+        result["checkpoint_file_path"] = str(cp_file)
+    elif require_actual_file:
+        # A6: Authoritative mode — must have actual file
+        raise SystemExit(
+            f"{label}_CHECKPOINT_NO_ACTUAL_FILE: {split_key} "
+            f"manifest must contain checkpoint_path or checkpoint_file"
+        )
 
     row_sha_lower = row_sha.lower()
     if row_sha_lower != declared_sha:
@@ -524,7 +545,7 @@ def verify_checkpoint_from_manifest(
             f"{label}_CHECKPOINT_SHA_MISMATCH: {split_key} "
             f"rows={row_sha_lower[:16]} manifest={declared_sha[:16]}"
         )
-    return declared_sha
+    return result
 
 
 # ── cross-role disjointness ────────────────────────────────────────────────

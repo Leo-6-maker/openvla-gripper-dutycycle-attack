@@ -168,10 +168,16 @@ def test_checkpoint_binding():
     with tempfile.TemporaryDirectory() as d:
         dp = Path(d); md = dp / "o0_i0"; md.mkdir(parents=True)
         cp_sha = "a" * 64
-        (md / "manifest.json").write_text(json.dumps({"checkpoint_sha256": cp_sha}))
-        rows = [_mk_prediction_row("ep1", 0, checkpoint_sha256=cp_sha)]
+        cp_file = md / "checkpoint.pt"; cp_file.write_text("mock data")
+        actual_sha = sha256_file(cp_file)
+        (md / "manifest.json").write_text(json.dumps({
+            "checkpoint_sha256": actual_sha,
+            "checkpoint_path": "checkpoint.pt",
+            "checkpoint_root": str(md),
+        }))
+        rows = [_mk_prediction_row("ep1", 0, checkpoint_sha256=actual_sha)]
         result = validate_checkpoint_binding(rows, dp, "o0_i0", "T")
-        assert result == cp_sha
+        assert result == actual_sha
 
 # ── hex tests ─────────────────────────────────────────────────────────
 def test_is_64char_hex():

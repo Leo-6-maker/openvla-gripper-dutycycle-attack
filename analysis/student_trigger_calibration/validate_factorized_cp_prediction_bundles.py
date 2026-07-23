@@ -48,7 +48,9 @@ def validate_checkpoint_binding(
 ) -> str:
     from factorized_phase_c_integrity import verify_checkpoint_from_manifest
     row_sha = next((r.get("checkpoint_sha256", "").lower() for r in rows), "").lower()
-    return verify_checkpoint_from_manifest(checkpoint_manifest_root, split_key, row_sha, label)
+    result = verify_checkpoint_from_manifest(checkpoint_manifest_root, split_key, row_sha, label,
+                                              require_actual_file=True)
+    return result["declared_sha256"]
 
 
 def validate_phase_b_receipt(receipt_path: Path, authoritative: bool) -> dict[str, Any]:

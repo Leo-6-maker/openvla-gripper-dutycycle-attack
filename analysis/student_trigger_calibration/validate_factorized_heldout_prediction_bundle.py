@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""Validate H Student prediction bundle (P0-7, P0-9).
+"""Validate H Student prediction bundle (A5: complete cross-receipt bindings).
 
-Strict validation before L3 replay: exact join with Teacher and runtime,
-no silent skip of missing rows, full seal verification.
+Verifies: H prediction root == auth output root, Teacher/runtime seals match auth,
+manifest SHA matches, checkpoint bindings, no loose JSON trust.
 """
 from __future__ import annotations
 
 import argparse, json, os, sys, uuid
-from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +18,8 @@ from factorized_phase_c_integrity import (
     verify_bundle_seal, seal_output_dir, extract_manifest_identities,
     verify_identity_closure, verify_step_closure, exact_three_way_join,
     validate_prediction_schema, validate_numeric_constraints,
-    consume_sealed_receipt,
+    consume_sealed_receipt, verify_receipt_binding,
+    verify_checkpoint_from_manifest,
 )
 
 SELF_SHA = None
@@ -53,7 +53,7 @@ def main() -> int:
     if len(expected) != 12 or len(expected_set) != 12 or expected_set != FROZEN_SPLITS:
         raise SystemExit("SPLIT_ENFORCEMENT: requires exactly 12 splits")
 
-    # P0-6: Consume authorization receipt as sealed root
+    # A5: Consume authorization as sealed root
     auth, _ = consume_sealed_receipt(args.heldout_prediction_authorization_root,
         "FACTORIZED_HELDOUT_PREDICTION_AUTHORIZATION_RECEIPT_V1",
         "heldout_prediction_inference_authorized", True, "H_PRED_AUTH")
@@ -63,13 +63,25 @@ def main() -> int:
     h_pred_root = args.heldout_prediction_bundle_root.resolve()
     h_teacher_root = args.heldout_teacher_bundle_root.resolve()
     h_rt_root = args.heldout_runtime_bundle_root.resolve()
+
     h_pred_seal = verify_bundle_seal(h_pred_root, "H_PRED")
     h_teacher_seal = verify_bundle_seal(h_teacher_root, "H_TEACHER")
     h_rt_seal = verify_bundle_seal(h_rt_root, "H_RUNTIME")
 
-    # Verify manifest binding
-    if auth.get("authorized_h_manifest_sha256") != sha256_file(args.heldout_l3_manifest):
-        raise SystemExit("H_MANIFEST_BINDING_MISMATCH")
+    # A5: Verify H prediction root matches authorization
+    authorized_pred_root = Path(auth.get("authorized_h_prediction_output_root", ""))
+    if authorized_pred_root.resolve() != h_pred_root:
+        raise SystemExit(
+            f"H_PRED_ROOT_MISMATCH: auth={authorized_pred_root} actual={h_pred_root}"
+        )
+
+    # A5: Verify Teacher/runtime seals match authorization
+    verify_receipt_binding(auth, "authorized_h_teacher_bundle_sha256",
+                           h_teacher_seal, "H_PRED_AUTH_TEACHER")
+    verify_receipt_binding(auth, "authorized_h_runtime_bundle_sha256",
+                           h_rt_seal, "H_PRED_AUTH_RUNTIME")
+    verify_receipt_binding(auth, "authorized_h_manifest_sha256",
+                           sha256_file(args.heldout_l3_manifest), "H_PRED_AUTH_MANIFEST")
 
     feature_sha = sha256_file(args.feature_order_contract)
     norm_sha = sha256_file(args.normalization_contract)
@@ -92,17 +104,18 @@ def main() -> int:
             validate_prediction_schema(pred_rows, f"H_PRED_{sk}")
             validate_numeric_constraints(pred_rows, f"H_PRED_{sk}")
 
-            # P0-9: Exact 3-way join — NO silent "continue"
+            # Exact 3-way join
             _, _, _ = exact_three_way_join(pred_rows, teacher_rows, rt_rows, f"H_{sk}")
 
-            # Verify checkpoint binding
-            from factorized_phase_c_integrity import verify_checkpoint_from_manifest
-            binding = pred_rows[0]
-            verify_checkpoint_from_manifest(args.checkpoint_manifest_root, sk,
-                                            binding.get("checkpoint_sha256", ""), f"H_PRED_{sk}")
-            if binding.get("feature_order_sha256", "") != feature_sha:
+            # Verify checkpoint
+            verify_checkpoint_from_manifest(
+                args.checkpoint_manifest_root, sk,
+                pred_rows[0].get("checkpoint_sha256", ""),
+                f"H_PRED_{sk}", require_actual_file=True)
+
+            if pred_rows[0].get("feature_order_sha256", "") != feature_sha:
                 raise SystemExit(f"H_PRED_{sk}_FEATURE_MISMATCH")
-            if binding.get("normalization_sha256", "") != norm_sha:
+            if pred_rows[0].get("normalization_sha256", "") != norm_sha:
                 raise SystemExit(f"H_PRED_{sk}_NORM_MISMATCH")
 
             per_split[sk] = {"pass": True, "h_identities": len(h_ids)}
@@ -115,13 +128,20 @@ def main() -> int:
         "schema": "FACTORIZED_HELDOUT_PREDICTION_VALIDATION_RECEIPT_V1",
         "validator_code_sha256": SELF_SHA,
         "status": "COMPLETE", "h_predictions_ready": h_pred_ready,
+        # A5: Cross-receipt bindings
+        "authorization_receipt_sha256": sha256_file(
+            next(p for p in args.heldout_prediction_authorization_root.iterdir()
+                 if p.suffix == ".json" and p.name not in ("SHA256SUMS", "SHA256SUMS.sha256"))),
+        "heldout_manifest_sha256": sha256_file(args.heldout_l3_manifest),
         "h_prediction_seal_sha256": h_pred_seal,
         "h_teacher_seal_sha256": h_teacher_seal,
         "h_runtime_seal_sha256": h_rt_seal,
+        "checkpoint_manifest_root": str(args.checkpoint_manifest_root.resolve()),
+        "feature_order_sha256": feature_sha,
+        "normalization_sha256": norm_sha,
         "n_errors": len(all_errors), "per_split": per_split,
     }
-    if all_errors:
-        receipt["errors"] = all_errors
+    if all_errors: receipt["errors"] = all_errors
 
     staging = out_root.with_name(f".{out_root.name}.{uuid.uuid4().hex}.staging")
     staging.mkdir(parents=True)
@@ -130,7 +150,7 @@ def main() -> int:
     seal_output_dir(staging)
     os.replace(staging, out_root)
 
-    print(f"H Prediction Validation: ready={h_pred_ready} errors={len(all_errors)}")
+    print(f"H Prediction Validation: ready={h_pred_ready}")
     return 0 if h_pred_ready else 1
 
 
