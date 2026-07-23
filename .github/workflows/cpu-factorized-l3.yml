@@ -40,6 +40,7 @@ jobs:
           python -m py_compile \
             analysis/student_trigger_calibration/load_factorized_handoff.py \
             analysis/student_trigger_calibration/validate_factorized_codex_handoff.py \
+            analysis/student_trigger_calibration/validate_factorized_identity_disjointness.py \
             analysis/student_trigger_calibration/fit_factorized_calibrators.py \
             analysis/student_trigger_calibration/select_factorized_scheduler_thresholds.py \
             analysis/student_trigger_calibration/produce_factorized_calibration_threshold_contract.py \
