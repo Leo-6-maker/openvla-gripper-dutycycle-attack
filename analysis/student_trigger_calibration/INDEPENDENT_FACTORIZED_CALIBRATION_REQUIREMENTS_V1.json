@@ -2,14 +2,12 @@
   "document": "INDEPENDENT_FACTORIZED_CALIBRATION_REQUIREMENTS_V1",
   "frozen_date": "2026-07-22",
   "revised_date": "2026-07-23",
-  "status": "AWAITING_PHASE_B_IDENTITY_CLOSURE",
-
+  "status": "IDENTITY_CLOSURE_PASS_AWAITING_AUTHORITATIVE_TEACHER_COVERAGE",
   "revision_history": [
     "2026-07-22: Initial three-way requirement (C, P, H disjointness)",
     "2026-07-23 r1: Expanded to five-way identity closure (T, C, P, H, A)",
     "2026-07-23 r2: Split identity disjointness (hard gate) from statistical coverage (soft gate). Removed uniform 20-identity threshold. Added HOLD_INPUTS_MISSING verdict. NESTED_RETRAIN_REQUIRED only for proven contamination."
   ],
-
   "two_independent_gates": {
     "gate_1_identity_disjointness": {
       "type": "HARD",
@@ -28,7 +26,11 @@
     "gate_2_statistical_coverage": {
       "type": "SOFT",
       "description": "Checks whether per-role samples are sufficient for valid statistical inference. Insufficiency → HOLD, never retrain.",
-      "possible_statuses": ["PASS", "HOLD_INSUFFICIENT_STATISTICAL_COVERAGE", "NOT_AUDITABLE"],
+      "possible_statuses": [
+        "PASS",
+        "HOLD_INSUFFICIENT_STATISTICAL_COVERAGE",
+        "NOT_AUDITABLE"
+      ],
       "checks": {
         "calibration": {
           "description": "Per-head known positive AND known negative for all 3 heads (grasp, manipulation, release). No unknown→negative conversion.",
@@ -68,7 +70,6 @@
       "critical_rule": "HOLD_INPUTS_MISSING must NEVER be converted to NESTED_RETRAIN_REQUIRED. Missing evidence ≠ proven contamination."
     }
   },
-
   "verdict_rules": {
     "precedence": [
       "1. Inputs incomplete → HOLD_INPUTS_MISSING (regardless of any other finding)",
@@ -95,26 +96,45 @@
       "Cohort membership violations (e.g., TEST identity used for training)"
     ]
   },
-
   "phase_c_authorization": {
-    "AUTHORIZED": "Identity closure PASS + Statistical coverage PASS",
-    "HOLD_STATISTICAL_COVERAGE": "Identity closure PASS + Statistical coverage not PASS",
-    "HOLD": "Identity closure not PASS or inputs missing"
+    "CP_INFERENCE_AUTHORIZED": "Identity closure PASS + authoritative C/P Teacher contract integrity PASS + calibration coverage PASS + policy coverage PASS + K10 parity PASS",
+    "CP_INFERENCE_HOLD": "Any C/P identity, source-step, bundle-seal, Teacher-contract, K10, or statistical-coverage gate is not PASS",
+    "HELDOUT_L3_DATA_READY": "Identity closure PASS + authoritative H Teacher identity/step/source/K10 closure PASS",
+    "HELDOUT_L3_INFERENCE_AUTHORIZED": "Never issued by the Phase B validator; requires independent calibrator-freeze and scheduler-freeze receipt verification"
   },
-
   "cleaned2000_realistic_counts": {
-    "DETECTOR_TRAIN": {"total": 1200, "per_split_avg": 100},
-    "DETECTOR_VAL": {"total": 200, "per_split_avg": 16.7, "note": "Split into C≈8 and P≈8 per split"},
-    "DETECTOR_TEST": {"total": 200, "per_split_avg": 16.7},
-    "ATTACK_EVAL": {"total": 400, "per_split_avg": 33.3},
+    "DETECTOR_TRAIN": {
+      "total": 1200,
+      "per_split_avg": 100
+    },
+    "DETECTOR_VAL": {
+      "total": 200,
+      "per_split_avg": 16.7,
+      "note": "Split into C≈8 and P≈8 per split"
+    },
+    "DETECTOR_TEST": {
+      "total": 200,
+      "per_split_avg": 16.7
+    },
+    "ATTACK_EVAL": {
+      "total": 400,
+      "per_split_avg": 33.3
+    },
     "validation": "C≈8 and P≈8 per split is VALID under CLEAN2000. Must not trigger retrain."
   },
-
   "five_identity_roles": {
     "T_checkpoint_training": {
       "expected_cohort": "DETECTOR_TRAIN",
-      "provenance_methods_accepted": ["TRAINING_DATALOADER_LOG", "CANONICAL_TRAINING_LEDGER", "CHECKPOINT_SAMPLER_STATE"],
-      "provenance_methods_rejected": ["SET_SUBTRACTION", "INFERRED", "UNKNOWN"]
+      "provenance_methods_accepted": [
+        "TRAINING_DATALOADER_LOG",
+        "CANONICAL_TRAINING_LEDGER",
+        "CHECKPOINT_SAMPLER_STATE"
+      ],
+      "provenance_methods_rejected": [
+        "SET_SUBTRACTION",
+        "INFERRED",
+        "UNKNOWN"
+      ]
     },
     "C_calibrator_fit": {
       "expected_cohort": "DETECTOR_VAL",
@@ -137,7 +157,6 @@
       "note": "Isolation check only. No sample size requirement."
     }
   },
-
   "phase_b_deliverables": {
     "from_codex": [
       "FACTORIZED_IDENTITY_SOURCE_DISCOVERY_V1.json",
