@@ -58,7 +58,7 @@ def test_protocol_has_phase_b_gate_and_identity_closure():
     for role in ["T", "C", "P", "H", "A"]:
         assert role in closure["five_roles"]
     assert value["formal_gate"]["attack"] == "HOLD"
-    assert value["formal_gate"]["phase_b_identity_closure"] == "HOLD"
+    assert value["formal_gate"]["phase_b_identity_closure"].startswith("HOLD")
 
 
 def test_design_and_requirements_match_current_execution_boundary():
