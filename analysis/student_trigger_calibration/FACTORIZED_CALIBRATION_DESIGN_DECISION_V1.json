@@ -2,20 +2,17 @@
   "document": "FACTORIZED_CALIBRATION_DESIGN_DECISION_V1",
   "frozen_date": "2026-07-22",
   "revised_date": "2026-07-23",
-  "status": "BLOCKED_AWAITING_PHASE_B_IDENTITY_CLOSURE",
-
-  "revision_note": "2026-07-23: Restructured around Phase B identity closure. Design scheme cannot be selected until identity roots are recovered and five-way disjointness is proven or disproven.",
-
+  "status": "IDENTITY_CLOSURE_PASS_AWAITING_AUTHORITATIVE_TEACHER_COVERAGE",
+  "revision_note": "2026-07-23: Five-way identity and cohort closure passed via sealed deterministic C/P allocation. The next hard gate is authoritative external-R7 K10 Teacher coverage for exact C/P/H identities before any Student inference.",
   "current_state": {
     "phase_a_complete": true,
     "w32_seal_pass": true,
-    "identity_audit": "not received from Codex",
-    "chosen_scheme": null,
-    "reason": "Five-way identity independence must be proven before any calibration scheme can be authorized. CALIBRATOR_FIT, POLICY_SELECTION, HELDOUT_L3, and ATTACK_EVAL roles must all be shown disjoint from CHECKPOINT_TRAINING."
+    "identity_audit": "PASS_DETERMINISTIC_ALLOCATION",
+    "chosen_scheme": "DETERMINISTIC_C_P_ALLOCATION_WITH_INDEPENDENT_H",
+    "reason": "T/C/P/H/A disjointness and cohort closure are proven. C/P Student inference remains blocked until authoritative external-R7 K10 Teacher bundles pass contract, source-step, seal, identity, and statistical-coverage checks."
   },
-
   "phase_b_prerequisite": {
-    "description": "Before any calibration design decision, Codex must deliver identity manifests proving or disproving five-way independence.",
+    "description": "Identity manifests are available and five-way disjointness has passed. Complete authoritative C/P/H Teacher materialization and Phase B V3.1 validation.",
     "codex_deliverables": [
       "FACTORIZED_IDENTITY_SOURCE_DISCOVERY_V1.json",
       "FACTORIZED_CHECKPOINT_TRAINING_IDENTITY_LEDGER_V1.json",
@@ -23,9 +20,9 @@
       "FACTORIZED_PREINFERENCE_IDENTITY_FEASIBILITY_AUDIT_V1.json",
       "FACTORIZED_IDENTITY_COUNTS_BY_SPLIT.csv"
     ],
-    "deepseek_validator": "validate_factorized_identity_disjointness.py"
+    "deepseek_validator": "validate_factorized_identity_disjointness.py",
+    "status": "IDENTITY_COMPLETE_TEACHER_COVERAGE_HOLD"
   },
-
   "scheme_decision_tree": {
     "PASS_EXISTING_ROOTS": {
       "conditions": [
@@ -37,7 +34,7 @@
         "Five-way pairwise disjointness proven by validator"
       ],
       "action": "Allocate DETECTOR_VAL→C+P (deterministic split), DETECTOR_TEST→H, ATTACK_EVAL→A. Proceed to Phase C.",
-      "status": "PENDING_IDENTITY_MANIFESTS"
+      "status": "NOT_SELECTED"
     },
     "PASS_DETERMINISTIC_ALLOCATION": {
       "conditions": [
@@ -49,21 +46,17 @@
         "Pre-inference timestamp proves allocation precedes any prediction generation"
       ],
       "action": "Execute deterministic C/P split, seal allocation manifest, then proceed to Phase C.",
-      "status": "PENDING_IDENTITY_MANIFESTS"
+      "status": "SELECTED_PENDING_TEACHER_COVERAGE"
     },
     "NESTED_RETRAIN_REQUIRED": {
       "conditions": [
-        "Cannot recover checkpoint training identities from actual training logs",
-        "Existing VAL/TEST identities may have been used in training or model selection",
-        "ATTACK_EVAL identities participated in detector development",
-        "Per-split identity coverage insufficient for independent C/P/H roles",
-        "Cannot prove any identity is OOF with respect to checkpoint training"
+        "Proven cross-role canonical identity contamination between checkpoint training and C/P/H/A",
+        "Proven C/P/H/A identity reuse that invalidates the pre-registered independent evaluation design"
       ],
       "action": "Re-establish frozen training identities → inner-CV model selection → independent C/P/H/A allocation → new inference. PR #98/#99/#100 interfaces unchanged.",
-      "status": "POSSIBLE_OUTCOME"
+      "status": "NOT_CURRENTLY_REQUIRED"
     }
   },
-
   "holding_rules": {
     "no_heldout_OOF_reuse": "Heldout OOF predictions cannot serve as BOTH calibration data AND evaluation data",
     "five_way_disjointness": "T ∩ C = T ∩ P = T ∩ H = T ∩ A = ∅, C ∩ P = C ∩ H = P ∩ H = ∅, A isolated from all",
