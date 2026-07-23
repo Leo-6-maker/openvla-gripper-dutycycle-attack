@@ -36,11 +36,14 @@ jobs:
       - name: Compile all Phase C analysis scripts
         run: |
           python -m py_compile \
+            analysis/student_trigger_calibration/factorized_phase_c_integrity.py \
             analysis/student_trigger_calibration/validate_factorized_cp_prediction_bundles.py \
             analysis/student_trigger_calibration/freeze_factorized_calibrators.py \
             analysis/student_trigger_calibration/validate_factorized_calibrator_freeze.py \
             analysis/student_trigger_calibration/freeze_factorized_scheduler_policy.py \
             analysis/student_trigger_calibration/validate_factorized_scheduler_freeze.py \
+            analysis/student_trigger_calibration/authorize_factorized_heldout_prediction.py \
+            analysis/student_trigger_calibration/validate_factorized_heldout_prediction_bundle.py \
             analysis/student_trigger_calibration/authorize_factorized_heldout_l3.py \
             analysis/student_trigger_calibration/run_authorized_factorized_heldout_l3.py \
             analysis/student_trigger_calibration/build_factorized_detector_freeze.py \

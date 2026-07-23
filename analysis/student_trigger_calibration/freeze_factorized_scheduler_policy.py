@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
-"""Freeze joint scheduler thresholds from P Student predictions and P Teacher/K10 labels.
+"""Freeze joint scheduler thresholds (P0-1, P0-2, P0-3, P0-6).
 
-Reads only policy-selection identities (P). Never reads H, A, or modifies
-calibration. Joint grid search with pre-registered selection rule.
-
-Produces a sealed FACTORIZED_SCHEDULER_FREEZE_V1.json.
+Consumes REAL runtime bundles (--policy-runtime-bundle-root), not hardcoded values.
+Bans zero-recall policy freeze. Uses actual calibrator fit manifest SHA.
+Consumes sealed receipt roots.
 """
 from __future__ import annotations
 
-import argparse, hashlib, itertools, json, math, os, statistics, sys, time, uuid
+import argparse, itertools, json, math, os, statistics, sys, time, uuid
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Mapping, Sequence
@@ -17,29 +16,18 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(ROOT / "analysis/student_trigger_calibration"))
 sys.path.insert(0, str(ROOT / "src"))
 
-from fit_factorized_calibrators import HEADS, load_json, sha256_file, verify_sealed_directory
+from factorized_phase_c_integrity import (
+    FROZEN_SPLITS, HEADS, sha256_file, load_strict_json, load_strict_jsonl,
+    verify_bundle_seal, seal_output_dir, extract_manifest_identities,
+    verify_identity_closure, verify_step_closure, exact_three_way_join,
+    consume_sealed_receipt, verify_runtime_source_files,
+)
 from run_factorized_l3_analysis import (
-    compute_l3_metrics, exact_join, validate_episode_step_sequence, classify_episode,
-    is_valid_start,
+    compute_l3_metrics, validate_episode_step_sequence, classify_episode, is_valid_start,
 )
 from gripper_attack.factorized_scheduler_adapter import FactorizedV2SchedulerAdapter
 
-FROZEN_SPLITS = frozenset(f"o{o}_i{i}" for o in range(4) for i in range(3))
 SELF_SHA = None
-
-
-def _identity_set(manifest: dict[str, Any], role: str, split_key: str) -> set[str]:
-    if "identities" in manifest:
-        return set(manifest["identities"])
-    splits = manifest.get("splits", manifest.get("split_identities", {}))
-    if split_key in splits:
-        sd = splits[split_key]
-        if isinstance(sd, list): return set(sd)
-        if isinstance(sd, dict): return set(sd.get(role, []))
-    if role in manifest:
-        rd = manifest[role]
-        if isinstance(rd, list): return set(rd)
-    return set()
 
 
 def _parse_grid(text: str, label: str) -> tuple[float, ...]:
@@ -95,8 +83,7 @@ def evaluate_candidate(
             "calibration_fit_authoritative": True,
             "threshold_selection_authoritative": False,
             "l3_evaluation_eligible": False,
-            "training_authorized": False, "full_fit_authorized": False,
-            "attack_authorized": False,
+            "training_authorized": False, "full_fit_authorized": False, "attack_authorized": False,
         }
         for head in HEADS:
             hd = payload["calibrators"][head]
@@ -134,15 +121,17 @@ def evaluate_candidate(
     def ratio(n: int, d: int) -> float | None:
         return n / d if d > 0 else None
 
+    recall = ratio(totals["positive_on_corridor_emits"], totals["positive_episodes"])
     aggregate = {**totals,
         "negative_episode_false_start_rate": ratio(totals["negative_episode_emits"], totals["negative_episodes"]),
-        "valid_opportunity_recall": ratio(totals["positive_on_corridor_emits"], totals["positive_episodes"]),
+        "valid_opportunity_recall": recall,
         "all_emit_precision": ratio(totals["positive_on_corridor_emits"], totals["total_emitted_all"]),
         "verified_emit_precision": ratio(totals["positive_on_corridor_emits"], totals["total_emitted_verified"]),
         "median_timing_offset": float(statistics.median(all_offsets)) if all_offsets else None,
     }
     return {"thresholds": dict(thresholds), "all_split_false_start_defined": len(defined) == len(per_split),
-            "worst_split_negative_false_start_rate": worst, "per_split": per_split, "aggregate": aggregate}
+            "worst_split_negative_false_start_rate": worst, "per_split": per_split, "aggregate": aggregate,
+            "recall": recall}
 
 
 def selection_key(result: Mapping[str, Any]) -> tuple[float, ...]:
@@ -156,20 +145,6 @@ def selection_key(result: Mapping[str, Any]) -> tuple[float, ...]:
     )
 
 
-def _seal_output(output_root: Path, files: dict[str, str]) -> str:
-    staging = output_root.with_name(f".{output_root.name}.{uuid.uuid4().hex}.staging")
-    staging.mkdir(parents=True)
-    for name, content in files.items():
-        (staging / name).write_text(content, encoding="utf-8")
-    data = sorted(p for p in staging.iterdir() if p.is_file())
-    (staging / "SHA256SUMS").write_text(
-        "".join(f"{sha256_file(p)}  {p.name}\n" for p in data))
-    seal = sha256_file(staging / "SHA256SUMS")
-    (staging / "SHA256SUMS.sha256").write_text(f"{seal}  SHA256SUMS\n")
-    os.replace(staging, output_root)
-    return seal
-
-
 def main() -> int:
     global SELF_SHA
     SELF_SHA = sha256_file(Path(__file__))
@@ -178,13 +153,19 @@ def main() -> int:
     ap.add_argument("--policy-selection-manifest", type=Path, required=True)
     ap.add_argument("--policy-prediction-bundle-root", type=Path, required=True)
     ap.add_argument("--policy-teacher-bundle-root", type=Path, required=True)
+    # P0-1: REAL runtime bundle
+    ap.add_argument("--policy-runtime-bundle-root", type=Path, required=True)
+    # P0-6: sealed receipt roots
     ap.add_argument("--calibrator-freeze-root", type=Path, required=True)
-    ap.add_argument("--phase-b-receipt", type=Path, required=True)
-    ap.add_argument("--cp-prediction-validation-receipt", type=Path, required=True)
-    ap.add_argument("--calibrator-freeze-validation-receipt", type=Path, required=True)
+    ap.add_argument("--phase-b-validation-root", type=Path, required=True)
+    ap.add_argument("--cp-prediction-validation-root", type=Path, required=True)
+    ap.add_argument("--calibrator-freeze-validation-root", type=Path, required=True)
+    # P0-3: actual calibrator fit manifest
+    ap.add_argument("--calibrator-fit-manifest", type=Path, required=True)
     ap.add_argument("--structure-config", type=Path,
                     default=ROOT / "configs/FACTORIZED_V2_SCHEDULER_PROTOCOL_V1.json")
     ap.add_argument("--checkpoint-manifest-root", type=Path, required=True)
+    ap.add_argument("--runtime-source-root", type=Path, default=None)
     ap.add_argument("--output-root", type=Path, required=True)
     ap.add_argument("--grasp-grid", default="0.2,0.3,0.4,0.5,0.6,0.7,0.8")
     ap.add_argument("--manipulation-grid", default="0.2,0.3,0.4,0.5,0.6,0.7,0.8")
@@ -200,160 +181,128 @@ def main() -> int:
     if not math.isfinite(args.max_false_start) or not 0.0 <= args.max_false_start <= 1.0:
         raise SystemExit("MAX_FALSE_START_INVALID")
 
-    # Load receipts
-    phase_b = load_json(args.phase_b_receipt)
-    if not phase_b.get("cp_inference_authorized"):
-        raise SystemExit("PHASE_B_CP_NOT_AUTHORIZED")
-    cp_val = load_json(args.cp_prediction_validation_receipt)
-    if not cp_val.get("cp_predictions_ready"):
-        raise SystemExit("CP_PREDICTIONS_NOT_READY")
+    # P0-6: Consume sealed receipts
+    phase_b, _ = consume_sealed_receipt(args.phase_b_validation_root,
+        "DEEPSEEK_PHASE_B_VALIDATION_RECEIPT_V2", "cp_inference_authorized", True, "PHASE_B")
+    cp_val, _ = consume_sealed_receipt(args.cp_prediction_validation_root,
+        "DEEPSEEK_CP_PREDICTION_VALIDATION_RECEIPT_V1", "cp_predictions_ready", True, "CP_VAL")
+    cf_val, _ = consume_sealed_receipt(args.calibrator_freeze_validation_root,
+        "FACTORIZED_CALIBRATOR_FREEZE_VALIDATION_V1", "status", "PASS", "CAL_FREEZE_VAL")
 
     # Load calibrator freeze
-    freeze_root = args.calibrator_freeze_root.resolve()
-    verify_sealed_directory(freeze_root)
-    freeze_path = freeze_root / "FACTORIZED_CALIBRATOR_FREEZE_V1.json"
-    freeze_contract = load_json(freeze_path)
+    cf_root = args.calibrator_freeze_root.resolve()
+    verify_bundle_seal(cf_root, "CAL_FREEZE")
+    freeze_contract = load_strict_json(cf_root / "FACTORIZED_CALIBRATOR_FREEZE_V1.json", "CAL_FREEZE")
 
-    # Load calibrator freeze validation
-    cf_validation = load_json(args.calibrator_freeze_validation_receipt)
-    if cf_validation.get("status") != "PASS":
-        raise SystemExit("CALIBRATOR_FREEZE_VALIDATION_NOT_PASS")
+    # P0-3: Actual calibrator fit manifest SHA
+    fit_manifest_sha = sha256_file(args.calibrator_fit_manifest)
 
-    # Load P manifest and verify seals
-    pol_manifest = load_json(args.policy_selection_manifest)
+    pol_manifest = load_strict_json(args.policy_selection_manifest, "POL_MANIFEST")
     p_pred_root = args.policy_prediction_bundle_root.resolve()
     p_teacher_root = args.policy_teacher_bundle_root.resolve()
-    verify_sealed_directory(p_pred_root)
-    verify_sealed_directory(p_teacher_root)
+    p_rt_root = args.policy_runtime_bundle_root.resolve()
+    verify_bundle_seal(p_pred_root, "P_PRED")
+    verify_bundle_seal(p_teacher_root, "P_TEACHER")
+    verify_bundle_seal(p_rt_root, "P_RUNTIME")
 
-    # Grids
     grasp_grid = _parse_grid(args.grasp_grid, "GRASP")
     manipulation_grid = _parse_grid(args.manipulation_grid, "MANIPULATION")
     release_grid = _parse_grid(args.release_grid, "RELEASE")
 
-    # Structure config
     structure_path = args.structure_config.resolve()
-    structure = load_json(structure_path)
+    structure = load_strict_json(structure_path, "STRUCTURE")
     structural_sha = sha256_file(structure_path)
-    scheduler_path = ROOT / "src/gripper_attack/factorized_scheduler.py"
-    scheduler_source_sha = sha256_file(scheduler_path)
-    adapter_path = ROOT / "src/gripper_attack/factorized_scheduler_adapter.py"
-    adapter_source_sha = sha256_file(adapter_path)
+
+    # P0-5: Actual runtime source SHAs
+    runtime_src_root = args.runtime_source_root.resolve() if args.runtime_source_root else ROOT
+    rt_sources = verify_runtime_source_files(runtime_src_root)
 
     expected = [s.strip() for s in args.expected_splits.split(",")]
 
-    # Build payloads
     payloads: list[dict[str, Any]] = []
-    fit_manifest_shas: dict[str, str] = {}
-    pol_manifest_shas: dict[str, str] = {}
     for sk in expected:
-        p_ids = _identity_set(pol_manifest, "policy_selection", sk)
+        p_ids = extract_manifest_identities(pol_manifest, "policy_selection", sk)
 
-        # Load predictions
-        pred_path = p_pred_root / sk / "predictions.jsonl"
-        if not pred_path.is_file():
-            raise SystemExit(f"P_PRED_MISSING: {sk}")
-        pred_rows: list[dict[str, Any]] = []
-        for ln, line in enumerate(pred_path.read_text(encoding="utf-8").splitlines(), 1):
-            if not line.strip(): continue
-            pred_rows.append(json.loads(line))
+        pred_rows = load_strict_jsonl(p_pred_root / sk / "predictions.jsonl", f"P_PRED_{sk}")
+        teacher_rows = load_strict_jsonl(p_teacher_root / sk / "factorized_teacher_v1.jsonl", f"P_TEACHER_{sk}")
+        # P0-1: Load REAL runtime rows
+        runtime_rows = load_strict_jsonl(p_rt_root / sk / "runtime_scheduler_inputs.jsonl", f"P_RUNTIME_{sk}")
 
         pred_ids = {r["canonical_parent_key"] for r in pred_rows}
-        if pred_ids != p_ids:
-            raise SystemExit(f"P_ID_CLOSURE: {sk}")
+        verify_identity_closure(pred_ids, p_ids, "POLICY", sk)
 
-        # Load Teacher labels
-        teacher_path = p_teacher_root / sk / "factorized_teacher_v1.jsonl"
-        if not teacher_path.is_file():
-            raise SystemExit(f"P_TEACHER_MISSING: {sk}")
-        teacher_rows: list[dict[str, Any]] = []
-        for ln, line in enumerate(teacher_path.read_text(encoding="utf-8").splitlines(), 1):
-            if not line.strip(): continue
-            teacher_rows.append(json.loads(line))
+        # P0-1: Exact 3-way join (pred, teacher, runtime) — NO hardcoded values
+        pred_by_key, teacher_by_key, rt_by_key = exact_three_way_join(
+            pred_rows, teacher_rows, runtime_rows, f"P_{sk}")
 
-        # Build runtime and evaluation episodes
+        # Build runtime episodes from REAL runtime rows
         runtime_episodes: dict[str, list[dict[str, Any]]] = {}
         evaluation_episodes: dict[str, list[dict[str, Any]]] = {}
-        pred_by_key = {(r["canonical_parent_key"], r["step"]): r for r in pred_rows}
-        for t_row in teacher_rows:
-            ep = t_row["canonical_parent_key"]
-            step = t_row["step"]
-            key = (ep, step)
-            if key not in pred_by_key:
-                raise SystemExit(f"P_JOIN_FAIL: {sk} {key}")
-            p_row = pred_by_key[key]
-            runtime_row = {
-                "episode": ep, "step": step, "split": sk,
-                "checkpoint_sha256": p_row.get("checkpoint_sha256", ""),
-                "source_commit": p_row.get("checkpoint_source_commit", ""),
-                "feature_order_sha256": p_row.get("feature_order_sha256", ""),
-                "scheduler_source_sha256": scheduler_source_sha,
-                "structural_config_sha256": structural_sha,
-                "candidate_close": False, "action_known": True,
-                "student_valid": True, "route_supported": True,
-                "grasp_logit": p_row["grasp_logit"],
-                "manipulation_logit": p_row["manipulation_logit"],
-                "release_logit": p_row["release_logit"],
-            }
-            runtime_episodes.setdefault(ep, []).append(runtime_row)
-            eval_row = {
+        for (ep, step), rt_row in rt_by_key.items():
+            p_row = pred_by_key[(ep, step)]
+            t_row = teacher_by_key[(ep, step)]
+            runtime_episodes.setdefault(ep, []).append(rt_row)
+            evaluation_episodes.setdefault(ep, []).append({
                 "step_index": step, "canonical_parent_key": ep, "step": step,
                 "strict_k10_feasible": t_row.get("strict_k10_feasible", False),
                 "strict_k10_known_mask": t_row.get("strict_k10_known_mask", False),
-            }
-            evaluation_episodes.setdefault(ep, []).append(eval_row)
+            })
 
-        for ep_rows in runtime_episodes.values():
+        for ep, ep_rows in runtime_episodes.items():
             ep_rows.sort(key=lambda r: r["step"])
-        for ep_rows in evaluation_episodes.values():
+        for ep, ep_rows in evaluation_episodes.items():
             ep_rows.sort(key=lambda r: r["step"])
 
         checkpoint_sha = pred_rows[0].get("checkpoint_sha256", "")
-
-        # Get calibrator params from freeze contract
         freeze_split = freeze_contract["per_split"].get(sk)
         if not freeze_split:
             raise SystemExit(f"FREEZE_SPLIT_MISSING: {sk}")
         calibrators = {head: freeze_split[head] for head in HEADS}
 
         payloads.append({
-            "split": sk,
-            "runtime_episodes": runtime_episodes,
-            "evaluation_episodes": evaluation_episodes,
-            "calibrators": calibrators,
+            "split": sk, "runtime_episodes": runtime_episodes,
+            "evaluation_episodes": evaluation_episodes, "calibrators": calibrators,
             "checkpoint_sha256": checkpoint_sha,
-            "scheduler_source_sha256": scheduler_source_sha,
+            "scheduler_source_sha256": rt_sources["scheduler_source_sha256"],
             "student_source_commit": pred_rows[0].get("checkpoint_source_commit", ""),
             "feature_order_sha256": pred_rows[0].get("feature_order_sha256", ""),
-            "fit_manifest_sha256": sha256_file(args.calibrator_fit_manifest) if hasattr(args, 'calibrator_fit_manifest') else "",
+            "fit_manifest_sha256": fit_manifest_sha,
             "policy_manifest_sha256": sha256_file(args.policy_selection_manifest),
             "structure_path": structure_path,
         })
-        pol_manifest_shas[sk] = sha256_file(args.policy_selection_manifest)
 
     # Grid search
     best = None
     all_results: list[dict[str, Any]] = []
     for g, m, r in itertools.product(grasp_grid, manipulation_grid, release_grid):
         result = evaluate_candidate(payloads, {"grasp": g, "manipulation": m, "release": r}, structure)
+        # P0-2: Additional constraints beyond false-start
+        recall_val = result["aggregate"].get("valid_opportunity_recall")
+        positive_eps = result["aggregate"].get("positive_episodes", 0)
+        on_corridor = result["aggregate"].get("positive_on_corridor_emits", 0)
         result["constraint_pass"] = (
             result["all_split_false_start_defined"]
             and result["worst_split_negative_false_start_rate"] is not None
             and result["worst_split_negative_false_start_rate"] <= args.max_false_start
+            and positive_eps > 0                                   # P0-2: positive denominator > 0
+            and recall_val is not None and recall_val > 0.0        # P0-2: recall > 0
+            and on_corridor > 0                                     # P0-2: at least one verified on-corridor emit
         )
         all_results.append(result)
         if result["constraint_pass"] and (best is None or selection_key(result) > selection_key(best)):
             best = result
 
-    # Build freeze contract
     if best is None:
+        best_recall = max(
+            (r["aggregate"].get("valid_opportunity_recall") or 0.0 for r in all_results), default=0.0
+        )
         freeze_scheduler = {
             "schema": "FACTORIZED_SCHEDULER_FREEZE_V1",
             "status": "HOLD_NO_FEASIBLE_THRESHOLD",
             "grid_combinations": len(all_results),
             "max_false_start": args.max_false_start,
-            "attack_authorized": False,
-            "heldout_l3_authorized": False,
+            "best_observed_recall": best_recall,
+            "attack_authorized": False, "heldout_l3_authorized": False,
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
     else:
@@ -362,43 +311,39 @@ def main() -> int:
             "status": "COMPLETE",
             "selected_thresholds": best["thresholds"],
             "selection_rule": {
-                "constraint": f"worst-split false-start <= {args.max_false_start}",
+                "constraint": f"worst-split false-start <= {args.max_false_start} AND recall > 0 AND positive_eps > 0",
                 "objective": ["max recall", "max precision", "min timing offset",
                               "higher grasp", "higher manipulation", "lower release"],
-                "grid": {"grasp": list(grasp_grid), "manipulation": list(manipulation_grid),
-                         "release": list(release_grid)},
+                "grid": {"grasp": list(grasp_grid), "manipulation": list(manipulation_grid), "release": list(release_grid)},
             },
             "selected_metrics": best["aggregate"],
             "worst_split_false_start": best["worst_split_negative_false_start_rate"],
             "per_split": best["per_split"],
             "bindings": {
-                "calibrator_freeze_sha256": sha256_file(freeze_path),
-                "calibrator_freeze_validation_sha256": sha256_file(args.calibrator_freeze_validation_receipt),
+                "calibrator_freeze_sha256": sha256_file(cf_root / "FACTORIZED_CALIBRATOR_FREEZE_V1.json"),
+                "calibrator_fit_manifest_sha256": fit_manifest_sha,
+                "phase_b_validation_seal_sha256": sha256_file(args.phase_b_validation_root / "SHA256SUMS"),
+                "cp_prediction_validation_seal_sha256": sha256_file(args.cp_prediction_validation_root / "SHA256SUMS"),
                 "policy_selection_manifest_sha256": sha256_file(args.policy_selection_manifest),
                 "policy_prediction_bundle_sha256": sha256_file(p_pred_root / "SHA256SUMS"),
                 "policy_teacher_bundle_sha256": sha256_file(p_teacher_root / "SHA256SUMS"),
-                "runtime_adapter_source_sha256": adapter_source_sha,
-                "scheduler_source_sha256": scheduler_source_sha,
+                "policy_runtime_bundle_sha256": sha256_file(p_rt_root / "SHA256SUMS"),
+                "runtime_adapter_source_sha256": rt_sources["runtime_adapter_source_sha256"],
+                "scheduler_source_sha256": rt_sources["scheduler_source_sha256"],
                 "structural_config_sha256": structural_sha,
                 "freeze_code_sha256": SELF_SHA,
             },
-            "attack_authorized": False,
-            "heldout_l3_authorized": False,
+            "attack_authorized": False, "heldout_l3_authorized": False,
             "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         }
 
-    # Build search ledger
-    ledger_lines: list[str] = []
-    for candidate in all_results:
-        ledger_lines.append(json.dumps({
-            "thresholds": candidate["thresholds"],
-            "constraint_pass": candidate["constraint_pass"],
-            "worst_false_start": candidate.get("worst_split_negative_false_start_rate"),
-            "recall": candidate["aggregate"].get("valid_opportunity_recall"),
-            "precision": candidate["aggregate"].get("all_emit_precision"),
-        }) + "\n")
-
-    # Build policy metrics
+    ledger_lines = [
+        json.dumps({"thresholds": c["thresholds"], "constraint_pass": c["constraint_pass"],
+                     "worst_false_start": c.get("worst_split_negative_false_start_rate"),
+                     "recall": c["aggregate"].get("valid_opportunity_recall"),
+                     "precision": c["aggregate"].get("all_emit_precision")}) + "\n"
+        for c in all_results
+    ]
     policy_metrics = {
         "schema": "FACTORIZED_POLICY_SELECTION_METRICS_V1",
         "best_thresholds": best["thresholds"] if best else None,
@@ -406,12 +351,17 @@ def main() -> int:
         "aggregate": best["aggregate"] if best else {},
     }
 
-    files = {
-        "FACTORIZED_SCHEDULER_FREEZE_V1.json": json.dumps(freeze_scheduler, indent=2, sort_keys=True) + "\n",
-        "FACTORIZED_POLICY_SELECTION_METRICS_V1.json": json.dumps(policy_metrics, indent=2, sort_keys=True) + "\n",
-        "FACTORIZED_THRESHOLD_SEARCH_LEDGER_V1.jsonl": "".join(ledger_lines),
-    }
-    _seal_output(out_root, files)
+    staging = out_root.with_name(f".{out_root.name}.{uuid.uuid4().hex}.staging")
+    staging.mkdir(parents=True)
+    for name, content in [
+        ("FACTORIZED_SCHEDULER_FREEZE_V1.json", json.dumps(freeze_scheduler, indent=2, sort_keys=True) + "\n"),
+        ("FACTORIZED_POLICY_SELECTION_METRICS_V1.json", json.dumps(policy_metrics, indent=2, sort_keys=True) + "\n"),
+        ("FACTORIZED_THRESHOLD_SEARCH_LEDGER_V1.jsonl", "".join(ledger_lines)),
+    ]:
+        (staging / name).write_text(content, encoding="utf-8")
+    seal_output_dir(staging)
+    os.replace(staging, out_root)
+
     print(f"Scheduler Freeze: {out_root} status={freeze_scheduler['status']}")
     return 0 if best is not None else 2
 
