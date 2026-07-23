@@ -2,10 +2,8 @@
   "protocol": "FACTORIZED_V2_L3_EVALUATION_PROTOCOL_V1",
   "frozen_date": "2026-07-22",
   "revised_date": "2026-07-23",
-  "status": "PHASE_A_COMPLETE_PHASE_B_AWAITING_CODEX_IDENTITY_MANIFESTS",
-
-  "revision_note": "2026-07-23: Inserted Phase B (Identity Root Recovery and Pre-Inference Registration) as formal gate between Phase A (W32 seal + interface verification) and Phase C (production inference + calibration + L3 evaluation).",
-
+  "status": "PHASE_B_IDENTITY_PASS_AWAITING_AUTHORITATIVE_K10_TEACHER_BUNDLES",
+  "revision_note": "2026-07-23: Phase B identity/cohort closure passed. Authoritative external-R7 K10 Teacher bundles for C/P/H remain required. CP inference may run only after the Phase B V3.1 validator authorizes it; heldout-L3 inference remains blocked until independent calibrator and scheduler freeze receipts are verified.",
   "phase_summary": {
     "A_codex_static_handoff_and_seal": {
       "status": "COMPLETE",
@@ -26,16 +24,16 @@
       ]
     },
     "B_identity_root_recovery_and_preregistration": {
-      "status": "AWAITING_CODEX",
-      "description": "Recover canonical CLEAN2000 identity roots from server. Prove or disprove five-way identity independence BEFORE any new inference.",
+      "status": "IDENTITY_CLOSURE_PASS_TEACHER_COVERAGE_HOLD",
+      "description": "Use canonical CLEAN2000 manifests to prove five-way identity independence, then validate sealed authoritative external-R7 K10 Teacher bundles for exact C/P/H identities before any Student inference.",
       "forbidden_actions": [
-        "Run new OOF inference",
+        "Run C/P Student inference before cp_inference_authorized=true",
+        "Run heldout-L3 Student inference before external calibrator and scheduler freeze verification",
         "Fit calibrators on existing inner-CV predictions",
-        "Select scheduler thresholds",
-        "Start Full-FIT",
+        "Select scheduler thresholds on heldout-L3 or attack-eval identities",
+        "Start Full-FIT or attack",
         "Rename existing predictions as heldout-L3",
-        "Modify sealed W32 root",
-        "Expand PR code beyond current scope"
+        "Modify sealed W32 root"
       ],
       "requires": {
         "from_codex": [
@@ -51,44 +49,52 @@
         ]
       },
       "possible_outcomes": [
-        "PASS_EXISTING_ROOTS — original cohort manifests recovered, five-way proven",
-        "PASS_DETERMINISTIC_ALLOCATION — VAL deterministically split into C/P, five-way proven",
-        "NESTED_RETRAIN_REQUIRED — cannot prove independence, must re-establish from frozen identities"
+        "PASS_EXISTING_ROOTS — original cohort manifests recovered and five-way independence proven",
+        "PASS_DETERMINISTIC_ALLOCATION — sealed deterministic C/P allocation and five-way independence proven",
+        "HOLD_INPUTS_MISSING or HOLD_MANIFEST_INCOMPLETE — required evidence absent or malformed; no retraining conclusion",
+        "HOLD_INSUFFICIENT_STATISTICAL_COVERAGE — identity integrity passes but label coverage is insufficient",
+        "NESTED_RETRAIN_REQUIRED — only proven cross-role identity contamination"
       ],
-      "gate_to_phase_c": "identity_disjointness_audit.verdict ∈ {PASS_EXISTING_ROOTS, PASS_DETERMINISTIC_ALLOCATION}"
+      "gate_to_phase_c": "cp_inference_authorized=true from the authoritative Phase B V3.1 validator; this authorizes C/P Student inference only"
     },
     "C_production_inference_calibration_and_l3": {
-      "status": "HOLD_AWAITING_PHASE_B_PASS",
+      "status": "HOLD_AWAITING_AUTHORITATIVE_CP_TEACHER_COVERAGE",
       "steps": [
-        "1. Run checkpoint inference on allocated C identities → sealed calibration predictions",
-        "2. Run checkpoint inference on allocated P identities → sealed policy-selection predictions",
-        "3. Run checkpoint inference on allocated H identities → sealed heldout-L3 predictions",
-        "4. All predictions written to NEW production evidence root (never write back to sealed W32)",
-        "5. Each prediction bound to: checkpoint SHA, source commit, feature-order SHA, normalization SHA, source episode SHA, identity-role manifest SHA",
-        "6. Materialize four production bundles (C, P, H, A)",
-        "7. DeepSeek fits RAW/INTERCEPT_ONLY/PLATT on C predictions",
-        "8. DeepSeek selects joint (grasp, manipulation, release) thresholds on P predictions",
-        "9. Lock thresholds, run heldout-L3 exactly once on H predictions",
-        "10. Verify: 12/12 exact closure, worst-split false-start ≤ 0.10, recall > 0, four-suite trigger coverage > 0, no identity leakage"
+        "1. Generate and seal authoritative external-R7 K10 Teacher bundles for exact C, P, and H identities; exclude A and reserved pools",
+        "2. Run the authoritative Phase B V3.1 validator with full allocation, Teacher-contract, source-step, identity, K10, and bundle-seal bindings",
+        "3. Only if cp_inference_authorized=true, run checkpoint inference on C identities into a new sealed calibration-prediction root",
+        "4. Run checkpoint inference on P identities into a physically separate sealed policy-selection-prediction root",
+        "5. Bind every prediction to checkpoint SHA, source commit, feature-order SHA, normalization SHA, source episode SHA, and identity-role manifest SHA",
+        "6. Fit the pre-registered calibration candidates on C predictions; freeze the selected calibrator without reading H or A",
+        "7. Replay the real runtime adapter on P predictions; jointly select and freeze grasp/manipulation/release thresholds without reading H or A",
+        "8. Verify independent calibrator-freeze and scheduler-freeze receipts and emit the external heldout-L3 authorization receipt",
+        "9. Only then run heldout-L3 Student inference exactly once on H identities and evaluate the frozen pipeline",
+        "10. Require 12/12 closure, worst-split negative false-start ≤ 0.10, non-zero valid-opportunity recall, per-suite trigger coverage, and no identity/provenance leakage",
+        "11. Keep attack-eval A unread and unmaterialized until the detector freeze, runtime parity, and canary preregistration gates pass"
       ]
     }
   },
-
   "student": {
     "candidate": "V2B_RECOMMENDED_EXACT",
     "source_commit": "401f79a05753d970ecc803bb96abc64ce132df42",
     "description": "Exact-W32 causal TCN, H=64, dropout=0.1, wd=1e-4, 25D-only",
     "formal_selection_eligible": false
   },
-
   "expected_splits": [
-    "o0_i0", "o0_i1", "o0_i2",
-    "o1_i0", "o1_i1", "o1_i2",
-    "o2_i0", "o2_i1", "o2_i2",
-    "o3_i0", "o3_i1", "o3_i2"
+    "o0_i0",
+    "o0_i1",
+    "o0_i2",
+    "o1_i0",
+    "o1_i1",
+    "o1_i2",
+    "o2_i0",
+    "o2_i1",
+    "o2_i2",
+    "o3_i0",
+    "o3_i1",
+    "o3_i2"
   ],
   "partial_results_policy": "HOLD — all 12 splits required for authoritative conclusion",
-
   "factorized_runtime_inputs": {
     "description": "Formal Factorized scheduler inputs. NO V5 utility/regrasp/uncertainty.",
     "fields": {
@@ -104,28 +110,44 @@
       "release_probability": "sigmoid(release_logit). Conservative veto candidate. Not pure-release equivalent."
     },
     "forbidden_runtime_fields": [
-      "grasp_known_mask", "manipulation_known_mask", "release_known_mask",
-      "event_id", "event_role", "event_duration",
-      "strict_k10_feasible", "strict_k10_known_mask",
-      "grasp_target", "manipulation_target", "release_target",
-      "Teacher phase labels", "attack outcome", "future fields",
-      "utility_probability", "regrasp_probability", "uncertainty_probability"
+      "grasp_known_mask",
+      "manipulation_known_mask",
+      "release_known_mask",
+      "event_id",
+      "event_role",
+      "event_duration",
+      "strict_k10_feasible",
+      "strict_k10_known_mask",
+      "grasp_target",
+      "manipulation_target",
+      "release_target",
+      "Teacher phase labels",
+      "attack outcome",
+      "future fields",
+      "utility_probability",
+      "regrasp_probability",
+      "uncertainty_probability"
     ]
   },
-
   "offline_label_policy": {
     "calibration": {
-      "allowed": ["head_targets", "head_known_masks"],
+      "allowed": [
+        "head_targets",
+        "head_known_masks"
+      ],
       "purpose": "fit calibrators, compute head discrimination/calibration metrics",
       "forbidden": "must not affect scheduler state transitions"
     },
     "evaluation": {
-      "allowed": ["strict_k10_feasible", "strict_k10_known_mask", "Teacher event metadata"],
+      "allowed": [
+        "strict_k10_feasible",
+        "strict_k10_known_mask",
+        "Teacher event metadata"
+      ],
       "purpose": "audit-only — judge whether scheduler emit is correct",
       "forbidden": "must not affect scheduler state transitions"
     }
   },
-
   "k10_opportunity": {
     "description": "strict_k10_feasible[t] already means a complete T10 window exists starting at t.",
     "valid_start": "strict_k10_known_mask[t]=true AND strict_k10_feasible[t]=true",
@@ -137,7 +159,6 @@
     "containment": "emit_step is a VALID_START — containment is inherent in the strict_k10_feasible definition",
     "insufficient_coverage": "If Teacher bundle lacks complete eligible-domain known info, classify as BLOCKED_INSUFFICIENT_K10_KNOWN_COVERAGE"
   },
-
   "primary_metrics": {
     "negative_episode_false_start_rate": {
       "numerator": "negative episode emits",
@@ -154,14 +175,18 @@
       "denominator": "total emitted episodes"
     }
   },
-
   "secondary_metrics": [
-    "abstention_rate", "invalid_emit_fraction",
-    "early_emit_rate", "late_emit_rate", "median_timing_offset",
-    "unsupported_emit_rate", "student_valid_coverage", "candidate_exposure_rate",
-    "state_reason_breakdown", "per_identity_bootstrap_ci"
+    "abstention_rate",
+    "invalid_emit_fraction",
+    "early_emit_rate",
+    "late_emit_rate",
+    "median_timing_offset",
+    "unsupported_emit_rate",
+    "student_valid_coverage",
+    "candidate_exposure_rate",
+    "state_reason_breakdown",
+    "per_identity_bootstrap_ci"
   ],
-
   "L1": {
     "L1A": {
       "name": "non_close_intent_head_activation_diagnostic",
@@ -174,9 +199,12 @@
       "note": "Offline diagnostic only. Uses Teacher label. Cannot enter runtime scheduler."
     }
   },
-
   "calibration": {
-    "methods": ["RAW", "INTERCEPT_ONLY", "PLATT"],
+    "methods": [
+      "RAW",
+      "INTERCEPT_ONLY",
+      "PLATT"
+    ],
     "fit_priority": "grasp_logit, manipulation_logit, release_logit (raw logits). Probability only for consistency audit.",
     "provenance_classes": {
       "INDEPENDENT_CALIBRATION": "calibration identities NOT used in checkpoint training",
@@ -202,7 +230,6 @@
       "silent RAW fallback when method fails"
     ]
   },
-
   "identity_closure": {
     "five_roles": {
       "T": "checkpoint_training — from actual training dataloader logs, never set subtraction",
@@ -217,9 +244,12 @@
       "A ∩ (T ∪ C ∪ P ∪ H) = ∅"
     ],
     "validator": "validate_factorized_identity_disjointness.py",
-    "output_verdicts": ["PASS_EXISTING_ROOTS", "PASS_DETERMINISTIC_ALLOCATION", "NESTED_RETRAIN_REQUIRED"]
+    "output_verdicts": [
+      "PASS_EXISTING_ROOTS",
+      "PASS_DETERMINISTIC_ALLOCATION",
+      "NESTED_RETRAIN_REQUIRED"
+    ]
   },
-
   "formal_gate": {
     "phase_a_w32_seal": "PASS",
     "phase_b_identity_closure": "HOLD — awaiting Codex identity manifests",
@@ -229,7 +259,6 @@
     "active_canary": "HOLD",
     "attack": "HOLD"
   },
-
   "forbidden_substitutions": [
     "event_id for candidate_close",
     "event_id for K10",
