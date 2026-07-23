@@ -92,18 +92,24 @@ def _load_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
-def _fit_rows(registry_csv: Path) -> list[dict[str, Any]]:
+def _fit_rows(registry_csv: Path, target_split: str = "FIT_TRAIN") -> list[dict[str, Any]]:
     with registry_csv.open(newline="", encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle))
-    fit = [row for row in rows if row.get("split") == "FIT_TRAIN"]
-    if len(fit) != 800 or len({row.get("canonical_parent_key") for row in fit}) != 800:
-        raise ValueError("registry must contain exactly 800 unique FIT rows")
+    fit = [row for row in rows if row.get("split") == target_split]
+    # State ranges by split
+    _SPLIT_RANGES = {
+        "FIT_TRAIN": (0, 19, 800), "FIT_DEV": (20, 23, 160),
+        "CAL": (24, 26, 120), "CHECK": (27, 29, 120), "H": (30, 34, 200),
+    }
+    lo, hi, expected_n = _SPLIT_RANGES.get(target_split, (0, 19, 800))
+    if len(fit) != expected_n or len({row.get("canonical_parent_key") for row in fit}) != expected_n:
+        raise ValueError(f"registry must contain exactly {expected_n} unique {target_split} rows, got {len(fit)}")
     for row in fit:
         expected = f"{row['suite']}/task_{int(row['task_idx']):02d}/state_{int(row['state_id']):02d}"
-        if row.get("canonical_parent_key") != expected or int(row["state_id"]) not in range(20):
-            raise ValueError(f"invalid FIT identity: {row.get('canonical_parent_key')}")
+        if row.get("canonical_parent_key") != expected or int(row["state_id"]) not in range(lo, hi + 1):
+            raise ValueError(f"invalid {target_split} identity: {row.get('canonical_parent_key')}")
         if str(row.get("formal_selected", "")).lower() != "true":
-            raise ValueError(f"FIT row not formal-selected: {row['canonical_parent_key']}")
+            raise ValueError(f"{target_split} row not formal-selected: {row['canonical_parent_key']}")
         if not Path(row["selected_artifact_root"]).is_dir():
             raise ValueError(f"artifact root missing: {row['canonical_parent_key']}")
     return sorted(fit, key=lambda row: row["canonical_parent_key"])
@@ -214,7 +220,7 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     decoder_summary = _load_json(args.decoder_root / "summary.json")
     if decoder_summary.get("status") != "PASS_TASK_CONDITIONAL_DECODER":
         raise ValueError("Physics Teacher requires a passing task decoder")
-    rows = _fit_rows(args.registry_csv.resolve())
+    rows = _fit_rows(args.registry_csv.resolve(), args.target_split)
     specs = _task_specs()
     slices = _load_object_slices(args.decoder_root.resolve())
     roles: dict[tuple[str, int], Any] = {}
@@ -417,6 +423,9 @@ def main() -> int:
                         help="Optional: cross-check that git HEAD matches this commit SHA")
     parser.add_argument("--k10-root", type=Path, required=True,
                         help="Required: sealed Official K10 V1.2.2+ label root for strict_k10_feasible binding")
+    parser.add_argument("--target-split", type=str, default="FIT_TRAIN",
+                        choices=["FIT_TRAIN", "FIT_DEV", "CAL", "CHECK", "H"],
+                        help="Which identity split to label (default: FIT_TRAIN)")
     parser.add_argument("--expected-k10-schema", type=str, required=True,
                         help="Expected K10 label schema for binding verification")
     args = parser.parse_args()
