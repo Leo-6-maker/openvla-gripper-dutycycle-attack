@@ -1,0 +1,32 @@
+{
+  "gate": "P0_CLOSEOUT_ERRATUM_V2",
+  "supersedes": "24a9116 P0 closeout logic",
+  "reason": "1 MISSING cell incorrectly allowed overall PASS; gate logic fixed",
+  "timestamp": "2026-06-25T20:10:00+08:00",
+  "commit_with_issue": "24a9116",
+  "fix_commit": "TBD",
+
+  "original_issue": {
+    "statement": "all_parity_pass = n_fail == 0",
+    "problem": "1 MISSING cell with no telemetry was counted as PASS because n_fail==0",
+    "correct_behavior": "n_fail==0 AND n_missing==0, OR missing cells must have documented exclusion"
+  },
+
+  "corrected_status": {
+    "p0_parity_status": "PASS_WITH_1_QUARANTINED_MISSING",
+    "parity_pass": 30,
+    "parity_fail": 0,
+    "parity_missing": 1,
+    "missing_cell": "nc_p_t3_s7",
+    "missing_reason": "telemetry not yet written at closeout time (cell still running)",
+    "excluded_from_claims": true,
+    "does_not_affect_v2_verdict": true,
+    "full_attack_benchmark": "CONDITIONAL_GO"
+  },
+
+  "gate_decision": {
+    "P0_PARITY": "PASS_WITH_QUARANTINE",
+    "V2_CHECKPOINT_MATCH": "PASS",
+    "FULL_ATTACK_BENCHMARK": "CONDITIONAL_GO"
+  }
+}

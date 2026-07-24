@@ -1,0 +1,134 @@
+{
+  "gate": "LOTO_PHASE_B_METRIC_PREREGISTRATION_V1",
+  "status": "FROZEN_BEFORE_HELDOUT_OPEN",
+  "created_utc": "2026-06-29T00:00:00Z",
+  "binds_to": {
+    "metric_schema": "LOTO_METRIC_SCHEMA_V2",
+    "protocol": "LOTO_10FOLD_PROTOCOL_FREEZE_V2",
+    "freeze": "LOTO_30_CHECKPOINT_GLOBAL_FREEZE_V1",
+    "freeze_verifier": "LOTO_GLOBAL_FREEZE_V1_VERIFY"
+  },
+
+  "design": {
+    "phase_b_role": "CONFIRMATORY_ESTIMATION",
+    "phase_b_description": "Estimate detector performance on 9 held-out test tasks (Folds 01-09, 3 seeds each = 27 evaluations) using frozen checkpoints, frozen runtime parameters, and frozen metric definitions. No threshold tuning, no model retraining, no post-hoc metric selection.",
+    "fold_00_excluded": true,
+    "fold_00_role": "PILOT_DIAGNOSTIC — reported separately, not pooled with confirmatory folds",
+    "confirmatory_folds": ["01","02","03","04","05","06","07","08","09"],
+    "confirmatory_seeds": [1, 2, 3],
+    "total_confirmatory_evaluations": 27,
+    "heldout_episodes_per_fold": 50,
+    "total_heldout_episodes": 450,
+    "no_pass_fail_threshold": true,
+    "no_pass_fail_rationale": "Phase B is a confirmatory estimation of frozen-model performance. No pre-hoc pass/fail cutoff was registered in the original protocol. Reporting confidence intervals and descriptive statistics only. Any deployment-readiness judgment must be made separately and must not be based on post-hoc threshold selection."
+  },
+
+  "primary_metrics": {
+    "metric_1": {
+      "name": "K10_containment",
+      "definition": "Fraction of teacher-positive emitted episodes where emit_step ∈ corridor_active_at_t (valid-start set membership). Equivalent to CW / teacher_positive_episodes under LOTO_METRIC_SCHEMA_V2.",
+      "rationale": "Measures whether the detector's first emission falls within a valid K10 corridor start. This is the core deployment claim: the detector identifies a legitimate intervention opportunity.",
+      "reporting": "per-seed, per-fold mean ± std, confirmatory macro average, confirmatory micro average (pooled episodes), 95% bootstrap CI"
+    },
+    "metric_2": {
+      "name": "no_corridor_frame_FPR",
+      "definition": "DEFINITION A — PER-FRAME SCORE FPR. Fraction of all evaluable no-corridor frames (step_idx NOT IN corridor_active_at_t valid-start set) where the raw detector corridor_p > tau_corridor (0.3). Computed over every frame that has a corridor_p value, independent of whether the state machine emitted on that episode. This is a per-frame score discrimination metric, NOT an emission-based trigger rate.",
+      "numerator": "Count of no-corridor frames where corridor_p > tau_corridor",
+      "denominator": "Count of all evaluable no-corridor frames (step_idx ∉ corridor_active_at_t) with a corridor_p value",
+      "distinction_from_episode_metric": "This frame-level FPR is distinct from episode_false_trigger_rate (FPn / n_negative), which counts teacher-negative episodes where the state machine emitted. A detector can have low frame FPR (most frames below tau) but high episode false-trigger rate (tau exceeded on a few frames per episode, enough for the guard mechanism to trigger emission). Both metrics are reported; they measure different aspects of specificity.",
+      "rationale": "Measures the detector's raw score discrimination: how often does corridor_p exceed tau on frames where no corridor exists? Low frame FPR is necessary but not sufficient for selectivity — the episode false-trigger rate captures whether those false-positive frames cluster enough to trigger emission.",
+      "reporting": "per-seed, per-fold mean ± std, confirmatory macro average, confirmatory micro average (pooled frames), 95% bootstrap CI. Numerator and denominator reported explicitly alongside the ratio."
+    }
+  },
+
+  "secondary_metrics": {
+    "coverage": {
+      "name": "coverage",
+      "definition": "Fraction of teacher-positive episodes where detector emits (regardless of timing correctness). TP_emitted / teacher_positive_episodes.",
+      "rationale": "Upper bound on recall. If coverage is low, the detector misses too many opportunities for any downstream attack to be meaningful."
+    },
+    "median_signed_timing_error": {
+      "name": "median_signed_timing_error",
+      "definition": "Median of (emit_step − teacher_anchor) over teacher-positive emitted episodes. teacher_anchor = first stable_carry step + guard=5. Positive = late, negative = early.",
+      "unit": "steps"
+    },
+    "median_absolute_timing_error": {
+      "name": "median_absolute_timing_error",
+      "definition": "Median of |emit_step − teacher_anchor| over teacher-positive emitted episodes.",
+      "unit": "steps"
+    },
+    "early_trigger_rate": {
+      "name": "early_trigger_rate",
+      "definition": "Fraction of teacher-positive emitted episodes where emit_step < min(corridor_active_at_t). FE / teacher_positive_episodes.",
+      "rationale": "Early triggers may be usable if still within valid approach window, but indicate detector impatience."
+    },
+    "late_trigger_rate": {
+      "name": "late_trigger_rate",
+      "definition": "Fraction of teacher-positive emitted episodes where emit_step > max(corridor_active_at_t). Subset of LI under LOTO_METRIC_SCHEMA_V2.",
+      "rationale": "Late triggers miss the corridor entirely and are equivalent to false positives for attack purposes."
+    },
+    "episode_false_trigger_rate": {
+      "name": "episode_false_trigger_rate",
+      "definition": "Fraction of teacher-negative episodes (no corridor) where detector emits. FPn / teacher_negative_episodes.",
+      "rationale": "Episode-level complement to frame-level FPR. A single false-triggered episode may cause an unnecessary intervention."
+    },
+    "zero_emission_rate": {
+      "name": "zero_emission_rate",
+      "definition": "Fraction of all 50 held-out episodes where detector never emits. Includes both teacher-positive and teacher-negative episodes.",
+      "rationale": "If zero-emission rate is high, the detector is too conservative to be useful."
+    },
+    "score_saturation": {
+      "name": "score_saturation",
+      "definition": "Fraction of all frames where corridor_p >= 0.99. Reported separately for corridor-positive and corridor-negative frames.",
+      "rationale": "Near-1.0 scores indicate the model cannot discriminate — it outputs ceiling values regardless of input. This is a functional failure mode."
+    },
+    "corridor_p_quantiles": {
+      "name": "corridor_p_quantiles",
+      "definition": "p01, p05, p10, p25, p50, p75, p90, p95, p99, p99.9 of corridor_p over all frames, split by corridor label.",
+      "rationale": "Full score distribution for assessing discrimination quality."
+    }
+  },
+
+  "aggregation": {
+    "per_seed": "Each seed's metrics computed independently on its 50 held-out episodes.",
+    "per_fold": "Mean ± std of 3 seeds within each fold.",
+    "confirmatory_macro_average": {
+      "definition": "Mean of 9 fold-level means. Each fold weighted equally regardless of episode count.",
+      "ci_method": "Bootstrap: sample 9 folds with replacement, compute mean of fold means, 10000 resamples, 95% percentile CI."
+    },
+    "confirmatory_micro_average": {
+      "definition": "Pool all 450 confirmatory episodes, compute metric once over pooled data.",
+      "ci_method": "Bootstrap: sample 450 episodes with replacement, compute metric, 10000 resamples, 95% percentile CI."
+    },
+    "fold_variability": {
+      "definition": "Std of 9 fold-level means. Reports best fold, worst fold (by each primary metric)."
+    },
+    "pilot_separate": "Fold 00 reported in a separate table row labeled PILOT_DIAGNOSTIC. Never pooled with confirmatory folds."
+  },
+
+  "edge_case_handling": {
+    "invalid_episode": "Defined as: missing privileged records, step discontinuity, or teacher label generation failure. Counted and reported. Excluded from all metric denominators. If >5% of held-out episodes are invalid, flag as P1 data quality issue.",
+    "zero_positive_episodes": "If a fold/seed has 0 teacher-positive episodes (no corridor), coverage, K10 containment, and timing metrics are undefined. Report as 'NO_POSITIVES' and exclude from aggregation of those metrics. FPR and score distribution are still computable.",
+    "zero_emission_seed": "If a seed emits on 0 episodes: coverage=0, K10=undefined (report as 'NO_EMISSION'), FPR=0 (by definition, since no false positive frames exist if model never exceeds tau). Flag as score saturation suspect.",
+    "score_saturation_handling": "If any seed shows corridor_p >= 0.99 on >90% of frames, flag in report. Do NOT exclude from aggregation — report with flag."
+  },
+
+  "reporting_template": {
+    "confirmatory_table": {
+      "rows": "9 folds × 3 seeds = 27 rows, plus fold-level mean/std rows, plus confirmatory macro/micro summary rows",
+      "columns": "fold, seed, test_task, n_heldout, n_positive, n_negative, n_emitted, coverage, K10_containment, median_signed_error, median_absolute_error, early_rate, late_rate, no_corridor_frame_fpr, episode_false_trigger_rate, zero_emission_rate, score_saturation_pos, score_saturation_neg, corridor_p_median_pos, corridor_p_median_neg"
+    },
+    "pilot_table": "Same columns, single row for Fold 00 pilot aggregate (mean of 3 seeds). Labeled PILOT_DIAGNOSTIC.",
+    "full_table": "All 10 folds displayed, Fold 00 clearly marked as PILOT, Folds 01-09 as CONFIRMATORY."
+  },
+
+  "prohibited_post_hoc_actions": [
+    "Selecting the 'best' metric after seeing results",
+    "Changing primary metric definition after seeing results",
+    "Adding a pass/fail threshold retrospectively",
+    "Excluding folds or seeds based on performance",
+    "Re-running with different tau values and reporting the best",
+    "Pooling Fold 00 with confirmatory folds for primary conclusion",
+    "Claiming 'deployment-ready' based solely on confirmatory estimation without separate deployment qualification"
+  ]
+}

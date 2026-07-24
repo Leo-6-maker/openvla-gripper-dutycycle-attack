@@ -1,0 +1,69 @@
+{
+  "gate": "UPSTREAM_ARTIFACT_RICH_CORPUS_AND_SC5MLP_INITIAL_TRAINING",
+  "status": "CHECKPOINT_NOT_FOUND_TRAINING_NOT_STARTED",
+  "classification": "BLOCKED_NOT_EVALUABLE_CHECKPOINT_ABSENT",
+  "canonical_teacher": "src/gripper_attack/v2_privileged_teacher.py",
+  "canonical_feature_extractor": "src/gripper_attack/sc5_streaming_features_v2.py",
+  "canonical_schema_adapter": "src/gripper_attack/sc5_schema_adapter_v2.py",
+  "canonical_trainer": "scripts/stageb/train_sc5_v4.py",
+  "legacy_noncanonical_student": "src/utils/proprio_causal_student.py",
+  "detector": {
+    "name": "ProprioNoStep (SC5MLP)",
+    "checkpoint_path": "UNKNOWN — not found in repo or A800",
+    "checkpoint_sha256": "NOT_AVAILABLE",
+    "training_status": "NOT_STARTED (per D1B checkpoint selection rule)",
+    "d1b_doc": "reports/D1B_CHECKPOINT_SELECTION_RULE.md"
+  },
+  "architecture": {
+    "model": "SC5MLP",
+    "n_features": 25,
+    "hidden_dim": 64,
+    "n_layers": 2,
+    "heads": {
+      "phase_logits": 9,
+      "corridor_logit": 1,
+      "release_logit": 1
+    },
+    "feature_names": [
+      "gripper_command", "gripper_qpos", "gripper_opening_proxy",
+      "eef_x", "eef_y", "eef_z", "eef_vx", "eef_vy", "eef_vz",
+      "action_dx", "action_dy", "action_dz", "action_gripper",
+      "recent_close_streak", "recent_open_streak", "recent_gripper_flip_count",
+      "close_onset", "time_since_close", "eef_speed",
+      "eef_z_delta_since_close", "qpos_delta_1", "qpos_delta_3",
+      "opening_proxy_delta_3", "opening_proxy_variance_5", "eef_speed_variance_5"
+    ]
+  },
+  "phase_classes": [
+    "approach", "grasp_close", "stable_grasp", "first_lift",
+    "stable_carry", "pre_place_unsupported", "release_safe",
+    "recovery_or_regrasp", "abstain_unsupported"
+  ],
+  "trigger_params": {
+    "tau_corridor": 0.3,
+    "tau_release": 0.3,
+    "guard_steps": 5
+  },
+  "state_machine": {
+    "IDLE": "stable_carry phase AND corridor_p > tau_corridor → ARMED",
+    "ARMED": "step >= arm_step + guard AND corridor_p > tau_corridor AND release_p < tau_release → EMITTED",
+    "EMITTED": "one-shot latch, no further transitions"
+  },
+  "normalization": {
+    "mean_sha256": "NOT_AVAILABLE (embedded in checkpoint)",
+    "std_sha256": "NOT_AVAILABLE (embedded in checkpoint)",
+    "shape": [25]
+  },
+  "blocking_issues": [
+    "No trained checkpoint found in repository or A800 server",
+    "Normalization mean/std not available without checkpoint",
+    "Teacher labels cannot be generated without privileged teacher module",
+    "Full D0.3-D0.6 replay cannot be executed"
+  ],
+  "code_artifacts": {
+    "detector_runtime": "src/gripper_attack/sc5_detector_runtime.py",
+    "trigger_logic": "src/gripper_attack/triggers.py",
+    "student_model": "src/utils/proprio_causal_student.py",
+    "feature_extractor": "NOT_IDENTIFIED (likely v4 or sc5_streaming_features)"
+  }
+}

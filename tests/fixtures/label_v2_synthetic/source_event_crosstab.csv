@@ -1,0 +1,4 @@
+cohort_class,source_positive,source_no_event,total
+PRIMARY_SUCCESS_ELIGIBLE,3,1,4
+MECHANISM_INELIGIBLE_ABSTENTION,0,1,1
+ELIGIBLE_CLEAN_FAILURE,1,0,1

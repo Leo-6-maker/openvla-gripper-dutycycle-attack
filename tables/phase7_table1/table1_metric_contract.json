@@ -1,0 +1,114 @@
+{
+  "gate": "TABLE1_METRIC_CONTRACT_FREEZE",
+  "timestamp": "2026-06-26T03:00:00+08:00",
+  "status": "FROZEN_DURING_PARTIAL_EXECUTION_BEFORE_FINAL_AGGREGATION",
+  "status_note": "Original label claimed pre-TMA freeze but Git history shows TMA canary completed and 11-19/27 TMA runs done before contract commit 1429ae4. Corrected to honest timeline.",
+
+  "denominators": {
+    "qualified_expanded": {
+      "n_cells": 9,
+      "n_runs_per_condition": 27,
+      "cells": [
+        "alphabet_soup_s0", "salad_dressing_s0", "bbq_sauce_s0",
+        "ketchup_s0", "tomato_sauce_s0", "butter_s0",
+        "butter_s2", "milk_s4", "orange_juice_s0"
+      ],
+      "clean_fr": 0.0,
+      "delta_fr_definition": "attack FR (clean FR = 0 for qualified panel)"
+    },
+    "qualified_primary": {
+      "n_cells": 8,
+      "n_runs_per_condition": 24,
+      "excluded": "alphabet_soup_s0 (supplementary)",
+      "clean_fr": 0.0
+    },
+    "itt_expanded": {
+      "n_cells": 11,
+      "n_runs_per_condition": 33,
+      "includes_no_emit_cells": ["cream_cheese_s0", "chocolate_pudding_s2"],
+      "induced_failure_definition": "clean/control success AND attack failure"
+    },
+    "itt_primary": {
+      "n_cells": 10,
+      "n_runs_per_condition": 30,
+      "excluded": "alphabet_soup_s0 (supplementary)"
+    }
+  },
+
+  "metrics": {
+    "FR": {
+      "definition": "fraction of runs with task_success = false",
+      "unit": "run-level"
+    },
+    "delta_FR": {
+      "definition": "FR_attack - FR_clean for the SAME denominator",
+      "qualified_panel": "FR_attack (since clean FR = 0)",
+      "itt_panel": "NOT a simple subtraction; use induced_failure"
+    },
+    "induced_failure": {
+      "definition": "indicator(clean_success AND attack_failure)",
+      "itt_only": true
+    },
+    "TASR_frame": {
+      "definition": "fraction of attack frames where adv_token == TARGET_TOKEN (31744)",
+      "synonym": "token_open_duty"
+    },
+    "TASR_episode": {
+      "definition": "indicator(token_open_duty >= 0.8)",
+      "threshold": 0.8,
+      "frozen_before_outcomes": true
+    },
+    "NAD_policy": {
+      "definition": "|adv_action - clean_candidate_action| / action_range per DoF",
+      "status": "REQUIRES_RECOMPUTATION",
+      "issue": "clean_candidate_action is NOT saved in current telemetry for attack frames; raw_action_7d contains adversarial action on attack frames",
+      "workaround": "use pre-attack step action as approximate reference OR re-run with augmented telemetry saving clean_candidate",
+      "current_values": "INVALID — adv_vs_postprocessed_adv, not clean_vs_adv"
+    },
+    "NAD_exec": {
+      "definition": "|executed_adv_action - clean_candidate_action| / action_range",
+      "status": "REQUIRES_RECOMPUTATION (same issue as NAD_policy)"
+    },
+    "CQFR": {
+      "definition": "contact-quality failure rate (video-audited)",
+      "status": "PENDING_BLINDED_REVIEW",
+      "proxy_inadequate": "obj_z_drop during attack window misses post-attack drops"
+    },
+    "latency": {
+      "definition": "mean VLA model inference time per attacked step (from model_ms field)",
+      "unit": "milliseconds"
+    },
+    "attack_duty": {
+      "definition": "attack_frames / n_steps",
+      "unit": "ratio"
+    }
+  },
+
+  "current_confirmed_values": {
+    "note": "9-cell qualified panel only; clean FR = 0",
+    "VIS":           {"FR": 0.778, "delta_FR": 0.778, "TASR_f": 0.937, "TASR_e": 0.889},
+    "RAND":          {"FR": 0.000, "delta_FR": 0.000, "TASR_f": 0.000, "TASR_e": 0.000},
+    "SHUFFLED":      {"FR": 0.000, "delta_FR": 0.000, "TASR_f": 0.000, "TASR_e": 0.000},
+    "UNTARGETED":    {"FR": 0.000, "delta_FR": 0.000, "TASR_f": 0.000, "TASR_e": 0.000},
+    "RANDOM_TIME":   {"FR": 0.074, "delta_FR": 0.074, "TASR_f": 0.993, "TASR_e": 1.000},
+    "EARLY_SHIFT":   {"FR": 0.444, "delta_FR": 0.444, "TASR_f": 0.956, "TASR_e": 1.000},
+    "early_shift_verified": "12/27=0.444 confirmed via direct per-seed audit"
+  },
+
+  "nad_status": {
+    "current_computation": "INVALID",
+    "reason": "raw_action_7d stores adversarial action on attack frames, not clean candidate",
+    "fix_required": "either re-compute using pre-attack action as reference, or re-run with augmented telemetry",
+    "recommendation": "mark NAD as 'requires recomputation' in Table 1; use TASR + FR as primary aligned metrics"
+  },
+
+  "claim_boundary": {
+    "matched_independent_rollouts": true,
+    "not_exact_prefix_branches": true,
+    "alphabet_soup_supplementary": "pre-registered before attack outcomes",
+    "no_emit_cells_retained_in_itt": true,
+    "nc_safety_fail_acknowledged": true,
+    "timing_specificity_claims": "supported by TASR vs FR gap across Student/Early/Random",
+    "dimension_selectivity": "supported by TASR=0 for untargeted vs TASR=0.937 for VIS"
+  }
+}

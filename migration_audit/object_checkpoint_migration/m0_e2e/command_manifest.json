@@ -1,0 +1,51 @@
+{
+  "description": "Exact commands used for M0-E six-cell execution on A800 GPU4",
+  "python": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python3",
+  "bridge": "/mnt/sdc/dty_user/openvla_attack/scripts/stageb/run_v2_vis_sc5_mlp_bridge.py",
+  "bridge_sha256": "8deec28d0a2397a477376e7b29d14e4a828218a0fc472cfc25c61cc09e60a6c1",
+  "launcher": "/mnt/sdc/dty_user/openvla_attack/scripts/migration/run_m0e_object_e2e.py",
+  "launcher_sha256": "235d040b6eaba0b445b4812b6259b7a61e8f2a5a77754b3f45977a4400d78faa",
+  "cwd": "/mnt/sdc/dty_user/openvla_attack",
+  "environment": {
+    "CUDA_VISIBLE_DEVICES": "4",
+    "MUJOCO_GL": "egl",
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1",
+    "HOME": "/mnt/sdc/dty_user/openvla_attack/sandbox_home",
+    "TMPDIR": "/mnt/sdc/dty_user/openvla_attack/tmp",
+    "OPENVLA_ATTN_IMPLEMENTATION": "eager",
+    "TF_FORCE_GPU_ALLOW_GROWTH": "true"
+  },
+  "cells": [
+    {
+      "cell_id": "butter_s0_clean",
+      "command": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python3 /mnt/sdc/dty_user/openvla_attack/scripts/stageb/run_v2_vis_sc5_mlp_bridge.py --condition CLEAN --state_id 0 --anchor 94 --seed_id 42 --output_dir /mnt/sdc/dty_user/openvla_attack/evidence/object_checkpoint_migration/m0_e2e/butter_s0_clean --render_gpu 4 --mlp_path /mnt/sdc/dty_user/openvla_attack/artifacts/detector/sc5_mlp_s2.pt",
+      "task_idx_note": "hardcoded to 6 in bridge"
+    },
+    {
+      "cell_id": "butter_s0_true_t10",
+      "command": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python3 /mnt/sdc/dty_user/openvla_attack/scripts/stageb/run_v2_vis_sc5_mlp_bridge.py --condition TRUE_T10 --state_id 0 --anchor 94 --seed_id 42 --output_dir /mnt/sdc/dty_user/openvla_attack/evidence/object_checkpoint_migration/m0_e2e/butter_s0_true_t10 --render_gpu 4 --mlp_path /mnt/sdc/dty_user/openvla_attack/artifacts/detector/sc5_mlp_s2.pt",
+      "task_idx_note": "hardcoded to 6 in bridge"
+    },
+    {
+      "cell_id": "butter_s0_rand_t10",
+      "command": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python3 /mnt/sdc/dty_user/openvla_attack/scripts/stageb/run_v2_vis_sc5_mlp_bridge.py --condition RAND_T10 --state_id 0 --anchor 94 --seed_id 42 --output_dir /mnt/sdc/dty_user/openvla_attack/evidence/object_checkpoint_migration/m0_e2e/butter_s0_rand_t10 --render_gpu 4 --mlp_path /mnt/sdc/dty_user/openvla_attack/artifacts/detector/sc5_mlp_s2.pt",
+      "task_idx_note": "hardcoded to 6 in bridge"
+    },
+    {
+      "cell_id": "butter_s2_clean",
+      "command": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python3 /mnt/sdc/dty_user/openvla_attack/scripts/stageb/run_v2_vis_sc5_mlp_bridge.py --condition CLEAN --state_id 2 --anchor 96 --seed_id 42 --output_dir /mnt/sdc/dty_user/openvla_attack/evidence/object_checkpoint_migration/m0_e2e/butter_s2_clean --render_gpu 4 --mlp_path /mnt/sdc/dty_user/openvla_attack/artifacts/detector/sc5_mlp_s2.pt",
+      "task_idx_note": "hardcoded to 6 in bridge"
+    },
+    {
+      "cell_id": "butter_s2_true_t10",
+      "command": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python3 /mnt/sdc/dty_user/openvla_attack/scripts/stageb/run_v2_vis_sc5_mlp_bridge.py --condition TRUE_T10 --state_id 2 --anchor 96 --seed_id 42 --output_dir /mnt/sdc/dty_user/openvla_attack/evidence/object_checkpoint_migration/m0_e2e/butter_s2_true_t10 --render_gpu 4 --mlp_path /mnt/sdc/dty_user/openvla_attack/artifacts/detector/sc5_mlp_s2.pt",
+      "task_idx_note": "hardcoded to 6 in bridge"
+    },
+    {
+      "cell_id": "butter_s2_rand_t10",
+      "command": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python3 /mnt/sdc/dty_user/openvla_attack/scripts/stageb/run_v2_vis_sc5_mlp_bridge.py --condition RAND_T10 --state_id 2 --anchor 96 --seed_id 42 --output_dir /mnt/sdc/dty_user/openvla_attack/evidence/object_checkpoint_migration/m0_e2e/butter_s2_rand_t10 --render_gpu 4 --mlp_path /mnt/sdc/dty_user/openvla_attack/artifacts/detector/sc5_mlp_s2.pt",
+      "task_idx_note": "hardcoded to 6 in bridge"
+    }
+  ]
+}

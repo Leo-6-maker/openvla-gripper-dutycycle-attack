@@ -1,0 +1,142 @@
+{
+  "gate": "DIAGNOSTIC_300_EVALUATION",
+  "v1_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+  "v2_sha256": "b679e4e072531c70511a336ed68c563cf746938f6864b3cbd14f333e4f0eb09c",
+  "total_cells": 300,
+  "all_nc": true,
+  "per_batch": {
+    "A": {
+      "total": 100,
+      "v1_armed": 1,
+      "v1_emitted": 0,
+      "v2_armed": 0,
+      "v2_emitted": 0
+    },
+    "B": {
+      "total": 100,
+      "v1_armed": 0,
+      "v1_emitted": 0,
+      "v2_armed": 0,
+      "v2_emitted": 0
+    },
+    "C": {
+      "total": 100,
+      "v1_armed": 0,
+      "v1_emitted": 0,
+      "v2_armed": 0,
+      "v2_emitted": 0
+    }
+  },
+  "per_task": [
+    {
+      "task": 0,
+      "total": 30,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "task": 1,
+      "total": 30,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "task": 2,
+      "total": 30,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "task": 3,
+      "total": 30,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "task": 4,
+      "total": 30,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "task": 5,
+      "total": 30,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "task": 6,
+      "total": 30,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "task": 7,
+      "total": 30,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "task": 8,
+      "total": 30,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "task": 9,
+      "total": 30,
+      "v1_emit": 0,
+      "v2_emit": 0
+    }
+  ],
+  "per_template": [
+    {
+      "template": "P0",
+      "total": 100,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "template": "P1",
+      "total": 25,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "template": "P2",
+      "total": 26,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "template": "P3",
+      "total": 25,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "template": "P4",
+      "total": 24,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "template": "P5",
+      "total": 33,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "template": "P6",
+      "total": 33,
+      "v1_emit": 0,
+      "v2_emit": 0
+    },
+    {
+      "template": "P7",
+      "total": 34,
+      "v1_emit": 0,
+      "v2_emit": 0
+    }
+  ]
+}

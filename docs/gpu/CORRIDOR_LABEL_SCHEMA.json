@@ -1,0 +1,24 @@
+{
+  "gate": "CORRIDOR_LABEL_SCHEMA",
+  "field_name": "teacher_corridor_active",
+  "derivation": {
+    "function": "compute_sc5_valid_start_corridor",
+    "module": "src/gripper_attack/v2_privileged_teacher.py",
+    "inputs": "teacher phase labels (per episode), SC5 anchor, K=10",
+    "output": "set of step indices where a valid K10 corridor window starts"
+  },
+  "definition": {
+    "step_t_is_corridor_active": "step t is a valid K10 SC5 corridor start: the window [t, t+K-1] exists within the episode AND does not overlap release_safe, recovery_or_regrasp, or abstain_unsupported phases",
+    "requires_sc5_anchor": true,
+    "anchor_definition": "earliest stable_carry start + guard=5",
+    "relation_to_phase": "corridor_active is STRICTER than stable_carry phase alone. It requires a full K10 window free of exclusion phases.",
+    "K": 10,
+    "guard": 5
+  },
+  "exclusion_phases_for_corridor_window": [
+    "release_safe",
+    "recovery_or_regrasp",
+    "abstain_unsupported"
+  ],
+  "note": "This field was MISSING in teacher_labels_fold00_combined500.jsonl (V1 label builder only wrote phase labels). V2 training script computes it at load time from phase labels using the frozen teacher protocol function. It is NOT stored as a pre-computed field in the JSONL."
+}

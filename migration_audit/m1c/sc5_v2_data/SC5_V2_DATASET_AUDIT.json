@@ -1,0 +1,26 @@
+{
+  "total_samples": 370,
+  "train_tv": 159,
+  "train_nc": 121,
+  "dev_tv": 36,
+  "dev_nc": 54,
+  "leakage_pass": true,
+  "leakage": {
+    "state_overlap": 0,
+    "cell_uuid_overlap": 0,
+    "run_uuid_overlap": 0,
+    "telemetry_sha_overlap": 0
+  },
+  "teacher_validity": {
+    "nc_empty_anchor": 173,
+    "note": "Empty anchor expected for NC trajectories \u2014 no valid anchor exists"
+  },
+  "nc_category_distribution": {
+    "close_no_grasp": 164,
+    "no_stable_carry": 9,
+    "other": 2
+  },
+  "manifest_sha256": "19f1714750d41336a9ae0874ef853aeb40da77adc06ac668d10dcad346a7144c",
+  "labeler_sha256": "6394fe168c727c5ee82e995a52fa14f4d94dd15fc4344fdca85c30a776fc421a",
+  "teacher_config_sha256": "ebc1ccda21cdfeae0f70f90ef0e433be3474ef0baa9cf52f609d620f863ce87a"
+}

@@ -1,0 +1,131 @@
+{
+  "gate": "M0_E2E_ARTIFACT_MANIFEST",
+  "timestamp_utc": "2026-06-22T04:26:00Z",
+  "branch": "migration/object-checkpoint-a800-20260622",
+  "checkpoint": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/artifacts/detector/sc5_mlp_s2.pt",
+    "sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+    "params": 6604,
+    "architecture": "25-64-64-9+1+1+1"
+  },
+  "dataset": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/tables/v2_sc5_canonical_dataset.csv",
+    "sha256": "f942f4b0856d3449fa4e98f6d6e74ac8d5e8e9af7082373f961f79b0a6930cd9"
+  },
+  "runner": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/scripts/stageb/run_v2_vis_sc5_mlp_bridge.py",
+    "sha256": "8deec28d0a2397a477376e7b29d14e4a828218a0fc472cfc25c61cc09e60a6c1"
+  },
+  "launcher": {
+    "path": "scripts/migration/run_m0e_object_e2e.py",
+    "sha256": "235d040b6eaba0b445b4812b6259b7a61e8f2a5a77754b3f45977a4400d78faa",
+    "note": "launcher exists locally only; not present on A800"
+  },
+  "vla_model": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+    "files": {
+      "config.json": "72566b15b9ce4a5f5452aa50b5cc949811ab0a12b72a79a713b6355875813cff",
+      "model-00001-of-00004.safetensors": "1748e2921c82a8b80febb9a0d7f1659c556b0769ff54225c5f1905fcd47d5107",
+      "model-00002-of-00004.safetensors": "1a468feb31f2edbe8876c8571e5682406aeb169b80916d5952408a6fb20f017c",
+      "model-00003-of-00004.safetensors": "f4958ff679f5d7f600a2369b52ee81818e9992fb6584e40ba6f79e1f786f6e1d",
+      "model-00004-of-00004.safetensors": "eccbc0482e076cf5a502b51707e0581c19a111e376206febd5d0c4efe6f74b09",
+      "processing_prismatic.py": "938ef87ac9284069b782776792efb065f0e2c9d50c09a507dda132e97d5c08c0",
+      "modeling_prismatic.py": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+      "configuration_prismatic.py": "68cc5ae34f1b46af3168d8d479cb81bb776965653453fd904aa8eefb6c8f9f68",
+      "tokenizer.json": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+      "preprocessor_config.json": "a41a55e4e53f137736046e00626fc078540e7c7783483a2773e78bd630a201fc",
+      "tokenizer_config.json": "90940015efad61dc3bd174f67e3cabc47036b4cdc83af12c61d3a1c431d457e5"
+    }
+  },
+  "bddl": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/lib/python3.10/site-packages/libero/libero/bddl_files/libero_object/pick_up_the_butter_and_place_it_in_the_basket.bddl",
+    "sha256": "5d8053b40ff33246fdbcc38548db84032c6bb647b4b88b6646d9cf6b73a5006c"
+  },
+  "runtime_environment": {
+    "gpu_uuid": "GPU-e85ed586-ba64-a9e3-8fa9-07f16f84dcda",
+    "gpu_name": "NVIDIA A800-SXM4-80GB",
+    "driver": "550.90.12",
+    "python": "3.10.20",
+    "torch": "2.2.0+cu121",
+    "transformers": "4.40.1",
+    "libero": "0.1.1",
+    "robosuite": "1.4.0",
+    "mujoco": "3.9.0"
+  },
+  "cell_artifacts": {
+    "butter_s0_clean": {
+      "telemetry_csv_sha": "823af22a1c2377900baa2dabe06fd71f9f72da1398329fb17e4a46abe1e69da5",
+      "telemetry_csv_size": 94980,
+      "stdout_log_sha": "5066e73bf0c91a976348c9a766a916b43b7a5c250b3ae261d5e2d5fd74dcb2d7",
+      "stdout_log_size": 214,
+      "stderr_log_sha": "f62d2333c356d4facc474bc88dc98c6eed50f97c8c8655e189055f0244cacb53",
+      "stderr_log_size": 2216,
+      "episode_summary_sha": "657150731bdef0423b154d586277dfb0007843f26713811be8a773493d5c5311",
+      "episode_summary_size": 664,
+      "video_path": null,
+      "video_note": "NOT_AVAILABLE_NO_SAVE_VIDEO"
+    },
+    "butter_s0_true_t10": {
+      "telemetry_csv_sha": "46452961cbcf6e2abbc92348517437e55de56321c26d2406591011faf862cf6e",
+      "telemetry_csv_size": 158564,
+      "stdout_log_sha": "9b65b09703144edf1d19434ed1905c7df1a0713b5e4018675ebf3450c1afe71d",
+      "stdout_log_size": 219,
+      "stderr_log_sha": "f9ad0c562a7a1f900f83d3aa6e4e749e9b19dcd66bc2d0a5edb9c26608ae26d7",
+      "stderr_log_size": 2216,
+      "episode_summary_sha": "7b31b1f1fbc887b494a3e98b729728bee74e1b82848d829649a4304de57594d6",
+      "episode_summary_size": 778,
+      "video_path": null,
+      "video_note": "NOT_AVAILABLE_NO_SAVE_VIDEO"
+    },
+    "butter_s0_rand_t10": {
+      "telemetry_csv_sha": "107e0bc25bae8b36f62b1cdc3f69bbf4280335d6928b1e341c7f11680bd6fb2a",
+      "telemetry_csv_size": 95831,
+      "stdout_log_sha": "6bdb0d3e44c32e38bed28bcbe719096241426c7e7122d1e9ad94edaa201e4ce4",
+      "stdout_log_size": 218,
+      "stderr_log_sha": "503abb9424d7611193703025faae1769cc29530f790559a72af9c6febebfa9f7",
+      "stderr_log_size": 2216,
+      "episode_summary_sha": "6f78e315e88fb85f55d0639dfb3b3b03015dd059636fb22877ad931f37346320",
+      "episode_summary_size": 786,
+      "video_path": null,
+      "video_note": "NOT_AVAILABLE_NO_SAVE_VIDEO"
+    },
+    "butter_s2_clean": {
+      "telemetry_csv_sha": "5320e1fe18b372d8e402ad75f08d9528b1508b470cf8cdcc7b344aa61ca5c06e",
+      "telemetry_csv_size": 127030,
+      "stdout_log_sha": "f942a8de89bc598cb1171e2d8b448075c7befdcf3a15fc986aa983e3a0d55112",
+      "stdout_log_size": 216,
+      "stderr_log_sha": "f0f422370e86c85be5086839f76b7c0ad3a024feb8cfa8e024ec6013b0a48a71",
+      "stderr_log_size": 2216,
+      "episode_summary_sha": "72c55f0451586aa16ded1d6075ab67f5ac4262d57ebab1f24ec6f44e9ef142b3",
+      "episode_summary_size": 666,
+      "video_path": null,
+      "video_note": "NOT_AVAILABLE_NO_SAVE_VIDEO"
+    },
+    "butter_s2_true_t10": {
+      "telemetry_csv_sha": "9fc94e0b3d47f20ecb8ecb4a79294ce1476a1293c8b04f0f8b5713a0e7f49f8f",
+      "telemetry_csv_size": 129581,
+      "stdout_log_sha": "864bf57b738884d693cad76be2f3387e275e91403fa394f23336f3cdcae2510a",
+      "stdout_log_size": 220,
+      "stderr_log_sha": "9c88a2bb0158d0730c72f997a71bd4ce2d50af837e2f124c07d9d682c1892ae0",
+      "stderr_log_size": 2216,
+      "episode_summary_sha": "ba2bce2f82b25dacae04ade0b684561b97d1057ebfecec18c10677d480091722",
+      "episode_summary_size": 781,
+      "video_path": null,
+      "video_note": "NOT_AVAILABLE_NO_SAVE_VIDEO"
+    },
+    "butter_s2_rand_t10": {
+      "telemetry_csv_sha": "600990b04d4c4db02ae51ba9470fe52df7ee5719cd81a103ad129690c782b8e3",
+      "telemetry_csv_size": 128194,
+      "stdout_log_sha": "a246fd8dcb695f08f5446ebf38c31a37a4a397d17beafc47101eab4bab1fc536",
+      "stdout_log_size": 220,
+      "stderr_log_sha": "d66e07511cf556921b33bc05d9f1e27d0b2a0318afef88c2b1b25ec4bca220f5",
+      "stderr_log_size": 2216,
+      "episode_summary_sha": "5a469a548fce86f6bf1948e2eea4604917e96705b80fe4ed640c7540967663f0",
+      "episode_summary_size": 788,
+      "video_path": null,
+      "video_note": "NOT_AVAILABLE_NO_SAVE_VIDEO"
+    }
+  },
+  "video_status": "NOT_AVAILABLE",
+  "video_note": "M0-E bridge was invoked without --save_video flag. Videos were not produced. Re-run with --save_video is needed for video audit."
+}

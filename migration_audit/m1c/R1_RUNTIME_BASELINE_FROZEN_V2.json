@@ -1,0 +1,53 @@
+{
+  "gate": "M1C_R1_RUNTIME_BASELINE_FREEZE_V2",
+  "status": "FROZEN_FOR_FUTURE_VALIDATION",
+  "frozen_at": "2026-06-23T19:30:00+08:00",
+  "supersedes": "migration_audit/m1c/R1_RUNTIME_BASELINE_FROZEN.json",
+  "change_log": "V2: Added feat_valid gate — R1 now disarms on feat_valid=false even when cp/rp are finite and phase=stable_carry. This corrects a gap where the old code could remain ARMED with invalid feature data.",
+  "source_runtime_commit": "7a507685bbd31094bd37540786964aa89fa8cd98",
+  "fsm_version": "v1r_r1",
+  "class_name": "SC5DetectorRuntimeV1R",
+  "runtime_file": "src/gripper_attack/sc5_detector_runtime_v1r.py",
+  "test_file": "tests/stageb/test_sc5_detector_runtime_v1r.py",
+  "parameters": {
+    "tau_corridor": 0.3,
+    "tau_release": 0.3,
+    "guard": 5
+  },
+  "parameter_selection_source": "preexisting_frozen_M1B_defaults",
+  "m1b_usage": "diagnostic_only",
+  "claims": {
+    "sticky_arm_fixed_on_m1b_diagnostic": true,
+    "silent_stall_fixed_on_m1b_diagnostic": true,
+    "model_selectivity_residual": true,
+    "feat_valid_gate_enforced": true,
+    "all_six_clean_only_gates_pass": false,
+    "failing_gate": "no_corridor_abstain (0.636 < 0.90 on M1B diagnostic)"
+  },
+  "R2_status": {
+    "default_configuration": "REJECTED",
+    "method_family": "NOT_REJECTED",
+    "n_candidate_semantics": "FIXED (1=1st frame, 2=2nd, 3=3rd)",
+    "parameter_tuning_on_M1B": "FORBIDDEN",
+    "parameter_tuning_on_independent_validation": "GO_AFTER_DATA_PROTOCOL_FREEZE"
+  },
+  "sc5_v2_retrain": {
+    "status": "CONDITIONALLY_GO_AFTER_VALIDATION",
+    "rationale": "R1 fixes sticky-arm and silent-stall but cannot address sustained model-selectivity errors."
+  },
+  "next_gates": [
+    "Complete V4 train fill (52 cells, GPU0, ~21:45 ETA)",
+    "Collection closure + provenance",
+    "P3 corpus integrity audit",
+    "P4 Teacher labeling (train+val only)",
+    "P5 R1/R2 independent validation on validation set",
+    "SC5-v2 training decision"
+  ],
+  "invariants": [
+    "Original SC5DetectorRuntime preserved unchanged for regression",
+    "R1 parameters frozen from M1B defaults",
+    "M1B 60-cell data is diagnostic-only",
+    "Six absolute gates unchanged",
+    "Clean-only constraint"
+  ]
+}

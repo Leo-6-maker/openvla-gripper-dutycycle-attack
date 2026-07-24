@@ -1,0 +1,20 @@
+{
+  "gate": "M1C_PHASE_A_EXTERNAL_EVIDENCE_MANIFEST",
+  "description": "Pointers to A800-resident Phase A evidence. These files are NOT committed to git — they reside on the A800 server at /mnt/sdc/.",
+  "a800_host": "pm-364c0001",
+  "output_root": "/mnt/sdc/dty_user/openvla_attack/evidence/m1c/phase_a/",
+  "generated_at": "2026-06-23",
+  "m1b_close_commit": "9ab9f26cbb87869e8395f3238f6703b870df43fc",
+  "m1c_diagnostic_commit": "8827373f208ad2ce282ed8ad801f637cb6d1bd96",
+  "diagnostic_script_path": "scripts/migration/diagnose_false_triggers.py",
+  "m1b_artifact_manifest_path": "migration_audit/object_checkpoint_migration/m1_runtime_b0_d1/artifact_manifest_complete.json",
+  "m1b_classification_path": "migration_audit/object_checkpoint_migration/m1_runtime_b0_d1/final_classification.json",
+  "output_files": {
+    "run.log": "Full console output of Phase A run",
+    "phase_a_summary.csv": "Per-cell summary (17 rows)",
+    "phase_a_summary.json": "Per-cell summary (JSON)",
+    "hypothesis_classification.json": "Overall classification and recommendation",
+    "artifact_manifest.json": "Phase A provenance manifest with full SHA256"
+  },
+  "cell_outputs": "cells/<episode>/<profile>/{emit_window.csv, state_machine_trace.csv, evidence_breaks.csv, diagnostic_summary.json}"
+}

@@ -1,0 +1,95 @@
+# A800 Official OpenVLA Runtime Profile — LIBERO-Spatial
+# MIG2A Contract Freeze
+# Source commit: c8f03f48af692657d3060c19588038c7220e9af9 (OpenVLA upstream)
+# Model: openvla-7b-finetuned-libero-spatial
+
+runtime:
+  profile: openvla_official_a800
+  suite: libero_spatial
+  source_commit: "c8f03f48af692657d3060c19588038c7220e9af9"
+
+model:
+  path: "/mnt/sdc/dty_user/openvla_attack/models/libero-spatial/spatial_c8f03f4_20260620"
+  manifest_sha: TBD_FILL_AFTER_MANIFEST_GENERATION
+  dtype: "bfloat16"
+  attn_implementation: "eager"  # baseline; flash_attention_2 deferred to M1B
+  device_map: "cuda:0"
+  device_count: 1
+  per_gpu_memory_cap: null  # no legacy 10GB cap
+  low_cpu_mem_usage: true
+  local_files_only: true
+  trust_remote_code: true
+  repo: "openvla/openvla-7b-finetuned-libero-spatial"
+  provenance: LOCAL_MODIFIED_SNAPSHOT
+
+processor:
+  class: "AutoProcessor"
+  _actual_class: "PrismaticProcessor"
+  local_files_only: true
+  trust_remote_code: true
+
+tokenizer:
+  class: "LlamaTokenizerFast"
+  eos_token_id: 2
+  eos_token: "</s>"
+  pad_token_id: 32000
+  pad_token: "<PAD>"
+  bos_token_id: 1
+  bos_token: "<s>"
+  vocab_size: 32000
+  note: "ID 29871 is Llama space prefix token (not EOS)"
+
+prompt:
+  template: "In: What action should the robot take to {task.lower()}?\nOut:"
+  eos_appended: false  # predict_action handles internally
+  source: "prismatic/vla/constants.py"
+  source_commit: "c8f03f48af692657d3060c19588038c7220e9af9"
+
+image_preprocessing:
+  rotation: 180  # agentview
+  color_space: "RGB"
+  resize_method: "LANCZOS"
+  center_crop: true
+  output_size: [224, 224]
+  jpeg_roundtrip: false
+  source: "prismatic/models/vlas/openvla.py"
+  source_commit: "c8f03f48af692657d3060c19588038c7220e9af9"
+
+action:
+  dim: 7
+  unnorm_key: "libero_spatial"
+  q01: [-0.7454732114076613, -0.6616071462631226, -0.9375, -0.1071428582072258, -0.20678570866584778, -0.1842857152223587, 0.0]
+  q99: [0.9375, 0.8758928775787354, 0.9321428537368774, 0.1039285734295845, 0.17678570747375488, 0.14571428298950195, 1.0]
+  stats_sha256: "498d59072d79e32715b5fb1b817a025ca8034a4acec42fd62686392251ed182a"
+  decode_path_official: "model.predict_action() → internally calls generate() + decode + unnormalize"
+  double_unnorm_risk: "predict_action output is ALREADY unnormalized — do NOT re-apply q01/q99"
+
+gripper:
+  index: 6
+  normalize: "[0,1] → [-1,1]: (raw * 2) - 1"
+  binarize: "sign(normalized)"
+  invert: "-binarized  # project convention for LIBERO OPEN/CLOSE"
+  open: "inverted < 0"
+  close: "inverted >= 0"
+
+generation:
+  max_new_tokens: 7
+  do_sample: false  # deterministic greedy
+
+lane_o:
+  name: "Official predict_action"
+  method: "model.predict_action(input_ids=prompt_tokens, pixel_values=..., unnorm_key=libero_spatial, do_sample=False)"
+  external_token_append: false
+  external_unnorm: false
+
+lane_g:
+  name: "Manual generate + decode"
+  method: "model.generate(...) → extract new tokens → model.predict_action(generated_tokens)"
+  external_token_append: false
+  external_unnorm: false
+  note: "For diagnostic/historical comparison only. Not the official reference."
+
+gpu:
+  preferred_indices: [4, 6]
+  lease_dir: "/mnt/sdc/dty_user/openvla_attack/gpu_locks"
+  required_free_vram_gib: 20

@@ -1,0 +1,11 @@
+task_idx,task_name,split,n_rows,n_episodes
+0,butter,val,8729,37
+1,ketchup,train,7167,37
+2,milk,train,7501,37
+3,orange_juice,train,12059,37
+4,alphabet_soup,train,7358,37
+5,tomato_sauce,train,8272,37
+6,cream_cheese,train,7906,37
+7,salad_dressing,train,8013,37
+8,bbq_sauce,train,7736,37
+9,chocolate_pudding,held_out,9274,37

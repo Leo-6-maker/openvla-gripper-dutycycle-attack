@@ -1,0 +1,17 @@
+{
+  "verified_at": "2026-06-24T15:21:34+08:00",
+  "total_cells": 250,
+  "done_exists": 250,
+  "telemetry_exists": 250,
+  "summary_exists": 250,
+  "exit_code_zero": 250,
+  "condition_clean": 250,
+  "attack_frames_zero": 250,
+  "done_telemetry_sha_match": 250,
+  "summary_n_steps_matches_csv_rows": 250,
+  "stale_partial_files": 0,
+  "unique_member_paths": 250,
+  "all_pass": true,
+  "audit_script": "inline_python_on_server",
+  "notes": "7 .done regenerated; no stale partial files"
+}

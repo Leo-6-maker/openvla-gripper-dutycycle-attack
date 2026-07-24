@@ -1,0 +1,22 @@
+{
+  "gate": "M1C_RUNTIME_REPLAY_EXTERNAL_EVIDENCE",
+  "a800_host": "pm-364c0001",
+  "output_root": "/mnt/sdc/dty_user/openvla_attack/evidence/m1c/runtime_replay/",
+  "generated_at": "2026-06-23",
+  "m1b_close_commit": "9ab9f26cbb87869e8395f3238f6703b870df43fc",
+  "replay_script_commit": "aea3f3807e6f4e0f5e43deb1a5cee4c6c3e6a7e9",
+  "runtime_source_commit": "07bd43ba26cee08f4eb4216df3db995d4dd509dc",
+  "m1b_manifest_sha256": "<from_a800_run>",
+  "checkpoint_sha256": "<from_a800_run>",
+  "fsm_configs": {
+    "R0": {"fsm_version": "legacy_v1"},
+    "R1": {"fsm_version": "v1r_r1"},
+    "R2": {"fsm_version": "v1r_r2", "tau_on": 0.5, "tau_off": 0.3, "n_candidate": 3, "max_arm_age": 50}
+  },
+  "output_files": {
+    "run.log": "Full console output",
+    "per_cell_emit.csv": "180 rows (60 cells × 3 FSMs)",
+    "aggregate_metrics.json": "Per-FSM aggregate metrics",
+    "regression_table.csv": "R0/R1/R2 side-by-side comparison"
+  }
+}

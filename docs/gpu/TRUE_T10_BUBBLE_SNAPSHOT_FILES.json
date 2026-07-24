@@ -1,0 +1,99 @@
+{
+  "gate": "TRUE_T10_FILES_INVENTORY_V1",
+  "created_utc": "2026-06-29T10:48:00Z",
+  "evidence_root": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/TRUE_T10",
+  "total_file_count_at_snapshot": "(growing — execution in progress)",
+
+  "launch_directory": {
+    "path": "launch/",
+    "manifest_files": [
+      {"file": "manifest_gpu0_w0.jsonl", "sha256": "f8c40735e9bfef4de925ec8e20154aa7d5fbcaf598e1639d37206e2a1fc38e75", "jobs": 18},
+      {"file": "manifest_gpu1_w0.jsonl", "sha256": "b178c1a9ef6946899fb9804c489b863e6babbb4ea7f30fbac7f01dd9af26af7d", "jobs": 18},
+      {"file": "manifest_gpu1_w1.jsonl", "sha256": "d747699cea913ba20f89f1fcca7c90d045ac773b2de03c81a3327b6f3e4332ff", "jobs": 18},
+      {"file": "manifest_gpu4_w0.jsonl", "sha256": "680f1274821ae7f8abcb170baf983ac0ea65852dc6a9041b253e8f71acbe84aa", "jobs": 18},
+      {"file": "manifest_gpu4_w1.jsonl", "sha256": "3363661b817b30ea6441eff7c8d339bb14f177252a9fe9808d948574305f29a1", "jobs": 18},
+      {"file": "manifest_gpu5_w0.jsonl", "sha256": "be19578c129c795384e4410587a13b51bafd2442b35b100a8ba77af3d111def0", "jobs": 18},
+      {"file": "manifest_gpu5_w1.jsonl", "sha256": "08e549a296ef938e8d45582ffbbfd521ae19356da7f79465069d1a024f3e9d90", "jobs": 18},
+      {"file": "manifest_gpu6_w0.jsonl", "sha256": "c82cc0d9a9f6475a2b0b648f485e7082cd8274f7fda03eac0959c65f68f289c0", "jobs": 18},
+      {"file": "manifest_gpu7_w0.jsonl", "sha256": "858c6a66d8e1326ab6e5ea649421fa449d546c9132bad5d4e9b8285bfdf82191", "jobs": 18}
+    ],
+    "worker_logs": [
+      "worker_manifest_gpu0_w0.log", "worker_manifest_gpu1_w0.log", "worker_manifest_gpu1_w1.log",
+      "worker_manifest_gpu4_w0.log", "worker_manifest_gpu4_w1.log",
+      "worker_manifest_gpu5_w0.log", "worker_manifest_gpu5_w1.log",
+      "worker_manifest_gpu6_w0.log", "worker_manifest_gpu7_w0.log"
+    ],
+    "legacy_worker_logs": [
+      "worker_gpu0_even.log", "worker_gpu0_odd.log",
+      "worker_gpu1_even.log", "worker_gpu1_odd.log",
+      "worker_gpu4_even.log", "worker_gpu4_odd.log",
+      "worker_gpu5_even.log", "worker_gpu5_odd.log",
+      "worker_gpu6_even.log", "worker_gpu6_odd.log",
+      "worker_gpu7_even.log", "worker_gpu7_odd.log"
+    ],
+    "legacy_manifest_files": [
+      "MANIFEST_gpu0_even.jsonl", "MANIFEST_gpu0_odd.jsonl",
+      "MANIFEST_gpu2_even.jsonl", "MANIFEST_gpu2_odd.jsonl",
+      "MANIFEST_gpu3_even.jsonl", "MANIFEST_gpu3_odd.jsonl",
+      "MANIFEST_gpu4_even.jsonl", "MANIFEST_gpu4_odd.jsonl"
+    ]
+  },
+
+  "canonical_manifest": {
+    "file": "formal_manifest.jsonl",
+    "sha256": "64e20b8ff248fc078d705532aab6d4ec5ea186c143c8b6137fa90d41bdf7a6e4",
+    "size_bytes": 356724,
+    "rows": 162
+  },
+
+  "prelaunch_canary": {
+    "directory": "prelaunch_canary_bridge_v2/",
+    "structure": "fold_04/state_0/det_1/pert_0/",
+    "files": {
+      "TRUE_T10": ["episode_summary.json", "step_telemetry.csv", "stderr.log", "stdout.log"],
+      "CLEAN": ["episode_summary.json", "step_telemetry.csv", "stderr.log", "stdout.log"]
+    }
+  },
+
+  "formal_v1_output_directory": {
+    "path": "formal_v1/",
+    "folds_present": ["fold_01","fold_02","fold_03","fold_04","fold_05","fold_06","fold_07","fold_08","fold_09"],
+    "total_folds": 9,
+    "completed_episodes_at_snapshot": 7,
+    "per_episode_expected_files": ["episode_summary.json", "step_telemetry.csv", "stderr.log", "stdout.log"],
+    "note": "Each episode directory = formal_v1/fold_XX/state_Y/det_seed_D/pert_seed_P/"
+  },
+
+  "design_documents": {
+    "spec": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/LOTO_VIS_FORMAL_TRUE_T10_CONDITION_SPEC_V2.json",
+    "designation": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/LOTO_VIS_FORMAL_TRUE_T10_MANIFEST_DESIGNATION_V1.json",
+    "manifest_audit": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/LOTO_VIS_FORMAL_TRUE_T10_MANIFEST_AUDIT_V1.json",
+    "telemetry_schema": "/mnt/sdc/dty_user/openvla_attack/docs/gpu/LOTO_TABLE1_TELEMETRY_SCHEMA_V2.json",
+    "metric_schema": "/mnt/sdc/dty_user/openvla_attack/docs/gpu/LOTO_METRIC_SCHEMA_V2.json",
+    "state_selection": "/mnt/sdc/dty_user/openvla_attack/docs/gpu/LOTO_VIS_STATE_SELECTION_V1.json",
+    "heldout_prereg": "/mnt/sdc/dty_user/openvla_attack/docs/gpu/LOTO_VIS_HELDOUT_PREREGISTRATION_V1.json"
+  },
+
+  "anchors_per_fold": {
+    "fold_01": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/fold_01/FOLD01_heldout_episode_anchors.json",
+    "fold_02": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/fold_02/FOLD02_heldout_episode_anchors.json",
+    "fold_03": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/fold_03/FOLD03_heldout_episode_anchors.json",
+    "fold_04": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/fold_04/FOLD04_heldout_episode_anchors.json",
+    "fold_05": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/fold_05/FOLD05_heldout_episode_anchors.json",
+    "fold_06": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/fold_06/FOLD06_heldout_episode_anchors.json",
+    "fold_07": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/fold_07/FOLD07_heldout_episode_anchors.json",
+    "fold_08": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/fold_08/FOLD08_heldout_episode_anchors.json",
+    "fold_09": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/fold_09/FOLD09_heldout_episode_anchors.json"
+  },
+
+  "excluded_from_snapshot": [
+    "model_weights (OpenVLA-7B checkpoint)",
+    "full_rollout_trees",
+    "video_files",
+    "secrets_or_credentials",
+    "large_telemetry_directories (only file inventory + SHAs captured)",
+    "conda_pkgs/",
+    "cache/",
+    "envs/ directory contents"
+  ]
+}

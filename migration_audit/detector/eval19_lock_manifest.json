@@ -1,0 +1,46 @@
+{
+  "gate": "UPSTREAM_DETECTOR_TRANSFER_AND_THRESHOLD_AUDIT",
+  "eval_set": "EVAL19",
+  "definition": "Episode keys where both FP32-Eager and BF16-Flash2 upstream clean30 succeeded",
+  "count": 19,
+  "task_coverage": 10,
+  "keys": [
+    "task0_init0",
+    "task1_init0",
+    "task1_init1",
+    "task1_init2",
+    "task2_init1",
+    "task2_init2",
+    "task3_init0",
+    "task4_init0",
+    "task5_init0",
+    "task5_init2",
+    "task6_init0",
+    "task6_init1",
+    "task6_init2",
+    "task7_init1",
+    "task7_init2",
+    "task8_init0",
+    "task8_init2",
+    "task9_init0",
+    "task9_init2"
+  ],
+  "restrictions": [
+    "EVAL19 must NOT be used for threshold selection",
+    "EVAL19 must NOT be used for normalization fitting",
+    "EVAL19 must NOT be used for detector training",
+    "EVAL19 must NOT be used for window length selection",
+    "EVAL19 must NOT be used for hysteresis selection",
+    "If threshold is modified, EVAL19 stays hidden from the tuning process"
+  ],
+  "source_clean30": {
+    "plan_sha": "9549ee9a53b23bdc06329b2b8b12a4ed73278bdc7f97a732f2ef00653655219e",
+    "fp32_result_manifest_sha": "ef0b2c606b1beafc75410e149f43e85bbf9b42659829c79da35fdffe77567f20",
+    "flash2_result_manifest_path": "evidence/bf16_flash2_upstream_tfjpeg_clean30/manifest.json",
+    "integrity_audit_sha": "migration_audit/upstream_clean30/integrity_audit.json",
+    "paired_csv_path": "migration_audit/upstream_clean30/paired_fp32_flash2.csv",
+    "result_commit": "97e39970e2b8614ce42cb4914c17d9fbe94da02a",
+    "fix_commit": "2bad5b3f0efa2a25bcb92a97fc1a2c12bb575566"
+  },
+  "detector_contract_commit": "a5ea5c8"
+}

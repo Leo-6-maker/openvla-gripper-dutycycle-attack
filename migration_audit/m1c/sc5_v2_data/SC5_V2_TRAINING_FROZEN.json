@@ -1,0 +1,129 @@
+{
+  "gate": "SC5_V2_TRAINING_PROTOCOL",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-25T00:45:00+08:00",
+  "parent_commit": "51df7c3",
+
+  "split_mapping": {
+    "train": "train split (states 3-22, 280 episodes)",
+    "val": "dev split mapped to val (states 23-27, 90 episodes)",
+    "held_out": "NOT USED in V2 — all 370 episodes assigned to train or val",
+    "note": "train_sc5_v2.py maps 'dev' manifest entries to split='val'. No held-out set."
+  },
+
+  "architecture": {
+    "name": "SC5_MLP_v2",
+    "input_dim": 25,
+    "hidden_dim": 64,
+    "shared_trunk": "Linear(25,64) -> ReLU -> Linear(64,64) -> ReLU",
+    "heads": {
+      "phase_head": {"outputs": 9, "type": "Linear(64,9)", "supervised": true},
+      "corridor_head": {"outputs": 1, "type": "Linear(64,1)", "supervised": true},
+      "release_head": {"outputs": 1, "type": "Linear(64,1)", "supervised": true},
+      "confidence_head": {"outputs": 1, "type": "Linear(64,1)", "supervised": false}
+    },
+    "parameterized_outputs": 12,
+    "supervised_outputs": 11,
+    "parameter_count": 6604,
+    "note_confidence": "Confidence head retained for v1 architecture compatibility. No loss, no gradient, unused at inference.",
+    "identical_to_v1": true,
+    "note": "Architecture is IDENTICAL to SC5-v1. Only weights change via retraining on new data."
+  },
+
+  "vla_model": {
+    "status": "FROZEN",
+    "model": "openvla-7b-finetuned-libero-object",
+    "dtype": "bfloat16",
+    "attention": "eager",
+    "note": "VLA 7B model is NEVER trained. Only used for offline trajectory generation."
+  },
+
+  "teacher": {
+    "status": "FROZEN",
+    "config": "teacher_config_frozen.json (C16, guard=5, K=10)",
+    "usage": "Offline labeling only. NOT used during training or inference."
+  },
+
+  "dataset": {
+    "manifest_sha256": "19f1714750d41336a9ae0874ef853aeb40da77adc06ac668d10dcad346a7144c",
+    "manifest_path": "migration_audit/m1c/sc5_v2_data/SC5_V2_DATASET_MANIFEST.csv",
+    "total_samples": 370,
+    "train_split": {"tv": 159, "nc": 121, "total": 280},
+    "dev_split": {"tv": 36, "nc": 54, "total": 90},
+    "audit": "SC5_V2_DATASET_AUDIT.json (leakage=0, teacher validity=PASS)",
+    "feature_schema": "25D SC5 streaming features (see sc5_streaming_features_v2.py)",
+    "step_dataset": {
+      "path": "migration_audit/m1c/sc5_v2_data/SC5_V2_STEP_DATASET.csv",
+      "sha256": "c086c0c8107622161bc620ed17035d8d2aea37764b8602bf87d8d30ff7373de9",
+      "total_steps": 101215,
+      "train_eps": 280, "train_steps": 73764,
+      "val_eps": 90, "val_steps": 27451,
+      "phase_distribution": {
+        "approach": 50313, "grasp_close": 31528, "stable_grasp": 5466,
+        "first_lift": 0, "stable_carry": 8324,
+        "pre_place_unsupported": 4614, "release_safe": 277,
+        "recovery_or_regrasp": 323, "abstain_unsupported": 370
+      },
+      "generation_errors": 0
+    }
+  },
+
+  "training": {
+    "loss": {
+      "type": "multi_task",
+      "components": {
+        "phase": {"loss": "CrossEntropyLoss", "weight": 1.0, "class_weight": "inverse_frequency", "note": "9-class phase classification with auto-computed inverse-frequency class weights"},
+        "corridor": {"loss": "BCEWithLogitsLoss", "weight": 0.5, "pos_weight": 5.0, "note": "Binary corridor-active detection, pos_weight=5 to counter class imbalance"},
+        "release": {"loss": "BCEWithLogitsLoss", "weight": 0.3, "pos_weight": 5.0, "note": "Binary release-safe detection, pos_weight=5"}
+      },
+      "confidence_head": {"trained": false, "note": "No loss, no gradient — retained for v1 checkpoint compatibility only"},
+      "total_loss_formula": "1.0 * phase_CE + 0.5 * corridor_BCE(pos_weight=5) + 0.3 * release_BCE(pos_weight=5)"
+    },
+    "optimizer": "Adam",
+    "learning_rate": 0.001,
+    "weight_decay": 0.0001,
+    "batch_size": 64,
+    "max_epochs": 80,
+    "early_stopping": {"metric": "val_phase_CE", "mode": "min", "note": "Save checkpoint with lowest validation phase cross-entropy"},
+    "random_seeds": [42, 123, 456, 789, 1024],
+    "note_seeds": "5 fixed seeds to assess initialization sensitivity. Report mean ± std across seeds."
+  },
+
+  "checkpoint_selection_rule": {
+    "step_1_constraint": "Primary-dev TV coverage (recall) must not be significantly below SC5-v1 baseline",
+    "step_2_objective": "Among checkpoints satisfying step 1, minimize NC false-trigger rate on combined dev",
+    "step_3_tiebreak": "Prefer better primary-dev metrics before reserve-dev metrics",
+    "note": "Do NOT select checkpoint by maximizing combined accuracy on the NC-rich combined dev set."
+  },
+
+  "evaluation_slices": {
+    "primary_dev_50": {"purpose": "Near-natural distribution, primary result", "tv": 36, "nc": 14},
+    "reserve_dev_40": {"purpose": "Hard-negative stress test", "tv": 0, "nc": 40},
+    "combined_dev_90": {"purpose": "Overall dataset performance", "tv": 36, "nc": 54}
+  },
+
+  "required_metrics_per_slice": [
+    "TV corridor recall (coverage)",
+    "TV missed-trigger rate",
+    "NC false-trigger rate",
+    "NC abstention rate",
+    "Overall selective risk",
+    "Trigger timing / emit-step distribution (mean, median)"
+  ],
+
+  "baseline_comparison": {
+    "v1_weights": "artifacts/detector/sc5_mlp_s2.pt",
+    "requirement": "Compare SC5-v1 vs SC5-v2 on IDENTICAL dev manifest. Same 25D input, same architecture, same inference thresholds. Improvement must be attributable to new data, not structural changes."
+  },
+
+  "abstention_target": {
+    "train_nc_abstain": ">= 0.90 on primary dev NC",
+    "tv_coverage": ">= 0.80 on primary dev TV"
+  },
+
+  "outputs": {
+    "checkpoint": "artifacts/detector/sc5_mlp_v2.pt",
+    "training_log": "evidence/m1c/sc5_v2_training_log.csv",
+    "evaluation_report": "evidence/m1c/sc5_v2_eval_report.json"
+  }
+}

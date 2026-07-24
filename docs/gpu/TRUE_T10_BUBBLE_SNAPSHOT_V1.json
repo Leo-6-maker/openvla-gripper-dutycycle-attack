@@ -1,0 +1,416 @@
+{
+  "gate": "TRUE_T10_BUBBLE_SNAPSHOT_V1",
+  "snapshot_type": "POSTLAUNCH_IMMUTABLE_BUBBLE",
+  "created_utc": "2026-06-29T10:47:00Z",
+  "snapshot_trigger": "COMPRESS_CONTEXT_RECOVERY",
+  "purpose": "Immutable capture of complete TRUE_T10 launch state for Table 1 acceptance gate. All SHAs, process mappings, and runtime state frozen at this instant.",
+
+  "server_identity": {
+    "hostname": "pm-364c0001",
+    "uname": "Linux pm-364c0001 5.15.0-127-generic #137~20.04.1-Ubuntu SMP Fri Nov 15 14:46:54 UTC 2024 x86_64",
+    "driver_version": "550.90.12",
+    "cuda_version": "12.4",
+    "gpu_model": "NVIDIA A800-SXM4-80GB x8",
+    "snapshot_utc": "2026-06-29T10:45:36Z"
+  },
+
+  "git_state": {
+    "commit": "ace1876281a9ad6ed68e1229a6e17346356766e9",
+    "parent": "e43533cfdb6895a5daea7661e1d4f3d1c24158b8",
+    "branch": "feature/sc5-abstention-v2-20260622",
+    "remote": "origin/feature/sc5-abstention-v2-20260622",
+    "git_status_summary": "4 files modified, multiple untracked",
+    "modified_files": [
+      "scripts/stageb/run_sc5_cross_suite_clean.py",
+      "scripts/stageb/run_v2_vis_sc5_mlp_bridge.py",
+      "scripts/v4_run_eval_openvla.py",
+      "src/gripper_attack/attack_adapter.py"
+    ],
+    "diff_stat": "4 files changed, 1316 insertions(+), 1268 deletions(-)",
+    "diff_bridge_summary": "Added --libero_preprocess_backend, --attack_objective, --arm_lock, --keep_running, --trigger_step_override args; backend resolution logic; jpeg_roundtrip tracking",
+    "diff_clean_summary": "Changed preprocessing kwargs (libero_official_preprocess→False, backend→official_pil_lanczos removed)",
+    "diff_eval_summary": "Large reformatting (2496 lines restructured, shebang reordering)",
+    "diff_adapter_summary": "Minor import/function signature change in prepare_openvla_image_for_attack",
+    "untracked_execution_relevant": [
+      "configs/cross_suite_clean1500_protocol_v1.json",
+      "configs/cross_suite_clean1500_protocol_v1_gpu7_goal.json",
+      "configs/cross_suite_object_target_registry_v1.json",
+      "configs/detector/shard/c0r_flash2_gpu6.json",
+      "configs/detector/shard/c0r_fp32_gpu2.json",
+      "configs/detector/shard/c0r_fp32_gpu3.json",
+      "configs/detector/shard/c0r_fp32_gpu4_diag.json",
+      "docs/gpu/LOTO_10FOLD_PROTOCOL_FREEZE_V2.json",
+      "docs/gpu/LOTO_METRIC_SCHEMA_V2.json",
+      "docs/gpu/LOTO_PHASE_B_EVALUATOR_FREEZE_V1.json",
+      "docs/gpu/LOTO_PHASE_B_METRIC_PREREGISTRATION_V1.json",
+      "docs/gpu/LOTO_TABLE1_TELEMETRY_SCHEMA_V2.json",
+      "docs/gpu/LOTO_VIS_HELDOUT_PREREGISTRATION_V1.json",
+      "docs/gpu/LOTO_VIS_STATE_SELECTION_V1.json"
+    ],
+    "branch_note": "Server branch (feature/sc5-abstention-v2-20260622) differs from local repo branch (feature/sc5-video-export-20260618). Server repo is the execution environment."
+  },
+
+  "execution_scripts": {
+    "bridge": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/scripts/stageb/run_v2_vis_sc5_mlp_bridge.py",
+      "sha256": "4ef2a919ee650cf35b35eaa5b9c2152c0d7d18f43710c246ce14dd1c8a83e468",
+      "status": "DIRTY (modified from committed version)",
+      "modifications": "Added CLI args: --libero_preprocess_backend, --attack_objective, --arm_lock, --keep_running, --trigger_step_override. Added backend resolution. jpeg_roundtrip detection."
+    },
+    "worker": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/scripts/stageb/run_vis_formal_worker.py",
+      "sha256": "e21f7fbe7f78003ac2e626bfe9ddb047c194022727bb4d9bc19b9ce0876e337c",
+      "status": "COMMITTED (clean match to commit ace1876)",
+      "key_features": [
+        "fail-closed condition_id/condition resolution",
+        "mlp_path derived from fold+detector_seed",
+        "anchor from heldout anchors preload cache",
+        "task_id from canonical manifest field",
+        "retry: infrastructure failure only, different GPU, 2-consecutive stop"
+      ]
+    },
+    "victim_model": {
+      "path": "openvla-7b-finetuned-libero-object",
+      "type": "OpenVLA-7B",
+      "dtype": "bfloat16",
+      "attention": "eager",
+      "checkpoint_hash_in_spec": "55ed45ff16d5f38b5bf1b97d8d5e14b68f3f6e5c0a1b2c3d4e5f6a7b8c9d0e1f"
+    }
+  },
+
+  "sha_chain_audit": {
+    "status": "DISCREPANCY_FOUND",
+    "discrepancy_detail": {
+      "field": "bound_contract_sha256.worker_sha256",
+      "spec_value": "41eb3843eb4c6414068cfca3be9dc2bb730b49684832a1ddc333d92589e7dceb",
+      "actual_disk_value": "e21f7fbe7f78003ac2e626bfe9ddb047c194022727bb4d9bc19b9ce0876e337c",
+      "severity": "P1 — NEEDS RESOLUTION BEFORE TABLE 1 ACCEPTANCE",
+      "likely_cause": "Spec V2 was authorized using a pre-deployment worker snapshot. Worker was later updated (fail-closed resolution), producing different SHA. Bound contract was not re-audited after final deploy.",
+      "impact": "Worker running on server is NOT the worker named in the frozen spec. If the diff is purely the fail-closed fix (same semantics, different code layout), scientific validity may be preserved but provenance chain is broken.",
+      "resolution": "Must either: (a) re-freeze spec with corrected worker SHA, or (b) confirm diff is cosmetic-only via independent audit of the two worker versions."
+    },
+    "matching_shas": {
+      "bridge_sha256": {
+        "spec_bound": "4ef2a919ee650cf35b35eaa5b9c2152c0d7d18f43710c246ce14dd1c8a83e468",
+        "actual_disk": "4ef2a919ee650cf35b35eaa5b9c2152c0d7d18f43710c246ce14dd1c8a83e468",
+        "match": true
+      },
+      "state_selection_sha256": {
+        "spec_bound": "457aadd2c93192418f0558249423889bb8def9e27198699dbaf39820187b5719",
+        "match": "NOT_VERIFIED_ON_DISK"
+      },
+      "global_freeze_sha256": {
+        "spec_bound": "bd3a4e57a637d12f03004ff9751a73f16335e1740065fb067668aa3e3c3c0fbf",
+        "match": "NOT_VERIFIED_ON_DISK"
+      },
+      "manifest_sha256": {
+        "spec_designation": "64e20b8ff248fc078d705532aab6d4ec5ea186c143c8b6137fa90d41bdf7a6e4",
+        "actual_disk": "64e20b8ff248fc078d705532aab6d4ec5ea186c143c8b6137fa90d41bdf7a6e4",
+        "match": true
+      },
+      "telemetry_schema_sha256": {
+        "spec_bound": "b94194659274d7020e35cf69aca3f3054c5f6fb1d0c8921e6b02f93f213d8d8a",
+        "match": "NOT_VERIFIED_ON_DISK"
+      }
+    }
+  },
+
+  "condition_spec": {
+    "file": "LOTO_VIS_FORMAL_TRUE_T10_CONDITION_SPEC_V2.json",
+    "path": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/LOTO_VIS_FORMAL_TRUE_T10_CONDITION_SPEC_V2.json",
+    "sha256": "7feae7d25a952e7fc018a68205f6cf8e23223ab940b5a897a6734a56563881e1",
+    "condition_id": "TRUE_T10",
+    "supersedes": "V1 (7c2791fd...)",
+    "amendment_reason": "AUTHORIZATION_UPGRADE_FROM_DRAFT — bridge updated: added clean_env_action_7d",
+    "status": "AUTHORIZED_FOR_MANIFEST_GENERATION",
+    "attack_parameters": {
+      "objective_id": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+      "target_token": 31744,
+      "target_semantics": "gripper OPEN",
+      "epsilon": "2/255 (0.023529411764705882)",
+      "step_size": "0.001764705882352941",
+      "optimization_steps": 20,
+      "K": 10,
+      "timing_policy": "student_trigger",
+      "arm_lock": false
+    },
+    "design_parameters": {
+      "folds": ["01","02","03","04","05","06","07","08","09"],
+      "states_per_fold": 2,
+      "detector_seeds": [1, 2, 3],
+      "perturbation_seeds": [0, 1, 2],
+      "total_jobs": 162,
+      "gpu_denylist": [2]
+    },
+    "states_by_fold": {
+      "01": ["0", "2"],
+      "02": ["0", "1"],
+      "03": ["1", "3"],
+      "04": ["0", "1"],
+      "05": ["0", "4"],
+      "06": ["0", "1"],
+      "07": ["0", "1"],
+      "08": ["0", "2"],
+      "09": ["0", "1"]
+    }
+  },
+
+  "manifest": {
+    "canonical": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/TRUE_T10/formal_manifest.jsonl",
+      "sha256": "64e20b8ff248fc078d705532aab6d4ec5ea186c143c8b6137fa90d41bdf7a6e4",
+      "row_count": 162,
+      "unique_job_keys": 162,
+      "unique_output_roots": 162,
+      "output_root": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/TRUE_T10/formal_v1"
+    },
+    "launch_splits": {
+      "manifest_gpu0_w0.jsonl": {"sha256": "f8c40735e9bfef4de925ec8e20154aa7d5fbcaf598e1639d37206e2a1fc38e75", "jobs": 18},
+      "manifest_gpu1_w0.jsonl": {"sha256": "b178c1a9ef6946899fb9804c489b863e6babbb4ea7f30fbac7f01dd9af26af7d", "jobs": 18},
+      "manifest_gpu1_w1.jsonl": {"sha256": "d747699cea913ba20f89f1fcca7c90d045ac773b2de03c81a3327b6f3e4332ff", "jobs": 18},
+      "manifest_gpu4_w0.jsonl": {"sha256": "680f1274821ae7f8abcb170baf983ac0ea65852dc6a9041b253e8f71acbe84aa", "jobs": 18},
+      "manifest_gpu4_w1.jsonl": {"sha256": "3363661b817b30ea6441eff7c8d339bb14f177252a9fe9808d948574305f29a1", "jobs": 18},
+      "manifest_gpu5_w0.jsonl": {"sha256": "be19578c129c795384e4410587a13b51bafd2442b35b100a8ba77af3d111def0", "jobs": 18},
+      "manifest_gpu5_w1.jsonl": {"sha256": "08e549a296ef938e8d45582ffbbfd521ae19356da7f79465069d1a024f3e9d90", "jobs": 18},
+      "manifest_gpu6_w0.jsonl": {"sha256": "c82cc0d9a9f6475a2b0b648f485e7082cd8274f7fda03eac0959c65f68f289c0", "jobs": 18},
+      "manifest_gpu7_w0.jsonl": {"sha256": "858c6a66d8e1326ab6e5ea649421fa449d546c9132bad5d4e9b8285bfdf82191", "jobs": 18},
+      "total": 162
+    },
+    "designation": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/LOTO_VIS_FORMAL_TRUE_T10_MANIFEST_DESIGNATION_V1.json",
+      "sha256": "9b69a2798070242f28dafcb862d1740d942b1e471c9d99d54846c0e2b9527ef4",
+      "superseded_manifest_shas": [
+        "5a86d0145eaed3370de0cede9700f7b01774c204425fa24c4d7acd173213ea7a",
+        "ff97ac687bdc18c6286fedfa6fd8dab3c4c4e54a885eb022d16945802da02c66",
+        "afa215eec7feb6bf756dd7d8d30cea85c4cf7a7dd77b20ebbb350335e57338f2",
+        "f3632c8054ebac50d7b46b09d614766129471a796308fa4a7a0b8927a97a1104"
+      ],
+      "scientific_field_diff_count": 0,
+      "pairing_field_diff_count": 0,
+      "output_dirs_existing_at_launch": 0,
+      "reason": "CANONICAL_SCHEMA_AND_PROVENANCE_MIGRATION"
+    },
+    "audit": {
+      "path": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/LOTO_VIS_FORMAL_TRUE_T10_MANIFEST_AUDIT_V1.json",
+      "sha256": "a577618af5d16d25460500d3df91189c57d6753793cab0836078eb6a4488d6c6",
+      "original_manifest_sha256": "ff97ac687bdc18c6286fedfa6fd8dab3c4c4e54a885eb022d16945802da02c66",
+      "original_manifest_matches_clean_1to1": true,
+      "original_includes_noemission_parents": true,
+      "no_clean_result_inherited": true,
+      "pre_existing_output_dirs": 0
+    }
+  },
+
+  "prelaunch_canary": {
+    "directory": "prelaunch_canary_bridge_v2",
+    "fold": "04",
+    "state": "0",
+    "detector_seed": 1,
+    "perturbation_seed": 0,
+    "conditions_tested": ["CLEAN", "TRUE_T10"],
+    "files": {
+      "CLEAN": {
+        "episode_summary": "present",
+        "step_telemetry_csv": "present",
+        "stderr": "present",
+        "stdout": "present (no episode-log line found)"
+      },
+      "TRUE_T10": {
+        "episode_summary": "present",
+        "step_telemetry_csv": "present",
+        "stderr": "present",
+        "stdout": "present (no episode-log line found)"
+      }
+    },
+    "status": "CANARY_PASSED_2_EPISODES_PRODUCED",
+    "note": "Canary episodes completed but stdout logs do not show the standard TRUE_T10 episode summary line. This may indicate the canary used an earlier bridge version. Need to verify full episode_summary.json content."
+  },
+
+  "launch_state": {
+    "launch_time_utc": "2026-06-29T18:16:00+08:00 (approx)",
+    "launch_command_pattern": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python -u /mnt/sdc/dty_user/openvla_attack/scripts/stageb/run_vis_formal_worker.py <GPU_ID> <MANIFEST_PATH>",
+    "bridge_command_pattern": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python -u /mnt/sdc/dty_user/openvla_attack/scripts/stageb/run_v2_vis_sc5_mlp_bridge.py --condition TRUE_T10 --state_id <S> --anchor <A> --seed_id <P> --task_idx <T> --mlp_path <MLP> --render_gpu <G> --output_dir <DIR>",
+    "conda_env": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "worker_configuration": {
+      "gpu0": {"workers": 1, "jobs_per_worker": 18, "manifest": "manifest_gpu0_w0.jsonl"},
+      "gpu1": {"workers": 2, "jobs_per_worker": 18, "manifests": ["manifest_gpu1_w0.jsonl", "manifest_gpu1_w1.jsonl"]},
+      "gpu4": {"workers": 2, "jobs_per_worker": 18, "manifests": ["manifest_gpu4_w0.jsonl", "manifest_gpu4_w1.jsonl"]},
+      "gpu5": {"workers": 2, "jobs_per_worker": 18, "manifests": ["manifest_gpu5_w0.jsonl", "manifest_gpu5_w1.jsonl"]},
+      "gpu6": {"workers": 1, "jobs_per_worker": 18, "manifest": "manifest_gpu6_w0.jsonl"},
+      "gpu7": {"workers": 1, "jobs_per_worker": 18, "manifest": "manifest_gpu7_w0.jsonl"}
+    },
+    "total_workers": 9,
+    "total_jobs": 162,
+    "gpu2_excluded": true,
+    "gpu3_excluded": true,
+    "dual_launch_note": "Worker logs show TWO launch waves: (1) _even/_odd naming (14 jobs, CLEAN→TRUE_T10 sequential), some FAILED exit=1; (2) manifest_gpu* naming (18 jobs) — the CURRENTLY RUNNING launch. May indicate a re-launch after fixing something."
+  },
+
+  "gpu_state_at_snapshot": {
+    "snapshot_utc": "2026-06-29T10:45:38Z",
+    "gpus": {
+      "0": {"memory_used_mb": 59723, "memory_total_mb": 81920, "memory_free_mb": 20848, "gpu_util_pct": 53, "temp_c": 52, "power_w": 135, "processes": ["Xorg(4MiB)", "isaac-gr00t-n1.7(27798MiB)", "python:1568053(8046MiB)", "bridge:2495989(15852MiB)", "python:2812220(7988MiB)"]},
+      "1": {"memory_used_mb": 45929, "memory_total_mb": 81920, "memory_free_mb": 36251, "gpu_util_pct": 25, "temp_c": 44, "power_w": 186, "processes": ["Xorg(4MiB)", "python:1568053(5236MiB)", "bridge:2479577(18292MiB)", "bridge:2502716(15852MiB)", "python:2812220(6690MiB)"]},
+      "2": {"memory_used_mb": 39758, "memory_total_mb": 81920, "memory_free_mb": 41465, "gpu_util_pct": 52, "temp_c": 47, "power_w": 187, "processes": ["Xorg(4MiB)", "isaac-gr00t-n1.7:365449(27800MiB)", "python:1568053(5234MiB)", "python:2812220(6688MiB)"], "status": "QUARANTINED — no TRUE_T10 or CLEAN1500 workloads", "external_workloads": ["isaac-gr00t-n1.7 (27.8GB)"]},
+      "3": {"memory_used_mb": 65916, "memory_total_mb": 81920, "memory_free_mb": 15306, "gpu_util_pct": 3, "temp_c": 36, "power_w": 84, "processes": ["Xorg(4MiB)", "collector:98578(23682MiB)", "collector:99588(23682MiB)", "python:1568053(5234MiB)", "python:2812220(6688MiB)", "python:4149432(6592MiB)"]},
+      "4": {"memory_used_mb": 75972, "memory_total_mb": 81920, "memory_free_mb": 20139, "gpu_util_pct": 10, "temp_c": 42, "power_w": 88, "processes": ["Xorg(4MiB)", "python:1568053(5234MiB)", "bridge:2245990(16504MiB)", "bridge:2246293(16504MiB)", "collector:2449428(15566MiB)", "bridge:2479054(15426MiB)", "python:2812220(6688MiB)"], "shared_gpu": true, "note": "GPU4 hosts BOTH TRUE_T10 bridge (3 bridges = ~47.4GB) AND CLEAN1500 collector (1 collector = ~15.5GB). 75.9/80GB = 94.9% FULL — close to OOM threshold."},
+      "5": {"memory_used_mb": 46639, "memory_total_mb": 81920, "memory_free_mb": 20279, "gpu_util_pct": 36, "temp_c": 44, "power_w": 107, "processes": ["Xorg(4MiB)", "python:1568053(5236MiB)", "bridge:2479144(18820MiB)", "bridge:2484253(15852MiB)", "python:2812220(6690MiB)"]},
+      "6": {"memory_used_mb": 46780, "memory_total_mb": 81920, "memory_free_mb": 20744, "gpu_util_pct": 55, "temp_c": 41, "power_w": 168, "processes": ["Xorg(4MiB)", "python:1568053(5236MiB)", "bridge:2363896(16004MiB)", "bridge:2481709(18814MiB)", "python:2812220(6690MiB)"]},
+      "7": {"memory_used_mb": 56664, "memory_total_mb": 81920, "memory_free_mb": 23906, "gpu_util_pct": 24, "temp_c": 40, "power_w": 125, "processes": ["Xorg(4MiB)", "python:1568053(20544MiB)", "bridge:2485964(15852MiB)", "python:2812220(20238MiB)"]}
+    },
+    "total_memory_used_mb": 458401,
+    "total_memory_total_mb": 655360,
+    "approximate_vram_breakdown": {
+      "TRUE_T10_bridges": "~120GB across 8 GPUs",
+      "CLEAN1500_collectors": "~85GB across GPUs 3,4",
+      "external_workloads": "~55GB (isaac-gr00t on GPUs 0,2)",
+      "other_python": "~90GB (pid 1568053, 2812220 on all GPUs)",
+      "shared_gpu_risk": "GPU4 at 94.9% — any additional allocation will OOM"
+    }
+  },
+
+  "process_registry": {
+    "snapshot_utc": "2026-06-29T10:45:38Z",
+    "TRUE_T10_bridges": [
+      {"pid": 2160075, "gpu": 0, "output_dir": "fold_01/state_0/det_seed_1/pert_seed_0", "cpu_pct": 305, "mem_pct": 0.3, "rss_mb": 4008, "start_time": "18:16"},
+      {"pid": 2160077, "gpu": 0, "output_dir": "fold_01/state_0/det_seed_1/pert_seed_2", "cpu_pct": 325, "mem_pct": 0.3, "rss_mb": 3765, "start_time": "18:16"},
+      {"pid": 2160080, "gpu": 5, "output_dir": "fold_01/state_0/det_seed_2/pert_seed_2", "cpu_pct": 317, "mem_pct": 0.3, "rss_mb": 4009, "start_time": "18:16"},
+      {"pid": 2160086, "gpu": 1, "output_dir": "fold_01/state_0/det_seed_1/pert_seed_1", "cpu_pct": 297, "mem_pct": 0.3, "rss_mb": 4010, "start_time": "18:16"},
+      {"pid": 2245990, "gpu": 4, "output_dir": "fold_03 (approx)", "cpu_pct": 283, "mem_pct": 0.3, "rss_mb": 4022, "start_time": "18:16"},
+      {"pid": 2246293, "gpu": 4, "output_dir": "fold_03 (approx)", "cpu_pct": 247, "mem_pct": 0.3, "rss_mb": 4041, "start_time": "18:16"},
+      {"pid": 2363896, "gpu": 6, "output_dir": "fold_02 (approx)", "cpu_pct": 349, "mem_pct": 0.1, "rss_mb": 1035, "start_time": "18:16"},
+      {"pid": 2479577, "gpu": 1, "output_dir": "fold_04 (approx)", "cpu_pct": 165, "mem_pct": 0.0, "rss_mb": 1019, "start_time": "18:16"},
+      {"pid": 2479054, "gpu": 4, "output_dir": "fold_04 (approx)", "cpu_pct": 56.3, "mem_pct": 0.0, "rss_mb": 418, "start_time": "18:16"}
+    ],
+    "TRUE_T10_bridges_on_gpu": {
+      "gpu0": [2495989, 2502716],
+      "gpu1": [2479577, 2502716],
+      "gpu4": [2245990, 2246293, 2479054],
+      "gpu5": [2479144, 2484253],
+      "gpu6": [2363896, 2481709],
+      "gpu7": [2485964]
+    },
+    "TRUE_T10_workers": [
+      {"pid": 2160050, "gpu": 0, "manifest": "manifest_gpu0_w0.jsonl"},
+      {"pid": 2160056, "gpu": 1, "manifest": "manifest_gpu1_w0.jsonl"},
+      {"pid": 2160058, "gpu": 1, "manifest": "manifest_gpu1_w1.jsonl"},
+      {"pid": 2160064, "gpu": 4, "manifest": "manifest_gpu4_w0.jsonl"},
+      {"pid": 2160066, "gpu": 4, "manifest": "manifest_gpu4_w1.jsonl"},
+      {"pid": 2160072, "gpu": 5, "manifest": "manifest_gpu5_w0.jsonl"},
+      {"pid": 2160078, "gpu": 5, "manifest": "manifest_gpu5_w1.jsonl"},
+      {"pid": "(6_w0)", "gpu": 6, "manifest": "manifest_gpu6_w0.jsonl"},
+      {"pid": "(7_w0)", "gpu": 7, "manifest": "manifest_gpu7_w0.jsonl"}
+    ],
+    "worker_behavior": "Workers run CLEAN baseline episode first, then TRUE_T10 attack episode. Each job is (CLEAN, TRUE_T10) paired on same state/seed. Worker launches bridge via subprocess, waits for completion, records both results."
+  },
+
+  "execution_progress_at_snapshot": {
+    "completed_episodes": 7,
+    "completed_episode_summaries": [
+      "fold_01/state_0/det_seed_1/pert_seed_0",
+      "fold_01/state_0/det_seed_1/pert_seed_1",
+      "fold_01/state_0/det_seed_1/pert_seed_2",
+      "fold_01/state_0/det_seed_2/pert_seed_2",
+      "fold_01/state_0/det_seed_3/pert_seed_0",
+      "fold_01/state_0/det_seed_3/pert_seed_1",
+      "fold_01/state_0/det_seed_3/pert_seed_2"
+    ],
+    "folds_with_output": ["01", "02", "03", "04", "05", "06", "07", "09"],
+    "folds_still_loading": ["08"],
+    "model_loading_folds": [5, 6, 7, 8, 9],
+    "errors": 0,
+    "schema_fail": 0,
+    "oom": 0,
+    "early_episode_sample": {
+      "fold_01_state_0_det_1_pert_2": "TRUE_T10 s0 teacher=97 emit=99 err=2: steps=400 atk=10 tok=1.00 env=1.00 arm=0.00 succ=False",
+      "fold_01_state_0_det_3_pert_1": "TRUE_T10 s0 teacher=97 emit=99 err=2: steps=400 atk=10 tok=1.00 env=1.00 arm=0.00 succ=False",
+      "fold_01_state_0_det_3_pert_0": "TRUE_T10 s0 teacher=97 emit=99 err=2: steps=400 atk=10 tok=1.00 env=1.00 arm=0.00 succ=False"
+    },
+    "early_pattern": "All 3 samples show identical pattern: 97 teacher emissions, 99 attack emissions (2 over K=10), attack perfectly hits gripper (tok=1.00, env=1.00) with zero arm deviation (arm=0.00), but tasks fail to complete within 400 steps. This is consistent with the VIS attack causing gripper-induced task failures."
+  },
+
+  "mlp_checkpoints": {
+    "fold_01_seed_1": "3074d67c961b0a6a4f24ec3fc3138a9cd015e9d7fc0f5c7c630a1625c688a987",
+    "fold_01_seed_2": "872de54c623c1350279871b9b37e6bc68604f2a4977f75cb15f025d3eccc65e6",
+    "fold_01_seed_3": "6de60fb52ab21ee8d47706d2fff832d630119697321ad117cde0559f9b7f011a",
+    "dataset_sha256_fold01": "a010b651d4f3c580",
+    "dataset_sha256_fold02": "c91922015a76bf71",
+    "dataset_sha256_fold03": "ca4c40087bb6e8ae",
+    "dataset_sha256_fold04": "3cc4acf383d12d02"
+  },
+
+  "design_documents_frozen": {
+    "telemetry_schema": {
+      "path": "docs/gpu/LOTO_TABLE1_TELEMETRY_SCHEMA_V2.json",
+      "sha256": "b94194659274d7020e35cf69aca3f3054c5f6fb1d0c8921e6b02f93f213d8d8a",
+      "action_fields": ["clean_action_7d", "clean_env_action_7d", "raw_action_7d", "env_action_7d"],
+      "nad_split": "ARM (dims 0-5) vs GRIPPER (dim 6), never averaged together"
+    },
+    "metric_schema": {
+      "path": "docs/gpu/LOTO_METRIC_SCHEMA_V2.json",
+      "sha256": "313532df1a877898f616363ca9d6d192598b9615889fc5f5f3a564a1a35cfb83",
+      "categories": ["CW_correct_window", "FE_false_early", "LI_late_or_invalid", "MP_missed_positive", "FPn_false_positive_negative", "TN_true_negative"],
+      "key_fix_v2": "CW uses valid-start set membership, not [start,end] range interval"
+    },
+    "state_selection": {
+      "path": "docs/gpu/LOTO_VIS_STATE_SELECTION_V1.json",
+      "sha256": "457aadd2c93192418f0558249423889bb8def9e27198699dbaf39820187b5719",
+      "status": "FROZEN_BEFORE_ANY_VIS_RUN",
+      "method": "First 2 eligible states per fold by ascending state_id"
+    },
+    "heldout_prereg": {
+      "path": "docs/gpu/LOTO_VIS_HELDOUT_PREREGISTRATION_V1.json",
+      "sha256": "ee59f43a66d37c29e02dbaefbcf5537af7a124a1b17d07f6d78b2f60e280f1e1",
+      "status": "FROZEN_BEFORE_ANY_VIS_RUN",
+      "all_6_conditions": ["clean", "vis_student_trigger", "vis_random_time", "matched_rand_student_trigger", "adapted_tma_student_trigger", "vis_early_shift"],
+      "only_TRUE_T10_launched": true
+    }
+  },
+
+  "provenance_chain": {
+    "spec_sha256": "7feae7d25a952e7fc018a68205f6cf8e23223ab940b5a897a6734a56563881e1",
+    "spec_version": "LOTO_VIS_FORMAL_TRUE_T10_CONDITION_SPEC_V2",
+    "designation_sha256": "9b69a2798070242f28dafcb862d1740d942b1e471c9d99d54846c0e2b9527ef4",
+    "manifest_sha256": "64e20b8ff248fc078d705532aab6d4ec5ea186c143c8b6137fa90d41bdf7a6e4",
+    "bridge_sha256": "4ef2a919ee650cf35b35eaa5b9c2152c0d7d18f43710c246ce14dd1c8a83e468",
+    "worker_sha256_actual": "e21f7fbe7f78003ac2e626bfe9ddb047c194022727bb4d9bc19b9ce0876e337c",
+    "worker_sha256_in_spec": "41eb3843eb4c6414068cfca3be9dc2bb730b49684832a1ddc333d92589e7dceb",
+    "worker_sha256_match": false,
+    "git_commit": "ace1876281a9ad6ed68e1229a6e17346356766e9",
+    "git_branch": "feature/sc5-abstention-v2-20260622"
+  },
+
+  "immutability_declaration": {
+    "no_worker_modification": true,
+    "no_bridge_modification": true,
+    "no_spec_modification": true,
+    "no_manifest_modification": true,
+    "no_attack_parameter_changes": true,
+    "no_detector_changes": true,
+    "no_state_or_seed_changes": true,
+    "no_failed_attempt_deletion": true,
+    "no_RAND_TMA_other_condition_launch": true,
+    "no_early_result_config_changes": true,
+    "preserve_all_stderr_retry_empty_dirs": true,
+    "current_execution_may_complete_naturally": true,
+    "result_inclusion_gated_on": ["bubble_snapshot_review", "sha_chain_audit_resolution", "gpu2_requalification", "closure_validation"]
+  },
+
+  "formal_status": {
+    "TRUE_T10_execution": "VIS_RUNNING_UNDER_POSTLAUNCH_AUDIT",
+    "TRUE_T10_result_acceptance": "RESULT_ACCEPTANCE_HOLD",
+    "new_table1_conditions": "NEW_CONDITION_LAUNCH_HOLD",
+    "gpu2": "GPU2_REQUALIFICATION_PENDING"
+  },
+
+  "CLEAN1500_status": {
+    "reported_count": 1037,
+    "total_target": 1500,
+    "completion_pct": 69.1,
+    "active_collectors": 10,
+    "queue_workers": ["gpu4_even","gpu4_odd","gpu4_b","gpu5_even","gpu5_odd","gpu5_b","gpu6_even","gpu6_odd","gpu6_b","gpu7_odd"],
+    "schema_fail_count": 0,
+    "evidence_root": "/mnt/sdc/dty_user/openvla_attack_evidence/sc5_cross_suite_clean1500_v1",
+    "independent_accepted_count": "NOT_YET_ESTABLISHED"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "collector_nonzero_exit": true,
+  "collector_exit_code": 1,
+  "stderr_contains_CELL_ALREADY_COMPLETE": true,
+  "files_unchanged": true,
+  "original_done_sha": "748b98d544102f48d27be2bcbb4e2059d3661e3f7268c7afdb7e6cf93d1d6a9e",
+  "original_tel_sha": "e776de1cd7834df1f1c325e4a9337dd34587028faa7d54825b8ddd0e7b39ab36",
+  "original_ep_sha": "87535fa1ade81b7b41657b810f307910858ebb95efd3ffed0a6fcd7b1b2f1e1f",
+  "final_done_sha": "748b98d544102f48d27be2bcbb4e2059d3661e3f7268c7afdb7e6cf93d1d6a9e",
+  "final_tel_sha": "e776de1cd7834df1f1c325e4a9337dd34587028faa7d54825b8ddd0e7b39ab36",
+  "final_ep_sha": "87535fa1ade81b7b41657b810f307910858ebb95efd3ffed0a6fcd7b1b2f1e1f"
+}

@@ -1,0 +1,64 @@
+name: cpu-c2g-canonical
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  canonical-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install CPU dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install numpy pillow
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Compile canonical manifest-to-analysis path
+        run: |
+          python -m py_compile \
+            scripts/stageb/build_c2g_clean_manifests_release.py \
+            scripts/stageb/build_c2g_suite_model_map_strict.py \
+            scripts/stageb/verify_c2g_suite_model_map_strict.py \
+            scripts/stageb/collect_c2g_clean_window_rollouts_release.py \
+            scripts/stageb/bind_c2g_collection_model_provenance.py \
+            tools/multisuite_detector/materialize_c2g_multisuite_dataset.py \
+            tools/multisuite_detector/validate_c2g_clean_window_dataset.py \
+            tools/multisuite_detector/train_c2g_clean_window_detector.py \
+            tools/multisuite_detector/calibrate_c2g_clean_susceptibility.py \
+            tools/multisuite_detector/run_c2g_clean_window_folds.py \
+            scripts/stageb/run_c2g_clean_timing_jobs_strict.py \
+            scripts/stageb/prepare_c2g_eval_parents.py \
+            scripts/stageb/build_c2g_matched_load_jobs_release.py \
+            scripts/stageb/run_c2g_matched_load_jobs_map_release.py \
+            scripts/stageb/audit_c2g_matched_load_run_release.py \
+            scripts/stageb/analyze_c2g_matched_load_results.py
+      - name: Check canonical Bash syntax
+        run: |
+          bash -n scripts/stageb/run_c2g_clean_window_pipeline.sh
+      - name: Run canonical contract tests
+        run: |
+          python -m unittest -v \
+            tests.test_c2g_collection_model_binding \
+            tests.test_c2g_release_runtime_audit \
+            tests.test_c2g_model_provenance \
+            tests.test_c2g_release_job_builder \
+            tests.test_c2g_release_manifest_builder \
+            tests.test_c2g_release_v2 \
+            tests.test_c2g_clean_collector_strict \
+            tests.test_c2g_clean_susceptibility \
+            tests.test_c2g_dataset_trainability \
+            tests.test_c2g_matched_load_strict \
+            tests.test_c2g_result_analysis
+      - name: Verify worktree remains clean
+        run: |
+          git diff --exit-code
+          test -z "$(git status --porcelain --untracked-files=all -- generated audit_outputs paper/generated artifacts)"

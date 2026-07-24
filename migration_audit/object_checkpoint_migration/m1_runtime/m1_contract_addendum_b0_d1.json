@@ -1,0 +1,80 @@
+{
+  "amendment": "M1B_B0_D1_DUAL_PROFILE",
+  "parent_protocol": "M1_A800_LOCAL_RUNTIME_PROFILE_STUDY",
+  "amendment_reason": "A1 (BF16+FlashAttention2) runtime unavailable after two bounded build attempts. See a1_flash2_unavailable.json.",
+  "timestamp_utc": "2026-06-22T09:10:00Z",
+
+  "active_profiles": {
+    "B0": {"dtype": "bfloat16", "attention": "eager", "role": "baseline"},
+    "D1": {"dtype": "float32", "attention": "eager", "role": "fp32 transfer"}
+  },
+
+  "unavailable_profiles": {
+    "A1": {"dtype": "bfloat16", "attention": "flash_attention_2", "reason": "A1_FLASH2_RUNTIME_UNAVAILABLE"}
+  },
+
+  "scope": {
+    "main_episode_count": 30,
+    "main_run_count": 60,
+    "sentinel_episode_count": 6,
+    "sentinel_run_count": 24,
+    "smoke": "butter_s0 × B0 + D1 on GPU2"
+  },
+
+  "ordering": {
+    "group_AB": "fixed_order_index even → B0 → D1",
+    "group_BA": "fixed_order_index odd → D1 → B0",
+    "rationale": "balance cache, temperature, and run-order effects"
+  },
+
+  "denominators": {
+    "all_30": "all episodes reported, no removal of failures",
+    "S_B0": "B0 clean-success episodes, frozen before D1 comparison",
+    "S_common": "episodes where both B0 and D1 clean-succeed"
+  },
+
+  "thresholds": {
+    "B0_absolute": {
+      "feature_valid_steps": ">= 99%",
+      "coverage": ">= 0.80",
+      "false_early": "<= 0.10",
+      "post_release": "<= 0.05",
+      "median_anchor_error": "<= 8",
+      "K10_containment": ">= 0.85",
+      "no_corridor_abstain": ">= 0.90"
+    },
+    "D1_relative_to_B0": {
+      "clean_SR_drop": "<= 10 pp",
+      "coverage_drop": "<= 0.10",
+      "K10_drop": "<= 0.10",
+      "post_release_increase": "<= 0.05",
+      "common_success_episodes": ">= 15"
+    }
+  },
+
+  "final_classifications": [
+    "M1B_FP32_TRANSFER_PASS",
+    "M1B_FP32_TRANSFER_FAIL",
+    "M1B_BASELINE_INVALID",
+    "M1B_INFRASTRUCTURE_FAIL",
+    "M1_PARTIAL_RUNTIME_STUDY_COMPLETE"
+  ],
+
+  "forbidden_claims": [
+    "M1_RUNTIME_PROFILE_TRANSFER_PASS (Flash2 was not evaluated)"
+  ],
+
+  "output_directory": "migration_audit/object_checkpoint_migration/m1_runtime_b0_d1/",
+  "output_files": [
+    "contract_addendum.json",
+    "run_manifest.json",
+    "smoke_results.json",
+    "sentinel_repeatability.csv",
+    "episode_results.csv",
+    "teacher_alignment.csv",
+    "paired_b0_d1.csv",
+    "profile_summary.json",
+    "failure_ledger.json",
+    "artifact_manifest.json"
+  ]
+}

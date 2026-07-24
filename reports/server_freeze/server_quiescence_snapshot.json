@@ -1,0 +1,8 @@
+{
+  "server_ssh_access": "PASS",
+  "t0_file": "_codex_audit_raw/quiescence_t0.txt",
+  "t1_file": "_codex_audit_raw/quiescence_t1.txt",
+  "root_size_stable": true,
+  "open_file_handles_detected": false,
+  "note": "raw evidence captured locally; not committed because it includes process command lines"
+}

@@ -1,0 +1,135 @@
+{
+  "cuda_visible_devices": "",
+  "file_count": 19,
+  "files": [
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/.gitattributes",
+      "relative_path": ".gitattributes",
+      "sha256": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361",
+      "size_bytes": 1519
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/README.md",
+      "relative_path": "README.md",
+      "sha256": "114443c26010a714219f1fd7961a7e054aa9da293a8f32b24ffd6ad02ccef83e",
+      "size_bytes": 1841
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/added_tokens.json",
+      "relative_path": "added_tokens.json",
+      "sha256": "ab43123267b190cb7990bc9f2ae4ad32dcb7ed029fb0fccb1b4e062c6f54a2a1",
+      "size_bytes": 21
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/config.json",
+      "relative_path": "config.json",
+      "sha256": "06135f79f1010f85837ec4b8373bdda3a9387ab4937bc959e91a0ef4208ed237",
+      "size_bytes": 3465
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/configuration_prismatic.py",
+      "relative_path": "configuration_prismatic.py",
+      "sha256": "68cc5ae34f1b46af3168d8d479cb81bb776965653453fd904aa8eefb6c8f9f68",
+      "size_bytes": 5865
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/dataset_statistics.json",
+      "relative_path": "dataset_statistics.json",
+      "sha256": "5ea8e0815367f6d684736050d6635e1327ed19d011b002f68a56fae1ab980a6a",
+      "size_bytes": 2066
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/generation_config.json",
+      "relative_path": "generation_config.json",
+      "sha256": "67fbe17b12e8beb5be98eb911483971cc78589e51a37ac0cce9cd499d06a8bf1",
+      "size_bytes": 136
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/model-00001-of-00004.safetensors",
+      "relative_path": "model-00001-of-00004.safetensors",
+      "sha256": "d76243af9294ac2f069aef97de74ad4f84c17cb6fae0bda72169ae198f2c3bd8",
+      "size_bytes": 4925122448
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/model-00002-of-00004.safetensors",
+      "relative_path": "model-00002-of-00004.safetensors",
+      "sha256": "74eed479d3a21e2a24cb21a0bdf565e52ea8f8c55f60237d74e657b7bea223c2",
+      "size_bytes": 4947392496
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/model-00003-of-00004.safetensors",
+      "relative_path": "model-00003-of-00004.safetensors",
+      "sha256": "12b45ae85535565148907e379d6f35bcba83b9497006ff3b66658fa412ffac85",
+      "size_bytes": 4947417456
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/model-00004-of-00004.safetensors",
+      "relative_path": "model-00004-of-00004.safetensors",
+      "sha256": "d3b8e759db56b86709c56f8d156952415dd64e101feccfd01e701487041dd8c1",
+      "size_bytes": 262668432
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/model.safetensors.index.json",
+      "relative_path": "model.safetensors.index.json",
+      "sha256": "ca8b53fed8133ee2afcd2fc483de8febf7f5bb0f6bcb09f91189772e59e8f659",
+      "size_bytes": 94764
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/modeling_prismatic.py",
+      "relative_path": "modeling_prismatic.py",
+      "sha256": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+      "size_bytes": 26072
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/preprocessor_config.json",
+      "relative_path": "preprocessor_config.json",
+      "sha256": "a41a55e4e53f137736046e00626fc078540e7c7783483a2773e78bd630a201fc",
+      "size_bytes": 1649
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/processing_prismatic.py",
+      "relative_path": "processing_prismatic.py",
+      "sha256": "06563586bbc73d36501a14a231a3174904ede830d33174d0c625ece8e931ef1e",
+      "size_bytes": 12718
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/special_tokens_map.json",
+      "relative_path": "special_tokens_map.json",
+      "sha256": "cb90ee5cf5793aa444039af9795b00db59d3fef8942e7eca9cf1990bab370d61",
+      "size_bytes": 552
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/tokenizer.json",
+      "relative_path": "tokenizer.json",
+      "sha256": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+      "size_bytes": 1842976
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/tokenizer.model",
+      "relative_path": "tokenizer.model",
+      "sha256": "9e556afd44213b6bd1be2b850ebbbd98f5481437a8021afaf58ee7fb1818d347",
+      "size_bytes": 499723
+    },
+    {
+      "path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal/tokenizer_config.json",
+      "relative_path": "tokenizer_config.json",
+      "sha256": "90940015efad61dc3bd174f67e3cabc47036b4cdc83af12c61d3a1c431d457e5",
+      "size_bytes": 1191
+    }
+  ],
+  "missing_referenced_shards": [],
+  "model_class": "OpenVLAForActionPrediction",
+  "model_path": "/mnt/sdc/dty_user/openvla_attack/models/libero-goal",
+  "norm_stats_keys": [
+    "libero_goal"
+  ],
+  "processor_class": "PrismaticProcessor",
+  "referenced_shards": [
+    "model-00001-of-00004.safetensors",
+    "model-00002-of-00004.safetensors",
+    "model-00003-of-00004.safetensors",
+    "model-00004-of-00004.safetensors"
+  ],
+  "status": "PASS_C2F_GOAL_MODEL_INTEGRITY_AUDITED",
+  "unnorm_key": "libero_goal"
+}

@@ -1,0 +1,92 @@
+{
+  "gate": "FORMAL_SMOKE_22",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-24T18:00:00+08:00",
+  "parent_commit": "bf80039",
+  "total_cells": 22,
+  "breakdown": "10 P0 base + 10 nonzero base (P1-P7 all covered) + 2 replay (1 P0 + 1 P7)",
+  "pool": "smoke",
+  "collector": "run_v6_perturbed_collector.py",
+  "output_base": "evidence/m1c/formal_smoke_22",
+
+  "manifest_role_semantics": {
+    "base": "primary smoke cell executed once",
+    "replay": "re-run of identical (task,state,template,seed) config"
+  },
+
+  "replay_groups": {
+    "A": {"task": 0, "state": 3, "template": "P0", "seed": 42, "cells": 2},
+    "B": {"task": 6, "state": 5, "template": "P7", "seed": 48, "cells": 2}
+  },
+
+  "tolerances": {
+    "pre_wait_translation": {"dx_dy_tolerance_m": 0.002, "check": "actual_body_pos - original_body_pos vs manifest"},
+    "pre_wait_rotation": {"dyaw_tolerance_deg": 2.0, "zero_yaw_rotation_limit_deg": 1.0, "check": "relative quaternion yaw"},
+    "post_wait_translation_preservation": {"tolerance_m": 0.003, "check": "post_wait_body_pos - original_body_pos vs manifest"},
+    "post_wait_rotation_preservation": {"dyaw_tolerance_deg": 3.0, "zero_yaw_rotation_limit_deg": 2.0, "check": "post_wait quaternion relative to original"},
+    "pre_to_post_drift_diagnostic": {"tolerance_m": 0.010, "check": "|post_wait_pos - pre_wait_pos| diagnostic only"},
+    "P7_spec_exact_match": {"tolerance": 1e-9, "check": "perturbation_spec.dx_m/dy_m match manifest exactly"}
+  },
+
+  "audit_gates": {
+    "manifest_preflight": [
+      "exactly 22 rows with unique outputs",
+      "10 P0 base + 10 nonzero base + 2 replay (verified by role column)",
+      "P1-P7 all represented in nonzero base",
+      "replay groups A,B: each 1 base + 1 replay, identical config",
+      "no states 28-49",
+      "P7 dx/dy pre-computed from actual numpy RandomState generator"
+    ],
+    "per_cell_integrity": [
+      ".done, telemetry, summary all present",
+      ".done exit_code=0",
+      ".done telemetry_sha + summary_sha non-empty and match actual files",
+      "n_steps matches CSV rows",
+      "condition=CLEAN, pool=smoke, attack_frames=0 (summary + all telemetry rows)",
+      "task/state/template/seed match manifest (summary + all telemetry rows)",
+      "run_uuid + cell_uuid: non-empty, identical across summary/.done/all telemetry rows",
+      "attack_this + attack_count: field must exist, value must be False/0",
+      "P0: selected_original_state_sha256 == perturbed_pre_wait_sha256",
+      "P1-P7: selected_original_state_sha256 != perturbed_pre_wait_sha256",
+      "pre-wait pose delta matches manifest (translation ±2mm, yaw ±2deg)",
+      "zero-yaw templates: pre-wait rotation <1deg",
+      "post-wait pose vs ORIGINAL still matches requested perturbation (translation ±3mm, yaw ±3deg)",
+      "zero-yaw templates: post-wait rotation <2deg",
+      "pre-to-post drift <10mm (diagnostic)",
+      "P7: perturbation_spec.dx_m/dy_m/base_seed/template_id all present, exact match to manifest",
+      "All required asset SHAs present and non-MISSING",
+      "All asset SHAs identical across all 22 cells"
+    ],
+    "replay_consistency": [
+      "canonical hash over deterministic fields (excludes run_uuid, cell_uuid, model_ms)",
+      "group A: both cells identical canonical hash",
+      "group B: both cells identical canonical hash"
+    ],
+    "negative_completion_test": [
+      "duplicate invocation produces non-zero exit",
+      "stderr/log contains CELL_ALREADY_COMPLETE",
+      "original .done, telemetry, summary SHAs unchanged"
+    ],
+    "evidence_append_only": [
+      "launcher refuses to overwrite .smoke_complete output base",
+      "stale partial moved to quarantine",
+      ".smoke_complete marker atomically created on auditor PASS"
+    ]
+  },
+
+  "canonical_replay_fields": [
+    "step", "raw_gripper", "env_gripper", "qpos_sum",
+    "eef_x", "eef_y", "eef_z", "obj_x", "obj_y", "obj_z",
+    "eef_obj_dist", "target_x", "target_y", "target_z",
+    "detector_state", "corridor_p", "release_p", "pred_phase",
+    "mlp_emit", "perturbation_template", "perturbation_seed",
+    "raw_action_7d", "env_action_7d", "feat_valid"
+  ],
+  "excluded_from_replay": ["run_uuid", "cell_uuid", "model_ms"],
+
+  "required_asset_sha_fields": [
+    "bridge_sha256", "checkpoint_sha256", "teacher_config_sha256",
+    "target_resolver_sha256", "perturbation_generator_sha256",
+    "vla_model_manifest_sha256", "dataset_sha256", "runner_sha256"
+  ]
+}

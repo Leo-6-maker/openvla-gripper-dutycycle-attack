@@ -1,0 +1,89 @@
+{
+  "gate": "TRUE_T10_SERVER_RUNTIME_METADATA_V1",
+  "created_utc": "2026-06-29T10:49:00Z",
+  "server": "pm-364c0001",
+  "snapshot_method": "SSH remote command batch + manual synthesis",
+
+  "nvidia_smi_full": "(captured — see TRUE_T10_BUBBLE_SNAPSHOT_V1.json gpu_state_at_snapshot section)",
+
+  "nvidia_smi_pmon_sample": {
+    "captured_at": "2026-06-29T10:45:38Z",
+    "active_compute_processes": {
+      "gpu0": [
+        {"pid": 365422, "sm": 26, "mem": 10, "command": "python3 (isaac-gr00t)"},
+        {"pid": 2495989, "sm": 7, "mem": 4, "command": "python (bridge)"}
+      ],
+      "gpu1": [
+        {"pid": 2479577, "sm": 5, "mem": 2, "command": "python (bridge)"},
+        {"pid": 2502716, "sm": 13, "mem": 4, "command": "python (bridge)"}
+      ],
+      "gpu2": [
+        {"pid": 365449, "sm": 62, "mem": 14, "command": "python3 (isaac-gr00t)"}
+      ],
+      "gpu3": [
+        {"pid": 98578, "sm": 1, "mem": 0, "command": "python (collector)"},
+        {"pid": 99588, "sm": 0, "mem": 0, "command": "python (collector)"}
+      ],
+      "gpu4": [
+        {"pid": 2245990, "sm": 3, "mem": 0, "command": "python (bridge)"},
+        {"pid": 2246293, "sm": 27, "mem": 7, "command": "python (bridge)"},
+        {"pid": 2479054, "sm": 0, "mem": 0, "command": "python (bridge)"}
+      ],
+      "gpu5": [
+        {"pid": 2479144, "sm": 9, "mem": 2, "command": "python (bridge)"},
+        {"pid": 2484253, "sm": 0, "mem": 0, "command": "python (bridge)"}
+      ],
+      "gpu6": [
+        {"pid": 2363896, "sm": 6, "mem": 2, "command": "python (bridge)"},
+        {"pid": 2481709, "sm": 14, "mem": 5, "command": "python (bridge)"}
+      ],
+      "gpu7": [
+        {"pid": 2485964, "sm": 11, "mem": 4, "command": "python (bridge)"}
+      ]
+    }
+  },
+
+  "pid_process_mapping": {
+    "TRUE_T10_worker_pids": [2160050, 2160056, 2160058, 2160064, 2160066, 2160072, 2160078],
+    "TRUE_T10_bridge_pids": {
+      "confirmed": [2160075, 2160077, 2160080, 2160086, 2245990, 2246293, 2363896, 2479577, 2479054],
+      "likely": [2479144, 2481709, 2484253, 2485964, 2495989, 2502716]
+    },
+    "CLEAN1500_queue_pids": [2758209, 2758211, 2758213, 2758217, 2758219],
+    "CLEAN1500_collector_pids": [98578, 99588, 2406258, 2449428, 4149432],
+    "external_pids": {
+      "isaac_gr00t": [365422, 365449],
+      "unidentified_python": [1568053, 2812220],
+      "xorg": [6687]
+    }
+  },
+
+  "cpu_memory_summary": {
+    "TRUE_T10_workers": "~0% CPU (idle, waiting for bridges), ~10MB RSS each",
+    "TRUE_T10_bridges": "56-349% CPU (multi-threaded inference), 0.4-4.0GB RSS each",
+    "CLEAN1500_collectors": "~400% CPU (multi-threaded inference), ~3.9GB RSS each",
+    "CLEAN1500_queues": "0% CPU (idle, monitoring), ~12MB RSS each"
+  },
+
+  "conda_environment": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
+    "python_version": "3.10",
+    "key_packages": "tensorflow (with XLA), torch, openvla, libero, mujoco",
+    "ptxas_version": "10.1.243 (WARNING: older than required 11.1)"
+  },
+
+  "evidence_roots_summary": {
+    "TRUE_T10": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/vis_heldout_formal_v1/TRUE_T10",
+    "CLEAN1500": "/mnt/sdc/dty_user/openvla_attack_evidence/sc5_cross_suite_clean1500_v1",
+    "freeze_bundles": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/",
+    "mlp_checkpoints": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/fold_XX/training_v3/seed_Y/best_model.pt",
+    "anchors": "/mnt/sdc/dty_user/openvla_attack/evidence/sc5_object_privileged_loto_v1/fold_XX/FOLDXX_heldout_episode_anchors.json"
+  },
+
+  "network_topology": {
+    "jump_host": "vla-jump (10.60.133.3, user: scene)",
+    "target_host": "dty-server (10.60.2.56:33571, user: dty_user)",
+    "proxy_method": "netcat ProxyCommand via jump host",
+    "ssh_key": "~/.ssh/id_ed25519_vla"
+  }
+}

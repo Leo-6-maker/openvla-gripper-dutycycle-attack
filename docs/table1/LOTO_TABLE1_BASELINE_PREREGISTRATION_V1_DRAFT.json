@@ -1,0 +1,301 @@
+{
+  "artifact_name": "LOTO_TABLE1_BASELINE_PREREGISTRATION_V1_DRAFT",
+  "version": "1.0-draft",
+  "created_at": "2026-06-29",
+  "status": "DRAFT_NOT_AUTHORIZED",
+  "authorization": {
+    "formal_experiment_launch_authorized": false,
+    "reason": "Exact implementation paths, script SHA256 values, Formal CLEAN closure, and condition manifests must be completed and frozen before launch."
+  },
+  "repository": {
+    "full_name": "Leo-6-maker/openvla-gripper-dutycycle-attack",
+    "base_branch": "experiments/cross-suite-generalization-v1",
+    "documentation_branch": "docs/table1-sota-handoff-20260629",
+    "final_commit_sha": null
+  },
+  "study": {
+    "name": "LOTO Table 1 Matched-Threat Baseline Comparison",
+    "primary_question": "Under an identical online norm-bounded K10 threat model, does Student-triggered Prefix Log-Ratio OPEN produce selective gripper and contact failures beyond matched random, shuffled, generic untargeted, action-aware, position-aware, and targeted-manipulation baselines?",
+    "secondary_question": "Does Student timing produce stronger task and contact effects than random, early-shifted, fixed-prior, or oracle timing under a fixed targeted payload?",
+    "study_type": "confirmatory_estimation",
+    "post_phase_b_detector_tuning": "PROHIBITED"
+  },
+  "immutable_detector_dependencies": {
+    "global_freeze_artifact": "docs/gpu/LOTO_GLOBAL_FREEZE_V1.json",
+    "phase_b_result_artifact": "LOTO_PHASE_B_RESULTS_FREEZE_V1.json",
+    "phase_b_result_sha256": "89911600e0bdc08e46e21f1ebfa85ab37c1d16fb741d4fe7c52409d7e76cd241",
+    "vis_preregistration_artifact": "LOTO_VIS_HELDOUT_PREREGISTRATION_V1.json",
+    "state_selection_artifact": "LOTO_VIS_STATE_SELECTION_V1.json",
+    "state_selection_commit": "291f01a",
+    "vis_canary_artifact": "LOTO_VIS_ENGINEERING_CANARY_V1.json",
+    "vis_canary_sha256_prefix": "91f313ef",
+    "checkpoint_count": 30,
+    "confirmatory_folds": [1, 2, 3, 4, 5, 6, 7, 8, 9],
+    "detector_seeds": [1, 2, 3],
+    "runtime": {
+      "tau_corridor": 0.3,
+      "tau_release": 0.3,
+      "guard": 5,
+      "attack_window_length": 10
+    }
+  },
+  "formal_panel": {
+    "fold_count": 9,
+    "states_per_fold": 2,
+    "detector_seeds_per_state": 3,
+    "perturbation_seeds_per_detector_seed": 3,
+    "rollouts_per_condition": 162,
+    "clean_executions": 162,
+    "unique_clean_parent_groups": 54,
+    "clean_replicates_per_parent": 3,
+    "exact_state_selection_sha256": null,
+    "exact_manifest_path": null,
+    "exact_manifest_sha256": null
+  },
+  "threat_model": {
+    "victim": "OpenVLA-7B LIBERO-Object checkpoint",
+    "attack_stage": "inference_time",
+    "input_channel": "digital_visual_observation",
+    "knowledge": "white_box_for_gradient_methods",
+    "trigger": "frozen_clean_only_causal_student_unless_timing_ablation",
+    "online_privileged_state": false,
+    "attack_outcome_used_for_trigger": false,
+    "intervention_length_steps": 10,
+    "epsilon": null,
+    "epsilon_space": null,
+    "step_size": null,
+    "optimization_steps": null,
+    "initialization": null,
+    "preprocessing_backend": null,
+    "victim_checkpoint_path": null,
+    "victim_checkpoint_sha256": null,
+    "runner_path": null,
+    "runner_sha256": null
+  },
+  "condition_batches": {
+    "batch_a_minimum_claim": [
+      {
+        "condition_id": "CLEAN",
+        "role": "clean_reference",
+        "formal_status": "IN_PROGRESS_OR_AUDIT_REQUIRED",
+        "objective_path": null,
+        "objective_sha256": null
+      },
+      {
+        "condition_id": "PREFIX_STUDENT",
+        "role": "proposed_end_to_end_method",
+        "formal_status": "HOLD_UNTIL_PREREGISTRATION_FREEZE",
+        "objective_path": null,
+        "objective_sha256": null
+      },
+      {
+        "condition_id": "RAND_LINF_STUDENT",
+        "role": "matched_random_control",
+        "formal_status": "HOLD_UNTIL_PREREGISTRATION_FREEZE",
+        "objective_path": null,
+        "objective_sha256": null
+      },
+      {
+        "condition_id": "ADAPTED_TMA_OPEN_STUDENT",
+        "role": "closest_targeted_baseline",
+        "formal_status": "HOLD_UNTIL_IMPLEMENTATION_AUDIT",
+        "objective_path": null,
+        "objective_sha256": null
+      },
+      {
+        "condition_id": "PREFIX_RANDOM_TIME",
+        "role": "timing_specificity_control",
+        "formal_status": "HOLD_UNTIL_PREREGISTRATION_FREEZE",
+        "objective_path": null,
+        "objective_sha256": null
+      }
+    ],
+    "batch_b_complete_baseline_family": [
+      {
+        "condition_id": "SHUFFLED_GRADIENT_STUDENT",
+        "role": "gradient_direction_control",
+        "formal_status": "HOLD"
+      },
+      {
+        "condition_id": "UMA_UNTARGETED_CE_STUDENT",
+        "role": "classical_untargeted_baseline",
+        "formal_status": "HOLD"
+      },
+      {
+        "condition_id": "UADA_DOF1_3_STUDENT",
+        "role": "action_discrepancy_baseline",
+        "formal_status": "HOLD"
+      },
+      {
+        "condition_id": "UPA_DOF1_3_STUDENT",
+        "role": "position_aware_baseline",
+        "formal_status": "HOLD"
+      },
+      {
+        "condition_id": "PREFIX_EARLY_SHIFT",
+        "role": "structured_wrong_timing_control",
+        "formal_status": "HOLD"
+      },
+      {
+        "condition_id": "PREFIX_FIXED_TIME_PRIOR",
+        "role": "simple_timing_baseline",
+        "formal_status": "HOLD"
+      },
+      {
+        "condition_id": "TMA_RANDOM_TIME",
+        "role": "targeted_baseline_timing_control",
+        "formal_status": "HOLD"
+      },
+      {
+        "condition_id": "PREFIX_TEACHER_ORACLE",
+        "role": "privileged_timing_upper_bound",
+        "formal_status": "HOLD"
+      }
+    ],
+    "batch_c_contemporary_generic": [
+      {
+        "condition_id": "ADAPTED_FREEZEVLA_STUDENT",
+        "role": "strong_generic_task_disruption_reference",
+        "engineering_canary_folds": [3, 5, 6, 9],
+        "formal_status": "HOLD_CANARY_REQUIRED"
+      }
+    ]
+  },
+  "tma_semantics": {
+    "adapted_tma_open": {
+      "purpose": "Matched-threat algorithmic comparison",
+      "same_student_trigger": true,
+      "same_k10": true,
+      "same_epsilon": true,
+      "same_optimization_steps": true,
+      "target": "physical_gripper_open",
+      "loss": "standard_targeted_ce_or_original_tma_equivalent_to_be_frozen",
+      "claim_limit": "Adapted TMA under the current online threat model"
+    },
+    "original_protocol_tma": {
+      "included_in_primary_matched_table": false,
+      "required_for_original_sota_superiority_claim": true,
+      "protocol_path": null,
+      "status": "NOT_REPRODUCED_IN_THIS_DRAFT"
+    }
+  },
+  "timing_conditions": {
+    "student": "frozen_causal_student",
+    "random_time": "same_payload_same_length_random_valid_time_rule_to_be_frozen",
+    "early_shift": "same_payload_same_length_preregistered_negative_shift_to_be_frozen",
+    "fixed_time_prior": "training_only_normalized_time_prior_to_be_frozen",
+    "teacher_oracle": "privileged_teacher_anchor_upper_bound"
+  },
+  "denominators": {
+    "itt": "All preregistered formal episodes, including no-emission.",
+    "conditional": "Only valid emitted episodes.",
+    "clean_qualified": "Only parent groups satisfying the preregistered Formal CLEAN validity rule.",
+    "no_emission_in_itt": true,
+    "invalid_episode_policy": "Report separately; do not silently remove. Replacement is prohibited after state freeze unless the preregistered infrastructure retry rule explicitly permits it."
+  },
+  "primary_metrics": [
+    "itt_task_failure_rate",
+    "itt_contact_quality_failure_rate",
+    "clean_qualified_success_to_failure_conversion"
+  ],
+  "secondary_metrics": [
+    "conditional_task_failure_rate",
+    "conditional_contact_quality_failure_rate",
+    "detector_emit_coverage",
+    "official_libero_failure_rate",
+    "contact_quality_success_rate",
+    "sr_cq_mismatch_rate",
+    "open_token_target_success_rate",
+    "open_command_duty",
+    "longest_sustained_open_streak",
+    "gripper_qpos_response",
+    "gripper_width_response",
+    "command_to_physical_response_latency",
+    "arm_nad_or_rnad",
+    "gripper_nad_or_rnad",
+    "attack_frames",
+    "attack_duty_cycle",
+    "optimization_latency",
+    "end_to_end_latency",
+    "gpu_hours",
+    "peak_vram"
+  ],
+  "contact_quality": {
+    "official_sr_is_primary_physical_evidence": false,
+    "rubric_path": null,
+    "rubric_sha256": null,
+    "blind_review_required": true,
+    "double_review_subset_required": true,
+    "video_checksum_required": true,
+    "categories": [
+      "premature_release",
+      "slip",
+      "object_detach_or_drop",
+      "unstable_transport",
+      "uncontrolled_final_drop"
+    ]
+  },
+  "statistics": {
+    "primary_generalization_unit": "fold_or_fold_state_cluster",
+    "primary_aggregation": "fold_macro",
+    "primary_uncertainty": "cluster_aware_95_percent_confidence_interval",
+    "paired_effect": "paired_risk_difference",
+    "secondary_aggregation": "pooled_episode_micro",
+    "required_breakdowns": [
+      "per_fold",
+      "per_state",
+      "best_fold",
+      "worst_fold",
+      "no_emission_count",
+      "invalid_count",
+      "retry_count",
+      "quarantine_count"
+    ],
+    "treat_162_as_independent": false,
+    "post_hoc_pass_fail_threshold": false
+  },
+  "required_pairwise_comparisons": [
+    "PREFIX_STUDENT_vs_CLEAN",
+    "PREFIX_STUDENT_vs_RAND_LINF_STUDENT",
+    "PREFIX_STUDENT_vs_PREFIX_RANDOM_TIME",
+    "PREFIX_STUDENT_vs_PREFIX_EARLY_SHIFT",
+    "PREFIX_STUDENT_vs_ADAPTED_TMA_OPEN_STUDENT",
+    "ADAPTED_TMA_OPEN_STUDENT_vs_TMA_RANDOM_TIME",
+    "NO_LOCK_vs_ARM_LOCK"
+  ],
+  "formal_launch_gates": {
+    "formal_clean_closed_and_frozen": false,
+    "exact_manifest_frozen": false,
+    "all_objective_semantics_reviewed": false,
+    "all_script_sha256_recorded": false,
+    "all_conditions_emit_common_telemetry_schema": false,
+    "metric_implementation_frozen": false,
+    "contact_quality_rubric_frozen": false,
+    "retry_and_quarantine_policy_frozen": false,
+    "storage_capacity_checked": false,
+    "condition_output_roots_empty_or_quarantined": false
+  },
+  "condition_freeze_required_files": [
+    "MANIFEST.jsonl",
+    "MANIFEST.sha256",
+    "accepted_job_keys.txt",
+    "RESULT_INVENTORY.json",
+    "PROVENANCE_AUDIT.json",
+    "PAIRING_AUDIT.json",
+    "ARTIFACT_SHA256SUMS.txt",
+    "CONDITION_RESULTS.json",
+    "CONDITION_FREEZE.json",
+    "README_RESTORE.txt"
+  ],
+  "prohibited_actions": [
+    "post_phase_b_detector_tuning",
+    "attack_outcome_in_student_labels_or_features",
+    "replacement_of_difficult_frozen_states_after_outcome_review",
+    "removal_of_no_emission_from_itt",
+    "physical_failure_claim_from_simulator_sr_alone",
+    "manual_copying_of_final_table_values",
+    "mixing_canary_pilot_exploratory_and_confirmatory_results",
+    "claiming_original_sota_superiority_from_adapted_loss_only"
+  ],
+  "next_action": "Complete exact implementation inventory and Formal CLEAN closure audit, then replace all null fields, compute artifact SHA256 values, change status to FROZEN, and obtain explicit launch authorization."
+}

@@ -1,0 +1,72 @@
+{
+  "gate": "LOTO_10FOLD_PROTOCOL_FREEZE_V2",
+  "replaces": ["LOTO_10FOLD_PROTOCOL_FREEZE_V1.json", "LOTO_10FOLD_PROTOCOL_AMENDMENT_01.json"],
+  "single_source_of_truth": true,
+  "fold_matrix": {
+    "00": {"test": 8, "val": 6, "train": [0,1,2,3,4,5,7,9], "test_name": "chocolate_pudding", "val_name": "butter", "status": "COMPLETE_AMENDMENT_CONTROLLED"},
+    "01": {"test": 9, "val": 7, "train": [0,1,2,3,4,5,6,8], "test_name": "orange_juice", "val_name": "milk", "status": "PENDING"},
+    "02": {"test": 0, "val": 8, "train": [1,2,3,4,5,6,7,9], "test_name": "alphabet_soup", "val_name": "chocolate_pudding", "status": "PENDING"},
+    "03": {"test": 1, "val": 9, "train": [0,2,3,4,5,6,7,8], "test_name": "cream_cheese", "val_name": "orange_juice", "status": "PENDING"},
+    "04": {"test": 2, "val": 0, "train": [1,3,4,5,6,7,8,9], "test_name": "salad_dressing", "val_name": "alphabet_soup", "status": "PENDING"},
+    "05": {"test": 3, "val": 1, "train": [0,2,4,5,6,7,8,9], "test_name": "bbq_sauce", "val_name": "cream_cheese", "status": "PENDING"},
+    "06": {"test": 4, "val": 2, "train": [0,1,3,5,6,7,8,9], "test_name": "ketchup", "val_name": "salad_dressing", "status": "PENDING"},
+    "07": {"test": 5, "val": 3, "train": [0,1,2,4,6,7,8,9], "test_name": "tomato_sauce", "val_name": "bbq_sauce", "status": "PENDING"},
+    "08": {"test": 6, "val": 4, "train": [0,1,2,3,5,7,8,9], "test_name": "butter", "val_name": "ketchup", "status": "PENDING"},
+    "09": {"test": 7, "val": 5, "train": [0,1,2,3,4,6,8,9], "test_name": "milk", "val_name": "tomato_sauce", "status": "PENDING"}
+  },
+  "val_formula": "val = (test - 2) mod 10",
+  "training": {
+    "seeds": [1, 2, 3],
+    "architecture": "SC5MLP 25→64→64",
+    "epochs": 80,
+    "learning_rate": 0.001,
+    "batch_size": 64,
+    "optimizer": "Adam",
+    "weight_decay": 0.0001,
+    "phase_loss": "weighted CrossEntropy",
+    "corridor_loss_weight": 0.5,
+    "release_loss_weight": 0.3,
+    "bce_pos_weight": 5.0,
+    "checkpoint_selection_metric": "phase_cross_entropy_val_only"
+  },
+  "runtime": {
+    "tau_corridor": 0.3,
+    "tau_release": 0.3,
+    "guard": 5,
+    "K": 10,
+    "first_emit_only": true,
+    "reset_per_episode": true
+  },
+  "per_fold_rules": {
+    "teacher_calibration": "train-only (400 privileged records per fold)",
+    "teacher_label_regeneration": "V2PrivilegedTeacher(cfg).label_trajectory() per episode",
+    "normalization": "train-only (recomputed per fold from feature CSV)",
+    "train_episodes": 400,
+    "val_episodes": 50,
+    "test_episodes": 50,
+    "heldout_labels_phase": "B only — materialize_sc5_loto_heldout_labels_v2.py"
+  },
+  "two_phase_test_open": {
+    "phase_a": "Build folds 01-09, train 27 checkpoints, functional replay, freeze SHAs. NEVER open heldout.",
+    "phase_b": "Write LOTO_TEST_OPEN_EVENT_V1.json → materialize heldout labels → evaluate all 9 folds at once.",
+    "phase_b_gate": "All 27 checkpoints frozen, LOTO_TEST_OPEN_EVENT_V1.json SHA recorded",
+    "fold_00": "Already completed as amendment-controlled corrected evaluation"
+  },
+  "scripts": {
+    "builder": "scripts/stageb/build_sc5_loto_fold_v3.py",
+    "trainer": "scripts/stageb/train_sc5_loto_v3.py",
+    "materializer": "scripts/stageb/materialize_sc5_loto_heldout_labels_v2.py",
+    "metric_schema": "docs/gpu/LOTO_METRIC_SCHEMA_V2.json"
+  },
+  "functional_gate": {
+    "checkpoint_runtime_load": "PASS",
+    "state_dict_parity": 0,
+    "train_armed_gt_0": true,
+    "train_emitted_gt_0": true,
+    "val_armed_gt_0": true,
+    "val_emitted_gt_0": true,
+    "corridor_p99_not_collapsed": true,
+    "label_support_nonzero": true,
+    "test_file_never_opened": true
+  }
+}

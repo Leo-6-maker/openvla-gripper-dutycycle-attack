@@ -1,0 +1,62 @@
+{
+  "gate": "M1C_COLLECTION_EXECUTION_MANIFEST",
+  "status": "FROZEN_AFTER_PARTIAL_COLLECTION",
+  "frozen_at": "2026-06-23T14:45:00+08:00",
+  "collection_code_commit": "b0a5bf5 (protocol freeze)",
+  "replay_metrics_fix_commit": "cda491b",
+  "assets": {
+    "detector_checkpoint": {
+      "path": "artifacts/detector/sc5_mlp_s2.pt",
+      "sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628"
+    },
+    "vla_model": {
+      "path": "models/openvla-7b-finetuned-libero-object",
+      "shards": {
+        "00001": "1748e2921c82a8b80febb9a0d7f1659c556b0769ff54225c5f1905fcd47d5107",
+        "00002": "1a468feb31f2edbe8876c8571e5682406aeb169b80916d5952408a6fb20f017c",
+        "00003": "f4958ff679f5d7f600a2369b52ee81818e9992fb6584e40ba6f79e1f786f6e1d",
+        "00004": "eccbc0482e076cf5a502b51707e0581c19a111e376206febd5d0c4efe6f74b09"
+      }
+    },
+    "teacher_config": {
+      "path": "migration_audit/object_checkpoint_migration/m1_runtime/teacher_config_frozen.json",
+      "sha256": "ebc1ccda21cdfeae0f70f90ef0e433be3474ef0baa9cf52f609d620f863ce87a"
+    },
+    "bridge_script": {
+      "path": "scripts/stageb/run_v2_vis_sc5_mlp_bridge.py",
+      "sha256": "fd594b3f9b38f4545d7b19202b380c0f4eeb0e9d95cb566f2fbca7b1852b208e"
+    },
+    "v4_runner": {
+      "path": "scripts/v4_run_eval_openvla.py",
+      "sha256": "a80eb7d3f2ef1c7ca8e79eeb5dbe1249eb702f95ea6a47e0e1cb3cf8b7e977d6",
+      "note": "Patched on A800 2026-06-23 to remove libero_official_preprocess from prepare_openvla_image call"
+    }
+  },
+  "environment": {
+    "python": "3.10.20 (GCC 14.3.0)",
+    "torch": "2.2.0+cu121",
+    "mujoco": "3.9.0",
+    "robosuite": "1.4.0",
+    "numpy": "1.26.4",
+    "transformers": "4.40.1",
+    "pytorch_lightning": "2.4.0"
+  },
+  "gpu_uuids": {
+    "gpu2": "GPU-7b06162a-27e4-2552-e891-d201e3fae6b9",
+    "gpu3": "GPU-41cd4b75-e3d4-92b8-ec37-ddca13e3761a",
+    "gpu4": "GPU-e85ed586-ba64-a9e3-8fa9-07f16f84dcda",
+    "gpu6": "GPU-92963392-f77a-85ce-4ba7-7a8288429ca5"
+  },
+  "collection_status": {
+    "train_gpu2": "states 3-15, 24/130 done (stopped mid-collection)",
+    "train_gpu3": "states 16-27, ~24/120 done (estimated, stopped mid-collection)",
+    "validation_gpu4": "states 28-37, 11/100 done (stopped mid-collection)",
+    "blind_gpu6": "states 38-47, 12/100 done (STOPPED — COMPROMISED)"
+  },
+  "blind_seal": {
+    "status": "COMPROMISED",
+    "exposed_cells": 12,
+    "exposed_success_emit_data": true,
+    "action": "STOPPED_GPU6 — see BLIND_SEAL_AUDIT.md"
+  }
+}

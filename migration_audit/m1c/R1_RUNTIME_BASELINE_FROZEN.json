@@ -1,0 +1,70 @@
+{
+  "gate": "M1C_R1_RUNTIME_BASELINE_FREEZE",
+  "status": "FROZEN_FOR_FUTURE_VALIDATION",
+  "frozen_at": "2026-06-23",
+  "source_runtime_commit": "07bd43ba26cee08f4eb4216df3db995d4dd509dc",
+  "source_replay_commit": "1b499e3e9c0fb34e3af0a65d6f49ddb85bed2cc3",
+  "fsm_version": "v1r_r1",
+  "class_name": "SC5DetectorRuntimeV1R",
+  "runtime_file": "src/gripper_attack/sc5_detector_runtime_v1r.py",
+  "test_file": "tests/stageb/test_sc5_detector_runtime_v1r.py",
+  "parameters": {
+    "tau_corridor": 0.3,
+    "tau_release": 0.3,
+    "guard": 5
+  },
+  "parameter_selection_source": "preexisting_frozen_M1B_defaults",
+  "m1b_usage": "diagnostic_only",
+  "m1b_usage_note": "M1B 60 cells observed during Phase A and replay. Cannot serve as blind or validation set.",
+  "claims": {
+    "sticky_arm_fixed_on_m1b_diagnostic": true,
+    "silent_stall_fixed_on_m1b_diagnostic": true,
+    "model_selectivity_residual": true,
+    "all_six_clean_only_gates_pass": false,
+    "failing_gate": "no_corridor_abstain (0.636 < 0.90)"
+  },
+  "m1b_diagnostic_metrics": {
+    "B0": {
+      "no_corridor_abstain": "5/7 = 0.714",
+      "coverage": "23/23 = 1.000",
+      "k10_containment": "22/23 = 0.957",
+      "false_early": "1/25 = 0.040",
+      "median_anchor_error": 2.0,
+      "silent_stalls": 0,
+      "n_disarms": 4
+    },
+    "D1": {
+      "no_corridor_abstain": "2/4 = 0.500",
+      "coverage": "26/26 = 1.000",
+      "k10_containment": "26/26 = 1.000",
+      "false_early": "0/28 = 0.000",
+      "median_anchor_error": 2.0,
+      "silent_stalls": 0,
+      "n_disarms": 0
+    }
+  },
+  "R2_status": {
+    "default_configuration": "REJECTED (zero coverage)",
+    "method_family": "NOT_REJECTED",
+    "parameter_tuning_on_M1B": "FORBIDDEN",
+    "parameter_tuning_on_independent_validation": "GO_AFTER_DATA_PROTOCOL_FREEZE"
+  },
+  "sc5_v2_retrain": {
+    "status": "CONDITIONALLY_GO_AFTER_DATA_PROTOCOL_FREEZE",
+    "rationale": "R1 fixes sticky-arm and silent-stall failures but cannot address 4 sustained model-selectivity errors. No-corridor abstain=0.636 remains below 0.90 threshold even after runtime repair."
+  },
+  "next_gates": [
+    "Freeze Object clean data collection protocol with train/val/blind splits",
+    "Collect new B0 clean corpus on GPU2/3/4/6",
+    "Evaluate R1 on independent validation (not M1B)",
+    "Tune R2 parameters on independent validation if R1 insufficient",
+    "Train SC5-v2 if no FSM configuration achieves six-gate pass on independent validation"
+  ],
+  "invariants": [
+    "Original SC5DetectorRuntime (legacy_v1) preserved unchanged for regression",
+    "R1 parameters frozen from M1B defaults — no threshold sweep performed",
+    "M1B 60-cell data is diagnostic-only — no parameter selection",
+    "Six absolute gates unchanged from M1B pre-registration",
+    "Clean-only constraint: no VIS/RAND/attack data in training or parameter selection"
+  ]
+}

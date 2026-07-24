@@ -1,0 +1,7 @@
+cell_id,video_available,video_path,video_size_bytes,video_sha,visible_grasp,object_lifted,object_carried,object_dropped,controlled_placement,failure_phase,notes,reviewer
+butter_s0_clean,false,NOT_AVAILABLE_NO_SAVE_VIDEO,,,,,,,,,,Bridge was run without --save_video flag; video not produced,pending
+butter_s0_true_t10,false,NOT_AVAILABLE_NO_SAVE_VIDEO,,,,,,,,,,Bridge was run without --save_video flag; video not produced,pending
+butter_s0_rand_t10,false,NOT_AVAILABLE_NO_SAVE_VIDEO,,,,,,,,,,Bridge was run without --save_video flag; video not produced,pending
+butter_s2_clean,false,NOT_AVAILABLE_NO_SAVE_VIDEO,,,,,,,,,,Bridge was run without --save_video flag; video not produced. s2 CLEAN timed out at 400 steps. Detector triggered at step 33 (anchor=96, err=-63). Task failed.,pending
+butter_s2_true_t10,false,NOT_AVAILABLE_NO_SAVE_VIDEO,,,,,,,,,,Bridge was run without --save_video flag; video not produced,pending
+butter_s2_rand_t10,false,NOT_AVAILABLE_NO_SAVE_VIDEO,,,,,,,,,,Bridge was run without --save_video flag; video not produced,pending

@@ -1,0 +1,28 @@
+{
+  "run_id": "FORMAL_SMOKE_22_V2_RUN2",
+  "status": "FORMAL_PASS",
+  "protocol": "FORMAL_SMOKE_22_V2_FROZEN.json",
+  "parent_commit": "cbcef7b",
+  "completed_at": "2026-06-24T20:14:55+08:00",
+  "cells_collected": 22,
+  "cells_with_done": 22,
+  "audit_errors": 0,
+  "negative_test": {
+    "collector_nonzero_exit": true,
+    "collector_exit_code": 1,
+    "stderr_contains_CELL_ALREADY_COMPLETE": true,
+    "files_unchanged": true,
+    "original_done_sha": "748b98d544102f48d27be2bcbb4e2059d3661e3f7268c7afdb7e6cf93d1d6a9e",
+    "original_tel_sha": "e776de1cd7834df1f1c325e4a9337dd34587028faa7d54825b8ddd0e7b39ab36",
+    "original_ep_sha": "87535fa1ade81b7b41657b810f307910858ebb95efd3ffed0a6fcd7b1b2f1e1f",
+    "final_done_sha": "748b98d544102f48d27be2bcbb4e2059d3661e3f7268c7afdb7e6cf93d1d6a9e",
+    "final_tel_sha": "e776de1cd7834df1f1c325e4a9337dd34587028faa7d54825b8ddd0e7b39ab36",
+    "final_ep_sha": "87535fa1ade81b7b41657b810f307910858ebb95efd3ffed0a6fcd7b1b2f1e1f"
+  },
+  "smoke_complete": true,
+  "collector_sha256": "d86e4fdaae0bb6b31cf6b6718f8ac316bb663c7d2baf8db0ba81b23b8bcaa4a7",
+  "auditor_sha256": "7c72420fdaf4d5803c194658af4c5fc514ce1d4726fda571072a16974707b772",
+  "frozen_protocol_v2_sha256": "6565376ae635fb5be4e9e2fb3814eef0c91e2cdb43e09fa442a14bf31808ef21",
+  "collector_matches_frozen": true,
+  "auditor_matches_frozen": true
+}

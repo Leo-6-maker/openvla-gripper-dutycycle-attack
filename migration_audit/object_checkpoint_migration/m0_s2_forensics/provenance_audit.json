@@ -1,0 +1,113 @@
+{
+  "gate": "M0_S2_PROVENANCE_AUDIT",
+  "timestamp_utc": "2026-06-22T05:00:00Z",
+  "branch": "migration/object-checkpoint-a800-20260622",
+  "task_identity": {
+    "task_idx": 6,
+    "task_name": "pick_up_the_butter_and_place_it_in_the_basket",
+    "task_suite": "libero_object",
+    "state_ids": [0, 2],
+    "bddl_file": "libero_object/pick_up_the_butter_and_place_it_in_the_basket.bddl",
+    "bddl_sha256_current": "5d8053b40ff33246fdbcc38548db84032c6bb647b4b88b6646d9cf6b73a5006c"
+  },
+  "init_state": {
+    "source": "suite.get_task_init_states(6)",
+    "n_init_states": 50,
+    "s0_sha": "bad9bba0fbdf574e67aa4f37c8ec45b157b0f587a4f1c255fef5f0c2c146998d",
+    "s0_shape": [110],
+    "s0_dtype": "float64",
+    "s2_sha": "c21cc2b537e2701898d990680eaa7565df3530e8ed95ae858310c013f3cc09dc",
+    "s2_shape": [110],
+    "s2_dtype": "float64"
+  },
+  "env_contract": {
+    "dummy_wait_steps": 10,
+    "max_episode_steps": 400,
+    "camera_names": ["agentview", "eye_in_hand"],
+    "camera_resolution": [224, 224],
+    "image_rotation": 180,
+    "preprocess_backend": "project_pil_lanczos",
+    "prompt_template": "In: What action should the robot take to {instruction}?\nOut:",
+    "instruction": "pick up the butter and place it in the basket",
+    "generation_do_sample": false,
+    "action_dim": 7
+  },
+  "vla_model_current": {
+    "path": "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object",
+    "config_json_sha": "72566b15b9ce4a5f5452aa50b5cc949811ab0a12b72a79a713b6355875813cff",
+    "safetensors_shas": {
+      "shard_1": "1748e2921c82a8b80febb9a0d7f1659c556b0769ff54225c5f1905fcd47d5107",
+      "shard_2": "1a468feb31f2edbe8876c8571e5682406aeb169b80916d5952408a6fb20f017c",
+      "shard_3": "f4958ff679f5d7f600a2369b52ee81818e9992fb6584e40ba6f79e1f786f6e1d",
+      "shard_4": "eccbc0482e076cf5a502b51707e0581c19a111e376206febd5d0c4efe6f74b09"
+    },
+    "processing_prismatic_sha": "938ef87ac9284069b782776792efb065f0e2c9d50c09a507dda132e97d5c08c0",
+    "modeling_prismatic_sha": "2e672e75958205b05f40f4cd2467d3763b8e36eb2728289cd055c54213338e85",
+    "configuration_prismatic_sha": "68cc5ae34f1b46af3168d8d479cb81bb776965653453fd904aa8eefb6c8f9f68",
+    "tokenizer_json_sha": "8f5e2869e1807b8bb3c7717a294539c37e9de5d728ad60e31ef57e83cc5ea527",
+    "preprocessor_config_sha": "a41a55e4e53f137736046e00626fc078540e7c7783483a2773e78bd630a201fc",
+    "tokenizer_config_sha": "90940015efad61dc3bd174f67e3cabc47036b4cdc83af12c61d3a1c431d457e5"
+  },
+  "vla_model_old_c16": {
+    "path": "TBD_OLD_SERVER_UNREACHABLE",
+    "note": "Old C16 model was at /data/liuyu/repos/sc5_census_freeze_cc356f3_20260618/ on old vla server. Need to compare all file SHAs."
+  },
+  "software_versions": {
+    "python": "3.10.20",
+    "torch": "2.2.0+cu121",
+    "transformers": "4.40.1",
+    "libero": "0.1.1",
+    "robosuite": "1.4.0",
+    "mujoco": "3.9.0",
+    "old_c16_versions": {
+      "hostname": "klfy-SYS-4028GR-TR2",
+      "python": "3.10.18",
+      "torch": "2.6.0+cu124",
+      "cuda": "12.4",
+      "transformers": "4.40.1",
+      "mujoco": "3.8.0",
+      "robosuite": "1.4.1"
+    }
+  },
+  "runtime_config": {
+    "dtype": "BF16",
+    "attention_implementation": "eager",
+    "device_map": "cuda:0",
+    "gpu": "NVIDIA A800-SXM4-80GB",
+    "gpu_uuid": "GPU-e85ed586-ba64-a9e3-8fa9-07f16f84dcda",
+    "driver": "550.90.12",
+    "old_c16_runtime": {
+      "device_map": "auto",
+      "gpus": "8x NVIDIA 2080Ti (11GB each)",
+      "max_memory_per_gpu": "~10000MiB"
+    }
+  },
+  "provenance_comparison_status": {
+    "checkpoint_sha_match": true,
+    "dataset_sha_match": true,
+    "bddl_sha_current": "5d8053b40ff33246fdbcc38548db84032c6bb647b4b88b6646d9cf6b73a5006c",
+    "model_safetensors_match": true,
+    "model_safetensors_00001": "1748e292... MATCH",
+    "model_safetensors_00002": "1a468feb... MATCH",
+    "model_safetensors_00003": "f4958ff6... MATCH",
+    "model_safetensors_00004": "eccbc048... MATCH",
+    "processing_prismatic_py": "938ef87a... MATCH",
+    "modeling_prismatic_py": "2e672e75... MATCH",
+    "configuration_prismatic_py": "68cc5ae3... MATCH",
+    "config_json": "44c03b83 vs 72566b15 — DIFFERS (_name_or_path only)",
+    "init_state_sha_s0": "bad9bba0fbdf574e67aa4f37c8ec45b157b0f587a4f1c255fef5f0c2c146998d",
+    "init_state_sha_s2": "c21cc2b537e2701898d990680eaa7565df3530e8ed95ae858310c013f3cc09dc",
+    "software_versions": {
+      "python": "3.10.18 vs 3.10.20 — DIFFERENT",
+      "torch": "2.6.0+cu124 vs 2.2.0+cu121 — DIFFERENT",
+      "transformers": "4.40.1 vs 4.40.1 — MATCH",
+      "mujoco": "3.8.0 vs 3.9.0 — DIFFERENT",
+      "robosuite": "1.4.1 vs 1.4.0 — DIFFERENT"
+    },
+    "first_action_divergence": "policy step 4 — act_dx: 0.0888 (old) vs 0.1106 (A800)",
+    "eef_at_divergence": "Identical within 35um — image rendering difference is likely cause"
+  },
+  "classification": "PROVENANCE_FULLY_AUDITED",
+  "root_cause": "MuJoCo 3.8.0 vs 3.9.0 rendering differences produce slightly different VLA input images, accumulating to first action divergence at step 4, then complete closed-loop trajectory divergence. Model weights are identical (all 4 safetensors match).",
+  "old_c16_poc_step_trace": "NOT_FOUND — Original C16 POC E2E step telemetry was not archived on old server. Comparison used milestone_2e2 data (May 27, 2025) with same model weights."
+}

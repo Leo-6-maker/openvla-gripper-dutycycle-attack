@@ -1,0 +1,116 @@
+{
+  "gate": "FORMAL_SMOKE_22_V2",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-24T19:15:00+08:00",
+  "parent_commit": "9f8f3c8",
+  "replaces": "FORMAL_SMOKE_22 (V1) — V1 gates revised after RUN1 exploratory data revealed physical settling and bf16 non-determinism",
+  "total_cells": 22,
+  "breakdown": "10 P0 base + 10 nonzero base (P1-P7) + 2 replay (1 P0 + 1 P7)",
+  "pool": "smoke",
+  "collector": "run_v6_perturbed_collector.py",
+  "output_base": "evidence/m1c/formal_smoke_22_v2",
+
+  "run1_lessons": {
+    "yaw_perturbation_decay": "P5/P6 ±5° rotations decay during dummy-wait physics settling. Pre-wait check already verifies correct application. Post-wait yaw is WARN-only.",
+    "vla_bf16_nondeterminism": "VLA bfloat16 eager attention produces different actions across runs even with same seed/state. Replay gate uses collector-level invariants, not exact trajectory identity.",
+    "dummy_wait_settling": "Object settles 5-50mm during 10-step dummy wait. Drift and post-wait translation for yaw templates are diagnostic WARN, not FAIL.",
+    "cream_cheese_z": "cream_cheese body center is at z=0.0000 (on MuJoCo table surface). Object-below-table check uses z < -0.01."
+  },
+
+  "manifest_role_semantics": {
+    "base": "primary smoke cell executed once",
+    "replay": "re-run of identical (task,state,template,seed) config"
+  },
+
+  "replay_groups": {
+    "A": {"task": 0, "state": 3, "template": "P0", "seed": 42, "cells": 2},
+    "B": {"task": 6, "state": 5, "template": "P7", "seed": 48, "cells": 2}
+  },
+
+  "tolerances": {
+    "pre_wait_translation": {"dx_dy_tolerance_m": 0.002, "check": "actual_body_pos - original_body_pos vs manifest", "gate": "FAIL"},
+    "pre_wait_rotation": {"dyaw_tolerance_deg": 2.0, "zero_yaw_rotation_limit_deg": 1.0, "check": "relative quaternion yaw", "gate": "FAIL"},
+    "post_wait_translation": {"tolerance_m": 0.003, "check": "post_wait_body_pos - original_body_pos vs manifest", "gate": "FAIL", "note": "applies to P0-P4,P7 only; P5/P6 are WARN-only"},
+    "post_wait_translation_yaw_templates": {"tolerance_m": 0.050, "check": "post_wait_body_pos - original_body_pos vs manifest for P5/P6", "gate": "WARN"},
+    "post_wait_rotation": {"dyaw_tolerance_deg": 3.0, "check": "post_wait quaternion relative to original", "gate": "FAIL", "note": "applies to P0-P4,P7; P5/P6 are WARN-only"},
+    "post_wait_rotation_yaw_templates": {"dyaw_tolerance_deg": 3.0, "check": "post_wait quaternion relative to original for P5/P6", "gate": "WARN"},
+    "pre_to_post_drift_diagnostic": {"tolerance_m": 0.050, "check": "|post_wait_pos - pre_wait_pos|", "gate": "WARN"},
+    "P7_spec_exact_match": {"tolerance": 1e-9, "check": "perturbation_spec.dx_m/dy_m match manifest exactly", "gate": "FAIL"},
+    "object_below_table": {"threshold_m": -0.01, "check": "actual_body_pos[2] after sim.forward()", "gate": "FAIL"}
+  },
+
+  "audit_gates": {
+    "manifest_preflight": [
+      "exactly 22 rows with unique outputs",
+      "10 P0 base + 10 nonzero base + 2 replay (verified by role column)",
+      "P1-P7 all represented in nonzero base",
+      "replay groups A,B: each 1 base + 1 replay, identical config",
+      "no states 28-49",
+      "P7 dx/dy pre-computed from actual numpy RandomState generator"
+    ],
+    "per_cell_integrity": [
+      ".done, telemetry, summary all present",
+      ".done exit_code=0",
+      ".done telemetry_sha + summary_sha non-empty and match actual files",
+      "n_steps matches CSV rows",
+      "condition=CLEAN, pool=smoke, attack_frames=0 (summary + all telemetry rows)",
+      "task/state/template/seed match manifest (summary + all telemetry rows)",
+      "run_uuid + cell_uuid: non-empty, identical across summary/.done/all telemetry rows",
+      "attack_this + attack_count: field must exist, value must be False/0",
+      "P0: selected_original_state_sha256 == perturbed_pre_wait_sha256",
+      "P1-P7: selected_original_state_sha256 != perturbed_pre_wait_sha256",
+      "pre-wait pose delta matches manifest (translation ±2mm, yaw ±2deg, FAIL)",
+      "zero-yaw templates: pre-wait rotation <1deg (FAIL)",
+      "post-wait pose vs ORIGINAL: ±3mm for P0-P4,P7 (FAIL); ±50mm for P5/P6 (WARN)",
+      "post-wait yaw vs ORIGINAL: ±3deg for P0-P4,P7 (FAIL); P5/P6 (WARN)",
+      "pre-to-post drift diagnostic (WARN >50mm)",
+      "P7: perturbation_spec.dx_m/dy_m/base_seed/template_id all present, exact match to manifest (FAIL)",
+      "All 8 asset SHAs present, non-MISSING, and identical across all 22 cells (FAIL)"
+    ],
+    "replay_consistency": [
+      "Collector-level invariants (not exact trajectory identity due to bf16 VLA non-determinism)",
+      "Both cells in group have exit_code=0, condition=CLEAN",
+      "selected_original_state_sha256 identical (collector determinism)",
+      "perturbed_pre_wait_sha256 identical (collector determinism)",
+      "step count within ±10% or ±5 steps",
+      "mlp_emit_step within ±10 steps (if both non-negative)"
+    ],
+    "negative_completion_test": [
+      "duplicate invocation produces non-zero exit",
+      "stderr/log contains CELL_ALREADY_COMPLETE",
+      "original .done, telemetry, summary SHAs unchanged"
+    ],
+    "evidence_append_only": [
+      "launcher refuses to overwrite .smoke_complete output base",
+      "stale partial moved to quarantine",
+      ".smoke_complete marker atomically created on auditor PASS"
+    ]
+  },
+
+  "canonical_replay_fields": [
+    "step", "raw_gripper", "env_gripper", "qpos_sum",
+    "eef_x", "eef_y", "eef_z", "obj_x", "obj_y", "obj_z",
+    "eef_obj_dist", "target_x", "target_y", "target_z",
+    "detector_state", "corridor_p", "release_p", "pred_phase",
+    "mlp_emit", "perturbation_template", "perturbation_seed",
+    "feat_valid"
+  ],
+  "excluded_from_replay": ["run_uuid", "cell_uuid", "model_ms", "raw_action_7d", "env_action_7d"],
+  "note_replay": "raw_action_7d and env_action_7d excluded because bfloat16 VLA inference is non-deterministic across runs",
+
+  "required_asset_sha_fields": [
+    "bridge_sha256", "runner_sha256", "checkpoint_sha256",
+    "teacher_config_sha256", "target_resolver_sha256",
+    "perturbation_generator_sha256",
+    "vla_model_manifest_sha256", "dataset_sha256"
+  ],
+
+  "frozen_artifact_shas": {
+    "collector_sha256": "d86e4fdaae0bb6b31cf6b6718f8ac316bb663c7d2baf8db0ba81b23b8bcaa4a7",
+    "auditor_sha256": "7c72420fdaf4d5803c194658af4c5fc514ce1d4726fda571072a16974707b772",
+    "manifest_sha256": "b4dd3b886e5b3ab27ba4465b1ea1ec59df24ac38b94e45c58765fda8ca305423",
+    "launcher_sha256": "9c061ba733e7dc7e3c42a9c00a9d05580ca6ab0394f5d0256b62cde4a94a7265",
+    "checkpoint_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+    "frozen_protocol_v1_sha256": "50be6dc4921a8b301c33c723e6d28a13845b61aaebf55241226b3148fc65b1d5"
+  }
+}

@@ -1,0 +1,79 @@
+{
+  "gate": "SC5_V2_TRAINING_PROTOCOL_V3",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-25T06:00:00+08:00",
+  "parent_commit": "46ee604",
+  "supersedes": "SC5_V2_TRAINING_FROZEN_V2.json at 75f10cb",
+  "change_log": "V3: step dataset revised from c086 (101215 steps) to 05f6 (84015 steps). 17200 invalid-feature steps removed by deterministic label-independent filter. All 5 seeds trained on 05f6. See SC5_V2_STEP_DATASET_REVISION_AUDIT.json for full explanation.",
+
+  "architecture": {
+    "name": "SC5_MLP_v2",
+    "input_dim": 25, "hidden_dim": 64,
+    "shared_trunk": "Linear(25,64)->ReLU->Linear(64,64)->ReLU",
+    "heads": {
+      "phase_head": {"outputs": 9, "supervised": true},
+      "corridor_head": {"outputs": 1, "supervised": true},
+      "release_head": {"outputs": 1, "supervised": true},
+      "confidence_head": {"outputs": 1, "supervised": false}
+    },
+    "parameterized_outputs": 12, "supervised_outputs": 11,
+    "parameter_count": 6604, "identical_to_v1": true
+  },
+
+  "dataset": {
+    "manifest_sha256": "19f1714750d41336a9ae0874ef853aeb40da77adc06ac668d10dcad346a7144c",
+    "total_episodes": 370,
+    "train_split": {"tv": 159, "nc": 121, "total": 280},
+    "dev_split": {"tv": 36, "nc": 54, "total": 90},
+    "step_dataset_sha256": "05f6f9e9b2ac5720ff00714199e4c67c2f44f55ed01d40fc0459ff323af04e0e",
+    "step_dataset_revision": "05f6 (see SC5_V2_STEP_DATASET_REVISION_AUDIT.json)",
+    "train_steps": 59773, "val_steps": 24242, "total_steps": 84015,
+    "filter_rationale": "17200 steps removed: only feature-valid steps retained (V2 bridge writes f_* features only when feat_valid=True). Deterministic, label-independent filter applied BEFORE any training."
+  },
+
+  "training": {
+    "loss": {
+      "phase": {"loss": "CrossEntropyLoss", "weight": 1.0, "class_weight": "inverse_frequency"},
+      "corridor": {"loss": "BCEWithLogitsLoss", "weight": 0.5, "pos_weight": 5.0},
+      "release": {"loss": "BCEWithLogitsLoss", "weight": 0.3, "pos_weight": 5.0}
+    },
+    "optimizer": "Adam", "learning_rate": 0.001, "weight_decay": 0.0001,
+    "batch_size": 64, "max_epochs": 80,
+    "early_stopping": {"metric": "val_phase_CE", "mode": "min"},
+    "seeds": [42, 123, 456, 789, 1024],
+    "unique_checkpoints": 5
+  },
+
+  "checkpoint_schema": {
+    "required_keys": ["model_state", "mean", "std", "feature_names", "phase_classes", "split_mode"],
+    "split_mode": "frozen",
+    "runtime_thresholds": {"tau_corridor": 0.3, "tau_release": 0.3, "guard": 5},
+    "strict_load_postcondition": "All 5 checkpoints verified via subprocess SC5DetectorRuntime(strict=True) load"
+  },
+
+  "checkpoint_selection": {
+    "step_1": "Primary-dev TV corridor recall >= SC5-v1 recall minus 5 percentage points",
+    "step_2": "Among qualifying checkpoints, minimize NC false-trigger rate on primary dev 50",
+    "step_3": "Tiebreak: prefer better primary-dev metrics",
+    "note": "5-seed training execution is complete. Model selection is NOT yet done — requires formal evaluator on all 3 dev slices."
+  },
+
+  "evaluation": {
+    "slices": {
+      "primary_dev_50": {"tv": 36, "nc": 14},
+      "reserve_dev_40": {"tv": 0, "nc": 40},
+      "combined_dev_90": {"tv": 36, "nc": 54}
+    },
+    "baseline": "SC5-v1 (sc5_mlp_s2.pt) on same dev manifest",
+    "targets": {
+      "primary_dev_nc_abstain": ">= 0.90",
+      "primary_dev_tv_coverage": ">= 0.80"
+    }
+  },
+
+  "artifacts": {
+    "training_index": "migration_audit/m1c/sc5_v2_data/SC5_V2_TRAINING_RUN_INDEX.csv",
+    "revision_audit": "migration_audit/m1c/sc5_v2_data/SC5_V2_STEP_DATASET_REVISION_AUDIT.json",
+    "trainer_sha256": "computed_at_training_time"
+  }
+}

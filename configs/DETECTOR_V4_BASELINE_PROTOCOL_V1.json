@@ -1,0 +1,90 @@
+{
+  "schema": "DETECTOR_V4_BASELINE_PROTOCOL_V1",
+  "version": "1.0",
+
+  "baselines": {
+    "close_only": {
+      "name": "Close-Only Baseline",
+      "description": "Emit on every step where gripper is closed (time_since_close >= 0, i.e., within a close event window). This is a deterministic heuristic requiring no training.",
+      "rule": "EMIT_IF_CANDIDATE_CLOSE",
+      "parameters": {},
+      "reference": "B3 viability handoff close-only baseline",
+      "known_performance": {
+        "full_t10_range": "0.988-1.000",
+        "negative_any_emit": "matches close activity pattern in negative episodes"
+      }
+    },
+    "time_since_close": {
+      "name": "Time-Since-Close Baseline",
+      "description": "Emit on every step where time_since_close is within a configurable window. Diagnostic comparator only.",
+      "rule": "EMIT_IF_TIME_SINCE_CLOSE_IN_RANGE",
+      "parameters": {"min_steps": 0, "max_steps": 9999},
+      "reference": "B3 viability handoff diagnostic comparator",
+      "known_performance": {
+        "full_t10_range": "0.992-0.996",
+        "negative_any_emit": "similar to close_only"
+      }
+    },
+    "b3_25d_original": {
+      "name": "B3_25D (Frozen Negative Baseline)",
+      "description": "Original B3_25D detector frozen as reference. Must not be retrained or have threshold retuned.",
+      "rule": "B3_MODEL_PREDICTION_AT_THRESHOLD_0_5",
+      "parameters": {"threshold": 0.5},
+      "reference": "OFFICIAL_V3_B3_25D_VIABILITY_HANDOFF_20260718",
+      "known_performance": {
+        "mean_full_t10": 0.9572,
+        "mean_later_event": 0.8821,
+        "mean_negative_any_emit": 0.1345,
+        "max_negative_any_emit": 0.1875,
+        "release_overlap": 0
+      }
+    }
+  },
+
+  "comparison_method": "MATCHED_OPERATING_POINT",
+
+  "matched_comparisons": [
+    {
+      "name": "matched_recall_vs_close_baseline",
+      "description": "At matched full-T10 event hit rates (90%, 93%, 95%), compare false-emit rates between V4 detector and close-only baseline.",
+      "primary_target": 0.95,
+      "metrics": {
+        "v4_negative_episode_any_emit": "to be measured",
+        "close_baseline_negative_episode_any_emit": "to be measured",
+        "v4_hard_negative_window_false_emit": "to be measured",
+        "delta_negative_emit": "v4 - close_baseline (negative = V4 advantage)",
+        "delta_hard_negative": "v4 - close_baseline (negative = V4 advantage)"
+      }
+    },
+    {
+      "name": "matched_fpr_vs_close_baseline",
+      "description": "At matched negative episode any-emit rates (5%, 10%, 15%), compare full-T10 hit rates.",
+      "primary_target": 0.10,
+      "metrics": {
+        "v4_full_t10_hit": "to be measured",
+        "close_baseline_full_t10_hit": "to be measured",
+        "delta_full_t10": "v4 - close_baseline (positive = V4 advantage)"
+      }
+    },
+    {
+      "name": "pareto_dominance",
+      "description": "Check if V4 has at least one operating point where: recall >= 0.90 AND negative_emit < close_baseline_negative_emit AND release_overlap = 0.",
+      "required": true
+    }
+  ],
+
+  "threshold_free_metrics": {
+    "auroc_step_level": "Area under ROC for step-level critical_retention_window vs background",
+    "auprc_hard_negative": "Area under PR curve for hard_negative_window detection",
+    "partial_auc": "Partial AUC in FPR range [0, 0.20]",
+    "score_close_correlation": "Pearson r between V4 criticality score and close streak, to detect close-detector degeneracy"
+  },
+
+  "baseline_computation_rules": {
+    "per_validation_set": true,
+    "no_training_required": true,
+    "deterministic": true,
+    "close_only_computable_from": "candidate_close label in Teacher V2 labels",
+    "match_on_same_validation_identities": true
+  }
+}

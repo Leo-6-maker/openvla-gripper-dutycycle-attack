@@ -1,0 +1,50 @@
+{
+  "protocol": "sc5_object_loto_v1_fold00_canary",
+  "isolation_level": "STUDENT_ROW_ONLY",
+  "teacher_calibration": "INHERITED_FROM_OLD_ALL_TASK",
+  "old_model": "sc5_v2_seed42 (in-domain, all 10 tasks trained, all-task teacher calibration)",
+  "new_model": "sc5_object_loto_v1 fold00 seed1 (LOTO, 8 train tasks, inherited teacher labels)",
+  "held_out_task": "chocolate_pudding (task_idx=9)",
+  "val_task": "butter (task_idx=0)",
+  "train_tasks": ["ketchup", "milk", "orange_juice", "alphabet_soup", "tomato_sauce", "cream_cheese", "salad_dressing", "bbq_sauce"],
+  "results": {
+    "train_emission": "158/296 (53%)",
+    "val_emission": "21/37 (57%)",
+    "held_out_emission": "18/37 (49%)",
+    "emission_rate_summary": "Old and new models produce identical per-task emission rates across all 10 tasks",
+    "correlation": {
+      "pearson_r": 0.9979,
+      "spearman_r": 0.9148,
+      "pearson_train": 0.9975,
+      "pearson_val": 0.9995,
+      "pearson_held_out": 0.9997
+    },
+    "per_task_emission": {
+      "train": {
+        "ketchup": "21/37 (57%)",
+        "milk": "24/37 (65%)",
+        "orange_juice": "9/37 (24%)",
+        "alphabet_soup": "24/37 (65%)",
+        "tomato_sauce": "22/37 (59%)",
+        "cream_cheese": "20/37 (54%)",
+        "salad_dressing": "18/37 (49%)",
+        "bbq_sauce": "20/37 (54%)"
+      },
+      "val": {"butter": "21/37 (57%)"},
+      "held_out": {"chocolate_pudding": "18/37 (49%)"}
+    }
+  },
+  "conclusion": "STUDENT-ONLY ISOLATION CANARY PASS. Removing chocolate_pudding and butter student rows from training produces zero degradation in detector emission on held-out tasks. Pearson r=0.998 between old (10-task) and new (8-task) models. However, teacher calibration still used all 10 tasks, so this is not yet strict LOTO.",
+  "limitations": [
+    "Teacher labels inherited from old all-task calibration",
+    "Emission rate only; timing accuracy not yet reported",
+    "Only one held-out task; 10-fold LOTO not done",
+    "Only one model seed compared",
+    "Release head still produces zero output"
+  ],
+  "next_steps": [
+    "Strict teacher-isolated Fold 0 V2 via privileged teacher re-run on train tasks only",
+    "Report contact-window recall, false-early rate, median timing error",
+    "10-fold LOTO after strict Fold 0 passes"
+  ]
+}

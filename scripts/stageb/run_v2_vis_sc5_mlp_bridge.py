@@ -8,14 +8,14 @@ CHANGES vs run_v2_vis_sc5_bridge.py (only 3):
 
 ALL VIS attack code preserved exactly. ALL telemetry preserved exactly.
 """
-import argparse, csv, json, os, sys, time, numpy as np, torch
+import argparse, copy, csv, hashlib, json, os, sys, time, numpy as np, torch
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO)); sys.path.insert(0, str(REPO / "src")); sys.path.insert(0, str(REPO / "scripts"))
 os.environ.setdefault("OPENVLA_ATTN_IMPLEMENTATION", "eager")
 
-MODEL_PATH = "/data/aviary/models/openvla/openvla-7b-finetuned-libero-object"
+MODEL_PATH = os.environ.get("OPENVLA_MODEL_PATH", "/mnt/sdc/dty_user/openvla_attack/models/openvla-7b-finetuned-libero-object")
 EPSILON = 0.023529411764705882; TARGET_TOKEN = 31744; ARM_GATE = 5; PGD_STEPS = 20; K = 10
 
 ap = argparse.ArgumentParser()
@@ -27,11 +27,35 @@ ap.add_argument("--output_dir", required=True)
 ap.add_argument("--render_gpu", type=int, required=True)
 ap.add_argument("--mlp_path", default="outputs/sc5_canonical_eng/sc5_mlp_s2.pt")
 ap.add_argument("--task_idx", type=int, default=6, help="LIBERO task index (default 6=butter)")
+ap.add_argument("--save_video", action="store_true", default=False)
+ap.add_argument("--source_commit", default="", help="Git commit SHA (required when --save_video)")
+ap.add_argument("--video_fps", type=int, default=20)
+ap.add_argument("--frame_stride", type=int, default=1)
+ap.add_argument("--libero_preprocess_backend", default="upstream_tf_jpeg",
+                choices=["upstream_tf_jpeg", "project_pil_lanczos", "none"],
+                help="Preprocessing backend (canonical names only, no aliases)")
+ap.add_argument("--attack_objective", default="autoregressive_prefix_gripper_target_token_logratio_arm_v3",
+                help="Attack objective name (use untargeted_clean_token_ce for untargeted PGD)")
+ap.add_argument("--arm_lock", action="store_true", default=False,
+                help="Arm Execution Lock: executed_arm = clean_candidate_arm (first 6 DoF from clean decode)")
+ap.add_argument("--keep_running", action="store_true", default=False, help="Dont break on done (for random-time supplement)")
+ap.add_argument("--trigger_step_override", type=int, default=-1, help="If >= 0, overrides MLP emit for trigger (supplement use)")
 args = ap.parse_args()
+
+if args.save_video and not args.source_commit:
+    raise ValueError("--source_commit is required when --save_video is enabled")
+
+# Resolve backend (import validation)
+from gripper_attack.openvla_preprocess import resolve_backend, CANONICAL_BACKENDS
+PREPROCESS_BACKEND = resolve_backend(args.libero_preprocess_backend)
+USES_JPEG_ROUNDTRIP = (PREPROCESS_BACKEND == "upstream_tf_jpeg")
+print(f"Preprocess backend: requested={args.libero_preprocess_backend} resolved={PREPROCESS_BACKEND} jpeg_roundtrip={USES_JPEG_ROUNDTRIP}")
 
 STATE_ID = args.state_id; ANCHOR = args.anchor; IS_ATTACK = args.condition != "CLEAN"
 IS_RAND = "RAND" in args.condition; IS_SHUFFLED = "SHUFFLED" in args.condition
 ATTACK_FRAMES = K if IS_ATTACK else 0
+
+
 
 # ── OpenVLA model (identical to v2 bridge) ──
 from transformers import AutoProcessor
@@ -40,15 +64,23 @@ try:
 except Exception:
     from transformers import AutoModelForVision2Seq as AutoModelCls
 processor = AutoProcessor.from_pretrained(MODEL_PATH, trust_remote_code=True, local_files_only=True)
-visible = torch.cuda.device_count()
+# M1: dtype and attention from env vars with fail-closed validation
+_dtype_name = os.environ.get("OPENVLA_DTYPE", "bfloat16")
+_attn_name = os.environ.get("OPENVLA_ATTN_IMPLEMENTATION", "eager")
+_dtype_map = {"bfloat16": torch.bfloat16, "float32": torch.float32}
+if _dtype_name not in _dtype_map:
+    raise RuntimeError("OPENVLA_DTYPE must be bfloat16 or float32, got: %s" % _dtype_name)
+_torch_dtype = _dtype_map[_dtype_name]
 model = AutoModelCls.from_pretrained(
-    MODEL_PATH, trust_remote_code=True, local_files_only=True, torch_dtype=torch.bfloat16,
-    low_cpu_mem_usage=True, device_map="auto",
-    max_memory={idx: "10000MiB" for idx in range(visible)} | {"cpu": "128GiB"}, attn_implementation="eager")
+    MODEL_PATH, trust_remote_code=True, local_files_only=True, torch_dtype=_torch_dtype,
+    low_cpu_mem_usage=True, device_map="cuda:0", attn_implementation=_attn_name)
 model_dtype = next(model.parameters()).dtype
 device = "cuda:0"
-for v in model.hf_device_map.values():
-    if isinstance(v, int): device = "cuda:%d" % v; break
+# Runtime self-attestation
+_actual_dtype_str = str(model_dtype).replace("torch.", "")
+_actual_attn = getattr(model.config, "_attn_implementation", "unknown")
+print("Model on %s dtype=%s attn=%s (requested: dtype=%s attn=%s)" % (
+    device, _actual_dtype_str, _actual_attn, _dtype_name, _attn_name))
 action_dim = int(model.get_action_dim("libero_object"))
 print("Model on %s" % device)
 
@@ -57,21 +89,32 @@ from gripper_attack.sc5_detector_runtime import SC5DetectorRuntime, SC5_FEATURES
 detector = SC5DetectorRuntime(args.mlp_path, tau_corridor=0.3, tau_release=0.3, guard=5)
 print("MLP detector loaded, dataset_sha256=%s" % detector.dataset_sha256[:16])
 
+_video_raw_frames = []
+if args.save_video:
+    print("Video recording ENABLED (fps=%d, stride=%d)" % (args.video_fps, args.frame_stride))
+
 # ── Persistent attacker (identical to v2 bridge) ──
 attacker = None
 if IS_ATTACK and not IS_RAND:
     from gripper_attack.attack_adapter import OpenVLAVisualAttacker
-    opt = {"method": "token_prefix_pgd", "objective": "autoregressive_prefix_gripper_target_token_logratio_arm_v3",
-           "target_token_id": TARGET_TOKEN, "epsilon": EPSILON, "num_steps": PGD_STEPS,
+    from gripper_attack.route_contract import UNTARGETED_OBJECTIVES
+    _is_untargeted = args.attack_objective in UNTARGETED_OBJECTIVES
+    opt = {"method": "token_prefix_pgd", "objective": args.attack_objective,
+           "epsilon": EPSILON, "num_steps": PGD_STEPS,
            "step_size": EPSILON * 0.075, "random_start": True, "prefix_refresh_interval": 1,
            "surrogate_score_path": "cached_autoregressive_generate_v1",
-           "gripper_margin": 5.0, "arm_preserve_weight": 0.5, "arm_gate_min_match_count": ARM_GATE,
-           "strict_route": True, "allow_fallback": False, "temporal_init": "prev_delta",
-           "target_execution_class": "CLIP_MEDIATED_OPEN"}
+           "strict_route": not _is_untargeted, "allow_fallback": False, "temporal_init": "prev_delta"}
+    if not _is_untargeted:
+        opt["target_token_id"] = TARGET_TOKEN
+        opt["target_execution_class"] = "CLIP_MEDIATED_OPEN"
+        opt["gripper_margin"] = 5.0
+        opt["arm_preserve_weight"] = 0.5
+        opt["arm_gate_min_match_count"] = ARM_GATE
     if IS_SHUFFLED: opt["gradient_transform"] = "permute"; opt["gradient_transform_seed"] = args.seed_id + 100000
     attacker = OpenVLAVisualAttacker(model=model, processor=processor, config={"attack_optimizer": opt},
-        seed=args.seed_id, preprocess_kwargs={"libero_official_preprocess": False,
-            "libero_preprocess_backend": "official_pil_lanczos", "center_crop": True, "resize_size": 224}, device=device)
+        seed=args.seed_id, preprocess_kwargs={"libero_preprocess_backend": PREPROCESS_BACKEND, "center_crop": True, "resize_size": 224}, device=device)
+
+
 
 # ── Env (identical to v2 bridge) ──
 from v4_run_eval_openvla import decode_with_scores, prompt, postprocess_openvla_action_for_libero
@@ -88,6 +131,8 @@ instruction = task_obj.language
 env, obs = build_v4_exact_env(bddl, args.render_gpu, 400, 10)
 obs = env.set_init_state(init_states[STATE_ID])
 env, obs = apply_dummy_wait(env, obs, 10)
+
+
 
 _task_name = task_obj.name
 _obj_key = _task_name.replace("pick_up_the_","").replace("_and_place_it_in_the_basket","")
@@ -123,7 +168,7 @@ for step in range(400):
     # Clean decode (identical to v2 bridge)
     t0 = time.perf_counter()
     action, _, _, _ = decode_with_scores(model, processor, device, raw, instruction, "libero_object", 8,
-        libero_official_preprocess=False, libero_preprocess_backend="official_pil_lanczos",
+        libero_preprocess_backend=PREPROCESS_BACKEND,
         center_crop=True, resize_size=224, drop_attention_mask=True)
     raw_grip = float(action[-1]); env_grip = -1.0 if raw_grip > 0.5 else 1.0
     env_action_final = postprocess_openvla_action_for_libero(np.asarray(action, dtype=np.float32), enabled=True)
@@ -179,12 +224,15 @@ for step in range(400):
 
     # === VIS ATTACK (IDENTICAL to v2 bridge, only trigger condition changed) ===
     attack_this = False; adv_token = None; adv_arm = 0; prev_flag = False
-    if IS_ATTACK and _mlp_emit >= 0 and step >= _mlp_emit and attack_count < ATTACK_FRAMES:
+    _trigger_step = args.trigger_step_override if args.trigger_step_override >= 0 else _mlp_emit
+    _clean_candidate = np.asarray(action, dtype=np.float32)
+    if IS_ATTACK and _trigger_step >= 0 and step >= _trigger_step and attack_count < ATTACK_FRAMES:
+        # _clean_candidate already initialized above
         if IS_RAND:
             from gripper_attack.m3_controls import sample_processor_delta, project_and_cast_processor_values
             from gripper_attack.attack_adapter import prepare_openvla_image_for_attack
-            proc_image = prepare_openvla_image_for_attack(raw, libero_official_preprocess=False,
-                libero_preprocess_backend="official_pil_lanczos", center_crop=True, resize_size=224)
+            proc_image = prepare_openvla_image_for_attack(raw,
+                libero_preprocess_backend=PREPROCESS_BACKEND, center_crop=True, resize_size=224)
             inputs = processor(prompt(instruction), proc_image, return_tensors="pt")
             inputs.pop("attention_mask", None)
             iids = inputs["input_ids"].to(device)
@@ -201,8 +249,8 @@ for step in range(400):
             from gripper_attack.attack_adapter import prepare_openvla_image_for_attack, get_adv_inputs_from_attack_result
             from gripper_attack.route_contract import validate_true_pgd_attack_result
             clean_action_np = np.asarray(action, dtype=np.float32)
-            proc_image = prepare_openvla_image_for_attack(raw, libero_official_preprocess=False,
-                libero_preprocess_backend="official_pil_lanczos", center_crop=True, resize_size=224)
+            proc_image = prepare_openvla_image_for_attack(raw,
+                libero_preprocess_backend=PREPROCESS_BACKEND, center_crop=True, resize_size=224)
             inputs = processor(prompt(instruction), proc_image, return_tensors="pt")
             inputs.pop("attention_mask", None)
             iids = inputs["input_ids"].to(device)
@@ -232,6 +280,14 @@ for step in range(400):
         mk = np.asarray(s.get("mask", np.ones_like(lo, dtype=bool)), dtype=bool)
         attack_action = np.where(mk, 0.5*(na+1)*(hi-lo)+lo, na).astype(np.float32)
         env_action_final = postprocess_openvla_action_for_libero(attack_action, enabled=True)
+        # Arm Execution Lock: override arm DoF with clean candidate if requested
+        if args.arm_lock:
+            _arm_error = np.max(np.abs(attack_action[0:6] - clean_action_np[0:6]))
+            _msg_suffix = f"arm_lock before={_arm_error:.2e}"
+            attack_action[0:6] = clean_action_np[0:6].copy()
+            env_action_final = postprocess_openvla_action_for_libero(attack_action, enabled=True)
+            _arm_error_after = np.max(np.abs(attack_action[0:6] - clean_action_np[0:6]))
+            print(f"ArmLock step={step}: max_abs_arm_error={_arm_error:.2e} -> {_arm_error_after:.2e} {_msg_suffix}")
         raw_grip = float(attack_action[-1]); env_grip = float(env_action_final[-1])
         attack_this = True; attack_count += 1
         prev_delta_flags.append(prev_flag)
@@ -248,14 +304,25 @@ for step in range(400):
         "prev_delta_used": prev_flag, "model_ms": round(t_vla*1000, 2),
         "feat_valid": _feat_valid, "feat_error": _feat_error,
         "detector_state": _det_state, "corridor_p": _det_cp, "release_p": _det_rp,
-        "pred_phase": _det_pp, "qpos_source": "q7+q8_sum"}
+        "pred_phase": _det_pp, "qpos_source": "q7+q8_sum",
+        "raw_action_7d": json.dumps([float(x) for x in action]),
+        "env_action_7d": json.dumps([float(x) for x in env_action_final]),
+        "clean_action_7d": json.dumps([float(x) for x in _clean_candidate])}
     if _feat_valid:
         for fn in SC5_FEATURES:
             _tel["f_"+fn] = _feat_25d.get(fn, float("nan"))
     telemetry.append(_tel)
 
     obs, _, done, _ = env.step(env_action_final)
-    if done: break
+    if args.save_video and step % args.frame_stride == 0:
+        try:
+            _raw = obs.get("agentview_image", None)
+            if _raw is not None:
+                _raw_copy = copy.deepcopy(_raw)
+                _video_raw_frames.append(np.asarray(_raw_copy))
+        except Exception:
+            pass
+    if done and not args.keep_running: break
 
 success = bool(env.check_success()) if hasattr(env, "check_success") else False
 env.close()
@@ -281,13 +348,43 @@ summary = {"condition": args.condition, "state_id": STATE_ID, "teacher_anchor": 
     "env_open_duty": round(n_env_open/n_atk,3) if n_atk>0 else 0,
     "prev_delta_flags": prev_delta_flags, "task_success": success}
 
+_video_manifest = {}
+if args.save_video and _video_raw_frames:
+    try:
+        from imageio.v2 import mimwrite as _mimwrite
+        out_vdir = Path(args.output_dir)
+        out_vdir.mkdir(parents=True, exist_ok=True)
+        _raw_path = out_vdir / "rollout_raw.mp4"
+        _mimwrite(str(_raw_path), [np.asarray(f) for f in _video_raw_frames],
+                  fps=args.video_fps, codec="libx264", quality=8,
+                  output_params=["-preset", "fast"])
+        print("Video saved: %s (%d frames)" % (_raw_path, len(_video_raw_frames)))
+        _video_manifest = {
+            "raw_video_path": str(_raw_path),
+            "frame_count": len(_video_raw_frames),
+            "fps": args.video_fps,
+            "stride": args.frame_stride,
+            "source_commit": args.source_commit,
+        }
+    except Exception as _ve:
+        print("Video encoding failed: %s" % _ve)
+
 out = Path(args.output_dir); out.mkdir(parents=True, exist_ok=True)
 with open(out / "step_telemetry.csv", "w", newline="") as f:
     w = csv.DictWriter(f, fieldnames=list(telemetry[0].keys())); w.writeheader(); w.writerows(telemetry)
+summary["requested_dtype"] = _dtype_name
+summary["actual_dtype"] = _actual_dtype_str
+summary["requested_attn"] = _attn_name
+summary["actual_attn"] = _actual_attn
+summary["preprocess_backend_requested"] = args.libero_preprocess_backend
+summary["preprocess_backend_resolved"] = PREPROCESS_BACKEND
+summary["preprocess_uses_jpeg_roundtrip"] = USES_JPEG_ROUNDTRIP
+if _video_manifest:
+    summary["video"] = _video_manifest
 with open(out / "episode_summary.json", "w") as f:
     json.dump(summary, f, indent=2, default=str)
-print("%s s%d teacher=%d emit=%d err=%d: steps=%d atk=%d tok=%.2f env=%.2f arm=%.2f succ=%s" % (
+print("%s s%d teacher=%d emit=%d err=%d: steps=%d atk=%d tok=%.2f env=%.2f arm=%.2f succ=%s%s" % (
     args.condition, STATE_ID, ANCHOR, _mlp_emit,
     (_mlp_emit - ANCHOR) if _mlp_emit >= 0 else -1,
     len(telemetry), n_atk, summary["token_open_duty"], summary["env_open_duty"],
-    summary["arm_duty"], success))
+    summary["arm_duty"], success, " [VIDEO]" if args.save_video else ""))

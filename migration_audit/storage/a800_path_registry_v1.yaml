@@ -1,0 +1,87 @@
+# A800 Path Registry v1 — 2026-06-20
+# Migration branch: infra/a800-migration-20260620
+# Selected storage root: /mnt/sdc (ONLY viable candidate)
+
+registry:
+  version: 1
+  frozen_at: "2026-06-20T15:10:20Z"
+  selected_root: /mnt/sdc
+
+paths:
+  OPENVLA_STORAGE_ROOT:
+    path: /mnt/sdc/dty_user/openvla_attack
+    filesystem: /dev/nvme1n1p1
+    fs_uuid: 24a62cf7-f683-47fc-b158-12ac1151481c
+    fs_type: ext4
+    block_size: 4096
+    total_bytes: 3149224534016
+    free_bytes_at_freeze: 153462947840
+    inodes_total: 195354624
+    inodes_free: 190632273
+    inode_use_pct: 2.4
+    owner: dty_user
+    permissions: "0755"
+    status: ACTIVE_INSUFFICIENT_SPACE
+    note: "143 GiB free — need ≥500 GiB. Requires pi0/ dataset cleanup."
+
+  OPENVLA_MODEL_ROOT:
+    path: /mnt/sdc/dty_user/openvla_attack/models
+    filesystem: /dev/nvme1n1p1
+    fs_uuid: 24a62cf7-f683-47fc-b158-12ac1151481c
+    status: PENDING_MODEL_SYNC
+    note: "Currently empty. Will receive libero-spatial checkpoint first."
+
+  OPENVLA_CACHE_ROOT:
+    path: /mnt/sdc/dty_user/openvla_attack/cache
+    filesystem: /dev/nvme1n1p1
+    fs_uuid: 24a62cf7-f683-47fc-b158-12ac1151481c
+    subdirs:
+      huggingface: /mnt/sdc/dty_user/openvla_attack/cache/huggingface
+      torch: /mnt/sdc/dty_user/openvla_attack/cache/torch
+      pip: /mnt/sdc/dty_user/openvla_attack/cache/pip
+      xdg: /mnt/sdc/dty_user/openvla_attack/cache/xdg
+    status: ACTIVE
+
+  OPENVLA_DATA_ROOT:
+    path: /mnt/sdc/dty_user/openvla_attack/data
+    filesystem: /dev/nvme1n1p1
+    fs_uuid: 24a62cf7-f683-47fc-b158-12ac1151481c
+    status: PENDING_TRANSFER
+    note: "Currently empty. Will receive frozen-clean300, train300, layer1 data."
+
+  OPENVLA_OUTPUT_ROOT:
+    path: /mnt/sdc/dty_user/openvla_attack/evidence
+    filesystem: /dev/nvme1n1p1
+    fs_uuid: 24a62cf7-f683-47fc-b158-12ac1151481c
+    status: PENDING_ROLLOUT
+
+  OPENVLA_TRANSFER_STAGING_ROOT:
+    path: /mnt/sdc/dty_user/openvla_attack/migration_audit/transfer
+    filesystem: /dev/nvme1n1p1
+    fs_uuid: 24a62cf7-f683-47fc-b158-12ac1151481c
+    status: PENDING_TRANSFER
+
+  OPENVLA_TMP_ROOT:
+    path: /mnt/sdc/dty_user/openvla_attack/tmp
+    filesystem: /dev/nvme1n1p1
+    fs_uuid: 24a62cf7-f683-47fc-b158-12ac1151481c
+    status: ACTIVE
+
+legacy_consumers_on_root:
+  - path: /mnt/sdc/dty_user/pi0
+    size_bytes_estimate: 814548418560
+    note: "π0 model checkpoints (281G) + LeRobot datasets (377G) + raw data (156G)"
+    active_refs: 0
+    recommended_action: "ARCHIVE_OR_DELETE_AFTER_APPROVAL"
+  - path: /mnt/sdc/dty_user/Emu3.5
+    size_bytes_estimate: 141557760000
+    note: "Emu3.5 model weights (131G)"
+    active_refs: 0
+    recommended_action: "HOLD_PENDING_CONFIRMATION"
+  - path: /mnt/sdc/dty_user/pi0_openpi
+    size_bytes_estimate: 56818114560
+    note: "OpenPI checkpoints (44G) + third party"
+    active_refs: 8
+    recommended_action: "HOLD_ACTIVE_PROCESSES"
+
+registry_sha256: TBD_ON_FINALIZE

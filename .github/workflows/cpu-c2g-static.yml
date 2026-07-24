@@ -1,0 +1,252 @@
+name: cpu-c2g-static
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  c2g-static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install CPU test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install numpy pytest pillow
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+      - name: Compile complete C2g pipeline and Track A modules
+        run: |
+          python -m py_compile \
+            scripts/stageb/audit_c2f_track_a_run.py \
+            scripts/stageb/audit_c2g_matched_load_run.py \
+            scripts/stageb/build_c2g_matched_load_jobs.py \
+            scripts/stageb/build_c2g_suite_model_map.py \
+            scripts/stageb/collect_c2g_clean_window_rollouts.py \
+            scripts/stageb/collect_c2g_clean_window_rollouts_event_v2.py \
+            scripts/stageb/collect_c2g_clean_window_rollouts_release.py \
+            scripts/stageb/collect_c2g_clean_window_rollouts_strict.py \
+            scripts/stageb/collect_c2g_r8t_teacher_v2_canary.py \
+            scripts/stageb/collect_c2g_r8w_teacher_v2_clean.py \
+            scripts/stageb/calibrate_c2g_r9p_preview_thresholds.py \
+            scripts/stageb/extract_c2g_detector_timing.py \
+            scripts/stageb/finalize_c2g_goal_model_manifest_v2.py \
+            scripts/stageb/prepare_c2g_eval_parents.py \
+            scripts/stageb/run_c2g_r9p_offline_latency_smoke.py \
+            scripts/stageb/run_c2g_r9p_streaming_replay.py \
+            scripts/stageb/run_c2f_canary_worker.py \
+            scripts/stageb/run_c2g_clean_timing_jobs.py \
+            scripts/stageb/run_c2g_clean_timing_jobs_strict.py \
+            scripts/stageb/run_c2g_clean_window_vis_pgd.py \
+            scripts/stageb/run_c2g_matched_load_jobs.py \
+            scripts/stageb/run_c2g_matched_load_jobs_map_release.py \
+            scripts/stageb/run_c2g_r8_collection_shard.py \
+            scripts/stageb/run_c2g_r8t_dynamic_gpu_canary.py \
+            scripts/stageb/replay_c2g_r8t_canary_success.py \
+            scripts/stageb/run_c2g_r8t_teacher_v2_canary_shard.py \
+            scripts/stageb/run_c2g_r8u_adaptive_gpu_preview.py \
+            scripts/stageb/run_c2g_r8w_full_clean_shard.py \
+            scripts/stageb/run_c2g_r8w_gpu4567_16worker.py \
+            scripts/stageb/run_c2g_r8z_ogs_label_generation.py \
+            scripts/stageb/run_c2g_r8z1_semantic_prefix_audit.py \
+            scripts/stageb/run_c2g_r8y_l10_520_shard.py \
+            scripts/stageb/run_c2g_r8y_l10_520_dynamic_scheduler.py \
+            scripts/stageb/train_c2g_r9p_preview_detector.py \
+            src/gripper_attack/c2g_bddl_metadata.py \
+            src/gripper_attack/c2g_causal_vulnerability_detector.py \
+            src/gripper_attack/c2g_clean_event_tracking.py \
+            src/gripper_attack/c2g_clean_mechanism.py \
+            src/gripper_attack/c2g_clean_policy_signals.py \
+            src/gripper_attack/c2g_clean_window_runtime.py \
+            src/gripper_attack/c2g_clean_window_schema.py \
+            src/gripper_attack/c2g_counterfactual_manifest.py \
+            src/gripper_attack/c2g_gripper_critical_window_detector.py \
+            src/gripper_attack/c2g_matched_load_manifest.py \
+            src/gripper_attack/c2g_semantic_aliases.py \
+            src/gripper_attack/c2g_teacher_v2_contact_identity.py \
+            src/gripper_attack/c2g_teacher_v2_schema.py \
+            src/gripper_attack/c2g_teacher_v2_target_resolution.py \
+            tools/multisuite_detector/audit_c2f_teacher_v1_labels.py \
+            tools/multisuite_detector/audit_c2g_clean_source_inventory.py \
+            tools/multisuite_detector/audit_c2g_clean_window_v2.py \
+            tools/multisuite_detector/audit_c2g_goal_event_tracking.py \
+            tools/multisuite_detector/audit_c2g_goal_model_integrity_v2.py \
+            tools/multisuite_detector/audit_c2g_r5_bound_dataset.py \
+            tools/multisuite_detector/audit_c2g_r8_collection_wave.py \
+            tools/multisuite_detector/audit_c2g_r8r_clean2000_reuse.py \
+            tools/multisuite_detector/audit_c2g_r8s_teacher_v1_semantic_replay.py \
+            tools/multisuite_detector/audit_c2g_r8t_teacher_v2_canary.py \
+            tools/multisuite_detector/audit_c2g_r8u_postcanary.py \
+            tools/multisuite_detector/audit_c2g_r8w_full_clean_2000.py \
+            tools/multisuite_detector/audit_c2g_r8z_ogs_canary.py \
+            tools/multisuite_detector/audit_c2g_r8z_ogs_full1500.py \
+            tools/multisuite_detector/audit_c2g_r9p_materialization.py \
+            tools/multisuite_detector/audit_c2g_r8z1_semantic_prefix_closure.py \
+            tools/multisuite_detector/audit_c2g_static_assets.py \
+            tools/multisuite_detector/audit_c2g_static_assets_strict.py \
+            tools/multisuite_detector/build_c2g_r8_collection_waves.py \
+            tools/multisuite_detector/build_c2g_r8r_clean2000_source_spec.py \
+            tools/multisuite_detector/build_c2g_r8t_teacher_v2_canary.py \
+            tools/multisuite_detector/build_c2g_r8w_full_clean_2000_plan.py \
+            tools/multisuite_detector/build_c2g_r8z_ogs_official_views.py \
+            tools/multisuite_detector/build_c2g_r9p_preview_plan.py \
+            tools/multisuite_detector/build_c2g_r8y_l10_520_plan.py \
+            tools/multisuite_detector/c2g_official_suite_horizons.py \
+            tools/multisuite_detector/audit_c2g_r8y_l10_520_canary.py \
+            tools/multisuite_detector/audit_c2g_r8y_l10_520_full500.py \
+            tools/multisuite_detector/c2g_clean_dataset_adapter.py \
+            tools/multisuite_detector/c2g_clean_window_label_builder.py \
+            tools/multisuite_detector/c2g_dataset_scaffold.py \
+            tools/multisuite_detector/c2g_r8r_common.py \
+            tools/multisuite_detector/c2g_r8r_episode.py \
+            tools/multisuite_detector/c2g_r8r_outputs.py \
+            tools/multisuite_detector/c2g_r8s_common.py \
+            tools/multisuite_detector/c2g_r8s_episode.py \
+            tools/multisuite_detector/rebuild_c2g_r8z_teacher_v2_labels.py \
+            tools/multisuite_detector/materialize_c2g_clean_window_dataset.py \
+            tools/multisuite_detector/materialize_c2g_multisuite_dataset.py \
+            tools/multisuite_detector/materialize_c2g_r9p_ogs1500.py \
+            tools/multisuite_detector/plan_c2g_scientific_corpus.py \
+            tools/multisuite_detector/run_c2g_clean_window_folds.py \
+            tools/multisuite_detector/train_c2g_clean_window_detector.py \
+            tests/test_c2g_clean_window_e2e.py \
+            tests/test_c2g_clean_window_pipeline_tools.py \
+            tests/test_c2g_clean_window_server_audit.py \
+            tests/test_c2g_clean_window_v2.py \
+            tests/test_c2g_event_teacher_integration.py \
+            tests/test_c2g_goal_event_tracking.py \
+            tests/test_c2g_goal_manifest_v2_contract.py \
+            tests/test_c2g_goal_model_integrity_v2.py \
+            tests/test_c2g_matched_load_strict.py \
+            tests/test_c2g_r6_bound_dataset_audit.py \
+            tests/test_c2g_r7_scientific_corpus.py \
+            tests/test_c2g_r8_collection_control.py \
+            tests/test_c2g_r8_real_schema_compat.py \
+            tests/test_c2g_r8r_clean2000_reuse_audit.py \
+            tests/test_c2g_r8r_launcher_contract.py \
+            tests/test_c2g_r8s_teacher_v1_semantic_replay.py \
+            tests/test_c2g_r8s_launcher_contract.py \
+            tests/test_c2g_r8t_teacher_v2_canary.py \
+            tests/test_c2g_r8w_full_clean_plan.py \
+            tests/test_c2g_r8w_full_clean_collector.py \
+            tests/test_c2g_r8w_16worker_scheduler.py \
+            tests/test_c2g_r8w_full_clean_audit.py \
+            tests/test_c2g_r8z_official_views.py \
+            tests/test_c2g_r8z_teacher_v2_rebuild.py \
+            tests/test_c2g_r8z_sealed_cohorts.py \
+            tests/test_c2g_r8z_ogs_audit.py \
+            tests/test_c2g_r8z1_exact_prefix.py \
+            tests/test_c2g_r8z1_teacher_semantics.py \
+            tests/test_c2g_r8z1_checksum_completeness.py \
+            tests/test_c2g_r8z1_train_only_density.py \
+            tests/test_c2g_r9p_episode_training.py \
+            tests/test_c2g_r9p_fsm.py \
+            tests/test_c2g_r9p_materialization.py \
+            tests/test_c2g_r9p_nested_split.py \
+            tests/test_c2g_r9p_no_teacher_leakage.py \
+            tests/test_c2g_r9p_sealed_cohorts.py \
+            tests/test_c2g_r9p_streaming_equivalence.py \
+            tests/test_c2g_r8x_hardware_bound_repro.py \
+            tests/test_c2g_official_suite_horizons.py \
+            tests/test_c2g_r8y_l10_520_plan.py \
+            tests/test_c2g_r8y_dynamic_admission.py \
+            tests/test_c2g_r8y_l10_520_canary_audit.py \
+            tests/test_c2g_r8y_l10_520_full_audit.py \
+            tests/test_c2g_s1_semantic_remediation.py \
+            tests/test_c2g_server_resume_hardening.py
+      - name: Check launcher syntax
+        run: |
+          bash -n scripts/stageb/run_c2f_track_a_smoke5.sh
+          bash -n scripts/stageb/run_c2f_table1_candidate_gpu17.sh
+          bash -n scripts/stageb/run_c2g_clean_window_end_to_end.sh
+          bash -n scripts/stageb/run_c2g_clean_window_pipeline.sh
+          bash -n scripts/stageb/run_c2g_clean_window_pipeline_strict.sh
+          bash -n scripts/stageb/run_c2g_r6_dataset_audit.sh
+          bash -n scripts/stageb/run_c2g_r7_corpus_planning.sh
+          bash -n scripts/stageb/run_c2g_r8r_clean2000_reuse_audit.sh
+          bash -n scripts/stageb/run_c2g_r8r_input_for_r8s.sh
+          bash -n scripts/stageb/run_c2g_r8s_teacher_v1_semantic_replay_audit.sh
+      - name: Run complete C2g static suite
+        run: |
+          python -m unittest -v \
+            tests.test_c2f_track_a_static \
+            tests.test_c2g_static \
+            tests.test_c2g_p0_patch \
+            tests.test_c2g_teacher_v2_target_resolution \
+            tests.test_c2g_teacher_v2_contact_identity \
+            tests.test_c2g_teacher_v2_schema \
+            tests.test_c2g_counterfactual_manifest \
+            tests.test_c2g_static_asset_inventory \
+            tests.test_c2g_clean_window_v2 \
+            tests.test_c2g_clean_window_server_audit \
+            tests.test_c2g_clean_window_e2e \
+            tests.test_c2g_clean_window_pipeline_tools \
+            tests.test_c2g_dataset_trainability \
+            tests.test_c2g_event_teacher_integration \
+            tests.test_c2g_goal_event_tracking \
+            tests.test_c2g_goal_manifest_v2_contract \
+            tests.test_c2g_goal_model_integrity_v2 \
+            tests.test_c2g_matched_load_strict \
+            tests.test_c2g_r6_bound_dataset_audit \
+            tests.test_c2g_r7_scientific_corpus \
+            tests.test_c2g_r8_collection_control \
+            tests.test_c2g_r8_real_schema_compat \
+            tests.test_c2g_r8r_clean2000_reuse_audit \
+            tests.test_c2g_r8r_launcher_contract \
+            tests.test_c2g_r8s_teacher_v1_semantic_replay \
+            tests.test_c2g_r8s_launcher_contract \
+            tests.test_c2g_r8t_teacher_v2_canary \
+            tests.test_c2g_r8u_postcanary \
+            tests.test_c2g_r8u_adaptive_gpu_preview \
+            tests.test_c2g_r8w_full_clean_plan \
+            tests.test_c2g_r8w_full_clean_collector \
+            tests.test_c2g_r8w_16worker_scheduler \
+            tests.test_c2g_r8w_full_clean_audit \
+            tests.test_c2g_r8z_official_views \
+            tests.test_c2g_r8z_teacher_v2_rebuild \
+            tests.test_c2g_r8z_sealed_cohorts \
+            tests.test_c2g_r8z_ogs_audit \
+            tests.test_c2g_r8z1_exact_prefix \
+            tests.test_c2g_r8z1_teacher_semantics \
+            tests.test_c2g_r8z1_checksum_completeness \
+            tests.test_c2g_r8z1_train_only_density \
+            tests.test_c2g_r9p_episode_training \
+            tests.test_c2g_r9p_fsm \
+            tests.test_c2g_r9p_materialization \
+            tests.test_c2g_r9p_nested_split \
+            tests.test_c2g_r9p_no_teacher_leakage \
+            tests.test_c2g_r9p_sealed_cohorts \
+            tests.test_c2g_r9p_streaming_equivalence \
+            tests.test_c2g_r9p_synthetic_e2e \
+            tests.test_c2g_r8x_hardware_bound_repro \
+            tests.test_c2g_official_suite_horizons \
+            tests.test_c2g_r8y_l10_520_plan \
+            tests.test_c2g_r8y_dynamic_admission \
+            tests.test_c2g_r8y_l10_520_canary_audit \
+            tests.test_c2g_r8y_l10_520_full_audit \
+            tests.test_c2g_s1_semantic_remediation \
+            tests.test_c2g_server_resume_hardening
+      - name: Verify tracked code and protected outputs unchanged
+        shell: python
+        run: |
+          import subprocess
+
+          subprocess.run(["git", "diff", "--exit-code"], check=True)
+          protected = ["generated", "audit_outputs", "paper/generated", "artifacts"]
+          status = subprocess.run(
+              ["git", "status", "--porcelain", "--untracked-files=all", "--", *protected],
+              check=True,
+              capture_output=True,
+              text=True,
+          ).stdout.strip()
+          if status:
+              raise SystemExit(
+                  "Static tests must not create or modify protected output paths:\n" + status
+              )

@@ -1,0 +1,14 @@
+diff --git a/scripts/stageb/run_sc5_cross_suite_clean.py b/scripts/stageb/run_sc5_cross_suite_clean.py
+index 6cf4ac4f..6f4d2a0d 100644
+--- a/scripts/stageb/run_sc5_cross_suite_clean.py
++++ b/scripts/stageb/run_sc5_cross_suite_clean.py
+@@ -42,8 +42,7 @@ DEFAULT_MAX_STEPS = {
+ }
+ NUM_STEPS_WAIT = 10
+ PREPROCESS_KWARGS = {
+-    "libero_official_preprocess": False,
+-    "libero_preprocess_backend": "official_pil_lanczos",
++    "libero_preprocess_backend": "upstream_tf_jpeg",
+     "center_crop": True,
+     "resize_size": 224,
+     "drop_attention_mask": True,

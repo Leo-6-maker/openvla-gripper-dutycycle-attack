@@ -1,0 +1,42 @@
+{
+  "classification": "A1_FLASH2_RUNTIME_UNAVAILABLE",
+  "timestamp_utc": "2026-06-22T09:00:00Z",
+  "profile": "A1 (BF16 + FlashAttention2)",
+  "status": "NOT EVALUATED",
+  "statement": "FlashAttention2 was not evaluated because the shared A800 software stack could not provide the cuDNN ABI required to build/import flash-attn. The installed nvidia-cudnn-cu12==8.9.7.29 ships split component libraries (libcudnn_ops_infer.so.8 etc.) but torch 2.2.0+cu121 links against the combined libcudnn.so.8. Without root access to install system-level cuDNN, the flash-attn wheel could not be built despite two bounded attempts.",
+  "attempt_count": 2,
+  "attempts": [
+    {
+      "id": 1,
+      "method": "pip wheel --no-build-isolation (SM80-only, /mnt/sdc TMPDIR)",
+      "error": "pip metadata hook ran in isolated subprocess, could not find libcudnn.so.8"
+    },
+    {
+      "id": 2,
+      "method": "setup.py bdist_wheel (direct, SM80-only, /mnt/sdc TMPDIR)",
+      "error": "torch import failed: ImportError: libcudnn.so.8: cannot open shared object file"
+    }
+  ],
+  "environment": {
+    "torch": "2.2.0+cu121",
+    "cuda": "12.1 (runtime), 12.4 (nvcc)",
+    "cudnn_package": "nvidia-cudnn-cu12==8.9.7.29",
+    "cudnn_components": [
+      "libcudnn_ops_infer.so.8",
+      "libcudnn_ops_train.so.8",
+      "libcudnn_adv_infer.so.8",
+      "libcudnn_adv_train.so.8",
+      "libcudnn_cnn_infer.so.8",
+      "libcudnn_cnn_train.so.8"
+    ],
+    "missing": "combined libcudnn.so.8 with SONAME and symbol version tags",
+    "root_free_at_last_attempt": "1.9 GB",
+    "root_total": "428 GB",
+    "root_used": "426 GB"
+  },
+  "evidence_files": [
+    "migration_audit/object_checkpoint_migration/m1_runtime/flash_build_attempts.md",
+    "migration_audit/object_checkpoint_migration/m1_runtime/flash_build_artifact_manifest.json"
+  ],
+  "note": "B0 (BF16+Eager) and D1 (FP32+Eager) both confirmed working. Eager attention used for both profiles; Flash2 not silently substituted."
+}

@@ -1,0 +1,35 @@
+{
+  "gate": "SC5_V2_STEP_DATASET_REVISION",
+  "revision": "05f6",
+  "supersedes": "c086",
+  "old_sha256": "c086c0c8107622161bc620ed17035d8d2aea37764b8602bf87d8d30ff7373de9",
+  "new_sha256": "05f6f9e9b2ac5720ff00714199e4c67c2f44f55ed01d40fc0459ff323af04e0e",
+  "old_total_steps": 101215,
+  "new_total_steps": 84015,
+  "old_train_steps": 73764,
+  "new_train_steps": 59773,
+  "old_val_steps": 27451,
+  "new_val_steps": 24242,
+  "removed_steps": 17200,
+  "removed_train": 13991,
+  "removed_val": 3209,
+  "filter_rule": "Remove any step where any of the 25 SC5_FEATURES is missing, empty, NaN, or non-numeric in the telemetry CSV.",
+  "filter_rationale": [
+    "V2 bridge only writes f_* streaming features when feat_valid=True.",
+    "Steps with feat_valid=False (invalid feature steps) have no 25D feature values.",
+    "SC5 MLP detector only processes feature-valid steps, so training on invalid steps is incorrect.",
+    "Filter is deterministic and label-independent \u2014 no Teacher label or model outcome was used.",
+    "Filter was applied BEFORE any training run (the trainer failed on first attempt with missing feature error)."
+  ],
+  "phase_distribution": {
+    "abstain_unsupported": 370,
+    "approach": 46635,
+    "grasp_close": 30537,
+    "stable_grasp": 4859,
+    "stable_carry": 1531,
+    "pre_place_unsupported": 83
+  },
+  "generated_before_any_training": true,
+  "deterministic_filter": true,
+  "label_independent": true
+}

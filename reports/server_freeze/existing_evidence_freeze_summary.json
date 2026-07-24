@@ -1,0 +1,74 @@
+{
+  "attack_execution_evidence": "FRAMES_ONLY_BOUNDED",
+  "audit_freeze_status": "EXISTING_EVIDENCE_FREEZE_READY_FOR_REVIEW",
+  "backup": {
+    "clean2000": {
+      "destination_file_count": 16,
+      "destination_total_bytes": 579585829,
+      "relative_path_set_equal": true,
+      "sha256_all_match": true,
+      "source_file_count": 16,
+      "source_total_bytes": 579585829,
+      "status": "PASS"
+    },
+    "object": {
+      "destination_file_count": 7777,
+      "destination_total_bytes": 504814688,
+      "relative_path_set_equal": true,
+      "sha256_all_match": true,
+      "source_file_count": 7777,
+      "source_total_bytes": 504814688,
+      "status": "PASS"
+    },
+    "runtime_provenance": {
+      "destination_file_count": 33,
+      "destination_total_bytes": 6272266,
+      "relative_path_set_equal": true,
+      "sha256_all_match": true,
+      "source_file_count": 33,
+      "source_total_bytes": 6272266,
+      "status": "PASS"
+    },
+    "source_quiescence": {
+      "after_rows": 7793,
+      "before_rows": 7793,
+      "status": "PASS"
+    },
+    "target_root": "/data/liuyu/openvla_gripper_freeze/20260702_codex_verified_v3"
+  },
+  "clean2000_builder_lineage": "BUILDER_LINEAGE_UNRESOLVED_NO_REPRODUCIBLE_SEARCH_EVIDENCE",
+  "clean2000_cohort_counts": {
+    "ELIGIBLE_CLEAN_FAILURE": 307,
+    "MECHANISM_INELIGIBLE_ABSTENTION": 650,
+    "PRIMARY_SUCCESS_ELIGIBLE": 1043
+  },
+  "clean2000_teacher_source_semantics": "PASS_CROSSTAB_RECONCILED_TIMING_UNUSABLE",
+  "experiment_authorization_status": "NOT_AUTHORIZED",
+  "no_gpu_job_launched": true,
+  "no_new_experiment_launched": true,
+  "no_source_scientific_artifact_modified": true,
+  "object_final_classification": "FROZEN_EMPIRICAL_RESULTS_PROTOCOL_PARTIAL_BOUNDED",
+  "object_protocol_missing_fields": "UNRESOLVED_BOUNDED",
+  "object_protocol_source_attribution": "PASS_PARTIAL_BOUNDED",
+  "official_libero_registry_match": "PASS",
+  "rand_t10_classification": "RAND_FIELD_CONFLICT_BOUNDED",
+  "raw_attack_applied_trusted": false,
+  "remaining_limitations": [
+    "HISTORICAL_PROTOCOL_PARTIAL_BOUNDED",
+    "CLEAN2000_CANONICAL_TIMING_UNUSABLE",
+    "EXPERIMENT_AUTHORIZATION_NOT_GRANTED"
+  ],
+  "remaining_p0": [],
+  "review6": {
+    "clean2000_source_event_crosstab": "FIXED",
+    "master_ledger_field_rename": "FIXED_WITH_DEPRECATED_MARKER",
+    "object_protocol_negative_search_provenance": "DEMOTED_TO_UNRESOLVED_NO_FORMAL_BINDING_EVIDENCE",
+    "object_subgroup_metrics": "FIXED"
+  },
+  "review7": {
+    "audit_freeze_ready_for_review": "YES",
+    "sha_table_long_format": "FIXED",
+    "status_vocabulary_normalized": "FIXED"
+  },
+  "scientific_claim_status": "LEGACY_PROTOCOL_LIMITED"
+}

@@ -1,0 +1,14 @@
+{
+  "gate": "FORMAL_SMOKE_22_V2_ERRATUM",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-24T20:30:00+08:00",
+  "parent_commit": "cbcef7b",
+  "erratum_type": "metadata_typo_in_frozen_path",
+  "description": "FORMAL_SMOKE_22_V2_FROZEN.json listed output_base as 'evidence/m1c/formal_smoke_22_v2' but the frozen launcher (sha256: 9c061ba733e7dc7e3c42a9c00a9d05580ca6ab0394f5d0256b62cde4a94a7265) hardcodes OUTBASE='evidence/m1c/formal_smoke_22'. The actual V2 run wrote to evidence/m1c/formal_smoke_22/ as determined by the launcher.",
+  "resolution": "The launcher SHA is the authoritative artifact. Output path is evidence/m1c/formal_smoke_22/. This erratum does NOT modify any gate threshold, tolerance, or audit check.",
+  "affected_field": "output_base in FORMAL_SMOKE_22_V2_FROZEN.json",
+  "correct_value": "evidence/m1c/formal_smoke_22",
+  "incorrect_frozen_value": "evidence/m1c/formal_smoke_22_v2",
+  "no_threshold_change": true,
+  "no_gate_change": true
+}

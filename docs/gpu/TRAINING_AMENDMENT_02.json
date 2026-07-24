@@ -1,0 +1,37 @@
+{
+  "gate": "TRAINING_AMENDMENT_02",
+  "invalidates": "TRAINING V1 (train_sc5_strict_fold0_v1.py, all 3 seeds)",
+  "bug": "V1 used lab.get('is_corridor', False) — field absent from teacher labels → 86,191 rows defaulted to False → corridor head trained on all-negative labels",
+  "observed": {"max_corridor_p": 0.0086, "all_split_emissions": 0},
+  "fix": "Corridor label derived from find_sc5_anchor_v2() + compute_sc5_valid_start_corridor() per episode. Only sc5['valid'] episodes get corridor positives.",
+  "trainer": "scripts/stageb/train_sc5_strict_fold0_v2.py",
+  "fail_closed_guarantees": [
+    "KeyError on missing teacher label",
+    "KeyError on missing 'phase' field",
+    "KeyError on missing 'step_idx' field",
+    "AssertionError on non-contiguous steps",
+    "AssertionError on step[0] != 0",
+    "AssertionError on anchor type != int",
+    "AssertionError on valid anchor < 0",
+    "no .get(..., default) for any supervision field"
+  ],
+  "label_support_gates": [
+    "train_corridor_pos > 0",
+    "train_corridor_neg > 0",
+    "val_corridor_pos > 0",
+    "release_pos > 0",
+    "release_neg > 0",
+    "phase_unique >= 2",
+    "task_8_rows_in_train_val == 0"
+  ],
+  "unchanged": [
+    "seeds [1,2,3]",
+    "architecture 25→64→64",
+    "tau_corridor=0.3, tau_release=0.3, guard=5, K=10",
+    "train-only normalization",
+    "val-only checkpoint selection (phase CE)",
+    "teacher config",
+    "feature order",
+    "raw corpus"
+  ]
+}

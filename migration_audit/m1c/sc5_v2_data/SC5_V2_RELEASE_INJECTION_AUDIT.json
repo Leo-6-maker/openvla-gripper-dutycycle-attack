@@ -1,0 +1,19 @@
+{
+  "gate": "SC5_V2_RELEASE_INJECTION_AUDIT",
+  "method": "V1 release_head.weight+bias injected into V2 shared trunk",
+  "injected_heads": [
+    "release_head.weight",
+    "release_head.bias",
+    "confidence_head.weight",
+    "confidence_head.bias"
+  ],
+  "v1_checkpoint_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+  "release_safe_count_in_a3f9": 0,
+  "reason": "a3f9 dataset has release_safe=0 (post-emit steps lack valid streaming features)",
+  "risk": "New shared trunk h_v2 may produce different representations. V1 release head semantics may not transfer.",
+  "equivalence_checks_required": [
+    "release probability MAE vs V1 on 90 dev trajectories",
+    "threshold decision agreement at tau_release=0.3 (>= 99%)",
+    "emit disagreement from release branch (<= 1/90)"
+  ]
+}

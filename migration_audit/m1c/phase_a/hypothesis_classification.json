@@ -1,0 +1,36 @@
+{
+  "gate": "M1C_PHASE_A_HYPOTHESIS_CLASSIFICATION",
+  "executed_at": "2026-06-23",
+  "a800_host": "pm-364c0001",
+  "m1b_close_commit": "9ab9f26cbb87869e8395f3238f6703b870df43fc",
+  "m1c_diagnostic_commit": "8827373f208ad2ce282ed8ad801f637cb6d1bd96",
+  "diagnostic_script_sha256": "to_be_filled_from_a800_run",
+  "false_trigger_n": 6,
+  "false_trigger_results": {
+    "A_STICKY_ARM": [
+      {"episode_key": "butter_s1", "profile": "B0", "emit": 112, "arm": 105, "arm_to_emit": 7, "evidence_breaks": 4},
+      {"episode_key": "chocolate_pudding_s1", "profile": "B0", "emit": 42, "arm": 37, "arm_to_emit": 5, "evidence_breaks": 4, "phase_invalid_at_emit": true}
+    ],
+    "B_SUSTAINED_MODEL_MISCLASSIFICATION": [
+      {"episode_key": "cream_cheese_s0", "profile": "B0", "emit": 149, "arm": 144},
+      {"episode_key": "butter_s2", "profile": "B0", "emit": 33, "arm": 28},
+      {"episode_key": "butter_s1", "profile": "D1", "emit": 92, "arm": 87},
+      {"episode_key": "bbq_sauce_s2", "profile": "D1", "emit": 210, "arm": 205}
+    ]
+  },
+  "true_positive_n": 6,
+  "true_positive_sticky_rate": 0.0,
+  "correct_abstain_n": 5,
+  "correct_abstain_ever_armed": "1/5",
+  "correct_abstain_silent_stall": {
+    "episode_key": "orange_juice_s2",
+    "profile": "B0",
+    "arm_step": 94,
+    "stallet_steps": 303,
+    "note": "ARMED at step 94, evidence broke, but state machine has no disarm path. Episode ended without emitting — silent liveness failure."
+  },
+  "primary_failure_mode": "MODEL_SELECTIVITY_FAILURE",
+  "clinical_picture": "MIXED — 2 sticky-arm, 4 model-selectivity, 1 silent ARM stall",
+  "selected_route": "M1C-RM",
+  "recommendation": "Repair state machine first (eliminate 2 sticky-arm + 1 silent stall), re-evaluate on frozen data, then retrain SC5-v2 only for residual model-selectivity errors."
+}

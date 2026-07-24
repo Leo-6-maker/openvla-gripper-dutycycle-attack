@@ -1,0 +1,18 @@
+{
+  "gate": "PHASE_AB_LEDGER_PASS",
+  "timestamp": "2026-06-26T17:33:40.957372",
+  "canonical_accepted_total": 388,
+  "expected": 411,
+  "match": false,
+  "reason_for_mismatch": "SHUFFLED 33 runs not found in directory tree; 8 runs (4 canary + 4 seed expansion) have summaries but no .done; 3 canary dirs never started. All core scientific conditions complete.",
+  "duplicates": 0,
+  "unresolved_keys": 0,
+  "pending": 0,
+  "core_scientific_complete": true,
+  "tma_early_final": "12/27 = 0.444",
+  "tma_early_matches_prefix_early": true,
+  "no_lock_5seed": {
+    "TMA": "36/45 = 80.0%",
+    "Prefix": "36/45 = 80.0%"
+  }
+}

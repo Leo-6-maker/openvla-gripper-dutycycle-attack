@@ -1,0 +1,80 @@
+{
+  "gate": "F0_OBJECT_ARTIFACT_FREEZE",
+  "status": "PASS",
+  "checkpoint": {
+    "source_path": "/data/liuyu/repos/sc5_census_freeze_cc356f3_20260618/outputs/sc5_canonical_eng/sc5_mlp_s2.pt",
+    "a800_path": "/mnt/sdc/dty_user/openvla_attack/artifacts/detector/sc5_mlp_s2.pt",
+    "sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+    "file_size": 36194,
+    "seed": 2,
+    "git_tag": "freeze/layer123-poc-20260618",
+    "git_commit": "54ea19a477bd98c0d0343e36b90e81391af3adb2"
+  },
+  "dataset": {
+    "sha256": "f942f4b0856d3449fa4e98f6d6e74ac8d5e8e9af7082373f961f79b0a6930cd9",
+    "train_rows": 15433,
+    "val_rows": 4695,
+    "suite": "libero_object",
+    "n_tasks": 38,
+    "split_mode": "frozen"
+  },
+  "architecture": {
+    "input_features": 25,
+    "backbone": "Linear(25,64)-ReLU-Linear(64,64)-ReLU",
+    "heads": {
+      "phase_head": 9,
+      "corridor_head": 1,
+      "release_head": 1,
+      "confidence_head": 1
+    },
+    "parameter_count": 6604,
+    "feature_names": [
+      "gripper_command", "gripper_qpos", "gripper_opening_proxy",
+      "eef_x", "eef_y", "eef_z", "eef_vx", "eef_vy", "eef_vz",
+      "action_dx", "action_dy", "action_dz", "action_gripper",
+      "recent_close_streak", "recent_open_streak", "recent_gripper_flip_count",
+      "close_onset", "time_since_close", "eef_speed",
+      "eef_z_delta_since_close", "qpos_delta_1", "qpos_delta_3",
+      "opening_proxy_delta_3", "opening_proxy_variance_5", "eef_speed_variance_5"
+    ],
+    "phase_classes": [
+      "approach", "grasp_close", "stable_grasp", "first_lift",
+      "stable_carry", "pre_place_unsupported", "release_safe",
+      "recovery_or_regrasp", "abstain_unsupported"
+    ]
+  },
+  "normalization": {
+    "mean_shape": [25],
+    "std_shape": [25],
+    "all_finite": true,
+    "std_all_positive": true,
+    "source": "train_only"
+  },
+  "trigger_params": {
+    "tau_corridor": 0.3,
+    "tau_release": 0.3,
+    "guard": 5,
+    "K": 10
+  },
+  "state_machine": "IDLE → (stable_carry AND cp > tau_c) → ARMED → (guard steps AND cp > tau_c AND rp < tau_r) → EMITTED (one-shot)",
+  "c16_metrics": {
+    "coverage": 0.873,
+    "false_early": 0.025,
+    "post_release": 0.000,
+    "median_abs_error": 2.7,
+    "k10_containment": 0.974,
+    "no_corridor_abstain": 0.954
+  },
+  "c16_e2e": {
+    "butter_s0s2": "2/2 detector-triggered VIS POC PASS"
+  },
+  "a800_environment": {
+    "hostname": "pm-364c0001",
+    "conda_env": "openvla-official-a800",
+    "python": "3.10.20",
+    "pytorch": "2.2.0+cu121",
+    "model_snapshot": "models/libero-spatial/spatial_c8f03f4_20260620"
+  },
+  "strict_load_verified": true,
+  "confidence_head_present": true
+}

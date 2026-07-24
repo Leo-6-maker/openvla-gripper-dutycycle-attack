@@ -1,0 +1,85 @@
+{
+  "schema": "DETECTOR_V4_DECISION_CONFIG_V1",
+  "version": "1.0",
+  "status": "SEALED_INDEPENDENT_CONFIG",
+  "decision_config_recovered": true,
+  "note": "Unlike B3_25D where decision-config was NOT_RECOVERED, this config is independently sealed before any GPU matrix training. It defines the exact rules for PASS/HOLD decisions on V4 viability results.",
+
+  "primary_decision_rule": {
+    "description": "V4 detector PASSES viability if it demonstrates Pareto improvement over close-only baseline on at least 3 of 4 folds with matched operating points, AND all hard gates pass.",
+    "hard_gates": {
+      "source_mutation_zero": {"required": true, "stop_on_fail": true},
+      "leakage_violation_zero": {"required": true, "stop_on_fail": true},
+      "release_overlap_zero": {"required": true, "stop_on_fail": true},
+      "unknown_as_negative_zero": {"required": true, "stop_on_fail": true},
+      "all_seals_pass": {"required": true, "stop_on_fail": true},
+      "four_folds_complete": {"required": true, "stop_on_fail": true},
+      "three_seeds_per_fold": {"required": true, "stop_on_fail": true},
+      "checkpoint_not_attack_authorized": {"required": true, "stop_on_fail": true}
+    }
+  },
+
+  "metric_thresholds": {
+    "full_t10_hit_at_matched_fpr_10pct": {
+      "operator": ">=",
+      "target": "CLOSE_BASELINE_VALUE",
+      "description": "At matched negative-episode any-emit = 10%, V4 full-T10 hit rate must be >= close baseline at the same operating point."
+    },
+    "negative_episode_any_emit_at_matched_recall_95pct": {
+      "operator": "<",
+      "target": "CLOSE_BASELINE_VALUE",
+      "description": "At matched full-T10 = 95%, V4 negative any-emit must be strictly less than close baseline."
+    },
+    "later_event_hit_lower_bound": {
+      "operator": ">=",
+      "target": 0.80,
+      "description": "Later-event hit rate must not crash below 80% at any viable operating point."
+    },
+    "pareto_folds_minimum": {
+      "operator": ">=",
+      "target": 3,
+      "unit": "folds out of 4",
+      "description": "At least 3 of 4 folds must show a Pareto-improving operating point."
+    },
+    "score_close_correlation_max": {
+      "operator": "<",
+      "target": 0.95,
+      "description": "Pearson correlation between V4 criticality score and close streak must be below 0.95. Above this, the model is essentially a close detector."
+    },
+    "seed_std_max": {
+      "operator": "<=",
+      "target": 0.05,
+      "description": "Standard deviation of full-T10 hit across 3 seeds within each fold must be <= 0.05."
+    }
+  },
+
+  "decision_outcomes": {
+    "PASS": "All hard gates pass AND all metric thresholds met. Detector demonstrates Pareto improvement over close baseline.",
+    "HOLD_MARGINAL": "Hard gates pass but some metric thresholds not met. Detector shows promise but insufficient evidence. DO NOT proceed to FIT-DEV.",
+    "HOLD_FAIL": "Hard gates fail OR metrics far below thresholds. Detector does not demonstrate value over close baseline.",
+    "HOLD_INCOMPLETE": "Not all runs completed or seals not verified."
+  },
+
+  "post_decision_rules": {
+    "on_pass": "STOP_AND_REQUEST_FIT_DEV_AUTHORIZATION",
+    "on_hold_marginal": "STOP_AND_REPORT_FINDINGS",
+    "on_hold_fail": "STOP_AND_REPORT_FINDINGS",
+    "on_hold_incomplete": "COMPLETE_REMAINING_RUNS"
+  },
+
+  "prohibited_post_decision_actions": [
+    "RETUNE_THRESHOLD_ON_HELDOUT",
+    "SELECT_BEST_SEED_AND_DECLARE_PASS",
+    "READ_FIT_DEV_TO_OVERRIDE_HOLD",
+    "READ_CAL_OR_CHECK",
+    "FULL_FIT_REFIT_WITHOUT_AUTHORIZATION",
+    "MODIFY_METRIC_THRESHOLDS_AFTER_SEEING_RESULTS"
+  ],
+
+  "sealing": {
+    "sealed_before_any_gpu_training": true,
+    "seal_date": "2026-07-18",
+    "sha256": "TO_BE_COMPUTED_AFTER_FINAL_COMMIT",
+    "modification_after_seal": "FORBIDDEN"
+  }
+}

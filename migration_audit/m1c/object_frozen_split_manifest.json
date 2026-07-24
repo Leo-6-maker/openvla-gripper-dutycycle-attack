@@ -1,0 +1,64 @@
+{
+  "gate": "M1C_FROZEN_SPLIT_MANIFEST",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-23",
+  "split_rules": {
+    "m1b_exclusion": "States 0,1,2 for all 10 tasks are OBSERVED in M1B and excluded from all M1C pools.",
+    "hash_isolation": "Episodes sharing the same initial_state_sha256 must belong to the same split. Cross-split SHA leakage is forbidden.",
+    "blind_inviolability": "Once a state is assigned to the blind pool, it cannot be reassigned. Blind results are opened exactly once.",
+    "profile": "B0 primary (BF16+Eager). D1 reserved for secondary transfer test after final model freeze."
+  },
+  "split_assignment": {
+    "train": {
+      "tasks": [0,1,2,3,4,5,6,7,8,9],
+      "states": "3-27 inclusive",
+      "n_states": 250,
+      "gpu_target": {"GPU2": 125, "GPU3": 125},
+      "target_episodes": {"teacher_valid_min": 120, "no_corridor_min": 80}
+    },
+    "validation": {
+      "tasks": [0,1,2,3,4,5,6,7,8,9],
+      "states": "28-37 inclusive",
+      "n_states": 100,
+      "gpu_target": {"GPU4": 100},
+      "target_episodes": {"teacher_valid_min": 30, "no_corridor_min": 20}
+    },
+    "blind": {
+      "tasks": [0,1,2,3,4,5,6,7,8,9],
+      "states": "38-47 inclusive",
+      "n_states": 100,
+      "gpu_target": {"GPU6": 100},
+      "target_episodes": {"teacher_valid_min": 30, "no_corridor_min": 30}
+    }
+  },
+  "runtime_config": {
+    "profile": "B0",
+    "dtype": "bfloat16",
+    "attn": "eager",
+    "attack": "disabled",
+    "detector_checkpoint": "artifacts/detector/sc5_mlp_s2.pt",
+    "vla_model": "models/openvla-7b-finetuned-libero-object",
+    "teacher_config_sha": "<from_frozen_c16_config>",
+    "bridge_script": "scripts/stageb/run_v2_vis_sc5_mlp_bridge.py",
+    "max_steps": 400,
+    "dummy_wait": 10,
+    "do_sample": false
+  },
+  "collection_protocol": {
+    "smoke_first": "Each GPU runs 2-4 cells before scaling up",
+    "smoke_checks": [
+      "detector checkpoint SHA matches",
+      "attack_frames == 0",
+      "telemetry columns complete with corridor_p, release_p, pred_phase, feat_valid",
+      "teacher fields extractable",
+      "disk growth manageable",
+      ".done and heartbeat functional"
+    ],
+    "output_structure": "evidence/m1c/object_clean_corpus/{pool}/{task_name}_{state_id}/",
+    "per_cell_artifacts": [
+      "step_telemetry.csv",
+      "episode_summary.json",
+      ".done"
+    ]
+  }
+}

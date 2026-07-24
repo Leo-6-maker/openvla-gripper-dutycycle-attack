@@ -1,0 +1,36 @@
+{
+  "protocol": "sc5_object_loto_v1_fold00",
+  "split_type": "task_level_811_student_only",
+  "isolation_level": "STUDENT_ROW_ONLY",
+  "train_tasks": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "val_tasks": [
+    0
+  ],
+  "held_out_tasks": [
+    9
+  ],
+  "task_isolation_pass": true,
+  "episode_isolation_pass": true,
+  "teacher_calibration_source": "inherited_from_old_all_task_build",
+  "teacher_isolation_note": "Teacher calibration and per-row labels were produced by the original build_sc5_canonical_corpus_v2.py which had access to all 10 Object tasks. Student row split is strict 8/1/1, but teacher labels may carry indirect information about val/held_out tasks through calibration thresholds. This is a STUDENT-ONLY isolation canary. Full teacher-isolated LOTO requires re-running privileged teacher calibration on train tasks only, which needs raw step_records.jsonl files.",
+  "rows": {
+    "val": 8729,
+    "train": 66012,
+    "held_out": 9274
+  },
+  "episodes": {
+    "val": 37,
+    "train": 296,
+    "held_out": 37
+  },
+  "gate_pass": true
+}

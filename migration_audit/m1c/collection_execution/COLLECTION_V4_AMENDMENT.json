@@ -1,0 +1,75 @@
+{
+  "gate": "M1C_COLLECTION_V4_AMENDMENT",
+  "status": "FROZEN_DURING_EXECUTION",
+  "created_at": "2026-06-23T15:20:27+08:00",
+  "parent_execution_manifest": "migration_audit/m1c/collection_execution/COLLECTION_EXECUTION_MANIFEST.json (commit 10a0934)",
+  "collection_branch": "feature/sc5-abstention-v2-20260622",
+  "collection_commit": "10a0934",
+  "v4_runner_path": "/tmp/launch_v4.sh",
+  "v4_runner_sha256": "b57142317e017e8522dc7f71c4ea7e43650fbb17d313fc64b82c01b35c7d0c10",
+  "rc_fix_description": "Changed local rc=$? to local rc; rc=$? to correctly capture bridge exit code. The local builtin resets $? to 0.",
+  "a800_host": "pm-364c0001",
+  "a800_python": "3.10.20 (GCC 14.3.0)",
+  "a800_torch": "2.2.0+cu121",
+  "a800_cuda": "CUDA 12.1 (from torch build tag)",
+  "gpu_assignments": {
+    "gpu2": {
+      "index": 2,
+      "uuid": "GPU-7b06162a-27e4-2552-e891-d201e3fae6b9",
+      "name": "NVIDIA A800-SXM4-80GB",
+      "shard": "train_3_9",
+      "pool": "train",
+      "state_range": "3-9",
+      "planned_cells": 70
+    },
+    "gpu5": {
+      "index": 5,
+      "uuid": "GPU-185b30c0-074c-6f07-aa8b-a67d00e8e4a9",
+      "name": "NVIDIA A800-SXM4-80GB",
+      "shard": "train_10_15",
+      "pool": "train",
+      "state_range": "10-15",
+      "planned_cells": 60
+    },
+    "gpu3": {
+      "index": 3,
+      "uuid": "GPU-41cd4b75-e3d4-92b8-ec37-ddca13e3761a",
+      "name": "NVIDIA A800-SXM4-80GB",
+      "shard": "train_16_27",
+      "pool": "train",
+      "state_range": "16-27",
+      "planned_cells": 120
+    },
+    "gpu4": {
+      "index": 4,
+      "uuid": "GPU-e85ed586-ba64-a9e3-8fa9-07f16f84dcda",
+      "name": "NVIDIA A800-SXM4-80GB",
+      "shard": "validation_28_37",
+      "pool": "validation",
+      "state_range": "28-37",
+      "planned_cells": 100
+    }
+  },
+  "total_planned_cells": 350,
+  "train_planned": 250,
+  "validation_planned": 100,
+  "blind_planned": 0,
+  "excluded_states": {
+    "m1b_observed": "0,1,2",
+    "compromised_blind": "38-47",
+    "buffer_reserved": "48-49"
+  },
+  "v4_launch_command": "bash /tmp/launch_v4.sh 2>&1 | tee /mnt/sdc/dty_user/openvla_attack/evidence/m1c/object_clean_corpus/collection_v4.log",
+  "v4_pid": 3819063,
+  "v4_tmux": "m1c_v4",
+  "output_root": "/mnt/sdc/dty_user/openvla_attack/evidence/m1c/object_clean_corpus",
+  "attack_disabled_proof": "export OPENVLA_DTYPE=bfloat16 OPENVLA_ATTN_IMPLEMENTATION=eager; bridge --condition CLEAN",
+  "shard_non_overlap_verified": true,
+  "asset_sha_consistency": {
+    "detector_checkpoint": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628",
+    "vla_model_shards": "4 shards, SHA in COLLECTION_EXECUTION_MANIFEST.json",
+    "teacher_config": "ebc1ccda21cdfeae0f70f90ef0e433be3474ef0baa9cf52f609d620f863ce87a",
+    "bridge_script": "fd594b3f9b38f4545d7b19202b380c0f4eeb0e9d95cb566f2fbca7b1852b208e",
+    "v4_runner": "b57142317e017e8522dc7f71c4ea7e43650fbb17d313fc64b82c01b35c7d0c10"
+  }
+}

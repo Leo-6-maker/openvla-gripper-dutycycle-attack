@@ -1,0 +1,31 @@
+{
+  "old_thresholds": {
+    "grasp_close_sustain": 3,
+    "eef_obj_dist_max": 0.0638,
+    "eef_obj_dist_stable_var": 0.005,
+    "lift_z_threshold": 0.088,
+    "lift_sustain_steps": 2,
+    "carry_obj_z_var_max": 0.01,
+    "carry_window": 8,
+    "preplace_target_dist_min": 0.05,
+    "preplace_target_dist_max": 0.3618,
+    "release_target_dist_max": 0.1516,
+    "regrasp_eef_obj_dist_max": 0.1,
+    "stability_window": 5
+  },
+  "new_thresholds": {
+    "grasp_close_sustain": 3,
+    "eef_obj_dist_max": 0.12,
+    "eef_obj_dist_stable_var": 0.005,
+    "lift_z_threshold": 0.0994,
+    "lift_sustain_steps": 2,
+    "carry_obj_z_var_max": 0.01,
+    "carry_window": 8,
+    "preplace_target_dist_min": 0.05,
+    "preplace_target_dist_max": 0.3673,
+    "release_target_dist_max": 0.1672,
+    "regrasp_eef_obj_dist_max": 0.1,
+    "stability_window": 5
+  },
+  "overall_phase_agreement": 0.7887075058902726
+}

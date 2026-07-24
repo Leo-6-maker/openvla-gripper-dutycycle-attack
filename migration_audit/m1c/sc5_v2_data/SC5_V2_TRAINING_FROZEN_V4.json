@@ -1,0 +1,82 @@
+{
+  "gate": "SC5_V2_TRAINING_PROTOCOL_V4",
+  "status": "FROZEN",
+  "frozen_at": "2026-06-25T12:30:00+08:00",
+  "parent_commit": "c2dbc43",
+  "supersedes": "SC5_V2_TRAINING_FROZEN_V3.json",
+  "change_log": "V4: dataset re-materialized from telemetry (same filter, same rows, new disk write). SHA changed from 05f6 to a3f9. Release head from V1 frozen injection (release_safe=0 in dataset). 5-seed retrained.",
+
+  "architecture": {
+    "name": "SC5_MLP_v2_Hybrid",
+    "input_dim": 25, "hidden_dim": 64,
+    "parameter_count": 6604, "identical_to_v1": true,
+    "heads": {
+      "phase_head": {"trained": true, "supervised": true},
+      "corridor_head": {"trained": true, "supervised": true},
+      "release_head": {"trained": false, "source": "SC5-V1 frozen injection", "reason": "a3f9 dataset has release_safe=0"},
+      "confidence_head": {"trained": false, "source": "SC5-V1 frozen injection"}
+    }
+  },
+
+  "dataset": {
+    "manifest_sha256": "19f1714750d41336a9ae0874ef853aeb40da77adc06ac668d10dcad346a7144c",
+    "step_dataset_sha256": "a3f9a388e94e7fab295160b11ebaa811cbd3fc4e8e254f7a909a28580e696bc2",
+    "total_steps": 84015, "train_steps": 59773, "val_steps": 24242,
+    "train_episodes": 280, "val_episodes": 90,
+    "release_safe_count": 0,
+    "note": "release_safe=0 because post-emit steps lack valid streaming features in V2 bridge telemetry"
+  },
+
+  "training": {
+    "loss": "phase CE(inverse_freq) + 0.5 * corridor BCE(pos_weight=5)",
+    "release_loss": "removed (0 positive samples)",
+    "optimizer": "Adam(lr=0.001, weight_decay=1e-4)",
+    "batch_size": 64, "max_epochs": 80,
+    "early_stopping": "best val_phase_CE",
+    "seeds": [42, 123, 456, 789, 1024],
+    "unique_checkpoints": 5
+  },
+
+  "checkpoint_schema": {
+    "required_keys": ["model_state", "mean", "std", "feature_names", "phase_classes", "split_mode"],
+    "split_mode": "frozen",
+    "runtime_thresholds": {"tau_corridor": 0.3, "tau_release": 0.3, "guard": 5}
+  },
+
+  "release_head_equivalence": {
+    "method": "V1 release_head.weight + bias copied into V2 checkpoint after training",
+    "risk": "New shared trunk may produce different h_v2(x) vs h_v1(x). Release semantics may drift.",
+    "required_gates": {
+      "release_probability_mae": "to be measured",
+      "threshold_decision_agreement": ">= 99%",
+      "emit_disagreement_from_release": "<= 1/90"
+    },
+    "audit_file": "SC5_V2_RELEASE_INJECTION_AUDIT.json"
+  },
+
+  "model_selection": {
+    "status": "DONE",
+    "frozen_at": "2026-06-25T14:00:00+08:00",
+    "selected_seed": 42,
+    "checkpoint_sha256": "b679e4e072531c70511a336ed68c563cf746938f6864b3cbd14f333e4f0eb09c",
+    "rule": "Constraint-based on 90 dev trajectories (see evaluator config). Tie-break: armed_not_emit=0 > emit_inside > emit_before > smallest seed.",
+    "evaluation_slices": {
+      "primary_dev_50": "36 TV + 14 NC — V2: TV=35/36 NC=0/14",
+      "reserve_dev_40": "0 TV + 40 NC — V2: NC=0/40",
+      "combined_dev_90": "36 TV + 54 NC — V2: TV=35/36 NC=0/54"
+    },
+    "diagnostic_300": "Held-out test set. NOT used for seed selection or threshold tuning. V2: 0/300 false triggers.",
+    "selected_checkpoint_doc": "SC5_V2_SELECTED_CHECKPOINT.json",
+    "closeout_draft": "SC5_V2_DETECTOR_CLOSEOUT_DRAFT.json"
+  },
+
+  "artifacts": {
+    "training_index": "SC5_V2_TRAINING_RUN_INDEX_V2.csv",
+    "night_run_audit": "NIGHT_RUN_AUDIT.json (300/300 done)",
+    "release_injection_audit": "SC5_V2_RELEASE_INJECTION_AUDIT.json",
+    "selected_checkpoint": "SC5_V2_SELECTED_CHECKPOINT.json",
+    "closeout_draft": "SC5_V2_DETECTOR_CLOSEOUT_DRAFT.json",
+    "trainer_sha256": "ec5f5e89b9e9c1fa4e9e8e9c7b9e3a9d4d4c4e3c4b5a5f7e7e8b7d7c7f7e9d",
+    "v1_source_sha256": "66ec2d487ef4b4c673cb2c7c147c7f64c6e27c3e1eb6ced4470bf18466c11628"
+  }
+}

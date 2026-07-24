@@ -1,0 +1,91 @@
+{
+  "gate": "LOTO_PHASE_B_EVALUATOR_FREEZE_V1",
+  "status": "FROZEN_BEFORE_HELDOUT_OPEN",
+  "created_utc": "2026-06-29T00:00:00Z",
+  "git_commit": "9636609fa228221a71a2cad5761669220bba6dab",
+
+  "frozen_artifacts": {
+    "evaluator": {
+      "path": "scripts/stageb/eval_sc5_loto_heldout_v1.py",
+      "sha256": "d6140f089c1fe7cfcdccc37a37ef39d8cbe676c09bf443242d8a8b7d2ba07b81",
+      "git_blob_sha": "8c14d0750ffaeb6d67e772bb28dc963db5f9ea59",
+      "version": "V1",
+      "note": "Updated 2026-06-29: added explicit FPR numerator/denominator and inline definitions distinguishing frame-level score FPR from episode false-trigger rate."
+    },
+    "metric_schema": {
+      "path": "docs/gpu/LOTO_METRIC_SCHEMA_V2.json",
+      "sha256": "313532df1a877898f616363ca9d6d192598b9615889fc5f5f3a564a1a35cfb83",
+      "git_blob_sha": "e5b54a0972936a3ec082cf84f8e74dda9c7e220f",
+      "version": "V2"
+    },
+    "metric_preregistration": {
+      "path": "docs/gpu/LOTO_PHASE_B_METRIC_PREREGISTRATION_V1.json",
+      "sha256": "148e709b912f47c372b1fe547f0a1d35e3f1b6675d0a3652326aeb86fff2bd9a",
+      "git_blob_sha": "de268611013041308d379061e44c4147bd943814",
+      "version": "V1",
+      "note": "Updated 2026-06-29: explicit Definition A (per-frame score FPR) vs episode false-trigger rate distinction. Numerator/denominator reporting required."
+    },
+    "freeze_verifier": {
+      "path": "scripts/stageb/verify_loto_freeze.py",
+      "sha256": "7b93fe3739707fe8e3d2604e7b13989ebeaf667372a97002d404b33b62590ad0",
+      "git_blob_sha": "45983cabba31a5106fedd2e416c950e7dfefbaf2",
+      "version": "V1"
+    },
+    "heldout_materializer": {
+      "path": "scripts/stageb/materialize_sc5_loto_heldout_labels_v2.py",
+      "sha256": "6ae512576228a0008de54d4d2c12ee90a8b3699561b450d0ae9b04d581085453",
+      "git_blob_sha": "05e0ae85afb5f8444e3f88dd7158b35128348425",
+      "version": "V2"
+    },
+    "checkpoint_freeze": {
+      "path": "docs/gpu/LOTO_GLOBAL_FREEZE_V1.json",
+      "sha256": "bd3a4e57a637d12f03004ff9751a73f16335e1740065fb067668aa3e3c3c0fbf",
+      "git_blob_sha": "c5ffccbad90d8a6b19a2c3b5d935bf238400c138"
+    },
+    "freeze_verifier_report": {
+      "path": "evidence/sc5_object_privileged_loto_v1/LOTO_GLOBAL_FREEZE_V1_VERIFY.json",
+      "sha256": "fe0a6177482ce54f4e971d14edb893392fbfacd4e24fd053894ecc7cc46e9fc6",
+      "result": "ALL_PASS"
+    }
+  },
+
+  "runtime_parameters": {
+    "tau_corridor": 0.3,
+    "tau_release": 0.3,
+    "guard": 5,
+    "K": 10,
+    "first_emit_only": true,
+    "reset_per_episode": true
+  },
+
+  "evaluator_tested_on": {
+    "fold_00_pilot": "PASS — all 3 seeds produce valid outputs, metrics match expected V2 schema values",
+    "train_val": "Not directly tested; evaluator only reads held-out CSV + labels",
+    "folds_01_09": "NOT TOUCHED — never run on confirmatory folds before LOTO_TEST_OPEN_EVENT_V1"
+  },
+
+  "output_schema": {
+    "per_seed": [
+      "HELDOUT_EPISODE_RESULTS.json",
+      "HELDOUT_SEED_SUMMARY.json",
+      "HELDOUT_ROW_DIAGNOSTICS.csv",
+      "COMPLETE.json"
+    ],
+    "aggregation": "TBD — aggregator script to be written after evaluator freeze, tested on Fold 00 only"
+  },
+
+  "prohibited_modifications": [
+    "Changing metric definitions after freeze",
+    "Changing runtime parameters (tau, guard, K)",
+    "Re-selecting best epoch",
+    "Changing feature schema",
+    "Modifying corridor label logic",
+    "Adding post-hoc thresholds"
+  ],
+
+  "fold00_pilot_test_results_summary": {
+    "seed_1": {"K10_containment": 0.9333, "no_corridor_frame_FPR": 0.0346, "med_signed_error": 6.0, "zero_emission": 0.04},
+    "seed_2": {"K10_containment": 0.9333, "no_corridor_frame_FPR": 0.0461, "med_signed_error": 6.0, "zero_emission": 0.06},
+    "seed_3": {"K10_containment": 0.9333, "no_corridor_frame_FPR": 0.0616, "med_signed_error": 6.0, "zero_emission": 0.14}
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "schema": "DETECTOR_V4_TEACHER_PROTOCOL_V1",
+  "version": "1.0",
+  "teacher_type": "CLEAN_ONLY_PRIVILEGED",
+  "teacher_data_sources": {
+    "s1_root": "OFFICIAL_V3_S1_FIT_V1_5e27d7c",
+    "teacher_records": "teacher_retention_records.jsonl per identity",
+    "privileged_fields_used": [
+      "event_close_onset",
+      "event_release_onset",
+      "event_support",
+      "event_opening_stable",
+      "event_start_step",
+      "event_end_step",
+      "grasp_support",
+      "retention_active",
+      "retention_continuation_t10",
+      "release_imminent",
+      "retention_unknown_mask"
+    ]
+  },
+
+  "labels": {
+    "candidate_close": {
+      "type": "deterministic_forward_fill",
+      "description": "True from close_onset step through close_end step. Computed from event_close_onset and event_end_step. Forward-filled as a segment mask.",
+      "inputs": ["event_close_onset", "event_end_step"],
+      "future_leakage": false
+    },
+    "valid_retention": {
+      "type": "derived",
+      "description": "True when candidate_close AND retention_active AND grasp_support AND NOT release_imminent.",
+      "inputs": ["candidate_close", "retention_active", "grasp_support", "release_imminent"],
+      "future_leakage": false
+    },
+    "critical_retention_window": {
+      "type": "window_label",
+      "description": "A contiguous segment of valid_retention=True steps that has duration >= min_critical_duration (default 10 steps) and contains at least one event_support step.",
+      "inputs": ["valid_retention", "event_support", "min_critical_duration"],
+      "future_leakage": false,
+      "parameters": {"min_critical_duration": 10}
+    },
+    "false_trigger_veto": {
+      "type": "derived",
+      "description": "True when candidate_close is true but the close window is NOT a valid retention window. Categories: close_without_support, support_without_retention, premature_release, unstable_multi_close, post_retention_release.",
+      "categories": [
+        "CLOSE_WITHOUT_SUPPORT",
+        "SUPPORT_WITHOUT_RETENTION",
+        "PREMATURE_RELEASE",
+        "UNSTABLE_MULTI_CLOSE",
+        "POST_RETENTION_RELEASE",
+        "NO_CLOSE_SIMPLE_NEGATIVE"
+      ],
+      "future_leakage": false
+    },
+    "release_imminent_label": {
+      "type": "passthrough",
+      "description": "Directly from Teacher record release_imminent field.",
+      "inputs": ["release_imminent"],
+      "future_leakage": false
+    },
+    "event_valid_mask": {
+      "type": "derived",
+      "description": "True when Teacher evidence is valid AND retention_unknown_mask is false. Steps where Teacher cannot determine labels are masked.",
+      "inputs": ["event_evidence_valid", "retention_unknown_mask"],
+      "future_leakage": false
+    },
+    "hard_negative_category": {
+      "type": "categorical",
+      "description": "For each close candidate window, assign one of: VALID_RETENTION, CLOSE_WITHOUT_SUPPORT, SUPPORT_WITHOUT_RETENTION, PREMATURE_RELEASE, UNSTABLE_MULTI_CLOSE, POST_RETENTION_RELEASE, NO_CLOSE_SIMPLE_NEGATIVE, UNKNOWN_OR_AMBIGUOUS.",
+      "values": [
+        "VALID_RETENTION",
+        "CLOSE_WITHOUT_SUPPORT",
+        "SUPPORT_WITHOUT_RETENTION",
+        "PREMATURE_RELEASE",
+        "UNSTABLE_MULTI_CLOSE",
+        "POST_RETENTION_RELEASE",
+        "NO_CLOSE_SIMPLE_NEGATIVE",
+        "UNKNOWN_OR_AMBIGUOUS"
+      ],
+      "unknown_policy": "MASK_NOT_NEGATIVE",
+      "future_leakage": false
+    }
+  },
+
+  "candidate_window_rules": {
+    "onset_detection": "event_close_onset == true",
+    "end_detection": "event_end_step from corresponding close event, or first step where all of [candidate_close, grasp_support, retention_active] are false for >= sustain_gap steps",
+    "sustain_gap": 5,
+    "min_window_duration": 3,
+    "max_windows_per_episode": 50,
+    "overlap_policy": "DISJOINT_BY_ONSET",
+    "grouping": "SAME_EPISODE_WINDOWS_KEPT_TOGETHER_FOR_TRAIN_VAL_SPLIT"
+  },
+
+  "audit_requirements": {
+    "check_close_baseline_degeneracy": true,
+    "check_label_determined_by_close_alone": false,
+    "check_per_suite_task_positive_coverage": true,
+    "check_per_suite_task_hard_negative_coverage": true,
+    "check_l10_later_event_coverage": true,
+    "check_unknown_properly_masked": true,
+    "check_no_future_leakage": true,
+    "check_no_privileged_in_student_view": true,
+    "check_non_negative_count_per_fold": true,
+    "check_non_hard_negative_count_per_category": true,
+    "check_duplicate_window": true,
+    "check_source_closure": true
+  },
+
+  "close_baseline_label_comparison": {
+    "description": "For diagnostic audit only. The close baseline (emit whenever candidate_close=True) is compared against each Teacher V2 label to measure degeneracy.",
+    "metrics": ["precision", "recall", "f1", "per_category_breakdown"],
+    "degeneracy_threshold": "If close baseline achieves >= 0.95 recall on critical_retention_window, the label may be too close to close heuristic."
+  }
+}
