@@ -1,0 +1,28 @@
+{
+  "protocol_id": "OPENVLA_LIBERO_OFFICIAL_V1",
+  "num_tasks_per_suite": 10,
+  "num_trials_per_task": 50,
+  "num_steps_wait": 10,
+  "max_steps": {
+    "libero_spatial": 220,
+    "libero_object": 280,
+    "libero_goal": 300,
+    "libero_10": 520
+  },
+  "execution_chain": [
+    "model.predict_action",
+    "normalize_gripper_action",
+    "invert_gripper_action",
+    "env.step"
+  ],
+  "detector_input_schema": {
+    "proprio_action": "features_25d",
+    "policy_intent": "clean_policy_intent_9d",
+    "teacher_sidecar": "privileged_teacher_sidecar.jsonl",
+    "student_must_not_consume": [
+      "object_state",
+      "mujoco_contact_pairs",
+      "attack_outcome"
+    ]
+  }
+}

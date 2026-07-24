@@ -28,7 +28,12 @@ jobs:
             scripts/stageb/audit_existing_nonobject_clean_outputs.py \
             scripts/stageb/build_paper_table_schemas.py \
             scripts/stageb/build_teacher_label_eval_table.py \
-            scripts/stageb/audit_github_branch_pr_hygiene.py
+            scripts/stageb/audit_github_branch_pr_hygiene.py \
+            scripts/official_clean_worker.py \
+            scripts/audit_official_clean_schema.py \
+            scripts/run_official_action_parity.py \
+            src/gripper_attack/official_openvla_adapter.py \
+            src/gripper_attack/official_libero_protocol.py
       - name: Run targeted CPU tests
         run: |
           pytest \
