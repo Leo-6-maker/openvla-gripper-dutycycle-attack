@@ -778,8 +778,27 @@ def test_checkpoint_roundtrip():
     os.remove(tmp)
     print('PASS: test_checkpoint_roundtrip')
 
+class TestResult:
+    def __init__(self):
+        self.passed = 0
+        self.failed = 0
+        self.skipped = 0
+        self.results = []
+
+    def run(self, test_fn, skippable=False):
+        try:
+            test_fn()
+            self.passed += 1
+            self.results.append(('PASS', test_fn.__name__))
+        except Exception as e:
+            self.results.append(('FAIL', test_fn.__name__, str(e)))
+            print(f'FAIL: {test_fn.__name__}: {e}')
+            if not skippable:
+                self.failed += 1
+
 def run_all_tests():
-    tests = [
+    tr = TestResult()
+    for test in [
         test_cc_not_in_forward,
         test_heads_independent,
         test_no_hard_candidate_close,
@@ -794,21 +813,25 @@ def run_all_tests():
         test_get_last_logits_empty_mask,
         test_get_last_logits_varying_lengths,
         test_get_last_logits_cpu,
-        test_get_last_logits_cuda,
         test_mixed_valid_empty_mask,
         test_individual_vs_batched_padding,
         test_checkpoint_roundtrip,
-    ]
-    passed = 0
-    for test in tests:
-        try:
-            test()
-            passed += 1
-        except Exception as e:
-            print(f'FAIL: {test.__name__}: {e}')
-    print(f'\n{passed}/{len(tests)} tests passed')
-    return passed == len(tests)
+    ]:
+        tr.run(test)
+
+    # CUDA test: SKIP if no CUDA, PASS/FAIL if available
+    if torch.cuda.is_available():
+        print(f'CUDA: {torch.cuda.get_device_name(0)} ({torch.cuda.get_device_capability(0)})')
+        tr.run(test_get_last_logits_cuda)
+    else:
+        tr.skipped += 1
+        print('SKIP: test_get_last_logits_cuda (no CUDA)')
+
+    print(f'\n{tr.passed} PASS / {tr.failed} FAIL / {tr.skipped} SKIP (total {tr.passed + tr.failed + tr.skipped})')
+    return tr.failed == 0
 
 if __name__ == '__main__':
-    run_all_tests()
+    ok = run_all_tests()
     print(f'\nN5 Model Schema SHA: {compute_schema_sha()}')
+    import sys
+    sys.exit(0 if ok else 1)

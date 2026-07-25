@@ -202,12 +202,11 @@ def evaluate_physical_criticality(step):
 
     return result
 
-def evaluate_safe_release_and_instability(step):
+def evaluate_safe_release_and_instability(step, production_mode=False):
     """Head D+E: Safe release AND instability — each with OWN validity.
 
-    FINAL FIX: Each head independently determines valid_mask.
-    safe_release: depends on target_progress_known + release_known (NOT engagement)
-    instability: depends on release_known + grasp_known + contact + stability
+    FINAL: Instability uses evidence lattice (same principle as criticality).
+    Production mode requires explicit known_mask; legacy mode infers from score>0.
     """
     safe = {'value': None, 'valid_mask': False, 'reason': 'UNKNOWN_PRIVILEGED_STATE',
             'confidence': 0.0, 'source': 'physics_teacher_v21c'}
@@ -221,11 +220,11 @@ def evaluate_safe_release_and_instability(step):
     grasp_known = step.get('grasp_established_known_mask', False)
     grasp = step.get('grasp_established', False)
     contact = step.get('gripper_contact_score', 0)
-    ck = step.get('contact_known_mask', contact != 0)
+    ck = step.get('contact_known_mask', contact != 0) if not production_mode else step.get('contact_known_mask', False)
     stability = step.get('relative_pose_stability', 0)
-    sk = step.get('stability_known_mask', stability != 0)
+    sk = step.get('stability_known_mask', stability != 0) if not production_mode else step.get('stability_known_mask', False)
 
-    # ── safe_release: depends on target_known + release_known (NOT engagement) ──
+    # ── safe_release (unchanged from previous fix) ──
     if target_known and target_progress >= 0.95:
         safe['value'] = 1; safe['valid_mask'] = True
         safe['reason'] = 'SAFE_RELEASE_POST_SUCCESS'; safe['confidence'] = 1.0
@@ -237,21 +236,47 @@ def evaluate_safe_release_and_instability(step):
         safe['value'] = 0; safe['valid_mask'] = True
         safe['reason'] = 'NOT_IN_RELEASE'; safe['confidence'] = 0.8
 
-    # ── instability: depends on release + grasp + contact + stability ──
-    if release_known and release and grasp_known and grasp:
+    # ── instability: evidence lattice ──
+    # Channels: slip (release+grasp), contact-loss, pose-anomaly
+    instab_channels = []
+    # slip: releasing while grasping
+    instab_channels.append(('slip', release_known and grasp_known,
+                            release and grasp,
+                            step.get('release_or_instability_confidence', 0.5)))
+    # contact loss: low contact while grasping
+    instab_channels.append(('contact_loss', bool(ck) and grasp_known,
+                            bool(ck) and grasp and contact < 0.1,
+                            0.6 if (bool(ck) and grasp and contact < 0.1) else 0.0))
+    # pose anomaly: low stability while grasping
+    instab_channels.append(('pose_anomaly', bool(sk) and grasp_known,
+                            bool(sk) and grasp and 0 < stability < 0.3,
+                            1.0 - stability if (bool(sk) and grasp and 0 < stability < 0.3) else 0.0))
+
+    any_known = any(k for _, k, _, _ in instab_channels)
+    if not any_known:
+        return safe, instab  # both unknown
+
+    any_positive = any(p for _, k, p, _ in instab_channels if k and p)
+    all_channels_known = all(k for _, k, _, _ in instab_channels)
+    # For "all negative": every channel that IS known must be negative
+    all_known_negative = all((not p) for _, k, p, _ in instab_channels if k)
+
+    if any_positive:
         instab['value'] = 1; instab['valid_mask'] = True
-        instab['reason'] = 'INSTABILITY_SLIP'
-        instab['confidence'] = step.get('release_or_instability_confidence', 0.5)
-    elif release_known and release and bool(ck) and contact < 0.1 and grasp_known and grasp:
-        instab['value'] = 1; instab['valid_mask'] = True
-        instab['reason'] = 'INSTABILITY_SLIP'; instab['confidence'] = 0.6
-    elif grasp_known and grasp and bool(sk) and 0 < stability < 0.3:
-        instab['value'] = 1; instab['valid_mask'] = True
-        instab['reason'] = 'INSTABILITY_POSE_ANOMALY'
-        instab['confidence'] = 1.0 - stability
-    elif release_known and not release and grasp_known:
+        # Find the specific reason
+        for name, k, p, conf in instab_channels:
+            if k and p:
+                if name == 'slip':
+                    instab['reason'] = 'INSTABILITY_SLIP'; instab['confidence'] = conf
+                elif name == 'contact_loss':
+                    instab['reason'] = 'INSTABILITY_SLIP'; instab['confidence'] = conf
+                elif name == 'pose_anomaly':
+                    instab['reason'] = 'INSTABILITY_POSE_ANOMALY'; instab['confidence'] = conf
+                break
+    elif all_channels_known and all_known_negative:
         instab['value'] = 0; instab['valid_mask'] = True
         instab['reason'] = 'NO_INSTABILITY_DETECTED'; instab['confidence'] = 0.7
+    # else: partial unknown → valid_mask stays False
 
     return safe, instab
 
@@ -629,26 +654,37 @@ def anti_regression_tests():
                     'detail': f'All critical known → K10={k10_all["value"]}'})
 
     all_pass = all(r['pass'] for r in results)
-    return {'all_pass': all_pass, 'n_pass': sum(1 for r in results if r['pass']), 'n_total': len(results), 'tests': results}
+    n_pass = sum(1 for r in results if r['pass'])
+    n_fail = len(results) - n_pass
+    return {'all_pass': all_pass, 'n_pass': n_pass, 'n_fail': n_fail, 'n_total': len(results), 'tests': results}
 
 # ── Production Contract ──
 
 def compute_labels_sha(labels_jsonl_str):
     return hashlib.sha256(labels_jsonl_str.encode()).hexdigest()
 
-N5_ALLOWED_ROOT = os.path.abspath('/mnt/sdc/dty_user/openvla_attack_outputs/n5')
+N5_ALLOWED_ROOT = os.path.realpath('/mnt/sdc/dty_user/openvla_attack_outputs/n5')
 
 def write_atomic(content, final_path, allow_overwrite=False):
-    """Atomic write: tmpfile → flush+fsync → os.replace → fsync dir.
+    """Atomic write: realpath check → tmpfile → fsync → os.replace → fsync dir.
 
-    FINAL FIX: Only allows writes within N5_ALLOWED_ROOT.
-    No-clobber by default (rejects if final exists).
+    FINAL: realpath/commonpath prevents symlink escapes.
+    Uses os.link as no-clobber (hardlink fails if target exists = atomic check).
+    Rejects allow_overwrite in production.
     """
-    final_abs = os.path.abspath(final_path)
-    if not final_abs.startswith(N5_ALLOWED_ROOT + os.sep) and final_abs != N5_ALLOWED_ROOT:
-        raise ValueError(f'REJECTED: output not under {N5_ALLOWED_ROOT}: {final_abs}')
+    final_abs = os.path.realpath(final_path)
+    # Verify under allowed root via common path
+    if os.path.commonpath([final_abs, N5_ALLOWED_ROOT]) != N5_ALLOWED_ROOT:
+        raise ValueError(f'REJECTED: {final_abs} not under {N5_ALLOWED_ROOT}')
+    # Detect symlinks in path components
+    p = final_abs
+    while p != N5_ALLOWED_ROOT and p != os.path.dirname(p):
+        if os.path.islink(p):
+            raise ValueError(f'REJECTED: symlink in output path: {p}')
+        p = os.path.dirname(p)
+
     if not allow_overwrite and os.path.exists(final_abs):
-        raise FileExistsError(f'REJECTED: output already exists (no-clobber): {final_abs}')
+        raise FileExistsError(f'REJECTED: output already exists: {final_abs}')
 
     d = os.path.dirname(final_abs)
     os.makedirs(d, exist_ok=True)
@@ -659,7 +695,14 @@ def write_atomic(content, final_path, allow_overwrite=False):
             f.write(content)
             f.flush()
             os.fsync(f.fileno())
-        os.replace(tmp, final_abs)
+        # Atomic no-clobber via hardlink: succeeds only if final doesn't exist
+        # If hardlink fails with EEXIST, we've been raced — fail
+        try:
+            os.link(tmp, final_abs)
+        except FileExistsError:
+            os.unlink(tmp)
+            raise FileExistsError(f'REJECTED: concurrent write detected for {final_abs}')
+        os.unlink(tmp)
         dir_fd = os.open(d, os.O_RDONLY)
         try:
             os.fsync(dir_fd)
@@ -683,7 +726,7 @@ def main():
     for t in test_results['tests']:
         status = 'PASS' if t['pass'] else 'FAIL'
         print(f'  [{status}] {t["test"]}: {t["detail"]}')
-    print(f'\n  {test_results["n_pass"]}/{test_results["n_total"]} tests passed')
+    print(f'\n  {test_results["n_pass"]} PASS / {test_results["n_fail"]} FAIL (total {test_results["n_total"]})')
     if not test_results['all_pass']:
         print('  ANTI-REGRESSION FAILED — aborting')
         sys.exit(1)
