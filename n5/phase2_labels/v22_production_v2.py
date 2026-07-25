@@ -5,7 +5,7 @@ Fixes all 8 P0 defects from d042fde audit:
   2. Grasp: target-finger contact pair filter (not arbitrary contact_count>0)
   3. Lift: target object Z from qpos slices (not EEF Z proxy)
   4. Comotion: correct history indexing (step[t-window] not step[t])
-  5. Safe release + close_intent: implemented (not NOT_COMPUTED)
+  5. Safe release (placement-gated) + gripper_closing_state: implemented
   6. Terminal state: wired from episode_summary.json
   7. K10: one output per timestep (fix duplicate append)
   8. Instability: target-relative EEF motion (not EEF-alone jumps)
@@ -258,10 +258,10 @@ FIELD_TYPES = {
     "gripper_width_velocity": {"dtype": "float32", "shape": [], "unit": "m/s"},
     "gripper_physics_known_mask": {"dtype": "bool", "shape": []},
     "gripper_physics_confidence": {"dtype": "float32", "shape": [], "valid_range": [0.0, 1.0]},
-    # close_intent (physical measurement, NOT policy action)
-    "close_intent_detected": {"dtype": "bool", "shape": [], "valid_range": [False, True]},
-    "close_intent_known_mask": {"dtype": "bool", "shape": []},
-    "close_intent_confidence": {"dtype": "float32", "shape": [], "valid_range": [0.0, 1.0]},
+    # gripper_closing_state (physical qpos measurement, NOT policy action)
+    "gripper_closing_detected": {"dtype": "bool", "shape": [], "valid_range": [False, True]},
+    "gripper_closing_known_mask": {"dtype": "bool", "shape": []},
+    "gripper_closing_confidence": {"dtype": "float32", "shape": [], "valid_range": [0.0, 1.0]},
 }
 
 V22_CONFIG = {
@@ -689,18 +689,37 @@ def compute_instability_indicators(steps, grasp_results, manipulated_objects, ob
                     elif cf_prev[0] and not cf_now[0]:
                         slip = True  # lost contact with target
 
-            # Pose anomaly: target-relative EEF jump (not EEF-alone)
+            # Pose anomaly: target-object-relative displacement
+            # Δr = (o_t - e_t) - (o_{t-w} - e_{t-w})
+            # Only when object moves relative to EEF abnormally is it instability.
+            # EEF-alone jumps do NOT constitute pose anomaly.
             eef = _finite_vector(rec.get('robot0_eef_pos'), 3)
             prev_eef = _finite_vector(prev_rec.get('robot0_eef_pos'), 3)
-            if eef is not None and prev_eef is not None:
-                if can_target:
-                    # Target-relative: check if object moved abnormally relative to EEF
+            if eef is not None and prev_eef is not None and can_target:
+                # Compute target-relative displacement for each manipulated object
+                obj_rel_deltas = []
+                for name in manipulated_objects:
+                    spec = object_slices.get(name)
+                    if spec is None:
+                        continue
+                    curr_obj = _slice_vector(rec.get('object_state', []), spec, 'pos')
+                    prev_obj = _slice_vector(prev_rec.get('object_state', []), spec, 'pos')
+                    if curr_obj is None or prev_obj is None:
+                        continue
+                    # Object-relative-to-EEF vector at t and t-window
+                    rel_now = [curr_obj[i] - eef[i] for i in range(3)]
+                    rel_prev = [prev_obj[i] - prev_eef[i] for i in range(3)]
+                    delta = _dist(rel_now, rel_prev)
+                    obj_rel_deltas.append(delta)
+                if obj_rel_deltas:
                     pose_anomaly_known = True
-                    eef_jump = _dist(eef, prev_eef)
-                    if eef_jump > V22_CONFIG['instability']['pose_jump_threshold_m']:
+                    max_delta = max(obj_rel_deltas)
+                    if max_delta > V22_CONFIG['instability']['pose_jump_threshold_m']:
                         pose_anomaly = True
                 else:
                     pose_anomaly_known = False
+            else:
+                pose_anomaly_known = False
 
             # Width increase: gripper opening unexpectedly during grasp
             qpos = _finite_vector(rec.get('robot0_gripper_qpos'), 2)
@@ -754,11 +773,13 @@ def compute_terminal_state(steps, episode_summary):
         })
     return results
 
-def compute_safe_release(steps, grasp_results, terminal_results):
-    """Compute planned/normal safe release.
+def compute_safe_release(steps, grasp_results, terminal_results, placement_results):
+    """Compute safe release: release_event AND known placement AND object_placed.
 
-    V2 FIX: Actually implemented using gripper width velocity + grasp state.
-    Safe release = gripper opening + previously grasping + not terminal.
+    V2 FIX (audit round 2): Safe release requires placement confirmation.
+    Unplanned opening, attack-induced drop, or contact loss WITHOUT placement
+    is NOT safe_release — it goes to instability instead.
+    When placement is unknown, safe_release valid_mask = False.
     """
     T = len(steps)
     results = []
@@ -776,21 +797,34 @@ def compute_safe_release(steps, grasp_results, terminal_results):
             was_grasping = grasp_results[max(0, t-1)]['grasp_established'] if t > 0 else False
             is_grasping = grasp_results[t]['grasp_established']
             is_terminal = terminal_results[t]['task_terminal']
+            placement_known = placement_results[t]['placement_known_mask']
+            placement_confirmed = placement_results[t]['object_placed']
 
-            release_known = True
-            # Gripper opening + previously grasping → release
+            has_release_event = False
             if was_grasping and width > V22_CONFIG['safe_release']['release_width_open_threshold']:
-                release_detected = True
-                release_conf = 0.8
+                has_release_event = True
             elif is_terminal and not is_grasping:
-                release_detected = True
-                release_conf = 0.9
-            elif not is_grasping and was_grasping:
-                release_detected = True
-                release_conf = 0.6
-            else:
+                has_release_event = True
+
+            if has_release_event:
+                if placement_known and placement_confirmed:
+                    release_detected = True
+                    release_known = True
+                    release_conf = 0.85
+                elif placement_known and not placement_confirmed:
+                    # Release event without placement → NOT safe (could be drop/attack)
+                    release_detected = False
+                    release_known = True
+                    release_conf = 0.7
+                else:
+                    # Release event but placement unknown → cannot confirm safe
+                    release_detected = False
+                    release_known = False
+                    release_conf = 0.0
+            elif not has_release_event:
                 release_detected = False
-                release_conf = 0.0
+                release_known = True
+                release_conf = 0.7
 
         results.append({
             'planned_release_detected': bool(release_detected),
@@ -845,12 +879,13 @@ def compute_placement_state(steps, grasp_results, manipulated_objects, object_sl
         })
     return results
 
-def compute_close_intent(steps):
-    """Compute close intent from physical gripper measurements.
+def compute_gripper_closing_state(steps):
+    """Compute gripper closing state from physical qpos measurements.
 
-    V2 FIX: Actually implemented. close_intent = gripper actively closing.
-    This is a physical measurement (qpos velocity), NOT policy action intent.
-    Decoupled from candidate_close.
+    V2 FIX: Measures physical gripper closure from qpos velocity.
+    This is physical state measurement, NOT a policy intent signal.
+    Renamed from close_intent to avoid confusion with policy-level gating.
+    Fully decoupled from any policy-level close gate.
     """
     T = len(steps)
     results = []
@@ -866,16 +901,16 @@ def compute_close_intent(steps):
             near_closed = qpos_sum < V22_CONFIG['grasp']['gripper_close_qpos_sum']
 
             results.append({
-                'close_intent_detected': bool(closing or near_closed),
-                'close_intent_known_mask': True,
-                'close_intent_confidence': 0.9 if near_closed else (0.6 if closing else 0.0),
+                'gripper_closing_detected': bool(closing or near_closed),
+                'gripper_closing_known_mask': True,
+                'gripper_closing_confidence': 0.9 if near_closed else (0.6 if closing else 0.0),
             })
             prev_qpos_sum = qpos_sum
         else:
             results.append({
-                'close_intent_detected': False,
-                'close_intent_known_mask': False,
-                'close_intent_confidence': 0.0,
+                'gripper_closing_detected': False,
+                'gripper_closing_known_mask': False,
+                'gripper_closing_confidence': 0.0,
             })
 
     return results
@@ -929,7 +964,7 @@ def v22_to_label_v2(v22_snapshot, step_index, K=10):
     t = factors['terminal_state']
     pr = factors.get('planned_release', {})
     pl = factors.get('placement_state', {})
-    ci = factors.get('close_intent', {})
+    ci = factors.get('gripper_closing_state', {})
 
     # ── Physical criticality (Head A) ──
     channels = [
@@ -999,23 +1034,24 @@ def v22_to_label_v2(v22_snapshot, step_index, K=10):
     else:
         safe_release = {'value': None, 'valid_mask': False, 'reason': 'UNKNOWN_PRIVILEGED_STATE', 'confidence': 0.0}
 
-    # ── Close intent (Head C) — physical measurement, not policy action ──
-    if ci.get('close_intent_known_mask'):
-        close_intent = {
-            'value': bool(ci.get('close_intent_detected', False)),
+    # ── Gripper closing state (Head C) — physical qpos measurement, NOT policy intent ──
+    if ci.get('gripper_closing_known_mask'):
+        gripper_closing = {
+            'value': bool(ci.get('gripper_closing_detected', False)),
             'valid_mask': True,
             'reason': 'PHYSICAL_CLOSURE_MEASUREMENT',
-            'confidence': ci.get('close_intent_confidence', 0.0),
+            'confidence': ci.get('gripper_closing_confidence', 0.0),
         }
     else:
-        close_intent = {'value': None, 'valid_mask': False, 'reason': 'UNKNOWN_PRIVILEGED_STATE', 'confidence': 0.0}
+        gripper_closing = {'value': None, 'valid_mask': False,
+                          'reason': 'UNKNOWN_PRIVILEGED_STATE', 'confidence': 0.0}
 
     return {
         'physical_criticality': crit,
         'instability': instability,
         'safe_release': safe_release,
         'k10_feasible': {'value': None, 'valid_mask': False, 'reason': 'COMPUTED_SEPARATELY', 'confidence': 0.0},
-        'close_intent': close_intent,
+        'gripper_closing_state': gripper_closing,
     }
 
 # ── K10 Recompute (fixed: one output per timestep) ──
@@ -1208,8 +1244,7 @@ def test_comotion_history_index():
     print(f'PASS: test_comotion_history_index (score={results[-1]["object_eef_comotion_score"]:.3f})')
 
 def test_safe_release_implemented():
-    """Safe release detects gripper opening after grasp."""
-    from physics_teacher_v22 import create_v22_snapshot
+    """Safe release requires placement confirmation (not just gripper opening)."""
     steps = []
     for i in range(30):
         qpos = [0.0, 0.0] if i < 20 else [0.04, 0.04]
@@ -1217,33 +1252,40 @@ def test_safe_release_implemented():
             'robot0_gripper_qpos': qpos,
             'robot0_eef_pos': [0.3, 0.0, 0.1],
             'object_state': list(range(56)),
-            'mujoco_contact_pairs': [],
+            'mujoco_contact_pairs': [["gripper0_finger1", "bowl_main"]],
         })
     grasp_results = compute_grasp_state(steps, ["bowl"], [])
     terminal_results = [{'task_terminal': (i == 29), 'task_success': False,
                          'terminal_known_mask': True, 'terminal_confidence': 0.5}
                         for i in range(30)]
-    release_results = compute_safe_release(steps, grasp_results, terminal_results)
-    # After step 20, gripper opens → release should be detected
-    has_release = any(r['planned_release_detected'] for r in release_results[20:])
-    assert has_release, 'Safe release should be detected when gripper opens after grasping'
-    # All should have known_mask=True
-    assert all(r['planned_release_known_mask'] for r in release_results), 'Release known_mask should be True'
+    # Placement: known + placed after step 22
+    placement_results = []
+    for i in range(30):
+        placement_results.append({
+            'object_placed': i >= 22,
+            'placement_known_mask': True,
+            'placement_confidence': 0.8,
+        })
+    release_results = compute_safe_release(steps, grasp_results, terminal_results, placement_results)
+    # Steps 20-21: release event but placement not yet confirmed → not safe
+    assert release_results[20]['planned_release_detected'] == False, \
+        'Release without placement should NOT be safe_release'
+    # Steps 23+: release event + placement confirmed → safe_release
+    safe_steps = [r['planned_release_detected'] for r in release_results[23:]]
+    assert any(safe_steps), 'Release with placement should be safe_release'
     print('PASS: test_safe_release_implemented')
 
-def test_close_intent_implemented():
-    """Close intent from physical gripper measurement."""
+def test_gripper_closing_implemented():
+    """Gripper closing state from physical qpos measurement."""
     steps = []
-    qpos = [0.08, 0.08]
     for i in range(20):
         qpos = [max(0.0, 0.08 - i * 0.004), max(0.0, 0.08 - i * 0.004)]
         steps.append({'robot0_gripper_qpos': list(qpos)})
-    results = compute_close_intent(steps)
-    # During closing: close_intent should be True
-    closing_steps = [r['close_intent_detected'] for r in results[1:15]]
-    assert any(closing_steps), 'Closing gripper should produce close_intent=True'
-    assert all(r['close_intent_known_mask'] for r in results), 'Close intent known_mask should be True'
-    print('PASS: test_close_intent_implemented')
+    results = compute_gripper_closing_state(steps)
+    closing_steps = [r['gripper_closing_detected'] for r in results[1:15]]
+    assert any(closing_steps), 'Closing gripper should produce gripper_closing=True'
+    assert all(r['gripper_closing_known_mask'] for r in results), 'Gripper closing known_mask should be True'
+    print('PASS: test_gripper_closing_implemented')
 
 def test_terminal_from_summary():
     """Terminal state uses episode_summary data."""
@@ -1348,20 +1390,20 @@ def test_v22_to_label_v2_adapter():
         'planned_release_known_mask': True,
         'planned_release_confidence': 0.7,
     }
-    # Set close_intent (not a V22 factor, but needed for Label V2 adapter)
-    snap['factors']['close_intent'] = {
-        'close_intent_detected': True,
-        'close_intent_known_mask': True,
-        'close_intent_confidence': 0.8,
+    # Set gripper_closing_state
+    snap['factors']['gripper_closing_state'] = {
+        'gripper_closing_detected': True,
+        'gripper_closing_known_mask': True,
+        'gripper_closing_confidence': 0.8,
     }
 
     label = v22_to_label_v2(snap, 50)
     assert label['physical_criticality']['value'] == 1
     assert label['physical_criticality']['valid_mask'] == True
-    assert label['safe_release']['valid_mask'] == True  # Now implemented!
-    assert label['safe_release']['value'] == 0  # Not releasing
-    assert label['close_intent']['valid_mask'] == True  # Now implemented!
-    assert label['close_intent']['value'] == True  # Closing
+    assert label['safe_release']['valid_mask'] == True
+    assert label['safe_release']['value'] == 0
+    assert label['gripper_closing_state']['valid_mask'] == True
+    assert label['gripper_closing_state']['value'] == True
     print('PASS: test_v22_to_label_v2_adapter')
 
 def test_all_heads_produced():
@@ -1369,7 +1411,7 @@ def test_all_heads_produced():
     from physics_teacher_v22 import create_v22_snapshot
     snap = create_v22_snapshot()
     label = v22_to_label_v2(snap, 0)
-    heads = ['physical_criticality', 'k10_feasible', 'safe_release', 'instability', 'close_intent']
+    heads = ['physical_criticality', 'k10_feasible', 'safe_release', 'instability', 'gripper_closing_state']
     for h in heads:
         assert h in label, f'Missing head: {h}'
         assert 'value' in label[h], f'{h}: missing value'
@@ -1385,7 +1427,7 @@ def run_all_tests():
         test_goal_resolver_unknown_task,
         test_grasp_target_specific, test_lift_uses_object_z,
         test_lift_unknown_without_slices, test_comotion_history_index,
-        test_safe_release_implemented, test_close_intent_implemented,
+        test_safe_release_implemented, test_gripper_closing_implemented,
         test_terminal_from_summary, test_k10_no_duplicate_append,
         test_candidate_close_not_in_physics, test_contact_flags_target_specific,
         test_k10_safe_release_veto, test_instability_no_eef_proxy,

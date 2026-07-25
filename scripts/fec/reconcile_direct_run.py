@@ -39,8 +39,9 @@ DIRECT_RUNS = {
         'cell_id': 'formal_libero_spatial_task_00_state_102',
         'parent_id': 'p_spatial_s2',
         'suite': 'libero_spatial', 'task_index': 0, 'state_index': 2,
-        'classification': 'DONE_CLASSIFIED_TC',
-        'note': 'Smoke status=FAIL non-fatal, all 5 arms complete.',
+        'classification': 'DONE_VALID',
+        'provenance': 'RECOVERED_DIRECT_RUN',
+        'note': 'Completed via direct nohup due to persistent worker subprocess bug. All 5 arms pass. Not TC — no terminal censor issue.',
     },
 }
 
@@ -87,13 +88,19 @@ def validate_provenance(artifact_dir):
 
 
 def copy_to_permanent(tmp_path, identity):
-    """Copy artifacts from /tmp to permanent N5 recovery directory."""
+    """Copy artifacts from /tmp to permanent N5 recovery directory.
+    Uses os.rename for atomic move; falls back to shutil.copytree with no-clobber.
+    NEVER overwrites existing recovered attempts.
+    """
     dest = os.path.join(RECOVERY_ROOT, identity)
     if os.path.exists(dest):
-        # Remove existing — this is a one-time recovery operation
-        shutil.rmtree(dest)
+        raise FileExistsError(f'REJECTED: recovered attempt already exists at {dest} — no overwrite allowed')
     os.makedirs(RECOVERY_ROOT, exist_ok=True)
-    shutil.copytree(tmp_path, dest)
+    # Try atomic rename first (same filesystem)
+    try:
+        os.rename(tmp_path, dest)
+    except OSError:
+        shutil.copytree(tmp_path, dest)
     return dest
 
 

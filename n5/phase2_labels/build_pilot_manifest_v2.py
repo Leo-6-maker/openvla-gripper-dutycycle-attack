@@ -127,17 +127,19 @@ def main():
 
     import time
     manifest_v2['frozen_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    # Compute self-hash over canonical form with self_sha=null
     manifest_v2['self_sha'] = None
-    manifest_json = json.dumps(manifest_v2, indent=2)
-    manifest_v2['self_sha'] = hashlib.sha256(manifest_json.encode()).hexdigest()
-    # Re-serialize with self_sha included
-    manifest_json = json.dumps(manifest_v2, indent=2)
+    canonical_null = json.dumps(manifest_v2, indent=2, sort_keys=True)
+    self_sha = hashlib.sha256(canonical_null.encode()).hexdigest()
+    # Embed self_sha and re-serialize
+    manifest_v2['self_sha'] = self_sha
+    manifest_json = json.dumps(manifest_v2, indent=2, sort_keys=True)
 
     with open(MANIFEST_V2_PATH, 'w') as f:
         f.write(manifest_json + '\n')
 
     print(f'\nManifest V2 written: {MANIFEST_V2_PATH}')
-    print(f'Self SHA: {manifest_v2["self_sha"]}')
+    print(f'Self SHA: {self_sha}')
     print(f'Episodes: {len(episodes_v2)}')
     print(f'Issues: {len(issues)}')
     for issue in issues:

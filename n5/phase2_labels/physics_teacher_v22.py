@@ -78,11 +78,11 @@ V22_FACTORS = {
         "required_for": ["instability", "close_intent_context"],
         "note": "Physical qpos measurement, NOT policy action. For context only."
     },
-    "close_intent": {
-        "description": "Physical gripper closure intent from qpos velocity (NOT policy action)",
-        "fields": ["close_intent_detected", "close_intent_known_mask", "close_intent_confidence"],
-        "required_for": ["close_intent_head"],
-        "constraint": "Physical qpos measurement only. MUST NOT use policy-close gate or action labels."
+    "gripper_closing_state": {
+        "description": "Physical gripper closing measurement from qpos velocity (NOT policy intent)",
+        "fields": ["gripper_closing_detected", "gripper_closing_known_mask", "gripper_closing_confidence"],
+        "required_for": ["gripper_closing_head"],
+        "constraint": "Physical qpos measurement only. MUST NOT use policy-close gate or action labels. This is physical state, NOT a policy intent signal."
     },
 }
 
