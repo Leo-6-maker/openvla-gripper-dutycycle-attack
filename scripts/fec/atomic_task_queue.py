@@ -201,10 +201,9 @@ class AtomicTaskQueue:
                 conn.execute("UPDATE tasks SET state=?,accepted_attempt_id=?,updated_at=? WHERE cell_id=?",
                              (new_state, attempt_id, now, cell_id))
             elif task_outcome == 'FAILED':
-                # Infrastructure failure: retry-ready with incremented attempt count
+                # Infrastructure failure: retry-ready (attempt_count already incremented in claim)
                 new_state = 'RETRY_READY'
-                conn.execute("""UPDATE tasks SET state=?,attempt_count=attempt_count+1,
-                               lease_owner=NULL,lease_token=NULL,updated_at=? WHERE cell_id=?""",
+                conn.execute("""UPDATE tasks SET state=?,lease_owner=NULL,lease_token=NULL,updated_at=? WHERE cell_id=?""",
                              (new_state, now, cell_id))
             elif task_outcome == 'CLASSIFIED':
                 # Scientific result but not clean PASS (e.g., CLASS_C terminal censor)
@@ -212,9 +211,12 @@ class AtomicTaskQueue:
                 conn.execute("UPDATE tasks SET state=?,accepted_attempt_id=?,updated_at=? WHERE cell_id=?",
                              (new_state, attempt_id, now, cell_id))
             else:
-                new_state = task_outcome or 'DONE_VALID'
-                conn.execute("UPDATE tasks SET state=?,accepted_attempt_id=?,updated_at=? WHERE cell_id=?",
-                             (new_state, attempt_id, now, cell_id))
+                # Unknown outcome: fail closed, do NOT accept
+                self._log(worker_id, cell_id, 'COMMIT_REJECTED_UNKNOWN_OUTCOME',
+                          {'attempt_id': attempt_id, 'outcome': str(task_outcome)})
+                conn.rollback()
+                self.set_run_state('HOLD')
+                return False
 
             conn.execute("""UPDATE attempts SET state=?,ended_at=?,exit_code=?,error_class=?,
                            exposure_status=?,task_outcome=?,output_dir=?,receipt_sha=?,
