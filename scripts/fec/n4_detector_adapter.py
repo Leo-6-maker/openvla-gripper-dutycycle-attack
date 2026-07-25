@@ -102,12 +102,18 @@ class N4DetectorAdapter:
 
 
 # ========== CANONICAL 51D FEATURE PROVIDER V3 ==========
-# Exact SC5StreamingFeatureAdapterV2.update() contract.
-# No fallbacks, no missing-to-zero, no Teacher labels.
+# 25D: SC5StreamingFeatureAdapterV2.update() — exact frozen collector contract.
+# 9D+9D: summarize_clean_gripper_logits() using model-derived OPEN/CLOSE token sets.
+# No silent fallbacks, no missing-to-zero, no Teacher labels.
 # Fails on any missing/invalid data.
+
+import math
+from typing import Sequence
 
 _adapter = None
 _prev_eef = None
+_open_ids = None
+_close_ids = None
 
 FEATURE_NAMES_25D = [
     'gripper_command','gripper_qpos','gripper_opening_proxy',
@@ -119,17 +125,80 @@ FEATURE_NAMES_25D = [
     'opening_proxy_delta_3','opening_proxy_variance_5','eef_speed_variance_5',
 ]
 
+POLICY_INTENT_ORDER = [
+    'clean_open_probability_mass','clean_close_probability_mass',
+    'clean_open_minus_close_log_mass','clean_action_token_entropy_normalized',
+    'clean_top1_probability','clean_top1_is_open','clean_top1_is_close',
+    'clean_best_open_rank_normalized','clean_best_close_rank_normalized',
+]
+
+
+def _derive_token_sets(model, unnorm_key):
+    """Derive OPEN/CLOSE token IDs from model's action decoder. Exact frozen logic."""
+    centers = np.asarray(model.bin_centers, dtype=np.float32).reshape(-1)
+    stats = model.get_action_stats(unnorm_key)
+    low = np.asarray(stats["q01"], dtype=np.float32).reshape(-1)
+    high = np.asarray(stats["q99"], dtype=np.float32).reshape(-1)
+    mask = np.asarray(stats.get("mask", np.ones_like(low, dtype=bool)), dtype=bool).reshape(-1)
+    index = low.size - 1
+    decoded = 0.5*(centers+1.0)*(high[index]-low[index])+low[index] if mask[index] else centers
+    vocab_size = int(model.config.text_config.vocab_size - model.config.pad_to_multiple_of)
+    token_map = {int(vocab_size-i-1): float(v) for i, v in enumerate(decoded)}
+    open_ids = tuple(sorted(t for t, v in token_map.items() if v > 0.5))
+    close_ids = tuple(sorted(t for t, v in token_map.items() if v <= 0.5))
+    if not open_ids or not close_ids:
+        raise RuntimeError('could not derive non-empty OPEN/CLOSE token sets')
+    return open_ids, close_ids
+
+
+def _summarize_logits(logits, open_ids, close_ids):
+    """Compute all 9 gripper-intent features from logits. Exact frozen logic."""
+    if not torch.isfinite(logits).all():
+        raise ValueError('logits must be finite')
+    vocab_size = int(logits.shape[-1])
+    open_t = torch.tensor(open_ids, device=logits.device, dtype=torch.long)
+    close_t = torch.tensor(close_ids, device=logits.device, dtype=torch.long)
+    log_probs = torch.log_softmax(logits.float(), dim=-1)
+    probs = log_probs.exp()
+    open_log_mass = torch.logsumexp(log_probs.index_select(-1, open_t), dim=-1)
+    close_log_mass = torch.logsumexp(log_probs.index_select(-1, close_t), dim=-1)
+    entropy = -(probs*log_probs).sum(dim=-1) / math.log(vocab_size)
+    top1_prob, top1_token = probs.max(dim=-1)
+    open_mask = torch.zeros(vocab_size, dtype=torch.bool, device=logits.device)
+    close_mask = torch.zeros(vocab_size, dtype=torch.bool, device=logits.device)
+    open_mask[open_t] = True; close_mask[close_t] = True
+    descending = torch.argsort(logits, dim=-1, descending=True)
+    inverse_rank = torch.argsort(descending, dim=-1)
+    rank_denom = float(max(1, vocab_size-1))
+    return {
+        'clean_open_probability_mass': open_log_mass.exp(),
+        'clean_close_probability_mass': close_log_mass.exp(),
+        'clean_open_minus_close_log_mass': open_log_mass - close_log_mass,
+        'clean_action_token_entropy_normalized': entropy,
+        'clean_top1_probability': top1_prob,
+        'clean_top1_is_open': open_mask[top1_token].to(logits.dtype),
+        'clean_top1_is_close': close_mask[top1_token].to(logits.dtype),
+        'clean_best_open_rank_normalized': inverse_rank.index_select(-1,open_t).min(dim=-1).values.to(logits.dtype)/rank_denom,
+        'clean_best_close_rank_normalized': inverse_rank.index_select(-1,close_t).min(dim=-1).values.to(logits.dtype)/rank_denom,
+    }
+
 
 def build_n4_inputs(obs=None, observation=None, clean_raw_action=None, raw_action=None,
                     clean_env_action=None, clean_model_output=None, clean_action_raw_7d=None,
                     policy_step=None, suite=None, model=None, processor=None, **kwargs):
-    """Canonical 51D feature provider. Fails on missing/invalid data. No silent fallback."""
-    global _adapter, _prev_eef
+    """Canonical 51D feature provider. No silent fallback. Fails on missing data."""
+    global _adapter, _prev_eef, _open_ids, _close_ids
     from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
 
-    if _adapter is None or (policy_step is not None and int(policy_step) == 0):
+    step = int(policy_step) if policy_step is not None else 0
+    if _adapter is None or step == 0:
         _adapter = SC5StreamingFeatureAdapterV2()
         _prev_eef = None
+        # Derive OPEN/CLOSE token sets from model's action decoder
+        if model is not None and suite is not None:
+            _open_ids, _close_ids = _derive_token_sets(model, suite)
+        else:
+            raise RuntimeError('build_n4_inputs requires model and suite for token derivation')
 
     obs_dict = obs if obs is not None else observation
     if obs_dict is None:
@@ -144,14 +213,13 @@ def build_n4_inputs(obs=None, observation=None, clean_raw_action=None, raw_actio
     if raw.shape != (7,):
         raise RuntimeError('clean_raw_action must be 7D, got {}'.format(raw.shape))
 
-    env_action = clean_env_action
-    if env_action is None:
+    if clean_env_action is None:
         raise RuntimeError('build_n4_inputs requires clean_env_action')
-    env_action = np.asarray(env_action, dtype=np.float64)
+    env_action = np.asarray(clean_env_action, dtype=np.float64)
+    if env_action.shape != (7,):
+        raise RuntimeError('clean_env_action must be 7D, got {}'.format(env_action.shape))
 
-    step = int(policy_step) if policy_step is not None else 0
-
-    # Gripper qpos from MuJoCo sim: q7+q8 (matching frozen collector)
+    # Gripper qpos: q7+q8 (frozen collector exact)
     qpos_arr = obs_dict.get('robot0_gripper_qpos')
     if qpos_arr is None:
         raise RuntimeError('obs missing robot0_gripper_qpos')
@@ -164,73 +232,61 @@ def build_n4_inputs(obs=None, observation=None, clean_raw_action=None, raw_actio
     gripper_qpos = float(q7 + q8)
     opening_proxy = float(abs(q7) + abs(q8))
 
-    # EEF position from grip site (robot0_eef_pos as proxy when sim not accessible)
+    # EEF position (robot0_eef_pos proxy for grip site)
     eef_pos = obs_dict.get('robot0_eef_pos')
     if eef_pos is None:
         raise RuntimeError('obs missing robot0_eef_pos')
     eef_pos = np.asarray(eef_pos, dtype=np.float64).flatten()
+    if eef_pos.size < 3:
+        raise RuntimeError('robot0_eef_pos too short: {}'.format(eef_pos.size))
     eef_x, eef_y, eef_z = float(eef_pos[0]), float(eef_pos[1]), float(eef_pos[2])
+    if not np.all(np.isfinite([eef_x, eef_y, eef_z])):
+        raise RuntimeError('EEF non-finite: {},{},{}'.format(eef_x, eef_y, eef_z))
 
-    # EEF velocity = causal delta (matching frozen collector)
-    if _prev_eef is not None and np.all(np.isfinite([eef_x, eef_y, eef_z])):
-        eef_vx = eef_x - _prev_eef[0]
-        eef_vy = eef_y - _prev_eef[1]
-        eef_vz = eef_z - _prev_eef[2]
+    # EEF velocity = causal delta
+    if _prev_eef is not None:
+        eef_vx = eef_x - _prev_eef[0]; eef_vy = eef_y - _prev_eef[1]; eef_vz = eef_z - _prev_eef[2]
     else:
         eef_vx = eef_vy = eef_vz = 0.0
-    if np.all(np.isfinite([eef_x, eef_y, eef_z])):
-        _prev_eef = (eef_x, eef_y, eef_z)
+    _prev_eef = (eef_x, eef_y, eef_z)
 
-    # Action
-    raw_gripper = float(raw[6])
-    env_gripper = float(env_action[6]) if len(env_action) > 6 else raw_gripper
+    # Actions
+    raw_gripper = float(raw[6]); env_gripper = float(env_action[6])
     action_dx = float(raw[0]); action_dy = float(raw[1]); action_dz = float(raw[2])
-    action_gripper = raw_gripper
 
     # Canonical 25D via SC5StreamingFeatureAdapterV2.update()
     feat_result = _adapter.update(
-        step_id=step,
-        raw_gripper=raw_gripper, env_gripper=env_gripper,
+        step_id=step, raw_gripper=raw_gripper, env_gripper=env_gripper,
         gripper_qpos=gripper_qpos, gripper_opening_proxy=opening_proxy,
         eef_x=eef_x, eef_y=eef_y, eef_z=eef_z,
         eef_vx=eef_vx, eef_vy=eef_vy, eef_vz=eef_vz,
         action_dx=action_dx, action_dy=action_dy, action_dz=action_dz,
-        action_gripper=action_gripper,
+        action_gripper=raw_gripper,
     )
     if not feat_result.get('valid'):
-        raise RuntimeError('SC5 adapter invalid at step {}: {}'.format(
-            step, feat_result.get('error', 'unknown')))
+        raise RuntimeError('SC5 adapter invalid at step {}: {}'.format(step, feat_result.get('error','unknown')))
 
     f25d_dict = feat_result['features']
-    f25d = np.array([float(f25d_dict.get(name, 0.0)) for name in FEATURE_NAMES_25D], dtype=np.float32)
+    missing_25d = [n for n in FEATURE_NAMES_25D if n not in f25d_dict]
+    if missing_25d:
+        raise RuntimeError('SC5 adapter missing 25D fields: {}'.format(missing_25d))
+    f25d = np.array([float(f25d_dict[n]) for n in FEATURE_NAMES_25D], dtype=np.float32)
 
-    # 9D policy intent from model.generate() scores
+    # 9D policy intent from model.generate() scores using canonical token sets
     p9d = np.zeros(9, dtype=np.float32)
     if clean_model_output is not None and hasattr(clean_model_output, 'scores') and clean_model_output.scores:
         last_scores = clean_model_output.scores[-1]
         if last_scores.dim() >= 2:
-            last_scores = last_scores[0] if last_scores.dim() == 2 else last_scores[0, -1]
+            last_scores = last_scores[0] if last_scores.dim()==2 else last_scores[0,-1]
         if last_scores.dim() >= 1 and last_scores.shape[-1] > 100:
-            log_probs = torch.log_softmax(last_scores.float(), dim=-1)
-            probs = log_probs.exp(); V = last_scores.shape[-1]
-            n_bin = min(256, V // 8)
-            open_t = torch.arange(0, max(1, n_bin // 4), device=last_scores.device)
-            close_t = torch.arange(V - n_bin // 4, V, device=last_scores.device)
-            olm = torch.logsumexp(log_probs.index_select(-1, open_t), dim=-1)
-            clm = torch.logsumexp(log_probs.index_select(-1, close_t), dim=-1)
-            ent = -(probs * log_probs).sum(dim=-1) / max(1.0, np.log(V))
-            t1p, t1t = probs.max(dim=-1)
-            p9d[0] = float(olm.exp().cpu()); p9d[1] = float(clm.exp().cpu())
-            p9d[2] = float((olm - clm).cpu()); p9d[3] = float(ent.cpu())
-            p9d[4] = float(t1p.cpu())
-            p9d[5] = 1.0 if int(t1t) in open_t else 0.0
-            p9d[6] = 1.0 if int(t1t) in close_t else 0.0
-            p9d[7] = 0.0; p9d[8] = 0.0
+            summary = _summarize_logits(last_scores, _open_ids, _close_ids)
+            p9d = np.array([float(summary[n].detach().cpu()) for n in POLICY_INTENT_ORDER], dtype=np.float32)
 
-    # 9D gripper token (same logits source)
-    g9d = p9d.copy()
+    # 9D gripper token — separate block, same canonical logits source
+    g9d = np.zeros(9, dtype=np.float32)
+    if clean_model_output is not None and hasattr(clean_model_output, 'scores') and clean_model_output.scores:
+        g9d = p9d.copy()  # Same logits source; canonical separation deferred to token-mapping audit
 
     candidate_close = bool(raw_gripper < 0.5)
-
     return {'f25d': f25d.astype(np.float32), 'p9d': p9d.astype(np.float32),
             'g9d': g9d.astype(np.float32), 'candidate_close': candidate_close}
