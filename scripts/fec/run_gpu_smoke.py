@@ -377,7 +377,7 @@ class N4Bridge:
                 "generation": clean_model_output,
                 "policy_step": policy_step,
                 "step": policy_step,
-                "suite": suite,
+                "suite": suite, "unnorm_key": unnorm_key,
                 "model": model,
                 "processor": processor,
             },
@@ -727,7 +727,7 @@ def main() -> int:
                     clean_env_action=clean_env_action,
                     clean_model_output=clean_generation,
                     policy_step=policy_step,
-                    suite=args.suite, unnorm_key=unnorm_key,
+                    unnorm_key=unnorm_key,
                     model=model,
                     processor=processor,
                 )
@@ -770,7 +770,7 @@ def main() -> int:
                         clean_action=clean_raw_action,
                         target_action=clean_raw_action,
                         clean_model_output=clean_generation,
-                        suite=args.suite, unnorm_key=unnorm_key,
+                        unnorm_key=unnorm_key,
                     )
                     attack_audit = validate_attack_result(attack_result, arm=arm, config=attack_cfg)
                     adv_inputs = attack_audit.pop("adv_inputs")
