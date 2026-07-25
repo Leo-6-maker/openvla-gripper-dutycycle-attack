@@ -45,11 +45,11 @@ REASON_CODES = {
     'UNKNOWN_COMPONENT_MASKED': 'Required physics component has known_mask=False',
 }
 
-def _engagement_evidence(step):
+def _engagement_evidence(step, production_mode=False):
     """Extract engagement evidence channels with independent known masks.
 
-    Each channel returns (known: bool, positive: bool, confidence: float).
-    Score-based channels use >0.2 as positive and non-zero as known signal.
+    production_mode=True: requires explicit known_mask fields.
+    production_mode=False (legacy): infers known from score != 0.
     """
     channels = []
     # grasp
@@ -60,17 +60,26 @@ def _engagement_evidence(step):
     mk = step.get('manipulation_active_known_mask', False)
     channels.append(('manipulation', mk, mk and step.get('manipulation_active', False),
                      step.get('manipulation_active_confidence', 0)))
-    # contact: non-zero score treated as computed; explicit mask overrides
+    # contact: production requires explicit mask; legacy infers from non-zero
     cs = step.get('gripper_contact_score', 0)
-    ck = step.get('contact_known_mask', cs != 0)
+    if production_mode:
+        ck = step.get('contact_known_mask', False)
+    else:
+        ck = step.get('contact_known_mask', cs != 0)
     channels.append(('contact', bool(ck), cs > 0.2, min(cs, 1.0)))
     # comotion
     ms = step.get('object_eef_comotion_score', 0)
-    cmk = step.get('comotion_known_mask', ms != 0)
+    if production_mode:
+        cmk = step.get('comotion_known_mask', False)
+    else:
+        cmk = step.get('comotion_known_mask', ms != 0)
     channels.append(('comotion', bool(cmk), ms > 0.2, min(ms, 1.0)))
     # lift
     ls = step.get('lift_score', 0)
-    lk = step.get('lift_known_mask', ls != 0)
+    if production_mode:
+        lk = step.get('lift_known_mask', False)
+    else:
+        lk = step.get('lift_known_mask', ls != 0)
     channels.append(('lift', bool(lk), ls > 0.1, min(ls, 1.0)))
     return channels
 
@@ -102,18 +111,14 @@ def _evidence_lattice(channels):
     can_determine_negative = all_known and all_negative
     return can_determine_positive, can_determine_negative, any_positive, all_known, best_conf, sources
 
-def evaluate_physical_criticality(step):
-    """Head A: Physical criticality — evidence lattice (head-specific validity).
-
-    P0 FINAL FIX: Uses evidence lattice. Any known+positive → can be positive.
-    All known+negative → can be negative. Otherwise → valid_mask=false.
-    """
+def evaluate_physical_criticality(step, production_mode=False):
+    """Head A: Physical criticality — evidence lattice (head-specific validity)."""
     result = {
         'value': None, 'valid_mask': False, 'reason': 'UNKNOWN_PRIVILEGED_STATE',
         'confidence': 0.0, 'source': 'physics_teacher_v21c',
     }
 
-    channels = _engagement_evidence(step)
+    channels = _engagement_evidence(step, production_mode=production_mode)
     can_pos, can_neg, any_pos, all_known, best_conf, sources = _evidence_lattice(channels)
 
     release = step.get('release_or_instability', False)
@@ -381,10 +386,11 @@ def evaluate_close_intent(step):
         'close_event_onset': step.get('close_event_onset', False),
     }
 
-def generate_labels_v2(steps, K=10):
+def generate_labels_v2(steps, K=10, production_mode=True):
     """Generate Label Contract V2 for an episode.
 
     Tri-state output per head: {value, valid_mask, reason, confidence, source}.
+    production_mode=True (default): requires explicit known_mask, no inference.
     """
     T = len(steps)
     labels = []
@@ -393,9 +399,9 @@ def generate_labels_v2(steps, K=10):
     critical_results = []
     safe_release_results = []
     for step in steps:
-        crit = evaluate_physical_criticality(step)
+        crit = evaluate_physical_criticality(step, production_mode=production_mode)
         critical_results.append(crit)
-        safe, instab = evaluate_safe_release_and_instability(step)
+        safe, instab = evaluate_safe_release_and_instability(step, production_mode=production_mode)
         safe_release_results.append(safe)
         close = evaluate_close_intent(step)
 
@@ -642,7 +648,90 @@ def anti_regression_tests():
         if os.path.exists(test_dir):
             shutil.rmtree(test_dir)
 
-    # ── Test 11: K10 with all known → correct result ──
+    # ── Test 11: Instability direct — partial known + one positive → 1 ──
+    instab_pos_step = {
+        'step': 110, 'candidate_close': False, 'action_intent': 'OPEN',
+        'grasp_established': True, 'grasp_established_known_mask': True,
+        'release_or_instability': True, 'release_or_instability_known_mask': True,
+        'contact_known_mask': False, 'stability_known_mask': False,
+        'target_progress': 0.5, 'target_progress_known': False,
+        'gripper_contact_score': 0, 'relative_pose_stability': 0,
+        'manipulation_active': False, 'manipulation_active_known_mask': True,
+        'release_or_instability_confidence': 0.6,
+    }
+    _, instab_pos = evaluate_safe_release_and_instability(instab_pos_step)
+    t11_pass = (instab_pos['value'] == 1 and instab_pos['valid_mask'] == True)
+    assert t11_pass, f'INSTAB_POS_FAILED: value={instab_pos["value"]} valid={instab_pos["valid_mask"]}'
+    results.append({'test': 'instability_partial_known_positive', 'pass': True,
+                    'detail': f'Partial known + slip positive → value={instab_pos["value"]}'})
+
+    # ── Test 12: Instability — all known + all negative → 0 ──
+    instab_neg_step = {
+        'step': 111, 'candidate_close': False, 'action_intent': 'CLOSE',
+        'grasp_established': True, 'grasp_established_known_mask': True,
+        'release_or_instability': False, 'release_or_instability_known_mask': True,
+        'contact_known_mask': True, 'gripper_contact_score': 0.5,
+        'stability_known_mask': True, 'relative_pose_stability': 0.8,
+        'target_progress': 0.5, 'target_progress_known': False,
+        'manipulation_active': False, 'manipulation_active_known_mask': True,
+        'release_or_instability_confidence': 0.0,
+    }
+    _, instab_neg = evaluate_safe_release_and_instability(instab_neg_step)
+    t12_pass = (instab_neg['value'] == 0 and instab_neg['valid_mask'] == True)
+    assert t12_pass, f'INSTAB_NEG_FAILED: value={instab_neg["value"]} valid={instab_neg["valid_mask"]}'
+    results.append({'test': 'instability_all_known_negative', 'pass': True,
+                    'detail': f'All known + all negative → value={instab_neg["value"]}'})
+
+    # ── Test 13: Instability — partial known + no positive → invalid ──
+    instab_unk_step = {
+        'step': 112, 'candidate_close': False, 'action_intent': 'OPEN',
+        'grasp_established': True, 'grasp_established_known_mask': True,
+        'release_or_instability': False, 'release_or_instability_known_mask': True,
+        'contact_known_mask': False, 'stability_known_mask': False,
+        'target_progress': 0.5, 'target_progress_known': False,
+        'gripper_contact_score': 0, 'relative_pose_stability': 0,
+        'manipulation_active': False, 'manipulation_active_known_mask': False,
+        'release_or_instability_confidence': 0,
+    }
+    _, instab_unk = evaluate_safe_release_and_instability(instab_unk_step)
+    t13_pass = (instab_unk['value'] is None and instab_unk['valid_mask'] == False)
+    assert t13_pass, f'INSTAB_UNK_FAILED: value={instab_unk["value"]} valid={instab_unk["valid_mask"]}'
+    results.append({'test': 'instability_partial_unknown_invalid', 'pass': True,
+                    'detail': f'Partial known + no positive → value={instab_unk["value"]} valid={instab_unk["valid_mask"]}'})
+
+    # ── Test 14: Production mode requires explicit masks ──
+    prod_step = {
+        'step': 120, 'grasp_established': True, 'grasp_established_known_mask': True,
+        'grasp_established_confidence': 0.9,
+        'manipulation_active': False, 'manipulation_active_known_mask': True,
+        'gripper_contact_score': 0.5,  # non-zero but no explicit mask → unknown in prod
+        'object_eef_comotion_score': 0, 'lift_score': 0,
+        'release_or_instability': False, 'release_or_instability_known_mask': True,
+        'target_progress': 0.3, 'target_progress_known': True,
+        'relative_pose_stability': 0.8,
+    }
+    crit_prod = evaluate_physical_criticality(prod_step, production_mode=True)
+    t14_pass = (crit_prod['valid_mask'] == True and crit_prod['value'] == 1)  # grasp known+positive → 1
+    assert t14_pass, f'PROD_MODE_FAILED: value={crit_prod["value"]} valid={crit_prod["valid_mask"]}'
+
+    # With production_mode=True and all score masks explicitly false → unknown if only scores
+    score_only_step = {
+        'step': 121, 'grasp_established_known_mask': False,
+        'manipulation_active_known_mask': False,
+        'contact_known_mask': False, 'gripper_contact_score': 0.5,  # score high but mask=False
+        'comotion_known_mask': False, 'object_eef_comotion_score': 0,
+        'lift_known_mask': False, 'lift_score': 0,
+        'release_or_instability_known_mask': False,
+        'target_progress_known': False,
+        'relative_pose_stability': 0,
+    }
+    crit_score_only = evaluate_physical_criticality(score_only_step, production_mode=True)
+    t14b_pass = (crit_score_only['valid_mask'] == False and crit_score_only['value'] is None)
+    assert t14b_pass, f'PROD_SCORE_ONLY_FAILED: value={crit_score_only["value"]} valid={crit_score_only["valid_mask"]} (all scores non-zero but masks=False → unknown)'
+    results.append({'test': 'production_mode_explicit_masks', 'pass': True,
+                    'detail': 'Production mode requires explicit known_mask; score-only with mask=False → unknown'})
+
+    # ── Test 15: K10 with all known → correct result ──
     all_crit_steps = [dict(base_step) for _ in range(K + 5)]
     for i, s in enumerate(all_crit_steps): s['step'] = i
     crit_all_known = [evaluate_physical_criticality(s) for s in all_crit_steps]
@@ -665,12 +754,10 @@ def compute_labels_sha(labels_jsonl_str):
 
 N5_ALLOWED_ROOT = os.path.realpath('/mnt/sdc/dty_user/openvla_attack_outputs/n5')
 
-def write_atomic(content, final_path, allow_overwrite=False):
-    """Atomic write: realpath check → tmpfile → fsync → os.replace → fsync dir.
+def write_atomic(content, final_path):
+    """Atomic write: realpath check → tmpfile → fsync → os.link → fsync dir.
 
-    FINAL: realpath/commonpath prevents symlink escapes.
-    Uses os.link as no-clobber (hardlink fails if target exists = atomic check).
-    Rejects allow_overwrite in production.
+    Uses os.link for atomic no-clobber. allow_overwrite is NOT supported in production.
     """
     final_abs = os.path.realpath(final_path)
     # Verify under allowed root via common path
@@ -683,7 +770,7 @@ def write_atomic(content, final_path, allow_overwrite=False):
             raise ValueError(f'REJECTED: symlink in output path: {p}')
         p = os.path.dirname(p)
 
-    if not allow_overwrite and os.path.exists(final_abs):
+    if os.path.exists(final_abs):
         raise FileExistsError(f'REJECTED: output already exists: {final_abs}')
 
     d = os.path.dirname(final_abs)
@@ -719,7 +806,10 @@ def main():
     parser.add_argument('--input-dir', help='Factorized teacher labels root')
     parser.add_argument('--suite', help='Suite to process')
     parser.add_argument('--output', default=None, help='N5 production output root (REQUIRED for production)')
+    parser.add_argument('--legacy-diagnostic-mode', action='store_true',
+                        help='Allow score!=0 → known mask inference (for diagnostics only, NOT for Label Seal)')
     args = parser.parse_args()
+    production_mode = not args.legacy_diagnostic_mode
 
     print(f'=== Label Contract V2 ({LABEL_CONTRACT_VERSION}) Anti-Regression Tests ===')
     test_results = anti_regression_tests()
@@ -773,7 +863,7 @@ def main():
             if not steps:
                 continue
 
-            labels_v2 = generate_labels_v2(steps)
+            labels_v2 = generate_labels_v2(steps, production_mode=production_mode)
 
             # Statistics
             n_crit = sum(1 for l in labels_v2 if l['physical_criticality']['valid_mask'] and l['physical_criticality']['value'] == 1)
@@ -813,6 +903,8 @@ def main():
         'suite': args.suite,
         'n_episodes': total_episodes,
         'n_steps': suite_stats['steps'],
+        'production_mode': production_mode,
+        'legacy_inferred_masks': 0 if production_mode else 1,
         'episodes': episode_manifest,
     }
     manifest_path = os.path.join(output_abs, args.suite, 'LABEL_MANIFEST.json')
