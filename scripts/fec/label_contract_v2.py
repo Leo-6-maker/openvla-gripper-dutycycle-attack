@@ -45,19 +45,25 @@ REASON_CODES = {
     'UNKNOWN_COMPONENT_MASKED': 'Required physics component has known_mask=False',
 }
 
-def _any_physics_known(step):
-    """Check if ANY physical factor is known (has known_mask=True)."""
-    known_fields = [
+def _engagement_physics_known(step):
+    """Check if ALL engagement-relevant physics factors are known.
+
+    P0-3 FIX: Uses head-specific validity. Criticality requires grasp/manipulation/
+    contact/comotion to be known. If only target_progress or release is known,
+    engagement is still unknown.
+    """
+    engagement_fields = [
         'grasp_established_known_mask',
         'manipulation_active_known_mask',
-        'release_or_instability_known_mask',
-        'target_progress_known',
     ]
-    return any(step.get(f, False) for f in known_fields)
-
-def _all_physics_unknown(step):
-    """Check if ALL physical factors are unknown."""
-    return not _any_physics_known(step)
+    # Also check that contact/comotion scores are meaningful (>0 means they were computed)
+    # When known_mask=False for grasp AND manipulation, and scores are 0, engagement is unknown
+    all_engagement_unknown = not any(step.get(f, False) for f in engagement_fields)
+    # Scores are 0 when unknown — treat as unknown evidence
+    scores_all_zero = (step.get('gripper_contact_score', 0) == 0 and
+                       step.get('object_eef_comotion_score', 0) == 0 and
+                       step.get('lift_score', 0) == 0)
+    return not (all_engagement_unknown and scores_all_zero)
 
 def evaluate_physical_criticality(step):
     """Head A: Physical criticality — tri-state contract.
@@ -72,7 +78,7 @@ def evaluate_physical_criticality(step):
         'confidence': 0.0, 'source': 'physics_teacher_v21c',
     }
 
-    if _all_physics_unknown(step):
+    if not _engagement_physics_known(step):
         result['reason'] = 'UNKNOWN_COMPONENT_MASKED'
         return result
 
@@ -175,7 +181,7 @@ def evaluate_safe_release_and_instability(step):
     instab = {'value': None, 'valid_mask': False, 'reason': 'UNKNOWN_PRIVILEGED_STATE',
               'confidence': 0.0, 'source': 'physics_teacher_v21c'}
 
-    if _all_physics_unknown(step):
+    if not _engagement_physics_known(step):
         safe['reason'] = 'UNKNOWN_COMPONENT_MASKED'
         instab['reason'] = 'UNKNOWN_COMPONENT_MASKED'
         return safe, instab
@@ -189,7 +195,6 @@ def evaluate_safe_release_and_instability(step):
     contact = step.get('gripper_contact_score', 0)
     stability = step.get('relative_pose_stability', 0)
     comotion = step.get('object_eef_comotion_score', 0)
-    action_intent = step.get('action_intent', 'UNKNOWN')
 
     # ── Safe release: known completion or explicit placement ──
     if target_known and target_progress >= 0.95:
@@ -229,12 +234,6 @@ def evaluate_safe_release_and_instability(step):
         instab['valid_mask'] = True
         instab['reason'] = 'INSTABILITY_POSE_ANOMALY'
         instab['confidence'] = 1.0 - stability
-    elif action_intent == 'OPEN' and grasp_known and grasp:
-        # Opening while grasping → unplanned open → instability
-        instab['value'] = 1
-        instab['valid_mask'] = True
-        instab['reason'] = 'INSTABILITY_UNPLANNED_OPEN'
-        instab['confidence'] = 0.5
     elif release_known and not release and grasp_known:
         # Known: not releasing, not unstable
         instab['value'] = 0
@@ -281,29 +280,54 @@ def evaluate_k10_feasibility(steps, t, critical_results, safe_release_results, K
             return result
 
     # Check critical corridor (only count valid_mask=True, value=1 steps)
+    # P0-4 FIX: unknown steps → valid_mask=false for K10 overall
     corridor_length = 0
     max_corridor = 0
+    has_unknown_in_window = False
+    has_known_false_in_window = False
     for i in range(t, min(t + K, T)):
         if i < len(critical_results):
             cr = critical_results[i]
-            if cr['valid_mask'] and cr['value'] == 1:
+            if not cr['valid_mask']:
+                has_unknown_in_window = True
+                corridor_length = 0  # reset corridor at unknown
+            elif cr['value'] == 1:
                 corridor_length += 1
                 max_corridor = max(max_corridor, corridor_length)
             else:
+                has_known_false_in_window = True
                 corridor_length = 0
         else:
             corridor_length = 0
 
-    if max_corridor < K:
+    # Known false in window → definitively infeasible
+    if has_known_false_in_window and max_corridor < K:
         result['value'] = 0
         result['valid_mask'] = True
         result['reason'] = 'K10_INFEASIBLE_NO_CRITICAL_CORRIDOR'
         result['confidence'] = float(max_corridor) / K
         return result
 
-    result['value'] = 1
+    # Unknown in window → cannot determine feasibility
+    if has_unknown_in_window and max_corridor < K:
+        result['value'] = None
+        result['valid_mask'] = False
+        result['reason'] = 'K10_UNKNOWN_CRITICAL_IN_WINDOW'
+        result['confidence'] = float(max_corridor) / K
+        return result
+
+    # All known, corridor sufficient
+    if max_corridor >= K:
+        result['value'] = 1
+        result['valid_mask'] = True
+        result['reason'] = 'K10_FEASIBLE'
+        result['confidence'] = float(max_corridor) / K
+        return result
+
+    # All known, insufficient corridor
+    result['value'] = 0
     result['valid_mask'] = True
-    result['reason'] = 'K10_FEASIBLE'
+    result['reason'] = 'K10_INFEASIBLE_NO_CRITICAL_CORRIDOR'
     result['confidence'] = float(max_corridor) / K
     return result
 
@@ -511,6 +535,74 @@ def anti_regression_tests():
     results.append({'test': 'safe_release_vetoes_k10', 'pass': True,
                     'detail': f'Safe release in window → K10={k10_safe["value"]} (expected 0)'})
 
+    # ── Test 8: Partial unknown → valid_mask=false (NOT negative) ──
+    partial_unknown_step = {
+        'step': 90, 'candidate_close': True, 'action_intent': 'CLOSE',
+        'grasp_established': False, 'grasp_established_confidence': 0, 'grasp_established_known_mask': False,
+        'manipulation_active': False, 'manipulation_active_confidence': 0, 'manipulation_active_known_mask': False,
+        'gripper_contact_score': 0, 'object_eef_comotion_score': 0, 'lift_score': 0,
+        'release_or_instability': False, 'release_or_instability_confidence': 0, 'release_or_instability_known_mask': True,
+        'target_progress': 0.5, 'target_progress_known': True,
+        'relative_pose_stability': 0,
+    }
+    crit_partial = evaluate_physical_criticality(partial_unknown_step)
+    t8_pass = (crit_partial['value'] is None and crit_partial['valid_mask'] == False)
+    assert t8_pass, f'PARTIAL_UNKNOWN_FAILED: value={crit_partial["value"]} valid={crit_partial["valid_mask"]} (expected None, False)'
+    results.append({'test': 'partial_unknown_is_invalid', 'pass': True,
+                    'detail': f'Only release/target known → value={crit_partial["value"]} valid={crit_partial["valid_mask"]}'})
+
+    # ── Test 9: K10 with unknown in window → valid_mask=false ──
+    # Build a sequence with all critical but one step unknown
+    unk_steps = []
+    for _ in range(K + 5):
+        s = dict(base_step)
+        unk_steps.append(s)
+    # Make step 5 unknown
+    unk_steps[5] = dict(unknown_step)
+    crit_unk_seq = [evaluate_physical_criticality(s) for s in unk_steps]
+    safe_unk_seq = [evaluate_safe_release_and_instability(s)[0] for s in unk_steps]
+    k10_unk = evaluate_k10_feasibility(unk_steps, 0, crit_unk_seq, safe_unk_seq, K)
+    t9_pass = (k10_unk['value'] is None and k10_unk['valid_mask'] == False)
+    assert t9_pass, f'K10_UNKNOWN_FAILED: value={k10_unk["value"]} valid={k10_unk["valid_mask"]} (expected None, False)'
+    results.append({'test': 'k10_unknown_in_window', 'pass': True,
+                    'detail': f'Unknown step in K10 window → value={k10_unk["value"]} valid={k10_unk["valid_mask"]}'})
+
+    # ── Test 10: Atomic write success + verify content ──
+    # Use N5 output dir (not /tmp which is rejected)
+    test_dir = '/mnt/sdc/dty_user/openvla_attack_outputs/n5/tmp/atomic_test'
+    os.makedirs(test_dir, exist_ok=True)
+    try:
+        test_content = json.dumps({'test': 'atomic_write_test', 'value': 42})
+        test_path = os.path.join(test_dir, 'test_output.json')
+        write_atomic(test_content, test_path)
+        assert os.path.isfile(test_path), 'Atomic write: file not created'
+        with open(test_path) as ff:
+            assert ff.read() == test_content, 'Atomic write: content mismatch'
+        # Verify /tmp rejection
+        try:
+            write_atomic('x', '/tmp/should_fail.json')
+            assert False, 'Should have rejected /tmp path'
+        except ValueError:
+            pass
+        results.append({'test': 'atomic_write_success', 'pass': True,
+                        'detail': 'Write + content verify + /tmp rejection'})
+    finally:
+        if os.path.exists(test_path) and os.path.isfile(test_path):
+            os.remove(test_path)
+        if os.path.exists(os.path.join(test_dir, 'test_output.json')):
+            os.remove(os.path.join(test_dir, 'test_output.json'))
+
+    # ── Test 11: K10 with all known → correct result ──
+    all_crit_steps = [dict(base_step) for _ in range(K + 5)]
+    for i, s in enumerate(all_crit_steps): s['step'] = i
+    crit_all_known = [evaluate_physical_criticality(s) for s in all_crit_steps]
+    safe_all_known = [evaluate_safe_release_and_instability(s)[0] for s in all_crit_steps]
+    k10_all = evaluate_k10_feasibility(all_crit_steps, 0, crit_all_known, safe_all_known, K)
+    t11_pass = (k10_all['value'] == 1 and k10_all['valid_mask'] == True)
+    assert t11_pass, f'K10_ALL_KNOWN_FAILED: value={k10_all["value"]} valid={k10_all["valid_mask"]}'
+    results.append({'test': 'k10_all_known_feasible', 'pass': True,
+                    'detail': f'All critical known → K10={k10_all["value"]}'})
+
     all_pass = all(r['pass'] for r in results)
     return {'all_pass': all_pass, 'n_pass': sum(1 for r in results if r['pass']), 'n_total': len(results), 'tests': results}
 
@@ -520,20 +612,28 @@ def compute_labels_sha(labels_jsonl_str):
     return hashlib.sha256(labels_jsonl_str.encode()).hexdigest()
 
 def write_atomic(content, final_path):
-    """Atomic write: tmpfile → fsync → rename. Rejects /tmp paths for N5 production."""
+    """Atomic write: tmpfile → flush+fsync → rename → fsync dir. P0-2 FIXED."""
     final_abs = os.path.abspath(final_path)
     if final_abs.startswith('/tmp'):
         raise ValueError(f'REJECTED: output path in /tmp: {final_abs}. Use N5 production path.')
     d = os.path.dirname(final_abs)
     os.makedirs(d, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=d, prefix='.tmp_label_v2_')
+    tmp = None
     try:
+        fd, tmp = tempfile.mkstemp(dir=d, prefix='.tmp_label_v2_')
         with os.fdopen(fd, 'w') as f:
             f.write(content)
-        os.fsync(fd)
-        shutil.move(tmp, final_abs)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, final_abs)
+        # fsync parent directory for durability
+        dir_fd = os.open(d, os.O_RDONLY)
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
     except Exception:
-        if os.path.exists(tmp):
+        if tmp and os.path.exists(tmp):
             os.unlink(tmp)
         raise
 

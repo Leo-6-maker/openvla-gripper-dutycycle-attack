@@ -115,16 +115,6 @@ class N5SharedEncoder(nn.Module):
         fused = self.fusion(torch.cat([s, l], dim=-1))  # (B, T, hidden)
         return F.relu(fused)
 
-# ── Shared Encoder (replaces old separate definition) ──
-# N5SharedEncoder is now the canonical shared encoder
-        # x: (B, T, C)
-        x = x.transpose(1, 2)  # (B, C, T)
-        for layer in self.layers:
-            x = layer(x)
-        x = x.transpose(1, 2)  # (B, T, C)
-        return x
-
-# ── Shared Encoder (defined above, this section removed) ──
 
 # ── Independent Heads ──
 
@@ -183,11 +173,14 @@ class N5MultiHeadStudent(nn.Module):
     def get_last_logits(self, x, timestep_mask=None, head_idx=None):
         """Get logits for the LAST VALID timestep (handles padding correctly).
 
-        P0 FIX: Uses timestep_mask to find last valid step, not x[:, -1].
+        P0-5 FIX: Passes head_idx to forward; handles device; hard-fails on all-False mask.
         """
-        all_logits = self.forward(x, timestep_mask=timestep_mask)
+        all_logits = self.forward(x, timestep_mask=timestep_mask, head_idx=head_idx)
+
         if timestep_mask is not None:
-            # Find last True index per batch: (B, T) → (B,)
+            if not timestep_mask.any():
+                raise ValueError('get_last_logits: timestep_mask is all False — no valid steps')
+            # Find last True index per batch item
             last_valid_idx = (timestep_mask.shape[1] - 1 -
                               timestep_mask.flip(1).long().argmax(dim=1))
             no_valid = ~timestep_mask.any(dim=1)
@@ -196,12 +189,16 @@ class N5MultiHeadStudent(nn.Module):
             last_valid_idx = None
 
         if head_idx is not None:
+            # all_logits is (B, T) tensor
             if last_valid_idx is not None:
-                return all_logits[torch.arange(all_logits.shape[0]), last_valid_idx]
+                idx = torch.arange(all_logits.shape[0], device=all_logits.device)
+                return all_logits[idx, last_valid_idx]
             return all_logits[:, -1]
 
+        # all_logits is dict
         if last_valid_idx is not None:
-            idx = torch.arange(all_logits[list(all_logits.keys())[0]].shape[0])
+            first_name = list(all_logits.keys())[0]
+            idx = torch.arange(all_logits[first_name].shape[0], device=all_logits[first_name].device)
             return {
                 name: logits[idx, last_valid_idx]
                 for name, logits in all_logits.items()
@@ -400,7 +397,7 @@ class LastFrameMLP(nn.Module):
 # ── Schema and Versioning ──
 
 N5_MODEL_SCHEMA = {
-    'schema': 'N5_MULTIHEAD_STUDENT_V1',
+    'schema': 'N5_MULTIHEAD_STUDENT_V2',
     'input_dim': 51,
     'input_breakdown': {
         'f25d': '25D SC5 streaming features',
@@ -408,19 +405,39 @@ N5_MODEL_SCHEMA = {
         'g9d': '9D gripper token (TRAIN_G9D_ORDER)',
         'proxies_8d': '8D causal response proxies',
     },
+    'encoder': {
+        'type': 'DualCausalTCN',
+        'kernel_size': 2,
+        'short_rf': 32,
+        'short_dilations': [1, 2, 4, 8, 16],
+        'long_rf': 128,
+        'long_dilations': [1, 2, 4, 8, 16, 32, 64],
+        'hidden_dim': 64,
+        'dropout': 0.1,
+        'fusion': 'concat -> Linear(128, 64) -> ReLU',
+        'timestep_mask': 'supported (zeros out padding, gathers last valid step)',
+    },
     'heads': {
-        'physical_criticality': 'Binary: physically engaged AND not releasing AND task not done',
-        'k10_feasible': 'Binary: horizon >= 10, no release/terminal in window, critical corridor',
-        'safe_release': 'Binary: task done or high-confidence release',
-        'instability': 'Binary: low-confidence release, possible vulnerability',
-        'close_intent': 'Binary: policy-level close signal (raw_gripper <= 0.5)',
+        'order': ['physical_criticality', 'k10_feasible', 'safe_release', 'instability', 'close_intent'],
+        'physical_criticality': {'output': 'scalar logit', 'validity': 'tri-state (value/valid_mask/reason)'},
+        'k10_feasible': {'output': 'scalar logit', 'validity': 'tri-state'},
+        'safe_release': {'output': 'scalar logit', 'validity': 'tri-state'},
+        'instability': {'output': 'scalar logit', 'validity': 'tri-state'},
+        'close_intent': {'output': 'scalar logit', 'validity': 'binary (always valid)'},
+    },
+    'loss': {
+        'type': 'masked_bce_with_logits',
+        'pos_weight': 'frozen from train split, clamped [1, 20]',
+        'head_weight': 'configurable per head',
+        'hard_fail': 'split-level (no positives OR no negatives → HOLD)',
+        'batch_skip': 'skip head if zero valid in batch, log warning',
     },
     'constraints': [
         'NO head output gates another head',
-        'NO candidate_close in loss mask',
-        'NO cc in prediction pipeline',
+        'NO candidate_close in loss mask or prediction',
         'Independent valid_mask per head',
         'Train-only normalization',
+        'Suite-balanced sampling with replacement, no data discard',
     ],
 }
 
@@ -543,33 +560,81 @@ def test_padding_parity():
     print('PASS: test_padding_parity')
 
 def test_padding_left_right():
-    """Verify left-padding vs right-padding parity for last valid step.
-
-    Uses sequences long enough to cover the long RF (128) so that warmup
-    transients don't affect the comparison at the last valid step.
-    """
+    """Verify left-padding vs right-padding parity for last valid step."""
     model = N5MultiHeadStudent()
     model.eval()
-    seq_len = model.encoder.long_rf + 50  # Well beyond long RF
+    seq_len = model.encoder.long_rf + 50
     x = torch.randn(1, seq_len, 51)
-
-    # Both have same valid sequence, just different padding positions
-    # Right-padded: valid at start, zeros at end
     x_right = torch.cat([x, torch.zeros(1, 20, 51)], dim=1)
     mask_right = torch.cat([torch.ones(1, seq_len, dtype=torch.bool), torch.zeros(1, 20, dtype=torch.bool)], dim=1)
-
-    # Left-padded: zeros at start, valid at end
     x_left = torch.cat([torch.zeros(1, 20, 51), x], dim=1)
     mask_left = torch.cat([torch.zeros(1, 20, dtype=torch.bool), torch.ones(1, seq_len, dtype=torch.bool)], dim=1)
-
     with torch.no_grad():
         out_right = model.get_last_logits(x_right, timestep_mask=mask_right)
         out_left = model.get_last_logits(x_left, timestep_mask=mask_left)
-
     for name in N5MultiHeadStudent.HEAD_NAMES:
         diff = (out_right[name] - out_left[name]).abs().max()
-        assert diff < 5e-3, f'{name}: left vs right padding mismatch, max_diff={diff:.6f} (seq_len={seq_len})'
+        assert diff < 5e-3, f'{name}: left vs right padding mismatch, max_diff={diff:.6f}'
     print('PASS: test_padding_left_right')
+
+def test_get_last_logits_head_idx():
+    """Verify get_last_logits with head_idx returns correct single-head output."""
+    model = N5MultiHeadStudent()
+    model.eval()
+    x = torch.randn(2, 10, 51)
+    mask = torch.ones(2, 10, dtype=torch.bool)
+    # All heads
+    out_all = model.get_last_logits(x, timestep_mask=mask)
+    assert isinstance(out_all, dict), f'Expected dict, got {type(out_all)}'
+    # Single head
+    for i, name in enumerate(N5MultiHeadStudent.HEAD_NAMES):
+        out_single = model.get_last_logits(x, timestep_mask=mask, head_idx=i)
+        assert out_single.shape == (2,), f'head_idx={i}: expected (2,), got {out_single.shape}'
+        diff = (out_all[name] - out_single).abs().max()
+        assert diff < 1e-6, f'head_idx={i} ({name}): mismatch with dict path, diff={diff:.6f}'
+    print('PASS: test_get_last_logits_head_idx')
+
+def test_get_last_logits_empty_mask():
+    """Verify get_last_logits hard-fails on all-False mask."""
+    model = N5MultiHeadStudent()
+    model.eval()
+    x = torch.randn(2, 10, 51)
+    mask_all_false = torch.zeros(2, 10, dtype=torch.bool)
+    try:
+        model.get_last_logits(x, timestep_mask=mask_all_false)
+        assert False, 'Should have raised ValueError'
+    except ValueError as e:
+        assert 'all False' in str(e), f'Wrong error: {e}'
+    print('PASS: test_get_last_logits_empty_mask')
+
+def test_get_last_logits_varying_lengths():
+    """Verify get_last_logits handles batch items with different valid lengths."""
+    model = N5MultiHeadStudent()
+    model.eval()
+    x = torch.randn(3, 15, 51)  # 3 items, max 15 steps
+    mask = torch.tensor([
+        [1,1,1,1,1,0,0,0,0,0,0,0,0,0,0],  # valid len=5
+        [1,1,1,1,1,1,1,1,1,1,1,1,0,0,0],  # valid len=12
+        [1,1,1,1,1,1,1,1,0,0,0,0,0,0,0],  # valid len=8
+    ], dtype=torch.bool)
+    with torch.no_grad():
+        out = model.get_last_logits(x, timestep_mask=mask)
+    for name in N5MultiHeadStudent.HEAD_NAMES:
+        assert out[name].shape == (3,), f'{name}: expected (3,), got {out[name].shape}'
+    print('PASS: test_get_last_logits_varying_lengths')
+
+def test_get_last_logits_cpu_cuda():
+    """Verify get_last_logits works on CPU."""
+    model = N5MultiHeadStudent()
+    model.eval()
+    model = model.cpu()
+    x = torch.randn(2, 10, 51)
+    mask = torch.ones(2, 10, dtype=torch.bool)
+    out = model.get_last_logits(x, timestep_mask=mask)
+    assert isinstance(out, dict)
+    out_single = model.get_last_logits(x, timestep_mask=mask, head_idx=0)
+    assert out_single.shape == (2,)
+    print('PASS: test_get_last_logits_cpu_cuda')
 
 def test_sampler():
     """Verify suite-balanced sampler."""
@@ -639,6 +704,10 @@ def run_all_tests():
         test_causal_invariance,
         test_padding_parity,
         test_padding_left_right,
+        test_get_last_logits_head_idx,
+        test_get_last_logits_empty_mask,
+        test_get_last_logits_varying_lengths,
+        test_get_last_logits_cpu_cuda,
         test_checkpoint_roundtrip,
     ]
     passed = 0
