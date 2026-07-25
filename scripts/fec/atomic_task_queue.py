@@ -171,9 +171,12 @@ class AtomicTaskQueue:
     def commit_result(self, cell_id, attempt_id, worker_id, lease_token, lease_epoch,
                       exit_code=0, error_class=None, exposure_status=None, task_outcome=None,
                       output_dir=None, receipt_sha=None, peak_memory_mb=None, nvml_peak_mb=None):
+        """Commit attempt. On success (task_outcome=DONE_VALID): set accepted_attempt_id.
+        On failure: mark task FAILED or RETRY_READY, do NOT set accepted_attempt_id."""
         conn = self._get_conn()
         try:
             conn.execute("BEGIN IMMEDIATE")
+            # P0-5: Validate task lease AND attempt row matches
             task = conn.execute("""SELECT * FROM tasks WHERE cell_id=? AND lease_owner=?
                                   AND lease_token=? AND lease_epoch=?""",
                                 (cell_id, worker_id, lease_token, lease_epoch)).fetchone()
@@ -181,16 +184,45 @@ class AtomicTaskQueue:
                 conn.rollback(); return False
             if task['accepted_attempt_id'] is not None:
                 conn.rollback(); return False
+
+            # Validate attempt row
+            attempt = conn.execute("""SELECT * FROM attempts WHERE attempt_id=? AND cell_id=?
+                                     AND worker_id=? AND lease_epoch=?""",
+                                   (attempt_id, cell_id, worker_id, lease_epoch)).fetchone()
+            if not attempt:
+                conn.rollback(); return False
+
             now = self._now()
-            conn.execute("UPDATE tasks SET state='DONE_VALID',accepted_attempt_id=?,updated_at=? WHERE cell_id=?",
-                         (attempt_id, now, cell_id))
-            conn.execute("""UPDATE attempts SET state='DONE_VALID',ended_at=?,exit_code=?,error_class=?,
+            is_success = (task_outcome == 'DONE_VALID' or task_outcome == 'DONE')
+
+            if is_success:
+                # P0-3: Only set DONE_VALID + accepted_attempt_id on success
+                new_state = 'DONE_VALID'
+                conn.execute("UPDATE tasks SET state=?,accepted_attempt_id=?,updated_at=? WHERE cell_id=?",
+                             (new_state, attempt_id, now, cell_id))
+            elif task_outcome == 'FAILED':
+                # Infrastructure failure: retry-ready with incremented attempt count
+                new_state = 'RETRY_READY'
+                conn.execute("""UPDATE tasks SET state=?,attempt_count=attempt_count+1,
+                               lease_owner=NULL,lease_token=NULL,updated_at=? WHERE cell_id=?""",
+                             (new_state, now, cell_id))
+            elif task_outcome == 'CLASSIFIED':
+                # Scientific result but not clean PASS (e.g., CLASS_C terminal censor)
+                new_state = 'DONE_VALID'
+                conn.execute("UPDATE tasks SET state=?,accepted_attempt_id=?,updated_at=? WHERE cell_id=?",
+                             (new_state, attempt_id, now, cell_id))
+            else:
+                new_state = task_outcome or 'DONE_VALID'
+                conn.execute("UPDATE tasks SET state=?,accepted_attempt_id=?,updated_at=? WHERE cell_id=?",
+                             (new_state, attempt_id, now, cell_id))
+
+            conn.execute("""UPDATE attempts SET state=?,ended_at=?,exit_code=?,error_class=?,
                            exposure_status=?,task_outcome=?,output_dir=?,receipt_sha=?,
                            peak_memory_mb=?,nvml_peak_mb=? WHERE attempt_id=?""",
-                         (now, exit_code, error_class, exposure_status, task_outcome,
+                         (new_state, now, exit_code, error_class, exposure_status, task_outcome,
                           output_dir, receipt_sha, peak_memory_mb, nvml_peak_mb, attempt_id))
             self._log(worker_id, cell_id, 'TASK_COMMITTED',
-                      {'attempt_id': attempt_id, 'exposure': exposure_status})
+                      {'attempt_id': attempt_id, 'outcome': task_outcome, 'state': new_state})
             conn.commit()
             return True
         except Exception:
