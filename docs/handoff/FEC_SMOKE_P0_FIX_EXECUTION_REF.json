@@ -1,0 +1,6 @@
+{
+  "branch": "codex/fec-smoke-runner-p0-fix-20260725",
+  "checkout": "origin/codex/fec-smoke-runner-p0-fix-20260725",
+  "use_branch_tip": true,
+  "note": "The handoff markdown contains an intermediate commit SHA for audit history; execution must use the current branch tip and record git rev-parse HEAD in the runtime receipt."
+}
