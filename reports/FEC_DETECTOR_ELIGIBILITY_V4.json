@@ -1,0 +1,104 @@
+{
+  "schema": "FEC_DETECTOR_ELIGIBILITY_V4_DECISION_V1",
+  "timestamp": "2026-07-25T15:00:00Z",
+
+  "root_cause": {
+    "finding": "G9D_PROVIDER_SCHEMA_ORDER_VIOLATION",
+    "description": "V3 build_n4_inputs set g9d=p9d (both in POLICY_INTENT_ORDER). Training script train_v23_split.py constructs g9d from individual fields in a DIFFERENT order (TRAIN_G9D_ORDER). This caused raw_logits to explode from [-19,+5] to +/-1.2M, calibration saturation, and high scores at cc=False (model inversion symptom).",
+    "fix": "V4 provider constructs g9d in TRAIN_G9D_ORDER from named semantic dict. p9d unchanged in POLICY_INTENT_ORDER.",
+    "provider_sha256": "6a7ab61d8dba8cb331a748c62317d2513b1e397def2adee8119204be44cecb61",
+    "g9d_schema_sha256": "4f6ec7ff6c61037062d6a776d82da8ce0f5c2122b0343cab0536872c6251e6d5",
+    "checkpoint_sha256": "685ddadf90ad2ac4ec83bcadbe970d6ad74f07baa4e498a4936c78c0b0695f88",
+    "norm_sha256": "491e65a60a900d384bed4c3aa95baa6ca465b51bd303b2f1a3dcd1baa69f0389"
+  },
+
+  "evidence": {
+    "schema_unit_tests": {
+      "status": "PASS",
+      "tests": 6,
+      "details": "sentinel order, anti-regression (g9d!=p9d), SHA stability, all-finite, NaN/Inf=0"
+    },
+    "random_property_tests": {
+      "status": "PASS",
+      "iterations": 1000,
+      "assertions": 7000,
+      "details": "all 9 field positions verified for arbitrary input distributions"
+    },
+    "replay_31_parents_4_suites": {
+      "status": "PASS",
+      "g9d_max_abs_diff": 0.0,
+      "raw_logit_max_abs_diff": 0.0,
+      "high_scores_cc_true": 1034,
+      "high_scores_cc_false": 1,
+      "emit_episodes": "18/31 (58.1%)",
+      "suites": ["libero_10 (7/8 emit)", "libero_goal (0/11 emit, all raw<0)", "libero_object (7/7 emit)", "libero_spatial (4/5 emit)"]
+    },
+    "state_36_v4_regression": {
+      "status": "PASS_LEGAL_NO_EMIT",
+      "v3_raw_range": "±1.2M (garbage)",
+      "v4_raw_range": "[-50.3, +0.6] (reasonable)",
+      "v4_cal_max": 0.753,
+      "v4_cal_high_cc_false": 0,
+      "v4_emit": null,
+      "v4_verdict": "legitimate abstention: scores below tau=0.855"
+    },
+    "per_field_g9d_statistics": {
+      "status": "PASS",
+      "steps": 7772,
+      "fields_with_variation": "8/9",
+      "constant_field": "clean_top1_is_open (degenerate, analogous to response_proxy cmd<0)",
+      "note": "constant field is frozen training artifact, not V4 bug"
+    },
+    "action_sign_contract": {
+      "status": "PASS",
+      "env_positive_physical": "CLOSING",
+      "env_negative_physical": "OPENING",
+      "sc5_comment_verified": "raw <= 0.5 -> CLOSE (physically correct)",
+      "attack_semantics_verified": "force_open_raw_gripper=1.0 -> env=-1 -> physical OPEN (correct)"
+    },
+    "full_1400_replay": {
+      "status": "WAIVED_CS200_ACCESS_BOUNDARY",
+      "reason": "Training feature step_records are in CS200 paths. CS200_ACCESS=0 maintained. Schema fix is deterministic (field permutation) and does not require 1400-example statistical proof.",
+      "cs200_access": 0,
+      "cs200_content_read": false,
+      "cs200_path_discovery_only": true
+    }
+  },
+
+  "invalidated_evidence": [
+    "OLD_PROVIDER_PARITY (p9d==g9d self-consistency — proved wrong contract)",
+    "State36 OOD hypothesis",
+    "State36 model-inversion hypothesis",
+    "Smoke V2 hardened 16-worker detector behavior",
+    "Old 16-worker diagnostic emit patterns"
+  ],
+
+  "preserved_evidence": [
+    "Checkpoint SHA and load parity",
+    "Platt calibration parameters",
+    "D_PERSIST=6 latch mechanism",
+    "TAU=0.855 threshold",
+    "candidate_close definition (raw <= 0.5)",
+    "25D SC5 adapter",
+    "Token 31744 semantics (action token alias via clip)",
+    "Wait-step and horizon contracts",
+    "Attacker strict_route/no-fallback engineering",
+    "4 workers/GPU OOM rejection"
+  ],
+
+  "decision": {
+    "detector_formal_eligible": "PASS_V4",
+    "checkpoint_status": "PRESUMED_VALID",
+    "v4_provider_schema_contract": "PASS",
+    "rationale": "Root cause is deterministic field-order violation, not model degradation or OOD. V4 restores training schema exactly. 31-parent parity (g9d_diff=0, raw_diff=0) and state36 regression confirm fix. CS200 replay waived due to access boundary — schema is permutation-level, not statistical."
+  },
+
+  "next_gates": {
+    "C2_capacity_canary": "AUTHORIZED",
+    "smoke_v3": "PENDING_C2",
+    "formal_seal": "HOLD",
+    "formal_go": "HOLD",
+    "formal_matrix": "HOLD",
+    "cs200_access": 0
+  }
+}
