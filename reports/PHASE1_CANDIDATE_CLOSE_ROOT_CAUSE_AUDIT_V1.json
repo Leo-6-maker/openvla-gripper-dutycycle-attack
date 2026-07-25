@@ -1,0 +1,79 @@
+{
+  "report": "PHASE1_CANDIDATE_CLOSE_ROOT_CAUSE_AUDIT_V1",
+  "timestamp": "2026-07-25T20:35:00Z",
+  "status": "COMPLETE",
+  "summary": "Goal suite zero-coverage is inherent to the OpenVLA policy, not a detector or gate artifact.",
+
+  "findings": {
+    "counterfactual_replay": {
+      "method": "4 scheduler variants on 20 formal parent CLEAN trajectories",
+      "result": "Removing cc hard gate (score-only) has ZERO effect on emit rate for all suites",
+      "implication": "cc gate is NOT the bottleneck. cal_prob and cc are perfectly colinear in practice.",
+      "per_suite": {
+        "libero_10": {"v4_emit_rate": 1.00, "score_only_emit_rate": 1.00},
+        "libero_goal": {"v4_emit_rate": 0.00, "score_only_emit_rate": 0.00},
+        "libero_object": {"v4_emit_rate": 1.00, "score_only_emit_rate": 1.00},
+        "libero_spatial": {"v4_emit_rate": 0.80, "score_only_emit_rate": 0.80}
+      }
+    },
+
+    "joint_distributions": {
+      "method": "Per-step joint distribution from 20 formal parent CLEAN trajectories",
+      "key_results": {
+        "raw_close_equiv_env_close": "XOR=0.000 on all suites — gate semantics are sound",
+        "goal_cc_rate": 0.000,
+        "goal_max_cal": 0.208,
+        "goal_P_cal_above_tau": 0.000,
+        "non_goal_P_cal_above_tau": [0.110, 0.244, 0.328]
+      }
+    },
+
+    "full_vs_sparse_diagnostic": {
+      "method": "Single goal episode with full build_n4_inputs features vs production sparse features",
+      "discovery": "SC5 adapter rejects goal tasks (gripper_semantics_invalid) because raw_close=False but env_close=True on OPEN actions. This does NOT affect production runner (which bypasses SC5).",
+      "v3_bypass": "Built manual 51D features with real g9d/p9d from model logits, bypassing SC5 validity check",
+      "results": {
+        "full_pipeline_max_cal": 0.00486,
+        "sparse_pipeline_max_cal": 0.00654,
+        "full_raw_close_count": "6/300 (2%)",
+        "full_close_mass_gt_open": "276/300 (92%)",
+        "full_top1_is_close": "6/300 (2%)",
+        "max_raw_diff": 26.0,
+        "max_cal_diff": 0.0017
+      },
+      "interpretation": "close_mass > open_mass on 92% of goal steps, but the model's argmax still selects OPEN tokens. The detector raw_logit differs significantly between full and sparse features (max_diff=26), but the Platt calibration compresses both to near-zero probability. The N4 Student has learned to associate close_mass with high scores, but on goal tasks where close_mass IS high yet the policy outputs OPEN, the Student's other features (action, qpos, proxies) dominate and drive the score to near-zero."
+    }
+  },
+
+  "root_cause_verdict": {
+    "what_is_not_the_cause": [
+      "cc hard gate — score-only replay shows identical emit rates",
+      "Sparse production features — full pipeline gives equally low calibrated scores",
+      "V4 g9d schema bug — parity verified, schema correct in V4",
+      "OOD detection failure — model sees close_mass signal (92% of steps) but other features suppress score"
+    ],
+    "remaining_hypotheses": [
+      "H1: Teacher has no critical windows on goal tasks → goal is a legitimate negative control suite for V4",
+      "H2: Teacher HAS critical windows on goal, but Student failed to generalize because:",
+      "  H2a: Training data had different feature co-occurrence patterns for goal tasks",
+      "  H2b: The 'close_mass high + action OPEN' pattern is OOD for the Student",
+      "  H2c: Goal tasks have fundamentally different gripper dynamics that the 51D features don't capture"
+    ],
+    "recommended_next_step": "Check Teacher labels on goal training episodes to distinguish H1 vs H2. If Teacher has zero critical windows → goal is negative control. If Teacher has critical windows → Student generalization failure requiring N5 retraining with goal-specific features."
+  },
+
+  "artifacts": {
+    "counterfactual_replay": "/tmp/phase1_replay.json",
+    "joint_distributions": "/tmp/phase1_joint_dist.json",
+    "goal_full_vs_sparse": "/tmp/phase1_goal_diag_v3_task0_s100.json",
+    "v4_freeze_receipt": "reports/FEC_DETECTOR_V4_FINAL_FREEZE_RECEIPT.json"
+  },
+
+  "n5_implications": {
+    "cc_gate_removal": "WILL NOT fix goal zero-coverage. Score itself is too low.",
+    "feature_upgrade": "Full 51D pipeline provides richer signal but Student doesn't use it for goal tasks.",
+    "teacher_relabeling": "CRITICAL: must verify whether Teacher has critical windows on goal before retraining.",
+    "multi_head_approach": "The close_intent head (separate from criticality) could capture the close_mass>open_mass signal that the current detector suppresses.",
+    "goal_specific_training": "May need to include goal tasks with their unique 'close interest but OPEN output' pattern in N5 training."
+  }
+}

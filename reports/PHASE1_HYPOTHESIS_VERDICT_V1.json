@@ -1,0 +1,106 @@
+{
+  "report": "PHASE1_H1_H2_H3_H4_VERDICT_V1",
+  "timestamp": "2026-07-25T21:00:00Z",
+  "status": "COMPLETE",
+  "corrected_phase1_conclusion": "Goal hard-gate bottleneck = REJECTED. Goal Student strong-negative = CONFIRMED. Goal legitimate negative suite = PARTIALLY (t00/t07 only). Teacher critical availability = CONFIRMED on 8/10 goal tasks. Label contract defect = CONFIRMED (cc is first funnel filter).",
+
+  "evidence_summary": {
+    "source": "K10 OPPORTUNITY LABELER V1 audit (800 episodes, 40 tasks)",
+    "key_finding": "candidate_close is the FIRST filter in the K10 labeler funnel. Steps with cc=False are eliminated before any physical assessment (grasp, lift, critical).",
+    "goal_task_breakdown": {
+      "tasks_with_zero_cc": ["t00", "t07"],
+      "tasks_with_cc_and_critical_but_zero_feasible": ["t01", "t02", "t03", "t04", "t05"],
+      "tasks_with_feasible_windows": ["t06 (2 eps, 265 starts)", "t08 (2 eps, 34 starts)", "t09 (5 eps, 86 starts)"]
+    },
+    "example_goal_t01_funnel": {
+      "candidate_close": 855,
+      "task_role": 855,
+      "stable_grasp": 59,
+      "lift_pass": 47,
+      "critical": 44,
+      "release_veto": 5
+    },
+    "interpretation": "Goal t01 has 44 critical steps detected by Teacher physics. But all 20 episodes have no_corridor (no 10-step continuous window). The cc gate reduces entry from 855 candidate steps to 44 critical steps, but the corridor length kills it."
+  },
+
+  "hypothesis_verdicts": {
+    "H1_teacher_no_critical": {
+      "verdict": "TRUE for t00 and t07 only (2/10 goal tasks)",
+      "evidence": "t00 and t07 have funnel={critical: 0} — zero cc steps AND zero critical. These tasks genuinely have no close action and no physical engagement windows.",
+      "confidence": "HIGH",
+      "implication": "For t00/t07, V4 no-emit is CORRECT behavior. For other 8 tasks, Teacher DOES detect critical."
+    },
+    "H2_label_killed_by_cc": {
+      "verdict": "CONFIRMED — cc is first filter in K10 labeler funnel",
+      "evidence": "ALL tasks show candidate_close as first funnel stage. cc=False steps never reach physical assessment. P(label|cc=False)=0 by construction, not correlation.",
+      "confidence": "HIGH",
+      "implication": "Training label contract is defective. N5 MUST decouple critical from candidate_close. The labeler should assess physical state FIRST, then separately track close_intent as a soft feature."
+    },
+    "H3_student_generalization_failure": {
+      "verdict": "LIKELY — Student learned goal→negative from label distribution",
+      "evidence": "Even for goal tasks with feasible windows (t06, t08, t09), the fraction of positive steps is tiny (<10%). Student raw_logit ≈ -11 on goal steps (strong negative). The cc gate in labels means Student never saw positive examples on cc=False steps, making all goal steps appear negative during training.",
+      "confidence": "HIGH",
+      "implication": "N5 retraining with decoupled labels required. Goal tasks need positive label coverage on their critical windows (which exist but are currently masked by cc gate)."
+    },
+    "H4_teacher_rules_miss_goal_physics": {
+      "verdict": "PARTIALLY TRUE — cc gate is an action filter, not a physical filter",
+      "evidence": "The physical filters (stable_grasp, lift, critical) DO detect engagement on goal tasks (44-510 critical steps per task). But they're only reached after cc filter. The fundamental issue is using action intent (cc) as a prerequisite for physical assessment, rather than as an independent signal.",
+      "confidence": "MEDIUM",
+      "implication": "N5 should use physical-state-based critical definition. cc should be demoted from prerequisite gate to independent feature head."
+    }
+  },
+
+  "goal_task_matrix": {
+    "description": "10 goal tasks × K10 labeler audit",
+    "tasks": {
+      "t00": {"feasible_eps": 0, "total_starts": 0, "cc_steps": 0, "critical_steps": 0, "dominant_issue": "NO_CC_NO_CRITICAL"},
+      "t01": {"feasible_eps": 0, "total_starts": 0, "cc_steps": 855, "critical_steps": 44, "dominant_issue": "NO_K10_CORRIDOR"},
+      "t02": {"feasible_eps": 0, "total_starts": 0, "cc_steps": 1237, "critical_steps": 60, "dominant_issue": "NO_K10_CORRIDOR"},
+      "t03": {"feasible_eps": 0, "total_starts": 0, "cc_steps": 3663, "critical_steps": 48, "dominant_issue": "NO_K10_CORRIDOR"},
+      "t04": {"feasible_eps": 0, "total_starts": 0, "cc_steps": 973, "critical_steps": 10, "dominant_issue": "NO_K10_CORRIDOR"},
+      "t05": {"feasible_eps": 0, "total_starts": 0, "cc_steps": 3248, "critical_steps": 14, "dominant_issue": "NO_K10_CORRIDOR"},
+      "t06": {"feasible_eps": 2, "total_starts": 265, "cc_steps": 1916, "critical_steps": 510, "dominant_issue": "FEASIBLE_BUT_RARE"},
+      "t07": {"feasible_eps": 0, "total_starts": 0, "cc_steps": 0, "critical_steps": 0, "dominant_issue": "NO_CC_NO_CRITICAL"},
+      "t08": {"feasible_eps": 2, "total_starts": 34, "cc_steps": 1222, "critical_steps": 196, "dominant_issue": "FEASIBLE_BUT_RARE"},
+      "t09": {"feasible_eps": 5, "total_starts": 86, "cc_steps": 2613, "critical_steps": 448, "dominant_issue": "FEASIBLE_BUT_RARE"}
+    }
+  },
+
+  "root_cause_chain": {
+    "description": "Why V4 detector outputs ~0 on all goal steps",
+    "chain": [
+      "1. K10 labeler uses candidate_close as FIRST funnel filter",
+      "2. All cc=False steps get label=0 regardless of physical state",
+      "3. Goal tasks have 70% cc=False steps → 70% of training data is negative by construction",
+      "4. On cc=True goal steps, K10 corridor length < 10 → label=0 for most tasks",
+      "5. Only 3/10 goal tasks have any positive labels, and even those are sparse (<5% of steps)",
+      "6. Student learns: goal suite features → low score (raw_logit ≈ -11)",
+      "7. At inference: goal steps → Student outputs strong negative → cal_prob ≈ 0.005",
+      "8. Score << τ=0.855 → no emit regardless of scheduler variant",
+      "9. Full 51D features don't help because Student was trained to suppress goal features"
+    ]
+  },
+
+  "n5_required_fixes": {
+    "label_contract": {
+      "priority": "P0",
+      "action": "Decouple critical from candidate_close. Build critical label from physical state only (grasp, manipulation, contact, lift, target_progress, release_safe). cc becomes independent close_intent feature.",
+      "expected_effect": "Goal tasks with physical engagement (8/10) will have positive critical labels even when cc=False."
+    },
+    "k10_feasibility": {
+      "priority": "P1",
+      "action": "Separate K10 corridor assessment from cc. K10_feasible should check: (a) horizon ≥ 10 steps remaining, (b) not in release_safe phase, (c) not post-success. It should NOT require cc.",
+      "expected_effect": "More K10 feasible windows on goal tasks, especially t01-t05 which have critical but fail corridor."
+    },
+    "training_data": {
+      "priority": "P1",
+      "action": "Goal tasks need oversampling or suite-balanced batches. Currently dominated by libero_10 (92.6% of positive steps per R10 diagnostic).",
+      "expected_effect": "Student will learn goal-specific critical features instead of suppressing them."
+    },
+    "multi_head_architecture": {
+      "priority": "P2",
+      "action": "critical_head (physical state), k10_feasible_head (horizon/safety), release_safe_head, close_intent_head (soft evidence).",
+      "expected_effect": "Each head can specialize; close_intent no longer gates criticality."
+    }
+  }
+}
