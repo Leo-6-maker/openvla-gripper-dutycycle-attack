@@ -78,6 +78,12 @@ V22_FACTORS = {
         "required_for": ["instability", "close_intent_context"],
         "note": "Physical qpos measurement, NOT policy action. For context only."
     },
+    "close_intent": {
+        "description": "Physical gripper closure intent from qpos velocity (NOT policy action)",
+        "fields": ["close_intent_detected", "close_intent_known_mask", "close_intent_confidence"],
+        "required_for": ["close_intent_head"],
+        "constraint": "Physical qpos measurement only. MUST NOT use policy-close gate or action labels."
+    },
 }
 
 def make_factor_template(factor_name):
