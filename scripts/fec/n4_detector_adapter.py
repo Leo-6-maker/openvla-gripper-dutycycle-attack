@@ -185,20 +185,23 @@ def _summarize_logits(logits, open_ids, close_ids):
 
 def build_n4_inputs(obs=None, observation=None, clean_raw_action=None, raw_action=None,
                     clean_env_action=None, clean_model_output=None, clean_action_raw_7d=None,
-                    policy_step=None, suite=None, model=None, processor=None, **kwargs):
+                    policy_step=None, suite=None, unnorm_key=None, model=None, processor=None, **kwargs):
     """Canonical 51D feature provider. No silent fallback. Fails on missing data."""
     global _adapter, _prev_eef, _open_ids, _close_ids
     from gripper_attack.sc5_streaming_features_v2 import SC5StreamingFeatureAdapterV2
+
+    # Use unnorm_key (resolved by runner) if provided, else fall back to suite
+    token_key = unnorm_key if unnorm_key is not None else suite
 
     step = int(policy_step) if policy_step is not None else 0
     if _adapter is None or step == 0:
         _adapter = SC5StreamingFeatureAdapterV2()
         _prev_eef = None
         # Derive OPEN/CLOSE token sets from model's action decoder
-        if model is not None and suite is not None:
-            _open_ids, _close_ids = _derive_token_sets(model, suite)
+        if model is not None and token_key is not None:
+            _open_ids, _close_ids = _derive_token_sets(model, token_key)
         else:
-            raise RuntimeError('build_n4_inputs requires model and suite for token derivation')
+            raise RuntimeError('build_n4_inputs requires model and unnorm_key/suite for token derivation')
 
     obs_dict = obs if obs is not None else observation
     if obs_dict is None:
@@ -273,20 +276,20 @@ def build_n4_inputs(obs=None, observation=None, clean_raw_action=None, raw_actio
     f25d = np.array([float(f25d_dict[n]) for n in FEATURE_NAMES_25D], dtype=np.float32)
 
     # 9D policy intent from model.generate() scores using canonical token sets
-    p9d = np.zeros(9, dtype=np.float32)
-    if clean_model_output is not None and hasattr(clean_model_output, 'scores') and clean_model_output.scores:
-        last_scores = clean_model_output.scores[-1]
-        if last_scores.dim() >= 2:
-            last_scores = last_scores[0] if last_scores.dim()==2 else last_scores[0,-1]
-        if last_scores.dim() >= 1 and last_scores.shape[-1] > 100:
-            summary = _summarize_logits(last_scores, _open_ids, _close_ids)
-            p9d = np.array([float(summary[n].detach().cpu()) for n in POLICY_INTENT_ORDER], dtype=np.float32)
+    if clean_model_output is None or not hasattr(clean_model_output, 'scores') or not clean_model_output.scores:
+        raise RuntimeError('build_n4_inputs requires clean_model_output with scores (use output_scores=True)')
+    last_scores = clean_model_output.scores[-1]
+    if last_scores.dim() >= 2:
+        last_scores = last_scores[0] if last_scores.dim()==2 else last_scores[0,-1]
+    if last_scores.dim() < 1 or last_scores.shape[-1] <= 100:
+        raise RuntimeError('clean_model_output.scores[-1] has invalid shape: {}'.format(last_scores.shape))
+    summary = _summarize_logits(last_scores, _open_ids, _close_ids)
+    p9d = np.array([float(summary[n].detach().cpu()) for n in POLICY_INTENT_ORDER], dtype=np.float32)
 
     # 9D gripper token — separate block, same canonical logits source
-    g9d = np.zeros(9, dtype=np.float32)
-    if clean_model_output is not None and hasattr(clean_model_output, 'scores') and clean_model_output.scores:
-        g9d = p9d.copy()  # Same logits source; canonical separation deferred to token-mapping audit
+    # Canonical separation deferred to token-mapping audit; current: same logits
+    g9d = np.array([float(summary[n].detach().cpu()) for n in POLICY_INTENT_ORDER], dtype=np.float32)
 
-    candidate_close = bool(raw_gripper < 0.5)
+    candidate_close = bool(raw_gripper <= 0.5)  # matches SC5 adapter threshold
     return {'f25d': f25d.astype(np.float32), 'p9d': p9d.astype(np.float32),
             'g9d': g9d.astype(np.float32), 'candidate_close': candidate_close}

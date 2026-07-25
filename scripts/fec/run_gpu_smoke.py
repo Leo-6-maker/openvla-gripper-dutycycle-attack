@@ -727,7 +727,7 @@ def main() -> int:
                     clean_env_action=clean_env_action,
                     clean_model_output=clean_generation,
                     policy_step=policy_step,
-                    suite=args.suite,
+                    unnorm_key=unnorm_key,
                     model=model,
                     processor=processor,
                 )
