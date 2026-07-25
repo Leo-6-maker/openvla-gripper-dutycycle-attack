@@ -193,25 +193,31 @@ class AtomicTaskQueue:
                 conn.rollback(); return False
 
             now = self._now()
-            is_success = (task_outcome == 'DONE_VALID' or task_outcome == 'DONE')
+            # ── V4: Strict state enum ──
+            ACCEPTED = {'DONE_VALID', 'DONE_CLASSIFIED_TC', 'DONE'}
+            HOLD_STATES = {'HOLD_ORACLE_CONTRACT', 'HOLD_HASH_MISMATCH', 'HOLD_SCHEMA_MISMATCH'}
+            RETRY_STATES = {'FAILED_RETRYABLE_INFRA', 'FAILED'}
+            FATAL_STATES = {'FAILED_FATAL_POST_ACTION'}
 
-            if is_success:
-                # P0-3: Only set DONE_VALID + accepted_attempt_id on success
-                new_state = 'DONE_VALID'
+            if task_outcome in ACCEPTED:
+                new_state = task_outcome if task_outcome != 'DONE' else 'DONE_VALID'
                 conn.execute("UPDATE tasks SET state=?,accepted_attempt_id=?,updated_at=? WHERE cell_id=?",
                              (new_state, attempt_id, now, cell_id))
-            elif task_outcome == 'FAILED':
-                # Infrastructure failure: retry-ready (attempt_count already incremented in claim)
+            elif task_outcome in RETRY_STATES:
                 new_state = 'RETRY_READY'
                 conn.execute("""UPDATE tasks SET state=?,lease_owner=NULL,lease_token=NULL,updated_at=? WHERE cell_id=?""",
                              (new_state, now, cell_id))
-            elif task_outcome == 'CLASSIFIED':
-                # Scientific result but not clean PASS (e.g., CLASS_C terminal censor)
-                new_state = 'DONE_VALID'
-                conn.execute("UPDATE tasks SET state=?,accepted_attempt_id=?,updated_at=? WHERE cell_id=?",
-                             (new_state, attempt_id, now, cell_id))
+            elif task_outcome in FATAL_STATES:
+                new_state = task_outcome
+                conn.execute("""UPDATE tasks SET state=?,lease_owner=NULL,lease_token=NULL,updated_at=? WHERE cell_id=?""",
+                             (new_state, now, cell_id))
+            elif task_outcome in HOLD_STATES:
+                new_state = task_outcome
+                conn.execute("UPDATE tasks SET state=?,updated_at=? WHERE cell_id=?",
+                             (new_state, now, cell_id))
+                self.set_run_state('HOLD')
             else:
-                # Unknown outcome: fail closed, do NOT accept
+                # Unknown: fail closed
                 self._log(worker_id, cell_id, 'COMMIT_REJECTED_UNKNOWN_OUTCOME',
                           {'attempt_id': attempt_id, 'outcome': str(task_outcome)})
                 conn.rollback()
