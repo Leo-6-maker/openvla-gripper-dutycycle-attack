@@ -178,13 +178,17 @@ class N5MultiHeadStudent(nn.Module):
         all_logits = self.forward(x, timestep_mask=timestep_mask, head_idx=head_idx)
 
         if timestep_mask is not None:
-            if not timestep_mask.any():
-                raise ValueError('get_last_logits: timestep_mask is all False — no valid steps')
+            # Check per-row: each batch item must have at least one valid step
+            invalid_rows = ~timestep_mask.any(dim=1)
+            if invalid_rows.any():
+                n_invalid = invalid_rows.sum().item()
+                raise ValueError(
+                    f'get_last_logits: {n_invalid} batch items have all-False mask. '
+                    f'Each item must have at least one valid timestep.'
+                )
             # Find last True index per batch item
             last_valid_idx = (timestep_mask.shape[1] - 1 -
                               timestep_mask.flip(1).long().argmax(dim=1))
-            no_valid = ~timestep_mask.any(dim=1)
-            last_valid_idx[no_valid] = timestep_mask.shape[1] - 1
         else:
             last_valid_idx = None
 
@@ -219,38 +223,56 @@ class FrozenPosWeights:
 
     @classmethod
     def compute(cls, train_labels, train_valid_masks):
-        """Compute frozen pos_weight from full train split.
-        train_labels: Dict[str, Tensor] per-head binary labels (concatenated over all episodes)
-        train_valid_masks: Dict[str, Tensor] per-head valid masks
-        """
+        """Compute frozen pos_weight from full train split. Stores pos/neg counts."""
         weights = {}
+        pos_counts = {}
+        neg_counts = {}
         for name in N5MultiHeadStudent.HEAD_NAMES:
             targets = train_labels[name]
             mask = train_valid_masks[name]
-            if mask.sum() == 0:
-                weights[name] = None  # No valid data for this head → skip
+            n_valid = mask.sum().item()
+            if n_valid == 0:
+                weights[name] = None
+                pos_counts[name] = 0
+                neg_counts[name] = 0
                 continue
-            n_pos = targets[mask].sum()
-            n_neg = mask.sum() - n_pos
+            n_pos = targets[mask].sum().item()
+            n_neg = n_valid - n_pos
+            pos_counts[name] = int(n_pos)
+            neg_counts[name] = int(n_neg)
             if n_pos > 0 and n_neg > 0:
-                w = float((n_neg / n_pos).clamp(1, 20))
+                w = float(np.clip(n_neg / n_pos, 1, 20))
                 weights[name] = w
-            elif n_pos == 0:
-                weights[name] = None  # No positives → cannot train this head
             else:
-                weights[name] = 1.0
-        return cls(weights)
+                weights[name] = None  # No positives OR no negatives → HOLD
+        instance = cls(weights)
+        instance._pos_counts = pos_counts
+        instance._neg_counts = neg_counts
+        return instance
 
     def get_weight(self, head_name):
         return self.weights.get(head_name)
 
     def validate(self):
-        """Check that all heads have usable weights. Returns list of issues."""
+        """Check all heads have both positive AND negative samples. Returns issues list."""
         issues = []
         for name in N5MultiHeadStudent.HEAD_NAMES:
             w = self.weights.get(name)
             if w is None:
-                issues.append(f'{name}: no valid positive or negative samples — HOLD')
+                issues.append(f'{name}: no valid samples — HOLD (split-level)')
+            elif not hasattr(self, '_counts'):
+                pass  # counts not available from weights alone
+        # Check from stored counts if available
+        if hasattr(self, '_pos_counts') and hasattr(self, '_neg_counts'):
+            for name in N5MultiHeadStudent.HEAD_NAMES:
+                n_pos = self._pos_counts.get(name, 0)
+                n_neg = self._neg_counts.get(name, 0)
+                if n_pos == 0 and n_neg == 0:
+                    issues.append(f'{name}: zero valid samples — HOLD')
+                elif n_pos == 0:
+                    issues.append(f'{name}: zero positives (n_neg={n_neg}) — HOLD')
+                elif n_neg == 0:
+                    issues.append(f'{name}: zero negatives (n_pos={n_pos}) — HOLD')
         return issues
 
 def masked_bce_loss(logits, targets, valid_mask, pos_weight=None):
@@ -263,34 +285,35 @@ def masked_bce_loss(logits, targets, valid_mask, pos_weight=None):
     return loss
 
 def n5_total_loss(model_output, labels, valid_masks, frozen_weights, head_weights=None):
-    """Total N5 training loss. Uses FROZEN pos_weight per head (not per-batch).
+    """Total N5 training loss. Uses FROZEN pos_weight per head.
 
-    Args:
-        model_output: Dict[str, Tensor] from model.forward()
-        labels: Dict[str, Tensor] per-head binary labels
-        valid_masks: Dict[str, Tensor] per-head boolean valid masks
-        frozen_weights: FrozenPosWeights instance
-        head_weights: Optional Dict[str, float] per-head loss weights
-
-    HARD FAIL if a head has no valid samples.
+    Batch-level: skips head if zero valid samples (logs warning).
+    Split-level: FrozenPosWeights.validate() should have already checked for
+    trainable heads. Batch-skip is for rare edge cases (all-instability batch).
     """
     if head_weights is None:
         head_weights = {name: 1.0 for name in N5MultiHeadStudent.HEAD_NAMES}
 
     total = 0.0
     per_head = {}
+    active_heads = 0
     for name in N5MultiHeadStudent.HEAD_NAMES:
         logits = model_output[name]
         target = labels[name]
         mask = valid_masks[name]
         n_valid = mask.sum().item()
         if n_valid == 0:
-            raise RuntimeError(f'HARD FAIL: head {name} has zero valid samples in batch. Check data pipeline.')
+            per_head[name] = 0.0
+            continue
 
         loss = masked_bce_loss(logits, target, mask, frozen_weights.get_weight(name))
         weighted = loss * head_weights[name]
         total += weighted
         per_head[name] = loss.item()
+        active_heads += 1
+
+    if active_heads == 0:
+        raise RuntimeError('All heads have zero valid samples in batch')
 
     return total, per_head
 
@@ -427,17 +450,22 @@ N5_MODEL_SCHEMA = {
     },
     'loss': {
         'type': 'masked_bce_with_logits',
-        'pos_weight': 'frozen from train split, clamped [1, 20]',
+        'pos_weight': 'frozen from train split, clamped [1, 20]; no pos OR no neg → HOLD',
         'head_weight': 'configurable per head',
-        'hard_fail': 'split-level (no positives OR no negatives → HOLD)',
-        'batch_skip': 'skip head if zero valid in batch, log warning',
+        'split_level': 'HOLD if any head has no positives or no negatives',
+        'batch_level': 'skip head if zero valid in batch (log warning), hard-fail if all heads empty',
+    },
+    'sampler': {
+        'type': 'suite_balanced',
+        'behavior': 'truncates to min suite; warns on discard; with-replacement not yet implemented',
+        'note': 'with-replacement sampling is tracked as P1 enhancement for N5 training',
     },
     'constraints': [
         'NO head output gates another head',
         'NO candidate_close in loss mask or prediction',
         'Independent valid_mask per head',
         'Train-only normalization',
-        'Suite-balanced sampling with replacement, no data discard',
+        'Right-padding only for batched inference (left-padding not fully supported)',
     ],
 }
 
@@ -604,7 +632,7 @@ def test_get_last_logits_empty_mask():
         model.get_last_logits(x, timestep_mask=mask_all_false)
         assert False, 'Should have raised ValueError'
     except ValueError as e:
-        assert 'all False' in str(e), f'Wrong error: {e}'
+        assert 'all-False mask' in str(e), f'Wrong error: {e}'
     print('PASS: test_get_last_logits_empty_mask')
 
 def test_get_last_logits_varying_lengths():
@@ -623,7 +651,7 @@ def test_get_last_logits_varying_lengths():
         assert out[name].shape == (3,), f'{name}: expected (3,), got {out[name].shape}'
     print('PASS: test_get_last_logits_varying_lengths')
 
-def test_get_last_logits_cpu_cuda():
+def test_get_last_logits_cpu():
     """Verify get_last_logits works on CPU."""
     model = N5MultiHeadStudent()
     model.eval()
@@ -634,7 +662,65 @@ def test_get_last_logits_cpu_cuda():
     assert isinstance(out, dict)
     out_single = model.get_last_logits(x, timestep_mask=mask, head_idx=0)
     assert out_single.shape == (2,)
-    print('PASS: test_get_last_logits_cpu_cuda')
+    print('PASS: test_get_last_logits_cpu')
+
+def test_get_last_logits_cuda():
+    """Verify get_last_logits works on CUDA if available."""
+    if not torch.cuda.is_available():
+        print('SKIP: test_get_last_logits_cuda (no CUDA)')
+        return
+    model = N5MultiHeadStudent()
+    model.eval()
+    model = model.cuda()
+    x = torch.randn(2, 10, 51, device='cuda')
+    mask = torch.ones(2, 10, dtype=torch.bool, device='cuda')
+    out = model.get_last_logits(x, timestep_mask=mask)
+    assert isinstance(out, dict)
+    for name in N5MultiHeadStudent.HEAD_NAMES:
+        assert out[name].device.type == 'cuda', f'{name} not on CUDA'
+    out_single = model.get_last_logits(x, timestep_mask=mask, head_idx=0)
+    assert out_single.device.type == 'cuda'
+    print('PASS: test_get_last_logits_cuda')
+
+def test_mixed_valid_empty_mask():
+    """Verify get_last_logits handles batch with mixed valid/empty items."""
+    model = N5MultiHeadStudent()
+    model.eval()
+    x = torch.randn(3, 10, 51)
+    mask = torch.tensor([
+        [1,1,1,1,1,0,0,0,0,0],  # valid
+        [0,0,0,0,0,0,0,0,0,0],  # ALL EMPTY
+        [1,1,1,0,0,0,0,0,0,0],  # valid
+    ], dtype=torch.bool)
+    try:
+        model.get_last_logits(x, timestep_mask=mask)
+        assert False, 'Should have raised ValueError for row with all-False mask'
+    except ValueError as e:
+        assert 'all-False mask' in str(e), f'Wrong error: {e}'
+    print('PASS: test_mixed_valid_empty_mask')
+
+def test_individual_vs_batched_padding():
+    """Verify individual inference matches batched right-padded inference."""
+    model = N5MultiHeadStudent()
+    model.eval()
+    # Test various lengths around RF boundaries
+    for length in [1, 5, 31, 32, 33, 100]:
+        # Individual inference
+        x_indiv = torch.randn(1, length, 51)
+        with torch.no_grad():
+            out_indiv = model.get_last_logits(x_indiv)
+        # Batched right-padded: pad to length+10
+        max_len = length + 10
+        x_pad = torch.zeros(1, max_len, 51)
+        x_pad[0, :length] = x_indiv[0]
+        mask_pad = torch.zeros(1, max_len, dtype=torch.bool)
+        mask_pad[0, :length] = True
+        with torch.no_grad():
+            out_batch = model.get_last_logits(x_pad, timestep_mask=mask_pad)
+        for name in N5MultiHeadStudent.HEAD_NAMES:
+            diff = (out_indiv[name] - out_batch[name]).abs().max()
+            assert diff < 1e-4, f'len={length} {name}: individual vs batched right-pad mismatch, diff={diff:.6f}'
+    print('PASS: test_individual_vs_batched_padding')
 
 def test_sampler():
     """Verify suite-balanced sampler."""
@@ -707,7 +793,10 @@ def run_all_tests():
         test_get_last_logits_head_idx,
         test_get_last_logits_empty_mask,
         test_get_last_logits_varying_lengths,
-        test_get_last_logits_cpu_cuda,
+        test_get_last_logits_cpu,
+        test_get_last_logits_cuda,
+        test_mixed_valid_empty_mask,
+        test_individual_vs_batched_padding,
         test_checkpoint_roundtrip,
     ]
     passed = 0

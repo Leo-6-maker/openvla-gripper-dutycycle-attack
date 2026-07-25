@@ -45,55 +45,76 @@ REASON_CODES = {
     'UNKNOWN_COMPONENT_MASKED': 'Required physics component has known_mask=False',
 }
 
-def _engagement_physics_known(step):
-    """Check if ALL engagement-relevant physics factors are known.
+def _engagement_evidence(step):
+    """Extract engagement evidence channels with independent known masks.
 
-    P0-3 FIX: Uses head-specific validity. Criticality requires grasp/manipulation/
-    contact/comotion to be known. If only target_progress or release is known,
-    engagement is still unknown.
+    Each channel returns (known: bool, positive: bool, confidence: float).
+    Score-based channels use >0.2 as positive and non-zero as known signal.
     """
-    engagement_fields = [
-        'grasp_established_known_mask',
-        'manipulation_active_known_mask',
-    ]
-    # Also check that contact/comotion scores are meaningful (>0 means they were computed)
-    # When known_mask=False for grasp AND manipulation, and scores are 0, engagement is unknown
-    all_engagement_unknown = not any(step.get(f, False) for f in engagement_fields)
-    # Scores are 0 when unknown — treat as unknown evidence
-    scores_all_zero = (step.get('gripper_contact_score', 0) == 0 and
-                       step.get('object_eef_comotion_score', 0) == 0 and
-                       step.get('lift_score', 0) == 0)
-    return not (all_engagement_unknown and scores_all_zero)
+    channels = []
+    # grasp
+    gk = step.get('grasp_established_known_mask', False)
+    channels.append(('grasp', gk, gk and step.get('grasp_established', False),
+                     step.get('grasp_established_confidence', 0)))
+    # manipulation
+    mk = step.get('manipulation_active_known_mask', False)
+    channels.append(('manipulation', mk, mk and step.get('manipulation_active', False),
+                     step.get('manipulation_active_confidence', 0)))
+    # contact: non-zero score treated as computed; explicit mask overrides
+    cs = step.get('gripper_contact_score', 0)
+    ck = step.get('contact_known_mask', cs != 0)
+    channels.append(('contact', bool(ck), cs > 0.2, min(cs, 1.0)))
+    # comotion
+    ms = step.get('object_eef_comotion_score', 0)
+    cmk = step.get('comotion_known_mask', ms != 0)
+    channels.append(('comotion', bool(cmk), ms > 0.2, min(ms, 1.0)))
+    # lift
+    ls = step.get('lift_score', 0)
+    lk = step.get('lift_known_mask', ls != 0)
+    channels.append(('lift', bool(lk), ls > 0.1, min(ls, 1.0)))
+    return channels
+
+def _evidence_lattice(channels):
+    """Evidence lattice for engagement.
+    - any known+positive → can determine 'positively engaged' (but may be partial)
+    - all known and all negative → can determine 'not engaged'
+    - else → unknown (valid_mask=false)
+    Returns (can_determine_positive: bool, can_determine_negative: bool,
+             any_positive: bool, all_known: bool, best_confidence: float,
+             positive_sources: list[str])
+    """
+    any_positive = False
+    all_known = True
+    all_negative = True
+    best_conf = 0.0
+    sources = []
+    for name, known, positive, conf in channels:
+        if known:
+            if positive:
+                any_positive = True
+                all_negative = False
+                sources.append(name)
+                best_conf = max(best_conf, conf)
+            # known+negative: contributes to all_known but not to positive
+        else:
+            all_known = False
+    can_determine_positive = any_positive
+    can_determine_negative = all_known and all_negative
+    return can_determine_positive, can_determine_negative, any_positive, all_known, best_conf, sources
 
 def evaluate_physical_criticality(step):
-    """Head A: Physical criticality — tri-state contract.
+    """Head A: Physical criticality — evidence lattice (head-specific validity).
 
-    Returns dict: {value: null|0|1, valid_mask: bool, reason: str, confidence: float, source: str}
-
-    P0 FIX: Unknown physics → valid_mask=false, value=null, reason=UNKNOWN_PRIVILEGED_STATE.
-    Only assigns value=0 when physics is KNOWN and shows no engagement.
+    P0 FINAL FIX: Uses evidence lattice. Any known+positive → can be positive.
+    All known+negative → can be negative. Otherwise → valid_mask=false.
     """
     result = {
         'value': None, 'valid_mask': False, 'reason': 'UNKNOWN_PRIVILEGED_STATE',
         'confidence': 0.0, 'source': 'physics_teacher_v21c',
     }
 
-    if not _engagement_physics_known(step):
-        result['reason'] = 'UNKNOWN_COMPONENT_MASKED'
-        return result
-
-    grasp = step.get('grasp_established', False)
-    grasp_conf = step.get('grasp_established_confidence', 0)
-    grasp_known = step.get('grasp_established_known_mask', False)
-
-    manipulation = step.get('manipulation_active', False)
-    manipulation_conf = step.get('manipulation_active_confidence', 0)
-    manipulation_known = step.get('manipulation_active_known_mask', False)
-
-    contact = step.get('gripper_contact_score', 0)
-    comotion = step.get('object_eef_comotion_score', 0)
-    lift = step.get('lift_score', 0)
-    stability = step.get('relative_pose_stability', 0)
+    channels = _engagement_evidence(step)
+    can_pos, can_neg, any_pos, all_known, best_conf, sources = _evidence_lattice(channels)
 
     release = step.get('release_or_instability', False)
     release_known = step.get('release_or_instability_known_mask', False)
@@ -101,45 +122,58 @@ def evaluate_physical_criticality(step):
     target_progress = step.get('target_progress', 0)
     target_known = step.get('target_progress_known', False)
 
-    result['valid_mask'] = True  # At least some physics is known
+    grasp = step.get('grasp_established', False)
+    grasp_known = step.get('grasp_established_known_mask', False)
 
-    # Physical engagement assessment
-    physically_engaged = False
-    engagement_confidence = 0.0
-    engagement_source = []
-
-    if grasp_known and grasp:
-        physically_engaged = True
-        engagement_confidence = max(engagement_confidence, grasp_conf)
-        engagement_source.append('grasp')
-    if manipulation_known and manipulation:
-        physically_engaged = True
-        engagement_confidence = max(engagement_confidence, manipulation_conf)
-        engagement_source.append('manipulation')
-    if contact > 0.2:
-        physically_engaged = True
-        engagement_confidence = max(engagement_confidence, min(contact, 1.0))
-        engagement_source.append('contact')
-    if comotion > 0.2:
-        physically_engaged = True
-        engagement_confidence = max(engagement_confidence, min(comotion, 1.0))
-        engagement_source.append('comotion')
-
-    result['source'] = '+'.join(engagement_source) if engagement_source else 'physics_teacher_v21c'
-
-    # Task complete → safe release, not critical
+    # Task complete → known safe release (independent of engagement)
     if target_known and target_progress >= 0.95:
         result['value'] = 0
+        result['valid_mask'] = True
         result['reason'] = 'SAFE_RELEASE_POST_SUCCESS'
         result['confidence'] = 1.0
         return result
 
-    # Known: no physical engagement
-    if not physically_engaged:
+    # Known releasing without grasp → safe release, not critical
+    if release_known and release and grasp_known and not grasp:
         result['value'] = 0
-        result['reason'] = 'NOT_CRITICAL_NO_ENGAGEMENT'
-        result['confidence'] = 1.0 - engagement_confidence
+        result['valid_mask'] = True
+        result['reason'] = 'SAFE_RELEASE_PLACEMENT'
+        result['confidence'] = step.get('release_or_instability_confidence', 0.5)
         return result
+
+    # Can determine negative: all engagement channels known and all negative
+    if can_neg:
+        result['value'] = 0
+        result['valid_mask'] = True
+        result['reason'] = 'NOT_CRITICAL_NO_ENGAGEMENT'
+        result['confidence'] = best_conf
+        return result
+
+    # Can determine positive: at least one channel known+positive
+    if can_pos:
+        result['value'] = 1
+        result['valid_mask'] = True
+        result['confidence'] = best_conf
+        result['source'] = '+'.join(sources)
+        # Determine subtype
+        gk = step.get('grasp_established_known_mask', False)
+        g = step.get('grasp_established', False)
+        ls = step.get('lift_score', 0)
+        mk = step.get('manipulation_active_known_mask', False)
+        m = step.get('manipulation_active', False)
+        if gk and g and ls > 0.1:
+            result['reason'] = 'CRITICAL_HELD_TRANSPORT'
+        elif mk and m:
+            result['reason'] = 'CRITICAL_CONTACT_MANIPULATION'
+        elif gk and g and target_known and 0.5 <= target_progress < 0.95:
+            result['reason'] = 'CRITICAL_PRE_PLACE'
+        else:
+            result['reason'] = 'CRITICAL_ENGAGED_LIFT'
+        return result
+
+    # Otherwise: partial unknown → valid_mask=false
+    result['reason'] = 'UNKNOWN_COMPONENT_MASKED'
+    return result
 
     # Known: releasing WITHOUT grasping → safe release
     # Releasing WHILE grasping → instability, still potentially critical
@@ -169,22 +203,16 @@ def evaluate_physical_criticality(step):
     return result
 
 def evaluate_safe_release_and_instability(step):
-    """Head D+E: Safe release AND instability — properly separated.
+    """Head D+E: Safe release AND instability — each with OWN validity.
 
-    P0 FIX: Uses independent physical conditions, not confidence threshold.
-    - safe_release: task done, explicit placement phase, or planned open
-    - instability: slip, contact loss, pose anomaly, unplanned open
-    - Both have independent value/valid_mask/reason/source
+    FINAL FIX: Each head independently determines valid_mask.
+    safe_release: depends on target_progress_known + release_known (NOT engagement)
+    instability: depends on release_known + grasp_known + contact + stability
     """
     safe = {'value': None, 'valid_mask': False, 'reason': 'UNKNOWN_PRIVILEGED_STATE',
             'confidence': 0.0, 'source': 'physics_teacher_v21c'}
     instab = {'value': None, 'valid_mask': False, 'reason': 'UNKNOWN_PRIVILEGED_STATE',
               'confidence': 0.0, 'source': 'physics_teacher_v21c'}
-
-    if not _engagement_physics_known(step):
-        safe['reason'] = 'UNKNOWN_COMPONENT_MASKED'
-        instab['reason'] = 'UNKNOWN_COMPONENT_MASKED'
-        return safe, instab
 
     target_progress = step.get('target_progress', 0)
     target_known = step.get('target_progress_known', False)
@@ -193,53 +221,37 @@ def evaluate_safe_release_and_instability(step):
     grasp_known = step.get('grasp_established_known_mask', False)
     grasp = step.get('grasp_established', False)
     contact = step.get('gripper_contact_score', 0)
+    ck = step.get('contact_known_mask', contact != 0)
     stability = step.get('relative_pose_stability', 0)
-    comotion = step.get('object_eef_comotion_score', 0)
+    sk = step.get('stability_known_mask', stability != 0)
 
-    # ── Safe release: known completion or explicit placement ──
+    # ── safe_release: depends on target_known + release_known (NOT engagement) ──
     if target_known and target_progress >= 0.95:
-        safe['value'] = 1
-        safe['valid_mask'] = True
-        safe['reason'] = 'SAFE_RELEASE_POST_SUCCESS'
-        safe['confidence'] = 1.0
+        safe['value'] = 1; safe['valid_mask'] = True
+        safe['reason'] = 'SAFE_RELEASE_POST_SUCCESS'; safe['confidence'] = 1.0
     elif release_known and release and grasp_known and not grasp:
-        # Releasing when not grasping → planned release after placement
-        safe['value'] = 1
-        safe['valid_mask'] = True
+        safe['value'] = 1; safe['valid_mask'] = True
         safe['reason'] = 'SAFE_RELEASE_PLACEMENT'
         safe['confidence'] = step.get('release_or_instability_confidence', 0.5)
     elif release_known and not release:
-        # Known: NOT releasing → safe_release = 0
-        safe['value'] = 0
-        safe['valid_mask'] = True
-        safe['reason'] = 'NOT_IN_RELEASE'
-        safe['confidence'] = 0.8
+        safe['value'] = 0; safe['valid_mask'] = True
+        safe['reason'] = 'NOT_IN_RELEASE'; safe['confidence'] = 0.8
 
-    # ── Instability: slip, contact loss, pose anomaly ──
+    # ── instability: depends on release + grasp + contact + stability ──
     if release_known and release and grasp_known and grasp:
-        # Releasing WHILE still grasping → instability!
-        instab['value'] = 1
-        instab['valid_mask'] = True
+        instab['value'] = 1; instab['valid_mask'] = True
         instab['reason'] = 'INSTABILITY_SLIP'
         instab['confidence'] = step.get('release_or_instability_confidence', 0.5)
-    elif release_known and release and contact < 0.1 and grasp_known and grasp:
-        # Release with low contact → instability
-        instab['value'] = 1
-        instab['valid_mask'] = True
-        instab['reason'] = 'INSTABILITY_SLIP'
-        instab['confidence'] = 0.6
-    elif grasp_known and grasp and stability < 0.3 and stability > 0:
-        # Grasping but unstable pose → instability
-        instab['value'] = 1
-        instab['valid_mask'] = True
+    elif release_known and release and bool(ck) and contact < 0.1 and grasp_known and grasp:
+        instab['value'] = 1; instab['valid_mask'] = True
+        instab['reason'] = 'INSTABILITY_SLIP'; instab['confidence'] = 0.6
+    elif grasp_known and grasp and bool(sk) and 0 < stability < 0.3:
+        instab['value'] = 1; instab['valid_mask'] = True
         instab['reason'] = 'INSTABILITY_POSE_ANOMALY'
         instab['confidence'] = 1.0 - stability
     elif release_known and not release and grasp_known:
-        # Known: not releasing, not unstable
-        instab['value'] = 0
-        instab['valid_mask'] = True
-        instab['reason'] = 'NO_INSTABILITY_DETECTED'
-        instab['confidence'] = 0.7
+        instab['value'] = 0; instab['valid_mask'] = True
+        instab['reason'] = 'NO_INSTABILITY_DETECTED'; instab['confidence'] = 0.7
 
     return safe, instab
 
@@ -567,9 +579,11 @@ def anti_regression_tests():
     results.append({'test': 'k10_unknown_in_window', 'pass': True,
                     'detail': f'Unknown step in K10 window → value={k10_unk["value"]} valid={k10_unk["valid_mask"]}'})
 
-    # ── Test 10: Atomic write success + verify content ──
-    # Use N5 output dir (not /tmp which is rejected)
+    # ── Test 10: Atomic write success + content verify + N5 root check ──
     test_dir = '/mnt/sdc/dty_user/openvla_attack_outputs/n5/tmp/atomic_test'
+    if os.path.exists(test_dir):
+        import shutil
+        shutil.rmtree(test_dir)
     os.makedirs(test_dir, exist_ok=True)
     try:
         test_content = json.dumps({'test': 'atomic_write_test', 'value': 42})
@@ -578,19 +592,30 @@ def anti_regression_tests():
         assert os.path.isfile(test_path), 'Atomic write: file not created'
         with open(test_path) as ff:
             assert ff.read() == test_content, 'Atomic write: content mismatch'
+        # Verify no-clobber
+        try:
+            write_atomic('different', test_path)
+            assert False, 'Should have rejected overwrite'
+        except FileExistsError:
+            pass
         # Verify /tmp rejection
         try:
             write_atomic('x', '/tmp/should_fail.json')
             assert False, 'Should have rejected /tmp path'
         except ValueError:
             pass
+        # Verify non-N5 path rejection
+        try:
+            write_atomic('x', '/mnt/sdc/dty_user/should_fail.json')
+            assert False, 'Should have rejected non-N5 path'
+        except ValueError:
+            pass
         results.append({'test': 'atomic_write_success', 'pass': True,
-                        'detail': 'Write + content verify + /tmp rejection'})
+                        'detail': 'Write + content + no-clobber + /tmp + non-N5 rejection'})
     finally:
-        if os.path.exists(test_path) and os.path.isfile(test_path):
-            os.remove(test_path)
-        if os.path.exists(os.path.join(test_dir, 'test_output.json')):
-            os.remove(os.path.join(test_dir, 'test_output.json'))
+        import shutil
+        if os.path.exists(test_dir):
+            shutil.rmtree(test_dir)
 
     # ── Test 11: K10 with all known → correct result ──
     all_crit_steps = [dict(base_step) for _ in range(K + 5)]
@@ -611,11 +636,20 @@ def anti_regression_tests():
 def compute_labels_sha(labels_jsonl_str):
     return hashlib.sha256(labels_jsonl_str.encode()).hexdigest()
 
-def write_atomic(content, final_path):
-    """Atomic write: tmpfile → flush+fsync → rename → fsync dir. P0-2 FIXED."""
+N5_ALLOWED_ROOT = os.path.abspath('/mnt/sdc/dty_user/openvla_attack_outputs/n5')
+
+def write_atomic(content, final_path, allow_overwrite=False):
+    """Atomic write: tmpfile → flush+fsync → os.replace → fsync dir.
+
+    FINAL FIX: Only allows writes within N5_ALLOWED_ROOT.
+    No-clobber by default (rejects if final exists).
+    """
     final_abs = os.path.abspath(final_path)
-    if final_abs.startswith('/tmp'):
-        raise ValueError(f'REJECTED: output path in /tmp: {final_abs}. Use N5 production path.')
+    if not final_abs.startswith(N5_ALLOWED_ROOT + os.sep) and final_abs != N5_ALLOWED_ROOT:
+        raise ValueError(f'REJECTED: output not under {N5_ALLOWED_ROOT}: {final_abs}')
+    if not allow_overwrite and os.path.exists(final_abs):
+        raise FileExistsError(f'REJECTED: output already exists (no-clobber): {final_abs}')
+
     d = os.path.dirname(final_abs)
     os.makedirs(d, exist_ok=True)
     tmp = None
@@ -626,7 +660,6 @@ def write_atomic(content, final_path):
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp, final_abs)
-        # fsync parent directory for durability
         dir_fd = os.open(d, os.O_RDONLY)
         try:
             os.fsync(dir_fd)
