@@ -363,7 +363,7 @@ class N4Bridge:
         reset()
 
     def step(self, *, obs: Mapping[str, Any], clean_raw_action: Any, clean_env_action: Any,
-             clean_model_output: Any, policy_step: int, suite: str, model: Any, processor: Any) -> dict[str, Any]:
+             clean_model_output: Any, policy_step: int, suite: str, unnorm_key: str, model: Any, processor: Any) -> dict[str, Any]:
         payload = call_with_supported_kwargs(
             self.provider,
             {
@@ -727,7 +727,7 @@ def main() -> int:
                     clean_env_action=clean_env_action,
                     clean_model_output=clean_generation,
                     policy_step=policy_step,
-                    unnorm_key=unnorm_key,
+                    suite=args.suite, unnorm_key=unnorm_key,
                     model=model,
                     processor=processor,
                 )
@@ -770,7 +770,7 @@ def main() -> int:
                         clean_action=clean_raw_action,
                         target_action=clean_raw_action,
                         clean_model_output=clean_generation,
-                        unnorm_key=unnorm_key,
+                        suite=args.suite, unnorm_key=unnorm_key,
                     )
                     attack_audit = validate_attack_result(attack_result, arm=arm, config=attack_cfg)
                     adv_inputs = attack_audit.pop("adv_inputs")
