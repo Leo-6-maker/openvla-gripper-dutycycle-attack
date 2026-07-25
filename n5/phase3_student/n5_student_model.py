@@ -54,31 +54,45 @@ class CausalTCNBlock(nn.Module):
         return out + res
 
 class CausalTCNEncoder(nn.Module):
-    """Stacked causal TCN with configurable receptive field."""
+    """Stacked causal TCN with EXACT receptive field.
+
+    P0 FIX: kernel_size=2 gives precise RF control.
+    With kernel_size=2, dilation sequence 1,2,4,8,16 gives RF=32.
+    Dilation 1,2,4,8,16,32,64 gives RF=128.
+    Formula: RF = 1 + sum((kernel_size-1) * d_i) = 1 + sum(d_i) for k=2.
+    """
     def __init__(self, input_dim, hidden_dim, rf, dropout=0.1):
         super().__init__()
         layers = []
         d = 1
-        while d <= rf:
+        self._rf = 1
+        while self._rf < rf:
             in_ch = input_dim if d == 1 else hidden_dim
-            layers.append(CausalTCNBlock(in_ch, hidden_dim, kernel_size=3,
+            layers.append(CausalTCNBlock(in_ch, hidden_dim, kernel_size=2,
                                           dilation=d, dropout=dropout))
+            self._rf += d  # exact for k=2: each layer adds dilation to RF
             d *= 2
         self.layers = nn.ModuleList(layers)
         self.output_dim = hidden_dim
 
-    def forward(self, x):
-        # x: (B, T, C)
+    @property
+    def receptive_field(self):
+        return self._rf
+
+    def forward(self, x, timestep_mask=None):
+        # x: (B, T, C) or (B, T, C) with timestep_mask: (B, T) boolean
+        if timestep_mask is not None:
+            # Zero out padding timesteps so they don't contribute
+            mask_expanded = timestep_mask.unsqueeze(-1).float()  # (B, T, 1)
+            x = x * mask_expanded
         x = x.transpose(1, 2)  # (B, C, T)
         for layer in self.layers:
             x = layer(x)
         x = x.transpose(1, 2)  # (B, T, C)
         return x
 
-# ── Shared Encoder ──
-
 class N5SharedEncoder(nn.Module):
-    """Dual-branch CausalTCN with concat fusion. Same architecture as V4 encoder."""
+    """Dual-branch CausalTCN with concat fusion."""
     def __init__(self, input_dim=51, hidden=64, short_rf=32, long_rf=128, dropout=0.1):
         super().__init__()
         self.short_tcn = CausalTCNEncoder(input_dim, hidden, short_rf, dropout)
@@ -86,12 +100,31 @@ class N5SharedEncoder(nn.Module):
         self.fusion = nn.Linear(hidden * 2, hidden)
         self.hidden = hidden
 
-    def forward(self, x):
-        # x: (B, T, 51)
-        s = self.short_tcn(x)  # (B, T, hidden)
-        l = self.long_tcn(x)   # (B, T, hidden)
+    @property
+    def short_rf(self):
+        return self.short_tcn.receptive_field
+
+    @property
+    def long_rf(self):
+        return self.long_tcn.receptive_field
+
+    def forward(self, x, timestep_mask=None):
+        # x: (B, T, 51), timestep_mask: (B, T) boolean (True=valid)
+        s = self.short_tcn(x, timestep_mask)  # (B, T, hidden)
+        l = self.long_tcn(x, timestep_mask)   # (B, T, hidden)
         fused = self.fusion(torch.cat([s, l], dim=-1))  # (B, T, hidden)
         return F.relu(fused)
+
+# ── Shared Encoder (replaces old separate definition) ──
+# N5SharedEncoder is now the canonical shared encoder
+        # x: (B, T, C)
+        x = x.transpose(1, 2)  # (B, C, T)
+        for layer in self.layers:
+            x = layer(x)
+        x = x.transpose(1, 2)  # (B, T, C)
+        return x
+
+# ── Shared Encoder (defined above, this section removed) ──
 
 # ── Independent Heads ──
 
@@ -131,61 +164,118 @@ class N5MultiHeadStudent(nn.Module):
         self.input_dim = input_dim
         self.hidden = hidden
 
-    def forward(self, x, head_idx=None):
+    def forward(self, x, timestep_mask=None, head_idx=None):
         """Forward pass.
 
         Args:
             x: (B, T, 51) normalized input features
+            timestep_mask: (B, T) boolean, True=valid timestep. Padding steps should be False.
             head_idx: If None, return all 5 head logits.
                       If int, return only that head's logits.
-
-        Returns:
-            If head_idx is None: Dict[str, Tensor] mapping head name to (B, T) logits
-            If head_idx is int: Tensor (B, T) logits for that head
         """
-        shared = self.encoder(x)  # (B, T, hidden)
+        shared = self.encoder(x, timestep_mask=timestep_mask)  # (B, T, hidden)
 
         if head_idx is not None:
             return self.heads[head_idx](shared)
 
         return {name: head(shared) for name, head in zip(self.HEAD_NAMES, self.heads)}
 
-    def get_last_logits(self, x, head_idx=None):
-        """Get logits for the last timestep only (for streaming inference)."""
-        all_logits = self.forward(x, head_idx=head_idx)
+    def get_last_logits(self, x, timestep_mask=None, head_idx=None):
+        """Get logits for the LAST VALID timestep (handles padding correctly).
+
+        P0 FIX: Uses timestep_mask to find last valid step, not x[:, -1].
+        """
+        all_logits = self.forward(x, timestep_mask=timestep_mask)
+        if timestep_mask is not None:
+            # Find last True index per batch: (B, T) → (B,)
+            last_valid_idx = (timestep_mask.shape[1] - 1 -
+                              timestep_mask.flip(1).long().argmax(dim=1))
+            no_valid = ~timestep_mask.any(dim=1)
+            last_valid_idx[no_valid] = timestep_mask.shape[1] - 1
+        else:
+            last_valid_idx = None
+
         if head_idx is not None:
-            return all_logits[:, -1]  # (B,)
+            if last_valid_idx is not None:
+                return all_logits[torch.arange(all_logits.shape[0]), last_valid_idx]
+            return all_logits[:, -1]
+
+        if last_valid_idx is not None:
+            idx = torch.arange(all_logits[list(all_logits.keys())[0]].shape[0])
+            return {
+                name: logits[idx, last_valid_idx]
+                for name, logits in all_logits.items()
+            }
         return {name: logits[:, -1] for name, logits in all_logits.items()}
 
 # ── Loss Functions ──
 
-def masked_bce_loss(logits, targets, valid_mask, pos_weight=None):
-    """Masked binary cross-entropy. Only valid steps contribute to loss.
+class FrozenPosWeights:
+    """P0 FIX: Pre-compute pos_weight from TRAIN split, freeze for all batches.
 
-    Args:
-        logits: (B, T) raw logits
-        targets: (B, T) binary labels {0, 1}
-        valid_mask: (B, T) boolean, True = step is valid for this head
-        pos_weight: Optional positive class weight tensor
+    Usage:
+      fw = FrozenPosWeights.compute(train_labels, train_masks)
+      loss = masked_bce_loss(logits, targets, mask, fw.get_weight(head_name))
     """
+    def __init__(self, weights):
+        self.weights = weights
+
+    @classmethod
+    def compute(cls, train_labels, train_valid_masks):
+        """Compute frozen pos_weight from full train split.
+        train_labels: Dict[str, Tensor] per-head binary labels (concatenated over all episodes)
+        train_valid_masks: Dict[str, Tensor] per-head valid masks
+        """
+        weights = {}
+        for name in N5MultiHeadStudent.HEAD_NAMES:
+            targets = train_labels[name]
+            mask = train_valid_masks[name]
+            if mask.sum() == 0:
+                weights[name] = None  # No valid data for this head → skip
+                continue
+            n_pos = targets[mask].sum()
+            n_neg = mask.sum() - n_pos
+            if n_pos > 0 and n_neg > 0:
+                w = float((n_neg / n_pos).clamp(1, 20))
+                weights[name] = w
+            elif n_pos == 0:
+                weights[name] = None  # No positives → cannot train this head
+            else:
+                weights[name] = 1.0
+        return cls(weights)
+
+    def get_weight(self, head_name):
+        return self.weights.get(head_name)
+
+    def validate(self):
+        """Check that all heads have usable weights. Returns list of issues."""
+        issues = []
+        for name in N5MultiHeadStudent.HEAD_NAMES:
+            w = self.weights.get(name)
+            if w is None:
+                issues.append(f'{name}: no valid positive or negative samples — HOLD')
+        return issues
+
+def masked_bce_loss(logits, targets, valid_mask, pos_weight=None):
+    """Masked BCE loss with optional FROZEN pos_weight (scalar, not per-batch)."""
     loss = F.binary_cross_entropy_with_logits(
         logits[valid_mask], targets[valid_mask].float(),
-        pos_weight=pos_weight, reduction='mean'
+        pos_weight=torch.tensor(pos_weight, device=logits.device) if pos_weight else None,
+        reduction='mean'
     )
     return loss
 
-def n5_total_loss(model_output, labels, valid_masks, head_weights=None):
-    """Total N5 training loss across all heads.
+def n5_total_loss(model_output, labels, valid_masks, frozen_weights, head_weights=None):
+    """Total N5 training loss. Uses FROZEN pos_weight per head (not per-batch).
 
     Args:
         model_output: Dict[str, Tensor] from model.forward()
         labels: Dict[str, Tensor] per-head binary labels
         valid_masks: Dict[str, Tensor] per-head boolean valid masks
+        frozen_weights: FrozenPosWeights instance
         head_weights: Optional Dict[str, float] per-head loss weights
 
-    Returns:
-        total_loss: scalar
-        per_head_losses: Dict[str, float]
+    HARD FAIL if a head has no valid samples.
     """
     if head_weights is None:
         head_weights = {name: 1.0 for name in N5MultiHeadStudent.HEAD_NAMES}
@@ -196,19 +286,11 @@ def n5_total_loss(model_output, labels, valid_masks, head_weights=None):
         logits = model_output[name]
         target = labels[name]
         mask = valid_masks[name]
-        if mask.sum() == 0:
-            per_head[name] = 0.0
-            continue
+        n_valid = mask.sum().item()
+        if n_valid == 0:
+            raise RuntimeError(f'HARD FAIL: head {name} has zero valid samples in batch. Check data pipeline.')
 
-        # Compute class weight from valid positives
-        n_pos = target[mask].sum()
-        n_neg = mask.sum() - n_pos
-        if n_pos > 0 and n_neg > 0:
-            pos_weight = torch.tensor([n_neg / n_pos], device=logits.device)
-        else:
-            pos_weight = None
-
-        loss = masked_bce_loss(logits, target, mask, pos_weight)
+        loss = masked_bce_loss(logits, target, mask, frozen_weights.get_weight(name))
         weighted = loss * head_weights[name]
         total += weighted
         per_head[name] = loss.item()
@@ -218,8 +300,11 @@ def n5_total_loss(model_output, labels, valid_masks, head_weights=None):
 # ── Suite-Balanced Sampler ──
 
 class SuiteBalancedSampler:
-    """Ensures each batch has roughly equal representation from all 4 suites."""
-    def __init__(self, episode_indices, episode_suites, batch_size, shuffle=True):
+    """Ensures each batch has roughly equal representation from all 4 suites.
+
+    P1 FIX: Uses fixed RNG, warns on silent truncation.
+    """
+    def __init__(self, episode_indices, episode_suites, batch_size, shuffle=True, seed=42):
         self.suite_indices = {}
         for i, suite in enumerate(episode_suites):
             self.suite_indices.setdefault(suite, []).append(episode_indices[i])
@@ -227,27 +312,30 @@ class SuiteBalancedSampler:
         self.suites = sorted(self.suite_indices.keys())
         self.n_suites = len(self.suites)
         self.per_suite_batch = max(1, batch_size // self.n_suites)
-        self.batch_size = self.per_suite_batch * self.n_suites
+        self.effective_batch_size = self.per_suite_batch * self.n_suites
         self.shuffle = shuffle
+        self.rng = np.random.RandomState(seed + 42)  # Fixed RNG per sampler instance
+
+        # Warn on truncation
+        suite_lens = {s: len(self.suite_indices[s]) for s in self.suites}
+        self.min_suite_len = min(suite_lens.values())
+        self.max_suite_len = max(suite_lens.values())
+        if self.min_suite_len < self.max_suite_len:
+            truncated = {s: n - self.min_suite_len for s, n in suite_lens.items() if n > self.min_suite_len}
+            print(f'WARNING: SuiteBalancedSampler truncating {sum(truncated.values())} episodes to min={self.min_suite_len}: {truncated}')
 
     def __iter__(self):
         indices = []
         for suite in self.suites:
             suite_idx = self.suite_indices[suite].copy()
             if self.shuffle:
-                np.random.shuffle(suite_idx)
-            indices.append(suite_idx)
+                self.rng.shuffle(suite_idx)
+            indices.append(suite_idx[:self.min_suite_len])
 
-        # Truncate to min common length
-        min_len = min(len(idx) for idx in indices)
-        for i in range(self.n_suites):
-            indices[i] = indices[i][:min_len]
-
-        # Interleave batches
-        n_batches = min_len // self.per_suite_batch
+        n_batches = self.min_suite_len // self.per_suite_batch
         batch_order = list(range(n_batches))
         if self.shuffle:
-            np.random.shuffle(batch_order)
+            self.rng.shuffle(batch_order)
 
         for b in batch_order:
             batch = []
@@ -258,24 +346,36 @@ class SuiteBalancedSampler:
             yield batch
 
     def __len__(self):
-        min_len = min(len(idx) for idx in self.suite_indices.values())
-        return min_len // self.per_suite_batch
+        return self.min_suite_len // self.per_suite_batch
 
 # ── Baseline Models ──
 
 class PriorBaseline(nn.Module):
-    """Always outputs the training prior (mean label per head)."""
+    """Always outputs the training prior as RAW LOGIT (logit(prior), not probability).
+
+    P1 FIX: Converts prior probability to logit space for fair comparison with other models.
+    """
     def __init__(self, priors=None):
         super().__init__()
         self.priors = priors or {}
 
     def forward(self, x):
         B, T = x.shape[:2]
-        return {name: torch.full((B, T), p, device=x.device)
-                for name, p in self.priors.items()}
+        result = {}
+        for name, p in self.priors.items():
+            # Convert probability to logit: logit(p) = log(p/(1-p))
+            p_clipped = max(min(p, 0.999), 0.001)
+            logit_val = np.log(p_clipped / (1 - p_clipped))
+            result[name] = torch.full((B, T), logit_val, device=x.device)
+        return result
 
 class LastFrameMLP(nn.Module):
-    """Simple MLP on last frame only (no temporal context)."""
+    """MLP on last VALID frame only (no temporal context, no future leakage).
+
+    P1 FIX: Does NOT expand to full sequence. Each timestep prediction uses
+    only that timestep's features. Use timestep_mask to find valid frames.
+    For evaluation, processes each step independently (no temporal modeling).
+    """
     def __init__(self, input_dim=51, hidden=64):
         super().__init__()
         self.net = nn.Sequential(
@@ -286,11 +386,16 @@ class LastFrameMLP(nn.Module):
             nn.Linear(hidden // 2, 1) for _ in range(N5MultiHeadStudent.N_HEADS)
         ])
 
-    def forward(self, x):
-        last = x[:, -1, :]  # (B, 51)
-        h = self.net(last)  # (B, hidden//2)
-        return {name: head(h).squeeze(-1).unsqueeze(1).expand(-1, x.shape[1])
-                for name, head in zip(N5MultiHeadStudent.HEAD_NAMES, self.heads)}
+    def forward(self, x, timestep_mask=None):
+        B, T, C = x.shape
+        # Process each timestep independently (no temporal leakage)
+        x_flat = x.reshape(B * T, C)
+        h = self.net(x_flat)  # (B*T, hidden//2)
+        result = {}
+        for i, (name, head) in enumerate(zip(N5MultiHeadStudent.HEAD_NAMES, self.heads)):
+            logits_flat = head(h).squeeze(-1)  # (B*T,)
+            result[name] = logits_flat.reshape(B, T)  # (B, T)
+        return result
 
 # ── Schema and Versioning ──
 
@@ -371,12 +476,100 @@ def test_baseline_shapes():
     out = prior_model(x)
     for name in N5MultiHeadStudent.HEAD_NAMES:
         assert out[name].shape == (2, 10), f'Prior {name} shape: {out[name].shape}'
+        # PriorBaseline should output raw logits (not raw probabilities)
+        assert out[name].abs().max() < 10, f'Prior {name} has extreme logits'
 
     mlp = LastFrameMLP()
     out2 = mlp(x)
     for name in N5MultiHeadStudent.HEAD_NAMES:
         assert out2[name].shape == (2, 10), f'MLP {name} shape: {out2[name].shape}'
     print('PASS: test_baseline_shapes')
+
+def test_receptive_field():
+    """Verify EXACT receptive field: RF32=32, RF128=128 with kernel_size=2."""
+    encoder32 = CausalTCNEncoder(51, 64, rf=32)
+    assert encoder32.receptive_field == 32, f'Short RF: expected 32, got {encoder32.receptive_field}'
+    encoder128 = CausalTCNEncoder(51, 64, rf=128)
+    assert encoder128.receptive_field == 128, f'Long RF: expected 128, got {encoder128.receptive_field}'
+    print(f'PASS: test_receptive_field (short={encoder32.receptive_field}, long={encoder128.receptive_field})')
+
+def test_rf_impulse():
+    """Impulse response test: verify prefix output is invariant to suffix changes.
+
+    Two sequences share the same prefix up to t=49 but have different suffixes
+    (zeros vs impulse at t=50). Prefix outputs must be identical.
+    """
+    for rf in [32, 128]:
+        encoder = CausalTCNEncoder(1, 8, rf=rf)
+        encoder.eval()
+        T = rf + 100
+        # Sequence A: all zeros
+        x_a = torch.zeros(1, T, 1)
+        # Sequence B: impulse at t=50
+        x_b = torch.zeros(1, T, 1)
+        x_b[0, 50, 0] = 1.0
+
+        with torch.no_grad():
+            out_a = encoder(x_a)
+            out_b = encoder(x_b)
+
+        # Prefix (steps 0..49) must be identical
+        prefix_diff = (out_a[0, :50, :] - out_b[0, :50, :]).abs().max()
+        assert prefix_diff < 1e-5, f'RF{rf}: prefix outputs differ, max_diff={prefix_diff:.6f}'
+
+        # Steps at and after impulse should differ
+        post_diff = (out_a[0, 50:, :] - out_b[0, 50:, :]).abs().max()
+        assert post_diff > 0.01, f'RF{rf}: impulse caused no change, diff={post_diff:.6f}'
+    print('PASS: test_rf_impulse')
+
+def test_padding_parity():
+    """Verify padding doesn't affect valid timestep outputs."""
+    model = N5MultiHeadStudent()
+    model.eval()
+    x = torch.randn(1, 5, 51)
+    mask = torch.ones(1, 5, dtype=torch.bool)
+
+    # Pad with zeros at end
+    x_padded = torch.cat([x, torch.zeros(1, 3, 51)], dim=1)  # (1, 8, 51)
+    mask_padded = torch.cat([mask, torch.zeros(1, 3, dtype=torch.bool)], dim=1)
+
+    with torch.no_grad():
+        out_orig = model(x, timestep_mask=mask)
+        out_padded = model(x_padded, timestep_mask=mask_padded)
+
+    for name in N5MultiHeadStudent.HEAD_NAMES:
+        diff = (out_orig[name] - out_padded[name][:, :5]).abs().max()
+        assert diff < 1e-4, f'{name}: padding changed valid outputs, max_diff={diff:.6f}'
+    print('PASS: test_padding_parity')
+
+def test_padding_left_right():
+    """Verify left-padding vs right-padding parity for last valid step.
+
+    Uses sequences long enough to cover the long RF (128) so that warmup
+    transients don't affect the comparison at the last valid step.
+    """
+    model = N5MultiHeadStudent()
+    model.eval()
+    seq_len = model.encoder.long_rf + 50  # Well beyond long RF
+    x = torch.randn(1, seq_len, 51)
+
+    # Both have same valid sequence, just different padding positions
+    # Right-padded: valid at start, zeros at end
+    x_right = torch.cat([x, torch.zeros(1, 20, 51)], dim=1)
+    mask_right = torch.cat([torch.ones(1, seq_len, dtype=torch.bool), torch.zeros(1, 20, dtype=torch.bool)], dim=1)
+
+    # Left-padded: zeros at start, valid at end
+    x_left = torch.cat([torch.zeros(1, 20, 51), x], dim=1)
+    mask_left = torch.cat([torch.zeros(1, 20, dtype=torch.bool), torch.ones(1, seq_len, dtype=torch.bool)], dim=1)
+
+    with torch.no_grad():
+        out_right = model.get_last_logits(x_right, timestep_mask=mask_right)
+        out_left = model.get_last_logits(x_left, timestep_mask=mask_left)
+
+    for name in N5MultiHeadStudent.HEAD_NAMES:
+        diff = (out_right[name] - out_left[name]).abs().max()
+        assert diff < 5e-3, f'{name}: left vs right padding mismatch, max_diff={diff:.6f} (seq_len={seq_len})'
+    print('PASS: test_padding_left_right')
 
 def test_sampler():
     """Verify suite-balanced sampler."""
@@ -440,8 +633,12 @@ def run_all_tests():
         test_heads_independent,
         test_no_hard_candidate_close,
         test_baseline_shapes,
+        test_receptive_field,
+        test_rf_impulse,
         test_sampler,
         test_causal_invariance,
+        test_padding_parity,
+        test_padding_left_right,
         test_checkpoint_roundtrip,
     ]
     passed = 0
