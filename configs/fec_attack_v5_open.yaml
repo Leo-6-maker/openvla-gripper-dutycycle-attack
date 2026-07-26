@@ -1,9 +1,9 @@
-# FEC V3 Attack Configuration
-# Frozen for 100-cell formal FEC matrix.
+# FEC V5 OPEN Attack Configuration — POST_GRASP_PREMATURE_OPEN
+# Experimental canary. NOT frozen for formal matrix.
 # Supersedes: v4_attack.yaml (generic V4 config lacks strict_route, objective, burst_frames)
 
-version: fec_attack_v3
-status: FROZEN_ACTIVE
+version: fec_attack_v5_open_canary_v1
+status: EXPERIMENTAL_CANARY
 
 attack_optimizer:
   method: token_prefix_pgd

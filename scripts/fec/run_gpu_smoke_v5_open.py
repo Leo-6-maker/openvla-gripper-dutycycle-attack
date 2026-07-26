@@ -233,7 +233,7 @@ def check_success(env: Any, done: bool, info: Mapping[str, Any] | None) -> bool:
             return bool(checker())
         except Exception:
             pass
-    return bool(done)
+    return False  # V5 FIX: never treat done as success; require explicit info/env check
 
 
 def resolve_task_instruction(task: Any) -> str:
@@ -826,6 +826,7 @@ def main() -> int:
 
                 success = check_success(env, bool(done), info)
                 if success:
+                    result[success_source] = env_check
                     result["task_success"] = True
                     result["termination"] = "SUCCESS"
                     break

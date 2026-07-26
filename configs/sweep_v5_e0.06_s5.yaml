@@ -2,8 +2,8 @@
 # Frozen for 100-cell formal FEC matrix.
 # Supersedes: v4_attack.yaml (generic V4 config lacks strict_route, objective, burst_frames)
 
-version: fec_attack_v3
-status: FROZEN_ACTIVE
+version: fec_attack_v5_sweep_canary_v1
+status: EXPERIMENTAL_CANARY_SWEEP
 
 attack_optimizer:
   method: token_prefix_pgd
