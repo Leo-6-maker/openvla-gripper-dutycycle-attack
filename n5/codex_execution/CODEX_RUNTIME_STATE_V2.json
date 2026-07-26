@@ -2,7 +2,7 @@
   "state_file": "CODEX_RUNTIME_STATE_V2",
   "owner": "Codex",
   "branch": "codex/detector-completion-20260726",
-  "code_snapshot_commit": "3ce6dac486f1c9c91b5246991a97bd67b6e55c61",
+  "code_snapshot_commit": "f34c1878bc6bc2da943ad17d1b6d06a8676b0e87",
   "receipt_commit": "69bae546c67f7596273d842bcf4e03790ce04d47",
   "supersession_ledger_commit": "62aed6c1c9f93c04994d730526a5b742238bd6e8",
   "transition_receipt_commit": "fcef528ccba43b54911f94b22ca231aae77da635",
@@ -52,14 +52,14 @@
   },
   "c3_s3_evidence": {
     "status": "HOLD",
-    "code_commit": "3ce6dac486f1c9c91b5246991a97bd67b6e55c61",
-    "code_tree": "f038d4dd8c800455abffd43c18eb6113177f8566",
-    "evidence_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/c3_s3/c3_s3_geometry_observability_3ce6dac4_20260726_2145",
-    "sha256sums_sha256": "391772eda1ebc693b391628ceaae6cb0f8b29017cf9eded7a072f7a58b0e4c2d",
-    "sha256sums_sidecar_file_sha256": "adc43e398362c455c0f2349bc737ad6b068be340983e509a378cf13ac83f306b",
-    "summary_sha256": "3eeae73ea4eddcf6c99e169a89a5173e138a6db7e80944e003a60f0ed7297946",
-    "canonical_rebuild_a_sha256": "eecd565eff524c2df51b7a97c900bd6967b35e3559430bbf2d1bc88957dbac32",
-    "canonical_rebuild_b_sha256": "eecd565eff524c2df51b7a97c900bd6967b35e3559430bbf2d1bc88957dbac32",
+    "code_commit": "660688a9b6b9c2d03e475d6b8ca88ea5a8a8bb07",
+    "code_tree": "95ef48f31c693aad49045d4aa8c9976573cb7205",
+    "evidence_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/c3_s3/c3_s3_geometry_observability_660688a_20260726_2300",
+    "sha256sums_sha256": "0033a4041d32aaaf62c3340e2cc442c11d5152673a5b64ebfd1a98d797ff5dff",
+    "sha256sums_sidecar_file_sha256": "7806eaf88f47f473e590d38a23d09803997602b0895f4988ae78dc32b50aed81",
+    "summary_sha256": "ddd24069aebb3d1cfb2777cadf8956dc8d6deb74bcb2b53114570b8fe0d5dd13",
+    "canonical_rebuild_a_sha256": "10d80dc380de34b4750dd5cac820d5e6584dabb0663c6e74c262e5e2dc8ea25f",
+    "canonical_rebuild_b_sha256": "10d80dc380de34b4750dd5cac820d5e6584dabb0663c6e74c262e5e2dc8ea25f",
     "task_rows": 46,
     "supported_rows": 44,
     "static_rows": 11,
@@ -74,11 +74,17 @@
     "protected_reads": 0,
     "model_inference": false,
     "rollout_steps": 0,
-    "attack_steps": 0
+    "attack_steps": 0,
+    "input_inventory_status": "HOLD_INPUTS_MISSING",
+    "input_allowlist_sha256": "5440d43a8f54ea665beb316d4a959e05841590a55f97a51a771fcd5e99445af9",
+    "input_inventory_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/c3_s3_input_inventory_f34c187_20260726_2345",
+    "input_inventory_sha256sums_sha256": "9790e4e7927335e4d48a6c8cd8a22fa05fb940277768b80d4775e212179767c7",
+    "episode_geometry_root_count": 0
   },
   "blockers": [
     "H0.3 packet claims 25/25 resolver tests; independent rerun is 20/20.",
-    "C3-S3 task mapping and transform contract are sealed, but no development/confirmation per-episode geometry manifest is mounted; static/dynamic numerical replay error gates are not evaluable.",
+    "C3-S3 task mapping and transform contract are sealed, but the explicit allowlist has zero episode geometry roots; static/dynamic numerical replay error gates are not evaluable.",
+    "C3-S3 input inventory rejected the unbound C2F observation root because it has no accepted top-level seal or Official V3 trajectory binding.",
     "Two articulated cabinet target rows remain ARTICULATED_UNKNOWN and require a sealed reconstruction contract.",
     "All downstream Gates remain blocked until their own evidence, independent review, transition receipt, and runtime-state commit pass."
   ],
@@ -92,5 +98,5 @@
     "c3_s3_authorized": true
   },
   "next_gate": "C3-S3 remediation: mount non-protected development/confirmation geometry evidence and complete numerical replay audit; do not read CAL/G10/T2R-D or start Student training.",
-  "self_sha256": "6e43ff2e6c564305300d7dd772c61ec40c69604180cda60cd889c6c84d64d206"
+  "self_sha256": "1f78dbfed3fd1c2fe09511491a85736d3eea67b7843ee89821b3e349e4c40252"
 }
