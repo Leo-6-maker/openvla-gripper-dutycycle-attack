@@ -12,6 +12,7 @@ import hashlib
 import json
 import math
 import shutil
+import subprocess
 import sys
 import uuid
 from collections import Counter
@@ -91,6 +92,18 @@ def _hash_without(row: Mapping[str, Any], field: str) -> str:
     value = dict(row)
     value.pop(field, None)
     return _sha256_bytes(_canonical(value))
+
+
+def _git_snapshot() -> dict[str, str]:
+    repo = HERE.parents[2]
+    try:
+        commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True, stderr=subprocess.DEVNULL).strip()
+        tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=repo, text=True, stderr=subprocess.DEVNULL).strip()
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise ValueError("Stage 3 code snapshot cannot be resolved") from exc
+    if len(commit) != 40 or len(tree) != 40:
+        raise ValueError("Stage 3 code snapshot is malformed")
+    return {"commit": commit, "tree": tree}
 
 
 def _target_role(predicate: str) -> str:
@@ -308,6 +321,7 @@ def run_evaluation(dataset_root: Path, allowlist_path: Path, reference_run_a: Pa
         raise FileExistsError(out)
     manifest, reference_poses, binding = _load_inputs(dataset_root, allowlist_path, reference_run_a, reference_run_b)
     frozen = load_contract()
+    code_snapshot = _git_snapshot()
     cases = build_predicate_cases(manifest, reference_poses, frozen)
     inputs = [_case_input(case) for case in cases]
     records, summary = _evaluate(inputs, frozen)
@@ -333,10 +347,10 @@ def run_evaluation(dataset_root: Path, allowlist_path: Path, reference_run_a: Pa
         _write_jsonl(staging / "case_inputs.jsonl", inputs)
         _write_jsonl(staging / "predicate_records.jsonl", records)
         summary.update({"schema": SCHEMA, "canonical_digest": canonical_digest, "input_canonical_digest": input_digest, "output_canonical_digest": output_digest, "run_id": run_id, "input_output_sha_mismatches": []})
-        _json(staging / "input_binding.json", {**binding, "predicate_contract_path": str(CONTRACT_PATH), "predicate_contract_sha256": _sha256(CONTRACT_PATH), "evaluator_source_path": str(HERE), "evaluator_source_sha256": _sha256(HERE), "run_id": run_id, "protected_reads": [], "tolerance_provenance": frozen["tolerance_provenance"]})
+        _json(staging / "input_binding.json", {**binding, "dataset_code_snapshot_commit": binding.get("code_snapshot_commit"), "dataset_code_snapshot_tree": binding.get("code_snapshot_tree"), "stage3_code_snapshot_commit": code_snapshot["commit"], "stage3_code_snapshot_tree": code_snapshot["tree"], "predicate_contract_path": str(CONTRACT_PATH), "predicate_contract_sha256": _sha256(CONTRACT_PATH), "evaluator_source_path": str(HERE), "evaluator_source_sha256": _sha256(HERE), "run_id": run_id, "protected_reads": [], "tolerance_provenance": frozen["tolerance_provenance"]})
         _json(staging / "canonical_payload.json", canonical)
         _json(staging / "summary.json", summary)
-        seal = _seal(staging, out, {"schema": SCHEMA, "canonical_digest": canonical_digest, "input_canonical_digest": input_digest, "output_canonical_digest": output_digest, "input_binding": {**binding, "predicate_contract_sha256": _sha256(CONTRACT_PATH), "evaluator_source_sha256": _sha256(HERE)}, "protected_reads": []})
+        seal = _seal(staging, out, {"schema": SCHEMA, "canonical_digest": canonical_digest, "input_canonical_digest": input_digest, "output_canonical_digest": output_digest, "input_binding": {**binding, "dataset_code_snapshot_commit": binding.get("code_snapshot_commit"), "dataset_code_snapshot_tree": binding.get("code_snapshot_tree"), "stage3_code_snapshot_commit": code_snapshot["commit"], "stage3_code_snapshot_tree": code_snapshot["tree"], "predicate_contract_sha256": _sha256(CONTRACT_PATH), "evaluator_source_sha256": _sha256(HERE)}, "protected_reads": []})
         verify_sealed_output(out)
         return {"root": str(out), "status": summary["status"], "canonical_digest": canonical_digest, "sha256sums_sha256": seal["sha256sums_sha256"]}
     except Exception:
