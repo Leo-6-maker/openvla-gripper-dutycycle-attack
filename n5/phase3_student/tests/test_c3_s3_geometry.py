@@ -107,7 +107,7 @@ def test_static_dynamic_transform_and_quaternion_sign_equivalence():
     parent = {"pos": [1.0, 2.0, 3.0], "quat": [half, 0.0, 0.0, half]}
     local = {"pos": [1.0, 0.0, 0.0], "quat": [1.0, 0.0, 0.0, 0.0]}
     pose = contract.compose_pose(parent, local)
-    assert pose["pos"] == [1.0, 3.0, 3.0]
+    assert max(abs(a - b) for a, b in zip(pose["pos"], [1.0, 3.0, 3.0])) < 1e-12
     assert contract.rotation_geodesic_error(pose["quat"], [-x for x in pose["quat"]]) < 1e-12
     assert contract.position_error(pose["pos"], [1.0, 3.0, 3.0]) < 1e-12
 
