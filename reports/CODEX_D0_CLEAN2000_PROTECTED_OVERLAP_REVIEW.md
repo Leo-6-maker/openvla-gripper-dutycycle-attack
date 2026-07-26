@@ -26,8 +26,10 @@ the receipt or report.
 | T2R-D protected manifest | 260 | 130 | 130 | 0 | 0 |
 
 Aggregate protected union size is 1330. Clean2000/protected aggregate
-overlap is 1330. Cross-manifest overlap is 0. The nonzero Clean2000 overlap
-is an immediate stop under the D0 contract; no split or capability result can
+overlap is 1330. The same custodian reports FIT_TRAIN/protected overlap 130
+and non-FIT Clean2000/protected overlap 1200. Cross-manifest overlap is 0.
+The nonzero Clean2000 overlap (and independently the nonzero FIT overlap) is
+an immediate stop under the D0 contract; no split or capability result can
 promote this input to a consumable FIT root.
 
 The official identity manifest SHA256 is
@@ -39,12 +41,12 @@ was opened.
 
 ## Sealed custodian evidence
 
-- Root: `/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/d0_clean2000_517a957_20260727_0145`
+- Root: `/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/d0_clean2000_517a957_20260727_0200`
 - Custodian script SHA256:
-  `2b0930877e10e4b2dbfcb8c7cc64a27fe00327e7cb54aeada6b4645deab3296e`
-- `SHA256SUMS`: `b2590d31f995346a7642940eb983c9c67b60aaaaee5b22b13c6f902ab3f5be5c`
-- `SHA256SUMS.sha256`: `73979333304dffdde70df7b3a681dd4c7b22df3d36a0ef2f12c8bb2f18587cf9`
-- `D0_FEASIBILITY_RECEIPT.json`: `838b9387c57d5c924ce5cb1fdf6174b07420aa3d2a5f70c1195183d42bc2cbd7`
+  `530e9c75711ad0d55a1f82dc9a9909abaa13aac64fc6826408f2564cc826b6ad`
+- `SHA256SUMS`: `5ed9a7d2f71a05806d94cca2c586368cfc035b136e78726c121d15f57568d8b8`
+- `SHA256SUMS.sha256`: `2568f06ca6797654e40a1f29b18b656c8534d0028ff9ff9bdfc1f63cf3674138`
+- `D0_FEASIBILITY_RECEIPT.json`: `0385da541d4ef7762119cc131f823980e883900478b56a20dcd0610f93b6dd96`
 - Protected identity values emitted: `0`
 - Payload read: `false`
 - Model inference/training/rollout/attack: `false`

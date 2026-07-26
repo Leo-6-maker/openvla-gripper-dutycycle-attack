@@ -5,11 +5,12 @@
     "status": "HOLD_PROVENANCE",
     "clean2000_identity_closure": "PASS_2000_OF_2000",
     "clean_protected_overlap_count": 1330,
+    "fit_train_protected_overlap_count": 130,
     "protected_identity_values_emitted": 0,
     "capability_decision": "PARTIAL",
     "derived_snapshot_created": false,
-    "receipt_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/d0_clean2000_517a957_20260727_0145",
-    "receipt_sha256s_sha256": "b2590d31f995346a7642940eb983c9c67b60aaaaee5b22b13c6f902ab3f5be5c"
+    "receipt_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/d0_clean2000_517a957_20260727_0200",
+    "receipt_sha256s_sha256": "5ed9a7d2f71a05806d94cca2c586368cfc035b136e78726c121d15f57568d8b8"
   },
   "c3_t0": {
     "status": "PASS_SYNTHETIC_CONTRACT_ONLY",

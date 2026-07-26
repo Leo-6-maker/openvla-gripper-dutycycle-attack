@@ -172,6 +172,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     for audit in protected_audits:
         protected_union.update(audit["keys"])
     overlap = clean_audit["keys"] & protected_union
+    fit_keys = {key for key in clean_audit["keys"] if key[2] < 20}
     source_root = Path(args.source_root).resolve() if args.source_root else None
     source_entries = sorted(path.name for path in source_root.iterdir()) if source_root and source_root.is_dir() else []
     source_top_seal = bool(source_root and all((source_root / name).is_file() for name in ("SHA256SUMS", "SHA256SUMS.sha256")))
@@ -190,7 +191,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "decision": status,
         "clean_manifest": {"path": str(clean), "sha256": sha256_file(clean), **{k: v for k, v in clean_audit.items() if k != "keys"}},
         "protected_manifests": [{"path": str(path), "sha256": sha256_file(path), "root_seal_files_present": sorted(name for name in ("P0_EVIDENCE_SEAL.json", "G6_SEAL_V2.json", "G6_SEAL.json") if (path.parent / name).is_file()), **{k: v for k, v in audit.items() if k != "keys"}} for path, audit in zip(protected, protected_audits)],
-        "aggregate": {"protected_union_unique": len(protected_union), "clean_protected_overlap_count": len(overlap), "protected_cross_manifest_overlap_count": sum(len(protected_audits[i]["keys"] & protected_audits[j]["keys"]) for i in range(len(protected_audits)) for j in range(i + 1, len(protected_audits)))},
+        "aggregate": {"protected_union_unique": len(protected_union), "clean_protected_overlap_count": len(overlap), "fit_train_protected_overlap_count": len(fit_keys & protected_union), "non_fit_clean_protected_overlap_count": len((clean_audit["keys"] - fit_keys) & protected_union), "protected_cross_manifest_overlap_count": sum(len(protected_audits[i]["keys"] & protected_audits[j]["keys"]) for i in range(len(protected_audits)) for j in range(i + 1, len(protected_audits)))},
         "protected_identity_values_emitted": 0,
         "protected_content_emitted": False,
         "identity_closure_2000": closure,
