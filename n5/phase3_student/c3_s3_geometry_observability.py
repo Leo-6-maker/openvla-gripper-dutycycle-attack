@@ -24,6 +24,7 @@ from c3_s3_input_contract import (
     audit_episode_geometry,
     load_allowlist,
     load_jsonl_exact,
+    p99,
     require_allowed_path,
     sha256_file as contract_sha256_file,
     verify_manifest_binding,
