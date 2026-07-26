@@ -8,7 +8,7 @@ Resolution priority (strict, no fallback, per-entity):
   5. UNRESOLVED       — everything else
 
 AMBIGUOUS: name matches multiple entity types, or alias has multiple candidates.
-Region role is determined structurally (site existence), not by suffix.
+Region/object roles are derived from BDDL declarations, not MuJoCo name availability.
 
 FORBIDDEN:
   - STRIP_SUFFIX_BODY, STRIP_SUFFIX_SITE, SUBSTRING
@@ -29,193 +29,271 @@ BLOCKED_RESOLUTIONS = frozenset({
 TERMINAL_RESOLUTIONS = frozenset({'UNRESOLVED', 'AMBIGUOUS', 'ENV_ERROR'})
 
 
-# ── Core: pure structural entity resolver ──
+# ── Core: role-safe structural entity resolver ──
 
-def _is_region(name, sites):
-    """A name is a region iff it exists as a site in the model. Structural, not suffix-based."""
-    return name in sites
+MANIPULATED_OBJECT = 'MANIPULATED_OBJECT'
+OBJECT_TARGET = 'OBJECT_TARGET'
+REGION_TARGET = 'REGION_TARGET'
+ENTITY_ROLES = frozenset({MANIPULATED_OBJECT, OBJECT_TARGET, REGION_TARGET})
 
 
-def _verify_alias_hierarchy_full(target_name, alias_body_name, bodies, geoms, target_body_id):
-    """Verify alias body belongs to the target object hierarchy.
+def _body_descends_from(body_id, root_body_id, bodies):
+    """Return True when body_id is root_body_id or a descendant of it."""
+    id_to_parent = {
+        int(info['id']): int(info.get('parent_id', -1))
+        for info in bodies.values() if 'id' in info
+    }
+    current = int(body_id)
+    root = int(root_body_id)
+    visited = set()
+    while current not in visited:
+        if current == root:
+            return True
+        visited.add(current)
+        if current not in id_to_parent:
+            return False
+        parent = id_to_parent[current]
+        if parent < 0 or parent == current:
+            return False
+        current = parent
+    return False
 
-    Checks ALL matching geoms, not just first 3.
-    Returns (ok, detail_dict).
-    """
+
+def _verify_alias_hierarchy_full(target_name, alias_body_name, bodies, geoms,
+                                 target_body_id):
+    """Verify every matching geom belongs to the accepted root body ancestry."""
     detail = {'alias_body': alias_body_name, 'target': target_name}
     expected = target_name + '_main'
     if alias_body_name != expected:
         detail['error'] = f'body_name_mismatch_expected_{expected}'
         return False, detail
 
-    prefix = target_name + '_'
-    other_bodies = [bn for bn in bodies if bn.startswith(prefix) and bn != alias_body_name]
-    if other_bodies:
-        detail['error'] = 'non_unique_bodies'
-        detail['other_bodies'] = other_bodies
-        return False, detail
-
     geom_prefix = target_name + '_g'
-    matching_geoms = {gn: g for gn, g in geoms.items() if gn.startswith(geom_prefix)}
+    matching_geoms = {
+        gn: g for gn, g in geoms.items() if gn.startswith(geom_prefix)
+    }
     if not matching_geoms:
         detail['error'] = 'no_geoms'
         return False, detail
 
     mismatched = []
-    matched = 0
-    for gn, g in matching_geoms.items():
-        if g['body_id'] != target_body_id:
-            mismatched.append(gn)
+    descendant = 0
+    direct = 0
+    for gn, geom in matching_geoms.items():
+        body_id = int(geom['body_id'])
+        if body_id == int(target_body_id):
+            direct += 1
+        if _body_descends_from(body_id, target_body_id, bodies):
+            descendant += 1
         else:
-            matched += 1
+            mismatched.append(gn)
 
     detail['total_geoms'] = len(matching_geoms)
-    detail['matched_geoms'] = matched
+    detail['direct_geoms'] = direct
+    detail['descendant_geoms'] = descendant
     detail['mismatched_geoms'] = len(mismatched)
     if mismatched:
-        detail['error'] = f'geom_body_mismatch_{len(mismatched)}_of_{len(matching_geoms)}'
+        detail['error'] = (
+            f'geom_outside_alias_ancestry_{len(mismatched)}_of_'
+            f'{len(matching_geoms)}'
+        )
         detail['mismatched_sample'] = mismatched[:5]
         return False, detail
-
     return True, detail
 
 
-def resolve_entity(name, is_region, sites, bodies, geoms):
-    """Resolve a single entity name (target or object).
+def _result(name, role, resolution, **fields):
+    result = {'name': name, 'semantic_role': role, 'resolution': resolution}
+    result.update(fields)
+    return result
 
-    Returns dict with keys: resolution, entity_type, entity_id, size,
-    parent_body_id, parent_body_name, alias_ledger_entry (if alias),
-    error_detail (if unresolved/ambiguous).
 
-    This is a pure function — no side effects, no MuJoCo dependency.
-    """
-    result = {'name': name, 'is_region': is_region}
+def resolve_entity(name, semantic_role, sites, bodies, geoms):
+    """Resolve one BDDL operand under an independently supplied semantic role."""
+    if semantic_role not in ENTITY_ROLES:
+        raise ValueError(f'unknown semantic role: {semantic_role}')
 
     in_sites = name in sites
     in_bodies = name in bodies
     in_geoms = name in geoms
+    exact_types = [
+        entity_type for entity_type, present in
+        [('site', in_sites), ('body', in_bodies), ('geom', in_geoms)]
+        if present
+    ]
+    if len(exact_types) > 1:
+        return _result(
+            name, semantic_role, 'AMBIGUOUS',
+            error_detail={'reason': 'exact_cross_type_conflict',
+                          'entity_types': exact_types},
+        )
 
-    # ── Ambiguity detection (before any resolution) ──
-    match_count = sum([in_sites, in_bodies, in_geoms])
-    if match_count > 1:
-        result['resolution'] = 'AMBIGUOUS'
-        result['error_detail'] = {
-            'in_sites': in_sites, 'in_bodies': in_bodies, 'in_geoms': in_geoms,
-            'reason': f'name_matches_{match_count}_entity_types'
-        }
-        return result
+    if semantic_role == REGION_TARGET:
+        if in_sites:
+            site = sites[name]
+            parent_body_name = None
+            for body_name, body in bodies.items():
+                if int(body['id']) == int(site['body_id']):
+                    parent_body_name = body_name
+                    break
+            return _result(
+                name, semantic_role, 'EXACT_SITE',
+                entity_type='site', entity_id=site['id'],
+                size=site.get('size'), parent_body_id=site['body_id'],
+                parent_body_name=parent_body_name,
+            )
+        if in_bodies:
+            return _result(
+                name, semantic_role, 'BLOCKED_REGION_AS_BODY',
+                error_detail={'reason': 'declared_region_site_missing'},
+            )
+        if in_geoms:
+            return _result(
+                name, semantic_role, 'BLOCKED_REGION_AS_GEOM',
+                error_detail={'reason': 'declared_region_site_missing'},
+            )
+        return _result(
+            name, semantic_role, 'UNRESOLVED',
+            error_detail={'reason': 'declared_region_site_missing'},
+        )
 
-    # ── Priority 1: EXACT_SITE ──
+    # Both manipulated objects and object targets are forbidden from sites.
     if in_sites:
-        s = sites[name]
-        result['resolution'] = 'EXACT_SITE'
-        result['entity_type'] = 'site'
-        result['entity_id'] = s['id']
-        result['size'] = s['size']
-        result['parent_body_id'] = s['body_id']
-        # Look up parent body name
-        for bn, bi in bodies.items():
-            if bi['id'] == s['body_id']:
-                result['parent_body_name'] = bn
-                break
-        return result
-
-    # ── Priority 2: EXACT_BODY ──
+        return _result(
+            name, semantic_role, 'BLOCKED_OBJECT_AS_SITE',
+            error_detail={'reason': 'object_operand_resolved_to_site'},
+        )
     if in_bodies:
-        if is_region:
-            result['resolution'] = 'BLOCKED_REGION_AS_BODY'
-            result['error_detail'] = {'reason': 'region_target_resolved_to_body'}
-            return result
-        b = bodies[name]
-        result['resolution'] = 'EXACT_BODY'
-        result['entity_type'] = 'body'
-        result['entity_id'] = b['id']
-        return result
-
-    # ── Priority 3: EXACT_GEOM ──
+        body = bodies[name]
+        return _result(
+            name, semantic_role, 'EXACT_BODY',
+            entity_type='body', entity_id=body['id'],
+        )
     if in_geoms:
-        if is_region:
-            result['resolution'] = 'BLOCKED_REGION_AS_GEOM'
-            result['error_detail'] = {'reason': 'region_target_resolved_to_geom'}
-            return result
-        g = geoms[name]
-        result['resolution'] = 'EXACT_GEOM'
-        result['entity_type'] = 'geom'
-        result['entity_id'] = g['id']
-        return result
+        geom = geoms[name]
+        return _result(
+            name, semantic_role, 'EXACT_GEOM',
+            entity_type='geom', entity_id=geom['id'],
+        )
 
-    # ── Priority 4: APPROVED_STRUCTURAL_ALIAS ──
-    if not is_region:
-        prefix = name + '_'
-        candidates = [bn for bn in bodies if bn.startswith(prefix)]
-        if len(candidates) > 1:
-            result['resolution'] = 'AMBIGUOUS'
-            result['error_detail'] = {
-                'reason': 'multiple_alias_candidates',
-                'candidates': candidates,
-            }
-            return result
-        alias_name = name + '_main'
+    alias_name = name + '_main'
+    if alias_name in sites or alias_name in geoms:
+        conflicts = []
+        if alias_name in sites:
+            conflicts.append('site')
+        if alias_name in geoms:
+            conflicts.append('geom')
         if alias_name in bodies:
-            alias_body = bodies[alias_name]
-            verified, detail = _verify_alias_hierarchy_full(
-                name, alias_name, bodies, geoms, alias_body['id'])
-            if verified:
-                result['resolution'] = 'APPROVED_STRUCTURAL_ALIAS'
-                result['entity_type'] = 'body'
-                result['entity_id'] = alias_body['id']
-                result['alias_rule'] = 'R1_main_suffix'
-                result['alias_from'] = name
-                result['alias_to'] = alias_name
-                result['alias_verification'] = detail
-                return result
-            else:
-                result['resolution'] = 'UNRESOLVED'
-                result['error_detail'] = {
-                    'reason': 'alias_verification_failed',
-                    'alias_attempted': alias_name,
-                    'verification': detail,
-                }
-                return result
+            conflicts.append('body')
+        return _result(
+            name, semantic_role, 'AMBIGUOUS',
+            error_detail={'reason': 'alias_cross_type_conflict',
+                          'alias': alias_name, 'entity_types': conflicts},
+        )
+    if alias_name in bodies:
+        alias_body = bodies[alias_name]
+        verified, detail = _verify_alias_hierarchy_full(
+            name, alias_name, bodies, geoms, alias_body['id'])
+        if verified:
+            return _result(
+                name, semantic_role, 'APPROVED_STRUCTURAL_ALIAS',
+                entity_type='body', entity_id=alias_body['id'],
+                alias_rule='R1_main_suffix', alias_from=name,
+                alias_to=alias_name, alias_verification=detail,
+            )
+        return _result(
+            name, semantic_role, 'UNRESOLVED',
+            error_detail={'reason': 'alias_verification_failed',
+                          'alias_attempted': alias_name,
+                          'verification': detail},
+        )
 
-    # ── Priority 5: UNRESOLVED ──
-    result['resolution'] = 'UNRESOLVED'
-    return result
+    return _result(name, semantic_role, 'UNRESOLVED',
+                   error_detail={'reason': 'no_role_compatible_entity'})
 
 
-def resolve_relation(pred, obj_name, target_name, sites, bodies, geoms):
-    """Resolve a complete BDDL goal relation (object + target).
+def _target_semantic_role(target_name, bddl_object_names):
+    """Derive target role from BDDL declarations, independently of MuJoCo."""
+    return OBJECT_TARGET if target_name in bddl_object_names else REGION_TARGET
 
-    Returns dict with: object_resolution, target_resolution, relation_status,
-    predicate, and full resolution details.
-    """
-    is_region = _is_region(target_name, sites)
 
-    obj_res = resolve_entity(obj_name, False, sites, bodies, geoms)
-    tgt_res = resolve_entity(target_name, is_region, sites, bodies, geoms)
+def resolve_relation(pred, obj_name, target_name, bddl_object_names,
+                     sites, bodies, geoms):
+    """Resolve a complete relation with BDDL-derived operand roles."""
+    object_names = set(bddl_object_names)
+    if obj_name not in object_names:
+        obj_res = _result(
+            obj_name, MANIPULATED_OBJECT, 'UNRESOLVED',
+            error_detail={'reason': 'manipulated_object_not_declared_in_bddl'},
+        )
+    else:
+        obj_res = resolve_entity(
+            obj_name, MANIPULATED_OBJECT, sites, bodies, geoms)
+
+    target_role = _target_semantic_role(target_name, object_names)
+    tgt_res = resolve_entity(target_name, target_role, sites, bodies, geoms)
 
     obj_ok = obj_res['resolution'] in VALID_RESOLUTIONS
     tgt_ok = tgt_res['resolution'] in VALID_RESOLUTIONS
     obj_ambiguous = obj_res['resolution'] == 'AMBIGUOUS'
     tgt_ambiguous = tgt_res['resolution'] == 'AMBIGUOUS'
-    obj_blocked = 'BLOCKED' in obj_res.get('resolution', '')
-    tgt_blocked = 'BLOCKED' in tgt_res.get('resolution', '')
-
-    relation_ok = obj_ok and tgt_ok
+    obj_blocked = obj_res['resolution'].startswith('BLOCKED_')
+    tgt_blocked = tgt_res['resolution'].startswith('BLOCKED_')
 
     return {
         'predicate': pred,
         'object_bddl': obj_name,
         'target_bddl': target_name,
-        'target_is_region': is_region,
+        'object_semantic_role': MANIPULATED_OBJECT,
+        'target_semantic_role': target_role,
+        'target_is_region': target_role == REGION_TARGET,
         'object_resolution': obj_res,
         'target_resolution': tgt_res,
-        'relation_ok': relation_ok,
+        'relation_ok': obj_ok and tgt_ok,
         'object_blocked': obj_blocked,
         'target_blocked': tgt_blocked,
         'object_ambiguous': obj_ambiguous,
         'target_ambiguous': tgt_ambiguous,
     }
+
+
+def summarize_relation_resolutions(relations, task_key):
+    """Aggregate production counters and alias ledger from relation outputs."""
+    counts = {
+        'n_relations': len(relations),
+        'object_ok': 0, 'object_unresolved': 0,
+        'object_ambiguous': 0, 'object_blocked': 0,
+        'target_ok': 0, 'target_unresolved': 0,
+        'target_ambiguous': 0, 'target_blocked': 0,
+    }
+    alias_ledger = []
+    for rel in relations:
+        for role_key, count_prefix, source_name in [
+            ('object_resolution', 'object', rel['object_bddl']),
+            ('target_resolution', 'target', rel['target_bddl']),
+        ]:
+            resolved = rel[role_key]
+            resolution = resolved['resolution']
+            if resolution in VALID_RESOLUTIONS:
+                counts[f'{count_prefix}_ok'] += 1
+                if resolution == 'APPROVED_STRUCTURAL_ALIAS':
+                    alias_ledger.append({
+                        'task_key': task_key,
+                        'entity_role': count_prefix,
+                        'semantic_role': resolved['semantic_role'],
+                        'rule': resolved['alias_rule'],
+                        'target': source_name,
+                        'alias': resolved['alias_to'],
+                        'entity_id': resolved['entity_id'],
+                        'verification': resolved['alias_verification'],
+                    })
+            elif resolution.startswith('BLOCKED_'):
+                counts[f'{count_prefix}_blocked'] += 1
+            elif resolution == 'AMBIGUOUS':
+                counts[f'{count_prefix}_ambiguous'] += 1
+            else:
+                counts[f'{count_prefix}_unresolved'] += 1
+    return counts, alias_ledger
 
 
 # ── Full registry builder (MuJoCo-dependent) ──
@@ -310,6 +388,7 @@ def build_registry_v2(suite, task_idx):
             return result, 'BDDL unavailable'
 
         task_role = bddl_info['task_role']
+        bddl_object_names = set(bddl_info.get('object_slices', {}).keys())
         g_rels = task_role.get('goal_relations', [])
         result['goal_predicates'] = [(r[0], r[1], r[2]) for r in g_rels]
 
@@ -322,60 +401,14 @@ def build_registry_v2(suite, task_idx):
         else:
             result['task_disposition'] = 'OTHER_RELATION_TYPE'
 
-        # Resolve all relations
-        relations = []
-        alias_ledger = []
-        counts = {
-            'n_relations': len(g_rels),
-            'object_ok': 0, 'object_unresolved': 0, 'object_ambiguous': 0, 'object_blocked': 0,
-            'target_ok': 0, 'target_unresolved': 0, 'target_ambiguous': 0, 'target_blocked': 0,
-        }
-
-        for pred, obj_name, target_name in g_rels:
-            rel = resolve_relation(pred, obj_name, target_name, sites, bodies, geoms)
-            relations.append(rel)
-
-            # Count object resolution
-            o_res = rel['object_resolution']['resolution']
-            if o_res in VALID_RESOLUTIONS:
-                counts['object_ok'] += 1
-                if o_res == 'APPROVED_STRUCTURAL_ALIAS':
-                    alias_ledger.append({
-                        'task_key': result['task_key'],
-                        'entity_role': 'object',
-                        'rule': 'R1_main_suffix',
-                        'target': obj_name,
-                        'alias': rel['object_resolution'].get('alias_to', ''),
-                        'entity_id': rel['object_resolution']['entity_id'],
-                        'verification': rel['object_resolution'].get('alias_verification', {}),
-                    })
-            elif 'BLOCKED' in o_res:
-                counts['object_blocked'] += 1
-            elif o_res == 'AMBIGUOUS':
-                counts['object_ambiguous'] += 1
-            else:
-                counts['object_unresolved'] += 1
-
-            # Count target resolution
-            t_res = rel['target_resolution']['resolution']
-            if t_res in VALID_RESOLUTIONS:
-                counts['target_ok'] += 1
-                if t_res == 'APPROVED_STRUCTURAL_ALIAS':
-                    alias_ledger.append({
-                        'task_key': result['task_key'],
-                        'entity_role': 'target',
-                        'rule': 'R1_main_suffix',
-                        'target': target_name,
-                        'alias': rel['target_resolution'].get('alias_to', ''),
-                        'entity_id': rel['target_resolution']['entity_id'],
-                        'verification': rel['target_resolution'].get('alias_verification', {}),
-                    })
-            elif 'BLOCKED' in t_res:
-                counts['target_blocked'] += 1
-            elif t_res == 'AMBIGUOUS':
-                counts['target_ambiguous'] += 1
-            else:
-                counts['target_unresolved'] += 1
+        # Resolve all relations with roles derived from BDDL declarations.
+        relations = [
+            resolve_relation(pred, obj_name, target_name, bddl_object_names,
+                             sites, bodies, geoms)
+            for pred, obj_name, target_name in g_rels
+        ]
+        counts, alias_ledger = summarize_relation_resolutions(
+            relations, result['task_key'])
 
         result['relations'] = relations
         result['alias_ledger'] = alias_ledger
