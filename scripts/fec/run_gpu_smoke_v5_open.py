@@ -830,7 +830,6 @@ def main() -> int:
 
                 success = check_success(env, bool(done), info)
                 if success:
-                    result[success_source] = env_check
                     result["task_success"] = True
                     result["termination"] = "SUCCESS"
                     break

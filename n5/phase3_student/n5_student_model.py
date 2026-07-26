@@ -11,7 +11,7 @@ Architecture:
        B: k10_feasible          (scalar logit)
        C: safe_release          (scalar logit)
        D: instability           (scalar logit)
-       E: close_intent          (scalar logit)
+       E: gripper_closing_state          (scalar logit)
 
 Hard constraints:
   - All heads output RAW logits (before sigmoid)
@@ -141,10 +141,10 @@ class N5MultiHeadStudent(nn.Module):
       1: k10_feasible          — horizon >= 10, no release/terminal in window, critical corridor
       2: safe_release          — task done or high-confidence release
       3: instability           — low-confidence release, possible vulnerability window
-      4: close_intent          — policy-level close signal (auxiliary, never a gate)
+      4: gripper_closing_state — physical qpos closure measurement (auxiliary, never a gate)
     """
     HEAD_NAMES = ['physical_criticality', 'k10_feasible', 'safe_release',
-                  'instability', 'close_intent']
+                  'instability', 'gripper_closing_state']
     N_HEADS = 5
 
     def __init__(self, input_dim=51, hidden=64, short_rf=32, long_rf=128, dropout=0.1):
@@ -441,12 +441,12 @@ N5_MODEL_SCHEMA = {
         'timestep_mask': 'supported (zeros out padding, gathers last valid step)',
     },
     'heads': {
-        'order': ['physical_criticality', 'k10_feasible', 'safe_release', 'instability', 'close_intent'],
+        'order': ['physical_criticality', 'k10_feasible', 'safe_release', 'instability', 'gripper_closing_state'],
         'physical_criticality': {'output': 'scalar logit', 'validity': 'tri-state (value/valid_mask/reason)'},
         'k10_feasible': {'output': 'scalar logit', 'validity': 'tri-state'},
         'safe_release': {'output': 'scalar logit', 'validity': 'tri-state'},
         'instability': {'output': 'scalar logit', 'validity': 'tri-state'},
-        'close_intent': {'output': 'scalar logit', 'validity': 'binary (always valid)'},
+        'gripper_closing_state': {'output': 'scalar logit', 'validity': 'binary (always valid)'},
     },
     'loss': {
         'type': 'masked_bce_with_logits',

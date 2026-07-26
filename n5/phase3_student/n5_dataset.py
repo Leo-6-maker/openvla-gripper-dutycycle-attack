@@ -43,7 +43,7 @@ TRAIN_G9D_ORDER = [
 _p9d_by_name = {name: i for i, name in enumerate(POLICY_INTENT_ORDER)}
 G9D_FROM_P9D = [_p9d_by_name[name] for name in TRAIN_G9D_ORDER]
 
-N5_HEAD_NAMES = ['physical_criticality', 'k10_feasible', 'safe_release', 'instability', 'close_intent']
+N5_HEAD_NAMES = ['physical_criticality', 'k10_feasible', 'safe_release', 'instability', 'gripper_closing_state']
 
 FROZEN_FEATURE_SCHEMA = {
     'schema': 'N5_51D_FEATURE_SCHEMA_V1',
@@ -167,7 +167,7 @@ def load_episode_labels(label_path: str) -> Dict[str, np.ndarray]:
         'k10_feasible': 'k10_feasible',
         'safe_release': 'safe_release',
         'instability': 'instability',
-        'close_intent': 'gripper_closing_state',
+        'gripper_closing_state': 'gripper_closing_state',
     }
 
     for model_name, label_key in head_map.items():
