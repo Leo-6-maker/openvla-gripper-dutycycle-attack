@@ -5,7 +5,7 @@
   "base_commit": "7550bf0ae5647df6afb062450b64ef4a3ff1bb9a",
   "plan_commit": "9e1906a0a5b7dc34602b1d83840a5b1278ca2bdb",
   "current_gate": "H0.3-R6_PROVENANCE_AND_ROLE_SAFE_RESOLVER",
-  "status": "HOLD_ACTIVE_REMEDIATION",
+  "status": "H0.3-R6_SOURCE_READY_AWAITING_SERVER",
   "codex_verdicts": {
     "H0.3-R5_RESOLVER": "HOLD",
     "H0.3-R5_PROVENANCE": "FAIL_NON_CONSUMABLE",
@@ -52,9 +52,27 @@
     "detail": "This Codex work session has GitHub access but no SSH/cluster connector, host, key, or mounted server checkout. Server execution cannot start until a session is connected."
   },
   "next_actions": [
-    "Implement H0.3-R6 on this Codex branch",
-    "Connect the A800 server session and verify clean worktree/environment",
-    "Run R6 tests and two immutable C1 builds",
-    "Commit artifacts in a later evidence commit and issue an independent transition receipt"
-  ]
+    "Connect the A800 server session",
+    "Fetch this Codex branch and create a detached clean worktree at the final source commit",
+    "Run full server unit/integration suites",
+    "Generate immutable run_A and run_B using distinct empty directories",
+    "Run finalize_h03_r6.py and commit the complete evidence package",
+    "Create a later transition receipt before independently unlocking C3-S3"
+  ],
+  "h03_r6_source": {
+    "resolver_commit": "89d6473f46c0a47fec069c5df0980df28cebcccf",
+    "tests_commit": "2dfb79f883684b419f188298a69fdfe46a355e9a",
+    "finalizer_commit": "a4979ad9d1f6020b3e3d287f8ca10fe426a70661",
+    "local_contract_tests": {
+      "passed": 20,
+      "failed": 0,
+      "errors": 0
+    },
+    "python_compile": "PASS",
+    "limitations": [
+      "No LIBERO/MuJoCo production integration run in this work session",
+      "No server run_A/run_B generated",
+      "No protected data accessed"
+    ]
+  }
 }
