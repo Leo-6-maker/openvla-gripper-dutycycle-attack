@@ -12,8 +12,7 @@ def _physical(**updates):
     row = {
         "physical_known": True, "stable_grasp": True,
         "transport_or_manipulation": False, "placement": False,
-        "release": False, "stability": True, "remaining_steps": 12,
-        "horizon_known": True, "right_censored": False,
+        "release": False, "stability": True, "protocol_steps_remaining": 12,
         "safe_release": False, "slip": False, "regrasp": False,
         "contact_loss": False, "gripper_qpos": 0.1,
         "qpos_close_threshold": 0.2,
@@ -42,6 +41,17 @@ class TestC3T0SemanticContract(unittest.TestCase):
         self.assertEqual(unknown, {"value": UNKNOWN, "mask": False,
                                    "reason": "SAFE_RELEASE_COMPONENT_UNKNOWN"})
 
+    def test_safe_release_truth_table_and_k10_cross_head_invariant(self):
+        for placement in (True, False):
+            for release in (True, False):
+                for stability in (True, False):
+                    result = safe_release(_physical(placement=placement, release=release, stability=stability))
+                    expected = TRUE if placement and release and stability else FALSE
+                    self.assertEqual(result["value"], expected)
+        result = evaluate_heads(_physical(placement=True, release=True, stability=True))
+        self.assertEqual(result["safe_release"]["value"], TRUE)
+        self.assertEqual(result["k10_feasible"]["value"], FALSE)
+
     def test_physical_label_rejects_outcome_and_task_success_leakage(self):
         self.assertEqual(physical_criticality(_physical())["value"], TRUE)
         for forbidden in ("task_success", "terminal", "outcome", "future"):
@@ -61,11 +71,19 @@ class TestC3T0SemanticContract(unittest.TestCase):
         self.assertEqual(apply_right_censor(persisted[1], 10)["value"], TRUE)
 
     def test_k10_right_censor_and_known_horizon(self):
-        self.assertEqual(k10_feasible(_physical(remaining_steps=10,
+        self.assertEqual(k10_feasible(_physical(protocol_steps_remaining=10,
                                                  safe_release=False))["value"], TRUE)
-        self.assertEqual(k10_feasible(_physical(remaining_steps=9,
+        self.assertEqual(k10_feasible(_physical(protocol_steps_remaining=9,
                                                  safe_release=False))["value"], FALSE)
-        self.assertEqual(k10_feasible(_physical(right_censored=True))["value"], UNKNOWN)
+        self.assertEqual(k10_feasible(_physical(protocol_steps_remaining=None,
+                                                 safe_release=False))["value"], UNKNOWN)
+
+    def test_per_head_allowlist_ignores_nonhead_aliases_and_rejects_forbidden_aliases(self):
+        base = _physical()
+        altered = {**base, "placement_label": False, "transport_label": False}
+        self.assertEqual(physical_criticality(base), physical_criticality(altered))
+        with self.assertRaises(ContractError):
+            evaluate_heads({**base, "task_success": False})
 
     def test_quaternion_sign_equivalence_and_nonfinite_rejection(self):
         q = (0.5, 0.5, 0.5, 0.5)

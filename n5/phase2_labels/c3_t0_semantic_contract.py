@@ -20,8 +20,17 @@ HEADS = (
     "gripper_closing_state",
 )
 FORBIDDEN_TOKENS = {
-    "task_success", "task_terminal", "terminal", "reward", "outcome",
-    "attack", "future", "teacher", "episode_success",
+    "task_success", "task_terminal", "terminal", "terminal_state",
+    "reward", "outcome", "attack", "future", "teacher", "episode_success",
+    "episode_summary", "policy_action", "action", "command", "close_intent",
+}
+
+HEAD_INPUT_ALLOWLIST = {
+    "physical_criticality": frozenset({"physical_known", "stable_grasp", "transport_or_manipulation"}),
+    "safe_release": frozenset({"placement", "release", "stability"}),
+    "k10_feasible": frozenset({"protocol_steps_remaining", "safe_release"}),
+    "instability": frozenset({"slip", "regrasp", "contact_loss"}),
+    "gripper_closing_state": frozenset({"gripper_qpos", "qpos_close_threshold"}),
 }
 
 
@@ -38,6 +47,12 @@ def _reject_forbidden(value: Any, path: str = "record") -> None:
     elif isinstance(value, (list, tuple)):
         for index, child in enumerate(value):
             _reject_forbidden(child, f"{path}[{index}]")
+
+
+def _project(value: Mapping[str, Any], head: str) -> dict[str, Any]:
+    _reject_forbidden(value)
+    allowed = HEAD_INPUT_ALLOWLIST[head]
+    return {key: value[key] for key in allowed if key in value}
 
 
 def label(value: str, reason: str) -> dict[str, Any]:
@@ -57,7 +72,7 @@ def _tri(value: Any) -> str | None:
 
 
 def physical_criticality(record: Mapping[str, Any]) -> dict[str, Any]:
-    _reject_forbidden(record)
+    record = _project(record, "physical_criticality")
     known = record.get("physical_known")
     stable = _tri(record.get("stable_grasp"))
     transport = _tri(record.get("transport_or_manipulation"))
@@ -70,7 +85,7 @@ def physical_criticality(record: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def safe_release(record: Mapping[str, Any]) -> dict[str, Any]:
-    _reject_forbidden(record)
+    record = _project(record, "safe_release")
     values = [_tri(record.get(name)) for name in ("placement", "release", "stability")]
     if any(value is None for value in values):
         return label(UNKNOWN, "SAFE_RELEASE_COMPONENT_UNKNOWN")
@@ -81,12 +96,13 @@ def safe_release(record: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def k10_feasible(record: Mapping[str, Any], horizon: int = 10) -> dict[str, Any]:
-    _reject_forbidden(record)
-    if record.get("right_censored") is True or record.get("horizon_known") is not True:
-        return label(UNKNOWN, "RIGHT_CENSORED_OR_HORIZON_UNKNOWN")
-    safe = _tri(record.get("safe_release"))
-    remaining = record.get("remaining_steps")
-    if safe is None or not isinstance(remaining, int) or isinstance(remaining, bool):
+    record = _project(record, "k10_feasible")
+    safe_record = record.get("safe_release")
+    safe = _tri(safe_record.get("value")) if isinstance(safe_record, Mapping) else _tri(safe_record)
+    remaining = record.get("protocol_steps_remaining")
+    if remaining is None:
+        return label(UNKNOWN, "RIGHT_CENSORED_PROTOCOL_STEPS_REMAINING")
+    if safe is None or not isinstance(remaining, int) or isinstance(remaining, bool) or remaining < 0:
         return label(UNKNOWN, "K10_EVIDENCE_UNKNOWN")
     return label(
         TRUE if remaining >= horizon and safe == FALSE else FALSE,
@@ -95,7 +111,7 @@ def k10_feasible(record: Mapping[str, Any], horizon: int = 10) -> dict[str, Any]
 
 
 def instability(record: Mapping[str, Any]) -> dict[str, Any]:
-    _reject_forbidden(record)
+    record = _project(record, "instability")
     values = [_tri(record.get(name)) for name in ("slip", "regrasp", "contact_loss")]
     if any(value is None for value in values):
         return label(UNKNOWN, "INSTABILITY_EVIDENCE_UNKNOWN")
@@ -106,7 +122,7 @@ def instability(record: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def gripper_closing_state(record: Mapping[str, Any]) -> dict[str, Any]:
-    _reject_forbidden(record)
+    record = _project(record, "gripper_closing_state")
     qpos = record.get("gripper_qpos")
     threshold = record.get("qpos_close_threshold")
     if not all(isinstance(value, (int, float)) and not isinstance(value, bool)
@@ -139,7 +155,7 @@ def apply_persistence(labels: Sequence[Mapping[str, Any]], min_steps: int = 2) -
 def apply_right_censor(item: Mapping[str, Any], remaining_steps: int | None,
                        required_steps: int = 10) -> dict[str, Any]:
     if remaining_steps is None or remaining_steps < required_steps:
-        return label(UNKNOWN, "RIGHT_CENSORED")
+        return label(UNKNOWN, "RIGHT_CENSORED_PROTOCOL_STEPS")
     return label(item.get("value", UNKNOWN), item.get("reason", "UNCENSORED"))
 
 
@@ -157,10 +173,16 @@ def quaternion_equivalent(q1: Iterable[float], q2: Iterable[float], tol: float =
 
 def evaluate_heads(record: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
     _reject_forbidden(record)
-    return {
+    safe = safe_release(record)
+    result = {
         "physical_criticality": physical_criticality(record),
-        "k10_feasible": k10_feasible(record),
-        "safe_release": safe_release(record),
+        "k10_feasible": k10_feasible({"protocol_steps_remaining": record.get("protocol_steps_remaining"), "safe_release": safe}),
+        "safe_release": safe,
         "instability": instability(record),
         "gripper_closing_state": gripper_closing_state(record),
     }
+    if result["safe_release"]["value"] == TRUE and result["k10_feasible"]["value"] == TRUE:
+        raise ContractError("cross-head invariant violated: safe_release TRUE with k10 TRUE")
+    if result["k10_feasible"]["value"] == TRUE and result["safe_release"]["value"] != FALSE:
+        raise ContractError("cross-head invariant violated: K10 requires safe_release FALSE")
+    return result

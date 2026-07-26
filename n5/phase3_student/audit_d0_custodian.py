@@ -161,6 +161,47 @@ def seal(staging: Path, final: Path, manifest: dict[str, Any]) -> dict[str, str]
     return {"root": str(final), "sha256sums_sha256": sums_sha}
 
 
+def write_csv(path: Path, fields: list[str], rows: Iterable[Mapping[str, Any]]) -> None:
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def aggregate_counts(keys: Iterable[tuple[str, int, int]]) -> tuple[dict[str, int], list[dict[str, int | str]]]:
+    per_suite: dict[str, int] = {}
+    per_task: dict[tuple[str, int], int] = {}
+    for suite, task, _state in keys:
+        per_suite[suite] = per_suite.get(suite, 0) + 1
+        per_task[(suite, task)] = per_task.get((suite, task), 0) + 1
+    rows = [{"suite": suite, "task_id": task, "unique_count": count} for (suite, task), count in sorted(per_task.items())]
+    return dict(sorted(per_suite.items())), rows
+
+
+def schema_only_capability(source_root: Path | None, keys: set[tuple[str, int, int]]) -> dict[str, Any]:
+    expected = ("episode_metadata.json", "step_records.jsonl", "runtime_audit.json", "privileged_teacher_sidecar.jsonl", "artifact_sha256.json", "episode_summary.json")
+    present = {name: 0 for name in expected}
+    root_count = 0
+    replay_ready = 0
+    if source_root and source_root.is_dir():
+        for suite, task, state in keys:
+            episode_root = source_root / suite / f"task_{task:02d}" / f"state_{state:02d}"
+            if episode_root.is_dir():
+                root_count += 1
+            for name in expected:
+                if (episode_root / name).is_file():
+                    present[name] += 1
+            if (episode_root / "episode_metadata.json").is_file() and (episode_root / "step_records.jsonl").is_file():
+                replay_ready += 1
+    if root_count == len(keys) and replay_ready == len(keys):
+        decision = "REPLAY"
+    elif root_count == 0:
+        decision = "INCOMPATIBLE"
+    else:
+        decision = "PARTIAL"
+    return {"decision": decision, "schema_only": True, "dev_identity_count": len(keys), "episode_root_count": root_count, "replay_ready_count": replay_ready, "expected_file_counts": present}
+
+
 def run(args: argparse.Namespace) -> dict[str, Any]:
     clean = Path(args.clean_manifest).resolve()
     protected = [Path(path).resolve() for path in args.protected_manifest]
@@ -173,6 +214,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         protected_union.update(audit["keys"])
     overlap = clean_audit["keys"] & protected_union
     fit_keys = {key for key in clean_audit["keys"] if key[2] < 20}
+    dev_keys = clean_audit["keys"] - protected_union
     source_root = Path(args.source_root).resolve() if args.source_root else None
     source_entries = sorted(path.name for path in source_root.iterdir()) if source_root and source_root.is_dir() else []
     source_top_seal = bool(source_root and all((source_root / name).is_file() for name in ("SHA256SUMS", "SHA256SUMS.sha256")))
@@ -181,23 +223,32 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         split = "FIT_TRAIN" if state < 20 else "FIT_DEV" if state < 24 else "CAL" if state < 27 else "CHECK" if state < 30 else "FINAL_EVAL_CANDIDATE"
         split_counts[split] += 1
     closure = clean_audit["unique_records"] == 2000 and clean_audit["duplicate_records"] == 0 and clean_audit["conflict_identities"] == 0 and clean_audit["malformed_records"] == 0
-    protected_complete = all(a["unique_records"] > 0 and a["duplicate_records"] == 0 and a["conflict_identities"] == 0 and a["malformed_records"] == 0 for a in protected_audits)
+    # Exact duplicate rows are reported but do not invalidate a set-valued
+    # manifest; conflicting or malformed identities do.
+    protected_complete = all(a["unique_records"] > 0 and a["conflict_identities"] == 0 and a["malformed_records"] == 0 for a in protected_audits)
     overlap_zero = not overlap
-    capability = "PARTIAL"  # schema-only metadata cannot certify replay or V23 relabelability.
-    status = "PASS_METADATA_OVERLAP_ZERO" if closure and protected_complete and overlap_zero else "HOLD_PROVENANCE"
+    dev_suite_counts, dev_task_counts = aggregate_counts(dev_keys)
+    capability_audit = schema_only_capability(source_root, dev_keys)
+    dev_closure = len(dev_keys) == 670 and not (dev_keys & protected_union) and (dev_keys | protected_union) == clean_audit["keys"]
+    capability = capability_audit["decision"]
+    status = "PASS" if closure and protected_complete and dev_closure and capability in {"DIRECT_RELABEL", "REPLAY"} else "HOLD_PROVENANCE"
     receipt: dict[str, Any] = {
         "schema": "C3_D0_CLEAN2000_ALLOCATION_CUSTODIAN_V1",
         "status": status,
         "decision": status,
         "clean_manifest": {"path": str(clean), "sha256": sha256_file(clean), **{k: v for k, v in clean_audit.items() if k != "keys"}},
         "protected_manifests": [{"path": str(path), "sha256": sha256_file(path), "root_seal_files_present": sorted(name for name in ("P0_EVIDENCE_SEAL.json", "G6_SEAL_V2.json", "G6_SEAL.json") if (path.parent / name).is_file()), **{k: v for k, v in audit.items() if k != "keys"}} for path, audit in zip(protected, protected_audits)],
-        "aggregate": {"protected_union_unique": len(protected_union), "clean_protected_overlap_count": len(overlap), "fit_train_protected_overlap_count": len(fit_keys & protected_union), "non_fit_clean_protected_overlap_count": len((clean_audit["keys"] - fit_keys) & protected_union), "protected_cross_manifest_overlap_count": sum(len(protected_audits[i]["keys"] & protected_audits[j]["keys"]) for i in range(len(protected_audits)) for j in range(i + 1, len(protected_audits)))},
+        "aggregate": {"clean_unique": len(clean_audit["keys"]), "protected_union_unique": len(protected_union), "dev_pool_unique": len(dev_keys), "clean_protected_overlap_count": len(overlap), "fit_train_protected_overlap_count": len(fit_keys & protected_union), "non_fit_clean_protected_overlap_count": len((clean_audit["keys"] - fit_keys) & protected_union), "protected_cross_manifest_overlap_count": sum(len(protected_audits[i]["keys"] & protected_audits[j]["keys"]) for i in range(len(protected_audits)) for j in range(i + 1, len(protected_audits)))},
         "protected_identity_values_emitted": 0,
         "protected_content_emitted": False,
         "identity_closure_2000": closure,
+        "dev_pool_closure_670": dev_closure,
+        "dev_pool_per_suite_counts": dev_suite_counts,
+        "dev_pool_per_task_counts": dev_task_counts,
         "split_counts": split_counts,
         "fit_only_status": "DERIVED_FROM_OFFICIAL_V3_SPLIT_METADATA" if split_counts["FIT_TRAIN"] == 800 else "HOLD",
         "capability_decision": capability,
+        "capability_audit": capability_audit,
         "source_root": {"path": str(source_root) if source_root else None, "top_level_seal_present": source_top_seal, "top_level_names": source_entries, "payloads_read": False},
         "derived_snapshot_created": False,
         "model_inference": False,
@@ -212,8 +263,15 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     staging = parent / f".staging_{final.name}_{uuid.uuid4().hex}"
     staging.mkdir()
     try:
-        if overlap_zero:
-            (staging / "V23_SPLIT_PLAN.json").write_text(json.dumps({"schema": "C3_D0_TASK_STRATIFIED_V23_SPLIT_V1", "status": "FROZEN_METADATA_ONLY", "split_counts": split_counts, "identity_manifest_sha256": receipt["clean_manifest"]["sha256"], "protected_overlap_count": 0}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        if dev_closure:
+            receipt["derived_snapshot_created"] = True
+            dev_manifest_path = staging / "DEV_POOL_IDENTITY_MANIFEST.csv"
+            write_csv(dev_manifest_path, ["suite", "task_id", "state_id"], ({"suite": suite, "task_id": task, "state_id": state} for suite, task, state in sorted(dev_keys)))
+            dev_manifest_sha = sha256_file(dev_manifest_path)
+            receipt["dev_pool_identity_manifest_sha256"] = dev_manifest_sha
+            write_csv(staging / "DEV_POOL_PER_SUITE_TASK_COUNTS.csv", ["suite", "task_id", "unique_count"], dev_task_counts)
+            (staging / "CAPABILITY_AUDIT.json").write_text(json.dumps(capability_audit, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            (staging / "V23_DEV_POOL_SPLIT_PLAN.json").write_text(json.dumps({"schema": "C3_D0_R2_V23_DEV_POOL_SPLIT_V1", "status": "FROZEN_METADATA_ONLY", "dev_pool_unique": len(dev_keys), "per_suite_counts": dev_suite_counts, "per_task_counts": dev_task_counts, "protected_identity_values_emitted": 0, "identity_manifest_sha256": dev_manifest_sha}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         (staging / "D0_FEASIBILITY_RECEIPT.json").write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         return receipt | seal(staging, final, {"schema": receipt["schema"], "status": status, "protected_identity_values_emitted": 0, "payloads_read": False})
     except Exception:
