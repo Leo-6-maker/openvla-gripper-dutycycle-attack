@@ -41,4 +41,3 @@ that consumes the C3-T0-R1 contract is implemented and independently checked.
 
 No protected or real episode content was consumed for this gate. No model
 inference, Student training, rollout, CAL, CHECK, or attack was run.
-
