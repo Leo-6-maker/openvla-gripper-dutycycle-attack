@@ -267,7 +267,7 @@ def train_model(model, train_loader, val_loader, pos_weights, name, out_dir):
             break
 
     # Load best checkpoint
-    best_ckpt = torch.load(os.path.join(out_dir, f'{name}_best.pt'), map_location=DEVICE)
+    best_ckpt = torch.load(os.path.join(out_dir, f'{name}_best.pt'), map_location=DEVICE, weights_only=False)
     model.load_state_dict(best_ckpt['model'])
 
     return {

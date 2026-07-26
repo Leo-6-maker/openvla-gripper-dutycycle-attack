@@ -379,7 +379,7 @@ class PriorBaseline(nn.Module):
         super().__init__()
         self.priors = priors or {}
 
-    def forward(self, x):
+    def forward(self, x, timestep_mask=None):
         B, T = x.shape[:2]
         result = {}
         for name, p in self.priors.items():

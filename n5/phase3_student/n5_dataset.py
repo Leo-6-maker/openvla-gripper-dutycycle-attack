@@ -312,7 +312,7 @@ class N5Normalizer:
     @classmethod
     def load(cls, path: str):
         import torch
-        state = torch.load(path, map_location='cpu', weights_only=True)
+        state = torch.load(path, map_location='cpu', weights_only=False)
         norm = cls()
         norm.n25d_m = state['n25d_m']; norm.n25d_s = state['n25d_s']
         norm.np9d_m = state['np9d_m']; norm.np9d_s = state['np9d_s']
