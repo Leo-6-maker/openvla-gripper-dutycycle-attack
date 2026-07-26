@@ -9,8 +9,8 @@ The sealed C1-V2 task registry and coordinate-transform contract are closed. The
 ## Source and execution
 
 - Branch: `codex/detector-completion-20260726`
-- Code commit: `210ff02b916a4dcd46899683c4120225f46735ae`
-- Code tree: `9e9a2c30f9917e758bffb420589d38feaa4df7aa`
+- Code commit: `3ce6dac486f1c9c91b5246991a97bd67b6e55c61`
+- Code tree: `f038d4dd8c800455abffd43c18eb6113177f8566`
 - Official environment: `/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800`
 - C1 source commit: `beb0721d36bd27412cde7d60623b8cb2f671a4bf`
 - C1 source tree: `bb7ef11fd8329ae2e8bb71a0bb4c6c4caaf2f7c3`
@@ -21,13 +21,13 @@ The sealed C1-V2 task registry and coordinate-transform contract are closed. The
 
 Root:
 
-`/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/c3_s3/c3_s3_geometry_observability_210ff02b_20260726_2115`
+`/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/c3_s3/c3_s3_geometry_observability_3ce6dac4_20260726_2145`
 
-- `SHA256SUMS` digest: `675c48b026cd1e5cf4cceacee00f9edfebdcad8d803529ab10b6dad5176f4444`
-- `SHA256SUMS.sha256` file SHA: `ee16753b70baa3929febea8a64779b97a2ccf93fff8469c801e35e2db7882cfb`
-- Summary SHA: `a957e3985755c3cb67721b53e5d4887f15a80616384b44c53210254c1c7561a1`
-- Canonical rebuild A: `329a37ceed3a0a485c725bef37c2fee1287aacdb74da265489c484229a9f91bc`
-- Canonical rebuild B: `329a37ceed3a0a485c725bef37c2fee1287aacdb74da265489c484229a9f91bc`
+- `SHA256SUMS` digest: `391772eda1ebc693b391628ceaae6cb0f8b29017cf9eded7a072f7a58b0e4c2d`
+- `SHA256SUMS.sha256` file SHA: `adc43e398362c455c0f2349bc737ad6b068be340983e509a378cf13ac83f306b`
+- Summary SHA: `3eeae73ea4eddcf6c99e169a89a5173e138a6db7e80944e003a60f0ed7297946`
+- Canonical rebuild A: `eecd565eff524c2df51b7a97c900bd6967b35e3559430bbf2d1bc88957dbac32`
+- Canonical rebuild B: `eecd565eff524c2df51b7a97c900bd6967b35e3559430bbf2d1bc88957dbac32`
 - Root seal: `PASS` (`sha256sum -c SHA256SUMS` and sidecar check)
 
 ## Results
@@ -53,4 +53,3 @@ The 40 model initializations were metadata-only (`action_steps=0`); no simulator
 ## Blocking condition
 
 The C1-V2 registry stores entity names, IDs, parent relationships and resolution decisions, but not per-episode canonical states, world-frame geometry, step bindings, or reconstruction error measurements. Therefore it cannot prove the C3-S3 numerical thresholds. C3-G and all later gates remain blocked. No data from CAL, G10, or T2R-D was read.
-
