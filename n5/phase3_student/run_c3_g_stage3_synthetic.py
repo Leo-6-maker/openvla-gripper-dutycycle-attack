@@ -190,6 +190,7 @@ def build_predicate_cases(manifest: Mapping[str, Any], reference_poses: Mapping[
             }
             if kind == "IDENTITY_MISMATCH":
                 case["expected_identity"]["step"] = 1
+            case["case_input_sha256"] = _hash_without(case, "case_input_sha256")
             cases.append(case)
     return cases
 
