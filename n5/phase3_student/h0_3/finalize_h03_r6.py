@@ -6,8 +6,10 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 SUMMARY = "ENTITY_REGISTRY_V2_SUMMARY.json"
@@ -203,16 +205,19 @@ def main():
         errors.append("run_A/run_B canonical alias-ledger digests differ")
 
     source_inventory = []
+    source_snapshots = []
     for relative in SOURCE_FILES:
         path = repo_root / relative
         if not path.is_file():
             errors.append(f"missing source file {relative}")
         else:
             source_inventory.append({
-                "path": relative,
+                "path": f"source/{relative}",
+                "repo_relative_path": relative,
                 "size_bytes": path.stat().st_size,
                 "sha256": sha256_file(path),
             })
+            source_snapshots.append((path, Path("source") / relative))
 
     if errors:
         for error in errors:
@@ -256,23 +261,44 @@ def main():
         },
     }
 
-    out.mkdir(parents=True, exist_ok=False)
-    manifest_path = out / "ARTIFACT_MANIFEST.json"
-    with open(manifest_path, "w", encoding="utf-8") as handle:
-        json.dump(manifest, handle, indent=2, ensure_ascii=False)
-        handle.write("\n")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    if out.exists():
+        raise FileExistsError(f"output directory already exists: {out}")
+    staging = Path(tempfile.mkdtemp(
+        prefix=f".{out.name}.staging-", dir=out.parent))
+    try:
+        shutil.copytree(run_a, staging / "run_A")
+        shutil.copytree(run_b, staging / "run_B")
+        for source_path, relative in source_snapshots:
+            destination = staging / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source_path, destination)
 
-    checksum_rows = list(files)
-    checksum_rows.extend(source_inventory)
-    checksum_rows.append({
-        "path": "ARTIFACT_MANIFEST.json",
-        "size_bytes": manifest_path.stat().st_size,
-        "sha256": sha256_file(manifest_path),
-    })
-    checksums_path = out / "SHA256SUMS"
-    with open(checksums_path, "w", encoding="utf-8") as handle:
-        for row in sorted(checksum_rows, key=lambda value: value["path"]):
-            handle.write(f"{row['sha256']}  {row['path']}\n")
+        manifest_path = staging / "ARTIFACT_MANIFEST.json"
+        with open(manifest_path, "w", encoding="utf-8") as handle:
+            json.dump(manifest, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+
+        checksum_rows = list(files)
+        checksum_rows.extend(source_inventory)
+        checksum_rows.append({
+            "path": "ARTIFACT_MANIFEST.json",
+            "size_bytes": manifest_path.stat().st_size,
+            "sha256": sha256_file(manifest_path),
+        })
+        checksums_path = staging / "SHA256SUMS"
+        with open(checksums_path, "w", encoding="utf-8") as handle:
+            for row in sorted(checksum_rows, key=lambda value: value["path"]):
+                handle.write(f"{row['sha256']}  {row['path']}\n")
+
+        sidecar_path = staging / "SHA256SUMS.sha256"
+        with open(sidecar_path, "w", encoding="utf-8") as handle:
+            handle.write(f"{sha256_file(checksums_path)}  SHA256SUMS\n")
+
+        os.replace(staging, out)
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
 
     print(json.dumps({
         "status": "PASS_CANDIDATE_AWAITING_TRANSITION_REVIEW",
@@ -280,8 +306,9 @@ def main():
         "source_tree": tree,
         "run_A_canonical_payload_sha256": payload_a_sha,
         "run_B_canonical_payload_sha256": payload_b_sha,
-        "artifact_manifest_sha256": sha256_file(manifest_path),
-        "sha256sums_sha256": sha256_file(checksums_path),
+        "artifact_manifest_sha256": sha256_file(out / "ARTIFACT_MANIFEST.json"),
+        "sha256sums_sha256": sha256_file(out / "SHA256SUMS"),
+        "sha256sums_sidecar_sha256": sha256_file(out / "SHA256SUMS.sha256"),
     }, indent=2))
     return 0
 
