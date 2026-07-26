@@ -57,7 +57,9 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         "r6_binding": r6_binding,
         "allowed_episode_geometry_root_count": len(allowlist.get("allowed_episode_geometry_roots", [])),
         "observed_candidates": candidates,
-        "protected_read": 0,
+        "protected_reads": [],
+        "validated_roots": [r6_binding["root"]],
+        "purpose": allowlist["purpose"],
         "model_inference": False,
         "rollout_steps": 0,
         "attack_steps": 0,
@@ -77,7 +79,9 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
             "source_commit": args.source_commit,
             "code_commit": args.code_commit,
             "allowlist_sha256": inventory["allowlist_sha256"],
-            "protected_read": 0,
+            "protected_reads": inventory["protected_reads"],
+            "validated_roots": inventory["validated_roots"],
+            "purpose": inventory["purpose"],
         })
         print(json.dumps({**result, "status": status}, sort_keys=True))
         return inventory

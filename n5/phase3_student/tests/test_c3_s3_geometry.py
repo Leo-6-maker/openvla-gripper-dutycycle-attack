@@ -44,11 +44,49 @@ def test_protected_path_rejection():
 def _allowlist(tmp_path, *, episode_roots=None, denied_roots=None):
     return {
         "schema": "C3_S3_ALLOWED_INPUTS_V1",
+        "scope": "FIT_TRAIN_ONLY",
+        "purpose": "FIT_TRAIN_METADATA_ONLY",
         "protected_semantics_read": False,
         "allowed_roots": [{"name": "root", "path": str(tmp_path), "manifest_path": "manifest.json", "manifest_sha256": ""}],
         "allowed_episode_geometry_roots": episode_roots or [],
         "denied_roots": denied_roots or [],
+        "denied_purposes": ["FIT_DEV", "CAL", "CHECK", "G10", "T2R-D"],
     }
+
+
+def _sealed_root(tmp_path):
+    root = tmp_path / "sealed"
+    root.mkdir()
+    (root / "payload.json").write_text("{}\n", encoding="utf-8")
+    manifest = root / "manifest.json"
+    manifest.write_text(json.dumps({"schema": "TEST"}) + "\n", encoding="utf-8")
+    rows = []
+    for path in sorted(root.rglob("*")):
+        if path.is_file():
+            rows.append(f"{contract.sha256_file(path)}  {path.relative_to(root).as_posix()}")
+    sums = root / "SHA256SUMS"
+    sums.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    (root / "SHA256SUMS.sha256").write_text(f"{contract.sha256_file(sums)}  SHA256SUMS\n", encoding="utf-8")
+    return root, {
+        "manifest_path": "manifest.json",
+        "manifest_sha256": contract.sha256_file(manifest),
+        "root_sha256s_sha256": contract.sha256_file(sums),
+    }
+
+
+def _complete_metrics(**overrides):
+    metrics = {
+        "static_position_max_error_m": 0.0,
+        "static_rotation_max_error_rad": 0.0,
+        "static_position_denominator": 1,
+        "static_rotation_denominator": 1,
+        "dynamic_position_p99_m": 0.0,
+        "dynamic_rotation_p99_rad": 0.0,
+        "dynamic_position_p99_denominator": 1,
+        "dynamic_rotation_p99_denominator": 1,
+    }
+    metrics.update(overrides)
+    return metrics
 
 
 def test_explicit_allowlist_rejects_denied_and_unlisted(tmp_path):
@@ -111,6 +149,90 @@ def test_exact_step_join_rejects_task_identity_mismatch(tmp_path):
         assert "identity mismatch" in str(exc)
     else:
         raise AssertionError("task identity mismatch was accepted")
+
+
+def test_allowlist_purpose_conflict_is_rejected(tmp_path):
+    allow = _allowlist(tmp_path)
+    allow["scope"] = "FIT_DEVELOPMENT_ONLY"
+    path = tmp_path / "allow.json"
+    path.write_text(json.dumps(allow), encoding="utf-8")
+    try:
+        contract.load_allowlist(path)
+    except ValueError as exc:
+        assert "purpose conflict" in str(exc)
+    else:
+        raise AssertionError("contradictory FIT purpose was accepted")
+
+
+def test_top_level_seal_mismatch_is_rejected(tmp_path):
+    root, entry = _sealed_root(tmp_path)
+    (root / "payload.json").write_text("tampered\n", encoding="utf-8")
+    try:
+        contract.verify_manifest_binding(root, entry)
+    except ValueError as exc:
+        assert "sealed file mismatch" in str(exc)
+    else:
+        raise AssertionError("tampered top-level seal was accepted")
+
+
+def test_independent_chain_rejects_same_path(tmp_path):
+    descriptor = {
+        "path": str(tmp_path / "same.jsonl"),
+        "computation_chain_id": "chain-a",
+        "method": "OBSERVABLE_LOCAL_POSE_RECONSTRUCTION",
+        "code_sha256": "code-a",
+    }
+    try:
+        contract.verify_independent_computation_chain(descriptor, dict(descriptor))
+    except ValueError as exc:
+        assert "paths are identical" in str(exc)
+    else:
+        raise AssertionError("same-path reference was accepted")
+
+
+def test_independent_chain_rejects_different_paths_same_chain(tmp_path):
+    source = {
+        "path": str(tmp_path / "source.jsonl"),
+        "computation_chain_id": "same-chain",
+        "method": "OBSERVABLE_LOCAL_POSE_RECONSTRUCTION",
+        "code_sha256": "same-code",
+    }
+    reference = {
+        "path": str(tmp_path / "reference.jsonl"),
+        "computation_chain_id": "same-chain",
+        "method": "DIRECT_MUJOCO_WORLD_POSE",
+        "code_sha256": "other-code",
+    }
+    try:
+        contract.verify_independent_computation_chain(source, reference)
+    except ValueError as exc:
+        assert "not independent" in str(exc)
+    else:
+        raise AssertionError("same-chain reference was accepted")
+
+
+def test_relation_coverage_missing_row_holds():
+    task_rows = [
+        {"task_key": "libero_10/task_00", "relation_index": 0, "classification": "STATIC_FIXTURE"},
+        {"task_key": "libero_10/task_00", "relation_index": 1, "classification": "DYNAMIC_RECONSTRUCTABLE"},
+    ]
+    coverage = c3.relation_coverage(task_rows, [{"task_key": "libero_10/task_00", "relation_index": 0, "episode_id": "e", "step_count": 1}])
+    assert coverage["coverage_complete"] is False
+    assert coverage["missing_supported_relations"] == ["libero_10/task_00#relation_1"]
+
+
+def test_empty_static_dynamic_denominator_holds():
+    coverage = {"coverage_complete": True}
+    result = c3.evaluate_numerical_gate(_complete_metrics(static_position_denominator=0), coverage, replay_evidence=True, unknown_articulated_count=0)
+    assert result["status"] == "HOLD"
+    assert "static_position_denominator" in str(result["hold_reasons"])
+
+
+def test_threshold_failure_is_final_fail():
+    coverage = {"coverage_complete": True}
+    result = c3.evaluate_numerical_gate(_complete_metrics(dynamic_rotation_p99_rad=0.01), coverage, replay_evidence=True, unknown_articulated_count=0)
+    assert result["status"] == "FAIL"
+    assert result["threshold_violations"][0]["metric"] == "dynamic_rotation_p99_rad"
 
 
 def test_static_dynamic_transform_and_quaternion_sign_equivalence():

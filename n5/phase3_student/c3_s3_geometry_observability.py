@@ -27,6 +27,7 @@ from c3_s3_input_contract import (
     p99,
     require_allowed_path,
     sha256_file as contract_sha256_file,
+    verify_independent_computation_chain,
     verify_manifest_binding,
 )
 
@@ -34,6 +35,15 @@ from c3_s3_input_contract import (
 FOUR_SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
 EXPECTED_TASKS = tuple(f"{suite}/task_{idx:02d}" for suite in FOUR_SUITES for idx in range(10))
 PROTECTED_TOKENS = ("cal", "check", "g10", "t2r-d", "t2rd")
+
+# Frozen in CODEX_DETECTOR_COMPLETION_PLAN_V1.md; these values are part of the
+# gate, not merely diagnostic display values.
+NUMERICAL_THRESHOLDS = {
+    "static_position_max_error_m": 1e-6,
+    "static_rotation_max_error_rad": 1e-6,
+    "dynamic_position_p99_m": 1e-4,
+    "dynamic_rotation_p99_rad": 1e-3,
+}
 
 
 def canonical_json(value: Any) -> bytes:
@@ -50,6 +60,20 @@ def sha256_file(path: Path) -> str:
         for chunk in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def validate_frozen_numerical_thresholds(path: Path | None = None) -> Dict[str, Any]:
+    config_path = path or (Path(__file__).resolve().parents[2] / "configs" / "C3_S3_NUMERICAL_THRESHOLDS_V1.json")
+    data = json.loads(config_path.read_text(encoding="utf-8"))
+    if data.get("schema") != "C3_S3_NUMERICAL_THRESHOLDS_V1" or data.get("status") != "FROZEN":
+        raise ValueError("C3-S3 numerical threshold contract is not frozen")
+    source = Path(__file__).resolve().parents[2] / str(data.get("source_document"))
+    if sha256_file(source) != data.get("source_document_sha256"):
+        raise ValueError("C3-S3 numerical threshold source SHA mismatch")
+    for key, expected in NUMERICAL_THRESHOLDS.items():
+        if float(data.get(key, -1.0)) != expected or expected <= 0:
+            raise ValueError(f"C3-S3 numerical threshold mismatch: {key}")
+    return {"path": str(config_path.resolve()), "sha256": sha256_file(config_path), "values": dict(NUMERICAL_THRESHOLDS)}
 
 
 def safe_relative(path_value: str) -> Path:
@@ -368,12 +392,14 @@ def load_episode_manifest(path: Path | None) -> List[Dict[str, Any]]:
 def audit_episode_manifest(path: Path, allowlist: Mapping[str, Any]) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Load and exactly replay an explicitly allowlisted geometry manifest."""
     manifest_path, root_entry = require_allowed_path(path, allowlist, episode=True)
+    root_seal = verify_manifest_binding(manifest_path.parent, root_entry)
     expected_manifest_sha = root_entry.get("manifest_sha256")
     if expected_manifest_sha and contract_sha256_file(manifest_path) != expected_manifest_sha:
         raise ValueError("episode manifest SHA mismatch")
     entries = load_episode_manifest(manifest_path)
     seen: set[str] = set()
     audited: List[Dict[str, Any]] = []
+    validated_roots = [root_seal["root"]]
     for entry in entries:
         episode_id = str(entry.get("episode_id", ""))
         if not episode_id or episode_id in seen:
@@ -386,6 +412,8 @@ def audit_episode_manifest(path: Path, allowlist: Mapping[str, Any]) -> Tuple[Li
         for required in ("suite", "task_idx", "state_id", "init_seed"):
             if required not in entry:
                 raise ValueError(f"episode identity field missing: {required}")
+        if type(entry.get("relation_index")) is not int or entry["relation_index"] < 0:
+            raise ValueError(f"episode relation_index missing or invalid: {episode_id}")
         suite, task_name = str(entry["task_key"]).split("/", 1)
         if entry["suite"] != suite or entry["task_idx"] != int(task_name.removeprefix("task_")):
             raise ValueError(f"episode task identity mismatch: {episode_id}")
@@ -402,10 +430,9 @@ def audit_episode_manifest(path: Path, allowlist: Mapping[str, Any]) -> Tuple[Li
         reference_value = reference_desc.get("path")
         if not isinstance(source_value, str) or not Path(source_value).is_absolute() or not isinstance(reference_value, str) or not Path(reference_value).is_absolute():
             raise ValueError(f"source/reference paths must be absolute for {episode_id}")
+        chain = verify_independent_computation_chain(source_desc, reference_desc)
         source_path, _ = require_allowed_path(Path(source_value), allowlist, episode=True)
         reference_path, _ = require_allowed_path(Path(reference_value), allowlist, episode=True)
-        if source_path == reference_path:
-            raise ValueError(f"reference chain is not independent for {episode_id}")
         for descriptor, resolved in ((source_desc, source_path), (reference_desc, reference_path)):
             declared = descriptor.get("sha256")
             if not isinstance(declared, str) or contract_sha256_file(resolved) != declared:
@@ -413,13 +440,20 @@ def audit_episode_manifest(path: Path, allowlist: Mapping[str, Any]) -> Tuple[Li
         identity = {key: entry[key] for key in ("task_key", "suite", "task_idx", "state_id", "init_seed")}
         source_rows = load_jsonl_exact(source_path, episode_id=episode_id, step_count=step_count, role="source", identity=identity)
         reference_rows = load_jsonl_exact(reference_path, episode_id=episode_id, step_count=step_count, role="reference", identity=identity)
-        audited.append(audit_episode_geometry(entry, source_rows, reference_rows))
+        result = audit_episode_geometry(entry, source_rows, reference_rows)
+        result["source_reference_chain"] = chain
+        audited.append(result)
+        validated_roots.extend([str(source_path.parent), str(reference_path.parent)])
     return audited, {
         "status": "PASS" if audited else "HOLD_INPUTS_MISSING",
         "manifest_path": str(manifest_path),
         "manifest_sha256": contract_sha256_file(manifest_path),
+        "root_sha256s_sha256": root_seal["sha256sums_sha256"],
         "episode_count": len(audited),
-        "source_reference_independence": "INDEPENDENT_WORLD_REFERENCE",
+        "source_reference_independence": "PASS" if audited else None,
+        "validated_roots": sorted(set(validated_roots)),
+        "protected_reads": [],
+        "purpose": allowlist["purpose"],
     }
 
 
@@ -438,6 +472,8 @@ def aggregate_replay_metrics(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any
     return {
         "static_position_max_error_m": max(static_positions, default=None),
         "static_rotation_max_error_rad": max(static_rotations, default=None),
+        "static_position_denominator": len(static_positions),
+        "static_rotation_denominator": len(static_rotations),
         "dynamic_position_p99_m": dynamic_position_p99["value"],
         "dynamic_rotation_p99_rad": dynamic_rotation_p99["value"],
         "dynamic_position_p99_denominator": dynamic_position_p99["count"],
@@ -445,6 +481,86 @@ def aggregate_replay_metrics(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any
         "episode_count": len(rows),
         "unknown_articulated_count": sum(int(r.get("unknown_articulated_count", 0)) for r in rows),
     }
+
+
+def relation_coverage(task_rows: Sequence[Mapping[str, Any]], episode_rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+    expected = {
+        (str(row["task_key"]), int(row["relation_index"]))
+        for row in task_rows
+        if row.get("classification") != "NON_PLACEMENT_EXCLUDED"
+    }
+    by_relation: Dict[Tuple[str, int], List[Mapping[str, Any]]] = {}
+    for row in episode_rows:
+        key = (str(row.get("task_key")), row.get("relation_index"))
+        if not isinstance(key[1], int):
+            continue
+        by_relation.setdefault(key, []).append(row)
+    observed = set(by_relation)
+    missing = sorted(expected - observed)
+    extra = sorted(observed - expected)
+    denominator_rows = []
+    relation_denominators = []
+    for key in sorted(by_relation):
+        rows = by_relation[key]
+        relation_denominators.append({
+            "task_key": key[0],
+            "relation_index": key[1],
+            "episode_count": len(rows),
+            "step_denominator": sum(int(row.get("step_count", 0)) for row in rows),
+            "compared_pose_denominator": sum(int(row.get("compared_pose_count", 0)) for row in rows),
+            "static_position_denominator": sum(int(row.get("static_position_count", 0)) for row in rows),
+            "static_rotation_denominator": sum(int(row.get("static_rotation_count", 0)) for row in rows),
+            "dynamic_position_denominator": sum(int(row.get("dynamic_position_count", 0)) for row in rows),
+            "dynamic_rotation_denominator": sum(int(row.get("dynamic_rotation_count", 0)) for row in rows),
+        })
+        for row in rows:
+            denominator_rows.append({
+                "task_key": key[0],
+                "relation_index": key[1],
+                "episode_id": row.get("episode_id"),
+                "step_denominator": int(row.get("step_count", 0)),
+                "compared_pose_denominator": int(row.get("compared_pose_count", 0)),
+                "static_position_denominator": int(row.get("static_position_count", 0)),
+                "static_rotation_denominator": int(row.get("static_rotation_count", 0)),
+                "dynamic_position_denominator": int(row.get("dynamic_position_count", 0)),
+                "dynamic_rotation_denominator": int(row.get("dynamic_rotation_count", 0)),
+            })
+    return {
+        "expected_supported_relation_count": len(expected),
+        "covered_supported_relation_count": len(expected & observed),
+        "missing_supported_relations": [f"{task}#relation_{index}" for task, index in missing],
+        "extra_relation_rows": [f"{task}#relation_{index}" for task, index in extra],
+        "coverage_complete": not missing and not extra and len(expected) > 0,
+        "relation_denominators": relation_denominators,
+        "denominator_rows": denominator_rows,
+    }
+
+
+def evaluate_numerical_gate(replay_metrics: Mapping[str, Any], coverage: Mapping[str, Any], *, replay_evidence: bool, unknown_articulated_count: int) -> Dict[str, Any]:
+    hold_reasons: List[str] = []
+    if not replay_evidence:
+        hold_reasons.append("replay evidence is unavailable")
+    if not coverage.get("coverage_complete"):
+        hold_reasons.append("supported relation coverage is partial or has extra rows")
+    denominator_fields = (
+        "static_position_denominator", "static_rotation_denominator",
+        "dynamic_position_p99_denominator", "dynamic_rotation_p99_denominator",
+    )
+    empty_denominators = [name for name in denominator_fields if int(replay_metrics.get(name, 0) or 0) <= 0]
+    if empty_denominators:
+        hold_reasons.append(f"empty numerical denominators: {empty_denominators}")
+    if unknown_articulated_count:
+        hold_reasons.append("articulated rows remain unresolved; they are not negative")
+    if hold_reasons:
+        return {"status": "HOLD", "hold_reasons": hold_reasons, "threshold_violations": []}
+    violations = []
+    for metric, limit in NUMERICAL_THRESHOLDS.items():
+        value = replay_metrics.get(metric)
+        if value is None or float(value) > limit:
+            violations.append({"metric": metric, "value": value, "limit": limit})
+    if violations:
+        return {"status": "FAIL", "hold_reasons": [], "threshold_violations": violations}
+    return {"status": "PASS", "hold_reasons": [], "threshold_violations": []}
 
 
 def build_payload(source: Dict[str, Any], task_rows: Mapping[str, Dict[str, Any]], metadata: Mapping[str, Dict[str, Any]], episode_rows: Sequence[Dict[str, Any]], transform: Dict[str, Any]) -> Dict[str, Any]:
@@ -489,6 +605,7 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
     r6_root = Path(args.r6_root).resolve()
     allowlist_path = Path(args.input_allowlist).resolve()
     allowlist = load_allowlist(allowlist_path)
+    threshold_binding = validate_frozen_numerical_thresholds()
     r6_resolved, r6_entry = require_allowed_path(r6_root, allowlist, episode=False, regular=False)
     r6_binding = verify_manifest_binding(r6_resolved, r6_entry)
     source, task_rows = compare_registry(r6_root)
@@ -512,6 +629,9 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         "manifest_sha256": None,
         "episode_count": 0,
         "source_reference_independence": None,
+        "validated_roots": [str(r6_resolved)],
+        "protected_reads": [],
+        "purpose": allowlist["purpose"],
     }
     if args.episode_manifest:
         episode_rows, episode_inventory = audit_episode_manifest(Path(args.episode_manifest).resolve(), allowlist)
@@ -522,7 +642,14 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
     task_rows_out = payload_a["task_rows"]
     supported_rows = [r for r in task_rows_out if r.get("classification") != "NON_PLACEMENT_EXCLUDED"]
     replay_metrics = aggregate_replay_metrics(episode_rows)
+    coverage = relation_coverage(task_rows_out, episode_rows)
     replay_evidence = episode_inventory.get("status") == "PASS" and bool(episode_rows)
+    numerical_gate = evaluate_numerical_gate(
+        replay_metrics,
+        coverage,
+        replay_evidence=replay_evidence,
+        unknown_articulated_count=replay_metrics["unknown_articulated_count"],
+    )
     hold_reasons: List[str] = []
     if not replay_evidence:
         hold_reasons.append("allowlisted per-episode geometry telemetry and independent world-reference root are unavailable")
@@ -532,12 +659,16 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         hold_reasons.append("independent canonical rebuild mismatch")
     if not transform["pass"]:
         hold_reasons.append("coordinate transform contract failed")
+    hold_reasons.extend(numerical_gate.get("hold_reasons", []))
+    threshold_violations = numerical_gate.get("threshold_violations", [])
     summary = {
         "gate": "C3-S3",
         "schema": "OFFICIAL_V3_C3_S3_GEOMETRY_OBSERVABILITY_V2",
-        "status": "PASS" if (independent_equal and transform["pass"] and replay_evidence and not any(r.get("classification") == "ARTICULATED_UNKNOWN" for r in supported_rows)) else "HOLD",
+        "status": "FAIL" if threshold_violations or not transform["pass"] else ("PASS" if independent_equal and numerical_gate["status"] == "PASS" else "HOLD"),
         "source_mutation": 0,
-        "protected_reads": 0,
+        "protected_reads": episode_inventory.get("protected_reads", []),
+        "validated_roots": sorted(set(episode_inventory.get("validated_roots", []) + [str(r6_resolved)])),
+        "purpose": episode_inventory.get("purpose", allowlist["purpose"]),
         "model_inference": False,
         "rollout_steps": 0,
         "attack_steps": 0,
@@ -558,6 +689,13 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         "dynamic_rotation_p99_error_rad": replay_metrics["dynamic_rotation_p99_rad"],
         "dynamic_position_p99_denominator": replay_metrics["dynamic_position_p99_denominator"],
         "dynamic_rotation_p99_denominator": replay_metrics["dynamic_rotation_p99_denominator"],
+        "static_position_denominator": replay_metrics["static_position_denominator"],
+        "static_rotation_denominator": replay_metrics["static_rotation_denominator"],
+        "numerical_thresholds": NUMERICAL_THRESHOLDS,
+        "numerical_threshold_contract": threshold_binding,
+        "numerical_gate": numerical_gate,
+        "relation_coverage": coverage,
+        "denominator_rows": coverage["denominator_rows"],
         "unknown_articulated_pose_count": replay_metrics["unknown_articulated_count"],
         "silent_fallback_count": sum(bool(r.get("silent_fallback")) for r in task_rows_out),
         "unknown_to_negative_count": sum(bool(r.get("unknown_is_negative")) for r in task_rows_out),
@@ -587,12 +725,15 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
             "audit_code_tree": args.audit_code_tree,
             "source_tree": source["r6_source_tree"],
             "input_r6_root_sha256s_sha256": source["r6_root_sha256s_sha256"],
-            "protected_reads": 0,
+            "protected_reads": summary["protected_reads"],
+            "validated_roots": summary["validated_roots"],
+            "purpose": summary["purpose"],
             "model_inference": False,
             "rollout_steps": 0,
             "attack_steps": 0,
             "input_allowlist_path": str(allowlist_path),
             "input_allowlist_sha256": contract_sha256_file(allowlist_path),
+            "numerical_threshold_contract": threshold_binding,
             "episode_inventory": episode_inventory,
         })
         print(json.dumps({"root": str(final), "status": summary["status"], "sha256sums_sha256": seal["sha256sums_sha256"], "canonical_digest": summary["canonical_digest_a"]}, sort_keys=True))

@@ -1,7 +1,8 @@
 {
   "schema": "C3_S3_ALLOWED_INPUTS_V1",
   "status": "FROZEN_METADATA_ONLY",
-  "scope": "FIT_DEVELOPMENT_ONLY",
+  "scope": "FIT_TRAIN_ONLY",
+  "purpose": "FIT_TRAIN_METADATA_ONLY",
   "protected_semantics_read": false,
   "allowed_roots": [
     {

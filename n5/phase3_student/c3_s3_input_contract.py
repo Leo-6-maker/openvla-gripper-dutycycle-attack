@@ -24,12 +24,27 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def safe_relative(path_value: str) -> Path:
+    path = Path(path_value)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"unsafe relative path: {path_value}")
+    return path
+
+
 def load_allowlist(path: Path) -> Dict[str, Any]:
     data = json.loads(path.read_text(encoding="utf-8"))
     if data.get("schema") != "C3_S3_ALLOWED_INPUTS_V1":
         raise ValueError("wrong C3-S3 input allowlist schema")
     if data.get("protected_semantics_read") is not False:
         raise ValueError("allowlist must be protected-read false")
+    scope = data.get("scope")
+    denied_purposes = set(data.get("denied_purposes", []))
+    if scope == "FIT_DEVELOPMENT_ONLY" and "FIT_DEV" in denied_purposes:
+        raise ValueError("allowlist purpose conflict: FIT_DEVELOPMENT_ONLY denies FIT_DEV")
+    if not isinstance(data.get("purpose"), str) or not data["purpose"]:
+        raise ValueError("allowlist purpose must be explicit")
+    if data["purpose"] in denied_purposes:
+        raise ValueError(f"allowlist purpose is denied: {data['purpose']}")
     return data
 
 
@@ -84,14 +99,95 @@ def require_allowed_path(path: Path, allowlist: Mapping[str, Any], *, episode: b
 
 
 def verify_manifest_binding(root: Path, entry: Mapping[str, Any]) -> Dict[str, Any]:
-    manifest = root / str(entry["manifest_path"])
-    resolved = _resolved_without_symlink(manifest)
-    if not resolved.is_file():
+    return verify_sealed_root(root, entry)
+
+
+def verify_sealed_root(root: Path, entry: Mapping[str, Any]) -> Dict[str, Any]:
+    """Verify top-level manifest, checksum sidecar, and exact payload closure."""
+    resolved_root = _resolved_without_symlink(root)
+    if not resolved_root.is_dir():
+        raise ValueError(f"sealed root is not a directory: {root}")
+    manifest = resolved_root / str(entry["manifest_path"])
+    resolved_manifest = _resolved_without_symlink(manifest)
+    if not resolved_manifest.is_file():
         raise ValueError(f"manifest is not a regular file: {manifest}")
-    actual = sha256_file(resolved)
-    if actual != entry.get("manifest_sha256"):
-        raise ValueError(f"manifest SHA mismatch: expected {entry.get('manifest_sha256')}, got {actual}")
-    return {"root": str(root), "manifest": str(resolved), "manifest_sha256": actual, "entry": dict(entry)}
+    sums_path = resolved_root / "SHA256SUMS"
+    sidecar_path = resolved_root / "SHA256SUMS.sha256"
+    if not sums_path.is_file() or not sidecar_path.is_file():
+        raise ValueError("sealed root is missing SHA256SUMS or SHA256SUMS.sha256")
+    if sha256_file(sums_path) != sidecar_path.read_text(encoding="utf-8").split()[0]:
+        raise ValueError("SHA256SUMS sidecar mismatch")
+    expected_root_sums = entry.get("root_sha256s_sha256")
+    actual_root_sums = sha256_file(sums_path)
+    if expected_root_sums and actual_root_sums != expected_root_sums:
+        raise ValueError("top-level SHA256SUMS digest mismatch")
+    for candidate in resolved_root.rglob("*"):
+        if candidate.is_symlink():
+            raise ValueError(f"symlink in sealed root rejected: {candidate}")
+    expected: Dict[str, str] = {}
+    for raw in sums_path.read_text(encoding="utf-8").splitlines():
+        if not raw.strip():
+            continue
+        fields = raw.split(None, 1)
+        if len(fields) != 2:
+            raise ValueError("malformed SHA256SUMS row")
+        digest, name = fields
+        rel = safe_relative(name.lstrip("*"))
+        key = rel.as_posix()
+        if key in {"SHA256SUMS", "SHA256SUMS.sha256"} or key in expected:
+            raise ValueError(f"invalid or duplicate checksum entry: {key}")
+        target = resolved_root / rel
+        if not target.is_file() or target.is_symlink() or sha256_file(target) != digest:
+            raise ValueError(f"sealed file mismatch: {key}")
+        expected[key] = digest
+    actual = {
+        p.relative_to(resolved_root).as_posix(): sha256_file(p)
+        for p in resolved_root.rglob("*")
+        if p.is_file() and not p.is_symlink() and p.name not in {"SHA256SUMS", "SHA256SUMS.sha256"}
+    }
+    if set(actual) != set(expected):
+        missing = sorted(set(actual) - set(expected))
+        extra = sorted(set(expected) - set(actual))
+        raise ValueError(f"sealed file closure mismatch: unlisted={missing}, missing={extra}")
+    actual_manifest = actual.get(Path(entry["manifest_path"]).as_posix())
+    if actual_manifest != entry.get("manifest_sha256"):
+        raise ValueError(f"manifest SHA mismatch: expected {entry.get('manifest_sha256')}, got {actual_manifest}")
+    return {
+        "root": str(resolved_root),
+        "manifest": str(resolved_manifest),
+        "manifest_sha256": actual_manifest,
+        "sha256sums_sha256": actual_root_sums,
+        "verified_files": sorted(actual),
+        "entry": dict(entry),
+    }
+
+
+def verify_independent_computation_chain(source: Mapping[str, Any], reference: Mapping[str, Any]) -> Dict[str, Any]:
+    """Require declared, distinguishable source/reference computation chains."""
+    source_path = source.get("path")
+    reference_path = reference.get("path")
+    source_chain = source.get("computation_chain_id")
+    reference_chain = reference.get("computation_chain_id")
+    source_method = source.get("method")
+    reference_method = reference.get("method")
+    source_code = source.get("code_sha256")
+    reference_code = reference.get("code_sha256")
+    if not all(isinstance(value, str) and value for value in (
+        source_path, reference_path, source_chain, reference_chain,
+        source_method, reference_method, source_code, reference_code,
+    )):
+        raise ValueError("source/reference computation-chain declaration is incomplete")
+    if source_path == reference_path:
+        raise ValueError("source/reference paths are identical")
+    if source_chain == reference_chain or source_method == reference_method or source_code == reference_code:
+        raise ValueError("source/reference computation chains are not independent")
+    return {
+        "status": "PASS",
+        "source_chain": source_chain,
+        "reference_chain": reference_chain,
+        "source_method": source_method,
+        "reference_method": reference_method,
+    }
 
 
 def load_jsonl_exact(path: Path, *, episode_id: str, step_count: int, role: str, identity: Mapping[str, Any] | None = None) -> List[Dict[str, Any]]:
@@ -226,6 +322,7 @@ def audit_episode_geometry(entry: Mapping[str, Any], source_rows: Sequence[Mappi
     return {
         "episode_id": episode_id,
         "task_key": entry["task_key"],
+        "relation_index": entry.get("relation_index"),
         "step_count": step_count,
         "compared_pose_count": compared,
         "unknown_articulated_count": unknown,
