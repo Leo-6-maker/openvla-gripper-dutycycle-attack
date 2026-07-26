@@ -19,6 +19,16 @@ import uuid
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Sequence, Tuple
 
+from c3_s3_input_contract import (
+    GEOMETRY_SCHEMA,
+    audit_episode_geometry,
+    load_allowlist,
+    load_jsonl_exact,
+    require_allowed_path,
+    sha256_file as contract_sha256_file,
+    verify_manifest_binding,
+)
+
 
 FOUR_SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
 EXPECTED_TASKS = tuple(f"{suite}/task_{idx:02d}" for suite in FOUR_SUITES for idx in range(10))
@@ -354,11 +364,82 @@ def load_episode_manifest(path: Path | None) -> List[Dict[str, Any]]:
     raise ValueError("episode manifest must be a list or {episodes: [...]} ")
 
 
+def audit_episode_manifest(path: Path, allowlist: Mapping[str, Any]) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """Load and exactly replay an explicitly allowlisted geometry manifest."""
+    manifest_path, root_entry = require_allowed_path(path, allowlist, episode=True)
+    expected_manifest_sha = root_entry.get("manifest_sha256")
+    if expected_manifest_sha and contract_sha256_file(manifest_path) != expected_manifest_sha:
+        raise ValueError("episode manifest SHA mismatch")
+    entries = load_episode_manifest(manifest_path)
+    seen: set[str] = set()
+    audited: List[Dict[str, Any]] = []
+    for entry in entries:
+        episode_id = str(entry.get("episode_id", ""))
+        if not episode_id or episode_id in seen:
+            raise ValueError(f"duplicate or missing episode_id: {episode_id!r}")
+        seen.add(episode_id)
+        if entry.get("schema", GEOMETRY_SCHEMA) != GEOMETRY_SCHEMA:
+            raise ValueError("episode geometry schema mismatch")
+        if entry.get("task_key") not in EXPECTED_TASKS:
+            raise ValueError(f"unknown episode task: {entry.get('task_key')}")
+        step_count = entry.get("step_count")
+        if type(step_count) is not int or step_count <= 0:
+            raise ValueError(f"invalid step_count for {episode_id}")
+        if entry.get("reference_chain") != "INDEPENDENT_WORLD_REFERENCE":
+            raise ValueError(f"independent reference chain missing for {episode_id}")
+        source_desc = entry.get("source_telemetry")
+        reference_desc = entry.get("reference_telemetry")
+        if not isinstance(source_desc, Mapping) or not isinstance(reference_desc, Mapping):
+            raise ValueError(f"source/reference descriptors missing for {episode_id}")
+        source_path, _ = require_allowed_path(Path(str(source_desc.get("path", ""))), allowlist, episode=True)
+        reference_path, _ = require_allowed_path(Path(str(reference_desc.get("path", ""))), allowlist, episode=True)
+        if source_path == reference_path:
+            raise ValueError(f"reference chain is not independent for {episode_id}")
+        for descriptor, resolved in ((source_desc, source_path), (reference_desc, reference_path)):
+            declared = descriptor.get("sha256")
+            if not isinstance(declared, str) or contract_sha256_file(resolved) != declared:
+                raise ValueError(f"source SHA mismatch for {episode_id}: {resolved}")
+        source_rows = load_jsonl_exact(source_path, episode_id=episode_id, step_count=step_count, role="source")
+        reference_rows = load_jsonl_exact(reference_path, episode_id=episode_id, step_count=step_count, role="reference")
+        audited.append(audit_episode_geometry(entry, source_rows, reference_rows))
+    return audited, {
+        "status": "PASS" if audited else "HOLD_INPUTS_MISSING",
+        "manifest_path": str(manifest_path),
+        "manifest_sha256": contract_sha256_file(manifest_path),
+        "episode_count": len(audited),
+        "source_reference_independence": "INDEPENDENT_WORLD_REFERENCE",
+    }
+
+
+def aggregate_replay_metrics(rows: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+    static_positions: List[float] = []
+    static_rotations: List[float] = []
+    dynamic_positions: List[float] = []
+    dynamic_rotations: List[float] = []
+    for row in rows:
+        static_positions.extend(float(value) for value in row.get("static_position_errors_m", []))
+        static_rotations.extend(float(value) for value in row.get("static_rotation_errors_rad", []))
+        dynamic_positions.extend(float(value) for value in row.get("dynamic_position_errors_m", []))
+        dynamic_rotations.extend(float(value) for value in row.get("dynamic_rotation_errors_rad", []))
+    dynamic_position_p99 = p99(dynamic_positions)
+    dynamic_rotation_p99 = p99(dynamic_rotations)
+    return {
+        "static_position_max_error_m": max(static_positions, default=None),
+        "static_rotation_max_error_rad": max(static_rotations, default=None),
+        "dynamic_position_p99_m": dynamic_position_p99["value"],
+        "dynamic_rotation_p99_rad": dynamic_rotation_p99["value"],
+        "dynamic_position_p99_denominator": dynamic_position_p99["count"],
+        "dynamic_rotation_p99_denominator": dynamic_rotation_p99["count"],
+        "episode_count": len(rows),
+        "unknown_articulated_count": sum(int(r.get("unknown_articulated_count", 0)) for r in rows),
+    }
+
+
 def build_payload(source: Dict[str, Any], task_rows: Mapping[str, Dict[str, Any]], metadata: Mapping[str, Dict[str, Any]], episode_rows: Sequence[Dict[str, Any]], transform: Dict[str, Any]) -> Dict[str, Any]:
     geometry_rows = classify_rows(task_rows, metadata)
     canonical = {"source": source, "geometry_rows": geometry_rows, "episode_rows": list(episode_rows), "transform_contract": transform}
     return {
-        "schema": "OFFICIAL_V3_C3_S3_GEOMETRY_OBSERVABILITY_V1",
+        "schema": "OFFICIAL_V3_C3_S3_GEOMETRY_OBSERVABILITY_V2",
         "source": source,
         "transform_contract": transform,
         "task_rows": geometry_rows,
@@ -394,28 +475,55 @@ def seal_root(staging: Path, final: Path, manifest: Dict[str, Any]) -> Dict[str,
 
 def run(args: argparse.Namespace) -> Dict[str, Any]:
     r6_root = Path(args.r6_root).resolve()
+    allowlist_path = Path(args.input_allowlist).resolve()
+    allowlist = load_allowlist(allowlist_path)
+    r6_resolved, r6_entry = require_allowed_path(r6_root, allowlist, episode=False, regular=False)
+    r6_binding = verify_manifest_binding(r6_resolved, r6_entry)
     source, task_rows = compare_registry(r6_root)
     source_b, task_rows_b = compare_registry(r6_root)
     source["audit_code_commit"] = args.audit_code_commit
     source["audit_code_tree"] = args.audit_code_tree
     source_b["audit_code_commit"] = args.audit_code_commit
     source_b["audit_code_tree"] = args.audit_code_tree
+    source["input_allowlist_path"] = str(allowlist_path)
+    source["input_allowlist_sha256"] = contract_sha256_file(allowlist_path)
+    source["r6_manifest_binding"] = r6_binding
+    source_b["input_allowlist_path"] = str(allowlist_path)
+    source_b["input_allowlist_sha256"] = contract_sha256_file(allowlist_path)
+    source_b["r6_manifest_binding"] = r6_binding
     metadata = extract_model_metadata() if args.extract_model_metadata else {}
     metadata_b = extract_model_metadata() if args.extract_model_metadata else {}
-    episode_rows = load_episode_manifest(Path(args.episode_manifest).resolve() if args.episode_manifest else None)
+    episode_rows: List[Dict[str, Any]] = []
+    episode_inventory: Dict[str, Any] = {
+        "status": "HOLD_INPUTS_MISSING",
+        "manifest_path": None,
+        "manifest_sha256": None,
+        "episode_count": 0,
+        "source_reference_independence": None,
+    }
+    if args.episode_manifest:
+        episode_rows, episode_inventory = audit_episode_manifest(Path(args.episode_manifest).resolve(), allowlist)
     transform = transform_contract_tests()
     payload_a = build_payload(source, task_rows, metadata, episode_rows, transform)
     payload_b = build_payload(source_b, task_rows_b, metadata_b, episode_rows, transform)
     independent_equal = payload_a["canonical_payload_sha256"] == payload_b["canonical_payload_sha256"]
     task_rows_out = payload_a["task_rows"]
     supported_rows = [r for r in task_rows_out if r.get("classification") != "NON_PLACEMENT_EXCLUDED"]
-    # ponytail: keep this gate closed until a real per-episode geometry replay
-    # auditor computes numerical errors; a non-empty manifest alone is not evidence.
-    replay_evidence = False
+    replay_metrics = aggregate_replay_metrics(episode_rows)
+    replay_evidence = episode_inventory.get("status") == "PASS" and bool(episode_rows)
+    hold_reasons: List[str] = []
+    if not replay_evidence:
+        hold_reasons.append("allowlisted per-episode geometry telemetry and independent world-reference root are unavailable")
+    if any(r.get("classification") == "ARTICULATED_UNKNOWN" for r in supported_rows):
+        hold_reasons.append("articulated geometry remains explicitly unknown and is not treated as negative")
+    if not independent_equal:
+        hold_reasons.append("independent canonical rebuild mismatch")
+    if not transform["pass"]:
+        hold_reasons.append("coordinate transform contract failed")
     summary = {
         "gate": "C3-S3",
-        "schema": "OFFICIAL_V3_C3_S3_GEOMETRY_OBSERVABILITY_V1",
-        "status": "PASS" if (independent_equal and transform["pass"] and replay_evidence and all(r.get("classification") != "ARTICULATED_UNKNOWN" for r in supported_rows)) else "HOLD",
+        "schema": "OFFICIAL_V3_C3_S3_GEOMETRY_OBSERVABILITY_V2",
+        "status": "PASS" if (independent_equal and transform["pass"] and replay_evidence and not any(r.get("classification") == "ARTICULATED_UNKNOWN" for r in supported_rows)) else "HOLD",
         "source_mutation": 0,
         "protected_reads": 0,
         "model_inference": False,
@@ -427,18 +535,24 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         "articulated_unknown_rows": sum(r.get("classification") == "ARTICULATED_UNKNOWN" for r in supported_rows),
         "episode_rows": len(episode_rows),
         "episode_manifest_present": bool(episode_rows),
-        "static_replay_evidence": "NOT_IMPLEMENTED_C3_S3_REPLAY_REQUIRED",
-        "dynamic_replay_evidence": "NOT_IMPLEMENTED_C3_S3_REPLAY_REQUIRED",
-        "static_position_max_error_m": None,
-        "static_rotation_max_error_rad": None,
-        "dynamic_position_p99_error_m": None,
-        "dynamic_rotation_p99_error_rad": None,
+        "input_inventory_status": episode_inventory.get("status"),
+        "input_allowlist_path": str(allowlist_path),
+        "input_allowlist_sha256": contract_sha256_file(allowlist_path),
+        "static_replay_evidence": "PASS" if replay_evidence else "HOLD_INPUTS_MISSING",
+        "dynamic_replay_evidence": "PASS" if replay_evidence else "HOLD_INPUTS_MISSING",
+        "static_position_max_error_m": replay_metrics["static_position_max_error_m"],
+        "static_rotation_max_error_rad": replay_metrics["static_rotation_max_error_rad"],
+        "dynamic_position_p99_error_m": replay_metrics["dynamic_position_p99_m"],
+        "dynamic_rotation_p99_error_rad": replay_metrics["dynamic_rotation_p99_rad"],
+        "dynamic_position_p99_denominator": replay_metrics["dynamic_position_p99_denominator"],
+        "dynamic_rotation_p99_denominator": replay_metrics["dynamic_rotation_p99_denominator"],
+        "unknown_articulated_pose_count": replay_metrics["unknown_articulated_count"],
         "silent_fallback_count": sum(bool(r.get("silent_fallback")) for r in task_rows_out),
         "unknown_to_negative_count": sum(bool(r.get("unknown_is_negative")) for r in task_rows_out),
         "independent_canonical_digest_equal": independent_equal,
         "canonical_digest_a": payload_a["canonical_payload_sha256"],
         "canonical_digest_b": payload_b["canonical_payload_sha256"],
-        "hold_reasons": ["per-episode geometry replay auditor and development/confirmation geometry manifest are not present; numerical observability gates cannot be evaluated"],
+        "hold_reasons": hold_reasons,
     }
     parent = Path(args.out_parent).resolve()
     parent.mkdir(parents=True, exist_ok=True)
@@ -455,7 +569,7 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         write_json(staging / "summary.json", summary)
         seal = seal_root(staging, final, {
             "gate": "C3-S3",
-            "schema": "OFFICIAL_V3_C3_S3_GEOMETRY_OBSERVABILITY_V1",
+            "schema": "OFFICIAL_V3_C3_S3_GEOMETRY_OBSERVABILITY_V2",
             "source_commit": args.source_commit,
             "audit_code_commit": args.audit_code_commit,
             "audit_code_tree": args.audit_code_tree,
@@ -465,6 +579,9 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
             "model_inference": False,
             "rollout_steps": 0,
             "attack_steps": 0,
+            "input_allowlist_path": str(allowlist_path),
+            "input_allowlist_sha256": contract_sha256_file(allowlist_path),
+            "episode_inventory": episode_inventory,
         })
         print(json.dumps({"root": str(final), "status": summary["status"], "sha256sums_sha256": seal["sha256sums_sha256"], "canonical_digest": summary["canonical_digest_a"]}, sort_keys=True))
         return summary
@@ -483,6 +600,7 @@ def main() -> int:
     parser.add_argument("--source-commit", required=True)
     parser.add_argument("--audit-code-commit", required=True)
     parser.add_argument("--audit-code-tree", required=True)
+    parser.add_argument("--input-allowlist", default=str(Path(__file__).resolve().parents[2] / "configs" / "C3_S3_ALLOWED_INPUTS_V1.json"))
     parser.add_argument("--extract-model-metadata", action="store_true")
     parser.add_argument("--episode-manifest")
     args = parser.parse_args()

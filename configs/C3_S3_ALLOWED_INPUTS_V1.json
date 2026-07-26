@@ -1,0 +1,55 @@
+{
+  "schema": "C3_S3_ALLOWED_INPUTS_V1",
+  "status": "FROZEN_METADATA_ONLY",
+  "scope": "FIT_DEVELOPMENT_ONLY",
+  "protected_semantics_read": false,
+  "allowed_roots": [
+    {
+      "name": "h03_r6_c1_registry",
+      "path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/h0_3/codex_r6_finalize_beb0721_20260726_1330",
+      "manifest_path": "ARTIFACT_MANIFEST.json",
+      "manifest_sha256": "8f1b6d890b21a54206e1dd4f6606901e2441b5c537e9ff6c3ba4a89d0bcea2b0",
+      "root_sha256s_sha256": "14c6b728ae2c142a5dbd860384152e4665de1013ab491d2a61afe54e5576532f",
+      "schema": "H0_3_R6_C1_ARTIFACT_MANIFEST_V1",
+      "identity_count": 40,
+      "episode_count": 0,
+      "task_count": 40,
+      "protected": false,
+      "rationale": "Sealed C1 task-resolution registry only; contains no episode telemetry or protected split semantics."
+    }
+  ],
+  "allowed_episode_geometry_roots": [],
+  "denied_roots": [
+    {
+      "name": "official_clean_all_states",
+      "path": "/mnt/sdc/dty_user/openvla_attack_evidence/c2g/c2g_cs200_official_v3_20260716/clean",
+      "reason": "All-state clean root is not an explicit FIT-only geometry replay input in this contract."
+    },
+    {
+      "name": "c2f_unbound_observations",
+      "path": "/mnt/sdc/dty_user/openvla_attack_evidence/c2f/clean2000_obs_clean_36712cc",
+      "reason": "Parallel campaign root has no accepted top-level seal or Official V3 trajectory binding."
+    }
+  ],
+  "denied_purposes": [
+    "FIT_DEV",
+    "CAL",
+    "CHECK",
+    "G10",
+    "T2R-D",
+    "CS200",
+    "ATTACK",
+    "ROLLOUT"
+  ],
+  "rules": {
+    "exact_root_or_descendant_only": true,
+    "symlink_components_rejected": true,
+    "manifest_sha256_required": true,
+    "referenced_files_must_be_allowlisted": true,
+    "episode_step_join": "exact_0_to_step_count_minus_1",
+    "reference_chain": "INDEPENDENT_WORLD_REFERENCE_REQUIRED",
+    "unknown_is_negative": false,
+    "formal_training_authorized": false,
+    "formal_attack_authorized": false
+  }
+}
