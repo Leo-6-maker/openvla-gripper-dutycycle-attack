@@ -469,10 +469,15 @@ def compute_grasp_state(steps, manipulated_objects, support_names):
 
     V2 FIX: Uses _contact_flags (target-finger contact), not arbitrary contact_count>0.
     When no manipulated_objects known → grasp_known_mask=False.
+
+    T2 FIX: Adds contact_established as relaxed criterion (contact without tight closure).
+    Small objects can be securely held without gripper_qpos > 0.7.
+    contact_established = has_gripper_contact sustained for dwell_steps (NO qpos requirement).
     """
     T = len(steps)
     results = []
     contact_dwell = 0
+    contact_only_dwell = 0
     can_detect = len(manipulated_objects) > 0
 
     for t in range(T):
@@ -483,6 +488,7 @@ def compute_grasp_state(steps, manipulated_objects, support_names):
             qpos_close = _gripper_qpos_closure(rec)
             gripper_near_closed = qpos_close > 0.7
 
+            # Strict grasp: tight closure + contact
             if gripper_near_closed and has_gripper_contact:
                 contact_dwell += 1
             elif has_gripper_contact:
@@ -490,20 +496,31 @@ def compute_grasp_state(steps, manipulated_objects, support_names):
             else:
                 contact_dwell = 0
 
+            # Relaxed contact: contact alone (no qpos requirement)
+            if has_gripper_contact:
+                contact_only_dwell += 1
+            else:
+                contact_only_dwell = 0
+
             grasp = contact_dwell >= V22_CONFIG['grasp']['dwell_steps_required']
+            contact_est = contact_only_dwell >= V22_CONFIG['grasp']['dwell_steps_required']
             conf = min(1.0, contact_dwell / max(1, V22_CONFIG['grasp']['dwell_steps_confidence']))
             known_mask = True
         else:
             grasp = False
+            contact_est = False
             conf = 0.0
             contact_dwell = 0
+            contact_only_dwell = 0
             known_mask = False
 
         results.append({
             'grasp_established': bool(grasp),
+            'contact_established': bool(contact_est),
             'grasp_confidence': float(conf),
             'grasp_known_mask': bool(known_mask),
             'grasp_dwell_steps': contact_dwell,
+            'contact_dwell_steps': contact_only_dwell,
         })
     return results
 
@@ -780,9 +797,16 @@ def compute_safe_release(steps, grasp_results, terminal_results, placement_resul
     Unplanned opening, attack-induced drop, or contact loss WITHOUT placement
     is NOT safe_release — it goes to instability instead.
     When placement is unknown, safe_release valid_mask = False.
+
+    T2 FIX: Uses _had_grasp_evidence (grasp_established OR contact_established)
+    for release event detection, enabling safe_release for small objects.
     """
     T = len(steps)
     results = []
+
+    def _had_grasp(idx):
+        g = grasp_results[idx]
+        return g.get('grasp_established', False) or g.get('contact_established', False)
 
     for t in range(T):
         rec = steps[t]
@@ -794,16 +818,26 @@ def compute_safe_release(steps, grasp_results, terminal_results, placement_resul
 
         if qpos is not None and grasp_results[t]['grasp_known_mask']:
             width = abs(qpos[0]) + abs(qpos[1])
-            was_grasping = grasp_results[max(0, t-1)]['grasp_established'] if t > 0 else False
-            is_grasping = grasp_results[t]['grasp_established']
+            # Tight grasp check (original, unchanged)
+            was_grasping_tight = grasp_results[max(0, t-1)].get('grasp_established', False) if t > 0 else False
+            is_grasping_tight = grasp_results[t].get('grasp_established', False)
+            # Contact-only check (T2: for small objects)
+            had_contact = grasp_results[max(0, t-1)].get('contact_established', False) if t > 0 else False
+            has_contact = grasp_results[t].get('contact_established', False)
+
             is_terminal = terminal_results[t]['task_terminal']
             placement_known = placement_results[t]['placement_known_mask']
             placement_confirmed = placement_results[t]['object_placed']
 
             has_release_event = False
-            if was_grasping and width > V22_CONFIG['safe_release']['release_width_open_threshold']:
+            # Path 1: tight grasp → opening gripper
+            if was_grasping_tight and width > V22_CONFIG['safe_release']['release_width_open_threshold']:
                 has_release_event = True
-            elif is_terminal and not is_grasping:
+            # Path 2: terminal with no tight grasp
+            elif is_terminal and not is_grasping_tight:
+                has_release_event = True
+            # Path 3 (T2): contact-based → gripper opening or contact loss
+            elif had_contact and (not has_contact or width > V22_CONFIG['safe_release']['release_width_open_threshold'] * 2):
                 has_release_event = True
 
             if has_release_event:
@@ -833,11 +867,28 @@ def compute_safe_release(steps, grasp_results, terminal_results, placement_resul
         })
     return results
 
+T2_PLACEMENT_TOLERANCE = 0.25
+
 def compute_placement_state(steps, grasp_results, manipulated_objects, object_slices, target_names):
-    """Detect object placement on target surface/region."""
+    """Detect object placement on target surface/region.
+
+    T2 FIX: Also detects placement via contact_established → not transition.
+    Prior grasp evidence = grasp_established OR contact_established.
+    This enables placement detection for small objects where gripper never closes to qpos > 0.7.
+    """
     T = len(steps)
     results = []
     can_compute = len(manipulated_objects) > 0 and len(object_slices) > 0
+
+    def _had_grasp_evidence(idx):
+        """Prior grasp/transport evidence at step idx."""
+        if idx < 0 or idx >= len(grasp_results):
+            return False
+        g = grasp_results[idx]
+        return g.get('grasp_established', False) or g.get('contact_established', False)
+
+    # Pre-compute: was grasp/contact ever established?
+    ever_had_evidence = any(_had_grasp_evidence(t) for t in range(T))
 
     for t in range(T):
         placed = False
@@ -847,8 +898,27 @@ def compute_placement_state(steps, grasp_results, manipulated_objects, object_sl
 
         if can_compute and grasp_results[t]['grasp_known_mask']:
             known = True
-            # Simple heuristic: grasp lost + object near target
-            if t > 0 and grasp_results[t-1]['grasp_established'] and not grasp_results[t]['grasp_established']:
+            # Detect grasp/contact release: prior evidence exists, current step lost it
+            is_release = False
+            if t > 0:
+                had_prior = _had_grasp_evidence(t - 1)
+                has_current = _had_grasp_evidence(t)
+                if had_prior and not has_current:
+                    is_release = True
+
+            # Also detect: current evidence + gripper opening + near target
+            is_contact_with_opening = False
+            if t > 0:
+                qpos_curr = _finite_vector(steps[t].get('robot0_gripper_qpos'), 2)
+                qpos_prev = _finite_vector(steps[t-1].get('robot0_gripper_qpos'), 2)
+                if qpos_curr is not None and qpos_prev is not None:
+                    width_curr = abs(qpos_curr[0]) + abs(qpos_curr[1])
+                    width_prev = abs(qpos_prev[0]) + abs(qpos_prev[1])
+                    gripper_opening = (width_curr - width_prev) > 0.01
+                    if gripper_opening and _had_grasp_evidence(t):
+                        is_contact_with_opening = True
+
+            if is_release or is_contact_with_opening:
                 for name in manipulated_objects:
                     spec = object_slices.get(name)
                     if spec is None:
@@ -859,13 +929,18 @@ def compute_placement_state(steps, grasp_results, manipulated_objects, object_sl
                     for tname in target_names:
                         tspec = object_slices.get(tname)
                         if tspec is None:
+                            for fallback_key in sorted(object_slices.keys()):
+                                if fallback_key in tname or tname.startswith(fallback_key):
+                                    tspec = object_slices.get(fallback_key)
+                                    break
+                        if tspec is None:
                             continue
                         tpos = _slice_vector(steps[t].get('object_state', []), tspec, 'pos')
                         if tpos is None:
                             continue
-                        if _dist(obj_pos, tpos) < V22_CONFIG['safe_release']['placement_region_tolerance']:
+                        if _dist(obj_pos, tpos) < T2_PLACEMENT_TOLERANCE:
                             placed = True
-                            conf = 0.7
+                            conf = 0.7 if is_release else 0.55
                             region = tname
                             break
                     if placed:
@@ -877,6 +952,40 @@ def compute_placement_state(steps, grasp_results, manipulated_objects, object_sl
             'placement_confidence': float(conf),
             'placement_region': region,
         })
+
+    # T2: Terminal proximity fallback — if placement never detected but object
+    # was near target at episode end AND prior transport evidence exists,
+    # mark the last step as placed (successful placement at end of episode).
+    if sum(1 for r in results if r['object_placed']) == 0 and ever_had_evidence:
+        # Check last 30% of episode for object near target
+        check_start = max(0, T - max(10, T * 3 // 10))
+        for t in range(check_start, T):
+            for name in manipulated_objects:
+                spec = object_slices.get(name)
+                if spec is None:
+                    continue
+                obj_pos = _slice_vector(steps[t].get('object_state', []), spec, 'pos')
+                if obj_pos is None:
+                    continue
+                for tname in target_names:
+                    tspec = object_slices.get(tname)
+                    if tspec is None:
+                        for fallback_key in sorted(object_slices.keys()):
+                            if fallback_key in tname or tname.startswith(fallback_key):
+                                tspec = object_slices.get(fallback_key)
+                                break
+                    if tspec is None:
+                        continue
+                    tpos = _slice_vector(steps[t].get('object_state', []), tspec, 'pos')
+                    if tpos is None:
+                        continue
+                    if _dist(obj_pos, tpos) < max(T2_PLACEMENT_TOLERANCE, 0.35):
+                        # Retroactively mark last step as placed
+                        results[-1]['object_placed'] = True
+                        results[-1]['placement_confidence'] = 0.5
+                        results[-1]['placement_region'] = tname
+                        return results
+
     return results
 
 def compute_gripper_closing_state(steps):
