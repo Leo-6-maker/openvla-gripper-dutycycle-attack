@@ -137,21 +137,21 @@ def main():
         ci_low = float(np.percentile(boot_means, 2.5))
         ci_high = float(np.percentile(boot_means, 97.5))
         mean_delta = float(deltas_acc.mean())
-        p_significant = float((boot_means > 0).mean())
+        bootstrap_support = float((boot_means > 0).mean())
 
         print(f'  N5 mean acc: {np.mean(n5_accs):.4f}')
         print(f'  MLP mean acc: {np.mean(mlp_accs):.4f}')
         print(f'  Mean delta: {mean_delta:.4f}')
         print(f'  Delta 95% CI: [{ci_low:.4f}, {ci_high:.4f}]')
-        print(f'  P(delta > 0): {p_significant:.4f}')
+        print(f'  bootstrap_support: {bootstrap_support:.4f}')
         print(f'  N episodes: {n_eps}')
 
-        if p_significant >= 0.95 and ci_low > 0:
-            print(f'  VERDICT: N5 significantly better than MLP on {head_name}')
-        elif p_significant >= 0.95:
-            print(f'  VERDICT: N5 better on average but CI includes small negative values')
+        if bootstrap_support >= 0.95 and ci_low > 0:
+            print(f'  VERDICT: N5 paired delta CI excludes 0 (bootstrap_support={bootstrap_support:.3f}), N5 > MLP on {head_name}')
+        elif bootstrap_support >= 0.95:
+            print(f'  VERDICT: N5 paired delta direction positive (bootstrap_support={bootstrap_support:.3f}) but CI includes small negative values')
         else:
-            print(f'  VERDICT: Difference not statistically significant at 95% level')
+            print(f'  VERDICT: Paired delta not conclusive at 95% level (bootstrap_support={bootstrap_support:.3f})')
 
     # Per-suite AUPRC
     print('\n=== Per-Suite AUPRC (N5) ===')

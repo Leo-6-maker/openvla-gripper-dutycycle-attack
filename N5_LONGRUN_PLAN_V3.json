@@ -1,0 +1,432 @@
+{
+  "plan": "N5_LONGRUN_PLAN_V3",
+  "frozen_at": "2026-07-26",
+  "status": "RUNNING",
+  "current_gate": "R0_EVIDENCE_READINESS",
+  "predecessor": "N5_LONGRUN_PLAN_V2 (preserved as historical record — never modified)",
+
+  "hard_rules": {
+    "auto_advance_on_pass": true,
+    "stop_on_fail": true,
+    "no_threshold_tuning_after_fail": true,
+    "no_identity_swapping": true,
+    "no_overwriting_artifacts": true,
+    "no_modifying_v4_formal": true,
+    "no_modifying_v2_predecessors": true,
+    "no_g9_threshold_search_before_t5_a1_s1_pass": true,
+    "no_g10_evaluation_before_g9_sealed": true,
+
+    "exit_codes": {
+      "0": "PASS — commit receipt, auto-advance to next gate",
+      "2": "CONTRACT_PROVENANCE_FAIL — stop immediately, write HOLD_PACKET",
+      "3": "INFRA_FAIL — retry once with identical inputs; if second failure, stop",
+      "4": "VALID_SCIENTIFIC_NEGATIVE — stop, preserve all outputs, await review",
+      "5": "HOLD_REVIEW — stop immediately, no parameter tuning allowed"
+    },
+
+    "gate_requirements": {
+      "fresh_output_dir": "every gate writes to a NEW directory, never overwrites",
+      "receipt_mandatory": "every PASS writes a self-hashed receipt",
+      "commit_per_gate": "every PASS commits its receipt separately",
+      "upstream_sha_check": "every gate verifies upstream receipt SHA before starting",
+      "no_post_fail_tuning": "failure → HOLD_PACKET, no threshold/identity/label/sample changes",
+      "hold_packet_format": "failed gate, failed predicates, last passing receipt SHA, source commit, exact commands, logs, artifact paths, observed metrics, suspected causes (marked hypotheses)"
+    }
+  },
+
+  "gates": [
+    {
+      "id": "R0_EVIDENCE_READINESS",
+      "description": "Pre-check: verify all P0 fixes exist in repo, receipts self-consistent, working tree clean",
+      "depends_on": [],
+      "gpu_count": 0,
+      "estimated_minutes": 5,
+      "pass_conditions": [
+        "runner undefined-variable fix present in repo (success_source/env_check removed)",
+        "gripper_closing_state renamed from close_intent in model HEAD_NAMES, dataset, seals",
+        "PROTOCOL_AMENDMENT_V3.json exists and contains no PLACEHOLDER values",
+        "G10 test manifest frozen at 1200 identities, SHA=9feb87df72cbd...",
+        "G6_SEAL_V2.json exists, self-hash verifies",
+        "P0_EVIDENCE_SEAL.json exists, self-hash verifies",
+        "G9 SCORING_MANIFEST.json exists, self-hash verifies",
+        "checkpoint weight SHA bound to semantic migration receipt",
+        "paired bootstrap script uses 'bootstrap_support' not 'P(delta>0)'",
+        "working tree clean (no uncommitted changes to tracked files)",
+        "all self-hashes recompute consistently"
+      ],
+      "fail_action": "HOLD_REVIEW — fix missing items before any Teacher work"
+    },
+    {
+      "id": "T1_PLACEMENT_ROOT_CAUSE_AUDIT",
+      "description": "Read-only diagnosis: classify placement detection gap for all libero_object episodes",
+      "depends_on": ["R0_EVIDENCE_READINESS"],
+      "gpu_count": 0,
+      "estimated_minutes": 30,
+      "pass_conditions": [
+        "139/139 successful libero_object episodes have definite disposition (BDDL metadata missing vs placement logic too strict)",
+        "per-suite/per-task statistics for: manipulated_objects, object_slices, support_names, grasp_known_mask, placement state, gripper opening, official success",
+        "32-episode manual audit set frozen: 16 libero_object success, 8 other-suite normal release, 4 pregrasp negative, 4 articulated unknown",
+        "per-stage miss counts with code-path attribution",
+        "NO modification of any labels",
+        "NO reading of G10 model outputs",
+        "if critical physical states are unrecoverable in most tasks → stop, do not invent proxies"
+      ],
+      "fail_action": "HOLD_REVIEW — if root cause unclear or physical states unrecoverable"
+    },
+    {
+      "id": "T2_TEACHER_PATCH_CANARY",
+      "description": "Implement suite-agnostic placement fallback, validate on sealed 64-ep canary",
+      "depends_on": ["T1_PLACEMENT_ROOT_CAUSE_AUDIT"],
+      "gpu_count": 0,
+      "estimated_minutes": 45,
+      "semantics": {
+        "placement_confirmed": "target near semantic goal/support AND object motion stable or support contact established AND prior grasp/transport evidence exists",
+        "safe_release": "placement_confirmed AND planned gripper opening AND not instability/drop"
+      },
+      "forbidden": [
+        "gripper OPEN alone as placement proxy",
+        "candidate_close in physical label computation",
+        "official success as direct Teacher input",
+        "articulated unknown → negative conversion",
+        "suite-specific thresholds"
+      ],
+      "canary_spec": {
+        "n_episodes": 64,
+        "composition": "fixed training identities covering 4 suites + manual 32 set",
+        "deterministic_replay": "run twice, must be step-identical"
+      },
+      "pass_conditions": [
+        "successful supported pick-place placement recall >= 90%",
+        "manual placement false-positive rate <= 5%",
+        "planned-opening event recall >= 80%",
+        "planned-opening precision >= 90%",
+        "libero_object safe-release positive > 0",
+        "at least 3 supported suites have safe-release positives",
+        "pregrasp episodes produce zero placement or safe-release",
+        "articulated tasks remain unknown (no false placement)",
+        "two replay runs step-identical",
+        "safe_release=1 ⇒ k10_feasible=0 (all instances)",
+        "K10 must be 0 when window intersects release/terminal"
+      ],
+      "fail_action": "HOLD_REVIEW — do not tune thresholds; fix Teacher logic, re-run sealed canary"
+    },
+    {
+      "id": "T3_SCIENTIFIC_CONTRACT_V2",
+      "description": "Freeze Scientific Contract V2: safe-release demoted to auxiliary, K10 handles release/horizon veto",
+      "depends_on": ["T2_TEACHER_PATCH_CANARY"],
+      "gpu_count": 0,
+      "estimated_minutes": 10,
+      "scheduler": {
+        "emit_rule": "p_critical >= tau_c AND p_K10 >= tau_k AND persistence_D AND remaining_horizon >= K",
+        "safe_release": "auxiliary diagnostic only, NOT in emit gate",
+        "tau_safe": "NOT DEFINED (removed from contract)",
+        "k10_responsibility": "release/horizon veto delegated to K10 Teacher",
+        "instability": "not a hard veto",
+        "gripper_closing_state": "auxiliary only",
+        "candidate_close": "never a gate",
+        "suite_specific_thresholds": "forbidden",
+        "first_emit_only": true,
+        "unsupported_unknown": "must abstain"
+      },
+      "pass_conditions": [
+        "JSON schema valid",
+        "self-hash consistent",
+        "all upstream SHAs bound (R0, T1, T2 receipts)",
+        "protocol amendment explaining safe-release gate removal",
+        "V1 preserved unmodified as historical record"
+      ],
+      "fail_action": "HOLD_REVIEW"
+    },
+    {
+      "id": "T4_FULL_RELABEL_AND_LABEL_SEAL_V2",
+      "description": "Rerun all 800 episode labels with frozen V23/V24 Teacher, produce Label Seal V2",
+      "depends_on": ["T3_SCIENTIFIC_CONTRACT_V2"],
+      "gpu_count": 0,
+      "estimated_hours": 2,
+      "pass_conditions": [
+        "800/800 episodes relabeled successfully",
+        "step/identity mismatch = 0",
+        "duplicate/overwrite = 0",
+        "unknown → negative = 0",
+        "NaN/Inf known label = 0",
+        "articulated unknown not eroded",
+        "safe_release=1 ⇒ K10=0 holds for all episodes",
+        "criticality exits after release window",
+        "manual 32-set precision/recall still meets T2 thresholds",
+        "per-suite/per-head positive/negative/unknown distribution reported",
+        "label Merkle root computed",
+        "self-hashed seal written",
+        "delta report: criticality changed, K10 changed, safe-release changed, critical&&old_cc=false decomposition, critical run lengths and end positions",
+        "if any head feeding shared encoder changes → old G6/G7/G8 receipts marked SUPERSEDED"
+      ],
+      "fail_action": "HOLD_REVIEW"
+    },
+    {
+      "id": "T5_TEACHER_ORACLE_ENRICHMENT",
+      "description": "Matched-snapshot ORACLE validation: prove Teacher-identified windows correspond to physical vulnerability",
+      "depends_on": ["T4_FULL_RELABEL_AND_LABEL_SEAL_V2"],
+      "gpu_count": 1,
+      "estimated_hours": 4,
+      "window_spec": {
+        "n_windows": 48,
+        "composition": "24 Teacher critical-positive, 12 pregrasp/known-negative, 12 release/post-placement",
+        "coverage": "all 4 suites, all supported mechanisms",
+        "g10_exclusion": "identities must NOT be in G10 test manifest"
+      },
+      "execution": "each window branched from exact snapshot: CLEAN_REPLAY + COMMAND_OPEN_ORACLE_K10",
+      "metrics": [
+        "target contact loss",
+        "qpos/width opening",
+        "slip/drop",
+        "object-EEF divergence",
+        "task outcome",
+        "treatment-induced truncation"
+      ],
+      "pass_conditions": [
+        "snapshot/prefix equality: 100%",
+        "ORACLE OPEN execution fidelity: 100%",
+        "critical-positive physical adverse outcome rate >= control rate + 20pp",
+        "cluster/bootstrap or permutation test direction positive, 95% interval lower bound > 0",
+        "release group not classified as attack opportunity by Teacher",
+        "immutable receipts per window"
+      ],
+      "fail_action": "VALID_SCIENTIFIC_NEGATIVE (exit 4) — if no significant enrichment, stop. Do not continue to Student training."
+    },
+    {
+      "id": "A1_STUDENT_ARCHITECTURE_ABLATION",
+      "description": "Student shortcut audit and architecture selection using new Teacher labels only",
+      "depends_on": ["T5_TEACHER_ORACLE_ENRICHMENT"],
+      "gpu_count": 1,
+      "estimated_hours": 6,
+      "ablations": [
+        {"features": "UNIQUE40", "model": "MLP", "note": "25D + p9d + 6 non-redundant proxies"},
+        {"features": "PHY31", "model": "RF32", "note": "25D + 6 physical proxies"},
+        {"features": "UNIQUE40", "model": "RF32"},
+        {"features": "UNIQUE40", "model": "Dual"},
+        {"features": "LEGACY51", "model": "Dual", "note": "reference"},
+        {"features": "BEST", "model": "2-head-core", "note": "vs 5-head baseline"}
+      ],
+      "extra_tests": [
+        "old_cc=false & critical=true metrics",
+        "policy/open-close feature permutation",
+        "temporal-order shuffle",
+        "per-suite AUPRC",
+        "paired episode bootstrap",
+        "3 seeds only for final candidate"
+      ],
+      "selection_rules": [
+        "critical/K10 both significantly better than MLP",
+        "supported suites must not be structural-zero",
+        "old_cc=false critical recall >= 80%",
+        "choose simplest model within 1pp of best core AUPRC",
+        "any suite degrading >2pp cannot be masked by overall mean",
+        "cal/test completely unread"
+      ],
+      "pass_conditions": [
+        "all ablations run to completion with finite loss",
+        "selection rules applied deterministically",
+        "selected model documented with rationale",
+        "receipt binds all ablation results with SHAs"
+      ],
+      "fail_action": "HOLD_MODEL_VALUE (exit 5) — if no temporal model significantly beats MLP on both critical and K10"
+    },
+    {
+      "id": "S1_FINAL_STUDENT_RETRAIN_AND_SEAL",
+      "description": "Final Student training with A1-selected architecture, 3 frozen seeds",
+      "depends_on": ["A1_STUDENT_ARCHITECTURE_ABLATION"],
+      "gpu_count": 1,
+      "estimated_hours": 4,
+      "pass_conditions": [
+        "new G6 V3 seal frozen",
+        "train/val/cal still 640/80/80 identities (unchanged from V2)",
+        "feature schema, normalizer, pos-weight freshly frozen from train only",
+        "3 pre-registered seeds all finite loss",
+        "every head receives valid gradient",
+        "checkpoint roundtrip PASS",
+        "causal/padding parity PASS",
+        "source/data/checkpoint SHA complete",
+        "final model selection uses val-only pre-registered rule",
+        "cal/G10 still unblinded"
+      ],
+      "fail_action": "HOLD_REVIEW"
+    },
+    {
+      "id": "G9_CALIBRATION_SCHEDULER",
+      "description": "Calibrate criticality and K10 only (NOT safe-release). Search tau_c, tau_k, persistence D.",
+      "depends_on": ["S1_FINAL_STUDENT_RETRAIN_AND_SEAL"],
+      "gpu_count": 0,
+      "estimated_minutes": 30,
+      "calibration": {
+        "method": "Platt or temperature on natural-distribution cal80",
+        "unknown_handling": "never used in fit",
+        "search_grid": {
+          "tau_c": [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95],
+          "tau_k": [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95],
+          "D": [1, 2, 4, 6, 8, 10]
+        },
+        "evaluation": "episode-level causal replay, first-emit-only, horizon abstain"
+      },
+      "feasibility_constraints": [
+        "eligible critical episode recall >= 80%",
+        "K10 containment >= 80%",
+        "known-negative false emit <= 0.10/episode",
+        "release false emit <= 0.10/episode",
+        "articulated unknown emit = 0",
+        "every supported suite recall > 0",
+        "no suite-specific threshold"
+      ],
+      "tie_break": [
+        "maximize minimum suite recall",
+        "maximize K10 containment",
+        "minimize false emit",
+        "prefer smaller D",
+        "prefer higher thresholds"
+      ],
+      "pass_conditions": [
+        "at least one (tau_c, tau_k, D) combination satisfies all feasibility constraints",
+        "tie-break applied deterministically",
+        "thresholds frozen with SHA",
+        "receipt binds calibration manifest, search grid, tie-break logic",
+        "G10 test manifest still unread"
+      ],
+      "fail_action": "HOLD_REVIEW — if no feasible combination exists, do not relax constraints"
+    },
+    {
+      "id": "G10_HELDOUT_1200_REPLAY",
+      "description": "Detector-only replay on 1200 held-out identities. Compare V4 vs MLP vs final V5 Student.",
+      "depends_on": ["G9_CALIBRATION_SCHEDULER"],
+      "gpu_count": 1,
+      "estimated_hours": 3,
+      "pass_conditions": [
+        "identity leakage: 0 (no training/val/cal identity in test set)",
+        "Goal eligible recall: V5 significantly > V4",
+        "overall K10 containment: V5 >= V4",
+        "known-negative false emit: V5 <= V4",
+        "safe-release false emit <= 0.10/episode",
+        "articulated unknown emit = 0",
+        "Spatial old-no-emit mechanisms now covered",
+        "per-suite bootstrap CI and AUPRC complete",
+        "Teacher, Student, thresholds all frozen before test label generation"
+      ],
+      "fail_action": "HOLD_REVIEW — do not return to G9 to re-tune"
+    },
+    {
+      "id": "E1_VIS_EXECUTOR_FREEZE",
+      "description": "Freeze VIS-PGD executor config on non-Formal dev snapshots",
+      "depends_on": ["G10_HELDOUT_1200_REPLAY"],
+      "gpu_count": 1,
+      "estimated_minutes": 30,
+      "comparison": [
+        "single-token 31745 (NATIVE_OPEN)",
+        "OPEN-region objective",
+        "epsilon=0.03",
+        "PGD-20",
+        "5 fixed restarts"
+      ],
+      "selection_rules": [
+        "highest OPEN duty",
+        "arm dimensions preserved",
+        "fallback = 0",
+        "actual L_inf <= 0.03",
+        ">= 3/5 restarts achieve >= 2/10 OPEN frames",
+        "same config reproducible across frames"
+      ],
+      "pass_conditions": [
+        "exactly one executor config frozen with SHA",
+        "both objectives tested; if both fail → stop"
+      ],
+      "fail_action": "HOLD_REVIEW"
+    },
+    {
+      "id": "G11_V5_INTEGRATION_SMOKE",
+      "description": "V5 detector + VIS executor integration smoke test with exact-prefix runner",
+      "depends_on": ["E1_VIS_EXECUTOR_FREEZE"],
+      "gpu_count": 1,
+      "estimated_minutes": 20,
+      "coverage": ["trigger", "no-emit", "articulated abstain", "horizon abstain", "5 arms", "exact-prefix restore", "physical telemetry", "treatment truncation"],
+      "pass_conditions": [
+        "attack_errors = 0",
+        "fallback = 0",
+        "SHA mismatch = 0",
+        "prefix mismatch = 0",
+        "OPEN direction verified",
+        "K10 accounting verified",
+        "immutable receipt"
+      ],
+      "fail_action": "HOLD_REVIEW"
+    },
+    {
+      "id": "G12_FORMAL_WAVE0",
+      "description": "V5 Formal Wave-0: 4 pre-registered parents × 5 arms across all 4 suites",
+      "depends_on": ["G11_V5_INTEGRATION_SMOKE"],
+      "gpu_count": 1,
+      "estimated_hours": 2,
+      "parent_spec": "4 parents, one per suite, pre-registered before execution",
+      "pass_conditions": [
+        "20/20 arms disposition",
+        "exact snapshot verified",
+        "immutable receipt per arm",
+        "contact/qpos/object telemetry complete",
+        "CLEAN/TRUE/RAND/ORACLE/RANDOM_TIME all verified",
+        "both trigger and no-emit paths covered"
+      ],
+      "fail_action": "HOLD_REVIEW — fix engineering issues before unlocking remaining parents"
+    },
+    {
+      "id": "G13_FORMAL_20_PARENT",
+      "description": "V5 Formal complete matrix: 20 parents × 5 arms = 100 arms",
+      "depends_on": ["G12_FORMAL_WAVE0"],
+      "gpu_count": 8,
+      "estimated_hours": 4,
+      "pass_conditions": [
+        "100/100 arm dispositions",
+        "ITT includes no-emit and abstain",
+        "planned vs executed K10 reported",
+        "terminal censor separately reported",
+        "artifact immutable per parent",
+        "V4 Formal files unchanged"
+      ],
+      "scientific_note": "TRUE VIS showing no significant attack effect is NOT gate failure — it is a valid scientific result. If execution chain is correct, G13 marks PASS_COMPLETE_SCIENTIFIC_NEGATIVE and proceeds to G14.",
+      "fail_action": "engineering failure → HOLD_REVIEW; attack ineffectiveness → PASS_COMPLETE_SCIENTIFIC_NEGATIVE → G14"
+    },
+    {
+      "id": "G14_FINAL_REPORT",
+      "description": "Comprehensive final report: V4 vs V5, OPEN vs CLOSE, VIS vs ORACLE, all mechanisms",
+      "depends_on": ["G13_FORMAL_20_PARENT"],
+      "gpu_count": 0,
+      "estimated_hours": 2,
+      "required_sections": [
+        "Teacher label validity and ORACLE enrichment",
+        "V4 vs V5 detector replay comparison",
+        "MLP/RF32/Dual ablation results",
+        "random vs V5 timing analysis",
+        "TRUE vs RAND comparison",
+        "TRUE vs ORACLE gap analysis",
+        "Goal coverage delta",
+        "articulated abstain analysis",
+        "VIS flip duty characterization",
+        "task/contact/drop outcome analysis",
+        "all negative results and protocol deviations"
+      ],
+      "pass_conditions": [
+        "all sections present with data",
+        "receipts self-consistent",
+        "all SHAs verifiable",
+        "all protocol deviations documented"
+      ]
+    }
+  ],
+
+  "current_gate_detail": {
+    "id": "R0_EVIDENCE_READINESS",
+    "started_at": "2026-07-26",
+    "status": "IN_PROGRESS"
+  },
+
+  "superseded_artifacts": {
+    "G6_V1_SEAL": "superseded by G6_SEAL_V2 (close_intent → gripper_closing_state rename)",
+    "G7_RECEIPT": "will be superseded if Teacher label changes affect any shared-encoder head",
+    "G8_RECEIPT": "will be superseded if Teacher label changes affect any shared-encoder head",
+    "G7_G8_CHECKPOINTS": "valid for architecture reference but will be superseded by S1 retraining"
+  }
+}
