@@ -2,8 +2,8 @@
   "state_file": "CODEX_RUNTIME_STATE_V2",
   "owner": "Codex",
   "branch": "codex/detector-completion-20260726",
-  "code_snapshot_commit": "a402c2b98543e2c2d3d3a23dbce0ad64f087efcf",
-  "receipt_commit": "b71c00d1c82fb89b7c718dc877c20b77f885d305",
+  "code_snapshot_commit": "beb0721d36bd27412cde7d60623b8cb2f671a4bf",
+  "receipt_commit": "69bae546c67f7596273d842bcf4e03790ce04d47",
   "current_gate": "H0.3-R6_PROVENANCE",
   "status": "HOLD_REVIEW",
   "previous_state": {
@@ -12,21 +12,20 @@
   },
   "execution_receipt": {
     "path": "reports/CODEX_H0_3_R6_EXECUTION_RECEIPT.json",
-    "sha256": "fffb672afeb540c894cc17396c81bd350d936dcfb450537552b1a75cac009005",
-    "self_sha256": "923f00081c7266f6bb46eb6537514ffbb541ef93ed987aff4d6d2584606cbc23"
+    "sha256": "ef62a5f3065e3c057851d39be276f47e311d9d19aa431c98cdc8f0c989e6ed27",
+    "self_sha256": "3dd7a16a289980b3ed007d85edfe662385d1eabb74720bcaf16d7a2aefffa2d4"
   },
   "r6_evidence": {
     "resolver_tests": "20 passed",
     "run_a_run_b_canonical_payload_equal": true,
     "object_target_unresolved_ambiguous_blocked": 0,
     "self_contained_sha256sum": "PASS",
-    "evidence_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/h0_3/codex_r6_finalize_a402c2b_20260726_1200"
+    "evidence_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/h0_3/codex_r6_finalize_beb0721_20260726_1330"
   },
   "blockers": [
-    "Full official contract suite has 4 failures.",
     "H0.3 packet claims 25/25 resolver tests; independent rerun is 20/20.",
-    "C3-T0 Teacher success/terminal perturbation remains failing.",
-    "No independent transition receipt has been created."
+    "No independent transition receipt has been created.",
+    "The historical packet timestamp is later than the source-ready commit timestamp; chronology is disclosed but not independently closed."
   ],
   "protected_boundaries": {
     "cal_read": false,
@@ -38,5 +37,5 @@
     "c3_s3_authorized": false
   },
   "next_gate": "Resolve contract-test and chronology blockers, then issue an independent transition receipt; do not start C3-S3 before that receipt.",
-  "self_sha256": "bdd98dc65d6d6ae7831b5449a2d92b65493d94cc24a406c9bdd55be8bfc29416"
+  "self_sha256": "59847a9535149cfe8995dc428eb5946da43a1c3a2d168fbf8db447df5f921f92"
 }
