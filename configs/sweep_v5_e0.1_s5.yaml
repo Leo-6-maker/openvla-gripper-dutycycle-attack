@@ -1,0 +1,67 @@
+# FEC V3 Attack Configuration
+# Frozen for 100-cell formal FEC matrix.
+# Supersedes: v4_attack.yaml (generic V4 config lacks strict_route, objective, burst_frames)
+
+version: fec_attack_v3
+status: FROZEN_ACTIVE
+
+attack_optimizer:
+  method: token_prefix_pgd
+  strict_route: true
+  allow_fallback: false
+
+  epsilon: 0.1
+  step_size: 0.02
+  num_steps: 5
+  random_start: false
+
+  temporal_init: none
+  temporal_smooth_lambda: 0.0
+
+  surrogate_score_path: cached_autoregressive_generate_v1
+  prefix_refresh_interval: 1
+
+  # TRUE payload
+  objective: autoregressive_prefix_gripper_target_token_logratio_arm_v3
+  target_token_id: 31745  # FIXED: canonical NATIVE_OPEN token
+  target_execution_class: NATIVE_OPEN  # FIXED: CLIP_MEDIATED_OPEN is empty class
+  gradient_transform: none
+
+  # RAND payload (overrides objective gradient with Rademacher random signs)
+  # RAND uses same objective + gradient_transform: rademacher
+  # with frozen per-job seed from manifest
+
+  arm_preserve_weight: 0.1
+  gripper_margin: 5.0
+
+runtime:
+  attack_burst_frames: 10
+  fallback_forbidden: true
+  K10: 10
+
+arms:
+  CLEAN:
+    intervention: none
+    detector: logging_only
+  TRUE_T10:
+    trigger: n4_first_emit
+    objective: autoregressive_prefix_gripper_target_token_logratio_arm_v3
+    gradient_transform: none
+    burst_frames: 10
+  RAND_T10:
+    trigger: n4_first_emit
+    objective: autoregressive_prefix_gripper_target_token_logratio_arm_v3
+    gradient_transform: rademacher
+    gradient_transform_seed_per_job: true
+    burst_frames: 10
+    matched_to_TRUE: [epsilon, num_steps, step_size, random_start, burst_frames, surrogate_score_path, prefix_refresh_interval, temporal_init, temporal_smooth_lambda]
+  COMMAND_OPEN_ORACLE:
+    trigger: n4_first_emit
+    intervention: gripper_override_open
+    arm_dims_preserved: [0,1,2,3,4,5]
+    burst_frames: 10
+  RANDOM_TIME_T10:
+    trigger: pre_rollout_random_sampler
+    objective: autoregressive_prefix_gripper_target_token_logratio_arm_v3
+    gradient_transform: none
+    burst_frames: 10
