@@ -4,6 +4,7 @@
   "branch": "codex/detector-completion-20260726",
   "code_snapshot_commit": "beb0721d36bd27412cde7d60623b8cb2f671a4bf",
   "receipt_commit": "69bae546c67f7596273d842bcf4e03790ce04d47",
+  "supersession_ledger_commit": "62aed6c1c9f93c04994d730526a5b742238bd6e8",
   "current_gate": "H0.3-R6_PROVENANCE",
   "status": "HOLD_REVIEW",
   "previous_state": {
@@ -15,6 +16,11 @@
     "sha256": "ef62a5f3065e3c057851d39be276f47e311d9d19aa431c98cdc8f0c989e6ed27",
     "self_sha256": "3dd7a16a289980b3ed007d85edfe662385d1eabb74720bcaf16d7a2aefffa2d4"
   },
+  "supersession_ledger": {
+    "path": "reports/CODEX_H0_3_R6_SUPERSESSION_LEDGER.json",
+    "sha256": "c105428fe069dcc715798a623e7f1053e6a748502ae93bf775bf2ded67f70250",
+    "self_sha256": "7275e551fd4daed0c4894fa58d6fa1784bef9f1806b9c87478839e10cb8feeb6"
+  },
   "r6_evidence": {
     "resolver_tests": "20 passed",
     "run_a_run_b_canonical_payload_equal": true,
@@ -24,7 +30,7 @@
   },
   "blockers": [
     "H0.3 packet claims 25/25 resolver tests; independent rerun is 20/20.",
-    "No independent transition receipt has been created.",
+    "No independent transition receipt has been created; the read-only reviewer has not returned a verdict yet.",
     "The historical packet timestamp is later than the source-ready commit timestamp; chronology is disclosed but not independently closed."
   ],
   "protected_boundaries": {
@@ -37,5 +43,5 @@
     "c3_s3_authorized": false
   },
   "next_gate": "Resolve contract-test and chronology blockers, then issue an independent transition receipt; do not start C3-S3 before that receipt.",
-  "self_sha256": "59847a9535149cfe8995dc428eb5946da43a1c3a2d168fbf8db447df5f921f92"
+  "self_sha256": "01342d2dc049811e5ecceee68455b5fc3e2db6cb79e8b20036bcdba3c47de692"
 }
