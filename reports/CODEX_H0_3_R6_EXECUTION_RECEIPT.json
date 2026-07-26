@@ -3,14 +3,14 @@
   "gate": "H0.3-R6-PROVENANCE",
   "status": "HOLD_REVIEW",
   "owner": "Codex",
-  "code_snapshot_commit": "a402c2b98543e2c2d3d3a23dbce0ad64f087efcf",
-  "code_snapshot_tree": "b6cb5aff2f8c14161967b4164e43ea4bd1312aa3",
+  "code_snapshot_commit": "beb0721d36bd27412cde7d60623b8cb2f671a4bf",
+  "code_snapshot_tree": "bb7ef11fd8329ae2e8bb71a0bb4c6c4caaf2f7c3",
   "server": {
     "host": "pm-364c0001",
     "repo": "/mnt/sdc/dty_user/openvla_attack",
     "environment": "/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800",
     "worktree": "/mnt/sdc/dty_user/openvla_attack_worktrees/codex-detector-completion-0b723",
-    "worktree_head": "a402c2b98543e2c2d3d3a23dbce0ad64f087efcf",
+    "worktree_head": "beb0721d36bd27412cde7d60623b8cb2f671a4bf",
     "worktree_dirty": false
   },
   "runs": {
@@ -36,11 +36,11 @@
     "env_errors": 0
   },
   "finalized_evidence": {
-    "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/h0_3/codex_r6_finalize_a402c2b_20260726_1200",
+    "root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/h0_3/codex_r6_finalize_beb0721_20260726_1330",
     "status": "PASS_CANDIDATE_AWAITING_TRANSITION_REVIEW",
-    "artifact_manifest_sha256": "700c0a5c9acdd43dc994db7f45f9ae9aca1687da3203c954c613e99a2603ca37",
-    "sha256sums_sha256": "b3338511ad76bc2c788a6cec087cc07f472e5db9c124a7b1e46b6c9485bb95d3",
-    "sha256sums_sidecar_sha256": "d67e7db83cedb28a46d888d845feb443b4ccdbe887962a43e3051bcba3e55bba",
+    "artifact_manifest_sha256": "8f1b6d890b21a54206e1dd4f6606901e2441b5c537e9ff6c3ba4a89d0bcea2b0",
+    "sha256sums_sha256": "14c6b728ae2c142a5dbd860384152e4665de1013ab491d2a61afe54e5576532f",
+    "sha256sums_sidecar_sha256": "d1d9f244d0f485eaab5956e61b50d4df071b7d0e745d322d6e62eedf0d4e1d67",
     "file_count": 90,
     "sha256sum_check": "PASS",
     "sidecar_check": "PASS"
@@ -54,15 +54,11 @@
       "skipped": 0
     },
     "full_contract": {
-      "passed": 42,
-      "failed": 4,
+      "passed": 46,
+      "failed": 0,
       "errors": 0,
       "skipped": 0,
-      "failures": [
-        "two legacy HEAD_NAMES import failures",
-        "historical H0 binding assertion mismatch",
-        "C3-T0 success/terminal perturbation changes V22 physical label"
-      ]
+      "failures": []
     },
     "receipt_claim_discrepancy": "H0.3 packet claims 25/25 resolver tests; official rerun executed 20/20."
   },
@@ -81,6 +77,6 @@
     "attack_started": false,
     "c3_s3_authorized": false
   },
-  "decision": "H0.3-R6 remains HOLD_REVIEW; C3-S3 and all downstream gates remain BLOCKED.",
-  "self_sha256": "923f00081c7266f6bb46eb6537514ffbb541ef93ed987aff4d6d2584606cbc23"
+  "decision": "R6 provenance evidence is PASS_CANDIDATE; independent transition/chronology review remains HOLD_REVIEW; C3-S3 and all downstream gates remain BLOCKED.",
+  "self_sha256": "3dd7a16a289980b3ed007d85edfe662385d1eabb74720bcaf16d7a2aefffa2d4"
 }
