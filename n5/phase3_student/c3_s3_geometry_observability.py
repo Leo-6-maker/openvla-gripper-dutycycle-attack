@@ -292,7 +292,13 @@ def classify_rows(rows: Mapping[str, Dict[str, Any]], metadata: Mapping[str, Dic
             continue
         for index, relation in enumerate(relations):
             target = relation.get("target_resolution", {})
-            if target.get("resolution") != "EXACT_SITE":
+            target_role = relation.get("target_semantic_role")
+            if target_role == "OBJECT_TARGET" and target.get("resolution") in {"EXACT_BODY", "EXACT_GEOM", "APPROVED_STRUCTURAL_ALIAS"}:
+                classification = "DYNAMIC_RECONSTRUCTABLE"
+                reason = "object target has a resolved body/geom; step-bound object_state evidence is still required"
+                parent = None
+                joint_count = None
+            elif target.get("resolution") != "EXACT_SITE":
                 classification = "ARTICULATED_UNKNOWN"
                 reason = "target is not an exact region site"
                 parent = None
@@ -387,15 +393,19 @@ def seal_root(staging: Path, final: Path, manifest: Dict[str, Any]) -> Dict[str,
 def run(args: argparse.Namespace) -> Dict[str, Any]:
     r6_root = Path(args.r6_root).resolve()
     source, task_rows = compare_registry(r6_root)
+    source_b, task_rows_b = compare_registry(r6_root)
     metadata = extract_model_metadata() if args.extract_model_metadata else {}
+    metadata_b = extract_model_metadata() if args.extract_model_metadata else {}
     episode_rows = load_episode_manifest(Path(args.episode_manifest).resolve() if args.episode_manifest else None)
     transform = transform_contract_tests()
     payload_a = build_payload(source, task_rows, metadata, episode_rows, transform)
-    payload_b = build_payload(source, task_rows, metadata, episode_rows, transform)
+    payload_b = build_payload(source_b, task_rows_b, metadata_b, episode_rows, transform)
     independent_equal = payload_a["canonical_payload_sha256"] == payload_b["canonical_payload_sha256"]
     task_rows_out = payload_a["task_rows"]
     supported_rows = [r for r in task_rows_out if r.get("classification") != "NON_PLACEMENT_EXCLUDED"]
-    replay_evidence = bool(episode_rows)
+    # ponytail: keep this gate closed until a real per-episode geometry replay
+    # auditor computes numerical errors; a non-empty manifest alone is not evidence.
+    replay_evidence = False
     summary = {
         "gate": "C3-S3",
         "schema": "OFFICIAL_V3_C3_S3_GEOMETRY_OBSERVABILITY_V1",
@@ -411,8 +421,8 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         "articulated_unknown_rows": sum(r.get("classification") == "ARTICULATED_UNKNOWN" for r in supported_rows),
         "episode_rows": len(episode_rows),
         "episode_manifest_present": bool(episode_rows),
-        "static_replay_evidence": "AVAILABLE" if episode_rows else "MISSING_EPISODE_MANIFEST",
-        "dynamic_replay_evidence": "AVAILABLE" if episode_rows else "MISSING_EPISODE_MANIFEST",
+        "static_replay_evidence": "NOT_IMPLEMENTED_C3_S3_REPLAY_REQUIRED",
+        "dynamic_replay_evidence": "NOT_IMPLEMENTED_C3_S3_REPLAY_REQUIRED",
         "static_position_max_error_m": None,
         "static_rotation_max_error_rad": None,
         "dynamic_position_p99_error_m": None,
@@ -422,7 +432,7 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         "independent_canonical_digest_equal": independent_equal,
         "canonical_digest_a": payload_a["canonical_payload_sha256"],
         "canonical_digest_b": payload_b["canonical_payload_sha256"],
-        "hold_reasons": [] if replay_evidence else ["development/confirmation episode manifest not supplied; per-episode observability and replay error gates cannot be evaluated"],
+        "hold_reasons": ["per-episode geometry replay auditor and development/confirmation geometry manifest are not present; numerical observability gates cannot be evaluated"],
     }
     parent = Path(args.out_parent).resolve()
     parent.mkdir(parents=True, exist_ok=True)
