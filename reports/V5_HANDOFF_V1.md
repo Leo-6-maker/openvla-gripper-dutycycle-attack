@@ -1,6 +1,6 @@
 # V5 Handoff: V4 Detector Status, V5 Upgrade Rationale, Gaps
 
-**Date**: 2026-07-26 | **Branch**: `deepseek/integration-final-detector-20260724` | **Commit**: `e99fa27`
+**Date**: 2026-07-26 | **Branch**: `deepseek/integration-final-detector-20260724` | **Commit**: `ef324d1`
 
 ---
 
@@ -111,16 +111,34 @@ All 10 frames: clean_grip=0.0 (CLOSE) → final_grip=-1.0 (OPEN)
 
 **Verdict**: V4's emission window is physically vulnerable. Forced OPEN at this emit point causes task failure (policy horizon exhausted before task completion). The window is physically correct — the object is gripper-dependent and OPEN breaks the task.
 
-### 1.7 Combined V4D-OPEN Verdict
+### 1.7 V4D-OPEN Current Verdict (2026-07-26 sweep)
 
 ```text
-Physical vulnerability: CONFIRMED   ← ORACLE OPEN → task failure
-VIS reachability:      NOT REACHABLE ← ε=0.03/PGD-5 cannot flip argmax
-OPEN-CLOSE margin:     -15.75 clean, -17.31 after PGD-5 (improving but still negative)
-Model state:           UNCERTAIN — top prediction is non-action token 31744, not deep-CLOSE
-```
+8-GPU parallel budget sweep (render_gpu_device_id=0 + CUDA_VISIBLE_DEVICES isolation):
 
-The V4 Detector selects a window that is **physically correct but VIS-unreachable** with the frozen attack budget. This is not a problem with the physical window — it's a problem with the model's commitment at that point. The model is not "deep CLOSE" (top logit goes to an invalid token), but it's not flippable with ε=0.03 in 5 steps.
+  ε=0.03 PGD-5:  0/10 OPEN   (baseline — insufficient)
+  ε=0.03 PGD-10: 0/10 OPEN
+  ε=0.03 PGD-20: 4/10 OPEN   (K10=9, terminal censor)  ← PGD-20 SUCCEEDS at ε=0.03!
+  ε=0.06 PGD-5:  3/10 OPEN
+  ε=0.06 PGD-10: 4/10 OPEN
+  ε=0.06 PGD-20: 5/10 OPEN   (K10=6, severe TC)
+  ε=0.10 PGD-5:  5/10 OPEN
+  ε=0.10 PGD-10: 5/10 OPEN
+
+All successful: first frame env=-1.0 (OPEN), then revert to +1.0 (CLOSE).
+PGD-20 at ε=0.03 proves the window IS reachable within the frozen budget radius.
+
+Physical vulnerability: CONFIRMED by ORACLE (same-init independent rollout, not
+yet exact-snapshot matched). ORACLE OPEN → task failure (POLICY_HORIZON).
+
+VIS reachability: ε=0.03/PGD-5 NOT ACHIEVED (single attempt, no restart).
+                  ε=0.03/PGD-20 EMPIRICALLY ACHIEVED (4/10 frames flipped).
+                  Region-mass objective not yet tested (single-token 31745 used).
+
+Conclusion: V4 emit=83 is NOT unreachable. PGD-5 is simply insufficient. More
+optimization steps (PGD-20) or a region-mass objective may both resolve this.
+The first-frame-OPEN-then-revert pattern suggests the adversarial delta does not
+transfer well across policy steps — a known limitation of single-image PGD.
 
 ---
 
@@ -235,13 +253,11 @@ t09 (wine on rack):  52.0% crit, 48.0% known-neg
 
 | Gap | Detail |
 |-----|--------|
-| PGD bugs fixed | `target_action`, `TARGET_TOKEN_ID=31745`, `execution_class=NATIVE_OPEN` — all corrected |
-| ORACLE at V4 emit | **CONFIRMED**: V4 window physically vulnerable (ORACLE OPEN → task failure) |
-| PGD-5 vs PGD-20 | Logit margin improved -49→-17 in 5 steps but didn't cross zero. More steps may succeed. NOT YET TESTED. |
-| ε=0.03 vs ε larger | Model may be outside 0.03 reachable radius at V4 emit. NOT YET TESTED. |
-| Config frozen? | Attack config (`fec_attack_v3.yaml`) has hardcoded 31744; new config `fec_attack_v5_open.yaml` fixes this |
-
-Combined verdict: V4 Detector selects **physically correct but VIS-unreachable** windows. The attack configuration (ε=0.03, PGD-5) cannot flip the model's gripper output from CLOSE to OPEN at the tested emit point, despite the window being physically vulnerable to forced OPEN. This is a budget/optimization issue, not a window-selection issue.
+| PGD bugs fixed | `target_action`, `TARGET_TOKEN_ID=31745`, `execution_class=NATIVE_OPEN` — committed (`a4a74e8`) |
+| ORACLE at V4 emit | Same-init independent rollout confirms physical vulnerability. Exact-snapshot not yet sealed. |
+| PGD-5 vs PGD-20 | **PGD-20 SUCCEEDS** (4/10 OPEN at ε=0.03). PGD-5 alone insufficient. |
+| Single-token vs region | `prefix_locked_gripper_open_region_ce` config created (`ef324d1`), not yet tested |
+| ε=0.03 vs larger | ε=0.06/PGD-5 → 3/10, ε=0.10/PGD-5 → 5/10. |
 
 ### 4.2 High — Formal Evidence
 
@@ -285,15 +301,18 @@ Current recommendation: N5-v1 supports pick-place tasks with strong Teacher; art
 
 ## 5. Next Steps (Priority Order)
 
-### Immediate (this session) — COMPLETED
+### Completed (2026-07-26)
 
-1. **Run ORACLE-only canary at V4 emit** — DONE: V4 window physically vulnerable (ORACLE OPEN → task failure)
-2. **Commit logit margin analysis results** — DONE: clean -15.75, PGD-5 -17.31, model in uncertain state
+1. **8-GPU budget sweep** — DONE (`5d1d447`): PGD-20 at ε=0.03 flips 4/10 frames
+2. **Gate A engineering fixes** — DONE (`ef324d1`): config path, check_success, metadata, route_contract, V6 runner
+3. **OPEN-region objective config** — DONE (`ef324d1`): `fec_attack_v5_open_region.yaml`
+4. **V6 runner** — DONE (`ef324d1`): exact-prefix snapshot, physical telemetry, provenance
 
-### Immediate (next)
+### Immediate (next session)
 
-1. **Run PGD-20 canary** — determine if more steps can flip the gripper at V4 emit
-2. **Run ε=0.06 canary** — determine if larger budget reaches OPEN at V4 emit
+1. **Gate B: single-frame A/B test** — single-token 31745 vs OPEN-region logsumexp at emit=83
+2. **Gate C: PGD-20 with 5 restarts** — confirm empirical reachability at ε=0.03
+3. **Gate D: exact-snapshot three-arm canary** — CLEAN_REPLAY/ORACLE/best VIS with physical telemetry + video
 
 ### Short-term (next session)
 
