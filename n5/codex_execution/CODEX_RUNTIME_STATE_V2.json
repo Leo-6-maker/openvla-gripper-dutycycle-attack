@@ -2,12 +2,12 @@
   "state_file": "CODEX_RUNTIME_STATE_V2",
   "owner": "Codex",
   "branch": "codex/detector-completion-20260726",
-  "code_snapshot_commit": "beb0721d36bd27412cde7d60623b8cb2f671a4bf",
+  "code_snapshot_commit": "210ff02b916a4dcd46899683c4120225f46735ae",
   "receipt_commit": "69bae546c67f7596273d842bcf4e03790ce04d47",
   "supersession_ledger_commit": "62aed6c1c9f93c04994d730526a5b742238bd6e8",
   "transition_receipt_commit": "fcef528ccba43b54911f94b22ca231aae77da635",
   "current_gate": "C3-S3",
-  "status": "NEXT_GATE_AUTHORIZED",
+  "status": "C3_S3_HOLD",
   "previous_state": {
     "path": "n5/codex_execution/CODEX_RUNTIME_STATE_V1.json",
     "sha256": "3dea750030951f1a3254ab904d430dcb41f3d964a754dd0408d9c29fe37b3082"
@@ -31,7 +31,7 @@
   },
   "gate_status": {
     "H0.3-R6": "PASS",
-    "C3-S3": "AUTHORIZED",
+    "C3-S3": "HOLD",
     "C3-G": "BLOCKED",
     "C3-T0": "BLOCKED",
     "C3-T": "BLOCKED",
@@ -50,9 +50,35 @@
     "self_contained_sha256sum": "PASS",
     "evidence_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/h0_3/codex_r6_finalize_beb0721_20260726_1330"
   },
+  "c3_s3_evidence": {
+    "status": "HOLD",
+    "code_commit": "210ff02b916a4dcd46899683c4120225f46735ae",
+    "evidence_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/c3_s3/c3_s3_geometry_observability_210ff02b_20260726_2115",
+    "sha256sums_sha256": "675c48b026cd1e5cf4cceacee00f9edfebdcad8d803529ab10b6dad5176f4444",
+    "sha256sums_sidecar_file_sha256": "ee16753b70baa3929febea8a64779b97a2ccf93fff8469c801e35e2db7882cfb",
+    "summary_sha256": "a957e3985755c3cb67721b53e5d4887f15a80616384b44c53210254c1c7561a1",
+    "canonical_rebuild_a_sha256": "329a37ceed3a0a485c725bef37c2fee1287aacdb74da265489c484229a9f91bc",
+    "canonical_rebuild_b_sha256": "329a37ceed3a0a485c725bef37c2fee1287aacdb74da265489c484229a9f91bc",
+    "task_rows": 46,
+    "supported_rows": 44,
+    "static_rows": 11,
+    "dynamic_rows": 31,
+    "articulated_unknown_rows": 2,
+    "non_placement_excluded_rows": 2,
+    "episode_rows": 0,
+    "static_replay_error": null,
+    "dynamic_replay_p99_error": null,
+    "transform_contract": "PASS",
+    "source_mutation": 0,
+    "protected_reads": 0,
+    "model_inference": false,
+    "rollout_steps": 0,
+    "attack_steps": 0
+  },
   "blockers": [
     "H0.3 packet claims 25/25 resolver tests; independent rerun is 20/20.",
-    "C3-S3 execution has not started; this runtime commit only authorizes the next Gate.",
+    "C3-S3 task mapping and transform contract are sealed, but no development/confirmation per-episode geometry manifest is mounted; static/dynamic numerical replay error gates are not evaluable.",
+    "Two articulated cabinet target rows remain ARTICULATED_UNKNOWN and require a sealed reconstruction contract.",
     "All downstream Gates remain blocked until their own evidence, independent review, transition receipt, and runtime-state commit pass."
   ],
   "protected_boundaries": {
@@ -64,6 +90,6 @@
     "attack_started": false,
     "c3_s3_authorized": true
   },
-  "next_gate": "Execute C3-S3 Geometry Observability Seal only; do not read T2R-D or start Student training.",
-  "self_sha256": "1f78c53d9f3f78f45de01e112827b5585dc0e2c1ee81fda5631cec8ea2a52a86"
+  "next_gate": "C3-S3 remediation: mount non-protected development/confirmation geometry evidence and complete numerical replay audit; do not read CAL/G10/T2R-D or start Student training.",
+  "self_sha256": "81a3da3f6e151173781787778284e1c4051a7520225174a55f553c8889f60fd6"
 }
