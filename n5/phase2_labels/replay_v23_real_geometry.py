@@ -201,7 +201,10 @@ def shape_vertices(model: Any, geom_id: int) -> list[tuple[float, float, float]]
     return [(sx*half[0], sy*half[1], sz*half[2]) for sx in (-1,1) for sy in (-1,1) for sz in (-1,1)]
 
 
-def body_local_bounds(model: Any, body_id: int) -> tuple[list[float], list[float]]:
+def body_local_bounds(model: Any, body_id: int, cache: dict[tuple[str, int], tuple[list[float], list[float]]] | None = None) -> tuple[list[float], list[float]]:
+    key = ("body", body_id)
+    if cache is not None and key in cache:
+        return cache[key]
     ids = [i for i in range(int(model.nbody)) if i == body_id or body_path(model, body_id, i) is not None]
     corners: list[tuple[float, float, float]] = []
     for gid in range(int(model.ngeom)):
@@ -225,10 +228,15 @@ def body_local_bounds(model: Any, body_id: int) -> tuple[list[float], list[float
     center = [(hi[i]+lo[i])/2 for i in range(3)]
     if any(x <= 0 or not math.isfinite(x) for x in half):
         raise GeometryHold("invalid body bounds")
+    if cache is not None:
+        cache[key] = (center, half)
     return center, half
 
 
-def geom_local_bounds(model: Any, geom_id: int) -> tuple[list[float], list[float]]:
+def geom_local_bounds(model: Any, geom_id: int, cache: dict[tuple[str, int], tuple[list[float], list[float]]] | None = None) -> tuple[list[float], list[float]]:
+    key = ("geom", geom_id)
+    if cache is not None and key in cache:
+        return cache[key]
     vertices = shape_vertices(model, geom_id)
     lo = [min(vertex[i] for vertex in vertices) for i in range(3)]
     hi = [max(vertex[i] for vertex in vertices) for i in range(3)]
@@ -236,6 +244,8 @@ def geom_local_bounds(model: Any, geom_id: int) -> tuple[list[float], list[float
     half = [(hi[i] - lo[i]) / 2 for i in range(3)]
     if any(not math.isfinite(value) or value <= 0 for value in half):
         raise GeometryHold(f"invalid geom bounds: {geom_id}")
+    if cache is not None:
+        cache[key] = (center, half)
     return center, half
 
 
@@ -265,7 +275,8 @@ def load_relations(registry_root: Path, task_key: str) -> tuple[dict[str, Any], 
     return data["legacy"], sha256_file(file)
 
 
-def target_geometry(sim: Any, model: Any, resolution: Mapping[str, Any]) -> tuple[dict[str, list[float]], list[float], str]:
+def target_geometry(sim: Any, model: Any, resolution: Mapping[str, Any],
+                    bounds_cache: dict[tuple[str, int], tuple[list[float], list[float]]] | None = None) -> tuple[dict[str, list[float]], list[float], str]:
     name = resolution.get("alias_to") or resolution.get("name")
     kind = resolution.get("entity_type")
     expected_id = int(resolution.get("entity_id", -1))
@@ -278,20 +289,21 @@ def target_geometry(sim: Any, model: Any, resolution: Mapping[str, Any]) -> tupl
         bid = model.body(name).id
         if bid != expected_id:
             raise GeometryHold(f"body identity mismatch: {name}")
-        center, half = body_local_bounds(model, bid)
+        center, half = body_local_bounds(model, bid, bounds_cache)
         body_pose = pose(sim.data.body_xpos[bid].tolist(), sim.data.body_xquat[bid].tolist())
         return compose(body_pose, {"pos": center, "quat": [1,0,0,0]}), half, "body"
     if kind == "geom":
         gid = model.geom(name).id
         if gid != expected_id:
             raise GeometryHold(f"geom identity mismatch: {name}")
-        center, half = geom_local_bounds(model, gid)
+        center, half = geom_local_bounds(model, gid, bounds_cache)
         geom_pose = pose(sim.data.geom_xpos[gid].tolist(), mat_to_quat(sim.data.geom_xmat[gid].tolist()))
         return compose(geom_pose, {"pos": center, "quat": [1, 0, 0, 0]}), half, "geom"
     raise GeometryHold(f"unsupported target entity: {kind}")
 
 
-def build_case(sim: Any, model: Any, relation: Mapping[str, Any], episode_id: str, step: int) -> dict[str, Any]:
+def build_case(sim: Any, model: Any, relation: Mapping[str, Any], episode_id: str, step: int,
+               bounds_cache: dict[tuple[str, int], tuple[list[float], list[float]]] | None = None) -> dict[str, Any]:
     obj = relation["object_resolution"]
     name = obj.get("alias_to") or obj.get("name")
     kind = obj.get("entity_type")
@@ -299,17 +311,17 @@ def build_case(sim: Any, model: Any, relation: Mapping[str, Any], episode_id: st
         bid = model.body(name).id
         if bid != int(obj.get("entity_id", -1)):
             raise GeometryHold(f"object identity mismatch: {name}")
-        center, half = body_local_bounds(model, bid)
+        center, half = body_local_bounds(model, bid, bounds_cache)
         obj_pose = compose(pose(sim.data.body_xpos[bid].tolist(), sim.data.body_xquat[bid].tolist()), {"pos": center, "quat": [1,0,0,0]})
     elif kind == "geom":
         gid = model.geom(name).id
         if gid != int(obj.get("entity_id", -1)):
             raise GeometryHold(f"object geom identity mismatch: {name}")
-        center, half = geom_local_bounds(model, gid)
+        center, half = geom_local_bounds(model, gid, bounds_cache)
         obj_pose = compose(pose(sim.data.geom_xpos[gid].tolist(), mat_to_quat(sim.data.geom_xmat[gid].tolist())), {"pos": center, "quat": [1, 0, 0, 0]})
     else:
         raise GeometryHold(f"unsupported object entity: {kind}")
-    target_pose, target_half, target_kind = target_geometry(sim, model, relation["target_resolution"])
+    target_pose, target_half, target_kind = target_geometry(sim, model, relation["target_resolution"], bounds_cache)
     if len(target_half) != 3 or any(float(x) <= 0 for x in target_half):
         raise GeometryHold(f"target extents invalid: {episode_id}:{step}")
     object_id = f"{episode_id}#relation_{relation['relation_index']}#object"
@@ -354,7 +366,7 @@ def replay_episode(record: Mapping[str, Any], registry_root: Path, benchmark_cac
     model = env.sim.model; site_id = model.site_name2id("gripper0_grip_site")
     qpos_binding = calibrated_qpos_threshold(model)
     relation_rows = []
-    qpos_errors = []; eef_errors = []; all_cases = []
+    qpos_errors = []; eef_errors = []; all_cases = []; bounds_cache = {}
     try:
         relations = []
         for idx, rel in enumerate(legacy.get("relations", [])):
@@ -363,7 +375,7 @@ def replay_episode(record: Mapping[str, Any], registry_root: Path, benchmark_cac
             step = int(step_row["step"])
             qpos_errors.append(float(np.max(np.abs(np.asarray(side_row["robot0_gripper_qpos"], float)-np.asarray(obs["robot0_gripper_qpos"], float)))))
             eef_errors.append(float(np.max(np.abs(np.asarray(side_row["eef_feature_pos"], float)-np.asarray(env.sim.data.site_xpos[site_id], float)))))
-            all_cases.append({"episode_id": episode_id, "step": step, "relations": [build_case(env.sim, model, rel, episode_id, step) for rel in relations]})
+            all_cases.append({"episode_id": episode_id, "step": step, "relations": [build_case(env.sim, model, rel, episode_id, step, bounds_cache) for rel in relations]})
             obs, _reward, done, _info = env.step([float(x) for x in step_row["applied_action_7d"]])
             if done and step + 1 < len(steps):
                 raise GeometryHold(f"replay terminated before source horizon: {episode_id}:{step}")
