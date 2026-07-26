@@ -1,0 +1,84 @@
+{
+  "gate": "C3-S2_STATIC_DYNAMIC_TARGET_SEAL_V2",
+  "plan_gate": "C3-S2",
+  "timestamp": "2026-07-26T10:00:00Z",
+  "status": "PASS",
+  "exit_code": 0,
+
+  "upstream_sha_verified": {
+    "H0_RECEIPT": "3286fbad11a8cf46... (server SHA matches local)"
+  },
+
+  "server_artifacts": {
+    "C3_S_V2_RECEIPT": {
+      "server_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/c3_s2_v2_seal/C3_S_V2_RECEIPT.json",
+      "server_file_sha256": "67ba64bfedf77779afad59e92f2a2d014aa442d58a5698d294ef95c5fef0fae4",
+      "self_sha256": "31f3838a0542635ca8eba4bbd9827d68a777028010ea518f2a1d8fb45cccba7f"
+    },
+    "STATIC_WORLD_POSE_SEAL": {
+      "server_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/c3_s2_v2_seal/STATIC_WORLD_POSE_SEAL.json",
+      "server_file_sha256": "b251db8701a6a5d1a3aa4bdac68fb349578ca10a41cdaacab1e6fa80298833a1"
+    },
+    "BASKET_RECONSTRUCTION_SEAL": {
+      "server_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/c3_s2_v2_seal/BASKET_RECONSTRUCTION_SEAL.json",
+      "server_file_sha256": "fa458d91523e1c9e2466352ef20ea51c58074926cf6ae0d61e8d7ff22cf8c5fe"
+    },
+    "TARGET_OBSERVABILITY_MANIFEST": {
+      "server_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/c3_s2_v2_seal/TARGET_OBSERVABILITY_MANIFEST.json",
+      "server_file_sha256": "fd812726304ad2615cb210410b7cb680d8a4e24980f01bd5f83b6f002e2f930d"
+    }
+  },
+
+  "classification": {
+    "n_targets": 23,
+    "task_bound_keys": "suite/task_idx/BDDL_SHA/model_SHA/site_name (NO site-name-only dedup)",
+    "static_criterion": "pos_drift <= 1e-6 AND rot_drift <= 1e-6 AND NOT has_movable_ancestor",
+    "STATIC_EXACT_SITE": 8,
+    "DYNAMIC_RECONSTRUCTABLE": 13,
+    "DYNAMIC_POSSIBLE_UNSEALED": 2,
+    "static_targets": [
+      "flat_stove_1_cook_region (libero_10/task_02, libero_10/task_08, libero_goal/task_01)",
+      "desk_caddy_1_back_contain_region (libero_10/task_05)",
+      "living_room_table_plate_right_region (libero_10/task_06)",
+      "microwave_1_heating_region (libero_10/task_09)",
+      "main_table_stove_front_region (libero_goal/task_05)",
+      "wine_rack_1_top_region (libero_goal/task_09)"
+    ],
+    "reconstructable": "basket_1_contain_region (13 task instances across libero_10 and libero_object)",
+    "unsealed": [
+      "white_cabinet_1_bottom_region (libero_10/task_03) — hinge joint_13, range 0.17",
+      "wooden_cabinet_1_top_region (libero_goal/task_03) — hinge joint_13, range 0.17"
+    ]
+  },
+
+  "basket_reconstruction": {
+    "method": "T_site_world = T_body_world * T_site_body",
+    "body_name": "basket_1_main",
+    "site_name": "basket_1_contain_region",
+    "max_position_error": 0.0,
+    "n_samples": 5,
+    "tolerance": 1e-06,
+    "passes": true
+  },
+
+  "observability_ceiling": {
+    "total_supported_episodes": 79,
+    "observable_episodes": 79,
+    "unobservable_episodes": 0,
+    "max_possible_recall": 1.0,
+    "passes_95pct": true,
+    "verdict": "PASS — ceiling >= 95%, T2R-D structurally feasible"
+  },
+
+  "v1_defects_resolved": [
+    "wooden_cabinet_1_top_region: V1=STATIC → V2=DYNAMIC_POSSIBLE_UNSEALED (movable hinge ancestor detected)",
+    "white_cabinet_1_bottom_region: V1=non-static (correct direction) → V2=DYNAMIC_POSSIBLE_UNSEALED (movable hinge ancestor documented)",
+    "basket_1_contain_region: V1=DYNAMIC_UNOBSERVABLE → V2=DYNAMIC_RECONSTRUCTABLE (body→site transform validated, max error 0.0)",
+    "Dedup: site-name-only → task+BDDL+model+site composite keys (23 targets vs 9 in V1)",
+    "Static criterion: pos/rot drift only → added NOT has_movable_ancestor requirement"
+  ],
+
+  "source_commit": "00c54f9",
+  "source_script": "n5/phase3_student/t2cs_v2_seal.py",
+  "next_gate": "C3-G_TRISTATE_GEOMETRY_EVALUATOR"
+}
