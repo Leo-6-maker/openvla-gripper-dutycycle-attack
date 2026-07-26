@@ -44,14 +44,14 @@ def walk_identity_objects(value: Any) -> Iterable[Mapping[str, Any]]:
 
 
 def manifest_files(root: Path) -> List[Path]:
-    return sorted(root.glob("shards/*/worker_*/worker_manifest.json"))
+    return sorted(root.glob("shards/*/worker_*/worker_manifest.jsonl"))
 
 
 def build_rows(c2f_root: Path) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
     rows: Dict[tuple[str, int, int], Dict[str, Any]] = {}
     worker_manifests = manifest_files(c2f_root)
     for worker_manifest in worker_manifests:
-        data = json.loads(worker_manifest.read_text(encoding="utf-8"))
+        data = [json.loads(line) for line in worker_manifest.read_text(encoding="utf-8").splitlines() if line.strip()]
         worker = worker_manifest.parent.name
         suite_dir = worker_manifest.parent.parent.name
         for obj in walk_identity_objects(data):
