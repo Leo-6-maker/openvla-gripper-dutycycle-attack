@@ -28,7 +28,7 @@ FORBIDDEN_TOKENS = {
 HEAD_INPUT_ALLOWLIST = {
     "physical_criticality": frozenset({"physical_known", "stable_grasp", "transport_or_manipulation"}),
     "safe_release": frozenset({"placement", "release", "stability"}),
-    "k10_feasible": frozenset({"protocol_steps_remaining", "safe_release"}),
+    "k10_feasible": frozenset({"protocol_steps_remaining", "safe_release_computed"}),
     "instability": frozenset({"slip", "regrasp", "contact_loss"}),
     "gripper_closing_state": frozenset({"gripper_qpos", "qpos_close_threshold"}),
 }
@@ -62,7 +62,7 @@ def label(value: str, reason: str) -> dict[str, Any]:
 
 
 def _tri(value: Any) -> str | None:
-    if value is None:
+    if value is None or value == UNKNOWN:
         return None
     if value is True or value == TRUE:
         return TRUE
@@ -97,7 +97,7 @@ def safe_release(record: Mapping[str, Any]) -> dict[str, Any]:
 
 def k10_feasible(record: Mapping[str, Any], horizon: int = 10) -> dict[str, Any]:
     record = _project(record, "k10_feasible")
-    safe_record = record.get("safe_release")
+    safe_record = record.get("safe_release_computed")
     safe = _tri(safe_record.get("value")) if isinstance(safe_record, Mapping) else _tri(safe_record)
     remaining = record.get("protocol_steps_remaining")
     if remaining is None:
@@ -152,10 +152,12 @@ def apply_persistence(labels: Sequence[Mapping[str, Any]], min_steps: int = 2) -
     return out
 
 
-def apply_right_censor(item: Mapping[str, Any], remaining_steps: int | None,
+def apply_right_censor(item: Mapping[str, Any], observed_future_steps_available: Any,
                        required_steps: int = 10) -> dict[str, Any]:
-    if remaining_steps is None or remaining_steps < required_steps:
-        return label(UNKNOWN, "RIGHT_CENSORED_PROTOCOL_STEPS")
+    if (not isinstance(observed_future_steps_available, int)
+            or isinstance(observed_future_steps_available, bool)
+            or observed_future_steps_available < required_steps):
+        return label(UNKNOWN, "RIGHT_CENSORED_OBSERVED_FUTURE_STEPS")
     return label(item.get("value", UNKNOWN), item.get("reason", "UNCENSORED"))
 
 
@@ -176,7 +178,7 @@ def evaluate_heads(record: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
     safe = safe_release(record)
     result = {
         "physical_criticality": physical_criticality(record),
-        "k10_feasible": k10_feasible({"protocol_steps_remaining": record.get("protocol_steps_remaining"), "safe_release": safe}),
+        "k10_feasible": k10_feasible({"protocol_steps_remaining": record.get("protocol_steps_remaining"), "safe_release_computed": safe}),
         "safe_release": safe,
         "instability": instability(record),
         "gripper_closing_state": gripper_closing_state(record),

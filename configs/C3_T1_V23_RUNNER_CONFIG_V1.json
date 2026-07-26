@@ -1,0 +1,34 @@
+{
+  "schema": "C3_T1_V23_RUNNER_CONFIG_V1",
+  "status": "FROZEN_DEVELOPMENT",
+  "qpos_close_threshold": 0.2,
+  "required_geometry_contract": "C3_G_PREDICATE_CONTRACT_V1_1",
+  "required_heads": [
+    "physical_criticality",
+    "k10_feasible",
+    "safe_release",
+    "instability",
+    "gripper_closing_state"
+  ],
+  "forbidden_runtime_fields": [
+    "task_success",
+    "task_terminal",
+    "terminal",
+    "terminal_state",
+    "reward",
+    "outcome",
+    "attack",
+    "future",
+    "action",
+    "action_raw",
+    "clean_action_raw_7d",
+    "applied_action_7d",
+    "policy_action",
+    "command",
+    "close_intent"
+  ],
+  "protected_payload_read": false,
+  "model_inference": false,
+  "rollout": false,
+  "attack": false
+}

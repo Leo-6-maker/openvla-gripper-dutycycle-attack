@@ -13,7 +13,7 @@ def _physical(**updates):
         "physical_known": True, "stable_grasp": True,
         "transport_or_manipulation": False, "placement": False,
         "release": False, "stability": True, "protocol_steps_remaining": 12,
-        "safe_release": False, "slip": False, "regrasp": False,
+        "safe_release_computed": False, "slip": False, "regrasp": False,
         "contact_loss": False, "gripper_qpos": 0.1,
         "qpos_close_threshold": 0.2,
     }
@@ -72,11 +72,44 @@ class TestC3T0SemanticContract(unittest.TestCase):
 
     def test_k10_right_censor_and_known_horizon(self):
         self.assertEqual(k10_feasible(_physical(protocol_steps_remaining=10,
-                                                 safe_release=False))["value"], TRUE)
+                                                 safe_release_computed=False))["value"], TRUE)
         self.assertEqual(k10_feasible(_physical(protocol_steps_remaining=9,
-                                                 safe_release=False))["value"], FALSE)
+                                                 safe_release_computed=False))["value"], FALSE)
         self.assertEqual(k10_feasible(_physical(protocol_steps_remaining=None,
-                                                 safe_release=False))["value"], UNKNOWN)
+                                                 safe_release_computed=False))["value"], UNKNOWN)
+
+    def test_k10_boundary_and_invalid_protocol_horizon_values(self):
+        for horizon, expected in ((None, UNKNOWN), (-1, UNKNOWN), (0, FALSE),
+                                  (9, FALSE), (10, TRUE), (11, TRUE),
+                                  (True, UNKNOWN), ("10", UNKNOWN),
+                                  (math.nan, UNKNOWN), (math.inf, UNKNOWN)):
+            result = k10_feasible({
+                "protocol_steps_remaining": horizon,
+                "safe_release_computed": FALSE,
+            })
+            self.assertEqual(result["value"], expected, msg=f"horizon={horizon!r}")
+        self.assertEqual(k10_feasible({
+            "protocol_steps_remaining": 10,
+            "safe_release_computed": UNKNOWN,
+        })["value"], UNKNOWN)
+
+    def test_observed_future_steps_are_separate_from_protocol_horizon(self):
+        for observed, expected in ((None, UNKNOWN), (0, UNKNOWN), (1, UNKNOWN),
+                                   (9, UNKNOWN), (10, TRUE), (True, UNKNOWN),
+                                   ("10", UNKNOWN), (math.nan, UNKNOWN),
+                                   (math.inf, UNKNOWN)):
+            result = apply_right_censor({"value": TRUE}, observed)
+            self.assertEqual(result["value"], expected, msg=f"observed={observed!r}")
+
+    def test_evaluate_heads_uses_one_computed_safe_release(self):
+        result = evaluate_heads(_physical(protocol_steps_remaining=10,
+                                           placement=False, release=False,
+                                           stability=True))
+        direct = k10_feasible({
+            "protocol_steps_remaining": 10,
+            "safe_release_computed": result["safe_release"],
+        })
+        self.assertEqual(result["k10_feasible"], direct)
 
     def test_per_head_allowlist_ignores_nonhead_aliases_and_rejects_forbidden_aliases(self):
         base = _physical()

@@ -17,7 +17,7 @@
     "input": "protocol_steps_remaining",
     "null_protocol_steps_remaining": "UNKNOWN",
     "protocol_steps_remaining_0_to_9": "FALSE",
-    "protocol_steps_remaining_gte_10": "TRUE only when computed safe_release is FALSE",
+    "protocol_steps_remaining_gte_10": "TRUE only when safe_release_computed is FALSE",
     "future_outcome_forbidden": true
   },
   "input_allowlists": {
@@ -29,7 +29,7 @@
   },
   "cross_head_invariants": [
     "safe_release TRUE implies k10_feasible FALSE",
-    "k10_feasible TRUE implies safe_release FALSE and protocol_steps_remaining >= 10",
+    "k10_feasible TRUE implies safe_release_computed FALSE and protocol_steps_remaining >= 10",
     "UNKNOWN is never converted to FALSE"
   ],
   "truth_semantics": {
@@ -39,8 +39,8 @@
       "UNKNOWN": "physical evidence is absent, ambiguous, nonfinite, or right-censored"
     },
     "k10_feasible": {
-      "TRUE": "known remaining horizon is at least 10 and safe_release is FALSE",
-      "FALSE": "known remaining horizon is below 10 or safe_release is TRUE",
+      "TRUE": "known protocol_steps_remaining is at least 10 and safe_release_computed is FALSE",
+      "FALSE": "known protocol_steps_remaining is below 10 or safe_release_computed is TRUE",
       "UNKNOWN": "horizon/release evidence is unknown or right-censored"
     },
     "safe_release": {
