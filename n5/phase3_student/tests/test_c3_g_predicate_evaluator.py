@@ -51,7 +51,7 @@ def test_coordinate_transform_and_q_sign_equivalence():
 
 
 def test_boundary_is_inclusive_but_hard_negative_is_false():
-    tol = CONTRACT["tolerance"]["position_m"]
+    tol = CONTRACT["tolerance"]["containment_margin_m"]
     limit = 0.9
     boundary = evaluate_case(_case("In", object_pos=(limit + tol, 0.0, 0.0)), CONTRACT)
     outside = evaluate_case(_case("In", object_pos=(limit + 2.0 * tol, 0.0, 0.0)), CONTRACT)

@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 
-CONTRACT_PATH = Path(__file__).resolve().parents[2] / "configs" / "C3_G_PREDICATE_CONTRACT_V1.json"
+CONTRACT_PATH = Path(__file__).resolve().parents[2] / "configs" / "C3_G_PREDICATE_CONTRACT_V1_1.json"
 SUPPORTED = frozenset({"In", "On", "Stack"})
 OBJECT_ROLE = "MANIPULATED_OBJECT"
 OBJECT_TARGET = "OBJECT_TARGET"
@@ -17,11 +17,15 @@ FORBIDDEN = frozenset({"task_success", "reward", "teacher", "outcome", "attack",
 
 def load_contract(path: Path = CONTRACT_PATH) -> dict[str, Any]:
     data = json.loads(path.read_text(encoding="utf-8"))
-    if data.get("schema") != "C3_G_PREDICATE_CONTRACT_V1" or data.get("status") != "FROZEN":
+    if data.get("schema") != "C3_G_PREDICATE_CONTRACT_V1_1" or data.get("status") != "FROZEN":
         raise ValueError("C3-G predicate contract is not frozen")
     if data.get("tri_state") != ["TRUE", "FALSE", "UNKNOWN"]:
         raise ValueError("C3-G tri-state contract mismatch")
-    if float(data.get("tolerance", {}).get("position_m", -1.0)) <= 0 or float(data.get("tolerance", {}).get("comparison_epsilon_m", -1.0)) < 0:
+    tolerance = data.get("tolerance", {})
+    required = ("numerical_epsilon_m", "comparison_epsilon_m", "containment_margin_m", "support_vertical_tolerance_m", "horizontal_overlap_threshold_m")
+    if any(key not in tolerance for key in required):
+        raise ValueError("C3-G tolerance split is incomplete")
+    if any(float(tolerance[key]) < 0 for key in required) or float(tolerance["numerical_epsilon_m"]) <= 0:
         raise ValueError("C3-G tolerance is invalid")
     return data
 
@@ -85,7 +89,7 @@ def _relative_position(target_pose: Mapping[str, Any], object_pose: Mapping[str,
 
 
 def _unknown(predicate: Any, reason: str) -> dict[str, Any]:
-    return {"value": "UNKNOWN", "predicate": predicate, "reason": reason}
+    return {"value": "UNKNOWN", "predicate": predicate, "reason": reason, "raw_measurements": {}}
 
 
 def evaluate_case(case: Mapping[str, Any], contract: Mapping[str, Any] | None = None) -> dict[str, Any]:
@@ -123,18 +127,23 @@ def evaluate_case(case: Mapping[str, Any], contract: Mapping[str, Any] | None = 
     if relative is None:
         return _unknown(predicate, "NON_FINITE_POSE")
     position, _ = relative
-    tolerance = float(frozen["tolerance"]["position_m"])
-    epsilon = float(frozen["tolerance"].get("comparison_epsilon_m", 0.0))
+    tolerance = frozen["tolerance"]
+    epsilon = float(tolerance.get("comparison_epsilon_m", tolerance["numerical_epsilon_m"]))
     if predicate == "In":
         limits = [target_extents[index] - object_extents[index] for index in range(3)]
         if any(limit < 0 for limit in limits):
             return _unknown(predicate, "DEGENERATE_CONTAINMENT")
-        value = "TRUE" if all(abs(position[index]) <= limits[index] + tolerance + epsilon for index in range(3)) else "FALSE"
+        margin = float(tolerance["containment_margin_m"])
+        value = "TRUE" if all(abs(position[index]) <= limits[index] + margin + epsilon for index in range(3)) else "FALSE"
+        raw = {"relative_position": position, "limits": limits, "containment_margin_m": margin, "comparison_epsilon_m": epsilon}
     else:
         limits = [target_extents[0] - object_extents[0], target_extents[1] - object_extents[1]]
         if any(limit < 0 for limit in limits):
             return _unknown(predicate, "DEGENERATE_SUPPORT")
-        horizontal = all(abs(position[index]) <= limits[index] + tolerance + epsilon for index in range(2))
+        horizontal_margin = float(tolerance["horizontal_overlap_threshold_m"])
+        horizontal = all(abs(position[index]) <= limits[index] + horizontal_margin + epsilon for index in range(2))
         vertical_gap = position[2] - target_extents[2] - object_extents[2]
-        value = "TRUE" if horizontal and abs(vertical_gap) <= tolerance + epsilon else "FALSE"
-    return {"value": value, "predicate": predicate, "reason": "GEOMETRY_EVALUATED", "relative_position": position}
+        vertical_tolerance = float(tolerance["support_vertical_tolerance_m"])
+        value = "TRUE" if horizontal and abs(vertical_gap) <= vertical_tolerance + epsilon else "FALSE"
+        raw = {"relative_position": position, "limits": limits, "horizontal_overlap_threshold_m": horizontal_margin, "vertical_gap_m": vertical_gap, "support_vertical_tolerance_m": vertical_tolerance, "comparison_epsilon_m": epsilon}
+    return {"value": value, "predicate": predicate, "reason": "GEOMETRY_EVALUATED", "raw_measurements": raw, "relative_position": position}
