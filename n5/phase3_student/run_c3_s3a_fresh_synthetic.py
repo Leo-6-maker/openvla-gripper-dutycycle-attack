@@ -535,6 +535,7 @@ def _write_result(out: Path, payload: Mapping[str, Any], rows: Sequence[Mapping[
             "coverage": payload["coverage"],
             "metrics": payload["metrics"],
             "category_metrics": payload["category_metrics"],
+            "numerical_thresholds": c3.NUMERICAL_THRESHOLDS,
             "numerical_gate": payload["numerical_gate"],
             "selected_row_count": len(selected),
             "source_mutation": 0,
