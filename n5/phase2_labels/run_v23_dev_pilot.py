@@ -456,6 +456,8 @@ def _registry_object_ids(registry_root: Path, episode_id: str) -> set[str]:
     legacy = data.get("legacy")
     if not isinstance(legacy, Mapping):
         raise RunnerHold(f"registry legacy relation data missing: {task_key}")
+    if not isinstance(legacy.get("relations"), list):
+        raise RunnerHold(f"registry relation list missing: {task_key}")
     ids = set()
     for relation in legacy.get("relations", []):
         if not isinstance(relation, Mapping):
@@ -467,8 +469,6 @@ def _registry_object_ids(registry_root: Path, episode_id: str) -> set[str]:
         if not isinstance(name, str) or not name:
             raise RunnerHold(f"object identity missing: {task_key}")
         ids.add(name)
-    if not ids:
-        raise RunnerHold(f"registry object set empty: {task_key}")
     return ids
 
 
