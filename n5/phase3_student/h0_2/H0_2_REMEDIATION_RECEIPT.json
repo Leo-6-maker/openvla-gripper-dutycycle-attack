@@ -1,0 +1,57 @@
+{
+  "receipt": "H0_2_REMEDIATION_RECEIPT",
+  "gate": "H0_2_REMEDIATION",
+  "status": "HOLD_REVIEW",
+  "producer_agent": "DeepSeek",
+  "timestamp": "2026-07-26T10:20:00Z",
+  "self_hash_algorithm": "SHA256(UTF-8(json.dumps(object_without_top_level_self_sha256, sort_keys=true, separators=(\",\", \":\"), ensure_ascii=false)))",
+  "audited_source_commit": "00c54f93c1dbd00b2ea42e34de7cdfbbad9d3756",
+  "remediation_branch": "deepseek/h0-2-remediation-20260726",
+  "upstream_codex_audit": {
+    "audit_branch": "codex/h0-1-independent-audit-20260726",
+    "audit_commit": "c6fdadbed2894aa6f9e5983fde19fa4075a6cfa8",
+    "audit_verdict": "PROVENANCE_FAIL",
+    "audit_receipt_sha256": "9f4c7175d333a57102670328eda0cf7ad05df1c9e438b26349ff6a162682694b",
+    "audit_receipt_self_sha256": "c1a7ce9a715f68f696b80099adc11a41b3c219b2a89209eeb927eba449b4bae0"
+  },
+  "sub_artifacts": {
+    "c1_rerun_receipt": {
+      "path": "n5/phase3_student/h0_2/C1_RERUN_RECEIPT.json",
+      "sha256": "1752b7acf8d15551d1d12b822ea0ef160a46e334e7b7e84efb3f27d8b2ed47d2",
+      "self_sha256": "bce505a2499653af568df5314e3ee2f58d56690b98fa73705f44f715df9524cf"
+    },
+    "test_h0_v2_run_receipt": {
+      "path": "n5/phase3_student/h0_2/TEST_H0_V2_RUN_RECEIPT.json",
+      "sha256": "01c65db4f70eb458f7f8a62e305882e90f15575aa30c3d01c701fde50a896374",
+      "self_sha256": "a565f5d10fd1a29dad76a20ea2e22b7122021599bd7b08f03c0cda690804f8d9"
+    },
+    "runtime_state": {
+      "path": "n5/phase3_student/h0_2/N5_RUNTIME_STATE_V1.json",
+      "sha256": "04880c4419249c15009e0623dd1cda0a63959730b5645518e84d6e91c58410e8",
+      "self_sha256": "7a6b06f726d169a147cbf324800200b4d49ad04af1f573d0a69b024878c57bf8"
+    },
+    "hold_packet": {
+      "path": "n5/phase3_student/h0_2/H0_2_HOLD_PACKET.json",
+      "sha256": "5be084db58110454f622a3f34e572c52174b085200223e9db4c7c4e7127922f5",
+      "self_sha256": "fb6492937c628a066d8075489448f47dee26408af529bb602362f30cdf0c414a"
+    },
+    "protocol_amendment_v4": {
+      "path": "reports/PROTOCOL_AMENDMENT_V4_PROVENANCE_CORRECTION.json",
+      "sha256": "7ff761960141d08bdfb2fc122afc932c26e8e9ea2ea40f04f044a6651ca0ae79"
+    },
+    "codex_v2_tests": {
+      "path": "n5/phase3_student/tests/test_h0_contracts_v2.py",
+      "sha256": "080026e0a3fcc5ca322609c18f174b726517ebf13b1830f4309dcefa4bfa7521"
+    }
+  },
+  "resolution_summary": {
+    "receipt_self_hash_algorithm": "RESOLVED — Codex canonical algorithm adopted for all H0.2 receipts",
+    "c1_provenance": "UNRESOLVED — C1 rerun produced 26/40 (not 40/40). Three different script versions identified. Source lineage cannot be reconstructed.",
+    "file_binding_shas": "RESOLVED — H0.2 receipts bind to explicit commit 00c54f9",
+    "protocol_chronology": "RESOLVED — Codex V4 provenance correction adopted, V3 preserved",
+    "v2_server_tests": "NOT_EXECUTED — blocked by C1 PROVENANCE_FAIL",
+    "runtime_state": "CREATED — N5_RUNTIME_STATE_V1.json, V4 plan preserved unmodified"
+  },
+  "verdict": "H0.2 = HOLD_REVIEW. C1 source lineage cannot be proven. Do not unblind T2R-D. Do not start C3-S2/C3-G. Submit for joint Codex/DeepSeek review.",
+  "self_sha256": "2df9e86c2cd4d49dc1d951422521e9163cc4a55f76eee709c7014b7e685ae82d"
+}
