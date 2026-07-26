@@ -209,6 +209,11 @@ class N5MultiHeadStudent(nn.Module):
             }
         return {name: logits[:, -1] for name, logits in all_logits.items()}
 
+
+# Backward-compatible module-level export for the frozen H0 contract tests.
+# The class constant remains the single source of truth.
+HEAD_NAMES = N5MultiHeadStudent.HEAD_NAMES
+
 # ── Loss Functions ──
 
 class FrozenPosWeights:

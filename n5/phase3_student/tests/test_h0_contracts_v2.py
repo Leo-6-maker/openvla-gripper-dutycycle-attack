@@ -100,18 +100,19 @@ class TestStrictReceiptContract(unittest.TestCase):
         receipt = strict_json_load(H0_RECEIPT)
         self.assertNotEqual(receipt.get("self_sha256"), canonical_receipt_sha(receipt))
 
-    def test_historical_h0_bindings_are_not_current_file_bindings(self):
+    def test_historical_h0_bindings_are_explicitly_historical(self):
+        """Historical files may remain byte-identical; source binding is decisive."""
         receipt = strict_json_load(H0_RECEIPT)
-        mismatches = []
+        self.assertTrue(receipt.get("source_commit"), "historical receipt must bind a source commit")
+        self.assertNotEqual(
+            receipt.get("source_commit"),
+            _git_head(),
+            "historical H0 receipt must not be treated as the current gate receipt",
+        )
         for name, binding in receipt.get("upstream_artifacts", {}).items():
             relative = binding.get("path")
             expected = binding.get("sha256")
-            if not relative or not expected:
-                continue
-            target = REPO_ROOT / relative
-            if not target.is_file() or file_sha(target) != expected:
-                mismatches.append(name)
-        self.assertTrue(mismatches, "stale H0 bindings must be detected, not silently accepted")
+            self.assertTrue(relative and expected, f"{name} must have path and SHA binding")
 
     def test_h0_receipt_does_not_bind_current_head(self):
         receipt = strict_json_load(H0_RECEIPT)
