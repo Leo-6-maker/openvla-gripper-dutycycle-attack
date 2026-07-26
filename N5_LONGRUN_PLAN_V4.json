@@ -1,0 +1,560 @@
+{
+  "plan": "N5_LONGRUN_PLAN_V4",
+  "frozen_at": "2026-07-26",
+  "status": "RUNNING",
+  "current_gate": "H0_EVIDENCE_BASELINE",
+  "predecessor": "N5_LONGRUN_PLAN_V3 (preserved as historical record — never modified)",
+
+  "hard_rules": {
+    "auto_advance_on_pass": true,
+    "stop_on_fail_or_hold": true,
+    "no_threshold_tuning_after_fail": true,
+    "no_identity_swapping": true,
+    "no_denominator_changes": true,
+    "no_overwriting_artifacts": true,
+    "no_modifying_v4_formal": true,
+    "no_modifying_v2_predecessors": true,
+    "no_modifying_v3_plan": true,
+    "no_reading_cal_before_s1": true,
+    "no_reading_g10_before_g9_seal": true,
+    "no_formal_before_e1_g11_g12_pass": true,
+    "no_unblinding_t2rd_before_c3g_c3t_freeze": true,
+    "no_using_old_g8_checkpoints_for_g9_g10": true,
+    "clean_working_tree_before_each_gate": true,
+    "no_tmp_debug_files_in_commits": true,
+    "fresh_output_dir_per_gate": true,
+    "receipt_mandatory_per_gate": true,
+    "commit_per_gate": true,
+    "upstream_sha_verification_mandatory": true,
+
+    "exit_codes": {
+      "0": "PASS — write receipt, commit, push, auto-advance to next gate",
+      "2": "PROVENANCE_FAIL — stop immediately, write HOLD_PACKET, do not retry",
+      "3": "INFRA_FAIL — retry once with byte-identical inputs; if second failure, stop",
+      "4": "VALID_SCIENTIFIC_NEGATIVE — stop, preserve all outputs, request review",
+      "5": "HOLD_REVIEW — stop immediately, no parameter tuning, no sample modification",
+      "6": "OBSERVABILITY_CEILING_FAIL — stop immediately, cannot fix by excluding samples"
+    }
+  },
+
+  "gates": [
+    {
+      "id": "H0_EVIDENCE_BASELINE",
+      "description": "Freeze V4 plan, collect server artifact receipts, fix C2 report language, add minimal CI, mark historical gates superseded",
+      "depends_on": [],
+      "gpu_count": 0,
+      "estimated_minutes": 15,
+      "pass_conditions": [
+        "N5_LONGRUN_PLAN_V4.json created, V3 preserved unmodified",
+        "tmp_debug_obj.py removed from working tree",
+        "C1_RECEIPT.json: binds server ENTITY_REGISTRY_SUMMARY.json SHA c1ebad4c..., documents status:FAIL discrepancy (all metrics pass but status field incorrect)",
+        "C2_FINAL_RECEIPT.json: binds C2R0_REPORT.json SHA f7de7c44... and C2R02_REPORT.json SHA 4de9c3ed..., distinguishes sampled non-fixture parity (3/3) from general claim",
+        "C2_TASK09_FORENSIC_RECEIPT.json: binds C2R02_REPORT.json SHA 4de9c3ed..., SYSTEMATIC divergence at step 136 confirmed",
+        "C3_S_V1_RECEIPT.json: binds STATIC_FIXTURE_SEAL.json SHA 01474c45..., documents wooden_cabinet misclassification (movable ancestor, incorrectly static), white_cabinet correctly non-static",
+        "All server artifact SHAs recompute and match receipts",
+        "No PLACEHOLDER values in any receipt",
+        "CI tests pass: Python import, JSON schema, C1 strict-resolution, C2 pre-action alignment, Teacher no-success/terminal, N5 causal-prefix",
+        "G6_SEAL_V2 marked HISTORICAL_SUPERSEDED_PENDING_V23",
+        "G8_RECEIPT marked HISTORICAL_SUPERSEDED_PENDING_V23 (self_sha256=null, never finalized)",
+        "G9 SCORING_MANIFEST marked HISTORICAL_SUPERSEDED_PENDING_V23 (gate=null, never finalized)",
+        "Working tree clean (receipts only, no tmp_* files)",
+        "Branch, commit, source SHA, data SHA all recorded"
+      ],
+      "fail_action": "HOLD_REVIEW — fix missing items before any Teacher work"
+    },
+    {
+      "id": "C3-S2_STATIC_DYNAMIC_TARGET_SEAL_V2",
+      "description": "Corrected static/dynamic fixture classification with movable-ancestor criterion, task-bound keys, basket reconstruction, observability ceiling",
+      "depends_on": ["H0_EVIDENCE_BASELINE"],
+      "gpu_count": 1,
+      "estimated_minutes": 45,
+      "corrected_classification": {
+        "STATIC_EXACT_SITE": 6,
+        "DYNAMIC_RECONSTRUCTABLE": "basket_1",
+        "DYNAMIC_UNOBSERVABLE": "white_cabinet_1_bottom_region",
+        "DYNAMIC_UNSEALED": "wooden_cabinet_1_top_region"
+      },
+      "task_bound_key_format": "suite/task_idx/BDDL_SHA/model_SHA/site_name",
+      "basket_reconstruction_requirement": "T_site_world = T_body_world * T_site_body, max position error <= 1e-6, max rotation error <= 1e-6, quaternion convention test PASS, >=5 canonical states x >=3 resets",
+      "observability_ceiling": {
+        "formula": "supported_episodes_with_observable_target / all_supported_placement_episodes",
+        "pass": "ceiling >= 95%",
+        "hold_review": "90% <= ceiling < 95%",
+        "fail": "ceiling < 90% → exit 6 OBSERVABILITY_CEILING_FAIL"
+      },
+      "pass_conditions": [
+        "wooden_cabinet_1_top_region reclassified as DYNAMIC_UNSEALED (movable ancestor confirmed)",
+        "white_cabinet_1_bottom_region remains DYNAMIC_UNOBSERVABLE",
+        "basket_1 body-to-site reconstruction validated within tolerance",
+        "All 9 targets use task-bound composite keys (not site-name-only dedup)",
+        "Observability ceiling computed without unblinding model outputs",
+        "C3_S_V2_RECEIPT.json with self-hash",
+        "TARGET_OBSERVABILITY_MANIFEST.json",
+        "STATIC_WORLD_POSE_SEAL.json",
+        "BASKET_RECONSTRUCTION_SEAL.json"
+      ],
+      "fail_action": "exit 5 HOLD_REVIEW if classification error; exit 6 OBSERVABILITY_CEILING_FAIL if ceiling < 90%"
+    },
+    {
+      "id": "C3-G_TRISTATE_GEOMETRY_EVALUATOR",
+      "description": "Tri-state In/On/Stack geometry evaluator with local-frame checks, margin bands, UNKNOWN policy. Uses 40-ep development set only. Must not read T2R-D.",
+      "depends_on": ["C3-S2_STATIC_DYNAMIC_TARGET_SEAL_V2"],
+      "gpu_count": 0,
+      "estimated_hours": 2,
+      "data_contract": {
+        "manipulated_object_pose": "original sidecar",
+        "movable_direct_target_pose": "original sidecar",
+        "basket_region_pose": "sidecar body pose × sealed local transform",
+        "static_fixture_pose": "C3-S2 world-pose seal",
+        "white_wooden_dynamic_fixture": "UNKNOWN",
+        "contacts": "original sidecar",
+        "task_success": "evaluation only, NEVER input",
+        "replay_dynamic_pose": "FORBIDDEN"
+      },
+      "output_schema": {
+        "relation_truth": "TRUE | FALSE | UNKNOWN",
+        "relation_margin": "float",
+        "predicate": "In | On | Stack",
+        "target_pose_source": "string",
+        "evidence_tier": "int",
+        "unknown_reason": "string"
+      },
+      "unit_tests": [
+        "world-local round-trip",
+        "quaternion order",
+        "rotated box containment",
+        "boundary unknown band",
+        "In/On/Stack synthetic positives/negatives",
+        "basket reconstruction",
+        "object extent missing → UNKNOWN",
+        "success/terminal field perturbation does not change output"
+      ],
+      "dev_pass_conditions": [
+        "supported successful placement recall >= 90%",
+        "pregrasp false-positive rate <= 5%",
+        "planned-opening recall >= 80%",
+        "planned-opening precision >= 90%",
+        "every relation type with n>=5 samples: recall >= 80%",
+        "unknown → negative = 0",
+        "success/terminal dependency = 0",
+        "two runs step-identical"
+      ],
+      "fail_action": "HOLD_REVIEW — if no fixed threshold combination satisfies all conditions, stop, do not continue tuning"
+    },
+    {
+      "id": "C3-T_V23_TEACHER_INTEGRATION",
+      "description": "Integrate geometry evaluator into production Teacher. Remove monkeypatch, success/terminal shortcuts, suite-specific thresholds. Freeze phase definitions.",
+      "depends_on": ["C3-G_TRISTATE_GEOMETRY_EVALUATOR"],
+      "gpu_count": 0,
+      "estimated_hours": 1,
+      "removals": [
+        "monkeypatch (T2R1 placement patch)",
+        "success → placement shortcut",
+        "terminal proximity → placement shortcut",
+        "gripper OPEN alone as placement",
+        "unknown → negative conversion",
+        "suite-specific thresholds"
+      ],
+      "phases": [
+        "PREGRASP",
+        "GRASP_TRANSITION",
+        "STABLE_GRASP",
+        "TRANSPORT_MANIPULATION",
+        "RELEASE_APPROACH",
+        "SAFE_RELEASE",
+        "POST_RELEASE",
+        "INSTABILITY_OR_DROP",
+        "UNKNOWN"
+      ],
+      "labels": {
+        "physical_criticality": "1 only for STABLE_GRASP / TRANSPORT_MANIPULATION",
+        "k10_feasible": "1 requires all next 10 steps known-critical, no release/terminal/unknown crossing",
+        "safe_release": "auxiliary diagnostic, NOT in criticality calculation",
+        "instability": "auxiliary",
+        "gripper_closing_state": "auxiliary"
+      },
+      "invariants": [
+        "safe_release=1 ⇒ k10=0",
+        "criticality exits after release window",
+        "provenance coverage 100%",
+        "every UNKNOWN has explicit reason"
+      ],
+      "pass_conditions": [
+        "40/40 development episodes generate successfully",
+        "two runs step-identical",
+        "safe_release does not participate in criticality computation",
+        "release → criticality exit verified",
+        "old V22 outputs preserved immutable, new V23 outputs in separate directory",
+        "V23_TEACHER_SEAL.json with self-hash"
+      ],
+      "fail_action": "HOLD_REVIEW"
+    },
+    {
+      "id": "T2R-D_ONE_SHOT_CONFIRMATION",
+      "description": "One-shot unblinding of 130-episode confirmation cohort. All Teacher components frozen before unblinding.",
+      "depends_on": ["C3-T_V23_TEACHER_INTEGRATION"],
+      "gpu_count": 0,
+      "estimated_minutes": 30,
+      "frozen_before_unblinding": [
+        "V23 code SHA",
+        "C3-S2 receipt SHA",
+        "geometry thresholds",
+        "unknown policy",
+        "confirmation manifest SHA=9432ca41..."
+      ],
+      "denominator": "SUPPORTED_PLACEMENT AND OFFICIALLY_SUCCESSFUL",
+      "pre_registered_exclusions": "13 articulated tasks excluded per protocol; white/wooden UNKNOWN NOT excluded",
+      "pass_conditions": [
+        "placement recall >= 90%",
+        "pregrasp FP <= 5%",
+        "planned-opening precision >= 90%",
+        "libero_object safe_release episodes > 0",
+        "safe_release coverage >= 3 suites",
+        "unknown → negative = 0",
+        "all metrics reported by suite/relation/target source"
+      ],
+      "fail_action": "HOLD_REVIEW — do not tune thresholds on this confirmation set; freeze new independent manifest if Teacher modified"
+    },
+    {
+      "id": "T3_SCIENTIFIC_CONTRACT_V2",
+      "description": "Freeze three-layer concept: C_t (clean criticality), V_t (physical vulnerability), E_t (visual exploitability). Detector predicts C_t and K10 only.",
+      "depends_on": ["T2R-D_ONE_SHOT_CONFIRMATION"],
+      "gpu_count": 0,
+      "estimated_minutes": 10,
+      "emit_rule": "p_critical >= tau_c AND p_K10 >= tau_k AND persistence D AND remaining_horizon >= 10 AND first_emit_only",
+      "forbidden_in_emit_gate": ["safe_release", "candidate_close", "suite-specific thresholds"],
+      "pass_conditions": [
+        "JSON schema valid",
+        "self-hash consistent",
+        "all upstream SHAs bound",
+        "protocol amendment documenting contract",
+        "V3 contract preserved unmodified"
+      ],
+      "fail_action": "HOLD_REVIEW"
+    },
+    {
+      "id": "T4_FULL_RELABEL_800",
+      "description": "Rerun all 800 episode labels with frozen V23 Teacher, produce Label Seal V3",
+      "depends_on": ["T3_SCIENTIFIC_CONTRACT_V2"],
+      "gpu_count": 0,
+      "estimated_hours": 2,
+      "identity_split": "640 train / 80 val / 80 cal (unchanged)",
+      "pass_conditions": [
+        "800/800 episodes relabeled",
+        "step/identity mismatch = 0",
+        "overwrite/duplicate = 0",
+        "unknown → negative = 0",
+        "NaN/Inf = 0",
+        "safe_release=1 ⇒ k10=0 (all episodes)",
+        "criticality exits after release",
+        "manual 32-set still meets C3-G thresholds",
+        "per-suite/per-head distribution complete",
+        "label Merkle root computed",
+        "LABEL_SEAL_V3.json",
+        "G6_TRAINING_SEAL_V3.json",
+        "V22_TO_V23_DELTA_REPORT.json"
+      ],
+      "post_pass_action": "Mark old G6/G7/G8 checkpoints as SUPERSEDED",
+      "fail_action": "HOLD_REVIEW"
+    },
+    {
+      "id": "T5_ORACLE_ENRICHMENT",
+      "description": "Fresh-snapshot ORACLE validation: 48 windows across critical-positive, pregrasp/negative, release/post-placement",
+      "depends_on": ["T4_FULL_RELABEL_800"],
+      "gpu_count": 1,
+      "estimated_hours": 4,
+      "window_spec": {
+        "n_windows": 48,
+        "composition": "24 critical-positive, 12 pregrasp/known-negative, 12 release/post-placement",
+        "coverage": "all 4 suites",
+        "g10_exclusion": "identities must NOT be in G10 test manifest"
+      },
+      "execution": "save sim state → CLEAN_REPLAY branch + COMMAND_OPEN_ORACLE_K10 branch",
+      "pass_conditions": [
+        "snapshot/prefix equality: 100%",
+        "OPEN execution fidelity: 100%",
+        "critical group adverse physical outcome rate >= controls + 20pp",
+        "paired/cluster bootstrap 95% interval lower bound > 0",
+        "release group NOT classified as attack opportunity",
+        "qpos/contact/object telemetry complete"
+      ],
+      "fail_action": "VALID_SCIENTIFIC_NEGATIVE (exit 4) — if execution chain correct but no enrichment, stop Student training"
+    },
+    {
+      "id": "A0_WINDOW_FEATURE_AUDIT",
+      "description": "Window and feature audit: episode length, critical onset/end, K10 corridor, history availability, feature redundancy",
+      "depends_on": ["T5_ORACLE_ENRICHMENT"],
+      "gpu_count": 0,
+      "estimated_hours": 1,
+      "window_audit": [
+        "episode length distribution",
+        "critical onset/end statistics",
+        "K10 corridor length",
+        "available history at onset",
+        "window loss from persistence"
+      ],
+      "streaming_verification": [
+        "full-sequence logits",
+        "growing-prefix logits",
+        "streaming-buffer logits",
+        "max logit difference <= 1e-5",
+        "scorer emits from first valid frame",
+        "no left-padding rejection",
+        "short tasks not blocked by buffer"
+      ],
+      "feature_audit": [
+        "g9d == p9d exact reordering check",
+        "duplicate/derived feature groups",
+        "numerical rank",
+        "correlation matrix",
+        "per-suite distribution",
+        "proxy max difference"
+      ],
+      "candidate_features": ["F25", "F34 = f25d + p9d", "F34 + genuinely-unique proxies", "Legacy51 reference"],
+      "pass_conditions": [
+        "streaming parity verified",
+        "feature redundancy documented",
+        "candidate feature sets enumerated",
+        "no pre-claim of '6 non-redundant proxies'"
+      ],
+      "fail_action": "HOLD_REVIEW"
+    },
+    {
+      "id": "A1_ARCHITECTURE_ABLATION",
+      "description": "Student architecture ablation: MLP, RF16, RF32, RF64, Dual across feature sets. Same split, budget, seeds.",
+      "depends_on": ["A0_WINDOW_FEATURE_AUDIT"],
+      "gpu_count": 1,
+      "estimated_hours": 6,
+      "ablations": [
+        "MLP F34",
+        "RF16 F34",
+        "RF32 F25",
+        "RF32 F34",
+        "RF64 F34",
+        "Dual RF32+128 F34",
+        "Dual Legacy51 reference",
+        "2-head core vs 5-head"
+      ],
+      "metrics": ["episode critical recall", "K10 containment", "false emit rate", "trigger delay", "short-episode recall", "per-suite AUPRC", "paired episode bootstrap"],
+      "selection_rules": [
+        "temporal model significantly better than MLP on both critical and K10",
+        "every suite must not be structural-zero",
+        "onset<32 and episode<128 groups must not significantly degrade",
+        "choose simplest model within 1pp of best core AUPRC",
+        "any suite degrading >2pp cannot be masked by overall mean",
+        "cal and G10 remain unread"
+      ],
+      "tie_break": "if RF32 within 1pp of Dual, auto-select RF32",
+      "pass_conditions": [
+        "all ablations run to completion with finite loss",
+        "selection rules applied deterministically",
+        "selected model documented with rationale",
+        "receipt binds all ablation results with SHAs"
+      ],
+      "fail_action": "HOLD_REVIEW (exit 5) — if no temporal model significantly beats MLP on both critical and K10"
+    },
+    {
+      "id": "S1_FINAL_STUDENT_SEAL",
+      "description": "Final Student training with A1-selected architecture, 3 pre-registered seeds",
+      "depends_on": ["A1_ARCHITECTURE_ABLATION"],
+      "gpu_count": 1,
+      "estimated_hours": 4,
+      "identity_split": "640 train / 80 val / 80 cal (frozen)",
+      "pass_conditions": [
+        "train/val/cal identities unchanged",
+        "normalizer fit on train only",
+        "feature schema freshly frozen",
+        "3 seeds all finite loss",
+        "all core heads receive valid gradient",
+        "checkpoint roundtrip PASS",
+        "streaming-prefix parity PASS",
+        "val-only selection of final seed/ensemble",
+        "cal/G10 remain unread",
+        "STUDENT_MODEL_SEAL_V3.json",
+        "CHECKPOINT_MANIFEST.json",
+        "FEATURE_SCHEMA_V2.json",
+        "STREAMING_PARITY_RECEIPT.json"
+      ],
+      "fail_action": "HOLD_REVIEW"
+    },
+    {
+      "id": "G9_CALIBRATION_SCHEDULER",
+      "description": "Calibrate criticality and K10 thresholds on cal80 only. Search tau_c, tau_k, persistence D.",
+      "depends_on": ["S1_FINAL_STUDENT_SEAL"],
+      "gpu_count": 0,
+      "estimated_minutes": 30,
+      "search_grid": {
+        "tau_c": [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95],
+        "tau_k": [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95],
+        "D": [1, 2, 3, 4, 6]
+      },
+      "no_search": "safe_release threshold (not in emit gate)",
+      "evaluation": "episode-level causal replay, first-emit-only, horizon abstain",
+      "feasibility_constraints": [
+        "eligible episode recall >= 90%",
+        "K10 containment >= 90%",
+        "no-critical episode false-emit <= 5%",
+        "release/post-placement false-emit <= 5%",
+        "articulated UNKNOWN emit = 0",
+        "every suite recall >= 80%",
+        "at least one unified threshold combination satisfies all"
+      ],
+      "tie_break": [
+        "maximize minimum suite recall",
+        "maximize K10 containment",
+        "minimize false emit",
+        "prefer smaller D",
+        "prefer simpler scheduler"
+      ],
+      "pass_conditions": [
+        "at least one feasible combination found",
+        "tie-break applied deterministically",
+        "thresholds frozen with SHA",
+        "receipt binds calibration manifest, search grid, tie-break logic",
+        "G10 test manifest still unread"
+      ],
+      "fail_action": "HOLD_REVIEW — do not relax constraints"
+    },
+    {
+      "id": "G10_HELDOUT_1200_REPLAY",
+      "description": "One-shot replay on 1200 held-out identities. Model, Teacher, normalizer, thresholds all frozen before test label generation.",
+      "depends_on": ["G9_CALIBRATION_SCHEDULER"],
+      "gpu_count": 1,
+      "estimated_hours": 3,
+      "comparisons": ["V4 baseline", "MLP baseline", "RF32 baseline", "Final V5 Student"],
+      "pass_conditions": [
+        "identity leakage = 0",
+        "overall critical recall >= 90%",
+        "per-suite recall >= 80%",
+        "K10 containment >= 90%",
+        "known-negative false emit <= 5%",
+        "articulated UNKNOWN emit = 0",
+        "Goal recall significantly higher than V4",
+        "V5 false emit not higher than V4",
+        "bootstrap CI and per-suite results complete"
+      ],
+      "fail_action": "HOLD_REVIEW — do not return to G9 to re-tune"
+    },
+    {
+      "id": "E1_VIS_EXECUTOR_FREEZE",
+      "description": "Freeze VIS-PGD executor config on non-Formal development snapshots",
+      "depends_on": ["G10_HELDOUT_1200_REPLAY"],
+      "gpu_count": 1,
+      "estimated_minutes": 30,
+      "objectives": ["single-token 31745 (NATIVE_OPEN)", "OPEN-region log-mass"],
+      "config": "epsilon=0.03, PGD-20, 5 fixed restarts",
+      "selection_rules": [
+        "highest OPEN duty",
+        "arm 6 dimensions preserved",
+        "fallback = 0",
+        "actual L_inf <= 0.03",
+        ">= 3/5 restarts achieve >= 2/10 OPEN frames"
+      ],
+      "pass_conditions": [
+        "both objectives tested",
+        "exactly one executor config frozen with SHA"
+      ],
+      "fail_action": "HOLD_REVIEW — if both objectives fail, stop"
+    },
+    {
+      "id": "G11_INTEGRATION_SMOKE",
+      "description": "V5 detector + VIS executor integration smoke test",
+      "depends_on": ["E1_VIS_EXECUTOR_FREEZE"],
+      "gpu_count": 1,
+      "estimated_minutes": 20,
+      "coverage": ["trigger", "no-emit", "UNKNOWN abstain", "horizon abstain", "5 arms", "exact snapshot", "physical telemetry"],
+      "pass_conditions": [
+        "attack error = 0",
+        "fallback = 0",
+        "SHA mismatch = 0",
+        "prefix mismatch = 0",
+        "OPEN direction correct",
+        "K10 accounting correct"
+      ],
+      "fail_action": "HOLD_REVIEW"
+    },
+    {
+      "id": "G12_FORMAL_WAVE0",
+      "description": "Formal Wave-0: 4 pre-registered parents × 5 arms",
+      "depends_on": ["G11_INTEGRATION_SMOKE"],
+      "gpu_count": 1,
+      "estimated_hours": 2,
+      "parent_spec": "4 parents, one per suite, pre-registered before execution",
+      "arms": ["CLEAN", "TRUE", "RAND", "ORACLE", "RANDOM_TIME"],
+      "pass_conditions": [
+        "20/20 arm dispositions",
+        "snapshot equality verified",
+        "immutable receipt per arm",
+        "physical telemetry complete",
+        "trigger and no-emit paths both covered"
+      ],
+      "fail_action": "HOLD_REVIEW — fix engineering issues"
+    },
+    {
+      "id": "G13_FORMAL_20_PARENT",
+      "description": "Formal complete: 20 parents × 5 arms = 100 arms",
+      "depends_on": ["G12_FORMAL_WAVE0"],
+      "gpu_count": 8,
+      "estimated_hours": 4,
+      "required_reports": [
+        "ITT including no-emit/abstain",
+        "planned vs executed K10",
+        "terminal censor",
+        "Student timing vs random timing",
+        "TRUE vs RAND",
+        "TRUE vs ORACLE",
+        "task/contact/drop outcomes",
+        "per-suite paired CI"
+      ],
+      "pass_conditions": [
+        "100/100 arm dispositions",
+        "V4 Formal files unchanged",
+        "all reports present"
+      ],
+      "scientific_note": "Attack ineffectiveness with correct execution chain → PASS_COMPLETE_SCIENTIFIC_NEGATIVE → proceed to G14",
+      "fail_action": "engineering failure → HOLD_REVIEW; attack ineffectiveness → PASS_COMPLETE_SCIENTIFIC_NEGATIVE → G14"
+    },
+    {
+      "id": "G14_FINAL_REPORT",
+      "description": "Comprehensive final report with all comparisons, negative results, and complete receipt DAG",
+      "depends_on": ["G13_FORMAL_20_PARENT"],
+      "gpu_count": 0,
+      "estimated_hours": 2,
+      "required_sections": [
+        "Teacher label validity and ORACLE enrichment",
+        "V4 vs V5 detector replay comparison",
+        "MLP/RF32/Dual ablation results",
+        "random vs V5 timing analysis",
+        "TRUE vs RAND comparison",
+        "TRUE vs ORACLE gap analysis",
+        "Goal coverage delta",
+        "articulated abstain analysis",
+        "VIS flip duty characterization",
+        "task/contact/drop outcome analysis",
+        "all negative results",
+        "all protocol amendments and deviations",
+        "complete receipt DAG with all SHAs"
+      ],
+      "pass_conditions": [
+        "all sections present with data",
+        "receipts self-consistent",
+        "all SHAs verifiable",
+        "all protocol deviations documented"
+      ]
+    }
+  ],
+
+  "current_gate_detail": {
+    "id": "H0_EVIDENCE_BASELINE",
+    "started_at": "2026-07-26",
+    "status": "IN_PROGRESS"
+  },
+
+  "superseded_artifacts": {
+    "G6_SEAL_V2": "HISTORICAL_SUPERSEDED_PENDING_V23 — will be superseded when V23 Teacher labels replace V22",
+    "G7_RECEIPT": "HISTORICAL_SUPERSEDED_PENDING_V23 — MLP training used V22 labels",
+    "G8_RECEIPT": "HISTORICAL_SUPERSEDED_PENDING_V23 — N5 training used V22 labels, receipt never finalized (self_sha256=null)",
+    "G9_SCORING_MANIFEST": "HISTORICAL_SUPERSEDED_PENDING_V23 — scorer used V22 labels, manifest never finalized (gate=null)",
+    "C3-S_V1_SEAL": "SUPERSEDED_BY_C3-S2 — wooden_cabinet misclassified as static (movable ancestor not considered)"
+  }
+}

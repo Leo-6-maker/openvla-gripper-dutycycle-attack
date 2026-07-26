@@ -1,0 +1,117 @@
+{
+  "gate": "H0_EVIDENCE_BASELINE",
+  "sub_artifact": "C3_S_V1_RECEIPT",
+  "artifact_type": "server_artifact_binding",
+  "timestamp": "2026-07-26T10:00:00Z",
+
+  "bound_artifact": {
+    "name": "STATIC_FIXTURE_SEAL.json",
+    "server_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/t2cs_static_fixture_seal/STATIC_FIXTURE_SEAL.json",
+    "server_file_sha256": "01474c45604d6c0195f5c9aaded4fbd80b143da2d150fa5a6f6a71673cde0182",
+    "source_commit": "d820953",
+    "source_script": "n5/phase3_student/t2cs_static_fixture_seal.py"
+  },
+
+  "content_summary": {
+    "gate": "C3-S_STATIC_FIXTURE_INVARIANCE",
+    "n_fixture_targets": 9,
+    "n_static": 7,
+    "n_non_static": 2,
+    "all_static": false,
+    "pos_tolerance": 1e-06,
+    "rot_tolerance": 1e-06,
+    "dedup_method": "site_name only (NO task/model binding)"
+  },
+
+  "per_fixture_classification": {
+    "flat_stove_1_cook_region": {
+      "is_static": true,
+      "has_movable_ancestor": false,
+      "max_pos_drift": 0.0,
+      "max_rot_drift": 0.0,
+      "classification": "CORRECT — static, no movable ancestor"
+    },
+    "desk_caddy_1_back_contain_region": {
+      "is_static": true,
+      "has_movable_ancestor": false,
+      "max_pos_drift": 0.0,
+      "max_rot_drift": 7.4e-32,
+      "classification": "CORRECT — static, no movable ancestor"
+    },
+    "living_room_table_plate_right_region": {
+      "is_static": true,
+      "has_movable_ancestor": false,
+      "max_pos_drift": 0.0,
+      "max_rot_drift": 0.0,
+      "classification": "CORRECT — static, no movable ancestor"
+    },
+    "microwave_1_heating_region": {
+      "is_static": true,
+      "has_movable_ancestor": false,
+      "max_pos_drift": 0.0,
+      "max_rot_drift": 0.0,
+      "classification": "CORRECT — static, no movable ancestor"
+    },
+    "main_table_stove_front_region": {
+      "is_static": true,
+      "has_movable_ancestor": false,
+      "max_pos_drift": 0.0,
+      "max_rot_drift": 0.0,
+      "classification": "CORRECT — static, no movable ancestor"
+    },
+    "wine_rack_1_top_region": {
+      "is_static": true,
+      "has_movable_ancestor": false,
+      "max_pos_drift": 0.0,
+      "max_rot_drift": 2.2e-16,
+      "classification": "CORRECT — static, no movable ancestor"
+    },
+    "wooden_cabinet_1_top_region": {
+      "is_static": true,
+      "has_movable_ancestor": true,
+      "movable_joint_detail": "joint_13_type_2_range_0.1700 (hinge joint with 0.17 range)",
+      "max_pos_drift": 0.0,
+      "max_rot_drift": 9.9e-32,
+      "v1_classification": "STATIC (INCORRECT)",
+      "correct_classification": "DYNAMIC_UNSEALED — has movable ancestor (hinge joint). The site may appear static across the limited canonical states sampled, but the hinge means it CAN move. Must not be sealed as static."
+    },
+    "white_cabinet_1_bottom_region": {
+      "is_static": false,
+      "has_movable_ancestor": true,
+      "movable_joint_detail": "joint_13_type_2_range_0.1700 (hinge joint with 0.17 range)",
+      "max_pos_drift": 0.0129,
+      "max_rot_drift": 0.0,
+      "classification": "CORRECT — non-static, movable ancestor detected and position drift confirms"
+    },
+    "basket_1_contain_region": {
+      "is_static": false,
+      "has_movable_ancestor": false,
+      "max_pos_drift": 0.0478,
+      "max_rot_drift": 0.0024,
+      "classification": "CORRECT — non-static (dynamic object). V1 correctly identifies as non-static but does not attempt body→site reconstruction. V2 must add DYNAMIC_RECONSTRUCTABLE classification."
+    }
+  },
+
+  "v1_defects": [
+    {
+      "defect": "wooden_cabinet_1_top_region misclassified as static",
+      "root_cause": "V1 criterion only checks pos/rot drift <= 1e-6, does not check has_movable_ancestor",
+      "impact": "wooden_cabinet world pose would be incorrectly sealed as static, causing C3-G geometry errors for any task using this fixture",
+      "fix": "C3-S2 must add 'AND NOT has_movable_ancestor' to static criterion"
+    },
+    {
+      "defect": "site-name-only deduplication",
+      "root_cause": "V1 uses set of site_name strings, ignoring that same site name in different tasks/suites may have different model contexts",
+      "impact": "Potential cross-task pose collision if same site name used in multiple BDDL files",
+      "fix": "C3-S2 must use task-bound composite keys: suite/task_idx/BDDL_SHA/model_SHA/site_name"
+    },
+    {
+      "defect": "basket not reconstructed",
+      "root_cause": "V1 treats basket as generic non-static fixture, does not attempt body→site reconstruction",
+      "impact": "basket pose unavailable for C3-G geometry checks, reducing supported placement coverage",
+      "fix": "C3-S2 must validate T_site_world = T_body_world * T_site_body reconstruction"
+    }
+  ],
+
+  "verdict": "PARTIAL — 6/9 correctly static, 2/9 correctly non-static, 1/9 (wooden_cabinet) MISCLASSIFIED. The V1 seal is VALID as a historical record but MUST NOT be used as the static pose source for C3-G. C3-S2 must supersede it."
+}
