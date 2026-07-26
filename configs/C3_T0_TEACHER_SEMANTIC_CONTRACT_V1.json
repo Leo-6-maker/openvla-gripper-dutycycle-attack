@@ -14,7 +14,14 @@
   "right_censor": {
     "k10": 10,
     "insufficient_observed_horizon": "UNKNOWN",
-    "input": "protocol_steps_remaining",
+    "input": "observed_future_steps_available",
+    "protocol_input": "protocol_steps_remaining",
+    "protocol_horizons": {
+      "libero_10": 520,
+      "libero_goal": 300,
+      "libero_object": 280,
+      "libero_spatial": 220
+    },
     "null_protocol_steps_remaining": "UNKNOWN",
     "protocol_steps_remaining_0_to_9": "FALSE",
     "protocol_steps_remaining_gte_10": "TRUE only when safe_release_computed is FALSE",
@@ -22,7 +29,7 @@
   },
   "input_allowlists": {
     "physical_criticality": ["physical_known", "stable_grasp", "transport_or_manipulation"],
-    "safe_release": ["placement", "release", "stability"],
+    "safe_release": ["placement", "released_state", "placement_stability"],
     "k10_feasible": ["protocol_steps_remaining", "safe_release_computed"],
     "instability": ["slip", "regrasp", "contact_loss"],
     "gripper_closing_state": ["gripper_qpos", "qpos_close_threshold"]
@@ -44,7 +51,7 @@
       "UNKNOWN": "horizon/release evidence is unknown or right-censored"
     },
     "safe_release": {
-      "TRUE": "placement AND release AND stability are all TRUE",
+      "TRUE": "placement AND released_state AND placement_stability are all TRUE",
       "FALSE": "all three components are known and at least one is FALSE",
       "UNKNOWN": "any component is UNKNOWN"
     },
@@ -69,7 +76,7 @@
       "safe_release_is_computed_once": true
     },
     "safe_release": {
-      "formula": "placement AND release AND stability",
+      "formula": "placement AND released_state AND placement_stability",
       "unknown_dominates": true
     },
     "instability": {

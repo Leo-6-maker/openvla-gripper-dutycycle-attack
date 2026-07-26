@@ -23,6 +23,8 @@ from n5.phase2_labels.c3_t0_semantic_contract import (
     UNKNOWN,
     apply_persistence,
     evaluate_heads,
+    protocol_horizon_for_suite,
+    protocol_steps_remaining,
 )
 from n5.phase3_student.c3_g_predicate_evaluator import evaluate_case, load_contract
 
@@ -143,9 +145,11 @@ def evaluate_step(
     geometry: Mapping[str, Any] | None,
     geometry_contract: Mapping[str, Any],
     step: int,
-    step_count: int,
+    observed_step_count: int,
+    protocol_horizon: int,
     object_ids: set[str],
-    qpos_close_threshold: float,
+    qpos_close_threshold: float | None,
+    previous_geometry: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Evaluate one prefix using only current/past physical observations."""
     # Reject forbidden fields before projecting the physical allowlist.  A
@@ -160,14 +164,26 @@ def evaluate_step(
     _reject_forbidden(physical_keys)
     contact_now = _contact_state(current, object_ids)
     contact_prev = _contact_state(previous, object_ids) if previous is not None else UNKNOWN
+    if qpos_close_threshold is None or not math.isfinite(float(qpos_close_threshold)):
+        raise RunnerHold("qpos threshold must be supplied by a MuJoCo calibration binding")
     qpos = _qpos_scalar(current)
     close = None if qpos is None else qpos <= qpos_close_threshold
     open_now = _qpos_open(current, qpos_close_threshold)
     open_prev = _qpos_open(previous, qpos_close_threshold) if previous is not None else None
-    release = UNKNOWN if open_now is None or open_prev is None else (TRUE if not open_prev and open_now else FALSE)
+    released_state = _tri(open_now)
+    release_event = UNKNOWN if open_now is None or open_prev is None else (
+        TRUE if not open_prev and open_now else FALSE
+    )
     stable = UNKNOWN if contact_now == UNKNOWN or close is None else (TRUE if contact_now == TRUE and close else FALSE)
     transport = _comotion(previous, current, geometry)
     placement, geometry_record = _placement(geometry, geometry_contract)
+    previous_placement = UNKNOWN
+    if previous_geometry is not None:
+        previous_placement, _ = _placement(previous_geometry, geometry_contract)
+    placement_stability = (
+        UNKNOWN if placement == UNKNOWN or previous_placement == UNKNOWN
+        else TRUE if placement == TRUE and previous_placement == TRUE else FALSE
+    )
     stability = UNKNOWN if previous is None else (TRUE if stable == TRUE and contact_now == contact_prev else FALSE)
     contact_loss = UNKNOWN if previous is None or contact_prev == UNKNOWN else (TRUE if contact_prev == TRUE and contact_now == FALSE else FALSE)
     regrasp = UNKNOWN if previous is None or contact_prev == UNKNOWN else (TRUE if contact_prev == FALSE and contact_now == TRUE and close is True else FALSE)
@@ -178,10 +194,11 @@ def evaluate_step(
         "stable_grasp": stable,
         "transport_or_manipulation": transport,
         "placement": placement,
-        "release": release,
-        "stability": stability,
-        "protocol_steps_remaining": step_count - step,
-        "observed_future_steps_available": step_count - step - 1,
+        "released_state": released_state,
+        "release_event": release_event,
+        "placement_stability": placement_stability,
+        "protocol_steps_remaining": protocol_horizon - step - 1,
+        "observed_future_steps_available": observed_step_count - step - 1,
         "slip": slip,
         "regrasp": regrasp,
         "contact_loss": contact_loss,
@@ -209,25 +226,34 @@ def evaluate_step(
 
 def run_episode(sidecar_rows: Sequence[Mapping[str, Any]], geometry_cases: Mapping[int, Mapping[str, Any]],
                 episode_id: str, geometry_contract: Mapping[str, Any], object_ids: set[str],
-                qpos_close_threshold: float = 0.2) -> dict[str, Any]:
+                qpos_close_threshold: float | None = None,
+                protocol_horizon: int | None = None) -> dict[str, Any]:
     if not sidecar_rows:
         raise RunnerHold("empty physical sidecar")
     for index, row in enumerate(sidecar_rows):
         if row.get("step") != index:
             raise RunnerHold("sidecar step stream is not contiguous")
-    outputs = [
-        evaluate_step(
+    suite = episode_id.split("/", 1)[0]
+    frozen_horizon = protocol_horizon if protocol_horizon is not None else protocol_horizon_for_suite(suite)
+    if frozen_horizon is None:
+        raise RunnerHold(f"unknown suite horizon: {suite}")
+    if len(sidecar_rows) > frozen_horizon:
+        raise RunnerHold("observed episode exceeds frozen protocol horizon")
+    outputs = []
+    for index, row in enumerate(sidecar_rows):
+        current = dict(row)
+        outputs.append(evaluate_step(
             sidecar_rows[index - 1] if index else None,
-            sidecar_rows[index],
+            current,
             geometry_cases.get(index),
             geometry_contract,
             index,
             len(sidecar_rows),
+            frozen_horizon,
             object_ids,
             qpos_close_threshold,
-        )
-        for index in range(len(sidecar_rows))
-    ]
+            geometry_cases.get(index - 1) if index else None,
+        ))
     for item in outputs:
         if item["heads"]["safe_release"]["value"] == TRUE and item["heads"]["k10_feasible"]["value"] == TRUE:
             raise ContractError("safe_release TRUE with k10 TRUE")

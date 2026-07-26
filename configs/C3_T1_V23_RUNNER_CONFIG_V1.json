@@ -1,7 +1,15 @@
 {
   "schema": "C3_T1_V23_RUNNER_CONFIG_V1",
   "status": "FROZEN_DEVELOPMENT",
-  "qpos_close_threshold": 0.2,
+  "protocol_horizons": {
+    "libero_10": 520,
+    "libero_goal": 300,
+    "libero_object": 280,
+    "libero_spatial": 220
+  },
+  "protocol_steps_remaining": "protocol_horizon - step - 1; null outside [0, horizon)",
+  "observed_future_steps_available": "observed_step_count - step - 1; right-censor input only",
+  "qpos_threshold_source": "MuJoCo joint range or sealed calibration binding; no default",
   "required_geometry_contract": "C3_G_PREDICATE_CONTRACT_V1_1",
   "required_heads": [
     "physical_criticality",

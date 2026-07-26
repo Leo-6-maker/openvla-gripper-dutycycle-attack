@@ -49,7 +49,7 @@ class TestV23Runner(unittest.TestCase):
             _row(2, [0.4, 0.4], []),
         ]
         geometry = {i: _case(i, [0.0, 0.0, 0.0]) for i in range(3)}
-        result = run_episode(rows, geometry, "libero_10/task_00/state_00", load_contract(), {"obj_1"})
+        result = run_episode(rows, geometry, "libero_10/task_00/state_00", load_contract(), {"obj_1"}, 0.2)
         self.assertEqual(result["step_count"], 3)
         self.assertEqual(result["forbidden_reads"], 0)
         self.assertEqual(result["unknown_to_false"], 0)
@@ -57,7 +57,7 @@ class TestV23Runner(unittest.TestCase):
 
     def test_unknown_geometry_is_not_negative(self):
         rows = [_row(0, [0.05, 0.05], [["obj_1", "gripper0_finger1"]])]
-        result = run_episode(rows, {}, "libero_10/task_00/state_00", load_contract(), {"obj_1"})
+        result = run_episode(rows, {}, "libero_10/task_00/state_00", load_contract(), {"obj_1"}, 0.2)
         self.assertEqual(result["steps"][0]["heads"]["physical_criticality"]["value"], UNKNOWN)
         self.assertEqual(result["unknown_to_false"], 0)
 
@@ -65,12 +65,22 @@ class TestV23Runner(unittest.TestCase):
         rows = [_row(0, [0.05, 0.05], [["obj_1", "gripper0_finger1"]])]
         rows[0]["task_success"] = False
         with self.assertRaises(ContractError):
-            run_episode(rows, {}, "libero_10/task_00/state_00", load_contract(), {"obj_1"})
+            run_episode(rows, {}, "libero_10/task_00/state_00", load_contract(), {"obj_1"}, 0.2)
 
     def test_noncontiguous_steps_rejected(self):
         rows = [_row(1, [0.05, 0.05], [])]
         with self.assertRaises(RunnerHold):
-            run_episode(rows, {}, "libero_10/task_00/state_00", load_contract(), {"obj_1"})
+            run_episode(rows, {}, "libero_10/task_00/state_00", load_contract(), {"obj_1"}, 0.2)
+
+    def test_protocol_horizon_is_not_observed_episode_length(self):
+        short = [_row(0, [0.05, 0.05], []), _row(1, [0.05, 0.05], [])]
+        longer = short + [_row(2, [0.05, 0.05], [])]
+        a = run_episode(short, {}, "libero_10/task_00/state_00", load_contract(), {"obj_1"}, 0.2)
+        b = run_episode(longer, {}, "libero_10/task_00/state_00", load_contract(), {"obj_1"}, 0.2)
+        self.assertEqual(a["steps"][0]["protocol_steps_remaining"], 519)
+        self.assertEqual(b["steps"][0]["protocol_steps_remaining"], 519)
+        self.assertEqual(a["steps"][0]["observed_future_steps_available"], 1)
+        self.assertEqual(b["steps"][0]["observed_future_steps_available"], 2)
 
 
 if __name__ == "__main__":

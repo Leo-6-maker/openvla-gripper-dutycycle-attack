@@ -19,6 +19,12 @@ HEADS = (
     "instability",
     "gripper_closing_state",
 )
+PROTOCOL_HORIZONS = {
+    "libero_10": 520,
+    "libero_goal": 300,
+    "libero_object": 280,
+    "libero_spatial": 220,
+}
 FORBIDDEN_TOKENS = {
     "task_success", "task_terminal", "terminal", "terminal_state",
     "reward", "outcome", "attack", "future", "teacher", "episode_success",
@@ -27,7 +33,7 @@ FORBIDDEN_TOKENS = {
 
 HEAD_INPUT_ALLOWLIST = {
     "physical_criticality": frozenset({"physical_known", "stable_grasp", "transport_or_manipulation"}),
-    "safe_release": frozenset({"placement", "release", "stability"}),
+    "safe_release": frozenset({"placement", "released_state", "placement_stability"}),
     "k10_feasible": frozenset({"protocol_steps_remaining", "safe_release_computed"}),
     "instability": frozenset({"slip", "regrasp", "contact_loss"}),
     "gripper_closing_state": frozenset({"gripper_qpos", "qpos_close_threshold"}),
@@ -36,6 +42,19 @@ HEAD_INPUT_ALLOWLIST = {
 
 class ContractError(ValueError):
     pass
+
+
+def protocol_horizon_for_suite(suite: Any) -> int | None:
+    return PROTOCOL_HORIZONS.get(suite) if isinstance(suite, str) else None
+
+
+def protocol_steps_remaining(suite: Any, step: Any) -> int | None:
+    horizon = protocol_horizon_for_suite(suite)
+    if horizon is None or not isinstance(step, int) or isinstance(step, bool):
+        return None
+    if step < 0 or step >= horizon:
+        return None
+    return horizon - step - 1
 
 
 def _reject_forbidden(value: Any, path: str = "record") -> None:
@@ -86,12 +105,12 @@ def physical_criticality(record: Mapping[str, Any]) -> dict[str, Any]:
 
 def safe_release(record: Mapping[str, Any]) -> dict[str, Any]:
     record = _project(record, "safe_release")
-    values = [_tri(record.get(name)) for name in ("placement", "release", "stability")]
+    values = [_tri(record.get(name)) for name in ("placement", "released_state", "placement_stability")]
     if any(value is None for value in values):
         return label(UNKNOWN, "SAFE_RELEASE_COMPONENT_UNKNOWN")
     return label(
         TRUE if all(value == TRUE for value in values) else FALSE,
-        "PLACEMENT_RELEASE_STABILITY_CONJUNCTION",
+        "PLACEMENT_RELEASED_STATE_PLACEMENT_STABILITY_CONJUNCTION",
     )
 
 

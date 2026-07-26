@@ -4,7 +4,8 @@ import unittest
 from n5.phase2_labels.c3_t0_semantic_contract import (
     ContractError, FALSE, TRUE, UNKNOWN, apply_persistence,
     apply_right_censor, evaluate_heads, gripper_closing_state,
-    k10_feasible, physical_criticality, quaternion_equivalent, safe_release,
+    k10_feasible, physical_criticality, protocol_steps_remaining,
+    quaternion_equivalent, safe_release,
 )
 
 
@@ -12,7 +13,8 @@ def _physical(**updates):
     row = {
         "physical_known": True, "stable_grasp": True,
         "transport_or_manipulation": False, "placement": False,
-        "release": False, "stability": True, "protocol_steps_remaining": 12,
+        "released_state": False, "release_event": False,
+        "placement_stability": True, "protocol_steps_remaining": 12,
         "safe_release_computed": False, "slip": False, "regrasp": False,
         "contact_loss": False, "gripper_qpos": 0.1,
         "qpos_close_threshold": 0.2,
@@ -33,11 +35,11 @@ class TestC3T0SemanticContract(unittest.TestCase):
         self.assertEqual(result["physical_criticality"]["value"], TRUE)
 
     def test_safe_release_requires_all_three_components_and_unknown_is_not_false(self):
-        self.assertEqual(safe_release(_physical(placement=True, release=True,
-                                                 stability=True))["value"], TRUE)
-        self.assertEqual(safe_release(_physical(placement=True, release=True,
-                                                 stability=False))["value"], FALSE)
-        unknown = safe_release(_physical(placement=True, release=None, stability=True))
+        self.assertEqual(safe_release(_physical(placement=True, released_state=True,
+                                                 placement_stability=True))["value"], TRUE)
+        self.assertEqual(safe_release(_physical(placement=True, released_state=True,
+                                                 placement_stability=False))["value"], FALSE)
+        unknown = safe_release(_physical(placement=True, released_state=None, placement_stability=True))
         self.assertEqual(unknown, {"value": UNKNOWN, "mask": False,
                                    "reason": "SAFE_RELEASE_COMPONENT_UNKNOWN"})
 
@@ -45,10 +47,12 @@ class TestC3T0SemanticContract(unittest.TestCase):
         for placement in (True, False):
             for release in (True, False):
                 for stability in (True, False):
-                    result = safe_release(_physical(placement=placement, release=release, stability=stability))
+                    result = safe_release(_physical(placement=placement, released_state=release,
+                                                    placement_stability=stability))
                     expected = TRUE if placement and release and stability else FALSE
                     self.assertEqual(result["value"], expected)
-        result = evaluate_heads(_physical(placement=True, release=True, stability=True))
+        result = evaluate_heads(_physical(placement=True, released_state=True,
+                                           placement_stability=True))
         self.assertEqual(result["safe_release"]["value"], TRUE)
         self.assertEqual(result["k10_feasible"]["value"], FALSE)
 
@@ -103,13 +107,20 @@ class TestC3T0SemanticContract(unittest.TestCase):
 
     def test_evaluate_heads_uses_one_computed_safe_release(self):
         result = evaluate_heads(_physical(protocol_steps_remaining=10,
-                                           placement=False, release=False,
-                                           stability=True))
+                                           placement=False, released_state=False,
+                                           placement_stability=True))
         direct = k10_feasible({
             "protocol_steps_remaining": 10,
             "safe_release_computed": result["safe_release"],
         })
         self.assertEqual(result["k10_feasible"], direct)
+
+    def test_protocol_horizon_is_frozen_and_not_observed_length(self):
+        self.assertEqual(protocol_steps_remaining("libero_10", 509), 10)
+        self.assertEqual(protocol_steps_remaining("libero_goal", 289), 10)
+        self.assertEqual(protocol_steps_remaining("libero_object", 269), 10)
+        self.assertEqual(protocol_steps_remaining("libero_spatial", 209), 10)
+        self.assertIsNone(protocol_steps_remaining("libero_10", 520))
 
     def test_per_head_allowlist_ignores_nonhead_aliases_and_rejects_forbidden_aliases(self):
         base = _physical()
