@@ -83,6 +83,7 @@ class TestV23Runner(unittest.TestCase):
         self.assertEqual(b["steps"][0]["protocol_steps_remaining"], 519)
         self.assertEqual(a["steps"][0]["observed_future_steps_available"], 1)
         self.assertEqual(b["steps"][0]["observed_future_steps_available"], 2)
+        self.assertEqual(a["steps"][0]["heads"]["k10_feasible"]["value"], UNKNOWN)
 
     def test_multi_relation_geometry_is_preserved(self):
         rows = [_row(0, [0.05, 0.05], [["obj_1", "gripper0_finger1"]])]

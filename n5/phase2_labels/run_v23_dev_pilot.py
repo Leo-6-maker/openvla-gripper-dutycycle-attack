@@ -473,7 +473,7 @@ def _registry_object_ids(registry_root: Path, episode_id: str) -> set[str]:
 
 
 def _sealed_output(output_parent: Path, output_name: str, episodes: Sequence[Mapping[str, Any]],
-                   bindings: Mapping[str, Any], geometry_root: Path) -> dict[str, Any]:
+                   bindings: Mapping[str, Any], geometry_root: Path, smoke: bool = False) -> dict[str, Any]:
     output_parent.mkdir(parents=True, exist_ok=True)
     final = output_parent / output_name
     if final.exists() or final.is_symlink():
@@ -494,7 +494,7 @@ def _sealed_output(output_parent: Path, output_name: str, episodes: Sequence[Map
                             "schema": RUNNER_SCHEMA}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         manifest = {
             "schema": "C3_T1_V23_TEACHER_PILOT_OUTPUT_V1",
-            "status": "PASS_FIT_DEV_ONLY",
+            "status": "PASS_FIT_DEV_SMOKE" if smoke else "PASS_FIT_DEV_ONLY",
             "episode_count": len(episodes),
             "episodes": [{"episode_id": item["episode_id"], "step_count": item["step_count"]}
                          for item in episodes],
@@ -530,12 +530,23 @@ def _sealed_output(output_parent: Path, output_name: str, episodes: Sequence[Map
 
 def execute_pilot(manifest_path: Path, registry_root: Path, geometry_root: Path,
                   geometry_allowlist: Path, predicate_contract: Path,
-                  semantic_contract: Path, output_parent: Path, output_name: str) -> dict[str, Any]:
+                  semantic_contract: Path, output_parent: Path, output_name: str,
+                  selected_ids: Sequence[str] | None = None) -> dict[str, Any]:
     preflight_result = preflight(manifest_path, registry_root, geometry_root,
                                  geometry_allowlist, predicate_contract, semantic_contract)
     manifest = _strict_json(manifest_path)
+    records = sorted(manifest["records"], key=lambda item: item["episode_id"])
+    if selected_ids is not None:
+        requested = list(selected_ids)
+        if len(set(requested)) != len(requested) or not requested:
+            raise RunnerHold("selected episode identities are not unique")
+        available = {str(item["episode_id"]) for item in records}
+        if not set(requested) <= available:
+            raise RunnerHold("selected episode identity is outside frozen pilot")
+        records = [item for item in records if str(item["episode_id"]) in set(requested)]
+        records.sort(key=lambda item: requested.index(str(item["episode_id"])))
     episodes = []
-    for record in sorted(manifest["records"], key=lambda item: item["episode_id"]):
+    for record in records:
         episode_id = str(record["episode_id"])
         files = {str(item["name"]): item for item in record.get("source_files", [])}
         sidecar_path = Path(str(record["source_episode_root"])) / "privileged_teacher_sidecar.jsonl"
@@ -551,8 +562,9 @@ def execute_pilot(manifest_path: Path, registry_root: Path, geometry_root: Path,
                               threshold, protocol_horizon_for_suite(episode_id.split("/", 1)[0]))
         episodes.append(episode)
     return _sealed_output(output_parent, output_name, episodes,
-                          {"preflight": preflight_result, "manifest_sha256": sha256_file(manifest_path)},
-                          geometry_root)
+                          {"preflight": preflight_result, "manifest_sha256": sha256_file(manifest_path),
+                           "selected_episode_ids": [item["episode_id"] for item in records]},
+                          geometry_root, smoke=selected_ids is not None)
 
 
 def verify_required_contract_files(registry_root: Path, geometry_root: Path, geometry_allowlist: Path,
@@ -600,6 +612,7 @@ def main() -> int:
     parser.add_argument("--semantic-contract", required=True, type=Path)
     parser.add_argument("--execute-output-parent", type=Path)
     parser.add_argument("--execute-output-name")
+    parser.add_argument("--episode-id", action="append", dest="episode_ids")
     args = parser.parse_args()
     try:
         if (args.execute_output_parent is None) != (args.execute_output_name is None):
@@ -613,7 +626,7 @@ def main() -> int:
             result = execute_pilot(
                 args.manifest, args.registry_root, args.geometry_root,
                 args.geometry_allowlist, args.predicate_contract, args.semantic_contract,
-                args.execute_output_parent, args.execute_output_name,
+                args.execute_output_parent, args.execute_output_name, args.episode_ids,
             )
     except (RunnerHold, ContractError) as exc:
         print(json.dumps({
