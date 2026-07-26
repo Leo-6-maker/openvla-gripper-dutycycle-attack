@@ -17,6 +17,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
 from physics_teacher_v22 import create_v22_snapshot, V22_SCHEMA_VERSION, compute_v22_schema_sha
+from t2r1_placement_patch import patch as t2r1_patch; t2r1_patch()
 from v22_production_v2 import (
     parse_sidecar, parse_episode_summary, resolve_goal_target,
     resolve_manipulated_objects, get_object_slices_for_task,
@@ -159,9 +160,12 @@ def process_episode(ep, manifest, dry_run=False):
         manipulated_objects = task_role['manipulated_objects']
         support_names = task_role['support_names']
         target_names = task_role['target_names']
+        goal_support_names = task_role.get('goal_support_names', [])
+        goal_relations = task_role.get('goal_relations', [])
     else:
         object_slices = {}
         manipulated_objects = []; support_names = []; target_names = []
+        goal_support_names = []; goal_relations = []
 
     # Step 5: Target resolution
     target = resolve_goal_target(instruction, object_slices)
@@ -173,7 +177,7 @@ def process_episode(ep, manifest, dry_run=False):
     lift_results = compute_lift_state(steps, manipulated_objects, object_slices)
     instability_results = compute_instability_indicators(steps, grasp_results, manipulated_objects, object_slices)
     terminal_results = compute_terminal_state(steps, episode_summary)
-    placement_results = compute_placement_state(steps, grasp_results, manipulated_objects, object_slices, target_names)
+    placement_results = compute_placement_state(steps, grasp_results, manipulated_objects, object_slices, target_names, goal_support_names, goal_relations)
     safe_release_results = compute_safe_release(steps, grasp_results, terminal_results, placement_results)
     gripper_closing_results = compute_gripper_closing_state(steps)
     gripper_physics_results = compute_gripper_physics(steps)

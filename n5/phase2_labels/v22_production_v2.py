@@ -188,9 +188,28 @@ def parse_bddl_task_role(text, suite, task_idx, object_names):
             if m.group(1) in manipulated and m.group(2) not in supports:
                 supports.append(m.group(2))
 
+    # T2R1: Extract goal_support_names from goal relations (separate from source supports)
+    goal_supports = []
+    goal_relations = []
+    for pred, obj, target in predicates:
+        if pred in ('In', 'InContainer', 'Inside'):
+            goal_relations.append(('In', obj, target))
+            if target not in goal_supports:
+                goal_supports.append(target)
+        elif pred in ('On', 'OnContainer'):
+            goal_relations.append(('On', obj, target))
+            if target not in goal_supports:
+                goal_supports.append(target)
+        elif pred == 'Stack':
+            goal_relations.append(('Stack', obj, target))
+            if target not in goal_supports:
+                goal_supports.append(target)
+
     return {
         "manipulated_objects": manipulated, "target_names": targets,
         "support_names": supports, "goal_predicates": predicates,
+        "goal_support_names": goal_supports,
+        "goal_relations": goal_relations,
         "status": "PASS", "reason": "goal object and target decoded from BDDL",
     }
 
