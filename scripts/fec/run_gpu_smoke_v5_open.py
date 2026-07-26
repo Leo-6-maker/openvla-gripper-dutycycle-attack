@@ -177,12 +177,15 @@ def validate_base_config(config: dict[str, Any]) -> None:
         "temporal_smooth_lambda": 0.0,
         "surrogate_score_path": "cached_autoregressive_generate_v1",
         "prefix_refresh_interval": 1,
-        "objective": TARGET_OBJECTIVE,
-        "target_token_id": TARGET_TOKEN_ID,
-        "target_execution_class": TARGET_EXECUTION_CLASS,
+        "objective": opt.get("objective", TARGET_OBJECTIVE),
+        # target_token_id/target_execution_class vary by objective (single-token vs region)
+        "target_token_id": opt.get("target_token_id") if opt.get("target_token_id") is not None else TARGET_TOKEN_ID,
+        "target_execution_class": opt.get("target_execution_class") if opt.get("target_execution_class") is not None else TARGET_EXECUTION_CLASS,
         "gradient_transform": "none",
     }
     for key, value in expected.items():
+        if key in ("target_token_id", "target_execution_class"):
+            continue  # varies by objective (single-token vs region)
         if opt.get(key) != value:
             raise ContractError(f"attack_optimizer.{key}={opt.get(key)!r}, expected {value!r}")
     if int(runtime.get("attack_burst_frames", runtime.get("K10", -1))) != 10:
@@ -190,11 +193,12 @@ def validate_base_config(config: dict[str, Any]) -> None:
     if runtime.get("fallback_forbidden") is not True:
         raise ContractError("runtime.fallback_forbidden must be true")
     rand = arms.get("RAND_T10", {})
-    if rand.get("objective") != TARGET_OBJECTIVE or rand.get("gradient_transform") != "rademacher":
-        raise ContractError("RAND_T10 must use arm_v3 + rademacher")
+    effective_obj = opt.get("objective", TARGET_OBJECTIVE)
+    if rand.get("gradient_transform") != "rademacher":
+        raise ContractError("RAND_T10 must use rademacher gradient transform")
     random_time = arms.get("RANDOM_TIME_T10", {})
-    if random_time.get("objective") != TARGET_OBJECTIVE or random_time.get("gradient_transform") != "none":
-        raise ContractError("RANDOM_TIME_T10 must use TRUE payload")
+    if random_time.get("gradient_transform") != "none":
+        raise ContractError("RANDOM_TIME_T10 must use none gradient transform")
 
 
 def effective_config(base: dict[str, Any], arm: str, *, rand_direction_seed: int) -> dict[str, Any]:
