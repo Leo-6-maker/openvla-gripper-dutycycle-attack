@@ -1,0 +1,153 @@
+{
+  "document": "C3-S3 Geometry Support Answers",
+  "status": "DEVELOPMENT_ONLY",
+  "producer": "DeepSeek",
+  "consumable_as_formal_evidence": false,
+  "timestamp": "2026-07-26T12:00:00Z",
+
+  "inventory_summary": {
+    "total_episodes": 2000,
+    "per_suite": {"libero_10": 500, "libero_goal": 500, "libero_object": 500, "libero_spatial": 500},
+    "all_expected_fields_present": true,
+    "missing_expected_fields": [],
+    "field_coverage": {
+      "object_state": "100%",
+      "robot0_eef_pos": "100%",
+      "robot0_eef_quat": "100%",
+      "robot0_gripper_qpos": "100%",
+      "mujoco_contact_pairs": "100%",
+      "step": "100%",
+      "state_id": "100%"
+    }
+  },
+
+  "answers": {
+    "q1_independent_mujoco_world_frame_reference": {
+      "answer": "PARTIAL",
+      "detail": "The C3-S2 static fixture seal provides world-frame site poses for 8 static fixtures, validated via MuJoCo model queries. The C1-V2 registry maps BDDL targets to MuJoCo entity IDs. However, these are model-level, not per-episode. For per-step verification, the sidecar object_state provides body world poses (including basket_1_main), but site world poses (sim.data.site_xpos) are NOT recorded in the sidecar and require either MuJoCo replay or body→site reconstruction.",
+      "available_sources": [
+        "C3-S2 STATIC_WORLD_POSE_SEAL — 8 static fixture world poses",
+        "C1-V2 registry — entity IDs, sizes, parent relationships",
+        "Sidecar object_state — body world poses (including basket_1_main)"
+      ],
+      "missing_for_per_episode": [
+        "sim.data.site_xpos per step (requires MuJoCo init + replay)",
+        "sim.data.site_xmat per step"
+      ]
+    },
+    "q2_static_fixture_offline_verification": {
+      "answer": "YES — but limited to seal-validated fixtures",
+      "detail": "Static fixtures classified as STATIC_EXACT_SITE in C3-S2 can be verified offline by comparing their seal world poses against reconstructed poses from sidecar object_state. The parent body pose is in object_state (e.g., flat_stove_1_burner for flat_stove_1_cook_region). The reconstruction uses: site_world = seal_mean_xpos (constant). Divergence from this constant across episodes indicates non-static behavior. However, for the 2 DYNAMIC_POSSIBLE_UNSEALED fixtures (white_cabinet, wooden_cabinet), offline verification is not possible — their poses depend on unrecorded hinge joint angles.",
+      "static_fixtures_verifiable_offline": 8,
+      "unverifiable_offline": ["white_cabinet_1_bottom_region", "wooden_cabinet_1_top_region"],
+      "method": "Compare C3-S2 seal mean_xpos/mean_xmat against null model (constant pose hypothesis)"
+    },
+    "q3_dynamic_support_body_site_reconstruction": {
+      "answer": "YES — for basket and other body+site fixtures",
+      "detail": "Basket body pose (basket_1_main) is available in object_state at every step via slice specs from BDDL parsing. The C3-S2 seal validated the body→site reconstruction: site_world = body_xpos + body_xmat @ site_local_pos with max error 0.0 across 5 canonical states. This reconstruction can be applied per-step using the sidecar body pose. For non-basket dynamic fixtures without validated local transforms, the reconstruction is NOT available.",
+      "reconstructable": ["basket_1_contain_region (13 task instances)"],
+      "not_reconstructable": ["white_cabinet_1_bottom_region", "wooden_cabinet_1_top_region"],
+      "validation": "C3-S2 basket reconstruction seal — max position error 0.0, tolerance 1e-6"
+    },
+    "q4_articulated_unknown_tasks": {
+      "answer": "2 fixtures across 2 tasks",
+      "details": {
+        "white_cabinet_1_bottom_region": {
+          "task": "libero_10/task_03",
+          "movable_joint": "hinge joint_13, range 0.17",
+          "classification": "DYNAMIC_POSSIBLE_UNSEALED",
+          "episodes_affected": "libero_10/task_03 — all 50 states. Pick-and-place tasks targeting white cabinet bottom shelf."
+        },
+        "wooden_cabinet_1_top_region": {
+          "task": "libero_goal/task_03",
+          "movable_joint": "hinge joint_13, range 0.17",
+          "classification": "DYNAMIC_POSSIBLE_UNSEALED",
+          "episodes_affected": "libero_goal/task_03 — all 50 states. Goal-conditioned tasks targeting wooden cabinet top."
+        }
+      },
+      "total_episodes_affected": 100,
+      "observability_status": "UNKNOWN — hinge joint angles not recorded in sidecar; world pose of cabinet-mounted sites depends on unobservable joint state"
+    },
+    "q5_telemetry_sufficiency": {
+      "answer": "INSUFFICIENT — key gaps remain",
+      "static_position_max_error": {
+        "feasible": true,
+        "method": "Compare C3-S2 seal mean_xpos against reconstructed site pose from sidecar body pose",
+        "limitation": "Requires body pose for each static fixture's parent body in object_state. Some parent bodies (e.g., table, wine_rack_1_main) may not be in object_state slices."
+      },
+      "static_rotation_max_error": {
+        "feasible": true,
+        "method": "Compare C3-S2 seal mean_xmat against sidecar body_xmat for parent body",
+        "limitation": "Same body availability constraint as position."
+      },
+      "dynamic_position_p99": {
+        "feasible": true,
+        "method": "Reconstruct basket site pose from sidecar body pose across all basket-task episodes, compute per-step reconstruction error against seal-validated model",
+        "limitation": "Without ground-truth site_xpos, error is relative to reconstruction model, not absolute."
+      },
+      "dynamic_rotation_p99": {
+        "feasible": true,
+        "method": "Same as position — relative to body orientation. Basket typically has near-identity rotation, so error is dominated by body quaternion noise."
+      },
+      "absolute_ground_truth": "NOT available without MuJoCo replay. Sidecar does not record sim.data.site_xpos/xmat."
+    },
+    "q6_minimum_missing_fields": {
+      "answer": "4 field categories missing for complete numerical verification",
+      "missing_fields": [
+        {
+          "field": "sim.data.site_xpos per step",
+          "priority": "P0",
+          "reason": "Ground truth for static/dynamic fixture world position",
+          "obtainable_via": "MuJoCo replay with canonical init state"
+        },
+        {
+          "field": "sim.data.site_xmat per step",
+          "priority": "P0",
+          "reason": "Ground truth for static/dynamic fixture world rotation",
+          "obtainable_via": "MuJoCo replay with canonical init state"
+        },
+        {
+          "field": "movable ancestor joint angles (hinge qpos)",
+          "priority": "P1",
+          "reason": "Required to verify white/wooden cabinet pose. Without this, 100 episodes (2 tasks × 50 states) have UNKNOWN fixture poses.",
+          "obtainable_via": "MuJoCo model.jnt_qposadr + sim.data.qpos during replay"
+        },
+        {
+          "field": "canonical init state bytes",
+          "priority": "P1",
+          "reason": "Required for deterministic MuJoCo replay. Currently only init_state_sha256 is stored, not the raw state array.",
+          "obtainable_via": "suite_obj.get_task_init_states(task_idx)[state_id] — available during live sim but not serialized to sidecar"
+        }
+      ]
+    },
+    "q7_recorded_action_modeless_replay": {
+      "answer": "PARTIALLY — works for non-fixture-contact episodes, fails for contact-sensitive trajectories",
+      "detail": "C2R0 demonstrated: 3/4 sampled episodes achieve exact numerical parity (0 EEF/qpos/object issues) using canonical init state + recorded actions. However, task_09 (microwave fixture) shows systematic divergence at step 136 due to contact dynamics amplifying sub-pixel EEF offset. For C3-S3 purposes: static fixture episodes can use C3-S2 seal directly (no replay needed); basket episodes can use body→site reconstruction from sidecar (no replay needed); white/wooden cabinet episodes require replay of hinge joint angles, which is NOT available from sidecar alone.",
+      "replay_feasible_for": [
+        "Non-fixture-contact episodes — exact parity confirmed (3/3 sampled)",
+        "Static fixture episodes — use C3-S2 seal, no replay needed",
+        "Basket episodes — use body→site reconstruction, no replay needed"
+      ],
+      "replay_not_feasible_for": [
+        "Fixture-contact episodes (task_09 type) — systematic divergence",
+        "White/wooden cabinet episodes — hinge angles not recorded"
+      ],
+      "minimum_requirements_for_full_replay": [
+        "Canonical init state bytes (not just SHA)",
+        "Deterministic MuJoCo version + seed",
+        "Acceptance of sub-pixel divergence for contact-sensitive trajectories"
+      ]
+    }
+  },
+
+  "development_recommendations": [
+    "1. Static fixtures (8): use C3-S2 seal directly for world pose — no per-episode replay needed for these",
+    "2. Basket (13 task instances): use sidecar body pose + validated local transform for per-step site pose",
+    "3. White/wooden cabinet (2 tasks): mark as UNOBSERVABLE in per-episode evaluation — hinge angles not in sidecar",
+    "4. For absolute ground-truth validation: implement MuJoCo replay with canonical init states on a sample of non-fixture episodes",
+    "5. P99 dynamic error: compute from basket reconstruction across all 13 task instances × 50 states = 650 episodes"
+  ],
+
+  "protected_reads": 0,
+  "gpu_model_rollout_attack": 0
+}
