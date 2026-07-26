@@ -2,8 +2,9 @@
   "state_file": "N5_RUNTIME_STATE_V2",
   "predecessor": "n5/phase3_student/h0_2/N5_RUNTIME_STATE_V1.json (historical)",
   "active_plan": "N5_LONGRUN_PLAN_V4 (frozen historical, NOT overwritten)",
-  "current_gate": "H0.3-A_HISTORICAL_INVALIDATION",
-  "status": "PROVENANCE_FAIL",
+  "current_gate": "H0.3-PROVENANCE (H0.3-R5 resubmission)",
+  "status": "AWAITING_CODEX_REVIEW",
+  "gate_split_active": "H0.3 split into H0.3-PROVENANCE + C3-T0-TEACHER-CAUSALITY per GATE_SPLIT_AMENDMENT.json",
   "producer_agent": "DeepSeek",
   "updated_at": "2026-07-26T11:00:00Z",
   "self_hash_algorithm": "SHA256(UTF-8(json.dumps(object_without_top_level_self_sha256, sort_keys=true, separators=(\",\", \":\"), ensure_ascii=false)))",
@@ -34,5 +35,5 @@
     "attack_started": false
   },
   "next_gate": "H0.3-B_C1_V2_RESOLVER_CONTRACT",
-  "self_sha256": "932740c75e6c24799195a920c94d035d40ec5876ab14b401b733dc92f3a5fed9"
+  "self_sha256": "9b56d1d4cc27ea608ffe9f57a5f20d2c4fae94e14ebe3d9a369fa67a15988e2c"
 }

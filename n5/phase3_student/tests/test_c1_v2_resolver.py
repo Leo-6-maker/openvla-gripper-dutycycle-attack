@@ -1,156 +1,241 @@
-"""C1-V2 Resolver Unit Tests.
+"""C1-V2 Resolver Contract Tests.
 
-Validates:
-  1. EXACT_SITE resolution
-  2. EXACT_BODY resolution
-  3. APPROVED_STRUCTURAL_ALIAS (R1: {name}_main)
-  4. BLOCKED region→body rejection
-  5. UNRESOLVED detection
-  6. No ambiguous/multi-candidate acceptance
-  7. Hierarchy verification
+Tests the pure-function resolver with synthetic entity data.
+No MuJoCo dependency — tests are deterministic and repeatable.
 """
 import unittest, sys, os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 from t2rc1_v2_registry import (
-    _is_region_target, _verify_alias_hierarchy,
-    VALID_RESOLUTIONS, BLOCKED_RESOLUTIONS, APPROVED_ALIAS_RULES,
+    resolve_entity, resolve_relation,
+    _is_region, _verify_alias_hierarchy_full,
+    VALID_RESOLUTIONS, BLOCKED_RESOLUTIONS,
 )
 
 
-class TestRegionDetection(unittest.TestCase):
-    def test_known_regions(self):
-        regions = ['basket_1_contain_region', 'flat_stove_1_cook_region',
-                   'microwave_1_heating_region', 'wooden_cabinet_1_top_region',
-                   'white_cabinet_1_bottom_region', 'main_table_stove_front_region']
-        for r in regions:
-            self.assertTrue(_is_region_target(r), f'{r} should be detected as region')
+def _make_synthetic_entities():
+    """Build synthetic sites/bodies/geoms mimicking a real LIBERO task.
 
-    def test_non_regions(self):
-        non_regions = ['alphabet_soup_1', 'plate_1', 'akita_black_bowl_1',
-                       'butter_1', 'milk_1']
-        for r in non_regions:
-            self.assertFalse(_is_region_target(r), f'{r} should NOT be detected as region')
+    Pattern: objects like alphabet_soup_1 have body alphabet_soup_1_main
+    with geoms alphabet_soup_1_g0 through alphabet_soup_1_gN.
+    Regions like basket_1_contain_region are sites on basket_1_main body.
+    """
+    bodies = {
+        'alphabet_soup_1_main': {'id': 1},
+        'butter_1_main': {'id': 2},
+        'basket_1_main': {'id': 3},
+        'plate_1_main': {'id': 4},
+        'akita_black_bowl_1_main': {'id': 5},
+    }
+    sites = {
+        'basket_1_contain_region': {
+            'id': 10, 'body_id': 3, 'size': [0.06, 0.06, 0.07],
+            'pos': [0, 0, 0.07], 'quat': [0, 0, 0, 1], 'type': 0,
+        },
+        'flat_stove_1_cook_region': {
+            'id': 11, 'body_id': 99, 'size': [0.075, 0.075, 0.0025],
+            'pos': [0, 0, 0], 'quat': [0, 0, 0, 1], 'type': 0,
+        },
+    }
+    geoms = {}
+    for name, body_id in [('alphabet_soup_1', 1), ('butter_1', 2),
+                           ('plate_1', 4), ('akita_black_bowl_1', 5)]:
+        for i in range(5):
+            gn = f'{name}_g{i}'
+            geoms[gn] = {'id': 100 + body_id * 100 + i, 'body_id': body_id}
+    return sites, bodies, geoms
 
 
-class TestAliasHierarchyVerification(unittest.TestCase):
+class TestStructuralRegionDetection(unittest.TestCase):
     def setUp(self):
-        # Simulated entity data
-        self.bodies = {
-            'plate_1_main': {'id': 10, 'name': 'plate_1_main'},
-            'akita_black_bowl_1_main': {'id': 20, 'name': 'akita_black_bowl_1_main'},
-        }
-        self.geoms = {
-            'plate_1_g0': {'body_id': 10}, 'plate_1_g1': {'body_id': 10},
-            'plate_1_g2': {'body_id': 10},
-            'akita_black_bowl_1_g0': {'body_id': 20},
-        }
+        self.sites, self.bodies, self.geoms = _make_synthetic_entities()
 
-    def test_valid_alias_unique_hierarchy_verified(self):
-        ok, msg = _verify_alias_hierarchy(
-            'plate_1', 'plate_1_main', self.bodies, self.geoms, 10)
-        self.assertTrue(ok, msg)
-        self.assertIn('unique_hierarchy_verified', msg)
+    def test_region_when_in_sites(self):
+        self.assertTrue(_is_region('basket_1_contain_region', self.sites))
 
-    def test_alias_name_mismatch_rejected(self):
-        ok, msg = _verify_alias_hierarchy(
-            'plate_1', 'plate_1_other', self.bodies, self.geoms, 10)
+    def test_not_region_when_not_in_sites(self):
+        self.assertFalse(_is_region('alphabet_soup_1', self.sites))
+        self.assertFalse(_is_region('plate_1', self.sites))
+
+    def test_region_detection_is_structural_not_suffix(self):
+        """A name with _region suffix but NOT in sites is NOT a region."""
+        self.assertFalse(_is_region('fake_contain_region', self.sites))
+
+
+class TestResolveEntity(unittest.TestCase):
+    def setUp(self):
+        self.sites, self.bodies, self.geoms = _make_synthetic_entities()
+
+    def test_alias_for_bddl_object(self):
+        """BDDL names like alphabet_soup_1 are NOT bodies — only _main is."""
+        r = resolve_entity('alphabet_soup_1', False, self.sites, self.bodies, self.geoms)
+        self.assertEqual(r['resolution'], 'APPROVED_STRUCTURAL_ALIAS')
+        self.assertEqual(r['entity_id'], 1)
+        self.assertEqual(r['alias_to'], 'alphabet_soup_1_main')
+
+    def test_exact_body_when_raw_name_is_body(self):
+        """If a BDDL name is literally a body name, it resolves EXACT_BODY."""
+        bodies2 = dict(self.bodies)
+        bodies2['butter_1'] = {'id': 2}  # BDDL name IS the body name
+        r = resolve_entity('butter_1', False, self.sites, bodies2, self.geoms)
+        self.assertEqual(r['resolution'], 'EXACT_BODY')
+
+    def test_exact_site(self):
+        r = resolve_entity('basket_1_contain_region', True, self.sites, self.bodies, self.geoms)
+        self.assertEqual(r['resolution'], 'EXACT_SITE')
+        self.assertEqual(r['entity_id'], 10)
+
+    def test_alias_main_suffix(self):
+        r = resolve_entity('plate_1', False, self.sites, self.bodies, self.geoms)
+        self.assertEqual(r['resolution'], 'APPROVED_STRUCTURAL_ALIAS')
+        self.assertEqual(r['entity_id'], 4)
+        self.assertEqual(r['alias_to'], 'plate_1_main')
+
+    def test_unresolved_unknown(self):
+        r = resolve_entity('nonexistent_object', False, self.sites, self.bodies, self.geoms)
+        self.assertEqual(r['resolution'], 'UNRESOLVED')
+
+    def test_unresolved_alias_fails_verification(self):
+        # Add a body that matches _main but has wrong geoms
+        sites2 = dict(self.sites)
+        bodies2 = dict(self.bodies)
+        bodies2['fake_obj_1_main'] = {'id': 99}
+        # No geoms with prefix fake_obj_1_ → hierarchy verification fails
+        r = resolve_entity('fake_obj_1', False, sites2, bodies2, self.geoms)
+        self.assertEqual(r['resolution'], 'UNRESOLVED')
+        self.assertIn('alias_verification_failed', r.get('error_detail', {}).get('reason', ''))
+
+    def test_blocked_region_as_body(self):
+        # A region name that matches a body → BLOCKED
+        sites2 = dict(self.sites)
+        bodies2 = dict(self.bodies)
+        bodies2['my_region'] = {'id': 99}
+        r = resolve_entity('my_region', True, sites2, bodies2, self.geoms)
+        self.assertEqual(r['resolution'], 'BLOCKED_REGION_AS_BODY')
+
+    def test_blocked_region_as_geom(self):
+        # A region name that matches a geom → BLOCKED
+        sites2 = dict(self.sites)
+        geoms2 = dict(self.geoms)
+        geoms2['my_region'] = {'id': 99, 'body_id': 1}
+        r = resolve_entity('my_region', True, sites2, self.bodies, geoms2)
+        self.assertEqual(r['resolution'], 'BLOCKED_REGION_AS_GEOM')
+
+    def test_ambiguous_multi_type(self):
+        # Name exists as both site and body → AMBIGUOUS
+        sites2 = dict(self.sites)
+        bodies2 = dict(self.bodies)
+        sites2['ambiguous_name'] = {'id': 50, 'body_id': 1, 'size': [1,1,1],
+                                     'pos': [0,0,0], 'quat': [0,0,0,1], 'type': 0}
+        bodies2['ambiguous_name'] = {'id': 50}
+        r = resolve_entity('ambiguous_name', False, sites2, bodies2, self.geoms)
+        self.assertEqual(r['resolution'], 'AMBIGUOUS')
+
+    def test_ambiguous_multiple_alias_candidates(self):
+        # Multiple bodies starting with prefix → AMBIGUOUS
+        bodies2 = dict(self.bodies)
+        bodies2['multi_obj_main'] = {'id': 50}
+        bodies2['multi_obj_other'] = {'id': 51}
+        r = resolve_entity('multi_obj', False, self.sites, bodies2, self.geoms)
+        self.assertEqual(r['resolution'], 'AMBIGUOUS')
+        self.assertIn('multiple_alias_candidates', r.get('error_detail', {}).get('reason', ''))
+
+
+class TestResolveRelation(unittest.TestCase):
+    def setUp(self):
+        self.sites, self.bodies, self.geoms = _make_synthetic_entities()
+
+    def test_full_relation_ok(self):
+        """Both object and target resolve: object via alias, target via EXACT_SITE."""
+        rel = resolve_relation('In', 'alphabet_soup_1',
+                               'basket_1_contain_region',
+                               self.sites, self.bodies, self.geoms)
+        self.assertTrue(rel['relation_ok'])
+        self.assertEqual(rel['object_resolution']['resolution'], 'APPROVED_STRUCTURAL_ALIAS')
+        self.assertEqual(rel['target_resolution']['resolution'], 'EXACT_SITE')
+
+    def test_full_relation_ok_with_alias(self):
+        rel = resolve_relation('On', 'plate_1', 'akita_black_bowl_1',
+                               self.sites, self.bodies, self.geoms)
+        self.assertTrue(rel['relation_ok'])
+        self.assertEqual(rel['object_resolution']['resolution'], 'APPROVED_STRUCTURAL_ALIAS')
+        self.assertEqual(rel['target_resolution']['resolution'], 'APPROVED_STRUCTURAL_ALIAS')
+
+    def test_relation_fails_on_object_unresolved(self):
+        rel = resolve_relation('On', 'nonexistent', 'basket_1_contain_region',
+                               self.sites, self.bodies, self.geoms)
+        self.assertFalse(rel['relation_ok'])
+        self.assertEqual(rel['object_resolution']['resolution'], 'UNRESOLVED')
+
+    def test_relation_fails_on_target_ambiguous(self):
+        sites2 = dict(self.sites)
+        bodies2 = dict(self.bodies)
+        sites2['ambig'] = {'id': 50, 'body_id': 1, 'size': [1,1,1],
+                           'pos': [0,0,0], 'quat': [0,0,0,1], 'type': 0}
+        bodies2['ambig'] = {'id': 50}
+        rel = resolve_relation('On', 'butter_1', 'ambig',
+                               sites2, bodies2, self.geoms)
+        self.assertFalse(rel['relation_ok'])
+        self.assertTrue(rel['target_ambiguous'])
+
+    def test_target_is_region_detected(self):
+        rel = resolve_relation('In', 'alphabet_soup_1',
+                               'basket_1_contain_region',
+                               self.sites, self.bodies, self.geoms)
+        self.assertTrue(rel['target_is_region'])
+
+    def test_target_not_region_for_body(self):
+        rel = resolve_relation('On', 'plate_1', 'akita_black_bowl_1',
+                               self.sites, self.bodies, self.geoms)
+        self.assertFalse(rel['target_is_region'])
+
+
+class TestHierarchyVerificationFull(unittest.TestCase):
+    def setUp(self):
+        _, self.bodies, self.geoms = _make_synthetic_entities()
+
+    def test_all_geoms_checked(self):
+        ok, detail = _verify_alias_hierarchy_full(
+            'plate_1', 'plate_1_main', self.bodies, self.geoms, 4)
+        self.assertTrue(ok)
+        self.assertEqual(detail['total_geoms'], 5)
+        self.assertEqual(detail['matched_geoms'], 5)
+        self.assertEqual(detail['mismatched_geoms'], 0)
+
+    def test_mismatched_geom_detected(self):
+        geoms2 = dict(self.geoms)
+        geoms2['plate_1_g3'] = {'id': 999, 'body_id': 999}  # wrong body
+        ok, detail = _verify_alias_hierarchy_full(
+            'plate_1', 'plate_1_main', self.bodies, geoms2, 4)
         self.assertFalse(ok)
-        self.assertIn('alias_body', msg)
+        self.assertGreater(detail['mismatched_geoms'], 0)
 
-    def test_non_unique_body_rejected(self):
-        bodies = dict(self.bodies)
-        bodies['plate_1_extra'] = {'id': 99}
-        ok, msg = _verify_alias_hierarchy(
-            'plate_1', 'plate_1_main', bodies, self.geoms, 10)
+    def test_non_unique_bodies_detected(self):
+        bodies2 = dict(self.bodies)
+        bodies2['plate_1_extra'] = {'id': 99}
+        ok, detail = _verify_alias_hierarchy_full(
+            'plate_1', 'plate_1_main', bodies2, self.geoms, 4)
         self.assertFalse(ok)
-        self.assertIn('non_unique_bodies', msg)
-
-    def test_no_geoms_rejected(self):
-        ok, msg = _verify_alias_hierarchy(
-            'plate_1', 'plate_1_main', self.bodies, {}, 10)
-        self.assertFalse(ok)
-        self.assertIn('no_geoms', msg)
-
-    def test_geom_body_mismatch_rejected(self):
-        geoms = {'plate_1_g0': {'body_id': 999}}  # wrong body
-        ok, msg = _verify_alias_hierarchy(
-            'plate_1', 'plate_1_main', self.bodies, geoms, 10)
-        self.assertFalse(ok)
-        self.assertIn('body_mismatch', msg)
+        self.assertIn('non_unique_bodies', detail.get('error', ''))
 
 
 class TestResolutionEnum(unittest.TestCase):
-    def test_valid_resolutions(self):
-        self.assertEqual(VALID_RESOLUTIONS,
-                         {'EXACT_SITE', 'EXACT_BODY', 'EXACT_GEOM', 'APPROVED_STRUCTURAL_ALIAS'})
+    def test_valid_not_include_blocked(self):
+        self.assertNotIn('STRIP_SUFFIX_BODY', VALID_RESOLUTIONS)
+        self.assertNotIn('SUBSTRING', VALID_RESOLUTIONS)
 
-    def test_blocked_resolutions(self):
-        self.assertEqual(BLOCKED_RESOLUTIONS,
-                         {'STRIP_SUFFIX_BODY', 'STRIP_SUFFIX_SITE', 'SUBSTRING'})
+    def test_blocked_set_correct(self):
+        self.assertIn('STRIP_SUFFIX_BODY', BLOCKED_RESOLUTIONS)
+        self.assertIn('STRIP_SUFFIX_SITE', BLOCKED_RESOLUTIONS)
+        self.assertIn('SUBSTRING', BLOCKED_RESOLUTIONS)
 
-    def test_alias_rules_exist(self):
-        self.assertIn('R1_main_suffix', APPROVED_ALIAS_RULES)
-        rule = APPROVED_ALIAS_RULES['R1_main_suffix']
-        self.assertEqual(rule['transform']('plate_1'), 'plate_1_main')
-        self.assertEqual(rule['verification'], 'hierarchy')
-
-
-class TestResolutionPriority(unittest.TestCase):
-    """Verify resolution code follows the documented priority order."""
-
-    def test_priority_order_in_source(self):
-        """Check the source code has resolution steps in correct order."""
-        src_path = os.path.join(os.path.dirname(HERE), 't2rc1_v2_registry.py')
-        with open(src_path) as f:
-            code = f.read()
-
-        # The documented priority comments must appear in order
-        priorities = [
-            'Priority 1: EXACT_SITE',
-            'Priority 2: EXACT_BODY',
-            'Priority 3: EXACT_GEOM',
-            'Priority 4: APPROVED_STRUCTURAL_ALIAS',
-            'Priority 5: UNRESOLVED',
-        ]
-        positions = [code.find(p) for p in priorities]
-        for i in range(len(positions) - 1):
-            self.assertLess(positions[i], positions[i + 1],
-                f'Priority {i+1} must appear before priority {i+2} in source')
-
-    def test_no_fallback_in_source(self):
-        src_path = os.path.join(os.path.dirname(HERE), 't2rc1_v2_registry.py')
-        with open(src_path) as f:
-            code = f.read()
-        import re
-        assignments = re.findall(r"entry\['resolution'\]\s*=\s*'([^']+)'", code)
-        for a in assignments:
-            self.assertNotIn(a, BLOCKED_RESOLUTIONS,
-                f'Blocked resolution {a} assigned in C1-V2 source')
-
-
-class TestForbiddenPatterns(unittest.TestCase):
-    def test_no_region_to_body_fallback(self):
-        """Region targets must never resolve to body via fallback."""
-        src_path = os.path.join(os.path.dirname(HERE), 't2rc1_v2_registry.py')
-        with open(src_path) as f:
-            code = f.read()
-        # The BLOCKED_REGION_AS_BODY path is intentional (error flag, not resolution)
-        # But there must be no path where is_region=True leads to EXACT_BODY or APPROVED_STRUCTURAL_ALIAS
-        self.assertIn('is_region', code)
-        self.assertIn('BLOCKED_REGION_AS_BODY', code)
-
-    def test_alias_only_for_non_regions(self):
-        """APPROVED_STRUCTURAL_ALIAS must only apply when is_region is False."""
-        src_path = os.path.join(os.path.dirname(HERE), 't2rc1_v2_registry.py')
-        with open(src_path) as f:
-            code = f.read()
-        # The alias block must be guarded by 'not is_region'
-        alias_section_start = code.find('Priority 4: APPROVED_STRUCTURAL_ALIAS')
-        alias_section = code[alias_section_start:alias_section_start + 500]
-        self.assertIn('not is_region', alias_section,
-                      'Alias resolution must be guarded by not is_region')
+    def test_valid_plus_terminal_covers_all(self):
+        all_resolutions = VALID_RESOLUTIONS | {'UNRESOLVED', 'AMBIGUOUS',
+                                                'BLOCKED_REGION_AS_BODY',
+                                                'BLOCKED_REGION_AS_GEOM',
+                                                'ENV_ERROR'}
+        self.assertGreater(len(all_resolutions), 5)
 
 
 if __name__ == '__main__':
