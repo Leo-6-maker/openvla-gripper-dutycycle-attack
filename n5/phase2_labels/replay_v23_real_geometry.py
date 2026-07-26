@@ -297,7 +297,8 @@ def build_case(sim: Any, model: Any, relation: Mapping[str, Any], episode_id: st
     }
 
 
-def replay_episode(record: Mapping[str, Any], registry_root: Path, benchmark_cache: dict[str, Any]) -> dict[str, Any]:
+def replay_episode(record: Mapping[str, Any], registry_root: Path, benchmark_cache: dict[str, Any],
+                   source_commit: str) -> dict[str, Any]:
     from libero.libero import get_libero_path
     from libero.libero.envs import OffScreenRenderEnv
     suite = str(record["suite"]); task_idx = int(record["task_id"]); state_id = int(record["state_id"]); episode_id = str(record["episode_id"])
@@ -348,6 +349,7 @@ def replay_episode(record: Mapping[str, Any], registry_root: Path, benchmark_cac
         "qpos_close_threshold": qpos_binding["value"], "qpos_calibration": qpos_binding,
         "qpos_sidecar_max_abs_error": max(qpos_errors, default=None), "eef_sidecar_max_abs_error": max(eef_errors, default=None),
         "registry_task_sha256": registry_sha, "source_mode": "DETERMINISTIC_LIBERO_MUJOCO_REPLAY",
+        "code_snapshot_commit": source_commit,
         "model_inference": False, "teacher_labeling": False, "attack": False,
     }
 
@@ -379,9 +381,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     ids = {str(row.get("episode_id")) for row in records}
     if len(ids) != 40 or not ids <= pool: raise GeometryHold("pilot identities are not proven inside DEV_POOL")
     benchmark_cache: dict[str, Any] = {}
-    episodes = [replay_episode(row, registry_root, benchmark_cache) for row in sorted(records, key=lambda x: x["episode_id"])]
+    if not isinstance(args.source_commit, str) or len(args.source_commit) != 40 or any(char not in "0123456789abcdef" for char in args.source_commit):
+        raise GeometryHold("source commit must be a full lowercase Git SHA")
+    episodes = [replay_episode(row, registry_root, benchmark_cache, args.source_commit) for row in sorted(records, key=lambda x: x["episode_id"])]
     if len(episodes) != 40 or {x["episode_id"] for x in episodes} != ids: raise GeometryHold("40-episode replay closure failed")
-    source_binding = {"pilot_manifest_sha256": sha256_file(pilot_manifest_path), "pilot_root_sha256s_sha256": pilot_seal["sha256sums_sha256"], "registry_root_sha256s_sha256": registry_seal["sha256sums_sha256"], "dev_pool_root_sha256s_sha256": d0_seal["sha256sums_sha256"], "source_mode": "DETERMINISTIC_LIBERO_MUJOCO_REPLAY", "model_inference": False, "teacher_labeling": False, "attack": False}
+    source_binding = {"pilot_manifest_sha256": sha256_file(pilot_manifest_path), "pilot_root_sha256s_sha256": pilot_seal["sha256sums_sha256"], "registry_root_sha256s_sha256": registry_seal["sha256sums_sha256"], "dev_pool_root_sha256s_sha256": d0_seal["sha256sums_sha256"], "source_mode": "DETERMINISTIC_LIBERO_MUJOCO_REPLAY", "code_snapshot_commit": args.source_commit, "model_inference": False, "teacher_labeling": False, "attack": False}
     parent = Path(args.output_parent).resolve(); parent.mkdir(parents=True, exist_ok=True); final = parent / args.output_name
     if final.exists(): raise GeometryHold(f"output exists: {final}")
     staging = parent / f".staging_{final.name}_{uuid.uuid4().hex}"; staging.mkdir()
@@ -389,10 +393,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         for ep in episodes:
             safe = ep["episode_id"].replace("/", "__")
             directory = staging / "episodes" / safe; directory.mkdir(parents=True)
-            write_json(directory / "episode_manifest.json", {k: ep[k] for k in ("episode_id","suite","task_idx","state_id","step_count","relation_count","qpos_close_threshold","qpos_calibration","registry_task_sha256","source_mode")})
+            write_json(directory / "episode_manifest.json", {k: ep[k] for k in ("episode_id","suite","task_idx","state_id","step_count","relation_count","qpos_close_threshold","qpos_calibration","registry_task_sha256","source_mode","code_snapshot_commit")})
             with (directory / "geometry_cases.jsonl").open("w", encoding="utf-8") as f:
                 for row in ep["geometry_cases"]: f.write(json.dumps(row, sort_keys=True, ensure_ascii=False) + "\n")
-        manifest = {"schema": "C3_T1_PILOT_GEOMETRY_ROOT_V1", "status": "FROZEN_DETERMINISTIC_REPLAY", "episode_count": 40, "episodes": [{k: ep[k] for k in ("episode_id","suite","task_idx","state_id","step_count","relation_count","qpos_close_threshold","qpos_calibration","source_mode")} for ep in episodes], "source_binding": source_binding, "protected_payload_read": False, "model_inference": False, "teacher_labeling": False, "attack": False}
+        manifest = {"schema": "C3_T1_PILOT_GEOMETRY_ROOT_V1", "status": "FROZEN_DETERMINISTIC_REPLAY", "episode_count": 40, "episodes": [{k: ep[k] for k in ("episode_id","suite","task_idx","state_id","step_count","relation_count","qpos_close_threshold","qpos_calibration","source_mode","code_snapshot_commit")} for ep in episodes], "source_binding": source_binding, "protected_payload_read": False, "model_inference": False, "teacher_labeling": False, "attack": False}
         write_json(staging / "dataset_manifest.json", manifest); write_json(staging / "source_binding.json", source_binding); write_json(staging / "runtime_audit.json", {"status":"PASS", "episodes":40, "qpos_sidecar_max_abs_error": max(ep["qpos_sidecar_max_abs_error"] for ep in episodes), "eef_sidecar_max_abs_error": max(ep["eef_sidecar_max_abs_error"] for ep in episodes), "protected_payload_read":False, "model_inference":False, "teacher_labeling":False, "attack":False})
         seal = seal_staging(staging); os.rename(staging, final)
         return {"root": str(final), "status":"PASS", **seal, "episodes":40}
@@ -401,7 +405,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(); parser.add_argument("--pilot-root", required=True); parser.add_argument("--registry-root", required=True); parser.add_argument("--dev-pool-root", required=True); parser.add_argument("--output-parent", required=True); parser.add_argument("--output-name", required=True)
+    parser = argparse.ArgumentParser(); parser.add_argument("--pilot-root", required=True); parser.add_argument("--registry-root", required=True); parser.add_argument("--dev-pool-root", required=True); parser.add_argument("--output-parent", required=True); parser.add_argument("--output-name", required=True); parser.add_argument("--source-commit", required=True)
     try: print(json.dumps(run(parser.parse_args()), sort_keys=True))
     except Exception as exc: print(json.dumps({"status":"HOLD_GEOMETRY_SOURCE_INSUFFICIENT", "reason":f"{type(exc).__name__}:{exc}", "model_inference":False, "teacher_labeling":False, "attack":False}, sort_keys=True)); return 2
     return 0
