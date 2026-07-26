@@ -12,8 +12,8 @@ replay gate remains fail-closed.
 ## Code and environment
 
 - Branch: `codex/detector-completion-20260726`
-- Code commit: `f34c1878bc6bc2da943ad17d1b6d06a8676b0e87`
-- Tree: `0910b6fd6728f1320e033a89a87f3c31216f27c8`
+- Current code commit: `becf8e67fcaf3ad6574d173b0ebc4934826fbafd`
+- Current tree: `4fa17272803f6d5b73ed0b864c8aadce594f1e34`
 - Official environment: `/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800`
 - C1 source commit: `beb0721d36bd27412cde7d60623b8cb2f671a4bf`
 - Protected reads: `0`
@@ -43,6 +43,8 @@ Inventory evidence root:
 - `inventory.json` SHA256: `ba7ffa60298abdce13ad65a512ce40ef8586274adf9e759eb9bb7cc21f9c0fca`
 - Status: `HOLD_INPUTS_MISSING`
 
+The inventory root was generated under code commit `f34c1878bc6bc2da943ad17d1b6d06a8676b0e87`; the current checkout adds stricter task/state/seed and absolute-path checks and was rerun through the official CPU contract suite.
+
 ## C3-S3 evidence
 
 Current metadata-only evidence root:
@@ -59,6 +61,11 @@ Current metadata-only evidence root:
 - Episode rows: `0`
 - Static/dynamic numerical replay: `HOLD_INPUTS_MISSING`
 - Root seal: `PASS`
+
+The geometry evidence root was generated under code commit
+`660688a9b6b9c2d03e475d6b8ca88ea5a8a8bb07`; the current checkout preserves
+that sealed root and adds stricter row-level identity checks for any future
+replay input.
 
 The two articulated rows remain unknown. They are not converted to negative
 and do not silently reduce the supported denominator.

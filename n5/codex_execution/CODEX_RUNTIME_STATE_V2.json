@@ -2,7 +2,7 @@
   "state_file": "CODEX_RUNTIME_STATE_V2",
   "owner": "Codex",
   "branch": "codex/detector-completion-20260726",
-  "code_snapshot_commit": "f34c1878bc6bc2da943ad17d1b6d06a8676b0e87",
+  "code_snapshot_commit": "becf8e67fcaf3ad6574d173b0ebc4934826fbafd",
   "receipt_commit": "69bae546c67f7596273d842bcf4e03790ce04d47",
   "supersession_ledger_commit": "62aed6c1c9f93c04994d730526a5b742238bd6e8",
   "transition_receipt_commit": "fcef528ccba43b54911f94b22ca231aae77da635",
@@ -98,5 +98,5 @@
     "c3_s3_authorized": true
   },
   "next_gate": "C3-S3 remediation: mount non-protected development/confirmation geometry evidence and complete numerical replay audit; do not read CAL/G10/T2R-D or start Student training.",
-  "self_sha256": "1f78dbfed3fd1c2fe09511491a85736d3eea67b7843ee89821b3e349e4c40252"
+  "self_sha256": "9268ebb524ce3b005932171fca76992d8a38fb4794702627ff73f147464445fd"
 }
