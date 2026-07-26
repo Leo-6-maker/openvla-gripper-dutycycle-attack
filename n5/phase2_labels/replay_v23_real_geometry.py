@@ -23,7 +23,7 @@ import numpy as np
 
 HORIZONS = {"libero_10": 520, "libero_goal": 300, "libero_object": 280, "libero_spatial": 220}
 NUM_STEPS_WAIT = 10
-FORBIDDEN_TOKENS = ("cal", "check", "g10", "t2r", "attack")
+FORBIDDEN_TOKENS = ("cal", "check", "g10", "t2r")
 
 
 class GeometryHold(RuntimeError):
