@@ -82,7 +82,8 @@ scope of this pilot and must not be silently converted to zero.
     n5/phase2_labels/tests/test_v23_dev_pilot_runner.py
     configs/C3_T0_TEACHER_SEMANTIC_CONTRACT_V1.json
 
-The latest branch commit is a10b9b155e8c2ef9c6135736a636e9a2feabc072.
+The geometry source snapshot is a10b9b155e8c2ef9c6135736a636e9a2feabc072;
+the report/code handoff commit is 536faedd5757bd09832709c27cd7f787154a46ff.
 The runner output was executed from the preceding runner snapshot
 61b183839102ee14c92c06b3e2afb3932f3784c6; the intervening a10b9b1 change
 is replay-bound geometry caching only and does not change runner semantics.
