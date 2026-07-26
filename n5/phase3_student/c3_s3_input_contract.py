@@ -319,8 +319,22 @@ def audit_episode_geometry(entry: Mapping[str, Any], source_rows: Sequence[Mappi
                 unknown += 1
                 continue
             reconstruction = source_entity.get("reconstruction")
-            if not isinstance(reconstruction, Mapping) or reconstruction.get("kind") not in {"STATIC", "DYNAMIC"}:
+            if not isinstance(reconstruction, Mapping) or reconstruction.get("kind") not in {"STATIC", "DYNAMIC", "ARTICULATED"}:
                 raise ValueError(f"unsupported reconstruction kind at {episode_id}:{step}:{entity_id}")
+            if reconstruction.get("kind") == "ARTICULATED":
+                chain = reconstruction.get("articulated_joint_chain")
+                expected_chain = entry.get("articulated_joint_chain")
+                if not isinstance(chain, Mapping) or not isinstance(expected_chain, Mapping):
+                    raise ValueError(f"articulated joint chain missing at {episode_id}:{step}:{entity_id}")
+                for field in ("kind", "joint_name", "qpos_index", "axis", "limits", "ancestor_chain"):
+                    if chain.get(field) != expected_chain.get(field):
+                        raise ValueError(f"articulated joint chain mismatch at {episode_id}:{step}:{entity_id}: {field}")
+                qpos = chain.get("qpos")
+                limits = chain.get("limits")
+                if not isinstance(qpos, (int, float)) or not math.isfinite(float(qpos)) or not isinstance(limits, Sequence) or len(limits) != 2:
+                    raise ValueError(f"articulated qpos contract malformed at {episode_id}:{step}:{entity_id}")
+                if not float(limits[0]) <= float(qpos) <= float(limits[1]):
+                    raise ValueError(f"articulated qpos outside limits at {episode_id}:{step}:{entity_id}")
             predicted = compose_pose(_pose(reconstruction, "parent_world_pose"), _pose(reconstruction, "local_pose"))
             reference = _pose(reference_entity, "world_pose")
             pos = position_error(predicted["pos"], reference["pos"])
