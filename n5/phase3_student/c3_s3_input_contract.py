@@ -94,7 +94,7 @@ def verify_manifest_binding(root: Path, entry: Mapping[str, Any]) -> Dict[str, A
     return {"root": str(root), "manifest": str(resolved), "manifest_sha256": actual, "entry": dict(entry)}
 
 
-def load_jsonl_exact(path: Path, *, episode_id: str, step_count: int, role: str) -> List[Dict[str, Any]]:
+def load_jsonl_exact(path: Path, *, episode_id: str, step_count: int, role: str, identity: Mapping[str, Any] | None = None) -> List[Dict[str, Any]]:
     rows: List[Dict[str, Any]] = []
     seen: set[int] = set()
     for line_no, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -103,6 +103,9 @@ def load_jsonl_exact(path: Path, *, episode_id: str, step_count: int, role: str)
         row = json.loads(raw)
         if row.get("episode_id") != episode_id:
             raise ValueError(f"{role} episode mismatch at line {line_no}")
+        for field, expected in (identity or {}).items():
+            if row.get(field) != expected:
+                raise ValueError(f"{role} identity mismatch for {field} at line {line_no}")
         step = row.get("step")
         if type(step) is not int or step < 0 or step >= step_count or step in seen:
             raise ValueError(f"{role} duplicate/missing-invalid step at line {line_no}: {step!r}")

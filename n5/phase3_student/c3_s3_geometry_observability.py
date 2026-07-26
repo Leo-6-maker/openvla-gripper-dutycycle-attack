@@ -383,6 +383,12 @@ def audit_episode_manifest(path: Path, allowlist: Mapping[str, Any]) -> Tuple[Li
             raise ValueError("episode geometry schema mismatch")
         if entry.get("task_key") not in EXPECTED_TASKS:
             raise ValueError(f"unknown episode task: {entry.get('task_key')}")
+        for required in ("suite", "task_idx", "state_id", "init_seed"):
+            if required not in entry:
+                raise ValueError(f"episode identity field missing: {required}")
+        suite, task_name = str(entry["task_key"]).split("/", 1)
+        if entry["suite"] != suite or entry["task_idx"] != int(task_name.removeprefix("task_")):
+            raise ValueError(f"episode task identity mismatch: {episode_id}")
         step_count = entry.get("step_count")
         if type(step_count) is not int or step_count <= 0:
             raise ValueError(f"invalid step_count for {episode_id}")
@@ -392,16 +398,21 @@ def audit_episode_manifest(path: Path, allowlist: Mapping[str, Any]) -> Tuple[Li
         reference_desc = entry.get("reference_telemetry")
         if not isinstance(source_desc, Mapping) or not isinstance(reference_desc, Mapping):
             raise ValueError(f"source/reference descriptors missing for {episode_id}")
-        source_path, _ = require_allowed_path(Path(str(source_desc.get("path", ""))), allowlist, episode=True)
-        reference_path, _ = require_allowed_path(Path(str(reference_desc.get("path", ""))), allowlist, episode=True)
+        source_value = source_desc.get("path")
+        reference_value = reference_desc.get("path")
+        if not isinstance(source_value, str) or not Path(source_value).is_absolute() or not isinstance(reference_value, str) or not Path(reference_value).is_absolute():
+            raise ValueError(f"source/reference paths must be absolute for {episode_id}")
+        source_path, _ = require_allowed_path(Path(source_value), allowlist, episode=True)
+        reference_path, _ = require_allowed_path(Path(reference_value), allowlist, episode=True)
         if source_path == reference_path:
             raise ValueError(f"reference chain is not independent for {episode_id}")
         for descriptor, resolved in ((source_desc, source_path), (reference_desc, reference_path)):
             declared = descriptor.get("sha256")
             if not isinstance(declared, str) or contract_sha256_file(resolved) != declared:
                 raise ValueError(f"source SHA mismatch for {episode_id}: {resolved}")
-        source_rows = load_jsonl_exact(source_path, episode_id=episode_id, step_count=step_count, role="source")
-        reference_rows = load_jsonl_exact(reference_path, episode_id=episode_id, step_count=step_count, role="reference")
+        identity = {key: entry[key] for key in ("task_key", "suite", "task_idx", "state_id", "init_seed")}
+        source_rows = load_jsonl_exact(source_path, episode_id=episode_id, step_count=step_count, role="source", identity=identity)
+        reference_rows = load_jsonl_exact(reference_path, episode_id=episode_id, step_count=step_count, role="reference", identity=identity)
         audited.append(audit_episode_geometry(entry, source_rows, reference_rows))
     return audited, {
         "status": "PASS" if audited else "HOLD_INPUTS_MISSING",

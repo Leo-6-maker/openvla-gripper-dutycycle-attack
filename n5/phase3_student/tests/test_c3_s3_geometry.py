@@ -102,6 +102,17 @@ def test_exact_step_join_rejects_duplicate_and_missing(tmp_path):
         raise AssertionError("missing step was accepted")
 
 
+def test_exact_step_join_rejects_task_identity_mismatch(tmp_path):
+    path = tmp_path / "rows.jsonl"
+    path.write_text(json.dumps({"episode_id": "e", "step": 0, "task_key": "wrong"}) + "\n", encoding="utf-8")
+    try:
+        contract.load_jsonl_exact(path, episode_id="e", step_count=1, role="source", identity={"task_key": "right"})
+    except ValueError as exc:
+        assert "identity mismatch" in str(exc)
+    else:
+        raise AssertionError("task identity mismatch was accepted")
+
+
 def test_static_dynamic_transform_and_quaternion_sign_equivalence():
     half = math.sqrt(0.5)
     parent = {"pos": [1.0, 2.0, 3.0], "quat": [half, 0.0, 0.0, half]}
