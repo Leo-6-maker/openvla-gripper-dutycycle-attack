@@ -176,7 +176,7 @@ def _reference_world_pose(rel: Mapping[str, Any], step: int) -> Dict[str, List[f
             f"<joint name='{chain['joint_name']}' type='hinge' axis='{' '.join(map(str, chain['axis']))}' "
             f"range='{' '.join(map(str, chain['limits']))}' limited='true'/>"
         )
-        entity_xml = f"<body name='entity' pos='{' '.join(map(str, local_pos))}' quat='{' '.join(map(str, _reference_quat_z(local_angle)))}'>{joint_xml}</body>"
+        entity_xml = f"<body name='entity' pos='{' '.join(map(str, local_pos))}' quat='{' '.join(map(str, _reference_quat_z(local_angle)))}'><inertial pos='0 0 0' mass='0.01' diaginertia='0.0001 0.0001 0.0001'/>{joint_xml}</body>"
     else:
         entity_xml = f"<body name='entity' pos='{' '.join(map(str, local_pos))}' quat='{' '.join(map(str, _reference_quat_z(local_angle)))}'/>"
     model = mujoco.MjModel.from_xml_string(
