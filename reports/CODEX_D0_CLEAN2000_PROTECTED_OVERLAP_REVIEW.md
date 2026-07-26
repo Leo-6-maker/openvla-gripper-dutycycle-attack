@@ -1,5 +1,8 @@
 # D0 Clean2000 allocation review
 
+> Historical R0 decision. Superseded by `CODEX_D0_R2_DEV_POOL_REVIEW.md` and
+> the sealed D0-R2 root `d0_r2_dev_pool_20260727_0240`.
+
 ## Decision
 
 ```text

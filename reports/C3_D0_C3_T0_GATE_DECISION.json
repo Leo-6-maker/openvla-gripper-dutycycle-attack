@@ -1,20 +1,23 @@
 {
   "schema": "C3_D0_C3_T0_GATE_DECISION_V1",
-  "status": "STOP_D0_HOLD",
+  "status": "HOLD_V23_DEV_PILOT_IMPLEMENTATION",
   "d0": {
-    "status": "HOLD_PROVENANCE",
+    "status": "PASS",
     "clean2000_identity_closure": "PASS_2000_OF_2000",
     "clean_protected_overlap_count": 1330,
     "fit_train_protected_overlap_count": 130,
     "protected_identity_values_emitted": 0,
-    "capability_decision": "PARTIAL",
-    "derived_snapshot_created": false,
-    "receipt_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/d0_clean2000_517a957_20260727_0200",
-    "receipt_sha256s_sha256": "5ed9a7d2f71a05806d94cca2c586368cfc035b136e78726c121d15f57568d8b8"
+    "capability_decision": "REPLAY",
+    "dev_pool_unique": 670,
+    "dev_pool_closure": true,
+    "derived_snapshot_created": true,
+    "receipt_root": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/d0_r2_dev_pool_20260727_0240",
+    "receipt_sha256": "b238fc1f38bbbe7601bcdcb4bd3a7d63c1c91b546968322bc0e704bc76013bd9",
+    "receipt_sha256s_sha256": "e4612df514e2953c691731b59e8cc080d0613ccb70eb93477dc32a5aa3c4ef1d"
   },
   "c3_t0": {
-    "status": "PASS_SYNTHETIC_CONTRACT_ONLY",
-    "test_count": 7,
+    "status": "PASS_CONTRACT_R1_SYNTHETIC_ONLY",
+    "test_count": 9,
     "failures": 0,
     "errors": 0,
     "real_episode_consumption": false
@@ -22,7 +25,8 @@
   "pilot": {
     "authorized": false,
     "started": false,
-    "reason": "D0 aggregate overlap is nonzero"
+    "reason": "No V23-compatible pilot runner exists; legacy run_pilot_12_v3.py is V22 and outcome-dependent",
+    "legacy_runner_not_used": true
   },
   "protected_reads": "aggregate_identity_metadata_only",
   "protected_semantic_reads": 0,

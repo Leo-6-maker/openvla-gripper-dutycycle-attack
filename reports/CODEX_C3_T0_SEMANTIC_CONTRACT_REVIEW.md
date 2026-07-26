@@ -1,5 +1,9 @@
 # C3-T0 semantic contract review
 
+> Historical pre-R1 review. Superseded by
+> `CODEX_C3_T0_R1_SEMANTIC_CONTRACT_REVIEW.md`; the current contract test
+> count is 9.
+
 ## Decision
 
 ```text
