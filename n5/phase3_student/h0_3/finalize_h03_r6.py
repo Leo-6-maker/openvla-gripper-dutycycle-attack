@@ -50,6 +50,24 @@ def git(repo_root, *args):
     ).strip()
 
 
+def git_symbolic_ref(repo_root):
+    """Return the branch name, or empty string for a detached HEAD."""
+    result = subprocess.run(
+        ["git", "-C", str(repo_root), "symbolic-ref", "-q", "--short", "HEAD"],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    if result.returncode not in (0, 1):
+        raise subprocess.CalledProcessError(
+            result.returncode,
+            result.args,
+            output=result.stdout,
+            stderr=result.stderr,
+        )
+    return result.stdout.strip()
+
+
 def canonical_summary(summary):
     result = copy.deepcopy(summary)
     result.pop("timestamp", None)
@@ -143,7 +161,7 @@ def main():
         errors.append(f"HEAD {head} != source commit {args.source_commit}")
     if status:
         errors.append("source worktree is dirty")
-    branch = git(repo_root, "symbolic-ref", "-q", "--short", "HEAD")
+    branch = git_symbolic_ref(repo_root)
     if branch:
         errors.append(f"worktree is not detached (branch={branch})")
 
