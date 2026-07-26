@@ -396,6 +396,10 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
     r6_root = Path(args.r6_root).resolve()
     source, task_rows = compare_registry(r6_root)
     source_b, task_rows_b = compare_registry(r6_root)
+    source["audit_code_commit"] = args.audit_code_commit
+    source["audit_code_tree"] = args.audit_code_tree
+    source_b["audit_code_commit"] = args.audit_code_commit
+    source_b["audit_code_tree"] = args.audit_code_tree
     metadata = extract_model_metadata() if args.extract_model_metadata else {}
     metadata_b = extract_model_metadata() if args.extract_model_metadata else {}
     episode_rows = load_episode_manifest(Path(args.episode_manifest).resolve() if args.episode_manifest else None)
@@ -453,6 +457,8 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
             "gate": "C3-S3",
             "schema": "OFFICIAL_V3_C3_S3_GEOMETRY_OBSERVABILITY_V1",
             "source_commit": args.source_commit,
+            "audit_code_commit": args.audit_code_commit,
+            "audit_code_tree": args.audit_code_tree,
             "source_tree": source["r6_source_tree"],
             "input_r6_root_sha256s_sha256": source["r6_root_sha256s_sha256"],
             "protected_reads": 0,
@@ -475,6 +481,8 @@ def main() -> int:
     parser.add_argument("--out-parent", required=True)
     parser.add_argument("--output-name")
     parser.add_argument("--source-commit", required=True)
+    parser.add_argument("--audit-code-commit", required=True)
+    parser.add_argument("--audit-code-tree", required=True)
     parser.add_argument("--extract-model-metadata", action="store_true")
     parser.add_argument("--episode-manifest")
     args = parser.parse_args()
