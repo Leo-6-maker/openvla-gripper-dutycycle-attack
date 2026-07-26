@@ -292,7 +292,9 @@ def classify_rows(rows: Mapping[str, Dict[str, Any]], metadata: Mapping[str, Dic
             continue
         for index, relation in enumerate(relations):
             target = relation.get("target_resolution", {})
-            target_role = relation.get("target_semantic_role")
+            # C1-V2's sealed relation schema retains target_is_region rather
+            # than duplicating the internal semantic-role field.
+            target_role = relation.get("target_semantic_role") or ("REGION_TARGET" if relation.get("target_is_region") else "OBJECT_TARGET")
             if target_role == "OBJECT_TARGET" and target.get("resolution") in {"EXACT_BODY", "EXACT_GEOM", "APPROVED_STRUCTURAL_ALIAS"}:
                 classification = "DYNAMIC_RECONSTRUCTABLE"
                 reason = "object target has a resolved body/geom; step-bound object_state evidence is still required"
