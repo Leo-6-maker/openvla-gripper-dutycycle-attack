@@ -14,7 +14,7 @@
   },
   "c3_t0": {
     "status": "PASS_SYNTHETIC_CONTRACT_ONLY",
-    "test_count": 8,
+    "test_count": 7,
     "failures": 0,
     "errors": 0,
     "real_episode_consumption": false
