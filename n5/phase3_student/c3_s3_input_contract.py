@@ -85,16 +85,28 @@ def _root_entry(path: Path, allowlist: Mapping[str, Any], *, episode: bool) -> M
     return None
 
 
-def require_allowed_path(path: Path, allowlist: Mapping[str, Any], *, episode: bool = False, regular: bool = True) -> Tuple[Path, Mapping[str, Any]]:
+def require_allowed_path(path: Path, allowlist: Mapping[str, Any], *, episode: bool = False, regular: bool = True, audit_events: List[Dict[str, Any]] | None = None) -> Tuple[Path, Mapping[str, Any]]:
     resolved = _resolved_without_symlink(path)
     reason = _deny_reason(resolved, allowlist)
     if reason:
+        if audit_events is not None:
+            audit_events.append({"event": "denied_root_checked", "path": str(resolved), "reason": reason, "read": False})
         raise ValueError(f"explicitly denied input: {resolved}: {reason}")
     entry = _root_entry(resolved, allowlist, episode=episode)
     if entry is None:
+        if audit_events is not None:
+            audit_events.append({"event": "unlisted_root_checked", "path": str(resolved), "read": False})
         raise ValueError(f"input is not in the explicit allowlist: {resolved}")
     if regular and not resolved.is_file():
         raise ValueError(f"input is not a regular file: {resolved}")
+    if audit_events is not None:
+        audit_events.append({
+            "event": "allowed_root_checked",
+            "path": str(resolved),
+            "root": str(Path(str(entry["path"])).resolve(strict=False)),
+            "purpose": entry.get("purpose", allowlist.get("purpose")),
+            "read": False,
+        })
     return resolved, entry
 
 
@@ -107,7 +119,8 @@ def verify_sealed_root(root: Path, entry: Mapping[str, Any]) -> Dict[str, Any]:
     resolved_root = _resolved_without_symlink(root)
     if not resolved_root.is_dir():
         raise ValueError(f"sealed root is not a directory: {root}")
-    manifest = resolved_root / str(entry["manifest_path"])
+    manifest_rel = safe_relative(str(entry["manifest_path"]))
+    manifest = resolved_root / manifest_rel
     resolved_manifest = _resolved_without_symlink(manifest)
     if not resolved_manifest.is_file():
         raise ValueError(f"manifest is not a regular file: {manifest}")
@@ -149,7 +162,7 @@ def verify_sealed_root(root: Path, entry: Mapping[str, Any]) -> Dict[str, Any]:
         missing = sorted(set(actual) - set(expected))
         extra = sorted(set(expected) - set(actual))
         raise ValueError(f"sealed file closure mismatch: unlisted={missing}, missing={extra}")
-    actual_manifest = actual.get(Path(entry["manifest_path"]).as_posix())
+    actual_manifest = actual.get(manifest_rel.as_posix())
     if actual_manifest != entry.get("manifest_sha256"):
         raise ValueError(f"manifest SHA mismatch: expected {entry.get('manifest_sha256')}, got {actual_manifest}")
     return {
@@ -177,7 +190,7 @@ def verify_independent_computation_chain(source: Mapping[str, Any], reference: M
         source_method, reference_method, source_code, reference_code,
     )):
         raise ValueError("source/reference computation-chain declaration is incomplete")
-    if source_path == reference_path:
+    if Path(source_path).resolve(strict=False) == Path(reference_path).resolve(strict=False):
         raise ValueError("source/reference paths are identical")
     if source_chain == reference_chain or source_method == reference_method or source_code == reference_code:
         raise ValueError("source/reference computation chains are not independent")

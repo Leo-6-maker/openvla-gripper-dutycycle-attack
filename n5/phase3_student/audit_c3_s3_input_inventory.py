@@ -34,20 +34,26 @@ def seal(staging: Path, final: Path, manifest: Dict[str, Any]) -> Dict[str, str]
 def run(args: argparse.Namespace) -> Dict[str, Any]:
     allowlist_path = Path(args.allowlist).resolve()
     allowlist = load_allowlist(allowlist_path)
-    r6_root, r6_entry = require_allowed_path(Path(args.r6_root).resolve(), allowlist, regular=False)
+    audit_events = []
+    r6_root, r6_entry = require_allowed_path(Path(args.r6_root).resolve(), allowlist, regular=False, audit_events=audit_events)
     r6_binding = verify_manifest_binding(r6_root, r6_entry)
     candidates = []
-    candidate = Path(args.observed_candidate).resolve()
-    if candidate.exists() and not candidate.is_symlink():
-        names = sorted(item.name for item in candidate.iterdir())
-        candidates.append({
-            "path": str(candidate),
-            "metadata_only": True,
+    candidate = Path(args.observed_candidate)
+    candidate_record = {"path": str(candidate), "metadata_only": True, "accepted_as_c3_s3_input": False}
+    try:
+        candidate_resolved, _ = require_allowed_path(candidate, allowlist, regular=False, audit_events=audit_events)
+    except (ValueError, FileNotFoundError) as exc:
+        candidate_record.update({"top_level_entries": [], "top_level_seal_present": False, "reason": f"UNVERIFIED_PATH: {exc}"})
+    else:
+        names = sorted(item.name for item in candidate_resolved.iterdir()) if candidate_resolved.is_dir() else []
+        candidate_record.update({
             "top_level_entries": names,
-            "top_level_seal_present": all((candidate / name).is_file() for name in ("SHA256SUMS", "SHA256SUMS.sha256")),
-            "accepted_as_c3_s3_input": False,
-            "reason": "parallel C2F root is not Official V3 trajectory-bound and lacks an accepted top-level seal",
+            "top_level_seal_present": all((candidate_resolved / name).is_file() for name in ("SHA256SUMS", "SHA256SUMS.sha256")),
+            "reason": "candidate metadata was allowlisted but is not accepted without an explicit C3-S3 geometry contract",
         })
+    candidates.append(candidate_record)
+    allowed_events = [event for event in audit_events if event.get("event") == "allowed_root_checked"]
+    purposes = sorted({str(event["purpose"]) for event in allowed_events if event.get("purpose")})
     status = "PASS_INPUT_INVENTORY_NO_EPISODE_SOURCE" if allowlist.get("allowed_episode_geometry_roots") else "HOLD_INPUTS_MISSING"
     inventory = {
         "schema": "C3_S3_INPUT_INVENTORY_V1",
@@ -57,9 +63,10 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         "r6_binding": r6_binding,
         "allowed_episode_geometry_root_count": len(allowlist.get("allowed_episode_geometry_roots", [])),
         "observed_candidates": candidates,
-        "protected_reads": [],
-        "validated_roots": [r6_binding["root"]],
-        "purpose": allowlist["purpose"],
+        "protected_reads": [str(event["path"]) for event in audit_events if event.get("read") is True],
+        "validated_roots": sorted({str(event["root"]) for event in allowed_events}),
+        "purpose": purposes[0] if len(purposes) == 1 else purposes,
+        "verification_events": audit_events,
         "model_inference": False,
         "rollout_steps": 0,
         "attack_steps": 0,

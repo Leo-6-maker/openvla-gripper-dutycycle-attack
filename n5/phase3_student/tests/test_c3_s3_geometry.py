@@ -37,8 +37,17 @@ def test_unknown_is_not_negative():
     assert row["unknown_is_negative"] is False
 
 
-def test_protected_path_rejection():
-    assert any(token in "/mnt/example/t2r-d" for token in c3.PROTECTED_TOKENS)
+def test_protected_path_rejection(tmp_path):
+    denied = tmp_path / "protected"
+    denied.mkdir()
+    (denied / "episode.jsonl").write_text("{}\n", encoding="utf-8")
+    allow = _allowlist(tmp_path, denied_roots=[{"path": str(denied), "reason": "protected FIT_DEV"}])
+    try:
+        contract.require_allowed_path(denied / "episode.jsonl", allow)
+    except ValueError as exc:
+        assert "denied" in str(exc)
+    else:
+        raise AssertionError("protected root was accepted")
 
 
 def _allowlist(tmp_path, *, episode_roots=None, denied_roots=None):
@@ -233,6 +242,52 @@ def test_threshold_failure_is_final_fail():
     result = c3.evaluate_numerical_gate(_complete_metrics(dynamic_rotation_p99_rad=0.01), coverage, replay_evidence=True, unknown_articulated_count=0)
     assert result["status"] == "FAIL"
     assert result["threshold_violations"][0]["metric"] == "dynamic_rotation_p99_rad"
+
+
+def test_nan_threshold_value_fails_closed():
+    coverage = {"coverage_complete": True}
+    result = c3.evaluate_numerical_gate(_complete_metrics(dynamic_position_p99_m=float("nan")), coverage, replay_evidence=True, unknown_articulated_count=0)
+    assert result["status"] == "FAIL"
+
+
+def test_frozen_relation_count_is_exactly_44():
+    task_rows = [
+        {"task_key": f"libero_10/task_{idx:02d}", "relation_index": 0, "classification": "STATIC_FIXTURE"}
+        for idx in range(10)
+    ]
+    coverage = c3.relation_coverage(task_rows, [])
+    assert coverage["expected_relation_count_is_frozen_44"] is False
+    assert coverage["coverage_complete"] is False
+
+
+def test_articulated_unknown_forces_hold_not_negative():
+    coverage = {"coverage_complete": True}
+    result = c3.evaluate_numerical_gate(_complete_metrics(), coverage, replay_evidence=True, unknown_articulated_count=1)
+    assert result["status"] == "HOLD"
+    assert "not negative" in str(result["hold_reasons"])
+
+
+def test_independent_chain_rejects_resolved_path_alias(tmp_path):
+    source_path = tmp_path / "source.jsonl"
+    source_path.write_text("{}\n", encoding="utf-8")
+    source = {
+        "path": str(source_path),
+        "computation_chain_id": "chain-a",
+        "method": "OBSERVABLE_LOCAL_POSE_RECONSTRUCTION",
+        "code_sha256": "code-a",
+    }
+    reference = {
+        "path": str(tmp_path / "sub" / ".." / "source.jsonl"),
+        "computation_chain_id": "chain-b",
+        "method": "DIRECT_MUJOCO_WORLD_POSE",
+        "code_sha256": "code-b",
+    }
+    try:
+        contract.verify_independent_computation_chain(source, reference)
+    except ValueError as exc:
+        assert "paths are identical" in str(exc)
+    else:
+        raise AssertionError("resolved path alias was accepted")
 
 
 def test_static_dynamic_transform_and_quaternion_sign_equivalence():

@@ -44,6 +44,7 @@ NUMERICAL_THRESHOLDS = {
     "dynamic_position_p99_m": 1e-4,
     "dynamic_rotation_p99_rad": 1e-3,
 }
+EXPECTED_SUPPORTED_RELATION_COUNT = 44
 
 
 def canonical_json(value: Any) -> bytes:
@@ -389,9 +390,9 @@ def load_episode_manifest(path: Path | None) -> List[Dict[str, Any]]:
     raise ValueError("episode manifest must be a list or {episodes: [...]} ")
 
 
-def audit_episode_manifest(path: Path, allowlist: Mapping[str, Any]) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+def audit_episode_manifest(path: Path, allowlist: Mapping[str, Any], audit_events: List[Dict[str, Any]] | None = None) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """Load and exactly replay an explicitly allowlisted geometry manifest."""
-    manifest_path, root_entry = require_allowed_path(path, allowlist, episode=True)
+    manifest_path, root_entry = require_allowed_path(path, allowlist, episode=True, audit_events=audit_events)
     root_seal = verify_manifest_binding(manifest_path.parent, root_entry)
     expected_manifest_sha = root_entry.get("manifest_sha256")
     if expected_manifest_sha and contract_sha256_file(manifest_path) != expected_manifest_sha:
@@ -431,8 +432,8 @@ def audit_episode_manifest(path: Path, allowlist: Mapping[str, Any]) -> Tuple[Li
         if not isinstance(source_value, str) or not Path(source_value).is_absolute() or not isinstance(reference_value, str) or not Path(reference_value).is_absolute():
             raise ValueError(f"source/reference paths must be absolute for {episode_id}")
         chain = verify_independent_computation_chain(source_desc, reference_desc)
-        source_path, _ = require_allowed_path(Path(source_value), allowlist, episode=True)
-        reference_path, _ = require_allowed_path(Path(reference_value), allowlist, episode=True)
+        source_path, _ = require_allowed_path(Path(source_value), allowlist, episode=True, audit_events=audit_events)
+        reference_path, _ = require_allowed_path(Path(reference_value), allowlist, episode=True, audit_events=audit_events)
         for descriptor, resolved in ((source_desc, source_path), (reference_desc, reference_path)):
             declared = descriptor.get("sha256")
             if not isinstance(declared, str) or contract_sha256_file(resolved) != declared:
@@ -530,7 +531,13 @@ def relation_coverage(task_rows: Sequence[Mapping[str, Any]], episode_rows: Sequ
         "covered_supported_relation_count": len(expected & observed),
         "missing_supported_relations": [f"{task}#relation_{index}" for task, index in missing],
         "extra_relation_rows": [f"{task}#relation_{index}" for task, index in extra],
-        "coverage_complete": not missing and not extra and len(expected) > 0,
+        "coverage_complete": (
+            len(expected) == EXPECTED_SUPPORTED_RELATION_COUNT
+            and len(expected & observed) == EXPECTED_SUPPORTED_RELATION_COUNT
+            and not missing
+            and not extra
+        ),
+        "expected_relation_count_is_frozen_44": len(expected) == EXPECTED_SUPPORTED_RELATION_COUNT,
         "relation_denominators": relation_denominators,
         "denominator_rows": denominator_rows,
     }
@@ -556,7 +563,11 @@ def evaluate_numerical_gate(replay_metrics: Mapping[str, Any], coverage: Mapping
     violations = []
     for metric, limit in NUMERICAL_THRESHOLDS.items():
         value = replay_metrics.get(metric)
-        if value is None or float(value) > limit:
+        try:
+            numeric_value = float(value)
+        except (TypeError, ValueError):
+            numeric_value = float("nan")
+        if not math.isfinite(numeric_value) or numeric_value > limit:
             violations.append({"metric": metric, "value": value, "limit": limit})
     if violations:
         return {"status": "FAIL", "hold_reasons": [], "threshold_violations": violations}
@@ -606,7 +617,8 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
     allowlist_path = Path(args.input_allowlist).resolve()
     allowlist = load_allowlist(allowlist_path)
     threshold_binding = validate_frozen_numerical_thresholds()
-    r6_resolved, r6_entry = require_allowed_path(r6_root, allowlist, episode=False, regular=False)
+    audit_events: List[Dict[str, Any]] = []
+    r6_resolved, r6_entry = require_allowed_path(r6_root, allowlist, episode=False, regular=False, audit_events=audit_events)
     r6_binding = verify_manifest_binding(r6_resolved, r6_entry)
     source, task_rows = compare_registry(r6_root)
     source_b, task_rows_b = compare_registry(r6_root)
@@ -629,12 +641,21 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         "manifest_sha256": None,
         "episode_count": 0,
         "source_reference_independence": None,
-        "validated_roots": [str(r6_resolved)],
+        "validated_roots": [],
         "protected_reads": [],
-        "purpose": allowlist["purpose"],
+        "purpose": None,
+        "verification_events": [],
     }
     if args.episode_manifest:
-        episode_rows, episode_inventory = audit_episode_manifest(Path(args.episode_manifest).resolve(), allowlist)
+        episode_rows, episode_inventory = audit_episode_manifest(Path(args.episode_manifest).resolve(), allowlist, audit_events=audit_events)
+    allowed_events = [event for event in audit_events if event.get("event") == "allowed_root_checked"]
+    episode_inventory["verification_events"] = audit_events
+    episode_inventory["validated_roots"] = sorted({str(event["root"]) for event in allowed_events})
+    episode_inventory["protected_reads"] = [str(event["path"]) for event in audit_events if event.get("read") is True]
+    purposes = sorted({str(event["purpose"]) for event in allowed_events if event.get("purpose")})
+    if not purposes:
+        raise ValueError("allowlist validation produced no purpose")
+    episode_inventory["purpose"] = purposes[0] if len(purposes) == 1 else purposes
     transform = transform_contract_tests()
     payload_a = build_payload(source, task_rows, metadata, episode_rows, transform)
     payload_b = build_payload(source_b, task_rows_b, metadata_b, episode_rows, transform)
@@ -667,7 +688,7 @@ def run(args: argparse.Namespace) -> Dict[str, Any]:
         "status": "FAIL" if threshold_violations or not transform["pass"] else ("PASS" if independent_equal and numerical_gate["status"] == "PASS" else "HOLD"),
         "source_mutation": 0,
         "protected_reads": episode_inventory.get("protected_reads", []),
-        "validated_roots": sorted(set(episode_inventory.get("validated_roots", []) + [str(r6_resolved)])),
+        "validated_roots": sorted(set(episode_inventory.get("validated_roots", []))),
         "purpose": episode_inventory.get("purpose", allowlist["purpose"]),
         "model_inference": False,
         "rollout_steps": 0,
