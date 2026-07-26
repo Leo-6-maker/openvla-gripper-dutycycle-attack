@@ -176,14 +176,26 @@ def body_path(model: Any, root_id: int, child_id: int) -> list[int] | None:
     return list(reversed(path))
 
 
-def shape_corners(kind: int, size: Sequence[float]) -> list[tuple[float, float, float]]:
+def shape_vertices(model: Any, geom_id: int) -> list[tuple[float, float, float]]:
+    kind = int(model.geom_type[geom_id])
+    size = model.geom_size[geom_id].tolist()
     s = [abs(float(x)) for x in size]
     if kind == 2: half = [s[0], s[0], s[0]]
     elif kind == 3: half = [s[0], s[0], s[0] + s[1]]
     elif kind == 4: half = s[:3]
     elif kind == 5: half = [s[0], s[0], s[1]]
     elif kind == 6: half = s[:3]
-    else: raise GeometryHold(f"unsupported object geom type: {kind}")
+    elif kind == 7:
+        mesh_id = int(model.geom_dataid[geom_id])
+        start = int(model.mesh_vertadr[mesh_id]); count = int(model.mesh_vertnum[mesh_id])
+        vertices = np.asarray(model.mesh_vert[start:start + count], dtype=float)
+        if vertices.ndim != 2 or vertices.shape[1] != 3 or len(vertices) == 0:
+            raise GeometryHold(f"mesh vertices unavailable: {geom_id}")
+        if not np.isfinite(vertices).all():
+            raise GeometryHold(f"mesh vertices non-finite: {geom_id}")
+        return [tuple(float(vertices[i, j]) * s[j] for j in range(3)) for i in range(len(vertices))]
+    else:
+        raise GeometryHold(f"unsupported object geom type: {kind}")
     if len(half) != 3 or any(not math.isfinite(x) or x <= 0 for x in half):
         raise GeometryHold("degenerate object geometry")
     return [(sx*half[0], sy*half[1], sz*half[2]) for sx in (-1,1) for sy in (-1,1) for sz in (-1,1)]
@@ -203,7 +215,7 @@ def body_local_bounds(model: Any, body_id: int) -> tuple[list[float], list[float
         for bid in path:
             local = compose(local, {"pos": model.body_pos[bid].tolist(), "quat": model.body_quat[bid].tolist()})
         local = compose(local, {"pos": model.geom_pos[gid].tolist(), "quat": model.geom_quat[gid].tolist()})
-        for corner in shape_corners(int(model.geom_type[gid]), model.geom_size[gid].tolist()):
+        for corner in shape_vertices(model, gid):
             corners.append(tuple(local["pos"][i] + qrotate(local["quat"], corner)[i] for i in range(3)))
     if not corners:
         raise GeometryHold(f"body has no supported geoms: {body_id}")
