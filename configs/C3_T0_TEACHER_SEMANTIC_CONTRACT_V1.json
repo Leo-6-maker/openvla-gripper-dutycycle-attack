@@ -9,7 +9,14 @@
   "persistence": {
     "positive_min_steps": 2,
     "requires_contiguous_known_steps": true,
-    "unconfirmed_positive": "UNKNOWN"
+    "unconfirmed_positive": "UNKNOWN",
+    "per_head_min_steps": {
+      "physical_criticality": 2,
+      "safe_release": 2,
+      "instability": 1,
+      "k10_feasible": 1,
+      "gripper_closing_state": 1
+    }
   },
   "right_censor": {
     "k10": 10,

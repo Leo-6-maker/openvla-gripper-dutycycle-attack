@@ -46,14 +46,16 @@ class TestV23Runner(unittest.TestCase):
         rows = [
             _row(0, [0.05, 0.05], [["obj_1", "gripper0_finger1"]]),
             _row(1, [0.05, 0.05], [["obj_1", "gripper0_finger1"]]),
-            _row(2, [0.4, 0.4], []),
+            _row(2, [0.05, 0.05], [["obj_1", "gripper0_finger1"]]),
+            _row(3, [0.4, 0.4], []),
         ]
-        geometry = {i: _case(i, [0.0, 0.0, 0.0]) for i in range(3)}
+        geometry = {i: _case(i, [float(i), 0.0, 0.0]) for i in range(4)}
         result = run_episode(rows, geometry, "libero_10/task_00/state_00", load_contract(), {"obj_1"}, 0.2)
-        self.assertEqual(result["step_count"], 3)
+        self.assertEqual(result["step_count"], 4)
         self.assertEqual(result["forbidden_reads"], 0)
         self.assertEqual(result["unknown_to_false"], 0)
-        self.assertEqual(result["steps"][1]["heads"]["physical_criticality"]["value"], TRUE)
+        self.assertEqual(result["steps"][1]["heads"]["physical_criticality"]["value"], UNKNOWN)
+        self.assertEqual(result["steps"][2]["heads"]["physical_criticality"]["value"], TRUE)
 
     def test_unknown_geometry_is_not_negative(self):
         rows = [_row(0, [0.05, 0.05], [["obj_1", "gripper0_finger1"]])]

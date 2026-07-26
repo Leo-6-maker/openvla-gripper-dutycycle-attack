@@ -22,7 +22,9 @@ from n5.phase2_labels.c3_t0_semantic_contract import (
     TRUE,
     UNKNOWN,
     apply_persistence,
+    apply_right_censor,
     evaluate_heads,
+    k10_feasible,
     protocol_horizon_for_suite,
     protocol_steps_remaining,
 )
@@ -30,6 +32,11 @@ from n5.phase3_student.c3_g_predicate_evaluator import evaluate_case, load_contr
 
 
 RUNNER_SCHEMA = "C3_T1_V23_TEACHER_RUNNER_V1"
+PERSISTENCE_MIN_STEPS = {
+    "physical_criticality": 2,
+    "safe_release": 2,
+    "instability": 1,
+}
 FORBIDDEN_FIELDS = frozenset({
     "task_success", "task_terminal", "terminal", "terminal_state", "reward",
     "outcome", "attack", "future", "action", "action_raw",
@@ -281,6 +288,18 @@ def run_episode(sidecar_rows: Sequence[Mapping[str, Any]], geometry_cases: Mappi
             qpos_close_threshold,
             geometry_cases.get(index - 1) if index else None,
         ))
+    for head, min_steps in PERSISTENCE_MIN_STEPS.items():
+        persisted = apply_persistence([item["heads"][head] for item in outputs], min_steps)
+        for item, value in zip(outputs, persisted):
+            item["heads"][head] = value
+    for item in outputs:
+        safe = item["heads"]["safe_release"]
+        item["heads"]["k10_feasible"] = k10_feasible({
+            "protocol_steps_remaining": item["protocol_steps_remaining"],
+            "safe_release_computed": safe,
+        })
+        item["heads"]["k10_feasible"] = apply_right_censor(
+            item["heads"]["k10_feasible"], item["observed_future_steps_available"], 10)
     for item in outputs:
         if item["heads"]["safe_release"]["value"] == TRUE and item["heads"]["k10_feasible"]["value"] == TRUE:
             raise ContractError("safe_release TRUE with k10 TRUE")
