@@ -228,6 +228,17 @@ def body_local_bounds(model: Any, body_id: int) -> tuple[list[float], list[float
     return center, half
 
 
+def geom_local_bounds(model: Any, geom_id: int) -> tuple[list[float], list[float]]:
+    vertices = shape_vertices(model, geom_id)
+    lo = [min(vertex[i] for vertex in vertices) for i in range(3)]
+    hi = [max(vertex[i] for vertex in vertices) for i in range(3)]
+    center = [(hi[i] + lo[i]) / 2 for i in range(3)]
+    half = [(hi[i] - lo[i]) / 2 for i in range(3)]
+    if any(not math.isfinite(value) or value <= 0 for value in half):
+        raise GeometryHold(f"invalid geom bounds: {geom_id}")
+    return center, half
+
+
 def calibrated_qpos_threshold(model: Any) -> dict[str, Any]:
     ranges = []
     joints = []
@@ -270,17 +281,34 @@ def target_geometry(sim: Any, model: Any, resolution: Mapping[str, Any]) -> tupl
         center, half = body_local_bounds(model, bid)
         body_pose = pose(sim.data.body_xpos[bid].tolist(), sim.data.body_xquat[bid].tolist())
         return compose(body_pose, {"pos": center, "quat": [1,0,0,0]}), half, "body"
+    if kind == "geom":
+        gid = model.geom(name).id
+        if gid != expected_id:
+            raise GeometryHold(f"geom identity mismatch: {name}")
+        center, half = geom_local_bounds(model, gid)
+        geom_pose = pose(sim.data.geom_xpos[gid].tolist(), mat_to_quat(sim.data.geom_xmat[gid].tolist()))
+        return compose(geom_pose, {"pos": center, "quat": [1, 0, 0, 0]}), half, "geom"
     raise GeometryHold(f"unsupported target entity: {kind}")
 
 
 def build_case(sim: Any, model: Any, relation: Mapping[str, Any], episode_id: str, step: int) -> dict[str, Any]:
     obj = relation["object_resolution"]
     name = obj.get("alias_to") or obj.get("name")
-    bid = model.body(name).id
-    if bid != int(obj.get("entity_id", -1)):
-        raise GeometryHold(f"object identity mismatch: {name}")
-    center, half = body_local_bounds(model, bid)
-    obj_pose = compose(pose(sim.data.body_xpos[bid].tolist(), sim.data.body_xquat[bid].tolist()), {"pos": center, "quat": [1,0,0,0]})
+    kind = obj.get("entity_type")
+    if kind == "body":
+        bid = model.body(name).id
+        if bid != int(obj.get("entity_id", -1)):
+            raise GeometryHold(f"object identity mismatch: {name}")
+        center, half = body_local_bounds(model, bid)
+        obj_pose = compose(pose(sim.data.body_xpos[bid].tolist(), sim.data.body_xquat[bid].tolist()), {"pos": center, "quat": [1,0,0,0]})
+    elif kind == "geom":
+        gid = model.geom(name).id
+        if gid != int(obj.get("entity_id", -1)):
+            raise GeometryHold(f"object geom identity mismatch: {name}")
+        center, half = geom_local_bounds(model, gid)
+        obj_pose = compose(pose(sim.data.geom_xpos[gid].tolist(), mat_to_quat(sim.data.geom_xmat[gid].tolist())), {"pos": center, "quat": [1, 0, 0, 0]})
+    else:
+        raise GeometryHold(f"unsupported object entity: {kind}")
     target_pose, target_half, target_kind = target_geometry(sim, model, relation["target_resolution"])
     if len(target_half) != 3 or any(float(x) <= 0 for x in target_half):
         raise GeometryHold(f"target extents invalid: {episode_id}:{step}")
@@ -331,8 +359,6 @@ def replay_episode(record: Mapping[str, Any], registry_root: Path, benchmark_cac
         relations = []
         for idx, rel in enumerate(legacy.get("relations", [])):
             item = dict(rel); item["relation_index"] = idx; relations.append(item)
-        if not relations:
-            raise GeometryHold(f"no C1 relation for {episode_id}")
         for step_row, side_row in zip(steps, sidecar):
             step = int(step_row["step"])
             qpos_errors.append(float(np.max(np.abs(np.asarray(side_row["robot0_gripper_qpos"], float)-np.asarray(obs["robot0_gripper_qpos"], float)))))

@@ -88,7 +88,7 @@ def _tri(value: Any) -> str:
 
 def _contact_state(row: Mapping[str, Any], object_ids: set[str]) -> str:
     pairs = row.get("mujoco_contact_pairs")
-    if not isinstance(pairs, list):
+    if not object_ids or not isinstance(pairs, list):
         return UNKNOWN
     found = False
     for pair in pairs:
