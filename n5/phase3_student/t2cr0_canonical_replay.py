@@ -24,10 +24,10 @@ C2R0_OUT = '/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/t2cr0_can
 os.makedirs(C2R0_OUT, exist_ok=True)
 
 NUM_STEPS_WAIT = 10
-# Parity tolerances (tight, for exact replay)
-QPOS_TOL = 0.0005
-EEF_TOL = 0.001
-OBJ_TOL = 0.002
+# Parity tolerances — tight for exact replay verification
+QPOS_TOL = 0.0001   # Gripper qpos: nearly bit-exact
+EEF_TOL = 0.0001    # EEF: should be exact if timing fixed
+OBJ_TOL = 0.0001    # Object position max error
 
 
 def hash_init_state(init_state_obj):
@@ -106,30 +106,41 @@ def replay_one(ident):
         obs = env.set_init_state(canonical_state)
         env, obs = apply_dummy_wait(env, obs, NUM_STEPS_WAIT)
 
-        # Now replay recorded actions
+        # Now replay: match collector semantics (state BEFORE action)
         telemetry = []
         parity_issues = []
 
+        # After dummy wait, obs is at step 0 (pre-action)
         for t in range(min(n_actions, len(orig_steps))):
-            action = recorded[t]
-            obs, reward, done, info = env.step(action)
-
+            # 1. RECORD current state (pre-action, matching original collector)
             sim = env.sim
 
-            # Collect world-frame positions
             frame = {'step': t}
 
-            # EEF
             eef = obs.get('robot0_eef_pos', [0,0,0])
             if hasattr(eef, 'flatten'): eef = eef.flatten()
             frame['eef_pos'] = [float(x) for x in eef[:3]]
 
-            # Gripper qpos
             qpos = obs.get('robot0_gripper_qpos', [0,0])
             if hasattr(qpos, 'flatten'): qpos = qpos.flatten()
             frame['gripper_qpos'] = [float(x) for x in qpos[:2]]
 
-            # Parity check vs original
+            # Object state
+            obj_state = obs.get('object_state', [])
+            if hasattr(obj_state, 'flatten'): obj_state = obj_state.flatten()
+            frame['object_state'] = [float(x) for x in obj_state[:20]]  # sample
+
+            # Contacts
+            contacts = []
+            for ci in range(sim.data.ncon):
+                c = sim.data.contact[ci]
+                g1 = sim.model.geom(c.geom1).name
+                g2 = sim.model.geom(c.geom2).name
+                if g1 and g2:
+                    contacts.append([g1, g2])
+            frame['contacts'] = contacts
+
+            # 2. COMPARE with original sidecar step[t] (both are pre-action)
             orig = orig_steps[t]
             orig_qpos = orig.get('robot0_gripper_qpos', [0,0])
             orig_eef = orig.get('robot0_eef_pos', [0,0,0])
@@ -146,29 +157,19 @@ def replay_one(ident):
                     parity_issues.append({'step': t, 'field': 'eef_pos',
                                          'diff': float(ed), 'tol': EEF_TOL})
 
-            # Object state parity
-            obj_state_orig = orig.get('object_state', [])
-            obj_state_replay = obs.get('object_state', [])
-            if hasattr(obj_state_replay, 'flatten'):
-                obj_state_replay = obj_state_replay.flatten()
-            if len(obj_state_orig) > 0 and len(obj_state_replay) >= len(obj_state_orig):
-                obj_diff = sum(abs(float(obj_state_replay[i]) - float(obj_state_orig[i]))
-                              for i in range(min(len(obj_state_orig), len(obj_state_replay))))
-                if obj_diff > OBJ_TOL * len(obj_state_orig):
-                    parity_issues.append({'step': t, 'field': 'object_state',
-                                         'diff': float(obj_diff)})
-
-            # Contacts
-            contacts = []
-            for ci in range(sim.data.ncon):
-                c = sim.data.contact[ci]
-                g1 = sim.model.geom(c.geom1).name
-                g2 = sim.model.geom(c.geom2).name
-                if g1 and g2:
-                    contacts.append([g1, g2])
-            frame['contacts'] = contacts
+            orig_obj = orig.get('object_state', [])
+            if len(orig_obj) > 0 and len(obj_state) >= len(orig_obj):
+                max_err = max(abs(float(obj_state[i]) - float(orig_obj[i]))
+                             for i in range(min(len(orig_obj), len(obj_state))))
+                if max_err > OBJ_TOL:
+                    parity_issues.append({'step': t, 'field': 'object_state_max',
+                                         'max_err': float(max_err)})
 
             telemetry.append(frame)
+
+            # 3. THEN execute action[t]
+            action = recorded[t]
+            obs, reward, done, info = env.step(action)
 
             if done and t < n_actions - 5:
                 parity_issues.append({'step': t, 'type': 'early_termination',
@@ -177,16 +178,30 @@ def replay_one(ident):
 
         parity_ok = len(parity_issues) == 0
 
+        # Per-field statistics
+        eef_diffs = [p['diff'] for p in parity_issues if p.get('field') == 'eef_pos']
+        qpos_diffs = [p['diff'] for p in parity_issues if p.get('field') == 'gripper_qpos']
+        obj_max_errs = [p['max_err'] for p in parity_issues if p.get('field') == 'object_state_max']
+
+        def _stats(arr):
+            if not arr: return {'max': 0, 'median': 0, 'p95': 0, 'n': 0}
+            a = sorted(arr)
+            return {'max': max(a), 'median': float(np.median(a)),
+                    'p95': float(np.percentile(a, 95)), 'n': len(a)}
+
         result = {
             'identity': ident,
             'init_sha_match': init_sha_match,
+            'init_sha_note': 'HASH_CANONICALIZATION_UNRESOLVED',
             'expected_init_sha': expected_init_sha[:16] + '...',
-            'actual_init_sha': init_sha[:16] + '...',
             'n_steps_original': len(orig_steps),
             'n_actions': n_actions,
             'n_replayed': len(telemetry),
             'parity_ok': parity_ok,
             'n_parity_issues': len(parity_issues),
+            'eef_l1_stats': _stats(eef_diffs),
+            'qpos_stats': _stats(qpos_diffs),
+            'object_max_stats': _stats(obj_max_errs),
             'parity_sample': parity_issues[:5],
         }
         return result, parity_ok and init_sha_match, None
