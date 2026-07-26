@@ -1111,10 +1111,10 @@ def v22_to_label_v2(v22_snapshot, step_index, K=10):
     all_known = all(k for _, k, _, _ in channels)
     all_negative = all((not p) for _, k, p, _ in channels if k)
 
+    # Terminal/success state is evaluation-only; physical criticality must be
+    # determined solely by the causal physics channels above.
     if not any_known:
         crit = {'value': None, 'valid_mask': False, 'reason': 'UNKNOWN_PRIVILEGED_STATE', 'confidence': 0.0}
-    elif t.get('terminal_known_mask') and t.get('task_success'):
-        crit = {'value': 0, 'valid_mask': True, 'reason': 'SAFE_RELEASE_POST_SUCCESS', 'confidence': 1.0}
     elif any_positive:
         crit = {'value': 1, 'valid_mask': True,
                 'reason': 'CRITICAL_ENGAGED_LIFT', 'confidence': max(c[3] for c in channels if c[1] and c[2])}
