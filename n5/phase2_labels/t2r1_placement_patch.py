@@ -1,6 +1,6 @@
-"""T2R1: Relation-Aware Placement Patch for V22 Teacher.
+"""T2R1+T2RB: Relation-Aware Placement Patch for V22 Teacher.
 
-Adds goal-support contact detection and relation-aware placement
+Adds goal-support contact detection + geometry-based relation resolution
 by monkeypatching v22_production_v2.compute_placement_state.
 
 To use: import t2r1_placement_patch before calling process_episode.
@@ -8,13 +8,14 @@ To use: import t2r1_placement_patch before calling process_episode.
 import json, os, sys
 import numpy as np
 
-# Import the original module
 from v22_production_v2 import (
     _slice_vector, _dist, _finite_vector, _contact_flags,
     T2_PLACEMENT_TOLERANCE,
 )
+from t2rb_geometry_resolver import evaluate_all_relations
 
 T2_PLACEMENT_CONTACT_DWELL = 3
+T2_GEOMETRY_DWELL_REQUIRED = 3
 _original_compute_placement_state = None
 
 
@@ -139,6 +140,20 @@ def compute_placement_state_t2r1(steps, grasp_results, manipulated_objects, obje
             placed = True
             conf = 0.80
             evidence_type = 'GOAL_SUPPORT_CONTACT'
+
+        # Evidence tier 1.5: geometry-based goal relation (In/On/Stack dwell)
+        if not placed and goal_relations:
+            rel_results = evaluate_all_relations(steps, t, goal_relations, object_slices)
+            any_satisfied = any(r['satisfied'] for r in rel_results)
+            if any_satisfied and prior_transport:
+                placed = True
+                conf = 0.70
+                evidence_type = 'GEOMETRY_RELATION'
+                # Find which relation satisfied
+                for r in rel_results:
+                    if r['satisfied']:
+                        region = r['relation'][2]  # target name
+                        break
 
         # Evidence tier 2: object near target position (point distance)
         if not placed:
