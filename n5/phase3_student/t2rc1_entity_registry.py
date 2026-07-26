@@ -22,6 +22,7 @@ def build_entity_registry(suite, task_idx):
     """Start LIBERO, extract full MuJoCo entity registry for one task."""
     from libero.libero import get_libero_path
     from libero.libero.benchmark import get_benchmark
+    from libero.libero.envs import OffScreenRenderEnv
     import mujoco
 
     # Get task and BDDL
@@ -30,8 +31,7 @@ def build_entity_registry(suite, task_idx):
     bddl_path = os.path.join(get_libero_path("bddl_files"),
                             task.problem_folder, task.bddl_file)
 
-    # Create environment (use OffScreenRenderEnv like the smoke runner)
-    from libero.lifelong.offscreen_render_env import OffScreenRenderEnv
+    # Create environment
     env = OffScreenRenderEnv(
         bddl_file_name=bddl_path,
         camera_heights=224,
