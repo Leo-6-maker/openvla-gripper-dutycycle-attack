@@ -44,7 +44,7 @@ def walk_identity_objects(value: Any) -> Iterable[Mapping[str, Any]]:
 
 
 def manifest_files(root: Path) -> List[Path]:
-    return sorted(root.glob("shards/*/worker_manifest.json"))
+    return sorted(root.glob("shards/*/worker_*/worker_manifest.json"))
 
 
 def build_rows(c2f_root: Path) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
