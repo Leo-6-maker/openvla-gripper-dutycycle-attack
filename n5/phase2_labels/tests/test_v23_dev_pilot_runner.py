@@ -82,6 +82,18 @@ class TestV23Runner(unittest.TestCase):
         self.assertEqual(a["steps"][0]["observed_future_steps_available"], 1)
         self.assertEqual(b["steps"][0]["observed_future_steps_available"], 2)
 
+    def test_multi_relation_geometry_is_preserved(self):
+        rows = [_row(0, [0.05, 0.05], [["obj_1", "gripper0_finger1"]])]
+        first = _case(0, [0.0, 0.0, 0.0])
+        second = _case(0, [0.0, 0.0, 0.0])
+        second["relation_index"] = 1
+        second["expected_identity"] = {**second["expected_identity"], "object_id": "obj_2", "target_id": "region_2"}
+        second["object"]["id"] = "obj_2"
+        second["target"]["id"] = "region_2"
+        result = run_episode(rows, {0: {"relations": [first, second]}},
+                             "libero_10/task_00/state_00", load_contract(), {"obj_1"}, 0.2)
+        self.assertEqual(len(result["steps"][0]["geometry"]["relations"]), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -107,36 +107,63 @@ def _qpos_open(row: Mapping[str, Any], threshold: float) -> bool | None:
     return None if value is None else value > threshold
 
 
-def _comotion(previous: Mapping[str, Any] | None, current: Mapping[str, Any], geometry: Mapping[str, Any] | None) -> str:
-    if previous is None or geometry is None:
+def _geometry_relations(geometry: Mapping[str, Any] | None) -> list[Mapping[str, Any]]:
+    if geometry is None:
+        return []
+    relations = geometry.get("relations")
+    if isinstance(relations, list):
+        return [item for item in relations if isinstance(item, Mapping)]
+    return [geometry]
+
+
+def _object_positions(geometry: Mapping[str, Any] | None) -> dict[Any, list[float]]:
+    result: dict[Any, list[float]] = {}
+    for index, relation in enumerate(_geometry_relations(geometry)):
+        pose = relation.get("object", {}).get("pose", {}) if isinstance(relation.get("object"), Mapping) else {}
+        position = _finite_vector(pose.get("pos"), 3) if isinstance(pose, Mapping) else None
+        if position is None:
+            position = _finite_vector(relation.get("object_position"), 3)
+        if position is not None:
+            result[relation.get("relation_index", index)] = position
+    return result
+
+
+def _comotion(previous: Mapping[str, Any] | None, current: Mapping[str, Any],
+              geometry: Mapping[str, Any] | None,
+              previous_geometry: Mapping[str, Any] | None) -> str:
+    if previous is None or geometry is None or previous_geometry is None:
         return UNKNOWN
-    object_now = _finite_vector(geometry.get("object_position"), 3)
-    object_prev = _finite_vector(geometry.get("previous_object_position"), 3)
     eef_now = _finite_vector(current.get("robot0_eef_pos"), 3)
     eef_prev = _finite_vector(previous.get("robot0_eef_pos"), 3)
-    if None in (object_now, object_prev, eef_now, eef_prev):
+    if eef_now is None or eef_prev is None:
         return UNKNOWN
-    object_delta = [object_now[i] - object_prev[i] for i in range(3)]
     eef_delta = [eef_now[i] - eef_prev[i] for i in range(3)]
-    object_norm = math.sqrt(sum(item * item for item in object_delta))
     eef_norm = math.sqrt(sum(item * item for item in eef_delta))
-    if object_norm == 0.0 or eef_norm == 0.0:
+    if eef_norm == 0.0:
         return FALSE
-    cosine = sum(object_delta[i] * eef_delta[i] for i in range(3)) / (object_norm * eef_norm)
-    return TRUE if cosine >= 0.0 else FALSE
+    current_positions = _object_positions(geometry)
+    previous_positions = _object_positions(previous_geometry)
+    common = sorted(set(current_positions) & set(previous_positions))
+    if not common:
+        return UNKNOWN
+    values = []
+    for key in common:
+        object_delta = [current_positions[key][i] - previous_positions[key][i] for i in range(3)]
+        object_norm = math.sqrt(sum(item * item for item in object_delta))
+        if object_norm == 0.0:
+            values.append(FALSE)
+        else:
+            values.append(TRUE if sum(object_delta[i] * eef_delta[i] for i in range(3)) / (object_norm * eef_norm) >= 0.0 else FALSE)
+    return TRUE if TRUE in values else FALSE if all(value == FALSE for value in values) else UNKNOWN
 
 
 def _placement(geometry: Mapping[str, Any] | None, predicate_contract: Mapping[str, Any]) -> tuple[str, dict[str, Any]]:
     if geometry is None:
         return UNKNOWN, {"reason": "MISSING_GEOMETRY_CASE"}
-    result = evaluate_case(geometry, predicate_contract)
-    value = _tri(result.get("value"))
-    return value, {
-        "predicate": result.get("predicate"),
-        "reason": result.get("reason"),
-        "raw_measurements": result.get("raw_measurements", {}),
-        "relative_position": result.get("relative_position"),
-    }
+    results = [evaluate_case(item, predicate_contract) for item in _geometry_relations(geometry)]
+    values = [_tri(item.get("value")) for item in results]
+    value = TRUE if TRUE in values else FALSE if values and all(item == FALSE for item in values) else UNKNOWN
+    return value, {"aggregate": value, "relations": results}
 
 
 def evaluate_step(
@@ -175,7 +202,7 @@ def evaluate_step(
         TRUE if not open_prev and open_now else FALSE
     )
     stable = UNKNOWN if contact_now == UNKNOWN or close is None else (TRUE if contact_now == TRUE and close else FALSE)
-    transport = _comotion(previous, current, geometry)
+    transport = _comotion(previous, current, geometry, previous_geometry)
     placement, geometry_record = _placement(geometry, geometry_contract)
     previous_placement = UNKNOWN
     if previous_geometry is not None:
@@ -352,15 +379,21 @@ def _verify_geometry_binding(geometry_root: Path, geometry_allowlist: Path,
     allowlist = _strict_json(geometry_allowlist)
     allowed = allowlist.get("allowed_episode_geometry_roots")
     expected_path = str(geometry_root.resolve())
-    if not isinstance(allowed, list) or not any(
-        isinstance(item, Mapping) and str(item.get("path", "")).rstrip("/") == expected_path.rstrip("/")
-        for item in allowed
-    ):
+    binding = next((item for item in (allowed or [])
+                    if isinstance(item, Mapping)
+                    and str(item.get("path", "")).rstrip("/") == expected_path.rstrip("/")), None)
+    if binding is None:
         raise RunnerHold("geometry root is not explicitly allowlisted")
     _verify_root_seal(geometry_root)
     manifest_path = geometry_root / "dataset_manifest.json"
     if not manifest_path.is_file():
         raise RunnerHold("geometry dataset manifest is missing")
+    if binding.get("manifest_sha256") is not None and binding["manifest_sha256"] != sha256_file(manifest_path):
+        raise RunnerHold("geometry manifest is not bound by allowlist")
+    if binding.get("sha256sums_sha256") is not None:
+        actual_sums_sha = sha256_file(geometry_root / "SHA256SUMS")
+        if binding["sha256sums_sha256"] != actual_sums_sha:
+            raise RunnerHold("geometry root seal is not bound by allowlist")
     data = _strict_json(manifest_path)
     geometry_ids = {
         row.get("episode_id") for row in data.get("episodes", [])
@@ -370,6 +403,137 @@ def _verify_geometry_binding(geometry_root: Path, geometry_allowlist: Path,
         raise RunnerHold("geometry root does not bind exactly the frozen pilot identities")
     if data.get("clean2000_payload_read") is True or data.get("protected_payload_read") is True:
         raise RunnerHold("geometry root declares protected/Clean2000 payload access")
+
+
+def _load_geometry_episode(geometry_root: Path, episode_id: str) -> tuple[dict[int, dict[str, Any]], dict[str, Any]]:
+    directory = geometry_root / "episodes" / episode_id.replace("/", "__")
+    manifest_path = directory / "episode_manifest.json"
+    cases_path = directory / "geometry_cases.jsonl"
+    if not manifest_path.is_file() or not cases_path.is_file():
+        raise RunnerHold(f"geometry episode files are missing: {episode_id}")
+    manifest = _strict_json(manifest_path)
+    if manifest.get("episode_id") != episode_id:
+        raise RunnerHold(f"geometry episode identity mismatch: {episode_id}")
+    rows = _load_jsonl(cases_path)
+    expected_count = manifest.get("step_count")
+    if not isinstance(expected_count, int) or len(rows) != expected_count:
+        raise RunnerHold(f"geometry step count mismatch: {episode_id}")
+    by_step: dict[int, dict[str, Any]] = {}
+    for row in rows:
+        step = row.get("step")
+        if not isinstance(step, int) or step in by_step:
+            raise RunnerHold(f"geometry step stream is not unique: {episode_id}")
+        by_step[step] = row
+    if sorted(by_step) != list(range(len(rows))):
+        raise RunnerHold(f"geometry step stream is not contiguous: {episode_id}")
+    return by_step, manifest
+
+
+def _registry_object_ids(registry_root: Path, episode_id: str) -> set[str]:
+    suite, task, _state = episode_id.split("/")
+    task_key = f"{suite}/{task}"
+    row_path = registry_root / "run_A" / "per_task" / (task_key.replace("/", "_") + ".json")
+    data = _strict_json(row_path)
+    legacy = data.get("legacy")
+    if not isinstance(legacy, Mapping):
+        raise RunnerHold(f"registry legacy relation data missing: {task_key}")
+    ids = set()
+    for relation in legacy.get("relations", []):
+        if not isinstance(relation, Mapping):
+            raise RunnerHold(f"malformed registry relation: {task_key}")
+        resolution = relation.get("object_resolution")
+        if not isinstance(resolution, Mapping):
+            raise RunnerHold(f"object resolution missing: {task_key}")
+        name = resolution.get("alias_to") or resolution.get("name")
+        if not isinstance(name, str) or not name:
+            raise RunnerHold(f"object identity missing: {task_key}")
+        ids.add(name)
+    if not ids:
+        raise RunnerHold(f"registry object set empty: {task_key}")
+    return ids
+
+
+def _sealed_output(output_parent: Path, output_name: str, episodes: Sequence[Mapping[str, Any]],
+                   bindings: Mapping[str, Any], geometry_root: Path) -> dict[str, Any]:
+    output_parent.mkdir(parents=True, exist_ok=True)
+    final = output_parent / output_name
+    if final.exists() or final.is_symlink():
+        raise RunnerHold(f"pilot output already exists: {final}")
+    staging = output_parent / f".staging_{output_name}_{uuid.uuid4().hex}"
+    staging.mkdir()
+    try:
+        for episode in episodes:
+            safe = str(episode["episode_id"]).replace("/", "__")
+            directory = staging / "episodes" / safe
+            directory.mkdir(parents=True)
+            steps = episode["steps"]
+            with (directory / "labels.jsonl").open("w", encoding="utf-8") as handle:
+                for row in steps:
+                    handle.write(json.dumps(row, sort_keys=True, ensure_ascii=False) + "\n")
+            (directory / "episode_manifest.json").write_text(
+                json.dumps({"episode_id": episode["episode_id"], "step_count": episode["step_count"],
+                            "schema": RUNNER_SCHEMA}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        manifest = {
+            "schema": "C3_T1_V23_TEACHER_PILOT_OUTPUT_V1",
+            "status": "PASS_FIT_DEV_ONLY",
+            "episode_count": len(episodes),
+            "episodes": [{"episode_id": item["episode_id"], "step_count": item["step_count"]}
+                         for item in episodes],
+            "geometry_root": str(geometry_root),
+            "bindings": dict(bindings),
+            "protected_payload_read": False,
+            "model_inference": False,
+            "student_training": False,
+            "rollout": False,
+            "attack": False,
+        }
+        (staging / "PILOT_OUTPUT_MANIFEST.json").write_text(
+            json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        (staging / "runtime_audit.json").write_text(json.dumps({
+            "status": "PASS", "episodes": len(episodes),
+            "unknown_to_false": sum(int(item["unknown_to_false"]) for item in episodes),
+            "forbidden_reads": sum(int(item["forbidden_reads"]) for item in episodes),
+            "protected_payload_read": False, "model_inference": False,
+            "student_training": False, "rollout": False, "attack": False,
+        }, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        files = sorted(path.relative_to(staging).as_posix() for path in staging.rglob("*") if path.is_file())
+        (staging / "SHA256SUMS").write_text(
+            "".join(f"{sha256_file(staging / name)}  {name}\n" for name in files), encoding="utf-8")
+        sums_sha = sha256_file(staging / "SHA256SUMS")
+        (staging / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n", encoding="utf-8")
+        os.rename(staging, final)
+        return {"root": str(final), "status": "PASS", "sha256sums_sha256": sums_sha,
+                "episode_count": len(episodes)}
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+
+
+def execute_pilot(manifest_path: Path, registry_root: Path, geometry_root: Path,
+                  geometry_allowlist: Path, predicate_contract: Path,
+                  semantic_contract: Path, output_parent: Path, output_name: str) -> dict[str, Any]:
+    preflight_result = preflight(manifest_path, registry_root, geometry_root,
+                                 geometry_allowlist, predicate_contract, semantic_contract)
+    manifest = _strict_json(manifest_path)
+    episodes = []
+    for record in sorted(manifest["records"], key=lambda item: item["episode_id"]):
+        episode_id = str(record["episode_id"])
+        files = {str(item["name"]): item for item in record.get("source_files", [])}
+        sidecar_path = Path(str(record["source_episode_root"])) / "privileged_teacher_sidecar.jsonl"
+        _verify_source_file(sidecar_path, files["privileged_teacher_sidecar.jsonl"])
+        sidecar_rows = _load_jsonl(sidecar_path)
+        geometry_cases, geometry_manifest = _load_geometry_episode(geometry_root, episode_id)
+        if len(sidecar_rows) != geometry_manifest["step_count"]:
+            raise RunnerHold(f"sidecar/geometry count mismatch: {episode_id}")
+        threshold = geometry_manifest.get("qpos_close_threshold")
+        object_ids = _registry_object_ids(registry_root, episode_id)
+        episode = run_episode(sidecar_rows, geometry_cases, episode_id,
+                              load_contract(predicate_contract), object_ids,
+                              threshold, protocol_horizon_for_suite(episode_id.split("/", 1)[0]))
+        episodes.append(episode)
+    return _sealed_output(output_parent, output_name, episodes,
+                          {"preflight": preflight_result, "manifest_sha256": sha256_file(manifest_path)},
+                          geometry_root)
 
 
 def verify_required_contract_files(registry_root: Path, geometry_root: Path, geometry_allowlist: Path,
@@ -415,12 +579,23 @@ def main() -> int:
     parser.add_argument("--geometry-allowlist", required=True, type=Path)
     parser.add_argument("--predicate-contract", required=True, type=Path)
     parser.add_argument("--semantic-contract", required=True, type=Path)
+    parser.add_argument("--execute-output-parent", type=Path)
+    parser.add_argument("--execute-output-name")
     args = parser.parse_args()
     try:
-        result = preflight(
-            args.manifest, args.registry_root, args.geometry_root,
-            args.geometry_allowlist, args.predicate_contract, args.semantic_contract,
-        )
+        if (args.execute_output_parent is None) != (args.execute_output_name is None):
+            raise RunnerHold("execution output parent/name must be supplied together")
+        if args.execute_output_parent is None:
+            result = preflight(
+                args.manifest, args.registry_root, args.geometry_root,
+                args.geometry_allowlist, args.predicate_contract, args.semantic_contract,
+            )
+        else:
+            result = execute_pilot(
+                args.manifest, args.registry_root, args.geometry_root,
+                args.geometry_allowlist, args.predicate_contract, args.semantic_contract,
+                args.execute_output_parent, args.execute_output_name,
+            )
     except (RunnerHold, ContractError) as exc:
         print(json.dumps({
             "schema": RUNNER_SCHEMA,
