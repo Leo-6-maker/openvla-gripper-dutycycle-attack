@@ -1,0 +1,79 @@
+{
+  "gate": "T1_PLACEMENT_ROOT_CAUSE_AUDIT",
+  "status": "PASS",
+  "exit_code": 0,
+  "timestamp": "2026-07-26T08:00:00Z",
+  "head_commit": "1b5a6cf",
+  "branch": "deepseek/integration-final-detector-20260724",
+  "upstream": {
+    "r0_receipt_sha": "6b8581b28c5b1f2a73626c79f1fe7343d589190c8890b6ebdbbb85ddb71d64dd"
+  },
+  "root_cause": {
+    "primary": "GRASP_ESTABLISHED_CRITERION_TOO_STRICT_FOR_SMALL_OBJECTS",
+    "mechanism": "compute_grasp_state requires BOTH gripper_near_closed (qpos > 0.7) AND has_gripper_contact for 5 consecutive steps. libero_object tasks involve small items that can be grasped with wider gripper opening, making the qpos > 0.7 criterion rarely satisfied.",
+    "chain": [
+      "Step 1: compute_grasp_state \u2192 grasp_known_mask=True (contacts detected, 2000+ steps per task)",
+      "Step 2: grasp_established \u2192 requires gripper_near_closed (qpos > 0.7) AND has_gripper_contact for dwell_steps_required=5",
+      "Step 3: gripper_near_closed rarely True for small object tasks \u2192 grasp_established almost never True",
+      "Step 4: compute_placement_state \u2192 checks grasp transition (grasp_established \u2192 not) \u2192 never detects",
+      "Step 5: compute_safe_release \u2192 requires placement_known AND object_placed \u2192 never fires"
+    ]
+  },
+  "diagnosis": {
+    "139_successful_libero_object": {
+      "total": 139,
+      "classified": 139,
+      "GRASP_NEVER_ESTABLISHED": 133,
+      "NO_GRASP_TO_RELEASE_TRANSITION": 1,
+      "TARGET_NOT_IN_OBJECT_SLICES": 5
+    },
+    "grasp_known_vs_established": {
+      "grasp_known_steps": "2000-2500 per task (contacts ARE detected)",
+      "grasp_established_steps": "0-87 per task (strict closure criterion fails)",
+      "ratio": "< 4% in best case, 0% in most tasks"
+    },
+    "bdll_availability": {
+      "manipulated_objects": "present for all object/spatial tasks",
+      "object_slices": "5-8 objects per task",
+      "target_names": "present",
+      "conclusion": "BDDL metadata is sufficient; issue is physical criterion, not metadata gap"
+    }
+  },
+  "manual_audit_set": {
+    "total": 32,
+    "composition": {
+      "libero_object_GRASP_NEVER_ESTABLISHED": 16,
+      "other_suite_safe_release_reference": 8,
+      "pregrasp_negative": 4,
+      "articulated_unknown": 4
+    },
+    "frozen_identities_path": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/t1_placement_audit/T1_REPORT.json"
+  },
+  "per_task_summary": {
+    "libero_object_has_grasp_known": true,
+    "libero_object_has_grasp_established": "rarely (0-87 steps per task)",
+    "libero_object_has_placement": false,
+    "other_suites_placement_gap": "same mechanism \u2014 only tasks with large objects (bowls, bins) achieve qpos > 0.7"
+  },
+  "recommendation_for_t2": {
+    "approach": "RELAX_GRASP_CLOSURE_OR_ADD_CONTACT_ONLY_FALLBACK",
+    "options": [
+      "A: Lower gripper_near_closed threshold for small-object tasks",
+      "B: Use contact_dwell alone (without qpos closure) as grasp_established criterion when has_gripper_contact is sustained",
+      "C: Add suite-agnostic placement fallback: object_near_target AND sustained_contact AND gripper_opening \u2192 placement",
+      "D: Use object Z stabilization near support surface as placement proxy"
+    ],
+    "constraints": [
+      "NO suite-specific thresholds",
+      "NO candidate_close in placement logic",
+      "NO official success as Teacher input",
+      "articulated unknown must remain unknown"
+    ]
+  },
+  "server_paths": {
+    "report": "/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/t1_placement_audit/T1_REPORT.json",
+    "report_sha": "e8c8d960ec8a7bc5..."
+  },
+  "next_gate": "T2_TEACHER_PATCH_CANARY",
+  "self_sha256": "a87666a7c940767c55b79f589b76cf3829f9d4d52269bf13d847155949392b84"
+}
