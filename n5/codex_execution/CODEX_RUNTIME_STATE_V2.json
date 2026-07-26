@@ -5,8 +5,9 @@
   "code_snapshot_commit": "beb0721d36bd27412cde7d60623b8cb2f671a4bf",
   "receipt_commit": "69bae546c67f7596273d842bcf4e03790ce04d47",
   "supersession_ledger_commit": "62aed6c1c9f93c04994d730526a5b742238bd6e8",
-  "current_gate": "H0.3-R6_PROVENANCE",
-  "status": "HOLD_REVIEW",
+  "transition_receipt_commit": "fcef528ccba43b54911f94b22ca231aae77da635",
+  "current_gate": "C3-S3",
+  "status": "NEXT_GATE_AUTHORIZED",
   "previous_state": {
     "path": "n5/codex_execution/CODEX_RUNTIME_STATE_V1.json",
     "sha256": "3dea750030951f1a3254ab904d430dcb41f3d964a754dd0408d9c29fe37b3082"
@@ -21,6 +22,27 @@
     "sha256": "c105428fe069dcc715798a623e7f1053e6a748502ae93bf775bf2ded67f70250",
     "self_sha256": "7275e551fd4daed0c4894fa58d6fa1784bef9f1806b9c87478839e10cb8feeb6"
   },
+  "transition_receipt": {
+    "path": "reports/CODEX_H0_3_R6_TRANSITION_RECEIPT_V1.json",
+    "git_commit": "fcef528ccba43b54911f94b22ca231aae77da635",
+    "git_blob": "b0e1b85c7466f3fcf0fa66e05828e872b90c697c",
+    "file_sha256": "509bae0b2558f0dc79c8827d89633995e8536b72971706564c8a53026ab42c54",
+    "self_sha256": "f371743ae53d4e61cd1e2bb62f0e09cf6b23e8509da029b5b6cde8be6f854457"
+  },
+  "gate_status": {
+    "H0.3-R6": "PASS",
+    "C3-S3": "AUTHORIZED",
+    "C3-G": "BLOCKED",
+    "C3-T0": "BLOCKED",
+    "C3-T": "BLOCKED",
+    "T2R-D": "BLOCKED",
+    "L23-800": "BLOCKED",
+    "S0": "BLOCKED",
+    "S1": "BLOCKED",
+    "S2": "BLOCKED",
+    "I0": "BLOCKED",
+    "R0": "BLOCKED"
+  },
   "r6_evidence": {
     "resolver_tests": "20 passed",
     "run_a_run_b_canonical_payload_equal": true,
@@ -30,8 +52,8 @@
   },
   "blockers": [
     "H0.3 packet claims 25/25 resolver tests; independent rerun is 20/20.",
-    "No independent transition receipt has been created; the read-only reviewer has not returned a verdict yet.",
-    "The historical packet timestamp is later than the source-ready commit timestamp; chronology is disclosed but not independently closed."
+    "C3-S3 execution has not started; this runtime commit only authorizes the next Gate.",
+    "All downstream Gates remain blocked until their own evidence, independent review, transition receipt, and runtime-state commit pass."
   ],
   "protected_boundaries": {
     "cal_read": false,
@@ -40,8 +62,8 @@
     "training_started": false,
     "inference_started": false,
     "attack_started": false,
-    "c3_s3_authorized": false
+    "c3_s3_authorized": true
   },
-  "next_gate": "Resolve contract-test and chronology blockers, then issue an independent transition receipt; do not start C3-S3 before that receipt.",
-  "self_sha256": "01342d2dc049811e5ecceee68455b5fc3e2db6cb79e8b20036bcdba3c47de692"
+  "next_gate": "Execute C3-S3 Geometry Observability Seal only; do not read T2R-D or start Student training.",
+  "self_sha256": "1f78c53d9f3f78f45de01e112827b5585dc0e2c1ee81fda5631cec8ea2a52a86"
 }
