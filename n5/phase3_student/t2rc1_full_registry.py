@@ -192,73 +192,12 @@ def build_registry(suite, task_idx):
                 entry['entity_type'] = 'geom'
                 n_exact += 1
             else:
-                # Check stripped suffix -> site (FOR REGION TARGETS ONLY)
-                found = False
-                for suffix in REGION_SUFFIXES:
-                    base = target_name.replace(suffix, '')
-                    if base != target_name:
-                        if base in sites:
-                            if is_region:
-                                entry['resolution'] = 'STRIP_SUFFIX_SITE'
-                                entry['entity_id'] = sites[base]['id']
-                                entry['entity_type'] = 'site'
-                                entry['resolved_name'] = base
-                                entry['size'] = sites[base]['size']
-                                found = True; break
-                            else:
-                                # Non-region: strip suffix -> site is ok
-                                entry['resolution'] = 'EXACT_SITE'
-                                entry['entity_id'] = sites[base]['id']
-                                entry['entity_type'] = 'site'
-                                entry['resolved_name'] = base
-                                found = True; n_exact += 1; break
-                        if base in bodies:
-                            if is_region:
-                                entry['resolution'] = 'BLOCKED_REGION_STRIP_TO_BODY'
-                                entry['body_name'] = base
-                                found = True; n_blocked += 1; break
-                            else:
-                                entry['resolution'] = 'EXACT_BODY'
-                                entry['entity_id'] = bodies[base]['id']
-                                entry['entity_type'] = 'body'
-                                entry['resolved_name'] = base
-                                found = True; n_exact += 1; break
-
-                if not found:
-                    # Substring search (blocked for regions, last resort for objects)
-                    for name in sorted(sites.keys()):
-                        n_clean = name.replace('_contain_region', '').replace('_init_region', '')
-                        t_clean = target_name.replace('_contain_region', '').replace('_init_region', '')
-                        if n_clean in t_clean or t_clean in n_clean:
-                            if is_region:
-                                entry['resolution'] = 'BLOCKED_SUBSTRING_SITE'
-                                n_blocked += 1
-                            else:
-                                entry['resolution'] = 'EXACT_SITE'
-                                entry['entity_id'] = sites[name]['id']
-                                entry['entity_type'] = 'site'
-                                entry['resolved_name'] = name
-                                n_exact += 1
-                            found = True; break
-                    if not found:
-                        for name in sorted(bodies.keys()):
-                            n_clean = name.replace('_contain_region', '').replace('_init_region', '')
-                            t_clean = target_name.replace('_contain_region', '').replace('_init_region', '')
-                            if n_clean in t_clean or t_clean in n_clean:
-                                if is_region:
-                                    entry['resolution'] = 'BLOCKED_SUBSTRING_BODY'
-                                    n_blocked += 1
-                                else:
-                                    entry['resolution'] = 'EXACT_BODY'
-                                    entry['entity_id'] = bodies[name]['id']
-                                    entry['entity_type'] = 'body'
-                                    entry['resolved_name'] = name
-                                    n_exact += 1
-                                found = True; break
-
-                if not found:
-                    entry['resolution'] = 'UNRESOLVED'
-                    n_unresolved += 1
+                # STRICT: no fallback allowed for region targets
+                # Non-region targets that don't match exactly → UNRESOLVED
+                entry['resolution'] = 'UNRESOLVED'
+                if is_region:
+                    entry['available_sites'] = sorted(sites.keys())[:10]
+                n_unresolved += 1
 
             # Object resolution
             if obj_name in bodies:
