@@ -359,7 +359,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     pilot_seal = verify_sealed_root(pilot_root); registry_seal = verify_sealed_root(registry_root); d0_seal = verify_sealed_root(d0_root)
     pilot_manifest_path = pilot_root / "PILOT_INPUT_MANIFEST.json"; pilot_manifest = strict_json(pilot_manifest_path)
     if pilot_manifest.get("schema") != "V23_DEV_PILOT_V1" or pilot_manifest.get("episode_count") != 40: raise GeometryHold("pilot manifest closure failed")
-    pool = {row["episode_id"] for row in csv.DictReader((d0_root / "DEV_POOL_IDENTITY_MANIFEST.csv").open(encoding="utf-8", newline=""))}
+    pool = {
+        f"{row['suite']}/task_{int(row['task_id']):02d}/state_{int(row['state_id']):02d}"
+        for row in csv.DictReader((d0_root / "DEV_POOL_IDENTITY_MANIFEST.csv").open(encoding="utf-8", newline=""))
+    }
     records = pilot_manifest.get("records", [])
     ids = {str(row.get("episode_id")) for row in records}
     if len(ids) != 40 or not ids <= pool: raise GeometryHold("pilot identities are not proven inside DEV_POOL")
