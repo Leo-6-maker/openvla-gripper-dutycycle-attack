@@ -53,12 +53,23 @@ def main():
     parser.add_argument("--allowed-gpus", required=True)
     parser.add_argument("--allowed-output-root", required=True)
     parser.add_argument("--r5e-comparison-root", type=Path, required=True,
-                        help="Path to sealed R5-E comparison root (SHA verified against frozen)")
+                        help="Path to sealed R5-E comparison root (verified against frozen SHA)")
     args = parser.parse_args()
 
-    # Validate frozen comparison SHA from actual sealed evidence
-    comp_sha = sha256_file(Path(args.r5e_comparison_root) / "SHA256SUMS")
-    FROZEN_R5E["r5e_comparison_sha256"] = comp_sha
+    # Verify comparison root seal + check frozen SHA
+    comp_root = Path(args.r5e_comparison_root).resolve()
+    if not comp_root.is_dir():
+        raise SystemExit(f"comparison root not found: {comp_root}")
+    comp_sums = comp_root / "SHA256SUMS"
+    comp_side = comp_root / "SHA256SUMS.sha256"
+    if not comp_sums.is_file() or not comp_side.is_file():
+        raise SystemExit(f"comparison root not sealed: {comp_root}")
+    actual_comp_sha = sha256_file(comp_sums)
+    expected_comp_sha = FROZEN_R5E.get("r5e_comparison_sha256", "")
+    if not expected_comp_sha or actual_comp_sha != expected_comp_sha:
+        raise SystemExit(
+            f"comparison SHA mismatch: actual={actual_comp_sha} "
+            f"expected={expected_comp_sha}")
     if not SHA256_RE.match(args.r5f_source_commit):
         raise SystemExit(f"r5f-source-commit invalid: {args.r5f_source_commit[:20]}")
     if not SHA256_RE.match(args.r5f_script_sha):
@@ -135,7 +146,6 @@ def main():
 
         # Frozen R5-E evidence
         **FROZEN_R5E,
-        "r5e_comparison_sha256": args.r5e_comparison_sha,
 
         # Execution source
         "r5f_execution_source_commit": args.r5f_source_commit,
@@ -171,7 +181,8 @@ def main():
 
         # Permissions
         "authorized_identities": 40,
-        "allowed_gpus": allowed_gpus,
+        "allowed_physical_gpus": allowed_gpus,
+        "allowed_gpus": [0],  # logical cuda:0 only
         "physical_to_logical_gpu": {str(g): 0 for g in allowed_gpus},
         "allowed_output_roots": [args.allowed_output_root],
         "openvla_inference_authorized": True,

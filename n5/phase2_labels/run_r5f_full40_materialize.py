@@ -220,13 +220,18 @@ def load_pilot_identities(pilot_path):
     return identities
 
 
-def load_resolutions(registry_path):
-    """Load relation-bound entity resolutions from C1-V2 per-task registry."""
+def load_resolutions(registry_path, allow_articulated=False):
+    """Load relation-bound entity resolutions from C1-V2 per-task registry.
+    If allow_articulated and task is ARTICULATED_UNSUPPORTED with 0 relations,
+    returns empty dict (geometry NOT_APPLICABLE)."""
     with open(registry_path) as f:
         data = json.load(f)
     legacy = data.get("legacy", data)
     relations = legacy.get("relations", [])
+    disposition = legacy.get("task_disposition", "")
     if not relations:
+        if allow_articulated and disposition == "ARTICULATED_UNSUPPORTED":
+            return {}, relations  # NOT_APPLICABLE — no geometry entities
         raise CollectionHold(f"registry has no relations: {registry_path}")
 
     VALID = frozenset({"EXACT_BODY", "EXACT_SITE", "EXACT_GEOM", "APPROVED_STRUCTURAL_ALIAS"})
@@ -354,7 +359,10 @@ def capture_one_episode(module, suite, task_idx, state_id, collection_seed,
     from libero.libero.envs import OffScreenRenderEnv
 
     reg_path = Path(registry_dir) / f"{suite}_task_{task_idx:02d}.json"
-    resolutions, relations = load_resolutions(str(reg_path))
+    registry_data = json.loads(reg_path.read_text(encoding="utf-8"))
+    legacy = registry_data.get("legacy", registry_data)
+    is_articulated = legacy.get("task_disposition") == "ARTICULATED_UNSUPPORTED"
+    resolutions, relations = load_resolutions(str(reg_path), allow_articulated=True)
 
     bddl_root = Path(get_libero_path("bddl_files")).resolve()
     task_bddl = (bddl_root / task.problem_folder / task.bddl_file).resolve()
@@ -463,6 +471,9 @@ def capture_one_episode(module, suite, task_idx, state_id, collection_seed,
         "source_mode": "NEW_FIT_ONLY_CORRECTED_COLLECTOR",
         "forward_before_capture": True,
         "protocol_amendment": "PROTOCOL_AMENDMENT_V5_G_REC_DIRECT_POSE",
+        "geometry_status": "NOT_APPLICABLE" if (is_articulated and not resolutions) else "OK",
+        "placement_state": "UNKNOWN" if (is_articulated and not resolutions) else "OK",
+        "placement_mask": 0 if (is_articulated and not resolutions) else 1,
         "original_payload_target_pose_available": False,
         "model_inference": True, "attack_enabled": False,
         "detector_loaded": False, "teacher_labels_generated": False,
@@ -563,7 +574,7 @@ def main():
             upstream_root=args.upstream_root,
             libero_root=get_libero_path("bddl_files"),
             output_root=str(args.output_root.resolve()),
-            gpu=0,  # logical cuda:0 (CUDA_VISIBLE_DEVICES already set)
+            gpu=0,
             physical_gpu=args.gpu,
         )
     except TransitionRejected as e:
@@ -611,6 +622,8 @@ def main():
         raise SystemExit(f"staging exists: {staging}")
     staging.mkdir(parents=True)
     (staging / "episodes").mkdir()
+
+    try:
 
     print("=" * 70)
     print(f"[DeepSeek] R5-F: Corrected FIT Full40 Materialization — Run {args.run_label}")
@@ -769,6 +782,11 @@ def main():
         if staging.exists():
             shutil.rmtree(staging, ignore_errors=True)
         raise SystemExit(f"rename failed — output may have appeared: {out_root}")
+
+    finally:
+        if staging.exists() and staging != out_root:
+            import shutil
+            shutil.rmtree(staging, ignore_errors=True)
 
     print(f"\n{'=' * 70}")
     print(f"Run {args.run_label}: {n_collected}/{len(identities)} episodes collected")

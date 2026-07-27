@@ -41,12 +41,13 @@ def _make_git_repo(commit_msg="test", extra_file=None):
     (d / "README.md").write_text(commit_msg)
     subprocess.run(["git","add","."], cwd=str(d), check=True)
     subprocess.run(["git","commit","-q","-m",commit_msg], cwd=str(d), check=True)
+    commit = subprocess.check_output(["git","-C",str(d),"rev-parse","HEAD"],text=True).strip()
     if extra_file:
         (d / extra_file).write_text("dirty")
-    return d
+    return d, commit
 
 def _sealed_transition(manifest_overrides=None, tamper=None, extra_file=None,
-                        upstream_root=None, libero_root=None):
+                        upstream_root=None, libero_root=None, src_repo_root=None):
     root = Path(tempfile.mkdtemp(prefix="fit_test_t_"))
     model_dir = Path(tempfile.mkdtemp(prefix="test_model_"))
     (model_dir / "config.json").write_text('{"t":1}')
@@ -62,9 +63,14 @@ def _sealed_transition(manifest_overrides=None, tamper=None, extra_file=None,
     alias.write_text('{"n_aliases":5}')
 
     if upstream_root is None:
-        upstream_root = _make_git_repo("upstream")
+        upstream_root, _ = _make_git_repo("upstream")
     if libero_root is None:
-        libero_root = _make_git_repo("libero")
+        libero_root, _ = _make_git_repo("libero")
+    # Create source repo with the execution commit
+    if src_repo_root is None:
+        src_repo_root, src_commit = _make_git_repo("source_repo")
+        global EXEC_COMMIT
+        EXEC_COMMIT = src_commit
 
     upstream_commit = _git_value(upstream_root, "rev-parse", "HEAD")
     upstream_tree = _git_value(upstream_root, "rev-parse", "HEAD^{tree}")
@@ -86,7 +92,8 @@ def _sealed_transition(manifest_overrides=None, tamper=None, extra_file=None,
         "libero_commit":libero_commit,"libero_tree":libero_tree,
         "identity_allowlist_digest":"", "identity_set_digest":"",
         "authorized_identities":40,"n_pilot_identities":40,
-        "allowed_gpus":[6,7],"physical_to_logical_gpu":{"6":0,"7":0},
+        "allowed_physical_gpus":[6,7],"allowed_gpus":[0],
+        "physical_to_logical_gpu":{"6":0,"7":0},
         "allowed_output_roots":["/tmp/test_output"],
         "openvla_inference_authorized":True,"clean_action_only":True,
         "forward_before_capture":True,"max_episodes":40,"identity_set_frozen":True,
@@ -118,24 +125,24 @@ def _sealed_transition(manifest_overrides=None, tamper=None, extra_file=None,
     if tamper:
         (root/tamper).write_text((root/tamper).read_text()+"TAMPERED")
 
-    return root, model_dir, worker, pilot, per_task, alias, upstream_root, libero_root
+    return root, model_dir, worker, pilot, per_task, alias, upstream_root, libero_root, src_repo_root
 
 
-def _verify(root, md, wk, pl, per_task, al, up, lib, **kw):
+def _verify(root, md, wk, pl, per_task, al, up, lib, repo, **kw):
     return verify_transition(root, kw.get("commit",EXEC_COMMIT),
         kw.get("script",SCRIPT_SHA), md, wk, pl, per_task, al, up, lib,
-        kw.get("output","/tmp/test_output"), kw.get("gpu",6),
-        kw.get("physical_gpu",6))
+        kw.get("output","/tmp/test_output"), kw.get("gpu",0),
+        kw.get("physical_gpu",6), repo_root=repo)
 
 
 class TestSealRejects(unittest.TestCase):
     def test_01_missing(self):
         with self.assertRaises((TransitionRejected,SystemExit,FileNotFoundError)):
-            _verify("/nonexistent",*[Path("/tmp/x")]*7)
+            _verify("/nonexistent",*[Path("/tmp/x")]*8)
     def test_02_unsealed(self):
         r=Path(tempfile.mkdtemp());(r/"TRANSITION_MANIFEST.json").write_text("{}")
         with self.assertRaises(TransitionRejected):
-            _verify(r,*[Path("/tmp/x")]*7)
+            _verify(r,*[Path("/tmp/x")]*8)
         shutil.rmtree(r,ignore_errors=True)
     def test_03_tampered(self):
         a=_sealed_transition(tamper="TRANSITION_MANIFEST.json")
@@ -179,27 +186,27 @@ class TestModelBinding(unittest.TestCase):
     def test_10_wrong_worker(self):
         a=_sealed_transition(); w2=Path(tempfile.mktemp(suffix=".py"));w2.write_text("#wrong")
         try:
-            with self.assertRaises(TransitionRejected): _verify(a[0],a[1],w2,*a[3:])
+            with self.assertRaises(TransitionRejected): _verify(a[0],a[1],w2,a[3],a[4],a[5],a[6],a[7],a[8])
         finally: shutil.rmtree(a[0],ignore_errors=True);os.remove(w2)
 
 class TestRuntimeBinding(unittest.TestCase):
     def test_11_wrong_upstream(self):
-        up2=_make_git_repo("different_upstream")
+        up2,_=_make_git_repo("different_upstream")
         a=_sealed_transition()
         try:
-            with self.assertRaises(TransitionRejected): _verify(a[0],a[1],a[2],a[3],a[4],a[5],up2,a[7])
+            with self.assertRaises(TransitionRejected): _verify(a[0],a[1],a[2],a[3],a[4],a[5],up2,a[7],a[8])
         finally: shutil.rmtree(a[0],ignore_errors=True);shutil.rmtree(up2,ignore_errors=True)
     def test_12_wrong_libero(self):
-        lib2=_make_git_repo("different_libero")
+        lib2,_=_make_git_repo("different_libero")
         a=_sealed_transition()
         try:
-            with self.assertRaises(TransitionRejected): _verify(a[0],a[1],a[2],a[3],a[4],a[5],a[6],lib2)
+            with self.assertRaises(TransitionRejected): _verify(a[0],a[1],a[2],a[3],a[4],a[5],a[6],lib2,a[8])
         finally: shutil.rmtree(a[0],ignore_errors=True);shutil.rmtree(lib2,ignore_errors=True)
     def test_13_dirty_upstream(self):
-        up=_make_git_repo("upstream",extra_file="dirty.txt")
+        up,_=_make_git_repo("upstream",extra_file="dirty.txt")
         a=_sealed_transition()
         try:
-            with self.assertRaises(TransitionRejected): _verify(a[0],a[1],a[2],a[3],a[4],a[5],up,a[7])
+            with self.assertRaises(TransitionRejected): _verify(a[0],a[1],a[2],a[3],a[4],a[5],up,a[7],a[8])
         finally: shutil.rmtree(a[0],ignore_errors=True);shutil.rmtree(up,ignore_errors=True)
 
 class TestPermissions(unittest.TestCase):
@@ -216,17 +223,12 @@ class TestPermissions(unittest.TestCase):
     def test_16_unauthorized_gpu(self):
         a=_sealed_transition()
         try:
-            with self.assertRaises(TransitionRejected): _verify(*a,gpu=99)
+            with self.assertRaises(TransitionRejected): _verify(*a,physical_gpu=99)
         finally: shutil.rmtree(a[0],ignore_errors=True)
     def test_17_wrong_output(self):
         a=_sealed_transition()
         try:
             with self.assertRaises(TransitionRejected): _verify(*a,output="/wrong")
-        finally: shutil.rmtree(a[0],ignore_errors=True)
-    def test_18_wrong_physical_gpu(self):
-        a=_sealed_transition()
-        try:
-            with self.assertRaises(TransitionRejected): _verify(*a,physical_gpu=99)
         finally: shutil.rmtree(a[0],ignore_errors=True)
 
 class TestIdentityBinding(unittest.TestCase):

@@ -24,7 +24,8 @@ FROZEN_R5E = {
     "r5e_independent_review_sha256sums":
         "2465a4c9e4ba0d329183a70b4cc7f38fe38e78ccbb1cb908604fb878c288ca61",
     "r5e_comparison_sha256":
-        "",  # must be bound from actual sealed comparison evidence root
+        "0000000000000000000000000000000000000000000000000000000000000000",
+    # placeholder — must be replaced with actual sealed comparison SHA before execution
 }
 
 FOUR_SUITES = ["libero_10", "libero_goal", "libero_object", "libero_spatial"]
@@ -240,11 +241,14 @@ def _runtime_git_values(root, label):
 
 
 def parse_iso_datetime(s):
-    """Parse ISO8601 datetime string. Returns None on failure."""
+    """Parse ISO8601 datetime string. Returns UTC-aware datetime or None."""
     import datetime
     for fmt in ["%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S%z"]:
         try:
-            return datetime.datetime.strptime(s, fmt)
+            dt = datetime.datetime.strptime(s, fmt)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=datetime.timezone.utc)
+            return dt
         except ValueError:
             continue
     return None
@@ -253,7 +257,8 @@ def parse_iso_datetime(s):
 def verify_transition(transition_root, execution_source_commit, script_sha,
                       model_path, official_worker_path, pilot_manifest_path,
                       registry_root, alias_ledger_path, upstream_root,
-                      libero_root, output_root, gpu, physical_gpu=None):
+                      libero_root, output_root, gpu, physical_gpu=None,
+                      repo_root=None):
     """Validate transition receipt. Raises TransitionRejected on any failure.
     Must be called BEFORE load_policy()."""
 
@@ -279,18 +284,26 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
     created_dt = parse_iso_datetime(created)
     if created_dt is None:
         raise TransitionRejected(f"created_at unparseable: {created}")
-    # Get source commit timestamp
+    # Get source commit timestamp — must succeed with explicit repo root
     import subprocess, datetime
+    repo = Path(repo_root) if repo_root else Path.cwd()
     try:
         ct_str = subprocess.check_output(
-            ["git", "log", "-1", "--format=%ct", execution_source_commit],
-            text=True, stderr=subprocess.DEVNULL).strip()
-        commit_ts = datetime.datetime.fromtimestamp(int(ct_str), tz=datetime.timezone.utc)
-    except Exception:
-        commit_ts = None  # Cannot verify without repo; skip for tests
-    if commit_ts is not None and created_dt < commit_ts:
+            ["git", "-C", str(repo), "log", "-1", "--format=%ct",
+             execution_source_commit],
+            text=True, stderr=subprocess.PIPE).strip()
+    except subprocess.CalledProcessError:
         raise TransitionRejected(
-            f"transition created {created} before source commit timestamp "
+            f"source commit {execution_source_commit[:16]} not found in repo "
+            f"{repo}")
+    if not ct_str or not ct_str.isdigit():
+        raise TransitionRejected(
+            f"source commit {execution_source_commit[:16]} not found in repo "
+            f"{repo}")
+    commit_ts = datetime.datetime.fromtimestamp(int(ct_str), tz=datetime.timezone.utc)
+    if created_dt < commit_ts:
+        raise TransitionRejected(
+            f"transition created {created} before source commit "
             f"{commit_ts.isoformat()}")
 
     # 4. Schema, gate, status
@@ -379,8 +392,8 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
         raise TransitionRejected(
             f"upstream commit mismatch: declared={declared_up_commit[:16]} "
             f"actual={up_commit[:16]}")
-    if declared_up_tree and declared_up_tree != up_tree:
-        raise TransitionRejected("upstream tree mismatch")
+    if not declared_up_tree or declared_up_tree != up_tree:
+        raise TransitionRejected("upstream tree missing or mismatched")
 
     # 13. LIBERO runtime
     declared_lib_commit = tm.get("libero_commit")
@@ -390,8 +403,8 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
         raise TransitionRejected(
             f"LIBERO commit mismatch: declared={declared_lib_commit[:16]} "
             f"actual={lib_commit[:16]}")
-    if declared_lib_tree and declared_lib_tree != lib_tree:
-        raise TransitionRejected("LIBERO tree mismatch")
+    if not declared_lib_tree or declared_lib_tree != lib_tree:
+        raise TransitionRejected("LIBERO tree missing or mismatched")
 
     # 14. Full permission matrix
     PERMS = {
@@ -408,19 +421,19 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
             raise TransitionRejected(f"permission violation: {key} must be {expected}")
 
     # 15. GPU + output allowlist
-    if gpu not in tm.get("allowed_gpus", []):
-        raise TransitionRejected(f"GPU {gpu} not in allowlist")
-    if str(output_root) not in tm.get("allowed_output_roots", []):
-        raise TransitionRejected("output root not in allowlist")
-
-    # 16. Physical/logical GPU mapping consistency
     if physical_gpu is not None:
+        if physical_gpu not in tm.get("allowed_physical_gpus", []):
+            raise TransitionRejected(
+                f"physical GPU {physical_gpu} not in allowlist")
+        # Verify mapping: physical GPU → logical cuda:0
         declared = tm.get("physical_to_logical_gpu", {})
         if str(physical_gpu) not in declared:
             raise TransitionRejected(f"physical GPU {physical_gpu} not mapped")
         if declared[str(physical_gpu)] != 0:
             raise TransitionRejected(
                 f"physical GPU {physical_gpu} maps to device "
-                f"{declared[str(physical_gpu)]}, expected 0")
+                f"{declared[str(physical_gpu)]}, expected logical 0")
+    if str(output_root) not in tm.get("allowed_output_roots", []):
+        raise TransitionRejected("output root not in allowlist")
 
     return tm
