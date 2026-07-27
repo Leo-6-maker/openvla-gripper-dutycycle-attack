@@ -203,6 +203,119 @@ def task_specs(suites: list[str], libero_root: Path) -> dict[tuple[str, int], di
     return specs
 
 
+def quat_geodesic(left: list[float], right: list[float]) -> float:
+    def norm(q: list[float]) -> list[float]:
+        n = math.sqrt(sum(float(x) * float(x) for x in q))
+        if n == 0 or not math.isfinite(n):
+            raise AuditHold("invalid quaternion in reference comparison")
+        return [float(x) / n for x in q]
+    a, b = norm(left), norm(right)
+    dot = min(1.0, max(-1.0, abs(sum(x * y for x, y in zip(a, b)))))
+    return 2.0 * math.acos(dot)
+
+
+def l2(left: list[float], right: list[float]) -> float:
+    value = math.sqrt(sum((float(a) - float(b)) ** 2 for a, b in zip(left, right)))
+    if not math.isfinite(value):
+        raise AuditHold("nonfinite reference error")
+    return value
+
+
+def percentile(values: list[float], q: float) -> float | None:
+    if not values:
+        return None
+    ordered = sorted(values)
+    index = min(len(ordered) - 1, max(0, math.ceil(q * len(ordered)) - 1))
+    return ordered[index]
+
+
+def compare_reference_geometry(args: argparse.Namespace, records: list[dict[str, Any]],
+                               specs: dict[tuple[str, int], dict[str, Any]]) -> dict[str, Any]:
+    if args.geometry_root is None:
+        return {"status": "HOLD_REFERENCE_MISSING", "reason": "geometry replay root not supplied"}
+    threshold = json_load(args.threshold_config)
+    if threshold.get("schema") != "C3_S3_NUMERICAL_THRESHOLDS_V1" or threshold.get("status") != "FROZEN":
+        raise AuditHold("numerical threshold contract is not frozen")
+    position_limit = float(threshold["thresholds"]["dynamic_position_p99_m"])
+    rotation_limit = float(threshold["thresholds"]["dynamic_rotation_p99_rad"])
+    object_positions: list[float] = []
+    object_rotations: list[float] = []
+    target_positions: list[float] = []
+    target_rotations: list[float] = []
+    episode_rows: list[dict[str, Any]] = []
+    missing_geometry_steps = 0
+    relation_rows = 0
+    pilot_by_id = {str(r["episode_id"]): r for r in records}
+    for episode_id, record in pilot_by_id.items():
+        spec = specs[(str(record["suite"]), int(record["task_id"]))]
+        sidecar = read_jsonl(safe_path(Path(str(record["source_episode_root"]))) / "privileged_teacher_sidecar.jsonl")
+        geometry_path = args.geometry_root / "episodes" / episode_id.replace("/", "__") / "geometry_cases.jsonl"
+        if not geometry_path.is_file():
+            raise AuditHold(f"geometry episode missing: {episode_id}")
+        geometry_rows = read_jsonl(geometry_path)
+        if len(sidecar) != len(geometry_rows):
+            raise AuditHold(f"geometry/source length mismatch: {episode_id}")
+        local_object, local_rotation, local_target, local_target_rotation = [], [], [], []
+        for step, (source_row, geometry_row) in enumerate(zip(sidecar, geometry_rows)):
+            if int(geometry_row.get("step", -1)) != step:
+                raise AuditHold(f"geometry step closure failed: {episode_id}:{step}")
+            for relation_index, (_, object_name, target_name) in enumerate(spec["relations"]):
+                relations = geometry_row.get("relations", [])
+                if relation_index >= len(relations):
+                    missing_geometry_steps += 1
+                    continue
+                geometry_relation = relations[relation_index]
+                object_pose = geometry_relation.get("object", {}).get("pose", {})
+                base = spec["objects"].index(object_name) * OBJECT_WIDTH if object_name in spec["objects"] else None
+                if base is None or not isinstance(source_row.get("object_state"), list):
+                    continue
+                state = source_row["object_state"]
+                source_pos = [float(x) for x in state[base:base + 3]]
+                source_quat = [float(x) for x in state[base + 3:base + 7]]
+                replay_pos = object_pose.get("pos")
+                replay_quat = object_pose.get("quat")
+                if not (isinstance(replay_pos, list) and isinstance(replay_quat, list) and len(replay_pos) == 3 and len(replay_quat) == 4):
+                    raise AuditHold(f"malformed geometry object pose: {episode_id}:{step}")
+                local_object.append(l2(source_pos, replay_pos))
+                local_rotation.append(quat_geodesic(source_quat, [float(x) for x in replay_quat]))
+                relation_rows += 1
+                target_base = spec["objects"].index(target_name) * OBJECT_WIDTH if target_name in spec["objects"] else None
+                target_pose = geometry_relation.get("target", {}).get("pose", {})
+                if target_base is not None and isinstance(target_pose.get("pos"), list) and isinstance(target_pose.get("quat"), list):
+                    local_target.append(l2([float(x) for x in state[target_base:target_base + 3]], target_pose["pos"]))
+                    local_target_rotation.append(quat_geodesic([float(x) for x in state[target_base + 3:target_base + 7]], [float(x) for x in target_pose["quat"]]))
+        object_positions.extend(local_object); object_rotations.extend(local_rotation)
+        target_positions.extend(local_target); target_rotations.extend(local_target_rotation)
+        episode_rows.append({"episode_id": episode_id, "object_position_count": len(local_object),
+                             "object_rotation_count": len(local_rotation), "target_position_count": len(local_target),
+                             "target_rotation_count": len(local_target_rotation),
+                             "object_position_p99_m": percentile(local_object, .99),
+                             "object_rotation_p99_rad": percentile(local_rotation, .99)})
+    metrics = {
+        "object_position": {"count": len(object_positions), "p50": percentile(object_positions, .50),
+                             "p95": percentile(object_positions, .95), "p99": percentile(object_positions, .99),
+                             "max": max(object_positions) if object_positions else None},
+        "object_rotation": {"count": len(object_rotations), "p50": percentile(object_rotations, .50),
+                             "p95": percentile(object_rotations, .95), "p99": percentile(object_rotations, .99),
+                             "max": max(object_rotations) if object_rotations else None},
+        "target_position": {"count": len(target_positions), "p50": percentile(target_positions, .50),
+                             "p95": percentile(target_positions, .95), "p99": percentile(target_positions, .99),
+                             "max": max(target_positions) if target_positions else None},
+        "target_rotation": {"count": len(target_rotations), "p50": percentile(target_rotations, .50),
+                             "p95": percentile(target_rotations, .95), "p99": percentile(target_rotations, .99),
+                             "max": max(target_rotations) if target_rotations else None},
+    }
+    known = metrics["object_position"]["count"] > 0 and metrics["object_rotation"]["count"] > 0
+    pass_numeric = known and metrics["object_position"]["p99"] <= position_limit and metrics["object_rotation"]["p99"] <= rotation_limit
+    return {"status": "PASS" if pass_numeric else "FAIL_NUMERICAL_FIDELITY", "threshold_config": str(args.threshold_config.resolve()),
+            "threshold_config_sha256": sha256_file(args.threshold_config), "thresholds": {"position_p99_m": position_limit, "rotation_p99_rad": rotation_limit},
+            "metrics": metrics, "relation_rows": relation_rows, "missing_geometry_steps": missing_geometry_steps,
+            "qpos_classification_flips": None, "comotion_classification_flips": None, "predicate_decision_flips": None,
+            "near_boundary_policy": "UNKNOWN", "episode_rows": episode_rows,
+            "independent_chains": {"source": "recorded privileged object_state", "replay": "deterministic MuJoCo geometry_cases DIRECT_SIM_STATE",
+                                   "same_action_replay_pose_chain": False}, "protected_payload_read": False}
+
+
 def source_binding(args: argparse.Namespace, metadata_rows: list[dict[str, Any]]) -> dict[str, Any]:
     paths = [args.collector_source, args.domain_source, args.robosuite_source,
              args.protocol_config, args.schema_doc]
@@ -368,16 +481,9 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
         "episode_audit": per_episode,
         "protected_payload_read": False, "model_inference": False, "student_training": False, "rollout": False, "attack": False,
     }
-    geometry = None
-    if args.geometry_root:
-        geometry = verify_seal(args.geometry_root)
-        cases = list(args.geometry_root.glob("episodes/*/geometry_cases.jsonl"))
-        geometry["per_step_geometry_case_files"] = len(cases)
-        geometry["all_case_rows_step_zero_only"] = all(all(int(json.loads(line).get("step", -1)) == 0 for line in p.read_text().splitlines() if line.strip()) for p in cases)
-    r1d = {"schema": "C3_T1D_R2B_R1D_REFERENCE_COMPARISON_V1", "status": "HOLD_REFERENCE_MISSING",
-           "reason": "bound pilot telemetry has no full independent target-site reference and existing geometry evidence has no per-step object/target replay stream",
-           "geometry_root": geometry, "known_classification_flips": None, "supported_predicate_flips": None,
-           "near_boundary_policy": "UNKNOWN", "protected_payload_read": False}
+    geometry = verify_seal(args.geometry_root) if args.geometry_root else None
+    r1d = {"schema": "C3_T1D_R2B_R1D_REFERENCE_COMPARISON_V1",
+           **compare_reference_geometry(args, records, specs), "geometry_root": geometry}
     return {"field_audit": {"schema": "C3_T1D_R2B_R1A_FIELD_AUDIT_V1", "status": "PASS" if binding["status"] == "PASS" else "HOLD_SCHEMA_UNBOUND", "episode_count": len(per_episode),
                              "step_count": total_steps, "source_file_set": list(EXPECTED_SOURCE_FILES), "pilot_seal": pilot_seal,
                              "field_profiles": all_profiles, "episodes": per_episode, "source_binding": binding,
@@ -429,6 +535,7 @@ def main() -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--pilot-root", type=Path, required=True)
     p.add_argument("--geometry-root", type=Path)
+    p.add_argument("--threshold-config", type=Path, required=True)
     p.add_argument("--collector-source", type=Path, required=True)
     p.add_argument("--domain-source", type=Path, required=True)
     p.add_argument("--robosuite-source", type=Path, required=True)
