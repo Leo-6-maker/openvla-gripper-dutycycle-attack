@@ -22,7 +22,8 @@ from n5.phase2_labels.c3_t0_semantic_contract import (
     TRUE,
     UNKNOWN,
     apply_persistence,
-    apply_right_censor,
+    aggregate_tri_conjunction,
+    aggregate_tri_disjunction,
     evaluate_heads,
     k10_feasible,
     protocol_horizon_for_suite,
@@ -32,6 +33,8 @@ from n5.phase3_student.c3_g_predicate_evaluator import evaluate_case, load_contr
 
 
 RUNNER_SCHEMA = "C3_T1_V23_TEACHER_RUNNER_V1"
+SEMANTIC_SCHEMA = "C3_T0_TEACHER_SEMANTIC_CONTRACT_V1_1"
+DEFAULT_SEMANTIC_CONTRACT = Path(__file__).resolve().parents[2] / "configs" / "C3_T0_TEACHER_SEMANTIC_CONTRACT_V1_1.json"
 PERSISTENCE_MIN_STEPS = {
     "physical_criticality": 2,
     "safe_release": 2,
@@ -47,6 +50,39 @@ FORBIDDEN_FIELDS = frozenset({
 
 class RunnerHold(RuntimeError):
     pass
+
+
+def load_semantic_contract(path: Path = DEFAULT_SEMANTIC_CONTRACT) -> dict[str, Any]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("schema") != SEMANTIC_SCHEMA or data.get("status") != "FROZEN_FIT_DEV_ONLY":
+        raise RunnerHold("semantic contract is not the frozen V1.1 FIT-only contract")
+    thresholds = data.get("quality_thresholds")
+    if not isinstance(thresholds, Mapping):
+        raise RunnerHold("quality thresholds are missing")
+    required = {
+        "comotion": ("object_min_displacement_m", "eef_min_displacement_m", "cosine_threshold"),
+        "placement_stability": ("relative_translation_tolerance_m", "relative_rotation_tolerance_rad", "min_consecutive_steps"),
+        "slip": ("relative_motion_tolerance_m",),
+    }
+    for section, keys in required.items():
+        values = thresholds.get(section)
+        if not isinstance(values, Mapping) or any(key not in values for key in keys):
+            raise RunnerHold(f"quality threshold section incomplete: {section}")
+        for key in keys:
+            value = values[key]
+            if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(float(value)):
+                raise RunnerHold(f"non-finite quality threshold: {section}.{key}")
+    if thresholds["comotion"]["object_min_displacement_m"] <= 0 or thresholds["comotion"]["eef_min_displacement_m"] <= 0:
+        raise RunnerHold("co-motion minimum displacement must be positive")
+    if not 0.0 < thresholds["comotion"]["cosine_threshold"] <= 1.0:
+        raise RunnerHold("co-motion cosine threshold is invalid")
+    if thresholds["placement_stability"]["relative_translation_tolerance_m"] <= 0 or thresholds["placement_stability"]["relative_rotation_tolerance_rad"] <= 0:
+        raise RunnerHold("placement stability thresholds must be positive")
+    if int(thresholds["placement_stability"]["min_consecutive_steps"]) < 2:
+        raise RunnerHold("placement stability requires at least two consecutive steps")
+    if thresholds["slip"]["relative_motion_tolerance_m"] <= 0:
+        raise RunnerHold("slip threshold must be positive")
+    return data
 
 
 def sha256_file(path: Path) -> str:
@@ -135,9 +171,81 @@ def _object_positions(geometry: Mapping[str, Any] | None) -> dict[Any, list[floa
     return result
 
 
+def _relation_map(geometry: Mapping[str, Any] | None) -> dict[Any, Mapping[str, Any]]:
+    if geometry is None:
+        return {}
+    return {
+        relation.get("relation_index", index): relation
+        for index, relation in enumerate(_geometry_relations(geometry))
+        if isinstance(relation, Mapping)
+    }
+
+
+def _pose_delta(previous: Mapping[str, Any], current: Mapping[str, Any]) -> tuple[float, float] | None:
+    try:
+        prev_object = previous["object"]["pose"]
+        prev_target = previous["target"]["pose"]
+        curr_object = current["object"]["pose"]
+        curr_target = current["target"]["pose"]
+        prev_rel = _relative_pose(prev_target, prev_object)
+        curr_rel = _relative_pose(curr_target, curr_object)
+    except (KeyError, TypeError):
+        return None
+    if prev_rel is None or curr_rel is None:
+        return None
+    translation = math.sqrt(sum((curr_rel[0][i] - prev_rel[0][i]) ** 2 for i in range(3)))
+    dot = abs(sum(curr_rel[1][i] * prev_rel[1][i] for i in range(4)))
+    dot = max(-1.0, min(1.0, dot))
+    rotation = 2.0 * math.acos(dot)
+    return translation, rotation
+
+
+def _relative_pose(target: Mapping[str, Any], object_pose: Mapping[str, Any]) -> tuple[list[float], list[float]] | None:
+    target_pos = _finite_vector(target.get("pos"), 3)
+    object_pos = _finite_vector(object_pose.get("pos"), 3)
+    target_quat = _finite_vector(target.get("quat"), 4)
+    object_quat = _finite_vector(object_pose.get("quat"), 4)
+    if None in (target_pos, object_pos, target_quat, object_quat):
+        return None
+    target_norm = math.sqrt(sum(value * value for value in target_quat))
+    object_norm = math.sqrt(sum(value * value for value in object_quat))
+    if target_norm <= 0 or object_norm <= 0:
+        return None
+    tq = [value / target_norm for value in target_quat]
+    oq = [value / object_norm for value in object_quat]
+    inverse = [tq[0], -tq[1], -tq[2], -tq[3]]
+    delta = [object_pos[i] - target_pos[i] for i in range(3)]
+    rotated = _rotate_vector(inverse, delta)
+    relative_quat = _quat_multiply(inverse, oq)
+    return rotated, relative_quat
+
+
+def _rotate_vector(quaternion: Sequence[float], vector: Sequence[float]) -> list[float]:
+    w, x, y, z = quaternion
+    vx, vy, vz = vector
+    tx = 2.0 * (y * vz - z * vy)
+    ty = 2.0 * (z * vx - x * vz)
+    tz = 2.0 * (x * vy - y * vx)
+    return [vx + w * tx + y * tz - z * ty,
+            vy + w * ty + z * tx - x * tz,
+            vz + w * tz + x * ty - y * tx]
+
+
+def _quat_multiply(left: Sequence[float], right: Sequence[float]) -> list[float]:
+    w1, x1, y1, z1 = left
+    w2, x2, y2, z2 = right
+    raw = [w1*w2 - x1*x2 - y1*y2 - z1*z2,
+           w1*x2 + x1*w2 + y1*z2 - z1*y2,
+           w1*y2 - x1*z2 + y1*w2 + z1*x2,
+           w1*z2 + x1*y2 - y1*x2 + z1*w2]
+    norm = math.sqrt(sum(value * value for value in raw))
+    return [value / norm for value in raw] if norm > 0 and math.isfinite(norm) else []
+
+
 def _comotion(previous: Mapping[str, Any] | None, current: Mapping[str, Any],
               geometry: Mapping[str, Any] | None,
-              previous_geometry: Mapping[str, Any] | None) -> str:
+              previous_geometry: Mapping[str, Any] | None,
+              thresholds: Mapping[str, Any]) -> str:
     if previous is None or geometry is None or previous_geometry is None:
         return UNKNOWN
     eef_now = _finite_vector(current.get("robot0_eef_pos"), 3)
@@ -146,8 +254,11 @@ def _comotion(previous: Mapping[str, Any] | None, current: Mapping[str, Any],
         return UNKNOWN
     eef_delta = [eef_now[i] - eef_prev[i] for i in range(3)]
     eef_norm = math.sqrt(sum(item * item for item in eef_delta))
-    if eef_norm == 0.0:
-        return FALSE
+    cfg = thresholds["comotion"]
+    eef_min = float(cfg["eef_min_displacement_m"])
+    object_min = float(cfg["object_min_displacement_m"])
+    if eef_norm < eef_min:
+        return UNKNOWN
     current_positions = _object_positions(geometry)
     previous_positions = _object_positions(previous_geometry)
     common = sorted(set(current_positions) & set(previous_positions))
@@ -157,11 +268,12 @@ def _comotion(previous: Mapping[str, Any] | None, current: Mapping[str, Any],
     for key in common:
         object_delta = [current_positions[key][i] - previous_positions[key][i] for i in range(3)]
         object_norm = math.sqrt(sum(item * item for item in object_delta))
-        if object_norm == 0.0:
+        if object_norm < object_min:
             values.append(FALSE)
         else:
-            values.append(TRUE if sum(object_delta[i] * eef_delta[i] for i in range(3)) / (object_norm * eef_norm) >= 0.0 else FALSE)
-    return TRUE if TRUE in values else FALSE if all(value == FALSE for value in values) else UNKNOWN
+            cosine = sum(object_delta[i] * eef_delta[i] for i in range(3)) / (object_norm * eef_norm)
+            values.append(TRUE if cosine >= float(cfg["cosine_threshold"]) else FALSE)
+    return aggregate_tri_disjunction(values)
 
 
 def _placement(geometry: Mapping[str, Any] | None, predicate_contract: Mapping[str, Any]) -> tuple[str, dict[str, Any]]:
@@ -169,8 +281,46 @@ def _placement(geometry: Mapping[str, Any] | None, predicate_contract: Mapping[s
         return UNKNOWN, {"reason": "MISSING_GEOMETRY_CASE"}
     results = [evaluate_case(item, predicate_contract) for item in _geometry_relations(geometry)]
     values = [_tri(item.get("value")) for item in results]
-    value = TRUE if TRUE in values else FALSE if values and all(item == FALSE for item in values) else UNKNOWN
+    value = aggregate_tri_conjunction(values)
     return value, {"aggregate": value, "relations": results}
+
+
+def _placement_stability(previous_geometry: Mapping[str, Any] | None,
+                         geometry: Mapping[str, Any] | None,
+                         predicate_contract: Mapping[str, Any],
+                         thresholds: Mapping[str, Any]) -> tuple[str, dict[str, Any]]:
+    if previous_geometry is None or geometry is None:
+        return UNKNOWN, {"reason": "PLACEMENT_HISTORY_UNKNOWN"}
+    previous_relations = _relation_map(previous_geometry)
+    current_relations = _relation_map(geometry)
+    if not previous_relations or set(previous_relations) != set(current_relations):
+        return UNKNOWN, {"reason": "PLACEMENT_RELATION_SET_UNKNOWN"}
+    translation_limit = float(thresholds["placement_stability"]["relative_translation_tolerance_m"])
+    rotation_limit = float(thresholds["placement_stability"]["relative_rotation_tolerance_rad"])
+    values = []
+    evidence = []
+    for index in sorted(current_relations):
+        current_result = evaluate_case(current_relations[index], predicate_contract)
+        previous_result = evaluate_case(previous_relations[index], predicate_contract)
+        current_value = _tri(current_result.get("value"))
+        previous_value = _tri(previous_result.get("value"))
+        delta = _pose_delta(previous_relations[index], current_relations[index])
+        if delta is None or current_value is None or previous_value is None:
+            value = UNKNOWN
+        elif current_value == FALSE or previous_value == FALSE:
+            value = FALSE
+        elif delta[0] <= translation_limit and delta[1] <= rotation_limit:
+            value = TRUE
+        else:
+            value = FALSE
+        values.append(value)
+        evidence.append({"relation_index": index, "value": value,
+                         "relative_translation_delta_m": None if delta is None else delta[0],
+                         "relative_rotation_delta_rad": None if delta is None else delta[1],
+                         "translation_tolerance_m": translation_limit,
+                         "rotation_tolerance_rad": rotation_limit,
+                         "support_state": current_value})
+    return aggregate_tri_conjunction(values), {"aggregate": aggregate_tri_conjunction(values), "relations": evidence}
 
 
 def evaluate_step(
@@ -183,6 +333,7 @@ def evaluate_step(
     protocol_horizon: int,
     object_ids: set[str],
     qpos_close_threshold: float | None,
+    semantic_config: Mapping[str, Any],
     previous_geometry: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Evaluate one prefix using only current/past physical observations."""
@@ -204,24 +355,50 @@ def evaluate_step(
     close = None if qpos is None else qpos <= qpos_close_threshold
     open_now = _qpos_open(current, qpos_close_threshold)
     open_prev = _qpos_open(previous, qpos_close_threshold) if previous is not None else None
-    released_state = _tri(open_now)
+    released_state = (
+        UNKNOWN if open_now is None or contact_now == UNKNOWN else
+        TRUE if open_now and contact_now == FALSE else FALSE
+    )
     release_event = UNKNOWN if open_now is None or open_prev is None else (
         TRUE if not open_prev and open_now else FALSE
     )
     stable = UNKNOWN if contact_now == UNKNOWN or close is None else (TRUE if contact_now == TRUE and close else FALSE)
-    transport = _comotion(previous, current, geometry, previous_geometry)
+    transport = _comotion(previous, current, geometry, previous_geometry,
+                          semantic_config["quality_thresholds"])
     placement, geometry_record = _placement(geometry, geometry_contract)
-    previous_placement = UNKNOWN
-    if previous_geometry is not None:
-        previous_placement, _ = _placement(previous_geometry, geometry_contract)
-    placement_stability = (
-        UNKNOWN if placement == UNKNOWN or previous_placement == UNKNOWN
-        else TRUE if placement == TRUE and previous_placement == TRUE else FALSE
+    placement_stability, stability_record = _placement_stability(
+        previous_geometry, geometry, geometry_contract,
+        semantic_config["quality_thresholds"],
     )
     stability = UNKNOWN if previous is None else (TRUE if stable == TRUE and contact_now == contact_prev else FALSE)
     contact_loss = UNKNOWN if previous is None or contact_prev == UNKNOWN else (TRUE if contact_prev == TRUE and contact_now == FALSE else FALSE)
     regrasp = UNKNOWN if previous is None or contact_prev == UNKNOWN else (TRUE if contact_prev == FALSE and contact_now == TRUE and close is True else FALSE)
-    slip = UNKNOWN if previous is None or contact_prev == UNKNOWN else (TRUE if contact_prev == TRUE and contact_now == FALSE else FALSE)
+    slip = UNKNOWN
+    slip_record: dict[str, Any] = {"reason": "SLIP_HISTORY_UNKNOWN"}
+    if previous is not None and contact_prev != UNKNOWN and contact_now != UNKNOWN:
+        if contact_prev == TRUE and contact_now == TRUE:
+            previous_positions = _object_positions(previous_geometry)
+            current_positions = _object_positions(geometry)
+            eef_prev = _finite_vector(previous.get("robot0_eef_pos"), 3)
+            eef_now = _finite_vector(current.get("robot0_eef_pos"), 3)
+            common = sorted(set(previous_positions) & set(current_positions))
+            if eef_prev is None or eef_now is None or not common:
+                slip = UNKNOWN
+            else:
+                eef_delta = [eef_now[i] - eef_prev[i] for i in range(3)]
+                relative_deltas = []
+                for relation_index in common:
+                    object_delta = [current_positions[relation_index][i] - previous_positions[relation_index][i] for i in range(3)]
+                    relative_deltas.append(math.sqrt(sum((object_delta[i] - eef_delta[i]) ** 2 for i in range(3))))
+                max_relative_delta = max(relative_deltas)
+                slip_limit = float(semantic_config["quality_thresholds"]["slip"]["relative_motion_tolerance_m"])
+                slip = TRUE if max_relative_delta > slip_limit else FALSE
+                slip_record = {"max_relative_motion_m": max_relative_delta,
+                               "relative_motion_tolerance_m": slip_limit,
+                               "contact_maintained": True}
+        else:
+            slip = FALSE
+            slip_record = {"contact_maintained": False, "reason": "CONTACT_NOT_MAINTAINED"}
     physical_known = contact_now != UNKNOWN and qpos is not None
     record = {
         "physical_known": physical_known,
@@ -245,11 +422,16 @@ def evaluate_step(
         "protocol_steps_remaining": record["protocol_steps_remaining"],
         "observed_future_steps_available": record["observed_future_steps_available"],
         "geometry": geometry_record,
+        "placement_stability_evidence": stability_record,
+        "slip_evidence": slip_record,
         "geometry_case_present": geometry is not None,
         "physical_components": {
             "contact": contact_now,
             "stable_grasp": stable,
             "transport_or_manipulation": transport,
+            "released_state": released_state,
+            "placement": placement,
+            "placement_stability": placement_stability,
             "slip": slip,
             "regrasp": regrasp,
             "contact_loss": contact_loss,
@@ -261,7 +443,8 @@ def evaluate_step(
 def run_episode(sidecar_rows: Sequence[Mapping[str, Any]], geometry_cases: Mapping[int, Mapping[str, Any]],
                 episode_id: str, geometry_contract: Mapping[str, Any], object_ids: set[str],
                 qpos_close_threshold: float | None = None,
-                protocol_horizon: int | None = None) -> dict[str, Any]:
+                protocol_horizon: int | None = None,
+                semantic_config: Mapping[str, Any] | None = None) -> dict[str, Any]:
     if not sidecar_rows:
         raise RunnerHold("empty physical sidecar")
     for index, row in enumerate(sidecar_rows):
@@ -273,6 +456,7 @@ def run_episode(sidecar_rows: Sequence[Mapping[str, Any]], geometry_cases: Mappi
         raise RunnerHold(f"unknown suite horizon: {suite}")
     if len(sidecar_rows) > frozen_horizon:
         raise RunnerHold("observed episode exceeds frozen protocol horizon")
+    semantic_config = semantic_config or load_semantic_contract()
     outputs = []
     for index, row in enumerate(sidecar_rows):
         current = dict(row)
@@ -286,9 +470,13 @@ def run_episode(sidecar_rows: Sequence[Mapping[str, Any]], geometry_cases: Mappi
             frozen_horizon,
             object_ids,
             qpos_close_threshold,
+            semantic_config,
             geometry_cases.get(index - 1) if index else None,
         ))
-    for head, min_steps in PERSISTENCE_MIN_STEPS.items():
+    configured_persistence = semantic_config.get("persistence", {}).get("per_head_min_steps", PERSISTENCE_MIN_STEPS)
+    for head, min_steps in configured_persistence.items():
+        if head not in PERSISTENCE_MIN_STEPS:
+            continue
         persisted = apply_persistence([item["heads"][head] for item in outputs], min_steps)
         for item, value in zip(outputs, persisted):
             item["heads"][head] = value
@@ -298,8 +486,9 @@ def run_episode(sidecar_rows: Sequence[Mapping[str, Any]], geometry_cases: Mappi
             "protocol_steps_remaining": item["protocol_steps_remaining"],
             "safe_release_computed": safe,
         })
-        item["heads"]["k10_feasible"] = apply_right_censor(
-            item["heads"]["k10_feasible"], item["observed_future_steps_available"], 10)
+        observed = item["observed_future_steps_available"]
+        item["audit_observation_mask"] = bool(isinstance(observed, int) and observed >= 10)
+        item["audit_censor_reason"] = None if item["audit_observation_mask"] else "OBSERVED_SUFFIX_SHORTER_THAN_K10"
     for item in outputs:
         if item["heads"]["safe_release"]["value"] == TRUE and item["heads"]["k10_feasible"]["value"] == TRUE:
             raise ContractError("safe_release TRUE with k10 TRUE")
@@ -535,6 +724,7 @@ def execute_pilot(manifest_path: Path, registry_root: Path, geometry_root: Path,
     preflight_result = preflight(manifest_path, registry_root, geometry_root,
                                  geometry_allowlist, predicate_contract, semantic_contract)
     manifest = _strict_json(manifest_path)
+    semantic_config = load_semantic_contract(semantic_contract)
     records = sorted(manifest["records"], key=lambda item: item["episode_id"])
     if selected_ids is not None:
         requested = list(selected_ids)
@@ -559,7 +749,8 @@ def execute_pilot(manifest_path: Path, registry_root: Path, geometry_root: Path,
         object_ids = _registry_object_ids(registry_root, episode_id)
         episode = run_episode(sidecar_rows, geometry_cases, episode_id,
                               load_contract(predicate_contract), object_ids,
-                              threshold, protocol_horizon_for_suite(episode_id.split("/", 1)[0]))
+                              threshold, protocol_horizon_for_suite(episode_id.split("/", 1)[0]),
+                              semantic_config)
         episodes.append(episode)
     return _sealed_output(output_parent, output_name, episodes,
                           {"preflight": preflight_result, "manifest_sha256": sha256_file(manifest_path),
@@ -589,12 +780,14 @@ def preflight(manifest_path: Path, registry_root: Path, geometry_root: Path,
     _verify_registry_binding(registry_root)
     _verify_geometry_binding(geometry_root, geometry_allowlist, pilot_ids)
     contract = load_contract(predicate_contract)
+    semantic = load_semantic_contract(semantic_contract)
     return {
         "schema": RUNNER_SCHEMA,
         "status": "PREFLIGHT_PASS_NO_EPISODE_EXECUTION",
         "manifest_sha256": sha256_file(manifest_path),
         "contract_bindings": bindings,
         "predicate_contract_schema": contract.get("schema"),
+        "semantic_contract_schema": semantic.get("schema"),
         "protected_payload_read": False,
         "model_inference": False,
         "rollout": False,

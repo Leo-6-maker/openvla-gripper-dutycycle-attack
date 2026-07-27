@@ -90,6 +90,26 @@ def _tri(value: Any) -> str | None:
     raise ContractError(f"expected tri-state boolean, got {value!r}")
 
 
+def aggregate_tri_conjunction(values: Iterable[Any]) -> str:
+    """Three-valued AND: FALSE dominates UNKNOWN, which dominates TRUE."""
+    normalized = [_tri(value) for value in values]
+    if any(value == FALSE for value in normalized):
+        return FALSE
+    if not normalized or any(value is None for value in normalized):
+        return UNKNOWN
+    return TRUE
+
+
+def aggregate_tri_disjunction(values: Iterable[Any]) -> str:
+    """Three-valued OR: TRUE dominates UNKNOWN, which dominates FALSE."""
+    normalized = [_tri(value) for value in values]
+    if any(value == TRUE for value in normalized):
+        return TRUE
+    if not normalized or any(value is None for value in normalized):
+        return UNKNOWN
+    return FALSE
+
+
 def physical_criticality(record: Mapping[str, Any]) -> dict[str, Any]:
     record = _project(record, "physical_criticality")
     known = record.get("physical_known")
@@ -98,7 +118,7 @@ def physical_criticality(record: Mapping[str, Any]) -> dict[str, Any]:
     if known is not True or stable is None or transport is None:
         return label(UNKNOWN, "PHYSICAL_EVIDENCE_UNKNOWN")
     return label(
-        TRUE if TRUE in (stable, transport) else FALSE,
+        aggregate_tri_disjunction((stable, transport)),
         "PHYSICAL_EVIDENCE_PRESENT",
     )
 
@@ -106,10 +126,11 @@ def physical_criticality(record: Mapping[str, Any]) -> dict[str, Any]:
 def safe_release(record: Mapping[str, Any]) -> dict[str, Any]:
     record = _project(record, "safe_release")
     values = [_tri(record.get(name)) for name in ("placement", "released_state", "placement_stability")]
-    if any(value is None for value in values):
+    aggregate = aggregate_tri_conjunction(values)
+    if aggregate == UNKNOWN:
         return label(UNKNOWN, "SAFE_RELEASE_COMPONENT_UNKNOWN")
     return label(
-        TRUE if all(value == TRUE for value in values) else FALSE,
+        aggregate,
         "PLACEMENT_RELEASED_STATE_PLACEMENT_STABILITY_CONJUNCTION",
     )
 
@@ -132,10 +153,11 @@ def k10_feasible(record: Mapping[str, Any], horizon: int = 10) -> dict[str, Any]
 def instability(record: Mapping[str, Any]) -> dict[str, Any]:
     record = _project(record, "instability")
     values = [_tri(record.get(name)) for name in ("slip", "regrasp", "contact_loss")]
-    if any(value is None for value in values):
+    aggregate = aggregate_tri_disjunction(values)
+    if aggregate == UNKNOWN:
         return label(UNKNOWN, "INSTABILITY_EVIDENCE_UNKNOWN")
     return label(
-        TRUE if TRUE in values else FALSE,
+        aggregate,
         "PHYSICAL_INSTABILITY_EVIDENCE",
     )
 

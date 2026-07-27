@@ -4,7 +4,8 @@ import unittest
 from n5.phase2_labels.c3_t0_semantic_contract import (
     ContractError, FALSE, TRUE, UNKNOWN, apply_persistence,
     apply_right_censor, evaluate_heads, gripper_closing_state,
-    k10_feasible, physical_criticality, protocol_steps_remaining,
+    aggregate_tri_conjunction, aggregate_tri_disjunction, k10_feasible,
+    physical_criticality, protocol_steps_remaining,
     quaternion_equivalent, safe_release,
 )
 
@@ -24,6 +25,16 @@ def _physical(**updates):
 
 
 class TestC3T0SemanticContract(unittest.TestCase):
+    def test_tri_state_conjunction_truth_table(self):
+        for values, expected in (((TRUE, TRUE), TRUE), ((TRUE, FALSE), FALSE),
+                                 ((TRUE, UNKNOWN), UNKNOWN), ((FALSE, UNKNOWN), FALSE),
+                                 ((), UNKNOWN)):
+            self.assertEqual(aggregate_tri_conjunction(values), expected)
+
+    def test_tri_state_disjunction_unknown_is_not_false(self):
+        self.assertEqual(aggregate_tri_disjunction((FALSE, UNKNOWN)), UNKNOWN)
+        self.assertEqual(aggregate_tri_disjunction((TRUE, UNKNOWN)), TRUE)
+
     def test_all_five_heads_have_tri_state_mask_and_reason(self):
         result = evaluate_heads(_physical())
         self.assertEqual(set(result), {
