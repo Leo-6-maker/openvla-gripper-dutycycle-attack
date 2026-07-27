@@ -169,12 +169,17 @@ def main():
     staging = out.parent / f".{out.name}.transition_staging.{os.getpid()}.{uuid.uuid4().hex[:8]}"
     staging.mkdir(parents=True)
 
+    # Compute identity set digest (SHA of identity list content, excluding the wrapper fields)
+    identity_set_digest = hashlib.sha256(
+        json.dumps(identity_allowlist, sort_keys=True).encode()
+    ).hexdigest()
+
     # Write allowlist
     allowlist_path = staging / "IDENTITY_ALLOWLIST.json"
     allowlist_path.write_text(json.dumps({
         "gate": "FIT-INFERENCE_IDENTITY_ALLOWLIST",
         "n_identities": len(identity_allowlist),
-        "identity_set_digest": sha256_file.__func__,  # placeholder
+        "identity_set_digest": identity_set_digest,
         "identities": identity_allowlist,
     }, indent=2, sort_keys=True))
 

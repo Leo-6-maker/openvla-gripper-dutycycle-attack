@@ -38,7 +38,8 @@ def sha256_file(path):
 
 
 def full_seal_check(root):
-    """Verify every file in SHA256SUMS. Returns (ok, file_count, error)."""
+    """Verify every file in SHA256SUMS. Returns (ok, file_count, error).
+    Rejects symlinks, missing files, hash mismatches, and unsealed extra files."""
     root = Path(root)
     sums_path = root / "SHA256SUMS"
     side_path = root / "SHA256SUMS.sha256"
@@ -48,6 +49,7 @@ def full_seal_check(root):
     if len(sidecar) < 2 or sidecar[0] != sha256_file(sums_path):
         return False, 0, "seal sidecar mismatch"
     file_count = 0
+    manifest_files = {}
     for line in sums_path.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if not line:
@@ -66,7 +68,16 @@ def full_seal_check(root):
             return False, file_count, f"missing: {name}"
         if sha256_file(target) != digest:
             return False, file_count, f"hash mismatch: {name}"
+        manifest_files[name] = digest
         file_count += 1
+
+    # Exclusive check: every file under root must be listed in SHA256SUMS
+    for p in root.rglob("*"):
+        if p.is_file() and p.name not in ("SHA256SUMS", "SHA256SUMS.sha256"):
+            rel = str(p.relative_to(root)).replace("\\", "/")
+            if rel not in manifest_files:
+                return False, file_count, f"unsealed extra file: {rel}"
+
     return True, file_count, "OK"
 
 
