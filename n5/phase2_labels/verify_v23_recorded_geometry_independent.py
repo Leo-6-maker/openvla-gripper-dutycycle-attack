@@ -529,7 +529,7 @@ def pose_diff(
         metrics["local_center_max_error_m"] = max(metrics["local_center_max_error_m"], max(abs(float(a)-float(b)) for a,b in zip(actual["local_geometry_center"], expected["local_geometry_center"])))
 
 
-def review_run(run_root: Path, pilot: Mapping[str, Any], index_payload: Mapping[str, Any], registry_root: Path, libero_root: Path, alias_ledger: Mapping[str, Mapping[str, Any]], expected_commit: str) -> dict[str, Any]:
+def review_run(run_root: Path, pilot: Mapping[str, Any], index_payload: Mapping[str, Any], registry_root: Path, libero_root: Path, alias_ledger: Mapping[str, Mapping[str, Any]], expected_commit: str, protocol: Mapping[str, Any]) -> dict[str, Any]:
     seal_sha = verify_seal(run_root); manifest = json.loads((run_root/"MANIFEST.json").read_text())
     if manifest.get("code_snapshot_commit") != expected_commit or manifest.get("consumer_eligible") is not False: raise ReviewHold("run manifest binding mismatch")
     import libero.libero.benchmark as benchmark_module
@@ -589,7 +589,8 @@ def review_run(run_root: Path, pilot: Mapping[str, Any], index_payload: Mapping[
             step_count += 1
         episode_count += 1
     for env, _ in task_cache.values(): env.close()
-    passed = not errors and episode_count == 40 and step_count == 9422 and relation_rows == 11880 and alias_rows == 217 and unknown_rows == 0 and all(value <= limit for value, limit in ((metrics["body_origin_position_max_error_m"],1e-8),(metrics["body_origin_rotation_max_error_rad"],BODY_ROT_TOL),(metrics["geometry_position_max_error_m"],POS_TOL),(metrics["geometry_rotation_max_error_rad"],ROT_TOL),(metrics["extent_max_error_m"],EXTENT_TOL)))
+    thresholds = protocol["thresholds"]
+    passed = not errors and episode_count == 40 and step_count == 9422 and relation_rows == 11880 and alias_rows == 217 and unknown_rows == 0 and all(value <= limit for value, limit in ((metrics["body_origin_position_max_error_m"], thresholds["body_origin_position_m"]),(metrics["body_origin_rotation_max_error_rad"], thresholds["body_origin_rotation_rad"]),(metrics["geometry_position_max_error_m"], thresholds["geometry_position_m"]),(metrics["geometry_rotation_max_error_rad"], thresholds["geometry_rotation_rad"]),(metrics["extent_max_error_m"], thresholds["extent_m"])))
     ordered = sorted(diagnostics, key=lambda row: (row["position_error_l2_m"], row["position_error_l_inf_m"], row["rotation_error_rad"]), reverse=True)
     source_counts: dict[str, int] = {}
     high_source_counts: dict[str, int] = {}
@@ -618,14 +619,25 @@ def review_run(run_root: Path, pilot: Mapping[str, Any], index_payload: Mapping[
         "alias_rows_in_top_100": sum(row.get("alias_status") == "INIT_GEOM_ALIAS_TO_INDEX_BODY" for row in ordered[:100]),
         "top_100_difference_rows": ordered[:100],
     }
-    return {"status": "PASS" if passed else "HOLD", "run_root": str(run_root), "run_sha256s_sha256": seal_sha, "episodes": episode_count, "steps": step_count, "relation_rows": relation_rows, "alias_rows": alias_rows, "supported_unknown_rows": unknown_rows, "metrics": metrics, "thresholds": {"body_origin_position_m":1e-8,"body_origin_rotation_rad":BODY_ROT_TOL,"geometry_position_m":POS_TOL,"geometry_rotation_rad":ROT_TOL,"extent_m":EXTENT_TOL}, "difference_summary": difference_summary, "errors": errors}
+    return {"status": "PASS" if passed else "HOLD", "run_root": str(run_root), "run_sha256s_sha256": seal_sha, "episodes": episode_count, "steps": step_count, "relation_rows": relation_rows, "alias_rows": alias_rows, "supported_unknown_rows": unknown_rows, "metrics": metrics, "thresholds": thresholds, "numerical_protocol": protocol, "difference_summary": difference_summary, "errors": errors}
+
+
+def load_numerical_protocol(path: Path) -> dict[str, Any]:
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if data.get("schema") != "V23_G_REC_NUMERICAL_PROTOCOL_AMENDMENT_V1" or data.get("status") != "FROZEN_BEFORE_R1C":
+        raise ReviewHold("numerical protocol schema/status mismatch")
+    thresholds = data.get("thresholds")
+    expected = {"body_origin_position_m": 1e-8, "body_origin_rotation_rad": 1e-7, "geometry_position_m": 1e-6, "geometry_rotation_rad": 1e-6, "extent_m": 1e-6}
+    if thresholds != expected or data.get("geometry_position_not_relaxed") is not True:
+        raise ReviewHold("numerical protocol threshold amendment mismatch")
+    return {"path": str(path.resolve()), "sha256": sha256_file(path), "schema": data["schema"], "thresholds": thresholds, "quaternion_metric": data["quaternion_metric"]}
 
 
 def main() -> int:
-    ap=argparse.ArgumentParser(); ap.add_argument("--run-root", type=Path, required=True); ap.add_argument("--pilot-manifest", type=Path, required=True); ap.add_argument("--index-root", type=Path, required=True); ap.add_argument("--registry-root", type=Path, required=True); ap.add_argument("--libero-root", type=Path, required=True); ap.add_argument("--alias-ledger", type=Path, required=True); ap.add_argument("--expected-commit", required=True); ap.add_argument("--output", type=Path, required=True)
+    ap=argparse.ArgumentParser(); ap.add_argument("--run-root", type=Path, required=True); ap.add_argument("--pilot-manifest", type=Path, required=True); ap.add_argument("--index-root", type=Path, required=True); ap.add_argument("--registry-root", type=Path, required=True); ap.add_argument("--libero-root", type=Path, required=True); ap.add_argument("--alias-ledger", type=Path, required=True); ap.add_argument("--expected-commit", required=True); ap.add_argument("--numerical-protocol", type=Path, default=Path(__file__).resolve().parents[2] / "configs" / "V23_G_REC_NUMERICAL_PROTOCOL_AMENDMENT_V1.json"); ap.add_argument("--output", type=Path, required=True)
     args=ap.parse_args()
     try:
-        pilot=json.loads(args.pilot_manifest.read_text()); index_payload=json.loads((args.index_root/"OBJECT_STATE_INDEX_MAP_V1.json").read_text()); ledger=json.loads(args.alias_ledger.read_text()); aliases={f"{x['suite']}/task_{int(x['task_id']):02d}/{x['bddl_object']}":x for x in ledger["entries"]}; result=review_run(args.run_root,pilot,index_payload,args.registry_root,args.libero_root,aliases,args.expected_commit)
+        pilot=json.loads(args.pilot_manifest.read_text()); index_payload=json.loads((args.index_root/"OBJECT_STATE_INDEX_MAP_V1.json").read_text()); ledger=json.loads(args.alias_ledger.read_text()); aliases={f"{x['suite']}/task_{int(x['task_id']):02d}/{x['bddl_object']}":x for x in ledger["entries"]}; protocol=load_numerical_protocol(args.numerical_protocol); result=review_run(args.run_root,pilot,index_payload,args.registry_root,args.libero_root,aliases,args.expected_commit,protocol)
     except Exception as exc:
         result={"status":"HOLD","error_type":type(exc).__name__,"error":str(exc)}
     args.output.parent.mkdir(parents=True, exist_ok=True); args.output.write_text(json.dumps(result,indent=2,sort_keys=True)+"\n")

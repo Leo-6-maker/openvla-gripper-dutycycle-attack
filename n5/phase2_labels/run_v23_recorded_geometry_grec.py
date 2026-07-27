@@ -142,6 +142,7 @@ def main() -> int:
     parser.add_argument("--alias-ledger", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--code-snapshot-commit", required=True)
+    parser.add_argument("--numerical-protocol", type=Path, required=True)
     args = parser.parse_args()
 
     output = args.output_root.resolve()
@@ -181,6 +182,7 @@ def main() -> int:
                 "--libero-root", str(args.libero_root),
                 "--alias-ledger", str(args.alias_ledger),
                 "--expected-commit", args.code_snapshot_commit,
+                "--numerical-protocol", str(args.numerical_protocol),
                 "--output", str(review_path),
             ]
             completed = subprocess.run(command, check=False, capture_output=True, text=True)
@@ -234,6 +236,8 @@ def main() -> int:
             "registry_root_path": str(args.registry_root.resolve()),
             "libero_root": str(args.libero_root.resolve()),
             "alias_ledger_path": str(args.alias_ledger.resolve()),
+            "numerical_protocol_path": str(args.numerical_protocol.resolve()),
+            "numerical_protocol_sha256": sha256_file(args.numerical_protocol),
             "run_A": "run_A",
             "run_B": "run_B",
             "comparison": "comparison/comparison.json",
