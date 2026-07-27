@@ -252,6 +252,10 @@ def test_one_task(suite, task_idx, state_id, seed, test_steps, registry_dir, app
                 if not all(math.isfinite(float(x)) for x in pos):
                     return None, {"status": "SKIP",
                                   "error": f"non-finite A position: {info['name']} step {step}"}
+                rot_flat = rot.flatten() if hasattr(rot, 'flatten') else rot
+                if not all(math.isfinite(float(x)) for x in rot_flat):
+                    return None, {"status": "SKIP",
+                                  "error": f"non-finite A rotation: {info['name']} step {step}"}
                 A_poses[(etype, eid)] = (pos, rot, info)
 
             # First forward → B (capture forward)
@@ -321,6 +325,10 @@ def test_one_task(suite, task_idx, state_id, seed, test_steps, registry_dir, app
                 if not all(math.isfinite(float(x)) for x in pos):
                     return None, {"status": "SKIP",
                                   "error": f"non-finite C position: {info['name']} step {step}"}
+                rot_flat = rot.flatten() if hasattr(rot, 'flatten') else rot
+                if not all(math.isfinite(float(x)) for x in rot_flat):
+                    return None, {"status": "SKIP",
+                                  "error": f"non-finite C rotation: {info['name']} step {step}"}
                 C_poses[(etype, eid)] = (pos, rot)
 
             # Compare
@@ -628,7 +636,7 @@ def main():
 
     print(f"\nSealed: {out}")
     print(f"  SHA256SUMS: {sums_sha}")
-    return 0 if gate_pass else (0 if (is_smoke and identity_ok) else 5)
+    return 0 if status_label.endswith("_PASS") else 5
 
 
 if __name__ == "__main__":

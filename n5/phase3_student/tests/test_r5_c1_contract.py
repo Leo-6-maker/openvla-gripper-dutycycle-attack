@@ -40,6 +40,10 @@ class FakeBody:
 class FakeModel:
     def __init__(self, nbody=10, nsite=5, ngeom=8):
         self.nbody = nbody; self.nsite = nsite; self.ngeom = ngeom
+        # Required by collect_entity (parent_body_id, body_parentid, site_bodyid, geom_bodyid)
+        self.body_parentid = np.array([-1] + [0] * (nbody - 1), dtype=int)
+        self.site_bodyid = np.array([0] * nsite, dtype=int)
+        self.geom_bodyid = np.array([0] * ngeom, dtype=int)
     def body(self, i):
         return FakeBody(f"body_{i}")
     def site(self, i):
@@ -70,9 +74,11 @@ def _make_fake_data(nbody=3, nsite=2, ngeom=2):
     body_xpos = [np.array([float(i), 0.0, 0.0]) for i in range(nbody)]
     body_xquat = [np.array([1.0, 0.0, 0.0, 0.0]) for _ in range(nbody)]
     site_xpos = [np.array([0.0, float(i), 0.0]) for i in range(nsite)]
-    site_xmat = [np.eye(3) for _ in range(nsite)]
+    # Use flat 9-element arrays (flattened 3x3 rotation matrices) to match
+    # MuJoCo's site_xmat / geom_xmat layout and mat_to_quat expectations.
+    site_xmat = [np.eye(3).flatten() for _ in range(nsite)]
     geom_xpos = [np.array([0.0, 0.0, float(i)]) for i in range(ngeom)]
-    geom_xmat = [np.eye(3) for _ in range(ngeom)]
+    geom_xmat = [np.eye(3).flatten() for _ in range(ngeom)]
     return FakeData(qpos, qvel, act, 0.0, body_xpos, body_xquat,
                     site_xpos, site_xmat, geom_xpos, geom_xmat)
 

@@ -163,23 +163,39 @@ def collect_entity(model: Any, data: Any, resolution: Mapping[str, Any]) -> dict
         if entity_id < 0 or entity_id >= int(model.nbody):
             raise CollectionHold(f"body id out of range: {entity_id}")
         actual_name = str(model.body(entity_id).name or "")
-        pose = {"position": data.body_xpos[entity_id].tolist(), "quaternion": qnorm(data.body_xquat[entity_id])}
+        pos = data.body_xpos[entity_id].tolist()
+        quat_raw = [float(x) for x in data.body_xquat[entity_id]]
+        if not all(math.isfinite(float(x)) for x in pos):
+            raise CollectionHold(f"non-finite body position: {actual_name}")
+        if not all(math.isfinite(float(x)) for x in quat_raw):
+            raise CollectionHold(f"non-finite body quaternion: {actual_name}")
+        quat = qnorm(quat_raw)  # Also validates non-zero norm
         parent = int(model.body_parentid[entity_id])
-        return {"entity_type": kind, "entity_id": entity_id, "entity_name": actual_name, "parent_body_id": parent, "world_pose": pose}
+        return {"entity_type": kind, "entity_id": entity_id, "entity_name": actual_name, "parent_body_id": parent, "world_pose": {"position": pos, "quaternion": quat}}
     if kind == "site":
         if entity_id < 0 or entity_id >= int(model.nsite):
             raise CollectionHold(f"site id out of range: {entity_id}")
         actual_name = str(model.site(entity_id).name or "")
         body_id = int(model.site_bodyid[entity_id])
-        pose = {"position": data.site_xpos[entity_id].tolist(), "quaternion": mat_to_quat(data.site_xmat[entity_id])}
-        return {"entity_type": kind, "entity_id": entity_id, "entity_name": actual_name, "parent_body_id": body_id, "world_pose": pose}
+        pos = data.site_xpos[entity_id].tolist()
+        quat = mat_to_quat(data.site_xmat[entity_id])  # Validates and normalizes
+        if not all(math.isfinite(float(x)) for x in pos):
+            raise CollectionHold(f"non-finite site position: {actual_name}")
+        if not all(math.isfinite(float(x)) for x in quat):
+            raise CollectionHold(f"non-finite site quaternion: {actual_name}")
+        return {"entity_type": kind, "entity_id": entity_id, "entity_name": actual_name, "parent_body_id": body_id, "world_pose": {"position": pos, "quaternion": quat}}
     if kind == "geom":
         if entity_id < 0 or entity_id >= int(model.ngeom):
             raise CollectionHold(f"geom id out of range: {entity_id}")
         actual_name = str(model.geom(entity_id).name or "")
         body_id = int(model.geom_bodyid[entity_id])
-        pose = {"position": data.geom_xpos[entity_id].tolist(), "quaternion": mat_to_quat(data.geom_xmat[entity_id])}
-        return {"entity_type": kind, "entity_id": entity_id, "entity_name": actual_name, "parent_body_id": body_id, "world_pose": pose}
+        pos = data.geom_xpos[entity_id].tolist()
+        quat = mat_to_quat(data.geom_xmat[entity_id])  # Validates and normalizes
+        if not all(math.isfinite(float(x)) for x in pos):
+            raise CollectionHold(f"non-finite geom position: {actual_name}")
+        if not all(math.isfinite(float(x)) for x in quat):
+            raise CollectionHold(f"non-finite geom quaternion: {actual_name}")
+        return {"entity_type": kind, "entity_id": entity_id, "entity_name": actual_name, "parent_body_id": body_id, "world_pose": {"position": pos, "quaternion": quat}}
     raise CollectionHold(f"unsupported entity kind: {kind}")
 
 

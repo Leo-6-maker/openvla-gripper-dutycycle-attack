@@ -1,0 +1,104 @@
+{
+  "meta": {
+    "review_type": "subagent_pre_submit",
+    "reviewed_commit": "bb25340d8388b2c6f42b21ca733673378e30ee30",
+    "reviewed_tree": "9da2ce22f08ba1479d69226a78c0f15a654b8566",
+    "baseline_commit": "95ac49a",
+    "branch": "deepseek/detector-grec-r3-20260727",
+    "reviewer": "subagent",
+    "timestamp": "2026-07-27T17:00:00Z"
+  },
+  "test_results": {
+    "test_c1_v2_resolver_py": {"passed": 23, "failed": 0, "errored": 0, "status": "PASS"},
+    "test_r5_c1_contract_pure": {"passed": 19, "failed": 0, "errored": 0, "status": "PASS"},
+    "test_r5_c1_contract_integration": {"passed": 0, "failed": 0, "errored": 5, "status": "ERROR_EGL_MISSING"},
+    "test_comparator_mutations": {"passed": 15, "failed": 0, "errored": 0, "status": "PASS"},
+    "py_compile_all_files": {"passed": 8, "failed": 0, "status": "PASS"}
+  },
+  "gpt_audit_issues": {
+    "1_collection_seed_fallback": "FIXED",
+    "2_output_episode_vs_pilot_id": "PASS",
+    "3_comparator_variant_keys": "FIXED",
+    "4_r5e_smoke_exit_code": "FIXED",
+    "5_r5e_rotation_finite_check": "FIXED",
+    "6_r5f_init_state_sha_required": "PASS",
+    "7_r5f_entity_identity": "PASS",
+    "8_act_none_array_all_locations": "PASS",
+    "9_r5e_gate_pass_0_of_40": "PASS",
+    "10_comparator_gate_c1": "PASS"
+  },
+  "bugs_found": [
+    {
+      "id": "BUG-P0-001",
+      "severity": "P0",
+      "file": "n5/phase2_labels/run_grec_fit_geometry_fallback_canary.py",
+      "function": "collect_entity",
+      "description": "Missing NaN/Inf finiteness checks for position and quaternion. Non-finite values would pass through silently.",
+      "fix": "Added math.isfinite checks for all position and quaternion values; body quaternions pass through qnorm() for normalization."
+    },
+    {
+      "id": "BUG-P0-002",
+      "severity": "P0",
+      "file": "n5/phase2_labels/compare_r5_canonical.py",
+      "function": "VARIANT_MANIFEST_KEYS",
+      "description": "script_sha256 was listed as variant key, allowing different script hashes between A and B runs.",
+      "fix": "Removed script_sha256 from VARIANT_MANIFEST_KEYS."
+    },
+    {
+      "id": "BUG-P1-001",
+      "severity": "P1",
+      "file": "n5/phase2_labels/run_r5f_full40_materialize.py",
+      "function": "load_pilot_identities",
+      "description": "collection_seed silently fell back to 0 if missing from pilot record.",
+      "fix": "Added explicit key-missing check that raises CollectionHold."
+    },
+    {
+      "id": "BUG-P1-002",
+      "severity": "P1",
+      "file": "n5/phase2_labels/run_r5e_same_live_gate.py",
+      "function": "test_one_task",
+      "description": "A and C rotation values were not checked for finiteness. Only B rotations were checked.",
+      "fix": "Added math.isfinite checks for A and C rotation values; non-finite rotations now cause SKIP."
+    },
+    {
+      "id": "BUG-P1-003",
+      "severity": "P1",
+      "file": "n5/phase2_labels/run_r5e_same_live_gate.py",
+      "function": "main",
+      "description": "Smoke mode with FAIL status exited 0 (contradiction between status label and exit code).",
+      "fix": "Exit code now follows status_label: 0 for *_PASS, 5 for *_FAIL."
+    },
+    {
+      "id": "BUG-P2-001",
+      "severity": "P2",
+      "file": "n5/phase3_student/tests/test_r5_c1_contract.py",
+      "function": "FakeModel.__init__",
+      "description": "FakeModel missing body_parentid, site_bodyid, geom_bodyid attributes.",
+      "fix": "Added numpy array attributes matching collect_entity requirements."
+    },
+    {
+      "id": "BUG-P2-002",
+      "severity": "P2",
+      "file": "n5/phase3_student/tests/test_r5_c1_contract.py",
+      "function": "_make_fake_data",
+      "description": "site_xmat and geom_xmat used 2D 3x3 matrices instead of flat 9-element arrays.",
+      "fix": "Added .flatten() to matrix creation."
+    }
+  ],
+  "new_test_files": [
+    "n5/phase2_labels/test_comparator_mutations.py"
+  ],
+  "files_changed": [
+    "n5/phase2_labels/compare_r5_canonical.py",
+    "n5/phase2_labels/run_grec_fit_geometry_fallback_canary.py",
+    "n5/phase2_labels/run_r5e_same_live_gate.py",
+    "n5/phase2_labels/run_r5f_full40_materialize.py",
+    "n5/phase3_student/tests/test_r5_c1_contract.py"
+  ],
+  "remaining_risks": [
+    "5 integration tests require EGL/GPU and cannot run on audit machine (pre-existing)",
+    "R5-F entity identity verification is name-based; stale pilot manifest names would pass",
+    "C1 alias ledger comparison is count-only, not entry-by-entry"
+  ],
+  "verdict": "READY_FOR_GPT_REVIEW"
+}

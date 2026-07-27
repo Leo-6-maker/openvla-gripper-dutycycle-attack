@@ -81,7 +81,6 @@ VARIANT_MANIFEST_KEYS = frozenset({
     "timestamp", "start_time", "end_time", "elapsed_s",
     "executable", "command", "python_version",
     "environment", "hostname",
-    "script_sha256",
     "r5e_receipt",
     "model_tree_sha256", "processor_sha256",
 })

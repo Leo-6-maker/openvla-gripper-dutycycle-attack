@@ -181,7 +181,10 @@ def load_pilot_identities(pilot_path):
         task_id = int(rec["task_id"])
         state_id = int(rec["state_id"])
         ep_id = str(rec["episode_id"])
-        seed_val = int(rec.get("collection_seed", rec.get("seed", 0)))
+        if "collection_seed" not in rec:
+            raise CollectionHold(
+                f"pilot record {ep_id} missing collection_seed")
+        seed_val = int(rec["collection_seed"])
         init_sha = rec.get("initial_state_sha256", "")
         if not init_sha or not isinstance(init_sha, str) or len(init_sha) != 64:
             raise CollectionHold(
