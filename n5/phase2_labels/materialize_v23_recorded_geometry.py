@@ -63,10 +63,13 @@ def model_body_pose(sim: Any, model: Any, body_id: int) -> dict[str, list[float]
     return pose(sim.data.body_xpos[body_id].tolist(), sim.data.body_xquat[body_id].tolist())
 
 
-def chain_has_joint(model: Any, root_id: int, child_id: int) -> bool:
+def chain_has_articulated_joint(model: Any, root_id: int, child_id: int) -> bool:
     path = body_path(model, root_id, child_id) or []
-    for body_id in [root_id, *path]:
-        if int(model.body_jntnum[body_id]) > 0:
+    body_ids = {root_id, *path}
+    # MuJoCo type 0 is a free joint: it makes an object dynamic, but it is not
+    # an articulated target. Hinge/slide/ball joints remain fail-closed.
+    for joint_id in range(int(model.njnt)):
+        if int(model.jnt_bodyid[joint_id]) in body_ids and int(model.jnt_type[joint_id]) != 0:
             return True
     return False
 
@@ -112,7 +115,7 @@ def target_case(
         dynamic = dynamic_root_for_site(model, site_id, object_roots)
         if dynamic is not None:
             object_name, root_id = dynamic
-            if chain_has_joint(model, root_id, int(model.site_bodyid[site_id])):
+            if chain_has_articulated_joint(model, root_id, int(model.site_bodyid[site_id])):
                 return {"id": name, "role": "REGION_TARGET", "source": "UNKNOWN_ARTICULATED", "known": False}
             body_origin = recorded_body_pose(state, objects[object_name])
             site_local = site_local_pose(model, site_id, root_id)
@@ -135,7 +138,7 @@ def target_case(
         alias_name = name
         body_id = int(model.body(alias_name).id)
         bddl_name = str(resolution.get("alias_from") or alias_name.removesuffix("_main"))
-        has_joint = chain_has_joint(model, body_id, body_id)
+        has_joint = chain_has_articulated_joint(model, body_id, body_id)
         if has_joint:
             return {"id": bddl_name, "role": "OBJECT_TARGET", "source": "UNKNOWN_ARTICULATED", "known": False}
         center, half = body_local_bounds(model, body_id, bounds_cache)
