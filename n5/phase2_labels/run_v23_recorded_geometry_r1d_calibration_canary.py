@@ -185,12 +185,15 @@ def is_alias(resolution: Mapping[str, Any]) -> bool:
     return str(resolution.get("resolution") or "").startswith("ALIAS") or str(resolution.get("resolution") or "").startswith("INIT_GEOM_ALIAS")
 
 
-def canary(output: Path, pilot_manifest: Path, registry_root: Path, libero_root: Path) -> dict[str, Any]:
+def canary(output: Path, pilot_manifest: Path, registry_root: Path, libero_root: Path, index_root: Path, alias_ledger: Path) -> dict[str, Any]:
     if output.exists() or output.is_symlink():
         raise CanaryHold(f"output exists: {output}")
     pilot = json.loads(pilot_manifest.read_text(encoding="utf-8"))
     if pilot.get("protected_payload_read") is not False:
         raise CanaryHold("pilot manifest does not prove protected exclusion")
+    index_payload = json.loads((index_root / "OBJECT_STATE_INDEX_MAP_V1.json").read_text(encoding="utf-8"))
+    ledger = json.loads(alias_ledger.read_text(encoding="utf-8"))
+    alias_entries = {f"{row['suite']}/task_{int(row['task_id']):02d}/{row['bddl_object']}": row for row in ledger.get("entries", [])}
     from libero.libero import get_libero_path
     from libero.libero.benchmark import get_benchmark
     from libero.libero.envs import OffScreenRenderEnv
@@ -206,7 +209,8 @@ def canary(output: Path, pilot_manifest: Path, registry_root: Path, libero_root:
     errors = []
     fixed = dynamic = alias = articulated_unknown = 0
     direct_checks = 0
-    max_pos = max_rot = 0.0
+    max_pos = max_rot = fixed_max_pos = fixed_max_rot = 0.0
+    relation_keys = set()
     for suite, task_id in task_keys:
         task_file = registry_root / "run_A" / "per_task" / f"{suite}_task_{task_id:02d}.json"
         task_data = json.loads(task_file.read_text(encoding="utf-8"))["legacy"]
@@ -220,6 +224,8 @@ def canary(output: Path, pilot_manifest: Path, registry_root: Path, libero_root:
             sim = env.env.sim
             model = sim.model
             relations = task_data.get("relations", [])
+            for relation_index, relation in enumerate(relations):
+                relation_keys.add((suite, task_id, relation_index, json.dumps(relation, sort_keys=True)))
             seen = set()
             for relation_index, relation in enumerate(relations):
                 for side in ("object_resolution", "target_resolution"):
@@ -232,14 +238,23 @@ def canary(output: Path, pilot_manifest: Path, registry_root: Path, libero_root:
                     try:
                         validate_identity(model, resolution)
                         entity_id = int(resolution["entity_id"])
+                        entity_body = entity_id if kind == "body" else int(model.site_bodyid[entity_id]) if kind == "site" else int(model.geom_bodyid[entity_id])
+                        object_name = str(resolution.get("alias_from") or resolution.get("name") or "")
+                        index_entry = next((row for task_row in index_payload.get("tasks", []) if task_row.get("suite") == suite and int(task_row.get("task_id", -1)) == task_id for row in task_row.get("objects", []) if row.get("object_name") == object_name), None)
+                        alias_key = f"{suite}/task_{task_id:02d}/{object_name}"
+                        alias_mapping = bool(side == "object_resolution" and kind == "geom" and index_entry is not None and int(model.geom_bodyid[entity_id]) != int(index_entry.get("body_id", -1)))
+                        if alias_mapping and alias_key not in alias_entries:
+                            raise CanaryHold(f"unledgered alias mapping: {alias_key}")
+                        has_articulated = entity_body != 0 and (chain_has_joint(model, entity_body, False) or subtree_has_articulated(model, entity_body))
+                        has_any = chain_has_joint(model, entity_body, True)
+                        row_kind = "ALIAS" if alias_mapping else "ARTICULATED_UNKNOWN" if has_articulated else "DYNAMIC_RECORDED" if has_any else "MODEL_FIXED_CHAIN"
                         expected = model_entity_pose(model, kind, entity_id)
                         direct = sim_entity_pose(sim, kind, entity_id)
                         pos_err = position_error(direct["pos"], expected["pos"])
                         rot_err = rotation_error(direct["quat"], expected["quat"])
                         max_pos = max(max_pos, pos_err); max_rot = max(max_rot, rot_err)
-                        has_articulated = chain_has_joint(model, entity_id if kind == "body" else int(model.site_bodyid[entity_id]) if kind == "site" else int(model.geom_bodyid[entity_id]), False) or subtree_has_articulated(model, entity_id if kind == "body" else int(model.site_bodyid[entity_id]) if kind == "site" else int(model.geom_bodyid[entity_id]))
-                        has_any = chain_has_joint(model, entity_id if kind == "body" else int(model.site_bodyid[entity_id]) if kind == "site" else int(model.geom_bodyid[entity_id]), True)
-                        row_kind = "ALIAS" if is_alias(resolution) else "ARTICULATED_UNKNOWN" if has_articulated else "DYNAMIC_RECORDED" if has_any else "MODEL_FIXED_CHAIN"
+                        if row_kind in {"MODEL_FIXED_CHAIN", "ALIAS"}:
+                            fixed_max_pos = max(fixed_max_pos, pos_err); fixed_max_rot = max(fixed_max_rot, rot_err)
                         if row_kind == "ALIAS": alias += 1
                         elif row_kind == "ARTICULATED_UNKNOWN": articulated_unknown += 1
                         elif row_kind == "DYNAMIC_RECORDED": dynamic += 1
@@ -256,14 +271,16 @@ def canary(output: Path, pilot_manifest: Path, registry_root: Path, libero_root:
                         errors.append(f"mapping:{suite}:{task_id}:{relation_index}:{side}:{exc}")
             for _ in range(2):
                 env.reset()
-                if any(position_error(sim_entity_pose(env.env.sim, row["entity_type"], row["entity_id"])["pos"], model_entity_pose(env.env.sim.model, row["entity_type"], row["entity_id"])["pos"]) > POS_TOL for row in mapping_rows if row["suite"] == suite and row["task_id"] == task_id and row["classification"] == "MODEL_FIXED_CHAIN"):
+                if any(position_error(sim_entity_pose(env.env.sim, row["entity_type"], row["entity_id"])["pos"], model_entity_pose(env.env.sim.model, row["entity_type"], row["entity_id"])["pos"]) > POS_TOL for row in mapping_rows if row["suite"] == suite and row["task_id"] == task_id and row["classification"] in {"MODEL_FIXED_CHAIN", "ALIAS"}):
                     errors.append(f"fixed-chain reset invariance failed:{suite}:{task_id}")
         finally:
             env.close()
     synthetic = {"nbody": 3, "body_parentid": [0, 0, 1], "nbody": 3, "njnt": 1, "jnt_bodyid": [2], "jnt_type": [2]}
     if not synthetic["jnt_bodyid"]:
         errors.append("descendant joint mutation control missing")
-    report = {"schema": "V23_G_REC_R1D_DIRECT_CALIBRATION_CANARY_V1", "status": "PASS" if not errors else "HOLD", "task_count": len(task_keys), "mapping_count": len(mapping_rows), "direct_checks": direct_checks, "fixed_count": fixed, "dynamic_recorded_count": dynamic, "alias_count": alias, "articulated_unknown_count": articulated_unknown, "max_position_error_m": max_pos, "max_rotation_error_rad": max_rot, "identity_mutation_fail_closed": not any("identity mutation accepted" in x for x in errors), "q_neg_q_equivalence": rotation_error([1, 0, 0, 0], [-1, 0, 0, 0]) == 0.0, "descendant_joint_mutation_fail_closed": True, "rows": mapping_rows, "errors": errors, "protected_payload_read": False, "model_inference": False, "action_replay": False}
+    errors.extend([] if len(relation_keys) == 44 else [f"supported relation closure mismatch: {len(relation_keys)} != 44"])
+    errors.extend([] if alias == 1 else [f"alias mapping coverage mismatch: {alias} != 1"])
+    report = {"schema": "V23_G_REC_R1D_DIRECT_CALIBRATION_CANARY_V1", "status": "PASS" if not errors else "HOLD", "task_count": len(task_keys), "relation_count": len(relation_keys), "mapping_count": len(mapping_rows), "direct_checks": direct_checks, "fixed_count": fixed, "dynamic_recorded_count": dynamic, "alias_count": alias, "articulated_unknown_count": articulated_unknown, "max_position_error_m": max_pos, "max_rotation_error_rad": max_rot, "fixed_chain_max_position_error_m": fixed_max_pos, "fixed_chain_max_rotation_error_rad": fixed_max_rot, "identity_mutation_fail_closed": not any("identity mutation accepted" in x for x in errors), "q_neg_q_equivalence": rotation_error([1, 0, 0, 0], [-1, 0, 0, 0]) == 0.0, "descendant_joint_mutation_fail_closed": True, "rows": mapping_rows, "errors": errors, "protected_payload_read": False, "model_inference": False, "action_replay": False}
     staging = output.parent / f".{output.name}.staging.{os.getpid()}"
     if staging.exists() or staging.is_symlink():
         raise CanaryHold(f"staging exists: {staging}")
@@ -283,10 +300,12 @@ def main() -> int:
     parser.add_argument("--pilot-manifest", type=Path, required=True)
     parser.add_argument("--registry-root", type=Path, required=True)
     parser.add_argument("--libero-root", type=Path, required=True)
+    parser.add_argument("--index-root", type=Path, required=True)
+    parser.add_argument("--alias-ledger", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     try:
-        report = canary(args.output.resolve(), args.pilot_manifest.resolve(), args.registry_root.resolve(), args.libero_root.resolve())
+        report = canary(args.output.resolve(), args.pilot_manifest.resolve(), args.registry_root.resolve(), args.libero_root.resolve(), args.index_root.resolve(), args.alias_ledger.resolve())
     except Exception as exc:
         report = {"schema": "V23_G_REC_R1D_DIRECT_CALIBRATION_CANARY_V1", "status": "HOLD", "error_type": type(exc).__name__, "error": str(exc), "protected_payload_read": False}
         print(json.dumps(report, sort_keys=True))
