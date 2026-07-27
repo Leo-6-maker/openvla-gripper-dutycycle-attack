@@ -35,6 +35,50 @@ class TransitionRejected(Exception):
     pass
 
 
+def verify_r5e_comparison_root(root):
+    """Full verification of R5-E comparison evidence root.
+    Returns (ok, digest, issues_list)."""
+    ok, n_files, err = full_seal_check(root)
+    if not ok:
+        return False, "", [f"seal failed: {err}"]
+
+    root = Path(root)
+    manifest_path = root / "COMPARISON_MANIFEST.json"
+    if not manifest_path.is_file():
+        return False, "", ["COMPARISON_MANIFEST.json missing"]
+    cm = json.loads(manifest_path.read_text(encoding="utf-8"))
+
+    issues = []
+    if cm.get("status") != "CANONICAL_IDENTITY_CONFIRMED":
+        issues.append(f"status: {cm.get('status')}")
+    if cm.get("n_records") != 840:
+        issues.append(f"records: {cm.get('n_records')}")
+    if cm.get("n_issues", -1) != 0:
+        issues.append(f"issues: {cm.get('n_issues')}")
+    if not cm.get("canonical_identical"):
+        issues.append("canonical_identical != True")
+    if cm.get("run_a_sha256sums") != FROZEN_R5E["r5e_run_a_sha256sums"]:
+        issues.append("run_a_sha256sums mismatch")
+    if cm.get("run_b_sha256sums") != FROZEN_R5E["r5e_run_b_sha256sums"]:
+        issues.append("run_b_sha256sums mismatch")
+    if cm.get("c1_canonical_digest") != FROZEN_R5E["c1_canonical_digest"]:
+        issues.append("c1_canonical_digest mismatch")
+    canonical_digest = cm.get("canonical_manifest_digest_A", "")
+    if canonical_digest != cm.get("canonical_manifest_digest_B", ""):
+        issues.append("canonical digest A != B")
+
+    # Independent record count from actual files
+    for suffix in ["run_A", "run_B"]:
+        jl_path = root / f"case_records_{suffix}.jsonl"
+        if jl_path.is_file():
+            recs = [json.loads(l) for l in open(jl_path) if l.strip()]
+            if len(recs) != 840:
+                issues.append(f"{suffix}: {len(recs)} records (expected 840)")
+
+    ok = len(issues) == 0
+    return ok, canonical_digest, issues
+
+
 def sha256_file(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -419,20 +463,29 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
         if tm.get(key) != expected:
             raise TransitionRejected(f"permission violation: {key} must be {expected}")
 
-    # 15. GPU + output allowlist
-    if gpu not in tm.get("allowed_gpus", [0]):
-        raise TransitionRejected(f"logical GPU {gpu} not in allowlist")
-    if physical_gpu is not None:
-        if physical_gpu not in tm.get("allowed_physical_gpus", []):
-            raise TransitionRejected(
-                f"physical GPU {physical_gpu} not in allowlist")
-        declared = tm.get("physical_to_logical_gpu", {})
-        if str(physical_gpu) not in declared:
-            raise TransitionRejected(f"physical GPU {physical_gpu} not mapped")
-        if declared[str(physical_gpu)] != gpu:
-            raise TransitionRejected(
-                f"physical GPU {physical_gpu} maps to device "
-                f"{declared[str(physical_gpu)]}, expected logical {gpu}")
+    # 15. GPU + output allowlist (fail-closed)
+    allowed_logical = tm.get("allowed_gpus")
+    if allowed_logical != [0]:
+        raise TransitionRejected(
+            f"allowed_gpus must be exactly [0], got {allowed_logical}")
+    if gpu != 0:
+        raise TransitionRejected(f"logical GPU must be 0, got {gpu}")
+    if physical_gpu is None:
+        raise TransitionRejected("physical_gpu must be provided")
+    allowed_physical = tm.get("allowed_physical_gpus")
+    if not allowed_physical or not isinstance(allowed_physical, list):
+        raise TransitionRejected("allowed_physical_gpus missing or invalid")
+    if physical_gpu not in allowed_physical:
+        raise TransitionRejected(
+            f"physical GPU {physical_gpu} not in allowlist: {allowed_physical}")
+    declared_map = tm.get("physical_to_logical_gpu")
+    if not declared_map or not isinstance(declared_map, dict):
+        raise TransitionRejected("physical_to_logical_gpu missing or invalid")
+    if str(physical_gpu) not in declared_map:
+        raise TransitionRejected(f"physical GPU {physical_gpu} not mapped")
+    if declared_map[str(physical_gpu)] != 0:
+        raise TransitionRejected(
+            f"physical GPU {physical_gpu} maps to {declared_map[str(physical_gpu)]}, expected 0")
     if str(output_root) not in tm.get("allowed_output_roots", []):
         raise TransitionRejected("output root not in allowlist")
 

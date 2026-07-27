@@ -56,17 +56,14 @@ def main():
                         help="Path to sealed R5-E comparison root (verified against frozen SHA)")
     args = parser.parse_args()
 
-    # Verify comparison root seal + check frozen SHA
+    # Full comparison root verification
     comp_root = Path(args.r5e_comparison_root).resolve()
-    if not comp_root.is_dir():
-        raise SystemExit(f"comparison root not found: {comp_root}")
-    comp_sums = comp_root / "SHA256SUMS"
-    comp_side = comp_root / "SHA256SUMS.sha256"
-    if not comp_sums.is_file() or not comp_side.is_file():
-        raise SystemExit(f"comparison root not sealed: {comp_root}")
-    actual_comp_sha = sha256_file(comp_sums)
+    ok, _, issues = verify_r5e_comparison_root(comp_root)
+    if not ok:
+        raise SystemExit(f"comparison root verification failed: {issues}")
+    actual_comp_sha = sha256_file(comp_root / "SHA256SUMS")
     expected_comp_sha = FROZEN_R5E.get("r5e_comparison_sha256", "")
-    if not expected_comp_sha or actual_comp_sha != expected_comp_sha:
+    if actual_comp_sha != expected_comp_sha:
         raise SystemExit(
             f"comparison SHA mismatch: actual={actual_comp_sha} "
             f"expected={expected_comp_sha}")
@@ -199,33 +196,40 @@ def main():
 
     # ── Seal ──
     staging = out.parent / f".{out.name}.transition_staging.{os.getpid()}.{uuid.uuid4().hex[:8]}"
+    if staging.exists():
+        raise SystemExit(f"staging exists: {staging}")
     staging.mkdir(parents=True)
+    published = False
+    try:
+        allowlist_path = staging / "IDENTITY_ALLOWLIST.json"
+        allowlist_path.write_text(json.dumps({
+            "gate": "FIT-INFERENCE_IDENTITY_ALLOWLIST",
+            "n_identities": 40,
+            "identity_set_digest": identity_set_digest,
+            "identities": identity_allowlist,
+        }, indent=2, sort_keys=True))
 
-    allowlist_path = staging / "IDENTITY_ALLOWLIST.json"
-    allowlist_path.write_text(json.dumps({
-        "gate": "FIT-INFERENCE_IDENTITY_ALLOWLIST",
-        "n_identities": 40,
-        "identity_set_digest": identity_set_digest,
-        "identities": identity_allowlist,
-    }, indent=2, sort_keys=True))
+        manifest["identity_allowlist_digest"] = sha256_file(allowlist_path)
+        (staging / "TRANSITION_MANIFEST.json").write_text(
+            json.dumps(manifest, indent=2, sort_keys=True))
 
-    manifest["identity_allowlist_digest"] = sha256_file(allowlist_path)
-    (staging / "TRANSITION_MANIFEST.json").write_text(
-        json.dumps(manifest, indent=2, sort_keys=True))
+        # Seal
+        payload = sorted(p for p in staging.rglob("*") if p.is_file())
+        sums = "\n".join(
+            f"{sha256_file(p)}  {p.relative_to(staging).as_posix()}" for p in payload) + "\n"
+        (staging / "SHA256SUMS").write_text(sums)
+        sums_sha = sha256_file(staging / "SHA256SUMS")
+        (staging / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n")
+        staging.rename(out)
+        published = True
 
-    # Seal
-    payload = sorted(p for p in staging.rglob("*") if p.is_file())
-    sums = "\n".join(
-        f"{sha256_file(p)}  {p.relative_to(staging).as_posix()}" for p in payload) + "\n"
-    (staging / "SHA256SUMS").write_text(sums)
-    sums_sha = sha256_file(staging / "SHA256SUMS")
-    (staging / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n")
-    staging.rename(out)
-
-    print(f"Transition sealed: {out}")
-    print(f"  SHA256SUMS: {sums_sha}")
-    print(f"  Allowlist digest: {manifest['identity_allowlist_digest']}")
-    print(f"  Source commit: {args.r5f_source_commit}")
+        print(f"Transition sealed: {out}")
+        print(f"  SHA256SUMS: {sums_sha}")
+        print(f"  Allowlist digest: {manifest['identity_allowlist_digest']}")
+        print(f"  Source commit: {args.r5f_source_commit}")
+    finally:
+        if not published and staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
 
 
 if __name__ == "__main__":
