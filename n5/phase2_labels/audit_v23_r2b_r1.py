@@ -236,8 +236,8 @@ def compare_reference_geometry(args: argparse.Namespace, records: list[dict[str,
     threshold = json_load(args.threshold_config)
     if threshold.get("schema") != "C3_S3_NUMERICAL_THRESHOLDS_V1" or threshold.get("status") != "FROZEN":
         raise AuditHold("numerical threshold contract is not frozen")
-    position_limit = float(threshold["thresholds"]["dynamic_position_p99_m"])
-    rotation_limit = float(threshold["thresholds"]["dynamic_rotation_p99_rad"])
+    position_limit = float(threshold["dynamic_position_p99_m"])
+    rotation_limit = float(threshold["dynamic_rotation_p99_rad"])
     object_positions: list[float] = []
     object_rotations: list[float] = []
     target_positions: list[float] = []
