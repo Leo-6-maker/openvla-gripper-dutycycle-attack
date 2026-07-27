@@ -249,7 +249,7 @@ def capture_episode(module: ModuleType, args: argparse.Namespace, record: Mappin
                 raise CollectionHold(f"executed action shape failed at step {step}")
             rows.append({
                 "step": step, "suite": suite, "task_idx": task_id, "state_id": state_id,
-                "action_raw_7d": raw_action, "action_env_7d": executed,
+                "action_raw_7d": raw_action, "score_action_7d": score_action, "action_env_7d": executed,
                 "generation_passes_per_step": count, "single_generation_parity_pass": True,
                 "action_mutation_by_detector": False,
             })
