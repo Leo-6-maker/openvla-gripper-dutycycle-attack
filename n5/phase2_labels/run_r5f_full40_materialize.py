@@ -20,7 +20,7 @@ Usage (server):
     --run-label A \
     --gpu 0
 """
-import argparse, copy, hashlib, importlib, json, math, os, pickle
+import argparse, copy, hashlib, importlib, json, math, os, pickle, shutil
 import platform, random, socket, subprocess, sys, time, uuid
 from pathlib import Path
 from types import ModuleType
@@ -624,190 +624,187 @@ def main():
     from libero.libero import benchmark
 
     staging = out_root.parent / f".{out_root.name}.staging.{os.getpid()}.{uuid.uuid4().hex[:8]}"
-    if staging.exists():
-        raise SystemExit(f"staging exists: {staging}")
-    staging.mkdir(parents=True)
-    (staging / "episodes").mkdir()
-
-    print("=" * 70)
-    print(f"[DeepSeek] R5-F: Corrected FIT Full40 Materialization — Run {args.run_label}")
-    print(f"  model={args.model_path}  gpu={args.gpu}  seed={args.seed}")
-    print(f"  source_commit={source_commit}")
-    print(f"  protocol_amendment_sha={protocol_sha}")
-    print(f"  transition_receipt={args.transition_receipt}")
-    print("=" * 70)
-
-    suite_dict = benchmark.get_benchmark_dict()
-    collections = []
-    failures = []
-    total_start = time.time()
-    input_bindings = []
-
+    published = False
     try:
+        if staging.exists():
+            raise SystemExit(f"staging exists: {staging}")
+        staging.mkdir(parents=True)
+        (staging / "episodes").mkdir()
+
+        print("=" * 70)
+        print(f"[DeepSeek] R5-F: Corrected FIT Full40 Materialization — Run {args.run_label}")
+        print(f"  model={args.model_path}  gpu={args.gpu}  seed={args.seed}")
+        print(f"  source_commit={source_commit}")
+        print(f"  protocol_amendment_sha={protocol_sha}")
+        print(f"  transition_receipt={args.transition_receipt}")
+        print("=" * 70)
+
+        suite_dict = benchmark.get_benchmark_dict()
+        collections = []
+        failures = []
+        total_start = time.time()
+        input_bindings = []
+
         for ident in identities:
             suite = ident["suite"]; task_idx = ident["task_id"]
-        state_id = ident["state_id"]; ep_id = ident["episode_id"]
-        coll_seed = ident["collection_seed"]
-        task_key = f"{suite}/task_{task_idx:02d}"
+            state_id = ident["state_id"]; ep_id = ident["episode_id"]
+            coll_seed = ident["collection_seed"]
+            task_key = f"{suite}/task_{task_idx:02d}"
 
-        print(f"\n  {ep_id}...", end=" ", flush=True)
+            print(f"\n  {ep_id}...", end=" ", flush=True)
+            try:
+                suite_obj = suite_dict[suite]()
+                task = suite_obj.get_task(task_idx)
+                states = suite_obj.get_task_init_states(task_idx)
+                if state_id >= len(states):
+                    raise CollectionHold(f"state_id {state_id} >= {len(states)}")
+                canonical_state = copy.deepcopy(states[state_id])
+
+                # Verify initial-state SHA
+                init_state_sha = sha256_bytes(pickle.dumps(canonical_state, protocol=4))
+                declared_sha = ident["initial_state_sha256"]
+                if init_state_sha != declared_sha:
+                    raise CollectionHold(
+                        f"initial_state_sha mismatch: computed={init_state_sha[:16]} "
+                        f"declared={declared_sha[:16]}")
+
+                # Check for articulated NOT_APPLICABLE tasks
+                reg_path = Path(str(args.registry_root)) / f"{suite}_task_{task_idx:02d}.json"
+                registry_data = json.loads(reg_path.read_text(encoding="utf-8"))
+                legacy = registry_data.get("legacy", registry_data)
+                is_articulated = legacy.get("task_disposition") == "ARTICULATED_UNSUPPORTED"
+
+                episode = capture_one_episode(
+                    module, suite, task_idx, state_id, coll_seed,
+                    str(args.registry_root), canonical_state, task, adapter)
+
+                # Enforce output episode_id matches pilot
+                if episode["episode_id"] != ep_id:
+                    raise CollectionHold(
+                        f"episode_id mismatch: output={episode['episode_id']} pilot={ep_id}")
+
+                # Shape + finite validation
+                _validate_episode_shapes(episode)
+
+                ep_dir = staging / "episodes" / f"{suite}_task_{task_idx:02d}"
+                ep_dir.mkdir()
+                (ep_dir / "episode.json").write_text(
+                    json.dumps(episode, indent=2, sort_keys=True, default=str), encoding="utf-8")
+                ep_sha = sha256_file(ep_dir / "episode.json")
+
+                binding = {
+                    "pilot_episode_id": ep_id,
+                    "output_episode_id": episode["episode_id"],
+                    "suite": suite, "task_id": task_idx, "state_id": state_id,
+                    "collection_seed": coll_seed,
+                    "initial_state_sha_verified": True,
+                    "initial_state_sha": init_state_sha,
+                    "steps": episode["step_count"],
+                    "entities": len(episode["telemetry"][0]["entities"]) if episode["telemetry"] else 0,
+                    "episode_sha256": ep_sha,
+                    "status": "OK",
+                }
+                input_bindings.append(binding)
+                collections.append({"task_key": task_key, "episode_id": ep_id,
+                                   "steps": episode["step_count"], "sha256": ep_sha})
+                print(f"steps={episode['step_count']} "
+                      f"entities={len(episode['telemetry'][0]['entities']) if episode['telemetry'] else 0} "
+                      f"init_sha=VERIFIED OK")
+            except CollectionHold as e:
+                print(f"HOLD: {e}")
+                failures.append({"task_key": task_key, "episode_id": ep_id, "error": str(e)})
+                input_bindings.append({
+                    "pilot_episode_id": ep_id, "suite": suite,
+                    "task_id": task_idx, "state_id": state_id,
+                    "status": "FAIL", "error": str(e),
+                })
+
+        elapsed = time.time() - total_start
+
+        # ── Manifest ──
+        n_collected = len(collections)
+        n_failed = len(failures)
+        all_ok = n_collected == 40 and n_failed == 0
+        collection_status = "COMPLETE" if all_ok else "PARTIAL_NONCONSUMABLE"
+
+        manifest = {
+            "gate": "R5-F_CORRECTED_FULL40_MATERIALIZATION",
+            "schema": "G_REC_CORRECTED_FULL40_V2",
+            "protocol_amendment": "PROTOCOL_AMENDMENT_V5_G_REC_DIRECT_POSE",
+            "protocol_amendment_sha256": protocol_sha,
+            "run_label": args.run_label,
+            "status": collection_status,
+            "consumer_eligible": all_ok,
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "elapsed_s": elapsed,
+            "source_commit": source_commit, "source_tree": source_tree,
+            "script_sha256": script_sha,
+            "transition_receipt_sha256sums": sha256_file(Path(args.transition_receipt) / "SHA256SUMS"),
+            "c1_canonical_digest": transition_manifest.get("c1_canonical_digest"),
+            "identity_set_digest": transition_manifest.get("identity_set_digest"),
+            "pilot_manifest_sha256": pilot_sha,
+            "registry_manifest": registry_manifest,
+            "alias_ledger_sha256": alias_ledger_sha,
+            "model_path": str(args.model_path.resolve()),
+            "model_tree_sha256": module.checkpoint_tree_fingerprint(args.model_path)[0],
+            "processor_sha256": sha256_file(args.model_path / "preprocessor_config.json"),
+            "upstream_root": str(args.upstream_root.resolve()),
+            "upstream_commit": git_value(args.upstream_root, "rev-parse", "HEAD"),
+            "libero_root": str(Path(get_libero_path("bddl_files")).resolve().parents[2]),
+            "environment": {
+                "python": sys.executable, "python_version": platform.python_version(),
+                "torch": module.torch.__version__,
+                "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
+                "hostname": socket.gethostname(),
+            },
+            "n_pilot_identities": len(identities),
+            "n_collected": n_collected, "n_failed": n_failed,
+            "total_steps": sum(c["steps"] for c in collections),
+            "collections": collections,
+            "failures": failures,
+            "input_bindings": input_bindings,
+            "forward_before_capture": True,
+            "no_detector": True, "attack_enabled": False,
+            "teacher_labels_generated": False,
+            "protected_payload_read": False,
+            "forbidden_path_audit": "PASS",
+        }
+        (staging / "MANIFEST.json").write_text(
+            json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
+        (staging / "SEAL_RECEIPT.json").write_text(json.dumps({
+            "schema": "V23_G_REC_CORRECTED_FULL40_SEAL_V2",
+            "status": f"SEALED_{collection_status}",
+            "run_label": args.run_label,
+            "consumer_eligible": all_ok,
+        }, indent=2, sort_keys=True), encoding="utf-8")
+
+        seal = seal_root(staging)
+
+        # Publish only after the complete run has been written and sealed.
         try:
-            suite_obj = suite_dict[suite]()
-            task = suite_obj.get_task(task_idx)
-            states = suite_obj.get_task_init_states(task_idx)
-            if state_id >= len(states):
-                raise CollectionHold(f"state_id {state_id} >= {len(states)}")
-            canonical_state = copy.deepcopy(states[state_id])
+            staging.rename(out_root)
+        except OSError as exc:
+            raise SystemExit(
+                f"rename failed — output may have appeared: {out_root}") from exc
+        published = True
 
-            # Verify initial-state SHA
-            init_state_sha = sha256_bytes(pickle.dumps(canonical_state, protocol=4))
-            declared_sha = ident["initial_state_sha256"]
-            if init_state_sha != declared_sha:
-                raise CollectionHold(
-                    f"initial_state_sha mismatch: computed={init_state_sha[:16]} "
-                    f"declared={declared_sha[:16]}")
+        print(f"\n{'=' * 70}")
+        print(f"Run {args.run_label}: {n_collected}/{len(identities)} episodes collected")
+        print(f"  Failures: {n_failed}")
+        print(f"  Total steps: {sum(c['steps'] for c in collections)}")
+        print(f"  Elapsed: {elapsed:.0f}s")
+        print(f"  Sealed: {out_root}")
+        print(f"  SHA256SUMS: {seal['sha256sums_sha256']}")
+        print(f"  Status: {collection_status}")
 
-            # Check for articulated NOT_APPLICABLE tasks
-            reg_path = Path(str(args.registry_root)) / f"{suite}_task_{task_idx:02d}.json"
-            registry_data = json.loads(reg_path.read_text(encoding="utf-8"))
-            legacy = registry_data.get("legacy", registry_data)
-            is_articulated = legacy.get("task_disposition") == "ARTICULATED_UNSUPPORTED"
-
-            episode = capture_one_episode(
-                module, suite, task_idx, state_id, coll_seed,
-                str(args.registry_root), canonical_state, task, adapter)
-
-            # Enforce output episode_id matches pilot
-            if episode["episode_id"] != ep_id:
-                raise CollectionHold(
-                    f"episode_id mismatch: output={episode['episode_id']} pilot={ep_id}")
-
-            # Shape + finite validation
-            _validate_episode_shapes(episode)
-
-            ep_dir = staging / "episodes" / f"{suite}_task_{task_idx:02d}"
-            ep_dir.mkdir()
-            (ep_dir / "episode.json").write_text(
-                json.dumps(episode, indent=2, sort_keys=True, default=str), encoding="utf-8")
-            ep_sha = sha256_file(ep_dir / "episode.json")
-
-            binding = {
-                "pilot_episode_id": ep_id,
-                "output_episode_id": episode["episode_id"],
-                "suite": suite, "task_id": task_idx, "state_id": state_id,
-                "collection_seed": coll_seed,
-                "initial_state_sha_verified": True,
-                "initial_state_sha": init_state_sha,
-                "steps": episode["step_count"],
-                "entities": len(episode["telemetry"][0]["entities"]) if episode["telemetry"] else 0,
-                "episode_sha256": ep_sha,
-                "status": "OK",
-            }
-            input_bindings.append(binding)
-            collections.append({"task_key": task_key, "episode_id": ep_id,
-                               "steps": episode["step_count"], "sha256": ep_sha})
-            print(f"steps={episode['step_count']} "
-                  f"entities={len(episode['telemetry'][0]['entities']) if episode['telemetry'] else 0} "
-                  f"init_sha=VERIFIED OK")
-        except CollectionHold as e:
-            print(f"HOLD: {e}")
-            failures.append({"task_key": task_key, "episode_id": ep_id, "error": str(e)})
-            input_bindings.append({
-                "pilot_episode_id": ep_id, "suite": suite,
-                "task_id": task_idx, "state_id": state_id,
-                "status": "FAIL", "error": str(e),
-            })
-
-    except Exception:
-        import shutil
-        if staging.exists():
+        if failures:
+            for f in failures:
+                print(f"  FAIL: {f['episode_id']}: {f['error']}")
+            return 1
+        return 0
+    finally:
+        if not published and staging.exists():
             shutil.rmtree(staging, ignore_errors=True)
-        raise
-
-    elapsed = time.time() - total_start
-
-    # ── Manifest ──
-    n_collected = len(collections)
-    n_failed = len(failures)
-    all_ok = n_collected == 40 and n_failed == 0
-    collection_status = "COMPLETE" if all_ok else "PARTIAL_NONCONSUMABLE"
-
-    manifest = {
-        "gate": "R5-F_CORRECTED_FULL40_MATERIALIZATION",
-        "schema": "G_REC_CORRECTED_FULL40_V2",
-        "protocol_amendment": "PROTOCOL_AMENDMENT_V5_G_REC_DIRECT_POSE",
-        "protocol_amendment_sha256": protocol_sha,
-        "run_label": args.run_label,
-        "status": collection_status,
-        "consumer_eligible": all_ok,
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "elapsed_s": elapsed,
-        "source_commit": source_commit, "source_tree": source_tree,
-        "script_sha256": script_sha,
-        "transition_receipt_sha256sums": sha256_file(Path(args.transition_receipt) / "SHA256SUMS"),
-        "c1_canonical_digest": transition_manifest.get("c1_canonical_digest"),
-        "identity_set_digest": transition_manifest.get("identity_set_digest"),
-        "pilot_manifest_sha256": pilot_sha,
-        "registry_manifest": registry_manifest,
-        "alias_ledger_sha256": alias_ledger_sha,
-        "model_path": str(args.model_path.resolve()),
-        "model_tree_sha256": module.checkpoint_tree_fingerprint(args.model_path)[0],
-        "processor_sha256": sha256_file(args.model_path / "preprocessor_config.json"),
-        "upstream_root": str(args.upstream_root.resolve()),
-        "upstream_commit": git_value(args.upstream_root, "rev-parse", "HEAD"),
-        "libero_root": str(Path(get_libero_path("bddl_files")).resolve().parents[2]),
-        "environment": {
-            "python": sys.executable, "python_version": platform.python_version(),
-            "torch": module.torch.__version__,
-            "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES", ""),
-            "hostname": socket.gethostname(),
-        },
-        "n_pilot_identities": len(identities),
-        "n_collected": n_collected, "n_failed": n_failed,
-        "total_steps": sum(c["steps"] for c in collections),
-        "collections": collections,
-        "failures": failures,
-        "input_bindings": input_bindings,
-        "forward_before_capture": True,
-        "no_detector": True, "attack_enabled": False,
-        "teacher_labels_generated": False,
-        "protected_payload_read": False,
-        "forbidden_path_audit": "PASS",
-    }
-    (staging / "MANIFEST.json").write_text(
-        json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8")
-    (staging / "SEAL_RECEIPT.json").write_text(json.dumps({
-        "schema": "V23_G_REC_CORRECTED_FULL40_SEAL_V2",
-        "status": f"SEALED_{collection_status}",
-        "run_label": args.run_label,
-        "consumer_eligible": all_ok,
-    }, indent=2, sort_keys=True), encoding="utf-8")
-
-    seal = seal_root(staging)
-
-    # Atomic no-replace publication
-    try:
-        staging.rename(out_root)
-    except OSError:
-        import shutil
-        if staging.exists():
-            shutil.rmtree(staging, ignore_errors=True)
-        raise SystemExit(f"rename failed — output may have appeared: {out_root}")
-
-    print(f"\n{'=' * 70}")
-    print(f"Run {args.run_label}: {n_collected}/{len(identities)} episodes collected")
-    print(f"  Failures: {n_failed}")
-    print(f"  Total steps: {sum(c['steps'] for c in collections)}")
-    print(f"  Elapsed: {elapsed:.0f}s")
-    print(f"  Sealed: {out_root}")
-    print(f"  SHA256SUMS: {seal['sha256sums_sha256']}")
-    print(f"  Status: {collection_status}")
-
-    if failures:
-        for f in failures:
-            print(f"  FAIL: {f['episode_id']}: {f['error']}")
-        return 1
-    return 0
 
 
 if __name__ == "__main__":
