@@ -553,18 +553,22 @@ def verify_pilot_inputs(pilot: Mapping[str, Any], pilot_manifest: Path) -> dict[
         raise GeometryHold("D0 receipt binding failed")
     d0_root = verify_sealed_root(d0_path.parent)
     d0 = json.loads(d0_path.read_text(encoding="utf-8"))
+    aggregate = d0.get("aggregate", {})
     if (
         d0.get("decision") != "PASS"
-        or d0.get("dev_pool_unique") != 670
-        or d0.get("aggregate", {}).get("clean_protected_overlap_count") != 1330
-        or d0.get("aggregate", {}).get("protected_cross_manifest_overlap_count") != 0
-        or d0.get("aggregate", {}).get("protected_union_unique") != 1330
+        or d0.get("dev_pool_closure_670") is not True
+        or aggregate.get("dev_pool_unique") != 670
+        or aggregate.get("clean_protected_overlap_count") != 1330
+        or aggregate.get("protected_cross_manifest_overlap_count") != 0
+        or aggregate.get("protected_union_unique") != 1330
     ):
         raise GeometryHold("D0 receipt decision/closure mismatch")
     dev_spec = pilot.get("dev_pool_manifest", {})
     dev_path = Path(str(dev_spec.get("path", ""))).resolve()
     if not dev_path.is_file() or sha256_file(dev_path) != dev_spec.get("sha256"):
         raise GeometryHold("DEV_POOL manifest binding failed")
+    if d0.get("dev_pool_identity_manifest_sha256") != dev_spec.get("sha256"):
+        raise GeometryHold("D0 DEV_POOL manifest binding failed")
     with dev_path.open(newline="", encoding="utf-8") as handle:
         dev_rows = list(csv.DictReader(handle))
     dev_ids = {(str(row["suite"]), int(row["task_id"]), int(row["state_id"])) for row in dev_rows}
