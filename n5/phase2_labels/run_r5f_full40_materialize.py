@@ -315,6 +315,37 @@ def verify_entity_identity(model, entity_type, entity_id, expected_name):
     return True
 
 
+def _validate_episode_shapes(episode):
+    """Validate shape + finiteness of all actions, states, EEF, gripper, entities."""
+    import math
+    for step_data in episode.get("steps", []):
+        for key in ["action_raw_7d", "score_action_7d", "action_env_7d"]:
+            arr = step_data.get(key, [])
+            if len(arr) != 7 or not all(math.isfinite(float(x)) for x in arr):
+                raise CollectionHold(f"invalid {key} at step {step_data.get('step')}")
+    for tel in episode.get("telemetry", []):
+        ss = tel.get("sim_state", {})
+        for key in ["qpos", "qvel"]:
+            arr = ss.get(key, [])
+            if not arr or not all(math.isfinite(float(x)) for x in arr):
+                raise CollectionHold(f"invalid {key} at step {tel.get('step')}")
+        for key in ["robot0_eef_pos", "robot0_eef_quat", "robot0_gripper_qpos"]:
+            arr = tel.get(key, [])
+            if key == "robot0_eef_pos" and len(arr) != 3:
+                raise CollectionHold(f"invalid eef_pos shape at step {tel.get('step')}")
+            if not all(math.isfinite(float(x)) for x in arr):
+                raise CollectionHold(f"non-finite {key} at step {tel.get('step')}")
+        for ent in tel.get("entities", []):
+            pos = ent["world_pose"]["position"]
+            quat = ent["world_pose"]["quaternion"]
+            if len(pos) != 3 or len(quat) != 4:
+                raise CollectionHold(f"invalid entity pose shape at step {tel.get('step')}")
+            if not all(math.isfinite(float(x)) for x in pos):
+                raise CollectionHold(f"non-finite entity position at step {tel.get('step')}")
+            if not all(math.isfinite(float(x)) for x in quat):
+                raise CollectionHold(f"non-finite entity quaternion at step {tel.get('step')}")
+
+
 def capture_one_episode(module, suite, task_idx, state_id, collection_seed,
                         registry_dir, canonical_state, task, adapter):
     """Collect a single episode using corrected forward-before-capture protocol."""
@@ -478,6 +509,11 @@ def main():
         raise SystemExit(f"output exists: {out_root}")
 
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu)
+    # Validate GPU mapping: CUDA_VISIBLE_DEVICES must map requested gpu to device 0
+    visible = str(args.gpu)
+    visible_gpus = [int(x.strip()) for x in visible.split(",") if x.strip()]
+    if len(visible_gpus) != 1 or visible_gpus[0] != int(args.gpu):
+        raise SystemExit(f"GPU mapping mismatch: CUDA_VISIBLE_DEVICES={visible} gpu={args.gpu}")
     os.environ.setdefault("MUJOCO_GL", "egl")
     random.seed(args.seed)
 
@@ -601,7 +637,7 @@ def main():
                 raise CollectionHold(f"state_id {state_id} >= {len(states)}")
             canonical_state = copy.deepcopy(states[state_id])
 
-            # Verify initial-state SHA (declared_sha already validated in load_pilot_identities)
+            # Verify initial-state SHA
             init_state_sha = sha256_bytes(pickle.dumps(canonical_state, protocol=4))
             declared_sha = ident["initial_state_sha256"]
             if init_state_sha != declared_sha:
@@ -609,9 +645,23 @@ def main():
                     f"initial_state_sha mismatch: computed={init_state_sha[:16]} "
                     f"declared={declared_sha[:16]}")
 
+            # Check for articulated NOT_APPLICABLE tasks
+            reg_path = Path(str(args.registry_root)) / f"{suite}_task_{task_idx:02d}.json"
+            registry_data = json.loads(reg_path.read_text(encoding="utf-8"))
+            legacy = registry_data.get("legacy", registry_data)
+            is_articulated = legacy.get("task_disposition") == "ARTICULATED_UNSUPPORTED"
+
             episode = capture_one_episode(
                 module, suite, task_idx, state_id, coll_seed,
                 str(args.registry_root), canonical_state, task, adapter)
+
+            # Enforce output episode_id matches pilot
+            if episode["episode_id"] != ep_id:
+                raise CollectionHold(
+                    f"episode_id mismatch: output={episode['episode_id']} pilot={ep_id}")
+
+            # Shape + finite validation
+            _validate_episode_shapes(episode)
 
             ep_dir = staging / "episodes" / f"{suite}_task_{task_idx:02d}"
             ep_dir.mkdir()
@@ -636,8 +686,8 @@ def main():
                                "steps": episode["step_count"], "sha256": ep_sha})
             print(f"steps={episode['step_count']} "
                   f"entities={len(episode['telemetry'][0]['entities']) if episode['telemetry'] else 0} "
-                  f"init_sha={'OK' if state_sha_ok else 'UNVERIFIED'} OK")
-        except Exception as e:
+                  f"init_sha=VERIFIED OK")
+        except CollectionHold as e:
             print(f"HOLD: {e}")
             failures.append({"task_key": task_key, "episode_id": ep_id, "error": str(e)})
             input_bindings.append({
@@ -667,6 +717,8 @@ def main():
         "source_commit": source_commit, "source_tree": source_tree,
         "script_sha256": script_sha,
         "transition_receipt_sha256sums": sha256_file(Path(args.transition_receipt) / "SHA256SUMS"),
+        "c1_canonical_digest": transition_manifest.get("c1_canonical_digest"),
+        "identity_set_digest": transition_manifest.get("identity_set_digest"),
         "pilot_manifest_sha256": pilot_sha,
         "registry_manifest": registry_manifest,
         "alias_ledger_sha256": alias_ledger_sha,

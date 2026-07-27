@@ -1,61 +1,76 @@
-"""[DeepSeek] FIT-INFERENCE Transition Negative Tests.
+"""[DeepSeek] FIT-INFERENCE Transition Negative Tests (v2).
 
-Verifies that verify_transition() correctly rejects invalid/missing/tampered
-transition receipts BEFORE any model loading.
+All rejections must occur BEFORE model loading.
 """
 import json, os, sys, hashlib, shutil, tempfile, unittest
 from pathlib import Path
-import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, '..', '..', 'phase2_labels'))
-from fit_transition import verify_transition, TransitionRejected, sha256_file, full_seal_check
+from fit_transition import (
+    verify_transition, TransitionRejected, sha256_file, full_seal_check,
+    compute_model_tree_fingerprint, validate_identity_allowlist, FROZEN_R5E,
+)
 
-EXEC_COMMIT = "ee7da22b76a856b6c10ac29f02f73dbf6aebcc83"
+EXEC_COMMIT = "e" * 40
 SCRIPT_SHA = "a" * 64
 GPU = 6
+OUTPUT_ROOT = str(Path("/tmp/test_r5f_output").resolve())
+
+VALID_MANIFEST_BASE = {
+    "gate": "FIT-INFERENCE_TRANSITION",
+    "schema": "FIT_INFERENCE_TRANSITION_V1",
+    "status": "FROZEN_BEFORE_EXECUTION",
+    "created_at": "2026-07-28T00:00:00Z",
+    **FROZEN_R5E,
+    "r5e_comparison_sha256": "c" * 64,
+    "r5f_execution_source_commit": EXEC_COMMIT,
+    "r5f_script_sha256": SCRIPT_SHA,
+    "model_tree_sha256": "",  # filled by helper
+    "processor_sha256": "",
+    "official_worker_sha256": "",
+    "pilot_manifest_sha256": "",
+    "registry_summary_sha256": "",
+    "alias_ledger_sha256": "",
+    "upstream_commit": "u" * 40,
+    "libero_fingerprint": "l" * 64,
+    "identity_allowlist_digest": "",
+    "identity_set_digest": "",
+    "authorized_identities": 40,
+    "allowed_gpus": [6, 7],
+    "allowed_output_roots": [OUTPUT_ROOT],
+    "openvla_inference_authorized": True,
+    "clean_action_only": True,
+    "forward_before_capture": True,
+    "max_episodes": 40,
+    "identity_set_frozen": True,
+    "teacher_labels_authorized": False,
+    "student_training_authorized": False,
+    "detector_load_authorized": False,
+    "attack_authorized": False,
+    "protected_payload_read": False,
+}
 
 
-def _make_sealed_root(manifest_override=None, tamper_file=None):
-    """Create a minimal sealed transition receipt in a temp dir."""
-    root = Path(tempfile.mkdtemp(prefix="fit_transition_test_"))
-    manifest = {
-        "gate": "FIT-INFERENCE_TRANSITION",
-        "schema": "FIT_INFERENCE_TRANSITION_V1",
-        "status": "FROZEN_BEFORE_EXECUTION",
-        "c1_canonical_digest":
-            "f9bb35965a166b0f56d92f3624855459fb6c4845b3a60f99551e953931fc7eb7",
-        "r5e_execution_commit":
-            "ee7da22b76a856b6c10ac29f02f73dbf6aebcc83",
-        "r5e_execution_tree":
-            "4e5a07aaa0a64e8c96ddd5c3515b9a861c145f11",
-        "r5e_run_a_sha256sums":
-            "548bb98d91a321f938c47e1152104e819dc4e9a1378020c3b5fcdcaab7ca27ac",
-        "r5e_run_b_sha256sums":
-            "708e300ea561f5836fb6723eef14531ed9f91f4e188cad77905f6594b76c304e",
-        "r5e_independent_review_sha256sums":
-            "2465a4c9e4ba0d329183a70b4cc7f38fe38e78ccbb1cb908604fb878c288ca61",
-        "r5f_execution_source_commit": EXEC_COMMIT,
-        "r5f_script_sha256": SCRIPT_SHA,
-        "model_tree_sha256": "b" * 64,
-        "official_worker_sha256": "c" * 64,
-        "pilot_manifest_sha256": "d" * 64,
-        "registry_summary_sha256": "e" * 64,
-        "alias_ledger_sha256": "f" * 64,
-        "identity_allowlist_digest": "",  # filled below
-        "teacher_labels_authorized": False,
-        "student_training_authorized": False,
-        "attack_authorized": False,
-        "protected_payload_read": False,
-        "detector_load_authorized": False,
-        "allowed_gpus": [6, 7],
-        "allowed_output_roots": [str(Path("/tmp/test_r5f_output").resolve())],
-        "openvla_inference_authorized": True,
-        "clean_action_only": True,
-        "forward_before_capture": True,
-    }
+def _make_temp_file(content, suffix=".json"):
+    p = Path(tempfile.mktemp(suffix=suffix))
+    p.write_text(content)
+    return p
 
-    # Identity allowlist
+def _make_pilot():
+    records = []
+    for suite in ["libero_10", "libero_goal", "libero_object", "libero_spatial"]:
+        for tid in range(10):
+            records.append({
+                "episode_id": f"{suite}/task_{tid:02d}/state_0",
+                "suite": suite, "task_id": tid, "state_id": 0,
+                "collection_seed": 20260717,
+                "initial_state_sha256": "0" * 64,
+            })
+    return json.dumps({"protected_payload_read": False, "no_attack": True,
+                        "records": records})
+
+def _make_allowlist():
     identities = []
     for suite in ["libero_10", "libero_goal", "libero_object", "libero_spatial"]:
         for tid in range(10):
@@ -65,19 +80,50 @@ def _make_sealed_root(manifest_override=None, tamper_file=None):
                 "collection_seed": 20260717,
                 "initial_state_sha256": "0" * 64,
             })
-    allowlist = {
-        "gate": "FIT-INFERENCE_IDENTITY_ALLOWLIST",
-        "n_identities": 40,
-        "identities": identities,
-    }
-    allowlist_path = root / "IDENTITY_ALLOWLIST.json"
-    allowlist_path.write_text(json.dumps(allowlist, indent=2, sort_keys=True))
-    manifest["identity_allowlist_digest"] = sha256_file(allowlist_path)
+    return json.dumps({"gate": "FIT-INFERENCE_IDENTITY_ALLOWLIST",
+                        "n_identities": 40, "identities": identities})
 
-    if manifest_override:
-        manifest.update(manifest_override)
+def _make_model_dir():
+    d = Path(tempfile.mkdtemp(prefix="test_model_"))
+    (d / "config.json").write_text('{"test": true}')
+    (d / "preprocessor_config.json").write_text('{"test": true}')
+    return d
+
+def _sealed_transition(manifest_overrides=None, tamper=None, extra_file=None):
+    """Create a sealed transition receipt with all files."""
+    root = Path(tempfile.mkdtemp(prefix="fit_test_transition_"))
+    # Create dummy model for fingerprint
+    model_dir = _make_model_dir()
+    worker_file = _make_temp_file("# test worker")
+    pilot_file = _make_temp_file(_make_pilot())
+    registry_file = _make_temp_file('{"status":"PASS"}')
+    alias_file = _make_temp_file('{"n_aliases":5}')
+
+    manifest = dict(VALID_MANIFEST_BASE)
+    manifest["model_tree_sha256"] = compute_model_tree_fingerprint(model_dir)
+    manifest["processor_sha256"] = sha256_file(model_dir / "preprocessor_config.json")
+    manifest["official_worker_sha256"] = sha256_file(worker_file)
+    manifest["pilot_manifest_sha256"] = sha256_file(pilot_file)
+    manifest["registry_summary_sha256"] = sha256_file(registry_file)
+    manifest["alias_ledger_sha256"] = sha256_file(alias_file)
+
+    # Identity allowlist
+    allowlist_content = _make_allowlist()
+    allowlist_path = root / "IDENTITY_ALLOWLIST.json"
+    allowlist_path.write_text(allowlist_content)
+    manifest["identity_allowlist_digest"] = sha256_file(allowlist_path)
+    manifest["identity_set_digest"] = hashlib.sha256(
+        json.dumps(json.loads(allowlist_content)["identities"], sort_keys=True).encode()
+    ).hexdigest()
+
+    if manifest_overrides:
+        manifest.update(manifest_overrides)
+
     (root / "TRANSITION_MANIFEST.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True))
+
+    if extra_file:
+        (root / extra_file).write_text("UNSEALED")
 
     # Seal
     payload = sorted(p for p in root.rglob("*") if p.is_file())
@@ -87,197 +133,295 @@ def _make_sealed_root(manifest_override=None, tamper_file=None):
     sums_sha = sha256_file(root / "SHA256SUMS")
     (root / "SHA256SUMS.sha256").write_text(f"{sums_sha}  SHA256SUMS\n")
 
-    if tamper_file:
-        target = root / tamper_file
+    if tamper:
+        target = root / tamper
         target.write_text(target.read_text() + "TAMPERED")
 
-    return root
+    return root, model_dir, worker_file, pilot_file, registry_file, alias_file
 
 
-class TestTransitionRejectsMissing(unittest.TestCase):
-    """Transition MUST be present and intact."""
+def _verify(root, model_dir, worker, pilot, registry, alias, **kw):
+    return verify_transition(
+        root, kw.get("commit", EXEC_COMMIT), kw.get("script", SCRIPT_SHA),
+        model_dir, worker, pilot, registry, alias,
+        kw.get("output", OUTPUT_ROOT), kw.get("gpu", GPU))
 
-    def test_01_receipt_missing_rejected(self):
+
+class TestTransitionSealRejects(unittest.TestCase):
+    def test_01_missing_receipt(self):
         with self.assertRaises((TransitionRejected, SystemExit, FileNotFoundError)):
-            verify_transition(
-                "/nonexistent/path", EXEC_COMMIT, SCRIPT_SHA,
-                Path("/tmp/model"), Path("/tmp/worker.py"), Path("/tmp/pilot.json"),
-                Path("/tmp/registry/per_task"), Path("/tmp/alias.json"),
-                Path("/tmp/output"), GPU)
+            _verify("/nonexistent", Path("/tmp/m"), Path("/tmp/w"),
+                    Path("/tmp/p"), Path("/tmp/r"), Path("/tmp/a"))
 
-    def test_02_unsealed_root_rejected(self):
+    def test_02_unsealed_root(self):
         root = Path(tempfile.mkdtemp())
         (root / "TRANSITION_MANIFEST.json").write_text("{}")
         with self.assertRaises(TransitionRejected):
-            verify_transition(
-                root, EXEC_COMMIT, SCRIPT_SHA,
-                Path("/tmp/model"), Path("/tmp/worker.py"), Path("/tmp/pilot.json"),
-                Path("/tmp/registry/per_task"), Path("/tmp/alias.json"),
-                Path("/tmp/output"), GPU)
+            _verify(root, Path("/tmp/m"), Path("/tmp/w"),
+                    Path("/tmp/p"), Path("/tmp/r"), Path("/tmp/a"))
         shutil.rmtree(root, ignore_errors=True)
 
-    def test_03_tampered_seal_rejected(self):
-        root = _make_sealed_root(tamper_file="TRANSITION_MANIFEST.json")
+    def test_03_tampered_seal(self):
+        root, md, wk, pl, rg, al = _sealed_transition(tamper="TRANSITION_MANIFEST.json")
         try:
             with self.assertRaises(TransitionRejected):
-                verify_transition(
-                    root, EXEC_COMMIT, SCRIPT_SHA,
-                    Path("/tmp/model"), Path("/tmp/worker.py"), Path("/tmp/pilot.json"),
-                    Path("/tmp/registry/per_task"), Path("/tmp/alias.json"),
-                    Path("/tmp/output"), GPU)
+                _verify(root, md, wk, pl, rg, al)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_04_extra_unsealed_file(self):
+        root, md, wk, pl, rg, al = _sealed_transition(extra_file="EXTRA_FILE.txt")
+        try:
+            with self.assertRaises(TransitionRejected):
+                _verify(root, md, wk, pl, rg, al)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_05_path_traversal_in_manifest(self):
+        root = Path(tempfile.mkdtemp())
+        sums = f"{'0'*64}  ../etc/passwd\n"
+        (root / "SHA256SUMS").write_text(sums)
+        (root / "SHA256SUMS.sha256").write_text(f"{sha256_file(root / 'SHA256SUMS')}  SHA256SUMS\n")
+        (root / "TRANSITION_MANIFEST.json").write_text("{}")
+        with self.assertRaises(TransitionRejected):
+            _verify(root, Path("/tmp/m"), Path("/tmp/w"),
+                    Path("/tmp/p"), Path("/tmp/r"), Path("/tmp/a"))
+        shutil.rmtree(root, ignore_errors=True)
+
+
+class TestTransitionFrozenBindings(unittest.TestCase):
+    def test_06_wrong_c1_digest(self):
+        root, md, wk, pl, rg, al = _sealed_transition(
+            manifest_overrides={"c1_canonical_digest": "0" * 64})
+        try:
+            with self.assertRaises(TransitionRejected):
+                _verify(root, md, wk, pl, rg, al)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_07_wrong_r5e_digest(self):
+        root, md, wk, pl, rg, al = _sealed_transition(
+            manifest_overrides={"r5e_run_a_sha256sums": "0" * 64})
+        try:
+            with self.assertRaises(TransitionRejected):
+                _verify(root, md, wk, pl, rg, al)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_08_missing_comparison_sha(self):
+        root, md, wk, pl, rg, al = _sealed_transition(
+            manifest_overrides={"r5e_comparison_sha256": ""})
+        try:
+            with self.assertRaises(TransitionRejected):
+                _verify(root, md, wk, pl, rg, al)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_09_wrong_source_commit(self):
+        root, md, wk, pl, rg, al = _sealed_transition()
+        try:
+            with self.assertRaises(TransitionRejected):
+                _verify(root, md, wk, pl, rg, al, commit="0" * 40)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_10_wrong_script_sha(self):
+        root, md, wk, pl, rg, al = _sealed_transition()
+        try:
+            with self.assertRaises(TransitionRejected):
+                _verify(root, md, wk, pl, rg, al, script="0" * 64)
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
 
-class TestTransitionRejectsBindings(unittest.TestCase):
-    """Scientific and source bindings must match exactly."""
-
-    def test_04_wrong_c1_digest_rejected(self):
-        root = _make_sealed_root(manifest_override={
-            "c1_canonical_digest": "0" * 64})
+class TestTransitionModelBinding(unittest.TestCase):
+    def test_11_wrong_model_tree(self):
+        root, md, wk, pl, rg, al = _sealed_transition(
+            manifest_overrides={"model_tree_sha256": "0" * 64})
         try:
             with self.assertRaises(TransitionRejected):
-                verify_transition(
-                    root, EXEC_COMMIT, SCRIPT_SHA,
-                    Path("/tmp/model"), Path("/tmp/worker.py"), Path("/tmp/pilot.json"),
-                    Path("/tmp/registry/per_task"), Path("/tmp/alias.json"),
-                    Path("/tmp/output"), GPU)
+                _verify(root, md, wk, pl, rg, al)
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
-    def test_05_wrong_r5e_digest_rejected(self):
-        root = _make_sealed_root(manifest_override={
-            "r5e_run_a_sha256sums": "0" * 64})
+    def test_12_wrong_processor_config(self):
+        root, md, wk, pl, rg, al = _sealed_transition(
+            manifest_overrides={"processor_sha256": "0" * 64})
         try:
             with self.assertRaises(TransitionRejected):
-                verify_transition(
-                    root, EXEC_COMMIT, SCRIPT_SHA,
-                    Path("/tmp/model"), Path("/tmp/worker.py"), Path("/tmp/pilot.json"),
-                    Path("/tmp/registry/per_task"), Path("/tmp/alias.json"),
-                    Path("/tmp/output"), GPU)
+                _verify(root, md, wk, pl, rg, al)
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
-    def test_06_wrong_source_commit_rejected(self):
-        root = _make_sealed_root(manifest_override={
-            "r5f_execution_source_commit": "0" * 40})
+    def test_13_wrong_worker_sha(self):
+        root, md, wk, pl, rg, al = _sealed_transition()
+        # Create different worker file
+        wrong_worker = _make_temp_file("# wrong worker")
         try:
             with self.assertRaises(TransitionRejected):
-                verify_transition(
-                    root, "different_commit_40_chars_____",
-                    SCRIPT_SHA,
-                    Path("/tmp/model"), Path("/tmp/worker.py"), Path("/tmp/pilot.json"),
-                    Path("/tmp/registry/per_task"), Path("/tmp/alias.json"),
-                    Path("/tmp/output"), GPU)
-        finally:
-            shutil.rmtree(root, ignore_errors=True)
-
-    def test_07_wrong_script_sha_rejected(self):
-        root = _make_sealed_root()
-        try:
-            with self.assertRaises(TransitionRejected):
-                verify_transition(
-                    root, EXEC_COMMIT, "0" * 64,
-                    Path("/tmp/model"), Path("/tmp/worker.py"), Path("/tmp/pilot.json"),
-                    Path("/tmp/registry/per_task"), Path("/tmp/alias.json"),
-                    Path("/tmp/output"), GPU)
+                _verify(root, md, wrong_worker, pl, rg, al)
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
 
-class TestTransitionRejectsPermissions(unittest.TestCase):
-    """Permission boundaries must be enforced."""
-
-    def test_08_teacher_authorized_rejected(self):
-        root = _make_sealed_root(manifest_override={
-            "teacher_labels_authorized": True})
+class TestTransitionPermissions(unittest.TestCase):
+    def test_14_teacher_authorized(self):
+        root, md, wk, pl, rg, al = _sealed_transition(
+            manifest_overrides={"teacher_labels_authorized": True})
         try:
             with self.assertRaises(TransitionRejected):
-                verify_transition(
-                    root, EXEC_COMMIT, SCRIPT_SHA,
-                    Path("/tmp/model"), Path("/tmp/worker.py"), Path("/tmp/pilot.json"),
-                    Path("/tmp/registry/per_task"), Path("/tmp/alias.json"),
-                    Path("/tmp/output"), GPU)
+                _verify(root, md, wk, pl, rg, al)
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
-    def test_09_attack_authorized_rejected(self):
-        root = _make_sealed_root(manifest_override={
-            "attack_authorized": True})
+    def test_15_attack_authorized(self):
+        root, md, wk, pl, rg, al = _sealed_transition(
+            manifest_overrides={"attack_authorized": True})
         try:
             with self.assertRaises(TransitionRejected):
-                verify_transition(
-                    root, EXEC_COMMIT, SCRIPT_SHA,
-                    Path("/tmp/model"), Path("/tmp/worker.py"), Path("/tmp/pilot.json"),
-                    Path("/tmp/registry/per_task"), Path("/tmp/alias.json"),
-                    Path("/tmp/output"), GPU)
+                _verify(root, md, wk, pl, rg, al)
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
-    def test_10_protected_payload_read_rejected(self):
-        root = _make_sealed_root(manifest_override={
-            "protected_payload_read": True})
+    def test_16_student_training_authorized(self):
+        root, md, wk, pl, rg, al = _sealed_transition(
+            manifest_overrides={"student_training_authorized": True})
         try:
             with self.assertRaises(TransitionRejected):
-                verify_transition(
-                    root, EXEC_COMMIT, SCRIPT_SHA,
-                    Path("/tmp/model"), Path("/tmp/worker.py"), Path("/tmp/pilot.json"),
-                    Path("/tmp/registry/per_task"), Path("/tmp/alias.json"),
-                    Path("/tmp/output"), GPU)
+                _verify(root, md, wk, pl, rg, al)
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
-    def test_11_detector_load_rejected(self):
-        root = _make_sealed_root(manifest_override={
-            "detector_load_authorized": True})
+    def test_17_protected_payload_read(self):
+        root, md, wk, pl, rg, al = _sealed_transition(
+            manifest_overrides={"protected_payload_read": True})
         try:
             with self.assertRaises(TransitionRejected):
-                verify_transition(
-                    root, EXEC_COMMIT, SCRIPT_SHA,
-                    Path("/tmp/model"), Path("/tmp/worker.py"), Path("/tmp/pilot.json"),
-                    Path("/tmp/registry/per_task"), Path("/tmp/alias.json"),
-                    Path("/tmp/output"), GPU)
+                _verify(root, md, wk, pl, rg, al)
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
-    def test_12_unauthorized_gpu_rejected(self):
-        root = _make_sealed_root()
+    def test_18_detector_load(self):
+        root, md, wk, pl, rg, al = _sealed_transition(
+            manifest_overrides={"detector_load_authorized": True})
         try:
             with self.assertRaises(TransitionRejected):
-                verify_transition(
-                    root, EXEC_COMMIT, SCRIPT_SHA,
-                    Path("/tmp/model"), Path("/tmp/worker.py"), Path("/tmp/pilot.json"),
-                    Path("/tmp/registry/per_task"), Path("/tmp/alias.json"),
-                    Path("/tmp/output"), gpu=99)
+                _verify(root, md, wk, pl, rg, al)
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
-    def test_13_wrong_output_root_rejected(self):
-        root = _make_sealed_root()
+    def test_19_missing_clean_action_only(self):
+        root, md, wk, pl, rg, al = _sealed_transition(
+            manifest_overrides={"clean_action_only": False})
         try:
             with self.assertRaises(TransitionRejected):
-                verify_transition(
-                    root, EXEC_COMMIT, SCRIPT_SHA,
-                    Path("/tmp/model"), Path("/tmp/worker.py"), Path("/tmp/pilot.json"),
-                    Path("/tmp/registry/per_task"), Path("/tmp/alias.json"),
-                    Path("/wrong/output/root"), GPU)
+                _verify(root, md, wk, pl, rg, al)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_20_max_episodes_wrong(self):
+        root, md, wk, pl, rg, al = _sealed_transition(
+            manifest_overrides={"max_episodes": 100})
+        try:
+            with self.assertRaises(TransitionRejected):
+                _verify(root, md, wk, pl, rg, al)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_21_unauthorized_gpu(self):
+        root, md, wk, pl, rg, al = _sealed_transition()
+        try:
+            with self.assertRaises(TransitionRejected):
+                _verify(root, md, wk, pl, rg, al, gpu=99)
+        finally:
+            shutil.rmtree(root, ignore_errors=True)
+
+    def test_22_wrong_output_root(self):
+        root, md, wk, pl, rg, al = _sealed_transition()
+        try:
+            with self.assertRaises(TransitionRejected):
+                _verify(root, md, wk, pl, rg, al, output="/wrong/path")
         finally:
             shutil.rmtree(root, ignore_errors=True)
 
 
 class TestTransitionPositive(unittest.TestCase):
-    """Valid transition MUST pass."""
+    def test_23_valid_transition_passes(self):
+        """Positive path: valid transition receipt with real model dir."""
+        # Create registry FIRST so we can bind its SHA into the manifest
+        reg_dir = Path(tempfile.mkdtemp(prefix="test_registry_"))
+        per_task = reg_dir / "per_task"
+        per_task.mkdir()
+        (reg_dir / "ENTITY_REGISTRY_V2_SUMMARY.json").write_text(
+            json.dumps({"status": "PASS"}))
+        registry_sha = sha256_file(reg_dir / "ENTITY_REGISTRY_V2_SUMMARY.json")
 
-    def test_14_valid_transition_passes_with_missing_model(self):
-        """Valid transition passes structural checks; model SHA checked later."""
-        root = _make_sealed_root()
+        root, md, wk, pl, rg, al = _sealed_transition(
+            manifest_overrides={"registry_summary_sha256": registry_sha})
         try:
-            # Model/worker/pilot paths don't exist in test — verifier checks
-            # transition structure and bindings, then defers to runtime
-            # for actual file existence checks that need server paths.
-            pass
+            result = _verify(root, md, wk, pl, str(per_task), al)
+            self.assertIsNotNone(result)
+            self.assertEqual(result["gate"], "FIT-INFERENCE_TRANSITION")
         finally:
             shutil.rmtree(root, ignore_errors=True)
+            shutil.rmtree(md, ignore_errors=True)
+            shutil.rmtree(reg_dir, ignore_errors=True)
+            os.remove(wk); os.remove(pl); os.remove(rg); os.remove(al)
+
+
+class TestIdentityAllowlist(unittest.TestCase):
+    def test_24_pilot_allowlist_mismatch_rejected(self):
+        """Allowlist that doesn't match pilot rebuild must be rejected."""
+        root = Path(tempfile.mkdtemp())
+        pilot = _make_temp_file(_make_pilot())
+        # Create an allowlist with wrong task_id
+        wrong_ids = []
+        for suite in ["libero_10", "libero_goal", "libero_object", "libero_spatial"]:
+            for tid in range(10):
+                wrong_ids.append({
+                    "episode_id": f"{suite}/task_{tid:02d}/state_0",
+                    "suite": suite, "task_id": tid, "state_id": 0,
+                    "collection_seed": 20260717,
+                    "initial_state_sha256": "X" * 64,  # WRONG
+                })
+        (root / "IDENTITY_ALLOWLIST.json").write_text(json.dumps(
+            {"gate": "FIT-INFERENCE_IDENTITY_ALLOWLIST", "identities": wrong_ids}))
+        with self.assertRaises(TransitionRejected):
+            validate_identity_allowlist(root / "IDENTITY_ALLOWLIST.json", pilot)
+        shutil.rmtree(root, ignore_errors=True)
+
+    def test_25_missing_seed_rejected(self):
+        """Missing collection_seed in pilot must be rejected."""
+        pilot_data = json.loads(_make_pilot())
+        del pilot_data["records"][0]["collection_seed"]
+        pilot = _make_temp_file(json.dumps(pilot_data))
+        root = Path(tempfile.mkdtemp())
+        with self.assertRaises(TransitionRejected):
+            validate_identity_allowlist(root / "nonexistent", pilot)
+        shutil.rmtree(root, ignore_errors=True)
+        os.remove(pilot)
+
+
+class TestModelTreeFingerprint(unittest.TestCase):
+    def test_26_different_model_trees_differ(self):
+        d1 = _make_model_dir()
+        d2 = _make_model_dir()
+        (d2 / "extra_file.txt").write_text("different")
+        fp1 = compute_model_tree_fingerprint(d1)
+        fp2 = compute_model_tree_fingerprint(d2)
+        self.assertNotEqual(fp1, fp2)
+        shutil.rmtree(d1, ignore_errors=True)
+        shutil.rmtree(d2, ignore_errors=True)
+
+    def test_27_symlink_rejected(self):
+        d = Path(tempfile.mkdtemp(prefix="test_symlink_"))
+        (d / "real.txt").write_text("real")
+        os.symlink(d / "real.txt", d / "link.txt")
+        try:
+            with self.assertRaises(TransitionRejected):
+                compute_model_tree_fingerprint(d)
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
 
 
 if __name__ == "__main__":
