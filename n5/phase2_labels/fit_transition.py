@@ -25,6 +25,8 @@ FROZEN_R5E = {
         "2465a4c9e4ba0d329183a70b4cc7f38fe38e78ccbb1cb908604fb878c288ca61",
     "r5e_comparison_sha256":
         "e8e9c67c0a1d6be6ed5a005da100500fa335a62e38ee178e845d401ad670f329",
+    "r5e_comparison_canonical_digest":
+        "5727b2323384230d127c4376f5987e8a1c874c6254b6fa31809e28528e11cd65",
 }
 
 FOUR_SUITES = ["libero_10", "libero_goal", "libero_object", "libero_spatial"]
@@ -64,7 +66,9 @@ def verify_r5e_comparison_root(root):
     if cm.get("c1_canonical_digest") != FROZEN_R5E["c1_canonical_digest"]:
         issues.append("c1_canonical_digest mismatch")
     canonical_digest = cm.get("canonical_manifest_digest_A", "")
-    if canonical_digest != cm.get("canonical_manifest_digest_B", ""):
+    if canonical_digest != FROZEN_R5E.get("r5e_comparison_canonical_digest", ""):
+        issues.append(f"canonical digest A mismatch: {canonical_digest[:16]}")
+    if cm.get("canonical_manifest_digest_B", "") != canonical_digest:
         issues.append("canonical digest A != B")
 
     # Independent record count from actual files

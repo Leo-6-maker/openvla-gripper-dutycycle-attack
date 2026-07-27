@@ -628,6 +628,7 @@ def main():
         raise SystemExit(f"staging exists: {staging}")
     staging.mkdir(parents=True)
     (staging / "episodes").mkdir()
+
     print("=" * 70)
     print(f"[DeepSeek] R5-F: Corrected FIT Full40 Materialization — Run {args.run_label}")
     print(f"  model={args.model_path}  gpu={args.gpu}  seed={args.seed}")
@@ -777,14 +778,17 @@ def main():
 
     seal = seal_root(staging)
 
-    # Atomic no-replace publication
+    # Atomic no-replace publication with staging cleanup on any failure
+    published = False
     try:
         staging.rename(out_root)
-    except OSError:
-        import shutil
-        if staging.exists():
-            shutil.rmtree(staging, ignore_errors=True)
+        published = True
+    except Exception:
+        _cleanup_staging()
         raise SystemExit(f"rename failed — output may have appeared: {out_root}")
+    finally:
+        if not published:
+            _cleanup_staging()
 
     print(f"\n{'=' * 70}")
     print(f"Run {args.run_label}: {n_collected}/{len(identities)} episodes collected")
