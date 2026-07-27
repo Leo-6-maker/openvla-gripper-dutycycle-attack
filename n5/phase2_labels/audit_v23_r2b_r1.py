@@ -181,6 +181,7 @@ def task_specs(suites: list[str], libero_root: Path) -> dict[tuple[str, int], di
     # Importing LIBERO here only loads benchmark/BDDL metadata; no policy or rollout.
     from libero.libero import get_libero_path
     from libero.libero.benchmark import get_benchmark
+    from libero.libero.envs.bddl_utils import robosuite_parse_problem
 
     specs: dict[tuple[str, int], dict[str, Any]] = {}
     for suite in suites:
@@ -188,8 +189,11 @@ def task_specs(suites: list[str], libero_root: Path) -> dict[tuple[str, int], di
         for task_idx in range(10):
             task = benchmark.get_task(task_idx)
             bddl = Path(get_libero_path("bddl_files")) / task.problem_folder / task.bddl_file
-            text = bddl.read_text(encoding="utf-8")
-            objects, relations = parse_bddl(text)
+            parsed = robosuite_parse_problem(str(bddl))
+            objects = [name for names in parsed["objects"].values() for name in names]
+            relations = [(str(row[0]).capitalize(), str(row[1]), str(row[2]))
+                         for row in parsed.get("goal_state", [])
+                         if isinstance(row, list) and len(row) == 3]
             specs[(suite, task_idx)] = {
                 "task_name": task.name,
                 "task_language": task.language,
@@ -197,6 +201,7 @@ def task_specs(suites: list[str], libero_root: Path) -> dict[tuple[str, int], di
                 "bddl_sha256": sha256_file(bddl),
                 "objects": objects,
                 "relations": relations,
+                "regions": sorted(parsed.get("regions", {})),
                 "expected_width": len(objects) * OBJECT_WIDTH,
                 "libero_root": str(libero_root.resolve()),
             }
@@ -212,6 +217,12 @@ def quat_geodesic(left: list[float], right: list[float]) -> float:
     a, b = norm(left), norm(right)
     dot = min(1.0, max(-1.0, abs(sum(x * y for x, y in zip(a, b)))))
     return 2.0 * math.acos(dot)
+
+
+def mujoco_wxyz_to_xyzw(quaternion: list[float]) -> list[float]:
+    if len(quaternion) != 4:
+        raise AuditHold("invalid MuJoCo quaternion length")
+    return [float(quaternion[1]), float(quaternion[2]), float(quaternion[3]), float(quaternion[0])]
 
 
 def l2(left: list[float], right: list[float]) -> float:
@@ -277,13 +288,13 @@ def compare_reference_geometry(args: argparse.Namespace, records: list[dict[str,
                 if not (isinstance(replay_pos, list) and isinstance(replay_quat, list) and len(replay_pos) == 3 and len(replay_quat) == 4):
                     raise AuditHold(f"malformed geometry object pose: {episode_id}:{step}")
                 local_object.append(l2(source_pos, replay_pos))
-                local_rotation.append(quat_geodesic(source_quat, [float(x) for x in replay_quat]))
+                local_rotation.append(quat_geodesic(source_quat, mujoco_wxyz_to_xyzw([float(x) for x in replay_quat])))
                 relation_rows += 1
                 target_base = spec["objects"].index(target_name) * OBJECT_WIDTH if target_name in spec["objects"] else None
                 target_pose = geometry_relation.get("target", {}).get("pose", {})
                 if target_base is not None and isinstance(target_pose.get("pos"), list) and isinstance(target_pose.get("quat"), list):
                     local_target.append(l2([float(x) for x in state[target_base:target_base + 3]], target_pose["pos"]))
-                    local_target_rotation.append(quat_geodesic([float(x) for x in state[target_base + 3:target_base + 7]], [float(x) for x in target_pose["quat"]]))
+                    local_target_rotation.append(quat_geodesic([float(x) for x in state[target_base + 3:target_base + 7]], mujoco_wxyz_to_xyzw([float(x) for x in target_pose["quat"]])))
         object_positions.extend(local_object); object_rotations.extend(local_rotation)
         target_positions.extend(local_target); target_rotations.extend(local_target_rotation)
         episode_rows.append({"episode_id": episode_id, "object_position_count": len(local_object),
@@ -318,7 +329,7 @@ def compare_reference_geometry(args: argparse.Namespace, records: list[dict[str,
 
 def source_binding(args: argparse.Namespace, metadata_rows: list[dict[str, Any]]) -> dict[str, Any]:
     paths = [args.collector_source, args.domain_source, args.robosuite_source,
-             args.protocol_config, args.schema_doc]
+             args.bddl_utils_source, args.protocol_config, args.schema_doc]
     for path in paths:
         if not path.is_file() or path.is_symlink():
             raise AuditHold(f"source binding file missing or unsafe: {path}")
@@ -328,12 +339,14 @@ def source_binding(args: argparse.Namespace, metadata_rows: list[dict[str, Any]]
     collector_text = args.collector_source.read_text(encoding="utf-8")
     domain_text = args.domain_source.read_text(encoding="utf-8")
     robosuite_text = args.robosuite_source.read_text(encoding="utf-8")
+    bddl_text = args.bddl_utils_source.read_text(encoding="utf-8")
     assertions = {
         "collector_reads_object_state": 'obs.get("object-state", [])' in collector_text,
         "collector_writes_qpos_eef_contact": all(k in collector_text for k in ("robot0_gripper_qpos", "robot0_eef_pos", "mujoco_contact_pairs")),
         "domain_object_order": "for (i, obj) in enumerate(self.objects):" in domain_text,
         "domain_four_components": "sensors = [obj_pos, obj_quat, obj_to_eef_pos, obj_to_eef_quat]" in domain_text,
         "robosuite_modality_concat": "obs_by_modality[modality].append" in robosuite_text and "np.concatenate(obs, axis=-1)" in robosuite_text,
+        "bddl_parser_preserves_category_order": "objects[group.pop(0)] = object_list" in bddl_text,
     }
     if not all(assertions.values()):
         raise AuditHold(f"source assertions incomplete: {assertions}")
@@ -351,6 +364,8 @@ def source_binding(args: argparse.Namespace, metadata_rows: list[dict[str, Any]]
         "protocol_config_sha256": sha256_file(args.protocol_config),
         "schema_doc": str(args.schema_doc.resolve()),
         "schema_doc_sha256": sha256_file(args.schema_doc),
+        "bddl_utils_source": str(args.bddl_utils_source.resolve()),
+        "bddl_utils_source_sha256": sha256_file(args.bddl_utils_source),
         "object_state_layout": ["pos[3]", "quat_xyzw[4]", "to_eef_pos[3]", "to_eef_quat_xyzw[4]"],
         "object_state_width": OBJECT_WIDTH,
         "assertions": assertions,
@@ -539,6 +554,7 @@ def main() -> int:
     p.add_argument("--collector-source", type=Path, required=True)
     p.add_argument("--domain-source", type=Path, required=True)
     p.add_argument("--robosuite-source", type=Path, required=True)
+    p.add_argument("--bddl-utils-source", type=Path, required=True)
     p.add_argument("--protocol-config", type=Path, required=True)
     p.add_argument("--schema-doc", type=Path, required=True)
     p.add_argument("--libero-root", type=Path, required=True)
