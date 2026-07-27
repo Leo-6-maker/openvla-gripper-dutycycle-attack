@@ -28,7 +28,11 @@ materialized sides intentionally use the recorded MuJoCo world pose.  This
 avoids the rejected action-replay-as-truth path but remains a
 `DERIVED_FIT_ONLY_CANARY_NONCONSUMABLE` evidence root.
 
-The next permitted operation is the batch collection of the remaining
-frozen FIT pilot identities, followed by per-episode seal/audit, recorded-pose
-materialization, independent structural verification, and a new G-REC review.
-No protected split is opened by that operation.
+The four-suite canary gate was followed by a 40-episode FIT-only batch
+recovery.  Its 40 child seals and unified runtime audit passed; the batch
+observed 8,332 steps and 44 relation rows, with two relation-empty telemetry
+episodes retained outside geometry materialization.  The resulting derived
+geometry A/B roots contain 10,317 cases and have identical canonical digest
+`87e2ff5179cd733fdaa91970ae8b81ca5bf493d79663bd5ad941e5141fa3eea1`.
+Because both sides still use direct recorded world pose, this remains
+`NONCONSUMABLE`; G-REC geometry accuracy and T-PILOT remain blocked.

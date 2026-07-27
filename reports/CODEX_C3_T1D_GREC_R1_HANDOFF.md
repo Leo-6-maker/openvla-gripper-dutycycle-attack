@@ -10,6 +10,7 @@ G-REC-R1D direct calibration        = HOLD_RESET_INVARIANCE
 G-REC-R2 fresh A/B                 = HOLD_INDEPENDENT_REVIEW
 G-REC final                        = HOLD_DATA_GAP
 G-REC-DATA-FALLBACK canary         = PASS_ENGINEERING_NONCONSUMABLE
+G-REC-DATA-FALLBACK full40         = PASS_INPUT_RECOVERY_NONCONSUMABLE
 T-PILOT                            = BLOCKED
 ```
 
@@ -197,3 +198,55 @@ carry `DIRECT_RECORDED_MUJOCO_WORLD_POSE`; they do not provide the independent
 model-chain/reference accuracy proof required by G-REC-R2.  Therefore the
 canary is explicitly `NONCONSUMABLE`, G-REC remains `HOLD_DATA_GAP`, and no
 Teacher or Student consumer may read it.
+
+## Frozen 40-episode FIT-only fallback recovery
+
+The remaining frozen DEV pilot identities were collected in four suite batches
+using the official clean action path. Batch execution used source commit
+`b5c78538ef38eb1def05710a754671f5d1fe57f4` and only free GPU 6/7. Each batch
+contains 10 independently sealed child episode roots.
+
+| suite | episodes | steps | relation rows | relation-empty | batch `SHA256SUMS` SHA |
+|---|---:|---:|---:|---:|---|
+| libero_10 | 10 | 3700 | 16 | 0 | `be2151d67c356f5063d0e1c4f3520af12cda33113f2c470c08da4212dcc08a26` |
+| libero_goal | 10 | 1368 | 8 | 2 | `015a6989b71e047bcd018e9b33eed4f84c5af7135e8fa8edca19833266290f3c` |
+| libero_object | 10 | 1990 | 10 | 0 | `b21354ec8c4e3b68ab3b5b6974b92f4f7962b50eb83c24a936dc255437429397` |
+| libero_spatial | 10 | 1274 | 10 | 0 | `6bd2d6e31a8d37cbd4b3f876f6862ddb1afa66f43405c8d808ce7ea7ebf755bb` |
+| **total** | **40** | **8332** | **44** | **2** | — |
+
+The 8,332 steps are observed clean episode lengths and are not substituted
+for the historical 9,422-step count. All 40 child audits passed with
+generation bad steps `0`, action mutation steps `0`, detector steps `0`,
+contact-invalid steps `0`, nonfinite telemetry steps `0`, and maximum raw/
+score action parity error `0.0`. The unified audit is:
+
+```text
+/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/grec_fallback_full40_runtime_audit_b5c7853_20260727
+SHA256SUMS: 35a1716efe951e044f57460d1237efad4bb4994c21fe779a14dc942c3aca2fba
+SHA256SUMS.sha256: e313428f4ef0cdc96bb556b0c10cd772beeca60e5720acad6093c3ec929b3392
+```
+
+Relation-bearing child roots were materialized twice without action replay:
+
+```text
+run_A:
+/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/grec_fallback_geometry_full40_run_A_b5c7853_20260727
+SHA256SUMS: 6a377e4fcab8ad18c3e99dd37656351ee4488ac56d3fe080ebb324dc2db74987
+
+run_B:
+/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/grec_fallback_geometry_full40_run_B_b5c7853_20260727
+SHA256SUMS: c4e7dc4665f40120df9a6085d7b9823cd748f8dd9d9936b84678a4e9d1ce9065
+
+independent structural review:
+/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/grec_fallback_geometry_full40_independent_b5c7853_20260727
+SHA256SUMS: e8116bb1cf9b195d0582077ffed750c5d2a7e56dcb18517d3059821c6f50aba3
+```
+
+The two geometry roots contain `10,317` cases with canonical digest
+`87e2ff5179cd733fdaa91970ae8b81ca5bf493d79663bd5ad941e5141fa3eea1`.
+All 40 child seals, A/B seals, and the independent structural review passed.
+This still does **not** prove geometry accuracy: both derived sides use
+`DIRECT_RECORDED_MUJOCO_WORLD_POSE`. The full40 fallback is therefore a
+sealed input-recovery artifact only, remains `NONCONSUMABLE`, and cannot be
+used for V23 labels, Student training, or T-PILOT promotion without a
+separate independent reference-chain gate.
