@@ -12,10 +12,12 @@ Fixes all GPT-review P0 issues:
 
 DEVELOPMENT_ONLY — consumer_eligible = false.
 """
-import json, os, sys, hashlib, time, math, glob, argparse
+import json, os, sys, hashlib, time, math, glob, argparse, copy
 from collections import defaultdict
 from pathlib import Path
 import numpy as np
+
+DUMMY_ACTION = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]  # Open gripper
 
 # ── Frozen thresholds (from V23_G_REC_NUMERICAL_PROTOCOL_AMENDMENT_V1) ──
 BODY_ORIGIN_POS_LIMIT = 1e-8
@@ -72,13 +74,41 @@ def quat_to_matrix(w, x, y, z):
     ])
 
 
-def geodesic_error_rad(q1_xyzw, q2_xyzw):
-    """Sign-invariant geodesic distance (radians) between two xyzw quaternions."""
-    q1 = np.array(q1_xyzw, dtype=float); q2 = np.array(q2_xyzw, dtype=float)
+def mat_to_quat_wxyz(m):
+    """Convert 3x3 rotation matrix to quaternion (w,x,y,z). Matches collector mat_to_quat."""
+    values = [float(x) for x in m]
+    a00, a01, a02, a10, a11, a12, a20, a21, a22 = values
+    trace = a00 + a11 + a22
+    if trace > 0:
+        s = math.sqrt(trace + 1.0) * 2
+        q = (0.25 * s, (a21 - a12) / s, (a02 - a20) / s, (a10 - a01) / s)
+    elif a00 > a11 and a00 > a22:
+        s = math.sqrt(1 + a00 - a11 - a22) * 2
+        q = ((a21 - a12) / s, 0.25 * s, (a01 + a10) / s, (a02 + a20) / s)
+    elif a11 > a22:
+        s = math.sqrt(1 + a11 - a00 - a22) * 2
+        q = ((a02 - a20) / s, (a01 + a10) / s, 0.25 * s, (a12 + a21) / s)
+    else:
+        s = math.sqrt(1 + a22 - a00 - a11) * 2
+        q = ((a10 - a01) / s, (a02 + a20) / s, (a12 + a21) / s, 0.25 * s)
+    norm = math.sqrt(sum(x*x for x in q))
+    return tuple(x / norm for x in q)
+
+
+def geodesic_error_rad(q1_wxyz, q2_wxyz):
+    """Sign-invariant geodesic distance (radians) between two wxyz quaternions."""
+    q1 = np.array(q1_wxyz, dtype=float); q2 = np.array(q2_wxyz, dtype=float)
     q1 /= np.linalg.norm(q1); q2 /= np.linalg.norm(q2)
     dot = abs(np.dot(q1, q2))
     dot = min(dot, 1.0)
     return float(2.0 * math.atan2(math.sqrt(max(0, 1 - dot*dot)), dot))
+
+
+KIND_THRESHOLDS = {
+    "body_origin": (BODY_ORIGIN_POS_LIMIT, BODY_ORIGIN_ROT_LIMIT),
+    "site": (GEOMETRY_POS_LIMIT, GEOMETRY_ROT_LIMIT),
+    "geom_center": (GEOMETRY_POS_LIMIT, GEOMETRY_ROT_LIMIT),
+}
 
 
 def R3A_audit_all_steps(episode_path):
@@ -137,32 +167,51 @@ def R3A_audit_all_steps(episode_path):
     }
 
 
-def R3B_forward_all_steps(episode_path, env, expected_entities):
-    """R3-B-R1: Forward every step and compare against recorded entities.
+def R3B_forward_all_steps(episode_path, env, expected_entities, canonical_state, suite_seed, num_steps_wait):
+    """R3-B-R2: Forward every step using collector init contract and compare.
 
-    expected_entities: dict of (entity_type, entity_id) -> {name, semantic_role, kind}
-    Returns list of per-step error records.
+    Collector init: set_official_seed → env.seed → env.reset → set_init_state →
+    wait NUM_STEPS_WAIT → start recording.
+    Verifier matches this exactly, then restores per-step qpos/qvel and calls sim.forward().
+
+    expected_entities: dict of (entity_type, entity_id) -> {name, kind}
+      kind ∈ {"body_origin", "site", "geom_center"}
     """
     with open(episode_path) as f:
         ep = json.load(f)
 
     ident = ep["episode_id"]
     telemetry = ep["telemetry"]
-    sim = env.sim
-    model = sim.model
+    import random as _random
+    _random.seed(suite_seed)
+    env.seed(suite_seed)
+    env.reset()
+    env.set_init_state(copy.deepcopy(canonical_state))
+    # Apply NUM_STEPS_WAIT dummy actions (collector does this before recording)
+    for _ in range(int(num_steps_wait)):
+        env.step(DUMMY_ACTION)
+
+    # Verify model fingerprint matches recorded dimensions
+    ss0 = telemetry[0]["sim_state"]
+    model = env.sim.model
+    if len(ss0["qpos"]) != model.nq:
+        raise GateHold(f"{ident}: qpos width {len(ss0['qpos'])} != nq {model.nq}")
+    if len(ss0["qvel"]) != model.nv:
+        raise GateHold(f"{ident}: qvel width {len(ss0['qvel'])} != nv {model.nv}")
+    if model.nmocap > 0:
+        raise GateHold(f"{ident}: nmocap={model.nmocap} — unsupported")
 
     records = []
     for t in telemetry:
         step = t["step"]
         ss = t["sim_state"]
 
-        # Set state and forward
-        sim.data.qpos[:] = np.array(ss["qpos"], dtype=np.float64)
-        sim.data.qvel[:] = np.array(ss["qvel"], dtype=np.float64)
-        if ss.get("act") and len(ss["act"]) > 0:
-            sim.data.act[:] = np.array(ss["act"], dtype=np.float64)
-        sim.data.time = float(ss.get("time", 0))
-        sim.forward()
+        env.sim.data.qpos[:] = np.array(ss["qpos"], dtype=np.float64)
+        env.sim.data.qvel[:] = np.array(ss["qvel"], dtype=np.float64)
+        if ss.get("act") is not None and len(ss.get("act", [])) > 0:
+            env.sim.data.act[:] = np.array(ss["act"], dtype=np.float64)
+        env.sim.data.time = float(ss.get("time", 0))
+        env.sim.forward()
 
         recorded_entities = {(e["entity_type"], e["entity_id"]): e for e in t.get("entities", [])}
 
@@ -172,68 +221,32 @@ def R3B_forward_all_steps(episode_path, env, expected_entities):
 
             rec = recorded_entities[key]
             rec_pos = np.array(rec["world_pose"]["position"])
-            rec_quat = np.array(rec["world_pose"]["quaternion"])  # xyzw
+            rec_quat_wxyz = np.array(rec["world_pose"]["quaternion"])  # wxyz from collector
 
-            # Independent forward pose
             etype, eid = key
             if etype == "body":
-                fwd_pos = sim.data.body_xpos[eid].copy()
-                fwd_xmat = sim.data.body_xmat[eid].copy()
-                kind = expected.get("kind", "body_origin")
+                fwd_pos = env.sim.data.body_xpos[eid].copy()
+                fwd_xmat = env.sim.data.body_xmat[eid].copy().flatten()
+                kind = "body_origin"
             elif etype == "site":
-                fwd_pos = sim.data.site_xpos[eid].copy()
-                fwd_xmat = sim.data.site_xmat[eid].copy()
+                fwd_pos = env.sim.data.site_xpos[eid].copy()
+                fwd_xmat = env.sim.data.site_xmat[eid].copy().flatten()
                 kind = "site"
             elif etype == "geom":
-                fwd_pos = sim.data.geom_xpos[eid].copy()
-                fwd_xmat = sim.data.geom_xmat[eid].copy()
-                kind = "geom"
+                fwd_pos = env.sim.data.geom_xpos[eid].copy()
+                fwd_xmat = env.sim.data.geom_xmat[eid].copy().flatten()
+                kind = "geom_center"
             else:
                 raise GateHold(f"unknown entity type: {etype}")
 
-            # Position errors
             pos_linf = float(np.max(np.abs(rec_pos - fwd_pos)))
             pos_l2 = float(np.linalg.norm(rec_pos - fwd_pos))
 
-            # Rotation: convert forward xmat to quat, compute geodesic
-            R = fwd_xmat.reshape(3, 3)
-            # matrix_to_quat (wxyz)
-            tr = np.trace(R)
-            if tr > 0:
-                s = math.sqrt(tr + 1.0) * 2
-                fwd_q_w = 0.25 * s
-                fwd_q_x = (R[2,1] - R[1,2]) / s
-                fwd_q_y = (R[0,2] - R[2,0]) / s
-                fwd_q_z = (R[1,0] - R[0,1]) / s
-            elif R[0,0] > R[1,1] and R[0,0] > R[2,2]:
-                s = math.sqrt(1.0 + R[0,0] - R[1,1] - R[2,2]) * 2
-                fwd_q_w = (R[2,1] - R[1,2]) / s
-                fwd_q_x = 0.25 * s
-                fwd_q_y = (R[0,1] + R[1,0]) / s
-                fwd_q_z = (R[0,2] + R[2,0]) / s
-            elif R[1,1] > R[2,2]:
-                s = math.sqrt(1.0 + R[1,1] - R[0,0] - R[2,2]) * 2
-                fwd_q_w = (R[0,2] - R[2,0]) / s
-                fwd_q_x = (R[0,1] + R[1,0]) / s
-                fwd_q_y = 0.25 * s
-                fwd_q_z = (R[1,2] + R[2,1]) / s
-            else:
-                s = math.sqrt(1.0 + R[2,2] - R[0,0] - R[1,1]) * 2
-                fwd_q_w = (R[1,0] - R[0,1]) / s
-                fwd_q_x = (R[0,2] + R[2,0]) / s
-                fwd_q_y = (R[1,2] + R[2,1]) / s
-                fwd_q_z = 0.25 * s
-            fwd_quat_xyzw = [fwd_q_x, fwd_q_y, fwd_q_z, fwd_q_w]
+            # Convert forward xmat to wxyz quaternion using collector's exact algorithm
+            fwd_quat_wxyz = mat_to_quat_wxyz(fwd_xmat)
+            geo_err = geodesic_error_rad(rec_quat_wxyz, fwd_quat_wxyz)
 
-            geo_err = geodesic_error_rad(rec_quat, fwd_quat_xyzw)
-
-            # Determine limits based on kind
-            if kind in ("body_origin",):
-                pos_limit = BODY_ORIGIN_POS_LIMIT
-                rot_limit = BODY_ORIGIN_ROT_LIMIT
-            else:
-                pos_limit = GEOMETRY_POS_LIMIT
-                rot_limit = GEOMETRY_ROT_LIMIT
+            pos_limit, rot_limit = KIND_THRESHOLDS[kind]
 
             records.append({
                 "episode_id": ident, "step": step,
@@ -317,12 +330,15 @@ def main():
         print("\n[DeepSeek] R3-A-R1 audit complete")
         return
 
-    # ── R3-B-R1: State-forward canary or full40 ──
+    # ── R3-B-R2: State-forward with collector init contract ──
     from libero.libero import get_libero_path
-    from libero.libero.benchmark import get_benchmark
+    from libero.libero.benchmark import get_benchmark, get_benchmark_dict
     from libero.libero.envs import OffScreenRenderEnv
 
-    # For canary: use a known entity-bearing episode (libero_10/task_00 has 3 entities)
+    NUM_STEPS_WAIT = 10
+    COLLECTION_SEED = 0
+    import random as _random
+
     episodes_to_run = all_episodes if args.mode == "full40" else [
         ep for ep in sorted(all_episodes)
         if "libero_10" in ep and "task_00" in ep and "state_15" in ep
@@ -332,56 +348,59 @@ def main():
 
     all_records = []
     for ep_file in episodes_to_run:
-        # Get task info
         with open(ep_file) as f:
             ep = json.load(f)
         ident = ep["episode_id"]
         suite = ep["telemetry"][0]["suite"]
         task_idx = ep["telemetry"][0]["task_idx"]
         t0_entities = ep["telemetry"][0]["entities"]
+        parts = ident.split("/")
+        state_id = int(parts[-1].replace("state_", ""))
 
-        print(f"\n  {ident}: suite={suite} task={task_idx}")
+        print(f"\n  {ident}: suite={suite} task={task_idx} state={state_id}")
 
-        # Create env
         benchmark = get_benchmark(suite)(0)
         task = benchmark.get_task(task_idx)
         bddl_path = os.path.join(get_libero_path("bddl_files"),
                                  task.problem_folder, task.bddl_file)
         bddl_sha = sha256_file(bddl_path)
 
+        suite_dict = get_benchmark_dict()
+        suite_obj = suite_dict[suite]()
+        init_states = suite_obj.get_task_init_states(task_idx)
+        if state_id >= len(init_states):
+            raise GateHold(f"{ident}: state_id {state_id} >= {len(init_states)}")
+        canonical_state = init_states[state_id]
+
         env = OffScreenRenderEnv(
             bddl_file_name=bddl_path,
-            camera_heights=224, camera_widths=224,
+            camera_heights=256, camera_widths=256,
             render_gpu_device_id=-1,
             has_renderer=False, has_offscreen_renderer=False,
-            horizon=500,
+            horizon=520,
         )
+        _random.seed(COLLECTION_SEED)
+        env.seed(COLLECTION_SEED)
         env.reset()
+        env.set_init_state(copy.deepcopy(canonical_state))
+        for _ in range(NUM_STEPS_WAIT):
+            env.step(DUMMY_ACTION)
+
         model = env.sim.model
+        print(f"    nq={model.nq} nv={model.nv} nmocap={model.nmocap} "
+              f"BDDL={bddl_sha[:12]}... OK")
 
-        # Verify dimensions
-        ss0 = ep["telemetry"][0]["sim_state"]
-        if len(ss0["qpos"]) != model.nq:
-            env.close()
-            raise GateHold(f"{ident}: recorded qpos width {len(ss0['qpos'])} != model.nq {model.nq}")
-        if len(ss0["qvel"]) != model.nv:
-            env.close()
-            raise GateHold(f"{ident}: recorded qvel width {len(ss0['qvel'])} != model.nv {model.nv}")
-        if model.nmocap > 0:
-            env.close()
-            raise GateHold(f"{ident}: MOCAP required (nmocap={model.nmocap}) — unsupported")
-
-        print(f"    nq={model.nq} nv={model.nv} nmocap={model.nmocap} OK")
-
-        # Build expected entity map from telemetry (for state-forward comparison)
-        # In full semantic mode, this would come from the resolver.
-        # For now: use recorded entity identity as reference for forward comparison.
+        kind_map = {"body": "body_origin", "site": "site", "geom": "geom_center"}
         expected = {}
         for e in t0_entities:
             key = (e["entity_type"], e["entity_id"])
-            expected[key] = {"name": e.get("entity_name", "?"), "kind": e["entity_type"]}
+            expected[key] = {
+                "name": e.get("entity_name", "?"),
+                "kind": kind_map.get(e["entity_type"], e["entity_type"]),
+            }
 
-        records = R3B_forward_all_steps(ep_file, env, expected)
+        records = R3B_forward_all_steps(
+            ep_file, env, expected, canonical_state, COLLECTION_SEED, NUM_STEPS_WAIT)
         all_records.extend(records)
         env.close()
 
