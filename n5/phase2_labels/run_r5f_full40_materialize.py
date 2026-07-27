@@ -643,8 +643,9 @@ def main():
     total_start = time.time()
     input_bindings = []
 
-    for ident in identities:
-        suite = ident["suite"]; task_idx = ident["task_id"]
+    try:
+        for ident in identities:
+            suite = ident["suite"]; task_idx = ident["task_id"]
         state_id = ident["state_id"]; ep_id = ident["episode_id"]
         coll_seed = ident["collection_seed"]
         task_key = f"{suite}/task_{task_idx:02d}"
@@ -717,6 +718,12 @@ def main():
                 "status": "FAIL", "error": str(e),
             })
 
+    except Exception:
+        import shutil
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
+        raise
+
     elapsed = time.time() - total_start
 
     # ── Manifest ──
@@ -778,17 +785,14 @@ def main():
 
     seal = seal_root(staging)
 
-    # Atomic no-replace publication with staging cleanup on any failure
-    published = False
+    # Atomic no-replace publication
     try:
         staging.rename(out_root)
-        published = True
-    except Exception:
-        _cleanup_staging()
+    except OSError:
+        import shutil
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
         raise SystemExit(f"rename failed — output may have appeared: {out_root}")
-    finally:
-        if not published:
-            _cleanup_staging()
 
     print(f"\n{'=' * 70}")
     print(f"Run {args.run_label}: {n_collected}/{len(identities)} episodes collected")
