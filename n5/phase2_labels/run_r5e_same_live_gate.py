@@ -589,11 +589,12 @@ def main():
             all_records.extend(records)
             all_summaries.append(summary)
             tested_tasks.add(task_key)
-            ok = summary["status"] == "PASS"
+            status = summary["status"]
+            display = status if status in ("NOT_APPLICABLE",) else ("PASS" if status == "PASS" else "FAIL")
             print(f"entities={summary['n_entities']} records={summary['n_records']} "
                   f"BC_fail={summary['BC_pos_fail']}/{summary['BC_rot_fail']} "
                   f"stale={summary['AB_stale_count']} mut={summary['source_mutations']} "
-                  f"{'PASS' if ok else 'FAIL'}")
+                  f"{display}")
 
     n_tested = len(tested_tasks)
     total_bc_pos_fail = sum(s.get("BC_pos_fail", 0) for s in all_summaries)
