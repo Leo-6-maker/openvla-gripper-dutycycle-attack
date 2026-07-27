@@ -455,18 +455,22 @@ def main():
     parser.add_argument("--upstream-root", type=Path, required=True)
     parser.add_argument("--official-worker", type=Path, required=True)
     parser.add_argument("--pilot-manifest", type=Path, required=True)
-    parser.add_argument("--r5e-receipt", type=Path, required=True)
+    parser.add_argument("--transition-receipt", type=Path, required=True,
+                        help="Sealed FIT-INFERENCE transition receipt root")
     parser.add_argument("--registry-root", type=Path, required=True)
     parser.add_argument("--alias-ledger", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--run-label", required=True, choices=["A", "B"])
     parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument("--seed", type=int, default=20260717)
+    parser.add_argument("--preflight-only", action="store_true",
+                        help="Validate all inputs but do NOT load model or collect")
     args = parser.parse_args()
 
     # Path safety audit
     for path in [args.model_path, args.upstream_root, args.official_worker,
-                 args.pilot_manifest, args.r5e_receipt, args.registry_root, args.alias_ledger]:
+                 args.pilot_manifest, args.transition_receipt, args.registry_root,
+                 args.alias_ledger]:
         reject_path(path)
 
     out_root = Path(args.output_root).resolve() / f"run_{args.run_label}"
@@ -490,9 +494,6 @@ def main():
     pilot_path = Path(args.pilot_manifest).resolve()
     pilot_sha = sha256_file(pilot_path)
 
-    # Verify R5-E receipt
-    r5e_binding = verify_r5e_receipt(args.r5e_receipt)
-
     # Load and validate pilot identities
     identities = load_pilot_identities(str(pilot_path))
     print(f"Pilot manifest: {pilot_sha}")
@@ -509,6 +510,36 @@ def main():
 
     alias_ledger_path = Path(args.alias_ledger).resolve()
     alias_ledger_sha = sha256_file(alias_ledger_path)
+
+    # ── FIT-INFERENCE Transition Verification (BEFORE any model load) ──
+    from fit_transition import verify_transition, TransitionRejected
+    try:
+        transition_manifest = verify_transition(
+            transition_root=args.transition_receipt,
+            execution_source_commit=source_commit,
+            script_sha=script_sha,
+            model_path=args.model_path,
+            official_worker_path=args.official_worker,
+            pilot_manifest_path=pilot_path,
+            registry_root=args.registry_root,
+            alias_ledger_path=alias_ledger_path,
+            output_root=str(args.output_root.resolve()),
+            gpu=args.gpu,
+        )
+    except TransitionRejected as e:
+        raise SystemExit(f"TRANSITION_REJECTED: {e}")
+
+    print(f"Transition receipt: VERIFIED")
+    print(f"  source commit: {source_commit}")
+
+    # ── Preflight-only: stop before model load ──
+    if args.preflight_only:
+        print("\nPREFLIGHT_ONLY: All validations passed. No model loaded.")
+        print(f"  openvla_import = 0")
+        print(f"  load_policy = 0")
+        print(f"  cuda_allocation = 0")
+        print(f"  rollout = 0")
+        return 0
 
     # ── Load module ──
     worker = Path(args.official_worker).resolve()
@@ -546,7 +577,7 @@ def main():
     print(f"  model={args.model_path}  gpu={args.gpu}  seed={args.seed}")
     print(f"  source_commit={source_commit}")
     print(f"  protocol_amendment_sha={protocol_sha}")
-    print(f"  r5e_receipt={r5e_binding['path']}")
+    print(f"  transition_receipt={args.transition_receipt}")
     print("=" * 70)
 
     suite_dict = benchmark.get_benchmark_dict()
@@ -635,7 +666,7 @@ def main():
         "elapsed_s": elapsed,
         "source_commit": source_commit, "source_tree": source_tree,
         "script_sha256": script_sha,
-        "r5e_receipt": r5e_binding,
+        "transition_receipt_sha256sums": sha256_file(Path(args.transition_receipt) / "SHA256SUMS"),
         "pilot_manifest_sha256": pilot_sha,
         "registry_manifest": registry_manifest,
         "alias_ledger_sha256": alias_ledger_sha,
