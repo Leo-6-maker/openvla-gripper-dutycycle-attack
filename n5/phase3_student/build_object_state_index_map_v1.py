@@ -292,6 +292,7 @@ def main() -> int:
     parser.add_argument("--pilot-manifest", type=Path, required=True)
     parser.add_argument("--libero-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--code-snapshot-commit", required=True)
     args = parser.parse_args()
     manifest, records = read_pilot_manifest(args.pilot_manifest)
     census = read_collector_census(records)
@@ -302,6 +303,8 @@ def main() -> int:
         "schema": SCHEMA,
         "status": "DERIVED_STATIC_SCHEMA_SEALED",
         "source": "official LIBERO environment object list and object-state observable",
+        "code_snapshot_commit": args.code_snapshot_commit,
+        "builder_source_sha256": sha256_file(Path(__file__).resolve()),
         "pilot_manifest_sha256": sha256_file(args.pilot_manifest),
         "pilot_manifest_schema": manifest.get("schema"),
         "collector_variant_census": census,
