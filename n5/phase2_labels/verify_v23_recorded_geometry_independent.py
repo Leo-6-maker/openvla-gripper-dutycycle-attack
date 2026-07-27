@@ -358,18 +358,108 @@ def expected_target(sim: Any, model: Any, resolution: Mapping[str, Any], state: 
     return {"known": False, "source": "UNKNOWN_TARGET_RESOLUTION"}
 
 
-def pose_diff(actual: Mapping[str, Any], expected: Mapping[str, Any], metrics: dict[str, float]) -> None:
+def joint_chain(model: Any, ancestor_ids: Sequence[int]) -> list[dict[str, Any]]:
+    allowed = {int(x) for x in ancestor_ids}
+    return [
+        {
+            "joint_id": int(joint_id),
+            "joint_name": str(model.joint(joint_id).name or ""),
+            "body_id": int(model.jnt_bodyid[joint_id]),
+            "joint_type": int(model.jnt_type[joint_id]),
+        }
+        for joint_id in range(int(model.njnt))
+        if int(model.jnt_bodyid[joint_id]) in allowed
+    ]
+
+
+def entity_hierarchy(model: Any, resolution: Mapping[str, Any], index_entry: Mapping[str, Any] | None) -> dict[str, Any]:
+    kind = str(resolution.get("entity_type") or "")
+    entity_id = int(resolution.get("entity_id", -1))
+    if kind == "site":
+        body_id = int(model.site_bodyid[entity_id])
+    elif kind == "geom":
+        body_id = int(model.geom_bodyid[entity_id])
+    elif kind == "body":
+        body_id = entity_id
+    elif index_entry is not None:
+        body_id = int(index_entry.get("body_id", -1))
+    else:
+        return {"parent_root_body": None, "ancestor_chain": [], "joint_chain": []}
+    ancestors = ancestor_chain(model, body_id)
+    ids = [int(x["body_id"]) for x in ancestors]
+    return {
+        "parent_root_body": {
+            "parent_body_id": int(model.body_parentid[body_id]),
+            "parent_body_name": str(model.body(int(model.body_parentid[body_id])).name or "") if body_id else None,
+            "root_body_id": ids[0],
+            "root_body_name": ancestors[0]["body_name"],
+            "entity_body_id": body_id,
+            "entity_body_name": str(model.body(body_id).name or ""),
+        },
+        "ancestor_chain": ancestors,
+        "joint_chain": joint_chain(model, ids),
+    }
+
+
+def diagnostic_row(
+    context: Mapping[str, Any],
+    comparison_kind: str,
+    actual: Mapping[str, Any],
+    expected: Mapping[str, Any],
+    actual_pose: Mapping[str, Any],
+    expected_pose: Mapping[str, Any],
+) -> dict[str, Any]:
+    position_error = [
+        float(actual_pose["pos"][i]) - float(expected_pose["pos"][i])
+        for i in range(3)
+    ]
+    position_linf = max(abs(x) for x in position_error)
+    position_l2 = math.sqrt(sum(x * x for x in position_error))
+    return {
+        **dict(context),
+        "comparison_kind": comparison_kind,
+        "source": actual.get("source"),
+        "expected_source": expected.get("source"),
+        "actual_pose": actual_pose,
+        "expected_pose": expected_pose,
+        "position_error_vector": position_error,
+        "position_error_l_inf_m": position_linf,
+        "position_error_l2_m": position_l2,
+        "rotation_error_rad": quat_distance(actual_pose["quat"], expected_pose["quat"]),
+        "local_center": {
+            "actual": actual.get("local_geometry_center"),
+            "expected": expected.get("local_geometry_center"),
+        },
+        "extents": {
+            "actual": actual.get("half_extents"),
+            "expected": expected.get("half_extents"),
+        },
+        "actual_geometry_entity_type": actual.get("geometry_entity_type"),
+        "alias_status": actual.get("registry_identity_status"),
+    }
+
+
+def pose_diff(
+    actual: Mapping[str, Any],
+    expected: Mapping[str, Any],
+    metrics: dict[str, float],
+    context: Mapping[str, Any],
+    diagnostics: list[dict[str, Any]],
+) -> None:
     if actual.get("known") != expected.get("known") or actual.get("source") != expected.get("source"):
         raise ReviewHold("known/source mismatch")
     if not expected.get("known"): return
     ap, ep = actual["pose"], expected["pose"]
     metrics["geometry_position_max_error_m"] = max(metrics["geometry_position_max_error_m"], max(abs(float(a)-float(b)) for a,b in zip(ap["pos"], ep["pos"])))
     metrics["geometry_rotation_max_error_rad"] = max(metrics["geometry_rotation_max_error_rad"], quat_distance(ap["quat"], ep["quat"]))
+    diagnostics.append(diagnostic_row(context, "geometry", actual, expected, ap, ep))
     for key in ("body_origin_pose", "parent_body_origin_pose"):
         if key in expected and expected[key] is not None:
             if key not in actual: raise ReviewHold(f"missing {key}")
-            metrics["body_origin_position_max_error_m"] = max(metrics["body_origin_position_max_error_m"], max(abs(float(a)-float(b)) for a,b in zip(actual[key]["pos"], expected[key]["pos"])))
-            metrics["body_origin_rotation_max_error_rad"] = max(metrics["body_origin_rotation_max_error_rad"], quat_distance(actual[key]["quat"], expected[key]["quat"]))
+            body_actual, body_expected = actual[key], expected[key]
+            metrics["body_origin_position_max_error_m"] = max(metrics["body_origin_position_max_error_m"], max(abs(float(a)-float(b)) for a,b in zip(body_actual["pos"], body_expected["pos"])))
+            metrics["body_origin_rotation_max_error_rad"] = max(metrics["body_origin_rotation_max_error_rad"], quat_distance(body_actual["quat"], body_expected["quat"]))
+            diagnostics.append(diagnostic_row(context, key, actual, expected, body_actual, body_expected))
     if "half_extents" in expected:
         if "half_extents" not in actual: raise ReviewHold("missing extents")
         metrics["extent_max_error_m"] = max(metrics["extent_max_error_m"], max(abs(float(a)-float(b)) for a,b in zip(actual["half_extents"], expected["half_extents"])))
@@ -387,6 +477,7 @@ def review_run(run_root: Path, pilot: Mapping[str, Any], index_payload: Mapping[
     if subprocess.check_output(["git", "-C", str(libero_root), "show", "-s", "--format=%H", "HEAD"], text=True).strip() != LIBERO_HEAD or subprocess.check_output(["git", "-C", str(libero_root), "show", "-s", "--format=%T", "HEAD"], text=True).strip() != LIBERO_TREE: raise ReviewHold("LIBERO snapshot mismatch")
     if Path(get_libero_path("bddl_files")).resolve() != (libero_root/"libero/libero/bddl_files").resolve(): raise ReviewHold("LIBERO BDDL root mismatch")
     metrics = {"body_origin_position_max_error_m": 0.0, "body_origin_rotation_max_error_rad": 0.0, "geometry_position_max_error_m": 0.0, "geometry_rotation_max_error_rad": 0.0, "extent_max_error_m": 0.0, "local_center_max_error_m": 0.0}
+    diagnostics: list[dict[str, Any]] = []
     episode_count=step_count=relation_rows=alias_rows=unknown_rows=0; errors=[]; task_cache={}
     records = {str(r["episode_id"]): r for r in pilot["records"]}
     for episode_dir in sorted((run_root/"episodes").iterdir()):
@@ -405,16 +496,55 @@ def review_run(run_root: Path, pilot: Mapping[str, Any], index_payload: Mapping[
             expected_relations=registry.get("relations",[])
             if len(output_row.get("relations",[])) != len(expected_relations): raise ReviewHold(f"relation closure mismatch: {eid}:{output_row.get('step')}")
             for relation_index, (out_rel, relation) in enumerate(zip(output_row["relations"], expected_relations)):
-                obj_name=str(relation["object_resolution"].get("alias_from") or relation["object_resolution"].get("name") or ""); alias=alias_ledger.get(f"{suite}/task_{task_id:02d}/{obj_name}")
+                obj_resolution = relation["object_resolution"]
+                target_resolution = relation["target_resolution"]
+                obj_name=str(obj_resolution.get("alias_from") or obj_resolution.get("name") or ""); alias=alias_ledger.get(f"{suite}/task_{task_id:02d}/{obj_name}")
                 obj=expected_object(model, relation["object_resolution"], state, objects, cache, alias, suite, task_id, bddl_sha, registry_sha, inventory_sha)
                 target=expected_target(sim, model, relation["target_resolution"], state, objects, roots, cache)
-                pose_diff(out_rel["object"], obj, metrics); pose_diff(out_rel["target"], target, metrics); relation_rows+=1
+                for side, actual, expected, resolution, index_entry in (
+                    ("object", out_rel["object"], obj, obj_resolution, objects.get(obj_name)),
+                    ("target", out_rel["target"], target, target_resolution, None),
+                ):
+                    hierarchy = entity_hierarchy(model, resolution, index_entry)
+                    context = {
+                        "episode_id": eid,
+                        "suite": suite,
+                        "task_id": task_id,
+                        "state_id": int(record["state_id"]),
+                        "step": int(output_row["step"]),
+                        "relation_index": relation_index,
+                        "predicate": relation.get("predicate"),
+                        "side": side,
+                        "entity_id": resolution.get("entity_id"),
+                        "entity_name": resolution.get("alias_from") or resolution.get("alias_to") or resolution.get("name"),
+                        "entity_type": resolution.get("entity_type"),
+                        "parent_root_body": hierarchy["parent_root_body"],
+                        "ancestor_chain": hierarchy["ancestor_chain"],
+                        "joint_chain": hierarchy["joint_chain"],
+                    }
+                    pose_diff(actual, expected, metrics, context, diagnostics)
+                relation_rows+=1
                 alias_rows += int(out_rel["object"].get("registry_identity_status") == "INIT_GEOM_ALIAS_TO_INDEX_BODY"); unknown_rows += int(not out_rel.get("known", False))
             step_count += 1
         episode_count += 1
     for env, _ in task_cache.values(): env.close()
     passed = not errors and episode_count == 40 and step_count == 9422 and relation_rows == 11880 and alias_rows == 217 and unknown_rows == 0 and all(value <= limit for value, limit in ((metrics["body_origin_position_max_error_m"],1e-8),(metrics["body_origin_rotation_max_error_rad"],1e-8),(metrics["geometry_position_max_error_m"],POS_TOL),(metrics["geometry_rotation_max_error_rad"],ROT_TOL),(metrics["extent_max_error_m"],EXTENT_TOL)))
-    return {"status": "PASS" if passed else "HOLD", "run_root": str(run_root), "run_sha256s_sha256": seal_sha, "episodes": episode_count, "steps": step_count, "relation_rows": relation_rows, "alias_rows": alias_rows, "supported_unknown_rows": unknown_rows, "metrics": metrics, "thresholds": {"body_origin_position_m":1e-8,"body_origin_rotation_rad":1e-8,"geometry_position_m":POS_TOL,"geometry_rotation_rad":ROT_TOL,"extent_m":EXTENT_TOL}, "errors": errors}
+    ordered = sorted(diagnostics, key=lambda row: (row["position_error_l2_m"], row["position_error_l_inf_m"], row["rotation_error_rad"]), reverse=True)
+    source_counts: dict[str, int] = {}
+    for row in diagnostics:
+        source = str(row.get("source") or "<missing>")
+        source_counts[source] = source_counts.get(source, 0) + 1
+    difference_summary = {
+        "difference_rows_total": len(diagnostics),
+        "position_l_inf_gt_1e-6_m": sum(row["position_error_l_inf_m"] > 1e-6 for row in diagnostics),
+        "position_l_inf_gt_1e-4_m": sum(row["position_error_l_inf_m"] > 1e-4 for row in diagnostics),
+        "rotation_gt_1e-8_rad": sum(row["rotation_error_rad"] > 1e-8 for row in diagnostics),
+        "source_counts": source_counts,
+        "alias_rows_total": sum(row.get("alias_status") == "INIT_GEOM_ALIAS_TO_INDEX_BODY" for row in diagnostics),
+        "alias_rows_in_top_100": sum(row.get("alias_status") == "INIT_GEOM_ALIAS_TO_INDEX_BODY" for row in ordered[:100]),
+        "top_100_difference_rows": ordered[:100],
+    }
+    return {"status": "PASS" if passed else "HOLD", "run_root": str(run_root), "run_sha256s_sha256": seal_sha, "episodes": episode_count, "steps": step_count, "relation_rows": relation_rows, "alias_rows": alias_rows, "supported_unknown_rows": unknown_rows, "metrics": metrics, "thresholds": {"body_origin_position_m":1e-8,"body_origin_rotation_rad":1e-8,"geometry_position_m":POS_TOL,"geometry_rotation_rad":ROT_TOL,"extent_m":EXTENT_TOL}, "difference_summary": difference_summary, "errors": errors}
 
 
 def main() -> int:
