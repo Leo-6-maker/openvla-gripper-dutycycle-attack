@@ -9,6 +9,7 @@ G-REC-R1C geometry correction       = HOLD_RESET_VARYING_FIXED_TARGET
 G-REC-R1D direct calibration        = HOLD_RESET_INVARIANCE
 G-REC-R2 fresh A/B                 = HOLD_INDEPENDENT_REVIEW
 G-REC final                        = HOLD_DATA_GAP
+G-REC-DATA-FALLBACK canary         = PASS_ENGINEERING_NONCONSUMABLE
 T-PILOT                            = BLOCKED
 ```
 
@@ -153,3 +154,46 @@ variants semantically equivalent.
 No new R2 run is authorized until this source decision is sealed.  If the
 missing target pose cannot be recovered or collector variants cannot be proven
 equivalent, the result remains `DATA_GAP` and T-PILOT stays blocked.
+
+## FIT-only telemetry fallback canary
+
+The four-suite replacement telemetry canary was collected with the official
+clean action path on free GPU 6/7.  It did not load a detector, mutate an
+action, generate Teacher labels, read protected payload, or run an attack.
+The four input roots were independently sealed and structurally audited before
+materialization:
+
+| suite | episode | steps | input `SHA256SUMS` SHA |
+|---|---|---:|---|
+| libero_10 | `libero_10/task_00/state_15` | 258 | `a84f9fe6cb08f3176c54e41bff170b8ddbf0d49f39a123d628194572259a4638` |
+| libero_goal | `libero_goal/task_01/state_11` | 96 | `f3a3361e946fa9ec3f4933a364294e433e3a7f68fb623b0f95d39648c8ff4e70` |
+| libero_object | `libero_object/task_00/state_09` | 177 | `81231a12a7eb1009e6642a2f931957b7017f1e95da8c44d1e61cf7e45a565bba` |
+| libero_spatial | `libero_spatial/task_00/state_04` | 74 | `39a8c4b40a0eb8d341b2962f0f06b2c1d0b206a2f0ef453e4c5723f871f0c038` |
+
+The derived geometry canary was materialized twice from those sealed roots:
+
+```text
+run_A root:
+/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/grec_fallback_geometry_canary_run_A_dbd1741_20260727
+SHA256SUMS:
+f10dae9ff107de2669604c37cc099d86368bde66ec8dcc638cf0cc5447eccd32
+
+run_B root:
+/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/grec_fallback_geometry_canary_run_B_dbd1741_20260727
+SHA256SUMS:
+54adeba21354462e219e62906067b8fe09cc863390e589852a6669dd533c60d2
+
+independent structural review root:
+/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/grec_fallback_geometry_canary_independent_dbd1741_20260727
+SHA256SUMS:
+e0855976099e4a17a531b442611ec3760a4b1df07142aa2404e1afbb99f89f52
+canonical geometry digest (A=B):
+881843e571987f51a820aa8b3fed83cdf6dd4833f572e0b97f1eed52792e6ab7
+geometry cases: 863
+```
+
+This is an engineering/data-availability canary only.  Both derived sides
+carry `DIRECT_RECORDED_MUJOCO_WORLD_POSE`; they do not provide the independent
+model-chain/reference accuracy proof required by G-REC-R2.  Therefore the
+canary is explicitly `NONCONSUMABLE`, G-REC remains `HOLD_DATA_GAP`, and no
+Teacher or Student consumer may read it.
