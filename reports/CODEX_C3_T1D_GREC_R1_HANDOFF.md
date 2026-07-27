@@ -1,52 +1,55 @@
 # C3-T1D G-REC R1 handoff
 
-Status: `G-REC-R1 = PASS_LOCAL_DIAGNOSTIC_AND_CANARY`
+## Current decision
 
-This is not the final G-REC decision.  The old sealed `run_A` and `run_B`
-remain unchanged and are not reclassified as final evidence until a fresh R2
-double run passes.
+```text
+G-REC-R1A discrepancy localization = PASS
+G-REC-R1B numerical amendment      = PASS
+G-REC-R1C geometry correction       = HOLD_RESET_VARYING_FIXED_TARGET
+G-REC-R1D direct calibration        = HOLD_RESET_INVARIANCE
+G-REC-R2 fresh A/B                 = HOLD_INDEPENDENT_REVIEW
+G-REC final                        = HOLD_DATA_GAP
+T-PILOT                            = BLOCKED
+```
 
-## R1A read-only localization
+No old root was modified or re-sealed.  No protected payload, CAL/G10/T2R-D
+data, OpenVLA inference, Student training, rollout, or attack was executed.
 
-Diagnostic source commit: `474dca525ce04537994ff6a02412249bf2b3beb5`
+## R1A — read-only discrepancy localization
 
 Diagnostic root:
-
 `/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/grec_r1a_diag_474dca5_20260727_1600`
 
-Root `SHA256SUMS` SHA: `2c977f9002476df30f7b5c05e9201e019fbe86484b793badd75139d817fad020`
+`SHA256SUMS` SHA:
+`2c977f9002476df30f7b5c05e9201e019fbe86484b793badd75139d817fad020`
 
-The independent verifier found all position errors above `1e-6 m` on the
-target side with source `FROZEN_MODEL_SITE`; no high-error row was one of the
-217 alias rows.  The complete high-error entity census was:
+All rows above `1e-6 m` were target-side `FROZEN_MODEL_SITE`; none of the 217
+alias rows was a high-error row.  The complete high-error census was:
 
 | target entity | rows |
 |---|---:|
-| `desk_caddy_1_back_contain_region` | 217 |
-| `microwave_1_heating_region` | 297 |
-| `white_cabinet_1_bottom_region` | 520 |
-| `wooden_cabinet_1_top_region` | 191 |
-| `flat_stove_1_cook_region` | 1496 |
-| `wine_rack_1_top_region` | 165 |
-| `wooden_cabinet_1_top_side` | 399 |
+| desk_caddy_1_back_contain_region | 217 |
+| microwave_1_heating_region | 297 |
+| white_cabinet_1_bottom_region | 520 |
+| wooden_cabinet_1_top_region | 191 |
+| flat_stove_1_cook_region | 1496 |
+| wine_rack_1_top_region | 165 |
+| wooden_cabinet_1_top_side | 399 |
 
-The largest recorded row was `libero_10/task_03/state_18`, step 0,
-`In -> white_cabinet_1_bottom_region`, with position L2 error
-`0.022695981058470777 m`.  Its ancestor chain contains the articulated
-`white_cabinet_1_bottom_level` joint.  A/B comparison changed 10 geometry
-case files and 6,570 fields; the changes are reset-time target pose fields.
+The largest old diagnostic row was
+`libero_10/task_03/state_18`, step 0, `In` to
+`white_cabinet_1_bottom_region`, L2 position error
+`0.022695981058470777 m`.  The A/B comparison changed 10 geometry files and
+6,570 fields.  This localized the problem to target geometry, but did not by
+itself establish the target pose source.
 
-Conclusion: R1A localized the discrepancy to reset-time target geometry and
-proved that the alias mapping is not the high-error source.
+## R1B — frozen numerical amendment
 
-## R1B numerical amendment
-
-Frozen before R1C in:
-
+Configuration:
 `configs/V23_G_REC_NUMERICAL_PROTOCOL_AMENDMENT_V1.json`
 
-The quaternion metric is the stable sign-invariant geodesic
-`2*atan2(sqrt(max(0,1-dot^2)),dot)`.  The frozen limits are:
+The frozen sign-invariant quaternion metric is
+`2*atan2(sqrt(max(0,1-dot^2)),dot)`.  The limits are:
 
 | quantity | limit |
 |---|---:|
@@ -56,70 +59,79 @@ The quaternion metric is the stable sign-invariant geodesic
 | geometry rotation | `1e-6 rad` |
 | extent | `1e-6 m` |
 
-Geometry position was not relaxed.  The official environment contract tests
-passed: `21 passed, 0 failed, 0 errors`.
+Geometry position was not relaxed.  The official-environment contract test
+run before the fresh replay passed `21 passed, 0 failed, 0 errors`.
 
-## R1C geometry source correction
+## R1C — source correction and remaining semantic failure
 
-The materializer and independent verifier now:
+The materializer and independent verifier now compose fixed entities through the
+complete model ancestor chain and no longer use `sim.data` reset-time poses for
+fixed geometry.  Dynamic rigid entities use recorded object-state body origins;
+jointed entities without recorded parent telemetry fail closed as
+`UNKNOWN_UNOBSERVED_JOINTED`, and articulated entities remain
+`ARTICULATED_UNKNOWN`.
 
-- compose fixed entities through the complete world-to-entity model ancestor
-  chain;
-- never use `sim.data` reset-time world pose for fixed site/body targets;
-- use recorded object-state body origin for dynamic rigid objects;
-- return `UNKNOWN_UNOBSERVED_JOINTED` when a jointed fixed target lacks a
-  recorded parent pose;
-- return `ARTICULATED_UNKNOWN` for articulated entities;
-- enforce model entity identity before accepting a target or alias;
-- use the same world-chain logic for articulated-joint detection.
+The corrected cross-reset canary exposed the remaining problem: LIBERO's
+placement sampler changes fixture body transforms during reset.  A fixed-chain
+reference captured before the extra reset did not remain invariant after the
+reset.  This is a geometry-source/data-gap finding, not a reason to widen the
+position threshold.
 
-The fresh verifier path now requires and records the frozen numerical
-amendment; it does not silently fall back to old constants.
+Corrected canary root:
+`/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/grec_r1d_reset_audit_20260727_1820`
 
-## R1D direct calibration canary
+`SHA256SUMS` SHA:
+`e827e82d481e424a64f4127db78d518f3a1b978126197ab4f934f6de5498f711`
 
-Execution source commit: `dc9ec711ec0b0b8a674dd9b30673b55991ec5bb3`
+`SHA256SUMS.sha256` SHA:
+`0cd01edf84721de6d2e81ea519d58cc1cc5e1bc2ec930282eb23bdd21279d9f9`
 
-Canary root:
+Result: `HOLD`, 44 relations, 88 mappings, 8 fixed mappings, 74 recorded
+dynamic mappings, 1 alias mapping, 5 articulated-unknown mappings, and 10
+reset-invariance failures.  The older strict canary root
+`grec_r1d_calibration_dc9ec71_20260727_1730` is retained as a historical
+diagnostic only; its same-reset comparison was tautological and is not a
+formal R1D PASS.
 
-`/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/grec_r1d_calibration_dc9ec71_20260727_1730`
+## R2 — fresh replay result
 
-Root `SHA256SUMS` SHA: `095ba45039bc05374a9171fa177ebaca54a3381e68a62b100578a99614f536fd`
+Source commit: `4194f47efa58cd8f57d79cf19aa2701d3d6ead5f`.
 
-The strict canary reported:
+The fresh R2 materialization reached 40/40 episodes, 9,422/9,422 steps,
+11,880 relation rows, and 217 alias rows, but the independent verifier failed
+closed before the B-side review could complete.  The unsealed staging root is
+preserved at:
+
+`/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/.grec_r2_4194f47_20260727_1800.staging.1219803`
+
+Observed verifier summary:
 
 ```text
-status                         PASS
-tasks                          40
-relations                      44
-side mappings                  88
-direct checks                  88
-MODEL_FIXED_CHAIN mappings     8
-DYNAMIC_RECORDED mappings      74
-ALIAS mappings                 1
-ARTICULATED_UNKNOWN mappings   5
-fixed-chain position max       0.0 m
-fixed-chain rotation max       0.0 rad
-q/-q equivalence               PASS
-identity mutation              FAIL-CLOSED
-descendant-joint mutation      FAIL-CLOSED
-protected payload              false
-model inference                false
-action replay                  false
+body-origin position max       = 0.0 m
+body-origin rotation max       = 5.16191365590357e-08 rad
+geometry position max           = 0.013316277407554006 m
+geometry rotation max           = 5.16191365590357e-08 rad
+supported UNKNOWN rows         = 711
+high position rows              = 2574
+high rows source                = MODEL_FIXED_CHAIN target geometry
 ```
 
-The first, broader canary root
-`grec_r1d_calibration_05f948e_20260727_1700` is retained as a diagnostic
-history root.  It is not used for the strict result because it did not bind
-the index map and alias ledger.
+The largest R2 row was `libero_goal/task_09/state_16`, step 0,
+`wine_rack_1_top_region`, with position L2 error
+`0.01799183047 m`.  This is not numerical noise and is not converted to a
+negative label.
 
-## Boundary
+## Required data-gap recovery
 
-The next permitted action is a fresh R2 source commit and clean detached
-worktree producing new `run_A`, `run_B`, independent reviews, and comparison.
-The old G-REC staging and both old sealed runs remain read-only.  No protected
-payload, CAL/G10/T2R-D data, OpenVLA inference, Student training, rollout, or
-attack was executed in R1.
+The next permitted action is a read-only telemetry/schema audit over the
+already bound 40 DEV payloads.  It must bind all three files per episode,
+count collector-source variants, and establish whether target/site/body world
+poses or only an `initial_state_sha256` digest are present.  If target fixture
+poses are absent, G-REC-DATA-FALLBACK is required: new FIT-only telemetry must
+be collected directly, with static targets from frozen model/site transforms
+and dynamic targets from recorded object-state body origins.  Action replay
+geometry cannot be used as original-trajectory truth.
 
-`G-REC-R2 = NOT RUN`
-`T-PILOT = BLOCKED UNTIL R2 PASS`
+No new R2 run is authorized until this source decision is sealed.  If the
+missing target pose cannot be recovered or collector variants cannot be proven
+equivalent, the result remains `DATA_GAP` and T-PILOT stays blocked.

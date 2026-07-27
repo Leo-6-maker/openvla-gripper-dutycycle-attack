@@ -220,13 +220,16 @@ def canary(output: Path, pilot_manifest: Path, registry_root: Path, libero_root:
         bddl = (bddl_root / task.problem_folder / task.bddl_file).resolve()
         env = OffScreenRenderEnv(bddl_file_name=str(bddl), camera_heights=32, camera_widths=32, render_gpu_device_id=-1, has_renderer=False, has_offscreen_renderer=False, horizon=2)
         try:
-            env.reset()
+            # The constructor has already performed LIBERO's first internal
+            # reset.  Capture that model chain before any additional reset;
+            # comparing against the post-reset model would be tautological.
             sim = env.env.sim
             model = sim.model
             relations = task_data.get("relations", [])
             for relation_index, relation in enumerate(relations):
                 relation_keys.add((suite, task_id, relation_index, json.dumps(relation, sort_keys=True)))
             seen = set()
+            fixed_reference: dict[tuple[str, int], dict[str, list[float]]] = {}
             for relation_index, relation in enumerate(relations):
                 for side in ("object_resolution", "target_resolution"):
                     resolution = relation[side]
@@ -267,11 +270,23 @@ def canary(output: Path, pilot_manifest: Path, registry_root: Path, libero_root:
                         except CanaryHold:
                             pass
                         mapping_rows.append({"suite": suite, "task_id": task_id, "relation_index": relation_index, "side": side, "entity_type": kind, "entity_id": entity_id, "entity_name": entity_name(model, kind, entity_id), "classification": row_kind, "position_error_m": pos_err, "rotation_error_rad": rot_err})
+                        if row_kind in {"MODEL_FIXED_CHAIN", "ALIAS"}:
+                            fixed_reference[(kind, entity_id)] = expected
                     except CanaryHold as exc:
                         errors.append(f"mapping:{suite}:{task_id}:{relation_index}:{side}:{exc}")
             for _ in range(2):
                 env.reset()
-                if any(position_error(sim_entity_pose(env.env.sim, row["entity_type"], row["entity_id"])["pos"], model_entity_pose(env.env.sim.model, row["entity_type"], row["entity_id"])["pos"]) > POS_TOL for row in mapping_rows if row["suite"] == suite and row["task_id"] == task_id and row["classification"] in {"MODEL_FIXED_CHAIN", "ALIAS"}):
+                if any(
+                    position_error(
+                        sim_entity_pose(env.env.sim, kind, entity_id)["pos"],
+                        expected["pos"],
+                    ) > POS_TOL
+                    or rotation_error(
+                        sim_entity_pose(env.env.sim, kind, entity_id)["quat"],
+                        expected["quat"],
+                    ) > ROT_TOL
+                    for (kind, entity_id), expected in fixed_reference.items()
+                ):
                     errors.append(f"fixed-chain reset invariance failed:{suite}:{task_id}")
         finally:
             env.close()
