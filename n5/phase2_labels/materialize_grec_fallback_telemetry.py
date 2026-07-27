@@ -84,6 +84,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         entities_by_step = {int(row["step"]): {(str(entity["entity_type"]), int(entity["entity_id"])): entity for entity in row.get("entities", [])} for row in telemetry_rows}
         relations = episode.get("relations", [])
         if not relations:
+            if args.skip_empty_relations:
+                bindings.append({"root": str(input_root), "input_sha256sums_sha256": input_sha, "episode_id": episode["episode_id"], "step_count": len(entities_by_step), "relation_count": 0, "skipped_empty_relations": True, "source_parent_identity": manifest.get("source_parent_identity")})
+                continue
             raise MaterializeHold(f"empty relation set: {input_root}")
         for step, entity_map in sorted(entities_by_step.items()):
             for relation_index, relation in enumerate(relations):
@@ -130,6 +133,7 @@ def main() -> int:
     parser.add_argument("--input-root", action="append", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--run-label", required=True, choices=("run_A", "run_B"))
+    parser.add_argument("--skip-empty-relations", action="store_true")
     args = parser.parse_args()
     try:
         result = run(args)

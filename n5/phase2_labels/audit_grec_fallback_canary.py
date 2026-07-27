@@ -56,7 +56,7 @@ def verify_root(root: Path) -> dict[str, Any]:
     return {"sha256sums_sha256": sha256_file(sums), "file_count": len(expected)}
 
 
-def audit_one(root: Path) -> dict[str, Any]:
+def audit_one(root: Path, allow_empty_relations: bool = False) -> dict[str, Any]:
     seal = verify_root(root)
     manifest = json.loads((root / "FALLBACK_CANARY_MANIFEST.json").read_text(encoding="utf-8"))
     episode = json.loads((root / "episode.json").read_text(encoding="utf-8"))
@@ -65,7 +65,7 @@ def audit_one(root: Path) -> dict[str, Any]:
     if manifest.get("attack_enabled") is not False or manifest.get("no_detector") is not True or manifest.get("teacher_labels_generated") is not False:
         raise AuditHold(f"execution boundary failed: {root}")
     steps = episode.get("steps", []); telemetry = episode.get("telemetry", [])
-    if not episode.get("relations") or not steps or len(steps) != len(telemetry):
+    if (not episode.get("relations") and not allow_empty_relations) or not steps or len(steps) != len(telemetry):
         raise AuditHold(f"step/telemetry count mismatch: {root}")
     if [int(x.get("step", -1)) for x in steps] != list(range(len(steps))):
         raise AuditHold(f"step sequence mismatch: {root}")
@@ -94,7 +94,7 @@ def audit_one(root: Path) -> dict[str, Any]:
         entity_count += len(record.get("entities", []))
     if bad_generation or detector_count or attack_mutations or nonfinite:
         raise AuditHold(f"runtime boundary failed: generation={bad_generation}, detector={detector_count}, action_mutation={attack_mutations}, nonfinite={nonfinite}")
-    if entity_count <= 0:
+    if entity_count <= 0 and (episode.get("relations") or not allow_empty_relations):
         raise AuditHold(f"entity pose coverage is empty: {root}")
     return {
         "root": str(root.resolve()), "episode_id": episode.get("episode_id"), "suite": episode.get("suite"),
@@ -102,7 +102,7 @@ def audit_one(root: Path) -> dict[str, Any]:
         "entity_pose_rows": entity_count, "contact_invalid_steps": contact_invalid,
         "generation_bad_steps": bad_generation, "detector_steps": detector_count,
         "action_mutation_steps": attack_mutations, "nonfinite_telemetry_steps": nonfinite,
-        "max_action_parity_error": action_parity, "seal": seal,
+        "max_action_parity_error": action_parity, "empty_relations_allowed": bool(allow_empty_relations and not episode.get("relations")), "seal": seal,
     }
 
 
@@ -110,12 +110,13 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", action="append", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--allow-empty-relations", action="store_true")
     args = parser.parse_args()
     try:
         if args.output.exists() or args.output.is_symlink():
             raise AuditHold(f"output exists: {args.output}")
-        rows = [audit_one(root.resolve()) for root in args.root]
-        result = {"schema": "V23_G_REC_DATA_FALLBACK_CANARY_AUDIT_V1", "status": "PASS", "canaries": rows, "protected_payload_read": False, "model_inference": False, "attack": False}
+        rows = [audit_one(root.resolve(), args.allow_empty_relations) for root in args.root]
+        result = {"schema": "V23_G_REC_DATA_FALLBACK_CANARY_AUDIT_V1", "status": "PASS", "canaries": rows, "allow_empty_relations": args.allow_empty_relations, "protected_payload_read": False, "model_inference": False, "attack": False}
         staging = args.output.parent / f".{args.output.name}.staging.{os.getpid()}"
         if staging.exists() or staging.is_symlink():
             raise AuditHold(f"staging exists: {staging}")
