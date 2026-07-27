@@ -82,6 +82,7 @@ VARIANT_MANIFEST_KEYS = frozenset({
     "executable", "command", "python_version",
     "environment", "hostname",
     "r5e_receipt",
+    "registry_manifest",
     "model_tree_sha256", "processor_sha256",
 })
 
