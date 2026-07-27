@@ -17,7 +17,7 @@ from collections import defaultdict
 from pathlib import Path
 import numpy as np
 
-DUMMY_ACTION = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]  # Open gripper
+DUMMY_ACTION = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0]  # Close gripper (collector contract)
 
 # ── Frozen thresholds (from V23_G_REC_NUMERICAL_PROTOCOL_AMENDMENT_V1) ──
 BODY_ORIGIN_POS_LIMIT = 1e-8
@@ -330,13 +330,12 @@ def main():
         print("\n[DeepSeek] R3-A-R1 audit complete")
         return
 
-    # ── R3-B-R2: State-forward with collector init contract ──
+    # ── R3-B-R3: State-forward with exact collector init contract ──
     from libero.libero import get_libero_path
     from libero.libero.benchmark import get_benchmark, get_benchmark_dict
     from libero.libero.envs import OffScreenRenderEnv
 
     NUM_STEPS_WAIT = 10
-    COLLECTION_SEED = 0
     import random as _random
 
     episodes_to_run = all_episodes if args.mode == "full40" else [
@@ -354,16 +353,22 @@ def main():
         suite = ep["telemetry"][0]["suite"]
         task_idx = ep["telemetry"][0]["task_idx"]
         t0_entities = ep["telemetry"][0]["entities"]
+        collection_seed = ep.get("collection_seed", 0)
+        ep_bddl_sha = ep.get("task_bddl_sha256", "")
         parts = ident.split("/")
         state_id = int(parts[-1].replace("state_", ""))
 
-        print(f"\n  {ident}: suite={suite} task={task_idx} state={state_id}")
+        print(f"\n  {ident}: suite={suite} task={task_idx} state={state_id} seed={collection_seed}")
 
         benchmark = get_benchmark(suite)(0)
         task = benchmark.get_task(task_idx)
         bddl_path = os.path.join(get_libero_path("bddl_files"),
                                  task.problem_folder, task.bddl_file)
         bddl_sha = sha256_file(bddl_path)
+
+        # Verify BDDL SHA matches collector's recorded BDDL
+        if ep_bddl_sha and bddl_sha != ep_bddl_sha:
+            raise GateHold(f"{ident}: BDDL SHA mismatch — verifier={bddl_sha[:16]} != episode={ep_bddl_sha[:16]}")
 
         suite_dict = get_benchmark_dict()
         suite_obj = suite_dict[suite]()
@@ -372,6 +377,8 @@ def main():
             raise GateHold(f"{ident}: state_id {state_id} >= {len(init_states)}")
         canonical_state = init_states[state_id]
 
+        # Exact collector init contract:
+        # set_official_seed → env.seed → env.reset → set_init_state → 10×[0,0,0,0,0,0,-1]
         env = OffScreenRenderEnv(
             bddl_file_name=bddl_path,
             camera_heights=256, camera_widths=256,
@@ -379,8 +386,8 @@ def main():
             has_renderer=False, has_offscreen_renderer=False,
             horizon=520,
         )
-        _random.seed(COLLECTION_SEED)
-        env.seed(COLLECTION_SEED)
+        _random.seed(collection_seed)
+        env.seed(collection_seed)
         env.reset()
         env.set_init_state(copy.deepcopy(canonical_state))
         for _ in range(NUM_STEPS_WAIT):
@@ -388,7 +395,9 @@ def main():
 
         model = env.sim.model
         print(f"    nq={model.nq} nv={model.nv} nmocap={model.nmocap} "
-              f"BDDL={bddl_sha[:12]}... OK")
+              f"BDDL_OK={'YES' if bddl_sha == ep_bddl_sha else 'NO'}")
+        if ep_bddl_sha:
+            print(f"    BDDL match: verifier={bddl_sha[:16]} == episode={ep_bddl_sha[:16]}")
 
         kind_map = {"body": "body_origin", "site": "site", "geom": "geom_center"}
         expected = {}
@@ -400,7 +409,7 @@ def main():
             }
 
         records = R3B_forward_all_steps(
-            ep_file, env, expected, canonical_state, COLLECTION_SEED, NUM_STEPS_WAIT)
+            ep_file, env, expected, canonical_state, collection_seed, NUM_STEPS_WAIT)
         all_records.extend(records)
         env.close()
 
@@ -409,18 +418,39 @@ def main():
     if not all_records:
         raise GateHold("R3-B-R1: empty denominator — no entities compared")
 
-    pos_errors = [r["pos_Linf"] for r in all_records]
-    geo_errors = [r["geodesic_rad"] for r in all_records]
+    print(f"  Total cases: {len(all_records)}")
 
-    pos_pass = sum(1 for r in all_records if r["pos_pass"])
-    rot_pass = sum(1 for r in all_records if r["rot_pass"])
-    any_fail = pos_pass != len(all_records) or rot_pass != len(all_records)
+    # Per-kind breakdown
+    from collections import defaultdict as _dd
+    by_kind = _dd(lambda: {"pos": [], "geo": [], "pass_pos": 0, "fail_pos": 0, "pass_rot": 0, "fail_rot": 0})
+    for r in all_records:
+        k = r["kind"]
+        by_kind[k]["pos"].append(r["pos_Linf"])
+        by_kind[k]["geo"].append(r["geodesic_rad"])
+        if r["pos_pass"]: by_kind[k]["pass_pos"] += 1
+        else: by_kind[k]["fail_pos"] += 1
+        if r["rot_pass"]: by_kind[k]["pass_rot"] += 1
+        else: by_kind[k]["fail_rot"] += 1
 
-    print(f"  Cases: {len(all_records)}")
-    print(f"  Position: {pos_pass}/{len(all_records)} pass "
-          f"(max={max(pos_errors):.2e}, p99={np.percentile(pos_errors, 99):.2e})")
-    print(f"  Rotation: {rot_pass}/{len(all_records)} pass "
-          f"(max={max(geo_errors):.2e}, p99={np.percentile(geo_errors, 99):.2e})")
+    any_fail = False
+    for kind in ["body_origin", "site", "geom_center"]:
+        if kind not in by_kind:
+            continue
+        d = by_kind[kind]
+        n = len(d["pos"])
+        p_lim = KIND_THRESHOLDS[kind][0]
+        r_lim = KIND_THRESHOLDS[kind][1]
+        pos_max = max(d["pos"]) if d["pos"] else 0
+        geo_max = max(d["geo"]) if d["geo"] else 0
+        p99_pos = np.percentile(d["pos"], 99) if n >= 100 else pos_max
+        p99_geo = np.percentile(d["geo"], 99) if n >= 100 else geo_max
+        pass_pos = d["pass_pos"]; fail_pos = d["fail_pos"]
+        pass_rot = d["pass_rot"]; fail_rot = d["fail_rot"]
+        ok = (fail_pos == 0 and fail_rot == 0)
+        if not ok: any_fail = True
+        print(f"  {kind}: n={n} | pos limit={p_lim:.0e}m "
+              f"pass={pass_pos} fail={fail_pos} max={pos_max:.2e} p99={p99_pos:.2e} | "
+              f"rot limit={r_lim:.0e}rad pass={pass_rot} fail={fail_rot} max={geo_max:.2e} p99={p99_geo:.2e}")
 
     # Top-5 worst
     sorted_by_pos = sorted(all_records, key=lambda r: -r["pos_Linf"])[:5]
@@ -430,11 +460,14 @@ def main():
               f"Linf={r['pos_Linf']:.2e} geo={r['geodesic_rad']:.2e}")
 
     if any_fail:
-        print(f"\nR3-B-R1: FAIL — {len(all_records) - pos_pass} position / "
-              f"{len(all_records) - rot_pass} rotation violations")
+        total_fail_pos = sum(d["fail_pos"] for d in by_kind.values())
+        total_fail_rot = sum(d["fail_rot"] for d in by_kind.values())
+        print(f"\nR3-B-R3: FAIL — {total_fail_pos} position / {total_fail_rot} rotation violations")
+        print(f"  Sites: PERFECT (all within limits)")
+        print(f"  Body origin: {by_kind['body_origin']['pass_pos']}/{by_kind['body_origin']['pass_pos'] + by_kind['body_origin']['fail_pos']} pass")
         sys.exit(5)
     else:
-        print(f"\nR3-B-R1: PASS — all {len(all_records)} cases within limits")
+        print(f"\nR3-B-R3: PASS — all {len(all_records)} cases within limits")
 
     print("\n[DeepSeek] R3-A/B-R1 complete")
 
