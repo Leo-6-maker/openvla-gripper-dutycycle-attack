@@ -10,7 +10,10 @@ import os
 from pathlib import Path
 from typing import Any
 
-from n5.phase2_labels.run_v23_recorded_geometry_grec import publish_noreplace
+try:
+    from n5.phase2_labels.run_v23_recorded_geometry_grec import publish_noreplace
+except ModuleNotFoundError:  # direct script execution from the repository
+    from run_v23_recorded_geometry_grec import publish_noreplace
 
 
 class VerifyHold(RuntimeError):
