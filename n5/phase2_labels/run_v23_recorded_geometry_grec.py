@@ -125,6 +125,14 @@ def command_for(script: Path, args: argparse.Namespace, output: Path) -> list[st
     ]
 
 
+def run_logged(command: list[str], stdout_path: Path, stderr_path: Path) -> None:
+    completed = subprocess.run(command, check=False, capture_output=True, text=True)
+    stdout_path.write_text(completed.stdout or "", encoding="utf-8")
+    stderr_path.write_text(completed.stderr or "", encoding="utf-8")
+    if completed.returncode != 0:
+        raise subprocess.CalledProcessError(completed.returncode, command, completed.stdout, completed.stderr)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pilot-manifest", type=Path, required=True)
@@ -160,9 +168,7 @@ def main() -> int:
         for name, run_dir in run_dirs.items():
             command = command_for(materializer, args, run_dir)
             commands[name] = command
-            completed = subprocess.run(command, check=True, capture_output=True, text=True)
-            (staging / f"{name}.stdout.log").write_text(completed.stdout, encoding="utf-8")
-            (staging / f"{name}.stderr.log").write_text(completed.stderr, encoding="utf-8")
+            run_logged(command, staging / f"{name}.stdout.log", staging / f"{name}.stderr.log")
 
         for name, run_dir in run_dirs.items():
             review_path = reviews / f"{name}.json"
@@ -178,8 +184,8 @@ def main() -> int:
                 "--output", str(review_path),
             ]
             completed = subprocess.run(command, check=False, capture_output=True, text=True)
-            (staging / f"{name}.independent.stdout.log").write_text(completed.stdout, encoding="utf-8")
-            (staging / f"{name}.independent.stderr.log").write_text(completed.stderr, encoding="utf-8")
+            (staging / f"{name}.independent.stdout.log").write_text(completed.stdout or "", encoding="utf-8")
+            (staging / f"{name}.independent.stderr.log").write_text(completed.stderr or "", encoding="utf-8")
             review = json.loads(review_path.read_text(encoding="utf-8"))
             if completed.returncode != 0 or review.get("status") != "PASS":
                 raise RuntimeError(f"independent review failed for {name}: {review}")
@@ -247,7 +253,14 @@ def main() -> int:
         print(json.dumps({"status": "PASS", "output_root": str(output), **seal, "summary": summaries["run_A"]}, sort_keys=True))
         return 0
     except Exception as exc:
-        failure = {"status": "HOLD", "error_type": type(exc).__name__, "error": str(exc), "source_snapshot": snapshot}
+        failure = {
+            "status": "HOLD",
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+            "source_snapshot": snapshot,
+            "stdout_logs": sorted(p.name for p in staging.glob("*.stdout.log")),
+            "stderr_logs": sorted(p.name for p in staging.glob("*.stderr.log")),
+        }
         (staging / "FAILURE.json").write_text(json.dumps(failure, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(json.dumps(failure, sort_keys=True), file=sys.stderr)
         return 1
