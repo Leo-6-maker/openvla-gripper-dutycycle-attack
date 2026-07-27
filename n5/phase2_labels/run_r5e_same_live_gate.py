@@ -103,13 +103,19 @@ def load_relation_entities(registry_path):
             if resolution in VALID_RESOLUTIONS:
                 key = (res["entity_type"], res["entity_id"])
                 bddl_name = rel.get(f"{role_key}_bddl", "?")
+                # For alias-resolved entities, the MuJoCo entity name is alias_to,
+                # not the BDDL logical name (which is alias_from).
+                if resolution == "APPROVED_STRUCTURAL_ALIAS":
+                    mujoco_name = res.get("alias_to", res.get("name", bddl_name))
+                else:
+                    mujoco_name = res.get("name", bddl_name)
                 entities[key] = {
-                    "name": res.get("name", bddl_name),
+                    "name": mujoco_name,
+                    "bddl_logical_name": bddl_name,
                     "entity_type": res["entity_type"],
                     "entity_id": res["entity_id"],
                     "resolution": resolution,
                     "semantic_role": res.get("semantic_role", "?"),
-                    "bddl_name": bddl_name,
                     "relation_index": irel,
                     "side": role_key,
                 }
@@ -255,11 +261,13 @@ def test_one_task(suite, task_idx, state_id, seed, test_steps, registry_dir, app
             qpos_drift1 = float(np.max(np.abs(qpos_before - env.sim.data.qpos.copy())))
             qvel_drift1 = float(np.max(np.abs(qvel_before - env.sim.data.qvel.copy())))
             time_drift1 = abs(time_before - float(env.sim.data.time))
+            act_after_1 = env.sim.data.act.copy() if (hasattr(env.sim.data, 'act') and env.sim.data.act is not None) else None
+            act_none_transition_1 = (act_before is None) != (act_after_1 is None)
             act_drift1 = 0.0
-            if act_before is not None and hasattr(env.sim.data, 'act') and env.sim.data.act is not None:
-                act_drift1 = float(np.max(np.abs(act_before - env.sim.data.act.copy())))
+            if not act_none_transition_1 and act_before is not None and act_after_1 is not None:
+                act_drift1 = float(np.max(np.abs(act_before - act_after_1)))
             source_mutated_1 = (qpos_drift1 > 0 or qvel_drift1 > 0 or
-                                time_drift1 > 0 or act_drift1 > 0)
+                                time_drift1 > 0 or act_drift1 > 0 or act_none_transition_1)
 
             B_poses = {}
             for (etype, eid), info in expected_entities.items():
@@ -291,11 +299,13 @@ def test_one_task(suite, task_idx, state_id, seed, test_steps, registry_dir, app
             qpos_drift2 = float(np.max(np.abs(qpos_mid - env.sim.data.qpos.copy())))
             qvel_drift2 = float(np.max(np.abs(qvel_mid - env.sim.data.qvel.copy())))
             time_drift2 = abs(time_mid - float(env.sim.data.time))
+            act_after_2 = env.sim.data.act.copy() if (hasattr(env.sim.data, 'act') and env.sim.data.act is not None) else None
+            act_none_transition_2 = (act_mid is None) != (act_after_2 is None)
             act_drift2 = 0.0
-            if act_mid is not None and hasattr(env.sim.data, 'act') and env.sim.data.act is not None:
-                act_drift2 = float(np.max(np.abs(act_mid - env.sim.data.act.copy())))
+            if not act_none_transition_2 and act_mid is not None and act_after_2 is not None:
+                act_drift2 = float(np.max(np.abs(act_mid - act_after_2)))
             source_mutated_2 = (qpos_drift2 > 0 or qvel_drift2 > 0 or
-                                time_drift2 > 0 or act_drift2 > 0)
+                                time_drift2 > 0 or act_drift2 > 0 or act_none_transition_2)
 
             C_poses = {}
             for (etype, eid), info in expected_entities.items():
@@ -445,7 +455,7 @@ def main():
     protocol_sha = sha256_file(protocol_path) if protocol_path.is_file() else "MISSING"
 
     # Action sequences: zero actions then varied actions for physics interaction
-    zero_actions = [[0.0]*7] * 3
+    zero_actions = [[0.0]*7 for _ in range(3)]
     varied_actions = [
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
@@ -507,7 +517,6 @@ def main():
     total_nonfinite = sum(s.get("nonfinite", 0) for s in all_summaries)
     entity_closure_ok = all(s.get("entity_closure_ok", False) for s in all_summaries
                             if s.get("status") != "SKIP")
-    all_finite = total_nonfinite == 0
 
     # Strict gate: exactly 40 tested, skip=0, all PASS
     identity_ok = (tested_tasks == expected_task_set and skipped == 0)
@@ -612,6 +621,9 @@ def main():
     try:
         staging.rename(out)
     except OSError:
+        import shutil
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
         raise SystemExit(f"rename failed — output may have appeared: {out}")
 
     print(f"\nSealed: {out}")

@@ -238,11 +238,10 @@ class TestCollectEntityRejection(unittest.TestCase):
             self.fail(f"Valid site raised CollectionHold: {e}")
 
     def test_11_all_zeros_quaternion_raises(self):
-        """All-zeros quaternion is invalid (qnorm divides by zero)."""
+        """All-zeros quaternion is invalid (qnorm rejects zero norm)."""
         self.data.body_xquat[1] = np.array([0.0, 0.0, 0.0, 0.0])
         resolution = {"entity_type": "body", "entity_id": 1}
-        # This should raise either from qnorm (zero norm) or non-finite check
-        with self.assertRaises((CollectionHold, ZeroDivisionError, ValueError)):
+        with self.assertRaises(CollectionHold):
             collect_entity(self.model, self.data, resolution)
 
 

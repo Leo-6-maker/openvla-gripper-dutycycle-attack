@@ -181,8 +181,11 @@ def resolve_entity(name, semantic_role, sites, bodies, geoms):
     alias_in_geoms = alias_name in geoms
     alias_in_bodies = alias_name in bodies
 
-    # Cross-type conflict: alias exists in multiple entity types → AMBIGUOUS
-    if alias_in_sites or alias_in_geoms:
+    # Cross-type conflict: alias exists in multiple entity types → AMBIGUOUS.
+    # If alias exists only in sites or geoms (not bodies), no alias possible
+    # — silently skip to EXACT_GEOM fallback.
+    alias_type_count = sum([alias_in_sites, alias_in_geoms, alias_in_bodies])
+    if alias_type_count > 1:
         conflicts = []
         if alias_in_sites:
             conflicts.append('site')
@@ -207,18 +210,6 @@ def resolve_entity(name, semantic_role, sites, bodies, geoms):
             if in_geoms:
                 candidates.append({
                     'entity_type': 'geom', 'entity_id': geoms[name]['id'],
-                    'resolution': 'EXACT_GEOM',
-                    'status': 'SUPERSEDED_BY_STRUCTURAL_ALIAS',
-                })
-            if alias_in_sites:
-                candidates.append({
-                    'entity_type': 'site', 'entity_id': sites[alias_name]['id'],
-                    'resolution': 'EXACT_SITE',
-                    'status': 'SUPERSEDED_BY_STRUCTURAL_ALIAS',
-                })
-            if alias_in_geoms:
-                candidates.append({
-                    'entity_type': 'geom', 'entity_id': geoms[alias_name]['id'],
                     'resolution': 'EXACT_GEOM',
                     'status': 'SUPERSEDED_BY_STRUCTURAL_ALIAS',
                 })

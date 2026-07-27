@@ -202,14 +202,17 @@ def _verify_source_stability(qpos_before, qvel_before, act_before, time_before, 
     pos_drift = float(np.max(np.abs(qpos_before - qpos_after)))
     vel_drift = float(np.max(np.abs(qvel_before - qvel_after)))
     time_drift = abs(float(time_before) - time_after)
+    # Act must not transition between None and array, or mutate values
+    act_none_transition = (act_before is None) != (act_after is None)
     act_drift = 0.0
-    if act_before is not None and act_after is not None:
+    if not act_none_transition and act_before is not None and act_after is not None:
         act_drift = float(np.max(np.abs(act_before - act_after)))
-    if pos_drift > 0 or vel_drift > 0 or time_drift > 0 or act_drift > 0:
+    if pos_drift > 0 or vel_drift > 0 or time_drift > 0 or act_drift > 0 or act_none_transition:
         raise CollectionHold(
             f"source state mutated by {label} at step {step}: "
             f"qpos_drift={pos_drift:.2e} qvel_drift={vel_drift:.2e} "
-            f"time_drift={time_drift:.2e} act_drift={act_drift:.2e}")
+            f"time_drift={time_drift:.2e} act_drift={act_drift:.2e}"
+            f"{' act_none_transition' if act_none_transition else ''}")
     return True
 
 

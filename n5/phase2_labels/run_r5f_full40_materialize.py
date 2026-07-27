@@ -99,14 +99,16 @@ def _verify_source_stability(qpos_before, qvel_before, act_before, time_before, 
     pos_drift = float(np.max(np.abs(qpos_before - qpos_after)))
     vel_drift = float(np.max(np.abs(qvel_before - qvel_after)))
     time_drift = abs(float(time_before) - time_after)
+    act_none_transition = (act_before is None) != (act_after is None)
     act_drift = 0.0
-    if act_before is not None and act_after is not None:
+    if not act_none_transition and act_before is not None and act_after is not None:
         act_drift = float(np.max(np.abs(act_before - act_after)))
-    if pos_drift > 0 or vel_drift > 0 or time_drift > 0 or act_drift > 0:
+    if pos_drift > 0 or vel_drift > 0 or time_drift > 0 or act_drift > 0 or act_none_transition:
         raise CollectionHold(
             f"source state mutated by {label} at step {step}: "
             f"qpos_drift={pos_drift:.2e} qvel_drift={vel_drift:.2e} "
-            f"time_drift={time_drift:.2e} act_drift={act_drift:.2e}")
+            f"time_drift={time_drift:.2e} act_drift={act_drift:.2e}"
+            f"{' act_none_transition' if act_none_transition else ''}")
     return True
 
 
@@ -180,7 +182,10 @@ def load_pilot_identities(pilot_path):
         state_id = int(rec["state_id"])
         ep_id = str(rec["episode_id"])
         seed_val = int(rec.get("collection_seed", rec.get("seed", 0)))
-        init_sha = rec.get("initial_state_sha256", rec.get("source_episode_root", ""))
+        init_sha = rec.get("initial_state_sha256", "")
+        if not init_sha or not isinstance(init_sha, str) or len(init_sha) != 64:
+            raise CollectionHold(
+                f"pilot record {ep_id} missing or invalid initial_state_sha256: {init_sha[:20] if init_sha else 'MISSING'}")
 
         if suite not in FOUR_SUITES:
             raise CollectionHold(f"unknown suite: {suite}")
@@ -233,7 +238,7 @@ def load_resolutions(registry_path):
 
 
 def verify_r5e_receipt(r5e_path):
-    """Verify R5-E sealed root exists and status is PASS."""
+    """Verify R5-E sealed root — full seal check + status verification."""
     r5e = Path(r5e_path).resolve()
     if not r5e.is_dir():
         raise CollectionHold(f"R5-E receipt not found: {r5e}")
@@ -241,9 +246,28 @@ def verify_r5e_receipt(r5e_path):
     side_path = r5e / "SHA256SUMS.sha256"
     if not sums_path.is_file() or not side_path.is_file():
         raise CollectionHold(f"R5-E receipt not sealed: {r5e}")
+    # Verify sidecar
     sidecar = side_path.read_text(encoding="utf-8").strip().split()
     if len(sidecar) < 2 or sidecar[0] != sha256_file(sums_path):
         raise CollectionHold(f"R5-E seal sidecar mismatch: {r5e}")
+    # Verify every file in SHA256SUMS
+    for line in sums_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split(None, 1)
+        if len(parts) < 2:
+            raise CollectionHold(f"R5-E SHA256SUMS malformed line: {line}")
+        digest, name = parts
+        name = name.lstrip("*")
+        if name in ("SHA256SUMS", "SHA256SUMS.sha256"):
+            continue
+        target = r5e / name
+        if not target.is_file():
+            raise CollectionHold(f"R5-E sealed file missing: {name}")
+        if sha256_file(target) != digest:
+            raise CollectionHold(f"R5-E seal file mismatch: {name}")
+    # Verify manifest status
     manifest_path = r5e / "MANIFEST.json"
     if not manifest_path.is_file():
         raise CollectionHold(f"R5-E manifest missing: {r5e}")
@@ -258,6 +282,29 @@ def verify_r5e_receipt(r5e_path):
         "manifest_sha256": sha256_file(manifest_path),
         "status": manifest["status"],
     }
+
+
+def verify_entity_identity(model, entity_type, entity_id, expected_name):
+    """Verify MuJoCo entity name matches registry expectation. Raises on mismatch."""
+    if entity_type == "body":
+        if entity_id < 0 or entity_id >= int(model.nbody):
+            raise CollectionHold(f"body id {entity_id} out of range")
+        actual = str(model.body(entity_id).name or "")
+    elif entity_type == "site":
+        if entity_id < 0 or entity_id >= int(model.nsite):
+            raise CollectionHold(f"site id {entity_id} out of range")
+        actual = str(model.site(entity_id).name or "")
+    elif entity_type == "geom":
+        if entity_id < 0 or entity_id >= int(model.ngeom):
+            raise CollectionHold(f"geom id {entity_id} out of range")
+        actual = str(model.geom(entity_id).name or "")
+    else:
+        raise CollectionHold(f"unknown entity type: {entity_type}")
+    if actual != expected_name:
+        raise CollectionHold(
+            f"entity identity mismatch: expected '{expected_name}', "
+            f"got '{actual}' for {entity_type}#{entity_id}")
+    return True
 
 
 def capture_one_episode(module, suite, task_idx, state_id, collection_seed,
@@ -282,6 +329,12 @@ def capture_one_episode(module, suite, task_idx, state_id, collection_seed,
         obs = env.set_init_state(copy.deepcopy(canonical_state))
         for _ in range(int(module.NUM_STEPS_WAIT)):
             obs = env.step([0, 0, 0, 0, 0, 0, -1])[0]
+
+        # Verify all registry entities match the live MuJoCo model
+        model = env.sim.model
+        for (etype, eid), res in resolutions.items():
+            expected_name = res.get("alias_to", res.get("name", "?"))
+            verify_entity_identity(model, etype, eid, expected_name)
 
         rows = []
         privileged = []
@@ -509,10 +562,13 @@ def main():
                 raise CollectionHold(f"state_id {state_id} >= {len(states)}")
             canonical_state = copy.deepcopy(states[state_id])
 
-            # Verify initial-state SHA
+            # Verify initial-state SHA (declared_sha already validated in load_pilot_identities)
             init_state_sha = sha256_bytes(pickle.dumps(canonical_state, protocol=4))
-            declared_sha = ident.get("initial_state_sha256", "")
-            state_sha_ok = (not declared_sha) or (init_state_sha == declared_sha)
+            declared_sha = ident["initial_state_sha256"]
+            if init_state_sha != declared_sha:
+                raise CollectionHold(
+                    f"initial_state_sha mismatch: computed={init_state_sha[:16]} "
+                    f"declared={declared_sha[:16]}")
 
             episode = capture_one_episode(
                 module, suite, task_idx, state_id, coll_seed,
@@ -529,9 +585,8 @@ def main():
                 "output_episode_id": episode["episode_id"],
                 "suite": suite, "task_id": task_idx, "state_id": state_id,
                 "collection_seed": coll_seed,
-                "initial_state_sha_verified": state_sha_ok,
-                "initial_state_sha_declared": declared_sha,
-                "initial_state_sha_actual": init_state_sha,
+                "initial_state_sha_verified": True,
+                "initial_state_sha": init_state_sha,
                 "steps": episode["step_count"],
                 "entities": len(episode["telemetry"][0]["entities"]) if episode["telemetry"] else 0,
                 "episode_sha256": ep_sha,
@@ -615,6 +670,9 @@ def main():
     try:
         staging.rename(out_root)
     except OSError:
+        import shutil
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
         raise SystemExit(f"rename failed — output may have appeared: {out_root}")
 
     print(f"\n{'=' * 70}")
