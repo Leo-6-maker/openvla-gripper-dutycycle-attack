@@ -143,15 +143,59 @@ def recorded_body_pose(state: list[float], entry: Mapping[str, Any]) -> dict[str
     return pose(state[start:start + 3], xyzw_to_wxyz(state[start + 3:start + 7]))
 
 
+def world_body_path(model: Any, child_id: int) -> list[int]:
+    """Return the complete model-local chain from world body to child."""
+    path = []
+    current = int(child_id)
+    for _ in range(int(model.nbody)):
+        if current == 0:
+            return list(reversed(path))
+        if current < 0 or current >= int(model.nbody):
+            break
+        path.append(current)
+        current = int(model.body_parentid[current])
+    raise GeometryHold(f"invalid world ancestor chain: {child_id}")
+
+
+def body_descendant_or_self(model: Any, root_id: int, body_id: int) -> bool:
+    current = int(body_id)
+    for _ in range(int(model.nbody)):
+        if current == int(root_id):
+            return True
+        if current <= 0 or current >= int(model.nbody):
+            return False
+        current = int(model.body_parentid[current])
+    return False
+
+
+def body_chain_has_joint(model: Any, body_id: int, include_free: bool = True) -> bool:
+    chain = set(world_body_path(model, body_id))
+    return any(
+        int(model.jnt_bodyid[joint_id]) in chain
+        and (include_free or int(model.jnt_type[joint_id]) != 0)
+        for joint_id in range(int(model.njnt))
+    )
+
+
+def fixed_body_pose(model: Any, body_id: int) -> dict[str, list[float]]:
+    if body_chain_has_joint(model, body_id, include_free=True):
+        raise GeometryHold(f"fixed body has a joint: {body_id}")
+    result = pose([0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+    for ancestor_id in world_body_path(model, body_id):
+        result = compose(result, pose(model.body_pos[ancestor_id].tolist(), model.body_quat[ancestor_id].tolist()))
+    return result
+
+
 def model_body_pose(sim: Any, model: Any, body_id: int) -> dict[str, list[float]]:
-    return pose(sim.data.body_xpos[body_id].tolist(), sim.data.body_xquat[body_id].tolist())
+    del sim
+    return fixed_body_pose(model, body_id)
 
 
 def subtree_has_articulated_joint(model: Any, root_id: int) -> bool:
     body_ids = {
         body_id
         for body_id in range(int(model.nbody))
-        if body_id == root_id or body_path(model, root_id, body_id) is not None
+        if body_descendant_or_self(model, root_id, body_id)
     }
     # MuJoCo type 0 is a free joint: it makes an object dynamic, but it is not
     # an articulated target. Hinge/slide/ball joints anywhere below the root
@@ -183,6 +227,11 @@ def site_local_pose(model: Any, site_id: int, root_id: int) -> dict[str, list[fl
     return local
 
 
+def fixed_site_pose(model: Any, site_id: int) -> dict[str, list[float]]:
+    parent_id = int(model.site_bodyid[site_id])
+    return compose(fixed_body_pose(model, parent_id), pose(model.site_pos[site_id].tolist(), model.site_quat[site_id].tolist()))
+
+
 def geom_local_pose(model: Any, geom_id: int, root_id: int) -> dict[str, list[float]]:
     body_id = int(model.geom_bodyid[geom_id])
     path = body_path(model, root_id, body_id)
@@ -195,7 +244,8 @@ def geom_local_pose(model: Any, geom_id: int, root_id: int) -> dict[str, list[fl
 
 
 def static_site_pose(sim: Any, model: Any, site_id: int) -> dict[str, list[float]]:
-    return pose(sim.data.site_xpos[site_id].tolist(), mat_to_quat(sim.data.site_xmat[site_id].tolist()))
+    del sim
+    return fixed_site_pose(model, site_id)
 
 
 def target_case(
@@ -222,14 +272,16 @@ def target_case(
         if dynamic is not None:
             object_name, root_id = dynamic
             if subtree_has_articulated_joint(model, root_id):
-                return {"id": name, "role": "REGION_TARGET", "source": "UNKNOWN_ARTICULATED", "known": False}
+                return {"id": name, "role": "REGION_TARGET", "source": "ARTICULATED_UNKNOWN", "known": False}
             body_origin = recorded_body_pose(state, objects[object_name])
             site_local = site_local_pose(model, site_id, root_id)
             site_pose = compose(body_origin, site_local)
             source = "RECORDED_OBJECT_STATE_FROZEN_SITE_LOCAL"
         else:
+            if body_chain_has_joint(model, parent_id, include_free=True):
+                return {"id": name, "role": "REGION_TARGET", "source": "UNKNOWN_UNOBSERVED_JOINTED", "known": False}
             site_pose = static_site_pose(sim, model, site_id)
-            source = "FROZEN_MODEL_SITE"
+            source = "MODEL_FIXED_CHAIN"
         return {
             "id": name,
             "role": "REGION_TARGET",
@@ -246,16 +298,18 @@ def target_case(
         if body_id != int(resolution.get("entity_id", -1)):
             raise GeometryHold(f"body identity mismatch: {alias_name}")
         bddl_name = str(resolution.get("alias_from") or alias_name.removesuffix("_main"))
-        has_joint = subtree_has_articulated_joint(model, body_id)
+        has_joint = subtree_has_articulated_joint(model, body_id) or body_chain_has_joint(model, body_id, include_free=False)
         if has_joint:
-            return {"id": bddl_name, "role": "OBJECT_TARGET", "source": "UNKNOWN_ARTICULATED", "known": False}
+            return {"id": bddl_name, "role": "OBJECT_TARGET", "source": "ARTICULATED_UNKNOWN", "known": False}
         center, half = body_local_bounds(model, body_id, bounds_cache)
         if bddl_name in objects:
             body_pose = recorded_body_pose(state, objects[bddl_name])
             source = "RECORDED_OBJECT_STATE_FROZEN_BODY_LOCAL"
         else:
+            if body_chain_has_joint(model, body_id, include_free=True):
+                return {"id": bddl_name, "role": "OBJECT_TARGET", "source": "UNKNOWN_UNOBSERVED_JOINTED", "known": False}
             body_pose = model_body_pose(sim, model, body_id)
-            source = "FROZEN_MODEL_BODY"
+            source = "MODEL_FIXED_CHAIN"
         return {
             "id": bddl_name,
             "role": "OBJECT_TARGET",

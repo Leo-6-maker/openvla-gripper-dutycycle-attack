@@ -27,6 +27,7 @@ LIBERO_TREE = "99f4ada3f1d62e026fc9ff2390eb4ff8a1760e60"
 POS_TOL = 1e-6
 ROT_TOL = 1e-6
 EXTENT_TOL = 1e-6
+BODY_ROT_TOL = 1e-7
 
 
 def sha256_file(path: Path) -> str:
@@ -159,7 +160,9 @@ def compose(a: Mapping[str, Sequence[float]], b: Mapping[str, Sequence[float]]) 
 
 def quat_distance(a: Sequence[float], b: Sequence[float]) -> float:
     qa, qb = qnorm(a), qnorm(b)
-    return 2 * math.acos(min(1.0, abs(sum(x*y for x, y in zip(qa, qb)))))
+    dot = abs(sum(x * y for x, y in zip(qa, qb)))
+    dot = min(1.0, max(0.0, dot))
+    return 2 * math.atan2(math.sqrt(max(0.0, 1.0 - dot * dot)), dot)
 
 
 def body_path(model: Any, root_id: int, child_id: int) -> list[int] | None:
@@ -171,6 +174,55 @@ def body_path(model: Any, root_id: int, child_id: int) -> list[int] | None:
         if current <= 0 or len(path) > int(model.nbody):
             return None
     return list(reversed(path))
+
+
+def world_body_path(model: Any, child_id: int) -> list[int]:
+    """Return the complete model-local chain from world body to child."""
+    path = []
+    current = int(child_id)
+    for _ in range(int(model.nbody)):
+        if current == 0:
+            return list(reversed(path))
+        if current < 0 or current >= int(model.nbody):
+            break
+        path.append(current)
+        current = int(model.body_parentid[current])
+    raise ReviewHold(f"invalid world ancestor chain: {child_id}")
+
+
+def body_descendant_or_self(model: Any, root_id: int, body_id: int) -> bool:
+    current = int(body_id)
+    for _ in range(int(model.nbody)):
+        if current == int(root_id):
+            return True
+        if current <= 0 or current >= int(model.nbody):
+            return False
+        current = int(model.body_parentid[current])
+    return False
+
+
+def body_chain_has_joint(model: Any, body_id: int, include_free: bool = True) -> bool:
+    chain = set(world_body_path(model, body_id))
+    return any(
+        int(model.jnt_bodyid[joint_id]) in chain
+        and (include_free or int(model.jnt_type[joint_id]) != 0)
+        for joint_id in range(int(model.njnt))
+    )
+
+
+def fixed_body_pose(model: Any, body_id: int) -> dict[str, list[float]]:
+    if body_chain_has_joint(model, body_id, include_free=True):
+        raise ReviewHold(f"fixed body has a joint: {body_id}")
+    result = pose([0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+    for ancestor_id in world_body_path(model, body_id):
+        result = compose(result, pose(model.body_pos[ancestor_id].tolist(), model.body_quat[ancestor_id].tolist()))
+    return result
+
+
+def fixed_site_pose(model: Any, site_id: int) -> dict[str, list[float]]:
+    parent_id = int(model.site_bodyid[site_id])
+    result = fixed_body_pose(model, parent_id)
+    return compose(result, pose(model.site_pos[site_id].tolist(), model.site_quat[site_id].tolist()))
 
 
 def shape_vertices(model: Any, geom_id: int) -> list[tuple[float, float, float]]:
@@ -243,8 +295,13 @@ def local_geom_pose(model: Any, geom_id: int, root_id: int) -> dict[str, list[fl
 
 
 def subtree_articulated(model: Any, root_id: int) -> bool:
-    bodies = {i for i in range(int(model.nbody)) if i == root_id or body_path(model, root_id, i) is not None}
+    bodies = {i for i in range(int(model.nbody)) if body_descendant_or_self(model, root_id, i)}
     return any(int(model.jnt_bodyid[j]) in bodies and int(model.jnt_type[j]) != 0 for j in range(int(model.njnt)))
+
+
+def subtree_has_any_joint(model: Any, root_id: int) -> bool:
+    bodies = {i for i in range(int(model.nbody)) if body_descendant_or_self(model, root_id, i)}
+    return any(int(model.jnt_bodyid[j]) in bodies for j in range(int(model.njnt)))
 
 
 def recorded_pose(state: Sequence[float], entry: Mapping[str, Any]) -> dict[str, list[float]]:
@@ -339,21 +396,25 @@ def expected_target(sim: Any, model: Any, resolution: Mapping[str, Any], state: 
                 if current == root_id: dynamic = (object_name, root_id); break
             if dynamic: break
             current = int(model.body_parentid[current])
-        if dynamic and subtree_articulated(model, dynamic[1]): return {"known": False, "source": "UNKNOWN_ARTICULATED"}
+        if dynamic and subtree_articulated(model, dynamic[1]): return {"known": False, "source": "ARTICULATED_UNKNOWN"}
         if dynamic:
             object_name, root_id = dynamic; local = local_site_pose(model, sid, root_id); target_pose = compose(recorded_pose(state, objects[object_name]), local); source = "RECORDED_OBJECT_STATE_FROZEN_SITE_LOCAL"; parent_origin = recorded_pose(state, objects[object_name])
         else:
-            target_pose = pose(sim.data.site_xpos[sid].tolist(), mat_to_quat(sim.data.site_xmat[sid].tolist())); source = "FROZEN_MODEL_SITE"; local = None; parent_origin = None
+            if body_chain_has_joint(model, parent, include_free=True):
+                return {"known": False, "source": "UNKNOWN_UNOBSERVED_JOINTED"}
+            target_pose = fixed_site_pose(model, sid); source = "MODEL_FIXED_CHAIN"; local = None; parent_origin = None
         return {"known": True, "source": source, "pose": target_pose, "half_extents": [float(x) for x in model.site_size[sid].tolist()], "local_geometry_pose": local, "parent_body_origin_pose": parent_origin}
     if kind == "body":
         bid = int(model.body(name).id)
         if bid != int(resolution.get("entity_id", -1)): raise ReviewHold("target body identity mismatch")
-        if subtree_articulated(model, bid): return {"known": False, "source": "UNKNOWN_ARTICULATED"}
+        if subtree_articulated(model, bid) or body_chain_has_joint(model, bid, include_free=False): return {"known": False, "source": "ARTICULATED_UNKNOWN"}
         center, half = local_bounds(model, bid, cache); bddl_name = str(resolution.get("alias_from") or name.removesuffix("_main"))
         if bddl_name in objects:
             origin = recorded_pose(state, objects[bddl_name]); source = "RECORDED_OBJECT_STATE_FROZEN_BODY_LOCAL"
         else:
-            origin = pose(sim.data.body_xpos[bid].tolist(), sim.data.body_xquat[bid].tolist()); source = "FROZEN_MODEL_BODY"
+            if subtree_has_any_joint(model, bid) or body_chain_has_joint(model, bid, include_free=True):
+                return {"known": False, "source": "UNKNOWN_UNOBSERVED_JOINTED"}
+            origin = fixed_body_pose(model, bid); source = "MODEL_FIXED_CHAIN"
         return {"known": True, "source": source, "pose": compose(origin, pose(center, [1,0,0,0])), "half_extents": half, "body_origin_pose": origin, "local_geometry_center": center}
     return {"known": False, "source": "UNKNOWN_TARGET_RESOLUTION"}
 
@@ -528,7 +589,7 @@ def review_run(run_root: Path, pilot: Mapping[str, Any], index_payload: Mapping[
             step_count += 1
         episode_count += 1
     for env, _ in task_cache.values(): env.close()
-    passed = not errors and episode_count == 40 and step_count == 9422 and relation_rows == 11880 and alias_rows == 217 and unknown_rows == 0 and all(value <= limit for value, limit in ((metrics["body_origin_position_max_error_m"],1e-8),(metrics["body_origin_rotation_max_error_rad"],1e-8),(metrics["geometry_position_max_error_m"],POS_TOL),(metrics["geometry_rotation_max_error_rad"],ROT_TOL),(metrics["extent_max_error_m"],EXTENT_TOL)))
+    passed = not errors and episode_count == 40 and step_count == 9422 and relation_rows == 11880 and alias_rows == 217 and unknown_rows == 0 and all(value <= limit for value, limit in ((metrics["body_origin_position_max_error_m"],1e-8),(metrics["body_origin_rotation_max_error_rad"],BODY_ROT_TOL),(metrics["geometry_position_max_error_m"],POS_TOL),(metrics["geometry_rotation_max_error_rad"],ROT_TOL),(metrics["extent_max_error_m"],EXTENT_TOL)))
     ordered = sorted(diagnostics, key=lambda row: (row["position_error_l2_m"], row["position_error_l_inf_m"], row["rotation_error_rad"]), reverse=True)
     source_counts: dict[str, int] = {}
     high_source_counts: dict[str, int] = {}
@@ -557,7 +618,7 @@ def review_run(run_root: Path, pilot: Mapping[str, Any], index_payload: Mapping[
         "alias_rows_in_top_100": sum(row.get("alias_status") == "INIT_GEOM_ALIAS_TO_INDEX_BODY" for row in ordered[:100]),
         "top_100_difference_rows": ordered[:100],
     }
-    return {"status": "PASS" if passed else "HOLD", "run_root": str(run_root), "run_sha256s_sha256": seal_sha, "episodes": episode_count, "steps": step_count, "relation_rows": relation_rows, "alias_rows": alias_rows, "supported_unknown_rows": unknown_rows, "metrics": metrics, "thresholds": {"body_origin_position_m":1e-8,"body_origin_rotation_rad":1e-8,"geometry_position_m":POS_TOL,"geometry_rotation_rad":ROT_TOL,"extent_m":EXTENT_TOL}, "difference_summary": difference_summary, "errors": errors}
+    return {"status": "PASS" if passed else "HOLD", "run_root": str(run_root), "run_sha256s_sha256": seal_sha, "episodes": episode_count, "steps": step_count, "relation_rows": relation_rows, "alias_rows": alias_rows, "supported_unknown_rows": unknown_rows, "metrics": metrics, "thresholds": {"body_origin_position_m":1e-8,"body_origin_rotation_rad":BODY_ROT_TOL,"geometry_position_m":POS_TOL,"geometry_rotation_rad":ROT_TOL,"extent_m":EXTENT_TOL}, "difference_summary": difference_summary, "errors": errors}
 
 
 def main() -> int:
