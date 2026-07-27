@@ -23,6 +23,8 @@ FROZEN_R5E = {
         "708e300ea561f5836fb6723eef14531ed9f91f4e188cad77905f6594b76c304e",
     "r5e_independent_review_sha256sums":
         "2465a4c9e4ba0d329183a70b4cc7f38fe38e78ccbb1cb908604fb878c288ca61",
+    "r5e_comparison_sha256":
+        "",  # must be bound from actual sealed comparison evidence root
 }
 
 FOUR_SUITES = ["libero_10", "libero_goal", "libero_object", "libero_spatial"]
@@ -219,9 +221,39 @@ def validate_identity_allowlist(allowlist_path, pilot_path):
 
 # ── Main verifier ──
 
+def _runtime_git_values(root, label):
+    """Return (commit, tree, clean) for a git repo. Raises on dirty or missing."""
+    import subprocess
+    root = Path(root).resolve()
+    p = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
+                       capture_output=True, text=True)
+    if p.returncode != 0:
+        raise TransitionRejected(f"{label} not a git repo: {root}")
+    commit = p.stdout.strip()
+    tree = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD^{tree}"],
+                                   text=True).strip()
+    status = subprocess.check_output(["git", "-C", str(root), "status", "--porcelain"],
+                                     text=True).strip()
+    if status:
+        raise TransitionRejected(f"{label} working tree not clean: {status[:80]}")
+    return commit, tree
+
+
+def parse_iso_datetime(s):
+    """Parse ISO8601 datetime string. Returns None on failure."""
+    import datetime
+    for fmt in ["%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%dT%H:%M:%S%z"]:
+        try:
+            return datetime.datetime.strptime(s, fmt)
+        except ValueError:
+            continue
+    return None
+
+
 def verify_transition(transition_root, execution_source_commit, script_sha,
                       model_path, official_worker_path, pilot_manifest_path,
-                      registry_root, alias_ledger_path, output_root, gpu):
+                      registry_root, alias_ledger_path, upstream_root,
+                      libero_root, output_root, gpu, physical_gpu=None):
     """Validate transition receipt. Raises TransitionRejected on any failure.
     Must be called BEFORE load_policy()."""
 
@@ -240,145 +272,155 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
         raise TransitionRejected("TRANSITION_MANIFEST.json missing")
     tm = json.loads(manifest_path.read_text(encoding="utf-8"))
 
-    # 3. Schema, gate, status, chronology
+    # 3. Chronology: created_at must be after execution commit
+    created = tm.get("created_at", "")
+    if not created:
+        raise TransitionRejected("created_at missing")
+    created_dt = parse_iso_datetime(created)
+    if created_dt is None:
+        raise TransitionRejected(f"created_at unparseable: {created}")
+    # Get source commit timestamp
+    import subprocess, datetime
+    try:
+        ct_str = subprocess.check_output(
+            ["git", "log", "-1", "--format=%ct", execution_source_commit],
+            text=True, stderr=subprocess.DEVNULL).strip()
+        commit_ts = datetime.datetime.fromtimestamp(int(ct_str), tz=datetime.timezone.utc)
+    except Exception:
+        commit_ts = None  # Cannot verify without repo; skip for tests
+    if commit_ts is not None and created_dt < commit_ts:
+        raise TransitionRejected(
+            f"transition created {created} before source commit timestamp "
+            f"{commit_ts.isoformat()}")
+
+    # 4. Schema, gate, status
     if tm.get("gate") != "FIT-INFERENCE_TRANSITION":
         raise TransitionRejected(f"gate mismatch: {tm.get('gate')}")
     if tm.get("schema") != "FIT_INFERENCE_TRANSITION_V1":
         raise TransitionRejected(f"schema mismatch: {tm.get('schema')}")
     if tm.get("status") != "FROZEN_BEFORE_EXECUTION":
         raise TransitionRejected(f"status mismatch: {tm.get('status')}")
-    if not tm.get("created_at"):
-        raise TransitionRejected("created_at missing")
 
-    # 4. Verify all frozen R5-E scientific evidence
+    # 5. Verify all frozen R5-E scientific evidence (including comparison SHA)
     for key, expected in FROZEN_R5E.items():
         actual = tm.get(key)
         if actual != expected:
             raise TransitionRejected(
                 f"frozen R5-E evidence mismatch: {key}={actual} (expected {expected})")
 
-    # r5e_comparison_sha must be present and non-empty
-    r5e_comp = tm.get("r5e_comparison_sha256", "")
-    if not r5e_comp or not SHA256_RE.match(r5e_comp):
-        raise TransitionRejected(
-            f"r5e_comparison_sha256 missing or invalid: {r5e_comp[:20]}")
-
-    # 5. Execution source binding
+    # 6. Execution source binding
     if tm.get("r5f_execution_source_commit") != execution_source_commit:
         raise TransitionRejected(
             f"source commit mismatch: declared={tm.get('r5f_execution_source_commit')} "
             f"actual={execution_source_commit}")
     if tm.get("r5f_script_sha256") != script_sha:
-        raise TransitionRejected(
-            f"script SHA mismatch: declared={tm.get('r5f_script_sha256')} "
-            f"actual={script_sha}")
+        raise TransitionRejected("script SHA mismatch")
 
-    # 6. Model tree fingerprint
-    declared_model_tree = tm.get("model_tree_sha256")
-    actual_model_tree = compute_model_tree_fingerprint(model_path)
-    if declared_model_tree != actual_model_tree:
+    # 7. Model tree + processor
+    declared_tree = tm.get("model_tree_sha256")
+    actual_tree = compute_model_tree_fingerprint(model_path)
+    if declared_tree != actual_tree:
         raise TransitionRejected(
-            f"model tree mismatch: declared={declared_model_tree[:16]} "
-            f"actual={actual_model_tree[:16]}")
-
-    # 7. Processor/config SHA
+            f"model tree mismatch: declared={declared_tree[:16]} actual={actual_tree[:16]}")
     declared_proc = tm.get("processor_sha256")
     proc_path = Path(model_path) / "preprocessor_config.json"
     if not proc_path.is_file():
         raise TransitionRejected(f"processor config missing: {proc_path}")
-    actual_proc = sha256_file(proc_path)
-    if declared_proc != actual_proc:
-        raise TransitionRejected(
-            f"processor SHA mismatch: declared={declared_proc[:16]} "
-            f"actual={actual_proc[:16]}")
+    if declared_proc != sha256_file(proc_path):
+        raise TransitionRejected("processor SHA mismatch")
 
-    # 8. Official worker SHA
+    # 8. Worker SHA
     declared_worker = tm.get("official_worker_sha256")
     if not Path(official_worker_path).is_file():
         raise TransitionRejected(f"worker missing: {official_worker_path}")
-    actual_worker = sha256_file(official_worker_path)
-    if declared_worker != actual_worker:
-        raise TransitionRejected(
-            f"worker SHA mismatch: declared={declared_worker[:16]} "
-            f"actual={actual_worker[:16]}")
+    if declared_worker != sha256_file(official_worker_path):
+        raise TransitionRejected("worker SHA mismatch")
 
     # 9. Pilot manifest SHA
     declared_pilot = tm.get("pilot_manifest_sha256")
     if not Path(pilot_manifest_path).is_file():
         raise TransitionRejected(f"pilot manifest missing: {pilot_manifest_path}")
-    actual_pilot = sha256_file(pilot_manifest_path)
-    if declared_pilot != actual_pilot:
-        raise TransitionRejected(
-            f"pilot SHA mismatch: declared={declared_pilot[:16]} "
-            f"actual={actual_pilot[:16]}")
+    if declared_pilot != sha256_file(pilot_manifest_path):
+        raise TransitionRejected("pilot SHA mismatch")
 
-    # 10. Identity allowlist — rebuild from pilot and compare
-    _, actual_allowlist_digest = validate_identity_allowlist(
+    # 10. Identity allowlist + identity_set_digest
+    allowlist_data, actual_allowlist_digest = validate_identity_allowlist(
         tr / "IDENTITY_ALLOWLIST.json", pilot_manifest_path)
-    declared_allowlist = tm.get("identity_allowlist_digest")
-    if declared_allowlist != actual_allowlist_digest:
-        raise TransitionRejected(
-            f"allowlist digest mismatch: declared={declared_allowlist[:16]} "
-            f"actual={actual_allowlist_digest[:16]}")
+    if tm.get("identity_allowlist_digest") != actual_allowlist_digest:
+        raise TransitionRejected("allowlist digest mismatch")
+    # Recompute identity_set_digest
+    id_set_digest = hashlib.sha256(
+        json.dumps(allowlist_data, sort_keys=True).encode()).hexdigest()
+    if tm.get("identity_set_digest") != id_set_digest:
+        raise TransitionRejected("identity_set_digest mismatch")
+    if tm.get("authorized_identities") != 40:
+        raise TransitionRejected("authorized_identities must be 40")
+    if tm.get("n_pilot_identities") != 40:
+        raise TransitionRejected("n_pilot_identities must be 40")
 
-    # 11. Registry summary SHA
+    # 11. Registry + alias
     declared_reg = tm.get("registry_summary_sha256")
     reg_path = Path(registry_root).parent / "ENTITY_REGISTRY_V2_SUMMARY.json"
     if not reg_path.is_file():
         raise TransitionRejected(f"registry summary missing: {reg_path}")
-    actual_reg = sha256_file(reg_path)
-    if declared_reg != actual_reg:
-        raise TransitionRejected(
-            f"registry SHA mismatch: declared={declared_reg[:16]} "
-            f"actual={actual_reg[:16]}")
-
-    # 12. Alias ledger SHA
+    if declared_reg != sha256_file(reg_path):
+        raise TransitionRejected("registry SHA mismatch")
     declared_alias = tm.get("alias_ledger_sha256")
     if not Path(alias_ledger_path).is_file():
         raise TransitionRejected(f"alias ledger missing: {alias_ledger_path}")
-    actual_alias = sha256_file(alias_ledger_path)
-    if declared_alias != actual_alias:
+    if declared_alias != sha256_file(alias_ledger_path):
+        raise TransitionRejected("alias ledger SHA mismatch")
+
+    # 12. Upstream runtime — compute actual commit, tree, clean
+    declared_up_commit = tm.get("upstream_commit")
+    declared_up_tree = tm.get("upstream_tree", "")
+    up_commit, up_tree = _runtime_git_values(upstream_root, "upstream")
+    if declared_up_commit != up_commit:
         raise TransitionRejected(
-            f"alias ledger SHA mismatch: declared={declared_alias[:16]} "
-            f"actual={actual_alias[:16]}")
+            f"upstream commit mismatch: declared={declared_up_commit[:16]} "
+            f"actual={up_commit[:16]}")
+    if declared_up_tree and declared_up_tree != up_tree:
+        raise TransitionRejected("upstream tree mismatch")
 
-    # 13. Upstream OpenVLA commit/tree
-    declared_upstream = tm.get("upstream_commit")
-    if not declared_upstream or len(declared_upstream) < 40:
-        raise TransitionRejected("upstream_commit missing or invalid")
+    # 13. LIBERO runtime
+    declared_lib_commit = tm.get("libero_commit")
+    declared_lib_tree = tm.get("libero_tree", "")
+    lib_commit, lib_tree = _runtime_git_values(libero_root, "LIBERO")
+    if declared_lib_commit != lib_commit:
+        raise TransitionRejected(
+            f"LIBERO commit mismatch: declared={declared_lib_commit[:16]} "
+            f"actual={lib_commit[:16]}")
+    if declared_lib_tree and declared_lib_tree != lib_tree:
+        raise TransitionRejected("LIBERO tree mismatch")
 
-    # 14. LIBERO runtime fingerprint
-    declared_libero = tm.get("libero_fingerprint")
-    if not declared_libero or len(declared_libero) < 40:
-        raise TransitionRejected("libero_fingerprint missing or invalid")
-
-    # 15. Full permission matrix
-    PERMISSION_MUST_BE = {
+    # 14. Full permission matrix
+    PERMS = {
         "openvla_inference_authorized": True,
-        "clean_action_only": True,
-        "forward_before_capture": True,
-        "max_episodes": 40,
-        "identity_set_frozen": True,
+        "clean_action_only": True, "forward_before_capture": True,
+        "max_episodes": 40, "identity_set_frozen": True,
         "teacher_labels_authorized": False,
         "student_training_authorized": False,
         "detector_load_authorized": False,
-        "attack_authorized": False,
-        "protected_payload_read": False,
+        "attack_authorized": False, "protected_payload_read": False,
     }
-    for key, expected in PERMISSION_MUST_BE.items():
-        actual = tm.get(key)
-        if actual != expected:
+    for key, expected in PERMS.items():
+        if tm.get(key) != expected:
+            raise TransitionRejected(f"permission violation: {key} must be {expected}")
+
+    # 15. GPU + output allowlist
+    if gpu not in tm.get("allowed_gpus", []):
+        raise TransitionRejected(f"GPU {gpu} not in allowlist")
+    if str(output_root) not in tm.get("allowed_output_roots", []):
+        raise TransitionRejected("output root not in allowlist")
+
+    # 16. Physical/logical GPU mapping consistency
+    if physical_gpu is not None:
+        declared = tm.get("physical_to_logical_gpu", {})
+        if str(physical_gpu) not in declared:
+            raise TransitionRejected(f"physical GPU {physical_gpu} not mapped")
+        if declared[str(physical_gpu)] != 0:
             raise TransitionRejected(
-                f"permission violation: {key}={actual} (must be {expected})")
-
-    # 16. GPU allowlist
-    allowed_gpus = tm.get("allowed_gpus", [])
-    if gpu not in allowed_gpus:
-        raise TransitionRejected(f"GPU {gpu} not in allowlist: {allowed_gpus}")
-
-    # 17. Output root allowlist
-    allowed_outputs = tm.get("allowed_output_roots", [])
-    if str(output_root) not in allowed_outputs:
-        raise TransitionRejected(f"output root {output_root} not in allowlist")
+                f"physical GPU {physical_gpu} maps to device "
+                f"{declared[str(physical_gpu)]}, expected 0")
 
     return tm

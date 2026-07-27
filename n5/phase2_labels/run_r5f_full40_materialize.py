@@ -549,6 +549,7 @@ def main():
 
     # ── FIT-INFERENCE Transition Verification (BEFORE any model load) ──
     from fit_transition import verify_transition, TransitionRejected
+    from libero.libero import get_libero_path
     try:
         transition_manifest = verify_transition(
             transition_root=args.transition_receipt,
@@ -559,8 +560,11 @@ def main():
             pilot_manifest_path=pilot_path,
             registry_root=args.registry_root,
             alias_ledger_path=alias_ledger_path,
+            upstream_root=args.upstream_root,
+            libero_root=get_libero_path("bddl_files"),
             output_root=str(args.output_root.resolve()),
-            gpu=args.gpu,
+            gpu=0,  # logical cuda:0 (CUDA_VISIBLE_DEVICES already set)
+            physical_gpu=args.gpu,
         )
     except TransitionRejected as e:
         raise SystemExit(f"TRANSITION_REJECTED: {e}")

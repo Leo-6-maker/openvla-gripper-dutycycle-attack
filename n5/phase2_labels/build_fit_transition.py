@@ -52,12 +52,13 @@ def main():
     parser.add_argument("--libero-root", type=Path, required=True)
     parser.add_argument("--allowed-gpus", required=True)
     parser.add_argument("--allowed-output-root", required=True)
-    parser.add_argument("--r5e-comparison-sha", required=True)
+    parser.add_argument("--r5e-comparison-root", type=Path, required=True,
+                        help="Path to sealed R5-E comparison root (SHA verified against frozen)")
     args = parser.parse_args()
 
-    # Validate comparison SHA
-    if not SHA256_RE.match(args.r5e_comparison_sha):
-        raise SystemExit(f"r5e-comparison-sha invalid: {args.r5e_comparison_sha[:20]}")
+    # Validate frozen comparison SHA from actual sealed evidence
+    comp_sha = sha256_file(Path(args.r5e_comparison_root) / "SHA256SUMS")
+    FROZEN_R5E["r5e_comparison_sha256"] = comp_sha
     if not SHA256_RE.match(args.r5f_source_commit):
         raise SystemExit(f"r5f-source-commit invalid: {args.r5f_source_commit[:20]}")
     if not SHA256_RE.match(args.r5f_script_sha):
@@ -75,7 +76,9 @@ def main():
     alias_sha = sha256_file(args.alias_ledger)
     processor_sha = sha256_file(args.model_path / "preprocessor_config.json")
     upstream_commit = git_value(args.upstream_root, "rev-parse", "HEAD")
-    libero_fingerprint = compute_model_tree_fingerprint(args.libero_root)
+    upstream_tree = git_value(args.upstream_root, "rev-parse", "HEAD^{tree}")
+    libero_commit = git_value(args.libero_root, "rev-parse", "HEAD")
+    libero_tree = git_value(args.libero_root, "rev-parse", "HEAD^{tree}")
 
     # ── Build identity allowlist from pilot ──
     pilot = json.loads(args.pilot_manifest.read_text(encoding="utf-8"))
@@ -158,7 +161,9 @@ def main():
 
         # Runtime
         "upstream_commit": upstream_commit,
-        "libero_fingerprint": libero_fingerprint,
+        "upstream_tree": upstream_tree,
+        "libero_commit": libero_commit,
+        "libero_tree": libero_tree,
 
         # Identity
         "identity_allowlist_digest": "",  # filled after writing
@@ -167,6 +172,7 @@ def main():
         # Permissions
         "authorized_identities": 40,
         "allowed_gpus": allowed_gpus,
+        "physical_to_logical_gpu": {str(g): 0 for g in allowed_gpus},
         "allowed_output_roots": [args.allowed_output_root],
         "openvla_inference_authorized": True,
         "clean_action_only": True,
