@@ -453,8 +453,9 @@ def main():
 
     # ── Manifest status check ──
     print("\n--- Manifest Status ---")
-    ma = json.loads((root_a / "MANIFEST.json").read_text(encoding="utf-8"))
-    mb = json.loads((root_b / "MANIFEST.json").read_text(encoding="utf-8"))
+    manifest_names = {"c1": "ENTITY_REGISTRY_V2_SUMMARY.json"}.get(args.gate, "MANIFEST.json")
+    ma = json.loads((root_a / manifest_names).read_text(encoding="utf-8"))
+    mb = json.loads((root_b / manifest_names).read_text(encoding="utf-8"))
     status_a = ma.get("status", "?")
     status_b = mb.get("status", "?")
     print(f"  A: {status_a}  consumer_eligible={ma.get('consumer_eligible', '?')}")

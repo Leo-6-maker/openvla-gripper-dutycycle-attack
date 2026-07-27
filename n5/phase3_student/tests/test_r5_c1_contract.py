@@ -346,9 +346,13 @@ class TestForwardBeforeCaptureIntegration(unittest.TestCase):
             self.assertEqual(time_drift, 0.0,
                 f"time mutated by forward at step {step}: drift={time_drift:.2e}")
             if act_before is not None and hasattr(self.data, 'act') and self.data.act is not None:
-                act_drift = float(np.max(np.abs(act_before - self.data.act.copy())))
-                self.assertEqual(act_drift, 0.0,
-                    f"act mutated by forward at step {step}: drift={act_drift:.2e}")
+                if len(act_before) > 0 and len(self.data.act) > 0:
+                    act_drift = float(np.max(np.abs(act_before - self.data.act.copy())))
+                    self.assertEqual(act_drift, 0.0,
+                        f"act mutated by forward at step {step}: drift={act_drift:.2e}")
+                else:
+                    self.assertEqual(len(act_before), len(self.data.act),
+                        f"act length changed by forward at step {step}")
 
             self.env.step([0.0] * 7)
 
