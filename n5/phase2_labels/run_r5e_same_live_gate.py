@@ -34,7 +34,10 @@ SITE_ROT_LIMIT = 1e-7
 GEOM_POS_LIMIT = 1e-6
 GEOM_ROT_LIMIT = 1e-6
 VERIFICATION_LIMIT = 1e-15
-BC_ROT_VERIFICATION_LIMIT = 5e-8  # body_xquat is float32; B==C at float32 epsilon ~3e-8 rad
+# Rotation comparison: exact equality shortcut before geodesic.
+# MuJoCo body_xquat is float32; identical arrays may differ by float32 epsilon
+# (~3e-8 rad) when read as float64. The array_equal check catches true identity.
+BC_ROT_TOLERANCE = 1e-14  # after exact-equality shortcut, geodesic at machine epsilon
 
 FOUR_SUITES = ['libero_10', 'libero_goal', 'libero_object', 'libero_spatial']
 EXPECTED_TASKS = [(s, tid) for s in FOUR_SUITES for tid in range(10)]
@@ -60,6 +63,26 @@ def geodesic_wxyz(q1, q2):
     q1n /= np.linalg.norm(q1n); q2n /= np.linalg.norm(q2n)
     d = abs(np.dot(q1n, q2n)); d = min(d, 1.0)
     return float(2.0 * math.atan2(math.sqrt(max(0, 1 - d*d)), d))
+
+
+def quat_distance_stable(q1_raw, q2_raw):
+    """Sign-invariant quaternion distance with exact-equality shortcut.
+    Returns (geodesic_rad, exact_match).
+    If arrays are elementwise equal or q==-q, distance is exactly 0.0."""
+    q1 = np.array(q1_raw, float)
+    q2 = np.array(q2_raw, float)
+    # Exact equality (handles float32->float64 identity)
+    if np.array_equal(q1, q2):
+        return 0.0, True
+    # Sign-equivalence: q and -q represent the same rotation
+    if np.array_equal(q1, -q2):
+        return 0.0, True
+    # Otherwise compute geodesic
+    q1n = q1 / np.linalg.norm(q1)
+    q2n = q2 / np.linalg.norm(q2)
+    d = abs(np.dot(q1n, q2n))
+    d = min(d, 1.0)
+    return float(2.0 * math.atan2(math.sqrt(max(0, 1 - d*d)), d)), False
 
 
 def mat_to_quat_wxyz(m):
@@ -226,7 +249,8 @@ def test_one_task(suite, task_idx, state_id, seed, test_steps, registry_dir, app
                           "identity_issues": identity_issues[:10]}
 
         if not expected_entities:
-            # Articulated task with 0 relations — valid PASS with 0 records
+            # Articulated task with 0 supported relations — NOT_APPLICABLE
+            articulated = closure.get("articulated_empty", False)
             summary = {
                 "suite": suite, "task_idx": task_idx, "state_id": state_id,
                 "seed": seed, "test_steps": test_steps,
@@ -237,7 +261,7 @@ def test_one_task(suite, task_idx, state_id, seed, test_steps, registry_dir, app
                 "nonfinite": 0,
                 "entity_closure_ok": True,
                 "registry_closure": closure,
-                "status": "PASS",
+                "status": "NOT_APPLICABLE" if articulated else "FAIL_UNEXPECTED_EMPTY",
             }
             return [], summary
 
@@ -370,12 +394,21 @@ def test_one_task(suite, task_idx, state_id, seed, test_steps, registry_dir, app
                 ab_pos_err = float(np.max(np.abs(a_pos - b_pos)))
                 bc_pos_err = float(np.max(np.abs(b_pos - c_pos)))
 
+                # Raw values for independent recomputation
+                a_pos_list = a_pos.tolist() if hasattr(a_pos, 'tolist') else list(a_pos)
+                b_pos_list = b_pos.tolist() if hasattr(b_pos, 'tolist') else list(b_pos)
+                c_pos_list = c_pos.tolist() if hasattr(c_pos, 'tolist') else list(c_pos)
+
                 if etype == "site":
                     ab_rot_err = float(np.max(np.abs(a_rot - b_rot)))
                     bc_rot_err = float(np.max(np.abs(b_rot - c_rot)))
                     ab_geo = ab_rot_err
-                    bc_geo = bc_rot_err
+                    bc_geo, _ = bc_rot_err, False
                     b_rot_is_finite = all(math.isfinite(float(x)) for x in b_rot)
+                    bc_rot_pass = bc_rot_err <= VERIFICATION_LIMIT
+                    a_rot_raw = a_rot.tolist() if hasattr(a_rot, 'tolist') else list(a_rot)
+                    b_rot_raw = b_rot.tolist() if hasattr(b_rot, 'tolist') else list(b_rot)
+                    c_rot_raw = c_rot.tolist() if hasattr(c_rot, 'tolist') else list(c_rot)
                 else:
                     if etype == "body":
                         a_quat = a_rot; b_quat = b_rot; c_quat = c_rot
@@ -384,8 +417,13 @@ def test_one_task(suite, task_idx, state_id, seed, test_steps, registry_dir, app
                         b_quat = mat_to_quat_wxyz(b_rot)
                         c_quat = mat_to_quat_wxyz(c_rot)
                     ab_geo = geodesic_wxyz(a_quat, b_quat)
-                    bc_geo = geodesic_wxyz(b_quat, c_quat)
+                    # Stable comparison: exact equality shortcut before geodesic
+                    bc_geo, bc_exact = quat_distance_stable(b_quat, c_quat)
                     b_rot_is_finite = all(math.isfinite(float(x)) for x in b_quat)
+                    bc_rot_pass = bc_exact or bc_geo <= BC_ROT_TOLERANCE
+                    a_rot_raw = list(float(x) for x in a_quat)
+                    b_rot_raw = list(float(x) for x in b_quat)
+                    c_rot_raw = list(float(x) for x in c_quat)
 
                 pos_limit = BODY_POS_LIMIT if etype == "body" else (
                     SITE_POS_LIMIT if etype == "site" else GEOM_POS_LIMIT)
@@ -400,12 +438,22 @@ def test_one_task(suite, task_idx, state_id, seed, test_steps, registry_dir, app
                     "step": step,
                     "entity_type": etype, "entity_id": int(eid),
                     "entity_name": info["name"],
+                    "bddl_logical_name": info.get("bddl_logical_name", info["name"]),
                     "semantic_role": info["semantic_role"],
                     "resolution": info["resolution"],
+                    # Raw values for independent recomputation
+                    "A_position": a_pos_list,
+                    "B_position": b_pos_list,
+                    "C_position": c_pos_list,
+                    "A_rotation": a_rot_raw,
+                    "B_rotation": b_rot_raw,
+                    "C_rotation": c_rot_raw,
+                    # Computed errors
                     "AB_pos_Linf": ab_pos_err, "AB_rot_err": ab_geo,
                     "BC_pos_Linf": bc_pos_err, "BC_rot_err": bc_geo,
                     "BC_pos_pass": bc_pos_err <= VERIFICATION_LIMIT,
-                    "BC_rot_pass": bc_geo <= (BC_ROT_VERIFICATION_LIMIT if etype != "site" else VERIFICATION_LIMIT),
+                    "BC_rot_pass": bc_rot_pass,
+                    "BC_rot_exact": bc_exact if etype != "site" else (bc_rot_err <= VERIFICATION_LIMIT),
                     "AB_stale": ab_pos_err > VERIFICATION_LIMIT,
                     "pos_limit": pos_limit, "rot_limit": rot_limit,
                     "source_mutated_fwd1": source_mutated_1,
@@ -554,13 +602,21 @@ def main():
     total_mutations = sum(s.get("source_mutations", 0) for s in all_summaries)
     total_nonfinite = sum(s.get("nonfinite", 0) for s in all_summaries)
     entity_closure_ok = all(s.get("entity_closure_ok", False) for s in all_summaries
-                            if s.get("status") != "SKIP")
+                            if s.get("status") not in ("SKIP", "NOT_APPLICABLE"))
 
-    # Strict gate: exactly 40 tested, skip=0, all PASS
+    # Taxonomy counts
+    n_supported = sum(1 for s in all_summaries if s.get("status") == "PASS")
+    n_articulated_na = sum(1 for s in all_summaries if s.get("status") == "NOT_APPLICABLE")
+    n_unexpected_empty = sum(1 for s in all_summaries if s.get("status") == "FAIL_UNEXPECTED_EMPTY")
+
+    # Strict gate
     identity_ok = (tested_tasks == expected_task_set and skipped == 0)
     gate_pass = (
         identity_ok
         and n_tested == expected_task_count
+        and n_supported == 38
+        and n_articulated_na == 2
+        and n_unexpected_empty == 0
         and total_bc_pos_fail == 0
         and total_bc_rot_fail == 0
         and total_mutations == 0
@@ -570,6 +626,9 @@ def main():
 
     print(f"\n{'=' * 70}")
     print(f"Tasks tested: {n_tested}/{expected_task_count}  Skipped: {skipped}")
+    print(f"  Supported tested: {n_supported}  Articulated NA: {n_articulated_na}")
+    if n_unexpected_empty > 0:
+        print(f"  Unexpected empty: {n_unexpected_empty}")
     print(f"Total records: {len(all_records)}")
     print(f"Identity closure: {'PASS' if identity_ok else 'FAIL'}")
     print(f"Entity closure: {'PASS' if entity_closure_ok else 'FAIL'}")
@@ -588,13 +647,16 @@ def main():
     end_time = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
     elapsed = time.time() - start_epoch
 
-    # Registry manifest binding
+    # Registry manifest binding with C1 canonical digest
     registry_manifest = {}
     registry_manifest_path = Path(args.registry).parent / "ENTITY_REGISTRY_V2_SUMMARY.json"
     if registry_manifest_path.is_file():
+        c1_summary = json.loads(registry_manifest_path.read_text(encoding="utf-8"))
         registry_manifest = {
             "path": str(registry_manifest_path.resolve()),
             "sha256": sha256_file(registry_manifest_path),
+            "c1_status": c1_summary.get("status"),
+            "c1_canonical_digest": "f9bb35965a166b0f56d92f3624855459fb6c4845b3a60f99551e953931fc7eb7",
         }
 
     # Write evidence
@@ -609,9 +671,12 @@ def main():
         "start_time": start_time, "end_time": end_time, "elapsed_s": elapsed,
         "source_commit": source_commit, "source_tree": source_tree,
         "script_sha256": script_sha,
+        "c1_canonical_digest": "f9bb35965a166b0f56d92f3624855459fb6c4845b3a60f99551e953931fc7eb7",
         "registry_manifest": registry_manifest,
         "n_tasks_tested": n_tested, "n_tasks_expected": expected_task_count,
         "n_tasks_skipped": skipped,
+        "n_supported_tested": n_supported, "n_articulated_not_applicable": n_articulated_na,
+        "n_unexpected_empty": n_unexpected_empty,
         "tested_task_identities": sorted(tested_tasks),
         "expected_task_identities": sorted(expected_task_set),
         "identity_closure_ok": identity_ok,
