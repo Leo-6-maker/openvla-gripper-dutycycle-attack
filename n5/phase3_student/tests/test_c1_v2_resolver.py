@@ -241,6 +241,62 @@ class TestAliasAncestry(unittest.TestCase):
         self.assertEqual(detail['descendant_geoms'], 5)
 
 
+class TestBlackBookAliasBeforeGeom(unittest.TestCase):
+    """R5-D: black_book_1 must resolve to body_origin via APPROVED_STRUCTURAL_ALIAS,
+    not geom_center via EXACT_GEOM."""
+
+    def setUp(self):
+        self.sites, self.bodies, self.geoms = _entities()
+
+    def test_black_book_alias_wins_over_exact_geom(self):
+        """When {name} is a geom AND {name}_main is a body, alias must win."""
+        geoms = dict(self.geoms)
+        geoms['black_book_1'] = {'id': 3000, 'body_id': 1}
+        bodies = dict(self.bodies)
+        bodies['black_book_1_main'] = {'id': 50, 'parent_id': 0}
+        # Add matching geoms for hierarchy verification
+        for idx in range(3):
+            geoms[f'black_book_1_g{idx}'] = {'id': 3001 + idx, 'body_id': 50}
+
+        result = resolve_entity(
+            'black_book_1', MANIPULATED_OBJECT,
+            self.sites, bodies, geoms,
+        )
+        self.assertEqual(result['resolution'], 'APPROVED_STRUCTURAL_ALIAS')
+        self.assertEqual(result['entity_type'], 'body')
+        self.assertEqual(result['alias_to'], 'black_book_1_main')
+        self.assertTrue(result.get('black_book_applies'))
+        self.assertIn('all_candidates', result)
+        candidates = result['all_candidates']
+        self.assertTrue(any(c['status'] == 'SELECTED' for c in candidates))
+        self.assertTrue(any(c['status'] == 'SUPERSEDED_BY_STRUCTURAL_ALIAS' for c in candidates))
+
+    def test_black_book_alias_verification_fails_closed(self):
+        """Failed alias verification must return UNRESOLVED, not fallback to geom."""
+        geoms = dict(self.geoms)
+        geoms['black_book_1'] = {'id': 3000, 'body_id': 1}
+        bodies = dict(self.bodies)
+        bodies['black_book_1_main'] = {'id': 50, 'parent_id': 0}
+        # NO matching geoms → hierarchy verification fails
+        result = resolve_entity(
+            'black_book_1', MANIPULATED_OBJECT,
+            self.sites, bodies, geoms,
+        )
+        self.assertEqual(result['resolution'], 'UNRESOLVED')
+        self.assertEqual(
+            result['error_detail']['reason'], 'alias_verification_failed')
+
+    def test_geom_without_alias_still_works(self):
+        """When geom exists but no body alias, EXACT_GEOM is still valid."""
+        geoms = dict(self.geoms)
+        geoms['simple_geom_obj'] = {'id': 4000, 'body_id': 1}
+        result = resolve_entity(
+            'simple_geom_obj', MANIPULATED_OBJECT,
+            self.sites, self.bodies, geoms,
+        )
+        self.assertEqual(result['resolution'], 'EXACT_GEOM')
+
+
 class TestProductionAggregation(unittest.TestCase):
     def setUp(self):
         self.sites, self.bodies, self.geoms = _entities()

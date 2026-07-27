@@ -169,44 +169,95 @@ def resolve_entity(name, semantic_role, sites, bodies, geoms):
             name, semantic_role, 'EXACT_BODY',
             entity_type='body', entity_id=body['id'],
         )
-    if in_geoms:
-        geom = geoms[name]
-        return _result(
-            name, semantic_role, 'EXACT_GEOM',
-            entity_type='geom', entity_id=geom['id'],
-        )
 
+    # R5-D: Before accepting EXACT_GEOM, check for APPROVED_STRUCTURAL_ALIAS to a body.
+    # For composite MuJoCo objects, {name} often names a geom while {name}_main
+    # names the root body. Body origin (body_xpos) is the physically meaningful
+    # reference for dynamic objects; geom center (geom_xpos) is secondary.
+    # black_book_1 is the canonical case: it must resolve to black_book_1_main body,
+    # not the init geom.
     alias_name = name + '_main'
-    if alias_name in sites or alias_name in geoms:
+    alias_in_sites = alias_name in sites
+    alias_in_geoms = alias_name in geoms
+    alias_in_bodies = alias_name in bodies
+
+    # Cross-type conflict: alias exists in multiple entity types → AMBIGUOUS
+    if alias_in_sites or alias_in_geoms:
         conflicts = []
-        if alias_name in sites:
+        if alias_in_sites:
             conflicts.append('site')
-        if alias_name in geoms:
+        if alias_in_geoms:
             conflicts.append('geom')
-        if alias_name in bodies:
+        if alias_in_bodies:
             conflicts.append('body')
         return _result(
             name, semantic_role, 'AMBIGUOUS',
             error_detail={'reason': 'alias_cross_type_conflict',
                           'alias': alias_name, 'entity_types': conflicts},
         )
-    if alias_name in bodies:
+
+    if alias_in_bodies:
         alias_body = bodies[alias_name]
         verified, detail = _verify_alias_hierarchy_full(
             name, alias_name, bodies, geoms, alias_body['id'])
         if verified:
+            # Record all candidates for audit. When both exact geom and alias
+            # body exist, alias body wins — body_origin over geom_center.
+            candidates = []
+            if in_geoms:
+                candidates.append({
+                    'entity_type': 'geom', 'entity_id': geoms[name]['id'],
+                    'resolution': 'EXACT_GEOM',
+                    'status': 'SUPERSEDED_BY_STRUCTURAL_ALIAS',
+                })
+            if alias_in_sites:
+                candidates.append({
+                    'entity_type': 'site', 'entity_id': sites[alias_name]['id'],
+                    'resolution': 'EXACT_SITE',
+                    'status': 'SUPERSEDED_BY_STRUCTURAL_ALIAS',
+                })
+            if alias_in_geoms:
+                candidates.append({
+                    'entity_type': 'geom', 'entity_id': geoms[alias_name]['id'],
+                    'resolution': 'EXACT_GEOM',
+                    'status': 'SUPERSEDED_BY_STRUCTURAL_ALIAS',
+                })
+            candidates.append({
+                'entity_type': 'body', 'entity_id': alias_body['id'],
+                'resolution': 'APPROVED_STRUCTURAL_ALIAS',
+                'status': 'SELECTED',
+            })
             return _result(
                 name, semantic_role, 'APPROVED_STRUCTURAL_ALIAS',
                 entity_type='body', entity_id=alias_body['id'],
                 alias_rule='R1_main_suffix', alias_from=name,
                 alias_to=alias_name, alias_verification=detail,
+                all_candidates=candidates,
+                black_book_applies=(name == 'black_book_1'),
             )
+        # Alias exists but hierarchy verification failed — fail closed.
+        candidates = []
+        if in_geoms:
+            candidates.append({
+                'entity_type': 'geom', 'entity_id': geoms[name]['id'],
+                'resolution': 'EXACT_GEOM', 'status': 'REJECTED_ALIAS_FAILED',
+            })
         return _result(
             name, semantic_role, 'UNRESOLVED',
             error_detail={'reason': 'alias_verification_failed',
                           'alias_attempted': alias_name,
                           'verification': detail},
+            all_candidates=candidates,
+            black_book_applies=(name == 'black_book_1'),
         )
+
+    # No alias body. If exact geom exists, accept it (no body alternative).
+    if in_geoms:
+        geom = geoms[name]
+        return _result(
+            name, semantic_role, 'EXACT_GEOM',
+            entity_type='geom', entity_id=geom['id'],
+            note='No _{}_main body alias exists; geom center is best available entity.')
 
     return _result(name, semantic_role, 'UNRESOLVED',
                    error_detail={'reason': 'no_role_compatible_entity'})
