@@ -25,6 +25,7 @@ from replay_v23_real_geometry import (
     body_local_bounds,
     body_path,
     compose,
+    geom_local_bounds,
     mat_to_quat,
     pose,
     read_jsonl,
@@ -93,6 +94,17 @@ def site_local_pose(model: Any, site_id: int, root_id: int) -> dict[str, list[fl
         local = compose(local, pose(model.body_pos[body_id].tolist(), model.body_quat[body_id].tolist()))
     local = compose(local, pose(model.site_pos[site_id].tolist(), model.site_quat[site_id].tolist()))
     return local
+
+
+def geom_local_pose(model: Any, geom_id: int, root_id: int) -> dict[str, list[float]]:
+    body_id = int(model.geom_bodyid[geom_id])
+    path = body_path(model, root_id, body_id)
+    if path is None:
+        raise GeometryHold("geometry is outside recorded object body")
+    local = pose([0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+    for child_id in path:
+        local = compose(local, pose(model.body_pos[child_id].tolist(), model.body_quat[child_id].tolist()))
+    return compose(local, pose(model.geom_pos[geom_id].tolist(), model.geom_quat[geom_id].tolist()))
 
 
 def static_site_pose(sim: Any, model: Any, site_id: int) -> dict[str, list[float]]:
@@ -169,25 +181,40 @@ def object_case(
     bounds_cache: dict[tuple[str, int], tuple[list[float], list[float]]],
 ) -> dict[str, Any]:
     bddl_name = str(resolution.get("alias_from") or resolution.get("name") or "")
-    if bddl_name not in objects or resolution.get("entity_type") != "body":
+    if bddl_name not in objects:
         return {"id": bddl_name, "role": "MANIPULATED_OBJECT", "source": "UNKNOWN_OBJECT_MAPPING", "known": False}
-    body_id = int(resolution.get("entity_id", -1))
     entry = objects[bddl_name]
-    if body_id != int(entry.get("body_id", -1)):
-        raise GeometryHold(f"object-state/body identity mismatch: {bddl_name}")
     body_name = str(entry.get("body_name", ""))
-    if not body_name or int(model.body(body_name).id) != body_id:
+    if not body_name or int(model.body(body_name).id) != int(entry.get("body_id", -1)):
         raise GeometryHold(f"object-state/model body mismatch: {bddl_name}")
-    center, half = body_local_bounds(model, body_id, bounds_cache)
+    body_id = int(entry["body_id"])
+    kind = resolution.get("entity_type")
+    if kind == "body":
+        if body_id != int(resolution.get("entity_id", -1)):
+            raise GeometryHold(f"object-state/body identity mismatch: {bddl_name}")
+        local_pose = pose([0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+        center, half = body_local_bounds(model, body_id, bounds_cache)
+        source = "RECORDED_OBJECT_STATE_FROZEN_BODY_LOCAL"
+    elif kind == "geom":
+        geom_id = int(resolution.get("entity_id", -1))
+        if not 0 <= geom_id < int(model.ngeom) or int(model.geom_bodyid[geom_id]) != body_id:
+            raise GeometryHold(f"object-state/geom identity mismatch: {bddl_name}")
+        local_pose = geom_local_pose(model, geom_id, body_id)
+        center, half = geom_local_bounds(model, geom_id, bounds_cache)
+        source = "RECORDED_OBJECT_STATE_FROZEN_GEOM_LOCAL"
+    else:
+        return {"id": bddl_name, "role": "MANIPULATED_OBJECT", "source": "UNKNOWN_OBJECT_MAPPING", "known": False}
     body_origin = recorded_body_pose(state, entry)
     return {
         "id": bddl_name,
         "role": "MANIPULATED_OBJECT",
-        "pose": compose(body_origin, pose(center, [1.0, 0.0, 0.0, 0.0])),
+        "pose": compose(body_origin, compose(local_pose, pose(center, [1.0, 0.0, 0.0, 0.0]))),
         "body_origin_pose": body_origin,
+        "local_geometry_pose": local_pose,
         "local_geometry_center": center,
         "half_extents": half,
-        "source": "RECORDED_OBJECT_STATE_FROZEN_BODY_LOCAL",
+        "source": source,
+        "geometry_entity_type": kind,
         "known": True,
     }
 
