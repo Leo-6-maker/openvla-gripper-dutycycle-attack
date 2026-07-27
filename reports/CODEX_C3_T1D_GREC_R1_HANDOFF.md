@@ -132,6 +132,24 @@ be collected directly, with static targets from frozen model/site transforms
 and dynamic targets from recorded object-state body origins.  Action replay
 geometry cannot be used as original-trajectory truth.
 
+The audit has now been executed without model inference or replay:
+
+```text
+root: /mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/grec_r1c_telemetry_audit_33d4886_20260727_1910
+SHA256SUMS: f36c572d09f630d682b35eddbbf4e9c54ddaea0551cd5a26ff63897de1353165
+SHA256SUMS.sha256: 607def6a438dac63c17b1f80a00bf7bb0edf4628ae3f6b6c9f3ac3b935056aab
+episodes: 40/40
+steps: 9422/9422
+target/site/body pose paths in payload: 0 episode-level matches
+```
+
+Four collector-source variants are present, with `official_clean_worker.py`
+episode counts `7, 3, 11, 19`; the other collector component hashes also
+split into two variants.  Every episode has an `initial_state_sha256` digest,
+but no initial-state payload and no per-step target/site/body world-pose
+field.  This establishes the data gap; it does not prove the four collector
+variants semantically equivalent.
+
 No new R2 run is authorized until this source decision is sealed.  If the
 missing target pose cannot be recovered or collector variants cannot be proven
 equivalent, the result remains `DATA_GAP` and T-PILOT stays blocked.
