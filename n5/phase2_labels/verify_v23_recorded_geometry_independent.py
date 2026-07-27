@@ -531,15 +531,28 @@ def review_run(run_root: Path, pilot: Mapping[str, Any], index_payload: Mapping[
     passed = not errors and episode_count == 40 and step_count == 9422 and relation_rows == 11880 and alias_rows == 217 and unknown_rows == 0 and all(value <= limit for value, limit in ((metrics["body_origin_position_max_error_m"],1e-8),(metrics["body_origin_rotation_max_error_rad"],1e-8),(metrics["geometry_position_max_error_m"],POS_TOL),(metrics["geometry_rotation_max_error_rad"],ROT_TOL),(metrics["extent_max_error_m"],EXTENT_TOL)))
     ordered = sorted(diagnostics, key=lambda row: (row["position_error_l2_m"], row["position_error_l_inf_m"], row["rotation_error_rad"]), reverse=True)
     source_counts: dict[str, int] = {}
+    high_source_counts: dict[str, int] = {}
+    high_entity_counts: dict[str, int] = {}
+    high_side_counts: dict[str, int] = {}
     for row in diagnostics:
         source = str(row.get("source") or "<missing>")
         source_counts[source] = source_counts.get(source, 0) + 1
+        if row["position_error_l_inf_m"] > 1e-6:
+            high_source_counts[source] = high_source_counts.get(source, 0) + 1
+            entity_key = "|".join(str(row.get(key) or "<missing>") for key in ("side", "predicate", "entity_name", "entity_type"))
+            high_entity_counts[entity_key] = high_entity_counts.get(entity_key, 0) + 1
+            side = str(row.get("side") or "<missing>")
+            high_side_counts[side] = high_side_counts.get(side, 0) + 1
     difference_summary = {
         "difference_rows_total": len(diagnostics),
         "position_l_inf_gt_1e-6_m": sum(row["position_error_l_inf_m"] > 1e-6 for row in diagnostics),
         "position_l_inf_gt_1e-4_m": sum(row["position_error_l_inf_m"] > 1e-4 for row in diagnostics),
         "rotation_gt_1e-8_rad": sum(row["rotation_error_rad"] > 1e-8 for row in diagnostics),
         "source_counts": source_counts,
+        "high_position_error_source_counts": dict(sorted(high_source_counts.items())),
+        "high_position_error_side_counts": dict(sorted(high_side_counts.items())),
+        "high_position_error_entity_counts": dict(sorted(high_entity_counts.items())),
+        "high_position_error_alias_rows": sum(row.get("alias_status") == "INIT_GEOM_ALIAS_TO_INDEX_BODY" and row["position_error_l_inf_m"] > 1e-6 for row in diagnostics),
         "alias_rows_total": sum(row.get("alias_status") == "INIT_GEOM_ALIAS_TO_INDEX_BODY" for row in diagnostics),
         "alias_rows_in_top_100": sum(row.get("alias_status") == "INIT_GEOM_ALIAS_TO_INDEX_BODY" for row in ordered[:100]),
         "top_100_difference_rows": ordered[:100],
