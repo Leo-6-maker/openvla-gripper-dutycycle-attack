@@ -26,6 +26,8 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any, Mapping
 
+import numpy as np
+
 
 HORIZONS = {"libero_10": 520, "libero_goal": 300, "libero_object": 280, "libero_spatial": 220}
 FORBIDDEN = {"cal", "check", "g10", "t2r", "attack"}
@@ -191,6 +193,26 @@ def registry_task(registry_root: Path, suite: str, task_id: int) -> tuple[dict[s
     return payload["legacy"], path
 
 
+def _verify_source_stability(qpos_before, qvel_before, act_before, time_before, data, step, label):
+    """Fail-closed: any source-state mutation after sim.forward() is a HOLD."""
+    qpos_after = data.qpos.copy()
+    qvel_after = data.qvel.copy()
+    act_after = data.act.copy() if hasattr(data, 'act') and data.act is not None else None
+    time_after = float(data.time)
+    pos_drift = float(np.max(np.abs(qpos_before - qpos_after)))
+    vel_drift = float(np.max(np.abs(qvel_before - qvel_after)))
+    time_drift = abs(float(time_before) - time_after)
+    act_drift = 0.0
+    if act_before is not None and act_after is not None:
+        act_drift = float(np.max(np.abs(act_before - act_after)))
+    if pos_drift > 0 or vel_drift > 0 or time_drift > 0 or act_drift > 0:
+        raise CollectionHold(
+            f"source state mutated by {label} at step {step}: "
+            f"qpos_drift={pos_drift:.2e} qvel_drift={vel_drift:.2e} "
+            f"time_drift={time_drift:.2e} act_drift={act_drift:.2e}")
+    return True
+
+
 def capture_episode(module: ModuleType, args: argparse.Namespace, record: Mapping[str, Any], registry_root: Path, state: Any, task: Any, suite_seed: int, adapter: Any) -> dict[str, Any]:
     from experiments.robot.libero.libero_utils import get_libero_image
     from libero.libero import get_libero_path
@@ -221,9 +243,16 @@ def capture_episode(module: ModuleType, args: argparse.Namespace, record: Mappin
     generation_counts = []
     try:
         for step in range(HORIZONS[suite]):
+            # R5-C1: forward-before-capture protocol (PROTOCOL_AMENDMENT_V5_G_REC_DIRECT_POSE)
+            qpos_pre = env.sim.data.qpos.copy()
+            qvel_pre = env.sim.data.qvel.copy()
+            act_pre = env.sim.data.act.copy() if hasattr(env.sim.data, 'act') and env.sim.data.act is not None else None
+            time_pre = float(env.sim.data.time)
+            env.sim.forward()
+            _verify_source_stability(qpos_pre, qvel_pre, act_pre, time_pre, env.sim.data, step, "capture_forward")
             model = env.sim.model; data = env.sim.data
-            entities = [collect_entity(model, data, resolution) for resolution in unique_resolutions.values()]
             sim_state = env.sim.get_state()
+            entities = [collect_entity(model, data, resolution) for resolution in unique_resolutions.values()]
             privileged.append({
                 "step": step, "suite": suite, "task_idx": task_id, "state_id": state_id,
                 "sim_state": {"time": float(data.time), "qpos": sim_state.qpos.tolist(), "qvel": sim_state.qvel.tolist(), "act": getattr(sim_state, "act", None).tolist() if getattr(sim_state, "act", None) is not None else None},
@@ -232,6 +261,8 @@ def capture_episode(module: ModuleType, args: argparse.Namespace, record: Mappin
                 "robot0_gripper_qpos": jsonable(obs.get("robot0_gripper_qpos", [])),
                 "object_state": jsonable(obs.get("object-state", [])),
                 "entities": entities,
+                "forward_before_capture": True,
+                "protocol_amendment": "PROTOCOL_AMENDMENT_V5_G_REC_DIRECT_POSE",
                 **capture_contacts(env),
             })
             image = get_libero_image(obs, 224)
