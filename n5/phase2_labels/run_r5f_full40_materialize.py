@@ -442,6 +442,10 @@ def capture_one_episode(module, suite, task_idx, state_id, collection_seed,
             executed = [float(x) for x in jsonable(adapter.postprocess(clean_action))]
             if len(executed) != 7:
                 raise CollectionHold(f"executed action shape failed at step {step}")
+            # Pre-step: all actions must be finite (BEFORE env.step)
+            for action_label, action_arr in [("raw", raw_action), ("score", score_action), ("executed", executed)]:
+                if not all(math.isfinite(x) for x in action_arr):
+                    raise CollectionHold(f"non-finite {action_label}_action at step {step}: {action_arr}")
             rows.append({
                 "step": step, "suite": suite, "task_idx": task_idx, "state_id": state_id,
                 "action_raw_7d": raw_action, "score_action_7d": score_action,
@@ -576,6 +580,7 @@ def main():
             output_root=str(args.output_root.resolve()),
             gpu=0,
             physical_gpu=args.gpu,
+            repo_root=repo_root,
         )
     except TransitionRejected as e:
         raise SystemExit(f"TRANSITION_REJECTED: {e}")
@@ -598,7 +603,8 @@ def main():
         raise SystemExit(f"worker missing: {worker}")
 
     old_argv = sys.argv
-    sys.argv = [str(worker), "--suite", "libero_10", "--gpu", str(args.gpu)]
+    # CUDA_VISIBLE_DEVICES already set to physical GPU; worker sees logical cuda:0
+    sys.argv = [str(worker), "--suite", "libero_10", "--gpu", "0"]
     try:
         spec = importlib.util.spec_from_file_location("official_clean_worker", str(worker))
         if spec is None or spec.loader is None:
@@ -622,8 +628,6 @@ def main():
         raise SystemExit(f"staging exists: {staging}")
     staging.mkdir(parents=True)
     (staging / "episodes").mkdir()
-
-    try:
 
     print("=" * 70)
     print(f"[DeepSeek] R5-F: Corrected FIT Full40 Materialization — Run {args.run_label}")
@@ -782,11 +786,6 @@ def main():
         if staging.exists():
             shutil.rmtree(staging, ignore_errors=True)
         raise SystemExit(f"rename failed — output may have appeared: {out_root}")
-
-    finally:
-        if staging.exists() and staging != out_root:
-            import shutil
-            shutil.rmtree(staging, ignore_errors=True)
 
     print(f"\n{'=' * 70}")
     print(f"Run {args.run_label}: {n_collected}/{len(identities)} episodes collected")

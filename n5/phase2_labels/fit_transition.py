@@ -24,8 +24,7 @@ FROZEN_R5E = {
     "r5e_independent_review_sha256sums":
         "2465a4c9e4ba0d329183a70b4cc7f38fe38e78ccbb1cb908604fb878c288ca61",
     "r5e_comparison_sha256":
-        "0000000000000000000000000000000000000000000000000000000000000000",
-    # placeholder — must be replaced with actual sealed comparison SHA before execution
+        "e8e9c67c0a1d6be6ed5a005da100500fa335a62e38ee178e845d401ad670f329",
 }
 
 FOUR_SUITES = ["libero_10", "libero_goal", "libero_object", "libero_spatial"]
@@ -421,18 +420,19 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
             raise TransitionRejected(f"permission violation: {key} must be {expected}")
 
     # 15. GPU + output allowlist
+    if gpu not in tm.get("allowed_gpus", [0]):
+        raise TransitionRejected(f"logical GPU {gpu} not in allowlist")
     if physical_gpu is not None:
         if physical_gpu not in tm.get("allowed_physical_gpus", []):
             raise TransitionRejected(
                 f"physical GPU {physical_gpu} not in allowlist")
-        # Verify mapping: physical GPU → logical cuda:0
         declared = tm.get("physical_to_logical_gpu", {})
         if str(physical_gpu) not in declared:
             raise TransitionRejected(f"physical GPU {physical_gpu} not mapped")
-        if declared[str(physical_gpu)] != 0:
+        if declared[str(physical_gpu)] != gpu:
             raise TransitionRejected(
                 f"physical GPU {physical_gpu} maps to device "
-                f"{declared[str(physical_gpu)]}, expected logical 0")
+                f"{declared[str(physical_gpu)]}, expected logical {gpu}")
     if str(output_root) not in tm.get("allowed_output_roots", []):
         raise TransitionRejected("output root not in allowlist")
 
