@@ -65,7 +65,7 @@ def audit_one(root: Path) -> dict[str, Any]:
     if manifest.get("attack_enabled") is not False or manifest.get("no_detector") is not True or manifest.get("teacher_labels_generated") is not False:
         raise AuditHold(f"execution boundary failed: {root}")
     steps = episode.get("steps", []); telemetry = episode.get("telemetry", [])
-    if not steps or len(steps) != len(telemetry):
+    if not episode.get("relations") or not steps or len(steps) != len(telemetry):
         raise AuditHold(f"step/telemetry count mismatch: {root}")
     if [int(x.get("step", -1)) for x in steps] != list(range(len(steps))):
         raise AuditHold(f"step sequence mismatch: {root}")
@@ -94,6 +94,8 @@ def audit_one(root: Path) -> dict[str, Any]:
         entity_count += len(record.get("entities", []))
     if bad_generation or detector_count or attack_mutations or nonfinite:
         raise AuditHold(f"runtime boundary failed: generation={bad_generation}, detector={detector_count}, action_mutation={attack_mutations}, nonfinite={nonfinite}")
+    if entity_count <= 0:
+        raise AuditHold(f"entity pose coverage is empty: {root}")
     return {
         "root": str(root.resolve()), "episode_id": episode.get("episode_id"), "suite": episode.get("suite"),
         "step_count": len(steps), "relation_count": len(episode.get("relations", [])),

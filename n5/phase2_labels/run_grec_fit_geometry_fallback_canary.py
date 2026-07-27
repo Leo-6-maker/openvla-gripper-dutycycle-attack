@@ -292,7 +292,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     records = sorted((row for row in pilot.get("records", []) if row.get("suite") == args.suite), key=lambda row: row["episode_id"])
     if not records:
         raise CollectionHold(f"suite missing from pilot: {args.suite}")
-    record = records[0]
+    record = None
+    for candidate in records:
+        candidate_legacy, _ = registry_task(args.registry_root, args.suite, int(candidate["task_id"]))
+        if candidate_legacy.get("relations"):
+            record = candidate
+            break
+    if record is None:
+        raise CollectionHold(f"suite has no relation-bearing FIT canary: {args.suite}")
     source_meta = verify_source_record(record)
     declared_model = source_meta["metadata"].get("checkpoint_path_verified") or source_meta["metadata"].get("checkpoint_path_declared")
     if not isinstance(declared_model, str) or Path(declared_model).resolve() != args.model_path.resolve():
