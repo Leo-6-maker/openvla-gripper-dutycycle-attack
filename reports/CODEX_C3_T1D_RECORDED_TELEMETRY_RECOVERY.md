@@ -1,10 +1,32 @@
-# C3-T1D recorded-telemetry geometry recovery
+# C3-T1D recorded-telemetry geometry recovery — historical, superseded
 
 Date: 2026-07-27
 
+## Supersession notice
+
+This report and its derived roots are retained as historical evidence only.
+They are **not** the current G-REC geometry truth and are not consumable by
+V23 Teacher labeling.  The later R1A/R1C/R2 audit found that fixed target
+poses depend on LIBERO placement-reset state that is not present in the
+three-file episode payload.  A/B replay and reset-model output therefore do
+not establish original-trajectory accuracy.
+
+Current authoritative status:
+
+```text
+G-REC-R1C = HOLD_RESET_VARYING_FIXED_TARGET
+G-REC-R1D = HOLD_RESET_INVARIANCE
+G-REC-R2  = HOLD_INDEPENDENT_REVIEW
+derived snapshot in this report = HISTORICAL_NON_CONSUMABLE
+```
+
+The current telemetry audit is sealed separately at
+`grec_r1c_telemetry_audit_33d4886_20260727_1910`; its result is
+`PASS_SCHEMA_METADATA_ONLY`, not a geometry-validity PASS.
+
 ## Decision
 
-The old action-replay geometry is diagnostic only. This recovery uses the
+The old action-replay geometry is diagnostic only. This recovery used the
 sealed per-step `object_state` stream for object body origins and the frozen
 LIBERO model for static site/body/geometry transforms. It does not call
 `env.step()`, load OpenVLA, generate labels, train a Student, run rollout, or
@@ -93,9 +115,9 @@ source = RECORDED_OBJECT_STATE_FROZEN_BODY_LOCAL_INIT_GEOM_ALIAS
 
 This is an auditable derived alias, not a silent exact-geometry claim.
 
-## Execution evidence
+## Historical execution evidence
 
-### Four-suite canary
+### Four-suite canary (historical)
 
 ```text
 root: /mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/recorded_geometry_canary_v3_987680f_20260727_1155
@@ -107,7 +129,7 @@ unknown: 0
 seal: PASS
 ```
 
-### Full derived root
+### Full derived root (historical, superseded)
 
 ```text
 root: /mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/recorded_geometry_full_v4_9f0edeb_20260727_1230
@@ -152,12 +174,13 @@ Earlier roots with all-UNKNOWN free-joint handling, incomplete exact-geom
 handling, or an incorrect manually supplied commit string are retained as
 failed/diagnostic evidence and were not overwritten.
 
-## Boundary
+## Current boundary
 
 ```text
-recorded telemetry geometry recovery = DERIVED SEALED SNAPSHOT
+recorded telemetry geometry recovery = HISTORICAL DERIVED SNAPSHOT ONLY
 action replay geometry as truth       = REJECTED
-V23 Teacher labels                    = NOT GENERATED
+fixed target reset pose truth         = NOT AVAILABLE FROM CURRENT PAYLOAD
+V23 Teacher labels                    = NOT GENERATED / BLOCKED
 Student training/inference            = NOT STARTED
 OpenVLA/model rollout                 = NOT STARTED
 attack                                = NOT STARTED
