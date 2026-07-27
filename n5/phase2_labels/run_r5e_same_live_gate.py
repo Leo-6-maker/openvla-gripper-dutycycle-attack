@@ -267,11 +267,16 @@ def test_one_task(suite, task_idx, state_id, seed, test_steps, registry_dir, app
             time_drift1 = abs(time_before - float(env.sim.data.time))
             act_after_1 = env.sim.data.act.copy() if (hasattr(env.sim.data, 'act') and env.sim.data.act is not None) else None
             act_none_transition_1 = (act_before is None) != (act_after_1 is None)
+            act_len_change_1 = False
             act_drift1 = 0.0
             if not act_none_transition_1 and act_before is not None and act_after_1 is not None:
-                act_drift1 = float(np.max(np.abs(act_before - act_after_1)))
+                if len(act_before) != len(act_after_1):
+                    act_len_change_1 = True
+                elif len(act_before) > 0:
+                    act_drift1 = float(np.max(np.abs(act_before - act_after_1)))
             source_mutated_1 = (qpos_drift1 > 0 or qvel_drift1 > 0 or
-                                time_drift1 > 0 or act_drift1 > 0 or act_none_transition_1)
+                                time_drift1 > 0 or act_drift1 > 0 or
+                                act_none_transition_1 or act_len_change_1)
 
             B_poses = {}
             for (etype, eid), info in expected_entities.items():
@@ -287,6 +292,10 @@ def test_one_task(suite, task_idx, state_id, seed, test_steps, registry_dir, app
                 if not all(math.isfinite(float(x)) for x in pos):
                     return None, {"status": "SKIP",
                                   "error": f"non-finite B position: {info['name']} step {step}"}
+                rot_flat = rot.flatten() if hasattr(rot, 'flatten') else rot
+                if not all(math.isfinite(float(x)) for x in rot_flat):
+                    return None, {"status": "SKIP",
+                                  "error": f"non-finite B rotation: {info['name']} step {step}"}
                 B_poses[(etype, eid)] = (pos, rot)
 
             # Save state before second forward
@@ -305,11 +314,16 @@ def test_one_task(suite, task_idx, state_id, seed, test_steps, registry_dir, app
             time_drift2 = abs(time_mid - float(env.sim.data.time))
             act_after_2 = env.sim.data.act.copy() if (hasattr(env.sim.data, 'act') and env.sim.data.act is not None) else None
             act_none_transition_2 = (act_mid is None) != (act_after_2 is None)
+            act_len_change_2 = False
             act_drift2 = 0.0
             if not act_none_transition_2 and act_mid is not None and act_after_2 is not None:
-                act_drift2 = float(np.max(np.abs(act_mid - act_after_2)))
+                if len(act_mid) != len(act_after_2):
+                    act_len_change_2 = True
+                elif len(act_mid) > 0:
+                    act_drift2 = float(np.max(np.abs(act_mid - act_after_2)))
             source_mutated_2 = (qpos_drift2 > 0 or qvel_drift2 > 0 or
-                                time_drift2 > 0 or act_drift2 > 0 or act_none_transition_2)
+                                time_drift2 > 0 or act_drift2 > 0 or
+                                act_none_transition_2 or act_len_change_2)
 
             C_poses = {}
             for (etype, eid), info in expected_entities.items():
