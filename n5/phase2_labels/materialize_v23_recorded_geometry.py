@@ -189,6 +189,7 @@ def object_case(
         raise GeometryHold(f"object-state/model body mismatch: {bddl_name}")
     body_id = int(entry["body_id"])
     kind = resolution.get("entity_type")
+    identity_status = "INDEX_BODY_IDENTITY"
     if kind == "body":
         if body_id != int(resolution.get("entity_id", -1)):
             raise GeometryHold(f"object-state/body identity mismatch: {bddl_name}")
@@ -197,11 +198,24 @@ def object_case(
         source = "RECORDED_OBJECT_STATE_FROZEN_BODY_LOCAL"
     elif kind == "geom":
         geom_id = int(resolution.get("entity_id", -1))
-        if not 0 <= geom_id < int(model.ngeom) or int(model.geom_bodyid[geom_id]) != body_id:
+        if not 0 <= geom_id < int(model.ngeom):
             raise GeometryHold(f"object-state/geom identity mismatch: {bddl_name}")
-        local_pose = geom_local_pose(model, geom_id, body_id)
-        center, half = geom_local_bounds(model, geom_id, bounds_cache)
-        source = "RECORDED_OBJECT_STATE_FROZEN_GEOM_LOCAL"
+        geom_body_id = int(model.geom_bodyid[geom_id])
+        geom_name = str(model.geom(geom_id).name or "")
+        if geom_body_id == body_id:
+            local_pose = geom_local_pose(model, geom_id, body_id)
+            center, half = geom_local_bounds(model, geom_id, bounds_cache)
+            source = "RECORDED_OBJECT_STATE_FROZEN_GEOM_LOCAL"
+            identity_status = "EXACT_GEOM_TO_INDEX_BODY"
+        elif geom_body_id == 0 and geom_name == bddl_name:
+            # Some C1 rows name an init marker geom after the BDDL object;
+            # the physical body is the sealed object-state index-map binding.
+            local_pose = pose([0.0, 0.0, 0.0], [1.0, 0.0, 0.0, 0.0])
+            center, half = body_local_bounds(model, body_id, bounds_cache)
+            source = "RECORDED_OBJECT_STATE_FROZEN_BODY_LOCAL_INIT_GEOM_ALIAS"
+            identity_status = "INIT_GEOM_ALIAS_TO_INDEX_BODY"
+        else:
+            raise GeometryHold(f"object-state/geom identity mismatch: {bddl_name}")
     else:
         return {"id": bddl_name, "role": "MANIPULATED_OBJECT", "source": "UNKNOWN_OBJECT_MAPPING", "known": False}
     body_origin = recorded_body_pose(state, entry)
@@ -215,6 +229,7 @@ def object_case(
         "half_extents": half,
         "source": source,
         "geometry_entity_type": kind,
+        "registry_identity_status": identity_status,
         "known": True,
     }
 
