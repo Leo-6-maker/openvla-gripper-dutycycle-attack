@@ -211,8 +211,7 @@ def source_binding(args: argparse.Namespace, metadata_rows: list[dict[str, Any]]
             raise AuditHold(f"source binding file missing or unsafe: {path}")
     collector_sha = sha256_file(args.collector_source)
     declared = {str(m.get("collector_source_sha256", {}).get("official_clean_worker.py", "")) for m in metadata_rows}
-    if declared != {collector_sha}:
-        raise AuditHold(f"collector SHA mismatch declared={sorted(declared)} actual={collector_sha}")
+    missing_variants = sorted(x for x in declared if x and x != collector_sha)
     collector_text = args.collector_source.read_text(encoding="utf-8")
     domain_text = args.domain_source.read_text(encoding="utf-8")
     robosuite_text = args.robosuite_source.read_text(encoding="utf-8")
@@ -228,6 +227,9 @@ def source_binding(args: argparse.Namespace, metadata_rows: list[dict[str, Any]]
     return {
         "collector_source": str(args.collector_source.resolve()),
         "collector_source_sha256": collector_sha,
+        "declared_collector_source_sha256_variants": sorted(declared),
+        "unresolved_collector_source_sha256_variants": missing_variants,
+        "status": "PASS" if not missing_variants else "HOLD_SOURCE_VARIANTS_UNRESOLVED",
         "domain_source": str(args.domain_source.resolve()),
         "domain_source_sha256": sha256_file(args.domain_source),
         "robosuite_source": str(args.robosuite_source.resolve()),
@@ -345,7 +347,7 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
                                  "independent_from_action_replay": True})
     relation_parse_ok = bool(relation_counts)
     status = "R1B_PARTIAL_REFERENCE_HOLD" if (
-        not relation_parse_ok or any(x["status"] in {"PARTIAL", "MISSING", "UNKNOWN"} for x in coverage)
+        binding["status"] != "PASS" or not relation_parse_ok or any(x["status"] in {"PARTIAL", "MISSING", "UNKNOWN"} for x in coverage)
     ) else "R1B_REFERENCE_RECOVERY_PASS"
     reference = {
         "schema": "C3_T1D_R2B_R1_REFERENCE_AUDIT_V1",
@@ -376,7 +378,7 @@ def audit(args: argparse.Namespace) -> dict[str, Any]:
            "reason": "bound pilot telemetry has no full independent target-site reference and existing geometry evidence has no per-step object/target replay stream",
            "geometry_root": geometry, "known_classification_flips": None, "supported_predicate_flips": None,
            "near_boundary_policy": "UNKNOWN", "protected_payload_read": False}
-    return {"field_audit": {"schema": "C3_T1D_R2B_R1A_FIELD_AUDIT_V1", "status": "PASS", "episode_count": len(per_episode),
+    return {"field_audit": {"schema": "C3_T1D_R2B_R1A_FIELD_AUDIT_V1", "status": "PASS" if binding["status"] == "PASS" else "HOLD_SCHEMA_UNBOUND", "episode_count": len(per_episode),
                              "step_count": total_steps, "source_file_set": list(EXPECTED_SOURCE_FILES), "pilot_seal": pilot_seal,
                              "field_profiles": all_profiles, "episodes": per_episode, "source_binding": binding,
                              "suite_counts": dict(Counter(x["suite"] for x in per_episode)),
