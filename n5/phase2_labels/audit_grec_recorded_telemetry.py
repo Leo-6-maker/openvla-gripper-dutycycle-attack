@@ -86,7 +86,11 @@ def audit(output: Path, pilot_manifest: Path) -> dict[str, Any]:
 
     episode_rows = []
     collector_counts = Counter()
+    collector_component_counts: dict[str, Counter[str]] = defaultdict(Counter)
+    worker_counts = Counter()
     schema_counts = Counter()
+    official_seed_count = 0
+    initial_state_digest_count = 0
     step_total = sidecar_total = 0
     metadata_field_counts: Counter[str] = Counter()
     step_field_counts: Counter[str] = Counter()
@@ -119,8 +123,17 @@ def audit(output: Path, pilot_manifest: Path) -> dict[str, Any]:
             raise AuditHold(f"step identity mismatch: {record['episode_id']}")
         if [int(x.get("step", -1)) for x in sidecar] != list(range(expected)):
             raise AuditHold(f"sidecar identity mismatch: {record['episode_id']}")
-        collector = str(metadata.get("collector_source_sha256") or "MISSING")
+        collector_map = metadata.get("collector_source_sha256")
+        if isinstance(collector_map, dict):
+            collector = json.dumps({str(k): str(v) for k, v in sorted(collector_map.items())}, sort_keys=True, separators=(",", ":"))
+            for component, digest in collector_map.items():
+                collector_component_counts[str(component)][str(digest)] += 1
+        else:
+            collector = str(collector_map or "MISSING")
         collector_counts[collector] += 1
+        worker_counts[str(metadata.get("collector_worker_id") or "MISSING")] += 1
+        official_seed_count += int("official_seed" in metadata)
+        initial_state_digest_count += int(bool(metadata.get("initial_state_sha256")))
         schema_counts[str(metadata.get("schema_version") or record.get("schema_version") or "MISSING")] += 1
         metadata_keys = sorted(metadata)
         step_keys = sorted({key for row in steps for key in row})
@@ -173,6 +186,10 @@ def audit(output: Path, pilot_manifest: Path) -> dict[str, Any]:
         "sidecar_step_count": sidecar_total,
         "source_roots": sorted(source_roots),
         "collector_source_sha256_counts": dict(sorted(collector_counts.items())),
+        "collector_component_sha256_counts": {component: dict(sorted(values.items())) for component, values in sorted(collector_component_counts.items())},
+        "collector_worker_id_counts": dict(sorted(worker_counts.items())),
+        "official_seed_present_count": official_seed_count,
+        "initial_state_sha256_present_count": initial_state_digest_count,
         "schema_version_counts": dict(sorted(schema_counts.items())),
         "metadata_field_episode_counts": dict(sorted(metadata_field_counts.items())),
         "step_field_episode_counts": dict(sorted(step_field_counts.items())),
@@ -216,7 +233,7 @@ def main() -> int:
     except Exception as exc:
         print(json.dumps({"schema": "V23_G_REC_RECORDED_TELEMETRY_AUDIT_V1", "status": "HOLD", "error_type": type(exc).__name__, "error": str(exc), "protected_payload_read": False}, sort_keys=True))
         return 1
-    print(json.dumps({"status": result["status"], "episode_count": result["episode_count"], "step_count": result["step_count"], "collector_source_sha256_counts": result["collector_source_sha256_counts"], "target_pose_path_episode_counts": result["target_pose_path_episode_counts"]}, sort_keys=True))
+    print(json.dumps({"status": result["status"], "episode_count": result["episode_count"], "step_count": result["step_count"], "collector_source_sha256_counts": result["collector_source_sha256_counts"], "collector_component_sha256_counts": result["collector_component_sha256_counts"], "target_pose_path_episode_counts": result["target_pose_path_episode_counts"]}, sort_keys=True))
     return 0
 
 
