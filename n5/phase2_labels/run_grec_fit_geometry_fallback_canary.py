@@ -294,6 +294,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise CollectionHold(f"suite missing from pilot: {args.suite}")
     record = records[0]
     source_meta = verify_source_record(record)
+    declared_model = source_meta["metadata"].get("checkpoint_path_verified") or source_meta["metadata"].get("checkpoint_path_declared")
+    if not isinstance(declared_model, str) or Path(declared_model).resolve() != args.model_path.resolve():
+        raise CollectionHold(f"checkpoint path is not the source-bound path: declared={declared_model} actual={args.model_path.resolve()}")
     if not args.model_path.is_dir() or not (args.model_path / "config.json").is_file():
         raise CollectionHold("model checkpoint missing")
     alias = json.loads(args.alias_ledger.read_text(encoding="utf-8"))
