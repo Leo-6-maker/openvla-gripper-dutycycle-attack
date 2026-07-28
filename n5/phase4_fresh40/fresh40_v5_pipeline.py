@@ -339,7 +339,7 @@ def _teacher_episode(ep: Mapping[str, Any], cfg: Mapping[str, Any]) -> tuple[lis
             safe = aggregate_and((placement, released, stable))
             instability = aggregate_or((slip, contact_loss))
             per_phys.append(physical); per_safe.append(safe); per_inst.append(instability)
-            relation_history[ridx] = {"object": obj_pos, "eef": eef, "target": target_pos, "contact": contact_proxy, "initial_z": previous.get("initial_z", float(obj_pos[2])) if previous else float(obj_pos[2])}
+            relation_history[ridx] = {"object": obj_pos, "eef": np.asarray(eef, dtype=np.float64), "target": target_pos, "contact": contact_proxy, "initial_z": previous.get("initial_z", float(obj_pos[2])) if previous else float(obj_pos[2])}
         raw["physical_criticality"].append(aggregate_or(per_phys))
         raw["safe_release"].append(aggregate_and(per_safe))
         raw["instability"].append(aggregate_or(per_inst))
