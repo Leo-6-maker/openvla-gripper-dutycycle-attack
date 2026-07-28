@@ -216,7 +216,7 @@ def git_identity(repo: Path) -> Tuple[str, str]:
             ["git", "-C", str(repo), "rev-parse", "HEAD^{tree}"], text=True
         ).strip()
         dirty = subprocess.check_output(
-            ["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=normal"],
+            ["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"],
             text=True,
         ).strip()
     except subprocess.CalledProcessError as exc:
