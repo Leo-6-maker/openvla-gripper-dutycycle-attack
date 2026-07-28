@@ -441,8 +441,15 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
         id_set_digest = hashlib.sha256(
             json.dumps(allowlist_data, sort_keys=True).encode()).hexdigest()
 
-    if tm.get("identity_allowlist_digest") != actual_allowlist_digest:
-        raise TransitionRejected("allowlist digest mismatch")
+    declared_allowlist_digest = (
+        tm.get("identity_allowlist_digest")
+        or tm.get("identity_allowlist_file_sha256")
+        or tm.get("identity_allowlist_root_sha256sums_sha256")
+        or "")
+    if declared_allowlist_digest != actual_allowlist_digest:
+        raise TransitionRejected(
+            f"allowlist digest mismatch: declared={declared_allowlist_digest[:16]} "
+            f"actual={actual_allowlist_digest[:16]}")
     if tm.get("identity_set_digest") != id_set_digest:
         raise TransitionRejected("identity_set_digest mismatch")
     if tm.get("authorized_identities") != expected_identity_count:
