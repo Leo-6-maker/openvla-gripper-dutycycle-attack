@@ -163,7 +163,9 @@ def collect_entity(model, data, resolution):
             raise CollectionHold(f"non-finite body quaternion: {actual_name}")
         parent = int(model.body_parentid[entity_id])
         return {**base, "entity_name": actual_name,
-                "parent_body_id": parent, "world_pose": {"position": pos, "quaternion": quat}}
+                "parent_body_id": parent,
+                "position": pos, "rotation_wxyz": quat,
+                "world_pose": {"position": pos, "quaternion": quat}}
     if kind == "site":
         if entity_id < 0 or entity_id >= int(model.nsite):
             raise CollectionHold(f"site id out of range: {entity_id}")
@@ -176,7 +178,9 @@ def collect_entity(model, data, resolution):
         if not all(math.isfinite(x) for x in quat):
             raise CollectionHold(f"non-finite site quaternion: {actual_name}")
         return {**base, "entity_name": actual_name,
-                "parent_body_id": body_id, "world_pose": {"position": pos, "quaternion": quat}}
+                "parent_body_id": body_id,
+                "position": pos, "rotation_wxyz": quat,
+                "world_pose": {"position": pos, "quaternion": quat}}
     if kind == "geom":
         if entity_id < 0 or entity_id >= int(model.ngeom):
             raise CollectionHold(f"geom id out of range: {entity_id}")
@@ -189,7 +193,9 @@ def collect_entity(model, data, resolution):
         if not all(math.isfinite(x) for x in quat):
             raise CollectionHold(f"non-finite geom quaternion: {actual_name}")
         return {**base, "entity_name": actual_name,
-                "parent_body_id": body_id, "world_pose": {"position": pos, "quaternion": quat}}
+                "parent_body_id": body_id,
+                "position": pos, "rotation_wxyz": quat,
+                "world_pose": {"position": pos, "quaternion": quat}}
     raise CollectionHold(f"unsupported entity kind: {kind}")
 
 
