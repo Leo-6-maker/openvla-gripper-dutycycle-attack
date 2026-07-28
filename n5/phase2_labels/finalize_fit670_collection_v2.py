@@ -111,6 +111,12 @@ def main() -> None:
             or manifest.get("n_assigned") != assigned
             or manifest.get("n_fail") != 0
             or manifest.get("n_success", 0) + manifest.get("n_skipped", 0) != assigned
+            or manifest.get("schema") != "FIT670_ATOMIC_WORKER_V2"
+            or manifest.get("transition_schema") != strict.TRANSITION_SCHEMA
+            or manifest.get("identity_set_digest") != allowlist["identity_set_digest"]
+            or manifest.get("shard_plan_sha256") != strict.sha256_file(args.shard_plan)
+            or manifest.get("collection_source_commit")
+            != transition["collection_source_commit"]
         ):
             raise SystemExit(f"worker manifest closure failed: shard {shard_id}")
         worker_results[str(shard_id)] = {
@@ -120,6 +126,22 @@ def main() -> None:
             "n_skipped": manifest.get("n_skipped"),
             "worker_sha256sums_sha256": strict.sha256_file(root / "SHA256SUMS"),
         }
+
+    worker_logs = {}
+    expected_log_names = set()
+    for shard_id in range(plan["n_shards"]):
+        gpu = mapping[str(shard_id)]
+        name = f"worker_shard_{shard_id}_gpu_{gpu}.log"
+        expected_log_names.add(name)
+        path = output_root / name
+        if not path.is_file() or path.is_symlink():
+            raise SystemExit(f"missing/unsafe worker log: {path}")
+        worker_logs[name] = strict.sha256_file(path)
+    extra_logs = {
+        path.name for path in output_root.glob("worker_*.log")
+    } - expected_log_names
+    if extra_logs:
+        raise SystemExit(f"unexpected worker logs: {sorted(extra_logs)}")
 
     residues = [
         str(path)
@@ -149,6 +171,7 @@ def main() -> None:
             "collection_source_commit": transition["collection_source_commit"],
             "collection_source_tree": transition["collection_source_tree"],
             "worker_results": worker_results,
+            "worker_log_sha256": worker_logs,
             "episode_seal_digest": strict.canonical_json_sha(episode_seals),
             "episode_seals": episode_seals,
             "staging_residue": 0,
