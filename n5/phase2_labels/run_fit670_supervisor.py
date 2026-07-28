@@ -33,8 +33,8 @@ def main():
     parser.add_argument("--upstream-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=20260717)
-    parser.add_argument("--gpus", default="0,1,2,3,4,5",
-                        help="Comma-separated physical GPU indices (default: 0-5)")
+    parser.add_argument("--gpus", default="0,1,2,3,4,5,6,7",
+                        help="Comma-separated physical GPU indices (default: 0-7)")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print commands without executing")
     args = parser.parse_args()

@@ -36,7 +36,8 @@ from fit_collection_core import (
     sha256_file, sha256_bytes, sha256_image, sha256_numpy, git_value, reject_path,
     mat_to_quat, jsonable,
     _verify_source_stability, collect_entity, verify_entity_identity,
-    collect_contact_pairs, compute_gripper_width,
+    collect_contact_pairs, compute_gripper_width, compute_eef_velocity,
+    get_geom_extents, capture_gpu_identity,
     _validate_episode_shapes, seal_root,
     load_resolutions, capture_model_geometry_snapshot,
     make_episode_staging, compute_episode_target, publish_episode, stage_cleanup,
@@ -110,6 +111,8 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
             rows = []
             privileged = []
             generation_counts = []
+            prev_obs = None
+            from fit_collection_core import compute_eef_velocity, get_geom_extents
 
             for step_num in range(HORIZONS[suite]):
                 # ── forward-before-capture protocol ──
@@ -130,7 +133,24 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
                 model = env.sim.model; data = env.sim.data
                 sim_state = env.sim.get_state()
                 entities = [collect_entity(model, data, res) for res in resolutions.values()]
-                contact_pairs = collect_contact_pairs(model, data)
+                contact_pairs = collect_contact_pairs(model, data,
+                                                      registry_resolutions=resolutions)
+
+                # Add geom extents to entity records
+                for ent, (etype, eid) in zip(entities, resolutions.keys()):
+                    if etype == "geom":
+                        ent["geom_extents"] = get_geom_extents(model, eid)
+
+                # EEF velocity (finite difference)
+                eef_velocity = compute_eef_velocity(obs, prev_obs)
+                gripper_qpos = jsonable(obs.get("robot0_gripper_qpos", []))
+                gripper_vel = None
+                if prev_obs is not None and isinstance(gripper_qpos, list) and len(gripper_qpos) >= 1:
+                    prev_gripper = jsonable(prev_obs.get("robot0_gripper_qpos", []))
+                    if isinstance(prev_gripper, list) and len(prev_gripper) >= 1:
+                        gripper_vel = float(gripper_qpos[0]) - float(prev_gripper[0])
+
+                prev_obs = obs
 
                 # Save student RGB frame
                 rgb_image = get_libero_image(obs, 224)
@@ -145,6 +165,7 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
                 privileged.append({
                     "step": step_num, "suite": suite, "task_idx": task_idx,
                     "state_id": state_id,
+                    "horizon": HORIZONS[suite],
                     "sim_state": {
                         "time": float(data.time),
                         "qpos": sim_state.qpos.tolist(),
@@ -153,7 +174,9 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
                     },
                     "robot0_eef_pos": jsonable(obs.get("robot0_eef_pos", [])),
                     "robot0_eef_quat": jsonable(obs.get("robot0_eef_quat", [])),
-                    "robot0_gripper_qpos": jsonable(obs.get("robot0_gripper_qpos", [])),
+                    "robot0_eef_vel": eef_velocity,
+                    "robot0_gripper_qpos": gripper_qpos,
+                    "robot0_gripper_vel": gripper_vel,
                     "gripper_width": compute_gripper_width(obs),
                     "object_state": jsonable(obs.get("object-state", [])),
                     "entities": entities,
@@ -355,13 +378,18 @@ def main():
 
     # ── GPU info (record once) ──
     import torch
+    gpu_identity = capture_gpu_identity(args.gpu)
     gpu_info = {
         "physical_gpu": args.gpu,
         "logical_gpu": 0,
+        "gpu_uuid": gpu_identity.get("gpu_uuid", "UNAVAILABLE"),
+        "pci_bus_id": gpu_identity.get("pci_bus_id", "UNAVAILABLE"),
+        "gpu_name": gpu_identity.get("gpu_name", "N/A"),
         "cuda_device_name": torch.cuda.get_device_name(0) if torch.cuda.is_available() else "N/A",
         "pytorch_version": torch.__version__,
         "cudnn_deterministic": torch.backends.cudnn.deterministic,
         "cudnn_benchmark": torch.backends.cudnn.benchmark,
+        "sdpa_available": hasattr(torch.nn.functional, 'scaled_dot_product_attention'),
     }
     (worker_root / "GPU_IDENTITY.json").write_text(
         json.dumps(gpu_info, indent=2, sort_keys=True), encoding="utf-8")

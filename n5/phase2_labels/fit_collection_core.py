@@ -209,10 +209,34 @@ def verify_entity_identity(model, etype, eid, expected_name):
         raise CollectionHold(f"entity identity mismatch: {etype}[{eid}] expected={expected_name} actual={actual}")
 
 
-def collect_contact_pairs(model, data, max_contacts=100):
-    """Collect contact pairs from MuJoCo data. Capped at max_contacts per step."""
+def collect_contact_pairs(model, data, registry_resolutions=None, max_contacts=100):
+    """Collect contact pairs with position, normal, force, and object-gripper matching.
+
+    MuJoCo mjContact fields used:
+      - dist: signed distance (negative = penetration)
+      - pos[3]: contact position in world coordinates
+      - frame[9]: contact frame; first 3 components = contact normal
+      - efc_address: index into efc_force for constraint force
+
+    Object-gripper matching: marks pairs where one body maps to a C1 registry
+    object role and the other body is a gripper finger.
+    """
     pairs = []
     n = min(int(data.ncon), max_contacts)
+
+    # Build set of object body names from registry for object-gripper matching
+    object_body_names = set()
+    if registry_resolutions:
+        for (etype, eid), res in registry_resolutions.items():
+            if res.get("role") == "object" and etype == "body":
+                name = res.get("alias_to", res.get("name", ""))
+                if name:
+                    object_body_names.add(name)
+
+    # Gripper finger body name patterns
+    gripper_patterns = ("gripper", "finger", "robot0_right", "robot0_left",
+                        "r_gripper", "l_gripper")
+
     for i in range(n):
         c = data.contact[i]
         g1 = int(c.geom1); g2 = int(c.geom2)
@@ -222,11 +246,42 @@ def collect_contact_pairs(model, data, max_contacts=100):
         b2_id = int(model.geom_bodyid[g2]) if 0 <= g2 < model.ngeom else -1
         body1_name = str(model.body(b1_id).name or "") if 0 <= b1_id < model.nbody else "NONE"
         body2_name = str(model.body(b2_id).name or "") if 0 <= b2_id < model.nbody else "NONE"
+
+        # Contact position and normal from MuJoCo
+        pos = [float(c.pos[0]), float(c.pos[1]), float(c.pos[2])]
+        normal = [float(c.frame[0]), float(c.frame[1]), float(c.frame[2])]
+
+        # Constraint force (scalar from efc_force array if available)
+        force = None
+        efc_addr = int(c.efc_address)
+        if efc_addr >= 0 and hasattr(data, 'efc_force') and data.efc_force is not None:
+            try:
+                force = float(data.efc_force[efc_addr])
+            except (IndexError, TypeError):
+                pass
+
+        # Object-gripper contact detection
+        is_object_gripper = False
+        body1_lower = body1_name.lower()
+        body2_lower = body2_name.lower()
+        b1_is_obj = body1_name in object_body_names
+        b2_is_obj = body2_name in object_body_names
+        b1_is_gripper = any(p in body1_lower for p in gripper_patterns)
+        b2_is_gripper = any(p in body2_lower for p in gripper_patterns)
+        if (b1_is_obj and b2_is_gripper) or (b2_is_obj and b1_is_gripper):
+            is_object_gripper = True
+
         pairs.append({
             "geom1": geom1_name, "geom2": geom2_name,
             "body1": body1_name, "body2": body2_name,
+            "geom1_id": g1, "geom2_id": g2,
+            "body1_id": b1_id, "body2_id": b2_id,
             "dist": float(c.dist),
-            "efc_address": int(c.efc_address),
+            "position": pos,
+            "normal": normal,
+            "force": force,
+            "efc_address": efc_addr,
+            "is_object_gripper_contact": is_object_gripper,
         })
     return pairs
 
@@ -238,6 +293,54 @@ def compute_gripper_width(obs):
         vals = [float(x) for x in list(qpos)[:2]]
         return float(vals[0] + vals[1])
     return None
+
+
+def compute_eef_velocity(obs_current, obs_previous):
+    """Compute EEF velocity from consecutive observations (finite difference)."""
+    if obs_previous is None:
+        return None
+    cp = obs_current.get("robot0_eef_pos", [])
+    pp = obs_previous.get("robot0_eef_pos", [])
+    if len(cp) == 3 and len(pp) == 3:
+        return [float(cp[0]) - float(pp[0]),
+                float(cp[1]) - float(pp[1]),
+                float(cp[2]) - float(pp[2])]
+    return None
+
+
+def capture_gpu_identity(physical_gpu):
+    """Capture GPU UUID and PCI bus ID via nvidia-smi. Returns dict or None."""
+    try:
+        out = subprocess.check_output(
+            ["nvidia-smi", "--query-gpu=index,uuid,pci.bus_id,name",
+             "--format=csv,noheader"],
+            text=True, timeout=10,
+        ).strip().split("\n")
+        for line in out:
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) >= 4 and parts[0] == str(physical_gpu):
+                return {
+                    "physical_gpu_index": int(parts[0]),
+                    "gpu_uuid": parts[1],
+                    "pci_bus_id": parts[2],
+                    "gpu_name": parts[3],
+                }
+    except Exception:
+        pass
+    return {"physical_gpu_index": physical_gpu, "gpu_uuid": "UNAVAILABLE",
+            "pci_bus_id": "UNAVAILABLE", "gpu_name": "UNAVAILABLE"}
+
+
+def get_geom_extents(model, geom_id):
+    """Get MuJoCo geom size/extents as list of floats."""
+    if geom_id < 0 or geom_id >= int(model.ngeom):
+        return []
+    gtype = int(model.geom_type[geom_id])
+    gsize = model.geom_size[geom_id]
+    try:
+        return [float(x) for x in gsize]
+    except (TypeError, IndexError):
+        return []
 
 
 # ── Validation ──
