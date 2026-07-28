@@ -82,7 +82,8 @@ def full_seal_check(root: Path) -> str:
             raise ContractViolation(f"sealed path escapes or is missing: {rel}")
         if sha256_file(target) != digest:
             raise ContractViolation(f"sealed file mismatch: {rel}")
-        declared[rel] = digest
+        rel_key = rel if not rel.startswith("./") else rel[2:]
+        declared[rel_key] = digest
     actual = {
         p.relative_to(root).as_posix()
         for p in root.rglob("*")
