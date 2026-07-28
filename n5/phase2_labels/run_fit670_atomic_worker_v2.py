@@ -45,6 +45,7 @@ ARGS = {
     "upstream_root": Path(_arg_value("--upstream-root")).resolve(),
     "output_root": Path(_arg_value("--output-root")).resolve(),
 }
+LIBERO_IMPORT_ORIGIN = strict.assert_import_origin("libero", LIBERO_ROOT)
 
 SOURCE_FILES = {
     "fit670_strict_contract.py": Path(strict.__file__).resolve(),
@@ -62,6 +63,7 @@ _original_collect_entity = legacy.collect_entity
 _original_load_resolutions = legacy.load_resolutions
 _original_validate_shapes = legacy._validate_episode_shapes
 _original_capture_one = legacy.capture_one_fit670_episode
+_original_seal_root = legacy.seal_root
 
 
 def verify_transition_adapter(*_args, **_kwargs):
@@ -171,6 +173,34 @@ def capture_one_v2(module, suite, task_idx, state_id, collection_seed,
         Path(output_root) / "episodes" / suite
         / f"task_{task_idx:02d}" / f"state_{state_id:02d}"
     )
+
+
+def seal_root_v2(root):
+    root = Path(root)
+    manifest_path = root / "WORKER_MANIFEST.json"
+    if manifest_path.is_file():
+        if _transition_manifest is None:
+            raise strict.ContractViolation("worker seal attempted before strict transition")
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest.update(
+            {
+                "schema": "FIT670_ATOMIC_WORKER_V2",
+                "transition_schema": strict.TRANSITION_SCHEMA,
+                "identity_set_digest": _transition_manifest["identity_set_digest"],
+                "shard_plan_sha256": _transition_manifest["shard_plan_sha256"],
+                "collection_source_commit": _transition_manifest[
+                    "collection_source_commit"
+                ],
+                "collection_source_tree": _transition_manifest[
+                    "collection_source_tree"
+                ],
+                "libero_import_origin": LIBERO_IMPORT_ORIGIN,
+            }
+        )
+        manifest_path.write_text(
+            json.dumps(manifest, indent=2, sort_keys=True), encoding="utf-8"
+        )
+    return _original_seal_root(root)
     if target.exists():
         if _transition_manifest is None:
             raise strict.ContractViolation("resume attempted before strict transition")
@@ -193,6 +223,7 @@ legacy.load_resolutions = load_resolutions_v2
 legacy.collect_entity = collect_entity_v2
 legacy._validate_episode_shapes = validate_episode_shapes_v2
 legacy.capture_one_fit670_episode = capture_one_v2
+legacy.seal_root = seal_root_v2
 
 # The legacy main imports this symbol again from fit_transition. Replacing the
 # module attribute alone is insufficient, so install the strict adapter there.
