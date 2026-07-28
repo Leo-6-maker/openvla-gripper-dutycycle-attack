@@ -46,7 +46,8 @@ from fit_collection_core import (
 
 def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_seed,
                                registry_dir, canonical_state, task, adapter,
-                               output_root, save_student_rgb=True):
+                               output_root, gpu_info=None, provenance=None,
+                               save_student_rgb=True):
     """Collect a single episode with FIT670 telemetry upgrades.
 
     Returns (episode_data, published_target_path).
@@ -287,6 +288,8 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
             "model_inference": True, "attack_enabled": False,
             "detector_loaded": False, "teacher_labels_generated": False,
             "student_rgb_saved": save_student_rgb,
+            "gpu_identity": gpu_info or {},
+            "provenance": provenance or {},
         }
 
         _validate_episode_shapes(episode)
@@ -449,6 +452,21 @@ def main():
     (worker_root / "GPU_IDENTITY.json").write_text(
         json.dumps(gpu_info, indent=2, sort_keys=True), encoding="utf-8")
 
+    # ── Build provenance block (recorded once per worker, embedded in each episode) ──
+    worker_provenance = {
+        "collector_commit": git_value(Path(__file__).resolve().parent.parent.parent,
+                                      "rev-parse", "HEAD"),
+        "collector_tree": git_value(Path(__file__).resolve().parent.parent.parent,
+                                    "rev-parse", "HEAD^{tree}"),
+        "collector_script_sha256": sha256_file(Path(__file__).resolve()),
+        "worker_sha256": sha256_file(worker_path),
+        "upstream_commit": git_value(args.upstream_root, "rev-parse", "HEAD"),
+        "upstream_tree": git_value(args.upstream_root, "rev-parse", "HEAD^{tree}"),
+        "physical_gpu": args.gpu,
+        "logical_gpu": 0,
+        "collection_seed": args.seed,
+    }
+
     # ── Collect episodes ──
     staging = out_root.parent / f".{label}.staging.{os.getpid()}.{uuid.uuid4().hex[:8]}"
     staging.mkdir(parents=True)
@@ -494,6 +512,8 @@ def main():
                 module, suite, task_id, state_id, seed,
                 str(args.registry_root), canonical_state, task, adapter,
                 out_root,
+                gpu_info=gpu_info,
+                provenance=worker_provenance,
                 save_student_rgb=not args.no_student_rgb,
             )
 

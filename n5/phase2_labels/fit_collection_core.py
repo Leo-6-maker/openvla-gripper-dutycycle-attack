@@ -147,6 +147,10 @@ def _verify_source_stability(qpos_before, qvel_before, act_before, time_before, 
 def collect_entity(model, data, resolution):
     kind = str(resolution.get("entity_type") or "")
     entity_id = int(resolution.get("entity_id", -1))
+    role = resolution.get("role", "")
+    resolution_kind = resolution.get("resolution", "")
+    base = {"entity_type": kind, "entity_id": entity_id,
+            "role": role, "resolution": resolution_kind}
     if kind == "body":
         if entity_id < 0 or entity_id >= int(model.nbody):
             raise CollectionHold(f"body id out of range: {entity_id}")
@@ -158,7 +162,7 @@ def collect_entity(model, data, resolution):
         if not all(math.isfinite(x) for x in quat):
             raise CollectionHold(f"non-finite body quaternion: {actual_name}")
         parent = int(model.body_parentid[entity_id])
-        return {"entity_type": kind, "entity_id": entity_id, "entity_name": actual_name,
+        return {**base, "entity_name": actual_name,
                 "parent_body_id": parent, "world_pose": {"position": pos, "quaternion": quat}}
     if kind == "site":
         if entity_id < 0 or entity_id >= int(model.nsite):
@@ -171,7 +175,7 @@ def collect_entity(model, data, resolution):
             raise CollectionHold(f"non-finite site position: {actual_name}")
         if not all(math.isfinite(x) for x in quat):
             raise CollectionHold(f"non-finite site quaternion: {actual_name}")
-        return {"entity_type": kind, "entity_id": entity_id, "entity_name": actual_name,
+        return {**base, "entity_name": actual_name,
                 "parent_body_id": body_id, "world_pose": {"position": pos, "quaternion": quat}}
     if kind == "geom":
         if entity_id < 0 or entity_id >= int(model.ngeom):
@@ -184,7 +188,7 @@ def collect_entity(model, data, resolution):
             raise CollectionHold(f"non-finite geom position: {actual_name}")
         if not all(math.isfinite(x) for x in quat):
             raise CollectionHold(f"non-finite geom quaternion: {actual_name}")
-        return {"entity_type": kind, "entity_id": entity_id, "entity_name": actual_name,
+        return {**base, "entity_name": actual_name,
                 "parent_body_id": body_id, "world_pose": {"position": pos, "quaternion": quat}}
     raise CollectionHold(f"unsupported entity kind: {kind}")
 
