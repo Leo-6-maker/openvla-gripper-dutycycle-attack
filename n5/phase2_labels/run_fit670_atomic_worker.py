@@ -403,8 +403,9 @@ def main():
     staging = out_root.parent / f".{label}.staging.{os.getpid()}.{uuid.uuid4().hex[:8]}"
     staging.mkdir(parents=True)
 
-    episodes_dir = out_root / "episodes"
-    episodes_dir.mkdir(parents=True, exist_ok=True)
+    # compute_episode_target will create episodes/{suite}/task_{id}/state_{id}/
+    # so we pass the top-level out_root, not a pre-created episodes/ subdir
+    (out_root / "episodes").mkdir(parents=True, exist_ok=True)
 
     results = []
     failures = []
@@ -442,7 +443,7 @@ def main():
             episode_data, target_path = capture_one_fit670_episode(
                 module, suite, task_id, state_id, seed,
                 str(args.registry_root), canonical_state, task, adapter,
-                episodes_dir,
+                out_root,
                 save_student_rgb=not args.no_student_rgb,
             )
 
