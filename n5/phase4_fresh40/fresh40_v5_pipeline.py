@@ -490,7 +490,7 @@ def _load_student_data(dataset_root: Path, split: str) -> tuple[list[dict[str, A
     return episodes, mean, std
 
 
-def train_student(dataset_root: Path, output_root: Path, config: Mapping[str, Any], variant: str, epochs: int) -> dict[str, Any]:
+def train_student(dataset_root: Path, output_root: Path, config: Mapping[str, Any], variant: str, epochs: int, device_name: str = "cpu") -> dict[str, Any]:
     import torch
     from n5_student_model import N5MultiHeadStudent
 
@@ -509,7 +509,8 @@ def train_student(dataset_root: Path, output_root: Path, config: Mapping[str, An
     seed = int(config["student_contract"]["seed"])
     torch.manual_seed(seed)
     np.random.seed(seed)
-    model = N5MultiHeadStudent(input_dim=25, hidden=int(config["student_contract"]["hidden"]), short_rf=int(config["student_contract"]["short_rf"]), long_rf=int(config["student_contract"]["long_rf"]), dropout=0.1)
+    device = torch.device(device_name)
+    model = N5MultiHeadStudent(input_dim=25, hidden=int(config["student_contract"]["hidden"]), short_rf=int(config["student_contract"]["short_rf"]), long_rf=int(config["student_contract"]["long_rf"]), dropout=0.1).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=float(config["student_contract"]["learning_rate"]), weight_decay=float(config["student_contract"]["weight_decay"]))
     history = []
     model.train()
@@ -518,12 +519,12 @@ def train_student(dataset_root: Path, output_root: Path, config: Mapping[str, An
         losses = []
         for ep_idx in epoch_order:
             ep = train_eps[ep_idx]
-            x = torch.from_numpy(ep["features"]).unsqueeze(0)
-            outputs = model(x, timestep_mask=torch.ones((1, x.shape[1]), dtype=torch.bool))
+            x = torch.from_numpy(ep["features"]).unsqueeze(0).to(device)
+            outputs = model(x, timestep_mask=torch.ones((1, x.shape[1]), dtype=torch.bool, device=device))
             terms = []
             for head in active:
-                values = torch.tensor([1.0 if r["labels"][head]["value"] == "TRUE" else 0.0 for r in ep["rows"]], dtype=torch.float32).unsqueeze(0)
-                mask = torch.tensor([bool(r["labels"][head]["mask"]) for r in ep["rows"]], dtype=torch.bool).unsqueeze(0)
+                values = torch.tensor([1.0 if r["labels"][head]["value"] == "TRUE" else 0.0 for r in ep["rows"]], dtype=torch.float32, device=device).unsqueeze(0)
+                mask = torch.tensor([bool(r["labels"][head]["mask"]) for r in ep["rows"]], dtype=torch.bool, device=device).unsqueeze(0)
                 if bool(mask.any()):
                     terms.append(torch.nn.functional.binary_cross_entropy_with_logits(outputs[head][mask], values[mask]))
             if not terms:
@@ -622,7 +623,7 @@ def main() -> int:
         result = build_dataset(args.source_root.resolve(), args.teacher_root.resolve(), args.output_root.resolve(), cfg)
     elif args.command == "train":
         if not args.dataset_root: raise SystemExit("--dataset-root required")
-        result = train_student(args.dataset_root.resolve(), args.output_root.resolve(), cfg, args.variant, args.epochs)
+        result = train_student(args.dataset_root.resolve(), args.output_root.resolve(), cfg, args.variant, args.epochs, args.device)
     elif args.command == "shadow":
         if not args.dataset_root or not args.checkpoint: raise SystemExit("--dataset-root and --checkpoint required")
         result = shadow_student(args.dataset_root.resolve(), args.checkpoint.resolve(), args.output_root.resolve(), cfg)
