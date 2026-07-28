@@ -411,25 +411,34 @@ def load_resolutions(reg_path, allow_articulated=False):
             return {}, []
         raise CollectionHold(f"articulated task unsupported: {reg_path}")
     resolutions = {}
-    # C1 registry uses 'entities' field; older versions used 'bindings'
-    bindings = legacy.get("entities") or legacy.get("bindings") or []
-    for binding in bindings:
-        if binding.get("resolution") == "UNRESOLVED":
-            raise CollectionHold(f"unresolved binding in {reg_path}: {binding}")
-        etype = binding.get("entity_type", "")
-        eid = int(binding.get("entity_id", -1))
-        key = (etype, eid)
-        if key in resolutions:
-            existing = resolutions[key]
-            if existing.get("role") != binding.get("role"):
-                raise CollectionHold(f"binding conflict at {key}")
-            continue
-        resolutions[key] = {
-            "entity_type": etype, "entity_id": eid,
-            "name": binding.get("name", ""), "role": binding.get("role", ""),
-            "resolution": binding.get("resolution", ""),
-            "alias_to": binding.get("alias_to", ""),
-        }
+    # C1-V2 embeds entity resolutions inside each relation's
+    # object_resolution and target_resolution fields.
+    for rel in legacy.get("relations", []):
+        for side in ("object_resolution", "target_resolution"):
+            res = rel.get(side, {})
+            etype = res.get("entity_type", "")
+            eid = int(res.get("entity_id", -1)) if res.get("entity_id") is not None else -1
+            if not etype or eid < 0:
+                continue
+            if res.get("resolution") == "UNRESOLVED":
+                raise CollectionHold(f"unresolved {side} in {reg_path}: {res}")
+            key = (etype, eid)
+            role = rel.get("object_semantic_role" if side == "object_resolution"
+                          else "target_semantic_role", "")
+            if key in resolutions:
+                existing = resolutions[key]
+                if existing.get("role") != role:
+                    raise CollectionHold(f"binding conflict at {key}")
+                continue
+            resolutions[key] = {
+                "entity_type": etype, "entity_id": eid,
+                "name": res.get("name", ""),
+                "role": role,
+                "resolution": res.get("resolution", ""),
+                "alias_to": res.get("alias_to", ""),
+                "alias_from": res.get("alias_from", ""),
+                "semantic_role": rel.get(f"{'object' if side == 'object_resolution' else 'target'}_semantic_role", ""),
+            }
     relations = legacy.get("relations", [])
     return resolutions, relations
 
