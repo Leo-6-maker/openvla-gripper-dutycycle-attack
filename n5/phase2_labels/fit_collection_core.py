@@ -406,7 +406,9 @@ def load_resolutions(reg_path, allow_articulated=False):
             return {}, []
         raise CollectionHold(f"articulated task unsupported: {reg_path}")
     resolutions = {}
-    for binding in legacy.get("bindings", []):
+    # C1 registry uses 'entities' field; older versions used 'bindings'
+    bindings = legacy.get("entities") or legacy.get("bindings") or []
+    for binding in bindings:
         if binding.get("resolution") == "UNRESOLVED":
             raise CollectionHold(f"unresolved binding in {reg_path}: {binding}")
         etype = binding.get("entity_type", "")
