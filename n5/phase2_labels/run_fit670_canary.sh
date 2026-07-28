@@ -2,7 +2,7 @@
 set -e
 WORKTREE=/tmp/fresh670_v5_worktree
 PYTHON=/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python
-OUT=/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/fresh670_v5
+OUT=/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/fresh670_v5_r2_canary
 
 echo "=== FIT670 V5 8-GPU CANARY ==="
 echo "Started: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
@@ -22,6 +22,7 @@ launch_worker() {
         --alias-ledger /mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/c1_v2_r7/run_A/ALIAS_LEDGER.json \
         --upstream-root /mnt/sdc/dty_user/openvla_attack \
         --output-root $OUT --seed 20260717 \
+        --max-identities 1 \
         > $LOG 2>&1 &
     echo "  GPU $GPU PID: $!"
 }
