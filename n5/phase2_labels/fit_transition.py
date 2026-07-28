@@ -191,15 +191,17 @@ def full_seal_check(root):
 
 # ── Identity allowlist validation ──
 
-def validate_identity_allowlist(allowlist_path, pilot_path):
+def validate_identity_allowlist(allowlist_path, pilot_path, expected_count=40):
     """Rebuild identity allowlist from pilot manifest and compare exactly
-    with IDENTITY_ALLOWLIST.json. Returns (allowlist, digest)."""
+    with IDENTITY_ALLOWLIST.json. Returns (allowlist, digest).
+    expected_count: 40 for R5-F, 670 for FIT670."""
     if not Path(pilot_path).is_file():
         raise TransitionRejected(f"pilot manifest missing: {pilot_path}")
     pilot = json.loads(Path(pilot_path).read_text(encoding="utf-8"))
     records = pilot.get("records", [])
-    if len(records) != 40:
-        raise TransitionRejected(f"pilot must have 40 records, got {len(records)}")
+    if len(records) != expected_count:
+        raise TransitionRejected(
+            f"pilot must have {expected_count} records, got {len(records)}")
 
     # Rebuild allowlist from pilot
     rebuilt = []
@@ -241,12 +243,14 @@ def validate_identity_allowlist(allowlist_path, pilot_path):
             "initial_state_sha256": init_sha,
         })
 
-    # Closure checks
-    for suite in FOUR_SUITES:
-        if len(suite_task[suite]) != 10:
-            raise TransitionRejected(f"{suite}: expected 10 tasks, got {suite_task[suite]}")
-        if suite_task[suite] != set(range(10)):
-            raise TransitionRejected(f"{suite}: missing task ids")
+    # Closure checks — per-suite task count only for 40-identity R5-F
+    if expected_count == 40:
+        for suite in FOUR_SUITES:
+            if len(suite_task[suite]) != 10:
+                raise TransitionRejected(
+                    f"{suite}: expected 10 tasks, got {suite_task[suite]}")
+            if suite_task[suite] != set(range(10)):
+                raise TransitionRejected(f"{suite}: missing task ids")
 
     # Compare with IDENTITY_ALLOWLIST.json
     allowlist_path = Path(allowlist_path)
@@ -254,8 +258,9 @@ def validate_identity_allowlist(allowlist_path, pilot_path):
         raise TransitionRejected("IDENTITY_ALLOWLIST.json missing from receipt")
     declared = json.loads(allowlist_path.read_text(encoding="utf-8"))
     declared_ids = declared.get("identities", [])
-    if len(declared_ids) != 40:
-        raise TransitionRejected(f"allowlist has {len(declared_ids)} identities, expected 40")
+    if len(declared_ids) != expected_count:
+        raise TransitionRejected(
+            f"allowlist has {len(declared_ids)} identities, expected {expected_count}")
 
     # Canonical comparison
     rebuilt_str = json.dumps(rebuilt, sort_keys=True, ensure_ascii=False)
@@ -305,12 +310,14 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
                       model_path, official_worker_path, pilot_manifest_path,
                       registry_root, alias_ledger_path, upstream_root,
                       libero_root, output_root, gpu, physical_gpu=None,
-                      repo_root=None, nd_diagnostic_mode=False):
+                      repo_root=None, nd_diagnostic_mode=False,
+                      expected_identity_count=40):
     """Validate transition receipt. Raises TransitionRejected on any failure.
     Must be called BEFORE load_policy().
 
     nd_diagnostic_mode: relaxes source-commit, script-SHA, upstream/libero
     and chronology bindings for non-consumable diagnostic runs.
+    expected_identity_count: defaults to 40 for R5-F; set to 670 for FIT670.
     """
 
     tr = Path(transition_root).resolve()
@@ -418,10 +425,12 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
         json.dumps(allowlist_data, sort_keys=True).encode()).hexdigest()
     if tm.get("identity_set_digest") != id_set_digest:
         raise TransitionRejected("identity_set_digest mismatch")
-    if tm.get("authorized_identities") != 40:
-        raise TransitionRejected("authorized_identities must be 40")
-    if tm.get("n_pilot_identities") != 40:
-        raise TransitionRejected("n_pilot_identities must be 40")
+    if tm.get("authorized_identities") != expected_identity_count:
+        raise TransitionRejected(
+            f"authorized_identities must be {expected_identity_count}")
+    if tm.get("n_pilot_identities") != expected_identity_count:
+        raise TransitionRejected(
+            f"n_pilot_identities must be {expected_identity_count}")
 
     # 11. Registry + alias
     declared_reg = tm.get("registry_summary_sha256")
