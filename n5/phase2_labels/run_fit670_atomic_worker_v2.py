@@ -44,7 +44,11 @@ ARGS = {
     "alias_ledger": Path(_arg_value("--alias-ledger")).resolve(),
     "upstream_root": Path(_arg_value("--upstream-root")).resolve(),
     "output_root": Path(_arg_value("--output-root")).resolve(),
+    "max_identities": int(_arg_value("--max-identities")),
 }
+COLLECTION_MODE = "canary" if ARGS["max_identities"] == 1 else "formal"
+if ARGS["max_identities"] not in (0, 1):
+    raise strict.ContractViolation("V2 max-identities must be exactly 0 or 1")
 LIBERO_IMPORT_ORIGIN = strict.assert_import_origin("libero", LIBERO_ROOT)
 
 SOURCE_FILES = {
@@ -55,6 +59,7 @@ SOURCE_FILES = {
     "run_fit670_supervisor_v2.py": Path(__file__).resolve().parent / "run_fit670_supervisor_v2.py",
     "finalize_fit670_collection_v2.py": Path(__file__).resolve().parent / "finalize_fit670_collection_v2.py",
     "run_fit670_v2.sh": Path(__file__).resolve().parent / "run_fit670_v2.sh",
+    "validate_fit670_canary_v2.py": Path(__file__).resolve().parent / "validate_fit670_canary_v2.py",
 }
 
 _transition_manifest = None
@@ -84,6 +89,7 @@ def verify_transition_adapter(*_args, **_kwargs):
         upstream_root=ARGS["upstream_root"],
         libero_root=LIBERO_ROOT,
         source_files=SOURCE_FILES,
+        collection_mode=COLLECTION_MODE,
     )
     return _transition_manifest
 
