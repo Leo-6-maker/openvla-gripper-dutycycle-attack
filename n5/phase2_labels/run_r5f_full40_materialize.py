@@ -604,7 +604,26 @@ def main():
 
     old_argv = sys.argv
     # CUDA_VISIBLE_DEVICES already set to physical GPU; worker sees logical cuda:0
-    sys.argv = [str(worker), "--suite", "libero_10", "--gpu", "0"]
+    dummy = "0" * 64
+    sys.argv = [
+        str(worker), "--suite", "libero_10", "--gpu", "0",
+        "--worker-id", "r5f_run_a", "--model-path", str(args.model_path),
+        "--manifest", str(pilot_path), "--output-root", str(out_root.parent),
+        "--upstream-root", str(args.upstream_root),
+        "--worker-start-manifest-dir", str(out_root.parent),
+        "--prelease-gate-dir", str(out_root.parent),
+        "--queue-epoch-id", "FIT_TRANSITION_74E5AD0",
+        "--queue-manifest-sha256", dummy,
+        "--canonical-manifest-sha256", dummy,
+        "--runtime-config-sha256", dummy,
+        "--protocol-config", str(pilot_path),
+        "--processor-path", str(args.model_path),
+        "--supervisor-pid", "0",
+        "--supervisor-config-sha256", dummy,
+        "--relay-archive-commit", "74e5ad0",
+        "--provenance-path", str(pilot_path),
+        "--seed", str(args.seed),
+    ]
     try:
         spec = importlib.util.spec_from_file_location("official_clean_worker", str(worker))
         if spec is None or spec.loader is None:
