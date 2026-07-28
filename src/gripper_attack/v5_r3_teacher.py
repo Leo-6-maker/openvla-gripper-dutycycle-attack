@@ -167,6 +167,8 @@ def validate_contact_row(row: Mapping[str, Any], *, expected_step: int | None = 
         _required_entity(entity)
     if not any(item.get("role") == "MANIPULATED_OBJECT" for item in row["entities"]):
         raise R3ContractError(f"missing manipulated object at step {row['step']}")
+    if not any(item.get("role") in {"OBJECT_TARGET", "REGION_TARGET"} for item in row["entities"]):
+        raise R3ContractError(f"missing target entity at step {row['step']}")
     if not isinstance(row["contact_pairs"], list) or not isinstance(row["contact_ncon_total"], int):
         raise R3ContractError(f"invalid contact container at step {row['step']}")
     if row["contact_ncon_total"] != len(row["contact_pairs"]):

@@ -10,6 +10,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -95,6 +96,10 @@ def load_consumable_episodes(input_root: Path, *, expected_count: int = 8) -> tu
         if relative.is_absolute() or ".." in relative.parts:
             raise ValueError(f"unsafe episode path: {relative}")
         path = root / relative
+        if not re.fullmatch(r"[0-9a-f]{64}", str(item["source_sha256"])):
+            raise ValueError(f"invalid episode source SHA: {identity}")
+        if not re.fullmatch(r"[0-9a-f]{40}", str(item["source_commit"])) or not re.fullmatch(r"[0-9a-f]{40}", str(item["source_tree"])):
+            raise ValueError(f"invalid source lineage SHA: {identity}")
         if not path.is_file() or sha256_file(path) != str(item["source_sha256"]):
             raise ValueError(f"episode source seal mismatch: {identity}")
         rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]

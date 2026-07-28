@@ -1,4 +1,3 @@
-import hashlib
 import json
 import sys
 from pathlib import Path
@@ -8,7 +7,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "detector_v5"))
 
-from audit_r3_contact_input import R3ContractError, audit, sha256_file
+from audit_r3_contact_input import audit, sha256_file
 
 
 def _entity(name, role, position):
@@ -35,7 +34,7 @@ def _row(identity, step):
         "step": step,
         "valid": True,
         "candidate_close": True,
-        "entities": [_entity("cube_1", "MANIPULATED_OBJECT", [0.0, 0.0, 0.0]), _entity("gripper", "GRIPPER", [0.0, 0.0, 0.0])],
+        "entities": [_entity("cube_1", "MANIPULATED_OBJECT", [0.0, 0.0, 0.0]), _entity("target_1", "OBJECT_TARGET", [0.0, 0.0, 0.0]), _entity("gripper", "GRIPPER", [0.0, 0.0, 0.0])],
         "contact_pairs": [pair],
         "contact_ncon_total": 1,
         "contact_truncated": False,
