@@ -103,7 +103,7 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
 
             model = env.sim.model
             for (etype, eid), res in resolutions.items():
-                expected_name = res.get("alias_to", res.get("name", "?"))
+                expected_name = res.get("alias_to") or res.get("name") or "?"
                 verify_entity_identity(model, etype, eid, expected_name)
 
             # ── Model geometry snapshot (once per episode) ──
