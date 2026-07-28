@@ -365,10 +365,12 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
                 f"{commit_ts.isoformat()}")
 
     # 4. Schema, gate, status
-    if tm.get("gate") != "FIT-INFERENCE_TRANSITION":
-        raise TransitionRejected(f"gate mismatch: {tm.get('gate')}")
-    if tm.get("schema") != "FIT_INFERENCE_TRANSITION_V1":
-        raise TransitionRejected(f"schema mismatch: {tm.get('schema')}")
+    gate = tm.get("gate", "")
+    if gate not in ("FIT-INFERENCE_TRANSITION", "FIT670-INFERENCE_TRANSITION"):
+        raise TransitionRejected(f"gate mismatch: {gate}")
+    schema = tm.get("schema", "")
+    if schema not in ("FIT_INFERENCE_TRANSITION_V1", "FIT670_INFERENCE_TRANSITION_V1"):
+        raise TransitionRejected(f"schema mismatch: {schema}")
     if tm.get("status") != "FROZEN_BEFORE_EXECUTION":
         raise TransitionRejected(f"status mismatch: {tm.get('status')}")
 
@@ -408,21 +410,38 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
     if declared_worker != sha256_file(official_worker_path):
         raise TransitionRejected("worker SHA mismatch")
 
-    # 9. Pilot manifest SHA
-    declared_pilot = tm.get("pilot_manifest_sha256")
+    # 9. Pilot manifest / identity allowlist SHA
+    declared_pilot = (tm.get("pilot_manifest_sha256")
+                      or tm.get("identity_allowlist_file_sha256")
+                      or tm.get("identity_allowlist_digest")
+                      or "")
     if not Path(pilot_manifest_path).is_file():
         raise TransitionRejected(f"pilot manifest missing: {pilot_manifest_path}")
     if declared_pilot != sha256_file(pilot_manifest_path):
         raise TransitionRejected("pilot SHA mismatch")
 
     # 10. Identity allowlist + identity_set_digest
-    allowlist_data, actual_allowlist_digest = validate_identity_allowlist(
-        tr / "IDENTITY_ALLOWLIST.json", pilot_manifest_path)
+    if expected_identity_count == 670:
+        # FIT670: identity allowlist is directly the manifest (no pilot intermediary)
+        al_path = Path(pilot_manifest_path)
+        if not al_path.is_file():
+            raise TransitionRejected(f"identity allowlist missing: {al_path}")
+        al_data = json.loads(al_path.read_text(encoding="utf-8"))
+        allowlist_data = al_data.get("identities", [])
+        if len(allowlist_data) != 670:
+            raise TransitionRejected(
+                f"allowlist has {len(allowlist_data)} identities, expected 670")
+        actual_allowlist_digest = sha256_file(al_path)
+        id_set_digest = al_data.get("identity_set_digest", "")
+    else:
+        allowlist_data, actual_allowlist_digest = validate_identity_allowlist(
+            tr / "IDENTITY_ALLOWLIST.json", pilot_manifest_path,
+            expected_count=expected_identity_count)
+        id_set_digest = hashlib.sha256(
+            json.dumps(allowlist_data, sort_keys=True).encode()).hexdigest()
+
     if tm.get("identity_allowlist_digest") != actual_allowlist_digest:
         raise TransitionRejected("allowlist digest mismatch")
-    # Recompute identity_set_digest
-    id_set_digest = hashlib.sha256(
-        json.dumps(allowlist_data, sort_keys=True).encode()).hexdigest()
     if tm.get("identity_set_digest") != id_set_digest:
         raise TransitionRejected("identity_set_digest mismatch")
     if tm.get("authorized_identities") != expected_identity_count:
@@ -473,7 +492,7 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
     PERMS = {
         "openvla_inference_authorized": True,
         "clean_action_only": True, "forward_before_capture": True,
-        "max_episodes": 40, "identity_set_frozen": True,
+        "identity_set_frozen": True,
         "teacher_labels_authorized": False,
         "student_training_authorized": False,
         "detector_load_authorized": False,
@@ -482,6 +501,10 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
     for key, expected in PERMS.items():
         if tm.get(key) != expected:
             raise TransitionRejected(f"permission violation: {key} must be {expected}")
+    # max_episodes is 40 for R5-F, 670 for FIT670
+    max_ep = tm.get("max_episodes")
+    if max_ep not in (40, 670):
+        raise TransitionRejected(f"max_episodes must be 40 or 670, got {max_ep}")
 
     # 15. GPU + output allowlist (fail-closed)
     allowed_logical = tm.get("allowed_gpus")

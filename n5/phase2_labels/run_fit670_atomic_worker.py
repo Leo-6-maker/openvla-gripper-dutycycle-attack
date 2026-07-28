@@ -263,6 +263,10 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
 
 
 def main():
+    # Force unbuffered output for canary/collection log visibility
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--shard-id", type=int, required=True)
     parser.add_argument("--gpu", type=int, required=True, help="Physical GPU number")
@@ -291,6 +295,7 @@ def main():
     worker_root = out_root / label
     if worker_root.exists():
         raise SystemExit(f"worker output exists: {worker_root}")
+    worker_root.mkdir(parents=True)
 
     # ── Load shard identities ──
     shard_plan = json.loads(Path(args.shard_plan).read_text(encoding="utf-8"))
