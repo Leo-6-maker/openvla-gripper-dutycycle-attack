@@ -506,11 +506,13 @@ def main():
     parser.add_argument("--registry-root", type=Path, required=True)
     parser.add_argument("--alias-ledger", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
-    parser.add_argument("--run-label", required=True, choices=["A", "B", "C"])
+    parser.add_argument("--run-label", required=True)
     parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument("--seed", type=int, default=20260717)
     parser.add_argument("--preflight-only", action="store_true",
                         help="Validate all inputs but do NOT load model or collect")
+    parser.add_argument("--task-filter", action="append", default=[],
+                        help="Only collect suite:task_id,task_id,... (repeatable, ND diagnostic use)")
     args = parser.parse_args()
 
     # Path safety audit
@@ -547,6 +549,20 @@ def main():
 
     # Load and validate pilot identities
     identities = load_pilot_identities(str(pilot_path))
+
+    # Apply task filter (ND diagnostic use)
+    task_filter = {}
+    for spec in args.task_filter:
+        suite, ids_str = spec.split(":")
+        task_filter[suite] = [int(x.strip()) for x in ids_str.split(",")]
+    if task_filter:
+        identities = [i for i in identities
+                      if i["suite"] in task_filter
+                      and i["task_id"] in task_filter[i["suite"]]]
+        print(f"Task filter active: {len(identities)} tasks selected")
+        for ident in identities:
+            print(f"  {ident['episode_id']}")
+
     print(f"Pilot manifest: {pilot_sha}")
     print(f"  Identities: {len(identities)} (10 per suite)")
 
@@ -581,6 +597,7 @@ def main():
             gpu=0,
             physical_gpu=args.gpu,
             repo_root=repo_root,
+            nd_diagnostic_mode=bool(task_filter),
         )
     except TransitionRejected as e:
         raise SystemExit(f"TRANSITION_REJECTED: {e}")

@@ -305,15 +305,19 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
                       model_path, official_worker_path, pilot_manifest_path,
                       registry_root, alias_ledger_path, upstream_root,
                       libero_root, output_root, gpu, physical_gpu=None,
-                      repo_root=None):
+                      repo_root=None, nd_diagnostic_mode=False):
     """Validate transition receipt. Raises TransitionRejected on any failure.
-    Must be called BEFORE load_policy()."""
+    Must be called BEFORE load_policy().
+
+    nd_diagnostic_mode: relaxes source-commit, script-SHA, upstream/libero
+    and chronology bindings for non-consumable diagnostic runs.
+    """
 
     tr = Path(transition_root).resolve()
     if not tr.is_dir():
         raise TransitionRejected(f"transition receipt not found: {tr}")
 
-    # 1. Full seal verification
+    # 1. Full seal verification (ALWAYS enforced)
     ok, n_files, err = full_seal_check(tr)
     if not ok:
         raise TransitionRejected(f"transition seal failed: {err}")
@@ -331,27 +335,27 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
     created_dt = parse_iso_datetime(created)
     if created_dt is None:
         raise TransitionRejected(f"created_at unparseable: {created}")
-    # Get source commit timestamp — must succeed with explicit repo root
-    import subprocess, datetime
-    repo = Path(repo_root) if repo_root else Path.cwd()
-    try:
-        ct_str = subprocess.check_output(
-            ["git", "-C", str(repo), "log", "-1", "--format=%ct",
-             execution_source_commit],
-            text=True, stderr=subprocess.PIPE).strip()
-    except subprocess.CalledProcessError:
-        raise TransitionRejected(
-            f"source commit {execution_source_commit[:16]} not found in repo "
-            f"{repo}")
-    if not ct_str or not ct_str.isdigit():
-        raise TransitionRejected(
-            f"source commit {execution_source_commit[:16]} not found in repo "
-            f"{repo}")
-    commit_ts = datetime.datetime.fromtimestamp(int(ct_str), tz=datetime.timezone.utc)
-    if created_dt < commit_ts:
-        raise TransitionRejected(
-            f"transition created {created} before source commit "
-            f"{commit_ts.isoformat()}")
+    if not nd_diagnostic_mode:
+        import subprocess, datetime
+        repo = Path(repo_root) if repo_root else Path.cwd()
+        try:
+            ct_str = subprocess.check_output(
+                ["git", "-C", str(repo), "log", "-1", "--format=%ct",
+                 execution_source_commit],
+                text=True, stderr=subprocess.PIPE).strip()
+        except subprocess.CalledProcessError:
+            raise TransitionRejected(
+                f"source commit {execution_source_commit[:16]} not found in repo "
+                f"{repo}")
+        if not ct_str or not ct_str.isdigit():
+            raise TransitionRejected(
+                f"source commit {execution_source_commit[:16]} not found in repo "
+                f"{repo}")
+        commit_ts = datetime.datetime.fromtimestamp(int(ct_str), tz=datetime.timezone.utc)
+        if created_dt < commit_ts:
+            raise TransitionRejected(
+                f"transition created {created} before source commit "
+                f"{commit_ts.isoformat()}")
 
     # 4. Schema, gate, status
     if tm.get("gate") != "FIT-INFERENCE_TRANSITION":
@@ -368,13 +372,14 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
             raise TransitionRejected(
                 f"frozen R5-E evidence mismatch: {key}={actual} (expected {expected})")
 
-    # 6. Execution source binding
-    if tm.get("r5f_execution_source_commit") != execution_source_commit:
-        raise TransitionRejected(
-            f"source commit mismatch: declared={tm.get('r5f_execution_source_commit')} "
-            f"actual={execution_source_commit}")
-    if tm.get("r5f_script_sha256") != script_sha:
-        raise TransitionRejected("script SHA mismatch")
+    # 6. Execution source binding (relaxed in ND diagnostic mode)
+    if not nd_diagnostic_mode:
+        if tm.get("r5f_execution_source_commit") != execution_source_commit:
+            raise TransitionRejected(
+                f"source commit mismatch: declared={tm.get('r5f_execution_source_commit')} "
+                f"actual={execution_source_commit}")
+        if tm.get("r5f_script_sha256") != script_sha:
+            raise TransitionRejected("script SHA mismatch")
 
     # 7. Model tree + processor
     declared_tree = tm.get("model_tree_sha256")
@@ -431,27 +436,29 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
     if declared_alias != sha256_file(alias_ledger_path):
         raise TransitionRejected("alias ledger SHA mismatch")
 
-    # 12. Upstream runtime — compute actual commit, tree, clean
-    declared_up_commit = tm.get("upstream_commit")
-    declared_up_tree = tm.get("upstream_tree", "")
-    up_commit, up_tree = _runtime_git_values(upstream_root, "upstream")
-    if declared_up_commit != up_commit:
-        raise TransitionRejected(
-            f"upstream commit mismatch: declared={declared_up_commit[:16]} "
-            f"actual={up_commit[:16]}")
-    if not declared_up_tree or declared_up_tree != up_tree:
-        raise TransitionRejected("upstream tree missing or mismatched")
+    # 12. Upstream runtime (relaxed in ND diagnostic mode)
+    if not nd_diagnostic_mode:
+        declared_up_commit = tm.get("upstream_commit")
+        declared_up_tree = tm.get("upstream_tree", "")
+        up_commit, up_tree = _runtime_git_values(upstream_root, "upstream")
+        if declared_up_commit != up_commit:
+            raise TransitionRejected(
+                f"upstream commit mismatch: declared={declared_up_commit[:16]} "
+                f"actual={up_commit[:16]}")
+        if not declared_up_tree or declared_up_tree != up_tree:
+            raise TransitionRejected("upstream tree missing or mismatched")
 
-    # 13. LIBERO runtime
-    declared_lib_commit = tm.get("libero_commit")
-    declared_lib_tree = tm.get("libero_tree", "")
-    lib_commit, lib_tree = _runtime_git_values(libero_root, "LIBERO")
-    if declared_lib_commit != lib_commit:
-        raise TransitionRejected(
-            f"LIBERO commit mismatch: declared={declared_lib_commit[:16]} "
-            f"actual={lib_commit[:16]}")
-    if not declared_lib_tree or declared_lib_tree != lib_tree:
-        raise TransitionRejected("LIBERO tree missing or mismatched")
+    # 13. LIBERO runtime (relaxed in ND diagnostic mode)
+    if not nd_diagnostic_mode:
+        declared_lib_commit = tm.get("libero_commit")
+        declared_lib_tree = tm.get("libero_tree", "")
+        lib_commit, lib_tree = _runtime_git_values(libero_root, "LIBERO")
+        if declared_lib_commit != lib_commit:
+            raise TransitionRejected(
+                f"LIBERO commit mismatch: declared={declared_lib_commit[:16]} "
+                f"actual={lib_commit[:16]}")
+        if not declared_lib_tree or declared_lib_tree != lib_tree:
+            raise TransitionRejected("LIBERO tree missing or mismatched")
 
     # 14. Full permission matrix
     PERMS = {
