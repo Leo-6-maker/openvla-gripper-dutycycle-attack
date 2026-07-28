@@ -2,7 +2,9 @@
 
 ## Review scope
 
-This review starts from handoff commit `f07fb43c79d16339abf3f79d177792a2b72e7717` and preserves every historical source, checkpoint, prediction, and shadow root. The remediation code is on `codex/fresh40-v5-canary-20260728` at `404c5279e9d15edea22a0754dd884582880c83d2d`, with no protected-split or attack input access.
+This review starts from handoff commit `f07fb43c79d16339abf3f79d177792a2b72e7717` and preserves every historical source, checkpoint, prediction, and shadow root. The remediation code at the time of this historical report was `404c5279e9d15edea22a0754dd884582880c83d2`; later R2 corrections are recorded in `OFFICIAL_V3_FRESH40_V5_R2_REMEDIATION.md`.
+
+**Historical erratum:** the original 4041b0a text contained one 41-character rendering of the execution commit. The valid commit is the 40-character SHA above. The 4041b0a `R1=PASS` summary is superseded by the split R1/R2 decision in the remediation report.
 
 The f07 engineering chain is reproducible, but its scientific canary must remain `NOT_EVALUATED_DUE_TO_CONFOUNDS`: the Teacher is a recorded-telemetry proxy, and the original shadow metric divided one-shot emits by step-level critical labels.
 
