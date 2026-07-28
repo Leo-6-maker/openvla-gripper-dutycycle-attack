@@ -114,7 +114,13 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
             prev_obs = None
             from fit_collection_core import compute_eef_velocity, get_geom_extents
 
+            # Per-step timing accumulators
+            timing = {"image_prep": [], "sim_forward": [], "geometry_contact": [],
+                      "png_encode": [], "model_inference": [], "env_step": [],
+                      "action_process": [], "feature_build": [], "file_write": []}
+
             for step_num in range(HORIZONS[suite]):
+                t_step = time.perf_counter()
                 # ── forward-before-capture protocol ──
                 qpos_pre = env.sim.data.qpos.copy()
                 qvel_pre = env.sim.data.qvel.copy()
@@ -127,6 +133,7 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
                 if not all(math.isfinite(float(x)) for x in qvel_pre):
                     raise CollectionHold(f"non-finite qvel at step {step_num}")
 
+                t_simfwd = time.perf_counter()
                 env.sim.forward()
                 _verify_source_stability(qpos_pre, qvel_pre, act_pre, time_pre,
                                          env.sim.data, step_num, "capture_forward")
@@ -135,6 +142,7 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
                 entities = [collect_entity(model, data, res) for res in resolutions.values()]
                 contact_pairs = collect_contact_pairs(model, data,
                                                       registry_resolutions=resolutions)
+                t_geom = time.perf_counter()
 
                 # Add geom extents to entity records
                 for ent, (etype, eid) in zip(entities, resolutions.keys()):
@@ -161,6 +169,9 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
                     png_path = steps_dir / f"step_{step_num:04d}.png"
                     pil_img.save(str(png_path), format="PNG")
                     frame_sha = sha256_file(png_path)
+                t_png = time.perf_counter()
+
+                t_feat = time.perf_counter()
 
                 privileged.append({
                     "step": step_num, "suite": suite, "task_idx": task_idx,
@@ -187,8 +198,10 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
                 })
 
                 image = get_libero_image(obs, 224)
+                t_infer = time.perf_counter()
                 clean_action, generation, score_meta = adapter.predict_action_with_scores(
                     image, str(task.language))
+                t_action = time.perf_counter()
                 count = score_meta.get("generation_passes_per_step")
                 if isinstance(count, bool) or not isinstance(count, int) or count != 1:
                     raise CollectionHold(f"generation pass count: {count}")
@@ -219,6 +232,34 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
                 rows.append(row)
 
                 obs, _reward, done, _info = env.step(executed)
+                t_env = time.perf_counter()
+
+                # Accumulate per-step timing
+                timing["image_prep"].append((t_infer - t_feat) * 1000)
+                timing["sim_forward"].append((t_geom - t_simfwd) * 1000)
+                timing["geometry_contact"].append((t_feat - t_geom) * 1000)
+                timing["png_encode"].append((t_png - t_geom) * 1000)
+                timing["feature_build"].append((t_infer - t_png) * 1000)
+                timing["model_inference"].append((t_action - t_infer) * 1000)
+                timing["action_process"].append((t_env - t_action) * 1000)
+                timing["env_step"].append((t_env - t_action) * 1000)
+                timing["file_write"].append(0)  # no per-step file write in loop
+
+                # Summary every 50 steps
+                if (step_num + 1) % 50 == 0:
+                    med = lambda a: sorted(a)[len(a)//2] if a else 0
+                    p95 = lambda a: sorted(a)[int(len(a)*0.95)] if a else 0
+                    print(f"    step {step_num+1}/{HORIZONS[suite]} "
+                          f"timing(ms) p50/p95: "
+                          f"prep={med(timing['image_prep']):.0f}/{p95(timing['image_prep']):.0f} "
+                          f"simfw={med(timing['sim_forward']):.0f}/{p95(timing['sim_forward']):.0f} "
+                          f"geom={med(timing['geometry_contact']):.0f}/{p95(timing['geometry_contact']):.0f} "
+                          f"png={med(timing['png_encode']):.0f}/{p95(timing['png_encode']):.0f} "
+                          f"infer={med(timing['model_inference']):.0f}/{p95(timing['model_inference']):.0f} "
+                          f"act={med(timing['action_process']):.0f}/{p95(timing['action_process']):.0f} "
+                          f"step={med(timing['env_step']):.0f}/{p95(timing['env_step']):.0f}",
+                          flush=True)
+
                 if done:
                     break
         finally:
@@ -249,6 +290,15 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
         }
 
         _validate_episode_shapes(episode)
+
+        # Summary timing
+        med = lambda a: sorted(a)[len(a)//2] if a else 0
+        p95 = lambda a: sorted(a)[int(len(a)*0.95)] if a else 0
+        episode["timing_summary_ms"] = {
+            k: {"p50": round(med(v), 1), "p95": round(p95(v), 1)}
+            for k, v in timing.items() if v
+        }
+
         (staging / "episode.json").write_text(
             json.dumps(episode, indent=2, sort_keys=True), encoding="utf-8")
 
