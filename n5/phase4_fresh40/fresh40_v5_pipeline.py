@@ -468,6 +468,132 @@ def build_dataset(source_root: Path, teacher_root: Path, output_root: Path, conf
     return {"output_root": str(output_root), "sha256sums_sha256": seal["sha256sums_sha256"], "manifest_sha256": sha256_file(output_root / "MANIFEST.json"), "train": len(train), "dev": len(dev)}
 
 
+def _dataset_episode_path(dataset_root: Path, identity: str) -> Path:
+    return dataset_root / "episodes" / f"{identity.replace('/', '__')}.jsonl"
+
+
+def _load_student_data(dataset_root: Path, split: str) -> tuple[list[dict[str, Any]], np.ndarray, np.ndarray]:
+    manifest = json.loads((dataset_root / "MANIFEST.json").read_text())
+    split_data = json.loads((dataset_root / "split_identities.json").read_text())
+    normalizer = json.loads((dataset_root / "normalizer.json").read_text())
+    mean, std = np.asarray(normalizer["mean"], dtype=np.float32), np.asarray(normalizer["std"], dtype=np.float32)
+    episodes = []
+    for identity in split_data[split]:
+        rows = [json.loads(line) for line in _dataset_episode_path(dataset_root, identity).read_text().splitlines() if line.strip()]
+        if not rows or [r["step"] for r in rows] != list(range(len(rows))):
+            raise RuntimeError(f"invalid dataset step closure: {identity}")
+        features = np.asarray([r["features_25d"] for r in rows], dtype=np.float32)
+        if features.shape[1] != 25 or not np.isfinite(features).all():
+            raise RuntimeError(f"invalid 25D input: {identity}")
+        features = (features - mean) / std
+        episodes.append({"identity": identity, "rows": rows, "features": features})
+    return episodes, mean, std
+
+
+def train_student(dataset_root: Path, output_root: Path, config: Mapping[str, Any], variant: str, epochs: int) -> dict[str, Any]:
+    import torch
+    from n5_student_model import N5MultiHeadStudent
+
+    if output_root.exists():
+        raise RuntimeError(f"output already exists: {output_root}")
+    active = {"critical_only": ("physical_criticality",), "three_head": ("physical_criticality", "k10_feasible", "safe_release"), "full_five": HEADS}[variant]
+    train_eps, mean, std = _load_student_data(dataset_root, "train")
+    coverage = {h: {"TRUE": 0, "FALSE": 0, "UNKNOWN": 0} for h in HEADS}
+    for ep in train_eps:
+        for row in ep["rows"]:
+            for h in HEADS:
+                coverage[h][row["labels"][h]["value"]] += 1
+    for head in active:
+        if coverage[head]["TRUE"] == 0 or coverage[head]["FALSE"] == 0:
+            raise RuntimeError(f"active head lacks both classes: {head}: {coverage[head]}")
+    seed = int(config["student_contract"]["seed"])
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    model = N5MultiHeadStudent(input_dim=25, hidden=int(config["student_contract"]["hidden"]), short_rf=int(config["student_contract"]["short_rf"]), long_rf=int(config["student_contract"]["long_rf"]), dropout=0.1)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=float(config["student_contract"]["learning_rate"]), weight_decay=float(config["student_contract"]["weight_decay"]))
+    history = []
+    model.train()
+    for epoch in range(int(epochs)):
+        epoch_order = sorted(range(len(train_eps)), key=lambda i: hashlib.sha256(f"{seed}:{epoch}:{train_eps[i]['identity']}".encode()).hexdigest())
+        losses = []
+        for ep_idx in epoch_order:
+            ep = train_eps[ep_idx]
+            x = torch.from_numpy(ep["features"]).unsqueeze(0)
+            outputs = model(x, timestep_mask=torch.ones((1, x.shape[1]), dtype=torch.bool))
+            terms = []
+            for head in active:
+                values = torch.tensor([1.0 if r["labels"][head]["value"] == "TRUE" else 0.0 for r in ep["rows"]], dtype=torch.float32).unsqueeze(0)
+                mask = torch.tensor([bool(r["labels"][head]["mask"]) for r in ep["rows"]], dtype=torch.bool).unsqueeze(0)
+                if bool(mask.any()):
+                    terms.append(torch.nn.functional.binary_cross_entropy_with_logits(outputs[head][mask], values[mask]))
+            if not terms:
+                continue
+            loss = torch.stack(terms).mean()
+            optimizer.zero_grad(set_to_none=True); loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), float(config["student_contract"]["gradient_clip"]))
+            optimizer.step(); losses.append(float(loss.detach().cpu()))
+        history.append({"epoch": epoch + 1, "mean_loss": float(np.mean(losses)) if losses else None, "episodes": len(losses)})
+    staging = output_root.parent / f".{output_root.name}.staging.{os.getpid()}"
+    if staging.exists() or output_root.exists():
+        raise RuntimeError(f"output already exists: {output_root}")
+    staging.mkdir(parents=True)
+    torch.save({"model_state_dict": model.state_dict(), "input_dim": 25, "hidden": int(config["student_contract"]["hidden"]), "short_rf": int(config["student_contract"]["short_rf"]), "long_rf": int(config["student_contract"]["long_rf"]), "heads": list(HEADS), "variant": variant, "seed": seed}, staging / "checkpoint.pt")
+    manifest = {"schema": "FRESH40_V5_STUDENT_DEVELOPMENT_CHECKPOINT_V1", "status": "DEVELOPMENT_NONCONSUMABLE", "dataset_root": str(dataset_root), "dataset_manifest_sha256": sha256_file(dataset_root / "MANIFEST.json"), "variant": variant, "active_heads": list(active), "checkpoint_sha256": sha256_file(staging / "checkpoint.pt"), "train_identity_sha256": json.loads((dataset_root / "MANIFEST.json").read_text())["train_identity_sha256"], "coverage": coverage, "history": history, "formal_training_authorized": False, "formal_inference_authorized": False, "attack_authorized": False, "protected_reads": False}
+    (staging / "MANIFEST.json").write_text(json.dumps(manifest, indent=2, sort_keys=True))
+    (staging / "normalizer.json").write_text(json.dumps({"mean": mean.tolist(), "std": std.tolist(), "dataset_manifest_sha256": manifest["dataset_manifest_sha256"]}, indent=2, sort_keys=True))
+    seal = _seal(staging); _publish(staging, output_root)
+    return {"output_root": str(output_root), "variant": variant, "active_heads": list(active), "checkpoint_sha256": manifest["checkpoint_sha256"], "sha256sums_sha256": seal["sha256sums_sha256"], "history": history, "coverage": coverage}
+
+
+def shadow_student(dataset_root: Path, checkpoint_root: Path, output_root: Path, config: Mapping[str, Any]) -> dict[str, Any]:
+    import torch
+    from n5_student_model import N5MultiHeadStudent
+
+    if output_root.exists():
+        raise RuntimeError(f"output already exists: {output_root}")
+    checkpoint = torch.load(checkpoint_root / "checkpoint.pt", map_location="cpu", weights_only=False)
+    model = N5MultiHeadStudent(input_dim=25, hidden=int(checkpoint["hidden"]), short_rf=int(checkpoint["short_rf"]), long_rf=int(checkpoint["long_rf"]), dropout=0.1)
+    model.load_state_dict(checkpoint["model_state_dict"], strict=True); model.eval()
+    dev_eps, _, _ = _load_student_data(dataset_root, "dev")
+    pred_rows, events = [], []
+    counts = {"steps": 0, "emits": 0, "critical_known": 0, "critical_true": 0, "critical_correct": 0, "critical_fp": 0, "unknown_emits": 0, "safe_true_emits": 0, "instability_true_emits": 0}
+    with torch.no_grad():
+        for ep in dev_eps:
+            x = torch.from_numpy(ep["features"]).unsqueeze(0)
+            probs = {h: torch.sigmoid(v).squeeze(0).cpu().numpy() for h, v in model(x, timestep_mask=torch.ones((1, x.shape[1]), dtype=torch.bool)).items()}
+            prior_candidate = False; event_id = -1; emitted_event = False
+            for idx, row in enumerate(ep["rows"]):
+                candidate = bool(row["candidate_close"])
+                if candidate and not prior_candidate:
+                    event_id += 1; emitted_event = False
+                if not candidate:
+                    emitted_event = False
+                critical = float(probs["physical_criticality"][idx])
+                safe = float(probs["safe_release"][idx])
+                instability = float(probs["instability"][idx])
+                emit = bool(candidate and not emitted_event and critical >= 0.5 and safe < 0.5 and instability < 0.5)
+                if emit:
+                    emitted_event = True; counts["emits"] += 1; events.append({"episode_id": ep["identity"], "step": idx, "event_id": event_id, "critical_probability": critical, "safe_release_probability": safe, "instability_probability": instability})
+                    if row["labels"]["physical_criticality"]["value"] == "UNKNOWN": counts["unknown_emits"] += 1
+                    if row["labels"]["safe_release"]["value"] == "TRUE": counts["safe_true_emits"] += 1
+                    if row["labels"]["instability"]["value"] == "TRUE": counts["instability_true_emits"] += 1
+                target = row["labels"]["physical_criticality"]
+                if target["mask"]:
+                    counts["critical_known"] += 1; counts["critical_true"] += int(target["value"] == "TRUE")
+                    if emit and target["value"] == "TRUE": counts["critical_correct"] += 1
+                    if emit and target["value"] == "FALSE": counts["critical_fp"] += 1
+                pred_rows.append({"episode_id": ep["identity"], "step": idx, "candidate_close": candidate, "physical_criticality_probability": critical, "safe_release_probability": safe, "instability_probability": instability, "emit": emit, "event_id": event_id, "action_mutation": False})
+                counts["steps"] += 1; prior_candidate = candidate
+    metrics = {"schema": "FRESH40_V5_CAUSAL_SHADOW_V1", "status": "DEVELOPMENT_NONCONSUMABLE", "checkpoint_sha256": sha256_file(checkpoint_root / "checkpoint.pt"), "dataset_manifest_sha256": sha256_file(dataset_root / "MANIFEST.json"), "counts": counts, "critical_recall_among_known_true": counts["critical_correct"] / counts["critical_true"] if counts["critical_true"] else None, "pre_grasp_fp": counts["critical_fp"] / counts["critical_known"] if counts["critical_known"] else None, "unknown_fail_closed": counts["unknown_emits"] == 0, "action_mutation": False, "protected_reads": False, "attack_enabled": False}
+    staging = output_root.parent / f".{output_root.name}.staging.{os.getpid()}"; staging.mkdir(parents=True)
+    (staging / "prediction_records.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in pred_rows))
+    (staging / "event_records.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in events))
+    (staging / "evaluation_summary.json").write_text(json.dumps(metrics, indent=2, sort_keys=True))
+    (staging / "MANIFEST.json").write_text(json.dumps({"schema": "FRESH40_V5_CAUSAL_SHADOW_BUNDLE_V1", "status": "DEVELOPMENT_NONCONSUMABLE", "dataset_manifest_sha256": metrics["dataset_manifest_sha256"], "checkpoint_sha256": metrics["checkpoint_sha256"], "prediction_count": len(pred_rows), "event_count": len(events), "action_mutation": False, "protected_reads": False, "attack_enabled": False}, indent=2, sort_keys=True))
+    seal = _seal(staging); _publish(staging, output_root)
+    return {"output_root": str(output_root), "sha256sums_sha256": seal["sha256sums_sha256"], **metrics}
+
+
 def _parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser()
     ap.add_argument("command", choices=("audit", "teacher", "dataset", "train", "shadow", "canary"))
@@ -495,9 +621,14 @@ def main() -> int:
         if not args.source_root or not args.teacher_root: raise SystemExit("--source-root and --teacher-root required")
         result = build_dataset(args.source_root.resolve(), args.teacher_root.resolve(), args.output_root.resolve(), cfg)
     elif args.command == "train":
-        raise SystemExit("train is intentionally gated until CPU audit confirms active-head coverage; use the dedicated training stage after dataset review")
+        if not args.dataset_root: raise SystemExit("--dataset-root required")
+        result = train_student(args.dataset_root.resolve(), args.output_root.resolve(), cfg, args.variant, args.epochs)
+    elif args.command == "shadow":
+        if not args.dataset_root or not args.checkpoint: raise SystemExit("--dataset-root and --checkpoint required")
+        result = shadow_student(args.dataset_root.resolve(), args.checkpoint.resolve(), args.output_root.resolve(), cfg)
     else:
-        raise SystemExit(f"{args.command} is not enabled in the initial E0-E2 CPU pass")
+        if not args.dataset_root or not args.checkpoint: raise SystemExit("--dataset-root and --checkpoint required")
+        result = shadow_student(args.dataset_root.resolve(), args.checkpoint.resolve(), args.output_root.resolve(), cfg)
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 
