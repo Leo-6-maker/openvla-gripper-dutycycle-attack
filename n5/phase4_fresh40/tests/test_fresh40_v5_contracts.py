@@ -9,6 +9,7 @@ HERE = Path(__file__).resolve()
 ROOT = HERE.parents[3]
 sys.path.insert(0, str(ROOT / "n5" / "phase4_fresh40"))
 from fresh40_v5_pipeline import aggregate_and, aggregate_or, canonical_sha, label, _persistence, _select_split, variant_decision
+from run_v5_oracle_ladder import _event_metrics
 
 
 def test_unknown_is_not_negative():
@@ -70,3 +71,10 @@ def test_variant_equations_are_distinct_and_frozen():
     p["k10_feasible"] = 0.1
     assert variant_decision("three_head", True, p)
     assert not variant_decision("full_five", True, p)
+
+
+def test_partial_unknown_event_is_not_scored_as_known():
+    event = {"start": 0, "labels": [{"value": "TRUE", "mask": True}, {"value": "UNKNOWN", "mask": False}], "selected": {"oracle": 0}}
+    metrics = _event_metrics([event], ("oracle",))
+    assert metrics["excluded_unknown_events"] == 1
+    assert metrics["oracle"]["positive_events"] == 0

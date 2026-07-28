@@ -660,7 +660,7 @@ def shadow_student(dataset_root: Path, checkpoint_root: Path, output_root: Path,
     positive_events = negative_events = predicted_positive_events = predicted_negative_events = 0; latencies = []
     for event in event_rows:
         known = [x["target"] for x in event if x["target"]["mask"]]
-        if not known or any(x["value"] == "UNKNOWN" for x in known):
+        if not known or any(x["target"]["value"] == "UNKNOWN" for x in event):
             continue
         has_true = any(x["value"] == "TRUE" for x in known)
         predicted = any(x["emit"] for x in event)
