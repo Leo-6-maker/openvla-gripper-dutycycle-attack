@@ -47,7 +47,7 @@ from fit_collection_core import (
 def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_seed,
                                registry_dir, canonical_state, task, adapter,
                                output_root, gpu_info=None, provenance=None,
-                               save_student_rgb=True):
+                               episode_bindings=None, save_student_rgb=True):
     """Collect a single episode with FIT670 telemetry upgrades.
 
     Returns (episode_data, published_target_path).
@@ -118,7 +118,10 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
             # Per-step timing accumulators
             timing = {"image_prep": [], "sim_forward": [], "geometry_contact": [],
                       "png_encode": [], "model_inference": [], "env_step": [],
-                      "action_process": [], "feature_build": [], "file_write": []}
+                      "action_process": [], "feature_build": [], "file_write": [],
+                      "cpu_preprocess": [], "host_to_device": [],
+                      "cuda_forward": [], "device_to_host": [],
+                      "action_decode": [], "cuda_sync_wait": []}
 
             for step_num in range(HORIZONS[suite]):
                 t_step = time.perf_counter()
@@ -200,8 +203,17 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
 
                 image = get_libero_image(obs, 224)
                 t_infer = time.perf_counter()
+
+                # CUDA event timing for precise GPU kernel measurement
+                cuda_start = torch.cuda.Event(enable_timing=True)
+                cuda_end = torch.cuda.Event(enable_timing=True)
+                cuda_start.record()
                 clean_action, generation, score_meta = adapter.predict_action_with_scores(
                     image, str(task.language))
+                cuda_end.record()
+                torch.cuda.synchronize()
+                cuda_forward_ms = cuda_start.elapsed_time(cuda_end)
+
                 t_action = time.perf_counter()
                 count = score_meta.get("generation_passes_per_step")
                 if isinstance(count, bool) or not isinstance(count, int) or count != 1:
@@ -223,8 +235,15 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
                 row = {
                     "step": step_num, "suite": suite, "task_idx": task_idx,
                     "state_id": state_id,
-                    "action_raw_7d": raw_action, "score_action_7d": score_action,
-                    "action_env_7d": executed, "generation_passes_per_step": count,
+                    # canonical names
+                    "raw_action_7d": raw_action,
+                    "scored_action_7d": score_action,
+                    "executed_action_7d": executed,
+                    # deprecated compatibility aliases (verified elementwise identical)
+                    "action_raw_7d": raw_action,
+                    "score_action_7d": score_action,
+                    "action_env_7d": executed,
+                    "generation_passes_per_step": count,
                     "single_generation_parity_pass": True,
                     "action_mutation_by_detector": False,
                 }
@@ -236,29 +255,30 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
                 t_env = time.perf_counter()
 
                 # Accumulate per-step timing
+                wall_ms = (t_action - t_infer) * 1000
                 timing["image_prep"].append((t_infer - t_feat) * 1000)
                 timing["sim_forward"].append((t_geom - t_simfwd) * 1000)
                 timing["geometry_contact"].append((t_feat - t_geom) * 1000)
                 timing["png_encode"].append((t_png - t_geom) * 1000)
                 timing["feature_build"].append((t_infer - t_png) * 1000)
-                timing["model_inference"].append((t_action - t_infer) * 1000)
+                timing["model_inference"].append(wall_ms)          # wall clock
+                timing["cuda_forward"].append(cuda_forward_ms)     # GPU kernel time
+                timing["cpu_preprocess"].append(wall_ms - cuda_forward_ms)  # CPU overhead
                 timing["action_process"].append((t_env - t_action) * 1000)
                 timing["env_step"].append((t_env - t_action) * 1000)
-                timing["file_write"].append(0)  # no per-step file write in loop
+                timing["file_write"].append(0)
 
                 # Summary every 50 steps
                 if (step_num + 1) % 50 == 0:
                     med = lambda a: sorted(a)[len(a)//2] if a else 0
                     p95 = lambda a: sorted(a)[int(len(a)*0.95)] if a else 0
                     print(f"    step {step_num+1}/{HORIZONS[suite]} "
-                          f"timing(ms) p50/p95: "
-                          f"prep={med(timing['image_prep']):.0f}/{p95(timing['image_prep']):.0f} "
-                          f"simfw={med(timing['sim_forward']):.0f}/{p95(timing['sim_forward']):.0f} "
-                          f"geom={med(timing['geometry_contact']):.0f}/{p95(timing['geometry_contact']):.0f} "
-                          f"png={med(timing['png_encode']):.0f}/{p95(timing['png_encode']):.0f} "
-                          f"infer={med(timing['model_inference']):.0f}/{p95(timing['model_inference']):.0f} "
-                          f"act={med(timing['action_process']):.0f}/{p95(timing['action_process']):.0f} "
-                          f"step={med(timing['env_step']):.0f}/{p95(timing['env_step']):.0f}",
+                          f"wall/p50: infer={med(timing['model_inference']):.0f} "
+                          f"cuda={med(timing['cuda_forward']):.0f} "
+                          f"cpu={med(timing['cpu_preprocess']):.0f} "
+                          f"png={med(timing['png_encode']):.0f} "
+                          f"geom={med(timing['geometry_contact']):.0f} "
+                          f"act={med(timing['action_process']):.0f}",
                           flush=True)
 
                 if done:
@@ -290,6 +310,10 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
             "student_rgb_saved": save_student_rgb,
             "gpu_identity": gpu_info or {},
             "provenance": provenance or {},
+            "bindings": {
+                **(episode_bindings or {}),
+            },
+            "schema_version": "FIT670_FEATURE_SCHEMA_V1",
         }
 
         _validate_episode_shapes(episode)
@@ -467,6 +491,21 @@ def main():
         "collection_seed": args.seed,
     }
 
+    # ── Episode-level bindings (from transition receipt and allowlist) ──
+    tm = json.loads(
+        (Path(args.transition_receipt) / "TRANSITION_MANIFEST.json").read_text(encoding="utf-8"))
+    al = json.loads(Path(args.identity_allowlist).read_text(encoding="utf-8"))
+    episode_bindings = {
+        "c1_canonical_digest": tm.get("c1_canonical_digest", ""),
+        "identity_allowlist_digest": tm.get("identity_allowlist_digest", ""),
+        "identity_set_digest": al.get("identity_set_digest", ""),
+        "transition_receipt_sha256": sha256_file(
+            Path(args.transition_receipt) / "SHA256SUMS"),
+        "schema_version": "FIT670_FEATURE_SCHEMA_V1",
+        "frozen_r5e_c1_canonical_digest": tm.get("c1_canonical_digest", ""),
+        "frozen_r5e_comparison_sha256": tm.get("r5e_comparison_sha256", ""),
+    }
+
     # ── Collect episodes ──
     staging = out_root.parent / f".{label}.staging.{os.getpid()}.{uuid.uuid4().hex[:8]}"
     staging.mkdir(parents=True)
@@ -514,6 +553,7 @@ def main():
                 out_root,
                 gpu_info=gpu_info,
                 provenance=worker_provenance,
+                episode_bindings=episode_bindings,
                 save_student_rgb=not args.no_student_rgb,
             )
 
