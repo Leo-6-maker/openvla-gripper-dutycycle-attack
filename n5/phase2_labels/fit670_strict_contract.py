@@ -12,6 +12,8 @@ import math
 import os
 import re
 import subprocess
+from datetime import datetime, timezone
+import importlib.util
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Tuple
 
@@ -223,6 +225,33 @@ def git_identity(repo: Path) -> Tuple[str, str]:
     return commit, tree
 
 
+def git_commit_time(repo: Path, commit: str) -> datetime:
+    try:
+        raw = subprocess.check_output(
+            ["git", "-C", str(Path(repo).resolve()), "show", "-s", "--format=%cI", commit],
+            text=True,
+        ).strip()
+        value = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except Exception as exc:
+        raise ContractViolation(f"cannot resolve commit chronology: {repo}@{commit}") from exc
+    if value.tzinfo is None:
+        raise ContractViolation("git commit timestamp is timezone-naive")
+    return value.astimezone(timezone.utc)
+
+
+def assert_import_origin(module_name: str, expected_root: Path) -> str:
+    spec = importlib.util.find_spec(module_name)
+    if spec is None or spec.origin is None:
+        raise ContractViolation(f"cannot resolve import origin: {module_name}")
+    origin = Path(spec.origin).resolve()
+    root = Path(expected_root).resolve()
+    if origin != root and root not in origin.parents:
+        raise ContractViolation(
+            f"{module_name} import escapes frozen root: {origin} not under {root}"
+        )
+    return str(origin)
+
+
 def validate_transition_v2(
     transition_root: Path,
     *,
@@ -260,6 +289,15 @@ def validate_transition_v2(
         "alias_ledger_sha256": sha256_file(alias_ledger),
         "model_tree_sha256": compute_model_tree_fingerprint(model_path),
         "processor_sha256": sha256_file(Path(model_path) / "preprocessor_config.json"),
+        "identity_allowlist_root_sha256sums_sha256": full_seal_check(
+            Path(allowlist_path).parent
+        ),
+        "shard_plan_root_sha256sums_sha256": full_seal_check(
+            Path(shard_plan_path).parent
+        ),
+        "c1_root_sha256sums_sha256": full_seal_check(
+            Path(registry_summary).parent
+        ),
     }
     for key, value in exact.items():
         if manifest.get(key) != value:
@@ -302,6 +340,15 @@ def validate_transition_v2(
     for key, value in runtime.items():
         if manifest.get(key) != value:
             raise ContractViolation(f"runtime provenance mismatch: {key}")
+    created_at = manifest.get("created_at")
+    try:
+        created = datetime.fromisoformat(str(created_at).replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ContractViolation("invalid transition created_at") from exc
+    if created.tzinfo is None or created.astimezone(timezone.utc) <= git_commit_time(
+        repo_root, repo_commit
+    ):
+        raise ContractViolation("transition chronology does not follow source commit")
     frozen_source = manifest.get("collection_source_files")
     if not isinstance(frozen_source, dict) or set(frozen_source) != set(source_files):
         raise ContractViolation("transition source-file set mismatch")
