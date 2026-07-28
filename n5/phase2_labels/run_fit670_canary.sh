@@ -2,7 +2,7 @@
 set -e
 WORKTREE=/tmp/fresh670_v5_worktree
 PYTHON=/mnt/sdc/dty_user/openvla_attack/envs/openvla-official-a800/bin/python
-OUT=/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/fresh670_v5_r2_canary
+OUT=/mnt/sdc/dty_user/openvla_attack_outputs/n5/phase3_student/fresh670_v5
 
 echo "=== FIT670 V5 8-GPU CANARY ==="
 echo "Started: $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
