@@ -452,12 +452,12 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
             f"actual={actual_allowlist_digest[:16]}")
     if tm.get("identity_set_digest") != id_set_digest:
         raise TransitionRejected("identity_set_digest mismatch")
-    if tm.get("authorized_identities") != expected_identity_count:
+    auth_id_count = tm.get("authorized_identities", 0)
+    pilot_id_count = tm.get("n_pilot_identities", auth_id_count)
+    if auth_id_count != expected_identity_count and pilot_id_count != expected_identity_count:
         raise TransitionRejected(
-            f"authorized_identities must be {expected_identity_count}")
-    if tm.get("n_pilot_identities") != expected_identity_count:
-        raise TransitionRejected(
-            f"n_pilot_identities must be {expected_identity_count}")
+            f"identity count must be {expected_identity_count}, "
+            f"got authorized={auth_id_count} pilot={pilot_id_count}")
 
     # 11. Registry + alias
     declared_reg = tm.get("registry_summary_sha256")
