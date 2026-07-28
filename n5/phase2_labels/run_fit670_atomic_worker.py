@@ -52,6 +52,7 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
 
     Returns (episode_data, published_target_path).
     """
+    import torch
     from experiments.robot.libero.libero_utils import get_libero_image
     from libero.libero import get_libero_path
     from libero.libero.envs import OffScreenRenderEnv
