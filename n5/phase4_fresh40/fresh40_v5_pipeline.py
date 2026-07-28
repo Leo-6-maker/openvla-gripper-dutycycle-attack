@@ -379,7 +379,7 @@ def build_teacher(source_root: Path, output_root: Path, config: Mapping[str, Any
         ep = json.loads(ep_path.read_text())
         rows, summary = _teacher_episode(ep, config)
         ep_dir = staging / "episodes" / str(ep["episode_id"])
-        ep_dir.mkdir()
+        ep_dir.mkdir(parents=True)
         with (ep_dir / "labels.jsonl").open("w") as f:
             for row in rows:
                 f.write(json.dumps(row, sort_keys=True) + "\n")
