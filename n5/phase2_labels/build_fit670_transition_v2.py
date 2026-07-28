@@ -59,12 +59,15 @@ def main() -> None:
         raise SystemExit(f"collection output is not empty: {output_root}")
 
     allowlist, _ = strict.validate_allowlist(allowlist_path)
+    allowlist_root_seal = strict.full_seal_check(allowlist_path.parent)
     physical_gpus = [int(value) for value in args.physical_gpus.split(",")]
     if len(set(physical_gpus)) != len(physical_gpus) or not physical_gpus:
         raise SystemExit("physical GPU list must be non-empty and unique")
     plan, _ = strict.validate_shard_plan(
         shard_plan_path, allowlist_path, expected_n_shards=len(physical_gpus)
     )
+    shard_plan_root_seal = strict.full_seal_check(shard_plan_path.parent)
+    c1_root_seal = strict.full_seal_check(args.registry_summary.resolve().parent)
 
     comp_root = args.r5e_comparison_root.resolve()
     ok, _, issues = verify_r5e_comparison_root(comp_root)
@@ -106,12 +109,14 @@ def main() -> None:
         "protected_overlap_verified": 0,
         "identity_allowlist_path": str(allowlist_path),
         "identity_allowlist_file_sha256": strict.sha256_file(allowlist_path),
+        "identity_allowlist_root_sha256sums_sha256": allowlist_root_seal,
         "identity_set_digest": allowlist["identity_set_digest"],
         "authorized_identities": 670,
         "max_episodes": 670,
         "identity_set_frozen": True,
         "shard_plan_path": str(shard_plan_path),
         "shard_plan_sha256": strict.sha256_file(shard_plan_path),
+        "shard_plan_root_sha256sums_sha256": shard_plan_root_seal,
         "n_shards": plan["n_shards"],
         "allowed_physical_gpus": physical_gpus,
         "shard_to_physical_gpu": shard_to_gpu,
@@ -127,8 +132,12 @@ def main() -> None:
         "official_worker_sha256": strict.sha256_file(args.official_worker),
         "registry_summary_sha256": strict.sha256_file(args.registry_summary),
         "alias_ledger_sha256": strict.sha256_file(args.alias_ledger),
+        "c1_root_sha256sums_sha256": c1_root_seal,
         "collection_source_commit": source_commit,
         "collection_source_tree": source_tree,
+        "collection_source_commit_time": strict.git_commit_time(
+            repo_root, source_commit
+        ).isoformat(),
         "collection_source_files": {
             name: strict.sha256_file(path) for name, path in source_files.items()
         },
