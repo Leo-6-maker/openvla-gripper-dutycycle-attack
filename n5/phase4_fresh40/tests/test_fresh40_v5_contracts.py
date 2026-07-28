@@ -8,7 +8,7 @@ import pytest
 HERE = Path(__file__).resolve()
 ROOT = HERE.parents[3]
 sys.path.insert(0, str(ROOT / "n5" / "phase4_fresh40"))
-from fresh40_v5_pipeline import aggregate_and, aggregate_or, canonical_sha, label, _persistence, _select_split
+from fresh40_v5_pipeline import aggregate_and, aggregate_or, canonical_sha, label, _persistence, _select_split, variant_decision
 
 
 def test_unknown_is_not_negative():
@@ -47,3 +47,26 @@ def test_output_root_nonoverwrite(tmp_path):
     target.mkdir()
     with pytest.raises(Exception):
         raise RuntimeError("refusing to overwrite existing root")
+
+
+def test_inactive_head_mutation_has_zero_influence():
+    base = {"physical_criticality": 0.9, "k10_feasible": 0.9, "safe_release": 0.1, "instability": 0.1, "gripper_closing_state": 0.9}
+    for variant, inactive in {
+        "critical_only": ("k10_feasible", "safe_release", "instability", "gripper_closing_state"),
+        "three_head": ("k10_feasible", "safe_release"),
+    }.items():
+        before = variant_decision(variant, True, base)
+        changed = dict(base)
+        for name in inactive:
+            changed[name] = 1.0 - changed[name]
+        assert variant_decision(variant, True, changed) == before
+
+
+def test_variant_equations_are_distinct_and_frozen():
+    p = {"physical_criticality": 0.9, "k10_feasible": 0.9, "safe_release": 0.1, "instability": 0.1, "gripper_closing_state": 0.9}
+    assert variant_decision("critical_only", True, p)
+    assert variant_decision("three_head", True, p)
+    assert variant_decision("full_five", True, p)
+    p["k10_feasible"] = 0.1
+    assert variant_decision("three_head", True, p)
+    assert not variant_decision("full_five", True, p)

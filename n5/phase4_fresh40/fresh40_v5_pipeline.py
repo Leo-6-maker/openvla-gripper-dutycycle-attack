@@ -30,6 +30,11 @@ for _p in (SRC, STUDENT):
         sys.path.insert(0, str(_p))
 
 HEADS = ("physical_criticality", "k10_feasible", "safe_release", "instability", "gripper_closing_state")
+VARIANT_ACTIVE_HEADS = {
+    "critical_only": ("physical_criticality",),
+    "three_head": ("physical_criticality", "instability", "gripper_closing_state"),
+    "full_five": HEADS,
+}
 SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
 HORIZONS = {"libero_10": 520, "libero_goal": 300, "libero_object": 280, "libero_spatial": 220}
 FORBIDDEN = {"task_success", "terminal", "terminal_state", "reward", "outcome", "future", "attack_result"}
@@ -288,6 +293,58 @@ def _persistence(values: list[str], minimum: int) -> list[str]:
     return result
 
 
+def variant_decision(variant: str, candidate_close: bool, probabilities: Mapping[str, float], threshold: float = 0.5) -> bool:
+    """Frozen deploy decision; inactive heads are never read."""
+    if variant not in VARIANT_ACTIVE_HEADS:
+        raise ValueError(f"unknown variant: {variant}")
+    if not candidate_close or float(probabilities["physical_criticality"]) < threshold:
+        return False
+    if variant == "critical_only":
+        return True
+    if float(probabilities["instability"]) >= threshold or float(probabilities["gripper_closing_state"]) < threshold:
+        return False
+    if variant == "three_head":
+        return True
+    return float(probabilities["k10_feasible"]) >= threshold and float(probabilities["safe_release"]) < threshold
+
+
+def _rank_auc(scores: list[float], values: list[bool]) -> float | None:
+    pos = sum(values); neg = len(values) - pos
+    if not pos or not neg:
+        return None
+    order = sorted(range(len(scores)), key=lambda i: (float(scores[i]), i))
+    rank_sum = 0.0; i = 0
+    while i < len(order):
+        j = i + 1
+        while j < len(order) and float(scores[order[j]]) == float(scores[order[i]]):
+            j += 1
+        avg_rank = (i + 1 + j) / 2.0
+        rank_sum += avg_rank * sum(1 for k in order[i:j] if values[k])
+        i = j
+    return float((rank_sum - pos * (pos + 1) / 2.0) / (pos * neg))
+
+
+def _average_precision(scores: list[float], values: list[bool]) -> float | None:
+    pos = sum(values)
+    if not pos:
+        return None
+    order = sorted(range(len(scores)), key=lambda i: (-float(scores[i]), i))
+    hit = 0; total = 0.0
+    for rank, idx in enumerate(order, 1):
+        if values[idx]:
+            hit += 1; total += hit / rank
+    return float(total / pos)
+
+
+def _head_metrics(scores: list[float], values: list[bool]) -> dict[str, Any]:
+    pos = sum(values); neg = len(values) - pos
+    pred = [x >= 0.5 for x in scores]
+    tp = sum(p and y for p, y in zip(pred, values)); fp = sum(p and not y for p, y in zip(pred, values))
+    fn = sum((not p) and y for p, y in zip(pred, values)); tn = sum((not p) and not y for p, y in zip(pred, values))
+    balanced_accuracy = ((tp / pos) + (tn / neg)) / 2.0 if pos and neg else None
+    return {"known_steps": len(values), "positive": pos, "negative": neg, "auroc": _rank_auc(scores, values), "auprc": _average_precision(scores, values), "recall": tp / pos if pos else None, "precision": tp / (tp + fp) if tp + fp else None, "balanced_accuracy": balanced_accuracy}
+
+
 def _teacher_episode(ep: Mapping[str, Any], cfg: Mapping[str, Any]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     tc = cfg["teacher_contract"]
     steps, telemetry, relations = ep["steps"], ep["telemetry"], ep.get("relations", [])
@@ -496,7 +553,7 @@ def train_student(dataset_root: Path, output_root: Path, config: Mapping[str, An
 
     if output_root.exists():
         raise RuntimeError(f"output already exists: {output_root}")
-    active = {"critical_only": ("physical_criticality",), "three_head": ("physical_criticality", "k10_feasible", "safe_release"), "full_five": HEADS}[variant]
+    active = VARIANT_ACTIVE_HEADS[variant]
     train_eps, mean, std = _load_student_data(dataset_root, "train")
     coverage = {h: {"TRUE": 0, "FALSE": 0, "UNKNOWN": 0} for h in HEADS}
     for ep in train_eps:
@@ -546,7 +603,7 @@ def train_student(dataset_root: Path, output_root: Path, config: Mapping[str, An
     return {"output_root": str(output_root), "variant": variant, "active_heads": list(active), "checkpoint_sha256": manifest["checkpoint_sha256"], "sha256sums_sha256": seal["sha256sums_sha256"], "history": history, "coverage": coverage}
 
 
-def shadow_student(dataset_root: Path, checkpoint_root: Path, output_root: Path, config: Mapping[str, Any]) -> dict[str, Any]:
+def shadow_student(dataset_root: Path, checkpoint_root: Path, output_root: Path, config: Mapping[str, Any], variant: str) -> dict[str, Any]:
     import torch
     from n5_student_model import N5MultiHeadStudent
 
@@ -556,41 +613,71 @@ def shadow_student(dataset_root: Path, checkpoint_root: Path, output_root: Path,
     model = N5MultiHeadStudent(input_dim=25, hidden=int(checkpoint["hidden"]), short_rf=int(checkpoint["short_rf"]), long_rf=int(checkpoint["long_rf"]), dropout=0.1)
     model.load_state_dict(checkpoint["model_state_dict"], strict=True); model.eval()
     dev_eps, _, _ = _load_student_data(dataset_root, "dev")
-    pred_rows, events = [], []
+    pred_rows, events, event_rows = [], [], []
     counts = {"steps": 0, "emits": 0, "critical_known": 0, "critical_true": 0, "critical_correct": 0, "critical_fp": 0, "unknown_emits": 0, "safe_true_emits": 0, "instability_true_emits": 0}
+    head_scores = {h: [] for h in HEADS}; head_values = {h: [] for h in HEADS}
+    known_critical_true_total = known_critical_true_candidate = 0
     with torch.no_grad():
         for ep in dev_eps:
             x = torch.from_numpy(ep["features"]).unsqueeze(0)
             probs = {h: torch.sigmoid(v).squeeze(0).cpu().numpy() for h, v in model(x, timestep_mask=torch.ones((1, x.shape[1]), dtype=torch.bool)).items()}
-            prior_candidate = False; event_id = -1; emitted_event = False
+            prior_candidate = False; event_id = -1; emitted_event = False; current_event = []
             for idx, row in enumerate(ep["rows"]):
                 candidate = bool(row["candidate_close"])
                 if candidate and not prior_candidate:
+                    if current_event:
+                        event_rows.append(current_event)
+                    current_event = []
                     event_id += 1; emitted_event = False
                 if not candidate:
+                    if current_event:
+                        event_rows.append(current_event); current_event = []
                     emitted_event = False
-                critical = float(probs["physical_criticality"][idx])
-                safe = float(probs["safe_release"][idx])
-                instability = float(probs["instability"][idx])
-                emit = bool(candidate and not emitted_event and critical >= 0.5 and safe < 0.5 and instability < 0.5)
+                probability_row = {h: float(probs[h][idx]) for h in HEADS}
+                critical = probability_row["physical_criticality"]
+                emit = bool(not emitted_event and variant_decision(variant, candidate, probability_row))
                 if emit:
-                    emitted_event = True; counts["emits"] += 1; events.append({"episode_id": ep["identity"], "step": idx, "event_id": event_id, "critical_probability": critical, "safe_release_probability": safe, "instability_probability": instability})
+                    emitted_event = True; counts["emits"] += 1; events.append({"episode_id": ep["identity"], "step": idx, "event_id": event_id, "critical_probability": critical, "safe_release_probability": probability_row["safe_release"], "instability_probability": probability_row["instability"]})
                     if row["labels"]["physical_criticality"]["value"] == "UNKNOWN": counts["unknown_emits"] += 1
                     if row["labels"]["safe_release"]["value"] == "TRUE": counts["safe_true_emits"] += 1
                     if row["labels"]["instability"]["value"] == "TRUE": counts["instability_true_emits"] += 1
                 target = row["labels"]["physical_criticality"]
+                current_event.append({"step": idx, "emit": emit, "target": target}) if candidate else None
                 if target["mask"]:
                     counts["critical_known"] += 1; counts["critical_true"] += int(target["value"] == "TRUE")
                     if emit and target["value"] == "TRUE": counts["critical_correct"] += 1
                     if emit and target["value"] == "FALSE": counts["critical_fp"] += 1
-                pred_rows.append({"episode_id": ep["identity"], "step": idx, "candidate_close": candidate, "physical_criticality_probability": critical, "safe_release_probability": safe, "instability_probability": instability, "emit": emit, "event_id": event_id, "action_mutation": False})
+                for h in HEADS:
+                    head = row["labels"][h]
+                    if head["mask"]:
+                        head_scores[h].append(probability_row[h]); head_values[h].append(head["value"] == "TRUE")
+                known_critical_true_total += int(target["mask"] and target["value"] == "TRUE")
+                known_critical_true_candidate += int(target["mask"] and target["value"] == "TRUE" and candidate)
+                pred_rows.append({"episode_id": ep["identity"], "step": idx, "candidate_close": candidate, "probabilities": probability_row, "active_heads": list(VARIANT_ACTIVE_HEADS[variant]), "emit": emit, "event_id": event_id, "action_mutation": False})
                 counts["steps"] += 1; prior_candidate = candidate
-    metrics = {"schema": "FRESH40_V5_CAUSAL_SHADOW_V1", "status": "DEVELOPMENT_NONCONSUMABLE", "checkpoint_sha256": sha256_file(checkpoint_root / "checkpoint.pt"), "dataset_manifest_sha256": sha256_file(dataset_root / "MANIFEST.json"), "counts": counts, "critical_recall_among_known_true": counts["critical_correct"] / counts["critical_true"] if counts["critical_true"] else None, "pre_grasp_fp": counts["critical_fp"] / counts["critical_known"] if counts["critical_known"] else None, "unknown_fail_closed": counts["unknown_emits"] == 0, "action_mutation": False, "protected_reads": False, "attack_enabled": False}
+            if current_event:
+                event_rows.append(current_event)
+    positive_events = negative_events = predicted_positive_events = predicted_negative_events = 0; latencies = []
+    for event in event_rows:
+        known = [x["target"] for x in event if x["target"]["mask"]]
+        if not known or any(x["target"]["value"] == "UNKNOWN" for x in event):
+            continue
+        has_true = any(x["target"]["value"] == "TRUE" for x in known)
+        predicted = any(x["emit"] for x in event)
+        if has_true:
+            positive_events += 1; predicted_positive_events += int(predicted)
+            if predicted:
+                latencies.append(next(x["step"] for x in event if x["emit"]) - event[0]["step"])
+        else:
+            negative_events += 1; predicted_negative_events += int(predicted)
+    head_report = {h: _head_metrics(head_scores[h], head_values[h]) for h in HEADS}
+    event_report = {"positive_events": positive_events, "predicted_positive_events": predicted_positive_events, "positive_event_recall": predicted_positive_events / positive_events if positive_events else None, "known_negative_events": negative_events, "predicted_negative_events": predicted_negative_events, "known_negative_event_fp": predicted_negative_events / negative_events if negative_events else None, "mean_emit_latency_steps": float(np.mean(latencies)) if latencies else None, "emitted_positive_latency_samples": len(latencies)}
+    metrics = {"schema": "FRESH40_V5_CAUSAL_SHADOW_V2", "status": "DEVELOPMENT_NONCONSUMABLE", "variant": variant, "active_heads": list(VARIANT_ACTIVE_HEADS[variant]), "variant_equation": "candidate AND active head predicates; one emit per candidate event", "checkpoint_sha256": sha256_file(checkpoint_root / "checkpoint.pt"), "dataset_manifest_sha256": sha256_file(dataset_root / "MANIFEST.json"), "counts": counts, "candidate_gate_ceiling": {"known_critical_true_steps": known_critical_true_total, "known_critical_true_candidate_steps": known_critical_true_candidate, "recall_ceiling": known_critical_true_candidate / known_critical_true_total if known_critical_true_total else None}, "head_metrics": head_report, "event_metrics": event_report, "unknown_emit_count": counts["unknown_emits"], "unknown_fail_closed": counts["unknown_emits"] == 0, "action_mutation": False, "protected_reads": False, "attack_enabled": False}
     staging = output_root.parent / f".{output_root.name}.staging.{os.getpid()}"; staging.mkdir(parents=True)
     (staging / "prediction_records.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in pred_rows))
     (staging / "event_records.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in events))
     (staging / "evaluation_summary.json").write_text(json.dumps(metrics, indent=2, sort_keys=True))
-    (staging / "MANIFEST.json").write_text(json.dumps({"schema": "FRESH40_V5_CAUSAL_SHADOW_BUNDLE_V1", "status": "DEVELOPMENT_NONCONSUMABLE", "dataset_manifest_sha256": metrics["dataset_manifest_sha256"], "checkpoint_sha256": metrics["checkpoint_sha256"], "prediction_count": len(pred_rows), "event_count": len(events), "action_mutation": False, "protected_reads": False, "attack_enabled": False}, indent=2, sort_keys=True))
+    (staging / "MANIFEST.json").write_text(json.dumps({"schema": "FRESH40_V5_CAUSAL_SHADOW_BUNDLE_V2", "status": "DEVELOPMENT_NONCONSUMABLE", "variant": variant, "active_heads": list(VARIANT_ACTIVE_HEADS[variant]), "dataset_manifest_sha256": metrics["dataset_manifest_sha256"], "checkpoint_sha256": metrics["checkpoint_sha256"], "prediction_count": len(pred_rows), "event_count": len(events), "action_mutation": False, "protected_reads": False, "attack_enabled": False}, indent=2, sort_keys=True))
     seal = _seal(staging); _publish(staging, output_root)
     return {"output_root": str(output_root), "sha256sums_sha256": seal["sha256sums_sha256"], **metrics}
 
@@ -626,10 +713,10 @@ def main() -> int:
         result = train_student(args.dataset_root.resolve(), args.output_root.resolve(), cfg, args.variant, args.epochs, args.device)
     elif args.command == "shadow":
         if not args.dataset_root or not args.checkpoint: raise SystemExit("--dataset-root and --checkpoint required")
-        result = shadow_student(args.dataset_root.resolve(), args.checkpoint.resolve(), args.output_root.resolve(), cfg)
+        result = shadow_student(args.dataset_root.resolve(), args.checkpoint.resolve(), args.output_root.resolve(), cfg, args.variant)
     else:
         if not args.dataset_root or not args.checkpoint: raise SystemExit("--dataset-root and --checkpoint required")
-        result = shadow_student(args.dataset_root.resolve(), args.checkpoint.resolve(), args.output_root.resolve(), cfg)
+        result = shadow_student(args.dataset_root.resolve(), args.checkpoint.resolve(), args.output_root.resolve(), cfg, args.variant)
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 
