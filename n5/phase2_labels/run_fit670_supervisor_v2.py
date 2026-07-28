@@ -115,7 +115,17 @@ def main() -> None:
             command,
             stdout=handle,
             stderr=subprocess.STDOUT,
-            env={**os.environ, "CUDA_VISIBLE_DEVICES": str(gpu)},
+            env={
+                **os.environ,
+                "CUDA_VISIBLE_DEVICES": str(gpu),
+                "PYTHONPATH": os.pathsep.join(
+                    [
+                        str(args.libero_root.resolve()),
+                        str(args.upstream_root.resolve()),
+                        os.environ.get("PYTHONPATH", ""),
+                    ]
+                ),
+            },
         )
         processes.append((shard_id, gpu, count, process, handle, log_path))
         print(f"launched shard={shard_id} gpu={gpu} pid={process.pid}")
