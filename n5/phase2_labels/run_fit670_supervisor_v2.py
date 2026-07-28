@@ -53,6 +53,7 @@ def main() -> None:
         "run_fit670_supervisor_v2.py": here / "run_fit670_supervisor_v2.py",
         "finalize_fit670_collection_v2.py": here / "finalize_fit670_collection_v2.py",
         "run_fit670_v2.sh": here / "run_fit670_v2.sh",
+        "validate_fit670_canary_v2.py": here / "validate_fit670_canary_v2.py",
     }
     registry_summary = args.registry_root.parent / "ENTITY_REGISTRY_V2_SUMMARY.json"
 
@@ -73,6 +74,7 @@ def main() -> None:
             upstream_root=args.upstream_root,
             libero_root=args.libero_root,
             source_files=source_files,
+            collection_mode=args.mode,
         )
 
     output_root = args.output_root.resolve()
