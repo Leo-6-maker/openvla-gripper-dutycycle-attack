@@ -27,7 +27,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from fit_transition import (
     compute_model_tree_fingerprint, sha256_file,
-    FOUR_SUITES, FROZEN_R5E,
+    FOUR_SUITES, FROZEN_R5E, verify_r5e_comparison_root,
 )
 
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
@@ -67,7 +67,7 @@ def main():
         raise SystemExit(
             f"comparison SHA mismatch: actual={actual_comp_sha} "
             f"expected={expected_comp_sha}")
-    if not SHA256_RE.match(args.r5f_source_commit):
+    if not re.match(r'^[0-9a-f]{40}$', args.r5f_source_commit):
         raise SystemExit(f"r5f-source-commit invalid: {args.r5f_source_commit[:20]}")
     if not SHA256_RE.match(args.r5f_script_sha):
         raise SystemExit(f"r5f-script-sha invalid: {args.r5f_script_sha[:20]}")

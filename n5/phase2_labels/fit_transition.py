@@ -280,8 +280,8 @@ def _runtime_git_values(root, label):
     commit = p.stdout.strip()
     tree = subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD^{tree}"],
                                    text=True).strip()
-    status = subprocess.check_output(["git", "-C", str(root), "status", "--porcelain"],
-                                     text=True).strip()
+    status = subprocess.check_output(
+        ["git", "-C", str(root), "status", "--porcelain", "-uno"], text=True).strip()
     if status:
         raise TransitionRejected(f"{label} working tree not clean: {status[:80]}")
     return commit, tree
