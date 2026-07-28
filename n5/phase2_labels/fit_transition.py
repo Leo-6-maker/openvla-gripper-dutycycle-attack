@@ -369,7 +369,8 @@ def verify_transition(transition_root, execution_source_commit, script_sha,
     if gate not in ("FIT-INFERENCE_TRANSITION", "FIT670-INFERENCE_TRANSITION"):
         raise TransitionRejected(f"gate mismatch: {gate}")
     schema = tm.get("schema", "")
-    if schema not in ("FIT_INFERENCE_TRANSITION_V1", "FIT670_INFERENCE_TRANSITION_V1"):
+    if schema not in ("FIT_INFERENCE_TRANSITION_V1", "FIT670_INFERENCE_TRANSITION_V1",
+                       "FIT670_INFERENCE_TRANSITION_V2"):
         raise TransitionRejected(f"schema mismatch: {schema}")
     if tm.get("status") != "FROZEN_BEFORE_EXECUTION":
         raise TransitionRejected(f"status mismatch: {tm.get('status')}")
