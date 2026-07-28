@@ -8,8 +8,8 @@ import pytest
 HERE = Path(__file__).resolve()
 ROOT = HERE.parents[3]
 sys.path.insert(0, str(ROOT / "n5" / "phase4_fresh40"))
-from fresh40_v5_pipeline import aggregate_and, aggregate_or, canonical_sha, label, _persistence, _select_split, variant_decision
-from run_v5_oracle_ladder import _event_metrics
+from fresh40_v5_pipeline import aggregate_and, aggregate_or, canonical_sha, event_label, label, _persistence, _publish, _select_split, variant_decision
+from run_v5_oracle_ladder import _event_metrics, critical_event_intervals
 
 
 def test_unknown_is_not_negative():
@@ -23,10 +23,12 @@ def test_persistence_is_causal():
     assert _persistence(["TRUE", "TRUE", "FALSE"], 2) == ["UNKNOWN", "TRUE", "FALSE"]
 
 
-def test_q_minus_q_hash_is_not_a_pose_label():
+def test_q_minus_q_geodesic_is_zero():
     q = [0.0, 0.0, 0.70710678, 0.70710678]
     assert all(math.isfinite(x) for x in q)
-    assert canonical_sha(q) != canonical_sha([-x for x in q])
+    norm = math.sqrt(sum(x * x for x in q))
+    dot = abs(sum((x / norm) * (-x / norm) for x in q))
+    assert 2.0 * math.atan2(math.sqrt(max(0.0, 1.0 - dot * dot)), dot) < 1e-12
 
 
 def test_split_is_deterministic_and_disjoint():
@@ -46,8 +48,10 @@ def test_forbidden_outcome_keys_not_in_label_contract(tmp_path):
 def test_output_root_nonoverwrite(tmp_path):
     target = tmp_path / "out"
     target.mkdir()
+    staging = tmp_path / "staging"
+    staging.mkdir()
     with pytest.raises(Exception):
-        raise RuntimeError("refusing to overwrite existing root")
+        _publish(staging, target)
 
 
 def test_inactive_head_mutation_has_zero_influence():
@@ -73,8 +77,24 @@ def test_variant_equations_are_distinct_and_frozen():
     assert not variant_decision("full_five", True, p)
 
 
-def test_partial_unknown_event_is_not_scored_as_known():
+def test_three_value_event_or_semantics():
+    assert event_label(["TRUE", "UNKNOWN"]) == "TRUE"
+    assert event_label(["FALSE", "UNKNOWN"]) == "UNKNOWN"
+    assert event_label(["FALSE", "FALSE"]) == "FALSE"
+    assert event_label(["UNKNOWN"]) == "UNKNOWN"
+
+
+def test_true_unknown_event_is_scored_positive():
     event = {"start": 0, "labels": [{"value": "TRUE", "mask": True}, {"value": "UNKNOWN", "mask": False}], "selected": {"oracle": 0}}
     metrics = _event_metrics([event], ("oracle",))
-    assert metrics["excluded_unknown_events"] == 1
-    assert metrics["oracle"]["positive_events"] == 0
+    assert metrics["excluded_unknown_events"] == 0
+    assert metrics["oracle"]["positive_events"] == 1
+
+
+def test_critical_events_are_built_before_candidate_gate():
+    rows = [
+        {"labels": {"physical_criticality": label("FALSE", "x")}, "candidate_close": False},
+        {"labels": {"physical_criticality": label("TRUE", "x")}, "candidate_close": False},
+        {"labels": {"physical_criticality": label("TRUE", "x")}, "candidate_close": True},
+    ]
+    assert critical_event_intervals(rows) == [{"start": 1, "end": 2}]

@@ -16,7 +16,9 @@ import os
 import platform
 import shutil
 import sys
+import subprocess
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
@@ -38,6 +40,30 @@ VARIANT_ACTIVE_HEADS = {
 SUITES = ("libero_10", "libero_goal", "libero_object", "libero_spatial")
 HORIZONS = {"libero_10": 520, "libero_goal": 300, "libero_object": 280, "libero_spatial": 220}
 FORBIDDEN = {"task_success", "terminal", "terminal_state", "reward", "outcome", "future", "attack_result"}
+
+
+def event_label(values: Iterable[str]) -> str:
+    vals = list(values)
+    if any(v == "TRUE" for v in vals):
+        return "TRUE"
+    if vals and all(v == "FALSE" for v in vals):
+        return "FALSE"
+    return "UNKNOWN"
+
+
+def _execution_provenance(started_at: str | None = None) -> dict[str, Any]:
+    def git_value(*args: str) -> str | None:
+        try:
+            return subprocess.check_output(["git", *args], cwd=ROOT, text=True, stderr=subprocess.DEVNULL).strip()
+        except (OSError, subprocess.CalledProcessError):
+            return None
+
+    return {
+        "actual_started_at": started_at or datetime.now(timezone.utc).isoformat(),
+        "source_commit": git_value("rev-parse", "HEAD"),
+        "source_commit_time": git_value("show", "-s", "--format=%cI", "HEAD"),
+        "directory_label_timestamp_is_authoritative": False,
+    }
 
 
 def sha256_file(path: Path) -> str:
@@ -609,6 +635,7 @@ def shadow_student(dataset_root: Path, checkpoint_root: Path, output_root: Path,
 
     if output_root.exists():
         raise RuntimeError(f"output already exists: {output_root}")
+    provenance = _execution_provenance()
     checkpoint = torch.load(checkpoint_root / "checkpoint.pt", map_location="cpu", weights_only=False)
     model = N5MultiHeadStudent(input_dim=25, hidden=int(checkpoint["hidden"]), short_rf=int(checkpoint["short_rf"]), long_rf=int(checkpoint["long_rf"]), dropout=0.1)
     model.load_state_dict(checkpoint["model_state_dict"], strict=True); model.eval()
@@ -659,10 +686,10 @@ def shadow_student(dataset_root: Path, checkpoint_root: Path, output_root: Path,
                 event_rows.append(current_event)
     positive_events = negative_events = predicted_positive_events = predicted_negative_events = 0; latencies = []
     for event in event_rows:
-        known = [x["target"] for x in event if x["target"]["mask"]]
-        if not known or any(x["target"]["value"] == "UNKNOWN" for x in event):
+        target_label = event_label(x["target"]["value"] for x in event)
+        if target_label == "UNKNOWN":
             continue
-        has_true = any(x["value"] == "TRUE" for x in known)
+        has_true = target_label == "TRUE"
         predicted = any(x["emit"] for x in event)
         if has_true:
             positive_events += 1; predicted_positive_events += int(predicted)
@@ -672,12 +699,13 @@ def shadow_student(dataset_root: Path, checkpoint_root: Path, output_root: Path,
             negative_events += 1; predicted_negative_events += int(predicted)
     head_report = {h: _head_metrics(head_scores[h], head_values[h]) for h in HEADS}
     event_report = {"positive_events": positive_events, "predicted_positive_events": predicted_positive_events, "positive_event_recall": predicted_positive_events / positive_events if positive_events else None, "known_negative_events": negative_events, "predicted_negative_events": predicted_negative_events, "known_negative_event_fp": predicted_negative_events / negative_events if negative_events else None, "mean_emit_latency_steps": float(np.mean(latencies)) if latencies else None, "emitted_positive_latency_samples": len(latencies)}
-    metrics = {"schema": "FRESH40_V5_CAUSAL_SHADOW_V2", "status": "DEVELOPMENT_NONCONSUMABLE", "variant": variant, "active_heads": list(VARIANT_ACTIVE_HEADS[variant]), "variant_equation": "candidate AND active head predicates; one emit per candidate event", "checkpoint_sha256": sha256_file(checkpoint_root / "checkpoint.pt"), "dataset_manifest_sha256": sha256_file(dataset_root / "MANIFEST.json"), "counts": counts, "candidate_gate_ceiling": {"known_critical_true_steps": known_critical_true_total, "known_critical_true_candidate_steps": known_critical_true_candidate, "recall_ceiling": known_critical_true_candidate / known_critical_true_total if known_critical_true_total else None}, "head_metrics": head_report, "event_metrics": event_report, "unknown_label_handling": {"unknown_emit_count": counts["unknown_emits"], "unknown_labels_masked_from_metrics": True, "unknown_as_negative": False}, "action_mutation": False, "protected_reads": False, "attack_enabled": False}
+    provenance["actual_ended_at"] = datetime.now(timezone.utc).isoformat()
+    metrics = {"schema": "FRESH40_V5_CAUSAL_SHADOW_V2", "status": "DEVELOPMENT_NONCONSUMABLE", "variant": variant, "active_heads": list(VARIANT_ACTIVE_HEADS[variant]), "variant_equation": "candidate AND active head predicates; one emit per candidate event", "checkpoint_sha256": sha256_file(checkpoint_root / "checkpoint.pt"), "dataset_manifest_sha256": sha256_file(dataset_root / "MANIFEST.json"), "counts": counts, "candidate_gate_ceiling": {"known_critical_true_steps": known_critical_true_total, "known_critical_true_candidate_steps": known_critical_true_candidate, "recall_ceiling": known_critical_true_candidate / known_critical_true_total if known_critical_true_total else None}, "head_metrics": head_report, "event_metrics": event_report, "unknown_label_handling": {"unknown_emit_count": counts["unknown_emits"], "unknown_labels_masked_from_metrics": True, "unknown_as_negative": False}, **provenance, "action_mutation": False, "protected_reads": False, "attack_enabled": False}
     staging = output_root.parent / f".{output_root.name}.staging.{os.getpid()}"; staging.mkdir(parents=True)
     (staging / "prediction_records.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in pred_rows))
     (staging / "event_records.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in events))
     (staging / "evaluation_summary.json").write_text(json.dumps(metrics, indent=2, sort_keys=True))
-    (staging / "MANIFEST.json").write_text(json.dumps({"schema": "FRESH40_V5_CAUSAL_SHADOW_BUNDLE_V2", "status": "DEVELOPMENT_NONCONSUMABLE", "variant": variant, "active_heads": list(VARIANT_ACTIVE_HEADS[variant]), "dataset_manifest_sha256": metrics["dataset_manifest_sha256"], "checkpoint_sha256": metrics["checkpoint_sha256"], "prediction_count": len(pred_rows), "event_count": len(events), "action_mutation": False, "protected_reads": False, "attack_enabled": False}, indent=2, sort_keys=True))
+    (staging / "MANIFEST.json").write_text(json.dumps({"schema": "FRESH40_V5_CAUSAL_SHADOW_BUNDLE_V2", "status": "DEVELOPMENT_NONCONSUMABLE", "variant": variant, "active_heads": list(VARIANT_ACTIVE_HEADS[variant]), "dataset_manifest_sha256": metrics["dataset_manifest_sha256"], "checkpoint_sha256": metrics["checkpoint_sha256"], "prediction_count": len(pred_rows), "event_count": len(events), **provenance, "action_mutation": False, "protected_reads": False, "attack_enabled": False}, indent=2, sort_keys=True))
     seal = _seal(staging); _publish(staging, output_root)
     return {"output_root": str(output_root), "sha256sums_sha256": seal["sha256sums_sha256"], **metrics}
 
