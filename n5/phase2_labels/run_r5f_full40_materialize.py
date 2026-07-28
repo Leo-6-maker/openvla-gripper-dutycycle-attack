@@ -603,10 +603,11 @@ def main():
         raise SystemExit(f"worker missing: {worker}")
 
     old_argv = sys.argv
-    # CUDA_VISIBLE_DEVICES already set to physical GPU; worker sees logical cuda:0
+    # Worker's module-level __init__ sets CUDA_VISIBLE_DEVICES from --gpu.
+    # Must pass the physical GPU number, not logical 0.
     dummy = "0" * 64
     sys.argv = [
-        str(worker), "--suite", "libero_10", "--gpu", "0",
+        str(worker), "--suite", "libero_10", "--gpu", str(args.gpu),
         "--worker-id", "r5f_run_a", "--model-path", str(args.model_path),
         "--manifest", str(pilot_path), "--output-root", str(out_root.parent),
         "--upstream-root", str(args.upstream_root),
