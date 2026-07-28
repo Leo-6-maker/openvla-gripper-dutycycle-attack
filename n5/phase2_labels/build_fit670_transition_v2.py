@@ -43,6 +43,8 @@ def main() -> None:
     parser.add_argument("--libero-root", type=Path, required=True)
     parser.add_argument("--r5e-comparison-root", type=Path, required=True)
     parser.add_argument("--allowed-output-root", type=Path, required=True)
+    parser.add_argument("--mode", choices=("canary", "formal"), required=True)
+    parser.add_argument("--canary-review-root", type=Path)
     parser.add_argument("--physical-gpus", required=True, help="e.g. 0,1,2,3,4,5,6,7")
     parser.add_argument("--out", type=Path, required=True)
     args = parser.parse_args()
@@ -85,6 +87,7 @@ def main() -> None:
         "run_fit670_supervisor_v2.py": here / "run_fit670_supervisor_v2.py",
         "finalize_fit670_collection_v2.py": here / "finalize_fit670_collection_v2.py",
         "run_fit670_v2.sh": here / "run_fit670_v2.sh",
+        "validate_fit670_canary_v2.py": here / "validate_fit670_canary_v2.py",
     }
     missing = [str(path) for path in source_files.values() if not path.is_file()]
     if missing:
@@ -97,6 +100,24 @@ def main() -> None:
         str(shard_id): physical_gpus[shard_id]
         for shard_id in range(plan["n_shards"])
     }
+    canary_binding = {}
+    if args.mode == "formal":
+        if args.canary_review_root is None:
+            raise SystemExit("formal transition requires --canary-review-root")
+        canary_root = args.canary_review_root.resolve()
+        canary_seal = strict.full_seal_check(canary_root)
+        canary = strict.load_json(canary_root / "CANARY_REVIEW.json")
+        if (
+            canary.get("status") != "PASS_ENGINEERING_CONSUMABLE_INPUT_GATE"
+            or canary.get("identity_set_digest") != allowlist["identity_set_digest"]
+            or canary.get("shard_plan_sha256") != strict.sha256_file(shard_plan_path)
+            or canary.get("collection_source_commit") != source_commit
+        ):
+            raise SystemExit("canary review does not bind the formal source/input set")
+        canary_binding = {
+            "canary_review_root": str(canary_root),
+            "canary_review_sha256sums_sha256": canary_seal,
+        }
 
     manifest = {
         "gate": strict.TRANSITION_GATE,
@@ -104,6 +125,8 @@ def main() -> None:
         "created_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "status": "FROZEN_BEFORE_EXECUTION",
         "consumer_eligible": False,
+        "collection_mode": args.mode,
+        **canary_binding,
         **FROZEN_R5E,
         "identity_pool": "D0-R2_DEV_POOL_670",
         "protected_overlap_verified": 0,
