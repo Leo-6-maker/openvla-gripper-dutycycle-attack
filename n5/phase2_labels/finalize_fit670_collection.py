@@ -166,15 +166,16 @@ def main():
 
     print(f"\n  STATUS: {status}")
 
-    # ── Generate global seal ──
-    if status in ("PASS_CONSUMABLE", "PARTIAL_NONCONSUMABLE"):
-        staging = out_root.parent / f".global_seal.staging.{os.getpid()}.{uuid.uuid4().hex[:8]}"
+    # ── Generate global seal in FINALIZATION/ subdirectory ──
+    if status == "PASS_CONSUMABLE":
+        final_dir = out_root / "FINALIZATION"
+        staging = out_root.parent / f".finalization.staging.{os.getpid()}.{uuid.uuid4().hex[:8]}"
         staging.mkdir(parents=True)
         published = False
         try:
             global_manifest = {
                 "gate": "FIT670_ATOMIC_COLLECTION",
-                "schema": "FIT670_GLOBAL_MERGE_V1",
+                "schema": "FIT670_GLOBAL_MERGE_V2",
                 "status": status,
                 "n_identities_expected": 670,
                 "n_identities_found": len(found_ids),
@@ -193,13 +194,20 @@ def main():
                 json.dumps(global_manifest, indent=2, sort_keys=True), encoding="utf-8")
 
             seal_root(staging)
-            staging.rename(out_root)
+            if final_dir.exists():
+                shutil.rmtree(staging, ignore_errors=True)
+                raise SystemExit(f"FINALIZATION already exists: {final_dir}")
+            staging.rename(final_dir)
             published = True
 
-            print(f"\n  Global seal written to: {out_root}")
+            print(f"\n  Global seal written to: {final_dir}")
         finally:
             if not published and staging.exists():
                 shutil.rmtree(staging, ignore_errors=True)
+    else:
+        print(f"\n  Global seal NOT generated (status={status}, requires PASS_CONSUMABLE)")
+        print(f"  Missing: {len(missing_ids)}, Seal failures: {len(seal_failures)}, "
+              f"Source mismatches: {len(source_mismatches)}")
 
     # Exit code
     if status == "PASS_CONSUMABLE":

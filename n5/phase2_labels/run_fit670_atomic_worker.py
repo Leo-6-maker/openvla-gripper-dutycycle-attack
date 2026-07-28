@@ -53,6 +53,7 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
     Returns (episode_data, published_target_path).
     """
     import torch
+    from fit_transition import full_seal_check
     from experiments.robot.libero.libero_utils import get_libero_image
     from libero.libero import get_libero_path
     from libero.libero.envs import OffScreenRenderEnv
@@ -70,13 +71,23 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
     ep_id = f"{suite}/task_{task_idx:02d}/state_{state_id:02d}"
     target = compute_episode_target(output_root, suite, task_idx, state_id)
 
-    # Check if already published (resume support)
+    # Check if already published (strict resume validation)
     if target.exists():
         existing_seal = target / "SHA256SUMS.sha256"
-        if existing_seal.is_file():
-            print(f"    SKIP (already sealed): {ep_id}")
+        ep_file = target / "episode.json"
+        if existing_seal.is_file() and ep_file.is_file():
+            # Verify full seal
+            ok, n_files, err = full_seal_check(target)
+            if not ok:
+                raise CollectionHold(f"existing target has broken seal: {err}")
+            # Verify entities non-empty for supported tasks
+            ep_data = json.loads(ep_file.read_text(encoding="utf-8"))
+            tel_entities = ep_data.get("telemetry", [{}])[0].get("entities", [])
+            if ep_data.get("geometry_status") != "NOT_APPLICABLE" and len(tel_entities) == 0:
+                raise CollectionHold(f"existing target has empty entities — cannot SKIP, must re-collect")
+            print(f"    SKIP (already sealed, entities={len(tel_entities)}): {ep_id}")
             return None, target
-        raise CollectionHold(f"target exists but not sealed: {target}")
+        raise CollectionHold(f"target exists but seal/episode incomplete: {target}")
 
     staging = make_episode_staging(ep_id, output_root)
     published = False
@@ -145,8 +156,8 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
                 model = env.sim.model; data = env.sim.data
                 sim_state = env.sim.get_state()
                 entities = [collect_entity(model, data, res) for res in resolutions.values()]
-                contact_pairs = collect_contact_pairs(model, data,
-                                                      registry_resolutions=resolutions)
+                contact_pairs, ncon_total, contact_truncated = collect_contact_pairs(
+                    model, data, registry_resolutions=resolutions)
                 t_geom = time.perf_counter()
 
                 # Add geom extents to entity records
@@ -190,14 +201,16 @@ def capture_one_fit670_episode(module, suite, task_idx, state_id, collection_see
                     },
                     "robot0_eef_pos": jsonable(obs.get("robot0_eef_pos", [])),
                     "robot0_eef_quat": jsonable(obs.get("robot0_eef_quat", [])),
-                    "robot0_eef_vel": eef_velocity,
+                    "robot0_eef_delta_per_control_step": eef_velocity,
                     "robot0_gripper_qpos": gripper_qpos,
-                    "robot0_gripper_vel": gripper_vel,
+                    "robot0_gripper_delta_per_control_step": gripper_vel,
                     "gripper_width": compute_gripper_width(obs),
                     "object_state": jsonable(obs.get("object-state", [])),
                     "entities": entities,
                     "contact_pairs": contact_pairs,
                     "contact_count": int(data.ncon),
+                    "contact_ncon_total": ncon_total,
+                    "contact_truncated": contact_truncated,
                     "forward_before_capture": True,
                     "protocol_amendment": "PROTOCOL_AMENDMENT_V6_FIT670_ATOMIC",
                 })
@@ -360,6 +373,8 @@ def main():
     parser.add_argument("--seed", type=int, default=20260717)
     parser.add_argument("--no-student-rgb", action="store_true")
     parser.add_argument("--preflight-only", action="store_true")
+    parser.add_argument("--max-identities", type=int, default=0,
+                        help="Limit identities processed (0=unlimited, 1=canary mode)")
     args = parser.parse_args()
 
     # Path safety audit
@@ -372,13 +387,21 @@ def main():
     label = f"gpu_{args.gpu}"
     worker_root = out_root / label
     if worker_root.exists():
-        raise SystemExit(f"worker output exists: {worker_root}")
-    worker_root.mkdir(parents=True)
+        raise SystemExit(f"worker output exists (prior run): {worker_root}")
+
+    # Create worker staging (atomic publish at end)
+    worker_staging = out_root.parent / f".{label}.worker_staging.{os.getpid()}.{uuid.uuid4().hex[:8]}"
+    worker_staging.mkdir(parents=True)
 
     # ── Load shard identities ──
     shard_plan = json.loads(Path(args.shard_plan).read_text(encoding="utf-8"))
     shard = shard_plan["shards"][args.shard_id]
     identities = shard["identities"]
+    # Apply max-identities limit (canary mode)
+    if args.max_identities > 0:
+        identities = identities[:args.max_identities]
+        print(f"CANARY MODE: limited to {len(identities)} identity")
+
     print(f"Worker shard {args.shard_id} (GPU {args.gpu}): {len(identities)} identities")
     print(f"  cost: {shard['total_cost']}")
     print(f"  suites: {shard['suite_counts']}")
@@ -474,7 +497,7 @@ def main():
         "cudnn_benchmark": torch.backends.cudnn.benchmark,
         "sdpa_available": hasattr(torch.nn.functional, 'scaled_dot_product_attention'),
     }
-    (worker_root / "GPU_IDENTITY.json").write_text(
+    (worker_staging / "GPU_IDENTITY.json").write_text(
         json.dumps(gpu_info, indent=2, sort_keys=True), encoding="utf-8")
 
     # ── Build provenance block (recorded once per worker, embedded in each episode) ──
@@ -508,9 +531,6 @@ def main():
     }
 
     # ── Collect episodes ──
-    staging = out_root.parent / f".{label}.staging.{os.getpid()}.{uuid.uuid4().hex[:8]}"
-    staging.mkdir(parents=True)
-
     # compute_episode_target will create episodes/{suite}/task_{id}/state_{id}/
     # so we pass the top-level out_root, not a pre-created episodes/ subdir
     (out_root / "episodes").mkdir(parents=True, exist_ok=True)
@@ -600,11 +620,11 @@ def main():
         "failures": failures,
         "gpu_info": gpu_info,
     }
-    (staging / "WORKER_MANIFEST.json").write_text(
+    (worker_staging / "WORKER_MANIFEST.json").write_text(
         json.dumps(worker_manifest, indent=2, sort_keys=True), encoding="utf-8")
 
-    seal_root(staging)
-    staging.rename(worker_root)
+    seal_root(worker_staging)
+    worker_staging.rename(worker_root)
 
     print(f"\nWorker shard {args.shard_id} complete:")
     print(f"  success: {worker_manifest['n_success']}")

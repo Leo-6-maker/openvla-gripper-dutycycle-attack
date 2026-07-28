@@ -213,20 +213,25 @@ def verify_entity_identity(model, etype, eid, expected_name):
         raise CollectionHold(f"entity identity mismatch: {etype}[{eid}] expected={expected_name} actual={actual}")
 
 
-def collect_contact_pairs(model, data, registry_resolutions=None, max_contacts=100):
+def collect_contact_pairs(model, data, registry_resolutions=None, max_contacts=None):
     """Collect contact pairs with position, normal, force, and object-gripper matching.
 
     MuJoCo mjContact fields used:
       - dist: signed distance (negative = penetration)
       - pos[3]: contact position in world coordinates
       - frame[9]: contact frame; first 3 components = contact normal
-      - efc_address: index into efc_force for constraint force
+      - efc_address: index into efc_force for normal constraint force scalar
 
     Object-gripper matching: marks pairs where one body maps to a C1 registry
     object role and the other body is a gripper finger.
+
+    max_contacts: if None, records ALL contacts. If set, caps at that number
+    and sets contact_truncated=True.
     """
     pairs = []
-    n = min(int(data.ncon), max_contacts)
+    ncon_total = int(data.ncon)
+    n = ncon_total if max_contacts is None else min(ncon_total, max_contacts)
+    truncated = ncon_total > n
 
     # Build set of object body names from registry for object-gripper matching
     object_body_names = set()
@@ -283,11 +288,11 @@ def collect_contact_pairs(model, data, registry_resolutions=None, max_contacts=1
             "dist": float(c.dist),
             "position": pos,
             "normal": normal,
-            "force": force,
+            "normal_constraint_force_scalar": force,
             "efc_address": efc_addr,
             "is_object_gripper_contact": is_object_gripper,
         })
-    return pairs
+    return pairs, ncon_total, truncated
 
 
 def compute_gripper_width(obs):
