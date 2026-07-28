@@ -268,6 +268,7 @@ def validate_transition_v2(
     upstream_root: Path,
     libero_root: Path,
     source_files: Mapping[str, Path],
+    collection_mode: str,
 ) -> Dict[str, Any]:
     from fit_transition import compute_model_tree_fingerprint
 
@@ -275,6 +276,25 @@ def validate_transition_v2(
     manifest = load_json(Path(transition_root) / "TRANSITION_MANIFEST.json")
     if manifest.get("gate") != TRANSITION_GATE or manifest.get("schema") != TRANSITION_SCHEMA:
         raise ContractViolation("legacy or wrong transition receipt")
+    if collection_mode not in {"canary", "formal"}:
+        raise ContractViolation(f"invalid runtime collection mode: {collection_mode}")
+    if manifest.get("collection_mode") != collection_mode:
+        raise ContractViolation("transition/runtime collection mode mismatch")
+    if collection_mode == "formal":
+        canary_root = Path(str(manifest.get("canary_review_root", "")))
+        if full_seal_check(canary_root) != manifest.get(
+            "canary_review_sha256sums_sha256"
+        ):
+            raise ContractViolation("formal transition has invalid canary review seal")
+        canary = load_json(canary_root / "CANARY_REVIEW.json")
+        if (
+            canary.get("status") != "PASS_ENGINEERING_CONSUMABLE_INPUT_GATE"
+            or canary.get("identity_set_digest") != manifest.get("identity_set_digest")
+            or canary.get("shard_plan_sha256") != manifest.get("shard_plan_sha256")
+            or canary.get("collection_source_commit")
+            != manifest.get("collection_source_commit")
+        ):
+            raise ContractViolation("formal transition canary binding failed")
     allowlist, _ = validate_allowlist(allowlist_path)
     plan, _ = validate_shard_plan(
         shard_plan_path, allowlist_path, manifest.get("n_shards")
