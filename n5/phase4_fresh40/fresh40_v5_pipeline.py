@@ -424,7 +424,7 @@ def _stream_features(ep: Mapping[str, Any]) -> tuple[np.ndarray, np.ndarray]:
 def _select_split(eps: list[str], seed: int) -> tuple[list[str], list[str]]:
     by_suite = {suite: [] for suite in SUITES}
     for ident in eps:
-        by_suite[ident.split("_task_")[0]].append(ident)
+        by_suite[ident.split("/", 1)[0]].append(ident)
     dev, train = [], []
     for suite, values in by_suite.items():
         ordered = sorted(values, key=lambda x: hashlib.sha256(f"{seed}:{x}".encode()).hexdigest())
@@ -434,7 +434,7 @@ def _select_split(eps: list[str], seed: int) -> tuple[list[str], list[str]]:
 
 def build_dataset(source_root: Path, teacher_root: Path, output_root: Path, config: Mapping[str, Any]) -> dict[str, Any]:
     hash_listed_files(source_root); hash_listed_files(teacher_root)
-    identities = [p.parent.name for p in _episode_paths(source_root)]
+    identities = [str(json.loads(p.read_text())["episode_id"]) for p in _episode_paths(source_root)]
     train, dev = _select_split(identities, int(config["student_contract"]["seed"]))
     staging = output_root.parent / f".{output_root.name}.staging.{os.getpid()}"
     if staging.exists() or output_root.exists():
@@ -453,7 +453,8 @@ def build_dataset(source_root: Path, teacher_root: Path, output_root: Path, conf
         records = []
         for idx, (feat, cand, row) in enumerate(zip(features, candidate, rows)):
             records.append({"episode_id": ident, "step": idx, "features_25d": feat.tolist(), "student_valid": True, "candidate_close": bool(cand), "labels": {h: row[h] for h in HEADS}})
-        (staging / "episodes" / f"{ident}.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in records))
+        safe_ident = ident.replace("/", "__")
+        (staging / "episodes" / f"{safe_ident}.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in records))
         if ident in train:
             train_values.append(features)
         all_manifest.append({"episode_id": ident, "step_count": len(records), "split": "train" if ident in train else "dev"})

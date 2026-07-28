@@ -29,7 +29,7 @@ def test_q_minus_q_hash_is_not_a_pose_label():
 
 
 def test_split_is_deterministic_and_disjoint():
-    identities = [f"libero_{s}_task_{t:02d}" for s in ("10", "goal", "object", "spatial") for t in range(10)]
+    identities = [f"libero_{s}/task_{t:02d}/state_{t}" for s in ("10", "goal", "object", "spatial") for t in range(10)]
     train_a, dev_a = _select_split(identities, 20260717)
     train_b, dev_b = _select_split(identities, 20260717)
     assert train_a == train_b and dev_a == dev_b
