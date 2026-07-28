@@ -505,6 +505,8 @@ def publish_episode(staging, target):
     if target.exists():
         shutil.rmtree(staging, ignore_errors=True)
         raise CollectionHold(f"target exists (would overwrite): {target}")
+    # Ensure parent directory chain exists
+    target.parent.mkdir(parents=True, exist_ok=True)
     seal = seal_root(staging)
     try:
         staging.rename(target)
