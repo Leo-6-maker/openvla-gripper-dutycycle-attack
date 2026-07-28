@@ -506,7 +506,7 @@ def main():
     parser.add_argument("--registry-root", type=Path, required=True)
     parser.add_argument("--alias-ledger", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
-    parser.add_argument("--run-label", required=True, choices=["A", "B"])
+    parser.add_argument("--run-label", required=True, choices=["A", "B", "C"])
     parser.add_argument("--gpu", type=int, default=0)
     parser.add_argument("--seed", type=int, default=20260717)
     parser.add_argument("--preflight-only", action="store_true",
