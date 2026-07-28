@@ -123,6 +123,7 @@
       "placement_stability_consecutive_steps": 2,
       "comotion_min_displacement_m": 0.0005,
       "comotion_cosine_threshold": 0.7,
+      "relative_motion_tolerance_m": 0.02,
       "slip_relative_motion_threshold_m": 0.02,
       "k10": 10,
       "suite_protocol_horizon": {
