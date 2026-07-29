@@ -229,6 +229,27 @@ def test_t1_runner_rejects_unselected_full_formal_path():
         formal_runner._require_pilot_selection(None, None)
     with pytest.raises(ValueError, match="selected pilot manifest is required"):
         formal_runner._require_pilot_selection(Path("selection.json"), None)
+    formal_runner._require_pilot_selection(None, None, full_formal=True)
+    with pytest.raises(ValueError, match="cannot accept"):
+        formal_runner._require_pilot_selection(Path("selection.json"), "a" * 64, full_formal=True)
+
+
+def test_full_formal_selection_requires_exact_t0_a_670_closure(tmp_path):
+    bindings = {f"suite/task_{i:02d}/state_00": {} for i in range(670)}
+    seals = {identity: "seal" for identity in bindings}
+    audit = {
+        "manifest_sha256": "a" * 64,
+        "seal_sha256sums_sha256": "b" * 64,
+        "manifest": {"episode_bindings": bindings, "finalization": {"episode_seals": seals}},
+    }
+    selection = formal_runner._derive_full_formal_selection(audit, tmp_path)
+    assert selection["identity_count"] == 670
+    assert selection["identities"] == sorted(bindings)
+    assert selection["source"] == "T0-A_FORMAL_INPUT_MANIFEST"
+    bad = dict(audit)
+    bad["manifest"] = {"episode_bindings": dict(list(bindings.items())[:-1]), "finalization": {"episode_seals": seals}}
+    with pytest.raises(ValueError, match="exact T0-A 670 identity closure"):
+        formal_runner._derive_full_formal_selection(bad, tmp_path)
 
 
 def test_teacher_label_root_is_new_sibling_of_transition_root(tmp_path):

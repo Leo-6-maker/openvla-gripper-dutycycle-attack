@@ -99,9 +99,13 @@ def _reject_forbidden_fields(value: Any, path: str = "root") -> None:
             _reject_forbidden_fields(child, f"{path}[{index}]")
 
 
-def _require_pilot_selection(selection_manifest_path: Path | None, selection_digest: str | None) -> None:
+def _require_pilot_selection(selection_manifest_path: Path | None, selection_digest: str | None, *, full_formal: bool = False) -> None:
+    if full_formal:
+        if selection_manifest_path is not None or selection_digest is not None:
+            raise ValueError("full formal mode cannot accept a pilot selection manifest")
+        return
     if selection_manifest_path is None or selection_digest is None:
-        raise ValueError("T1 selected pilot manifest is required; full formal path is disabled")
+        raise ValueError("T1 selected pilot manifest is required; pass --full-formal for explicit T2 execution")
 
 
 def _verify_transition(path: Path, formal_root: Path, expected_digest: str) -> dict[str, Any]:
@@ -244,6 +248,24 @@ def _verify_selection_manifest(path: Path, audit: Mapping[str, Any], formal_root
     return {"manifest": manifest, "manifest_sha256": sha256_file(manifest_path), "seal_sha256sums_sha256": seal["sha256sums_sha256"], "identities": [row["episode_id"] for row in selected]}
 
 
+def _derive_full_formal_selection(audit: Mapping[str, Any], input_audit_root: Path) -> dict[str, Any]:
+    bindings = audit.get("manifest", {}).get("episode_bindings")
+    episode_seals = audit.get("manifest", {}).get("finalization", {}).get("episode_seals")
+    if not isinstance(bindings, Mapping) or len(bindings) != 670 or not isinstance(episode_seals, Mapping) or set(bindings) != set(episode_seals):
+        raise ValueError("full formal selection requires exact T0-A 670 identity closure")
+    identities = sorted(str(identity) for identity in bindings)
+    return {
+        "schema": "V5_R3_FULL_FORMAL_SELECTION_FROM_T0_A_V1",
+        "status": "PASS_FULL_FORMAL_T2_SELECTION",
+        "manifest_path": str((input_audit_root / "FORMAL_INPUT_MANIFEST.json").resolve()),
+        "manifest_sha256": audit["manifest_sha256"],
+        "seal_sha256sums_sha256": audit["seal_sha256sums_sha256"],
+        "identities": identities,
+        "identity_count": len(identities),
+        "source": "T0-A_FORMAL_INPUT_MANIFEST",
+    }
+
+
 def _validate_teacher_label_root(output_root: Path, declared_transition_root: Path, transition_manifest_root: Path) -> None:
     declared_transition_root = declared_transition_root.resolve()
     transition_manifest_root = transition_manifest_root.resolve()
@@ -364,8 +386,8 @@ def _verify_finalization(finalization_root: Path, transition: Mapping[str, Any],
     }
 
 
-def _load_formal(formal_root: Path, finalization_root: Path, transition_path: Path, input_audit_root: Path, fit_to_teacher_transition_path: Path, teacher_contract_path: Path, teacher_runner_path: Path, protocol_path: Path, selection_manifest_path: Path | None, selection_digest: str | None, *, transition_digest: str, episode_digest: str, fit_to_teacher_transition_digest: str, output_root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    _require_pilot_selection(selection_manifest_path, selection_digest)
+def _load_formal(formal_root: Path, finalization_root: Path, transition_path: Path, input_audit_root: Path, fit_to_teacher_transition_path: Path, teacher_contract_path: Path, teacher_runner_path: Path, protocol_path: Path, selection_manifest_path: Path | None, selection_digest: str | None, *, transition_digest: str, episode_digest: str, fit_to_teacher_transition_digest: str, output_root: Path, full_formal: bool = False) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    _require_pilot_selection(selection_manifest_path, selection_digest, full_formal=full_formal)
     root = formal_root.resolve()
     paths = [root, finalization_root.resolve(), transition_path.resolve(), input_audit_root.resolve(), fit_to_teacher_transition_path.resolve(), teacher_contract_path.resolve(), teacher_runner_path.resolve()]
     if selection_manifest_path is not None:
@@ -374,7 +396,10 @@ def _load_formal(formal_root: Path, finalization_root: Path, transition_path: Pa
         raise ValueError("formal input path is forbidden-looking")
     transition = _verify_transition(transition_path, root, transition_digest)
     audit = _verify_input_audit(input_audit_root, root, finalization_root, transition_path, transition["manifest"], episode_digest)
-    selection = _verify_selection_manifest(selection_manifest_path, audit, root, selection_digest)
+    if selection_manifest_path is not None:
+        selection = _verify_selection_manifest(selection_manifest_path, audit, root, selection_digest)
+    else:
+        selection = _derive_full_formal_selection(audit, input_audit_root)
     downstream = _verify_fit_to_teacher_transition(fit_to_teacher_transition_path, {**transition, "manifest_path": str(transition_path.resolve())}, audit, root, output_root, teacher_contract_path, teacher_runner_path, protocol_path, fit_to_teacher_transition_digest)
     finalization = audit["manifest"]["finalization"]
     bindings = audit["manifest"]["episode_bindings"]
@@ -452,14 +477,14 @@ def _load_formal(formal_root: Path, finalization_root: Path, transition_path: Pa
     }, loaded
 
 
-def run(formal_root: Path, finalization_root: Path, transition_path: Path, input_audit_root: Path, fit_to_teacher_transition_path: Path, teacher_contract_path: Path, teacher_runner_path: Path, protocol_path: Path, output_root: Path, *, transition_digest: str, episode_digest: str, fit_to_teacher_transition_digest: str, selection_manifest_path: Path | None = None, selection_digest: str | None = None, resume: bool = False) -> dict[str, Any]:
-    _require_pilot_selection(selection_manifest_path, selection_digest)
+def run(formal_root: Path, finalization_root: Path, transition_path: Path, input_audit_root: Path, fit_to_teacher_transition_path: Path, teacher_contract_path: Path, teacher_runner_path: Path, protocol_path: Path, output_root: Path, *, transition_digest: str, episode_digest: str, fit_to_teacher_transition_digest: str, selection_manifest_path: Path | None = None, selection_digest: str | None = None, full_formal: bool = False, resume: bool = False) -> dict[str, Any]:
+    _require_pilot_selection(selection_manifest_path, selection_digest, full_formal=full_formal)
     if output_root.exists():
         raise FileExistsError(output_root)
     protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
     if not protocol.get("schema", "").startswith("V5_TEACHER_STUDENT_R3_DEV_PROTOCOL"):
         raise ValueError("unexpected R3 protocol")
-    binding, episodes = _load_formal(formal_root, finalization_root, transition_path, input_audit_root, fit_to_teacher_transition_path, teacher_contract_path, teacher_runner_path, protocol_path, selection_manifest_path, selection_digest, transition_digest=transition_digest, episode_digest=episode_digest, fit_to_teacher_transition_digest=fit_to_teacher_transition_digest, output_root=output_root)
+    binding, episodes = _load_formal(formal_root, finalization_root, transition_path, input_audit_root, fit_to_teacher_transition_path, teacher_contract_path, teacher_runner_path, protocol_path, selection_manifest_path, selection_digest, transition_digest=transition_digest, episode_digest=episode_digest, fit_to_teacher_transition_digest=fit_to_teacher_transition_digest, output_root=output_root, full_formal=full_formal)
     staging = output_root.with_name(f".{output_root.name}.staging")
     if output_root.exists():
         raise FileExistsError(output_root)
@@ -479,6 +504,7 @@ def run(formal_root: Path, finalization_root: Path, transition_path: Path, input
         "identity_count": len(episodes),
         "selection_manifest_sha256": binding["selection"]["manifest_sha256"] if binding["selection"] else None,
         "selection_seal_sha256sums_sha256": binding["selection"]["seal_sha256sums_sha256"] if binding["selection"] else None,
+        "selection_mode": "FULL_FORMAL_T2" if full_formal else "FROZEN_T1_PILOT",
     }
     resume_manifest_path = staging / "RESUME_MANIFEST.json"
     if resume_manifest_path.exists():
@@ -557,6 +583,7 @@ def run(formal_root: Path, finalization_root: Path, transition_path: Path, input
             "formal_inference_authorized": False,
             "attack_authorized": False,
             "authorization_boundary": "FIT_TO_TEACHER_TRANSITION_V1 only; no Student, rollout, shadow, protected or attack permission",
+            "selection_mode": "FULL_FORMAL_T2" if full_formal else "FROZEN_T1_PILOT",
         }
         (staging / "teacher_manifest.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         (staging / "teacher_records.jsonl").write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in records), encoding="utf-8")
@@ -582,6 +609,7 @@ def main() -> int:
     parser.add_argument("--protocol", type=Path, default=ROOT / "configs" / "R3_DEV_PROTOCOL.json")
     parser.add_argument("--selection-manifest", type=Path)
     parser.add_argument("--selection-sha256sums-sha256")
+    parser.add_argument("--full-formal", action="store_true", help="Explicit T2 mode: consume all 670 identities from sealed T0-A")
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--transition-sha256sums-sha256", required=True)
     parser.add_argument("--episode-seal-digest", required=True)
@@ -590,7 +618,9 @@ def main() -> int:
     args = parser.parse_args()
     if (args.selection_manifest is None) != (args.selection_sha256sums_sha256 is None):
         parser.error("--selection-manifest and --selection-sha256sums-sha256 must be provided together")
-    print(json.dumps(run(args.formal_root.resolve(), args.finalization_root.resolve(), args.transition.resolve(), args.input_audit.resolve(), args.fit_to_teacher_transition.resolve(), args.teacher_contract.resolve(), args.teacher_runner.resolve(), args.protocol.resolve(), args.output_root.resolve(), transition_digest=args.transition_sha256sums_sha256, episode_digest=args.episode_seal_digest, fit_to_teacher_transition_digest=args.fit_to_teacher_transition_sha256sums_sha256, selection_manifest_path=args.selection_manifest.resolve() if args.selection_manifest else None, selection_digest=args.selection_sha256sums_sha256, resume=args.resume), indent=2, sort_keys=True))
+    if args.full_formal and args.selection_manifest is not None:
+        parser.error("--full-formal cannot be combined with --selection-manifest")
+    print(json.dumps(run(args.formal_root.resolve(), args.finalization_root.resolve(), args.transition.resolve(), args.input_audit.resolve(), args.fit_to_teacher_transition.resolve(), args.teacher_contract.resolve(), args.teacher_runner.resolve(), args.protocol.resolve(), args.output_root.resolve(), transition_digest=args.transition_sha256sums_sha256, episode_digest=args.episode_seal_digest, fit_to_teacher_transition_digest=args.fit_to_teacher_transition_sha256sums_sha256, selection_manifest_path=args.selection_manifest.resolve() if args.selection_manifest else None, selection_digest=args.selection_sha256sums_sha256, full_formal=args.full_formal, resume=args.resume), indent=2, sort_keys=True))
     return 0
 
 
