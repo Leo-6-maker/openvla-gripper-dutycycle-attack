@@ -244,6 +244,16 @@ def _verify_selection_manifest(path: Path, audit: Mapping[str, Any], formal_root
     return {"manifest": manifest, "manifest_sha256": sha256_file(manifest_path), "seal_sha256sums_sha256": seal["sha256sums_sha256"], "identities": [row["episode_id"] for row in selected]}
 
 
+def _validate_teacher_label_root(output_root: Path, declared_transition_root: Path, transition_manifest_root: Path) -> None:
+    declared_transition_root = declared_transition_root.resolve()
+    transition_manifest_root = transition_manifest_root.resolve()
+    output_root = output_root.resolve()
+    if declared_transition_root != transition_manifest_root:
+        raise ValueError("FIT_TO_TEACHER transition output root mismatch")
+    if output_root == declared_transition_root or output_root.parent != declared_transition_root.parent:
+        raise ValueError("Teacher label output root must be a new sibling of the sealed transition root")
+
+
 def _verify_fit_to_teacher_transition(path: Path, original: Mapping[str, Any], audit: Mapping[str, Any], formal_root: Path, output_root: Path, teacher_contract_path: Path, teacher_runner_path: Path, protocol_path: Path, expected_seal: str) -> dict[str, Any]:
     manifest_path = path.resolve()
     if manifest_path.is_symlink() or not manifest_path.is_file():
@@ -264,8 +274,7 @@ def _verify_fit_to_teacher_transition(path: Path, original: Mapping[str, Any], a
         raise ValueError("FIT_TO_TEACHER identity binding mismatch")
     if Path(str(transition.get("formal_root", ""))).resolve() != formal_root.resolve():
         raise ValueError("FIT_TO_TEACHER formal root mismatch")
-    if Path(str(transition.get("output_root", ""))).resolve() != output_root.resolve():
-        raise ValueError("FIT_TO_TEACHER output root mismatch")
+    _validate_teacher_label_root(output_root, Path(str(transition.get("output_root", ""))), manifest_path.parent)
     permissions = transition.get("permissions")
     expected_permissions = {
         "fit_episode_read": True, "teacher_label_generation": True,

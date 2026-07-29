@@ -228,3 +228,14 @@ def test_t1_runner_rejects_unselected_full_formal_path():
         formal_runner._require_pilot_selection(None, None)
     with pytest.raises(ValueError, match="selected pilot manifest is required"):
         formal_runner._require_pilot_selection(Path("selection.json"), None)
+
+
+def test_teacher_label_root_is_new_sibling_of_transition_root(tmp_path):
+    transition_root = tmp_path / "r3_fit_to_teacher_transition"
+    transition_root.mkdir()
+    label_root = tmp_path / "r3_teacher_pilot"
+    formal_runner._validate_teacher_label_root(label_root, transition_root, transition_root)
+    with pytest.raises(ValueError, match="new sibling"):
+        formal_runner._validate_teacher_label_root(transition_root, transition_root, transition_root)
+    with pytest.raises(ValueError, match="new sibling"):
+        formal_runner._validate_teacher_label_root(tmp_path / "nested" / "r3_teacher_pilot", transition_root, transition_root)
