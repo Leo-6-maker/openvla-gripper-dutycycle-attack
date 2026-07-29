@@ -52,7 +52,8 @@ def test_progress_audit_closes_published_and_worker_sets(tmp_path):
     assert report["status"] == "PASS"
     assert report["valid_sealed_episodes"] == 2
     assert report["per_shard_unique_sum"] == 2
-    assert report["protected_reads"] == 0
+    assert report["protected_reads"] == []
+    assert report["protected_read_audit"]["status"] == "PASS"
 
 
 def test_progress_audit_rejects_worker_duplicate(tmp_path):

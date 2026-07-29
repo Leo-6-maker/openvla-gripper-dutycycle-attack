@@ -111,6 +111,9 @@ def test_future_suffix_does_not_change_prefix_labels():
 
 
 def test_k10_unknown_safe_release_is_not_false():
-    labels = derive_episode_labels([_row(0, contact=True), _row(1, contact=True)], PROTOCOL)
+    # No object-gripper contact gives a known released state, while the
+    # two-step prefix is too short to establish placement stability.
+    rows = [_row(0, contact=False), _row(1, contact=False)]
+    labels = derive_episode_labels(rows, PROTOCOL)
     assert labels[0]["labels"]["safe_release"]["value"] == "UNKNOWN"
     assert labels[0]["labels"]["k10_feasibility"]["value"] == "UNKNOWN"
