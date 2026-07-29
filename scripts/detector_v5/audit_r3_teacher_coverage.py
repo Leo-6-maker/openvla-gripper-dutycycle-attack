@@ -312,6 +312,7 @@ def audit(input_root: Path, protocol_path: Path, output_root: Path | None = None
         event_suites = {label: set() for label in candidate_events}
         unknown_reasons: defaultdict[str, int] = defaultdict(int)
         not_applicable_steps = 0
+        right_censored_events = 0
         teacher_true_intervals = []
         candidate_intervals = []
         for identity, rows in sorted(by_episode.items()):
@@ -333,6 +334,8 @@ def audit(input_root: Path, protocol_path: Path, output_root: Path | None = None
                 event_rows = [row for row in rows if start <= int(row["step"]) <= end]
                 label = _event_label(event_rows, head)
                 candidate_events[label] += 1
+                if label == "UNKNOWN" and any(bool(row.get("right_censored")) for row in event_rows):
+                    right_censored_events += 1
                 event_episodes[label].add(identity)
                 event_tasks[label].add((str(event_rows[0].get("suite")), int(event_rows[0].get("task_id"))))
                 event_suites[label].add(str(event_rows[0].get("suite")))
@@ -353,9 +356,11 @@ def audit(input_root: Path, protocol_path: Path, output_root: Path | None = None
             "negative_suite_count": len(event_suites["FALSE"]),
             "unknown_suite_count": len(event_suites["UNKNOWN"]),
             "task_count": len({(row.get("suite"), row.get("task_id")) for rows in by_episode.values() for row in rows}),
-            "suite_count": len({row.get("suite") for rows in records}),
+            "suite_count": len({str(rows[0].get("suite")) for rows in by_episode.values() if rows}),
             "candidate_event_count": sum(candidate_events.values()),
             "right_censored_steps": sum(bool(row.get("right_censored")) for row in records),
+            "right_censored_event_count": right_censored_events,
+            "unknown_non_censored_event_count": candidate_events["UNKNOWN"] - right_censored_events,
             "not_applicable_step_count": not_applicable_steps,
             "unknown_reason_histogram": dict(sorted(unknown_reasons.items())),
             "teacher_true_intervals": len(teacher_true_intervals),
