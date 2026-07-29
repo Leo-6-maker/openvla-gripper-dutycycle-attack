@@ -15,6 +15,7 @@ from gripper_attack.seal_utils import rename_noreplace
 
 EXPECTED_TASK_COUNT = 40
 EXPECTED_IDENTITY_COUNT = 40
+EXPECTED_FORMAL_IDENTITY_COUNT = 670
 EXPECTED_SUITE_COUNT = 4
 EXPECTED_TASK_IDS = set(range(10))
 
@@ -96,7 +97,7 @@ def _validate_audit_closure(manifest: Mapping[str, Any], bindings: Mapping[str, 
     if episode_digest != finalization.get("episode_seal_digest"):
         raise ValueError("T0-A episode seal digest mismatch")
     workers = manifest.get("worker_closure")
-    if not isinstance(workers, list) or len(workers) != 8 or sum(int(item.get("count", -1)) for item in workers) != EXPECTED_IDENTITY_COUNT:
+    if not isinstance(workers, list) or len(workers) != 8 or sum(int(item.get("count", -1)) for item in workers) != EXPECTED_FORMAL_IDENTITY_COUNT:
         raise ValueError("T0-A worker closure is incomplete")
 
 
