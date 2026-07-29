@@ -15,6 +15,7 @@ from build_r3_fit_to_teacher_transition import PERMISSIONS, build  # noqa: E402
 from build_r3_teacher_pilot_manifest import select_task_balanced_bindings, validate_task_groups  # noqa: E402
 from audit_r3_formal_input import BINDING_FIELDS, _canonical_digest, _validate_episode_relations  # noqa: E402
 import run_r3_v23_formal_teacher as formal_runner  # noqa: E402
+from gripper_attack.v5_r3_teacher import R3ContractError, canonicalize_fit670_episode, derive_episode_labels, validate_contact_row  # noqa: E402
 
 
 GIT_SHA = "a" * 40
@@ -239,3 +240,89 @@ def test_teacher_label_root_is_new_sibling_of_transition_root(tmp_path):
         formal_runner._validate_teacher_label_root(transition_root, transition_root, transition_root)
     with pytest.raises(ValueError, match="new sibling"):
         formal_runner._validate_teacher_label_root(tmp_path / "nested" / "r3_teacher_pilot", transition_root, transition_root)
+
+
+def test_not_applicable_geometry_allows_empty_entities_without_creating_negatives():
+    row = {
+        "episode_id": "libero_goal/task_00/state_06",
+        "step": 0,
+        "valid": True,
+        "candidate_close": False,
+        "entities": [],
+        "relation_bindings": [],
+        "geometry_status": "NOT_APPLICABLE",
+        "contact_pairs": [],
+        "contact_ncon_total": 0,
+        "contact_truncated": False,
+        "forward_before_capture": True,
+        "eef_pos": [0.0, 0.0, 0.0],
+        "eef_quat_xyzw": [0.0, 0.0, 0.0, 1.0],
+        "gripper_qpos": [0.0, 0.0],
+        "protocol_steps_remaining": 10,
+    }
+    validate_contact_row(row, expected_step=0)
+    row["geometry_status"] = "APPLICABLE"
+    with pytest.raises(ValueError, match="empty entities"):
+        validate_contact_row(row, expected_step=0)
+
+
+def test_not_applicable_geometry_derives_unknown_geometry_heads_only():
+    row = {
+        "episode_id": "libero_goal/task_00/state_06",
+        "suite": "libero_goal",
+        "task_id": 0,
+        "state_id": 6,
+        "seed": 20260717,
+        "step": 0,
+        "valid": True,
+        "candidate_close": True,
+        "entities": [],
+        "relation_bindings": [],
+        "geometry_status": "NOT_APPLICABLE",
+        "contact_pairs": [],
+        "contact_ncon_total": 0,
+        "contact_truncated": False,
+        "forward_before_capture": True,
+        "eef_pos": [0.0, 0.0, 0.0],
+        "eef_quat_xyzw": [0.0, 0.0, 0.0, 1.0],
+        "gripper_qpos": [0.0, 0.0],
+        "protocol_steps_remaining": 10,
+    }
+    protocol = {"teacher": {"frozen_thresholds": {"qpos_close_threshold": 0.1}}}
+    labels = derive_episode_labels([row], protocol)[0]["labels"]
+    for head in ("physical_criticality", "k10_feasibility", "safe_release", "instability"):
+        assert labels[head]["value"] == "UNKNOWN"
+        assert labels[head]["valid_mask"] is False
+    assert labels["gripper_closing_state"]["value"] == "TRUE"
+
+
+@pytest.mark.parametrize("relations", [None, {}, ""])
+def test_not_applicable_requires_exact_empty_relation_list(relations):
+    episode = {
+        "schema": "FIT670_EPISODE_V2",
+        "episode_id": "libero_goal/task_00/state_06",
+        "geometry_status": "NOT_APPLICABLE",
+        "relations": relations,
+        "telemetry": [{"step": 0, "entities": []}],
+        "steps": [{"step": 0}],
+    }
+    with pytest.raises(R3ContractError, match="entities missing"):
+        canonicalize_fit670_episode(episode)
+
+
+@pytest.mark.parametrize("relations", [None, {}, ""])
+def test_malformed_relations_rejected_even_with_entities(relations):
+    entities = [
+        {"logical_name": "obj", "position": [0.0, 0.0, 0.0], "rotation_wxyz": [1.0, 0.0, 0.0, 0.0], "role": "MANIPULATED_OBJECT", "alias_to": "", "entity_id": 1},
+        {"logical_name": "target", "position": [0.1, 0.0, 0.0], "rotation_wxyz": [1.0, 0.0, 0.0, 0.0], "role": "REGION_TARGET", "alias_to": "", "entity_id": 2},
+    ]
+    episode = {
+        "schema": "FIT670_EPISODE_V2",
+        "episode_id": "libero_10/task_00/state_00",
+        "geometry_status": "APPLICABLE",
+        "relations": relations,
+        "telemetry": [{"step": 0, "entities": entities, "contact_pairs": [], "contact_ncon_total": 0, "horizon": 10}],
+        "steps": [{"step": 0, "raw_action_7d": [0.0] * 7}],
+    }
+    with pytest.raises(R3ContractError, match="relations must be a list"):
+        canonicalize_fit670_episode(episode)

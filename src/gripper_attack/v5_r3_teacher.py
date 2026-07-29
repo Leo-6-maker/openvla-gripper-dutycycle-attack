@@ -77,7 +77,9 @@ def _canonical_relation_bindings(episode: Mapping[str, Any], entities: Sequence[
     must agree before a relation can be consumed.
     """
     raw_relations = episode.get("relations")
-    if not isinstance(raw_relations, list) or not raw_relations:
+    if not isinstance(raw_relations, list):
+        raise R3ContractError("collector relations must be a list")
+    if not raw_relations:
         return []
     bindings: list[dict[str, Any]] = []
     for relation_index, relation in enumerate(raw_relations):
@@ -194,6 +196,8 @@ def canonicalize_fit670_episode(episode: Mapping[str, Any]) -> list[dict[str, An
     from .action_contract import raw_gripper_is_close
 
     rows: list[dict[str, Any]] = []
+    relations = episode.get("relations")
+    geometry_not_applicable = episode.get("geometry_status") == "NOT_APPLICABLE" and isinstance(relations, list) and len(relations) == 0
     gripper_body_ids: dict[str, int] = {}
     for expected_step, (raw, action) in enumerate(zip(telemetry, steps)):
         if not isinstance(raw, Mapping) or not isinstance(action, Mapping):
@@ -201,12 +205,12 @@ def canonicalize_fit670_episode(episode: Mapping[str, Any]) -> list[dict[str, An
         if raw.get("step") != expected_step or action.get("step") != expected_step:
             raise R3ContractError(f"FIT670 step closure failed at {expected_step}")
         entities_raw = raw.get("entities")
-        if not isinstance(entities_raw, list) or not entities_raw:
+        if not isinstance(entities_raw, list) or (not entities_raw and not geometry_not_applicable):
             raise R3ContractError(f"FIT670 entities missing at step {expected_step}")
         entities = [_canonical_entity(item) for item in entities_raw]
-        if not any(item["role"] == "MANIPULATED_OBJECT" for item in entities):
+        if not geometry_not_applicable and not any(item["role"] == "MANIPULATED_OBJECT" for item in entities):
             raise R3ContractError(f"FIT670 manipulated object missing at {expected_step}")
-        if not any(item["role"] in {"OBJECT_TARGET", "REGION_TARGET"} for item in entities):
+        if not geometry_not_applicable and not any(item["role"] in {"OBJECT_TARGET", "REGION_TARGET"} for item in entities):
             raise R3ContractError(f"FIT670 target missing at {expected_step}")
         relation_bindings = _canonical_relation_bindings(episode, entities)
         contact_pairs = []
@@ -259,6 +263,7 @@ def canonicalize_fit670_episode(episode: Mapping[str, Any]) -> list[dict[str, An
             "step": expected_step,
             "valid": True,
             "entities": entities,
+            "geometry_status": "NOT_APPLICABLE" if geometry_not_applicable else "APPLICABLE",
             "contact_pairs": contact_pairs,
             "contact_ncon_total": int(raw["contact_ncon_total"]),
             "contact_truncated": raw.get("contact_truncated"),
@@ -427,14 +432,16 @@ def validate_contact_row(row: Mapping[str, Any], *, expected_step: int | None = 
         raise R3ContractError("invalid step or valid type")
     if _finite_vector(row["eef_pos"], 3) is None or _finite_vector(row["eef_quat_xyzw"], 4) is None or _finite_vector(row["gripper_qpos"], 2) is None:
         raise R3ContractError(f"nonfinite robot telemetry at step {row['step']}")
-    if not isinstance(row["entities"], list) or not row["entities"]:
+    not_applicable = row.get("geometry_status") == "NOT_APPLICABLE" and row.get("relation_bindings") == []
+    if not isinstance(row["entities"], list) or (not row["entities"] and not not_applicable):
         raise R3ContractError(f"empty entities at step {row['step']}")
-    for entity in row["entities"]:
-        _required_entity(entity)
-    if not any(item.get("role") == "MANIPULATED_OBJECT" for item in row["entities"]):
-        raise R3ContractError(f"missing manipulated object at step {row['step']}")
-    if not any(item.get("role") in {"OBJECT_TARGET", "REGION_TARGET"} for item in row["entities"]):
-        raise R3ContractError(f"missing target entity at step {row['step']}")
+    if not not_applicable:
+        for entity in row["entities"]:
+            _required_entity(entity)
+        if not any(item.get("role") == "MANIPULATED_OBJECT" for item in row["entities"]):
+            raise R3ContractError(f"missing manipulated object at step {row['step']}")
+        if not any(item.get("role") in {"OBJECT_TARGET", "REGION_TARGET"} for item in row["entities"]):
+            raise R3ContractError(f"missing target entity at step {row['step']}")
     if not isinstance(row["contact_pairs"], list) or not isinstance(row["contact_ncon_total"], int):
         raise R3ContractError(f"invalid contact container at step {row['step']}")
     if row["contact_ncon_total"] != len(row["contact_pairs"]):
@@ -486,6 +493,46 @@ def _contact_history(rows: Sequence[Mapping[str, Any]], index: int, object_entit
     return _object_gripper_contact(rows[index], object_entity)
 
 
+def _derive_not_applicable_labels(rows: Sequence[Mapping[str, Any]], protocol: Mapping[str, Any]) -> list[dict[str, Any]]:
+    thresholds = protocol["teacher"]["frozen_thresholds"]
+    evidence = {
+        "physical_criticality": ["geometry_not_applicable"],
+        "k10_feasibility": ["safe_release_computed"],
+        "safe_release": ["placement", "released_state", "placement_stability"],
+        "instability": ["contact_transition", "relative_slip", "regrasp", "contact_loss"],
+        "gripper_closing_state": ["physical_gripper_qpos"],
+    }
+    output = []
+    for index, row in enumerate(rows):
+        qpos = _finite_vector(row["gripper_qpos"], 2)
+        if qpos is None:
+            closing = _label("UNKNOWN", "NONFINITE_GRIPPER_QPOS")
+        else:
+            closing = _label(
+                "TRUE" if max(abs(value) for value in qpos) <= float(thresholds["qpos_close_threshold"]) else "FALSE",
+                "PHYSICAL_QPOS",
+            )
+        labels = {
+            "physical_criticality": _label("UNKNOWN", "GEOMETRY_NOT_APPLICABLE"),
+            "k10_feasibility": _label("UNKNOWN", "GEOMETRY_NOT_APPLICABLE"),
+            "safe_release": _label("UNKNOWN", "GEOMETRY_NOT_APPLICABLE"),
+            "instability": _label("UNKNOWN", "GEOMETRY_NOT_APPLICABLE"),
+            "gripper_closing_state": closing,
+        }
+        right_censored = index == len(rows) - 1 and int(row["protocol_steps_remaining"]) > 0
+        output.append({
+            "episode_id": row["episode_id"], "suite": row.get("suite"), "task_id": row.get("task_id"),
+            "state_id": row.get("state_id"), "seed": row.get("seed"), "step": index,
+            "candidate_close": bool(row["candidate_close"]), "relation_identity": [], "relation_index": None,
+            "right_censored": right_censored, "evidence_fields": evidence,
+            "labels": {
+                head: {**label, "valid_mask": bool(label["mask"]), "evidence_fields": evidence[head], "right_censored": right_censored}
+                for head, label in labels.items()
+            },
+        })
+    return output
+
+
 def _derive_single_relation_labels(
     rows: Sequence[Mapping[str, Any]],
     protocol: Mapping[str, Any],
@@ -496,6 +543,8 @@ def _derive_single_relation_labels(
         raise R3ContractError("empty episode")
     for index, row in enumerate(rows):
         validate_contact_row(row, expected_step=index)
+    if all(row.get("geometry_status") == "NOT_APPLICABLE" and row.get("relation_bindings") == [] for row in rows):
+        return _derive_not_applicable_labels(rows, protocol)
     thresholds = protocol["teacher"]["frozen_thresholds"]
     initial_object = _position(_selected_entity(rows[0], "MANIPULATED_OBJECT", relation_binding))
     initial_object_z = initial_object[2] if initial_object is not None else None
