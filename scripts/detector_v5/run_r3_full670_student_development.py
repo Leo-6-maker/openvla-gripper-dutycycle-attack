@@ -389,12 +389,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     continued.load_state_dict(checkpoint["model"], strict=True)
     continued_optimizer.load_state_dict(checkpoint["optimizer"])
     resumed_optimizer.zero_grad(set_to_none=True)
-    torch.set_rng_state(checkpoint["torch_rng_state"])
-    _train(continued, x, valid, targets, active_masks, weights, continued_optimizer, 1)
-    torch.set_rng_state(checkpoint["torch_rng_state"])
-    _train(resumed, x, valid, targets, active_masks, weights, resumed_optimizer, 1)
-    with torch.no_grad():
-        continuation_diff = max(float((continued(x, timestep_mask=valid)[key] - resumed(x, timestep_mask=valid)[key]).abs().max()) for key in final_logits)
+    training_threads = torch.get_num_threads()
+    torch.set_num_threads(1)
+    try:
+        torch.set_rng_state(checkpoint["torch_rng_state"])
+        _train(continued, x, valid, targets, active_masks, weights, continued_optimizer, 1)
+        torch.set_rng_state(checkpoint["torch_rng_state"])
+        _train(resumed, x, valid, targets, active_masks, weights, resumed_optimizer, 1)
+        with torch.no_grad():
+            continuation_diff = max(float((continued(x, timestep_mask=valid)[key] - resumed(x, timestep_mask=valid)[key]).abs().max()) for key in final_logits)
+    finally:
+        torch.set_num_threads(training_threads)
     if not np.isfinite(continuation_diff) or continuation_diff > 1e-7:
         raise AssertionError(f"checkpoint continuation mismatch: {continuation_diff}")
 
@@ -444,6 +449,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "checkpoint_sha256": checkpoint_sha,
             "checkpoint_resume_max_logit_diff": resume_diff,
             "checkpoint_continuation_max_logit_diff": continuation_diff,
+            "checkpoint_continuation_threads": 1,
             "checkpoint_rng_state_saved": True,
             "feature_normalization": {"mean": mean.tolist(), "std": std.tolist()},
             "heldout_evaluation": False,
