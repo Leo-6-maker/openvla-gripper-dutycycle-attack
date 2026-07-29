@@ -44,6 +44,7 @@ SOURCE_FILES = (
     "src/gripper_attack/v5_r3_features.py",
     "src/gripper_attack/v5_r3_student.py",
     "src/gripper_attack/v5_r3_teacher.py",
+    "scripts/detector_v5/run_r3_full670_student_development.py",
 )
 
 
