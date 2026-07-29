@@ -15,7 +15,7 @@ from build_r3_fit_to_teacher_transition import PERMISSIONS, build  # noqa: E402
 from build_r3_teacher_pilot_manifest import select_task_balanced_bindings, validate_task_groups  # noqa: E402
 from audit_r3_formal_input import BINDING_FIELDS, _canonical_digest, _validate_episode_relations  # noqa: E402
 import run_r3_v23_formal_teacher as formal_runner  # noqa: E402
-from gripper_attack.v5_r3_teacher import R3ContractError, canonicalize_fit670_episode, derive_episode_labels, validate_contact_row  # noqa: E402
+from gripper_attack.v5_r3_teacher import R3ContractError, _aggregate_relation_label, canonicalize_fit670_episode, derive_episode_labels, validate_contact_row  # noqa: E402
 
 
 GIT_SHA = "a" * 40
@@ -294,6 +294,23 @@ def test_not_applicable_geometry_derives_unknown_geometry_heads_only():
         assert labels[head]["value"] == "UNKNOWN"
         assert labels[head]["valid_mask"] is False
     assert labels["gripper_closing_state"]["value"] == "TRUE"
+
+
+def test_multi_relation_reason_taxonomy_preserves_tri_state_values():
+    def label(value, reason):
+        return {"value": value, "reason": reason, "evidence_fields": [], "right_censored": False}
+
+    assert _aggregate_relation_label([label("TRUE", "RELATION_EVIDENCE")], "physical_criticality")["reason"] == "MULTI_RELATION_TRUE_PRESENT"
+    assert _aggregate_relation_label([label("TRUE", "RELATION_EVIDENCE"), label("UNKNOWN", "RELATION_EVIDENCE_UNKNOWN")], "physical_criticality")["reason"] == "MULTI_RELATION_TRUE_PRESENT"
+    assert _aggregate_relation_label([label("FALSE", "RELATION_EVIDENCE"), label("FALSE", "RELATION_EVIDENCE")], "physical_criticality")["reason"] == "MULTI_RELATION_ALL_FALSE"
+    assert _aggregate_relation_label([label("FALSE", "RELATION_EVIDENCE"), label("UNKNOWN", "RELATION_EVIDENCE_UNKNOWN")], "physical_criticality")["reason"] == "MULTI_RELATION_MIXED_UNKNOWN_NO_TRUE"
+    assert _aggregate_relation_label([label("UNKNOWN", "MISSING_OBJECT_IDENTITY")], "physical_criticality")["reason"] == "RELATION_BINDING_UNKNOWN"
+    assert _aggregate_relation_label([label("UNKNOWN", "GEOMETRY_NOT_APPLICABLE"), label("UNKNOWN", "GEOMETRY_NOT_APPLICABLE")], "physical_criticality")["reason"] == "GEOMETRY_NOT_APPLICABLE"
+    assert _aggregate_relation_label([label("UNKNOWN", "MISSING_CONTACT_EVIDENCE")], "physical_criticality")["reason"] == "RELATION_EVIDENCE_UNKNOWN"
+    mixed = _aggregate_relation_label([label("UNKNOWN", "MISSING_OBJECT_IDENTITY"), label("UNKNOWN", "MISSING_CONTACT_EVIDENCE")], "physical_criticality")
+    assert mixed["reason"] == "MULTI_RELATION_MIXED_UNKNOWN_NO_TRUE"
+    assert mixed["value"] == "UNKNOWN"
+    assert mixed["mask"] is False
 
 
 @pytest.mark.parametrize("relations", [None, {}, ""])

@@ -698,11 +698,28 @@ def _aggregate_relation_label(labels: Sequence[Mapping[str, Any]], head: str) ->
     values = [str(label["value"]) for label in labels]
     value = tri_or(values)
     if value == "TRUE":
-        reason = "MULTI_RELATION_OR_TRUE"
+        reason = "MULTI_RELATION_TRUE_PRESENT"
     elif value == "FALSE":
-        reason = "MULTI_RELATION_OR_FALSE"
+        reason = "MULTI_RELATION_ALL_FALSE"
     else:
-        reason = "MULTI_RELATION_OR_UNKNOWN"
+        relation_reasons = [str(label.get("reason", "")) for label in labels]
+        unknown_reasons = {
+            "RELATION_BINDING_UNKNOWN"
+            if reason in {"MISSING_OBJECT_IDENTITY", "MISSING_TARGET_IDENTITY", "RELATION_BINDING_UNKNOWN"}
+            else "GEOMETRY_NOT_APPLICABLE"
+            if reason == "GEOMETRY_NOT_APPLICABLE"
+            else "RELATION_EVIDENCE_UNKNOWN"
+            for reason in relation_reasons
+            if reason != ""
+        }
+        if unknown_reasons == {"GEOMETRY_NOT_APPLICABLE"}:
+            reason = "GEOMETRY_NOT_APPLICABLE"
+        elif unknown_reasons == {"RELATION_BINDING_UNKNOWN"}:
+            reason = "RELATION_BINDING_UNKNOWN"
+        elif all(str(label["value"]) == "UNKNOWN" for label in labels) and len(unknown_reasons) == 1:
+            reason = next(iter(unknown_reasons))
+        else:
+            reason = "MULTI_RELATION_MIXED_UNKNOWN_NO_TRUE"
     evidence_fields = sorted({
         str(field)
         for label in labels
