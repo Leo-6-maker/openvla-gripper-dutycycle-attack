@@ -51,7 +51,7 @@ def test_r3_split_and_threshold_are_frozen():
     assert split["identity_overlap"] is False
     assert split["task_group_overlap"] is False
     assert split["seed"] == 20260717
-    assert split["tranches"] == [8, 40, 80, 160, 670]
+    assert split["tranches"] == [8, 40, 80, 160, 320, 670]
     threshold = PROTOCOL["threshold"]
     assert threshold["engineering_threshold"] == 0.5
     assert threshold["selection_scope"] == "FIT_DEV only"
@@ -79,3 +79,11 @@ def test_r3_forbidden_substitutions_are_explicit():
     assert "UNKNOWN mapped to FALSE" in forbidden
     assert "Fresh40 proxy telemetry for missing contact pairs" in forbidden
     assert "future frames or future labels" in forbidden
+
+
+def test_fast_closure_amendment_freezes_current_coverage_gate():
+    assert PROTOCOL["protocol_revision"] == "R3-FAST-CLOSURE-R1"
+    assert PROTOCOL["minimum_coverage_for_student"]["per_head_positive_events"] == 20
+    assert PROTOCOL["minimum_coverage_for_student"]["per_head_negative_events"] == 20
+    assert PROTOCOL["input_consumption"]["canonical_source"].endswith("fixed_sealed_development_tranche")
+    assert PROTOCOL["teacher"]["semantic_rules"]["k10"].endswith("safe_release_computed is FALSE")

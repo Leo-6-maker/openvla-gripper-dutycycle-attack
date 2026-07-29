@@ -1,5 +1,8 @@
 {
-  "schema": "V5_TEACHER_STUDENT_R3_DEV_PROTOCOL_V1",
+  "schema": "V5_TEACHER_STUDENT_R3_DEV_PROTOCOL_V1_AMENDED_FAST_CLOSURE",
+  "protocol_revision": "R3-FAST-CLOSURE-R1",
+  "supersedes_sha256": "05699e65c778101bb8eb97dd43ed2562e899ce1c88d0c1745cd5058396accf3d",
+  "amendment_reason": "Before any production label consumption, permit the sealed 8-episode canary and fixed sealed development tranches; freeze 20/20 event coverage gate.",
   "status": "FROZEN_BEFORE_R3_1_CONSUMPTION",
   "lineage": {
     "base_commit": "6504e94567d9f6bc6394185daf26a60eccf0bb19",
@@ -23,8 +26,8 @@
     "attack_authorized": false
   },
   "input_consumption": {
-    "canonical_source": "DeepSeek_FIT670_V2_canary_only",
-    "allowed_tranches": [8, 40, 80, 160, 670],
+    "canonical_source": "DeepSeek_FIT670_V2_canary_or_fixed_sealed_development_tranche",
+    "allowed_tranches": [8, 40, 80, 160, 320, 670],
     "identity_manifest_required": true,
     "identity_order_frozen_before_read": true,
     "old_fresh40_proxy_substitution": "FORBIDDEN",
@@ -178,7 +181,7 @@
     "seed": 20260717,
     "fit_dev_threshold_selection_once": true,
     "heldout_threshold_tuning": false,
-    "tranches": [8, 40, 80, 160, 670],
+    "tranches": [8, 40, 80, 160, 320, 670],
     "coverage_hold_if_underpowered": true
   },
   "threshold": {
@@ -210,8 +213,8 @@
     "R3_6": "FIT-only causal shadow execution contract"
   },
   "minimum_coverage_for_student": {
-    "per_head_positive_events": 10,
-    "per_head_negative_events": 10,
+    "per_head_positive_events": 20,
+    "per_head_negative_events": 20,
     "physical_criticality_positive_events": 20,
     "teacher_critical_events": 20,
     "unknown_fraction_max_candidate_events": 0.60

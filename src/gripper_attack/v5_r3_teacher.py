@@ -7,6 +7,7 @@ returns explicit TRUE/FALSE/UNKNOWN labels.
 from __future__ import annotations
 
 import math
+import re
 from typing import Any, Iterable, Mapping, Sequence
 
 
@@ -25,7 +26,9 @@ ENTITY_ROLES = {
     "SUPPORT_SURFACE",
     "GRIPPER",
     "EEF",
+    "CONTACT_OTHER",
 }
+GRIPPER_BODY_PATTERN = re.compile(r"^gripper0_(?:.*finger.*|.*gripper.*)$")
 FORBIDDEN_FIELDS = {
     "task_success", "terminal", "terminal_state", "reward", "outcome",
     "attack_result", "future", "future_frame", "future_label",
@@ -34,6 +37,168 @@ FORBIDDEN_FIELDS = {
 
 class R3ContractError(ValueError):
     """Raised when a canary row cannot be consumed without guessing."""
+
+
+def _wxyz_to_xyzw(value: Any) -> list[float] | None:
+    """Convert the collector's frozen MuJoCo wxyz convention to xyzw."""
+    quat = _finite_vector(value, 4)
+    return None if quat is None else [quat[1], quat[2], quat[3], quat[0]]
+
+
+def _canonical_entity(entity: Mapping[str, Any]) -> dict[str, Any]:
+    pose = entity.get("world_pose") if isinstance(entity.get("world_pose"), Mapping) else {}
+    position = entity.get("position", pose.get("position"))
+    quaternion = entity.get("rotation_wxyz", pose.get("quaternion"))
+    converted = _wxyz_to_xyzw(quaternion)
+    if _finite_vector(position, 3) is None or converted is None:
+        raise R3ContractError(f"nonfinite collector entity pose: {entity.get('logical_name')!r}")
+    role = str(entity.get("role", ""))
+    if role not in ENTITY_ROLES - {"CONTACT_OTHER"}:
+        raise R3ContractError(f"unknown collector entity role: {role!r}")
+    for key in ("logical_name", "alias_to", "entity_id"):
+        if key not in entity:
+            raise R3ContractError(f"collector entity missing {key}")
+    return {
+        "logical_name": str(entity["logical_name"]),
+        "alias_to": str(entity.get("alias_to") or ""),
+        "role": role,
+        "entity_id": int(entity["entity_id"]),
+        "body_origin": [float(x) for x in position],
+        "quat_xyzw": converted,
+        "collector_entity_name": str(entity.get("entity_name") or ""),
+    }
+
+
+def _contact_endpoint(raw_name: Any, raw_id: Any, entities: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Bind a recorded contact endpoint without using the collector flag.
+
+    The source collector records MuJoCo body names/ids but not endpoint role
+    objects. Exact entity-name/id matches win; the frozen robot body prefix is
+    the only allowed gripper binding. Everything else remains explicit
+    CONTACT_OTHER rather than being relabeled as support.
+    """
+    name = str(raw_name or "")
+    try:
+        entity_id = int(raw_id)
+    except (TypeError, ValueError):
+        raise R3ContractError(f"contact endpoint has invalid entity id: {raw_id!r}") from None
+    matches = []
+    for entity in entities:
+        names = {
+            str(entity.get("entity_name") or ""),
+            str(entity.get("logical_name") or ""),
+            str(entity.get("alias_to") or ""),
+        }
+        if name in names and int(entity.get("entity_id", -1)) == entity_id:
+            matches.append(entity)
+    if len(matches) > 1:
+        raise R3ContractError(f"ambiguous contact endpoint binding: {name!r}/{entity_id}")
+    if matches:
+        entity = matches[0]
+        return {
+            "logical_name": name,
+            "role": str(entity["role"]),
+            "entity_id": entity_id,
+        }
+    if GRIPPER_BODY_PATTERN.fullmatch(name):
+        return {"logical_name": name, "role": "GRIPPER", "entity_id": entity_id, "binding_source": "FROZEN_GRIPPER_BODY_PATTERN"}
+    raise R3ContractError(f"unbound contact endpoint: {name!r}/{entity_id}")
+
+
+def canonicalize_fit670_episode(episode: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Adapt an atomically sealed FIT670_EPISODE_V2 to the R3 row contract.
+
+    Only current telemetry and the same-step raw action are consumed. The
+    adapter deliberately drops sim_state, images, outcomes, and future rows.
+    """
+    if episode.get("schema") != "FIT670_EPISODE_V2":
+        raise R3ContractError(f"unexpected FIT670 episode schema: {episode.get('schema')!r}")
+    telemetry = episode.get("telemetry")
+    steps = episode.get("steps")
+    if not isinstance(telemetry, list) or not isinstance(steps, list) or len(telemetry) != len(steps) or not telemetry:
+        raise R3ContractError("FIT670 telemetry/step closure is incomplete")
+    episode_id = str(episode.get("episode_id") or "")
+    if not episode_id:
+        raise R3ContractError("FIT670 episode_id is empty")
+    from .action_contract import raw_gripper_is_close
+
+    rows: list[dict[str, Any]] = []
+    gripper_body_ids: dict[str, int] = {}
+    for expected_step, (raw, action) in enumerate(zip(telemetry, steps)):
+        if not isinstance(raw, Mapping) or not isinstance(action, Mapping):
+            raise R3ContractError(f"malformed FIT670 row at step {expected_step}")
+        if raw.get("step") != expected_step or action.get("step") != expected_step:
+            raise R3ContractError(f"FIT670 step closure failed at {expected_step}")
+        entities_raw = raw.get("entities")
+        if not isinstance(entities_raw, list) or not entities_raw:
+            raise R3ContractError(f"FIT670 entities missing at step {expected_step}")
+        entities = [_canonical_entity(item) for item in entities_raw]
+        if not any(item["role"] == "MANIPULATED_OBJECT" for item in entities):
+            raise R3ContractError(f"FIT670 manipulated object missing at {expected_step}")
+        if not any(item["role"] in {"OBJECT_TARGET", "REGION_TARGET"} for item in entities):
+            raise R3ContractError(f"FIT670 target missing at {expected_step}")
+        contact_pairs = []
+        raw_pairs = raw.get("contact_pairs")
+        if not isinstance(raw_pairs, list) or raw.get("contact_ncon_total") != len(raw_pairs):
+            raise R3ContractError(f"FIT670 contact closure failed at {expected_step}")
+        for pair in raw_pairs:
+            if not isinstance(pair, Mapping):
+                raise R3ContractError(f"malformed FIT670 contact at {expected_step}")
+            for key in ("body1", "body1_id", "body2", "body2_id", "position", "normal", "normal_constraint_force_scalar"):
+                if key not in pair:
+                    raise R3ContractError(f"FIT670 contact missing {key} at {expected_step}")
+            for body_name, body_id in ((pair["body1"], pair["body1_id"]), (pair["body2"], pair["body2_id"])):
+                name = str(body_name or "")
+                if GRIPPER_BODY_PATTERN.fullmatch(name):
+                    try:
+                        numeric_id = int(body_id)
+                    except (TypeError, ValueError):
+                        raise R3ContractError(f"invalid gripper body id at {expected_step}") from None
+                    previous_id = gripper_body_ids.setdefault(name, numeric_id)
+                    if previous_id != numeric_id:
+                        raise R3ContractError(f"gripper body identity changed: {name}")
+            contact_pairs.append({
+                "entity_a": _contact_endpoint(pair["body1"], pair["body1_id"], entities_raw),
+                "entity_b": _contact_endpoint(pair["body2"], pair["body2_id"], entities_raw),
+                "position": pair["position"],
+                "normal": pair["normal"],
+                "normal_constraint_force_scalar": pair["normal_constraint_force_scalar"],
+                "collector_object_gripper_flag": bool(pair.get("is_object_gripper_contact", False)),
+            })
+        horizon = raw.get("horizon")
+        if not isinstance(horizon, int) or horizon <= expected_step:
+            raise R3ContractError(f"FIT670 horizon is invalid at {expected_step}")
+        raw_action = action.get("raw_action_7d")
+        if not isinstance(raw_action, list) or len(raw_action) != 7:
+            raise R3ContractError(f"FIT670 raw action is invalid at {expected_step}")
+        try:
+            raw_gripper = float(raw_action[6])
+        except (TypeError, ValueError):
+            raise R3ContractError(f"FIT670 raw gripper is invalid at {expected_step}") from None
+        if not math.isfinite(raw_gripper) or not 0.0 <= raw_gripper <= 1.0:
+            raise R3ContractError(f"FIT670 raw gripper is invalid at {expected_step}")
+        candidate_close = raw_gripper_is_close(raw_gripper)
+        rows.append({
+            "episode_id": episode_id,
+            "suite": episode.get("suite"),
+            "task_id": episode.get("task_id"),
+            "state_id": episode.get("state_id"),
+            "seed": episode.get("collection_seed"),
+            "step": expected_step,
+            "valid": True,
+            "entities": entities,
+            "contact_pairs": contact_pairs,
+            "contact_ncon_total": int(raw["contact_ncon_total"]),
+            "contact_truncated": raw.get("contact_truncated"),
+            "forward_before_capture": raw.get("forward_before_capture"),
+            "eef_pos": raw.get("robot0_eef_pos"),
+            "eef_quat_xyzw": _wxyz_to_xyzw(raw.get("robot0_eef_quat")),
+            "gripper_qpos": raw.get("robot0_gripper_qpos"),
+            "protocol_steps_remaining": int(horizon - expected_step - 1),
+            "candidate_close": bool(candidate_close),
+            "candidate_close_source": "FIT670_STEP.raw_action_7d[6]",
+        })
+    return rows
 
 
 def _walk_forbidden(value: Any, path: str = "") -> list[str]:
@@ -152,12 +317,12 @@ def validate_contact_row(row: Mapping[str, Any], *, expected_step: int | None = 
     forbidden = _walk_forbidden(row)
     if forbidden:
         raise R3ContractError(f"forbidden fields: {forbidden}")
-    for key in ("episode_id", "step", "valid", "entities", "contact_pairs", "contact_ncon_total", "contact_truncated", "forward_before_capture", "eef_pos", "eef_quat_xyzw", "gripper_qpos", "protocol_steps_remaining"):
+    for key in ("episode_id", "step", "valid", "candidate_close", "entities", "contact_pairs", "contact_ncon_total", "contact_truncated", "forward_before_capture", "eef_pos", "eef_quat_xyzw", "gripper_qpos", "protocol_steps_remaining"):
         if key not in row:
             raise R3ContractError(f"row missing {key}")
     if expected_step is not None and row["step"] != expected_step:
         raise R3ContractError(f"step closure expected {expected_step}, got {row['step']}")
-    if not isinstance(row["step"], int) or row["step"] < 0 or not isinstance(row["valid"], bool):
+    if not isinstance(row["step"], int) or row["step"] < 0 or not isinstance(row["valid"], bool) or not isinstance(row["candidate_close"], bool):
         raise R3ContractError("invalid step or valid type")
     if _finite_vector(row["eef_pos"], 3) is None or _finite_vector(row["eef_quat_xyzw"], 4) is None or _finite_vector(row["gripper_qpos"], 2) is None:
         raise R3ContractError(f"nonfinite robot telemetry at step {row['step']}")
@@ -296,20 +461,58 @@ def derive_episode_labels(rows: Sequence[Mapping[str, Any]], protocol: Mapping[s
         released = "UNKNOWN" if qpos is None or not force_known else "TRUE" if max(abs(value) for value in qpos) >= float(thresholds["qpos_open_threshold"]) and not contact else "FALSE"
         safe = tri_and([placement, released, placement_stability])
         remaining = row.get("protocol_steps_remaining")
-        k10 = "UNKNOWN" if not isinstance(remaining, int) else "TRUE" if remaining >= int(thresholds["k10"]) and safe != "TRUE" else "FALSE"
+        k10 = (
+            "UNKNOWN"
+            if not isinstance(remaining, int) or safe == "UNKNOWN"
+            else "TRUE" if remaining >= int(thresholds["k10"]) else "FALSE"
+        )
         previous_contact = bool(_contact_history(rows, index - 1)[0]) if index else False
         contact_loss = previous_contact and not contact
         slip = bool(contact and object_delta is not None and object_delta > float(thresholds["slip_relative_motion_threshold_m"]))
         instability = tri_or(["TRUE" if contact_loss or slip else "FALSE"] if force_known else ["UNKNOWN"])
+        relation_identity = [
+            {
+                "logical_name": item.get("logical_name"),
+                "alias_to": item.get("alias_to"),
+                "role": item.get("role"),
+                "entity_id": item.get("entity_id"),
+            }
+            for item in row["entities"]
+            if item.get("role") in {"MANIPULATED_OBJECT", "OBJECT_TARGET", "REGION_TARGET"}
+        ]
+        right_censored = index == len(rows) - 1 and int(row["protocol_steps_remaining"]) > 0
+        evidence = {
+            "physical_criticality": ["object_gripper_contact", "contact_force", "object_eef_relative_pose", "object_eef_comotion", "lift", "support_state"],
+            "k10_feasibility": ["protocol_steps_remaining", "safe_release_computed"],
+            "safe_release": ["placement", "released_state", "placement_stability"],
+            "instability": ["contact_transition", "relative_slip", "regrasp", "contact_loss"],
+            "gripper_closing_state": ["physical_gripper_qpos"],
+        }
         results.append({
+            "episode_id": row["episode_id"],
+            "suite": row.get("suite"),
+            "task_id": row.get("task_id"),
+            "state_id": row.get("state_id"),
+            "seed": row.get("seed"),
             "step": index,
-            "candidate_close": bool(row.get("candidate_close", False)),
+            "candidate_close": bool(row["candidate_close"]),
+            "relation_identity": relation_identity,
+            "right_censored": right_censored,
+            "evidence_fields": evidence,
             "labels": {
-                "physical_criticality": _label(physical, "CONTACT_GEOMETRY_CAUSAL" if physical != "UNKNOWN" else "PHYSICAL_EVIDENCE_UNKNOWN"),
-                "k10_feasibility": _label(k10, "PROTOCOL_HORIZON_AND_SAFE_RELEASE" if k10 != "UNKNOWN" else "HORIZON_UNKNOWN"),
-                "safe_release": _label(safe, "PLACEMENT_RELEASE_STABILITY" if safe != "UNKNOWN" else "SAFE_RELEASE_COMPONENT_UNKNOWN"),
-                "instability": _label(instability, "CONTACT_SLIP_TRANSITION" if instability != "UNKNOWN" else "CONTACT_EVIDENCE_UNKNOWN"),
-                "gripper_closing_state": _label(close_label, close_reason),
+                head: {
+                    **label,
+                    "valid_mask": bool(label["mask"]),
+                    "evidence_fields": evidence[head],
+                    "right_censored": right_censored,
+                }
+                for head, label in {
+                    "physical_criticality": _label(physical, "CONTACT_GEOMETRY_CAUSAL" if physical != "UNKNOWN" else "PHYSICAL_EVIDENCE_UNKNOWN"),
+                    "k10_feasibility": _label(k10, "PROTOCOL_HORIZON_AND_SAFE_RELEASE" if k10 != "UNKNOWN" else "HORIZON_OR_SAFE_RELEASE_UNKNOWN"),
+                    "safe_release": _label(safe, "PLACEMENT_RELEASE_STABILITY" if safe != "UNKNOWN" else "SAFE_RELEASE_COMPONENT_UNKNOWN"),
+                    "instability": _label(instability, "CONTACT_SLIP_TRANSITION" if instability != "UNKNOWN" else "CONTACT_EVIDENCE_UNKNOWN"),
+                    "gripper_closing_state": _label(close_label, close_reason),
+                }.items()
             },
         })
     return results

@@ -79,6 +79,7 @@ def _root(tmp_path):
         "status": "PASS_ENGINEERING_CONSUMABLE_INPUT_GATE",
         "protected_reads": False,
         "attack_enabled": False,
+        "synthetic_fixture": True,
         "episodes": episodes,
     }, indent=2, sort_keys=True), encoding="utf-8")
     _seal(root)
@@ -86,7 +87,7 @@ def _root(tmp_path):
 
 
 def test_valid_eight_episode_canary_audits(tmp_path):
-    report = audit(_root(tmp_path), expected_count=8)
+    report = audit(_root(tmp_path), expected_count=8, allow_synthetic_fixture=True)
     assert report["status"] == "PASS_ENGINEERING_CONSUMABLE_INPUT_GATE"
     assert report["identity_count"] == 8
     assert report["step_count"] == 16
@@ -100,4 +101,4 @@ def test_wrong_gate_status_is_rejected(tmp_path):
     (root / "MANIFEST.json").write_text(json.dumps(manifest, sort_keys=True), encoding="utf-8")
     _seal(root)
     with pytest.raises(ValueError, match="not consumable"):
-        audit(root, expected_count=8)
+        audit(root, expected_count=8, allow_synthetic_fixture=True)

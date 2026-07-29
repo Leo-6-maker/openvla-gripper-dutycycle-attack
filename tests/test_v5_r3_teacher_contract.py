@@ -97,7 +97,7 @@ def test_teacher_is_causal_and_emits_all_five_heads():
     assert set(derived[0]["labels"]) == {
         "physical_criticality", "k10_feasibility", "safe_release", "instability", "gripper_closing_state"
     }
-    assert all(set(item["labels"][head]) == {"value", "mask", "reason"} for item in derived for head in item["labels"])
+    assert all({"value", "mask", "reason", "valid_mask", "evidence_fields", "right_censored"}.issubset(item["labels"][head]) for item in derived for head in item["labels"])
     assert all(item["labels"][head]["value"] in {"TRUE", "FALSE", "UNKNOWN"} for item in derived for head in item["labels"])
 
 
@@ -108,3 +108,9 @@ def test_future_suffix_does_not_change_prefix_labels():
     first = derive_episode_labels(prefix + suffix_a, PROTOCOL)[:4]
     second = derive_episode_labels(prefix + suffix_b, PROTOCOL)[:4]
     assert first == second
+
+
+def test_k10_unknown_safe_release_is_not_false():
+    labels = derive_episode_labels([_row(0, contact=True), _row(1, contact=True)], PROTOCOL)
+    assert labels[0]["labels"]["safe_release"]["value"] == "UNKNOWN"
+    assert labels[0]["labels"]["k10_feasibility"]["value"] == "UNKNOWN"

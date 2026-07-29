@@ -14,7 +14,11 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from gripper_attack.v5_r3_teacher import HEADS, derive_episode_labels
+from gripper_attack.seal_utils import rename_noreplace
 from audit_r3_contact_input import load_consumable_episodes, sha256_file
+
+
+ACCEPTED_PROTOCOL_SCHEMA = "V5_TEACHER_STUDENT_R3_DEV_PROTOCOL_V1_AMENDED_FAST_CLOSURE"
 
 
 def _write_seal(root: Path) -> str:
@@ -32,13 +36,13 @@ def _write_seal(root: Path) -> str:
     return digest
 
 
-def run(input_root: Path, output_root: Path, protocol_path: Path) -> dict:
+def run(input_root: Path, output_root: Path, protocol_path: Path, *, expected_count: int = 8, transition_manifest_path: Path | None = None) -> dict:
     if output_root.exists():
         raise FileExistsError(output_root)
     protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
-    if protocol.get("schema") != "V5_TEACHER_STUDENT_R3_DEV_PROTOCOL_V1":
+    if protocol.get("schema") != ACCEPTED_PROTOCOL_SCHEMA:
         raise ValueError("unexpected R3 protocol")
-    manifest, episodes, input_seal = load_consumable_episodes(input_root, expected_count=8)
+    manifest, episodes, input_seal = load_consumable_episodes(input_root, expected_count=expected_count, transition_manifest_path=transition_manifest_path)
     staging = output_root.with_name(f".{output_root.name}.staging.{os.getpid()}")
     if staging.exists() or output_root.exists():
         raise FileExistsError(output_root)
@@ -61,6 +65,12 @@ def run(input_root: Path, output_root: Path, protocol_path: Path) -> dict:
             "input_schema": manifest["schema"],
             "input_status": manifest["status"],
             "input_sha256sums_sha256": input_seal["sha256sums_sha256"],
+            "source_root": manifest.get("source_root"),
+            "identity_allowlist_sha256": manifest.get("identity_allowlist_sha256"),
+            "identity_allowlist_path": manifest.get("identity_allowlist_path"),
+            "transition_manifest_sha256": manifest.get("transition_manifest_sha256"),
+            "transition_manifest_path": manifest.get("transition_manifest_path"),
+            "transition_sha256sums_sha256": manifest.get("transition_sha256sums_sha256"),
             "protocol_sha256": sha256_file(protocol_path),
             "identity_count": len(episodes),
             "step_count": label_count,
@@ -76,7 +86,7 @@ def run(input_root: Path, output_root: Path, protocol_path: Path) -> dict:
         (staging / "teacher_manifest.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         (staging / "teacher_records.jsonl").write_text("".join(json.dumps(row, sort_keys=True) + "\n" for row in event_rows), encoding="utf-8")
         digest = _write_seal(staging)
-        os.rename(staging, output_root)
+        rename_noreplace(staging, output_root)
         report["sha256sums_sha256"] = digest
         return report
     except Exception:
@@ -90,8 +100,10 @@ def main() -> int:
     parser.add_argument("--input-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--protocol", type=Path, default=ROOT / "configs" / "R3_DEV_PROTOCOL.json")
+    parser.add_argument("--expected-count", type=int, default=8)
+    parser.add_argument("--transition-manifest", type=Path)
     args = parser.parse_args()
-    print(json.dumps(run(args.input_root.resolve(), args.output_root.resolve(), args.protocol.resolve()), indent=2, sort_keys=True))
+    print(json.dumps(run(args.input_root.resolve(), args.output_root.resolve(), args.protocol.resolve(), expected_count=args.expected_count, transition_manifest_path=args.transition_manifest), indent=2, sort_keys=True))
     return 0
 
 
