@@ -352,7 +352,7 @@ def audit(formal_root: Path, finalization_root: Path, transition_path: Path, all
         "allowlist_sha256": sha256_file(allowlist_path), "allowlist_root_sha256sums_sha256": allowlist_seal["sha256sums_sha256"], "shard_plan_sha256": sha256_file(shard_plan_path),
         "finalization": finalization, "worker_closure": worker_audit, "episode_bindings": episode_bindings, "episode_binding_digest": _canonical_digest([episode_bindings[key] for key in sorted(episode_bindings)]), "schema_rows": schema_rows, "non_applicable_geometry_episodes": non_applicable_geometry_episodes,
         "gate": {"duplicate": 0, "missing": 0, "extra": 0, "unallowlisted": 0, "bad_episode_seal": 0, "bad_worker_seal": 0, "schema_error": 0, "empty_entity_records": 0, "identity_binding_error": 0, "source_binding_error": 0, "nonfinite": 0, "staging_residue": 0, "protected_reads": 0},
-        "payload_semantics_read": True, "teacher_labels_generated": False, "labels_generated": False, "student_started": False, "attack_authorized": False,
+        "payload_semantics_read": True, "protected_reads": 0, "teacher_labels_generated": False, "labels_generated": False, "student_started": False, "attack_authorized": False,
         "source_staging_residue": source_staging,
     }
     staging = output_root.with_name(f".{output_root.name}.staging.{os.getpid()}")
