@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "detector_v5"))
 
 from build_r3_fit_to_teacher_transition import PERMISSIONS, build  # noqa: E402
-from audit_r3_formal_input import _validate_episode_relations  # noqa: E402
+from audit_r3_formal_input import BINDING_FIELDS, _canonical_digest, _validate_episode_relations  # noqa: E402
 import run_r3_v23_formal_teacher as formal_runner  # noqa: E402
 
 
@@ -189,3 +189,9 @@ def test_empty_relations_are_only_valid_for_explicit_not_applicable_geometry():
     assert _validate_episode_relations({"relations": [], "geometry_status": "NOT_APPLICABLE"}, "e") == (0, "NOT_APPLICABLE")
     with pytest.raises(ValueError, match="empty relation records"):
         _validate_episode_relations({"relations": [], "geometry_status": "OK"}, "e")
+
+
+def test_t0_binding_digest_uses_the_shared_required_field_contract():
+    row = {key: (str(i) if key != "worker_result_steps" else 1) for i, key in enumerate(BINDING_FIELDS)}
+    expected = hashlib.sha256(json.dumps([row], sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+    assert _canonical_digest([row]) == expected

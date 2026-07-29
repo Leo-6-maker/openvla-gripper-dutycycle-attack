@@ -23,6 +23,16 @@ from gripper_attack.seal_utils import rename_noreplace
 
 FORBIDDEN_PARTS = {"cal", "check", "g10", "t2r-d", "protected", "attack"}
 EXPECTED_COUNT = 670
+BINDING_FIELDS = (
+    "suite", "task_id", "task_name", "state_id", "seed", "episode_id", "initial_state_sha256",
+    "relative_path", "episode_sha256", "episode_sha256sums_sha256", "worker_id", "shard_id",
+    "worker_result_target", "worker_result_steps", "worker_result_source_sha256",
+    "worker_result_episode_sha256sums_sha256", "worker_result_initial_state_sha256",
+    "worker_result_binding_mode", "worker_manifest_sha256", "worker_seal_sha256sums_sha256",
+    "collection_source_commit", "collection_source_tree", "collector_script_sha256",
+    "transition_manifest_sha256", "transition_sha256sums_sha256", "allowlist_sha256",
+    "c1_canonical_digest", "schema",
+)
 
 
 def _sha64(value: Any, field: str) -> str:
@@ -55,7 +65,8 @@ def _safe_episode_path(root: Path, identity: str) -> Path:
 
 
 def _canonical_digest(entries: list[dict[str, Any]]) -> str:
-    return hashlib.sha256(json.dumps(entries, sort_keys=True).encode()).hexdigest()
+    rows = [{key: entry[key] for key in BINDING_FIELDS} for entry in entries]
+    return hashlib.sha256(json.dumps(rows, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
 def _identity_set_digest(entries: list[dict[str, Any]]) -> str:
