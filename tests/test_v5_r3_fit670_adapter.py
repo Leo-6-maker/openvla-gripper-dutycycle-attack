@@ -49,6 +49,11 @@ def _episode(raw_grippers=(0.0, 1.0)):
         "task_id": 0,
         "state_id": 0,
         "collection_seed": 0,
+        "relations": [{
+            "predicate": "PLACEMENT",
+            "object_resolution": {"name": "cube_1", "semantic_role": "MANIPULATED_OBJECT", "entity_id": 10},
+            "target_resolution": {"name": "target_1", "semantic_role": "OBJECT_TARGET", "entity_id": 11},
+        }],
         "telemetry": rows,
         "steps": steps,
     }
