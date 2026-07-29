@@ -16,6 +16,8 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from audit_r3_contact_input import sha256_file, verify_seal
+from audit_r3_formal_input import BINDING_FIELDS, _canonical_digest
+from build_r3_teacher_pilot_manifest import validate_task_groups
 from gripper_attack.seal_utils import rename_noreplace
 from gripper_attack.v5_r3_teacher import HEADS, canonicalize_fit670_episode, derive_episode_labels, validate_contact_row
 
@@ -97,6 +99,11 @@ def _reject_forbidden_fields(value: Any, path: str = "root") -> None:
             _reject_forbidden_fields(child, f"{path}[{index}]")
 
 
+def _require_pilot_selection(selection_manifest_path: Path | None, selection_digest: str | None) -> None:
+    if selection_manifest_path is None or selection_digest is None:
+        raise ValueError("T1 selected pilot manifest is required; full formal path is disabled")
+
+
 def _verify_transition(path: Path, formal_root: Path, expected_digest: str) -> dict[str, Any]:
     manifest_path = path.resolve()
     if manifest_path.is_symlink() or not manifest_path.is_file():
@@ -163,7 +170,7 @@ def _verify_input_audit(audit_root: Path, formal_root: Path, finalization_root: 
         raise ValueError("T0-A audit is not consumable")
     if manifest.get("episode_count") != 670 or manifest.get("episode_list_nonempty") is not True or manifest.get("protected_reads") != 0:
         raise ValueError("T0-A audit cardinality/boundary is not closed")
-    if manifest.get("teacher_labels_generated") is not False or manifest.get("labels_generated") is not False or manifest.get("student_started") is not False:
+    if manifest.get("teacher_labels_generated") is not False or manifest.get("labels_generated") is not False or manifest.get("student_started") is not False or manifest.get("attack_authorized") is not False:
         raise ValueError("T0-A audit already contains downstream execution")
     if Path(str(manifest.get("formal_root", ""))).resolve() != formal_root.resolve():
         raise ValueError("T0-A formal root mismatch")
@@ -188,6 +195,53 @@ def _verify_input_audit(audit_root: Path, formal_root: Path, finalization_root: 
     if not isinstance(bindings, Mapping) or len(bindings) != 670 or set(bindings) != set(finalization.get("episode_seals", {})):
         raise ValueError("T0-A episode binding closure is incomplete")
     return {"root": str(root), "seal": seal, "manifest": manifest, "manifest_sha256": sha256_file(manifest_path), "seal_sha256sums_sha256": seal["sha256sums_sha256"]}
+
+
+def _verify_selection_manifest(path: Path, audit: Mapping[str, Any], formal_root: Path, expected_seal: str | None) -> dict[str, Any]:
+    manifest_path = path.resolve()
+    if any(part.lower() in FORBIDDEN_PARTS for part in manifest_path.parts):
+        raise ValueError("pilot selection path is forbidden-looking")
+    if manifest_path.is_symlink() or not manifest_path.is_file():
+        raise ValueError("pilot selection manifest missing or symlinked")
+    seal = verify_seal(manifest_path.parent)
+    if expected_seal is None or seal["sha256sums_sha256"] != expected_seal:
+        raise ValueError("pilot selection seal mismatch")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("schema") != "V5_R3_TEACHER_PILOT_MANIFEST_V1" or manifest.get("status") != "PASS_FROZEN_TEACHER_PILOT_INPUT":
+        raise ValueError("pilot selection manifest is not frozen")
+    if manifest.get("formal_root") != str(formal_root) or manifest.get("input_audit_manifest_sha256") != str(audit["manifest_sha256"]):
+        raise ValueError("pilot selection source binding mismatch")
+    if manifest.get("input_audit_seal_sha256sums_sha256") != str(audit["seal_sha256sums_sha256"]):
+        raise ValueError("pilot selection audit seal mismatch")
+    if manifest.get("protected_reads") != 0 or manifest.get("teacher_labels_generated") is not False or manifest.get("labels_generated") is not False or manifest.get("student_started") is not False or manifest.get("attack_authorized") is not False:
+        raise ValueError("pilot selection permission boundary is not closed")
+    selected = manifest.get("selected_bindings")
+    audit_bindings = audit["manifest"].get("episode_bindings")
+    if not isinstance(selected, list) or len(selected) != 40 or len({row.get("episode_id") for row in selected if isinstance(row, Mapping)}) != 40 or not isinstance(audit_bindings, Mapping):
+        raise ValueError("pilot selection identity closure is not exact 40")
+    for row in selected:
+        identity = row.get("episode_id")
+        if identity not in audit_bindings or any(row.get(key) != audit_bindings[identity].get(key) for key in BINDING_FIELDS):
+            raise ValueError(f"pilot selection binding mismatch: {identity}")
+    if manifest.get("selected_identity_digest") != _canonical_digest(selected):
+        raise ValueError("pilot selection digest mismatch")
+    try:
+        validate_task_groups(selected)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("pilot selection is not exactly 4 suites x 10 tasks") from exc
+    for field, expected in {
+        "episode_binding_digest": audit["manifest"].get("episode_binding_digest"),
+        "identity_set_digest": audit["manifest"].get("identity_set_digest"),
+        "episode_seal_digest": audit["manifest"].get("finalization", {}).get("episode_seal_digest"),
+        "transition_manifest_sha256": audit["manifest"].get("transition_manifest_sha256"),
+        "transition_sha256sums_sha256": audit["manifest"].get("transition_sha256sums_sha256"),
+        "allowlist_sha256": audit["manifest"].get("allowlist_sha256"),
+        "allowlist_root_sha256sums_sha256": audit["manifest"].get("allowlist_root_sha256sums_sha256"),
+        "shard_plan_sha256": audit["manifest"].get("shard_plan_sha256"),
+    }.items():
+        if manifest.get(field) != expected:
+            raise ValueError(f"pilot selection source closure mismatch: {field}")
+    return {"manifest": manifest, "manifest_sha256": sha256_file(manifest_path), "seal_sha256sums_sha256": seal["sha256sums_sha256"], "identities": [row["episode_id"] for row in selected]}
 
 
 def _verify_fit_to_teacher_transition(path: Path, original: Mapping[str, Any], audit: Mapping[str, Any], formal_root: Path, output_root: Path, teacher_contract_path: Path, teacher_runner_path: Path, protocol_path: Path, expected_seal: str) -> dict[str, Any]:
@@ -301,13 +355,17 @@ def _verify_finalization(finalization_root: Path, transition: Mapping[str, Any],
     }
 
 
-def _load_formal(formal_root: Path, finalization_root: Path, transition_path: Path, input_audit_root: Path, fit_to_teacher_transition_path: Path, teacher_contract_path: Path, teacher_runner_path: Path, protocol_path: Path, *, transition_digest: str, episode_digest: str, fit_to_teacher_transition_digest: str, output_root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+def _load_formal(formal_root: Path, finalization_root: Path, transition_path: Path, input_audit_root: Path, fit_to_teacher_transition_path: Path, teacher_contract_path: Path, teacher_runner_path: Path, protocol_path: Path, selection_manifest_path: Path | None, selection_digest: str | None, *, transition_digest: str, episode_digest: str, fit_to_teacher_transition_digest: str, output_root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    _require_pilot_selection(selection_manifest_path, selection_digest)
     root = formal_root.resolve()
     paths = [root, finalization_root.resolve(), transition_path.resolve(), input_audit_root.resolve(), fit_to_teacher_transition_path.resolve(), teacher_contract_path.resolve(), teacher_runner_path.resolve()]
+    if selection_manifest_path is not None:
+        paths.append(selection_manifest_path.resolve())
     if any(part.lower() in FORBIDDEN_PARTS for path in paths for part in path.parts):
         raise ValueError("formal input path is forbidden-looking")
     transition = _verify_transition(transition_path, root, transition_digest)
     audit = _verify_input_audit(input_audit_root, root, finalization_root, transition_path, transition["manifest"], episode_digest)
+    selection = _verify_selection_manifest(selection_manifest_path, audit, root, selection_digest)
     downstream = _verify_fit_to_teacher_transition(fit_to_teacher_transition_path, {**transition, "manifest_path": str(transition_path.resolve())}, audit, root, output_root, teacher_contract_path, teacher_runner_path, protocol_path, fit_to_teacher_transition_digest)
     finalization = audit["manifest"]["finalization"]
     bindings = audit["manifest"]["episode_bindings"]
@@ -316,7 +374,8 @@ def _load_formal(formal_root: Path, finalization_root: Path, transition_path: Pa
     if not authorized_ok or set(bindings) != set(finalization["episode_seals"]):
         raise ValueError("formal transition/audit identity mismatch")
     loaded = []
-    for identity in sorted(finalization["episode_seals"]):
+    identities = selection["identities"]
+    for identity in identities:
         relative = _safe_identity_path(root, identity)
         episode_path = root / relative
         episode_seal = verify_seal(episode_path.parent)
@@ -373,6 +432,7 @@ def _load_formal(formal_root: Path, finalization_root: Path, transition_path: Pa
         "input_audit": audit,
         "fit_to_teacher_transition": downstream,
         "transition": transition,
+        "selection": selection,
         "identity_count": len(loaded),
         "step_count": sum(len(item["rows"]) for item in loaded),
         "protected_reads": 0,
@@ -383,13 +443,14 @@ def _load_formal(formal_root: Path, finalization_root: Path, transition_path: Pa
     }, loaded
 
 
-def run(formal_root: Path, finalization_root: Path, transition_path: Path, input_audit_root: Path, fit_to_teacher_transition_path: Path, teacher_contract_path: Path, teacher_runner_path: Path, protocol_path: Path, output_root: Path, *, transition_digest: str, episode_digest: str, fit_to_teacher_transition_digest: str, resume: bool = False) -> dict[str, Any]:
+def run(formal_root: Path, finalization_root: Path, transition_path: Path, input_audit_root: Path, fit_to_teacher_transition_path: Path, teacher_contract_path: Path, teacher_runner_path: Path, protocol_path: Path, output_root: Path, *, transition_digest: str, episode_digest: str, fit_to_teacher_transition_digest: str, selection_manifest_path: Path | None = None, selection_digest: str | None = None, resume: bool = False) -> dict[str, Any]:
+    _require_pilot_selection(selection_manifest_path, selection_digest)
     if output_root.exists():
         raise FileExistsError(output_root)
     protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
     if not protocol.get("schema", "").startswith("V5_TEACHER_STUDENT_R3_DEV_PROTOCOL"):
         raise ValueError("unexpected R3 protocol")
-    binding, episodes = _load_formal(formal_root, finalization_root, transition_path, input_audit_root, fit_to_teacher_transition_path, teacher_contract_path, teacher_runner_path, protocol_path, transition_digest=transition_digest, episode_digest=episode_digest, fit_to_teacher_transition_digest=fit_to_teacher_transition_digest, output_root=output_root)
+    binding, episodes = _load_formal(formal_root, finalization_root, transition_path, input_audit_root, fit_to_teacher_transition_path, teacher_contract_path, teacher_runner_path, protocol_path, selection_manifest_path, selection_digest, transition_digest=transition_digest, episode_digest=episode_digest, fit_to_teacher_transition_digest=fit_to_teacher_transition_digest, output_root=output_root)
     staging = output_root.with_name(f".{output_root.name}.staging")
     if output_root.exists():
         raise FileExistsError(output_root)
@@ -407,6 +468,8 @@ def run(formal_root: Path, finalization_root: Path, transition_path: Path, input
         "protocol_sha256": sha256_file(protocol_path),
         "identity_set_digest": binding["transition"]["manifest"].get("identity_set_digest"),
         "identity_count": len(episodes),
+        "selection_manifest_sha256": binding["selection"]["manifest_sha256"] if binding["selection"] else None,
+        "selection_seal_sha256sums_sha256": binding["selection"]["seal_sha256sums_sha256"] if binding["selection"] else None,
     }
     resume_manifest_path = staging / "RESUME_MANIFEST.json"
     if resume_manifest_path.exists():
@@ -508,13 +571,17 @@ def main() -> int:
     parser.add_argument("--teacher-contract", type=Path, required=True)
     parser.add_argument("--teacher-runner", type=Path, default=Path(__file__))
     parser.add_argument("--protocol", type=Path, default=ROOT / "configs" / "R3_DEV_PROTOCOL.json")
+    parser.add_argument("--selection-manifest", type=Path)
+    parser.add_argument("--selection-sha256sums-sha256")
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--transition-sha256sums-sha256", required=True)
     parser.add_argument("--episode-seal-digest", required=True)
     parser.add_argument("--fit-to-teacher-transition-sha256sums-sha256", required=True)
     parser.add_argument("--resume", action="store_true")
     args = parser.parse_args()
-    print(json.dumps(run(args.formal_root.resolve(), args.finalization_root.resolve(), args.transition.resolve(), args.input_audit.resolve(), args.fit_to_teacher_transition.resolve(), args.teacher_contract.resolve(), args.teacher_runner.resolve(), args.protocol.resolve(), args.output_root.resolve(), transition_digest=args.transition_sha256sums_sha256, episode_digest=args.episode_seal_digest, fit_to_teacher_transition_digest=args.fit_to_teacher_transition_sha256sums_sha256, resume=args.resume), indent=2, sort_keys=True))
+    if (args.selection_manifest is None) != (args.selection_sha256sums_sha256 is None):
+        parser.error("--selection-manifest and --selection-sha256sums-sha256 must be provided together")
+    print(json.dumps(run(args.formal_root.resolve(), args.finalization_root.resolve(), args.transition.resolve(), args.input_audit.resolve(), args.fit_to_teacher_transition.resolve(), args.teacher_contract.resolve(), args.teacher_runner.resolve(), args.protocol.resolve(), args.output_root.resolve(), transition_digest=args.transition_sha256sums_sha256, episode_digest=args.episode_seal_digest, fit_to_teacher_transition_digest=args.fit_to_teacher_transition_sha256sums_sha256, selection_manifest_path=args.selection_manifest.resolve() if args.selection_manifest else None, selection_digest=args.selection_sha256sums_sha256, resume=args.resume), indent=2, sort_keys=True))
     return 0
 
 

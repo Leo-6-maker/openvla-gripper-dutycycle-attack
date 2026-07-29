@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "detector_v5"))
 
 from build_r3_fit_to_teacher_transition import PERMISSIONS, build  # noqa: E402
+from build_r3_teacher_pilot_manifest import select_task_balanced_bindings, validate_task_groups  # noqa: E402
 from audit_r3_formal_input import BINDING_FIELDS, _canonical_digest, _validate_episode_relations  # noqa: E402
 import run_r3_v23_formal_teacher as formal_runner  # noqa: E402
 
@@ -102,6 +103,7 @@ def _fixture(tmp_path: Path):
         "teacher_labels_generated": False,
         "labels_generated": False,
         "student_started": False,
+        "attack_authorized": False,
         "source_staging_residue": [],
         "identity_set_digest": identity_digest,
         "collection_source_commit": GIT_SHA,
@@ -195,3 +197,34 @@ def test_t0_binding_digest_uses_the_shared_required_field_contract():
     row = {key: (str(i) if key != "worker_result_steps" else 1) for i, key in enumerate(BINDING_FIELDS)}
     expected = hashlib.sha256(json.dumps([row], sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     assert _canonical_digest([row]) == expected
+
+
+def test_pilot_selection_is_exactly_one_identity_per_task_and_deterministic():
+    bindings = {
+        f"suite_{suite}/task_{task:02d}/state_{state:02d}": {
+            "episode_id": f"suite_{suite}/task_{task:02d}/state_{state:02d}",
+            "suite": f"suite_{suite}",
+            "task_id": task,
+        }
+        for suite in range(4)
+        for task in range(10)
+        for state in range(2)
+    }
+    first = select_task_balanced_bindings(bindings, 20260717)
+    second = select_task_balanced_bindings(bindings, 20260717)
+    assert [row["episode_id"] for row in first] == [row["episode_id"] for row in second]
+    assert len(first) == 40
+    assert len({(row["suite"], row["task_id"]) for row in first}) == 40
+
+
+def test_pilot_selection_rejects_incomplete_or_misnumbered_task_grid():
+    rows = [{"suite": "suite_0", "task_id": 0, "episode_id": "e"}]
+    with pytest.raises(ValueError, match="4 suites x 10 tasks"):
+        validate_task_groups(rows)
+
+
+def test_t1_runner_rejects_unselected_full_formal_path():
+    with pytest.raises(ValueError, match="selected pilot manifest is required"):
+        formal_runner._require_pilot_selection(None, None)
+    with pytest.raises(ValueError, match="selected pilot manifest is required"):
+        formal_runner._require_pilot_selection(Path("selection.json"), None)
