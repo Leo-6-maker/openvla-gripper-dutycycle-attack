@@ -69,6 +69,68 @@ def _canonical_entity(entity: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _canonical_relation_bindings(episode: Mapping[str, Any], entities: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Bind each declared relation to one object and one target entity.
+
+    FIT670 can contain several manipulated objects in one episode.  Role-only
+    lookup is therefore unsafe; relation resolution name, role, and entity id
+    must agree before a relation can be consumed.
+    """
+    raw_relations = episode.get("relations")
+    if not isinstance(raw_relations, list) or not raw_relations:
+        return []
+    bindings: list[dict[str, Any]] = []
+    for relation_index, relation in enumerate(raw_relations):
+        if not isinstance(relation, Mapping):
+            raise R3ContractError(f"malformed relation binding: {relation_index}")
+        object_resolution = relation.get("object_resolution")
+        target_resolution = relation.get("target_resolution")
+        if not isinstance(object_resolution, Mapping) or not isinstance(target_resolution, Mapping):
+            raise R3ContractError(f"relation resolution missing: {relation_index}")
+        object_role = str(object_resolution.get("semantic_role") or relation.get("object_semantic_role") or "")
+        target_role = str(target_resolution.get("semantic_role") or relation.get("target_semantic_role") or "")
+        object_name = str(object_resolution.get("name") or relation.get("object_bddl") or "")
+        target_name = str(target_resolution.get("name") or relation.get("target_bddl") or "")
+        try:
+            object_id = int(object_resolution["entity_id"])
+            target_id = int(target_resolution["entity_id"])
+        except (KeyError, TypeError, ValueError):
+            raise R3ContractError(f"relation entity id missing: {relation_index}") from None
+        object_matches = [
+            entity for entity in entities
+            if entity.get("logical_name") == object_name
+            and entity.get("role") == object_role == "MANIPULATED_OBJECT"
+            and int(entity.get("entity_id", -1)) == object_id
+        ]
+        if target_role not in {"OBJECT_TARGET", "REGION_TARGET"}:
+            raise R3ContractError(f"relation target role is not a target: {relation_index}")
+        target_matches = [
+            entity for entity in entities
+            if entity.get("logical_name") == target_name
+            and entity.get("role") == target_role
+            and int(entity.get("entity_id", -1)) == target_id
+        ]
+        if len(object_matches) != 1 or len(target_matches) != 1:
+            raise R3ContractError(f"relation entity binding mismatch: {relation_index}")
+        bindings.append({
+            "relation_index": relation_index,
+            "predicate": str(relation.get("predicate") or ""),
+            "object": {
+                "logical_name": object_name,
+                "alias_to": object_matches[0].get("alias_to"),
+                "role": object_role,
+                "entity_id": object_id,
+            },
+            "target": {
+                "logical_name": target_name,
+                "alias_to": target_matches[0].get("alias_to"),
+                "role": target_role,
+                "entity_id": target_id,
+            },
+        })
+    return bindings
+
+
 def _contact_endpoint(raw_name: Any, raw_id: Any, entities: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     """Bind a recorded contact endpoint without using the collector flag.
 
@@ -146,6 +208,7 @@ def canonicalize_fit670_episode(episode: Mapping[str, Any]) -> list[dict[str, An
             raise R3ContractError(f"FIT670 manipulated object missing at {expected_step}")
         if not any(item["role"] in {"OBJECT_TARGET", "REGION_TARGET"} for item in entities):
             raise R3ContractError(f"FIT670 target missing at {expected_step}")
+        relation_bindings = _canonical_relation_bindings(episode, entities)
         contact_pairs = []
         raw_pairs = raw.get("contact_pairs")
         if not isinstance(raw_pairs, list) or raw.get("contact_ncon_total") != len(raw_pairs):
@@ -206,6 +269,7 @@ def canonicalize_fit670_episode(episode: Mapping[str, Any]) -> list[dict[str, An
             "protocol_steps_remaining": int(horizon - expected_step - 1),
             "candidate_close": bool(candidate_close),
             "candidate_close_source": "FIT670_STEP.raw_action_7d[6]",
+            "relation_bindings": relation_bindings,
         })
     return rows
 
@@ -305,7 +369,32 @@ def _entity(row: Mapping[str, Any], role: str) -> Mapping[str, Any] | None:
     return matches[0]
 
 
-def _object_gripper_contact(row: Mapping[str, Any]) -> tuple[bool, bool, float]:
+def _selected_entity(row: Mapping[str, Any], role: str, relation_binding: Mapping[str, Any] | None) -> Mapping[str, Any] | None:
+    if relation_binding is None:
+        return _entity(row, role)
+    side = "object" if role == "MANIPULATED_OBJECT" else "target"
+    expected = relation_binding.get(side)
+    if not isinstance(expected, Mapping):
+        return None
+    matches = [
+        item for item in row["entities"]
+        if item.get("role") == expected.get("role")
+        and item.get("logical_name") == expected.get("logical_name")
+        and int(item.get("entity_id", -1)) == int(expected.get("entity_id", -2))
+    ]
+    return matches[0] if len(matches) == 1 else None
+
+
+def _same_entity(endpoint: Mapping[str, Any], entity: Mapping[str, Any] | None) -> bool:
+    if entity is None or endpoint.get("role") != entity.get("role"):
+        return False
+    try:
+        return int(endpoint.get("entity_id", -1)) == int(entity.get("entity_id", -2))
+    except (TypeError, ValueError):
+        return False
+
+
+def _object_gripper_contact(row: Mapping[str, Any], object_entity: Mapping[str, Any] | None = None) -> tuple[bool, bool, float]:
     found = False
     force_known = True
     max_force = 0.0
@@ -313,6 +402,9 @@ def _object_gripper_contact(row: Mapping[str, Any]) -> tuple[bool, bool, float]:
         endpoints = (pair["entity_a"], pair["entity_b"])
         roles = {str(endpoint["role"]) for endpoint in endpoints}
         if "MANIPULATED_OBJECT" in roles and "GRIPPER" in roles:
+            object_endpoint = next(endpoint for endpoint in endpoints if endpoint.get("role") == "MANIPULATED_OBJECT")
+            if object_entity is not None and not _same_entity(object_endpoint, object_entity):
+                continue
             found = True
             force = float(pair["normal_constraint_force_scalar"])
             max_force = max(max_force, abs(force))
@@ -390,33 +482,37 @@ def _cosine(a: Sequence[float] | None, b: Sequence[float] | None) -> float | Non
     return sum(x * y for x, y in zip(a, b)) / (na * nb)
 
 
-def _contact_history(rows: Sequence[Mapping[str, Any]], index: int) -> tuple[bool, bool, float]:
-    return _object_gripper_contact(rows[index])
+def _contact_history(rows: Sequence[Mapping[str, Any]], index: int, object_entity: Mapping[str, Any] | None = None) -> tuple[bool, bool, float]:
+    return _object_gripper_contact(rows[index], object_entity)
 
 
-def derive_episode_labels(rows: Sequence[Mapping[str, Any]], protocol: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """Derive five causal labels from a validated episode timeline."""
+def _derive_single_relation_labels(
+    rows: Sequence[Mapping[str, Any]],
+    protocol: Mapping[str, Any],
+    relation_binding: Mapping[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    """Derive five causal labels for one relation from a validated timeline."""
     if not rows:
         raise R3ContractError("empty episode")
     for index, row in enumerate(rows):
         validate_contact_row(row, expected_step=index)
     thresholds = protocol["teacher"]["frozen_thresholds"]
-    initial_object = _position(_entity(rows[0], "MANIPULATED_OBJECT"))
+    initial_object = _position(_selected_entity(rows[0], "MANIPULATED_OBJECT", relation_binding))
     initial_object_z = initial_object[2] if initial_object is not None else None
     results: list[dict[str, Any]] = []
     for index, row in enumerate(rows):
-        obj = _entity(row, "MANIPULATED_OBJECT")
-        target = _entity(row, "OBJECT_TARGET") or _entity(row, "REGION_TARGET")
+        obj = _selected_entity(row, "MANIPULATED_OBJECT", relation_binding)
+        target = _selected_entity(row, "OBJECT_TARGET", relation_binding) or _selected_entity(row, "REGION_TARGET", relation_binding)
         object_pos = _position(obj)
         target_pos = _position(target)
         eef_pos = _finite_vector(row["eef_pos"], 3)
-        contact, force_known, force = _contact_history(rows, index)
+        contact, force_known, force = _contact_history(rows, index, obj)
         qpos = _finite_vector(row["gripper_qpos"], 2)
         close = qpos is not None and max(abs(value) for value in qpos) <= float(thresholds["qpos_close_threshold"])
         close_label = "TRUE" if close else "FALSE"
         close_reason = "PHYSICAL_QPOS"
         previous = rows[index - 1] if index else None
-        previous_obj = _position(_entity(previous, "MANIPULATED_OBJECT")) if previous else None
+        previous_obj = _position(_selected_entity(previous, "MANIPULATED_OBJECT", relation_binding)) if previous else None
         previous_eef = _finite_vector(previous["eef_pos"], 3) if previous else None
         object_delta_vector = _delta(object_pos, previous_obj)
         eef_delta_vector = _delta(eef_pos, previous_eef)
@@ -435,7 +531,7 @@ def derive_episode_labels(rows: Sequence[Mapping[str, Any]], protocol: Mapping[s
         else:
             dwell = 0
             for previous_index in range(index, -1, -1):
-                if not _contact_history(rows, previous_index)[0]:
+                if not _contact_history(rows, previous_index, _selected_entity(rows[previous_index], "MANIPULATED_OBJECT", relation_binding))[0]:
                     break
                 dwell += 1
             previous_relative = _delta(previous_obj, previous_eef)
@@ -456,8 +552,8 @@ def derive_episode_labels(rows: Sequence[Mapping[str, Any]], protocol: Mapping[s
             placement = "TRUE" if _distance(object_pos, target_pos) <= float(thresholds["placement_distance_threshold_m"]) else "FALSE"
         target_history: list[float] = []
         for previous_index in range(max(0, index - int(thresholds["placement_stability_consecutive_steps"])), index + 1):
-            history_object = _position(_entity(rows[previous_index], "MANIPULATED_OBJECT"))
-            history_target = _position(_entity(rows[previous_index], "OBJECT_TARGET") or _entity(rows[previous_index], "REGION_TARGET"))
+            history_object = _position(_selected_entity(rows[previous_index], "MANIPULATED_OBJECT", relation_binding))
+            history_target = _position(_selected_entity(rows[previous_index], "OBJECT_TARGET", relation_binding) or _selected_entity(rows[previous_index], "REGION_TARGET", relation_binding))
             distance = _distance(history_object, history_target)
             if distance is None:
                 target_history = []
@@ -475,20 +571,40 @@ def derive_episode_labels(rows: Sequence[Mapping[str, Any]], protocol: Mapping[s
             if not isinstance(remaining, int) or safe == "UNKNOWN"
             else "TRUE" if remaining >= int(thresholds["k10"]) else "FALSE"
         )
-        previous_contact = bool(_contact_history(rows, index - 1)[0]) if index else False
+        previous_contact = bool(_contact_history(rows, index - 1, _selected_entity(rows[index - 1], "MANIPULATED_OBJECT", relation_binding))[0]) if index else False
         contact_loss = previous_contact and not contact
         slip = bool(contact and object_delta is not None and object_delta > float(thresholds["slip_relative_motion_threshold_m"]))
         instability = tri_or(["TRUE" if contact_loss or slip else "FALSE"] if force_known else ["UNKNOWN"])
-        relation_identity = [
-            {
-                "logical_name": item.get("logical_name"),
-                "alias_to": item.get("alias_to"),
-                "role": item.get("role"),
-                "entity_id": item.get("entity_id"),
-            }
-            for item in row["entities"]
-            if item.get("role") in {"MANIPULATED_OBJECT", "OBJECT_TARGET", "REGION_TARGET"}
-        ]
+        if physical == "UNKNOWN":
+            if obj is None:
+                physical_reason = "MISSING_OBJECT_IDENTITY"
+            elif object_pos is None or eef_pos is None or object_delta is None or eef_delta is None:
+                physical_reason = "MISSING_GEOMETRY"
+            elif not force_known:
+                physical_reason = "MISSING_CONTACT_EVIDENCE"
+            elif stable == "UNKNOWN":
+                physical_reason = "STABILITY_UNKNOWN"
+            elif comotion == "UNKNOWN":
+                physical_reason = "INSUFFICIENT_CAUSAL_PREFIX"
+            else:
+                physical_reason = "PHYSICAL_EVIDENCE_UNKNOWN"
+        else:
+            physical_reason = "CONTACT_GEOMETRY_CAUSAL"
+        safe_reason = "PLACEMENT_RELEASE_STABILITY" if safe != "UNKNOWN" else "SAFE_RELEASE_COMPONENT_UNKNOWN"
+        k10_reason = "PROTOCOL_HORIZON_AND_SAFE_RELEASE" if k10 != "UNKNOWN" else "HORIZON_OR_SAFE_RELEASE_UNKNOWN"
+        if relation_binding is None:
+            relation_identity = [
+                {
+                    "logical_name": item.get("logical_name"),
+                    "alias_to": item.get("alias_to"),
+                    "role": item.get("role"),
+                    "entity_id": item.get("entity_id"),
+                }
+                for item in row["entities"]
+                if item.get("role") in {"MANIPULATED_OBJECT", "OBJECT_TARGET", "REGION_TARGET"}
+            ]
+        else:
+            relation_identity = [relation_binding["object"], relation_binding["target"]]
         right_censored = index == len(rows) - 1 and int(row["protocol_steps_remaining"]) > 0
         evidence = {
             "physical_criticality": ["object_gripper_contact", "contact_force", "object_eef_relative_pose", "object_eef_comotion", "lift", "support_state"],
@@ -506,6 +622,7 @@ def derive_episode_labels(rows: Sequence[Mapping[str, Any]], protocol: Mapping[s
             "step": index,
             "candidate_close": bool(row["candidate_close"]),
             "relation_identity": relation_identity,
+            "relation_index": relation_binding.get("relation_index") if relation_binding is not None else None,
             "right_censored": right_censored,
             "evidence_fields": evidence,
             "labels": {
@@ -516,12 +633,104 @@ def derive_episode_labels(rows: Sequence[Mapping[str, Any]], protocol: Mapping[s
                     "right_censored": right_censored,
                 }
                 for head, label in {
-                    "physical_criticality": _label(physical, "CONTACT_GEOMETRY_CAUSAL" if physical != "UNKNOWN" else "PHYSICAL_EVIDENCE_UNKNOWN"),
-                    "k10_feasibility": _label(k10, "PROTOCOL_HORIZON_AND_SAFE_RELEASE" if k10 != "UNKNOWN" else "HORIZON_OR_SAFE_RELEASE_UNKNOWN"),
-                    "safe_release": _label(safe, "PLACEMENT_RELEASE_STABILITY" if safe != "UNKNOWN" else "SAFE_RELEASE_COMPONENT_UNKNOWN"),
+                    "physical_criticality": _label(physical, physical_reason),
+                    "k10_feasibility": _label(k10, k10_reason),
+                    "safe_release": _label(safe, safe_reason),
                     "instability": _label(instability, "CONTACT_SLIP_TRANSITION" if instability != "UNKNOWN" else "CONTACT_EVIDENCE_UNKNOWN"),
                     "gripper_closing_state": _label(close_label, close_reason),
                 }.items()
             },
         })
     return results
+
+
+def _aggregate_relation_label(labels: Sequence[Mapping[str, Any]], head: str) -> dict[str, Any]:
+    """Aggregate one head across relations without converting UNKNOWN to FALSE."""
+    values = [str(label["value"]) for label in labels]
+    value = tri_or(values)
+    if value == "TRUE":
+        reason = "MULTI_RELATION_OR_TRUE"
+    elif value == "FALSE":
+        reason = "MULTI_RELATION_OR_FALSE"
+    else:
+        reason = "MULTI_RELATION_OR_UNKNOWN"
+    evidence_fields = sorted({
+        str(field)
+        for label in labels
+        for field in label.get("evidence_fields", [])
+    })
+    right_censored = any(bool(label.get("right_censored")) for label in labels)
+    return {
+        "value": value,
+        "mask": value != "UNKNOWN",
+        "valid_mask": value != "UNKNOWN",
+        "reason": reason,
+        "evidence_fields": evidence_fields,
+        "right_censored": right_censored,
+    }
+
+
+def derive_episode_labels(
+    rows: Sequence[Mapping[str, Any]],
+    protocol: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Derive one step stream, aggregating declared multi-object relations.
+
+    A source episode remains one contiguous step stream.  Each declared
+    relation is evaluated independently, then heads are combined with the
+    frozen tri-state OR semantics: TRUE wins, all-known FALSE is FALSE, and
+    otherwise the result is UNKNOWN.
+    """
+    if not rows:
+        raise R3ContractError("empty episode")
+    bindings = rows[0].get("relation_bindings")
+    if not bindings:
+        return _derive_single_relation_labels(rows, protocol, None)
+    if not isinstance(bindings, list):
+        raise R3ContractError("relation_bindings is not a list")
+    for row in rows:
+        if row.get("relation_bindings") != bindings:
+            raise R3ContractError("relation binding changed within episode")
+    per_relation = [
+        _derive_single_relation_labels(rows, protocol, binding)
+        for binding in bindings
+    ]
+    if not per_relation or any(len(stream) != len(rows) for stream in per_relation):
+        raise R3ContractError("relation label stream is incomplete")
+    output: list[dict[str, Any]] = []
+    for step_index, source_row in enumerate(rows):
+        relation_rows = [stream[step_index] for stream in per_relation]
+        labels = {
+            head: _aggregate_relation_label(
+                [relation_row["labels"][head] for relation_row in relation_rows], head
+            )
+            for head in HEADS
+        }
+        output.append({
+            "episode_id": source_row["episode_id"],
+            "suite": source_row.get("suite"),
+            "task_id": source_row.get("task_id"),
+            "state_id": source_row.get("state_id"),
+            "seed": source_row.get("seed"),
+            "step": step_index,
+            "candidate_close": bool(source_row["candidate_close"]),
+            "relation_identity": [binding["object"] | {"side": "object"} for binding in bindings]
+            + [binding["target"] | {"side": "target"} for binding in bindings],
+            "relation_indices": [int(binding["relation_index"]) for binding in bindings],
+            "relation_count": len(bindings),
+            "relation_bindings": bindings,
+            "relation_labels": [
+                {
+                    "relation_index": relation_row.get("relation_index"),
+                    "relation_identity": relation_row.get("relation_identity"),
+                    "labels": relation_row["labels"],
+                }
+                for relation_row in relation_rows
+            ],
+            "right_censored": any(bool(relation_row.get("right_censored")) for relation_row in relation_rows),
+            "evidence_fields": {
+                head: labels[head]["evidence_fields"] for head in HEADS
+            },
+            "labels": labels,
+        })
+    return output
