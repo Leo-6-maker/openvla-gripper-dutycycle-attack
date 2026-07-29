@@ -90,7 +90,7 @@ def _fixture(tmp_path: Path):
         }
     binding_rows = [{key: bindings[identity][key] for key in ("suite", "task_id", "task_name", "state_id", "seed", "episode_id", "initial_state_sha256", "relative_path", "episode_sha256", "episode_sha256sums_sha256", "worker_id", "shard_id", "worker_result_target", "worker_result_steps", "worker_result_source_sha256", "worker_result_episode_sha256sums_sha256", "worker_result_initial_state_sha256", "worker_result_binding_mode", "worker_manifest_sha256", "worker_seal_sha256sums_sha256", "collection_source_commit", "collection_source_tree", "collector_script_sha256", "transition_manifest_sha256", "transition_sha256sums_sha256", "allowlist_sha256", "c1_canonical_digest", "schema")} for identity in sorted(bindings)]
     binding_digest = hashlib.sha256(json.dumps(binding_rows, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-    identity_rows = [{key: bindings[identity][key] for key in ("episode_id", "suite", "task_id", "state_id", "seed", "initial_state_sha256")} for identity in sorted(bindings)]
+    identity_rows = [{"episode_id": bindings[identity]["episode_id"], "suite": bindings[identity]["suite"], "task_id": bindings[identity]["task_id"], "state_id": bindings[identity]["state_id"], "collection_seed": bindings[identity]["seed"], "initial_state_sha256": bindings[identity]["initial_state_sha256"]} for identity in sorted(bindings)]
     identity_digest = hashlib.sha256(json.dumps(identity_rows, sort_keys=True).encode()).hexdigest()
     episode_digest = hashlib.sha256(json.dumps({identity: bindings[identity]["episode_sha256sums_sha256"] for identity in sorted(bindings)}, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     audit_manifest = {

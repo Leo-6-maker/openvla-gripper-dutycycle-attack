@@ -94,7 +94,7 @@ def _identity_digest(bindings: Mapping[str, Any]) -> str:
     rows = []
     for identity in sorted(bindings):
         row = bindings[identity]
-        rows.append({key: row[key] for key in ("episode_id", "suite", "task_id", "state_id", "seed", "initial_state_sha256")})
+        rows.append({"episode_id": row["episode_id"], "suite": row["suite"], "task_id": row["task_id"], "state_id": row["state_id"], "collection_seed": row["seed"], "initial_state_sha256": row["initial_state_sha256"]})
     return hashlib.sha256(json.dumps(rows, sort_keys=True).encode()).hexdigest()
 
 
