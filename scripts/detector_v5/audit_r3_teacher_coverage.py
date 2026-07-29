@@ -307,13 +307,25 @@ def audit(input_root: Path, protocol_path: Path, output_root: Path | None = None
     for head in HEADS:
         counts = {"TRUE": 0, "FALSE": 0, "UNKNOWN": 0, "NOT_APPLICABLE": 0}
         candidate_events = {"TRUE": 0, "FALSE": 0, "UNKNOWN": 0}
-        positive_episodes = set()
+        event_episodes = {label: set() for label in candidate_events}
+        event_tasks = {label: set() for label in candidate_events}
+        event_suites = {label: set() for label in candidate_events}
+        unknown_reasons: defaultdict[str, int] = defaultdict(int)
+        not_applicable_steps = 0
         teacher_true_intervals = []
         candidate_intervals = []
         for identity, rows in sorted(by_episode.items()):
             for row in rows:
-                value = str(row["labels"][head]["value"])
+                label_data = row["labels"][head]
+                value = str(label_data["value"])
                 counts[value] = counts.get(value, 0) + 1
+                if value == "UNKNOWN":
+                    reason = label_data.get("reason")
+                    if not isinstance(reason, str) or not reason:
+                        raise ValueError(f"UNKNOWN label has no reason: {identity} step={row['step']} head={head}")
+                    unknown_reasons[reason] += 1
+                    if reason == "GEOMETRY_NOT_APPLICABLE":
+                        not_applicable_steps += 1
             teacher_true_intervals.extend((identity, *interval) for interval in _contiguous_intervals(rows, lambda row: row["labels"][head]["value"] == "TRUE"))
             candidate = _contiguous_intervals(rows, lambda row: bool(row.get("candidate_close")))
             candidate_intervals.extend((identity, *interval) for interval in candidate)
@@ -321,8 +333,9 @@ def audit(input_root: Path, protocol_path: Path, output_root: Path | None = None
                 event_rows = [row for row in rows if start <= int(row["step"]) <= end]
                 label = _event_label(event_rows, head)
                 candidate_events[label] += 1
-                if label == "TRUE":
-                    positive_episodes.add(identity)
+                event_episodes[label].add(identity)
+                event_tasks[label].add((str(event_rows[0].get("suite")), int(event_rows[0].get("task_id"))))
+                event_suites[label].add(str(event_rows[0].get("suite")))
         known_steps = counts["TRUE"] + counts["FALSE"]
         head_report[head] = {
             "step_counts": counts,
@@ -330,10 +343,21 @@ def audit(input_root: Path, protocol_path: Path, output_root: Path | None = None
             "positive_events": candidate_events["TRUE"],
             "negative_events": candidate_events["FALSE"],
             "unknown_events": candidate_events["UNKNOWN"],
-            "positive_episode_count": len(positive_episodes),
+            "positive_episode_count": len(event_episodes["TRUE"]),
+            "negative_episode_count": len(event_episodes["FALSE"]),
+            "unknown_episode_count": len(event_episodes["UNKNOWN"]),
+            "positive_task_count": len(event_tasks["TRUE"]),
+            "negative_task_count": len(event_tasks["FALSE"]),
+            "unknown_task_count": len(event_tasks["UNKNOWN"]),
+            "positive_suite_count": len(event_suites["TRUE"]),
+            "negative_suite_count": len(event_suites["FALSE"]),
+            "unknown_suite_count": len(event_suites["UNKNOWN"]),
             "task_count": len({(row.get("suite"), row.get("task_id")) for rows in by_episode.values() for row in rows}),
+            "suite_count": len({row.get("suite") for rows in records}),
             "candidate_event_count": sum(candidate_events.values()),
-            "right_censored_steps": sum(bool(row.get("right_censored")) for rows in records),
+            "right_censored_steps": sum(bool(row.get("right_censored")) for row in records),
+            "not_applicable_step_count": not_applicable_steps,
+            "unknown_reason_histogram": dict(sorted(unknown_reasons.items())),
             "teacher_true_intervals": len(teacher_true_intervals),
             "candidate_intervals": len(candidate_intervals),
             "teacher_true_intervals_touched_by_candidate": sum(
@@ -347,11 +371,24 @@ def audit(input_root: Path, protocol_path: Path, output_root: Path | None = None
     minima = json.loads(protocol_path.read_text(encoding="utf-8"))["minimum_coverage_for_student"]
     coverage = {
         head: {
-            "pass": values["positive_events"] >= int(minima["per_head_positive_events"]) and values["negative_events"] >= int(minima["per_head_negative_events"]) and values["positive_episode_count"] >= 5 and values["task_count"] >= 2,
+            "pass": values["positive_events"] >= int(minima["per_head_positive_events"])
+            and values["negative_events"] >= int(minima["per_head_negative_events"])
+            and values["positive_episode_count"] >= 5
+            and values["negative_episode_count"] >= 5
+            and values["positive_task_count"] >= 2
+            and values["negative_task_count"] >= 2
+            and values["positive_suite_count"] >= 2
+            and values["negative_suite_count"] >= 2,
             "required_positive_events": int(minima["per_head_positive_events"]),
             "required_negative_events": int(minima["per_head_negative_events"]),
+            "required_positive_episodes": 5,
+            "required_negative_episodes": 5,
+            "required_positive_tasks": 2,
+            "required_negative_tasks": 2,
+            "required_positive_suites": 2,
+            "required_negative_suites": 2,
         }
-        | {key: values[key] for key in ("positive_events", "negative_events", "positive_episode_count", "task_count")}
+        | {key: values[key] for key in ("positive_events", "negative_events", "positive_episode_count", "negative_episode_count", "positive_task_count", "negative_task_count", "positive_suite_count", "negative_suite_count")}
         for head, values in head_report.items()
     }
     path_parts = {part.lower() for part in root.parts}
