@@ -55,9 +55,10 @@ def test_t3_rejects_full_five_or_unexpected_head_set():
         "protected_read_audit": {"status": "PASS", "forbidden_root_parts": []},
         "input_root": "/tmp/teacher",
         "input_sha256sums_sha256": "a" * 64,
-        "coverage": _coverage(safe_release={"pass": True}),
+        "coverage": _coverage(),
     }
-    with pytest.raises(ValueError, match="eligible head set"):
+    data["coverage"].pop("instability")
+    with pytest.raises(ValueError, match="coverage head set mismatch"):
         MODULE._validate_t3(data, teacher_root=Path("/tmp/teacher"), teacher_seal="a" * 64)
 
 
@@ -84,6 +85,7 @@ def test_teacher_manifest_rejects_authoritative_or_unknown_to_negative():
     manifest = {
         "schema": "V5_R3_V23_TEACHER_FORMAL_V1",
         "status": "DEVELOPMENT_NONCONSUMABLE",
+        "selection_mode": "FULL_FORMAL_T2",
         "input_status": "PASS_CONSUMABLE_FINAL",
         "identity_count": 670,
         "step_count": 196483,
