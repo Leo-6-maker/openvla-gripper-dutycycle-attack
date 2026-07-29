@@ -317,6 +317,13 @@ def _shuffle_known_targets(targets: Mapping[str, torch.Tensor], masks: Mapping[s
     return shuffled
 
 
+def _restore_optimizer(model: torch.nn.Module, checkpoint_state: Mapping[str, Any], *, learning_rate: float, weight_decay: float) -> torch.optim.Optimizer:
+    optimizer = torch.optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
+    # Checkpoint state contains mutable AdamW tensors; each restored branch must own a copy.
+    optimizer.load_state_dict(copy.deepcopy(checkpoint_state))
+    return optimizer
+
+
 def run(args: argparse.Namespace) -> dict[str, Any]:
     if not args.output_root.is_absolute():
         raise ValueError("output root must be absolute")
@@ -376,18 +383,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
     checkpoint = {"model": copy.deepcopy(model.state_dict()), "optimizer": copy.deepcopy(optimizer.state_dict()), "epoch": args.epochs, "active_heads": list(ACTIVE_HEADS), "torch_rng_state": torch.get_rng_state().clone()}
     resumed = N5MultiHeadStudent(input_dim=25, dropout=0.0).to(device)
-    resumed_optimizer = torch.optim.AdamW(resumed.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+    resumed_optimizer = _restore_optimizer(resumed, checkpoint["optimizer"], learning_rate=args.learning_rate, weight_decay=args.weight_decay)
     resumed.load_state_dict(checkpoint["model"], strict=True)
-    resumed_optimizer.load_state_dict(checkpoint["optimizer"])
     with torch.no_grad():
         resume_diff = max(float((final_logits[key] - resumed(x, timestep_mask=valid)[key]).abs().max()) for key in final_logits)
     if not np.isfinite(resume_diff) or resume_diff > 1e-7:
         raise AssertionError(f"checkpoint resume mismatch: {resume_diff}")
 
     continued = N5MultiHeadStudent(input_dim=25, dropout=0.0).to(device)
-    continued_optimizer = torch.optim.AdamW(continued.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
+    continued_optimizer = _restore_optimizer(continued, checkpoint["optimizer"], learning_rate=args.learning_rate, weight_decay=args.weight_decay)
     continued.load_state_dict(checkpoint["model"], strict=True)
-    continued_optimizer.load_state_dict(checkpoint["optimizer"])
     resumed_optimizer.zero_grad(set_to_none=True)
     training_threads = torch.get_num_threads()
     torch.set_num_threads(1)

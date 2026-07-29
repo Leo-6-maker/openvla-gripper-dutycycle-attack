@@ -85,6 +85,23 @@ def test_output_root_must_be_safe_new_sibling(tmp_path):
         MODULE._safe_output(Path("relative-output"), parent=tmp_path)
 
 
+def test_checkpoint_continuation_optimizer_states_are_independent():
+    import copy
+    import torch
+
+    model = MODULE._load_model()(input_dim=25, dropout=0.0)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5)
+    loss = sum(parameter.square().sum() for parameter in model.parameters())
+    loss.backward()
+    optimizer.step()
+    checkpoint_state = copy.deepcopy(optimizer.state_dict())
+    left = MODULE._restore_optimizer(MODULE._load_model()(input_dim=25, dropout=0.0), checkpoint_state, learning_rate=1e-3, weight_decay=1e-5)
+    right = MODULE._restore_optimizer(MODULE._load_model()(input_dim=25, dropout=0.0), checkpoint_state, learning_rate=1e-3, weight_decay=1e-5)
+    left_state = next(iter(left.state.values()))
+    right_state = next(iter(right.state.values()))
+    assert left_state["exp_avg"].data_ptr() != right_state["exp_avg"].data_ptr()
+
+
 def test_feature_prefix_is_invariant_to_future_suffix():
     def episode(last_value):
         steps = []
