@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts" / "detector_v5"))
 
 from build_r3_fit_to_teacher_transition import PERMISSIONS, build  # noqa: E402
+from audit_r3_formal_input import _validate_episode_relations  # noqa: E402
 import run_r3_v23_formal_teacher as formal_runner  # noqa: E402
 
 
@@ -182,3 +183,9 @@ def test_formal_runner_resume_label_requires_provenance(tmp_path):
     assert rows == [{"episode_id": "e", "step": 0}]
     with pytest.raises(ValueError, match="provenance mismatch"):
         formal_runner._load_sealed_episode_labels(root, "e", {**binding, "protocol_sha256": "d" * 64})
+
+
+def test_empty_relations_are_only_valid_for_explicit_not_applicable_geometry():
+    assert _validate_episode_relations({"relations": [], "geometry_status": "NOT_APPLICABLE"}, "e") == (0, "NOT_APPLICABLE")
+    with pytest.raises(ValueError, match="empty relation records"):
+        _validate_episode_relations({"relations": [], "geometry_status": "OK"}, "e")

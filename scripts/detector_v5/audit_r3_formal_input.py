@@ -91,6 +91,16 @@ def _assert_finite(value: Any, path: str = "root") -> None:
             _assert_finite(item, f"{path}.{key}")
 
 
+def _validate_episode_relations(episode: dict[str, Any], identity: str) -> tuple[int, str]:
+    relations = episode.get("relations")
+    geometry_status = episode.get("geometry_status")
+    if not isinstance(relations, list):
+        raise ValueError(f"T0-A relation records are not a list: {identity}")
+    if not relations and geometry_status != "NOT_APPLICABLE":
+        raise ValueError(f"T0-A empty relation records without NOT_APPLICABLE status: {identity}")
+    return len(relations), str(geometry_status or "APPLICABLE")
+
+
 def _verify_formal_finalization(finalization_root: Path, expected_episode_digest: str) -> dict[str, Any]:
     root = finalization_root.resolve()
     if _forbidden_path(root):
@@ -281,6 +291,7 @@ def audit(formal_root: Path, finalization_root: Path, transition_path: Path, all
         raise ValueError(f"T0-A formal source has staging residue: {source_staging[:3]}")
     episode_bindings = {}
     schema_rows = []
+    non_applicable_geometry_episodes = 0
     for identity in sorted(allowlist_by_id):
         relative = _safe_episode_path(formal_root, identity)
         episode_path = formal_root / relative
@@ -309,10 +320,12 @@ def audit(formal_root: Path, finalization_root: Path, transition_path: Path, all
         provenance = episode.get("provenance")
         if not isinstance(provenance, dict) or provenance.get("collector_commit") != transition.get("collection_source_commit") or provenance.get("collector_tree") != transition.get("collection_source_tree"):
             raise ValueError(f"T0-A episode source binding mismatch: {identity}")
-        relations = episode.get("relations")
+        relation_count, geometry_status = _validate_episode_relations(episode, identity)
+        if relation_count == 0:
+            non_applicable_geometry_episodes += 1
         telemetry = episode.get("telemetry")
         steps = episode.get("steps")
-        if not isinstance(relations, list) or not relations or not isinstance(telemetry, list) or not telemetry or not isinstance(steps, list) or len(steps) != len(telemetry) or not steps or episode.get("n_steps") != len(steps) or episode.get("step_count") != len(steps):
+        if not isinstance(telemetry, list) or not telemetry or not isinstance(steps, list) or len(steps) != len(telemetry) or not steps or episode.get("n_steps") != len(steps) or episode.get("step_count") != len(steps):
             raise ValueError(f"T0-A empty/schema episode records: {identity}")
         if not all(isinstance(value, (int, float)) and not isinstance(value, bool) and value == value and abs(value) != float("inf") for value in [episode.get("collection_seed"), episode.get("task_id"), episode.get("state_id")]):
             raise ValueError(f"T0-A nonfinite identity metadata: {identity}")
@@ -328,7 +341,7 @@ def audit(formal_root: Path, finalization_root: Path, transition_path: Path, all
             "collection_source_commit": transition["collection_source_commit"], "collection_source_tree": transition["collection_source_tree"], "collector_script_sha256": provenance["collector_script_sha256"],
             "transition_manifest_sha256": sha256_file(transition_path), "transition_sha256sums_sha256": transition_seal["sha256sums_sha256"], "allowlist_sha256": sha256_file(allowlist_path), "c1_canonical_digest": transition.get("c1_canonical_digest"), "schema": episode.get("schema"),
         }
-        schema_rows.append({"episode_id": identity, "step_count": len(steps), "telemetry_count": len(telemetry), "relation_count": len(relations), "schema": episode.get("schema"), "schema_version": episode.get("schema_version")})
+        schema_rows.append({"episode_id": identity, "step_count": len(steps), "telemetry_count": len(telemetry), "relation_count": relation_count, "geometry_status": geometry_status, "schema": episode.get("schema"), "schema_version": episode.get("schema_version")})
     actual_episode_digest = hashlib.sha256(json.dumps({identity: row["episode_sha256sums_sha256"] for identity, row in sorted(episode_bindings.items())}, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     if actual_episode_digest != expected_episode_digest:
         raise ValueError("T0-A episode seal digest recomputation mismatch")
@@ -337,7 +350,7 @@ def audit(formal_root: Path, finalization_root: Path, transition_path: Path, all
         "episode_count": len(episode_bindings), "episode_list_nonempty": bool(episode_bindings), "episode_identity_unique": len(episode_bindings) == EXPECTED_COUNT, "identity_set_digest": transition["identity_set_digest"],
         "collection_source_commit": transition["collection_source_commit"], "collection_source_tree": transition["collection_source_tree"], "transition_manifest_sha256": sha256_file(transition_path), "transition_sha256sums_sha256": transition_seal["sha256sums_sha256"],
         "allowlist_sha256": sha256_file(allowlist_path), "allowlist_root_sha256sums_sha256": allowlist_seal["sha256sums_sha256"], "shard_plan_sha256": sha256_file(shard_plan_path),
-        "finalization": finalization, "worker_closure": worker_audit, "episode_bindings": episode_bindings, "episode_binding_digest": _canonical_digest([episode_bindings[key] for key in sorted(episode_bindings)]), "schema_rows": schema_rows,
+        "finalization": finalization, "worker_closure": worker_audit, "episode_bindings": episode_bindings, "episode_binding_digest": _canonical_digest([episode_bindings[key] for key in sorted(episode_bindings)]), "schema_rows": schema_rows, "non_applicable_geometry_episodes": non_applicable_geometry_episodes,
         "gate": {"duplicate": 0, "missing": 0, "extra": 0, "unallowlisted": 0, "bad_episode_seal": 0, "bad_worker_seal": 0, "schema_error": 0, "empty_entity_records": 0, "identity_binding_error": 0, "source_binding_error": 0, "nonfinite": 0, "staging_residue": 0, "protected_reads": 0},
         "payload_semantics_read": True, "teacher_labels_generated": False, "labels_generated": False, "student_started": False, "attack_authorized": False,
         "source_staging_residue": source_staging,
