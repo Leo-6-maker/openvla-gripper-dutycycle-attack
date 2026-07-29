@@ -85,6 +85,21 @@ def test_fit670_adapter_rejects_unbound_gripper_body():
         canonicalize_fit670_episode(episode)
 
 
+def test_fit670_adapter_binds_unknown_non_gripper_as_contact_other():
+    episode = _episode()
+    episode["telemetry"][0]["contact_pairs"][0]["body2"] = "living_room_table_col"
+    episode["telemetry"][0]["contact_pairs"][0]["body2_id"] = 3
+    rows = canonicalize_fit670_episode(episode)
+    assert rows[0]["contact_pairs"][0]["entity_b"]["role"] == "CONTACT_OTHER"
+
+
+def test_fit670_adapter_rejects_empty_contact_body():
+    episode = _episode()
+    episode["telemetry"][0]["contact_pairs"][0]["body2"] = ""
+    with pytest.raises(R3ContractError, match="unbound contact endpoint"):
+        canonicalize_fit670_episode(episode)
+
+
 def test_fit670_adapter_rejects_gripper_body_id_drift():
     episode = _episode()
     episode["telemetry"][1]["contact_pairs"][0]["body2_id"] = 21

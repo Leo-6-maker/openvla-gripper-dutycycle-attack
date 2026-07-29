@@ -78,6 +78,8 @@ def _contact_endpoint(raw_name: Any, raw_id: Any, entities: Sequence[Mapping[str
     CONTACT_OTHER rather than being relabeled as support.
     """
     name = str(raw_name or "")
+    if not name:
+        raise R3ContractError(f"unbound contact endpoint: {name!r}/{raw_id!r}")
     try:
         entity_id = int(raw_id)
     except (TypeError, ValueError):
@@ -102,7 +104,14 @@ def _contact_endpoint(raw_name: Any, raw_id: Any, entities: Sequence[Mapping[str
         }
     if GRIPPER_BODY_PATTERN.fullmatch(name):
         return {"logical_name": name, "role": "GRIPPER", "entity_id": entity_id, "binding_source": "FROZEN_GRIPPER_BODY_PATTERN"}
-    raise R3ContractError(f"unbound contact endpoint: {name!r}/{entity_id}")
+    if name.startswith("gripper0_"):
+        raise R3ContractError(f"unbound contact endpoint: {name!r}/{entity_id}")
+    return {
+        "logical_name": name,
+        "role": "CONTACT_OTHER",
+        "entity_id": entity_id,
+        "binding_source": "UNRESOLVED_NON_GRIPPER_CONTACT_OTHER",
+    }
 
 
 def canonicalize_fit670_episode(episode: Mapping[str, Any]) -> list[dict[str, Any]]:
