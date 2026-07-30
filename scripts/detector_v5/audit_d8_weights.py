@@ -169,7 +169,8 @@ def audit(
         pos_mask = (labs == 1.0) & effective_mask
         ep_pos_totals.append(float(weights[pos_mask].sum()))
 
-        # Negative: per-span weights
+        # Negative: per-span weights within this episode
+        ep_neg_span_weights = []
         i = 0
         while i < n:
             if effective_mask[i] and labs[i] == 0.0:
@@ -178,12 +179,30 @@ def audit(
                     j += 1
                 span_w = float(weights[i:j].sum())
                 all_neg_span_weights.append(span_w)
+                ep_neg_span_weights.append(span_w)
                 i = j
             else:
                 i += 1
 
         neg_mask = (labs == 0.0) & effective_mask
-        ep_neg_totals.append(float(weights[neg_mask].sum()))
+        tn_ep = float(weights[neg_mask].sum())
+        ep_neg_totals.append(tn_ep)
+
+        # Per-episode negative span equality (same as positive event equality)
+        if ep_neg_span_weights and len(ep_neg_span_weights) > 1:
+            if not np.allclose(ep_neg_span_weights, ep_neg_span_weights[0], rtol=1e-6, atol=1e-7):
+                issues.append(
+                    f"{eid}: intra-episode negative span weights not equal: "
+                    f"{ep_neg_span_weights}"
+                )
+
+        # Per-episode positive total check
+        if tp > 0 and not np.isclose(tp, 1.0, rtol=1e-6, atol=1e-7):
+            issues.append(f"{eid}: positive total != 1.0: {tp:.10f}")
+
+        # Per-episode negative total check
+        if tn_ep > 0 and not np.isclose(tn_ep, 1.0, rtol=1e-6, atol=1e-7):
+            issues.append(f"{eid}: negative total != 1.0: {tn_ep:.10f}")
 
     # Invariant checks
     if abs(total_unk) > 1e-10:
@@ -210,8 +229,12 @@ def audit(
         len(nonzero_pos) > 0 and np.allclose(nonzero_pos, 1.0, rtol=1e-6, atol=1e-7)
     )
 
+    consumer_eligible = len(issues) == 0 and n_applicable > 0
+
     report = {
         "schema": "DETECTOR_V3_D8_WEIGHT_AUDIT_V1",
+        "status": "PASS" if consumer_eligible else "FAIL",
+        "consumer_eligible": consumer_eligible,
         "G": G,
         "applicable_episodes": n_applicable,
         "zero_event_episodes": n_zero_event,
@@ -285,6 +308,9 @@ def main() -> int:
     commit = subprocess.check_output(
         ("git", "rev-parse", "HEAD"), cwd=ROOT, text=True
     ).strip()
+    tree = subprocess.check_output(
+        ("git", "rev-parse", "HEAD^{tree}"), cwd=ROOT, text=True
+    ).strip()
 
     sidecar_root = args.sidecar_root.resolve(strict=True)
     teacher_root = args.teacher_root.resolve(strict=True)
@@ -296,11 +322,39 @@ def main() -> int:
 
     report = audit(sidecar_root, teacher_root, args.G, args.output_root)
 
-    status = "PASS" if report["pass"] else f"FAIL: {len(report['issues'])} issues"
+    # Add provenance bindings
+    report["code_snapshot"] = {"commit": commit, "tree": tree}
+    report["audit_script_sha256"] = sha256_file(Path(__file__))
+    report["consolidator_sha256"] = sha256_file(
+        ROOT / "scripts" / "detector_v5" / "d8_event_consolidator.py"
+    )
+    report["protocol_sha256"] = sha256_file(
+        ROOT / "configs" / "DETECTOR_V3_D8_EVENT_CONSOLIDATION_PROTOCOL.json"
+    )
+    report["sidecar_root"] = str(sidecar_root)
+    report["sidecar_seal"] = sidecar_seal["sha256sums_sha256"]
+    report["teacher_root"] = str(teacher_root)
+    report["teacher_seal"] = teacher_seal["sha256sums_sha256"]
+    report["timestamp_utc"] = datetime.now(timezone.utc).isoformat()
+
+    # Rewrite report with provenance (preserving seal)
+    audit_path = args.output_root / "AUDIT_REPORT.json"
+    if audit_path.exists():
+        audit_path.write_text(json.dumps(report, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+
+    # Reseal with provenance
+    digest = _write_seal(args.output_root)
+    report["sha256sums_sha256"] = digest
+
+    consumer_eligible = report.get("consumer_eligible", False)
+    pass_all = report["pass"] and consumer_eligible
+
+    status = "PASS" if pass_all else f"FAIL"
     p = report["positive"]
     n = report["negative"]
     z = report["zero_weight"]
     print(f"\nG={args.G}: {status}")
+    print(f"  Consumer eligible: {consumer_eligible}")
     print(f"  Positive: {p['event_count']} events, ESS={p['ess']:.1f}, "
           f"per_ep_near_1={p['per_episode_total_near_1']}")
     print(f"  Negative: {n['span_count']} spans, ESS={n['ess']:.1f}, "
@@ -311,8 +365,8 @@ def main() -> int:
     for issue in report["issues"]:
         print(f"  ISSUE: {issue}")
 
-    print(f"\nSealed: {report['sha256sums_sha256']}")
-    return 0 if report["pass"] else 1
+    print(f"\nSealed: {digest}")
+    return 0 if pass_all else 1
 
 
 if __name__ == "__main__":

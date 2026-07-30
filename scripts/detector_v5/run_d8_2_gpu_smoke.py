@@ -53,7 +53,14 @@ from gripper_attack.seal_utils import rename_noreplace
 G = 3
 SEED = 20260717
 FOLD = 0
-FOLD_STATE_RANGES = {0: (0, 9), 1: (10, 19), 2: (20, 29), 3: (30, 39), 4: (40, 49)}
+# R6.1: Proper 5-fold grouped assignment — 4 states per fold (~134 val / ~536 train)
+FOLD_STATE_RANGES = {
+    0: [0, 1, 2, 3],
+    1: [4, 5, 6, 7],
+    2: [8, 9, 10, 11],
+    3: [12, 13, 14, 15],
+    4: [16, 17, 18, 19],
+}
 
 # Simple MLP model for smoke — full FactorizedStudent integrated in D8-2 CV
 class D8SmokeModel(nn.Module):
@@ -123,13 +130,13 @@ def main() -> int:
     sidecar = load_sidecar_correct(args.sidecar_root)
     ep_labels, teacher_steps, n_ids = load_teacher_labels(args.teacher_root)
 
-    # Build fold assignments
+    # Build fold assignments — 4 states per fold
     assignments = {}
     for eid in sorted(ep_labels.keys()):
         parts = eid.split("/")
         sid = int(parts[2].replace("state_", ""))
-        for f, (lo, hi) in FOLD_STATE_RANGES.items():
-            if lo <= sid <= hi:
+        for f, states in FOLD_STATE_RANGES.items():
+            if sid in states:
                 assignments[eid] = f
                 break
 
