@@ -144,8 +144,8 @@ class TestLabelImmutability(unittest.TestCase):
 class TestWeights(unittest.TestCase):
     """Training weight tests."""
 
-    def test_13_candidate_mutation_does_not_change_weights(self):
-        """Physical event weights must be independent of candidate_close."""
+    def test_13_weight_determinism(self):
+        """Same input produces same physical weights (determinism, not candidate)."""
         targets = np.array([1.0, 0.0, 1.0, 1.0, 0.0], dtype=np.float32)
         masks = np.array([True, True, True, True, True], dtype=bool)
         consolidated = {"event_groups": []}
@@ -200,11 +200,23 @@ class TestCanonicalDigest(unittest.TestCase):
 class TestFailClosed(unittest.TestCase):
     """Fail-closed behavior."""
 
-    def test_18_nonfinite_step_rejected(self):
-        """Non-finite step values must be handled safely."""
-        labels = {0: _make_label("TRUE"), 1: _make_label("TRUE")}
+    def test_18_nonfinite_and_identity_unresolved_rejected(self):
+        """NONFINITE and IDENTITY_UNRESOLVED reasons must not bridge."""
+        labels = {
+            0: _make_label("TRUE"),
+            1: _make_label("UNKNOWN", reason="NONFINITE"),
+            2: _make_label("TRUE"),
+        }
         result = consolidate_physical_events("test/ep/state", labels, G=3)
-        self.assertIn("consolidated_event_count", result)
+        self.assertEqual(result["total_bridged_gaps"], 0)
+        # Also test IDENTITY_UNRESOLVED
+        labels2 = {
+            0: _make_label("TRUE"),
+            1: _make_label("UNKNOWN", reason="IDENTITY_UNRESOLVED"),
+            2: _make_label("TRUE"),
+        }
+        result2 = consolidate_physical_events("test/ep/state", labels2, G=3)
+        self.assertEqual(result2["total_bridged_gaps"], 0)
 
     def test_19_duplicate_labels_handled(self):
         """Same step appearing twice should not cause issues."""

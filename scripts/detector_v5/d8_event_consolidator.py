@@ -50,7 +50,7 @@ def _step_is_unk_allowed(lab: dict | None) -> bool:
     return True
 
 
-def _relation_signature(ep_rel: dict | None, side: str) -> str:
+def _relation_signature(ep_rel: dict | None) -> str:
     """Stable signature for object/target/relation identity."""
     if not isinstance(ep_rel, dict):
         return ""
@@ -60,7 +60,7 @@ def _relation_signature(ep_rel: dict | None, side: str) -> str:
     bid = ep_rel.get("binding_identity", "")
     role = ep_rel.get("entity_role", "")
     return hashlib.sha256(
-        f"{obj}|{tgt}|{rel}|{bid}|{role}|{side}".encode()
+        f"{obj}|{tgt}|{rel}|{bid}|{role}".encode()
     ).hexdigest()
 
 
@@ -220,14 +220,17 @@ def _validate_gap(
         if not _step_is_unk_allowed(lab):
             return False, f"GAP_STEP_NOT_ALLOWED: reason={lab.get('reason')} value={lab.get('value')}"
 
-    # Condition 4: Same logical object/target/relation/binding identity
+    # Condition 4: Same logical object/target/relation/binding identity.
+    # NOTE: _episode_relation_at is currently a placeholder stub. Full identity
+    # checks require episode-level relation data (object_resolution, target_resolution,
+    # selected_relation, binding_identity from C1 registry). With relations=None
+    # (the current default), identity checks are skipped. This is acceptable for
+    # G-sensitivity analysis but MUST be resolved before Detector-v3 training.
     if relations:
-        rel_sig_left = _episode_relation_at(labels, left_span[0], relations)
-        rel_sig_right = _episode_relation_at(labels, right_span[0], relations)
-        sig_left = _relation_signature(rel_sig_left, "left")
-        sig_right = _relation_signature(rel_sig_right, "right")
-        if sig_left != sig_right:
-            return False, f"RELATION_SIGNATURE_MISMATCH: {sig_left[:16]} != {sig_right[:16]}"
+        rel_left = _episode_relation_at(labels, left_span[0], relations)
+        rel_right = _episode_relation_at(labels, right_span[0], relations)
+        if _relation_signature(rel_left) != _relation_signature(rel_right):
+            return False, "RELATION_SIGNATURE_MISMATCH"
 
     return True, "REL_UNK_BRIDGE"
 
@@ -257,23 +260,25 @@ def build_physical_event_weights(
     """Teacher-event-based weights using consolidated event groups.
 
     Each consolidated event gets equal total positive weight.
-    Known FALSE spans get equal total negative weight.
     UNKNOWN/articulated steps get zero weight.
+
+    Precondition: labels and masks are contiguous zero-based arrays where
+    index i corresponds to step i.  fragment_ranges use these same indices.
     """
     weights = np.zeros(len(labels), dtype=np.float32)
     n = len(labels)
 
-    # If we have consolidated events, use them for TRUE span weighting
     event_groups = consolidated_events.get("event_groups", [])
     if event_groups:
         for group in event_groups:
             for frag_start, frag_end in group["fragment_ranges"]:
                 frag_len = frag_end - frag_start + 1
-                if frag_len > 0:
-                    total_positive_weight = 1.0 / len(event_groups)  # Equal per event
-                    for i in range(frag_start, frag_end + 1):
-                        if i < n and masks[i] and labels[i] == 1:
-                            weights[i] = total_positive_weight / frag_len
+                if frag_len <= 0:
+                    continue
+                total_positive_weight = 1.0 / max(len(event_groups), 1)
+                for i in range(frag_start, frag_end + 1):
+                    if 0 <= i < n and masks[i] and labels[i] == 1:
+                        weights[i] = total_positive_weight / frag_len
         return weights
 
     # Fallback: _physical_event_weights logic without consolidation
