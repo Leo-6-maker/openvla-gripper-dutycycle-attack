@@ -394,15 +394,20 @@ def _validate_gap(
                     "step_evidence": gap_evidence,
                 }
 
+            # R6.1: Per-relation verdict must be UNKNOWN (not TRUE/FALSE).
+            # Aggregate reason=RELATION_EVIDENCE_UNKNOWN gates bridgeability;
+            # per-relation reason uses a different taxonomy (e.g.,
+            # INSUFFICIENT_CAUSAL_PREFIX) and must only be non-forbidden.
             if gap_rel.get("verdict") != "UNKNOWN":
                 return False, {
                     "reject_reason": f"GAP_RELATION_VERDICT_NOT_UNKNOWN: {gap_rel.get('verdict')}",
                     "step_evidence": gap_evidence,
                 }
 
-            if gap_rel.get("reason") != "RELATION_EVIDENCE_UNKNOWN":
+            gap_reason = gap_rel.get("reason", "")
+            if gap_reason in FORBIDDEN_REASONS:
                 return False, {
-                    "reject_reason": f"GAP_RELATION_REASON_NOT_REL_UNK: {gap_rel.get('reason')}",
+                    "reject_reason": f"GAP_RELATION_FORBIDDEN_REASON: {gap_reason}",
                     "step_evidence": gap_evidence,
                 }
 
