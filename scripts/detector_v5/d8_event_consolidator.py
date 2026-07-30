@@ -81,6 +81,10 @@ def consolidate_physical_events(
     Returns:
         event_groups sidecar dict with consolidated_event_ids, fragments, gaps
     """
+    suite, task_str, state_str = _parse_episode_id(episode_id)
+    task_key = f"{suite}/{task_str}"
+    is_articulated = task_key in ARTICULATED_TASKS
+
     steps_sorted = sorted(labels.keys())
     if not steps_sorted:
         return {"episode_id": episode_id, "event_groups": [], "head": HEAD, "G": G,
@@ -89,11 +93,6 @@ def consolidate_physical_events(
                 "articulated": is_articulated, "applicable": not is_articulated}
 
     n = len(steps_sorted)
-    suite, task_str, state_str = _parse_episode_id(episode_id)
-
-    # Determine if this episode is articulated (exclude from physical denominator)
-    task_key = f"{suite}/{task_str}"
-    is_articulated = task_key in ARTICULATED_TASKS
 
     # Step 1: Find raw TRUE spans
     raw_spans: List[Tuple[int, int, int, int]] = []  # (start, end, start_idx, end_idx)
