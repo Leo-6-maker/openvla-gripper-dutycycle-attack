@@ -19,7 +19,8 @@ from scripts.detector_v5.build_r3_generalization_splits import (
 
 
 def _identities(n=40):
-    return [{"episode_id": f"ep/{i:03d}", "suite": f"suite_{i // 10}", "task_id": i % 10} for i in range(n)]
+    suites = ("libero_spatial", "libero_object", "libero_goal", "libero_10")
+    return [{"episode_id": f"ep/{i:03d}", "suite": suites[(i // 30) % 4], "task_id": (i // 3) % 10} for i in range(n)]
 
 
 def test_episode_split_is_deterministic_and_disjoint():
@@ -99,9 +100,10 @@ def test_manifest_has_no_teacher_fields():
 
 
 def test_event_task_and_suite_denominators_are_unique():
+    labels = {head: {"value": "TRUE", "valid_mask": True, "mask": True, "right_censored": False} for head in ("physical_criticality", "k10_feasibility", "safe_release", "instability", "gripper_closing_state")}
     rows = {
-        "a": [{"episode_id": "a", "step": 0, "candidate_close": True, "labels": {"physical_criticality": {"value": "TRUE", "valid_mask": True, "mask": True, "right_censored": False}}}],
-        "b": [{"episode_id": "b", "step": 0, "candidate_close": True, "labels": {"physical_criticality": {"value": "TRUE", "valid_mask": True, "mask": True, "right_censored": False}}}],
+        "a": [{"episode_id": "a", "step": 0, "candidate_close": True, "labels": labels}],
+        "b": [{"episode_id": "b", "step": 0, "candidate_close": True, "labels": labels}],
     }
     metadata = {"a": {"suite": "libero_spatial", "task_id": 0}, "b": {"suite": "libero_spatial", "task_id": 0}}
     summary = _summarize_split(["a", "b"], rows, metadata)
