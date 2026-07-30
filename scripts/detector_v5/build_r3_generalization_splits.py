@@ -343,7 +343,7 @@ def _manifest_row(identity: str, item: Mapping[str, Any], binding: Mapping[str, 
         "collection_source_commit": item.get("collection_source_commit"),
         "collection_source_tree": item.get("collection_source_tree"),
         "teacher_root_sha256sums_sha256": binding["teacher_root_sha256sums_sha256"],
-        "t4_root_sha256sums_sha256": binding["t4_seal_sha256sums_sha256"],
+        "t4_seal_sha256sums_sha256": binding["t4_seal_sha256sums_sha256"],
         "g0_report_sha256": g0_report_sha,
         "g0_root_sha256sums_sha256": g0_seal_sha,
         "protocol_sha256": protocol_sha,
@@ -414,7 +414,7 @@ def run(t4_root: Path, g0_root: Path, output_root: Path, protocol_path: Path) ->
         raise ValueError("G0 report is not a passing diagnostic audit")
     g0_binding = g0_report.get("input_binding", {})
     expected_g0_binding = {
-        "t4_root_sha256sums_sha256": binding["t4_seal_sha256sums_sha256"],
+        "t4_seal_sha256sums_sha256": binding["t4_seal_sha256sums_sha256"],
         "teacher_root": binding["teacher_root"],
         "teacher_root_sha256sums_sha256": binding["teacher_root_sha256sums_sha256"],
         "teacher_manifest_sha256": binding["teacher_manifest_sha256"],
@@ -527,7 +527,7 @@ def run(t4_root: Path, g0_root: Path, output_root: Path, protocol_path: Path) ->
         "formal_training_consumable": False,
         "input_binding": {
             "t4_root": str(Path(binding["t4_root"]).resolve()),
-            "t4_root_sha256sums_sha256": binding["t4_seal_sha256sums_sha256"],
+            "t4_seal_sha256sums_sha256": binding["t4_seal_sha256sums_sha256"],
             "teacher_root": binding["teacher_root"],
             "teacher_root_sha256sums_sha256": binding["teacher_root_sha256sums_sha256"],
             "g0_root": str(g0_root),
