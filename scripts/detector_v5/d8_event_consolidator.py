@@ -270,22 +270,31 @@ def _validate_gap(
 def _episode_relation_at(labels, step, relations) -> dict | None:
     """Find relation record active at a given step.
 
-    For per-step relation sidecars: relations should be a list of dicts
-    with 'step' field. Returns the record whose step matches.
-    If relations lack step fields, raises ValueError.
+    Supports two formats:
+    1. Per-step dict: relations[step] = sidecar entry with per_relation list
+    2. List of dicts with 'step' field (legacy)
     """
     if not relations:
         return None
-    # Check if relations have step fields
+    # Format 1: dict keyed by step
+    if isinstance(relations, dict):
+        entry = relations.get(step)
+        if not isinstance(entry, dict):
+            return None
+        # Get the selected relation from the sidecar entry
+        per_rel = entry.get("per_relation", [])
+        sel_idx = entry.get("selected_relation_index")
+        if sel_idx is not None and sel_idx < len(per_rel):
+            return per_rel[sel_idx]
+        return None
+    # Format 2: list of dicts with step field (legacy)
     has_steps = any(isinstance(r, dict) and "step" in r for r in relations)
     if has_steps:
         for r in relations:
             if isinstance(r, dict) and r.get("step") == step:
                 return r
         return None
-    # If no step fields, each record should cover a range or be episode-global.
-    # For now, require per-step resolution.
-    raise ValueError("relation records lack per-step resolution; cannot locate relation at step")
+    raise ValueError("relation records lack per-step resolution")
 
 
 def _parse_episode_id(eid: str) -> Tuple[str, str, str]:
