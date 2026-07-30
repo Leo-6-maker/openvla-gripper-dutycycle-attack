@@ -206,8 +206,8 @@ def _validate_g1(g1_root: Path, *, t4_seal: str, g0_seal: str, feature_order_sha
         "episode_validation": _validate_manifest_rows(g1_root, "EPISODE_VAL", 81, expected_manifest_bindings, expected_metadata),
         "episode_test": _validate_manifest_rows(g1_root, "EPISODE_TEST", 144, expected_manifest_bindings, expected_metadata),
         "task_train": _validate_manifest_rows(g1_root, "TASK_TRAIN", 498, expected_manifest_bindings, expected_metadata),
-        "task_validation": _validate_manifest_rows(g1_root, "TASK_VAL", 83, expected_manifest_bindings, expected_metadata),
-        "task_test": _validate_manifest_rows(g1_root, "TASK_TEST", 89, expected_manifest_bindings, expected_metadata),
+        "task_validation": _validate_manifest_rows(g1_root, "TASK_VAL", 91, expected_manifest_bindings, expected_metadata),
+        "task_test": _validate_manifest_rows(g1_root, "TASK_TEST", 81, expected_manifest_bindings, expected_metadata),
     }
     _validate_split_identity_sets(split_bindings, "episode", expected_identity_ids)
     _validate_split_identity_sets(split_bindings, "task", expected_identity_ids)
