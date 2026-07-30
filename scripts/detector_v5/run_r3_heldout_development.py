@@ -639,9 +639,29 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
     _check_split_closure({f"{family}_{split}": split_ids[f"{family}_{split}"] for split in evaluated_splits}, records, family, loaded_ids=required_ids)
     normal = split_meta["normalization"]
     train_ids = split_ids[f"{family}_train"]; mean = np.asarray(normal["mean"], dtype=np.float64); std = np.asarray(normal["std"], dtype=np.float64)
-    # G1 normalization is sealed and verified via SHA256 in _load_splits.
-    # The stored mean/std are authoritative; runtime recomputation may differ
-    # due to feature adapter environment specifics.
+    recomputed_train = np.concatenate([records_by_id[identity]["features"] for identity in train_ids], axis=0)
+    rmean = recomputed_train.mean(axis=0).astype(np.float64)
+    rstd = np.maximum(recomputed_train.std(axis=0, ddof=0), 1e-8).astype(np.float64)
+    max_mean_diff = float(np.abs(rmean - mean).max())
+    max_std_diff = float(np.abs(rstd - std).max())
+    normalization_drift = {
+        "recomputed_from_current_adapter": True,
+        "recomputed_dtype": str(recomputed_train.dtype),
+        "stored_dtype": str(mean.dtype),
+        "max_mean_abs_diff": max_mean_diff,
+        "max_std_abs_diff": max_std_diff,
+        "train_identity_count": len(train_ids),
+        "train_step_count": int(len(recomputed_train)),
+    }
+    normalization_ok = max_mean_diff < 0.01 and max_std_diff < 0.02
+    if not normalization_ok:
+        normalization_drift["status"] = "HOLD_NORMALIZATION_MISMATCH"
+        normalization_drift["detail"] = {
+            "mean": mean.tolist(), "recomputed_mean": rmean.tolist(),
+            "std": std.tolist(), "recomputed_std": rstd.tolist(),
+        }
+    else:
+        normalization_drift["status"] = "PASS_RECOMPUTED_CONSISTENT"
     split_batches = {f"{family}_{split}": _batch(records_by_id, split_ids[f"{family}_{split}"], mean, std, device) for split in evaluated_splits}
     model_cls = _load_model()
     init_rng_state = torch.get_rng_state()
@@ -734,7 +754,7 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
         if grad_sum != 0.0:
             safe_release_grad_zero = False
 
-    report = {"schema": "V5_R3_HELDOUT_DEVELOPMENT_V3", "status": "ENGINEERING_DEVELOPMENT_NONCONSUMABLE", "split_family": family, "config": args.config, "seed": args.seed, "epochs": args.epochs, "device": str(device), "random_initialization": True, "all_670_checkpoint_loaded": False, "initial_state_sha256": init_state_digest, "label_shuffle_same_initialization": True, "risk_direction": dict(RISK_DIRECTION), "event_definition": EVENT_DEFINITION, "safe_release_gradient_zero": safe_release_grad_zero, "active_heads": list(active), "inactive_heads": list(INACTIVE_HEADS), "train_identity_count": len(train_ids), "validation_identity_count": len(split_ids[f"{family}_validation"]), "test_identity_count": len(split_ids[f"{family}_test"]), "test_payload_read": False, "test_evaluation_performed": False, "history": history, "thresholds_validation_only": thresholds, "metrics": metrics, "baselines": baselines, "label_shuffle": shuffle_results, "privileged_oracle": {"status": "NOT_AVAILABLE_SEPARATE_PRIVILEGED_INPUT", "deployable": False}, "binding": {"g2_root": g2_binding["g2_root"], "g2_seal_sha256sums_sha256": g2_binding["g2_seal_sha256sums_sha256"], "g1_root": g2_binding["g1_root"], "g1_seal_sha256sums_sha256": g2_binding["g1_seal_sha256sums_sha256"], "split_manifests": g2_binding["split_manifests"], "normalization_sha256": split_meta["normalization_sha256"], "t4_root": record_binding["t4_root"], "t4_seal_sha256sums_sha256": record_binding["t4_seal_sha256sums_sha256"], "teacher_root_sha256sums_sha256": record_binding["teacher_root_sha256sums_sha256"], "feature_order_sha256": record_binding["feature_order_sha256"], "trainer_sha256": sha256_file(Path(__file__))}, "permissions": {"teacher_labels_read": True, "fit_development_features_read": True, "student_training": True, "development_inference": True, "privileged_oracle_diagnostic": False, "shadow_offline": False, "shadow_live": False, "formal_training": False, "full_fit": False, "rollout": False, "attack": False, "protected_reads": 0}, "threshold_selection_split": "validation_only", "test_read_once": False, "teacher_privileged_fields_in_student": False, "safe_release_status": "NOT_EVALUABLE_COVERAGE"}
+    report = {"schema": "V5_R3_HELDOUT_DEVELOPMENT_V3", "status": "ENGINEERING_DEVELOPMENT_NONCONSUMABLE", "split_family": family, "config": args.config, "seed": args.seed, "epochs": args.epochs, "device": str(device), "random_initialization": True, "all_670_checkpoint_loaded": False, "initial_state_sha256": init_state_digest, "label_shuffle_same_initialization": True, "risk_direction": dict(RISK_DIRECTION), "event_definition": EVENT_DEFINITION, "normalization_drift": normalization_drift, "safe_release_gradient_zero": safe_release_grad_zero, "active_heads": list(active), "inactive_heads": list(INACTIVE_HEADS), "train_identity_count": len(train_ids), "validation_identity_count": len(split_ids[f"{family}_validation"]), "test_identity_count": len(split_ids[f"{family}_test"]), "test_payload_read": False, "test_evaluation_performed": False, "history": history, "thresholds_validation_only": thresholds, "metrics": metrics, "baselines": baselines, "label_shuffle": shuffle_results, "privileged_oracle": {"status": "NOT_AVAILABLE_SEPARATE_PRIVILEGED_INPUT", "deployable": False}, "binding": {"g2_root": g2_binding["g2_root"], "g2_seal_sha256sums_sha256": g2_binding["g2_seal_sha256sums_sha256"], "g1_root": g2_binding["g1_root"], "g1_seal_sha256sums_sha256": g2_binding["g1_seal_sha256sums_sha256"], "split_manifests": g2_binding["split_manifests"], "normalization_sha256": split_meta["normalization_sha256"], "t4_root": record_binding["t4_root"], "t4_seal_sha256sums_sha256": record_binding["t4_seal_sha256sums_sha256"], "teacher_root_sha256sums_sha256": record_binding["teacher_root_sha256sums_sha256"], "feature_order_sha256": record_binding["feature_order_sha256"], "trainer_sha256": sha256_file(Path(__file__))}, "permissions": {"teacher_labels_read": True, "fit_development_features_read": True, "student_training": True, "development_inference": True, "privileged_oracle_diagnostic": False, "shadow_offline": False, "shadow_live": False, "formal_training": False, "full_fit": False, "rollout": False, "attack": False, "protected_reads": 0}, "threshold_selection_split": "validation_only", "test_read_once": False, "teacher_privileged_fields_in_student": False, "safe_release_status": "NOT_EVALUABLE_COVERAGE"}
     staging = args.output_root.with_name(f".{args.output_root.name}.staging.{os.getpid()}")
     if staging.exists() or staging.is_symlink():
         raise FileExistsError(f"staging root already exists: {staging}")
