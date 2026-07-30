@@ -57,6 +57,14 @@ def _git_snapshot() -> tuple[str, str]:
     return run("rev-parse", "HEAD"), run("rev-parse", "HEAD^{tree}")
 
 
+def _is_ancestor(commit: str, current: str) -> bool:
+    return subprocess.run(("git", "merge-base", "--is-ancestor", commit, current), cwd=ROOT, check=False).returncode == 0
+
+
+def _commit_tree(commit: str) -> str:
+    return subprocess.check_output(("git", "rev-parse", f"{commit}^{{tree}}"), cwd=ROOT, text=True).strip()
+
+
 def _require_clean_git() -> None:
     dirty = subprocess.check_output(("git", "status", "--porcelain"), cwd=ROOT, text=True)
     if dirty.strip():
@@ -183,8 +191,11 @@ def _validate_g1(g1_root: Path, *, t4_seal: str, g0_seal: str, feature_order_sha
     }
     if any(checks.get(key) != value for key, value in required_checks.items()):
         raise ValueError("G1 closure checks are not passing")
-    if audit.get("builder_source", {}).get("commit") != _git_snapshot()[0] or audit.get("builder_source", {}).get("tree") != _git_snapshot()[1]:
-        raise ValueError("G1 builder was not run from the consuming code snapshot")
+    current_commit, _ = _git_snapshot()
+    builder_commit = audit.get("builder_source", {}).get("commit")
+    builder_tree = audit.get("builder_source", {}).get("tree")
+    if not isinstance(builder_commit, str) or len(builder_commit) != 40 or not _is_ancestor(builder_commit, current_commit) or not isinstance(builder_tree, str) or _commit_tree(builder_commit) != builder_tree:
+        raise ValueError("G1 builder snapshot is not in the consuming code lineage")
     closure, closure_sha = _json(g1_root, "IDENTITY_CLOSURE.json")
     if closure.get("duplicate_missing_extra") != {"duplicate": 0, "missing": 0, "extra": 0}:
         raise ValueError("G1 identity closure has duplicate/missing/extra identities")
@@ -211,7 +222,9 @@ def _validate_g1(g1_root: Path, *, t4_seal: str, g0_seal: str, feature_order_sha
         if len(train.get("mean", [])) != 25 or len(train.get("std", [])) != 25:
             raise ValueError("G1 normalization shape mismatch")
     split_protocol, split_protocol_sha = _json(g1_root, "SPLIT_PROTOCOL.json")
-    if split_protocol.get("source_commit") != _git_snapshot()[0] or split_protocol.get("source_tree") != _git_snapshot()[1] or split_protocol.get("protected_reads") != 0:
+    protocol_commit = split_protocol.get("source_commit")
+    protocol_tree = split_protocol.get("source_tree")
+    if not isinstance(protocol_commit, str) or len(protocol_commit) != 40 or not _is_ancestor(protocol_commit, current_commit) or not isinstance(protocol_tree, str) or _commit_tree(protocol_commit) != protocol_tree or protocol_commit != builder_commit or protocol_tree != builder_tree or split_protocol.get("protected_reads") != 0:
         raise ValueError("G1 split protocol source/boundary mismatch")
     if split_protocol.get("normalization_source") != "train_only" or split_protocol.get("test_read_once") is not True:
         raise ValueError("G1 split protocol is not closed")
