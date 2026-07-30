@@ -151,7 +151,7 @@ class TestEventMetrics(unittest.TestCase):
                                np.array([True, False, False, False, True]))
         probs = {"a": np.array([0.9, 0.1, 0.1, 0.1, 0.9])}
         metrics = _event_metrics([item], ["a"], "h", probs, 0.5)
-        self.assertEqual(metrics["teacher_critical_events"], 3)  # all three TRUE spans
+        self.assertEqual(metrics["teacher_critical_events"], 2)  # [(0,1), (3,4)]
         self.assertEqual(metrics["teacher_critical_events_reached_by_candidate"], 2)  # first and last
 
     def test_candidate_ceiling(self):
@@ -265,15 +265,16 @@ class TestSafeReleaseGradient(unittest.TestCase):
         model = N5MultiHeadStudent(input_dim=25, dropout=0.0)
         x = torch.randn(2, 10, 25)
         valid = torch.ones(2, 10, dtype=torch.bool)
-        targets = {head: torch.zeros(2, 10) for head in N5MultiHeadStudent.HEAD_NAMES}
+        heads = ("physical_criticality", "k10_feasibility", "safe_release", "instability", "gripper_closing_state")
+        targets = {head: torch.zeros(2, 10) for head in heads}
         masks = {
             "physical_criticality": torch.ones(2, 10, dtype=torch.bool),
-            "k10_feasible": torch.ones(2, 10, dtype=torch.bool),
+            "k10_feasibility": torch.ones(2, 10, dtype=torch.bool),
             "safe_release": torch.zeros(2, 10, dtype=torch.bool),
             "instability": torch.ones(2, 10, dtype=torch.bool),
             "gripper_closing_state": torch.ones(2, 10, dtype=torch.bool),
         }
-        weights = {head: torch.ones(2, 10) for head in N5MultiHeadStudent.HEAD_NAMES}
+        weights = {head: torch.ones(2, 10) for head in heads}
 
         model.zero_grad(set_to_none=True)
         logits = model(x, timestep_mask=valid)
