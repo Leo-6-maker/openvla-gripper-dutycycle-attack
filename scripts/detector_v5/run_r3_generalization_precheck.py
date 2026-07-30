@@ -114,8 +114,8 @@ def _compute(binding: dict[str, Any], *, seed: int, threads: int) -> dict[str, A
     final_loss = float(_loss(logits, targets, active_masks, weights)[0].detach().cpu())
     unknown_targets = {head: value.clone() for head, value in targets.items()}
     unknown_masks = {head: value.clone() for head, value in active_masks.items()}
-    unknown_targets["physical_criticality"][0, 0] = 1.0
-    unknown_masks["physical_criticality"][0, 0] = False
+    unknown_targets["physical_criticality"][0, 11] = 1.0
+    unknown_masks["physical_criticality"][0, 11] = False
     unknown_loss = float(_loss(model(x, timestep_mask=valid), unknown_targets, unknown_masks, weights)[0].detach().cpu())
     if abs(unknown_loss - final_loss) > 1e-7:
         raise AssertionError("UNKNOWN target changed loss")
