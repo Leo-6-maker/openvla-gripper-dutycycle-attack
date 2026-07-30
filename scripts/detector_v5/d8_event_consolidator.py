@@ -83,7 +83,10 @@ def consolidate_physical_events(
     """
     steps_sorted = sorted(labels.keys())
     if not steps_sorted:
-        return {"episode_id": episode_id, "event_groups": [], "head": HEAD, "G": G}
+        return {"episode_id": episode_id, "event_groups": [], "head": HEAD, "G": G,
+                "raw_true_span_count": 0, "consolidated_event_count": 0,
+                "total_bridged_gaps": 0, "total_rejected_gaps": 0,
+                "articulated": is_articulated, "applicable": not is_articulated}
 
     n = len(steps_sorted)
     suite, task_str, state_str = _parse_episode_id(episode_id)
@@ -114,6 +117,9 @@ def consolidate_physical_events(
             "head": HEAD, "G": G,
             "articulated": is_articulated,
             "raw_true_span_count": 0,
+            "consolidated_event_count": 0,
+            "total_bridged_gaps": 0,
+            "total_rejected_gaps": 0,
             "applicable": not is_articulated,
         }
 
