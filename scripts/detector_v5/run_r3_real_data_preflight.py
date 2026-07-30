@@ -54,7 +54,7 @@ def run(*, g2_root: Path, output_root: Path, per_split: int = 2, seed: int = 202
     selected_ids = set(selected["train"]) | set(selected["validation"])
     if set(selected["train"]) & set(selected["validation"]):
         raise ValueError("preflight train/validation overlap")
-    records, record_binding = _load_records(Path(transition["t4"]["root"]), allow_descendant_snapshot=False, identity_allowlist=selected_ids)
+    records, record_binding = _load_records(Path(transition["t4"]["root"]), allow_descendant_snapshot=True, identity_allowlist=selected_ids)
     records_by_id = {row["identity"]: row for row in records}
     _check_split_closure({"episode_train": selected["train"], "episode_validation": selected["validation"]}, records, "episode", loaded_ids=selected_ids)
     mean = np.asarray(split_meta["normalization"]["mean"], dtype=np.float64)
