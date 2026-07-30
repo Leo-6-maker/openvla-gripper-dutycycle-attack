@@ -19,8 +19,8 @@ for path in (ROOT / "src", ROOT / "scripts" / "detector_v5", ROOT / "n5" / "phas
 
 from gripper_attack.seal_utils import rename_noreplace
 from audit_r3_contact_input import sha256_file, verify_seal
-from run_r3_full670_student_development import ACTIVE_HEADS, INACTIVE_HEADS, _batch, _load_model, _load_records, _loss
-from run_r3_heldout_development import _active_masks, _check_split_closure, _load_g2, _load_splits, _safe_output_root, _write_seal
+from run_r3_full670_student_development import ACTIVE_HEADS, INACTIVE_HEADS, _load_model, _load_records, _loss
+from run_r3_heldout_development import _active_masks, _batch, _check_split_closure, _load_g2, _load_splits, _safe_output_root, _write_seal
 
 
 def _step(model: torch.nn.Module, optimizer: torch.optim.Optimizer, batch: tuple[Any, ...], active: tuple[str, ...]) -> float:
