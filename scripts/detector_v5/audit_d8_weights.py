@@ -156,8 +156,9 @@ def audit(
             per_episode_pos_events[eid] = ep_event_weights
             n_applicable += 1
             # Check: all events within this episode have equal weight
+            # Tolerance: float32 precision (~1e-7 relative) from weight builder
             if len(ep_event_weights) > 1:
-                if not np.allclose(ep_event_weights, ep_event_weights[0], rtol=1e-12):
+                if not np.allclose(ep_event_weights, ep_event_weights[0], rtol=1e-6, atol=1e-7):
                     issues.append(
                         f"{eid}: intra-episode event weights not equal: "
                         f"{ep_event_weights}"
@@ -202,9 +203,12 @@ def audit(
     ess_pos = float(np.sum(pos_w_arr)**2 / max(np.sum(pos_w_arr**2), 1e-20))
     ess_neg = float(np.sum(neg_w_arr)**2 / max(np.sum(neg_w_arr**2), 1e-20))
 
-    # Per-episode pos total check
+    # Per-episode pos total check (only episodes with positive events)
     ep_pos_arr = np.array(ep_pos_totals) if ep_pos_totals else np.array([0.0])
-    ep_pos_close_to_one = bool(np.allclose(ep_pos_arr[ep_pos_arr > 0], 1.0, rtol=1e-10))
+    nonzero_pos = ep_pos_arr[ep_pos_arr > 0]
+    ep_pos_close_to_one = bool(
+        len(nonzero_pos) > 0 and np.allclose(nonzero_pos, 1.0, rtol=1e-6, atol=1e-7)
+    )
 
     report = {
         "schema": "DETECTOR_V3_D8_WEIGHT_AUDIT_V1",
@@ -242,9 +246,9 @@ def audit(
         "pass": len(issues) == 0,
     }
 
-    # Verify intra-episode equality
+    # Verify intra-episode equality (float32 tolerance)
     for eid, ews in per_episode_pos_events.items():
-        if len(ews) > 1 and not np.allclose(ews, ews[0], rtol=1e-12):
+        if len(ews) > 1 and not np.allclose(ews, ews[0], rtol=1e-6, atol=1e-7):
             report["intra_episode"]["all_episodes_events_equal"] = False
             break
 
