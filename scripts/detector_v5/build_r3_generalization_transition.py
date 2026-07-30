@@ -113,7 +113,11 @@ def _json(root: Path, name: str) -> tuple[dict[str, Any], str]:
 
 
 def _validate_manifest_rows(g1_root: Path, split: str, expected_count: int, expected_bindings: Mapping[str, Any], expected_metadata: Mapping[str, Mapping[str, Any]]) -> dict[str, Any]:
-    manifest, digest = _json(g1_root, f"{split.upper()}_MANIFEST.json")
+    path = g1_root / f"{split.upper()}_MANIFEST.json"
+    if not path.is_file() or path.is_symlink():
+        raise ValueError(f"missing regular JSON file: {path}")
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    digest = sha256_file(path)
     if not isinstance(manifest, list) or len(manifest) != expected_count:
         raise ValueError(f"{split} manifest count mismatch")
     identities: list[str] = []
