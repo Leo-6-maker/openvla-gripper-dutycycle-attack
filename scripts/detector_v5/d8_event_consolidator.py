@@ -318,49 +318,58 @@ def build_physical_event_weights(
     labels: np.ndarray,
     masks: np.ndarray,
     consolidated_events: Dict[str, Any],
+    right_censored: np.ndarray | None = None,
+    geom_na: np.ndarray | None = None,
 ) -> np.ndarray:
     """Teacher-event-based weights.
 
     Each consolidated TRUE event gets equal total positive weight (shared across
     all fragments). Known FALSE spans get equal total negative weight.
     UNKNOWN/articulated steps get zero weight.
+    RIGHT_CENSORED and GEOMETRY_NOT_APPLICABLE steps get zero weight
+    regardless of mask.
 
     Precondition: labels and masks are contiguous zero-based arrays where
     index i corresponds to step i.
     """
     n = len(labels)
     weights = np.zeros(n, dtype=np.float32)
+
+    # Zero out effective mask for right_censored and GEOM_NA steps
+    effective_mask = masks.copy()
+    if right_censored is not None:
+        effective_mask = effective_mask & (~right_censored)
+    if geom_na is not None:
+        effective_mask = effective_mask & (~geom_na)
+
     event_groups = consolidated_events.get("event_groups", [])
 
     if not event_groups:
-        # Fallback: raw contiguous TRUE/FALSE spans
-        return _fallback_weights(labels, masks)
+        return _fallback_weights(labels, effective_mask)
 
     num_events = len(event_groups)
     pos_weight_per_event = 1.0 / max(num_events, 1)
 
     # Positive weights: each consolidated event gets equal share,
     # distributed evenly across ALL true steps in that event
-    event_true_steps = set()
     for group in event_groups:
         group_steps = []
         for frag_start, frag_end in group["fragment_ranges"]:
             for i in range(frag_start, frag_end + 1):
-                if 0 <= i < n and masks[i] and labels[i] == 1:
+                if 0 <= i < n and effective_mask[i] and labels[i] == 1:
                     group_steps.append(i)
         if group_steps:
             per_step = pos_weight_per_event / len(group_steps)
             for i in group_steps:
                 weights[i] = per_step
-                event_true_steps.add(i)
 
     # Negative weights: contiguous known FALSE spans
     i = 0
     neg_spans = []
     while i < n:
-        if masks[i] and labels[i] == 0:
+        if effective_mask[i] and labels[i] == 0:
             j = i + 1
-            while j < n and masks[j] and labels[j] == 0:
+            while j < n and effective_mask[j] and labels[j] == 0:
                 j += 1
             neg_spans.append((i, j))
             i = j
