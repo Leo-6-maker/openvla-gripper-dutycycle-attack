@@ -66,7 +66,7 @@ def audit(
     output_root: Path,
 ) -> dict[str, Any]:
     sidecar = load_sidecar_correct(sidecar_root)
-    ep_labels = load_teacher_labels(teacher_root)
+    ep_labels, teacher_steps, teacher_ids = load_teacher_labels(teacher_root)
 
     # Identity closure
     sc_ids = set(sidecar.keys())
