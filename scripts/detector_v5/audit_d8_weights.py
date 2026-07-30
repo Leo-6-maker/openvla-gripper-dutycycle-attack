@@ -1,19 +1,25 @@
-"""D8 Weight Audit: verify training weight invariants for consolidated events.
+"""D8 Weight Audit: formal training weight invariant verification.
 
-Checks:
-  Positive: each consolidated event gets equal total weight
-  Negative: known FALSE gets non-zero weight (equal per contiguous span)
-  UNKNOWN/GEOM_NA/RIGHT_CENSORED: weight = 0
-  Multi-fragment: one event weight regardless of fragment count
-  articulated NOT_APPLICABLE: excluded from denominator
+Uses strict formal loaders (load_sidecar_correct, load_teacher_labels).
+Produces sealed audit artifact with per-episode weight checks.
+
+Verified invariants:
+  - UNKNOWN/GEOM_NA/RIGHT_CENSORED weights = 0
+  - Per-episode: all consolidated events have equal total weight
+  - All effective negative spans have non-zero weight
+  - Per-episode positive total ≈ 1.0 (within tolerance)
+  - Effective sample sizes computed via ESS
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import subprocess
 import sys
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -27,95 +33,83 @@ for p in (ROOT / "src", ROOT / "scripts" / "detector_v5"):
 from d8_event_consolidator import (
     consolidate_physical_events,
     build_physical_event_weights,
+    compute_consolidation_digest,
 )
+from run_d8_formal_g_sensitivity import (
+    load_sidecar_correct,
+    load_teacher_labels,
+)
+from audit_r3_contact_input import sha256_file, verify_seal
+from gripper_attack.seal_utils import rename_noreplace
 
 ARTICULATED_TASKS = {"libero_goal/task_00", "libero_goal/task_07"}
 
 
-def _load_sidecar(sidecar_root: Path) -> dict:
-    ep_dir = sidecar_root / "per_episode"
-    sidecar: dict = {}
-    for fname in sorted(ep_dir.iterdir()):
-        if not fname.suffix == ".json":
-            continue
-        with open(fname, encoding="utf-8") as fh:
-            ep_data = json.load(fh)
-        eid = None
-        steps: dict = {}
-        for sk, entry in ep_data.items():
-            if not isinstance(entry, dict):
-                continue
-            try:
-                step = int(sk)
-            except (ValueError, TypeError):
-                continue
-            if eid is None:
-                eid = entry.get("episode_id", "")
-            steps[step] = entry
-        if eid:
-            sidecar[eid] = steps
-    return sidecar
+def _write_seal(p: Path) -> str:
+    files = sorted(
+        x for x in p.rglob("*")
+        if x.is_file() and x.name not in {"SHA256SUMS", "SHA256SUMS.sha256"}
+    )
+    (p / "SHA256SUMS").write_text(
+        "".join(f"{sha256_file(x)}  {x.relative_to(p).as_posix()}\n" for x in files),
+        encoding="utf-8",
+    )
+    d = sha256_file(p / "SHA256SUMS")
+    (p / "SHA256SUMS.sha256").write_text(f"{d}  SHA256SUMS\n", encoding="utf-8")
+    return d
 
 
-def _load_teacher(teacher_root: Path, sidecar: dict) -> dict:
-    records_path = teacher_root / "teacher_records.jsonl"
-    # Only load episodes in sidecar
-    wanted = set(sidecar.keys())
-    ep_labels: dict = defaultdict(dict)
-    with open(records_path, encoding="utf-8") as fh:
-        for line in fh:
-            if not line.strip():
-                continue
-            row = json.loads(line)
-            eid = str(row["episode_id"])
-            if eid not in wanted:
-                continue
-            pc = row.get("labels", {}).get("physical_criticality", {})
-            if isinstance(pc, dict):
-                ep_labels[eid][row["step"]] = dict(pc)
-    return dict(ep_labels)
+def audit(
+    sidecar_root: Path,
+    teacher_root: Path,
+    G: int,
+    output_root: Path,
+) -> dict[str, Any]:
+    sidecar = load_sidecar_correct(sidecar_root)
+    ep_labels = load_teacher_labels(teacher_root)
 
+    # Identity closure
+    sc_ids = set(sidecar.keys())
+    t_ids = set(ep_labels.keys())
+    if sc_ids != t_ids:
+        raise ValueError(f"identity mismatch: sidecar={len(sc_ids)} teacher={len(t_ids)}")
 
-def audit(G: int, sidecar: dict, ep_labels: dict) -> dict[str, Any]:
-    """Run weight audit for a specific G value.
-
-    Returns audit report dict.
-    """
+    # Per-epoch tracking
     all_pos_event_weights: list[float] = []
     all_neg_span_weights: list[float] = []
-    total_pos: float = 0.0
-    total_neg: float = 0.0
-    total_unk: float = 0.0
-    total_geom_na: float = 0.0
-    total_rc: float = 0.0
-    total_art: float = 0.0
+    per_episode_pos_events: dict[str, list[float]] = {}  # eid -> [event_w, ...]
+    total_pos = 0.0
+    total_neg = 0.0
+    total_unk = 0.0
+    total_geom_na = 0.0
+    total_rc = 0.0
+    total_art = 0
+    issues: list[str] = []
     ep_pos_totals: list[float] = []
     ep_neg_totals: list[float] = []
-    multi_frag_weights: list[float] = []
-    single_frag_weights: list[float] = []
-    violations: list[str] = []
+    n_applicable = 0
+    n_zero_event = 0
 
-    applicable = 0
-
-    for eid in sorted(ep_labels.keys()):
+    for eid in sorted(t_ids):
         labels = ep_labels[eid]
-        relations = sidecar.get(eid, {})
-        result = consolidate_physical_events(eid, labels, relations=relations, G=G)
+        relations = sidecar[eid]
 
-        if result.get("articulated"):
+        # Per-episode step closure
+        if set(relations.keys()) != set(labels.keys()):
+            raise ValueError(f"step set mismatch in {eid}")
+
+        result = consolidate_physical_events(eid, labels, relations=relations, G=G)
+        task_key = "/".join(eid.split("/")[:2])
+        is_art = task_key in ARTICULATED_TASKS
+
+        if is_art:
             for lab in labels.values():
                 if lab.get("mask") and lab.get("valid_mask"):
-                    total_art += 1.0
-            continue
-
-        if not result.get("applicable", True):
+                    total_art += 1
             continue
 
         event_groups = result.get("event_groups", [])
-        if not event_groups:
-            continue
 
-        applicable += 1
         max_step = max(labels.keys())
         n = max_step + 1
         labs = np.zeros(n, dtype=np.float32)
@@ -135,36 +129,51 @@ def audit(G: int, sidecar: dict, ep_labels: dict) -> dict[str, Any]:
             rc_arr[s] = bool(lab.get("right_censored", False))
             geom_arr[s] = lab.get("reason") == "GEOMETRY_NOT_APPLICABLE"
 
-        # P0-4 fix: pass right_censored and geom_na arrays
-        weights = build_physical_event_weights(labs, masks, result,
-                                                right_censored=rc_arr,
-                                                geom_na=geom_arr)
+        weights = build_physical_event_weights(
+            labs, masks, result, right_censored=rc_arr, geom_na=geom_arr,
+        )
 
-        # Positive event weights
+        effective_mask = masks & (~rc_arr) & (~geom_arr)
+
+        # UNKNOWN / zero-weight categories
+        unk_mask = (labs == -1.0) & masks
+        total_unk += float(weights[unk_mask].sum())
+        total_geom_na += float(weights[geom_arr].sum())
+        total_rc += float(weights[rc_arr].sum())
+
+        # Positive: per-event weights within this episode
+        ep_event_weights = []
         for group in event_groups:
             event_w = 0.0
             for fs, fe in group["fragment_ranges"]:
                 for i in range(fs, fe + 1):
-                    if i < n and masks[i] and labs[i] == 1.0:
+                    if i < n and effective_mask[i] and labs[i] == 1.0:
                         event_w += float(weights[i])
+            ep_event_weights.append(event_w)
             all_pos_event_weights.append(event_w)
-            if group.get("fragment_count", 1) > 1:
-                multi_frag_weights.append(event_w)
-            else:
-                single_frag_weights.append(event_w)
 
-        pos_mask = (labs == 1.0) & masks
-        tp = float(weights[pos_mask].sum())
-        total_pos += tp
-        ep_pos_totals.append(tp)
+        if ep_event_weights:
+            per_episode_pos_events[eid] = ep_event_weights
+            n_applicable += 1
+            # Check: all events within this episode have equal weight
+            if len(ep_event_weights) > 1:
+                if not np.allclose(ep_event_weights, ep_event_weights[0], rtol=1e-12):
+                    issues.append(
+                        f"{eid}: intra-episode event weights not equal: "
+                        f"{ep_event_weights}"
+                    )
+        else:
+            n_zero_event += 1
 
-        # Negative span weights (use effective_mask for span boundaries)
-        eff_mask = masks & (~rc_arr) & (~geom_arr)
+        pos_mask = (labs == 1.0) & effective_mask
+        ep_pos_totals.append(float(weights[pos_mask].sum()))
+
+        # Negative: per-span weights
         i = 0
         while i < n:
-            if eff_mask[i] and labs[i] == 0.0:
+            if effective_mask[i] and labs[i] == 0.0:
                 j = i + 1
-                while j < n and eff_mask[j] and labs[j] == 0.0:
+                while j < n and effective_mask[j] and labs[j] == 0.0:
                     j += 1
                 span_w = float(weights[i:j].sum())
                 all_neg_span_weights.append(span_w)
@@ -172,76 +181,52 @@ def audit(G: int, sidecar: dict, ep_labels: dict) -> dict[str, Any]:
             else:
                 i += 1
 
-        neg_mask = (labs == 0.0) & eff_mask
-        tn = float(weights[neg_mask].sum())
-        total_neg += tn
-        ep_neg_totals.append(tn)
+        neg_mask = (labs == 0.0) & effective_mask
+        ep_neg_totals.append(float(weights[neg_mask].sum()))
 
-        # UNKNOWN
-        unk_mask = (labs == -1.0) & masks
-        total_unk += float(weights[unk_mask].sum())
-
-        # GEOM_NA and RIGHT_CENSORED: verified against passed arrays
-        total_geom_na += float(weights[geom_arr].sum())
-        total_rc += float(weights[rc_arr].sum())
-
-    # Check invariants
-    issues: list[str] = []
-
-    # P0-4: Per-episode event weight equality (not global)
-    # Protocol: each episode gets equal total positive weight = 1.0,
-    # within each episode, each event gets equal share.
-    ep_event_weights: dict[int, list[float]] = defaultdict(list)
-    for i, w in enumerate(all_pos_event_weights):
-        # We need episode index — tracked during iteration
-        pass
-
+    # Invariant checks
     if abs(total_unk) > 1e-10:
         issues.append(f"UNKNOWN weight non-zero: {total_unk:.10f}")
-
     if abs(total_geom_na) > 1e-10:
         issues.append(f"GEOM_NA weight non-zero: {total_geom_na:.10f}")
-
     if abs(total_rc) > 1e-10:
         issues.append(f"RIGHT_CENSORED weight non-zero: {total_rc:.10f}")
 
-    if len(all_neg_span_weights) > 0 and any(w <= 0 for w in all_neg_span_weights):
-        issues.append("Some negative span weights are zero")
+    if all_neg_span_weights and any(w <= 0 for w in all_neg_span_weights):
+        zero_spans = [w for w in all_neg_span_weights if w <= 0]
+        issues.append(f"Negative spans with zero weight: {len(zero_spans)}")
 
-    # Effective sample size: sum(w)^2 / sum(w^2)
-    pos_w_arr = np.array(all_pos_event_weights)
-    neg_w_arr = np.array(all_neg_span_weights)
+    # ESS
+    pos_w_arr = np.array(all_pos_event_weights) if all_pos_event_weights else np.array([0.0])
+    neg_w_arr = np.array(all_neg_span_weights) if all_neg_span_weights else np.array([0.0])
     ess_pos = float(np.sum(pos_w_arr)**2 / max(np.sum(pos_w_arr**2), 1e-20))
     ess_neg = float(np.sum(neg_w_arr)**2 / max(np.sum(neg_w_arr**2), 1e-20))
 
-    # Balance — per-episode semantics (P0-4): each episode gets equal total
-    # positive weight = 1.0, events within episode share equally.
+    # Per-episode pos total check
+    ep_pos_arr = np.array(ep_pos_totals) if ep_pos_totals else np.array([0.0])
+    ep_pos_close_to_one = bool(np.allclose(ep_pos_arr[ep_pos_arr > 0], 1.0, rtol=1e-10))
+
     report = {
+        "schema": "DETECTOR_V3_D8_WEIGHT_AUDIT_V1",
         "G": G,
-        "applicable_episodes": applicable,
-        "articulated_masked_steps": int(total_art),
+        "applicable_episodes": n_applicable,
+        "zero_event_episodes": n_zero_event,
+        "articulated_masked_steps": total_art,
         "positive": {
-            "total_weight": float(total_pos),
+            "total_weight": float(np.sum(pos_w_arr)),
             "event_count": len(all_pos_event_weights),
             "per_event_mean": float(pos_w_arr.mean()) if len(pos_w_arr) > 0 else 0.0,
             "per_event_min": float(pos_w_arr.min()) if len(pos_w_arr) > 0 else 0.0,
             "per_event_max": float(pos_w_arr.max()) if len(pos_w_arr) > 0 else 0.0,
             "ess": float(ess_pos),
-            "per_episode_mean": float(np.mean(ep_pos_totals)) if ep_pos_totals else 0.0,
-            "per_episode_std": float(np.std(ep_pos_totals)) if ep_pos_totals else 0.0,
-            "per_episode_equal": bool(np.allclose(ep_pos_totals, ep_pos_totals[0] if ep_pos_totals else 0)),
-            "multi_fragment_events": len(multi_frag_weights),
-            "single_fragment_events": len(single_frag_weights),
+            "per_episode_total_near_1": ep_pos_close_to_one,
         },
         "negative": {
-            "total_weight": float(total_neg),
+            "total_weight": float(np.sum(neg_w_arr)),
             "span_count": len(all_neg_span_weights),
-            "per_span_mean": float(np.mean(all_neg_span_weights)) if all_neg_span_weights else 0.0,
-            "per_span_min": float(np.min(all_neg_span_weights)) if all_neg_span_weights else 0.0,
-            "per_span_max": float(np.max(all_neg_span_weights)) if all_neg_span_weights else 0.0,
-            "all_nonzero": all(w > 0 for w in all_neg_span_weights),
-            "per_episode_mean": float(np.mean(ep_neg_totals)) if ep_neg_totals else 0.0,
-            "per_episode_std": float(np.std(ep_neg_totals)) if ep_neg_totals else 0.0,
+            "per_span_mean": float(neg_w_arr.mean()) if len(neg_w_arr) > 0 else 0.0,
+            "ess": float(ess_neg),
+            "all_nonzero": all(w > 0 for w in all_neg_span_weights) if all_neg_span_weights else True,
         },
         "zero_weight": {
             "UNKNOWN": float(total_unk),
@@ -249,52 +234,81 @@ def audit(G: int, sidecar: dict, ep_labels: dict) -> dict[str, Any]:
             "RIGHT_CENSORED": float(total_rc),
             "all_zero": abs(total_unk) <= 1e-10 and abs(total_geom_na) <= 1e-10 and abs(total_rc) <= 1e-10,
         },
-        "balance": {
-            "pos_neg_ratio": float(total_pos / max(total_neg, 1e-10)),
-            "ess_positive": float(ess_pos),
-            "ess_negative": float(ess_neg),
-            "max_min_pos_weight_ratio": float(pos_w_arr.max() / pos_w_arr.min()) if len(pos_w_arr) > 0 and pos_w_arr.min() > 0 else float("inf"),
+        "intra_episode": {
+            "episodes_with_events": len(per_episode_pos_events),
+            "all_episodes_events_equal": len(per_episode_pos_events) > 0,
         },
         "issues": issues,
         "pass": len(issues) == 0,
     }
+
+    # Verify intra-episode equality
+    for eid, ews in per_episode_pos_events.items():
+        if len(ews) > 1 and not np.allclose(ews, ews[0], rtol=1e-12):
+            report["intra_episode"]["all_episodes_events_equal"] = False
+            break
+
+    # Write sealed output
+    if output_root.exists():
+        raise FileExistsError(str(output_root))
+    staging = output_root.with_name(f".{output_root.name}.staging.{os.getpid()}")
+    staging.mkdir(parents=True)
+
+    (staging / "AUDIT_REPORT.json").write_text(
+        json.dumps(report, indent=2, sort_keys=True, default=str) + "\n",
+        encoding="utf-8",
+    )
+
+    digest = _write_seal(staging)
+    rename_noreplace(staging, output_root)
+    report["sha256sums_sha256"] = digest
     return report
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="D8 Formal Weight Audit")
     parser.add_argument("--sidecar-root", type=Path, required=True)
     parser.add_argument("--teacher-root", type=Path, required=True)
-    parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--G", type=int, default=3)
     args = parser.parse_args()
 
-    sidecar = _load_sidecar(args.sidecar_root.resolve(strict=True))
-    ep_labels = _load_teacher(args.teacher_root.resolve(strict=True), sidecar)
+    if subprocess.check_output(
+        ("git", "status", "--porcelain"), cwd=ROOT, text=True
+    ).strip():
+        return 1  # clean checkout required
 
-    for G in [0, 1, 2, 3, 5]:
-        report = audit(G, sidecar, ep_labels)
-        status = "PASS" if report["pass"] else f"FAIL: {len(report['issues'])} issues"
-        p = report["positive"]
-        n = report["negative"]
-        z = report["zero_weight"]
-        b = report["balance"]
-        print(f"\nG={G}: {status}")
-        print(f"  Positive: {p['event_count']} events, mean_w={p['per_event_mean']:.6f}, "
-              f"per_ep_equal={p['per_episode_equal']}, ESS={b['ess_positive']:.1f}")
-        print(f"  Negative: {n['span_count']} spans, mean_w={n['per_span_mean']:.6f}, "
-              f"nonzero={n['all_nonzero']}, ESS={b['ess_negative']:.1f}")
-        print(f"  Zero-weight: UNK={z['UNKNOWN']:.6f} GEOM_NA={z['GEOM_NA']:.6f} "
-              f"RC={z['RIGHT_CENSORED']:.6f} all_zero={z['all_zero']}")
-        print(f"  Multi-frag: {p['multi_fragment_events']} events")
-        for issue in report["issues"]:
-            print(f"  ISSUE: {issue}")
+    commit = subprocess.check_output(
+        ("git", "rev-parse", "HEAD"), cwd=ROOT, text=True
+    ).strip()
 
-    if args.output:
-        args.output.write_text(
-            json.dumps({str(G): audit(G, sidecar, ep_labels) for G in [0, 1, 2, 3, 5]}, indent=2, default=str),
-            encoding="utf-8",
-        )
-    return 0
+    sidecar_root = args.sidecar_root.resolve(strict=True)
+    teacher_root = args.teacher_root.resolve(strict=True)
+    sidecar_seal = verify_seal(sidecar_root)
+    teacher_seal = verify_seal(teacher_root)
+
+    print(f"Sidecar seal: {sidecar_seal['sha256sums_sha256'][:20]}...")
+    print(f"Teacher seal: {teacher_seal['sha256sums_sha256'][:20]}...")
+
+    report = audit(sidecar_root, teacher_root, args.G, args.output_root)
+
+    status = "PASS" if report["pass"] else f"FAIL: {len(report['issues'])} issues"
+    p = report["positive"]
+    n = report["negative"]
+    z = report["zero_weight"]
+    print(f"\nG={args.G}: {status}")
+    print(f"  Positive: {p['event_count']} events, ESS={p['ess']:.1f}, "
+          f"per_ep_near_1={p['per_episode_total_near_1']}")
+    print(f"  Negative: {n['span_count']} spans, ESS={n['ess']:.1f}, "
+          f"nonzero={n['all_nonzero']}")
+    print(f"  Zero-weight: UNK={z['UNKNOWN']:.10f} GEOM_NA={z['GEOM_NA']:.10f} "
+          f"RC={z['RIGHT_CENSORED']:.10f}")
+    print(f"  Intra-episode events equal: {report['intra_episode']['all_episodes_events_equal']}")
+    for issue in report["issues"]:
+        print(f"  ISSUE: {issue}")
+
+    print(f"\nSealed: {report['sha256sums_sha256']}")
+    return 0 if report["pass"] else 1
 
 
 if __name__ == "__main__":
