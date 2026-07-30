@@ -49,7 +49,7 @@ def test_g3_exact_permission_boundary(tmp_path):
     path = tmp_path / "TEACHER_TO_STUDENT_GENERALIZATION_TRANSITION_V1.json"
     path.write_text(json.dumps(transition), encoding="utf-8")
     MODULE._write_seal(tmp_path)
-    assert MODULE._validate_transition(tmp_path)["protected_reads"] == 0
+    assert MODULE._validate_transition(tmp_path)["transition"]["protected_reads"] == 0
     bad = dict(transition, permissions={**MODULE.EXPECTED_PERMISSION_MATRIX, "attack": True})
     path.write_text(json.dumps(bad), encoding="utf-8")
     with pytest.raises(ValueError):
