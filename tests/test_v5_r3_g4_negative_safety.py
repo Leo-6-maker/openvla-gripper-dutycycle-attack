@@ -302,6 +302,38 @@ class TestEventDefinition(unittest.TestCase):
         self.assertEqual(spans, [(0, 1), (3, 4)])  # step 2 masked→cut
 
 
+class TestPhysicalEventWeights(unittest.TestCase):
+    """D8-1: Physical event weights independent of candidate_close."""
+
+    def test_weights_independent_of_candidate(self):
+        from run_r3_micro_overfit import _physical_event_weights
+        targets = np.array([0.0, 1.0, 1.0, 0.0, 1.0, 1.0, 0.0], dtype=np.float32)
+        masks = np.array([True, True, True, True, True, True, True], dtype=bool)
+        w1 = _physical_event_weights(targets, masks)
+        w2 = _physical_event_weights(targets.copy(), masks.copy())
+        self.assertTrue(np.array_equal(w1, w2))
+
+    def test_each_span_equal_total_weight(self):
+        from run_r3_micro_overfit import _physical_event_weights
+        targets = np.array([0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 0.0], dtype=np.float32)
+        masks = np.array([True] * 7, dtype=bool)
+        w = _physical_event_weights(targets, masks)
+        self.assertAlmostEqual(float(w[1:4].sum()), 1.0, places=5)
+        self.assertAlmostEqual(float(w[5:6].sum()), 1.0, places=5)
+        self.assertAlmostEqual(float(w[0:1].sum()), 1.0, places=5)
+        self.assertAlmostEqual(float(w[4:5].sum()), 1.0, places=5)
+        self.assertAlmostEqual(float(w[6:7].sum()), 1.0, places=5)
+
+    def test_unknown_zero_weight(self):
+        from run_r3_micro_overfit import _physical_event_weights
+        targets = np.array([1.0, 1.0, 1.0], dtype=np.float32)
+        masks = np.array([True, False, True], dtype=bool)
+        w = _physical_event_weights(targets, masks)
+        self.assertEqual(float(w[1]), 0.0)
+        self.assertGreater(float(w[0]), 0.0)
+        self.assertGreater(float(w[2]), 0.0)
+
+
 class TestSafeReleaseGradient(unittest.TestCase):
     """P2: Safe release must receive zero gradient in all code paths."""
 

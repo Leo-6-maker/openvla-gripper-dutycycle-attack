@@ -47,7 +47,7 @@ from build_r3_teacher_student_transition import (
 from gripper_attack.seal_utils import rename_noreplace
 from gripper_attack.v5_r3_features import ACTION_GRIPPER_SOURCE, FEATURE_ORDER, load_feature_binding, materialize_fit670_features
 from gripper_attack.v5_r3_teacher import HEADS
-from run_r3_micro_overfit import _accuracy, _batch, _event_weights, _load_model, _loss, _train, _write_seal
+from run_r3_micro_overfit import _accuracy, _batch, _event_weights, _load_model, _loss, _physical_event_weights, _train, _write_seal
 
 
 ACTIVE_HEADS = ("physical_criticality", "k10_feasibility", "instability", "gripper_closing_state")
@@ -310,7 +310,10 @@ def _load_records(t4_root: Path, *, allow_descendant_snapshot: bool = False, ide
             "targets": {head: np.asarray(values, dtype=np.float32) for head, values in targets.items()},
             "masks": {head: np.asarray(values, dtype=bool) for head, values in masks.items()},
             "right_censored": {head: np.asarray(values, dtype=bool) for head, values in right_censored.items()},
-            "weights": {head: _event_weights(candidates, masks[head]) for head in HEADS},
+            "weights": {
+                "physical_criticality": _physical_event_weights(targets["physical_criticality"], masks["physical_criticality"]),
+                **{head: _event_weights(candidates, masks[head]) for head in HEADS if head != "physical_criticality"},
+            },
         })
     expected_step_count = 196483 if identity_allowlist is None else sum(int(bindings[identity]["worker_result_steps"]) for identity in selected_identities)
     if sum(len(row["features"]) for row in binding_rows) != expected_step_count:

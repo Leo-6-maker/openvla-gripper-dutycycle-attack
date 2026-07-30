@@ -77,6 +77,41 @@ def _event_weights(candidates: list[bool], known: list[bool]) -> np.ndarray:
     return weights
 
 
+def _physical_event_weights(targets: np.ndarray, masks: np.ndarray) -> np.ndarray:
+    """Weights based on contiguous physical TRUE spans, NOT candidate_close.
+
+    Each contiguous known TRUE span gets equal total weight. Known FALSE regions
+    get uniform weight.  UNKNOWN/masked steps get zero weight.  This makes
+    physical head training independent of candidate_close block structure.
+    """
+    weights = np.zeros(len(targets), dtype=np.float32)
+    n = len(targets)
+    i = 0
+    while i < n:
+        # Find next contiguous block of same (known_true, known_false, other) state
+        if masks[i] and targets[i] == 1:
+            # TRUE span
+            j = i + 1
+            while j < n and masks[j] and targets[j] == 1:
+                j += 1
+            span_len = j - i
+            if span_len > 0:
+                weights[i:j] = 1.0 / float(span_len)
+            i = j
+        elif masks[i] and targets[i] == 0:
+            # FALSE span
+            j = i + 1
+            while j < n and masks[j] and targets[j] == 0:
+                j += 1
+            span_len = j - i
+            if span_len > 0:
+                weights[i:j] = 1.0 / float(span_len)
+            i = j
+        else:
+            i += 1
+    return weights
+
+
 def _load_data(input_root: Path, teacher_root: Path, transition: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     manifest, episodes, input_seal = load_consumable_episodes(input_root, expected_count=8, transition_manifest_path=transition)
     teacher_seal = verify_seal(teacher_root)
