@@ -271,7 +271,9 @@ def _safe_auc(y: np.ndarray, score: np.ndarray) -> float | None:
     negatives = int(len(y) - positives)
     if positives == 0 or negatives == 0:
         return None
-    order = np.argsort(-score, kind="mergesort")
+    # Rank from low to high; the Mann-Whitney formulation below then yields
+    # P(score_positive > score_negative), including average ranks for ties.
+    order = np.argsort(score, kind="mergesort")
     ranks = np.empty(len(y), dtype=np.float64)
     sorted_score = score[order]
     start = 0
