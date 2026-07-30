@@ -1,6 +1,8 @@
 """D8-1 Event Consolidator tests — 30 tests covering merge conditions, weights, step integrity."""
 from __future__ import annotations
 
+import hashlib
+import json
 import unittest
 
 import numpy as np
@@ -288,6 +290,155 @@ class TestCanonicalAndFailClosed(unittest.TestCase):
         for k in original:
             self.assertEqual(labels[k]["value"], original[k]["value"])
             self.assertEqual(labels[k]["reason"], original[k]["reason"])
+
+
+class TestSidecarLoaderCorrectness(unittest.TestCase):
+    """Episode ID loader: read from JSON entry, not filename."""
+
+    def setUp(self):
+        self.tmpdir = Path(__file__).resolve().parent / "_tmp_sidecar_test"
+        self.tmpdir.mkdir(exist_ok=True)
+        self.ep_dir = self.tmpdir / "per_episode"
+        self.ep_dir.mkdir(exist_ok=True)
+        self.sums = self.tmpdir / "SHA256SUMS"
+        self.sums_sidecar = self.tmpdir / "SHA256SUMS.sha256"
+
+    def tearDown(self):
+        import shutil
+        if self.tmpdir.exists():
+            shutil.rmtree(self.tmpdir)
+
+    def _make_entry(self, step, eid, **kw):
+        entry = {
+            "episode_id": eid, "step": step, "aggregate_physical_label": "TRUE",
+            "aggregate_mask": True, "aggregate_reason": "",
+            "per_relation": [], "selection_status": "UNIQUE_SUPPORT",
+            "selected_relation_index": 0, "candidate_relation_indices": [0],
+            "supporting_relation_indices": [0], "candidate_close": False,
+            "suite": eid.split("/")[0], "task_id": 0, "state_id": 0, "seed": 0,
+            **kw,
+        }
+        return entry
+
+    def _seal(self):
+        files = sorted(
+            x for x in self.tmpdir.rglob("*")
+            if x.is_file() and x.name not in {"SHA256SUMS", "SHA256SUMS.sha256"}
+        )
+        hashes = []
+        for f in files:
+            d = hashlib.sha256(f.read_bytes()).hexdigest()
+            hashes.append(f"{d}  {f.relative_to(self.tmpdir).as_posix()}")
+        self.sums.write_text("\n".join(hashes) + "\n", encoding="utf-8")
+        s = hashlib.sha256(self.sums.read_bytes()).hexdigest()
+        self.sums_sidecar.write_text(f"{s}  SHA256SUMS\n", encoding="utf-8")
+        return s
+
+    def test_31_episode_id_from_entry_not_filename(self):
+        """Episode ID read from entry, not filename."""
+        eid = "libero_10/task_02/state_05"
+        fname = "wrong_name.json"  # filename differs from internal ID
+        ep_data = {str(i): self._make_entry(i, eid) for i in range(3)}
+        (self.ep_dir / fname).write_text(json.dumps(ep_data) + "\n")
+        self._seal()
+        from run_d8_formal_g_sensitivity import load_sidecar_correct
+        sidecar = load_sidecar_correct(self.tmpdir)
+        self.assertIn(eid, sidecar)
+        self.assertEqual(len(sidecar[eid]), 3)
+
+    def test_32_duplicate_internal_episode_id_fail_closed(self):
+        """Two files with same internal episode_id must fail."""
+        eid = "libero_10/task_02/state_05"
+        ep1 = {str(i): self._make_entry(i, eid) for i in range(2)}
+        ep2 = {str(i): self._make_entry(i, eid) for i in range(2, 4)}
+        (self.ep_dir / "file_a.json").write_text(json.dumps(ep1) + "\n")
+        (self.ep_dir / "file_b.json").write_text(json.dumps(ep2) + "\n")
+        self._seal()
+        from run_d8_formal_g_sensitivity import load_sidecar_correct
+        with self.assertRaises(ValueError):
+            load_sidecar_correct(self.tmpdir)
+
+    def test_33_empty_episode_id_fail_closed(self):
+        """Empty episode_id in entry must fail."""
+        ep = {str(i): self._make_entry(i, "") for i in range(2)}
+        (self.ep_dir / "empty_eid.json").write_text(json.dumps(ep) + "\n")
+        self._seal()
+        from run_d8_formal_g_sensitivity import load_sidecar_correct
+        with self.assertRaises(ValueError):
+            load_sidecar_correct(self.tmpdir)
+
+    def test_34_filename_vs_entry_id_mismatch_diagnostic_only(self):
+        """Filename different from internal ID is OK (not a failure)."""
+        eid = "libero_goal/task_07/state_03"
+        fname = "libero_10_task_07_state_03.json"  # wrong suite in filename
+        ep = {str(i): self._make_entry(i, eid) for i in range(2)}
+        (self.ep_dir / fname).write_text(json.dumps(ep) + "\n")
+        self._seal()
+        from run_d8_formal_g_sensitivity import load_sidecar_correct
+        sidecar = load_sidecar_correct(self.tmpdir)
+        self.assertIn(eid, sidecar)
+        self.assertNotIn("libero_10/task_07/state_03", sidecar)
+
+    def test_35_malformed_id_not_rejected_at_load(self):
+        """Malformed episode IDs are passed through (validated downstream)."""
+        eid = "weird_format_without_slashes"
+        ep = {str(i): self._make_entry(i, eid) for i in range(2)}
+        (self.ep_dir / "weird.json").write_text(json.dumps(ep) + "\n")
+        self._seal()
+        from run_d8_formal_g_sensitivity import load_sidecar_correct
+        sidecar = load_sidecar_correct(self.tmpdir)
+        self.assertIn(eid, sidecar)
+
+    def test_36_missing_episode_id_field(self):
+        """Entry without episode_id field must fail."""
+        ep = {"0": {"step": 0}}  # no episode_id
+        (self.ep_dir / "no_eid.json").write_text(json.dumps(ep) + "\n")
+        self._seal()
+        from run_d8_formal_g_sensitivity import load_sidecar_correct
+        with self.assertRaises(ValueError):
+            load_sidecar_correct(self.tmpdir)
+
+    def test_37_inconsistent_episode_id_within_file(self):
+        """Different steps in same file with different episode_ids must fail."""
+        ep = {
+            "0": self._make_entry(0, "libero_10/task_00/state_00"),
+            "1": self._make_entry(1, "libero_10/task_00/state_01"),
+        }
+        (self.ep_dir / "mixed.json").write_text(json.dumps(ep) + "\n")
+        self._seal()
+        from run_d8_formal_g_sensitivity import load_sidecar_correct
+        with self.assertRaises(ValueError):
+            load_sidecar_correct(self.tmpdir)
+
+    def test_38_empty_file(self):
+        """Empty JSON file must fail."""
+        (self.ep_dir / "empty.json").write_text("{}")
+        self._seal()
+        from run_d8_formal_g_sensitivity import load_sidecar_correct
+        with self.assertRaises(ValueError):
+            load_sidecar_correct(self.tmpdir)
+
+    def test_39_sidecar_seal_verification(self):
+        """Sidecar with correct seal loads successfully."""
+        eid = "libero_10/task_00/state_00"
+        ep = {str(i): self._make_entry(i, eid) for i in range(5)}
+        (self.ep_dir / "ok.json").write_text(json.dumps(ep) + "\n")
+        self._seal()
+        from audit_r3_contact_input import verify_seal
+        seal = verify_seal(self.tmpdir)
+        self.assertIn("sha256sums_sha256", seal)
+
+    def test_40_bad_seal_fails(self):
+        """Sidecar with bad seal must fail verification."""
+        eid = "libero_10/task_00/state_00"
+        ep = {str(i): self._make_entry(i, eid) for i in range(2)}
+        (self.ep_dir / "ok.json").write_text(json.dumps(ep) + "\n")
+        self._seal()
+        # Corrupt the seal
+        self.sums_sidecar.write_text("0000000000000000000000000000000000000000000000000000000000000000  SHA256SUMS\n")
+        from audit_r3_contact_input import verify_seal
+        with self.assertRaises(ValueError):
+            verify_seal(self.tmpdir)
 
 
 if __name__ == "__main__":
