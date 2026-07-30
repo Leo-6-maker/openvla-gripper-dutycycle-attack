@@ -167,7 +167,8 @@ def audit(
             n_zero_event += 1
 
         pos_mask = (labs == 1.0) & effective_mask
-        ep_pos_totals.append(float(weights[pos_mask].sum()))
+        tp = float(weights[pos_mask].sum())
+        ep_pos_totals.append(tp)
 
         # Negative: per-span weights within this episode
         ep_neg_span_weights = []
