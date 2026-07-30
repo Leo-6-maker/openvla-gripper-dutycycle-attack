@@ -158,12 +158,13 @@ def audit(G: int, sidecar: dict, ep_labels: dict) -> dict[str, Any]:
         total_pos += tp
         ep_pos_totals.append(tp)
 
-        # Negative span weights
+        # Negative span weights (use effective_mask for span boundaries)
+        eff_mask = masks & (~rc_arr) & (~geom_arr)
         i = 0
         while i < n:
-            if masks[i] and labs[i] == 0.0:
+            if eff_mask[i] and labs[i] == 0.0:
                 j = i + 1
-                while j < n and masks[j] and labs[j] == 0.0:
+                while j < n and eff_mask[j] and labs[j] == 0.0:
                     j += 1
                 span_w = float(weights[i:j].sum())
                 all_neg_span_weights.append(span_w)
@@ -171,7 +172,7 @@ def audit(G: int, sidecar: dict, ep_labels: dict) -> dict[str, Any]:
             else:
                 i += 1
 
-        neg_mask = (labs == 0.0) & masks
+        neg_mask = (labs == 0.0) & eff_mask
         tn = float(weights[neg_mask].sum())
         total_neg += tn
         ep_neg_totals.append(tn)
