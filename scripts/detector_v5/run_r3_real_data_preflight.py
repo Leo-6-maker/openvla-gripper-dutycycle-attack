@@ -13,8 +13,9 @@ import numpy as np
 import torch
 
 ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT / "scripts" / "detector_v5") not in sys.path:
-    sys.path.insert(0, str(ROOT / "scripts" / "detector_v5"))
+for path in (ROOT / "src", ROOT / "scripts" / "detector_v5", ROOT / "n5" / "phase3_student"):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
 from gripper_attack.seal_utils import rename_noreplace
 from audit_r3_contact_input import sha256_file, verify_seal
