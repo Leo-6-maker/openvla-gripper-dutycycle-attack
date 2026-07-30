@@ -10,11 +10,17 @@ import argparse
 import copy
 import json
 import os
+import sys
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 import torch
+
+ROOT = Path(__file__).resolve().parents[2]
+for path in (ROOT / "src", ROOT / "scripts" / "detector_v5"):
+    if str(path) not in sys.path:
+        sys.path.insert(0, str(path))
 
 from audit_r3_contact_input import sha256_file, verify_seal
 from build_r3_generalization_transition import (
