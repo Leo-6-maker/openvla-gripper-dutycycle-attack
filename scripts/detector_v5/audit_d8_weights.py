@@ -213,10 +213,8 @@ def audit(G: int, sidecar: dict, ep_labels: dict) -> dict[str, Any]:
     ess_pos = float(np.sum(pos_w_arr)**2 / max(np.sum(pos_w_arr**2), 1e-20))
     ess_neg = float(np.sum(neg_w_arr)**2 / max(np.sum(neg_w_arr**2), 1e-20))
 
-    # Multi-fragment: same total event weight as single-fragment in same episode
-    # (verified separately — mf vs sf mean should be similar across all data)
-
-    # Balance
+    # Balance — per-episode semantics (P0-4): each episode gets equal total
+    # positive weight = 1.0, events within episode share equally.
     report = {
         "G": G,
         "applicable_episodes": applicable,
@@ -224,15 +222,15 @@ def audit(G: int, sidecar: dict, ep_labels: dict) -> dict[str, Any]:
         "positive": {
             "total_weight": float(total_pos),
             "event_count": len(all_pos_event_weights),
-            "per_event_mean": float(pw.mean()) if len(pw) > 0 else 0.0,
-            "per_event_min": float(pw.min()) if len(pw) > 0 else 0.0,
-            "per_event_max": float(pw.max()) if len(pw) > 0 else 0.0,
-            "equal_weight_pass": len(pw) <= 1 or bool(np.allclose(pw, pw[0])),
-            "multi_fragment_events": len(multi_frag_weights),
-            "single_fragment_events": len(single_frag_weights),
-            "mf_sf_equal": bool(np.allclose(mf_arr.mean(), sf_arr.mean(), rtol=1e-10)),
+            "per_event_mean": float(pos_w_arr.mean()) if len(pos_w_arr) > 0 else 0.0,
+            "per_event_min": float(pos_w_arr.min()) if len(pos_w_arr) > 0 else 0.0,
+            "per_event_max": float(pos_w_arr.max()) if len(pos_w_arr) > 0 else 0.0,
+            "ess": float(ess_pos),
             "per_episode_mean": float(np.mean(ep_pos_totals)) if ep_pos_totals else 0.0,
             "per_episode_std": float(np.std(ep_pos_totals)) if ep_pos_totals else 0.0,
+            "per_episode_equal": bool(np.allclose(ep_pos_totals, ep_pos_totals[0] if ep_pos_totals else 0)),
+            "multi_fragment_events": len(multi_frag_weights),
+            "single_fragment_events": len(single_frag_weights),
         },
         "negative": {
             "total_weight": float(total_neg),
@@ -252,8 +250,9 @@ def audit(G: int, sidecar: dict, ep_labels: dict) -> dict[str, Any]:
         },
         "balance": {
             "pos_neg_ratio": float(total_pos / max(total_neg, 1e-10)),
-            "effective_sample_size": int(total_pos + total_neg),
-            "max_min_pos_weight_ratio": float(pw.max() / pw.min()) if len(pw) > 0 and pw.min() > 0 else float("inf"),
+            "ess_positive": float(ess_pos),
+            "ess_negative": float(ess_neg),
+            "max_min_pos_weight_ratio": float(pos_w_arr.max() / pos_w_arr.min()) if len(pos_w_arr) > 0 and pos_w_arr.min() > 0 else float("inf"),
         },
         "issues": issues,
         "pass": len(issues) == 0,
