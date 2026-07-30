@@ -593,29 +593,44 @@ def build_physical_event_weights(
 
 
 def _fallback_weights(labels, masks):
-    """Weights without consolidated events: equal per contiguous span."""
+    """Weights without consolidated events: equal per contiguous span.
+
+    Per-episode per-class normalization: each class (positive/negative)
+    gets total weight = 1.0, distributed evenly across its spans.
+    """
     n = len(labels)
     weights = np.zeros(n, dtype=np.float32)
+
+    # Count spans per class
+    pos_spans = []
+    neg_spans = []
     i = 0
     while i < n:
         if masks[i] and labels[i] == 1:
             j = i + 1
             while j < n and masks[j] and labels[j] == 1:
                 j += 1
-            span_len = j - i
-            if span_len > 0:
-                weights[i:j] = 1.0 / float(span_len)
+            pos_spans.append((i, j))
             i = j
         elif masks[i] and labels[i] == 0:
             j = i + 1
             while j < n and masks[j] and labels[j] == 0:
                 j += 1
-            span_len = j - i
-            if span_len > 0:
-                weights[i:j] = 1.0 / float(span_len)
+            neg_spans.append((i, j))
             i = j
         else:
             i += 1
+
+    if pos_spans:
+        pos_weight_per_span = 1.0 / len(pos_spans)
+        for s, e in pos_spans:
+            weights[s:e] = pos_weight_per_span / float(e - s)
+
+    if neg_spans:
+        neg_weight_per_span = 1.0 / len(neg_spans)
+        for s, e in neg_spans:
+            weights[s:e] = neg_weight_per_span / float(e - s)
+
     return weights
 
 
