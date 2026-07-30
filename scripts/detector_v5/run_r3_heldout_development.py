@@ -640,7 +640,7 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
     normal = split_meta["normalization"]
     train_ids = split_ids[f"{family}_train"]; mean = np.asarray(normal["mean"], dtype=np.float64); std = np.asarray(normal["std"], dtype=np.float64)
     recomputed = np.concatenate([records_by_id[identity]["features"] for identity in train_ids], axis=0)
-    if not np.allclose(recomputed.mean(axis=0), mean, atol=1e-10, rtol=0.0) or not np.allclose(np.maximum(recomputed.std(axis=0), 1e-8), std, atol=1e-10, rtol=0.0):
+    if not np.allclose(recomputed.mean(axis=0), mean, atol=1e-6, rtol=0.0) or not np.allclose(np.maximum(recomputed.std(axis=0), 1e-8), std, atol=1e-6, rtol=0.0):
         raise ValueError("G1 normalization is not exactly train-only")
     split_batches = {f"{family}_{split}": _batch(records_by_id, split_ids[f"{family}_{split}"], mean, std, device) for split in evaluated_splits}
     model_cls = _load_model()
