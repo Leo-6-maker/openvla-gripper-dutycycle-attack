@@ -49,6 +49,12 @@ CONFIG_HEADS = {
 }
 THRESHOLDS = tuple(round(0.05 * index, 2) for index in range(1, 20))
 MODEL_HEAD = {"k10_feasibility": "k10_feasible"}
+RISK_DIRECTION = {
+    "physical_criticality": "probability_is_risk",
+    "k10_feasibility": "invert_1_minus_probability_for_risk",
+    "instability": "probability_is_risk",
+    "gripper_closing_state": "probability_is_risk",
+}
 FORBIDDEN_OUTPUT_PARTS = {"protected", "cal", "check", "g10", "t2r-d", "attack", "rollout"}
 
 
@@ -291,10 +297,24 @@ def _safe_auprc(y: np.ndarray, score: np.ndarray) -> float | None:
     if positives == 0:
         return None
     order = np.argsort(-score, kind="mergesort")
-    truth = y[order]
-    cumulative = np.cumsum(truth)
-    precision = cumulative / np.arange(1, len(y) + 1)
-    return float((precision * truth).sum() / positives)
+    y_sorted = y[order]
+    n = len(y)
+    cum_pos = 0.0
+    auprc = 0.0
+    i = 0
+    while i < n:
+        j = i + 1
+        while j < n and score[order[j]] == score[order[i]]:
+            j += 1
+        group_size = j - i
+        group_pos = float(y_sorted[i:j].sum())
+        if group_pos > 0:
+            for k in range(group_size):
+                expected_cum = cum_pos + (k + 1) * group_pos / group_size
+                auprc += (expected_cum / (i + k + 1)) * (group_pos / group_size)
+        cum_pos += group_pos
+        i = j
+    return float(auprc / positives)
 
 
 def _binary_metrics(y: np.ndarray, score: np.ndarray, threshold: float = 0.5) -> dict[str, Any]:
@@ -323,6 +343,24 @@ def _candidate_spans(item: Mapping[str, Any]) -> list[tuple[int, int]]:
     return spans
 
 
+def _teacher_critical_spans(item: Mapping[str, Any], head: str) -> list[tuple[int, int]]:
+    """Contiguous TRUE label spans independent of candidate_close."""
+    masks = np.asarray(item["masks"][head], dtype=bool)
+    targets = np.asarray(item["targets"][head], dtype=np.float32)
+    known_true = masks & (targets == 1)
+    spans: list[tuple[int, int]] = []
+    start: int | None = None
+    for index, value in enumerate(known_true):
+        if value and start is None:
+            start = index
+        if not value and start is not None:
+            spans.append((start, index - 1))
+            start = None
+    if start is not None:
+        spans.append((start, len(known_true) - 1))
+    return spans
+
+
 def _event_label(item: Mapping[str, Any], head: str, start: int, end: int) -> str:
     masks = np.asarray(item["masks"][head], dtype=bool)[start:end + 1]
     targets = np.asarray(item["targets"][head], dtype=np.float32)[start:end + 1]
@@ -335,39 +373,108 @@ def _event_label(item: Mapping[str, Any], head: str, start: int, end: int) -> st
 
 
 def _event_metrics(items: Sequence[Mapping[str, Any]], ids: Sequence[str], head: str, probabilities: Mapping[str, np.ndarray], threshold: float) -> dict[str, Any]:
-    labels: list[int] = []; predictions: list[int] = []; episodes = 0; candidate_episodes = 0; false_emits = 0; true_events = 0; unknown_events = 0; right_censored_events = 0; candidate_events = 0; latencies: list[int] = []
+    labels: list[int] = []; predictions: list[int] = []; episodes = 0; candidate_episodes = 0; false_emits = 0
+    true_events_candidate = 0; unknown_events = 0; right_censored_events = 0; candidate_events = 0
+    teacher_critical_total = 0; teacher_critical_reached_by_candidate = 0
+    teacher_detected_events = 0; latencies: list[int] = []
+
     for item in items:
         if item["identity"] not in ids:
             continue
         episodes += 1
-        spans = _candidate_spans(item); candidate_events += len(spans); candidate_episodes += int(bool(spans))
-        for start, end in spans:
-            label = _event_label(item, head, start, end)
-            event_scores = probabilities[item["identity"]][start:end + 1]
+        tc_spans = _teacher_critical_spans(item, head)
+        teacher_critical_total += len(tc_spans)
+        spans = _candidate_spans(item)
+        candidate_events += len(spans)
+        candidate_episodes += int(bool(spans))
+
+        has_candidate = np.zeros(len(item["features"]), dtype=bool)
+        for s, e in spans:
+            has_candidate[s:e + 1] = True
+        for ts, te in tc_spans:
+            if has_candidate[ts:te + 1].any():
+                teacher_critical_reached_by_candidate += 1
+                detector_hit = False
+                for s, e in spans:
+                    overlap_start = max(ts, s)
+                    overlap_end = min(te, e)
+                    if overlap_start > overlap_end:
+                        continue
+                    event_scores = probabilities[item["identity"]][overlap_start:overlap_end + 1]
+                    if np.any(event_scores >= threshold):
+                        detector_hit = True
+                        first = overlap_start + int(np.flatnonzero(event_scores >= threshold)[0])
+                        latencies.append(first - ts)
+                        break
+                if detector_hit:
+                    teacher_detected_events += 1
+
+        false_emits_in_episode = 0
+        for s, e in spans:
+            event_scores = probabilities[item["identity"]][s:e + 1]
             crossings = np.flatnonzero(event_scores >= threshold)
+            label = _event_label(item, head, s, e)
             if label == "UNKNOWN":
                 unknown_events += 1
-                right_censored_events += int(bool(np.asarray(item.get("right_censored", {}).get(head, np.zeros(len(item["features"]), dtype=bool)))[start:end + 1].any()))
+                right_censored_events += int(bool(np.asarray(item.get("right_censored", {}).get(head, np.zeros(len(item["features"]), dtype=bool)))[s:e + 1].any()))
                 continue
             is_true = label == "TRUE"
             predicted = bool(len(crossings))
-            labels.append(int(is_true)); predictions.append(int(bool(len(crossings))))
+            labels.append(int(is_true))
+            predictions.append(int(predicted))
             if is_true:
-                true_events += 1
-                if predicted:
-                    first = start + int(crossings[0])
-                    latencies.append(first - start)
+                true_events_candidate += 1
             elif predicted:
-                false_emits += 1
+                false_emits_in_episode += 1
+        false_emits += false_emits_in_episode
+
     y = np.asarray(labels, dtype=np.int64); pred = np.asarray(predictions, dtype=np.int64)
     if len(y):
-        tp = int(np.sum((y == 1) & (pred == 1))); tn = int(np.sum((y == 0) & (pred == 0))); fp = int(np.sum((y == 0) & (pred == 1))); fn = int(np.sum((y == 1) & (pred == 0)))
-        recall = tp / (tp + fn) if tp + fn else None; negative_recall = tn / (tn + fp) if tn + fp else None
-        binary = {"count": len(y), "positive": int(y.sum()), "negative": int(len(y) - y.sum()), "balanced_accuracy": (recall + negative_recall) / 2 if recall is not None and negative_recall is not None else None, "mcc": ((tp * tn - fp * fn) / math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))) if (tp + fp) * (tp + fn) * (tn + fp) * (tn + fn) else None, "precision": tp / (tp + fp) if tp + fp else None, "recall": recall, "confusion_matrix": {"tp": tp, "tn": tn, "fp": fp, "fn": fn}}
+        tp = int(np.sum((y == 1) & (pred == 1))); tn = int(np.sum((y == 0) & (pred == 0)))
+        fp = int(np.sum((y == 0) & (pred == 1))); fn = int(np.sum((y == 1) & (pred == 0)))
+        recall = tp / (tp + fn) if tp + fn else None
+        negative_recall = tn / (tn + fp) if tn + fp else None
+        binary = {"count": len(y), "positive": int(y.sum()), "negative": int(len(y) - y.sum()),
+                  "balanced_accuracy": (recall + negative_recall) / 2 if recall is not None and negative_recall is not None else None,
+                  "mcc": ((tp * tn - fp * fn) / math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)))
+                         if (tp + fp) * (tp + fn) * (tn + fp) * (tn + fn) else None,
+                  "precision": tp / (tp + fp) if tp + fp else None, "recall": recall,
+                  "confusion_matrix": {"tp": tp, "tn": tn, "fp": fp, "fn": fn}}
     else:
-        binary = {"count": 0, "positive": 0, "negative": 0, "balanced_accuracy": None, "mcc": None, "precision": None, "recall": None, "confusion_matrix": {"tp": 0, "tn": 0, "fp": 0, "fn": 0}}
+        binary = {"count": 0, "positive": 0, "negative": 0, "balanced_accuracy": None, "mcc": None,
+                  "precision": None, "recall": None, "confusion_matrix": {"tp": 0, "tn": 0, "fp": 0, "fn": 0}}
     negative_recall = (binary["confusion_matrix"]["tn"] / binary["negative"]) if binary["negative"] else None
-    return {"metric_kind": "causal_streaming_first_threshold_crossing", "candidate_events": candidate_events, "candidate_episodes": candidate_episodes, "no_candidate_episodes": episodes - candidate_episodes, "known_events": int(len(y)), "positive_events": int(y.sum()) if len(y) else 0, "negative_events": int(len(y) - y.sum()) if len(y) else 0, "unknown_events": unknown_events, "right_censored_events": right_censored_events, "unknown_event_coverage": (1.0 - unknown_events / candidate_events) if candidate_events else None, "event_recall": binary["recall"], "negative_event_recall": negative_recall, "minority_event_recall": min(binary["recall"], negative_recall) if binary["recall"] is not None and negative_recall is not None else None, "event_precision": binary["precision"], "known_negative_fpr": (binary["confusion_matrix"]["fp"] / binary["negative"] if binary["negative"] else None), "false_emits_per_episode": false_emits / episodes if episodes else None, "latency_mean": float(np.mean(latencies)) if latencies else None, "latency_count": len(latencies), "balanced_accuracy": binary["balanced_accuracy"], "mcc": binary["mcc"], "confusion_matrix": binary["confusion_matrix"], "threshold": threshold, "episodes": episodes, "true_events": true_events, "event_score_source": "none_first_crossing_only"}
+    candidate_ceiling = (teacher_critical_reached_by_candidate / teacher_critical_total) if teacher_critical_total else None
+    end_to_end_critical_recall = (teacher_detected_events / teacher_critical_total) if teacher_critical_total else None
+    candidate_conditioned_recall = (teacher_detected_events / teacher_critical_reached_by_candidate) if teacher_critical_reached_by_candidate else None
+
+    return {"metric_kind": "causal_streaming_first_threshold_crossing",
+            "teacher_critical_events": teacher_critical_total,
+            "candidate_events": candidate_events,
+            "teacher_critical_events_reached_by_candidate": teacher_critical_reached_by_candidate,
+            "candidate_ceiling": candidate_ceiling,
+            "end_to_end_critical_recall": end_to_end_critical_recall,
+            "candidate_conditioned_recall": candidate_conditioned_recall,
+            "candidate_episodes": candidate_episodes,
+            "no_candidate_episodes": episodes - candidate_episodes,
+            "known_events": int(len(y)), "positive_events": int(y.sum()) if len(y) else 0,
+            "negative_events": int(len(y) - y.sum()) if len(y) else 0,
+            "unknown_events": unknown_events, "right_censored_events": right_censored_events,
+            "unknown_event_coverage": (1.0 - unknown_events / candidate_events) if candidate_events else None,
+            "event_recall": binary["recall"],
+            "negative_event_recall": negative_recall,
+            "minority_event_recall": min(binary["recall"], negative_recall)
+                                     if binary["recall"] is not None and negative_recall is not None else None,
+            "event_precision": binary["precision"],
+            "known_negative_fpr": (binary["confusion_matrix"]["fp"] / binary["negative"]
+                                   if binary["negative"] else None),
+            "false_emits_per_episode": false_emits / episodes if episodes else None,
+            "latency_mean": float(np.mean(latencies)) if latencies else None,
+            "latency_count": len(latencies),
+            "balanced_accuracy": binary["balanced_accuracy"], "mcc": binary["mcc"],
+            "confusion_matrix": binary["confusion_matrix"], "threshold": threshold,
+            "episodes": episodes, "true_events_candidate": true_events_candidate,
+            "event_score_source": "none_first_crossing_only"}
 
 
 def _select_threshold(items: Sequence[Mapping[str, Any]], ids: Sequence[str], head: str, probabilities: Mapping[str, np.ndarray]) -> dict[str, Any]:
@@ -422,6 +529,9 @@ def _predict(model: torch.nn.Module, batch: tuple[Any, ...], ids: Sequence[str],
     model.eval()
     with torch.no_grad():
         logits = model(x, timestep_mask=valid)
+    for name, value in logits.items():
+        if not torch.isfinite(value).all():
+            raise FloatingPointError(f"nonfinite logit in {name} during prediction")
     def sigmoid(value: np.ndarray) -> np.ndarray:
         clipped = np.clip(value, -60.0, 60.0)
         return 1.0 / (1.0 + np.exp(-clipped))
@@ -504,6 +614,22 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
     torch.manual_seed(args.seed); np.random.seed(args.seed)
     device = torch.device(args.device)
     transition, g2_binding = _load_g2(args.g2_root)
+    test_policy = transition.get("test_read_policy")
+    if args.read_test:
+        if test_policy != "G7_ONE_TIME_AFTER_VALIDATION_FREEZE":
+            raise ValueError("--read-test requires G7 authorization; G2 transition test_read_policy is not G7_ONE_TIME_AFTER_VALIDATION_FREEZE")
+        g7_transition_path = args.g2_root.parent / "G7_TEST_TRANSITION" / "G7_TEST_READ_TRANSITION.json"
+        if not g7_transition_path.is_file():
+            raise ValueError("G7 test-read transition not found; test payload read is not authorized at G4/G5/G6")
+        g7 = _load_json(g7_transition_path)
+        if g7.get("status") != "PASS_G7_TEST_READ_AUTHORIZED" or g7.get("schema") != "V5_R3_G7_TEST_READ_TRANSITION_V1":
+            raise ValueError("G7 transition is not authorized for test read")
+        if g7.get("consumption_count", 0) != 0:
+            raise ValueError("G7 transition has already been consumed; test can only be read once")
+        g7_binding = g7.get("binding", {})
+        if (g7_binding.get("trainer_sha256") != sha256_file(Path(__file__)) or
+            g7_binding.get("g1_test_manifest_sha256") != g2_binding["split_manifests"].get(f"{args.split_family}_test", {}).get("file_sha256")):
+            raise ValueError("G7 transition binding does not match current execution context")
     allowed_parent = Path(g2_binding["g2_root"]).parent
     _safe_output_root(args.output_root, allowed_parent)
     family = args.split_family
@@ -523,8 +649,22 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
     split_batches = {f"{family}_{split}": _batch(records_by_id, split_ids[f"{family}_{split}"], mean, std, device) for split in evaluated_splits}
     model_cls = _load_model()
     model = model_cls(input_dim=25, hidden=64, short_rf=32, long_rf=128, dropout=0.0).to(device)
+    init_rng_state = torch.get_rng_state()
+    init_np_state = np.random.get_state()
+    import hashlib as _hashlib
+    init_state_digest = _hashlib.sha256(b"".join(param.detach().cpu().numpy().tobytes() for param in model.parameters())).hexdigest()
     active = CONFIG_HEADS[args.config]
     history = _train(model, split_batches[f"{family}_train"], active, args.epochs, args.learning_rate, args.weight_decay, args.gradient_clip)
+    # Verify inactive heads (safe_release) receive zero gradient through shared encoder.
+    model.zero_grad(set_to_none=True)
+    train_x, train_valid, train_targets, train_masks, train_weights = split_batches[f"{family}_train"]
+    loss, _ = _loss(model(train_x, timestep_mask=train_valid), train_targets, _active_masks(train_masks, active), train_weights)
+    loss.backward()
+    for head in INACTIVE_HEADS:
+        idx = model_cls.HEAD_NAMES.index(head)
+        grad_sum = float(sum(p.grad.abs().sum() for p in model.heads[idx].parameters() if p.grad is not None))
+        if grad_sum != 0.0:
+            raise AssertionError(f"inactive head {head} received nonzero gradient: {grad_sum}")
     probabilities = {}
     for split in evaluated_splits:
         probabilities.update(_predict(model, split_batches[f"{family}_{split}"], split_ids[f"{family}_{split}"], records_by_id, device))
@@ -542,7 +682,14 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
         thresholds[head] = {"status": "HOLD_COVERAGE", "threshold": None}
     shuffle_results: dict[str, Any] = {}
     for shuffle_seed in (args.seed + 101, args.seed + 102, args.seed + 103):
+        torch.set_rng_state(init_rng_state)
+        np.random.set_state(init_np_state)
         shuffle_model = model_cls(input_dim=25, hidden=64, short_rf=32, long_rf=128, dropout=0.0).to(device)
+        shuffle_init_digest = _hashlib.sha256(b"".join(param.detach().cpu().numpy().tobytes() for param in shuffle_model.parameters())).hexdigest()
+        if shuffle_init_digest != init_state_digest:
+            raise AssertionError(f"shuffle model seed={shuffle_seed} does not share real model initialization")
+        torch.manual_seed(shuffle_seed)
+        np.random.seed(shuffle_seed)
         shuffled_targets = _shuffle_targets(split_batches[f"{family}_train"], active, shuffle_seed)
         shuffle_history = _train(shuffle_model, split_batches[f"{family}_train"], active, args.epochs, args.learning_rate, args.weight_decay, args.gradient_clip, targets_override=shuffled_targets)
         shuffle_probabilities: dict[str, np.ndarray] = {}
@@ -576,7 +723,15 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
         baselines["linear_probe"][head] = {"threshold": linear_threshold} if linear_threshold is None else {"validation": _event_metrics(records, split_ids[f"{family}_validation"], head, val_prob, linear_threshold), **({"test": _event_metrics(records, split_ids[f"{family}_test"], head, _head_probability(linear["probabilities"], split_ids[f"{family}_test"], head), linear_threshold)} if args.read_test else {}), "threshold": linear_threshold}
     if not args.read_test:
         metrics["test"] = {"status": "NOT_READ_BY_PROTOCOL"}
-    report = {"schema": "V5_R3_HELDOUT_DEVELOPMENT_V2", "status": "ENGINEERING_DEVELOPMENT_NONCONSUMABLE", "split_family": family, "config": args.config, "seed": args.seed, "epochs": args.epochs, "device": str(device), "random_initialization": True, "all_670_checkpoint_loaded": False, "active_heads": list(active), "inactive_heads": list(INACTIVE_HEADS), "train_identity_count": len(train_ids), "validation_identity_count": len(split_ids[f"{family}_validation"]), "test_identity_count": len(split_ids[f"{family}_test"]), "test_payload_read": bool(args.read_test), "test_evaluation_performed": bool(args.read_test), "history": history, "thresholds_validation_only": thresholds, "metrics": metrics, "baselines": baselines, "label_shuffle": shuffle_results, "privileged_oracle": {"status": "NOT_AVAILABLE_SEPARATE_PRIVILEGED_INPUT", "deployable": False}, "binding": {"g2_root": g2_binding["g2_root"], "g2_seal_sha256sums_sha256": g2_binding["g2_seal_sha256sums_sha256"], "g1_root": g2_binding["g1_root"], "g1_seal_sha256sums_sha256": g2_binding["g1_seal_sha256sums_sha256"], "split_manifests": g2_binding["split_manifests"], "normalization_sha256": split_meta["normalization_sha256"], "t4_root": record_binding["t4_root"], "t4_seal_sha256sums_sha256": record_binding["t4_seal_sha256sums_sha256"], "teacher_root_sha256sums_sha256": record_binding["teacher_root_sha256sums_sha256"], "feature_order_sha256": record_binding["feature_order_sha256"], "trainer_sha256": sha256_file(Path(__file__))}, "permissions": {"teacher_labels_read": True, "fit_development_features_read": True, "student_training": True, "development_inference": True, "privileged_oracle_diagnostic": False, "shadow_offline": False, "shadow_live": False, "formal_training": False, "full_fit": False, "rollout": False, "attack": False, "protected_reads": 0}, "threshold_selection_split": "validation_only", "test_read_once": True, "teacher_privileged_fields_in_student": False, "safe_release_status": "NOT_EVALUABLE_COVERAGE"}
+    # Compute safe_release gradient check result for the report.
+    safe_release_grad_zero = True
+    for head in INACTIVE_HEADS:
+        idx = model_cls.HEAD_NAMES.index(head)
+        grad_sum = float(sum(p.grad.abs().sum() for p in model.heads[idx].parameters() if p.grad is not None))
+        if grad_sum != 0.0:
+            safe_release_grad_zero = False
+
+    report = {"schema": "V5_R3_HELDOUT_DEVELOPMENT_V3", "status": "ENGINEERING_DEVELOPMENT_NONCONSUMABLE", "split_family": family, "config": args.config, "seed": args.seed, "epochs": args.epochs, "device": str(device), "random_initialization": True, "all_670_checkpoint_loaded": False, "initial_state_sha256": init_state_digest, "label_shuffle_same_initialization": True, "risk_direction": dict(RISK_DIRECTION), "safe_release_gradient_zero": safe_release_grad_zero, "active_heads": list(active), "inactive_heads": list(INACTIVE_HEADS), "train_identity_count": len(train_ids), "validation_identity_count": len(split_ids[f"{family}_validation"]), "test_identity_count": len(split_ids[f"{family}_test"]), "test_payload_read": bool(args.read_test), "test_evaluation_performed": bool(args.read_test), "history": history, "thresholds_validation_only": thresholds, "metrics": metrics, "baselines": baselines, "label_shuffle": shuffle_results, "privileged_oracle": {"status": "NOT_AVAILABLE_SEPARATE_PRIVILEGED_INPUT", "deployable": False}, "binding": {"g2_root": g2_binding["g2_root"], "g2_seal_sha256sums_sha256": g2_binding["g2_seal_sha256sums_sha256"], "g1_root": g2_binding["g1_root"], "g1_seal_sha256sums_sha256": g2_binding["g1_seal_sha256sums_sha256"], "split_manifests": g2_binding["split_manifests"], "normalization_sha256": split_meta["normalization_sha256"], "t4_root": record_binding["t4_root"], "t4_seal_sha256sums_sha256": record_binding["t4_seal_sha256sums_sha256"], "teacher_root_sha256sums_sha256": record_binding["teacher_root_sha256sums_sha256"], "feature_order_sha256": record_binding["feature_order_sha256"], "trainer_sha256": sha256_file(Path(__file__))}, "permissions": {"teacher_labels_read": True, "fit_development_features_read": True, "student_training": True, "development_inference": True, "privileged_oracle_diagnostic": False, "shadow_offline": False, "shadow_live": False, "formal_training": False, "full_fit": False, "rollout": False, "attack": False, "protected_reads": 0}, "threshold_selection_split": "validation_only", "test_read_once": True, "teacher_privileged_fields_in_student": False, "safe_release_status": "NOT_EVALUABLE_COVERAGE"}
     staging = args.output_root.with_name(f".{args.output_root.name}.staging.{os.getpid()}")
     if staging.exists() or staging.is_symlink():
         raise FileExistsError(f"staging root already exists: {staging}")

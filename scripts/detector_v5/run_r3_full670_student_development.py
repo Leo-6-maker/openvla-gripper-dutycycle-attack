@@ -401,6 +401,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         }
 
     model = N5MultiHeadStudent(input_dim=25, dropout=0.0).to(device)
+    init_rng_state = torch.get_rng_state()
+    init_np_state = np.random.get_state()
+    init_state_digest = hashlib.sha256(b"".join(param.detach().cpu().numpy().tobytes() for param in model.parameters())).hexdigest()
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     active_masks = {head: (masks[head] if head in ACTIVE_HEADS else torch.zeros_like(masks[head])) for head in HEADS}
     with torch.no_grad():
@@ -450,7 +453,14 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise AssertionError(f"checkpoint continuation mismatch: {continuation_diff}")
 
     shuffled_targets = _shuffle_known_targets(targets, active_masks, args.seed + 1)
+    torch.set_rng_state(init_rng_state)
+    np.random.set_state(init_np_state)
     shuffle_model = N5MultiHeadStudent(input_dim=25, dropout=0.0).to(device)
+    shuffle_init_digest = hashlib.sha256(b"".join(param.detach().cpu().numpy().tobytes() for param in shuffle_model.parameters())).hexdigest()
+    if shuffle_init_digest != init_state_digest:
+        raise AssertionError("label-shuffle model does not share real model initialization")
+    torch.manual_seed(args.seed + 1)
+    np.random.seed(args.seed + 1)
     shuffle_optimizer = torch.optim.AdamW(shuffle_model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     with torch.no_grad():
         shuffle_initial = float(_loss(shuffle_model(x, timestep_mask=valid), shuffled_targets, active_masks, weights)[0])
@@ -489,7 +499,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "binding": binding,
             "single_head": single_results,
             "shared_four_head": {"initial_loss": initial, "final_loss": float(final), "loss_reduction": 1.0 - float(final) / max(initial, 1e-12), "accuracy": _accuracy(final_logits, targets, active_masks), "components": components, "history": history},
-            "label_shuffle_control": {"seed": args.seed + 1, "initial_loss": shuffle_initial, "final_loss": float(shuffle_final), "loss_reduction": 1.0 - float(shuffle_final) / max(shuffle_initial, 1e-12), "accuracy": _accuracy(shuffle_logits, shuffled_targets, active_masks), "components": shuffle_components, "history": shuffle_history},
+            "initial_state_sha256": init_state_digest,
+            "label_shuffle_same_initialization": True,
+            "label_shuffle_control": {"seed": args.seed + 1, "initial_state_sha256": shuffle_init_digest, "initial_state_matches_real": shuffle_init_digest == init_state_digest, "initial_loss": shuffle_initial, "final_loss": float(shuffle_final), "loss_reduction": 1.0 - float(shuffle_final) / max(shuffle_initial, 1e-12), "accuracy": _accuracy(shuffle_logits, shuffled_targets, active_masks), "components": shuffle_components, "history": shuffle_history},
             "base_rate": base_rate,
             "disabled_head_gradient_sum": inactive_gradient,
             "checkpoint_sha256": checkpoint_sha,
