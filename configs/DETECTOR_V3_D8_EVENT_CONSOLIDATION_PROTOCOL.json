@@ -1,0 +1,67 @@
+{
+  "schema": "DETECTOR_V3_D8_EVENT_CONSOLIDATION_PROTOCOL_V1",
+  "status": "FROZEN_BEFORE_EXECUTION",
+  "frozen_date": "2026-07-30",
+  "head": "physical_criticality",
+  "tri_state_labels_immutable": true,
+  "unknown_as_negative": false,
+  "unknown_relabel_allowed": false,
+  "bridge_reason_allowlist": [
+    "RELATION_EVIDENCE_UNKNOWN"
+  ],
+  "forbidden_reasons": [
+    "GEOMETRY_NOT_APPLICABLE",
+    "RIGHT_CENSORED",
+    "NONFINITE",
+    "IDENTITY_UNRESOLVED",
+    "KNOWN_FALSE"
+  ],
+  "gap_sensitivity": {
+    "G": [0, 1, 2, 3, 5],
+    "primary_development_candidate": 3,
+    "final_selection": "670_train_validation_CV_only"
+  },
+  "merge_conditions": [
+    "same_episode_identity",
+    "same_head",
+    "both_sides_known_TRUE",
+    "same_logical_object",
+    "same_target",
+    "same_selected_relation",
+    "same_binding_identity",
+    "same_entity_role_type",
+    "gap_length_le_G",
+    "all_gap_steps_UNKNOWN_mask_false",
+    "all_gap_reasons_in_allowlist",
+    "no_known_FALSE_in_gap",
+    "no_GEOMETRY_NOT_APPLICABLE",
+    "no_right_censored_boundary",
+    "no_episode_task_state_boundary",
+    "no_object_target_relation_switch",
+    "multi_relation_ambiguity_signature_consistent",
+    "candidate_ledger_contains_relation"
+  ],
+  "old_g7_test_role": "POSTHOC_DIAGNOSTIC_ONLY",
+  "final_eval_required": "NEW_UNTOUCHED_EVAL160",
+  "articulated_tasks": {
+    "libero_goal/task_00": "ARTICULATED_UNSUPPORTED_EXCLUDE_FROM_PHYSICAL_DENOMINATOR",
+    "libero_goal/task_07": "ARTICULATED_UNSUPPORTED_EXCLUDE_FROM_PHYSICAL_DENOMINATOR"
+  },
+  "output_semantics": {
+    "step_labels_unchanged": true,
+    "UNKNOWN_mask_remains_false": true,
+    "UNKNOWN_training_weight_zero": true,
+    "event_grouping_only": true,
+    "no_pseudo_TRUE_generated": true,
+    "candidate_close_not_used_in_grouping": true
+  },
+  "training_weights": {
+    "physical_head": "teacher_event_based",
+    "candidate_close_dependency": "REMOVED",
+    "consolidated_event_equal_weight": true,
+    "suite_balanced": true,
+    "episode_balanced": true,
+    "UNKNOWN_weight": 0,
+    "articulated_NOT_APPLICABLE_excluded": true
+  }
+}
