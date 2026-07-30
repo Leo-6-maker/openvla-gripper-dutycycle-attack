@@ -383,19 +383,41 @@ def _validate_gap(
                         "step_evidence": gap_evidence,
                     }
 
-            # Verify candidate ledger signature consistency for our relation
+            # R6 P0-2 fix: Gap relation detail MUST exist and match
+            # (not just "relation ID appears in candidate list")
             gap_rel = _find_relation_by_id(relations, step, boundary_rel_id)
-            if gap_rel is not None:
-                sig_gap = canonical_relation_binding_digest(gap_rel)
-                # Empty sig is OK for REL_UNK steps (identity may be incomplete)
-                # But if present, it must match boundary
-                if sig_gap and sig_gap not in (sig_left, ""):
-                    return False, {
-                        "reject_reason": "RELATION_BINDING_CHANGED_IN_GAP",
-                        "step_evidence": gap_evidence,
-                    }
-            # gap_rel is None when relation exists in candidates but has no
-            # detailed binding — that's OK for REL_UNK steps
+            if gap_rel is None:
+                return False, {
+                    "reject_reason": "GAP_MISSING_RELATION_DETAIL",
+                    "step_evidence": gap_evidence,
+                }
+
+            # Gap relation verdict must be UNKNOWN
+            if gap_rel.get("verdict") != "UNKNOWN":
+                return False, {
+                    "reject_reason": f"GAP_RELATION_VERDICT_NOT_UNKNOWN: {gap_rel.get('verdict')}",
+                    "step_evidence": gap_evidence,
+                }
+
+            # Gap relation reason must be RELATION_EVIDENCE_UNKNOWN
+            if gap_rel.get("reason") != "RELATION_EVIDENCE_UNKNOWN":
+                return False, {
+                    "reject_reason": f"GAP_RELATION_REASON_NOT_ALLOWED: {gap_rel.get('reason')}",
+                    "step_evidence": gap_evidence,
+                }
+
+            # Gap relation binding must match boundary
+            sig_gap = canonical_relation_binding_digest(gap_rel)
+            if not sig_gap:
+                return False, {
+                    "reject_reason": "GAP_RELATION_SIGNATURE_EMPTY",
+                    "step_evidence": gap_evidence,
+                }
+            if sig_gap != sig_left:
+                return False, {
+                    "reject_reason": "RELATION_BINDING_CHANGED_IN_GAP",
+                    "step_evidence": gap_evidence,
+                }
 
         # Store boundary evidence in gap_evidence last element
         if gap_evidence:
@@ -444,12 +466,8 @@ def _boundary_relation_id(relations, step) -> int | None:
     status = entry.get("selection_status", "")
     if status != "UNIQUE_SUPPORT":
         return None
-    # Use selected_relation_id (canonical) if present, else fall back
+    # R6 P0-3: Formal mode only — no legacy fallback
     rid = entry.get("selected_relation_id")
-    if rid is None:
-        # Legacy: selected_relation_index may have been stored as list position
-        # Try the selected_relation_index as relation_id directly
-        rid = entry.get("selected_relation_index")
     if rid is None:
         return None
     # Verify the ID actually exists in per_relation

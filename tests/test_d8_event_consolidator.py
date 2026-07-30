@@ -26,13 +26,20 @@ def _label(value, reason="RELATION_EVIDENCE_UNKNOWN", mask=True, valid_mask=True
 
 
 def _rel(**kw):
-    """Make a per-relation record with required identity fields."""
+    """Make a per-relation record with required identity fields.
+
+    R6: verdict and reason defaults added for gap detail validation (P0-2).
+    """
     defaults = {
         "logical_object": "obj_1", "logical_target": "tgt_1",
         "selected_relation": "grasp",
         "entity_role": "MANIPULATED_OBJECT", "entity_type": "box",
         "object_entity_id": 1, "target_entity_id": 2,
         "relation_index": 0,
+        "verdict": "UNKNOWN",
+        "reason": "RELATION_EVIDENCE_UNKNOWN",
+        "mask": False,
+        "valid_mask": False,
     }
     defaults.update(kw)
     return defaults
@@ -509,6 +516,115 @@ class TestRelationSignatureOptionalFields(unittest.TestCase):
         }
         r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
         self.assertEqual(r["total_bridged_gaps"], 1)
+
+
+class TestR6GapDetailFailClosed(unittest.TestCase):
+    """R6 P0-2: Gap relation detail MUST exist and match."""
+
+    def test_44_missing_relation_detail_in_gap_rejects(self):
+        """Gap step with candidate_relation_indices but no matching per_relation detail."""
+        labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
+        rel_boundary = _rel(relation_index=0)
+        # Gap step 1: candidate list contains relation 0, but per_relation is empty
+        relations = {
+            0: _make_sidecar_entry(0, [rel_boundary], selected_relation_id=0),
+            1: _make_sidecar_entry(1, [], selection_status="RELATION_AMBIGUOUS",
+                                   selected_relation_id=None,
+                                   candidate_relation_indices=[0]),  # ID in list but no detail
+            2: _make_sidecar_entry(2, [rel_boundary], selected_relation_id=0),
+        }
+        r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
+        self.assertEqual(r["total_bridged_gaps"], 0)
+
+    def test_45_gap_relation_wrong_verdict_rejects(self):
+        """Gap relation with verdict=TRUE (not UNKNOWN) must reject."""
+        labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
+        rel_boundary = _rel(relation_index=0)
+        rel_gap_wrong = _rel(relation_index=0, verdict="TRUE", reason="RELATION_EVIDENCE_UNKNOWN")
+        relations = {
+            0: _make_sidecar_entry(0, [rel_boundary], selected_relation_id=0),
+            1: _make_sidecar_entry(1, [rel_gap_wrong], selection_status="RELATION_AMBIGUOUS",
+                                   selected_relation_id=None),
+            2: _make_sidecar_entry(2, [rel_boundary], selected_relation_id=0),
+        }
+        r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
+        self.assertEqual(r["total_bridged_gaps"], 0)
+
+    def test_46_gap_relation_wrong_reason_rejects(self):
+        """Gap relation with reason != RELATION_EVIDENCE_UNKNOWN must reject."""
+        labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
+        rel_boundary = _rel(relation_index=0)
+        rel_gap_wrong = _rel(relation_index=0, verdict="UNKNOWN", reason="OTHER_REASON")
+        relations = {
+            0: _make_sidecar_entry(0, [rel_boundary], selected_relation_id=0),
+            1: _make_sidecar_entry(1, [rel_gap_wrong], selection_status="RELATION_AMBIGUOUS",
+                                   selected_relation_id=None),
+            2: _make_sidecar_entry(2, [rel_boundary], selected_relation_id=0),
+        }
+        r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
+        self.assertEqual(r["total_bridged_gaps"], 0)
+
+    def test_47_gap_relation_binding_differs_rejects(self):
+        """Gap relation with different binding digest must reject."""
+        labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
+        rel_boundary = _rel(relation_index=0, logical_object="obj_A")
+        rel_gap_diff = _rel(relation_index=0, logical_object="obj_B",
+                            verdict="UNKNOWN", reason="RELATION_EVIDENCE_UNKNOWN")
+        relations = {
+            0: _make_sidecar_entry(0, [rel_boundary], selected_relation_id=0),
+            1: _make_sidecar_entry(1, [rel_gap_diff], selection_status="RELATION_AMBIGUOUS",
+                                   selected_relation_id=None),
+            2: _make_sidecar_entry(2, [rel_boundary], selected_relation_id=0),
+        }
+        r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
+        self.assertEqual(r["total_bridged_gaps"], 0)
+
+    def test_48_gap_relation_empty_signature_rejects(self):
+        """Gap relation with empty canonical digest must reject."""
+        labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
+        rel_boundary = _rel(relation_index=0)
+        rel_gap_empty = _rel(relation_index=0, logical_object="",
+                             verdict="UNKNOWN", reason="RELATION_EVIDENCE_UNKNOWN")
+        relations = {
+            0: _make_sidecar_entry(0, [rel_boundary], selected_relation_id=0),
+            1: _make_sidecar_entry(1, [rel_gap_empty], selection_status="RELATION_AMBIGUOUS",
+                                   selected_relation_id=None),
+            2: _make_sidecar_entry(2, [rel_boundary], selected_relation_id=0),
+        }
+        r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
+        self.assertEqual(r["total_bridged_gaps"], 0)
+
+    def test_49_same_relation_detail_bridges(self):
+        """Gap with matching detail (verdict=UNKNOWN, reason=REL_UNK, same binding)."""
+        labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
+        rel_same = _rel(relation_index=0, verdict="UNKNOWN", reason="RELATION_EVIDENCE_UNKNOWN")
+        relations = {
+            0: _make_sidecar_entry(0, [rel_same], selected_relation_id=0),
+            1: _make_sidecar_entry(1, [rel_same], selection_status="RELATION_AMBIGUOUS",
+                                   selected_relation_id=None),
+            2: _make_sidecar_entry(2, [rel_same], selected_relation_id=0),
+        }
+        r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
+        self.assertEqual(r["total_bridged_gaps"], 1)
+
+
+class TestR6FormalNoLegacyFallback(unittest.TestCase):
+    """R6 P0-3: Formal mode must not fall back to selected_relation_index."""
+
+    def test_50_no_selected_relation_id_rejects(self):
+        """Boundary without selected_relation_id must reject even if selected_relation_index is set."""
+        labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
+        rel_same = _rel(relation_index=0)
+        # Boundary step 0: selected_relation_id=None but selected_relation_index=0 (legacy)
+        relations = {
+            0: _make_sidecar_entry(0, [rel_same], selected_relation_id=None,
+                                   selected_relation_index=0),  # legacy field present but ignored
+            1: _make_sidecar_entry(1, [rel_same], selection_status="RELATION_AMBIGUOUS",
+                                   selected_relation_id=None),
+            2: _make_sidecar_entry(2, [rel_same], selected_relation_id=0),
+        }
+        r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
+        self.assertEqual(r["total_bridged_gaps"], 0)
 
 
 if __name__ == "__main__":

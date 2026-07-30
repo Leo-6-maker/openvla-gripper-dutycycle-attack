@@ -14,7 +14,9 @@ import json
 import os
 import subprocess
 import sys
+import uuid
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -73,6 +75,7 @@ def build(
     output_root: Path,
     allowlist_path: Path | None = None,
     num_workers: int = 1,
+    run_label: str = "A",
 ) -> dict[str, Any]:
     if subprocess.check_output(("git", "status", "--porcelain"), cwd=ROOT, text=True).strip():
         raise ValueError("clean checkout required")
@@ -164,6 +167,21 @@ def build(
                     "evidence_fields": evidence,
                     **sig,
                 })
+
+            # R6 P0-1: Verify identity ordering invariant for this step
+            # For multi-relation steps, object/target identity counts must match
+            # relation count to guarantee positional pairing is valid.
+            n_obj = len(objects)
+            n_tgt = len(targets)
+            n_rel = len(per_rel)
+            if n_obj != n_rel or n_tgt != n_rel:
+                # Only fail if there are identities at all (some steps have none)
+                if n_obj > 0 or n_tgt > 0:
+                    raise ValueError(
+                        f"R6 identity ordering violation at {eid} step={step}: "
+                        f"objects={n_obj} targets={n_tgt} relations={n_rel} "
+                        f"(all must be equal or all zero)"
+                    )
 
             # Determine selection status
             supporting = [r for r in per_rel if r["verdict"] == "TRUE"]
@@ -259,10 +277,18 @@ def build(
         )
 
     # Build manifest
+    run_uuid = str(uuid.uuid4())
+    created_at = datetime.now(timezone.utc).isoformat()
     payload = {
         "schema": "DETECTOR_V3_D8_RELATION_SIDECAR_V1",
         "status": "PASS_MATERIALIZED",
+        "run_label": run_label,
+        "run_uuid": run_uuid,
+        "created_at": created_at,
         "code_snapshot": {"commit": commit, "tree": tree},
+        "builder_sha256": sha256_file(Path(__file__)),
+        "d8_consolidator_sha256": sha256_file(ROOT / "scripts" / "detector_v5" / "d8_event_consolidator.py"),
+        "d8_protocol_sha256": sha256_file(ROOT / "configs" / "DETECTOR_V3_D8_EVENT_CONSOLIDATION_PROTOCOL.json"),
         "teacher_root": str(teacher_root),
         "teacher_seal": teacher_seal["sha256sums_sha256"],
         "teacher_manifest_sha256": sha256_file(teacher_root / "teacher_manifest.json"),
@@ -273,9 +299,6 @@ def build(
         "steps_found": total_steps,
         "raw_label_digest": raw_label_digest,
         "selection_statistics": {k: dict(v) for k, v in stats.items()},
-        "builder_sha256": sha256_file(Path(__file__)),
-        "d8_consolidator_sha256": sha256_file(ROOT / "scripts" / "detector_v5" / "d8_event_consolidator.py"),
-        "d8_protocol_sha256": sha256_file(ROOT / "configs" / "DETECTOR_V3_D8_EVENT_CONSOLIDATION_PROTOCOL.json"),
         "protected_reads": 0,
         "test_payload_read": 0,
     }
@@ -296,8 +319,10 @@ def main() -> int:
     parser.add_argument("--teacher-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--num-workers", type=int, default=1)
+    parser.add_argument("--run-label", type=str, default="A")
     args = parser.parse_args()
-    result = build(args.teacher_root, args.output_root, num_workers=args.num_workers)
+    result = build(args.teacher_root, args.output_root,
+                   num_workers=args.num_workers, run_label=args.run_label)
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 

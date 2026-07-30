@@ -155,8 +155,11 @@ def load_sidecar_correct(sidecar_root: Path) -> Dict[str, Dict[int, dict]]:
 def _validate_episode_id_format(eid: str, source: str):
     """Validate episode_id has the required suite/task/state format."""
     parts = eid.split("/")
-    if len(parts) < 3:
-        raise ValueError(f"malformed episode_id '{eid}' in {source}: expected suite/task_XX/state_YY")
+    if len(parts) != 3:
+        raise ValueError(
+            f"malformed episode_id '{eid}' in {source}: "
+            f"expected exactly suite/task_XX/state_YY, got {len(parts)} components"
+        )
     suite = parts[0]
     if suite not in ("libero_10", "libero_goal", "libero_object", "libero_spatial"):
         raise ValueError(f"unknown suite '{suite}' in episode_id '{eid}' in {source}")
