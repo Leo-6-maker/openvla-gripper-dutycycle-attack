@@ -118,7 +118,7 @@ def deterministic_gripper_gate(predictions: list[dict[str, Any]]) -> dict[str, A
     """
     results: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
     for row in predictions:
-        if row.get("split") != "validation":
+        if row.get("split") != "episode_validation":
             continue
         eid = row["episode_id"]
         cc = row.get("candidate_close", False)
@@ -146,7 +146,7 @@ def compute_event_metrics_independent(
     """Independent event-level metric computation from predictions."""
     by_episode: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in predictions:
-        if row.get("split") != "validation":
+        if row.get("split") != "episode_validation":
             continue
         by_episode[row["episode_id"]].append(row)
 
@@ -301,7 +301,7 @@ def compute_step_metrics_independent(
     ys = []
     ss = []
     for row in predictions:
-        if row.get("split") != "validation":
+        if row.get("split") != "episode_validation":
             continue
         hd = row.get(head, {})
         if not isinstance(hd, dict) or not hd.get("known"):
@@ -321,7 +321,7 @@ def compute_shuffle_metrics_independent(
     ys = []
     ss = []
     for row in predictions:
-        if row.get("split") != "validation":
+        if row.get("split") != "episode_validation":
             continue
         hd = row.get(head, {})
         if not isinstance(hd, dict) or not hd.get("known"):
