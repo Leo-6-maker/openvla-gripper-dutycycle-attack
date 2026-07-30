@@ -27,6 +27,7 @@ def test_g3_active_and_inactive_heads_are_frozen():
 
 def test_g3_exact_permission_boundary(tmp_path):
     transition = {
+        "schema": "TEACHER_TO_STUDENT_GENERALIZATION_TRANSITION_V1",
         "status": "PASS_G2_DEVELOPMENT_TRANSITION",
         "protected_reads": 0,
         "model_boundary": {
