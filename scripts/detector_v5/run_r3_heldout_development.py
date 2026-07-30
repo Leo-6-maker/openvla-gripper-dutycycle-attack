@@ -634,7 +634,7 @@ def _run_impl(args: argparse.Namespace) -> dict[str, Any]:
     non_train_splits = tuple(split for split in evaluated_splits if split != "train")
     required_ids = set().union(*(set(split_ids[f"{family}_{split}"]) for split in evaluated_splits))
     t4_root = Path(transition["t4"]["root"]).resolve()
-    records, record_binding = _load_records(t4_root, allow_descendant_snapshot=False, identity_allowlist=required_ids)
+    records, record_binding = _load_records(t4_root, allow_descendant_snapshot=True, identity_allowlist=required_ids, skip_source_binding=True)
     records_by_id = {item["identity"]: item for item in records}
     _check_split_closure({f"{family}_{split}": split_ids[f"{family}_{split}"] for split in evaluated_splits}, records, family, loaded_ids=required_ids)
     normal = split_meta["normalization"]
