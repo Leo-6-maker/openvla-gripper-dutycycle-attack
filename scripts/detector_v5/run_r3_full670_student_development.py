@@ -12,6 +12,7 @@ import copy
 import hashlib
 import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any, Mapping
@@ -101,7 +102,25 @@ def _safe_episode(formal_root: Path, relative_path: str) -> Path:
     return path
 
 
-def _load_t4(t4_root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
+def _snapshot_matches(snapshot: Mapping[str, Any], *, allow_descendant_snapshot: bool) -> bool:
+    actual_commit, actual_tree = _git_snapshot(ROOT)
+    if (actual_commit, actual_tree) == (snapshot.get("commit"), snapshot.get("tree")):
+        return True
+    if not allow_descendant_snapshot:
+        return False
+    source_commit = snapshot.get("commit")
+    source_tree = snapshot.get("tree")
+    if not isinstance(source_commit, str) or len(source_commit) != 40 or not isinstance(source_tree, str) or len(source_tree) != 40:
+        return False
+    try:
+        resolved_tree = subprocess.check_output(("git", "rev-parse", f"{source_commit}^{{tree}}"), cwd=ROOT, text=True).strip()
+        is_ancestor = subprocess.run(("git", "merge-base", "--is-ancestor", source_commit, actual_commit), cwd=ROOT, check=False).returncode == 0
+    except (OSError, subprocess.CalledProcessError):
+        return False
+    return resolved_tree == source_tree and is_ancestor
+
+
+def _load_t4(t4_root: Path, *, allow_descendant_snapshot: bool = False) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     t4_root = _safe_root(t4_root)
     t4_seal = verify_seal(t4_root)
     transition_path = _safe_file(t4_root / "TEACHER_STUDENT_TRANSITION.json", label="T4 transition")
@@ -117,9 +136,8 @@ def _load_t4(t4_root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, A
     if not isinstance(permissions, Mapping) or permissions.get("student_training_scope") != "DEVELOPMENT_ONLY" or permissions.get("development_student_training_authorized") is not True or permissions.get("formal_training_authorized") is not False or permissions.get("formal_inference_authorized") is not False or permissions.get("attack_authorized") is not False:
         raise ValueError("T4 development permission scope is invalid")
 
-    actual_commit, actual_tree = _git_snapshot(ROOT)
     snapshot = transition.get("code_snapshot")
-    if not isinstance(snapshot, Mapping) or (actual_commit, actual_tree) != (snapshot.get("commit"), snapshot.get("tree")):
+    if not isinstance(snapshot, Mapping) or not _snapshot_matches(snapshot, allow_descendant_snapshot=allow_descendant_snapshot):
         raise ValueError("T4 code snapshot does not match the consuming checkout")
     protocol_path = _safe_file(ROOT / "configs" / "R3_DEV_PROTOCOL.json", label="R3 protocol")
     if sha256_file(protocol_path) != transition.get("protocol", {}).get("sha256"):
@@ -177,8 +195,8 @@ def _load_t4(t4_root: Path) -> tuple[dict[str, Any], dict[str, Any], dict[str, A
     return transition, teacher_manifest, coverage, {"teacher_root": teacher_root, "coverage_root": coverage_root, "formal_root": formal_root, "t0a_root": t0a_root, "t0b_path": t0b_path, "t0a_manifest": t0a_manifest, "t0b_manifest": t0b_manifest, "t4_seal": t4_seal}
 
 
-def _load_records(t4_root: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    transition, teacher_manifest, coverage, roots = _load_t4(t4_root)
+def _load_records(t4_root: Path, *, allow_descendant_snapshot: bool = False) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    transition, teacher_manifest, coverage, roots = _load_t4(t4_root, allow_descendant_snapshot=allow_descendant_snapshot)
     audit_root = Path(str(transition["t0_a"]["root"])).resolve()
     audit_seal = verify_seal(audit_root)
     audit_path = audit_root / "FORMAL_INPUT_MANIFEST.json"
@@ -268,6 +286,7 @@ def _load_records(t4_root: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
         binding_rows.append({
             "identity": identity,
             "features": np.asarray([row["features_25d"] for row in features], dtype=np.float32),
+            "candidate_close": np.asarray(candidates, dtype=bool),
             "targets": {head: np.asarray(values, dtype=np.float32) for head, values in targets.items()},
             "masks": {head: np.asarray(values, dtype=bool) for head, values in masks.items()},
             "weights": {head: _event_weights(candidates, masks[head]) for head in HEADS},
