@@ -123,7 +123,7 @@ def _snapshot_matches(snapshot: Mapping[str, Any], *, allow_descendant_snapshot:
     return resolved_tree == source_tree and is_ancestor
 
 
-def _load_t4(t4_root: Path, *, allow_descendant_snapshot: bool = False) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
+def _load_t4(t4_root: Path, *, allow_descendant_snapshot: bool = False, skip_source_binding: bool = False) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any], dict[str, Any]]:
     t4_root = _safe_root(t4_root)
     t4_seal = verify_seal(t4_root)
     transition_path = _safe_file(t4_root / "TEACHER_STUDENT_TRANSITION.json", label="T4 transition")
@@ -146,7 +146,7 @@ def _load_t4(t4_root: Path, *, allow_descendant_snapshot: bool = False) -> tuple
     if sha256_file(protocol_path) != transition.get("protocol", {}).get("sha256"):
         raise ValueError("T4 protocol binding mismatch")
     feature_binding = _feature_binding(ROOT)
-    if transition.get("feature_binding") != feature_binding or transition.get("source_bindings") != _source_bindings(ROOT):
+    if not skip_source_binding and (transition.get("feature_binding") != feature_binding or transition.get("source_bindings") != _source_bindings(ROOT)):
         raise ValueError("T4 source/feature binding mismatch")
 
     teacher_root = _safe_root(Path(str(transition["teacher_root"])))
@@ -198,8 +198,8 @@ def _load_t4(t4_root: Path, *, allow_descendant_snapshot: bool = False) -> tuple
     return transition, teacher_manifest, coverage, {"teacher_root": teacher_root, "coverage_root": coverage_root, "formal_root": formal_root, "t0a_root": t0a_root, "t0b_path": t0b_path, "t0a_manifest": t0a_manifest, "t0b_manifest": t0b_manifest, "t4_seal": t4_seal}
 
 
-def _load_records(t4_root: Path, *, allow_descendant_snapshot: bool = False, identity_allowlist: set[str] | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    transition, teacher_manifest, coverage, roots = _load_t4(t4_root, allow_descendant_snapshot=allow_descendant_snapshot)
+def _load_records(t4_root: Path, *, allow_descendant_snapshot: bool = False, identity_allowlist: set[str] | None = None, skip_source_binding: bool = False) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    transition, teacher_manifest, coverage, roots = _load_t4(t4_root, allow_descendant_snapshot=allow_descendant_snapshot, skip_source_binding=skip_source_binding)
     audit_root = Path(str(transition["t0_a"]["root"])).resolve()
     audit_seal = verify_seal(audit_root)
     audit_path = audit_root / "FORMAL_INPUT_MANIFEST.json"
