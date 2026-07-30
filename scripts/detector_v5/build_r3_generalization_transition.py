@@ -229,7 +229,7 @@ def _validate_g1(g1_root: Path, *, t4_seal: str, g0_seal: str, feature_order_sha
     if split_protocol.get("normalization_source") != "train_only" or split_protocol.get("test_read_once") is not True:
         raise ValueError("G1 split protocol is not closed")
     audit_input = audit.get("input_binding", {})
-    if audit_input.get("t4_seal_sha256sums_sha256") != t4_seal or audit_input.get("g0_seal_sha256sums_sha256") != g0_seal or audit_input.get("feature_order_sha256") != feature_order_sha:
+    if audit_input.get("t4_seal_sha256sums_sha256") != t4_seal or audit_input.get("g0_root_sha256sums_sha256") != g0_seal or audit_input.get("feature_order_sha256") != feature_order_sha:
         raise ValueError("G1 nested source binding mismatch")
     return {
         "audit": {"path": "G1_SPLIT_AUDIT.json", "sha256": audit_sha},
