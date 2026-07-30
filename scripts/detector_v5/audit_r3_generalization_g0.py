@@ -163,8 +163,12 @@ def _safe_ratio(numerator: int | float, denominator: int | float) -> float | Non
 
 def _validate_output_path(raw_output: Path, allowed_parent: Path) -> Path:
     """Reject unsafe paths before any resolve can hide a symlink or escape."""
-    if not raw_output.is_absolute() or raw_output.exists() or raw_output.is_symlink():
+    if not raw_output.is_absolute():
         raise ValueError(f"output root must be a new absolute regular path: {raw_output}")
+    if raw_output.is_symlink():
+        raise ValueError(f"output root is a symlink: {raw_output}")
+    if raw_output.exists():
+        raise FileExistsError(raw_output)
     if any(part.casefold() in FORBIDDEN_PATH_PARTS for part in raw_output.parts):
         raise ValueError("output root is under a forbidden path")
     current = Path(raw_output.anchor)
