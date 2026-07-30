@@ -49,19 +49,29 @@ def _step_is_unk_allowed(lab: dict | None) -> bool:
 
 
 def _relation_signature(ep_rel: dict | None) -> str:
-    """Stable signature. Returns empty string if any field is missing/empty (fail-closed)."""
+    """Stable signature. Returns empty string if critical fields missing (fail-closed).
+
+    entity_type and object_entity_id/target_entity_id are optional identity
+    fields that may be legitimately empty in the sidecar data.
+    """
     if not isinstance(ep_rel, dict):
         return ""
-    fields = [
+    # Critical fields: must be non-empty (fail-closed)
+    critical = [
         "logical_object", "logical_target", "selected_relation",
-        "binding_identity", "entity_role", "entity_type",
-        "object_entity_id", "target_entity_id",
+        "binding_identity", "entity_role",
     ]
     values = []
-    for f in fields:
+    for f in critical:
         v = ep_rel.get(f, "")
         if v is None or (isinstance(v, str) and v.strip() == ""):
-            return ""  # fail-closed: missing field
+            return ""
+        values.append(str(v))
+    # Optional fields: included when present, empty string when absent
+    for f in ("entity_type", "object_entity_id", "target_entity_id"):
+        v = ep_rel.get(f, "")
+        if v is None:
+            v = ""
         values.append(str(v))
     return hashlib.sha256("|".join(values).encode()).hexdigest()
 

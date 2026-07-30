@@ -441,5 +441,60 @@ class TestSidecarLoaderCorrectness(unittest.TestCase):
             verify_seal(self.tmpdir)
 
 
+class TestRelationSignatureOptionalFields(unittest.TestCase):
+    """Relation signature treats entity_type as optional."""
+
+    def test_41_empty_entity_type_bridges(self):
+        """Empty entity_type should NOT block bridging (optional field)."""
+        labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
+        base_rel = {
+            "step": 0, "logical_object": "obj_1", "logical_target": "tgt_1",
+            "selected_relation": "grasp", "binding_identity": "bind_1",
+            "entity_role": "MANIPULATED_OBJECT",
+            "object_entity_id": 1, "target_entity_id": 2,
+        }
+        rels = [
+            {**base_rel, "step": 0, "entity_type": ""},
+            {**base_rel, "step": 1, "entity_type": ""},
+            {**base_rel, "step": 2, "entity_type": ""},
+        ]
+        r = consolidate_physical_events("test/ep/state", labels, relations=rels, G=3)
+        self.assertEqual(r["total_bridged_gaps"], 1)
+
+    def test_42_missing_critical_field_still_rejects(self):
+        """Missing logical_object (critical) must still reject."""
+        labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
+        base_rel = {
+            "step": 0, "logical_target": "tgt_1",
+            "selected_relation": "grasp", "binding_identity": "bind_1",
+            "entity_role": "MANIPULATED_OBJECT",
+            "object_entity_id": 1, "target_entity_id": 2,
+        }
+        rels = [
+            {**base_rel, "step": 0, "logical_object": ""},
+            {**base_rel, "step": 1, "logical_object": "x"},
+            {**base_rel, "step": 2, "logical_object": ""},
+        ]
+        r = consolidate_physical_events("test/ep/state", labels, relations=rels, G=3)
+        self.assertEqual(r["total_bridged_gaps"], 0)
+
+    def test_43_none_entity_type_allowed(self):
+        """None entity_type should be treated as empty (optional)."""
+        labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
+        base_rel = {
+            "step": 0, "logical_object": "obj_1", "logical_target": "tgt_1",
+            "selected_relation": "grasp", "binding_identity": "bind_1",
+            "entity_role": "MANIPULATED_OBJECT",
+            "object_entity_id": 1, "target_entity_id": 2,
+        }
+        rels = [
+            {**base_rel, "step": 0, "entity_type": None},
+            {**base_rel, "step": 1, "entity_type": None},
+            {**base_rel, "step": 2, "entity_type": None},
+        ]
+        r = consolidate_physical_events("test/ep/state", labels, relations=rels, G=3)
+        self.assertEqual(r["total_bridged_gaps"], 1)
+
+
 if __name__ == "__main__":
     unittest.main()
