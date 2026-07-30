@@ -383,8 +383,11 @@ def _validate_gap(
                         "step_evidence": gap_evidence,
                     }
 
-            # R6 P0-2 fix: Gap relation detail MUST exist and match
-            # (not just "relation ID appears in candidate list")
+            # R6 P0-2 fix: Gap relation detail MUST exist with matching binding.
+            # The aggregate label already confirmed RELATION_EVIDENCE_UNKNOWN for
+            # the step. Per-relation verdict may differ from aggregate (different
+            # semantic levels). What matters: the same relation binding persisted
+            # through the gap with non-forbidden identity.
             gap_rel = _find_relation_by_id(relations, step, boundary_rel_id)
             if gap_rel is None:
                 return False, {
@@ -392,21 +395,15 @@ def _validate_gap(
                     "step_evidence": gap_evidence,
                 }
 
-            # Gap relation verdict must be UNKNOWN
-            if gap_rel.get("verdict") != "UNKNOWN":
+            # Gap relation must not have forbidden reason at per-relation level
+            gap_reason = gap_rel.get("reason", "")
+            if gap_reason in FORBIDDEN_REASONS:
                 return False, {
-                    "reject_reason": f"GAP_RELATION_VERDICT_NOT_UNKNOWN: {gap_rel.get('verdict')}",
+                    "reject_reason": f"GAP_RELATION_FORBIDDEN_REASON: {gap_reason}",
                     "step_evidence": gap_evidence,
                 }
 
-            # Gap relation reason must be RELATION_EVIDENCE_UNKNOWN
-            if gap_rel.get("reason") != "RELATION_EVIDENCE_UNKNOWN":
-                return False, {
-                    "reject_reason": f"GAP_RELATION_REASON_NOT_ALLOWED: {gap_rel.get('reason')}",
-                    "step_evidence": gap_evidence,
-                }
-
-            # Gap relation binding must match boundary
+            # Gap relation binding must match boundary (fail-closed on empty sig)
             sig_gap = canonical_relation_binding_digest(gap_rel)
             if not sig_gap:
                 return False, {

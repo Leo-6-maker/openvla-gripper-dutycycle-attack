@@ -536,28 +536,30 @@ class TestR6GapDetailFailClosed(unittest.TestCase):
         r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
         self.assertEqual(r["total_bridged_gaps"], 0)
 
-    def test_45_gap_relation_wrong_verdict_rejects(self):
-        """Gap relation with verdict=TRUE (not UNKNOWN) must reject."""
+    def test_45_gap_relation_any_verdict_bridges(self):
+        """Gap per-relation verdict=TRUE still bridges (aggregate level is UNK)."""
         labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
-        rel_boundary = _rel(relation_index=0)
-        rel_gap_wrong = _rel(relation_index=0, verdict="TRUE", reason="RELATION_EVIDENCE_UNKNOWN")
+        rel_same = _rel(relation_index=0)
+        rel_gap = _rel(relation_index=0, verdict="TRUE", reason="RELATION_EVIDENCE_UNKNOWN")
         relations = {
-            0: _make_sidecar_entry(0, [rel_boundary], selected_relation_id=0),
-            1: _make_sidecar_entry(1, [rel_gap_wrong], selection_status="RELATION_AMBIGUOUS",
+            0: _make_sidecar_entry(0, [rel_same], selected_relation_id=0),
+            1: _make_sidecar_entry(1, [rel_gap], selection_status="RELATION_AMBIGUOUS",
                                    selected_relation_id=None),
-            2: _make_sidecar_entry(2, [rel_boundary], selected_relation_id=0),
+            2: _make_sidecar_entry(2, [rel_same], selected_relation_id=0),
         }
         r = consolidate_physical_events("test/ep/state", labels, relations=relations, G=3)
-        self.assertEqual(r["total_bridged_gaps"], 0)
+        # Bridges because per-relation verdict is not a hard gate;
+        # aggregate label reason (RELATION_EVIDENCE_UNKNOWN) is the gate
+        self.assertEqual(r["total_bridged_gaps"], 1)
 
-    def test_46_gap_relation_wrong_reason_rejects(self):
-        """Gap relation with reason != RELATION_EVIDENCE_UNKNOWN must reject."""
+    def test_46_gap_relation_forbidden_reason_rejects(self):
+        """Gap per-relation with forbidden reason (KNOWN_FALSE) must reject."""
         labels = {0: _label("TRUE"), 1: _label("UNKNOWN"), 2: _label("TRUE")}
         rel_boundary = _rel(relation_index=0)
-        rel_gap_wrong = _rel(relation_index=0, verdict="UNKNOWN", reason="OTHER_REASON")
+        rel_gap_forbidden = _rel(relation_index=0, verdict="UNKNOWN", reason="KNOWN_FALSE")
         relations = {
             0: _make_sidecar_entry(0, [rel_boundary], selected_relation_id=0),
-            1: _make_sidecar_entry(1, [rel_gap_wrong], selection_status="RELATION_AMBIGUOUS",
+            1: _make_sidecar_entry(1, [rel_gap_forbidden], selection_status="RELATION_AMBIGUOUS",
                                    selected_relation_id=None),
             2: _make_sidecar_entry(2, [rel_boundary], selected_relation_id=0),
         }
