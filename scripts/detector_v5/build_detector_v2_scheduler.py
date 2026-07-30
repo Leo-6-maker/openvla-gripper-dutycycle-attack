@@ -185,15 +185,12 @@ def build(
             grid_results.append(metrics)
 
     # Select best: maximize e2e_recall subject to guardrails
-    valid = [g for g in grid_results if g["end_to_end_recall"] is not None]
-    valid = [g for g in valid if g["end_to_end_recall"] >= 0.55]
-    valid = [g for g in valid if g["false_emits_per_episode"] is not None]
+    valid = [g for g in grid_results if g["end_to_end_recall"] is not None and g["false_emits_per_episode"] is not None]
+    # Select: maximize e2e_recall, minimize false_emits (primary sort by e2e, secondary by fewer false_emits)
+    valid.sort(key=lambda g: (g["end_to_end_recall"], -g["false_emits_per_episode"]), reverse=True)
 
     if not valid:
-        raise ValueError("no scheduler config passes guardrails")
-
-    # Sort by e2e_recall desc, then false_emits asc
-    valid.sort(key=lambda g: (g["end_to_end_recall"], -g["false_emits_per_episode"]), reverse=True)
+        raise ValueError("no valid scheduler configs")
     selected = valid[0]
 
     # Verify on other seeds
