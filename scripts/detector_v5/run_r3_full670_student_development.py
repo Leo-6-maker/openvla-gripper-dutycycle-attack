@@ -12,6 +12,7 @@ import copy
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -52,6 +53,8 @@ from run_r3_micro_overfit import _accuracy, _batch, _event_weights, _load_model,
 ACTIVE_HEADS = ("physical_criticality", "k10_feasibility", "instability", "gripper_closing_state")
 INACTIVE_HEADS = ("safe_release",)
 TRUTH_VALUES = {"TRUE", "FALSE", "UNKNOWN", "NOT_APPLICABLE"}
+_TEACHER_IDENTITY_RE = re.compile(r'"episode_id"\s*:\s*("(?:\\.|[^"\\])*")')
+_TEACHER_STEP_RE = re.compile(r'"step"\s*:\s*(-?\d+)')
 
 
 def _validate_t4_permissions(permissions: Any) -> None:
@@ -195,7 +198,7 @@ def _load_t4(t4_root: Path, *, allow_descendant_snapshot: bool = False) -> tuple
     return transition, teacher_manifest, coverage, {"teacher_root": teacher_root, "coverage_root": coverage_root, "formal_root": formal_root, "t0a_root": t0a_root, "t0b_path": t0b_path, "t0a_manifest": t0a_manifest, "t0b_manifest": t0b_manifest, "t4_seal": t4_seal}
 
 
-def _load_records(t4_root: Path, *, allow_descendant_snapshot: bool = False) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def _load_records(t4_root: Path, *, allow_descendant_snapshot: bool = False, identity_allowlist: set[str] | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     transition, teacher_manifest, coverage, roots = _load_t4(t4_root, allow_descendant_snapshot=allow_descendant_snapshot)
     audit_root = Path(str(transition["t0_a"]["root"])).resolve()
     audit_seal = verify_seal(audit_root)
@@ -209,25 +212,40 @@ def _load_records(t4_root: Path, *, allow_descendant_snapshot: bool = False) -> 
     bindings = audited.get("episode_bindings")
     if not isinstance(bindings, Mapping) or len(bindings) != 670:
         raise ValueError("T0-A identity closure is incomplete")
+    all_identities = {str(identity) for identity in bindings}
+    selected_identities = sorted(all_identities if identity_allowlist is None else {str(identity) for identity in identity_allowlist})
+    if not selected_identities or not set(selected_identities).issubset(all_identities):
+        raise ValueError("identity allowlist is empty or outside T0-A")
 
     labels: dict[tuple[str, int], dict[str, Any]] = {}
+    seen_teacher_keys: set[tuple[str, int]] = set()
+    total_teacher_rows = 0
     with (roots["teacher_root"] / "teacher_records.jsonl").open(encoding="utf-8") as handle:
         for line_number, line in enumerate(handle, 1):
             if not line.strip():
                 continue
-            row = json.loads(line)
-            identity, step = str(row.get("episode_id")), row.get("step")
-            if not isinstance(step, int) or isinstance(step, bool) or step < 0 or (identity, step) in labels:
+            total_teacher_rows += 1
+            identity_matches = _TEACHER_IDENTITY_RE.findall(line)
+            step_matches = _TEACHER_STEP_RE.findall(line)
+            if len(identity_matches) != 1 or len(step_matches) != 1:
+                raise ValueError(f"malformed Teacher identity index at line {line_number}")
+            identity, step = str(json.loads(identity_matches[0])), int(step_matches[0])
+            if not isinstance(step, int) or isinstance(step, bool) or step < 0 or (identity, step) in seen_teacher_keys:
                 raise ValueError(f"duplicate/malformed Teacher record at line {line_number}")
-            row_labels = row.get("labels")
-            if not isinstance(row_labels, Mapping) or set(row_labels) != set(HEADS):
-                raise ValueError(f"Teacher head closure failed at line {line_number}")
-            labels[(identity, step)] = row
-    if len(labels) != 196483:
-        raise ValueError(f"Teacher record count mismatch: {len(labels)}")
+            seen_teacher_keys.add((identity, step))
+            if identity not in all_identities:
+                raise ValueError(f"Teacher record outside T0-A identity closure: {identity}")
+            if identity in selected_identities:
+                row = json.loads(line)
+                row_labels = row.get("labels")
+                if str(row.get("episode_id")) != identity or row.get("step") != step or not isinstance(row_labels, Mapping) or set(row_labels) != set(HEADS):
+                    raise ValueError(f"Teacher head closure failed at line {line_number}")
+                labels[(identity, step)] = row
+    if total_teacher_rows != 196483:
+        raise ValueError(f"Teacher record count mismatch: {total_teacher_rows}")
 
     binding_rows: list[dict[str, Any]] = []
-    for identity in sorted(bindings):
+    for identity in selected_identities:
         binding = bindings[identity]
         if not isinstance(binding, Mapping) or binding.get("episode_id") != identity:
             raise ValueError(f"identity binding mismatch: {identity}")
@@ -270,6 +288,7 @@ def _load_records(t4_root: Path, *, allow_descendant_snapshot: bool = False) -> 
         targets = {head: [] for head in HEADS}
         masks = {head: [] for head in HEADS}
         candidates: list[bool] = []
+        right_censored = {head: [] for head in HEADS}
         for feature_row in features:
             step = int(feature_row["step"])
             row = labels.get((identity, step))
@@ -283,15 +302,18 @@ def _load_records(t4_root: Path, *, allow_descendant_snapshot: bool = False) -> 
                 known = _known_label(label, active=head in ACTIVE_HEADS)
                 targets[head].append(float(label["value"] == "TRUE"))
                 masks[head].append(known)
+                right_censored[head].append(bool(label["right_censored"]))
         binding_rows.append({
             "identity": identity,
             "features": np.asarray([row["features_25d"] for row in features], dtype=np.float32),
             "candidate_close": np.asarray(candidates, dtype=bool),
             "targets": {head: np.asarray(values, dtype=np.float32) for head, values in targets.items()},
             "masks": {head: np.asarray(values, dtype=bool) for head, values in masks.items()},
+            "right_censored": {head: np.asarray(values, dtype=bool) for head, values in right_censored.items()},
             "weights": {head: _event_weights(candidates, masks[head]) for head in HEADS},
         })
-    if sum(len(row["features"]) for row in binding_rows) != 196483:
+    expected_step_count = 196483 if identity_allowlist is None else sum(int(bindings[identity]["worker_result_steps"]) for identity in selected_identities)
+    if sum(len(row["features"]) for row in binding_rows) != expected_step_count:
         raise ValueError("feature/Teacher total step mismatch")
     feature_binding_path = ROOT / "configs" / "R3_SC5_FEATURE_BINDING_V1.json"
     feature_binding = load_feature_binding(feature_binding_path, ROOT)

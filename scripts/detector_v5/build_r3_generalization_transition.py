@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 import subprocess
 import sys
 from pathlib import Path
@@ -189,7 +190,7 @@ def _validate_g1(g1_root: Path, *, t4_seal: str, g0_seal: str, feature_order_sha
         "teacher_fields_in_manifests": False,
         "protected_reads": 0,
     }
-    if any(checks.get(key) != value for key, value in required_checks.items()):
+    if any(type(checks.get(key)) is not type(value) or checks.get(key) != value for key, value in required_checks.items()):
         raise ValueError("G1 closure checks are not passing")
     current_commit, _ = _git_snapshot()
     builder_commit = audit.get("builder_source", {}).get("commit")
@@ -243,8 +244,16 @@ def _validate_g1(g1_root: Path, *, t4_seal: str, g0_seal: str, feature_order_sha
 
 
 def _validate_permissions(value: Mapping[str, Any]) -> None:
-    if dict(value) != EXPECTED_PERMISSION_MATRIX:
-        raise ValueError("G2 permission matrix is not exact development-only scope")
+    _validate_exact_mapping(value, EXPECTED_PERMISSION_MATRIX, "G2 permission matrix")
+
+
+def _validate_exact_mapping(value: Any, expected: Mapping[str, Any], label: str) -> None:
+    if not isinstance(value, Mapping) or set(value) != set(expected):
+        raise ValueError(f"{label} keys are not exact")
+    for key, expected_value in expected.items():
+        actual = value[key]
+        if type(actual) is not type(expected_value) or actual != expected_value:
+            raise ValueError(f"{label} type/value mismatch: {key}")
 
 
 def _validate_t4_permissions(value: Mapping[str, Any]) -> None:
@@ -258,8 +267,7 @@ def _validate_t4_permissions(value: Mapping[str, Any]) -> None:
         "protected_reads": 0, "CAL_READ": False, "CHECK_READ": False,
         "G10_READ": False, "T2R_D_READ": False, "attack_authorized": False,
     }
-    if dict(value) != expected:
-        raise ValueError("T4 permission matrix is not exact development-only scope")
+    _validate_exact_mapping(value, expected, "T4 permission matrix")
 
 
 def _validate_g0_permissions(value: Mapping[str, Any]) -> None:
@@ -270,8 +278,7 @@ def _validate_g0_permissions(value: Mapping[str, Any]) -> None:
         "G10_READ": False, "T2R_D_READ": False, "shadow": False,
         "rollout": False, "attack": False,
     }
-    if dict(value) != expected:
-        raise ValueError("G0 permission matrix is not exact diagnostic-only scope")
+    _validate_exact_mapping(value, expected, "G0 permission matrix")
 
 
 def _write_seal(root: Path) -> str:
@@ -282,7 +289,9 @@ def _write_seal(root: Path) -> str:
     return digest
 
 
-def build(*, t4_root: Path, g0_root: Path, g1_root: Path, protocol_path: Path, output_root: Path) -> dict[str, Any]:
+def build(*, t4_root: Path, g0_root: Path, g1_root: Path, protocol_path: Path, output_root: Path, revision: str = "V1") -> dict[str, Any]:
+    if revision not in {"V1", "V2"}:
+        raise ValueError("unsupported G2 transition revision")
     _require_clean_git()
     commit, tree = _git_snapshot()
     _reject_symlink_components(protocol_path, "protocol")
@@ -354,7 +363,7 @@ def build(*, t4_root: Path, g0_root: Path, g1_root: Path, protocol_path: Path, o
     source_files = {
         "split_builder": {"path": "scripts/detector_v5/build_r3_generalization_splits.py", "sha256": sha256_file(ROOT / "scripts/detector_v5/build_r3_generalization_splits.py")},
         "transition_builder": {"path": "scripts/detector_v5/build_r3_generalization_transition.py", "sha256": sha256_file(Path(__file__))},
-        "student_trainer_reference": {"path": "scripts/detector_v5/run_r3_full670_student_development.py", "sha256": sha256_file(ROOT / "scripts/detector_v5/run_r3_full670_student_development.py")},
+        "student_trainer_reference": {"path": "scripts/detector_v5/run_r3_heldout_development.py", "sha256": sha256_file(ROOT / "scripts/detector_v5/run_r3_heldout_development.py")},
         "feature_binding": {"path": "configs/R3_SC5_FEATURE_BINDING_V1.json", "sha256": feature_sha},
         "generalization_protocol": {"path": "configs/R3_GENERALIZATION_PROTOCOL_V1.json", "sha256": protocol_sha},
     }
@@ -388,13 +397,44 @@ def build(*, t4_root: Path, g0_root: Path, g1_root: Path, protocol_path: Path, o
         "attack_authorized": False,
         "consumable_for_scientific_promotion": False,
     }
+    if revision == "V2":
+        full_loader_path = ROOT / "scripts/detector_v5/run_r3_full670_student_development.py"
+        model_path = ROOT / "n5/phase3_student/n5_student_model.py"
+        source_files.update({
+            "full_loader": {"path": "scripts/detector_v5/run_r3_full670_student_development.py", "sha256": sha256_file(full_loader_path)},
+            "model": {"path": "n5/phase3_student/n5_student_model.py", "sha256": sha256_file(model_path)},
+            "metric_implementation": source_files["student_trainer_reference"],
+        })
+        manifest_sha = g1_binding["file_sha256"]
+        payload.update({
+            "schema": "TEACHER_TO_STUDENT_GENERALIZATION_TRANSITION_V2",
+            "interface_revision": "R3-G2-V2",
+            "exact_execution_snapshot": {"commit": commit, "tree": tree},
+            "input_bindings": {
+                "g0_seal_sha256sums_sha256": g0_seal,
+                "g1_seal_sha256sums_sha256": verify_seal(g1_root)["sha256sums_sha256"],
+                "episode_train_manifest_sha256": manifest_sha["EPISODE_TRAIN_MANIFEST.json"],
+                "episode_validation_manifest_sha256": manifest_sha["EPISODE_VAL_MANIFEST.json"],
+                "episode_test_manifest_sha256": manifest_sha["EPISODE_TEST_MANIFEST.json"],
+                "teacher_root_sha256sums_sha256": t4_transition["teacher_root_sha256sums_sha256"],
+                "feature_binding_sha256": feature_sha,
+                "feature_order_sha256": feature_order_sha,
+                "eligible_heads": list(ACTIVE_HEADS),
+            },
+            "threshold_protocol": {"path": "configs/R3_GENERALIZATION_PROTOCOL_V1.json", "sha256": protocol_sha, "selection_split": "validation_only", "test_read_before_selection": False},
+            "gpu_allowlist": {"physical_ids": list(range(8)), "one_process_per_gpu": True, "ddp": False, "idle_only": True},
+            "output_parent": str(output_root.parent.resolve()),
+            "official_environment": {"path": protocol.get("official_environment"), "python_executable": sys.executable, "python_version": platform.python_version(), "platform": platform.platform()},
+            "test_read_policy": "G7_ONE_TIME_AFTER_VALIDATION_FREEZE",
+            "safe_release_training_enabled": False,
+        })
     _reject_forbidden(payload)
     staging = output_root.with_name(f".{output_root.name}.staging.{os.getpid()}")
     if staging.exists() or staging.is_symlink():
         raise FileExistsError(staging)
     staging.mkdir(parents=True)
     try:
-        (staging / "TEACHER_TO_STUDENT_GENERALIZATION_TRANSITION_V1.json").write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        (staging / f"TEACHER_TO_STUDENT_GENERALIZATION_TRANSITION_{revision}.json").write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         (staging / "PERMISSION_MATRIX.json").write_text(json.dumps(EXPECTED_PERMISSION_MATRIX, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         (staging / "SPLIT_BINDINGS.json").write_text(json.dumps({"expected_split_keys": list(EXPECTED_SPLITS), "bindings": g1_binding["split_manifests"]}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         seal = _write_seal(staging)
@@ -414,8 +454,9 @@ def main() -> int:
     parser.add_argument("--g1-root", type=Path, required=True)
     parser.add_argument("--protocol", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--revision", choices=("V1", "V2"), default="V1")
     args = parser.parse_args()
-    print(json.dumps(build(t4_root=args.t4_root, g0_root=args.g0_root, g1_root=args.g1_root, protocol_path=args.protocol, output_root=args.output_root), indent=2, sort_keys=True))
+    print(json.dumps(build(t4_root=args.t4_root, g0_root=args.g0_root, g1_root=args.g1_root, protocol_path=args.protocol, output_root=args.output_root, revision=args.revision), indent=2, sort_keys=True))
     return 0
 
 

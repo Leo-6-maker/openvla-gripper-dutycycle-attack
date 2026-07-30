@@ -19,6 +19,10 @@ def test_permission_matrix_is_exact():
     MODULE._validate_permissions(MODULE.EXPECTED_PERMISSION_MATRIX)
     with pytest.raises(ValueError):
         MODULE._validate_permissions({**MODULE.EXPECTED_PERMISSION_MATRIX, "attack": True})
+    with pytest.raises(ValueError, match="type/value"):
+        MODULE._validate_permissions({**MODULE.EXPECTED_PERMISSION_MATRIX, "protected_reads": False})
+    with pytest.raises(ValueError, match="type/value"):
+        MODULE._validate_permissions({**MODULE.EXPECTED_PERMISSION_MATRIX, "attack": 0})
 
 
 def test_expected_split_keys_are_exact():
